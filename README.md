@@ -5,8 +5,8 @@ with 東方紅魔郷 ~ the Embodiment of Scarlet Devil (Touhou 6).
 
 Each port is built from a matching decompilation of the original game:
 
-- [th06](https://github.com/cirno-labs/th06)
-- [th07](https://github.com/cirno-labs/th07)
+- [th06](https://github.com/Cirno-Labs/th06)
+- [th07](https://github.com/Cirno-Labs/th07)
 
 The decompilations reproduce the original executables byte for byte.
 This repository takes their source once it is complete and turns it into
