@@ -4,6 +4,7 @@ core_include = [layer_include['core']]
 # the tests link it alone.
 core_base_lib = static_library(
   'core_base',
+  'base/arena.c',
   'base/log.c',
   'base/memory.c',
   'base/result.c',

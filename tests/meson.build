@@ -13,7 +13,7 @@ test(
 )
 
 # Each part of core/base has a test named after it.
-foreach part : ['log', 'memory', 'result', 'string']
+foreach part : ['arena', 'log', 'memory', 'result', 'string']
   test(
     'core/base/' + part,
     executable(
@@ -29,7 +29,12 @@ endforeach
 
 # These tests do something fatal, which aborts the program, so they pass
 # when they fail.
-foreach name : ['allocator_failure', 'assert', 'memory_overflow']
+foreach name : [
+  'allocator_failure',
+  'arena_full',
+  'assert',
+  'memory_overflow',
+]
   test(
     'core/base/' + name,
     executable(

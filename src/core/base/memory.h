@@ -44,7 +44,8 @@ size_t Mem_ArrSize(size_t count, size_t size);
 // and free receive the size the block has, so that an allocator does not
 // have to record it.
 //
-// g_HeapAllocator takes its memory from the C heap.
+// g_HeapAllocator takes its memory from the C heap, and Arena_Allocator
+// returns one that takes it from an arena.
 typedef struct {
     void *(*alloc)(void *context, size_t size);
     void *(*realloc)(
