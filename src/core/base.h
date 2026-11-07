@@ -5,6 +5,7 @@
 #include "core/base/arena.h"
 #include "core/base/array.h"
 #include "core/base/assert.h"
+#include "core/base/hash_map.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/result.h"

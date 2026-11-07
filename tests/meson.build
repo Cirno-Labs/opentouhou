@@ -13,7 +13,15 @@ test(
 )
 
 # Each part of core/base has a test named after it.
-foreach part : ['arena', 'array', 'log', 'memory', 'result', 'string']
+foreach part : [
+  'arena',
+  'array',
+  'hash_map',
+  'log',
+  'memory',
+  'result',
+  'string',
+]
   test(
     'core/base/' + part,
     executable(
@@ -53,7 +61,12 @@ endforeach
 # Each of these files compiles, and fails to compile with BREAK defined,
 # which shows that the container macros reject a value of the wrong type.
 compile_fail_args = core_include + ['-Werror']
-foreach name : ['array_item_type', 'array_slice_type']
+foreach name : [
+  'array_item_type',
+  'array_slice_type',
+  'hash_map_key_type',
+  'hash_map_value_type',
+]
   source = files('compile_fail' / name + '.c')
   if not cc.compiles(source, args: compile_fail_args, name: name)
     error('tests/compile_fail/' + name + '.c does not compile')
