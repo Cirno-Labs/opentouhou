@@ -1,0 +1,43 @@
+name: Build a pull request
+
+# Keep the trigger on `pull_request`, never `pull_request_target`. On a fork
+# pull request, `pull_request` runs with a read-only token and no secrets.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Install prek and clang-format
+        run: |
+          pipx install prek==0.2.24
+          pipx install clang-format==22.1.8
+
+      - name: Run the checks
+        run: |
+          prek -a || { git diff; exit 1; }
+
+  build_linux:
+    name: Linux
+    uses: ./.github/workflows/job_build.yml
+    with:
+      platform: linux
+      target: debug
+
+  build_win:
+    name: Windows
+    uses: ./.github/workflows/job_build.yml
+    with:
+      platform: win
+      target: debug

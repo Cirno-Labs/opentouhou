@@ -1,0 +1,69 @@
+name: Build and package
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        description: "Platform to build for: linux or win"
+        required: true
+      target:
+        type: string
+        description: "Build type: debug or release"
+        required: true
+
+jobs:
+  build:
+    name: Build (${{ inputs.platform }}, ${{ inputs.target }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Install just
+        uses: taiki-e/install-action@6d97d0d47ea06f0bb4e81bc7911476e7cc61b312 # just
+
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Log in to the container registry
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # A pull request restores the shared ccache read-only and never writes
+      # it back (see the Save step), so a branch cannot poison the cache that
+      # a later develop build uses.
+      - name: Restore ccache
+        id: ccache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/ccache
+          key: ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross.txt') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross.txt') }}-
+
+      - name: Build and package
+        env:
+          CCACHE_MAXSIZE: 1G
+        run: just package-${{ inputs.platform }} ${{ inputs.target }}
+
+      - name: Run the unit tests
+        if: ${{ inputs.platform == 'linux' }}
+        run: just test
+
+      - name: Save ccache
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/ccache
+          key: ${{ steps.ccache.outputs.cache-primary-key }}
+
+      - name: Upload the packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: packages-${{ inputs.platform }}-${{ inputs.target }}
+          path: build/packages/
+          compression-level: 0
