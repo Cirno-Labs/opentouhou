@@ -1,5 +1,11 @@
 core_include = [layer_include['core']]
 
+# core/math uses sqrtf, floorf, trunc and friends from the C library (never
+# its trig or atan2, which core/math/libm vendors instead). GCC's libm is a
+# separate archive on Linux; MinGW folds it into the C library, so there is
+# nothing to find there.
+cc_libm = meson.get_compiler('c').find_library('m', required: false)
+
 # core/base needs nothing but the C library, so it is built without SDL and
 # the tests link it alone.
 core_base_lib = static_library(
@@ -26,6 +32,15 @@ core_json_lib = static_library(
   'json/parse.c',
   c_args: core_include,
   implicit_include_directories: false,
+)
+
+# core/math needs only core/base, so the tests link it without SDL.
+core_math_lib = static_library(
+  'core_math',
+  'math/common.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [cc_libm],
 )
 
 core_io_lib = static_library(
@@ -69,7 +84,10 @@ core_main_lib = static_library(
 # link it, but never see its headers.
 core_dep = declare_dependency(
   compile_args: core_include,
-  link_with: [core_lib, core_vfs_lib, core_io_lib, core_json_lib, core_base_lib],
+  link_with: [
+    core_lib, core_vfs_lib, core_io_lib, core_json_lib, core_math_lib,
+    core_base_lib,
+  ],
   link_whole: core_main_lib,
   dependencies: [sdl3.partial_dependency(links: true)],
 )

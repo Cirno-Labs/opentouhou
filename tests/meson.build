@@ -12,6 +12,25 @@ test(
   suite: 'unit',
 )
 
+# Each part of core/math has a test named after it, linking the sources
+# directly like core/base's tests do.
+foreach part : [
+  'common',
+]
+  test(
+    'core/math/' + part,
+    executable(
+      'test_' + part,
+      'test_' + part + '.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_math_lib, core_base_lib],
+      dependencies: [cc_libm],
+    ),
+    suite: 'unit',
+  )
+endforeach
+
 test(
   'core/vfs',
   executable(
