@@ -39,6 +39,7 @@ endforeach
 # Each part of core/json has a test named after it.
 foreach part : [
   'get',
+  'index',
   'merge',
   'parse',
 ]

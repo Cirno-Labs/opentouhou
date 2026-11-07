@@ -20,7 +20,8 @@
 
 // Returns the value of the member with the given key, or nullptr if object
 // is not an object or has no such member. For duplicate keys, the last
-// member wins. The search is linear.
+// member wins. The search is linear; a JSON_INDEX makes the lookups in a
+// large object fast.
 const JSON_VALUE *Json_Get(const JSON_VALUE *object, const char *key);
 
 // Returns the item at index, or nullptr if array is not an array or index is
