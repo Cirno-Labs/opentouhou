@@ -20,6 +20,7 @@ core_base_lib = static_library(
 core_io_lib = static_library(
   'core_io',
   'io/reader.c',
+  'io/writer.c',
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
