@@ -17,6 +17,14 @@ core_base_lib = static_library(
   implicit_include_directories: false,
 )
 
+# core/json needs only core/base, so the tests link it without SDL.
+core_json_lib = static_library(
+  'core_json',
+  'json/parse.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
 core_io_lib = static_library(
   'core_io',
   'io/file.c',
@@ -48,7 +56,7 @@ core_main_lib = static_library(
 # link it, but never see its headers.
 core_dep = declare_dependency(
   compile_args: core_include,
-  link_with: [core_lib, core_io_lib, core_base_lib],
+  link_with: [core_lib, core_io_lib, core_json_lib, core_base_lib],
   link_whole: core_main_lib,
   dependencies: [sdl3.partial_dependency(links: true)],
 )

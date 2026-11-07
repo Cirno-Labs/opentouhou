@@ -36,6 +36,23 @@ foreach part : [
   )
 endforeach
 
+# Each part of core/json has a test named after it.
+foreach part : [
+  'parse',
+]
+  test(
+    'core/json/' + part,
+    executable(
+      'test_json_' + part,
+      'test_json_' + part + '.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_json_lib, core_base_lib],
+    ),
+    suite: 'unit',
+  )
+endforeach
+
 # Each part of core/io has tests named after it. A test that works with
 # files does so in its own directory inside the build directory, which is
 # also its user directory.
