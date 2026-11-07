@@ -1,8 +1,8 @@
 #include "core/app.h"
 
-static APP_RESULT M_Init(void)
+static RESULT M_Init(void)
 {
-    return APP_RESULT_OK;
+    return OK;
 }
 
 static bool M_Tick(const TICK_INPUT *const input, FRAME *const frame)

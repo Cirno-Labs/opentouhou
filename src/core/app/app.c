@@ -2,6 +2,8 @@
 #define SDL_MAIN_NOIMPL
 #include "core/app.h"
 
+#include "core/base/log.h"
+
 #include "clock.h"
 
 #include <SDL3/SDL.h>
@@ -38,13 +40,7 @@ struct FRAME {
 static APP_CONTEXT m_Context;
 static FRAME m_Frame;
 
-static SDL_AppResult M_Fail(const char *const what)
-{
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s: %s", what, SDL_GetError());
-    return SDL_APP_FAILURE;
-}
-
-static SDL_AppResult M_CreateWindow(APP_CONTEXT *const ctx)
+static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -55,14 +51,13 @@ static SDL_AppResult M_CreateWindow(APP_CONTEXT *const ctx)
     ctx->window = SDL_CreateWindow(
         g_GameDesc.title, g_GameDesc.logical_width, g_GameDesc.logical_height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    if (ctx->window == nullptr) {
-        return M_Fail("Cannot create the window");
-    }
+    FAIL_IF(
+        ctx->window == nullptr, "Cannot create the window: %s", SDL_GetError());
 
     ctx->gl_context = SDL_GL_CreateContext(ctx->window);
-    if (ctx->gl_context == nullptr) {
-        return M_Fail("Cannot create an OpenGL 3.3 core context");
-    }
+    FAIL_IF(
+        ctx->gl_context == nullptr,
+        "Cannot create an OpenGL 3.3 core context: %s", SDL_GetError());
 
     ctx->gl_get_string =
         (GL_GET_STRING_FUNC)SDL_GL_GetProcAddress("glGetString");
@@ -70,43 +65,39 @@ static SDL_AppResult M_CreateWindow(APP_CONTEXT *const ctx)
     ctx->gl_clear_color =
         (GL_CLEAR_COLOR_FUNC)SDL_GL_GetProcAddress("glClearColor");
     ctx->gl_clear = (GL_CLEAR_FUNC)SDL_GL_GetProcAddress("glClear");
-    if (ctx->gl_get_string == nullptr || ctx->gl_viewport == nullptr
-        || ctx->gl_clear_color == nullptr || ctx->gl_clear == nullptr) {
-        return M_Fail("Cannot load the OpenGL functions");
-    }
+    FAIL_IF(
+        ctx->gl_get_string == nullptr || ctx->gl_viewport == nullptr
+            || ctx->gl_clear_color == nullptr || ctx->gl_clear == nullptr,
+        "Cannot load the OpenGL functions: %s", SDL_GetError());
 
     ctx->vsync = SDL_GL_SetSwapInterval(1);
     if (!ctx->vsync) {
-        SDL_Log("Vsync is not available: %s", SDL_GetError());
+        LOG_INFO("Vsync is not available: %s", SDL_GetError());
     }
 
-    SDL_Log(
+    LOG_INFO(
         "OpenGL %s, %s", (const char *)ctx->gl_get_string(GL_VERSION),
         (const char *)ctx->gl_get_string(GL_RENDERER));
-    return SDL_APP_CONTINUE;
+    return OK;
 }
 
-SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
+static RESULT M_Init(APP_CONTEXT *const ctx)
 {
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        return M_Fail("Cannot initialize SDL");
-    }
-
-    APP_CONTEXT *const ctx = &m_Context;
-    const SDL_AppResult result = M_CreateWindow(ctx);
-    if (result != SDL_APP_CONTINUE) {
-        return result;
-    }
+    FAIL_IF(
+        !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
+    MUST(M_CreateWindow(ctx));
 
     Clock_Init(&ctx->clock, APP_TICK_RATE, MAX_TICKS_PER_FRAME);
 
     ctx->game_init_called = true;
-    if (g_GameDesc.init() != APP_RESULT_OK) {
-        SDL_LogError(
-            SDL_LOG_CATEGORY_APPLICATION, "%s failed to start", g_GameDesc.id);
-        return SDL_APP_FAILURE;
-    }
-    return SDL_APP_CONTINUE;
+    MUST(g_GameDesc.init(), "%s failed to start", g_GameDesc.id);
+    return OK;
+}
+
+SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
+{
+    return Result_Log(M_Init(&m_Context), LOG_LEVEL_ERROR) ? SDL_APP_CONTINUE
+                                                           : SDL_APP_FAILURE;
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)

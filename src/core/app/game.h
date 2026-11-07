@@ -1,14 +1,11 @@
 #pragma once
 
+#include "core/base/result.h"
+
 #include <stdint.h>
 
 #define APP_TICK_RATE 60
 #define INPUT_MAX_PLAYERS 2
-
-typedef enum {
-    APP_RESULT_OK,
-    APP_RESULT_FAILURE,
-} APP_RESULT;
 
 // Holds what one tick records for display.
 typedef struct FRAME FRAME;
@@ -42,7 +39,7 @@ typedef struct {
     int logical_width;
     int logical_height;
     // Prepares the game. Called once, after the window exists.
-    APP_RESULT (*init)(void);
+    RESULT (*init)(void);
     // Advances the game by one 60 Hz step and records what to show into
     // the frame. Returns false when the game wants to quit.
     bool (*tick)(const TICK_INPUT *input, FRAME *frame);
