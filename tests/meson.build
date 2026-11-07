@@ -16,6 +16,7 @@ test(
 foreach part : [
   'arena',
   'array',
+  'cp932',
   'hash_map',
   'log',
   'memory',

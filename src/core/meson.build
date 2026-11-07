@@ -6,6 +6,8 @@ core_base_lib = static_library(
   'core_base',
   'base/arena.c',
   'base/array.c',
+  'base/cp932.c',
+  'base/cp932_table.c',
   'base/hash_map.c',
   'base/log.c',
   'base/memory.c',
