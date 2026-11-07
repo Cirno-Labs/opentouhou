@@ -1,0 +1,18 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+repos:
+- repo: local
+  hooks:
+  - id: clang-format
+    name: clang-format
+    entry: clang-format
+    args: ["-style=file", "-i"]
+    language: system
+    files: \.[ch]$
+
+  - id: commit-msg
+    name: Commit message has a module prefix and follows 50/72
+    entry: tools/lint/check_commit_msg
+    language: python
+    stages: [commit-msg]

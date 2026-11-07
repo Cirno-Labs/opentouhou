@@ -25,24 +25,25 @@ each game.
   is interpolated between ticks
 - In-game translations, switchable from the game's menus, with text
   rendered by the port instead of GDI
-
-Replays from the original games are not expected to play back: the
-original floating-point math cannot be reproduced exactly on modern
-compilers and other architectures.
+- Replays recorded with the original games play back, on every
+  platform: the game logic reproduces the original floating-point math
 
 ## Status
 
-Nothing yet. Work starts once the decompilations up to and including
-th10 are complete. th10 is built on a different engine from th06–th09,
-so the shared layer will be designed with both engines in view instead
-of being fitted to the older one.
+The port of th06 in `src/th06/` is starting, written from its
+decompilation. The shared layers are designed up front. th10
+is built on a different engine from th06–th09, and the shared layer is
+reviewed against it before its interfaces settle.
 
 ## Layout
 
 ```
-lib/platform/   shared layer: window, rendering, input, audio, text,
-                translations, frame pacing
-src/games/      one port per game (th06plus, th07plus, ...)
+src/core/   shared by every game: window, rendering, input, audio,
+            text, file IO, patches, frame pacing
+src/stg/    shared by the shooting games: archives, sprite scripts,
+            dialogue, enemy scripts, bullets, scores, replays
+src/th06/   one directory per game
+docs/       documentation, starting with ARCHITECTURE.md
 ```
 
 ## Legal
@@ -50,3 +51,9 @@ src/games/      one port per game (th06plus, th07plus, ...)
 Touhou Project is by ZUN / Team Shanghai Alice. This is an unofficial
 fan project. It contains no assets or code from the original games, and
 it is not affiliated with or endorsed by ZUN or Team Shanghai Alice.
+
+## License
+
+The source in this repository is licensed under the GNU General Public
+License, version 3 only (`GPL-3.0-only`), see [`LICENSE`](LICENSE). The
+license covers our code, not the original games or their data.
