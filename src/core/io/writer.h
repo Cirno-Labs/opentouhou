@@ -4,22 +4,30 @@
 #include "core/base/result.h"
 #include "core/base/types.h"
 
-// Writes little-endian values, as READER reads them, into a growable buffer.
-// Every file format that the program writes is written field by field
-// through a WRITER, so no structure is ever written as it lies in memory.
+// Writes little-endian values, as READER reads them, into a growable buffer
+// or a file. Every file format that the program writes is written field by
+// field through a WRITER, so no structure is ever written as it lies in
+// memory.
 //
 // Writes go to the position and move it forward. Writer_Seek moves the
 // position back, to replace a field that was written before, such as a size
 // or an offset that is known only after the data it describes. A write that
 // passes the end extends the data.
 //
+// A file writer writes into a temporary file next to the target, and
+// Writer_Close renames it over the target. A crash or a failure therefore
+// leaves the old file or the new one, never a part of the new one.
+//
+// The first write to a file that fails sets the error flag and records the
+// reason. After that, every write does nothing, and Writer_Close removes
+// the temporary file and returns the failure. A buffer writer never fails.
 // Running out of memory is fatal. Writing to a closed writer, seeking past
-// the end and taking the buffer of a closed writer are programming errors,
+// the end and taking the buffer of a file writer are programming errors,
 // and fatal too.
 //
 // Example:
 // WRITER writer;
-// Writer_OpenBuffer(&writer, &g_HeapAllocator);
+// MUST(Writer_OpenFile(&writer, path));
 // const uint32_t version = 2;
 // Writer_Write(&writer, &version);
 // const size_t size_position = Writer_Tell(&writer);
@@ -29,8 +37,9 @@
 // Writer_Seek(&writer, size_position);
 // Writer_WriteU32(&writer, (uint32_t)(end - size_position - 4));
 // Writer_Seek(&writer, end);
-// size_t size;
-// uint8_t *const data = Writer_TakeBuffer(&writer, &size);
+// MUST(Writer_Close(&writer));
+
+typedef struct WRITER_FILE WRITER_FILE;
 
 // Holds a destination and a position in it. The fields are private to the
 // Writer_ functions. A WRITER is a plain value, so it can live on the stack.
@@ -40,7 +49,15 @@ typedef struct {
     size_t capacity;
     size_t position;
     const ALLOCATOR *allocator;
+    WRITER_FILE *file;
+    bool failed;
 } WRITER;
+
+// Opens a writer into a new temporary file, "<path>.tmp", that Writer_Close
+// renames to path. The writer keeps the latest written bytes in memory and
+// writes them to the file in blocks. The directory must exist. On failure,
+// the writer is closed.
+RESULT Writer_OpenFile(WRITER *writer, const char *path);
 
 // Opens a writer into a growable buffer that the writer owns, with its
 // memory from allocator. It allocates nothing until the first write.
@@ -52,10 +69,21 @@ void Writer_OpenBuffer(WRITER *writer, const ALLOCATOR *allocator);
 // the same allocator.
 uint8_t *Writer_TakeBuffer(WRITER *writer, size_t *size);
 
-// Closes a writer. For a buffer writer, releases the bytes that
-// Writer_TakeBuffer did not take, and returns OK. Closing a closed writer
-// does nothing.
+// Closes a writer. For a file writer, writes the bytes kept in memory,
+// flushes the temporary file to disk where the platform allows it, and
+// renames it over the target, replacing a file that is there. On failure,
+// the temporary file is removed, the target is unchanged, and the failure is
+// returned. For a buffer writer, releases the bytes that Writer_TakeBuffer
+// did not take, and returns OK. Closing a closed writer does nothing and
+// returns OK.
 RESULT Writer_Close(WRITER *writer);
+
+// Returns whether the error flag is set.
+bool Writer_Failed(const WRITER *writer);
+
+// Returns the failure that set the error flag, which names the path and the
+// reason, or OK when the flag is not set.
+RESULT Writer_Result(const WRITER *writer);
 
 // Returns the position, which is the offset of the next write.
 size_t Writer_Tell(const WRITER *writer);

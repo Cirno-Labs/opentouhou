@@ -38,7 +38,7 @@ endforeach
 
 # Each part of core/io has tests named after it. A test that works with
 # files does so in its own directory inside the build directory.
-foreach name : ['reader', 'reader_file', 'writer']
+foreach name : ['reader', 'reader_file', 'writer', 'writer_file']
   test(
     'core/io/' + name,
     executable(
@@ -68,6 +68,7 @@ foreach name, expected : {
   'core/io/reader_buffer_null': 'Assertion failed: data != nullptr || size == 0',
   'core/io/writer_closed': 'Assertion failed: M_IsOpen(writer)',
   'core/io/writer_seek_past_end': 'Assertion failed: position <= writer->size',
+  'core/io/writer_take_file': 'Assertion failed: writer->file == nullptr',
 }
   part = name.split('/')[-1]
   test(
