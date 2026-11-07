@@ -16,6 +16,7 @@ test(
 # directly like core/base's tests do.
 foreach part : [
   'common',
+  'x87',
 ]
   test(
     'core/math/' + part,
@@ -30,6 +31,21 @@ foreach part : [
     suite: 'unit',
   )
 endforeach
+
+# The x87 comparison test only builds on x86 with a compiler that supports
+# GCC's inline asm; test_x87_asm.c itself is a no-op test elsewhere.
+test(
+  'core/math/x87_asm',
+  executable(
+    'test_x87_asm',
+    'test_x87_asm.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_math_lib, core_base_lib],
+    dependencies: [cc_libm],
+  ),
+  suite: 'unit',
+)
 
 test(
   'core/vfs',
