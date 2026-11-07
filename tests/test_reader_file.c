@@ -44,13 +44,32 @@ static char *M_PrepareFile(const char *const name)
     return path;
 }
 
-static bool M_FailsWith(const READER *const reader, const char *const message)
+// Checks that a reader failed with message followed by " in <path>", or,
+// when that is too long for the reader's buffer, by " in ..." and the end
+// of path with its file name whole.
+static bool M_FailsIn(
+    const READER *const reader, const char *const message,
+    const char *const path)
 {
     const RESULT result = Reader_Result(reader);
-    const bool matches = !IS_OK(result) && strcmp(result.message, message) == 0;
-    if (!IS_OK(result) && !matches) {
+    if (IS_OK(result)) {
+        return false;
+    }
+    char *const whole = Str_Format("%s in %s", message, path);
+    char *const elided = Str_Format("%s in ...", message);
+    const char *const name = strrchr(path, '/');
+    const size_t length = strlen(result.message);
+    bool matches = strcmp(result.message, whole) == 0;
+    if (!matches && strlen(whole) >= READER_ERROR_SIZE) {
+        matches = Str_StartsWith(result.message, elided)
+            && Str_EndsWith(result.message, name != nullptr ? name : path)
+            && length < READER_ERROR_SIZE;
+    }
+    if (!matches) {
         printf("    message: %s\n", result.message);
     }
+    Mem_Free(elided);
+    Mem_Free(whole);
     Result_Ignore(result);
     return matches;
 }
@@ -176,9 +195,8 @@ TEST(slices_read_through_the_file)
 
     Reader_ReadU8(&inner);
     char *const expected = Str_Format(
-        "%s: read of 1 bytes at 0x%zx past end 0x%zx", path, start + 108,
-        start + 108);
-    CHECK(M_FailsWith(&inner, expected));
+        "read of 1 bytes at 0x%zx past end 0x%zx", start + 108, start + 108);
+    CHECK(M_FailsIn(&inner, expected, path));
     CHECK(!Reader_Failed(&slice));
     Reader_Close(&slice);
     Reader_Seek(&reader, 0);
@@ -196,14 +214,12 @@ TEST(reading_past_the_end_names_the_path)
     READER reader;
     CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(Reader_ReadU32(&reader), 0);
-    char *const expected =
-        Str_Format("%s: read of 4 bytes at 0x0 past end 0x3", path);
-    CHECK(M_FailsWith(&reader, expected));
+    const char *const expected = "read of 4 bytes at 0x0 past end 0x3";
+    CHECK(M_FailsIn(&reader, expected, path));
 
     Reader_Close(&reader);
-    CHECK(M_FailsWith(&reader, expected));
+    CHECK(M_FailsIn(&reader, expected, path));
     CHECK_EQ_INT(Reader_Size(&reader), 0);
-    Mem_Free(expected);
     Mem_Free(path);
     Mem_Free(directory);
 }
@@ -216,11 +232,36 @@ TEST(result_still_names_the_path_after_close)
     READER reader;
     CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(Reader_ReadU32(&reader), 0);
-    char *const expected =
-        Str_Format("%s: read of 4 bytes at 0x0 past end 0x3", path);
     Reader_Close(&reader);
-    CHECK(M_FailsWith(&reader, expected));
-    Mem_Free(expected);
+    CHECK(M_FailsIn(&reader, "read of 4 bytes at 0x0 past end 0x3", path));
+    Mem_Free(path);
+    Mem_Free(directory);
+}
+
+TEST(a_long_path_is_cut_at_the_start)
+{
+    char *directory = TestDir_Prepare("long_path");
+    for (int i = 0; i < 6; i++) {
+        char *const deeper =
+            TestDir_Join(directory, "a_directory_with_a_long_name");
+        CHECK(SDL_CreateDirectory(deeper));
+        Mem_Free(directory);
+        directory = deeper;
+    }
+    char *const path = TestDir_Join(directory, "紅魔郷CM.DAT");
+    M_Create(path, "abc", 3);
+    READER reader;
+    CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
+    Reader_ReadU32(&reader);
+    Reader_Close(&reader);
+
+    const RESULT result = Reader_Result(&reader);
+    CHECK(!IS_OK(result));
+    CHECK(Str_StartsWith(
+        result.message, "read of 4 bytes at 0x0 past end 0x3 in .../"));
+    CHECK(Str_EndsWith(result.message, "/紅魔郷CM.DAT"));
+    CHECK(strlen(result.message) < READER_ERROR_SIZE);
+    Result_Ignore(result);
     Mem_Free(path);
     Mem_Free(directory);
 }
@@ -234,14 +275,12 @@ TEST(a_file_that_shrinks_fails_with_the_reason)
     Reader_Skip(&reader, 2);
     CHECK_EQ_INT(Reader_ReadU32(&reader), 0);
     CHECK_EQ_INT(Reader_Tell(&reader), 2);
-    char *const expected = Str_Format(
-        "%s: read of 4 bytes at 0x2 failed: the file is shorter than when "
-        "it was opened",
-        path);
-    CHECK(M_FailsWith(&reader, expected));
+    const char *const expected =
+        "read of 4 bytes at 0x2 failed (the file is shorter than when it was "
+        "opened)";
+    CHECK(M_FailsIn(&reader, expected, path));
     Reader_Close(&reader);
-    CHECK(M_FailsWith(&reader, expected));
-    Mem_Free(expected);
+    CHECK(M_FailsIn(&reader, expected, path));
     Mem_Free(path);
 }
 

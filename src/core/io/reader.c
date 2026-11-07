@@ -81,29 +81,51 @@ static uint64_t M_Absolute(const READER *const reader, const uint64_t position)
     return offset;
 }
 
+// Returns where the part of path to keep starts, so that " in ...<part>"
+// fits in capacity bytes with its terminator: at a '/' when one leaves
+// enough room, else at the first whole UTF-8 character that does.
+static const char *M_PathTail(const char *const path, const size_t capacity)
+{
+    const size_t fixed = strlen(" in ...") + 1;
+    const size_t length = strlen(path);
+    if (capacity <= fixed) {
+        return path + length;
+    }
+    const char *tail = path + length - MIN(length, capacity - fixed);
+    for (const char *slash = tail; *slash != '\0'; slash++) {
+        if (*slash == '/') {
+            return slash;
+        }
+    }
+    while (((unsigned char)*tail & 0xC0) == 0x80) {
+        tail++;
+    }
+    return tail;
+}
+
 PRINTF_FORMAT(2, 3)
 static void M_Fail(READER *const reader, const char *const fmt, ...)
 {
     if (reader->error[0] != '\0') {
         return;
     }
-    char *message = reader->error;
-    size_t capacity = sizeof(reader->error);
-    if (reader->file != nullptr) {
-        const int written =
-            snprintf(message, capacity, "%s: ", reader->file->path);
-        if (written > 0 && (size_t)written < capacity) {
-            message += written;
-            capacity -= (size_t)written;
-        } else {
-            message += capacity - 1;
-            capacity = 1;
-        }
-    }
     va_list args;
     va_start(args, fmt);
-    vsnprintf(message, capacity, fmt, args);
+    vsnprintf(reader->error, sizeof(reader->error), fmt, args);
     va_end(args);
+    if (reader->file == nullptr) {
+        return;
+    }
+
+    const char *const path = reader->file->path;
+    const size_t used = strlen(reader->error);
+    const size_t capacity = sizeof(reader->error) - used;
+    char *const end = reader->error + used;
+    if (strlen(" in ") + strlen(path) < capacity) {
+        snprintf(end, capacity, " in %s", path);
+    } else {
+        snprintf(end, capacity, " in ...%s", M_PathTail(path, capacity));
+    }
 }
 
 static bool M_Claim(
@@ -142,7 +164,7 @@ static bool M_Copy(READER *const reader, void *const buffer, const size_t size)
     if (!M_ReadFile(reader->file, offset, buffer, size)) {
         reader->position -= size;
         M_Fail(
-            reader, "read of %llu bytes at 0x%llx failed: %s",
+            reader, "read of %llu bytes at 0x%llx failed (%s)",
             (unsigned long long)size,
             (unsigned long long)M_Absolute(reader, reader->position),
             reader->file->error);

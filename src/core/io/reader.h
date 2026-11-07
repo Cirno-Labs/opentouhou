@@ -88,9 +88,11 @@ bool Reader_Failed(const READER *reader);
 
 // Returns a failure that names the first failed operation and its offset,
 // such as "read of 4 bytes at 0x1234 past end 0x1230", or OK when the error
-// flag is not set. For a file, the message starts with the path, and an
-// error of the file adds the reason that the platform gives. The message
-// was formatted when the operation failed, so it still names the path after
+// flag is not set. For a file, an error of the file adds the reason that
+// the platform gives, and the message ends with " in <path>". When the path
+// does not fit in READER_ERROR_SIZE, its start is replaced with "...", cut
+// at a '/' where possible, so the file name stays whole. The message was
+// formatted when the operation failed, so it still names the path after
 // Reader_Close.
 RESULT Reader_Result(const READER *reader);
 
