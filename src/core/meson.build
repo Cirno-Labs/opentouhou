@@ -50,6 +50,7 @@ core_math_lib = static_library(
   'math/libm/sin_kernel.c',
   'math/libm/tan.c',
   'math/libm/tan_kernel.c',
+  'math/vec.c',
   'math/x87.c',
   c_args: core_include,
   implicit_include_directories: false,

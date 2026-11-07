@@ -16,6 +16,7 @@ test(
 # directly like core/base's tests do.
 foreach part : [
   'common',
+  'vec',
   'x87',
 ]
   test(
