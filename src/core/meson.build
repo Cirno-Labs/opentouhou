@@ -1,5 +1,14 @@
 core_include = [layer_include['core']]
 
+# core/base needs nothing but the C library, so it is built without SDL and
+# the tests link it alone.
+core_base_lib = static_library(
+  'core_base',
+  'base/log.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
 core_lib = static_library(
   'core',
   'app/app.c',
@@ -20,7 +29,7 @@ core_main_lib = static_library(
 # link it, but never see its headers.
 core_dep = declare_dependency(
   compile_args: core_include,
-  link_with: core_lib,
+  link_with: [core_lib, core_base_lib],
   link_whole: core_main_lib,
   dependencies: [sdl3.partial_dependency(links: true)],
 )
