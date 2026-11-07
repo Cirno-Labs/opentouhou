@@ -107,8 +107,8 @@ Dockerfiles.
 ## Building without Docker
 
 Possible, not supported. You need a C23 compiler (clang 18 or GCC 14 or
-newer), Meson 1.3 or newer, Ninja, pkg-config, and development packages
-for SDL3, SDL3_ttf and FFmpeg. Then:
+newer), Meson 1.4 or newer, Ninja, pkg-config, and SDL3 3.2 or newer.
+Then:
 
 ```sh
 meson setup build/native
