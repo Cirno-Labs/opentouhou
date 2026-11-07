@@ -1,0 +1,17 @@
+# Meson cross file for the Windows build image.
+[binaries]
+c = ['ccache', 'x86_64-w64-mingw32-gcc-posix']
+ar = 'x86_64-w64-mingw32-gcc-ar-posix'
+strip = 'x86_64-w64-mingw32-strip'
+windres = 'x86_64-w64-mingw32-windres'
+objdump = 'x86_64-w64-mingw32-objdump'
+pkg-config = 'pkg-config'
+
+[properties]
+pkg_config_libdir = '/ext/lib/pkgconfig'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Touhou 6: the Embodiment of Scarlet Devil
+Name[ja]=東方紅魔郷 ~ the Embodiment of Scarlet Devil
+Comment=Runs the original game's data on opentouhou
+Exec=oth06
+Icon=th06
+Categories=Game;ArcadeGame;
+Terminal=false

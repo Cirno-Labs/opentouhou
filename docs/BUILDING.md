@@ -14,8 +14,7 @@ out of the same images.
 - git
 - Python 3, for the tools under `tools/`
 
-That is all. The compilers, Meson, SDL3, SDL3_ttf, FFmpeg and the rest
-live in the images.
+That is all. The compilers, Meson and the libraries live in the images.
 
 ## Building
 
@@ -50,10 +49,8 @@ This writes one package per game to `build/packages/`:
   everything inside.
 - `oth06-<version>-Windows.zip`: `oth06.exe` and the files it needs.
 
-Every package contains the game's executable, its shaders, the bundled
-font and its licence (`BIZUDGothic`, SIL Open Font License), this
-project's licence and a readme. None contains any of the original
-game's files.
+Every package contains the game's executable, this project's licence
+and a readme. None contains any of the original game's files.
 
 The version comes from `git describe` on the latest `v*` tag; untagged
 builds are named after the commit.
@@ -80,15 +77,17 @@ scores and replays go to your user directory:
 
 There is one image per target platform, defined under `tools/docker/`:
 
-- `linux`: an old-glibc base, so the executables run on older
-  distributions; clang; the dependencies built as static libraries.
+- `linux`: AlmaLinux 8, whose glibc 2.28 lets the executables run on
+  older distributions; clang; the dependencies built as static
+  libraries; appimagetool for the AppImages.
 - `win`: MinGW-w64 for x86-64, a Meson cross file, the dependencies
-  cross-compiled as static libraries.
+  cross-compiled as static libraries. The executables link the MinGW
+  runtime statically, so they need no DLLs beyond those of Windows.
 
 Each dependency is built in its own stage and installed into `/ext`,
 which the final stage collects. The images are tagged with a version in
-the `justfile` and pushed to a registry, so CI and most developers pull
-them instead of building them.
+the `justfile` and pushed to `ghcr.io/cirno-labs/`, so CI and most
+developers pull them instead of building them.
 
 ```sh
 just image-linux     # build the Linux image locally
@@ -97,12 +96,11 @@ just image-win
 
 Change a Dockerfile, bump the image version in the `justfile`, rebuild,
 and push the new image before the change lands, or CI will build it from
-scratch on every run.
+scratch on every run. The "Build and push the Docker images" workflow
+pushes both images.
 
-FFmpeg is built with only what the games use: the PNG, JPEG and BMP
-image decoders, the PCM, Vorbis, FLAC and MP3 audio decoders, their
-demuxers, and libswresample. Its flags live in one file next to the
-Dockerfiles.
+The images build one dependency, SDL3, at the release that the
+Dockerfiles pin.
 
 ## Building without Docker
 
@@ -137,13 +135,11 @@ The style and commit rules the checks enforce are in
 
 ```sh
 just test           # unit tests, inside the Linux image
-just test-replays   # replay tests, needs your own game data and cases
 ```
 
-Unit tests need nothing but the source and run in CI. Replay tests need
-the original game data and replay cases produced from the original
-executable, so they run only on your machine; see ARCHITECTURE.md,
-"Replay tests".
+Unit tests live in `tests/`. They need nothing but the source and run
+in CI. Replay tests do not exist yet; ARCHITECTURE.md, "Replay tests",
+describes them.
 
 ## Later
 
