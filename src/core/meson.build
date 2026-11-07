@@ -21,6 +21,7 @@ core_base_lib = static_library(
 core_json_lib = static_library(
   'core_json',
   'json/get.c',
+  'json/merge.c',
   'json/parse.c',
   c_args: core_include,
   implicit_include_directories: false,
