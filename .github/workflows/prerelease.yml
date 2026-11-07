@@ -14,9 +14,12 @@ concurrency:
   group: prerelease
   cancel-in-progress: true
 
+# Publishing stays off until the repository variable PRERELEASE_ENABLE
+# is set to true.
 jobs:
   build_linux:
     name: Linux
+    if: vars.PRERELEASE_ENABLE == 'true'
     uses: ./.github/workflows/job_build.yml
     with:
       platform: linux
@@ -24,6 +27,7 @@ jobs:
 
   build_win:
     name: Windows
+    if: vars.PRERELEASE_ENABLE == 'true'
     uses: ./.github/workflows/job_build.yml
     with:
       platform: win
