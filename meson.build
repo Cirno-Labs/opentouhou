@@ -22,8 +22,11 @@ if host_machine.cpu_family() in ['x86', 'x86_64']
   add_project_arguments('-msse2', '-mfpmath=sse', language: 'c')
 endif
 
+# The container macros return typed pointers, so a pointer of the wrong
+# type is an error, as it is by default in GCC 14.
 add_project_arguments(
   cc.get_supported_arguments(
+    '-Werror=incompatible-pointer-types',
     '-Wno-unused-parameter',
     '-Wshadow',
     '-Wstrict-prototypes',
