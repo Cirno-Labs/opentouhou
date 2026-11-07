@@ -82,4 +82,5 @@ ENV PYTHONPATH=/app/tools
 ENV CCACHE_BASEDIR=/app
 ENV CCACHE_COMPILERCHECK=content
 ENV CCACHE_DIR=/app/.cache/ccache/win
+LABEL org.opencontainers.image.source="https://github.com/Cirno-Labs/opentouhou"
 ENTRYPOINT ["python3", "/app/tools/docker/entrypoint.py", "--platform", "win"]
