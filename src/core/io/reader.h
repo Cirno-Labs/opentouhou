@@ -4,41 +4,50 @@
 #include "core/base/result.h"
 #include "core/base/types.h"
 
-// Reads little-endian values from a buffer in memory. Every file format is
-// parsed field by field through a READER, so no structure is ever filled
-// straight from file data, and the code does not depend on packing, pointer
-// size or byte order.
+// Reads little-endian values from a buffer in memory or from a file. Every
+// file format is parsed field by field through a READER, so no structure is
+// ever filled straight from file data, and the code does not depend on
+// packing, pointer size or byte order.
 //
 // The data is untrusted, so no read is fatal and no read goes outside the
-// reader's range. The first read that fails sets the error flag and records
-// the failure. After that, every read returns zero, Reader_ReadBytes fills
-// its buffer with zeros, Reader_ReadAlloc and Reader_Borrow return nullptr,
-// and Reader_Skip and Reader_Seek do nothing. A parser therefore reads its
-// fields without checking each one, and calls Reader_Result once at the
-// end. A value that sizes an allocation or a loop must be checked before it
-// is used, with Reader_Failed or against Reader_Remaining.
+// reader's range. The first read that fails, by passing the end or by an
+// error of the file, sets the error flag and records the failure. After that,
+// every read returns zero, Reader_ReadBytes fills its buffer with zeros,
+// Reader_ReadAlloc and Reader_Borrow return nullptr, and Reader_Skip and
+// Reader_Seek do nothing. A parser therefore reads its fields without checking
+// each one, and calls Reader_Result once at the end. A value that sizes an
+// allocation or a loop must be checked before it is used, with Reader_Failed or
+// against Reader_Remaining.
 //
 // Positions count from the start of the reader's range. The offsets in
-// failure messages count from the start of the buffer, also in a slice, so
-// that they match the offsets in the file.
+// failure messages count from the start of the buffer or the file, also in a
+// slice, so that they match the offsets in the file.
 //
 // Example:
 // READER reader;
-// Reader_OpenBuffer(&reader, data, size);
+// MUST(Reader_OpenFile(&reader, path));
 // uint32_t version;
 // uint32_t count;
 // Reader_Read(&reader, &version);
 // Reader_Read(&reader, &count);
-// MUST(Reader_Result(&reader), "%s", path);
+// Reader_Close(&reader);
+// MUST(Reader_Result(&reader));
+
+// Sets how many bytes a file reader reads from the file at a time.
+#define READER_BUFFER_SIZE 65536
 
 // Sets the size of the buffer that holds a reader's failure message.
 #define READER_ERROR_SIZE 160
+
+typedef struct READER_FILE READER_FILE;
 
 // Holds a range of a source and a position in it. The fields are private
 // to the Reader_ functions. A READER is a plain value, so it can live on
 // the stack.
 typedef struct {
     const uint8_t *data;
+    READER_FILE *file;
+    bool owns_file;
     size_t origin;
     size_t size;
     size_t position;
@@ -52,12 +61,27 @@ typedef struct {
 // its slices are in use. A data of nullptr is allowed when size is 0.
 void Reader_OpenBuffer(READER *reader, const void *data, size_t size);
 
+// Opens a file for reading, at position 0. The reader reads the file in
+// blocks of READER_BUFFER_SIZE bytes as the position reaches them, and never
+// holds the whole file in memory. On failure, the reader is empty, and
+// Reader_Close does nothing.
+RESULT Reader_OpenFile(READER *reader, const char *path);
+
+// Closes the file of a reader that Reader_OpenFile opened, and leaves the
+// reader empty. The slices of the reader become invalid. The error flag and
+// its message stay unchanged. For a buffer reader and for a slice, does
+// nothing.
+void Reader_Close(READER *reader);
+
 // Returns whether the error flag is set.
 bool Reader_Failed(const READER *reader);
 
 // Returns a failure that names the first failed operation and its offset,
 // such as "read of 4 bytes at 0x1234 past end 0x1230", or OK when the error
-// flag is not set. The message was formatted when the operation failed.
+// flag is not set. For a file, the message starts with the path, and an
+// error of the file adds the reason that the platform gives. The message
+// was formatted when the operation failed, so it still names the path after
+// Reader_Close.
 RESULT Reader_Result(const READER *reader);
 
 // Return the position, the size of the range, and the number of bytes from
@@ -125,13 +149,16 @@ void *Reader_ReadAlloc(READER *reader, size_t size, const ALLOCATOR *allocator);
 // Returns a pointer to the next size bytes of the buffer, without copying
 // them, and moves past them. The pointer points into the memory given to
 // Reader_OpenBuffer, so it stays valid for as long as that memory does,
-// independently of the reader. On failure, returns nullptr.
+// independently of the reader. On failure, returns nullptr. A file reader
+// has no memory to point into, so calling this on one is fatal.
 const void *Reader_Borrow(READER *reader, size_t size);
 
 // Returns a reader over the next size bytes, and moves this reader past
-// them. The slice has its own position and error flag. On failure, the
-// slice is empty and has the failure of this reader, so that the result of
-// either one reports it.
+// them. The slice has its own position and error flag. A slice of a file
+// reader reads through the file of the reader that Reader_OpenFile opened,
+// so it is valid until that reader is closed, and needs no Reader_Close of
+// its own. On failure, the slice is empty and has the failure of this
+// reader, so that the result of either one reports it.
 READER Reader_Slice(READER *reader, size_t size);
 
 // The rest of this header is the implementation behind Reader_Read.

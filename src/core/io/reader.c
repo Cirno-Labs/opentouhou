@@ -1,14 +1,76 @@
 #include "core/io/reader.h"
 
 #include "core/base/assert.h"
+#include "core/base/string.h"
 #include "core/base/utils.h"
 
+#include <SDL3/SDL.h>
 #include <stdarg.h>
 #include <stdckdint.h>
 #include <stdio.h>
 #include <string.h>
 
+struct READER_FILE {
+    SDL_IOStream *stream;
+    char *path;
+    char *error;
+    size_t size;
+    size_t buffer_start;
+    size_t buffer_length;
+    uint8_t buffer[READER_BUFFER_SIZE];
+};
+
 static const uint8_t m_NoData[1];
+
+static bool M_ReadStream(
+    READER_FILE *const file, const size_t offset, uint8_t *const buffer,
+    const size_t size)
+{
+    bool read = SDL_SeekIO(file->stream, (Sint64)offset, SDL_IO_SEEK_SET) >= 0;
+    size_t total = 0;
+    while (read && total < size) {
+        const size_t count =
+            SDL_ReadIO(file->stream, buffer + total, size - total);
+        read = count != 0;
+        total += count;
+    }
+    if (!read && file->error == nullptr) {
+        file->error = SDL_GetIOStatus(file->stream) == SDL_IO_STATUS_EOF
+            ? Str_Dup("the file is shorter than when it was opened")
+            : Str_Dup(SDL_GetError());
+    }
+    return read;
+}
+
+// Copies size bytes at offset in the file into buffer, through the block
+// that the file keeps in memory. A read of a block or more bypasses it.
+static bool M_ReadFile(
+    READER_FILE *const file, size_t offset, uint8_t *buffer, size_t size)
+{
+    while (size > 0) {
+        if (offset >= file->buffer_start
+            && offset - file->buffer_start < file->buffer_length) {
+            const size_t start = offset - file->buffer_start;
+            const size_t count = MIN(size, file->buffer_length - start);
+            memcpy(buffer, file->buffer + start, count);
+            buffer += count;
+            offset += count;
+            size -= count;
+        } else if (size >= READER_BUFFER_SIZE) {
+            return M_ReadStream(file, offset, buffer, size);
+        } else {
+            const size_t length =
+                MIN((size_t)READER_BUFFER_SIZE, file->size - offset);
+            file->buffer_length = 0;
+            if (!M_ReadStream(file, offset, file->buffer, length)) {
+                return false;
+            }
+            file->buffer_start = offset;
+            file->buffer_length = length;
+        }
+    }
+    return true;
+}
 
 static uint64_t M_Absolute(const READER *const reader, const uint64_t position)
 {
@@ -25,9 +87,22 @@ static void M_Fail(READER *const reader, const char *const fmt, ...)
     if (reader->error[0] != '\0') {
         return;
     }
+    char *message = reader->error;
+    size_t capacity = sizeof(reader->error);
+    if (reader->file != nullptr) {
+        const int written =
+            snprintf(message, capacity, "%s: ", reader->file->path);
+        if (written > 0 && (size_t)written < capacity) {
+            message += written;
+            capacity -= (size_t)written;
+        } else {
+            message += capacity - 1;
+            capacity = 1;
+        }
+    }
     va_list args;
     va_start(args, fmt);
-    vsnprintf(reader->error, sizeof(reader->error), fmt, args);
+    vsnprintf(message, capacity, fmt, args);
     va_end(args);
 }
 
@@ -57,8 +132,21 @@ static bool M_Copy(READER *const reader, void *const buffer, const size_t size)
     if (!M_Claim(reader, "read", size, &offset)) {
         return false;
     }
-    if (size != 0) {
+    if (size == 0) {
+        return true;
+    }
+    if (reader->file == nullptr) {
         memcpy(buffer, reader->data + offset, size);
+        return true;
+    }
+    if (!M_ReadFile(reader->file, offset, buffer, size)) {
+        reader->position -= size;
+        M_Fail(
+            reader, "read of %llu bytes at 0x%llx failed: %s",
+            (unsigned long long)size,
+            (unsigned long long)M_Absolute(reader, reader->position),
+            reader->file->error);
+        return false;
     }
     return true;
 }
@@ -84,6 +172,48 @@ void Reader_OpenBuffer(
         .data = data != nullptr ? data : m_NoData,
         .size = size,
     };
+}
+
+RESULT Reader_OpenFile(READER *const reader, const char *const path)
+{
+    Reader_OpenBuffer(reader, nullptr, 0);
+    SDL_IOStream *const stream = SDL_IOFromFile(path, "rb");
+    FAIL_IF(stream == nullptr, "Cannot open %s: %s", path, SDL_GetError());
+    const Sint64 size = SDL_GetIOSize(stream);
+    if (size < 0 || (uint64_t)size > SIZE_MAX) {
+        const RESULT result = FAIL(
+            "Cannot read %s: %s", path,
+            size < 0 ? SDL_GetError() : "the file is too large");
+        SDL_CloseIO(stream);
+        return result;
+    }
+
+    READER_FILE *const file = Mem_AllocZ(sizeof(*file));
+    file->stream = stream;
+    file->path = Str_Dup(path);
+    file->size = (size_t)size;
+    reader->file = file;
+    reader->owns_file = true;
+    reader->size = file->size;
+    return OK;
+}
+
+void Reader_Close(READER *const reader)
+{
+    if (!reader->owns_file) {
+        return;
+    }
+    READER_FILE *const file = reader->file;
+    SDL_CloseIO(file->stream);
+    Mem_Free(file->path);
+    Mem_Free(file->error);
+    Mem_Free(file);
+    reader->data = m_NoData;
+    reader->file = nullptr;
+    reader->owns_file = false;
+    reader->origin = 0;
+    reader->size = 0;
+    reader->position = 0;
 }
 
 bool Reader_Failed(const READER *const reader)
@@ -223,6 +353,7 @@ void *Reader_ReadAlloc(
 
 const void *Reader_Borrow(READER *const reader, const size_t size)
 {
+    ASSERT(reader->file == nullptr);
     size_t offset;
     if (!M_Claim(reader, "read", size, &offset)) {
         return nullptr;
@@ -236,10 +367,12 @@ READER Reader_Slice(READER *const reader, const size_t size)
     size_t offset;
     if (!M_Claim(reader, "slice", size, &offset)) {
         slice = *reader;
+        slice.owns_file = false;
         slice.size = 0;
         slice.position = 0;
         return slice;
     }
+    slice.owns_file = false;
     slice.origin = offset;
     slice.size = size;
     slice.position = 0;

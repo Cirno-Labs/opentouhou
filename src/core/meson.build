@@ -22,6 +22,7 @@ core_io_lib = static_library(
   'io/reader.c',
   c_args: core_include,
   implicit_include_directories: false,
+  dependencies: [sdl3],
 )
 
 core_lib = static_library(

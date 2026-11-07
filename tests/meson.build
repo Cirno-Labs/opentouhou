@@ -36,17 +36,20 @@ foreach part : [
   )
 endforeach
 
-# Each part of core/io has a test named after it.
-foreach part : ['reader']
+# Each part of core/io has tests named after it. A test that works with
+# files does so in its own directory inside the build directory.
+foreach name : ['reader', 'reader_file']
   test(
-    'core/io/' + part,
+    'core/io/' + name,
     executable(
-      'test_' + part,
-      'test_' + part + '.c',
+      'test_' + name,
+      'test_' + name + '.c',
       c_args: core_include,
       implicit_include_directories: false,
       link_with: [core_io_lib, core_base_lib],
+      dependencies: [sdl3],
     ),
+    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / name},
     suite: 'unit',
   )
 endforeach
@@ -61,6 +64,7 @@ foreach name, expected : {
   'core/base/array_out_of_range': 'Assertion failed: index >= 0 && index < array->count',
   'core/base/assert': 'Assertion failed: EXIT_SUCCESS == 1',
   'core/base/memory_overflow': 'elements of 3 bytes is too large',
+  'core/io/reader_borrow_file': 'Assertion failed: reader->file == nullptr',
   'core/io/reader_buffer_null': 'Assertion failed: data != nullptr || size == 0',
 }
   part = name.split('/')[-1]
