@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #define APP_TICK_RATE 60
-#define APP_MAX_PLAYERS 2
+#define INPUT_MAX_PLAYERS 2
 
 typedef enum {
     APP_RESULT_OK,
@@ -13,11 +13,25 @@ typedef enum {
 // Holds what one tick records for display.
 typedef struct FRAME FRAME;
 
-// Holds the input for one tick: each player's action bitmask, in the order
-// the game declared its actions.
+// Holds one player's input for one tick: a bitmask of the game's actions, in
+// the order the game declared them.
 typedef struct {
-    uint32_t actions[APP_MAX_PLAYERS];
+    uint32_t actions;
+} PLAYER_INPUT;
+
+// Holds the input of every player for one tick. A one-player game reads p1;
+// a versus game loops over players.
+typedef struct {
+    union {
+        PLAYER_INPUT players[INPUT_MAX_PLAYERS];
+        struct {
+            PLAYER_INPUT p1;
+            PLAYER_INPUT p2;
+        };
+    };
 } TICK_INPUT;
+
+static_assert(INPUT_MAX_PLAYERS == 2);
 
 typedef struct {
     // Identifies the game in paths and settings, as in "th06".
