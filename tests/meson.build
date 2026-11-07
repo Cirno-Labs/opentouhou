@@ -49,6 +49,19 @@ test(
 )
 
 test(
+  'core/config',
+  executable(
+    'test_config',
+    'test_config.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_config_lib, core_ini_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/ini',
   executable(
     'test_ini',
@@ -209,6 +222,8 @@ compile_fail_args = core_include + ['-Werror']
 foreach name : [
   'array_item_type',
   'array_slice_type',
+  'config_bool_on_float_field',
+  'config_float_on_int_field',
   'hash_map_key_type',
   'hash_map_value_type',
 ]
