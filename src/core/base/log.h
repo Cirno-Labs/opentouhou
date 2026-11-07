@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/base/utils.h"
+
 // Writes messages to the standard error stream, one line each, with the
 // level and the source position of the message.
 
@@ -29,10 +31,10 @@ LOG_LEVEL Log_GetMinLevel(void);
 
 // Writes one message with a printf-style format. The LOG_ macros call it with
 // the source position.
-[[gnu::format(printf, 4, 5)]]
+PRINTF_FORMAT(4, 5)
 void Log_Message(
     LOG_LEVEL level, const char *file, int line, const char *fmt, ...);
 
 // Writes one message regardless of the minimum level and aborts the program.
-[[noreturn, gnu::format(printf, 3, 4)]]
-void Log_Fatal(const char *file, int line, const char *fmt, ...);
+PRINTF_FORMAT(3, 4)
+[[noreturn]] void Log_Fatal(const char *file, int line, const char *fmt, ...);

@@ -13,7 +13,7 @@ test(
 )
 
 # Each part of core/base has a test named after it.
-foreach part : ['log']
+foreach part : ['log', 'memory', 'string']
   test(
     'core/base/' + part,
     executable(
@@ -27,16 +27,19 @@ foreach part : ['log']
   )
 endforeach
 
-# A failed ASSERT aborts the program, so this test passes when it fails.
-test(
-  'core/base/assert',
-  executable(
-    'test_assert',
-    'test_assert.c',
-    c_args: core_include,
-    implicit_include_directories: false,
-    link_with: core_base_lib,
-  ),
-  should_fail: true,
-  suite: 'unit',
-)
+# These tests do something fatal, which aborts the program, so they pass
+# when they fail.
+foreach name : ['allocator_failure', 'assert', 'memory_overflow']
+  test(
+    'core/base/' + name,
+    executable(
+      'test_' + name,
+      'test_' + name + '.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: core_base_lib,
+    ),
+    should_fail: true,
+    suite: 'unit',
+  )
+endforeach

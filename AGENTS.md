@@ -21,6 +21,8 @@ Naming:
 - Global variables: `g_PascalCase`
 - Module variables: `static m_PascalCase`
 - Public functions: `Module_PascalCase()`
+- Module prefixes are short (`Mem_`, `Str_`, `Array_`, `HashMap_`,
+  ...); the name after the underscore is spelled out in full.
 - Module functions: `static M_PascalCase()`
 - Structs, enums, enum members, macros: `UPPER_SNAKE_CASE`
 

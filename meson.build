@@ -39,6 +39,9 @@ if host_machine.system() == 'windows'
   # Links libgcc and winpthread into the executable, so it needs no DLLs
   # beyond the ones Windows has.
   add_project_link_arguments('-static', language: 'c')
+  # Selects MinGW's own printf family, which follows C99 (%zu, %lld) on
+  # every Windows version, instead of the one in msvcrt.dll.
+  add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: 'c')
 endif
 
 # Each layer has its own include root in the build directory. The root

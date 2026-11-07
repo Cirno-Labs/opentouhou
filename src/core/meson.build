@@ -5,6 +5,8 @@ core_include = [layer_include['core']]
 core_base_lib = static_library(
   'core_base',
   'base/log.c',
+  'base/memory.c',
+  'base/string.c',
   c_args: core_include,
   implicit_include_directories: false,
 )
