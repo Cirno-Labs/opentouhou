@@ -37,8 +37,16 @@ foreach part : [
 endforeach
 
 # Each part of core/io has tests named after it. A test that works with
-# files does so in its own directory inside the build directory.
-foreach name : ['file', 'reader', 'reader_file', 'writer', 'writer_file']
+# files does so in its own directory inside the build directory, which is
+# also its user directory.
+foreach name : [
+  'file',
+  'path',
+  'reader',
+  'reader_file',
+  'writer',
+  'writer_file',
+]
   test(
     'core/io/' + name,
     executable(
@@ -49,7 +57,10 @@ foreach name : ['file', 'reader', 'reader_file', 'writer', 'writer_file']
       link_with: [core_io_lib, core_base_lib],
       dependencies: [sdl3],
     ),
-    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / name},
+    env: {
+      'TEST_DIR': meson.current_build_dir() / 'tmp' / name,
+      'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / name,
+    },
     suite: 'unit',
   )
 endforeach
