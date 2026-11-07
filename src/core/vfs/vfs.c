@@ -2,6 +2,7 @@
 
 #include "core/base/array.h"
 #include "core/base/string.h"
+#include "core/vfs/dir_source.h"
 #include "core/vfs/normalize.h"
 
 #include <string.h>
@@ -88,6 +89,15 @@ void Vfs_MountSource(
     VFS *const vfs, VFS_SOURCE *const source, const int32_t priority)
 {
     Array_Append(&vfs->mounts, ((VFS_MOUNT) { source, priority }));
+}
+
+RESULT Vfs_MountDir(
+    VFS *const vfs, const char *const path, const int32_t priority)
+{
+    VFS_SOURCE *source;
+    MUST(DirSource_Create(path, vfs->allocator, &source));
+    Vfs_MountSource(vfs, source, priority);
+    return OK;
 }
 
 bool Vfs_Exists(const VFS *const vfs, const char *const path)

@@ -24,6 +24,23 @@ test(
   suite: 'unit',
 )
 
+test(
+  'core/vfs/mount_dir',
+  executable(
+    'test_vfs_mount_dir',
+    'test_vfs_mount_dir.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_vfs_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'vfs_mount_dir',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'vfs_mount_dir',
+  },
+  suite: 'unit',
+)
+
 # Each part of core/base has a test named after it.
 foreach part : [
   'arena',

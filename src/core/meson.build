@@ -42,9 +42,11 @@ core_io_lib = static_library(
 core_vfs_lib = static_library(
   'core_vfs',
   'vfs/vfs.c',
+  'vfs/dir_source.c',
   'vfs/normalize.c',
   c_args: core_include,
   implicit_include_directories: false,
+  dependencies: [sdl3],
 )
 
 core_lib = static_library(
