@@ -34,10 +34,22 @@ core_json_lib = static_library(
   implicit_include_directories: false,
 )
 
-# core/math needs only core/base, so the tests link it without SDL.
+# core/math needs only core/base, so the tests link it without SDL. The
+# math/libm sources are a vendored double-precision libm (see
+# math/libm/libm_internal.h), used only by math/x87.c.
 core_math_lib = static_library(
   'core_math',
   'math/common.c',
+  'math/libm/atan.c',
+  'math/libm/atan2.c',
+  'math/libm/cos.c',
+  'math/libm/cos_kernel.c',
+  'math/libm/rem_pio2.c',
+  'math/libm/rem_pio2_large.c',
+  'math/libm/sin.c',
+  'math/libm/sin_kernel.c',
+  'math/libm/tan.c',
+  'math/libm/tan_kernel.c',
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [cc_libm],
