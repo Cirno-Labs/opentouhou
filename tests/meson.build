@@ -49,6 +49,23 @@ test(
 )
 
 test(
+  'core/ini',
+  executable(
+    'test_ini',
+    'test_ini.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_ini_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'ini',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'ini',
+  },
+  suite: 'unit',
+)
+
+test(
   'core/vfs',
   executable(
     'test_vfs',

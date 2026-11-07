@@ -68,6 +68,18 @@ core_io_lib = static_library(
   dependencies: [sdl3],
 )
 
+# core/ini needs core/base and core/io, which needs SDL for its files.
+core_ini_lib = static_library(
+  'core_ini',
+  'ini/edit.c',
+  'ini/ini.c',
+  'ini/parse.c',
+  'ini/write.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
 core_vfs_lib = static_library(
   'core_vfs',
   'vfs/vfs.c',
@@ -99,8 +111,8 @@ core_main_lib = static_library(
 core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
-    core_lib, core_vfs_lib, core_io_lib, core_json_lib, core_math_lib,
-    core_base_lib,
+    core_lib, core_vfs_lib, core_ini_lib, core_io_lib, core_json_lib,
+    core_math_lib, core_base_lib,
   ],
   link_whole: core_main_lib,
   dependencies: [sdl3.partial_dependency(links: true)],
