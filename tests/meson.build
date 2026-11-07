@@ -36,25 +36,31 @@ foreach part : [
   )
 endforeach
 
-# These tests do something fatal, which aborts the program, so they pass
-# when they fail.
-foreach name : [
-  'allocator_failure',
-  'arena_full',
-  'array_out_of_range',
-  'assert',
-  'memory_overflow',
-]
+# These tests do something fatal. Each passes only when the program
+# aborts with a fatal error that contains the given text.
+python = find_program('python3.12', 'python3')
+expect_fatal = files('expect_fatal.py')
+foreach name, expected : {
+  'allocator_failure': 'Out of memory allocating 8 bytes',
+  'arena_full': 'Arena test is full',
+  'array_out_of_range': 'Assertion failed: index >= 0 && index < array->count',
+  'assert': 'Assertion failed: EXIT_SUCCESS == 1',
+  'memory_overflow': 'elements of 3 bytes is too large',
+}
   test(
     'core/base/' + name,
-    executable(
-      'test_' + name,
-      'test_' + name + '.c',
-      c_args: core_include,
-      implicit_include_directories: false,
-      link_with: core_base_lib,
-    ),
-    should_fail: true,
+    python,
+    args: [
+      expect_fatal,
+      expected,
+      executable(
+        'test_' + name,
+        'test_' + name + '.c',
+        c_args: core_include,
+        implicit_include_directories: false,
+        link_with: core_base_lib,
+      ),
+    ],
     suite: 'unit',
   )
 endforeach
