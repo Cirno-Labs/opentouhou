@@ -13,7 +13,7 @@ test(
 )
 
 # Each part of core/base has a test named after it.
-foreach part : ['log', 'memory', 'string']
+foreach part : ['log', 'memory', 'result', 'string']
   test(
     'core/base/' + part,
     executable(
