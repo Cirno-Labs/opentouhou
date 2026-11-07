@@ -20,6 +20,7 @@ core_base_lib = static_library(
 # core/json needs only core/base, so the tests link it without SDL.
 core_json_lib = static_library(
   'core_json',
+  'json/get.c',
   'json/parse.c',
   c_args: core_include,
   implicit_include_directories: false,
