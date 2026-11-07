@@ -12,6 +12,18 @@ test(
   suite: 'unit',
 )
 
+test(
+  'core/vfs',
+  executable(
+    'test_vfs',
+    'test_vfs.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_vfs_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
 # Each part of core/base has a test named after it.
 foreach part : [
   'arena',
