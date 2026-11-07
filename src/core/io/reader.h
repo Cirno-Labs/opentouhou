@@ -48,6 +48,7 @@ typedef struct {
     const uint8_t *data;
     READER_FILE *file;
     bool owns_file;
+    const ALLOCATOR *buffer_allocator;
     size_t origin;
     size_t size;
     size_t position;
@@ -61,16 +62,25 @@ typedef struct {
 // its slices are in use. A data of nullptr is allowed when size is 0.
 void Reader_OpenBuffer(READER *reader, const void *data, size_t size);
 
+// Prepares a reader over size bytes of data, at position 0, and gives the
+// reader ownership of data: Reader_Close releases it with allocator.
+// Reader_Borrow works on it like on any buffer reader, but the pointers it
+// returns, and the ranges of any slice taken before the close, stay valid
+// only until Reader_Close runs.
+void Reader_OpenOwnedBuffer(
+    READER *reader, void *data, size_t size, const ALLOCATOR *allocator);
+
 // Opens a file for reading, at position 0. The reader reads the file in
 // blocks of READER_BUFFER_SIZE bytes as the position reaches them, and never
 // holds the whole file in memory. On failure, the reader is empty, and
 // Reader_Close does nothing.
 RESULT Reader_OpenFile(READER *reader, const char *path);
 
-// Closes the file of a reader that Reader_OpenFile opened, and leaves the
-// reader empty. The slices of the reader become invalid. The error flag and
-// its message stay unchanged. For a buffer reader and for a slice, does
-// nothing.
+// Closes the file of a reader that Reader_OpenFile opened, or releases the
+// data of a reader that Reader_OpenOwnedBuffer opened, and leaves the reader
+// empty. The slices of the reader become invalid. The error flag and its
+// message stay unchanged. For a reader that owns neither, and for a slice,
+// does nothing.
 void Reader_Close(READER *reader);
 
 // Returns whether the error flag is set.

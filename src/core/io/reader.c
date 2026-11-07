@@ -174,6 +174,14 @@ void Reader_OpenBuffer(
     };
 }
 
+void Reader_OpenOwnedBuffer(
+    READER *const reader, void *const data, const size_t size,
+    const ALLOCATOR *const allocator)
+{
+    Reader_OpenBuffer(reader, data, size);
+    reader->buffer_allocator = allocator;
+}
+
 RESULT Reader_OpenFile(READER *const reader, const char *const path)
 {
     Reader_OpenBuffer(reader, nullptr, 0);
@@ -200,17 +208,24 @@ RESULT Reader_OpenFile(READER *const reader, const char *const path)
 
 void Reader_Close(READER *const reader)
 {
-    if (!reader->owns_file) {
+    if (reader->owns_file) {
+        READER_FILE *const file = reader->file;
+        SDL_CloseIO(file->stream);
+        Mem_Free(file->path);
+        Mem_Free(file->error);
+        Mem_Free(file);
+    } else if (reader->buffer_allocator != nullptr) {
+        if (reader->data != m_NoData) {
+            Allocator_Free(
+                reader->buffer_allocator, (void *)reader->data, reader->size);
+        }
+    } else {
         return;
     }
-    READER_FILE *const file = reader->file;
-    SDL_CloseIO(file->stream);
-    Mem_Free(file->path);
-    Mem_Free(file->error);
-    Mem_Free(file);
     reader->data = m_NoData;
     reader->file = nullptr;
     reader->owns_file = false;
+    reader->buffer_allocator = nullptr;
     reader->origin = 0;
     reader->size = 0;
     reader->position = 0;
@@ -368,11 +383,13 @@ READER Reader_Slice(READER *const reader, const size_t size)
     if (!M_Claim(reader, "slice", size, &offset)) {
         slice = *reader;
         slice.owns_file = false;
+        slice.buffer_allocator = nullptr;
         slice.size = 0;
         slice.position = 0;
         return slice;
     }
     slice.owns_file = false;
+    slice.buffer_allocator = nullptr;
     slice.origin = offset;
     slice.size = size;
     slice.position = 0;

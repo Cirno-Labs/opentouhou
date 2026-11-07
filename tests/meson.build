@@ -64,6 +64,7 @@ foreach name : [
   'path',
   'reader',
   'reader_file',
+  'reader_owned_buffer',
   'writer',
   'writer_file',
 ]
