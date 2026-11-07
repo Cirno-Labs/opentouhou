@@ -1,29 +1,18 @@
 #include "core/app/clock.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "test.h"
 
 #define NS_PER_SECOND 1000000000ULL
 #define TICK_NS (NS_PER_SECOND / 60 + 1)
 
-static int m_Failures;
-
-static void M_Expect(const bool condition, const char *const what)
-{
-    if (!condition) {
-        fprintf(stderr, "FAIL: %s\n", what);
-        m_Failures++;
-    }
-}
-
-static void M_TestFirstCallStarts(void)
+TEST(first_call_starts_the_clock)
 {
     CLOCK clock;
     Clock_Init(&clock, 60, 4);
-    M_Expect(Clock_Advance(&clock, 5 * NS_PER_SECOND) == 0, "first call");
+    CHECK_EQ_INT(Clock_Advance(&clock, 5 * NS_PER_SECOND), 0);
 }
 
-static void M_TestOneSecondIsSixtyTicks(void)
+TEST(one_second_is_sixty_ticks)
 {
     CLOCK clock;
     Clock_Init(&clock, 60, 1000);
@@ -32,44 +21,33 @@ static void M_TestOneSecondIsSixtyTicks(void)
     for (uint64_t ms = 1; ms <= 1000; ms++) {
         total += Clock_Advance(&clock, ms * 1000000ULL);
     }
-    M_Expect(total == 60, "60 ticks in one second of 1 ms steps");
+    CHECK_EQ_INT(total, 60);
 }
 
-static void M_TestCatchUpIsCapped(void)
+TEST(catch_up_is_capped)
 {
     CLOCK clock;
     Clock_Init(&clock, 60, 4);
     Clock_Advance(&clock, 0);
-    M_Expect(Clock_Advance(&clock, NS_PER_SECOND) == 4, "cap");
-    M_Expect(
-        Clock_Advance(&clock, NS_PER_SECOND + TICK_NS) == 1, "dropped time");
+    CHECK_EQ_INT(Clock_Advance(&clock, NS_PER_SECOND), 4);
+    CHECK_EQ_INT(Clock_Advance(&clock, NS_PER_SECOND + TICK_NS), 1);
 }
 
-static void M_TestBackwardsRestarts(void)
+TEST(time_going_backwards_restarts_the_clock)
 {
     CLOCK clock;
     Clock_Init(&clock, 60, 4);
     Clock_Advance(&clock, NS_PER_SECOND);
-    M_Expect(Clock_Advance(&clock, 0) == 0, "time going backwards");
-    M_Expect(Clock_Advance(&clock, TICK_NS) == 1, "tick after restart");
+    CHECK_EQ_INT(Clock_Advance(&clock, 0), 0);
+    CHECK_EQ_INT(Clock_Advance(&clock, TICK_NS), 1);
 }
 
-static void M_TestTimeUntilNextTick(void)
+TEST(time_until_next_tick)
 {
     CLOCK clock;
     Clock_Init(&clock, 60, 4);
     Clock_Advance(&clock, 0);
-    M_Expect(Clock_NsUntilNextTick(&clock) == TICK_NS, "full tick");
+    CHECK_EQ_INT(Clock_NsUntilNextTick(&clock), TICK_NS);
     Clock_Advance(&clock, TICK_NS - 1000);
-    M_Expect(Clock_NsUntilNextTick(&clock) == 1000, "partial tick");
-}
-
-int main(void)
-{
-    M_TestFirstCallStarts();
-    M_TestOneSecondIsSixtyTicks();
-    M_TestCatchUpIsCapped();
-    M_TestBackwardsRestarts();
-    M_TestTimeUntilNextTick();
-    return m_Failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    CHECK_EQ_INT(Clock_NsUntilNextTick(&clock), 1000);
 }
