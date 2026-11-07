@@ -38,7 +38,7 @@ endforeach
 
 # Each part of core/io has tests named after it. A test that works with
 # files does so in its own directory inside the build directory.
-foreach name : ['reader', 'reader_file', 'writer', 'writer_file']
+foreach name : ['file', 'reader', 'reader_file', 'writer', 'writer_file']
   test(
     'core/io/' + name,
     executable(
