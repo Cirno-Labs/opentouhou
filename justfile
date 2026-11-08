@@ -1,8 +1,6 @@
 CWD := `pwd`
 HOST_USER_UID := `id -u`
 HOST_USER_GID := `id -g`
-DOCKER_IMAGE_VERSION := "20261108"
-DOCKER_IMAGE_PREFIX := "ghcr.io/cirno-labs/opentouhou-"
 
 # List the recipes.
 default:
@@ -12,7 +10,7 @@ default:
 _docker_build platform force="0":
     #!/usr/bin/env sh
     set -e
-    full_tag="{{DOCKER_IMAGE_PREFIX}}{{platform}}:{{DOCKER_IMAGE_VERSION}}"
+    full_tag="$(tools/docker/image_tag {{platform}})"
     if [ "{{force}}" = "0" ]; then
         if docker image inspect "$full_tag" >/dev/null 2>&1; then
             exit 0
@@ -29,15 +27,17 @@ _docker_build platform force="0":
         tools/docker/{{platform}}
 
 _docker_push platform:
-    docker push {{DOCKER_IMAGE_PREFIX}}{{platform}}:{{DOCKER_IMAGE_VERSION}}
+    docker push "$(tools/docker/image_tag {{platform}})"
 
 _docker_run platform *args:
+    #!/usr/bin/env sh
+    set -e
     docker run \
         --rm \
         --user {{HOST_USER_UID}}:{{HOST_USER_GID}} \
         -e CCACHE_MAXSIZE \
         -v "{{CWD}}:/app" \
-        {{DOCKER_IMAGE_PREFIX}}{{platform}}:{{DOCKER_IMAGE_VERSION}} \
+        "$(tools/docker/image_tag {{platform}})" \
         {{args}}
 
 # Build the Linux image locally.

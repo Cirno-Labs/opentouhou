@@ -85,19 +85,20 @@ There is one image per target platform, defined under `tools/docker/`:
   runtime statically, so they need no DLLs beyond those of Windows.
 
 Each dependency is built in its own stage and installed into `/ext`,
-which the final stage collects. The images are tagged with a version in
-the `justfile` and pushed to `ghcr.io/cirno-labs/`, so CI and most
-developers pull them instead of building them.
+which the final stage collects. Each image is tagged with the
+committer date and a hash of its own Dockerfile, computed by
+`tools/docker/image_tag`, and pushed to `ghcr.io/cirno-labs/`, so CI and
+most developers pull them instead of building them. Changing one
+Dockerfile only retags that platform's image.
 
 ```sh
 just image-linux     # build the Linux image locally
 just image-win
 ```
 
-Change a Dockerfile, bump the image version in the `justfile`, rebuild,
-and push the new image before the change lands, or CI will build it from
-scratch on every run. The "Build and push the Docker images" workflow
-pushes both images.
+Change a Dockerfile, then rebuild and push the new image before the
+change lands, or CI will build it from scratch on every run. The "Build
+and push the Docker images" workflow pushes both images.
 
 The images build two dependencies at the releases the Dockerfiles pin:
 SDL3, and FFmpeg for `core/image`. FFmpeg is built with only the PNG,
