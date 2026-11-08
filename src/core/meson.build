@@ -89,15 +89,20 @@ core_config_lib = static_library(
   implicit_include_directories: false,
 )
 
-# core/input needs only core/base, core/ini and core/config; its SDL backend
-# is added by a later platform-specific library, so the tests link this
-# library against a fake backend instead of a real one.
+# core/input needs core/base, core/ini and core/config, plus one platform
+# backend chosen by the 'platform' option; the tests link input.c and
+# names.c against input_backend_fake.c instead of a real backend.
+input_backend_sources = {
+  'sdl': 'input/backend_sdl.c',
+}
 core_input_lib = static_library(
   'core_input',
   'input/input.c',
   'input/names.c',
+  input_backend_sources[get_option('platform')],
   c_args: core_include,
   implicit_include_directories: false,
+  dependencies: [sdl3],
 )
 
 core_vfs_lib = static_library(
@@ -131,8 +136,8 @@ core_main_lib = static_library(
 core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
-    core_lib, core_vfs_lib, core_config_lib, core_ini_lib, core_io_lib,
-    core_json_lib, core_math_lib, core_base_lib,
+    core_lib, core_input_lib, core_vfs_lib, core_config_lib, core_ini_lib,
+    core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
   link_whole: core_main_lib,
   dependencies: [sdl3.partial_dependency(links: true)],

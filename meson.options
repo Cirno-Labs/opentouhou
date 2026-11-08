@@ -1,0 +1,9 @@
+# Selects which backend_<platform>.c a module with platform-specific code
+# compiles in. Only 'sdl' exists today.
+option(
+  'platform',
+  type: 'combo',
+  choices: ['sdl'],
+  value: 'sdl',
+  description: 'Platform backend for modules such as core/input',
+)
