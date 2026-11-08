@@ -12,6 +12,8 @@
 
 #include <windows.h>
 
+#include <shlobj.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,17 +24,20 @@
 // Names the replay copy so that the game's replay menu lists it.
 #define REPLAY_COPY L"replay\\th6_ud0000.rpy"
 
+#define DEFAULT_OUT_DIR "../opentouhou-cases/th06"
+
 typedef struct {
     const char *game_dir;
     const char *replay;
     bool live;
     bool dry_run;
     int quit_after;
+    const char *out_dir;
 } ARGS;
 
 static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
 {
-    *args = (ARGS) {};
+    *args = (ARGS) { .out_dir = DEFAULT_OUT_DIR };
     for (int i = 1; i < argc; i++) {
         const bool has_value = i + 1 < argc;
         if (strcmp(argv[i], "--game") == 0 && has_value) {
@@ -45,6 +50,8 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
             args->dry_run = true;
         } else if (strcmp(argv[i], "--quit-after") == 0 && has_value) {
             args->quit_after = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--out") == 0 && has_value) {
+            args->out_dir = argv[++i];
         } else {
             return false;
         }
@@ -115,6 +122,32 @@ static RESULT M_WriteConfig(const char *const work_dir)
     return Writer_Close(&writer);
 }
 
+// Names the case after the replay, or after the time for --live.
+static RESULT M_CasePath(const ARGS *const args, wchar_t out[MAX_PATH])
+{
+    wchar_t *const out_dir = M_Wide(args->out_dir);
+    wchar_t dir[MAX_PATH];
+    const DWORD length = GetFullPathNameW(out_dir, MAX_PATH, dir, nullptr);
+    Mem_Free(out_dir);
+    FAIL_IF(length == 0 || length >= MAX_PATH, "bad --out %s", args->out_dir);
+    SHCreateDirectoryExW(nullptr, dir, nullptr);
+
+    wchar_t name[MAX_PATH];
+    if (args->replay != nullptr) {
+        wchar_t *const replay = M_Wide(args->replay);
+        _wsplitpath(replay, nullptr, nullptr, name, nullptr);
+        Mem_Free(replay);
+    } else {
+        SYSTEMTIME now;
+        GetLocalTime(&now);
+        swprintf(
+            name, MAX_PATH, L"live-%04d%02d%02d-%02d%02d%02d", now.wYear,
+            now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond);
+    }
+    swprintf(out, MAX_PATH, L"%ls\\%ls.otrc", dir, name);
+    return OK;
+}
+
 static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
 {
     char work_dir_utf8[MAX_PATH];
@@ -134,10 +167,11 @@ static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
     return OK;
 }
 
-static wchar_t *M_Environment(const ARGS *const args, const wchar_t *work_dir)
+static wchar_t *M_Environment(
+    const ARGS *const args, const wchar_t *work_dir, const wchar_t *case_path)
 {
-    wchar_t lines[3][MAX_PATH + 32];
-    const wchar_t *extra[3];
+    wchar_t lines[4][MAX_PATH + 32];
+    const wchar_t *extra[4];
     size_t count = 0;
     swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_WORK=%ls", work_dir);
     count++;
@@ -153,6 +187,11 @@ static wchar_t *M_Environment(const ARGS *const args, const wchar_t *work_dir)
             args->quit_after);
         count++;
     }
+    if (!args->dry_run) {
+        swprintf(
+            lines[count], MAX_PATH + 32, L"TH06CAPTURE_CASE=%ls", case_path);
+        count++;
+    }
     for (size_t i = 0; i < count; i++) {
         extra[i] = lines[i];
     }
@@ -161,13 +200,15 @@ static wchar_t *M_Environment(const ARGS *const args, const wchar_t *work_dir)
 
 static RESULT M_Run(const ARGS *const args, const wchar_t *const work_dir)
 {
+    wchar_t case_path[MAX_PATH];
+    MUST(M_CasePath(args, case_path));
     MUST(M_Prepare(args, work_dir));
 
     char exe_utf8[MAX_PATH];
     snprintf(exe_utf8, MAX_PATH, "%s/%s", args->game_dir, GAME_EXE_NAME);
     wchar_t *const exe = M_Wide(exe_utf8);
     wchar_t *const game_dir = M_Wide(args->game_dir);
-    wchar_t *const environment = M_Environment(args, work_dir);
+    wchar_t *const environment = M_Environment(args, work_dir, case_path);
     wchar_t command_line[MAX_PATH];
     swprintf(command_line, MAX_PATH, L"\"%ls\"", exe);
     LAUNCH_PROCESS process;
@@ -211,7 +252,7 @@ int main(void)
             stderr,
             "usage: th06capture.exe --game <dir> "
             "(--replay <file.rpy> | --live) [--dry-run] "
-            "[--quit-after <seconds>]\n");
+            "[--quit-after <seconds>] [--out <dir>]\n");
         return 1;
     }
     char exe[MAX_PATH];

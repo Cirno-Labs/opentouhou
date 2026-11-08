@@ -75,6 +75,7 @@ shared_library(
   '../core/iat.c',
   '../core/overlay.c',
   '../core/patch.c',
+  '../core/case.c',
   name_prefix: '',
   c_args: core_include,
   implicit_include_directories: false,

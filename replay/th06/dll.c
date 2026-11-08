@@ -5,6 +5,9 @@
 
 #include "core/base/log.h"
 #include "core/base/result.h"
+#include "core/base/utils.h"
+#include "core/io/writer.h"
+#include "../core/case.h"
 
 #include <windows.h>
 
@@ -25,10 +28,76 @@ static int m_TitleFrames;
 static uint32_t m_Calcs;
 static DWORD m_QuitAfter;
 
+static WRITER m_CaseFile;
+static CASE_WRITER *m_Case;
+static uint32_t m_CaseRows;
+
 static bool M_GetEnv(const wchar_t *name, wchar_t *out, DWORD size)
 {
     const DWORD length = GetEnvironmentVariableW(name, out, size);
     return length != 0 && length < size;
+}
+
+static void M_OpenCase(void)
+{
+    wchar_t path_w[MAX_PATH];
+    if (!M_GetEnv(L"TH06CAPTURE_CASE", path_w, MAX_PATH)) {
+        return;
+    }
+    char path[MAX_PATH];
+    WideCharToMultiByte(
+        CP_ACP, 0, path_w, -1, path, sizeof(path), nullptr, nullptr);
+    if (!Result_Log(Writer_OpenFile(&m_CaseFile, path), LOG_LEVEL_ERROR)) {
+        return;
+    }
+
+    const RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
+    const char *start_names[] = {
+        "difficulty", "character", "shot_type", "stage",    "lives",
+        "bombs",      "power",     "score",     "rng_seed", "rank",
+    };
+    const uint32_t start_row[] = {
+        (uint32_t)game->difficulty,
+        game->character,
+        game->shot_type,
+        (uint32_t)game->stage,
+        (uint8_t)game->lives,
+        (uint8_t)game->bombs,
+        game->power,
+        game->score,
+        RETAIL_RNG_SEED,
+        (uint32_t)game->rank,
+    };
+    const char *calc_names[] = {
+        "buttons", "calc",  "stage", "stage_frames", "score",
+        "lives",   "bombs", "power", "rng_seed",     "is_playing",
+    };
+    const CASE_HEADER header = {
+        .game_id = "th06",
+        .info = "th06 1.02h",
+        .start_names = { .items = start_names,
+                         .count = ARRAY_SIZE(start_names) },
+        .start = { .items = (uint32_t *)start_row,
+                   .count = ARRAY_SIZE(start_row) },
+        .calc_names = { .items = calc_names, .count = ARRAY_SIZE(calc_names) },
+    };
+    m_Case = Case_OpenWriter(&m_CaseFile, &header);
+    m_CaseRows = 0;
+    LOG_INFO("case: opened %s", path);
+}
+
+static void M_WriteCaseRow(void)
+{
+    const RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
+    const uint32_t row[] = {
+        RETAIL_BUTTONS,        m_CaseRows,
+        (uint32_t)game->stage, (uint32_t)game->stage_frames,
+        game->score,           (uint8_t)game->lives,
+        (uint8_t)game->bombs,  game->power,
+        RETAIL_RNG_SEED,       game->is_playing,
+    };
+    Case_WriteRow(m_Case, row);
+    m_CaseRows++;
 }
 
 static void M_EndOfCalc(void)
@@ -37,6 +106,24 @@ static void M_EndOfCalc(void)
     if (m_Calcs % 600 == 0) {
         LOG_INFO("calcs: %u", m_Calcs);
     }
+    if (m_Case == nullptr && RETAIL_GAME_MANAGER_AT->is_playing != 0
+        && RETAIL_GAME_MANAGER_AT->is_in_demo == 0) {
+        M_OpenCase();
+    }
+    if (m_Case != nullptr) {
+        M_WriteCaseRow();
+    }
+}
+
+static void M_CloseCase(void)
+{
+    if (m_Case == nullptr) {
+        return;
+    }
+    Result_Log(Case_CloseWriter(m_Case), LOG_LEVEL_ERROR);
+    Result_Log(Writer_Close(&m_CaseFile), LOG_LEVEL_ERROR);
+    LOG_INFO("case: closed, %u rows", m_CaseRows);
+    m_Case = nullptr;
 }
 
 #pragma GCC diagnostic push
@@ -180,6 +267,8 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 {
     if (reason == DLL_PROCESS_ATTACH) {
         M_Attach();
+    } else if (reason == DLL_PROCESS_DETACH) {
+        M_CloseCase();
     }
     return TRUE;
 }
