@@ -22,3 +22,13 @@ RESULT Patch_Value32(
     FlushInstructionCache(GetCurrentProcess(), slot, sizeof(*slot));
     return OK;
 }
+
+RESULT Patch_Call(
+    const uintptr_t address, const uintptr_t old_target,
+    const uintptr_t new_target)
+{
+    const uintptr_t next = address + 5;
+    return Patch_Value32(
+        address + 1, (uint32_t)(old_target - next),
+        (uint32_t)(new_target - next));
+}

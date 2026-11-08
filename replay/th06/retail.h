@@ -5,9 +5,16 @@
 
 // Describes retail 1.02h. It has no relocations, so addresses are absolute.
 
-// Patch site, followed by the value it holds.
+// Patch sites, each followed by the value it holds.
 #define RETAIL_TITLE_CALLBACK_SITE 0x0043a395
 #define RETAIL_MAIN_MENU_ON_UPDATE 0x0043579f
+#define RETAIL_PLAY_ON_UPDATE_2_SITE 0x0042a3d8
+#define RETAIL_PLAY_ON_UPDATE_2 0x0042a510
+#define RETAIL_RUN_CALC_CHAIN_CALL 0x00420853
+#define RETAIL_RUN_CALC_CHAIN 0x0041ca10
+
+// Restarts the update chain within the frame; returned by PlayOnUpdate2.
+#define RETAIL_CHAIN_RESTART 6
 
 #define RETAIL_MAIN_MENU_TITLE 1
 #define RETAIL_MAIN_MENU_TITLE_KEY 2

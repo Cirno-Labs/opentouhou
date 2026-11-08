@@ -15,14 +15,47 @@
 // Starts the replay after this many frames on the title screen.
 #define REPLAY_START_DELAY 60
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+typedef int(__attribute__((thiscall)) * RUN_CALC_CHAIN_FN)(void *chain);
+#pragma GCC diagnostic pop
+
 static char m_ReplayPath[MAX_PATH];
 static int m_TitleFrames;
+static uint32_t m_Calcs;
 static DWORD m_QuitAfter;
 
 static bool M_GetEnv(const wchar_t *name, wchar_t *out, DWORD size)
 {
     const DWORD length = GetEnvironmentVariableW(name, out, size);
     return length != 0 && length < size;
+}
+
+static void M_EndOfCalc(void)
+{
+    m_Calcs++;
+    if (m_Calcs % 600 == 0) {
+        LOG_INFO("calcs: %u", m_Calcs);
+    }
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+static int __attribute__((thiscall)) M_RunCalcChain(void *chain)
+{
+    const int result = ((RUN_CALC_CHAIN_FN)RETAIL_RUN_CALC_CHAIN)(chain);
+    M_EndOfCalc();
+    return result;
+}
+#pragma GCC diagnostic pop
+
+static int __cdecl M_PlayOnUpdate2(void *replay)
+{
+    const int result = ((RETAIL_CALLBACK)RETAIL_PLAY_ON_UPDATE_2)(replay);
+    if (result == RETAIL_CHAIN_RESTART) {
+        M_EndOfCalc();
+    }
+    return result;
 }
 
 // Does what confirming a file in the replay menu does, for the replay's
@@ -118,6 +151,10 @@ static void M_Attach(void)
         LOG_ERROR("timeGetTime is not imported");
         TerminateProcess(GetCurrentProcess(), 1);
     }
+    M_Patch(Patch_Call(
+        RETAIL_RUN_CALC_CHAIN_CALL, RETAIL_RUN_CALC_CHAIN,
+        (uintptr_t)M_RunCalcChain));
+
     wchar_t replay[MAX_PATH];
     if (M_GetEnv(L"TH06CAPTURE_REPLAY", replay, MAX_PATH)) {
         WideCharToMultiByte(
@@ -126,6 +163,9 @@ static void M_Attach(void)
         M_Patch(Patch_Value32(
             RETAIL_TITLE_CALLBACK_SITE, RETAIL_MAIN_MENU_ON_UPDATE,
             (uint32_t)(uintptr_t)M_MainMenuOnUpdate));
+        M_Patch(Patch_Value32(
+            RETAIL_PLAY_ON_UPDATE_2_SITE, RETAIL_PLAY_ON_UPDATE_2,
+            (uint32_t)(uintptr_t)M_PlayOnUpdate2));
     }
 
     wchar_t quit_after[16];
