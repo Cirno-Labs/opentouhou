@@ -3,8 +3,14 @@
 #include "core/app.h"
 
 #include "core/base/log.h"
+#include "core/base/memory.h"
+#include "core/config.h"
+#include "core/ini.h"
+#include "core/io/path.h"
 
 #include "clock.h"
+#include "hotkeys.h"
+#include "settings.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -31,6 +37,17 @@ struct APP_CONTEXT {
     CLOCK clock;
     bool vsync;
     bool game_init_called;
+    INPUT_STATE *input;
+    // Holds g_GameDesc.input_schema->players input structs, one after
+    // another.
+    void *input_buffer;
+    // Holds config.ini's path, or nullptr when the user directory could
+    // not be found.
+    char *ini_path;
+    INI *ini;
+    APP_SETTINGS settings;
+    HOTKEYS hotkeys;
+    HOTKEYS hotkeys_edges;
 };
 
 struct FRAME {
@@ -89,6 +106,31 @@ static RESULT M_Init(APP_CONTEXT *const ctx)
 
     Clock_Init(&ctx->clock, APP_TICK_RATE, MAX_TICKS_PER_FRAME);
 
+    char *user_dir = nullptr;
+    if (Result_Log(
+            Path_GetUserDir(g_GameDesc.id, &user_dir), LOG_LEVEL_ERROR)) {
+        ctx->ini_path = Path_Join(&g_HeapAllocator, user_dir, "config.ini");
+        Mem_Free(user_dir);
+    }
+    if (ctx->ini_path != nullptr) {
+        Result_Log(
+            Ini_Load(ctx->ini_path, &g_HeapAllocator, &ctx->ini),
+            LOG_LEVEL_ERROR);
+    }
+    if (ctx->ini == nullptr) {
+        MUST(Ini_Parse("", 0, &g_HeapAllocator, &ctx->ini));
+    }
+    Config_Load(&g_AppSettingsSchema, ctx->ini, &ctx->settings);
+
+    ctx->input = Input_Create(g_GameDesc.input_schema, &g_HeapAllocator);
+    Input_AddSchema(ctx->input, &g_HotkeysSchema);
+    Input_Load(ctx->input, ctx->ini);
+
+    ctx->input_buffer = Allocator_AllocZ(
+        &g_HeapAllocator,
+        g_GameDesc.input_schema->size
+            * (size_t)g_GameDesc.input_schema->players);
+
     ctx->game_init_called = true;
     MUST(g_GameDesc.init(), "%s failed to start", g_GameDesc.id);
     return OK;
@@ -116,9 +158,16 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     APP_CONTEXT *const ctx = &m_Context;
 
     const int ticks = Clock_Advance(&ctx->clock, SDL_GetTicksNS());
+    if (ticks > 0) {
+        Input_Update(ctx->input, ctx->input_buffer);
+        HOTKEYS hotkeys;
+        Input_Read(ctx->input, &g_HotkeysSchema, &hotkeys);
+        Input_Debounce(
+            &g_HotkeysSchema, &ctx->hotkeys, &hotkeys, &ctx->hotkeys_edges);
+        ctx->hotkeys = hotkeys;
+    }
     for (int i = 0; i < ticks; i++) {
-        const TICK_INPUT input = {};
-        if (!g_GameDesc.tick(&input, &m_Frame)) {
+        if (!g_GameDesc.tick(ctx->input_buffer, &m_Frame)) {
             return SDL_APP_SUCCESS;
         }
         m_Frame.tick++;
@@ -144,6 +193,22 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     if (ctx->game_init_called) {
         g_GameDesc.shutdown();
     }
+    if (ctx->ini != nullptr) {
+        Config_Save(&g_AppSettingsSchema, ctx->ini, &ctx->settings);
+        Input_Save(ctx->input, ctx->ini);
+        if (ctx->ini_path != nullptr) {
+            Result_Log(Ini_Save(ctx->ini, ctx->ini_path), LOG_LEVEL_ERROR);
+        }
+        Ini_Free(ctx->ini);
+    }
+    Mem_Free(ctx->ini_path);
+    if (ctx->input_buffer != nullptr) {
+        Allocator_Free(
+            &g_HeapAllocator, ctx->input_buffer,
+            g_GameDesc.input_schema->size
+                * (size_t)g_GameDesc.input_schema->players);
+    }
+    Input_Destroy(ctx->input);
     if (ctx->gl_context != nullptr) {
         SDL_GL_DestroyContext(ctx->gl_context);
     }

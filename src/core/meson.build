@@ -119,6 +119,8 @@ core_lib = static_library(
   'core',
   'app/app.c',
   'app/clock.c',
+  'app/hotkeys.c',
+  'app/settings.c',
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],

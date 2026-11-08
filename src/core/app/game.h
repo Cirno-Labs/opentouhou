@@ -1,34 +1,12 @@
 #pragma once
 
 #include "core/base/result.h"
-
-#include <stdint.h>
+#include "core/input.h"
 
 #define APP_TICK_RATE 60
-#define INPUT_MAX_PLAYERS 2
 
 // Holds what one tick records for display.
 typedef struct FRAME FRAME;
-
-// Holds one player's input for one tick: a bitmask of the game's actions, in
-// the order the game declared them.
-typedef struct {
-    uint32_t actions;
-} PLAYER_INPUT;
-
-// Holds the input of every player for one tick. A one-player game reads p1;
-// a versus game loops over players.
-typedef struct {
-    union {
-        PLAYER_INPUT players[INPUT_MAX_PLAYERS];
-        struct {
-            PLAYER_INPUT p1;
-            PLAYER_INPUT p2;
-        };
-    };
-} TICK_INPUT;
-
-static_assert(INPUT_MAX_PLAYERS == 2);
 
 typedef struct {
     // Identifies the game in paths and settings, as in "th06".
@@ -38,11 +16,16 @@ typedef struct {
     // Sets the size of the game's screen in pixels.
     int logical_width;
     int logical_height;
+    // Sets the game's input struct and actions. core/app creates the
+    // INPUT_STATE from it and passes tick a buffer of schema->size *
+    // schema->players bytes, one player's input after another.
+    const INPUT_SCHEMA *input_schema;
     // Prepares the game. Called once, after the window exists.
     RESULT (*init)(void);
     // Advances the game by one 60 Hz step and records what to show into
-    // the frame. Returns false when the game wants to quit.
-    bool (*tick)(const TICK_INPUT *input, FRAME *frame);
+    // the frame. input points to input_schema->players input structs.
+    // Returns false when the game wants to quit.
+    bool (*tick)(const void *input, FRAME *frame);
     // Releases what init acquired. Called once, also when init failed.
     void (*shutdown)(void);
 } GAME_DESC;
