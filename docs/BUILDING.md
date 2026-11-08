@@ -30,7 +30,7 @@ builds it if it cannot (this takes a while, it compiles every
 dependency). Later builds reuse it, and ccache keeps rebuilds fast.
 
 Outputs land in `build/<platform>/<target>/`, one executable per game:
-`build/linux/debug/oth06`, `build/win/release/oth06.exe`. An
+`build/linux/debug/o<game>`, `build/win/release/o<game>.exe`. An
 executable's name is the game id with an `o` before it, so that it does
 not clash with the original game's executable in the same folder.
 
@@ -45,9 +45,9 @@ just package-win release
 
 This writes one package per game to `build/packages/`:
 
-- `oth06-<version>-Linux.AppImage`: a single executable file with
+- `o<game>-<version>-Linux.AppImage`: a single executable file with
   everything inside.
-- `oth06-<version>-Windows.zip`: `oth06.exe` and the files it needs.
+- `o<game>-<version>-Windows.zip`: `o<game>.exe` and the files it needs.
 
 Every package contains the game's executable, this project's licence
 and a readme. None contains any of the original game's files.
@@ -61,7 +61,7 @@ The games need the original game's data. Point a game at the directory
 that holds it, either by putting the executable there or by passing it:
 
 ```sh
-build/linux/debug/oth06 --data ~/games/th06
+build/linux/debug/o<game> --data ~/games/<game>
 ```
 
 The data directory is never written to unless you choose the original
@@ -70,8 +70,8 @@ scores and replays go to your user directory:
 
 | Platform | User directory |
 | --- | --- |
-| Linux | `$XDG_DATA_HOME/opentouhou/th06/` (usually `~/.local/share/...`) |
-| Windows | `%APPDATA%\opentouhou\th06\` |
+| Linux | `$XDG_DATA_HOME/opentouhou/<game>/` (usually `~/.local/share/...`) |
+| Windows | `%APPDATA%\opentouhou\<game>\` |
 
 ## Docker images
 
