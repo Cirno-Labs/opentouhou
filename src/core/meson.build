@@ -18,6 +18,7 @@ core_base_lib = static_library(
   'base/log.c',
   'base/memory.c',
   'base/result.c',
+  'base/sha1.c',
   'base/string.c',
   c_args: core_include,
   implicit_include_directories: false,

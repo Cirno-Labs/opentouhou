@@ -118,7 +118,7 @@ generator.
 ## Modules
 
 ```
-core/base     types, asserts, logging, allocators, containers, strings
+core/base     types, asserts, logging, allocators, containers, strings, hashes
 core/io       readers and writers, files, paths
 core/ini      the INI format our settings are stored in
 core/vfs      the file namespace the games load from

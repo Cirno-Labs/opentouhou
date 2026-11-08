@@ -10,6 +10,7 @@
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/result.h"
+#include "core/base/sha1.h"
 #include "core/base/string.h"
 #include "core/base/types.h"
 #include "core/base/utils.h"

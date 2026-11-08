@@ -207,6 +207,7 @@ foreach part : [
   'log',
   'memory',
   'result',
+  'sha1',
   'string',
 ]
   test(
