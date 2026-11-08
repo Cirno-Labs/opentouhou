@@ -1,7 +1,7 @@
 CWD := `pwd`
 HOST_USER_UID := `id -u`
 HOST_USER_GID := `id -g`
-DOCKER_IMAGE_VERSION := "20261107"
+DOCKER_IMAGE_VERSION := "20261108"
 DOCKER_IMAGE_PREFIX := "ghcr.io/cirno-labs/opentouhou-"
 
 # List the recipes.

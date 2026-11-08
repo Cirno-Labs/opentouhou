@@ -70,6 +70,58 @@ RUN curl -fsSL -o /tmp/sdl.tar.gz \
 
 
 
+# zlib, built statically for FFmpeg's PNG encoder and decoder.
+FROM base AS zlib
+ARG ZLIB_VERSION=1.3.1
+ARG ZLIB_SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
+RUN curl -fsSL -o /tmp/zlib.tar.gz \
+        https://www.zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz \
+    && echo "${ZLIB_SHA256}  /tmp/zlib.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/zlib.tar.gz -C /tmp \
+    && cd /tmp/zlib-${ZLIB_VERSION} \
+    && CFLAGS="-fPIC" ./configure --prefix=/ext --static \
+    && make -j"$(nproc)" \
+    && make install \
+    && rm -rf /tmp/zlib.tar.gz /tmp/zlib-${ZLIB_VERSION}
+
+
+
+# FFmpeg, built statically with only the codecs core/image needs: PNG, MJPEG
+# and BMP decoding, PNG and MJPEG encoding, through libavcodec, libavutil
+# and libswscale. No assembly, so every platform decodes with the same C
+# code. No libavformat: core/image demuxes nothing, it decodes a
+# whole buffer as one frame. The default configuration is LGPL, since
+# --enable-gpl is never passed.
+FROM base AS ffmpeg
+ARG FFMPEG_VERSION=7.1.1
+ARG FFMPEG_SHA256=733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
+COPY --from=zlib /ext/ /ext/
+RUN curl -fsSL -o /tmp/ffmpeg.tar.xz \
+        https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz \
+    && echo "${FFMPEG_SHA256}  /tmp/ffmpeg.tar.xz" | sha256sum -c - \
+    && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp \
+    && cd /tmp/ffmpeg-${FFMPEG_VERSION} \
+    && PKG_CONFIG_PATH=/ext/lib/pkgconfig ./configure \
+        --prefix=/ext \
+        --disable-everything \
+        --disable-programs \
+        --disable-doc \
+        --disable-network \
+        --disable-autodetect \
+        --disable-x86asm \
+        --disable-shared \
+        --enable-static \
+        --enable-pic \
+        --enable-zlib \
+        --enable-decoder=png,mjpeg,bmp \
+        --enable-encoder=png,mjpeg \
+        --pkg-config-flags="--static" \
+    && make -j"$(nproc)" \
+    && make install \
+    && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-${FFMPEG_VERSION}
+
+
+
 # appimagetool and the AppImage runtime it embeds
 FROM base AS appimage
 ARG APPIMAGETOOL_VERSION=1.9.1
@@ -105,6 +157,7 @@ RUN dnf -y install \
         ninja==1.13.2
 
 COPY --from=sdl /ext/ /ext/
+COPY --from=ffmpeg /ext/ /ext/
 COPY --from=appimage /opt/ /opt/
 RUN ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool
 

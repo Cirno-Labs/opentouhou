@@ -99,8 +99,10 @@ and push the new image before the change lands, or CI will build it from
 scratch on every run. The "Build and push the Docker images" workflow
 pushes both images.
 
-The images build one dependency, SDL3, at the release that the
-Dockerfiles pin.
+The images build two dependencies at the releases the Dockerfiles pin:
+SDL3, and FFmpeg for `core/image`. FFmpeg is built with only the PNG,
+MJPEG and BMP codecs it needs, and with no GPL component enabled, so its
+licence stays LGPL.
 
 ## Building without Docker
 

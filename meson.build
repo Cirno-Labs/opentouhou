@@ -66,6 +66,14 @@ endforeach
 
 sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
 
+# core/image decodes and encodes through FFmpeg's libavcodec and converts
+# pixel formats through libswscale, both built with only the codecs it
+# uses (see tools/docker). No libavformat: core/image never demuxes a
+# container.
+avcodec = dependency('libavcodec', static: true)
+avutil = dependency('libavutil', static: true)
+swscale = dependency('libswscale', static: true)
+
 subdir('src/core')
 
 # Each game's directory adds the game to this dictionary. The executables
