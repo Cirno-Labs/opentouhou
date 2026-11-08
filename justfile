@@ -4,6 +4,8 @@ HOST_USER_GID := `id -g`
 
 import "tools/docker/docker.just"
 
+mod replay
+
 # List the recipes.
 [group('misc')]
 default:
@@ -43,3 +45,4 @@ version:
 [group('misc')]
 clean:
     rm -rf build/
+

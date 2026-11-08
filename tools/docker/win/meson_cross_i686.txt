@@ -1,0 +1,17 @@
+# Meson cross file for i686 Windows builds in the Windows build image.
+[binaries]
+c = ['ccache', 'i686-w64-mingw32-gcc-posix']
+ar = 'i686-w64-mingw32-gcc-ar-posix'
+strip = 'i686-w64-mingw32-strip'
+windres = 'i686-w64-mingw32-windres'
+objdump = 'i686-w64-mingw32-objdump'
+pkg-config = 'pkg-config'
+
+[properties]
+pkg_config_libdir = '/ext/i686/lib/pkgconfig'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86'
+cpu = 'i686'
+endian = 'little'

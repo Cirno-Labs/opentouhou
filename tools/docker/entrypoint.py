@@ -18,9 +18,10 @@ from shared.versioning import executable_name, generate_package_name, generate_v
 REPO_DIR = Path("/app")
 PACKAGING_DIR = REPO_DIR / "tools/packaging"
 PACKAGES_DIR = REPO_DIR / "build/packages"
-CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross.txt"}
+CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt"}
 EXE_SUFFIXES = {"linux": "", "win": ".exe"}
 GAMES = ["th06"]
+CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
 
 
 def build_dir(platform: str, target: str) -> Path:
@@ -36,6 +37,30 @@ def run_build(platform: str, target: str) -> None:
         command += [str(root), str(REPO_DIR)]
         subprocess.check_call(command)
     subprocess.check_call(["meson", "compile", "-C", str(root)])
+
+
+def run_capture_build(game: str) -> None:
+    source_dir = REPO_DIR / "replay" / game
+    build_dir = REPO_DIR / "build/replay" / game
+    if not (build_dir / "build.ninja").exists():
+        # The image sets PKG_CONFIG_PATH for the x86_64 "win" target. It
+        # takes priority over the cross file's pkg_config_libdir, which
+        # would otherwise make pkg-config resolve the i686 dependencies to
+        # the wrong architecture. Clearing it here leaves pkg_config_libdir
+        # as the only search path.
+        env = dict(os.environ)
+        env.pop("PKG_CONFIG_PATH", None)
+        subprocess.check_call(
+            [
+                "meson",
+                "setup",
+                f"--cross-file={CAPTURE_CROSS_FILE}",
+                str(build_dir),
+                str(source_dir),
+            ],
+            env=env,
+        )
+    subprocess.check_call(["meson", "compile", "-C", str(build_dir)])
 
 
 def run_test(platform: str, target: str) -> None:
@@ -107,12 +132,16 @@ def main() -> None:
         subparser.add_argument(
             "--target", choices=["debug", "release"], default="debug"
         )
+    capture_parser = subparsers.add_parser("replay")
+    capture_parser.add_argument("game")
     args = parser.parse_args()
 
     if args.command == "build":
         run_build(args.platform, args.target)
     elif args.command == "test":
         run_test(args.platform, args.target)
+    elif args.command == "replay":
+        run_capture_build(args.game)
     else:
         run_package(args.platform, args.target)
 

@@ -55,6 +55,17 @@ and a readme. None contains any of the original game's files.
 The version comes from `git describe` on the latest `v*` tag; untagged
 builds are named after the commit.
 
+## Capturing replay test cases
+
+```sh
+just replay::build <game>
+```
+
+This cross-builds a game's capture tools, dev-only tools for capturing
+replay test cases from the original game. They are used locally and
+never packaged or released. Each game's own notes describe how to
+capture with them.
+
 ## Running
 
 The games need the original game's data. Point a game at the directory

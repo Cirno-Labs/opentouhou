@@ -1,4 +1,4 @@
-# Meson cross file for the Windows build image.
+# Meson cross file for x86-64 Windows builds in the Windows build image.
 [binaries]
 c = ['ccache', 'x86_64-w64-mingw32-gcc-posix']
 ar = 'x86_64-w64-mingw32-gcc-ar-posix'

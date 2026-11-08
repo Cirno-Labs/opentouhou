@@ -41,9 +41,9 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .cache/ccache
-          key: ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross.txt') }}-${{ github.sha }}
+          key: ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-${{ github.sha }}
           restore-keys: |
-            ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross.txt') }}-
+            ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-
 
       - name: Build and package
         env:
