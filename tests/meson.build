@@ -62,6 +62,32 @@ test(
 )
 
 test(
+  'core/image/pixels',
+  executable(
+    'test_image_pixels',
+    'test_image_pixels.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_image_lib, core_base_lib],
+    dependencies: [avcodec, avutil, swscale, cc_libm],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'core/image/codec',
+  executable(
+    'test_image_codec',
+    'test_image_codec.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_image_lib, core_io_lib, core_base_lib],
+    dependencies: [avcodec, avutil, swscale, cc_libm],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/ini',
   executable(
     'test_ini',

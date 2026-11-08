@@ -115,6 +115,19 @@ core_vfs_lib = static_library(
   dependencies: [sdl3],
 )
 
+# core/image needs core/base and core/io, plus FFmpeg for decoding and
+# encoding; the tests link it without SDL beyond what core/io needs.
+core_image_lib = static_library(
+  'core_image',
+  'image/decode.c',
+  'image/encode.c',
+  'image/pixels.c',
+  'image/resize.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [avcodec, avutil, swscale, cc_libm],
+)
+
 core_lib = static_library(
   'core',
   'app/app.c',
@@ -139,8 +152,14 @@ core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
     core_lib, core_input_lib, core_vfs_lib, core_config_lib, core_ini_lib,
-    core_io_lib, core_json_lib, core_math_lib, core_base_lib,
+    core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
   link_whole: core_main_lib,
-  dependencies: [sdl3.partial_dependency(links: true)],
+  dependencies: [
+    sdl3.partial_dependency(links: true),
+    avcodec.partial_dependency(links: true),
+    avutil.partial_dependency(links: true),
+    swscale.partial_dependency(links: true),
+    cc_libm,
+  ],
 )
