@@ -74,6 +74,10 @@ avcodec = dependency('libavcodec', static: true)
 avutil = dependency('libavutil', static: true)
 swscale = dependency('libswscale', static: true)
 
+# The replay test case format compresses its calc rows with zlib. Only the
+# tests use it; no layer of the game depends on it.
+zlib = dependency('zlib', static: true)
+
 subdir('src/core')
 subdir('src/stg')
 

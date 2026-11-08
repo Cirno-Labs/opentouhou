@@ -1,3 +1,27 @@
+# The replay test case format lives in replay/core, outside the game layers.
+replay_include = ['-I' + meson.current_source_dir() / '../replay/core']
+
+replay_case_lib = static_library(
+  'replay_case',
+  '../replay/core/case.c',
+  c_args: core_include + replay_include,
+  implicit_include_directories: false,
+  dependencies: [zlib],
+)
+
+test(
+  'replay/core/case',
+  executable(
+    'test_case',
+    'test_case.c',
+    c_args: core_include + replay_include,
+    implicit_include_directories: false,
+    link_with: [replay_case_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3, zlib],
+  ),
+  suite: 'unit',
+)
+
 # The tests include core's private headers, so they compile against the
 # sources directly instead of the library.
 test(
