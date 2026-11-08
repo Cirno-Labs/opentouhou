@@ -74,6 +74,7 @@ shared_library(
   '../core/clock.c',
   '../core/iat.c',
   '../core/overlay.c',
+  '../core/patch.c',
   name_prefix: '',
   c_args: core_include,
   implicit_include_directories: false,

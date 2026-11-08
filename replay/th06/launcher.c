@@ -19,8 +19,12 @@
 #define GAME_EXE_NAME "東方紅魔郷.exe"
 #define GAME_EXE_SHA1 "e61b4f4fea3802e926ef307f45166599c3e86555"
 
+// Names the replay copy so that the game's replay menu lists it.
+#define REPLAY_COPY L"replay\\th6_ud0000.rpy"
+
 typedef struct {
     const char *game_dir;
+    const char *replay;
     bool live;
     bool dry_run;
     int quit_after;
@@ -33,6 +37,8 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
         const bool has_value = i + 1 < argc;
         if (strcmp(argv[i], "--game") == 0 && has_value) {
             args->game_dir = argv[++i];
+        } else if (strcmp(argv[i], "--replay") == 0 && has_value) {
+            args->replay = argv[++i];
         } else if (strcmp(argv[i], "--live") == 0) {
             args->live = true;
         } else if (strcmp(argv[i], "--dry-run") == 0) {
@@ -43,7 +49,7 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
             return false;
         }
     }
-    return args->game_dir != nullptr && args->live;
+    return args->game_dir != nullptr && (args->replay != nullptr) != args->live;
 }
 
 static wchar_t *M_Wide(const char *const text)
@@ -115,16 +121,32 @@ static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
     WideCharToMultiByte(
         CP_UTF8, 0, work_dir, -1, work_dir_utf8, MAX_PATH, nullptr, nullptr);
     MUST(M_WriteConfig(work_dir_utf8));
+    if (args->replay != nullptr) {
+        wchar_t copy[MAX_PATH];
+        swprintf(copy, MAX_PATH, L"%ls\\replay", work_dir);
+        CreateDirectoryW(copy, nullptr);
+        swprintf(copy, MAX_PATH, L"%ls\\" REPLAY_COPY, work_dir);
+        wchar_t *const source = M_Wide(args->replay);
+        const bool copied = CopyFileW(source, copy, FALSE);
+        Mem_Free(source);
+        FAIL_IF(!copied, "cannot copy %s", args->replay);
+    }
     return OK;
 }
 
 static wchar_t *M_Environment(const ARGS *const args, const wchar_t *work_dir)
 {
-    wchar_t lines[2][MAX_PATH + 32];
-    const wchar_t *extra[2];
+    wchar_t lines[3][MAX_PATH + 32];
+    const wchar_t *extra[3];
     size_t count = 0;
     swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_WORK=%ls", work_dir);
     count++;
+    if (args->replay != nullptr) {
+        swprintf(
+            lines[count], MAX_PATH + 32, L"TH06CAPTURE_REPLAY=./%ls",
+            REPLAY_COPY);
+        count++;
+    }
     if (args->quit_after > 0) {
         swprintf(
             lines[count], MAX_PATH + 32, L"TH06CAPTURE_QUIT_AFTER=%d",
@@ -188,7 +210,7 @@ int main(void)
         fprintf(
             stderr,
             "usage: th06capture.exe --game <dir> "
-            "--live [--dry-run] "
+            "(--replay <file.rpy> | --live) [--dry-run] "
             "[--quit-after <seconds>]\n");
         return 1;
     }
