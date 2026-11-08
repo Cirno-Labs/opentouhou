@@ -89,6 +89,17 @@ core_config_lib = static_library(
   implicit_include_directories: false,
 )
 
+# core/input needs only core/base, core/ini and core/config; its SDL backend
+# is added by a later platform-specific library, so the tests link this
+# library against a fake backend instead of a real one.
+core_input_lib = static_library(
+  'core_input',
+  'input/input.c',
+  'input/names.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
 core_vfs_lib = static_library(
   'core_vfs',
   'vfs/vfs.c',

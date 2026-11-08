@@ -79,6 +79,23 @@ test(
 )
 
 test(
+  'core/input',
+  executable(
+    'test_input',
+    'test_input.c',
+    'input_backend_fake.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [
+      core_input_lib, core_config_lib, core_ini_lib, core_io_lib,
+      core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/vfs',
   executable(
     'test_vfs',
@@ -216,6 +233,28 @@ foreach name, expected : {
   )
 endforeach
 
+test(
+  'core/input/duplicate_action',
+  python,
+  args: [
+    expect_fatal,
+    'input: action "shoot" is in two schemas',
+    executable(
+      'test_input_duplicate_action',
+      'test_input_duplicate_action.c',
+      'input_backend_fake.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [
+        core_input_lib, core_config_lib, core_ini_lib, core_io_lib,
+        core_base_lib,
+      ],
+      dependencies: [sdl3],
+    ),
+  ],
+  suite: 'unit',
+)
+
 # Each of these files compiles, and fails to compile with BREAK defined,
 # which shows that the container macros reject a value of the wrong type.
 compile_fail_args = core_include + ['-Werror']
@@ -226,6 +265,9 @@ foreach name : [
   'config_float_on_int_field',
   'hash_map_key_type',
   'hash_map_value_type',
+  'input_button_on_float_field',
+  'input_stick_on_bool_field',
+  'input_stick_with_gap',
 ]
   source = files('compile_fail' / name + '.c')
   if not cc.compiles(source, args: compile_fail_args, name: name)
