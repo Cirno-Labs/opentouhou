@@ -100,6 +100,18 @@ RESULT Vfs_MountDir(
     return OK;
 }
 
+RESULT Vfs_MountFile(
+    VFS *const vfs, const char *const path, const VFS_OPENER opener,
+    const int32_t priority)
+{
+    READER file;
+    MUST(Vfs_Open(vfs, path, VFS_STREAM, &file), "%s", path);
+    VFS_SOURCE *source;
+    MUST(opener(&file, path, vfs->allocator, &source));
+    Vfs_MountSource(vfs, source, priority);
+    return OK;
+}
+
 bool Vfs_Exists(const VFS *const vfs, const char *const path)
 {
     char *normalized;

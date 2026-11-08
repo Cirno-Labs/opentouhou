@@ -134,6 +134,18 @@ test(
 )
 
 test(
+  'core/vfs/mount_file',
+  executable(
+    'test_vfs_mount_file',
+    'test_vfs_mount_file.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_vfs_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/vfs/mount_dir',
   executable(
     'test_vfs_mount_dir',
