@@ -53,7 +53,7 @@ endif
 # that is not on its include path.
 include_root = meson.current_build_dir() / 'include'
 layer_include = {}
-foreach layer : ['core', 'th06']
+foreach layer : ['core', 'stg', 'th06']
   run_command(
     python3,
     files('tools/meson/link_layer'),
@@ -75,6 +75,7 @@ avutil = dependency('libavutil', static: true)
 swscale = dependency('libswscale', static: true)
 
 subdir('src/core')
+subdir('src/stg')
 
 # Each game's directory adds the game to this dictionary. The executables
 # are declared here, so that they land in the root of the build directory.
@@ -90,7 +91,7 @@ foreach name, game : games
     game['sources'],
     c_args: game['c_args'],
     implicit_include_directories: false,
-    dependencies: [core_dep],
+    dependencies: [core_dep, stg_dep],
     win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
   )
 endforeach

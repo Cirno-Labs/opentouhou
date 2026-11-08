@@ -1,0 +1,16 @@
+# stg sees core's headers and its own; a game includes stg only through
+# "stg/..." headers, never stg's sources directly.
+stg_include = [layer_include['core'], layer_include['stg']]
+
+stg_pbg3_lib = static_library(
+  'stg_pbg3',
+  'pbg3.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+)
+
+stg_dep = declare_dependency(
+  compile_args: [layer_include['stg']],
+  link_with: [stg_pbg3_lib],
+  dependencies: [core_dep],
+)

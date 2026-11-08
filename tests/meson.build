@@ -134,6 +134,18 @@ test(
 )
 
 test(
+  'stg/pbg3',
+  executable(
+    'test_pbg3',
+    'test_pbg3.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/vfs/mount_file',
   executable(
     'test_vfs_mount_file',
