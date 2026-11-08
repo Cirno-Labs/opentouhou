@@ -51,6 +51,7 @@ core_base_lib = static_library(
   src_root / 'core/base/log.c',
   src_root / 'core/base/memory.c',
   src_root / 'core/base/result.c',
+  src_root / 'core/base/sha1.c',
   src_root / 'core/base/string.c',
   c_args: core_include,
   implicit_include_directories: false,
@@ -68,9 +69,34 @@ core_io_lib = static_library(
 )
 
 shared_library(
-  'th06trace',
-  'tracer.c',
+  'th06capture',
+  'dll.c',
+  '../core/clock.c',
+  '../core/iat.c',
+  '../core/overlay.c',
   name_prefix: '',
+  c_args: core_include,
+  implicit_include_directories: false,
+  link_with: [core_base_lib, core_io_lib],
+  dependencies: [sdl3, zlib],
+)
+
+executable(
+  'th06capture',
+  'launcher.c',
+  '../core/launch.c',
+  '../core/workdir.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  link_with: [core_base_lib, core_io_lib],
+  dependencies: [sdl3, zlib],
+)
+
+executable(
+  'overlay_test',
+  '../core/iat.c',
+  '../core/overlay.c',
+  '../core/overlay_test.c',
   c_args: core_include,
   implicit_include_directories: false,
   link_with: [core_base_lib, core_io_lib],
