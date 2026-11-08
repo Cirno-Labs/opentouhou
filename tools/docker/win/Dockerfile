@@ -4,9 +4,11 @@
 # /ext. The final stage collects /ext and adds the build tools. The source is
 # not part of the image; it is mounted at /app.
 #
-# The target is x86-64. The dependencies are static libraries, and the game
-# links libgcc and winpthread statically, so the executable needs no DLLs
-# beyond the ones Windows has.
+# The main target is x86-64. The image also cross-builds a static SDL3
+# and zlib for i686, used by the capture tools under replay/. The
+# dependencies are static libraries, and the game links libgcc and
+# winpthread statically, so the executable needs no DLLs beyond the ones
+# Windows has.
 
 FROM debian:trixie AS base
 ENV DEBIAN_FRONTEND=noninteractive
@@ -17,6 +19,9 @@ RUN apt-get update \
         gcc-mingw-w64-x86-64-posix \
         g++-mingw-w64-x86-64-posix \
         binutils-mingw-w64-x86-64 \
+        gcc-mingw-w64-i686-posix \
+        g++-mingw-w64-i686-posix \
+        binutils-mingw-w64-i686 \
         make \
         cmake \
         pkg-config \
@@ -54,6 +59,56 @@ RUN curl -fsSL -o /tmp/sdl.tar.gz \
     && cmake --build /tmp/sdl-build -j"$(nproc)" \
     && cmake --install /tmp/sdl-build \
     && rm -rf /tmp/sdl.tar.gz /tmp/SDL3-${SDL_VERSION} /tmp/sdl-build
+
+
+
+# SDL3 for i686, used by the capture tools.
+FROM base AS sdl-i686
+ARG SDL_VERSION=3.4.20
+ARG SDL_SHA256=f3bb06f55bed9557227a700af2ea62e49497ebdf58037732a731a5fb3ef8581f
+RUN curl -fsSL -o /tmp/sdl.tar.gz \
+        https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL3-${SDL_VERSION}.tar.gz \
+    && echo "${SDL_SHA256}  /tmp/sdl.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/sdl.tar.gz -C /tmp \
+    && cmake -S /tmp/SDL3-${SDL_VERSION} -B /tmp/sdl-build \
+        -DCMAKE_SYSTEM_NAME=Windows \
+        -DCMAKE_SYSTEM_PROCESSOR=x86 \
+        -DCMAKE_C_COMPILER=i686-w64-mingw32-gcc-posix \
+        -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++-posix \
+        -DCMAKE_RC_COMPILER=i686-w64-mingw32-windres \
+        -DCMAKE_FIND_ROOT_PATH=/usr/i686-w64-mingw32 \
+        -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+        -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+        -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext/i686 \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DSDL_SHARED=OFF \
+        -DSDL_STATIC=ON \
+        -DSDL_TEST_LIBRARY=OFF \
+        -DSDL_TESTS=OFF \
+        -DSDL_EXAMPLES=OFF \
+    && cmake --build /tmp/sdl-build -j"$(nproc)" \
+    && cmake --install /tmp/sdl-build \
+    && rm -rf /tmp/sdl.tar.gz /tmp/SDL3-${SDL_VERSION} /tmp/sdl-build
+
+
+
+# zlib for i686, used by the capture tools.
+FROM base AS zlib-i686
+ARG ZLIB_VERSION=1.3.1
+ARG ZLIB_SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
+RUN curl -fsSL -o /tmp/zlib.tar.gz \
+        https://www.zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz \
+    && echo "${ZLIB_SHA256}  /tmp/zlib.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/zlib.tar.gz -C /tmp \
+    && cd /tmp/zlib-${ZLIB_VERSION} \
+    && CC=i686-w64-mingw32-gcc-posix AR=i686-w64-mingw32-ar \
+        RANLIB=i686-w64-mingw32-ranlib \
+        ./configure --prefix=/ext/i686 --static \
+    && make -j"$(nproc)" \
+    && make install \
+    && rm -rf /tmp/zlib.tar.gz /tmp/zlib-${ZLIB_VERSION}
 
 
 
@@ -139,6 +194,8 @@ RUN apt-get update \
 
 COPY --from=sdl /ext/ /ext/
 COPY --from=ffmpeg /ext/ /ext/
+COPY --from=sdl-i686 /ext/i686/ /ext/i686/
+COPY --from=zlib-i686 /ext/i686/ /ext/i686/
 
 RUN mkdir /app
 WORKDIR /app
