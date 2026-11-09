@@ -16,6 +16,10 @@ typedef struct {
     bool unlock_end;
     bool unlock_start;
     bool confirm;
+    // TODO: read by the analog_speed and analog_direction features. Until
+    // they exist, only the direction buttons move the player.
+    float move_x;
+    float move_y;
 } TH06_INPUT;
 
 static const INPUT_ACTION m_Actions[] = {
@@ -42,6 +46,7 @@ static const INPUT_ACTION m_Actions[] = {
     INPUT_BUTTON(TH06_INPUT, unlock_end, "s", nullptr, nullptr),
     INPUT_BUTTON(TH06_INPUT, unlock_start, "home", nullptr, nullptr),
     INPUT_BUTTON(TH06_INPUT, confirm, "return", nullptr, nullptr),
+    INPUT_STICK(TH06_INPUT, move, "left_stick", "joy_axis_0, joy_axis_1"),
 };
 static const INPUT_SCHEMA m_InputSchema =
     INPUT_SCHEMA_OF(TH06_INPUT, m_Actions, 1);
