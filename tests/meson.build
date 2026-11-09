@@ -108,6 +108,30 @@ test(
 )
 
 test(
+  'th06/effect',
+  executable(
+    'test_th06_effect',
+    'test_th06_effect.c',
+    'anm_builder.c',
+    'pbg3_builder.c',
+    'th06_data.c',
+    'th06_scene_stubs.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
+      core_math_lib, core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_effect',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_effect',
+  },
+  suite: 'unit',
+)
+
+test(
   'th06/files',
   executable(
     'test_th06_files',

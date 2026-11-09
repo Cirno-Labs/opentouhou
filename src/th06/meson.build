@@ -7,6 +7,7 @@ th06_lib = static_library(
   'anm/state.c',
   'buttons.c',
   'chain.c',
+  'effect.c',
   'files.c',
   'game.c',
   'game_manager/chain.c',
