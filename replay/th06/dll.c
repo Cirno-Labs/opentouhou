@@ -30,6 +30,8 @@ typedef int(__attribute__((thiscall)) * RUN_CALC_CHAIN_FN)(void *chain);
 #pragma GCC diagnostic pop
 
 static char m_ReplayPath[MAX_PATH];
+static bool m_ReplayStarted;
+static bool m_ReplayEnded;
 static int m_TitleFrames;
 static uint32_t m_Calcs;
 static DWORD m_QuitAfter;
@@ -160,19 +162,6 @@ static void M_StartReplay(void)
     LOG_INFO("replay: started at stage %d", stage);
 }
 
-static int __cdecl M_MainMenuOnUpdate(void *menu)
-{
-    const int state = ((RETAIL_MAIN_MENU *)menu)->state;
-    const bool title =
-        state == RETAIL_MAIN_MENU_TITLE || state == RETAIL_MAIN_MENU_TITLE_KEY;
-    m_TitleFrames = title ? m_TitleFrames + 1 : 0;
-    if (m_TitleFrames == REPLAY_START_DELAY) {
-        M_StartReplay();
-        return 0;
-    }
-    return ((RETAIL_CALLBACK)RETAIL_MAIN_MENU_ON_UPDATE)(menu);
-}
-
 static BOOL CALLBACK M_CloseGameWindow(HWND window, LPARAM unused)
 {
     DWORD process = 0;
@@ -181,8 +170,30 @@ static BOOL CALLBACK M_CloseGameWindow(HWND window, LPARAM unused)
         return TRUE;
     }
     PostMessageW(window, WM_CLOSE, 0, 0);
-    LOG_INFO("quit-after: closed the game window");
+    LOG_INFO("closed the game window");
     return FALSE;
+}
+
+static int __cdecl M_MainMenuOnUpdate(void *menu)
+{
+    if (m_ReplayStarted) {
+        if (!m_ReplayEnded) {
+            m_ReplayEnded = true;
+            EnumWindows(M_CloseGameWindow, 0);
+            LOG_INFO("replay: ended, closing the game");
+        }
+        return ((RETAIL_CALLBACK)RETAIL_MAIN_MENU_ON_UPDATE)(menu);
+    }
+    const int state = ((RETAIL_MAIN_MENU *)menu)->state;
+    const bool title =
+        state == RETAIL_MAIN_MENU_TITLE || state == RETAIL_MAIN_MENU_TITLE_KEY;
+    m_TitleFrames = title ? m_TitleFrames + 1 : 0;
+    if (m_TitleFrames == REPLAY_START_DELAY) {
+        M_StartReplay();
+        m_ReplayStarted = true;
+        return 0;
+    }
+    return ((RETAIL_CALLBACK)RETAIL_MAIN_MENU_ON_UPDATE)(menu);
 }
 
 static DWORD WINAPI M_QuitAfterThread(LPVOID unused)
