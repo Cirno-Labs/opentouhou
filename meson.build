@@ -94,6 +94,7 @@ foreach name, game : games
     'o' + name,
     game['sources'],
     c_args: game['c_args'],
+    link_with: game.get('link_with', []),
     implicit_include_directories: false,
     dependencies: [core_dep, stg_dep],
     win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
