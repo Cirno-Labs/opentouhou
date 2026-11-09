@@ -23,6 +23,19 @@ test(
 )
 
 test(
+  'th06/scene',
+  executable(
+    'test_th06_scene',
+    'test_th06_scene.c',
+    'th06_scene_stubs.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th06/files',
   executable(
     'test_th06_files',
