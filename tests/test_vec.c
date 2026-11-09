@@ -80,6 +80,28 @@ TEST(lookat_places_the_camera_at_the_origin)
     CHECK(ra.z > 0.0f);
 }
 
+TEST(a_quaternion_turns_x_into_y_about_z)
+{
+    // A quarter turn about z: sin(pi/4) on the axis, cos(pi/4) as w.
+    const VEC4 q = { 0.0f, 0.0f, 0.70710677f, 0.70710677f };
+    const MAT4 m = Mat4_RotationQuaternion(q);
+    const VEC3 r = Vec3_TransformCoord((VEC3) { 1.0f, 0.0f, 0.0f }, &m);
+    CHECK(M_Near(r.x, 0.0f));
+    CHECK(M_Near(r.y, 1.0f));
+    CHECK(M_Near(r.z, 0.0f));
+}
+
+TEST(the_identity_quaternion_gives_the_identity)
+{
+    const MAT4 m = Mat4_RotationQuaternion((VEC4) { 0.0f, 0.0f, 0.0f, 1.0f });
+    const MAT4 identity = Mat4_Identity();
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            CHECK(m.m[i][j] == identity.m[i][j]);
+        }
+    }
+}
+
 TEST(perspective_matches_the_documented_formula)
 {
     const float fov_y = 1.0471976f; // pi/3

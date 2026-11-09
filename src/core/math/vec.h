@@ -74,6 +74,11 @@ MAT4 Mat4_Identity(void);
 // as through a and then b: v * Mat4_Multiply(a, b) == (v * a) * b.
 MAT4 Mat4_Multiply(const MAT4 *a, const MAT4 *b);
 
+// Builds the rotation matrix of the unit quaternion q (x, y, z the
+// vector part, w the scalar), as D3DXMatrixRotationQuaternion does. The
+// operation order is a guess.
+MAT4 Mat4_RotationQuaternion(VEC4 q);
+
 // Builds a left-handed view matrix looking from eye toward at, with up
 // giving the camera's up direction, as D3DXMatrixLookAtLH does.
 MAT4 Mat4_LookAtLH(VEC3 eye, VEC3 at, VEC3 up);

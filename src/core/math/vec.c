@@ -94,6 +94,21 @@ MAT4 Mat4_Multiply(const MAT4 *const a, const MAT4 *const b)
     return result;
 }
 
+MAT4 Mat4_RotationQuaternion(const VEC4 q)
+{
+    MAT4 m = Mat4_Identity();
+    m.m[0][0] = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+    m.m[0][1] = 2.0f * (q.x * q.y + q.z * q.w);
+    m.m[0][2] = 2.0f * (q.x * q.z - q.y * q.w);
+    m.m[1][0] = 2.0f * (q.x * q.y - q.z * q.w);
+    m.m[1][1] = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);
+    m.m[1][2] = 2.0f * (q.y * q.z + q.x * q.w);
+    m.m[2][0] = 2.0f * (q.x * q.z + q.y * q.w);
+    m.m[2][1] = 2.0f * (q.y * q.z - q.x * q.w);
+    m.m[2][2] = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+    return m;
+}
+
 MAT4 Mat4_LookAtLH(const VEC3 eye, const VEC3 at, const VEC3 up)
 {
     const VEC3 z_axis = Vec3_Normalize(Vec3_Sub(at, eye));
