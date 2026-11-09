@@ -31,6 +31,7 @@ typedef struct {
     const char *replay;
     bool live;
     bool dry_run;
+    bool fast;
     int quit_after;
     const char *out_dir;
 } ARGS;
@@ -48,6 +49,8 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
             args->live = true;
         } else if (strcmp(argv[i], "--dry-run") == 0) {
             args->dry_run = true;
+        } else if (strcmp(argv[i], "--fast") == 0) {
+            args->fast = true;
         } else if (strcmp(argv[i], "--quit-after") == 0 && has_value) {
             args->quit_after = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--out") == 0 && has_value) {
@@ -56,7 +59,8 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
             return false;
         }
     }
-    return args->game_dir != nullptr && (args->replay != nullptr) != args->live;
+    return args->game_dir != nullptr && (args->replay != nullptr) != args->live
+        && !(args->fast && args->live) && !(args->fast && args->quit_after > 0);
 }
 
 static wchar_t *M_Wide(const char *const text)
@@ -170,8 +174,8 @@ static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
 static wchar_t *M_Environment(
     const ARGS *const args, const wchar_t *work_dir, const wchar_t *case_path)
 {
-    wchar_t lines[4][MAX_PATH + 32];
-    const wchar_t *extra[4];
+    wchar_t lines[5][MAX_PATH + 32];
+    const wchar_t *extra[5];
     size_t count = 0;
     swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_WORK=%ls", work_dir);
     count++;
@@ -179,6 +183,10 @@ static wchar_t *M_Environment(
         swprintf(
             lines[count], MAX_PATH + 32, L"TH06CAPTURE_REPLAY=./%ls",
             REPLAY_COPY);
+        count++;
+    }
+    if (args->fast) {
+        swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_FAST=1");
         count++;
     }
     if (args->quit_after > 0) {
@@ -251,7 +259,7 @@ int main(void)
         fprintf(
             stderr,
             "usage: th06capture.exe --game <dir> "
-            "(--replay <file.rpy> | --live) [--dry-run] "
+            "(--replay <file.rpy> | --live) [--dry-run] [--fast] "
             "[--quit-after <seconds>] [--out <dir>]\n");
         return 1;
     }

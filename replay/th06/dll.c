@@ -20,6 +20,10 @@
 // Starts the replay after this many frames on the title screen.
 #define REPLAY_START_DELAY 60
 
+// More than one 60 Hz frame, so every RunFrame runs one calc without
+// waiting for real time.
+#define FAST_CLOCK_STEP 17
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
 typedef int(__attribute__((thiscall)) * RUN_CALC_CHAIN_FN)(void *chain);
@@ -212,7 +216,10 @@ static void M_Attach(void)
         TerminateProcess(GetCurrentProcess(), 1);
     }
     M_Patch(Overlay_Install(game, work));
-    if (!Clock_Install(GetModuleHandleW(nullptr))) {
+    wchar_t fast[4];
+    const uint32_t step =
+        M_GetEnv(L"TH06CAPTURE_FAST", fast, 4) ? FAST_CLOCK_STEP : 0;
+    if (!Clock_Install(GetModuleHandleW(nullptr), step)) {
         LOG_ERROR("timeGetTime is not imported");
         TerminateProcess(GetCurrentProcess(), 1);
     }
