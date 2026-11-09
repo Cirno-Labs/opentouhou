@@ -3,6 +3,7 @@
 # the unported modules instead.
 th06_lib = static_library(
   'th06_lib',
+  'angle.c',
   'buttons.c',
   'chain.c',
   'files.c',
