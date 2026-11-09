@@ -58,6 +58,18 @@ test(
 )
 
 test(
+  'th06/game_manager',
+  executable(
+    'test_th06_game_manager',
+    'test_th06_game_manager.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th06/scene',
   executable(
     'test_th06_scene',

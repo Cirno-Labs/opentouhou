@@ -9,6 +9,7 @@ th06_lib = static_library(
   'chain.c',
   'files.c',
   'game.c',
+  'game_manager/chain.c',
   'scene.c',
   'timer.c',
   c_args: [layer_include['th06']],

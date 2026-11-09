@@ -1,5 +1,6 @@
 #include "th06/game.h"
 
+#include "th06/game_manager.h"
 #include "th06/scene.h"
 
 #include "core/base/log.h"
@@ -11,6 +12,7 @@ TH06_INPUT g_Input;
 RESULT Game_Init(void)
 {
     Chain_Init(&g_Chain);
+    GameManager_Create(&g_GameManager);
     return Scene_Register();
 }
 
