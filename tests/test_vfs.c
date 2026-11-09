@@ -53,6 +53,16 @@ static RESULT M_Open(
     return OK;
 }
 
+static void M_List(
+    const VFS_SOURCE *const source,
+    void (*const visit)(void *user, const char *path), void *const user)
+{
+    const FAKE_SOURCE *const fake = (const FAKE_SOURCE *)source;
+    for (int32_t i = 0; i < fake->count; i++) {
+        visit(user, fake->entries[i].path);
+    }
+}
+
 static void M_Close(VFS_SOURCE *const source)
 {
     FAKE_SOURCE *const fake = (FAKE_SOURCE *)source;
@@ -65,6 +75,7 @@ static void M_Close(VFS_SOURCE *const source)
 static const VFS_SOURCE_FUNCS M_Funcs = {
     .contains = M_Contains,
     .open = M_Open,
+    .list = M_List,
     .close = M_Close,
 };
 

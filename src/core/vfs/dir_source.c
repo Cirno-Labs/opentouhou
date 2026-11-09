@@ -1,5 +1,6 @@
 #include "core/vfs/dir_source.h"
 
+#include "core/base/array.h"
 #include "core/base/hash_map.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
@@ -15,10 +16,14 @@
 #define M_MAX_DEPTH 32
 
 typedef HASH_MAP(const char *, char *) DIR_ENTRIES;
+typedef ARRAY(char *) DIR_PATHS;
 
 typedef struct {
     VFS_SOURCE base;
     DIR_ENTRIES entries;
+    // The normalised paths, in the order they were recorded, so list can
+    // visit them without depending on the map's iteration order.
+    DIR_PATHS order;
     char *name;
     const ALLOCATOR *allocator;
 } DIR_SOURCE;
@@ -30,6 +35,11 @@ static void M_FreeEntries(DIR_SOURCE *const dir)
         Allocator_Free(dir->allocator, real_path, strlen(real_path) + 1);
     }
     HashMap_Free(&dir->entries);
+    for (int32_t i = 0; i < dir->order.count; i++) {
+        char *const path = dir->order.items[i];
+        Allocator_Free(dir->allocator, path, strlen(path) + 1);
+    }
+    Array_Free(&dir->order);
 }
 
 // Records real_path, which Path_Join returned, under vfs_path in the map,
@@ -47,9 +57,11 @@ static RESULT M_Record(
     }
     bool found;
     char **const slot = HashMap_GetOrPut(&dir->entries, normalized, &found);
-    Allocator_Free(dir->allocator, normalized, strlen(normalized) + 1);
     if (found) {
         Allocator_Free(dir->allocator, *slot, strlen(*slot) + 1);
+        Allocator_Free(dir->allocator, normalized, strlen(normalized) + 1);
+    } else {
+        Array_Append(&dir->order, normalized);
     }
     *slot = real_path;
     return OK;
@@ -126,6 +138,16 @@ static RESULT M_Open(
     return M_ReadWhole(*real_path, dir->allocator, out);
 }
 
+static void M_List(
+    const VFS_SOURCE *const source,
+    void (*const visit)(void *user, const char *path), void *const user)
+{
+    const DIR_SOURCE *const dir = (const DIR_SOURCE *)source;
+    for (int32_t i = 0; i < dir->order.count; i++) {
+        visit(user, dir->order.items[i]);
+    }
+}
+
 static void M_Close(VFS_SOURCE *const source)
 {
     DIR_SOURCE *const dir = (DIR_SOURCE *)source;
@@ -137,6 +159,7 @@ static void M_Close(VFS_SOURCE *const source)
 static const VFS_SOURCE_FUNCS M_Funcs = {
     .contains = M_Contains,
     .open = M_Open,
+    .list = M_List,
     .close = M_Close,
 };
 
@@ -151,6 +174,7 @@ RESULT DirSource_Create(
     dir->base.name = dir->name;
     dir->allocator = allocator;
     HashMap_Init(&dir->entries, allocator);
+    Array_Init(&dir->order, allocator);
 
     const RESULT result = M_Walk(dir, path, "", 0);
     if (!IS_OK(result)) {

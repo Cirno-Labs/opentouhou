@@ -1,5 +1,7 @@
 #include "core/vfs.h"
 
+#include "core/base/string.h"
+#include "core/vfs/dir_source.h"
 #include "test.h"
 #include "test_allocator.h"
 #include "test_dir.h"
@@ -59,6 +61,44 @@ TEST(nested_mixed_case_files_open_in_both_modes)
     Mem_Free(nested_file);
     Mem_Free(top_file);
     Mem_Free(sub);
+    Mem_Free(directory);
+}
+
+typedef struct {
+    char *paths[2];
+    int32_t count;
+} VISITED_PATHS;
+
+static void M_Visit(void *const user, const char *const path)
+{
+    VISITED_PATHS *const visited = (VISITED_PATHS *)user;
+    visited->paths[visited->count++] = Str_Dup(path);
+}
+
+TEST(listing_visits_the_recorded_paths_in_order)
+{
+    char *const directory = TestDir_Prepare("listed");
+    char *const first_file = TestDir_Join(directory, "Bgm.wav");
+    char *const second_file = TestDir_Join(directory, "Title00.jpg");
+    M_Create(first_file, "a song");
+    M_Create(second_file, "a title");
+
+    VFS_SOURCE *source;
+    CHECK(Result_Log(
+        DirSource_Create(directory, &g_HeapAllocator, &source),
+        LOG_LEVEL_ERROR));
+
+    VISITED_PATHS visited = { .count = 0 };
+    source->funcs->list(source, M_Visit, &visited);
+    CHECK_EQ_INT(visited.count, 2);
+    CHECK(strcmp(visited.paths[0], "bgm.wav") == 0);
+    CHECK(strcmp(visited.paths[1], "title00.jpg") == 0);
+    Mem_Free(visited.paths[0]);
+    Mem_Free(visited.paths[1]);
+
+    source->funcs->close(source);
+    Mem_Free(second_file);
+    Mem_Free(first_file);
     Mem_Free(directory);
 }
 

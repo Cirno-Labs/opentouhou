@@ -36,12 +36,16 @@ typedef struct VFS_SOURCE VFS_SOURCE;
 // The functions a mounted source implements. contains and open receive a
 // path the VFS has already normalised (core/vfs/vfs.c normalises every path
 // before it reaches a source), so a source only ever compares normalised
-// paths, never a path as a game gave it. close releases the source itself,
-// along with anything it holds.
+// paths, never a path as a game gave it. list calls visit with each path
+// the source has, in that normalised form and in the source's order. close
+// releases the source itself, along with anything it holds.
 typedef struct {
     bool (*contains)(const VFS_SOURCE *source, const char *path);
     RESULT (*open)(
         VFS_SOURCE *source, const char *path, VFS_MODE mode, READER *out);
+    void (*list)(
+        const VFS_SOURCE *source, void (*visit)(void *user, const char *path),
+        void *user);
     void (*close)(VFS_SOURCE *source);
 } VFS_SOURCE_FUNCS;
 

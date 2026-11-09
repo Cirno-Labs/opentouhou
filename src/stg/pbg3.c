@@ -243,6 +243,19 @@ static RESULT M_Open(
     return OK;
 }
 
+static void M_List(
+    const VFS_SOURCE *const source,
+    void (*const visit)(void *user, const char *path), void *const user)
+{
+    const PBG3_SOURCE *const pbg3 = (const PBG3_SOURCE *)source;
+    for (int32_t i = 0; i < pbg3->entries.count; i++) {
+        char *const name = Str_Dup(pbg3->entries.items[i].name);
+        M_FoldAscii(name);
+        visit(user, name);
+        Mem_Free(name);
+    }
+}
+
 static void M_Close(VFS_SOURCE *const source)
 {
     PBG3_SOURCE *const pbg3 = (PBG3_SOURCE *)source;
@@ -259,6 +272,7 @@ static void M_Close(VFS_SOURCE *const source)
 static const VFS_SOURCE_FUNCS M_Funcs = {
     .contains = M_Contains,
     .open = M_Open,
+    .list = M_List,
     .close = M_Close,
 };
 

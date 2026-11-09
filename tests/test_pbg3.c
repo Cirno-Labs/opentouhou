@@ -3,6 +3,7 @@
 #include "pbg3_builder.h"
 
 #include "core/base/cp932.h"
+#include "core/base/string.h"
 #include "test.h"
 #include "test_allocator.h"
 
@@ -349,6 +350,70 @@ TEST(a_cp932_name_is_converted_to_utf8)
     CHECK_EQ_INT(test.live_blocks, 0);
 }
 
+typedef struct {
+    char *names[2];
+    int32_t count;
+} VISITED_NAMES;
+
+static void M_Visit(void *const user, const char *const path)
+{
+    VISITED_NAMES *const visited = (VISITED_NAMES *)user;
+    visited->names[visited->count++] = Str_Dup(path);
+}
+
+TEST(listing_visits_entry_names_folded_in_table_order)
+{
+    char *cp932_bytes;
+    CHECK(Result_Log(
+        Cp932_Encode(
+            "\xe3\x81\x82.txt", strlen("\xe3\x81\x82.txt"), &cp932_bytes),
+        LOG_LEVEL_ERROR));
+
+    uint8_t compressed[16];
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'v');
+    Pbg3Builder_FlushByte(&bw);
+    memcpy(compressed, bw.bytes, bw.length);
+
+    const PBG3_BUILDER_ENTRY entries[2] = {
+        {
+            .name = "Title00.JPG",
+            .compressed = compressed,
+            .compressed_size = bw.length,
+            .checksum = Pbg3Builder_Checksum(compressed, bw.length),
+            .decoded_size = 1,
+        },
+        {
+            .name = cp932_bytes,
+            .compressed = compressed,
+            .compressed_size = bw.length,
+            .checksum = Pbg3Builder_Checksum(compressed, bw.length),
+            .decoded_size = 1,
+        },
+    };
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(entries, 2, archive);
+    Mem_Free(cp932_bytes);
+
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS_SOURCE *source;
+    CHECK(Result_Log(
+        M_Open(archive, size, &test.allocator, &source), LOG_LEVEL_ERROR));
+
+    VISITED_NAMES visited = { .count = 0 };
+    source->funcs->list(source, M_Visit, &visited);
+    CHECK_EQ_INT(visited.count, 2);
+    CHECK(strcmp(visited.names[0], "title00.jpg") == 0);
+    CHECK(strcmp(visited.names[1], "\xe3\x81\x82.txt") == 0);
+    Mem_Free(visited.names[0]);
+    Mem_Free(visited.names[1]);
+
+    source->funcs->close(source);
+    CHECK_EQ_INT(test.live_blocks, 0);
+}
+
 // A source that answers to one fixed path with raw bytes, standing in for
 // a mounted archive file so Vfs_MountFile has something to open as a
 // stream before handing it to Pbg3_Open.
@@ -373,6 +438,13 @@ static RESULT M_RawOpen(
     return OK;
 }
 
+static void M_RawList(
+    [[maybe_unused]] const VFS_SOURCE *const source,
+    [[maybe_unused]] void (*const visit)(void *user, const char *path),
+    [[maybe_unused]] void *const user)
+{
+}
+
 static void M_RawClose(VFS_SOURCE *const source)
 {
     RAW_FILE_SOURCE *const raw = (RAW_FILE_SOURCE *)source;
@@ -383,6 +455,7 @@ static void M_RawClose(VFS_SOURCE *const source)
 static const VFS_SOURCE_FUNCS M_RawFuncs = {
     .contains = M_RawContains,
     .open = M_RawOpen,
+    .list = M_RawList,
     .close = M_RawClose,
 };
 
