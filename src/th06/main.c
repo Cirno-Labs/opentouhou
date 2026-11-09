@@ -2,20 +2,22 @@
 
 #include "th06/buttons.h"
 #include "th06/files.h"
+#include "th06/game.h"
 
 static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
-    return OK;
+    return Game_Init();
 }
 
 static bool M_Tick(const void *const input, FRAME *const frame)
 {
-    return true;
+    return Game_Tick(input);
 }
 
 static void M_Shutdown(void)
 {
+    Game_Shutdown();
     Files_Shutdown();
 }
 
