@@ -11,6 +11,29 @@ test(
 )
 
 test(
+  'th06/anm',
+  executable(
+    'test_th06_anm',
+    'test_th06_anm.c',
+    'anm_builder.c',
+    'pbg3_builder.c',
+    'th06_data.c',
+    c_args: [layer_include['th06']] + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
+      core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_anm',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_anm',
+  },
+  suite: 'unit',
+)
+
+test(
   'th06/buttons',
   executable(
     'test_th06_buttons',
