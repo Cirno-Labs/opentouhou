@@ -13,9 +13,9 @@ typedef struct {
     bool right;
     bool skip;
     bool quit;
-    bool s;
-    bool home;
-    bool enter;
+    bool unlock_end;
+    bool unlock_start;
+    bool confirm;
 } TH06_INPUT;
 
 static const INPUT_ACTION m_Actions[] = {
@@ -39,9 +39,9 @@ static const INPUT_ACTION m_Actions[] = {
     INPUT_BUTTON(
         TH06_INPUT, skip, "left_ctrl, right_ctrl", "north", "joy_button_4"),
     INPUT_BUTTON(TH06_INPUT, quit, "q", nullptr, nullptr),
-    INPUT_BUTTON(TH06_INPUT, s, "s", nullptr, nullptr),
-    INPUT_BUTTON(TH06_INPUT, home, "home", nullptr, nullptr),
-    INPUT_BUTTON(TH06_INPUT, enter, "return", nullptr, nullptr),
+    INPUT_BUTTON(TH06_INPUT, unlock_end, "s", nullptr, nullptr),
+    INPUT_BUTTON(TH06_INPUT, unlock_start, "home", nullptr, nullptr),
+    INPUT_BUTTON(TH06_INPUT, confirm, "return", nullptr, nullptr),
 };
 static const INPUT_SCHEMA m_InputSchema =
     INPUT_SCHEMA_OF(TH06_INPUT, m_Actions, 1);
