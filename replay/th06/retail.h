@@ -224,3 +224,60 @@ typedef struct {
 static_assert(offsetof(RETAIL_BULLET_MANAGER, bullets) == 0x5600);
 static_assert(offsetof(RETAIL_BULLET_MANAGER, lasers) == 0xec000);
 #define RETAIL_BULLET_MANAGER_AT ((RETAIL_BULLET_MANAGER *)0x005a5ff8)
+
+// EnemyFlags::active, the first byte of Enemy::flags.
+#define RETAIL_ENEMY_FLAGS_ACTIVE 0x80
+
+// EnemyManager::enemies[i], one enemy.
+typedef struct {
+    uint8_t pad_0000[0xc6c];
+    RETAIL_VEC3 pos;
+    uint8_t pad_0c78[0x6c];
+    int32_t life;
+    uint8_t pad_0ce8[0x168];
+    uint8_t flags;
+    uint8_t pad_0e51[0x77];
+} RETAIL_ENEMY;
+static_assert(offsetof(RETAIL_ENEMY, pos) == 0xc6c);
+static_assert(offsetof(RETAIL_ENEMY, life) == 0xce4);
+static_assert(offsetof(RETAIL_ENEMY, flags) == 0xe50);
+static_assert(sizeof(RETAIL_ENEMY) == 0xec8);
+
+// g_EnemyManager at 0x4b79c8.
+typedef struct {
+    uint8_t pad_0000[0xed0];
+    RETAIL_ENEMY enemies[0x101];
+    uint8_t pad_0ee598[0x2c];
+    int32_t spell_card_capture;
+    int32_t spell_card_active;
+    int32_t spell_card_bonus;
+    int32_t spell_card_index;
+} RETAIL_ENEMY_MANAGER;
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, enemies) == 0xed0);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_capture) == 0xee5c4);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_active) == 0xee5c8);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_bonus) == 0xee5cc);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_index) == 0xee5d0);
+#define RETAIL_ENEMY_MANAGER_AT ((RETAIL_ENEMY_MANAGER *)0x004b79c8)
+
+// ItemManager::items[i], one item.
+typedef struct {
+    uint8_t pad_0000[0x110];
+    RETAIL_VEC3 pos;
+    uint8_t pad_011c[0x24];
+    uint8_t type;
+    uint8_t active;
+    uint8_t pad_0142[0x01];
+    uint8_t state;
+} RETAIL_ITEM;
+static_assert(offsetof(RETAIL_ITEM, pos) == 0x110);
+static_assert(offsetof(RETAIL_ITEM, type) == 0x140);
+static_assert(offsetof(RETAIL_ITEM, active) == 0x141);
+static_assert(offsetof(RETAIL_ITEM, state) == 0x143);
+static_assert(sizeof(RETAIL_ITEM) == 0x144);
+
+// g_ItemManager at 0x69e268.
+typedef struct {
+    RETAIL_ITEM items[0x201];
+} RETAIL_ITEM_MANAGER;
+#define RETAIL_ITEM_MANAGER_AT ((RETAIL_ITEM_MANAGER *)0x0069e268)

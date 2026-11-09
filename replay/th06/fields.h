@@ -42,7 +42,13 @@
     X(bullet_count, U32)                                                       \
     X(bullet_hash, HASH)                                                       \
     X(laser_count, U32)                                                        \
-    X(laser_hash, HASH)
+    X(laser_hash, HASH)                                                        \
+    X(spell_card, U32)                                                         \
+    X(spell_card_bonus, U32)                                                   \
+    X(enemy_count, U32)                                                        \
+    X(enemy_hash, HASH)                                                        \
+    X(item_count, U32)                                                         \
+    X(item_hash, HASH)
 
 // A HASH column folds one kind's live slots in slot order with Case_Hash,
 // from CASE_HASH_INIT: the slot index, then the values below as u32s, a
@@ -53,6 +59,8 @@
 //     angle, timer current, grazed.
 //   - laser: state, pos x y z, angle, start_offset, end_offset, timer
 //     current.
+//   - enemy: pos x y z, life.
+//   - item: type | state << 8, pos x y z.
 
 #define TH06_FIELD_ENUM(name, kind) TH06_START_##name,
 enum { TH06_START_FIELDS(TH06_FIELD_ENUM) TH06_START_COUNT };

@@ -88,6 +88,46 @@ static uint32_t M_HashLasers(
     return hash;
 }
 
+static uint32_t M_HashEnemies(
+    const RETAIL_ENEMY_MANAGER *enemies, uint32_t *count)
+{
+    uint32_t hash = CASE_HASH_INIT;
+    *count = 0;
+    for (uint32_t i = 0; i < ARRAY_SIZE(enemies->enemies); i++) {
+        const RETAIL_ENEMY *const enemy = &enemies->enemies[i];
+        if ((enemy->flags & RETAIL_ENEMY_FLAGS_ACTIVE) == 0) {
+            continue;
+        }
+        (*count)++;
+        hash = Case_Hash(hash, i);
+        hash = Case_Hash(hash, M_F32Bits(enemy->pos.x));
+        hash = Case_Hash(hash, M_F32Bits(enemy->pos.y));
+        hash = Case_Hash(hash, M_F32Bits(enemy->pos.z));
+        hash = Case_Hash(hash, (uint32_t)enemy->life);
+    }
+    return hash;
+}
+
+static uint32_t M_HashItems(const RETAIL_ITEM_MANAGER *items, uint32_t *count)
+{
+    uint32_t hash = CASE_HASH_INIT;
+    *count = 0;
+    for (uint32_t i = 0; i < ARRAY_SIZE(items->items); i++) {
+        const RETAIL_ITEM *const item = &items->items[i];
+        if (item->active == 0) {
+            continue;
+        }
+        (*count)++;
+        hash = Case_Hash(hash, i);
+        hash =
+            Case_Hash(hash, (uint32_t)item->type | (uint32_t)item->state << 8);
+        hash = Case_Hash(hash, M_F32Bits(item->pos.x));
+        hash = Case_Hash(hash, M_F32Bits(item->pos.y));
+        hash = Case_Hash(hash, M_F32Bits(item->pos.z));
+    }
+    return hash;
+}
+
 void State_Start(uint32_t row[TH06_START_COUNT])
 {
     const RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
@@ -144,4 +184,18 @@ void State_Calc(uint32_t row[TH06_CALC_COUNT])
     uint32_t laser_count;
     row[TH06_CALC_laser_hash] = M_HashLasers(bullets, &laser_count);
     row[TH06_CALC_laser_count] = laser_count;
+
+    const RETAIL_ENEMY_MANAGER *const enemies = RETAIL_ENEMY_MANAGER_AT;
+    row[TH06_CALC_spell_card] = (uint8_t)enemies->spell_card_active
+        | (uint8_t)enemies->spell_card_capture << 8
+        | (uint16_t)enemies->spell_card_index << 16;
+    row[TH06_CALC_spell_card_bonus] = (uint32_t)enemies->spell_card_bonus;
+    uint32_t enemy_count;
+    row[TH06_CALC_enemy_hash] = M_HashEnemies(enemies, &enemy_count);
+    row[TH06_CALC_enemy_count] = enemy_count;
+
+    const RETAIL_ITEM_MANAGER *const items = RETAIL_ITEM_MANAGER_AT;
+    uint32_t item_count;
+    row[TH06_CALC_item_hash] = M_HashItems(items, &item_count);
+    row[TH06_CALC_item_count] = item_count;
 }
