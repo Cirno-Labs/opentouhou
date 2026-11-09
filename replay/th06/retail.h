@@ -128,3 +128,37 @@ typedef struct {
     uint8_t lives;
     uint8_t bombs;
 } RETAIL_REPLAY_STAGE;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} RETAIL_VEC3;
+
+// Player::bullets[i], a shot of the player's own fire.
+typedef struct {
+    uint8_t pad_0000[0x110];
+    RETAIL_VEC3 pos;
+    uint8_t pad_011c[0x30];
+    int16_t damage;
+    int16_t state;
+    uint8_t pad_0150[0x08];
+} RETAIL_PLAYER_BULLET;
+static_assert(offsetof(RETAIL_PLAYER_BULLET, pos) == 0x110);
+static_assert(offsetof(RETAIL_PLAYER_BULLET, damage) == 0x14c);
+static_assert(offsetof(RETAIL_PLAYER_BULLET, state) == 0x14e);
+static_assert(sizeof(RETAIL_PLAYER_BULLET) == 0x158);
+
+// g_Player at 0x6ca628.
+typedef struct {
+    uint8_t pad_0000[0x440];
+    RETAIL_VEC3 position;
+    uint8_t pad_044c[0x594];
+    int8_t player_state;
+    uint8_t pad_09e1[0x47];
+    RETAIL_PLAYER_BULLET bullets[0x50];
+} RETAIL_PLAYER;
+static_assert(offsetof(RETAIL_PLAYER, position) == 0x440);
+static_assert(offsetof(RETAIL_PLAYER, player_state) == 0x9e0);
+static_assert(offsetof(RETAIL_PLAYER, bullets) == 0xa28);
+#define RETAIL_PLAYER_AT ((RETAIL_PLAYER *)0x006ca628)

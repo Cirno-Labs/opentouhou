@@ -33,7 +33,18 @@
     X(sub_rank, I32)                                                           \
     X(next_extend, U32)                                                        \
     X(rng_seed, U32)                                                           \
-    X(rng_generated, U32)
+    X(rng_generated, U32)                                                      \
+    X(player_x, F32)                                                           \
+    X(player_y, F32)                                                           \
+    X(player_state, U32)                                                       \
+    X(shot_count, U32)                                                         \
+    X(shot_hash, HASH)
+
+// A HASH column folds one kind's live slots in slot order with Case_Hash,
+// from CASE_HASH_INIT: the slot index, then the values below as u32s, a
+// float as its bits.
+//
+//   - shot: state | damage << 16, pos x, pos y, pos z.
 
 #define TH06_FIELD_ENUM(name, kind) TH06_START_##name,
 enum { TH06_START_FIELDS(TH06_FIELD_ENUM) TH06_START_COUNT };

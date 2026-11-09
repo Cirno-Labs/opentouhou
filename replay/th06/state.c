@@ -1,6 +1,40 @@
 #include "state.h"
 
+#include "../core/case.h"
 #include "retail.h"
+
+#include "core/base/utils.h"
+
+#include <string.h>
+
+static uint32_t M_F32Bits(float value)
+{
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    return bits;
+}
+
+static uint32_t M_HashShots(const RETAIL_PLAYER *player, uint32_t *count)
+{
+    uint32_t hash = CASE_HASH_INIT;
+    *count = 0;
+    for (uint32_t i = 0; i < ARRAY_SIZE(player->bullets); i++) {
+        const RETAIL_PLAYER_BULLET *const bullet = &player->bullets[i];
+        if (bullet->state == 0) {
+            continue;
+        }
+        (*count)++;
+        hash = Case_Hash(hash, i);
+        hash = Case_Hash(
+            hash,
+            (uint32_t)(uint16_t)bullet->state
+                | (uint32_t)(uint16_t)bullet->damage << 16);
+        hash = Case_Hash(hash, M_F32Bits(bullet->pos.x));
+        hash = Case_Hash(hash, M_F32Bits(bullet->pos.y));
+        hash = Case_Hash(hash, M_F32Bits(bullet->pos.z));
+    }
+    return hash;
+}
 
 void State_Start(uint32_t row[TH06_START_COUNT])
 {
@@ -41,4 +75,13 @@ void State_Calc(uint32_t row[TH06_CALC_COUNT])
     row[TH06_CALC_next_extend] = (uint8_t)game->next_extend;
     row[TH06_CALC_rng_seed] = RETAIL_RNG_AT->seed;
     row[TH06_CALC_rng_generated] = (uint32_t)RETAIL_RNG_AT->generated;
+
+    const RETAIL_PLAYER *const player = RETAIL_PLAYER_AT;
+    uint32_t shot_count;
+    const uint32_t shot_hash = M_HashShots(player, &shot_count);
+    row[TH06_CALC_player_x] = M_F32Bits(player->position.x);
+    row[TH06_CALC_player_y] = M_F32Bits(player->position.y);
+    row[TH06_CALC_player_state] = (uint8_t)player->player_state;
+    row[TH06_CALC_shot_count] = shot_count;
+    row[TH06_CALC_shot_hash] = shot_hash;
 }
