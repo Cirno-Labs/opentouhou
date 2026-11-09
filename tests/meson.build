@@ -65,6 +65,7 @@ test(
     'test_th06_files',
     'test_th06_files.c',
     'pbg3_builder.c',
+    'th06_data.c',
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
     link_with: [
