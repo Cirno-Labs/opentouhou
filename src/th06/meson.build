@@ -8,6 +8,7 @@ th06_lib = static_library(
   'files.c',
   'game.c',
   'scene.c',
+  'timer.c',
   c_args: [layer_include['th06']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],

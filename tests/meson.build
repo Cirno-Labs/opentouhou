@@ -36,6 +36,18 @@ test(
 )
 
 test(
+  'th06/timer',
+  executable(
+    'test_th06_timer',
+    'test_th06_timer.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th06/files',
   executable(
     'test_th06_files',
