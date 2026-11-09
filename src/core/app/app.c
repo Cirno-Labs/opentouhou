@@ -4,6 +4,7 @@
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/config.h"
 #include "core/ini.h"
 #include "core/io/path.h"
@@ -15,6 +16,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_opengl.h>
+
+#include <string.h>
 
 #define MAX_TICKS_PER_FRAME 4
 
@@ -41,6 +44,8 @@ struct APP_CONTEXT {
     // Holds g_GameDesc.input_schema->players input structs, one after
     // another.
     void *input_buffer;
+    // Holds the directory with the original game's data.
+    char *data_dir;
     // Holds config.ini's path, or nullptr when the user directory could
     // not be found.
     char *ini_path;
@@ -98,8 +103,33 @@ static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
     return OK;
 }
 
-static RESULT M_Init(APP_CONTEXT *const ctx)
+static RESULT M_ParseDataDir(
+    const int argc, char *const argv[], char **const out)
 {
+    *out = nullptr;
+    for (int i = 1; i < argc; i++) {
+        FAIL_IF(
+            strcmp(argv[i], "--data") != 0, "Unknown argument: %s", argv[i]);
+        FAIL_IF(i + 1 >= argc, "--data needs a directory");
+        FAIL_IF(*out != nullptr, "--data is given twice");
+        *out = Str_Dup(argv[++i]);
+    }
+    if (*out == nullptr) {
+        const char *const exe_dir = Path_GetExeDir();
+        FAIL_IF(exe_dir == nullptr, "Cannot find the executable's directory");
+        *out = Str_Dup(exe_dir);
+    }
+    return OK;
+}
+
+const char *App_GetDataDir(void)
+{
+    return m_Context.data_dir;
+}
+
+static RESULT M_Init(APP_CONTEXT *const ctx, const int argc, char *const argv[])
+{
+    MUST(M_ParseDataDir(argc, argv, &ctx->data_dir));
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
@@ -138,8 +168,9 @@ static RESULT M_Init(APP_CONTEXT *const ctx)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    return Result_Log(M_Init(&m_Context), LOG_LEVEL_ERROR) ? SDL_APP_CONTINUE
-                                                           : SDL_APP_FAILURE;
+    return Result_Log(M_Init(&m_Context, argc, argv), LOG_LEVEL_ERROR)
+        ? SDL_APP_CONTINUE
+        : SDL_APP_FAILURE;
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
@@ -202,6 +233,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
         Ini_Free(ctx->ini);
     }
     Mem_Free(ctx->ini_path);
+    Mem_Free(ctx->data_dir);
     if (ctx->input_buffer != nullptr) {
         Allocator_Free(
             &g_HeapAllocator, ctx->input_buffer,
