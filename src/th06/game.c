@@ -6,6 +6,7 @@
 #include "core/base/log.h"
 
 CHAIN g_Chain;
+RNG g_Rng;
 BUTTONS g_Buttons;
 TH06_INPUT g_Input;
 

@@ -75,9 +75,22 @@ test(
     'test_th06_scene',
     'test_th06_scene.c',
     'th06_scene_stubs.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [th06_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'th06/screen_effect',
+  executable(
+    'test_th06_screen_effect',
+    'test_th06_screen_effect.c',
+    'th06_scene_stubs.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, stg_rng_lib, core_math_lib, core_base_lib],
   ),
   suite: 'unit',
 )

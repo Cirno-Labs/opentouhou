@@ -11,6 +11,7 @@ th06_lib = static_library(
   'game.c',
   'game_manager/chain.c',
   'scene.c',
+  'screen_effect.c',
   'timer.c',
   c_args: [layer_include['th06']],
   implicit_include_directories: false,

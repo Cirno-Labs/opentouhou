@@ -4,7 +4,11 @@
 #include "th06/buttons.h"
 #include "th06/chain.h"
 
+#include "stg/rng.h"
+
 extern CHAIN g_Chain;
+// Draws all of the gameplay randomness.
+extern RNG g_Rng;
 extern BUTTONS g_Buttons;
 // Set by Game_Tick to the input the current tick runs with.
 extern TH06_INPUT g_Input;
