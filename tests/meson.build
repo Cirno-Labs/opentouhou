@@ -10,6 +10,18 @@ test(
   suite: 'unit',
 )
 
+test(
+  'stg/rng',
+  executable(
+    'test_rng',
+    'test_rng.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_rng_lib],
+  ),
+  suite: 'unit',
+)
+
 # The replay test case format lives in replay/core, outside the game layers.
 replay_include = ['-I' + meson.current_source_dir() / '../replay/core']
 

@@ -144,9 +144,9 @@ Two rules hold across modules:
 - Text is UTF-8 everywhere. Shift-JIS exists only when original data is
   read or original-format files are written.
 
-`stg` holds ZUN's archive formats, the ANM sprite engine, MSG dialogue,
-the ECL script VM, the gameplay managers and the original file formats,
-as far as games share them. Each `src/thXX/` holds that game's
+`stg` holds ZUN's archive formats, the random number generator, the ANM
+sprite engine, MSG dialogue, the ECL script VM, the gameplay managers
+and the original file formats, as far as games share them. Each `src/thXX/` holds that game's
 `GAME_DESC`, scenes, rules, tables and features.
 
 ## Data, saves and config

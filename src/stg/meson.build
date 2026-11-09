@@ -9,8 +9,15 @@ stg_pbg3_lib = static_library(
   implicit_include_directories: false,
 )
 
+stg_rng_lib = static_library(
+  'stg_rng',
+  'rng.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+)
+
 stg_dep = declare_dependency(
   compile_args: [layer_include['stg']],
-  link_with: [stg_pbg3_lib],
+  link_with: [stg_pbg3_lib, stg_rng_lib],
   dependencies: [core_dep],
 )
