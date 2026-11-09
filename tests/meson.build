@@ -1,4 +1,16 @@
 test(
+  'th06/buttons',
+  executable(
+    'test_th06_buttons',
+    'test_th06_buttons.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th06/chain',
   executable(
     'test_th06_chain',

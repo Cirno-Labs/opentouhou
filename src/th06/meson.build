@@ -1,6 +1,7 @@
 # Everything but main.c, so the replay runner and the tests link it too.
 th06_lib = static_library(
   'th06_lib',
+  'buttons.c',
   'chain.c',
   'files.c',
   c_args: [layer_include['th06']],
