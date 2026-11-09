@@ -1,7 +1,9 @@
 #include "../core/clock.h"
 #include "../core/overlay.h"
 #include "../core/patch.h"
+#include "fields.h"
 #include "retail.h"
+#include "state.h"
 
 #include "core/base/log.h"
 #include "core/base/result.h"
@@ -51,34 +53,16 @@ static void M_OpenCase(void)
         return;
     }
 
-    const RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
-    const char *start_names[] = {
-        "difficulty", "character", "shot_type", "stage",    "lives",
-        "bombs",      "power",     "score",     "rng_seed", "rank",
-    };
-    const uint32_t start_row[] = {
-        (uint32_t)game->difficulty,
-        game->character,
-        game->shot_type,
-        (uint32_t)game->stage,
-        (uint8_t)game->lives,
-        (uint8_t)game->bombs,
-        game->power,
-        game->score,
-        RETAIL_RNG_SEED,
-        (uint32_t)game->rank,
-    };
-    const char *calc_names[] = {
-        "buttons", "calc",  "stage", "stage_frames", "score",
-        "lives",   "bombs", "power", "rng_seed",     "is_playing",
-    };
+    const char *start_names[] = { TH06_START_NAMES };
+    uint32_t start_row[TH06_START_COUNT];
+    State_Start(start_row);
+    const char *calc_names[] = { TH06_CALC_NAMES };
     const CASE_HEADER header = {
         .game_id = "th06",
         .info = "th06 1.02h",
         .start_names = { .items = start_names,
                          .count = ARRAY_SIZE(start_names) },
-        .start = { .items = (uint32_t *)start_row,
-                   .count = ARRAY_SIZE(start_row) },
+        .start = { .items = start_row, .count = ARRAY_SIZE(start_row) },
         .calc_names = { .items = calc_names, .count = ARRAY_SIZE(calc_names) },
     };
     m_Case = Case_OpenWriter(&m_CaseFile, &header);
@@ -88,14 +72,8 @@ static void M_OpenCase(void)
 
 static void M_WriteCaseRow(void)
 {
-    const RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
-    const uint32_t row[] = {
-        RETAIL_BUTTONS,        m_CaseRows,
-        (uint32_t)game->stage, (uint32_t)game->stage_frames,
-        game->score,           (uint8_t)game->lives,
-        (uint8_t)game->bombs,  game->power,
-        RETAIL_RNG_SEED,       game->is_playing,
-    };
+    uint32_t row[TH06_CALC_COUNT];
+    State_Calc(row);
     Case_WriteRow(m_Case, row);
     m_CaseRows++;
 }

@@ -30,27 +30,41 @@ typedef int(__cdecl *RETAIL_CALLBACK)(void *arg);
 #define RETAIL_FREE ((void(__cdecl *)(void *data))0x0045baed)
 #define RETAIL_LAST_FILE_SIZE (*(int32_t *)0x0069d914)
 
-// Rng's seed, g_Random at 0x69d8f8.
-#define RETAIL_RNG_SEED (*(uint16_t *)0x0069d8f8)
 // The held buttons, g_Buttons at 0x69d904.
 #define RETAIL_BUTTONS (*(uint16_t *)0x0069d904)
 
+// g_Random at 0x69d8f8.
 typedef struct {
-    uint8_t pad_0000[0x04];
+    uint16_t seed;
+    uint8_t pad_02[0x02];
+    int32_t generated;
+} RETAIL_RNG;
+static_assert(offsetof(RETAIL_RNG, generated) == 0x04);
+#define RETAIL_RNG_AT ((RETAIL_RNG *)0x0069d8f8)
+
+typedef struct {
+    uint32_t gui_score;
     uint32_t score;
     uint8_t pad_0008[0x08];
     int32_t difficulty;
-    uint8_t pad_0014[0x08];
+    int32_t graze;
+    uint8_t pad_0018[0x04];
     uint32_t is_in_replay;
-    uint8_t pad_0020[0x17f0];
+    uint8_t pad_0020[0x0c];
+    int8_t is_frozen;
+    uint8_t pad_002d[0x17e3];
     uint16_t power;
-    uint8_t pad_1812[0x08];
+    uint8_t pad_1812[0x02];
+    uint16_t point_items;
+    uint8_t pad_1816[0x03];
+    int8_t power_item_combo;
     int8_t lives;
     int8_t bombs;
-    uint8_t pad_181c[0x01];
+    int8_t next_extend;
     uint8_t character;
     uint8_t shot_type;
-    uint8_t pad_181f[0x02];
+    uint8_t is_paused;
+    uint8_t is_in_continue_menu;
     uint8_t is_playing;
     uint8_t pad_1822[0x02];
     uint8_t is_in_demo;
@@ -61,18 +75,28 @@ typedef struct {
     int32_t stage;
     uint8_t pad_1a38[0x38];
     int32_t rank;
+    uint8_t pad_1a74[0x08];
+    int32_t sub_rank;
 } RETAIL_GAME_MANAGER;
 static_assert(offsetof(RETAIL_GAME_MANAGER, score) == 0x04);
+static_assert(offsetof(RETAIL_GAME_MANAGER, graze) == 0x14);
 static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_replay) == 0x1c);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_frozen) == 0x2c);
 static_assert(offsetof(RETAIL_GAME_MANAGER, power) == 0x1810);
+static_assert(offsetof(RETAIL_GAME_MANAGER, point_items) == 0x1814);
+static_assert(offsetof(RETAIL_GAME_MANAGER, power_item_combo) == 0x1819);
 static_assert(offsetof(RETAIL_GAME_MANAGER, lives) == 0x181a);
+static_assert(offsetof(RETAIL_GAME_MANAGER, next_extend) == 0x181c);
 static_assert(offsetof(RETAIL_GAME_MANAGER, character) == 0x181d);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_paused) == 0x181f);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_continue_menu) == 0x1820);
 static_assert(offsetof(RETAIL_GAME_MANAGER, is_playing) == 0x1821);
 static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_demo) == 0x1824);
 static_assert(offsetof(RETAIL_GAME_MANAGER, replay_file) == 0x182c);
 static_assert(offsetof(RETAIL_GAME_MANAGER, stage_frames) == 0x1a30);
 static_assert(offsetof(RETAIL_GAME_MANAGER, stage) == 0x1a34);
 static_assert(offsetof(RETAIL_GAME_MANAGER, rank) == 0x1a70);
+static_assert(offsetof(RETAIL_GAME_MANAGER, sub_rank) == 0x1a7c);
 
 typedef struct {
     uint8_t pad_0000[0x18c];

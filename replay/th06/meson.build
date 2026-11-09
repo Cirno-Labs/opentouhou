@@ -71,6 +71,7 @@ core_io_lib = static_library(
 shared_library(
   'th06capture',
   'dll.c',
+  'state.c',
   '../core/clock.c',
   '../core/iat.c',
   '../core/overlay.c',
