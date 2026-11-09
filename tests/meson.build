@@ -11,6 +11,26 @@ test(
 )
 
 test(
+  'th06/files',
+  executable(
+    'test_th06_files',
+    'test_th06_files.c',
+    'pbg3_builder.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_files',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_files',
+  },
+  suite: 'unit',
+)
+
+test(
   'stg/rng',
   executable(
     'test_rng',
@@ -186,6 +206,7 @@ test(
   executable(
     'test_pbg3',
     'test_pbg3.c',
+    'pbg3_builder.c',
     c_args: stg_include,
     implicit_include_directories: false,
     link_with: [stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib],

@@ -1,171 +1,12 @@
 #include "stg/pbg3.h"
 
+#include "pbg3_builder.h"
+
 #include "core/base/cp932.h"
 #include "test.h"
 #include "test_allocator.h"
 
 #include <string.h>
-
-// Builds a PBG3 archive byte for byte, to check the reader against bytes
-// whose layout is known, instead of trusting a second implementation of
-// the format.
-
-#define M_HEADER_VARINT_BYTES 4
-#define M_MAX_ARCHIVE_SIZE 65536
-
-typedef struct {
-    uint8_t bytes[M_MAX_ARCHIVE_SIZE];
-    size_t length;
-    uint32_t current;
-    int32_t bits;
-} BIT_WRITER;
-
-static void M_BitWriter_Init(BIT_WRITER *const bw)
-{
-    bw->length = 0;
-    bw->current = 0;
-    bw->bits = 0;
-}
-
-static void M_WriteBits(
-    BIT_WRITER *const bw, const uint32_t value, const int32_t count)
-{
-    for (int32_t i = count - 1; i >= 0; i--) {
-        bw->current = (bw->current << 1) | ((value >> i) & 1);
-        bw->bits++;
-        if (bw->bits == 8) {
-            bw->bytes[bw->length++] = (uint8_t)bw->current;
-            bw->current = 0;
-            bw->bits = 0;
-        }
-    }
-}
-
-static void M_FlushByte(BIT_WRITER *const bw)
-{
-    if (bw->bits > 0) {
-        bw->bytes[bw->length++] = (uint8_t)(bw->current << (8 - bw->bits));
-        bw->current = 0;
-        bw->bits = 0;
-    }
-}
-
-// Writes a varint using exactly byte_count bytes, so the caller can place a
-// value whose encoded size is known ahead of what the value turns out to
-// be, such as the header's table offset.
-static void M_WriteVarintN(
-    BIT_WRITER *const bw, const uint32_t value, const int32_t byte_count)
-{
-    M_WriteBits(bw, (uint32_t)(byte_count - 1), 2);
-    M_WriteBits(bw, value, byte_count * 8);
-}
-
-static void M_WriteVarint(BIT_WRITER *const bw, const uint32_t value)
-{
-    int32_t byte_count = 1;
-    while (byte_count < 4 && (value >> (byte_count * 8)) != 0) {
-        byte_count++;
-    }
-    M_WriteVarintN(bw, value, byte_count);
-}
-
-static void M_WriteName(BIT_WRITER *const bw, const char *const name)
-{
-    for (const unsigned char *c = (const unsigned char *)name; *c != '\0';
-         c++) {
-        M_WriteBits(bw, *c, 8);
-    }
-    M_WriteBits(bw, 0, 8);
-}
-
-static void M_WriteLiteral(BIT_WRITER *const bw, const uint8_t byte)
-{
-    M_WriteBits(bw, 1, 1);
-    M_WriteBits(bw, byte, 8);
-}
-
-// Writes a back-reference copying length bytes (3 to 18) starting at dict
-// index offset. dict[k] holds the (k - 1)th byte this stream has produced,
-// so offset is one more than the index of the byte to repeat.
-static void M_WriteBackref(
-    BIT_WRITER *const bw, const uint32_t offset, const uint32_t length)
-{
-    M_WriteBits(bw, 0, 1);
-    M_WriteBits(bw, offset, 13);
-    M_WriteBits(bw, length - 3, 4);
-}
-
-static void M_WriteStop(BIT_WRITER *const bw)
-{
-    M_WriteBits(bw, 0, 1);
-    M_WriteBits(bw, 0, 13);
-}
-
-static uint32_t M_Checksum(const uint8_t *const bytes, const size_t size)
-{
-    uint32_t sum = 0;
-    for (size_t i = 0; i < size; i++) {
-        sum += bytes[i];
-    }
-    return sum;
-}
-
-typedef struct {
-    const char *name;
-    const uint8_t *compressed;
-    size_t compressed_size;
-    uint32_t checksum;
-    uint32_t decoded_size;
-} BUILD_ENTRY;
-
-// Assembles a whole PBG3 archive from already-compressed entries: the
-// magic, a fixed-width header, each entry's compressed bytes back to back,
-// and the table. Returns the number of bytes written.
-static size_t M_BuildArchive(
-    const BUILD_ENTRY *const entries, const int32_t count, uint8_t *const out)
-{
-    const size_t header_bits = (2 + M_HEADER_VARINT_BYTES * 8) * 2;
-    const size_t header_size = (header_bits + 7) / 8;
-    const size_t data_start = 4 + header_size;
-
-    size_t offsets[64];
-    size_t cursor = data_start;
-    for (int32_t i = 0; i < count; i++) {
-        offsets[i] = cursor;
-        cursor += entries[i].compressed_size;
-    }
-    const uint32_t table_offset = (uint32_t)cursor;
-
-    memcpy(out, "PBG3", 4);
-    BIT_WRITER header;
-    M_BitWriter_Init(&header);
-    M_WriteVarintN(&header, (uint32_t)count, M_HEADER_VARINT_BYTES);
-    M_WriteVarintN(&header, table_offset, M_HEADER_VARINT_BYTES);
-    M_FlushByte(&header);
-    CHECK_EQ_INT(header.length, header_size);
-    memcpy(out + 4, header.bytes, header.length);
-
-    for (int32_t i = 0; i < count; i++) {
-        memcpy(
-            out + offsets[i], entries[i].compressed,
-            entries[i].compressed_size);
-    }
-
-    BIT_WRITER table;
-    M_BitWriter_Init(&table);
-    for (int32_t i = 0; i < count; i++) {
-        M_WriteVarint(&table, 0); // unk1
-        M_WriteVarint(&table, 0); // unk0
-        M_WriteVarint(&table, entries[i].checksum);
-        M_WriteVarint(&table, (uint32_t)offsets[i]);
-        M_WriteVarint(&table, entries[i].decoded_size);
-        M_WriteName(&table, entries[i].name);
-    }
-    M_FlushByte(&table);
-    memcpy(out + table_offset, table.bytes, table.length);
-
-    return table_offset + table.length;
-}
 
 static RESULT M_Open(
     const uint8_t *const bytes, const size_t size,
@@ -192,24 +33,24 @@ static bool M_ReadsAs(READER *const reader, const char *const expected)
 TEST(a_literal_only_entry_decodes)
 {
     uint8_t compressed[64];
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
     const char *const text = "hello";
     for (const char *c = text; *c != '\0'; c++) {
-        M_WriteLiteral(&bw, (uint8_t)*c);
+        Pbg3Builder_WriteLiteral(&bw, (uint8_t)*c);
     }
-    M_FlushByte(&bw);
+    Pbg3Builder_FlushByte(&bw);
     memcpy(compressed, bw.bytes, bw.length);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "hello.txt",
         .compressed = compressed,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(compressed, bw.length),
+        .checksum = Pbg3Builder_Checksum(compressed, bw.length),
         .decoded_size = 5,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -229,21 +70,22 @@ TEST(a_literal_only_entry_decodes)
 
 TEST(an_overlapping_back_reference_repeats_a_byte)
 {
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'A');
-    M_WriteBackref(&bw, 1, 8); // repeat dict[1] eight times, self-overlapping
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'A');
+    Pbg3Builder_WriteBackref(
+        &bw, 1, 8); // repeat dict[1] eight times, self-overlapping
+    Pbg3Builder_FlushByte(&bw);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "a.txt",
         .compressed = bw.bytes,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(bw.bytes, bw.length),
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
         .decoded_size = 9,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -263,23 +105,23 @@ TEST(an_overlapping_back_reference_repeats_a_byte)
 
 TEST(a_non_overlapping_back_reference_repeats_three_bytes)
 {
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'A');
-    M_WriteLiteral(&bw, 'B');
-    M_WriteLiteral(&bw, 'C');
-    M_WriteBackref(&bw, 1, 3); // repeat dict[1..3] once: "ABC"
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'A');
+    Pbg3Builder_WriteLiteral(&bw, 'B');
+    Pbg3Builder_WriteLiteral(&bw, 'C');
+    Pbg3Builder_WriteBackref(&bw, 1, 3); // repeat dict[1..3] once: "ABC"
+    Pbg3Builder_FlushByte(&bw);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "b.txt",
         .compressed = bw.bytes,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(bw.bytes, bw.length),
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
         .decoded_size = 6,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -300,21 +142,21 @@ TEST(a_non_overlapping_back_reference_repeats_three_bytes)
 TEST(a_wrong_checksum_fails)
 {
     uint8_t compressed[16];
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'x');
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'x');
+    Pbg3Builder_FlushByte(&bw);
     memcpy(compressed, bw.bytes, bw.length);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "x.txt",
         .compressed = compressed,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(compressed, bw.length) + 1,
+        .checksum = Pbg3Builder_Checksum(compressed, bw.length) + 1,
         .decoded_size = 1,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -334,21 +176,21 @@ TEST(a_wrong_checksum_fails)
 
 TEST(a_decoded_size_smaller_than_the_stream_produces_fails)
 {
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'a');
-    M_WriteLiteral(&bw, 'b');
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'a');
+    Pbg3Builder_WriteLiteral(&bw, 'b');
+    Pbg3Builder_FlushByte(&bw);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "y.txt",
         .compressed = bw.bytes,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(bw.bytes, bw.length),
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
         .decoded_size = 1, // the stream has 2 literal bytes
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -367,21 +209,21 @@ TEST(a_decoded_size_smaller_than_the_stream_produces_fails)
 
 TEST(a_decoded_size_larger_than_the_stream_produces_fails)
 {
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'a');
-    M_WriteStop(&bw);
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'a');
+    Pbg3Builder_WriteStop(&bw);
+    Pbg3Builder_FlushByte(&bw);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "z.txt",
         .compressed = bw.bytes,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(bw.bytes, bw.length),
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
         .decoded_size = 5, // the stream stops after 1 byte
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -400,20 +242,20 @@ TEST(a_decoded_size_larger_than_the_stream_produces_fails)
 
 TEST(a_truncated_table_fails)
 {
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'x');
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'x');
+    Pbg3Builder_FlushByte(&bw);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "x.txt",
         .compressed = bw.bytes,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(bw.bytes, bw.length),
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
         .decoded_size = 1,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     VFS_SOURCE *source;
     const RESULT result = M_Open(archive, size - 2, &g_HeapAllocator, &source);
@@ -434,21 +276,21 @@ TEST(a_bad_magic_fails)
 TEST(lookup_is_by_last_component_and_ignores_ascii_case)
 {
     uint8_t compressed[16];
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'v');
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'v');
+    Pbg3Builder_FlushByte(&bw);
     memcpy(compressed, bw.bytes, bw.length);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "Title00.jpg",
         .compressed = compressed,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(compressed, bw.length),
+        .checksum = Pbg3Builder_Checksum(compressed, bw.length),
         .decoded_size = 1,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
@@ -474,21 +316,21 @@ TEST(a_cp932_name_is_converted_to_utf8)
         LOG_LEVEL_ERROR));
 
     uint8_t compressed[16];
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'w');
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'w');
+    Pbg3Builder_FlushByte(&bw);
     memcpy(compressed, bw.bytes, bw.length);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = cp932_bytes,
         .compressed = compressed,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(compressed, bw.length),
+        .checksum = Pbg3Builder_Checksum(compressed, bw.length),
         .decoded_size = 1,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
     Mem_Free(cp932_bytes);
 
     TEST_ALLOCATOR test;
@@ -547,21 +389,21 @@ static const VFS_SOURCE_FUNCS M_RawFuncs = {
 TEST(mounting_through_vfs_mount_file_reads_an_entry)
 {
     uint8_t compressed[16];
-    BIT_WRITER bw;
-    M_BitWriter_Init(&bw);
-    M_WriteLiteral(&bw, 'q');
-    M_FlushByte(&bw);
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'q');
+    Pbg3Builder_FlushByte(&bw);
     memcpy(compressed, bw.bytes, bw.length);
 
-    const BUILD_ENTRY entry = {
+    const PBG3_BUILDER_ENTRY entry = {
         .name = "q.txt",
         .compressed = compressed,
         .compressed_size = bw.length,
-        .checksum = M_Checksum(compressed, bw.length),
+        .checksum = Pbg3Builder_Checksum(compressed, bw.length),
         .decoded_size = 1,
     };
-    uint8_t archive[M_MAX_ARCHIVE_SIZE];
-    const size_t size = M_BuildArchive(&entry, 1, archive);
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);

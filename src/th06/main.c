@@ -1,5 +1,7 @@
 #include "core/app.h"
 
+#include "th06/files.h"
+
 typedef struct {
     bool shoot;
     bool bomb;
@@ -46,6 +48,7 @@ static const INPUT_SCHEMA m_InputSchema =
 
 static RESULT M_Init(void)
 {
+    MUST(Files_Init(App_GetDataDir()));
     return OK;
 }
 
@@ -56,6 +59,7 @@ static bool M_Tick(const void *const input, FRAME *const frame)
 
 static void M_Shutdown(void)
 {
+    Files_Shutdown();
 }
 
 const GAME_DESC g_GameDesc = {
