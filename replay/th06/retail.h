@@ -162,3 +162,65 @@ static_assert(offsetof(RETAIL_PLAYER, position) == 0x440);
 static_assert(offsetof(RETAIL_PLAYER, player_state) == 0x9e0);
 static_assert(offsetof(RETAIL_PLAYER, bullets) == 0xa28);
 #define RETAIL_PLAYER_AT ((RETAIL_PLAYER *)0x006ca628)
+
+// BulletManager::bullets[i], one enemy bullet.
+typedef struct {
+    uint8_t pad_0000[0x560];
+    RETAIL_VEC3 pos;
+    RETAIL_VEC3 velocity;
+    uint8_t pad_0578[0x0c];
+    float speed;
+    uint8_t pad_0588[0x08];
+    float angle;
+    uint8_t pad_0594[0x10];
+    int32_t timer_current;
+    uint8_t pad_05a8[0x10];
+    uint16_t flags;
+    uint8_t pad_05ba[0x04];
+    uint16_t state;
+    uint8_t pad_05c0[0x03];
+    uint8_t grazed;
+} RETAIL_BULLET;
+static_assert(offsetof(RETAIL_BULLET, pos) == 0x560);
+static_assert(offsetof(RETAIL_BULLET, velocity) == 0x56c);
+static_assert(offsetof(RETAIL_BULLET, speed) == 0x584);
+static_assert(offsetof(RETAIL_BULLET, angle) == 0x590);
+static_assert(offsetof(RETAIL_BULLET, timer_current) == 0x5a4);
+static_assert(offsetof(RETAIL_BULLET, flags) == 0x5b8);
+static_assert(offsetof(RETAIL_BULLET, state) == 0x5be);
+static_assert(offsetof(RETAIL_BULLET, grazed) == 0x5c3);
+static_assert(sizeof(RETAIL_BULLET) == 0x5c4);
+
+// BulletManager::lasers[i], one enemy laser.
+typedef struct {
+    uint8_t pad_0000[0x220];
+    RETAIL_VEC3 pos;
+    float angle;
+    float start_offset;
+    float end_offset;
+    uint8_t pad_0238[0x20];
+    int32_t active;
+    uint8_t pad_025c[0x08];
+    int32_t timer_current;
+    uint8_t pad_0268[0x04];
+    uint8_t state;
+    uint8_t pad_026d[0x03];
+} RETAIL_LASER;
+static_assert(offsetof(RETAIL_LASER, pos) == 0x220);
+static_assert(offsetof(RETAIL_LASER, angle) == 0x22c);
+static_assert(offsetof(RETAIL_LASER, start_offset) == 0x230);
+static_assert(offsetof(RETAIL_LASER, end_offset) == 0x234);
+static_assert(offsetof(RETAIL_LASER, active) == 0x258);
+static_assert(offsetof(RETAIL_LASER, timer_current) == 0x264);
+static_assert(offsetof(RETAIL_LASER, state) == 0x26c);
+static_assert(sizeof(RETAIL_LASER) == 0x270);
+
+// g_BulletManager at 0x5a5ff8.
+typedef struct {
+    uint8_t pad_0000[0x5600];
+    RETAIL_BULLET bullets[0x280];
+    RETAIL_LASER lasers[0x40];
+} RETAIL_BULLET_MANAGER;
+static_assert(offsetof(RETAIL_BULLET_MANAGER, bullets) == 0x5600);
+static_assert(offsetof(RETAIL_BULLET_MANAGER, lasers) == 0xec000);
+#define RETAIL_BULLET_MANAGER_AT ((RETAIL_BULLET_MANAGER *)0x005a5ff8)
