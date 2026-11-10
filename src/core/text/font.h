@@ -16,4 +16,6 @@ RESULT TextFont_Load(READER *reader, float pixel_height, TEXT_FONT **out);
 
 // Opens the bundled BIZ UDGothic Bold font under the SIL Open Font License.
 RESULT TextFont_LoadDefault(float pixel_height, TEXT_FONT **out);
+// Changes the size from loaded font data without reading files.
+RESULT TextFont_SetSize(TEXT_FONT *font, float pixel_height);
 void TextFont_Free(TEXT_FONT *font);

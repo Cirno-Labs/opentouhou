@@ -134,3 +134,22 @@ TEST(measure_matches_glyph_bounds)
     TextFont_Free(font);
     Text_Shutdown();
 }
+
+TEST(resize_uses_loaded_font_data)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(15, &font)));
+    const TEXT_STYLE style = TextStyle_Default();
+    int32_t width, height;
+    CHECK(IS_OK(Text_Measure(font, "東方", &style, &width, &height)));
+    CHECK(IS_OK(TextFont_SetSize(font, 30)));
+    int32_t resized_width, resized_height;
+    CHECK(IS_OK(
+        Text_Measure(font, "東方", &style, &resized_width, &resized_height)));
+    CHECK(resized_width > width);
+    CHECK(resized_height > height);
+    CHECK(!Result_Ignore(TextFont_SetSize(font, NAN)));
+    TextFont_Free(font);
+    Text_Shutdown();
+}

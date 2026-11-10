@@ -75,6 +75,8 @@ static const char *const m_Faces[][M_FACE_COUNT] = {
     { "data/face01a.anm", "data/face01b.anm", "data/face01c.anm" },
 };
 
+static const uint32_t m_TextColors[GUI_MSG_SIDE_COUNT] = { 0xe8f0ff, 0xffe8f0 };
+
 static const int32_t m_StageFaceFirstSprites[M_STAGE_FACE_COUNT] = {
     0x4a8,
     0x4aa,
@@ -353,10 +355,16 @@ static void M_UpdateBossBar(void)
     }
 }
 
-static void M_UpdatePopup(GUI_POPUP *const popup, const int32_t frames)
+static void M_UpdatePopup(
+    GUI_POPUP *const popup, const int32_t frames, const bool slide)
 {
     if (!popup->shown) {
         return;
+    }
+    if (slide) {
+        popup->pos.x = popup->timer.current < 30
+            ? (float)popup->timer.current * -312.0f / 30.0f + 416.0f
+            : 104.0f;
     }
     if (popup->timer.current >= frames) {
         popup->shown = false;
@@ -434,9 +442,9 @@ static void M_UpdateInterface(void)
     if (g_Gui.loading.sprite >= 0 && Anm_Step(&g_Gui.loading)) {
         g_Gui.loading.sprite = -1;
     }
-    M_UpdatePopup(&g_Gui.popups.bonus, M_BONUS_POPUP_FRAMES);
-    M_UpdatePopup(&g_Gui.popups.full_power, M_FULL_POWER_POPUP_FRAMES);
-    M_UpdatePopup(&g_Gui.popups.spell_bonus, M_SPELL_BONUS_POPUP_FRAMES);
+    M_UpdatePopup(&g_Gui.popups.bonus, M_BONUS_POPUP_FRAMES, true);
+    M_UpdatePopup(&g_Gui.popups.full_power, M_FULL_POWER_POPUP_FRAMES, true);
+    M_UpdatePopup(&g_Gui.popups.spell_bonus, M_SPELL_BONUS_POPUP_FRAMES, false);
     if (g_Gui.stage_clear.state == GUI_STAGE_CLEAR_PENDING) {
         M_AddStageClearBonus();
     }
@@ -470,12 +478,19 @@ static void M_ShowLine(const M_INSTR *const instr)
 {
     if (instr->index == 0 && g_Gui.msg.lines[1].script_index >= 0) {
         g_Gui.msg.line_texts[1] = " ";
+        Result_Log(
+            Anm_RenderText(
+                &g_Gui.msg.lines[1], m_TextColors[instr->who], 0, "%s", " "),
+            LOG_LEVEL_WARNING);
     }
     ANM_VM *const line = &g_Gui.msg.lines[instr->index];
     Anm_StartScript(line, instr->index + M_LINE_SCRIPT);
     line->font_height = M_LINE_FONT_SIZE;
     line->font_width = line->font_height;
     g_Gui.msg.line_texts[instr->index] = instr->text;
+    Result_Log(
+        Anm_RenderText(line, m_TextColors[instr->who], 0, "%s", instr->text),
+        LOG_LEVEL_WARNING);
     g_Gui.msg.wait_frames = 0;
 }
 
@@ -550,11 +565,23 @@ static M_RUN M_RunInstrs(void)
             g_Gui.banners.song_name.font_width = M_SONG_FONT_SIZE;
             g_Gui.banners.song_name.font_height = M_SONG_FONT_SIZE;
             g_Gui.banners.song = instr->value;
+            if (instr->value >= 0 && instr->value < STAGE_SONG_COUNT
+                && g_Stage.data.song_names[instr->value] != nullptr) {
+                Result_Log(
+                    Anm_RenderTextRightAligned(
+                        &g_Gui.banners.song_name, 0xe0ffff, 0, "♪%s",
+                        g_Stage.data.song_names[instr->value]),
+                    LOG_LEVEL_WARNING);
+            }
             break;
         case M_OP_NAMEPLATE: {
             ANM_VM *const nameplate = &g_Gui.msg.nameplates[instr->index];
             Anm_StartScript(nameplate, instr->index + M_NAMEPLATE_SCRIPT);
             g_Gui.msg.nameplate_texts[instr->index] = instr->text;
+            Result_Log(
+                Anm_RenderTextRightAligned(
+                    nameplate, m_TextColors[instr->who], 0, "%s", instr->text),
+                LOG_LEVEL_WARNING);
             g_Gui.msg.wait_frames = 0;
             break;
         }
@@ -691,6 +718,20 @@ static void M_StartBanners(void)
     Anm_StartScript(&g_Gui.banners.song_name, M_SONG_NAME_SCRIPT);
     g_Gui.banners.song_name.font_width = M_SONG_FONT_SIZE;
     g_Gui.banners.song_name.font_height = M_SONG_FONT_SIZE;
+    if (g_Stage.data.name != nullptr) {
+        Result_Log(
+            Anm_RenderTextCentered(
+                &g_Gui.banners.stage_name, 0xe0ffff, 0, "%s",
+                g_Stage.data.name),
+            LOG_LEVEL_WARNING);
+    }
+    if (g_Stage.data.song_names[0] != nullptr) {
+        Result_Log(
+            Anm_RenderTextRightAligned(
+                &g_Gui.banners.song_name, 0xe0ffff, 0, "♪%s",
+                g_Stage.data.song_names[0]),
+            LOG_LEVEL_WARNING);
+    }
     g_Gui.banners.song = 0;
     g_Gui.msg.script = -1;
     g_Gui.stage_clear.state = GUI_STAGE_CLEAR_NONE;
@@ -832,6 +873,9 @@ void Gui_ShowBombName(const int32_t sprite, const char *const name)
     Anm_SetSprite(&g_Gui.banners.bomb_portrait, sprite);
     Anm_StartScript(&g_Gui.banners.bomb_name, M_BOMB_NAME_SCRIPT);
     g_Gui.banners.bomb_text = name;
+    Result_Log(
+        Anm_RenderText(&g_Gui.banners.bomb_name, 0xf0f0ff, 0, "%s", name),
+        LOG_LEVEL_WARNING);
     char *encoded = nullptr;
     const RESULT result = Cp932_Encode(name, strlen(name), &encoded);
     g_Gui.banners.bomb_width =
@@ -853,6 +897,10 @@ void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
         &g_Gui.banners.spell_portrait, sprite + M_SPELL_PORTRAIT_SPRITE);
     Anm_StartScript(&g_Gui.banners.spell_name, M_SPELL_NAME_SCRIPT);
     g_Gui.banners.spell_text = name;
+    Result_Log(
+        Anm_RenderTextRightAligned(
+            &g_Gui.banners.spell_name, 0xfff0f0, 0, "%s", name),
+        LOG_LEVEL_WARNING);
     char *encoded = nullptr;
     const RESULT result = Cp932_Encode(name, strlen(name), &encoded);
     g_Gui.banners.spell_width =
@@ -870,14 +918,17 @@ void Gui_EndSpellCardName(void)
 void Gui_ShowSpellCardBonus(const int32_t bonus)
 {
     M_ShowPopup(&g_Gui.popups.spell_bonus, bonus);
+    g_Gui.popups.spell_bonus.pos = (VEC3) { 224, 16, 0 };
 }
 
 void Gui_ShowBonusPopup(const int32_t bonus)
 {
     M_ShowPopup(&g_Gui.popups.bonus, bonus);
+    g_Gui.popups.bonus.pos = (VEC3) { 416, 32, 0 };
 }
 
 void Gui_ShowFullPowerPopup(void)
 {
     M_ShowPopup(&g_Gui.popups.full_power, 0);
+    g_Gui.popups.full_power.pos = (VEC3) { 416, 232, 0 };
 }

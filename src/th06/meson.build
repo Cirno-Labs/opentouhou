@@ -7,6 +7,7 @@ th06_lib = static_library(
   'anm/state.c',
   'anm/draw.c',
   'anm/texture.c',
+  'anm/text.c',
   'ascii/chain.c',
   'ascii/pause_menu.c',
   'ascii/text.c',

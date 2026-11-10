@@ -1,13 +1,18 @@
 #include "core/app.h"
 
 #include "th06/buttons.h"
+#include "th06/anm.h"
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 
+static bool m_GameInitialized;
+
 static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
+    MUST(Anm_InitText());
+    m_GameInitialized = true;
     MUST(Game_Init());
     g_AsciiText.capture_background = true;
     return OK;
@@ -20,7 +25,11 @@ static bool M_Tick(const void *const input)
 
 static void M_Shutdown(void)
 {
-    Game_Shutdown();
+    if (m_GameInitialized) {
+        Game_Shutdown();
+        m_GameInitialized = false;
+    }
+    Anm_ShutdownText();
     Files_Shutdown();
 }
 

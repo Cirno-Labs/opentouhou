@@ -1027,3 +1027,19 @@ TEST(gui_drawing_records_the_hud_and_dialogue_gradient)
     GfxRecorder_Stop();
     M_Teardown();
 }
+
+TEST(popups_slide_into_the_playfield_before_their_timer_advances)
+{
+    M_Setup("popup_slide");
+    Gui_ShowBonusPopup(100);
+    Gui_ShowFullPowerPopup();
+    CHECK(g_Gui.popups.bonus.pos.x == 416.0f);
+    CHECK(g_Gui.popups.bonus.pos.y == 32.0f);
+    CHECK(g_Gui.popups.full_power.pos.y == 232.0f);
+    M_Run(16);
+    CHECK(g_Gui.popups.bonus.pos.x == 260.0f);
+    CHECK(g_Gui.popups.full_power.pos.x == 260.0f);
+    M_Run(15);
+    CHECK(g_Gui.popups.bonus.pos.x == 104.0f);
+    M_Teardown();
+}

@@ -28,7 +28,7 @@ RESULT Anm_CreateTexture(
 void Anm_ReleaseTexture(int32_t slot);
 // Returns the texture without transferring ownership.
 GFX_TEXTURE *Anm_GetTexture(int32_t slot);
-// Replaces a texture rectangle with image pixels.
+// Replaces a texture rectangle with pixels quantized to its loaded format.
 RESULT Anm_UpdateTexture(int32_t slot, GFX_RECT rectangle, const IMAGE *image);
 
 RESULT Anm_LoadSurface(int32_t surface, const char *path);

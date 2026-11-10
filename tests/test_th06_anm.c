@@ -1,4 +1,5 @@
 #include "th06/anm.h"
+#include "th06/anm/private.h"
 
 #include "th06/files.h"
 #include "th06/timer.h"
@@ -832,4 +833,77 @@ TEST(sprite_changes_renew_only_the_presentation_lifetime)
     CHECK(vm.presentation_generation != first);
     CHECK_EQ_INT(m_Rng.generated, generated);
     M_Teardown(directory);
+}
+
+static int32_t M_FirstTextPixel(const IMAGE *const image, const int32_t row)
+{
+    for (int32_t x = 0; x < image->width; x++) {
+        for (int32_t y = row; y < row + 16; y++) {
+            if (image->pixels
+                    [((size_t)y * (size_t)image->width + (size_t)x) * 4 + 3]
+                > 32) {
+                return x;
+            }
+        }
+    }
+    return -1;
+}
+
+TEST(text_rows_align_cp932_and_preserve_other_rows)
+{
+    CHECK(IS_OK(Anm_InitText()));
+    CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
+    };
+    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
+    CHECK(IS_OK(Anm_RenderText(&vm, 0x001122ee, UINT32_MAX, "%s", "東")));
+    CHECK(vm.shown);
+    const IMAGE *const image = AnmTexture_GetImage(100);
+    const int32_t left = M_FirstTextPixel(image, 16);
+    CHECK(left >= 0 && left < 8);
+    CHECK_EQ_INT(M_FirstTextPixel(image, 0), -1);
+    bool colored = false;
+    for (int32_t i = 0; i < image->width * image->height; i++) {
+        const uint8_t *const pixel = image->pixels + (size_t)i * 4;
+        if (pixel[3] > 128) {
+            colored |= pixel[0] > pixel[1] && pixel[1] > pixel[2];
+        }
+    }
+    CHECK(colored);
+    CHECK(IS_OK(
+        Anm_RenderTextRightAligned(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
+    const int32_t right = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    CHECK(right - left >= 112 && right - left <= 114);
+    CHECK(IS_OK(Anm_RenderTextCentered(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
+    const int32_t center = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    CHECK(center - left >= 56 && center - left <= 58);
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, 0, "%s", " ")));
+    CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), -1);
+    Anm_ReleaseTexture(100);
+    Anm_ShutdownText();
+}
+
+TEST(headless_text_sets_shown_without_a_font_or_texture)
+{
+    const ANM_SPRITE sprite = { .slot = 100, .texture_width = 128 };
+    ANM_VM vm = { .sprite_data = &sprite };
+    CHECK(IS_OK(Anm_RenderTextCentered(&vm, 0xffffff, 0, "%s", "東方")));
+    CHECK(vm.shown);
+}
+
+TEST(texture_updates_keep_the_loaded_color_depth)
+{
+    CHECK(IS_OK(Anm_CreateTexture(100, 2, 2, ANM_TEXTURE_A4R4G4B4)));
+    IMAGE image = Image_Create(1, 1, &g_HeapAllocator);
+    memcpy(image.pixels, (uint8_t[]) { 128, 33, 245, 128 }, 4);
+    CHECK(IS_OK(Anm_UpdateTexture(100, (GFX_RECT) { 1, 1, 1, 1 }, &image)));
+    const uint8_t *const pixel = AnmTexture_GetImage(100)->pixels + 12;
+    CHECK_EQ_INT(pixel[0], 136);
+    CHECK_EQ_INT(pixel[1], 34);
+    CHECK_EQ_INT(pixel[2], 255);
+    CHECK_EQ_INT(pixel[3], 136);
+    CHECK_EQ_INT(image.pixels[0], 128);
+    Image_Free(&image);
+    Anm_ReleaseTexture(100);
 }

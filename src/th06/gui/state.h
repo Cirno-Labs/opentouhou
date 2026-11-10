@@ -37,6 +37,7 @@ typedef struct {
     bool shown;
     TIMER timer;
     int32_t value;
+    VEC3 pos;
 } GUI_POPUP;
 
 typedef struct {

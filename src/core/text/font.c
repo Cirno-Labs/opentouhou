@@ -65,6 +65,18 @@ RESULT TextFont_LoadDefault(const float pixel_height, TEXT_FONT **const out)
     return TextFont_Load(&reader, pixel_height, out);
 }
 
+RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
+{
+    FAIL_IF(
+        font == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
+            || pixel_height > 4096.0f,
+        "Invalid font size");
+    FAIL_IF(
+        !TTF_SetFontSize(font->font, pixel_height), "Cannot resize font: %s",
+        SDL_GetError());
+    return OK;
+}
+
 void TextFont_Free(TEXT_FONT *const font)
 {
     if (font != nullptr) {

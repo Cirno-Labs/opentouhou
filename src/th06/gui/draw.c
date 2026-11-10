@@ -283,31 +283,30 @@ static void M_DrawPopups(void)
     if (g_Gui.popups.bonus.shown) {
         AsciiText_SetColor(0xffffff80u);
         AsciiText_AddFormat(
-            (VEC3) { 416, 32, 0 }, "BONUS %8d", g_Gui.popups.bonus.value);
+            g_Gui.popups.bonus.pos, "BONUS %8d", g_Gui.popups.bonus.value);
         AsciiText_SetColor(0xffffffffu);
     }
     if (g_Gui.popups.full_power.shown) {
         AsciiText_SetColor(0xffc0b0ffu);
-        AsciiText_AddString((VEC3) { 416, 232, 0 }, "Full Power Mode!!");
+        AsciiText_AddString(g_Gui.popups.full_power.pos, "Full Power Mode!!");
         AsciiText_SetColor(0xffffffffu);
     }
     if (g_Gui.popups.spell_bonus.shown) {
         AsciiText_SetColor(0xffff0000u);
-        AsciiText_AddString(
-            (VEC3) { (384.0f - 16.0f * (float)strlen("Spell Card Bonus!"))
-                             / 2.0f
-                         + 32.0f,
-                     80, 0 },
-            "Spell Card Bonus!");
+        GUI_POPUP *const popup = &g_Gui.popups.spell_bonus;
+        popup->pos.x =
+            (384.0f - (float)strlen("Spell Card Bonus!") * 16.0f) / 2.0f
+            + 32.0f;
+        popup->pos.y = 80.0f;
+        AsciiText_AddString(popup->pos, "Spell Card Bonus!");
         char buffer[32];
         snprintf(buffer, sizeof(buffer), "+%d", g_Gui.popups.spell_bonus.value);
         g_AsciiText.scale_x = 2.0f;
         g_AsciiText.scale_y = 2.0f;
         AsciiText_SetColor(0xffff8080u);
-        AsciiText_AddString(
-            (VEC3) { (384.0f - (float)strlen(buffer) * 32.0f) / 2.0f + 32.0f,
-                     96, 0 },
-            buffer);
+        popup->pos.x = (384.0f - (float)strlen(buffer) * 32.0f) / 2.0f + 32.0f;
+        popup->pos.y += 16.0f;
+        AsciiText_AddString(popup->pos, buffer);
         g_AsciiText.scale_x = 1.0f;
         g_AsciiText.scale_y = 1.0f;
         AsciiText_SetColor(0xffffffffu);

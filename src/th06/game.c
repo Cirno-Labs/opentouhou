@@ -19,6 +19,7 @@ RESULT Game_Init(void)
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     MUST(Scene_Register());
+    MUST(Anm_Load(0, "data/text.anm", 0x700));
     return AsciiText_Register();
 }
 

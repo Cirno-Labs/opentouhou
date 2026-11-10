@@ -10,6 +10,7 @@
 typedef struct {
     GFX_TEXTURE *texture;
     IMAGE image;
+    ANM_TEXTURE_FORMAT format;
 } M_TEXTURE;
 
 static M_TEXTURE m_Textures[ANM_TEXTURE_COUNT];
@@ -28,6 +29,11 @@ static void M_Quantize(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
         break;
     case ANM_TEXTURE_A4R4G4B4:
         Image_Quantize(image, IMAGE_DEPTH_A4R4G4B4);
+        break;
+    case ANM_TEXTURE_RGB8:
+        for (int64_t i = 0; i < (int64_t)image->width * image->height; i++) {
+            image->pixels[i * 4 + 3] = 255;
+        }
         break;
     default:
         break;
@@ -48,7 +54,8 @@ static RESULT M_Decode(
     return OK;
 }
 
-static RESULT M_Store(const int32_t slot, IMAGE *const image)
+static RESULT M_Store(
+    const int32_t slot, IMAGE *const image, const ANM_TEXTURE_FORMAT format)
 {
     GFX_TEXTURE *texture = nullptr;
     const RESULT result = GfxTexture_Create(image, &texture);
@@ -57,7 +64,8 @@ static RESULT M_Store(const int32_t slot, IMAGE *const image)
         return result;
     }
     Anm_ReleaseTexture(slot);
-    m_Textures[slot] = (M_TEXTURE) { .texture = texture, .image = *image };
+    m_Textures[slot] =
+        (M_TEXTURE) { .texture = texture, .image = *image, .format = format };
     return OK;
 }
 
@@ -69,7 +77,7 @@ RESULT Anm_LoadTexture(
     IMAGE image;
     MUST(M_Decode(path, color_key, &image));
     M_Quantize(&image, format);
-    return M_Store(slot, &image);
+    return M_Store(slot, &image, format);
 }
 
 RESULT Anm_LoadTextureAlpha(
@@ -107,7 +115,7 @@ RESULT Anm_CreateTexture(
         "Invalid ANM texture dimensions");
     IMAGE image = Image_Create(width, height, &g_HeapAllocator);
     M_Quantize(&image, format);
-    return M_Store(slot, &image);
+    return M_Store(slot, &image, format);
 }
 
 void Anm_ReleaseTexture(const int32_t slot)
@@ -144,17 +152,29 @@ RESULT Anm_UpdateTexture(
             || (int64_t)rectangle.x + rectangle.width > texture->image.width
             || (int64_t)rectangle.y + rectangle.height > texture->image.height,
         "Invalid ANM texture update rectangle");
-    GfxTexture_Upload(texture->texture, rectangle, image);
+    IMAGE pixels = Image_Create(image->width, image->height, &g_HeapAllocator);
+    memcpy(
+        pixels.pixels, image->pixels,
+        (size_t)image->width * (size_t)image->height * 4);
+    M_Quantize(&pixels, texture->format);
+    GfxTexture_Upload(texture->texture, rectangle, &pixels);
     for (int32_t row = 0; row < image->height; row++) {
         memcpy(
             texture->image.pixels
                 + ((size_t)(rectangle.y + row) * (size_t)texture->image.width
                    + (size_t)rectangle.x)
                     * 4,
-            image->pixels + (size_t)row * (size_t)image->width * 4,
+            pixels.pixels + (size_t)row * (size_t)image->width * 4,
             (size_t)image->width * 4);
     }
+    Image_Free(&pixels);
     return OK;
+}
+
+const IMAGE *AnmTexture_GetImage(const int32_t slot)
+{
+    ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
+    return &m_Textures[slot].image;
 }
 
 RESULT AnmTexture_LoadSlot(READER *const reader, const int32_t slot)

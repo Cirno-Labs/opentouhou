@@ -111,3 +111,12 @@ RESULT AsciiText_Register(void)
 {
     return OK;
 }
+
+RESULT Anm_Load(
+    const int32_t slot, const char *const path, const int32_t first_sprite)
+{
+    CHECK_EQ_INT(slot, 0);
+    CHECK_EQ_STR(path, "data/text.anm");
+    CHECK_EQ_INT(first_sprite, 0x700);
+    return OK;
+}
