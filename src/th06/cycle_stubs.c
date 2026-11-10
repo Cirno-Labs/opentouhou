@@ -6,58 +6,6 @@
 #include "th06/ecl.h"
 #include "th06/enemy.h"
 #include "th06/gui.h"
-#include "th06/player.h"
-
-// player
-
-PLAYER g_Player;
-
-RESULT Player_Register(void)
-{
-    return OK;
-}
-
-void Player_Remove(void)
-{
-}
-
-float Player_AngleFrom(const VEC3 pos)
-{
-    return 0.0f;
-}
-
-float Player_AngleTo(const VEC3 pos)
-{
-    return 0.0f;
-}
-
-PLAYER_CONTACT Player_CheckHit(const VEC3 pos, const VEC3 size)
-{
-    return PLAYER_CONTACT_NONE;
-}
-
-PLAYER_CONTACT Player_CheckGraze(const VEC3 pos, const VEC3 size)
-{
-    return PLAYER_CONTACT_NONE;
-}
-
-void Player_CheckLaserHit(
-    const VEC3 pos, const VEC3 size, const VEC3 origin, const float angle,
-    const bool can_graze)
-{
-}
-
-bool Player_TouchesGrazeBox(const VEC3 pos, const VEC3 size)
-{
-    return false;
-}
-
-int32_t Player_CalcDamage(
-    const VEC3 pos, const VEC3 size, bool *const hit_by_bomb)
-{
-    *hit_by_bomb = false;
-    return 0;
-}
 
 // bomb
 
