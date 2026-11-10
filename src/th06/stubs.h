@@ -14,3 +14,6 @@ RESULT ResultScreen_Register(int32_t mode);
 RESULT MusicRoom_Register(void);
 RESULT Ending_Register(void);
 void Replay_Save(void);
+void ResultScreen_AddSpellCardAttempt(
+    int32_t index, const char *name, int32_t bonus);
+void ResultScreen_AddSpellCardCapture(int32_t index, int32_t shot_type);

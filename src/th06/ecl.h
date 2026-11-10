@@ -20,8 +20,9 @@ typedef struct ENEMY ENEMY;
 // Selects one of the pattern functions that an enemy script calls once
 // (opcode 121) or sets as the frame function of its state (opcode 122).
 // Scripts select a function by number, so the numbers are fixed. Only the
-// functions marked "frame" run as a frame function; the others read the
-// argument of the opcode.
+// functions marked "frame" run as a frame function. A frame function runs
+// without an opcode, so one that reads the argument of opcode 121 (0, 1,
+// 4, 7, 13 and 16) is fatal as a frame function.
 typedef enum {
     ECL_FUNC_NONE = -1,
     ECL_FUNC_FREEZE_BULLETS = 0, // stops the bullets, or sends them drifting
@@ -112,8 +113,10 @@ typedef struct {
 } ECL_TIMELINE_ENTRY;
 
 // Loads the enemy script file of g_GameManager.run.stage. A file whose
-// subroutine table, timeline or instructions run past its end, or that
-// names a subroutine it does not have, fails the load.
+// subroutine table, timeline or instructions run past its end, that names
+// a subroutine it does not have, that jumps to a position that is not an
+// instruction, or whose spell card names are not CP932 text, fails the
+// load.
 RESULT Ecl_Load(void);
 // Releases the file loaded by Ecl_Load.
 void Ecl_Release(void);

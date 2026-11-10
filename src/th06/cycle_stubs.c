@@ -2,7 +2,6 @@
 // modules that are can build and run their tests. Each module removes its
 // part when it lands.
 
-#include "th06/ecl.h"
 #include "th06/enemy.h"
 #include "th06/gui.h"
 
@@ -37,32 +36,6 @@ void Enemy_ReleaseOrbits(ENEMY *const enemy)
 
 void Enemy_KillAll(void)
 {
-}
-
-// ecl
-
-RESULT Ecl_Load(void)
-{
-    return OK;
-}
-
-void Ecl_Release(void)
-{
-}
-
-const ECL_TIMELINE_ENTRY *Ecl_GetTimeline(void)
-{
-    static const ECL_TIMELINE_ENTRY end = { .time = -1 };
-    return &end;
-}
-
-void Ecl_StartSub(ECL_STATE *const state, const int16_t sub)
-{
-}
-
-ECL_RUN Ecl_RunEnemy(ENEMY *const enemy)
-{
-    return ECL_RUN_CONTINUE;
 }
 
 // gui

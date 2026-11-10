@@ -41,3 +41,15 @@ void Replay_Save(void)
 {
     LOG_INFO("Replay_Save is not ported");
 }
+
+void ResultScreen_AddSpellCardAttempt(
+    const int32_t index, const char *const name, const int32_t bonus)
+{
+    LOG_INFO("ResultScreen_AddSpellCardAttempt is not ported");
+}
+
+void ResultScreen_AddSpellCardCapture(
+    const int32_t index, const int32_t shot_type)
+{
+    LOG_INFO("ResultScreen_AddSpellCardCapture is not ported");
+}

@@ -52,3 +52,20 @@ void Replay_Save(void)
 {
     g_SceneStubCalls.replay_save++;
 }
+
+void ResultScreen_AddSpellCardAttempt(
+    const int32_t index, const char *const name, const int32_t bonus)
+{
+    g_SceneStubCalls.spell_card_attempt++;
+    g_SceneStubCalls.spell_card_attempt_index = index;
+    g_SceneStubCalls.spell_card_attempt_name = name;
+    g_SceneStubCalls.spell_card_attempt_bonus = bonus;
+}
+
+void ResultScreen_AddSpellCardCapture(
+    const int32_t index, const int32_t shot_type)
+{
+    g_SceneStubCalls.spell_card_capture++;
+    g_SceneStubCalls.spell_card_capture_index = index;
+    g_SceneStubCalls.spell_card_capture_shot_type = shot_type;
+}

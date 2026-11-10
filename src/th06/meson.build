@@ -10,6 +10,7 @@ th06_lib = static_library(
   'buttons.c',
   'chain.c',
   'cycle_stubs.c',
+  'ecl.c',
   'effect.c',
   'files.c',
   'game.c',
