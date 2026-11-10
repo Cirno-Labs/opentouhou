@@ -26,11 +26,6 @@ RESULT Ending_Register(void)
     return OK;
 }
 
-void Replay_Save(void)
-{
-    LOG_INFO("Replay_Save is not ported");
-}
-
 void ResultScreen_AddSpellCardAttempt(
     const int32_t index, const char *const name, const int32_t bonus)
 {
@@ -41,17 +36,6 @@ void ResultScreen_AddSpellCardCapture(
     const int32_t index, const int32_t shot_type)
 {
     LOG_INFO("ResultScreen_AddSpellCardCapture is not ported");
-}
-
-RESULT Replay_Register(const int32_t mode, const char *const path)
-{
-    LOG_INFO("Replay_Register is not ported");
-    return OK;
-}
-
-void Replay_EndStage(void)
-{
-    LOG_INFO("Replay_EndStage is not ported");
 }
 
 void ResultScreen_LoadGameRecords(

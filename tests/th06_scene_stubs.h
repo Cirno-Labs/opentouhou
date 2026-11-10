@@ -14,7 +14,7 @@ typedef struct {
     int result_screen_register;
     int music_room_register;
     int ending_register;
-    int replay_save;
+    int replay_discard;
     int spell_card_attempt;
     int spell_card_capture;
     int32_t title_set_up_mode;

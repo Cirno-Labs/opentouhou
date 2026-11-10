@@ -2,6 +2,11 @@
 
 #include "core/base/result.h"
 
+// Runs stage setup, score counting, extends, demo timing and pause gating.
+// Score-file and ASCII interface work uses explicit stand-ins until
+// those modules are ported. Camera calculations run headless;
+// drawing and audio come with their presentation modules.
+
 // Adds the update element (priority 4) and draw element (priority 2).
 // Resets the stage frame count, advances the stage number and starts
 // the stage. Outside SCENE_NEXT_STAGE, also initializes a new game.

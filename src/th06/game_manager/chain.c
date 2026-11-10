@@ -11,6 +11,7 @@
 #include "th06/screen_effect.h"
 #include "th06/stage.h"
 #include "th06/stubs.h"
+#include "th06/replay.h"
 
 #include "core/io/reader.h"
 
@@ -143,7 +144,8 @@ static RESULT M_Added(void *const arg)
     bool replay_failed = false;
     if (gm->mode.in_replay) {
         replay_failed = !Result_Log(
-            Replay_Register(1, gm->mode.replay_path), LOG_LEVEL_ERROR);
+            Replay_Register(REPLAY_PLAY, gm->mode.replay_path),
+            LOG_LEVEL_ERROR);
         while (m_ExtendScores[gm->score.next_extend] <= gm->score.shown) {
             gm->score.next_extend++;
         }
@@ -160,7 +162,7 @@ static RESULT M_Added(void *const arg)
     MUST(Effect_Register(), "effects");
     MUST(Gui_Register(), "interface");
     if (!gm->mode.in_replay) {
-        Result_Ignore(Replay_Register(0, "replay/th6_00.rpy"));
+        Result_Ignore(Replay_Register(REPLAY_RECORD, "replay/th6_00.rpy"));
     }
     gm->mode.in_continue_menu = false;
     gm->mode.playing = true;
@@ -193,7 +195,7 @@ static CHAIN_STATUS M_Calc(void *const arg)
 {
     GAME_MANAGER *const gm = arg;
     if (gm->mode.in_demo) {
-        if (Buttons_ToWord(&g_Buttons.pressed) != 0) {
+        if (Buttons_WasPressed(&g_Buttons, 0xffff)) {
             Scene_Request(SCENE_TITLE);
         }
         gm->mode.demo_frames++;

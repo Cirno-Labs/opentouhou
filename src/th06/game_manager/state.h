@@ -6,11 +6,6 @@
 
 #include <stdint.h>
 
-// Runs stage setup, score counting, extends, demo timing and pause gating.
-// Replay, score-file and ASCII interface work uses explicit stand-ins
-// until those modules are ported. Camera calculations run headless;
-// drawing and audio come with their presentation modules.
-
 // A rectangle in play-area pixels.
 typedef struct {
     float x, y, width, height;
@@ -107,7 +102,6 @@ extern GAME_MANAGER g_GameManager;
 // Sets gm up for a new game: zeroed, with the play area at 32, 16,
 // 384 x 448.
 void GameManager_Create(GAME_MANAGER *gm);
-
 // Returns whether a box centred at x, y lies at least partly inside the
 // play area.
 bool GameManager_IsInPlayArea(float x, float y, float width, float height);

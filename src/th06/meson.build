@@ -20,6 +20,8 @@ th06_lib = static_library(
   'gui/gui.c',
   'item.c',
   'player.c',
+  'replay/chain.c',
+  'replay/format.c',
   'scene.c',
   'screen_effect.c',
   'stage.c',

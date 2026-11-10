@@ -1,6 +1,7 @@
 #include "th06_scene_stubs.h"
 
 #include "th06/stubs.h"
+#include "th06/replay.h"
 
 SCENE_STUB_CALLS g_SceneStubCalls;
 
@@ -48,9 +49,9 @@ RESULT Ending_Register(void)
     return OK;
 }
 
-void Replay_Save(void)
+void Replay_Discard(void)
 {
-    g_SceneStubCalls.replay_save++;
+    g_SceneStubCalls.replay_discard++;
 }
 
 void ResultScreen_AddSpellCardAttempt(

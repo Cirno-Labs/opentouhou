@@ -13,6 +13,7 @@
 #include "th06/screen_effect.h"
 #include "th06/stage.h"
 #include "th06/stubs.h"
+#include "th06/replay.h"
 
 #include "core/math/x87.h"
 
@@ -123,7 +124,7 @@ void AsciiText_Initialize(void)
     M_Event('A');
 }
 
-RESULT Replay_Register(const int32_t mode, const char *const path)
+RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
 {
     M_Event(mode == 1 ? 'R' : 'W');
     m_ReplayGenerated = g_Rng.generated;
@@ -410,7 +411,7 @@ TEST(demo_fades_then_returns_to_title_and_accepts_any_button)
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(m_Scene, SCENE_TITLE);
     m_Scene = SCENE_GAMEPLAY;
-    g_Buttons.pressed.confirm = true;
+    g_Buttons.word = 0x1000;
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(m_Scene, SCENE_TITLE);
 }
@@ -433,4 +434,15 @@ TEST(camera_uses_truncated_viewport_dimensions)
     g_GameManager.camera.zoom = 2.0f;
     GameManager_SetUpFixedCamera(0.0f);
     CHECK(memcmp(&fixed, &g_GameManager.camera.view, sizeof(fixed)) == 0);
+}
+
+TEST(demo_accepts_partial_release_of_the_whole_button_word)
+{
+    M_Setup();
+    g_GameManager.mode.in_demo = true;
+    M_Start();
+    g_Buttons.word = 1;
+    g_Buttons.previous_word = 3;
+    Chain_RunCalc(&g_Chain);
+    CHECK_EQ_INT(m_Scene, SCENE_TITLE);
 }

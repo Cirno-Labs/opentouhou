@@ -1,3 +1,17 @@
+foreach replay_test : ['replay', 'replay_format']
+  test(
+    'th06/' + replay_test,
+    executable(
+      'test_th06_' + replay_test,
+      'test_th06_' + replay_test + '.c',
+      c_args: [layer_include['th06']] + core_include + stg_include,
+      implicit_include_directories: false,
+      link_with: [th06_lib, stg_rng_lib, core_io_lib, core_base_lib],
+    ),
+    suite: 'unit',
+  )
+endforeach
+
 test(
   'th06/game_manager/chain',
   executable(

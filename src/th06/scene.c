@@ -3,6 +3,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/stubs.h"
+#include "th06/replay.h"
 
 static SCENE m_Current;
 static SCENE m_Requested;
@@ -60,7 +61,7 @@ static CHAIN_STATUS M_Switch(void)
             return CHAIN_QUIT;
         case SCENE_TITLE:
             GameManager_Remove();
-            Replay_Save();
+            Replay_Discard();
             return M_GoToTitle(0);
         case SCENE_GAME_RESULT:
             GameManager_Remove();
@@ -73,14 +74,14 @@ static CHAIN_STATUS M_Switch(void)
             }
             if (m_Requested == SCENE_TITLE) {
                 GameManager_Remove();
-                Replay_Save();
+                Replay_Discard();
                 return M_GoToTitle(0);
             }
             m_Requested = SCENE_GAMEPLAY;
             return CHAIN_CONTINUE;
         case SCENE_REPLAY_END:
             GameManager_Remove();
-            Replay_Save();
+            Replay_Discard();
             m_Requested = SCENE_TITLE;
             return IS_OK(TitleScene_SetUp(1)) ? CHAIN_CONTINUE : CHAIN_QUIT;
         case SCENE_ENDING:
@@ -93,10 +94,10 @@ static CHAIN_STATUS M_Switch(void)
     case SCENE_GAME_RESULT:
         switch (m_Requested) {
         case SCENE_QUIT:
-            Replay_Save();
+            Replay_Discard();
             return CHAIN_QUIT;
         case SCENE_TITLE:
-            Replay_Save();
+            Replay_Discard();
             return M_GoToTitle(0);
         default:
             return CHAIN_CONTINUE;

@@ -54,6 +54,31 @@ static const BUTTON_BIT m_Bits[] = {
     { offsetof(TH06_INPUT, confirm), 0x1000 },
 };
 
+static void M_Update(BUTTONS *const buttons)
+{
+    const uint16_t previous = buttons->previous_word;
+    bool repeat = false;
+    if (previous == buttons->word) {
+        if (buttons->held_frames >= 30) {
+            if (buttons->held_frames % 8 == 0) {
+                repeat = true;
+            }
+            if (buttons->held_frames >= 38) {
+                buttons->held_frames = 30;
+            }
+        }
+        buttons->held_frames++;
+    } else {
+        buttons->held_frames = 0;
+    }
+
+    const uint16_t pressed = buttons->word & (uint16_t)~previous;
+    const uint16_t repeated = pressed | (repeat ? buttons->word : 0);
+    buttons->held = Buttons_FromWord(buttons->word);
+    buttons->pressed = Buttons_FromWord(pressed);
+    buttons->repeated = Buttons_FromWord(repeated);
+}
+
 uint16_t Buttons_ToWord(const TH06_INPUT *const input)
 {
     const uint8_t *const base = (const uint8_t *)input;
@@ -78,30 +103,23 @@ TH06_INPUT Buttons_FromWord(const uint16_t word)
 
 void Buttons_Update(BUTTONS *const buttons, const TH06_INPUT *const input)
 {
-    const uint16_t previous = buttons->word;
+    buttons->previous_word = buttons->word;
     buttons->word = Buttons_ToWord(input);
-    bool repeat = false;
-    if (previous == buttons->word) {
-        if (buttons->held_frames >= 30) {
-            if (buttons->held_frames % 8 == 0) {
-                repeat = true;
-            }
-            if (buttons->held_frames >= 38) {
-                buttons->held_frames = 30;
-            }
-        }
-        buttons->held_frames++;
-    } else {
-        buttons->held_frames = 0;
-    }
-
-    const uint16_t pressed = buttons->word & (uint16_t)~previous;
-    const uint16_t repeated = pressed | (repeat ? buttons->word : 0);
-    buttons->held = Buttons_FromWord(buttons->word);
+    M_Update(buttons);
     buttons->held.move_x = input->move_x;
     buttons->held.move_y = input->move_y;
-    buttons->pressed = Buttons_FromWord(pressed);
-    buttons->repeated = Buttons_FromWord(repeated);
+}
+
+void Buttons_ApplyReplay(BUTTONS *const buttons, const uint16_t replay_word)
+{
+    buttons->word = (buttons->word & (uint16_t)~0x1f7) | replay_word;
+    M_Update(buttons);
+}
+
+bool Buttons_WasPressed(const BUTTONS *const buttons, const uint16_t mask)
+{
+    return (buttons->word & mask) != 0
+        && (buttons->word & mask) != (buttons->previous_word & mask);
 }
 
 void Buttons_Clear(BUTTONS *const buttons)
@@ -110,4 +128,5 @@ void Buttons_Clear(BUTTONS *const buttons)
     buttons->pressed = (TH06_INPUT) {};
     buttons->repeated = (TH06_INPUT) {};
     buttons->word = 0;
+    buttons->previous_word = 0;
 }

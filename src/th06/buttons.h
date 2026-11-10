@@ -34,10 +34,16 @@ typedef struct {
     TH06_INPUT pressed; // down this calc, up the calc before
     TH06_INPUT repeated; // pressed, or held on a calc that repeats
     uint16_t word;
+    uint16_t previous_word;
     int32_t held_frames;
 } BUTTONS;
 
 void Buttons_Update(BUTTONS *buttons, const TH06_INPUT *input);
+// Replaces the gameplay bits with replay_word and repeats the input
+// update against the previous word saved by Buttons_Update.
+void Buttons_ApplyReplay(BUTTONS *buttons, uint16_t replay_word);
+// Returns whether the masked word is nonzero and changed this calc.
+bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);
 // Clears everything but held_frames, as a scene switch does.
 void Buttons_Clear(BUTTONS *buttons);
 

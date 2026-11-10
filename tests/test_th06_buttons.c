@@ -122,3 +122,43 @@ TEST(clear_keeps_held_frames_and_counts_as_pressed_next)
     Buttons_Update(&buttons, &input);
     CHECK(buttons.pressed.shoot);
 }
+
+TEST(replay_uses_the_saved_previous_word_after_live_input)
+{
+    BUTTONS buttons = { .word = 1, .held_frames = 31 };
+    const TH06_INPUT live = { .menu = true };
+    Buttons_Update(&buttons, &live);
+    CHECK_EQ_INT(buttons.previous_word, 1);
+    CHECK_EQ_INT(buttons.held_frames, 0);
+    Buttons_ApplyReplay(&buttons, 1);
+    CHECK_EQ_INT(buttons.previous_word, 1);
+    CHECK_EQ_INT(buttons.word, 9);
+    CHECK(buttons.pressed.menu);
+    CHECK(!buttons.pressed.shoot);
+}
+
+TEST(replay_updates_the_repeat_counter_against_the_same_snapshot)
+{
+    BUTTONS buttons = { .word = 1, .held_frames = 31 };
+    const TH06_INPUT input = { .shoot = true };
+    Buttons_Update(&buttons, &input);
+    CHECK_EQ_INT(buttons.held_frames, 32);
+    CHECK(!buttons.repeated.shoot);
+    Buttons_ApplyReplay(&buttons, 1);
+    CHECK_EQ_INT(buttons.held_frames, 33);
+    CHECK(buttons.repeated.shoot);
+    CHECK(!buttons.pressed.shoot);
+}
+
+TEST(masked_press_counts_partial_release_while_another_bit_stays_down)
+{
+    BUTTONS buttons = { .word = 3 };
+    const TH06_INPUT input = { .shoot = true };
+    Buttons_Update(&buttons, &input);
+    CHECK(Buttons_WasPressed(&buttons, 3));
+    CHECK(!Buttons_WasPressed(&buttons, 1));
+    CHECK(!Buttons_WasPressed(&buttons, 2));
+    CHECK(!buttons.pressed.shoot);
+    Buttons_Clear(&buttons);
+    CHECK_EQ_INT(buttons.previous_word, 0);
+}
