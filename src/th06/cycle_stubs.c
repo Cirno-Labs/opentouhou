@@ -3,46 +3,10 @@
 // part when it lands.
 
 #include "th06/bomb.h"
-#include "th06/bullet.h"
 #include "th06/ecl.h"
 #include "th06/enemy.h"
 #include "th06/gui.h"
 #include "th06/player.h"
-
-// bullet
-
-BULLET_MANAGER g_Bullets;
-
-RESULT Bullet_Register(void)
-{
-    return OK;
-}
-
-void Bullet_Remove(void)
-{
-}
-
-void Bullet_FirePattern(const BULLET_SHOOTER *const shooter)
-{
-}
-
-LASER *Bullet_SpawnLaser(const BULLET_SHOOTER *const shooter)
-{
-    static LASER spare;
-    return &spare;
-}
-
-void Bullet_ClearAll(void)
-{
-}
-
-void Bullet_ClearAllToItems(void)
-{
-}
-
-void Bullet_ClearAllWithBonus(const int32_t max_bonus, const bool to_items)
-{
-}
 
 // player
 

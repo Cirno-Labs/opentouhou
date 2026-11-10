@@ -45,7 +45,8 @@ typedef enum {
 // ex_floats and ex_ints of the shooter hold their values.
 typedef enum {
     // Starts 5 faster and slows to its speed over 16 frames. A laser with
-    // this flag fades in and out instead of widening and narrowing.
+    // this flag fades in over its start instead of widening, and fades in
+    // again over the same frames as it ends instead of narrowing.
     BULLET_FLAG_START_FAST = 0x1,
     // Plays spawn sprite 1, 2 or 3 first, at 1/2, 1/2.5 or 1/3 of the
     // velocity.
@@ -73,7 +74,8 @@ typedef enum {
     // Bounces off the edges of the play area ex_ints[0] times and then
     // takes speed ex_floats[0], or keeps its own when that is negative.
     BULLET_FLAG_BOUNCE = 0x400,
-    // Is like BULLET_FLAG_BOUNCE, without the bottom edge.
+    // Is like BULLET_FLAG_BOUNCE, but the bottom edge does not turn the
+    // bullet. Each frame below it still counts as a bounce.
     BULLET_FLAG_BOUNCE_NO_BOTTOM = 0x800,
 } BULLET_FLAG;
 
@@ -211,12 +213,13 @@ LASER *Bullet_SpawnLaser(const BULLET_SHOOTER *shooter);
 
 // Makes every bullet fade out and every laser end.
 void Bullet_ClearAll(void);
-// Turns every bullet into a star item (ITEM_STAR). Ends every laser and
-// drops a star item every 32 pixels along it.
+// Turns every bullet that is not fading into a star item (ITEM_STAR).
+// Ends every laser, and drops a star item every 32 pixels along each
+// laser that was not ending yet.
 void Bullet_ClearAllToItems(void);
 // Makes every bullet fade out and every laser end, and scores each
-// bullet: 2000 for the first, then 10 more for each next one, capped at
-// max_bonus.
+// bullet, fading ones too: 2000 for the first, then 10 more for each next
+// one, capped at max_bonus from the second one on.
 // Adds the total to the score and shows it with Gui_ShowBonusPopup. With
 // to_items, also drops the star items of Bullet_ClearAllToItems, plus one
 // at the position of each laser.

@@ -7,7 +7,7 @@
 // sprite and script offset tables, then the sprites and the scripts'
 // instructions. Tests use it instead of the game's data.
 
-#define ANM_BUILDER_MAX_SPRITES 32
+#define ANM_BUILDER_MAX_SPRITES 64
 #define ANM_BUILDER_MAX_SCRIPTS 32
 #define ANM_BUILDER_MAX_SCRIPT_BYTES 512
 #define ANM_BUILDER_MAX_SIZE 32768

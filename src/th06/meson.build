@@ -5,6 +5,7 @@ th06_lib = static_library(
   'th06_lib',
   'angle.c',
   'anm/state.c',
+  'bullet.c',
   'buttons.c',
   'chain.c',
   'cycle_stubs.c',
