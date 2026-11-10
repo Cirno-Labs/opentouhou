@@ -92,9 +92,9 @@ typedef struct ENEMY {
     // its script_index is negative, and becomes unused when its script
     // ends.
     ANM_VM vms[ENEMY_SPRITE_COUNT];
-    // Holds the color of vm without the hit flash, which drawing writes
-    // into vm: the update puts it back before each step of the script and
-    // saves it again after.
+    // Holds the color of vm between updates. The update puts it back into
+    // vm before each step of the script and saves it again after, so a
+    // color that the enemy script gives vm before the step is lost.
     uint32_t color;
 
     struct {

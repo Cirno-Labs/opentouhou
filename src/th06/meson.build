@@ -12,6 +12,7 @@ th06_lib = static_library(
   'cycle_stubs.c',
   'ecl.c',
   'effect.c',
+  'enemy.c',
   'files.c',
   'game.c',
   'game_manager/chain.c',

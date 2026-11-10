@@ -2,41 +2,7 @@
 // modules that are can build and run their tests. Each module removes its
 // part when it lands.
 
-#include "th06/enemy.h"
 #include "th06/gui.h"
-
-// enemy
-
-ENEMY_MANAGER g_Enemies;
-
-RESULT Enemy_Register(void)
-{
-    return OK;
-}
-
-void Enemy_Remove(void)
-{
-}
-
-ENEMY *Enemy_Spawn(
-    const int32_t sub, const VEC3 pos, const int16_t life, const int16_t item,
-    const int32_t score)
-{
-    static ENEMY spare;
-    return &spare;
-}
-
-void Enemy_ClampPos(ENEMY *const enemy)
-{
-}
-
-void Enemy_ReleaseOrbits(ENEMY *const enemy)
-{
-}
-
-void Enemy_KillAll(void)
-{
-}
 
 // gui
 
