@@ -5,9 +5,9 @@
 // Runs the items that enemies, cleared bullets and the player drop: moves
 // them, and collects those that touch the graze box, which changes the
 // score, the power, the bombs, the lives and the rank. While the player is
-// at full power above y 128, every item flies to it. The bullet update
-// runs the items, so the items have no chain elements of their own. The
-// item state is module state. Drawing comes with graphics.
+// at full power above y 128, every falling item flies to it. The bullet
+// update runs the items, so the items have no chain elements of their own.
+// The item state is module state. Drawing comes with graphics.
 
 #define ITEM_COUNT 0x200
 

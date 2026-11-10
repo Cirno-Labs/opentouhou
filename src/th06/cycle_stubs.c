@@ -7,26 +7,7 @@
 #include "th06/ecl.h"
 #include "th06/enemy.h"
 #include "th06/gui.h"
-#include "th06/item.h"
 #include "th06/player.h"
-
-// item
-
-void Item_Reset(void)
-{
-}
-
-void Item_Update(void)
-{
-}
-
-void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
-{
-}
-
-void Item_CollectAll(void)
-{
-}
 
 // bullet
 
