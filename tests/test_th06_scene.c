@@ -3,6 +3,7 @@
 #include "test.h"
 #include "th06_scene_stubs.h"
 
+#include "th06/anm.h"
 #include "th06/buttons.h"
 #include "th06/game.h"
 
@@ -95,4 +96,12 @@ TEST(a_switch_clears_the_buttons)
     Game_Tick(&input); // switches to gameplay
     CHECK(!g_Buttons.held.shoot);
     CHECK_EQ_INT(g_Buttons.word, 0);
+}
+
+void Anm_Init(const ALLOCATOR *const allocator, RNG *const rng)
+{
+}
+
+void Anm_Shutdown(void)
+{
 }

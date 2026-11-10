@@ -1,9 +1,11 @@
 #include "th06/game.h"
 
+#include "th06/anm.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
 
 #include "core/base/log.h"
+#include "core/base/memory.h"
 
 CHAIN g_Chain;
 RNG g_Rng;
@@ -12,6 +14,7 @@ TH06_INPUT g_Input;
 
 RESULT Game_Init(void)
 {
+    Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     return Scene_Register();
@@ -32,4 +35,5 @@ bool Game_Tick(const TH06_INPUT *const input)
 void Game_Shutdown(void)
 {
     Chain_Release(&g_Chain);
+    Anm_Shutdown();
 }

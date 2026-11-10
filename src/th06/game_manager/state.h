@@ -1,6 +1,15 @@
 #pragma once
 
+#include "th06/screens/result/types.h"
+
+#include "core/math/vec.h"
+
 #include <stdint.h>
+
+// Runs stage setup, score counting, extends, demo timing and pause gating.
+// Replay, score-file and ASCII interface work uses explicit stand-ins
+// until those modules are ported. Camera calculations run headless;
+// drawing and audio come with their presentation modules.
 
 // A rectangle in play-area pixels.
 typedef struct {
@@ -72,6 +81,12 @@ typedef struct {
         char replay_path[0x200];
     } mode;
 
+    struct {
+        SPELL_CARD_RECORD spell_cards[64];
+        CLEAR_RECORD clears[4];
+        PRACTICE_RECORD practice[4][6][4];
+    } records;
+
     // The play area moves while ScreenEffect_Shake runs, and gameplay
     // reads it then too: the respawn position, GameManager_IsInPlayArea.
     PLAY_RECT play_area;
@@ -81,6 +96,9 @@ typedef struct {
         float distance;
         float offset_x, offset_y;
         float zoom;
+        VIEWPORT viewport;
+        MAT4 view;
+        MAT4 projection;
     } camera;
 } GAME_MANAGER;
 
@@ -89,6 +107,7 @@ extern GAME_MANAGER g_GameManager;
 // Sets gm up for a new game: zeroed, with the play area at 32, 16,
 // 384 x 448.
 void GameManager_Create(GAME_MANAGER *gm);
+
 // Returns whether a box centred at x, y lies at least partly inside the
 // play area.
 bool GameManager_IsInPlayArea(float x, float y, float width, float height);

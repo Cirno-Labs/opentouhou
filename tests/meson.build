@@ -1,4 +1,16 @@
 test(
+  'th06/game_manager/chain',
+  executable(
+    'test_th06_game_manager_chain',
+    'test_th06_game_manager_chain.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, stg_rng_lib, core_io_lib, core_math_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th06/angle',
   executable(
     'test_th06_angle',

@@ -50,7 +50,8 @@ include: `src/core/vfs.h`. Its code is one source file beside the
 header (`src/stg/rng.c`) or a directory of the same name
 (`src/core/vfs/`). A module made of independent parts has one header
 per part in its directory (`src/core/gfx/frame.h`), and its public
-header only includes them (`src/core/gfx.h`).
+header only includes them (`src/core/gfx.h`). A layer can keep a
+group of related modules together in one folder.
 
 ## Program structure
 

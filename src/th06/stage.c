@@ -414,6 +414,9 @@ static CHAIN_STATUS M_Draw2(void *const arg)
     if (g_Stage.spell_card.state >= 1 && g_Stage.spell_card.frames <= 0) {
         Anm_StartScript(&g_Stage.spell_card.background, M_SPELL_CARD_SCRIPT);
     }
+    g_GameManager.camera.viewport.min_z = 0.0f;
+    g_GameManager.camera.viewport.max_z = 0.5f;
+    GameManager_SetUpFixedCamera(0.0f);
     return CHAIN_CONTINUE;
 }
 

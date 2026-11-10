@@ -1,6 +1,7 @@
 #include "th06/scene.h"
 
 #include "th06/game.h"
+#include "th06/game_manager.h"
 #include "th06/stubs.h"
 
 static SCENE m_Current;

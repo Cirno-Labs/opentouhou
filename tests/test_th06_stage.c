@@ -280,3 +280,31 @@ TEST(an_instance_of_a_missing_object_fails_the_load)
     CHECK(!Result_Ignore(M_Setup("bad_instance", m_Keyframes, 4, 3)));
     M_Teardown();
 }
+
+TEST(drawing_restores_the_fixed_camera_and_foreground_depth)
+{
+    CHECK(Result_Log(
+        M_Setup("fixed_camera", m_Keyframes, 4, 0), LOG_LEVEL_ERROR));
+    g_GameManager.camera.viewport = (VIEWPORT) {
+        .width = 384.0f,
+        .height = 448.0f,
+        .min_z = 0.5f,
+        .max_z = 1.0f,
+    };
+    g_GameManager.camera.offset_x = 10.0f;
+    g_GameManager.camera.offset_y = 20.0f;
+    g_GameManager.camera.zoom = 2.0f;
+    GameManager_SetUpCamera(0.0f);
+    Chain_RunDraw(&g_Chain);
+    CHECK(g_GameManager.camera.viewport.min_z == 0.0f);
+    CHECK(g_GameManager.camera.viewport.max_z == 0.5f);
+    CHECK(g_GameManager.camera.view.m[0][0] == 1.0f);
+    CHECK(g_GameManager.camera.view.m[1][1] == 1.0f);
+    CHECK(g_GameManager.camera.view.m[2][2] == 1.0f);
+    CHECK(g_GameManager.camera.view.m[3][0] == -192.0f);
+    CHECK(g_GameManager.camera.view.m[3][1] == 224.0f);
+    CHECK(g_GameManager.camera.view.m[3][2] == g_GameManager.camera.distance);
+    CHECK(g_GameManager.camera.distance > 800.0f);
+    CHECK(g_GameManager.camera.distance < 900.0f);
+    M_Teardown();
+}
