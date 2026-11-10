@@ -1,3 +1,17 @@
+foreach ascii_test : ['ascii', 'ascii_menu']
+  test(
+    'th06/' + ascii_test,
+    executable(
+      'test_th06_' + ascii_test,
+      'test_th06_' + ascii_test + '.c',
+      c_args: [layer_include['th06']] + core_include + stg_include,
+      implicit_include_directories: false,
+      link_with: [th06_lib, core_base_lib],
+    ),
+    suite: 'unit',
+  )
+endforeach
+
 foreach replay_test : ['replay', 'replay_format']
   test(
     'th06/' + replay_test,

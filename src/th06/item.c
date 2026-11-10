@@ -1,6 +1,7 @@
 #include "th06/item.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/bullet.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -54,6 +55,10 @@ static const int32_t m_PowerItemBonus[] = {
     5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 51200,
 };
 
+static const int32_t m_PowerLevels[] = {
+    8, 16, 32, 48, 64, 80, 96, 128, 999,
+};
+
 static const M_POINT_VALUE m_PointValues[] = {
     { 100000, 60000, 100 }, // easy
     { 100000, 60000, 100 }, // normal
@@ -80,8 +85,13 @@ static int32_t M_AddCombo(const int32_t count)
     return m_PowerItemBonus[g_GameManager.player.power_item_combo];
 }
 
-static void M_AddPower(const int32_t amount)
+static void M_AddPower(const VEC3 pos, const int32_t amount)
 {
+    int32_t level = 0;
+    while (g_GameManager.player.power >= m_PowerLevels[level]) {
+        level++;
+    }
+    const int32_t previous_level = level;
     g_GameManager.player.power =
         (uint16_t)(g_GameManager.player.power + amount);
     if (g_GameManager.player.power >= M_FULL_POWER) {
@@ -90,27 +100,39 @@ static void M_AddPower(const int32_t amount)
         Gui_ShowFullPowerPopup();
     }
     g_GameManager.score.value += 10;
+    while (g_GameManager.player.power >= m_PowerLevels[level]) {
+        level++;
+    }
+    AsciiText_AddPopup(
+        pos, level != previous_level ? -1 : 10,
+        level != previous_level ? 0xff80c0ffu : 0xffffffffu);
 }
 
-static void M_CollectPower(void)
+static void M_CollectPower(const VEC3 pos)
 {
     if (g_GameManager.player.power >= M_FULL_POWER) {
-        g_GameManager.score.value += (uint32_t)M_AddCombo(1);
+        const int32_t amount = M_AddCombo(1);
+        g_GameManager.score.value += (uint32_t)amount;
+        AsciiText_AddPopup(
+            pos, amount, amount >= 12800 ? 0xffffff00u : 0xffffffffu);
     } else {
         g_GameManager.player.power_item_combo = 0;
-        M_AddPower(1);
+        M_AddPower(pos, 1);
     }
     GameManager_AddRank(1);
 }
 
 // Leaves power_item_combo as it is below full power, and changes no rank,
 // unlike a small power item.
-static void M_CollectBigPower(void)
+static void M_CollectBigPower(const VEC3 pos)
 {
     if (g_GameManager.player.power >= M_FULL_POWER) {
-        g_GameManager.score.value += (uint32_t)M_AddCombo(8);
+        const int32_t amount = M_AddCombo(8);
+        g_GameManager.score.value += (uint32_t)amount;
+        AsciiText_AddPopup(
+            pos, amount, amount >= 12800 ? 0xffffff00u : 0xffffffffu);
     } else {
-        M_AddPower(8);
+        M_AddPower(pos, 8);
     }
 }
 
@@ -125,6 +147,8 @@ static void M_CollectPoint(const VEC3 pos)
         const int32_t amount = y < M_COLLECT_LINE
             ? value->high
             : value->base - (y - M_COLLECT_LINE) * value->step;
+        AsciiText_AddPopup(
+            pos, amount, amount >= value->high ? 0xffffff00u : 0xffffffffu);
         g_GameManager.score.value += (uint32_t)amount;
     }
     g_GameManager.player.point_items++;
@@ -136,13 +160,13 @@ static void M_Collect(const M_ITEM *const item)
 {
     switch (item->type) {
     case ITEM_POWER:
-        M_CollectPower();
+        M_CollectPower(item->pos);
         break;
     case ITEM_POINT:
         M_CollectPoint(item->pos);
         break;
     case ITEM_BIG_POWER:
-        M_CollectBigPower();
+        M_CollectBigPower(item->pos);
         break;
     case ITEM_BOMB:
         if (g_GameManager.player.bombs < M_MAX_BOMBS) {
@@ -160,18 +184,19 @@ static void M_Collect(const M_ITEM *const item)
         if (g_GameManager.player.power < M_FULL_POWER) {
             Bullet_ClearAllToItems();
             Gui_ShowFullPowerPopup();
+            AsciiText_AddPopup(item->pos, -1, 0xff80c0ffu);
         }
         g_GameManager.player.power = M_FULL_POWER;
         g_GameManager.score.value += 1000;
+        AsciiText_AddPopup(item->pos, 1000, 0xffffffffu);
         break;
-    case ITEM_STAR:
-        if (g_Player.bomb.running) {
-            g_GameManager.score.value += 100;
-        } else {
-            g_GameManager.score.value +=
-                (uint32_t)(g_GameManager.player.graze / 3 * 10 + 500);
-        }
-        break;
+    case ITEM_STAR: {
+        const int32_t amount = g_Player.bomb.running
+            ? 100
+            : g_GameManager.player.graze / 3 * 10 + 500;
+        g_GameManager.score.value += (uint32_t)amount;
+        AsciiText_AddPopup2(item->pos, amount, 0xffffffffu);
+    } break;
     default:
         break;
     }

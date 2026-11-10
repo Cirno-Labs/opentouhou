@@ -6,6 +6,7 @@
 #include "th06_data.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/bullet.h"
 #include "th06/files.h"
 #include "th06/game.h"
@@ -72,6 +73,7 @@ static void M_Setup(void)
 {
     Rng_SetSeed(&g_Rng, 7);
     Anm_Init(&g_HeapAllocator, &g_Rng);
+    AsciiText_Initialize();
     GameManager_Create(&g_GameManager);
     g_GameManager.rank.value = 10;
     g_GameManager.rank.max = 99;
@@ -381,6 +383,9 @@ TEST(a_power_item_below_full_power_adds_one_power)
     CHECK_EQ_INT(g_GameManager.score.value, 10);
     CHECK_EQ_INT(g_GameManager.rank.sub, 1);
     CHECK_EQ_INT(m_ClearCalls, 0);
+    CHECK_EQ_INT(g_AsciiText.next_popup, 1);
+    CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 0);
+    CHECK_EQ_INT(g_AsciiText.popups[0].digits[1], 1);
     M_Teardown();
 }
 
@@ -393,6 +398,9 @@ TEST(reaching_full_power_clears_the_bullets)
     CHECK_EQ_INT(m_ClearCalls, 1);
     CHECK_EQ_INT(m_PopupCalls, 1);
     CHECK_EQ_INT(g_GameManager.score.value, 10);
+    CHECK_EQ_INT(g_AsciiText.popups[0].digit_count, 1);
+    CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 10);
+    CHECK_EQ_INT(g_AsciiText.popups[0].color, 0xff80c0ffu);
     M_Teardown();
 }
 
@@ -544,6 +552,9 @@ TEST(a_full_power_item_fills_the_power)
     CHECK_EQ_INT(g_GameManager.score.value, 1000);
     CHECK_EQ_INT(m_ClearCalls, 1);
     CHECK_EQ_INT(m_PopupCalls, 1);
+    CHECK_EQ_INT(g_AsciiText.next_popup, 2);
+    CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 10);
+    CHECK_EQ_INT(g_AsciiText.popups[1].digit_count, 4);
     M_Collect(ITEM_FULL_POWER, 300.0f);
     CHECK_EQ_INT(g_GameManager.score.value, 2000);
     CHECK_EQ_INT(m_ClearCalls, 1);
@@ -557,6 +568,9 @@ TEST(a_star_item_scores_by_the_graze)
     g_GameManager.player.graze = 100;
     M_Collect(ITEM_STAR, 300.0f);
     CHECK_EQ_INT(g_GameManager.score.value, 830);
+    CHECK_EQ_INT(g_AsciiText.next_popup, 0);
+    CHECK_EQ_INT(g_AsciiText.next_popup2, 1);
+    CHECK_EQ_INT(g_AsciiText.popups[512].digits[1], 3);
     M_Teardown();
 }
 

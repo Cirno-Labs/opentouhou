@@ -1,6 +1,7 @@
 #include "th06/game_manager.h"
 
 #include "th06/bullet.h"
+#include "th06/ascii.h"
 #include "th06/ecl.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"

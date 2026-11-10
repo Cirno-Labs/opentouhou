@@ -1,4 +1,5 @@
 #include "th06/bullet.h"
+#include "th06/ascii.h"
 
 #include "th06/angle.h"
 #include "th06/anm.h"
@@ -713,6 +714,9 @@ static int32_t M_ClearAll(
             if (to_items) {
                 Item_Spawn(bullet->pos, ITEM_STAR, ITEM_HOMING);
             }
+            AsciiText_AddPopup(
+                bullet->pos, score,
+                score >= max_bonus ? 0xffffff00u : 0xffffffffu);
             total += score;
             score += M_BONUS_STEP;
             if (score > max_bonus) {

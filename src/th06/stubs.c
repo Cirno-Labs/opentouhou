@@ -70,8 +70,3 @@ void ResultScreen_LoadGameRecords(
         }
     }
 }
-
-void AsciiText_Initialize(void)
-{
-    LOG_INFO("AsciiText_Initialize is not ported");
-}

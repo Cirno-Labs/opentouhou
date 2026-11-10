@@ -1,6 +1,7 @@
 #include "th06/game.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
 
@@ -17,7 +18,8 @@ RESULT Game_Init(void)
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
-    return Scene_Register();
+    MUST(Scene_Register());
+    return AsciiText_Register();
 }
 
 bool Game_Tick(const TH06_INPUT *const input)

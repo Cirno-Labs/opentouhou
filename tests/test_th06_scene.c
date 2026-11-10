@@ -4,6 +4,7 @@
 #include "th06_scene_stubs.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/buttons.h"
 #include "th06/game.h"
 
@@ -104,4 +105,9 @@ void Anm_Init(const ALLOCATOR *const allocator, RNG *const rng)
 
 void Anm_Shutdown(void)
 {
+}
+
+RESULT AsciiText_Register(void)
+{
+    return OK;
 }

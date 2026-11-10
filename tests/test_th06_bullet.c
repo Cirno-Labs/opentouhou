@@ -7,6 +7,7 @@
 
 #include "th06/angle.h"
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/chain.h"
 #include "th06/files.h"
 #include "th06/game.h"
@@ -193,6 +194,7 @@ static void M_Prepare(const char *const case_name, const int32_t flying_sprite)
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
+    AsciiText_Initialize();
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     Scene_Request(SCENE_GAMEPLAY);
@@ -1398,6 +1400,12 @@ TEST(clear_all_with_bonus_scores_every_bullet_up_to_the_cap)
     CHECK_EQ_INT(g_GameManager.score.value, 7 + 2000 + 2010 + 2015);
     CHECK_EQ_INT(m_BonusPopups, 1);
     CHECK_EQ_INT(m_BonusPopup, 2000 + 2010 + 2015);
+    CHECK_EQ_INT(g_AsciiText.next_popup, 3);
+    CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 0);
+    CHECK_EQ_INT(g_AsciiText.popups[1].digits[1], 1);
+    CHECK_EQ_INT(g_AsciiText.popups[2].digits[0], 5);
+    CHECK_EQ_INT(g_AsciiText.popups[0].color, 0xffffffffu);
+    CHECK_EQ_INT(g_AsciiText.popups[2].color, 0xffffff00u);
     for (int32_t i = 0; i < 3; i++) {
         CHECK(g_Bullets.bullets[i].state == BULLET_FADING);
     }
