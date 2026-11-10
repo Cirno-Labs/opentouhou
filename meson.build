@@ -65,6 +65,7 @@ foreach layer : ['core', 'stg', 'th06']
 endforeach
 
 sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
+sdl3_ttf = dependency('sdl3-ttf', version: '>=3.2.2', static: true)
 
 # FFmpeg supplies image codecs and audio decoding and conversion.
 # The Dockerfiles enable only the formats these modules support.

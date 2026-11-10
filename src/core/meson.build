@@ -167,6 +167,23 @@ core_gfx_gl_lib = static_library(
   dependencies: [sdl3, cc_libm],
 )
 
+text_font = custom_target(
+  'text_font',
+  input: 'text/fonts/BIZUDGothic-Bold.ttf',
+  output: 'text_font.h',
+  command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', '@INPUT@'],
+)
+
+core_text_lib = static_library(
+  'core_text',
+  'text/font.c',
+  'text/render.c',
+  text_font,
+  c_args: core_include + ['-I' + meson.current_build_dir()],
+  implicit_include_directories: false,
+  dependencies: [sdl3_ttf, sdl3, cc_libm],
+)
+
 core_lib = static_library(
   'core',
   'app/app.c',
@@ -191,11 +208,13 @@ core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
     core_lib, core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_vfs_lib,
-    core_config_lib, core_ini_lib, core_audio_lib, core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
+    core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
+    core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
   link_whole: core_main_lib,
   dependencies: [
     sdl3.partial_dependency(links: true),
+    sdl3_ttf.partial_dependency(links: true),
     avcodec.partial_dependency(links: true),
     avutil.partial_dependency(links: true),
     swscale.partial_dependency(links: true),

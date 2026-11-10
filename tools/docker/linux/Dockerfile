@@ -70,6 +70,49 @@ RUN curl -fsSL -o /tmp/sdl.tar.gz \
 
 
 
+# SDL3_ttf supplies UTF-8 font rasterization.
+FROM base AS sdl-ttf
+ARG SDL_TTF_VERSION=3.2.2
+ARG SDL_TTF_SHA256=63547d58d0185c833213885b635a2c0548201cc8f301e6587c0be1a67e1e045d
+ARG FREETYPE_COMMIT=9973564cfa63763a3e4ac67c09147899539b1e07
+ARG FREETYPE_SHA256=026a05a49d114a1235d2926f4c03a9330e4b1a6efe7c217ec9607904c32907d4
+ARG HARFBUZZ_COMMIT=564bf9818a18709776856533829c0c04950773d6
+ARG HARFBUZZ_SHA256=a448dd6c22d8e1e1cf39438c662251c1f97f810b8780eed4a6d6ada948c99ddc
+COPY --from=sdl /ext/ /ext/
+RUN curl -fsSL -o /tmp/ttf.tar.gz \
+        https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL_TTF_VERSION}/SDL3_ttf-${SDL_TTF_VERSION}.tar.gz \
+    && echo "${SDL_TTF_SHA256}  /tmp/ttf.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/ttf.tar.gz -C /tmp \
+    && mkdir -p /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/freetype \
+        /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/harfbuzz \
+    && curl -fsSL -o /tmp/freetype.tar.gz \
+        https://codeload.github.com/libsdl-org/freetype/tar.gz/${FREETYPE_COMMIT} \
+    && echo "${FREETYPE_SHA256}  /tmp/freetype.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/freetype.tar.gz --strip-components=1 \
+        -C /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/freetype \
+    && curl -fsSL -o /tmp/harfbuzz.tar.gz \
+        https://codeload.github.com/libsdl-org/harfbuzz/tar.gz/${HARFBUZZ_COMMIT} \
+    && echo "${HARFBUZZ_SHA256}  /tmp/harfbuzz.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/harfbuzz.tar.gz --strip-components=1 \
+        -C /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/harfbuzz \
+    && cmake -S /tmp/SDL3_ttf-${SDL_TTF_VERSION} -B /tmp/ttf-build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_PREFIX_PATH=/ext \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DSDLTTF_VENDORED=ON \
+        -DSDLTTF_HARFBUZZ=ON \
+        -DSDLTTF_PLUTOSVG=OFF \
+        -DSDLTTF_SAMPLES=OFF \
+    && cmake --build /tmp/ttf-build -j"$(nproc)" \
+    && cmake --install /tmp/ttf-build \
+    && rm -rf /tmp/ttf.tar.gz /tmp/freetype.tar.gz /tmp/harfbuzz.tar.gz \
+        /tmp/SDL3_ttf-${SDL_TTF_VERSION} /tmp/ttf-build
+
+
+
 # zlib, built statically for FFmpeg's PNG encoder and decoder.
 FROM base AS zlib
 ARG ZLIB_VERSION=1.3.1
@@ -157,6 +200,7 @@ RUN dnf -y install \
         ninja==1.13.2
 
 COPY --from=sdl /ext/ /ext/
+COPY --from=sdl-ttf /ext/ /ext/
 COPY --from=ffmpeg /ext/ /ext/
 COPY --from=appimage /opt/ /opt/
 RUN ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool

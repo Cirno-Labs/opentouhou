@@ -896,3 +896,17 @@ executable(
   ],
   dependencies: [sdl3, avcodec, avutil, swscale, cc_libm],
 )
+
+
+test(
+  'core/text',
+  executable(
+    'test_text',
+    'test_text.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3_ttf, sdl3, cc_libm],
+  ),
+  suite: 'unit',
+)
