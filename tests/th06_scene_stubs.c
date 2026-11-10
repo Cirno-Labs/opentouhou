@@ -19,12 +19,14 @@ RESULT TitleScene_SetUp(const int32_t mode)
 RESULT GameManager_Register(void)
 {
     g_SceneStubCalls.game_manager_register++;
+    g_SceneStubCalls.game_manager_register_scene = Scene_GetRequested();
     return OK;
 }
 
 void GameManager_Remove(void)
 {
     g_SceneStubCalls.game_manager_remove++;
+    g_SceneStubCalls.game_manager_remove_scene = Scene_GetRequested();
 }
 
 RESULT ResultScreen_Register(const int32_t mode)

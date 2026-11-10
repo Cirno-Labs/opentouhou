@@ -23,3 +23,6 @@ RESULT Scene_Register(void);
 // Requests a switch at the start of the next calc.
 void Scene_Request(SCENE scene);
 SCENE Scene_Get(void);
+// Returns the scene last requested. While a switch sets a scene up, this
+// is the scene being set up, and Scene_Get returns the scene before it.
+SCENE Scene_GetRequested(void);

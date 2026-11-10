@@ -46,6 +46,21 @@ TEST(gameplay_next_stage_reregisters)
     CHECK_EQ_INT(g_SceneStubCalls.game_manager_register, 2);
 }
 
+TEST(a_switch_to_the_next_stage_requests_it_until_it_is_set_up)
+{
+    M_Setup();
+    Game_Tick(&m_NoInput);
+    Scene_Request(SCENE_GAMEPLAY);
+    Game_Tick(&m_NoInput);
+    CHECK_EQ_INT(g_SceneStubCalls.game_manager_register_scene, SCENE_GAMEPLAY);
+    Scene_Request(SCENE_NEXT_STAGE);
+    Game_Tick(&m_NoInput);
+    CHECK_EQ_INT(g_SceneStubCalls.game_manager_remove_scene, SCENE_NEXT_STAGE);
+    CHECK_EQ_INT(
+        g_SceneStubCalls.game_manager_register_scene, SCENE_NEXT_STAGE);
+    CHECK_EQ_INT(Scene_GetRequested(), SCENE_GAMEPLAY);
+}
+
 TEST(quit_ends_the_tick_with_false)
 {
     M_Setup();

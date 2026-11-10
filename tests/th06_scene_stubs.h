@@ -1,5 +1,7 @@
 #pragma once
 
+#include "th06/scene.h"
+
 #include <stdint.h>
 
 // Counts calls into the th06/stubs.h functions this test links instead
@@ -15,6 +17,9 @@ typedef struct {
     int replay_save;
     int32_t title_set_up_mode;
     int32_t result_screen_register_mode;
+    // Hold Scene_GetRequested at the last call of each.
+    SCENE game_manager_register_scene;
+    SCENE game_manager_remove_scene;
 } SCENE_STUB_CALLS;
 
 extern SCENE_STUB_CALLS g_SceneStubCalls;
