@@ -2,16 +2,9 @@
 // modules that are can build and run their tests. Each module removes its
 // part when it lands.
 
-#include "th06/bomb.h"
 #include "th06/ecl.h"
 #include "th06/enemy.h"
 #include "th06/gui.h"
-
-// bomb
-
-void Bomb_Update(void)
-{
-}
 
 // enemy
 
