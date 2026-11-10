@@ -55,9 +55,10 @@ static CHAIN_STATUS M_Observe(void *const arg)
     return CHAIN_CONTINUE;
 }
 
-static void M_CalcEnd(void *const arg)
+static bool M_CalcEnd(void *const arg)
 {
     m_CalcEnds++;
+    return true;
 }
 
 static void M_SetUp(void)

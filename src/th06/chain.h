@@ -40,9 +40,10 @@ typedef struct CHAIN_ELEM {
 typedef struct {
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
-    // Called at each end of a calc: when Chain_RunCalc returns and before
-    // it restarts. Set by the replay runner; nullptr in the game.
-    void (*on_calc_end)(void *arg);
+    // Runs after each calc, including before a restart. Returns whether a
+    // pending restart may run. False stops at that completed calc and
+    // returns CHAIN_RUN_CONTINUE. Set by the runner; nullptr in the game.
+    bool (*on_calc_end)(void *arg);
     void *on_calc_end_arg;
 } CHAIN;
 

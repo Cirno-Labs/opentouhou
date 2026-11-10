@@ -57,11 +57,10 @@ static CHAIN_STATUS M_Run(
     return CHAIN_CONTINUE;
 }
 
-static void M_CalcEnd(const CHAIN *const chain)
+static bool M_CalcEnd(const CHAIN *const chain)
 {
-    if (chain->on_calc_end != nullptr) {
-        chain->on_calc_end(chain->on_calc_end_arg);
-    }
+    return chain->on_calc_end == nullptr
+        || chain->on_calc_end(chain->on_calc_end_arg);
 }
 
 void Chain_Init(CHAIN *const chain)
@@ -116,9 +115,13 @@ CHAIN_RUN Chain_RunCalc(CHAIN *const chain)
     int count;
     CHAIN_STATUS status;
     while ((status = M_Run(&chain->calc, true, &count)) == CHAIN_RESTART) {
-        M_CalcEnd(chain);
+        if (!M_CalcEnd(chain)) {
+            return CHAIN_RUN_CONTINUE;
+        }
     }
-    M_CalcEnd(chain);
+    if (!M_CalcEnd(chain)) {
+        return CHAIN_RUN_CONTINUE;
+    }
     if (status == CHAIN_QUIT || (status == CHAIN_CONTINUE && count == 0)) {
         return CHAIN_RUN_QUIT;
     }

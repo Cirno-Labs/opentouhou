@@ -1,3 +1,44 @@
+test(
+  'th06/runner/run',
+  executable(
+    'test_th06_runner_run',
+    'test_th06_runner_run.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th06_runner_lib],
+    dependencies: [sdl3, zlib],
+  ),
+  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_runner' },
+  suite: 'unit',
+)
+
+test(
+  'th06/runner/state',
+  executable(
+    'test_th06_runner_state',
+    'test_th06_runner_state.c',
+    '../replay/th06/runner/state.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, stg_rng_lib, core_math_lib, core_io_lib, core_base_lib, replay_case_lib],
+    dependencies: [sdl3, zlib],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'th06/runner/compare',
+  executable(
+    'test_th06_runner_compare',
+    'test_th06_runner_compare.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th06_runner_lib],
+    dependencies: [sdl3, zlib],
+  ),
+  suite: 'unit',
+)
+
 foreach ascii_test : ['ascii', 'ascii_menu']
   test(
     'th06/' + ascii_test,
@@ -396,17 +437,6 @@ test(
     link_with: [stg_rng_lib],
   ),
   suite: 'unit',
-)
-
-# The replay test case format lives in replay/core, outside the game layers.
-replay_include = ['-I' + meson.current_source_dir() / '../replay/core']
-
-replay_case_lib = static_library(
-  'replay_case',
-  '../replay/core/case.c',
-  c_args: core_include + replay_include,
-  implicit_include_directories: false,
-  dependencies: [zlib],
 )
 
 test(

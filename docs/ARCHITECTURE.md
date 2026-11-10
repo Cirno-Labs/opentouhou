@@ -178,8 +178,8 @@ Replay tests check that a game does what its original did, tick for
 tick. They run locally against the developer's own game data, so
 neither the cases nor the data are in this repository or in CI.
 
-A case is one binary file: a header naming the game and the starting
-state, then one row of named values per calc, written and read through
+A case is one binary file: a header naming the game and an initial
+checkpoint, then one row of named values per calc, written and read through
 `replay/core/case.h`. A capture tool per game, in `replay/thXX/`,
 produces cases from the original executable. Each game's headless
-runner plays a case and reports the first tick where a value differs.
+runner drives its input and reports the first calc where a value differs.

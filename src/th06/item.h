@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/math/vec.h"
+#include "th06/anm.h"
 
 // Runs the items that enemies, cleared bullets and the player drop: moves
 // them, and collects those that touch the graze box, which changes the
@@ -30,6 +30,24 @@ typedef enum {
     // falls. The player's death drops these.
     ITEM_THROWN = 2,
 } ITEM_STATE;
+
+// Holds one item slot. An inactive slot keeps its last values.
+typedef struct {
+    ANM_VM vm;
+    VEC3 pos;
+    // Holds the speed, except that an ITEM_THROWN item keeps where it
+    // dropped until it lands.
+    VEC3 velocity;
+    VEC3 target;
+    TIMER timer;
+    int8_t type;
+    bool active;
+    int8_t state;
+} ITEM;
+
+// Returns the ITEM_COUNT slots in slot order. The view stays valid for
+// the life of the module and reflects later updates.
+const ITEM *Item_GetSlots(void);
 
 // Removes every item.
 void Item_Reset(void);

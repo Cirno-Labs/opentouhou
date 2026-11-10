@@ -27,19 +27,6 @@
 #define M_MAX_BOMBS 8
 #define M_MAX_LIVES 8
 
-typedef struct {
-    ANM_VM vm;
-    VEC3 pos;
-    // Holds the speed, except that an ITEM_THROWN item keeps where it
-    // dropped here until it lands.
-    VEC3 velocity;
-    VEC3 target; // where an ITEM_THROWN item lands
-    TIMER timer;
-    int8_t type;
-    bool active;
-    int8_t state;
-} M_ITEM;
-
 // Holds the score of a point item on one difficulty.
 typedef struct {
     int32_t high; // collected above the line
@@ -67,7 +54,7 @@ static const M_POINT_VALUE m_PointValues[] = {
     { 300000, 200000, 400 }, // extra
 };
 
-static M_ITEM m_Items[ITEM_COUNT];
+static ITEM m_Items[ITEM_COUNT];
 static int32_t m_Next;
 
 // Adds count to power_item_combo, up to the last bonus, and returns its
@@ -156,7 +143,7 @@ static void M_CollectPoint(const VEC3 pos)
     GameManager_AddRank(pos.y < M_COLLECT_LINE ? 30 : 3);
 }
 
-static void M_Collect(const M_ITEM *const item)
+static void M_Collect(const ITEM *const item)
 {
     switch (item->type) {
     case ITEM_POWER:
@@ -202,7 +189,7 @@ static void M_Collect(const M_ITEM *const item)
     }
 }
 
-static void M_Home(M_ITEM *const item)
+static void M_Home(ITEM *const item)
 {
     const float angle = Player_AngleFrom(item->pos);
     X87_SinCosScale(
@@ -212,7 +199,7 @@ static void M_Home(M_ITEM *const item)
 
 // Moves item and returns false when it fell out of the bottom of the play
 // area, which frees it.
-static bool M_Move(M_ITEM *const item)
+static bool M_Move(ITEM *const item)
 {
     item->pos = Vec3_Add(item->pos, item->velocity);
     if (g_GameManager.play_area.height + 16.0f <= item->pos.y) {
@@ -229,7 +216,7 @@ static bool M_Move(M_ITEM *const item)
 }
 
 // Moves item for this frame. Returns false when it fell out.
-static bool M_Update(M_ITEM *const item)
+static bool M_Update(ITEM *const item)
 {
     // A thrown item stays thrown after it lands, so it falls and never
     // homes at full power. Only Item_CollectAll makes it home.
@@ -260,10 +247,15 @@ static bool M_Update(M_ITEM *const item)
     return M_Move(item);
 }
 
+const ITEM *Item_GetSlots(void)
+{
+    return m_Items;
+}
+
 void Item_Reset(void)
 {
     for (int32_t i = 0; i < ITEM_COUNT; i++) {
-        m_Items[i] = (M_ITEM) {};
+        m_Items[i] = (ITEM) {};
     }
     m_Next = 0;
 }
@@ -272,7 +264,7 @@ void Item_Update(void)
 {
     const VEC3 size = { 16.0f, 16.0f, 16.0f };
     for (int32_t i = 0; i < ITEM_COUNT; i++) {
-        M_ITEM *const item = &m_Items[i];
+        ITEM *const item = &m_Items[i];
         if (!item->active || !M_Update(item)) {
             continue;
         }
@@ -288,7 +280,7 @@ void Item_Update(void)
 
 void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
 {
-    M_ITEM *item = &m_Items[m_Next];
+    ITEM *item = &m_Items[m_Next];
     for (int32_t tries = 0; tries < ITEM_COUNT; tries++) {
         m_Next++;
         if (item->active) {

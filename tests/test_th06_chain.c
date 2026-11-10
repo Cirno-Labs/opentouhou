@@ -76,10 +76,11 @@ static void M_LogDeleted(void *const arg)
     M_Log(elem->log, elem->tag);
 }
 
-static void M_CalcEnd(void *const arg)
+static bool M_CalcEnd(void *const arg)
 {
     FIXTURE *const fixture = arg;
     fixture->calc_ends++;
+    return true;
 }
 
 // Adds one element per spec, in order, to the draw chain when draw is

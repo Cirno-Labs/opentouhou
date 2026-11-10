@@ -66,6 +66,26 @@ replay test cases from the original game. They are used locally and
 never packaged or released. Each game's own notes describe how to
 capture with them.
 
+## Comparing replay test cases
+
+`th06replay` compares captured calc rows with headless playback. It is
+built with the games and is never packaged. Pass the original data, the
+player's replay input and its captured case:
+
+```sh
+build/linux/debug/th06replay --data <data-dir> --replay <input.rpy> <case.otrc>
+just replay::run <case-or-dir> <data-dir> <replay-dir>
+```
+
+`--replays <dir>` matches each case to a `.rpy` with the same basename.
+`--break-on-diff` stops in the debugger at the first differing calc.
+`--break-at N` stops at calc N; calc numbers start at 0. Cases and replay
+inputs stay outside the repository. Original files are only read.
+
+The runner reports skipped columns and the first calc with any
+difference. Its [public header](../replay/th06/runner/run.h) describes
+the supported capture format and the checks for full replay coverage.
+
 ## Running
 
 The games need the original game's data. Point a game at the directory
@@ -152,8 +172,8 @@ just test           # unit tests, inside the Linux image
 ```
 
 Unit tests live in `tests/`. They need nothing but the source and run
-in CI. Replay tests do not exist yet; ARCHITECTURE.md, "Replay tests",
-describes them.
+in CI. Replay comparisons use private cases and original data, so they
+run separately from `just test`.
 
 ## Later
 

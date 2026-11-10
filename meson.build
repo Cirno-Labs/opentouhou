@@ -74,8 +74,7 @@ avcodec = dependency('libavcodec', static: true)
 avutil = dependency('libavutil', static: true)
 swscale = dependency('libswscale', static: true)
 
-# The replay test case format compresses its calc rows with zlib. Only the
-# tests use it; no layer of the game depends on it.
+# The case tools compress calc rows with zlib. No game layer depends on it.
 zlib = dependency('zlib', static: true)
 
 subdir('src/core')
@@ -100,6 +99,20 @@ foreach name, game : games
     win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
   )
 endforeach
+subdir('replay')
+runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/backend_main_windows.c' : 'replay/th06/runner/backend_main_posix.c'
+executable(
+  'th06replay',
+  'replay/th06/runner/main.c',
+  runner_entry,
+  'src/th06/stubs.c',
+  c_args: [layer_include['th06']] + core_include + stg_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, zlib, cc_libm],
+  link_with: [th06_runner_lib],
+  link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+  win_subsystem: 'console',
+)
 if not meson.is_cross_build()
   subdir('tests')
 endif
