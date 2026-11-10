@@ -132,15 +132,16 @@ change lands, or CI will build it from scratch on every run. The "Build
 and push the Docker images" workflow pushes both images.
 
 The images build two dependencies at the releases the Dockerfiles pin:
-SDL3, and FFmpeg for `core/image`. FFmpeg is built with only the PNG,
-MJPEG and BMP codecs it needs, and with no GPL component enabled, so its
-licence stays LGPL.
+SDL3, and FFmpeg for `core/image` and `core/audio`. FFmpeg supports PNG,
+MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and MP3 audio. No GPL
+component is enabled, so its licence stays LGPL.
 
 ## Building without Docker
 
 Possible, not supported. You need a C23 compiler (clang 18 or GCC 14 or
-newer), Meson 1.4 or newer, Ninja, pkg-config, and SDL3 3.2 or newer.
-Then:
+newer), Meson 1.4 or newer, Ninja, pkg-config, SDL3 3.2 or newer, and
+FFmpeg 7.1 development libraries (avcodec, avformat, avutil, swresample
+and swscale). Then:
 
 ```sh
 meson setup build/native

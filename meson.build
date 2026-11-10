@@ -66,13 +66,13 @@ endforeach
 
 sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
 
-# core/image decodes and encodes through FFmpeg's libavcodec and converts
-# pixel formats through libswscale, both built with only the codecs it
-# uses (see tools/docker). No libavformat: core/image never demuxes a
-# container.
+# FFmpeg supplies image codecs and audio decoding and conversion.
+# The Dockerfiles enable only the formats these modules support.
 avcodec = dependency('libavcodec', static: true)
 avutil = dependency('libavutil', static: true)
 swscale = dependency('libswscale', static: true)
+avformat = dependency('libavformat', static: true)
+swresample = dependency('libswresample', static: true)
 
 # The case tools compress calc rows with zlib. No game layer depends on it.
 zlib = dependency('zlib', static: true)

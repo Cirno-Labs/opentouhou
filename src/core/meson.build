@@ -129,6 +129,16 @@ core_image_lib = static_library(
   dependencies: [avcodec, avutil, swscale, cc_libm],
 )
 
+core_audio_lib = static_library(
+  'core_audio',
+  'audio/engine.c',
+  'audio/decoder.c',
+  'audio/backend_sdl.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, avformat, avcodec, avutil, swresample, cc_libm],
+)
+
 core_lib = static_library(
   'core',
   'app/app.c',
@@ -153,7 +163,7 @@ core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
     core_lib, core_input_lib, core_vfs_lib, core_config_lib, core_ini_lib,
-    core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
+    core_audio_lib, core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
   link_whole: core_main_lib,
   dependencies: [
@@ -161,6 +171,8 @@ core_dep = declare_dependency(
     avcodec.partial_dependency(links: true),
     avutil.partial_dependency(links: true),
     swscale.partial_dependency(links: true),
+    avformat.partial_dependency(links: true),
+    swresample.partial_dependency(links: true),
     cc_libm,
   ],
 )

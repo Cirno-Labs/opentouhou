@@ -1,4 +1,34 @@
 test(
+  'core/audio/device',
+  executable(
+    'test_audio_device',
+    'test_audio_device.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_audio_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+  ),
+  env: {'SDL_AUDIO_DRIVER': 'dummy'},
+  suite: 'unit',
+)
+
+foreach part : ['audio', 'audio_decoder']
+  test(
+    part == 'audio' ? 'core/audio' : 'core/audio/decoder',
+    executable(
+      'test_' + part,
+      'test_' + part + '.c',
+      'audio_backend_fake.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_audio_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+    ),
+    suite: 'unit',
+  )
+endforeach
+
+test(
   'th06/runner/run',
   executable(
     'test_th06_runner_run',

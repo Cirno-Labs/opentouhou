@@ -86,12 +86,9 @@ RUN curl -fsSL -o /tmp/zlib.tar.gz \
 
 
 
-# FFmpeg, built statically with only the codecs core/image needs: PNG, MJPEG
-# and BMP decoding, PNG and MJPEG encoding, through libavcodec, libavutil
-# and libswscale. No assembly, so every platform decodes with the same C
-# code. No libavformat: core/image demuxes nothing, it decodes a
-# whole buffer as one frame. The default configuration is LGPL, since
-# --enable-gpl is never passed.
+# FFmpeg supplies image codecs and audio demuxers, decoders and conversion.
+# Disable assembly so each platform uses the same C implementations.
+# Keep the default LGPL configuration; no GPL component is enabled.
 FROM base AS ffmpeg
 ARG FFMPEG_VERSION=7.1.1
 ARG FFMPEG_SHA256=733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
@@ -113,7 +110,10 @@ RUN curl -fsSL -o /tmp/ffmpeg.tar.xz \
         --enable-static \
         --enable-pic \
         --enable-zlib \
-        --enable-decoder=png,mjpeg,bmp \
+        --enable-decoder=png,mjpeg,bmp,pcm_u8,pcm_s8,pcm_s16le,pcm_s16be,pcm_u16le,pcm_u16be,pcm_s24le,pcm_s24be,pcm_u24le,pcm_u24be,pcm_s32le,pcm_s32be,pcm_u32le,pcm_u32be,pcm_f32le,pcm_f32be,pcm_f64le,pcm_f64be,pcm_alaw,pcm_mulaw,adpcm_ms,adpcm_ima_wav,vorbis,flac,mp3,mp3float \
+        --enable-demuxer=wav,ogg,flac,mp3 \
+        --enable-parser=vorbis,flac,mpegaudio \
+        --enable-swresample \
         --enable-encoder=png,mjpeg \
         --pkg-config-flags="--static" \
     && make -j"$(nproc)" \
