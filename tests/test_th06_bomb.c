@@ -35,8 +35,7 @@
 #define M_OFFSET_Y 20.0f
 
 // The test runs the bombs through the real player update. It links these
-// instead of the stand-ins in cycle_stubs.c and the modules they stand
-// for. Each records its calls.
+// instead of the modules they stand for. Each records its calls.
 
 typedef struct {
     EFFECT_TYPE type;

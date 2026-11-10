@@ -35,8 +35,8 @@
 #define M_SCRIPT_RISING 0x441
 #define M_SCRIPT_LASER 0x445
 
-// The test links these instead of the stand-ins in cycle_stubs.c and the
-// modules they stand for. Each records its calls.
+// The test links these instead of the modules they stand for. Each
+// records its calls.
 
 typedef struct {
     EFFECT_TYPE type;

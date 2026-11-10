@@ -302,6 +302,30 @@ test(
 )
 
 test(
+  'th06/gui',
+  executable(
+    'test_th06_gui',
+    'test_th06_gui.c',
+    'anm_builder.c',
+    'pbg3_builder.c',
+    'th06_data.c',
+    'th06_scene_stubs.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
+      core_math_lib, core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_gui',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_gui',
+  },
+  suite: 'unit',
+)
+
+test(
   'th06/files',
   executable(
     'test_th06_files',

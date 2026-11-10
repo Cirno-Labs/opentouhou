@@ -1,0 +1,980 @@
+#include "th06/gui.h"
+
+#include "anm_builder.h"
+#include "test.h"
+#include "test_dir.h"
+#include "th06_data.h"
+
+#include "th06/anm.h"
+#include "th06/chain.h"
+#include "th06/files.h"
+#include "th06/game.h"
+#include "th06/game_manager.h"
+#include "th06/scene.h"
+
+#include "core/base/memory.h"
+#include "core/base/utils.h"
+
+#include <SDL3/SDL.h>
+#include <string.h>
+
+#define M_MAX_SCRIPTS 4
+#define M_SCRIPT_SIZE 512
+#define M_MSG_SIZE 4096
+#define M_LEAVE_FRAMES 100
+#define M_APPEAR_FRAMES 3
+#define M_FACE12C_END 7
+#define M_KOUMA "\x8d\x67\x96\x82" // 紅魔 in CP932
+
+typedef struct {
+    uint8_t bytes[M_SCRIPT_SIZE];
+    size_t size;
+} M_SCRIPT;
+
+static char *m_Directory;
+static M_SCRIPT m_Scripts[M_MAX_SCRIPTS];
+static int32_t m_ScriptCount;
+
+static void M_Instr(
+    M_SCRIPT *const script, const uint16_t time, const uint8_t opcode,
+    const void *const args, const uint8_t size)
+{
+    uint8_t *const at = &script->bytes[script->size];
+    memcpy(at, &time, 2);
+    at[2] = opcode;
+    at[3] = size;
+    memcpy(at + 4, args, size);
+    script->size += 4 + (size_t)size;
+}
+
+static M_SCRIPT *M_Script(void)
+{
+    M_SCRIPT *const script = &m_Scripts[m_ScriptCount++];
+    *script = (M_SCRIPT) {};
+    return script;
+}
+
+static void M_Op(M_SCRIPT *const script, const uint16_t time, const uint8_t op)
+{
+    M_Instr(script, time, op, nullptr, 0);
+}
+
+static void M_OpInt(
+    M_SCRIPT *const script, const uint16_t time, const uint8_t op,
+    const int32_t value)
+{
+    M_Instr(script, time, op, &value, 4);
+}
+
+static void M_OpWho(
+    M_SCRIPT *const script, const uint16_t time, const uint8_t op,
+    const int16_t who, const int16_t index)
+{
+    const int16_t args[2] = { who, index };
+    M_Instr(script, time, op, args, 4);
+}
+
+static void M_OpText(
+    M_SCRIPT *const script, const uint16_t time, const uint8_t op,
+    const int16_t who, const int16_t index, const char *const text)
+{
+    uint8_t args[64] = {};
+    memcpy(&args[0], &who, 2);
+    memcpy(&args[2], &index, 2);
+    const size_t length = strlen(text);
+    memcpy(&args[4], text, length);
+    M_Instr(script, time, op, args, (uint8_t)(4 + length + 1));
+}
+
+static void M_OpInterrupt(
+    M_SCRIPT *const script, const uint16_t time, const int16_t who,
+    const uint8_t label)
+{
+    uint8_t args[4] = {};
+    memcpy(&args[0], &who, 2);
+    args[2] = label;
+    M_Instr(script, time, 5, args, 4);
+}
+
+static void M_OpByte(
+    M_SCRIPT *const script, const uint16_t time, const uint8_t op,
+    const uint8_t value)
+{
+    const uint8_t args[4] = { value };
+    M_Instr(script, time, op, args, 4);
+}
+
+static void M_WriteMsg(const char *const name)
+{
+    static uint8_t bytes[M_MSG_SIZE];
+    memset(bytes, 0, sizeof(bytes));
+    memcpy(bytes, &m_ScriptCount, 4);
+    size_t at = 4 + 4 * (size_t)m_ScriptCount;
+    for (int32_t i = 0; i < m_ScriptCount; i++) {
+        const int32_t offset = (int32_t)at;
+        memcpy(&bytes[4 + 4 * i], &offset, 4);
+        memcpy(&bytes[at], m_Scripts[i].bytes, m_Scripts[i].size);
+        at += m_Scripts[i].size;
+    }
+    Th06Data_WriteFile(m_Directory, name, bytes, at);
+}
+
+// Writes an ANM file with one sprite and the given scripts, each showing
+// the sprite on frame 0 and keeping it until frame end.
+static void M_WriteAnm(
+    const char *const name, const int32_t *const ids, const int16_t *const ends,
+    const int32_t count)
+{
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 64, 64);
+    AnmBuilder_AddSprite(&builder, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    AnmBuilder_AddSprite(&builder, 1, 16.0f, 0.0f, 16.0f, 16.0f);
+    const uint32_t sprite = 0;
+    for (int32_t i = 0; i < count; i++) {
+        const int32_t script = AnmBuilder_BeginScript(&builder, ids[i]);
+        AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+        AnmBuilder_Instr(&builder, script, ends[i], 15, nullptr, 0);
+    }
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, name, bytes, size);
+}
+
+static void M_WriteFace(const char *const name, const int16_t end)
+{
+    const int32_t ids[] = { 0, 1 };
+    const int16_t ends[] = { end, end };
+    M_WriteAnm(name, ids, ends, 2);
+}
+
+// Writes the loading screen: it shows its sprite, stops on frame 2, and
+// ends on the third frame after interrupt 1.
+static void M_WriteLoading(void)
+{
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 64, 64);
+    AnmBuilder_AddSprite(&builder, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    const uint32_t sprite = 0;
+    const uint32_t label = 1;
+    const uint32_t alpha = 0xff;
+    const int32_t script = AnmBuilder_BeginScript(&builder, 0);
+    AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+    AnmBuilder_Instr(&builder, script, 2, 21, nullptr, 0);
+    AnmBuilder_Instr(&builder, script, 2, 22, &label, 1);
+    AnmBuilder_Instr(&builder, script, 2, 3, &alpha, 1);
+    AnmBuilder_Instr(&builder, script, 5, 0, nullptr, 0);
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, "data/loading.anm", bytes, size);
+}
+
+static void M_WriteData(const char *const case_name)
+{
+    m_Directory = TestDir_Prepare(case_name);
+    Th06Data_WriteArchives(m_Directory, -1);
+    char *const data = TestDir_Join(m_Directory, "data");
+    SDL_CreateDirectory(data);
+    Mem_Free(data);
+    const int32_t front_ids[] = {
+        0x13, 0x14, 0x100, 0x101, 0x102, 0x103, 0x104, 0x105, 0x106, 0x107,
+    };
+    int16_t front_ends[ARRAY_SIZE(front_ids)];
+    for (size_t i = 0; i < ARRAY_SIZE(front_ids); i++) {
+        front_ends[i] = 1000;
+    }
+    front_ends[0] = M_APPEAR_FRAMES;
+    front_ends[1] = M_LEAVE_FRAMES;
+    M_WriteAnm(
+        "data/front.anm", front_ids, front_ends,
+        (int32_t)ARRAY_SIZE(front_ids));
+    M_WriteLoading();
+    M_WriteFace("data/face00a.anm", 1000);
+    M_WriteFace("data/face00b.anm", 1000);
+    M_WriteFace("data/face00c.anm", 1000);
+    M_WriteFace("data/face03a.anm", 1000);
+    M_WriteFace("data/face03b.anm", 1000);
+    M_WriteFace("data/face08a.anm", 1000);
+    M_WriteFace("data/face12a.anm", 1000);
+    M_WriteFace("data/face12b.anm", 1000);
+    M_WriteFace("data/face12c.anm", M_FACE12C_END);
+    M_WriteMsg("data/msg1.dat");
+    M_WriteMsg("data/msg7.dat");
+}
+
+static RESULT M_SetupStage(const char *const case_name, const int32_t stage)
+{
+    M_WriteData(case_name);
+    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Anm_Init(&g_HeapAllocator, &g_Rng);
+    Chain_Init(&g_Chain);
+    GameManager_Create(&g_GameManager);
+    g_GameManager.run.stage = stage;
+    g_GameManager.run.difficulty = 1;
+    g_Buttons = (BUTTONS) {};
+    Scene_Request(SCENE_GAMEPLAY);
+    m_ScriptCount = 0;
+    return Gui_Register();
+}
+
+static void M_Setup(const char *const case_name)
+{
+    CHECK(Result_Log(M_SetupStage(case_name, 1), LOG_LEVEL_ERROR));
+}
+
+static void M_Teardown(void)
+{
+    Chain_Release(&g_Chain);
+    Anm_Shutdown();
+    Files_Shutdown();
+    Mem_Free(m_Directory);
+}
+
+static void M_Run(const int32_t frames)
+{
+    for (int32_t i = 0; i < frames; i++) {
+        Chain_RunCalc(&g_Chain);
+    }
+}
+
+TEST(registering_loads_the_interface)
+{
+    M_Setup("register");
+    CHECK(Anm_GetScript(0x613) != nullptr);
+    CHECK(Anm_GetScript(0x619) != nullptr);
+    CHECK(Anm_GetScript(0x4a0) != nullptr);
+    CHECK(Anm_GetScript(0x4a8) != nullptr);
+    CHECK(g_Gui.hud.sprites[0x13].script == Anm_GetScript(0x613));
+    CHECK(g_Gui.banners.song_name.script == Anm_GetScript(0x701));
+    CHECK_EQ_INT(g_Gui.banners.song_name.font_width, 16);
+    CHECK(g_Gui.banners.bomb_name.script == nullptr);
+    CHECK(!g_Gui.banners.bomb_name.shown);
+    CHECK_EQ_INT(g_Gui.banners.bomb_name.font_height, 15);
+    CHECK_EQ_INT(g_Gui.loading.sprite, -1);
+    CHECK(!Gui_IsMsgRunning());
+    M_Teardown();
+}
+
+TEST(removing_releases_the_files)
+{
+    M_Op(M_Script(), 0, 0);
+    M_Setup("remove");
+    Gui_Remove();
+    CHECK(Anm_GetScript(0x613) == nullptr);
+    CHECK(Anm_GetScript(0x4a0) == nullptr);
+    CHECK(Anm_GetScript(0x4a8) == nullptr);
+    Gui_StartMsg(0);
+    CHECK(!Gui_IsMsgRunning());
+    M_Teardown();
+}
+
+TEST(the_next_stage_keeps_the_interface)
+{
+    M_Op(M_Script(), 0, 0);
+    M_Setup("next_stage");
+    g_Gui.popups.bonus.value = 1234;
+    Scene_Request(SCENE_NEXT_STAGE);
+    Gui_Remove();
+    CHECK(Anm_GetScript(0x613) != nullptr);
+    CHECK(Anm_GetScript(0x4a0) != nullptr);
+    CHECK(Anm_GetScript(0x4a8) == nullptr);
+    CHECK(Result_Log(Gui_Register(), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(g_Gui.popups.bonus.value, 1234);
+    CHECK(Anm_GetScript(0x4a8) != nullptr);
+    CHECK(g_Gui.loading.script == Anm_GetScript(0x619));
+    CHECK_EQ_INT(g_Gui.loading.pending_interrupt, 1);
+    M_Teardown();
+}
+
+TEST(a_script_without_an_end_fails_the_add)
+{
+    M_OpInt(M_Script(), 0, 6, 0);
+    CHECK(!Result_Log(M_SetupStage("no_end", 1), LOG_LEVEL_INFO));
+    CHECK(Anm_GetScript(0x4a8) == nullptr);
+    CHECK(Anm_GetScript(0x613) == nullptr);
+    M_Teardown();
+}
+
+TEST(a_text_past_its_instruction_fails_the_add)
+{
+    M_SCRIPT *const script = M_Script();
+    const int16_t args[2] = { 0, 0 };
+    M_Instr(script, 0, 3, args, 4);
+    M_Op(script, 0, 0);
+    CHECK(!Result_Log(M_SetupStage("short_text", 1), LOG_LEVEL_INFO));
+    M_Teardown();
+}
+
+TEST(a_text_without_its_end_fails_the_add)
+{
+    const uint8_t args[6] = { 0, 0, 0, 0, 'a', 'b' };
+    M_Instr(M_Script(), 0, 3, args, 6);
+    M_Op(&m_Scripts[0], 0, 0);
+    CHECK(!Result_Log(M_SetupStage("open_text", 1), LOG_LEVEL_INFO));
+    M_Teardown();
+}
+
+TEST(a_line_out_of_range_fails_the_add)
+{
+    M_OpText(M_Script(), 0, 3, 0, 2, "a");
+    M_Op(&m_Scripts[0], 0, 0);
+    CHECK(!Result_Log(M_SetupStage("bad_line", 1), LOG_LEVEL_INFO));
+    M_Teardown();
+}
+
+TEST(a_portrait_side_out_of_range_fails_the_add)
+{
+    M_OpWho(M_Script(), 0, 1, 2, 0);
+    M_Op(&m_Scripts[0], 0, 0);
+    CHECK(!Result_Log(M_SetupStage("bad_side", 1), LOG_LEVEL_INFO));
+    M_Teardown();
+}
+
+TEST(a_script_ends_at_a_halt)
+{
+    M_Op(M_Script(), 0, 10);
+    M_Op(M_Script(), 0, 11);
+    CHECK(Result_Log(M_SetupStage("halt_end", 1), LOG_LEVEL_ERROR));
+    M_Teardown();
+}
+
+TEST(starting_a_missing_script_does_nothing)
+{
+    M_Op(M_Script(), 0, 0);
+    M_Setup("missing");
+    Gui_StartMsg(1);
+    CHECK(!Gui_IsMsgRunning());
+    Gui_StartMsg(-1);
+    CHECK(!Gui_IsMsgRunning());
+    Gui_StartMsg(0);
+    CHECK(Gui_IsMsgRunning());
+    CHECK(Gui_IsMsgSkippable());
+    M_Teardown();
+}
+
+TEST(an_instruction_runs_on_its_frame)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 2, 6);
+    M_Op(script, 4, 0);
+    M_Setup("frames");
+    Gui_StartMsg(0);
+    M_Run(2);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 1);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 3);
+    M_Run(1);
+    CHECK(Gui_IsMsgRunning());
+    M_Run(1);
+    CHECK(!Gui_IsMsgRunning());
+    M_Teardown();
+}
+
+TEST(a_release_lets_the_timeline_run_for_one_frame)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 10);
+    M_Setup("release");
+    Gui_StartMsg(0);
+    CHECK(Gui_MsgHoldsTimeline());
+    M_Run(1);
+    CHECK(!Gui_MsgHoldsTimeline());
+    M_Run(1);
+    CHECK(Gui_MsgHoldsTimeline());
+    M_Teardown();
+}
+
+TEST(a_halt_holds_the_script_and_its_timer)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 0, 10);
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 0);
+    M_Setup("halt");
+    Gui_StartMsg(0);
+    M_Run(5);
+    CHECK(Gui_IsMsgRunning());
+    CHECK_EQ_INT(g_Gui.msg.pc, 0);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 0);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 0);
+    M_Teardown();
+}
+
+TEST(a_wait_ends_after_its_frames)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 4, 3);
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 10);
+    M_Setup("wait");
+    Gui_StartMsg(0);
+    M_Run(3);
+    CHECK_EQ_INT(g_Gui.msg.wait_frames, 3);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 0);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 1);
+    M_Teardown();
+}
+
+TEST(the_shoot_button_ends_a_wait_after_8_frames)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 4, 1000);
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 10);
+    M_Setup("shoot");
+    Gui_StartMsg(0);
+    g_Buttons.held.shoot = true;
+    g_Buttons.pressed.shoot = true;
+    M_Run(8);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 1);
+    M_Teardown();
+}
+
+TEST(a_held_shoot_button_does_not_end_a_wait)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 4, 1000);
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 10);
+    M_Setup("held_shoot");
+    Gui_StartMsg(0);
+    g_Buttons.held.shoot = true;
+    M_Run(20);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 0);
+    CHECK_EQ_INT(g_Gui.msg.wait_frames, 20);
+    M_Teardown();
+}
+
+TEST(skip_ends_a_wait)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 4, 1000);
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 10);
+    M_Setup("skip_wait");
+    Gui_StartMsg(0);
+    g_Buttons.held.skip = true;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 1);
+    M_Teardown();
+}
+
+TEST(skip_moves_the_timer_to_the_next_instruction)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 100, 6);
+    M_Op(script, 200, 0);
+    M_Setup("skip_timer");
+    Gui_StartMsg(0);
+    g_Buttons.held.skip = true;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 1);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 101);
+    M_Run(1);
+    CHECK(!Gui_IsMsgRunning());
+    M_Teardown();
+}
+
+TEST(skip_opens_the_box_at_once)
+{
+    M_Op(M_Script(), 0, 10);
+    M_Setup("skip_box");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 0);
+    g_Buttons.held.skip = true;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 60);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 60);
+    M_Teardown();
+}
+
+TEST(an_unskippable_script_ignores_skip)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpByte(script, 0, 13, 0);
+    M_OpInt(script, 0, 4, 1000);
+    M_Op(script, 0, 6);
+    M_Op(script, 0, 10);
+    M_Setup("unskippable");
+    Gui_StartMsg(0);
+    g_Buttons.held.skip = true;
+    M_Run(3);
+    CHECK(!Gui_IsMsgSkippable());
+    CHECK_EQ_INT(g_Gui.msg.timeline_release, 0);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 0);
+    M_Teardown();
+}
+
+TEST(the_portrait_instructions_start_scripts_and_sprites)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpWho(script, 0, 1, 0, 1);
+    M_OpWho(script, 0, 1, 1, 0);
+    M_OpWho(script, 0, 2, 0, 1);
+    M_OpWho(script, 0, 2, 1, 1);
+    M_Op(script, 0, 10);
+    M_Setup("portraits");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK(g_Gui.msg.portraits[0].script == Anm_GetScript(0x4a1));
+    CHECK(g_Gui.msg.portraits[1].script == Anm_GetScript(0x4a2));
+    CHECK_EQ_INT(g_Gui.msg.portraits[0].sprite, 0x4a1);
+    CHECK_EQ_INT(g_Gui.msg.portraits[1].sprite, 0x4a9);
+    M_Teardown();
+}
+
+TEST(a_line_shows_its_text_in_utf8)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 0, 3, 0, 1, M_KOUMA);
+    M_OpText(script, 0, 8, 1, 0, "Reimu");
+    M_Op(script, 0, 10);
+    M_Setup("line");
+    Gui_StartMsg(0);
+    g_Gui.msg.wait_frames = 5;
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[1], "紅魔");
+    CHECK(g_Gui.msg.lines[1].script == Anm_GetScript(0x703));
+    CHECK_EQ_INT(g_Gui.msg.lines[1].font_width, 15);
+    CHECK_EQ_INT(g_Gui.msg.lines[1].font_height, 15);
+    CHECK_EQ_STR(g_Gui.msg.nameplate_texts[0], "Reimu");
+    CHECK(g_Gui.msg.nameplates[0].script == Anm_GetScript(0x704));
+    CHECK_EQ_INT(g_Gui.msg.wait_frames, 0);
+    M_Teardown();
+}
+
+TEST(a_first_line_blanks_a_shown_second_line)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 0, 3, 0, 0, "one");
+    M_OpInt(script, 0, 4, 1);
+    M_OpText(script, 0, 3, 0, 1, "two");
+    M_OpInt(script, 0, 4, 1);
+    M_OpText(script, 0, 3, 0, 0, "three");
+    M_Op(script, 0, 10);
+    M_Setup("blank");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "one");
+    CHECK(g_Gui.msg.line_texts[1] == nullptr);
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[1], "two");
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "three");
+    CHECK_EQ_STR(g_Gui.msg.line_texts[1], " ");
+    M_Teardown();
+}
+
+TEST(an_interrupt_reaches_a_portrait_or_a_line)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInterrupt(script, 0, 1, 7);
+    M_OpInterrupt(script, 0, 3, 9);
+    M_Op(script, 0, 10);
+    M_Setup("interrupt");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.msg.portraits[1].pending_interrupt, 7);
+    CHECK_EQ_INT(g_Gui.msg.lines[1].pending_interrupt, 9);
+    M_Teardown();
+}
+
+TEST(a_song_instruction_shows_the_song_name)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 7, 2);
+    M_Op(script, 0, 10);
+    M_Setup("song");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.banners.song, 2);
+    CHECK(g_Gui.banners.song_name.script == Anm_GetScript(0x701));
+    M_Teardown();
+}
+
+TEST(a_song_out_of_range_fails_the_add)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 7, 4);
+    M_Op(script, 0, 0);
+    CHECK(!Result_Log(M_SetupStage("bad_song", 1), LOG_LEVEL_INFO));
+    M_Teardown();
+}
+
+static SCENE M_NextScene(
+    const int32_t stage, const int32_t difficulty, const bool practice,
+    const bool replay)
+{
+    g_GameManager.run.stage = stage;
+    g_GameManager.run.difficulty = difficulty;
+    g_GameManager.mode.in_practice = practice;
+    g_GameManager.mode.in_replay = replay;
+    g_GameManager.mode.game_cleared = false;
+    Scene_Request(SCENE_GAMEPLAY);
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK(Gui_IsMsgRunning());
+    return Scene_GetRequested();
+}
+
+TEST(the_scene_instruction_picks_the_next_scene)
+{
+    M_Op(M_Script(), 0, 11);
+    M_Setup("scene");
+    g_GameManager.score.value = 5000;
+    CHECK_EQ_INT(M_NextScene(1, 1, false, false), SCENE_NEXT_STAGE);
+    CHECK_EQ_INT(g_GameManager.score.shown, 5000);
+    CHECK_EQ_INT(M_NextScene(5, 1, false, false), SCENE_NEXT_STAGE);
+    CHECK_EQ_INT(M_NextScene(5, 0, false, false), SCENE_ENDING);
+    CHECK_EQ_INT(M_NextScene(6, 2, false, false), SCENE_ENDING);
+    CHECK_EQ_INT(M_NextScene(6, 2, false, true), SCENE_REPLAY_END);
+    CHECK_EQ_INT(M_NextScene(1, 1, true, false), SCENE_GAME_RESULT);
+    CHECK(!g_GameManager.mode.game_cleared);
+    CHECK_EQ_INT(M_NextScene(7, 4, false, false), SCENE_GAME_RESULT);
+    CHECK(g_GameManager.mode.game_cleared);
+    CHECK_EQ_INT(M_NextScene(7, 4, false, true), SCENE_REPLAY_END);
+    CHECK(!g_GameManager.mode.game_cleared);
+    M_Teardown();
+}
+
+TEST(the_stage_clear_instruction_starts_the_loading_screen)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 0, 9);
+    M_Op(script, 0, 10);
+    M_Setup("stage_clear");
+    g_GameManager.score.next_extend = 2;
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.stage_clear.state, GUI_STAGE_CLEAR_PENDING);
+    CHECK(g_Gui.loading.script == Anm_GetScript(0x619));
+    CHECK(g_Gui.loading.sprite >= 0);
+    CHECK_EQ_INT(g_GameManager.score.next_extend, 2);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.stage_clear.state, GUI_STAGE_CLEAR_SHOWN);
+    M_Teardown();
+}
+
+TEST(the_last_stage_clear_ends_the_extends)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 0, 9);
+    M_Op(script, 0, 10);
+    M_Setup("last_clear");
+    g_GameManager.run.stage = 6;
+    g_GameManager.score.next_extend = 2;
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_INT(g_GameManager.score.next_extend, -1);
+    CHECK_EQ_INT(g_Gui.loading.sprite, -1);
+    M_Teardown();
+}
+
+TEST(the_loading_screen_shows_once_it_stops)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 0, 9);
+    M_Op(script, 0, 10);
+    M_Setup("loading");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK(!Gui_IsLoadingShown());
+    M_Run(2);
+    CHECK(Gui_IsLoadingShown());
+    M_Run(5);
+    CHECK(Gui_IsLoadingShown());
+    g_Gui.loading.pending_interrupt = 1;
+    M_Run(1);
+    CHECK(!Gui_IsLoadingShown());
+    CHECK(g_Gui.loading.sprite >= 0);
+    M_Run(3);
+    CHECK_EQ_INT(g_Gui.loading.sprite, -1);
+    M_Teardown();
+}
+
+static int32_t M_StageClearBonus(void)
+{
+    g_GameManager.score.value = 100;
+    g_Gui.stage_clear.state = GUI_STAGE_CLEAR_PENDING;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.stage_clear.state, GUI_STAGE_CLEAR_SHOWN);
+    CHECK_EQ_INT(g_GameManager.score.value, 100 + g_Gui.stage_clear.total);
+    return g_Gui.stage_clear.total;
+}
+
+TEST(the_stage_clear_bonus_scales_by_difficulty)
+{
+    M_Setup("bonus");
+    g_GameManager.player.graze = 3;
+    g_GameManager.player.power = 1;
+    g_GameManager.player.point_items = 7;
+    g_GameManager.run.start_lives = 2;
+    const int32_t base = (1000 + 30 + 100) * 7;
+    g_GameManager.run.difficulty = 0;
+    CHECK_EQ_INT(M_StageClearBonus(), 3950);
+    g_GameManager.run.difficulty = 1;
+    CHECK_EQ_INT(M_StageClearBonus(), base);
+    g_GameManager.run.difficulty = 2;
+    CHECK_EQ_INT(M_StageClearBonus(), 9490);
+    g_GameManager.run.difficulty = 3;
+    CHECK_EQ_INT(M_StageClearBonus(), 11860);
+    g_GameManager.run.difficulty = 4;
+    CHECK_EQ_INT(M_StageClearBonus(), 15820);
+    M_Teardown();
+}
+
+TEST(the_stage_clear_bonus_counts_lives_and_bombs_from_stage_6)
+{
+    M_Setup("bonus_final");
+    g_GameManager.run.stage = 6;
+    g_GameManager.player.graze = 3;
+    g_GameManager.player.point_items = 2;
+    g_GameManager.player.lives = 2;
+    g_GameManager.player.bombs = 1;
+    CHECK_EQ_INT(M_StageClearBonus(), (6000 + 30) * 2 + 6000000 + 1000000);
+    M_Teardown();
+}
+
+TEST(the_starting_lives_cut_the_stage_clear_bonus_everywhere)
+{
+    M_Setup("bonus_lives");
+    g_GameManager.player.graze = 3;
+    g_GameManager.player.power = 1;
+    g_GameManager.player.point_items = 7;
+    g_GameManager.run.difficulty = 2;
+    g_GameManager.run.start_lives = 3;
+    CHECK_EQ_INT(M_StageClearBonus(), 4740);
+    g_GameManager.run.start_lives = 4;
+    CHECK_EQ_INT(M_StageClearBonus(), 1890);
+    g_GameManager.mode.in_practice = true;
+    CHECK_EQ_INT(M_StageClearBonus(), 1890);
+    g_GameManager.mode.in_practice = false;
+    g_GameManager.run.difficulty = 4;
+    CHECK_EQ_INT(M_StageClearBonus(), 3160);
+    M_Teardown();
+}
+
+TEST(the_boss_bar_appears_and_leaves)
+{
+    M_Setup("boss_bar");
+    g_Gui.boss.present = true;
+    g_Gui.boss.health = 1.0f;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_APPEARING);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 0);
+    CHECK(g_Gui.hud.sprites[0x13].script == Anm_GetScript(0x613));
+    M_Run(M_APPEAR_FRAMES - 1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_APPEARING);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_SHOWN);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 4 * M_APPEAR_FRAMES);
+    g_Gui.boss.present = false;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_LEAVING);
+    CHECK(g_Gui.hud.sprites[0x13].script == Anm_GetScript(0x614));
+    M_Run(M_LEAVE_FRAMES - 2);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_LEAVING);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_HIDDEN);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 0);
+    CHECK(g_Gui.hud.boss_health_shown == 0.0f);
+    M_Teardown();
+}
+
+TEST(the_boss_bar_alpha_rises_to_255)
+{
+    M_Setup("alpha_rise");
+    g_Gui.boss.present = true;
+    M_Run(1 + 63);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 0xfc);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 0xff);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 0xff);
+    M_Teardown();
+}
+
+TEST(the_boss_bar_alpha_wraps_below_0)
+{
+    M_Setup("alpha_wrap");
+    g_Gui.boss.present = true;
+    M_Run(1 + 64);
+    g_Gui.boss.present = false;
+    M_Run(63);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, 3);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, UINT32_MAX);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar_alpha, UINT32_MAX - 4);
+    M_Teardown();
+}
+
+TEST(a_boss_coming_back_shows_the_bar_once_it_has_left)
+{
+    M_Setup("boss_back");
+    g_Gui.boss.present = true;
+    M_Run(1 + M_APPEAR_FRAMES);
+    g_Gui.boss.present = false;
+    M_Run(1);
+    g_Gui.boss.present = true;
+    M_Run(M_LEAVE_FRAMES - 2);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_LEAVING);
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_SHOWN);
+    M_Teardown();
+}
+
+TEST(the_boss_health_shown_follows_the_health)
+{
+    M_Setup("health");
+    g_Gui.boss.present = true;
+    g_Gui.boss.health = 0.025f;
+    M_Run(M_APPEAR_FRAMES);
+    CHECK(g_Gui.hud.boss_health_shown == 0.0f);
+    float expected = 0.0f;
+    M_Run(1);
+    expected += 0.01f;
+    CHECK(g_Gui.hud.boss_health_shown == expected);
+    M_Run(1);
+    expected += 0.01f;
+    CHECK(g_Gui.hud.boss_health_shown == expected);
+    M_Run(1);
+    CHECK(g_Gui.hud.boss_health_shown == 0.025f);
+    g_Gui.boss.health = 0.0f;
+    M_Run(1);
+    expected = 0.025f;
+    expected -= 0.02f;
+    CHECK(g_Gui.hud.boss_health_shown == expected);
+    M_Run(1);
+    CHECK(g_Gui.hud.boss_health_shown == 0.0f);
+    M_Teardown();
+}
+
+TEST(a_dialogue_stops_the_boss_bar)
+{
+    M_Op(M_Script(), 0, 10);
+    M_Setup("bar_msg");
+    Gui_StartMsg(0);
+    g_Gui.boss.present = true;
+    M_Run(3);
+    CHECK_EQ_INT(g_Gui.hud.boss_bar, GUI_BOSS_BAR_HIDDEN);
+    CHECK(g_Gui.hud.sprites[0x13].script == Anm_GetScript(0x613));
+    M_Teardown();
+}
+
+TEST(drawing_places_the_boss_health_bar)
+{
+    M_Setup("draw_bar");
+    Chain_RunDraw(&g_Chain);
+    CHECK(g_Gui.hud.sprites[0x15].scale_x == 1.0f);
+    g_Gui.boss.present = true;
+    g_Gui.hud.boss_health_shown = 0.3f;
+    Chain_RunDraw(&g_Chain);
+    CHECK(g_Gui.hud.sprites[0x15].scale_x == 0.3f * 288.0f / 14.0f);
+    CHECK(g_Gui.hud.sprites[0x15].pos.x == 96.0f);
+    CHECK(g_Gui.hud.sprites[0x15].pos.y == 24.0f);
+    CHECK_EQ_INT(g_Gui.hud.sprites[0x15].anchor, 3);
+    M_Teardown();
+}
+
+TEST(drawing_leaves_the_frame_sprites_where_they_were_drawn_last)
+{
+    M_Setup("draw_frame");
+    g_GameManager.player.power = 127;
+    Chain_RunDraw(&g_Chain);
+    CHECK(g_Gui.hud.sprites[6].pos.x == 608.0f);
+    CHECK(g_Gui.hud.sprites[6].pos.y == 448.0f);
+    CHECK(g_Gui.hud.sprites[6].pos.z == 0.49f);
+    CHECK(g_Gui.hud.sprites[7].pos.x == 384.0f);
+    CHECK(g_Gui.hud.sprites[8].pos.y == 464.0f);
+    CHECK(g_Gui.hud.sprites[0x16].pos.x == 0.0f);
+    CHECK(g_Gui.hud.sprites[0x16].pos.y == 464.0f);
+    CHECK(g_Gui.hud.sprites[0x12].pos.x == 0.0f);
+    g_GameManager.player.power = 128;
+    Chain_RunDraw(&g_Chain);
+    CHECK(g_Gui.hud.sprites[0x12].pos.x == 496.0f);
+    CHECK(g_Gui.hud.sprites[0x12].pos.y == 186.0f);
+    M_Teardown();
+}
+
+static int32_t M_PopupFrames(const GUI_POPUP *const popup)
+{
+    int32_t frames = 0;
+    while (popup->shown && frames < 1000) {
+        M_Run(1);
+        frames++;
+    }
+    return frames;
+}
+
+TEST(the_popups_show_for_their_durations)
+{
+    M_Setup("popups");
+    Gui_ShowBonusPopup(1200);
+    CHECK_EQ_INT(g_Gui.popups.bonus.value, 1200);
+    CHECK_EQ_INT(M_PopupFrames(&g_Gui.popups.bonus), 251);
+    Gui_ShowFullPowerPopup();
+    CHECK_EQ_INT(M_PopupFrames(&g_Gui.popups.full_power), 181);
+    Gui_ShowSpellCardBonus(300000);
+    CHECK_EQ_INT(g_Gui.popups.spell_bonus.value, 300000);
+    CHECK_EQ_INT(M_PopupFrames(&g_Gui.popups.spell_bonus), 281);
+    M_Teardown();
+}
+
+TEST(the_names_show_their_portraits)
+{
+    M_Setup("names");
+    Gui_ShowBombName(0x4a1, "霊符「夢想封印」");
+    CHECK(g_Gui.banners.bomb_portrait.script == Anm_GetScript(0x4a1));
+    CHECK_EQ_INT(g_Gui.banners.bomb_portrait.sprite, 0x4a1);
+    CHECK(g_Gui.banners.bomb_name.script == Anm_GetScript(0x706));
+    CHECK_EQ_STR(g_Gui.banners.bomb_text, "霊符「夢想封印」");
+    Gui_EndBombName();
+    CHECK_EQ_INT(g_Gui.banners.bomb_name.pending_interrupt, 1);
+    Gui_ShowSpellCardName(1, "name");
+    CHECK(g_Gui.banners.spell_portrait.script == Anm_GetScript(0x4a3));
+    CHECK_EQ_INT(g_Gui.banners.spell_portrait.sprite, 0x4a9);
+    CHECK(g_Gui.banners.spell_name.script == Anm_GetScript(0x707));
+    CHECK_EQ_STR(g_Gui.banners.spell_text, "name");
+    Gui_EndSpellCardName();
+    CHECK_EQ_INT(g_Gui.banners.spell_name.pending_interrupt, 1);
+    M_Teardown();
+}
+
+TEST(a_frozen_game_stops_the_interface)
+{
+    M_Op(M_Script(), 0, 10);
+    M_Setup("frozen");
+    Gui_StartMsg(0);
+    Gui_ShowBonusPopup(5);
+    g_Gui.boss.present = true;
+    g_Buttons.held.skip = true;
+    g_GameManager.mode.frozen = true;
+    M_Run(3);
+    CHECK_EQ_INT(g_Gui.popups.bonus.timer.current, 0);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 0);
+    g_GameManager.mode.frozen = false;
+    M_Run(1);
+    CHECK_EQ_INT(g_Gui.popups.bonus.timer.current, 1);
+    CHECK_EQ_INT(g_Gui.msg.timer.current, 60);
+    M_Teardown();
+}
+
+TEST(the_extra_stage_dialogue_loads_the_third_boss_portrait)
+{
+    M_Op(M_Script(), 0, 10);
+    CHECK(Result_Log(M_SetupStage("extra", 7), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(Anm_GetScript(0x4a8)->instrs[1].time, 1000);
+    Gui_StartMsg(0);
+    CHECK(Gui_IsMsgRunning());
+    CHECK(Anm_GetScript(0x2b3) == nullptr);
+    CHECK_EQ_INT(Anm_GetScript(0x4a8)->instrs[1].time, M_FACE12C_END);
+    M_Teardown();
+}

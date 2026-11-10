@@ -111,7 +111,10 @@ extern GUI g_Gui;
 // g_GameManager.run.stage. Outside SCENE_NEXT_STAGE, it also resets g_Gui
 // and loads the interface, the loading screen and the portraits of the
 // character. In SCENE_NEXT_STAGE, it keeps them and lets the loading
-// screen leave.
+// screen leave. A dialogue file fails the add when a script runs past the
+// file, an instruction has fewer arguments than its opcode reads, a text
+// is not CP932, or an instruction names a side, a line or a song out of
+// range.
 RESULT Gui_Register(void);
 // Removes both elements and releases the stage's portraits and dialogue
 // file. Outside SCENE_NEXT_STAGE, also releases the rest.

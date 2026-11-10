@@ -34,7 +34,7 @@
 #define M_SPRITE_64 0x29a
 #define M_MAX_HITS 16
 
-// The test links these instead of the stand-ins in cycle_stubs.c. The
+// The test links these instead of the modules they stand for. The
 // player is at m_AimAngle from everything, and the contacts it reports
 // are m_Graze and m_Hit. Items are never collected, and each test of the
 // graze box records where an item was.

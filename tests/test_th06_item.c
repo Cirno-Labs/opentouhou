@@ -25,7 +25,7 @@
 #define M_TOUCH_X 50.0f
 #define M_NO_TOUCH -1.0f
 
-// The test links these instead of the stand-ins in cycle_stubs.c. The
+// The test links these instead of the modules they stand for. The
 // graze box touches every item at x m_TouchX, and records where each item
 // was tested.
 
