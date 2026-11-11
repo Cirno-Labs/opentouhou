@@ -121,6 +121,7 @@ core_patch_lib = static_library(
   'core_patch',
   'patch/files.c',
   'patch/stack.c',
+  'patch/strings.c',
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],

@@ -838,6 +838,22 @@ test(
 )
 
 test(
+  'core/patch/strings',
+  executable(
+    'test_patch_strings',
+    'test_patch_strings.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [
+      core_patch_lib, core_json_lib, core_vfs_lib, core_io_lib, core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'patch_strings'},
+  suite: 'unit',
+)
+
+test(
   'core/patch/stack',
   executable(
     'test_patch_stack',
