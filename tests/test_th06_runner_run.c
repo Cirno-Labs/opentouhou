@@ -3,6 +3,7 @@
 #include "test.h"
 #include "test_dir.h"
 
+#include "core/app.h"
 #include "core/base/memory.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -242,4 +243,18 @@ TEST(empty_case_does_not_initialize_gameplay)
     CHECK(!Result_Ignore(M_Run(0, &report)));
     CHECK_EQ_INT(m_InitCalls, 0);
     CHECK_EQ_INT(m_ShutdownCalls, 0);
+}
+
+TEST(the_runner_reports_full_speed_every_half_second)
+{
+    int32_t measured = 0;
+    for (int32_t i = 1; i <= 3 * APP_TICK_RATE / 2; i++) {
+        float rate = 0.0f;
+        if (App_GetTickRate(&rate)) {
+            measured++;
+            CHECK_EQ_INT(i % (APP_TICK_RATE / 2), 0);
+            CHECK(rate == (float)APP_TICK_RATE);
+        }
+    }
+    CHECK_EQ_INT(measured, 3);
 }

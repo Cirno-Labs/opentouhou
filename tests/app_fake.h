@@ -7,8 +7,8 @@
 
 // Stands in for core/app in the th06 tests: the functions that th06 calls
 // read g_FakeApp and record their requests in it. FakeApp_Reset gives the
-// state of the replay runner's core/app: no pad press, no bindings, no
-// requests and the windowed mode.
+// state of the replay runner's core/app before its first measurement: no
+// pad press, no tick rate, no bindings, no requests and the windowed mode.
 
 #define FAKE_APP_REQUEST_COUNT 32
 #define FAKE_APP_BINDING_COUNT 4
@@ -25,6 +25,9 @@ typedef struct {
     // Holds the control that the next App_GetPadPress returns once.
     bool pad_pending;
     INPUT_BINDING pad_press;
+    // Holds the tick rate that the next App_GetTickRate returns once.
+    bool tick_rate_measured;
+    float tick_rate;
     // Holds the bindings that App_GetBindings returns for each action.
     INPUT_BINDING bindings[INPUT_MAX_ACTIONS][FAKE_APP_BINDING_COUNT];
     size_t binding_counts[INPUT_MAX_ACTIONS];

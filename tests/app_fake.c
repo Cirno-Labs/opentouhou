@@ -53,6 +53,16 @@ void App_RequestResetPadBindings(void)
     M_Record('r', 0, (INPUT_BINDING) {});
 }
 
+bool App_GetTickRate(float *const out)
+{
+    const bool measured = g_FakeApp.tick_rate_measured;
+    if (measured) {
+        *out = g_FakeApp.tick_rate;
+    }
+    g_FakeApp.tick_rate_measured = false;
+    return measured;
+}
+
 bool App_IsFullscreen(void)
 {
     return g_FakeApp.fullscreen;

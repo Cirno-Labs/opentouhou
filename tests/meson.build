@@ -694,6 +694,18 @@ test(
 )
 
 test(
+  'core/app/tick_rate',
+  executable(
+    'test_tick_rate',
+    'test_tick_rate.c',
+    '../src/core/app/tick_rate.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/app/screenshot',
   executable(
     'test_screenshot',

@@ -19,6 +19,7 @@
 #include "request_queue.h"
 #include "settings.h"
 #include "screenshot.h"
+#include "tick_rate.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -38,6 +39,9 @@ struct APP_CONTEXT {
     SDL_Window *window;
     SDL_GLContext gl_context;
     CLOCK clock;
+    TICK_RATE tick_rate;
+    bool tick_rate_measured;
+    float measured_tick_rate;
     bool vsync;
     bool game_init_called;
     INPUT_STATE *input;
@@ -365,6 +369,14 @@ void App_RequestResetPadBindings(void)
         &m_Context.requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
 }
 
+bool App_GetTickRate(float *const out)
+{
+    if (m_Context.tick_rate_measured) {
+        *out = m_Context.measured_tick_rate;
+    }
+    return m_Context.tick_rate_measured;
+}
+
 bool App_IsFullscreen(void)
 {
     return m_Context.settings.fullscreen;
@@ -401,7 +413,13 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 {
     APP_CONTEXT *const ctx = &m_Context;
 
-    const int ticks = Clock_Advance(&ctx->clock, SDL_GetTicksNS());
+    const uint64_t now_ns = SDL_GetTicksNS();
+    const int ticks = Clock_Advance(&ctx->clock, now_ns);
+    float tick_rate;
+    if (TickRate_Add(&ctx->tick_rate, ticks, now_ns, &tick_rate)) {
+        ctx->tick_rate_measured = true;
+        ctx->measured_tick_rate = tick_rate;
+    }
     Input_Update(ctx->input, ctx->input_buffer);
     HOTKEYS hotkeys;
     Input_Read(ctx->input, &g_HotkeysSchema, &hotkeys);
@@ -425,6 +443,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         const bool running = g_GameDesc.tick(ctx->input_buffer);
         Gfx_EndTick();
         ctx->pad_pressed = false;
+        ctx->tick_rate_measured = false;
         M_ApplyRequests(ctx);
         if (!running) {
             return SDL_APP_SUCCESS;
