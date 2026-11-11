@@ -400,3 +400,33 @@ TEST(prepares_slowdown_with_the_original_clamps)
     CHECK(!Result_Ignore(ReplayFormat_Prepare(&info, &prepared)));
     CHECK(!Result_Ignore(ReplayFormat_Prepare(nullptr, &prepared)));
 }
+
+TEST(summary_takes_lives_and_bombs_from_the_first_stage)
+{
+    REPLAY_STAGE second = { .score = 100, .lives = 4, .bombs = 1 };
+    REPLAY_STAGE fourth = { .score = 300, .lives = 1, .bombs = 2 };
+    REPLAY_FILE file = {
+        .shot = 3,
+        .difficulty = 2,
+        .score = 400,
+        .slowdown = 1.5f,
+        .stages = { [2] = &second, [4] = &fourth },
+    };
+    memcpy(file.date, "01/02/03", 9);
+    memcpy(file.name, "NAME", 5);
+    REPLAY_SUMMARY summary;
+    Replay_Summarize(&file, &summary);
+    CHECK_EQ_INT(summary.shot, 3);
+    CHECK_EQ_INT(summary.difficulty, 2);
+    CHECK_EQ_INT(summary.score, 400);
+    CHECK(summary.slowdown == 1.5f);
+    CHECK_EQ_STR(summary.date, "01/02/03");
+    CHECK_EQ_STR(summary.name, "NAME");
+    CHECK(!summary.stages[1]);
+    CHECK(summary.stages[2]);
+    CHECK(!summary.stages[3]);
+    CHECK(summary.stages[4]);
+    CHECK_EQ_INT(summary.stage_scores[4], 300);
+    CHECK_EQ_INT(summary.lives, 4);
+    CHECK_EQ_INT(summary.bombs, 1);
+}

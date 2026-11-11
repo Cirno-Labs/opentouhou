@@ -245,6 +245,32 @@ RESULT Replay_Read(READER *const reader, REPLAY_FILE **const out)
     return OK;
 }
 
+void Replay_Summarize(const REPLAY_FILE *const file, REPLAY_SUMMARY *const out)
+{
+    *out = (REPLAY_SUMMARY) {
+        .shot = file->shot,
+        .difficulty = file->difficulty,
+        .score = file->score,
+        .slowdown = file->slowdown,
+    };
+    memcpy(out->date, file->date, sizeof(out->date));
+    memcpy(out->name, file->name, sizeof(out->name));
+    bool first = true;
+    for (int32_t i = 1; i <= 7; i++) {
+        const REPLAY_STAGE *const stage = file->stages[i];
+        if (stage == nullptr) {
+            continue;
+        }
+        out->stages[i] = true;
+        out->stage_scores[i] = stage->score;
+        if (first) {
+            out->lives = stage->lives;
+            out->bombs = stage->bombs;
+            first = false;
+        }
+    }
+}
+
 void Replay_Free(REPLAY_FILE *const file)
 {
     if (file == nullptr) {

@@ -36,6 +36,21 @@ typedef struct {
     REPLAY_STAGE *stages[8]; // stages 1 through 7
 } REPLAY_FILE;
 
+// Holds what the replay menu shows of a replay and what starting it takes.
+typedef struct {
+    uint8_t shot; // character * 2 + shot type
+    uint8_t difficulty;
+    char date[9];
+    char name[25]; // UTF-8
+    uint32_t score;
+    float slowdown;
+    bool stages[8]; // whether stages 1 to 7 are present
+    int32_t stage_scores[8]; // the score at the end of each present stage
+    // Hold the lives and bombs of the first stage present.
+    uint8_t lives;
+    uint8_t bombs;
+} REPLAY_SUMMARY;
+
 typedef struct {
     const char *name;
     const char *date; // MM/DD/YY
