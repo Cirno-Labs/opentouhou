@@ -119,6 +119,7 @@ core_vfs_lib = static_library(
 # core/patch needs core/base, core/io, core/vfs and core/json.
 core_patch_lib = static_library(
   'core_patch',
+  'patch/files.c',
   'patch/stack.c',
   c_args: core_include,
   implicit_include_directories: false,

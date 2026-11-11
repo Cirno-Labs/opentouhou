@@ -15,7 +15,7 @@
 #define TestJson_Parse(allocator_, text_)                                      \
     TestJson_ParseAt(__FILE__, __LINE__, (allocator_), (text_))
 
-static JSON_VALUE *TestJson_ParseAt(
+[[maybe_unused]] static JSON_VALUE *TestJson_ParseAt(
     const char *const file, const int line, const ALLOCATOR *const allocator,
     const char *const text)
 {
