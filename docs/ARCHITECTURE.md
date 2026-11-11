@@ -65,6 +65,9 @@ typedef struct {
     int logical_width;         // 640
     int logical_height;        // 480
     const INPUT_SCHEMA *input_schema;
+    // The game's own settings, loaded and saved with core's.
+    const CONFIG_SCHEMA *settings_schema;
+    void *settings;
     RESULT (*init)(void);
     // One 60 Hz step: advance the game and draw it.
     bool (*tick)(const void *input);

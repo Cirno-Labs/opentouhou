@@ -131,6 +131,9 @@ static RESULT M_Init(APP_CONTEXT *const ctx, const int argc, char *const argv[])
         MUST(Ini_Parse("", 0, &g_HeapAllocator, &ctx->ini));
     }
     Config_Load(&g_AppSettingsSchema, ctx->ini, &ctx->settings);
+    if (g_GameDesc.settings_schema != nullptr) {
+        Config_Load(g_GameDesc.settings_schema, ctx->ini, g_GameDesc.settings);
+    }
     if (ctx->settings.fullscreen
         && !Result_Log(M_SetFullscreen(ctx, true), LOG_LEVEL_WARNING)) {
         ctx->settings.fullscreen = false;
@@ -247,6 +250,10 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     Audio_Shutdown();
     if (ctx->ini != nullptr) {
         Config_Save(&g_AppSettingsSchema, ctx->ini, &ctx->settings);
+        if (g_GameDesc.settings_schema != nullptr) {
+            Config_Save(
+                g_GameDesc.settings_schema, ctx->ini, g_GameDesc.settings);
+        }
         Input_Save(ctx->input, ctx->ini);
         if (ctx->ini_path != nullptr) {
             Result_Log(Ini_Save(ctx->ini, ctx->ini_path), LOG_LEVEL_ERROR);

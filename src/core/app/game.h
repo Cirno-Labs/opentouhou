@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/base/result.h"
+#include "core/config.h"
 #include "core/input.h"
 
 #define APP_TICK_RATE 60
@@ -17,6 +18,11 @@ typedef struct {
     // INPUT_STATE from it and passes tick a buffer of schema->size *
     // schema->players bytes, one player's input after another.
     const INPUT_SCHEMA *input_schema;
+    // Describes the game's own settings and points at the struct that holds
+    // them. core/app loads them from its INI before init and saves them
+    // after shutdown. Both are nullptr for a game without settings.
+    const CONFIG_SCHEMA *settings_schema;
+    void *settings;
     // Prepares the game. Called once, after the window exists.
     RESULT (*init)(void);
     // Advances the game by one 60 Hz step and draws it through core/gfx.
