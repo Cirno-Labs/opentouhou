@@ -27,6 +27,9 @@ static char *m_StageNames[M_STAGE_COUNT + 1];
 static char *m_Themes[M_TRACK_COUNT + 1];
 static char *m_Comments[TRANSLATION_TUNE_COUNT][TRANSLATION_COMMENT_ROWS];
 static bool m_HasComment[TRANSLATION_TUNE_COUNT];
+static char *m_Font;
+static const char **m_FontFiles;
+static int32_t m_FontFileCount;
 static char *m_Strings[STRING_COUNT];
 static const char *const m_Defaults[STRING_COUNT] = { TH06_STRINGS(M_DEFAULT) };
 static const uint32_t m_Addresses[STRING_COUNT] = { TH06_STRINGS(M_ADDRESS) };
@@ -114,6 +117,25 @@ static void M_LoadComments(
     Mem_Free(plain_format);
 }
 
+static void M_LoadFont(
+    const PATCH_STACK *const patches, const ALLOCATOR *const allocator)
+{
+    const char *const font = Json_GetString(
+        Json_Get(Patch_LoadSettings(patches, allocator), "font"), nullptr);
+    m_Font = font != nullptr ? Str_Dup(font) : nullptr;
+    int32_t count = 0;
+    for (int32_t i = 0; i < Patch_GetCount(patches); i++) {
+        count += Patch_Get(patches, i)->font_count;
+    }
+    m_FontFiles = Mem_AllocArr((size_t)(count > 0 ? count : 1), sizeof(char *));
+    for (int32_t i = Patch_GetCount(patches) - 1; i >= 0; i--) {
+        const PATCH_INFO *const info = Patch_Get(patches, i);
+        for (int32_t j = 0; j < info->font_count; j++) {
+            m_FontFiles[m_FontFileCount++] = info->fonts[j];
+        }
+    }
+}
+
 void Translation_Init(const PATCH_STACK *const patches)
 {
     if (patches == nullptr) {
@@ -124,6 +146,7 @@ void Translation_Init(const PATCH_STACK *const patches)
     const ALLOCATOR *const allocator = Arena_Allocator(&arena);
     PATCH_STRINGS *const strings = Patch_LoadStrings(patches, M_IMAGE_BASE);
     M_TranslateStrings(strings);
+    M_LoadFont(patches, allocator);
 
     const JSON_VALUE *const spells =
         Patch_LoadJson(patches, PATCH_GAME_DIR, "spells.js", allocator);
@@ -152,6 +175,11 @@ void Translation_Init(const PATCH_STACK *const patches)
 
 void Translation_Shutdown(void)
 {
+    Mem_Free(m_Font);
+    m_Font = nullptr;
+    Mem_Free(m_FontFiles);
+    m_FontFiles = nullptr;
+    m_FontFileCount = 0;
     for (int32_t i = 0; i < TRANSLATION_SPELL_COUNT; i++) {
         Mem_Free(m_SpellNames[i]);
         m_SpellNames[i] = nullptr;
@@ -227,4 +255,15 @@ const char *Translation_GetMusicComment(const int32_t tune, const int32_t row)
         return nullptr;
     }
     return m_Comments[tune][row];
+}
+
+const char *Translation_GetFont(void)
+{
+    return m_Font;
+}
+
+const char *const *Translation_GetFontFiles(int32_t *const count)
+{
+    *count = m_FontFileCount;
+    return m_FontFiles;
 }

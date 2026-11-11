@@ -58,7 +58,9 @@ static RESULT M_Init(void)
         LOG_INFO("The patches change gameplay, so replays are not saved");
         ResultScreen_RefuseReplays(true);
     }
-    MUST(Anm_InitText(nullptr, nullptr, 0));
+    int32_t font_count;
+    const char *const *const fonts = Translation_GetFontFiles(&font_count);
+    MUST(Anm_InitText(Translation_GetFont(), fonts, font_count));
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(App_GetUserDir());
     Result_Log(M_KeepDemo(), LOG_LEVEL_WARNING);

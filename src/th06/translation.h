@@ -22,6 +22,14 @@
 // Holds the number of comment rows of a music room tune.
 #define TRANSLATION_COMMENT_ROWS 8
 
+// Returns the font family that the patch settings name, from thcrap's
+// "font" setting, or nullptr when they name none.
+const char *Translation_GetFont(void);
+// Returns the font files of the patches, the patch that applies last
+// first, and sets *count to their number. The paths belong to the stack of
+// Translation_Init.
+const char *const *Translation_GetFontFiles(int32_t *count);
+
 // Loads the translations of patches and applies the string tables to
 // g_Strings. Never fails: a file that is missing or broken leaves the
 // original text. A nullptr patches loads nothing.
