@@ -190,6 +190,29 @@ static void M_ShowHalf(
     Mem_Free(converted);
 }
 
+// Shows the whole text line at the cursor on the first sprite of the line,
+// and moves the cursor to the NUL or line break that ends it.
+static void M_ShowLine(M_ENDING *const ending)
+{
+    const size_t start = ending->cursor;
+    while (ending->cursor < ending->script.size && M_Current(ending) != '\0'
+           && !M_IsBreak(M_Current(ending))) {
+        ending->cursor++;
+    }
+    const int32_t index = ending->line * 2;
+    if (index < 0 || index >= M_SPRITE_COUNT) {
+        return;
+    }
+    ANM_VM *const vm = &ending->sprites[index];
+    Anm_StartScript(vm, M_FIRST_TEXT_SCRIPT + index);
+    const char *const line = EndingScript_GetHalf(&ending->script, start);
+    Result_Log(
+        Anm_RenderText(
+            vm, ending->text_color, M_TEXT_SHADOW, "%s",
+            line != nullptr ? line : ""),
+        LOG_LEVEL_WARNING);
+}
+
 static void M_ClearScripts(M_ENDING *const ending)
 {
     for (int32_t i = 0; i < M_SPRITE_COUNT; i++) {
@@ -397,6 +420,11 @@ static M_STEP M_RunScript(M_ENDING *const ending)
             }
             if (c == '\0' || M_IsBreak(c)) {
                 M_EndLine(ending, half, start, text, length);
+                goto done;
+            }
+            if (ending->script.whole_lines) {
+                M_ShowLine(ending);
+                M_EndLine(ending, 0, 0, text, 0);
                 goto done;
             }
             if (length == 0) {

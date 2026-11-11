@@ -2,6 +2,7 @@
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -13,8 +14,11 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 
+#include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/image.h"
+#include "core/json.h"
+#include "core/patch.h"
 #include "core/io/file.h"
 
 #include <string.h>
@@ -50,7 +54,7 @@ SCENE Scene_GetRequested(void)
 static ENDING_SCRIPT M_Script(const char *const text, const size_t size)
 {
     ENDING_SCRIPT script;
-    EndingScript_Init(text, size, &script);
+    EndingScript_Init(text, size, false, &script);
     return script;
 }
 
@@ -399,4 +403,158 @@ TEST(a_script_without_its_end_command_ends_at_its_last_byte)
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(M_TicksToEnd(5), 1);
     M_Teardown();
+}
+
+// Patched endings
+
+// Returns script with diff applied, as a new string, or nullptr when
+// diff does not parse.
+static char *M_ApplyDiff(
+    const char *const script, const size_t size, const char *const diff)
+{
+    ARENA arena;
+    Arena_Init(&arena, "test", 1 << 16);
+    JSON_VALUE *tree = nullptr;
+    if (!Result_Log(
+            Json_Parse(diff, strlen(diff), Arena_Allocator(&arena), &tree),
+            LOG_LEVEL_ERROR)) {
+        Arena_Free(&arena);
+        return nullptr;
+    }
+    size_t patched_size;
+    uint8_t *const patched = EndingScript_ApplyDiff(
+        (const uint8_t *)script, size, tree, &patched_size);
+    char *const text = Mem_AllocZ(patched_size + 1);
+    memcpy(text, patched, patched_size);
+    Mem_Free(patched);
+    Arena_Free(&arena);
+    return text;
+}
+
+static void M_CheckDiff(
+    const char *const script, const size_t size, const char *const diff,
+    const char *const expected, const size_t expected_size)
+{
+    char *const text = M_ApplyDiff(script, size, diff);
+    CHECK(text != nullptr && memcmp(text, expected, expected_size) == 0);
+    CHECK(text != nullptr && text[expected_size] == '\0');
+    Mem_Free(text);
+}
+
+#define M_CHECK_DIFF(script_, diff_, expected_)                                \
+    M_CheckDiff(                                                               \
+        script_, sizeof(script_) - 1, diff_, expected_, sizeof(expected_) - 1)
+
+#define M_DIFF_SCRIPT                                                          \
+    "@c255\0\r\n"                                                              \
+    "A1\0\r\n"                                                                 \
+    "A2\0\r\n"                                                                 \
+    "@w10\0"                                                                   \
+    "0\0\r\n"                                                                  \
+    "B1\0\r\n"                                                                 \
+    "@z\r\n"
+
+TEST(a_jdiff_replaces_the_text_block_its_line_starts)
+{
+    M_CHECK_DIFF(
+        M_DIFF_SCRIPT, "{'1': {lines: ['One', 'Two', 'Three']}}",
+        "@c255\0\r\n"
+        "One\r\nTwo\r\nThree\r\n"
+        "@w10\0"
+        "0\0\r\n"
+        "B1\0\r\n"
+        "@z\r\n");
+}
+
+TEST(a_jdiff_counts_the_command_lines)
+{
+    M_CHECK_DIFF(
+        M_DIFF_SCRIPT, "{'4': {lines: ['Bee']}}",
+        "@c255\0\r\n"
+        "A1\0\r\n"
+        "A2\0\r\n"
+        "@w10\0"
+        "0\0\r\n"
+        "Bee\r\n"
+        "@z\r\n");
+}
+
+TEST(a_jdiff_key_inside_a_block_does_nothing)
+{
+    M_CHECK_DIFF(
+        M_DIFF_SCRIPT, "{'2': {lines: ['x']}, '#1': {lines: ['y']}}",
+        M_DIFF_SCRIPT);
+}
+
+TEST(an_empty_jdiff_block_removes_the_text)
+{
+    M_CHECK_DIFF(
+        M_DIFF_SCRIPT, "{'4': {lines: []}}",
+        "@c255\0\r\n"
+        "A1\0\r\n"
+        "A2\0\r\n"
+        "@w10\0"
+        "0\0\r\n"
+        "@z\r\n");
+}
+
+TEST(jdiff_lines_lose_their_markup)
+{
+    M_CHECK_DIFF(
+        M_DIFF_SCRIPT, "{'4': {lines: ['<c$Reimu:$12345678> \"Hi.\"']}}",
+        "@c255\0\r\n"
+        "A1\0\r\n"
+        "A2\0\r\n"
+        "@w10\0"
+        "0\0\r\n"
+        "Reimu: \"Hi.\"\r\n"
+        "@z\r\n");
+}
+
+TEST(whole_lines_make_each_text_line_one_half)
+{
+    const char text[] =
+        "@c255\0\r\n"
+        "A line longer than thirty-two bytes, in UTF-8 ♪\r\n" M_KOUMA "\0\r\n";
+    ENDING_SCRIPT script;
+    EndingScript_Init(text, sizeof(text) - 1, true, &script);
+    CHECK(EndingScript_GetHalf(&script, 0) == nullptr);
+    CHECK_EQ_STR(
+        EndingScript_GetHalf(&script, 8),
+        "A line longer than thirty-two bytes, in UTF-8 ♪");
+    CHECK(EndingScript_GetHalf(&script, 8 + 32) == nullptr);
+    const size_t kouma = sizeof(text) - 1 - 7;
+    CHECK_EQ_STR(EndingScript_GetHalf(&script, kouma), "紅魔");
+    EndingScript_Free(&script);
+}
+
+static PATCH_STACK *M_Patch(const char *const diff)
+{
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    PatchBuilder_Write(patches, "a/lang/th06/end00.end.jdiff", diff);
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    Files_SetPatches(stack);
+    return stack;
+}
+
+TEST(a_patched_ending_shows_a_line_in_one_step)
+{
+    M_Setup("patched_full");
+    M_RUN(
+        "@s0\0"
+        "0\0\r\n"
+        "0123456789abcdef0123456789ABCDEF"
+        "0123456789abcdef0123456789ABCDEF\r\n@z\r\n");
+    PATCH_STACK *const stack = M_Patch(
+        "{'1': {lines: ['A translated line of more than sixty-four bytes, "
+        "which shows whole.']}}");
+    CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(M_TicksToEnd(5), 2);
+    M_Teardown();
+    Patch_CloseStack(stack);
 }
