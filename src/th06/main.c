@@ -38,6 +38,9 @@ static RESULT M_Init(void)
     ResultScreen_OpenSaves(App_GetUserDir());
     m_GameInitialized = true;
     MUST(Game_Init());
+    // Seeds the gameplay RNG from the clock once, outside the ticks, as the
+    // original seeds it at start. Replays restore their own seeds.
+    Rng_SetSeed(&g_Rng, (uint16_t)time(nullptr));
     g_AsciiText.capture_background = true;
     return OK;
 }
