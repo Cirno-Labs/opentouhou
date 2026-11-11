@@ -68,6 +68,11 @@ static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
     SDL_GL_SetAttribute(
         SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+#ifdef __APPLE__
+    // macOS offers a 3.3 core context only when it is forward-compatible.
+    SDL_GL_SetAttribute(
+        SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+#endif
 
     ctx->window = SDL_CreateWindow(
         g_GameDesc.title, g_GameDesc.logical_width, g_GameDesc.logical_height,
@@ -90,6 +95,30 @@ static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
     return OK;
 }
 
+// Returns the default data directory for an executable in exe_dir. On
+// macOS, an executable inside an application bundle looks beside the
+// bundle, because the bundle holds only the program.
+static char *M_DataDirOf(const char *const exe_dir)
+{
+    char *const dir = Str_Dup(exe_dir);
+#ifdef __APPLE__
+    static const char suffix[] = ".app/Contents/MacOS";
+    size_t length = strlen(dir);
+    while (length > 1 && dir[length - 1] == '/') {
+        dir[--length] = '\0';
+    }
+    if (length > sizeof(suffix) - 1
+        && strcmp(dir + length - (sizeof(suffix) - 1), suffix) == 0) {
+        dir[length - (sizeof("/Contents/MacOS") - 1)] = '\0';
+        char *const slash = strrchr(dir, '/');
+        if (slash != nullptr) {
+            slash[1] = '\0';
+        }
+    }
+#endif
+    return dir;
+}
+
 // Prints the usage, the data directory and the user directory to stdout.
 // On Windows, a release build has no console of its own, so the text goes
 // to the console of the shell that started it.
@@ -101,6 +130,7 @@ static void M_PrintHelp(const char *const program)
     }
 #endif
     const char *const exe_dir = Path_GetExeDir();
+    char *const data_dir = exe_dir != nullptr ? M_DataDirOf(exe_dir) : nullptr;
     char *user_dir = nullptr;
     Result_Ignore(Path_GetUserDir(g_GameDesc.id, &user_dir));
     printf(
@@ -113,9 +143,10 @@ static void M_PrintHelp(const char *const program)
         "\n"
         "Data directory without --data: %s\n"
         "Settings, scores and replays:  %s\n",
-        program, g_GameDesc.title, exe_dir != nullptr ? exe_dir : "unknown",
+        program, g_GameDesc.title, data_dir != nullptr ? data_dir : "unknown",
         user_dir != nullptr ? user_dir : "no user directory");
     fflush(stdout);
+    Mem_Free(data_dir);
     Mem_Free(user_dir);
 }
 
@@ -140,7 +171,7 @@ static RESULT M_ParseArgs(
     if (*data_dir == nullptr) {
         const char *const exe_dir = Path_GetExeDir();
         FAIL_IF(exe_dir == nullptr, "Cannot find the executable's directory");
-        *data_dir = Str_Dup(exe_dir);
+        *data_dir = M_DataDirOf(exe_dir);
     }
     return OK;
 }

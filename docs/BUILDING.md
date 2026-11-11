@@ -103,6 +103,9 @@ build/linux/debug/o<game> --data ~/games/<game>
 `o<game> --help` lists the arguments and prints the data and user
 directories that the game uses.
 
+On macOS, the application bundle looks for the data in the folder that
+holds the bundle, so put `o<game>.app` into the game's folder.
+
 The data directory is never written to. Settings, scores and replays go
 to your user directory:
 
