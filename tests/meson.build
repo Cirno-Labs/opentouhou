@@ -628,8 +628,8 @@ test(
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
     link_with: [
-      th06_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
+      th06_lib, stg_pbg3_lib, core_patch_lib, core_json_lib, core_vfs_lib,
+      core_io_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
     ],
     dependencies: [sdl3],
   ),

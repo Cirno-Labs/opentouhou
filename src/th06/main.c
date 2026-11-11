@@ -55,6 +55,7 @@ static RESULT M_KeepDemo(void)
 static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
+    Files_SetPatches(App_GetPatches());
     MUST(Anm_InitText());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(App_GetUserDir());
@@ -101,6 +102,7 @@ const GAME_DESC g_GameDesc = {
     .input_schema = &g_InputSchema,
     .settings_schema = &g_SettingsSchema,
     .settings = &g_Settings,
+    .patch_game = &g_PatchGame,
     .init = M_Init,
     .tick = M_Tick,
     .shutdown = M_Shutdown,

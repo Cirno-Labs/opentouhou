@@ -1,10 +1,15 @@
 #include "th06/files.h"
 
 #include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/base/utils.h"
+#include "core/patch.h"
 #include "core/vfs.h"
 
 #include "stg/pbg3.h"
+
+// Mounts the patches above the six archives, which mount at 11 to 16.
+#define M_PATCH_PRIORITY 100
 
 static const char *const m_Archives[] = {
     "紅魔郷IN.DAT", "紅魔郷MD.DAT", "紅魔郷ST.DAT",
@@ -12,6 +17,21 @@ static const char *const m_Archives[] = {
 };
 
 static VFS *m_Vfs = nullptr;
+static const PATCH_STACK *m_Patches = nullptr;
+
+static PATCH_FILE_KIND M_Classify(const char *const name)
+{
+    if (Str_EndsWith(name, ".ecl") || Str_EndsWith(name, ".std")
+        || Str_EndsWith(name, ".sht")
+        || (Str_StartsWith(name, "msg") && Str_EndsWith(name, ".dat"))) {
+        return PATCH_FILE_GAMEPLAY;
+    }
+    if (Str_EndsWith(name, ".anm") || Str_EndsWith(name, ".png")
+        || Str_EndsWith(name, ".jpg")) {
+        return PATCH_FILE_IGNORED;
+    }
+    return PATCH_FILE_DATA;
+}
 
 static RESULT M_MountArchive(const char *const name, const int32_t priority)
 {
@@ -26,6 +46,12 @@ static RESULT M_MountArchive(const char *const name, const int32_t priority)
     Vfs_MountSource(m_Vfs, source, priority);
     return OK;
 }
+
+const PATCH_GAME g_PatchGame = {
+    .build = "v1.02h",
+    .layout = PATCH_LAYOUT_FLAT,
+    .classify = M_Classify,
+};
 
 RESULT Files_Init(const char *const data_dir)
 {
@@ -43,12 +69,23 @@ RESULT Files_Init(const char *const data_dir)
     return result;
 }
 
+void Files_SetPatches(const PATCH_STACK *const patches)
+{
+    m_Patches = patches;
+    if (patches != nullptr) {
+        Vfs_MountSource(
+            m_Vfs, Patch_CreateSource(patches, &g_HeapAllocator),
+            M_PATCH_PRIORITY);
+    }
+}
+
 void Files_Shutdown(void)
 {
     if (m_Vfs != nullptr) {
         Vfs_Destroy(m_Vfs);
         m_Vfs = nullptr;
     }
+    m_Patches = nullptr;
 }
 
 RESULT Files_Load(const char *const path, READER *const out)
@@ -59,4 +96,15 @@ RESULT Files_Load(const char *const path, READER *const out)
 RESULT Files_Stream(const char *const path, READER *const out)
 {
     return Vfs_Open(m_Vfs, path, VFS_STREAM, out);
+}
+
+JSON_VALUE *Files_LoadDiff(
+    const char *const path, const ALLOCATOR *const allocator)
+{
+    return Patch_LoadDiff(m_Patches, path, allocator);
+}
+
+bool Files_IsPatched(const char *const path)
+{
+    return Patch_Touches(m_Patches, path);
 }
