@@ -9,6 +9,7 @@
 #include "core/io/file.h"
 #include "core/io/path.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define M_SCORE_PATH "score.dat"
@@ -24,7 +25,8 @@ typedef struct {
 typedef struct {
     char *user_dir;
     SCORE_FILE score;
-    RESULT_SAVES_SLOT slots[RESULT_SAVES_SLOT_COUNT];
+    SAVED_REPLAY slots[SAVED_REPLAY_SLOT_COUNT];
+    SAVED_REPLAY user[SAVED_REPLAY_USER_COUNT];
     M_PENDING pending[M_PENDING_COUNT];
     RESULT_SCREEN_CLOCK clock;
 } M_SAVES;
@@ -75,23 +77,104 @@ static char *M_ReplayPath(const int32_t slot)
     return Str_Format(M_REPLAY_DIR "/th6_%.2d.rpy", slot + 1);
 }
 
-static void M_ReadSlot(READER *const reader, RESULT_SAVES_SLOT *const out)
+// Returns the path of name, relative to the user directory, as the
+// replay module opens it.
+static char *M_FullPath(const char *const name)
 {
-    *out = (RESULT_SAVES_SLOT) {};
+    return m_Saves.user_dir != nullptr
+        ? Path_Join(&g_HeapAllocator, m_Saves.user_dir, name)
+        : Str_Dup(name);
+}
+
+static void M_ReadReplay(
+    READER *const reader, const char *const name, const char *const label,
+    SAVED_REPLAY *const out)
+{
+    *out = (SAVED_REPLAY) {};
     REPLAY_FILE *file = nullptr;
     if (!Result_Ignore(Replay_Read(reader, &file))) {
         return;
     }
-    char *name;
-    if (Result_Ignore(Cp932_Encode(file->name, strlen(file->name), &name))) {
+    char *bytes;
+    char *const path = M_FullPath(name);
+    if (strlen(path) < sizeof(out->path)
+        && Result_Ignore(
+            Cp932_Encode(file->name, strlen(file->name), &bytes))) {
         out->valid = true;
-        memcpy(out->name, name, strlen(name) + 1);
-        memcpy(out->date, file->date, sizeof(out->date));
-        out->shot = file->shot;
-        out->score = file->score;
-        Mem_Free(name);
+        memcpy(out->path, path, strlen(path) + 1);
+        memcpy(out->label, label, strlen(label) + 1);
+        memcpy(out->name, bytes, strlen(bytes) + 1);
+        Replay_Summarize(file, &out->summary);
+        Mem_Free(bytes);
     }
+    Mem_Free(path);
     Replay_Free(file);
+}
+
+static void M_ReadSlot(
+    READER *const reader, const int32_t slot, SAVED_REPLAY *const out)
+{
+    char *const name = M_ReplayPath(slot);
+    char label[8];
+    snprintf(label, sizeof(label), "No.%.2d", slot + 1);
+    M_ReadReplay(reader, name, label, out);
+    Mem_Free(name);
+}
+
+static void M_ReadFile(
+    const char *const name, const char *const label, SAVED_REPLAY *const out)
+{
+    char *const path = M_FullPath(name);
+    READER reader;
+    if (File_Exists(path)
+        && Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_WARNING)) {
+        M_ReadReplay(&reader, name, label, out);
+        Reader_Close(&reader);
+    }
+    Mem_Free(path);
+}
+
+// Returns whether name matches th6_ud????.rpy, ignoring the case of ASCII
+// letters as Windows does.
+static bool M_IsUserReplay(const char *const name)
+{
+    const char *const pattern = "th6_ud????.rpy";
+    if (strlen(name) != strlen(pattern)) {
+        return false;
+    }
+    for (size_t i = 0; pattern[i] != 0; i++) {
+        const char c = name[i] >= 'A' && name[i] <= 'Z'
+            ? (char)(name[i] - 'A' + 'a')
+            : name[i];
+        if (pattern[i] != '?' && c != pattern[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void M_ReadUserReplays(void)
+{
+    char *const directory = M_FullPath(M_REPLAY_DIR);
+    FILE_LIST list;
+    if (File_Exists(directory)
+        && Result_Log(
+            File_ListDir(directory, &g_HeapAllocator, &list),
+            LOG_LEVEL_WARNING)) {
+        int32_t found = 0;
+        for (int32_t i = 0; i < list.count && found < SAVED_REPLAY_USER_COUNT;
+             i++) {
+            if (!M_IsUserReplay(list.items[i])) {
+                continue;
+            }
+            char *const name = Str_Format(M_REPLAY_DIR "/%s", list.items[i]);
+            M_ReadFile(name, "User ", &m_Saves.user[found]);
+            Mem_Free(name);
+            found++;
+        }
+        File_FreeList(&list);
+    }
+    Mem_Free(directory);
 }
 
 static void M_LoadScore(READER *const reader)
@@ -117,17 +200,18 @@ void ResultScreen_OpenSaves(const char *const user_dir)
         Reader_Close(&reader);
     }
     Mem_Free(score_path);
-    for (int32_t i = 0; i < RESULT_SAVES_SLOT_COUNT; i++) {
+    for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
         char *const name = M_ReplayPath(i);
-        char *const path = Path_Join(&g_HeapAllocator, user_dir, name);
+        char *const path = M_FullPath(name);
         if (File_Exists(path)
             && Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_WARNING)) {
-            M_ReadSlot(&reader, &m_Saves.slots[i]);
+            M_ReadSlot(&reader, i, &m_Saves.slots[i]);
             Reader_Close(&reader);
         }
         Mem_Free(path);
         Mem_Free(name);
     }
+    M_ReadUserReplays();
 }
 
 static RESULT M_Write(const M_PENDING *const pending)
@@ -182,11 +266,28 @@ void ResultScreen_CloseSaves(void)
     Mem_Free(m_Saves.user_dir);
     m_Saves.user_dir = nullptr;
     memset(m_Saves.slots, 0, sizeof(m_Saves.slots));
+    memset(m_Saves.user, 0, sizeof(m_Saves.user));
 }
 
 void ResultScreen_SetClock(const RESULT_SCREEN_CLOCK *const clock)
 {
     m_Saves.clock = *clock;
+}
+
+int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT])
+{
+    int32_t count = 0;
+    for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
+        if (m_Saves.slots[i].valid) {
+            out[count++] = m_Saves.slots[i];
+        }
+    }
+    for (int32_t i = 0; i < SAVED_REPLAY_USER_COUNT; i++) {
+        if (m_Saves.user[i].valid) {
+            out[count++] = m_Saves.user[i];
+        }
+    }
+    return count;
 }
 
 const SCORE_FILE *ResultSaves_GetScoreFile(void)
@@ -202,7 +303,7 @@ void ResultSaves_PutScoreFile(uint8_t *const data, const size_t size)
     M_Queue(Str_Dup(M_SCORE_PATH), data, size);
 }
 
-const RESULT_SAVES_SLOT *ResultSaves_GetSlot(const int32_t slot)
+const SAVED_REPLAY *ResultSaves_GetSlot(const int32_t slot)
 {
     return &m_Saves.slots[slot];
 }
@@ -212,7 +313,7 @@ void ResultSaves_PutReplay(
 {
     READER reader;
     Reader_OpenBuffer(&reader, data, size);
-    M_ReadSlot(&reader, &m_Saves.slots[slot]);
+    M_ReadSlot(&reader, slot, &m_Saves.slots[slot]);
     M_Queue(M_ReplayPath(slot), data, size);
 }
 

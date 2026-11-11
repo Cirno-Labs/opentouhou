@@ -82,7 +82,7 @@ typedef struct {
     // ranks below the tenth.
     HIGH_SCORE *named;
     HIGH_SCORE entry;
-    RESULT_SAVES_SLOT slots[RESULT_SAVES_SLOT_COUNT];
+    SAVED_REPLAY slots[SAVED_REPLAY_SLOT_COUNT];
     char replay_date[9];
     uint32_t replay_score;
     CHAIN_ELEM calc;
@@ -363,8 +363,8 @@ static bool M_SlotIsUsed(const M_SCREEN *const screen, const int32_t slot)
 static void M_ListSlots(M_SCREEN *const screen)
 {
     if (screen->frame == 0) {
-        for (int32_t i = 0; i < RESULT_SAVES_SLOT_COUNT; i++) {
-            const RESULT_SAVES_SLOT *const slot = ResultSaves_GetSlot(i);
+        for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
+            const SAVED_REPLAY *const slot = ResultSaves_GetSlot(i);
             if (slot->valid) {
                 screen->slots[i] = *slot;
             }
@@ -373,7 +373,7 @@ static void M_ListSlots(M_SCREEN *const screen)
     if (screen->frame < 20) {
         return;
     }
-    M_MoveCursorVertical(screen, RESULT_SAVES_SLOT_COUNT);
+    M_MoveCursorVertical(screen, SAVED_REPLAY_SLOT_COUNT);
     screen->replay_slot = screen->cursor;
     if (M_Pressed(M_CONFIRM)) {
         Sound_Queue(SOUND_OK);
@@ -982,10 +982,10 @@ static void M_DrawSlots(M_SCREEN *const screen)
         screen->sprites[0x15].pos, g_Strings[STRING_REPLAY_SAVE_HEADER]);
     const int32_t shot =
         g_GameManager.run.character * 2 + g_GameManager.run.shot_type;
-    for (int32_t i = 0; i < RESULT_SAVES_SLOT_COUNT; i++) {
+    for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
         const VEC3 pos = screen->sprites[M_SLOT_SPRITE + i].pos;
         AsciiText_SetColor(i == screen->replay_slot ? 0xffff8080 : 0xff808080);
-        const RESULT_SAVES_SLOT *const slot = &screen->slots[i];
+        const SAVED_REPLAY *const slot = &screen->slots[i];
         if (screen->state == M_STATE_REPLAY_NAME) {
             AsciiText_AddFormat(
                 pos, g_Strings[STRING_REPLAY_SAVE_SLOT], i + 1,
@@ -999,8 +999,9 @@ static void M_DrawSlots(M_SCREEN *const screen)
         } else {
             AsciiText_AddFormat(
                 pos, g_Strings[STRING_REPLAY_SAVE_SLOT], i + 1,
-                (const char *)slot->name, slot->date,
-                g_Strings[m_ShotTypeNames[slot->shot]], slot->score);
+                (const char *)slot->name, slot->summary.date,
+                g_Strings[m_ShotTypeNames[slot->summary.shot]],
+                slot->summary.score);
         }
     }
 }

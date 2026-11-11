@@ -112,7 +112,7 @@ TEST(open_reads_the_score_file_and_the_replay_slots)
     CHECK_EQ_INT(
         ScoreFile_GetHighScore(ResultSaves_GetScoreFile(), 2, 1), 4000000);
     CHECK(!ResultSaves_GetSlot(0)->valid);
-    const RESULT_SAVES_SLOT *const slot = ResultSaves_GetSlot(1);
+    const SAVED_REPLAY *const slot = ResultSaves_GetSlot(1);
     CHECK(slot->valid);
     CHECK(
         memcmp(
@@ -121,9 +121,9 @@ TEST(open_reads_the_score_file_and_the_replay_slots)
             "CD",
             6)
         == 0);
-    CHECK_EQ_STR(slot->date, "11/11/26");
-    CHECK_EQ_INT(slot->shot, 3);
-    CHECK_EQ_INT(slot->score, 7654321);
+    CHECK_EQ_STR(slot->summary.date, "11/11/26");
+    CHECK_EQ_INT(slot->summary.shot, 3);
+    CHECK_EQ_INT(slot->summary.score, 7654321);
     ResultScreen_CloseSaves();
     Mem_Free(replay_path);
     Mem_Free(replay_dir);
@@ -178,7 +178,7 @@ TEST(put_replay_creates_the_replay_directory)
     uint8_t *const copy = Mem_Dup(data, size);
     ResultSaves_PutReplay(14, data, size);
     CHECK(ResultSaves_GetSlot(14)->valid);
-    CHECK_EQ_INT(ResultSaves_GetSlot(14)->score, 7654321);
+    CHECK_EQ_INT(ResultSaves_GetSlot(14)->summary.score, 7654321);
     CHECK(Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_ERROR));
     CHECK(M_FileEquals(replay_path, copy, size));
     ResultScreen_CloseSaves();
@@ -309,5 +309,64 @@ TEST(load_game_records_reads_the_saved_score_file)
         &high, gm->records.spell_cards, gm->records.clears,
         gm->records.practice, 0, 1);
     CHECK_EQ_INT(high, 1000000);
+    ResultScreen_CloseSaves();
+}
+
+TEST(list_gives_the_slots_then_the_user_replays)
+{
+    char *const directory = TestDir_Prepare("list");
+    char *const replay_dir = TestDir_Join(directory, "replay");
+    CHECK(Result_Log(File_MakeDir(replay_dir), LOG_LEVEL_ERROR));
+    const char *const names[] = {
+        "th6_03.rpy",     "th6_01.rpy",   "th6_udB000.rpy",
+        "TH6_UD0001.rpy", "th6_ud12.rpy", "other.rpy",
+    };
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        char *const path = TestDir_Join(replay_dir, names[i]);
+        size_t size;
+        M_Save(path, M_ReplayBytes(&size), size);
+        Mem_Free(path);
+    }
+    char *const junk_path = TestDir_Join(replay_dir, "th6_ud0002.rpy");
+    M_Save(junk_path, Mem_AllocZ(8), 8);
+    Mem_Free(junk_path);
+    ResultScreen_OpenSaves(directory);
+    static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
+    CHECK_EQ_INT(ResultScreen_ListReplays(list), 4);
+    CHECK_EQ_STR(list[0].label, "No.01");
+    CHECK_EQ_STR(list[1].label, "No.03");
+    CHECK_EQ_STR(list[2].label, "User ");
+    CHECK_EQ_STR(list[3].label, "User ");
+    const char *const ends[] = {
+        "replay/th6_01.rpy",
+        "replay/th6_03.rpy",
+        "replay/TH6_UD0001.rpy",
+        "replay/th6_udB000.rpy",
+    };
+    for (int32_t i = 0; i < 4; i++) {
+        const size_t length = strlen(list[i].path);
+        const size_t end = strlen(ends[i]);
+        CHECK(
+            length > end && strcmp(list[i].path + length - end, ends[i]) == 0);
+        CHECK(strncmp(list[i].path, directory, strlen(directory)) == 0);
+        CHECK_EQ_INT(list[i].summary.lives, 2);
+        CHECK(list[i].summary.stages[1]);
+        CHECK_EQ_INT(list[i].summary.difficulty, 1);
+    }
+    ResultScreen_CloseSaves();
+    Mem_Free(replay_dir);
+    Mem_Free(directory);
+}
+
+TEST(list_follows_a_saved_slot)
+{
+    ResultScreen_OpenSaves(nullptr);
+    static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
+    CHECK_EQ_INT(ResultScreen_ListReplays(list), 0);
+    size_t size;
+    ResultSaves_PutReplay(4, M_ReplayBytes(&size), size);
+    CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
+    CHECK_EQ_STR(list[0].label, "No.05");
+    CHECK_EQ_STR(list[0].path, "replay/th6_05.rpy");
     ResultScreen_CloseSaves();
 }

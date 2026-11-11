@@ -1,6 +1,10 @@
 #pragma once
 
+#include "th06/replay/types.h"
+
 #include "core/base/result.h"
+
+#include <stdint.h>
 
 // Keeps score.dat and the headers of the replay slots in memory, so that
 // the simulation reads and saves them without the file system. The files
@@ -18,9 +22,27 @@ typedef struct {
     float expected_frames;
 } RESULT_SCREEN_CLOCK;
 
+#define SAVED_REPLAY_SLOT_COUNT 15
+#define SAVED_REPLAY_USER_COUNT 45
+#define SAVED_REPLAY_COUNT (SAVED_REPLAY_SLOT_COUNT + SAVED_REPLAY_USER_COUNT)
+#define SAVED_REPLAY_PATH_SIZE 0x200
+
+// Holds a replay of the replay directory as the menus show it.
+typedef struct {
+    bool valid;
+    // Holds the path of the file, as g_GameManager.mode.replay_path takes
+    // it.
+    char path[SAVED_REPLAY_PATH_SIZE];
+    char label[8]; // "No.01" to "No.15", or "User "
+    uint8_t name[9]; // CP932, as the ASCII font draws it
+    REPLAY_SUMMARY summary;
+} SAVED_REPLAY;
+
 // Reads score.dat and replay/th6_01.rpy to replay/th6_15.rpy from
 // user_dir. A missing or invalid file counts as empty. A nullptr user_dir
-// reads nothing.
+// reads nothing. Also reads the first 45 files of replay/ whose names
+// match th6_ud????.rpy, in byte order, as the original reads the first 45
+// that Windows lists.
 void ResultScreen_OpenSaves(const char *user_dir);
 // Writes the files that the simulation saved since the last call. Reports
 // the first failure. A file that fails to write is dropped, so a later
@@ -28,5 +50,9 @@ void ResultScreen_OpenSaves(const char *user_dir);
 RESULT ResultScreen_WriteSaves(void);
 // Releases the files in memory and drops the saves not written.
 void ResultScreen_CloseSaves(void);
+// Copies the valid replays into out in the replay menu's order: the
+// numbered slots, as the simulation last saved them, then the th6_ud files.
+// Returns their number.
+int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT]);
 // Sets the values that the next ticks read.
 void ResultScreen_SetClock(const RESULT_SCREEN_CLOCK *clock);

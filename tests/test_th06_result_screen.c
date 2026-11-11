@@ -409,12 +409,12 @@ TEST(saving_a_replay_writes_the_slot_and_draws_six_values)
     M_Run(61);
     CHECK_EQ_INT(m_Requested, SCENE_TITLE);
     CHECK_EQ_INT(g_Rng.seed, expected.seed);
-    const RESULT_SAVES_SLOT *const slot = ResultSaves_GetSlot(1);
+    const SAVED_REPLAY *const slot = ResultSaves_GetSlot(1);
     CHECK(slot->valid);
     CHECK(memcmp(slot->name, "A       ", 9) == 0);
-    CHECK_EQ_STR(slot->date, "12/24/26");
-    CHECK_EQ_INT(slot->shot, 2);
-    CHECK_EQ_INT(slot->score, 5000000);
+    CHECK_EQ_STR(slot->summary.date, "12/24/26");
+    CHECK_EQ_INT(slot->summary.shot, 2);
+    CHECK_EQ_INT(slot->summary.score, 5000000);
     M_Teardown();
 }
 
