@@ -854,7 +854,7 @@ static int32_t M_FirstTextPixel(const IMAGE *const image, const int32_t row)
 
 TEST(text_rows_align_cp932_and_preserve_other_rows)
 {
-    CHECK(IS_OK(Anm_InitText()));
+    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
         .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
@@ -883,6 +883,43 @@ TEST(text_rows_align_cp932_and_preserve_other_rows)
     CHECK(center - left >= 56 && center - left <= 58);
     CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, 0, "%s", " ")));
     CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), -1);
+    Anm_ReleaseTexture(100);
+    Anm_ShutdownText();
+}
+
+TEST(text_rows_lay_out_markup)
+{
+    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
+    };
+    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
+    const int32_t left = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "<s$東>")));
+    CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), -1);
+    CHECK(
+        IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "<r$東$東東>")));
+    const int32_t right = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    CHECK(right - left >= 14 && right - left <= 16);
+    Anm_ReleaseTexture(100);
+    Anm_ShutdownText();
+}
+
+TEST(text_takes_the_patch_font_of_the_family)
+{
+    const char *const paths[] = { SDL_getenv("TEST_FONT") };
+    CHECK(IS_OK(Anm_InitText("BIZ UDGothic", paths, 1)));
+    Anm_ShutdownText();
+    CHECK(IS_OK(Anm_InitText("Aroania", paths, 1)));
+    CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
+    };
+    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
+    CHECK(M_FirstTextPixel(AnmTexture_GetImage(100), 16) >= 0);
     Anm_ReleaseTexture(100);
     Anm_ShutdownText();
 }

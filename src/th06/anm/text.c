@@ -3,6 +3,7 @@
 #include "th06/anm/texture.h"
 
 #include "core/base/cp932.h"
+#include "core/base/log.h"
 #include "core/text.h"
 
 #include <stdarg.h>
@@ -56,10 +57,18 @@ static RESULT M_Format(
     return result;
 }
 
-RESULT Anm_InitText(void)
+RESULT Anm_InitText(
+    const char *const family, const char *const *const paths,
+    const int32_t count)
 {
     if (m_Font == nullptr) {
         MUST(Text_Init());
+        if (family != nullptr
+            && Result_Log(
+                TextFont_LoadFamily(paths, count, family, 30.0f, &m_Font),
+                LOG_LEVEL_WARNING)) {
+            return OK;
+        }
         const RESULT result = TextFont_LoadDefault(30.0f, &m_Font);
         if (!IS_OK(result)) {
             Text_Shutdown();
@@ -98,12 +107,13 @@ RESULT Anm_RenderTextToTextureIndex(
     FAIL_IF(height < 2 || height > 255, "Invalid ANM font height");
     MUST(TextFont_SetSize(m_Font, (float)height * 2.0f));
     TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
     style.color = M_Color(color);
     style.shadow = shadow == UINT32_MAX ? (GFX_COLOR) {} : M_Color(shadow);
     style.shadow_x = 3;
     style.shadow_y = 2;
     IMAGE glyphs;
-    MUST(Text_Render(m_Font, text, &style, &g_HeapAllocator, &glyphs));
+    MUST(Text_RenderMarkup(m_Font, text, &style, &g_HeapAllocator, &glyphs));
     IMAGE surface =
         Image_Create(width * 2 - 2, height * 2 - 2, &g_HeapAllocator);
     for (int32_t row = 0; row < glyphs.height && row < surface.height; row++) {

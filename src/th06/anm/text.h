@@ -4,12 +4,19 @@
 
 #include "core/base/result.h"
 
-// Loads the text font outside game ticks. Rendering still updates shown
-// while text is uninitialized, so headless play needs no font setup.
-RESULT Anm_InitText(void);
+// Loads the text font outside game ticks: the first of the count font files
+// in paths whose family is family, or the bundled font when family is
+// nullptr or no file has it. The bundled font draws the characters that the
+// patch font lacks. Text is bold, as the original's GDI font is, so a
+// Regular patch font is emboldened. Reports failure only when the bundled
+// font does not open. Rendering still updates shown while text is
+// uninitialized, so headless play needs no font setup.
+RESULT Anm_InitText(
+    const char *family, const char *const *paths, int32_t count);
 void Anm_ShutdownText(void);
 
-// Replaces a 16-pixel texture row with text. Uses UTF-8 and COLORREF colors
+// Replaces a 16-pixel texture row with text in thcrap's layout markup, as
+// Text_RenderMarkup draws it. Uses UTF-8 and COLORREF colors
 // with red in the low byte. Disables the shadow for 0xffffffff. Defaults
 // font_height to 15 when it is not positive. Scales double-size glyphs
 // through the text surface before replacing the row, as the game does.
