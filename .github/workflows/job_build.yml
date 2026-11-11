@@ -33,6 +33,31 @@ jobs:
       - name: Log in to the container registry
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
+      # An owner without a registry (see tools/docker/image_tag) keeps its
+      # local image in the Actions cache, keyed by the image tag, so that
+      # only a change to the image builds it again.
+      - name: Find the image
+        id: image
+        run: |
+          tag="$(tools/docker/image_tag ${{ inputs.platform }})"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          case "$tag" in
+            */*) echo "local=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "local=true" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Restore the image
+        id: image-cache
+        if: ${{ steps.image.outputs.local == 'true' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/image.tar.zst
+          key: image-v1-${{ steps.image.outputs.tag }}
+
+      - name: Load the image
+        if: ${{ steps.image-cache.outputs.cache-hit == 'true' }}
+        run: zstd -dc .cache/image.tar.zst | docker load
+
       # A pull request restores the shared ccache read-only and never writes
       # it back (see the Save step), so a branch cannot poison the cache that
       # a later develop build uses.
@@ -60,6 +85,19 @@ jobs:
         with:
           path: .cache/ccache
           key: ${{ steps.ccache.outputs.cache-primary-key }}
+
+      - name: Pack the image
+        if: ${{ steps.image.outputs.local == 'true' && steps.image-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request' }}
+        run: |
+          mkdir -p .cache
+          docker save "${{ steps.image.outputs.tag }}" | zstd -T0 -3 -o .cache/image.tar.zst
+
+      - name: Save the image
+        if: ${{ steps.image.outputs.local == 'true' && steps.image-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/image.tar.zst
+          key: ${{ steps.image-cache.outputs.cache-primary-key }}
 
       - name: Upload the packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -209,8 +209,9 @@ most developers pull them instead of building them. In GitHub Actions the
 prefix is the owner of the repository instead, so a fork builds and
 pulls its own images. An owner name that Docker does not accept in an
 image name, such as one that ends with a hyphen, gets local images
-instead: each CI job builds them, which is slow, and nothing is
-pushed. Changing one Dockerfile only retags that platform's image.
+instead: nothing is pushed, and CI keeps each image in the Actions
+cache under its tag, so a job builds it only after its Dockerfile
+changes. Changing one Dockerfile only retags that platform's image.
 
 ```sh
 just image-linux     # build the Linux image locally
