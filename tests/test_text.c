@@ -278,3 +278,40 @@ TEST(a_missing_family_fails)
         !Result_Ignore(TextFont_LoadFamily(nullptr, 0, "Aroania", 15, &font)));
     Text_Shutdown();
 }
+
+// Returns the number of pixels of text that are not transparent.
+static int32_t M_CountInk(
+    const TEXT_FONT *const font, const char *const text,
+    const TEXT_STYLE *const style)
+{
+    IMAGE image;
+    CHECK(IS_OK(Text_Render(font, text, style, &g_HeapAllocator, &image)));
+    int32_t ink = 0;
+    for (int32_t i = 0; i < image.width * image.height; i++) {
+        ink += image.pixels[(size_t)i * 4 + 3] != 0;
+    }
+    Image_Free(&image);
+    return ink;
+}
+
+TEST(faces_change_the_glyphs)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    const int32_t plain = M_CountInk(font, "Reimu", &style);
+    style.face = TEXT_FACE_BOLD;
+    CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
+    style.face = TEXT_FACE_UNDERLINE;
+    CHECK(M_CountInk(font, "Reimu", &style) > plain);
+    style.face = TEXT_FACE_ITALIC;
+    int32_t width, height, italic_width;
+    CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &italic_width, &height)));
+    style.face = 0;
+    CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &width, &height)));
+    CHECK(italic_width >= width);
+    CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
+    TextFont_Free(font);
+    Text_Shutdown();
+}

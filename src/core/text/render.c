@@ -5,6 +5,25 @@
 #include <string.h>
 #include <stdlib.h>
 
+static void M_SetFace(const TEXT_FONT *const font, const uint32_t face)
+{
+    TTF_FontStyleFlags flags = TTF_STYLE_NORMAL;
+    if ((face & TEXT_FACE_BOLD) != 0) {
+        flags |= TTF_STYLE_BOLD;
+    }
+    if ((face & TEXT_FACE_ITALIC) != 0) {
+        flags |= TTF_STYLE_ITALIC;
+    }
+    if ((face & TEXT_FACE_UNDERLINE) != 0) {
+        flags |= TTF_STYLE_UNDERLINE;
+    }
+    for (const TEXT_FONT *f = font; f != nullptr; f = f->fallback) {
+        if (TTF_GetFontStyle(f->font) != flags) {
+            TTF_SetFontStyle(f->font, flags);
+        }
+    }
+}
+
 static RESULT M_Measure(
     const TEXT_FONT *const font, const char *const text,
     const TEXT_STYLE *const style, int32_t *const width, int32_t *const height)
@@ -19,6 +38,7 @@ static RESULT M_Measure(
     if (text[0] == '\0') {
         return OK;
     }
+    M_SetFace(font, style->face);
     int natural_width, natural_height;
     FAIL_IF(
         !TTF_GetStringSize(

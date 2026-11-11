@@ -4,8 +4,20 @@
 #include "core/image.h"
 #include "core/text/font.h"
 
+// Selects the faces of a TEXT_STYLE, combined with '|'. Bold on a font
+// that is not bold emboldens its glyphs, as GDI does for a heavier weight;
+// bold on a bold font changes nothing. Italic on a font that is not italic
+// slants its glyphs.
+typedef enum {
+    TEXT_FACE_BOLD = 1 << 0,
+    TEXT_FACE_ITALIC = 1 << 1,
+    TEXT_FACE_UNDERLINE = 1 << 2,
+} TEXT_FACE;
+
 typedef struct {
     float width_scale;
+    // The TEXT_FACE flags; 0 for the font as it is.
+    uint32_t face;
     GFX_COLOR color;
     GFX_COLOR shadow;
     int32_t shadow_x;
