@@ -27,6 +27,10 @@
 // on fast displays, and waits until three seconds after the start before
 // it plays the title music. The port does neither.
 
+// Names the replay that the demo plays. Playback reads it from th06/replay's
+// store, so the program keeps it there before the first tick.
+#define TITLE_DEMO_PATH "data/demo/demo00.rpy"
+
 // Adds the title at calc priority 2 and draw priority 0. Opens the replay
 // menu when mode is nonzero, or the title otherwise. The first calc loads
 // the files of the screen it opens.

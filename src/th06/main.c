@@ -5,6 +5,8 @@
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
+#include "th06/screens/main.h"
+#include "th06/replay.h"
 #include "th06/screens/result.h"
 #include "th06/settings.h"
 #include "th06/sound.h"
@@ -30,12 +32,31 @@ static void M_SetClock(void)
     ResultScreen_SetClock(&clock);
 }
 
+// Keeps the demo replay of the title for playback, as the saves keep the
+// user's replays.
+static RESULT M_KeepDemo(void)
+{
+    READER reader;
+    MUST(Files_Load(TITLE_DEMO_PATH, &reader));
+    const size_t size = Reader_Remaining(&reader);
+    uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
+    const RESULT result = Reader_Result(&reader);
+    Reader_Close(&reader);
+    MUST(result, TITLE_DEMO_PATH);
+    Replay_AddFile(TITLE_DEMO_PATH, data, size);
+    if (data != nullptr) {
+        Allocator_Free(&g_HeapAllocator, data, size);
+    }
+    return OK;
+}
+
 static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
     MUST(Anm_InitText());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(App_GetUserDir());
+    Result_Log(M_KeepDemo(), LOG_LEVEL_WARNING);
     m_GameInitialized = true;
     MUST(Game_Init());
     // Seeds the gameplay RNG from the clock once, outside the ticks, as the
@@ -62,6 +83,7 @@ static void M_Shutdown(void)
     }
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_CloseSaves();
+    Replay_ClearFiles();
     SoundPlayer_Shutdown();
     Anm_ShutdownText();
     Files_Shutdown();

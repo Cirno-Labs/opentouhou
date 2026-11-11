@@ -66,6 +66,7 @@ static void M_SetUp(void)
     Replay_Discard();
     Chain_Release(&g_Chain);
     Chain_Init(&g_Chain);
+    Replay_ClearFiles();
     Mem_Free(m_Bytes);
     m_Bytes = nullptr;
     m_Size = 0;
@@ -121,6 +122,7 @@ static void M_Fixture(void)
     CHECK(Result_Ignore(ReplayFormat_Write(&writer, &file, &prepared, random)));
     m_Bytes = Writer_TakeBuffer(&writer, &m_Size);
     CHECK(Result_Ignore(Writer_Close(&writer)));
+    Replay_AddFile("synthetic.rpy", m_Bytes, m_Size);
 }
 
 static REPLAY_FILE *M_Save(void)
@@ -254,11 +256,11 @@ TEST(playback_restores_stage_state_and_previous_stage_score)
     CHECK_EQ_INT(g_GameManager.score.shown, 7654321);
     CHECK_EQ_INT(g_Rng.seed, 0xabcd);
     CHECK_EQ_INT(g_Rng.generated, 0);
-    CHECK_EQ_INT(m_Loads, 1);
+    CHECK_EQ_INT(m_Loads, 0);
     Replay_EndStage();
     g_GameManager.run.stage = 1;
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "ignored.rpy")));
-    CHECK_EQ_INT(m_Loads, 1);
+    CHECK_EQ_INT(m_Loads, 0);
     CHECK_EQ_INT(g_Rng.seed, 0x1234);
     Replay_Discard();
 }
@@ -379,4 +381,52 @@ TEST(invalid_save_metadata_keeps_recording_and_rng_unchanged_for_retry)
     }
     CHECK_EQ_INT(file->stages[1]->frame_count, 4);
     Replay_Free(file);
+}
+
+TEST(playback_reads_the_kept_file_and_opens_no_file)
+{
+    M_SetUp();
+    M_Fixture();
+    g_GameManager.run.stage = 1;
+    CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Bytes, m_Size);
+    REPLAY_FILE *file = nullptr;
+    CHECK(Result_Ignore(Replay_Read(&reader, &file)));
+    CHECK_EQ_INT(g_GameManager.run.difficulty, file->difficulty);
+    CHECK_EQ_INT(g_Rng.seed, file->stages[1]->rng_seed);
+    CHECK_EQ_INT(g_GameManager.player.lives, file->stages[1]->lives);
+    Replay_Free(file);
+    CHECK_EQ_INT(m_Loads, 0);
+    Replay_Discard();
+    Chain_Release(&g_Chain);
+}
+
+TEST(playback_of_a_path_not_kept_fails)
+{
+    M_SetUp();
+    M_Fixture();
+    const RESULT result = Replay_Register(REPLAY_PLAY, "elsewhere.rpy");
+    CHECK(!IS_OK(result));
+    Result_Ignore(result);
+    CHECK_EQ_INT(m_Loads, 0);
+    Replay_Discard();
+    Chain_Release(&g_Chain);
+}
+
+TEST(a_kept_file_is_a_copy_that_a_new_copy_replaces)
+{
+    const uint8_t first[] = { 1, 2, 3 };
+    const uint8_t second[] = { 4 };
+    Replay_AddFile("a.rpy", first, sizeof(first));
+    Replay_AddFile("b.rpy", second, sizeof(second));
+    Replay_AddFile("a.rpy", second, sizeof(second));
+    size_t size = 0;
+    const uint8_t *data = Replay_FindFile("a.rpy", &size);
+    CHECK(data != nullptr && size == 1 && data[0] == 4);
+    Replay_RemoveFile("a.rpy");
+    CHECK(Replay_FindFile("a.rpy", &size) == nullptr);
+    CHECK(Replay_FindFile("b.rpy", &size) != nullptr);
+    Replay_ClearFiles();
+    CHECK(Replay_FindFile("b.rpy", &size) == nullptr);
 }

@@ -383,6 +383,7 @@ TEST(saving_a_replay_writes_the_slot_and_draws_six_values)
     M_Setup("replay");
     M_StartGame(5000000);
     g_GameManager.run.stage = 1;
+    g_GameManager.player.lives = 5;
     CHECK(Result_Log(Replay_Register(REPLAY_RECORD, nullptr), LOG_LEVEL_ERROR));
     const RESULT_SCREEN_CLOCK clock = { "12/24/26", 1.0f, 1.0f };
     ResultScreen_SetClock(&clock);
@@ -415,6 +416,13 @@ TEST(saving_a_replay_writes_the_slot_and_draws_six_values)
     CHECK_EQ_STR(slot->summary.date, "12/24/26");
     CHECK_EQ_INT(slot->summary.shot, 2);
     CHECK_EQ_INT(slot->summary.score, 5000000);
+    g_GameManager.player.lives = 0;
+    g_GameManager.mode.in_replay = true;
+    CHECK(
+        Result_Log(Replay_Register(REPLAY_PLAY, slot->path), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(g_GameManager.player.lives, 5);
+    CHECK_EQ_INT(g_GameManager.run.character, 1);
+    Replay_Discard();
     M_Teardown();
 }
 

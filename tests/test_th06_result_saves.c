@@ -4,6 +4,7 @@
 #include "test_dir.h"
 
 #include "th06/game_manager.h"
+#include "th06/replay.h"
 #include "th06/replay/format.h"
 #include "th06/screens/result/private.h"
 
@@ -369,4 +370,20 @@ TEST(list_follows_a_saved_slot)
     CHECK_EQ_STR(list[0].label, "No.05");
     CHECK_EQ_STR(list[0].path, "replay/th6_05.rpy");
     ResultScreen_CloseSaves();
+}
+
+TEST(a_saved_slot_is_kept_for_playback)
+{
+    ResultScreen_OpenSaves(nullptr);
+    size_t size;
+    uint8_t *const data = M_ReplayBytes(&size);
+    uint8_t *const copy = Mem_Dup(data, size);
+    ResultSaves_PutReplay(2, data, size);
+    size_t kept_size = 0;
+    const uint8_t *const kept =
+        Replay_FindFile("replay/th6_03.rpy", &kept_size);
+    CHECK(kept != nullptr && kept_size == size);
+    CHECK(kept != nullptr && memcmp(kept, copy, size) == 0);
+    ResultScreen_CloseSaves();
+    Mem_Free(copy);
 }

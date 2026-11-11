@@ -304,7 +304,7 @@ TEST(practice_starts_at_a_cleared_stage)
     M_Teardown();
 }
 
-static void M_PutReplay(const int32_t slot, const int32_t first)
+static uint8_t *M_ReplayBytes(const int32_t first, size_t *const size)
 {
     REPLAY_FRAME frames[] = { { 0, 0 }, { 5, 0x81 }, { 9999999, 0 } };
     REPLAY_STAGE second = {
@@ -339,9 +339,15 @@ static void M_PutReplay(const int32_t slot, const int32_t first)
     CHECK(Result_Log(
         ReplayFormat_Write(&writer, &file, &prepared, random),
         LOG_LEVEL_ERROR));
-    size_t size;
-    uint8_t *const data = Writer_TakeBuffer(&writer, &size);
+    uint8_t *const data = Writer_TakeBuffer(&writer, size);
     Result_Ignore(Writer_Close(&writer));
+    return data;
+}
+
+static void M_PutReplay(const int32_t slot, const int32_t first)
+{
+    size_t size;
+    uint8_t *const data = M_ReplayBytes(first, &size);
     ResultSaves_PutReplay(slot, data, size);
 }
 

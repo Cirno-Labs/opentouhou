@@ -43,9 +43,19 @@ static RESULT M_StartReplay(const char *const path, int32_t *const last_stage)
 {
     READER reader;
     MUST(Reader_OpenFile(&reader, path));
-    REPLAY_FILE *file = nullptr;
-    const RESULT result = Replay_Read(&reader, &file);
+    const size_t size = Reader_Remaining(&reader);
+    uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
+    RESULT result = Reader_Result(&reader);
     Reader_Close(&reader);
+    MUST(result);
+    Replay_AddFile(path, data, size);
+    READER buffer;
+    Reader_OpenBuffer(&buffer, data, size);
+    REPLAY_FILE *file = nullptr;
+    result = Replay_Read(&buffer, &file);
+    if (data != nullptr) {
+        Allocator_Free(&g_HeapAllocator, data, size);
+    }
     MUST(result);
     int32_t first_stage = 0;
     for (int32_t i = 1; i <= 7; i++) {
@@ -128,6 +138,7 @@ RESULT Runner_Run(
         g_Chain.on_calc_end_arg = nullptr;
         Game_Shutdown();
     }
+    Replay_ClearFiles();
     if (compare != nullptr) {
         RESULT closed = RunnerCompare_Close(compare, report);
         if (IS_OK(result)) {

@@ -24,7 +24,6 @@
 #define M_DRAWN_VM_COUNT 0x62
 #define M_IDLE_FRAMES 720
 #define M_TITLE_MUSIC "bgm/th06_01.mid"
-#define M_DEMO_PATH "data/demo/demo00.rpy"
 #define M_MAPPING_COUNT 9
 
 #define M_UP 0x10
@@ -599,7 +598,7 @@ static void M_StartDemo(void)
     gm->mode.in_replay = true;
     gm->mode.in_demo = true;
     gm->mode.demo_frames = 0;
-    memcpy(gm->mode.replay_path, M_DEMO_PATH, sizeof(M_DEMO_PATH));
+    memcpy(gm->mode.replay_path, TITLE_DEMO_PATH, sizeof(TITLE_DEMO_PATH));
     gm->run.stage = 3;
     gm->run.difficulty = 3;
     Scene_Request(SCENE_GAMEPLAY);

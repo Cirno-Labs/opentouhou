@@ -6,9 +6,11 @@
 
 #include <stdint.h>
 
-// Keeps score.dat and the headers of the replay slots in memory, so that
-// the simulation reads and saves them without the file system. The files
-// go to the user directory in the original format. Without a user
+// Keeps score.dat and the replays of the replay directory in memory, so
+// that the simulation reads and saves them without the file system: a
+// tick never opens a file. The whole replay files go to th06/replay's
+// store, which playback reads. The files go to the user directory in the
+// original format, after the tick that saved them. Without a user
 // directory, saves stay in memory.
 
 // Holds the values that the result screen takes from outside the

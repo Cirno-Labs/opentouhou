@@ -1,6 +1,5 @@
 #include "th06/replay.h"
 
-#include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
@@ -57,21 +56,12 @@ static void M_EnsureFrames(M_REPLAY *const replay, const int32_t count)
 
 static RESULT M_Load(M_REPLAY *const replay)
 {
+    size_t size;
+    const uint8_t *const data = Replay_FindFile(replay->path, &size);
+    FAIL_IF(data == nullptr, "no replay is kept for %s", replay->path);
     READER reader;
-    RESULT result;
-    if (g_GameManager.mode.in_demo) {
-        result = Files_Load(replay->path, &reader);
-    } else {
-        result = Reader_OpenFile(&reader, replay->path);
-        if (!IS_OK(result)) {
-            Result_Ignore(result);
-            result = Files_Load(replay->path, &reader);
-        }
-    }
-    MUST(result);
-    result = Replay_Read(&reader, &replay->file);
-    Reader_Close(&reader);
-    MUST(result, "%s", replay->path);
+    Reader_OpenBuffer(&reader, data, size);
+    MUST(Replay_Read(&reader, &replay->file), "%s", replay->path);
     for (int32_t i = 1; i <= 7; i++) {
         if (replay->file->stages[i] != nullptr) {
             replay->capacities[i] = replay->file->stages[i]->frame_count;

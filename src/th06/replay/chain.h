@@ -4,7 +4,8 @@
 
 #include "core/io/writer.h"
 
-// Records and plays original-format replays. Playback restores each stage
+// Records and plays original-format replays. Playback reads the replay
+// that th06/replay/file.h keeps for its path. Playback restores each stage
 // before gameplay starts and replaces its gameplay buttons at priority 5.
 // Skippable dialogue restarts the calc chain at priority 16. Recording
 // samples button changes at priority 15. Dates and frame-rate totals for
