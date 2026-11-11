@@ -62,6 +62,7 @@ core_math_lib = static_library(
 core_io_lib = static_library(
   'core_io',
   'io/file.c',
+  'io/locale.c',
   'io/path.c',
   'io/reader.c',
   'io/writer.c',

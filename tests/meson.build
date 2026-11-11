@@ -1029,6 +1029,7 @@ endforeach
 # also its user directory.
 foreach name : [
   'file',
+  'locale',
   'path',
   'reader',
   'reader_file',

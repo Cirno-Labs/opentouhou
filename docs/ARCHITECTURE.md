@@ -134,7 +134,7 @@ generator.
 
 ```
 core/base     types, asserts, logging, allocators, containers, strings, hashes
-core/io       readers and writers, files, paths
+core/io       readers and writers, files, paths, the locale
 core/ini      the INI format our settings are stored in
 core/vfs      the file namespace the games load from
 core/json     JSON5 parsing, lookups, indexes, merging
