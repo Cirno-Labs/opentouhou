@@ -245,6 +245,8 @@ ENEMY *Enemy_Spawn(
 // Keeps the position of enemy within its bounds, while flags.clamp_pos is
 // set.
 void Enemy_ClampPos(ENEMY *enemy);
+// Renews sprite presentation identities after an instant position change.
+void Enemy_RenewPresentation(ENEMY *enemy);
 // Makes the orbit effects of enemy fade out and forgets them.
 void Enemy_ReleaseOrbits(ENEMY *enemy);
 // Kills every active enemy except the bosses: sets its life to 0, and

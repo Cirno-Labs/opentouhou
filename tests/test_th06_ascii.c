@@ -1,10 +1,13 @@
 #include "th06/ascii.h"
 
+#include "gfx_recorder.h"
 #include "test.h"
 
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
+
+#include "core/gfx/private.h"
 
 #include <limits.h>
 #include <string.h>
@@ -13,6 +16,7 @@ CHAIN g_Chain;
 GAME_MANAGER g_GameManager;
 BUTTONS g_Buttons;
 
+static uint32_t m_PresentationGeneration;
 static int32_t m_LoadCount;
 static int32_t m_LoadSlots[3];
 static int32_t m_LoadSprites[3];
@@ -37,6 +41,11 @@ RESULT Anm_Load(
 void Anm_Release(const int32_t slot)
 {
     m_Releases[m_ReleaseCount++] = slot;
+}
+
+void Anm_RenewPresentation(ANM_VM *const vm)
+{
+    vm->presentation_generation = ++m_PresentationGeneration;
 }
 
 void Anm_InitVm(ANM_VM *const vm)
@@ -307,4 +316,71 @@ TEST(replay_death_routes_before_later_gameplay_callbacks)
     CHECK(!g_GameManager.mode.in_continue_menu);
     CHECK_EQ_INT(g_GameManager.score.shown, 12345);
     CHECK_EQ_INT(m_LaterCalls, 1);
+}
+
+TEST(strings_record_the_atlas_glyphs_at_their_screen_positions)
+{
+    M_Setup();
+    M_Register();
+    GfxRecorder_Start();
+    const ANM_SPRITE sprite = {
+        .slot = 0, .width = 8.0f, .height = 16.0f, .u1 = 1.0f, .v1 = 1.0f
+    };
+    CHECK(Result_Ignore(Anm_CreateTexture(0, 8, 16, ANM_TEXTURE_RGBA8)));
+    g_AsciiText.glyph.sprite_data = &sprite;
+    g_AsciiText.glyph.visible = true;
+    AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "AB");
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    CHECK(GfxRecorder_Quad(0)->vertices[0].position.x == 10.0f);
+    CHECK(GfxRecorder_Quad(0)->vertices[0].position.y == 20.0f);
+    CHECK(GfxRecorder_Quad(1)->vertices[0].position.x == 24.0f);
+    CHECK_EQ_INT(g_AsciiText.string_count, 0);
+    Anm_ReleaseTexture(0);
+    Chain_Release(&g_Chain);
+    GfxRecorder_Stop();
+}
+
+TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
+{
+    M_Setup();
+    M_Register();
+    GfxRecorder_Start();
+    const ANM_SPRITE sprite = { .slot = 0, .width = 8, .height = 8 };
+    CHECK(IS_OK(Anm_CreateTexture(0, 256, 256, ANM_TEXTURE_RGBA8)));
+    g_AsciiText.digit.sprite_data = &sprite;
+    g_AsciiText.digit.visible = true;
+    g_AsciiText.digit.uv_scale_x = g_AsciiText.digit.uv_scale_y = 0.03125f;
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    AsciiText_AddPopup((VEC3) { 20, 30, 0 }, 12, 0xffffffff);
+    AsciiText_AddPopup((VEC3) { 40, 30, 0 }, 12, 0xffffffff);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 4);
+    const VEC3 first = GfxRecorder_Quad(0)->vertices[0].position;
+    const VEC3 second = GfxRecorder_Quad(2)->vertices[0].position;
+    g_AsciiText.popups[0].pos.y += 10.0f;
+    g_AsciiText.popups[1].pos.y += 10.0f;
+    Anm_RenewPresentation(&g_AsciiText.digit);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK(GfxRecorder_Quad(0)->vertices[0].position.y != first.y);
+    CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.y == first.y);
+    CHECK(GfxRecorder_Blend(0.0f, 2)[0].position.x == second.x);
+    CHECK(GfxRecorder_Blend(0.0f, 2)[0].position.y == second.y);
+    g_AsciiText.next_popup = 0;
+    AsciiText_AddPopup((VEC3) { 20, 0, 0 }, 12, 0xffffffff);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    const float moved = GfxRecorder_Quad(0)->vertices[0].position.y;
+    CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.y == moved);
+    Anm_ReleaseTexture(0);
+    Chain_Release(&g_Chain);
+    GfxRecorder_Stop();
 }

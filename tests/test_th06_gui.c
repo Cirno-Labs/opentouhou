@@ -1,11 +1,13 @@
 #include "th06/gui.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/chain.h"
 #include "th06/files.h"
 #include "th06/game.h"
@@ -13,6 +15,7 @@
 #include "th06/scene.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/base/utils.h"
 
 #include <SDL3/SDL.h>
@@ -206,6 +209,7 @@ static RESULT M_SetupStage(const char *const case_name, const int32_t stage)
     M_WriteData(case_name);
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
+    AsciiText_Initialize();
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
@@ -224,6 +228,7 @@ static void M_Setup(const char *const case_name)
 static void M_Teardown(void)
 {
     Chain_Release(&g_Chain);
+    AsciiText_Initialize();
     Anm_Shutdown();
     Files_Shutdown();
     Mem_Free(m_Directory);
@@ -976,5 +981,49 @@ TEST(the_extra_stage_dialogue_loads_the_third_boss_portrait)
     CHECK(Gui_IsMsgRunning());
     CHECK(Anm_GetScript(0x2b3) == nullptr);
     CHECK_EQ_INT(Anm_GetScript(0x4a8)->instrs[1].time, M_FACE12C_END);
+    M_Teardown();
+}
+
+TEST(gui_drawing_records_the_hud_and_dialogue_gradient)
+{
+    M_Setup("gui_draw");
+    CHECK(Result_Ignore(Anm_CreateTexture(0xd, 64, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 0xd, .width = 16, .height = 16, .u1 = 1.0f, .v1 = 1.0f
+    };
+    for (int32_t i = 0; i < GUI_SPRITE_COUNT; i++) {
+        Anm_InitVm(&g_Gui.hud.sprites[i]);
+        g_Gui.hud.sprites[i].sprite_data = &sprite;
+    }
+    g_Gui.msg.script = 0;
+    Timer_Set(&g_Gui.msg.timer, 60);
+    g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0, 0.5f };
+    g_GameManager.score.shown = 123456;
+    g_GameManager.player.power = 16;
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK(GfxRecorder_QuadCount() > 100);
+    bool found_dialogue = false;
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        const GFX_VERTEX *const vertices = GfxRecorder_Quad(i)->vertices;
+        if (vertices[0].position.y == 384.0f
+            && vertices[0].color.alpha == 0xd0) {
+            CHECK(vertices[2].position.y == 432.0f);
+            CHECK_EQ_INT(vertices[2].color.alpha, 0x90);
+            found_dialogue = true;
+        }
+    }
+    CHECK(found_dialogue);
+    bool found_score = false;
+    for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+        if (strcmp(g_AsciiText.strings[i].text, "000123456") == 0) {
+            found_score = true;
+        }
+    }
+    CHECK(found_score);
+    CHECK(g_GameManager.camera.viewport.width == 640.0f);
+    GfxRecorder_Stop();
     M_Teardown();
 }

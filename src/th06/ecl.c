@@ -1637,13 +1637,19 @@ static M_STEP M_Step(
         break;
     // Resolves each component in place, so a component that names a
     // component of the position reads the value just copied into it.
-    case M_OP_SET_POS:
+    case M_OP_SET_POS: {
+        const VEC3 previous = enemy->move.pos;
         enemy->move.pos = M_ArgVec3(instr, 0);
         enemy->move.pos.x = M_Float(enemy, &enemy->move.pos.x);
         enemy->move.pos.y = M_Float(enemy, &enemy->move.pos.y);
         enemy->move.pos.z = M_Float(enemy, &enemy->move.pos.z);
         Enemy_ClampPos(enemy);
+        if (enemy->move.pos.x != previous.x || enemy->move.pos.y != previous.y
+            || enemy->move.pos.z != previous.z) {
+            Enemy_RenewPresentation(enemy);
+        }
         break;
+    }
     case M_OP_SET_VELOCITY:
         enemy->move.velocity = M_ArgVec3(instr, 0);
         enemy->move.velocity.x = M_Float(enemy, &enemy->move.velocity.x);

@@ -6,9 +6,6 @@
 
 #include <stdint.h>
 
-// Loads the sprites and scripts of ANM files and runs a script on a
-// sprite once per frame. Drawing is not part of this module.
-
 #define ANM_SPRITE_COUNT 0x800
 #define ANM_SCRIPT_COUNT 0x800
 #define ANM_SLOT_COUNT 0x80
@@ -95,4 +92,8 @@ typedef struct {
     float uv_scale_x, uv_scale_y; // the sprite's size in texture coordinates
 
     uint8_t font_width, font_height;
+
+    // Identifies one presentation lifetime. Exclude it from simulation hashes
+    // and saves.
+    uint32_t presentation_generation;
 } ANM_VM;

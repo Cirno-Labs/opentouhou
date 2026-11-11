@@ -9,10 +9,9 @@
 #include <stdint.h>
 
 // Runs the stage background: loads the stage's data file and background
-// sprites, moves the camera and the fog along the stage script, and
-// animates the background objects. Nothing in gameplay reads it; enemy
-// scripts only start the spell card background and let the script past
-// its waits. Drawing comes with graphics.
+// sprites, moves the camera and fog along the stage script, and records
+// background objects in layer order. Enemy scripts start the spell card
+// background and let the stage script past its waits.
 
 #define STAGE_SONG_COUNT 4
 

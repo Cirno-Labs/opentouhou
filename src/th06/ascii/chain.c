@@ -76,6 +76,11 @@ static void M_DrawStrings(void)
                     Anm_SetSprite(&text->glyph, *c + 0x61);
                     text->glyph.color = 0xffffffffu;
                 }
+                ANM_DRAW draw = Anm_ScreenDraw();
+                draw.view = Anm_ScreenView(
+                    g_GameManager.camera.viewport,
+                    clipped ? ANM_VIEW_PLAY_AREA : ANM_VIEW_HUD);
+                Anm_DrawUnrotated(&text->glyph, &draw);
                 text->glyph.pos.x += advance;
             }
         }
@@ -110,6 +115,22 @@ static CHAIN_STATUS M_Draw2(void *const arg)
         text->digit.color = popup->color;
         for (int32_t digit = popup->digit_count - 1; digit >= 0; digit--) {
             Anm_SetSprite(&text->digit, popup->digits[digit]);
+            ANM_DRAW draw = GameManager_GetDrawContext();
+            draw.interpolate = true;
+            draw.part = (uint32_t)digit;
+            ANM_VM vm = text->digit;
+            vm.presentation_generation = popup->presentation_generation;
+            if (popup->digits[digit] >= 10) {
+                text->digit.uv_scale_x = 0.1875f;
+                text->digit.uv_scale_y = 0.03125f;
+                vm.uv_scale_x = text->digit.uv_scale_x;
+                vm.uv_scale_y = text->digit.uv_scale_y;
+                Anm_Draw3DRounded(&vm, &draw);
+                text->digit.uv_scale_x = 0.03125f;
+                text->digit.uv_scale_y = 0.03125f;
+            } else {
+                Anm_Draw3DRounded(&vm, &draw);
+            }
             text->digit.pos.x += 8.0f;
         }
     }

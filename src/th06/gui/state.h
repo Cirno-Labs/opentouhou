@@ -12,7 +12,7 @@
 // shooting and bombing, and ends the stage: it adds the stage clear bonus
 // and switches the scene. The interface keeps the state of the boss bar,
 // the banners and the popups that other modules show. Their sprite
-// scripts run in the update; the drawing comes with graphics. While the
+// scripts run in the update and draw callbacks record graphics. While the
 // game is frozen, the update does nothing. Names and texts are UTF-8.
 
 #define GUI_SPRITE_COUNT 0x1a
@@ -84,8 +84,10 @@ typedef struct {
         int32_t song; // the song of g_Stage.data that song_name shows
         ANM_VM bomb_portrait, bomb_name, bomb_bar;
         const char *bomb_text;
+        float bomb_width;
         ANM_VM spell_portrait, spell_name, spell_bar;
         const char *spell_text;
+        float spell_width;
     } banners;
 
     // Holds the loading screen between stages. It shows while its sprite

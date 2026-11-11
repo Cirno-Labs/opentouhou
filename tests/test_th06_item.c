@@ -1,6 +1,7 @@
 #include "th06/item.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -15,6 +16,7 @@
 #include "th06/player.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
@@ -601,6 +603,8 @@ static void M_WriteAnm(void)
 {
     ANM_BUILDER builder;
     AnmBuilder_Init(&builder, 64, 64);
+    AnmBuilder_AddSprite(&builder, 0, 0, 0, 16, 16);
+    AnmBuilder_AddSprite(&builder, 1, 16, 0, 32, 16);
     const int32_t script = AnmBuilder_BeginScript(&builder, 0);
     const uint32_t args[] = { 0, 2 };
     for (int16_t time = 0; time < 20; time++) {
@@ -629,6 +633,55 @@ TEST(an_item_steps_its_script_until_it_is_collected)
     m_TouchX = M_TOUCH_X;
     M_Frame();
     CHECK_EQ_INT(g_Rng.generated, 3);
+    M_Teardown();
+    Files_Shutdown();
+    Mem_Free(m_Directory);
+}
+
+TEST(item_drawing_keeps_positions_and_indicator_state_headlessly)
+{
+    M_Setup();
+    g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
+    Item_Spawn((VEC3) { 50.0f, -80.0f, 0.0f }, ITEM_POWER, ITEM_FALLING);
+    Item_Spawn((VEC3) { 70.0f, 120.0f, 0.0f }, ITEM_POINT, ITEM_FALLING);
+    const ITEM *const items = Item_GetSlots();
+    const RNG before = g_Rng;
+    Item_Draw();
+    CHECK(items[0].pos.y == -80.0f);
+    CHECK(items[0].vm.pos.x == 82.0f);
+    CHECK(items[0].vm.pos.y == 24.0f);
+    CHECK(items[0].vm.pos.z == 0.01f);
+    CHECK(!items[0].on_screen);
+    CHECK_EQ_INT(items[0].vm.color >> 24, 80);
+    CHECK(items[1].on_screen);
+    CHECK(items[1].vm.pos.x == 102.0f);
+    CHECK(items[1].vm.pos.y == 136.0f);
+    CHECK_EQ_INT(g_Rng.seed, before.seed);
+    CHECK_EQ_INT(g_Rng.generated, before.generated);
+    M_Teardown();
+}
+
+TEST(item_draws_identify_each_spawn)
+{
+    M_Setup();
+    m_Directory = TestDir_Prepare("item_presentation");
+    Th06Data_WriteArchives(m_Directory, -1);
+    M_WriteAnm();
+    CHECK(IS_OK(Files_Init(m_Directory)));
+    CHECK(IS_OK(Anm_Load(0, "item.anm", M_FIRST_SCRIPT)));
+    CHECK(IS_OK(Anm_CreateTexture(0, 64, 64, ANM_TEXTURE_RGBA8)));
+    Item_Spawn((VEC3) { 50, 100, 0 }, ITEM_POWER, ITEM_FALLING);
+    Item_Spawn((VEC3) { 70, 100, 0 }, ITEM_POWER, ITEM_FALLING);
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    const uint32_t generated = g_Rng.generated;
+    Item_Draw();
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    CHECK(GfxRecorder_QuadId(0) != 0);
+    CHECK(GfxRecorder_QuadId(0) != GfxRecorder_QuadId(1));
+    CHECK_EQ_INT(g_Rng.generated, generated);
+    GfxRecorder_Stop();
     M_Teardown();
     Files_Shutdown();
     Mem_Free(m_Directory);

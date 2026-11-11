@@ -4,9 +4,8 @@
 
 // Runs full-screen fades and the play area shake. Each effect adds its
 // own update element (priority 14) and, for the fades, a draw element
-// (priority 16), and removes them when it ends. Drawing comes with
-// graphics: the draw elements keep their place in the chain but draw
-// nothing yet.
+// (priority 16), and removes them when it ends. The draw callbacks record
+// colour rectangles when a frame is supplied.
 
 // Fades the whole screen in from color over duration frames.
 void ScreenEffect_FadeIn(int32_t duration, uint32_t color);

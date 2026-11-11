@@ -1,6 +1,7 @@
 #include "th06/bomb.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -20,6 +21,7 @@
 #include "th06/screen_effect.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
@@ -619,5 +621,60 @@ TEST(the_end_of_the_beam_restores_the_speed)
     CHECK_EQ_INT(m_NameEnds, 1);
     CHECK(g_Player.move.speed_scale_x == 1.0f);
     CHECK(g_Player.move.speed_scale_y == 1.0f);
+    M_Teardown();
+}
+
+TEST(bomb_drawing_records_each_shot_type_and_the_original_dim)
+{
+    M_Setup("bomb_draw", 0, 0);
+    GfxRecorder_Start();
+    const ANM_SPRITE sprite = {
+        .slot = 0, .width = 8.0f, .height = 8.0f, .u1 = 1.0f, .v1 = 1.0f
+    };
+    CHECK(Result_Ignore(Anm_CreateTexture(0, 8, 8, ANM_TEXTURE_RGBA8)));
+    g_Player.bomb.running = true;
+    g_Player.bomb.timer.current = 30;
+    g_Player.bomb.duration = 300;
+    g_Player.bomb.parts[0].state = 1;
+    g_Player.bomb.parts[0].pos = (VEC3) { 40, 60, 0 };
+    g_GameManager.play_area = (PLAY_RECT) { 32, 16, 384, 448 };
+    const int32_t counts[4] = { 5, 5, 25, 5 };
+    const RNG before = g_Rng;
+    for (int32_t shot = 0; shot < 4; shot++) {
+        g_GameManager.run.character = (uint8_t)(shot / 2);
+        g_GameManager.run.shot_type = (uint8_t)(shot % 2);
+        for (int32_t i = 0; i < PLAYER_BOMB_SPRITE_COUNT; i++) {
+            Anm_InitVm(&g_Player.bomb.vms[i]);
+            g_Player.bomb.vms[i].sprite_data = &sprite;
+            g_Player.bomb.vms[i].pos_offset = (VEC3) { 1, 2, 0 };
+        }
+        Gfx_BeginTick((GFX_COLOR) {});
+        Bomb_Draw();
+        Gfx_EndTick();
+        CHECK_EQ_INT(GfxRecorder_QuadCount(), counts[shot]);
+        CHECK_EQ_INT(GfxRecorder_Quad(0)->vertices[0].color.alpha, 88);
+        if (shot == 0) {
+            CHECK(g_Player.bomb.vms[0].pos.x == 73.0f);
+            CHECK(g_Player.bomb.vms[0].pos.y == 78.0f);
+            CHECK(GfxRecorder_Quad(1)->vertices[0].position.x == 69.0f);
+        }
+        float drawn[4];
+        for (int32_t i = 1; i < 4; i++) {
+            drawn[i] = GfxRecorder_Quad(i)->vertices[0].position.x;
+        }
+        for (int32_t i = 0; i < PLAYER_BOMB_SPRITE_COUNT; i++) {
+            g_Player.bomb.vms[i].pos_offset.x += 4.0f;
+        }
+        g_Player.bomb.parts[0].pos.x += 4.0f;
+        Gfx_BeginTick((GFX_COLOR) {});
+        Bomb_Draw();
+        Gfx_EndTick();
+        for (int32_t i = 1; i < 4; i++) {
+            CHECK(GfxRecorder_Blend(0.0f, i)[0].position.x == drawn[i]);
+        }
+    }
+    CHECK_EQ_INT(g_Rng.seed, before.seed);
+    CHECK_EQ_INT(g_Rng.generated, before.generated);
+    GfxRecorder_Stop();
     M_Teardown();
 }

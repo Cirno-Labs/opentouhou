@@ -1,6 +1,7 @@
 #include "th06/bullet.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -18,6 +19,7 @@
 #include "th06/scene.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
@@ -1449,5 +1451,35 @@ TEST(clear_all_with_bonus_to_items_drops_a_star_at_each_laser_too)
     CHECK(m_Items[1].x == 108.0f && m_Items[1].y == 100.0f);
     CHECK(M_SameVec(m_Items[2], M_LaserPoint(0.0f)));
     CHECK(M_SameVec(m_Items[4], M_LaserPoint(64.0f)));
+    M_Teardown();
+}
+
+TEST(bullet_draws_keep_distinct_lifetimes_when_pool_slots_are_reused)
+{
+    M_Setup("bullet_presentation");
+    CHECK(IS_OK(Anm_CreateTexture(6, 256, 256, ANM_TEXTURE_RGBA8)));
+    g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    const BULLET_SHOOTER shooter = M_Shooter(0, 0.0f, 1.0f);
+    BULLET *const first = M_Fire(&shooter);
+    BULLET *const second = M_Fire(&shooter);
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    const float x = GfxRecorder_Quad(1)->vertices[0].position.x;
+    first->state = BULLET_FREE;
+    g_Bullets.next_bullet = 0;
+    CHECK(M_Fire(&shooter) == first);
+    first->pos.x += 10.0f;
+    second->pos.x += 10.0f;
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.x == x + 10.0f);
+    CHECK(GfxRecorder_Blend(0.0f, 1)[0].position.x == x);
+    GfxRecorder_Stop();
     M_Teardown();
 }

@@ -5,9 +5,6 @@
 
 #define APP_TICK_RATE 60
 
-// Holds what one tick records for display.
-typedef struct FRAME FRAME;
-
 typedef struct {
     // Identifies the game in paths and settings, as in "th06".
     const char *id;
@@ -22,10 +19,11 @@ typedef struct {
     const INPUT_SCHEMA *input_schema;
     // Prepares the game. Called once, after the window exists.
     RESULT (*init)(void);
-    // Advances the game by one 60 Hz step and records what to show into
-    // the frame. input points to input_schema->players input structs.
-    // Returns false when the game wants to quit.
-    bool (*tick)(const void *input, FRAME *frame);
+    // Advances the game by one 60 Hz step and draws it through core/gfx.
+    // core/app starts and finishes the tick's drawing around the call.
+    // input points to input_schema->players input structs. Returns false
+    // when the game wants to quit.
+    bool (*tick)(const void *input);
     // Releases what init acquired. Called once, also when init failed.
     void (*shutdown)(void);
 } GAME_DESC;

@@ -13,7 +13,7 @@
 // (player.h). Each update runs the items first (item.h). The sprite
 // scripts of a bullet are part of the simulation: its size comes from its
 // sprite, and its spawn and fade states end with their scripts. Drawing
-// comes with graphics.
+// records sprites with a separate presentation lifetime for each spawn.
 
 #define BULLET_COUNT 0x280
 #define LASER_COUNT 0x40

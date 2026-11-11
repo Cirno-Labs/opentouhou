@@ -27,6 +27,7 @@ bool Game_Tick(const TH06_INPUT *const input)
     g_Input = *input;
     Chain_RunDraw(&g_Chain);
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
+    Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
     if (run == CHAIN_RUN_RESET) {
         Game_Shutdown();
         return Result_Log(Game_Init(), LOG_LEVEL_ERROR);

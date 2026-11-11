@@ -6,7 +6,7 @@
 #include "core/base/utils.h"
 
 // Runs the ASCII text queue, score popups, pause menu and continue menu.
-// Draw callbacks keep their sprite state but submit no graphics yet.
+// Records atlas glyphs, popups and menu sprites into the supplied frame.
 // Framebuffer capture and its background scripts are disabled headless.
 
 extern ASCII_TEXT g_AsciiText;

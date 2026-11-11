@@ -4,7 +4,7 @@
 // (player.h): the orbs of Reimu A, the pillars of Reimu B, the stars of
 // Marisa A and the beam of Marisa B. Each bomb sets the boxes that damage
 // enemies and clear bullets, keeps the player invulnerable, and ends after
-// its duration. Drawing comes with graphics.
+// its duration.
 
 // Runs the bomb of the shot type for a frame, while g_Player.bomb.running
 // is set. On its first frame, the bomb shows its name with

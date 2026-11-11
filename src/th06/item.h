@@ -42,6 +42,7 @@ typedef struct {
     TIMER timer;
     int8_t type;
     bool active;
+    bool on_screen;
     int8_t state;
 } ITEM;
 
@@ -58,3 +59,6 @@ void Item_Update(void);
 void Item_Spawn(VEC3 pos, ITEM_TYPE type, ITEM_STATE state);
 // Makes every item fly to the player.
 void Item_CollectAll(void);
+
+// Records active items and their indicators above the play area.
+void Item_Draw(void);

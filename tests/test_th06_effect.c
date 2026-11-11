@@ -1,6 +1,7 @@
 #include "th06/effect.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -12,6 +13,7 @@
 #include "th06/game_manager.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 
 #include "stg/rng.h"
 
@@ -164,5 +166,33 @@ TEST(an_orbit_fades_out_over_sixteen_frames)
     CHECK(effect->vm.color >> 24 == (uint32_t)(1.0f / 16.0f * 255.0f));
     Chain_RunCalc(&g_Chain);
     CHECK(!effect->active);
+    M_Teardown();
+}
+
+TEST(effect_draws_identify_each_spawn_without_consuming_random_values)
+{
+    M_Setup("effect_presentation", 2);
+    CHECK(IS_OK(Anm_CreateTexture(100, 256, 256, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = { .slot = 100, .width = 16, .height = 16 };
+    for (int32_t i = 0; i < 2; i++) {
+        EFFECT *const effect =
+            Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, 0xffffffff);
+        effect->vm.sprite_data = &sprite;
+        effect->vm.shown = true;
+        effect->vm.visible = true;
+    }
+    g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    const uint32_t generated = g_Rng.generated;
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    CHECK(GfxRecorder_QuadId(0) != 0);
+    CHECK(GfxRecorder_QuadId(0) != GfxRecorder_QuadId(1));
+    CHECK_EQ_INT(g_Rng.generated, generated);
+    GfxRecorder_Stop();
     M_Teardown();
 }

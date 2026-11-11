@@ -1,16 +1,19 @@
 #include "core/app.h"
 
 #include "th06/buttons.h"
+#include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 
 static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
-    return Game_Init();
+    MUST(Game_Init());
+    g_AsciiText.capture_background = true;
+    return OK;
 }
 
-static bool M_Tick(const void *const input, FRAME *const frame)
+static bool M_Tick(const void *const input)
 {
     return Game_Tick(input);
 }

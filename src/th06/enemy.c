@@ -536,28 +536,32 @@ static void M_PlaceSprite(
 }
 
 static void M_PlaceExtraSprites(
-    ENEMY *const enemy, const int32_t first, const int32_t end)
+    ENEMY *const enemy, const int32_t first, const int32_t end,
+    const ANM_DRAW *const draw)
 {
     for (int32_t i = first; i < end; i++) {
         ANM_VM *const vm = &enemy->vms[i];
         if (vm->script_index >= 0) {
             M_PlaceSprite(vm, enemy, vm->auto_rotate != 0, 0.495f);
+            Anm_Draw3DRounded(vm, draw);
         }
     }
 }
 
-// Places each sprite at its enemy. Drawing comes with graphics, but the
-// scripts of the sprites read the position and the rotation.
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    ANM_DRAW draw = GameManager_GetDrawContext();
+    draw.interpolate = true;
     for (int32_t i = 0; i < ENEMY_COUNT; i++) {
         ENEMY *const enemy = &g_Enemies.enemies[i];
         if (!enemy->flags.active || enemy->flags.hidden) {
             continue;
         }
-        M_PlaceExtraSprites(enemy, 0, ENEMY_SPRITE_COUNT / 2);
+        M_PlaceExtraSprites(enemy, 0, ENEMY_SPRITE_COUNT / 2, &draw);
         M_PlaceSprite(&enemy->vm, enemy, enemy->flags.rotate_sprite, 0.494f);
-        M_PlaceExtraSprites(enemy, ENEMY_SPRITE_COUNT / 2, ENEMY_SPRITE_COUNT);
+        Anm_Draw3DRounded(&enemy->vm, &draw);
+        M_PlaceExtraSprites(
+            enemy, ENEMY_SPRITE_COUNT / 2, ENEMY_SPRITE_COUNT, &draw);
     }
     return CHAIN_CONTINUE;
 }
@@ -613,6 +617,7 @@ ENEMY *Enemy_Spawn(
             continue;
         }
         *enemy = m_Template;
+        Enemy_RenewPresentation(enemy);
         if (life >= 0) {
             enemy->life = life;
         }
@@ -631,6 +636,14 @@ ENEMY *Enemy_Spawn(
         return enemy;
     }
     return &m_Spare;
+}
+
+void Enemy_RenewPresentation(ENEMY *const enemy)
+{
+    Anm_RenewPresentation(&enemy->vm);
+    for (int32_t i = 0; i < ENEMY_SPRITE_COUNT; i++) {
+        Anm_RenewPresentation(&enemy->vms[i]);
+    }
 }
 
 void Enemy_ClampPos(ENEMY *const enemy)

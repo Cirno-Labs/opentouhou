@@ -2,6 +2,7 @@
 
 #include "anm_builder.h"
 #include "ecl_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -22,6 +23,7 @@
 #include "th06/stage.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/base/utils.h"
 #include "core/math/vec.h"
 
@@ -1494,5 +1496,39 @@ TEST(drawing_skips_a_hidden_enemy)
     ENEMY *const enemy = M_Spawn();
     Chain_RunDraw(&g_Chain);
     CHECK(enemy->vm.pos.x == 0.0f);
+    M_End();
+}
+
+TEST(enemy_draws_do_not_share_copied_template_identities)
+{
+    M_Begin("enemy_presentation");
+    M_Load();
+    CHECK(IS_OK(Anm_CreateTexture(100, 256, 256, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = { .slot = 100, .width = 16, .height = 16 };
+    ENEMY *const first = M_Spawn();
+    ENEMY *const second = M_Spawn();
+    first->vm.sprite_data = &sprite;
+    second->vm.sprite_data = &sprite;
+    first->vm.shown = second->vm.shown = true;
+    first->vm.visible = second->vm.visible = true;
+    first->vm.color = second->vm.color = 0xffffffff;
+    first->vm.scale_x = second->vm.scale_x = 1;
+    first->vm.scale_y = second->vm.scale_y = 1;
+    first->vm.uv_scale_x = second->vm.uv_scale_x = 0.0625f;
+    first->vm.uv_scale_y = second->vm.uv_scale_y = 0.0625f;
+    g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    CHECK(GfxRecorder_QuadId(0) != 0);
+    CHECK(GfxRecorder_QuadId(0) != GfxRecorder_QuadId(1));
+    const uint32_t first_generation = first->vm.presentation_generation;
+    Enemy_RenewPresentation(first);
+    CHECK(first->vm.presentation_generation != first_generation);
+    GfxRecorder_Stop();
     M_End();
 }

@@ -50,7 +50,10 @@ test(
     '../replay/th06/runner/state.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, stg_rng_lib, core_math_lib, core_io_lib, core_base_lib, replay_case_lib],
+    link_with: [
+      th06_lib, stg_rng_lib, core_math_lib, core_io_lib, core_base_lib,
+      replay_case_lib, core_gfx_lib, core_image_lib,
+    ],
     dependencies: [sdl3, zlib],
   ),
   suite: 'unit',
@@ -75,9 +78,12 @@ foreach ascii_test : ['ascii', 'ascii_menu']
     executable(
       'test_th06_' + ascii_test,
       'test_th06_' + ascii_test + '.c',
+      'gfx_recorder.c',
       c_args: [layer_include['th06']] + core_include + stg_include,
       implicit_include_directories: false,
-      link_with: [th06_lib, core_base_lib],
+      link_with: [
+        th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
+      ],
     ),
     suite: 'unit',
   )
@@ -91,7 +97,10 @@ foreach replay_test : ['replay', 'replay_format']
       'test_th06_' + replay_test + '.c',
       c_args: [layer_include['th06']] + core_include + stg_include,
       implicit_include_directories: false,
-      link_with: [th06_lib, stg_rng_lib, core_io_lib, core_base_lib],
+      link_with: [
+        th06_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
+        core_image_lib, core_math_lib,
+      ],
     ),
     suite: 'unit',
   )
@@ -104,7 +113,10 @@ test(
     'test_th06_game_manager_chain.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, stg_rng_lib, core_io_lib, core_math_lib, core_base_lib],
+    link_with: [
+      th06_lib, stg_rng_lib, core_io_lib, core_math_lib, core_base_lib,
+      core_gfx_lib, core_image_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -116,7 +128,9 @@ test(
     'test_th06_angle.c',
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, core_math_lib, core_base_lib],
+    link_with: [
+      th06_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -126,6 +140,7 @@ test(
   executable(
     'test_th06_anm',
     'test_th06_anm.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -133,7 +148,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_base_lib,
+      core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -151,7 +166,9 @@ test(
     'test_th06_buttons.c',
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, core_base_lib],
+    link_with: [
+      th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -163,7 +180,9 @@ test(
     'test_th06_chain.c',
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, core_base_lib],
+    link_with: [
+      th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -175,7 +194,9 @@ test(
     'test_th06_game_manager.c',
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
-    link_with: [th06_lib],
+    link_with: [
+      th06_lib, core_gfx_lib, core_image_lib, core_math_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -185,6 +206,7 @@ test(
   executable(
     'test_th06_bomb',
     'test_th06_bomb.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -193,7 +215,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -209,6 +231,7 @@ test(
   executable(
     'test_th06_bullet',
     'test_th06_bullet.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -217,7 +240,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -233,6 +256,7 @@ test(
   executable(
     'test_th06_item',
     'test_th06_item.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -241,7 +265,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -257,6 +281,7 @@ test(
   executable(
     'test_th06_player',
     'test_th06_player.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -265,7 +290,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -284,7 +309,9 @@ test(
     'th06_scene_stubs.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, core_base_lib],
+    link_with: [
+      th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -294,10 +321,14 @@ test(
   executable(
     'test_th06_screen_effect',
     'test_th06_screen_effect.c',
+    'gfx_recorder.c',
     'th06_scene_stubs.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
-    link_with: [th06_lib, stg_rng_lib, core_math_lib, core_base_lib],
+    link_with: [
+      th06_lib, stg_rng_lib, core_math_lib, core_base_lib, core_gfx_lib,
+      core_image_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -307,6 +338,7 @@ test(
   executable(
     'test_th06_stage',
     'test_th06_stage.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -315,7 +347,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -333,7 +365,9 @@ test(
     'test_th06_timer.c',
     c_args: [layer_include['th06']] + core_include,
     implicit_include_directories: false,
-    link_with: [th06_lib],
+    link_with: [
+      th06_lib, core_gfx_lib, core_image_lib, core_math_lib,
+    ],
   ),
   suite: 'unit',
 )
@@ -352,7 +386,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -368,6 +402,7 @@ test(
   executable(
     'test_th06_enemy',
     'test_th06_enemy.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'ecl_builder.c',
     'pbg3_builder.c',
@@ -377,7 +412,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -393,6 +428,7 @@ test(
   executable(
     'test_th06_effect',
     'test_th06_effect.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -401,7 +437,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -417,6 +453,7 @@ test(
   executable(
     'test_th06_gui',
     'test_th06_gui.c',
+    'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
@@ -425,7 +462,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -447,6 +484,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib,
+      core_gfx_lib, core_image_lib, core_math_lib,
     ],
     dependencies: [sdl3],
   ),

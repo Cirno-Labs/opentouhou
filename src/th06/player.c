@@ -1071,8 +1071,56 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
+static void M_DrawShots(const PLAYER_BULLET_STATE state)
+{
+    ANM_DRAW draw = GameManager_GetDrawContext();
+    draw.interpolate = true;
+    for (int32_t i = 0; i < PLAYER_BULLET_COUNT; i++) {
+        PLAYER_BULLET *const bullet = &g_Player.shots.bullets[i];
+        if (bullet->state != state) {
+            continue;
+        }
+        if (bullet->vm.auto_rotate != 0) {
+            bullet->vm.rotation.z =
+                1.5707964f - Angle_AddNormalize(bullet->angle, 3.1415927f);
+        }
+        if (state == PLAYER_BULLET_HIT) {
+            bullet->vm.pos.z = 0.4f;
+        }
+        Anm_Draw3DRounded(&bullet->vm, &draw);
+    }
+}
+
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    M_DrawShots(PLAYER_BULLET_FLYING);
+    Bomb_Draw();
+    PLAYER *const player = &g_Player;
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.interpolate = true;
+    player->vm.pos =
+        (VEC3) { g_GameManager.play_area.x + player->pos.x,
+                 g_GameManager.play_area.y + player->pos.y, 0.49f };
+    if (!g_GameManager.mode.in_continue_menu) {
+        Anm_DrawUnrotated(&player->vm, &draw);
+        if (player->options.state != PLAYER_OPTIONS_NONE
+            && (player->state.value == PLAYER_ALIVE
+                || player->state.value == PLAYER_INVULNERABLE)) {
+            for (int32_t i = 0; i < PLAYER_OPTION_COUNT; i++) {
+                player->option_vms[i].pos = player->options.pos[i];
+                player->option_vms[i].pos.x += g_GameManager.play_area.x;
+                player->option_vms[i].pos.y += g_GameManager.play_area.y;
+                player->option_vms[i].pos.z = 0.491f;
+                Anm_Draw(&player->option_vms[i], &draw);
+            }
+        }
+    }
+    return CHAIN_CONTINUE;
+}
+
+static CHAIN_STATUS M_Draw2(void *const arg)
+{
+    M_DrawShots(PLAYER_BULLET_HIT);
     return CHAIN_CONTINUE;
 }
 
@@ -1145,7 +1193,7 @@ RESULT Player_Register(void)
     MUST(Chain_AddCalc(&g_Chain, &m_CalcElem, M_CALC_PRIORITY));
     Chain_InitElem(&m_DrawElem, M_Draw, nullptr);
     MUST(Chain_AddDraw(&g_Chain, &m_DrawElem, M_DRAW_PRIORITY));
-    Chain_InitElem(&m_Draw2Elem, M_Draw, nullptr);
+    Chain_InitElem(&m_Draw2Elem, M_Draw2, nullptr);
     return Chain_AddDraw(&g_Chain, &m_Draw2Elem, M_DRAW2_PRIORITY);
 }
 

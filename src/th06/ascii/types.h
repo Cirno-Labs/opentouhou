@@ -32,6 +32,7 @@ typedef struct {
     TIMER timer;
     bool active;
     uint8_t digit_count;
+    uint32_t presentation_generation;
 } ASCII_POPUP;
 
 typedef struct {

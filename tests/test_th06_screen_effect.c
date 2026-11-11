@@ -1,10 +1,13 @@
 #include "th06/screen_effect.h"
 
+#include "gfx_recorder.h"
 #include "test.h"
 
 #include "th06/chain.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+
+#include "core/gfx/private.h"
 
 #include "stg/rng.h"
 
@@ -100,4 +103,41 @@ TEST(releasing_the_chain_frees_every_effect)
         Chain_Init(&g_Chain);
     }
     CHECK(g_Chain.calc.next == nullptr);
+}
+
+TEST(fades_record_the_original_rectangles_and_preceding_calc_alpha)
+{
+    M_Setup();
+    GfxRecorder_Start();
+    ScreenEffect_FadeIn(4, 0x123456);
+    ScreenEffect_FadeOut(4, 0xabcdef);
+    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc(&g_Chain);
+    Gfx_BeginTick((GFX_COLOR) {});
+    const RNG before = g_Rng;
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    const GFX_VERTEX *const screen = GfxRecorder_Quad(0)->vertices;
+    const GFX_VERTEX *const play_area = GfxRecorder_Quad(1)->vertices;
+    CHECK(screen[0].position.x == 0.0f);
+    CHECK(screen[0].position.y == 0.0f);
+    CHECK(screen[2].position.x == 640.0f);
+    CHECK(screen[2].position.y == 480.0f);
+    CHECK_EQ_INT(screen[0].color.red, 0x12);
+    CHECK_EQ_INT(screen[0].color.green, 0x34);
+    CHECK_EQ_INT(screen[0].color.blue, 0x56);
+    CHECK_EQ_INT(screen[0].color.alpha, 191);
+    CHECK(play_area[0].position.x == 32.0f);
+    CHECK(play_area[0].position.y == 16.0f);
+    CHECK(play_area[2].position.x == 416.0f);
+    CHECK(play_area[2].position.y == 464.0f);
+    CHECK_EQ_INT(play_area[0].color.alpha, 63);
+    CHECK(GfxRecorder_Quad(0)->state.blend == GFX_BLEND_ALPHA);
+    CHECK(GfxRecorder_Quad(0)->state.depth_test == GFX_DEPTH_OFF);
+    CHECK(!GfxRecorder_Quad(0)->state.depth_write);
+    CHECK(GfxRecorder_Quad(0)->texture == nullptr);
+    CHECK_EQ_INT(g_Rng.seed, before.seed);
+    GfxRecorder_Stop();
+    Chain_Release(&g_Chain);
 }

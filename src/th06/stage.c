@@ -4,6 +4,7 @@
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/gui.h"
 
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
@@ -402,17 +403,145 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
+static bool M_ProjectVisible(
+    const MAT4 *const matrix, const ANM_DRAW *const draw)
+{
+    const VEC3 projected = Vec3_Project(
+        (VEC3) {}, &draw->view.viewport, &draw->view.projection,
+        &draw->view.view, matrix);
+    return projected.y >= draw->view.viewport.y
+        && projected.y <= draw->view.viewport.y + draw->view.viewport.height;
+}
+
+static bool M_ObjectVisible(
+    const STAGE_OBJECT *const object, const STAGE_INSTANCE *const instance,
+    const ANM_DRAW *const draw)
+{
+    MAT4 matrix = Mat4_Identity();
+    for (int32_t side = 0; side < 2; side++) {
+        matrix.m[3][0] = object->pos.x + instance->pos.x - g_Stage.camera.pos.x;
+        if (side != 0) {
+            matrix.m[3][0] += object->size.x;
+        }
+        matrix.m[3][1] =
+            -(object->pos.y + instance->pos.y - g_Stage.camera.pos.y);
+        matrix.m[3][2] = object->pos.z + instance->pos.z - g_Stage.camera.pos.z
+            + object->size.z;
+        if (M_ProjectVisible(&matrix, draw)) {
+            return true;
+        }
+        matrix.m[3][1] -= object->size.y;
+        if (M_ProjectVisible(&matrix, draw)) {
+            return true;
+        }
+        matrix.m[3][2] -= object->size.z;
+        if (M_ProjectVisible(&matrix, draw)) {
+            return true;
+        }
+        matrix.m[3][1] += object->size.y;
+        if (M_ProjectVisible(&matrix, draw)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void M_DrawLayer(const int32_t layer)
+{
+    ANM_DRAW draw = GameManager_GetDrawContext();
+    draw.interpolate = true;
+    draw.view.fog =
+        (GFX_FOG) { .enabled = true,
+                    .begin = g_Stage.fog.current.near,
+                    .end = g_Stage.fog.current.far,
+                    .color = { (uint8_t)(g_Stage.fog.current.color >> 16),
+                               (uint8_t)(g_Stage.fog.current.color >> 8),
+                               (uint8_t)g_Stage.fog.current.color,
+                               (uint8_t)(g_Stage.fog.current.color >> 24) } };
+    draw.view.id = ANM_VIEW_STAGE;
+    for (int32_t i = 0; i < g_Stage.data.instance_count; i++) {
+        const STAGE_INSTANCE *const instance = &g_Stage.data.instances[i];
+        const STAGE_OBJECT *const object =
+            &g_Stage.data.objects[instance->object];
+        if (object->layer != layer
+            || !M_ObjectVisible(object, instance, &draw)) {
+            continue;
+        }
+        for (int32_t j = 0; j < object->quad_count; j++) {
+            draw.part = (uint32_t)i << 16 | (uint32_t)j;
+            const STAGE_QUAD *const quad = &object->quads[j];
+            ANM_VM *const vm = &g_Stage.data.sprites[quad->sprite];
+            if (quad->type != 0 || vm->sprite_data == nullptr) {
+                continue;
+            }
+            vm->pos =
+                (VEC3) { quad->pos.x + instance->pos.x - g_Stage.camera.pos.x,
+                         quad->pos.y + instance->pos.y - g_Stage.camera.pos.y,
+                         quad->pos.z + instance->pos.z - g_Stage.camera.pos.z };
+            if (quad->width != 0.0f) {
+                vm->scale_x = quad->width / vm->sprite_data->width;
+            }
+            if (quad->height != 0.0f) {
+                vm->scale_y = quad->height / vm->sprite_data->height;
+            }
+            if (vm->auto_rotate == 2) {
+                const float width =
+                    quad->width != 0.0f ? quad->width : vm->sprite_data->width;
+                MAT4 matrix = Mat4_Identity();
+                matrix.m[3][0] = vm->pos.x;
+                matrix.m[3][1] = -vm->pos.y;
+                matrix.m[3][2] = vm->pos.z;
+                const VEC3 origin = Vec3_Project(
+                    (VEC3) {}, &draw.view.viewport, &draw.view.projection,
+                    &draw.view.view, &matrix);
+                matrix.m[3][0] += width * vm->scale_x;
+                const VEC3 right = Vec3_Project(
+                    (VEC3) {}, &draw.view.viewport, &draw.view.projection,
+                    &draw.view.view, &matrix);
+                vm->scale_x = (right.x - origin.x) / width;
+                vm->scale_y = vm->scale_x;
+                vm->pos = origin;
+                ANM_DRAW screen = Anm_ScreenDraw();
+                screen.interpolate = true;
+                screen.part = draw.part;
+                Anm_DrawNoRound(vm, &screen);
+            } else {
+                Anm_Draw3D(vm, &draw);
+            }
+        }
+    }
+}
+
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    g_Stage.fog.color_changed = false;
+    if (g_Stage.spell_card.state <= 1 && !Gui_IsLoadingShown()) {
+        M_DrawLayer(0);
+        M_DrawLayer(1);
+    }
     return CHAIN_CONTINUE;
 }
 
-// Starts the spell card background on the spell card's first frame. The
-// drawing comes with graphics.
 static CHAIN_STATUS M_Draw2(void *const arg)
 {
-    if (g_Stage.spell_card.state >= 1 && g_Stage.spell_card.frames <= 0) {
-        Anm_StartScript(&g_Stage.spell_card.background, M_SPELL_CARD_SCRIPT);
+    if (g_Stage.spell_card.state <= 1 && !Gui_IsLoadingShown()) {
+        M_DrawLayer(2);
+        M_DrawLayer(3);
+        if (g_Stage.spell_card.state == 1) {
+            Anm_DrawRect(
+                (GFX_RECT) { 32, 16, 384, 448 },
+                (uint32_t)(uint8_t)(g_Stage.spell_card.frames * 255 / 60)
+                    << 24);
+        }
+    }
+    if (g_Stage.spell_card.state >= 1) {
+        if (g_Stage.spell_card.frames <= 0) {
+            Anm_StartScript(
+                &g_Stage.spell_card.background, M_SPELL_CARD_SCRIPT);
+        }
+        ANM_DRAW screen = Anm_ScreenDraw();
+        screen.interpolate = true;
+        Anm_Draw(&g_Stage.spell_card.background, &screen);
     }
     g_GameManager.camera.viewport.min_z = 0.0f;
     g_GameManager.camera.viewport.max_z = 0.5f;

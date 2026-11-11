@@ -1,6 +1,8 @@
 #include "th06/gui.h"
+#include "th06/gui/private.h"
 
 #include "th06/chain.h"
+#include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -13,57 +15,7 @@
 #include "core/io/reader.h"
 
 #include <string.h>
-
-#define M_CALC_PRIORITY 12
-#define M_DRAW_PRIORITY 11
-#define M_EFFECT_SLOT 0xb
-#define M_EFFECT_FIRST_SPRITE 0x2b3
-#define M_FRONT_SLOT 0xd
-#define M_LOADING_SLOT 0xe
-#define M_FACE_SLOT 0xf
-#define M_FACE_COUNT 3
-#define M_STAGE_FACE_SLOT 0x12
-#define M_STAGE_FACE_COUNT 3
-#define M_FRONT_SCRIPT 0x600
-#define M_BOSS_BAR 0x13
-#define M_BOSS_BAR_APPEAR_SCRIPT 0x613
-#define M_BOSS_BAR_LEAVE_SCRIPT 0x614
-#define M_BOSS_HEALTH_BAR 0x15
-#define M_BOMB_BAR_SCRIPT 0x617
-#define M_SPELL_BAR_SCRIPT 0x618
-#define M_LOADING_SCRIPT 0x619
-#define M_PLAYER_PORTRAIT 0x4a0
-#define M_BOSS_PORTRAIT_SCRIPT 0x4a2
-#define M_BOSS_PORTRAIT_SPRITE 0x4a8
-#define M_BOMB_PORTRAIT_SCRIPT 0x4a1
-#define M_SPELL_PORTRAIT_SCRIPT 0x4a3
-#define M_SPELL_PORTRAIT_SPRITE 0x4a8
-#define M_STAGE_NAME_SCRIPT 0x700
-#define M_SONG_NAME_SCRIPT 0x701
-#define M_LINE_SCRIPT 0x702
-#define M_NAMEPLATE_SCRIPT 0x704
-#define M_BOMB_NAME_SCRIPT 0x706
-#define M_SPELL_NAME_SCRIPT 0x707
-#define M_NAME_FONT_SIZE 15
-#define M_SONG_FONT_SIZE 16
-#define M_LINE_FONT_SIZE 15
-#define M_SHOOT_WAIT_FRAMES 8
-#define M_BOX_OPEN_FRAMES 60
-#define M_BOSS_BAR_ALPHA_STEP 4
-#define M_BOSS_BAR_ALPHA_RISE_END 0xfc
-#define M_BOSS_BAR_ALPHA_MAX 0xff
-#define M_BOSS_HEALTH_RISE 0.01f
-#define M_BOSS_HEALTH_FALL 0.02f
-#define M_BONUS_POPUP_FRAMES 250
-#define M_FULL_POWER_POPUP_FRAMES 180
-#define M_SPELL_BONUS_POPUP_FRAMES 280
-#define M_MAX_POWER 128
-#define M_FRAME_Z 0.49f
-#define M_FRAME_SIDE 6
-#define M_FRAME_TOP 7
-#define M_FRAME_BOTTOM 8
-#define M_FULL_POWER_SPRITE 0x12
-#define M_VALUE_BACKGROUND 0x16
+#include <stdio.h>
 
 // Selects what a dialogue instruction does. The script stops on opcodes
 // 0, 10 and 11 and never runs past them.
@@ -672,25 +624,9 @@ static CHAIN_STATUS M_Update(void *const arg)
 
 // Places the sprites of the boss bar and the frame where the drawing
 // places them, because their scripts may move or scale them from there.
-// The frame sprites keep the last of the places they are drawn at.
 static CHAIN_STATUS M_Draw(void *const arg)
 {
-    ANM_VM *const sprites = g_Gui.hud.sprites;
-    if (g_Gui.msg.script < 0
-        && (int32_t)g_Gui.boss.present + (int32_t)g_Gui.hud.boss_bar > 0) {
-        ANM_VM *const health = &sprites[M_BOSS_HEALTH_BAR];
-        health->anchor = 3;
-        health->scale_x = g_Gui.hud.boss_health_shown * 288.0f / 14.0f;
-        health->pos = (VEC3) { 96.0f, 24.0f, 0.0f };
-    }
-    sprites[M_FRAME_SIDE].pos = (VEC3) { 608.0f, 448.0f, M_FRAME_Z };
-    sprites[M_FRAME_TOP].pos = (VEC3) { 384.0f, 0.0f, M_FRAME_Z };
-    sprites[M_FRAME_BOTTOM].pos = (VEC3) { 384.0f, 464.0f, M_FRAME_Z };
-    sprites[M_VALUE_BACKGROUND].pos = (VEC3) { 0.0f, 464.0f, M_FRAME_Z };
-    if (g_GameManager.player.power >= M_MAX_POWER) {
-        sprites[M_FULL_POWER_SPRITE].pos = (VEC3) { 496.0f, 186.0f, 0.0f };
-    }
-    return CHAIN_CONTINUE;
+    return GuiDraw_Frame();
 }
 
 static bool M_KeepsInterface(void)
@@ -896,6 +832,13 @@ void Gui_ShowBombName(const int32_t sprite, const char *const name)
     Anm_SetSprite(&g_Gui.banners.bomb_portrait, sprite);
     Anm_StartScript(&g_Gui.banners.bomb_name, M_BOMB_NAME_SCRIPT);
     g_Gui.banners.bomb_text = name;
+    char *encoded = nullptr;
+    const RESULT result = Cp932_Encode(name, strlen(name), &encoded);
+    g_Gui.banners.bomb_width =
+        (float)(IS_OK(result) ? strlen(encoded) : strlen(name)) * 15.0f / 2.0f
+        + 16.0f;
+    Result_Log(result, LOG_LEVEL_WARNING);
+    Mem_Free(encoded);
 }
 
 void Gui_EndBombName(void)
@@ -910,6 +853,13 @@ void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
         &g_Gui.banners.spell_portrait, sprite + M_SPELL_PORTRAIT_SPRITE);
     Anm_StartScript(&g_Gui.banners.spell_name, M_SPELL_NAME_SCRIPT);
     g_Gui.banners.spell_text = name;
+    char *encoded = nullptr;
+    const RESULT result = Cp932_Encode(name, strlen(name), &encoded);
+    g_Gui.banners.spell_width =
+        (float)(IS_OK(result) ? strlen(encoded) : strlen(name)) * 15.0f / 2.0f
+        + 16.0f;
+    Result_Log(result, LOG_LEVEL_WARNING);
+    Mem_Free(encoded);
 }
 
 void Gui_EndSpellCardName(void)

@@ -1,6 +1,7 @@
 #include "th06/player.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -19,6 +20,7 @@
 #include "th06/scene.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
@@ -1255,5 +1257,30 @@ TEST(the_last_death_opens_the_continue_menu)
     CHECK_EQ_INT(g_GameManager.player.bombs, 1);
     CHECK_EQ_INT(g_Player.state.timer.current, 1);
     CHECK_EQ_INT(g_Player.state.bomb_window, 0);
+    M_Teardown();
+}
+
+TEST(player_options_and_shots_record_distinct_motion)
+{
+    M_SetupAlive("player_presentation", 0, 0);
+    CHECK(IS_OK(Anm_CreateTexture(5, 64, 64, ANM_TEXTURE_RGBA8)));
+    g_GameManager.player.power = 8;
+    g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    M_Shoot();
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK(GfxRecorder_QuadCount() >= 4);
+    bool player = false;
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        const uint64_t id = GfxRecorder_QuadId(i);
+        CHECK(id != 0);
+        player |= id == ((uint64_t)g_Player.vm.presentation_generation << 32);
+    }
+    CHECK(player);
+    GfxRecorder_Stop();
     M_Teardown();
 }

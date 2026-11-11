@@ -262,6 +262,8 @@ static bool M_Spawn(
     bullet->color = shooter->color;
     bullet->sprites.flying = type->flying;
     bullet->sprites.fading = type->fading;
+    Anm_RenewPresentation(&bullet->sprites.flying);
+    Anm_RenewPresentation(&bullet->sprites.fading);
     bullet->sprites.hitbox_size = type->hitbox_size;
     static const BULLET_FLAG spawn_flags[BULLET_SPAWN_SPRITE_COUNT] = {
         BULLET_FLAG_SPAWN_1,
@@ -272,6 +274,7 @@ static bool M_Spawn(
         if ((bullet->flags & spawn_flags[i]) != 0) {
             ANM_VM *const vm = &bullet->sprites.spawning[i];
             *vm = type->spawning[i];
+            Anm_RenewPresentation(vm);
             M_SetColorSprite(bullet, vm, shooter->color);
             bullet->state = (BULLET_STATE)(BULLET_SPAWNING_1 + i);
             break;
@@ -621,8 +624,74 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
+static void M_DrawBullet(BULLET *const bullet, const ANM_DRAW *const draw)
+{
+    ANM_VM *vm = &bullet->sprites.flying;
+    if (bullet->state >= BULLET_SPAWNING_1
+        && bullet->state <= BULLET_SPAWNING_3) {
+        vm = &bullet->sprites.spawning[bullet->state - BULLET_SPAWNING_1];
+    } else if (bullet->state == BULLET_FADING) {
+        vm = &bullet->sprites.fading;
+    }
+    vm->pos = (VEC3) { bullet->pos.x, bullet->pos.y, 0.0f };
+    vm->color = (vm->color & 0xff000000u) | 0xffffffu;
+    if (vm->auto_rotate != 0) {
+        vm->rotation.z = 1.5707964f - bullet->angle;
+    }
+    Anm_Draw3DRounded(vm, draw);
+}
+
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    ANM_DRAW draw = GameManager_GetDrawContext();
+    draw.interpolate = true;
+    draw.depth_test = GFX_DEPTH_ALWAYS;
+    for (int32_t i = 0; i < LASER_COUNT; i++) {
+        LASER *const laser = &g_Bullets.lasers[i];
+        if (!laser->active) {
+            continue;
+        }
+        float sine, cosine;
+        X87_SinCos(laser->angle, &sine, &cosine);
+        const float length = (laser->end_offset - laser->start_offset) / 2.0f
+            + laser->start_offset;
+        laser->beam.pos = (VEC3) { cosine * length + laser->pos.x,
+                                   sine * length + laser->pos.y, 0.0f };
+        Anm_Draw3D(&laser->beam, &draw);
+        if (laser->start_offset < 16.0f || laser->speed == 0.0f) {
+            laser->origin.pos =
+                (VEC3) { cosine * laser->start_offset + laser->pos.x,
+                         sine * laser->start_offset + laser->pos.y, 0.0f };
+            laser->origin.color = (laser->beam.color & 0xffffffu) | 0xff000000u;
+            laser->origin.color_op = true;
+            laser->origin.scale_x =
+                laser->width / 10.0f * ((16.0f - laser->start_offset) / 16.0f);
+            laser->origin.scale_y = laser->origin.scale_x;
+            if (laser->origin.scale_y < 0.0f) {
+                laser->origin.scale_x = laser->width / 10.0f;
+                laser->origin.scale_y = laser->origin.scale_x;
+            }
+            Anm_Draw3D(&laser->origin, &draw);
+        }
+    }
+    Item_Draw();
+    for (int32_t pass = 0; pass < 4; pass++) {
+        for (int32_t i = 0; i < BULLET_COUNT; i++) {
+            BULLET *const bullet = &g_Bullets.bullets[i];
+            const ANM_SPRITE *const sprite = bullet->sprites.flying.sprite_data;
+            if (bullet->state == BULLET_FREE || sprite == nullptr) {
+                continue;
+            }
+            const int16_t script = bullet->sprites.flying.script_index;
+            const bool special = script == 0x201 || script == 0x203;
+            if ((pass == 0 && sprite->height > 16.0f)
+                || (pass == 1 && sprite->height == 16.0f && special)
+                || (pass == 2 && sprite->height == 16.0f && !special)
+                || (pass == 3 && sprite->height == 8.0f)) {
+                M_DrawBullet(bullet, &draw);
+            }
+        }
+    }
     return CHAIN_CONTINUE;
 }
 

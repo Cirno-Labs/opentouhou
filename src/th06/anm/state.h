@@ -6,7 +6,9 @@
 #include "core/base/result.h"
 #include "stg/rng.h"
 
-#include <stdint.h>
+// Renews the presentation identity after copying a VM or teleporting it.
+// Does not change animation state or consume random values.
+void Anm_RenewPresentation(ANM_VM *vm);
 
 // Sets up empty sprite, script and file tables. They and every file
 // Anm_Load parses come from allocator. Opcode 16 draws from rng.

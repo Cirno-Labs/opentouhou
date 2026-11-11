@@ -12,6 +12,8 @@ static void M_AddPopup(
     const uint32_t color)
 {
     popup->active = true;
+    Anm_RenewPresentation(&g_AsciiText.digit);
+    popup->presentation_generation = g_AsciiText.digit.presentation_generation;
     uint8_t count = 0;
     if (value >= 0) {
         while (value != 0) {

@@ -309,6 +309,7 @@ void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
         }
         Anm_StartScript(&item->vm, (int32_t)type + M_FIRST_SCRIPT);
         item->vm.color = 0xffffffffu;
+        item->on_screen = true;
         return;
     }
 }
@@ -319,5 +320,39 @@ void Item_CollectAll(void)
         if (m_Items[i].active) {
             m_Items[i].state = ITEM_HOMING;
         }
+    }
+}
+
+void Item_Draw(void)
+{
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.interpolate = true;
+    for (int32_t i = 0; i < ITEM_COUNT; i++) {
+        ITEM *const item = &m_Items[i];
+        if (!item->active) {
+            continue;
+        }
+        item->vm.pos =
+            (VEC3) { g_GameManager.play_area.x + item->pos.x,
+                     g_GameManager.play_area.y + item->pos.y, 0.01f };
+        if (item->pos.y < -8.0f) {
+            item->vm.pos.y = 8.0f + g_GameManager.play_area.y;
+            if (item->on_screen) {
+                Anm_SetSprite(&item->vm, item->type + 0x207);
+                item->on_screen = false;
+            }
+            int32_t alpha =
+                255 - X87_Ftol((8.0f - item->pos.y) * 255.0f / 128.0f);
+            if (alpha < 64) {
+                alpha = 64;
+            }
+            item->vm.color =
+                (item->vm.color & 0xffffffu) | (uint32_t)alpha << 24;
+        } else if (!item->on_screen) {
+            Anm_SetSprite(&item->vm, item->type + 0x200);
+            item->on_screen = true;
+            item->vm.color = 0xffffffffu;
+        }
+        Anm_DrawUnrotated(&item->vm, &draw);
     }
 }

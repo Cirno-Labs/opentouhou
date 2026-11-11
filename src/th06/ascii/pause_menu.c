@@ -46,6 +46,7 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->state++;
         menu->state_frames = 0;
         if (g_AsciiText.capture_background) {
+            Anm_SetPendingCopy(3, (GFX_RECT) { 32, 16, 384, 448 });
             Anm_StartScript(&menu->background, 0x718);
             menu->background.pos = (VEC3) { 32.0f, 16.0f, 0.0f };
         }
@@ -182,6 +183,22 @@ void PauseMenu_DrawPauseMenu(PAUSE_MENU *const menu)
 {
     if (g_GameManager.mode.paused != 0) {
         M_SetViewport();
+        ANM_DRAW draw = Anm_ScreenDraw();
+        draw.interpolate = true;
+        draw.part = ASCII_MENU_SPRITE_COUNT;
+        draw.view =
+            Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
+        if (g_AsciiText.capture_background && menu->state != 0) {
+            ANM_VM background = menu->background;
+            background.z_write_off = true;
+            Anm_DrawUnrotated(&background, &draw);
+        }
+        for (int32_t i = 0; i < ASCII_MENU_SPRITE_COUNT; i++) {
+            if (menu->sprites[i].shown) {
+                draw.part = (uint32_t)i;
+                Anm_DrawUnrotated(&menu->sprites[i], &draw);
+            }
+        }
     }
 }
 
@@ -218,6 +235,7 @@ void PauseMenu_UpdateContinueMenu(PAUSE_MENU *const menu)
                 menu->sprites[i].pending_interrupt = 1;
             }
             if (g_AsciiText.capture_background) {
+                Anm_SetPendingCopy(3, (GFX_RECT) { 32, 16, 384, 448 });
                 Anm_StartScript(&menu->background, 0x718);
                 menu->background.pos = (VEC3) { 32.0f, 16.0f, 0.0f };
             }
@@ -323,11 +341,31 @@ void PauseMenu_DrawContinueMenu(PAUSE_MENU *const menu)
 {
     if (g_GameManager.mode.in_continue_menu) {
         M_SetViewport();
+        ANM_DRAW draw = Anm_ScreenDraw();
+        draw.interpolate = true;
+        draw.part = ASCII_MENU_SPRITE_COUNT;
+        draw.view =
+            Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
+        if (g_AsciiText.capture_background
+            && (menu->state != 0 || menu->state_frames > 2)) {
+            Anm_DrawUnrotated(&menu->background, &draw);
+        }
         if (menu->state == 1 || menu->state == 2) {
             menu->sprites[4] = menu->sprites[1];
             menu->sprites[4].pos.x += 8.0f * menu->sprites[4].scale_x;
             Anm_SetSprite(
                 &menu->sprites[4], 0x1e - g_GameManager.stats.continues_used);
+            ANM_VM counter = menu->sprites[4];
+            counter.presentation_generation =
+                menu->sprites[1].presentation_generation;
+            draw.part = 4;
+            Anm_DrawUnrotated(&counter, &draw);
+        }
+        for (int32_t i = 0; i < 4; i++) {
+            if (menu->sprites[i].shown) {
+                draw.part = (uint32_t)i;
+                Anm_DrawUnrotated(&menu->sprites[i], &draw);
+            }
         }
     }
 }

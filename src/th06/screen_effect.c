@@ -7,6 +7,7 @@
 
 #include "core/base/assert.h"
 #include "core/base/log.h"
+#include "core/gfx.h"
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
@@ -23,6 +24,7 @@ typedef struct {
     int32_t duration;
     int32_t alpha;
     uint32_t color;
+    bool play_area;
     int32_t shake_from;
     int32_t shake_to;
 } M_EFFECT;
@@ -47,6 +49,11 @@ static void M_Deleted(void *const arg)
 
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    const M_EFFECT *const effect = arg;
+    Anm_DrawRect(
+        effect->play_area ? (GFX_RECT) { 32, 16, 384, 448 }
+                          : (GFX_RECT) { 0, 0, 640, 480 },
+        (uint32_t)effect->alpha << 24 | effect->color);
     return CHAIN_CONTINUE;
 }
 
@@ -165,5 +172,7 @@ void ScreenEffect_Shake(
 void ScreenEffect_FadeOut(const int32_t duration, const uint32_t color)
 {
     M_Start(
-        M_FadeOut, true, &(M_EFFECT) { .duration = duration, .color = color });
+        M_FadeOut, true,
+        &(M_EFFECT) {
+            .duration = duration, .color = color, .play_area = true });
 }

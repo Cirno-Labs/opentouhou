@@ -1,6 +1,7 @@
 #include "th06/stage.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -12,6 +13,7 @@
 #include "th06/game_manager.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>
@@ -306,5 +308,78 @@ TEST(drawing_restores_the_fixed_camera_and_foreground_depth)
     CHECK(g_GameManager.camera.view.m[3][2] == g_GameManager.camera.distance);
     CHECK(g_GameManager.camera.distance > 800.0f);
     CHECK(g_GameManager.camera.distance < 900.0f);
+    M_Teardown();
+}
+
+TEST(stage_layers_record_current_fog_and_instance_geometry)
+{
+    const STAGE_INSTR script[] = { { -1, STAGE_OP_KEYFRAME, { 0, 0, 0 } } };
+    CHECK(Result_Ignore(M_Setup("stage_draw_layer", script, 1, 0)));
+    const ANM_SPRITE sprite = {
+        .slot = 4, .width = 4.0f, .height = 4.0f, .u1 = 1.0f, .v1 = 1.0f
+    };
+    CHECK(Result_Ignore(Anm_CreateTexture(4, 4, 4, ANM_TEXTURE_RGBA8)));
+    ANM_VM *const vm = &g_Stage.data.sprites[0];
+    vm->sprite_data = &sprite;
+    vm->shown = true;
+    vm->visible = true;
+    vm->color = 0xffffffffu;
+    vm->uv_scale_x = 1.0f;
+    vm->uv_scale_y = 1.0f;
+    g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0.5f, 1.0f };
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    const GFX_FOG *const fog = &GfxRecorder_Quad(0)->view.fog;
+    CHECK(fog->enabled);
+    CHECK(fog->begin == 200.0f);
+    CHECK(fog->end == 500.0f);
+    CHECK(vm->pos.x == 5.0f);
+    CHECK(vm->scale_x == 4.0f);
+    CHECK(g_GameManager.camera.viewport.min_z == 0.0f);
+    CHECK(g_GameManager.camera.viewport.max_z == 0.5f);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(repeated_stage_instances_keep_separate_draw_parts)
+{
+    const STAGE_INSTR script[] = { { -1, STAGE_OP_KEYFRAME, { 0, 0, 0 } } };
+    CHECK(IS_OK(M_Setup("stage_instance_presentation", script, 1, 0)));
+    const ANM_SPRITE sprite = { .slot = 4, .width = 4, .height = 4 };
+    CHECK(IS_OK(Anm_CreateTexture(4, 4, 4, ANM_TEXTURE_RGBA8)));
+    ANM_VM *const vm = &g_Stage.data.sprites[0];
+    vm->sprite_data = &sprite;
+    vm->shown = true;
+    vm->visible = true;
+    vm->color = 0xffffffff;
+    vm->uv_scale_x = vm->uv_scale_y = 1;
+    g_Stage.data.instances = Mem_ReallocArr(
+        g_Stage.data.instances, 2, sizeof(*g_Stage.data.instances));
+    g_Stage.data.instances[1] = g_Stage.data.instances[0];
+    g_Stage.data.instances[1].pos.x += 32;
+    g_Stage.data.instance_count = 2;
+    g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0.5f, 1 };
+    g_GameManager.camera.view = Mat4_Identity();
+    g_GameManager.camera.projection = Mat4_Identity();
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    const uint64_t first = GfxRecorder_QuadId(0);
+    const uint64_t second = GfxRecorder_QuadId(1);
+    CHECK(first != 0 && second != 0);
+    CHECK_EQ_INT(first >> 32, second >> 32);
+    CHECK_EQ_INT((uint32_t)first, 0);
+    CHECK_EQ_INT((uint32_t)second, 1 << 16);
+    CHECK(
+        GfxRecorder_Quad(1)->vertices[0].position.x
+        == GfxRecorder_Quad(0)->vertices[0].position.x + 32);
+    GfxRecorder_Stop();
     M_Teardown();
 }

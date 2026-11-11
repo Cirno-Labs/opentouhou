@@ -95,6 +95,7 @@ static M_SPAWN_CALL m_SpawnCall;
 static int32_t m_SpawnCount;
 static ENEMY m_SpareEnemy;
 static int32_t m_ClampCalls;
+static int32_t m_PresentationRenewals;
 static int32_t m_ReleaseOrbitCalls;
 static int32_t m_KillAllCalls;
 static int32_t m_NameSprite;
@@ -170,6 +171,11 @@ ENEMY *Enemy_Spawn(
     m_SpawnCall = (M_SPAWN_CALL) { sub, pos, life, item, score };
     m_SpawnCount++;
     return &m_SpareEnemy;
+}
+
+void Enemy_RenewPresentation(ENEMY *const enemy)
+{
+    m_PresentationRenewals++;
 }
 
 void Enemy_ClampPos(ENEMY *const enemy)
@@ -284,6 +290,7 @@ static void M_ResetCalls(void)
     m_ItemCount = 0;
     m_SpawnCount = 0;
     m_ClampCalls = 0;
+    m_PresentationRenewals = 0;
     m_ReleaseOrbitCalls = 0;
     m_KillAllCalls = 0;
     m_NameCalls = 0;
@@ -1181,6 +1188,7 @@ TEST(set_pos_resolves_each_component_in_place)
     CHECK(m_Enemy.move.pos.y == 7.0f);
     CHECK(m_Enemy.move.pos.z == 7.0f);
     CHECK_EQ_INT(m_ClampCalls, 1);
+    CHECK_EQ_INT(m_PresentationRenewals, 1);
     M_End();
 }
 
@@ -2489,5 +2497,19 @@ TEST(follow_life_sets_values_from_the_life)
     CHECK(
         M_State()->float_vars[3]
         == 96.0f - range / 2.0f + Rng_F32InRange(&expected, range));
+    M_End();
+}
+
+TEST(instant_position_changes_renew_presentation_but_repeats_do_not)
+{
+    M_Begin("position_presentation");
+    M_INSTR(0, 43, M_F(1.0f), M_F(2.0f), M_F(3.0f));
+    M_INSTR(1, 43, M_F(4.0f), M_F(2.0f), M_F(3.0f));
+    M_Load();
+    m_Enemy.move.pos = (VEC3) { 1, 2, 3 };
+    M_Frame();
+    CHECK_EQ_INT(m_PresentationRenewals, 0);
+    M_Frame();
+    CHECK_EQ_INT(m_PresentationRenewals, 1);
     M_End();
 }

@@ -11,7 +11,7 @@
 // Runs short-lived effects drawn with ANM scripts: explosions, particles,
 // shockwaves, charges and the orbits around enemies. Particles and charges
 // draw from the gameplay generator when they start, so the effects spawned
-// are part of the simulation. Drawing comes with graphics.
+// are part of the simulation. Draw records smooth each effect lifetime.
 
 #define EFFECT_COUNT 0x200
 

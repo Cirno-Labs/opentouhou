@@ -33,6 +33,11 @@ static void M_Reset(void)
     Item_Reset();
 }
 
+void Anm_SetSprite(ANM_VM *const vm, const int32_t sprite)
+{
+    vm->sprite = (int16_t)sprite;
+}
+
 void Anm_StartScript(ANM_VM *const vm, const int32_t script)
 {
     vm->script_index = (int16_t)script;

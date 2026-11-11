@@ -38,3 +38,15 @@ void GameManager_SetUpFixedCamera(const float extra_far)
     g_GameManager.camera.projection =
         Mat4_PerspectiveFovLH(fov, aspect, 100.0f, 10000.0f + extra_far);
 }
+
+ANM_DRAW GameManager_GetDrawContext(void)
+{
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.view = (GFX_VIEW) {
+        .view = g_GameManager.camera.view,
+        .projection = g_GameManager.camera.projection,
+        .viewport = g_GameManager.camera.viewport,
+        .id = ANM_VIEW_CAMERA,
+    };
+    return draw;
+}

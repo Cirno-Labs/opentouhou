@@ -4,11 +4,13 @@
 #include "th06/timer.h"
 
 #include "anm_builder.h"
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 
 #include "stg/rng.h"
 
@@ -649,5 +651,185 @@ TEST(clear_menu_scripts_leaves_a_running_vm_running)
     CHECK(ended);
     CHECK(vm.sprite == 1);
 
+    M_Teardown(directory);
+}
+
+TEST(draw_variants_copy_geometry_and_preserve_vm_state)
+{
+    RNG rng;
+    Rng_SetSeed(&rng, 5);
+    Anm_Init(&g_HeapAllocator, &rng);
+    CHECK(Result_Ignore(Anm_CreateTexture(0, 256, 128, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = { .slot = 0,
+                                .width = 32.0f,
+                                .height = 16.0f,
+                                .u0 = 0.25f,
+                                .u1 = 0.375f,
+                                .v0 = 0.5f,
+                                .v1 = 0.625f };
+    ANM_VM vm;
+    Anm_CreateVm(&vm);
+    Anm_InitVm(&vm);
+    vm.sprite_data = &sprite;
+    vm.shown = true;
+    vm.pos = (VEC3) { 100.25f, 50.75f, 0.5f };
+    vm.uv_scale_x = 32.0f / 256.0f;
+    vm.uv_scale_y = 16.0f / 128.0f;
+    vm.uv_scroll_x = 0.125f;
+    vm.color = 0x80402010;
+    vm.blend_add = true;
+    vm.color_op = true;
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    ANM_DRAW draw = Anm_ScreenDraw();
+    Anm_Draw(&vm, &draw);
+    Anm_DrawNoRound(&vm, &draw);
+    vm.rotation.z = 0.5f;
+    Anm_Draw(&vm, &draw);
+    vm.rotation.z = 0.0f;
+    draw.view = (GFX_VIEW) {
+        .view = Mat4_Identity(),
+        .projection = Mat4_Identity(),
+        .viewport = { 0, 0, 640, 480, 0, 1 },
+    };
+    const ANM_VM before = vm;
+    Anm_Draw3D(&vm, &draw);
+    Anm_Draw3DRounded(&vm, &draw);
+    CHECK(memcmp(&before, &vm, sizeof(vm)) == 0);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 5);
+    const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);
+    CHECK(quad->vertices[0].position.x == 84.0f);
+    CHECK(quad->vertices[0].position.y == 43.0f);
+    CHECK(quad->vertices[1].position.x == 116.0f);
+    CHECK(quad->vertices[0].uv.x == 0.375f);
+    CHECK_EQ_INT(quad->vertices[0].color.alpha, 0x80);
+    CHECK(quad->state.blend == GFX_BLEND_ADD);
+    CHECK(quad->state.color_op == GFX_COLOR_ADD);
+    CHECK(quad->state.alpha_test && quad->state.repeat);
+    CHECK(quad->texture == Anm_GetTexture(0));
+    CHECK(GfxRecorder_Quad(1)->vertices[0].position.x == 84.75f);
+    CHECK(GfxRecorder_Quad(3)->vertices[0].position.x == 84.25f);
+    CHECK(GfxRecorder_Quad(3)->vertices[0].position.y == -34.75f);
+    CHECK(GfxRecorder_Quad(4)->vertices[0].position.x == 83.5f);
+    GfxRecorder_Stop();
+    Anm_Shutdown();
+}
+
+TEST(anm_metadata_creates_blank_texture_and_high_texture_slots_are_independent)
+{
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 64, 32);
+    AnmBuilder_AddSprite(&builder, 0, 0, 0, 16, 16);
+    const int32_t script = AnmBuilder_BeginScript(&builder, 0);
+    AnmBuilder_Instr(&builder, script, 0, 0, nullptr, 0);
+    char *const directory = TestDir_Prepare("anm_blank_texture");
+    Th06Data_WriteArchives(directory, -1);
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    size_t size = AnmBuilder_Build(&builder, bytes);
+    const uint32_t offset = (uint32_t)size;
+    bytes[28] = (uint8_t)offset;
+    bytes[29] = (uint8_t)(offset >> 8);
+    bytes[30] = (uint8_t)(offset >> 16);
+    bytes[31] = (uint8_t)(offset >> 24);
+    bytes[size++] = '@';
+    bytes[size++] = 0;
+    Th06Data_WriteFile(directory, "blank.anm", bytes, size);
+    M_Setup(directory);
+    CHECK(Result_Ignore(Anm_Load(3, "blank.anm", 0)));
+    CHECK(Anm_GetTexture(3) != nullptr);
+    CHECK_EQ_INT(GfxTexture_GetWidth(Anm_GetTexture(3)), 64);
+    CHECK_EQ_INT(GfxTexture_GetHeight(Anm_GetTexture(3)), 32);
+    CHECK(Result_Ignore(
+        Anm_CreateTexture(ANM_TEXTURE_COUNT - 1, 4, 4, ANM_TEXTURE_RGBA8)));
+    Anm_Release(3);
+    CHECK(Anm_GetTexture(3) == nullptr);
+    CHECK(Anm_GetTexture(ANM_TEXTURE_COUNT - 1) != nullptr);
+    M_Teardown(directory);
+}
+
+TEST(a_pending_copy_replaces_the_texture_with_the_screen_once)
+{
+    RNG rng;
+    Rng_SetSeed(&rng, 3);
+    GfxRecorder_Start();
+    Anm_Init(&g_HeapAllocator, &rng);
+    CHECK(Result_Ignore(Anm_CreateTexture(3, 16, 16, ANM_TEXTURE_RGBA8)));
+    GFX_TEXTURE *const original = Anm_GetTexture(3);
+    Gfx_BeginTick((GFX_COLOR) {});
+    CHECK(Result_Ignore(Anm_DoPendingCopy()));
+    CHECK(Anm_GetTexture(3) == original);
+    Anm_SetPendingCopy(3, (GFX_RECT) { 0, 0, 8, 4 });
+    CHECK(Result_Ignore(Anm_DoPendingCopy()));
+    GFX_TEXTURE *const copy = Anm_GetTexture(3);
+    CHECK(copy != original);
+    CHECK_EQ_INT(GfxTexture_GetWidth(copy), 8);
+    CHECK_EQ_INT(GfxTexture_GetHeight(copy), 4);
+    CHECK_EQ_INT(GfxRecorder_CopyCount(), 1);
+    CHECK(Result_Ignore(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_CopyCount(), 1);
+    Gfx_EndTick();
+    Anm_Shutdown();
+    GfxRecorder_Stop();
+}
+
+TEST(presentation_identity_survives_motion_and_breaks_at_discontinuities)
+{
+    GfxRecorder_Start();
+    CHECK(IS_OK(Anm_CreateTexture(100, 256, 256, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = { .slot = 100, .width = 32, .height = 32 };
+    ANM_VM vm;
+    Anm_CreateVm(&vm);
+    Anm_InitVm(&vm);
+    vm.sprite_data = &sprite;
+    vm.pos = (VEC3) { 100, 200, 0 };
+    vm.uv_scale_x = 0.125f;
+    vm.uv_scale_y = 0.125f;
+    const uint32_t generation = vm.presentation_generation;
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.interpolate = true;
+    draw.part = 7;
+    Gfx_BeginTick((GFX_COLOR) {});
+    Anm_Draw3D(&vm, &draw);
+    Gfx_EndTick();
+    const VEC3 old = GfxRecorder_Quad(0)->vertices[0].position;
+    vm.pos.x += 20;
+    Gfx_BeginTick((GFX_COLOR) {});
+    Anm_Draw3D(&vm, &draw);
+    ANM_VM clone = vm;
+    Anm_RenewPresentation(&clone);
+    CHECK(clone.presentation_generation != generation);
+    Anm_Draw3D(&clone, &draw);
+    draw.part = 8;
+    Anm_Draw3D(&vm, &draw);
+    Gfx_EndTick();
+    CHECK(GfxRecorder_Quad(0)->vertices[0].position.x == old.x + 20);
+    CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.x == old.x);
+    CHECK(GfxRecorder_Blend(0.0f, 1)[0].position.x == old.x + 20);
+    CHECK(GfxRecorder_Blend(0.0f, 2)[0].position.x == old.x + 20);
+    Anm_ReleaseTexture(100);
+    GfxRecorder_Stop();
+}
+
+TEST(sprite_changes_renew_only_the_presentation_lifetime)
+{
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 256, 256);
+    AnmBuilder_AddSprite(&builder, 0, 0, 0, 16, 16);
+    AnmBuilder_AddSprite(&builder, 1, 16, 0, 32, 16);
+    char *const directory =
+        M_SetupFiles("presentation_sprite", "test.anm", &builder);
+    M_Setup(directory);
+    CHECK(IS_OK(Anm_Load(0, "test.anm", 0)));
+    ANM_VM vm;
+    Anm_CreateVm(&vm);
+    Anm_SetSprite(&vm, 0);
+    const uint32_t first = vm.presentation_generation;
+    const uint32_t generated = m_Rng.generated;
+    Anm_SetSprite(&vm, 0);
+    CHECK_EQ_INT(vm.presentation_generation, first);
+    Anm_SetSprite(&vm, 1);
+    CHECK(vm.presentation_generation != first);
+    CHECK_EQ_INT(m_Rng.generated, generated);
     M_Teardown(directory);
 }

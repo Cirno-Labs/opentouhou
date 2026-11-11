@@ -1,4 +1,5 @@
 #include "th06/anm.h"
+#include "th06/anm/private.h"
 
 #include "th06/angle.h"
 #include "th06/files.h"
@@ -70,6 +71,7 @@ typedef struct {
 static M_STATE *m_State;
 static const ALLOCATOR *m_Allocator;
 static RNG *m_Rng;
+static uint32_t m_PresentationGeneration;
 
 static float M_F32(const uint32_t bits)
 {
@@ -232,7 +234,10 @@ RESULT Anm_Load(
     Anm_Release(slot);
     READER reader;
     MUST(Files_Load(path, &reader), "%s", path);
-    const RESULT result = M_Parse(&reader, slot, first_sprite);
+    RESULT result = M_Parse(&reader, slot, first_sprite);
+    if (IS_OK(result)) {
+        result = AnmTexture_LoadSlot(&reader, slot);
+    }
     Reader_Close(&reader);
     if (!IS_OK(result)) {
         Anm_Release(slot);
@@ -244,6 +249,7 @@ void Anm_Release(const int32_t slot)
 {
     ASSERT(slot >= 0 && slot < ANM_SLOT_COUNT);
     M_SLOT *const loaded = &m_State->slots[slot];
+    Anm_ReleaseTexture(slot);
     for (int32_t i = 0; i < loaded->sprite_count; i++) {
         if (loaded->sprites[i] >= 0) {
             m_State->sprites[loaded->sprites[i]] = (ANM_SPRITE) { .slot = -1 };
@@ -300,13 +306,26 @@ void Anm_Shutdown(void)
     for (int32_t i = 0; i < ANM_SLOT_COUNT; i++) {
         Anm_Release(i);
     }
+    for (int32_t i = 0; i < ANM_TEXTURE_COUNT; i++) {
+        Anm_ReleaseTexture(i);
+    }
+    for (int32_t i = 0; i < ANM_SURFACE_COUNT; i++) {
+        Anm_ReleaseSurface(i);
+    }
     Allocator_Free(m_Allocator, m_State, sizeof(M_STATE));
     m_State = nullptr;
+}
+
+void Anm_RenewPresentation(ANM_VM *const vm)
+{
+    ASSERT(m_PresentationGeneration != UINT32_MAX);
+    vm->presentation_generation = ++m_PresentationGeneration;
 }
 
 void Anm_CreateVm(ANM_VM *const vm)
 {
     *vm = (ANM_VM) {};
+    Anm_RenewPresentation(vm);
     vm->sprite = -1;
     Timer_Init(&vm->script_time);
     Timer_Init(&vm->move_timer);
@@ -316,6 +335,7 @@ void Anm_CreateVm(ANM_VM *const vm)
 
 void Anm_InitVm(ANM_VM *const vm)
 {
+    Anm_RenewPresentation(vm);
     vm->rotation = (VEC3) {};
     vm->rotation_speed = (VEC3) {};
     vm->scale_speed_x = 0.0f;
@@ -352,6 +372,9 @@ void Anm_SetSprite(ANM_VM *const vm, const int32_t sprite)
     if (sprite < 0 || sprite >= ANM_SPRITE_COUNT
         || m_State->sprites[sprite].slot < 0) {
         return;
+    }
+    if (vm->sprite != sprite || vm->sprite_data != &m_State->sprites[sprite]) {
+        Anm_RenewPresentation(vm);
     }
     vm->sprite = (int16_t)sprite;
     vm->sprite_data = &m_State->sprites[sprite];

@@ -178,13 +178,14 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
-// Places each sprite at its effect. Drawing comes with graphics, but the
-// position is state a script's moves start from.
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    ANM_DRAW draw = GameManager_GetDrawContext();
+    draw.interpolate = true;
     for (int32_t i = 0; i < EFFECT_COUNT; i++) {
         if (m_Effects[i].active) {
             m_Effects[i].vm.pos = m_Effects[i].pos;
+            Anm_Draw3D(&m_Effects[i].vm, &draw);
         }
     }
     return CHAIN_CONTINUE;

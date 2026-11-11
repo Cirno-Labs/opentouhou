@@ -66,22 +66,23 @@ typedef struct {
     int logical_height;        // 480
     const INPUT_SCHEMA *input_schema;
     RESULT (*init)(void);
-    // One 60 Hz step: advance the game and record what to show.
-    bool (*tick)(const void *input, FRAME *frame);
+    // One 60 Hz step: advance the game and draw it.
+    bool (*tick)(const void *input);
     void (*shutdown)(void);
 } GAME_DESC;
 ```
 
 A **tick** is one 60 Hz step of the game. A **display frame** is one
 image on screen. Each display frame reads the input devices, runs as
-many ticks as the clock allows, and renders the last two recorded
-`FRAME`s, interpolated.
+many ticks as the clock allows, and shows the last tick in the window.
 
-`tick` updates the game and records its draw commands into a `FRAME` in
-one call, because the originals interleave the two and some of their
-drawing code changes state. It never touches the GPU. The renderer pairs
-records by id between two frames to interpolate them; at 60 Hz this
-costs nothing.
+`tick` updates the game and draws it in one call, because the originals
+interleave the two and some of their drawing code changes state.
+Drawing runs in call order into a logical screen of the game's size, and
+every tick draws, also the ticks that a display frame runs to catch up.
+To show a tick, the renderer draws it again at window resolution, with
+each quad and view that has an id blended toward the tick before, so
+that motion is smooth at any refresh rate.
 
 ## Simulation state and determinism
 
