@@ -372,6 +372,43 @@ TEST(list_follows_a_saved_slot)
     ResultScreen_CloseSaves();
 }
 
+TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
+{
+    char *const directory = TestDir_Prepare("scan");
+    char *const replay_dir = TestDir_Join(directory, "replay");
+    CHECK(Result_Log(File_MakeDir(replay_dir), LOG_LEVEL_ERROR));
+    char *const first = TestDir_Join(replay_dir, "th6_ud0001.rpy");
+    char *const second = TestDir_Join(replay_dir, "th6_ud0002.rpy");
+    size_t size;
+    M_Save(first, M_ReplayBytes(&size), size);
+    ResultScreen_OpenSaves(directory);
+    static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
+    CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
+    CHECK(Replay_FindFile(list[0].path, &size) != nullptr);
+    char kept[SAVED_REPLAY_PATH_SIZE];
+    memcpy(kept, list[0].path, sizeof(kept));
+
+    SDL_RemovePath(first);
+    M_Save(second, M_ReplayBytes(&size), size);
+    const int32_t scan = ResultScreen_GetReplayScan();
+    ResultScreen_ScanReplays();
+    CHECK_EQ_INT(ResultScreen_GetReplayScan(), scan);
+    ResultScreen_RequestReplayScan();
+    ResultScreen_ScanReplays();
+    CHECK(ResultScreen_GetReplayScan() != scan);
+    CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
+    const size_t length = strlen(list[0].path);
+    CHECK(strcmp(list[0].path + length - 14, "th6_ud0002.rpy") == 0);
+    CHECK(Replay_FindFile(list[0].path, &size) != nullptr);
+    CHECK(Replay_FindFile(kept, &size) == nullptr);
+    ResultScreen_CloseSaves();
+    CHECK(Replay_FindFile(list[0].path, &size) == nullptr);
+    Mem_Free(second);
+    Mem_Free(first);
+    Mem_Free(replay_dir);
+    Mem_Free(directory);
+}
+
 TEST(a_saved_slot_is_kept_for_playback)
 {
     ResultScreen_OpenSaves(nullptr);

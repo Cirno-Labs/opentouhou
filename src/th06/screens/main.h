@@ -34,6 +34,13 @@
 // Adds the title at calc priority 2 and draw priority 0. Opens the replay
 // menu when mode is nonzero, or the title otherwise. The first calc loads
 // the files of the screen it opens.
+//
+// Opening the replay menu asks for a scan of the replay directory
+// (th06/screens/result/saves.h), which runs after that tick. From the title
+// menu, the list first shows at the 60th calc after the choice, with the
+// scanned files. Opened after a replay, the list shows at the first calc
+// with the files of the previous scan, and the scanned files from the
+// second calc on.
 RESULT TitleScene_SetUp(int32_t mode);
 // Sets g_GameManager up to play the replay at path from stage, from 0 for
 // stage 1, as the replay menu does, and requests SCENE_GAMEPLAY. The lives

@@ -12,6 +12,10 @@
 // store, which playback reads. The files go to the user directory in the
 // original format, after the tick that saved them. Without a user
 // directory, saves stay in memory.
+//
+// The replay menu asks for a scan of the replay directory when it opens,
+// as the original reads the directory then. th06/main.c runs the scan
+// after that tick, so the menu sees the new list from the next tick on.
 
 // Holds the values that the result screen takes from outside the
 // simulation.
@@ -52,6 +56,14 @@ void ResultScreen_OpenSaves(const char *user_dir);
 RESULT ResultScreen_WriteSaves(void);
 // Releases the files in memory and drops the saves not written.
 void ResultScreen_CloseSaves(void);
+// Asks for a scan of the replay directory after the tick.
+void ResultScreen_RequestReplayScan(void);
+// Scans the replay directory again when a tick asked for it: forgets the
+// replays read before and reads the slots and the user replays, as
+// ResultScreen_OpenSaves does.
+void ResultScreen_ScanReplays(void);
+// Returns a number that changes with each scan of the replay directory.
+int32_t ResultScreen_GetReplayScan(void);
 // Copies the valid replays into out in the replay menu's order: the
 // numbered slots, as the simulation last saved them, then the th6_ud files.
 // Returns their number.

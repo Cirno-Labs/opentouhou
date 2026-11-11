@@ -29,6 +29,9 @@ typedef struct {
     SAVED_REPLAY user[SAVED_REPLAY_USER_COUNT];
     M_PENDING pending[M_PENDING_COUNT];
     RESULT_SCREEN_CLOCK clock;
+    // Counts the scans of the replay directory.
+    int32_t scan;
+    bool scan_requested;
 } M_SAVES;
 
 static M_SAVES m_Saves = {
@@ -185,8 +188,8 @@ static void M_ReadUserReplays(void)
     Mem_Free(directory);
 }
 
-// Reads the numbered slots and the user replays of the replay directory,
-// and forgets the replays read before.
+// Forgets the replays read before, then reads the numbered slots and the
+// user replays of the replay directory.
 static void M_ScanReplays(void)
 {
     SAVED_REPLAY *const lists[] = { m_Saves.slots, m_Saves.user };
@@ -210,6 +213,7 @@ static void M_ScanReplays(void)
         Mem_Free(name);
     }
     M_ReadUserReplays();
+    m_Saves.scan++;
 }
 
 static void M_LoadScore(READER *const reader)
@@ -299,6 +303,7 @@ void ResultScreen_CloseSaves(void)
             Replay_RemoveFile(m_Saves.user[i].path);
         }
     }
+    m_Saves.scan_requested = false;
     memset(m_Saves.slots, 0, sizeof(m_Saves.slots));
     memset(m_Saves.user, 0, sizeof(m_Saves.user));
 }
@@ -306,6 +311,26 @@ void ResultScreen_CloseSaves(void)
 void ResultScreen_SetClock(const RESULT_SCREEN_CLOCK *const clock)
 {
     m_Saves.clock = *clock;
+}
+
+void ResultScreen_RequestReplayScan(void)
+{
+    m_Saves.scan_requested = true;
+}
+
+void ResultScreen_ScanReplays(void)
+{
+    if (m_Saves.scan_requested) {
+        m_Saves.scan_requested = false;
+        if (m_Saves.user_dir != nullptr) {
+            M_ScanReplays();
+        }
+    }
+}
+
+int32_t ResultScreen_GetReplayScan(void)
+{
+    return m_Saves.scan;
 }
 
 int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT])

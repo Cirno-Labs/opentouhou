@@ -351,6 +351,14 @@ static void M_PutReplay(const int32_t slot, const int32_t first)
     ResultSaves_PutReplay(slot, data, size);
 }
 
+static void M_WriteReplay(const char *const name, const int32_t first)
+{
+    size_t size;
+    uint8_t *const data = M_ReplayBytes(first, &size);
+    Th06Data_WriteFile(m_Directory, name, data, size);
+    Allocator_Free(&g_HeapAllocator, data, size);
+}
+
 TEST(a_replay_starts_with_the_lives_of_its_first_stage)
 {
     M_Setup("replay");
@@ -711,5 +719,64 @@ TEST(an_unchanged_window_row_asks_for_nothing)
     M_Press(m_Shoot);
     CHECK_EQ_INT(g_FakeApp.request_count, 0);
     FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(the_replay_menu_after_a_replay_takes_the_scanned_list)
+{
+    M_Setup("scan");
+    char *const replays = TestDir_Join(m_Directory, "replay");
+    CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
+    Mem_Free(replays);
+    M_WriteReplay("replay/th6_01.rpy", 2);
+    ResultScreen_OpenSaves(m_Directory);
+    M_WriteReplay("replay/th6_02.rpy", 1);
+    CHECK(Result_Log(TitleScene_SetUp(1), LOG_LEVEL_ERROR));
+    M_Tick();
+    ResultScreen_ScanReplays();
+    M_Tick();
+    M_Run(40);
+    M_Press(m_Down);
+    M_Press(m_Shoot);
+    M_Run(40);
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(m_Requested, SCENE_GAMEPLAY);
+    const size_t length = strlen(g_GameManager.mode.replay_path);
+    CHECK(
+        strcmp(
+            g_GameManager.mode.replay_path + length - 17, "replay/th6_02.rpy")
+        == 0);
+    CHECK_EQ_INT(g_GameManager.run.stage, 0);
+    M_Teardown();
+}
+
+TEST(the_title_menu_asks_for_a_scan_when_the_replay_menu_opens)
+{
+    M_Setup("scan_title");
+    char *const replays = TestDir_Join(m_Directory, "replay");
+    CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
+    Mem_Free(replays);
+    ResultScreen_OpenSaves(m_Directory);
+    M_WriteReplay("replay/th6_ud0001.rpy", 1);
+    M_OpenTitleMenu();
+    M_Press(m_Down);
+    M_Press(m_Down);
+    const int32_t scan = ResultScreen_GetReplayScan();
+    m_Input = m_Shoot;
+    M_Tick();
+    m_Input = (TH06_INPUT) {};
+    ResultScreen_ScanReplays();
+    CHECK(ResultScreen_GetReplayScan() != scan);
+    M_Run(62);
+    M_Press(m_Shoot);
+    M_Run(40);
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(m_Requested, SCENE_GAMEPLAY);
+    const size_t length = strlen(g_GameManager.mode.replay_path);
+    CHECK(
+        strcmp(
+            g_GameManager.mode.replay_path + length - 21,
+            "replay/th6_ud0001.rpy")
+        == 0);
     M_Teardown();
 }

@@ -93,6 +93,7 @@ typedef struct {
     // windowed.
     int32_t pending_windowed;
     SAVED_REPLAY replays[SAVED_REPLAY_COUNT];
+    int32_t replay_scan;
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
     bool added;
@@ -551,6 +552,7 @@ static void M_UpdateTitleMenu(M_MENU *const menu)
             break;
         case 3:
             M_OpenScreen(menu, M_STATE_OPEN_REPLAYS);
+            ResultScreen_RequestReplayScan();
             g_GameManager.mode.in_practice = false;
             break;
         case 4:
@@ -1059,9 +1061,15 @@ static bool M_StagePresent(const M_MENU *const menu, const int32_t index)
     return menu->replays[menu->replay_cursor].summary.stages[index + 1];
 }
 
-static void M_ListReplays(M_MENU *const menu)
+static void M_CopyReplays(M_MENU *const menu)
 {
     menu->replay_count = ResultScreen_ListReplays(menu->replays);
+    menu->replay_scan = ResultScreen_GetReplayScan();
+}
+
+static void M_ListReplays(M_MENU *const menu)
+{
+    M_CopyReplays(menu);
     menu->fade_from_color = 0;
     menu->fade_out_frames = menu->fade_in_frames;
     menu->fade_in_frames = 0;
@@ -1072,6 +1080,15 @@ static void M_ListReplays(M_MENU *const menu)
 
 static void M_UpdateReplays(M_MENU *const menu)
 {
+    // A list that opened before the scan of the replay directory, as the
+    // one after a replay does, takes the scanned list once it arrives.
+    if (menu->replay_scan != ResultScreen_GetReplayScan()) {
+        M_CopyReplays(menu);
+        if (menu->cursor >= menu->replay_count) {
+            menu->cursor = 0;
+        }
+        menu->replay_cursor = menu->cursor;
+    }
     if (menu->state_frames < 40) {
         return;
     }
@@ -1463,6 +1480,9 @@ RESULT TitleScene_SetUp(const int32_t mode)
     }
     g_GameManager.mode.paused = 0;
     menu->state = mode != 0 ? M_STATE_OPEN_REPLAYS : M_STATE_START;
+    if (mode != 0) {
+        ResultScreen_RequestReplayScan();
+    }
     Chain_InitElem(&menu->calc, M_Update, menu);
     menu->calc.added = M_Added;
     menu->calc.deleted = M_Deleted;

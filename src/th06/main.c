@@ -71,6 +71,7 @@ static bool M_Tick(const void *const input)
     M_SetClock();
     const bool running = Game_Tick(input);
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
+    ResultScreen_ScanReplays();
     SoundPlayer_Update();
     return running;
 }
