@@ -121,6 +121,7 @@ static RESULT M_Init(APP_CONTEXT *const ctx, const int argc, char *const argv[])
     MUST(M_CreateWindow(ctx));
 
     Clock_Init(&ctx->clock, APP_TICK_RATE, MAX_TICKS_PER_FRAME);
+    ctx->requests.fullscreen = -1;
 
     if (Result_Log(
             Path_GetUserDir(g_GameDesc.id, &ctx->user_dir), LOG_LEVEL_ERROR)) {
@@ -173,6 +174,13 @@ const char *App_GetUserDir(void)
 static void M_ApplyRequests(APP_CONTEXT *const ctx)
 {
     AppRequests_ApplyInput(&ctx->requests, ctx->input, g_GameDesc.input_schema);
+    if (ctx->requests.fullscreen >= 0) {
+        const bool fullscreen = ctx->requests.fullscreen != 0;
+        ctx->requests.fullscreen = -1;
+        if (fullscreen != ctx->settings.fullscreen) {
+            Result_Log(M_SetFullscreen(ctx, fullscreen), LOG_LEVEL_WARNING);
+        }
+    }
 }
 
 bool App_GetPadPress(INPUT_BINDING *const out)
@@ -211,6 +219,16 @@ void App_RequestResetPadBindings(void)
 {
     AppRequests_Add(
         &m_Context.requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
+}
+
+bool App_IsFullscreen(void)
+{
+    return m_Context.settings.fullscreen;
+}
+
+void App_RequestFullscreen(const bool fullscreen)
+{
+    m_Context.requests.fullscreen = fullscreen ? 1 : 0;
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])

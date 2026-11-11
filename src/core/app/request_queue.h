@@ -25,6 +25,9 @@ typedef struct {
 typedef struct {
     APP_REQUEST items[APP_REQUEST_COUNT];
     int32_t count;
+    // Holds the window mode asked for: -1 for none, 0 for windowed and 1
+    // for fullscreen.
+    int32_t fullscreen;
 } APP_REQUESTS;
 
 // Returns whether a gamepad control, or else a joystick control, went down

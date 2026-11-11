@@ -87,7 +87,7 @@ TEST(a_joystick_press_counts_and_a_key_does_not)
 TEST(requests_apply_in_order_after_the_queue)
 {
     INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
-    APP_REQUESTS requests = {};
+    APP_REQUESTS requests = { .fullscreen = -1 };
     AppRequests_Add(
         &requests, (APP_REQUEST) { APP_REQUEST_UNBIND, 0, M_Binding("south") });
     AppRequests_Add(
@@ -111,7 +111,7 @@ TEST(the_pad_reset_keeps_the_keyboard)
     Input_Bind(input, &m_Schema, 0, 0, M_Binding("c"));
     Input_Unbind(input, &m_Schema, 0, 0, M_Binding("south"));
     Input_Bind(input, &m_Schema, 0, 0, M_Binding("north"));
-    APP_REQUESTS requests = {};
+    APP_REQUESTS requests = { .fullscreen = -1 };
     AppRequests_Add(&requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
     AppRequests_ApplyInput(&requests, input, &m_Schema);
     M_CheckBindings(input, 0, "south, joy_button_0, c");
@@ -121,7 +121,7 @@ TEST(the_pad_reset_keeps_the_keyboard)
 
 TEST(a_full_queue_drops_further_requests)
 {
-    APP_REQUESTS requests = {};
+    APP_REQUESTS requests = { .fullscreen = -1 };
     for (int32_t i = 0; i < APP_REQUEST_COUNT + 3; i++) {
         AppRequests_Add(
             &requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
