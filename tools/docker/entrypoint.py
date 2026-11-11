@@ -3,6 +3,9 @@
 
 Each image runs this script with its platform. The repository is mounted
 at /app.
+
+The environment variable GAME_REPOSITORY, when set, gives the build
+option game_repository.
 """
 
 import argparse
@@ -22,10 +25,21 @@ CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt"}
 EXE_SUFFIXES = {"linux": "", "win": ".exe"}
 GAMES = ["th06"]
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
+OPTIONS = {
+    "GAME_REPOSITORY": "game_repository",
+}
 
 
 def build_dir(platform: str, target: str) -> Path:
     return REPO_DIR / "build" / platform / target
+
+
+def options() -> list[str]:
+    return [
+        f"-D{option}={os.environ[name]}"
+        for name, option in OPTIONS.items()
+        if os.environ.get(name)
+    ]
 
 
 def run_build(platform: str, target: str) -> None:
@@ -34,8 +48,11 @@ def run_build(platform: str, target: str) -> None:
         command = ["meson", "setup", f"--buildtype={target}"]
         if platform in CROSS_FILES:
             command.append(f"--cross-file={CROSS_FILES[platform]}")
+        command += options()
         command += [str(root), str(REPO_DIR)]
         subprocess.check_call(command)
+    elif options():
+        subprocess.check_call(["meson", "configure", str(root), *options()])
     subprocess.check_call(["meson", "compile", "-C", str(root)])
 
 

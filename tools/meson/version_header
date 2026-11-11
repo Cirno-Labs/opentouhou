@@ -6,6 +6,8 @@ GAME_VERSION is the version string from tools/shared/versioning.py.
 GAME_VERSION_RC holds its four numbers for VERSIONINFO: major, minor,
 patch and the commits since the tag, or zeros for an untagged build.
 --prefix replaces GAME in both names, such as OTHPATCH_VERSION.
+Each --repository NAME=OWNER/REPO adds NAME_REPOSITORY, a GitHub
+repository that publishes releases.
 The header is rewritten only when its text changes.
 """
 
@@ -26,11 +28,21 @@ def numbers(version: str) -> str:
     return ",".join(group or "0" for group in match.groups())
 
 
+def repository(value: str) -> tuple[str, str]:
+    name, _, repo = value.partition("=")
+    if not re.fullmatch(r"[A-Z0-9_]+", name) or not re.fullmatch(
+        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo
+    ):
+        raise argparse.ArgumentTypeError(f"not NAME=owner/name: {value}")
+    return name, repo
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("program")
     parser.add_argument("output", type=Path)
     parser.add_argument("--prefix", default="GAME")
+    parser.add_argument("--repository", type=repository, action="append", default=[])
     args = parser.parse_args()
     version = generate_version(args.program)
     text = (
@@ -38,6 +50,8 @@ def main() -> None:
         f'#define {args.prefix}_VERSION "{version}"\n'
         f"#define {args.prefix}_VERSION_RC {numbers(version)}\n"
     )
+    for name, repo in args.repository:
+        text += f'#define {name}_REPOSITORY "{repo}"\n'
     if not args.output.exists() or args.output.read_text() != text:
         args.output.write_text(text)
 

@@ -42,6 +42,8 @@ jobs:
         run: tools/mac/build test
 
       - name: Build and package
+        env:
+          GAME_REPOSITORY: ${{ github.repository }}
         run: tools/mac/build package --target ${{ inputs.target }}
 
       - name: Upload the packages

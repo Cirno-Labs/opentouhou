@@ -73,10 +73,13 @@ jobs:
       - name: Build and package
         env:
           CCACHE_MAXSIZE: 1G
+          GAME_REPOSITORY: ${{ github.repository }}
         run: just package-${{ inputs.platform }} ${{ inputs.target }}
 
       - name: Run the unit tests
         if: ${{ inputs.platform == 'linux' }}
+        env:
+          GAME_REPOSITORY: ${{ github.repository }}
         run: just test
 
       - name: Save ccache

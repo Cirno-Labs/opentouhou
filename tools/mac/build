@@ -4,6 +4,9 @@
 The dependencies come from tools/mac/build_deps, one prefix per
 architecture under --deps. The package is a universal application
 bundle per game, signed ad hoc, in a zip under build/packages/.
+
+The environment variable GAME_REPOSITORY, when set, gives the build
+option game_repository.
 """
 
 import argparse
@@ -27,6 +30,9 @@ ARCHS = ["arm64", "x86_64"]
 NATIVE_ARCH = "arm64"
 GAMES = ["th06"]
 DEPLOYMENT_TARGET = "12.0"
+OPTIONS = {
+    "GAME_REPOSITORY": "game_repository",
+}
 
 
 def build_dir(arch: str, target: str) -> Path:
@@ -41,6 +47,14 @@ def environment(deps: Path, arch: str) -> dict[str, str]:
     }
 
 
+def options() -> list[str]:
+    return [
+        f"-D{option}={os.environ[name]}"
+        for name, option in OPTIONS.items()
+        if os.environ.get(name)
+    ]
+
+
 def run_deps(deps: Path) -> None:
     for arch in ARCHS:
         subprocess.check_call([MAC_DIR / "build_deps", arch, deps / arch])
@@ -53,8 +67,14 @@ def run_build(deps: Path, target: str, archs: list[str]) -> None:
             command = ["meson", "setup", f"--buildtype={target}"]
             if arch != NATIVE_ARCH:
                 command.append(f"--cross-file={MAC_DIR / f'{arch}.txt'}")
+            command += options()
             command += [str(root), str(REPO_DIR)]
             subprocess.check_call(command, env=environment(deps, arch))
+        elif options():
+            subprocess.check_call(
+                ["meson", "configure", str(root), *options()],
+                env=environment(deps, arch),
+            )
         subprocess.check_call(
             ["meson", "compile", "-C", str(root)], env=environment(deps, arch)
         )

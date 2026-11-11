@@ -7,3 +7,9 @@ option(
   value: 'sdl',
   description: 'Platform backend for modules such as core/input',
 )
+option(
+  'game_repository',
+  type: 'string',
+  value: 'Cirno-Labs/opentouhou',
+  description: 'GitHub repository (owner/name) whose releases othpatch updates the games from',
+)

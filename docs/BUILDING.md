@@ -51,6 +51,14 @@ the options that the Linux image pins, into `build/mac-deps/`.
 
 `just` with no arguments lists every recipe.
 
+### Build options
+
+othpatch updates the games from the releases of one GitHub repository.
+The Meson option `game_repository` names it, `Cirno-Labs/opentouhou` by
+default. The Docker and macOS builds take it from the environment
+variable `GAME_REPOSITORY`. GitHub Actions sets it to the repository
+that runs the workflow, so that a fork updates from its own releases.
+
 ## Packaging
 
 ```sh

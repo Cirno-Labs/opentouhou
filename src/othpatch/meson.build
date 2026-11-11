@@ -24,6 +24,8 @@ othpatch_version = custom_target(
     '@OUTPUT@',
     '--prefix',
     'OTHPATCH',
+    '--repository',
+    'GAME=' + get_option('game_repository'),
   ],
   build_always_stale: true,
 )
