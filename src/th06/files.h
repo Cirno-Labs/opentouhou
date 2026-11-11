@@ -12,8 +12,8 @@
 
 // Describes th06 to thcrap patches: build v1.02h, the flat layout, and
 // these kinds of files. ECL, STD and SHT files and whole MSG files change
-// what happens in play. ANM files and images are not taken from patches
-// yet. Every other file replaces the game's file.
+// what happens in play. ANM files are not taken from patches yet. Every
+// other file replaces the game's file.
 extern const PATCH_GAME g_PatchGame;
 
 // Mounts data_dir and 紅魔郷IN, MD, ST, TL, CM and ED.DAT from it. A file

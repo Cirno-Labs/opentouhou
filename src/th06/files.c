@@ -26,8 +26,7 @@ static PATCH_FILE_KIND M_Classify(const char *const name)
         || (Str_StartsWith(name, "msg") && Str_EndsWith(name, ".dat"))) {
         return PATCH_FILE_GAMEPLAY;
     }
-    if (Str_EndsWith(name, ".anm") || Str_EndsWith(name, ".png")
-        || Str_EndsWith(name, ".jpg")) {
+    if (Str_EndsWith(name, ".anm")) {
         return PATCH_FILE_IGNORED;
     }
     return PATCH_FILE_DATA;

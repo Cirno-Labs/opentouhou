@@ -215,7 +215,9 @@ RESULT AnmTexture_LoadSlot(READER *const reader, const int32_t slot)
         FAIL_IF(
             memchr(alpha, '\0', Reader_Size(reader) - alpha_offset) == nullptr,
             "Unterminated ANM alpha image name");
-        MUST(Anm_LoadTextureAlpha(slot, alpha, format, color_key));
+        if (!Files_IsPatched(name) || Files_IsPatched(alpha)) {
+            MUST(Anm_LoadTextureAlpha(slot, alpha, format, color_key));
+        }
     }
     return OK;
 }

@@ -6,12 +6,15 @@
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
+#include "core/io/writer.h"
+#include "core/patch.h"
 
 #include "stg/rng.h"
 
@@ -906,4 +909,98 @@ TEST(texture_updates_keep_the_loaded_color_depth)
     CHECK_EQ_INT(image.pixels[0], 128);
     Image_Free(&image);
     Anm_ReleaseTexture(100);
+}
+
+static void M_PutWord(uint8_t *const out, const uint32_t value)
+{
+    for (int32_t i = 0; i < 4; i++) {
+        out[i] = (uint8_t)(value >> (i * 8));
+    }
+}
+
+// Writes directory/name as a 4 x 4 PNG of one color.
+static void M_WritePng(
+    const char *const directory, const char *const name, const uint8_t red,
+    const uint8_t blue, const uint8_t alpha)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    for (int32_t i = 0; i < 16; i++) {
+        image.pixels[i * 4] = red;
+        image.pixels[i * 4 + 2] = blue;
+        image.pixels[i * 4 + 3] = alpha;
+    }
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Image_EncodePng(&image, &writer);
+    size_t size;
+    uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
+    Result_Ignore(Writer_Close(&writer));
+    Th06Data_WriteFile(directory, name, bytes, size);
+    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Image_Free(&image);
+}
+
+// Loads masked.anm, whose image img.png has the mask img_a.png, with the
+// patch a/lang holding the given files, and returns the alpha of its first
+// pixel.
+static int32_t M_LoadMaskedAlpha(
+    const char *const case_name, const bool patch_image, const bool patch_mask)
+{
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 4, 4);
+    AnmBuilder_AddSprite(&builder, 0, 0, 0, 4, 4);
+    const int32_t script = AnmBuilder_BeginScript(&builder, 0);
+    AnmBuilder_Instr(&builder, script, 0, 0, nullptr, 0);
+    char *const directory = TestDir_Prepare(case_name);
+    Th06Data_WriteArchives(directory, -1);
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    size_t size = AnmBuilder_Build(&builder, bytes);
+    M_PutWord(&bytes[28], (uint32_t)size);
+    memcpy(&bytes[size], "img.png", 8);
+    size += 8;
+    M_PutWord(&bytes[36], (uint32_t)size);
+    memcpy(&bytes[size], "img_a.png", 10);
+    size += 10;
+    Th06Data_WriteFile(directory, "masked.anm", bytes, size);
+    M_WritePng(directory, "img.png", 255, 0, 255);
+    M_WritePng(directory, "img_a.png", 0, 10, 255);
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    char *const game_dir = TestDir_Join(patches, "a/lang/th06");
+    CHECK(Result_Log(File_MakeDir(game_dir), LOG_LEVEL_ERROR));
+    Mem_Free(game_dir);
+    if (patch_image) {
+        M_WritePng(directory, "patches/a/lang/th06/img.png", 0, 255, 77);
+    }
+    if (patch_mask) {
+        M_WritePng(directory, "patches/a/lang/th06/img_a.png", 0, 99, 255);
+    }
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        LOG_LEVEL_ERROR));
+    M_Setup(directory);
+    Files_SetPatches(stack);
+    CHECK(Result_Log(Anm_Load(3, "masked.anm", 0), LOG_LEVEL_ERROR));
+    const IMAGE *const image = AnmTexture_GetImage(3);
+    const int32_t alpha = image->pixels != nullptr ? image->pixels[3] : -1;
+    M_Teardown(directory);
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+    return alpha;
+}
+
+TEST(the_mask_of_the_game_gives_its_image_alpha)
+{
+    CHECK_EQ_INT(M_LoadMaskedAlpha("mask_game", false, false), 10);
+}
+
+TEST(a_patch_image_without_a_patch_mask_keeps_its_alpha)
+{
+    CHECK_EQ_INT(M_LoadMaskedAlpha("mask_image", true, false), 77);
+}
+
+TEST(a_patch_mask_gives_the_patch_image_alpha)
+{
+    CHECK_EQ_INT(M_LoadMaskedAlpha("mask_both", true, true), 99);
 }

@@ -21,7 +21,9 @@ void Anm_Shutdown(void);
 // when the file cannot be read, when a sprite or script number does not
 // fit the tables, or when a script is malformed: an instruction runs past
 // the file, has more than 16 bytes of arguments, or jumps to a position
-// that is not an instruction. A failed load leaves slot empty.
+// that is not an instruction. A failed load leaves slot empty. An image
+// that a patch replaces keeps its own alpha when the patch does not also
+// replace its alpha mask, as thcrap does.
 RESULT Anm_Load(int32_t slot, const char *path, int32_t first_sprite);
 // Releases the ANM file loaded into slot. Does nothing when slot is not
 // loaded.
