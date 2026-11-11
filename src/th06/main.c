@@ -5,6 +5,7 @@
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
+#include "th06/sound.h"
 
 static bool m_GameInitialized;
 
@@ -12,6 +13,7 @@ static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
     MUST(Anm_InitText());
+    Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     m_GameInitialized = true;
     MUST(Game_Init());
     g_AsciiText.capture_background = true;
@@ -20,7 +22,9 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
-    return Game_Tick(input);
+    const bool running = Game_Tick(input);
+    SoundPlayer_Update();
+    return running;
 }
 
 static void M_Shutdown(void)
@@ -29,6 +33,7 @@ static void M_Shutdown(void)
         Game_Shutdown();
         m_GameInitialized = false;
     }
+    SoundPlayer_Shutdown();
     Anm_ShutdownText();
     Files_Shutdown();
 }

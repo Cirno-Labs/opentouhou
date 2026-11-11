@@ -334,6 +334,26 @@ test(
 )
 
 test(
+  'th06/sound',
+  executable(
+    'test_th06_sound',
+    'test_th06_sound.c',
+    'audio_backend_fake.c',
+    'pbg3_builder.c',
+    'th06_data.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_pbg3_lib, core_vfs_lib, core_audio_lib, core_io_lib,
+      core_math_lib, core_base_lib,
+    ],
+    dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+  ),
+  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_sound' },
+  suite: 'unit',
+)
+
+test(
   'th06/stage',
   executable(
     'test_th06_stage',

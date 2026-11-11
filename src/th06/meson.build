@@ -32,6 +32,8 @@ th06_lib = static_library(
   'replay/format.c',
   'scene.c',
   'screen_effect.c',
+  'sound/events.c',
+  'sound/player.c',
   'stage.c',
   'timer.c',
   c_args: [layer_include['th06']],
