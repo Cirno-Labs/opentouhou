@@ -53,6 +53,101 @@ TEST(make_dir_fails_below_a_file)
     Mem_Free(directory);
 }
 
+static void M_CheckContent(const char *const path, const char *const expected)
+{
+    size_t size = 0;
+    char *const data = SDL_LoadFile(path, &size);
+    CHECK(data != nullptr && size == strlen(expected));
+    if (data != nullptr) {
+        CHECK(memcmp(data, expected, size) == 0);
+    }
+    SDL_free(data);
+}
+
+TEST(rename_moves_a_file)
+{
+    char *const directory = TestDir_Prepare("rename");
+    char *const from = TestDir_Join(directory, "from");
+    char *const to = TestDir_Join(directory, "to");
+    M_Create(from);
+    CHECK(Result_Log(File_Rename(from, to), LOG_LEVEL_ERROR));
+    CHECK(!File_Exists(from));
+    M_CheckContent(to, "x");
+    Mem_Free(to);
+    Mem_Free(from);
+    Mem_Free(directory);
+}
+
+TEST(rename_replaces_the_target)
+{
+    char *const directory = TestDir_Prepare("rename_replace");
+    char *const from = TestDir_Join(directory, "from");
+    char *const to = TestDir_Join(directory, "to");
+    CHECK(SDL_SaveFile(from, "new", 3));
+    CHECK(SDL_SaveFile(to, "old", 3));
+    CHECK(Result_Log(File_Rename(from, to), LOG_LEVEL_ERROR));
+    CHECK(!File_Exists(from));
+    M_CheckContent(to, "new");
+    Mem_Free(to);
+    Mem_Free(from);
+    Mem_Free(directory);
+}
+
+TEST(rename_of_a_missing_file_fails)
+{
+    char *const directory = TestDir_Prepare("rename_missing");
+    char *const from = TestDir_Join(directory, "from");
+    char *const to = TestDir_Join(directory, "to");
+    const RESULT result = File_Rename(from, to);
+    CHECK(!IS_OK(result));
+    Result_Ignore(result);
+    CHECK(!File_Exists(to));
+    Mem_Free(to);
+    Mem_Free(from);
+    Mem_Free(directory);
+}
+
+TEST(remove_deletes_a_file_and_an_empty_directory)
+{
+    char *const directory = TestDir_Prepare("remove");
+    char *const file = TestDir_Join(directory, "file");
+    char *const inner = TestDir_Join(directory, "inner");
+    M_Create(file);
+    CHECK(Result_Log(File_MakeDir(inner), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(File_Remove(file), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(File_Remove(inner), LOG_LEVEL_ERROR));
+    CHECK(!File_Exists(file));
+    CHECK(!File_Exists(inner));
+    Mem_Free(inner);
+    Mem_Free(file);
+    Mem_Free(directory);
+}
+
+TEST(remove_of_a_missing_path_succeeds)
+{
+    char *const directory = TestDir_Prepare("remove_missing");
+    char *const missing = TestDir_Join(directory, "missing");
+    CHECK(Result_Log(File_Remove(missing), LOG_LEVEL_ERROR));
+    Mem_Free(missing);
+    Mem_Free(directory);
+}
+
+TEST(remove_of_a_directory_with_entries_fails)
+{
+    char *const directory = TestDir_Prepare("remove_full");
+    char *const inner = TestDir_Join(directory, "inner");
+    char *const file = TestDir_Join(inner, "file");
+    CHECK(Result_Log(File_MakeDir(inner), LOG_LEVEL_ERROR));
+    M_Create(file);
+    const RESULT result = File_Remove(inner);
+    CHECK(!IS_OK(result));
+    Result_Ignore(result);
+    CHECK(File_Exists(file));
+    Mem_Free(file);
+    Mem_Free(inner);
+    Mem_Free(directory);
+}
+
 TEST(list_gives_every_name_sorted)
 {
     char *const directory = TestDir_Prepare("list");

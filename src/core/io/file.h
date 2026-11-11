@@ -20,6 +20,14 @@ bool File_Exists(const char *path);
 // exist. A directory that exists already is a success.
 RESULT File_MakeDir(const char *path);
 
+// Renames the file or directory at from to to, replacing a file that is at
+// to. Both paths must be on the same file system.
+RESULT File_Rename(const char *from, const char *to);
+
+// Removes the file or the empty directory at path. A path that names
+// nothing is a success.
+RESULT File_Remove(const char *path);
+
 // Lists the names of the entries of a directory, without the directory and
 // without "." and "..". The names are sorted byte by byte, so that the order
 // is the same on every platform. The list is prepared with allocator, which

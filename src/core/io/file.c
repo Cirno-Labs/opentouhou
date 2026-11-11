@@ -35,6 +35,22 @@ RESULT File_MakeDir(const char *const path)
     return OK;
 }
 
+RESULT File_Rename(const char *const from, const char *const to)
+{
+    FAIL_IF(
+        !SDL_RenamePath(from, to), "Cannot rename %s to %s: %s", from, to,
+        SDL_GetError());
+    return OK;
+}
+
+RESULT File_Remove(const char *const path)
+{
+    FAIL_IF(
+        File_Exists(path) && !SDL_RemovePath(path), "Cannot remove %s: %s",
+        path, SDL_GetError());
+    return OK;
+}
+
 RESULT File_ListDir(
     const char *const path, const ALLOCATOR *const allocator,
     FILE_LIST *const list)
