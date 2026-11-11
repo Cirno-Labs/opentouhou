@@ -498,7 +498,7 @@ TEST(an_empty_jdiff_block_removes_the_text)
         "@z\r\n");
 }
 
-TEST(jdiff_lines_lose_their_markup)
+TEST(jdiff_lines_keep_their_markup)
 {
     M_CHECK_DIFF(
         M_DIFF_SCRIPT, "{'4': {lines: ['<c$Reimu:$12345678> \"Hi.\"']}}",
@@ -507,7 +507,7 @@ TEST(jdiff_lines_lose_their_markup)
         "A2\0\r\n"
         "@w10\0"
         "0\0\r\n"
-        "Reimu: \"Hi.\"\r\n"
+        "<c$Reimu:$12345678> \"Hi.\"\r\n"
         "@z\r\n");
 }
 

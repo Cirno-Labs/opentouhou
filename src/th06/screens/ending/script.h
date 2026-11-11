@@ -19,8 +19,8 @@
 // half, from its start to its NUL or line break, and text that is valid
 // UTF-8 loads as UTF-8. The jdiff applies as thcrap's .end patcher applies
 // it: a key "<n>", the 0-based number of the line that starts a block of
-// text lines, gives the lines that replace the whole block. Their markup
-// and translator notes are taken out.
+// text lines, gives the lines that replace the whole block. They keep
+// their markup and translator notes, for Anm_RenderText to lay out.
 
 #define ENDING_HALF_BYTES 0x20
 

@@ -8,7 +8,6 @@
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/json.h"
-#include "core/patch.h"
 
 #include <stdio.h>
 
@@ -111,11 +110,9 @@ static void M_AppendLines(M_BYTES *const out, const JSON_VALUE *const lines)
         if (line == nullptr) {
             continue;
         }
-        char *const plain = Patch_PlainText(line);
-        Array_AppendSlice(out, (const uint8_t *)plain, (int32_t)strlen(plain));
+        Array_AppendSlice(out, (const uint8_t *)line, (int32_t)strlen(line));
         Array_Append(out, '\r');
         Array_Append(out, '\n');
-        Mem_Free(plain);
     }
 }
 
