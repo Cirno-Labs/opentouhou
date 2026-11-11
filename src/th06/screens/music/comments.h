@@ -15,7 +15,8 @@
 // the second only when the row is longer than 32 bytes. The halves are
 // split by bytes, before the conversion to UTF-8, as the original splits
 // them. A half that does not convert, such as one that splits a
-// character, is empty.
+// character, is empty. A half that is valid UTF-8, as a file from a patch
+// can hold, loads as UTF-8.
 //
 // The original stores at most 32 tunes and writes longer fields past their
 // buffers. The port stops at 32 tunes and cuts a field at its buffer: 63

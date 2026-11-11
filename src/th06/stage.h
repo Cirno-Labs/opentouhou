@@ -60,7 +60,8 @@ typedef struct {
 } STAGE_FOG;
 
 typedef struct {
-    // From the data file. The names are in UTF-8.
+    // From the data file. The names are in UTF-8: text that is valid UTF-8
+    // stays, and any other text converts from CP932.
     struct {
         char *name;
         char *song_names[STAGE_SONG_COUNT];

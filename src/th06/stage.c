@@ -47,7 +47,7 @@ static RESULT M_ReadName(READER *const reader, char **const out)
     const char *const end = memchr(bytes, '\0', sizeof(bytes));
     const size_t length =
         end != nullptr ? (size_t)(end - bytes) : sizeof(bytes);
-    return Cp932_Decode(bytes, length, out);
+    return Cp932_DecodeText(bytes, length, out);
 }
 
 static RESULT M_ReadObject(

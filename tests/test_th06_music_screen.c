@@ -111,6 +111,14 @@ TEST(text_converts_from_cp932_by_halves)
     CHECK_EQ_STR(m_Tunes[0].comment[2][1], "");
 }
 
+TEST(text_that_is_utf8_loads_as_utf8)
+{
+    const int32_t count = M_Parse("@a.mid\nTitle ♪\n\nComment ♪\n");
+    CHECK_EQ_INT(count, 1);
+    CHECK_EQ_STR(m_Tunes[0].title, "Title ♪");
+    CHECK_EQ_STR(m_Tunes[0].comment[1][0], "Comment ♪");
+}
+
 TEST(a_tune_cut_by_the_end_of_the_data_counts)
 {
     CHECK_EQ_INT(M_Parse("@a.mid\nTit"), 1);

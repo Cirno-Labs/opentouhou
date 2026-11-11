@@ -89,7 +89,7 @@ static void M_Decode(
         length++;
     }
     char *utf8;
-    if (Result_Ignore(Cp932_Decode((const char *)bytes, length, &utf8))) {
+    if (Result_Ignore(Cp932_DecodeText((const char *)bytes, length, &utf8))) {
         memcpy(out, utf8, strlen(utf8) + 1);
         Mem_Free(utf8);
     } else {
