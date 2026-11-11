@@ -34,6 +34,21 @@ Outputs land in `build/<platform>/<target>/`, one executable per game:
 executable's name is the game id with an `o` before it, so that it does
 not clash with the original game's executable in the same folder.
 
+### macOS
+
+Docker cannot produce macOS executables, so a Mac builds natively. It
+needs the Xcode command line tools, Meson, Ninja and pkg-config
+(`brew install meson ninja pkgconf`):
+
+```sh
+just deps-mac               # once: the libraries, for arm64 and x86-64
+just build-mac release      # build/mac-arm64/... and build/mac-x86_64/...
+just test-mac
+```
+
+`tools/mac/build_deps` builds the libraries at the versions and with
+the options that the Linux image pins, into `build/mac-deps/`.
+
 `just` with no arguments lists every recipe.
 
 ## Packaging
@@ -41,6 +56,7 @@ not clash with the original game's executable in the same folder.
 ```sh
 just package-linux release
 just package-win release
+just package-mac release    # on a Mac
 ```
 
 This writes one package per game to `build/packages/`:
@@ -48,6 +64,9 @@ This writes one package per game to `build/packages/`:
 - `o<game>-<version>-Linux.AppImage`: a single executable file with
   everything inside.
 - `o<game>-<version>-Windows.zip`: `o<game>.exe` and the files it needs.
+- `o<game>-<version>-macOS.zip`: `o<game>.app`, one universal bundle for
+  Apple silicon and Intel Macs. It has an ad-hoc signature only, so
+  macOS asks before its first start (Open from the context menu).
 
 Every package contains the game's executable, this project's licence
 and a readme. None contains any of the original game's files.
@@ -208,6 +227,4 @@ These tests use generated images and do not need game data.
 
 ## Later
 
-- **macOS:** a native build with Apple's clang outside Docker, as Docker
-  cannot produce macOS executables.
 - **Web:** an Emscripten image producing a WASM build.

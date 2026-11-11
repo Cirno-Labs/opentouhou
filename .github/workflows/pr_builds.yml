@@ -41,3 +41,9 @@ jobs:
     with:
       platform: win
       target: debug
+
+  build_mac:
+    name: macOS
+    uses: ./.github/workflows/job_build_macos.yml
+    with:
+      target: debug

@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Build, test and package the games on macOS, for arm64 and x86-64.
+
+The dependencies come from tools/mac/build_deps, one prefix per
+architecture under --deps. The package is a universal application
+bundle per game, signed ad hoc, in a zip under build/packages/.
+"""
+
+import argparse
+import os
+import plistlib
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from shared.versioning import executable_name, generate_package_name, generate_version
+
+REPO_DIR = Path(__file__).resolve().parents[2]
+MAC_DIR = REPO_DIR / "tools/mac"
+PACKAGING_DIR = REPO_DIR / "tools/packaging"
+PACKAGES_DIR = REPO_DIR / "build/packages"
+ARCHS = ["arm64", "x86_64"]
+NATIVE_ARCH = "arm64"
+GAMES = ["th06"]
+DEPLOYMENT_TARGET = "12.0"
+
+
+def build_dir(arch: str, target: str) -> Path:
+    return REPO_DIR / "build" / f"mac-{arch}" / target
+
+
+def environment(deps: Path, arch: str) -> dict[str, str]:
+    return {
+        **os.environ,
+        "MACOSX_DEPLOYMENT_TARGET": DEPLOYMENT_TARGET,
+        "PKG_CONFIG_LIBDIR": str(deps / arch / "lib/pkgconfig"),
+    }
+
+
+def run_deps(deps: Path) -> None:
+    for arch in ARCHS:
+        subprocess.check_call([MAC_DIR / "build_deps", arch, deps / arch])
+
+
+def run_build(deps: Path, target: str, archs: list[str]) -> None:
+    for arch in archs:
+        root = build_dir(arch, target)
+        if not (root / "build.ninja").exists():
+            command = ["meson", "setup", f"--buildtype={target}"]
+            if arch != NATIVE_ARCH:
+                command.append(f"--cross-file={MAC_DIR / f'{arch}.txt'}")
+            command += [str(root), str(REPO_DIR)]
+            subprocess.check_call(command, env=environment(deps, arch))
+        subprocess.check_call(
+            ["meson", "compile", "-C", str(root)], env=environment(deps, arch)
+        )
+
+
+def run_test(deps: Path, target: str) -> None:
+    run_build(deps, target, [NATIVE_ARCH])
+    subprocess.check_call(
+        [
+            "meson",
+            "test",
+            "-C",
+            str(build_dir(NATIVE_ARCH, target)),
+            "--print-errorlogs",
+        ],
+        env=environment(deps, NATIVE_ARCH),
+    )
+
+
+def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
+    contents = bundle / "Contents"
+    (contents / "MacOS").mkdir(parents=True)
+    (contents / "Resources").mkdir()
+    subprocess.check_call(
+        [
+            "lipo",
+            "-create",
+            *(
+                str(build_dir(arch, target) / executable_name(game))
+                for arch in ARCHS
+            ),
+            "-output",
+            str(contents / "MacOS" / executable_name(game)),
+        ]
+    )
+    with open(contents / "Info.plist", "wb") as handle:
+        plistlib.dump(
+            {
+                "CFBundleDevelopmentRegion": "en",
+                "CFBundleExecutable": executable_name(game),
+                "CFBundleIdentifier": f"io.github.cirno-labs.opentouhou.{game}",
+                "CFBundleInfoDictionaryVersion": "6.0",
+                "CFBundleName": game,
+                "CFBundlePackageType": "APPL",
+                "CFBundleShortVersionString": version,
+                "CFBundleVersion": version,
+                "LSMinimumSystemVersion": DEPLOYMENT_TARGET,
+                "NSHighResolutionCapable": True,
+            },
+            handle,
+        )
+    resources = contents / "Resources"
+    shutil.copy2(REPO_DIR / "LICENSE", resources / "LICENSE")
+    shutil.copy2(
+        REPO_DIR / "src/core/text/fonts/OFL.txt", resources / "FONT-LICENSE.txt"
+    )
+    shutil.copy2(PACKAGING_DIR / "README.txt", resources / "README.txt")
+    # An ad-hoc signature lets the bundle run on Apple silicon. Without a
+    # developer identity, Gatekeeper still asks before the first start.
+    subprocess.check_call(
+        ["codesign", "--force", "--deep", "--sign", "-", str(bundle)]
+    )
+
+
+def run_package(deps: Path, target: str) -> None:
+    run_build(deps, target, ARCHS)
+    version = generate_version(REPO_DIR)
+    PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+    for game in GAMES:
+        output = PACKAGES_DIR / f"{generate_package_name(game, version, 'mac')}.zip"
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp) / f"{executable_name(game)}.app"
+            write_bundle(game, version, target, bundle)
+            output.unlink(missing_ok=True)
+            subprocess.check_call(
+                ["ditto", "-c", "-k", "--keepParent", str(bundle), str(output)]
+            )
+        print(f"Created {output.relative_to(REPO_DIR)}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--deps",
+        type=Path,
+        default=REPO_DIR / "build/mac-deps",
+        help="the prefix root of the dependencies",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("deps")
+    for name in ["build", "test", "package"]:
+        subparser = subparsers.add_parser(name)
+        subparser.add_argument(
+            "--target", choices=["debug", "release"], default="debug"
+        )
+    args = parser.parse_args()
+    deps = args.deps.resolve()
+
+    if args.command == "deps":
+        run_deps(deps)
+    elif args.command == "build":
+        run_build(deps, args.target, ARCHS)
+    elif args.command == "test":
+        run_test(deps, args.target)
+    else:
+        run_package(deps, args.target)
+
+
+if __name__ == "__main__":
+    main()

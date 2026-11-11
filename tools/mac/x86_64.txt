@@ -1,0 +1,16 @@
+# Meson cross file for the x86-64 half of the universal macOS build, made
+# on an arm64 Mac.
+[binaries]
+c = ['clang', '-arch', 'x86_64']
+ar = 'ar'
+strip = 'strip'
+pkg-config = 'pkg-config'
+
+[built-in options]
+c_link_args = ['-arch', 'x86_64']
+
+[host_machine]
+system = 'darwin'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'

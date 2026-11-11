@@ -42,5 +42,5 @@ def executable_name(game: str) -> str:
 
 
 def generate_package_name(game: str, version: str, platform: str) -> str:
-    platform_name = {"linux": "Linux", "win": "Windows"}[platform]
+    platform_name = {"linux": "Linux", "win": "Windows", "mac": "macOS"}[platform]
     return f"{executable_name(game)}-{version}-{platform_name}"

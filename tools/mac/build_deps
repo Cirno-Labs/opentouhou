@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Builds the macOS dependencies for one architecture into a prefix, at the
+# versions and with the options that the Linux image pins, so that every
+# platform links the same libraries.
+#
+#     tools/mac/build_deps <arm64|x86_64> <prefix>
+set -euo pipefail
+
+arch=$1
+prefix=$2
+repo_dir=$(cd "$(dirname "$0")/../.." && pwd)
+dockerfile=$repo_dir/tools/docker/linux/Dockerfile
+jobs=$(sysctl -n hw.ncpu)
+export MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-12.0}
+
+pin() {
+    local value
+    value=$(sed -n "s/^ARG $1=//p" "$dockerfile" | head -n 1)
+    [ -n "$value" ] || { echo "No ARG $1 in $dockerfile" >&2; exit 1; }
+    echo "$value"
+}
+
+fetch() {
+    curl -fsSL -o "$3" "$1"
+    echo "$2  $3" | shasum -a 256 -c -
+}
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+mkdir -p "$prefix"
+
+cmake_options=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_INSTALL_PREFIX="$prefix"
+    -DCMAKE_INSTALL_LIBDIR=lib
+    -DCMAKE_PREFIX_PATH="$prefix"
+    -DCMAKE_OSX_ARCHITECTURES="$arch"
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET"
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+)
+
+zlib_version=$(pin ZLIB_VERSION)
+fetch "https://www.zlib.net/fossils/zlib-$zlib_version.tar.gz" \
+    "$(pin ZLIB_SHA256)" "$work/zlib.tar.gz"
+tar -xzf "$work/zlib.tar.gz" -C "$work"
+(
+    cd "$work/zlib-$zlib_version"
+    CFLAGS="-arch $arch -fPIC" ./configure --prefix="$prefix" --static
+    make -j"$jobs"
+    make install
+)
+
+sdl_version=$(pin SDL_VERSION)
+fetch "https://github.com/libsdl-org/SDL/releases/download/release-$sdl_version/SDL3-$sdl_version.tar.gz" \
+    "$(pin SDL_SHA256)" "$work/sdl.tar.gz"
+tar -xzf "$work/sdl.tar.gz" -C "$work"
+cmake -S "$work/SDL3-$sdl_version" -B "$work/sdl-build" "${cmake_options[@]}" \
+    -DSDL_SHARED=OFF \
+    -DSDL_STATIC=ON \
+    -DSDL_TEST_LIBRARY=OFF \
+    -DSDL_TESTS=OFF \
+    -DSDL_EXAMPLES=OFF
+cmake --build "$work/sdl-build" -j"$jobs"
+cmake --install "$work/sdl-build"
+
+ttf_version=$(pin SDL_TTF_VERSION)
+ttf_dir=$work/SDL3_ttf-$ttf_version
+fetch "https://github.com/libsdl-org/SDL_ttf/releases/download/release-$ttf_version/SDL3_ttf-$ttf_version.tar.gz" \
+    "$(pin SDL_TTF_SHA256)" "$work/ttf.tar.gz"
+tar -xzf "$work/ttf.tar.gz" -C "$work"
+mkdir -p "$ttf_dir/external/freetype" "$ttf_dir/external/harfbuzz"
+fetch "https://codeload.github.com/libsdl-org/freetype/tar.gz/$(pin FREETYPE_COMMIT)" \
+    "$(pin FREETYPE_SHA256)" "$work/freetype.tar.gz"
+tar -xzf "$work/freetype.tar.gz" --strip-components=1 -C "$ttf_dir/external/freetype"
+fetch "https://codeload.github.com/libsdl-org/harfbuzz/tar.gz/$(pin HARFBUZZ_COMMIT)" \
+    "$(pin HARFBUZZ_SHA256)" "$work/harfbuzz.tar.gz"
+tar -xzf "$work/harfbuzz.tar.gz" --strip-components=1 -C "$ttf_dir/external/harfbuzz"
+cmake -S "$ttf_dir" -B "$work/ttf-build" "${cmake_options[@]}" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DSDLTTF_VENDORED=ON \
+    -DSDLTTF_HARFBUZZ=ON \
+    -DSDLTTF_PLUTOSVG=OFF \
+    -DSDLTTF_SAMPLES=OFF
+cmake --build "$work/ttf-build" -j"$jobs"
+cmake --install "$work/ttf-build"
+
+# FFmpeg takes the configure options of the Linux image, which list the
+# codecs, and disables all assembly, as the image does for x86.
+ffmpeg_version=$(pin FFMPEG_VERSION)
+ffmpeg_options=()
+while IFS= read -r option; do
+    ffmpeg_options+=("$option")
+done < <(
+    sed -n '/^FROM base AS ffmpeg/,/^FROM /p' "$dockerfile" \
+        | sed -n 's/^ *\(--[a-z0-9-]*\(=[^ \\]*\)\{0,1\}\).*/\1/p' \
+        | grep -v -e '^--prefix' -e '^--pkg-config-flags'
+)
+fetch "https://ffmpeg.org/releases/ffmpeg-$ffmpeg_version.tar.xz" \
+    "$(pin FFMPEG_SHA256)" "$work/ffmpeg.tar.xz"
+tar -xJf "$work/ffmpeg.tar.xz" -C "$work"
+(
+    cd "$work/ffmpeg-$ffmpeg_version"
+    PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig" ./configure \
+        --prefix="$prefix" \
+        "${ffmpeg_options[@]}" \
+        --disable-asm \
+        --enable-cross-compile \
+        --target-os=darwin \
+        --arch="$arch" \
+        --cc=clang \
+        --extra-cflags="-arch $arch -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -I$prefix/include" \
+        --extra-ldflags="-arch $arch -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -L$prefix/lib" \
+        --pkg-config-flags=--static
+    make -j"$jobs"
+    make install
+)

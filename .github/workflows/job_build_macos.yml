@@ -1,0 +1,52 @@
+name: Build and package for macOS
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        description: "Build type: debug or release"
+        required: true
+
+jobs:
+  build:
+    name: Build (mac, ${{ inputs.target }})
+    runs-on: macos-14
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install the build tools
+        run: brew install meson ninja pkgconf
+
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # The dependencies change only with their script or the versions that
+      # the Linux image pins, so they are built once per change.
+      - name: Restore the dependencies
+        id: deps
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/mac-deps
+          key: mac-deps-v1-${{ hashFiles('tools/mac/build_deps', 'tools/docker/linux/Dockerfile') }}
+
+      - name: Build the dependencies
+        if: steps.deps.outputs.cache-hit != 'true'
+        run: tools/mac/build deps
+
+      - name: Run the unit tests
+        run: tools/mac/build test
+
+      - name: Build and package
+        run: tools/mac/build package --target ${{ inputs.target }}
+
+      - name: Upload the packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: packages-mac-${{ inputs.target }}
+          path: build/packages/
+          compression-level: 0

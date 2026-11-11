@@ -33,11 +33,19 @@ jobs:
       platform: win
       target: release
 
+  build_mac:
+    name: macOS
+    if: vars.PRERELEASE_ENABLE == 'true'
+    uses: ./.github/workflows/job_build_macos.yml
+    with:
+      target: release
+
   publish:
     name: Publish
     needs:
       - build_linux
       - build_win
+      - build_mac
     runs-on: ubuntu-latest
     steps:
       - name: Download the packages

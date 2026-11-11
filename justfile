@@ -27,6 +27,26 @@ package-linux target="debug": (build-linux target) (_docker_run "linux" "package
 [group('build')]
 package-win target="debug": (build-win target) (_docker_run "win" "package" "--target" target)
 
+# Build the macOS dependencies into build/mac-deps (on a Mac).
+[group('build')]
+deps-mac:
+    tools/mac/build deps
+
+# Build every game for macOS, arm64 and x86-64 (debug or release).
+[group('build')]
+build-mac target="debug":
+    tools/mac/build build --target {{target}}
+
+# Package every game for macOS into build/packages/.
+[group('build')]
+package-mac target="debug":
+    tools/mac/build package --target {{target}}
+
+# Run the unit tests on macOS.
+[group('test')]
+test-mac:
+    tools/mac/build test
+
 # Run the unit tests inside the Linux image.
 [group('test')]
 test: (image-linux "0") (_docker_run "linux" "test")
