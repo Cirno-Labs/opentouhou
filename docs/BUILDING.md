@@ -192,6 +192,11 @@ after the patches it depends on. `[patches] enabled = false` in
 `config.ini` turns them off, and `[patches] disabled` lists patch ids,
 such as `thpatch/lang_de`, separated by commas, that are left out.
 
+`othpatch` fills the patches folder from the repositories of
+thpatch.net. `othpatch` downloads the language pack of the system
+language, `othpatch en` the English one; `othpatch --help` lists the
+other arguments. A run also updates every patch in the folder.
+
 ## Docker images
 
 There is one image per target platform, defined under `tools/docker/`:

@@ -28,6 +28,7 @@ othpatch_lib = static_library(
   'fetch/file.c',
   othpatch_fetch_backends[host_machine.system()],
   'language.c',
+  'main.c',
   'repo.c',
   'update.c',
   othpatch_version,
@@ -38,3 +39,6 @@ othpatch_lib = static_library(
 
 othpatch_libs = [othpatch_lib, core_json_lib, core_io_lib, core_base_lib]
 othpatch_deps = [curl, sdl3]
+othpatch_entry = files(
+  host_machine.system() == 'windows' ? 'backend_main_windows.c' : 'backend_main_posix.c',
+)

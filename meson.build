@@ -105,6 +105,16 @@ endforeach
 # othpatch downloads patches. It is a program on core alone, and the only
 # one that links curl.
 subdir('src/othpatch')
+executable(
+  'othpatch',
+  othpatch_entry,
+  c_args: [layer_include['othpatch']] + core_include,
+  implicit_include_directories: false,
+  link_with: othpatch_libs,
+  dependencies: othpatch_deps,
+  link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+  win_subsystem: 'console',
+)
 subdir('replay')
 runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/backend_main_windows.c' : 'replay/th06/runner/backend_main_posix.c'
 executable(
