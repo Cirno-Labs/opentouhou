@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Print one section of a game's changelog without its heading.
+
+The section is the version's, or the unreleased changes by default.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parents[1]
+
+
+def section(text: str, title: str) -> str | None:
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line == f"## {title}" or line.startswith(f"## {title} "):
+            body = []
+            for other in lines[i + 1 :]:
+                if other.startswith("## "):
+                    break
+                body.append(other)
+            return "\n".join(body).strip()
+    return None
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("game", help="such as th06")
+    parser.add_argument("version", nargs="?", help="such as 1.2.0")
+    args = parser.parse_args()
+    changelog = REPO_DIR / "docs" / args.game / "CHANGELOG.md"
+    title = args.version.removeprefix("v") if args.version else "Unreleased"
+    if not changelog.exists():
+        sys.exit(f"{changelog.relative_to(REPO_DIR)} does not exist")
+    body = section(changelog.read_text(), title)
+    if body is None:
+        sys.exit(f"{changelog.relative_to(REPO_DIR)} has no section {title}")
+    print(body)
+
+
+if __name__ == "__main__":
+    main()

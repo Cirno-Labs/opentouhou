@@ -4,11 +4,13 @@ from pathlib import Path
 REPO_DIR = Path(__file__).resolve().parents[2]
 
 
-def generate_version(repo_dir: Path = REPO_DIR) -> str:
-    """Return the version: the latest `v*` tag, else the short commit.
+def generate_version(game: str, repo_dir: Path = REPO_DIR) -> str:
+    """Return a game's version: its latest `<game>-v*` tag, else the short
+    commit.
 
     A tag adds the commits since it and the commit, as in
     `1.0.0-3-gabcdef0`. A tree with uncommitted changes adds `-dirty`.
+    Each game has its own version; core has none.
     """
     result = subprocess.run(
         [
@@ -16,7 +18,7 @@ def generate_version(repo_dir: Path = REPO_DIR) -> str:
             "describe",
             "--tags",
             "--match",
-            "v*",
+            f"{game}-v*",
             "--always",
             "--abbrev=7",
             "--dirty",
@@ -28,7 +30,7 @@ def generate_version(repo_dir: Path = REPO_DIR) -> str:
     version = result.stdout.strip()
     if result.returncode != 0 or not version:
         return "unknown"
-    return version.removeprefix("v")
+    return version.removeprefix(f"{game}-v")
 
 
 def executable_name(game: str) -> str:

@@ -71,8 +71,30 @@ This writes one package per game to `build/packages/`:
 Every package contains the game's executable, this project's licence
 and a readme. None contains any of the original game's files.
 
-The version comes from `git describe` on the latest `v*` tag; untagged
-builds are named after the commit.
+Each game's version comes from `git describe` on its latest
+`<game>-v*` tag, so a th06 build after `th06-v1.2.0` is `1.2.0-3-gabcdef0`;
+untagged builds are named after the commit. `just version th06` prints
+it.
+
+## Releasing
+
+Each game has its own version and its own changelog,
+`docs/<game>/CHANGELOG.md`, which collects the changes for players
+under `## Unreleased` as they land. core has no version: a change in
+core goes into the changelog of each game it affects. To release th06:
+
+```sh
+tools/release th06 1.2.0
+git push origin HEAD && git push origin th06-v1.2.0
+```
+
+`tools/release` names th06's unreleased section after the version and
+the date, commits that and tags it `th06-v1.2.0`. Pushing the tag runs
+the "Publish a release" workflow: it builds the release packages for
+Linux, Windows and macOS and publishes th06's as a GitHub release, with
+the version's changelog section as the notes. Every push to `develop`
+replaces the `latest` development snapshot of every game instead, when
+the repository variable `PRERELEASE_ENABLE` is `true`.
 
 ## Capturing replay test cases
 

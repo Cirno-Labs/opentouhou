@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Prepare a game's release: name its unreleased changes and tag the
+commit.
+
+Renames the unreleased section of docs/<game>/CHANGELOG.md to the
+version and date, starts a new empty one, commits that and tags it
+<game>-v<version>. Pushing the tag starts the release workflow; this
+tool pushes nothing.
+"""
+
+import argparse
+import datetime
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parents[1]
+
+
+def git(*args: str) -> str:
+    return subprocess.run(
+        ["git", *args], cwd=REPO_DIR, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("game", help="such as th06")
+    parser.add_argument("version", help="such as 1.2.0")
+    args = parser.parse_args()
+    game = args.game
+    version = args.version.removeprefix("v")
+    changelog = REPO_DIR / "docs" / game / "CHANGELOG.md"
+    tag = f"{game}-v{version}"
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        sys.exit("The version must look like 1.2.0")
+    if git("status", "--porcelain"):
+        sys.exit("The working tree has uncommitted changes")
+    if not changelog.exists():
+        sys.exit(f"{changelog.relative_to(REPO_DIR)} does not exist")
+    if git("tag", "--list", tag):
+        sys.exit(f"The tag {tag} exists already")
+
+    text = changelog.read_text()
+    if "\n## Unreleased\n" not in text:
+        sys.exit(f"{changelog.relative_to(REPO_DIR)} has no Unreleased section")
+    date = datetime.date.today().isoformat()
+    text = text.replace(
+        "\n## Unreleased\n",
+        f"\n## Unreleased\n\n## {version} - {date}\n",
+        1,
+    )
+    changelog.write_text(text)
+
+    message = (
+        f"docs/{game}: release {version}\n\n"
+        f"Name the unreleased changes {version} in the changelog.\n"
+    )
+    git("commit", "-q", "-m", message, "--", str(changelog))
+    git("tag", "-a", tag, "-m", f"{game} {version}")
+    print(f"Tagged {tag}. Push the branch and then the tag:")
+    print(f"  git push origin HEAD && git push origin {tag}")
+
+
+if __name__ == "__main__":
+    main()

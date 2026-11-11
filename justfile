@@ -56,10 +56,10 @@ test: (image-linux "0") (_docker_run "linux" "test")
 lint:
     prek -a
 
-# Print the version that the packages carry.
+# Print the version that a game's packages carry.
 [group('misc')]
-version:
-    @tools/get_version
+version game="th06":
+    @tools/get_version {{game}}
 
 # Delete the build outputs.
 [group('misc')]

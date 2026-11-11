@@ -121,9 +121,9 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
 
 def run_package(deps: Path, target: str) -> None:
     run_build(deps, target, ARCHS)
-    version = generate_version(REPO_DIR)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
+        version = generate_version(game, REPO_DIR)
         output = PACKAGES_DIR / f"{generate_package_name(game, version, 'mac')}.zip"
         with tempfile.TemporaryDirectory() as tmp:
             bundle = Path(tmp) / f"{executable_name(game)}.app"

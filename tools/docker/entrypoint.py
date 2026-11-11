@@ -111,9 +111,9 @@ def package_win(game: str, exe: Path, output: Path) -> None:
 
 
 def run_package(platform: str, target: str) -> None:
-    version = generate_version(REPO_DIR)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
+        version = generate_version(game, REPO_DIR)
         exe = build_dir(platform, target) / f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
         stem = generate_package_name(game, version, platform)
         if platform == "linux":
