@@ -7,6 +7,7 @@
 // Holds core's own settings, loaded and saved by core/app.
 typedef struct {
     bool fullscreen;
+    bool interpolation; // smooths motion between ticks
     int32_t screenshot_resolution;
     int32_t screenshot_format;
     int32_t screenshot_jpeg_quality;

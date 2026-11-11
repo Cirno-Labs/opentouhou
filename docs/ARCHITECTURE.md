@@ -82,7 +82,8 @@ Drawing runs in call order into a logical screen of the game's size, and
 every tick draws, also the ticks that a display frame runs to catch up.
 To show a tick, the renderer draws it again at window resolution, with
 each quad and view that has an id blended toward the tick before, so
-that motion is smooth at any refresh rate.
+that motion is smooth at any refresh rate. A setting turns this off; the
+display frame then shows the last tick's logical screen, scaled.
 
 ## Simulation state and determinism
 

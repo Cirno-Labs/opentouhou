@@ -107,7 +107,9 @@ scores and replays go to your user directory:
 Press F11 or Alt+Enter to toggle fullscreen. Press Print Screen or F12
 to save a screenshot in `screenshots/` under the user directory. The
 `[screenshot]` settings in `config.ini` select the native or window
-resolution, PNG or JPEG, and JPEG quality.
+resolution, PNG or JPEG, and JPEG quality. `[video] interpolation`
+smooths motion between game ticks and is on by default; set it to
+`false` to show each tick as the game drew it.
 
 ## Docker images
 

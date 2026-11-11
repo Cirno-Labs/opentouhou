@@ -219,7 +219,9 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     };
     const float t = (float)((double)ctx->clock.pending / 1000000000.0);
     if (!Result_Log(
-            Gfx_Present(true, t > 1.0f ? 1.0f : t, &output), LOG_LEVEL_ERROR)) {
+            Gfx_Present(
+                ctx->settings.interpolation, t > 1.0f ? 1.0f : t, &output),
+            LOG_LEVEL_ERROR)) {
         return SDL_APP_FAILURE;
     }
     if (ctx->screenshot_pending) {
