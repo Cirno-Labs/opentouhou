@@ -1221,6 +1221,20 @@ TEST(base_tsa_crops_the_names_and_puts_them_a_texture_width_away)
     M_Teardown();
 }
 
+TEST(base_tsa_name_bars_take_whole_pixels)
+{
+    M_Setup("names_width_base_tsa");
+    M_UseBaseTsa();
+    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    Gui_ShowSpellCardName(1, "abc");
+    CHECK(g_Gui.banners.spell_width == 22.0f + 4.0f + 16.0f);
+    Gui_ShowBombName(0x4a1, "abcd");
+    CHECK(g_Gui.banners.bomb_width == 30.0f + 4.0f + 16.0f);
+    Anm_ShutdownText();
+    Translation_Shutdown();
+    M_Teardown();
+}
+
 // Returns whether the first nameplate draws before the second.
 static bool M_FirstNameplateDrawsFirst(void)
 {
