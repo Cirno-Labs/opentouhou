@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Write the description of a GitHub release as Markdown.
+
+The description starts with a table of the downloads: one row per game,
+one column per platform, each cell linking to the package of that game
+and platform among the files in --packages. The changes follow: for a
+game's release, that version's section of the game's changelog; for the
+development snapshot, each game's unreleased changes and the commit. The
+games default to those with a changelog and packages.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+from shared.changelog import changelog_path, games_with_changelogs, section
+from shared.versioning import executable_name
+
+PLATFORMS = [
+    ("Linux", "-Linux.zip"),
+    ("Windows", "-Windows.zip"),
+    ("macOS", "-macOS.zip"),
+]
+
+
+def downloads_table(games: list[str], packages: Path, url: str) -> str:
+    rows = [
+        "| Game | " + " | ".join(name for name, _ in PLATFORMS) + " |",
+        "|---" * (len(PLATFORMS) + 1) + "|",
+    ]
+    files = sorted(path.name for path in packages.iterdir() if path.is_file())
+    for game in games:
+        cells = []
+        for _, suffix in PLATFORMS:
+            matches = [
+                name
+                for name in files
+                if name.startswith(executable_name(game) + "-")
+                and name.endswith(suffix)
+            ]
+            cells.append(
+                " ".join(f"[{name}]({url}/{name})" for name in matches) or "–"
+            )
+        rows.append(f"| {game} | " + " | ".join(cells) + " |")
+    return "\n".join(rows)
+
+
+def unwrap(text: str) -> str:
+    """Join the wrapped lines of each list item into one line.
+
+    GitHub shows a line break inside a release description as a break,
+    so a wrapped changelog item would show as several short lines.
+    """
+    lines: list[str] = []
+    for line in text.splitlines():
+        if line.startswith("  ") and lines and lines[-1].startswith("- "):
+            lines[-1] += " " + line.strip()
+        else:
+            lines.append(line)
+    return "\n".join(lines)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repository", required=True, help="such as rr-/opentouhou")
+    parser.add_argument("--tag", required=True, help="such as th06-v1.2.0 or latest")
+    parser.add_argument("--packages", type=Path, required=True)
+    parser.add_argument(
+        "--games",
+        nargs="+",
+        help="the games, such as th06; by default every game with a changelog"
+        " and packages",
+    )
+    parser.add_argument("--version", help="the game's version, for a release")
+    parser.add_argument("--commit", help="the commit, for the snapshot")
+    args = parser.parse_args()
+
+    files = [path.name for path in args.packages.iterdir() if path.is_file()]
+    games = args.games or [
+        game
+        for game in games_with_changelogs()
+        if any(name.startswith(executable_name(game) + "-") for name in files)
+    ]
+    url = f"https://github.com/{args.repository}/releases/download/{args.tag}"
+    parts = [downloads_table(games, args.packages, url)]
+    if args.version is not None:
+        game = games[0]
+        body = section(changelog_path(game).read_text(), args.version)
+        if body is None:
+            sys.exit(f"The changelog of {game} has no section {args.version}")
+        parts.append(f"## Changes\n\n{unwrap(body)}")
+    else:
+        for game in games:
+            body = section(changelog_path(game).read_text(), "Unreleased")
+            parts.append(
+                f"## {game}: unreleased changes\n\n{unwrap(body or 'None yet.')}"
+            )
+        if args.commit is not None:
+            parts.append(f"Built from {args.commit} on develop.")
+    print("\n\n".join(parts))
+
+
+if __name__ == "__main__":
+    main()

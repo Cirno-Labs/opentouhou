@@ -60,9 +60,13 @@ jobs:
         run: |
           game="${TAG%-v*}"
           version="${TAG##*-v}"
-          tools/output_changelog "$game" "$version" > notes.md
+          mkdir game-packages
+          cp packages/o"$game"-* game-packages/
+          tools/release_notes --repository "$GH_REPO" --tag "$TAG" \
+            --packages game-packages --games "$game" --version "$version" \
+            > notes.md
           gh release create "$TAG" \
             --title "$game $version" \
             --notes-file notes.md \
             --verify-tag \
-            packages/o"$game"-*
+            game-packages/*

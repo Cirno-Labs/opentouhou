@@ -6,22 +6,8 @@ The section is the version's, or the unreleased changes by default.
 
 import argparse
 import sys
-from pathlib import Path
 
-REPO_DIR = Path(__file__).resolve().parents[1]
-
-
-def section(text: str, title: str) -> str | None:
-    lines = text.splitlines()
-    for i, line in enumerate(lines):
-        if line == f"## {title}" or line.startswith(f"## {title} "):
-            body = []
-            for other in lines[i + 1 :]:
-                if other.startswith("## "):
-                    break
-                body.append(other)
-            return "\n".join(body).strip()
-    return None
+from shared.changelog import REPO_DIR, changelog_path, section
 
 
 def main() -> None:
@@ -29,7 +15,7 @@ def main() -> None:
     parser.add_argument("game", help="such as th06")
     parser.add_argument("version", nargs="?", help="such as 1.2.0")
     args = parser.parse_args()
-    changelog = REPO_DIR / "docs" / args.game / "CHANGELOG.md"
+    changelog = changelog_path(args.game)
     title = args.version.removeprefix("v") if args.version else "Unreleased"
     if not changelog.exists():
         sys.exit(f"{changelog.relative_to(REPO_DIR)} does not exist")

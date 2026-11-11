@@ -96,10 +96,12 @@ git push origin HEAD && git push origin th06-v1.2.0
 `tools/release` names th06's unreleased section after the version and
 the date, commits that and tags it `th06-v1.2.0`. Pushing the tag runs
 the "Publish a release" workflow: it builds the release packages for
-Linux, Windows and macOS and publishes th06's as a GitHub release, with
-the version's changelog section as the notes. Every push to `develop`
-replaces the `latest` development snapshot of every game instead, when
-the repository variable `PRERELEASE_ENABLE` is `true`.
+Linux, Windows and macOS and publishes th06's as a GitHub release. Its
+description, written by `tools/release_notes`, starts with a table of
+the downloads per game and platform, then the version's changelog
+section. Every push to `develop` replaces the `latest` development
+snapshot of every game instead, with each game's unreleased changes,
+when the repository variable `PRERELEASE_ENABLE` is `true`.
 
 ## Capturing replay test cases
 

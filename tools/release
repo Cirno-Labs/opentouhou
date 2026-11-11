@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from shared.changelog import changelog_path
+
 REPO_DIR = Path(__file__).resolve().parents[1]
 
 
@@ -31,7 +33,7 @@ def main() -> None:
     args = parser.parse_args()
     game = args.game
     version = args.version.removeprefix("v")
-    changelog = REPO_DIR / "docs" / game / "CHANGELOG.md"
+    changelog = changelog_path(game)
     tag = f"{game}-v{version}"
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         sys.exit("The version must look like 1.2.0")
