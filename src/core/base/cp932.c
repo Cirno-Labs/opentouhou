@@ -5,6 +5,7 @@
 #include "cp932_table.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 static bool M_IsLeadByte(const uint8_t byte)
 {
@@ -173,5 +174,24 @@ RESULT Cp932_Encode(
 
     *out = '\0';
     *bytes = Mem_Realloc(result, (size_t)(out - (uint8_t *)result) + 1);
+    return OK;
+}
+
+RESULT Cp932_DecodeText(
+    const char *const bytes, const size_t size, char **const utf8)
+{
+    const uint8_t *const in = (const uint8_t *)bytes;
+    size_t i = 0;
+    while (i < size) {
+        uint32_t code_point;
+        const size_t length = M_GetUtf8(in + i, size - i, &code_point);
+        if (length == 0 || code_point == 0) {
+            return Cp932_Decode(bytes, size, utf8);
+        }
+        i += length;
+    }
+    *utf8 = Mem_Alloc(size + 1);
+    memcpy(*utf8, bytes, size);
+    (*utf8)[size] = '\0';
     return OK;
 }

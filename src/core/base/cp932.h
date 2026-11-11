@@ -19,3 +19,9 @@ RESULT Cp932_Decode(const char *bytes, size_t size, char **utf8);
 // Converts size bytes of UTF-8 text to CP932. A character that CP932 cannot
 // represent is a failure.
 RESULT Cp932_Encode(const char *utf8, size_t size, char **bytes);
+
+// Converts size bytes of text that is either UTF-8 or CP932 to UTF-8. Bytes
+// that are valid UTF-8 are copied; any other bytes convert as CP932 does.
+// This is how thcrap reads game text, which a patch can replace with UTF-8.
+// CP932 text that happens to be valid UTF-8 is read as UTF-8.
+RESULT Cp932_DecodeText(const char *bytes, size_t size, char **utf8);

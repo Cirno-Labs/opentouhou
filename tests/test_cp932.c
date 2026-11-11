@@ -163,3 +163,43 @@ TEST(characters_without_a_cp932_form_fail)
     CHECK(!Result_Ignore(result));
     CHECK(M_Utf8Fails("😀", 4));
 }
+
+static char *M_TextToUtf8(const char *const bytes, const size_t size)
+{
+    char *output;
+    if (!Result_Log(Cp932_DecodeText(bytes, size, &output), LOG_LEVEL_ERROR)) {
+        return nullptr;
+    }
+    return output;
+}
+
+TEST(text_that_is_utf8_is_copied)
+{
+    char *const output = M_TextToUtf8("東方 ♪ abc", strlen("東方 ♪ abc"));
+    CHECK_EQ_STR(output, "東方 ♪ abc");
+    Mem_Free(output);
+}
+
+TEST(text_that_is_not_utf8_converts_as_cp932)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(m_Samples); i++) {
+        const char *const cp932 = m_Samples[i].cp932;
+        char *const output = M_TextToUtf8(cp932, strlen(cp932));
+        CHECK_EQ_STR(output, m_Samples[i].utf8);
+        Mem_Free(output);
+    }
+}
+
+TEST(text_with_a_nul_byte_fails)
+{
+    char *output = (char *)1;
+    CHECK(!Result_Ignore(Cp932_DecodeText("ab\0cd", 5, &output)));
+    CHECK(output == nullptr);
+}
+
+TEST(text_converts_only_the_given_size)
+{
+    char *const output = M_TextToUtf8("abc\x82", 3);
+    CHECK_EQ_STR(output, "abc");
+    Mem_Free(output);
+}
