@@ -28,6 +28,12 @@
 // hundreds of repositories fits.
 #define M_ARENA_SIZE ((size_t)256 * 1024 * 1024)
 
+// Lists the games whose files othpatch can download, besides the files
+// that every game shares.
+static const char *const m_Games[] = { "th06" };
+
+#define M_GAME_COUNT ((int32_t)ARRAY_SIZE(m_Games))
+
 typedef struct {
     const char *dir;
     const char *repo;
@@ -35,19 +41,18 @@ typedef struct {
     bool list;
     bool help;
     bool version;
+    bool named_games[M_GAME_COUNT];
 } M_ARGS;
 
-// Lists the games whose files othpatch downloads, besides the files that
-// every game shares.
-static const char *const m_Games[] = { "th06" };
-
 static const char m_Usage[] =
-    "Usage: othpatch [--dir <folder>] [--repo <url>] [<language> | "
-    "<repo>/<patch> | <patch>]\n"
+    "Usage: othpatch [--dir <folder>] [--repo <url>] [--game <game>]...\n"
+    "                [<language> | <repo>/<patch> | <patch>]\n"
     "       othpatch --list | --help | --version\n"
     "\n"
     "Downloads thcrap patches for the opentouhou games into the patches\n"
-    "folder, and updates the patches that are there already.\n"
+    "folder, and updates the patches that are there already. It downloads\n"
+    "the files of each game that is beside othpatch, such as oth06 or\n"
+    "oth06.exe, and of each game that a patch in the folder has files for.\n"
     "\n"
     "  <language>      a language code, such as en or pt-br, for its\n"
     "                  language pack; without a name, the language of the\n"
@@ -59,6 +64,7 @@ static const char m_Usage[] =
     "  --repo <url>    the first repository, " M_DEFAULT_REPO
     "\n"
     "                  by default\n"
+    "  --game <game>   also download the files of a game, such as th06\n"
     "  --list          list the language packs\n"
     "  --help          print this help\n"
     "  --version       print the version\n";
@@ -83,17 +89,44 @@ static int M_FailResult(
     return 1;
 }
 
+static int32_t M_FindGame(const char *const id)
+{
+    for (int32_t i = 0; i < M_GAME_COUNT; i++) {
+        if (strcmp(m_Games[i], id) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static bool M_ParseArgs(
     const int argc, char **const argv, FILE *const out, M_ARGS *const args)
 {
     *args = (M_ARGS) { .repo = M_DEFAULT_REPO };
     for (int i = 1; i < argc; i++) {
         const char *const arg = argv[i];
-        if (strcmp(arg, "--dir") == 0 || strcmp(arg, "--repo") == 0) {
-            if (i + 1 >= argc) {
-                M_Fail(out, "%s needs a value", arg);
+        const bool valued = strcmp(arg, "--dir") == 0
+            || strcmp(arg, "--repo") == 0 || strcmp(arg, "--game") == 0;
+        if (valued && i + 1 >= argc) {
+            M_Fail(out, "%s needs a value", arg);
+            return false;
+        }
+        if (strcmp(arg, "--game") == 0) {
+            const char *const id = argv[++i];
+            const int32_t game = M_FindGame(id);
+            if (game < 0) {
+                char known[M_GAME_COUNT * 16] = "";
+                size_t length = 0;
+                for (int32_t k = 0; k < M_GAME_COUNT; k++) {
+                    length += (size_t)snprintf(
+                        known + length, sizeof(known) - length, "%s%s",
+                        k > 0 ? ", " : "", m_Games[k]);
+                }
+                M_Fail(out, "unknown game %s; othpatch knows %s", id, known);
                 return false;
             }
+            args->named_games[game] = true;
+        } else if (valued) {
             *(strcmp(arg, "--dir") == 0 ? &args->dir : &args->repo) = argv[++i];
         } else if (strcmp(arg, "--list") == 0) {
             args->list = true;
@@ -117,7 +150,8 @@ static bool M_ParseArgs(
 // Returns the patches folder: --dir, or <exe folder>/patches/ when a
 // portable.txt is beside othpatch, as for the games, or else the folder
 // of the platform. Mem_Free releases *out.
-static RESULT M_FindDir(const M_ARGS *const args, char **const out)
+static RESULT M_FindDir(
+    const M_ARGS *const args, const char *const exe_dir, char **const out)
 {
     *out = nullptr;
     if (args->dir != nullptr) {
@@ -125,7 +159,6 @@ static RESULT M_FindDir(const M_ARGS *const args, char **const out)
         *out = Str_Dup(args->dir);
         return OK;
     }
-    const char *const exe_dir = Path_GetExeDir();
     const char *portable_dir = nullptr;
     if (exe_dir != nullptr) {
         char *const marker =
@@ -215,10 +248,90 @@ static bool M_IsLanguagePack(const char *const id)
     return Str_StartsWith(id, M_FIRST_REPO "/" M_LANGUAGE_PREFIX);
 }
 
-static int M_Run(
-    const M_ARGS *const args, const char *const dir, ARENA *const arena,
-    FILE *const out)
+static bool M_IsBeside(
+    ARENA *const arena, const char *const exe_dir, const char *const game)
 {
+    static const char *const suffixes[] = { "", ".exe", ".AppImage", ".app" };
+    for (size_t i = 0; exe_dir != nullptr && i < ARRAY_SIZE(suffixes); i++) {
+        char name[64];
+        snprintf(name, sizeof(name), "o%s%s", game, suffixes[i]);
+        if (File_Exists(Path_Join(Arena_Allocator(arena), exe_dir, name))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool M_IsDownloaded(
+    ARENA *const arena, const char *const dir,
+    const UPDATE_INSTALLED_LIST *const installed, const char *const game)
+{
+    const ALLOCATOR *const allocator = Arena_Allocator(arena);
+    for (int32_t i = 0; i < installed->count; i++) {
+        const char *const patch_dir =
+            Path_Join(allocator, dir, installed->items[i].id);
+        if (File_Exists(Path_Join(allocator, patch_dir, game))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Picks the games whose files to download: the games named with --game,
+// the games beside othpatch and the games that an installed patch has a
+// folder for. Prints them with the reason for each, and returns how many
+// there are.
+static int32_t M_PickGames(
+    const M_ARGS *const args, const char *const exe_dir, const char *const dir,
+    const UPDATE_INSTALLED_LIST *const installed, ARENA *const arena,
+    const char *games[M_GAME_COUNT], FILE *const out)
+{
+    int32_t count = 0;
+    for (int32_t i = 0; i < M_GAME_COUNT; i++) {
+        const char *reason = nullptr;
+        if (args->named_games[i]) {
+            reason = "named on the command line";
+        } else if (M_IsBeside(arena, exe_dir, m_Games[i])) {
+            reason = "beside othpatch";
+        } else if (M_IsDownloaded(arena, dir, installed, m_Games[i])) {
+            reason = "in the patches folder";
+        }
+        if (reason != nullptr) {
+            fprintf(
+                out, "%s%s (%s)", count == 0 ? "Games: " : ", ", m_Games[i],
+                reason);
+            games[count++] = m_Games[i];
+        }
+    }
+    if (count > 0) {
+        fputc('\n', out);
+    }
+    return count;
+}
+
+static int M_Run(
+    const M_ARGS *const args, const char *const exe_dir, const char *const dir,
+    ARENA *const arena, FILE *const out)
+{
+    UPDATE_INSTALLED_LIST installed;
+    const char *games[M_GAME_COUNT];
+    int32_t game_count = 0;
+    if (!args->list) {
+        const RESULT listed = Update_ListInstalled(dir, arena, &installed);
+        if (!IS_OK(listed)) {
+            return M_FailResult(out, "cannot list the patches folder", listed);
+        }
+        game_count =
+            M_PickGames(args, exe_dir, dir, &installed, arena, games, out);
+        if (game_count == 0) {
+            return M_Fail(
+                out,
+                "no opentouhou game is beside othpatch; name one with "
+                "--game %s",
+                m_Games[0]);
+        }
+    }
+
     REPO_NETWORK *network;
     const RESULT opened = Repo_Open(args->repo, arena, &network);
     if (!IS_OK(opened)) {
@@ -248,11 +361,6 @@ static int M_Run(
         out, "%s: %s (%s), %s\n", language ? "Language" : "Patch", target->id,
         target->title, reason);
 
-    UPDATE_INSTALLED_LIST installed;
-    const RESULT listed = Update_ListInstalled(dir, arena, &installed);
-    if (!IS_OK(listed)) {
-        return M_FailResult(out, "cannot list the patches folder", listed);
-    }
     typedef ARRAY(const char *) M_IDS;
     M_IDS removals;
     Array_Init(&removals, Arena_Allocator(arena));
@@ -283,8 +391,8 @@ static int M_Run(
     for (int32_t i = 0; i < list.count; i++) {
         const REPO_PATCH *const patch = list.items[i];
         UPDATE_COUNTS counts;
-        const RESULT result = Update_Patch(
-            dir, patch, m_Games, (int32_t)ARRAY_SIZE(m_Games), &counts);
+        const RESULT result =
+            Update_Patch(dir, patch, games, game_count, &counts);
         if (!IS_OK(result)) {
             fprintf(out, "%s: failed: %s\n", patch->id, result.message);
             Result_Ignore(result);
@@ -328,7 +436,9 @@ static int M_Run(
     return 0;
 }
 
-int Main_Run(const int argc, char **const argv, FILE *const out)
+int Main_Run(
+    const int argc, char **const argv, const char *const exe_dir,
+    FILE *const out)
 {
     M_ARGS args;
     if (!M_ParseArgs(argc, argv, out, &args)) {
@@ -344,7 +454,7 @@ int Main_Run(const int argc, char **const argv, FILE *const out)
     }
     char *dir = nullptr;
     if (!args.list) {
-        const RESULT found = M_FindDir(&args, &dir);
+        const RESULT found = M_FindDir(&args, exe_dir, &dir);
         if (!IS_OK(found)) {
             return M_FailResult(out, "cannot find the patches folder", found);
         }
@@ -355,7 +465,7 @@ int Main_Run(const int argc, char **const argv, FILE *const out)
     if (IS_OK(started)) {
         ARENA arena;
         Arena_Init(&arena, "othpatch", M_ARENA_SIZE);
-        code = M_Run(&args, dir, &arena, out);
+        code = M_Run(&args, exe_dir, dir, &arena, out);
         Arena_Free(&arena);
     } else {
         M_FailResult(out, "cannot start", started);

@@ -8,17 +8,32 @@ typedef struct {
     char *dir;
     char *server;
     char *patches;
+    char *program;
     char *repo;
     char *output;
 } M_CASE;
 
-static M_CASE M_Prepare(const char *const name)
+// Prepares a test whose othpatch is in a folder of its own, with the file
+// beside_path beside it, or with nothing beside it when beside_path is
+// nullptr.
+static M_CASE M_PrepareBeside(
+    const char *const name, const char *const beside_path)
 {
     M_CASE test = { .dir = TestDir_Prepare(name) };
     test.server = TestDir_Join(test.dir, "server");
     test.patches = TestDir_Join(test.dir, "patches");
+    test.program = TestDir_Join(test.dir, "program");
     test.repo = Str_Format("file://%s/thpatch/repo.js", test.server);
+    PatchBuilder_Write(test.program, "othpatch", "");
+    if (beside_path != nullptr) {
+        PatchBuilder_Write(test.program, beside_path, "");
+    }
     return test;
+}
+
+static M_CASE M_Prepare(const char *const name)
+{
+    return M_PrepareBeside(name, "oth06");
 }
 
 // Adds the network of a thpatch with two language packs that depend on a
@@ -61,7 +76,7 @@ static int M_Run(M_CASE *const test, const int count, ...)
     }
     va_end(args);
     FILE *const out = tmpfile();
-    const int code = Main_Run(argc, argv, out);
+    const int code = Main_Run(argc, argv, test->program, out);
     const long size = ftell(out);
     rewind(out);
     Mem_Free(test->output);
@@ -82,6 +97,7 @@ static void M_Close(M_CASE *const test)
 {
     Mem_Free(test->output);
     Mem_Free(test->repo);
+    Mem_Free(test->program);
     Mem_Free(test->patches);
     Mem_Free(test->server);
     Mem_Free(test->dir);
@@ -98,6 +114,80 @@ TEST(language_code_installs_the_pack_and_its_dependencies)
     M_CheckOutput(&test, "Done: 2 patches, 1 files downloaded");
     CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/msg1.dat.jdiff"));
     CHECK(Server_Exists(test.patches, "nmlgc/base/patch.js"));
+    M_Close(&test);
+}
+
+TEST(game_beside_othpatch_is_downloaded)
+{
+    M_CASE test = M_PrepareBeside("beside", "oth06.AppImage");
+    M_AddNetwork(&test);
+    char *const present = Server_Entry("th06/msg1.dat.jdiff", "lang_en");
+    char *const absent = Server_Entry("th07/msg1.dat.jdiff", "other");
+    char *const entries = Str_Format("{%s, %s}", present, absent);
+    Server_AddFile(test.server, "thpatch", "lang_en", "files.js", entries);
+    Server_AddFile(
+        test.server, "thpatch", "lang_en", "th07/msg1.dat.jdiff", "other");
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(&test, "\nGames: th06 (beside othpatch)\nLanguage: ");
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/msg1.dat.jdiff"));
+    CHECK(!Server_Exists(test.patches, "thpatch/lang_en/th07"));
+    M_Close(&test);
+    Mem_Free(entries);
+    Mem_Free(absent);
+    Mem_Free(present);
+}
+
+TEST(game_bundle_beside_othpatch_is_downloaded)
+{
+    M_CASE test =
+        M_PrepareBeside("beside_bundle", "oth06.app/Contents/MacOS/oth06");
+    M_AddNetwork(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(&test, "Games: th06 (beside othpatch)\n");
+    M_Close(&test);
+}
+
+TEST(game_in_the_patches_folder_is_downloaded)
+{
+    M_CASE test = M_PrepareBeside("downloaded", nullptr);
+    M_AddNetwork(&test);
+    PatchBuilder_Write(test.patches, "mine/local/patch.js", "{}");
+    PatchBuilder_Write(test.patches, "mine/local/th06/old.txt", "");
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(&test, "Games: th06 (in the patches folder)\n");
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/msg1.dat.jdiff"));
+    M_Close(&test);
+}
+
+TEST(game_named_with_an_option_is_downloaded)
+{
+    M_CASE test = M_PrepareBeside("named_game", nullptr);
+    M_AddNetwork(&test);
+    CHECK_EQ_INT(M_Run(&test, 3, "--game", "th06", "en"), 0);
+    M_CheckOutput(&test, "Games: th06 (named on the command line)\n");
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/msg1.dat.jdiff"));
+    M_Close(&test);
+}
+
+TEST(failure_of_an_unknown_game_is_one_message)
+{
+    M_CASE test = M_Prepare("unknown_game");
+    CHECK_EQ_INT(M_Run(&test, 3, "--game", "th99", "en"), 1);
+    CHECK_EQ_STR(
+        test.output, "othpatch: unknown game th99; othpatch knows th06\n");
+    M_Close(&test);
+}
+
+TEST(failure_without_a_game_is_one_message)
+{
+    M_CASE test = M_PrepareBeside("no_game", "oth07");
+    M_AddNetwork(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 1);
+    M_CheckOutput(
+        &test,
+        "othpatch: no opentouhou game is beside othpatch; name one with "
+        "--game th06\n");
+    CHECK(!Server_Exists(test.patches, "thpatch"));
     M_Close(&test);
 }
 
@@ -273,7 +363,7 @@ TEST(bad_arguments_fail_with_one_message)
     CHECK_EQ_STR(test.output, "othpatch: name one patch only, not en and de\n");
     char *argv[] = { "othpatch", "--dir" };
     FILE *const out = tmpfile();
-    CHECK_EQ_INT(Main_Run(2, argv, out), 1);
+    CHECK_EQ_INT(Main_Run(2, argv, test.program, out), 1);
     fclose(out);
     M_Close(&test);
 }

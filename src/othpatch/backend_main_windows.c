@@ -1,6 +1,7 @@
 #include "othpatch/main.h"
 
 #include "core/base/memory.h"
+#include "core/io/path.h"
 
 #include <stdio.h>
 #include <windows.h>
@@ -37,7 +38,7 @@ int wmain(const int argc, wchar_t **const argv)
     }
     int result = 1;
     if (converted == argc) {
-        result = Main_Run(argc, utf8, stdout);
+        result = Main_Run(argc, utf8, Path_GetExeDir(), stdout);
     } else {
         fputs("othpatch: cannot convert the arguments to UTF-8\n", stdout);
     }
