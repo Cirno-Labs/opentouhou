@@ -116,6 +116,15 @@ core_vfs_lib = static_library(
   dependencies: [sdl3],
 )
 
+# core/patch needs core/base, core/io, core/vfs and core/json.
+core_patch_lib = static_library(
+  'core_patch',
+  'patch/stack.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
 # core/image needs core/base and core/io, plus FFmpeg for decoding and
 # encoding; the tests link it without SDL beyond what core/io needs.
 core_image_lib = static_library(
@@ -209,7 +218,8 @@ core_main_lib = static_library(
 core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
-    core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_vfs_lib,
+    core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_patch_lib,
+    core_vfs_lib,
     core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
     core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
