@@ -1,6 +1,7 @@
 #include "th06/anm/text.h"
 
 #include "th06/anm/texture.h"
+#include "th06/translation.h"
 
 #include "core/base/log.h"
 #include "core/text.h"
@@ -134,8 +135,10 @@ RESULT Anm_RenderTextToTextureIndex(
     style.shadow_y = 2;
     IMAGE glyphs;
     MUST(Text_RenderMarkup(m_Font, text, &style, &g_HeapAllocator, &glyphs));
-    IMAGE surface =
-        Image_Create(width * 2 - 2, height * 2 - 2, &g_HeapAllocator);
+    const bool halved = Translation_HasBaseTsa();
+    IMAGE surface = Image_Create(
+        halved ? width * 2 : width * 2 - 2, halved ? 32 : height * 2 - 2,
+        &g_HeapAllocator);
     for (int32_t row = 0; row < glyphs.height && row < surface.height; row++) {
         for (int32_t column = 0; column < glyphs.width; column++) {
             const int32_t target = column + x * 2;

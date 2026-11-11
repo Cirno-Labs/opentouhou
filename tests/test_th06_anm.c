@@ -3,6 +3,7 @@
 
 #include "th06/files.h"
 #include "th06/timer.h"
+#include "th06/translation.h"
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
@@ -15,6 +16,7 @@
 #include "core/gfx/private.h"
 #include "core/io/writer.h"
 #include "core/patch.h"
+#include "core/text.h"
 
 #include "stg/rng.h"
 
@@ -957,6 +959,93 @@ TEST(text_aligns_by_the_drawn_width_and_fills_the_sprite_row)
     Anm_ShutdownText();
     CHECK(IS_OK(Anm_MeasureText("Ab", 15, &width)));
     CHECK(width == 0.0f);
+}
+
+// Draws text as a text row of the bundled font does when it scales a
+// region of surface_width x surface_height pixels at the doubled size to
+// width x 16 pixels, and returns the row.
+static IMAGE M_ScaleRow(
+    const char *const text, const int32_t width, const int32_t surface_width,
+    const int32_t surface_height)
+{
+    TEXT_FONT *font;
+    CHECK(IS_OK(TextFont_LoadDefault(30.0f, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.color = (GFX_COLOR) { 0xee, 0x22, 0x11, 255 };
+    style.shadow_x = 3;
+    style.shadow_y = 2;
+    IMAGE glyphs;
+    CHECK(IS_OK(
+        Text_RenderMarkup(font, text, &style, &g_HeapAllocator, &glyphs)));
+    TextFont_Free(font);
+    IMAGE row = Image_Create(surface_width, surface_height, &g_HeapAllocator);
+    for (int32_t y = 0; y < glyphs.height && y < row.height; y++) {
+        memcpy(
+            row.pixels + (size_t)y * (size_t)row.width * 4,
+            glyphs.pixels + (size_t)y * (size_t)glyphs.width * 4,
+            (size_t)(glyphs.width < row.width ? glyphs.width : row.width) * 4);
+    }
+    Image_Free(&glyphs);
+    Image_Quantize(&row, IMAGE_DEPTH_A1R5G5B5);
+    Image_Resize(&row, width, 16);
+    return row;
+}
+
+// Draws "Night Sign" in a row of width 200 at y 16 and returns whether the
+// row holds the pixels of M_ScaleRow for the given region.
+static bool M_DrawsScaledRow(
+    const int32_t surface_width, const int32_t surface_height)
+{
+    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    CHECK(IS_OK(Anm_CreateTexture(100, 256, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100,
+        .texture_width = 256,
+        .texture_height = 64,
+        .y0 = 16,
+        .x1 = 200,
+        .width = 200,
+    };
+    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
+    const char *const text = "Night Sign";
+    CHECK(IS_OK(Anm_RenderText(&vm, 0x001122ee, UINT32_MAX, "%s", text)));
+    IMAGE expected = M_ScaleRow(text, 200, surface_width, surface_height);
+    const IMAGE *const image = AnmTexture_GetImage(100);
+    bool same = true;
+    for (int32_t y = 0; y < 16; y++) {
+        same = same
+            && memcmp(
+                   image->pixels + ((size_t)(16 + y) * 256) * 4,
+                   expected.pixels + (size_t)y * 200 * 4, 200 * 4)
+                == 0;
+    }
+    Image_Free(&expected);
+    Anm_ReleaseTexture(100);
+    Anm_ShutdownText();
+    return same;
+}
+
+TEST(text_rows_scale_the_doubled_row_less_two_pixels)
+{
+    CHECK(M_DrawsScaledRow(398, 28));
+}
+
+TEST(base_tsa_text_rows_scale_twice_the_row_by_32_pixels)
+{
+    char *const directory = TestDir_Prepare("anm_text_base_tsa");
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        LOG_LEVEL_ERROR));
+    Translation_Init(stack);
+    CHECK(M_DrawsScaledRow(400, 32));
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+    Mem_Free(directory);
 }
 
 TEST(text_takes_the_patch_font_of_the_family)
