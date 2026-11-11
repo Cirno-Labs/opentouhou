@@ -14,8 +14,10 @@ _docker_build platform force="0":
         fi
         echo "Cannot pull $full_tag, building it"
     fi
+    source="https://github.com/${GITHUB_REPOSITORY:-Cirno-Labs/opentouhou}"
     docker build \
         -f tools/docker/{{platform}}/Dockerfile \
+        --label "org.opencontainers.image.source=$source" \
         -t "$full_tag" \
         tools/docker/{{platform}}
 

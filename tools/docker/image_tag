@@ -4,12 +4,23 @@
 import argparse
 import datetime
 import hashlib
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parents[2]
-IMAGE_PREFIX = "ghcr.io/cirno-labs/opentouhou-"
+DEFAULT_OWNER = "cirno-labs"
+
+
+def image_prefix() -> str:
+    """Return the registry prefix of the images.
+
+    GitHub Actions names the owner of the repository that runs the
+    workflow, so a fork builds, pushes and pulls its own images.
+    """
+    owner = os.environ.get("GITHUB_REPOSITORY_OWNER") or DEFAULT_OWNER
+    return f"ghcr.io/{owner.lower()}/opentouhou-"
 
 
 def dockerfile_hash(dockerfile: Path) -> str:
@@ -56,7 +67,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("platform", choices=["linux", "win"])
     args = parser.parse_args()
-    print(f"{IMAGE_PREFIX}{args.platform}:{image_tag(args.platform)}")
+    print(f"{image_prefix()}{args.platform}:{image_tag(args.platform)}")
 
 
 if __name__ == "__main__":

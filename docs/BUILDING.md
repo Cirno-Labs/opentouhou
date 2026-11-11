@@ -136,7 +136,9 @@ Each dependency is built in its own stage and installed into `/ext`,
 which the final stage collects. Each image is tagged with the
 committer date and a hash of its own Dockerfile, computed by
 `tools/docker/image_tag`, and pushed to `ghcr.io/cirno-labs/`, so CI and
-most developers pull them instead of building them. Changing one
+most developers pull them instead of building them. In GitHub Actions the
+prefix is the owner of the repository instead, so a fork builds and
+pulls its own images. Changing one
 Dockerfile only retags that platform's image.
 
 ```sh
