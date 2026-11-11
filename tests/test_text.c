@@ -5,6 +5,7 @@
 
 #include <SDL3/SDL.h>
 #include <math.h>
+#include <string.h>
 
 TEST(default_font_renders_japanese)
 {
@@ -312,6 +313,162 @@ TEST(faces_change_the_glyphs)
     CHECK(IS_OK(Text_Measure(font, "Reimu", &style, &width, &height)));
     CHECK(italic_width >= width);
     CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+static int32_t M_Width(const TEXT_FONT *const font, const char *const text)
+{
+    const TEXT_STYLE style = TextStyle_Default();
+    int32_t width, height;
+    CHECK(IS_OK(Text_MeasureMarkup(font, text, &style, &width, &height)));
+    return width;
+}
+
+// Returns the first column of image with ink, or -1.
+static int32_t M_FirstInk(const IMAGE *const image)
+{
+    for (int32_t x = 0; x < image->width; x++) {
+        for (int32_t y = 0; y < image->height; y++) {
+            if (image->pixels
+                    [((size_t)y * (size_t)image->width + (size_t)x) * 4 + 3]
+                != 0) {
+                return x;
+            }
+        }
+    }
+    return -1;
+}
+
+static TEXT_FONT *M_OpenMarkupFont(void)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    return font;
+}
+
+TEST(a_line_without_markup_renders_as_plain_text)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    TEXT_STYLE style = TextStyle_Default();
+    style.shadow = (GFX_COLOR) { 0, 0, 0, 255 };
+    style.shadow_x = 3;
+    style.shadow_y = 2;
+    IMAGE plain, markup;
+    CHECK(
+        IS_OK(Text_Render(font, "霊夢 <b>", &style, &g_HeapAllocator, &plain)));
+    CHECK(IS_OK(Text_RenderMarkup(
+        font, "霊夢 <b>", &style, &g_HeapAllocator, &markup)));
+    CHECK_EQ_INT(markup.width, plain.width);
+    CHECK_EQ_INT(markup.height, plain.height);
+    CHECK(
+        memcmp(
+            markup.pixels, plain.pixels,
+            (size_t)plain.width * (size_t)plain.height * 4)
+        == 0);
+    int32_t width, height, plain_width, plain_height;
+    CHECK(IS_OK(Text_MeasureMarkup(font, "霊夢 <b>", &style, &width, &height)));
+    CHECK(IS_OK(
+        Text_Measure(font, "霊夢 <b>", &style, &plain_width, &plain_height)));
+    CHECK_EQ_INT(width, plain_width);
+    CHECK_EQ_INT(height, plain_height);
+    Image_Free(&markup);
+    Image_Free(&plain);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(center_aligns_the_text_in_its_column)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    const int32_t column = M_Width(font, "Youkai of the Dusk");
+    const int32_t text = M_Width(font, "Rumia");
+    CHECK_EQ_INT(M_Width(font, "<c$Rumia$Youkai of the Dusk>"), column);
+    CHECK_EQ_INT(
+        M_Width(font, "<c$Rumia$Youkai of the Dusk>!"),
+        column + M_Width(font, "!"));
+    const TEXT_STYLE style = TextStyle_Default();
+    IMAGE image, alone;
+    CHECK(IS_OK(Text_RenderMarkup(
+        font, "<c$Rumia$Youkai of the Dusk>", &style, &g_HeapAllocator,
+        &image)));
+    CHECK(IS_OK(Text_Render(font, "Rumia", &style, &g_HeapAllocator, &alone)));
+    CHECK_EQ_INT(
+        M_FirstInk(&image), column / 2 - text / 2 + M_FirstInk(&alone));
+    Image_Free(&alone);
+    Image_Free(&image);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(right_aligns_the_text_at_the_column_end)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    const int32_t column = M_Width(font, "12345678");
+    const int32_t text = M_Width(font, "Reimu:");
+    CHECK_EQ_INT(M_Width(font, "<r$Reimu:$12345678>"), column);
+    const TEXT_STYLE style = TextStyle_Default();
+    IMAGE image, alone;
+    CHECK(IS_OK(Text_RenderMarkup(
+        font, "<r$Reimu:$12345678>", &style, &g_HeapAllocator, &image)));
+    CHECK(IS_OK(Text_Render(font, "Reimu:", &style, &g_HeapAllocator, &alone)));
+    CHECK_EQ_INT(M_FirstInk(&image), column - text + M_FirstInk(&alone));
+    Image_Free(&alone);
+    Image_Free(&image);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(left_and_faces_keep_the_text_width)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    const int32_t a = M_Width(font, "Reimu");
+    const int32_t b = M_Width(font, " Hakurei");
+    CHECK_EQ_INT(M_Width(font, "<l$Reimu> Hakurei"), a + b);
+    CHECK_EQ_INT(M_Width(font, "<ub$Reimu> Hakurei"), a + b);
+    CHECK_EQ_INT(
+        M_Width(font, "<l$Reimu$Reimu Hakurei>!"),
+        M_Width(font, "Reimu Hakurei") + M_Width(font, "!"));
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(a_spacer_draws_nothing)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    CHECK_EQ_INT(
+        M_Width(font, "a<s$hidden>b"), M_Width(font, "a") + M_Width(font, "b"));
+    CHECK_EQ_INT(M_Width(font, "<s$hidden$column>"), 0);
+    const TEXT_STYLE style = TextStyle_Default();
+    IMAGE image;
+    CHECK(IS_OK(Text_RenderMarkup(
+        font, "<s$hidden>", &style, &g_HeapAllocator, &image)));
+    CHECK(image.pixels == nullptr);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(a_translator_note_is_left_out)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    CHECK_EQ_INT(M_Width(font, "Hello\x14note"), M_Width(font, "Hello"));
+    CHECK_EQ_INT(M_Width(font, "\x14note"), 0);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(incomplete_markup_is_text)
+{
+    TEXT_FONT *const font = M_OpenMarkupFont();
+    const TEXT_STYLE style = TextStyle_Default();
+    int32_t width, height;
+    CHECK(IS_OK(Text_Measure(font, "<c$a$b", &style, &width, &height)));
+    CHECK_EQ_INT(M_Width(font, "<c$a$b"), width);
+    CHECK(IS_OK(Text_Measure(font, "<text>", &style, &width, &height)));
+    CHECK_EQ_INT(M_Width(font, "<text>"), width);
+    CHECK_EQ_INT(
+        M_Width(font, "x<c$a>"), M_Width(font, "x") + M_Width(font, "a"));
     TextFont_Free(font);
     Text_Shutdown();
 }
