@@ -1192,4 +1192,8 @@ test(
     dependencies: [sdl3_ttf, sdl3, cc_libm],
   ),
   suite: 'unit',
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'text',
+    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
+  },
 )

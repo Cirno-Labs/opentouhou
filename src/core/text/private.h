@@ -7,4 +7,8 @@
 struct TEXT_FONT {
     TTF_Font *font;
     uint8_t *data;
+    // The em size for each pixel of cell height.
+    float cell_scale;
+    // The font that gives the characters font lacks, or nullptr.
+    TEXT_FONT *fallback;
 };
