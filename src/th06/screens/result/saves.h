@@ -70,3 +70,8 @@ int32_t ResultScreen_GetReplayScan(void);
 int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT]);
 // Sets the values that the next ticks read.
 void ResultScreen_SetClock(const RESULT_SCREEN_CLOCK *clock);
+// Makes the replay save menu refuse every game, as it refuses a game with
+// a continue, or accept games again. th06 refuses them while patches
+// change gameplay, because such a replay would not play back in the
+// original.
+void ResultScreen_RefuseReplays(bool refuse);

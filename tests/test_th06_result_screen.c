@@ -378,6 +378,26 @@ TEST(a_continued_game_cannot_save_its_replay)
     M_Teardown();
 }
 
+TEST(a_refused_game_cannot_save_its_replay)
+{
+    M_Setup("refused");
+    M_StartGame(5000000);
+    ResultScreen_RefuseReplays(true);
+    CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
+    M_Run(31);
+    M_Press((TH06_INPUT) { .menu = true });
+    M_Run(95);
+    M_Press((TH06_INPUT) { .shoot = true });
+    M_Run(110);
+    CHECK(m_Requested != SCENE_TITLE);
+    M_Press((TH06_INPUT) { .shoot = true });
+    M_Run(61);
+    CHECK_EQ_INT(m_Requested, SCENE_TITLE);
+    CHECK(!ResultSaves_GetSlot(0)->valid);
+    ResultScreen_RefuseReplays(false);
+    M_Teardown();
+}
+
 TEST(saving_a_replay_writes_the_slot_and_draws_six_values)
 {
     M_Setup("replay");

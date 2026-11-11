@@ -448,8 +448,10 @@ static void M_UpdateReplayPrompt(M_SCREEN *const screen)
     if (screen->frame == 60) {
         // Continued games cannot be saved. The original also refuses a
         // game speed below full speed, which the port never runs at.
-        const int16_t interrupt =
-            g_GameManager.stats.continues_used != 0 ? 0xc : 9;
+        const int16_t interrupt = g_GameManager.stats.continues_used != 0
+                || ResultSaves_RefusesReplays()
+            ? 0xc
+            : 9;
         // The original starts at the second sprite and runs one past the
         // last, onto the first text sprite, which never runs a script.
         for (int32_t i = 1; i < M_SPRITE_COUNT; i++) {

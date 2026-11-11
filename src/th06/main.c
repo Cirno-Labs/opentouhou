@@ -1,4 +1,6 @@
 #include "core/app.h"
+#include "core/base/log.h"
+#include "core/patch.h"
 
 #include "th06/buttons.h"
 #include "th06/anm.h"
@@ -58,6 +60,10 @@ static RESULT M_Init(void)
     MUST(Files_Init(App_GetDataDir()));
     Files_SetPatches(App_GetPatches());
     Translation_Init(App_GetPatches());
+    if (Patch_ChangesGameplay(App_GetPatches())) {
+        LOG_INFO("The patches change gameplay, so replays are not saved");
+        ResultScreen_RefuseReplays(true);
+    }
     MUST(Anm_InitText());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(App_GetUserDir());

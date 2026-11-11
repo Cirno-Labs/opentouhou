@@ -16,3 +16,5 @@ const SAVED_REPLAY *ResultSaves_GetSlot(int32_t slot);
 // takes data, a block from g_HeapAllocator.
 void ResultSaves_PutReplay(int32_t slot, uint8_t *data, size_t size);
 const RESULT_SCREEN_CLOCK *ResultSaves_GetClock(void);
+// Returns whether ResultScreen_RefuseReplays refuses replays.
+bool ResultSaves_RefusesReplays(void);

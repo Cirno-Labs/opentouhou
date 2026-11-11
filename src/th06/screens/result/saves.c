@@ -37,6 +37,7 @@ typedef struct {
 static M_SAVES m_Saves = {
     .clock = { "01/01/00", 1.0f, 1.0f },
 };
+static bool m_RefusesReplays;
 
 static void M_FreePending(M_PENDING *const pending)
 {
@@ -385,4 +386,14 @@ void ResultSaves_PutReplay(
 const RESULT_SCREEN_CLOCK *ResultSaves_GetClock(void)
 {
     return &m_Saves.clock;
+}
+
+bool ResultSaves_RefusesReplays(void)
+{
+    return m_RefusesReplays;
+}
+
+void ResultScreen_RefuseReplays(const bool refuse)
+{
+    m_RefusesReplays = refuse;
 }
