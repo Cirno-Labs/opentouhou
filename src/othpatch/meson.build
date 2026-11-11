@@ -26,6 +26,7 @@ othpatch_lib = static_library(
   'othpatch',
   'fetch/curl.c',
   'fetch/file.c',
+  'game.c',
   othpatch_fetch_backends[host_machine.system()],
   'language.c',
   'main.c',
