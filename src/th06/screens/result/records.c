@@ -85,3 +85,13 @@ void ResultScreen_LoadGameRecords(
     ScoreFile_LoadClears(file, clears);
     ScoreFile_LoadPractice(file, practice);
 }
+
+void ResultScreen_LoadTitleRecords(
+    CLEAR_RECORD clears[SCORE_SHOT_COUNT],
+    PRACTICE_RECORD practice[SCORE_SHOT_COUNT][SCORE_STAGE_COUNT]
+                            [SCORE_PRACTICE_DIFFICULTY_COUNT])
+{
+    const SCORE_FILE *const file = ResultSaves_GetScoreFile();
+    ScoreFile_LoadClears(file, clears);
+    ScoreFile_LoadPractice(file, practice);
+}

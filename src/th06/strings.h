@@ -26,7 +26,29 @@
     X(REPLAY_SAVE_HEADER, 0x46bd5c, "No.   Name     Date     Player Score")    \
     X(REPLAY_SAVE_SLOT, 0x46bd44, "No.%.2d %8s %8s %7s %9d")                   \
     X(REPLAY_SAVE_EMPTY, 0x46bd0c,                                             \
-      "No.%.2d -------- --/--/-- -------         0")
+      "No.%.2d -------- --/--/-- -------         0")                           \
+    X(MENU_REPLAY_HEADER, 0x46c49c, "No.   Name      Date     Player   Rank")  \
+    X(MENU_REPLAY, 0x46c484, "%s %8s  %8s %7s  %7s")                           \
+    X(MENU_STAGE_HEADER, 0x46c460, "Stage  LastScore")                         \
+    X(MENU_STAGE, 0x46c458, "%s %9d")                                          \
+    X(MENU_STAGE_EMPTY, 0x46c448, "%s ---------")                              \
+    X(MENU_STAGE_1, 0x46c418, "Stage1")                                        \
+    X(MENU_STAGE_2, 0x46c410, "Stage2")                                        \
+    X(MENU_STAGE_3, 0x46c408, "Stage3")                                        \
+    X(MENU_STAGE_4, 0x46c400, "Stage4")                                        \
+    X(MENU_STAGE_5, 0x46c3f8, "Stage5")                                        \
+    X(MENU_STAGE_6, 0x46c3f0, "Stage6")                                        \
+    X(MENU_STAGE_EXTRA, 0x46c3e8, "Extra ")                                    \
+    X(MENU_SHOT_TYPE_REIMU_A, 0, "ReimuA ")                                    \
+    X(MENU_SHOT_TYPE_REIMU_B, 0, "ReimuB ")                                    \
+    X(MENU_SHOT_TYPE_MARISA_A, 0, "MarisaA")                                   \
+    X(MENU_SHOT_TYPE_MARISA_B, 0, "MarisaB")                                   \
+    X(MENU_DIFFICULTY_EASY, 0x46c440, "Easy   ")                               \
+    X(MENU_DIFFICULTY_NORMAL, 0x46c438, "Normal ")                             \
+    X(MENU_DIFFICULTY_HARD, 0x46c430, "Hard   ")                               \
+    X(MENU_DIFFICULTY_LUNATIC, 0x46c428, "Lunatic")                            \
+    X(MENU_DIFFICULTY_EXTRA, 0x46c420, "Extra  ")                              \
+    X(MENU_PRACTICE_SCORE, 0x46c4c8, "STAGE %d  %.9d")
 
 #define TH06_STRING_ID(id_, address_, text_) STRING_##id_,
 

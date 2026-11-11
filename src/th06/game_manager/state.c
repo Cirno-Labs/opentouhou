@@ -9,6 +9,15 @@ void GameManager_Create(GAME_MANAGER *const gm)
     };
 }
 
+bool GameManager_IsExtraUnlocked(const int32_t character, const int32_t shot)
+{
+    const CLEAR_RECORD *const clear =
+        &g_GameManager.records.clears[character * 2 + shot];
+    return clear->without_continues[1] == 99
+        || clear->without_continues[2] == 99
+        || clear->without_continues[3] == 99;
+}
+
 bool GameManager_IsInPlayArea(
     const float x, const float y, const float width, const float height)
 {

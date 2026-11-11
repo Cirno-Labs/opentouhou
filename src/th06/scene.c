@@ -2,6 +2,7 @@
 
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/screens/main.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
 #include "th06/screens/result.h"

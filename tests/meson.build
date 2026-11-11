@@ -176,6 +176,30 @@ test(
 )
 
 test(
+  'th06/screens/main',
+  executable(
+    'test_th06_main_menu',
+    'test_th06_main_menu.c',
+    'gfx_recorder.c',
+    'anm_builder.c',
+    'pbg3_builder.c',
+    'th06_data.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
+      core_config_lib, core_ini_lib, core_math_lib, core_base_lib,
+      core_gfx_lib, core_image_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_main_menu',
+  },
+  suite: 'unit',
+)
+
+test(
   'th06/angle',
   executable(
     'test_th06_angle',

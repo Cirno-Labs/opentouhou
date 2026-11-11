@@ -8,6 +8,7 @@
 #include "th06/game_manager.h"
 #include "th06/replay.h"
 #include "th06/scene.h"
+#include "th06/screens/main.h"
 
 #include <inttypes.h>
 #include <string.h>
@@ -40,9 +41,6 @@ static bool M_CalcEnd(void *const arg)
 
 static RESULT M_StartReplay(const char *const path, int32_t *const last_stage)
 {
-    FAIL_IF(
-        strlen(path) >= sizeof(g_GameManager.mode.replay_path),
-        "replay path is too long");
     READER reader;
     MUST(Reader_OpenFile(&reader, path));
     REPLAY_FILE *file = nullptr;
@@ -62,16 +60,11 @@ static RESULT M_StartReplay(const char *const path, int32_t *const last_stage)
         Replay_Free(file);
         return FAIL("replay has no stage");
     }
-    g_GameManager.mode.in_replay = true;
-    memcpy(g_GameManager.mode.replay_path, path, strlen(path) + 1);
-    g_GameManager.run.difficulty = file->difficulty;
-    g_GameManager.run.character = file->shot / 2;
-    g_GameManager.run.shot_type = file->shot % 2;
-    g_GameManager.player.lives = (int8_t)file->stages[first_stage]->lives;
-    g_GameManager.player.bombs = (int8_t)file->stages[first_stage]->bombs;
-    g_GameManager.run.stage = first_stage - 1;
-    Scene_Request(SCENE_GAMEPLAY);
+    REPLAY_SUMMARY summary;
+    Replay_Summarize(file, &summary);
     Replay_Free(file);
+    MUST(TitleScene_SetUpReplay(&summary, path, first_stage - 1));
+    TitleScene_Remove();
     return OK;
 }
 

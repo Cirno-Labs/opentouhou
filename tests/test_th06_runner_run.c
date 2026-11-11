@@ -8,6 +8,7 @@
 #include "th06/game_manager.h"
 #include "th06/replay.h"
 #include "th06/scene.h"
+#include "th06/screens/main.h"
 
 CHAIN g_Chain;
 GAME_MANAGER g_GameManager;
@@ -21,6 +22,8 @@ static int32_t m_Actual;
 static int32_t m_LastStage;
 static bool m_Finish;
 static bool m_Reset;
+static int32_t m_SetUpStage;
+static int32_t m_TitleRemoved;
 
 RESULT Game_Init(void)
 {
@@ -100,6 +103,30 @@ void Replay_Free(REPLAY_FILE *const file)
     Mem_Free(file);
 }
 
+void Replay_Summarize(const REPLAY_FILE *const file, REPLAY_SUMMARY *const out)
+{
+    *out = (REPLAY_SUMMARY) {
+        .lives = file->stages[1]->lives,
+        .bombs = file->stages[1]->bombs,
+    };
+}
+
+RESULT TitleScene_SetUpReplay(
+    const REPLAY_SUMMARY *const summary, const char *const path,
+    const int32_t stage)
+{
+    m_SetUpStage = stage;
+    g_GameManager.player.lives = (int8_t)summary->lives;
+    g_GameManager.player.bombs = (int8_t)summary->bombs;
+    Scene_Request(SCENE_GAMEPLAY);
+    return OK;
+}
+
+void TitleScene_Remove(void)
+{
+    m_TitleRemoved++;
+}
+
 void RunnerState_Start(uint32_t row[TH06_START_COUNT])
 {
     memset(row, 0, TH06_START_COUNT * sizeof(uint32_t));
@@ -157,8 +184,12 @@ TEST(full_coverage_uses_replay_input_and_post_first_calc_start)
     m_Finish = true;
     m_Reset = false;
     m_LastStage = 1;
+    m_TitleRemoved = 0;
+    m_SetUpStage = -1;
     RUNNER_REPORT report;
     CHECK(Result_Ignore(M_Run(3, &report)));
+    CHECK_EQ_INT(m_SetUpStage, 0);
+    CHECK_EQ_INT(m_TitleRemoved, 1);
     CHECK(report.complete_schema);
     CHECK(report.complete_replay);
     CHECK_EQ_INT(report.rows, 3);

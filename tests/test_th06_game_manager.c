@@ -62,3 +62,20 @@ TEST(sub_rank_borrows_hundredths_and_stops_at_min)
     CHECK_EQ_INT(g_GameManager.rank.value, 9);
     CHECK_EQ_INT(g_GameManager.rank.sub, 0);
 }
+
+TEST(extra_opens_with_a_normal_to_lunatic_clear_without_continues)
+{
+    GameManager_Create(&g_GameManager);
+    CLEAR_RECORD *const clear = &g_GameManager.records.clears[3];
+    clear->without_continues[0] = 99;
+    clear->with_continues[2] = 99;
+    CHECK(!GameManager_IsExtraUnlocked(1, 1));
+    for (int32_t difficulty = 1; difficulty <= 3; difficulty++) {
+        *clear = (CLEAR_RECORD) {};
+        clear->without_continues[difficulty] = 99;
+        CHECK(GameManager_IsExtraUnlocked(1, 1));
+        CHECK(!GameManager_IsExtraUnlocked(1, 0));
+    }
+    clear->without_continues[3] = 98;
+    CHECK(!GameManager_IsExtraUnlocked(1, 1));
+}

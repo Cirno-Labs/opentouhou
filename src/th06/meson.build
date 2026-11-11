@@ -32,6 +32,7 @@ th06_lib = static_library(
   'replay/format.c',
   'scene.c',
   'screen_effect.c',
+  'screens/main.c',
   'screens/result/records.c',
   'screens/result/saves.c',
   'screens/result/score.c',
