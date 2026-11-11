@@ -12,8 +12,8 @@
 #include "th06/screen_effect.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/stubs.h"
 #include "th06/replay.h"
+#include "th06/screens/result.h"
 
 #include "core/io/reader.h"
 
@@ -91,8 +91,8 @@ static void M_NewGame(void)
     }
     ResultScreen_LoadGameRecords(
         &gm->score.high, gm->records.spell_cards, gm->records.clears,
-        &gm->records.practice[0][0][0],
-        gm->run.character * 2 + gm->run.shot_type, gm->run.difficulty);
+        gm->records.practice, gm->run.character * 2 + gm->run.shot_type,
+        gm->run.difficulty);
     if (gm->mode.in_practice) {
         gm->score.high =
             gm->records

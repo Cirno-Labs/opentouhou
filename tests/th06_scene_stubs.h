@@ -4,9 +4,9 @@
 
 #include <stdint.h>
 
-// Counts calls into the th06/stubs.h functions this test links instead
-// of src/th06/stubs.c, so a test can check which targets the scene
-// switch called.
+// Counts calls into the scene targets and the score record hooks, which
+// this test links instead of src/th06/stubs.c and the real modules, so a
+// test can check which targets the scene switch and the scripts called.
 typedef struct {
     int title_set_up;
     int game_manager_register;

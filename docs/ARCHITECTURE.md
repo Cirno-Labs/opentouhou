@@ -155,9 +155,8 @@ and the original file formats, as far as games share them. Each `src/thXX/` hold
 ## Data, saves and config
 
 - Original data is read from the data directory and never written.
-- Scores and replays exist in our native format, in the user directory,
-  and in the original format, in the data directory. A per-game
-  `save_format` setting chooses, `native` by default.
+- Scores and replays are saved in the original format, in the user
+  directory.
 - Our settings live in one INI file per game in the user directory.
 
 ## Features

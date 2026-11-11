@@ -134,6 +134,25 @@ test(
 )
 
 test(
+  'th06/result_saves',
+  executable(
+    'test_th06_result_saves',
+    'test_th06_result_saves.c',
+    c_args: [layer_include['th06']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
+      core_image_lib, core_math_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_result_saves',
+  },
+  suite: 'unit',
+)
+
+test(
   'th06/angle',
   executable(
     'test_th06_angle',

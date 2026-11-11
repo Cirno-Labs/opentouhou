@@ -13,7 +13,7 @@
 #include "th06/player.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/stubs.h"
+#include "th06/screens/result.h"
 
 #include "core/base/assert.h"
 #include "core/base/cp932.h"

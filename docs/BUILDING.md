@@ -100,9 +100,8 @@ that holds it, either by putting the executable there or by passing it:
 build/linux/debug/o<game> --data ~/games/<game>
 ```
 
-The data directory is never written to unless you choose the original
-save format (see ARCHITECTURE.md, "Data, saves and config"). Settings,
-scores and replays go to your user directory:
+The data directory is never written to. Settings, scores and replays go
+to your user directory:
 
 | Platform | User directory |
 | --- | --- |

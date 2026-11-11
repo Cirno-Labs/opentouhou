@@ -1,7 +1,5 @@
 #pragma once
 
-#include "th06/screens/result/types.h"
-
 #include "core/base/result.h"
 
 #include <stdint.h>
@@ -13,9 +11,3 @@ RESULT TitleScene_SetUp(int32_t mode);
 RESULT ResultScreen_Register(int32_t mode);
 RESULT MusicRoom_Register(void);
 RESULT Ending_Register(void);
-void ResultScreen_AddSpellCardAttempt(
-    int32_t index, const char *name, int32_t bonus);
-void ResultScreen_AddSpellCardCapture(int32_t index, int32_t shot_type);
-void ResultScreen_LoadGameRecords(
-    uint32_t *high_score, SPELL_CARD_RECORD *spell_cards, CLEAR_RECORD *clears,
-    PRACTICE_RECORD *practice, int32_t shot, int32_t difficulty);

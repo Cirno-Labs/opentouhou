@@ -14,7 +14,7 @@
 #include "th06/screen_effect.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/stubs.h"
+#include "th06/screens/result.h"
 #include "th06/replay.h"
 
 #include "core/math/x87.h"
@@ -144,8 +144,10 @@ RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
 }
 
 void ResultScreen_LoadGameRecords(
-    uint32_t *const high_score, SPELL_CARD_RECORD *const spell_cards,
-    CLEAR_RECORD *const clears, PRACTICE_RECORD *const practice,
+    uint32_t *const high_score, SPELL_CARD_RECORD spell_cards[SPELL_CARD_COUNT],
+    CLEAR_RECORD clears[SCORE_SHOT_COUNT],
+    PRACTICE_RECORD practice[SCORE_SHOT_COUNT][SCORE_STAGE_COUNT]
+                            [SCORE_PRACTICE_DIFFICULTY_COUNT],
     const int32_t shot, const int32_t difficulty)
 {
     M_Event('D');
@@ -157,7 +159,7 @@ void ResultScreen_LoadGameRecords(
             clears[i].with_continues[j] = 1;
         }
     }
-    practice[shot * 24 + g_GameManager.run.stage * 4 + difficulty].score = 555;
+    practice[shot][g_GameManager.run.stage][difficulty].score = 555;
 }
 
 void ScreenEffect_FadeOut(const int32_t duration, const uint32_t color)

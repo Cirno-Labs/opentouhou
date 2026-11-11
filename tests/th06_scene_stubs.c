@@ -1,5 +1,6 @@
 #include "th06_scene_stubs.h"
 
+#include "th06/screens/result.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
 
