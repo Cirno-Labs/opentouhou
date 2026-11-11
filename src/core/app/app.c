@@ -22,6 +22,11 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#ifdef _WIN32
+    #include <windows.h>
+#endif
+
+#include <stdio.h>
 #include <string.h>
 
 #define MAX_TICKS_PER_FRAME 4
@@ -85,21 +90,57 @@ static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
     return OK;
 }
 
-static RESULT M_ParseDataDir(
-    const int argc, char *const argv[], char **const out)
+// Prints the usage, the data directory and the user directory to stdout.
+// On Windows, a release build has no console of its own, so the text goes
+// to the console of the shell that started it.
+static void M_PrintHelp(const char *const program)
 {
-    *out = nullptr;
-    for (int i = 1; i < argc; i++) {
-        FAIL_IF(
-            strcmp(argv[i], "--data") != 0, "Unknown argument: %s", argv[i]);
-        FAIL_IF(i + 1 >= argc, "--data needs a directory");
-        FAIL_IF(*out != nullptr, "--data is given twice");
-        *out = Str_Dup(argv[++i]);
+#ifdef _WIN32
+    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+        freopen("CONOUT$", "w", stdout);
     }
-    if (*out == nullptr) {
+#endif
+    const char *const exe_dir = Path_GetExeDir();
+    char *user_dir = nullptr;
+    Result_Ignore(Path_GetUserDir(g_GameDesc.id, &user_dir));
+    printf(
+        "Usage: %s [--data DIR]\n"
+        "\n"
+        "Runs %s.\n"
+        "\n"
+        "  --data DIR  read the original game's data from DIR\n"
+        "  --help      print this help and quit\n"
+        "\n"
+        "Data directory without --data: %s\n"
+        "Settings, scores and replays:  %s\n",
+        program, g_GameDesc.title, exe_dir != nullptr ? exe_dir : "unknown",
+        user_dir != nullptr ? user_dir : "no user directory");
+    fflush(stdout);
+    Mem_Free(user_dir);
+}
+
+// Reads the command line. Sets *help when it asks for the usage.
+static RESULT M_ParseArgs(
+    const int argc, char *const argv[], char **const data_dir, bool *const help)
+{
+    *data_dir = nullptr;
+    *help = false;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+            *help = true;
+            continue;
+        }
+        FAIL_IF(
+            strcmp(argv[i], "--data") != 0, "Unknown argument: %s (see --help)",
+            argv[i]);
+        FAIL_IF(i + 1 >= argc, "--data needs a directory");
+        FAIL_IF(*data_dir != nullptr, "--data is given twice");
+        *data_dir = Str_Dup(argv[++i]);
+    }
+    if (*data_dir == nullptr) {
         const char *const exe_dir = Path_GetExeDir();
         FAIL_IF(exe_dir == nullptr, "Cannot find the executable's directory");
-        *out = Str_Dup(exe_dir);
+        *data_dir = Str_Dup(exe_dir);
     }
     return OK;
 }
@@ -113,9 +154,15 @@ static RESULT M_SetFullscreen(APP_CONTEXT *const ctx, const bool fullscreen)
     return OK;
 }
 
-static RESULT M_Init(APP_CONTEXT *const ctx, const int argc, char *const argv[])
+static RESULT M_Init(
+    APP_CONTEXT *const ctx, const int argc, char *const argv[],
+    bool *const help)
 {
-    MUST(M_ParseDataDir(argc, argv, &ctx->data_dir));
+    MUST(M_ParseArgs(argc, argv, &ctx->data_dir, help));
+    if (*help) {
+        M_PrintHelp(argc > 0 ? argv[0] : g_GameDesc.id);
+        return OK;
+    }
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
@@ -233,9 +280,11 @@ void App_RequestFullscreen(const bool fullscreen)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    return Result_Log(M_Init(&m_Context, argc, argv), LOG_LEVEL_ERROR)
-        ? SDL_APP_CONTINUE
-        : SDL_APP_FAILURE;
+    bool help = false;
+    if (!Result_Log(M_Init(&m_Context, argc, argv, &help), LOG_LEVEL_ERROR)) {
+        return SDL_APP_FAILURE;
+    }
+    return help ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)

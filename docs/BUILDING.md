@@ -100,6 +100,9 @@ that holds it, either by putting the executable there or by passing it:
 build/linux/debug/o<game> --data ~/games/<game>
 ```
 
+`o<game> --help` lists the arguments and prints the data and user
+directories that the game uses.
+
 The data directory is never written to. Settings, scores and replays go
 to your user directory:
 
