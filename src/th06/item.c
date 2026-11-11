@@ -7,6 +7,7 @@
 #include "th06/game_manager.h"
 #include "th06/gui.h"
 #include "th06/player.h"
+#include "th06/sound.h"
 #include "th06/timer.h"
 
 #include "core/base/utils.h"
@@ -93,6 +94,9 @@ static void M_AddPower(const VEC3 pos, const int32_t amount)
     AsciiText_AddPopup(
         pos, level != previous_level ? -1 : 10,
         level != previous_level ? 0xff80c0ffu : 0xffffffffu);
+    if (level != previous_level) {
+        Sound_Queue(SOUND_POWER_UP);
+    }
 }
 
 static void M_CollectPower(const VEC3 pos)
@@ -166,11 +170,13 @@ static void M_Collect(const ITEM *const item)
             g_GameManager.player.lives++;
         }
         GameManager_AddRank(200);
+        Sound_Queue(SOUND_EXTEND);
         break;
     case ITEM_FULL_POWER:
         if (g_GameManager.player.power < M_FULL_POWER) {
             Bullet_ClearAllToItems();
             Gui_ShowFullPowerPopup();
+            Sound_Queue(SOUND_POWER_UP);
             AsciiText_AddPopup(item->pos, -1, 0xff80c0ffu);
         }
         g_GameManager.player.power = M_FULL_POWER;
@@ -263,6 +269,7 @@ void Item_Reset(void)
 void Item_Update(void)
 {
     const VEC3 size = { 16.0f, 16.0f, 16.0f };
+    bool collected = false;
     for (int32_t i = 0; i < ITEM_COUNT; i++) {
         ITEM *const item = &m_Items[i];
         if (!item->active || !M_Update(item)) {
@@ -271,10 +278,14 @@ void Item_Update(void)
         if (Player_TouchesGrazeBox(item->pos, size)) {
             M_Collect(item);
             item->active = false;
+            collected = true;
             continue;
         }
         Timer_Tick(&item->timer);
         Anm_Step(&item->vm);
+    }
+    if (collected) {
+        Sound_Queue(SOUND_ITEM);
     }
 }
 

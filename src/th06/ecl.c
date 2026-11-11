@@ -11,6 +11,7 @@
 #include "th06/gui.h"
 #include "th06/item.h"
 #include "th06/player.h"
+#include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/stubs.h"
 
@@ -925,6 +926,7 @@ static void M_StarPattern(ENEMY *const enemy)
             shooter->speed1 = speed;
             shooter->angle1 -= 0.5235988f * progress;
         }
+        Sound_Queue(SOUND_SHOT_0_QUIET);
     }
     state->int_vars[2]++;
 }
@@ -1027,6 +1029,7 @@ static void M_SideArcFans(ENEMY *const enemy)
             shooter.color = 3;
             Bullet_FirePattern(&shooter);
         }
+        Sound_Queue(SOUND_SHOT_0);
     }
     state->int_vars[2]++;
 }
@@ -1836,6 +1839,9 @@ static M_STEP M_Step(
         break;
     case M_OP_SET_TAKES_DAMAGE:
         enemy->flags.takes_damage = (instr->args[0] & 1) != 0;
+        break;
+    case M_OP_PLAY_SOUND:
+        Sound_Queue(instr->args[0]);
         break;
     case M_OP_SET_DEATH:
         enemy->flags.death = (ENEMY_DEATH)(instr->args[0] & 7);

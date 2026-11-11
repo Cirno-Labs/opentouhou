@@ -8,6 +8,7 @@
 #include "th06/item.h"
 #include "th06/player.h"
 #include "th06/screen_effect.h"
+#include "th06/sound.h"
 #include "th06/timer.h"
 
 #include "core/math/x87.h"
@@ -92,6 +93,7 @@ static void M_LaunchOrb(const int32_t i)
         Anm_StartScriptAtOrigin(
             &g_Player.bomb.vms[i * M_ORB_SPRITES + k], k + M_ORB_FIRST_SCRIPT);
     }
+    Sound_Queue(SOUND_GUN);
 }
 
 static void M_BurstOrb(const int32_t i)
@@ -110,6 +112,7 @@ static void M_BurstOrb(const int32_t i)
     hit->damage = 200;
     g_Player.bomb.clear_areas[i].width = 256.0f;
     g_Player.bomb.clear_areas[i].height = 256.0f;
+    Sound_Queue(SOUND_SHOT_0_LOUD);
     ScreenEffect_Shake(16, 8, 0);
 }
 
@@ -229,6 +232,7 @@ static void M_ReimuB(void)
             Anm_StartScriptAtOrigin(
                 &player->bomb.vms[i], i + M_PILLAR_FIRST_SCRIPT);
         }
+        Sound_Queue(SOUND_POWER_1);
         player->bomb.parts[0].pos = (VEC3) { player->pos.x, 224.0f, 0.42f };
         player->bomb.parts[1].pos = (VEC3) { 192.0f, player->pos.y, 0.415f };
         player->bomb.parts[2].pos = (VEC3) { player->pos.x, 224.0f, 0.41f };
@@ -285,6 +289,7 @@ static void M_MarisaA(void)
             star->velocity.y = X87_Sin(angle) * 2.0f;
             star->velocity.z = 0.0f;
         }
+        Sound_Queue(SOUND_POWER_1);
         ScreenEffect_Shake(120, 4, 1);
     } else {
         for (int32_t i = 0; i < M_STAR_COUNT; i++) {
@@ -329,6 +334,7 @@ static void M_MarisaB(void)
                 &player->bomb.vms[i], i + M_BEAM_FIRST_SCRIPT);
             player->bomb.parts[i].pos = player->pos;
         }
+        Sound_Queue(SOUND_SPARK);
         player->move.speed_scale_y = M_BEAM_SPEED_SCALE;
         player->move.speed_scale_x = M_BEAM_SPEED_SCALE;
     } else {

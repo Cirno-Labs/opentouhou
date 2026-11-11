@@ -18,6 +18,7 @@
 #include "th06/gui.h"
 #include "th06/item.h"
 #include "th06/player.h"
+#include "th06/sound.h"
 #include "th06/stage.h"
 
 #include "core/base/memory.h"
@@ -1457,6 +1458,18 @@ TEST(shot_extras_and_sound_set_the_shooter)
     M_End();
 }
 
+TEST(play_sound_queues_its_argument)
+{
+    M_Begin("play_sound");
+    M_INSTR(0, 106, 7);
+    M_Load();
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], 7);
+    CHECK_EQ_INT(g_SoundEvents.queue[1], -1);
+    M_End();
+}
+
 TEST(lasers_start_turn_move_and_end)
 {
     M_Begin("lasers");
@@ -1900,6 +1913,21 @@ TEST(shoot_from_random_point_fires_from_a_box)
     M_End();
 }
 
+TEST(star_pattern_queues_its_sound_on_the_frames_it_fires)
+{
+    M_Begin("star_sound");
+    M_INSTR(0, 122, ECL_FUNC_STAR_PATTERN);
+    M_Load();
+    M_State()->int_vars[3] = 12;
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_SHOT_0_QUIET);
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    M_End();
+}
+
 TEST(star_pattern_fires_five_points_every_sixth_frame)
 {
     M_Begin("star");
@@ -2049,6 +2077,21 @@ TEST(freeze_or_send_off_sends_large_bullets_off)
         CHECK_EQ_INT(g_Bullets.bullets[300].color, 0);
         CHECK_EQ_INT(g_Rng.seed, expected.seed);
     }
+    M_End();
+}
+
+TEST(side_arc_fans_queue_their_sound_on_the_frames_they_fire)
+{
+    M_Begin("side_arc_sound");
+    M_INSTR(0, 122, ECL_FUNC_SIDE_ARC_FANS);
+    M_Load();
+    M_State()->int_vars[2] = 9;
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_SHOT_0);
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
     M_End();
 }
 

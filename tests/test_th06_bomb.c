@@ -19,6 +19,7 @@
 #include "th06/player.h"
 #include "th06/scene.h"
 #include "th06/screen_effect.h"
+#include "th06/sound.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
@@ -208,6 +209,7 @@ static void M_Setup(
     Scene_Request(SCENE_GAMEPLAY);
     g_Enemies = (ENEMY_MANAGER) {};
     g_Buttons = (BUTTONS) {};
+    Sound_Reset();
     m_NameSprite = 0;
     m_Name = nullptr;
     m_NameEnds = 0;
@@ -293,6 +295,20 @@ TEST(the_orbs_bomb_starts_with_its_name_and_a_clear_area)
     CHECK(area.x == M_START_X && area.y == M_START_Y);
     CHECK(area.width == 256.0f && area.height == 256.0f);
     CHECK_EQ_INT(g_Player.bomb.timer.current, 1);
+    M_Teardown();
+}
+
+TEST(an_orb_queues_its_sound_as_it_launches_and_as_it_bursts)
+{
+    M_Setup("reimu_a_sound", 0, 0);
+    M_StartBomb();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    M_RunTo(80);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_GUN);
+    Sound_Reset();
+    g_Player.bomb.hits[1].damage_dealt = 100;
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_SHOT_0_LOUD);
     M_Teardown();
 }
 
@@ -469,6 +485,17 @@ TEST(the_pillars_bomb_starts_through_the_player)
     CHECK(g_Player.bomb.clear_areas[0].width == 0.0f);
     CHECK(g_Player.bomb.hits[0].size.x == 0.0f);
     M_Teardown();
+}
+
+TEST(the_bombs_of_reimu_b_and_marisa_queue_their_sounds_as_they_start)
+{
+    const SOUND sounds[] = { SOUND_POWER_1, SOUND_POWER_1, SOUND_SPARK };
+    for (int32_t i = 0; i < 3; i++) {
+        M_Setup("start_sound", (i + 1) / 2, (i + 1) % 2);
+        M_StartBomb();
+        CHECK_EQ_INT(g_SoundEvents.queue[0], sounds[i]);
+        M_Teardown();
+    }
 }
 
 TEST(the_pillars_set_their_boxes_on_odd_frames)

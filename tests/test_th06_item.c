@@ -14,6 +14,7 @@
 #include "th06/game_manager.h"
 #include "th06/gui.h"
 #include "th06/player.h"
+#include "th06/sound.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
@@ -583,6 +584,59 @@ TEST(a_star_item_scores_100_in_a_bomb)
     g_Player.bomb.running = true;
     M_Collect(ITEM_STAR, 300.0f);
     CHECK_EQ_INT(g_GameManager.score.value, 100);
+    M_Teardown();
+}
+
+static void M_CheckQueue(const int32_t first, const int32_t second)
+{
+    CHECK_EQ_INT(g_SoundEvents.queue[0], first);
+    CHECK_EQ_INT(g_SoundEvents.queue[1], second);
+    Sound_Reset();
+}
+
+TEST(a_collected_item_queues_the_item_sound)
+{
+    M_Setup();
+    g_GameManager.player.power = 10;
+    Sound_Reset();
+    M_Collect(ITEM_POWER, 300.0f);
+    M_CheckQueue(SOUND_ITEM, -1);
+    M_Frame();
+    M_CheckQueue(-1, -1);
+    M_Teardown();
+}
+
+TEST(a_new_power_level_queues_the_power_up_sound)
+{
+    M_Setup();
+    g_GameManager.player.power = 7;
+    Sound_Reset();
+    M_Collect(ITEM_POWER, 300.0f);
+    M_CheckQueue(SOUND_POWER_UP, SOUND_ITEM);
+    M_Teardown();
+}
+
+TEST(a_life_item_queues_the_extend_sound_also_at_eight_lives)
+{
+    M_Setup();
+    g_GameManager.player.lives = 7;
+    Sound_Reset();
+    M_Collect(ITEM_LIFE, 300.0f);
+    M_CheckQueue(SOUND_EXTEND, SOUND_ITEM);
+    M_Collect(ITEM_LIFE, 300.0f);
+    M_CheckQueue(SOUND_EXTEND, SOUND_ITEM);
+    M_Teardown();
+}
+
+TEST(a_full_power_item_queues_the_power_up_sound_below_full_power)
+{
+    M_Setup();
+    g_GameManager.player.power = 20;
+    Sound_Reset();
+    M_Collect(ITEM_FULL_POWER, 300.0f);
+    M_CheckQueue(SOUND_POWER_UP, SOUND_ITEM);
+    M_Collect(ITEM_FULL_POWER, 300.0f);
+    M_CheckQueue(SOUND_ITEM, -1);
     M_Teardown();
 }
 

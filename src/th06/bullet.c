@@ -10,6 +10,7 @@
 #include "th06/item.h"
 #include "th06/player.h"
 #include "th06/scene.h"
+#include "th06/sound.h"
 #include "th06/timer.h"
 
 #include "core/base/assert.h"
@@ -859,12 +860,14 @@ void Bullet_Remove(void)
 void Bullet_FirePattern(const BULLET_SHOOTER *const shooter)
 {
     const float aim_angle = Player_AngleFrom(shooter->pos);
-    for (int32_t row = 0; row < shooter->rows; row++) {
-        for (int32_t col = 0; col < shooter->columns; col++) {
-            if (!M_Spawn(shooter, col, row, aim_angle)) {
-                return;
-            }
+    bool spawning = true;
+    for (int32_t row = 0; spawning && row < shooter->rows; row++) {
+        for (int32_t col = 0; spawning && col < shooter->columns; col++) {
+            spawning = M_Spawn(shooter, col, row, aim_angle);
         }
+    }
+    if ((shooter->flags & BULLET_FLAG_SOUND) != 0) {
+        Sound_Queue(shooter->sound);
     }
 }
 

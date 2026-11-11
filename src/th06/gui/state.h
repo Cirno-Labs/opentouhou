@@ -77,6 +77,7 @@ typedef struct {
         // while it leaves. It wraps below 0, as unsigned arithmetic does.
         uint32_t boss_bar_alpha;
         float boss_health_shown; // follows boss.health
+        int32_t boss_seconds_drawn; // boss.seconds when last drawn
     } hud;
 
     struct {

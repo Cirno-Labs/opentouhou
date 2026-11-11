@@ -7,6 +7,7 @@
 #include "th06/gui.h"
 #include "th06/item.h"
 #include "th06/player.h"
+#include "th06/sound.h"
 
 #include "core/base/assert.h"
 
@@ -414,6 +415,7 @@ static void M_Die(ENEMY *const enemy, const bool by_bomb)
     default:
         break;
     }
+    Sound_Queue((int32_t)(enemy - g_Enemies.enemies) % 2 + SOUND_ENEMY_DEATH_0);
     Effect_Spawn((EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1, M_WHITE);
     Effect_Spawn(
         (EFFECT_TYPE)(EFFECT_PARTICLE + enemy->death.particle_color),
@@ -432,6 +434,7 @@ static void M_UpdateHitFlash(ENEMY *const enemy, const int32_t life_before)
         enemy->hit_flash_frames--;
         enemy->vm.color_op = false;
     } else if (life_before > enemy->life) {
+        Sound_Queue(SOUND_DAMAGE);
         enemy->vm.color_op = true;
         enemy->hit_flash_frames = M_HIT_FLASH_FRAMES;
     } else {

@@ -2,6 +2,7 @@
 
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
+#include "th06/sound.h"
 
 #include "core/base/utils.h"
 
@@ -211,10 +212,15 @@ static void M_DrawHud(void)
                  : g_Gui.boss.seconds >= 5  ? 2
                                             : 3];
         AsciiText_SetColor((g_Gui.hud.boss_bar_alpha << 24) | color);
-        AsciiText_AddFormat(
-            (VEC3) { 384, 16, 0 }, "%.2d",
-            g_Gui.boss.seconds > 99 ? 99 : g_Gui.boss.seconds);
+        const int32_t seconds =
+            g_Gui.boss.seconds > 99 ? 99 : g_Gui.boss.seconds;
+        if (seconds < 10
+            && g_Gui.hud.boss_seconds_drawn != g_Gui.boss.seconds) {
+            Sound_Queue(SOUND_TIMEOUT);
+        }
+        AsciiText_AddFormat((VEC3) { 384, 16, 0 }, "%.2d", seconds);
         AsciiText_SetColor(0xffffffffu);
+        g_Gui.hud.boss_seconds_drawn = g_Gui.boss.seconds;
     }
     g_GameManager.camera.viewport.x = 0.0f;
     g_GameManager.camera.viewport.y = 0.0f;

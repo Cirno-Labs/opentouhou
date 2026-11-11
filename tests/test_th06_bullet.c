@@ -17,6 +17,7 @@
 #include "th06/item.h"
 #include "th06/player.h"
 #include "th06/scene.h"
+#include "th06/sound.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
@@ -519,6 +520,33 @@ TEST(a_full_pool_stops_the_pattern)
     Bullet_FirePattern(&shooter);
     CHECK_EQ_INT(g_Rng.generated, expected.generated);
     CHECK_EQ_INT(g_Bullets.next_bullet, 0);
+    M_Teardown();
+}
+
+TEST(the_sound_flag_queues_the_sound_also_from_a_full_pool)
+{
+    M_Setup("sound");
+    BULLET_SHOOTER shooter = M_Shooter(0, 0.0f, 0.0f);
+    shooter.columns = BULLET_COUNT + 1;
+    shooter.flags = BULLET_FLAG_SOUND;
+    shooter.sound = SOUND_SHOT_1;
+    Sound_Reset();
+    Bullet_FirePattern(&shooter);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_SHOT_1);
+    Sound_Reset();
+    Bullet_FirePattern(&shooter);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_SHOT_1);
+    M_Teardown();
+}
+
+TEST(a_shooter_without_the_sound_flag_queues_nothing)
+{
+    M_Setup("no_sound");
+    BULLET_SHOOTER shooter = M_Shooter(0, 0.0f, 0.0f);
+    shooter.sound = SOUND_SHOT_1;
+    Sound_Reset();
+    Bullet_FirePattern(&shooter);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
     M_Teardown();
 }
 

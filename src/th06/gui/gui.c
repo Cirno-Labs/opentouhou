@@ -7,6 +7,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
+#include "th06/sound.h"
 #include "th06/stage.h"
 
 #include "core/base/cp932.h"
@@ -573,6 +574,9 @@ static M_RUN M_RunInstrs(void)
                         g_Stage.data.song_names[instr->value]),
                     LOG_LEVEL_WARNING);
             }
+            if (g_Stage.data.song_paths[instr->value] != nullptr) {
+                Sound_PlayMusic(g_Stage.data.song_paths[instr->value]);
+            }
             break;
         case M_OP_NAMEPLATE: {
             ANM_VM *const nameplate = &g_Gui.msg.nameplates[instr->index];
@@ -592,6 +596,9 @@ static M_RUN M_RunInstrs(void)
             } else {
                 g_GameManager.score.next_extend = -1;
             }
+            break;
+        case M_OP_FADE_OUT_MUSIC:
+            Sound_FadeOutMusic(4.0f);
             break;
         case M_OP_HALT:
             return M_RUN_HALTED;
@@ -883,6 +890,7 @@ void Gui_ShowBombName(const int32_t sprite, const char *const name)
         + 16.0f;
     Result_Log(result, LOG_LEVEL_WARNING);
     Mem_Free(encoded);
+    Sound_Queue(SOUND_CARD);
 }
 
 void Gui_EndBombName(void)
@@ -908,6 +916,7 @@ void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
         + 16.0f;
     Result_Log(result, LOG_LEVEL_WARNING);
     Mem_Free(encoded);
+    Sound_Queue(SOUND_CARD);
 }
 
 void Gui_EndSpellCardName(void)

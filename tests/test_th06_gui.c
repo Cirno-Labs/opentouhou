@@ -13,6 +13,8 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
+#include "th06/sound.h"
+#include "th06/stage.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
@@ -604,6 +606,37 @@ TEST(a_song_instruction_shows_the_song_name)
     M_Teardown();
 }
 
+TEST(a_song_instruction_plays_the_song)
+{
+    static char path[] = "bgm/th06_03.mid";
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 7, 2);
+    M_Op(script, 0, 10);
+    M_Setup("song_music");
+    g_Stage.data.song_paths[2] = path;
+    Sound_Reset();
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_PLAY);
+    CHECK_EQ_STR(g_SoundEvents.music_path, "bgm/th06_03.mid");
+    g_Stage.data.song_paths[2] = nullptr;
+    M_Teardown();
+}
+
+TEST(the_fade_instruction_fades_the_music_out_over_4_seconds)
+{
+    M_SCRIPT *const script = M_Script();
+    M_Op(script, 0, 12);
+    M_Op(script, 0, 10);
+    M_Setup("fade_music");
+    Sound_Reset();
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK(g_SoundEvents.fade_out);
+    CHECK(g_SoundEvents.fade_seconds == 4.0f);
+    M_Teardown();
+}
+
 TEST(a_song_out_of_range_fails_the_add)
 {
     M_SCRIPT *const script = M_Script();
@@ -889,6 +922,26 @@ TEST(drawing_places_the_boss_health_bar)
     M_Teardown();
 }
 
+TEST(the_boss_timer_queues_its_sound_when_it_changes_below_10)
+{
+    M_Setup("timer_sound");
+    g_Gui.boss.present = true;
+    g_Gui.boss.seconds = 9;
+    Sound_Reset();
+    Chain_RunDraw(&g_Chain);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_TIMEOUT);
+    Sound_Reset();
+    Chain_RunDraw(&g_Chain);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    g_Gui.boss.seconds = 10;
+    Chain_RunDraw(&g_Chain);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    g_Gui.boss.seconds = 8;
+    Chain_RunDraw(&g_Chain);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_TIMEOUT);
+    M_Teardown();
+}
+
 TEST(drawing_leaves_the_frame_sprites_where_they_were_drawn_last)
 {
     M_Setup("draw_frame");
@@ -950,6 +1003,18 @@ TEST(the_names_show_their_portraits)
     CHECK_EQ_STR(g_Gui.banners.spell_text, "name");
     Gui_EndSpellCardName();
     CHECK_EQ_INT(g_Gui.banners.spell_name.pending_interrupt, 1);
+    M_Teardown();
+}
+
+TEST(the_names_queue_the_card_sound)
+{
+    M_Setup("names_sound");
+    Sound_Reset();
+    Gui_ShowBombName(0x4a1, "name");
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_CARD);
+    Sound_Reset();
+    Gui_ShowSpellCardName(1, "name");
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_CARD);
     M_Teardown();
 }
 

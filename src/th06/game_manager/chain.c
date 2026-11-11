@@ -10,6 +10,7 @@
 #include "th06/player.h"
 #include "th06/scene.h"
 #include "th06/screen_effect.h"
+#include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
@@ -165,6 +166,9 @@ static RESULT M_Added(void *const arg)
     if (!gm->mode.in_replay) {
         Result_Ignore(Replay_Register(REPLAY_RECORD, "replay/th6_00.rpy"));
     }
+    if (!gm->mode.in_demo && g_Stage.data.song_paths[0] != nullptr) {
+        Sound_PlayMusic(g_Stage.data.song_paths[0]);
+    }
     gm->mode.in_continue_menu = false;
     gm->mode.playing = true;
     gm->mode.frozen = false;
@@ -180,6 +184,9 @@ static RESULT M_Added(void *const arg)
 static void M_Deleted(void *const arg)
 {
     GAME_MANAGER *const gm = arg;
+    if (!gm->mode.in_demo) {
+        Sound_StopMusic();
+    }
     Stage_Remove();
     Bullet_Remove();
     Player_Remove();
@@ -255,6 +262,7 @@ static CHAIN_STATUS M_Calc(void *const arg)
             && m_ExtendScores[gm->score.next_extend] <= gm->score.shown) {
             if (gm->player.lives < 8) {
                 gm->player.lives++;
+                Sound_Queue(SOUND_EXTEND);
             }
             gm->score.next_extend++;
             GameManager_AddRank(200);

@@ -18,6 +18,7 @@
 #include "th06/gui.h"
 #include "th06/item.h"
 #include "th06/scene.h"
+#include "th06/sound.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
@@ -528,6 +529,18 @@ TEST(the_shot_button_fires_a_burst)
     M_Teardown();
 }
 
+TEST(a_shot_queues_the_sound_of_its_table_entry_when_it_fires)
+{
+    M_SetupAlive("shot_sound", 0, 0);
+    Sound_Reset();
+    M_Shoot();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_PLAYER_SHOT);
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    M_Teardown();
+}
+
 TEST(a_burst_lasts_30_frames)
 {
     M_SetupAlive("burst", 0, 0);
@@ -913,6 +926,15 @@ TEST(a_bullet_on_the_hitbox_kills_the_player)
     M_Teardown();
 }
 
+TEST(a_death_queues_the_death_sound)
+{
+    M_SetupAlive("die_sound", 0, 0);
+    Sound_Reset();
+    CHECK(Player_CheckHit(g_Player.pos, m_Small) == PLAYER_CONTACT_BOX);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_PLAYER_DEATH);
+    M_Teardown();
+}
+
 TEST(a_bullet_past_the_hitbox_misses)
 {
     M_SetupAlive("miss_player", 0, 0);
@@ -965,6 +987,15 @@ TEST(a_graze_reaches_20_past_the_bullet)
         Player_CheckGraze(M_At(x - 0.5f, M_START_Y), m_Small)
         == PLAYER_CONTACT_NONE);
     CHECK_EQ_INT(g_Player.state.value, PLAYER_ALIVE);
+    M_Teardown();
+}
+
+TEST(a_graze_queues_the_graze_sound)
+{
+    M_SetupAlive("graze_sound", 0, 0);
+    Sound_Reset();
+    CHECK(Player_CheckGraze(g_Player.pos, m_Small) == PLAYER_CONTACT_BOX);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_GRAZE);
     M_Teardown();
 }
 

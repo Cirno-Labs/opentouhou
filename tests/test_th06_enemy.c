@@ -20,6 +20,7 @@
 #include "th06/gui.h"
 #include "th06/item.h"
 #include "th06/player.h"
+#include "th06/sound.h"
 #include "th06/stage.h"
 
 #include "core/base/memory.h"
@@ -1047,7 +1048,38 @@ TEST(a_hit_flashes_the_sprite_for_four_frames)
     M_End();
 }
 
+TEST(a_hit_queues_the_damage_sound_as_the_flash_starts)
+{
+    M_Begin("damage_sound");
+    M_INSTR(0, M_OP_SET_LIFE, 1000);
+    M_Load();
+    M_Spawn();
+    m_Damage = 1;
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_DAMAGE);
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    M_End();
+}
+
 // Death
+
+TEST(a_death_queues_the_sound_of_the_slot_parity_then_the_hit)
+{
+    M_Begin("death_sound");
+    M_Load();
+    Enemy_Spawn(0, m_Pos, -1, -2, 500);
+    Enemy_Spawn(0, m_Pos, -1, -2, 500);
+    m_Damage = 5;
+    Sound_Reset();
+    M_Frame();
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_ENEMY_DEATH_0);
+    CHECK_EQ_INT(g_SoundEvents.queue[1], SOUND_DAMAGE);
+    CHECK_EQ_INT(g_SoundEvents.queue[2], SOUND_ENEMY_DEATH_1);
+    M_End();
+}
 
 TEST(death_remove_scores_frees_and_spawns_the_effects)
 {

@@ -12,6 +12,7 @@
 #include "th06/player.h"
 #include "th06/scene.h"
 #include "th06/screen_effect.h"
+#include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
@@ -21,6 +22,9 @@
 CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
+STAGE g_Stage;
+
+static char m_SongPath[] = "bgm/th06_02.mid";
 
 static SCENE m_Scene;
 static char m_Events[128];
@@ -187,6 +191,8 @@ static void M_Setup(void)
     m_FadeFrames = 0;
     m_FadeColor = 0xffffffff;
     m_AfterCalls = 0;
+    g_Stage.data.song_paths[0] = m_SongPath;
+    Sound_Reset();
 }
 
 static void M_Start(void)
@@ -380,6 +386,41 @@ TEST(score_counts_up_in_tens_and_extends_at_most_once_per_calc)
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(g_GameManager.score.next_extend, 1);
     CHECK_EQ_INT(g_GameManager.run.stage_frames, 2);
+}
+
+TEST(extend_queues_its_sound_only_below_eight_lives)
+{
+    M_Setup();
+    M_Start();
+    g_GameManager.score.value = 20000010;
+    g_GameManager.score.shown = 20000000;
+    g_GameManager.player.lives = 8;
+    Chain_RunCalc(&g_Chain);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
+    g_GameManager.score.value = 40000010;
+    g_GameManager.score.shown = 40000000;
+    g_GameManager.player.lives = 2;
+    Chain_RunCalc(&g_Chain);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_EXTEND);
+}
+
+TEST(stage_music_plays_on_add_and_stops_on_removal)
+{
+    M_Setup();
+    M_Start();
+    CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_PLAY);
+    CHECK_EQ_STR(g_SoundEvents.music_path, "bgm/th06_02.mid");
+    GameManager_Remove();
+    CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_STOP);
+}
+
+TEST(demo_leaves_the_music_alone)
+{
+    M_Setup();
+    g_GameManager.mode.in_demo = true;
+    M_Start();
+    GameManager_Remove();
+    CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_KEEP);
 }
 
 TEST(score_clamps_and_does_not_fall_below_the_shown_score)
