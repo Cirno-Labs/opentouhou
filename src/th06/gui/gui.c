@@ -17,10 +17,10 @@
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 #include "core/json.h"
-#include "core/patch.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -299,7 +299,7 @@ static void M_FreeMsg(void)
 static void M_SetText(M_INSTR *const instr, const char *const text)
 {
     Mem_Free(instr->text);
-    instr->text = Patch_PlainText(text);
+    instr->text = Str_Dup(text);
 }
 
 // Adds the lines of the box that its instructions did not take, after the
@@ -323,7 +323,7 @@ static void M_EndBox(M_PATCH_STATE *const state)
             }
             M_INSTR instr = state->out.items[state->last_line];
             instr.index = (int16_t)state->line;
-            instr.text = Patch_PlainText(text);
+            instr.text = Str_Dup(text);
             state->last_line++;
             Array_Insert(&state->out, state->last_line, instr);
         }
@@ -1050,6 +1050,24 @@ bool Gui_IsLoadingShown(void)
     return g_Gui.loading.sprite >= 0 && g_Gui.loading.stopped;
 }
 
+// Returns the width of the bar under a banner name: the name as a row of
+// height 15 draws it, and 16 pixels more. With the bundled font, this is
+// the original's 7.5 pixels for each CP932 byte. With base_tsa, the name
+// takes 4 pixels more, up to the texture width of its sprite.
+static float M_BannerWidth(const ANM_VM *const vm, const char *const name)
+{
+    float width;
+    Result_Log(
+        Anm_MeasureText(name, M_BANNER_FONT_SIZE, &width), LOG_LEVEL_WARNING);
+    if (Translation_HasBaseTsa() && vm->sprite_data != nullptr) {
+        width += 4.0f;
+        if (vm->sprite_data->texture_width < width) {
+            width = vm->sprite_data->texture_width;
+        }
+    }
+    return width + 16.0f;
+}
+
 void Gui_ShowBombName(const int32_t sprite, const char *const name)
 {
     Anm_StartScript(&g_Gui.banners.bomb_portrait, M_BOMB_PORTRAIT_SCRIPT);
@@ -1059,13 +1077,7 @@ void Gui_ShowBombName(const int32_t sprite, const char *const name)
     Result_Log(
         Anm_RenderText(&g_Gui.banners.bomb_name, 0xf0f0ff, 0, "%s", name),
         LOG_LEVEL_WARNING);
-    char *encoded = nullptr;
-    const RESULT result = Cp932_Encode(name, strlen(name), &encoded);
-    g_Gui.banners.bomb_width =
-        (float)(IS_OK(result) ? strlen(encoded) : strlen(name)) * 15.0f / 2.0f
-        + 16.0f;
-    Result_Log(result, LOG_LEVEL_WARNING);
-    Mem_Free(encoded);
+    g_Gui.banners.bomb_width = M_BannerWidth(&g_Gui.banners.bomb_name, name);
     Sound_Queue(SOUND_CARD);
 }
 
@@ -1081,17 +1093,13 @@ void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
         &g_Gui.banners.spell_portrait, sprite + M_SPELL_PORTRAIT_SPRITE);
     Anm_StartScript(&g_Gui.banners.spell_name, M_SPELL_NAME_SCRIPT);
     g_Gui.banners.spell_text = name;
+    ANM_VM *const vm = &g_Gui.banners.spell_name;
     Result_Log(
-        Anm_RenderTextRightAligned(
-            &g_Gui.banners.spell_name, 0xfff0f0, 0, "%s", name),
+        Translation_HasBaseTsa()
+            ? Anm_RenderText(vm, 0xfff0f0, 0, "%s", name)
+            : Anm_RenderTextRightAligned(vm, 0xfff0f0, 0, "%s", name),
         LOG_LEVEL_WARNING);
-    char *encoded = nullptr;
-    const RESULT result = Cp932_Encode(name, strlen(name), &encoded);
-    g_Gui.banners.spell_width =
-        (float)(IS_OK(result) ? strlen(encoded) : strlen(name)) * 15.0f / 2.0f
-        + 16.0f;
-    Result_Log(result, LOG_LEVEL_WARNING);
-    Mem_Free(encoded);
+    g_Gui.banners.spell_width = M_BannerWidth(vm, name);
     Sound_Queue(SOUND_CARD);
 }
 

@@ -3,11 +3,14 @@
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
 #include "th06/sound.h"
+#include "th06/translation.h"
 
 #include "core/base/utils.h"
 
 #include <stdio.h>
 #include <string.h>
+
+#define M_SET_SPRITE_OPCODE 1
 
 static GFX_COLOR M_DrawColor(const uint32_t color)
 {
@@ -41,6 +44,27 @@ static void M_Gradient(
         &(GFX_STATE) { .blend = GFX_BLEND_ALPHA }, nullptr, vertices, 0);
 }
 
+// Returns the width of a dialogue line: the width of the sprite that the
+// script of the first line shows first, which is 256 in the original.
+static float M_LineWidth(void)
+{
+    const ANM_SCRIPT *const script = Anm_GetScript(M_LINE_SCRIPT);
+    for (int32_t i = 0; script != nullptr && i < script->count; i++) {
+        if (script->instrs[i].opcode == M_SET_SPRITE_OPCODE) {
+            ANM_VM vm;
+            Anm_CreateVm(&vm);
+            Anm_SetSprite(
+                &vm,
+                (int32_t)script->instrs[i].args[0] + script->sprite_offset);
+            if (vm.sprite_data != nullptr) {
+                return vm.sprite_data->width;
+            }
+            break;
+        }
+    }
+    return 256.0f;
+}
+
 static void M_DrawMsg(void)
 {
     if (g_Gui.msg.script < 0
@@ -55,16 +79,20 @@ static void M_DrawMsg(void)
     const float height = g_Gui.msg.timer.current < 60
         ? (float)g_Gui.msg.timer.current * 48.0f / 60.0f
         : 48.0f;
-    const float center = (g_GameManager.play_area.width - 256.0f) / 2.0f
+    const float width = M_LineWidth();
+    const float center = (g_GameManager.play_area.width - width) / 2.0f
         + g_GameManager.play_area.x;
     M_Gradient(
-        center - 16.0f, 384.0f, center + 256.0f + 16.0f, 384.0f + height, 0.0f,
+        center - 16.0f, 384.0f, center + width + 16.0f, 384.0f + height, 0.0f,
         0xd0000000u, 0xd0000000u, 0x90000000u, 0x90000000u);
     for (int32_t i = 0; i < GUI_MSG_LINE_COUNT; i++) {
         Anm_DrawUnrotated(&g_Gui.msg.lines[i], &draw);
     }
+    const bool reversed = Translation_HasBaseTsa();
     for (int32_t i = 0; i < GUI_MSG_LINE_COUNT; i++) {
-        Anm_DrawUnrotated(&g_Gui.msg.nameplates[i], &draw);
+        Anm_DrawUnrotated(
+            &g_Gui.msg.nameplates[reversed ? GUI_MSG_LINE_COUNT - 1 - i : i],
+            &draw);
     }
 }
 
@@ -129,6 +157,34 @@ static void M_DrawStageClear(void)
     AsciiText_AddFormat(cursor, "Total     = %8d", g_Gui.stage_clear.total);
 }
 
+// Draws a bomb or spell card name and its bar as base_tsa's executable
+// patches do. The name row is cropped to the bar width less 16 pixels from
+// its left edge. The crop moves by the texture width less half the crop
+// width: to the right for a spell card name, and to the left for a bomb
+// name. The bar ends at the right edge of the crop.
+static void M_DrawPatchedBanner(
+    ANM_VM *const bar, const ANM_VM *const name, const float bar_width,
+    const bool spell, const ANM_DRAW *const draw)
+{
+    if (!name->shown || name->sprite_data == nullptr) {
+        return;
+    }
+    const float width = bar_width - 16.0f;
+    ANM_SPRITE sprite = *name->sprite_data;
+    sprite.x1 = sprite.x0 + width;
+    sprite.width = width;
+    sprite.u1 = sprite.x1 / sprite.texture_width;
+    ANM_VM cropped = *name;
+    cropped.sprite_data = &sprite;
+    const float shift = sprite.texture_width - width * 0.5f;
+    cropped.pos.x = spell ? shift + name->pos.x : name->pos.x - shift;
+    bar->pos = cropped.pos;
+    bar->pos.x = (width - bar_width) * 0.5f + cropped.pos.x;
+    bar->scale_x = bar_width / 14.0f;
+    Anm_DrawUnrotated(bar, draw);
+    Anm_DrawUnrotated(&cropped, draw);
+}
+
 static void M_DrawBanners(void)
 {
     ANM_DRAW world = GameManager_GetDrawContext();
@@ -161,7 +217,14 @@ static void M_DrawBanners(void)
     }
     Anm_DrawUnrotated(&g_Gui.banners.bomb_portrait, &screen);
     Anm_DrawUnrotated(&g_Gui.banners.spell_portrait, &screen);
-    if (g_Gui.banners.bomb_name.shown) {
+    if (Translation_HasBaseTsa()) {
+        M_DrawPatchedBanner(
+            &g_Gui.banners.bomb_bar, &g_Gui.banners.bomb_name,
+            g_Gui.banners.bomb_width, false, &screen);
+        M_DrawPatchedBanner(
+            &g_Gui.banners.spell_bar, &g_Gui.banners.spell_name,
+            g_Gui.banners.spell_width, true, &screen);
+    } else if (g_Gui.banners.bomb_name.shown) {
         g_Gui.banners.bomb_bar.pos = g_Gui.banners.bomb_name.pos;
         g_Gui.banners.bomb_bar.pos.x +=
             g_Gui.banners.bomb_width * 16.0f / 15.0f / 2.0f + -128.0f - 16.0f;
@@ -169,7 +232,7 @@ static void M_DrawBanners(void)
         Anm_DrawUnrotated(&g_Gui.banners.bomb_bar, &screen);
         Anm_DrawUnrotated(&g_Gui.banners.bomb_name, &screen);
     }
-    if (g_Gui.banners.spell_name.shown) {
+    if (!Translation_HasBaseTsa() && g_Gui.banners.spell_name.shown) {
         g_Gui.banners.spell_bar.pos = g_Gui.banners.spell_name.pos;
         g_Gui.banners.spell_bar.pos.x +=
             128.0f - g_Gui.banners.spell_width * 16.0f / 15.0f / 2.0f;

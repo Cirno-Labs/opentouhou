@@ -8,8 +8,9 @@
 // its dialogue and endings: the strings of the executable (stringlocs.js
 // and stringdefs.js, applied to g_Strings), the spell card names
 // (spells.js), the stage titles (stages.js), the song titles (themes.js)
-// and the music room comments (musiccmt.js). Every text is plain: thcrap's
-// markup and translator notes are taken out.
+// and the music room comments (musiccmt.js). The strings of the executable
+// are plain: thcrap's markup and translator notes are taken out. The other
+// texts keep them, for Anm_RenderText to lay out.
 //
 // The translations only change what is drawn. Nothing that the simulation
 // reads or that the score file stores changes, so the spell card records
@@ -29,6 +30,12 @@ const char *Translation_GetFont(void);
 // first, and sets *count to their number. The paths belong to the stack of
 // Translation_Init.
 const char *const *Translation_GetFontFiles(int32_t *count);
+
+// Returns whether nmlgc/base_tsa is in the patch stack. That patch ships a
+// text.anm with a different geometry and patches to the executable that
+// draw by it. th06 then draws its nameplates and its bomb and spell card
+// names as those executable patches do.
+bool Translation_HasBaseTsa(void);
 
 // Loads the translations of patches and applies the string tables to
 // g_Strings. Never fails: a file that is missing or broken leaves the

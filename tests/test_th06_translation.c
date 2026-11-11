@@ -109,7 +109,7 @@ TEST(spell_cards_stages_and_songs_are_translated)
     M_End();
 }
 
-TEST(music_comments_fill_every_row_and_number_the_title)
+TEST(music_comments_fill_every_row_and_keep_markup)
 {
     const char *const files[] = {
         "thpatch/lang/themes.js",
@@ -122,9 +122,9 @@ TEST(music_comments_fill_every_row_and_number_the_title)
     M_Begin("music", files, 6);
     CHECK_EQ_STR(
         Translation_GetMusicComment(0, 0),
-        "No.  1  A Dream More Scarlet than Red");
+        "No. <r$ 1$99>  A Dream More Scarlet than Red");
     CHECK_EQ_STR(Translation_GetMusicComment(0, 1), "The title theme.");
-    CHECK_EQ_STR(Translation_GetMusicComment(0, 2), "centred");
+    CHECK_EQ_STR(Translation_GetMusicComment(0, 2), "<c$centred$x>");
     CHECK_EQ_STR(Translation_GetMusicComment(0, 7), "");
     CHECK(Translation_GetMusicComment(1, 0) == nullptr);
     CHECK(Translation_GetMusicComment(0, 8) == nullptr);
@@ -158,6 +158,7 @@ TEST(the_font_comes_from_the_settings_and_the_patches)
         "{font: 'Aroania'}",
     };
     M_Begin("font", files, 8);
+    CHECK(Translation_HasBaseTsa());
     CHECK_EQ_STR(Translation_GetFont(), "Aroania");
     int32_t count;
     const char *const *const fonts = Translation_GetFontFiles(&count);
@@ -170,6 +171,7 @@ TEST(the_font_comes_from_the_settings_and_the_patches)
 TEST(no_patches_translate_nothing)
 {
     Translation_Init(nullptr);
+    CHECK(!Translation_HasBaseTsa());
     CHECK(Translation_GetFont() == nullptr);
     int32_t count;
     Translation_GetFontFiles(&count);

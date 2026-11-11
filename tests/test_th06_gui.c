@@ -16,9 +16,11 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
+#include "th06/translation.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
+#include "core/math/x87.h"
 #include "core/patch.h"
 #include "core/base/utils.h"
 
@@ -1049,6 +1051,224 @@ TEST(the_names_show_their_portraits)
     M_Teardown();
 }
 
+TEST(the_name_bars_take_the_drawn_width_of_the_names)
+{
+    M_Setup("names_width");
+    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    Gui_ShowBombName(0x4a1, "霊符「夢想封印」");
+    CHECK(g_Gui.banners.bomb_width == 16.0f * 15.0f / 2.0f + 16.0f);
+    Gui_ShowSpellCardName(1, "<b$Moon$Sign> Ray");
+    CHECK(g_Gui.banners.spell_width == 8.0f * 15.0f / 2.0f + 16.0f);
+    Anm_ShutdownText();
+    M_Teardown();
+}
+
+// Puts nmlgc/base_tsa in the patch stack of the translations.
+static void M_UseBaseTsa(void)
+{
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &m_Patches),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    Translation_Init(m_Patches);
+    CHECK(Translation_HasBaseTsa());
+}
+
+static void M_ShowVm(
+    ANM_VM *const vm, const ANM_SPRITE *const sprite, const float x,
+    const float y)
+{
+    Anm_InitVm(vm);
+    vm->sprite_data = sprite;
+    vm->shown = true;
+    vm->pos = (VEC3) { x, y, 0.0f };
+}
+
+// Draws one tick of the interface and returns the recorded quad of the
+// texture in slot, or nullptr when none is drawn.
+static const GFX_RECORDED_QUAD *M_DrawnQuad(const int32_t slot)
+{
+    const GFX_TEXTURE *const texture = Anm_GetTexture(slot);
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        if (GfxRecorder_Quad(i)->texture == texture) {
+            return GfxRecorder_Quad(i);
+        }
+    }
+    return nullptr;
+}
+
+static void M_DrawTick(void)
+{
+    g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0, 0.5f };
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+}
+
+TEST(the_spell_card_name_ends_at_the_right_of_its_row)
+{
+    M_Setup("banner_retail");
+    CHECK(Result_Ignore(Anm_CreateTexture(100, 256, 256, ANM_TEXTURE_RGBA8)));
+    CHECK(Result_Ignore(Anm_CreateTexture(101, 64, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE name = {
+        .slot = 100,
+        .x1 = 256,
+        .y1 = 16,
+        .texture_width = 256,
+        .texture_height = 256,
+        .u1 = 1.0f,
+        .v1 = 1.0f / 16.0f,
+        .width = 256,
+        .height = 16,
+    };
+    const ANM_SPRITE bar = {
+        .slot = 101,
+        .x1 = 14,
+        .y1 = 16,
+        .texture_width = 64,
+        .texture_height = 64,
+        .u1 = 14.0f / 64.0f,
+        .v1 = 0.25f,
+        .width = 14,
+        .height = 16,
+    };
+    M_ShowVm(&g_Gui.banners.spell_name, &name, 256.5f, 40.0f);
+    M_ShowVm(&g_Gui.banners.spell_bar, &bar, 0.0f, 0.0f);
+    const float width = 76.0f;
+    g_Gui.banners.spell_width = width;
+    GfxRecorder_Start();
+    M_DrawTick();
+    const float bar_x = 256.5f + (128.0f - width * 16.0f / 15.0f / 2.0f);
+    const float half = 14.0f * (width / 14.0f) / 2.0f;
+    const GFX_RECORDED_QUAD *const bar_quad = M_DrawnQuad(101);
+    CHECK(bar_quad != nullptr);
+    CHECK(bar_quad->vertices[0].position.x == X87_Rint(bar_x - half));
+    CHECK(bar_quad->vertices[1].position.x == X87_Rint(half + bar_x));
+    const GFX_RECORDED_QUAD *const name_quad = M_DrawnQuad(100);
+    CHECK(name_quad != nullptr);
+    CHECK(name_quad->vertices[0].position.x == X87_Rint(256.5f - 128.0f));
+    CHECK(name_quad->vertices[1].position.x == X87_Rint(128.0f + 256.5f));
+    CHECK(name_quad->vertices[1].uv.x == 1.0f);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(base_tsa_crops_the_names_and_puts_them_a_texture_width_away)
+{
+    M_Setup("banner_base_tsa");
+    M_UseBaseTsa();
+    CHECK(Result_Ignore(Anm_CreateTexture(100, 512, 256, ANM_TEXTURE_RGBA8)));
+    CHECK(Result_Ignore(Anm_CreateTexture(101, 64, 64, ANM_TEXTURE_RGBA8)));
+    CHECK(Result_Ignore(Anm_CreateTexture(102, 512, 256, ANM_TEXTURE_RGBA8)));
+    CHECK(Result_Ignore(Anm_CreateTexture(103, 64, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE spell = {
+        .slot = 100,
+        .x1 = 512,
+        .y1 = 16,
+        .texture_width = 512,
+        .texture_height = 256,
+        .u1 = 1.0f,
+        .v1 = 1.0f / 16.0f,
+        .width = 512,
+        .height = 16,
+    };
+    ANM_SPRITE bomb = spell;
+    bomb.slot = 102;
+    const ANM_SPRITE bar = {
+        .slot = 101,
+        .x1 = 14,
+        .y1 = 16,
+        .texture_width = 64,
+        .texture_height = 64,
+        .u1 = 14.0f / 64.0f,
+        .v1 = 0.25f,
+        .width = 14,
+        .height = 16,
+    };
+    ANM_SPRITE bomb_bar = bar;
+    bomb_bar.slot = 103;
+    M_ShowVm(&g_Gui.banners.spell_name, &spell, -128.0f, 40.0f);
+    M_ShowVm(&g_Gui.banners.spell_bar, &bar, 0.0f, 0.0f);
+    M_ShowVm(&g_Gui.banners.bomb_name, &bomb, 576.0f, 440.0f);
+    M_ShowVm(&g_Gui.banners.bomb_bar, &bomb_bar, 0.0f, 0.0f);
+    g_Gui.banners.spell_width = 116.0f;
+    g_Gui.banners.bomb_width = 116.0f;
+    GfxRecorder_Start();
+    M_DrawTick();
+    const GFX_RECORDED_QUAD *quad = M_DrawnQuad(100);
+    CHECK(quad != nullptr);
+    CHECK(quad->vertices[0].position.x == 284.0f);
+    CHECK(quad->vertices[1].position.x == -128.0f + 512.0f);
+    CHECK(quad->vertices[1].uv.x == 100.0f / 512.0f);
+    quad = M_DrawnQuad(101);
+    CHECK(quad != nullptr);
+    CHECK(quad->vertices[0].position.x == 268.0f);
+    CHECK(quad->vertices[1].position.x == 384.0f);
+    quad = M_DrawnQuad(102);
+    CHECK(quad != nullptr);
+    CHECK(quad->vertices[0].position.x == 576.0f - 512.0f);
+    CHECK(quad->vertices[1].position.x == 164.0f);
+    quad = M_DrawnQuad(103);
+    CHECK(quad != nullptr);
+    CHECK(quad->vertices[0].position.x == 48.0f);
+    CHECK(quad->vertices[1].position.x == 164.0f);
+    CHECK(g_Gui.banners.spell_name.pos.x == -128.0f);
+    CHECK(g_Gui.banners.bomb_name.pos.x == 576.0f);
+    GfxRecorder_Stop();
+    Translation_Shutdown();
+    M_Teardown();
+}
+
+// Returns whether the first nameplate draws before the second.
+static bool M_FirstNameplateDrawsFirst(void)
+{
+    CHECK(Result_Ignore(Anm_CreateTexture(100, 64, 64, ANM_TEXTURE_RGBA8)));
+    CHECK(Result_Ignore(Anm_CreateTexture(101, 64, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE first = {
+        .slot = 100,
+        .x1 = 16,
+        .y1 = 16,
+        .texture_width = 64,
+        .texture_height = 64,
+        .u1 = 0.25f,
+        .v1 = 0.25f,
+        .width = 16,
+        .height = 16,
+    };
+    ANM_SPRITE second = first;
+    second.slot = 101;
+    g_Gui.msg.script = 0;
+    Timer_Set(&g_Gui.msg.timer, 60);
+    M_ShowVm(&g_Gui.msg.nameplates[0], &first, 100.0f, 100.0f);
+    M_ShowVm(&g_Gui.msg.nameplates[1], &second, 100.0f, 120.0f);
+    GfxRecorder_Start();
+    M_DrawTick();
+    const GFX_RECORDED_QUAD *const a = M_DrawnQuad(100);
+    const GFX_RECORDED_QUAD *const b = M_DrawnQuad(101);
+    CHECK(a != nullptr && b != nullptr);
+    const bool result = a < b;
+    GfxRecorder_Stop();
+    return result;
+}
+
+TEST(nameplates_draw_in_order)
+{
+    M_Setup("nameplates_order");
+    CHECK(M_FirstNameplateDrawsFirst());
+    M_Teardown();
+}
+
+TEST(base_tsa_draws_the_nameplates_in_reverse)
+{
+    M_Setup("nameplates_base_tsa");
+    M_UseBaseTsa();
+    CHECK(!M_FirstNameplateDrawsFirst());
+    Translation_Shutdown();
+    M_Teardown();
+}
+
 TEST(the_names_queue_the_card_sound)
 {
     M_Setup("names_sound");
@@ -1287,14 +1507,17 @@ TEST(a_new_time_code_counts_its_boxes_from_0)
     M_Teardown();
 }
 
-TEST(jdiff_lines_lose_markup_and_notes)
+TEST(jdiff_lines_keep_markup_and_notes)
 {
     M_WriteBox(M_KOUMA, nullptr);
     M_SetupPatched(
         "jdiff_plain", "{'0': {'10_0': ['<c$Rumia$x> says\\u0014a note']}}");
     Gui_StartMsg(0);
     M_Run(11);
-    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "Rumia says");
+    CHECK_EQ_STR(
+        g_Gui.msg.line_texts[0],
+        "<c$Rumia$x> says\x14"
+        "a note");
     M_Teardown();
 }
 

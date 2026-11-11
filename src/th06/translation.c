@@ -19,6 +19,7 @@
 #define M_ARENA_CAPACITY (64 * 1024 * 1024)
 #define M_NUMBERED_TITLE "Music Room Numbered Title"
 #define M_KEY_SIZE 16
+#define M_BASE_TSA_PATCH "nmlgc/base_tsa"
 #define M_DEFAULT(id_, address_, text_) [STRING_##id_] = text_,
 #define M_ADDRESS(id_, address_, text_) [STRING_##id_] = address_,
 
@@ -28,6 +29,7 @@ static char *m_Themes[M_TRACK_COUNT + 1];
 static char *m_Comments[TRANSLATION_TUNE_COUNT][TRANSLATION_COMMENT_ROWS];
 static bool m_HasComment[TRANSLATION_TUNE_COUNT];
 static char *m_Font;
+static bool m_HasBaseTsa;
 static const char **m_FontFiles;
 static int32_t m_FontFileCount;
 static char *m_Strings[STRING_COUNT];
@@ -36,9 +38,9 @@ static const uint32_t m_Addresses[STRING_COUNT] = { TH06_STRINGS(M_ADDRESS) };
 // Holds the format of a numbered title when patches give none.
 static const char m_DefaultNumberedTitle[] = "%d %s";
 
-static char *M_Plain(const char *const text)
+static char *M_Copy(const char *const text)
 {
-    return text != nullptr ? Patch_PlainText(text) : nullptr;
+    return text != nullptr ? Str_Dup(text) : nullptr;
 }
 
 // Returns the text of key in object: a string, or the first line of an
@@ -89,9 +91,7 @@ static void M_LoadComments(
 {
     const char *const format =
         Patch_Translate(strings, M_NUMBERED_TITLE, m_DefaultNumberedTitle);
-    char *const plain_format = Patch_PlainText(format);
-    const bool numbered = format != m_DefaultNumberedTitle
-        && Patch_SameConversions(plain_format, m_DefaultNumberedTitle);
+    const bool numbered = format != m_DefaultNumberedTitle;
     for (int32_t tune = 0; tune < TRANSLATION_TUNE_COUNT; tune++) {
         char key[M_KEY_SIZE];
         snprintf(key, sizeof(key), "%d", tune + 1);
@@ -105,16 +105,14 @@ static void M_LoadComments(
         for (int32_t row = 0; row < TRANSLATION_COMMENT_ROWS; row++) {
             const char *const text = Json_GetString(Json_At(rows, row), "");
             if (strcmp(text, "@") != 0) {
-                m_Comments[tune][row] = Patch_PlainText(text);
+                m_Comments[tune][row] = Str_Dup(text);
             } else if (numbered) {
-                m_Comments[tune][row] =
-                    Str_Format(plain_format, tune + 1, title);
+                m_Comments[tune][row] = Str_Format(format, tune + 1, title);
             } else {
                 m_Comments[tune][row] = Str_Dup(title);
             }
         }
     }
-    Mem_Free(plain_format);
 }
 
 static void M_LoadFont(
@@ -147,23 +145,28 @@ void Translation_Init(const PATCH_STACK *const patches)
     PATCH_STRINGS *const strings = Patch_LoadStrings(patches, M_IMAGE_BASE);
     M_TranslateStrings(strings);
     M_LoadFont(patches, allocator);
+    for (int32_t i = 0; i < Patch_GetCount(patches); i++) {
+        if (strcmp(Patch_Get(patches, i)->id, M_BASE_TSA_PATCH) == 0) {
+            m_HasBaseTsa = true;
+        }
+    }
 
     const JSON_VALUE *const spells =
         Patch_LoadJson(patches, PATCH_GAME_DIR, "spells.js", allocator);
     for (int32_t i = 0; i < TRANSLATION_SPELL_COUNT; i++) {
-        m_SpellNames[i] = M_Plain(M_GetTextAt(spells, i));
+        m_SpellNames[i] = M_Copy(M_GetTextAt(spells, i));
     }
     const JSON_VALUE *const stages =
         Patch_LoadJson(patches, PATCH_GAME_DIR, "stages.js", allocator);
     for (int32_t i = 1; i <= M_STAGE_COUNT; i++) {
-        m_StageNames[i] = M_Plain(M_GetTextAt(stages, i));
+        m_StageNames[i] = M_Copy(M_GetTextAt(stages, i));
     }
     const JSON_VALUE *const themes =
         Patch_LoadJson(patches, PATCH_ROOT, "themes.js", allocator);
     for (int32_t i = 1; i <= M_TRACK_COUNT; i++) {
         char key[M_KEY_SIZE];
         snprintf(key, sizeof(key), "th06_%02d", i);
-        m_Themes[i] = M_Plain(Json_GetString(Json_Get(themes, key), nullptr));
+        m_Themes[i] = M_Copy(Json_GetString(Json_Get(themes, key), nullptr));
     }
     M_LoadComments(
         Patch_LoadJson(patches, PATCH_GAME_DIR, "musiccmt.js", allocator),
@@ -177,6 +180,7 @@ void Translation_Shutdown(void)
 {
     Mem_Free(m_Font);
     m_Font = nullptr;
+    m_HasBaseTsa = false;
     Mem_Free(m_FontFiles);
     m_FontFiles = nullptr;
     m_FontFileCount = 0;
@@ -266,4 +270,9 @@ const char *const *Translation_GetFontFiles(int32_t *const count)
 {
     *count = m_FontFileCount;
     return m_FontFiles;
+}
+
+bool Translation_HasBaseTsa(void)
+{
+    return m_HasBaseTsa;
 }
