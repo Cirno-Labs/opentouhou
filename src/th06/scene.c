@@ -4,8 +4,8 @@
 #include "th06/game_manager.h"
 #include "th06/screens/main.h"
 #include "th06/screens/music.h"
-#include "th06/stubs.h"
 #include "th06/replay.h"
+#include "th06/screens/ending.h"
 #include "th06/screens/result.h"
 
 static SCENE m_Current;

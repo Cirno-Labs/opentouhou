@@ -3,7 +3,7 @@
 #include "th06/screens/result.h"
 #include "th06/screens/main.h"
 #include "th06/screens/music.h"
-#include "th06/stubs.h"
+#include "th06/screens/ending.h"
 #include "th06/replay.h"
 
 SCENE_STUB_CALLS g_SceneStubCalls;

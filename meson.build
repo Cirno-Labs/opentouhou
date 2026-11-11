@@ -106,7 +106,6 @@ executable(
   'th06replay',
   'replay/th06/runner/main.c',
   runner_entry,
-  'src/th06/stubs.c',
   c_args: [layer_include['th06']] + core_include + stg_include,
   implicit_include_directories: false,
   dependencies: [sdl3, zlib, cc_libm],
