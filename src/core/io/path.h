@@ -24,3 +24,9 @@ const char *Path_GetExeDir(void);
 // ~/.local/share) on Linux, %APPDATA% on Windows and ~/Library/Application
 // Support on macOS. Mem_Free releases *out. On failure, *out is nullptr.
 RESULT Path_GetUserDir(const char *game_id, char **out);
+
+// Returns the folder that holds the thcrap patches of every game, and
+// creates it if it does not exist. It is "opentouhou/patches" in the same
+// platform directory as the user directories, so that it sits beside them.
+// Mem_Free releases *out. On failure, *out is nullptr.
+RESULT Path_GetPatchesDir(char **out);

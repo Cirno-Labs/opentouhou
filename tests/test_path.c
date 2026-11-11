@@ -66,4 +66,19 @@ TEST(the_user_directory_is_made_in_the_data_home)
     Mem_Free(expected);
     Mem_Free(directory);
 }
+
+TEST(the_patches_folder_is_beside_the_user_directories)
+{
+    const char *const data_home = getenv("XDG_DATA_HOME");
+    char *directory;
+    CHECK(Result_Log(Path_GetPatchesDir(&directory), LOG_LEVEL_ERROR));
+    char *const expected = Str_Format("%s/opentouhou/patches/", data_home);
+    CHECK_EQ_STR(directory, expected);
+    SDL_PathInfo info;
+    CHECK(
+        SDL_GetPathInfo(directory, &info)
+        && info.type == SDL_PATHTYPE_DIRECTORY);
+    Mem_Free(expected);
+    Mem_Free(directory);
+}
 #endif
