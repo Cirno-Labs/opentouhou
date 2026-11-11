@@ -348,6 +348,29 @@ static int32_t M_NextReady(const M_CANDIDATES *const candidates)
     return -1;
 }
 
+static void M_ListFonts(
+    PATCH_STACK *const stack, const M_CANDIDATE *const candidate,
+    PATCH_INFO *const info)
+{
+    const JSON_VALUE *const fonts = Json_Get(candidate->patch_js, "fonts");
+    if (fonts == nullptr || fonts->type != JSON_OBJECT) {
+        return;
+    }
+    const char **const paths = Arena_AllocArr(
+        &stack->arena,
+        (size_t)(fonts->object.count > 0 ? fonts->object.count : 1),
+        sizeof(char *));
+    const ALLOCATOR *const allocator = Arena_Allocator(&stack->arena);
+    for (int32_t i = 0; i < fonts->object.count; i++) {
+        const JSON_MEMBER *const member = &fonts->object.members[i];
+        if (member->value->type == JSON_BOOL && member->value->boolean) {
+            paths[info->font_count++] =
+                Path_Join(allocator, info->dir, member->key);
+        }
+    }
+    info->fonts = paths;
+}
+
 static void M_AddPatch(PATCH_STACK *const stack, M_CANDIDATE *const candidate)
 {
     PATCH *const patch = &stack->patches[stack->count++];
@@ -361,6 +384,7 @@ static void M_AddPatch(PATCH_STACK *const stack, M_CANDIDATE *const candidate)
     };
     candidate->id = nullptr;
     candidate->dir = nullptr;
+    M_ListFonts(stack, candidate, &patch->info);
     HashMap_Init(&patch->root, &g_HeapAllocator);
     HashMap_Init(&patch->game, &g_HeapAllocator);
     M_IndexDir(&patch->root, patch->info.dir, "", stack->game.build, false, 0);

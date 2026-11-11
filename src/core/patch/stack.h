@@ -80,6 +80,10 @@ typedef struct {
     const char *title;
     // The directory of the patch, ending with '/'.
     const char *dir;
+    // The paths on disk of the font files of the patch: the members of the
+    // patch.js object "fonts" whose value is true, each joined to dir.
+    const char *const *fonts;
+    int32_t font_count;
 } PATCH_INFO;
 
 // Opens the patches in dir that apply to the game game_id, which is the
