@@ -24,8 +24,14 @@ RESULT Anm_RenderTextToTextureIndex(
     int32_t texture, int32_t x, int32_t y, int32_t width, int32_t font_height,
     uint32_t color, uint32_t shadow, const char *text);
 
-// Formats text into the VM's texture and sets shown. Computes alignment
-// from the CP932 byte count, so Japanese characters count as two bytes.
+// Measures text in thcrap's layout markup as a row of font_height draws it,
+// in texture pixels. Gives 0 while text is uninitialized.
+RESULT Anm_MeasureText(const char *text, int32_t font_height, float *width);
+
+// Formats text into the row of the VM's sprite, as wide as the sprite, and
+// sets shown. Right and centered text align by the measured width scaled
+// by (h + 1) / h for the font height h. With the bundled font, this is the
+// original's rule of h + 1 pixels for each CP932 byte.
 PRINTF_FORMAT(4, 5)
 RESULT Anm_RenderText(
     ANM_VM *vm, uint32_t color, uint32_t shadow, const char *format, ...);

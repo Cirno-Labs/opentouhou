@@ -852,12 +852,17 @@ static int32_t M_FirstTextPixel(const IMAGE *const image, const int32_t row)
     return -1;
 }
 
-TEST(text_rows_align_cp932_and_preserve_other_rows)
+TEST(text_rows_align_by_measured_width_and_preserve_other_rows)
 {
     CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
-        .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
+        .slot = 100,
+        .texture_width = 128,
+        .texture_height = 64,
+        .y0 = 16,
+        .x1 = 128,
+        .width = 128,
     };
     ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
     CHECK(IS_OK(Anm_RenderText(&vm, 0x001122ee, UINT32_MAX, "%s", "東")));
@@ -892,7 +897,12 @@ TEST(text_rows_lay_out_markup)
     CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
-        .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
+        .slot = 100,
+        .texture_width = 128,
+        .texture_height = 64,
+        .y0 = 16,
+        .x1 = 128,
+        .width = 128,
     };
     ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
     CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
@@ -907,6 +917,48 @@ TEST(text_rows_lay_out_markup)
     Anm_ShutdownText();
 }
 
+TEST(text_aligns_by_the_drawn_width_and_fills_the_sprite_row)
+{
+    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    CHECK(IS_OK(Anm_CreateTexture(100, 256, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100,
+        .texture_width = 256,
+        .texture_height = 64,
+        .y0 = 16,
+        .x1 = 192,
+        .width = 192,
+    };
+    // Left text from x0 starts where the original puts aligned text.
+    ANM_SPRITE moved = sprite;
+    ANM_VM vm = { .sprite_data = &moved, .font_width = 15 };
+    moved.x0 = 192.0f - 2 * 16 / 2;
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "Ab")));
+    const int32_t right = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    moved.x0 = 192.0f / 2 - 2 * 16 / 4;
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "Ab")));
+    const int32_t center = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    vm.sprite_data = &sprite;
+    CHECK(IS_OK(
+        Anm_RenderTextRightAligned(&vm, 0xffffff, UINT32_MAX, "%s", "Ab")));
+    const int32_t plain = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    CHECK_EQ_INT(plain, right);
+    CHECK(IS_OK(Anm_RenderTextCentered(&vm, 0xffffff, UINT32_MAX, "%s", "Ab")));
+    CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), center);
+    CHECK(IS_OK(
+        Anm_RenderTextRightAligned(&vm, 0xffffff, UINT32_MAX, "%s", "<l$Ab>")));
+    CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), plain);
+    float width;
+    CHECK(IS_OK(Anm_MeasureText("Ab", 15, &width)));
+    CHECK(width == 15.0f);
+    CHECK(IS_OK(Anm_MeasureText("<c$東$東東>", 15, &width)));
+    CHECK(width == 30.0f);
+    Anm_ReleaseTexture(100);
+    Anm_ShutdownText();
+    CHECK(IS_OK(Anm_MeasureText("Ab", 15, &width)));
+    CHECK(width == 0.0f);
+}
+
 TEST(text_takes_the_patch_font_of_the_family)
 {
     const char *const paths[] = { SDL_getenv("TEST_FONT") };
@@ -915,7 +967,12 @@ TEST(text_takes_the_patch_font_of_the_family)
     CHECK(IS_OK(Anm_InitText("Aroania", paths, 1)));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
-        .slot = 100, .texture_width = 128, .texture_height = 64, .y0 = 16
+        .slot = 100,
+        .texture_width = 128,
+        .texture_height = 64,
+        .y0 = 16,
+        .x1 = 128,
+        .width = 128,
     };
     ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
     CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
