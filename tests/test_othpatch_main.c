@@ -1,8 +1,13 @@
+#include "othpatch/install.h"
 #include "othpatch/main.h"
+#include "othpatch/sha256.h"
 
 #include "othpatch_server.h"
 #include "test.h"
 #include "test_dir.h"
+#include "zip_builder.h"
+
+#include <sys/stat.h>
 
 typedef struct {
     char *dir;
@@ -10,6 +15,10 @@ typedef struct {
     char *patches;
     char *program;
     char *repo;
+    char *releases;
+    // Holds the answer to the question of othpatch, or nullptr for a run
+    // without a terminal.
+    const char *answer;
     char *output;
 } M_CASE;
 
@@ -24,6 +33,7 @@ static M_CASE M_PrepareBeside(
     test.patches = TestDir_Join(test.dir, "patches");
     test.program = TestDir_Join(test.dir, "program");
     test.repo = Str_Format("file://%s/thpatch/repo.js", test.server);
+    test.releases = Str_Format("file://%s/releases.json", test.server);
     PatchBuilder_Write(test.program, "othpatch", "");
     if (beside_path != nullptr) {
         PatchBuilder_Write(test.program, beside_path, "");
@@ -66,17 +76,26 @@ static void M_AddNetwork(const M_CASE *const test)
 // and keeps what it writes in test->output.
 static int M_Run(M_CASE *const test, const int count, ...)
 {
-    char *argv[16] = { "othpatch", "--dir", test->patches, "--repo",
-                       test->repo };
-    int argc = 5;
+    char *argv[16] = { "othpatch", "--dir",      test->patches, "--repo",
+                       test->repo, "--releases", test->releases };
+    int argc = 7;
     va_list args;
     va_start(args, count);
     for (int i = 0; i < count; i++) {
         argv[argc++] = va_arg(args, char *);
     }
     va_end(args);
+    FILE *in = nullptr;
+    if (test->answer != nullptr) {
+        in = tmpfile();
+        fputs(test->answer, in);
+        rewind(in);
+    }
     FILE *const out = tmpfile();
-    const int code = Main_Run(argc, argv, test->program, out);
+    const int code = Main_Run(argc, argv, test->program, in, out);
+    if (in != nullptr) {
+        fclose(in);
+    }
     const long size = ftell(out);
     rewind(out);
     Mem_Free(test->output);
@@ -96,6 +115,7 @@ static void M_CheckOutput(const M_CASE *const test, const char *const text)
 static void M_Close(M_CASE *const test)
 {
     Mem_Free(test->output);
+    Mem_Free(test->releases);
     Mem_Free(test->repo);
     Mem_Free(test->program);
     Mem_Free(test->patches);
@@ -109,7 +129,7 @@ TEST(language_code_installs_the_pack_and_its_dependencies)
     M_AddNetwork(&test);
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckOutput(&test, "Language: thpatch/lang_en (Patch lang_en), named on");
-    M_CheckOutput(&test, "nmlgc/base: 0 downloaded, 0 up to date, 0 removed\n");
+    M_CheckOutput(&test, "nmlgc/base: up to date\n");
     M_CheckOutput(&test, "thpatch/lang_en: 1 downloaded, 0 up to date");
     M_CheckOutput(&test, "Done: 2 patches, 1 files downloaded");
     CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/msg1.dat.jdiff"));
@@ -254,7 +274,7 @@ TEST(run_updates_installed_patches)
     CHECK_EQ_INT(M_Run(&test, 1, "tool"), 0);
     M_CheckOutput(&test, "Patch: thpatch/tool");
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
-    M_CheckOutput(&test, "thpatch/tool: 0 downloaded, 1 up to date");
+    M_CheckOutput(&test, "thpatch/tool: up to date\n");
     M_CheckOutput(&test, "Done: 3 patches");
     PatchBuilder_Write(
         test.patches, "thpatch/tool/patch.js", "{\"update\": false}");
@@ -363,7 +383,7 @@ TEST(bad_arguments_fail_with_one_message)
     CHECK_EQ_STR(test.output, "othpatch: name one patch only, not en and de\n");
     char *argv[] = { "othpatch", "--dir" };
     FILE *const out = tmpfile();
-    CHECK_EQ_INT(Main_Run(2, argv, test.program, out), 1);
+    CHECK_EQ_INT(Main_Run(2, argv, test.program, nullptr, out), 1);
     fclose(out);
     M_Close(&test);
 }
@@ -375,5 +395,281 @@ TEST(help_and_version_print_and_succeed)
     M_CheckOutput(&test, "Usage: othpatch");
     CHECK_EQ_INT(M_Run(&test, 1, "--version"), 0);
     M_CheckOutput(&test, "othpatch ");
+    M_Close(&test);
+}
+
+// Writes a game beside othpatch, a shell script in the form of the
+// platform's packages that prints version.
+static void M_WriteGame(const M_CASE *const test, const char *const version)
+{
+    ARENA arena;
+    Arena_Init(&arena, "main test", 1 << 16);
+    const char *const path = Install_GetGamePath(
+        Install_GetPlatform(), test->program, "th06", &arena);
+    const char *const relative = path + strlen(test->program) + 1;
+    char *const script = Str_Format("#!/bin/sh\necho \"th06 %s\"\n", version);
+    PatchBuilder_Write(test->program, relative, script);
+    CHECK(chmod(path, 0755) == 0);
+    Mem_Free(script);
+    Arena_Free(&arena);
+}
+
+// Returns the contents of the game beside othpatch. SDL_free releases
+// them.
+static char *M_ReadGame(const M_CASE *const test)
+{
+    ARENA arena;
+    Arena_Init(&arena, "main test", 1 << 16);
+    char *const data = SDL_LoadFile(
+        Install_GetGamePath(
+            Install_GetPlatform(), test->program, "th06", &arena),
+        nullptr);
+    Arena_Free(&arena);
+    return data;
+}
+
+// Writes the package of release version to the server, with the game
+// that prints version and an othpatch with othpatch as its contents, and
+// returns its digest.
+static void M_WritePackage(
+    const M_CASE *const test, const char *const version,
+    const char *const othpatch, char digest[SHA256_HEX_SIZE])
+{
+    const INSTALL_PLATFORM *const platform = Install_GetPlatform();
+    char *const script = Str_Format("#!/bin/sh\necho \"th06 %s\"\n", version);
+    char *const game = platform->bundle
+        ? Str_Format("oth06%s/Contents/MacOS/oth06", platform->game_suffix)
+        : Str_Format("oth06%s", platform->game_suffix);
+    const ZIP_BUILDER_ENTRY entries[] = {
+        { game, script, strlen(script), 0100755, true },
+        { platform->othpatch, othpatch, strlen(othpatch), 0100755, true },
+        { "README.txt", "readme", 6, 0100644, true },
+    };
+    const ZIP_BUILDER_ARCHIVE archive = ZipBuilder_Build(entries, 3);
+    char *const path =
+        Str_Format("%s/oth06-%s-%s.zip", test->server, version, platform->name);
+    CHECK(SDL_SaveFile(path, archive.data, archive.size));
+    Sha256_ComputeHex(archive.data, archive.size, digest);
+    Mem_Free(path);
+    Mem_Free(archive.data);
+    Mem_Free(game);
+    Mem_Free(script);
+}
+
+// Writes the release list with one release of th06, tagged
+// th06-v<version>, whose package has digest, or no digest when digest is
+// nullptr. A release without assets has no package.
+static void M_WriteReleases(
+    const M_CASE *const test, const char *const version,
+    const char *const digest, const bool assets)
+{
+    const char *const platform = Install_GetPlatform()->name;
+    char *const digest_member = digest != nullptr
+        ? Str_Format(", \"digest\": \"sha256:%s\"", digest)
+        : Str_Dup("");
+    char *const asset = assets
+        ? Str_Format(
+              "{\"name\": \"oth06-%s-%s.zip\", \"browser_download_url\": "
+              "\"file://%s/oth06-%s-%s.zip\"%s}",
+              version, platform, test->server, version, platform, digest_member)
+        : Str_Dup("");
+    char *const text = Str_Format(
+        "[{\"tag_name\": \"th06-v9.9.9\", \"draft\": false, "
+        "\"prerelease\": true, \"assets\": []}, "
+        "{\"tag_name\": \"th06-v%s\", \"draft\": false, \"prerelease\": "
+        "false, \"assets\": [%s]}]",
+        version, asset);
+    PatchBuilder_Write(test->server, "releases.json", text);
+    Mem_Free(text);
+    Mem_Free(asset);
+    Mem_Free(digest_member);
+}
+
+static M_CASE M_PrepareUpdate(
+    const char *const name, const char *const installed,
+    const char *const released)
+{
+    M_CASE test = M_PrepareBeside(name, nullptr);
+    M_AddNetwork(&test);
+    M_WriteGame(&test, installed);
+    char digest[SHA256_HEX_SIZE];
+    M_WritePackage(&test, released, "new othpatch", digest);
+    M_WriteReleases(&test, released, digest, true);
+    return test;
+}
+
+static void M_CheckGame(const M_CASE *const test, const char *const version)
+{
+    char *const game = M_ReadGame(test);
+    char *const expected = Str_Format("#!/bin/sh\necho \"th06 %s\"\n", version);
+    CHECK_EQ_STR(game, expected);
+    Mem_Free(expected);
+    SDL_free(game);
+}
+
+TEST(newer_release_without_a_terminal_is_only_announced)
+{
+    M_CASE test = M_PrepareUpdate("update_notice", "0.1.0", "0.2.0");
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(&test, "Done: 2 patches");
+    M_CheckOutput(
+        &test,
+        "Checking for updates...\n"
+        "oth06 0.2.0 is available (you have 0.1.0); run othpatch --update "
+        "to install it\n");
+    M_CheckGame(&test, "0.1.0");
+    M_Close(&test);
+}
+
+TEST(update_option_installs_the_game_and_othpatch)
+{
+    M_CASE test = M_PrepareUpdate("update_option", "0.1.0", "0.10.0");
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(
+        &test,
+        "oth06 0.10.0 is available (you have 0.1.0); installing it\n"
+        "oth06 0.10.0 is installed\n"
+        "othpatch is updated too; the next run uses it\n");
+    M_CheckGame(&test, "0.10.0");
+    char *const othpatch =
+        Server_Read(test.program, Install_GetPlatform()->othpatch);
+    CHECK_EQ_STR(othpatch, "new othpatch");
+    SDL_free(othpatch);
+    CHECK(!Server_Exists(test.program, "README.txt"));
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(&test, "oth06 0.10.0 is up to date\n");
+    M_Close(&test);
+}
+
+TEST(yes_at_the_question_installs_the_game)
+{
+    M_CASE test = M_PrepareUpdate("update_yes", "0.1.0", "0.2.0");
+    test.answer = " Yes\n";
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(
+        &test,
+        "oth06 0.2.0 is available (you have 0.1.0). Update now? [y/N] "
+        "oth06 0.2.0 is installed\n");
+    M_CheckGame(&test, "0.2.0");
+    M_Close(&test);
+}
+
+TEST(other_answers_at_the_question_skip_the_update)
+{
+    M_CASE test = M_PrepareUpdate("update_no", "0.1.0", "0.2.0");
+    const char *const answers[] = { "\n", "n\n", "yess\n", "" };
+    for (size_t i = 0; i < ARRAY_SIZE(answers); i++) {
+        test.answer = answers[i];
+        CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+        M_CheckOutput(&test, "Update now? [y/N] ");
+        M_CheckGame(&test, "0.1.0");
+    }
+    M_Close(&test);
+}
+
+TEST(same_or_older_release_is_up_to_date)
+{
+    M_CASE test = M_PrepareUpdate("update_same", "0.2.0", "0.2.0");
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(
+        &test, "Checking for updates...\noth06 0.2.0 is up to date\n");
+    M_Close(&test);
+    test = M_PrepareUpdate("update_older", "0.3.0", "0.2.0");
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(&test, "oth06 0.3.0 is up to date\n");
+    M_CheckGame(&test, "0.3.0");
+    M_Close(&test);
+}
+
+TEST(development_build_is_never_updated)
+{
+    M_CASE test = M_PrepareUpdate("update_dev", "0.1.0-3-gabcdef0", "0.2.0");
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(
+        &test,
+        "oth06 0.1.0-3-gabcdef0 is a development build; othpatch "
+        "updates releases only\n");
+    M_CheckGame(&test, "0.1.0-3-gabcdef0");
+    M_Close(&test);
+}
+
+TEST(digest_mismatch_fails_the_update)
+{
+    M_CASE test = M_PrepareUpdate("update_digest", "0.1.0", "0.2.0");
+    M_WriteReleases(
+        &test, "0.2.0",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        true);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 1);
+    M_CheckOutput(&test, "oth06: cannot install 0.2.0: oth06-0.2.0-");
+    M_CheckOutput(&test, " instead of 0000");
+    M_CheckGame(&test, "0.1.0");
+    M_Close(&test);
+}
+
+TEST(release_without_a_package_is_announced)
+{
+    M_CASE test = M_PrepareUpdate("update_no_asset", "0.1.0", "0.2.0");
+    M_WriteReleases(&test, "0.2.0", nullptr, false);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(
+        &test, "oth06 0.2.0 is available, but its release has no oth06-0.2.0-");
+    M_CheckGame(&test, "0.1.0");
+    M_Close(&test);
+}
+
+TEST(release_without_a_digest_installs)
+{
+    M_CASE test = M_PrepareUpdate("update_no_digest", "0.1.0", "0.2.0");
+    M_WriteReleases(&test, "0.2.0", nullptr, true);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckGame(&test, "0.2.0");
+    M_Close(&test);
+}
+
+TEST(failed_check_does_not_fail_the_patches)
+{
+    M_CASE test = M_PrepareBeside("update_offline", nullptr);
+    M_AddNetwork(&test);
+    M_WriteGame(&test, "0.1.0");
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(&test, "Done: 2 patches");
+    M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");
+    M_CheckGame(&test, "0.1.0");
+    M_Close(&test);
+}
+
+TEST(game_that_gives_no_version_is_skipped)
+{
+    M_CASE test = M_PrepareUpdate("update_broken", "0.1.0", "0.2.0");
+    ARENA arena;
+    Arena_Init(&arena, "main test", 1 << 16);
+    CHECK(
+        chmod(
+            Install_GetGamePath(
+                Install_GetPlatform(), test.program, "th06", &arena),
+            0644)
+        == 0);
+    Arena_Free(&arena);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(&test, "oth06: cannot read its version: ");
+    M_Close(&test);
+}
+
+TEST(leftovers_of_an_update_are_removed)
+{
+    M_CASE test = M_PrepareUpdate("update_leftovers", "0.1.0", "0.1.0");
+    const INSTALL_PLATFORM *const platform = Install_GetPlatform();
+    char *const old = Str_Format("%s.old", platform->othpatch);
+    char *const staged = Str_Format("oth06%s.new", platform->game_suffix);
+    PatchBuilder_Write(test.program, old, "x");
+    PatchBuilder_Write(test.program, staged, "x");
+    PatchBuilder_Write(test.program, "notes.old", "x");
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    CHECK(!Server_Exists(test.program, old));
+    CHECK(!Server_Exists(test.program, staged));
+    CHECK(Server_Exists(test.program, "notes.old"));
+    Mem_Free(staged);
+    Mem_Free(old);
     M_Close(&test);
 }

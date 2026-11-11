@@ -205,6 +205,11 @@ thpatch.net. `othpatch` downloads the language pack of the system
 language, `othpatch en` the English one; `othpatch --help` lists the
 other arguments. A run also updates every patch in the folder.
 
+Then `othpatch` checks for a newer release of each game beside it and
+asks before it installs it; `othpatch --update` installs it without
+asking. The releases come from the repository that the build option
+`game_repository` names. A development build is never updated.
+
 ## Docker images
 
 There is one image per target platform, defined under `tools/docker/`:

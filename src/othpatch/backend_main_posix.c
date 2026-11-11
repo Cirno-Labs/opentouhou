@@ -2,7 +2,10 @@
 
 #include "core/io/path.h"
 
+#include <unistd.h>
+
 int main(const int argc, char **const argv)
 {
-    return Main_Run(argc, argv, Path_GetExeDir(), stdout);
+    FILE *const in = isatty(STDIN_FILENO) ? stdin : nullptr;
+    return Main_Run(argc, argv, Path_GetExeDir(), in, stdout);
 }

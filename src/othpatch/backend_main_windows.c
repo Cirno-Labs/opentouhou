@@ -3,6 +3,7 @@
 #include "core/base/memory.h"
 #include "core/io/path.h"
 
+#include <io.h>
 #include <stdio.h>
 #include <windows.h>
 
@@ -38,7 +39,8 @@ int wmain(const int argc, wchar_t **const argv)
     }
     int result = 1;
     if (converted == argc) {
-        result = Main_Run(argc, utf8, Path_GetExeDir(), stdout);
+        FILE *const in = _isatty(_fileno(stdin)) ? stdin : nullptr;
+        result = Main_Run(argc, utf8, Path_GetExeDir(), in, stdout);
     } else {
         fputs("othpatch: cannot convert the arguments to UTF-8\n", stdout);
     }
