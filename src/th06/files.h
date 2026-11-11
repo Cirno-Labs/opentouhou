@@ -12,7 +12,9 @@
 
 // Describes th06 to thcrap patches: build v1.02h, the flat layout, and
 // these kinds of files. ECL, STD and SHT files and whole MSG files change
-// what happens in play. ANM files are not taken from patches yet. Every
+// what happens in play. Of the ANM files, only those of the menus, the
+// screens and the text rows are taken from patches: front, text,
+// replay00, and title*, select*, slpl*, result*, music* and staff*. Every
 // other file replaces the game's file.
 extern const PATCH_GAME g_PatchGame;
 

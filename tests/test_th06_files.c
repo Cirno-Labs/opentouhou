@@ -162,11 +162,12 @@ TEST(a_patch_file_replaces_the_archived_file)
     char *const directory = TestDir_Prepare("patched");
     const TH06_DATA_FILE patch_files[] = {
         { "end00.end", "patched" },
+        { "eff01.anm", "patched" },
         { "front.anm", "patched" },
         { "front.png", "patched" },
     };
     PATCH_STACK *const stack =
-        M_PreparePatched(directory, "end00.end", patch_files, 3);
+        M_PreparePatched(directory, "end00.end", patch_files, 4);
     CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
     Files_SetPatches(stack);
 
@@ -176,24 +177,25 @@ TEST(a_patch_file_replaces_the_archived_file)
     Reader_Close(&reader);
     CHECK(Files_IsPatched("data/end00.end"));
     CHECK(Files_IsPatched("data/front.png"));
-    CHECK(!Files_IsPatched("data/front.anm"));
+    CHECK(Files_IsPatched("data/front.anm"));
+    CHECK(!Files_IsPatched("data/eff01.anm"));
 
     Files_Shutdown();
     Patch_CloseStack(stack);
     Mem_Free(directory);
 }
 
-TEST(an_anm_of_a_patch_is_not_used_yet)
+TEST(a_gameplay_anm_of_a_patch_is_not_used)
 {
     char *const directory = TestDir_Prepare("ignored");
-    const TH06_DATA_FILE patch_files[] = { { "front.anm", "patched" } };
+    const TH06_DATA_FILE patch_files[] = { { "eff01.anm", "patched" } };
     PATCH_STACK *const stack =
-        M_PreparePatched(directory, "front.anm", patch_files, 1);
+        M_PreparePatched(directory, "eff01.anm", patch_files, 1);
     CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
     Files_SetPatches(stack);
 
     READER reader;
-    CHECK(Result_Log(Files_Load("data/front.anm", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Files_Load("data/eff01.anm", &reader), LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "archive"));
     Reader_Close(&reader);
 
@@ -245,7 +247,18 @@ TEST(gameplay_files_are_classified)
     CHECK_EQ_INT(g_PatchGame.classify("stage1.std"), PATCH_FILE_GAMEPLAY);
     CHECK_EQ_INT(g_PatchGame.classify("ply00a.sht"), PATCH_FILE_GAMEPLAY);
     CHECK_EQ_INT(g_PatchGame.classify("msg1.dat"), PATCH_FILE_GAMEPLAY);
-    CHECK_EQ_INT(g_PatchGame.classify("front.anm"), PATCH_FILE_IGNORED);
+    CHECK_EQ_INT(g_PatchGame.classify("front.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("text.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("replay00.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("title01s.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("select05.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("slpl00b.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("result03.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("music02.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("staff01.anm"), PATCH_FILE_DATA);
+    CHECK_EQ_INT(g_PatchGame.classify("eff01.anm"), PATCH_FILE_IGNORED);
+    CHECK_EQ_INT(g_PatchGame.classify("player00.anm"), PATCH_FILE_IGNORED);
+    CHECK_EQ_INT(g_PatchGame.classify("replay01.anm"), PATCH_FILE_IGNORED);
     CHECK_EQ_INT(g_PatchGame.classify("front.png"), PATCH_FILE_DATA);
     CHECK_EQ_INT(g_PatchGame.classify("th06logo.jpg"), PATCH_FILE_DATA);
     CHECK_EQ_INT(g_PatchGame.classify("end00.end"), PATCH_FILE_DATA);

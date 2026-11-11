@@ -8,6 +8,8 @@
 
 #include "stg/pbg3.h"
 
+#include <string.h>
+
 // Mounts the patches above the six archives, which mount at 11 to 16.
 #define M_PATCH_PRIORITY 100
 
@@ -19,6 +21,25 @@ static const char *const m_Archives[] = {
 static VFS *m_Vfs = nullptr;
 static const PATCH_STACK *m_Patches = nullptr;
 
+// Returns whether name is the ANM file of a menu, a screen or the text
+// rows, which only change what is drawn.
+static bool M_IsInterfaceAnm(const char *const name)
+{
+    static const char *const prefixes[] = {
+        "title", "select", "slpl", "result", "music", "staff",
+    };
+    if (strcmp(name, "front.anm") == 0 || strcmp(name, "text.anm") == 0
+        || strcmp(name, "replay00.anm") == 0) {
+        return true;
+    }
+    for (size_t i = 0; i < ARRAY_SIZE(prefixes); i++) {
+        if (Str_StartsWith(name, prefixes[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static PATCH_FILE_KIND M_Classify(const char *const name)
 {
     if (Str_EndsWith(name, ".ecl") || Str_EndsWith(name, ".std")
@@ -26,7 +47,7 @@ static PATCH_FILE_KIND M_Classify(const char *const name)
         || (Str_StartsWith(name, "msg") && Str_EndsWith(name, ".dat"))) {
         return PATCH_FILE_GAMEPLAY;
     }
-    if (Str_EndsWith(name, ".anm")) {
+    if (Str_EndsWith(name, ".anm") && !M_IsInterfaceAnm(name)) {
         return PATCH_FILE_IGNORED;
     }
     return PATCH_FILE_DATA;
