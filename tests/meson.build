@@ -780,6 +780,24 @@ test(
 )
 
 test(
+  'core/app/request_queue',
+  executable(
+    'test_app_requests',
+    'test_app_requests.c',
+    'input_backend_fake.c',
+    '../src/core/app/request_queue.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [
+      core_input_lib, core_config_lib, core_ini_lib, core_io_lib,
+      core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/vfs',
   executable(
     'test_vfs',

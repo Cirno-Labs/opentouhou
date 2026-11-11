@@ -79,6 +79,11 @@ A **tick** is one 60 Hz step of the game. A **display frame** is one
 image on screen. Each display frame reads the input devices, runs as
 many ticks as the clock allows, and shows the last tick in the window.
 
+A game reaches core state that is not part of its simulation, such as
+its input bindings, through core/app. It reads values that core/app
+took before the ticks of the display frame, and it asks for changes. core/app queues the requests and applies them after
+the tick that made them, so that core never changes during a tick.
+
 `tick` updates the game and draws it in one call, because the originals
 interleave the two and some of their drawing code changes state.
 Drawing runs in call order into a logical screen of the game's size, and

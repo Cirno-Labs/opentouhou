@@ -4,6 +4,7 @@
 
 #include "core/audio.h"
 
+#include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -14,6 +15,7 @@
 
 #include "clock.h"
 #include "hotkeys.h"
+#include "request_queue.h"
 #include "settings.h"
 #include "screenshot.h"
 
@@ -47,6 +49,9 @@ struct APP_CONTEXT {
     HOTKEYS hotkeys;
     HOTKEYS hotkeys_edges;
     bool screenshot_pending;
+    APP_REQUESTS requests;
+    bool pad_pressed;
+    INPUT_BINDING pad_press;
 };
 
 static APP_CONTEXT m_Context;
@@ -165,6 +170,49 @@ const char *App_GetUserDir(void)
     return m_Context.user_dir;
 }
 
+static void M_ApplyRequests(APP_CONTEXT *const ctx)
+{
+    AppRequests_ApplyInput(&ctx->requests, ctx->input, g_GameDesc.input_schema);
+}
+
+bool App_GetPadPress(INPUT_BINDING *const out)
+{
+    if (m_Context.pad_pressed) {
+        *out = m_Context.pad_press;
+    }
+    return m_Context.pad_pressed;
+}
+
+size_t App_GetBindings(
+    const size_t action, INPUT_BINDING *const out, const size_t capacity)
+{
+    ASSERT(action < g_GameDesc.input_schema->count);
+    return Input_GetBindings(
+        m_Context.input, g_GameDesc.input_schema, 0, action, out, capacity);
+}
+
+void App_RequestBind(const size_t action, const INPUT_BINDING binding)
+{
+    ASSERT(action < g_GameDesc.input_schema->count);
+    AppRequests_Add(
+        &m_Context.requests,
+        (APP_REQUEST) { APP_REQUEST_BIND, action, binding });
+}
+
+void App_RequestUnbind(const size_t action, const INPUT_BINDING binding)
+{
+    ASSERT(action < g_GameDesc.input_schema->count);
+    AppRequests_Add(
+        &m_Context.requests,
+        (APP_REQUEST) { APP_REQUEST_UNBIND, action, binding });
+}
+
+void App_RequestResetPadBindings(void)
+{
+    AppRequests_Add(
+        &m_Context.requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
+}
+
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
     return Result_Log(M_Init(&m_Context, argc, argv), LOG_LEVEL_ERROR)
@@ -203,10 +251,17 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     if (ctx->hotkeys_edges.screenshot) {
         ctx->screenshot_pending = true;
     }
+    INPUT_BINDING press;
+    if (AppRequests_ReadPadPress(ctx->input, &press) && !ctx->pad_pressed) {
+        ctx->pad_pressed = true;
+        ctx->pad_press = press;
+    }
     for (int i = 0; i < ticks; i++) {
         Gfx_BeginTick((GFX_COLOR) { 0, 0, 0, 255 });
         const bool running = g_GameDesc.tick(ctx->input_buffer);
         Gfx_EndTick();
+        ctx->pad_pressed = false;
+        M_ApplyRequests(ctx);
         if (!running) {
             return SDL_APP_SUCCESS;
         }
