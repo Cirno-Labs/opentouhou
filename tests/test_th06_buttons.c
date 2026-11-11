@@ -162,3 +162,27 @@ TEST(masked_press_counts_partial_release_while_another_bit_stays_down)
     Buttons_Clear(&buttons);
     CHECK_EQ_INT(buttons.previous_word, 0);
 }
+
+TEST(pressed_or_repeated_counts_a_partial_release)
+{
+    BUTTONS buttons = { .word = 0x1001 };
+    const TH06_INPUT input = { .confirm = true };
+    Buttons_Update(&buttons, &input);
+    CHECK(Buttons_WasPressedOrRepeated(&buttons, 0x1001));
+    CHECK(!Buttons_WasPressedOrRepeated(&buttons, 0x1000));
+}
+
+TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
+{
+    BUTTONS buttons = {};
+    const TH06_INPUT input = { .up = true };
+    int32_t count = 0;
+    for (int calc = 0; calc <= 33; calc++) {
+        Buttons_Update(&buttons, &input);
+        if (Buttons_WasPressedOrRepeated(&buttons, 0x10)) {
+            count++;
+        }
+        CHECK(!Buttons_WasPressedOrRepeated(&buttons, 0x20));
+    }
+    CHECK_EQ_INT(count, 2);
+}

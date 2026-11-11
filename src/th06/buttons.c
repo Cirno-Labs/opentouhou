@@ -122,6 +122,13 @@ bool Buttons_WasPressed(const BUTTONS *const buttons, const uint16_t mask)
         && (buttons->word & mask) != (buttons->previous_word & mask);
 }
 
+bool Buttons_WasPressedOrRepeated(
+    const BUTTONS *const buttons, const uint16_t mask)
+{
+    return Buttons_WasPressed(buttons, mask)
+        || (Buttons_ToWord(&buttons->repeated) & mask) != 0;
+}
+
 void Buttons_Clear(BUTTONS *const buttons)
 {
     buttons->held = (TH06_INPUT) {};
