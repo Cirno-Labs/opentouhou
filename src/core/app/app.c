@@ -158,16 +158,25 @@ static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
     return OK;
 }
 
-// Prints the usage, the mode and the folders to stdout. On Windows, a
-// release build has no console of its own, so the text goes to the console
-// of the shell that started it.
-static void M_PrintHelp(const APP_FOLDERS *const folders)
+// Prepares stdout for printing. On Windows, a release build has no console
+// of its own, so stdout goes to the console of the shell that started it,
+// unless stdout already goes to a pipe or a file.
+static void M_OpenStdout(void)
 {
 #ifdef _WIN32
-    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+    const HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    const bool redirected = handle != nullptr && handle != INVALID_HANDLE_VALUE
+        && GetFileType(handle) != FILE_TYPE_UNKNOWN;
+    if (!redirected && AttachConsole(ATTACH_PARENT_PROCESS)) {
         freopen("CONOUT$", "w", stdout);
     }
 #endif
+}
+
+// Prints the usage, the mode and the folders to stdout.
+static void M_PrintHelp(const APP_FOLDERS *const folders)
+{
+    M_OpenStdout();
     char *patches_dir = nullptr;
     Result_Ignore(AppFolders_GetPatchesDir(folders, &patches_dir));
     printf(
@@ -178,6 +187,7 @@ static void M_PrintHelp(const APP_FOLDERS *const folders)
         "  --data DIR      read the original game's data from DIR\n"
         "  --user-dir DIR  keep settings, scores and replays in DIR\n"
         "  --help          print this help and quit\n"
+        "  --version       print the version and quit\n"
         "\n"
         "Mode:            %s\n"
         "Program folder:  %s\n"
@@ -205,16 +215,27 @@ static RESULT M_ParseValue(
     return OK;
 }
 
+// Prints "<game id> <version>" to stdout.
+static void M_PrintVersion(void)
+{
+    M_OpenStdout();
+    printf("%s %s\n", g_GameDesc.id, g_GameDesc.version);
+    fflush(stdout);
+}
+
 // Reads the command line into input. Sets *help when it asks for the
-// usage.
+// usage, and *version when it asks for the version.
 static RESULT M_ParseArgs(
     const int argc, char *const argv[], APP_FOLDERS_INPUT *const input,
-    bool *const help)
+    bool *const help, bool *const version)
 {
     *help = false;
+    *version = false;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             *help = true;
+        } else if (strcmp(argv[i], "--version") == 0) {
+            *version = true;
         } else if (strcmp(argv[i], "--data") == 0) {
             MUST(M_ParseValue(argc, argv, &i, &input->data_dir));
         } else if (strcmp(argv[i], "--user-dir") == 0) {
@@ -235,9 +256,11 @@ static RESULT M_SetFullscreen(APP_CONTEXT *const ctx, const bool fullscreen)
     return OK;
 }
 
+// Starts the program. Sets *done when the command line asks only for the
+// usage or the version, which are then printed.
 static RESULT M_Init(
     APP_CONTEXT *const ctx, const int argc, char *const argv[],
-    bool *const help)
+    bool *const done)
 {
     APP_FOLDERS_INPUT input = {
         .exe_dir = Path_GetExeDir(),
@@ -245,10 +268,17 @@ static RESULT M_Init(
         .appdir = getenv("APPDIR"),
         .program = argc > 0 ? argv[0] : nullptr,
     };
-    MUST(M_ParseArgs(argc, argv, &input, help));
+    bool help;
+    bool version;
+    MUST(M_ParseArgs(argc, argv, &input, &help, &version));
+    *done = help || version;
+    if (version && !help) {
+        M_PrintVersion();
+        return OK;
+    }
     const bool found = Result_Log(
         AppFolders_Find(&input, g_GameDesc.id, &ctx->folders), LOG_LEVEL_ERROR);
-    if (*help) {
+    if (help) {
         M_PrintHelp(&ctx->folders);
         return OK;
     }
@@ -387,11 +417,11 @@ void App_RequestFullscreen(const bool fullscreen)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    bool help = false;
-    if (!Result_Log(M_Init(&m_Context, argc, argv, &help), LOG_LEVEL_ERROR)) {
+    bool done = false;
+    if (!Result_Log(M_Init(&m_Context, argc, argv, &done), LOG_LEVEL_ERROR)) {
         return SDL_APP_FAILURE;
     }
-    return help ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
+    return done ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
