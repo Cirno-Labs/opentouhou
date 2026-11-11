@@ -43,6 +43,9 @@ TEST(the_executable_directory_holds_the_executable)
     }
 }
 
+// macOS keeps the user directory in ~/Library/Application Support and
+// ignores XDG_DATA_HOME, so this test would write there.
+#ifndef __APPLE__
 TEST(the_user_directory_is_made_in_the_data_home)
 {
     // meson points XDG_DATA_HOME into the build directory, so that the test
@@ -63,3 +66,4 @@ TEST(the_user_directory_is_made_in_the_data_home)
     Mem_Free(expected);
     Mem_Free(directory);
 }
+#endif

@@ -56,7 +56,10 @@ TEST(make_dir_fails_below_a_file)
 TEST(list_gives_every_name_sorted)
 {
     char *const directory = TestDir_Prepare("list");
-    const char *const files[] = { "b.dat", "東方.txt", "A.TXT", "a.txt" };
+    // The names differ in more than case, because macOS and Windows file
+    // systems ignore case by default; "C.TXT" before "a.txt" still shows
+    // byte order.
+    const char *const files[] = { "b.dat", "東方.txt", "C.TXT", "a.txt" };
     for (size_t i = 0; i < ARRAY_SIZE(files); i++) {
         char *const path = TestDir_Join(directory, files[i]);
         M_Create(path);
@@ -73,7 +76,7 @@ TEST(list_gives_every_name_sorted)
     CHECK(Result_Log(
         File_ListDir(directory, &test.allocator, &list), LOG_LEVEL_ERROR));
     const char *const expected[] = {
-        "A.TXT", "a.txt", "b.dat", "sub", "東方.txt",
+        "C.TXT", "a.txt", "b.dat", "sub", "東方.txt",
     };
     CHECK_EQ_INT(list.count, ARRAY_SIZE(expected));
     for (int32_t i = 0; i < list.count && i < (int32_t)ARRAY_SIZE(expected);

@@ -189,6 +189,8 @@ TEST(a_failed_close_leaves_the_target_and_no_temporary)
     Mem_Free(directory);
 }
 
+// /dev/full exists only on Linux.
+#ifdef __linux__
 TEST(a_failed_write_is_sticky_and_leaves_the_target)
 {
     // The temporary file is a link to /dev/full, which fails every write
@@ -220,3 +222,4 @@ TEST(a_failed_write_is_sticky_and_leaves_the_target)
     Mem_Free(path);
     Mem_Free(directory);
 }
+#endif
