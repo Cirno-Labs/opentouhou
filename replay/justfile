@@ -10,3 +10,32 @@ build game:
 run cases data replays:
     just -f {{justfile_directory()}}/justfile build-linux
     {{quote(justfile_directory())}}/build/linux/debug/th06replay --data {{quote(data)}} --replays {{quote(replays)}} {{quote(cases)}}
+
+# Compare like `run`, with a release build and one process per case.
+[group('replay')]
+[no-cd]
+run-fast cases data replays jobs=num_cpus():
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just -f {{quote(justfile_directory())}}/justfile build-linux release
+    runner={{quote(justfile_directory())}}/build/linux/release/th06replay
+    cases={{quote(cases)}}
+    if [ -d "$cases" ]; then shopt -s nullglob; list=("$cases"/*.otrc); else list=("$cases"); fi
+    logs=$(mktemp -d)
+    trap 'rm -rf "$logs"' EXIT
+    printf '%s\0' "${list[@]}" | xargs -0 -P {{jobs}} -I{} sh -c \
+        'name=$(basename "$1" .otrc); "$2" --data "$3" --replay "$4/$name.rpy" "$1" > "$5/$name.log" 2>&1 || touch "$5/$name.fail"' \
+        _ {} "$runner" {{quote(data)}} {{quote(replays)}} "$logs"
+    failed=0
+    for case in "${list[@]}"; do
+        name=$(basename "$case" .otrc)
+        if [ -e "$logs/$name.fail" ]; then
+            failed=$((failed + 1))
+            echo "FAIL $name"
+            cat "$logs/$name.log"
+        else
+            echo "ok   $name"
+        fi
+    done
+    echo "${#list[@]} cases, $failed failed"
+    [ "$failed" -eq 0 ]

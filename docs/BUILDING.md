@@ -75,7 +75,12 @@ player's replay input and its captured case:
 ```sh
 build/linux/debug/th06replay --data <data-dir> --replay <input.rpy> <case.otrc>
 just replay::run <case-or-dir> <data-dir> <replay-dir>
+just replay::run-fast <case-or-dir> <data-dir> <replay-dir> [jobs]
 ```
+
+`run-fast` uses a release build and runs one process per case, as many
+at once as there are CPUs unless `jobs` says otherwise. It prints each
+case's result and the output of the failed ones.
 
 `--replays <dir>` matches each case to a `.rpy` with the same basename.
 `--break-on-diff` stops in the debugger at the first differing calc.
