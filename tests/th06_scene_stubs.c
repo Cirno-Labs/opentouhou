@@ -2,6 +2,7 @@
 
 #include "th06/screens/result.h"
 #include "th06/screens/main.h"
+#include "th06/screens/music.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
 
@@ -39,9 +40,9 @@ RESULT ResultScreen_Register(const int32_t mode)
     return OK;
 }
 
-RESULT MusicRoom_Register(void)
+RESULT MusicScreen_Register(void)
 {
-    g_SceneStubCalls.music_room_register++;
+    g_SceneStubCalls.music_screen_register++;
     return OK;
 }
 

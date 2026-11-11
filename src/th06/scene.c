@@ -3,6 +3,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/screens/main.h"
+#include "th06/screens/music.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
 #include "th06/screens/result.h"
@@ -39,7 +40,7 @@ static CHAIN_STATUS M_Switch(void)
             return IS_OK(ResultScreen_Register(0)) ? CHAIN_CONTINUE
                                                    : CHAIN_QUIT;
         case SCENE_MUSIC_ROOM:
-            return IS_OK(MusicRoom_Register()) ? CHAIN_CONTINUE : CHAIN_QUIT;
+            return IS_OK(MusicScreen_Register()) ? CHAIN_CONTINUE : CHAIN_QUIT;
         case SCENE_ENDING:
             GameManager_Remove();
             return IS_OK(Ending_Register()) ? CHAIN_CONTINUE : CHAIN_QUIT;

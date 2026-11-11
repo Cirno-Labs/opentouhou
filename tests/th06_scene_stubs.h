@@ -12,7 +12,7 @@ typedef struct {
     int game_manager_register;
     int game_manager_remove;
     int result_screen_register;
-    int music_room_register;
+    int music_screen_register;
     int ending_register;
     int replay_discard;
     int spell_card_attempt;
