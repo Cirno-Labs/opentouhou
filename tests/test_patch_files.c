@@ -242,6 +242,48 @@ TEST(json_files_merge_in_patch_order_with_the_build_last)
     Mem_Free(dir);
 }
 
+TEST(the_settings_merge_the_game_over_global)
+{
+    char *const dir = TestDir_Prepare("settings");
+    PatchBuilder_AddPatch(dir, "a/base", "{}");
+    PatchBuilder_AddPatch(dir, "a/top", "{dependencies: ['base']}");
+    PatchBuilder_Write(dir, "a/base/global.js", "{font: 'G', a: 1}");
+    PatchBuilder_Write(dir, "a/base/th06.js", "{font: 'Base'}");
+    PatchBuilder_Write(dir, "a/top/global.js", "{font: 'Top', b: 2}");
+    PatchBuilder_Write(dir, "a/top/th06.v1.02h.js", "{c: 3}");
+    PatchBuilder_Write(dir, "a/top/th07.js", "{font: 'Other'}");
+    PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
+    ARENA arena;
+    Arena_Init(&arena, "test", 1 << 20);
+    char buffer[64];
+    M_Dump(
+        Patch_LoadSettings(stack, Arena_Allocator(&arena)), buffer,
+        sizeof(buffer));
+    CHECK_EQ_STR(buffer, "{\"font\":\"Base\",\"a\":1,\"b\":2,\"c\":3}");
+    CHECK(Patch_LoadSettings(nullptr, Arena_Allocator(&arena)) == nullptr);
+    Arena_Free(&arena);
+    Patch_CloseStack(stack);
+    Mem_Free(dir);
+}
+
+TEST(the_settings_of_a_game_alone_are_its_file)
+{
+    char *const dir = TestDir_Prepare("settings_game");
+    PatchBuilder_AddPatch(dir, "a/only", "{}");
+    PatchBuilder_Write(dir, "a/only/th06.js", "{font: 'Game'}");
+    PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
+    ARENA arena;
+    Arena_Init(&arena, "test", 1 << 20);
+    char buffer[64];
+    M_Dump(
+        Patch_LoadSettings(stack, Arena_Allocator(&arena)), buffer,
+        sizeof(buffer));
+    CHECK_EQ_STR(buffer, "{\"font\":\"Game\"}");
+    Arena_Free(&arena);
+    Patch_CloseStack(stack);
+    Mem_Free(dir);
+}
+
 TEST(a_broken_json_file_is_left_out_of_the_merge)
 {
     char *const dir = TestDir_Prepare("json_broken");

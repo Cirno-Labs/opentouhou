@@ -177,6 +177,24 @@ JSON_VALUE *Patch_LoadJson(
     return tree;
 }
 
+JSON_VALUE *Patch_LoadSettings(
+    const PATCH_STACK *const stack, const ALLOCATOR *const allocator)
+{
+    if (stack == nullptr) {
+        return nullptr;
+    }
+    JSON_VALUE *const global =
+        Patch_LoadJson(stack, PATCH_ROOT, "global.js", allocator);
+    char *const name = Str_Format("%s.js", stack->game_id);
+    JSON_VALUE *const game = Patch_LoadJson(stack, PATCH_ROOT, name, allocator);
+    Mem_Free(name);
+    if (global == nullptr || global->type != JSON_OBJECT) {
+        return game != nullptr ? game : global;
+    }
+    Json_Merge(global, game, allocator);
+    return global;
+}
+
 JSON_VALUE *Patch_LoadDiff(
     const PATCH_STACK *const stack, const char *const path,
     const ALLOCATOR *const allocator)

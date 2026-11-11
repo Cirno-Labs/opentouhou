@@ -40,6 +40,13 @@ JSON_VALUE *Patch_LoadJson(
     const PATCH_STACK *stack, PATCH_SCOPE scope, const char *name,
     const ALLOCATOR *allocator);
 
+// Returns thcrap's run configuration of the game: global.js, then
+// "<game id>.js", each merged over the stack as Patch_LoadJson merges it
+// from PATCH_ROOT, with the second merged over the first. Returns nullptr
+// when no patch has either file, or for a nullptr stack.
+JSON_VALUE *Patch_LoadSettings(
+    const PATCH_STACK *stack, const ALLOCATOR *allocator);
+
 // Returns the merged jdiff of the game file at path: the tree that
 // Patch_LoadJson returns for "<name>.jdiff" in the game directory, where
 // name is the file that path maps to.
