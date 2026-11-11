@@ -619,6 +619,20 @@ test(
 )
 
 test(
+  'th06/translation',
+  executable(
+    'test_th06_translation',
+    'test_th06_translation.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, core_patch_lib, core_json_lib, core_io_lib],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_translation'},
+  suite: 'unit',
+)
+
+test(
   'th06/files',
   executable(
     'test_th06_files',

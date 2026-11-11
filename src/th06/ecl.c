@@ -14,6 +14,7 @@
 #include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/screens/result.h"
+#include "th06/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/cp932.h"
@@ -705,7 +706,11 @@ static LASER *M_GetLaser(const ENEMY *const enemy, const int32_t index)
 
 static void M_StartSpellCard(ENEMY *const enemy, const M_INSTR *const instr)
 {
-    Gui_ShowSpellCardName(M_ArgShort(instr, 0), instr->text);
+    // The name is translated only where it is drawn. The record of the
+    // card keeps the ECL's name, because the score file checks its bytes.
+    Gui_ShowSpellCardName(
+        M_ArgShort(instr, 0),
+        Translation_GetSpellName(M_ArgShort(instr, 1), instr->text));
     g_Enemies.spell_card.capturable = true;
     g_Enemies.spell_card.state = ENEMY_SPELL_RUNNING;
     g_Enemies.spell_card.index = M_ArgShort(instr, 1);

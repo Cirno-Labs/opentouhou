@@ -7,6 +7,7 @@
 #include "th06/scene.h"
 #include "th06/screens/music/comments.h"
 #include "th06/sound.h"
+#include "th06/translation.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -59,7 +60,13 @@ static void M_ShowComment(M_SCREEN *const screen)
     const MUSIC_TUNE *const tune = &screen->tunes[screen->playing];
     for (int32_t i = 0; i < M_COMMENT_SPRITES; i++) {
         ANM_VM *const vm = &screen->comment[i];
-        const char *const half = tune->comment[i / 2][i % 2];
+        const char *half = tune->comment[i / 2][i % 2];
+        // A translated row shows whole on the sprite of its first half.
+        const char *const translated =
+            Translation_GetMusicComment(screen->playing, i / 2);
+        if (translated != nullptr) {
+            half = i % 2 == 0 ? translated : "";
+        }
         if (half[0] != '\0') {
             vm->visible = true;
             Result_Log(
@@ -213,7 +220,8 @@ static RESULT M_Added(void *const arg)
         M_InitSprite(title, M_FIRST_TITLE_SPRITE + i);
         Result_Log(
             Anm_RenderText(
-                title, 0xc0e0ff, 0x302080, "%s", screen->tunes[i].title),
+                title, 0xc0e0ff, 0x302080, "%s",
+                Translation_GetMusicTitle(i, screen->tunes[i].title)),
             LOG_LEVEL_WARNING);
         title->pos =
             (VEC3) { 93.0f, 104.0f + (float)((i + 1) * 18) - 20.0f, 0.0f };

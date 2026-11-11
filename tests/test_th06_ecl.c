@@ -2,6 +2,7 @@
 
 #include "anm_builder.h"
 #include "ecl_builder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -20,9 +21,11 @@
 #include "th06/player.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
+#include "th06/translation.h"
 
 #include "core/base/memory.h"
 #include "core/base/utils.h"
+#include "core/patch.h"
 #include "core/math/common.h"
 #include "core/math/vec.h"
 #include "core/math/x87.h"
@@ -1561,6 +1564,29 @@ TEST(a_spell_card_starts_and_counts_an_attempt)
     M_Frame();
     CHECK_EQ_INT(m_NameCalls, 2);
     CHECK_EQ_INT(g_SceneStubCalls.spell_card_attempt, 1);
+    M_End();
+}
+
+TEST(a_translated_spell_card_name_is_shown_but_not_recorded)
+{
+    M_Begin("spell_translated");
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    PatchBuilder_Write(patches, "a/lang/th06/spells.js", "{'9': 'Moon Sign'}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        LOG_LEVEL_ERROR));
+    Translation_Init(stack);
+    const uint8_t args[] = { 2, 0, 9, 0, 'S', 'p', 'e', 'l', 'l', 0, 0, 0 };
+    EclBuilder_InstrBytes(&m_Builder, m_Sub, 0, 93, M_ALL, args, sizeof(args));
+    M_Load();
+    M_Frame();
+    CHECK_EQ_STR(m_Name, "Moon Sign");
+    CHECK_EQ_STR(g_SceneStubCalls.spell_card_attempt_name, "Spell");
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
     M_End();
 }
 

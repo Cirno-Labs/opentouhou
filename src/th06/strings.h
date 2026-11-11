@@ -4,6 +4,7 @@
 // X(id, address, text). address is the string's address in the retail
 // 1.02h executable, or 0 where it is not known yet. text is the UTF-8
 // default. A replacement of a format string keeps its conversions.
+// th06/translation replaces the entries with the translations of patches.
 #define TH06_STRINGS(X)                                                        \
     X(SHOT_NAME_REIMU_A, 0, "博麗 霊夢 (霊)")                                  \
     X(SHOT_NAME_REIMU_B, 0, "博麗 霊夢 (夢)")                                  \
@@ -48,7 +49,12 @@
     X(MENU_DIFFICULTY_HARD, 0x46c430, "Hard   ")                               \
     X(MENU_DIFFICULTY_LUNATIC, 0x46c428, "Lunatic")                            \
     X(MENU_DIFFICULTY_EXTRA, 0x46c420, "Extra  ")                              \
-    X(MENU_PRACTICE_SCORE, 0x46c4c8, "STAGE %d  %.9d")
+    X(MENU_PRACTICE_SCORE, 0x46c4c8, "STAGE %d  %.9d")                         \
+    X(SONG_NAME_FORMAT, 0x46a98c, "♪%s")                                       \
+    X(BOMB_NAME_REIMU_A, 0x46a3f4, "霊符「夢想封印」")                         \
+    X(BOMB_NAME_REIMU_B, 0x46a410, "夢符「封魔陣」")                           \
+    X(BOMB_NAME_MARISA_A, 0x46a420, "魔符「スターダストレヴァリエ」")          \
+    X(BOMB_NAME_MARISA_B, 0x46a450, "恋符「マスタースパーク」")
 
 #define TH06_STRING_ID(id_, address_, text_) STRING_##id_,
 
@@ -56,4 +62,4 @@ typedef enum {
     TH06_STRINGS(TH06_STRING_ID) STRING_COUNT,
 } STRING;
 
-extern const char *const g_Strings[STRING_COUNT];
+extern const char *g_Strings[STRING_COUNT];

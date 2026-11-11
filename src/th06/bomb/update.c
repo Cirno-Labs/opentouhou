@@ -9,6 +9,7 @@
 #include "th06/player.h"
 #include "th06/screen_effect.h"
 #include "th06/sound.h"
+#include "th06/strings.h"
 #include "th06/timer.h"
 
 #include "core/math/x87.h"
@@ -166,7 +167,7 @@ static void M_ReimuA(void)
         return;
     }
     if (M_Starts()) {
-        Gui_ShowBombName(0x4a1, "霊符「夢想封印」");
+        Gui_ShowBombName(0x4a1, g_Strings[STRING_BOMB_NAME_REIMU_A]);
         player->bomb.duration = 300;
         Timer_Set(&player->state.timer, 360);
         for (int32_t i = 0; i < PLAYER_BOMB_PART_COUNT; i++) {
@@ -225,7 +226,7 @@ static void M_ReimuB(void)
     }
     if (M_Starts()) {
         Item_CollectAll();
-        Gui_ShowBombName(0x4a3, "夢符「封魔陣」");
+        Gui_ShowBombName(0x4a3, g_Strings[STRING_BOMB_NAME_REIMU_B]);
         player->bomb.duration = 140;
         Timer_Set(&player->state.timer, 200);
         for (int32_t i = 0; i < M_PILLAR_COUNT; i++) {
@@ -276,7 +277,7 @@ static void M_MarisaA(void)
     }
     if (M_Starts()) {
         Item_CollectAll();
-        Gui_ShowBombName(0x4a3, "魔符「スターダストレヴァリエ」");
+        Gui_ShowBombName(0x4a3, g_Strings[STRING_BOMB_NAME_MARISA_A]);
         player->bomb.duration = 250;
         Timer_Set(&player->state.timer, 300);
         for (int32_t i = 0; i < M_STAR_COUNT; i++) {
@@ -326,7 +327,7 @@ static void M_MarisaB(void)
     }
     if (M_Starts()) {
         Item_CollectAll();
-        Gui_ShowBombName(0x4a1, "恋符「マスタースパーク」");
+        Gui_ShowBombName(0x4a1, g_Strings[STRING_BOMB_NAME_MARISA_B]);
         player->bomb.duration = 300;
         Timer_Set(&player->state.timer, 360);
         for (int32_t i = 0; i < M_BEAM_SPRITES; i++) {

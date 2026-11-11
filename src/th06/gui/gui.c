@@ -9,6 +9,8 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
+#include "th06/strings.h"
+#include "th06/translation.h"
 
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
@@ -570,8 +572,11 @@ static M_RUN M_RunInstrs(void)
                 && g_Stage.data.song_names[instr->value] != nullptr) {
                 Result_Log(
                     Anm_RenderTextRightAligned(
-                        &g_Gui.banners.song_name, 0xe0ffff, 0, "♪%s",
-                        g_Stage.data.song_names[instr->value]),
+                        &g_Gui.banners.song_name, 0xe0ffff, 0,
+                        g_Strings[STRING_SONG_NAME_FORMAT],
+                        Translation_GetSongName(
+                            g_GameManager.run.stage, instr->value,
+                            g_Stage.data.song_names[instr->value])),
                     LOG_LEVEL_WARNING);
             }
             if (g_Stage.data.song_paths[instr->value] != nullptr) {
@@ -729,14 +734,17 @@ static void M_StartBanners(void)
         Result_Log(
             Anm_RenderTextCentered(
                 &g_Gui.banners.stage_name, 0xe0ffff, 0, "%s",
-                g_Stage.data.name),
+                Translation_GetStageName(
+                    g_GameManager.run.stage, g_Stage.data.name)),
             LOG_LEVEL_WARNING);
     }
     if (g_Stage.data.song_names[0] != nullptr) {
         Result_Log(
             Anm_RenderTextRightAligned(
-                &g_Gui.banners.song_name, 0xe0ffff, 0, "♪%s",
-                g_Stage.data.song_names[0]),
+                &g_Gui.banners.song_name, 0xe0ffff, 0,
+                g_Strings[STRING_SONG_NAME_FORMAT],
+                Translation_GetSongName(
+                    g_GameManager.run.stage, 0, g_Stage.data.song_names[0])),
             LOG_LEVEL_WARNING);
     }
     g_Gui.banners.song = 0;

@@ -9,6 +9,7 @@
 #include "th06/screens/result/private.h"
 #include "th06/sound.h"
 #include "th06/strings.h"
+#include "th06/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/cp932.h"
@@ -723,7 +724,7 @@ static void M_UpdateSpellCards(M_SCREEN *const screen)
                     "%s",
                     card->attempts == 0
                         ? g_Strings[STRING_RESULT_UNKNOWN_SPELL_CARD]
-                        : card->name),
+                        : Translation_GetSpellName(i, card->name)),
                 LOG_LEVEL_WARNING);
         }
     }

@@ -49,6 +49,7 @@ th06_lib = static_library(
   'stage.c',
   'strings.c',
   'timer.c',
+  'translation.c',
   c_args: [layer_include['th06']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],

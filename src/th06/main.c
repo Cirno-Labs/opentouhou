@@ -10,6 +10,7 @@
 #include "th06/screens/result.h"
 #include "th06/settings.h"
 #include "th06/sound.h"
+#include "th06/translation.h"
 
 #include "version.h"
 
@@ -56,6 +57,7 @@ static RESULT M_Init(void)
 {
     MUST(Files_Init(App_GetDataDir()));
     Files_SetPatches(App_GetPatches());
+    Translation_Init(App_GetPatches());
     MUST(Anm_InitText());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(App_GetUserDir());
@@ -90,6 +92,7 @@ static void M_Shutdown(void)
     Replay_ClearFiles();
     SoundPlayer_Shutdown();
     Anm_ShutdownText();
+    Translation_Shutdown();
     Files_Shutdown();
 }
 
