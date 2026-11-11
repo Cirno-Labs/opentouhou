@@ -197,9 +197,10 @@ static void M_DrawBanners(void)
             (g_Gui.banners.stage_name.color & 0xff000000u) | 0xffff40u);
         if (!g_GameManager.mode.in_demo) {
             Anm_Draw3DRounded(&g_Gui.banners.stage_name, &world);
-            if (g_GameManager.run.stage < 6) {
+            const bool logo = GuiTextImage_ShowsStageLogo();
+            if (!logo && g_GameManager.run.stage < 6) {
                 AsciiText_AddFormat(pos, "STAGE %d", g_GameManager.run.stage);
-            } else {
+            } else if (!logo) {
                 pos.x = 136.0f;
                 AsciiText_AddString(
                     pos,

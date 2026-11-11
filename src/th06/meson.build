@@ -27,6 +27,7 @@ th06_lib = static_library(
   'game_manager/camera.c',
   'gui/gui.c',
   'gui/draw.c',
+  'gui/text_image.c',
   'item.c',
   'player.c',
   'replay/chain.c',

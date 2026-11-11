@@ -32,6 +32,16 @@ void Anm_Release(int32_t slot);
 void Anm_ClearMenuScripts(void);
 // Returns the loaded script at index, or nullptr when there is none.
 const ANM_SCRIPT *Anm_GetScript(int32_t index);
+// Puts script at index, or removes the script at index for nullptr. The
+// script stays the caller's and must outlive its use. Does nothing when
+// index is out of range.
+void Anm_SetScriptEntry(int32_t index, const ANM_SCRIPT *script);
+// Returns the sprite at index, unused or not, or nullptr when index is out
+// of range.
+const ANM_SPRITE *Anm_GetSpriteEntry(int32_t index);
+// Replaces the sprite at index with a copy of sprite. VMs that show the
+// sprite at index show the copy. Does nothing when index is out of range.
+void Anm_SetSpriteEntry(int32_t index, const ANM_SPRITE *sprite);
 
 // Sets vm up as new: zeroed, with no sprite and every TIMER started.
 void Anm_CreateVm(ANM_VM *vm);

@@ -8,6 +8,7 @@
 #include "th06_data.h"
 
 #include "th06/anm.h"
+#include "th06/anm/private.h"
 #include "th06/ascii.h"
 #include "th06/chain.h"
 #include "th06/files.h"
@@ -19,6 +20,9 @@
 #include "th06/translation.h"
 
 #include "core/base/memory.h"
+#include "core/image.h"
+#include "core/io/file.h"
+#include "core/io/writer.h"
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
 #include "core/patch.h"
@@ -1233,6 +1237,292 @@ TEST(base_tsa_name_bars_take_whole_pixels)
     Anm_ShutdownText();
     Translation_Shutdown();
     M_Teardown();
+}
+
+// Lists the text images a test patch holds.
+typedef enum {
+    M_IMAGE_STAGE_TITLE = 1 << 0,
+    M_IMAGE_STAGE_LOGO = 1 << 1,
+    M_IMAGE_SONG = 1 << 2,
+    M_IMAGE_BOSS_TITLE = 1 << 3,
+    M_IMAGE_BOSS_NAME = 1 << 4,
+    M_IMAGE_ALL = M_IMAGE_STAGE_TITLE | M_IMAGE_SONG | M_IMAGE_BOSS_TITLE
+        | M_IMAGE_BOSS_NAME,
+} M_IMAGES;
+
+// Writes the PNG name of the patch a/lang, width x height pixels of red.
+static void M_WriteTextImage(
+    const char *const name, const int32_t width, const int32_t height)
+{
+    IMAGE image = Image_Create(width, height, &g_HeapAllocator);
+    for (int64_t i = 0; i < (int64_t)width * height; i++) {
+        image.pixels[i * 4] = 255;
+        image.pixels[i * 4 + 3] = 255;
+    }
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Image_EncodePng(&image, &writer);
+    size_t size;
+    uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
+    CHECK(IS_OK(Writer_Close(&writer)));
+    char path[128];
+    snprintf(path, sizeof(path), "patches/a/lang/th06/%s", name);
+    Th06Data_WriteFile(m_Directory, path, bytes, size);
+    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Image_Free(&image);
+}
+
+// Writes text.anm: sprites 0 to 5 as 64 x 16 rows, and scripts 0, 1, 4
+// and 5 that show their sprite.
+static void M_WriteTextAnm(void)
+{
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 64, 128);
+    for (int32_t i = 0; i < 6; i++) {
+        AnmBuilder_AddSprite(&builder, i, 0.0f, 16.0f * i, 64.0f, 16.0f);
+    }
+    const uint32_t sprites[] = { 0, 1, 4, 5 };
+    for (size_t i = 0; i < ARRAY_SIZE(sprites); i++) {
+        const int32_t script =
+            AnmBuilder_BeginScript(&builder, (int32_t)sprites[i]);
+        AnmBuilder_Instr(&builder, script, 0, 1, &sprites[i], 1);
+        AnmBuilder_Instr(&builder, script, 1000, 15, nullptr, 0);
+    }
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, "data/text.anm", bytes, size);
+}
+
+// Sets up stage with text.anm and the patch a/lang holding images, below
+// nmlgc/base_tsa when base_tsa is set. The stage title image has 2 rows,
+// the song image 4, and the boss images 2.
+static void M_SetupTextImages(
+    const char *const case_name, const int32_t stage, const bool base_tsa,
+    const M_IMAGES images)
+{
+    static char name[] = "Stage";
+    static char song[] = "Song";
+    M_WriteData(case_name);
+    const int32_t front_ids[] = { 0x13, 0x14 };
+    const int16_t front_ends[] = { M_APPEAR_FRAMES, M_LEAVE_FRAMES };
+    M_WriteAnm("data/front.anm", front_ids, front_ends, 2);
+    M_WriteFace("data/face05a.anm", 1000);
+    M_WriteMsg("data/msg2.dat");
+    M_WriteTextAnm();
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    if (base_tsa) {
+        PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    }
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    char *const game_dir = TestDir_Join(patches, "a/lang/th06");
+    CHECK(Result_Log(File_MakeDir(game_dir), LOG_LEVEL_ERROR));
+    Mem_Free(game_dir);
+    if ((images & M_IMAGE_STAGE_TITLE) != 0) {
+        M_WriteTextImage("ti_sttitle.png", 384, 32);
+    }
+    if ((images & M_IMAGE_STAGE_LOGO) != 0) {
+        M_WriteTextImage("ti_stlogo.png", 384, 96);
+    }
+    if ((images & M_IMAGE_SONG) != 0) {
+        M_WriteTextImage("ti_bgm.png", 384, 128);
+    }
+    if ((images & M_IMAGE_BOSS_TITLE) != 0) {
+        M_WriteTextImage("ti_bosstitle.png", 384, 128);
+    }
+    if ((images & M_IMAGE_BOSS_NAME) != 0) {
+        M_WriteTextImage("ti_bossname.png", 384, 128);
+    }
+    m_Patches = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &m_Patches),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Files_SetPatches(m_Patches);
+    Translation_Init(m_Patches);
+    Anm_Init(&g_HeapAllocator, &g_Rng);
+    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Anm_CreateTexture(0, 64, 128, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
+    AsciiText_Initialize();
+    Chain_Init(&g_Chain);
+    GameManager_Create(&g_GameManager);
+    g_GameManager.run.stage = stage;
+    g_GameManager.run.difficulty = 1;
+    g_Buttons = (BUTTONS) {};
+    g_Stage.data.name = name;
+    g_Stage.data.song_names[0] = song;
+    g_Stage.data.song_names[1] = song;
+    Scene_Request(SCENE_GAMEPLAY);
+    CHECK(Result_Log(Gui_Register(), LOG_LEVEL_ERROR));
+}
+
+static void M_TeardownTextImages(void)
+{
+    g_Stage.data.name = nullptr;
+    g_Stage.data.song_names[0] = nullptr;
+    g_Stage.data.song_names[1] = nullptr;
+    Chain_Release(&g_Chain);
+    Anm_ShutdownText();
+    Translation_Shutdown();
+    M_Teardown();
+}
+
+// Returns whether the texture of slot holds no pixel that text drew: every
+// pixel is the red of M_WriteTextImage.
+static bool M_TextureIsUntouched(const int32_t slot)
+{
+    const IMAGE *const image = AnmTexture_GetImage(slot);
+    for (int64_t i = 0; i < (int64_t)image->width * image->height; i++) {
+        const uint8_t *const pixel = &image->pixels[i * 4];
+        if (pixel[0] != 255 || pixel[1] != 0 || pixel[3] != 255) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Returns whether the row of text.anm's texture at y holds a drawn pixel.
+static bool M_TextRowIsDrawn(const int32_t y)
+{
+    const IMAGE *const image = AnmTexture_GetImage(0);
+    for (int64_t i = (int64_t)y * image->width;
+         i < (int64_t)(y + 16) * image->width; i++) {
+        if (image->pixels[i * 4 + 3] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+TEST(text_rows_keep_their_sprites_without_base_tsa)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages("text_images_no_base_tsa", 1, false, M_IMAGE_ALL);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x700)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x701)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x704)->slot, 0);
+    CHECK(Anm_GetTexture(47) == nullptr);
+    CHECK(M_TextRowIsDrawn(0));
+    CHECK(M_TextRowIsDrawn(16));
+    M_TeardownTextImages();
+}
+
+TEST(base_tsa_without_images_keeps_the_text_rows)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages("text_images_none", 1, true, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x700)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x701)->slot, 0);
+    CHECK(M_TextRowIsDrawn(0));
+    CHECK(M_TextRowIsDrawn(16));
+    M_TeardownTextImages();
+}
+
+TEST(base_tsa_text_images_replace_the_stage_rows)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages("text_images_stage", 2, true, M_IMAGE_ALL);
+    const ANM_SPRITE *const title = Anm_GetSpriteEntry(0x700);
+    CHECK_EQ_INT(title->slot, 47);
+    CHECK(title->y0 == 16.0f && title->width == 384.0f);
+    CHECK(title->texture_width == 384.0f && title->v1 == 1.0f);
+    CHECK(g_Gui.banners.stage_name.sprite_data == title);
+    const ANM_SPRITE *const song = Anm_GetSpriteEntry(0x701);
+    CHECK_EQ_INT(song->slot, 48);
+    CHECK(song->y0 == 64.0f && song->height == 32.0f);
+    CHECK(g_Gui.banners.song_name.pos.x == 384.0f);
+    CHECK(g_Gui.banners.song_name.pos.y == 416.0f);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x704)->slot, 49);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x705)->slot, 50);
+    CHECK(M_TextureIsUntouched(47));
+    CHECK(M_TextureIsUntouched(48));
+    CHECK(!M_TextRowIsDrawn(0) && !M_TextRowIsDrawn(16));
+    M_TeardownTextImages();
+}
+
+TEST(base_tsa_text_images_show_the_boss_song_and_nameplates)
+{
+    m_ScriptCount = 0;
+    M_SCRIPT *const script = M_Script();
+    M_OpInt(script, 0, 7, 1);
+    M_OpText(script, 0, 8, 1, 0, "Boss");
+    M_Op(script, 0, 10);
+    M_SetupTextImages("text_images_boss", 1, true, M_IMAGE_ALL);
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK(Anm_GetSpriteEntry(0x701)->y0 == 32.0f);
+    CHECK(g_Gui.banners.song_name.pos.y == 416.0f);
+    const ANM_VM *const nameplate = &g_Gui.msg.nameplates[0];
+    CHECK_EQ_INT(nameplate->sprite_data->slot, 49);
+    CHECK(nameplate->pos.x == 224.0f && nameplate->pos.y == 352.0f);
+    CHECK(M_TextureIsUntouched(48));
+    CHECK(M_TextureIsUntouched(49));
+    M_TeardownTextImages();
+}
+
+TEST(base_tsa_boss_images_replace_both_nameplates_or_neither)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages(
+        "text_images_boss_title", 1, true,
+        M_IMAGE_STAGE_TITLE | M_IMAGE_BOSS_TITLE);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x700)->slot, 47);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x704)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x705)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x701)->slot, 0);
+    CHECK(M_TextRowIsDrawn(16));
+    M_TeardownTextImages();
+}
+
+TEST(base_tsa_text_images_without_the_stage_row_keep_the_text)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages("text_images_stage_7", 7, true, M_IMAGE_ALL);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x700)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x701)->slot, 0);
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x704)->slot, 0);
+    CHECK(Anm_GetScript(0x701)->count == 2);
+    CHECK(M_TextRowIsDrawn(0));
+    M_TeardownTextImages();
+}
+
+TEST(base_tsa_stage_logo_takes_precedence_over_the_stage_title)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages(
+        "text_images_logo", 2, true, M_IMAGE_STAGE_TITLE | M_IMAGE_STAGE_LOGO);
+    const ANM_SPRITE *const title = Anm_GetSpriteEntry(0x700);
+    CHECK(title->height == 48.0f && title->y0 == 48.0f);
+    CHECK(g_Gui.banners.stage_name.shown);
+    GfxRecorder_Start();
+    Chain_RunDraw(&g_Chain);
+    const int32_t with_logo = g_AsciiText.string_count;
+    GfxRecorder_Stop();
+    M_TeardownTextImages();
+    m_ScriptCount = 0;
+    M_SetupTextImages("text_images_title", 2, true, M_IMAGE_STAGE_TITLE);
+    CHECK(Anm_GetSpriteEntry(0x700)->height == 16.0f);
+    GfxRecorder_Start();
+    Chain_RunDraw(&g_Chain);
+    CHECK_EQ_INT(g_AsciiText.string_count, with_logo + 1);
+    GfxRecorder_Stop();
+    M_TeardownTextImages();
+}
+
+TEST(removing_the_interface_gives_the_text_rows_back)
+{
+    m_ScriptCount = 0;
+    M_SetupTextImages("text_images_release", 1, true, M_IMAGE_ALL);
+    const ANM_SCRIPT *const song = Anm_GetScript(0x701);
+    Gui_Remove();
+    CHECK_EQ_INT(Anm_GetSpriteEntry(0x700)->slot, 0);
+    CHECK(Anm_GetSpriteEntry(0x701)->y0 == 16.0f);
+    CHECK(Anm_GetScript(0x701) != song);
+    CHECK_EQ_INT(Anm_GetScript(0x701)->count, 2);
+    CHECK(Anm_GetTexture(47) == nullptr);
+    M_TeardownTextImages();
 }
 
 // Returns whether the first nameplate draws before the second.

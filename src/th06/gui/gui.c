@@ -732,12 +732,14 @@ static M_RUN M_RunInstrs(void)
             g_Gui.msg.timeline_release++;
             break;
         case M_OP_SONG:
+            GuiTextImage_ShowBossSong(g_GameManager.run.stage);
             Anm_StartScript(&g_Gui.banners.song_name, M_SONG_NAME_SCRIPT);
             g_Gui.banners.song_name.font_width = M_SONG_FONT_SIZE;
             g_Gui.banners.song_name.font_height = M_SONG_FONT_SIZE;
             g_Gui.banners.song = instr->value;
             if (instr->value >= 0 && instr->value < STAGE_SONG_COUNT
-                && g_Stage.data.song_names[instr->value] != nullptr) {
+                && g_Stage.data.song_names[instr->value] != nullptr
+                && !GuiTextImage_Replaces(M_SONG_NAME_SCRIPT)) {
                 Result_Log(
                     Anm_RenderTextRightAligned(
                         &g_Gui.banners.song_name, 0xe0ffff, 0,
@@ -755,10 +757,13 @@ static M_RUN M_RunInstrs(void)
             ANM_VM *const nameplate = &g_Gui.msg.nameplates[instr->index];
             Anm_StartScript(nameplate, instr->index + M_NAMEPLATE_SCRIPT);
             g_Gui.msg.nameplate_texts[instr->index] = instr->text;
-            Result_Log(
-                Anm_RenderTextRightAligned(
-                    nameplate, m_TextColors[instr->who], 0, "%s", instr->text),
-                LOG_LEVEL_WARNING);
+            if (!GuiTextImage_Replaces(M_NAMEPLATE_SCRIPT)) {
+                Result_Log(
+                    Anm_RenderTextRightAligned(
+                        nameplate, m_TextColors[instr->who], 0, "%s",
+                        instr->text),
+                    LOG_LEVEL_WARNING);
+            }
             g_Gui.msg.wait_frames = 0;
             break;
         }
@@ -894,11 +899,13 @@ static void M_StartBanners(void)
     g_Gui.banners.bomb_name.font_height = M_NAME_FONT_SIZE;
     g_Gui.banners.spell_name.font_width = M_NAME_FONT_SIZE;
     g_Gui.banners.spell_name.font_height = M_NAME_FONT_SIZE;
+    GuiTextImage_ShowStage(g_GameManager.run.stage);
     Anm_StartScript(&g_Gui.banners.stage_name, M_STAGE_NAME_SCRIPT);
     Anm_StartScript(&g_Gui.banners.song_name, M_SONG_NAME_SCRIPT);
     g_Gui.banners.song_name.font_width = M_SONG_FONT_SIZE;
     g_Gui.banners.song_name.font_height = M_SONG_FONT_SIZE;
-    if (g_Stage.data.name != nullptr) {
+    if (g_Stage.data.name != nullptr
+        && !GuiTextImage_Replaces(M_STAGE_NAME_SCRIPT)) {
         Result_Log(
             Anm_RenderTextCentered(
                 &g_Gui.banners.stage_name, 0xe0ffff, 0, "%s",
@@ -906,7 +913,8 @@ static void M_StartBanners(void)
                     g_GameManager.run.stage, g_Stage.data.name)),
             LOG_LEVEL_WARNING);
     }
-    if (g_Stage.data.song_names[0] != nullptr) {
+    if (g_Stage.data.song_names[0] != nullptr
+        && !GuiTextImage_Replaces(M_SONG_NAME_SCRIPT)) {
         Result_Log(
             Anm_RenderTextRightAligned(
                 &g_Gui.banners.song_name, 0xe0ffff, 0,
@@ -929,6 +937,7 @@ static void M_Release(void)
         Anm_Release(M_STAGE_FACE_SLOT + i);
     }
     M_FreeMsg();
+    GuiTextImage_Release();
     if (!M_KeepsInterface()) {
         Anm_Release(M_FRONT_SLOT);
         Anm_Release(M_LOADING_SLOT);
@@ -952,6 +961,7 @@ static RESULT M_Load(void)
             Anm_StartScript(&g_Gui.hud.sprites[i], i + M_FRONT_SCRIPT);
         }
     }
+    GuiTextImage_Load();
     M_StartBanners();
     return OK;
 }

@@ -291,6 +291,28 @@ const ANM_SCRIPT *Anm_GetScript(const int32_t index)
     return m_State->scripts[index];
 }
 
+void Anm_SetScriptEntry(const int32_t index, const ANM_SCRIPT *const script)
+{
+    if (index >= 0 && index < ANM_SCRIPT_COUNT) {
+        m_State->scripts[index] = script;
+    }
+}
+
+const ANM_SPRITE *Anm_GetSpriteEntry(const int32_t index)
+{
+    if (index < 0 || index >= ANM_SPRITE_COUNT) {
+        return nullptr;
+    }
+    return &m_State->sprites[index];
+}
+
+void Anm_SetSpriteEntry(const int32_t index, const ANM_SPRITE *const sprite)
+{
+    if (index >= 0 && index < ANM_SPRITE_COUNT) {
+        m_State->sprites[index] = *sprite;
+    }
+}
+
 void Anm_Init(const ALLOCATOR *const allocator, RNG *const rng)
 {
     m_Allocator = allocator;
