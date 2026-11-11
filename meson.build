@@ -53,7 +53,7 @@ endif
 # that is not on its include path.
 include_root = meson.current_build_dir() / 'include'
 layer_include = {}
-foreach layer : ['core', 'stg', 'th06']
+foreach layer : ['core', 'stg', 'th06', 'othpatch']
   run_command(
     python3,
     files('tools/meson/link_layer'),
@@ -75,7 +75,8 @@ swscale = dependency('libswscale', static: true)
 avformat = dependency('libavformat', static: true)
 swresample = dependency('libswresample', static: true)
 
-# The case tools compress calc rows with zlib. No game layer depends on it.
+# The case tools compress calc rows with zlib, and othpatch unpacks game
+# packages with it. No game layer depends on it.
 zlib = dependency('zlib', static: true)
 
 subdir('src/core')
@@ -100,6 +101,10 @@ foreach name, game : games
     win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
   )
 endforeach
+
+# othpatch downloads patches. It is a program on core alone, and the only
+# one that links curl.
+subdir('src/othpatch')
 subdir('replay')
 runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/backend_main_windows.c' : 'replay/th06/runner/backend_main_posix.c'
 executable(

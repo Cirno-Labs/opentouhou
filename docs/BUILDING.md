@@ -229,6 +229,11 @@ and FFmpeg for `core/image` and `core/audio`. FFmpeg supports PNG,
 MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and MP3 audio. No GPL
 component is enabled, so its licence stays LGPL.
 
+They also pin curl for othpatch, cut down to HTTP and HTTPS. Its TLS is
+mbedTLS on Linux and macOS and Schannel on Windows. curl has no CA bundle
+of its own; othpatch uses the system's certificates. Only othpatch links
+curl and mbedTLS.
+
 ## Building without Docker
 
 Possible, not supported. You need a C23 compiler (clang 18 or GCC 14 or

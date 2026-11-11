@@ -32,10 +32,11 @@ public header describes the module itself.
 ## Layers
 
 ```
-src/core/    every game: platform, rendering, audio, input, text,
-             files, patches, maths
-src/stg/     what the shooting games share beyond core
-src/thXX/    one directory per game
+src/core/      every game: platform, rendering, audio, input, text,
+               files, patches, maths
+src/stg/       what the shooting games share beyond core
+src/thXX/      one directory per game
+src/othpatch/  the patch downloader and updater, a program on core alone
 ```
 
 - `core` depends on no other layer and has no game concepts.

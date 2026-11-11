@@ -114,3 +114,37 @@ tar -xJf "$work/ffmpeg.tar.xz" -C "$work"
     make -j"$jobs"
     make install
 )
+
+# mbedTLS and curl take the CMake options of the Linux image, which cut
+# curl down to HTTP and HTTPS with mbedTLS. Only othpatch links them.
+stage_options() {
+    sed -n "/^FROM base AS $1\$/,/^FROM /p" "$dockerfile" \
+        | sed -n 's/^ *\(-D[A-Z0-9_]*=[^ \\]*\).*/\1/p' \
+        | grep -v '^-DCMAKE_'
+}
+
+mbedtls_version=$(pin MBEDTLS_VERSION)
+mbedtls_options=()
+while IFS= read -r option; do
+    mbedtls_options+=("$option")
+done < <(stage_options mbedtls)
+fetch "https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$mbedtls_version/mbedtls-$mbedtls_version.tar.bz2" \
+    "$(pin MBEDTLS_SHA256)" "$work/mbedtls.tar.bz2"
+tar -xjf "$work/mbedtls.tar.bz2" -C "$work"
+cmake -S "$work/mbedtls-$mbedtls_version" -B "$work/mbedtls-build" \
+    "${cmake_options[@]}" "${mbedtls_options[@]}"
+cmake --build "$work/mbedtls-build" -j"$jobs"
+cmake --install "$work/mbedtls-build"
+
+curl_version=$(pin CURL_VERSION)
+curl_options=()
+while IFS= read -r option; do
+    curl_options+=("$option")
+done < <(stage_options curl)
+fetch "https://curl.se/download/curl-$curl_version.tar.xz" \
+    "$(pin CURL_SHA256)" "$work/curl.tar.xz"
+tar -xJf "$work/curl.tar.xz" -C "$work"
+PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig" cmake -S "$work/curl-$curl_version" \
+    -B "$work/curl-build" "${cmake_options[@]}" "${curl_options[@]}"
+cmake --build "$work/curl-build" -j"$jobs"
+cmake --install "$work/curl-build"

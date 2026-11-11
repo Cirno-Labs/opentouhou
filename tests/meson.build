@@ -1198,3 +1198,27 @@ test(
     'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
   },
 )
+
+# Each part of othpatch has a test named after it. The tests use
+# repository networks of file:// URLs in their own directories, so no test
+# needs the network. othpatch allocates its arenas with malloc, which
+# MALLOC_PERTURB_ would fill byte by byte, so the tests turn it off.
+foreach part : ['fetch']
+  test(
+    'othpatch/' + part,
+    executable(
+      'test_othpatch_' + part,
+      'test_othpatch_' + part + '.c',
+      c_args: [layer_include['othpatch']] + core_include,
+      implicit_include_directories: false,
+      link_with: othpatch_libs,
+      dependencies: othpatch_deps,
+    ),
+    env: {
+      'TEST_DIR': meson.current_build_dir() / 'tmp' / 'othpatch_' + part,
+      'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'othpatch_' + part,
+      'MALLOC_PERTURB_': '0',
+    },
+    suite: 'unit',
+  )
+endforeach

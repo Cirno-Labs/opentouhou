@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Write a C header with a game's version, for the executable and its
-Windows resources.
+"""Write a C header with the version of a game or of othpatch, for the
+executable and its Windows resources.
 
 GAME_VERSION is the version string from tools/shared/versioning.py.
 GAME_VERSION_RC holds its four numbers for VERSIONINFO: major, minor,
 patch and the commits since the tag, or zeros for an untagged build.
-The header is rewritten only when the version changes.
+--prefix replaces GAME in both names, such as OTHPATCH_VERSION.
+The header is rewritten only when its text changes.
 """
 
 import argparse
@@ -27,14 +28,15 @@ def numbers(version: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("game")
+    parser.add_argument("program")
     parser.add_argument("output", type=Path)
+    parser.add_argument("--prefix", default="GAME")
     args = parser.parse_args()
-    version = generate_version(args.game)
+    version = generate_version(args.program)
     text = (
         "#pragma once\n\n"
-        f'#define GAME_VERSION "{version}"\n'
-        f"#define GAME_VERSION_RC {numbers(version)}\n"
+        f'#define {args.prefix}_VERSION "{version}"\n'
+        f"#define {args.prefix}_VERSION_RC {numbers(version)}\n"
     )
     if not args.output.exists() or args.output.read_text() != text:
         args.output.write_text(text)
