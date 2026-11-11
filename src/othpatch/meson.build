@@ -29,6 +29,7 @@ othpatch_lib = static_library(
   othpatch_fetch_backends[host_machine.system()],
   'language.c',
   'repo.c',
+  'update.c',
   othpatch_version,
   c_args: [layer_include['othpatch']] + core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
