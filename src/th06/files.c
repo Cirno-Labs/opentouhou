@@ -55,3 +55,8 @@ RESULT Files_Load(const char *const path, READER *const out)
 {
     return Vfs_Open(m_Vfs, path, VFS_IN_MEMORY, out);
 }
+
+RESULT Files_Stream(const char *const path, READER *const out)
+{
+    return Vfs_Open(m_Vfs, path, VFS_STREAM, out);
+}

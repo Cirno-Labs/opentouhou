@@ -65,6 +65,33 @@ TEST(an_archive_file_wins_over_a_loose_file_of_the_same_name)
     Mem_Free(directory);
 }
 
+TEST(stream_opens_an_archive_file_and_a_loose_file)
+{
+    char *const directory = TestDir_Prepare("stream");
+    Th06Data_WriteArchives(directory, 2);
+    const TH06_DATA_FILE files[] = {
+        { "ver0102.dat", "1.02h" },
+        { "th06_01.pos", "from-archive" },
+    };
+    Th06Data_WriteArchive(directory, g_Th06Archives[2], files, 2);
+    Th06Data_WriteFile(directory, "th06_01.wav", "from-loose", 10);
+
+    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+
+    READER reader;
+    CHECK(
+        Result_Log(Files_Stream("bgm/th06_01.pos", &reader), LOG_LEVEL_ERROR));
+    CHECK(M_ReadsAs(&reader, "from-archive"));
+    Reader_Close(&reader);
+
+    CHECK(Result_Log(Files_Stream("th06_01.wav", &reader), LOG_LEVEL_ERROR));
+    CHECK(M_ReadsAs(&reader, "from-loose"));
+    Reader_Close(&reader);
+
+    Files_Shutdown();
+    Mem_Free(directory);
+}
+
 TEST(a_missing_archive_fails_naming_it)
 {
     char *const directory = TestDir_Prepare("missing_archive");

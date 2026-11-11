@@ -15,3 +15,6 @@ void Files_Shutdown(void);
 // Opens path in memory, from the archives or else the data directory.
 // The archives find a file by the last component of its path.
 RESULT Files_Load(const char *path, READER *out);
+// Opens path as Files_Load does, but reads a file of the data directory
+// from the disk as the reader reaches it, so it is never all in memory.
+RESULT Files_Stream(const char *path, READER *out);
