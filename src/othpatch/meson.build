@@ -6,6 +6,12 @@ othpatch_fetch_backends = {
   'windows': 'fetch/backend_windows.c',
 }
 
+othpatch_install_backends = {
+  'linux': 'install/backend_linux.c',
+  'darwin': 'install/backend_mac.c',
+  'windows': 'install/backend_windows.c',
+}
+
 # Rewritten on every build; the compile reruns only when the version
 # changed.
 othpatch_version = custom_target(
@@ -27,6 +33,8 @@ othpatch_lib = static_library(
   'fetch/curl.c',
   'fetch/file.c',
   'game.c',
+  'install/install.c',
+  othpatch_install_backends[host_machine.system()],
   othpatch_fetch_backends[host_machine.system()],
   'language.c',
   'main.c',
