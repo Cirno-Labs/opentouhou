@@ -119,6 +119,11 @@ void Config_SetDefaults(const CONFIG_SCHEMA *const schema, void *const settings)
         case CONFIG_FLOAT:
             *(float *)field = option->fallback.real;
             break;
+        case CONFIG_STRING:
+            snprintf(
+                (char *)field, CONFIG_STRING_SIZE, "%s",
+                option->fallback.string);
+            break;
         }
     }
 }
@@ -174,6 +179,13 @@ void Config_Load(
             }
             break;
         }
+        case CONFIG_STRING:
+            if (strlen(text) < CONFIG_STRING_SIZE) {
+                memcpy(field, text, strlen(text) + 1);
+            } else {
+                M_WarnBadValue(option, text);
+            }
+            break;
         }
     }
 }
@@ -204,6 +216,9 @@ void Config_Save(
             Ini_Set(
                 ini, option->section, option->key,
                 option->range.names[*(const int32_t *)field]);
+            break;
+        case CONFIG_STRING:
+            Ini_Set(ini, option->section, option->key, (const char *)field);
             break;
         }
     }

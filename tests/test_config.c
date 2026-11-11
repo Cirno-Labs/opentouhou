@@ -12,6 +12,7 @@ typedef struct {
     int32_t width;
     float volume;
     int32_t filter;
+    char name[CONFIG_STRING_SIZE];
     bool untouched;
 } SETTINGS;
 
@@ -22,6 +23,7 @@ static const CONFIG_OPTION m_Options[] = {
     CONFIG_INT(SETTINGS, "video", "width", width, 640, 320, 7680),
     CONFIG_FLOAT(SETTINGS, "audio", "volume", volume, 1.0f, 0.0f, 1.0f),
     CONFIG_ENUM(SETTINGS, "video", "filter", filter, 0, m_Filters),
+    CONFIG_STRING(SETTINGS, "user", "name", name, "nobody"),
 };
 
 static const CONFIG_SCHEMA m_Schema = CONFIG_SCHEMA_OF(SETTINGS, m_Options);
@@ -45,6 +47,7 @@ TEST(set_defaults_writes_every_default)
     CHECK_EQ_INT(settings.width, 640);
     CHECK_EQ_INT((int)(settings.volume * 1000), 1000);
     CHECK_EQ_INT(settings.filter, 0);
+    CHECK_EQ_STR(settings.name, "nobody");
     CHECK(settings.untouched);
 }
 
@@ -56,9 +59,12 @@ TEST(load_reads_every_type)
         "width = 1920\n"
         "filter = Linear\n"
         "[audio]\n"
-        "volume = 0.5\n");
+        "volume = 0.5\n"
+        "[user]\n"
+        "name = Reimu Hakurei\n");
     SETTINGS settings;
     Config_Load(&m_Schema, ini, &settings);
+    CHECK_EQ_STR(settings.name, "Reimu Hakurei");
     CHECK(settings.fullscreen);
     CHECK_EQ_INT(settings.width, 1920);
     CHECK_EQ_INT((int)(settings.volume * 1000), 500);
@@ -167,6 +173,7 @@ TEST(save_then_load_round_trips_every_field)
         .width = 1280,
         .volume = 0.25f,
         .filter = 1,
+        .name = "Marisa",
     };
     INI *const ini = M_Parse("");
     Config_Save(&m_Schema, ini, &settings);
@@ -176,6 +183,7 @@ TEST(save_then_load_round_trips_every_field)
     CHECK_EQ_INT(loaded.width, settings.width);
     CHECK_EQ_INT((int)(loaded.volume * 1000), (int)(settings.volume * 1000));
     CHECK_EQ_INT(loaded.filter, settings.filter);
+    CHECK_EQ_STR(loaded.name, "Marisa");
     Ini_Free(ini);
 }
 
@@ -225,5 +233,31 @@ TEST(save_keeps_keys_the_schema_does_not_know)
     Config_Load(&m_Schema, ini, &settings);
     Config_Save(&m_Schema, ini, &settings);
     CHECK_EQ_STR(Ini_Get(ini, "video", "unknown"), "kept");
+    Ini_Free(ini);
+}
+
+TEST(too_long_string_keeps_the_default)
+{
+    char text[CONFIG_STRING_SIZE + 32];
+    const int prefix = snprintf(text, sizeof(text), "[user]\nname = ");
+    memset(text + prefix, 'a', CONFIG_STRING_SIZE);
+    snprintf(text + prefix + CONFIG_STRING_SIZE, 2, "\n");
+    INI *const ini = M_Parse(text);
+    SETTINGS settings;
+    Config_Load(&m_Schema, ini, &settings);
+    CHECK_EQ_STR(settings.name, "nobody");
+    Ini_Free(ini);
+}
+
+TEST(longest_string_that_fits_loads)
+{
+    char text[CONFIG_STRING_SIZE + 32];
+    const int prefix = snprintf(text, sizeof(text), "[user]\nname = ");
+    memset(text + prefix, 'a', CONFIG_STRING_SIZE - 1);
+    snprintf(text + prefix + CONFIG_STRING_SIZE - 1, 2, "\n");
+    INI *const ini = M_Parse(text);
+    SETTINGS settings;
+    Config_Load(&m_Schema, ini, &settings);
+    CHECK_EQ_INT(strlen(settings.name), CONFIG_STRING_SIZE - 1);
     Ini_Free(ini);
 }

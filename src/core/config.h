@@ -13,8 +13,9 @@
 // app loads the shared INI once and gives every part's schema a turn at it.
 //
 // A CONFIG_ENUM field is declared as int32_t, holding the index of the
-// value's name in the option's names. Every other field has the C type its
-// CONFIG_TYPE names: bool, int32_t, float.
+// value's name in the option's names. A CONFIG_STRING field is declared as
+// char[CONFIG_STRING_SIZE] and holds a NUL-terminated UTF-8 string. Every
+// other field has the C type its CONFIG_TYPE names: bool, int32_t, float.
 //
 // Example:
 //
@@ -51,7 +52,12 @@ typedef enum {
     CONFIG_INT,
     CONFIG_FLOAT,
     CONFIG_ENUM,
+    CONFIG_STRING,
 } CONFIG_TYPE;
+
+// Sets the size of a CONFIG_STRING field, terminator included. A longer
+// value in the INI is a warning, and the field keeps its default.
+#define CONFIG_STRING_SIZE 1024
 
 typedef struct {
     const char *section;
@@ -64,6 +70,7 @@ typedef struct {
         // Also the default index into range.names for CONFIG_ENUM.
         int32_t integer;
         float real;
+        const char *string;
     } fallback;
     union {
         struct {
@@ -159,4 +166,17 @@ void Config_Save(const CONFIG_SCHEMA *schema, INI *ini, const void *settings);
             + CONFIG_TYPE_CHECK(type_, field_, int32_t),                       \
         .fallback = { .integer = (fallback_) },                                \
         .range = { .names = (names_) },                                        \
+    }
+
+// Builds a CONFIG_OPTION for a char[CONFIG_STRING_SIZE] field. fallback_
+// is the default text and must fit in the field.
+#define CONFIG_STRING(type_, section_, key_, field_, fallback_)                \
+    {                                                                          \
+        .section = (section_),                                                 \
+        .key = (key_),                                                         \
+        .type = CONFIG_STRING,                                                 \
+        .offset = offsetof(type_, field_)                                      \
+            + CONFIG_TYPE_CHECK(                                               \
+                      type_, field_, typeof(char[CONFIG_STRING_SIZE])),        \
+        .fallback = { .string = (fallback_) },                                 \
     }
