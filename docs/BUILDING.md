@@ -167,6 +167,15 @@ resolution, PNG or JPEG, and JPEG quality. `[video] interpolation`
 smooths motion between game ticks and is on by default; set it to
 `false` to show each tick as the game drew it.
 
+The games read thcrap patches from the `patches/` folder beside the
+user directories (`$XDG_DATA_HOME/opentouhou/patches/`,
+`%APPDATA%\opentouhou\patches\`). It has the layout of thcrap's
+`repos/` folder, so a copy of that folder works: one folder per
+repository, and in it one folder per patch. Every patch in it applies,
+after the patches it depends on. `[patches] enabled = false` in
+`config.ini` turns them off, and `[patches] disabled` lists patch ids,
+such as `thpatch/lang_de`, separated by commas, that are left out.
+
 ## Docker images
 
 There is one image per target platform, defined under `tools/docker/`:

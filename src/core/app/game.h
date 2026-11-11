@@ -3,6 +3,7 @@
 #include "core/base/result.h"
 #include "core/config.h"
 #include "core/input.h"
+#include "core/patch/stack.h"
 
 #define APP_TICK_RATE 60
 
@@ -25,6 +26,9 @@ typedef struct {
     // after shutdown. Both are nullptr for a game without settings.
     const CONFIG_SCHEMA *settings_schema;
     void *settings;
+    // Describes the game to thcrap patches. core/app opens the patch stack
+    // from it before init. nullptr for a game that takes no patches.
+    const PATCH_GAME *patch_game;
     // Prepares the game. Called once, after the window exists.
     RESULT (*init)(void);
     // Advances the game by one 60 Hz step and draws it through core/gfx.

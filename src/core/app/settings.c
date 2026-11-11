@@ -16,6 +16,8 @@ static const CONFIG_OPTION m_Options[] = {
     CONFIG_INT(
         APP_SETTINGS, "screenshot", "jpeg_quality", screenshot_jpeg_quality, 90,
         1, 100),
+    CONFIG_BOOL(APP_SETTINGS, "patches", "enabled", patches_enabled, true),
+    CONFIG_STRING(APP_SETTINGS, "patches", "disabled", patches_disabled, ""),
 };
 
 const CONFIG_SCHEMA g_AppSettingsSchema =
