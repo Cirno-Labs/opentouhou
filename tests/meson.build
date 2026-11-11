@@ -122,6 +122,18 @@ test(
 )
 
 test(
+  'th06/score',
+  executable(
+    'test_th06_score',
+    'test_th06_score.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th06_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th06/angle',
   executable(
     'test_th06_angle',

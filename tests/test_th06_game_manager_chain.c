@@ -235,7 +235,7 @@ TEST(new_game_initializes_records_and_registers_in_original_order)
                   | (uint32_t)random_values[7] << 16));
     CHECK_EQ_INT(card->checksum, random_values[9] & 0xff);
     CHECK_EQ_INT(card->history[0], random_values[9] >> 8);
-    CHECK_EQ_INT(card->name_fill[0], random_values[12] & 0xff);
+    CHECK_EQ_INT(card->name_bytes[0], random_values[12] & 0xff);
     CHECK_EQ_INT(card->name[0], 0);
     CHECK_EQ_INT(card->attempts, 0);
     CHECK_EQ_INT(card->captures, 0);

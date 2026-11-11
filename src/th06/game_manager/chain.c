@@ -53,7 +53,7 @@ static void M_InitSpellCard(SPELL_CARD_RECORD *const card, const uint16_t index)
     Reader_Skip(&reader, 2);
     card->checksum = Reader_ReadU8(&reader);
     Reader_ReadBytes(&reader, card->history, sizeof(card->history));
-    Reader_ReadBytes(&reader, card->name_fill, sizeof(card->name_fill));
+    Reader_ReadBytes(&reader, card->name_bytes, sizeof(card->name_bytes));
     card->name[0] = '\0';
     card->header.magic = 0x4b544143;
     card->header.size = M_SPELL_CARD_BYTES;
