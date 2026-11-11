@@ -1,6 +1,8 @@
 # Everything but main.c and stubs.c, so the replay runner and the tests
 # link it too; stubs.c stays out so a test can link its own stand-ins for
-# the unported modules instead.
+# the unported modules instead. The core/app functions that it calls
+# come from core/app in the game, from replay/th06/runner/app_null.c in
+# the runner and from tests/app_fake.c in the tests.
 th06_lib = static_library(
   'th06_lib',
   'angle.c',

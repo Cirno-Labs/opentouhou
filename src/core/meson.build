@@ -209,11 +209,10 @@ core_main_lib = static_library(
 core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
-    core_lib, core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_vfs_lib,
+    core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_vfs_lib,
     core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
     core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
-  link_whole: core_main_lib,
   dependencies: [
     sdl3.partial_dependency(links: true),
     sdl3_ttf.partial_dependency(links: true),
@@ -224,4 +223,13 @@ core_dep = declare_dependency(
     swresample.partial_dependency(links: true),
     cc_libm,
   ],
+)
+
+# core/app runs the game, so only a game executable links it. The layers
+# above core call its game-facing functions and get them from the game,
+# or from a stand-in in the replay runner and the tests.
+core_app_dep = declare_dependency(
+  link_with: core_lib,
+  link_whole: core_main_lib,
+  dependencies: core_dep,
 )

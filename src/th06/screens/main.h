@@ -11,14 +11,20 @@
 // pad button configuration, and the demo that starts after 720 calcs
 // without input.
 //
-// The port reads no raw pad buttons, so the pad button configuration
-// shows and edits the original's mapping but can assign a button only by
-// restoring the defaults, and the mapping has no effect on the input.
-// The options show no choice for the colour depth and the window mode,
-// which the port does not take over (see th06/settings.h), and ignore
-// changes to them. The original measures the frame rate on the title to
-// slow the game down on fast displays, and waits until three seconds after
-// the start before it plays the title music. The port does neither.
+// The pad button configuration edits the gamepad and joystick bindings of
+// core/app and leaves the keyboard's. Each row shows one pad
+// button of its action as a number, and a press of a pad button gives it
+// to the row at the cursor. The d-pad, the sticks and the hats only move
+// the cursor, so the rows show and take the face, shoulder, back, start,
+// guide and stick-press buttons and the joystick buttons. Leaving the
+// screen asks core/app for the changed bindings. The original's defaults
+// become the port's default pad bindings. The options show no choice for
+// the colour depth and the window mode, and ignore changes to them (see
+// th06/settings.h).
+//
+// The original measures the frame rate on the title to slow the game down
+// on fast displays, and waits until three seconds after the start before
+// it plays the title music. The port does neither.
 
 // Adds the title at calc priority 2 and draw priority 0. Opens the replay
 // menu when mode is nonzero, or the title otherwise. The first calc loads

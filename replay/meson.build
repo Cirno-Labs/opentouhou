@@ -11,6 +11,7 @@ replay_case_lib = static_library(
 runner_backend = host_machine.system() == 'windows' ? 'th06/runner/backend_windows.c' : 'th06/runner/backend_posix.c'
 th06_runner_lib = static_library(
   'th06_runner',
+  'th06/runner/app_null.c',
   'th06/runner/compare.c',
   'th06/runner/run.c',
   'th06/runner/state.c',

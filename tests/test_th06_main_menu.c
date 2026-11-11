@@ -1,6 +1,7 @@
 #include "th06/screens/main.h"
 
 #include "anm_builder.h"
+#include "app_fake.h"
 #include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
@@ -509,5 +510,160 @@ TEST(the_runner_removes_the_title)
     TitleScene_Remove();
     CHECK(M_TitleRemoved());
     TitleScene_Remove();
+    M_Teardown();
+}
+
+static const char *const m_PadNames[9] = {
+    "south",     "east",      "west",       "start", "dpad_up",
+    "dpad_down", "dpad_left", "dpad_right", "north",
+};
+
+static void M_SetUpApp(void)
+{
+    FakeApp_Reset();
+    for (size_t action = 0; action < 9; action++) {
+        INPUT_BINDING *const bindings = g_FakeApp.bindings[action];
+        CHECK(Input_BindingFromName("z", &bindings[0]));
+        CHECK(Input_BindingFromName(m_PadNames[action], &bindings[1]));
+        g_FakeApp.binding_counts[action] = 2;
+    }
+}
+
+static void M_CheckRequest(
+    const int32_t index, const char kind, const size_t action,
+    const char *const name)
+{
+    CHECK(index < g_FakeApp.request_count);
+    const FAKE_APP_REQUEST *const request = &g_FakeApp.requests[index];
+    char request_name[INPUT_BINDING_NAME_SIZE] = "";
+    if (request->kind == 'b' || request->kind == 'u') {
+        Input_BindingName(request->binding, request_name);
+    }
+    CHECK_EQ_INT(request->kind, kind);
+    CHECK_EQ_INT(request->action, action);
+    CHECK_EQ_STR(request_name, name);
+}
+
+static void M_OpenOptions(void)
+{
+    M_OpenTitleMenu();
+    for (int32_t i = 0; i < 5; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Shoot);
+    M_Run(32);
+}
+
+static void M_OpenPadConfig(void)
+{
+    M_OpenOptions();
+    for (int32_t i = 0; i < 7; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Shoot);
+    M_Run(32);
+}
+
+static void M_PressPad(const char *const name)
+{
+    CHECK(Input_BindingFromName(name, &g_FakeApp.pad_press));
+    g_FakeApp.pad_pending = true;
+    M_Tick();
+}
+
+static void M_LeavePadConfig(void)
+{
+    for (int32_t i = 0; i < 10; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Shoot);
+}
+
+TEST(a_pad_press_takes_the_row_and_swaps_the_other_row)
+{
+    M_Setup("pad_swap");
+    M_SetUpApp();
+    M_OpenPadConfig();
+    M_PressPad("east");
+    CHECK_EQ_INT(g_FakeApp.request_count, 0);
+    M_LeavePadConfig();
+    CHECK_EQ_INT(g_FakeApp.request_count, 4);
+    M_CheckRequest(0, 'u', 0, "south");
+    M_CheckRequest(1, 'b', 0, "east");
+    M_CheckRequest(2, 'u', 1, "east");
+    M_CheckRequest(3, 'b', 1, "south");
+    FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(shoot_and_focus_may_share_a_pad_button)
+{
+    M_Setup("pad_share");
+    M_SetUpApp();
+    M_OpenPadConfig();
+    M_PressPad("west");
+    M_LeavePadConfig();
+    CHECK_EQ_INT(g_FakeApp.request_count, 2);
+    M_CheckRequest(0, 'u', 0, "south");
+    M_CheckRequest(1, 'b', 0, "west");
+    FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(a_joystick_button_counts_and_a_stick_does_not)
+{
+    M_Setup("pad_joystick");
+    M_SetUpApp();
+    M_OpenPadConfig();
+    M_PressPad("left_stick_up");
+    M_Press(m_Down);
+    M_PressPad("joy_button_12");
+    for (int32_t i = 0; i < 9; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(g_FakeApp.request_count, 2);
+    M_CheckRequest(0, 'u', 1, "east");
+    M_CheckRequest(1, 'b', 1, "joy_button_12");
+    FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(the_dpad_moves_the_pad_config_cursor_and_binds_nothing)
+{
+    M_Setup("pad_dpad");
+    M_SetUpApp();
+    M_OpenPadConfig();
+    CHECK(Input_BindingFromName("dpad_down", &g_FakeApp.pad_press));
+    g_FakeApp.pad_pending = true;
+    M_Press(m_Down);
+    M_PressPad("north");
+    for (int32_t i = 0; i < 9; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(g_FakeApp.request_count, 4);
+    M_CheckRequest(0, 'u', 1, "east");
+    M_CheckRequest(1, 'b', 1, "north");
+    M_CheckRequest(2, 'u', 8, "north");
+    M_CheckRequest(3, 'b', 8, "east");
+    FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(the_pad_defaults_reset_the_pad_before_the_rows)
+{
+    M_Setup("pad_defaults");
+    M_SetUpApp();
+    M_OpenPadConfig();
+    for (int32_t i = 0; i < 9; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Shoot);
+    M_Press(m_Down);
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(g_FakeApp.request_count, 1);
+    M_CheckRequest(0, 'r', 0, "");
+    FakeApp_Reset();
     M_Teardown();
 }

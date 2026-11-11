@@ -180,6 +180,7 @@ test(
   executable(
     'test_th06_main_menu',
     'test_th06_main_menu.c',
+    'app_fake.c',
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',

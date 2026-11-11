@@ -11,8 +11,11 @@
 #include "th06/sound.h"
 #include "th06/strings.h"
 
+#include "core/app.h"
 #include "core/base/log.h"
+#include "core/base/utils.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define M_CALC_PRIORITY 2
@@ -22,7 +25,6 @@
 #define M_IDLE_FRAMES 720
 #define M_TITLE_MUSIC "bgm/th06_01.mid"
 #define M_DEMO_PATH "data/demo/demo00.rpy"
-#define M_NO_PAD_BUTTON 32
 #define M_MAPPING_COUNT 9
 
 #define M_UP 0x10
@@ -55,11 +57,17 @@ typedef enum {
     M_STATE_PRACTICE_STAGE = 17,
 } M_STATE;
 
-// Holds the pad buttons of the original's controller mapping, in its
-// order: shoot, bomb, focus, menu, up, down, left, right, skip. -1 is
-// unbound.
+// Holds a pad button that a row of the pad button configuration shows.
 typedef struct {
-    int16_t buttons[M_MAPPING_COUNT];
+    bool bound;
+    INPUT_BINDING binding;
+} M_PAD_BUTTON;
+
+// Holds the rows of the pad button configuration, in the original's order,
+// which is also the order of the first actions of g_InputSchema: shoot,
+// bomb, focus, menu, up, down, left, right, skip.
+typedef struct {
+    M_PAD_BUTTON buttons[M_MAPPING_COUNT];
 } M_MAPPING;
 
 typedef struct {
@@ -78,14 +86,34 @@ typedef struct {
     int32_t fade_in_frames;
     int32_t fade_out_frames;
     M_MAPPING mapping;
+    // Holds the rows that the bindings had when the screen opened or when
+    // the defaults were chosen, and whether they were.
+    M_MAPPING committed;
+    bool reset_pad;
     SAVED_REPLAY replays[SAVED_REPLAY_COUNT];
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
     bool added;
 } M_MENU;
 
-static const M_MAPPING m_DefaultMapping = { { 0, 1, 0, -1, -1, -1, -1, -1,
-                                              -1 } };
+// Names the gamepad buttons that the configuration assigns, in the order
+// of their codes, so that it shows each as a number, as the original shows
+// its pad's button numbers. The d-pad is left out: like the sticks and the
+// hats, it moves the cursor only, as the pad's directions do in the
+// original.
+static const char *const m_GamepadButtons[] = {
+    "south",
+    "east",
+    "west",
+    "north",
+    "left_shoulder",
+    "right_shoulder",
+    "back",
+    "start",
+    "guide",
+    "left_stick_press",
+    "right_stick_press",
+};
 
 static const STRING m_StageNames[7] = {
     STRING_MENU_STAGE_1,     STRING_MENU_STAGE_2, STRING_MENU_STAGE_3,
@@ -107,8 +135,6 @@ static const STRING m_DifficultyNames[5] = {
 };
 
 static M_MENU m_Menu;
-// Holds the mapping that the pad button configuration commits.
-static M_MAPPING m_Mapping = m_DefaultMapping;
 // Remembers that the first title played its music. The original plays it
 // on the first start only after its three-second wait.
 static bool m_MusicStarted;
@@ -186,15 +212,131 @@ static int32_t M_MoveCursor(M_MENU *const menu, const int32_t count)
     return moved;
 }
 
-static void M_ReassignButton(
-    M_MENU *const menu, const int16_t button, const int16_t replacement,
-    const bool keep_shared)
+// Returns the number that the configuration shows for a pad button, from
+// 0 to 99, or -1 for a binding that it cannot show.
+static int32_t M_PadNumber(const INPUT_BINDING binding)
 {
-    int16_t *const buttons = menu->mapping.buttons;
+    if (binding.device == INPUT_DEVICE_KEYBOARD || binding.count != 1) {
+        return -1;
+    }
+    char name[INPUT_BINDING_NAME_SIZE];
+    Input_BindingName(binding, name);
+    int32_t number;
+    char extra;
+    if (sscanf(name, "joy_button_%d%c", &number, &extra) == 1) {
+        return number <= 99 ? number : -1;
+    }
+    for (size_t i = 0; i < ARRAY_SIZE(m_GamepadButtons); i++) {
+        if (strcmp(name, m_GamepadButtons[i]) == 0) {
+            return (int32_t)i;
+        }
+    }
+    return -1;
+}
+
+static bool M_SameButton(
+    const M_PAD_BUTTON *const a, const M_PAD_BUTTON *const b)
+{
+    return a->bound == b->bound
+        && (!a->bound
+            || (a->binding.device == b->binding.device
+                && a->binding.codes[0] == b->binding.codes[0]));
+}
+
+// Returns the first pad button of bindings that the configuration can show.
+static M_PAD_BUTTON M_FirstPadButton(
+    const INPUT_BINDING *const bindings, const size_t count)
+{
+    for (size_t i = 0; i < count; i++) {
+        if (M_PadNumber(bindings[i]) >= 0) {
+            return (M_PAD_BUTTON) { true, bindings[i] };
+        }
+    }
+    return (M_PAD_BUTTON) {};
+}
+
+static M_MAPPING M_CurrentMapping(void)
+{
+    M_MAPPING mapping = {};
+    for (size_t action = 0; action < M_MAPPING_COUNT; action++) {
+        INPUT_BINDING bindings[16];
+        size_t count = App_GetBindings(action, bindings, ARRAY_SIZE(bindings));
+        if (count > ARRAY_SIZE(bindings)) {
+            count = ARRAY_SIZE(bindings);
+        }
+        mapping.buttons[action] = M_FirstPadButton(bindings, count);
+    }
+    return mapping;
+}
+
+// Returns the rows of the default bindings of g_InputSchema: the gamepad's
+// first button, or else the joystick's.
+static M_MAPPING M_DefaultMapping(void)
+{
+    M_MAPPING mapping = {};
+    for (size_t action = 0; action < M_MAPPING_COUNT; action++) {
+        const INPUT_ACTION *const entry = &g_InputSchema.actions[action];
+        INPUT_BINDING bindings[16];
+        size_t count = 0;
+        const INPUT_DEVICE devices[] = {
+            INPUT_DEVICE_GAMEPAD,
+            INPUT_DEVICE_JOYSTICK,
+        };
+        for (size_t d = 0; d < ARRAY_SIZE(devices); d++) {
+            const char *names = entry->defaults[devices[d]];
+            while (names != nullptr && *names != 0 && count < 16) {
+                const char *const end = strchr(names, ',');
+                const size_t length =
+                    end != nullptr ? (size_t)(end - names) : strlen(names);
+                char name[INPUT_BINDING_NAME_SIZE] = {};
+                memcpy(
+                    name, names,
+                    length < sizeof(name) - 1 ? length : sizeof(name) - 1);
+                if (Input_BindingFromName(name, &bindings[count])) {
+                    count++;
+                }
+                names = end != nullptr ? end + 1 : nullptr;
+            }
+        }
+        mapping.buttons[action] = M_FirstPadButton(bindings, count);
+    }
+    return mapping;
+}
+
+// Gives every row that shows button the replacement, as the original's
+// ReassignButton does. keep_shared spares the shoot and focus rows, which
+// may share a button.
+static void M_ReassignButton(
+    M_MENU *const menu, const M_PAD_BUTTON *const button,
+    const M_PAD_BUTTON replacement, const bool keep_shared)
+{
+    M_PAD_BUTTON *const buttons = menu->mapping.buttons;
     for (int32_t i = 0; i < M_MAPPING_COUNT; i++) {
         const bool shared = i == 0 || i == 2;
-        if ((!keep_shared || !shared) && buttons[i] == button) {
+        if ((!keep_shared || !shared) && M_SameButton(&buttons[i], button)) {
             buttons[i] = replacement;
+        }
+    }
+}
+
+// Asks core/app for the bindings that make the rows true: the pad defaults
+// first when they were chosen, then each row that changed.
+static void M_CommitMapping(const M_MENU *const menu)
+{
+    if (menu->reset_pad) {
+        App_RequestResetPadBindings();
+    }
+    for (size_t i = 0; i < M_MAPPING_COUNT; i++) {
+        const M_PAD_BUTTON *const before = &menu->committed.buttons[i];
+        const M_PAD_BUTTON *const after = &menu->mapping.buttons[i];
+        if (M_SameButton(before, after)) {
+            continue;
+        }
+        if (before->bound) {
+            App_RequestUnbind(i, before->binding);
+        }
+        if (after->bound) {
+            App_RequestBind(i, after->binding);
         }
     }
 }
@@ -547,7 +689,9 @@ static void M_UpdateOptions(M_MENU *const menu)
         Sound_Queue(SOUND_OK);
         // The original also unbinds the pad's up and down while the screen
         // is open, so that they move the cursor only.
-        menu->mapping = m_Mapping;
+        menu->mapping = M_CurrentMapping();
+        menu->committed = menu->mapping;
+        menu->reset_pad = false;
         break;
     case 6:
         Sound_StopMusic();
@@ -581,7 +725,7 @@ static void M_UpdatePadConfig(M_MENU *const menu)
     }
     for (int32_t i = 0; i < M_MAPPING_COUNT; i++) {
         ANM_VM *const sprite = &menu->sprites[vm++];
-        sprite->visible = menu->mapping.buttons[i] >= 0;
+        sprite->visible = menu->mapping.buttons[i].bound;
         if (sprite->visible) {
             M_HighlightEntry(
                 sprite, i, menu->cursor, menu->selected_color,
@@ -590,12 +734,13 @@ static void M_UpdatePadConfig(M_MENU *const menu)
     }
     for (int32_t i = 0; i < M_MAPPING_COUNT * 2; i++) {
         ANM_VM *const sprite = &menu->sprites[vm++];
-        const int16_t button = menu->mapping.buttons[i / 2];
-        sprite->visible = button >= 0;
+        const M_PAD_BUTTON *const button = &menu->mapping.buttons[i / 2];
+        sprite->visible = button->bound;
         if (!sprite->visible) {
             continue;
         }
-        Anm_SetSprite(sprite, (i % 2 == 0 ? button / 10 : button % 10) + 0x100);
+        const int32_t number = M_PadNumber(button->binding);
+        Anm_SetSprite(sprite, (i % 2 == 0 ? number / 10 : number % 10) + 0x100);
         sprite->base_sprite = sprite->sprite;
         M_HighlightEntry(
             sprite, i / 2, menu->cursor, menu->selected_color,
@@ -604,28 +749,30 @@ static void M_UpdatePadConfig(M_MENU *const menu)
     if (menu->state_frames < 0x20) {
         return;
     }
-    // The port reads no raw pad buttons, so no button is ever pressed here
-    // and M_ReassignButton never runs.
-    const int16_t pressed = M_NO_PAD_BUTTON;
-    if (pressed < M_NO_PAD_BUTTON && menu->cursor < M_MAPPING_COUNT) {
+    INPUT_BINDING pressed;
+    if (App_GetPadPress(&pressed) && M_PadNumber(pressed) >= 0
+        && menu->cursor < M_MAPPING_COUNT) {
         Sound_Queue(SOUND_OK);
-        int16_t *const button = &menu->mapping.buttons[menu->cursor];
+        M_PAD_BUTTON *const row = &menu->mapping.buttons[menu->cursor];
+        const M_PAD_BUTTON button = { true, pressed };
         M_ReassignButton(
-            menu, pressed, *button, menu->cursor == 0 || menu->cursor == 2);
-        *button = pressed;
+            menu, &button, *row, menu->cursor == 0 || menu->cursor == 2);
+        *row = button;
     }
     if (!M_Pressed(M_CONFIRM)) {
         return;
     }
     if (menu->cursor == 9) {
-        menu->mapping = m_DefaultMapping;
+        menu->mapping = M_DefaultMapping();
+        menu->committed = menu->mapping;
+        menu->reset_pad = true;
     } else if (menu->cursor == 10) {
         menu->state = M_STATE_OPTIONS;
         menu->state_frames = 0;
         M_Interrupt(menu, 3);
         menu->cursor = 7;
         Sound_Queue(SOUND_CANCEL);
-        m_Mapping = menu->mapping;
+        M_CommitMapping(menu);
     }
 }
 

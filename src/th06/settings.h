@@ -16,8 +16,10 @@
 //   clears, frame items, Gouraud shading, depth tests, the 60-frame mode,
 //   colour blending, the reference rasterizer, fog and DirectInput;
 // - the window mode, which core's [video] fullscreen and its hotkey own;
-// - the pad button mapping and the pad axis thresholds, which core's
-//   [input] bindings own.
+// - the pad axis thresholds, which core's [input] settings own.
+//
+// The pad button mapping is core's [input] bindings. The title's pad
+// button configuration changes it through core/app.
 
 typedef enum {
     SETTINGS_MUSIC_OFF = 0,
