@@ -22,3 +22,12 @@ void App_RequestUnbind(const size_t action, const INPUT_BINDING binding)
 void App_RequestResetPadBindings(void)
 {
 }
+
+bool App_IsFullscreen(void)
+{
+    return false;
+}
+
+void App_RequestFullscreen(const bool fullscreen)
+{
+}

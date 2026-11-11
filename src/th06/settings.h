@@ -15,11 +15,11 @@
 //   colour add emulation, vertex buffers, 16-bit textures, back buffer
 //   clears, frame items, Gouraud shading, depth tests, the 60-frame mode,
 //   colour blending, the reference rasterizer, fog and DirectInput;
-// - the window mode, which core's [video] fullscreen and its hotkey own;
 // - the pad axis thresholds, which core's [input] settings own.
 //
-// The pad button mapping is core's [input] bindings. The title's pad
-// button configuration changes it through core/app.
+// The window mode and the pad button mapping are core's [video]
+// fullscreen and [input] bindings. The title's options change them through
+// core/app.
 
 typedef enum {
     SETTINGS_MUSIC_OFF = 0,

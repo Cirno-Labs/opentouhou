@@ -52,3 +52,13 @@ void App_RequestResetPadBindings(void)
 {
     M_Record('r', 0, (INPUT_BINDING) {});
 }
+
+bool App_IsFullscreen(void)
+{
+    return g_FakeApp.fullscreen;
+}
+
+void App_RequestFullscreen(const bool fullscreen)
+{
+    M_Record('f', fullscreen ? 1 : 0, (INPUT_BINDING) {});
+}

@@ -13,8 +13,8 @@
 #define FAKE_APP_REQUEST_COUNT 32
 #define FAKE_APP_BINDING_COUNT 4
 
-// Holds one request. kind is 'b' for a bind, 'u' for an unbind and 'r' for
-// the pad reset.
+// Holds one request. kind is 'b' for a bind, 'u' for an unbind, 'r' for the
+// pad reset and 'f' for a window mode, with 1 for fullscreen in action.
 typedef struct {
     char kind;
     size_t action;
@@ -28,6 +28,8 @@ typedef struct {
     // Holds the bindings that App_GetBindings returns for each action.
     INPUT_BINDING bindings[INPUT_MAX_ACTIONS][FAKE_APP_BINDING_COUNT];
     size_t binding_counts[INPUT_MAX_ACTIONS];
+    // Holds the window mode that App_IsFullscreen returns.
+    bool fullscreen;
     FAKE_APP_REQUEST requests[FAKE_APP_REQUEST_COUNT];
     int32_t request_count;
 } FAKE_APP;

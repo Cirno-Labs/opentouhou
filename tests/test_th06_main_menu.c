@@ -527,6 +527,7 @@ static void M_SetUpApp(void)
         CHECK(Input_BindingFromName(m_PadNames[action], &bindings[1]));
         g_FakeApp.binding_counts[action] = 2;
     }
+    g_FakeApp.fullscreen = true;
 }
 
 static void M_CheckRequest(
@@ -664,6 +665,45 @@ TEST(the_pad_defaults_reset_the_pad_before_the_rows)
     M_Press(m_Shoot);
     CHECK_EQ_INT(g_FakeApp.request_count, 1);
     M_CheckRequest(0, 'r', 0, "");
+    FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(the_window_row_changes_the_mode_when_the_options_close)
+{
+    M_Setup("window");
+    M_SetUpApp();
+    M_OpenOptions();
+    for (int32_t i = 0; i < 5; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Right);
+    CHECK_EQ_INT(g_FakeApp.request_count, 0);
+    M_Press(m_Down);
+    M_Press(m_Down);
+    M_Press(m_Down);
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(g_FakeApp.request_count, 1);
+    M_CheckRequest(0, 'f', 0, "");
+    FakeApp_Reset();
+    M_Teardown();
+}
+
+TEST(an_unchanged_window_row_asks_for_nothing)
+{
+    M_Setup("window_same");
+    M_SetUpApp();
+    M_OpenOptions();
+    for (int32_t i = 0; i < 5; i++) {
+        M_Press(m_Down);
+    }
+    M_Press(m_Right);
+    M_Press(m_Right);
+    M_Press(m_Down);
+    M_Press(m_Down);
+    M_Press(m_Down);
+    M_Press(m_Shoot);
+    CHECK_EQ_INT(g_FakeApp.request_count, 0);
     FakeApp_Reset();
     M_Teardown();
 }

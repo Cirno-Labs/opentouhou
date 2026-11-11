@@ -18,8 +18,9 @@
 // the cursor, so the rows show and take the face, shoulder, back, start,
 // guide and stick-press buttons and the joystick buttons. Leaving the
 // screen asks core/app for the changed bindings. The original's defaults
-// become the port's default pad bindings. The options show no choice for
-// the colour depth and the window mode, and ignore changes to them (see
+// become the port's default pad bindings. The window row of the options
+// shows and changes core/app's window mode, which changes when the options
+// close. The colour depth row shows no choice and ignores changes (see
 // th06/settings.h).
 //
 // The original measures the frame rate on the title to slow the game down

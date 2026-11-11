@@ -90,6 +90,9 @@ typedef struct {
     // the defaults were chosen, and whether they were.
     M_MAPPING committed;
     bool reset_pad;
+    // Holds the window mode that the options show: 0 for fullscreen, 1 for
+    // windowed.
+    int32_t pending_windowed;
     SAVED_REPLAY replays[SAVED_REPLAY_COUNT];
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
@@ -160,6 +163,13 @@ static bool M_HasTexture(const ANM_VM *const vm)
 {
     return vm->sprite_data != nullptr && vm->sprite_data->slot >= 0
         && Anm_GetTexture(vm->sprite_data->slot) != nullptr;
+}
+
+// Returns the window mode as the original's windowed setting: 0 for
+// fullscreen, 1 for windowed.
+static int32_t M_CurrentWindowed(void)
+{
+    return App_IsFullscreen() ? 0 : 1;
 }
 
 static bool M_AnyExtraUnlocked(void)
@@ -558,6 +568,7 @@ static void M_UpdateTitleMenu(M_MENU *const menu)
             menu->state_frames = 0;
             M_Interrupt(menu, 3);
             menu->cursor = 0;
+            menu->pending_windowed = M_CurrentWindowed();
             Sound_Queue(SOUND_OK);
             break;
         case 7:
@@ -625,6 +636,9 @@ static void M_ChangeOption(M_MENU *const menu, const int32_t step)
         M_CycleSetting(&sound, 2, step);
         g_Settings.sound = sound != 0;
         break;
+    case 5:
+        M_CycleSetting(&menu->pending_windowed, 2, step);
+        break;
     default:
         break;
     }
@@ -662,7 +676,8 @@ static void M_UpdateOptions(M_MENU *const menu)
             menu, &menu->sprites[0x4d + i], 3, i, g_Settings.music);
     }
     for (int32_t i = 0; i < 2; i++) {
-        M_HighlightOption(menu, &menu->sprites[0x4b + i], 5, i, -1);
+        M_HighlightOption(
+            menu, &menu->sprites[0x4b + i], 5, i, menu->pending_windowed);
     }
     if (menu->state_frames < 0x20) {
         return;
@@ -708,6 +723,11 @@ static void M_UpdateOptions(M_MENU *const menu)
         M_Interrupt(menu, 2);
         menu->cursor = 6;
         Sound_Queue(SOUND_CANCEL);
+        // The original restarts to change the window mode. core/app
+        // changes it after the tick instead.
+        if (menu->pending_windowed != M_CurrentWindowed()) {
+            App_RequestFullscreen(menu->pending_windowed == 0);
+        }
         break;
     default:
         break;
