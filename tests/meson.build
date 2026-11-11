@@ -983,6 +983,7 @@ foreach part : [
   'arena',
   'array',
   'cp932',
+  'crc32',
   'hash_map',
   'log',
   'memory',

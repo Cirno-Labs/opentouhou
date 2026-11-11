@@ -6,6 +6,7 @@
 #include "core/base/array.h"
 #include "core/base/assert.h"
 #include "core/base/cp932.h"
+#include "core/base/crc32.h"
 #include "core/base/hash_map.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"

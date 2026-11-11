@@ -13,6 +13,7 @@ core_base_lib = static_library(
   'base/arena.c',
   'base/array.c',
   'base/cp932.c',
+  'base/crc32.c',
   'base/cp932_table.c',
   'base/hash_map.c',
   'base/log.c',
