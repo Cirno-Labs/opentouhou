@@ -42,6 +42,10 @@ void Anm_DrawUnrotated(const ANM_VM *vm, const ANM_DRAW *draw);
 // Draws an axis-aligned sprite without pixel rounding.
 void Anm_DrawNoRound(const ANM_VM *vm, const ANM_DRAW *draw);
 // Draws the fixed world quad with the sprite scaling and XYZ rotations.
+// The quad is 256 units wide for a sprite as wide as its texture, as in
+// the game. With nmlgc/base_tsa, the quad is as many units wide and high
+// as the sprite has pixels, as its executable patches make it, so sprites
+// from textures larger than 256 pixels keep their size.
 void Anm_Draw3D(const ANM_VM *vm, const ANM_DRAW *draw);
 // Rounds world translation when no rotation is set.
 void Anm_Draw3DRounded(const ANM_VM *vm, const ANM_DRAW *draw);

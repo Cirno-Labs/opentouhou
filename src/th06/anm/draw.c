@@ -1,5 +1,7 @@
 #include "th06/anm/draw.h"
 
+#include "th06/translation.h"
+
 #include "core/base/assert.h"
 #include "core/base/utils.h"
 #include "core/math/x87.h"
@@ -111,6 +113,10 @@ static void M_World(
     MAT4 world = Mat4_Identity();
     world.m[0][0] = vm->uv_scale_x * vm->scale_x;
     world.m[1][1] = -vm->scale_y * vm->uv_scale_y;
+    if (Translation_HasBaseTsa()) {
+        world.m[0][0] *= sprite->texture_width / 256.0f;
+        world.m[1][1] *= sprite->texture_height / 256.0f;
+    }
     const float angles[3] = { vm->rotation.x, vm->rotation.y, vm->rotation.z };
     const bool rounded =
         round && angles[0] == 0.0f && angles[1] == 0.0f && angles[2] == 0.0f;

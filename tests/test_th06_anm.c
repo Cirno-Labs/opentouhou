@@ -961,6 +961,78 @@ TEST(text_aligns_by_the_drawn_width_and_fills_the_sprite_row)
     CHECK(width == 0.0f);
 }
 
+// Draws a 384 x 16 sprite of a 512 x 512 texture in 3D and returns the
+// size of the drawn quad.
+static VEC2 M_Draw3DSize(void)
+{
+    RNG rng;
+    Rng_SetSeed(&rng, 5);
+    Anm_Init(&g_HeapAllocator, &rng);
+    CHECK(Result_Ignore(Anm_CreateTexture(0, 512, 512, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 0,
+        .x1 = 384.0f,
+        .y1 = 16.0f,
+        .width = 384.0f,
+        .height = 16.0f,
+        .texture_width = 512.0f,
+        .texture_height = 512.0f,
+        .u1 = 0.75f,
+        .v1 = 1.0f / 32.0f,
+    };
+    ANM_VM vm;
+    Anm_CreateVm(&vm);
+    Anm_InitVm(&vm);
+    vm.sprite_data = &sprite;
+    vm.shown = true;
+    vm.uv_scale_x = 384.0f / 512.0f;
+    vm.uv_scale_y = 16.0f / 512.0f;
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.view = (GFX_VIEW) {
+        .view = Mat4_Identity(),
+        .projection = Mat4_Identity(),
+        .viewport = { 0, 0, 640, 480, 0, 1 },
+    };
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Anm_Draw3D(&vm, &draw);
+    Gfx_EndTick();
+    const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);
+    const VEC2 size = {
+        quad->vertices[1].position.x - quad->vertices[0].position.x,
+        quad->vertices[2].position.y - quad->vertices[0].position.y,
+    };
+    GfxRecorder_Stop();
+    Anm_Shutdown();
+    return size;
+}
+
+TEST(world_sprites_take_their_share_of_256_units)
+{
+    const VEC2 size = M_Draw3DSize();
+    CHECK(size.x == 192.0f);
+    CHECK(size.y == -8.0f);
+}
+
+TEST(base_tsa_world_sprites_take_their_size_in_pixels)
+{
+    char *const directory = TestDir_Prepare("anm_draw_base_tsa");
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        LOG_LEVEL_ERROR));
+    Translation_Init(stack);
+    const VEC2 size = M_Draw3DSize();
+    CHECK(size.x == 384.0f);
+    CHECK(size.y == -16.0f);
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+    Mem_Free(directory);
+}
+
 // Draws text as a text row of the bundled font does when it scales a
 // region of surface_width x surface_height pixels at the doubled size to
 // width x 16 pixels, and returns the row.
