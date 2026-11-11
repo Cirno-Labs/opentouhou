@@ -8,10 +8,14 @@ _docker_build platform force="0":
         if docker image inspect "$full_tag" >/dev/null 2>&1; then
             exit 0
         fi
-        echo "Docker image $full_tag not found, trying to pull it"
-        if docker pull "$full_tag"; then
-            exit 0
-        fi
+        case "$full_tag" in
+            */*)
+                echo "Docker image $full_tag not found, trying to pull it"
+                if docker pull "$full_tag"; then
+                    exit 0
+                fi
+                ;;
+        esac
         echo "Cannot pull $full_tag, building it"
     fi
     source="https://github.com/${GITHUB_REPOSITORY:-Cirno-Labs/opentouhou}"
@@ -23,7 +27,13 @@ _docker_build platform force="0":
 
 [group('docker')]
 _docker_push platform:
-    docker push "$(tools/docker/image_tag {{platform}})"
+    #!/usr/bin/env sh
+    set -e
+    full_tag="$(tools/docker/image_tag {{platform}})"
+    case "$full_tag" in
+        */*) docker push "$full_tag" ;;
+        *) echo "$full_tag is a local image; there is no registry to push it to" >&2; exit 1 ;;
+    esac
 
 [group('docker')]
 _docker_run platform *args:

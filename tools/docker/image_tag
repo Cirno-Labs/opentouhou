@@ -5,22 +5,30 @@ import argparse
 import datetime
 import hashlib
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_OWNER = "cirno-labs"
+# Matches a path component of an image name, as Docker accepts it.
+NAMESPACE = re.compile(r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*")
 
 
 def image_prefix() -> str:
     """Return the registry prefix of the images.
 
     GitHub Actions names the owner of the repository that runs the
-    workflow, so a fork builds, pushes and pulls its own images.
+    workflow, so a fork builds, pushes and pulls its own images. An owner
+    that is not a valid image path component, such as one that ends with
+    a hyphen, gets local images without a registry: they are built where
+    they are needed and never pushed.
     """
-    owner = os.environ.get("GITHUB_REPOSITORY_OWNER") or DEFAULT_OWNER
-    return f"ghcr.io/{owner.lower()}/opentouhou-"
+    owner = (os.environ.get("GITHUB_REPOSITORY_OWNER") or DEFAULT_OWNER).lower()
+    if not NAMESPACE.fullmatch(owner):
+        return "opentouhou-"
+    return f"ghcr.io/{owner}/opentouhou-"
 
 
 def dockerfile_hash(dockerfile: Path) -> str:
