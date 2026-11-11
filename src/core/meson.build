@@ -199,6 +199,7 @@ core_lib = static_library(
   'core',
   'app/app.c',
   'app/clock.c',
+  'app/folders.c',
   'app/tick_rate.c',
   'app/hotkeys.c',
   'app/request_queue.c',

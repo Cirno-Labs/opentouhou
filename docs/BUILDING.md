@@ -146,30 +146,44 @@ that holds it, either by putting the executable there or by passing it:
 build/linux/debug/o<game> --data ~/games/<game>
 ```
 
-`o<game> --help` lists the arguments and prints the data and user
-directories that the game uses.
+`o<game> --help` lists the arguments and prints the folder mode and the
+folders that the game uses.
 
-On macOS, the application bundle looks for the data in the folder that
-holds the bundle, so put `o<game>.app` into the game's folder.
+"Beside the executable" means the program folder: the folder that holds
+the `.AppImage` file on Linux, the folder that holds `o<game>.app` on
+macOS, and the folder of the executable elsewhere. So on Linux and macOS,
+put the AppImage or the bundle into the game's folder.
 
 The data directory is never written to. Settings, scores and replays go
-to your user directory:
+to the user folder, and thcrap patches come from the patches folder:
+
+| Mode | User folder | Patches folder |
+| --- | --- | --- |
+| default | your user directory | `patches/` beside the user directories |
+| portable | `userdata/` in the program folder | `patches/` in the program folder |
+| `--user-dir DIR` | `DIR` | as in the default mode |
+| `--user-dir DIR`, portable | `DIR` | `patches/` in the program folder |
+
+A file `portable.txt` in the program folder turns on portable mode.
+`--user-dir` moves only the user folder of one game, so that all games of
+one installation share one patches folder. The user directories are:
 
 | Platform | User directory |
 | --- | --- |
 | Linux | `$XDG_DATA_HOME/opentouhou/<game>/` (usually `~/.local/share/...`) |
 | Windows | `%APPDATA%\opentouhou\<game>\` |
+| macOS | `~/Library/Application Support/opentouhou/<game>/` |
 
 Press F11 or Alt+Enter to toggle fullscreen. Press Print Screen or F12
-to save a screenshot in `screenshots/` under the user directory. The
+to save a screenshot in `screenshots/` under the user folder. The
 `[screenshot]` settings in `config.ini` select the native or window
 resolution, PNG or JPEG, and JPEG quality. `[video] interpolation`
 smooths motion between game ticks and is on by default; set it to
 `false` to show each tick as the game drew it.
 
-The games read thcrap patches from the `patches/` folder beside the
-user directories (`$XDG_DATA_HOME/opentouhou/patches/`,
-`%APPDATA%\opentouhou\patches\`). It has the layout of thcrap's
+The games read thcrap patches from the patches folder
+(`$XDG_DATA_HOME/opentouhou/patches/`, `%APPDATA%\opentouhou\patches\`
+or `patches/` in portable mode). It has the layout of thcrap's
 `repos/` folder, so a copy of that folder works: one folder per
 repository, and in it one folder per patch. Every patch in it applies,
 after the patches it depends on. `[patches] enabled = false` in

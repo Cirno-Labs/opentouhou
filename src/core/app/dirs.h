@@ -1,9 +1,13 @@
 #pragma once
 
-// Returns the directory with the original game's data: the --data
-// argument, or the executable's directory without one.
+// The folders follow the rule in src/core/app/folders.h.
+
+// Returns the folder with the original game's data: the --data argument,
+// or the program folder without one.
 const char *App_GetDataDir(void);
 
-// Returns the writable directory for settings, scores, replays and screenshots.
-// Returns nullptr when the platform could not provide a user directory.
+// Returns the writable folder for settings, scores, replays and screenshots:
+// the --user-dir argument, the program folder's userdata/ in portable mode,
+// or the platform's user folder. Returns nullptr when the folder could not
+// be found or created.
 const char *App_GetUserDir(void);

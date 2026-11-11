@@ -705,6 +705,24 @@ test(
 )
 
 test(
+  'core/app/folders',
+  executable(
+    'test_app_folders',
+    'test_app_folders.c',
+    '../src/core/app/folders.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'app_folders',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'app_folders',
+  },
+  suite: 'unit',
+)
+
+test(
   'core/app/tick_rate',
   executable(
     'test_tick_rate',

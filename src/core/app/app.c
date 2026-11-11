@@ -15,6 +15,7 @@
 #include "core/patch.h"
 
 #include "clock.h"
+#include "folders.h"
 #include "hotkeys.h"
 #include "request_queue.h"
 #include "settings.h"
@@ -29,6 +30,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX_TICKS_PER_FRAME 4
@@ -48,9 +50,7 @@ struct APP_CONTEXT {
     // Holds g_GameDesc.input_schema->players input structs, one after
     // another.
     void *input_buffer;
-    // Holds the directory with the original game's data.
-    char *data_dir;
-    char *user_dir;
+    APP_FOLDERS folders;
     // Holds config.ini's path, or nullptr when the user directory could
     // not be found.
     char *ini_path;
@@ -102,7 +102,8 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
         return;
     }
     char *dir;
-    if (!Result_Log(Path_GetPatchesDir(nullptr, &dir), LOG_LEVEL_ERROR)) {
+    if (!Result_Log(
+            AppFolders_GetPatchesDir(&ctx->folders, &dir), LOG_LEVEL_ERROR)) {
         return;
     }
     char disabled_text[CONFIG_STRING_SIZE];
@@ -157,84 +158,70 @@ static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
     return OK;
 }
 
-// Returns the default data directory for an executable in exe_dir. On
-// macOS, an executable inside an application bundle looks beside the
-// bundle, because the bundle holds only the program.
-static char *M_DataDirOf(const char *const exe_dir)
-{
-    char *const dir = Str_Dup(exe_dir);
-#ifdef __APPLE__
-    static const char suffix[] = ".app/Contents/MacOS";
-    size_t length = strlen(dir);
-    while (length > 1 && dir[length - 1] == '/') {
-        dir[--length] = '\0';
-    }
-    if (length > sizeof(suffix) - 1
-        && strcmp(dir + length - (sizeof(suffix) - 1), suffix) == 0) {
-        dir[length - (sizeof("/Contents/MacOS") - 1)] = '\0';
-        char *const slash = strrchr(dir, '/');
-        if (slash != nullptr) {
-            slash[1] = '\0';
-        }
-    }
-#endif
-    return dir;
-}
-
-// Prints the usage, the data directory and the user directory to stdout.
-// On Windows, a release build has no console of its own, so the text goes
-// to the console of the shell that started it.
-static void M_PrintHelp(const char *const program)
+// Prints the usage, the mode and the folders to stdout. On Windows, a
+// release build has no console of its own, so the text goes to the console
+// of the shell that started it.
+static void M_PrintHelp(const APP_FOLDERS *const folders)
 {
 #ifdef _WIN32
     if (AttachConsole(ATTACH_PARENT_PROCESS)) {
         freopen("CONOUT$", "w", stdout);
     }
 #endif
-    const char *const exe_dir = Path_GetExeDir();
-    char *const data_dir = exe_dir != nullptr ? M_DataDirOf(exe_dir) : nullptr;
-    char *user_dir = nullptr;
-    Result_Ignore(Path_GetUserDir(g_GameDesc.id, &user_dir));
+    char *patches_dir = nullptr;
+    Result_Ignore(AppFolders_GetPatchesDir(folders, &patches_dir));
     printf(
-        "Usage: %s [--data DIR]\n"
+        "Usage: %s [--data DIR] [--user-dir DIR]\n"
         "\n"
         "Runs %s, version %s.\n"
         "\n"
-        "  --data DIR  read the original game's data from DIR\n"
-        "  --help      print this help and quit\n"
+        "  --data DIR      read the original game's data from DIR\n"
+        "  --user-dir DIR  keep settings, scores and replays in DIR\n"
+        "  --help          print this help and quit\n"
         "\n"
-        "Data directory without --data: %s\n"
-        "Settings, scores and replays:  %s\n",
-        program, g_GameDesc.title, g_GameDesc.version,
-        data_dir != nullptr ? data_dir : "unknown",
-        user_dir != nullptr ? user_dir : "no user directory");
+        "Mode:            %s\n"
+        "Program folder:  %s\n"
+        "Data folder:     %s\n"
+        "User folder:     %s\n"
+        "Patches folder:  %s\n",
+        folders->program_name, g_GameDesc.title, g_GameDesc.version,
+        AppFolders_GetModeName(folders->mode),
+        folders->program_dir != nullptr ? folders->program_dir : "unknown",
+        folders->data_dir != nullptr ? folders->data_dir : "unknown",
+        folders->user_dir != nullptr ? folders->user_dir : "none",
+        patches_dir != nullptr ? patches_dir : "none");
     fflush(stdout);
-    Mem_Free(data_dir);
-    Mem_Free(user_dir);
+    Mem_Free(patches_dir);
 }
 
-// Reads the command line. Sets *help when it asks for the usage.
-static RESULT M_ParseArgs(
-    const int argc, char *const argv[], char **const data_dir, bool *const help)
+// Reads the option at argv[*i] that takes a value into *value.
+static RESULT M_ParseValue(
+    const int argc, char *const argv[], int *const i, const char **const value)
 {
-    *data_dir = nullptr;
+    const char *const name = argv[*i];
+    FAIL_IF(*i + 1 >= argc, "%s needs a directory", name);
+    FAIL_IF(*value != nullptr, "%s is given twice", name);
+    *value = argv[++*i];
+    return OK;
+}
+
+// Reads the command line into input. Sets *help when it asks for the
+// usage.
+static RESULT M_ParseArgs(
+    const int argc, char *const argv[], APP_FOLDERS_INPUT *const input,
+    bool *const help)
+{
     *help = false;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             *help = true;
-            continue;
+        } else if (strcmp(argv[i], "--data") == 0) {
+            MUST(M_ParseValue(argc, argv, &i, &input->data_dir));
+        } else if (strcmp(argv[i], "--user-dir") == 0) {
+            MUST(M_ParseValue(argc, argv, &i, &input->user_dir));
+        } else {
+            return FAIL("Unknown argument: %s (see --help)", argv[i]);
         }
-        FAIL_IF(
-            strcmp(argv[i], "--data") != 0, "Unknown argument: %s (see --help)",
-            argv[i]);
-        FAIL_IF(i + 1 >= argc, "--data needs a directory");
-        FAIL_IF(*data_dir != nullptr, "--data is given twice");
-        *data_dir = Str_Dup(argv[++i]);
-    }
-    if (*data_dir == nullptr) {
-        const char *const exe_dir = Path_GetExeDir();
-        FAIL_IF(exe_dir == nullptr, "Cannot find the executable's directory");
-        *data_dir = M_DataDirOf(exe_dir);
     }
     return OK;
 }
@@ -252,12 +239,24 @@ static RESULT M_Init(
     APP_CONTEXT *const ctx, const int argc, char *const argv[],
     bool *const help)
 {
-    MUST(M_ParseArgs(argc, argv, &ctx->data_dir, help));
+    APP_FOLDERS_INPUT input = {
+        .exe_dir = Path_GetExeDir(),
+        .appimage = getenv("APPIMAGE"),
+        .appdir = getenv("APPDIR"),
+        .program = argc > 0 ? argv[0] : nullptr,
+    };
+    MUST(M_ParseArgs(argc, argv, &input, help));
+    const bool found = Result_Log(
+        AppFolders_Find(&input, g_GameDesc.id, &ctx->folders), LOG_LEVEL_ERROR);
     if (*help) {
-        M_PrintHelp(argc > 0 ? argv[0] : g_GameDesc.id);
+        M_PrintHelp(&ctx->folders);
         return OK;
     }
+    FAIL_IF(
+        ctx->folders.data_dir == nullptr,
+        "Cannot find the executable's directory");
     LOG_INFO("%s %s", g_GameDesc.id, g_GameDesc.version);
+    LOG_INFO("Folder mode: %s", AppFolders_GetModeName(ctx->folders.mode));
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
@@ -265,10 +264,9 @@ static RESULT M_Init(
     Clock_Init(&ctx->clock, APP_TICK_RATE, MAX_TICKS_PER_FRAME);
     ctx->requests.fullscreen = -1;
 
-    if (Result_Log(
-            Path_GetUserDir(g_GameDesc.id, &ctx->user_dir), LOG_LEVEL_ERROR)) {
+    if (found) {
         ctx->ini_path =
-            Path_Join(&g_HeapAllocator, ctx->user_dir, "config.ini");
+            Path_Join(&g_HeapAllocator, ctx->folders.user_dir, "config.ini");
     }
     if (ctx->ini_path != nullptr) {
         Result_Log(
@@ -306,12 +304,12 @@ static RESULT M_Init(
 
 const char *App_GetDataDir(void)
 {
-    return m_Context.data_dir;
+    return m_Context.folders.data_dir;
 }
 
 const char *App_GetUserDir(void)
 {
-    return m_Context.user_dir;
+    return m_Context.folders.user_dir;
 }
 
 const PATCH_STACK *App_GetPatches(void)
@@ -467,7 +465,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     }
     if (ctx->screenshot_pending) {
         Result_Log(
-            Screenshot_Save(ctx->user_dir, g_GameDesc.id, &ctx->settings),
+            Screenshot_Save(
+                ctx->folders.user_dir, g_GameDesc.id, &ctx->settings),
             LOG_LEVEL_WARNING);
         ctx->screenshot_pending = false;
     }
@@ -500,8 +499,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
         Ini_Free(ctx->ini);
     }
     Mem_Free(ctx->ini_path);
-    Mem_Free(ctx->data_dir);
-    Mem_Free(ctx->user_dir);
+    AppFolders_Free(&ctx->folders);
     if (ctx->input_buffer != nullptr) {
         Allocator_Free(
             &g_HeapAllocator, ctx->input_buffer,
