@@ -4,7 +4,9 @@
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
+#include "th06/screens/result.h"
 
+#include "core/app.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 
@@ -26,6 +28,10 @@ RESULT Game_Init(void)
 bool Game_Tick(const TH06_INPUT *const input)
 {
     g_Input = *input;
+    float tick_rate;
+    if (App_GetTickRate(&tick_rate)) {
+        ResultScreen_CountFrames(tick_rate);
+    }
     Chain_RunDraw(&g_Chain);
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
     Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);

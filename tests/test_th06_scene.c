@@ -1,5 +1,6 @@
 #include "th06/scene.h"
 
+#include "app_fake.h"
 #include "test.h"
 #include "th06_scene_stubs.h"
 
@@ -7,6 +8,9 @@
 #include "th06/ascii.h"
 #include "th06/buttons.h"
 #include "th06/game.h"
+#include "th06/game_manager.h"
+#include "th06/screens/result.h"
+#include "th06/screens/result/private.h"
 
 static const TH06_INPUT m_NoInput;
 
@@ -119,4 +123,22 @@ RESULT Anm_Load(
     CHECK_EQ_STR(path, "data/text.anm");
     CHECK_EQ_INT(first_sprite, 0x700);
     return OK;
+}
+
+TEST(a_tick_counts_the_measured_tick_rate)
+{
+    M_Setup();
+    FakeApp_Reset();
+    ResultScreen_ResetFrames();
+    g_GameManager.mode.playing = true;
+    Game_Tick(&m_NoInput);
+    CHECK(ResultSaves_GetClock()->expected_frames == 0.0f);
+    g_FakeApp.tick_rate_measured = true;
+    g_FakeApp.tick_rate = 45.0f;
+    Game_Tick(&m_NoInput);
+    CHECK(!g_FakeApp.tick_rate_measured);
+    CHECK(ResultSaves_GetClock()->expected_frames == 60.0f);
+    CHECK(ResultSaves_GetClock()->achieved_frames == 48.0f);
+    g_GameManager.mode.playing = false;
+    ResultScreen_ResetFrames();
 }

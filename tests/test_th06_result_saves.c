@@ -217,15 +217,59 @@ TEST(a_failed_write_is_dropped)
     Mem_Free(directory);
 }
 
-TEST(clock_defaults_to_full_speed)
+TEST(clock_starts_with_no_frames)
 {
     const RESULT_SCREEN_CLOCK *const clock = ResultSaves_GetClock();
     CHECK_EQ_STR(clock->date, "01/01/00");
-    CHECK(clock->achieved_frames == clock->expected_frames);
-    const RESULT_SCREEN_CLOCK set = { "02/03/04", 30.0f, 60.0f };
-    ResultScreen_SetClock(&set);
+    CHECK(clock->achieved_frames == 0.0f);
+    CHECK(clock->expected_frames == 0.0f);
+}
+
+TEST(set_date_replaces_the_date)
+{
+    ResultScreen_SetDate("02/03/04");
     CHECK_EQ_STR(ResultSaves_GetClock()->date, "02/03/04");
-    CHECK(ResultSaves_GetClock()->achieved_frames == 30.0f);
+    ResultScreen_SetDate("01/01/00");
+}
+
+static float M_AchievedAt(const float tick_rate)
+{
+    g_GameManager.mode.playing = true;
+    ResultScreen_ResetFrames();
+    ResultScreen_CountFrames(tick_rate);
+    CHECK(ResultSaves_GetClock()->expected_frames == 60.0f);
+    return ResultSaves_GetClock()->achieved_frames;
+}
+
+TEST(count_frames_adds_the_share_of_each_band)
+{
+    CHECK(M_AchievedAt(60.0f) == 60.0f);
+    CHECK(M_AchievedAt(54.001f) == 60.0f);
+    CHECK(M_AchievedAt(54.0f) == 48.0f);
+    CHECK(M_AchievedAt(42.001f) == 48.0f);
+    CHECK(M_AchievedAt(42.0f) == 36.0f);
+    CHECK(M_AchievedAt(30.001f) == 36.0f);
+    CHECK(M_AchievedAt(30.0f) == 30.0f);
+    CHECK(M_AchievedAt(0.0f) == 30.0f);
+    ResultScreen_ResetFrames();
+    g_GameManager.mode.playing = false;
+}
+
+TEST(count_frames_adds_up_while_playing)
+{
+    g_GameManager.mode.playing = true;
+    ResultScreen_ResetFrames();
+    ResultScreen_CountFrames(60.0f);
+    ResultScreen_CountFrames(45.0f);
+    CHECK(ResultSaves_GetClock()->expected_frames == 120.0f);
+    CHECK(ResultSaves_GetClock()->achieved_frames == 108.0f);
+    g_GameManager.mode.playing = false;
+    ResultScreen_CountFrames(60.0f);
+    CHECK(ResultSaves_GetClock()->expected_frames == 120.0f);
+    CHECK(ResultSaves_GetClock()->achieved_frames == 108.0f);
+    ResultScreen_ResetFrames();
+    CHECK(ResultSaves_GetClock()->expected_frames == 0.0f);
+    CHECK(ResultSaves_GetClock()->achieved_frames == 0.0f);
 }
 
 TEST(attempt_keeps_the_bytes_after_the_name)

@@ -20,21 +20,15 @@
 
 static bool m_GameInitialized;
 
-static void M_SetClock(void)
+static void M_SetDate(void)
 {
-    // TODO: count the frames as the original's frame rate display does.
-    // Until then, the result screen and replays show no slowdown.
-    RESULT_SCREEN_CLOCK clock = {
-        .date = "01/01/00",
-        .achieved_frames = 1.0f,
-        .expected_frames = 1.0f,
-    };
+    char date[9] = "01/01/00";
     const time_t now = time(nullptr);
     const struct tm *const local = localtime(&now);
     if (local != nullptr) {
-        strftime(clock.date, sizeof(clock.date), "%m/%d/%y", local);
+        strftime(date, sizeof(date), "%m/%d/%y", local);
     }
-    ResultScreen_SetClock(&clock);
+    ResultScreen_SetDate(date);
 }
 
 // Keeps the demo replay of the title for playback, as the saves keep the
@@ -79,7 +73,7 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
-    M_SetClock();
+    M_SetDate();
     const bool running = Game_Tick(input);
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_ScanReplays();

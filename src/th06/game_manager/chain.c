@@ -171,6 +171,9 @@ static RESULT M_Added(void *const arg)
     }
     gm->mode.in_continue_menu = false;
     gm->mode.playing = true;
+    if (Scene_GetRequested() != SCENE_NEXT_STAGE) {
+        ResultScreen_ResetFrames();
+    }
     gm->mode.frozen = false;
     gm->score.value = 0;
     gm->mode.game_cleared = false;

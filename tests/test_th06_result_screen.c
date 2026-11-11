@@ -405,8 +405,7 @@ TEST(saving_a_replay_writes_the_slot_and_draws_six_values)
     g_GameManager.run.stage = 1;
     g_GameManager.player.lives = 5;
     CHECK(Result_Log(Replay_Register(REPLAY_RECORD, nullptr), LOG_LEVEL_ERROR));
-    const RESULT_SCREEN_CLOCK clock = { "12/24/26", 1.0f, 1.0f };
-    ResultScreen_SetClock(&clock);
+    ResultScreen_SetDate("12/24/26");
     CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
     M_Run(31);
     M_Press((TH06_INPUT) { .shoot = true });

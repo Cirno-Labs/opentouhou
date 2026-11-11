@@ -336,6 +336,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -361,6 +362,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -386,6 +388,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -411,6 +414,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -432,6 +436,7 @@ test(
     'test_th06_scene',
     'test_th06_scene.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -448,6 +453,7 @@ test(
     'test_th06_screen_effect.c',
     'gfx_recorder.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -488,6 +494,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -527,6 +534,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -553,6 +561,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -578,6 +587,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
@@ -603,6 +613,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
+    'app_fake.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [

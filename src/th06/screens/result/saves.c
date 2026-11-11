@@ -1,5 +1,6 @@
 #include "th06/screens/result/private.h"
 
+#include "th06/game_manager.h"
 #include "th06/replay.h"
 
 #include "core/base/cp932.h"
@@ -35,7 +36,7 @@ typedef struct {
 } M_SAVES;
 
 static M_SAVES m_Saves = {
-    .clock = { "01/01/00", 1.0f, 1.0f },
+    .clock = { .date = "01/01/00" },
 };
 static bool m_RefusesReplays;
 
@@ -309,9 +310,35 @@ void ResultScreen_CloseSaves(void)
     memset(m_Saves.user, 0, sizeof(m_Saves.user));
 }
 
-void ResultScreen_SetClock(const RESULT_SCREEN_CLOCK *const clock)
+void ResultScreen_SetDate(const char *const date)
 {
-    m_Saves.clock = *clock;
+    snprintf(m_Saves.clock.date, sizeof(m_Saves.clock.date), "%s", date);
+}
+
+void ResultScreen_CountFrames(const float tick_rate)
+{
+    if (!g_GameManager.mode.playing) {
+        return;
+    }
+    // The original divides 60 by its game speed, which is 1 at full speed.
+    const float target = 60.0f;
+    RESULT_SCREEN_CLOCK *const clock = &m_Saves.clock;
+    clock->expected_frames += target;
+    if (target * 0.9f < tick_rate) {
+        clock->achieved_frames += target;
+    } else if (target * 0.7f < tick_rate) {
+        clock->achieved_frames += target * 0.8f;
+    } else if (target * 0.5f < tick_rate) {
+        clock->achieved_frames += target * 0.6f;
+    } else {
+        clock->achieved_frames += target * 0.5f;
+    }
+}
+
+void ResultScreen_ResetFrames(void)
+{
+    m_Saves.clock.achieved_frames = 0.0f;
+    m_Saves.clock.expected_frames = 0.0f;
 }
 
 void ResultScreen_RequestReplayScan(void)

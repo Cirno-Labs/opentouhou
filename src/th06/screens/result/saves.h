@@ -21,9 +21,9 @@
 // simulation.
 typedef struct {
     char date[9]; // the local date, as MM/DD/YY
-    // Count the frames that ran and the frames that were due during play.
-    // The slowdown that the result screen shows and replays store comes
-    // from them.
+    // Count the frames that ran and the frames that were due during play,
+    // as ResultScreen_CountFrames adds them. The slowdown that the result
+    // screen shows and replays store comes from them.
     float achieved_frames;
     float expected_frames;
 } RESULT_SCREEN_CLOCK;
@@ -68,8 +68,16 @@ int32_t ResultScreen_GetReplayScan(void);
 // numbered slots, as the simulation last saved them, then the th6_ud files.
 // Returns their number.
 int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT]);
-// Sets the values that the next ticks read.
-void ResultScreen_SetClock(const RESULT_SCREEN_CLOCK *clock);
+// Sets the date that the next ticks read, as MM/DD/YY.
+void ResultScreen_SetDate(const char *date);
+// Adds one measurement of the tick rate, in ticks per second, to the frame
+// counts while g_GameManager.mode.playing is set, as the original's frame
+// rate display does every half second. The frames due grow by 60. The
+// frames that ran grow by 60 above 54 ticks per second, by 48 above 42, by
+// 36 above 30 and by 30 below.
+void ResultScreen_CountFrames(float tick_rate);
+// Sets the frame counts to 0, as a new game starts.
+void ResultScreen_ResetFrames(void);
 // Makes the replay save menu refuse every game, as it refuses a game with
 // a continue, or accept games again. th06 refuses them while patches
 // change gameplay, because such a replay would not play back in the

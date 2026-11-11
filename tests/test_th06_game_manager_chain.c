@@ -38,6 +38,7 @@ static int32_t m_ReplayGenerated;
 static int32_t m_FadeFrames;
 static uint32_t m_FadeColor;
 static int32_t m_AfterCalls;
+static int32_t m_FrameResets;
 static CHAIN_ELEM m_AfterElem;
 
 static void M_Event(const char event)
@@ -162,6 +163,11 @@ void ResultScreen_LoadGameRecords(
     practice[shot][g_GameManager.run.stage][difficulty].score = 555;
 }
 
+void ResultScreen_ResetFrames(void)
+{
+    m_FrameResets++;
+}
+
 void ScreenEffect_FadeOut(const int32_t duration, const uint32_t color)
 {
     m_FadeFrames = duration;
@@ -193,6 +199,7 @@ static void M_Setup(void)
     m_FadeFrames = 0;
     m_FadeColor = 0xffffffff;
     m_AfterCalls = 0;
+    m_FrameResets = 0;
     g_Stage.data.song_paths[0] = m_SongPath;
     Sound_Reset();
 }
@@ -244,6 +251,13 @@ TEST(new_game_initializes_records_and_registers_in_original_order)
     CHECK_EQ_INT(g_GameManager.records.spell_cards[63].index, 63);
 }
 
+TEST(new_game_resets_the_frame_counts)
+{
+    M_Setup();
+    M_Start();
+    CHECK_EQ_INT(m_FrameResets, 1);
+}
+
 TEST(removal_uses_original_module_order_and_stops_playing)
 {
     M_Setup();
@@ -281,6 +295,7 @@ TEST(next_stage_keeps_totals_and_score_before_final_reset)
     CHECK_EQ_INT(g_GameManager.stats.deaths, 2);
     CHECK_EQ_INT(g_GameManager.rank.sub, 0);
     CHECK_EQ_INT(g_GameManager.run.rng_seed, 4321);
+    CHECK_EQ_INT(m_FrameResets, 1);
 }
 
 TEST(replay_restores_before_stage_rng_count_resets)
