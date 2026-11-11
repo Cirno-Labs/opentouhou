@@ -102,7 +102,7 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
         return;
     }
     char *dir;
-    if (!Result_Log(Path_GetPatchesDir(&dir), LOG_LEVEL_ERROR)) {
+    if (!Result_Log(Path_GetPatchesDir(nullptr, &dir), LOG_LEVEL_ERROR)) {
         return;
     }
     char disabled_text[CONFIG_STRING_SIZE];

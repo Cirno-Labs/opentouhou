@@ -1,12 +1,19 @@
 #include "core/io/path.h"
 
 #include "core/base/string.h"
+#include "core/io/file.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>
 
 #define M_ORGANIZATION "opentouhou"
 #define M_PATCHES_DIR "patches"
+
+#ifdef _WIN32
+    #define M_SEPARATOR "\\"
+#else
+    #define M_SEPARATOR "/"
+#endif
 
 char *Path_Join(
     const ALLOCATOR *const allocator, const char *const a, const char *const b)
@@ -43,8 +50,19 @@ RESULT Path_GetUserDir(const char *const game_id, char **const out)
     return OK;
 }
 
-RESULT Path_GetPatchesDir(char **const out)
+RESULT Path_GetPatchesDir(const char *const portable_dir, char **const out)
 {
-    MUST(Path_GetUserDir(M_PATCHES_DIR, out), "the patches folder");
+    *out = nullptr;
+    if (portable_dir == nullptr) {
+        MUST(Path_GetUserDir(M_PATCHES_DIR, out), "the patches folder");
+        return OK;
+    }
+    char *const dir = Path_Join(&g_HeapAllocator, portable_dir, M_PATCHES_DIR);
+    const RESULT result = File_MakeDir(dir);
+    if (IS_OK(result)) {
+        *out = Str_Format("%s" M_SEPARATOR, dir);
+    }
+    Mem_Free(dir);
+    MUST(result, "the patches folder");
     return OK;
 }

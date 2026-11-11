@@ -12,9 +12,8 @@
 // added when a is empty or already ends with '/' or '\'.
 char *Path_Join(const ALLOCATOR *allocator, const char *a, const char *b);
 
-// Returns the directory that holds the executable, which is the default data
-// directory, or nullptr when the platform cannot tell. The string stays
-// valid for the life of the program.
+// Returns the directory that holds the executable, or nullptr when the
+// platform cannot tell. The string stays valid for the life of the program.
 const char *Path_GetExeDir(void);
 
 // Returns the user directory of a game, where its settings, scores and
@@ -26,7 +25,9 @@ const char *Path_GetExeDir(void);
 RESULT Path_GetUserDir(const char *game_id, char **out);
 
 // Returns the folder that holds the thcrap patches of every game, and
-// creates it if it does not exist. It is "opentouhou/patches" in the same
-// platform directory as the user directories, so that it sits beside them.
+// creates it if it does not exist. Without a portable_dir, it is
+// "opentouhou/patches" in the same platform directory as the user
+// directories, so that it sits beside them. With a portable_dir, which is
+// the program folder in portable mode, it is "patches" in portable_dir.
 // Mem_Free releases *out. On failure, *out is nullptr.
-RESULT Path_GetPatchesDir(char **out);
+RESULT Path_GetPatchesDir(const char *portable_dir, char **out);

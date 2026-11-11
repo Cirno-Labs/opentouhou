@@ -6,6 +6,7 @@
 
 #include "test.h"
 #include "test_allocator.h"
+#include "test_dir.h"
 
 #include <SDL3/SDL.h>
 
@@ -71,7 +72,7 @@ TEST(the_patches_folder_is_beside_the_user_directories)
 {
     const char *const data_home = getenv("XDG_DATA_HOME");
     char *directory;
-    CHECK(Result_Log(Path_GetPatchesDir(&directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Path_GetPatchesDir(nullptr, &directory), LOG_LEVEL_ERROR));
     char *const expected = Str_Format("%s/opentouhou/patches/", data_home);
     CHECK_EQ_STR(directory, expected);
     SDL_PathInfo info;
@@ -82,3 +83,23 @@ TEST(the_patches_folder_is_beside_the_user_directories)
     Mem_Free(directory);
 }
 #endif
+
+TEST(a_portable_patches_folder_is_in_the_program_folder)
+{
+    char *const program = TestDir_Prepare("portable_patches");
+    char *directory;
+    CHECK(Result_Log(Path_GetPatchesDir(program, &directory), LOG_LEVEL_ERROR));
+#ifdef _WIN32
+    char *const expected = Str_Format("%s/patches\\", program);
+#else
+    char *const expected = Str_Format("%s/patches/", program);
+#endif
+    CHECK_EQ_STR(directory, expected);
+    SDL_PathInfo info;
+    CHECK(
+        SDL_GetPathInfo(directory, &info)
+        && info.type == SDL_PATHTYPE_DIRECTORY);
+    Mem_Free(expected);
+    Mem_Free(directory);
+    Mem_Free(program);
+}
