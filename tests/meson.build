@@ -534,6 +534,21 @@ test(
   suite: 'unit',
 )
 
+test(
+  'core/app/screenshot',
+  executable(
+    'test_screenshot',
+    'test_screenshot.c',
+    '../src/core/app/screenshot.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_image_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  suite: 'unit',
+  env: ['TEST_DIR=' + meson.current_build_dir() / 'tmp/screenshot'],
+)
+
 # Each part of core/math has a test named after it, linking the sources
 # directly like core/base's tests do.
 foreach part : [

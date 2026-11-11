@@ -370,3 +370,23 @@ TEST(upload_changes_only_the_quads_drawn_after_it)
     Image_Free(&green);
     GfxTexture_Free(texture);
 }
+
+TEST(the_screen_reads_back_without_window_scaling_or_borders)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(RED);
+    Gfx_EndTick();
+    IMAGE window = M_Output(false, 24);
+    CHECK_EQ_INT(window.width, 24);
+    CHECK_EQ_INT(window.height, 16);
+    M_CheckPixel(&window, 0, 0, BLUE, 0);
+    M_CheckPixel(&window, 12, 8, RED, 0);
+    IMAGE screen;
+    CHECK_OK(Gfx_ReadScreen(&g_HeapAllocator, &screen));
+    CHECK_EQ_INT(screen.width, SIZE);
+    CHECK_EQ_INT(screen.height, SIZE);
+    M_CheckPixel(&screen, 0, 0, RED, 0);
+    M_CheckPixel(&screen, 7, 7, RED, 0);
+    Image_Free(&screen);
+    Image_Free(&window);
+}

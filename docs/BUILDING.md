@@ -104,6 +104,11 @@ scores and replays go to your user directory:
 | Linux | `$XDG_DATA_HOME/opentouhou/<game>/` (usually `~/.local/share/...`) |
 | Windows | `%APPDATA%\opentouhou\<game>\` |
 
+Press F11 or Alt+Enter to toggle fullscreen. Press Print Screen or F12
+to save a screenshot in `screenshots/` under the user directory. The
+`[screenshot]` settings in `config.ini` select the native or window
+resolution, PNG or JPEG, and JPEG quality.
+
 ## Docker images
 
 There is one image per target platform, defined under `tools/docker/`:

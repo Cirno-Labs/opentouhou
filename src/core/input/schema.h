@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 // Reads the keyboard, gamepads and joysticks into the game's own input
-// struct, once per tick. The game declares the struct, with a bool per
+// struct. The game declares the struct, with a bool per
 // button and two floats per stick, and a table of INPUT_ACTIONs that maps
 // each field to its default bindings. The INI key of an action is its field
 // name.
