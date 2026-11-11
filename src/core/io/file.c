@@ -27,6 +27,14 @@ bool File_Exists(const char *const path)
     return SDL_GetPathInfo(path, nullptr);
 }
 
+RESULT File_MakeDir(const char *const path)
+{
+    FAIL_IF(
+        !SDL_CreateDirectory(path), "Cannot create %s: %s", path,
+        SDL_GetError());
+    return OK;
+}
+
 RESULT File_ListDir(
     const char *const path, const ALLOCATOR *const allocator,
     FILE_LIST *const list)

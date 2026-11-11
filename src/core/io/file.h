@@ -16,6 +16,10 @@ typedef ARRAY(char *) FILE_LIST;
 // symbolic link counts as what it points to.
 bool File_Exists(const char *path);
 
+// Creates the directory at path, and the directories above it that do not
+// exist. A directory that exists already is a success.
+RESULT File_MakeDir(const char *path);
+
 // Lists the names of the entries of a directory, without the directory and
 // without "." and "..". The names are sorted byte by byte, so that the order
 // is the same on every platform. The list is prepared with allocator, which

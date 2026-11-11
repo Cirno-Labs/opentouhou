@@ -26,6 +26,33 @@ TEST(exists_finds_files_and_directories)
     Mem_Free(directory);
 }
 
+TEST(make_dir_creates_missing_parents)
+{
+    char *const directory = TestDir_Prepare("make_dir");
+    char *const outer = TestDir_Join(directory, "outer");
+    char *const inner = TestDir_Join(outer, "inner");
+    CHECK(Result_Log(File_MakeDir(inner), LOG_LEVEL_ERROR));
+    CHECK(File_Exists(inner));
+    CHECK(Result_Log(File_MakeDir(inner), LOG_LEVEL_ERROR));
+    Mem_Free(inner);
+    Mem_Free(outer);
+    Mem_Free(directory);
+}
+
+TEST(make_dir_fails_below_a_file)
+{
+    char *const directory = TestDir_Prepare("make_dir_file");
+    char *const file = TestDir_Join(directory, "file");
+    char *const below = TestDir_Join(file, "below");
+    M_Create(file);
+    const RESULT result = File_MakeDir(below);
+    CHECK(!IS_OK(result));
+    Result_Ignore(result);
+    Mem_Free(below);
+    Mem_Free(file);
+    Mem_Free(directory);
+}
+
 TEST(list_gives_every_name_sorted)
 {
     char *const directory = TestDir_Prepare("list");
