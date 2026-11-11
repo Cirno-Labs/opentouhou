@@ -2,6 +2,7 @@
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -18,6 +19,7 @@
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
+#include "core/patch.h"
 #include "core/base/utils.h"
 
 #include <SDL3/SDL.h>
@@ -37,6 +39,7 @@ typedef struct {
 } M_SCRIPT;
 
 static char *m_Directory;
+static PATCH_STACK *m_Patches;
 static M_SCRIPT m_Scripts[M_MAX_SCRIPTS];
 static int32_t m_ScriptCount;
 
@@ -227,12 +230,40 @@ static void M_Setup(const char *const case_name)
     CHECK(Result_Log(M_SetupStage(case_name, 1), LOG_LEVEL_ERROR));
 }
 
+// Sets up stage 1 with a patch whose jdiff for msg1.dat is diff.
+static void M_SetupPatched(const char *const case_name, const char *const diff)
+{
+    M_WriteData(case_name);
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    PatchBuilder_Write(patches, "a/lang/th06/msg1.dat.jdiff", diff);
+    m_Patches = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &m_Patches),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Files_SetPatches(m_Patches);
+    Anm_Init(&g_HeapAllocator, &g_Rng);
+    AsciiText_Initialize();
+    Chain_Init(&g_Chain);
+    GameManager_Create(&g_GameManager);
+    g_GameManager.run.stage = 1;
+    g_GameManager.run.difficulty = 1;
+    g_Buttons = (BUTTONS) {};
+    Scene_Request(SCENE_GAMEPLAY);
+    m_ScriptCount = 0;
+    CHECK(Result_Log(Gui_Register(), LOG_LEVEL_ERROR));
+}
+
 static void M_Teardown(void)
 {
     Chain_Release(&g_Chain);
     AsciiText_Initialize();
     Anm_Shutdown();
     Files_Shutdown();
+    Patch_CloseStack(m_Patches);
+    m_Patches = nullptr;
     Mem_Free(m_Directory);
 }
 
@@ -554,6 +585,18 @@ TEST(a_line_shows_its_text_in_utf8)
     CHECK_EQ_STR(g_Gui.msg.nameplate_texts[0], "Reimu");
     CHECK(g_Gui.msg.nameplates[0].script == Anm_GetScript(0x704));
     CHECK_EQ_INT(g_Gui.msg.wait_frames, 0);
+    M_Teardown();
+}
+
+TEST(a_line_that_is_utf8_shows_as_it_is)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 0, 3, 0, 0, "Hello ♪");
+    M_Op(script, 0, 10);
+    M_Setup("line_utf8");
+    Gui_StartMsg(0);
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "Hello ♪");
     M_Teardown();
 }
 
@@ -1106,5 +1149,161 @@ TEST(popups_slide_into_the_playfield_before_their_timer_advances)
     CHECK(g_Gui.popups.full_power.pos.x == 260.0f);
     M_Run(15);
     CHECK(g_Gui.popups.bonus.pos.x == 104.0f);
+    M_Teardown();
+}
+
+// Dialogue jdiffs
+
+// Writes script 0 of msg1.dat: a box at time 10 of the lines first and
+// second, then a halt.
+static void M_WriteBox(const char *const first, const char *const second)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 10, 3, 0, 0, first);
+    if (second != nullptr) {
+        M_OpText(script, 10, 3, 0, 1, second);
+    }
+    M_Op(script, 10, 10);
+}
+
+TEST(a_jdiff_replaces_the_lines_of_a_box)
+{
+    M_WriteBox(M_KOUMA, M_KOUMA);
+    M_SetupPatched("jdiff_lines", "{'0': {'10_0': {lines: ['One', 'Two']}}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "One");
+    CHECK_EQ_STR(g_Gui.msg.line_texts[1], "Two");
+    M_Teardown();
+}
+
+TEST(a_jdiff_box_can_be_a_bare_array)
+{
+    M_WriteBox(M_KOUMA, nullptr);
+    M_SetupPatched("jdiff_bare", "{'0': {'10_0': ['One']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "One");
+    M_Teardown();
+}
+
+TEST(fewer_jdiff_lines_delete_the_extra_lines)
+{
+    M_WriteBox(M_KOUMA, M_KOUMA);
+    M_SetupPatched("jdiff_fewer", "{'0': {'10_0': ['One']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "One");
+    CHECK(g_Gui.msg.line_texts[1] == nullptr);
+    M_Teardown();
+}
+
+TEST(more_jdiff_lines_add_lines_on_the_same_frame)
+{
+    M_WriteBox(M_KOUMA, nullptr);
+    M_SetupPatched("jdiff_more", "{'0': {'10_0': ['One', 'Two']}}");
+    Gui_StartMsg(0);
+    M_Run(10);
+    CHECK(g_Gui.msg.line_texts[0] == nullptr);
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "One");
+    CHECK_EQ_STR(g_Gui.msg.line_texts[1], "Two");
+    M_Teardown();
+}
+
+TEST(jdiff_lines_past_the_second_are_dropped)
+{
+    M_WriteBox(M_KOUMA, nullptr);
+    M_SetupPatched("jdiff_third", "{'0': {'10_0': ['One', 'Two', 'Three']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "One");
+    CHECK_EQ_STR(g_Gui.msg.line_texts[1], "Two");
+    M_Teardown();
+}
+
+TEST(a_jdiff_nameplate_takes_its_h1_key)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 10, 8, 1, 0, M_KOUMA);
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_Op(script, 10, 10);
+    M_SetupPatched(
+        "jdiff_h1", "{'0': {'10_h1_0': ['Rumia'], '10_0': ['Line']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.nameplate_texts[0], "Rumia");
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "Line");
+    M_Teardown();
+}
+
+TEST(jdiff_boxes_count_within_a_time_code)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_OpInt(script, 10, 4, 1);
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_Op(script, 10, 10);
+    M_SetupPatched("jdiff_boxes", "{'0': {'10_0': ['A'], '10_1': ['B']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "A");
+    M_Run(2);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "B");
+    M_Teardown();
+}
+
+// thcrap counts each line of a box that the jdiff does not translate, so
+// the box after an untranslated box of two lines is box 2.
+TEST(an_untranslated_line_counts_as_a_box)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_OpText(script, 10, 3, 0, 1, M_KOUMA);
+    M_OpInt(script, 10, 4, 1);
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_Op(script, 10, 10);
+    M_SetupPatched("jdiff_untranslated", "{'0': {'10_2': ['Z']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "紅魔");
+    M_Run(2);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "Z");
+    M_Teardown();
+}
+
+TEST(a_new_time_code_counts_its_boxes_from_0)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_OpText(script, 11, 3, 0, 0, M_KOUMA);
+    M_Op(script, 11, 10);
+    M_SetupPatched("jdiff_time", "{'0': {'10_0': ['A'], '11_0': ['B']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "A");
+    M_Run(1);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "B");
+    M_Teardown();
+}
+
+TEST(jdiff_lines_lose_markup_and_notes)
+{
+    M_WriteBox(M_KOUMA, nullptr);
+    M_SetupPatched(
+        "jdiff_plain", "{'0': {'10_0': ['<c$Rumia$x> says\\u0014a note']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "Rumia says");
+    M_Teardown();
+}
+
+TEST(a_jdiff_for_another_script_changes_nothing)
+{
+    M_WriteBox(M_KOUMA, nullptr);
+    M_SetupPatched("jdiff_other", "{'1': {'10_0': ['One']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK_EQ_STR(g_Gui.msg.line_texts[0], "紅魔");
     M_Teardown();
 }

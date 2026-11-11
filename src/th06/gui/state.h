@@ -117,8 +117,10 @@ extern GUI g_Gui;
 // character. In SCENE_NEXT_STAGE, it keeps them and lets the loading
 // screen leave. A dialogue file fails the add when a script runs past the
 // file, an instruction has fewer arguments than its opcode reads, a text
-// is not CP932, or an instruction names a side, a line or a song out of
-// range.
+// is neither UTF-8 nor CP932, or an instruction names a side, a line or a
+// song out of range. The jdiff of the dialogue file from the patches then
+// changes the text of its lines, as thcrap's MSG patcher does, and a line
+// past the second of a box is dropped.
 RESULT Gui_Register(void);
 // Removes both elements and releases the stage's portraits and dialogue
 // file. Outside SCENE_NEXT_STAGE, also releases the rest.

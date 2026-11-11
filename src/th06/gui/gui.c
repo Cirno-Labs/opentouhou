@@ -12,13 +12,20 @@
 #include "th06/strings.h"
 #include "th06/translation.h"
 
+#include "core/base/arena.h"
+#include "core/base/array.h"
 #include "core/base/cp932.h"
+#include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
+#include "core/json.h"
+#include "core/patch.h"
 
 #include <string.h>
 #include <stdio.h>
+
+#define M_DIFF_ARENA_CAPACITY (16 * 1024 * 1024)
 
 // Selects what a dialogue instruction does. The script stops on opcodes
 // 0, 10 and 11 and never runs past them.
@@ -57,6 +64,21 @@ typedef struct {
     M_INSTR *instrs;
     int32_t count;
 } M_SCRIPT;
+
+typedef ARRAY(M_INSTR) M_INSTR_ARRAY;
+
+// Holds the state of applying the jdiff of one script, as thcrap's MSG
+// patcher keeps it. A box is the lines from a line 0 to the next line 0.
+typedef struct {
+    const JSON_VALUE *entry;
+    M_INSTR_ARRAY out;
+    int32_t time;
+    int32_t box; // counts the line instructions of a time without a diff
+    const JSON_VALUE *lines; // the lines of the box, or nullptr
+    int32_t line;
+    int32_t last_opcode; // the opcode of the last replaced line, or -1
+    int32_t last_line; // the position in out of the last replaced line
+} M_PATCH_STATE;
 
 // Tells how a frame of the dialogue script ended.
 typedef enum {
@@ -200,7 +222,7 @@ static RESULT M_ReadInstr(READER *const reader, M_INSTR *const instr)
             end == nullptr, "the text at 0x%zx runs past its instruction",
             start);
         MUST(
-            Cp932_Decode(
+            Cp932_DecodeText(
                 (const char *)text, (size_t)(end - text), &instr->text),
             "the text at 0x%zx", start);
         break;
@@ -274,6 +296,151 @@ static void M_FreeMsg(void)
     }
 }
 
+static void M_SetText(M_INSTR *const instr, const char *const text)
+{
+    Mem_Free(instr->text);
+    instr->text = Patch_PlainText(text);
+}
+
+// Adds the lines of the box that its instructions did not take, after the
+// last replaced line, as copies of it.
+static void M_EndBox(M_PATCH_STATE *const state)
+{
+    if (state->last_opcode >= 0 && state->lines != nullptr) {
+        const int32_t count = state->lines->array.count;
+        for (; state->line < count; state->line++) {
+            const char *const text =
+                Json_GetString(Json_At(state->lines, state->line), nullptr);
+            if (text == nullptr) {
+                continue;
+            }
+            if (state->line >= GUI_MSG_LINE_COUNT) {
+                LOG_WARNING(
+                    "Dropped the dialogue line %d at time %d: a box has %d "
+                    "lines",
+                    state->line, state->time, GUI_MSG_LINE_COUNT);
+                continue;
+            }
+            M_INSTR instr = state->out.items[state->last_line];
+            instr.index = (int16_t)state->line;
+            instr.text = Patch_PlainText(text);
+            state->last_line++;
+            Array_Insert(&state->out, state->last_line, instr);
+        }
+    }
+    state->line = 0;
+    state->lines = nullptr;
+}
+
+// Applies the diff to the line instruction instr, which is the last of
+// out. Returns whether instr stays.
+static bool M_PatchLine(M_PATCH_STATE *const state, M_INSTR *const instr)
+{
+    if (state->lines == nullptr) {
+        state->box++;
+        char key[48];
+        if (instr->opcode == M_OP_NAMEPLATE) {
+            snprintf(key, sizeof(key), "%d_h1_%d", state->time, state->box);
+        } else {
+            snprintf(key, sizeof(key), "%d_%d", state->time, state->box);
+        }
+        const JSON_VALUE *lines = Json_Get(state->entry, key);
+        if (lines != nullptr && lines->type == JSON_OBJECT) {
+            lines = Json_Get(lines, "lines");
+        }
+        if (lines != nullptr && lines->type == JSON_ARRAY) {
+            state->lines = lines;
+        }
+    }
+    if (state->lines == nullptr) {
+        return true;
+    }
+    const char *const text =
+        Json_GetString(Json_At(state->lines, state->line), nullptr);
+    state->line++;
+    if (text == nullptr) {
+        return false;
+    }
+    M_SetText(instr, text);
+    state->last_opcode = instr->opcode;
+    state->last_line = state->out.count - 1;
+    return true;
+}
+
+// Returns whether the box counter starts again for a line 0 of opcode
+// after a line of last_opcode. thcrap keeps counting only between two
+// lines of opcode 3.
+static bool M_RestartsBoxes(const int32_t last_opcode, const uint8_t opcode)
+{
+    return last_opcode == M_OP_NAMEPLATE || opcode == M_OP_NAMEPLATE;
+}
+
+// Applies the jdiff entry of a script, as thcrap's th06 MSG patcher does:
+// each box of a time code takes its lines from "<time>_<box>", or from
+// "<time>_h1_<box>" for nameplates. Fewer lines delete the extra line
+// instructions; more lines add copies of the last one.
+static void M_PatchScript(M_SCRIPT *const script, const JSON_VALUE *const entry)
+{
+    M_PATCH_STATE state = {
+        .entry = entry,
+        .time = -1,
+        .box = -1,
+        .last_opcode = -1,
+    };
+    Array_Init(&state.out, &g_HeapAllocator);
+    for (int32_t i = 0; i < script->count; i++) {
+        M_INSTR instr = script->instrs[i];
+        if (M_IsFinal(instr.opcode)) {
+            M_EndBox(&state);
+        }
+        if (instr.time != state.time) {
+            state.time = instr.time;
+            state.box = -1;
+        }
+        Array_Append(&state.out, instr);
+        if (instr.opcode != M_OP_LINE && instr.opcode != M_OP_NAMEPLATE) {
+            continue;
+        }
+        if (instr.index == 0) {
+            M_EndBox(&state);
+            if (state.last_opcode >= 0
+                && M_RestartsBoxes(state.last_opcode, instr.opcode)) {
+                state.box = -1;
+            }
+        }
+        state.line = instr.index;
+        M_INSTR *const last = &state.out.items[state.out.count - 1];
+        if (!M_PatchLine(&state, last)) {
+            Mem_Free(last->text);
+            state.out.count--;
+        }
+    }
+    Mem_Free(script->instrs);
+    script->instrs = Mem_AllocArr((size_t)state.out.count, sizeof(M_INSTR));
+    memcpy(
+        script->instrs, state.out.items,
+        (size_t)state.out.count * sizeof(M_INSTR));
+    script->count = state.out.count;
+    Array_Free(&state.out);
+}
+
+static void M_PatchMsg(const char *const path)
+{
+    ARENA arena;
+    Arena_Init(&arena, "dialogue jdiff", M_DIFF_ARENA_CAPACITY);
+    const JSON_VALUE *const diff =
+        Files_LoadDiff(path, Arena_Allocator(&arena));
+    for (int32_t i = 0; diff != nullptr && i < m_ScriptCount; i++) {
+        char key[16];
+        snprintf(key, sizeof(key), "%d", i);
+        const JSON_VALUE *const entry = Json_Get(diff, key);
+        if (entry != nullptr && entry->type == JSON_OBJECT) {
+            M_PatchScript(&m_Scripts[i], entry);
+        }
+    }
+    Arena_Free(&arena);
+}
+
 static RESULT M_LoadMsg(const char *const path)
 {
     M_FreeMsg();
@@ -285,6 +452,7 @@ static RESULT M_LoadMsg(const char *const path)
         M_FreeMsg();
     }
     MUST(result, "%s", path);
+    M_PatchMsg(path);
     g_Gui.msg.script = -1;
     g_Gui.msg.pc = 0;
     return OK;
