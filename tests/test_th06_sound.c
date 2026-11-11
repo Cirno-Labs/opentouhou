@@ -1,4 +1,5 @@
 #include "th06/files.h"
+#include "th06/settings.h"
 #include "th06/sound.h"
 
 #include "core/audio.h"
@@ -433,4 +434,56 @@ TEST(play_music_after_a_fade_starts_at_full_volume)
     SoundPlayer_Update();
     M_CheckNear(M_Mix(), 0.5f);
     M_Stop(directory);
+}
+
+TEST(sound_off_plays_no_effect_and_starts_no_music)
+{
+    char *const directory = M_Prepare("sound_off", -1);
+    M_WriteWave(directory, "bgm/th06_01.wav", 16, M_Ramp);
+    CHECK(Result_Log(M_Start(directory), LOG_LEVEL_ERROR));
+    g_Settings.sound = false;
+    Sound_PlayMusic("bgm/th06_01.mid");
+    bool heard = false;
+    for (int32_t i = 0; i < 50; i++) {
+        Sound_Queue(SOUND_OK);
+        SoundPlayer_Update();
+        heard = heard || M_Mix() != 0.0f;
+        SDL_Delay(1);
+    }
+    CHECK(!heard);
+    g_Settings.sound = true;
+    M_Stop(directory);
+}
+
+TEST(music_off_ignores_the_music_but_plays_effects)
+{
+    char *const directory = M_Prepare("music_off", -1);
+    M_WriteWave(directory, "bgm/th06_01.wav", 16, M_Ramp);
+    CHECK(Result_Log(M_Start(directory), LOG_LEVEL_ERROR));
+    g_Settings.music = SETTINGS_MUSIC_OFF;
+    Sound_PlayMusic("bgm/th06_01.mid");
+    for (int32_t i = 0; i < 20; i++) {
+        SoundPlayer_Update();
+        SDL_Delay(1);
+    }
+    CHECK(M_Mix() == 0.0f);
+    CHECK(M_PlayEffect(SOUND_OK) != 0.0f);
+    g_Settings.music = SETTINGS_MUSIC_WAVE;
+    M_Stop(directory);
+}
+
+TEST(settings_default_to_the_original_configuration)
+{
+    TH06_SETTINGS settings;
+    Config_SetDefaults(&g_SettingsSchema, &settings);
+    CHECK_EQ_INT(settings.lives, 2);
+    CHECK_EQ_INT(settings.bombs, 3);
+    CHECK_EQ_INT(settings.difficulty, 1);
+    CHECK_EQ_INT(settings.music, SETTINGS_MUSIC_WAVE);
+    CHECK(settings.sound);
+    CHECK_EQ_INT(g_Settings.lives, settings.lives);
+    CHECK_EQ_INT(g_Settings.bombs, settings.bombs);
+    CHECK_EQ_INT(g_Settings.difficulty, settings.difficulty);
+    CHECK_EQ_INT(g_Settings.music, settings.music);
+    CHECK(g_Settings.sound);
 }

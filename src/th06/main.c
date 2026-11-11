@@ -6,6 +6,7 @@
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/screens/result.h"
+#include "th06/settings.h"
 #include "th06/sound.h"
 
 #include <time.h>
@@ -69,6 +70,8 @@ const GAME_DESC g_GameDesc = {
     .logical_width = 640,
     .logical_height = 480,
     .input_schema = &g_InputSchema,
+    .settings_schema = &g_SettingsSchema,
+    .settings = &g_Settings,
     .init = M_Init,
     .tick = M_Tick,
     .shutdown = M_Shutdown,

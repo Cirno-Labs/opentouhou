@@ -17,6 +17,10 @@
 // which is not ported: a configuration that selects MIDI in the original
 // plays these wave files instead.
 //
+// g_Settings.sound off plays no sound effects and starts no music.
+// g_Settings.music off starts, stops and fades no music, as the original
+// ignores its music calls in that mode.
+//
 // A fade lowers the volume a little each tick, linearly in decibels, by
 // 50 dB over its length, and then stops the music.
 

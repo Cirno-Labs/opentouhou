@@ -1,6 +1,7 @@
 #include "th06/sound/player.h"
 
 #include "th06/files.h"
+#include "th06/settings.h"
 #include "th06/sound/events.h"
 
 #include "core/audio.h"
@@ -329,17 +330,22 @@ RESULT SoundPlayer_Init(void)
 void SoundPlayer_Update(void)
 {
     if (m_Player.enabled) {
+        const bool music = g_Settings.music != SETTINGS_MUSIC_OFF;
         M_StepFade();
         if (g_SoundEvents.music == SOUND_MUSIC_PLAY) {
-            M_PlayMusic(g_SoundEvents.music_path);
-        } else if (g_SoundEvents.music == SOUND_MUSIC_STOP) {
+            if (music && g_Settings.sound) {
+                M_PlayMusic(g_SoundEvents.music_path);
+            }
+        } else if (g_SoundEvents.music == SOUND_MUSIC_STOP && music) {
             M_StopMusic();
         }
-        if (g_SoundEvents.fade_out) {
+        if (g_SoundEvents.fade_out && music) {
             M_FadeOut(g_SoundEvents.fade_seconds);
         }
         M_StartMusic();
-        M_PlayQueued();
+        if (g_Settings.sound) {
+            M_PlayQueued();
+        }
     }
     Sound_Reset();
 }

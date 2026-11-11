@@ -37,6 +37,7 @@ th06_lib = static_library(
   'screens/result/score.c',
   'screens/result/screen.c',
   'sound/events.c',
+  'settings.c',
   'sound/player.c',
   'stage.c',
   'strings.c',

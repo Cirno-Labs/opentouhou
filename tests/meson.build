@@ -399,7 +399,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_pbg3_lib, core_vfs_lib, core_audio_lib, core_io_lib,
-      core_math_lib, core_base_lib,
+      core_config_lib, core_ini_lib, core_math_lib, core_base_lib,
     ],
     dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
   ),
