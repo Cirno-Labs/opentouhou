@@ -1203,7 +1203,7 @@ test(
 # repository networks of file:// URLs in their own directories, so no test
 # needs the network. othpatch allocates its arenas with malloc, which
 # MALLOC_PERTURB_ would fill byte by byte, so the tests turn it off.
-foreach part : ['fetch', 'language', 'main', 'repo', 'update']
+foreach part : ['fetch', 'language', 'main', 'repo', 'sha256', 'update']
   test(
     'othpatch/' + part,
     executable(

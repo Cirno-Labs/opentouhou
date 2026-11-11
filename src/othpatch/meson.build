@@ -30,6 +30,7 @@ othpatch_lib = static_library(
   'language.c',
   'main.c',
   'repo.c',
+  'sha256.c',
   'update.c',
   othpatch_version,
   c_args: [layer_include['othpatch']] + core_include + ['-I' + meson.current_build_dir()],
