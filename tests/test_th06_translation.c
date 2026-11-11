@@ -65,6 +65,25 @@ TEST(exe_strings_take_their_translation_by_address)
     CHECK_EQ_STR(g_Strings[STRING_BOMB_NAME_REIMU_A], "霊符「夢想封印」");
 }
 
+TEST(shot_names_take_their_translation_by_address)
+{
+    const char *const files[] = {
+        "nmlgc/base_tsa/th06/stringlocs.js",
+        ("{Rx6bb98: 'Stats ReimuA', Rx6bb88: 'Stats ReimuB', "
+         "Rx6bb74: 'Stats MarisaA', Rx6bb60: 'Stats MarisaB'}"),
+        "thpatch/lang/stringdefs.js",
+        ("{'Stats ReimuA': 'Reimu (Spirit)', 'Stats ReimuB': 'Reimu (Dream)', "
+         "'Stats MarisaA': 'Marisa (Magic)', 'Stats MarisaB': 'Marisa "
+         "(Love)'}"),
+    };
+    M_Begin("shot_names", files, 4);
+    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_REIMU_A], "Reimu (Spirit)");
+    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_REIMU_B], "Reimu (Dream)");
+    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_MARISA_A], "Marisa (Magic)");
+    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_MARISA_B], "Marisa (Love)");
+    M_End();
+}
+
 TEST(markup_that_drops_a_conversion_is_rejected)
 {
     const char *const files[] = {

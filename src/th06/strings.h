@@ -6,10 +6,10 @@
 // default. A replacement of a format string keeps its conversions.
 // th06/translation replaces the entries with the translations of patches.
 #define TH06_STRINGS(X)                                                        \
-    X(SHOT_NAME_REIMU_A, 0, "博麗 霊夢 (霊)")                                  \
-    X(SHOT_NAME_REIMU_B, 0, "博麗 霊夢 (夢)")                                  \
-    X(SHOT_NAME_MARISA_A, 0, "霧雨 魔理沙 (魔)")                               \
-    X(SHOT_NAME_MARISA_B, 0, "霧雨 魔理沙 (恋)")                               \
+    X(SHOT_NAME_REIMU_A, 0x46bb98, "博麗 霊夢 (霊)")                           \
+    X(SHOT_NAME_REIMU_B, 0x46bb88, "博麗 霊夢 (夢)")                           \
+    X(SHOT_NAME_MARISA_A, 0x46bb74, "霧雨 魔理沙 (魔)")                        \
+    X(SHOT_NAME_MARISA_B, 0x46bb60, "霧雨 魔理沙 (恋)")                        \
     X(SHOT_TYPE_REIMU_A, 0x46bd04, "ReimuA ")                                  \
     X(SHOT_TYPE_REIMU_B, 0x46bcfc, "ReimuB ")                                  \
     X(SHOT_TYPE_MARISA_A, 0x46bcf4, "MarisaA")                                 \
