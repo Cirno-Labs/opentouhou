@@ -136,14 +136,15 @@ static void M_PrintHelp(const char *const program)
     printf(
         "Usage: %s [--data DIR]\n"
         "\n"
-        "Runs %s.\n"
+        "Runs %s, version %s.\n"
         "\n"
         "  --data DIR  read the original game's data from DIR\n"
         "  --help      print this help and quit\n"
         "\n"
         "Data directory without --data: %s\n"
         "Settings, scores and replays:  %s\n",
-        program, g_GameDesc.title, data_dir != nullptr ? data_dir : "unknown",
+        program, g_GameDesc.title, g_GameDesc.version,
+        data_dir != nullptr ? data_dir : "unknown",
         user_dir != nullptr ? user_dir : "no user directory");
     fflush(stdout);
     Mem_Free(data_dir);
@@ -194,6 +195,7 @@ static RESULT M_Init(
         M_PrintHelp(argc > 0 ? argv[0] : g_GameDesc.id);
         return OK;
     }
+    LOG_INFO("%s %s", g_GameDesc.id, g_GameDesc.version);
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));

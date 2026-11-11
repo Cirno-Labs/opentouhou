@@ -62,6 +62,7 @@ table that each game defines:
 typedef struct {
     const char *id;            // "thXX"
     const char *title;         // window title
+    const char *version;       // the game's version
     int logical_width;         // 640
     int logical_height;        // 480
     const INPUT_SCHEMA *input_schema;

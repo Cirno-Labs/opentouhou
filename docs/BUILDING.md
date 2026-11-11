@@ -69,7 +69,12 @@ This writes one package per game to `build/packages/`:
   macOS asks before its first start (Open from the context menu).
 
 Every package contains the game's executable, this project's licence
-and a readme. None contains any of the original game's files.
+and a readme. None contains any of the original game's files. The
+executable carries the game's icon and version: in the Windows file
+properties, the AppImage's desktop entry and the macOS bundle's
+Info.plist. `--help` prints the version too. The icons are rendered
+from `tools/packaging/<game>.svg` by `tools/packaging/make_icons` and
+committed, so the build needs no converter.
 
 Each game's version comes from `git describe` on its latest
 `<game>-v*` tag, so a th06 build after `th06-v1.2.0` is `1.2.0-3-gabcdef0`;

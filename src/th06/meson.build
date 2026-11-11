@@ -54,10 +54,29 @@ th06_lib = static_library(
   dependencies: [core_dep, stg_dep],
 )
 
+# Rewritten on every build; the compile reruns only when the version
+# changed.
+th06_version = custom_target(
+  'th06_version',
+  output: 'version.h',
+  command: [python3, files('../../tools/meson/version_header'), 'th06', '@OUTPUT@'],
+  build_always_stale: true,
+)
+th06_sources = [files('main.c'), th06_version]
+if host_machine.system() == 'windows'
+  th06_sources += import('windows').compile_resources(
+    'th06.rc',
+    args: ['--include-dir', meson.current_build_dir(),
+           '--include-dir', meson.project_source_root() / 'tools/packaging'],
+    depends: th06_version,
+    depend_files: files('../../tools/packaging/th06.ico'),
+  )
+endif
+
 games += {
   'th06': {
-    'sources': files('main.c'),
-    'c_args': [layer_include['th06']],
+    'sources': th06_sources,
+    'c_args': [layer_include['th06'], '-I' + meson.current_build_dir()],
     'link_with': [th06_lib],
   },
 }

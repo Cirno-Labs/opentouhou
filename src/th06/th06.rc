@@ -1,0 +1,34 @@
+#include <winver.h>
+
+#include "version.h"
+
+1 ICON "th06.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION GAME_VERSION_RC
+PRODUCTVERSION GAME_VERSION_RC
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "opentouhou"
+            VALUE "FileDescription", "opentouhou th06: the Embodiment of Scarlet Devil"
+            VALUE "FileVersion", GAME_VERSION
+            VALUE "InternalName", "oth06"
+            VALUE "LegalCopyright", "GNU General Public License, version 3 only"
+            VALUE "OriginalFilename", "oth06.exe"
+            VALUE "ProductName", "opentouhou th06"
+            VALUE "ProductVersion", GAME_VERSION
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

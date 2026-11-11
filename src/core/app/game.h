@@ -11,6 +11,8 @@ typedef struct {
     const char *id;
     // Sets the window title, in UTF-8.
     const char *title;
+    // Names the game's version, as tools/shared/versioning.py gives it.
+    const char *version;
     // Sets the size of the game's screen in pixels.
     int logical_width;
     int logical_height;

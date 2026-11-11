@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""Write a C header with a game's version, for the executable and its
+Windows resources.
+
+GAME_VERSION is the version string from tools/shared/versioning.py.
+GAME_VERSION_RC holds its four numbers for VERSIONINFO: major, minor,
+patch and the commits since the tag, or zeros for an untagged build.
+The header is rewritten only when the version changes.
+"""
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from shared.versioning import generate_version
+
+
+def numbers(version: str) -> str:
+    match = re.match(r"(\d+)\.(\d+)\.(\d+)(?:-(\d+)-g[0-9a-f]+)?", version)
+    if match is None:
+        return "0,0,0,0"
+    return ",".join(group or "0" for group in match.groups())
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("game")
+    parser.add_argument("output", type=Path)
+    args = parser.parse_args()
+    version = generate_version(args.game)
+    text = (
+        "#pragma once\n\n"
+        f'#define GAME_VERSION "{version}"\n'
+        f"#define GAME_VERSION_RC {numbers(version)}\n"
+    )
+    if not args.output.exists() or args.output.read_text() != text:
+        args.output.write_text(text)
+
+
+if __name__ == "__main__":
+    main()

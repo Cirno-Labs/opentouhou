@@ -70,7 +70,7 @@ def run_test(platform: str, target: str) -> None:
     )
 
 
-def package_linux(game: str, exe: Path, output: Path) -> None:
+def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         app_dir = Path(tmp) / f"{game}.AppDir"
         (app_dir / "usr/bin").mkdir(parents=True)
@@ -81,7 +81,10 @@ def package_linux(game: str, exe: Path, output: Path) -> None:
         shutil.copy2(REPO_DIR / "LICENSE", doc_dir / "LICENSE")
         shutil.copy2(REPO_DIR / "src/core/text/fonts/OFL.txt", doc_dir / "FONT-LICENSE.txt")
         shutil.copy2(PACKAGING_DIR / "README.txt", doc_dir / "README.txt")
-        shutil.copy2(PACKAGING_DIR / f"{game}.desktop", app_dir)
+        desktop = (PACKAGING_DIR / f"{game}.desktop").read_text()
+        (app_dir / f"{game}.desktop").write_text(
+            desktop.rstrip("\n") + f"\nX-AppImage-Version={version}\n"
+        )
         shutil.copy2(PACKAGING_DIR / f"{game}.svg", app_dir)
         (app_dir / "AppRun").symlink_to(f"usr/bin/{executable_name(game)}")
 
@@ -118,7 +121,7 @@ def run_package(platform: str, target: str) -> None:
         stem = generate_package_name(game, version, platform)
         if platform == "linux":
             output = PACKAGES_DIR / f"{stem}.AppImage"
-            package_linux(game, exe, output)
+            package_linux(game, exe, output, version)
         else:
             output = PACKAGES_DIR / f"{stem}.zip"
             package_win(game, exe, output)

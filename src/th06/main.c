@@ -11,6 +11,8 @@
 #include "th06/settings.h"
 #include "th06/sound.h"
 
+#include "version.h"
+
 #include <time.h>
 
 static bool m_GameInitialized;
@@ -93,6 +95,7 @@ static void M_Shutdown(void)
 const GAME_DESC g_GameDesc = {
     .id = "th06",
     .title = "東方紅魔郷 ~ the Embodiment of Scarlet Devil",
+    .version = GAME_VERSION,
     .logical_width = 640,
     .logical_height = 480,
     .input_schema = &g_InputSchema,

@@ -95,6 +95,7 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
             {
                 "CFBundleDevelopmentRegion": "en",
                 "CFBundleExecutable": executable_name(game),
+                "CFBundleIconFile": f"{game}.icns",
                 "CFBundleIdentifier": f"io.github.cirno-labs.opentouhou.{game}",
                 "CFBundleInfoDictionaryVersion": "6.0",
                 "CFBundleName": game,
@@ -112,6 +113,7 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
         REPO_DIR / "src/core/text/fonts/OFL.txt", resources / "FONT-LICENSE.txt"
     )
     shutil.copy2(PACKAGING_DIR / "README.txt", resources / "README.txt")
+    shutil.copy2(PACKAGING_DIR / f"{game}.icns", resources / f"{game}.icns")
     # An ad-hoc signature lets the bundle run on Apple silicon. Without a
     # developer identity, Gatekeeper still asks before the first start.
     subprocess.check_call(
