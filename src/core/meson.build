@@ -139,6 +139,34 @@ core_audio_lib = static_library(
   dependencies: [sdl3, avformat, avcodec, avutil, swresample, cc_libm],
 )
 
+# core/gfx's frontend batches, keeps the last two ticks and blends them
+# without a GPU, so the tests and the replay runner link it alone. The
+# OpenGL backend, with Gfx_Init, is a separate library.
+core_gfx_lib = static_library(
+  'core_gfx',
+  'gfx/backend_null.c',
+  'gfx/frontend.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [cc_libm],
+)
+
+gfx_shaders = custom_target(
+  'gfx_shaders',
+  input: ['gfx/vertex.glsl', 'gfx/fragment.glsl'],
+  output: 'gfx_shaders.h',
+  command: [python3, files('../../tools/meson/embed_shader'), '@OUTPUT@', '@INPUT@'],
+)
+
+core_gfx_gl_lib = static_library(
+  'core_gfx_gl',
+  'gfx/backend_gl.c',
+  gfx_shaders,
+  c_args: core_include + ['-I' + meson.current_build_dir()],
+  implicit_include_directories: false,
+  dependencies: [sdl3, cc_libm],
+)
+
 core_lib = static_library(
   'core',
   'app/app.c',
@@ -162,8 +190,8 @@ core_main_lib = static_library(
 core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
-    core_lib, core_input_lib, core_vfs_lib, core_config_lib, core_ini_lib,
-    core_audio_lib, core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
+    core_lib, core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_vfs_lib,
+    core_config_lib, core_ini_lib, core_audio_lib, core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
   link_whole: core_main_lib,
   dependencies: [

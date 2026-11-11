@@ -176,6 +176,17 @@ Unit tests live in `tests/`. They need nothing but the source and run
 in CI. Replay comparisons use private cases and original data, so they
 run separately from `just test`.
 
+The graphics pixel tests also need an OpenGL driver. Run the built test
+outside Docker, with SDL's offscreen video driver:
+
+```sh
+SDL_VIDEODRIVER=offscreen build/linux/debug/tests/test_gfx_gl
+SDL_VIDEODRIVER=offscreen TEST_GFX_ES=1 build/linux/debug/tests/test_gfx_gl
+```
+
+The second command checks the same renderer through OpenGL ES 3.0.
+These tests use generated images and do not need game data.
+
 ## Later
 
 - **macOS:** a native build with Apple's clang outside Docker, as Docker

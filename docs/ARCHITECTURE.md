@@ -49,7 +49,7 @@ Inside a layer, each module has one public header that other modules
 include: `src/core/vfs.h`. Its code is one source file beside the
 header (`src/stg/rng.c`) or a directory of the same name
 (`src/core/vfs/`). A module made of independent parts has one header
-per part in its directory (`src/core/gfx/frame.h`), and its public
+per part in its directory (`src/core/gfx/draw.h`), and its public
 header only includes them (`src/core/gfx.h`). A layer can keep a
 group of related modules together in one folder.
 

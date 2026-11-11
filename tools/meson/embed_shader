@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+import json
+import sys
+from pathlib import Path
+
+
+def main() -> None:
+    output = Path(sys.argv[1])
+    declarations: list[str] = []
+    for source in sys.argv[2:]:
+        path = Path(source)
+        literal = "\n".join(json.dumps(line + "\n") for line in path.read_text().splitlines())
+        declarations.append(f"static const char m_{path.stem.title()}Shader[] =\n{literal};\n")
+    output.write_text("\n".join(declarations))
+
+
+if __name__ == "__main__":
+    main()

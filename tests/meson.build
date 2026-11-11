@@ -813,3 +813,48 @@ foreach name : [
     error('tests/compile_fail/' + name + '.c compiles with BREAK')
   endif
 endforeach
+
+test(
+  'core/gfx',
+  executable(
+    'test_gfx',
+    'test_gfx.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_gfx_lib, core_image_lib, core_math_lib, core_base_lib],
+    dependencies: [cc_libm],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'core/gfx/duplicate_id',
+  python,
+  args: [
+    expect_fatal,
+    'Assertion failed: !duplicate',
+    executable(
+      'test_gfx_duplicate_id',
+      'test_gfx_duplicate_id.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_gfx_lib, core_image_lib, core_math_lib, core_base_lib],
+      dependencies: [cc_libm],
+    ),
+  ],
+  suite: 'unit',
+)
+
+# The pixel tests need an OpenGL driver, so they are built here and run
+# outside the Docker image (see docs/BUILDING.md).
+executable(
+  'test_gfx_gl',
+  'test_gfx_gl.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  link_with: [
+    core_gfx_gl_lib, core_gfx_lib, core_image_lib, core_math_lib,
+    core_base_lib,
+  ],
+  dependencies: [sdl3, avcodec, avutil, swscale, cc_libm],
+)
