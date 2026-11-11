@@ -30,6 +30,7 @@ othpatch_lib = static_library(
   othpatch_fetch_backends[host_machine.system()],
   'language.c',
   'main.c',
+  'release.c',
   'repo.c',
   'sha256.c',
   'update.c',
