@@ -718,3 +718,12 @@ TEST(shutdown_cancels_pending_loads_and_accepts_reinitialization)
     AudioSample_Free(sample);
     Audio_Shutdown();
 }
+
+TEST(initialized_state_follows_init_and_shutdown)
+{
+    CHECK(!Audio_IsInitialized());
+    M_CheckResult(Audio_Init());
+    CHECK(Audio_IsInitialized());
+    Audio_Shutdown();
+    CHECK(!Audio_IsInitialized());
+}

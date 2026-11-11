@@ -663,6 +663,11 @@ void Audio_Shutdown(void)
     m_Mutex = nullptr;
 }
 
+bool Audio_IsInitialized(void)
+{
+    return m_Mutex != nullptr;
+}
+
 bool AudioBackend_Mix(float *const out, const uint32_t frames)
 {
     memset(out, 0, (size_t)frames * 2 * sizeof(float));
