@@ -4,6 +4,7 @@
 #include "th06/game_manager.h"
 #include "th06/stubs.h"
 #include "th06/replay.h"
+#include "th06/screens/result.h"
 
 static SCENE m_Current;
 static SCENE m_Requested;

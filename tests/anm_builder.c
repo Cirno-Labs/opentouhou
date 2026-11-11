@@ -115,6 +115,11 @@ size_t AnmBuilder_Build(const ANM_BUILDER *const b, uint8_t *const out)
         memcpy(&out[pos], b->scripts[i].bytes, b->scripts[i].length);
         pos += b->scripts[i].length;
     }
+    if (b->blank_texture) {
+        M_PutU32(&out[28], (uint32_t)pos);
+        out[pos++] = '@';
+        out[pos++] = 0;
+    }
 
     return pos;
 }

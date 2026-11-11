@@ -1,0 +1,37 @@
+#pragma once
+
+// Lists the text of the executable that the player sees, as
+// X(id, address, text). address is the string's address in the retail
+// 1.02h executable, or 0 where it is not known yet. text is the UTF-8
+// default. A replacement of a format string keeps its conversions.
+#define TH06_STRINGS(X)                                                        \
+    X(SHOT_NAME_REIMU_A, 0, "博麗 霊夢 (霊)")                                  \
+    X(SHOT_NAME_REIMU_B, 0, "博麗 霊夢 (夢)")                                  \
+    X(SHOT_NAME_MARISA_A, 0, "霧雨 魔理沙 (魔)")                               \
+    X(SHOT_NAME_MARISA_B, 0, "霧雨 魔理沙 (恋)")                               \
+    X(SHOT_TYPE_REIMU_A, 0x46bd04, "ReimuA ")                                  \
+    X(SHOT_TYPE_REIMU_B, 0x46bcfc, "ReimuB ")                                  \
+    X(SHOT_TYPE_MARISA_A, 0x46bcf4, "MarisaA")                                 \
+    X(SHOT_TYPE_MARISA_B, 0x46bcec, "MarisaB")                                 \
+    X(RESULT_DIFFICULTY_EASY, 0x46bc70, "     Easy")                           \
+    X(RESULT_DIFFICULTY_NORMAL, 0x46bc64, "   Normal")                         \
+    X(RESULT_DIFFICULTY_HARD, 0x46bc58, "     Hard")                           \
+    X(RESULT_DIFFICULTY_LUNATIC, 0x46bc4c, "  Lunatic")                        \
+    X(RESULT_DIFFICULTY_EXTRA, 0x46bc40, "    Extra")                          \
+    X(RESULT_RANK, 0x46bd94, "%2d")                                            \
+    X(RESULT_SCORE, 0x46bdc0, "%8s %9d(%d)")                                   \
+    X(RESULT_SCORE_EXTRA, 0x46bdb4, "%8s %9d(1)")                              \
+    X(RESULT_SCORE_CLEAR, 0x46bda8, "%8s %9d(C)")                              \
+    X(RESULT_UNKNOWN_SPELL_CARD, 0, "？？？？？")                              \
+    X(REPLAY_SAVE_HEADER, 0x46bd5c, "No.   Name     Date     Player Score")    \
+    X(REPLAY_SAVE_SLOT, 0x46bd44, "No.%.2d %8s %8s %7s %9d")                   \
+    X(REPLAY_SAVE_EMPTY, 0x46bd0c,                                             \
+      "No.%.2d -------- --/--/-- -------         0")
+
+#define TH06_STRING_ID(id_, address_, text_) STRING_##id_,
+
+typedef enum {
+    TH06_STRINGS(TH06_STRING_ID) STRING_COUNT,
+} STRING;
+
+extern const char *const g_Strings[STRING_COUNT];

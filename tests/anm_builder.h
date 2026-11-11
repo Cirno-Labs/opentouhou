@@ -25,6 +25,9 @@ typedef struct {
 
 typedef struct {
     int32_t width, height;
+    // Names the image "@", so that loading creates a blank texture of
+    // width x height.
+    bool blank_texture;
     ANM_BUILDER_SPRITE sprites[ANM_BUILDER_MAX_SPRITES];
     int32_t sprite_count;
     ANM_BUILDER_SCRIPT scripts[ANM_BUILDER_MAX_SCRIPTS];
