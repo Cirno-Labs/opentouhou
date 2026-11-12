@@ -16,7 +16,7 @@ Put the program into the folder of the original game, beside its .dat
 files:
 
 - Windows: oth06.exe
-- Linux: the .AppImage file. Make it executable before you start it.
+- Linux: oth06.AppImage. If it does not start, make it executable.
 - macOS: oth06.app
 
 Then start the program. The program never changes the files in that

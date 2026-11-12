@@ -70,6 +70,15 @@ def run_test(platform: str, target: str) -> None:
     )
 
 
+def write_zip(output: Path, files: list[tuple[Path, str]]) -> None:
+    """Write files into a zip, keeping the executable bit of each."""
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as handle:
+        for source, name in files:
+            info = zipfile.ZipInfo.from_file(source, name)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            handle.writestr(info, source.read_bytes())
+
+
 def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         app_dir = Path(tmp) / f"{game}.AppDir"
@@ -93,9 +102,16 @@ def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
                 "--runtime-file",
                 os.environ["APPIMAGE_RUNTIME"],
                 str(app_dir),
-                str(output),
+                str(Path(tmp) / "app.AppImage"),
             ],
             env={**os.environ, "ARCH": "x86_64"},
+        )
+        write_zip(
+            output,
+            [
+                (Path(tmp) / "app.AppImage", f"{executable_name(game)}.AppImage"),
+                (PACKAGING_DIR / "README.txt", "README.txt"),
+            ],
         )
 
 
@@ -104,9 +120,7 @@ def package_win(game: str, exe: Path, output: Path) -> None:
         (exe, f"{executable_name(game)}.exe"),
         (PACKAGING_DIR / "README.txt", "README.txt"),
     ]
-    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as handle:
-        for source, name in files:
-            handle.write(source, name)
+    write_zip(output, files)
 
 
 def run_package(platform: str, target: str) -> None:
@@ -115,11 +129,10 @@ def run_package(platform: str, target: str) -> None:
         version = generate_version(game, REPO_DIR)
         exe = build_dir(platform, target) / f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
         stem = generate_package_name(game, version, platform)
+        output = PACKAGES_DIR / f"{stem}.zip"
         if platform == "linux":
-            output = PACKAGES_DIR / f"{stem}.AppImage"
             package_linux(game, exe, output, version)
         else:
-            output = PACKAGES_DIR / f"{stem}.zip"
             package_win(game, exe, output)
         print(f"Created {output.relative_to(REPO_DIR)}")
 

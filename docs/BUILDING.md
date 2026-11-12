@@ -61,8 +61,8 @@ just package-mac release    # on a Mac
 
 This writes one package per game to `build/packages/`:
 
-- `o<game>-<version>-Linux.AppImage`: a single executable file with
-  everything inside.
+- `o<game>-<version>-Linux.zip`: `o<game>.AppImage`, a single executable
+  file with everything inside.
 - `o<game>-<version>-Windows.zip`: `o<game>.exe` and the files it needs.
 - `o<game>-<version>-macOS.zip`: `o<game>.app`, one universal bundle for
   Apple silicon and Intel Macs. It has an ad-hoc signature only, so
