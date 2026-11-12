@@ -68,7 +68,7 @@ environment variable `RELEASES_URL` at every build, and use the default
 when it is not set. GitHub Actions sets it to the index
 in the R2 bucket of the repository that runs the workflow,
 `<R2_PUBLIC_URL>/releases.json`, so that a fork updates from its own
-releases.
+releases. Without the variable `R2_PUBLIC_URL`, it keeps the default.
 
 The Meson option `programs` selects what a build contains: `games`, the
 games and the replay runner, `othpatch`, or `all`, the default. Each

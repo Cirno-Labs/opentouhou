@@ -118,7 +118,7 @@ jobs:
       - name: Build and package
         env:
           CCACHE_MAXSIZE: 1G
-          RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json', vars.R2_PUBLIC_URL) || '' }}
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
           RELEASE_INDEX_URL: ${{ inputs.release_index_url }}
           PACKAGES: ${{ inputs.packages }}
@@ -135,7 +135,7 @@ jobs:
       - name: Run the unit tests
         if: ${{ inputs.platform == 'linux' }}
         env:
-          RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json', vars.R2_PUBLIC_URL) || '' }}
           PACKAGES: ${{ inputs.packages }}
         run: just test "$PACKAGES"
 

@@ -55,7 +55,7 @@ jobs:
 
       - name: Build and package
         env:
-          RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json', vars.R2_PUBLIC_URL) || '' }}
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
           RELEASE_INDEX_URL: ${{ inputs.release_index_url }}
           PACKAGES: ${{ inputs.packages }}
