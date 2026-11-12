@@ -1,17 +1,26 @@
 name: Publish the releases
 
 # Publishes each program whose src/<program>/version.txt names a
-# version without a release yet: othpatch first, then the games, whose
-# packages download the othpatch that they ship from its release.
+# version that the release index in the R2 bucket does not have:
+# othpatch first, then the games, whose packages take the othpatch that
+# they ship from the index. Each publish uploads the files, adds the
+# release to the index and pushes the tag <program>-vX.Y.Z.
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   packages: read
 
 concurrency:
   group: release
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+  R2_BUCKET: ${{ vars.R2_BUCKET }}
+  R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
 
 jobs:
   plan:
@@ -21,15 +30,23 @@ jobs:
       othpatch: ${{ steps.plan.outputs.othpatch }}
       games: ${{ steps.plan.outputs.games }}
     steps:
+      - name: Check the settings
+        run: |
+          for name in R2_ACCOUNT_ID R2_BUCKET R2_PUBLIC_URL AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "$(printenv "$name")" ]; then
+              echo "::error::$name is empty. Set the repository variables R2_ACCOUNT_ID, R2_BUCKET and R2_PUBLIC_URL and the secrets R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY."
+              exit 1
+            fi
+          done
+
       - name: Check out the code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Find the versions without a release
         id: plan
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          tools/release_plan --repository "${{ github.repository }}" | tee -a "$GITHUB_OUTPUT"
+          tools/release_index fetch releases.json
+          tools/release_plan --index releases.json | tee -a "$GITHUB_OUTPUT"
 
   othpatch_linux:
     name: othpatch, Linux
@@ -71,6 +88,12 @@ jobs:
       - othpatch_win
       - othpatch_mac
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Every job that writes the index is in this group, so that two
+    # writes never overlap.
+    concurrency:
+      group: release-index
     steps:
       - name: Check out the code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,24 +105,21 @@ jobs:
           pattern: packages-othpatch-*
           merge-multiple: true
 
-      # The release starts as a draft and is published only after every
-      # file is uploaded, so that a failed upload leaves no release that
-      # the plan of the next run counts.
-      - name: Create the release
+      - name: Publish the files and the index
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.plan.outputs.othpatch }}
+        run: tools/release_index publish --program othpatch --version "$VERSION" --packages packages
+
+      - name: Push the tag
+        env:
           VERSION: ${{ needs.plan.outputs.othpatch }}
         run: |
-          tag="othpatch-v$VERSION"
-          tools/release_notes --repository "$GH_REPO" --tag "$tag" \
-            --packages packages --program othpatch --version "$VERSION" \
-            > notes.md
-          gh release create "$tag" --draft --target "$GITHUB_SHA" \
-            --title "othpatch $VERSION" --notes-file notes.md packages/*
-          gh release edit "$tag" --draft=false
+          git tag "othpatch-v$VERSION" "$GITHUB_SHA"
+          git push origin "othpatch-v$VERSION"
 
-  # A game job runs when the othpatch jobs succeeded or were skipped.
+  # A game job runs when the othpatch jobs succeeded or were skipped. The
+  # packages read the index from the bucket, which has the new othpatch
+  # as soon as its job publishes it.
   games_linux:
     name: Games, Linux
     needs:
@@ -112,6 +132,7 @@ jobs:
       target: release
       release: true
       packages: games
+      release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
   games_win:
     name: Games, Windows
@@ -125,6 +146,7 @@ jobs:
       target: release
       release: true
       packages: games
+      release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
   games_mac:
     name: Games, macOS
@@ -137,6 +159,7 @@ jobs:
       target: release
       release: true
       packages: games
+      release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
   games:
     name: Publish the games
@@ -147,6 +170,10 @@ jobs:
       - games_mac
     if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-index
     steps:
       - name: Check out the code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -158,23 +185,13 @@ jobs:
           pattern: packages-games-*
           merge-multiple: true
 
-      # Each game's packages are named after its executable: the game id
-      # with an o before it, as oth06.
-      - name: Create the releases
+      - name: Publish the files, the index and the tags
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
           GAMES: ${{ needs.plan.outputs.games }}
         run: |
           for game in $GAMES; do
             version="$(cat "src/$game/version.txt")"
-            tag="$game-v$version"
-            mkdir "release-$game"
-            cp packages/o"$game-$version"-* "release-$game/"
-            tools/release_notes --repository "$GH_REPO" --tag "$tag" \
-              --packages "release-$game" --program "$game" \
-              --version "$version" > notes.md
-            gh release create "$tag" --draft --target "$GITHUB_SHA" \
-              --title "$game $version" --notes-file notes.md "release-$game"/*
-            gh release edit "$tag" --draft=false
+            tools/release_index publish --program "$game" --version "$version" --packages packages
+            git tag "$game-v$version" "$GITHUB_SHA"
+            git push origin "$game-v$version"
           done

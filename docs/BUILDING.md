@@ -53,7 +53,7 @@ the options that the Linux image pins, into `build/mac-deps/`.
 
 ### Build options
 
-othpatch updates the games and itself from a release index,
+othpatch updates the games and itself from the release index,
 `releases.json` (see "Releasing"). The Meson option `releases_url`
 names it. The default, `https://opentouhou.invalid/releases.json`, is a
 placeholder that reaches nothing, so a build that is packaged or
@@ -136,18 +136,37 @@ tools/bump othpatch 0.2.0 --with-games --commit
 ```
 
 The workflow publishes every program whose `version.txt` names a
-version without a release, from the commit it runs on. A version
-without a changelog section waits until `tools/bump` writes it. It creates the
-tag `<program>-vX.Y.Z` itself. It builds and publishes othpatch first,
-then the games, whose packages download the othpatch that they ship
-from its release. Each description, written by `tools/release_notes`,
-starts with a table of the downloads per platform, then the version's
-changelog section. A run without unreleased versions does nothing.
+version that the release index does not have, from the commit it runs
+on. A version without a changelog section waits until `tools/bump`
+writes it. It builds and publishes othpatch first, then the games, whose
+packages take the othpatch that they ship from the index. For each
+program, `tools/release_index` uploads the files to the R2 bucket and
+then adds the release to the index, and the workflow pushes the tag
+`<program>-vX.Y.Z`. A run without
+unreleased versions does nothing. There are no GitHub releases.
 
-Every push to `develop` replaces the `latest` development snapshot
-instead, when the repository variable `PRERELEASE_ENABLE` is `true`. It
-holds the game packages with the othpatch that they ship, the othpatch
-of the commit, and each program's unreleased changes.
+The R2 bucket holds the downloads:
+
+- `<program>/<version>/<file>`: the files of a release, such as
+  `th06/0.1.1/oth06-0.1.1-Linux.zip`. A published version never
+  changes.
+- `snapshot/<file>`: the development snapshot.
+- `releases.json`: the release index, written after the files. Its
+  format is described in `tools/shared/release_index.py`. othpatch and
+  packaging read it.
+
+The workflows need these repository settings:
+
+- Variables `R2_ACCOUNT_ID` and `R2_BUCKET`: the bucket.
+- Variable `R2_PUBLIC_URL`: the public URL of the bucket, without a
+  `/` at the end.
+- Secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`: a key that can
+  read and write the bucket.
+
+Every push to `develop` replaces the development snapshot instead, when
+the repository variable `PRERELEASE_ENABLE` is `true`. It holds the
+game packages with the othpatch that they ship, the othpatch of the
+commit, and each program's unreleased changes.
 
 ## Capturing replay test cases
 

@@ -1,5 +1,8 @@
 name: Publish a development snapshot
 
+# Uploads the game packages and othpatch of each push to develop to
+# snapshot/ in the R2 bucket and replaces the snapshot of the release
+# index.
 on:
   push:
     branches:
@@ -7,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   packages: read
 
 # A newer push replaces the snapshot, so an older run has nothing to add.
@@ -25,6 +28,7 @@ jobs:
     with:
       platform: linux
       target: release
+      release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
   build_win:
     name: Windows
@@ -33,6 +37,7 @@ jobs:
     with:
       platform: win
       target: release
+      release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
   build_mac:
     name: macOS
@@ -40,6 +45,7 @@ jobs:
     uses: ./.github/workflows/job_build_macos.yml
     with:
       target: release
+      release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
   publish:
     name: Publish
@@ -48,6 +54,10 @@ jobs:
       - build_win
       - build_mac
     runs-on: ubuntu-latest
+    # Every job that writes the index is in this group, so that two
+    # writes never overlap.
+    concurrency:
+      group: release-index
     steps:
       - name: Check out the code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -58,17 +68,11 @@ jobs:
           path: packages/
           merge-multiple: true
 
-      - name: Replace the latest pre-release
+      - name: Publish the snapshot
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          tools/release_notes --repository "$GH_REPO" --tag latest \
-            --packages packages --commit "${{ github.sha }}" > notes.md
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest \
-            --prerelease \
-            --target "${{ github.sha }}" \
-            --title "Development snapshot" \
-            --notes-file notes.md \
-            packages/*
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
+        run: tools/release_index snapshot --packages packages --commit "$GITHUB_SHA"

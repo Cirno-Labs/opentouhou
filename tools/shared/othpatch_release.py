@@ -34,20 +34,15 @@ def releases_url(repo_dir: Path = REPO_DIR) -> str:
     return match.group(1)
 
 
-def request(url: str, accept: str) -> urllib.request.Request:
-    """Return a request to the GitHub API, with the token of GH_TOKEN or
-    GITHUB_TOKEN when one is set.
-    """
-    req = urllib.request.Request(url, headers={"Accept": accept})
-    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
-    if token:
-        req.add_unredirected_header("Authorization", f"Bearer {token}")
-    return req
+# Names the client in requests. The public address of an R2 bucket
+# refuses Python's default User-Agent with HTTP 403.
+USER_AGENT = "opentouhou-packaging"
 
 
 def read_url(url: str, what: str) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(url) as response:
+        with urllib.request.urlopen(request) as response:
             return response.read()
     except urllib.error.HTTPError as error:
         raise RuntimeError(f"Cannot read {what} at {url}: {error}") from None

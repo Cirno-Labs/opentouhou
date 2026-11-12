@@ -15,6 +15,10 @@ on:
         type: string
         description: "What to package: games, othpatch or all"
         default: all
+      release_index_url:
+        type: string
+        description: "URL of the release index that gives the othpatch of the game packages; empty for the build option releases_url"
+        default: ""
 
 jobs:
   build:
@@ -53,6 +57,7 @@ jobs:
         env:
           RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
+          RELEASE_INDEX_URL: ${{ inputs.release_index_url }}
           PACKAGES: ${{ inputs.packages }}
           TARGET: ${{ inputs.target }}
         run: |

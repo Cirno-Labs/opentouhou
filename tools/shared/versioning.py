@@ -81,9 +81,8 @@ def executable_name(game: str) -> str:
 def file_version(version: str) -> str:
     """Return a version as a file name can hold it.
 
-    GitHub renames the release assets whose names hold a +, so a
-    development version such as 1.2.0-dev+abcdef0 becomes
-    1.2.0-dev-abcdef0.
+    A + in a URL can stand for a space, so a development version such as
+    1.2.0-dev+abcdef0 becomes 1.2.0-dev-abcdef0.
     """
     return version.replace("+", "-")
 
