@@ -1,12 +1,12 @@
 name: Publish a development snapshot
 
-# Uploads the game packages and othpatch of each push to develop to
+# Uploads the game packages and othpatch of each push to main to
 # snapshot/ in the R2 bucket and replaces the snapshot of the release
 # index.
 on:
   push:
     branches:
-      - develop
+      - main
   workflow_dispatch:
 
 permissions:

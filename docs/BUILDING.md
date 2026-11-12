@@ -150,7 +150,7 @@ run of the "Publish the releases" workflow. To release th06 1.2.0:
 ```sh
 tools/bump th06 1.2.0 --commit
 git push origin HEAD
-gh workflow run release.yml --ref develop
+gh workflow run release.yml --ref main
 ```
 
 `tools/bump` writes the version into `version.txt` and turns th06's
@@ -198,7 +198,7 @@ The workflows need these repository settings:
 - Secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`: a key that can
   read and write the bucket.
 
-Every push to `develop` replaces the development snapshot instead, when
+Every push to `main` replaces the development snapshot instead, when
 the repository variable `PRERELEASE_ENABLE` is `true`. It holds the
 game packages with the othpatch that they ship, the othpatch of the
 commit, and each program's unreleased changes.
