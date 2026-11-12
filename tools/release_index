@@ -89,7 +89,7 @@ def publish(args: argparse.Namespace, work: Path) -> None:
     if changes is None or released is None:
         sys.exit(
             f"The changelog of {args.program} has no heading"
-            f" ## {args.version} - YYYY-MM-DD"
+            f" ## {args.version} (YYYY-MM-DD)"
         )
     names = [path.name for path in args.packages.iterdir() if path.is_file()]
     files = index_file.match_files(args.program, args.version, names)

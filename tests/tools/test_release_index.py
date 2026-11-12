@@ -19,32 +19,30 @@ CHANGELOGS = {
 
 ## Unreleased
 
-- Reads the index.
+- Added reading the index.
 
-## 0.1.2 - 2026-11-13
+## 0.1.2 (2026-11-13)
 
-- Ships with a game.
+- Changed to ship with a game.
 
-## 0.1.1 - 2026-11-12
+## 0.1.1 (2026-11-12)
 
-- No changes for players. This release checks that othpatch updates
-  itself.
+- Changed nothing for players. This release checks that othpatch
+  updates itself.
 
-## 0.1.0 - 2026-11-11
+## 0.1.0 (2026-11-11)
 
-- First release.
+- Added the first release.
 """,
     "th06": """# th06 changelog
 
-## Unreleased
+## 0.1.1 (2026-11-13)
 
-## 0.1.1 - 2026-11-13
+- Changed the packages to ship othpatch 0.1.2.
 
-- Ships othpatch 0.1.2.
+## 0.1.0 (2026-11-12)
 
-## 0.1.0 - 2026-11-12
-
-- First release.
+- Added the first release.
 """,
 }
 
@@ -116,7 +114,7 @@ class ReleaseIndexTest(unittest.TestCase):
         release = self.index()["programs"]["othpatch"][0]
         self.assertEqual(release["version"], "0.1.1")
         self.assertEqual(release["date"], "2026-11-12")
-        self.assertIn("updates\n  itself", release["changes"])
+        self.assertIn("othpatch\n  updates itself", release["changes"])
         self.assertNotIn("othpatch", release)
         self.assertEqual(sorted(release["files"]), ["Linux", "Windows"])
         linux = release["files"]["Linux"]

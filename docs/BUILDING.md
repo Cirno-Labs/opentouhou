@@ -129,10 +129,19 @@ build a release build. `just version th06` prints the version.
 Each program has its own changelog, `docs/<program>/CHANGELOG.md`, which
 collects the changes for players under `## Unreleased` as they land.
 core has no version: a change in core goes into the changelog of each
-game it affects. A check (`tools/lint/check_versions`, run by prek)
-makes sure that each changelog has a section for the version in
-`version.txt`, or unreleased changes when that version has no release
-yet, and that each `othpatch.txt` holds a version.
+game it affects. The format is described in `tools/shared/changelog.py`:
+a released version has the heading `## X.Y.Z (YYYY-MM-DD)`, and each
+entry starts with `Added`, `Changed`, `Fixed` or `Removed`.
+
+Two checks run by prek keep the changelogs in order.
+`tools/lint/check_changelog` checks the format, and it fails when a
+commit changes or removes a released section. To correct a released
+section on purpose, set `CHANGELOG_AMEND` to its version, such as
+`CHANGELOG_AMEND=1.2.0 git commit`; a comma separates more versions.
+`tools/lint/check_versions` makes sure that each changelog has a
+section for the version in `version.txt`, or unreleased changes when
+that version has no release yet, and that each `othpatch.txt` holds a
+version.
 
 A release has two steps: a commit that sets the versions, and a manual
 run of the "Publish the releases" workflow. To release th06 1.2.0:
@@ -143,9 +152,11 @@ git push origin HEAD
 gh workflow run release.yml --ref develop
 ```
 
-`tools/bump` writes the version into `version.txt` and names th06's
-unreleased section after the version and the date. To release othpatch
-and make every game ship it, each game in a new patch release:
+`tools/bump` writes the version into `version.txt` and turns th06's
+`## Unreleased` heading into `## 1.2.0 (YYYY-MM-DD)` with the date of
+the day in UTC. The bump commit is the one that the workflow
+publishes, so the date is set there. To release othpatch and make
+every game ship it, each game in a new patch release:
 
 ```sh
 tools/bump othpatch 0.2.0 --with-games --commit

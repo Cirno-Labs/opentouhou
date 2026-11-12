@@ -117,6 +117,13 @@ For commit messages, documentation and pull requests:
   ..." sentence.
 - To shorten, cut clauses and sentences. Do not compress.
 
+# Changelogs
+
+- A changelog entry says what a player notices, in one sentence that
+  starts with `Added`, `Changed`, `Fixed` or `Removed`.
+- Never list a fix of a change that no release has shipped. Correct
+  the entry of that change instead.
+
 # Commits
 
 - Subject: `module-prefix: imperative description`, at most 50

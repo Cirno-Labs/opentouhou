@@ -23,3 +23,9 @@ repos:
     language: python
     pass_filenames: false
     always_run: true
+
+  - id: check-changelog
+    name: Changelogs keep their format and their released sections
+    entry: tools/lint/check_changelog
+    language: python
+    files: ^docs/[^/]+/CHANGELOG\.md$

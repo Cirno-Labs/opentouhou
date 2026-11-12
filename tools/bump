@@ -3,14 +3,16 @@
 
 Writes the version into src/<program>/version.txt and turns the
 Unreleased section of docs/<program>/CHANGELOG.md into the section of
-that version and today's date, above a new empty Unreleased section.
+that version, "## X.Y.Z (YYYY-MM-DD)" with today's date in UTC. The
+bump commit is the commit that the release workflow publishes, and a
+released section never changes after it, so the date is set here.
 The release workflow then publishes every program whose version has no
 release yet. --commit commits the change.
 
 --with-games, for othpatch, also makes every game ship that othpatch:
-it writes the version into src/<game>/othpatch.txt, adds "Ships
-othpatch X.Y.Z." to the game's unreleased changes and raises the
-game's patch version by one in the same way.
+it writes the version into src/<game>/othpatch.txt, adds "Changed the
+packages to ship othpatch X.Y.Z." to the game's unreleased changes and
+raises the game's patch version by one in the same way.
 """
 
 import argparse
@@ -20,7 +22,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from shared.changelog import changelog_path
+from shared.changelog import UNRELEASED, VERBS, changelog_path, heading
 from shared.versioning import (
     REPO_DIR,
     VERSION,
@@ -40,16 +42,13 @@ def git(*args: str) -> str:
 
 def release_changelog(path: Path, version: str) -> None:
     """Turn the Unreleased section of a changelog into the section of
-    version."""
-    text = path.read_text()
-    if "\n## Unreleased\n" not in text:
-        sys.exit(f"{path.relative_to(REPO_DIR)} has no Unreleased section")
-    date = datetime.date.today().isoformat()
-    path.write_text(
-        text.replace(
-            "\n## Unreleased\n", f"\n## Unreleased\n\n## {version} - {date}\n", 1
-        )
-    )
+    version, dated today in UTC."""
+    lines = path.read_text().splitlines()
+    if f"## {UNRELEASED}" not in lines:
+        sys.exit(f"{path.relative_to(REPO_DIR)} has no unreleased changes")
+    today = datetime.datetime.now(datetime.UTC).date().isoformat()
+    lines[lines.index(f"## {UNRELEASED}")] = heading(version, today)
+    path.write_text("\n".join(lines) + "\n")
 
 
 def bump(program: str, version: str) -> list[Path]:
@@ -59,17 +58,28 @@ def bump(program: str, version: str) -> list[Path]:
     return [version_path(program), changelog_path(program)]
 
 
-def add_change(path: Path, line: str) -> None:
-    """Add a line to the end of the Unreleased section of a changelog."""
+def add_change(path: Path, entry: str) -> None:
+    """Add an entry to the Unreleased section of a changelog, after the
+    entries of the same verb, and add the section when it is absent."""
     lines = path.read_text().splitlines()
-    start = lines.index("## Unreleased")
+    if f"## {UNRELEASED}" not in lines:
+        first = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+        lines[first:first] = [f"## {UNRELEASED}", "", entry, ""]
+        path.write_text("\n".join(lines) + "\n")
+        return
+    start = lines.index(f"## {UNRELEASED}")
     end = next(
         (i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")),
         len(lines),
     )
-    while end > start + 1 and not lines[end - 1].strip():
-        end -= 1
-    lines[end:end] = ["", line] if end == start + 1 else [line]
+    rank = VERBS.index(entry[2:].split(" ", 1)[0])
+    at = start + 2 if start + 1 < end and not lines[start + 1].strip() else start + 1
+    for i in range(start + 1, end):
+        if lines[i].startswith("- ") and VERBS.index(lines[i][2:].split(" ", 1)[0]) > rank:
+            break
+        if lines[i].strip():
+            at = i + 1
+    lines.insert(at, entry)
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -78,7 +88,7 @@ def ship_othpatch(game: str, version: str) -> list[Path]:
     the files it changed."""
     major, minor, patch = read_version(version_path(game)).split(".")
     othpatch_pin_path(game).write_text(f"{version}\n")
-    add_change(changelog_path(game), f"- Ships othpatch {version}.")
+    add_change(changelog_path(game), f"- Changed the packages to ship othpatch {version}.")
     return [othpatch_pin_path(game), *bump(game, f"{major}.{minor}.{int(patch) + 1}")]
 
 
