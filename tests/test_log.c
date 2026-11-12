@@ -60,3 +60,28 @@ TEST(long_messages_are_not_truncated)
     CHECK(strstr(output, text) != nullptr);
     CHECK(strstr(output, "a|\n") != nullptr);
 }
+
+TEST(lines_go_to_the_file_and_the_standard_error_stream)
+{
+    FILE *const file = fopen("test_log_file.txt", "w+");
+    CHECK(file != nullptr);
+    if (file == nullptr) {
+        return;
+    }
+    M_Capture();
+    Log_SetFile(file);
+    Log_Message(LOG_LEVEL_INFO, "src/core/foo.c", 4, "into %s", "both");
+    Log_SetFile(nullptr);
+    Log_Message(LOG_LEVEL_INFO, "src/core/foo.c", 5, "stderr only");
+
+    CHECK_EQ_STR(
+        M_Captured(),
+        "INFO foo.c:4: into both\n"
+        "INFO foo.c:5: stderr only\n");
+    char text[256];
+    rewind(file);
+    const size_t size = fread(text, 1, sizeof(text) - 1, file);
+    text[size] = '\0';
+    fclose(file);
+    CHECK_EQ_STR(text, "INFO foo.c:4: into both\n");
+}

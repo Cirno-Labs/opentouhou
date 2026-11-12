@@ -2,8 +2,11 @@
 
 #include "core/base/utils.h"
 
+#include <stdio.h>
+
 // Writes messages to the standard error stream, one line each, with the
-// level and the source position of the message.
+// level and the source position of the message. Each line also goes to the
+// log file, when one is set.
 
 typedef enum {
     LOG_LEVEL_DEBUG,
@@ -35,6 +38,14 @@ typedef void (*LOG_FATAL_HANDLER)(
 // second call. A handler can end the program itself; when it returns,
 // Log_Fatal aborts.
 void Log_SetFatalHandler(LOG_FATAL_HANDLER handler);
+
+// Sets the stream that each line is also written to, after the standard
+// error stream. Each line is flushed, so that the file keeps every line
+// written before a crash, and a fatal line reaches it before the fatal
+// handler runs. Lines written before the file is set are only on the
+// standard error stream. nullptr, the default, sets none. The log never
+// closes the file.
+void Log_SetFile(FILE *file);
 
 // Sets the lowest level that is written. Messages below it are dropped. The
 // default is LOG_LEVEL_INFO.

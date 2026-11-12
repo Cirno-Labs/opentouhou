@@ -8,6 +8,7 @@
 
 static LOG_LEVEL m_MinLevel = LOG_LEVEL_INFO;
 static LOG_FATAL_HANDLER m_FatalHandler = nullptr;
+static FILE *m_File = nullptr;
 
 static const char *const m_LevelNames[] = {
     [LOG_LEVEL_DEBUG] = "DEBUG",
@@ -54,14 +55,22 @@ static void M_Write(
     const char *const level_name, const char *const file, const int line,
     const char *const message)
 {
-    fprintf(
-        stderr, "%s %s:%d: %s\n", level_name, M_GetFileName(file), line,
-        message);
+    const char *const name = M_GetFileName(file);
+    fprintf(stderr, "%s %s:%d: %s\n", level_name, name, line, message);
+    if (m_File != nullptr) {
+        fprintf(m_File, "%s %s:%d: %s\n", level_name, name, line, message);
+        fflush(m_File);
+    }
 }
 
 void Log_SetFatalHandler(const LOG_FATAL_HANDLER handler)
 {
     m_FatalHandler = handler;
+}
+
+void Log_SetFile(FILE *const file)
+{
+    m_File = file;
 }
 
 void Log_SetMinLevel(const LOG_LEVEL level)
