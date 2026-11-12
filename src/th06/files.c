@@ -13,7 +13,7 @@
 // Mounts the patches above the six archives, which mount at 11 to 16.
 #define M_PATCH_PRIORITY 100
 
-static const char *const m_Archives[] = {
+const char *const g_FilesArchives[FILES_ARCHIVE_COUNT] = {
     "紅魔郷IN.DAT", "紅魔郷MD.DAT", "紅魔郷ST.DAT",
     "紅魔郷TL.DAT", "紅魔郷CM.DAT", "紅魔郷ED.DAT",
 };
@@ -79,8 +79,8 @@ RESULT Files_Init(const char *const data_dir)
     RESULT result = Vfs_MountDir(m_Vfs, data_dir, 0);
     // All six archives mount at once: only ver0102.dat appears in more
     // than one of them, so a game file never needs a specific archive.
-    for (size_t i = 0; IS_OK(result) && i < ARRAY_SIZE(m_Archives); i++) {
-        result = M_MountArchive(m_Archives[i], (int32_t)(16 - i));
+    for (size_t i = 0; IS_OK(result) && i < ARRAY_SIZE(g_FilesArchives); i++) {
+        result = M_MountArchive(g_FilesArchives[i], (int32_t)(16 - i));
     }
     if (!IS_OK(result)) {
         Vfs_Destroy(m_Vfs);

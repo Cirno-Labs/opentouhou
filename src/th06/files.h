@@ -18,6 +18,11 @@
 // other file replaces the game's file.
 extern const PATCH_GAME g_PatchGame;
 
+#define FILES_ARCHIVE_COUNT 6
+
+// Names the six archives that Files_Init mounts, in that order.
+extern const char *const g_FilesArchives[FILES_ARCHIVE_COUNT];
+
 // Mounts data_dir and 紅魔郷IN, MD, ST, TL, CM and ED.DAT from it. A file
 // in more than one archive comes from the earliest in that order. An
 // archive that is missing, or that has no ver0102.dat, is a failure.
