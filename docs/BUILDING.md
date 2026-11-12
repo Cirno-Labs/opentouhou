@@ -241,8 +241,9 @@ the `.AppImage` file on Linux, the folder that holds `o<game>.app` on
 macOS, and the folder of the executable elsewhere. So on Linux and macOS,
 put the AppImage or the bundle into the game's folder.
 
-The data directory is never written to. Settings, scores and replays go
-to the user folder, and thcrap patches come from the patches folder:
+The data directory is never written to. Settings, scores, replays and
+the log of the last start, `o<game>.log`, go to the user folder, and
+thcrap patches come from the patches folder:
 
 | Mode | User folder | Patches folder |
 | --- | --- | --- |

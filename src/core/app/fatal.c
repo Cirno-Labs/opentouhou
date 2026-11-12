@@ -1,10 +1,13 @@
 #include "fatal.h"
 
+#include "log_file.h"
+
 #include "core/base/log.h"
 
 #include <SDL3/SDL.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define M_TEXT_SIZE 4096
 #define M_TITLE_SIZE 128
@@ -21,12 +24,22 @@ static void M_Show(const char *const outcome, const char *const text)
     }
 }
 
+static void M_AddLogPath(
+    char *const out, const size_t size, const char *const log_path)
+{
+    const size_t length = strlen(out);
+    if (log_path != nullptr && length + 1 < size) {
+        snprintf(out + length, size - length, "\n\nLog file: %s", log_path);
+    }
+}
+
 static void M_HandleFatal(
     const char *const message, const char *const file, const int line)
 {
     char text[M_TEXT_SIZE];
     AppFatal_FormatInternalError(
-        text, sizeof(text), m_GameId, message, file, line);
+        text, sizeof(text), m_GameId, message, file, line,
+        AppLogFile_GetPath());
     M_Show("stopped", text);
 }
 
@@ -59,7 +72,7 @@ void AppFatal_ShowStartupError(const char *const text)
 
 void AppFatal_FormatMissingData(
     char *const out, const size_t size, const char *const file,
-    const char *const data_dir)
+    const char *const data_dir, const char *const log_path)
 {
     snprintf(
         out, size,
@@ -70,11 +83,21 @@ void AppFatal_FormatMissingData(
         "Put the program into the folder of the original game, or start "
         "it with --data <folder>.",
         file, data_dir);
+    M_AddLogPath(out, size, log_path);
+}
+
+void AppFatal_FormatStartupError(
+    char *const out, const size_t size, const char *const message,
+    const char *const log_path)
+{
+    snprintf(out, size, "%s", message);
+    M_AddLogPath(out, size, log_path);
 }
 
 void AppFatal_FormatInternalError(
     char *const out, const size_t size, const char *const game_id,
-    const char *const message, const char *const file, const int line)
+    const char *const message, const char *const file, const int line,
+    const char *const log_path)
 {
     snprintf(
         out, size,
@@ -82,4 +105,5 @@ void AppFatal_FormatInternalError(
         "\n"
         "%s (%s:%d)",
         game_id, message, file, line);
+    M_AddLogPath(out, size, log_path);
 }

@@ -19,6 +19,7 @@
 #include "fatal.h"
 #include "folders.h"
 #include "hotkeys.h"
+#include "log_file.h"
 #include "request_queue.h"
 #include "settings.h"
 #include "screenshot.h"
@@ -313,6 +314,11 @@ static RESULT M_Init(
         M_PrintHelp(&ctx->folders);
         return OK;
     }
+    if (found) {
+        Result_Log(
+            AppLogFile_Open(ctx->folders.user_dir, g_GameDesc.id),
+            LOG_LEVEL_WARNING);
+    }
     FAIL_IF(
         ctx->folders.data_dir == nullptr,
         "Cannot find the executable's directory");
@@ -459,9 +465,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     if (m_Context.missing_data_file != nullptr) {
         AppFatal_FormatMissingData(
             text, sizeof(text), m_Context.missing_data_file,
-            m_Context.folders.data_dir);
+            m_Context.folders.data_dir, AppLogFile_GetPath());
     } else {
-        snprintf(text, sizeof(text), "%s", result.message);
+        AppFatal_FormatStartupError(
+            text, sizeof(text), result.message, AppLogFile_GetPath());
     }
     Result_Log(result, LOG_LEVEL_ERROR);
     AppFatal_ShowStartupError(text);
@@ -588,4 +595,5 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     if (ctx->window != nullptr) {
         SDL_DestroyWindow(ctx->window);
     }
+    AppLogFile_Close();
 }

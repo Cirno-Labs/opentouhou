@@ -10,7 +10,8 @@
 // core/app, so the tests, the replay runner and othpatch never show a
 // box. A game program shows none either in a headless run: when
 // $SDL_VIDEODRIVER is "offscreen" or "dummy", or when $CI is set and not
-// empty. A box comes after the log line of its error. It holds the thread
+// empty. A box comes after the log line of its error and names the log
+// file when one is open (AppLogFile_GetPath). It holds the thread
 // of the main loop until the player closes it; the program then ends, so
 // the box never changes the simulation.
 
@@ -27,13 +28,21 @@ void AppFatal_Install(const char *game_id);
 // nothing when the boxes are off.
 void AppFatal_ShowStartupError(const char *text);
 
-// Writes the text for a game data file that the data folder lacks into
-// out, truncated to size bytes.
-void AppFatal_FormatMissingData(
-    char *out, size_t size, const char *file, const char *data_dir);
+// The functions below write the text of a box into out, truncated to size
+// bytes. When log_path is not nullptr, the text ends with a line that
+// names the log file.
 
-// Writes the text for a fatal error that is not the player's to fix into
-// out, truncated to size bytes. file and line give the source position.
+// Writes the text for a game data file that the data folder lacks.
+void AppFatal_FormatMissingData(
+    char *out, size_t size, const char *file, const char *data_dir,
+    const char *log_path);
+
+// Writes the text for a failed start with the failure's message.
+void AppFatal_FormatStartupError(
+    char *out, size_t size, const char *message, const char *log_path);
+
+// Writes the text for a fatal error that is not the player's to fix. file
+// and line give the source position.
 void AppFatal_FormatInternalError(
     char *out, size_t size, const char *game_id, const char *message,
-    const char *file, int line);
+    const char *file, int line, const char *log_path);

@@ -5,6 +5,9 @@ core shows up here when the next th06 release includes it.
 
 ## Unreleased
 
+- The game writes its log to `oth06.log` in the user folder, and
+  replaces it at each start. The error message boxes name this file, so
+  that a player can send it with a bug report.
 - The game shows a message box when it cannot start or stops because
   of an error. Before this, a black window opened and closed at once.
   When the game data is missing, the box names the missing file, the

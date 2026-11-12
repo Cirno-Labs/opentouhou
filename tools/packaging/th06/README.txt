@@ -42,6 +42,7 @@ The program keeps your files in your user folder:
 - score.dat, the scores
 - replay/, the replays
 - screenshots/
+- oth06.log, the log of the last start. Send it with a bug report.
 
 The user folder is:
 

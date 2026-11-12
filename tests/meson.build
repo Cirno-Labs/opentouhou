@@ -885,11 +885,27 @@ test(
     'test_app_fatal',
     'test_app_fatal.c',
     '../src/core/app/fatal.c',
+    '../src/core/app/log_file.c',
     c_args: core_include,
     implicit_include_directories: false,
-    link_with: core_base_lib,
+    link_with: [core_io_lib, core_base_lib],
     dependencies: [sdl3],
   ),
+  suite: 'unit',
+)
+
+test(
+  'core/app/log_file',
+  executable(
+    'test_app_log_file',
+    'test_app_log_file.c',
+    '../src/core/app/log_file.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'app_log_file'},
   suite: 'unit',
 )
 
