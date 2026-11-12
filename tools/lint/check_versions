@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Fail when a program's version file or changelog is out of order.
+
+Each src/<program>/version.txt must hold one version X.Y.Z, and the
+program's changelog, docs/<program>/CHANGELOG.md, must have a section
+for it.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from shared.changelog import changelog_path, section
+from shared.versioning import REPO_DIR, programs, read_version, version_path
+
+
+def check_program(program: str) -> list[str]:
+    try:
+        version = read_version(version_path(program))
+    except ValueError as error:
+        return [str(error)]
+    changelog = changelog_path(program)
+    if not changelog.exists():
+        return [f"{changelog.relative_to(REPO_DIR)} does not exist"]
+    text = changelog.read_text()
+    if section(text, version) is None and not section(text, "Unreleased"):
+        return [
+            f"{changelog.relative_to(REPO_DIR)} has no section ## {version}"
+            " and no unreleased changes"
+        ]
+    return []
+
+
+def main() -> int:
+    errors = [error for program in programs() for error in check_program(program)]
+    for error in errors:
+        sys.stderr.write(f"{error}\n")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

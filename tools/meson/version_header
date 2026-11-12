@@ -3,8 +3,8 @@
 executable and its Windows resources.
 
 GAME_VERSION is the version string from tools/shared/versioning.py.
-GAME_VERSION_RC holds its four numbers for VERSIONINFO: major, minor,
-patch and the commits since the tag, or zeros for an untagged build.
+GAME_VERSION_RC holds its numbers for VERSIONINFO: major, minor, patch
+and 0.
 --prefix replaces GAME in both names, such as OTHPATCH_VERSION.
 Each --repository NAME=OWNER/REPO adds NAME_REPOSITORY, a GitHub
 repository that publishes releases.
@@ -22,10 +22,7 @@ from shared.versioning import generate_version
 
 
 def numbers(version: str) -> str:
-    match = re.match(r"(\d+)\.(\d+)\.(\d+)(?:-(\d+)-g[0-9a-f]+)?", version)
-    if match is None:
-        return "0,0,0,0"
-    return ",".join(group or "0" for group in match.groups())
+    return version.partition("-")[0].replace(".", ",") + ",0"
 
 
 def repository(value: str) -> tuple[str, str]:

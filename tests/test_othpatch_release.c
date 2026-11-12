@@ -75,8 +75,8 @@ TEST(plain_versions_parse)
 TEST(development_versions_do_not_parse)
 {
     RELEASE_VERSION version;
-    CHECK(!Release_ParseVersion("1.2.0-3-gabcdef0", &version));
-    CHECK(!Release_ParseVersion("1.2.0-dirty", &version));
+    CHECK(!Release_ParseVersion("1.2.0-dev+abcdef0", &version));
+    CHECK(!Release_ParseVersion("1.2.0-dev", &version));
     CHECK(!Release_ParseVersion("unknown", &version));
     CHECK(!Release_ParseVersion("abcdef0", &version));
     CHECK(!Release_ParseVersion("1.2", &version));

@@ -16,6 +16,7 @@ jobs:
     with:
       platform: linux
       target: release
+      release: true
 
   build_win:
     name: Windows
@@ -23,12 +24,14 @@ jobs:
     with:
       platform: win
       target: release
+      release: true
 
   build_mac:
     name: macOS
     uses: ./.github/workflows/job_build_macos.yml
     with:
       target: release
+      release: true
 
   publish:
     name: Publish
@@ -49,7 +52,7 @@ jobs:
 
       # The tag names the game and its version, as th06-v1.2.0. The
       # notes are that version's section of the game's changelog, which
-      # tools/release wrote. Only the tagged game's packages are attached.
+      # tools/bump wrote. Only the tagged game's packages are attached.
       # They are named after its executable: the game id with an o
       # before it, as oth06.
       - name: Create the release

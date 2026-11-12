@@ -16,3 +16,10 @@ repos:
     entry: tools/lint/check_commit_msg
     language: python
     stages: [commit-msg]
+
+  - id: check-versions
+    name: Each version file names a version that its changelog has
+    entry: tools/lint/check_versions
+    language: python
+    pass_filenames: false
+    always_run: true

@@ -11,6 +11,10 @@ on:
         type: string
         description: "Build type: debug or release"
         required: true
+      release:
+        type: boolean
+        description: "Build a release, whose version has no -dev suffix"
+        default: false
 
 jobs:
   build:
@@ -74,6 +78,7 @@ jobs:
         env:
           CCACHE_MAXSIZE: 1G
           GAME_REPOSITORY: ${{ github.repository }}
+          OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
         run: just package-${{ inputs.platform }} ${{ inputs.target }}
 
       - name: Run the unit tests

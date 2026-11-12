@@ -50,7 +50,7 @@ typedef struct {
 
 // Returns whether text is a version of three decimal numbers separated by
 // '.', such as "1.2.0", and writes it into out. A development build, such
-// as "1.2.0-3-gabcdef0" or "unknown", has no such version.
+// as "1.2.0-dev+abcdef0" or "1.2.0-dev", has no such version.
 bool Release_ParseVersion(const char *text, RELEASE_VERSION *out);
 
 // Returns a number below 0, 0 or above 0 when a is older than b, the same

@@ -89,25 +89,32 @@ Info.plist. `--help` prints the version too. The icons are rendered
 from `tools/packaging/<game>.svg` by `tools/packaging/make_icons` and
 committed, so the build needs no converter.
 
-Each game's version comes from `git describe` on its latest
-`<game>-v*` tag, so a th06 build after `th06-v1.2.0` is `1.2.0-3-gabcdef0`;
-untagged builds are named after the commit. `just version th06` prints
-it.
+Each program, a game or othpatch, has its own version in
+`src/<program>/version.txt`: the version of its current or next
+release, such as `1.2.0`. A release build reports that version. Every
+other build adds `-dev` and the commit, as `1.2.0-dev+abcdef0`, or
+`-dev` alone when git cannot name the commit, as in a Docker build of a
+git worktree. The environment variable `OPENTOUHOU_RELEASE=1` makes a
+build a release build. `just version th06` prints the version.
 
 ## Releasing
 
-Each game has its own version and its own changelog,
-`docs/<game>/CHANGELOG.md`, which collects the changes for players
-under `## Unreleased` as they land. core has no version: a change in
-core goes into the changelog of each game it affects. To release th06:
+Each program has its own changelog, `docs/<program>/CHANGELOG.md`, which
+collects the changes for players under `## Unreleased` as they land.
+core has no version: a change in core goes into the changelog of each
+game it affects. A check (`tools/lint/check_versions`, run by prek)
+makes sure that each changelog has a section for the version in
+`version.txt`, or unreleased changes when that version has no release
+yet. To release th06:
 
 ```sh
-tools/release th06 1.2.0
+tools/bump th06 1.2.0 --commit
+git tag th06-v1.2.0
 git push origin HEAD && git push origin th06-v1.2.0
 ```
 
-`tools/release` names th06's unreleased section after the version and
-the date, commits that and tags it `th06-v1.2.0`. Pushing the tag runs
+`tools/bump` writes the version into `version.txt` and names th06's
+unreleased section after the version and the date. Pushing the tag runs
 the "Publish a release" workflow: it builds the release packages for
 Linux, Windows and macOS and publishes th06's as a GitHub release. Its
 description, written by `tools/release_notes`, starts with a table of
