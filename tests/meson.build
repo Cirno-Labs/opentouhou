@@ -135,10 +135,10 @@ if build_othpatch
     )
   endforeach
 
-  # The release tools run their tests with the Python of the build. They
-  # replace the AWS CLI with tools/fake_aws.py, so no test needs the
-  # network.
-  foreach name : ['release_index']
+  # The release tools run their tests with the Python of the build. The
+  # release index test replaces the AWS CLI with tools/fake_aws.py, so no
+  # test needs the network.
+  foreach name : ['othpatch_release', 'release_index']
     test(
       'tools/' + name,
       python,

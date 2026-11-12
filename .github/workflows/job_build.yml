@@ -46,10 +46,12 @@ jobs:
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       # The games build in the media image and othpatch in the othpatch
-      # image, both built on the base image. An owner without a registry
-      # (see tools/docker/image) keeps each local image in the Actions
-      # cache, keyed by its tag, so that only a change to an image builds
-      # it again. The base image is restored only to build a child.
+      # image, both built on the base image. Packaging the games builds
+      # othpatch too, for a pinned othpatch without a release. An owner
+      # without a registry (see tools/docker/image) keeps each local image
+      # in the Actions cache, keyed by its tag, so that only a change to
+      # an image builds it again. The base image is restored only to build
+      # a child.
       - name: Find the images
         id: image
         env:
@@ -66,9 +68,7 @@ jobs:
           case "$PACKAGES" in
             games|all) echo "media_needed=true" >> "$GITHUB_OUTPUT" ;;
           esac
-          case "$PACKAGES" in
-            othpatch|all) echo "othpatch_needed=true" >> "$GITHUB_OUTPUT" ;;
-          esac
+          echo "othpatch_needed=true" >> "$GITHUB_OUTPUT"
 
       - name: Restore the media image
         id: media-cache

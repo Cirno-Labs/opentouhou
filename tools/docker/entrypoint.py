@@ -3,8 +3,10 @@
 
 package writes the game packages into build/packages/, each with the
 othpatch that src/<game>/othpatch.txt names, downloaded as the release
-index gives it. package-othpatch writes the executable of othpatch there, as
-its release names it.
+index gives it. Without that release, the packages carry the othpatch
+in build/<platform>/othpatch/<target>/, which the othpatch image built
+from the same commit before. package-othpatch writes the executable of
+othpatch there, as its release names it.
 
 Each image runs this script with its platform and the programs that it
 builds: the media image the games, the othpatch image othpatch. The
@@ -191,11 +193,23 @@ def package_win(game: str, exe: Path, othpatch: Path, output: Path) -> None:
     write_zip(output, files)
 
 
+def built_othpatch(platform: str, target: str) -> Path:
+    path = build_dir(platform, "othpatch", target) / f"othpatch{EXE_SUFFIXES[platform]}"
+    if not path.exists():
+        raise SystemExit(
+            f"{path.relative_to(REPO_DIR)} does not exist. Build othpatch"
+            f" first: just build-{platform} {target}"
+        )
+    return path
+
+
 def run_package(platform: str, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
         version = generate_version(game, REPO_DIR)
-        othpatch = pinned_othpatch(game, platform, REPO_DIR)
+        othpatch = pinned_othpatch(
+            game, platform, lambda: built_othpatch(platform, target), REPO_DIR
+        )
         name = f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
         exe = build_dir(platform, "games", target) / name
         stem = generate_package_name(game, version, platform)

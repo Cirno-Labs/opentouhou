@@ -8,7 +8,8 @@ and othpatch against base and othpatch, in
 build/mac-<arch>/othpatch/<target>/. The package is a universal application
 bundle per game, signed ad hoc, in a zip under build/packages/, with
 the othpatch that src/<game>/othpatch.txt names, downloaded as the
-release index gives it.
+release index gives it, or built from the same commit when that
+othpatch has no release.
 package-othpatch writes the universal executable of othpatch, signed ad
 hoc, as its release names it.
 
@@ -180,7 +181,9 @@ def run_package(deps: Path, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
         version = generate_version(game, REPO_DIR)
-        othpatch = pinned_othpatch(game, "mac", REPO_DIR)
+        othpatch = pinned_othpatch(
+            game, "mac", lambda: build_othpatch(deps, target), REPO_DIR
+        )
         output = PACKAGES_DIR / f"{generate_package_name(game, version, 'mac')}.zip"
         with tempfile.TemporaryDirectory() as tmp:
             contents = Path(tmp) / "package"
@@ -193,11 +196,11 @@ def run_package(deps: Path, target: str) -> None:
         print(f"Created {output.relative_to(REPO_DIR)}")
 
 
-def run_package_othpatch(deps: Path, target: str) -> None:
+def build_othpatch(deps: Path, target: str) -> Path:
+    """Build the universal othpatch, signed ad hoc, and return its path."""
     run_build(deps, "othpatch", target, ARCHS)
-    PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    version = generate_version("othpatch")
-    output = PACKAGES_DIR / othpatch_asset_name(version, "mac")
+    output = REPO_DIR / "build" / "mac-othpatch" / target / "othpatch"
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
     subprocess.check_call(
         [
@@ -212,6 +215,15 @@ def run_package_othpatch(deps: Path, target: str) -> None:
         ]
     )
     subprocess.check_call(["codesign", "--force", "--sign", "-", str(output)])
+    return output
+
+
+def run_package_othpatch(deps: Path, target: str) -> None:
+    executable = build_othpatch(deps, target)
+    PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+    version = generate_version("othpatch")
+    output = PACKAGES_DIR / othpatch_asset_name(version, "mac")
+    shutil.copy2(executable, output)
     print(f"Created {output.relative_to(REPO_DIR)}")
 
 

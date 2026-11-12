@@ -23,13 +23,15 @@ build-linux target="debug": (_build "linux" "media" target) (_build "linux" "oth
 [group('build')]
 build-win target="debug": (_build "win" "media" target) (_build "win" "othpatch" target)
 
-# Package every game for Linux into build/packages/.
+# Package every game for Linux into build/packages/. The othpatch of the
+# commit is built too, for the packages to carry when its version has no
+# release.
 [group('build')]
-package-linux target="debug": (_build "linux" "media" target) (_docker_run "linux" "media" "package" "--target" target)
+package-linux target="debug": (_build "linux" "othpatch" target) (_build "linux" "media" target) (_docker_run "linux" "media" "package" "--target" target)
 
-# Package every game for Windows into build/packages/.
+# Package every game for Windows into build/packages/, as for Linux.
 [group('build')]
-package-win target="debug": (_build "win" "media" target) (_docker_run "win" "media" "package" "--target" target)
+package-win target="debug": (_build "win" "othpatch" target) (_build "win" "media" target) (_docker_run "win" "media" "package" "--target" target)
 
 # Write othpatch for Linux into build/packages/.
 [group('build')]

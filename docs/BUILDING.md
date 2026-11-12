@@ -103,8 +103,11 @@ with the credits. The othpatch is the version that
 `src/<game>/othpatch.txt` names, downloaded as the release index gives
 it and checked against the SHA-256 digest in the index. The index is
 the one of the build option `releases_url`, or the one that the
-environment variable `RELEASE_INDEX_URL` names. So packaging needs the
-network, and it fails when the index has no such othpatch. None contains any of the original game's files. The
+environment variable `RELEASE_INDEX_URL` names, so packaging needs the
+network. When the index has no such othpatch, as before the first
+release, the packages carry the othpatch built from the same commit
+instead, and packaging says so. A release build always ships a released
+othpatch. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
 properties, the AppImage's desktop entry and the macOS bundle's
 Info.plist. `--help` prints the version too. The icons are rendered
