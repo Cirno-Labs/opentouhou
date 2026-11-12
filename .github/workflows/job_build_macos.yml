@@ -26,6 +26,8 @@ jobs:
     runs-on: macos-15
     permissions:
       contents: read
+    env:
+      OPENTOUHOU_WERROR: 1
 
     steps:
       - name: Install the build tools

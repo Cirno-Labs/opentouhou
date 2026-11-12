@@ -18,6 +18,7 @@ The environment variable RELEASES_URL, when set, gives the build option
 releases_url, and the default in meson.options applies otherwise.
 shared/othpatch_release.py names the release index that packaging
 reads.
+OPENTOUHOU_WERROR=1 makes every compiler warning an error, as in CI.
 """
 
 import argparse
@@ -57,18 +58,36 @@ def build_dir(platform: str, programs: str, target: str) -> Path:
     return REPO_DIR / "build" / platform / target
 
 
+def option_values(programs: str) -> dict[str, str | bool]:
+    return {
+        "programs": programs,
+        "releases_url": build_releases_url(REPO_DIR),
+        "werror": bool(os.environ.get("OPENTOUHOU_WERROR")),
+    }
+
+
+def format_option(name: str, value: str | bool) -> str:
+    if isinstance(value, bool):
+        value = "true" if value else "false"
+    return f"-D{name}={value}"
+
+
 def options(programs: str) -> list[str]:
-    values = {"programs": programs, "releases_url": build_releases_url(REPO_DIR)}
-    return [f"-D{name}={value}" for name, value in values.items()]
+    return [
+        format_option(name, value) for name, value in option_values(programs).items()
+    ]
 
 
 def changed_options(root: Path, programs: str) -> list[str]:
     path = root / "meson-info/intro-buildoptions.json"
     configured = {
-        f"-D{option['name']}={option['value']}"
-        for option in json.loads(path.read_text())
+        option["name"]: option["value"] for option in json.loads(path.read_text())
     }
-    return [option for option in options(programs) if option not in configured]
+    return [
+        format_option(name, value)
+        for name, value in option_values(programs).items()
+        if configured.get(name) != value
+    ]
 
 
 def run_build(platform: str, programs: str, target: str) -> None:

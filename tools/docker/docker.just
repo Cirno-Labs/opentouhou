@@ -14,6 +14,7 @@ _docker_run platform image *args:
         -e RELEASES_URL \
         -e RELEASE_INDEX_URL \
         -e OPENTOUHOU_RELEASE \
+        -e OPENTOUHOU_WERROR \
         -v "{{CWD}}:/app" \
         "$(tools/docker/image tag {{platform}} {{image}})" \
         {{args}}

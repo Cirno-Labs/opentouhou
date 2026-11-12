@@ -75,6 +75,10 @@ games and the replay runner, `othpatch`, or `all`, the default. Each
 comes with its tests. A build of `othpatch` needs only SDL3, zlib and
 curl, and a build of `games` does not need curl.
 
+CI builds with the Meson option `werror`, so every compiler warning
+fails it. The environment variable `OPENTOUHOU_WERROR=1` does the same
+for the Docker and macOS builds.
+
 ## Packaging
 
 ```sh
