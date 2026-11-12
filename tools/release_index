@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""Publish files to the R2 bucket and record them in releases.json.
+
+  fetch OUT       writes the index of the bucket into OUT, or an empty
+                  index when the bucket has none yet
+  has PROGRAM VERSION
+                  exits with 0 when the index of the bucket has that
+                  release, else with 1
+  publish --program P --version V --packages DIR [--othpatch X]
+                  uploads the files of P V in DIR to P/V/ with their
+                  SHA256SUMS and SHA1SUMS, then adds the release to
+                  the index; fails when the index has it
+  snapshot --packages DIR --commit SHA
+                  uploads every program's files in DIR to snapshot/,
+                  replaces the snapshot of the index, then deletes the
+                  older snapshot files
+
+publish takes the date and the changes from the program's changelog
+section, and for a game the othpatch version from --othpatch or else
+src/<game>/othpatch.txt. The index is uploaded last, so that it never
+names a file that is not uploaded. R2_PUBLIC_URL gives the public URL
+of the bucket for the file URLs; shared/r2.py names the other
+environment variables. shared/release_index.py describes the index.
+"""
+
+import argparse
+import datetime
+import sys
+import tempfile
+from pathlib import Path
+
+from shared import r2
+from shared import release_index as index_file
+from shared.changelog import changelog_path, date, section
+from shared.versioning import games, othpatch_pin_path, programs, read_version
+
+INDEX_KEY = "releases.json"
+
+
+def fetch_index(path: Path) -> dict:
+    if not r2.get(INDEX_KEY, path):
+        return index_file.empty()
+    return index_file.load(path)
+
+
+def put_index(index: dict, path: Path) -> None:
+    index_file.dump(index, path)
+    r2.put(path, INDEX_KEY, "application/json", cache_control="no-cache")
+
+
+def content_type(name: str) -> str:
+    return "application/zip" if name.endswith(".zip") else "application/octet-stream"
+
+
+def upload(packages: Path, files: dict, prefix: str, base_url: str) -> dict:
+    """Upload the files of a map from platform to name, and return the map
+    from platform to the files' index entries."""
+    entries = {}
+    for platform, name in files.items():
+        key = f"{prefix}/{name}"
+        r2.put(packages / name, key, content_type(name))
+        entries[platform] = index_file.file_entry(packages / name, f"{base_url}/{key}")
+    return entries
+
+
+def upload_checksums(entries: list[dict], prefix: str, base_url: str, work: Path) -> dict:
+    """Upload SHA256SUMS and SHA1SUMS of file entries, and return the map
+    from each name to its URL."""
+    urls = {}
+    for name, algorithm in index_file.CHECKSUMS.items():
+        path = work / name
+        path.write_text(index_file.checksum_file(entries, algorithm))
+        r2.put(path, f"{prefix}/{name}", "text/plain; charset=utf-8")
+        urls[name] = f"{base_url}/{prefix}/{name}"
+    return urls
+
+
+def public_url() -> str:
+    return r2.require("R2_PUBLIC_URL").rstrip("/")
+
+
+def publish(args: argparse.Namespace, work: Path) -> None:
+    base_url = public_url()
+    text = changelog_path(args.program).read_text()
+    changes = section(text, args.version)
+    released = date(text, args.version)
+    if changes is None or released is None:
+        sys.exit(
+            f"The changelog of {args.program} has no heading"
+            f" ## {args.version} - YYYY-MM-DD"
+        )
+    names = [path.name for path in args.packages.iterdir() if path.is_file()]
+    files = index_file.match_files(args.program, args.version, names)
+    if not files:
+        sys.exit(f"{args.packages} has no files of {args.program} {args.version}")
+
+    index = fetch_index(work / INDEX_KEY)
+    if index_file.find(index, args.program, args.version) is not None:
+        sys.exit(f"{args.program} {args.version} is published already")
+    release = {"version": args.version, "date": released}
+    if args.program in games():
+        release["othpatch"] = args.othpatch or read_version(othpatch_pin_path(args.program))
+    release["changes"] = changes
+    prefix = f"{args.program}/{args.version}"
+    release["files"] = upload(args.packages, files, prefix, base_url)
+    release["checksums"] = upload_checksums(
+        list(release["files"].values()), prefix, base_url, work
+    )
+    index_file.add_release(index, args.program, release)
+    put_index(index, work / INDEX_KEY)
+    print(f"Published {args.program} {args.version}: {', '.join(files.values())}")
+
+
+def snapshot(args: argparse.Namespace, work: Path) -> None:
+    base_url = public_url()
+    names = [path.name for path in args.packages.iterdir() if path.is_file()]
+    entries = {}
+    uploaded = set()
+    for program in programs():
+        files = index_file.match_files(program, None, names)
+        if not files:
+            continue
+        platform, name = next(iter(files.items()))
+        changes = section(changelog_path(program).read_text(), "Unreleased")
+        entries[program] = {
+            "version": index_file.file_version_of(program, platform, name),
+            "changes": changes or "",
+            "files": upload(args.packages, files, "snapshot", base_url),
+        }
+        uploaded.update(f"snapshot/{name}" for name in files.values())
+    if not entries:
+        sys.exit(f"{args.packages} has no files of any program")
+    checksums = upload_checksums(
+        [file for entry in entries.values() for file in entry["files"].values()],
+        "snapshot",
+        base_url,
+        work,
+    )
+    uploaded.update(f"snapshot/{name}" for name in index_file.CHECKSUMS)
+
+    index = fetch_index(work / INDEX_KEY)
+    now = datetime.datetime.now(datetime.UTC).replace(microsecond=0)
+    index["snapshot"] = {
+        "commit": args.commit,
+        "date": now.isoformat().replace("+00:00", "Z"),
+        "programs": entries,
+        "checksums": checksums,
+    }
+    put_index(index, work / INDEX_KEY)
+    for key in r2.keys("snapshot/"):
+        if key not in uploaded:
+            r2.delete(key)
+    print(f"Published the snapshot of {args.commit}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    commands = parser.add_subparsers(dest="command", required=True)
+    fetch = commands.add_parser("fetch")
+    fetch.add_argument("out", type=Path)
+    has = commands.add_parser("has")
+    has.add_argument("program")
+    has.add_argument("version")
+    pub = commands.add_parser("publish")
+    pub.add_argument("--program", required=True)
+    pub.add_argument("--version", required=True)
+    pub.add_argument("--packages", type=Path, required=True)
+    pub.add_argument("--othpatch", help="the othpatch version of a game's packages")
+    snap = commands.add_parser("snapshot")
+    snap.add_argument("--packages", type=Path, required=True)
+    snap.add_argument("--commit", required=True)
+    args = parser.parse_args()
+
+    try:
+        with tempfile.TemporaryDirectory() as work:
+            work = Path(work)
+            if args.command == "fetch":
+                index_file.dump(fetch_index(work / INDEX_KEY), args.out)
+            elif args.command == "has":
+                index = fetch_index(work / INDEX_KEY)
+                sys.exit(0 if index_file.find(index, args.program, args.version) else 1)
+            elif args.command == "publish":
+                publish(args, work)
+            else:
+                snapshot(args, work)
+    except (RuntimeError, ValueError) as error:
+        sys.exit(str(error))
+
+
+if __name__ == "__main__":
+    main()

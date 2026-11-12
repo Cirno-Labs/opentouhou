@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parents[2]
@@ -30,3 +31,12 @@ def section(text: str, title: str) -> str | None:
                 body.append(other)
             return "\n".join(body).strip()
     return None
+
+
+def date(text: str, title: str) -> str | None:
+    """Return the date of the `## <title> - YYYY-MM-DD` heading of a
+    changelog, or None when the section has no such heading."""
+    match = re.search(
+        rf"^## {re.escape(title)} - (\d{{4}}-\d{{2}}-\d{{2}})$", text, re.MULTILINE
+    )
+    return match.group(1) if match else None

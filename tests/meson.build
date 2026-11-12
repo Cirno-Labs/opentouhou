@@ -1222,3 +1222,14 @@ foreach part : ['fetch', 'game', 'install', 'language', 'main', 'release', 'repo
     suite: 'unit',
   )
 endforeach
+
+# The release tools run their tests with the Python of the build. They
+# replace the AWS CLI with tools/fake_aws.py, so no test needs the network.
+foreach name : ['release_index']
+  test(
+    'tools/' + name,
+    python,
+    args: [files('tools/test_' + name + '.py')],
+    suite: 'unit',
+  )
+endforeach
