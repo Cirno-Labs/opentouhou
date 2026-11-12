@@ -218,7 +218,53 @@ static void M_CheckFindFirstFile(void)
     M_Check(ud0002_before_ud0001, "O's matches are listed before G's");
 }
 
-static void M_CheckOutsidePathUntouched(void)
+static void M_CheckChangeDirectory(const char *game_full, const char *out_full)
+{
+    M_Check(
+        SetCurrentDirectoryA("./replay"),
+        "changing into a directory only O has succeeds");
+    char current[MAX_PATH];
+    char expected[MAX_PATH];
+    snprintf(expected, sizeof(expected), "%s\\replay", game_full);
+    GetCurrentDirectoryA(MAX_PATH, current);
+    M_Check(
+        strcmp(current, expected) == 0,
+        "the current directory is G/replay in G's terms");
+
+    HANDLE file = CreateFileA(
+        "th6_ud0009.rpy", GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file != INVALID_HANDLE_VALUE) {
+        CloseHandle(file);
+    }
+    char out_path[MAX_PATH];
+    snprintf(
+        out_path, sizeof(out_path), "%s\\replay\\th6_ud0009.rpy", out_full);
+    M_Check(
+        file != INVALID_HANDLE_VALUE && M_ExistsRaw(out_path),
+        "a relative write in G/replay lands in O/replay");
+
+    M_Check(SetCurrentDirectoryA("../"), "changing back to G succeeds");
+    GetCurrentDirectoryA(MAX_PATH, current);
+    M_Check(strcmp(current, game_full) == 0, "the current directory is G");
+
+    file = CreateFileA(
+        "after.cfg", GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file != INVALID_HANDLE_VALUE) {
+        CloseHandle(file);
+    }
+    snprintf(out_path, sizeof(out_path), "%s\\after.cfg", out_full);
+    M_Check(
+        file != INVALID_HANDLE_VALUE && M_ExistsRaw(out_path),
+        "a relative write after changing back lands in O");
+
+    M_Check(
+        !SetCurrentDirectoryA("missing"),
+        "changing into a directory neither has fails");
+}
+
+static void M_CheckOutsidePathRefused(void)
 {
     char temp_dir[MAX_PATH];
     GetTempPathA(MAX_PATH, temp_dir);
@@ -230,18 +276,26 @@ static void M_CheckOutsidePathUntouched(void)
     HANDLE file = CreateFileA(
         outside_path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL, nullptr);
-    bool created = file != INVALID_HANDLE_VALUE;
-    if (created) {
-        DWORD written;
-        WriteFile(file, "outside-data", 12, &written, nullptr);
+    M_Check(
+        file == INVALID_HANDLE_VALUE && !M_ExistsRaw(outside_path),
+        "a write outside G is refused");
+
+    M_Check(
+        !CreateDirectoryA(outside_path, nullptr) && !M_ExistsRaw(outside_path),
+        "a directory outside G is not created");
+    M_Check(!DeleteFileA(outside_path), "a delete outside G is refused");
+
+    char system_dir[MAX_PATH];
+    GetSystemDirectoryA(system_dir, MAX_PATH);
+    char system_file[MAX_PATH];
+    snprintf(system_file, sizeof(system_file), "%s\\kernel32.dll", system_dir);
+    file = CreateFileA(
+        system_file, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL, nullptr);
+    M_Check(file != INVALID_HANDLE_VALUE, "a read outside G succeeds");
+    if (file != INVALID_HANDLE_VALUE) {
         CloseHandle(file);
     }
-    M_Check(
-        created && M_ExistsRaw(outside_path),
-        "a path outside G is created at its real location");
-
-    BOOL deleted = DeleteFileA(outside_path);
-    M_Check(deleted, "deleting a path outside G uses the real function");
 }
 
 int main(int argc, char **argv)
@@ -269,8 +323,9 @@ int main(int argc, char **argv)
     M_CheckCreateDirectory(game_full, out_full);
     M_CheckRefusedWrite(game_full);
     M_CheckDeleteFile(game_full, out_full);
+    M_CheckChangeDirectory(game_full, out_full);
     M_CheckFindFirstFile();
-    M_CheckOutsidePathUntouched();
+    M_CheckOutsidePathRefused();
 
     if (m_Failures == 0) {
         printf("all checks passed\n");

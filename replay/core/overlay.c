@@ -13,7 +13,12 @@
 // Maps a path under the game directory G to the same path under the output
 // directory O. Writes go to O; reads take O's file when it has one, else
 // G's. A write that needs the content of a file only G has fails, so no
-// file of G is ever copied or changed.
+// file of G is ever copied or changed. A write outside G fails.
+//
+// A change of directory into a directory that only O has keeps the real
+// working directory and resolves relative paths against the directory in
+// G's terms. Without this, the original's "cd replay" fails and its next
+// "cd .." leaves G.
 
 #define MAX_FIND_HANDLES 64
 
@@ -28,6 +33,8 @@ typedef BOOL(WINAPI *DELETEFILEA_FN)(LPCSTR);
 typedef HANDLE(WINAPI *FINDFIRSTFILEA_FN)(LPCSTR, LPWIN32_FIND_DATAA);
 typedef BOOL(WINAPI *FINDNEXTFILEA_FN)(HANDLE, LPWIN32_FIND_DATAA);
 typedef BOOL(WINAPI *FINDCLOSE_FN)(HANDLE);
+typedef BOOL(WINAPI *SETCURRENTDIRECTORYA_FN)(LPCSTR);
+typedef DWORD(WINAPI *GETCURRENTDIRECTORYA_FN)(DWORD, LPSTR);
 
 typedef struct {
     WIN32_FIND_DATAA *entries;
@@ -39,6 +46,7 @@ static wchar_t m_GameDirW[MAX_PATH];
 static wchar_t m_OutDirW[MAX_PATH];
 static char m_GameDirA[MAX_PATH];
 static size_t m_GameDirALen;
+static char m_VirtualDir[MAX_PATH];
 
 static CRITICAL_SECTION m_Lock;
 static FIND_STATE *m_FindHandles[MAX_FIND_HANDLES];
@@ -49,6 +57,8 @@ static DELETEFILEA_FN m_RealDeleteFileA;
 static FINDFIRSTFILEA_FN m_RealFindFirstFileA;
 static FINDNEXTFILEA_FN m_RealFindNextFileA;
 static FINDCLOSE_FN m_RealFindClose;
+static SETCURRENTDIRECTORYA_FN m_RealSetCurrentDirectoryA;
+static GETCURRENTDIRECTORYA_FN m_RealGetCurrentDirectoryA;
 
 static void M_LogCall(const char *func, const char *path, const char *verdict)
 {
@@ -62,6 +72,27 @@ static bool M_IsUnderGame(const char *full)
     }
     char next = full[m_GameDirALen];
     return next == '\0' || next == '\\';
+}
+
+static bool M_IsRelative(const char *path)
+{
+    return path[0] != '\\' && path[0] != '/' && path[0] != '\0'
+        && path[1] != ':';
+}
+
+static bool M_FullPath(const char *path, char full[MAX_PATH])
+{
+    char joined[MAX_PATH];
+    if (m_VirtualDir[0] != '\0' && M_IsRelative(path)) {
+        const int length =
+            snprintf(joined, sizeof(joined), "%s\\%s", m_VirtualDir, path);
+        if (length < 0 || length >= MAX_PATH) {
+            return false;
+        }
+        path = joined;
+    }
+    const DWORD length = GetFullPathNameA(path, MAX_PATH, full, nullptr);
+    return length != 0 && length < MAX_PATH;
 }
 
 static void M_MapToOut(const char *full, wchar_t *out_buf, size_t out_cap)
@@ -131,19 +162,32 @@ static HANDLE WINAPI M_CreateFileA(
     LPCSTR path, DWORD access, DWORD share, LPSECURITY_ATTRIBUTES sa,
     DWORD disposition, DWORD flags, HANDLE template_file)
 {
+    const bool wants_write_or_create = (access & WRITE_ACCESS) != 0
+        || disposition == CREATE_ALWAYS || disposition == CREATE_NEW
+        || disposition == OPEN_ALWAYS || disposition == TRUNCATE_EXISTING;
     char full[MAX_PATH];
-    if (GetFullPathNameA(path, MAX_PATH, full, nullptr) == 0
-        || !M_IsUnderGame(full)) {
+    if (!M_FullPath(path, full)) {
+        if (wants_write_or_create) {
+            M_LogCall("CreateFileA", path, "refused");
+            SetLastError(ERROR_ACCESS_DENIED);
+            return INVALID_HANDLE_VALUE;
+        }
         return m_RealCreateFileA(
             path, access, share, sa, disposition, flags, template_file);
+    }
+    if (!M_IsUnderGame(full)) {
+        if (wants_write_or_create) {
+            M_LogCall("CreateFileA", full, "refused");
+            SetLastError(ERROR_ACCESS_DENIED);
+            return INVALID_HANDLE_VALUE;
+        }
+        return m_RealCreateFileA(
+            full, access, share, sa, disposition, flags, template_file);
     }
 
     wchar_t out_path[MAX_PATH];
     M_MapToOut(full, out_path, MAX_PATH);
 
-    bool wants_write_or_create = (access & WRITE_ACCESS) != 0
-        || disposition == CREATE_ALWAYS || disposition == CREATE_NEW
-        || disposition == OPEN_ALWAYS || disposition == TRUNCATE_EXISTING;
     bool needs_existing_content =
         (disposition == OPEN_EXISTING || disposition == OPEN_ALWAYS
          || disposition == TRUNCATE_EXISTING)
@@ -158,7 +202,7 @@ static HANDLE WINAPI M_CreateFileA(
         }
         M_LogCall("CreateFileA", path, "game");
         return m_RealCreateFileA(
-            path, access, share, sa, disposition, flags, template_file);
+            full, access, share, sa, disposition, flags, template_file);
     }
 
     if (needs_existing_content && !M_FileExistsW(out_path)
@@ -178,9 +222,10 @@ static HANDLE WINAPI M_CreateFileA(
 static BOOL WINAPI M_CreateDirectoryA(LPCSTR path, LPSECURITY_ATTRIBUTES sa)
 {
     char full[MAX_PATH];
-    if (GetFullPathNameA(path, MAX_PATH, full, nullptr) == 0
-        || !M_IsUnderGame(full)) {
-        return m_RealCreateDirectoryA(path, sa);
+    if (!M_FullPath(path, full) || !M_IsUnderGame(full)) {
+        M_LogCall("CreateDirectoryA", path, "refused");
+        SetLastError(ERROR_ACCESS_DENIED);
+        return FALSE;
     }
 
     wchar_t out_path[MAX_PATH];
@@ -194,9 +239,10 @@ static BOOL WINAPI M_CreateDirectoryA(LPCSTR path, LPSECURITY_ATTRIBUTES sa)
 static BOOL WINAPI M_DeleteFileA(LPCSTR path)
 {
     char full[MAX_PATH];
-    if (GetFullPathNameA(path, MAX_PATH, full, nullptr) == 0
-        || !M_IsUnderGame(full)) {
-        return m_RealDeleteFileA(path);
+    if (!M_FullPath(path, full) || !M_IsUnderGame(full)) {
+        M_LogCall("DeleteFileA", path, "refused");
+        SetLastError(ERROR_ACCESS_DENIED);
+        return FALSE;
     }
 
     wchar_t out_path[MAX_PATH];
@@ -241,9 +287,11 @@ static bool M_HasName(
 static HANDLE WINAPI M_FindFirstFileA(LPCSTR pattern, LPWIN32_FIND_DATAA data)
 {
     char full[MAX_PATH];
-    if (GetFullPathNameA(pattern, MAX_PATH, full, nullptr) == 0
-        || !M_IsUnderGame(full)) {
+    if (!M_FullPath(pattern, full)) {
         return m_RealFindFirstFileA(pattern, data);
+    }
+    if (!M_IsUnderGame(full)) {
+        return m_RealFindFirstFileA(full, data);
     }
 
     wchar_t out_pattern[MAX_PATH];
@@ -358,6 +406,58 @@ static BOOL WINAPI M_FindClose(HANDLE handle)
     return TRUE;
 }
 
+static bool M_IsDirectoryW(const wchar_t *path)
+{
+    const DWORD attributes = GetFileAttributesW(path);
+    return attributes != INVALID_FILE_ATTRIBUTES
+        && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+static bool M_IsDirectoryA(const char *path)
+{
+    const DWORD attributes = GetFileAttributesA(path);
+    return attributes != INVALID_FILE_ATTRIBUTES
+        && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+static BOOL WINAPI M_SetCurrentDirectoryA(LPCSTR path)
+{
+    char full[MAX_PATH];
+    if (!M_FullPath(path, full)) {
+        SetLastError(ERROR_PATH_NOT_FOUND);
+        return FALSE;
+    }
+    if (!M_IsUnderGame(full) || M_IsDirectoryA(full)) {
+        const BOOL result = m_RealSetCurrentDirectoryA(full);
+        if (result) {
+            m_VirtualDir[0] = '\0';
+        }
+        return result;
+    }
+    wchar_t out_path[MAX_PATH];
+    M_MapToOut(full, out_path, MAX_PATH);
+    if (!M_IsDirectoryW(out_path)) {
+        SetLastError(ERROR_PATH_NOT_FOUND);
+        return FALSE;
+    }
+    strcpy(m_VirtualDir, full);
+    M_LogCall("SetCurrentDirectoryA", path, "out");
+    return TRUE;
+}
+
+static DWORD WINAPI M_GetCurrentDirectoryA(DWORD size, LPSTR buffer)
+{
+    if (m_VirtualDir[0] == '\0') {
+        return m_RealGetCurrentDirectoryA(size, buffer);
+    }
+    const DWORD length = (DWORD)strlen(m_VirtualDir);
+    if (buffer == nullptr || size <= length) {
+        return length + 1;
+    }
+    memcpy(buffer, m_VirtualDir, length + 1);
+    return length;
+}
+
 RESULT Overlay_Install(const wchar_t *game_dir, const wchar_t *out_dir)
 {
     InitializeCriticalSection(&m_Lock);
@@ -388,6 +488,10 @@ RESULT Overlay_Install(const wchar_t *game_dir, const wchar_t *out_dir)
         { "FindNextFileA", (uintptr_t)M_FindNextFileA,
           (uintptr_t *)&m_RealFindNextFileA },
         { "FindClose", (uintptr_t)M_FindClose, (uintptr_t *)&m_RealFindClose },
+        { "SetCurrentDirectoryA", (uintptr_t)M_SetCurrentDirectoryA,
+          (uintptr_t *)&m_RealSetCurrentDirectoryA },
+        { "GetCurrentDirectoryA", (uintptr_t)M_GetCurrentDirectoryA,
+          (uintptr_t *)&m_RealGetCurrentDirectoryA },
     };
 
     for (size_t i = 0; i < ARRAYSIZE(table); i++) {
