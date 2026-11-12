@@ -268,14 +268,14 @@ class ReleaseIndexTest(unittest.TestCase):
             time = now - datetime.timedelta(hours=hours)
             return {"version": "0.1.0", "published": time.isoformat()}
 
-        index = {"format": 1, "programs": {"othpatch": [release(30)], "th06": [release(2)]}}
+        index = {"format": 1, "programs": {"othpatch": [release(30)], "oth06": [release(2)]}}
         result = self.plan(index)
         self.assertEqual(result.stdout, "othpatch=\ngames=\n")
         result = self.plan(index, "--replace")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "othpatch=\ngames=th06\n")
         self.assertIn("othpatch 0.1.0 cannot be replaced", result.stderr)
-        index["programs"]["th06"] = [release(25)]
+        index["programs"]["oth06"] = [release(25)]
         result = self.plan(index, "--replace")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("th06 0.1.0 cannot be replaced", result.stderr)
@@ -284,9 +284,31 @@ class ReleaseIndexTest(unittest.TestCase):
     def test_game_release_records_its_othpatch(self) -> None:
         self.package("oth06-0.1.1-Linux.zip")
         self.assertEqual(self.publish("th06", "0.1.1", "--othpatch", "0.1.2").returncode, 0)
-        release = self.index()["programs"]["th06"][0]
+        release = self.index()["programs"]["oth06"][0]
         self.assertEqual(release["othpatch"], "0.1.2")
         self.assertEqual(release["files"]["Linux"]["name"], "oth06-0.1.1-Linux.zip")
+
+    def test_game_release_has_the_product_name(self) -> None:
+        self.package("oth06-0.1.1-Linux.zip")
+        self.assertEqual(self.publish("th06", "0.1.1").returncode, 0)
+        self.assertEqual(list(self.index()["programs"]), ["oth06"])
+        release = self.index()["programs"]["oth06"][0]
+        self.assertEqual(
+            release["files"]["Linux"]["url"],
+            f"{PUBLIC_URL}/oth06/0.1.1/oth06-0.1.1-Linux.zip",
+        )
+        self.assertEqual(
+            release["checksums"]["SHA256SUMS"], f"{PUBLIC_URL}/oth06/0.1.1/SHA256SUMS"
+        )
+        self.assertTrue((self.root / "objects/oth06/0.1.1/oth06-0.1.1-Linux.zip").exists())
+        self.assertFalse((self.root / "objects/th06").exists())
+        self.assertEqual(self.run_tool("has", "th06", "0.1.1").returncode, 0)
+
+    def test_tag_has_the_product_name(self) -> None:
+        for program, tag in [("th06", "oth06-v1.2.0"), ("othpatch", "othpatch-v1.2.0")]:
+            result = self.run_tool("tag", program, "1.2.0")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, f"{tag}\n")
 
     def test_failed_upload_leaves_the_index_alone(self) -> None:
         self.package("othpatch-0.1.1-Linux")
@@ -327,8 +349,8 @@ class ReleaseIndexTest(unittest.TestCase):
         self.assertEqual(self.publish("othpatch", "0.1.1").returncode, 0)
         self.package("oth06-0.1.1-Linux.zip")
         self.assertEqual(self.publish("th06", "0.1.1").returncode, 0)
-        (self.root / "objects/th06/0.1.0").mkdir(parents=True)
-        (self.root / "objects/th06/0.1.0/oth06-0.1.0-Linux.zip").write_text("")
+        (self.root / "objects/oth06/0.1.0").mkdir(parents=True)
+        (self.root / "objects/oth06/0.1.0/oth06-0.1.0-Linux.zip").write_text("")
         shutil.rmtree(self.root / "packages")
         (self.root / "packages").mkdir()
         self.package("oth06-0.1.2-dev-abcdef0-Linux.zip")
@@ -343,7 +365,7 @@ class ReleaseIndexTest(unittest.TestCase):
         self.assertEqual(self.index(), {"format": 1, "programs": {}, "snapshot": snapshot})
         objects = self.root / "objects"
         self.assertFalse(any(path.is_file() for path in (objects / "othpatch").rglob("*")))
-        self.assertFalse(any(path.is_file() for path in (objects / "th06").rglob("*")))
+        self.assertFalse(any(path.is_file() for path in (objects / "oth06").rglob("*")))
         self.assertTrue((objects / "snapshot/oth06-0.1.2-dev-abcdef0-Linux.zip").exists())
         log = (self.root / "log").read_text().splitlines()
         puts = [i for i, line in enumerate(log) if line.startswith("s3 cp")]
@@ -372,10 +394,10 @@ class ReleaseIndexTest(unittest.TestCase):
         snapshot = index["snapshot"]
         self.assertEqual(snapshot["commit"], "abcdef0123")
         self.assertRegex(snapshot["date"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
-        th06 = snapshot["programs"]["th06"]
-        self.assertEqual(th06["version"], "0.1.2-dev-abcdef0")
+        game = snapshot["programs"]["oth06"]
+        self.assertEqual(game["version"], "0.1.2-dev-abcdef0")
         self.assertEqual(
-            th06["files"]["Windows"]["url"],
+            game["files"]["Windows"]["url"],
             f"{PUBLIC_URL}/snapshot/oth06-0.1.2-dev-abcdef0-Windows.zip",
         )
         self.assertIn("othpatch", snapshot["programs"])
@@ -420,7 +442,7 @@ class ReplaceRuleTest(unittest.TestCase):
             release_index.add_release(index, "th06", {"version": version})
         release_index.remove_release(index, "th06", "1.0.0")
         release_index.add_release(index, "th06", {"version": "1.0.0", "new": True})
-        releases = index["programs"]["th06"]
+        releases = index["programs"]["oth06"]
         self.assertEqual([item["version"] for item in releases], ["1.1.0", "1.0.0"])
         self.assertTrue(releases[1]["new"])
 

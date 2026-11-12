@@ -2,7 +2,10 @@
 
 The index lives at the root of the R2 bucket, beside the files it lists.
 othpatch reads it to find updates, and packaging reads it to find the
-othpatch that a game ships. It is one JSON object:
+othpatch that a game ships. It names each program by its product name,
+shared.versioning.product_name, such as oth06 or othpatch. The functions
+here take the program as the source tree names it, such as th06. The
+index is one JSON object:
 
     {
       "format": 1,
@@ -30,14 +33,14 @@ othpatch that a game ships. It is one JSON object:
             }
           }
         ],
-        "th06": [{"version": "0.1.1", "othpatch": "0.1.2", ...}]
+        "oth06": [{"version": "0.1.1", "othpatch": "0.1.2", ...}]
       },
       "snapshot": {
         "commit": "<full commit hash>",
         "date": "2026-11-12T14:03:00Z",
         "programs": {
-          "th06": {"version": "0.1.2-dev-abcdef0", "changes": "...",
-                   "files": {...}}
+          "oth06": {"version": "0.1.2-dev-abcdef0", "changes": "...",
+                    "files": {...}}
         },
         "checksums": {...}
       }
@@ -60,8 +63,9 @@ unreleased changes and its files, and the checksum files of all its
 files.
 
 A release's files, with its SHA256SUMS and SHA1SUMS, are at
-<program>/<version>/<name> in the bucket and a snapshot's at
-snapshot/<name>. A version in the index changes only when it is
+<product>/<version>/<name> in the bucket, such as oth06/0.1.1/, and a
+snapshot's at snapshot/<name>. The git tag of a release is
+<product>-v<version>, such as oth06-v0.1.1. A version in the index changes only when it is
 replaced, less than REPLACE_WINDOW after its "published" time. The
 replacement keeps that time, so that the window does not grow.
 """
@@ -101,9 +105,25 @@ def dump(index: dict, path: Path) -> None:
     path.write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n")
 
 
+def folder(program: str, version: str) -> str:
+    """Return the folder of a release's files in the bucket, such as
+    oth06/0.1.1."""
+    return f"{product_name(program)}/{version}"
+
+
+def tag(program: str, version: str) -> str:
+    """Return the git tag of a release, such as oth06-v0.1.1."""
+    return f"{product_name(program)}-v{version}"
+
+
+def releases(index: dict, program: str) -> list[dict]:
+    """Return the releases of a program, newest first."""
+    return index["programs"].get(product_name(program), [])
+
+
 def find(index: dict, program: str, version: str) -> dict | None:
     """Return the release of a program's version, or None."""
-    for release in index["programs"].get(program, []):
+    for release in releases(index, program):
         if release["version"] == version:
             return release
     return None
@@ -211,12 +231,12 @@ def add_release(index: dict, program: str, release: dict) -> None:
     """
     if find(index, program, release["version"]) is not None:
         raise ValueError(f"the index has {program} {release['version']} already")
-    releases = index["programs"].setdefault(program, [])
-    releases.append(release)
-    releases.sort(key=lambda item: version_key(item["version"]), reverse=True)
+    listed = index["programs"].setdefault(product_name(program), [])
+    listed.append(release)
+    listed.sort(key=lambda item: version_key(item["version"]), reverse=True)
 
 
 def remove_release(index: dict, program: str, version: str) -> None:
     """Remove the release of a program's version, if the index has it."""
-    releases = index["programs"].get(program, [])
-    releases[:] = [item for item in releases if item["version"] != version]
+    listed = releases(index, program)
+    listed[:] = [item for item in listed if item["version"] != version]

@@ -45,13 +45,13 @@ static RESULT M_FindIn(
     return Release_FindNewest(test->index, program, platform, &test->release);
 }
 
-// Finds the newest th06 release for Linux in an index whose programs are
+// Finds the newest oth06 release for Linux in an index whose programs are
 // the JSON object members programs.
 static RESULT M_Find(M_CASE *const test, const char *const programs)
 {
     char *const text =
         Str_Format("{\"format\": 1, \"programs\": {%s}}", programs);
-    const RESULT result = M_FindIn(test, text, "th06", "Linux");
+    const RESULT result = M_FindIn(test, text, "oth06", "Linux");
     Mem_Free(text);
     return result;
 }
@@ -107,7 +107,7 @@ TEST(newest_release_of_the_game_wins)
     char *const newest = M_Release("0.10.0", files);
     char *const other_game = M_Release("9.0.0", "");
     char *const programs = Str_Format(
-        "\"th07\": [%s], \"th06\": [%s, %s], \"othpatch\": [%s]", other_game,
+        "\"oth07\": [%s], \"oth06\": [%s, %s], \"othpatch\": [%s]", other_game,
         old, newest, other_game);
     M_CASE test;
     CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
@@ -131,7 +131,7 @@ TEST(releases_without_a_plain_version_are_skipped)
     char *const dev = M_Release("0.3.0-dev+abcdef0", "");
     char *const plain = M_Release("0.1.0", "");
     char *const programs = Str_Format(
-        "\"th06\": [%s, {\"date\": \"2026-11-12\"}, %s]", dev, plain);
+        "\"oth06\": [%s, {\"date\": \"2026-11-12\"}, %s]", dev, plain);
     M_CASE test;
     CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
     M_CheckVersion(test.release.version, 0, 1, 0);
@@ -145,7 +145,7 @@ TEST(release_without_the_platform_has_no_package)
 {
     char *const windows_file = M_File("Windows", "oth06-0.1.0-Windows.zip");
     char *const release = M_Release("0.1.0", windows_file);
-    char *const programs = Str_Format("\"th06\": [%s]", release);
+    char *const programs = Str_Format("\"oth06\": [%s]", release);
     M_CASE test;
     CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
     M_CheckVersion(test.release.version, 0, 1, 0);
@@ -161,7 +161,7 @@ TEST(release_without_the_platform_has_no_package)
 TEST(file_without_a_sha256_digest_has_none)
 {
     const char *const programs =
-        "\"th06\": [{\"version\": \"0.1.0\", \"files\": {\"Linux\": "
+        "\"oth06\": [{\"version\": \"0.1.0\", \"files\": {\"Linux\": "
         "{\"name\": \"oth06-0.1.0-Linux.zip\", \"url\": \"https://x/\"}}}]";
     M_CASE test;
     CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
@@ -174,11 +174,11 @@ TEST(index_without_a_release_of_the_game_fails)
 {
     char *const release = M_Release("1.0.0-rc1", "");
     char *const programs =
-        Str_Format("\"th06\": [%s], \"othpatch\": [%s]", release, release);
+        Str_Format("\"oth06\": [%s], \"othpatch\": [%s]", release, release);
     M_CASE test;
     const RESULT result = M_Find(&test, programs);
     CHECK(!IS_OK(result));
-    CHECK(strstr(result.message, "no release of th06") != nullptr);
+    CHECK(strstr(result.message, "no release of oth06") != nullptr);
     Result_Ignore(result);
     Arena_Free(&test.arena);
     Mem_Free(programs);
@@ -192,7 +192,7 @@ TEST(newest_release_of_othpatch_wins)
     char *const old = M_Release("1.1.0", "");
     char *const newest = M_Release("1.2.0", windows_file);
     char *const text = Str_Format(
-        "{\"format\": 1, \"programs\": {\"th06\": [%s], \"othpatch\": [%s, "
+        "{\"format\": 1, \"programs\": {\"oth06\": [%s], \"othpatch\": [%s, "
         "%s]}}",
         game, newest, old);
     M_CASE test;
@@ -215,11 +215,11 @@ TEST(text_that_is_not_an_index_fails)
     const char *const texts[] = {
         "[]",
         "{\"message\": \"Not Found\"}",
-        "{\"format\": 2, \"programs\": {\"th06\": []}}",
+        "{\"format\": 2, \"programs\": {\"oth06\": []}}",
     };
     for (size_t i = 0; i < ARRAY_SIZE(texts); i++) {
         M_CASE test;
-        const RESULT result = M_FindIn(&test, texts[i], "th06", "Linux");
+        const RESULT result = M_FindIn(&test, texts[i], "oth06", "Linux");
         CHECK(!IS_OK(result));
         CHECK(strstr(result.message, "not a release index") != nullptr);
         Result_Ignore(result);

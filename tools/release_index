@@ -8,9 +8,10 @@
                   release, else with 1
   publish --program P --version V --packages DIR [--othpatch X]
           [--replace]
-                  uploads the files of P V in DIR to P/V/ with their
-                  SHA256SUMS and SHA1SUMS, then adds the release to
-                  the index; fails when the index has it, unless
+                  uploads the files of P V in DIR to <product>/V/, such
+                  as oth06/1.2.0/, with their SHA256SUMS and SHA1SUMS,
+                  then adds the release to the index; fails when the
+                  index has it, unless
                   --replace is given and the release is less than 24
                   hours old, in which case it replaces the files and
                   the release
@@ -19,11 +20,16 @@
                   replaces the snapshot of the index, then deletes the
                   older snapshot files
   reset           writes an index without releases that keeps the
-                  snapshot, then deletes every file under <program>/
+                  snapshot, then deletes every file under <product>/
+  tag PROGRAM VERSION
+                  prints the git tag of the release, such as
+                  oth06-v1.2.0
 
-publish takes the date and the changes from the program's changelog
-section, and for a game the othpatch version from --othpatch or else
-src/<game>/othpatch.txt. The index is uploaded last, so that it never
+PROGRAM and P name the program as the source tree does, such as th06.
+The bucket, the index and the tags name it by its product name, such as
+oth06. publish takes the date and the changes from the program's
+changelog section, and for a game the othpatch version from --othpatch
+or else src/<game>/othpatch.txt. The index is uploaded last, so that it never
 names a file that is not uploaded. R2_PUBLIC_URL gives the public URL
 of the bucket for the file URLs; shared/r2.py names the other
 environment variables. shared/release_index.py describes the index.
@@ -38,7 +44,7 @@ from pathlib import Path
 from shared import r2
 from shared import release_index as index_file
 from shared.changelog import changelog_path, date, section
-from shared.versioning import games, othpatch_pin_path, programs, read_version
+from shared.versioning import games, othpatch_pin_path, product_name, programs, read_version
 
 INDEX_KEY = "releases.json"
 
@@ -117,7 +123,7 @@ def publish(args: argparse.Namespace, work: Path) -> None:
     if args.program in games():
         release["othpatch"] = args.othpatch or read_version(othpatch_pin_path(args.program))
     release["changes"] = changes
-    prefix = f"{args.program}/{args.version}"
+    prefix = index_file.folder(args.program, args.version)
     release["files"] = upload(args.packages, files, prefix, base_url)
     release["checksums"] = upload_checksums(
         list(release["files"].values()), prefix, base_url, work
@@ -145,7 +151,7 @@ def snapshot(args: argparse.Namespace, work: Path) -> None:
             continue
         platform, name = next(iter(files.items()))
         changes = section(changelog_path(program).read_text(), "Unreleased")
-        entries[program] = {
+        entries[product_name(program)] = {
             "version": index_file.file_version_of(program, platform, name),
             "changes": changes or "",
             "files": upload(args.packages, files, "snapshot", base_url),
@@ -177,7 +183,7 @@ def snapshot(args: argparse.Namespace, work: Path) -> None:
 
 def reset(work: Path) -> None:
     index = fetch_index(work / INDEX_KEY)
-    names = sorted(set(programs()) | set(index["programs"]))
+    names = sorted({product_name(program) for program in programs()} | set(index["programs"]))
     cleared = index_file.empty()
     if "snapshot" in index:
         cleared["snapshot"] = index["snapshot"]
@@ -209,6 +215,9 @@ def main() -> None:
         help="replace the release when it was published less than 24 hours ago",
     )
     commands.add_parser("reset")
+    tag = commands.add_parser("tag")
+    tag.add_argument("program")
+    tag.add_argument("version")
     snap = commands.add_parser("snapshot")
     snap.add_argument("--packages", type=Path, required=True)
     snap.add_argument("--commit", required=True)
@@ -226,6 +235,8 @@ def main() -> None:
                 publish(args, work)
             elif args.command == "reset":
                 reset(work)
+            elif args.command == "tag":
+                print(index_file.tag(args.program, args.version))
             else:
                 snapshot(args, work)
     except (RuntimeError, ValueError) as error:

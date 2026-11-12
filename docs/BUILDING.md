@@ -170,8 +170,13 @@ writes it. It builds and publishes othpatch first, then the games, whose
 packages take the othpatch that they ship from the index. For each
 program, `tools/release_index` uploads the files to the R2 bucket and
 then adds the release to the index, and the workflow pushes the tag
-`<program>-vX.Y.Z`. A run without
-unreleased versions does nothing. There are no GitHub releases.
+`<product>-vX.Y.Z`, such as `oth06-v1.2.0`. A run without unreleased
+versions does nothing. There are no GitHub releases.
+
+The bucket, the release index and the tags name a game by its product
+name, the name of its executable: `oth06` for th06. othpatch keeps its
+name. The source tree and the arguments of the tools, such as
+`tools/bump th06`, keep the game id.
 
 A run with the input `replace` also publishes again each version that
 was published less than 24 hours ago, from the commit it runs on, to
@@ -182,8 +187,8 @@ installed the replaced version get no update to the new files.
 
 The R2 bucket holds the downloads:
 
-- `<program>/<version>/<file>`: the files of a release, such as
-  `th06/0.1.1/oth06-0.1.1-Linux.zip`. A published version changes
+- `<product>/<version>/<file>`: the files of a release, such as
+  `oth06/0.1.1/oth06-0.1.1-Linux.zip`. A published version changes
   only through `replace`.
 - `snapshot/<file>`: the development snapshot.
 - `releases.json`: the release index, written after the files. Its

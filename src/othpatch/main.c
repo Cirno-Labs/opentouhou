@@ -577,19 +577,19 @@ static const JSON_VALUE *M_GetReleases(M_UPDATE *const update)
 }
 
 // Finds the newest release of program in index and compares it with
-// installed. Returns whether it is newer and has a package, and prints a
-// line otherwise. name is the program in messages, such as "oth06".
+// installed. program is the product name, such as "oth06" or "othpatch",
+// in the index and in messages. Returns whether the release is newer and
+// has a package, and prints a line otherwise.
 static bool M_FindUpdate(
     const M_UPDATE *const update, const JSON_VALUE *const index,
-    const char *const program, const char *const name,
-    const RELEASE_VERSION installed, const char *const version,
-    RELEASE *const out)
+    const char *const program, const RELEASE_VERSION installed,
+    const char *const version, RELEASE *const out)
 {
     const RESULT found =
         Release_FindNewest(index, program, update->platform->name, out);
     if (!IS_OK(found)) {
         fprintf(
-            update->out, "%s: cannot check for updates: %s\n", name,
+            update->out, "%s: cannot check for updates: %s\n", program,
             found.message);
         Result_Ignore(found);
         return false;
@@ -597,13 +597,13 @@ static bool M_FindUpdate(
     char newest[GAME_VERSION_SIZE];
     M_FormatVersion(out->version, newest);
     if (Release_CompareVersions(out->version, installed) <= 0) {
-        fprintf(update->out, "%s %s is up to date\n", name, version);
+        fprintf(update->out, "%s %s is up to date\n", program, version);
         return false;
     }
     if (out->url == nullptr) {
         fprintf(
-            update->out, "%s %s is available, but not for %s\n", name, newest,
-            update->platform->name);
+            update->out, "%s %s is available, but not for %s\n", program,
+            newest, update->platform->name);
         return false;
     }
     return true;
@@ -696,7 +696,7 @@ static bool M_UpdateGame(
         return false;
     }
     RELEASE release;
-    if (!M_FindUpdate(update, index, game, name, installed, version, &release)
+    if (!M_FindUpdate(update, index, name, installed, version, &release)
         || !M_AskInstall(update, name, &release, version)) {
         return false;
     }
@@ -752,8 +752,8 @@ static bool M_UpdateOthpatch(M_UPDATE *const update, const char *const running)
     M_FormatVersion(update->othpatch_version, version);
     RELEASE release;
     if (!M_FindUpdate(
-            update, index, "othpatch", "othpatch", update->othpatch_version,
-            version, &release)
+            update, index, "othpatch", update->othpatch_version, version,
+            &release)
         || !M_AskInstall(update, "othpatch", &release, version)) {
         return false;
     }

@@ -16,7 +16,7 @@ typedef struct {
     char *program;
     char *repo;
     char *releases;
-    // Hold the releases of th06 and of othpatch in the index, as the JSON
+    // Hold the releases of oth06 and of othpatch in the index, as the JSON
     // text of the members of each array.
     char *game_entries;
     char *othpatch_entries;
@@ -32,7 +32,7 @@ typedef struct {
 static void M_WriteIndex(const M_CASE *const test)
 {
     char *const text = Str_Format(
-        "{\"format\": 1, \"programs\": {\"th06\": [%s], \"othpatch\": "
+        "{\"format\": 1, \"programs\": {\"oth06\": [%s], \"othpatch\": "
         "[%s]}}",
         test->game_entries, test->othpatch_entries);
     PatchBuilder_Write(test->server, "releases.json", text);
@@ -499,7 +499,7 @@ static void M_WritePackage(
     Mem_Free(script);
 }
 
-// Writes the index with one release of th06, whose package has digest,
+// Writes the index with one release of oth06, whose package has digest,
 // or no digest when digest is nullptr. A release without files has no
 // package. A development version beside it does not count.
 static void M_WriteReleases(
@@ -672,6 +672,24 @@ TEST(release_without_a_digest_fails_the_update)
         &test,
         "oth06: cannot install 0.2.0: the index gives no SHA-256 digest of "
         "oth06-0.2.0-");
+    M_CheckGame(&test, "0.1.0");
+    M_Close(&test);
+}
+
+TEST(release_under_the_game_id_is_not_found)
+{
+    M_CASE test = M_PrepareUpdate("update_game_id", "0.1.0", "0.2.0");
+    char *const text = Str_Format(
+        "{\"format\": 1, \"programs\": {\"th06\": [%s], \"othpatch\": "
+        "[%s]}}",
+        test.game_entries, test.othpatch_entries);
+    PatchBuilder_Write(test.server, "releases.json", text);
+    Mem_Free(text);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(
+        &test,
+        "oth06: cannot check for updates: the index has no release of "
+        "oth06\n");
     M_CheckGame(&test, "0.1.0");
     M_Close(&test);
 }

@@ -12,9 +12,10 @@
 #define GAME_NAME_SIZE 32
 
 // Writes the product name of game, the game id with an "o" before it, into
-// name: "oth06" for "th06". The executable and the packages carry this
-// name, so that the executable does not clash with the original game's
-// executable in the same folder. The thcrap patches keep the game id.
+// name: "oth06" for "th06". The executable, the packages and the releases
+// in the release index carry this name, so that the executable does not
+// clash with the original game's executable in the same folder. The thcrap
+// patches keep the game id.
 void Game_GetProductName(const char *game, char name[GAME_NAME_SIZE]);
 
 // Runs the executable at path with --version and writes the version that

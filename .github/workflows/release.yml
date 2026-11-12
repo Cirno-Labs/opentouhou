@@ -4,7 +4,8 @@ name: Publish the releases
 # version that the release index in the R2 bucket does not have:
 # othpatch first, then the games, whose packages take the othpatch that
 # they ship from the index. Each publish uploads the files, adds the
-# release to the index and pushes the tag <program>-vX.Y.Z. With
+# release to the index and pushes the tag <product>-vX.Y.Z, such as
+# oth06-v1.2.0, that tools/release_index tag names. With
 # replace, a version published less than 24 hours ago is published
 # again: its files and its index entry are replaced, and its tag moves
 # to the commit of the run.
@@ -126,8 +127,9 @@ jobs:
           VERSION: ${{ needs.plan.outputs.othpatch }}
           REPLACE: ${{ inputs.replace && '1' || '' }}
         run: |
-          git tag ${REPLACE:+--force} "othpatch-v$VERSION" "$GITHUB_SHA"
-          git push ${REPLACE:+--force} origin "refs/tags/othpatch-v$VERSION"
+          tag="$(tools/release_index tag othpatch "$VERSION")"
+          git tag ${REPLACE:+--force} "$tag" "$GITHUB_SHA"
+          git push ${REPLACE:+--force} origin "refs/tags/$tag"
 
   # A game job runs when the othpatch jobs succeeded or were skipped. The
   # packages read the index from the bucket, which has the new othpatch
@@ -205,6 +207,7 @@ jobs:
           for game in $GAMES; do
             version="$(cat "src/$game/version.txt")"
             tools/release_index publish --program "$game" --version "$version" --packages packages ${REPLACE:+--replace}
-            git tag ${REPLACE:+--force} "$game-v$version" "$GITHUB_SHA"
-            git push ${REPLACE:+--force} origin "refs/tags/$game-v$version"
+            tag="$(tools/release_index tag "$game" "$version")"
+            git tag ${REPLACE:+--force} "$tag" "$GITHUB_SHA"
+            git push ${REPLACE:+--force} origin "refs/tags/$tag"
           done

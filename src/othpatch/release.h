@@ -36,7 +36,7 @@ bool Release_ParseVersion(const char *text, RELEASE_VERSION *out);
 // as b or newer than b.
 int32_t Release_CompareVersions(RELEASE_VERSION a, RELEASE_VERSION b);
 
-// Finds the newest release of program, such as "th06" or "othpatch", in
+// Finds the newest release of program, such as "oth06" or "othpatch", in
 // index, and its package for platform, such as "Linux". Only the releases
 // with a version "X.Y.Z" count. The strings of out come from index.
 // Reports failure when index is not a release index or has no release of

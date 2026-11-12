@@ -1,8 +1,8 @@
 name: Delete the releases
 
-# Deletes every release from the R2 bucket: the files under <program>/
-# and the releases in the index. The snapshot stays. The git tags stay;
-# delete them by hand.
+# Deletes every release from the R2 bucket: the files under <product>/,
+# such as oth06/, and the releases in the index. The snapshot stays.
+# The git tags stay; delete them by hand.
 on:
   workflow_dispatch:
     inputs:
