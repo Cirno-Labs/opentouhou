@@ -13,8 +13,10 @@
 #include "core/ini.h"
 #include "core/io/path.h"
 #include "core/patch.h"
+#include "core/vfs.h"
 
 #include "clock.h"
+#include "fatal.h"
 #include "folders.h"
 #include "hotkeys.h"
 #include "request_queue.h"
@@ -51,6 +53,9 @@ struct APP_CONTEXT {
     // another.
     void *input_buffer;
     APP_FOLDERS folders;
+    // Points at the entry of g_GameDesc.data_files that the data folder
+    // lacks, or is nullptr.
+    const char *missing_data_file;
     // Holds config.ini's path, or nullptr when the user directory could
     // not be found.
     char *ini_path;
@@ -122,6 +127,32 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
         const PATCH_INFO *const info = Patch_Get(ctx->patches, i);
         LOG_INFO("Patch %d: %s (%s)", i + 1, info->id, info->title);
     }
+}
+
+static RESULT M_CheckData(APP_CONTEXT *const ctx)
+{
+    if (g_GameDesc.data_file_count == 0) {
+        return OK;
+    }
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+    RESULT result = Vfs_MountDir(vfs, ctx->folders.data_dir, 0);
+    for (int32_t i = 0; IS_OK(result) && i < g_GameDesc.data_file_count; i++) {
+        const char *const name = g_GameDesc.data_files[i];
+        READER file;
+        result = Vfs_Open(vfs, name, VFS_STREAM, &file);
+        if (IS_OK(result)) {
+            Reader_Close(&file);
+        } else {
+            ctx->missing_data_file = name;
+            result = Result_Prefix(result, "%s", name);
+        }
+    }
+    Vfs_Destroy(vfs);
+    // A data folder that cannot be read lacks every file.
+    if (!IS_OK(result) && ctx->missing_data_file == nullptr) {
+        ctx->missing_data_file = g_GameDesc.data_files[0];
+    }
+    return result;
 }
 
 static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
@@ -287,6 +318,7 @@ static RESULT M_Init(
         "Cannot find the executable's directory");
     LOG_INFO("%s %s", g_GameDesc.id, g_GameDesc.version);
     LOG_INFO("Folder mode: %s", AppFolders_GetModeName(ctx->folders.mode));
+    MUST(M_CheckData(ctx), "%s failed to start", g_GameDesc.id);
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
@@ -417,11 +449,23 @@ void App_RequestFullscreen(const bool fullscreen)
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
+    AppFatal_Install(g_GameDesc.id);
     bool done = false;
-    if (!Result_Log(M_Init(&m_Context, argc, argv, &done), LOG_LEVEL_ERROR)) {
-        return SDL_APP_FAILURE;
+    const RESULT result = M_Init(&m_Context, argc, argv, &done);
+    if (IS_OK(result)) {
+        return done ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
     }
-    return done ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
+    char text[4096];
+    if (m_Context.missing_data_file != nullptr) {
+        AppFatal_FormatMissingData(
+            text, sizeof(text), m_Context.missing_data_file,
+            m_Context.folders.data_dir);
+    } else {
+        snprintf(text, sizeof(text), "%s", result.message);
+    }
+    Result_Log(result, LOG_LEVEL_ERROR);
+    AppFatal_ShowStartupError(text);
+    return SDL_APP_FAILURE;
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)

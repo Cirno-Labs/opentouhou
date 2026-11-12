@@ -29,6 +29,12 @@ typedef struct {
     // Describes the game to thcrap patches. core/app opens the patch stack
     // from it before init. nullptr for a game that takes no patches.
     const PATCH_GAME *patch_game;
+    // Names the files that the data folder must hold, and their number.
+    // core/app looks for them before it opens the window, as Vfs_Open
+    // finds files. A missing file stops the start with a message that
+    // names it and the data folder.
+    const char *const *data_files;
+    int32_t data_file_count;
     // Prepares the game. Called once, after the window exists.
     RESULT (*init)(void);
     // Advances the game by one 60 Hz step and draws it through core/gfx.

@@ -880,6 +880,20 @@ test(
 )
 
 test(
+  'core/app/fatal',
+  executable(
+    'test_app_fatal',
+    'test_app_fatal.c',
+    '../src/core/app/fatal.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: core_base_lib,
+    dependencies: [sdl3],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/app/tick_rate',
   executable(
     'test_tick_rate',

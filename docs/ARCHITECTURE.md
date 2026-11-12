@@ -74,6 +74,10 @@ typedef struct {
     void *settings;
     // How thcrap patches apply to the game, or nullptr.
     const PATCH_GAME *patch_game;
+    // The files that the data folder must hold, checked before the
+    // window opens.
+    const char *const *data_files;
+    int32_t data_file_count;
     RESULT (*init)(void);
     // One 60 Hz step: advance the game and draw it.
     bool (*tick)(const void *input);
