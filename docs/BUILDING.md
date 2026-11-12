@@ -111,8 +111,9 @@ othpatch. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
 properties, the AppImage's desktop entry and the macOS bundle's
 Info.plist. `--help` prints the version too. The icons are rendered
-from `tools/packaging/<game>.svg` by `tools/packaging/make_icons` and
-committed, so the build needs no converter.
+from `tools/packaging/<game>.png`, a square image of at least 1024
+pixels, by `tools/packaging/make_icons` and committed, so the build
+needs no converter.
 
 Each program, a game or othpatch, has its own version in
 `src/<program>/version.txt`: the version of its current or next

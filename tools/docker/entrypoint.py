@@ -160,7 +160,7 @@ def package_linux(
         (app_dir / f"{game}.desktop").write_text(
             desktop.rstrip("\n") + f"\nX-AppImage-Version={version}\n"
         )
-        shutil.copy2(PACKAGING_DIR / f"{game}.svg", app_dir)
+        shutil.copy2(PACKAGING_DIR / f"{game}.png", app_dir)
         (app_dir / "AppRun").symlink_to(f"usr/bin/{executable_name(game)}")
 
         subprocess.check_call(
