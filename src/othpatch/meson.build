@@ -57,4 +57,13 @@ othpatch_entry = [
   files(host_machine.system() == 'windows' ? 'backend_main_windows.c' : 'backend_main_posix.c'),
   othpatch_version,
 ]
+if host_machine.system() == 'windows'
+  othpatch_entry += import('windows').compile_resources(
+    'othpatch.rc',
+    args: ['--include-dir', meson.current_build_dir(),
+           '--include-dir', meson.project_source_root() / 'tools/packaging/othpatch'],
+    depends: othpatch_version,
+    depend_files: files('../../tools/packaging/othpatch/icon.ico'),
+  )
+endif
 othpatch_version_include = '-I' + meson.current_build_dir()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Render a game's icon into the Windows .ico and the macOS .icns.
+"""Render a program's icon into the Windows .ico and the macOS .icns.
 
-The source is <game>/icon.png beside this script, a square image of at
+The source is <program>/icon.png beside this script, a square image of at
 least 1024x1024 pixels with transparency. The icons, icon.ico and
 icon.icns, are committed beside it, so builds need no converter. Run
 this again after changing the PNG. Needs Pillow.
@@ -23,21 +23,21 @@ def render(source: Image.Image, size: int) -> Image.Image:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("game", help="such as th06")
-    game = parser.parse_args().game
-    game_dir = PACKAGING_DIR / game
-    source = Image.open(game_dir / "icon.png").convert("RGBA")
+    parser.add_argument("program", help="such as th06 or othpatch")
+    program = parser.parse_args().program
+    program_dir = PACKAGING_DIR / program
+    source = Image.open(program_dir / "icon.png").convert("RGBA")
     if source.width != source.height or source.width < max(ICNS_SIZES):
-        raise SystemExit(f"{game}/icon.png must be square and at least {max(ICNS_SIZES)} pixels wide")
+        raise SystemExit(f"{program}/icon.png must be square and at least {max(ICNS_SIZES)} pixels wide")
     largest = render(source, max(ICNS_SIZES))
     images = {size: render(source, size) for size in ICO_SIZES}
     images[ICO_SIZES[-1]].save(
-        game_dir / "icon.ico",
+        program_dir / "icon.ico",
         sizes=[(size, size) for size in ICO_SIZES],
         append_images=[images[size] for size in ICO_SIZES[:-1]],
     )
-    largest.save(game_dir / "icon.icns")
-    print(f"Wrote {game}/icon.ico and {game}/icon.icns")
+    largest.save(program_dir / "icon.icns")
+    print(f"Wrote {program}/icon.ico and {program}/icon.icns")
 
 
 if __name__ == "__main__":

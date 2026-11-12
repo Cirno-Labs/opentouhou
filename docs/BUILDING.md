@@ -100,8 +100,8 @@ signature. A development version holds a `-` instead of the `+`, as
 
 Every package contains the game's executable, othpatch and a readme
 with the credits. The files that one game's packages take, its readme,
-icons and desktop entry, are in `tools/packaging/<game>/`. The othpatch is the version that
-`src/<game>/othpatch.txt` names, downloaded as the release index gives
+icons and desktop entry, are in `tools/packaging/<game>/`. The
+othpatch is the version that `src/<game>/othpatch.txt` names, downloaded as the release index gives
 it and checked against the SHA-256 digest in the index. The index is
 the one of the build option `releases_url`, or the one that the
 environment variable `RELEASE_INDEX_URL` names, so packaging needs the
@@ -111,8 +111,9 @@ instead, and packaging says so. A release build always ships a released
 othpatch. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
 properties, the AppImage's desktop entry and the macOS bundle's
-Info.plist. `--help` prints the version too. The icons are rendered
-from `tools/packaging/<game>/icon.png`, a square image of at least 1024
+Info.plist. `othpatch.exe` carries the icon and version of othpatch.
+`--help` prints the version too. The icons are rendered from
+`tools/packaging/<program>/icon.png`, a square image of at least 1024
 pixels, by `tools/packaging/make_icons` and committed, so the build
 needs no converter.
 
