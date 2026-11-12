@@ -6,6 +6,7 @@ foreach part : [
   'crc32',
   'hash_map',
   'log',
+  'log_fatal_handler',
   'memory',
   'result',
   'sha1',
