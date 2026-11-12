@@ -4,12 +4,14 @@ import os
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 
 from shared.versioning import (
     PLATFORM_NAMES,
+    RELEASE_ENV,
     REPO_DIR,
     othpatch_asset_name,
     othpatch_pin_path,
@@ -54,21 +56,39 @@ def read_url(url: str, what: str) -> bytes:
         ) from None
 
 
+class IndexUnavailable(RuntimeError):
+    """Reports that the release index cannot be reached at all, as
+    opposed to an index that is reached and is wrong."""
+
+
 def read_index(url: str) -> dict:
     """Return the release index at url. An index that does not exist yet
-    (HTTP 404) has no releases."""
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    (HTTP 404) has no releases.
+
+    Raises IndexUnavailable when the host of url ends in .invalid, as
+    the default of the build option releases_url does, or when the
+    request fails. Raises RuntimeError when the index is not valid.
+    """
+    host = urllib.parse.urlsplit(url).hostname or ""
+    if host.endswith(".invalid"):
+        raise IndexUnavailable(f"The release index at {url} is a placeholder")
     try:
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(request) as response:
             data = response.read()
     except urllib.error.HTTPError as error:
         if error.code == 404:
             return {"format": 1, "programs": {}}
-        raise RuntimeError(f"Cannot read the release index at {url}: {error}") from None
+        raise IndexUnavailable(
+            f"Cannot read the release index at {url}: {error}"
+        ) from None
     except urllib.error.URLError as error:
-        raise RuntimeError(
-            f"Cannot read the release index at {url}: {error.reason}."
-            " Packaging reads the index and needs the network."
+        raise IndexUnavailable(
+            f"Cannot read the release index at {url}: {error.reason}"
+        ) from None
+    except (ValueError, OSError) as error:
+        raise IndexUnavailable(
+            f"Cannot read the release index at {url}: {error}"
         ) from None
     try:
         index = json.loads(data)
@@ -87,8 +107,9 @@ def fetch_othpatch(
     index has no othpatch of that version.
 
     The file is checked against the SHA-256 digest that the index gives.
-    Raises RuntimeError with a message for a person when the index cannot
-    be read, the file is missing or the digest is wrong.
+    Raises IndexUnavailable when the index cannot be reached, and
+    RuntimeError with a message for a person when the index is not
+    valid, the file is missing or the digest is wrong.
     """
     url = releases_url(repo_dir)
     index = read_index(url)
@@ -131,22 +152,33 @@ def pinned_othpatch(
     """Return the path of the othpatch that a game's packages ship.
 
     It is the release of the version in src/<game>/othpatch.txt, from
-    fetch_othpatch. When the index has no such release, it is the
-    othpatch built from the same commit, which build builds and returns,
-    so that packaging works before the first othpatch release. A release
-    build (OPENTOUHOU_RELEASE=1) ships released othpatch only. Prints
-    which othpatch the packages carry, and exits with the message of a
-    failure.
+    fetch_othpatch. When the index has no such release, or outside a
+    release build cannot be reached, it is the othpatch built from the
+    same commit, which build builds and returns. So packaging works
+    before the first othpatch release and without the network. A
+    release build (OPENTOUHOU_RELEASE=1) ships released othpatch only.
+    Prints which othpatch the packages carry, and exits with the
+    message of a failure.
     """
+    release = bool(os.environ.get(RELEASE_ENV))
     try:
         version = read_version(othpatch_pin_path(game, repo_dir))
         path = fetch_othpatch(version, platform, repo_dir)
+    except IndexUnavailable as error:
+        if release:
+            sys.exit(f"{error}. A release build needs the index.")
+        path = build()
+        print(
+            f"Warning: {error}, so the {game} packages carry the othpatch"
+            " of this commit."
+        )
+        return path
     except (RuntimeError, ValueError) as error:
         sys.exit(str(error))
     if path is not None:
         print(f"The {game} packages carry othpatch {version} from its release.")
         return path
-    if os.environ.get("OPENTOUHOU_RELEASE"):
+    if release:
         sys.exit(
             f"The release index at {releases_url(repo_dir)} has no othpatch"
             f" {version}. A release ships a released othpatch: publish it"

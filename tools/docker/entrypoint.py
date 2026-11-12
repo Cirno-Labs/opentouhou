@@ -3,8 +3,9 @@
 
 package writes the game packages into build/packages/, each with the
 othpatch that src/<game>/othpatch.txt names, downloaded as the release
-index gives it. Without that release, the packages carry the othpatch
-in build/<platform>/othpatch/<target>/, which the othpatch image built
+index gives it. Without that release, or outside a release build
+without the index, the packages carry the othpatch in
+build/<platform>/othpatch/<target>/, which the othpatch image built
 from the same commit before. package-othpatch writes the executable of
 othpatch there, as its release names it.
 

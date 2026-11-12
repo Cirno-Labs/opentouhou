@@ -55,9 +55,11 @@ class PinnedOthpatchTest(unittest.TestCase):
             ]
         }
 
-    def pinned(self, release: bool = False) -> tuple[Path, str]:
+    def pinned(
+        self, release: bool = False, url: str | None = None
+    ) -> tuple[Path, str]:
         env = {
-            "RELEASE_INDEX_URL": (self.root / "releases.json").as_uri(),
+            "RELEASE_INDEX_URL": url or (self.root / "releases.json").as_uri(),
             "OPENTOUHOU_RELEASE": "1" if release else "",
         }
         output = io.StringIO()
@@ -84,6 +86,41 @@ class PinnedOthpatchTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as raised:
             self.pinned(release=True)
         self.assertIn("has no othpatch 0.1.0", str(raised.exception.code))
+        self.assertEqual(self.builds, 0)
+
+    def test_placeholder_index_takes_the_build_of_the_commit(self) -> None:
+        with mock.patch("urllib.request.urlopen") as urlopen:
+            path, output = self.pinned(url="https://opentouhou.invalid/releases.json")
+        urlopen.assert_not_called()
+        self.assertEqual(path, self.built)
+        self.assertEqual(self.builds, 1)
+        self.assertEqual(len(output.splitlines()), 1)
+        self.assertIn("Warning", output)
+        self.assertIn("othpatch of this commit", output)
+
+    def test_unreachable_index_takes_the_build_of_the_commit(self) -> None:
+        path, output = self.pinned()
+        self.assertEqual(path, self.built)
+        self.assertEqual(self.builds, 1)
+        self.assertIn("Warning: Cannot read the release index", output)
+
+    def test_index_without_a_host_takes_the_build_of_the_commit(self) -> None:
+        path, output = self.pinned(url="/releases.json")
+        self.assertEqual(path, self.built)
+        self.assertIn("Warning", output)
+
+    def test_release_build_needs_the_index(self) -> None:
+        for url in ["https://opentouhou.invalid/releases.json", None]:
+            with self.subTest(url=url), self.assertRaises(SystemExit) as raised:
+                self.pinned(release=True, url=url)
+            self.assertIn("needs the index", str(raised.exception.code))
+        self.assertEqual(self.builds, 0)
+
+    def test_invalid_index_fails(self) -> None:
+        (self.root / "releases.json").write_text("[]")
+        with self.assertRaises(SystemExit) as raised:
+            self.pinned()
+        self.assertIn("is not a release index", str(raised.exception.code))
         self.assertEqual(self.builds, 0)
 
     def test_wrong_digest_fails(self) -> None:
