@@ -3,9 +3,19 @@
 #include "test.h"
 
 #include <SDL3/SDL.h>
+#include <string.h>
 
-// SDL reads the locale from these variables on Linux, the platform that runs
-// the tests.
+TEST(preferred_is_well_formed)
+{
+    const LOCALE locale = Locale_GetPreferred();
+    const size_t language = strlen(locale.language);
+    CHECK(language == 0 || language == 2 || language == 3);
+    CHECK(language != 0 || locale.country[0] == '\0');
+}
+
+// SDL reads the locale from these variables on Linux only. macOS and Windows
+// ask the system, so the tests below cannot choose the locale there.
+#ifdef __linux__
 static void M_SetLocale(const char *const lang)
 {
     SDL_Environment *const environment = SDL_GetEnvironment();
@@ -45,3 +55,4 @@ TEST(preferred_of_a_language_name_is_unknown)
     const LOCALE locale = Locale_GetPreferred();
     CHECK_EQ_STR(locale.language, "");
 }
+#endif

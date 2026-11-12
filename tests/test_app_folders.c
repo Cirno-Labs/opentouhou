@@ -22,10 +22,15 @@ static bool M_IsDir(const char *const path)
     return SDL_GetPathInfo(path, &info) && info.type == SDL_PATHTYPE_DIRECTORY;
 }
 
+// macOS keeps the platform folders in ~/Library/Application Support and
+// ignores XDG_DATA_HOME, so the tests of the platform folders would write
+// there.
+#ifndef __APPLE__
 static char *M_PlatformDir(const char *const name)
 {
     return Str_Format("%s/opentouhou/%s/", getenv("XDG_DATA_HOME"), name);
 }
+#endif
 
 // Finds the folders for a program in dir, with portable.txt there when
 // portable is set and with the --user-dir argument user_dir.
@@ -56,6 +61,7 @@ static void M_CheckPatchesDir(
     Mem_Free(dir);
 }
 
+#ifndef __APPLE__
 TEST(default_mode_uses_the_platform_folders)
 {
     char *const dir = TestDir_Prepare("default");
@@ -76,6 +82,7 @@ TEST(default_mode_uses_the_platform_folders)
     Mem_Free(program_dir);
     Mem_Free(dir);
 }
+#endif
 
 TEST(portable_mode_keeps_everything_in_new_program_subfolders)
 {
@@ -97,6 +104,7 @@ TEST(portable_mode_keeps_everything_in_new_program_subfolders)
     Mem_Free(dir);
 }
 
+#ifndef __APPLE__
 TEST(user_dir_moves_only_the_user_folder)
 {
     char *const dir = TestDir_Prepare("user_dir");
@@ -115,6 +123,7 @@ TEST(user_dir_moves_only_the_user_folder)
     Mem_Free(user_arg);
     Mem_Free(dir);
 }
+#endif
 
 TEST(user_dir_wins_over_portable_mode_but_keeps_its_patches_folder)
 {
