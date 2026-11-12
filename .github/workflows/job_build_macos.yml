@@ -11,6 +11,10 @@ on:
         type: boolean
         description: "Build a release, whose version has no -dev suffix"
         default: false
+      packages:
+        type: string
+        description: "What to package: games, othpatch or all"
+        default: all
 
 jobs:
   build:
@@ -50,11 +54,19 @@ jobs:
           GAME_REPOSITORY: ${{ github.repository }}
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
           GH_TOKEN: ${{ github.token }}
-        run: tools/mac/build package --target ${{ inputs.target }}
+          PACKAGES: ${{ inputs.packages }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          case "$PACKAGES" in
+            games|all) tools/mac/build package --target $TARGET ;;
+          esac
+          case "$PACKAGES" in
+            othpatch|all) tools/mac/build package-othpatch --target $TARGET ;;
+          esac
 
       - name: Upload the packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: packages-mac-${{ inputs.target }}
+          name: packages-${{ inputs.packages }}-mac-${{ inputs.target }}
           path: build/packages/
           compression-level: 0

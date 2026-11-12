@@ -1,47 +1,61 @@
 #!/usr/bin/env python3
 """Write the description of a GitHub release as Markdown.
 
-The description starts with a table of the downloads: one row per game,
-one column per platform, each cell linking to the package of that game
-and platform among the files in --packages. The changes follow: for a
-game's release, that version's section of the game's changelog; for the
-development snapshot, each game's unreleased changes and the commit. The
-games default to those with a changelog and packages.
+The description starts with a table of the downloads: one row per
+program, one column per platform, each cell linking to the files of
+that program and platform among the files in --packages. The changes
+follow: for the release of one program, that version's section of its
+changelog; for the development snapshot, each program's unreleased
+changes and the commit. The snapshot covers every program with a
+changelog and files in --packages.
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-from shared.changelog import changelog_path, games_with_changelogs, section
-from shared.versioning import executable_name
+from shared.changelog import changelog_path, section
+from shared.versioning import (
+    executable_name,
+    games,
+    othpatch_pin_path,
+    programs,
+    read_version,
+)
 
-PLATFORMS = [
-    ("Linux", "-Linux.zip"),
-    ("Windows", "-Windows.zip"),
-    ("macOS", "-macOS.zip"),
-]
+PLATFORMS = ["Linux", "Windows", "macOS"]
 
 
-def downloads_table(games: list[str], packages: Path, url: str) -> str:
+def file_prefix(program: str) -> str:
+    """Return the start of the names of a program's files, such as
+    oth06- or othpatch-."""
+    return "othpatch-" if program == "othpatch" else f"{executable_name(program)}-"
+
+
+def file_suffix(program: str, platform: str) -> str:
+    """Return the end of the name of a program's file for a platform, such
+    as -Linux.zip or -Windows.exe."""
+    if program != "othpatch":
+        return f"-{platform}.zip"
+    return f"-{platform}.exe" if platform == "Windows" else f"-{platform}"
+
+
+def downloads_table(names: list[str], files: list[str], url: str) -> str:
     rows = [
-        "| Game | " + " | ".join(name for name, _ in PLATFORMS) + " |",
+        "| Program | " + " | ".join(PLATFORMS) + " |",
         "|---" * (len(PLATFORMS) + 1) + "|",
     ]
-    files = sorted(path.name for path in packages.iterdir() if path.is_file())
-    for game in games:
+    for program in names:
         cells = []
-        for _, suffix in PLATFORMS:
+        for platform in PLATFORMS:
             matches = [
                 name
                 for name in files
-                if name.startswith(executable_name(game) + "-")
-                and name.endswith(suffix)
+                if name.startswith(file_prefix(program))
+                and name.endswith(file_suffix(program, platform))
             ]
-            cells.append(
-                " ".join(f"[{name}]({url}/{name})" for name in matches) or "–"
-            )
-        rows.append(f"| {game} | " + " | ".join(cells) + " |")
+            cells.append(" ".join(f"[{name}]({url}/{name})" for name in matches) or "–")
+        rows.append(f"| {program} | " + " | ".join(cells) + " |")
     return "\n".join(rows)
 
 
@@ -65,35 +79,34 @@ def main() -> None:
     parser.add_argument("--repository", required=True, help="such as rr-/opentouhou")
     parser.add_argument("--tag", required=True, help="such as th06-v1.2.0 or latest")
     parser.add_argument("--packages", type=Path, required=True)
-    parser.add_argument(
-        "--games",
-        nargs="+",
-        help="the games, such as th06; by default every game with a changelog"
-        " and packages",
-    )
-    parser.add_argument("--version", help="the game's version, for a release")
+    parser.add_argument("--program", help="the released program, such as th06")
+    parser.add_argument("--version", help="the released version, such as 1.2.0")
     parser.add_argument("--commit", help="the commit, for the snapshot")
     args = parser.parse_args()
 
-    files = [path.name for path in args.packages.iterdir() if path.is_file()]
-    games = args.games or [
-        game
-        for game in games_with_changelogs()
-        if any(name.startswith(executable_name(game) + "-") for name in files)
-    ]
+    files = sorted(path.name for path in args.packages.iterdir() if path.is_file())
     url = f"https://github.com/{args.repository}/releases/download/{args.tag}"
-    parts = [downloads_table(games, args.packages, url)]
-    if args.version is not None:
-        game = games[0]
-        body = section(changelog_path(game).read_text(), args.version)
+    if args.program is not None:
+        body = section(changelog_path(args.program).read_text(), args.version)
         if body is None:
-            sys.exit(f"The changelog of {game} has no section {args.version}")
-        parts.append(f"## Changes\n\n{unwrap(body)}")
+            sys.exit(f"The changelog of {args.program} has no section {args.version}")
+        parts = [downloads_table([args.program], files, url)]
+        if args.program in games():
+            othpatch = read_version(othpatch_pin_path(args.program))
+            parts.append(f"The packages include othpatch {othpatch}.")
+        parts.append(f"## Changes\n\n{unwrap(body or 'None.')}")
     else:
-        for game in games:
-            body = section(changelog_path(game).read_text(), "Unreleased")
+        names = [
+            program
+            for program in programs()
+            if changelog_path(program).exists()
+            and any(name.startswith(file_prefix(program)) for name in files)
+        ]
+        parts = [downloads_table(names, files, url)]
+        for program in names:
+            body = section(changelog_path(program).read_text(), "Unreleased")
             parts.append(
-                f"## {game}: unreleased changes\n\n{unwrap(body or 'None yet.')}"
+                f"## {program}: unreleased changes\n\n{unwrap(body or 'None yet.')}"
             )
         if args.commit is not None:
             parts.append(f"Built from {args.commit} on develop.")

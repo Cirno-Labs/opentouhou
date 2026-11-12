@@ -119,23 +119,38 @@ core has no version: a change in core goes into the changelog of each
 game it affects. A check (`tools/lint/check_versions`, run by prek)
 makes sure that each changelog has a section for the version in
 `version.txt`, or unreleased changes when that version has no release
-yet. To release th06:
+yet, and that each `othpatch.txt` holds a version.
+
+A release has two steps: a commit that sets the versions, and a manual
+run of the "Publish the releases" workflow. To release th06 1.2.0:
 
 ```sh
 tools/bump th06 1.2.0 --commit
-git tag th06-v1.2.0
-git push origin HEAD && git push origin th06-v1.2.0
+git push origin HEAD
+gh workflow run release.yml --ref develop
 ```
 
 `tools/bump` writes the version into `version.txt` and names th06's
-unreleased section after the version and the date. Pushing the tag runs
-the "Publish a release" workflow: it builds the release packages for
-Linux, Windows and macOS and publishes th06's as a GitHub release. Its
-description, written by `tools/release_notes`, starts with a table of
-the downloads per game and platform, then the version's changelog
-section. Every push to `develop` replaces the `latest` development
-snapshot of every game instead, with each game's unreleased changes,
-when the repository variable `PRERELEASE_ENABLE` is `true`.
+unreleased section after the version and the date. To release othpatch
+and make every game ship it, each game in a new patch release:
+
+```sh
+tools/bump othpatch 0.2.0 --with-games --commit
+```
+
+The workflow publishes every program whose `version.txt` names a
+version without a release, from the commit it runs on. A version
+without a changelog section waits until `tools/bump` writes it. It creates the
+tag `<program>-vX.Y.Z` itself. It builds and publishes othpatch first,
+then the games, whose packages download the othpatch that they ship
+from its release. Each description, written by `tools/release_notes`,
+starts with a table of the downloads per platform, then the version's
+changelog section. A run without unreleased versions does nothing.
+
+Every push to `develop` replaces the `latest` development snapshot
+instead, when the repository variable `PRERELEASE_ENABLE` is `true`. It
+holds the game packages with the othpatch that they ship, the othpatch
+of the commit, and each program's unreleased changes.
 
 ## Capturing replay test cases
 

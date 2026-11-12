@@ -1,44 +1,151 @@
-name: Publish a release
+name: Publish the releases
 
+# Publishes each program whose src/<program>/version.txt names a
+# version without a release yet: othpatch first, then the games, whose
+# packages download the othpatch that they ship from its release.
 on:
-  push:
-    tags:
-      - "*-v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
   packages: read
 
+concurrency:
+  group: release
+
 jobs:
-  build_linux:
-    name: Linux
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      othpatch: ${{ steps.plan.outputs.othpatch }}
+      games: ${{ steps.plan.outputs.games }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Find the versions without a release
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tools/release_plan --repository "${{ github.repository }}" | tee -a "$GITHUB_OUTPUT"
+
+  othpatch_linux:
+    name: othpatch, Linux
+    needs: plan
+    if: needs.plan.outputs.othpatch != ''
     uses: ./.github/workflows/job_build.yml
     with:
       platform: linux
       target: release
       release: true
+      packages: othpatch
 
-  build_win:
-    name: Windows
+  othpatch_win:
+    name: othpatch, Windows
+    needs: plan
+    if: needs.plan.outputs.othpatch != ''
     uses: ./.github/workflows/job_build.yml
     with:
       platform: win
       target: release
       release: true
+      packages: othpatch
 
-  build_mac:
-    name: macOS
+  othpatch_mac:
+    name: othpatch, macOS
+    needs: plan
+    if: needs.plan.outputs.othpatch != ''
     uses: ./.github/workflows/job_build_macos.yml
     with:
       target: release
       release: true
+      packages: othpatch
 
-  publish:
-    name: Publish
+  othpatch:
+    name: Publish othpatch
     needs:
-      - build_linux
-      - build_win
-      - build_mac
+      - plan
+      - othpatch_linux
+      - othpatch_win
+      - othpatch_mac
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download the executables
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: packages/
+          pattern: packages-othpatch-*
+          merge-multiple: true
+
+      # The release starts as a draft and is published only after every
+      # file is uploaded, so that a failed upload leaves no release that
+      # the plan of the next run counts.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.plan.outputs.othpatch }}
+        run: |
+          tag="othpatch-v$VERSION"
+          tools/release_notes --repository "$GH_REPO" --tag "$tag" \
+            --packages packages --program othpatch --version "$VERSION" \
+            > notes.md
+          gh release create "$tag" --draft --target "$GITHUB_SHA" \
+            --title "othpatch $VERSION" --notes-file notes.md packages/*
+          gh release edit "$tag" --draft=false
+
+  # A game job runs when the othpatch jobs succeeded or were skipped.
+  games_linux:
+    name: Games, Linux
+    needs:
+      - plan
+      - othpatch
+    if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
+    uses: ./.github/workflows/job_build.yml
+    with:
+      platform: linux
+      target: release
+      release: true
+      packages: games
+
+  games_win:
+    name: Games, Windows
+    needs:
+      - plan
+      - othpatch
+    if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
+    uses: ./.github/workflows/job_build.yml
+    with:
+      platform: win
+      target: release
+      release: true
+      packages: games
+
+  games_mac:
+    name: Games, macOS
+    needs:
+      - plan
+      - othpatch
+    if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
+    uses: ./.github/workflows/job_build_macos.yml
+    with:
+      target: release
+      release: true
+      packages: games
+
+  games:
+    name: Publish the games
+    needs:
+      - plan
+      - games_linux
+      - games_win
+      - games_mac
+    if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -48,28 +155,26 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: packages/
+          pattern: packages-games-*
           merge-multiple: true
 
-      # The tag names the game and its version, as th06-v1.2.0. The
-      # notes are that version's section of the game's changelog, which
-      # tools/bump wrote. Only the tagged game's packages are attached.
-      # They are named after its executable: the game id with an o
-      # before it, as oth06.
-      - name: Create the release
+      # Each game's packages are named after its executable: the game id
+      # with an o before it, as oth06.
+      - name: Create the releases
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          GAMES: ${{ needs.plan.outputs.games }}
         run: |
-          game="${TAG%-v*}"
-          version="${TAG##*-v}"
-          mkdir game-packages
-          cp packages/o"$game"-* game-packages/
-          tools/release_notes --repository "$GH_REPO" --tag "$TAG" \
-            --packages game-packages --games "$game" --version "$version" \
-            > notes.md
-          gh release create "$TAG" \
-            --title "$game $version" \
-            --notes-file notes.md \
-            --verify-tag \
-            game-packages/*
+          for game in $GAMES; do
+            version="$(cat "src/$game/version.txt")"
+            tag="$game-v$version"
+            mkdir "release-$game"
+            cp packages/o"$game-$version"-* "release-$game/"
+            tools/release_notes --repository "$GH_REPO" --tag "$tag" \
+              --packages "release-$game" --program "$game" \
+              --version "$version" > notes.md
+            gh release create "$tag" --draft --target "$GITHUB_SHA" \
+              --title "$game $version" --notes-file notes.md "release-$game"/*
+            gh release edit "$tag" --draft=false
+          done

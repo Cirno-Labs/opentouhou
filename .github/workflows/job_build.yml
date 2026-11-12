@@ -15,6 +15,10 @@ on:
         type: boolean
         description: "Build a release, whose version has no -dev suffix"
         default: false
+      packages:
+        type: string
+        description: "What to package: games, othpatch or all"
+        default: all
 
 jobs:
   build:
@@ -80,7 +84,16 @@ jobs:
           GAME_REPOSITORY: ${{ github.repository }}
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
           GH_TOKEN: ${{ github.token }}
-        run: just package-${{ inputs.platform }} ${{ inputs.target }}
+          PACKAGES: ${{ inputs.packages }}
+          PLATFORM: ${{ inputs.platform }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          case "$PACKAGES" in
+            games|all) just package-$PLATFORM $TARGET ;;
+          esac
+          case "$PACKAGES" in
+            othpatch|all) just package-othpatch-$PLATFORM $TARGET ;;
+          esac
 
       - name: Run the unit tests
         if: ${{ inputs.platform == 'linux' }}
@@ -111,6 +124,6 @@ jobs:
       - name: Upload the packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: packages-${{ inputs.platform }}-${{ inputs.target }}
+          name: packages-${{ inputs.packages }}-${{ inputs.platform }}-${{ inputs.target }}
           path: build/packages/
           compression-level: 0
