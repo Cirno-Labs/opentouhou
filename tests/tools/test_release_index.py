@@ -221,6 +221,40 @@ class ReleaseIndexTest(unittest.TestCase):
         self.assertEqual(self.run_tool("has", "othpatch", "0.1.1").returncode, 0)
         self.assertEqual(self.run_tool("has", "othpatch", "0.1.2").returncode, 1)
 
+    def test_reset_deletes_the_releases_and_keeps_the_snapshot(self) -> None:
+        self.package("othpatch-0.1.1-Linux")
+        self.assertEqual(self.publish("othpatch", "0.1.1").returncode, 0)
+        self.package("oth06-0.1.1-Linux.zip")
+        self.assertEqual(self.publish("th06", "0.1.1").returncode, 0)
+        (self.root / "objects/th06/0.1.0").mkdir(parents=True)
+        (self.root / "objects/th06/0.1.0/oth06-0.1.0-Linux.zip").write_text("")
+        shutil.rmtree(self.root / "packages")
+        (self.root / "packages").mkdir()
+        self.package("oth06-0.1.2-dev-abcdef0-Linux.zip")
+        result = self.run_tool(
+            "snapshot", "--packages", str(self.root / "packages"), "--commit", "abcdef0123"
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        snapshot = self.index()["snapshot"]
+
+        result = self.run_tool("reset")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.index(), {"format": 1, "programs": {}, "snapshot": snapshot})
+        objects = self.root / "objects"
+        self.assertFalse(any(path.is_file() for path in (objects / "othpatch").rglob("*")))
+        self.assertFalse(any(path.is_file() for path in (objects / "th06").rglob("*")))
+        self.assertTrue((objects / "snapshot/oth06-0.1.2-dev-abcdef0-Linux.zip").exists())
+        log = (self.root / "log").read_text().splitlines()
+        puts = [i for i, line in enumerate(log) if line.startswith("s3 cp")]
+        index_put = max(i for i in puts if "releases.json" in log[i])
+        deletes = [i for i, line in enumerate(log) if line.startswith("s3 rm")]
+        self.assertLess(index_put, min(deletes))
+
+    def test_reset_of_an_empty_bucket_writes_an_empty_index(self) -> None:
+        result = self.run_tool("reset")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.index(), {"format": 1, "programs": {}})
+
     def test_snapshot_replaces_the_older_snapshot(self) -> None:
         self.package("othpatch-0.1.1-Linux")
         self.publish("othpatch", "0.1.1")

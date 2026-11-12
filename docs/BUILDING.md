@@ -182,6 +182,10 @@ the repository variable `PRERELEASE_ENABLE` is `true`. It holds the
 game packages with the othpatch that they ship, the othpatch of the
 commit, and each program's unreleased changes.
 
+The manual "Delete the releases" workflow deletes every release from
+the bucket and the index and keeps the snapshot. It asks for the word
+`DELETE`. The tags stay.
+
 ## Capturing replay test cases
 
 ```sh

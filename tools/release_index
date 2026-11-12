@@ -14,6 +14,8 @@
                   uploads every program's files in DIR to snapshot/,
                   replaces the snapshot of the index, then deletes the
                   older snapshot files
+  reset           writes an index without releases that keeps the
+                  snapshot, then deletes every file under <program>/
 
 publish takes the date and the changes from the program's changelog
 section, and for a game the othpatch version from --othpatch or else
@@ -153,6 +155,19 @@ def snapshot(args: argparse.Namespace, work: Path) -> None:
     print(f"Published the snapshot of {args.commit}")
 
 
+def reset(work: Path) -> None:
+    index = fetch_index(work / INDEX_KEY)
+    names = sorted(set(programs()) | set(index["programs"]))
+    cleared = index_file.empty()
+    if "snapshot" in index:
+        cleared["snapshot"] = index["snapshot"]
+    put_index(cleared, work / INDEX_KEY)
+    for program in names:
+        for key in r2.keys(f"{program}/"):
+            r2.delete(key)
+    print(f"Deleted the releases of {', '.join(names)}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -168,6 +183,7 @@ def main() -> None:
     pub.add_argument("--version", required=True)
     pub.add_argument("--packages", type=Path, required=True)
     pub.add_argument("--othpatch", help="the othpatch version of a game's packages")
+    commands.add_parser("reset")
     snap = commands.add_parser("snapshot")
     snap.add_argument("--packages", type=Path, required=True)
     snap.add_argument("--commit", required=True)
@@ -183,6 +199,8 @@ def main() -> None:
                 sys.exit(0 if index_file.find(index, args.program, args.version) else 1)
             elif args.command == "publish":
                 publish(args, work)
+            elif args.command == "reset":
+                reset(work)
             else:
                 snapshot(args, work)
     except (RuntimeError, ValueError) as error:
