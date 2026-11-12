@@ -11,29 +11,33 @@ mod replay
 default:
     @just --list
 
-# Build every game for Linux (debug or release).
+# Build the games in the media image and othpatch in the othpatch image.
 [group('build')]
-build-linux target="debug": (image-linux "0") (_docker_run "linux" "build" "--target" target)
+_build platform image target: (_docker_build platform image) (_docker_run platform image "build" "--target" target)
 
-# Build every game for Windows (debug or release).
+# Build every game and othpatch for Linux (debug or release).
 [group('build')]
-build-win target="debug": (image-win "0") (_docker_run "win" "build" "--target" target)
+build-linux target="debug": (_build "linux" "media" target) (_build "linux" "othpatch" target)
+
+# Build every game and othpatch for Windows (debug or release).
+[group('build')]
+build-win target="debug": (_build "win" "media" target) (_build "win" "othpatch" target)
 
 # Package every game for Linux into build/packages/.
 [group('build')]
-package-linux target="debug": (build-linux target) (_docker_run "linux" "package" "--target" target)
+package-linux target="debug": (_build "linux" "media" target) (_docker_run "linux" "media" "package" "--target" target)
 
 # Package every game for Windows into build/packages/.
 [group('build')]
-package-win target="debug": (build-win target) (_docker_run "win" "package" "--target" target)
+package-win target="debug": (_build "win" "media" target) (_docker_run "win" "media" "package" "--target" target)
 
 # Write othpatch for Linux into build/packages/.
 [group('build')]
-package-othpatch-linux target="debug": (build-linux target) (_docker_run "linux" "package-othpatch" "--target" target)
+package-othpatch-linux target="debug": (_build "linux" "othpatch" target) (_docker_run "linux" "othpatch" "package-othpatch" "--target" target)
 
 # Write othpatch for Windows into build/packages/.
 [group('build')]
-package-othpatch-win target="debug": (build-win target) (_docker_run "win" "package-othpatch" "--target" target)
+package-othpatch-win target="debug": (_build "win" "othpatch" target) (_docker_run "win" "othpatch" "package-othpatch" "--target" target)
 
 # Build the macOS dependencies into build/mac-deps (on a Mac).
 [group('build')]
@@ -60,9 +64,20 @@ package-othpatch-mac target="debug":
 test-mac:
     tools/mac/build test
 
-# Run the unit tests inside the Linux image.
 [group('test')]
-test: (image-linux "0") (_docker_run "linux" "test")
+_test image: (_docker_build "linux" image) (_docker_run "linux" image "test")
+
+# Run the unit tests inside the Linux images (all, games or othpatch).
+[group('test')]
+test programs="all":
+    #!/usr/bin/env sh
+    set -e
+    case "{{programs}}" in
+        all) just _test media && just _test othpatch ;;
+        games) just _test media ;;
+        othpatch) just _test othpatch ;;
+        *) echo "Unknown programs {{programs}}: all, games or othpatch" >&2; exit 1 ;;
+    esac
 
 # Run the checks on the whole tree.
 [group('test')]

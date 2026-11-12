@@ -37,14 +37,14 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      # The dependencies change only with their script or the versions that
-      # the Linux image pins, so they are built once per change.
+      # The dependencies change only with their script, the pins or the
+      # options of the Linux images, so they are built once per change.
       - name: Restore the dependencies
         id: deps
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: build/mac-deps
-          key: mac-deps-v1-${{ hashFiles('tools/mac/build_deps', 'tools/docker/linux/Dockerfile') }}
+          key: mac-deps-v2-${{ hashFiles('tools/mac/build_deps', 'tools/docker/pins', 'tools/docker/linux/*/Dockerfile') }}
 
       - name: Build the dependencies
         if: steps.deps.outputs.cache-hit != 'true'

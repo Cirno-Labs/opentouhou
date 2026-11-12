@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""Name, build and push the build images.
+
+Each platform has three images: base, and media and othpatch, which are
+built on base. The Dockerfile of an image is
+tools/docker/<platform>/<image>/Dockerfile, and its ARGs take their values
+from tools/docker/pins.
+
+    image tag <platform> <image>      print the full name and tag
+    image build <platform> <image>    use a local image, else pull it,
+                                      else build it (--force: always build)
+    image push <platform> <image>     push the image to the registry
+"""
+
+import argparse
+import datetime
+import hashlib
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parents[2]
+DOCKER_DIR = REPO_DIR / "tools/docker"
+PINS = DOCKER_DIR / "pins"
+DEFAULT_OWNER = "cirno-labs"
+PLATFORMS = ["linux", "win"]
+PARENTS = {"base": None, "media": "base", "othpatch": "base"}
+# Matches a path component of an image name, as Docker accepts it.
+NAMESPACE = re.compile(r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*")
+ARG = re.compile(r"^ARG ([A-Z0-9_]+)\s*$", re.MULTILINE)
+PARENT_ARG = "BASE_IMAGE"
+
+
+def image_prefix() -> str:
+    """Return the registry prefix of the images.
+
+    GitHub Actions names the owner of the repository that runs the
+    workflow, so a fork builds, pushes and pulls its own images. An owner
+    that is not a valid image path component gets local images without a
+    registry: they are built where they are needed and never pushed.
+    """
+    owner = (os.environ.get("GITHUB_REPOSITORY_OWNER") or DEFAULT_OWNER).lower()
+    if not NAMESPACE.fullmatch(owner):
+        return "opentouhou-"
+    return f"ghcr.io/{owner}/opentouhou-"
+
+
+def dockerfile(platform: str, image: str) -> Path:
+    return DOCKER_DIR / platform / image / "Dockerfile"
+
+
+def read_pins() -> dict[str, str]:
+    pins = {}
+    for line in PINS.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            name, value = line.split("=", 1)
+            pins[name] = value
+    return pins
+
+
+def build_args(platform: str, image: str) -> dict[str, str]:
+    """Return the ARGs of an image's Dockerfile with their values."""
+    pins = read_pins()
+    args = {}
+    for name in ARG.findall(dockerfile(platform, image).read_text()):
+        if name == PARENT_ARG:
+            args[name] = full_name(platform, PARENTS[image])
+        elif name in pins:
+            args[name] = pins[name]
+        else:
+            sys.exit(f"{dockerfile(platform, image)}: no {name} in {PINS}")
+    return args
+
+
+def image_hash(platform: str, image: str) -> str:
+    """Hash the Dockerfile and its ARGs, which include the parent's name."""
+    digest = hashlib.sha256(dockerfile(platform, image).read_bytes())
+    for name, value in sorted(build_args(platform, image).items()):
+        digest.update(f"\n{name}={value}".encode())
+    return digest.hexdigest()[:8]
+
+
+def image_date(platform: str, image: str) -> str:
+    """Return the date of the last commit that changed the image's
+    Dockerfile or one of its parents'.
+
+    Returns today's date when one of them has uncommitted changes or no
+    commit yet.
+    """
+    files = []
+    while image is not None:
+        files.append(str(dockerfile(platform, image)))
+        image = PARENTS[image]
+    status = git("status", "--porcelain", "--", *files)
+    if status:
+        return today()
+    date = git("log", "-1", "--format=%cd", "--date=format:%Y%m%d", "--", *files)
+    return date if date else today()
+
+
+def git(*args: str) -> str:
+    result = subprocess.run(
+        ["git", *args], cwd=REPO_DIR, capture_output=True, text=True, check=True
+    )
+    return result.stdout.strip()
+
+
+def today() -> str:
+    return datetime.date.today().strftime("%Y%m%d")
+
+
+def full_name(platform: str, image: str) -> str:
+    tag = f"{image_date(platform, image)}-{image_hash(platform, image)}"
+    return f"{image_prefix()}{platform}-{image}:{tag}"
+
+
+def docker(*args: str) -> bool:
+    return subprocess.run(["docker", *args], cwd=REPO_DIR).returncode == 0
+
+
+def exists(name: str) -> bool:
+    return (
+        subprocess.run(
+            ["docker", "image", "inspect", name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
+def build(platform: str, image: str, force: bool) -> None:
+    """Make the image present locally, building its parent first if needed."""
+    name = full_name(platform, image)
+    if not force:
+        if exists(name):
+            return
+        if "/" in name:
+            print(f"Docker image {name} not found, trying to pull it")
+            if docker("pull", name):
+                return
+        print(f"Cannot pull {name}, building it")
+    if PARENTS[image] is not None:
+        build(platform, PARENTS[image], force)
+    source = "https://github.com/" + os.environ.get(
+        "GITHUB_REPOSITORY", "Cirno-Labs/opentouhou"
+    )
+    command = ["build", "-f", str(dockerfile(platform, image))]
+    for arg, value in build_args(platform, image).items():
+        command += ["--build-arg", f"{arg}={value}"]
+    command += [
+        "--label",
+        f"org.opencontainers.image.source={source}",
+        "-t",
+        name,
+        str(dockerfile(platform, image).parent),
+    ]
+    if not docker(*command):
+        sys.exit(f"Cannot build {name}")
+
+
+def push(platform: str, image: str) -> None:
+    name = full_name(platform, image)
+    if "/" not in name:
+        sys.exit(f"{name} is a local image; there is no registry to push it to")
+    if not docker("push", name):
+        sys.exit(f"Cannot push {name}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("command", choices=["tag", "build", "push"])
+    parser.add_argument("platform", choices=PLATFORMS)
+    parser.add_argument("image", choices=list(PARENTS))
+    parser.add_argument("--force", action="store_true", help="always build")
+    args = parser.parse_args()
+
+    if args.command == "tag":
+        print(full_name(args.platform, args.image))
+    elif args.command == "build":
+        build(args.platform, args.image, args.force)
+    else:
+        push(args.platform, args.image)
+
+
+if __name__ == "__main__":
+    main()

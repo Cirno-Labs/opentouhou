@@ -19,8 +19,10 @@ public header describes the module itself.
   and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and WebGL 2 share one
   set of `.glsl` shaders, compiled by the driver at startup.
 - **C23**, **Meson**, one static library per layer and one executable
-  per game. Dependencies are built from source, statically, in one
-  Docker image per target. clang-format formats, prek runs the checks.
+  per game. Dependencies are built from source, statically, in Docker
+  images per target: a base image with what every program links, and
+  one image per set of programs on top of it with only the libraries of
+  that set. clang-format formats, prek runs the checks.
   [BUILDING.md](BUILDING.md) has the details.
 - Platform code lives only in a module's `backend_<platform>.c`. Meson
   picks one platform per build. Public headers never include platform

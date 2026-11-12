@@ -19,20 +19,23 @@ That is all. The compilers, Meson and the libraries live in the images.
 ## Building
 
 ```sh
-just build-linux            # all games, debug
-just build-linux release    # all games, release
+just build-linux            # all games and othpatch, debug
+just build-linux release    # all games and othpatch, release
 just build-win              # Windows executables, cross-compiled
 just build-win release
 ```
 
-The first build pulls the image for the target from the registry, or
-builds it if it cannot (this takes a while, it compiles every
-dependency). Later builds reuse it, and ccache keeps rebuilds fast.
+The games build in one image and othpatch in another (see "Docker
+images"). The first build pulls the images for the target from the
+registry, or builds them if it cannot (this takes a while, it compiles
+every dependency). Later builds reuse them, and ccache keeps rebuilds
+fast.
 
-Outputs land in `build/<platform>/<target>/`, one executable per game:
+The games land in `build/<platform>/<target>/`, one executable per game:
 `build/linux/debug/o<game>`, `build/win/release/o<game>.exe`. An
 executable's name is the game id with an `o` before it, so that it does
 not clash with the original game's executable in the same folder.
+othpatch lands in `build/<platform>/othpatch/<target>/`.
 
 ### macOS
 
@@ -46,8 +49,11 @@ just build-mac release      # build/mac-arm64/... and build/mac-x86_64/...
 just test-mac
 ```
 
-`tools/mac/build_deps` builds the libraries at the versions and with
-the options that the Linux image pins, into `build/mac-deps/`.
+`tools/mac/build_deps` builds the libraries in the sets of the Docker
+images, at the versions of `tools/docker/pins` and with the options of
+the Linux Dockerfiles, into `build/mac-deps/<arch>/<set>/`. The games
+build against the base and media sets, othpatch against the base and
+othpatch sets.
 
 `just` with no arguments lists every recipe.
 
@@ -275,35 +281,52 @@ build is never updated.
 
 ## Docker images
 
-There is one image per target platform, defined under `tools/docker/`:
+Each target platform has three images, defined under
+`tools/docker/<platform>/<image>/`:
 
-- `linux`: AlmaLinux 8, whose glibc 2.28 lets the executables run on
-  older distributions; clang; the dependencies built as static
-  libraries; appimagetool for the AppImages.
-- `win`: MinGW-w64 for x86-64, a Meson cross file, the dependencies
-  cross-compiled as static libraries. The executables link the MinGW
-  runtime statically, so they need no DLLs beyond those of Windows.
+- `base`: the compiler, Meson, Ninja, ccache, and SDL3 and zlib, which
+  every program links.
+- `media`, built on `base`: SDL3_ttf with FreeType and HarfBuzz, and
+  FFmpeg. The games, the replay runner and their tests build in it.
+- `othpatch`, built on `base`: curl, and mbedTLS on Linux. othpatch and
+  its tests build in it, so othpatch never links FFmpeg or SDL3_ttf.
 
-Each dependency is built in its own stage and installed into `/ext`,
-which the final stage collects. Each image is tagged with the
-committer date and a hash of its own Dockerfile, computed by
-`tools/docker/image_tag`, and pushed to `ghcr.io/cirno-labs/`, so CI and
-most developers pull them instead of building them. In GitHub Actions the
-prefix is the owner of the repository instead, so a fork builds and
-pulls its own images. An owner name that Docker does not accept in an
-image name, such as one that ends with a hyphen, gets local images
-instead: nothing is pushed, and CI keeps each image in the Actions
-cache under its tag, so a job builds it only after its Dockerfile
-changes. Changing one Dockerfile only retags that platform's image.
+On Linux the images are based on AlmaLinux 8, whose glibc 2.28 lets the
+executables run on older distributions, with clang; the media image
+also has appimagetool for the AppImages. On Windows they have MinGW-w64
+for x86-64 and use the Meson cross file
+`tools/docker/win/meson_cross_x86_64.txt`; the media image also has
+MinGW-w64 for i686 with SDL3 and zlib, for the capture tools. The
+dependencies are static libraries, and the Windows executables link the
+MinGW runtime statically, so they need no DLLs beyond those of Windows.
+
+`tools/docker/pins` holds the version and SHA-256 digest of every
+library and tool that the images and `tools/mac/build_deps` download.
+`tools/docker/image` gives each Dockerfile the pins that it declares as
+ARGs. Each dependency is built in its own stage, and the final stage
+collects its files into `/ext`.
+
+`tools/docker/image` also names the images. A tag is the date of the
+last commit that changed the image's Dockerfile or its parent's, and a
+hash of the Dockerfile, its pins and the parent's tag. So a change to
+the base image retags the media and othpatch images, and a change to one
+pin retags only the images that use it. The images are pushed to
+`ghcr.io/cirno-labs/`, so CI and most developers pull them instead of
+building them. In GitHub Actions the prefix is the owner of the
+repository instead, so a fork builds and pulls its own images. An owner
+name that Docker does not accept in an image name gets local images
+instead: nothing is pushed, and CI keeps each image in its own entry of
+the Actions cache under its tag, so a job builds an image only after it
+changes.
 
 ```sh
-just image-linux     # build the Linux image locally
+just image-linux     # build the three Linux images locally
 just image-win
 ```
 
-Change a Dockerfile, then rebuild and push the new image before the
-change lands, or CI will build it from scratch on every run. The "Build
-and push the Docker images" workflow pushes both images.
+Change a Dockerfile or a pin, then rebuild and push the new images
+before the change lands, or CI will build them from scratch on every
+run. The "Build and push the Docker images" workflow pushes all images.
 
 The images pin SDL3, SDL3_ttf and its FreeType and HarfBuzz libraries,
 and FFmpeg for `core/image` and `core/audio`. FFmpeg supports PNG,
@@ -327,8 +350,8 @@ meson setup build/native
 meson compile -C build/native
 ```
 
-The Dockerfiles are the reference for which versions and build options
-we use. Builds that differ from them may behave differently, and bugs
+`tools/docker/pins` and the Dockerfiles are the reference for which
+versions and build options we use. Builds that differ from them may behave differently, and bugs
 that only appear there may not be fixed.
 
 ## Code style and checks
@@ -348,8 +371,12 @@ The style and commit rules the checks enforce are in
 ## Tests
 
 ```sh
-just test           # unit tests, inside the Linux image
+just test           # unit tests, inside the Linux images
+just test othpatch  # only othpatch's tests (or games)
 ```
+
+Each image runs the tests of its programs. The tests of core/base,
+core/json and core/io run in both.
 
 Unit tests live in `tests/`. They need nothing but the source and run
 in CI. Replay comparisons use private cases and original data, so they

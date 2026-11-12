@@ -1,22 +1,26 @@
 #!/usr/bin/env bash
-# Builds the macOS dependencies for one architecture into a prefix, at the
-# versions and with the options that the Linux image pins, so that every
-# platform links the same libraries.
+# Builds the macOS dependencies for one architecture, in the sets of the
+# Linux images, at the versions of tools/docker/pins and with the options
+# of the Linux Dockerfiles, so that every platform links the same
+# libraries. Each set has its own prefix under the root: base (SDL3 and
+# zlib), media (SDL3_ttf and FFmpeg) and othpatch (mbedTLS and curl).
+# media and othpatch build against base.
 #
-#     tools/mac/build_deps <arm64|x86_64> <prefix>
+#     tools/mac/build_deps <arm64|x86_64> <root>
 set -euo pipefail
 
 arch=$1
-prefix=$2
+root=$2
 repo_dir=$(cd "$(dirname "$0")/../.." && pwd)
-dockerfile=$repo_dir/tools/docker/linux/Dockerfile
+pins=$repo_dir/tools/docker/pins
+docker_dir=$repo_dir/tools/docker/linux
 jobs=$(sysctl -n hw.ncpu)
 export MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-12.0}
 
 pin() {
     local value
-    value=$(sed -n "s/^ARG $1=//p" "$dockerfile" | head -n 1)
-    [ -n "$value" ] || { echo "No ARG $1 in $dockerfile" >&2; exit 1; }
+    value=$(sed -n "s/^$1=//p" "$pins" | head -n 1)
+    [ -n "$value" ] || { echo "No $1 in $pins" >&2; exit 1; }
     echo "$value"
 }
 
@@ -27,17 +31,25 @@ fetch() {
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-mkdir -p "$prefix"
+base=$root/base
 
-cmake_options=(
-    -DCMAKE_BUILD_TYPE=Release
-    -DCMAKE_INSTALL_PREFIX="$prefix"
-    -DCMAKE_INSTALL_LIBDIR=lib
-    -DCMAKE_PREFIX_PATH="$prefix"
-    -DCMAKE_OSX_ARCHITECTURES="$arch"
-    -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET"
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-)
+# Selects the set that the next libraries install into.
+use_set() {
+    prefix=$root/$1
+    mkdir -p "$prefix"
+    cmake_options=(
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX="$prefix"
+        -DCMAKE_INSTALL_LIBDIR=lib
+        -DCMAKE_PREFIX_PATH="$prefix;$base"
+        -DCMAKE_OSX_ARCHITECTURES="$arch"
+        -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET"
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    )
+    pkg_config_libdir=$prefix/lib/pkgconfig:$base/lib/pkgconfig
+}
+
+use_set base
 
 zlib_version=$(pin ZLIB_VERSION)
 fetch "https://www.zlib.net/fossils/zlib-$zlib_version.tar.gz" \
@@ -63,6 +75,7 @@ cmake -S "$work/SDL3-$sdl_version" -B "$work/sdl-build" "${cmake_options[@]}" \
 cmake --build "$work/sdl-build" -j"$jobs"
 cmake --install "$work/sdl-build"
 
+use_set media
 ttf_version=$(pin SDL_TTF_VERSION)
 ttf_dir=$work/SDL3_ttf-$ttf_version
 fetch "https://github.com/libsdl-org/SDL_ttf/releases/download/release-$ttf_version/SDL3_ttf-$ttf_version.tar.gz" \
@@ -84,14 +97,14 @@ cmake -S "$ttf_dir" -B "$work/ttf-build" "${cmake_options[@]}" \
 cmake --build "$work/ttf-build" -j"$jobs"
 cmake --install "$work/ttf-build"
 
-# FFmpeg takes the configure options of the Linux image, which list the
-# codecs, and disables all assembly, as the image does for x86.
+# FFmpeg takes the configure options of the Linux media image, which list
+# the codecs, and disables all assembly, as the image does for x86.
 ffmpeg_version=$(pin FFMPEG_VERSION)
 ffmpeg_options=()
 while IFS= read -r option; do
     ffmpeg_options+=("$option")
 done < <(
-    sed -n '/^FROM base AS ffmpeg/,/^FROM /p' "$dockerfile" \
+    sed -n '/^FROM base AS ffmpeg/,/^FROM /p' "$docker_dir/media/Dockerfile" \
         | sed -n 's/^ *\(--[a-z0-9-]*\(=[^ \\]*\)\{0,1\}\).*/\1/p' \
         | grep -v -e '^--prefix' -e '^--pkg-config-flags'
 )
@@ -100,7 +113,7 @@ fetch "https://ffmpeg.org/releases/ffmpeg-$ffmpeg_version.tar.xz" \
 tar -xJf "$work/ffmpeg.tar.xz" -C "$work"
 (
     cd "$work/ffmpeg-$ffmpeg_version"
-    PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig" ./configure \
+    PKG_CONFIG_LIBDIR="$pkg_config_libdir" ./configure \
         --prefix="$prefix" \
         "${ffmpeg_options[@]}" \
         --disable-asm \
@@ -108,17 +121,19 @@ tar -xJf "$work/ffmpeg.tar.xz" -C "$work"
         --target-os=darwin \
         --arch="$arch" \
         --cc=clang \
-        --extra-cflags="-arch $arch -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -I$prefix/include" \
-        --extra-ldflags="-arch $arch -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -L$prefix/lib" \
+        --extra-cflags="-arch $arch -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -I$prefix/include -I$base/include" \
+        --extra-ldflags="-arch $arch -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -L$prefix/lib -L$base/lib" \
         --pkg-config-flags=--static
     make -j"$jobs"
     make install
 )
 
-# mbedTLS and curl take the CMake options of the Linux image, which cut
-# curl down to HTTP and HTTPS with mbedTLS. Only othpatch links them.
+# mbedTLS and curl take the CMake options of the Linux othpatch image,
+# which cut curl down to HTTP and HTTPS with mbedTLS. Only othpatch links
+# them.
+use_set othpatch
 stage_options() {
-    sed -n "/^FROM base AS $1\$/,/^FROM /p" "$dockerfile" \
+    sed -n "/^FROM base AS $1\$/,/^FROM /p" "$docker_dir/othpatch/Dockerfile" \
         | sed -n 's/^ *\(-D[A-Z0-9_]*=[^ \\]*\).*/\1/p' \
         | grep -v '^-DCMAKE_'
 }
@@ -144,7 +159,7 @@ done < <(stage_options curl)
 fetch "https://curl.se/download/curl-$curl_version.tar.xz" \
     "$(pin CURL_SHA256)" "$work/curl.tar.xz"
 tar -xJf "$work/curl.tar.xz" -C "$work"
-PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig" cmake -S "$work/curl-$curl_version" \
+PKG_CONFIG_LIBDIR="$pkg_config_libdir" cmake -S "$work/curl-$curl_version" \
     -B "$work/curl-build" "${cmake_options[@]}" "${curl_options[@]}"
 cmake --build "$work/curl-build" -j"$jobs"
 cmake --install "$work/curl-build"

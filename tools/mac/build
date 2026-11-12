@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Build, test and package the games on macOS, for arm64 and x86-64.
 
-The dependencies come from tools/mac/build_deps, one prefix per
-architecture under --deps. The package is a universal application
+The dependencies come from tools/mac/build_deps, one root per
+architecture under --deps, with a prefix per set as in the Linux images.
+The games build against base and media, in build/mac-<arch>/<target>/,
+and othpatch against base and othpatch, in
+build/mac-<arch>/othpatch/<target>/. The package is a universal application
 bundle per game, signed ad hoc, in a zip under build/packages/, with
 the othpatch that src/<game>/othpatch.txt names, downloaded as the
 release index gives it.
@@ -15,6 +18,7 @@ packaging reads.
 """
 
 import argparse
+import json
 import os
 import plistlib
 import shutil
@@ -42,17 +46,23 @@ NATIVE_ARCH = "arm64"
 GAMES = ["th06"]
 DEPLOYMENT_TARGET = "12.0"
 OPTIONS = {"RELEASES_URL": "releases_url"}
+PROGRAMS = ["games", "othpatch"]
+DEPS_SETS = {"games": "media", "othpatch": "othpatch"}
 
 
-def build_dir(arch: str, target: str) -> Path:
+def build_dir(arch: str, programs: str, target: str) -> Path:
+    if programs == "othpatch":
+        return REPO_DIR / "build" / f"mac-{arch}" / "othpatch" / target
     return REPO_DIR / "build" / f"mac-{arch}" / target
 
 
-def environment(deps: Path, arch: str) -> dict[str, str]:
+def environment(deps: Path, arch: str, programs: str) -> dict[str, str]:
+    sets = ["base", DEPS_SETS[programs]]
+    libdir = ":".join(str(deps / arch / name / "lib/pkgconfig") for name in sets)
     return {
         **os.environ,
         "MACOSX_DEPLOYMENT_TARGET": DEPLOYMENT_TARGET,
-        "PKG_CONFIG_LIBDIR": str(deps / arch / "lib/pkgconfig"),
+        "PKG_CONFIG_LIBDIR": libdir,
     }
 
 
@@ -69,38 +79,57 @@ def run_deps(deps: Path) -> None:
         subprocess.check_call([MAC_DIR / "build_deps", arch, deps / arch])
 
 
-def run_build(deps: Path, target: str, archs: list[str]) -> None:
+def configured_programs(root: Path) -> str:
+    path = root / "meson-info/intro-buildoptions.json"
+    for option in json.loads(path.read_text()):
+        if option["name"] == "programs":
+            return option["value"]
+    return "all"
+
+
+def run_build(deps: Path, programs: str, target: str, archs: list[str]) -> None:
     for arch in archs:
-        root = build_dir(arch, target)
+        root = build_dir(arch, programs, target)
+        env = environment(deps, arch, programs)
         if not (root / "build.ninja").exists():
-            command = ["meson", "setup", f"--buildtype={target}"]
+            command = [
+                "meson",
+                "setup",
+                f"--buildtype={target}",
+                f"-Dprograms={programs}",
+            ]
             if arch != NATIVE_ARCH:
                 command.append(f"--cross-file={MAC_DIR / f'{arch}.txt'}")
             command += options()
             command += [str(root), str(REPO_DIR)]
-            subprocess.check_call(command, env=environment(deps, arch))
-        elif options():
-            subprocess.check_call(
-                ["meson", "configure", str(root), *options()],
-                env=environment(deps, arch),
-            )
-        subprocess.check_call(
-            ["meson", "compile", "-C", str(root)], env=environment(deps, arch)
-        )
+            subprocess.check_call(command, env=env)
+        else:
+            # Reconfigures a build directory that builds other programs,
+            # such as the whole tree, which needs every set of libraries.
+            changed = []
+            if configured_programs(root) != programs:
+                changed.append(f"-Dprograms={programs}")
+            if changed or options():
+                subprocess.check_call(
+                    ["meson", "configure", str(root), *changed, *options()],
+                    env=env,
+                )
+        subprocess.check_call(["meson", "compile", "-C", str(root)], env=env)
 
 
 def run_test(deps: Path, target: str) -> None:
-    run_build(deps, target, [NATIVE_ARCH])
-    subprocess.check_call(
-        [
-            "meson",
-            "test",
-            "-C",
-            str(build_dir(NATIVE_ARCH, target)),
-            "--print-errorlogs",
-        ],
-        env=environment(deps, NATIVE_ARCH),
-    )
+    for programs in PROGRAMS:
+        run_build(deps, programs, target, [NATIVE_ARCH])
+        subprocess.check_call(
+            [
+                "meson",
+                "test",
+                "-C",
+                str(build_dir(NATIVE_ARCH, programs, target)),
+                "--print-errorlogs",
+            ],
+            env=environment(deps, NATIVE_ARCH, programs),
+        )
 
 
 def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
@@ -112,7 +141,7 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
             "lipo",
             "-create",
             *(
-                str(build_dir(arch, target) / executable_name(game))
+                str(build_dir(arch, "games", target) / executable_name(game))
                 for arch in ARCHS
             ),
             "-output",
@@ -147,7 +176,7 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
 
 
 def run_package(deps: Path, target: str) -> None:
-    run_build(deps, target, ARCHS)
+    run_build(deps, "games", target, ARCHS)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
         version = generate_version(game, REPO_DIR)
@@ -165,7 +194,7 @@ def run_package(deps: Path, target: str) -> None:
 
 
 def run_package_othpatch(deps: Path, target: str) -> None:
-    run_build(deps, target, ARCHS)
+    run_build(deps, "othpatch", target, ARCHS)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     version = generate_version("othpatch")
     output = PACKAGES_DIR / othpatch_asset_name(version, "mac")
@@ -174,7 +203,10 @@ def run_package_othpatch(deps: Path, target: str) -> None:
         [
             "lipo",
             "-create",
-            *(str(build_dir(arch, target) / "othpatch") for arch in ARCHS),
+            *(
+                str(build_dir(arch, "othpatch", target) / "othpatch")
+                for arch in ARCHS
+            ),
             "-output",
             str(output),
         ]
@@ -204,7 +236,8 @@ def main() -> None:
     if args.command == "deps":
         run_deps(deps)
     elif args.command == "build":
-        run_build(deps, args.target, ARCHS)
+        for programs in PROGRAMS:
+            run_build(deps, programs, args.target, ARCHS)
     elif args.command == "test":
         run_test(deps, args.target)
     elif args.command == "package-othpatch":

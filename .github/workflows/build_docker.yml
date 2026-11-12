@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   image:
-    name: Image (${{ matrix.platform }})
+    name: Images (${{ matrix.platform }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,13 +28,13 @@ jobs:
       - name: Log in to the container registry
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # An owner that cannot name a registry image gets a local one (see
-      # tools/docker/image_tag); the workflow then only checks that it
-      # builds.
-      - name: Build and push the image
+      # An owner that cannot name a registry image gets local ones (see
+      # tools/docker/image); the workflow then only checks that they
+      # build.
+      - name: Build and push the images
         run: |
           just image-${{ matrix.platform }}
-          case "$(tools/docker/image_tag ${{ matrix.platform }})" in
+          case "$(tools/docker/image tag ${{ matrix.platform }} base)" in
             */*) just push-image-${{ matrix.platform }} ;;
-            *) echo "::notice::Built a local image; this owner has no registry to push it to." ;;
+            *) echo "::notice::Built local images; this owner has no registry to push them to." ;;
           esac

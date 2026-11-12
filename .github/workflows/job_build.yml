@@ -45,30 +45,63 @@ jobs:
       - name: Log in to the container registry
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # An owner without a registry (see tools/docker/image_tag) keeps its
-      # local image in the Actions cache, keyed by the image tag, so that
-      # only a change to the image builds it again.
-      - name: Find the image
+      # The games build in the media image and othpatch in the othpatch
+      # image, both built on the base image. An owner without a registry
+      # (see tools/docker/image) keeps each local image in the Actions
+      # cache, keyed by its tag, so that only a change to an image builds
+      # it again. The base image is restored only to build a child.
+      - name: Find the images
         id: image
+        env:
+          PACKAGES: ${{ inputs.packages }}
+          PLATFORM: ${{ inputs.platform }}
         run: |
-          tag="$(tools/docker/image_tag ${{ inputs.platform }})"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          case "$tag" in
+          for image in base media othpatch; do
+            echo "$image=$(tools/docker/image tag $PLATFORM $image)" >> "$GITHUB_OUTPUT"
+          done
+          case "$(tools/docker/image tag $PLATFORM base)" in
             */*) echo "local=false" >> "$GITHUB_OUTPUT" ;;
             *) echo "local=true" >> "$GITHUB_OUTPUT" ;;
           esac
+          case "$PACKAGES" in
+            games|all) echo "media_needed=true" >> "$GITHUB_OUTPUT" ;;
+          esac
+          case "$PACKAGES" in
+            othpatch|all) echo "othpatch_needed=true" >> "$GITHUB_OUTPUT" ;;
+          esac
 
-      - name: Restore the image
-        id: image-cache
-        if: ${{ steps.image.outputs.local == 'true' }}
+      - name: Restore the media image
+        id: media-cache
+        if: ${{ steps.image.outputs.local == 'true' && steps.image.outputs.media_needed == 'true' }}
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          path: .cache/image.tar.zst
-          key: image-v1-${{ steps.image.outputs.tag }}
+          path: .cache/images/media.tar.zst
+          key: image-v2-${{ steps.image.outputs.media }}
 
-      - name: Load the image
-        if: ${{ steps.image-cache.outputs.cache-hit == 'true' }}
-        run: zstd -dc .cache/image.tar.zst | docker load
+      - name: Restore the othpatch image
+        id: othpatch-cache
+        if: ${{ steps.image.outputs.local == 'true' && steps.image.outputs.othpatch_needed == 'true' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/images/othpatch.tar.zst
+          key: image-v2-${{ steps.image.outputs.othpatch }}
+
+      - name: Restore the base image
+        id: base-cache
+        if: ${{ (steps.media-cache.outcome == 'success' && steps.media-cache.outputs.cache-hit != 'true') || (steps.othpatch-cache.outcome == 'success' && steps.othpatch-cache.outputs.cache-hit != 'true') }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/images/base.tar.zst
+          key: image-v2-${{ steps.image.outputs.base }}
+
+      - name: Load the images
+        if: ${{ steps.image.outputs.local == 'true' }}
+        run: |
+          for file in .cache/images/*.tar.zst; do
+            if [ -e "$file" ]; then
+              zstd -dc "$file" | docker load
+            fi
+          done
 
       # A pull request restores the shared ccache read-only and never writes
       # it back (see the Save step), so a branch cannot poison the cache that
@@ -78,9 +111,9 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .cache/ccache
-          key: ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-${{ github.sha }}
+          key: ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-${{ github.sha }}
           restore-keys: |
-            ccache-v1-${{ inputs.platform }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-
+            ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-
 
       - name: Build and package
         env:
@@ -103,7 +136,8 @@ jobs:
         if: ${{ inputs.platform == 'linux' }}
         env:
           RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
-        run: just test
+          PACKAGES: ${{ inputs.packages }}
+        run: just test "$PACKAGES"
 
       - name: Save ccache
         if: ${{ github.event_name != 'pull_request' }}
@@ -112,18 +146,44 @@ jobs:
           path: .cache/ccache
           key: ${{ steps.ccache.outputs.cache-primary-key }}
 
-      - name: Pack the image
-        if: ${{ steps.image.outputs.local == 'true' && steps.image-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request' }}
+      # Each image that this job built is saved in its own cache entry.
+      - name: Pack the images
+        id: pack
+        if: ${{ steps.image.outputs.local == 'true' && github.event_name != 'pull_request' }}
+        env:
+          BASE_MISSED: ${{ steps.base-cache.outcome == 'success' && steps.base-cache.outputs.cache-hit != 'true' }}
+          MEDIA_MISSED: ${{ steps.media-cache.outcome == 'success' && steps.media-cache.outputs.cache-hit != 'true' }}
+          OTHPATCH_MISSED: ${{ steps.othpatch-cache.outcome == 'success' && steps.othpatch-cache.outputs.cache-hit != 'true' }}
         run: |
-          mkdir -p .cache
-          docker save "${{ steps.image.outputs.tag }}" | zstd -T0 -3 -o .cache/image.tar.zst
+          mkdir -p .cache/images
+          pack() {
+            docker save "$2" | zstd -T0 -3 -f -o ".cache/images/$1.tar.zst"
+            echo "$1=true" >> "$GITHUB_OUTPUT"
+          }
+          if [ "$BASE_MISSED" = true ]; then pack base "${{ steps.image.outputs.base }}"; fi
+          if [ "$MEDIA_MISSED" = true ]; then pack media "${{ steps.image.outputs.media }}"; fi
+          if [ "$OTHPATCH_MISSED" = true ]; then pack othpatch "${{ steps.image.outputs.othpatch }}"; fi
 
-      - name: Save the image
-        if: ${{ steps.image.outputs.local == 'true' && steps.image-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request' }}
+      - name: Save the base image
+        if: ${{ steps.pack.outputs.base == 'true' }}
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          path: .cache/image.tar.zst
-          key: ${{ steps.image-cache.outputs.cache-primary-key }}
+          path: .cache/images/base.tar.zst
+          key: ${{ steps.base-cache.outputs.cache-primary-key }}
+
+      - name: Save the media image
+        if: ${{ steps.pack.outputs.media == 'true' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/images/media.tar.zst
+          key: ${{ steps.media-cache.outputs.cache-primary-key }}
+
+      - name: Save the othpatch image
+        if: ${{ steps.pack.outputs.othpatch == 'true' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/images/othpatch.tar.zst
+          key: ${{ steps.othpatch-cache.outputs.cache-primary-key }}
 
       - name: Upload the packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

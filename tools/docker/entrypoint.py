@@ -6,8 +6,10 @@ othpatch that src/<game>/othpatch.txt names, downloaded as the release
 index gives it. package-othpatch writes the executable of othpatch there, as
 its release names it.
 
-Each image runs this script with its platform. The repository is mounted
-at /app.
+Each image runs this script with its platform and the programs that it
+builds: the media image the games, the othpatch image othpatch. The
+games build in build/<platform>/<target>/, othpatch in
+build/<platform>/othpatch/<target>/. The repository is mounted at /app.
 
 The environment variable RELEASES_URL, when set, gives the build option
 releases_url. shared/othpatch_release.py names the release index that
@@ -15,6 +17,7 @@ packaging reads.
 """
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -38,9 +41,16 @@ EXE_SUFFIXES = {"linux": "", "win": ".exe"}
 GAMES = ["th06"]
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
 OPTIONS = {"RELEASES_URL": "releases_url"}
+COMMAND_PROGRAMS = {
+    "package": "games",
+    "package-othpatch": "othpatch",
+    "replay": "games",
+}
 
 
-def build_dir(platform: str, target: str) -> Path:
+def build_dir(platform: str, programs: str, target: str) -> Path:
+    if programs == "othpatch":
+        return REPO_DIR / "build" / platform / "othpatch" / target
     return REPO_DIR / "build" / platform / target
 
 
@@ -52,17 +62,38 @@ def options() -> list[str]:
     ]
 
 
-def run_build(platform: str, target: str) -> None:
-    root = build_dir(platform, target)
+def configured_programs(root: Path) -> str:
+    path = root / "meson-info/intro-buildoptions.json"
+    for option in json.loads(path.read_text()):
+        if option["name"] == "programs":
+            return option["value"]
+    return "all"
+
+
+def run_build(platform: str, programs: str, target: str) -> None:
+    root = build_dir(platform, programs, target)
     if not (root / "build.ninja").exists():
-        command = ["meson", "setup", f"--buildtype={target}"]
+        command = [
+            "meson",
+            "setup",
+            f"--buildtype={target}",
+            f"-Dprograms={programs}",
+        ]
         if platform in CROSS_FILES:
             command.append(f"--cross-file={CROSS_FILES[platform]}")
         command += options()
         command += [str(root), str(REPO_DIR)]
         subprocess.check_call(command)
-    elif options():
-        subprocess.check_call(["meson", "configure", str(root), *options()])
+    else:
+        # Reconfigures a build directory that builds other programs, such
+        # as the whole tree, which needs libraries that this image lacks.
+        changed = []
+        if configured_programs(root) != programs:
+            changed.append(f"-Dprograms={programs}")
+        if changed or options():
+            subprocess.check_call(
+                ["meson", "configure", str(root), *changed, *options()]
+            )
     subprocess.check_call(["meson", "compile", "-C", str(root)])
 
 
@@ -90,10 +121,16 @@ def run_capture_build(game: str) -> None:
     subprocess.check_call(["meson", "compile", "-C", str(build_dir)])
 
 
-def run_test(platform: str, target: str) -> None:
-    run_build(platform, target)
+def run_test(platform: str, programs: str, target: str) -> None:
+    run_build(platform, programs, target)
     subprocess.check_call(
-        ["meson", "test", "-C", str(build_dir(platform, target)), "--print-errorlogs"]
+        [
+            "meson",
+            "test",
+            "-C",
+            str(build_dir(platform, programs, target)),
+            "--print-errorlogs",
+        ]
     )
 
 
@@ -159,7 +196,8 @@ def run_package(platform: str, target: str) -> None:
     for game in GAMES:
         version = generate_version(game, REPO_DIR)
         othpatch = pinned_othpatch(game, platform, REPO_DIR)
-        exe = build_dir(platform, target) / f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
+        name = f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
+        exe = build_dir(platform, "games", target) / name
         stem = generate_package_name(game, version, platform)
         output = PACKAGES_DIR / f"{stem}.zip"
         if platform == "linux":
@@ -171,7 +209,8 @@ def run_package(platform: str, target: str) -> None:
 
 def run_package_othpatch(platform: str, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    exe = build_dir(platform, target) / f"othpatch{EXE_SUFFIXES[platform]}"
+    name = f"othpatch{EXE_SUFFIXES[platform]}"
+    exe = build_dir(platform, "othpatch", target) / name
     version = generate_version("othpatch")
     output = PACKAGES_DIR / othpatch_asset_name(version, platform)
     shutil.copy2(exe, output)
@@ -181,6 +220,7 @@ def run_package_othpatch(platform: str, target: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", choices=["linux", "win"], required=True)
+    parser.add_argument("--programs", choices=["games", "othpatch"], required=True)
     subparsers = parser.add_subparsers(dest="command", required=True)
     for name in ["build", "test", "package", "package-othpatch"]:
         subparser = subparsers.add_parser(name)
@@ -190,11 +230,14 @@ def main() -> None:
     capture_parser = subparsers.add_parser("replay")
     capture_parser.add_argument("game")
     args = parser.parse_args()
+    needed = COMMAND_PROGRAMS.get(args.command, args.programs)
+    if needed != args.programs:
+        parser.error(f"{args.command} runs in the image of {needed}")
 
     if args.command == "build":
-        run_build(args.platform, args.target)
+        run_build(args.platform, args.programs, args.target)
     elif args.command == "test":
-        run_test(args.platform, args.target)
+        run_test(args.platform, args.programs, args.target)
     elif args.command == "replay":
         run_capture_build(args.game)
     elif args.command == "package-othpatch":
