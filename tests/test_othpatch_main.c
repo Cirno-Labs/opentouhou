@@ -844,3 +844,43 @@ TEST(failed_othpatch_check_does_not_fail_the_patches)
     M_CheckOutput(&test, "Cannot check for updates of othpatch: ");
     M_Close(&test);
 }
+
+TEST(one_release_list_serves_the_games_and_othpatch)
+{
+    M_CASE test = M_PrepareUpdate("shared_list", "0.1.0", "0.2.0");
+    M_WriteOthpatchRelease(&test, "0.3.0", "othpatch 0.3.0", nullptr);
+    char *const text = Server_Read(test.server, "releases.json");
+    char *const othpatch = Server_Read(test.server, "othpatch_releases.json");
+    text[strlen(text) - 1] = ',';
+    // Keeps only the release othpatch-v0.3.0 of the othpatch list.
+    const char *const own =
+        strstr(othpatch, "{\"tag_name\": \"othpatch-v0.3.0\"");
+    char *const both = Str_Format("%s%s", text, own);
+    PatchBuilder_Write(test.server, "releases.json", both);
+    Mem_Free(test.othpatch_releases);
+    test.othpatch_releases = Str_Dup(test.releases);
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckOutput(
+        &test,
+        "oth06 0.2.0 is available (you have 0.1.0); run othpatch --update "
+        "to install it\n"
+        "othpatch 0.3.0 is available (you have 0.1.0); run othpatch --update "
+        "to install it\n");
+    Mem_Free(both);
+    SDL_free(othpatch);
+    SDL_free(text);
+    M_Close(&test);
+}
+
+TEST(failed_shared_release_list_is_one_message)
+{
+    M_CASE test = M_PrepareBeside("shared_offline", nullptr);
+    M_AddNetwork(&test);
+    M_WriteGame(&test, "0.1.0");
+    Mem_Free(test.othpatch_releases);
+    test.othpatch_releases = Str_Dup(test.releases);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");
+    CHECK(strstr(test.output, "of othpatch") == nullptr);
+    M_Close(&test);
+}

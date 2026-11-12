@@ -26,6 +26,9 @@
 #include <string.h>
 
 #define M_DEFAULT_REPO "https://srv.thpatch.net/repo.js"
+// Requests the newest 100 releases, the most that one page holds. Only the
+// newest release of each program counts, and it falls off the page only
+// after 100 newer releases of the other programs.
 #define M_RELEASES_URL(repository)                                             \
     "https://api.github.com/repos/" repository "/releases?per_page=100"
 #define M_DEFAULT_RELEASES M_RELEASES_URL(GAME_REPOSITORY)
@@ -560,13 +563,36 @@ typedef struct {
     // development build, which is never replaced.
     RELEASE_VERSION othpatch_version;
     bool othpatch_is_release;
-    // Holds the release list of the games, fetched once for every game.
-    bool releases_fetched;
+    // Holds the URL of the last release list that was fetched, or nullptr,
+    // and the list, or nullptr when the fetch failed. The games and
+    // othpatch share it when their URLs are the same.
+    const char *releases_url;
     JSON_VALUE *releases;
     ARENA *arena;
     FILE *in;
     FILE *out;
 } M_UPDATE;
+
+// Returns the release list at url, and fetches it unless it is the list
+// of the last call. Prints a line that starts with message and returns
+// nullptr when the fetch fails.
+static const JSON_VALUE *M_GetReleases(
+    M_UPDATE *const update, const char *const url, const char *const message)
+{
+    if (update->releases_url != nullptr
+        && strcmp(update->releases_url, url) == 0) {
+        return update->releases;
+    }
+    update->releases_url = url;
+    const RESULT fetched =
+        M_FetchReleases(url, update->arena, &update->releases);
+    if (!IS_OK(fetched)) {
+        fprintf(update->out, "%s: %s\n", message, fetched.message);
+        Result_Ignore(fetched);
+        update->releases = nullptr;
+    }
+    return update->releases;
+}
 
 // Finds the newest release in the list at url and compares it with
 // installed. Returns whether it is newer and has a package, and prints a
@@ -682,16 +708,9 @@ static bool M_UpdateGame(
             name, version);
         return false;
     }
-    if (!update->releases_fetched) {
-        update->releases_fetched = true;
-        const RESULT fetched = M_FetchReleases(
-            update->args->releases, update->arena, &update->releases);
-        if (!IS_OK(fetched)) {
-            fprintf(out, "Cannot check for updates: %s\n", fetched.message);
-            Result_Ignore(fetched);
-        }
-    }
-    if (update->releases == nullptr) {
+    const JSON_VALUE *const list = M_GetReleases(
+        update, update->args->releases, "Cannot check for updates");
+    if (list == nullptr) {
         return false;
     }
     char tag_prefix[GAME_VERSION_SIZE];
@@ -709,9 +728,7 @@ static bool M_UpdateGame(
         .package_suffix = package_suffix,
     };
     RELEASE release;
-    if (!M_FindUpdate(
-            update, update->releases, &names, name, installed, version,
-            &release)
+    if (!M_FindUpdate(update, list, &names, name, installed, version, &release)
         || !M_AskInstall(update, name, &release, version)) {
         return false;
     }
@@ -760,13 +777,10 @@ static bool M_UpdateOthpatch(M_UPDATE *const update, const char *const running)
             running);
         return false;
     }
-    JSON_VALUE *list;
-    const RESULT fetched =
-        M_FetchReleases(update->args->othpatch_releases, update->arena, &list);
-    if (!IS_OK(fetched)) {
-        fprintf(
-            out, "Cannot check for updates of othpatch: %s\n", fetched.message);
-        Result_Ignore(fetched);
+    const JSON_VALUE *const list = M_GetReleases(
+        update, update->args->othpatch_releases,
+        "Cannot check for updates of othpatch");
+    if (list == nullptr) {
         return false;
     }
     // The executable name after "othpatch" is ".exe" on Windows and empty
