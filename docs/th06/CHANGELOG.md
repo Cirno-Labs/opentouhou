@@ -15,6 +15,8 @@ core shows up here when the next th06 release includes it.
   puts them into another folder.
 - The Linux AppImage uses the folder that holds the AppImage file, not
   its own internal folder.
+- On macOS, the game looks for the game data and `portable.txt` in the
+  folder that holds `oth06.app`.
 - The result screen and saved replays show the real slow rate of the
   game.
 - Added screenshots, fullscreen and smooth motion between ticks.

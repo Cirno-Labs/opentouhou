@@ -71,18 +71,25 @@ static char *M_ProgramDirOf(const APP_FOLDERS_INPUT *const input)
         return nullptr;
     }
     char *const dir = M_AsDir(input->exe_dir);
-#ifdef __APPLE__
-    static const char suffix[] = ".app/Contents/MacOS/";
+    // SDL gives the Resources folder of an application bundle, and the
+    // executable sits in its MacOS folder.
+    static const char *const suffixes[] = {
+        ".app/Contents/Resources/",
+        ".app/Contents/MacOS/",
+    };
     const size_t length = strlen(dir);
-    if (length > sizeof(suffix) - 1
-        && strcmp(dir + length - (sizeof(suffix) - 1), suffix) == 0) {
-        dir[length - (sizeof("/Contents/MacOS/") - 1)] = '\0';
-        char *const slash = strrchr(dir, '/');
-        if (slash != nullptr) {
-            slash[1] = '\0';
+    for (size_t i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
+        const size_t suffix = strlen(suffixes[i]);
+        if (length > suffix
+            && strcmp(dir + length - suffix, suffixes[i]) == 0) {
+            dir[length - suffix + strlen(".app")] = '\0';
+            char *const slash = strrchr(dir, '/');
+            if (slash != nullptr) {
+                slash[1] = '\0';
+            }
+            break;
         }
     }
-#endif
     return dir;
 }
 

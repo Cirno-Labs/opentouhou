@@ -233,6 +233,32 @@ TEST(appimage_counts_only_inside_its_mount)
 }
 #endif
 
+TEST(a_bundle_runs_from_the_folder_that_holds_it)
+{
+    char *const dir = TestDir_Prepare("bundle");
+    M_WriteFile(dir, "portable.txt");
+    const char *const inner[] = { "Resources", "MacOS" };
+    for (size_t i = 0; i < sizeof(inner) / sizeof(inner[0]); i++) {
+        char *const exe_dir =
+            Str_Format("%s/oth06.app/Contents/%s/", dir, inner[i]);
+        const APP_FOLDERS_INPUT input = {
+            .exe_dir = exe_dir,
+            .program = "oth06",
+        };
+        APP_FOLDERS folders;
+        CHECK(Result_Log(
+            AppFolders_Find(&input, "th06", &folders), LOG_LEVEL_ERROR));
+        char *const program_dir = Str_Format("%s/", dir);
+        CHECK_EQ_STR(folders.program_dir, program_dir);
+        CHECK_EQ_STR(folders.data_dir, program_dir);
+        CHECK_EQ_INT(folders.mode, APP_FOLDERS_PORTABLE);
+        AppFolders_Free(&folders);
+        Mem_Free(program_dir);
+        Mem_Free(exe_dir);
+    }
+    Mem_Free(dir);
+}
+
 TEST(mode_names_differ)
 {
     CHECK_EQ_STR(AppFolders_GetModeName(APP_FOLDERS_DEFAULT), "default");

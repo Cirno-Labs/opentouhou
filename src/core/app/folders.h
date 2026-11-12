@@ -9,7 +9,9 @@
 //   AppImage runtime names the file in $APPIMAGE and its mount in
 //   $APPDIR. $APPIMAGE counts only while the executable is inside $APPDIR,
 //   so a variable that another AppImage left behind has no effect;
-// - on macOS, inside an application bundle, the folder of the bundle;
+// - on macOS, inside an application bundle, the folder that holds the
+//   bundle, whether the executable reports its Resources or its MacOS
+//   folder;
 // - elsewhere, the folder of the executable.
 //
 // The data folder is the --data argument, or the program folder without
