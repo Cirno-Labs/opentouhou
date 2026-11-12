@@ -52,6 +52,16 @@ static char *M_Format(ARENA *const arena, const char *const fmt, ...)
     return text;
 }
 
+// Returns the name of the game in a folder, such as "oth06.AppImage".
+static char *M_GameName(
+    const INSTALL_PLATFORM *const platform, const char *const game,
+    ARENA *const arena)
+{
+    char product[GAME_NAME_SIZE];
+    Game_GetProductName(game, product);
+    return M_Format(arena, "%s%s", product, platform->game_suffix);
+}
+
 // Removes the file or the folder at path with everything in it.
 static RESULT M_RemoveTree(const char *const path, ARENA *const arena)
 {
@@ -179,8 +189,7 @@ static RESULT M_InstallGame(
     const char *const game, const uint8_t *const package, const size_t size,
     const ZIP_ENTRY_LIST *const entries, ARENA *const arena)
 {
-    const char *const name =
-        M_Format(arena, "o%s%s", game, platform->game_suffix);
+    const char *const name = M_GameName(platform, game, arena);
     const char *const path = Path_Join(Arena_Allocator(arena), dir, name);
     const char *const staged = M_Format(arena, "%s.new", path);
     if (platform->bundle) {
@@ -242,12 +251,15 @@ char *Install_GetGamePath(
     const INSTALL_PLATFORM *const platform, const char *const dir,
     const char *const game, ARENA *const arena)
 {
-    const char *const name = platform->bundle
-        ? M_Format(
-              arena, "o%s%s/Contents/MacOS/o%s", game, platform->game_suffix,
-              game)
-        : M_Format(arena, "o%s%s", game, platform->game_suffix);
-    return Path_Join(Arena_Allocator(arena), dir, name);
+    const char *const name = M_GameName(platform, game, arena);
+    if (!platform->bundle) {
+        return Path_Join(Arena_Allocator(arena), dir, name);
+    }
+    char product[GAME_NAME_SIZE];
+    Game_GetProductName(game, product);
+    return Path_Join(
+        Arena_Allocator(arena), dir,
+        M_Format(arena, "%s/Contents/MacOS/%s", name, product));
 }
 
 RESULT Install_Package(
@@ -288,9 +300,8 @@ void Install_RemoveLeftovers(
     ARENA *const arena)
 {
     for (int32_t i = -1; i < game_count; i++) {
-        const char *const name = i < 0
-            ? platform->othpatch
-            : M_Format(arena, "o%s%s", games[i], platform->game_suffix);
+        const char *const name =
+            i < 0 ? platform->othpatch : M_GameName(platform, games[i], arena);
         static const char *const suffixes[] = { ".old", ".new" };
         for (size_t k = 0; k < ARRAY_SIZE(suffixes); k++) {
             const char *const path = Path_Join(

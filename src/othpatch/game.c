@@ -28,6 +28,11 @@ static RESULT M_Run(const char *const path, char **const out, int *const status)
     return OK;
 }
 
+void Game_GetProductName(const char *const game, char name[GAME_NAME_SIZE])
+{
+    snprintf(name, GAME_NAME_SIZE, "o%s", game);
+}
+
 RESULT Game_GetVersion(const char *const path, char version[GAME_VERSION_SIZE])
 {
     version[0] = '\0';

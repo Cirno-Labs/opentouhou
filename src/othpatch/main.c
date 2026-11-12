@@ -279,9 +279,11 @@ static bool M_IsBeside(
     ARENA *const arena, const char *const exe_dir, const char *const game)
 {
     static const char *const suffixes[] = { "", ".exe", ".AppImage", ".app" };
+    char product[GAME_NAME_SIZE];
+    Game_GetProductName(game, product);
     for (size_t i = 0; exe_dir != nullptr && i < ARRAY_SIZE(suffixes); i++) {
-        char name[64];
-        snprintf(name, sizeof(name), "o%s%s", game, suffixes[i]);
+        char name[GAME_NAME_SIZE + 16];
+        snprintf(name, sizeof(name), "%s%s", product, suffixes[i]);
         if (File_Exists(Path_Join(Arena_Allocator(arena), exe_dir, name))) {
             return true;
         }
@@ -672,15 +674,15 @@ static bool M_UpdateGame(
     M_UPDATE *const update, const char *const game, const char *const path)
 {
     FILE *const out = update->out;
+    char name[GAME_NAME_SIZE];
+    Game_GetProductName(game, name);
     char version[GAME_VERSION_SIZE];
     const RESULT asked = Game_GetVersion(path, version);
     if (!IS_OK(asked)) {
-        fprintf(out, "o%s: cannot read its version: %s\n", game, asked.message);
+        fprintf(out, "%s: cannot read its version: %s\n", name, asked.message);
         Result_Ignore(asked);
         return false;
     }
-    char name[GAME_VERSION_SIZE];
-    snprintf(name, sizeof(name), "o%s", game);
     RELEASE_VERSION installed;
     if (!Release_ParseVersion(version, &installed)) {
         fprintf(

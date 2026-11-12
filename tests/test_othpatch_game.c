@@ -30,6 +30,13 @@ static RESULT M_GetVersion(
     return result;
 }
 
+TEST(product_name_puts_an_o_before_the_game_id)
+{
+    char name[GAME_NAME_SIZE];
+    Game_GetProductName("th06", name);
+    CHECK_EQ_STR(name, "oth06");
+}
+
 TEST(version_is_the_last_word_of_the_line)
 {
     char version[GAME_VERSION_SIZE];
