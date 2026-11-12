@@ -8,14 +8,8 @@ option(
   description: 'Platform backend for modules such as core/input',
 )
 option(
-  'game_repository',
+  'releases_url',
   type: 'string',
-  value: 'Cirno-Labs/opentouhou',
-  description: 'GitHub repository (owner/name) whose releases othpatch updates the games from',
-)
-option(
-  'othpatch_repository',
-  type: 'string',
-  value: '',
-  description: 'GitHub repository (owner/name) whose releases othpatch updates itself from; empty for game_repository',
+  value: 'https://opentouhou.invalid/releases.json',
+  description: 'URL of the release index that othpatch updates the games and itself from',
 )

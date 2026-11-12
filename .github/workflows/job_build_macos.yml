@@ -51,9 +51,8 @@ jobs:
 
       - name: Build and package
         env:
-          GAME_REPOSITORY: ${{ github.repository }}
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
-          GH_TOKEN: ${{ github.token }}
           PACKAGES: ${{ inputs.packages }}
           TARGET: ${{ inputs.target }}
         run: |

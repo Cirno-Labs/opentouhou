@@ -17,10 +17,10 @@
 // exe_dir can be nullptr when the platform cannot tell it.
 //
 // Then othpatch checks each game in exe_dir in the form of the platform's
-// packages for a newer release, and then itself, with its releases tagged
-// othpatch-vX.Y.Z. It installs a newer release with --update, or when the
-// answer to a question on in is yes. Without in, it only says that a newer
-// release exists. A check that fails, such as without a network, prints
+// packages for a newer release, and then itself, in the release index at
+// --releases (othpatch/release.h). It installs a newer release with --update,
+// or when the answer to a question on in is yes. Without in, it only says that
+// a newer release exists. A check that fails, such as without a network, prints
 // one line and does not change the exit code; an install that fails does.
 // A game or an othpatch whose version is not of the form "X.Y.Z" is a
 // development build and is never updated. A game package also carries an

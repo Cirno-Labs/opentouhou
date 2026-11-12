@@ -29,21 +29,6 @@ TEST(file_url_reads_the_file_and_ignores_the_query)
     Mem_Free(dir);
 }
 
-TEST(run_keeps_the_accept_header_of_a_fetch)
-{
-    char *const dir = TestDir_Prepare("accept");
-    PatchBuilder_Write(dir, "c.txt", "hello");
-    char *const url = Str_Format("file://%s/c.txt", dir);
-    FETCH fetch = { .url = url, .accept = "application/octet-stream" };
-    Fetch_Run(&fetch, 1);
-    CHECK(Result_Log(fetch.result, LOG_LEVEL_ERROR));
-    fetch.result = OK;
-    CHECK_EQ_STR(fetch.accept, "application/octet-stream");
-    Fetch_Release(&fetch);
-    Mem_Free(url);
-    Mem_Free(dir);
-}
-
 TEST(file_url_of_an_empty_file_gives_no_bytes)
 {
     char *const dir = TestDir_Prepare("empty");

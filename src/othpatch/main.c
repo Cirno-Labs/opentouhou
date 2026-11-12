@@ -26,13 +26,6 @@
 #include <string.h>
 
 #define M_DEFAULT_REPO "https://srv.thpatch.net/repo.js"
-// Requests the newest 100 releases, the most that one page holds. Only the
-// newest release of each program counts, and it falls off the page only
-// after 100 newer releases of the other programs.
-#define M_RELEASES_URL(repository)                                             \
-    "https://api.github.com/repos/" repository "/releases?per_page=100"
-#define M_DEFAULT_RELEASES M_RELEASES_URL(GAME_REPOSITORY)
-#define M_DEFAULT_OTHPATCH_RELEASES M_RELEASES_URL(OTHPATCH_REPOSITORY)
 #define M_FIRST_REPO "thpatch"
 #define M_LANGUAGE_PREFIX "lang_"
 #define M_FALLBACK_LANGUAGE "lang_en"
@@ -52,7 +45,6 @@ typedef struct {
     const char *dir;
     const char *repo;
     const char *releases;
-    const char *othpatch_releases;
     const char *name;
     bool list;
     bool help;
@@ -64,7 +56,6 @@ typedef struct {
 static const char m_Usage[] =
     "Usage: othpatch [--dir <folder>] [--repo <url>] [--game <game>]...\n"
     "                [--update] [--releases <url>]\n"
-    "                [--othpatch-releases <url>]\n"
     "                [<language> | <repo>/<patch> | <patch>]\n"
     "       othpatch --list | --help | --version\n"
     "\n"
@@ -88,13 +79,9 @@ static const char m_Usage[] =
     "  --game <game>   also download the files of a game, such as th06\n"
     "  --update        install newer releases without asking\n"
     "  --releases <url>\n"
-    "                  the release list of the games, by default that of\n"
-    "                  " GAME_REPOSITORY
-    " on GitHub\n"
-    "  --othpatch-releases <url>\n"
-    "                  the release list of othpatch, by default that of\n"
-    "                  " OTHPATCH_REPOSITORY
-    " on GitHub\n"
+    "                  the release index of the games and othpatch,\n"
+    "                  " OTHPATCH_RELEASES_URL
+    " by default\n"
     "  --list          list the language packs\n"
     "  --help          print this help\n"
     "  --version       print the version\n";
@@ -134,15 +121,13 @@ static bool M_ParseArgs(
 {
     *args = (M_ARGS) {
         .repo = M_DEFAULT_REPO,
-        .releases = M_DEFAULT_RELEASES,
-        .othpatch_releases = M_DEFAULT_OTHPATCH_RELEASES,
+        .releases = OTHPATCH_RELEASES_URL,
     };
     for (int i = 1; i < argc; i++) {
         const char *const arg = argv[i];
         const bool valued = strcmp(arg, "--dir") == 0
             || strcmp(arg, "--repo") == 0 || strcmp(arg, "--game") == 0
-            || strcmp(arg, "--releases") == 0
-            || strcmp(arg, "--othpatch-releases") == 0;
+            || strcmp(arg, "--releases") == 0;
         if (valued && i + 1 >= argc) {
             M_Fail(out, "%s needs a value", arg);
             return false;
@@ -168,8 +153,6 @@ static bool M_ParseArgs(
             args->repo = argv[++i];
         } else if (strcmp(arg, "--releases") == 0) {
             args->releases = argv[++i];
-        } else if (strcmp(arg, "--othpatch-releases") == 0) {
-            args->othpatch_releases = argv[++i];
         } else if (strcmp(arg, "--update") == 0) {
             args->update = true;
         } else if (strcmp(arg, "--list") == 0) {
@@ -485,10 +468,9 @@ static int M_Run(
     return 0;
 }
 
-static RESULT M_Fetch(
-    const char *const url, const char *const accept, FETCH *const fetch)
+static RESULT M_Fetch(const char *const url, FETCH *const fetch)
 {
-    *fetch = (FETCH) { .url = url, .accept = accept };
+    *fetch = (FETCH) { .url = url };
     Fetch_Run(fetch, 1);
     const RESULT result = fetch->result;
     fetch->result = OK;
@@ -503,22 +485,24 @@ static RESULT M_FetchReleases(
 {
     *out = nullptr;
     FETCH fetch;
-    MUST(M_Fetch(url, nullptr, &fetch));
+    MUST(M_Fetch(url, &fetch));
     const RESULT parsed = Json_Parse(
         (const char *)fetch.data, fetch.size, Arena_Allocator(arena), out);
     Fetch_Release(&fetch);
     return parsed;
 }
 
-// Downloads the package of release and checks its SHA-256 digest when the
-// release gives one. Fetch_Release releases *out.
+// Downloads the package of release and checks its SHA-256 digest.
+// Fetch_Release releases *out.
 static RESULT M_Download(const RELEASE *const release, FETCH *const out)
 {
-    MUST(M_Fetch(release->url, RELEASE_ACCEPT, out), "%s", release->package);
+    FAIL_IF(
+        release->sha256 == nullptr, "the index gives no SHA-256 digest of %s",
+        release->package);
+    MUST(M_Fetch(release->url, out), "%s", release->package);
     char digest[SHA256_HEX_SIZE];
     Sha256_ComputeHex(out->data, out->size, digest);
-    if (release->sha256 != nullptr
-        && !Str_EqualIgnoreCase(digest, release->sha256)) {
+    if (!Str_EqualIgnoreCase(digest, release->sha256)) {
         Fetch_Release(out);
         return FAIL(
             "%s has the SHA-256 digest %s instead of %s", release->package,
@@ -563,47 +547,44 @@ typedef struct {
     // development build, which is never replaced.
     RELEASE_VERSION othpatch_version;
     bool othpatch_is_release;
-    // Holds the URL of the last release list that was fetched, or nullptr,
-    // and the list, or nullptr when the fetch failed. The games and
-    // othpatch share it when their URLs are the same.
-    const char *releases_url;
+    // Holds whether the release index was fetched, and the index, or
+    // nullptr when the fetch failed.
+    bool releases_fetched;
     JSON_VALUE *releases;
     ARENA *arena;
     FILE *in;
     FILE *out;
 } M_UPDATE;
 
-// Returns the release list at url, and fetches it unless it is the list
-// of the last call. Prints a line that starts with message and returns
-// nullptr when the fetch fails.
-static const JSON_VALUE *M_GetReleases(
-    M_UPDATE *const update, const char *const url, const char *const message)
+// Returns the release index, and fetches it on the first call. Prints one
+// line and returns nullptr when the fetch fails.
+static const JSON_VALUE *M_GetReleases(M_UPDATE *const update)
 {
-    if (update->releases_url != nullptr
-        && strcmp(update->releases_url, url) == 0) {
+    if (update->releases_fetched) {
         return update->releases;
     }
-    update->releases_url = url;
-    const RESULT fetched =
-        M_FetchReleases(url, update->arena, &update->releases);
+    update->releases_fetched = true;
+    const RESULT fetched = M_FetchReleases(
+        update->args->releases, update->arena, &update->releases);
     if (!IS_OK(fetched)) {
-        fprintf(update->out, "%s: %s\n", message, fetched.message);
+        fprintf(update->out, "Cannot check for updates: %s\n", fetched.message);
         Result_Ignore(fetched);
         update->releases = nullptr;
     }
     return update->releases;
 }
 
-// Finds the newest release in the list at url and compares it with
+// Finds the newest release of program in index and compares it with
 // installed. Returns whether it is newer and has a package, and prints a
 // line otherwise. name is the program in messages, such as "oth06".
 static bool M_FindUpdate(
-    const M_UPDATE *const update, const JSON_VALUE *const list,
-    const RELEASE_NAMES *const names, const char *const name,
+    const M_UPDATE *const update, const JSON_VALUE *const index,
+    const char *const program, const char *const name,
     const RELEASE_VERSION installed, const char *const version,
     RELEASE *const out)
 {
-    const RESULT found = Release_FindNewest(list, names, update->arena, out);
+    const RESULT found =
+        Release_FindNewest(index, program, update->platform->name, out);
     if (!IS_OK(found)) {
         fprintf(
             update->out, "%s: cannot check for updates: %s\n", name,
@@ -619,8 +600,8 @@ static bool M_FindUpdate(
     }
     if (out->url == nullptr) {
         fprintf(
-            update->out, "%s %s is available, but its release has no %s\n",
-            name, newest, out->package);
+            update->out, "%s %s is available, but not for %s\n", name, newest,
+            update->platform->name);
         return false;
     }
     return true;
@@ -708,27 +689,12 @@ static bool M_UpdateGame(
             name, version);
         return false;
     }
-    const JSON_VALUE *const list = M_GetReleases(
-        update, update->args->releases, "Cannot check for updates");
-    if (list == nullptr) {
+    const JSON_VALUE *const index = M_GetReleases(update);
+    if (index == nullptr) {
         return false;
     }
-    char tag_prefix[GAME_VERSION_SIZE];
-    char package_prefix[GAME_VERSION_SIZE];
-    char package_suffix[GAME_VERSION_SIZE];
-    snprintf(tag_prefix, sizeof(tag_prefix), "%s-v", game);
-    snprintf(package_prefix, sizeof(package_prefix), "o%s-", game);
-    snprintf(
-        package_suffix, sizeof(package_suffix), "-%s.zip",
-        update->platform->name);
-    const RELEASE_NAMES names = {
-        .program = game,
-        .tag_prefix = tag_prefix,
-        .package_prefix = package_prefix,
-        .package_suffix = package_suffix,
-    };
     RELEASE release;
-    if (!M_FindUpdate(update, list, &names, name, installed, version, &release)
+    if (!M_FindUpdate(update, index, game, name, installed, version, &release)
         || !M_AskInstall(update, name, &release, version)) {
         return false;
     }
@@ -763,9 +729,8 @@ static RESULT M_InstallOthpatch(
     return result;
 }
 
-// Checks for a newer release of othpatch, tagged othpatch-vX.Y.Z, and
-// installs it when --update or the answer on in says so. Returns whether
-// the install failed.
+// Checks for a newer release of othpatch, and installs it when --update or the
+// answer on in says so. Returns whether the install failed.
 static bool M_UpdateOthpatch(M_UPDATE *const update, const char *const running)
 {
     FILE *const out = update->out;
@@ -777,32 +742,16 @@ static bool M_UpdateOthpatch(M_UPDATE *const update, const char *const running)
             running);
         return false;
     }
-    const JSON_VALUE *const list = M_GetReleases(
-        update, update->args->othpatch_releases,
-        "Cannot check for updates of othpatch");
-    if (list == nullptr) {
+    const JSON_VALUE *const index = M_GetReleases(update);
+    if (index == nullptr) {
         return false;
     }
-    // The executable name after "othpatch" is ".exe" on Windows and empty
-    // elsewhere, and so is the end of the package name.
-    const char *const exe_suffix =
-        update->platform->othpatch + strlen("othpatch");
-    char package_suffix[GAME_VERSION_SIZE];
-    snprintf(
-        package_suffix, sizeof(package_suffix), "-%s%s", update->platform->name,
-        exe_suffix);
-    const RELEASE_NAMES names = {
-        .program = "othpatch",
-        .tag_prefix = "othpatch-v",
-        .package_prefix = "othpatch-",
-        .package_suffix = package_suffix,
-    };
     char version[GAME_VERSION_SIZE];
     M_FormatVersion(update->othpatch_version, version);
     RELEASE release;
     if (!M_FindUpdate(
-            update, list, &names, "othpatch", update->othpatch_version, version,
-            &release)
+            update, index, "othpatch", "othpatch", update->othpatch_version,
+            version, &release)
         || !M_AskInstall(update, "othpatch", &release, version)) {
         return false;
     }

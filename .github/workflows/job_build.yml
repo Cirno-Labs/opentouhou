@@ -81,9 +81,8 @@ jobs:
       - name: Build and package
         env:
           CCACHE_MAXSIZE: 1G
-          GAME_REPOSITORY: ${{ github.repository }}
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
-          GH_TOKEN: ${{ github.token }}
           PACKAGES: ${{ inputs.packages }}
           PLATFORM: ${{ inputs.platform }}
           TARGET: ${{ inputs.target }}
@@ -98,7 +97,7 @@ jobs:
       - name: Run the unit tests
         if: ${{ inputs.platform == 'linux' }}
         env:
-          GAME_REPOSITORY: ${{ github.repository }}
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL }}/releases.json
         run: just test
 
       - name: Save ccache

@@ -16,7 +16,10 @@ typedef struct {
     char *program;
     char *repo;
     char *releases;
-    char *othpatch_releases;
+    // Hold the releases of th06 and of othpatch in the index, as the JSON
+    // text of the members of each array.
+    char *game_entries;
+    char *othpatch_entries;
     // Holds the version of the running othpatch.
     const char *version;
     // Holds the answer to the question of othpatch, or nullptr for a run
@@ -24,6 +27,17 @@ typedef struct {
     const char *answer;
     char *output;
 } M_CASE;
+
+// Writes the release index of the test to the server.
+static void M_WriteIndex(const M_CASE *const test)
+{
+    char *const text = Str_Format(
+        "{\"format\": 1, \"programs\": {\"th06\": [%s], \"othpatch\": "
+        "[%s]}}",
+        test->game_entries, test->othpatch_entries);
+    PatchBuilder_Write(test->server, "releases.json", text);
+    Mem_Free(text);
+}
 
 // Prepares a test whose othpatch is in a folder of its own, with the file
 // beside_path beside it, or with nothing beside it when beside_path is
@@ -37,14 +51,11 @@ static M_CASE M_PrepareBeside(
     test.program = TestDir_Join(test.dir, "program");
     test.repo = Str_Format("file://%s/thpatch/repo.js", test.server);
     test.releases = Str_Format("file://%s/releases.json", test.server);
-    test.othpatch_releases =
-        Str_Format("file://%s/othpatch_releases.json", test.server);
+    test.game_entries = Str_Dup("");
+    test.othpatch_entries = Str_Dup("{\"version\": \"0.1.0\", \"files\": {}}");
     test.version = "0.1.0";
     PatchBuilder_Write(test.program, Install_GetPlatform()->othpatch, "");
-    PatchBuilder_Write(
-        test.server, "othpatch_releases.json",
-        "[{\"tag_name\": \"othpatch-v0.1.0\", \"draft\": false, "
-        "\"prerelease\": false, \"assets\": []}]");
+    M_WriteIndex(&test);
     if (beside_path != nullptr) {
         PatchBuilder_Write(test.program, beside_path, "");
     }
@@ -87,17 +98,10 @@ static void M_AddNetwork(const M_CASE *const test)
 static int M_Run(M_CASE *const test, const int count, ...)
 {
     char *argv[16] = {
-        "othpatch",
-        "--dir",
-        test->patches,
-        "--repo",
-        test->repo,
-        "--releases",
-        test->releases,
-        "--othpatch-releases",
-        test->othpatch_releases,
+        "othpatch", "--dir",      test->patches,  "--repo",
+        test->repo, "--releases", test->releases,
     };
-    int argc = 9;
+    int argc = 7;
     va_list args;
     va_start(args, count);
     for (int i = 0; i < count; i++) {
@@ -135,7 +139,8 @@ static void M_CheckOutput(const M_CASE *const test, const char *const text)
 static void M_Close(M_CASE *const test)
 {
     Mem_Free(test->output);
-    Mem_Free(test->othpatch_releases);
+    Mem_Free(test->othpatch_entries);
+    Mem_Free(test->game_entries);
     Mem_Free(test->releases);
     Mem_Free(test->repo);
     Mem_Free(test->program);
@@ -494,32 +499,31 @@ static void M_WritePackage(
     Mem_Free(script);
 }
 
-// Writes the release list with one release of th06, tagged
-// th06-v<version>, whose package has digest, or no digest when digest is
-// nullptr. A release without assets has no package.
+// Writes the index with one release of th06, whose package has digest,
+// or no digest when digest is nullptr. A release without files has no
+// package. A development version beside it does not count.
 static void M_WriteReleases(
-    const M_CASE *const test, const char *const version,
-    const char *const digest, const bool assets)
+    M_CASE *const test, const char *const version, const char *const digest,
+    const bool files)
 {
     const char *const platform = Install_GetPlatform()->name;
     char *const digest_member = digest != nullptr
-        ? Str_Format(", \"digest\": \"sha256:%s\"", digest)
+        ? Str_Format(", \"sha256\": \"%s\"", digest)
         : Str_Dup("");
-    char *const asset = assets
+    char *const file = files
         ? Str_Format(
-              "{\"name\": \"oth06-%s-%s.zip\", \"url\": "
+              "\"%s\": {\"name\": \"oth06-%s-%s.zip\", \"url\": "
               "\"file://%s/oth06-%s-%s.zip\"%s}",
-              version, platform, test->server, version, platform, digest_member)
+              platform, version, platform, test->server, version, platform,
+              digest_member)
         : Str_Dup("");
-    char *const text = Str_Format(
-        "[{\"tag_name\": \"th06-v9.9.9\", \"draft\": false, "
-        "\"prerelease\": true, \"assets\": []}, "
-        "{\"tag_name\": \"th06-v%s\", \"draft\": false, \"prerelease\": "
-        "false, \"assets\": [%s]}]",
-        version, asset);
-    PatchBuilder_Write(test->server, "releases.json", text);
-    Mem_Free(text);
-    Mem_Free(asset);
+    Mem_Free(test->game_entries);
+    test->game_entries = Str_Format(
+        "{\"version\": \"9.9.9-dev\", \"files\": {}}, "
+        "{\"version\": \"%s\", \"othpatch\": \"0.5.0\", \"files\": {%s}}",
+        version, file);
+    M_WriteIndex(test);
+    Mem_Free(file);
     Mem_Free(digest_member);
 }
 
@@ -650,18 +654,25 @@ TEST(release_without_a_package_is_announced)
     M_CASE test = M_PrepareUpdate("update_no_asset", "0.1.0", "0.2.0");
     M_WriteReleases(&test, "0.2.0", nullptr, false);
     CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
-    M_CheckOutput(
-        &test, "oth06 0.2.0 is available, but its release has no oth06-0.2.0-");
+    char *const expected = Str_Format(
+        "oth06 0.2.0 is available, but not for %s\n",
+        Install_GetPlatform()->name);
+    M_CheckOutput(&test, expected);
+    Mem_Free(expected);
     M_CheckGame(&test, "0.1.0");
     M_Close(&test);
 }
 
-TEST(release_without_a_digest_installs)
+TEST(release_without_a_digest_fails_the_update)
 {
     M_CASE test = M_PrepareUpdate("update_no_digest", "0.1.0", "0.2.0");
     M_WriteReleases(&test, "0.2.0", nullptr, true);
-    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
-    M_CheckGame(&test, "0.2.0");
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 1);
+    M_CheckOutput(
+        &test,
+        "oth06: cannot install 0.2.0: the index gives no SHA-256 digest of "
+        "oth06-0.2.0-");
+    M_CheckGame(&test, "0.1.0");
     M_Close(&test);
 }
 
@@ -669,10 +680,14 @@ TEST(failed_check_does_not_fail_the_patches)
 {
     M_CASE test = M_PrepareBeside("update_offline", nullptr);
     M_AddNetwork(&test);
+    Mem_Free(test.releases);
+    test.releases = Str_Format("file://%s/missing.json", test.server);
     M_WriteGame(&test, "0.1.0");
     CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(&test, "Done: 2 patches");
     M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");
+    const char *const first = strstr(test.output, "Cannot check");
+    CHECK(first != nullptr && strstr(first + 1, "Cannot check") == nullptr);
     M_CheckGame(&test, "0.1.0");
     M_Close(&test);
 }
@@ -739,12 +754,12 @@ TEST(development_othpatch_is_never_replaced)
     M_Close(&test);
 }
 
-// Writes the release list of othpatch with release v<version>, whose
+// Writes the index with othpatch release <version>, whose
 // executable for the platform holds contents and has digest, or the digest
 // of contents when digest is nullptr.
 static void M_WriteOthpatchRelease(
-    const M_CASE *const test, const char *const version,
-    const char *const contents, const char *const digest)
+    M_CASE *const test, const char *const version, const char *const contents,
+    const char *const digest)
 {
     const INSTALL_PLATFORM *const platform = Install_GetPlatform();
     char *const name = Str_Format(
@@ -753,19 +768,14 @@ static void M_WriteOthpatchRelease(
     PatchBuilder_Write(test->server, name, contents);
     char computed[SHA256_HEX_SIZE];
     Sha256_ComputeHex(contents, strlen(contents), computed);
-    char *const text = Str_Format(
-        "[{\"tag_name\": \"othpatch-v9.9.9\", \"draft\": true, "
-        "\"prerelease\": false, \"assets\": []}, "
-        "{\"tag_name\": \"th06-v9.9.9\", \"draft\": false, "
-        "\"prerelease\": false, \"assets\": []}, "
-        "{\"tag_name\": \"othpatch-v%s\", \"draft\": false, "
-        "\"prerelease\": false, "
-        "\"assets\": [{\"name\": \"%s\", \"url\": \"file://%s/%s\", "
-        "\"digest\": \"sha256:%s\"}]}]",
-        version, name, test->server, name,
+    Mem_Free(test->othpatch_entries);
+    test->othpatch_entries = Str_Format(
+        "{\"version\": \"9.9.9-dev\", \"files\": {}}, "
+        "{\"version\": \"%s\", \"files\": {\"%s\": {\"name\": \"%s\", "
+        "\"url\": \"file://%s/%s\", \"sha256\": \"%s\"}}}",
+        version, platform->name, name, test->server, name,
         digest != nullptr ? digest : computed);
-    PatchBuilder_Write(test->server, "othpatch_releases.json", text);
-    Mem_Free(text);
+    M_WriteIndex(test);
     Mem_Free(name);
 }
 
@@ -833,32 +843,22 @@ TEST(othpatch_of_a_game_package_counts_for_its_own_release)
     M_Close(&test);
 }
 
-TEST(failed_othpatch_check_does_not_fail_the_patches)
+TEST(failed_check_of_othpatch_does_not_fail_the_patches)
 {
     M_CASE test = M_PrepareBeside("self_offline", nullptr);
     M_AddNetwork(&test);
-    Mem_Free(test.othpatch_releases);
-    test.othpatch_releases = Str_Format("file://%s/missing.json", test.server);
+    Mem_Free(test.releases);
+    test.releases = Str_Format("file://%s/missing.json", test.server);
     CHECK_EQ_INT(M_Run(&test, 4, "--update", "--game", "th06", "en"), 0);
     M_CheckOutput(&test, "Done: 2 patches");
-    M_CheckOutput(&test, "Cannot check for updates of othpatch: ");
+    M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");
     M_Close(&test);
 }
 
-TEST(one_release_list_serves_the_games_and_othpatch)
+TEST(one_index_serves_the_games_and_othpatch)
 {
-    M_CASE test = M_PrepareUpdate("shared_list", "0.1.0", "0.2.0");
+    M_CASE test = M_PrepareUpdate("shared_index", "0.1.0", "0.2.0");
     M_WriteOthpatchRelease(&test, "0.3.0", "othpatch 0.3.0", nullptr);
-    char *const text = Server_Read(test.server, "releases.json");
-    char *const othpatch = Server_Read(test.server, "othpatch_releases.json");
-    text[strlen(text) - 1] = ',';
-    // Keeps only the release othpatch-v0.3.0 of the othpatch list.
-    const char *const own =
-        strstr(othpatch, "{\"tag_name\": \"othpatch-v0.3.0\"");
-    char *const both = Str_Format("%s%s", text, own);
-    PatchBuilder_Write(test.server, "releases.json", both);
-    Mem_Free(test.othpatch_releases);
-    test.othpatch_releases = Str_Dup(test.releases);
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckOutput(
         &test,
@@ -866,21 +866,5 @@ TEST(one_release_list_serves_the_games_and_othpatch)
         "to install it\n"
         "othpatch 0.3.0 is available (you have 0.1.0); run othpatch --update "
         "to install it\n");
-    Mem_Free(both);
-    SDL_free(othpatch);
-    SDL_free(text);
-    M_Close(&test);
-}
-
-TEST(failed_shared_release_list_is_one_message)
-{
-    M_CASE test = M_PrepareBeside("shared_offline", nullptr);
-    M_AddNetwork(&test);
-    M_WriteGame(&test, "0.1.0");
-    Mem_Free(test.othpatch_releases);
-    test.othpatch_releases = Str_Dup(test.releases);
-    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
-    M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");
-    CHECK(strstr(test.output, "of othpatch") == nullptr);
     M_Close(&test);
 }

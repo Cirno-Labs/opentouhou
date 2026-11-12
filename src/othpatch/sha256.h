@@ -2,8 +2,8 @@
 
 #include "core/base/types.h"
 
-// Computes SHA-256 hashes, which GitHub gives as the digest of each
-// release asset.
+// Computes SHA-256 hashes, which the release index gives for each
+// package.
 
 // Sets the size of a hash in bytes.
 #define SHA256_SIZE 32

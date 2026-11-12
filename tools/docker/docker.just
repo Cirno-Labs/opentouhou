@@ -43,11 +43,9 @@ _docker_run platform *args:
         --rm \
         --user {{HOST_USER_UID}}:{{HOST_USER_GID}} \
         -e CCACHE_MAXSIZE \
-        -e GAME_REPOSITORY \
-        -e OTHPATCH_REPOSITORY \
+        -e RELEASES_URL \
+        -e RELEASE_INDEX_URL \
         -e OPENTOUHOU_RELEASE \
-        -e GH_TOKEN \
-        -e GITHUB_TOKEN \
         -v "{{CWD}}:/app" \
         "$(tools/docker/image_tag {{platform}})" \
         {{args}}

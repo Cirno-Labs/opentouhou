@@ -6,8 +6,8 @@ GAME_VERSION is the version string from tools/shared/versioning.py.
 GAME_VERSION_RC holds its numbers for VERSIONINFO: major, minor, patch
 and 0.
 --prefix replaces GAME in both names, such as OTHPATCH_VERSION.
-Each --repository NAME=OWNER/REPO adds NAME_REPOSITORY, a GitHub
-repository that publishes releases.
+Each --define NAME=TEXT adds <prefix>_NAME, a string with the text, such
+as a URL.
 The header is rewritten only when its text changes.
 """
 
@@ -25,13 +25,13 @@ def numbers(version: str) -> str:
     return version.partition("-")[0].replace(".", ",") + ",0"
 
 
-def repository(value: str) -> tuple[str, str]:
-    name, _, repo = value.partition("=")
-    if not re.fullmatch(r"[A-Z0-9_]+", name) or not re.fullmatch(
-        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo
-    ):
-        raise argparse.ArgumentTypeError(f"not NAME=owner/name: {value}")
-    return name, repo
+def define(value: str) -> tuple[str, str]:
+    name, _, text = value.partition("=")
+    if not re.fullmatch(r"[A-Z0-9_]+", name) or not re.fullmatch(r"[!#-\[\]-~]+", text):
+        raise argparse.ArgumentTypeError(
+            f"not NAME=TEXT, the text printable ASCII without spaces, quotes or backslashes: {value}"
+        )
+    return name, text
 
 
 def main() -> None:
@@ -39,7 +39,7 @@ def main() -> None:
     parser.add_argument("program")
     parser.add_argument("output", type=Path)
     parser.add_argument("--prefix", default="GAME")
-    parser.add_argument("--repository", type=repository, action="append", default=[])
+    parser.add_argument("--define", type=define, action="append", default=[])
     args = parser.parse_args()
     version = generate_version(args.program)
     text = (
@@ -47,8 +47,8 @@ def main() -> None:
         f'#define {args.prefix}_VERSION "{version}"\n'
         f"#define {args.prefix}_VERSION_RC {numbers(version)}\n"
     )
-    for name, repo in args.repository:
-        text += f'#define {name}_REPOSITORY "{repo}"\n'
+    for name, value in args.define:
+        text += f'#define {args.prefix}_{name} "{value}"\n'
     if not args.output.exists() or args.output.read_text() != text:
         args.output.write_text(text)
 

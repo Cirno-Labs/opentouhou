@@ -53,16 +53,15 @@ the options that the Linux image pins, into `build/mac-deps/`.
 
 ### Build options
 
-othpatch updates the games and itself from the releases of a GitHub
-repository. Two Meson options name it:
-
-- `game_repository`: the games, `Cirno-Labs/opentouhou` by default.
-- `othpatch_repository`: othpatch, the same repository by default.
-
-The Docker and macOS builds take them from the environment variables
-`GAME_REPOSITORY` and `OTHPATCH_REPOSITORY`. GitHub Actions sets
-`GAME_REPOSITORY` to the repository that runs the workflow, so that a
-fork updates from its own releases.
+othpatch updates the games and itself from a release index,
+`releases.json` (see "Releasing"). The Meson option `releases_url`
+names it. The default, `https://opentouhou.invalid/releases.json`, is a
+placeholder that reaches nothing, so a build that is packaged or
+published must set it. The Docker and macOS builds take it from the
+environment variable `RELEASES_URL`. GitHub Actions sets it to the index
+in the R2 bucket of the repository that runs the workflow,
+`<R2_PUBLIC_URL>/releases.json`, so that a fork updates from its own
+releases.
 
 ## Packaging
 
@@ -86,17 +85,15 @@ counterparts write othpatch's executable as its release names it:
 `othpatch-<version>-Linux`, `othpatch-<version>-Windows.exe`, and
 `othpatch-<version>-macOS`, one universal executable with an ad-hoc
 signature. A development version holds a `-` instead of the `+`, as
-`0.1.0-dev-abcdef0`, because GitHub renames release files whose names
-hold a `+`.
+`0.1.0-dev-abcdef0`, so that the name is safe in a URL.
 
 Every package contains the game's executable, othpatch and a readme
 with the credits. The othpatch is the version that
-`src/<game>/othpatch.txt` names, downloaded from the release
-`othpatch-vX.Y.Z` of the othpatch repository (see the build options)
-and checked against the SHA-256 digest that the release gives. So
-packaging needs the network, and it fails when that release does not
-exist. `GH_TOKEN` or `GITHUB_TOKEN`, when set, gives access to a private
-repository. None contains any of the original game's files. The
+`src/<game>/othpatch.txt` names, downloaded as the release index gives
+it and checked against the SHA-256 digest in the index. The index is
+the one of the build option `releases_url`, or the one that the
+environment variable `RELEASE_INDEX_URL` names. So packaging needs the
+network, and it fails when the index has no such othpatch. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
 properties, the AppImage's desktop entry and the macOS bundle's
 Info.plist. `--help` prints the version too. The icons are rendered
@@ -249,9 +246,8 @@ other arguments. A run also updates every patch in the folder.
 Then `othpatch` checks for a newer release of each game beside it and
 asks before it installs it; `othpatch --update` installs it without
 asking. It then does the same for itself. The releases come from the
-repository that the build options name, the game releases tagged
-`<game>-vX.Y.Z` and the othpatch releases tagged `othpatch-vX.Y.Z`. A
-development build is never updated.
+release index that the build option `releases_url` names. A development
+build is never updated.
 
 ## Docker images
 

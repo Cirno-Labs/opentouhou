@@ -12,3 +12,5 @@ Each release lists what changed for players, newest first.
 - Checks for a newer release of othpatch itself and installs it in the
   same way. A game update never installs an older othpatch than the
   running one.
+- Finds the releases in the opentouhou release index. `--releases
+  <url>` names another release index.

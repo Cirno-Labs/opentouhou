@@ -8,6 +8,7 @@ import urllib.request
 from pathlib import Path
 
 from shared.versioning import (
+    PLATFORM_NAMES,
     REPO_DIR,
     othpatch_asset_name,
     othpatch_pin_path,
@@ -15,29 +16,27 @@ from shared.versioning import (
 )
 
 
-def othpatch_repository(repo_dir: Path = REPO_DIR) -> str:
-    """Return the GitHub repository that publishes othpatch's releases.
+def releases_url(repo_dir: Path = REPO_DIR) -> str:
+    """Return the URL of the release index that packaging reads.
 
-    It is the build option othpatch_repository, else game_repository, as
-    the environment variables OTHPATCH_REPOSITORY and GAME_REPOSITORY or
-    the defaults in meson.options give them.
+    It is the environment variable RELEASE_INDEX_URL, else the build
+    option releases_url, as the environment variable RELEASES_URL or the
+    default in meson.options gives it. RELEASE_INDEX_URL changes the index
+    of packaging alone, not the one that the built othpatch reads.
     """
-    for name in ["OTHPATCH_REPOSITORY", "GAME_REPOSITORY"]:
+    for name in ["RELEASE_INDEX_URL", "RELEASES_URL"]:
         if os.environ.get(name):
             return os.environ[name]
     options = (repo_dir / "meson.options").read_text()
-    match = re.search(r"'game_repository',.*?value: '([^']*)'", options, re.DOTALL)
+    match = re.search(r"'releases_url',.*?value: '([^']*)'", options, re.DOTALL)
     if match is None:
-        raise RuntimeError("meson.options has no default for game_repository")
+        raise RuntimeError("meson.options has no default for releases_url")
     return match.group(1)
 
 
 def request(url: str, accept: str) -> urllib.request.Request:
     """Return a request to the GitHub API, with the token of GH_TOKEN or
     GITHUB_TOKEN when one is set.
-
-    The token is never sent on to a redirect, because the download URL
-    of a file redirects to storage that refuses a second credential.
     """
     req = urllib.request.Request(url, headers={"Accept": accept})
     token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
@@ -46,56 +45,59 @@ def request(url: str, accept: str) -> urllib.request.Request:
     return req
 
 
-def fetch_othpatch(version: str, platform: str, repo_dir: Path = REPO_DIR) -> Path:
-    """Return the path of othpatch's executable for a platform from its
-    release othpatch-v<version>, downloaded into build/othpatch/.
-
-    The file is checked against the SHA-256 digest that the release gives.
-    Raises RuntimeError with a message for a person when the release or
-    the file is missing or the digest is wrong.
-    """
-    repository = othpatch_repository(repo_dir)
-    tag = f"othpatch-v{version}"
-    name = othpatch_asset_name(version, platform)
-    url = f"https://api.github.com/repos/{repository}/releases/tags/{tag}"
+def read_url(url: str, what: str) -> bytes:
     try:
-        with urllib.request.urlopen(
-            request(url, "application/vnd.github+json")
-        ) as response:
-            release = json.load(response)
+        with urllib.request.urlopen(url) as response:
+            return response.read()
     except urllib.error.HTTPError as error:
-        if error.code == 404:
-            raise RuntimeError(
-                f"{repository} has no release {tag}. Publish othpatch {version}"
-                " first, or name a released version in src/<game>/othpatch.txt."
-            ) from None
-        raise RuntimeError(
-            f"Cannot read the release {tag} of {repository}: {error}"
-        ) from None
+        raise RuntimeError(f"Cannot read {what} at {url}: {error}") from None
     except urllib.error.URLError as error:
         raise RuntimeError(
-            f"Cannot read the release {tag} of {repository}: {error.reason}."
+            f"Cannot read {what} at {url}: {error.reason}."
             " Packaging downloads othpatch and needs the network."
         ) from None
 
-    asset = next(
-        (item for item in release.get("assets", []) if item["name"] == name), None
+
+def fetch_othpatch(version: str, platform: str, repo_dir: Path = REPO_DIR) -> Path:
+    """Return the path of othpatch's executable for a platform, downloaded
+    into build/othpatch/ as the release index gives it.
+
+    The file is checked against the SHA-256 digest that the index gives.
+    Raises RuntimeError with a message for a person when the release or
+    the file is missing or the digest is wrong.
+    """
+    url = releases_url(repo_dir)
+    try:
+        index = json.loads(read_url(url, "the release index"))
+    except ValueError:
+        raise RuntimeError(f"The release index at {url} is not JSON") from None
+    if not isinstance(index, dict) or not isinstance(index.get("programs"), dict):
+        raise RuntimeError(f"{url} is not a release index")
+    release = next(
+        (
+            item
+            for item in index["programs"].get("othpatch", [])
+            if item.get("version") == version
+        ),
+        None,
     )
-    if asset is None:
-        raise RuntimeError(f"The release {tag} of {repository} has no {name}")
-    digest = (asset.get("digest") or "").removeprefix("sha256:").lower()
-    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+    if release is None:
         raise RuntimeError(
-            f"The release {tag} of {repository} gives no SHA-256 digest of {name}"
+            f"The release index at {url} has no othpatch {version}. Publish"
+            " it first, or name a released version in src/<game>/othpatch.txt."
         )
+    name = othpatch_asset_name(version, platform)
+    file = release.get("files", {}).get(PLATFORM_NAMES[platform])
+    if file is None or file.get("name") != name:
+        raise RuntimeError(f"othpatch {version} in the index at {url} has no {name}")
+    digest = str(file.get("sha256", "")).lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise RuntimeError(f"The index at {url} gives no SHA-256 digest of {name}")
 
     path = repo_dir / "build/othpatch" / name
     if path.exists() and hashlib.sha256(path.read_bytes()).hexdigest() == digest:
         return path
-    with urllib.request.urlopen(
-        request(asset["url"], "application/octet-stream")
-    ) as response:
-        data = response.read()
+    data = read_url(file["url"], name)
     computed = hashlib.sha256(data).hexdigest()
     if computed != digest:
         raise RuntimeError(

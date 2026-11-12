@@ -1,58 +1,59 @@
 #include "othpatch/release.h"
 
+#include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/json/parse.h"
 
 #include "test.h"
 
+#define M_DIGEST                                                               \
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
 typedef struct {
     ARENA arena;
-    JSON_VALUE *list;
+    JSON_VALUE *index;
     RELEASE release;
 } M_CASE;
 
-// Returns a release of the list in JSON.
-static char *M_Release(
-    const char *const tag, const bool draft, const bool prerelease,
-    const char *const assets)
+// Returns a release of the index in JSON, with the files in JSON.
+static char *M_Release(const char *const version, const char *const files)
 {
     return Str_Format(
-        "{\"tag_name\": \"%s\", \"draft\": %s, \"prerelease\": %s, "
-        "\"assets\": [%s]}",
-        tag, draft ? "true" : "false", prerelease ? "true" : "false", assets);
+        "{\"version\": \"%s\", \"date\": \"2026-11-12\", \"changes\": \"\", "
+        "\"files\": {%s}}",
+        version, files);
 }
 
-static char *M_Asset(const char *const name, const char *const digest)
+static char *M_File(const char *const platform, const char *const name)
 {
     return Str_Format(
-        "{\"name\": \"%s\", \"url\": "
-        "\"https://example.com/%s\"%s%s%s}",
-        name, name, digest != nullptr ? ", \"digest\": \"" : "",
-        digest != nullptr ? digest : "", digest != nullptr ? "\"" : "");
+        "\"%s\": {\"name\": \"%s\", \"url\": \"https://example.com/%s\", "
+        "\"size\": 1, \"sha256\": \"" M_DIGEST "\"}",
+        platform, name, name);
 }
 
-static RESULT M_FindNames(
-    M_CASE *const test, const char *const text,
-    const RELEASE_NAMES *const names)
+static RESULT M_FindIn(
+    M_CASE *const test, const char *const text, const char *const program,
+    const char *const platform)
 {
     Arena_Init(&test->arena, "release test", 1 << 20);
     CHECK(Result_Log(
         Json_Parse(
-            text, strlen(text), Arena_Allocator(&test->arena), &test->list),
+            text, strlen(text), Arena_Allocator(&test->arena), &test->index),
         LOG_LEVEL_ERROR));
-    return Release_FindNewest(test->list, names, &test->arena, &test->release);
+    return Release_FindNewest(test->index, program, platform, &test->release);
 }
 
-static RESULT M_Find(M_CASE *const test, const char *const text)
+// Finds the newest th06 release for Linux in an index whose programs are
+// the JSON object members programs.
+static RESULT M_Find(M_CASE *const test, const char *const programs)
 {
-    const RELEASE_NAMES names = {
-        .program = "th06",
-        .tag_prefix = "th06-v",
-        .package_prefix = "oth06-",
-        .package_suffix = "-Linux.zip",
-    };
-    return M_FindNames(test, text, &names);
+    char *const text =
+        Str_Format("{\"format\": 1, \"programs\": {%s}}", programs);
+    const RESULT result = M_FindIn(test, text, "th06", "Linux");
+    Mem_Free(text);
+    return result;
 }
 
 static void M_CheckVersion(
@@ -99,102 +100,104 @@ TEST(versions_compare_by_number)
 
 TEST(newest_release_of_the_game_wins)
 {
-    char *const asset = M_Asset(
-        "oth06-0.10.0-Linux.zip",
-        "sha256:"
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-    char *const other = M_Asset("oth06-0.10.0-Windows.zip", nullptr);
-    char *const assets = Str_Format("%s, %s", other, asset);
-    char *const old = M_Release("th06-v0.9.0", false, false, "");
-    char *const newest = M_Release("th06-v0.10.0", false, false, assets);
-    char *const other_game = M_Release("th07-v9.0.0", false, false, "");
-    char *const othpatch = M_Release("othpatch-v5.0.0", false, false, "");
-    char *const latest = M_Release("latest", false, true, "");
-    char *const text = Str_Format(
-        "[%s, %s, %s, %s, %s]", old, other_game, newest, othpatch, latest);
+    char *const linux_file = M_File("Linux", "oth06-0.10.0-Linux.zip");
+    char *const windows_file = M_File("Windows", "oth06-0.10.0-Windows.zip");
+    char *const files = Str_Format("%s, %s", windows_file, linux_file);
+    char *const old = M_Release("0.9.0", "");
+    char *const newest = M_Release("0.10.0", files);
+    char *const other_game = M_Release("9.0.0", "");
+    char *const programs = Str_Format(
+        "\"th07\": [%s], \"th06\": [%s, %s], \"othpatch\": [%s]", other_game,
+        old, newest, other_game);
     M_CASE test;
-    CHECK(Result_Log(M_Find(&test, text), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
     M_CheckVersion(test.release.version, 0, 10, 0);
     CHECK_EQ_STR(test.release.package, "oth06-0.10.0-Linux.zip");
     CHECK_EQ_STR(
         test.release.url, "https://example.com/oth06-0.10.0-Linux.zip");
-    CHECK_EQ_STR(
-        test.release.sha256,
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    CHECK_EQ_STR(test.release.sha256, M_DIGEST);
     Arena_Free(&test.arena);
-    Mem_Free(text);
-    Mem_Free(latest);
-    Mem_Free(othpatch);
+    Mem_Free(programs);
     Mem_Free(other_game);
     Mem_Free(newest);
     Mem_Free(old);
-    Mem_Free(assets);
-    Mem_Free(other);
-    Mem_Free(asset);
+    Mem_Free(files);
+    Mem_Free(windows_file);
+    Mem_Free(linux_file);
 }
 
-TEST(drafts_and_pre_releases_are_skipped)
+TEST(releases_without_a_plain_version_are_skipped)
 {
-    char *const draft = M_Release("th06-v0.3.0", true, false, "");
-    char *const pre = M_Release("th06-v0.2.0", false, true, "");
-    char *const plain = M_Release("th06-v0.1.0", false, false, "");
-    char *const text = Str_Format("[%s, %s, %s]", draft, pre, plain);
+    char *const dev = M_Release("0.3.0-dev+abcdef0", "");
+    char *const plain = M_Release("0.1.0", "");
+    char *const programs = Str_Format(
+        "\"th06\": [%s, {\"date\": \"2026-11-12\"}, %s]", dev, plain);
     M_CASE test;
-    CHECK(Result_Log(M_Find(&test, text), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
     M_CheckVersion(test.release.version, 0, 1, 0);
+    Arena_Free(&test.arena);
+    Mem_Free(programs);
+    Mem_Free(plain);
+    Mem_Free(dev);
+}
+
+TEST(release_without_the_platform_has_no_package)
+{
+    char *const windows_file = M_File("Windows", "oth06-0.1.0-Windows.zip");
+    char *const release = M_Release("0.1.0", windows_file);
+    char *const programs = Str_Format("\"th06\": [%s]", release);
+    M_CASE test;
+    CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
+    M_CheckVersion(test.release.version, 0, 1, 0);
+    CHECK(test.release.package == nullptr);
     CHECK(test.release.url == nullptr);
     CHECK(test.release.sha256 == nullptr);
     Arena_Free(&test.arena);
-    Mem_Free(text);
-    Mem_Free(plain);
-    Mem_Free(pre);
-    Mem_Free(draft);
+    Mem_Free(programs);
+    Mem_Free(release);
+    Mem_Free(windows_file);
 }
 
-TEST(asset_without_a_sha256_digest_has_none)
+TEST(file_without_a_sha256_digest_has_none)
 {
-    char *const asset = M_Asset("oth06-0.1.0-Linux.zip", "md5:abc");
-    char *const release = M_Release("th06-v0.1.0", false, false, asset);
-    char *const text = Str_Format("[%s]", release);
+    const char *const programs =
+        "\"th06\": [{\"version\": \"0.1.0\", \"files\": {\"Linux\": "
+        "{\"name\": \"oth06-0.1.0-Linux.zip\", \"url\": \"https://x/\"}}}]";
     M_CASE test;
-    CHECK(Result_Log(M_Find(&test, text), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
     CHECK(test.release.url != nullptr);
     CHECK(test.release.sha256 == nullptr);
     Arena_Free(&test.arena);
-    Mem_Free(text);
-    Mem_Free(release);
-    Mem_Free(asset);
 }
 
-TEST(list_without_a_release_of_the_game_fails)
+TEST(index_without_a_release_of_the_game_fails)
 {
-    char *const release = M_Release("th06-v1.0.0-rc1", false, false, "");
-    char *const text = Str_Format("[%s]", release);
+    char *const release = M_Release("1.0.0-rc1", "");
+    char *const programs =
+        Str_Format("\"th06\": [%s], \"othpatch\": [%s]", release, release);
     M_CASE test;
-    const RESULT result = M_Find(&test, text);
+    const RESULT result = M_Find(&test, programs);
     CHECK(!IS_OK(result));
     CHECK(strstr(result.message, "no release of th06") != nullptr);
     Result_Ignore(result);
     Arena_Free(&test.arena);
-    Mem_Free(text);
+    Mem_Free(programs);
     Mem_Free(release);
 }
 
 TEST(newest_release_of_othpatch_wins)
 {
-    char *const asset = M_Asset("othpatch-1.2.0-Windows.exe", nullptr);
-    char *const game = M_Release("th06-v9.0.0", false, false, "");
-    char *const old = M_Release("othpatch-v1.1.0", false, false, "");
-    char *const newest = M_Release("othpatch-v1.2.0", false, false, asset);
-    char *const text = Str_Format("[%s, %s, %s]", game, newest, old);
-    const RELEASE_NAMES names = {
-        .program = "othpatch",
-        .tag_prefix = "othpatch-v",
-        .package_prefix = "othpatch-",
-        .package_suffix = "-Windows.exe",
-    };
+    char *const windows_file = M_File("Windows", "othpatch-1.2.0-Windows.exe");
+    char *const game = M_Release("9.0.0", "");
+    char *const old = M_Release("1.1.0", "");
+    char *const newest = M_Release("1.2.0", windows_file);
+    char *const text = Str_Format(
+        "{\"format\": 1, \"programs\": {\"th06\": [%s], \"othpatch\": [%s, "
+        "%s]}}",
+        game, newest, old);
     M_CASE test;
-    CHECK(Result_Log(M_FindNames(&test, text, &names), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        M_FindIn(&test, text, "othpatch", "Windows"), LOG_LEVEL_ERROR));
     M_CheckVersion(test.release.version, 1, 2, 0);
     CHECK_EQ_STR(test.release.package, "othpatch-1.2.0-Windows.exe");
     CHECK_EQ_STR(
@@ -204,12 +207,22 @@ TEST(newest_release_of_othpatch_wins)
     Mem_Free(newest);
     Mem_Free(old);
     Mem_Free(game);
-    Mem_Free(asset);
+    Mem_Free(windows_file);
 }
 
-TEST(list_that_is_not_an_array_fails)
+TEST(text_that_is_not_an_index_fails)
 {
-    M_CASE test;
-    CHECK(!Result_Ignore(M_Find(&test, "{\"message\": \"Not Found\"}")));
-    Arena_Free(&test.arena);
+    const char *const texts[] = {
+        "[]",
+        "{\"message\": \"Not Found\"}",
+        "{\"format\": 2, \"programs\": {\"th06\": []}}",
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(texts); i++) {
+        M_CASE test;
+        const RESULT result = M_FindIn(&test, texts[i], "th06", "Linux");
+        CHECK(!IS_OK(result));
+        CHECK(strstr(result.message, "not a release index") != nullptr);
+        Result_Ignore(result);
+        Arena_Free(&test.arena);
+    }
 }

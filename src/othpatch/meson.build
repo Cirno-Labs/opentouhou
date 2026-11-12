@@ -12,11 +12,6 @@ othpatch_install_backends = {
   'windows': 'install/backend_windows.c',
 }
 
-othpatch_repository = get_option('othpatch_repository')
-if othpatch_repository == ''
-  othpatch_repository = get_option('game_repository')
-endif
-
 # Rewritten on every build; the compile reruns only when the version
 # changed.
 othpatch_version = custom_target(
@@ -29,10 +24,8 @@ othpatch_version = custom_target(
     '@OUTPUT@',
     '--prefix',
     'OTHPATCH',
-    '--repository',
-    'GAME=' + get_option('game_repository'),
-    '--repository',
-    'OTHPATCH=' + othpatch_repository,
+    '--define',
+    'RELEASES_URL=' + get_option('releases_url'),
   ],
   build_always_stale: true,
 )

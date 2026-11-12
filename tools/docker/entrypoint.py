@@ -2,15 +2,16 @@
 """Build and package opentouhou inside a build image.
 
 package writes the game packages into build/packages/, each with the
-othpatch that src/<game>/othpatch.txt names, downloaded from its
-release. package-othpatch writes the executable of othpatch there, as
+othpatch that src/<game>/othpatch.txt names, downloaded as the release
+index gives it. package-othpatch writes the executable of othpatch there, as
 its release names it.
 
 Each image runs this script with its platform. The repository is mounted
 at /app.
 
-The environment variables GAME_REPOSITORY and OTHPATCH_REPOSITORY, when
-set, give the build options game_repository and othpatch_repository.
+The environment variable RELEASES_URL, when set, gives the build option
+releases_url. shared/othpatch_release.py names the release index that
+packaging reads.
 """
 
 import argparse
@@ -36,10 +37,7 @@ CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt"}
 EXE_SUFFIXES = {"linux": "", "win": ".exe"}
 GAMES = ["th06"]
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
-OPTIONS = {
-    "GAME_REPOSITORY": "game_repository",
-    "OTHPATCH_REPOSITORY": "othpatch_repository",
-}
+OPTIONS = {"RELEASES_URL": "releases_url"}
 
 
 def build_dir(platform: str, target: str) -> Path:
