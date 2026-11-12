@@ -53,11 +53,16 @@ the options that the Linux image pins, into `build/mac-deps/`.
 
 ### Build options
 
-othpatch updates the games from the releases of one GitHub repository.
-The Meson option `game_repository` names it, `Cirno-Labs/opentouhou` by
-default. The Docker and macOS builds take it from the environment
-variable `GAME_REPOSITORY`. GitHub Actions sets it to the repository
-that runs the workflow, so that a fork updates from its own releases.
+othpatch updates the games and itself from the releases of a GitHub
+repository. Two Meson options name it:
+
+- `game_repository`: the games, `Cirno-Labs/opentouhou` by default.
+- `othpatch_repository`: othpatch, the same repository by default.
+
+The Docker and macOS builds take them from the environment variables
+`GAME_REPOSITORY` and `OTHPATCH_REPOSITORY`. GitHub Actions sets
+`GAME_REPOSITORY` to the repository that runs the workflow, so that a
+fork updates from its own releases.
 
 ## Packaging
 
@@ -207,8 +212,10 @@ other arguments. A run also updates every patch in the folder.
 
 Then `othpatch` checks for a newer release of each game beside it and
 asks before it installs it; `othpatch --update` installs it without
-asking. The releases come from the repository that the build option
-`game_repository` names. A development build is never updated.
+asking. It then does the same for itself. The releases come from the
+repository that the build options name, the game releases tagged
+`<game>-vX.Y.Z` and the othpatch releases tagged `othpatch-vX.Y.Z`. A
+development build is never updated.
 
 ## Docker images
 

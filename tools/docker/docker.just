@@ -44,6 +44,7 @@ _docker_run platform *args:
         --user {{HOST_USER_UID}}:{{HOST_USER_GID}} \
         -e CCACHE_MAXSIZE \
         -e GAME_REPOSITORY \
+        -e OTHPATCH_REPOSITORY \
         -v "{{CWD}}:/app" \
         "$(tools/docker/image_tag {{platform}})" \
         {{args}}

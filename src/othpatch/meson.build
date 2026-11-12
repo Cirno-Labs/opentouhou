@@ -12,6 +12,11 @@ othpatch_install_backends = {
   'windows': 'install/backend_windows.c',
 }
 
+othpatch_repository = get_option('othpatch_repository')
+if othpatch_repository == ''
+  othpatch_repository = get_option('game_repository')
+endif
+
 # Rewritten on every build; the compile reruns only when the version
 # changed.
 othpatch_version = custom_target(
@@ -26,6 +31,8 @@ othpatch_version = custom_target(
     'OTHPATCH',
     '--repository',
     'GAME=' + get_option('game_repository'),
+    '--repository',
+    'OTHPATCH=' + othpatch_repository,
   ],
   build_always_stale: true,
 )
@@ -53,6 +60,8 @@ othpatch_lib = static_library(
 
 othpatch_libs = [othpatch_lib, core_json_lib, core_io_lib, core_base_lib]
 othpatch_deps = [curl, sdl3, zlib]
-othpatch_entry = files(
-  host_machine.system() == 'windows' ? 'backend_main_windows.c' : 'backend_main_posix.c',
-)
+othpatch_entry = [
+  files(host_machine.system() == 'windows' ? 'backend_main_windows.c' : 'backend_main_posix.c'),
+  othpatch_version,
+]
+othpatch_version_include = '-I' + meson.current_build_dir()

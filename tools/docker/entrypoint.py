@@ -4,8 +4,8 @@
 Each image runs this script with its platform. The repository is mounted
 at /app.
 
-The environment variable GAME_REPOSITORY, when set, gives the build
-option game_repository.
+The environment variables GAME_REPOSITORY and OTHPATCH_REPOSITORY, when
+set, give the build options game_repository and othpatch_repository.
 """
 
 import argparse
@@ -27,6 +27,7 @@ GAMES = ["th06"]
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
 OPTIONS = {
     "GAME_REPOSITORY": "game_repository",
+    "OTHPATCH_REPOSITORY": "othpatch_repository",
 }
 
 

@@ -1,12 +1,12 @@
 #include "othpatch/install.h"
 
+#include "othpatch/game.h"
 #include "othpatch/install/backend.h"
 #include "othpatch/zip.h"
 
 #include "core/base/memory.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
-#include "core/io/reader.h"
 #include "core/io/writer.h"
 
 #include <stdarg.h>
@@ -194,51 +194,48 @@ static RESULT M_InstallGame(
     return M_Swap(platform, path, arena);
 }
 
-// Returns whether the file at path holds exactly size bytes of data.
-static bool M_HasContents(
-    const char *const path, const uint8_t *const data, const size_t size)
+// Writes data, the bytes of othpatch, beside the othpatch in dir as
+// "<name>.new" and returns the path of that file.
+static RESULT M_StageOthpatch(
+    const INSTALL_PLATFORM *const platform, const char *const dir,
+    const uint8_t *const data, const size_t size, ARENA *const arena,
+    const char **const out)
 {
-    READER reader;
-    if (!Result_Ignore(Reader_OpenFile(&reader, path))) {
-        return false;
-    }
-    bool same = Reader_Size(&reader) == size;
-    uint8_t buffer[65536];
-    for (size_t done = 0; same && done < size; done += sizeof(buffer)) {
-        const size_t part = MIN(size - done, sizeof(buffer));
-        Reader_ReadBytes(&reader, buffer, part);
-        same =
-            !Reader_Failed(&reader) && memcmp(buffer, data + done, part) == 0;
-    }
-    Reader_Close(&reader);
-    Result_Ignore(Reader_Result(&reader));
-    return same;
+    const char *const path =
+        Path_Join(Arena_Allocator(arena), dir, platform->othpatch);
+    *out = M_Format(arena, "%s.new", path);
+    return M_WriteFile(*out, data, size, true);
 }
 
-static RESULT M_InstallOthpatch(
+// Installs the othpatch of a package when its version is newer than
+// *current. A package othpatch that gives no version is skipped.
+static RESULT M_InstallNewerOthpatch(
     const INSTALL_PLATFORM *const platform, const char *const dir,
     const uint8_t *const package, const size_t size,
-    const ZIP_ENTRY_LIST *const entries, ARENA *const arena,
-    bool *const replaced)
+    const ZIP_ENTRY *const entry, RELEASE_VERSION *const current,
+    ARENA *const arena, bool *const replaced)
 {
-    const ZIP_ENTRY *const entry = Zip_Find(entries, platform->othpatch);
-    FAIL_IF(entry == nullptr, "the package has no %s", platform->othpatch);
     uint8_t *data;
     size_t data_size;
     MUST(Zip_Read(package, size, entry, &data, &data_size));
-    const char *const path =
-        Path_Join(Arena_Allocator(arena), dir, platform->othpatch);
-    RESULT result = OK;
-    if (!M_HasContents(path, data, data_size)) {
-        const char *const staged = M_Format(arena, "%s.new", path);
-        result = M_WriteFile(staged, data, data_size, true);
-        if (IS_OK(result)) {
-            result = M_Swap(platform, path, arena);
-        }
-        *replaced = IS_OK(result);
-    }
+    const char *staged;
+    const RESULT written =
+        M_StageOthpatch(platform, dir, data, data_size, arena, &staged);
     Mem_Free(data);
-    return result;
+    MUST(written);
+    char text[GAME_VERSION_SIZE];
+    RELEASE_VERSION version;
+    if (Result_Ignore(Game_GetVersion(staged, text))
+        && Release_ParseVersion(text, &version)
+        && Release_CompareVersions(version, *current) > 0) {
+        MUST(M_Swap(
+            platform,
+            Path_Join(Arena_Allocator(arena), dir, platform->othpatch), arena));
+        *current = version;
+        *replaced = true;
+        return OK;
+    }
+    return File_Remove(staged);
 }
 
 char *Install_GetGamePath(
@@ -256,20 +253,34 @@ char *Install_GetGamePath(
 RESULT Install_Package(
     const INSTALL_PLATFORM *const platform, const char *const dir,
     const char *const game, const uint8_t *const package, const size_t size,
-    ARENA *const arena, bool *const othpatch_replaced)
+    RELEASE_VERSION *const othpatch_version, ARENA *const arena,
+    bool *const othpatch_replaced)
 {
     *othpatch_replaced = false;
     ZIP_ENTRY_LIST entries;
     MUST(Zip_List(package, size, arena, &entries), "the package");
-    FAIL_IF(
-        Zip_Find(&entries, platform->othpatch) == nullptr,
-        "the package has no %s", platform->othpatch);
+    const ZIP_ENTRY *const othpatch = Zip_Find(&entries, platform->othpatch);
+    FAIL_IF(othpatch == nullptr, "the package has no %s", platform->othpatch);
     MUST(M_InstallGame(platform, dir, game, package, size, &entries, arena));
-    MUST(
-        M_InstallOthpatch(
-            platform, dir, package, size, &entries, arena, othpatch_replaced),
-        "%s", platform->othpatch);
+    if (othpatch_version != nullptr) {
+        MUST(
+            M_InstallNewerOthpatch(
+                platform, dir, package, size, othpatch, othpatch_version, arena,
+                othpatch_replaced),
+            "%s", platform->othpatch);
+    }
     return OK;
+}
+
+RESULT Install_Othpatch(
+    const INSTALL_PLATFORM *const platform, const char *const dir,
+    const uint8_t *const data, const size_t size, ARENA *const arena)
+{
+    const char *staged;
+    MUST(M_StageOthpatch(platform, dir, data, size, arena, &staged));
+    return M_Swap(
+        platform, Path_Join(Arena_Allocator(arena), dir, platform->othpatch),
+        arena);
 }
 
 void Install_RemoveLeftovers(

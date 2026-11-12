@@ -9,18 +9,27 @@
 #include <sys/stat.h>
 
 #define M_OLD_OTHPATCH "old othpatch"
-#define M_NEW_OTHPATCH "new othpatch"
+// Holds the othpatch of the packages, which prints its version as othpatch
+// does.
+#define M_NEW_OTHPATCH "#!/bin/sh\necho \"othpatch 0.2.0\"\n"
 
 typedef struct {
     char *dir;
     ARENA arena;
     ZIP_BUILDER_ARCHIVE package;
+    // Holds the version of the othpatch in dir, or tells that it is a
+    // development build.
+    RELEASE_VERSION othpatch_version;
+    bool othpatch_development;
     bool othpatch_replaced;
 } M_CASE;
 
 static M_CASE M_Prepare(const char *const name)
 {
-    M_CASE test = { .dir = TestDir_Prepare(name) };
+    M_CASE test = {
+        .dir = TestDir_Prepare(name),
+        .othpatch_version = { 0, 1, 0 },
+    };
     Arena_Init(&test.arena, "install test", 1 << 20);
     return test;
 }
@@ -32,6 +41,7 @@ static RESULT M_Install(
     test->package = ZipBuilder_Build(entries, count);
     return Install_Package(
         platform, test->dir, "th06", test->package.data, test->package.size,
+        test->othpatch_development ? nullptr : &test->othpatch_version,
         &test->arena, &test->othpatch_replaced);
 }
 
@@ -103,6 +113,7 @@ TEST(linux_package_replaces_the_appimage_and_othpatch)
     M_CheckFile(&test, "othpatch", M_NEW_OTHPATCH);
     M_CheckFile(&test, "README.txt", "the user's notes");
     CHECK(test.othpatch_replaced);
+    CHECK_EQ_INT(test.othpatch_version.minor, 2);
     CHECK_EQ_INT(M_Mode(&test, "oth06.AppImage"), 0755);
     CHECK_EQ_INT(M_Mode(&test, "othpatch"), 0755);
     CHECK(!M_Exists(&test, "oth06.AppImage.new"));
@@ -110,12 +121,37 @@ TEST(linux_package_replaces_the_appimage_and_othpatch)
     M_Close(&test);
 }
 
-TEST(same_othpatch_is_left_alone)
+TEST(same_or_older_othpatch_is_left_alone)
 {
-    M_CASE test = M_Prepare("same_othpatch");
-    PatchBuilder_Write(test.dir, "othpatch", M_NEW_OTHPATCH);
-    char *const path = TestDir_Join(test.dir, "othpatch");
-    CHECK(chmod(path, 0700) == 0);
+    const RELEASE_VERSION versions[] = { { 0, 2, 0 }, { 1, 0, 0 } };
+    for (size_t i = 0; i < ARRAY_SIZE(versions); i++) {
+        M_CASE test = M_Prepare("same_othpatch");
+        test.othpatch_version = versions[i];
+        PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
+        char *const path = TestDir_Join(test.dir, "othpatch");
+        CHECK(chmod(path, 0700) == 0);
+        const ZIP_BUILDER_ENTRY entries[] = {
+            M_Entry("oth06.AppImage", "new game", 0),
+            M_Entry("othpatch", M_NEW_OTHPATCH, 0),
+        };
+        CHECK(Result_Log(
+            M_Install(&test, &g_InstallLinux, entries, 2), LOG_LEVEL_ERROR));
+        CHECK(!test.othpatch_replaced);
+        CHECK(Release_CompareVersions(test.othpatch_version, versions[i]) == 0);
+        M_CheckFile(&test, "othpatch", M_OLD_OTHPATCH);
+        CHECK_EQ_INT(M_Mode(&test, "othpatch"), 0700);
+        CHECK(!M_Exists(&test, "othpatch.new"));
+        M_CheckFile(&test, "oth06.AppImage", "new game");
+        Mem_Free(path);
+        M_Close(&test);
+    }
+}
+
+TEST(development_othpatch_is_left_alone)
+{
+    M_CASE test = M_Prepare("development_othpatch");
+    test.othpatch_development = true;
+    PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     const ZIP_BUILDER_ENTRY entries[] = {
         M_Entry("oth06.AppImage", "new game", 0),
         M_Entry("othpatch", M_NEW_OTHPATCH, 0),
@@ -123,10 +159,49 @@ TEST(same_othpatch_is_left_alone)
     CHECK(Result_Log(
         M_Install(&test, &g_InstallLinux, entries, 2), LOG_LEVEL_ERROR));
     CHECK(!test.othpatch_replaced);
-    CHECK_EQ_INT(M_Mode(&test, "othpatch"), 0700);
+    M_CheckFile(&test, "othpatch", M_OLD_OTHPATCH);
     M_CheckFile(&test, "oth06.AppImage", "new game");
-    Mem_Free(path);
     M_Close(&test);
+}
+
+TEST(othpatch_without_a_version_is_left_alone)
+{
+    M_CASE test = M_Prepare("othpatch_without_a_version");
+    PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
+    const ZIP_BUILDER_ENTRY entries[] = {
+        M_Entry("oth06.AppImage", "new game", 0),
+        M_Entry("othpatch", "#!/bin/sh\nexit 1\n", 0),
+    };
+    CHECK(Result_Log(
+        M_Install(&test, &g_InstallLinux, entries, 2), LOG_LEVEL_ERROR));
+    CHECK(!test.othpatch_replaced);
+    M_CheckFile(&test, "othpatch", M_OLD_OTHPATCH);
+    CHECK(!M_Exists(&test, "othpatch.new"));
+    M_Close(&test);
+}
+
+TEST(othpatch_installs_from_its_own_release)
+{
+    const INSTALL_PLATFORM *const platforms[] = { &g_InstallLinux,
+                                                  &g_InstallWindows };
+    for (size_t i = 0; i < ARRAY_SIZE(platforms); i++) {
+        M_CASE test = M_Prepare("othpatch_release");
+        const char *const name = platforms[i]->othpatch;
+        PatchBuilder_Write(test.dir, name, M_OLD_OTHPATCH);
+        CHECK(Result_Log(
+            Install_Othpatch(
+                platforms[i], test.dir, (const uint8_t *)"new", 3, &test.arena),
+            LOG_LEVEL_ERROR));
+        M_CheckFile(&test, name, "new");
+        CHECK_EQ_INT(M_Mode(&test, name), 0755);
+        char *const staged = Str_Format("%s.new", name);
+        char *const old = Str_Format("%s.old", name);
+        CHECK(!M_Exists(&test, staged));
+        CHECK(!M_Exists(&test, old));
+        Mem_Free(old);
+        Mem_Free(staged);
+        M_Close(&test);
+    }
 }
 
 TEST(windows_package_moves_the_old_files_aside)

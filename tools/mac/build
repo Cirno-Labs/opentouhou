@@ -5,8 +5,8 @@ The dependencies come from tools/mac/build_deps, one prefix per
 architecture under --deps. The package is a universal application
 bundle per game, signed ad hoc, in a zip under build/packages/.
 
-The environment variable GAME_REPOSITORY, when set, gives the build
-option game_repository.
+The environment variables GAME_REPOSITORY and OTHPATCH_REPOSITORY, when
+set, give the build options game_repository and othpatch_repository.
 """
 
 import argparse
@@ -32,6 +32,7 @@ GAMES = ["th06"]
 DEPLOYMENT_TARGET = "12.0"
 OPTIONS = {
     "GAME_REPOSITORY": "game_repository",
+    "OTHPATCH_REPOSITORY": "othpatch_repository",
 }
 
 

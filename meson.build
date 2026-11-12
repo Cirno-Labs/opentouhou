@@ -108,7 +108,7 @@ subdir('src/othpatch')
 executable(
   'othpatch',
   othpatch_entry,
-  c_args: [layer_include['othpatch']] + core_include,
+  c_args: [layer_include['othpatch'], othpatch_version_include] + core_include,
   implicit_include_directories: false,
   link_with: othpatch_libs,
   dependencies: othpatch_deps,
