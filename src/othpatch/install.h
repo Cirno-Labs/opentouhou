@@ -59,11 +59,12 @@ char *Install_GetGamePath(
 // othpatch of the package replaces it only when the version that it
 // prints for --version is newer; *othpatch_version then holds that
 // version, and *othpatch_replaced is true. When othpatch_version is
-// nullptr, as for a development build, othpatch is never replaced.
+// nullptr, as for a development build, or the package has no othpatch,
+// othpatch is not replaced.
 //
 // The programs get the executable bit; the files of a bundle keep the
-// modes of the archive. Reports failure when the package lacks the game or
-// othpatch, when a bundle entry has an unsafe path or is a symbolic link,
+// modes of the archive. Reports failure when the package lacks the game,
+// when a bundle entry has an unsafe path or is a symbolic link,
 // or when a file cannot be written. A failure of othpatch leaves the new
 // game in place.
 RESULT Install_Package(

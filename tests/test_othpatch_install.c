@@ -298,15 +298,18 @@ TEST(package_without_the_game_changes_nothing)
     M_Close(&test);
 }
 
-TEST(package_without_othpatch_changes_nothing)
+TEST(package_without_othpatch_installs_the_game_only)
 {
     M_CASE test = M_Prepare("no_othpatch");
     PatchBuilder_Write(test.dir, "oth06.AppImage", "old game");
+    PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     const ZIP_BUILDER_ENTRY entries[] = {
         M_Entry("oth06.AppImage", "new game", 0),
     };
-    CHECK(!Result_Ignore(M_Install(&test, &g_InstallLinux, entries, 1)));
-    M_CheckFile(&test, "oth06.AppImage", "old game");
+    CHECK(Result_Log(
+        M_Install(&test, &g_InstallLinux, entries, 1), LOG_LEVEL_ERROR));
+    M_CheckFile(&test, "oth06.AppImage", "new game");
+    M_CheckFile(&test, "othpatch", M_OLD_OTHPATCH);
     M_Close(&test);
 }
 

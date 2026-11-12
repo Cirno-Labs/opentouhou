@@ -260,9 +260,8 @@ RESULT Install_Package(
     ZIP_ENTRY_LIST entries;
     MUST(Zip_List(package, size, arena, &entries), "the package");
     const ZIP_ENTRY *const othpatch = Zip_Find(&entries, platform->othpatch);
-    FAIL_IF(othpatch == nullptr, "the package has no %s", platform->othpatch);
     MUST(M_InstallGame(platform, dir, game, package, size, &entries, arena));
-    if (othpatch_version != nullptr) {
+    if (othpatch != nullptr && othpatch_version != nullptr) {
         MUST(
             M_InstallNewerOthpatch(
                 platform, dir, package, size, othpatch, othpatch_version, arena,
