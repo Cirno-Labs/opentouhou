@@ -19,22 +19,29 @@ from shared.versioning import (
 )
 
 
-def releases_url(repo_dir: Path = REPO_DIR) -> str:
-    """Return the URL of the release index that packaging reads.
-
-    It is the environment variable RELEASE_INDEX_URL, else the build
-    option releases_url, as the environment variable RELEASES_URL or the
-    default in meson.options gives it. RELEASE_INDEX_URL changes the index
-    of packaging alone, not the one that the built othpatch reads.
-    """
-    for name in ["RELEASE_INDEX_URL", "RELEASES_URL"]:
-        if os.environ.get(name):
-            return os.environ[name]
+def build_releases_url(repo_dir: Path = REPO_DIR) -> str:
+    """Return the value of the build option releases_url: the environment
+    variable RELEASES_URL, else the default in meson.options."""
+    if os.environ.get("RELEASES_URL"):
+        return os.environ["RELEASES_URL"]
     options = (repo_dir / "meson.options").read_text()
     match = re.search(r"'releases_url',.*?value: '([^']*)'", options, re.DOTALL)
     if match is None:
         raise RuntimeError("meson.options has no default for releases_url")
     return match.group(1)
+
+
+def releases_url(repo_dir: Path = REPO_DIR) -> str:
+    """Return the URL of the release index that packaging reads.
+
+    It is the environment variable RELEASE_INDEX_URL, else the build
+    option releases_url from build_releases_url. RELEASE_INDEX_URL
+    changes the index of packaging alone, not the one that the built
+    othpatch reads.
+    """
+    if os.environ.get("RELEASE_INDEX_URL"):
+        return os.environ["RELEASE_INDEX_URL"]
+    return build_releases_url(repo_dir)
 
 
 # Names the client in requests. The public address of an R2 bucket

@@ -14,8 +14,9 @@ package-othpatch writes the universal executable of othpatch, signed ad
 hoc, as its release names it.
 
 The environment variable RELEASES_URL, when set, gives the build option
-releases_url. shared/othpatch_release.py names the release index that
-packaging reads.
+releases_url, and the default in meson.options applies otherwise.
+shared/othpatch_release.py names the release index that packaging
+reads.
 """
 
 import argparse
@@ -30,7 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from shared.othpatch_release import pinned_othpatch
+from shared.othpatch_release import build_releases_url, pinned_othpatch
 from shared.versioning import (
     generate_package_name,
     generate_version,
@@ -46,7 +47,6 @@ ARCHS = ["arm64", "x86_64"]
 NATIVE_ARCH = "arm64"
 GAMES = ["th06"]
 DEPLOYMENT_TARGET = "12.0"
-OPTIONS = {"RELEASES_URL": "releases_url"}
 PROGRAMS = ["games", "othpatch"]
 DEPS_SETS = {"games": "media", "othpatch": "othpatch"}
 
@@ -67,25 +67,23 @@ def environment(deps: Path, arch: str, programs: str) -> dict[str, str]:
     }
 
 
-def options() -> list[str]:
-    return [
-        f"-D{option}={os.environ[name]}"
-        for name, option in OPTIONS.items()
-        if os.environ.get(name)
-    ]
+def options(programs: str) -> list[str]:
+    values = {"programs": programs, "releases_url": build_releases_url(REPO_DIR)}
+    return [f"-D{name}={value}" for name, value in values.items()]
+
+
+def changed_options(root: Path, programs: str) -> list[str]:
+    path = root / "meson-info/intro-buildoptions.json"
+    configured = {
+        f"-D{option['name']}={option['value']}"
+        for option in json.loads(path.read_text())
+    }
+    return [option for option in options(programs) if option not in configured]
 
 
 def run_deps(deps: Path) -> None:
     for arch in ARCHS:
         subprocess.check_call([MAC_DIR / "build_deps", arch, deps / arch])
-
-
-def configured_programs(root: Path) -> str:
-    path = root / "meson-info/intro-buildoptions.json"
-    for option in json.loads(path.read_text()):
-        if option["name"] == "programs":
-            return option["value"]
-    return "all"
 
 
 def run_build(deps: Path, programs: str, target: str, archs: list[str]) -> None:
@@ -97,23 +95,20 @@ def run_build(deps: Path, programs: str, target: str, archs: list[str]) -> None:
                 "meson",
                 "setup",
                 f"--buildtype={target}",
-                f"-Dprograms={programs}",
             ]
             if arch != NATIVE_ARCH:
                 command.append(f"--cross-file={MAC_DIR / f'{arch}.txt'}")
-            command += options()
+            command += options(programs)
             command += [str(root), str(REPO_DIR)]
             subprocess.check_call(command, env=env)
         else:
-            # Reconfigures a build directory that builds other programs,
-            # such as the whole tree, which needs every set of libraries.
-            changed = []
-            if configured_programs(root) != programs:
-                changed.append(f"-Dprograms={programs}")
-            if changed or options():
+            # Reconfigures a build directory whose options differ: one that
+            # builds other programs, such as the whole tree, which needs
+            # every set of libraries, or one with another releases_url.
+            changed = changed_options(root, programs)
+            if changed:
                 subprocess.check_call(
-                    ["meson", "configure", str(root), *changed, *options()],
-                    env=env,
+                    ["meson", "configure", str(root), *changed], env=env
                 )
         subprocess.check_call(["meson", "compile", "-C", str(root)], env=env)
 

@@ -15,8 +15,9 @@ games build in build/<platform>/<target>/, othpatch in
 build/<platform>/othpatch/<target>/. The repository is mounted at /app.
 
 The environment variable RELEASES_URL, when set, gives the build option
-releases_url. shared/othpatch_release.py names the release index that
-packaging reads.
+releases_url, and the default in meson.options applies otherwise.
+shared/othpatch_release.py names the release index that packaging
+reads.
 """
 
 import argparse
@@ -28,7 +29,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from shared.othpatch_release import pinned_othpatch
+from shared.othpatch_release import build_releases_url, pinned_othpatch
 from shared.versioning import (
     generate_package_name,
     generate_version,
@@ -43,7 +44,6 @@ CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt"}
 EXE_SUFFIXES = {"linux": "", "win": ".exe"}
 GAMES = ["th06"]
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
-OPTIONS = {"RELEASES_URL": "releases_url"}
 COMMAND_PROGRAMS = {
     "package": "games",
     "package-othpatch": "othpatch",
@@ -57,20 +57,18 @@ def build_dir(platform: str, programs: str, target: str) -> Path:
     return REPO_DIR / "build" / platform / target
 
 
-def options() -> list[str]:
-    return [
-        f"-D{option}={os.environ[name]}"
-        for name, option in OPTIONS.items()
-        if os.environ.get(name)
-    ]
+def options(programs: str) -> list[str]:
+    values = {"programs": programs, "releases_url": build_releases_url(REPO_DIR)}
+    return [f"-D{name}={value}" for name, value in values.items()]
 
 
-def configured_programs(root: Path) -> str:
+def changed_options(root: Path, programs: str) -> list[str]:
     path = root / "meson-info/intro-buildoptions.json"
-    for option in json.loads(path.read_text()):
-        if option["name"] == "programs":
-            return option["value"]
-    return "all"
+    configured = {
+        f"-D{option['name']}={option['value']}"
+        for option in json.loads(path.read_text())
+    }
+    return [option for option in options(programs) if option not in configured]
 
 
 def run_build(platform: str, programs: str, target: str) -> None:
@@ -80,23 +78,20 @@ def run_build(platform: str, programs: str, target: str) -> None:
             "meson",
             "setup",
             f"--buildtype={target}",
-            f"-Dprograms={programs}",
         ]
         if platform in CROSS_FILES:
             command.append(f"--cross-file={CROSS_FILES[platform]}")
-        command += options()
+        command += options(programs)
         command += [str(root), str(REPO_DIR)]
         subprocess.check_call(command)
     else:
-        # Reconfigures a build directory that builds other programs, such
-        # as the whole tree, which needs libraries that this image lacks.
-        changed = []
-        if configured_programs(root) != programs:
-            changed.append(f"-Dprograms={programs}")
-        if changed or options():
-            subprocess.check_call(
-                ["meson", "configure", str(root), *changed, *options()]
-            )
+        # Reconfigures a build directory whose options differ: one that
+        # builds other programs, such as the whole tree, which needs
+        # libraries that this image lacks, or one with another
+        # releases_url.
+        changed = changed_options(root, programs)
+        if changed:
+            subprocess.check_call(["meson", "configure", str(root), *changed])
     subprocess.check_call(["meson", "compile", "-C", str(root)])
 
 

@@ -64,7 +64,8 @@ othpatch updates the games and itself from the release index,
 names it. The default, `https://opentouhou.invalid/releases.json`, is a
 placeholder that reaches nothing, so a build that is packaged or
 published must set it. The Docker and macOS builds take it from the
-environment variable `RELEASES_URL`. GitHub Actions sets it to the index
+environment variable `RELEASES_URL` at every build, and use the default
+when it is not set. GitHub Actions sets it to the index
 in the R2 bucket of the repository that runs the workflow,
 `<R2_PUBLIC_URL>/releases.json`, so that a fork updates from its own
 releases.
