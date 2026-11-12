@@ -79,8 +79,17 @@ Translations
 Translations come with the othpatch tool, which is available separately.
 
 
-Source code and documentation:
+Credits
+-------
+
+The original game is by ZUN (Team Shanghai Alice). The translations are
+by the thpatch.net community, in the patch format of thcrap.
+
+The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, zlib and the
+BIZ UDGothic font.
+
+Source code, documentation and licences:
 https://github.com/Cirno-Labs/opentouhou
 
 This program is free software under the GNU General Public License,
-version 3 only. The file LICENSE contains the licence text.
+version 3 only.

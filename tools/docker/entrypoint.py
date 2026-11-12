@@ -78,8 +78,6 @@ def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
         doc_dir.mkdir(parents=True)
 
         shutil.copy2(exe, app_dir / "usr/bin" / executable_name(game))
-        shutil.copy2(REPO_DIR / "LICENSE", doc_dir / "LICENSE")
-        shutil.copy2(REPO_DIR / "src/core/text/fonts/OFL.txt", doc_dir / "FONT-LICENSE.txt")
         shutil.copy2(PACKAGING_DIR / "README.txt", doc_dir / "README.txt")
         desktop = (PACKAGING_DIR / f"{game}.desktop").read_text()
         (app_dir / f"{game}.desktop").write_text(
@@ -104,8 +102,6 @@ def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
 def package_win(game: str, exe: Path, output: Path) -> None:
     files = [
         (exe, f"{executable_name(game)}.exe"),
-        (REPO_DIR / "LICENSE", "LICENSE"),
-        (REPO_DIR / "src/core/text/fonts/OFL.txt", "FONT-LICENSE.txt"),
         (PACKAGING_DIR / "README.txt", "README.txt"),
     ]
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as handle:
