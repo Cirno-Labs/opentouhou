@@ -13,3 +13,12 @@ option(
   value: 'https://opentouhou.invalid/releases.json',
   description: 'URL of the release index that othpatch updates the games and itself from',
 )
+# Each build image has the libraries of one set of programs, so it
+# builds that set alone (see docs/BUILDING.md).
+option(
+  'programs',
+  type: 'combo',
+  choices: ['all', 'games', 'othpatch'],
+  value: 'all',
+  description: 'Programs to build: the games and the replay runner, othpatch, or both',
+)

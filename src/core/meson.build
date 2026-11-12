@@ -36,6 +36,24 @@ core_json_lib = static_library(
   implicit_include_directories: false,
 )
 
+core_io_lib = static_library(
+  'core_io',
+  'io/file.c',
+  'io/locale.c',
+  'io/path.c',
+  'io/reader.c',
+  'io/writer.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
+# othpatch links core/base, core/json and core/io only, so a build of
+# othpatch alone needs none of the libraries below.
+if not build_games
+  subdir_done()
+endif
+
 # core/math needs only core/base, so the tests link it without SDL. The
 # math/libm sources are a vendored double-precision libm (see
 # math/libm/libm_internal.h), used only by math/x87.c.
@@ -57,18 +75,6 @@ core_math_lib = static_library(
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [cc_libm],
-)
-
-core_io_lib = static_library(
-  'core_io',
-  'io/file.c',
-  'io/locale.c',
-  'io/path.c',
-  'io/reader.c',
-  'io/writer.c',
-  c_args: core_include,
-  implicit_include_directories: false,
-  dependencies: [sdl3],
 )
 
 # core/ini needs core/base and core/io, which needs SDL for its files.

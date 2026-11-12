@@ -64,70 +64,83 @@ foreach layer : ['core', 'stg', 'th06', 'othpatch']
   layer_include += {layer: '-I' + include_root / layer}
 endforeach
 
-sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
-sdl3_ttf = dependency('sdl3-ttf', version: '>=3.2.2', static: true)
+programs = get_option('programs')
+build_games = programs != 'othpatch'
+build_othpatch = programs != 'games'
 
-# FFmpeg supplies image codecs and audio decoding and conversion.
-# The Dockerfiles enable only the formats these modules support.
-avcodec = dependency('libavcodec', static: true)
-avutil = dependency('libavutil', static: true)
-swscale = dependency('libswscale', static: true)
-avformat = dependency('libavformat', static: true)
-swresample = dependency('libswresample', static: true)
+sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
 
 # The case tools compress calc rows with zlib, and othpatch unpacks game
 # packages with it. No game layer depends on it.
 zlib = dependency('zlib', static: true)
 
+if build_games
+  sdl3_ttf = dependency('sdl3-ttf', version: '>=3.2.2', static: true)
+
+  # FFmpeg supplies image codecs and audio decoding and conversion.
+  # The Dockerfiles enable only the formats these modules support.
+  avcodec = dependency('libavcodec', static: true)
+  avutil = dependency('libavutil', static: true)
+  swscale = dependency('libswscale', static: true)
+  avformat = dependency('libavformat', static: true)
+  swresample = dependency('libswresample', static: true)
+endif
+
 subdir('src/core')
-subdir('src/stg')
+if build_games
+  subdir('src/stg')
 
-# Each game's directory adds the game to this dictionary. The executables
-# are declared here, so that they land in the root of the build directory.
-# An executable is named after the game id with an o before it, as
-# oth06, so that it does not clash with the original game's executable
-# in the same folder.
-games = {}
-subdir('src/th06')
+  # Each game's directory adds the game to this dictionary. The executables
+  # are declared here, so that they land in the root of the build directory.
+  # An executable is named after the game id with an o before it, as
+  # oth06, so that it does not clash with the original game's executable
+  # in the same folder.
+  games = {}
+  subdir('src/th06')
 
-foreach name, game : games
+  foreach name, game : games
+    executable(
+      'o' + name,
+      game['sources'],
+      c_args: game['c_args'],
+      link_with: game.get('link_with', []),
+      implicit_include_directories: false,
+      dependencies: [core_app_dep, stg_dep],
+      win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
+    )
+  endforeach
+
+  subdir('replay')
+  runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/backend_main_windows.c' : 'replay/th06/runner/backend_main_posix.c'
   executable(
-    'o' + name,
-    game['sources'],
-    c_args: game['c_args'],
-    link_with: game.get('link_with', []),
+    'th06replay',
+    'replay/th06/runner/main.c',
+    runner_entry,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
-    dependencies: [core_app_dep, stg_dep],
-    win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
+    dependencies: [sdl3, zlib, cc_libm],
+    link_with: [th06_runner_lib],
+    link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+    win_subsystem: 'console',
   )
-endforeach
+endif
 
-# othpatch downloads patches. It is a program on core alone, and the only
-# one that links curl.
-subdir('src/othpatch')
-executable(
-  'othpatch',
-  othpatch_entry,
-  c_args: [layer_include['othpatch'], othpatch_version_include] + core_include,
-  implicit_include_directories: false,
-  link_with: othpatch_libs,
-  dependencies: othpatch_deps,
-  link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
-  win_subsystem: 'console',
-)
-subdir('replay')
-runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/backend_main_windows.c' : 'replay/th06/runner/backend_main_posix.c'
-executable(
-  'th06replay',
-  'replay/th06/runner/main.c',
-  runner_entry,
-  c_args: [layer_include['th06']] + core_include + stg_include,
-  implicit_include_directories: false,
-  dependencies: [sdl3, zlib, cc_libm],
-  link_with: [th06_runner_lib],
-  link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
-  win_subsystem: 'console',
-)
+if build_othpatch
+  # othpatch downloads patches. It is a program on core alone, and the only
+  # one that links curl.
+  subdir('src/othpatch')
+  executable(
+    'othpatch',
+    othpatch_entry,
+    c_args: [layer_include['othpatch'], othpatch_version_include] + core_include,
+    implicit_include_directories: false,
+    link_with: othpatch_libs,
+    dependencies: othpatch_deps,
+    link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+    win_subsystem: 'console',
+  )
+endif
+
 if not meson.is_cross_build()
   subdir('tests')
 endif

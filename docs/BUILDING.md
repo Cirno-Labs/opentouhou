@@ -63,6 +63,11 @@ in the R2 bucket of the repository that runs the workflow,
 `<R2_PUBLIC_URL>/releases.json`, so that a fork updates from its own
 releases.
 
+The Meson option `programs` selects what a build contains: `games`, the
+games and the replay runner, `othpatch`, or `all`, the default. Each
+comes with its tests. A build of `othpatch` needs only SDL3, zlib and
+curl, and a build of `games` does not need curl.
+
 ## Packaging
 
 ```sh
