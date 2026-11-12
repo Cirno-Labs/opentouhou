@@ -49,6 +49,7 @@ jobs:
         env:
           GAME_REPOSITORY: ${{ github.repository }}
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
+          GH_TOKEN: ${{ github.token }}
         run: tools/mac/build package --target ${{ inputs.target }}
 
       - name: Upload the packages

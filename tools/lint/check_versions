@@ -3,7 +3,8 @@
 
 Each src/<program>/version.txt must hold one version X.Y.Z, and the
 program's changelog, docs/<program>/CHANGELOG.md, must have a section
-for it.
+for it. Each game's src/<game>/othpatch.txt must hold the version X.Y.Z
+of the othpatch that its packages ship.
 """
 
 import sys
@@ -12,7 +13,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from shared.changelog import changelog_path, section
-from shared.versioning import REPO_DIR, programs, read_version, version_path
+from shared.versioning import (
+    REPO_DIR,
+    games,
+    othpatch_pin_path,
+    programs,
+    read_version,
+    version_path,
+)
 
 
 def check_program(program: str) -> list[str]:
@@ -32,8 +40,17 @@ def check_program(program: str) -> list[str]:
     return []
 
 
+def check_pin(game: str) -> list[str]:
+    try:
+        read_version(othpatch_pin_path(game))
+    except (OSError, ValueError) as error:
+        return [str(error)]
+    return []
+
+
 def main() -> int:
     errors = [error for program in programs() for error in check_program(program)]
+    errors += [error for game in games() for error in check_pin(game)]
     for error in errors:
         sys.stderr.write(f"{error}\n")
     return 1 if errors else 0

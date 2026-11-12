@@ -18,7 +18,7 @@ repos:
     stages: [commit-msg]
 
   - id: check-versions
-    name: Each version file names a version that its changelog has
+    name: Version files hold versions that the changelogs have
     entry: tools/lint/check_versions
     language: python
     pass_filenames: false

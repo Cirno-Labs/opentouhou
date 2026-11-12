@@ -79,6 +79,7 @@ jobs:
           CCACHE_MAXSIZE: 1G
           GAME_REPOSITORY: ${{ github.repository }}
           OPENTOUHOU_RELEASE: ${{ inputs.release && '1' || '' }}
+          GH_TOKEN: ${{ github.token }}
         run: just package-${{ inputs.platform }} ${{ inputs.target }}
 
       - name: Run the unit tests

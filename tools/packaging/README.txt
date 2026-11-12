@@ -12,12 +12,13 @@ included. You must have your own copy of the game.
 Installing
 ----------
 
-Put the program into the folder of the original game, beside its .dat
-files:
+Put the files of the package into the folder of the original game,
+beside its .dat files:
 
-- Windows: oth06.exe
-- Linux: oth06.AppImage. If it does not start, make it executable.
-- macOS: oth06.app
+- Windows: oth06.exe and othpatch.exe
+- Linux: oth06.AppImage and othpatch. If they do not start, make them
+  executable.
+- macOS: oth06.app and othpatch
 
 Then start the program. The program never changes the files in that
 folder.
@@ -73,10 +74,28 @@ F11 or Alt+Enter changes between window and full screen. F12 or Print
 Screen saves a screenshot.
 
 
-Translations
-------------
+Translations and updates
+------------------------
 
-Translations come with the othpatch tool, which is available separately.
+Keep othpatch in the same folder as the program. othpatch downloads
+the translations of thpatch.net into the patches folder. To get the
+translation into the language of your system, type:
+
+    othpatch
+
+To get a different language, give its code, for example English:
+
+    othpatch en
+
+Each time, othpatch also updates the translations that you have. Then
+it looks for a newer release of the program and of othpatch, and asks
+before it installs it. To install the updates without a question, type:
+
+    othpatch --update
+
+To see all arguments, type:
+
+    othpatch --help
 
 
 Credits

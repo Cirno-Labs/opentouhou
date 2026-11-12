@@ -14,6 +14,12 @@ def version_path(program: str, repo_dir: Path = REPO_DIR) -> Path:
     return repo_dir / "src" / program / "version.txt"
 
 
+def othpatch_pin_path(game: str, repo_dir: Path = REPO_DIR) -> Path:
+    """Return the path of the file that names the othpatch version of a
+    game's packages, src/<game>/othpatch.txt."""
+    return repo_dir / "src" / game / "othpatch.txt"
+
+
 def read_version(path: Path) -> str:
     """Return the version in a one-line file, such as 1.2.0.
 

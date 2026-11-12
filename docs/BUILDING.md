@@ -89,8 +89,14 @@ signature. A development version holds a `-` instead of the `+`, as
 `0.1.0-dev-abcdef0`, because GitHub renames release files whose names
 hold a `+`.
 
-Every package contains the game's executable and a readme with the
-credits. None contains any of the original game's files. The
+Every package contains the game's executable, othpatch and a readme
+with the credits. The othpatch is the version that
+`src/<game>/othpatch.txt` names, downloaded from the release
+`othpatch-vX.Y.Z` of the othpatch repository (see the build options)
+and checked against the SHA-256 digest that the release gives. So
+packaging needs the network, and it fails when that release does not
+exist. `GH_TOKEN` or `GITHUB_TOKEN`, when set, gives access to a private
+repository. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
 properties, the AppImage's desktop entry and the macOS bundle's
 Info.plist. `--help` prints the version too. The icons are rendered

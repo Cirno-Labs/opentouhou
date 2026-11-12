@@ -46,6 +46,8 @@ _docker_run platform *args:
         -e GAME_REPOSITORY \
         -e OTHPATCH_REPOSITORY \
         -e OPENTOUHOU_RELEASE \
+        -e GH_TOKEN \
+        -e GITHUB_TOKEN \
         -v "{{CWD}}:/app" \
         "$(tools/docker/image_tag {{platform}})" \
         {{args}}

@@ -3,7 +3,9 @@
 
 The dependencies come from tools/mac/build_deps, one prefix per
 architecture under --deps. The package is a universal application
-bundle per game, signed ad hoc, in a zip under build/packages/.
+bundle per game, signed ad hoc, in a zip under build/packages/, with
+the othpatch that src/<game>/othpatch.txt names, downloaded from its
+release.
 package-othpatch writes the universal executable of othpatch, signed ad
 hoc, as its release names it.
 
@@ -22,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from shared.othpatch_release import pinned_othpatch
 from shared.versioning import (
     executable_name,
     generate_package_name,
@@ -150,21 +153,24 @@ def run_package(deps: Path, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
         version = generate_version(game, REPO_DIR)
+        othpatch = pinned_othpatch(game, "mac", REPO_DIR)
         output = PACKAGES_DIR / f"{generate_package_name(game, version, 'mac')}.zip"
         with tempfile.TemporaryDirectory() as tmp:
-            bundle = Path(tmp) / f"{executable_name(game)}.app"
+            contents = Path(tmp) / "package"
+            contents.mkdir()
+            bundle = contents / f"{executable_name(game)}.app"
             write_bundle(game, version, target, bundle)
+            shutil.copy2(othpatch, contents / "othpatch")
             output.unlink(missing_ok=True)
-            subprocess.check_call(
-                ["ditto", "-c", "-k", "--keepParent", str(bundle), str(output)]
-            )
+            subprocess.check_call(["ditto", "-c", "-k", str(contents), str(output)])
         print(f"Created {output.relative_to(REPO_DIR)}")
 
 
 def run_package_othpatch(deps: Path, target: str) -> None:
     run_build(deps, target, ARCHS)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    output = PACKAGES_DIR / othpatch_asset_name(generate_version("othpatch"), "mac")
+    version = generate_version("othpatch")
+    output = PACKAGES_DIR / othpatch_asset_name(version, "mac")
     output.unlink(missing_ok=True)
     subprocess.check_call(
         [

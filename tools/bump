@@ -6,16 +6,30 @@ Unreleased section of docs/<program>/CHANGELOG.md into the section of
 that version and today's date, above a new empty Unreleased section.
 The release workflow then publishes every program whose version has no
 release yet. --commit commits the change.
+
+--with-games, for othpatch, also makes every game ship that othpatch:
+it writes the version into src/<game>/othpatch.txt, adds "Ships
+othpatch X.Y.Z." to the game's unreleased changes and raises the
+game's patch version by one in the same way.
 """
 
 import argparse
 import datetime
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 from shared.changelog import changelog_path
-from shared.versioning import REPO_DIR, VERSION, programs, version_path
+from shared.versioning import (
+    REPO_DIR,
+    VERSION,
+    games,
+    othpatch_pin_path,
+    programs,
+    read_version,
+    version_path,
+)
 
 
 def git(*args: str) -> str:
@@ -45,26 +59,59 @@ def bump(program: str, version: str) -> list[Path]:
     return [version_path(program), changelog_path(program)]
 
 
+def add_change(path: Path, line: str) -> None:
+    """Add a line to the end of the Unreleased section of a changelog."""
+    lines = path.read_text().splitlines()
+    start = lines.index("## Unreleased")
+    end = next(
+        (i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")),
+        len(lines),
+    )
+    while end > start + 1 and not lines[end - 1].strip():
+        end -= 1
+    lines[end:end] = ["", line] if end == start + 1 else [line]
+    path.write_text("\n".join(lines) + "\n")
+
+
+def ship_othpatch(game: str, version: str) -> list[Path]:
+    """Make a game ship othpatch version in a new patch release, and return
+    the files it changed."""
+    major, minor, patch = read_version(version_path(game)).split(".")
+    othpatch_pin_path(game).write_text(f"{version}\n")
+    add_change(changelog_path(game), f"- Ships othpatch {version}.")
+    return [othpatch_pin_path(game), *bump(game, f"{major}.{minor}.{int(patch) + 1}")]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("program", choices=programs())
     parser.add_argument("version", help="such as 1.2.0")
+    parser.add_argument(
+        "--with-games",
+        action="store_true",
+        help="for othpatch: make every game ship it in a new patch release",
+    )
     parser.add_argument("--commit", action="store_true", help="commit the change")
     args = parser.parse_args()
     version = args.version.removeprefix("v")
     if not VERSION.fullmatch(version):
         sys.exit("The version must look like 1.2.0")
+    if args.with_games and args.program != "othpatch":
+        sys.exit("--with-games is for othpatch only")
     if args.commit and git("status", "--porcelain"):
         sys.exit("The working tree has uncommitted changes")
 
     changed = bump(args.program, version)
+    released = [f"{args.program} {version}"]
+    if args.with_games:
+        for game in games():
+            changed += ship_othpatch(game, version)
+            released.append(f"{game} {read_version(version_path(game))}")
     for path in changed:
         print(f"Changed {path.relative_to(REPO_DIR)}")
     if args.commit:
-        message = (
-            f"{args.program}: release {version}\n\n"
-            f"Set the version of {args.program} to {version}.\n"
-        )
+        body = f"Set the versions for the release of {', '.join(released)}."
+        message = f"{args.program}: release {version}\n\n{textwrap.fill(body, 72)}\n"
         git("commit", "-q", "-m", message, "--", *map(str, changed))
         print("Committed. Push it, then run the release workflow.")
 

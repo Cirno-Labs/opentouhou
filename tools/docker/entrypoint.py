@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Build and package opentouhou inside a build image.
 
-package writes the game packages, and package-othpatch the executable
-of othpatch as its release names it, into build/packages/.
+package writes the game packages into build/packages/, each with the
+othpatch that src/<game>/othpatch.txt names, downloaded from its
+release. package-othpatch writes the executable of othpatch there, as
+its release names it.
 
 Each image runs this script with its platform. The repository is mounted
 at /app.
@@ -19,6 +21,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+from shared.othpatch_release import pinned_othpatch
 from shared.versioning import (
     executable_name,
     generate_package_name,
@@ -105,7 +108,9 @@ def write_zip(output: Path, files: list[tuple[Path, str]]) -> None:
             handle.writestr(info, source.read_bytes())
 
 
-def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
+def package_linux(
+    game: str, exe: Path, othpatch: Path, output: Path, version: str
+) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         app_dir = Path(tmp) / f"{game}.AppDir"
         (app_dir / "usr/bin").mkdir(parents=True)
@@ -136,14 +141,16 @@ def package_linux(game: str, exe: Path, output: Path, version: str) -> None:
             output,
             [
                 (Path(tmp) / "app.AppImage", f"{executable_name(game)}.AppImage"),
+                (othpatch, "othpatch"),
                 (PACKAGING_DIR / "README.txt", "README.txt"),
             ],
         )
 
 
-def package_win(game: str, exe: Path, output: Path) -> None:
+def package_win(game: str, exe: Path, othpatch: Path, output: Path) -> None:
     files = [
         (exe, f"{executable_name(game)}.exe"),
+        (othpatch, "othpatch.exe"),
         (PACKAGING_DIR / "README.txt", "README.txt"),
     ]
     write_zip(output, files)
@@ -153,20 +160,22 @@ def run_package(platform: str, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     for game in GAMES:
         version = generate_version(game, REPO_DIR)
+        othpatch = pinned_othpatch(game, platform, REPO_DIR)
         exe = build_dir(platform, target) / f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
         stem = generate_package_name(game, version, platform)
         output = PACKAGES_DIR / f"{stem}.zip"
         if platform == "linux":
-            package_linux(game, exe, output, version)
+            package_linux(game, exe, othpatch, output, version)
         else:
-            package_win(game, exe, output)
+            package_win(game, exe, othpatch, output)
         print(f"Created {output.relative_to(REPO_DIR)}")
 
 
 def run_package_othpatch(platform: str, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
     exe = build_dir(platform, target) / f"othpatch{EXE_SUFFIXES[platform]}"
-    output = PACKAGES_DIR / othpatch_asset_name(generate_version("othpatch"), platform)
+    version = generate_version("othpatch")
+    output = PACKAGES_DIR / othpatch_asset_name(version, platform)
     shutil.copy2(exe, output)
     print(f"Created {output.relative_to(REPO_DIR)}")
 
