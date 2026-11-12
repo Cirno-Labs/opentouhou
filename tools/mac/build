@@ -32,10 +32,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from shared.othpatch_release import pinned_othpatch
 from shared.versioning import (
-    executable_name,
     generate_package_name,
     generate_version,
     othpatch_asset_name,
+    product_name,
 )
 
 REPO_DIR = Path(__file__).resolve().parents[2]
@@ -142,18 +142,18 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
             "lipo",
             "-create",
             *(
-                str(build_dir(arch, "games", target) / executable_name(game))
+                str(build_dir(arch, "games", target) / product_name(game))
                 for arch in ARCHS
             ),
             "-output",
-            str(contents / "MacOS" / executable_name(game)),
+            str(contents / "MacOS" / product_name(game)),
         ]
     )
     with open(contents / "Info.plist", "wb") as handle:
         plistlib.dump(
             {
                 "CFBundleDevelopmentRegion": "en",
-                "CFBundleExecutable": executable_name(game),
+                "CFBundleExecutable": product_name(game),
                 "CFBundleIconFile": f"{game}.icns",
                 "CFBundleIdentifier": f"io.github.cirno-labs.opentouhou.{game}",
                 "CFBundleInfoDictionaryVersion": "6.0",
@@ -188,7 +188,7 @@ def run_package(deps: Path, target: str) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             contents = Path(tmp) / "package"
             contents.mkdir()
-            bundle = contents / f"{executable_name(game)}.app"
+            bundle = contents / f"{product_name(game)}.app"
             write_bundle(game, version, target, bundle)
             shutil.copy2(othpatch, contents / "othpatch")
             output.unlink(missing_ok=True)

@@ -68,14 +68,15 @@ def generate_version(program: str, repo_dir: Path = REPO_DIR) -> str:
     return f"{version}-dev+{commit}"
 
 
-def executable_name(game: str) -> str:
-    """Return the name of a game's executable: the game id with an o
-    before it, such as oth06.
+def product_name(program: str) -> str:
+    """Return the name that a program is published under: othpatch, or
+    for a game the game id with an o before it, such as oth06.
 
-    The executable sits in the original game's folder by default, so its
-    name must differ from the original's, such as th06.exe.
+    The program's executable and its files carry this name. A game's
+    executable sits in the original game's folder by default, so its name
+    must differ from the original's, such as th06.exe.
     """
-    return f"o{game}"
+    return program if program == "othpatch" else f"o{program}"
 
 
 def file_version(version: str) -> str:
@@ -93,7 +94,7 @@ PLATFORM_NAMES = {"linux": "Linux", "win": "Windows", "mac": "macOS"}
 def generate_package_name(game: str, version: str, platform: str) -> str:
     """Return the name of a game's package without .zip, such as
     oth06-1.2.0-Linux."""
-    return f"{executable_name(game)}-{file_version(version)}-{PLATFORM_NAMES[platform]}"
+    return f"{product_name(game)}-{file_version(version)}-{PLATFORM_NAMES[platform]}"
 
 
 def othpatch_asset_name(version: str, platform: str) -> str:

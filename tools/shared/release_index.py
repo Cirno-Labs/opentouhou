@@ -71,7 +71,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from shared.versioning import executable_name, file_version
+from shared.versioning import file_version, product_name
 
 FORMAT = 1
 PLATFORMS = ["Linux", "Windows", "macOS"]
@@ -112,7 +112,7 @@ def find(index: dict, program: str, version: str) -> dict | None:
 def file_prefix(program: str) -> str:
     """Return the start of the names of a program's files, such as
     oth06- or othpatch-."""
-    return "othpatch-" if program == "othpatch" else f"{executable_name(program)}-"
+    return f"{product_name(program)}-"
 
 
 def file_suffix(program: str, platform: str) -> str:

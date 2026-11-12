@@ -29,10 +29,10 @@ from pathlib import Path
 
 from shared.othpatch_release import pinned_othpatch
 from shared.versioning import (
-    executable_name,
     generate_package_name,
     generate_version,
     othpatch_asset_name,
+    product_name,
 )
 
 REPO_DIR = Path("/app")
@@ -154,14 +154,14 @@ def package_linux(
         doc_dir = app_dir / "usr/share/doc" / game
         doc_dir.mkdir(parents=True)
 
-        shutil.copy2(exe, app_dir / "usr/bin" / executable_name(game))
+        shutil.copy2(exe, app_dir / "usr/bin" / product_name(game))
         shutil.copy2(PACKAGING_DIR / game / "README.txt", doc_dir / "README.txt")
         desktop = (PACKAGING_DIR / game / "game.desktop").read_text()
         (app_dir / f"{game}.desktop").write_text(
             desktop.rstrip("\n") + f"\nX-AppImage-Version={version}\n"
         )
         shutil.copy2(PACKAGING_DIR / game / "icon.png", app_dir / f"{game}.png")
-        (app_dir / "AppRun").symlink_to(f"usr/bin/{executable_name(game)}")
+        (app_dir / "AppRun").symlink_to(f"usr/bin/{product_name(game)}")
 
         subprocess.check_call(
             [
@@ -177,7 +177,7 @@ def package_linux(
         write_zip(
             output,
             [
-                (Path(tmp) / "app.AppImage", f"{executable_name(game)}.AppImage"),
+                (Path(tmp) / "app.AppImage", f"{product_name(game)}.AppImage"),
                 (othpatch, "othpatch"),
                 (PACKAGING_DIR / game / "README.txt", "README.txt"),
             ],
@@ -186,7 +186,7 @@ def package_linux(
 
 def package_win(game: str, exe: Path, othpatch: Path, output: Path) -> None:
     files = [
-        (exe, f"{executable_name(game)}.exe"),
+        (exe, f"{product_name(game)}.exe"),
         (othpatch, "othpatch.exe"),
         (PACKAGING_DIR / game / "README.txt", "README.txt"),
     ]
@@ -210,7 +210,7 @@ def run_package(platform: str, target: str) -> None:
         othpatch = pinned_othpatch(
             game, platform, lambda: built_othpatch(platform, target), REPO_DIR
         )
-        name = f"{executable_name(game)}{EXE_SUFFIXES[platform]}"
+        name = f"{product_name(game)}{EXE_SUFFIXES[platform]}"
         exe = build_dir(platform, "games", target) / name
         stem = generate_package_name(game, version, platform)
         output = PACKAGES_DIR / f"{stem}.zip"
