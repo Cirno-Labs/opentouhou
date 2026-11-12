@@ -167,8 +167,8 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
             handle,
         )
     resources = contents / "Resources"
-    shutil.copy2(PACKAGING_DIR / "README.txt", resources / "README.txt")
-    shutil.copy2(PACKAGING_DIR / f"{game}.icns", resources / f"{game}.icns")
+    shutil.copy2(PACKAGING_DIR / game / "README.txt", resources / "README.txt")
+    shutil.copy2(PACKAGING_DIR / game / "icon.icns", resources / f"{game}.icns")
     # An ad-hoc signature lets the bundle run on Apple silicon. Without a
     # developer identity, Gatekeeper still asks before the first start.
     subprocess.check_call(

@@ -69,9 +69,9 @@ if host_machine.system() == 'windows'
   th06_sources += import('windows').compile_resources(
     'th06.rc',
     args: ['--include-dir', meson.current_build_dir(),
-           '--include-dir', meson.project_source_root() / 'tools/packaging'],
+           '--include-dir', meson.project_source_root() / 'tools/packaging/th06'],
     depends: th06_version,
-    depend_files: files('../../tools/packaging/th06.ico'),
+    depend_files: files('../../tools/packaging/th06/icon.ico'),
   )
 endif
 

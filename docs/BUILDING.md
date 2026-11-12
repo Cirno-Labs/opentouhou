@@ -99,7 +99,8 @@ signature. A development version holds a `-` instead of the `+`, as
 `0.1.0-dev-abcdef0`, so that the name is safe in a URL.
 
 Every package contains the game's executable, othpatch and a readme
-with the credits. The othpatch is the version that
+with the credits. The files that one game's packages take, its readme,
+icons and desktop entry, are in `tools/packaging/<game>/`. The othpatch is the version that
 `src/<game>/othpatch.txt` names, downloaded as the release index gives
 it and checked against the SHA-256 digest in the index. The index is
 the one of the build option `releases_url`, or the one that the
@@ -111,7 +112,7 @@ othpatch. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
 properties, the AppImage's desktop entry and the macOS bundle's
 Info.plist. `--help` prints the version too. The icons are rendered
-from `tools/packaging/<game>.png`, a square image of at least 1024
+from `tools/packaging/<game>/icon.png`, a square image of at least 1024
 pixels, by `tools/packaging/make_icons` and committed, so the build
 needs no converter.
 

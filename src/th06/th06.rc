@@ -2,7 +2,7 @@
 
 #include "version.h"
 
-1 ICON "th06.ico"
+1 ICON "icon.ico"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION GAME_VERSION_RC
