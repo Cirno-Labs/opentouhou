@@ -17,8 +17,9 @@
 #include <string.h>
 #include <wchar.h>
 
-// Starts the replay after this many frames on the title screen.
-#define REPLAY_START_DELAY 60
+// Starts the replay or opens the result screen after this many frames on
+// the title screen.
+#define TITLE_DELAY 60
 
 // More than one 60 Hz frame, so every RunFrame runs one calc without
 // waiting for real time.
@@ -32,6 +33,7 @@ typedef int(__attribute__((thiscall)) * RUN_CALC_CHAIN_FN)(void *chain);
 static char m_ReplayPath[MAX_PATH];
 static bool m_ReplayStarted;
 static bool m_ReplayEnded;
+static bool m_ResultOpened;
 static int m_TitleFrames;
 static uint32_t m_Calcs;
 static DWORD m_QuitAfter;
@@ -174,6 +176,15 @@ static BOOL CALLBACK M_CloseGameWindow(HWND window, LPARAM unused)
     return FALSE;
 }
 
+static bool M_TitleDelayReached(const void *const menu)
+{
+    const int state = ((const RETAIL_MAIN_MENU *)menu)->state;
+    const bool title =
+        state == RETAIL_MAIN_MENU_TITLE || state == RETAIL_MAIN_MENU_TITLE_KEY;
+    m_TitleFrames = title ? m_TitleFrames + 1 : 0;
+    return m_TitleFrames == TITLE_DELAY;
+}
+
 static int __cdecl M_MainMenuOnUpdate(void *menu)
 {
     if (m_ReplayStarted) {
@@ -184,13 +195,22 @@ static int __cdecl M_MainMenuOnUpdate(void *menu)
         }
         return ((RETAIL_CALLBACK)RETAIL_MAIN_MENU_ON_UPDATE)(menu);
     }
-    const int state = ((RETAIL_MAIN_MENU *)menu)->state;
-    const bool title =
-        state == RETAIL_MAIN_MENU_TITLE || state == RETAIL_MAIN_MENU_TITLE_KEY;
-    m_TitleFrames = title ? m_TitleFrames + 1 : 0;
-    if (m_TitleFrames == REPLAY_START_DELAY) {
+    if (M_TitleDelayReached(menu)) {
         M_StartReplay();
         m_ReplayStarted = true;
+        return 0;
+    }
+    return ((RETAIL_CALLBACK)RETAIL_MAIN_MENU_ON_UPDATE)(menu);
+}
+
+// Does what choosing Result on the title screen does. The result screen
+// loads score.dat and saves it when it closes, also when the game closes.
+static int __cdecl M_MainMenuOpenResult(void *menu)
+{
+    if (!m_ResultOpened && M_TitleDelayReached(menu)) {
+        m_ResultOpened = true;
+        RETAIL_APP_AT->scene = RETAIL_SCENE_RESULT;
+        LOG_INFO("result: opened");
         return 0;
     }
     return ((RETAIL_CALLBACK)RETAIL_MAIN_MENU_ON_UPDATE)(menu);
@@ -227,9 +247,9 @@ static void M_Attach(void)
         TerminateProcess(GetCurrentProcess(), 1);
     }
     M_Patch(Overlay_Install(game, work));
-    wchar_t fast[4];
+    wchar_t flag[4];
     const uint32_t step =
-        M_GetEnv(L"TH06CAPTURE_FAST", fast, 4) ? FAST_CLOCK_STEP : 0;
+        M_GetEnv(L"TH06CAPTURE_FAST", flag, 4) ? FAST_CLOCK_STEP : 0;
     if (!Clock_Install(GetModuleHandleW(nullptr), step)) {
         LOG_ERROR("timeGetTime is not imported");
         TerminateProcess(GetCurrentProcess(), 1);
@@ -249,6 +269,10 @@ static void M_Attach(void)
         M_Patch(Patch_Value32(
             RETAIL_PLAY_ON_UPDATE_2_SITE, RETAIL_PLAY_ON_UPDATE_2,
             (uint32_t)(uintptr_t)M_PlayOnUpdate2));
+    } else if (M_GetEnv(L"TH06CAPTURE_RESULT", flag, 4)) {
+        M_Patch(Patch_Value32(
+            RETAIL_TITLE_CALLBACK_SITE, RETAIL_MAIN_MENU_ON_UPDATE,
+            (uint32_t)(uintptr_t)M_MainMenuOpenResult));
     }
 
     wchar_t quit_after[16];

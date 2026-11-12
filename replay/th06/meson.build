@@ -105,3 +105,13 @@ executable(
   link_with: [core_base_lib, core_io_lib],
   dependencies: [sdl3, zlib],
 )
+
+executable(
+  'workdir_test',
+  '../core/workdir.c',
+  '../core/workdir_test.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  link_with: [core_base_lib, core_io_lib],
+  dependencies: [sdl3, zlib],
+)

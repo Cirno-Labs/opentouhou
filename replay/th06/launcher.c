@@ -26,14 +26,22 @@
 
 #define DEFAULT_OUT_DIR "../opentouhou-cases/th06"
 
+#define MAX_FILES 8
+#define MAX_ARGS 40
+
 typedef struct {
     const char *game_dir;
     const char *replay;
     bool live;
     bool dry_run;
     bool fast;
+    bool result;
     int quit_after;
     const char *out_dir;
+    const char *seeds[MAX_FILES];
+    size_t seed_count;
+    const char *keeps[MAX_FILES];
+    size_t keep_count;
 } ARGS;
 
 static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
@@ -53,14 +61,25 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
             args->fast = true;
         } else if (strcmp(argv[i], "--quit-after") == 0 && has_value) {
             args->quit_after = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--result") == 0) {
+            args->result = true;
         } else if (strcmp(argv[i], "--out") == 0 && has_value) {
             args->out_dir = argv[++i];
+        } else if (
+            strcmp(argv[i], "--seed") == 0 && has_value
+            && args->seed_count < MAX_FILES) {
+            args->seeds[args->seed_count++] = argv[++i];
+        } else if (
+            strcmp(argv[i], "--keep") == 0 && has_value
+            && args->keep_count < MAX_FILES) {
+            args->keeps[args->keep_count++] = argv[++i];
         } else {
             return false;
         }
     }
     return args->game_dir != nullptr && (args->replay != nullptr) != args->live
-        && !(args->fast && args->live) && !(args->fast && args->quit_after > 0);
+        && !(args->fast && args->live) && !(args->fast && args->quit_after > 0)
+        && !(args->result && !args->live);
 }
 
 static wchar_t *M_Wide(const char *const text)
@@ -126,15 +145,21 @@ static RESULT M_WriteConfig(const char *const work_dir)
     return Writer_Close(&writer);
 }
 
-// Names the case after the replay, or after the time for --live.
-static RESULT M_CasePath(const ARGS *const args, wchar_t out[MAX_PATH])
+static RESULT M_OutDir(const ARGS *const args, wchar_t dir[MAX_PATH])
 {
     wchar_t *const out_dir = M_Wide(args->out_dir);
-    wchar_t dir[MAX_PATH];
     const DWORD length = GetFullPathNameW(out_dir, MAX_PATH, dir, nullptr);
     Mem_Free(out_dir);
     FAIL_IF(length == 0 || length >= MAX_PATH, "bad --out %s", args->out_dir);
     SHCreateDirectoryExW(nullptr, dir, nullptr);
+    return OK;
+}
+
+// Names the case after the replay, or after the time for --live.
+static RESULT M_CasePath(const ARGS *const args, wchar_t out[MAX_PATH])
+{
+    wchar_t dir[MAX_PATH];
+    MUST(M_OutDir(args, dir));
 
     wchar_t name[MAX_PATH];
     if (args->replay != nullptr) {
@@ -168,14 +193,37 @@ static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
         Mem_Free(source);
         FAIL_IF(!copied, "cannot copy %s", args->replay);
     }
+    for (size_t i = 0; i < args->seed_count; i++) {
+        wchar_t *const seed = M_Wide(args->seeds[i]);
+        const RESULT copied = Workdir_CopyIn(work_dir, seed);
+        Mem_Free(seed);
+        MUST(copied);
+    }
+    return OK;
+}
+
+static RESULT M_Keep(const ARGS *const args, const wchar_t *const work_dir)
+{
+    wchar_t out_dir[MAX_PATH];
+    MUST(M_OutDir(args, out_dir));
+    size_t kept = 0;
+    for (size_t i = 0; i < args->keep_count; i++) {
+        wchar_t *const name = M_Wide(args->keeps[i]);
+        if (Result_Log(
+                Workdir_CopyOut(work_dir, name, out_dir), LOG_LEVEL_ERROR)) {
+            kept++;
+        }
+        Mem_Free(name);
+    }
+    FAIL_IF(kept != args->keep_count, "some files were not kept");
     return OK;
 }
 
 static wchar_t *M_Environment(
     const ARGS *const args, const wchar_t *work_dir, const wchar_t *case_path)
 {
-    wchar_t lines[5][MAX_PATH + 32];
-    const wchar_t *extra[5];
+    wchar_t lines[6][MAX_PATH + 32];
+    const wchar_t *extra[6];
     size_t count = 0;
     swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_WORK=%ls", work_dir);
     count++;
@@ -187,6 +235,10 @@ static wchar_t *M_Environment(
     }
     if (args->fast) {
         swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_FAST=1");
+        count++;
+    }
+    if (args->result) {
+        swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_RESULT=1");
         count++;
     }
     if (args->quit_after > 0) {
@@ -244,9 +296,9 @@ int main(void)
 {
     int argc;
     wchar_t **const wide_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    char buffers[16][MAX_PATH];
-    char *argv[16];
-    for (int i = 0; i < argc && i < 16; i++) {
+    char buffers[MAX_ARGS][MAX_PATH];
+    char *argv[MAX_ARGS];
+    for (int i = 0; i < argc && i < MAX_ARGS; i++) {
         WideCharToMultiByte(
             CP_UTF8, 0, wide_argv[i], -1, buffers[i], MAX_PATH, nullptr,
             nullptr);
@@ -255,12 +307,18 @@ int main(void)
     LocalFree(wide_argv);
 
     ARGS args;
-    if (argc > 16 || !M_ParseArgs(argc, argv, &args)) {
+    if (argc > MAX_ARGS || !M_ParseArgs(argc, argv, &args)) {
         fprintf(
             stderr,
             "usage: th06capture.exe --game <dir> "
             "(--replay <file.rpy> | --live) [--dry-run] [--fast] "
-            "[--quit-after <seconds>] [--out <dir>]\n");
+            "[--result] [--quit-after <seconds>] [--out <dir>] "
+            "[--seed <file>]... [--keep <name>]...\n"
+            "  --seed <file>  copy the file into the work directory first\n"
+            "  --keep <name>  copy the file from the work directory to --out "
+            "at the end\n"
+            "  --result       with --live, open the result screen, which "
+            "saves score.dat when the game closes\n");
         return 1;
     }
     char exe[MAX_PATH];
@@ -272,6 +330,7 @@ int main(void)
         return 1;
     }
     const bool ran = Result_Log(M_Run(&args, work_dir), LOG_LEVEL_ERROR);
+    const bool kept = Result_Log(M_Keep(&args, work_dir), LOG_LEVEL_ERROR);
     Workdir_RemoveTemp(work_dir);
-    return ran ? 0 : 1;
+    return ran && kept ? 0 : 1;
 }

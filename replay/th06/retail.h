@@ -20,6 +20,7 @@
 #define RETAIL_MAIN_MENU_TITLE_KEY 2
 
 #define RETAIL_SCENE_GAMEPLAY 2
+#define RETAIL_SCENE_RESULT 6
 
 typedef int(__cdecl *RETAIL_CALLBACK)(void *arg);
 

@@ -25,6 +25,34 @@ RESULT Workdir_CreateTemp(
     return FAIL("could not create a unique temporary directory");
 }
 
+RESULT Workdir_CopyIn(const wchar_t *dir, const wchar_t *source)
+{
+    wchar_t name[MAX_PATH];
+    wchar_t extension[MAX_PATH];
+    _wsplitpath(source, nullptr, nullptr, name, extension);
+    wchar_t target[MAX_PATH];
+    swprintf(target, ARRAYSIZE(target), L"%ls\\%ls%ls", dir, name, extension);
+    if (!CopyFileW(source, target, FALSE)) {
+        return FAIL(
+            "cannot copy %ls: %lu", source, (unsigned long)GetLastError());
+    }
+    return OK;
+}
+
+RESULT Workdir_CopyOut(
+    const wchar_t *dir, const wchar_t *name, const wchar_t *out_dir)
+{
+    wchar_t source[MAX_PATH];
+    swprintf(source, ARRAYSIZE(source), L"%ls\\%ls", dir, name);
+    wchar_t target[MAX_PATH];
+    swprintf(target, ARRAYSIZE(target), L"%ls\\%ls", out_dir, name);
+    if (!CopyFileW(source, target, FALSE)) {
+        return FAIL(
+            "cannot keep %ls: %lu", name, (unsigned long)GetLastError());
+    }
+    return OK;
+}
+
 static void M_RemoveTree(const wchar_t *dir)
 {
     wchar_t pattern[MAX_PATH];
