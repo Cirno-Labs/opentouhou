@@ -469,7 +469,7 @@ static void M_WriteReleases(
         : Str_Dup("");
     char *const asset = assets
         ? Str_Format(
-              "{\"name\": \"oth06-%s-%s.zip\", \"browser_download_url\": "
+              "{\"name\": \"oth06-%s-%s.zip\", \"url\": "
               "\"file://%s/oth06-%s-%s.zip\"%s}",
               version, platform, test->server, version, platform, digest_member)
         : Str_Dup("");

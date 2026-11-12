@@ -26,7 +26,7 @@ static char *M_Release(
 static char *M_Asset(const char *const name, const char *const digest)
 {
     return Str_Format(
-        "{\"name\": \"%s\", \"browser_download_url\": "
+        "{\"name\": \"%s\", \"url\": "
         "\"https://example.com/%s\"%s%s%s}",
         name, name, digest != nullptr ? ", \"digest\": \"" : "",
         digest != nullptr ? digest : "", digest != nullptr ? "\"" : "");

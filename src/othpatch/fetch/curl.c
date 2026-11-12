@@ -12,9 +12,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define M_GITHUB_API "https://api.github.com/"
+
 typedef struct {
     FETCH *fetch;
     CURL *curl;
+    struct curl_slist *headers;
     size_t capacity;
     bool too_large;
     char error[CURL_ERROR_SIZE];
@@ -22,6 +25,35 @@ typedef struct {
 
 static bool m_Ready;
 static FETCH_CA m_Ca;
+
+static const char *M_GetToken(void)
+{
+    const char *const names[] = { "GITHUB_TOKEN", "GH_TOKEN" };
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        const char *const token = getenv(names[i]);
+        if (token != nullptr && token[0] != '\0') {
+            return token;
+        }
+    }
+    return nullptr;
+}
+
+static struct curl_slist *M_Headers(const FETCH *const fetch)
+{
+    struct curl_slist *headers = nullptr;
+    if (fetch->accept != nullptr) {
+        char *const line = Str_Format("Accept: %s", fetch->accept);
+        headers = curl_slist_append(headers, line);
+        Mem_Free(line);
+    }
+    const char *const token = M_GetToken();
+    if (token != nullptr && Str_StartsWith(fetch->url, M_GITHUB_API)) {
+        char *const line = Str_Format("Authorization: Bearer %s", token);
+        headers = curl_slist_append(headers, line);
+        Mem_Free(line);
+    }
+    return headers;
+}
 
 static size_t M_Write(
     const char *const data, const size_t size, const size_t count,
@@ -80,6 +112,10 @@ static bool M_Start(CURLM *const multi, M_TRANSFER *const transfer)
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, M_Write);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, transfer);
     curl_easy_setopt(curl, CURLOPT_PRIVATE, transfer);
+    transfer->headers = M_Headers(fetch);
+    if (transfer->headers != nullptr) {
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, transfer->headers);
+    }
     if (m_Ca.file != nullptr) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, m_Ca.file);
     }
@@ -90,6 +126,8 @@ static bool M_Start(CURLM *const multi, M_TRANSFER *const transfer)
     if (code != CURLM_OK) {
         curl_easy_cleanup(curl);
         transfer->curl = nullptr;
+        curl_slist_free_all(transfer->headers);
+        transfer->headers = nullptr;
         M_Fail(
             fetch,
             FAIL("Cannot fetch %s: %s", fetch->url, curl_multi_strerror(code)));
@@ -122,6 +160,8 @@ static void M_Finish(
     curl_multi_remove_handle(multi, transfer->curl);
     curl_easy_cleanup(transfer->curl);
     transfer->curl = nullptr;
+    curl_slist_free_all(transfer->headers);
+    transfer->headers = nullptr;
 }
 
 static bool M_IsHttp(const char *const url)
@@ -161,7 +201,7 @@ void Fetch_Run(FETCH *const fetches, const int32_t count)
     while (next < count || active > 0) {
         while (next < count && active < FETCH_MAX_TRANSFERS) {
             FETCH *const fetch = &fetches[next++];
-            *fetch = (FETCH) { .url = fetch->url };
+            *fetch = (FETCH) { .url = fetch->url, .accept = fetch->accept };
             if (Str_StartsWith(fetch->url, "file:")) {
                 fetch->result =
                     FetchFile_Read(fetch->url, &fetch->data, &fetch->size);

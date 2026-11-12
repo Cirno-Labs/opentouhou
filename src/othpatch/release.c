@@ -81,8 +81,7 @@ static void M_FindPackage(const JSON_VALUE *const release, RELEASE *const out)
         if (strcmp(name, out->package) != 0) {
             continue;
         }
-        out->url =
-            Json_GetString(Json_Get(asset, "browser_download_url"), nullptr);
+        out->url = Json_GetString(Json_Get(asset, "url"), nullptr);
         const char *const digest =
             Json_GetString(Json_Get(asset, "digest"), "");
         if (Str_StartsWith(digest, M_DIGEST_PREFIX)) {

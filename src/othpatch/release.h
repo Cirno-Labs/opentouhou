@@ -14,14 +14,19 @@ typedef struct {
     int32_t patch;
 } RELEASE_VERSION;
 
+// Names the media type that the API URL of a package gives the file for.
+#define RELEASE_ACCEPT "application/octet-stream"
+
 // Holds the newest release of a game.
 typedef struct {
     RELEASE_VERSION version;
     // Holds the name of the package for the platform,
     // "o<game>-X.Y.Z-<platform>.zip".
     const char *package;
-    // Holds the download URL of the package, or nullptr when the release has
-    // no such package.
+    // Holds the API URL of the package, which gives the file itself when
+    // fetched with RELEASE_ACCEPT, or nullptr when the release has no such
+    // package. Unlike the browser URL, it also works for a private
+    // repository.
     const char *url;
     // Holds the SHA-256 digest of the package as hexadecimal text, or
     // nullptr when GitHub gives none.

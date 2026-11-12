@@ -12,6 +12,10 @@
 // checks the certificate of the server against the CA certificates that
 // $SSL_CERT_FILE names, or else against the system's certificates.
 //
+// A URL below https://api.github.com/ also carries the token in
+// $GITHUB_TOKEN, or else $GH_TOKEN, when one is set, so that the releases
+// of a private repository can be read. No other host receives it.
+//
 // file:// URLs read a local file, so that the tests need no server. The
 // host must be empty or "localhost", percent escapes are decoded, and a
 // query or fragment after '?' or '#' is ignored.
@@ -25,6 +29,8 @@
 // Holds one URL to fetch and, after Fetch_Run, its outcome.
 typedef struct {
     const char *url;
+    // Holds the Accept header to send, or nullptr for none.
+    const char *accept;
     // Holds the contents. Mem_Free releases data. On failure, data is
     // nullptr and size is 0.
     uint8_t *data;

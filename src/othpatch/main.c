@@ -467,9 +467,10 @@ static int M_Run(
     return 0;
 }
 
-static RESULT M_Fetch(const char *const url, FETCH *const fetch)
+static RESULT M_Fetch(
+    const char *const url, const char *const accept, FETCH *const fetch)
 {
-    *fetch = (FETCH) { .url = url };
+    *fetch = (FETCH) { .url = url, .accept = accept };
     Fetch_Run(fetch, 1);
     const RESULT result = fetch->result;
     fetch->result = OK;
@@ -484,7 +485,7 @@ static RESULT M_FetchReleases(
 {
     *out = nullptr;
     FETCH fetch;
-    MUST(M_Fetch(url, &fetch));
+    MUST(M_Fetch(url, nullptr, &fetch));
     const RESULT parsed = Json_Parse(
         (const char *)fetch.data, fetch.size, Arena_Allocator(arena), out);
     Fetch_Release(&fetch);
@@ -498,7 +499,7 @@ static RESULT M_Install(
 {
     *othpatch_replaced = false;
     FETCH fetch;
-    MUST(M_Fetch(release->url, &fetch), "%s", release->package);
+    MUST(M_Fetch(release->url, RELEASE_ACCEPT, &fetch), "%s", release->package);
     char digest[SHA256_HEX_SIZE];
     Sha256_ComputeHex(fetch.data, fetch.size, digest);
     RESULT result = OK;
