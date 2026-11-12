@@ -55,10 +55,10 @@ int32_t Release_CompareVersions(
     return 0;
 }
 
-// Returns whether release is a published release of game, and writes its
-// version into out.
+// Returns whether release is a published release with a tag that starts
+// with tag_prefix, and writes its version into out.
 static bool M_ReadRelease(
-    const JSON_VALUE *const release, const char *const game,
+    const JSON_VALUE *const release, const char *const tag_prefix,
     RELEASE_VERSION *const out)
 {
     if (Json_GetBool(Json_Get(release, "draft"), false)
@@ -66,10 +66,8 @@ static bool M_ReadRelease(
         return false;
     }
     const char *const tag = Json_GetString(Json_Get(release, "tag_name"), "");
-    const size_t length = strlen(game);
-    return strncmp(tag, game, length) == 0
-        && strncmp(tag + length, "-v", 2) == 0
-        && Release_ParseVersion(tag + length + 2, out);
+    return Str_StartsWith(tag, tag_prefix)
+        && Release_ParseVersion(tag + strlen(tag_prefix), out);
 }
 
 static void M_FindPackage(const JSON_VALUE *const release, RELEASE *const out)
@@ -92,8 +90,8 @@ static void M_FindPackage(const JSON_VALUE *const release, RELEASE *const out)
 }
 
 RESULT Release_FindNewest(
-    const JSON_VALUE *const list, const char *const game,
-    const char *const platform, ARENA *const arena, RELEASE *const out)
+    const JSON_VALUE *const list, const RELEASE_NAMES *const names,
+    ARENA *const arena, RELEASE *const out)
 {
     *out = (RELEASE) {};
     FAIL_IF(
@@ -103,21 +101,24 @@ RESULT Release_FindNewest(
     for (int32_t i = 0; i < list->array.count; i++) {
         const JSON_VALUE *const release = &list->array.items[i];
         RELEASE_VERSION version;
-        if (M_ReadRelease(release, game, &version)
+        if (M_ReadRelease(release, names->tag_prefix, &version)
             && (newest == nullptr
                 || Release_CompareVersions(version, out->version) > 0)) {
             newest = release;
             out->version = version;
         }
     }
-    FAIL_IF(newest == nullptr, "the repository has no release of %s", game);
+    FAIL_IF(
+        newest == nullptr, "the repository has no release of %s",
+        names->program);
     const int size = snprintf(
-        nullptr, 0, "o%s-%d.%d.%d-%s.zip", game, out->version.major,
-        out->version.minor, out->version.patch, platform);
+        nullptr, 0, "%s%d.%d.%d%s", names->package_prefix, out->version.major,
+        out->version.minor, out->version.patch, names->package_suffix);
     char *const package = Arena_Alloc(arena, (size_t)size + 1);
     snprintf(
-        package, (size_t)size + 1, "o%s-%d.%d.%d-%s.zip", game,
-        out->version.major, out->version.minor, out->version.patch, platform);
+        package, (size_t)size + 1, "%s%d.%d.%d%s", names->package_prefix,
+        out->version.major, out->version.minor, out->version.patch,
+        names->package_suffix);
     out->package = package;
     M_FindPackage(newest, out);
     return OK;

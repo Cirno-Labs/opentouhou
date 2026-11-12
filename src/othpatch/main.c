@@ -577,9 +577,21 @@ static bool M_UpdateGame(
     if (releases->list == nullptr) {
         return false;
     }
+    char tag_prefix[GAME_VERSION_SIZE];
+    char package_prefix[GAME_VERSION_SIZE];
+    char package_suffix[GAME_VERSION_SIZE];
+    snprintf(tag_prefix, sizeof(tag_prefix), "%s-v", game);
+    snprintf(package_prefix, sizeof(package_prefix), "o%s-", game);
+    snprintf(package_suffix, sizeof(package_suffix), "-%s.zip", platform->name);
+    const RELEASE_NAMES names = {
+        .program = game,
+        .tag_prefix = tag_prefix,
+        .package_prefix = package_prefix,
+        .package_suffix = package_suffix,
+    };
     RELEASE release;
-    const RESULT found = Release_FindNewest(
-        releases->list, game, platform->name, arena, &release);
+    const RESULT found =
+        Release_FindNewest(releases->list, &names, arena, &release);
     if (!IS_OK(found)) {
         fprintf(
             out, "o%s: cannot check for updates: %s\n", game, found.message);

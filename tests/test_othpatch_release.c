@@ -32,15 +32,27 @@ static char *M_Asset(const char *const name, const char *const digest)
         digest != nullptr ? digest : "", digest != nullptr ? "\"" : "");
 }
 
-static RESULT M_Find(M_CASE *const test, const char *const text)
+static RESULT M_FindNames(
+    M_CASE *const test, const char *const text,
+    const RELEASE_NAMES *const names)
 {
     Arena_Init(&test->arena, "release test", 1 << 20);
     CHECK(Result_Log(
         Json_Parse(
             text, strlen(text), Arena_Allocator(&test->arena), &test->list),
         LOG_LEVEL_ERROR));
-    return Release_FindNewest(
-        test->list, "th06", "Linux", &test->arena, &test->release);
+    return Release_FindNewest(test->list, names, &test->arena, &test->release);
+}
+
+static RESULT M_Find(M_CASE *const test, const char *const text)
+{
+    const RELEASE_NAMES names = {
+        .program = "th06",
+        .tag_prefix = "th06-v",
+        .package_prefix = "oth06-",
+        .package_suffix = "-Linux.zip",
+    };
+    return M_FindNames(test, text, &names);
 }
 
 static void M_CheckVersion(
@@ -166,6 +178,33 @@ TEST(list_without_a_release_of_the_game_fails)
     Arena_Free(&test.arena);
     Mem_Free(text);
     Mem_Free(release);
+}
+
+TEST(newest_release_of_othpatch_wins)
+{
+    char *const asset = M_Asset("othpatch-1.2.0-Windows.exe", nullptr);
+    char *const game = M_Release("th06-v9.0.0", false, false, "");
+    char *const old = M_Release("othpatch-v1.1.0", false, false, "");
+    char *const newest = M_Release("othpatch-v1.2.0", false, false, asset);
+    char *const text = Str_Format("[%s, %s, %s]", game, newest, old);
+    const RELEASE_NAMES names = {
+        .program = "othpatch",
+        .tag_prefix = "othpatch-v",
+        .package_prefix = "othpatch-",
+        .package_suffix = "-Windows.exe",
+    };
+    M_CASE test;
+    CHECK(Result_Log(M_FindNames(&test, text, &names), LOG_LEVEL_ERROR));
+    M_CheckVersion(test.release.version, 1, 2, 0);
+    CHECK_EQ_STR(test.release.package, "othpatch-1.2.0-Windows.exe");
+    CHECK_EQ_STR(
+        test.release.url, "https://example.com/othpatch-1.2.0-Windows.exe");
+    Arena_Free(&test.arena);
+    Mem_Free(text);
+    Mem_Free(newest);
+    Mem_Free(old);
+    Mem_Free(game);
+    Mem_Free(asset);
 }
 
 TEST(list_that_is_not_an_array_fails)
