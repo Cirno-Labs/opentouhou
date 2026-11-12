@@ -82,7 +82,7 @@ RESULT Zip_List(
     ZIP_ENTRY_LIST *const out)
 {
     Array_Init(out, Arena_Allocator(arena));
-    size_t end;
+    size_t end = 0;
     MUST(M_FindEnd(data, size, &end));
     READER reader;
     Reader_OpenBuffer(&reader, data, size);

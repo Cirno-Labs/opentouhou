@@ -610,7 +610,7 @@ static RESULT M_NextItem(
 
 static RESULT M_ParseArray(PARSER *const parser, JSON_VALUE *const out)
 {
-    int32_t slot;
+    int32_t slot = 0;
     MUST(M_OpenContainer(parser, &slot));
     JSON_VALUE *items = nullptr;
     if (parser->building) {
@@ -636,7 +636,7 @@ static RESULT M_ParseArray(PARSER *const parser, JSON_VALUE *const out)
 
 static RESULT M_ParseObject(PARSER *const parser, JSON_VALUE *const out)
 {
-    int32_t slot;
+    int32_t slot = 0;
     MUST(M_OpenContainer(parser, &slot));
     JSON_VALUE *values = nullptr;
     JSON_MEMBER *members = nullptr;

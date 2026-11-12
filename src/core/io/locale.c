@@ -54,11 +54,13 @@ LOCALE Locale_GetPreferred(void)
     const SDL_Locale *const first = count > 0 ? locales[0] : nullptr;
     if (first != nullptr && first->language != nullptr
         && M_IsLanguage(first->language)) {
-        for (size_t i = 0; first->language[i] != '\0'; i++) {
+        for (size_t i = 0;
+             i < LOCALE_CODE_SIZE - 1 && first->language[i] != '\0'; i++) {
             locale.language[i] = (char)SDL_tolower(first->language[i]);
         }
         if (first->country != nullptr && M_IsCountry(first->country)) {
-            for (size_t i = 0; first->country[i] != '\0'; i++) {
+            for (size_t i = 0;
+                 i < LOCALE_CODE_SIZE - 1 && first->country[i] != '\0'; i++) {
                 locale.country[i] = (char)SDL_toupper(first->country[i]);
             }
         }

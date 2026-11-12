@@ -393,7 +393,8 @@ RESULT Text_Render(
 {
     *out = (IMAGE) {};
     FAIL_IF(allocator == nullptr, "Missing text image allocator");
-    int32_t width, height;
+    int32_t width = 0;
+    int32_t height = 0;
     MUST(Text_Measure(font, text, style, &width, &height));
     if (width == 0 || height == 0) {
         return OK;
