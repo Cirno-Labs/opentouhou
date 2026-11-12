@@ -27,6 +27,14 @@ package-linux target="debug": (build-linux target) (_docker_run "linux" "package
 [group('build')]
 package-win target="debug": (build-win target) (_docker_run "win" "package" "--target" target)
 
+# Write othpatch for Linux into build/packages/.
+[group('build')]
+package-othpatch-linux target="debug": (build-linux target) (_docker_run "linux" "package-othpatch" "--target" target)
+
+# Write othpatch for Windows into build/packages/.
+[group('build')]
+package-othpatch-win target="debug": (build-win target) (_docker_run "win" "package-othpatch" "--target" target)
+
 # Build the macOS dependencies into build/mac-deps (on a Mac).
 [group('build')]
 deps-mac:
@@ -42,6 +50,11 @@ build-mac target="debug":
 package-mac target="debug":
     tools/mac/build package --target {{target}}
 
+# Write the universal othpatch for macOS into build/packages/.
+[group('build')]
+package-othpatch-mac target="debug":
+    tools/mac/build package-othpatch --target {{target}}
+
 # Run the unit tests on macOS.
 [group('test')]
 test-mac:
@@ -56,10 +69,10 @@ test: (image-linux "0") (_docker_run "linux" "test")
 lint:
     prek -a
 
-# Print the version that a game's packages carry.
+# Print the version that a build of a program reports.
 [group('misc')]
-version game="th06":
-    @tools/get_version {{game}}
+version program="th06":
+    @tools/get_version {{program}}
 
 # Delete the build outputs.
 [group('misc')]

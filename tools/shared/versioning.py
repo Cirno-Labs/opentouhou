@@ -82,6 +82,17 @@ def file_version(version: str) -> str:
     return version.replace("+", "-")
 
 
+PLATFORM_NAMES = {"linux": "Linux", "win": "Windows", "mac": "macOS"}
+
+
 def generate_package_name(game: str, version: str, platform: str) -> str:
-    platform_name = {"linux": "Linux", "win": "Windows", "mac": "macOS"}[platform]
-    return f"{executable_name(game)}-{file_version(version)}-{platform_name}"
+    """Return the name of a game's package without .zip, such as
+    oth06-1.2.0-Linux."""
+    return f"{executable_name(game)}-{file_version(version)}-{PLATFORM_NAMES[platform]}"
+
+
+def othpatch_asset_name(version: str, platform: str) -> str:
+    """Return the name of othpatch's executable in its release, such as
+    othpatch-1.2.0-Windows.exe."""
+    suffix = ".exe" if platform == "win" else ""
+    return f"othpatch-{file_version(version)}-{PLATFORM_NAMES[platform]}{suffix}"

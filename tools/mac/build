@@ -4,6 +4,8 @@
 The dependencies come from tools/mac/build_deps, one prefix per
 architecture under --deps. The package is a universal application
 bundle per game, signed ad hoc, in a zip under build/packages/.
+package-othpatch writes the universal executable of othpatch, signed ad
+hoc, as its release names it.
 
 The environment variables GAME_REPOSITORY and OTHPATCH_REPOSITORY, when
 set, give the build options game_repository and othpatch_repository.
@@ -20,7 +22,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from shared.versioning import executable_name, generate_package_name, generate_version
+from shared.versioning import (
+    executable_name,
+    generate_package_name,
+    generate_version,
+    othpatch_asset_name,
+)
 
 REPO_DIR = Path(__file__).resolve().parents[2]
 MAC_DIR = REPO_DIR / "tools/mac"
@@ -154,6 +161,24 @@ def run_package(deps: Path, target: str) -> None:
         print(f"Created {output.relative_to(REPO_DIR)}")
 
 
+def run_package_othpatch(deps: Path, target: str) -> None:
+    run_build(deps, target, ARCHS)
+    PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+    output = PACKAGES_DIR / othpatch_asset_name(generate_version("othpatch"), "mac")
+    output.unlink(missing_ok=True)
+    subprocess.check_call(
+        [
+            "lipo",
+            "-create",
+            *(str(build_dir(arch, target) / "othpatch") for arch in ARCHS),
+            "-output",
+            str(output),
+        ]
+    )
+    subprocess.check_call(["codesign", "--force", "--sign", "-", str(output)])
+    print(f"Created {output.relative_to(REPO_DIR)}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -164,7 +189,7 @@ def main() -> None:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("deps")
-    for name in ["build", "test", "package"]:
+    for name in ["build", "test", "package", "package-othpatch"]:
         subparser = subparsers.add_parser(name)
         subparser.add_argument(
             "--target", choices=["debug", "release"], default="debug"
@@ -178,6 +203,8 @@ def main() -> None:
         run_build(deps, args.target, ARCHS)
     elif args.command == "test":
         run_test(deps, args.target)
+    elif args.command == "package-othpatch":
+        run_package_othpatch(deps, args.target)
     else:
         run_package(deps, args.target)
 

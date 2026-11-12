@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Build and package opentouhou inside a build image.
 
+package writes the game packages, and package-othpatch the executable
+of othpatch as its release names it, into build/packages/.
+
 Each image runs this script with its platform. The repository is mounted
 at /app.
 
@@ -16,7 +19,12 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from shared.versioning import executable_name, generate_package_name, generate_version
+from shared.versioning import (
+    executable_name,
+    generate_package_name,
+    generate_version,
+    othpatch_asset_name,
+)
 
 REPO_DIR = Path("/app")
 PACKAGING_DIR = REPO_DIR / "tools/packaging"
@@ -155,11 +163,19 @@ def run_package(platform: str, target: str) -> None:
         print(f"Created {output.relative_to(REPO_DIR)}")
 
 
+def run_package_othpatch(platform: str, target: str) -> None:
+    PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+    exe = build_dir(platform, target) / f"othpatch{EXE_SUFFIXES[platform]}"
+    output = PACKAGES_DIR / othpatch_asset_name(generate_version("othpatch"), platform)
+    shutil.copy2(exe, output)
+    print(f"Created {output.relative_to(REPO_DIR)}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", choices=["linux", "win"], required=True)
     subparsers = parser.add_subparsers(dest="command", required=True)
-    for name in ["build", "test", "package"]:
+    for name in ["build", "test", "package", "package-othpatch"]:
         subparser = subparsers.add_parser(name)
         subparser.add_argument(
             "--target", choices=["debug", "release"], default="debug"
@@ -174,6 +190,8 @@ def main() -> None:
         run_test(args.platform, args.target)
     elif args.command == "replay":
         run_capture_build(args.game)
+    elif args.command == "package-othpatch":
+        run_package_othpatch(args.platform, args.target)
     else:
         run_package(args.platform, args.target)
 

@@ -81,6 +81,14 @@ This writes one package per game to `build/packages/`:
   Apple silicon and Intel Macs. It has an ad-hoc signature only, so
   macOS asks before its first start (Open from the context menu).
 
+`just package-othpatch-linux release` and its `-win` and `-mac`
+counterparts write othpatch's executable as its release names it:
+`othpatch-<version>-Linux`, `othpatch-<version>-Windows.exe`, and
+`othpatch-<version>-macOS`, one universal executable with an ad-hoc
+signature. A development version holds a `-` instead of the `+`, as
+`0.1.0-dev-abcdef0`, because GitHub renames release files whose names
+hold a `+`.
+
 Every package contains the game's executable and a readme with the
 credits. None contains any of the original game's files. The
 executable carries the game's icon and version: in the Windows file
