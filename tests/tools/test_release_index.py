@@ -1,5 +1,6 @@
 """Tests of tools/release_index against a fake AWS CLI."""
 
+import datetime
 import hashlib
 import json
 import os
@@ -13,6 +14,10 @@ from pathlib import Path
 TOOLS_DIR = Path(__file__).resolve().parents[2] / "tools"
 FAKE_AWS = Path(__file__).resolve().parent / "fake_aws.py"
 PUBLIC_URL = "https://pub.example.com"
+
+sys.path.insert(0, str(TOOLS_DIR))
+
+from shared import release_index
 # Gives the changelogs of the copy of the repository that the tool runs in.
 CHANGELOGS = {
     "othpatch": """# othpatch changelog
@@ -178,6 +183,104 @@ class ReleaseIndexTest(unittest.TestCase):
         self.assertIn("published already", result.stderr)
         self.assertEqual(self.index(), before)
 
+    def set_published(self, program: str, version: str, hours: float | None) -> None:
+        path = self.root / "objects" / "releases.json"
+        index = json.loads(path.read_text())
+        release = next(
+            item for item in index["programs"][program] if item["version"] == version
+        )
+        if hours is None:
+            del release["published"]
+        else:
+            time = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=hours)
+            release["published"] = time.replace(microsecond=0).isoformat()
+        path.write_text(json.dumps(index))
+
+    def test_publish_records_the_time(self) -> None:
+        self.package("othpatch-0.1.1-Linux")
+        self.assertEqual(self.publish("othpatch", "0.1.1").returncode, 0)
+        published = self.index()["programs"]["othpatch"][0]["published"]
+        self.assertRegex(published, r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+
+    def test_replace_within_24_hours_replaces_the_files(self) -> None:
+        self.package("othpatch-0.1.1-Linux", b"old")
+        self.package("othpatch-0.1.1-macOS", b"old")
+        self.assertEqual(self.publish("othpatch", "0.1.1").returncode, 0)
+        self.package("othpatch-0.1.2-Linux")
+        self.assertEqual(self.publish("othpatch", "0.1.2").returncode, 0)
+        self.set_published("othpatch", "0.1.1", 23.5)
+        published = self.index()["programs"]["othpatch"][1]["published"]
+        (self.root / "packages" / "othpatch-0.1.1-macOS").unlink()
+        self.package("othpatch-0.1.1-Linux", b"new")
+        result = self.publish("othpatch", "0.1.1", "--replace")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        releases = self.index()["programs"]["othpatch"]
+        self.assertEqual([item["version"] for item in releases], ["0.1.2", "0.1.1"])
+        release = releases[1]
+        self.assertEqual(release["published"], published)
+        self.assertEqual(sorted(release["files"]), ["Linux"])
+        self.assertEqual(release["files"]["Linux"]["sha256"], hashlib.sha256(b"new").hexdigest())
+        folder = self.root / "objects/othpatch/0.1.1"
+        self.assertEqual((folder / "othpatch-0.1.1-Linux").read_bytes(), b"new")
+        self.assertEqual(
+            sorted(path.name for path in folder.iterdir()),
+            ["SHA1SUMS", "SHA256SUMS", "othpatch-0.1.1-Linux"],
+        )
+        self.assertIn(hashlib.sha256(b"new").hexdigest(), (folder / "SHA256SUMS").read_text())
+
+    def test_replace_after_24_hours_fails(self) -> None:
+        self.package("othpatch-0.1.1-Linux")
+        self.assertEqual(self.publish("othpatch", "0.1.1").returncode, 0)
+        self.set_published("othpatch", "0.1.1", 24.1)
+        before = self.index()
+        result = self.publish("othpatch", "0.1.1", "--replace")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("24 hours or more ago", result.stderr)
+        self.assertEqual(self.index(), before)
+
+    def test_replace_without_a_publication_time_fails(self) -> None:
+        self.package("othpatch-0.1.1-Linux")
+        self.assertEqual(self.publish("othpatch", "0.1.1").returncode, 0)
+        self.set_published("othpatch", "0.1.1", None)
+        result = self.publish("othpatch", "0.1.1", "--replace")
+        self.assertIn("no time of its publication", result.stderr)
+
+    def test_replace_of_a_new_version_publishes_it(self) -> None:
+        self.package("othpatch-0.1.1-Linux")
+        result = self.publish("othpatch", "0.1.1", "--replace")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Published", result.stdout)
+
+    def plan(self, index: dict, *extra: str) -> subprocess.CompletedProcess:
+        path = self.root / "plan.json"
+        path.write_text(json.dumps(index))
+        tool = self.tool.parent / "release_plan"
+        return subprocess.run(
+            [sys.executable, str(tool), "--index", str(path), *extra],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_plan_replaces_only_releases_younger_than_24_hours(self) -> None:
+        now = datetime.datetime.now(datetime.UTC)
+
+        def release(hours: float) -> dict:
+            time = now - datetime.timedelta(hours=hours)
+            return {"version": "0.1.0", "published": time.isoformat()}
+
+        index = {"format": 1, "programs": {"othpatch": [release(30)], "th06": [release(2)]}}
+        result = self.plan(index)
+        self.assertEqual(result.stdout, "othpatch=\ngames=\n")
+        result = self.plan(index, "--replace")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "othpatch=\ngames=th06\n")
+        self.assertIn("othpatch 0.1.0 cannot be replaced", result.stderr)
+        index["programs"]["th06"] = [release(25)]
+        result = self.plan(index, "--replace")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("th06 0.1.0 cannot be replaced", result.stderr)
+
+
     def test_game_release_records_its_othpatch(self) -> None:
         self.package("oth06-0.1.1-Linux.zip")
         self.assertEqual(self.publish("th06", "0.1.1", "--othpatch", "0.1.2").returncode, 0)
@@ -292,6 +395,34 @@ class ReleaseIndexTest(unittest.TestCase):
         self.assertEqual(
             snapshot["checksums"]["SHA1SUMS"], f"{PUBLIC_URL}/snapshot/SHA1SUMS"
         )
+
+
+class ReplaceRuleTest(unittest.TestCase):
+    NOW = datetime.datetime(2026, 11, 12, 12, 0, tzinfo=datetime.UTC)
+
+    def error(self, release: dict) -> str | None:
+        return release_index.replace_error("th06", {"version": "1.0.0", **release}, self.NOW)
+
+    def test_release_younger_than_24_hours_can_be_replaced(self) -> None:
+        self.assertIsNone(self.error({"published": "2026-11-12T11:59:59Z"}))
+        self.assertIsNone(self.error({"published": "2026-11-11T12:00:01Z"}))
+
+    def test_release_of_24_hours_or_more_cannot_be_replaced(self) -> None:
+        self.assertIn("24 hours or more", self.error({"published": "2026-11-11T12:00:00Z"}))
+        self.assertIn("24 hours or more", self.error({"published": "2026-10-01T00:00:00Z"}))
+
+    def test_release_without_a_time_cannot_be_replaced(self) -> None:
+        self.assertIn("no time", self.error({"date": "2026-11-12"}))
+
+    def test_replaced_release_keeps_its_place(self) -> None:
+        index = release_index.empty()
+        for version in ["1.0.0", "1.1.0"]:
+            release_index.add_release(index, "th06", {"version": version})
+        release_index.remove_release(index, "th06", "1.0.0")
+        release_index.add_release(index, "th06", {"version": "1.0.0", "new": True})
+        releases = index["programs"]["th06"]
+        self.assertEqual([item["version"] for item in releases], ["1.1.0", "1.0.0"])
+        self.assertTrue(releases[1]["new"])
 
 
 if __name__ == "__main__":

@@ -7,9 +7,13 @@
                   exits with 0 when the index of the bucket has that
                   release, else with 1
   publish --program P --version V --packages DIR [--othpatch X]
+          [--replace]
                   uploads the files of P V in DIR to P/V/ with their
                   SHA256SUMS and SHA1SUMS, then adds the release to
-                  the index; fails when the index has it
+                  the index; fails when the index has it, unless
+                  --replace is given and the release is less than 24
+                  hours old, in which case it replaces the files and
+                  the release
   snapshot --packages DIR --commit SHA
                   uploads every program's files in DIR to snapshot/,
                   replaces the snapshot of the index, then deletes the
@@ -97,9 +101,19 @@ def publish(args: argparse.Namespace, work: Path) -> None:
         sys.exit(f"{args.packages} has no files of {args.program} {args.version}")
 
     index = fetch_index(work / INDEX_KEY)
-    if index_file.find(index, args.program, args.version) is not None:
+    now = datetime.datetime.now(datetime.UTC)
+    published = index_file.find(index, args.program, args.version)
+    if published is not None and not args.replace:
         sys.exit(f"{args.program} {args.version} is published already")
-    release = {"version": args.version, "date": released}
+    if published is not None:
+        error = index_file.replace_error(args.program, published, now)
+        if error is not None:
+            sys.exit(error)
+    release = {
+        "version": args.version,
+        "date": released,
+        "published": published["published"] if published else index_file.utc_time(now),
+    }
     if args.program in games():
         release["othpatch"] = args.othpatch or read_version(othpatch_pin_path(args.program))
     release["changes"] = changes
@@ -108,9 +122,16 @@ def publish(args: argparse.Namespace, work: Path) -> None:
     release["checksums"] = upload_checksums(
         list(release["files"].values()), prefix, base_url, work
     )
+    index_file.remove_release(index, args.program, args.version)
     index_file.add_release(index, args.program, release)
     put_index(index, work / INDEX_KEY)
-    print(f"Published {args.program} {args.version}: {', '.join(files.values())}")
+    if published is not None:
+        kept = {f"{prefix}/{name}" for name in [*files.values(), *index_file.CHECKSUMS]}
+        for key in r2.keys(f"{prefix}/"):
+            if key not in kept:
+                r2.delete(key)
+    verb = "Replaced" if published is not None else "Published"
+    print(f"{verb} {args.program} {args.version}: {', '.join(files.values())}")
 
 
 def snapshot(args: argparse.Namespace, work: Path) -> None:
@@ -141,10 +162,9 @@ def snapshot(args: argparse.Namespace, work: Path) -> None:
     uploaded.update(f"snapshot/{name}" for name in index_file.CHECKSUMS)
 
     index = fetch_index(work / INDEX_KEY)
-    now = datetime.datetime.now(datetime.UTC).replace(microsecond=0)
     index["snapshot"] = {
         "commit": args.commit,
-        "date": now.isoformat().replace("+00:00", "Z"),
+        "date": index_file.utc_time(datetime.datetime.now(datetime.UTC)),
         "programs": entries,
         "checksums": checksums,
     }
@@ -183,6 +203,11 @@ def main() -> None:
     pub.add_argument("--version", required=True)
     pub.add_argument("--packages", type=Path, required=True)
     pub.add_argument("--othpatch", help="the othpatch version of a game's packages")
+    pub.add_argument(
+        "--replace",
+        action="store_true",
+        help="replace the release when it was published less than 24 hours ago",
+    )
     commands.add_parser("reset")
     snap = commands.add_parser("snapshot")
     snap.add_argument("--packages", type=Path, required=True)

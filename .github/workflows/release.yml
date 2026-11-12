@@ -4,9 +4,17 @@ name: Publish the releases
 # version that the release index in the R2 bucket does not have:
 # othpatch first, then the games, whose packages take the othpatch that
 # they ship from the index. Each publish uploads the files, adds the
-# release to the index and pushes the tag <program>-vX.Y.Z.
+# release to the index and pushes the tag <program>-vX.Y.Z. With
+# replace, a version published less than 24 hours ago is published
+# again: its files and its index entry are replaced, and its tag moves
+# to the commit of the run.
 on:
   workflow_dispatch:
+    inputs:
+      replace:
+        description: Replace the versions published less than 24 hours ago
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,9 +52,11 @@ jobs:
 
       - name: Find the versions without a release
         id: plan
+        env:
+          REPLACE: ${{ inputs.replace && '1' || '' }}
         run: |
           tools/release_index fetch releases.json
-          tools/release_plan --index releases.json | tee -a "$GITHUB_OUTPUT"
+          tools/release_plan --index releases.json ${REPLACE:+--replace} | tee -a "$GITHUB_OUTPUT"
 
   othpatch_linux:
     name: othpatch, Linux
@@ -108,14 +118,16 @@ jobs:
       - name: Publish the files and the index
         env:
           VERSION: ${{ needs.plan.outputs.othpatch }}
-        run: tools/release_index publish --program othpatch --version "$VERSION" --packages packages
+          REPLACE: ${{ inputs.replace && '1' || '' }}
+        run: tools/release_index publish --program othpatch --version "$VERSION" --packages packages ${REPLACE:+--replace}
 
       - name: Push the tag
         env:
           VERSION: ${{ needs.plan.outputs.othpatch }}
+          REPLACE: ${{ inputs.replace && '1' || '' }}
         run: |
-          git tag "othpatch-v$VERSION" "$GITHUB_SHA"
-          git push origin "othpatch-v$VERSION"
+          git tag ${REPLACE:+--force} "othpatch-v$VERSION" "$GITHUB_SHA"
+          git push ${REPLACE:+--force} origin "refs/tags/othpatch-v$VERSION"
 
   # A game job runs when the othpatch jobs succeeded or were skipped. The
   # packages read the index from the bucket, which has the new othpatch
@@ -188,10 +200,11 @@ jobs:
       - name: Publish the files, the index and the tags
         env:
           GAMES: ${{ needs.plan.outputs.games }}
+          REPLACE: ${{ inputs.replace && '1' || '' }}
         run: |
           for game in $GAMES; do
             version="$(cat "src/$game/version.txt")"
-            tools/release_index publish --program "$game" --version "$version" --packages packages
-            git tag "$game-v$version" "$GITHUB_SHA"
-            git push origin "$game-v$version"
+            tools/release_index publish --program "$game" --version "$version" --packages packages ${REPLACE:+--replace}
+            git tag ${REPLACE:+--force} "$game-v$version" "$GITHUB_SHA"
+            git push ${REPLACE:+--force} origin "refs/tags/$game-v$version"
           done

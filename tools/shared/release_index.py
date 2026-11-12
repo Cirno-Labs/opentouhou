@@ -11,6 +11,7 @@ othpatch that a game ships. It is one JSON object:
           {
             "version": "0.1.2",
             "date": "2026-11-12",
+            "published": "2026-11-12T14:03:00Z",
             "changes": "- Fixed ...",
             "files": {
               "Linux": {
@@ -43,7 +44,9 @@ othpatch that a game ships. It is one JSON object:
     }
 
 "programs" maps each program to its releases, newest first. "date" is
-the date of the version's changelog heading. "changes" is the body of
+the date of the version's changelog heading. "published" is the UTC
+time of the version's first upload; a release published before the
+field existed has none. "changes" is the body of
 that changelog section, as Markdown. "files" maps a platform (Linux,
 Windows, macOS) to its file; a platform without a file is left out.
 "size" (in bytes), "sha256" and "sha1" are computed from the uploaded
@@ -58,9 +61,12 @@ files.
 
 A release's files, with its SHA256SUMS and SHA1SUMS, are at
 <program>/<version>/<name> in the bucket and a snapshot's at
-snapshot/<name>. A version in the index is never changed.
+snapshot/<name>. A version in the index changes only when it is
+replaced, less than REPLACE_WINDOW after its "published" time. The
+replacement keeps that time, so that the window does not grow.
 """
 
+import datetime
 import hashlib
 import json
 from pathlib import Path
@@ -70,6 +76,7 @@ from shared.versioning import executable_name, file_version
 FORMAT = 1
 PLATFORMS = ["Linux", "Windows", "macOS"]
 CHECKSUMS = {"SHA256SUMS": "sha256", "SHA1SUMS": "sha1"}
+REPLACE_WINDOW = datetime.timedelta(hours=24)
 
 
 def empty() -> dict:
@@ -171,6 +178,28 @@ def checksum_file(entries: list[dict], algorithm: str) -> str:
     )
 
 
+def utc_time(time: datetime.datetime) -> str:
+    """Return a time as the index holds it, such as 2026-11-12T14:03:00Z."""
+    time = time.astimezone(datetime.UTC).replace(microsecond=0)
+    return time.isoformat().replace("+00:00", "Z")
+
+
+def replace_error(program: str, release: dict, now: datetime.datetime) -> str | None:
+    """Return why a published release cannot be replaced at the time now,
+    or None when it can."""
+    name = f"{program} {release['version']}"
+    if "published" not in release:
+        return f"{name} cannot be replaced: the index has no time of its publication"
+    published = datetime.datetime.fromisoformat(release["published"])
+    if now - published >= REPLACE_WINDOW:
+        return (
+            f"{name} cannot be replaced: it was published at"
+            f" {release['published']}, 24 hours or more ago. Release a new"
+            " version instead"
+        )
+    return None
+
+
 def version_key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
@@ -185,3 +214,9 @@ def add_release(index: dict, program: str, release: dict) -> None:
     releases = index["programs"].setdefault(program, [])
     releases.append(release)
     releases.sort(key=lambda item: version_key(item["version"]), reverse=True)
+
+
+def remove_release(index: dict, program: str, version: str) -> None:
+    """Remove the release of a program's version, if the index has it."""
+    releases = index["programs"].get(program, [])
+    releases[:] = [item for item in releases if item["version"] != version]

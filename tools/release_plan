@@ -7,9 +7,14 @@ whose version the index does not have, separated by spaces. The index
 is a file that `tools/release_index fetch` wrote. A version without a
 section in the program's changelog is not ready for its release and is
 left out: tools/bump writes that section.
+
+--replace also counts a version that the index has when it was
+published less than 24 hours ago, so that the workflow publishes it
+again. It fails when that leaves nothing to publish.
 """
 
 import argparse
+import datetime
 import sys
 from pathlib import Path
 
@@ -21,21 +26,39 @@ from shared.versioning import games, read_version, version_path
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--index", type=Path, required=True)
+    parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="also publish again the versions published less than 24 hours ago",
+    )
     args = parser.parse_args()
     index = release_index.load(args.index)
+    now = datetime.datetime.now(datetime.UTC)
+    refused = []
 
     def unreleased(program: str) -> str | None:
         version = read_version(version_path(program))
         if section(changelog_path(program).read_text(), version) is None:
             sys.stderr.write(f"{program} {version} has no changelog section yet\n")
             return None
-        if release_index.find(index, program, version) is not None:
-            return None
-        return version
+        published = release_index.find(index, program, version)
+        if published is None:
+            return version
+        if args.replace:
+            error = release_index.replace_error(program, published, now)
+            if error is None:
+                return version
+            refused.append(error)
+        return None
 
     othpatch = unreleased("othpatch")
+    names = [game for game in games() if unreleased(game)]
+    if args.replace and othpatch is None and not names:
+        sys.exit("\n".join(refused) or "No version to publish or replace")
+    for error in refused:
+        sys.stderr.write(f"{error}\n")
     print(f"othpatch={othpatch or ''}")
-    print(f"games={' '.join(game for game in games() if unreleased(game))}")
+    print(f"games={' '.join(names)}")
 
 
 if __name__ == "__main__":

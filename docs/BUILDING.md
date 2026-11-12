@@ -172,11 +172,18 @@ then adds the release to the index, and the workflow pushes the tag
 `<program>-vX.Y.Z`. A run without
 unreleased versions does nothing. There are no GitHub releases.
 
+A run with the input `replace` also publishes again each version that
+was published less than 24 hours ago, from the commit it runs on, to
+correct a broken release. It replaces the version's files, checksums
+and index entry and moves its tag. A version published 24 hours ago or
+more stays as it is: release a new version instead. Players who
+installed the replaced version get no update to the new files.
+
 The R2 bucket holds the downloads:
 
 - `<program>/<version>/<file>`: the files of a release, such as
-  `th06/0.1.1/oth06-0.1.1-Linux.zip`. A published version never
-  changes.
+  `th06/0.1.1/oth06-0.1.1-Linux.zip`. A published version changes
+  only through `replace`.
 - `snapshot/<file>`: the development snapshot.
 - `releases.json`: the release index, written after the files. Its
   format is described in `tools/shared/release_index.py`. othpatch and
