@@ -2,6 +2,8 @@
 
 #include "core/base/string.h"
 
+#include <string.h>
+
 static char *M_Format(const INI *const ini, const char *const fmt, ...)
 {
     va_list args;
@@ -132,6 +134,23 @@ void Ini_Remove(
             && IniStruct_NamesEqual(line->key, key)) {
             IniStruct_FreeLine(ini, line);
             Array_OrderedRemove(&ini->lines, i);
+        }
+    }
+}
+
+void Ini_MergeChanges(
+    INI *const target, const INI *const base, const INI *const changed)
+{
+    for (int32_t i = 0; i < changed->lines.count; i++) {
+        const LINE *const line = &changed->lines.items[i];
+        if (line->kind != LINE_KEY) {
+            continue;
+        }
+        const char *const value = Ini_Get(changed, line->name, line->key);
+        const char *const old = Ini_Get(base, line->name, line->key);
+        if (old == nullptr || strcmp(old, value) != 0
+            || Ini_Get(target, line->name, line->key) == nullptr) {
+            Ini_Set(target, line->name, line->key, value);
         }
     }
 }

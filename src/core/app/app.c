@@ -63,6 +63,9 @@ struct APP_CONTEXT {
     // not be found.
     char *ini_path;
     INI *ini;
+    // Holds the loaded settings as the game writes them, so that the save
+    // can tell which ones changed.
+    INI *loaded_settings;
     APP_SETTINGS settings;
     PATCH_STACK *patches;
     HOTKEYS hotkeys;
@@ -96,6 +99,35 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
             dir, g_GameDesc.id, g_GameDesc.patch_game, &choice, &ctx->patches),
         LOG_LEVEL_ERROR);
     Mem_Free(dir);
+}
+
+static void M_WriteSettings(const APP_CONTEXT *const ctx, INI *const ini)
+{
+    Config_Save(&g_AppSettingsSchema, ini, &ctx->settings);
+    if (g_GameDesc.settings_schema != nullptr) {
+        Config_Save(g_GameDesc.settings_schema, ini, g_GameDesc.settings);
+    }
+    Input_Save(ctx->input, ini);
+}
+
+// Reads config.ini again so that an edit made while the game ran, such as
+// by othpatch, stays.
+static void M_SaveSettings(const APP_CONTEXT *const ctx)
+{
+    INI *current;
+    if (!Result_Log(
+            Ini_Parse("", 0, &g_HeapAllocator, &current), LOG_LEVEL_ERROR)) {
+        return;
+    }
+    M_WriteSettings(ctx, current);
+    INI *disk = nullptr;
+    Result_Log(
+        Ini_Load(ctx->ini_path, &g_HeapAllocator, &disk), LOG_LEVEL_ERROR);
+    INI *const target = disk != nullptr ? disk : ctx->ini;
+    Ini_MergeChanges(target, ctx->loaded_settings, current);
+    Result_Log(Ini_Save(target, ctx->ini_path), LOG_LEVEL_ERROR);
+    Ini_Free(disk);
+    Ini_Free(current);
 }
 
 static RESULT M_CheckData(APP_CONTEXT *const ctx)
@@ -325,6 +357,8 @@ static RESULT M_Init(
     ctx->input = Input_Create(g_GameDesc.input_schema, &g_HeapAllocator);
     Input_AddSchema(ctx->input, &g_HotkeysSchema);
     Input_Load(ctx->input, ctx->ini);
+    MUST(Ini_Parse("", 0, &g_HeapAllocator, &ctx->loaded_settings));
+    M_WriteSettings(ctx, ctx->loaded_settings);
 
     ctx->input_buffer = Allocator_AllocZ(
         &g_HeapAllocator,
@@ -535,18 +569,11 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     }
     Patch_CloseStack(ctx->patches);
     Audio_Shutdown();
-    if (ctx->ini != nullptr) {
-        Config_Save(&g_AppSettingsSchema, ctx->ini, &ctx->settings);
-        if (g_GameDesc.settings_schema != nullptr) {
-            Config_Save(
-                g_GameDesc.settings_schema, ctx->ini, g_GameDesc.settings);
-        }
-        Input_Save(ctx->input, ctx->ini);
-        if (ctx->ini_path != nullptr) {
-            Result_Log(Ini_Save(ctx->ini, ctx->ini_path), LOG_LEVEL_ERROR);
-        }
-        Ini_Free(ctx->ini);
+    if (ctx->loaded_settings != nullptr && ctx->ini_path != nullptr) {
+        M_SaveSettings(ctx);
     }
+    Ini_Free(ctx->loaded_settings);
+    Ini_Free(ctx->ini);
     Mem_Free(ctx->ini_path);
     AppFolders_Free(&ctx->folders);
     if (ctx->input_buffer != nullptr) {
