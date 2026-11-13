@@ -49,11 +49,20 @@ def releases_url(repo_dir: Path = REPO_DIR) -> str:
 USER_AGENT = "opentouhou-packaging"
 
 
+def request(url: str) -> bytes:
+    """Return the body of the response to a GET request of url.
+
+    Raises the errors of urllib.request.urlopen.
+    """
+    with urllib.request.urlopen(
+        urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    ) as response:
+        return response.read()
+
+
 def read_url(url: str, what: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request) as response:
-            return response.read()
+        return request(url)
     except urllib.error.HTTPError as error:
         raise RuntimeError(f"Cannot read {what} at {url}: {error}") from None
     except urllib.error.URLError as error:
@@ -80,9 +89,7 @@ def read_index(url: str) -> dict:
     if host.endswith(".invalid"):
         raise IndexUnavailable(f"The release index at {url} is a placeholder")
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(request) as response:
-            data = response.read()
+        data = request(url)
     except urllib.error.HTTPError as error:
         if error.code == 404:
             return {"format": 1, "programs": {}}

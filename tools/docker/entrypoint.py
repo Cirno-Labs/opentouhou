@@ -22,7 +22,6 @@ OPENTOUHOU_WERROR=1 makes every compiler warning an error, as in CI.
 """
 
 import argparse
-import json
 import os
 import shutil
 import subprocess
@@ -30,8 +29,10 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from shared.othpatch_release import build_releases_url, pinned_othpatch
+from shared.build import compile_programs, run_tests
+from shared.othpatch_release import pinned_othpatch
 from shared.versioning import (
+    games,
     generate_package_name,
     generate_version,
     othpatch_asset_name,
@@ -43,7 +44,6 @@ PACKAGING_DIR = REPO_DIR / "tools/packaging"
 PACKAGES_DIR = REPO_DIR / "build/packages"
 CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt"}
 EXE_SUFFIXES = {"linux": "", "win": ".exe"}
-GAMES = ["th06"]
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
 COMMAND_PROGRAMS = {
     "package": "games",
@@ -58,60 +58,14 @@ def build_dir(platform: str, programs: str, target: str) -> Path:
     return REPO_DIR / "build" / platform / target
 
 
-def option_values(programs: str) -> dict[str, str | bool]:
-    return {
-        "programs": programs,
-        "releases_url": build_releases_url(REPO_DIR),
-        "werror": bool(os.environ.get("OPENTOUHOU_WERROR")),
-    }
-
-
-def format_option(name: str, value: str | bool) -> str:
-    if isinstance(value, bool):
-        value = "true" if value else "false"
-    return f"-D{name}={value}"
-
-
-def options(programs: str) -> list[str]:
-    return [
-        format_option(name, value) for name, value in option_values(programs).items()
-    ]
-
-
-def changed_options(root: Path, programs: str) -> list[str]:
-    path = root / "meson-info/intro-buildoptions.json"
-    configured = {
-        option["name"]: option["value"] for option in json.loads(path.read_text())
-    }
-    return [
-        format_option(name, value)
-        for name, value in option_values(programs).items()
-        if configured.get(name) != value
-    ]
-
-
 def run_build(platform: str, programs: str, target: str) -> None:
-    root = build_dir(platform, programs, target)
-    if not (root / "build.ninja").exists():
-        command = [
-            "meson",
-            "setup",
-            f"--buildtype={target}",
-        ]
-        if platform in CROSS_FILES:
-            command.append(f"--cross-file={CROSS_FILES[platform]}")
-        command += options(programs)
-        command += [str(root), str(REPO_DIR)]
-        subprocess.check_call(command)
-    else:
-        # Reconfigures a build directory whose options differ: one that
-        # builds other programs, such as the whole tree, which needs
-        # libraries that this image lacks, or one with another
-        # releases_url.
-        changed = changed_options(root, programs)
-        if changed:
-            subprocess.check_call(["meson", "configure", str(root), *changed])
-    subprocess.check_call(["meson", "compile", "-C", str(root)])
+    compile_programs(
+        build_dir(platform, programs, target),
+        programs,
+        target,
+        CROSS_FILES.get(platform),
+        repo_dir=REPO_DIR,
+    )
 
 
 def run_capture_build(game: str) -> None:
@@ -140,16 +94,7 @@ def run_capture_build(game: str) -> None:
 
 def run_test(platform: str, programs: str, target: str, skipped: list[str]) -> None:
     run_build(platform, programs, target)
-    subprocess.check_call(
-        [
-            "meson",
-            "test",
-            "-C",
-            str(build_dir(platform, programs, target)),
-            "--print-errorlogs",
-            *(f"--no-suite={suite}" for suite in skipped),
-        ]
-    )
+    run_tests(build_dir(platform, programs, target), skipped)
 
 
 def write_zip(output: Path, files: list[tuple[Path, str]]) -> None:
@@ -221,7 +166,7 @@ def built_othpatch(platform: str, target: str) -> Path:
 
 def run_package(platform: str, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    for game in GAMES:
+    for game in games(REPO_DIR):
         version = generate_version(game, REPO_DIR)
         othpatch = pinned_othpatch(
             game, platform, lambda: built_othpatch(platform, target), REPO_DIR

@@ -21,7 +21,6 @@ OPENTOUHOU_WERROR=1 makes every compiler warning an error, as in CI.
 """
 
 import argparse
-import json
 import os
 import plistlib
 import shutil
@@ -32,8 +31,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from shared.othpatch_release import build_releases_url, pinned_othpatch
+from shared.build import SHARED_SUITES, compile_programs, run_tests
+from shared.othpatch_release import pinned_othpatch
 from shared.versioning import (
+    games,
     generate_package_name,
     generate_version,
     othpatch_asset_name,
@@ -46,11 +47,9 @@ PACKAGING_DIR = REPO_DIR / "tools/packaging"
 PACKAGES_DIR = REPO_DIR / "build/packages"
 ARCHS = ["arm64", "x86_64"]
 NATIVE_ARCH = "arm64"
-GAMES = ["th06"]
 DEPLOYMENT_TARGET = "12.0"
 PROGRAMS = ["games", "othpatch"]
 DEPS_SETS = {"games": "media", "othpatch": "othpatch"}
-SHARED_SUITES = ["core", "tools"]
 
 
 def build_dir(arch: str, programs: str, target: str) -> Path:
@@ -69,38 +68,6 @@ def environment(deps: Path, arch: str, programs: str) -> dict[str, str]:
     }
 
 
-def option_values(programs: str) -> dict[str, str | bool]:
-    return {
-        "programs": programs,
-        "releases_url": build_releases_url(REPO_DIR),
-        "werror": bool(os.environ.get("OPENTOUHOU_WERROR")),
-    }
-
-
-def format_option(name: str, value: str | bool) -> str:
-    if isinstance(value, bool):
-        value = "true" if value else "false"
-    return f"-D{name}={value}"
-
-
-def options(programs: str) -> list[str]:
-    return [
-        format_option(name, value) for name, value in option_values(programs).items()
-    ]
-
-
-def changed_options(root: Path, programs: str) -> list[str]:
-    path = root / "meson-info/intro-buildoptions.json"
-    configured = {
-        option["name"]: option["value"] for option in json.loads(path.read_text())
-    }
-    return [
-        format_option(name, value)
-        for name, value in option_values(programs).items()
-        if configured.get(name) != value
-    ]
-
-
 def run_deps(deps: Path) -> None:
     for arch in ARCHS:
         subprocess.check_call([MAC_DIR / "build_deps", arch, deps / arch])
@@ -108,46 +75,25 @@ def run_deps(deps: Path) -> None:
 
 def run_build(deps: Path, programs: str, target: str, archs: list[str]) -> None:
     for arch in archs:
-        root = build_dir(arch, programs, target)
-        env = environment(deps, arch, programs)
-        if not (root / "build.ninja").exists():
-            command = [
-                "meson",
-                "setup",
-                f"--buildtype={target}",
-            ]
-            if arch != NATIVE_ARCH:
-                command.append(f"--cross-file={MAC_DIR / f'{arch}.txt'}")
-            command += options(programs)
-            command += [str(root), str(REPO_DIR)]
-            subprocess.check_call(command, env=env)
-        else:
-            # Reconfigures a build directory whose options differ: one that
-            # builds other programs, such as the whole tree, which needs
-            # every set of libraries, or one with another releases_url.
-            changed = changed_options(root, programs)
-            if changed:
-                subprocess.check_call(
-                    ["meson", "configure", str(root), *changed], env=env
-                )
-        subprocess.check_call(["meson", "compile", "-C", str(root)], env=env)
+        cross_file = None if arch == NATIVE_ARCH else MAC_DIR / f"{arch}.txt"
+        compile_programs(
+            build_dir(arch, programs, target),
+            programs,
+            target,
+            cross_file,
+            environment(deps, arch, programs),
+            REPO_DIR,
+        )
 
 
 def run_test(deps: Path, target: str) -> None:
     for programs in PROGRAMS:
         run_build(deps, programs, target, [NATIVE_ARCH])
         # The games' build runs the suites that every build has.
-        skipped = SHARED_SUITES if programs == "othpatch" else []
-        subprocess.check_call(
-            [
-                "meson",
-                "test",
-                "-C",
-                str(build_dir(NATIVE_ARCH, programs, target)),
-                "--print-errorlogs",
-                *(f"--no-suite={suite}" for suite in skipped),
-            ],
-            env=environment(deps, NATIVE_ARCH, programs),
+        run_tests(
+            build_dir(NATIVE_ARCH, programs, target),
+            SHARED_SUITES if programs == "othpatch" else [],
+            environment(deps, NATIVE_ARCH, programs),
         )
 
 
@@ -195,7 +141,7 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
 def run_package(deps: Path, target: str) -> None:
     run_build(deps, "games", target, ARCHS)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    for game in GAMES:
+    for game in games(REPO_DIR):
         version = generate_version(game, REPO_DIR)
         othpatch = pinned_othpatch(
             game, "mac", lambda: build_othpatch(deps, target), REPO_DIR
