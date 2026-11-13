@@ -272,6 +272,25 @@ TEST(repeat_wraps_and_clamp_stretches_the_edge)
     GfxTexture_Free(texture);
 }
 
+TEST(a_linear_filter_blends_the_texels_that_a_pixel_covers)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[2] = { RED, GREEN };
+    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE linear = { .filter = GFX_FILTER_LINEAR };
+    M_Rect(&linear, texture, 0, 0, 1, SIZE, 0.5f, WHITE, 1.0f);
+    M_Rect(&m_Opaque, texture, 1, 0, 2, SIZE, 0.5f, WHITE, 1.0f);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 0, 0, (GFX_COLOR) { 128, 128, 0, 255 }, 1);
+    const uint8_t *const nearest = &image.pixels[4];
+    CHECK(
+        (nearest[0] == 255 && nearest[1] == 0)
+        || (nearest[0] == 0 && nearest[1] == 255));
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
 TEST(a_viewport_remaps_and_scissors_its_view)
 {
     REQUIRE_GL();

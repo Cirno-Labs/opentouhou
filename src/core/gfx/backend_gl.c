@@ -11,8 +11,10 @@
 #include <string.h>
 
 #define M_LOG_SIZE 2048
-#define M_SAMPLER_CLAMP 0
+// Indexes the samplers: bit 0 sets repeat, bit 1 the linear filter.
 #define M_SAMPLER_REPEAT 1
+#define M_SAMPLER_LINEAR 2
+#define M_SAMPLER_COUNT 4
 
 // Lists the OpenGL functions the backend loads, by their name after "gl",
 // the field that holds them, their return type and their parameters.
@@ -151,7 +153,7 @@ typedef struct {
     bool es;
     GLuint program, vertex_array, vertex_buffer, index_buffer;
     int32_t index_quads;
-    GLuint samplers[2];
+    GLuint samplers[M_SAMPLER_COUNT];
     M_LOCATIONS locations;
     M_TARGET screen, output;
     M_TARGET *target;
@@ -441,7 +443,9 @@ static void M_SetState(const GFX_STATE *const state, GFX_TEXTURE *const texture)
         GL_TEXTURE_2D, textured ? (GLuint)(uintptr_t)texture->handle : 0);
     gl->bind_sampler(
         0,
-        m_Backend.samplers[state->repeat ? M_SAMPLER_REPEAT : M_SAMPLER_CLAMP]);
+        m_Backend.samplers
+            [(state->repeat ? M_SAMPLER_REPEAT : 0)
+             | (state->filter == GFX_FILTER_LINEAR ? M_SAMPLER_LINEAR : 0)]);
 }
 
 static RESULT M_Init(
@@ -479,13 +483,16 @@ static RESULT M_Init(
         (const void *)offsetof(GFX_VERTEX, uv));
     gl->bind_buffer(GL_ELEMENT_ARRAY_BUFFER, m_Backend.index_buffer);
     M_EnsureIndices(1024);
-    gl->gen_samplers(2, m_Backend.samplers);
-    for (int32_t i = 0; i < 2; i++) {
-        const GLint wrap = i == M_SAMPLER_REPEAT ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+    gl->gen_samplers(M_SAMPLER_COUNT, m_Backend.samplers);
+    for (int32_t i = 0; i < M_SAMPLER_COUNT; i++) {
+        const GLint wrap =
+            (i & M_SAMPLER_REPEAT) != 0 ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+        const GLint filter =
+            (i & M_SAMPLER_LINEAR) != 0 ? GL_LINEAR : GL_NEAREST;
         gl->sampler_parameteri(
-            m_Backend.samplers[i], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            m_Backend.samplers[i], GL_TEXTURE_MIN_FILTER, filter);
         gl->sampler_parameteri(
-            m_Backend.samplers[i], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            m_Backend.samplers[i], GL_TEXTURE_MAG_FILTER, filter);
         gl->sampler_parameteri(m_Backend.samplers[i], GL_TEXTURE_WRAP_S, wrap);
         gl->sampler_parameteri(m_Backend.samplers[i], GL_TEXTURE_WRAP_T, wrap);
     }

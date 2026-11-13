@@ -38,6 +38,14 @@ typedef enum {
     GFX_DEPTH_ALWAYS,
 } GFX_DEPTH_TEST;
 
+// Picks the texel that a pixel shows: the nearest, as the original's
+// sprites need, or the blend of the four nearest, which keeps thin lines of
+// a texture drawn smaller than its size.
+typedef enum {
+    GFX_FILTER_NEAREST,
+    GFX_FILTER_LINEAR,
+} GFX_FILTER;
+
 // Holds everything that changes how a quad is drawn, apart from its
 // texture. Small and plain, so a backend can build one pipeline per state.
 typedef struct {
@@ -47,6 +55,7 @@ typedef struct {
     bool depth_write;
     bool alpha_test; // discards pixels with alpha 0
     bool repeat; // texture coordinates wrap instead of clamping
+    GFX_FILTER filter;
 } GFX_STATE;
 
 typedef struct {
