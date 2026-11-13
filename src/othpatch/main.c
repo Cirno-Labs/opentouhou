@@ -3,6 +3,7 @@
 #include "othpatch/fetch.h"
 #include "othpatch/install.h"
 #include "othpatch/context.h"
+#include "othpatch/step.h"
 
 #include "shell/folders.h"
 #include "core/base/arena.h"
@@ -123,23 +124,43 @@ static RESULT M_FindDir(
     return Folders_FindPatchesDir(&input, out);
 }
 
-static int M_RunAll(APP_CONTEXT *const run, const char *const version)
+// Holds a command: the steps that it runs in order, whether it needs the
+// network, and whether it ends with a summary of the steps.
+typedef struct {
+    const APP_STEP *steps[2];
+    int32_t step_count;
+    bool network;
+    bool summary;
+} M_COMMAND;
+
+static const M_COMMAND m_Run = {
+    { &g_StepPatches, &g_StepUpgrade }, 2, true, true
+};
+static const M_COMMAND m_List = { { &g_StepList }, 1, true, false };
+static const M_COMMAND m_Remove = { { &g_StepRemove }, 1, false, false };
+
+// Runs each step of command, also after one fails, and returns the exit
+// code.
+static int M_RunCommand(APP_CONTEXT *const run, const M_COMMAND *const command)
 {
-    FILE *const out = run->out;
-    bool first_run;
-    bool ok = StepPatches_Run(run, &first_run);
-    ok = StepUpgrade_Run(run, version) && ok;
-    fputs(
-        ok ? "\nAll done. Go yukkuri!\n" : "\nSomething failed, see above.\n",
-        out);
-    if (first_run) {
+    bool ok = true;
+    for (int32_t i = 0; i < command->step_count; i++) {
+        ok = command->steps[i]->run(run) && ok;
+    }
+    if (command->summary) {
+        fputs(
+            ok ? "\nAll done. Go yukkuri!\n"
+               : "\nSomething failed, see above.\n",
+            run->out);
+    }
+    if (command->summary && run->first_run) {
         fputs(
             "\n"
             "To use another language, run othpatch with its code, such as "
             "othpatch de.\n"
             "othpatch ja switches back to the original Japanese.\n"
             "othpatch --list shows every language.\n",
-            out);
+            run->out);
     }
     return ok ? 0 : 1;
 }
@@ -187,20 +208,20 @@ int Main_Run(
         .out = out,
         .terminal = output != MAIN_OUTPUT_FILE,
         .ansi = output == MAIN_OUTPUT_ANSI,
+        .version = version,
     };
+    const M_COMMAND *const command = args.remove != nullptr ? &m_Remove
+        : args.list                                         ? &m_List
+                                                            : &m_Run;
     int code = 1;
-    if (args.remove != nullptr) {
-        code = Installed_Remove(&run);
+    const RESULT started = command->network ? Fetch_Init() : OK;
+    if (IS_OK(started)) {
+        code = M_RunCommand(&run, command);
     } else {
-        const RESULT started = Fetch_Init();
-        if (!IS_OK(started)) {
-            Console_Fail(
-                out, started, "othpatch: cannot start: %s", started.message);
-        } else if (args.list) {
-            code = Installed_List(&run);
-        } else {
-            code = M_RunAll(&run, version);
-        }
+        Console_Fail(
+            out, started, "othpatch: cannot start: %s", started.message);
+    }
+    if (command->network) {
         Fetch_Shutdown();
     }
     PatchManager_Close(run.manager);
