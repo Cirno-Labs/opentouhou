@@ -43,7 +43,7 @@ static char *M_AsDir(const char *const path)
 
 // Returns the .AppImage file that holds the executable, or nullptr outside
 // an AppImage.
-static const char *M_AppImageOf(const APP_FOLDERS_INPUT *const input)
+static const char *M_AppImageOf(const FOLDERS_INPUT *const input)
 {
 #ifdef __linux__
     if (input->appimage != nullptr && input->appimage[0] == '/'
@@ -56,7 +56,7 @@ static const char *M_AppImageOf(const APP_FOLDERS_INPUT *const input)
     return nullptr;
 }
 
-static char *M_ProgramDirOf(const APP_FOLDERS_INPUT *const input)
+static char *M_ProgramDirOf(const FOLDERS_INPUT *const input)
 {
     const char *const appimage = M_AppImageOf(input);
     if (appimage != nullptr) {
@@ -98,7 +98,7 @@ static bool M_IsPortable(const char *const program_dir)
         return false;
     }
     char *const path =
-        Path_Join(&g_HeapAllocator, program_dir, APP_FOLDERS_PORTABLE_FILE);
+        Path_Join(&g_HeapAllocator, program_dir, FOLDERS_PORTABLE_FILE);
     const bool portable = File_Exists(path);
     Mem_Free(path);
     return portable;
@@ -112,13 +112,13 @@ static RESULT M_MakeUserDir(const char *const dir, char **const out)
 }
 
 static RESULT M_FindUserDir(
-    const APP_FOLDERS_INPUT *const input, const char *const game_id,
-    APP_FOLDERS *const out)
+    const FOLDERS_INPUT *const input, const char *const game_id,
+    FOLDERS *const out)
 {
     if (input->user_dir != nullptr) {
         return M_MakeUserDir(input->user_dir, &out->user_dir);
     }
-    if (out->mode == APP_FOLDERS_PORTABLE) {
+    if (out->mode == FOLDERS_PORTABLE) {
         char *const dir =
             Path_Join(&g_HeapAllocator, out->program_dir, M_PORTABLE_USER_DIR);
         const RESULT result = M_MakeUserDir(dir, &out->user_dir);
@@ -128,11 +128,11 @@ static RESULT M_FindUserDir(
     return Path_GetUserDir(game_id, &out->user_dir);
 }
 
-RESULT AppFolders_Find(
-    const APP_FOLDERS_INPUT *const input, const char *const game_id,
-    APP_FOLDERS *const out)
+RESULT Folders_Find(
+    const FOLDERS_INPUT *const input, const char *const game_id,
+    FOLDERS *const out)
 {
-    *out = (APP_FOLDERS) {};
+    *out = (FOLDERS) {};
     out->program_dir = M_ProgramDirOf(input);
     const char *const appimage = M_AppImageOf(input);
     const char *const program = appimage != nullptr ? appimage
@@ -146,42 +146,40 @@ RESULT AppFolders_Find(
     }
     const bool portable = M_IsPortable(out->program_dir);
     if (input->user_dir != nullptr) {
-        out->mode =
-            portable ? APP_FOLDERS_USER_DIR_PORTABLE : APP_FOLDERS_USER_DIR;
+        out->mode = portable ? FOLDERS_USER_DIR_PORTABLE : FOLDERS_USER_DIR;
     } else {
-        out->mode = portable ? APP_FOLDERS_PORTABLE : APP_FOLDERS_DEFAULT;
+        out->mode = portable ? FOLDERS_PORTABLE : FOLDERS_DEFAULT;
     }
     return M_FindUserDir(input, game_id, out);
 }
 
-RESULT AppFolders_GetPatchesDir(
-    const APP_FOLDERS *const folders, char **const out)
+RESULT Folders_GetPatchesDir(const FOLDERS *const folders, char **const out)
 {
-    const bool portable = folders->mode == APP_FOLDERS_PORTABLE
-        || folders->mode == APP_FOLDERS_USER_DIR_PORTABLE;
+    const bool portable = folders->mode == FOLDERS_PORTABLE
+        || folders->mode == FOLDERS_USER_DIR_PORTABLE;
     return Path_GetPatchesDir(portable ? folders->program_dir : nullptr, out);
 }
 
-const char *AppFolders_GetModeName(const APP_FOLDERS_MODE mode)
+const char *Folders_GetModeName(const FOLDERS_MODE mode)
 {
     switch (mode) {
-    case APP_FOLDERS_DEFAULT:
+    case FOLDERS_DEFAULT:
         return "default";
-    case APP_FOLDERS_PORTABLE:
+    case FOLDERS_PORTABLE:
         return "portable (portable.txt is in the program folder)";
-    case APP_FOLDERS_USER_DIR:
+    case FOLDERS_USER_DIR:
         return "--user-dir";
-    case APP_FOLDERS_USER_DIR_PORTABLE:
+    case FOLDERS_USER_DIR_PORTABLE:
         return "--user-dir, with the portable patches folder";
     }
     return "unknown";
 }
 
-void AppFolders_Free(APP_FOLDERS *const folders)
+void Folders_Free(FOLDERS *const folders)
 {
     Mem_Free(folders->program_dir);
     Mem_Free(folders->program_name);
     Mem_Free(folders->data_dir);
     Mem_Free(folders->user_dir);
-    *folders = (APP_FOLDERS) {};
+    *folders = (FOLDERS) {};
 }

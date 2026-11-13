@@ -1,6 +1,6 @@
 #include "th06/scene.h"
 
-#include "app_fake.h"
+#include "shell_fake.h"
 #include "test.h"
 #include "th06_scene_stubs.h"
 
@@ -128,15 +128,15 @@ RESULT Anm_Load(
 TEST(a_tick_counts_the_measured_tick_rate)
 {
     M_Setup();
-    FakeApp_Reset();
+    FakeShell_Reset();
     ResultScreen_ResetFrames();
     g_GameManager.mode.playing = true;
     Game_Tick(&m_NoInput);
     CHECK(ResultSaves_GetClock()->expected_frames == 0.0f);
-    g_FakeApp.tick_rate_measured = true;
-    g_FakeApp.tick_rate = 45.0f;
+    g_FakeShell.tick_rate_measured = true;
+    g_FakeShell.tick_rate = 45.0f;
     Game_Tick(&m_NoInput);
-    CHECK(!g_FakeApp.tick_rate_measured);
+    CHECK(!g_FakeShell.tick_rate_measured);
     CHECK(ResultSaves_GetClock()->expected_frames == 60.0f);
     CHECK(ResultSaves_GetClock()->achieved_frames == 48.0f);
     g_GameManager.mode.playing = false;

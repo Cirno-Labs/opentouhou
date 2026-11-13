@@ -5,7 +5,7 @@
 #include "core/input.h"
 #include "core/patch/stack.h"
 
-#define APP_TICK_RATE 60
+#define SHELL_TICK_RATE 60
 
 typedef struct {
     // Identifies the game in paths and settings, as in "th06".

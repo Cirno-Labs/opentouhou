@@ -11,6 +11,6 @@ typedef struct {
     int32_t screenshot_resolution;
     int32_t screenshot_format;
     int32_t screenshot_jpeg_quality;
-} APP_SETTINGS;
+} SHELL_SETTINGS;
 
-extern const CONFIG_SCHEMA g_AppSettingsSchema;
+extern const CONFIG_SCHEMA g_ShellSettingsSchema;

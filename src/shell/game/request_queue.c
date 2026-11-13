@@ -35,7 +35,7 @@ static void M_ResetPad(
     }
 }
 
-bool AppRequests_ReadPadPress(
+bool ShellRequests_ReadPadPress(
     INPUT_STATE *const input, INPUT_BINDING *const out)
 {
     INPUT_BINDING gamepad;
@@ -56,29 +56,30 @@ bool AppRequests_ReadPadPress(
     return true;
 }
 
-void AppRequests_Add(APP_REQUESTS *const requests, const APP_REQUEST request)
+void ShellRequests_Add(
+    SHELL_REQUESTS *const requests, const SHELL_REQUEST request)
 {
-    if (requests->count >= APP_REQUEST_COUNT) {
+    if (requests->count >= SHELL_REQUEST_COUNT) {
         LOG_WARNING("Dropped a request of the game to shell/game");
         return;
     }
     requests->items[requests->count++] = request;
 }
 
-void AppRequests_ApplyInput(
-    APP_REQUESTS *const requests, INPUT_STATE *const input,
+void ShellRequests_ApplyInput(
+    SHELL_REQUESTS *const requests, INPUT_STATE *const input,
     const INPUT_SCHEMA *const schema)
 {
     for (int32_t i = 0; i < requests->count; i++) {
-        const APP_REQUEST *const request = &requests->items[i];
+        const SHELL_REQUEST *const request = &requests->items[i];
         switch (request->type) {
-        case APP_REQUEST_BIND:
+        case SHELL_REQUEST_BIND:
             Input_Bind(input, schema, 0, request->action, request->binding);
             break;
-        case APP_REQUEST_UNBIND:
+        case SHELL_REQUEST_UNBIND:
             Input_Unbind(input, schema, 0, request->action, request->binding);
             break;
-        case APP_REQUEST_RESET_PAD:
+        case SHELL_REQUEST_RESET_PAD:
             M_ResetPad(input, schema);
             break;
         }

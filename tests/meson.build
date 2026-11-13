@@ -347,7 +347,7 @@ test(
   executable(
     'test_th06_main_menu',
     'test_th06_main_menu.c',
-    'app_fake.c',
+    'shell_fake.c',
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
@@ -504,7 +504,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -530,7 +530,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -556,7 +556,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -582,7 +582,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -604,7 +604,7 @@ test(
     'test_th06_scene',
     'test_th06_scene.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -621,7 +621,7 @@ test(
     'test_th06_screen_effect.c',
     'gfx_recorder.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -662,7 +662,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -702,7 +702,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -729,7 +729,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -755,7 +755,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -781,7 +781,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'app_fake.c',
+    'shell_fake.c',
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -893,16 +893,16 @@ test(
 test(
   'shell/folders',
   executable(
-    'test_app_folders',
-    'test_app_folders.c',
+    'test_folders',
+    'test_folders.c',
     c_args: shell_include,
     implicit_include_directories: false,
     link_with: [shell_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
   ),
   env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'app_folders',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'app_folders',
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'folders',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'folders',
   },
   suite: 'unit',
 )
@@ -910,8 +910,8 @@ test(
 test(
   'shell/fatal',
   executable(
-    'test_app_fatal',
-    'test_app_fatal.c',
+    'test_fatal',
+    'test_fatal.c',
     '../src/shell/fatal.c',
     '../src/shell/log_file.c',
     c_args: shell_include,
@@ -925,15 +925,15 @@ test(
 test(
   'shell/log_file',
   executable(
-    'test_app_log_file',
-    'test_app_log_file.c',
+    'test_log_file',
+    'test_log_file.c',
     '../src/shell/log_file.c',
     c_args: shell_include,
     implicit_include_directories: false,
     link_with: [core_io_lib, core_base_lib],
     dependencies: [sdl3],
   ),
-  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'app_log_file'},
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'log_file'},
   suite: 'unit',
 )
 
@@ -1076,8 +1076,8 @@ test(
 test(
   'shell/game/request_queue',
   executable(
-    'test_app_requests',
-    'test_app_requests.c',
+    'test_request_queue',
+    'test_request_queue.c',
     'input_backend_fake.c',
     '../src/shell/game/request_queue.c',
     c_args: shell_include,

@@ -4,28 +4,28 @@
 
 TEST(uses_box_by_default)
 {
-    CHECK(AppFatal_UsesBox(nullptr, nullptr));
-    CHECK(AppFatal_UsesBox("windows", nullptr));
-    CHECK(AppFatal_UsesBox("x11", ""));
+    CHECK(Fatal_UsesBox(nullptr, nullptr));
+    CHECK(Fatal_UsesBox("windows", nullptr));
+    CHECK(Fatal_UsesBox("x11", ""));
 }
 
 TEST(uses_no_box_without_video)
 {
-    CHECK(!AppFatal_UsesBox("offscreen", nullptr));
-    CHECK(!AppFatal_UsesBox("dummy", nullptr));
-    CHECK(!AppFatal_UsesBox("Offscreen", nullptr));
+    CHECK(!Fatal_UsesBox("offscreen", nullptr));
+    CHECK(!Fatal_UsesBox("dummy", nullptr));
+    CHECK(!Fatal_UsesBox("Offscreen", nullptr));
 }
 
 TEST(uses_no_box_on_ci)
 {
-    CHECK(!AppFatal_UsesBox(nullptr, "true"));
-    CHECK(!AppFatal_UsesBox("windows", "1"));
+    CHECK(!Fatal_UsesBox(nullptr, "true"));
+    CHECK(!Fatal_UsesBox("windows", "1"));
 }
 
 TEST(missing_data_names_file_folder_and_fix)
 {
     char text[1024];
-    AppFatal_FormatMissingData(
+    Fatal_FormatMissingData(
         text, sizeof(text), "紅魔郷CM.DAT", "/games/th06", nullptr);
     CHECK_EQ_STR(
         text,
@@ -40,7 +40,7 @@ TEST(missing_data_names_file_folder_and_fix)
 TEST(missing_data_names_the_log_file)
 {
     char text[1024];
-    AppFatal_FormatMissingData(
+    Fatal_FormatMissingData(
         text, sizeof(text), "紅魔郷CM.DAT", "/games/th06", "/u/oth06.log");
     CHECK_EQ_STR(
         text,
@@ -57,10 +57,10 @@ TEST(missing_data_names_the_log_file)
 TEST(startup_error_names_message_and_log_file)
 {
     char text[1024];
-    AppFatal_FormatStartupError(
+    Fatal_FormatStartupError(
         text, sizeof(text), "Cannot create the window", nullptr);
     CHECK_EQ_STR(text, "Cannot create the window");
-    AppFatal_FormatStartupError(
+    Fatal_FormatStartupError(
         text, sizeof(text), "Cannot create the window", "/u/oth06.log");
     CHECK_EQ_STR(
         text,
@@ -72,7 +72,7 @@ TEST(startup_error_names_message_and_log_file)
 TEST(internal_error_names_message_and_position)
 {
     char text[1024];
-    AppFatal_FormatInternalError(
+    Fatal_FormatInternalError(
         text, sizeof(text), "th06", "Assertion failed: x", "anm.c", 12,
         nullptr);
     CHECK_EQ_STR(
@@ -85,7 +85,7 @@ TEST(internal_error_names_message_and_position)
 TEST(internal_error_names_the_log_file)
 {
     char text[1024];
-    AppFatal_FormatInternalError(
+    Fatal_FormatInternalError(
         text, sizeof(text), "th06", "Assertion failed: x", "anm.c", 12,
         "C:\\Users\\a\\oth06.log");
     CHECK_EQ_STR(
@@ -100,10 +100,10 @@ TEST(internal_error_names_the_log_file)
 TEST(text_is_truncated_to_size)
 {
     char text[8];
-    AppFatal_FormatMissingData(text, sizeof(text), "a", "b", nullptr);
+    Fatal_FormatMissingData(text, sizeof(text), "a", "b", nullptr);
     CHECK_EQ_STR(text, "Cannot ");
-    AppFatal_FormatStartupError(text, sizeof(text), "Failed", "/log");
+    Fatal_FormatStartupError(text, sizeof(text), "Failed", "/log");
     CHECK_EQ_STR(text, "Failed\n");
-    AppFatal_FormatStartupError(text, sizeof(text), "Failed!", "/log");
+    Fatal_FormatStartupError(text, sizeof(text), "Failed!", "/log");
     CHECK_EQ_STR(text, "Failed!");
 }

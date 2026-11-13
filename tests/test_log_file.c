@@ -27,11 +27,11 @@ static char *M_LoadLog(const char *const path)
 TEST(file_is_named_after_the_executable)
 {
     char *const dir = TestDir_Prepare("named");
-    CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(LogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
     char *const path = TestDir_Join(dir, "oth06.log");
-    CHECK_EQ_STR(AppLogFile_GetPath(), path);
-    AppLogFile_Close();
-    CHECK(AppLogFile_GetPath() == nullptr);
+    CHECK_EQ_STR(LogFile_GetPath(), path);
+    LogFile_Close();
+    CHECK(LogFile_GetPath() == nullptr);
     Mem_Free(path);
     Mem_Free(dir);
 }
@@ -40,13 +40,13 @@ TEST(file_holds_the_lines_logged_while_open)
 {
     char *const dir = TestDir_Prepare("lines");
     LOG_INFO("before");
-    CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(LogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
     Log_Message(LOG_LEVEL_WARNING, "src/core/foo.c", 9, "while %s", "open");
     char *const path = TestDir_Join(dir, "oth06.log");
     char *text = M_LoadLog(path);
     CHECK_EQ_STR(text, "WARNING foo.c:9: while open\n");
     Mem_Free(text);
-    AppLogFile_Close();
+    LogFile_Close();
     LOG_INFO("after");
     text = M_LoadLog(path);
     CHECK_EQ_STR(text, "WARNING foo.c:9: while open\n");
@@ -58,12 +58,12 @@ TEST(file_holds_the_lines_logged_while_open)
 TEST(file_of_an_earlier_start_is_replaced)
 {
     char *const dir = TestDir_Prepare("replaced");
-    CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(LogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
     LOG_INFO("first start");
-    AppLogFile_Close();
-    CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
+    LogFile_Close();
+    CHECK(Result_Log(LogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
     Log_Message(LOG_LEVEL_INFO, "src/core/foo.c", 2, "second start");
-    AppLogFile_Close();
+    LogFile_Close();
     char *const path = TestDir_Join(dir, "oth06.log");
     char *const text = M_LoadLog(path);
     CHECK_EQ_STR(text, "INFO foo.c:2: second start\n");
@@ -76,11 +76,11 @@ TEST(missing_folder_reports_failure)
 {
     char *const dir = TestDir_Prepare("missing");
     char *const missing = TestDir_Join(dir, "none");
-    const RESULT result = AppLogFile_Open(missing, "th06");
+    const RESULT result = LogFile_Open(missing, "th06");
     CHECK(!IS_OK(result));
     CHECK(strstr(result.message, "oth06.log") != nullptr);
     Result_Ignore(result);
-    CHECK(AppLogFile_GetPath() == nullptr);
+    CHECK(LogFile_GetPath() == nullptr);
     Mem_Free(missing);
     Mem_Free(dir);
 }
@@ -94,9 +94,9 @@ TEST(file_in_a_folder_longer_than_max_path_holds_the_lines)
         dir = deeper;
     }
     CHECK(Result_Log(File_MakeDir(dir), LOG_LEVEL_ERROR));
-    CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(LogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
     Log_Message(LOG_LEVEL_INFO, "src/core/foo.c", 3, "deep");
-    AppLogFile_Close();
+    LogFile_Close();
     char *const path = TestDir_Join(dir, "oth06.log");
     char *const text = TestDir_Read(path);
     CHECK(text != nullptr && Str_StartsWith(text, "INFO foo.c:3: deep"));

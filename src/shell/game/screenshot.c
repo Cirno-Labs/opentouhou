@@ -12,7 +12,7 @@
 
 static RESULT M_Path(
     const char *const user_dir, const char *const game_id,
-    const APP_SETTINGS *const settings, char **const out)
+    const SHELL_SETTINGS *const settings, char **const out)
 {
     *out = nullptr;
     FAIL_IF(user_dir == nullptr, "No user directory for screenshots");
@@ -55,7 +55,7 @@ static RESULT M_Path(
 
 RESULT Screenshot_Save(
     const char *const user_dir, const char *const game_id,
-    const APP_SETTINGS *const settings)
+    const SHELL_SETTINGS *const settings)
 {
     IMAGE image = {};
     MUST(

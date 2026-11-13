@@ -30,7 +30,7 @@ bool Game_Tick(const TH06_INPUT *const input)
 {
     g_Input = *input;
     float tick_rate;
-    if (App_GetTickRate(&tick_rate)) {
+    if (Shell_GetTickRate(&tick_rate)) {
         ResultScreen_CountFrames(tick_rate);
     }
     Chain_RunDraw(&g_Chain);

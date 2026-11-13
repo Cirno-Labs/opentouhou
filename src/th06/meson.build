@@ -1,7 +1,7 @@
 # Everything but main.c, so the replay runner and the tests link it too.
 # The shell/game functions that it calls come from shell/game in the game,
-# from replay/th06/runner/app_null.c in the runner and from
-# tests/app_fake.c in the tests.
+# from replay/th06/runner/shell_null.c in the runner and from
+# tests/shell_fake.c in the tests.
 th06_lib = static_library(
   'th06_lib',
   'angle.c',

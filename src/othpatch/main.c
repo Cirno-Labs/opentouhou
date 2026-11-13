@@ -195,10 +195,10 @@ static bool M_ParseArgs(
 }
 
 static RESULT M_FindFolders(
-    const char *const exe_dir, const char *const game, APP_FOLDERS *const out)
+    const char *const exe_dir, const char *const game, FOLDERS *const out)
 {
-    const APP_FOLDERS_INPUT input = { .exe_dir = exe_dir };
-    return AppFolders_Find(&input, game, out);
+    const FOLDERS_INPUT input = { .exe_dir = exe_dir };
+    return Folders_Find(&input, game, out);
 }
 
 // Returns the patches folder: --dir, or else the patches folder of the
@@ -212,10 +212,10 @@ static RESULT M_FindDir(
         *out = Str_Dup(args->dir);
         return OK;
     }
-    APP_FOLDERS folders;
+    FOLDERS folders;
     Result_Ignore(M_FindFolders(exe_dir, m_Games[0], &folders));
-    const RESULT result = AppFolders_GetPatchesDir(&folders, out);
-    AppFolders_Free(&folders);
+    const RESULT result = Folders_GetPatchesDir(&folders, out);
+    Folders_Free(&folders);
     return result;
 }
 
@@ -386,13 +386,13 @@ static RESULT M_FindConfig(
     const char **const out)
 {
     *out = nullptr;
-    APP_FOLDERS folders;
+    FOLDERS folders;
     const RESULT result = M_FindFolders(exe_dir, game, &folders);
     if (IS_OK(result)) {
         *out =
             Path_Join(Arena_Allocator(arena), folders.user_dir, "config.ini");
     }
-    AppFolders_Free(&folders);
+    Folders_Free(&folders);
     return result;
 }
 
