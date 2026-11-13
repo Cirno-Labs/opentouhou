@@ -2,6 +2,8 @@
 
 #include "core/io/file.h"
 
+#include "core/base/string.h"
+
 #include <SDL3/SDL.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +21,42 @@ static SDL_EnumerationResult SDLCALL M_AddName(
     return SDL_ENUM_CONTINUE;
 }
 
+static bool M_IsSeparator(const char c)
+{
+#ifdef _WIN32
+    return c == '/' || c == '\\';
+#else
+    return c == '/';
+#endif
+}
+
+// Returns the length of the root at the start of path: the separators of
+// an absolute path, and on Windows also a drive such as "C:" or the server
+// and share of a UNC path such as "//server/share".
+static size_t M_RootLength(const char *const path)
+{
+    size_t length = 0;
+#ifdef _WIN32
+    if (path[0] != '\0' && path[1] == ':') {
+        length = 2;
+    } else if (M_IsSeparator(path[0]) && M_IsSeparator(path[1])) {
+        length = 2;
+        for (int32_t part = 0; part < 2; part++) {
+            while (M_IsSeparator(path[length])) {
+                length++;
+            }
+            while (path[length] != '\0' && !M_IsSeparator(path[length])) {
+                length++;
+            }
+        }
+    }
+#endif
+    while (M_IsSeparator(path[length])) {
+        length++;
+    }
+    return length;
+}
+
 static int M_CompareNames(const void *const a, const void *const b)
 {
     return strcmp(*(char *const *)a, *(char *const *)b);
@@ -29,8 +67,25 @@ bool File_Exists(const char *const path)
     return SDL_GetPathInfo(path, nullptr);
 }
 
+// Creates each missing parent before the directory, because on Windows
+// SDL_CreateDirectory cannot create the parents of a path without a drive,
+// such as "/dir", or of a UNC path.
 RESULT File_MakeDir(const char *const path)
 {
+    char *const parent = Str_Dup(path);
+    for (size_t i = M_RootLength(path); parent[i] != '\0'; i++) {
+        if (M_IsSeparator(parent[i])) {
+            parent[i] = '\0';
+            const bool made =
+                File_Exists(parent) || SDL_CreateDirectory(parent);
+            parent[i] = path[i];
+            if (!made) {
+                Mem_Free(parent);
+                return FAIL("Cannot create %s: %s", path, SDL_GetError());
+            }
+        }
+    }
+    Mem_Free(parent);
     FAIL_IF(
         !SDL_CreateDirectory(path), "Cannot create %s: %s", path,
         SDL_GetError());
