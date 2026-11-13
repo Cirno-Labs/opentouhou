@@ -285,6 +285,7 @@ TEST(language_code_sets_up_the_pack_and_its_dependencies)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: German\n"
         "German (thpatch/lang_de): 1 file\n"
         "Base patch (nmlgc/base): 2 files\n"
@@ -303,6 +304,7 @@ TEST(later_run_with_nothing_new_is_up_to_date)
     M_CheckAll(
         &test,
         "Updating the language...\n"
+        "Patches folder: %2$s\n"
         "Language: English\n"
         "Everything was already up to date.\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_CheckConfig(&test, "[patches]\nlanguage = en\n");
@@ -319,6 +321,7 @@ TEST(later_run_downloads_what_changed)
     M_CheckAll(
         &test,
         "Updating the language...\n"
+        "Patches folder: %2$s\n"
         "Language: English\n"
         "Base patch (nmlgc/base): 1 file\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_Close(&test);
@@ -332,6 +335,7 @@ TEST(terminal_redraws_the_bars_in_place)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: English\n"
         "\rEnglish (thpatch/lang_en) [....................] 0/1 file"
         "\rEnglish (thpatch/lang_en) [####################] 1/1 file\n"
@@ -350,6 +354,7 @@ TEST(ansi_terminal_shows_the_files_under_their_patch)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: English\n"
         "\x1b[2KEnglish (thpatch/lang_en) [....................] 0/1 file\n"
         "\x1b[1A\x1b[2KEnglish (thpatch/lang_en) [....................] 0/1 "
@@ -417,6 +422,7 @@ TEST(failure_without_a_game_fails_the_section)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "There is no opentouhou game beside othpatch.\n" M_OTHPATCH_SECTION
             M_SOMETHING_FAILED);
     CHECK(!Server_Exists(test.patches, "thpatch"));
@@ -443,6 +449,7 @@ TEST(first_run_sets_the_language_of_the_system)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "System language: English\n"
         "English (thpatch/lang_en): 1 file\n"
         "Base patch (nmlgc/base): 2 files\n"
@@ -455,7 +462,9 @@ TEST(first_run_sets_the_language_of_the_system)
     M_CheckConfig(&test, "[patches]\nlanguage = en\n");
     M_SetLocale("de_AT.UTF-8");
     CHECK_EQ_INT(M_Run(&test, 0), 0);
-    M_CheckOutput(&test, "Updating the language...\nLanguage: English\n");
+    M_CheckOutput(
+        &test,
+        "Updating the language...\nPatches folder: %2$s\nLanguage: English\n");
     M_Close(&test);
 }
 
@@ -474,7 +483,10 @@ TEST(first_run_without_a_pack_for_the_locale_sets_english)
     M_CASE test = M_PreparePortable("locale_fallback");
     M_SetLocale("fr_FR.UTF-8");
     CHECK_EQ_INT(M_Run(&test, 0), 0);
-    M_CheckOutput(&test, "Setting up the language...\nLanguage: English\n");
+    M_CheckOutput(
+        &test,
+        "Setting up the language...\nPatches folder: %2$s\nLanguage: "
+        "English\n");
     M_CheckConfig(&test, "[patches]\nlanguage = en\n");
     M_CheckOutput(&test, "othpatch --list shows every language.\n");
     M_Close(&test);
@@ -488,6 +500,7 @@ TEST(first_run_on_a_japanese_system_sets_the_original)
     M_CheckOutput(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "System language: original Japanese\n");
     M_CheckConfig(&test, "[patches]\nlanguage = ja\n");
     CHECK(!Server_Exists(test.patches, "thpatch"));
@@ -506,6 +519,7 @@ TEST(language_switch_keeps_the_other_pack)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: English\n"
         "English (thpatch/lang_en): 1 file\n"
         "Saved language = en to %1$s\n" M_OTHPATCH_SECTION M_ALL_DONE);
@@ -517,7 +531,9 @@ TEST(no_name_keeps_the_language_of_config_ini)
     M_CASE test = M_PreparePortable("keep_language");
     CHECK_EQ_INT(M_Run(&test, 1, "de"), 0);
     CHECK_EQ_INT(M_Run(&test, 0), 0);
-    M_CheckOutput(&test, "Updating the language...\nLanguage: German\n");
+    M_CheckOutput(
+        &test,
+        "Updating the language...\nPatches folder: %2$s\nLanguage: German\n");
     M_CheckConfig(&test, "[patches]\nlanguage = de\n");
     M_Close(&test);
 }
@@ -590,6 +606,7 @@ TEST(original_language_downloads_nothing)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: original Japanese\n"
         "Saved language = ja to %1$s\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_CheckConfig(&test, "[patches]\nlanguage = ja\n");
@@ -605,6 +622,7 @@ TEST(original_language_keeps_the_packs)
     M_CheckAll(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: original Japanese\n"
         "Saved language = ja to %1$s\n"
         "The other language packs stay installed, so switching back "
@@ -614,6 +632,7 @@ TEST(original_language_keeps_the_packs)
     M_CheckAll(
         &test,
         "Updating the language...\n"
+        "Patches folder: %2$s\n"
         "Language: original Japanese\n"
         "Everything was already up to date.\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_Close(&test);
@@ -626,6 +645,7 @@ TEST(unknown_language_lists_the_codes)
     M_CheckAll(
         &test,
         "Installing baboon...\n"
+        "Patches folder: %2$s\n"
         "Could not install baboon: no repository in the network has a patch "
         "baboon.\n"
         "Languages for oth06: de, en, ja (original)\n" M_OTHPATCH_SECTION
@@ -643,6 +663,7 @@ TEST(unknown_language_of_config_ini_lists_the_codes)
     M_CheckOutput(
         &test,
         "Updating the language...\n"
+        "Patches folder: %2$s\n"
         "There is no language \"xx\".\n"
         "Languages for oth06: de, en, ja (original)\n");
     M_Close(&test);
@@ -657,6 +678,7 @@ TEST(language_without_files_for_the_game_fails)
     M_CheckOutput(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: German\n"
         "German (thpatch/lang_de) has no files for oth06.\n");
     CHECK(M_ReadConfig(&test) == nullptr);
@@ -676,6 +698,7 @@ TEST(bare_name_of_two_repositories_is_ambiguous)
     M_CheckOutput(
         &test,
         "Installing tool...\n"
+        "Patches folder: %2$s\n"
         "2 repositories have a patch tool: thpatch/tool, nmlgc/tool. Name "
         "one as <repo>/<patch>.\n");
     M_Close(&test);
@@ -688,6 +711,7 @@ TEST(bare_name_of_one_repository_installs_it)
     M_CheckAll(
         &test,
         "Installing nmlgc/base...\n"
+        "Patches folder: %2$s\n"
         "Base patch (nmlgc/base): 2 files\n"
         "Installed nmlgc/base.\n" M_OTHPATCH_SECTION M_ALL_DONE);
     CHECK(Server_Exists(test.patches, "nmlgc/base/patch.js"));
@@ -723,6 +747,7 @@ TEST(mod_installs_with_what_it_needs)
     M_CheckAll(
         &test,
         "Installing thpatch/tool...\n"
+        "Patches folder: %2$s\n"
         "Tool (thpatch/tool): 1 file\n"
         "Installed thpatch/tool.\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_CheckConfig(&test, "[patches]\nlanguage = en\n");
@@ -738,6 +763,7 @@ TEST(remove_keeps_the_dependencies_that_others_need)
     M_CheckAll(
         &test,
         "Removing thpatch/tool...\n"
+        "Patches folder: %2$s\n"
         "Removed thpatch/tool and 1 patch that only it needed.\n");
     CHECK(!Server_Exists(test.patches, "thpatch/tool"));
     CHECK(!Server_Exists(test.patches, "thpatch/own"));
@@ -770,12 +796,14 @@ TEST(remove_fails_for_a_patch_that_another_needs)
     M_CheckAll(
         &test,
         "Removing nmlgc/base...\n"
+        "Patches folder: %2$s\n"
         "thpatch/lang_en needs nmlgc/base. Remove thpatch/lang_en first.\n");
     CHECK(Server_Exists(test.patches, "nmlgc/base/patch.js"));
     CHECK_EQ_INT(M_Run(&test, 2, "--remove", "nothing"), 1);
     M_CheckAll(
         &test,
         "Removing nothing...\n"
+        "Patches folder: %2$s\n"
         "There is no installed patch \"nothing\".\n"
         "othpatch --list shows the installed mods.\n");
     M_Close(&test);
@@ -790,6 +818,7 @@ TEST(remove_of_a_bare_name_of_two_patches_is_ambiguous)
     M_CheckAll(
         &test,
         "Removing tool...\n"
+        "Patches folder: %2$s\n"
         "2 installed patches are tool: a/tool, b/tool. Name one as "
         "<repo>/<patch>.\n");
     M_Close(&test);
@@ -882,6 +911,7 @@ TEST(failure_of_the_first_repository_fails_the_section)
     M_CheckOutput(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Could not download the patch list: ");
     M_CheckOutput(
         &test,
@@ -897,6 +927,7 @@ TEST(failure_of_a_missing_patch_names_it)
     M_CheckAll(
         &test,
         "Installing thpatch/gone...\n"
+        "Patches folder: %2$s\n"
         "Could not install thpatch/gone: repository thpatch has no patch "
         "gone.\n" M_OTHPATCH_SECTION M_SOMETHING_FAILED);
     M_Close(&test);
@@ -912,6 +943,7 @@ TEST(failure_of_a_missing_dependency_names_it)
     M_CheckOutput(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: English\n"
         "Could not install thpatch/lang_en: dependency nmlgc/gone of "
         "thpatch/lang_en: repository nmlgc has no patch gone.\n");
@@ -928,6 +960,7 @@ TEST(failure_of_a_download_keeps_the_files)
     M_CheckOutput(
         &test,
         "Setting up the language...\n"
+        "Patches folder: %2$s\n"
         "Language: German\n"
         "German (thpatch/lang_de): 0/1 file\n"
         "Could not download thpatch/lang_de: 1 files did not arrive: ");
