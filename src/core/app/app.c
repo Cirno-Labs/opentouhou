@@ -11,6 +11,7 @@
 #include "core/config.h"
 #include "core/gfx.h"
 #include "core/ini.h"
+#include "core/io/locale.h"
 #include "core/io/path.h"
 #include "core/patch.h"
 #include "core/vfs.h"
@@ -37,6 +38,7 @@
 #include <string.h>
 
 #define MAX_TICKS_PER_FRAME 4
+#define M_MAX_LOCALES 8
 
 typedef struct APP_CONTEXT APP_CONTEXT;
 
@@ -73,38 +75,9 @@ struct APP_CONTEXT {
 
 static APP_CONTEXT m_Context;
 
-// Splits the comma-separated ids of text into ids, trimming the spaces
-// around each, and returns their number. The ids point into text, which
-// the function changes.
-static int32_t M_SplitIds(
-    char *const text, const char **const ids, const int32_t capacity)
-{
-    int32_t count = 0;
-    char *rest = text;
-    while (rest != nullptr && count < capacity) {
-        char *const comma = strchr(rest, ',');
-        if (comma != nullptr) {
-            *comma = '\0';
-        }
-        while (*rest == ' ' || *rest == '\t') {
-            rest++;
-        }
-        size_t length = strlen(rest);
-        while (length > 0
-               && (rest[length - 1] == ' ' || rest[length - 1] == '\t')) {
-            rest[--length] = '\0';
-        }
-        if (length > 0) {
-            ids[count++] = rest;
-        }
-        rest = comma != nullptr ? comma + 1 : nullptr;
-    }
-    return count;
-}
-
 static void M_OpenPatches(APP_CONTEXT *const ctx)
 {
-    if (g_GameDesc.patch_game == nullptr || !ctx->settings.patches_enabled) {
+    if (g_GameDesc.patch_game == nullptr) {
         return;
     }
     char *dir;
@@ -112,22 +85,18 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
             AppFolders_GetPatchesDir(&ctx->folders, &dir), LOG_LEVEL_ERROR)) {
         return;
     }
-    char disabled_text[CONFIG_STRING_SIZE];
-    memcpy(
-        disabled_text, ctx->settings.patches_disabled, sizeof(disabled_text));
-    const char *disabled[CONFIG_STRING_SIZE / 2];
-    const int32_t disabled_count =
-        M_SplitIds(disabled_text, disabled, (int32_t)ARRAY_SIZE(disabled));
+    LOCALE locales[M_MAX_LOCALES];
+    const PATCH_CHOICE choice = {
+        .enabled = ctx->settings.patches_enabled,
+        .disabled = ctx->settings.patches_disabled,
+        .locales = locales,
+        .locale_count = Locale_ListPreferred(locales, M_MAX_LOCALES),
+    };
     Result_Log(
         Patch_OpenStack(
-            dir, g_GameDesc.id, g_GameDesc.patch_game, disabled, disabled_count,
-            &ctx->patches),
+            dir, g_GameDesc.id, g_GameDesc.patch_game, &choice, &ctx->patches),
         LOG_LEVEL_ERROR);
     Mem_Free(dir);
-    for (int32_t i = 0; i < Patch_GetCount(ctx->patches); i++) {
-        const PATCH_INFO *const info = Patch_Get(ctx->patches, i);
-        LOG_INFO("Patch %d: %s (%s)", i + 1, info->id, info->title);
-    }
 }
 
 static RESULT M_CheckData(APP_CONTEXT *const ctx)

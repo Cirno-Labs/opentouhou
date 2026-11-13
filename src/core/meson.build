@@ -50,8 +50,19 @@ core_io_lib = static_library(
   dependencies: [sdl3],
 )
 
-# othpatch links core/base, core/json and core/io only, so a build of
-# othpatch alone needs none of the libraries below.
+# core/patch's selection needs core/base, core/io and core/json, so that
+# othpatch can link it without core/vfs.
+core_patch_select_lib = static_library(
+  'core_patch_select',
+  'patch/language.c',
+  'patch/select.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
+# othpatch links core/base, core/json, core/io and core/patch's selection
+# only, so a build of othpatch alone needs none of the libraries below.
 if not build_games
   subdir_done()
 endif
@@ -134,6 +145,7 @@ core_patch_lib = static_library(
   'patch/strings.c',
   c_args: core_include,
   implicit_include_directories: false,
+  link_with: core_patch_select_lib,
   dependencies: [sdl3],
 )
 
@@ -235,7 +247,7 @@ core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
     core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_patch_lib,
-    core_vfs_lib,
+    core_patch_select_lib, core_vfs_lib,
     core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
     core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],

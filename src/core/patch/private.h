@@ -3,6 +3,7 @@
 #include "core/base/arena.h"
 #include "core/base/hash_map.h"
 #include "core/json/types.h"
+#include "core/patch/select.h"
 #include "core/patch/stack.h"
 
 // Holds the paths on disk of one file of a patch: under its plain name and
@@ -25,6 +26,7 @@ typedef struct {
 
 struct PATCH_STACK {
     ARENA arena;
+    PATCH_SELECTION *selection;
     PATCH *patches;
     int32_t count;
     PATCH_GAME game;
@@ -42,4 +44,4 @@ bool PatchStack_IsOverlaid(const PATCH_STACK *stack, const char *key);
 
 // Reads the JSON file at path into a tree from allocator. Returns nullptr,
 // with a log line, when the file does not read or parse.
-JSON_VALUE *PatchStack_ReadJson(const char *path, const ALLOCATOR *allocator);
+JSON_VALUE *PatchSelect_ReadJson(const char *path, const ALLOCATOR *allocator);

@@ -1124,6 +1124,22 @@ test(
   suite: 'unit',
 )
 
+foreach part : ['language', 'select']
+  test(
+    'core/patch/' + part,
+    executable(
+      'test_patch_' + part,
+      'test_patch_' + part + '.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_patch_select_lib, core_json_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'patch_' + part},
+    suite: 'unit',
+  )
+endforeach
+
 test(
   'core/patch/stack',
   executable(

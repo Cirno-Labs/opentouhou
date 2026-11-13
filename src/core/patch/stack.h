@@ -2,26 +2,15 @@
 
 #include "core/base/result.h"
 #include "core/base/types.h"
+#include "core/patch/select.h"
 
-// Finds the thcrap patches in a patches folder and puts them in the order
-// in which they apply. The folder has the layout of thcrap's repos/
-// folder: one directory per repository, and in it one directory per patch
-// with its patch.js, so that a patch is <folder>/<repo>/<patch>/ and has
-// the id "<repo>/<patch>".
+// Opens the thcrap patches of a patches folder in the order in which they
+// apply. The folder has the layout of thcrap's repos/ folder: one
+// directory per repository, and in it one directory per patch with its
+// patch.js, so that a patch is <folder>/<repo>/<patch>/ and has the id
+// "<repo>/<patch>".
 //
-// A patch applies after every patch that it depends on, so that its files
-// replace theirs. Patches with no order between them apply in byte order of
-// their ids. A dependency "<repo>/<patch>" names that patch. A bare
-// "<patch>" names the patch with that name in the same repository, or else
-// in the first repository, in byte order, that has one. This is how
-// thcrap's configurator resolves dependencies.
-//
-// These patches are left out, each with a log line:
-// - a disabled patch;
-// - a patch whose patch.js does not read or parse as an object;
-// - a patch whose supported_games does not list the game;
-// - a patch with a dependency that is missing or left out;
-// - a patch that depends on itself through other patches.
+// core/patch/select.h decides which patches load and their order.
 //
 // File names in a patch are case-insensitive. In each patch, a file has a
 // build-specific name with the game's build after the first part of its
@@ -29,7 +18,7 @@
 //
 // Example:
 // PATCH_STACK *stack;
-// MUST(Patch_OpenStack(dir, "th06", &game, nullptr, 0, &stack));
+// MUST(Patch_OpenStack(dir, "th06", &game, nullptr, &stack));
 // for (int32_t i = 0; i < Patch_GetCount(stack); i++) {
 //     LOG_INFO("%s", Patch_Get(stack, i)->id);
 // }
@@ -86,14 +75,15 @@ typedef struct {
     int32_t font_count;
 } PATCH_INFO;
 
-// Opens the patches in dir that apply to the game game_id, which is the
-// thcrap game id and the GAME_DESC id, such as "th06". disabled lists
-// disabled_count patch ids that are left out. A dir that does not exist
-// gives an empty stack. Reports failure only when dir exists and cannot be
-// listed; *out is then nullptr. The stack keeps a copy of game.
+// Opens the patches in dir that Patch_Select selects for game_id and
+// choice, and logs the description of the selection, with a warning when
+// the language is missing. game_id is the thcrap game id and the GAME_DESC
+// id, such as "th06". A missing dir gives an empty stack. Reports failure
+// only when dir exists and cannot be listed. The stack keeps a copy of
+// game.
 RESULT Patch_OpenStack(
     const char *dir, const char *game_id, const PATCH_GAME *game,
-    const char *const *disabled, int32_t disabled_count, PATCH_STACK **out);
+    const PATCH_CHOICE *choice, PATCH_STACK **out);
 
 // Releases a stack. A nullptr stack does nothing.
 void Patch_CloseStack(PATCH_STACK *stack);

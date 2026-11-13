@@ -1021,7 +1021,7 @@ TEST(base_tsa_world_sprites_take_their_size_in_pixels)
     PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     Translation_Init(stack);
     const VEC2 size = M_Draw3DSize();
@@ -1110,7 +1110,7 @@ TEST(base_tsa_text_rows_scale_twice_the_row_by_32_pixels)
     PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     Translation_Init(stack);
     CHECK(M_DrawsScaledRow(400, 32));
@@ -1232,7 +1232,7 @@ static int32_t M_LoadMaskedAlpha(
     }
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     M_Setup(directory);
     Files_SetPatches(stack);

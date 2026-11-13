@@ -151,7 +151,7 @@ static PATCH_STACK *M_PreparePatched(
     }
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     Mem_Free(patches);
     return stack;
