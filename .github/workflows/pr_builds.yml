@@ -58,13 +58,14 @@ jobs:
       platform: win
       target: ${{ matrix.target }}
 
+  # macOS runners are scarce, so macOS builds and tests the release target
+  # only, as the snapshot and the releases do.
   build_mac:
     name: macOS
     strategy:
       fail-fast: false
       matrix:
         target:
-          - debug
           - release
     uses: ./.github/workflows/job_build_macos.yml
     with:
