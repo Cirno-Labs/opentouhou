@@ -43,24 +43,49 @@ jobs:
               github.rest.actions.listWorkflowRunArtifacts,
               { owner, repo, run_id: run.id, per_page: 100 },
             );
-            // The pull request names its artifacts, so a name loses every
-            // character that could leave the link text.
-            const label = (name) => String(name).replace(/[^A-Za-z0-9._-]/g, '');
-            const links = artifacts
-              .filter((item) => !item.expired && item.name.startsWith('packages-'))
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((item) => `- [${label(item.name)}](https://github.com/${owner}/${repo}/actions/runs/${run.id}/artifacts/${item.id})`);
-            if (links.length === 0) {
-              core.warning(`The run ${run.id} has no artifacts.`);
+            // Each package is one artifact named
+            // <program>-<version>-<platform>-<target>[.zip|.exe]. A name that
+            // does not match is left out, so no other text reaches the comment.
+            const pattern = /^([a-z0-9]+)-[A-Za-z0-9.+-]+-(Windows|Linux|macOS)-(release|debug)(\.zip|\.exe)?$/;
+            const platforms = ['Windows', 'Linux', 'macOS'];
+            const targets = ['release', 'debug'];
+            const table = new Map();
+            for (const item of artifacts) {
+              const match = item.expired ? null : pattern.exec(item.name);
+              if (match === null) {
+                continue;
+              }
+              const [, program, platform, target] = match;
+              if (!table.has(program)) {
+                table.set(program, new Map());
+              }
+              table.get(program).set(`${platform}-${target}`, item.id);
+            }
+            if (table.size === 0) {
+              core.warning(`The run ${run.id} has no packages.`);
               return;
             }
+            const url = (id) => `https://github.com/${owner}/${repo}/actions/runs/${run.id}/artifacts/${id}`;
+            const programs = [...table.keys()].sort((a, b) =>
+              (a === 'othpatch') - (b === 'othpatch') || a.localeCompare(b));
+            const rows = programs.map((program) => {
+              const cells = platforms.map((platform) => targets
+                .filter((target) => table.get(program).has(`${platform}-${target}`))
+                .map((target) => `[${target}](${url(table.get(program).get(`${platform}-${target}`))})`)
+                .join(' · ') || '–');
+              return `| **${program}** | ${cells.join(' | ')} |`;
+            });
 
             const marker = '<!-- pr-build-links -->';
             const body = [
               marker,
-              `Builds of ${run.head_sha.slice(0, 7)}, for a signed-in GitHub account:`,
+              `Builds of ${run.head_sha.slice(0, 7)}. Downloads need a signed-in GitHub account.`,
               '',
-              ...links,
+              `| | ${platforms.join(' | ')} |`,
+              `|---|${platforms.map(() => '---').join('|')}|`,
+              ...rows,
+              '',
+              'The game zips carry othpatch, as on opentouhou.org. They expire after 14 days.',
             ].join('\n');
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: pull.number, per_page: 100,

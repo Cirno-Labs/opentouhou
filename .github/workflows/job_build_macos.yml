@@ -70,7 +70,45 @@ jobs:
             othpatch|all) tools/mac/build package-othpatch --target "$TARGET" ;;
           esac
 
+      # A pull request uploads each package as its own artifact, unzipped,
+      # so that its comment links each file. The name gains the target,
+      # because the debug and release builds name their files the same.
+      - name: Name the packages for the pull request
+        id: pr
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          mkdir -p build/pr
+          for file in build/packages/*; do
+            base=$(basename "$file")
+            case "$base" in
+              *.zip) out="${base%.zip}-$TARGET.zip" ;;
+              *.exe) out="${base%.exe}-$TARGET.exe" ;;
+              *) out="$base-$TARGET" ;;
+            esac
+            cp "$file" "build/pr/$out"
+            echo "${base%%-*}=build/pr/$out" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Upload oth06 for the pull request
+        if: ${{ steps.pr.outputs.oth06 }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ steps.pr.outputs.oth06 }}
+          archive: false
+          retention-days: 14
+
+      - name: Upload othpatch for the pull request
+        if: ${{ steps.pr.outputs.othpatch }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ steps.pr.outputs.othpatch }}
+          archive: false
+          retention-days: 14
+
       - name: Upload the packages
+        if: ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: packages-${{ inputs.packages }}-mac-${{ inputs.target }}
