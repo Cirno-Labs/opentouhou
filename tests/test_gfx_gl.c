@@ -339,6 +339,38 @@ TEST(present_scales_the_screen_into_a_letterbox)
     }
 }
 
+TEST(a_smooth_output_blends_the_pixels_that_it_scales)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[2] = { RED, GREEN };
+    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    for (int32_t interpolate = 0; interpolate < 2; interpolate++) {
+        for (int32_t smooth = 0; smooth < 2; smooth++) {
+            Gfx_BeginTick(BLACK);
+            M_Rect(&m_Opaque, texture, 0, 0, 2, SIZE, 0.5f, WHITE, 1.0f);
+            Gfx_EndTick();
+            const GFX_OUTPUT output = {
+                .width = 24,
+                .height = 16,
+                .border = BLUE,
+                .filter = smooth != 0 ? GFX_FILTER_LINEAR : GFX_FILTER_NEAREST,
+            };
+            CHECK_OK(Gfx_Present(interpolate != 0, 1.0f, &output));
+            IMAGE image = {};
+            CHECK_OK(Gfx_ReadOutput(&g_HeapAllocator, &image));
+            if (image.pixels == nullptr) {
+                abort();
+            }
+            M_CheckPixel(&image, 4, 4, RED, 0);
+            M_CheckPixel(
+                &image, 5, 4,
+                smooth != 0 ? (GFX_COLOR) { 191, 64, 0, 255 } : RED, 2);
+            Image_Free(&image);
+        }
+    }
+    GfxTexture_Free(texture);
+}
+
 TEST(present_draws_finer_than_a_logical_pixel)
 {
     REQUIRE_GL();
