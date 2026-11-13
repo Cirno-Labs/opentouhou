@@ -1,0 +1,33 @@
+name: Tell the site about new releases
+
+# Asks the download site to rebuild after a run that may have changed
+# the release index. The repository variable SITE_REPOSITORY names the
+# site's repository, and the secret SITE_DISPATCH_TOKEN may send it a
+# repository_dispatch event. Without either, nothing happens.
+on:
+  workflow_run:
+    workflows:
+      - Publish a development snapshot
+      - Publish the releases
+      - Delete the releases
+    types:
+      - completed
+
+permissions: {}
+
+jobs:
+  notify:
+    name: Notify the site
+    if: ${{ github.event.workflow_run.conclusion == 'success' && vars.SITE_REPOSITORY != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send releases-changed
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          SITE_REPOSITORY: ${{ vars.SITE_REPOSITORY }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "SITE_DISPATCH_TOKEN is not set; the site rebuilds on its own schedule."
+            exit 0
+          fi
+          gh api "repos/$SITE_REPOSITORY/dispatches" -f event_type=releases-changed

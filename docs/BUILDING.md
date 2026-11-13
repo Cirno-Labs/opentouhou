@@ -388,3 +388,8 @@ The workflows need these repository settings:
   which you create in the repository settings, so that its protection
   rules, such as required reviewers, apply to every job that writes the
   bucket.
+- Variable `SITE_REPOSITORY` and secret `SITE_DISPATCH_TOKEN`: the
+  download site's repository and a token that may send it a
+  `repository_dispatch` event. After each successful snapshot, release
+  or deletion, "Tell the site about new releases" asks the site to
+  rebuild. Without them the site rebuilds on its own schedule.
