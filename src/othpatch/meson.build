@@ -38,7 +38,6 @@ othpatch_lib = static_library(
   'install/install.c',
   othpatch_install_backends[host_machine.system()],
   othpatch_fetch_backends[host_machine.system()],
-  'language.c',
   'main.c',
   'release.c',
   'repo.c',
@@ -51,7 +50,10 @@ othpatch_lib = static_library(
   dependencies: [curl, zlib],
 )
 
-othpatch_libs = [othpatch_lib, core_json_lib, core_io_lib, core_base_lib]
+othpatch_libs = [
+  othpatch_lib, core_app_folders_lib, core_patch_select_lib, core_ini_lib,
+  core_json_lib, core_io_lib, core_base_lib,
+]
 othpatch_deps = [curl, sdl3, zlib]
 othpatch_entry = [
   files(host_machine.system() == 'windows' ? 'backend_main_windows.c' : 'backend_main_posix.c'),

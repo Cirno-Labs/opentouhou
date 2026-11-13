@@ -252,6 +252,23 @@ const REPO *Repo_FindPatch(
     }
 }
 
+int32_t Repo_FindAllPatch(
+    REPO_NETWORK *const network, const char *const name,
+    const REPO **const repos, const int32_t capacity)
+{
+    while (M_Walk(network)) {}
+    int32_t count = 0;
+    for (int32_t i = 0; i < network->repos.count; i++) {
+        if (Repo_HasPatch(network->repos.items[i], name)) {
+            if (count < capacity) {
+                repos[count] = network->repos.items[i];
+            }
+            count++;
+        }
+    }
+    return count;
+}
+
 // Returns the patch, fetching its patch.js from the servers of its
 // repository in order when it is not known yet.
 static RESULT M_GetPatch(

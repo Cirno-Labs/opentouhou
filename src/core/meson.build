@@ -74,8 +74,17 @@ core_patch_select_lib = static_library(
   dependencies: [sdl3],
 )
 
-# othpatch links core/base, core/json, core/io, core/ini and core/patch's
-# selection only, so a build of othpatch alone needs none of the libraries below.
+# core/app's folder rules need core/base and core/io only, so that othpatch
+# finds the folders of a game as the game does.
+core_app_folders_lib = static_library(
+  'core_app_folders',
+  'app/folders.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
+# othpatch links core/base, core/json, core/io, core/ini, core/patch's
+# selection and core/app's folder rules only, so a build of othpatch alone needs none of the libraries below.
 if not build_games
   subdir_done()
 endif
@@ -223,7 +232,6 @@ core_lib = static_library(
   'app/app.c',
   'app/clock.c',
   'app/fatal.c',
-  'app/folders.c',
   'app/log_file.c',
   'app/tick_rate.c',
   'app/hotkeys.c',
@@ -267,8 +275,9 @@ core_dep = declare_dependency(
 # core/app runs the game, so only a game executable links it. The layers
 # above core call its game-facing functions and get them from the game,
 # or from a stand-in in the replay runner and the tests.
+# The folder rules are a separate library, which othpatch links too.
 core_app_dep = declare_dependency(
-  link_with: core_lib,
+  link_with: [core_lib, core_app_folders_lib],
   link_whole: core_main_lib,
   dependencies: core_dep,
 )

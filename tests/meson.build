@@ -137,7 +137,7 @@ if build_othpatch
     'fake_program.c',
     implicit_include_directories: false,
   )
-  foreach part : ['fetch', 'game', 'install', 'language', 'main', 'release', 'repo', 'sha256', 'update', 'zip']
+  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'repo', 'sha256', 'update', 'zip']
     test(
       'othpatch/' + part,
       executable(
@@ -895,10 +895,9 @@ test(
   executable(
     'test_app_folders',
     'test_app_folders.c',
-    '../src/core/app/folders.c',
     c_args: core_include,
     implicit_include_directories: false,
-    link_with: [core_io_lib, core_base_lib],
+    link_with: [core_app_folders_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
   ),
   env: {

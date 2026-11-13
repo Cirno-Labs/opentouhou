@@ -597,19 +597,6 @@ static void M_Order(PATCH_SELECTION *const selection)
     M_Place(selection, in);
 }
 
-static const char *M_RoleName(const PATCH_ROLE role)
-{
-    switch (role) {
-    case PATCH_ROLE_LANGUAGE:
-        return "language";
-    case PATCH_ROLE_LIBRARY:
-        return "library";
-    case PATCH_ROLE_MOD:
-        return "mod";
-    }
-    return "mod";
-}
-
 static const char *M_NeededBy(
     PATCH_SELECTION *const selection, const int32_t index)
 {
@@ -654,7 +641,7 @@ static void M_SetReasons(PATCH_SELECTION *const selection)
     M_PATCHES *const patches = &selection->patches;
     for (int32_t i = 0; i < patches->count; i++) {
         M_PATCH *const patch = &patches->items[i];
-        const char *const role = M_RoleName(patch->entry.role);
+        const char *const role = Patch_GetRoleName(patch->entry.role);
         if (patch->disabled) {
             patch->entry.reason = "disabled in [patches] disabled";
         } else if (!selection->enabled) {
@@ -814,6 +801,19 @@ void Patch_FreeSelection(PATCH_SELECTION *const selection)
     }
     Arena_Free(&selection->arena);
     Mem_Free(selection);
+}
+
+const char *Patch_GetRoleName(const PATCH_ROLE role)
+{
+    switch (role) {
+    case PATCH_ROLE_LANGUAGE:
+        return "language";
+    case PATCH_ROLE_LIBRARY:
+        return "library";
+    case PATCH_ROLE_MOD:
+        return "mod";
+    }
+    return "mod";
 }
 
 int32_t Patch_GetEntryCount(const PATCH_SELECTION *const selection)

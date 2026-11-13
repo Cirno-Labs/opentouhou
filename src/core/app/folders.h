@@ -32,6 +32,9 @@
 // one installation shares it. Portable mode never writes into the program
 // folder itself, so the original game's own files there stay untouched.
 
+// Names the file that turns on portable mode.
+#define APP_FOLDERS_PORTABLE_FILE "portable.txt"
+
 typedef enum {
     APP_FOLDERS_DEFAULT,
     APP_FOLDERS_PORTABLE,

@@ -49,6 +49,12 @@ RESULT Update_Patch(
     const char *dir, const REPO_PATCH *patch, const char *const *games,
     int32_t game_count, UPDATE_COUNTS *counts);
 
+// Fetches the files.js of a patch as Update_Patch does, and sets *out to
+// whether it lists a file below "<game>/" for one of games.
+RESULT Update_HasGameFiles(
+    const REPO_PATCH *patch, const char *const *games, int32_t game_count,
+    bool *out);
+
 // Lists the patches of the patches folder dir, each <repository>/<patch>/
 // with a patch.js, in byte order of their ids. The list and its strings
 // come from arena. A missing folder has no patches. A patch.js that does

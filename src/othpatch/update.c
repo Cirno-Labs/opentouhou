@@ -363,6 +363,41 @@ static RESULT M_Update(
     return OK;
 }
 
+static RESULT M_HasGameFiles(
+    ARENA *const arena, const REPO_PATCH *const patch,
+    const char *const *const games, const int32_t game_count, bool *const out)
+{
+    FETCH list;
+    MUST(M_FetchFileList(arena, patch, &list));
+    JSON_VALUE *files = nullptr;
+    const RESULT parsed = Json_Parse(
+        (const char *)list.data, list.size, Arena_Allocator(arena), &files);
+    Fetch_Release(&list);
+    MUST(parsed, "files.js");
+    FAIL_IF(files->type != JSON_OBJECT, "files.js is not an object");
+    for (int32_t i = 0; i < files->object.count; i++) {
+        const char *const path = files->object.members[i].key;
+        if (strchr(path, '/') != nullptr && M_IsWanted(path, games, game_count)
+            && files->object.members[i].value->type != JSON_NULL) {
+            *out = true;
+            return OK;
+        }
+    }
+    return OK;
+}
+
+RESULT Update_HasGameFiles(
+    const REPO_PATCH *const patch, const char *const *const games,
+    const int32_t game_count, bool *const out)
+{
+    *out = false;
+    ARENA arena;
+    Arena_Init(&arena, "files", M_ARENA_SIZE);
+    const RESULT result = M_HasGameFiles(&arena, patch, games, game_count, out);
+    Arena_Free(&arena);
+    return result;
+}
+
 RESULT Update_Patch(
     const char *const dir, const REPO_PATCH *const patch,
     const char *const *const games, const int32_t game_count,

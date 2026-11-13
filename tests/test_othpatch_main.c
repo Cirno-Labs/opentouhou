@@ -8,6 +8,12 @@
 #include "test_dir.h"
 #include "zip_builder.h"
 
+#ifdef _WIN32
+    #define M_SEPARATOR "\\"
+#else
+    #define M_SEPARATOR "/"
+#endif
+
 typedef struct {
     char *dir;
     char *server;
@@ -277,17 +283,269 @@ TEST(no_name_without_a_pack_for_the_locale_picks_english)
 }
 #endif
 
-TEST(language_switch_removes_the_other_pack)
+// Gives the test a config.ini of its own: without portable.txt, every test
+// shares the one in XDG_DATA_HOME.
+static void M_MakePortable(const M_CASE *const test)
+{
+    PatchBuilder_Write(test->program, "portable.txt", "");
+}
+
+static char *M_ReadConfig(const M_CASE *const test)
+{
+    return Server_Read(test->program, "userdata/config.ini");
+}
+
+static void M_CheckConfig(const M_CASE *const test, const char *const text)
+{
+    char *const config = M_ReadConfig(test);
+    CHECK(config != nullptr);
+    CHECK_EQ_STR(config, text);
+    Mem_Free(config);
+}
+
+TEST(language_switch_keeps_the_other_pack)
 {
     M_CASE test = M_Prepare("switch");
+    M_MakePortable(&test);
     M_AddNetwork(&test);
     CHECK_EQ_INT(M_Run(&test, 1, "de"), 0);
     CHECK(Server_Exists(test.patches, "thpatch/lang_de/patch.js"));
+    M_CheckConfig(&test, "[patches]\nlanguage = de\n");
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
-    M_CheckOutput(
-        &test, "thpatch/lang_de: removed, thpatch/lang_en replaces it");
-    CHECK(!Server_Exists(test.patches, "thpatch/lang_de"));
+    CHECK(Server_Exists(test.patches, "thpatch/lang_de/patch.js"));
     CHECK(Server_Exists(test.patches, "thpatch/lang_en/patch.js"));
+    M_CheckConfig(&test, "[patches]\nlanguage = en\n");
+    char *const line = Str_Format(
+        "th06: set [patches] language = en in %s" M_SEPARATOR
+        "userdata" M_SEPARATOR "config.ini\n",
+        test.program);
+    M_CheckOutput(&test, line);
+    Mem_Free(line);
+    M_CheckOutput(
+        &test,
+        "A game that starts with --user-dir keeps its config.ini in that "
+        "folder; add this line under [patches] there:\nlanguage = en\n");
+    char *const selection = Str_Format(
+        "th06:\nPatches in %s:\n"
+        "  language: thpatch/lang_en ([patches] language = en)\n"
+        "  load  thpatch/lang_en                  language\n"
+        "  load  nmlgc/base                       library, needed by "
+        "thpatch/lang_en\n"
+        "  skip  thpatch/lang_de                  language, not chosen\n"
+        "Load order: nmlgc/base, thpatch/lang_en\n",
+        test.patches);
+    M_CheckOutput(&test, selection);
+    Mem_Free(selection);
+    M_Close(&test);
+}
+
+TEST(language_change_keeps_a_pack_that_a_patch_needs)
+{
+    M_CASE test = M_Prepare("removal_bug");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    Server_AddPatch(
+        test.server, "thpatch", "tool", "\"dependencies\": [\"lang_en\"]");
+    Server_AddFile(test.server, "thpatch", "tool", "files.js", "{}");
+    CHECK_EQ_INT(M_Run(&test, 1, "thpatch/tool"), 0);
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/patch.js"));
+    CHECK_EQ_INT(M_Run(&test, 1, "de"), 0);
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/patch.js"));
+    CHECK(Server_Exists(test.patches, "thpatch/tool/patch.js"));
+    M_Close(&test);
+}
+
+TEST(language_edit_keeps_the_other_lines_of_config_ini)
+{
+    M_CASE test = M_Prepare("config_edit");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    PatchBuilder_Write(
+        test.program, "userdata/config.ini",
+        "; my settings\n"
+        "[video]\n"
+        "fullscreen = true # big\n"
+        "\n"
+        "[patches]\n"
+        "disabled = a/b\n"
+        "language = de\n"
+        "; after\n"
+        "[screenshot]\n"
+        "format = jpg\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "EN"), 0);
+    M_CheckConfig(
+        &test,
+        "; my settings\n"
+        "[video]\n"
+        "fullscreen = true # big\n"
+        "\n"
+        "[patches]\n"
+        "disabled = a/b\n"
+        "language = en\n"
+        "; after\n"
+        "[screenshot]\n"
+        "format = jpg\n");
+    M_Close(&test);
+}
+
+TEST(language_edit_adds_the_section_or_the_file)
+{
+    M_CASE test = M_Prepare("config_add");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    PatchBuilder_Write(
+        test.program, "userdata/config.ini", "[video]\nfullscreen = true\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckConfig(
+        &test, "[video]\nfullscreen = true\n\n[patches]\nlanguage = en\n");
+    M_Close(&test);
+
+    M_CASE fresh = M_Prepare("config_new");
+    M_MakePortable(&fresh);
+    M_AddNetwork(&fresh);
+    CHECK_EQ_INT(M_Run(&fresh, 1, "de"), 0);
+    M_CheckConfig(&fresh, "[patches]\nlanguage = de\n");
+    M_Close(&fresh);
+}
+
+TEST(original_language_downloads_nothing)
+{
+    M_CASE test = M_Prepare("original");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "ja"), 0);
+    M_CheckOutput(
+        &test, "Language: the original, ja; othpatch downloads nothing\n");
+    M_CheckConfig(&test, "[patches]\nlanguage = ja\n");
+    CHECK(!Server_Exists(test.patches, "thpatch"));
+    M_CheckOutput(&test, "  language: original ([patches] language = ja)\n");
+    M_Close(&test);
+}
+
+TEST(unknown_language_lists_the_codes)
+{
+    M_CASE test = M_Prepare("unknown_language");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "baboon"), 1);
+    M_CheckOutput(
+        &test,
+        "othpatch: baboon is neither a language code nor a patch; the "
+        "language codes are de, en, or ja for the original\n");
+    char *const config = M_ReadConfig(&test);
+    CHECK(config == nullptr);
+    Mem_Free(config);
+    M_Close(&test);
+}
+
+TEST(language_without_files_for_the_game_fails)
+{
+    M_CASE test = M_Prepare("no_game_files");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    char *const entry = Server_Entry("th07/msg1.dat.jdiff", "x");
+    char *const files = Str_Format("{%s}", entry);
+    Server_AddFile(test.server, "thpatch", "lang_de", "files.js", files);
+    CHECK_EQ_INT(M_Run(&test, 1, "de"), 1);
+    M_CheckOutput(&test, "othpatch: thpatch/lang_de has no files for th06\n");
+    CHECK(M_ReadConfig(&test) == nullptr);
+    CHECK(!Server_Exists(test.patches, "thpatch"));
+    M_Close(&test);
+    Mem_Free(files);
+    Mem_Free(entry);
+}
+
+TEST(bare_name_of_two_repositories_is_ambiguous)
+{
+    M_CASE test = M_Prepare("ambiguous");
+    const char *const neighbors[] = { "nmlgc" };
+    Server_AddRepo(
+        test.server, "thpatch", neighbors, 1,
+        "\"lang_en\": \"English\", \"tool\": \"\"");
+    Server_AddRepo(test.server, "nmlgc", nullptr, 0, "\"tool\": \"\"");
+    CHECK_EQ_INT(M_Run(&test, 1, "tool"), 1);
+    M_CheckOutput(
+        &test,
+        "othpatch: 2 repositories have a patch tool: thpatch/tool, "
+        "nmlgc/tool; name one as <repo>/<patch>\n");
+    M_Close(&test);
+}
+
+TEST(bare_name_of_one_repository_installs_it)
+{
+    M_CASE test = M_Prepare("bare_name");
+    M_AddNetwork(&test);
+    Server_AddFile(test.server, "nmlgc", "base", "files.js", "{}");
+    CHECK_EQ_INT(M_Run(&test, 1, "base"), 0);
+    M_CheckOutput(&test, "Patch: nmlgc/base (Patch base)");
+    CHECK(Server_Exists(test.patches, "nmlgc/base/patch.js"));
+    M_Close(&test);
+}
+
+static void M_InstallTool(M_CASE *const test)
+{
+    M_AddNetwork(test);
+    const char *const neighbors[] = { "nmlgc" };
+    Server_AddRepo(
+        test->server, "thpatch", neighbors, 1,
+        "\"lang_en\": \"English\", \"tool\": \"\", \"own\": \"\"");
+    Server_AddPatch(
+        test->server, "thpatch", "tool",
+        "\"dependencies\": [\"nmlgc/base\", \"own\"]");
+    Server_AddFile(test->server, "thpatch", "tool", "files.js", "{}");
+    Server_AddPatch(test->server, "thpatch", "own", "");
+    Server_AddFile(test->server, "thpatch", "own", "files.js", "{}");
+    CHECK_EQ_INT(M_Run(test, 1, "en"), 0);
+    CHECK_EQ_INT(M_Run(test, 1, "thpatch/tool"), 0);
+}
+
+TEST(remove_keeps_the_dependencies_that_others_need)
+{
+    M_CASE test = M_Prepare("remove");
+    M_MakePortable(&test);
+    M_InstallTool(&test);
+    CHECK_EQ_INT(M_Run(&test, 2, "--remove", "tool"), 0);
+    M_CheckOutput(&test, "thpatch/own: removed\n");
+    M_CheckOutput(&test, "thpatch/tool: removed\n");
+    CHECK(!Server_Exists(test.patches, "thpatch/tool"));
+    CHECK(!Server_Exists(test.patches, "thpatch/own"));
+    CHECK(Server_Exists(test.patches, "nmlgc/base/patch.js"));
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/patch.js"));
+    M_CheckOutput(&test, "Load order: nmlgc/base, thpatch/lang_en\n");
+    M_Close(&test);
+}
+
+TEST(remove_fails_for_a_patch_that_another_needs)
+{
+    M_CASE test = M_Prepare("remove_needed");
+    M_InstallTool(&test);
+    CHECK_EQ_INT(M_Run(&test, 2, "--remove", "nmlgc/base"), 1);
+    M_CheckOutput(
+        &test,
+        "othpatch: thpatch/lang_en needs nmlgc/base; remove thpatch/lang_en "
+        "first\n");
+    CHECK(Server_Exists(test.patches, "nmlgc/base/patch.js"));
+    CHECK_EQ_INT(M_Run(&test, 2, "--remove", "nothing"), 1);
+    M_CheckOutput(
+        &test,
+        "othpatch: no installed patch is nothing; --installed lists them\n");
+    M_Close(&test);
+}
+
+TEST(installed_lists_the_roles)
+{
+    M_CASE test = M_Prepare("installed_roles");
+    M_InstallTool(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "--installed"), 0);
+    char *const expected = Str_Format(
+        "Patches folder: %s\n"
+        "nmlgc/base                       library\n"
+        "thpatch/lang_en                  language\n"
+        "thpatch/own                      library\n"
+        "thpatch/tool                     mod\n",
+        test.patches);
+    CHECK_EQ_STR(test.output, expected);
+    Mem_Free(expected);
     M_Close(&test);
 }
 
@@ -353,11 +611,10 @@ TEST(failure_of_a_missing_patch_is_one_message)
 {
     M_CASE test = M_Prepare("missing_patch");
     M_AddNetwork(&test);
-    CHECK_EQ_INT(M_Run(&test, 1, "ja"), 1);
+    CHECK_EQ_INT(M_Run(&test, 1, "thpatch/gone"), 1);
     M_CheckOutput(
         &test,
-        "othpatch: lang_ja: no repository in the network has a patch "
-        "lang_ja\n");
+        "othpatch: thpatch/gone: repository thpatch has no patch gone\n");
     M_Close(&test);
 }
 
@@ -371,7 +628,7 @@ TEST(failure_of_a_missing_dependency_names_it)
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 1);
     M_CheckOutput(
         &test,
-        "othpatch: lang_en: dependency nmlgc/gone of thpatch/lang_en: "
+        "othpatch: thpatch/lang_en: dependency nmlgc/gone of thpatch/lang_en: "
         "repository nmlgc has no patch gone\n");
     M_Close(&test);
 }

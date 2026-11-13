@@ -62,6 +62,9 @@ typedef enum {
     PATCH_ROLE_MOD,
 } PATCH_ROLE;
 
+// Returns "language", "library" or "mod".
+const char *Patch_GetRoleName(PATCH_ROLE role);
+
 typedef struct {
     // Holds "<repo>/<patch>".
     const char *id;
