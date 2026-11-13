@@ -115,7 +115,7 @@ if build_games
   endforeach
 
   subdir('replay')
-  runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/backend_main_windows.c' : 'replay/th06/runner/backend_main_posix.c'
+  runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/main_windows.c' : 'replay/th06/runner/main_posix.c'
   executable(
     'th06replay',
     'replay/th06/runner/main.c',

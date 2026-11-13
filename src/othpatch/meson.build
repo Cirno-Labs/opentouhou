@@ -59,7 +59,7 @@ othpatch_libs = [
 ]
 othpatch_deps = [curl, sdl3, zlib]
 othpatch_entry = [
-  files(host_machine.system() == 'windows' ? 'backend_main_windows.c' : 'backend_main_posix.c'),
+  files(host_machine.system() == 'windows' ? 'main_windows.c' : 'main_posix.c'),
   othpatch_version,
 ]
 if host_machine.system() == 'windows'
