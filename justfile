@@ -72,14 +72,27 @@ _test image: (_docker_build "linux" image) (_docker_run "linux" image "test")
 # Run the unit tests inside the Linux images (all, games or othpatch).
 [group('test')]
 test programs="all":
-    #!/usr/bin/env sh
-    set -e
+    #!/usr/bin/env bash
+    set -euo pipefail
     case "{{programs}}" in
-        all) just _test media && just _test othpatch ;;
-        games) just _test media ;;
-        othpatch) just _test othpatch ;;
+        all) ;;
+        games) exec just _test media ;;
+        othpatch) exec just _test othpatch ;;
         *) echo "Unknown programs {{programs}}: all, games or othpatch" >&2; exit 1 ;;
     esac
+    # Runs both images at once. The media image runs the suites that
+    # every build has, and the output of othpatch follows that of media.
+    just _docker_build linux media
+    just _docker_build linux othpatch
+    log=$(mktemp)
+    trap 'rm -f "$log"' EXIT
+    just _docker_run linux othpatch test --no-suite core --no-suite tools > "$log" 2>&1 &
+    othpatch=$!
+    status=0
+    just _docker_run linux media test || status=1
+    wait "$othpatch" || status=1
+    cat "$log"
+    exit "$status"
 
 # Run the tests of the Python tools on this machine.
 [group('test')]

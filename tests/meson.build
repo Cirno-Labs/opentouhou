@@ -1,3 +1,6 @@
+# The tests of core/base, core/json, core/io and the tools are in the suite
+# core or tools. Every build runs them, whatever programs it has.
+
 # Each part of core/base has a test named after it.
 foreach part : [
   'arena',
@@ -21,7 +24,7 @@ foreach part : [
       implicit_include_directories: false,
       link_with: core_base_lib,
     ),
-    suite: 'unit',
+    suite: ['unit', 'core'],
   )
 endforeach
 
@@ -41,7 +44,7 @@ foreach part : [
       implicit_include_directories: false,
       link_with: [core_json_lib, core_base_lib],
     ),
-    suite: 'unit',
+    suite: ['unit', 'core'],
   )
 endforeach
 
@@ -72,7 +75,7 @@ foreach name : [
       'TEST_DIR': meson.current_build_dir() / 'tmp' / name,
       'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / name,
     },
-    suite: 'unit',
+    suite: ['unit', 'core'],
   )
 endforeach
 
@@ -107,7 +110,7 @@ foreach name, expected : {
         link_with: [core_io_lib, core_base_lib],
       ),
     ],
-    suite: 'unit',
+    suite: ['unit', 'core'],
   )
 endforeach
 

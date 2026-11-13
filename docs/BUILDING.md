@@ -423,7 +423,9 @@ just test-tools     # only the tests of the Python tools, without Docker
 ```
 
 Each image runs the tests of its programs. The tests of core/base,
-core/json and core/io run in both.
+core/json, core/io and the tools run in both, except in `just test`,
+which runs the two images at the same time and runs these tests in the
+media image only.
 
 Unit tests live in `tests/`. They need nothing but the source and run
 in CI. Replay comparisons use private cases and original data, so they

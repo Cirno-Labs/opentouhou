@@ -138,7 +138,7 @@ def run_capture_build(game: str) -> None:
     subprocess.check_call(["meson", "compile", "-C", str(build_dir)])
 
 
-def run_test(platform: str, programs: str, target: str) -> None:
+def run_test(platform: str, programs: str, target: str, skipped: list[str]) -> None:
     run_build(platform, programs, target)
     subprocess.check_call(
         [
@@ -147,6 +147,7 @@ def run_test(platform: str, programs: str, target: str) -> None:
             "-C",
             str(build_dir(platform, programs, target)),
             "--print-errorlogs",
+            *(f"--no-suite={suite}" for suite in skipped),
         ]
     )
 
@@ -256,6 +257,13 @@ def main() -> None:
         subparser.add_argument(
             "--target", choices=["debug", "release"], default="debug"
         )
+    subparsers.choices["test"].add_argument(
+        "--no-suite",
+        action="append",
+        default=[],
+        dest="skipped",
+        help="leave out the tests of a Meson suite",
+    )
     capture_parser = subparsers.add_parser("replay")
     capture_parser.add_argument("game")
     args = parser.parse_args()
@@ -266,7 +274,7 @@ def main() -> None:
     if args.command == "build":
         run_build(args.platform, args.programs, args.target)
     elif args.command == "test":
-        run_test(args.platform, args.programs, args.target)
+        run_test(args.platform, args.programs, args.target, args.skipped)
     elif args.command == "replay":
         run_capture_build(args.game)
     elif args.command == "package-othpatch":

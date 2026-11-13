@@ -50,6 +50,7 @@ GAMES = ["th06"]
 DEPLOYMENT_TARGET = "12.0"
 PROGRAMS = ["games", "othpatch"]
 DEPS_SETS = {"games": "media", "othpatch": "othpatch"}
+SHARED_SUITES = ["core", "tools"]
 
 
 def build_dir(arch: str, programs: str, target: str) -> Path:
@@ -135,6 +136,8 @@ def run_build(deps: Path, programs: str, target: str, archs: list[str]) -> None:
 def run_test(deps: Path, target: str) -> None:
     for programs in PROGRAMS:
         run_build(deps, programs, target, [NATIVE_ARCH])
+        # The games' build runs the suites that every build has.
+        skipped = SHARED_SUITES if programs == "othpatch" else []
         subprocess.check_call(
             [
                 "meson",
@@ -142,6 +145,7 @@ def run_test(deps: Path, target: str) -> None:
                 "-C",
                 str(build_dir(NATIVE_ARCH, programs, target)),
                 "--print-errorlogs",
+                *(f"--no-suite={suite}" for suite in skipped),
             ],
             env=environment(deps, NATIVE_ARCH, programs),
         )
