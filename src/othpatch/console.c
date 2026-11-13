@@ -24,30 +24,15 @@ char *Console_Format(ARENA *const arena, const char *const fmt, ...)
     return copy;
 }
 
-PRINTF_FORMAT(2, 3)
-int Console_Fail(FILE *const out, const char *const fmt, ...)
+PRINTF_FORMAT(3, 4)
+void Console_Fail(
+    FILE *const out, const RESULT result, const char *const fmt, ...)
 {
-    fputs("othpatch: ", out);
     va_list args;
     va_start(args, fmt);
     vfprintf(out, fmt, args);
     va_end(args);
     fputc('\n', out);
-    return 1;
-}
-
-int Console_FailResult(
-    FILE *const out, const char *const context, const RESULT result)
-{
-    Console_Fail(out, "%s: %s", context, result.message);
-    Result_Ignore(result);
-    return 1;
-}
-
-void Console_PrintFailure(
-    FILE *const out, const char *const what, const RESULT result)
-{
-    fprintf(out, "%s: %s.\n", what, result.message);
     Result_Ignore(result);
 }
 

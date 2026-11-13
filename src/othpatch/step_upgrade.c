@@ -160,7 +160,8 @@ static bool M_FindUpdate(
     const RESULT found =
         Release_FindNewest(index, program, update->platform->name, out);
     if (!IS_OK(found)) {
-        Console_PrintFailure(stream, "Could not check for updates", found);
+        Console_Fail(
+            stream, found, "Could not check for updates: %s.", found.message);
         *failed = true;
         return false;
     }
@@ -213,11 +214,9 @@ static void M_PrintFailedInstall(
 {
     char newest[GAME_VERSION_SIZE];
     M_FormatVersion(release->version, newest);
-    Console_PrintFailure(
-        update->run->out,
-        Console_Format(
-            update->run->arena, "Could not update %s to %s", name, newest),
-        result);
+    Console_Fail(
+        update->run->out, result, "Could not update %s to %s: %s.", name,
+        newest, result.message);
 }
 
 static void M_PrintOthpatchUpdated(
@@ -258,11 +257,9 @@ static bool M_UpdateGame(
     char version[GAME_VERSION_SIZE];
     const RESULT asked = Game_GetVersion(path, version);
     if (!IS_OK(asked)) {
-        Console_PrintFailure(
-            out,
-            Console_Format(
-                update->run->arena, "Could not read the version of %s", name),
-            asked);
+        Console_Fail(
+            out, asked, "Could not read the version of %s: %s.", name,
+            asked.message);
         return false;
     }
     RELEASE_VERSION installed;

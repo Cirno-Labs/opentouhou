@@ -277,7 +277,9 @@ static bool M_OpenNetwork(M_LANGUAGE *const language)
         return true;
     }
     M_Head(language);
-    Console_PrintFailure(run->out, "Could not download the patch list", opened);
+    Console_Fail(
+        run->out, opened, "Could not download the patch list: %s.",
+        opened.message);
     fputs(m_Unchanged, run->out);
     return false;
 }
@@ -397,16 +399,15 @@ static void M_PrintFailedDownload(
 {
     APP_CONTEXT *const run = progress->run;
     if (progress->failed != nullptr) {
-        fprintf(
-            run->out, "Could not download %s: %s.\n", progress->failed,
+        Console_Fail(
+            run->out, result, "Could not download %s: %s.", progress->failed,
             progress->reason);
         fputs(m_Unchanged, run->out);
     } else {
-        fprintf(
-            run->out, "%c%s.\n", toupper((unsigned char)result.message[0]),
-            result.message + 1);
+        Console_Fail(
+            run->out, result, "%c%s.",
+            toupper((unsigned char)result.message[0]), result.message + 1);
     }
-    Result_Ignore(result);
 }
 
 // Brings every installed patch up to date, and sets *changed to whether a
@@ -417,8 +418,9 @@ static bool M_UpdateInstalled(M_PROGRESS *const progress, bool *const changed)
     const PATCH_EVENTS events = M_GetEvents(progress);
     const RESULT updated = PatchManager_Update(run->manager, &events);
     if (!IS_OK(updated) && progress->failed == nullptr) {
-        Console_PrintFailure(
-            run->out, "Could not download the patch list", updated);
+        Console_Fail(
+            run->out, updated, "Could not download the patch list: %s.",
+            updated.message);
         fputs(m_Unchanged, run->out);
         return false;
     }
@@ -450,11 +452,9 @@ static bool M_SaveLanguage(
         if (!IS_OK(found)) {
             char product[GAME_NAME_SIZE];
             Game_GetProductName(run->games[i], product);
-            Console_PrintFailure(
-                run->out,
-                Console_Format(
-                    run->arena, "Could not find the config.ini of %s", product),
-                found);
+            Console_Fail(
+                run->out, found, "Could not find the config.ini of %s: %s.",
+                product, found.message);
             saved = false;
             continue;
         }
@@ -462,12 +462,9 @@ static bool M_SaveLanguage(
         if (IS_OK(written)) {
             fprintf(run->out, "Saved language = %s to %s\n", code, path);
         } else {
-            Console_PrintFailure(
-                run->out,
-                Console_Format(
-                    run->arena, "Could not save language = %s to %s", code,
-                    path),
-                written);
+            Console_Fail(
+                run->out, written, "Could not save language = %s to %s: %s.",
+                code, path, written.message);
             saved = false;
         }
     }
@@ -641,8 +638,9 @@ bool StepPatches_Run(APP_CONTEXT *const run, bool *const first_run)
     }
     if (!IS_OK(opened)) {
         M_Head(&language);
-        Console_PrintFailure(
-            run->out, "Could not read the patches folder", opened);
+        Console_Fail(
+            run->out, opened, "Could not read the patches folder: %s.",
+            opened.message);
         return false;
     }
     if (run->game_count == 0) {
