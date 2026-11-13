@@ -16,7 +16,7 @@ static PATCH_STACK *M_Open(const char *const dir)
 {
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(dir, "th06", &m_Game, nullptr, 0, &stack),
+        Patch_OpenStack(dir, "th06", &m_Game, nullptr, &stack),
         LOG_LEVEL_ERROR));
     return stack;
 }

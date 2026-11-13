@@ -29,8 +29,7 @@ static void M_Begin(
     }
     m_Stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(
-            m_Directory, "th06", &g_PatchGame, nullptr, 0, &m_Stack),
+        Patch_OpenStack(m_Directory, "th06", &g_PatchGame, nullptr, &m_Stack),
         LOG_LEVEL_ERROR));
     Translation_Init(m_Stack);
 }

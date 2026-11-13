@@ -43,28 +43,52 @@ static bool M_IsCountry(const char *const code)
         && M_IsDigit(code[2]);
 }
 
-LOCALE Locale_GetPreferred(void)
+static LOCALE M_FromSdl(const SDL_Locale *const sdl)
 {
     LOCALE locale = {};
+    if (sdl == nullptr || sdl->language == nullptr
+        || !M_IsLanguage(sdl->language)) {
+        return locale;
+    }
+    for (size_t i = 0; i < LOCALE_CODE_SIZE - 1 && sdl->language[i] != '\0';
+         i++) {
+        locale.language[i] = (char)SDL_tolower(sdl->language[i]);
+    }
+    if (sdl->country != nullptr && M_IsCountry(sdl->country)) {
+        for (size_t i = 0; i < LOCALE_CODE_SIZE - 1 && sdl->country[i] != '\0';
+             i++) {
+            locale.country[i] = (char)SDL_toupper(sdl->country[i]);
+        }
+    }
+    return locale;
+}
+
+LOCALE Locale_GetPreferred(void)
+{
     int count = 0;
     SDL_Locale **const locales = SDL_GetPreferredLocales(&count);
     if (locales == nullptr) {
-        return locale;
+        return (LOCALE) {};
     }
-    const SDL_Locale *const first = count > 0 ? locales[0] : nullptr;
-    if (first != nullptr && first->language != nullptr
-        && M_IsLanguage(first->language)) {
-        for (size_t i = 0;
-             i < LOCALE_CODE_SIZE - 1 && first->language[i] != '\0'; i++) {
-            locale.language[i] = (char)SDL_tolower(first->language[i]);
-        }
-        if (first->country != nullptr && M_IsCountry(first->country)) {
-            for (size_t i = 0;
-                 i < LOCALE_CODE_SIZE - 1 && first->country[i] != '\0'; i++) {
-                locale.country[i] = (char)SDL_toupper(first->country[i]);
-            }
-        }
-    }
+    const LOCALE locale = M_FromSdl(count > 0 ? locales[0] : nullptr);
     SDL_free(locales);
     return locale;
+}
+
+int32_t Locale_ListPreferred(LOCALE *const locales, const int32_t capacity)
+{
+    int count = 0;
+    SDL_Locale **const sdl = SDL_GetPreferredLocales(&count);
+    if (sdl == nullptr) {
+        return 0;
+    }
+    int32_t written = 0;
+    for (int i = 0; i < count && written < capacity; i++) {
+        const LOCALE locale = M_FromSdl(sdl[i]);
+        if (locale.language[0] != '\0') {
+            locales[written++] = locale;
+        }
+    }
+    SDL_free(sdl);
+    return written;
 }

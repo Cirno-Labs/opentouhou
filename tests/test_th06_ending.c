@@ -535,7 +535,7 @@ static PATCH_STACK *M_Patch(const char *const diff)
     PatchBuilder_Write(patches, "a/lang/th06/end00.end.jdiff", diff);
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     Mem_Free(patches);
     Files_SetPatches(stack);

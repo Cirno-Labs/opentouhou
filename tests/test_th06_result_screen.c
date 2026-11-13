@@ -601,8 +601,7 @@ static void M_SetupText(const char *const case_name, const bool base_tsa)
         char *const patches = TestDir_Join(m_Directory, "patches");
         PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
         CHECK(Result_Log(
-            Patch_OpenStack(
-                patches, "th06", &g_PatchGame, nullptr, 0, &m_Patches),
+            Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &m_Patches),
             LOG_LEVEL_ERROR));
         Mem_Free(patches);
         Translation_Init(m_Patches);

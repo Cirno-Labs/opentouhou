@@ -132,7 +132,7 @@ static void M_MergeFile(
     if (path == nullptr) {
         return;
     }
-    JSON_VALUE *const value = PatchStack_ReadJson(path, allocator);
+    JSON_VALUE *const value = PatchSelect_ReadJson(path, allocator);
     if (value == nullptr) {
         return;
     }

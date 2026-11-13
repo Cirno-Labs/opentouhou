@@ -1575,7 +1575,7 @@ TEST(a_translated_spell_card_name_is_shown_but_not_recorded)
     PatchBuilder_Write(patches, "a/lang/th06/spells.js", "{'9': 'Moon Sign'}");
     PATCH_STACK *stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &stack),
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     Translation_Init(stack);
     const uint8_t args[] = { 2, 0, 9, 0, 'S', 'p', 'e', 'l', 'l', 0, 0, 0 };
