@@ -45,8 +45,9 @@ typedef struct {
     FILE *in;
     FILE *out;
     // Tells whether out is a terminal, where a progress bar redraws in
-    // place.
+    // place, and whether it takes ANSI escape sequences.
     bool terminal;
+    bool ansi;
     int32_t sections;
     // Holds the games whose files to download, and the patch manager for
     // them, which Installed_Open opens.
@@ -86,15 +87,49 @@ void Console_StartSection(APP_CONTEXT *run, const char *fmt, ...);
 // Returns the number of code points of UTF-8 text.
 int32_t Console_CountCodePoints(const char *text);
 
-// Draws a bar of files on a terminal, with done of total files.
-// Console_EndFiles ends it: on a terminal, it draws the bar a last time and
-// ends its line; elsewhere, it prints the label and the files.
-void Console_DrawFiles(CONSOLE_BAR *bar);
-void Console_EndFiles(CONSOLE_BAR *bar);
+#define CONSOLE_FILE_LINES 4
+
+// Holds one file line of a CONSOLE_PATCH: the file, or nullptr for a free
+// line, and received of size bytes, where size is 0 while it is unknown.
+typedef struct {
+    const char *file;
+    size_t received;
+    size_t size;
+} CONSOLE_FILE;
+
+// Holds the progress of the patch that downloads: its bar, and on an ANSI
+// terminal the lines of the files that download below it and the width
+// that the lines share.
+typedef struct {
+    CONSOLE_BAR bar;
+    CONSOLE_FILE files[CONSOLE_FILE_LINES];
+    int32_t width;
+    // Holds the number of lines of the block on the terminal, and the
+    // block last drawn, so that a report that changes nothing draws
+    // nothing.
+    int32_t lines;
+    char block[4096];
+} CONSOLE_PATCH;
+
+// Shows the progress of a patch that fetches files files, with label
+// padded to width code points. Without a terminal, only Console_EndPatch
+// prints, the label and the files. On a terminal, the bar of the patch
+// redraws in place with '\r'. On an ANSI terminal, up to CONSOLE_FILE_LINES
+// lines under the bar show the files that download, a finished file's
+// line goes to the next file, and Console_EndPatch collapses the block to
+// the bar of the patch.
+void Console_StartPatch(
+    CONSOLE_PATCH *patch, APP_CONTEXT *run, const char *label, int32_t width,
+    int32_t files);
+void Console_ReceiveFile(
+    CONSOLE_PATCH *patch, const char *file, size_t received, size_t size);
+void Console_EndFile(CONSOLE_PATCH *patch, const char *file);
+void Console_EndPatch(CONSOLE_PATCH *patch);
 
 // Draws a bar of bytes on a terminal as a PATCH_FETCH_PROGRESS received,
-// whose context is the bar. Console_EndBytes ends it as Console_EndFiles
-// does; arrived tells whether the fetch ended with success.
+// whose context is the bar. Console_EndBytes ends it: on a terminal, it
+// draws the bar a last time and ends its line; elsewhere, it prints the
+// label and the size. arrived tells whether the fetch ended with success.
 void Console_ReceiveBytes(
     void *context, const PATCH_FETCH *fetch, size_t received, size_t expected);
 void Console_EndBytes(CONSOLE_BAR *bar, bool arrived);

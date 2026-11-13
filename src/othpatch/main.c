@@ -147,7 +147,7 @@ static int M_RunAll(APP_CONTEXT *const run, const char *const version)
 int Main_Run(
     const int argc, char **const argv, const char *const version,
     const char *const exe_dir, FILE *const in, FILE *const out,
-    const bool terminal)
+    const MAIN_OUTPUT output)
 {
     APP_ARGS args;
     const RESULT parsed = M_ParseArgs(argc, argv, &args);
@@ -185,7 +185,8 @@ int Main_Run(
         .arena = &arena,
         .in = in,
         .out = out,
-        .terminal = terminal,
+        .terminal = output != MAIN_OUTPUT_FILE,
+        .ansi = output == MAIN_OUTPUT_ANSI,
     };
     int code = 1;
     if (args.remove != nullptr) {
