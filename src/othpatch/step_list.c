@@ -68,7 +68,7 @@ static bool M_List(APP_CONTEXT *const run)
             listed_original = true;
         }
         M_PrintLanguageLine(
-            out, pack_code, StepPatches_GetPackTitle(packs[i]),
+            out, pack_code, StepPatches_GetLanguageName(packs[i], run->arena),
             in_use == packs[i], M_IsInstalled(run->manager, packs[i]->id));
     }
     if (!listed_original) {

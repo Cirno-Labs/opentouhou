@@ -124,7 +124,8 @@ static void M_AddNetwork(const M_CASE *const test)
     const char *const neighbors[] = { "nmlgc" };
     Server_AddRepo(
         test->server, "thpatch", neighbors, 1,
-        "\"lang_en\": \"English\", \"lang_de\": \"German\", \"tool\": \"\"");
+        "\"lang_en\": \"English language pack\", \"lang_de\": \"German "
+        "language pack\", \"tool\": \"\"");
     Server_AddRepo(test->server, "nmlgc", nullptr, 0, "\"base\": \"\"");
     const char *const packs[] = { "lang_en", "lang_de" };
     const char *const titles[] = { "English", "German" };

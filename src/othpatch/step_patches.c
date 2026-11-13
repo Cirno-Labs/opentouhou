@@ -120,9 +120,21 @@ const PATCH_LISTED *StepPatches_FindLanguageOfCode(
     return nullptr;
 }
 
-const char *StepPatches_GetPackTitle(const PATCH_LISTED *const pack)
+const char *StepPatches_GetLanguageName(
+    const PATCH_LISTED *const pack, ARENA *const arena)
 {
-    return pack->title[0] != '\0' ? pack->title : StepPatches_GetPackCode(pack);
+    static const char suffix[] = " language pack";
+    if (pack->title[0] == '\0') {
+        return StepPatches_GetPackCode(pack);
+    }
+    const size_t size = strlen(pack->title);
+    const size_t suffix_size = sizeof(suffix) - 1;
+    if (size > suffix_size
+        && strcmp(pack->title + size - suffix_size, suffix) == 0) {
+        return Console_Format(
+            arena, "%.*s", (int)(size - suffix_size), pack->title);
+    }
+    return pack->title;
 }
 
 bool StepPatches_IsOriginal(const char *const name)
@@ -533,7 +545,7 @@ static bool M_Resolve(
         if (Patch_IsLanguagePack(code)) {
             const PATCH_LISTED *const pack = M_FindListed(listed, count, code);
             *title = pack != nullptr
-                ? StepPatches_GetPackTitle(pack)
+                ? StepPatches_GetLanguageName(pack, run->arena)
                 : strchr(code, '/') + 1 + strlen(APP_LANGUAGE_PREFIX);
         }
         return true;
@@ -542,7 +554,7 @@ static bool M_Resolve(
         StepPatches_FindLanguageOfCode(listed, count, code);
     if (found != nullptr) {
         *id = found->id;
-        *title = StepPatches_GetPackTitle(found);
+        *title = StepPatches_GetLanguageName(found, run->arena);
         return true;
     }
     if (system && count > 0) {
@@ -553,7 +565,7 @@ static bool M_Resolve(
         const PATCH_LISTED *const fallback = M_FindListed(listed, count, *id);
         *matched = false;
         *title = fallback != nullptr
-            ? StepPatches_GetPackTitle(fallback)
+            ? StepPatches_GetLanguageName(fallback, run->arena)
             : strchr(*id, '/') + 1 + strlen(APP_LANGUAGE_PREFIX);
         return true;
     }
