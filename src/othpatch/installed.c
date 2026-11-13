@@ -93,7 +93,9 @@ int Installed_List(APP_CONTEXT *const run)
     ARENA *const arena = run->arena;
     const RESULT opened = Installed_Open(run);
     if (!IS_OK(opened)) {
-        Console_PrintFailure(out, "Could not read the patches folder", opened);
+        Console_Fail(
+            out, opened, "Could not read the patches folder: %s.",
+            opened.message);
         return 1;
     }
     const PATCH_LISTED *listed;
@@ -101,7 +103,9 @@ int Installed_List(APP_CONTEXT *const run)
     const RESULT fetched =
         PatchManager_ListPatches(run->manager, &listed, &listed_count);
     if (!IS_OK(fetched)) {
-        Console_PrintFailure(out, "Could not download the patch list", fetched);
+        Console_Fail(
+            out, fetched, "Could not download the patch list: %s.",
+            fetched.message);
         return 1;
     }
     const char *const code = StepPatches_ReadLanguage(run);
@@ -257,7 +261,9 @@ int Installed_Remove(APP_CONTEXT *const run)
         fprintf(out, "Patches folder: %s\n", run->dir);
     }
     if (!IS_OK(opened)) {
-        Console_PrintFailure(out, "Could not read the patches folder", opened);
+        Console_Fail(
+            out, opened, "Could not read the patches folder: %s.",
+            opened.message);
         return 1;
     }
     if (index == -1) {

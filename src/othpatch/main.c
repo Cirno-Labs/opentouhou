@@ -56,8 +56,8 @@ static const char m_Usage[] =
     "  --releases <url>  the release index of the games and othpatch,\n"
     "                    " OTHPATCH_RELEASES_URL " by default\n";
 
-static bool M_ParseArgs(
-    const int argc, char **const argv, FILE *const out, APP_ARGS *const args)
+static RESULT M_ParseArgs(
+    const int argc, char **const argv, APP_ARGS *const args)
 {
     *args = (APP_ARGS) {
         .repo = M_DEFAULT_REPO,
@@ -69,8 +69,7 @@ static bool M_ParseArgs(
             || strcmp(arg, "--repo") == 0 || strcmp(arg, "--releases") == 0
             || strcmp(arg, "--remove") == 0;
         if (valued && i + 1 >= argc) {
-            Console_Fail(out, "%s needs a value", arg);
-            return false;
+            return FAIL("%s needs a value", arg);
         }
         if (strcmp(arg, "--dir") == 0) {
             args->dir = argv[++i];
@@ -91,28 +90,22 @@ static bool M_ParseArgs(
         } else if (strcmp(arg, "--version") == 0 || strcmp(arg, "-v") == 0) {
             args->version = true;
         } else if (arg[0] == '-') {
-            Console_Fail(
-                out, "unknown option %s; --help lists the options", arg);
-            return false;
+            return FAIL("unknown option %s; --help lists the options", arg);
         } else if (args->name != nullptr) {
-            Console_Fail(
-                out, "name one patch only, not %s and %s", args->name, arg);
-            return false;
+            return FAIL("name one patch only, not %s and %s", args->name, arg);
         } else {
             args->name = arg;
         }
     }
     if (args->list && args->remove != nullptr) {
-        Console_Fail(out, "use --list or --remove, not both");
-        return false;
+        return FAIL("use --list or --remove, not both");
     }
     if (args->name != nullptr && (args->remove != nullptr || args->list)) {
-        Console_Fail(
-            out, "%s takes no patch to install",
+        return FAIL(
+            "%s takes no patch to install",
             args->remove != nullptr ? "--remove" : "--list");
-        return false;
     }
-    return true;
+    return OK;
 }
 
 // Returns the patches folder: --dir, or else the patches folder of the
@@ -157,7 +150,9 @@ int Main_Run(
     const bool terminal)
 {
     APP_ARGS args;
-    if (!M_ParseArgs(argc, argv, out, &args)) {
+    const RESULT parsed = M_ParseArgs(argc, argv, &args);
+    if (!IS_OK(parsed)) {
+        Console_Fail(out, parsed, "othpatch: %s", parsed.message);
         return 1;
     }
     if (args.help) {
@@ -178,7 +173,10 @@ int Main_Run(
     const RESULT found = M_FindDir(&args, exe_dir, &dir);
     if (!IS_OK(found)) {
         Arena_Free(&arena);
-        return Console_FailResult(out, "cannot find the patches folder", found);
+        Console_Fail(
+            out, found, "othpatch: cannot find the patches folder: %s",
+            found.message);
+        return 1;
     }
     APP_CONTEXT run = {
         .args = &args,
@@ -195,7 +193,8 @@ int Main_Run(
     } else {
         const RESULT started = Fetch_Init();
         if (!IS_OK(started)) {
-            Console_FailResult(out, "cannot start", started);
+            Console_Fail(
+                out, started, "othpatch: cannot start: %s", started.message);
         } else if (args.list) {
             code = Installed_List(&run);
         } else {

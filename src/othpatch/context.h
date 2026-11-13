@@ -74,15 +74,10 @@ typedef struct {
 PRINTF_FORMAT(2, 3)
 char *Console_Format(ARENA *arena, const char *fmt, ...);
 
-// Prints "othpatch: <message>" for a failure before the first section, and
-// returns 1. Console_FailResult prints "<context>: <reason>" so and consumes
-// result.
-PRINTF_FORMAT(2, 3)
-int Console_Fail(FILE *out, const char *fmt, ...);
-int Console_FailResult(FILE *out, const char *context, RESULT result);
-
-// Prints "<what>: <reason>." and consumes result.
-void Console_PrintFailure(FILE *out, const char *what, RESULT result);
+// Prints the line that fmt formats, such as with the message of result,
+// and consumes result.
+PRINTF_FORMAT(3, 4)
+void Console_Fail(FILE *out, RESULT result, const char *fmt, ...);
 
 // Starts a section: a blank line after the section before, then heading.
 PRINTF_FORMAT(2, 3)
