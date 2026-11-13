@@ -1,4 +1,4 @@
-#include "core/base/crc32.h"
+#include "core/hash/crc32.h"
 
 #include "test.h"
 

@@ -2,8 +2,8 @@
 
 #include "othpatch/fetch.h"
 
-#include "core/base/crc32.h"
 #include "core/base/string.h"
+#include "core/hash/crc32.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
 #include "core/io/reader.h"

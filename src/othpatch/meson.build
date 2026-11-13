@@ -41,7 +41,6 @@ othpatch_lib = static_library(
   'main.c',
   'release.c',
   'repo.c',
-  'sha256.c',
   'update.c',
   'zip.c',
   othpatch_version,
@@ -52,7 +51,7 @@ othpatch_lib = static_library(
 
 othpatch_libs = [
   othpatch_lib, shell_lib, core_patch_select_lib, core_ini_lib,
-  core_json_lib, core_io_lib, core_base_lib,
+  core_json_lib, core_io_lib, core_hash_lib, core_base_lib,
 ]
 othpatch_deps = [curl, sdl3, zlib]
 othpatch_entry = [

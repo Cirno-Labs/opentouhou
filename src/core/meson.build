@@ -13,14 +13,22 @@ core_base_lib = static_library(
   'base/arena.c',
   'base/array.c',
   'base/cp932.c',
-  'base/crc32.c',
   'base/cp932_table.c',
   'base/hash_map.c',
   'base/log.c',
   'base/memory.c',
   'base/result.c',
-  'base/sha1.c',
   'base/string.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
+# core/hash needs only core/base, so the tests link it without SDL.
+core_hash_lib = static_library(
+  'core_hash',
+  'hash/crc32.c',
+  'hash/sha1.c',
+  'hash/sha256.c',
   c_args: core_include,
   implicit_include_directories: false,
 )

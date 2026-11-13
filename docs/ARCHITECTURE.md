@@ -150,7 +150,8 @@ generator.
 
 ```
 core/base     types, asserts, logging, allocators, containers,
-              strings, hashes
+              strings
+core/hash     CRC-32, SHA-1 and SHA-256
 core/io       readers and writers, files, paths, the locale, processes
 core/ini      the INI format our settings are stored in
 core/vfs      the file namespace the games load from
