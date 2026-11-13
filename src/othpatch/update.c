@@ -42,6 +42,15 @@ typedef struct {
 
 typedef ARRAY(M_ENTRY) M_ENTRY_LIST;
 
+typedef struct {
+    const UPDATE_PROGRESS *progress;
+    // Holds the batch that is being fetched, to check each file as it ends.
+    const FETCH *fetches;
+    M_ENTRY *const *batch;
+    int32_t done;
+    int32_t total;
+} M_PROGRESS;
+
 static char *M_Join(
     ARENA *const arena, const char *const a, const char *const b)
 {
@@ -245,11 +254,40 @@ static void M_TakeBatch(
     }
 }
 
+static void M_Report(const M_PROGRESS *const progress)
+{
+    if (progress->progress != nullptr) {
+        progress->progress->report(
+            progress->progress->context, progress->done, progress->total);
+    }
+}
+
+static void M_ReportEnded(void *const context, const FETCH *const fetch)
+{
+    M_PROGRESS *const progress = context;
+    const M_ENTRY *const entry = progress->batch[fetch - progress->fetches];
+    if (Crc32_Compute(fetch->data, fetch->size) == entry->crc) {
+        progress->done++;
+        M_Report(progress);
+    }
+}
+
 // Fetches every entry still to fetch, from each server in order.
 static RESULT M_FetchEntries(
     ARENA *const arena, const REPO_PATCH *const patch,
-    M_ENTRY_LIST *const entries)
+    const UPDATE_PROGRESS *const report, M_ENTRY_LIST *const entries)
 {
+    M_PROGRESS progress = { .progress = report };
+    for (int32_t i = 0; i < entries->count; i++) {
+        progress.total += entries->items[i].state == M_ENTRY_FETCH;
+    }
+    if (progress.total > 0) {
+        M_Report(&progress);
+    }
+    const FETCH_PROGRESS fetch_progress = {
+        .ended = M_ReportEnded,
+        .context = &progress,
+    };
     RESULT first = OK;
     for (int32_t server = 0; server < patch->server_count; server++) {
         int32_t index = 0;
@@ -268,7 +306,9 @@ static RESULT M_FetchEntries(
             if (count == 0) {
                 break;
             }
-            Fetch_Run(fetches, count);
+            progress.fetches = fetches;
+            progress.batch = batch;
+            Fetch_Run(fetches, count, &fetch_progress);
             M_TakeBatch(arena, fetches, batch, count, &first);
         }
     }
@@ -298,7 +338,7 @@ static RESULT M_FetchFileList(
         *out = (FETCH) {
             .url = M_Format(arena, "%sfiles.js", patch->servers[i]),
         };
-        Fetch_Run(out, 1);
+        Fetch_Run(out, 1, nullptr);
         last = out->result;
         out->result = OK;
         if (IS_OK(last)) {
@@ -312,7 +352,7 @@ static RESULT M_FetchFileList(
 static RESULT M_Update(
     ARENA *const arena, const char *const dir, const REPO_PATCH *const patch,
     const char *const *const games, const int32_t game_count,
-    UPDATE_COUNTS *const counts)
+    const UPDATE_PROGRESS *const progress, UPDATE_COUNTS *const counts)
 {
     const char *const repo_dir = M_Join(arena, dir, patch->repo->id);
     const char *const patch_dir = M_Join(arena, repo_dir, patch->name);
@@ -339,7 +379,7 @@ static RESULT M_Update(
     M_ENTRY_LIST entries;
     Array_Init(&entries, Arena_Allocator(arena));
     MUST(M_ReadEntries(arena, patch_dir, files, games, game_count, &entries));
-    MUST(M_FetchEntries(arena, patch, &entries));
+    MUST(M_FetchEntries(arena, patch, progress, &entries));
 
     for (int32_t i = 0; i < entries.count; i++) {
         const M_ENTRY *const entry = &entries.items[i];
@@ -401,13 +441,13 @@ RESULT Update_HasGameFiles(
 RESULT Update_Patch(
     const char *const dir, const REPO_PATCH *const patch,
     const char *const *const games, const int32_t game_count,
-    UPDATE_COUNTS *const counts)
+    const UPDATE_PROGRESS *const progress, UPDATE_COUNTS *const counts)
 {
     *counts = (UPDATE_COUNTS) {};
     ARENA arena;
     Arena_Init(&arena, "update", M_ARENA_SIZE);
     const RESULT result =
-        M_Update(&arena, dir, patch, games, game_count, counts);
+        M_Update(&arena, dir, patch, games, game_count, progress, counts);
     Arena_Free(&arena);
     return result;
 }

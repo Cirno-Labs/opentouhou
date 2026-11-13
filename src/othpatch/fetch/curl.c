@@ -13,15 +13,42 @@
 #include <string.h>
 
 typedef struct {
+    const FETCH_PROGRESS *progress;
+    size_t received;
+    size_t expected;
+} M_PROGRESS;
+
+typedef struct {
     FETCH *fetch;
     CURL *curl;
+    M_PROGRESS *progress;
     size_t capacity;
     bool too_large;
+    bool sized;
     char error[CURL_ERROR_SIZE];
 } M_TRANSFER;
 
 static bool m_Ready;
 static FETCH_CA m_Ca;
+
+static void M_ReportReceived(M_PROGRESS *const progress, const size_t bytes)
+{
+    progress->received += bytes;
+    const FETCH_PROGRESS *const report = progress->progress;
+    if (report != nullptr && report->received != nullptr) {
+        report->received(
+            report->context, progress->received, progress->expected);
+    }
+}
+
+static void M_ReportEnded(
+    const M_PROGRESS *const progress, const FETCH *const fetch)
+{
+    const FETCH_PROGRESS *const report = progress->progress;
+    if (report != nullptr && report->ended != nullptr) {
+        report->ended(report->context, fetch);
+    }
+}
 
 static size_t M_Write(
     const char *const data, const size_t size, const size_t count,
@@ -44,6 +71,17 @@ static size_t M_Write(
     }
     memcpy(fetch->data + fetch->size, data, bytes);
     fetch->size += bytes;
+    M_PROGRESS *const progress = transfer->progress;
+    if (!transfer->sized) {
+        transfer->sized = true;
+        curl_off_t length = -1;
+        curl_easy_getinfo(
+            transfer->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &length);
+        if (length > 0) {
+            progress->expected += (size_t)length;
+        }
+    }
+    M_ReportReceived(progress, bytes);
     return bytes;
 }
 
@@ -118,6 +156,7 @@ static void M_Finish(
             fetch->data = Mem_Alloc(0);
         }
         fetch->result = OK;
+        M_ReportEnded(transfer->progress, fetch);
     }
     curl_multi_remove_handle(multi, transfer->curl);
     curl_easy_cleanup(transfer->curl);
@@ -152,8 +191,11 @@ void Fetch_Shutdown(void)
     }
 }
 
-void Fetch_Run(FETCH *const fetches, const int32_t count)
+void Fetch_Run(
+    FETCH *const fetches, const int32_t count,
+    const FETCH_PROGRESS *const progress)
 {
+    M_PROGRESS state = { .progress = progress };
     M_TRANSFER transfers[FETCH_MAX_TRANSFERS] = {};
     CURLM *const multi = curl_multi_init();
     int32_t next = 0;
@@ -165,6 +207,11 @@ void Fetch_Run(FETCH *const fetches, const int32_t count)
             if (Str_StartsWith(fetch->url, "file:")) {
                 fetch->result =
                     FetchFile_Read(fetch->url, &fetch->data, &fetch->size);
+                if (IS_OK(fetch->result)) {
+                    state.expected += fetch->size;
+                    M_ReportReceived(&state, fetch->size);
+                    M_ReportEnded(&state, fetch);
+                }
                 continue;
             }
             if (!M_IsHttp(fetch->url)) {
@@ -182,7 +229,7 @@ void Fetch_Run(FETCH *const fetches, const int32_t count)
             while (transfer->fetch != nullptr) {
                 transfer++;
             }
-            *transfer = (M_TRANSFER) { .fetch = fetch };
+            *transfer = (M_TRANSFER) { .fetch = fetch, .progress = &state };
             if (M_Start(multi, transfer)) {
                 active++;
             } else {

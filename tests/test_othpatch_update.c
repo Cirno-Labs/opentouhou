@@ -8,13 +8,29 @@
 
 static const char *const m_Games[] = { "th06" };
 
+#define M_MAX_REPORTS 16
+
 typedef struct {
     char *dir;
     char *server;
     char *patches;
     ARENA arena;
     REPO_PATCH_LIST list;
+    // Hold the reports of the last update, done and total each.
+    int32_t reports[M_MAX_REPORTS][2];
+    int32_t report_count;
 } M_CASE;
+
+static void M_Record(
+    void *const context, const int32_t done, const int32_t total)
+{
+    M_CASE *const test = context;
+    if (test->report_count < M_MAX_REPORTS) {
+        test->reports[test->report_count][0] = done;
+        test->reports[test->report_count][1] = total;
+    }
+    test->report_count++;
+}
 
 // Prepares a server with the repository "first" that has the patch "p",
 // whose files.js has the given members, in the directory dir. M_Close
@@ -50,9 +66,11 @@ static RESULT M_Update(M_CASE *const test, UPDATE_COUNTS *const counts)
     if (IS_OK(result)) {
         result = Repo_AddPatch(network, "first/p", &test->list);
     }
+    const UPDATE_PROGRESS progress = { .report = M_Record, .context = test };
+    test->report_count = 0;
     if (IS_OK(result)) {
         result = Update_Patch(
-            test->patches, test->list.items[0], m_Games, 1, counts);
+            test->patches, test->list.items[0], m_Games, 1, &progress, counts);
     }
     Arena_Free(&test->arena);
     return result;
@@ -103,6 +121,42 @@ TEST(update_downloads_shared_and_game_files_only)
     Mem_Free(shared);
 }
 
+// Checks that the reports of the last update start at 0 of total, never go
+// down, and end at last of total.
+static void M_CheckReports(
+    const M_CASE *const test, const int32_t last, const int32_t total)
+{
+    CHECK(test->report_count >= 2 && test->report_count <= M_MAX_REPORTS);
+    CHECK_EQ_INT(test->reports[0][0], 0);
+    for (int32_t i = 0; i < test->report_count; i++) {
+        CHECK_EQ_INT(test->reports[i][1], total);
+        CHECK(i == 0 || test->reports[i][0] >= test->reports[i - 1][0]);
+    }
+    CHECK_EQ_INT(test->reports[test->report_count - 1][0], last);
+}
+
+TEST(update_reports_the_files_as_they_arrive)
+{
+    char *const kept = Server_Entry("kept", "kept");
+    char *const first = Server_Entry("th06/a", "a");
+    char *const second = Server_Entry("th06/b", "b");
+    char *const files = Str_Format("%s, %s, %s", kept, first, second);
+    M_CASE test = M_Prepare("progress", files);
+    PatchBuilder_Write(test.patches, "first/p/kept", "kept");
+    Server_AddFile(test.server, "first", "p", "th06/a", "a");
+    Server_AddFile(test.server, "first", "p", "th06/b", "b");
+    UPDATE_COUNTS counts;
+    CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
+    M_CheckReports(&test, 2, 2);
+    CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(test.report_count, 0);
+    M_Close(&test);
+    Mem_Free(files);
+    Mem_Free(second);
+    Mem_Free(first);
+    Mem_Free(kept);
+}
+
 TEST(update_skips_files_with_the_right_crc)
 {
     char *const files = Server_Entry("th06/a.png", "image");
@@ -149,6 +203,7 @@ TEST(update_rejects_a_download_with_a_bad_crc)
         && strstr(result.message, "1 files did not arrive") != nullptr
         && strstr(result.message, "CRC-32") != nullptr);
     Result_Ignore(result);
+    M_CheckReports(&test, 1, 2);
     M_CheckFile(&test, "first/p/th06/good", "old");
     CHECK(!Server_Exists(test.patches, "first/p/th06/bad"));
     CHECK(!Server_Exists(test.patches, "first/p/th06/good.part"));

@@ -167,7 +167,7 @@ static bool M_Walk(REPO_NETWORK *const network)
         fetches[i].url = M_Format(
             network->arena, "%srepo.js", network->urls.items[start + i]);
     }
-    Fetch_Run(fetches, count);
+    Fetch_Run(fetches, count, nullptr);
     for (int32_t i = 0; i < count; i++) {
         if (IS_OK(fetches[i].result)) {
             Result_Ignore(M_AddRepo(
@@ -197,7 +197,7 @@ RESULT Repo_Open(
     Array_Append(&network->urls, folder);
     network->next = 1;
     FETCH fetch = { .url = M_Format(arena, "%srepo.js", folder) };
-    Fetch_Run(&fetch, 1);
+    Fetch_Run(&fetch, 1, nullptr);
     if (!IS_OK(fetch.result)) {
         const RESULT result = fetch.result;
         fetch.result = OK;
@@ -293,7 +293,7 @@ static RESULT M_GetPatch(
         fetch = (FETCH) {
             .url = M_Format(arena, "%s%s/patch.js", repo->servers[i], name),
         };
-        Fetch_Run(&fetch, 1);
+        Fetch_Run(&fetch, 1, nullptr);
         last = fetch.result;
         fetch.result = OK;
         if (IS_OK(last)) {
