@@ -24,17 +24,31 @@ permissions:
 concurrency:
   group: release
 
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-  R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
-  R2_BUCKET: ${{ vars.R2_BUCKET }}
-  R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
-
+# The jobs that read or write the bucket take its secrets from the
+# environment release.
 jobs:
+  branch:
+    name: Check the branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the run is on main
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::This workflow runs only on main, not on $GITHUB_REF. Run it with --ref main."
+            exit 1
+          fi
+
   plan:
     name: Plan
+    needs: branch
     runs-on: ubuntu-latest
+    environment: release
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
     outputs:
       othpatch: ${{ steps.plan.outputs.othpatch }}
       games: ${{ steps.plan.outputs.games }}
@@ -43,7 +57,7 @@ jobs:
         run: |
           for name in R2_ACCOUNT_ID R2_BUCKET R2_PUBLIC_URL AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
             if [ -z "$(printenv "$name")" ]; then
-              echo "::error::$name is empty. Set the repository variables R2_ACCOUNT_ID, R2_BUCKET and R2_PUBLIC_URL and the secrets R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY."
+              echo "::error::$name is empty. Set the repository variables R2_ACCOUNT_ID, R2_BUCKET and R2_PUBLIC_URL and the secrets R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY of the environment release."
               exit 1
             fi
           done
@@ -99,8 +113,15 @@ jobs:
       - othpatch_win
       - othpatch_mac
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
     # Every job that writes the index is in this group, so that two
     # writes never overlap.
     concurrency:
@@ -184,8 +205,15 @@ jobs:
       - games_mac
     if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
     concurrency:
       group: release-index
     steps:

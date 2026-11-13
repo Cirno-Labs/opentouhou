@@ -208,7 +208,12 @@ The workflows need these repository settings:
 - Variable `R2_PUBLIC_URL`: the public URL of the bucket, without a
   `/` at the end.
 - Secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`: a key that can
-  read and write the bucket.
+  read and write the bucket. They belong to the environment `release`,
+  which you create in the repository settings, so that its protection
+  rules, such as required reviewers, apply to every job that writes the
+  bucket.
+
+"Publish the releases" and "Delete the releases" run only on `main`.
 
 Every push to `main` replaces the development snapshot instead, when
 the repository variable `PRERELEASE_ENABLE` is `true`. It holds the

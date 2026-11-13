@@ -54,6 +54,7 @@ jobs:
       - build_win
       - build_mac
     runs-on: ubuntu-latest
+    environment: release
     # Every job that writes the index is in this group, so that two
     # writes never overlap.
     concurrency:

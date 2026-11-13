@@ -14,10 +14,23 @@ permissions:
   contents: read
 
 jobs:
+  branch:
+    name: Check the branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the run is on main
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::This workflow runs only on main, not on $GITHUB_REF. Run it with --ref main."
+            exit 1
+          fi
+
   reset:
     name: Delete the releases
+    needs: branch
     if: inputs.confirm == 'DELETE'
     runs-on: ubuntu-latest
+    environment: release
     # Every job that writes the index is in this group, so that two
     # writes never overlap.
     concurrency:
