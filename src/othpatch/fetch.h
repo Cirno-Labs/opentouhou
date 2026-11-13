@@ -33,14 +33,24 @@ typedef struct {
     RESULT result;
 } FETCH;
 
+// Reports the progress of Fetch_Run. received sums the bytes that have
+// arrived, and expected the sizes that the servers announced, which is 0
+// while none is known; it comes as bytes arrive. ended comes when a fetch
+// ends with success, with its contents in place. Either may be nullptr.
+typedef struct {
+    void (*received)(void *context, size_t received, size_t expected);
+    void (*ended)(void *context, const FETCH *fetch);
+    void *context;
+} FETCH_PROGRESS;
+
 // Prepares curl and finds the CA certificates. Fetch_Shutdown releases
 // both.
 RESULT Fetch_Init(void);
 void Fetch_Shutdown(void);
 
 // Fetches every URL of fetches, at most FETCH_MAX_TRANSFERS at a time, and
-// sets the contents and the result of each.
-void Fetch_Run(FETCH *fetches, int32_t count);
+// sets the contents and the result of each. progress may be nullptr.
+void Fetch_Run(FETCH *fetches, int32_t count, const FETCH_PROGRESS *progress);
 
 // Releases the contents of a fetch and consumes its result.
 void Fetch_Release(FETCH *fetch);

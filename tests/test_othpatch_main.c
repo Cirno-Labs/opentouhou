@@ -32,6 +32,8 @@ typedef struct {
     // Holds the answer to the question of othpatch, or nullptr for a run
     // without a terminal.
     const char *answer;
+    // Tells othpatch that its output is a terminal.
+    bool terminal;
     // Holds the size of the game package in MB, as othpatch prints it.
     char package_size[16];
     char *output;
@@ -161,8 +163,8 @@ static int M_Run(M_CASE *const test, const int count, ...)
         rewind(in);
     }
     FILE *const out = tmpfile();
-    const int code =
-        Main_Run(argc, argv, test->version, test->program, in, out);
+    const int code = Main_Run(
+        argc, argv, test->version, test->program, in, out, test->terminal);
     if (in != nullptr) {
         fclose(in);
     }
@@ -318,6 +320,24 @@ TEST(later_run_downloads_what_changed)
         "Updating the language...\n"
         "Language: English\n"
         "Base patch (nmlgc/base): 1 file\n" M_OTHPATCH_SECTION M_ALL_DONE);
+    M_Close(&test);
+}
+
+TEST(terminal_redraws_the_bars_in_place)
+{
+    M_CASE test = M_PreparePortable("terminal");
+    test.terminal = true;
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckAll(
+        &test,
+        "Setting up the language...\n"
+        "Language: English\n"
+        "\rEnglish (thpatch/lang_en) [....................] 0/1 file"
+        "\rEnglish (thpatch/lang_en) [####################] 1/1 file\n"
+        "\rBase patch (nmlgc/base)   [....................] 0/2 files"
+        "\rBase patch (nmlgc/base)   [##########..........] 1/2 files"
+        "\rBase patch (nmlgc/base)   [####################] 2/2 files\n"
+        "Saved language = en to %1$s\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_Close(&test);
 }
 
@@ -874,6 +894,7 @@ TEST(failure_of_a_download_keeps_the_files)
         &test,
         "Setting up the language...\n"
         "Language: German\n"
+        "German (thpatch/lang_de): 0/1 file\n"
         "Could not download thpatch/lang_de: 1 files did not arrive: ");
     M_CheckOutput(
         &test,
@@ -904,7 +925,7 @@ TEST(bad_arguments_fail_with_one_message)
     char *argv[] = { "othpatch", "--dir" };
     FILE *const out = tmpfile();
     CHECK_EQ_INT(
-        Main_Run(2, argv, test.version, test.program, nullptr, out), 1);
+        Main_Run(2, argv, test.version, test.program, nullptr, out, false), 1);
     fclose(out);
     M_Close(&test);
 }
@@ -1102,6 +1123,19 @@ TEST(update_option_installs_the_game_and_othpatch)
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckOutput(
         &test, M_GAME_HEADING "You already have the newest oth06 (0.10.0).\n");
+    M_Close(&test);
+}
+
+TEST(terminal_redraws_the_bar_of_a_release)
+{
+    M_CASE test = M_PrepareUpdate("update_terminal", "0.1.0", "0.2.0");
+    test.terminal = true;
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(
+        &test,
+        "oth06 0.2.0 is out (you have 0.1.0).\n"
+        "\roth06 0.2.0 [####################] %3$s/%3$s MB\n"
+        "Updated oth06 from 0.1.0 to 0.2.0.\n");
     M_Close(&test);
 }
 

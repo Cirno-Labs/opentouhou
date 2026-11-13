@@ -43,7 +43,8 @@ int wmain(const int argc, wchar_t **const argv)
     if (converted == argc) {
         FILE *const in = _isatty(_fileno(stdin)) ? stdin : nullptr;
         result = Main_Run(
-            argc, utf8, OTHPATCH_VERSION, Path_GetExeDir(), in, stdout);
+            argc, utf8, OTHPATCH_VERSION, Path_GetExeDir(), in, stdout,
+            _isatty(_fileno(stdout)));
     } else {
         fputs("othpatch: cannot convert the arguments to UTF-8\n", stdout);
     }

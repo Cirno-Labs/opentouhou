@@ -33,6 +33,8 @@
 #define M_FALLBACK_LANGUAGE "lang_en"
 #define M_ORIGINAL_TITLE "original Japanese"
 #define M_MAX_AMBIGUOUS 8
+#define M_BAR_CELLS 20
+#define M_MEGABYTE (1024.0 * 1024.0)
 
 // Sets the size of the arena that holds the repository network. repo.c
 // limits the size of each repo.js and patch.js, so that a network of
@@ -66,8 +68,26 @@ typedef struct {
     ARENA *arena;
     FILE *in;
     FILE *out;
+    // Tells whether out is a terminal, where a progress bar redraws in
+    // place.
+    bool terminal;
     int32_t sections;
 } M_RUN;
+
+// Holds a progress bar: a label padded to width code points, and the
+// files or the bytes that have arrived.
+typedef struct {
+    M_RUN *run;
+    const char *label;
+    int32_t width;
+    int32_t done;
+    int32_t total;
+    size_t received;
+    size_t expected;
+    // Holds the line last drawn, so that a report that changes nothing
+    // draws nothing.
+    char line[512];
+} M_BAR;
 
 typedef enum {
     M_KIND_SETUP,
@@ -266,6 +286,132 @@ static void M_StartSection(M_RUN *const run, const char *const fmt, ...)
     vfprintf(run->out, fmt, args);
     va_end(args);
     fputc('\n', run->out);
+}
+
+static int32_t M_CountCodePoints(const char *const text)
+{
+    int32_t count = 0;
+    for (const char *c = text; *c != '\0'; c++) {
+        count += ((unsigned char)*c & 0xC0) != 0x80;
+    }
+    return count;
+}
+
+// Draws the bar on a terminal, filled to fraction, with amount after it.
+static void M_DrawBar(
+    M_BAR *const bar, const double fraction, const char *const amount)
+{
+    if (!bar->run->terminal) {
+        return;
+    }
+    char cells[M_BAR_CELLS + 1];
+    const int32_t filled =
+        (int32_t)(MIN(MAX(fraction, 0.0), 1.0) * M_BAR_CELLS);
+    for (int32_t i = 0; i < M_BAR_CELLS; i++) {
+        cells[i] = i < filled ? '#' : '.';
+    }
+    cells[M_BAR_CELLS] = '\0';
+    const int32_t padding = MAX(bar->width - M_CountCodePoints(bar->label), 0);
+    char line[sizeof(bar->line)];
+    snprintf(
+        line, sizeof(line), "%s%*s [%s] %s", bar->label, (int)padding, "",
+        cells, amount);
+    if (strcmp(line, bar->line) == 0) {
+        return;
+    }
+    snprintf(bar->line, sizeof(bar->line), "%s", line);
+    fprintf(bar->run->out, "\r%s", line);
+    fflush(bar->run->out);
+}
+
+// Ends the bar: on a terminal, draws it a last time and ends its line;
+// elsewhere, prints the label and plain.
+static void M_EndBar(
+    M_BAR *const bar, const double fraction, const char *const amount,
+    const char *const plain)
+{
+    if (bar->run->terminal) {
+        M_DrawBar(bar, fraction, amount);
+        fputc('\n', bar->run->out);
+    } else {
+        fprintf(bar->run->out, "%s: %s\n", bar->label, plain);
+    }
+}
+
+static const char *M_Files(const int32_t total)
+{
+    return total == 1 ? "file" : "files";
+}
+
+static void M_ReportFiles(
+    void *const context, const int32_t done, const int32_t total)
+{
+    M_BAR *const bar = context;
+    bar->done = done;
+    bar->total = total;
+    char amount[64];
+    snprintf(amount, sizeof(amount), "%d/%d %s", done, total, M_Files(total));
+    M_DrawBar(bar, (double)done / total, amount);
+}
+
+static void M_EndFiles(M_BAR *const bar)
+{
+    char amount[64];
+    snprintf(
+        amount, sizeof(amount), "%d/%d %s", bar->done, bar->total,
+        M_Files(bar->total));
+    char plain[64];
+    if (bar->done == bar->total) {
+        snprintf(plain, sizeof(plain), "%d %s", bar->done, M_Files(bar->total));
+    } else {
+        snprintf(plain, sizeof(plain), "%s", amount);
+    }
+    M_EndBar(bar, (double)bar->done / bar->total, amount, plain);
+}
+
+static void M_FormatBytes(
+    const M_BAR *const bar, char amount[64], double *const fraction)
+{
+    if (bar->expected == 0) {
+        snprintf(amount, 64, "%.1f MB", (double)bar->received / M_MEGABYTE);
+        *fraction = 0.0;
+        return;
+    }
+    snprintf(
+        amount, 64, "%.1f/%.1f MB", (double)bar->received / M_MEGABYTE,
+        (double)bar->expected / M_MEGABYTE);
+    *fraction = (double)bar->received / (double)bar->expected;
+}
+
+static void M_ReportBytes(
+    void *const context, const size_t received, const size_t expected)
+{
+    M_BAR *const bar = context;
+    bar->received = received;
+    bar->expected = expected;
+    char amount[64];
+    double fraction;
+    M_FormatBytes(bar, amount, &fraction);
+    M_DrawBar(bar, fraction, amount);
+}
+
+static void M_EndBytes(M_BAR *const bar, const bool arrived)
+{
+    if (arrived) {
+        bar->expected = bar->received;
+    }
+    char amount[64];
+    double fraction;
+    M_FormatBytes(bar, amount, &fraction);
+    char plain[64];
+    if (arrived) {
+        snprintf(
+            plain, sizeof(plain), "%.1f MB",
+            (double)bar->received / M_MEGABYTE);
+    } else {
+        snprintf(plain, sizeof(plain), "%s", amount);
+    }
+    M_EndBar(bar, fraction, amount, plain);
 }
 
 static int M_CompareMembers(const void *const a, const void *const b)
@@ -607,23 +753,36 @@ static bool M_UpdateList(
 {
     M_RUN *const run = language->run;
     *changed = false;
+    int32_t width = 0;
+    for (int32_t i = 0; i < list->count; i++) {
+        width = MAX(
+            width, M_CountCodePoints(M_GetLabel(list->items[i], run->arena)));
+    }
     for (int32_t i = 0; i < list->count; i++) {
         const REPO_PATCH *const patch =
             list->items[i < target_count ? target_count - 1 - i : i];
+        M_BAR bar = {
+            .run = run,
+            .label = M_GetLabel(patch, run->arena),
+            .width = width,
+        };
+        const UPDATE_PROGRESS progress = {
+            .report = M_ReportFiles,
+            .context = &bar,
+        };
         UPDATE_COUNTS counts;
         const RESULT result = Update_Patch(
-            run->dir, patch, language->games, language->game_count, &counts);
+            run->dir, patch, language->games, language->game_count, &progress,
+            &counts);
+        if (bar.total > 0) {
+            M_EndFiles(&bar);
+        }
         if (!IS_OK(result)) {
             const char *const what =
                 M_Format(run->arena, "Could not download %s", patch->id);
             M_PrintFailure(run->out, what, result);
             fputs(m_Unchanged, run->out);
             return false;
-        }
-        if (counts.downloaded > 0) {
-            fprintf(
-                run->out, "%s: %d %s\n", M_GetLabel(patch, run->arena),
-                counts.downloaded, counts.downloaded == 1 ? "file" : "files");
         }
         if (run->args->verbose && counts.downloaded == 0
             && counts.removed == 0) {
@@ -1191,10 +1350,12 @@ static int M_Remove(M_RUN *const run)
     return removed ? 0 : 1;
 }
 
-static RESULT M_Fetch(const char *const url, FETCH *const fetch)
+static RESULT M_Fetch(
+    const char *const url, const FETCH_PROGRESS *const progress,
+    FETCH *const fetch)
 {
     *fetch = (FETCH) { .url = url };
-    Fetch_Run(fetch, 1);
+    Fetch_Run(fetch, 1, progress);
     const RESULT result = fetch->result;
     fetch->result = OK;
     if (!IS_OK(result)) {
@@ -1208,7 +1369,7 @@ static RESULT M_FetchReleases(
 {
     *out = nullptr;
     FETCH fetch;
-    MUST(M_Fetch(url, &fetch));
+    MUST(M_Fetch(url, nullptr, &fetch));
     const RESULT parsed = Json_Parse(
         (const char *)fetch.data, fetch.size, Arena_Allocator(arena), out);
     Fetch_Release(&fetch);
@@ -1223,11 +1384,6 @@ static void M_FormatVersion(
         version.patch);
 }
 
-static void M_PrintSize(FILE *const out, const size_t size)
-{
-    fprintf(out, "%.1f", (double)size / (1024.0 * 1024.0));
-}
-
 // Downloads the package of release and checks its SHA-256 digest. name is
 // the program that it holds. Fetch_Release releases *out.
 static RESULT M_Download(
@@ -1237,13 +1393,21 @@ static RESULT M_Download(
     FAIL_IF(
         release->sha256 == nullptr, "the index gives no SHA-256 digest of %s",
         release->package);
-    MUST(M_Fetch(release->url, out), "%s", release->package);
     char newest[GAME_VERSION_SIZE];
     M_FormatVersion(release->version, newest);
-    FILE *const stream = update->run->out;
-    fprintf(stream, "%s %s: ", name, newest);
-    M_PrintSize(stream, out->size);
-    fputs(" MB\n", stream);
+    M_BAR bar = {
+        .run = update->run,
+        .label = M_Format(update->run->arena, "%s %s", name, newest),
+    };
+    const FETCH_PROGRESS progress = {
+        .received = M_ReportBytes,
+        .context = &bar,
+    };
+    const RESULT fetched = M_Fetch(release->url, &progress, out);
+    if (IS_OK(fetched) || bar.received > 0) {
+        M_EndBytes(&bar, IS_OK(fetched));
+    }
+    MUST(fetched, "%s", release->package);
     char digest[SHA256_HEX_SIZE];
     Sha256_ComputeHex(out->data, out->size, digest);
     if (!Str_EqualIgnoreCase(digest, release->sha256)) {
@@ -1551,7 +1715,8 @@ static int M_RunAll(M_RUN *const run, const char *const version)
 
 int Main_Run(
     const int argc, char **const argv, const char *const version,
-    const char *const exe_dir, FILE *const in, FILE *const out)
+    const char *const exe_dir, FILE *const in, FILE *const out,
+    const bool terminal)
 {
     M_ARGS args;
     if (!M_ParseArgs(argc, argv, out, &args)) {
@@ -1584,6 +1749,7 @@ int Main_Run(
         .arena = &arena,
         .in = in,
         .out = out,
+        .terminal = terminal,
     };
     int code = 1;
     if (args.remove != nullptr) {

@@ -10,7 +10,7 @@
 static FETCH M_Fetch(const char *const url)
 {
     FETCH fetch = { .url = url };
-    Fetch_Run(&fetch, 1);
+    Fetch_Run(&fetch, 1, nullptr);
     return fetch;
 }
 
@@ -103,7 +103,7 @@ TEST(run_fetches_more_urls_than_transfers)
         Mem_Free(dir_url);
         fetches[i] = (FETCH) { .url = urls[i] };
     }
-    Fetch_Run(fetches, COUNT);
+    Fetch_Run(fetches, COUNT, nullptr);
     for (int i = 0; i < COUNT; i++) {
         char content[16];
         snprintf(content, sizeof(content), "content %d", i);

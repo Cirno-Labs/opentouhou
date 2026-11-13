@@ -9,5 +9,7 @@
 int main(const int argc, char **const argv)
 {
     FILE *const in = isatty(STDIN_FILENO) ? stdin : nullptr;
-    return Main_Run(argc, argv, OTHPATCH_VERSION, Path_GetExeDir(), in, stdout);
+    return Main_Run(
+        argc, argv, OTHPATCH_VERSION, Path_GetExeDir(), in, stdout,
+        isatty(STDOUT_FILENO));
 }

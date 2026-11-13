@@ -29,6 +29,14 @@ typedef struct {
 
 typedef ARRAY(UPDATE_INSTALLED) UPDATE_INSTALLED_LIST;
 
+// Reports the progress of Update_Patch: done of the total files that the
+// update fetches have arrived. The first report, with done 0, comes before
+// the first file is fetched; no report comes when no file is fetched.
+typedef struct {
+    void (*report)(void *context, int32_t done, int32_t total);
+    void *context;
+} UPDATE_PROGRESS;
+
 // Brings the files of a patch in the patches folder dir up to date with
 // its files.js, which comes from the first server of the patch that gives
 // it. Of the files that files.js lists, the update keeps the files that
@@ -44,10 +52,10 @@ typedef ARRAY(UPDATE_INSTALLED) UPDATE_INSTALLED_LIST;
 // removed, and repo.js, files.js and patch.js are written last. When a
 // file does not arrive, the update reports failure and changes no file of
 // the patch. A .part file from an earlier update that stopped is replaced
-// or removed.
+// or removed. progress may be nullptr.
 RESULT Update_Patch(
     const char *dir, const REPO_PATCH *patch, const char *const *games,
-    int32_t game_count, UPDATE_COUNTS *counts);
+    int32_t game_count, const UPDATE_PROGRESS *progress, UPDATE_COUNTS *counts);
 
 // Fetches the files.js of a patch as Update_Patch does, and sets *out to
 // whether it lists a file below "<game>/" for one of games.
