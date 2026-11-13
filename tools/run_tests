@@ -117,6 +117,9 @@ def run_test(test: Test) -> Outcome:
 
 
 def main() -> int:
+    # Writes UTF-8, because a Windows console code page cannot encode every
+    # character of the test output.
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
