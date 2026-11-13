@@ -6,9 +6,14 @@ expected text. Fails when it exits normally, crashes in any other way,
 or reports a different fatal error.
 """
 
+import resource
 import signal
 import subprocess
 import sys
+
+
+def disable_core_dumps() -> None:
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
 
 def main() -> int:
@@ -18,7 +23,11 @@ def main() -> int:
 
     expected = sys.argv[1]
     result = subprocess.run(
-        sys.argv[2:], capture_output=True, text=True, check=False
+        sys.argv[2:],
+        capture_output=True,
+        text=True,
+        check=False,
+        preexec_fn=disable_core_dumps,
     )
     fatal_lines = [
         line for line in result.stderr.splitlines() if line.startswith("FATAL ")
