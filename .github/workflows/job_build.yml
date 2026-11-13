@@ -144,7 +144,9 @@ jobs:
       # The Windows unit tests build here and run in the job test_win, on
       # Windows. The upload holds the test list and the executables of each
       # build directory, at their paths in the repository. The executables
-      # lose their symbols, so that the upload is smaller.
+      # lose their symbols and go into one zstd archive with a long window:
+      # each one holds the same libraries, so the archive is about a seventh
+      # of a zip of them.
       - name: Build the Windows unit tests
         if: ${{ inputs.platform == 'win' }}
         env:
@@ -162,14 +164,16 @@ jobs:
               done
             fi
           done
+          tar -C "$stage" -cf - . | zstd -15 --long=27 -T0 -q -o build/win-tests.tar.zst
 
       - name: Upload the Windows unit tests
         if: ${{ inputs.platform == 'win' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: win-tests-${{ inputs.packages }}-${{ inputs.target }}
-          path: build/win-tests/
+          path: build/win-tests.tar.zst
           retention-days: 1
+          compression-level: 0
 
       - name: Save ccache
         if: ${{ github.event_name != 'pull_request' }}
@@ -225,7 +229,7 @@ jobs:
           compression-level: 0
 
   test_win:
-    name: Test (win, ${{ inputs.target }})
+    name: Windows tests
     needs: build
     if: ${{ inputs.platform == 'win' }}
     runs-on: windows-latest
@@ -241,12 +245,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Download the Windows unit tests
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: win-tests-${{ inputs.packages }}-${{ inputs.target }}
+
+      - name: Unpack the Windows unit tests
+        run: python -c "import tarfile; tarfile.open('win-tests.tar.zst', 'r:zst').extractall(filter='data')"
 
       # The tests of the Python tools run on Linux, where the tools run.
       - name: Run the unit tests
