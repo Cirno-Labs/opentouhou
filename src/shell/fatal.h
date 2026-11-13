@@ -6,8 +6,8 @@
 // release build on Windows has no console, so the log alone reaches no
 // player.
 //
-// Only core/app calls AppFatal_Install, and only the game programs link
-// core/app, so the tests, the replay runner and othpatch never show a
+// Only shell/game calls AppFatal_Install, and only the game programs link
+// shell/game, so the tests, the replay runner and othpatch never show a
 // box. A game program shows none either in a headless run: when
 // $SDL_VIDEODRIVER is "offscreen" or "dummy", or when $CI is set and not
 // empty. A box comes after the log line of its error and names the log

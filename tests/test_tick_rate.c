@@ -1,4 +1,4 @@
-#include "core/app/tick_rate.h"
+#include "shell/game/tick_rate.h"
 
 #include "test.h"
 

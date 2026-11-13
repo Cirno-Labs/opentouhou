@@ -59,7 +59,7 @@ bool AppRequests_ReadPadPress(
 void AppRequests_Add(APP_REQUESTS *const requests, const APP_REQUEST request)
 {
     if (requests->count >= APP_REQUEST_COUNT) {
-        LOG_WARNING("Dropped a request of the game to core/app");
+        LOG_WARNING("Dropped a request of the game to shell/game");
         return;
     }
     requests->items[requests->count++] = request;

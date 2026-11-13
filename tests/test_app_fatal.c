@@ -1,4 +1,4 @@
-#include "core/app/fatal.h"
+#include "shell/fatal.h"
 
 #include "test.h"
 

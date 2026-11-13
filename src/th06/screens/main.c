@@ -11,7 +11,7 @@
 #include "th06/sound.h"
 #include "th06/strings.h"
 
-#include "core/app.h"
+#include "shell/game.h"
 #include "core/base/log.h"
 #include "core/base/utils.h"
 
@@ -329,7 +329,7 @@ static void M_ReassignButton(
     }
 }
 
-// Asks core/app for the bindings that make the rows true: the pad defaults
+// Asks shell/game for the bindings that make the rows true: the pad defaults
 // first when they were chosen, then each row that changed.
 static void M_CommitMapping(const M_MENU *const menu)
 {
@@ -724,7 +724,7 @@ static void M_UpdateOptions(M_MENU *const menu)
         M_Interrupt(menu, 2);
         menu->cursor = 6;
         Sound_Queue(SOUND_CANCEL);
-        // The original restarts to change the window mode. core/app
+        // The original restarts to change the window mode. shell/game
         // changes it after the tick instead.
         if (menu->pending_windowed != M_CurrentWindowed()) {
             App_RequestFullscreen(menu->pending_windowed == 0);

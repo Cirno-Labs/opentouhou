@@ -2,7 +2,7 @@
 
 #include "core/input.h"
 
-// Holds core's own hotkey actions, added as a schema to the game's input.
+// Holds the shell's own hotkey actions, added as a schema to the game's input.
 typedef struct {
     bool screenshot;
     bool fullscreen;

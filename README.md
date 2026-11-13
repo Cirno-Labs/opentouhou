@@ -61,8 +61,10 @@ describes portable mode, the keys, the settings and othpatch.
 ## Layout
 
 ```
-src/core/      shared by every game: window, rendering, input, audio,
-               text, file IO, settings, frame pacing
+src/core/      shared by every game: rendering, input, audio, text,
+               file IO, settings
+src/shell/     the program around core: folders, log file, window,
+               main loop, frame pacing
 src/stg/       shared by the shooting games: archives, random numbers
 src/th06/      one directory per game
 src/othpatch/  the patch downloader and updater

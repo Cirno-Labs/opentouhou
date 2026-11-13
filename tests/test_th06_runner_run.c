@@ -3,7 +3,7 @@
 #include "test.h"
 #include "test_dir.h"
 
-#include "core/app.h"
+#include "shell/game.h"
 #include "core/base/memory.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/app/settings.h"
+#include "shell/game/settings.h"
 #include "core/base/result.h"
 
 RESULT Screenshot_Save(

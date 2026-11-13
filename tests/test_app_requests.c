@@ -1,4 +1,4 @@
-#include "../src/core/app/request_queue.h"
+#include "shell/game/request_queue.h"
 
 #include "core/base/log.h"
 

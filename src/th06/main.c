@@ -1,4 +1,4 @@
-#include "core/app.h"
+#include "shell/game.h"
 #include "core/base/log.h"
 #include "core/patch.h"
 

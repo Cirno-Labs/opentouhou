@@ -200,7 +200,7 @@ test(
   executable(
     'test_th06_runner_run',
     'test_th06_runner_run.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th06_runner_lib],
     dependencies: [sdl3, zlib],
@@ -352,7 +352,7 @@ test(
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -505,7 +505,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -531,7 +531,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -557,7 +557,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -583,7 +583,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -605,7 +605,7 @@ test(
     'test_th06_scene.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
@@ -622,7 +622,7 @@ test(
     'gfx_recorder.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, core_math_lib, core_base_lib, core_gfx_lib,
@@ -663,7 +663,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -703,7 +703,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -730,7 +730,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -756,7 +756,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -782,7 +782,7 @@ test(
     'th06_data.c',
     'th06_scene_stubs.c',
     'app_fake.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -876,28 +876,28 @@ test(
   suite: 'unit',
 )
 
-# The tests include core's private headers, so they compile against the
+# The tests include shell's private headers, so they compile against the
 # sources directly instead of the library.
 test(
-  'core/app/clock',
+  'shell/game/clock',
   executable(
     'test_clock',
     'test_clock.c',
-    '../src/core/app/clock.c',
-    c_args: core_include,
+    '../src/shell/game/clock.c',
+    c_args: shell_include,
     implicit_include_directories: false,
   ),
   suite: 'unit',
 )
 
 test(
-  'core/app/folders',
+  'shell/folders',
   executable(
     'test_app_folders',
     'test_app_folders.c',
-    c_args: core_include,
+    c_args: shell_include,
     implicit_include_directories: false,
-    link_with: [core_app_folders_lib, core_io_lib, core_base_lib],
+    link_with: [shell_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
   ),
   env: {
@@ -908,13 +908,13 @@ test(
 )
 
 test(
-  'core/app/fatal',
+  'shell/fatal',
   executable(
     'test_app_fatal',
     'test_app_fatal.c',
-    '../src/core/app/fatal.c',
-    '../src/core/app/log_file.c',
-    c_args: core_include,
+    '../src/shell/fatal.c',
+    '../src/shell/log_file.c',
+    c_args: shell_include,
     implicit_include_directories: false,
     link_with: [core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -923,12 +923,12 @@ test(
 )
 
 test(
-  'core/app/log_file',
+  'shell/log_file',
   executable(
     'test_app_log_file',
     'test_app_log_file.c',
-    '../src/core/app/log_file.c',
-    c_args: core_include,
+    '../src/shell/log_file.c',
+    c_args: shell_include,
     implicit_include_directories: false,
     link_with: [core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -938,24 +938,24 @@ test(
 )
 
 test(
-  'core/app/tick_rate',
+  'shell/game/tick_rate',
   executable(
     'test_tick_rate',
     'test_tick_rate.c',
-    '../src/core/app/tick_rate.c',
-    c_args: core_include,
+    '../src/shell/game/tick_rate.c',
+    c_args: shell_include,
     implicit_include_directories: false,
   ),
   suite: 'unit',
 )
 
 test(
-  'core/app/screenshot',
+  'shell/game/screenshot',
   executable(
     'test_screenshot',
     'test_screenshot.c',
-    '../src/core/app/screenshot.c',
-    c_args: core_include,
+    '../src/shell/game/screenshot.c',
+    c_args: shell_include,
     implicit_include_directories: false,
     link_with: [core_image_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -1074,13 +1074,13 @@ test(
 )
 
 test(
-  'core/app/request_queue',
+  'shell/game/request_queue',
   executable(
     'test_app_requests',
     'test_app_requests.c',
     'input_backend_fake.c',
-    '../src/core/app/request_queue.c',
-    c_args: core_include,
+    '../src/shell/game/request_queue.c',
+    c_args: shell_include,
     implicit_include_directories: false,
     link_with: [
       core_input_lib, core_config_lib, core_ini_lib, core_io_lib,

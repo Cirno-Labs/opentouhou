@@ -17,20 +17,20 @@ typedef struct {
     // Sets the size of the game's screen in pixels.
     int logical_width;
     int logical_height;
-    // Sets the game's input struct and actions. core/app creates the
+    // Sets the game's input struct and actions. shell/game creates the
     // INPUT_STATE from it and passes tick a buffer of schema->size *
     // schema->players bytes, one player's input after another.
     const INPUT_SCHEMA *input_schema;
     // Describes the game's own settings and points at the struct that holds
-    // them. core/app loads them from its INI before init and saves them
+    // them. shell/game loads them from its INI before init and saves them
     // after shutdown. Both are nullptr for a game without settings.
     const CONFIG_SCHEMA *settings_schema;
     void *settings;
-    // Describes the game to thcrap patches. core/app opens the patch stack
+    // Describes the game to thcrap patches. shell/game opens the patch stack
     // from it before init. nullptr for a game that takes no patches.
     const PATCH_GAME *patch_game;
     // Names the files that the data folder must hold, and their number.
-    // core/app looks for them before it opens the window, as Vfs_Open
+    // shell/game looks for them before it opens the window, as Vfs_Open
     // finds files. A missing file stops the start with a message that
     // names it and the data folder.
     const char *const *data_files;
@@ -38,7 +38,7 @@ typedef struct {
     // Prepares the game. Called once, after the window exists.
     RESULT (*init)(void);
     // Advances the game by one 60 Hz step and draws it through core/gfx.
-    // core/app starts and finishes the tick's drawing around the call.
+    // shell/game starts and finishes the tick's drawing around the call.
     // input points to input_schema->players input structs. Returns false
     // when the game wants to quit.
     bool (*tick)(const void *input);
@@ -46,5 +46,5 @@ typedef struct {
     void (*shutdown)(void);
 } GAME_DESC;
 
-// Describes the game that core runs. Each game executable defines it.
+// Describes the game that shell/game runs. Each game executable defines it.
 extern const GAME_DESC g_GameDesc;
