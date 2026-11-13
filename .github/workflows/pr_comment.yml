@@ -47,7 +47,7 @@ jobs:
             // character that could leave the link text.
             const label = (name) => String(name).replace(/[^A-Za-z0-9._-]/g, '');
             const links = artifacts
-              .filter((item) => !item.expired)
+              .filter((item) => !item.expired && item.name.startsWith('packages-'))
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((item) => `- [${label(item.name)}](https://github.com/${owner}/${repo}/actions/runs/${run.id}/artifacts/${item.id})`);
             if (links.length === 0) {
