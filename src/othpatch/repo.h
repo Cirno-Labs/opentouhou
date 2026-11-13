@@ -79,6 +79,13 @@ const REPO *Repo_FindRepo(REPO_NETWORK *network, const char *id);
 const REPO *Repo_FindPatch(
     REPO_NETWORK *network, const REPO *preferred, const char *name);
 
+// Walks the whole network and returns the number of repositories that have
+// the patch name. Writes the first capacity of them into repos, in the
+// order of the walk.
+int32_t Repo_FindAllPatch(
+    REPO_NETWORK *network, const char *name, const REPO **repos,
+    int32_t capacity);
+
 // Returns whether the patches of a repository list name.
 bool Repo_HasPatch(const REPO *repo, const char *name);
 

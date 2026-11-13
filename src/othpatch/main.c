@@ -3,20 +3,23 @@
 #include "othpatch/fetch.h"
 #include "othpatch/game.h"
 #include "othpatch/install.h"
-#include "othpatch/language.h"
 #include "othpatch/release.h"
 #include "othpatch/repo.h"
 #include "othpatch/sha256.h"
 #include "othpatch/update.h"
 
+#include "core/app/folders.h"
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/ini.h"
 #include "core/io/file.h"
 #include "core/io/locale.h"
 #include "core/io/path.h"
 #include "core/json/get.h"
 #include "core/json/parse.h"
+#include "core/patch/language.h"
+#include "core/patch/select.h"
 
 #include "version.h"
 
@@ -26,9 +29,10 @@
 #include <string.h>
 
 #define M_DEFAULT_REPO "https://srv.thpatch.net/repo.js"
-#define M_FIRST_REPO "thpatch"
 #define M_LANGUAGE_PREFIX "lang_"
 #define M_FALLBACK_LANGUAGE "lang_en"
+#define M_MAX_LOCALES 8
+#define M_MAX_AMBIGUOUS 8
 
 // Sets the size of the arena that holds the repository network. repo.c
 // limits the size of each repo.js and patch.js, so that a network of
@@ -46,7 +50,9 @@ typedef struct {
     const char *repo;
     const char *releases;
     const char *name;
+    const char *remove;
     bool list;
+    bool installed;
     bool help;
     bool version;
     bool update;
@@ -57,21 +63,25 @@ static const char m_Usage[] =
     "Usage: othpatch [--dir <folder>] [--repo <url>] [--game <game>]...\n"
     "                [--update] [--releases <url>]\n"
     "                [<language> | <repo>/<patch> | <patch>]\n"
+    "       othpatch [--dir <folder>] --remove <patch> | --installed\n"
     "       othpatch --list | --help | --version\n"
     "\n"
     "Downloads thcrap patches for the opentouhou games into the patches\n"
     "folder, and updates the patches that are there already. It downloads\n"
     "the files of each game that is beside othpatch, such as oth06 or\n"
     "oth06.exe, and of each game that a patch in the folder has files for.\n"
-    "Then it checks for a newer release of each game beside it and of\n"
-    "itself, and asks before it installs one.\n"
+    "For a language, it sets [patches] language in the config.ini of each\n"
+    "game. Then it checks for a newer release of each game beside it and\n"
+    "of itself, and asks before it installs one.\n"
     "\n"
     "  <language>      a language code, such as en or pt-br, for its\n"
-    "                  language pack; without a name, the language of the\n"
-    "                  system\n"
+    "                  language pack, or ja for the original; without a\n"
+    "                  name, the language of the system\n"
     "  <repo>/<patch>  a patch of one repository, such as nmlgc/aero\n"
-    "  <patch>         a patch of thpatch, or else of the first repository\n"
-    "                  that has it\n"
+    "  <patch>         the patch of the one repository that has it\n"
+    "  --remove <patch>\n"
+    "                  remove a patch and the patches that only it needs\n"
+    "  --installed     list the installed patches with their roles\n"
     "  --dir <folder>  the patches folder\n"
     "  --repo <url>    the first repository, " M_DEFAULT_REPO
     "\n"
@@ -127,7 +137,7 @@ static bool M_ParseArgs(
         const char *const arg = argv[i];
         const bool valued = strcmp(arg, "--dir") == 0
             || strcmp(arg, "--repo") == 0 || strcmp(arg, "--game") == 0
-            || strcmp(arg, "--releases") == 0;
+            || strcmp(arg, "--releases") == 0 || strcmp(arg, "--remove") == 0;
         if (valued && i + 1 >= argc) {
             M_Fail(out, "%s needs a value", arg);
             return false;
@@ -153,6 +163,10 @@ static bool M_ParseArgs(
             args->repo = argv[++i];
         } else if (strcmp(arg, "--releases") == 0) {
             args->releases = argv[++i];
+        } else if (strcmp(arg, "--remove") == 0) {
+            args->remove = argv[++i];
+        } else if (strcmp(arg, "--installed") == 0) {
+            args->installed = true;
         } else if (strcmp(arg, "--update") == 0) {
             args->update = true;
         } else if (strcmp(arg, "--list") == 0) {
@@ -171,12 +185,24 @@ static bool M_ParseArgs(
             args->name = arg;
         }
     }
+    if (args->name != nullptr && (args->remove != nullptr || args->installed)) {
+        M_Fail(
+            out, "%s takes no patch to install",
+            args->remove != nullptr ? "--remove" : "--installed");
+        return false;
+    }
     return true;
 }
 
-// Returns the patches folder: --dir, or <exe folder>/patches/ when a
-// portable.txt is beside othpatch, as for the games, or else the folder
-// of the platform. Mem_Free releases *out.
+static RESULT M_FindFolders(
+    const char *const exe_dir, const char *const game, APP_FOLDERS *const out)
+{
+    const APP_FOLDERS_INPUT input = { .exe_dir = exe_dir };
+    return AppFolders_Find(&input, game, out);
+}
+
+// Returns the patches folder: --dir, or else the patches folder of the
+// games beside othpatch. Mem_Free releases *out.
 static RESULT M_FindDir(
     const M_ARGS *const args, const char *const exe_dir, char **const out)
 {
@@ -186,16 +212,11 @@ static RESULT M_FindDir(
         *out = Str_Dup(args->dir);
         return OK;
     }
-    const char *portable_dir = nullptr;
-    if (exe_dir != nullptr) {
-        char *const marker =
-            Path_Join(&g_HeapAllocator, exe_dir, "portable.txt");
-        if (File_Exists(marker)) {
-            portable_dir = exe_dir;
-        }
-        Mem_Free(marker);
-    }
-    return Path_GetPatchesDir(portable_dir, out);
+    APP_FOLDERS folders;
+    Result_Ignore(M_FindFolders(exe_dir, m_Games[0], &folders));
+    const RESULT result = AppFolders_GetPatchesDir(&folders, out);
+    AppFolders_Free(&folders);
+    return result;
 }
 
 static int M_CompareMembers(const void *const a, const void *const b)
@@ -227,36 +248,61 @@ static void M_PrintList(
     }
 }
 
+static const char *M_FindLanguagePack(
+    const REPO *const repo, const char *const tag)
+{
+    const JSON_VALUE *const patches = repo->patches;
+    const int32_t count = patches != nullptr ? patches->object.count : 0;
+    for (int32_t i = 0; i < count; i++) {
+        const char *const key = patches->object.members[i].key;
+        if (Str_StartsWith(key, M_LANGUAGE_PREFIX)
+            && Patch_LanguageIs(key + strlen(M_LANGUAGE_PREFIX), tag)) {
+            return key;
+        }
+    }
+    return nullptr;
+}
+
+static const char *M_FindLanguageOfCode(
+    const REPO *const repo, const char *const code)
+{
+    char tags[PATCH_LANGUAGE_MAX_TAGS][PATCH_LANGUAGE_TAG_SIZE];
+    const int32_t count = Patch_GetLanguageTags(code, tags);
+    for (int32_t i = 0; i < count; i++) {
+        const char *const pack = M_FindLanguagePack(repo, tags[i]);
+        if (pack != nullptr) {
+            return pack;
+        }
+    }
+    return nullptr;
+}
+
 // Picks the language pack of the system locale that the first repository
 // has, or the fallback, and writes why into reason.
 static const char *M_PickLanguage(
-    const REPO *const first,
-    char names[LANGUAGE_MAX_CANDIDATES][LANGUAGE_NAME_SIZE], char *const reason,
-    const size_t reason_size)
+    const REPO *const first, char *const reason, const size_t reason_size)
 {
     const LOCALE locale = Locale_GetPreferred();
     char code[2 * LOCALE_CODE_SIZE];
     snprintf(
         code, sizeof(code), "%s%s%s", locale.language,
         locale.country[0] != '\0' ? "_" : "", locale.country);
-    const int32_t count = Language_FromLocale(locale, names);
-    for (int32_t i = 0; i < count; i++) {
-        if (Repo_HasPatch(first, names[i])) {
-            snprintf(reason, reason_size, "from the system locale %s", code);
-            return names[i];
-        }
-    }
-    if (count == 0) {
+    if (locale.language[0] == '\0') {
         snprintf(
             reason, reason_size,
             "the system locale is unknown, so English is the default");
-    } else {
-        snprintf(
-            reason, reason_size,
-            "the system locale %s has no language pack, so English is the "
-            "default",
-            code);
+        return M_FALLBACK_LANGUAGE;
     }
+    const char *const pack = M_FindLanguageOfCode(first, code);
+    if (pack != nullptr) {
+        snprintf(reason, reason_size, "from the system locale %s", code);
+        return pack;
+    }
+    snprintf(
+        reason, reason_size,
+        "the system locale %s has no language pack, so English is the "
+        "default",
+        code);
     return M_FALLBACK_LANGUAGE;
 }
 
@@ -268,11 +314,6 @@ static bool M_Contains(const REPO_PATCH_LIST *const list, const char *const id)
         }
     }
     return false;
-}
-
-static bool M_IsLanguagePack(const char *const id)
-{
-    return Str_StartsWith(id, M_FIRST_REPO "/" M_LANGUAGE_PREFIX);
 }
 
 static bool M_IsBeside(
@@ -338,6 +379,291 @@ static int32_t M_PickGames(
     return count;
 }
 
+// Returns the config.ini of game beside othpatch, started without
+// --user-dir. The path comes from arena.
+static RESULT M_FindConfig(
+    const char *const exe_dir, const char *const game, ARENA *const arena,
+    const char **const out)
+{
+    *out = nullptr;
+    APP_FOLDERS folders;
+    const RESULT result = M_FindFolders(exe_dir, game, &folders);
+    if (IS_OK(result)) {
+        *out =
+            Path_Join(Arena_Allocator(arena), folders.user_dir, "config.ini");
+    }
+    AppFolders_Free(&folders);
+    return result;
+}
+
+static RESULT M_WriteLanguage(const char *const path, const char *const code)
+{
+    INI *ini;
+    MUST(Ini_Load(path, &g_HeapAllocator, &ini));
+    Ini_Set(ini, "patches", "language", code);
+    const RESULT result = Ini_Save(ini, path);
+    Ini_Free(ini);
+    return result;
+}
+
+static int32_t M_SetLanguage(
+    const char *const exe_dir, const char *const *const games,
+    const int32_t game_count, const char *const code, ARENA *const arena,
+    FILE *const out)
+{
+    int32_t failed = 0;
+    for (int32_t i = 0; i < game_count; i++) {
+        const char *path;
+        RESULT result = M_FindConfig(exe_dir, games[i], arena, &path);
+        if (IS_OK(result)) {
+            result = M_WriteLanguage(path, code);
+        }
+        if (IS_OK(result)) {
+            fprintf(
+                out, "%s: set [patches] language = %s in %s\n", games[i], code,
+                path);
+        } else {
+            fprintf(
+                out, "%s: cannot set the language: %s\n", games[i],
+                result.message);
+            Result_Ignore(result);
+            failed++;
+        }
+    }
+    fprintf(
+        out,
+        "A game that starts with --user-dir keeps its config.ini in that "
+        "folder; add this line under [patches] there:\n"
+        "language = %s\n",
+        code);
+    return failed;
+}
+
+static void M_PrintSelections(
+    const char *const exe_dir, const char *const dir,
+    const char *const *const games, const int32_t game_count,
+    ARENA *const arena, FILE *const out)
+{
+    for (int32_t i = 0; i < game_count; i++) {
+        const char *path;
+        INI *ini = nullptr;
+        if (Result_Ignore(M_FindConfig(exe_dir, games[i], arena, &path))) {
+            Result_Ignore(Ini_Load(path, &g_HeapAllocator, &ini));
+        }
+        if (ini == nullptr) {
+            Result_Ignore(Ini_Parse("", 0, &g_HeapAllocator, &ini));
+        }
+        LOCALE locales[M_MAX_LOCALES];
+        PATCH_CHOICE choice = {
+            .locales = locales,
+            .locale_count = Locale_ListPreferred(locales, M_MAX_LOCALES),
+        };
+        Patch_ReadChoice(ini, &choice);
+        PATCH_SELECTION *selection;
+        const RESULT selected =
+            Patch_Select(dir, games[i], &choice, &selection);
+        if (IS_OK(selected)) {
+            char *const text = Patch_DescribeSelection(selection);
+            fprintf(out, "%s:\n%s", games[i], text);
+            Mem_Free(text);
+            Patch_FreeSelection(selection);
+        } else {
+            fprintf(
+                out, "%s: cannot read the patches: %s\n", games[i],
+                selected.message);
+            Result_Ignore(selected);
+        }
+        Ini_Free(ini);
+    }
+}
+
+static const char *M_ListCodes(const REPO *const repo, ARENA *const arena)
+{
+    const JSON_VALUE *const patches = repo->patches;
+    const int32_t count = patches != nullptr ? patches->object.count : 0;
+    const JSON_MEMBER **const packs =
+        Arena_AllocArr(arena, (size_t)count + 1, sizeof(*packs));
+    int32_t pack_count = 0;
+    for (int32_t i = 0; i < count; i++) {
+        const JSON_MEMBER *const member = &patches->object.members[i];
+        if (Str_StartsWith(member->key, M_LANGUAGE_PREFIX)) {
+            packs[pack_count++] = member;
+        }
+    }
+    qsort(packs, (size_t)pack_count, sizeof(*packs), M_CompareMembers);
+    size_t size = 1;
+    for (int32_t i = 0; i < pack_count; i++) {
+        size += strlen(packs[i]->key) + 2;
+    }
+    char *const text = Arena_Alloc(arena, size);
+    text[0] = '\0';
+    for (int32_t i = 0; i < pack_count; i++) {
+        if (i > 0) {
+            strcat(text, ", ");
+        }
+        strcat(text, packs[i]->key + strlen(M_LANGUAGE_PREFIX));
+    }
+    return text;
+}
+
+static bool M_ResolveName(
+    REPO_NETWORK *const network, const char *const name, ARENA *const arena,
+    const char **const out, FILE *const out_file)
+{
+    const REPO *const first = Repo_GetFirst(network);
+    if (strchr(name, '/') != nullptr) {
+        *out = name;
+        return true;
+    }
+    const char *const pack = M_FindLanguageOfCode(first, name);
+    if (pack != nullptr) {
+        *out = Path_Join(Arena_Allocator(arena), first->id, pack);
+        return true;
+    }
+    const REPO *repos[M_MAX_AMBIGUOUS];
+    const int32_t count =
+        Repo_FindAllPatch(network, name, repos, M_MAX_AMBIGUOUS);
+    if (count == 1) {
+        *out = Path_Join(Arena_Allocator(arena), repos[0]->id, name);
+        return true;
+    }
+    if (count == 0) {
+        M_Fail(
+            out_file,
+            "%s is neither a language code nor a patch; the language codes "
+            "are %s, or %s for the original",
+            name, M_ListCodes(first, arena), PATCH_LANGUAGE_ORIGINAL);
+        return false;
+    }
+    fprintf(
+        out_file, "othpatch: %d repositories have a patch %s:", count, name);
+    for (int32_t i = 0; i < MIN(count, M_MAX_AMBIGUOUS); i++) {
+        fprintf(out_file, "%s %s/%s", i > 0 ? "," : "", repos[i]->id, name);
+    }
+    fprintf(out_file, "; name one as <repo>/<patch>\n");
+    return false;
+}
+
+static bool M_IsOriginal(const char *const name)
+{
+    char tags[PATCH_LANGUAGE_MAX_TAGS][PATCH_LANGUAGE_TAG_SIZE];
+    return Patch_GetLanguageTags(name, tags) > 0
+        && Patch_IsOriginalLanguage(tags[0]);
+}
+
+static int M_Install(
+    const M_ARGS *const args, const char *const exe_dir, const char *const dir,
+    const UPDATE_INSTALLED_LIST *const installed,
+    const char *const *const games, const int32_t game_count,
+    ARENA *const arena, FILE *const out)
+{
+    REPO_NETWORK *network;
+    const RESULT opened = Repo_Open(args->repo, arena, &network);
+    if (!IS_OK(opened)) {
+        return M_FailResult(out, "cannot read the repository", opened);
+    }
+    const REPO *const first = Repo_GetFirst(network);
+    if (args->list) {
+        M_PrintList(first, arena, out);
+        return 0;
+    }
+
+    char reason[160] = "named on the command line";
+    const char *id = nullptr;
+    if (args->name == nullptr) {
+        id = Path_Join(
+            Arena_Allocator(arena), first->id,
+            M_PickLanguage(first, reason, sizeof(reason)));
+    } else if (!M_ResolveName(network, args->name, arena, &id, out)) {
+        return 1;
+    }
+
+    REPO_PATCH_LIST list;
+    Array_Init(&list, Arena_Allocator(arena));
+    const RESULT added = Repo_AddPatch(network, id, &list);
+    if (!IS_OK(added)) {
+        return M_FailResult(out, id, added);
+    }
+    const REPO_PATCH *const target = list.items[list.count - 1];
+    const bool language = Patch_IsLanguagePack(target->id);
+    if (language) {
+        bool has_files;
+        const RESULT checked =
+            Update_HasGameFiles(target, games, game_count, &has_files);
+        if (!IS_OK(checked)) {
+            return M_FailResult(out, target->id, checked);
+        }
+        if (!has_files) {
+            return M_Fail(
+                out, "%s has no files for %s", target->id,
+                game_count == 1 ? games[0] : "these games");
+        }
+    }
+    fprintf(
+        out, "%s: %s (%s), %s\n", language ? "Language" : "Patch", target->id,
+        target->title, reason);
+
+    for (int32_t i = 0; i < installed->count; i++) {
+        const UPDATE_INSTALLED *const patch = &installed->items[i];
+        if (!patch->update || M_Contains(&list, patch->id)) {
+            continue;
+        }
+        const RESULT result = Repo_AddPatch(network, patch->id, &list);
+        if (!IS_OK(result)) {
+            fprintf(
+                out, "%s: left as it is, cannot update it: %s\n", patch->id,
+                result.message);
+            Result_Ignore(result);
+        }
+    }
+
+    UPDATE_COUNTS total = {};
+    int32_t failed = 0;
+    for (int32_t i = 0; i < list.count; i++) {
+        const REPO_PATCH *const patch = list.items[i];
+        UPDATE_COUNTS counts;
+        const RESULT result =
+            Update_Patch(dir, patch, games, game_count, &counts);
+        if (!IS_OK(result)) {
+            fprintf(out, "%s: failed: %s\n", patch->id, result.message);
+            Result_Ignore(result);
+            failed++;
+            continue;
+        }
+        if (counts.downloaded == 0 && counts.removed == 0) {
+            fprintf(out, "%s: up to date\n", patch->id);
+        } else {
+            fprintf(
+                out, "%s: %d downloaded, %d up to date, %d removed\n",
+                patch->id, counts.downloaded, counts.up_to_date,
+                counts.removed);
+        }
+        total.downloaded += counts.downloaded;
+        total.up_to_date += counts.up_to_date;
+        total.removed += counts.removed;
+    }
+
+    if (failed > 0) {
+        return M_Fail(
+            out, "%d %s failed; run othpatch again to retry", failed,
+            failed == 1 ? "patch" : "patches");
+    }
+    if (language
+        && M_SetLanguage(
+               exe_dir, games, game_count,
+               target->name + strlen(M_LANGUAGE_PREFIX), arena, out)
+            > 0) {
+        return M_Fail(out, "the language is not set for every game");
+    }
+    fprintf(
+        out,
+        "Done: %d patches, %d files downloaded, %d up to date, %d "
+        "removed\n",
+        list.count, total.downloaded, total.up_to_date, total.removed);
+    M_PrintSelections(exe_dir, dir, games, game_count, arena, out);
+    return 0;
+}
+
 static int M_Run(
     const M_ARGS *const args, const char *const exe_dir, const char *const dir,
     ARENA *const arena, FILE *const out)
@@ -360,114 +686,177 @@ static int M_Run(
                 m_Games[0]);
         }
     }
-
-    REPO_NETWORK *network;
-    const RESULT opened = Repo_Open(args->repo, arena, &network);
-    if (!IS_OK(opened)) {
-        return M_FailResult(out, "cannot read the repository", opened);
-    }
-    const REPO *const first = Repo_GetFirst(network);
-    if (args->list) {
-        M_PrintList(first, arena, out);
+    if (!args->list && args->name != nullptr && M_IsOriginal(args->name)) {
+        fprintf(
+            out, "Language: the original, %s; othpatch downloads nothing\n",
+            args->name);
+        const int32_t failed = M_SetLanguage(
+            exe_dir, games, game_count, PATCH_LANGUAGE_ORIGINAL, arena, out);
+        if (failed > 0) {
+            return M_Fail(out, "the language is not set for every game");
+        }
+        M_PrintSelections(exe_dir, dir, games, game_count, arena, out);
         return 0;
     }
+    return M_Install(
+        args, exe_dir, dir, &installed, games, game_count, arena, out);
+}
 
-    char names[LANGUAGE_MAX_CANDIDATES][LANGUAGE_NAME_SIZE];
-    char reason[160] = "named on the command line";
-    const char *const name = args->name != nullptr
-        ? Language_FromArgument(args->name, names[0])
-        : M_PickLanguage(first, names, reason, sizeof(reason));
-
-    REPO_PATCH_LIST list;
-    Array_Init(&list, Arena_Allocator(arena));
-    const RESULT added = Repo_AddPatch(network, name, &list);
-    if (!IS_OK(added)) {
-        return M_FailResult(out, name, added);
+static int M_PrintInstalled(const char *const dir, FILE *const out)
+{
+    PATCH_SELECTION *selection;
+    const RESULT selected = Patch_Select(dir, nullptr, nullptr, &selection);
+    if (!IS_OK(selected)) {
+        return M_FailResult(out, "cannot list the patches folder", selected);
     }
-    const REPO_PATCH *const target = list.items[list.count - 1];
-    const bool language = M_IsLanguagePack(target->id);
-    fprintf(
-        out, "%s: %s (%s), %s\n", language ? "Language" : "Patch", target->id,
-        target->title, reason);
-
-    typedef ARRAY(const char *) M_IDS;
-    M_IDS removals;
-    Array_Init(&removals, Arena_Allocator(arena));
-    for (int32_t i = 0; i < installed.count; i++) {
-        const UPDATE_INSTALLED *const patch = &installed.items[i];
-        if (M_Contains(&list, patch->id)) {
-            continue;
-        }
-        if (language && M_IsLanguagePack(patch->id)) {
-            Array_Append(&removals, patch->id);
-            continue;
-        }
-        if (!patch->update) {
-            continue;
-        }
-        const RESULT result = Repo_AddPatch(network, patch->id, &list);
-        if (!IS_OK(result)) {
-            fprintf(
-                out, "%s: left as it is, cannot update it: %s\n", patch->id,
-                result.message);
-            Result_Ignore(result);
-        }
+    const int32_t count = Patch_GetEntryCount(selection);
+    if (count == 0) {
+        fputs("No patch is installed\n", out);
     }
-
-    UPDATE_COUNTS total = {};
-    int32_t failed = 0;
-    bool target_ok = false;
-    for (int32_t i = 0; i < list.count; i++) {
-        const REPO_PATCH *const patch = list.items[i];
-        UPDATE_COUNTS counts;
-        const RESULT result =
-            Update_Patch(dir, patch, games, game_count, &counts);
-        if (!IS_OK(result)) {
-            fprintf(out, "%s: failed: %s\n", patch->id, result.message);
-            Result_Ignore(result);
-            failed++;
-            continue;
-        }
-        target_ok = target_ok || patch == target;
-        if (counts.downloaded == 0 && counts.removed == 0) {
-            fprintf(out, "%s: up to date\n", patch->id);
-        } else {
-            fprintf(
-                out, "%s: %d downloaded, %d up to date, %d removed\n",
-                patch->id, counts.downloaded, counts.up_to_date,
-                counts.removed);
-        }
-        total.downloaded += counts.downloaded;
-        total.up_to_date += counts.up_to_date;
-        total.removed += counts.removed;
+    for (int32_t i = 0; i < count; i++) {
+        const PATCH_ENTRY *const entry = Patch_GetEntry(selection, i);
+        fprintf(out, "%-32s %s\n", entry->id, Patch_GetRoleName(entry->role));
     }
-
-    for (int32_t i = 0; target_ok && i < removals.count; i++) {
-        const RESULT result = Update_RemovePatch(dir, removals.items[i]);
-        if (IS_OK(result)) {
-            fprintf(
-                out, "%s: removed, %s replaces it\n", removals.items[i],
-                target->id);
-        } else {
-            fprintf(
-                out, "%s: cannot remove it: %s\n", removals.items[i],
-                result.message);
-            Result_Ignore(result);
-            failed++;
-        }
-    }
-
-    if (failed > 0) {
-        return M_Fail(
-            out, "%d %s failed; run othpatch again to retry", failed,
-            failed == 1 ? "patch" : "patches");
-    }
-    fprintf(
-        out,
-        "Done: %d patches, %d files downloaded, %d up to date, %d "
-        "removed\n",
-        list.count, total.downloaded, total.up_to_date, total.removed);
+    Patch_FreeSelection(selection);
     return 0;
+}
+
+static int32_t M_FindInstalled(
+    const PATCH_SELECTION *const selection, const char *const name,
+    FILE *const out)
+{
+    const int32_t count = Patch_GetEntryCount(selection);
+    int32_t found = -1;
+    int32_t matches = 0;
+    for (int32_t i = 0; i < count; i++) {
+        const char *const id = Patch_GetEntry(selection, i)->id;
+        if (strcmp(id, name) == 0) {
+            return i;
+        }
+        const char *const slash = strchr(id, '/');
+        if (strchr(name, '/') == nullptr && slash != nullptr
+            && strcmp(slash + 1, name) == 0) {
+            found = i;
+            matches++;
+        }
+    }
+    if (matches == 1) {
+        return found;
+    }
+    if (matches == 0) {
+        M_Fail(out, "no installed patch is %s; --installed lists them", name);
+        return -1;
+    }
+    fprintf(out, "othpatch: %d installed patches are %s:", matches, name);
+    for (int32_t i = 0, listed = 0; i < count; i++) {
+        const char *const id = Patch_GetEntry(selection, i)->id;
+        const char *const slash = strchr(id, '/');
+        if (slash != nullptr && strcmp(slash + 1, name) == 0) {
+            fprintf(out, "%s %s", listed++ > 0 ? "," : "", id);
+        }
+    }
+    fputs("; name one as <repo>/<patch>\n", out);
+    return -1;
+}
+
+static bool M_NeedsAny(const PATCH_ENTRY *const entry, const bool *const set)
+{
+    for (int32_t i = 0; i < entry->dependency_count; i++) {
+        if (set[entry->dependencies[i]]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Keeps language packs, so that removing a mod never removes the language
+// that a game uses.
+static void M_MarkRemovals(
+    const PATCH_SELECTION *const selection, const int32_t index,
+    bool *const removed)
+{
+    const int32_t count = Patch_GetEntryCount(selection);
+    removed[index] = true;
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (int32_t i = 0; i < count; i++) {
+            const PATCH_ENTRY *const entry = Patch_GetEntry(selection, i);
+            if (removed[i] || Patch_IsLanguagePack(entry->id)) {
+                continue;
+            }
+            bool needed_by_removed = false;
+            bool needed_by_kept = false;
+            for (int32_t j = 0; j < count; j++) {
+                const PATCH_ENTRY *const user = Patch_GetEntry(selection, j);
+                bool needs = false;
+                for (int32_t k = 0; k < user->dependency_count; k++) {
+                    needs = needs || (j != i && user->dependencies[k] == i);
+                }
+                needed_by_removed = needed_by_removed || (needs && removed[j]);
+                needed_by_kept = needed_by_kept || (needs && !removed[j]);
+            }
+            if (needed_by_removed && !needed_by_kept) {
+                removed[i] = true;
+                changed = true;
+            }
+        }
+    }
+}
+
+static int M_Remove(
+    const M_ARGS *const args, const char *const exe_dir, const char *const dir,
+    ARENA *const arena, FILE *const out)
+{
+    PATCH_SELECTION *selection;
+    const RESULT selected = Patch_Select(dir, nullptr, nullptr, &selection);
+    if (!IS_OK(selected)) {
+        return M_FailResult(out, "cannot list the patches folder", selected);
+    }
+    const int32_t index = M_FindInstalled(selection, args->remove, out);
+    if (index < 0) {
+        Patch_FreeSelection(selection);
+        return 1;
+    }
+    const int32_t count = Patch_GetEntryCount(selection);
+    bool *const removed =
+        Arena_AllocArrZ(arena, (size_t)MAX(count, 1), sizeof(bool));
+    removed[index] = true;
+    for (int32_t i = 0; i < count; i++) {
+        const PATCH_ENTRY *const entry = Patch_GetEntry(selection, i);
+        if (i != index && M_NeedsAny(entry, removed)) {
+            const int code = M_Fail(
+                out, "%s needs %s; remove %s first", entry->id,
+                Patch_GetEntry(selection, index)->id, entry->id);
+            Patch_FreeSelection(selection);
+            return code;
+        }
+    }
+    M_MarkRemovals(selection, index, removed);
+    int32_t failed = 0;
+    for (int32_t i = 0; i < count; i++) {
+        if (!removed[i]) {
+            continue;
+        }
+        const char *const id = Patch_GetEntry(selection, i)->id;
+        const RESULT result = Update_RemovePatch(dir, id);
+        if (IS_OK(result)) {
+            fprintf(out, "%s: removed\n", id);
+        } else {
+            fprintf(out, "%s: cannot remove it: %s\n", id, result.message);
+            Result_Ignore(result);
+            failed++;
+        }
+    }
+    Patch_FreeSelection(selection);
+    UPDATE_INSTALLED_LIST installed;
+    const char *games[M_GAME_COUNT];
+    if (Result_Ignore(Update_ListInstalled(dir, arena, &installed))) {
+        const int32_t game_count =
+            M_PickGames(args, exe_dir, dir, &installed, arena, games, out);
+        M_PrintSelections(exe_dir, dir, games, game_count, arena, out);
+    }
+    return failed > 0 ? M_Fail(out, "%d patches were not removed", failed) : 0;
 }
 
 static RESULT M_Fetch(const char *const url, FETCH *const fetch)
@@ -834,6 +1223,15 @@ int Main_Run(
             return M_FailResult(out, "cannot find the patches folder", found);
         }
         fprintf(out, "Patches folder: %s\n", dir);
+    }
+    if (args.installed || args.remove != nullptr) {
+        const int code = args.installed
+            ? M_PrintInstalled(dir, out)
+            : M_Remove(&args, exe_dir, dir, &arena, out);
+        Arena_Free(&arena);
+        Mem_Free(dir);
+        fflush(out);
+        return code;
     }
     int code = 1;
     const RESULT started = Fetch_Init();

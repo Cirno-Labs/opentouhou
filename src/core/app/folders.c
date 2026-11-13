@@ -7,7 +7,6 @@
 
 #include <string.h>
 
-#define M_PORTABLE_FILE "portable.txt"
 #define M_PORTABLE_USER_DIR "userdata"
 
 #ifdef _WIN32
@@ -99,7 +98,7 @@ static bool M_IsPortable(const char *const program_dir)
         return false;
     }
     char *const path =
-        Path_Join(&g_HeapAllocator, program_dir, M_PORTABLE_FILE);
+        Path_Join(&g_HeapAllocator, program_dir, APP_FOLDERS_PORTABLE_FILE);
     const bool portable = File_Exists(path);
     Mem_Free(path);
     return portable;
