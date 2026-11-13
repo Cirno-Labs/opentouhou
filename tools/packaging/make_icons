@@ -5,20 +5,67 @@ The source is <program>/icon.png beside this script, a square image of at
 least 1024x1024 pixels with transparency. The icons, icon.ico and
 icon.icns, are committed beside it, so builds need no converter. Run
 this again after changing the PNG. Needs Pillow.
+
+Every entry of both icons is a compressed PNG. The .icns holds one entry
+per size: the @2x types that repeat a size of another type are left out.
 """
 
 import argparse
+import io
+import struct
 from pathlib import Path
 
 from PIL import Image
 
 PACKAGING_DIR = Path(__file__).resolve().parent
 ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
-ICNS_SIZES = [16, 32, 64, 128, 256, 512, 1024]
+ICNS_TYPES = {
+    b"ic11": 32,
+    b"ic12": 64,
+    b"ic07": 128,
+    b"ic08": 256,
+    b"ic09": 512,
+    b"ic10": 1024,
+}
+LARGEST = max(ICNS_TYPES.values())
 
 
-def render(source: Image.Image, size: int) -> Image.Image:
-    return source.resize((size, size), Image.LANCZOS)
+def encode(source: Image.Image, size: int) -> bytes:
+    image = source.resize((size, size), Image.LANCZOS)
+    buffer = io.BytesIO()
+    image.save(buffer, "PNG", optimize=True)
+    return buffer.getvalue()
+
+
+def write_ico(path: Path, entries: dict[int, bytes]) -> None:
+    offset = 6 + 16 * len(entries)
+    directory = b""
+    data = b""
+    for size, png in entries.items():
+        # A width and height of 0 mean 256.
+        directory += struct.pack(
+            "<BBBBHHII",
+            size % 256,
+            size % 256,
+            0,
+            0,
+            1,
+            32,
+            len(png),
+            offset + len(data),
+        )
+        data += png
+    path.write_bytes(struct.pack("<HHH", 0, 1, len(entries)) + directory + data)
+
+
+def write_icns(path: Path, entries: dict[bytes, bytes]) -> None:
+    toc = b"".join(
+        kind + struct.pack(">I", 8 + len(png)) for kind, png in entries.items()
+    )
+    body = b"TOC " + struct.pack(">I", 8 + len(toc)) + toc
+    for kind, png in entries.items():
+        body += kind + struct.pack(">I", 8 + len(png)) + png
+    path.write_bytes(b"icns" + struct.pack(">I", 8 + len(body)) + body)
 
 
 def main() -> None:
@@ -26,20 +73,23 @@ def main() -> None:
     parser.add_argument("program", help="such as th06 or othpatch")
     program = parser.parse_args().program
     program_dir = PACKAGING_DIR / program
-    source = Image.open(program_dir / "icon.png").convert("RGBA")
-    if source.width != source.height or source.width < max(ICNS_SIZES):
+    source_path = program_dir / "icon.png"
+    source = Image.open(source_path).convert("RGBA")
+    if source.width != source.height or source.width < LARGEST:
         raise SystemExit(
-            f"{program}/icon.png must be square and at least"
-            f" {max(ICNS_SIZES)} pixels wide"
+            f"{program}/icon.png must be square and at least {LARGEST} pixels wide"
         )
-    largest = render(source, max(ICNS_SIZES))
-    images = {size: render(source, size) for size in ICO_SIZES}
-    images[ICO_SIZES[-1]].save(
-        program_dir / "icon.ico",
-        sizes=[(size, size) for size in ICO_SIZES],
-        append_images=[images[size] for size in ICO_SIZES[:-1]],
+    pngs = {}
+    for size in sorted(set(ICO_SIZES) | set(ICNS_TYPES.values())):
+        if size == source.width:
+            pngs[size] = source_path.read_bytes()
+        else:
+            pngs[size] = encode(source, size)
+    write_ico(program_dir / "icon.ico", {size: pngs[size] for size in ICO_SIZES})
+    write_icns(
+        program_dir / "icon.icns",
+        {kind: pngs[size] for kind, size in ICNS_TYPES.items()},
     )
-    largest.save(program_dir / "icon.icns")
     print(f"Wrote {program}/icon.ico and {program}/icon.icns")
 
 
