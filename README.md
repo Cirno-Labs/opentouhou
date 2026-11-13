@@ -3,6 +3,8 @@
 Unofficial cross-platform ports of the Touhou Project games, starting
 with 東方紅魔郷 ~ the Embodiment of Scarlet Devil (Touhou 6).
 
+Downloads, release notes and help: <https://opentouhou.org/>
+
 Each port is written from a matching decompilation of the original game:
 
 - [th06](https://github.com/Cirno-Labs/th06)
