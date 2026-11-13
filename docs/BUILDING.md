@@ -405,7 +405,9 @@ that only appear there may not be fixed.
 
 Formatting is clang-format, with the configuration in `.clang-format`.
 The checks run through [prek](https://github.com/j178/prek), configured
-in `.pre-commit-config.yaml`:
+in `.pre-commit-config.yaml`. prek installs the version of clang-format
+that the configuration names, so that every machine and CI format
+alike:
 
 ```sh
 prek install    # once: runs the checks on every commit and commit message

@@ -8,7 +8,8 @@ repos:
     name: clang-format
     entry: clang-format
     args: ["-style=file", "-i"]
-    language: system
+    language: python
+    additional_dependencies: [clang-format==22.1.8]
     files: \.[ch]$
 
   - id: commit-msg

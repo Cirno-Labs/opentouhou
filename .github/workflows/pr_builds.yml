@@ -25,10 +25,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Install prek and clang-format
-        run: |
-          pipx install prek==0.2.24
-          pipx install clang-format==22.1.8
+      - name: Install prek
+        run: pipx install prek==0.2.24
 
       - name: Run the checks
         run: |
