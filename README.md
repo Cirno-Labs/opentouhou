@@ -83,7 +83,8 @@ just run th06 --data <folder>    # build th06 and start it
 ```
 
 [docs/BUILDING.md](docs/BUILDING.md) describes how to build, test and
-release.
+release. [CONTRIBUTING.md](CONTRIBUTING.md) describes how to send a
+change and the rules that it follows.
 
 ## Legal
 

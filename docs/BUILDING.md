@@ -110,7 +110,7 @@ just format     # formats the C code and the Python tools
 ```
 
 The style and commit rules the checks enforce are in
-[AGENTS.md](../AGENTS.md).
+[CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Packaging
 
