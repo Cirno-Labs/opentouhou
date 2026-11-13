@@ -13,6 +13,7 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Removes path and, when it is a directory, everything in it.
 static void M_TestDirRemove(const char *const path)
@@ -45,7 +46,8 @@ static bool M_TestDirIsInTmp(const char *const root)
 }
 
 // Returns the path of an empty directory for the test case name. Mem_Free
-// releases the path.
+// releases the path. The runs that meson test --repeat makes after the
+// first, which may run at the same time, each get a directory of their own.
 static char *TestDir_Prepare(const char *const name)
 {
     const char *const root = getenv("TEST_DIR");
@@ -53,7 +55,10 @@ static char *TestDir_Prepare(const char *const name)
         fprintf(stderr, "TEST_DIR must name a directory in tests/tmp/\n");
         abort();
     }
-    char *const directory = Str_Format("%s/%s", root, name);
+    const char *const iteration = getenv("MESON_TEST_ITERATION");
+    char *const directory = iteration != nullptr && strcmp(iteration, "1") != 0
+        ? Str_Format("%s/run%s/%s", root, iteration, name)
+        : Str_Format("%s/%s", root, name);
     M_TestDirRemove(directory);
     if (!Result_Log(File_MakeDir(directory), LOG_LEVEL_ERROR)) {
         abort();
