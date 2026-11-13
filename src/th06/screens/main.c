@@ -169,7 +169,7 @@ static bool M_HasTexture(const ANM_VM *const vm)
 // fullscreen, 1 for windowed.
 static int32_t M_CurrentWindowed(void)
 {
-    return App_IsFullscreen() ? 0 : 1;
+    return Shell_IsFullscreen() ? 0 : 1;
 }
 
 static bool M_AnyExtraUnlocked(void)
@@ -270,7 +270,8 @@ static M_MAPPING M_CurrentMapping(void)
     M_MAPPING mapping = {};
     for (size_t action = 0; action < M_MAPPING_COUNT; action++) {
         INPUT_BINDING bindings[16];
-        size_t count = App_GetBindings(action, bindings, ARRAY_SIZE(bindings));
+        size_t count =
+            Shell_GetBindings(action, bindings, ARRAY_SIZE(bindings));
         if (count > ARRAY_SIZE(bindings)) {
             count = ARRAY_SIZE(bindings);
         }
@@ -334,7 +335,7 @@ static void M_ReassignButton(
 static void M_CommitMapping(const M_MENU *const menu)
 {
     if (menu->reset_pad) {
-        App_RequestResetPadBindings();
+        Shell_RequestResetPadBindings();
     }
     for (size_t i = 0; i < M_MAPPING_COUNT; i++) {
         const M_PAD_BUTTON *const before = &menu->committed.buttons[i];
@@ -343,10 +344,10 @@ static void M_CommitMapping(const M_MENU *const menu)
             continue;
         }
         if (before->bound) {
-            App_RequestUnbind(i, before->binding);
+            Shell_RequestUnbind(i, before->binding);
         }
         if (after->bound) {
-            App_RequestBind(i, after->binding);
+            Shell_RequestBind(i, after->binding);
         }
     }
 }
@@ -727,7 +728,7 @@ static void M_UpdateOptions(M_MENU *const menu)
         // The original restarts to change the window mode. shell/game
         // changes it after the tick instead.
         if (menu->pending_windowed != M_CurrentWindowed()) {
-            App_RequestFullscreen(menu->pending_windowed == 0);
+            Shell_RequestFullscreen(menu->pending_windowed == 0);
         }
         break;
     default:
@@ -771,7 +772,7 @@ static void M_UpdatePadConfig(M_MENU *const menu)
         return;
     }
     INPUT_BINDING pressed;
-    if (App_GetPadPress(&pressed) && M_PadNumber(pressed) >= 0
+    if (Shell_GetPadPress(&pressed) && M_PadNumber(pressed) >= 0
         && menu->cursor < M_MAPPING_COUNT) {
         Sound_Queue(SOUND_OK);
         M_PAD_BUTTON *const row = &menu->mapping.buttons[menu->cursor];

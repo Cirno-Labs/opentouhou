@@ -33,14 +33,14 @@
 // folder itself, so the original game's own files there stay untouched.
 
 // Names the file that turns on portable mode.
-#define APP_FOLDERS_PORTABLE_FILE "portable.txt"
+#define FOLDERS_PORTABLE_FILE "portable.txt"
 
 typedef enum {
-    APP_FOLDERS_DEFAULT,
-    APP_FOLDERS_PORTABLE,
-    APP_FOLDERS_USER_DIR,
-    APP_FOLDERS_USER_DIR_PORTABLE,
-} APP_FOLDERS_MODE;
+    FOLDERS_DEFAULT,
+    FOLDERS_PORTABLE,
+    FOLDERS_USER_DIR,
+    FOLDERS_USER_DIR_PORTABLE,
+} FOLDERS_MODE;
 
 // Holds what the folders come from. Each member is nullptr when it is not
 // given.
@@ -55,29 +55,29 @@ typedef struct {
     // Holds the --data and the --user-dir arguments.
     const char *data_dir;
     const char *user_dir;
-} APP_FOLDERS_INPUT;
+} FOLDERS_INPUT;
 
 // Holds the folders. Each string is nullptr when it could not be found.
 typedef struct {
-    APP_FOLDERS_MODE mode;
+    FOLDERS_MODE mode;
     char *program_dir;
     // Holds the file name of the program, without its folder: the
     // .AppImage file's inside an AppImage, argv[0]'s elsewhere.
     char *program_name;
     char *data_dir;
     char *user_dir;
-} APP_FOLDERS;
+} FOLDERS;
 
 // Finds the folders of game game_id and creates the user folder. Reports
 // failure when the user folder cannot be found or created; the other
 // folders are set then too.
-RESULT AppFolders_Find(
-    const APP_FOLDERS_INPUT *input, const char *game_id, APP_FOLDERS *out);
+RESULT Folders_Find(
+    const FOLDERS_INPUT *input, const char *game_id, FOLDERS *out);
 // Returns the patches folder of the mode in folders, and creates it, as
 // Path_GetPatchesDir does. Mem_Free releases *out. On failure, *out is
 // nullptr.
-RESULT AppFolders_GetPatchesDir(const APP_FOLDERS *folders, char **out);
+RESULT Folders_GetPatchesDir(const FOLDERS *folders, char **out);
 // Returns the name of a mode, as --help prints it.
-const char *AppFolders_GetModeName(APP_FOLDERS_MODE mode);
+const char *Folders_GetModeName(FOLDERS_MODE mode);
 // Releases the strings of folders.
-void AppFolders_Free(APP_FOLDERS *folders);
+void Folders_Free(FOLDERS *folders);

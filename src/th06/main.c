@@ -52,19 +52,19 @@ static RESULT M_KeepDemo(void)
 
 static RESULT M_Init(void)
 {
-    MUST(Files_Init(App_GetDataDir()));
-    Files_SetPatches(App_GetPatches());
-    Translation_Init(App_GetPatches());
-    if (Patch_ChangesGameplay(App_GetPatches())) {
+    MUST(Files_Init(Shell_GetDataDir()));
+    Files_SetPatches(Shell_GetPatches());
+    Translation_Init(Shell_GetPatches());
+    if (Patch_ChangesGameplay(Shell_GetPatches())) {
         LOG_INFO("The patches change gameplay, so replays are not saved");
         ResultScreen_RefuseReplays(true);
     }
     int32_t font_count;
     const char *const *const fonts = Translation_GetFontFiles(&font_count);
     MUST(Anm_InitText(Translation_GetFont(), fonts, font_count));
-    Note_Init(App_GetPatches());
+    Note_Init(Shell_GetPatches());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
-    ResultScreen_OpenSaves(App_GetUserDir());
+    ResultScreen_OpenSaves(Shell_GetUserDir());
     Result_Log(M_KeepDemo(), LOG_LEVEL_WARNING);
     m_GameInitialized = true;
     MUST(Game_Init());

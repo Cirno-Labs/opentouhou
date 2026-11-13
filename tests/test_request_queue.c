@@ -57,13 +57,13 @@ TEST(a_pad_press_gives_its_one_control)
     INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
     FakeInput_Connect(1, INPUT_DEVICE_GAMEPAD, "pad", "aabb");
     INPUT_BINDING press;
-    CHECK(!AppRequests_ReadPadPress(input, &press));
+    CHECK(!ShellRequests_ReadPadPress(input, &press));
     FakeInput_SetButton(1, 0, true);
-    CHECK(AppRequests_ReadPadPress(input, &press));
+    CHECK(ShellRequests_ReadPadPress(input, &press));
     M_CheckName(press, "south");
-    CHECK(!AppRequests_ReadPadPress(input, &press));
+    CHECK(!ShellRequests_ReadPadPress(input, &press));
     FakeInput_SetButton(1, 1, true);
-    CHECK(AppRequests_ReadPadPress(input, &press));
+    CHECK(ShellRequests_ReadPadPress(input, &press));
     M_CheckName(press, "east");
     FakeInput_Disconnect(1);
     Input_Destroy(input);
@@ -75,9 +75,9 @@ TEST(a_joystick_press_counts_and_a_key_does_not)
     FakeInput_Connect(2, INPUT_DEVICE_JOYSTICK, "stick", "ccdd");
     INPUT_BINDING press;
     FakeInput_SetKey(4, true);
-    CHECK(!AppRequests_ReadPadPress(input, &press));
+    CHECK(!ShellRequests_ReadPadPress(input, &press));
     FakeInput_SetButton(2, 7, true);
-    CHECK(AppRequests_ReadPadPress(input, &press));
+    CHECK(ShellRequests_ReadPadPress(input, &press));
     M_CheckName(press, "joy_button_7");
     FakeInput_SetKey(4, false);
     FakeInput_Disconnect(2);
@@ -87,17 +87,21 @@ TEST(a_joystick_press_counts_and_a_key_does_not)
 TEST(requests_apply_in_order_after_the_queue)
 {
     INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
-    APP_REQUESTS requests = { .fullscreen = -1 };
-    AppRequests_Add(
-        &requests, (APP_REQUEST) { APP_REQUEST_UNBIND, 0, M_Binding("south") });
-    AppRequests_Add(
-        &requests, (APP_REQUEST) { APP_REQUEST_BIND, 0, M_Binding("east") });
-    AppRequests_Add(
-        &requests, (APP_REQUEST) { APP_REQUEST_UNBIND, 1, M_Binding("east") });
-    AppRequests_Add(
-        &requests, (APP_REQUEST) { APP_REQUEST_BIND, 1, M_Binding("south") });
+    SHELL_REQUESTS requests = { .fullscreen = -1 };
+    ShellRequests_Add(
+        &requests,
+        (SHELL_REQUEST) { SHELL_REQUEST_UNBIND, 0, M_Binding("south") });
+    ShellRequests_Add(
+        &requests,
+        (SHELL_REQUEST) { SHELL_REQUEST_BIND, 0, M_Binding("east") });
+    ShellRequests_Add(
+        &requests,
+        (SHELL_REQUEST) { SHELL_REQUEST_UNBIND, 1, M_Binding("east") });
+    ShellRequests_Add(
+        &requests,
+        (SHELL_REQUEST) { SHELL_REQUEST_BIND, 1, M_Binding("south") });
     M_CheckBindings(input, 0, "z, south, joy_button_0");
-    AppRequests_ApplyInput(&requests, input, &m_Schema);
+    ShellRequests_ApplyInput(&requests, input, &m_Schema);
     CHECK_EQ_INT(requests.count, 0);
     M_CheckBindings(input, 0, "z, joy_button_0, east");
     M_CheckBindings(input, 1, "x, joy_button_1, south");
@@ -111,9 +115,10 @@ TEST(the_pad_reset_keeps_the_keyboard)
     Input_Bind(input, &m_Schema, 0, 0, M_Binding("c"));
     Input_Unbind(input, &m_Schema, 0, 0, M_Binding("south"));
     Input_Bind(input, &m_Schema, 0, 0, M_Binding("north"));
-    APP_REQUESTS requests = { .fullscreen = -1 };
-    AppRequests_Add(&requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
-    AppRequests_ApplyInput(&requests, input, &m_Schema);
+    SHELL_REQUESTS requests = { .fullscreen = -1 };
+    ShellRequests_Add(
+        &requests, (SHELL_REQUEST) { .type = SHELL_REQUEST_RESET_PAD });
+    ShellRequests_ApplyInput(&requests, input, &m_Schema);
     M_CheckBindings(input, 0, "south, joy_button_0, c");
     M_CheckBindings(input, 1, "east, joy_button_1, x");
     Input_Destroy(input);
@@ -121,10 +126,10 @@ TEST(the_pad_reset_keeps_the_keyboard)
 
 TEST(a_full_queue_drops_further_requests)
 {
-    APP_REQUESTS requests = { .fullscreen = -1 };
-    for (int32_t i = 0; i < APP_REQUEST_COUNT + 3; i++) {
-        AppRequests_Add(
-            &requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
+    SHELL_REQUESTS requests = { .fullscreen = -1 };
+    for (int32_t i = 0; i < SHELL_REQUEST_COUNT + 3; i++) {
+        ShellRequests_Add(
+            &requests, (SHELL_REQUEST) { .type = SHELL_REQUEST_RESET_PAD });
     }
-    CHECK_EQ_INT(requests.count, APP_REQUEST_COUNT);
+    CHECK_EQ_INT(requests.count, SHELL_REQUEST_COUNT);
 }

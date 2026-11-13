@@ -11,10 +11,10 @@
 // earlier start, and makes the log copy each line to it (Log_SetFile).
 // Lines logged before the file opens are not in it. Closes the file that
 // is open first.
-RESULT AppLogFile_Open(const char *user_dir, const char *game_id);
+RESULT LogFile_Open(const char *user_dir, const char *game_id);
 
 // Returns the path of the open log file, or nullptr when none is open.
-const char *AppLogFile_GetPath(void);
+const char *LogFile_GetPath(void);
 
 // Stops the log from writing to the file and closes it.
-void AppLogFile_Close(void);
+void LogFile_Close(void);

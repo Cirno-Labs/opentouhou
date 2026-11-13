@@ -37,13 +37,12 @@ static void M_HandleFatal(
     const char *const message, const char *const file, const int line)
 {
     char text[M_TEXT_SIZE];
-    AppFatal_FormatInternalError(
-        text, sizeof(text), m_GameId, message, file, line,
-        AppLogFile_GetPath());
+    Fatal_FormatInternalError(
+        text, sizeof(text), m_GameId, message, file, line, LogFile_GetPath());
     M_Show("stopped", text);
 }
 
-bool AppFatal_UsesBox(const char *const video_driver, const char *const ci)
+bool Fatal_UsesBox(const char *const video_driver, const char *const ci)
 {
     if (ci != nullptr && ci[0] != '\0') {
         return false;
@@ -53,24 +52,23 @@ bool AppFatal_UsesBox(const char *const video_driver, const char *const ci)
             && SDL_strcasecmp(video_driver, "dummy") != 0);
 }
 
-void AppFatal_Install(const char *const game_id)
+void Fatal_Install(const char *const game_id)
 {
     m_GameId = game_id;
-    m_UsesBox =
-        AppFatal_UsesBox(SDL_getenv("SDL_VIDEODRIVER"), SDL_getenv("CI"));
+    m_UsesBox = Fatal_UsesBox(SDL_getenv("SDL_VIDEODRIVER"), SDL_getenv("CI"));
     if (m_UsesBox) {
         Log_SetFatalHandler(M_HandleFatal);
     }
 }
 
-void AppFatal_ShowStartupError(const char *const text)
+void Fatal_ShowStartupError(const char *const text)
 {
     if (m_UsesBox) {
         M_Show("could not start", text);
     }
 }
 
-void AppFatal_FormatMissingData(
+void Fatal_FormatMissingData(
     char *const out, const size_t size, const char *const file,
     const char *const data_dir, const char *const log_path)
 {
@@ -86,7 +84,7 @@ void AppFatal_FormatMissingData(
     M_AddLogPath(out, size, log_path);
 }
 
-void AppFatal_FormatStartupError(
+void Fatal_FormatStartupError(
     char *const out, const size_t size, const char *const message,
     const char *const log_path)
 {
@@ -94,7 +92,7 @@ void AppFatal_FormatStartupError(
     M_AddLogPath(out, size, log_path);
 }
 
-void AppFatal_FormatInternalError(
+void Fatal_FormatInternalError(
     char *const out, const size_t size, const char *const game_id,
     const char *const message, const char *const file, const int line,
     const char *const log_path)

@@ -40,9 +40,9 @@
 #define MAX_TICKS_PER_FRAME 4
 #define M_MAX_LOCALES 8
 
-typedef struct APP_CONTEXT APP_CONTEXT;
+typedef struct SHELL_CONTEXT SHELL_CONTEXT;
 
-struct APP_CONTEXT {
+struct SHELL_CONTEXT {
     SDL_Window *window;
     SDL_GLContext gl_context;
     CLOCK clock;
@@ -55,7 +55,7 @@ struct APP_CONTEXT {
     // Holds g_GameDesc.input_schema->players input structs, one after
     // another.
     void *input_buffer;
-    APP_FOLDERS folders;
+    FOLDERS folders;
     // Points at the entry of g_GameDesc.data_files that the data folder
     // lacks, or is nullptr.
     const char *missing_data_file;
@@ -66,26 +66,26 @@ struct APP_CONTEXT {
     // Holds the loaded settings as the game writes them, so that the save
     // can tell which ones changed.
     INI *loaded_settings;
-    APP_SETTINGS settings;
+    SHELL_SETTINGS settings;
     PATCH_STACK *patches;
     HOTKEYS hotkeys;
     HOTKEYS hotkeys_edges;
     bool screenshot_pending;
-    APP_REQUESTS requests;
+    SHELL_REQUESTS requests;
     bool pad_pressed;
     INPUT_BINDING pad_press;
 };
 
-static APP_CONTEXT m_Context;
+static SHELL_CONTEXT m_Context;
 
-static void M_OpenPatches(APP_CONTEXT *const ctx)
+static void M_OpenPatches(SHELL_CONTEXT *const ctx)
 {
     if (g_GameDesc.patch_game == nullptr) {
         return;
     }
     char *dir;
     if (!Result_Log(
-            AppFolders_GetPatchesDir(&ctx->folders, &dir), LOG_LEVEL_ERROR)) {
+            Folders_GetPatchesDir(&ctx->folders, &dir), LOG_LEVEL_ERROR)) {
         return;
     }
     LOCALE locales[M_MAX_LOCALES];
@@ -101,9 +101,9 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
     Mem_Free(dir);
 }
 
-static void M_WriteSettings(const APP_CONTEXT *const ctx, INI *const ini)
+static void M_WriteSettings(const SHELL_CONTEXT *const ctx, INI *const ini)
 {
-    Config_Save(&g_AppSettingsSchema, ini, &ctx->settings);
+    Config_Save(&g_ShellSettingsSchema, ini, &ctx->settings);
     if (g_GameDesc.settings_schema != nullptr) {
         Config_Save(g_GameDesc.settings_schema, ini, g_GameDesc.settings);
     }
@@ -112,7 +112,7 @@ static void M_WriteSettings(const APP_CONTEXT *const ctx, INI *const ini)
 
 // Reads config.ini again so that an edit made while the game ran, such as
 // by othpatch, stays.
-static void M_SaveSettings(const APP_CONTEXT *const ctx)
+static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
 {
     INI *current;
     if (!Result_Log(
@@ -130,7 +130,7 @@ static void M_SaveSettings(const APP_CONTEXT *const ctx)
     Ini_Free(current);
 }
 
-static RESULT M_CheckData(APP_CONTEXT *const ctx)
+static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
 {
     if (g_GameDesc.data_file_count == 0) {
         return OK;
@@ -156,7 +156,7 @@ static RESULT M_CheckData(APP_CONTEXT *const ctx)
     return result;
 }
 
-static RESULT M_CreateWindow(APP_CONTEXT *const ctx)
+static RESULT M_CreateWindow(SHELL_CONTEXT *const ctx)
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -206,11 +206,11 @@ static void M_OpenStdout(void)
 }
 
 // Prints the usage, the mode and the folders to stdout.
-static void M_PrintHelp(const APP_FOLDERS *const folders)
+static void M_PrintHelp(const FOLDERS *const folders)
 {
     M_OpenStdout();
     char *patches_dir = nullptr;
-    Result_Ignore(AppFolders_GetPatchesDir(folders, &patches_dir));
+    Result_Ignore(Folders_GetPatchesDir(folders, &patches_dir));
     printf(
         "Usage: %s [--data DIR] [--user-dir DIR]\n"
         "\n"
@@ -227,7 +227,7 @@ static void M_PrintHelp(const APP_FOLDERS *const folders)
         "User folder:     %s\n"
         "Patches folder:  %s\n",
         folders->program_name, g_GameDesc.title, g_GameDesc.version,
-        AppFolders_GetModeName(folders->mode),
+        Folders_GetModeName(folders->mode),
         folders->program_dir != nullptr ? folders->program_dir : "unknown",
         folders->data_dir != nullptr ? folders->data_dir : "unknown",
         folders->user_dir != nullptr ? folders->user_dir : "none",
@@ -258,7 +258,7 @@ static void M_PrintVersion(void)
 // Reads the command line into input. Sets *help when it asks for the
 // usage, and *version when it asks for the version.
 static RESULT M_ParseArgs(
-    const int argc, char *const argv[], APP_FOLDERS_INPUT *const input,
+    const int argc, char *const argv[], FOLDERS_INPUT *const input,
     bool *const help, bool *const version)
 {
     *help = false;
@@ -279,7 +279,7 @@ static RESULT M_ParseArgs(
     return OK;
 }
 
-static RESULT M_SetFullscreen(APP_CONTEXT *const ctx, const bool fullscreen)
+static RESULT M_SetFullscreen(SHELL_CONTEXT *const ctx, const bool fullscreen)
 {
     FAIL_IF(
         !SDL_SetWindowFullscreen(ctx->window, fullscreen),
@@ -291,10 +291,10 @@ static RESULT M_SetFullscreen(APP_CONTEXT *const ctx, const bool fullscreen)
 // Starts the program. Sets *done when the command line asks only for the
 // usage or the version, which are then printed.
 static RESULT M_Init(
-    APP_CONTEXT *const ctx, const int argc, char *const argv[],
+    SHELL_CONTEXT *const ctx, const int argc, char *const argv[],
     bool *const done)
 {
-    APP_FOLDERS_INPUT input = {
+    FOLDERS_INPUT input = {
         .exe_dir = Path_GetExeDir(),
         .appimage = getenv("APPIMAGE"),
         .appdir = getenv("APPDIR"),
@@ -309,27 +309,27 @@ static RESULT M_Init(
         return OK;
     }
     const bool found = Result_Log(
-        AppFolders_Find(&input, g_GameDesc.id, &ctx->folders), LOG_LEVEL_ERROR);
+        Folders_Find(&input, g_GameDesc.id, &ctx->folders), LOG_LEVEL_ERROR);
     if (help) {
         M_PrintHelp(&ctx->folders);
         return OK;
     }
     if (found) {
         Result_Log(
-            AppLogFile_Open(ctx->folders.user_dir, g_GameDesc.id),
+            LogFile_Open(ctx->folders.user_dir, g_GameDesc.id),
             LOG_LEVEL_WARNING);
     }
     FAIL_IF(
         ctx->folders.data_dir == nullptr,
         "Cannot find the executable's directory");
     LOG_INFO("%s %s", g_GameDesc.id, g_GameDesc.version);
-    LOG_INFO("Folder mode: %s", AppFolders_GetModeName(ctx->folders.mode));
+    LOG_INFO("Folder mode: %s", Folders_GetModeName(ctx->folders.mode));
     MUST(M_CheckData(ctx), "%s failed to start", g_GameDesc.id);
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
 
-    Clock_Init(&ctx->clock, APP_TICK_RATE, MAX_TICKS_PER_FRAME);
+    Clock_Init(&ctx->clock, SHELL_TICK_RATE, MAX_TICKS_PER_FRAME);
     ctx->requests.fullscreen = -1;
 
     if (found) {
@@ -344,7 +344,7 @@ static RESULT M_Init(
     if (ctx->ini == nullptr) {
         MUST(Ini_Parse("", 0, &g_HeapAllocator, &ctx->ini));
     }
-    Config_Load(&g_AppSettingsSchema, ctx->ini, &ctx->settings);
+    Config_Load(&g_ShellSettingsSchema, ctx->ini, &ctx->settings);
     if (g_GameDesc.settings_schema != nullptr) {
         Config_Load(g_GameDesc.settings_schema, ctx->ini, g_GameDesc.settings);
     }
@@ -372,24 +372,25 @@ static RESULT M_Init(
     return OK;
 }
 
-const char *App_GetDataDir(void)
+const char *Shell_GetDataDir(void)
 {
     return m_Context.folders.data_dir;
 }
 
-const char *App_GetUserDir(void)
+const char *Shell_GetUserDir(void)
 {
     return m_Context.folders.user_dir;
 }
 
-const PATCH_STACK *App_GetPatches(void)
+const PATCH_STACK *Shell_GetPatches(void)
 {
     return m_Context.patches;
 }
 
-static void M_ApplyRequests(APP_CONTEXT *const ctx)
+static void M_ApplyRequests(SHELL_CONTEXT *const ctx)
 {
-    AppRequests_ApplyInput(&ctx->requests, ctx->input, g_GameDesc.input_schema);
+    ShellRequests_ApplyInput(
+        &ctx->requests, ctx->input, g_GameDesc.input_schema);
     if (ctx->requests.fullscreen >= 0) {
         const bool fullscreen = ctx->requests.fullscreen != 0;
         ctx->requests.fullscreen = -1;
@@ -399,7 +400,7 @@ static void M_ApplyRequests(APP_CONTEXT *const ctx)
     }
 }
 
-bool App_GetPadPress(INPUT_BINDING *const out)
+bool Shell_GetPadPress(INPUT_BINDING *const out)
 {
     if (m_Context.pad_pressed) {
         *out = m_Context.pad_press;
@@ -407,7 +408,7 @@ bool App_GetPadPress(INPUT_BINDING *const out)
     return m_Context.pad_pressed;
 }
 
-size_t App_GetBindings(
+size_t Shell_GetBindings(
     const size_t action, INPUT_BINDING *const out, const size_t capacity)
 {
     ASSERT(action < g_GameDesc.input_schema->count);
@@ -415,29 +416,30 @@ size_t App_GetBindings(
         m_Context.input, g_GameDesc.input_schema, 0, action, out, capacity);
 }
 
-void App_RequestBind(const size_t action, const INPUT_BINDING binding)
+void Shell_RequestBind(const size_t action, const INPUT_BINDING binding)
 {
     ASSERT(action < g_GameDesc.input_schema->count);
-    AppRequests_Add(
+    ShellRequests_Add(
         &m_Context.requests,
-        (APP_REQUEST) { APP_REQUEST_BIND, action, binding });
+        (SHELL_REQUEST) { SHELL_REQUEST_BIND, action, binding });
 }
 
-void App_RequestUnbind(const size_t action, const INPUT_BINDING binding)
+void Shell_RequestUnbind(const size_t action, const INPUT_BINDING binding)
 {
     ASSERT(action < g_GameDesc.input_schema->count);
-    AppRequests_Add(
+    ShellRequests_Add(
         &m_Context.requests,
-        (APP_REQUEST) { APP_REQUEST_UNBIND, action, binding });
+        (SHELL_REQUEST) { SHELL_REQUEST_UNBIND, action, binding });
 }
 
-void App_RequestResetPadBindings(void)
+void Shell_RequestResetPadBindings(void)
 {
-    AppRequests_Add(
-        &m_Context.requests, (APP_REQUEST) { .type = APP_REQUEST_RESET_PAD });
+    ShellRequests_Add(
+        &m_Context.requests,
+        (SHELL_REQUEST) { .type = SHELL_REQUEST_RESET_PAD });
 }
 
-bool App_GetTickRate(float *const out)
+bool Shell_GetTickRate(float *const out)
 {
     if (m_Context.tick_rate_measured) {
         *out = m_Context.measured_tick_rate;
@@ -445,19 +447,19 @@ bool App_GetTickRate(float *const out)
     return m_Context.tick_rate_measured;
 }
 
-bool App_IsFullscreen(void)
+bool Shell_IsFullscreen(void)
 {
     return m_Context.settings.fullscreen;
 }
 
-void App_RequestFullscreen(const bool fullscreen)
+void Shell_RequestFullscreen(const bool fullscreen)
 {
     m_Context.requests.fullscreen = fullscreen ? 1 : 0;
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
-    AppFatal_Install(g_GameDesc.id);
+    Fatal_Install(g_GameDesc.id);
     bool done = false;
     const RESULT result = M_Init(&m_Context, argc, argv, &done);
     if (IS_OK(result)) {
@@ -465,15 +467,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     }
     char text[4096];
     if (m_Context.missing_data_file != nullptr) {
-        AppFatal_FormatMissingData(
+        Fatal_FormatMissingData(
             text, sizeof(text), m_Context.missing_data_file,
-            m_Context.folders.data_dir, AppLogFile_GetPath());
+            m_Context.folders.data_dir, LogFile_GetPath());
     } else {
-        AppFatal_FormatStartupError(
-            text, sizeof(text), result.message, AppLogFile_GetPath());
+        Fatal_FormatStartupError(
+            text, sizeof(text), result.message, LogFile_GetPath());
     }
     Result_Log(result, LOG_LEVEL_ERROR);
-    AppFatal_ShowStartupError(text);
+    Fatal_ShowStartupError(text);
     return SDL_APP_FAILURE;
 }
 
@@ -492,7 +494,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    APP_CONTEXT *const ctx = &m_Context;
+    SHELL_CONTEXT *const ctx = &m_Context;
 
     const uint64_t now_ns = SDL_GetTicksNS();
     const int ticks = Clock_Advance(&ctx->clock, now_ns);
@@ -515,7 +517,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         ctx->screenshot_pending = true;
     }
     INPUT_BINDING press;
-    if (AppRequests_ReadPadPress(ctx->input, &press) && !ctx->pad_pressed) {
+    if (ShellRequests_ReadPadPress(ctx->input, &press) && !ctx->pad_pressed) {
         ctx->pad_pressed = true;
         ctx->pad_press = press;
     }
@@ -563,7 +565,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
-    APP_CONTEXT *const ctx = &m_Context;
+    SHELL_CONTEXT *const ctx = &m_Context;
     if (ctx->game_init_called) {
         g_GameDesc.shutdown();
     }
@@ -575,7 +577,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     Ini_Free(ctx->loaded_settings);
     Ini_Free(ctx->ini);
     Mem_Free(ctx->ini_path);
-    AppFolders_Free(&ctx->folders);
+    Folders_Free(&ctx->folders);
     if (ctx->input_buffer != nullptr) {
         Allocator_Free(
             &g_HeapAllocator, ctx->input_buffer,
@@ -590,5 +592,5 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     if (ctx->window != nullptr) {
         SDL_DestroyWindow(ctx->window);
     }
-    AppLogFile_Close();
+    LogFile_Close();
 }

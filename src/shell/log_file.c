@@ -11,9 +11,9 @@
 static FILE *m_File = nullptr;
 static char *m_Path = nullptr;
 
-RESULT AppLogFile_Open(const char *const user_dir, const char *const game_id)
+RESULT LogFile_Open(const char *const user_dir, const char *const game_id)
 {
-    AppLogFile_Close();
+    LogFile_Close();
     char *const name = Str_Format("o%s.log", game_id);
     char *const path = Path_Join(&g_HeapAllocator, user_dir, name);
     Mem_Free(name);
@@ -27,12 +27,12 @@ RESULT AppLogFile_Open(const char *const user_dir, const char *const game_id)
     return OK;
 }
 
-const char *AppLogFile_GetPath(void)
+const char *LogFile_GetPath(void)
 {
     return m_Path;
 }
 
-void AppLogFile_Close(void)
+void LogFile_Close(void)
 {
     if (m_File == nullptr) {
         return;

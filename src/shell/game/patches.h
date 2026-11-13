@@ -8,4 +8,4 @@
 // [patches] settings, which Patch_ReadChoice reads from config.ini, and the
 // preferred locales. Returns nullptr when the game takes no patches, or
 // when the folder cannot be read.
-const PATCH_STACK *App_GetPatches(void);
+const PATCH_STACK *Shell_GetPatches(void);

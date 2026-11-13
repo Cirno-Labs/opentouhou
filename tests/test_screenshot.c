@@ -32,12 +32,12 @@ RESULT Gfx_ReadOutput(const ALLOCATOR *const allocator, IMAGE *const out)
 TEST(saves_both_resolutions_without_overwriting_and_flattens_alpha)
 {
     char *const directory = TestDir_Prepare("screenshot");
-    const APP_SETTINGS settings = { .screenshot_jpeg_quality = 90 };
+    const SHELL_SETTINGS settings = { .screenshot_jpeg_quality = 90 };
     m_ScreenCaptures = 0;
     m_OutputCaptures = 0;
     CHECK_OK(Screenshot_Save(directory, "test", &settings));
     CHECK_OK(Screenshot_Save(directory, "test", &settings));
-    APP_SETTINGS window = settings;
+    SHELL_SETTINGS window = settings;
     window.screenshot_resolution = 1;
     CHECK_OK(Screenshot_Save(directory, "test", &window));
     CHECK_EQ_INT(m_ScreenCaptures, 2);
@@ -84,8 +84,8 @@ TEST(saves_both_resolutions_without_overwriting_and_flattens_alpha)
 TEST(saves_jpeg_and_reports_unavailable_user_directory)
 {
     char *const directory = TestDir_Prepare("screenshot_jpeg");
-    const APP_SETTINGS settings = { .screenshot_format = 1,
-                                    .screenshot_jpeg_quality = 90 };
+    const SHELL_SETTINGS settings = { .screenshot_format = 1,
+                                      .screenshot_jpeg_quality = 90 };
     CHECK_OK(Screenshot_Save(directory, "test", &settings));
     char *const screenshots =
         Path_Join(&g_HeapAllocator, directory, "screenshots");
