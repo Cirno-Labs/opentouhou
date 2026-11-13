@@ -9,6 +9,7 @@ games and the replay runner, or othpatch.
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 from shared.othpatch_release import build_releases_url
@@ -19,26 +20,39 @@ from shared.versioning import REPO_DIR
 SHARED_SUITES = ["core", "tools"]
 
 
-def option_values(programs: str, repo_dir: Path = REPO_DIR) -> dict[str, str | bool]:
+def option_values(
+    programs: str, repo_dir: Path = REPO_DIR
+) -> dict[str, str | bool | list[str]]:
     """Return the Meson options of a build of programs.
 
     The environment gives releases_url, as build_releases_url describes,
-    and OPENTOUHOU_WERROR=1 turns on werror.
+    and OPENTOUHOU_WERROR=1 makes compiler warnings errors. On macOS this
+    goes through c_args instead of werror, because Meson's werror also
+    makes linker warnings fatal there, and Apple's linker warns about the
+    alignment of FFmpeg's data.
     """
-    return {
+    werror = bool(os.environ.get("OPENTOUHOU_WERROR"))
+    values: dict[str, str | bool | list[str]] = {
         "programs": programs,
         "releases_url": build_releases_url(repo_dir),
-        "werror": bool(os.environ.get("OPENTOUHOU_WERROR")),
     }
+    if sys.platform == "darwin":
+        values["werror"] = False
+        values["c_args"] = ["-Werror"] if werror else []
+    else:
+        values["werror"] = werror
+    return values
 
 
-def format_option(name: str, value: str | bool) -> str:
+def format_option(name: str, value: str | bool | list[str]) -> str:
     if isinstance(value, bool):
         value = "true" if value else "false"
+    elif isinstance(value, list):
+        value = ",".join(value)
     return f"-D{name}={value}"
 
 
-def changed_options(root: Path, values: dict[str, str | bool]) -> list[str]:
+def changed_options(root: Path, values: dict[str, str | bool | list[str]]) -> list[str]:
     """Return the options of values that the build directory root has with
     another value."""
     path = root / "meson-info/intro-buildoptions.json"
