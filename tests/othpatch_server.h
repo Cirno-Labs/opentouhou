@@ -90,12 +90,12 @@
 }
 
 // Returns the contents of a file, or nullptr when it cannot be read.
-// SDL_free releases them.
+// Mem_Free releases them.
 [[maybe_unused]] static char *Server_Read(
     const char *const root, const char *const path)
 {
     char *const full = Str_Format("%s/%s", root, path);
-    char *const data = SDL_LoadFile(full, nullptr);
+    char *const data = TestDir_Read(full);
     Mem_Free(full);
     return data;
 }

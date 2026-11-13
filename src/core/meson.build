@@ -44,6 +44,7 @@ core_io_lib = static_library(
   'io/process.c',
   'io/reader.c',
   'io/writer.c',
+  host_machine.system() == 'windows' ? 'io/backend_windows.c' : 'io/backend_posix.c',
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],

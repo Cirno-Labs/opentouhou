@@ -19,10 +19,11 @@ typedef struct {
 } M_CASE;
 
 // Prepares a server with the repository "first" that has the patch "p",
-// whose files.js has the given members.
-static M_CASE M_Prepare(const char *const name, const char *const files)
+// whose files.js has the given members, in the directory dir. M_Close
+// releases dir.
+static M_CASE M_PrepareIn(char *const dir, const char *const files)
 {
-    M_CASE test = { .dir = TestDir_Prepare(name) };
+    M_CASE test = { .dir = dir };
     test.server = TestDir_Join(test.dir, "server");
     test.patches = TestDir_Join(test.dir, "patches");
     Server_AddRepo(test.server, "first", nullptr, 0, "\"p\": \"\"");
@@ -31,6 +32,11 @@ static M_CASE M_Prepare(const char *const name, const char *const files)
     Server_AddFile(test.server, "first", "p", "files.js", text);
     Mem_Free(text);
     return test;
+}
+
+static M_CASE M_Prepare(const char *const name, const char *const files)
+{
+    return M_PrepareIn(TestDir_Prepare(name), files);
 }
 
 static RESULT M_Update(M_CASE *const test, UPDATE_COUNTS *const counts)
@@ -66,7 +72,7 @@ static void M_CheckFile(
 {
     char *const data = Server_Read(test->patches, path);
     CHECK_EQ_STR(data, content);
-    SDL_free(data);
+    Mem_Free(data);
 }
 
 TEST(update_downloads_shared_and_game_files_only)
@@ -91,7 +97,7 @@ TEST(update_downloads_shared_and_game_files_only)
     CHECK(Server_Exists(test.patches, "first/p/patch.js"));
     char *const files_js = Server_Read(test.patches, "first/p/files.js");
     CHECK(files_js != nullptr && strstr(files_js, "th07/msg1") != nullptr);
-    SDL_free(files_js);
+    Mem_Free(files_js);
     M_Close(&test);
     Mem_Free(files);
     Mem_Free(other);
@@ -318,4 +324,24 @@ TEST(update_tries_the_servers_in_order)
     Mem_Free(files);
     Mem_Free(b);
     Mem_Free(a);
+}
+
+TEST(update_writes_below_a_folder_longer_than_max_path)
+{
+    char *dir = TestDir_Prepare("long_path");
+    for (int i = 0; i < 8; i++) {
+        char *const deeper = TestDir_Join(dir, "a_directory_with_a_long_name");
+        Mem_Free(dir);
+        dir = deeper;
+    }
+    char *const files = Server_Entry("th06/紅魔郷.msg.jdiff", "msg");
+    M_CASE test = M_PrepareIn(dir, files);
+    Server_AddFile(test.server, "first", "p", "th06/紅魔郷.msg.jdiff", "msg");
+    CHECK(strlen(test.patches) > 260);
+    UPDATE_COUNTS counts;
+    CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(counts.downloaded, 1);
+    M_CheckFile(&test, "first/p/th06/紅魔郷.msg.jdiff", "msg");
+    M_Close(&test);
+    Mem_Free(files);
 }

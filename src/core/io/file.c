@@ -3,6 +3,7 @@
 #include "core/io/file.h"
 
 #include "core/base/string.h"
+#include "core/io/backend.h"
 
 #include <SDL3/SDL.h>
 #include <stdlib.h>
@@ -57,6 +58,14 @@ static size_t M_RootLength(const char *const path)
     return length;
 }
 
+static bool M_CreateDir(const char *const path)
+{
+    char *const system_path = IoBackend_SystemPath(path);
+    const bool made = SDL_CreateDirectory(system_path);
+    Mem_Free(system_path);
+    return made;
+}
+
 static int M_CompareNames(const void *const a, const void *const b)
 {
     return strcmp(*(char *const *)a, *(char *const *)b);
@@ -64,15 +73,19 @@ static int M_CompareNames(const void *const a, const void *const b)
 
 bool File_Exists(const char *const path)
 {
-    return SDL_GetPathInfo(path, nullptr);
+    char *const system_path = IoBackend_SystemPath(path);
+    const bool exists = SDL_GetPathInfo(system_path, nullptr);
+    Mem_Free(system_path);
+    return exists;
 }
 
 RESULT File_GetType(const char *const path, FILE_TYPE *const type)
 {
+    char *const system_path = IoBackend_SystemPath(path);
     SDL_PathInfo info;
-    FAIL_IF(
-        !SDL_GetPathInfo(path, &info), "Cannot query %s: %s", path,
-        SDL_GetError());
+    const bool queried = SDL_GetPathInfo(system_path, &info);
+    Mem_Free(system_path);
+    FAIL_IF(!queried, "Cannot query %s: %s", path, SDL_GetError());
     switch (info.type) {
     case SDL_PATHTYPE_FILE:
         *type = FILE_TYPE_FILE;
@@ -88,16 +101,15 @@ RESULT File_GetType(const char *const path, FILE_TYPE *const type)
 }
 
 // Creates each missing parent before the directory, because on Windows
-// SDL_CreateDirectory cannot create the parents of a path without a drive,
-// such as "/dir", or of a UNC path.
+// SDL_CreateDirectory cannot create the parents of a path in the extended
+// form, such as "\\?\C:\dir".
 RESULT File_MakeDir(const char *const path)
 {
     char *const parent = Str_Dup(path);
     for (size_t i = M_RootLength(path); parent[i] != '\0'; i++) {
         if (M_IsSeparator(parent[i])) {
             parent[i] = '\0';
-            const bool made =
-                File_Exists(parent) || SDL_CreateDirectory(parent);
+            const bool made = File_Exists(parent) || M_CreateDir(parent);
             parent[i] = path[i];
             if (!made) {
                 Mem_Free(parent);
@@ -106,25 +118,28 @@ RESULT File_MakeDir(const char *const path)
         }
     }
     Mem_Free(parent);
-    FAIL_IF(
-        !SDL_CreateDirectory(path), "Cannot create %s: %s", path,
-        SDL_GetError());
+    FAIL_IF(!M_CreateDir(path), "Cannot create %s: %s", path, SDL_GetError());
     return OK;
 }
 
 RESULT File_Rename(const char *const from, const char *const to)
 {
-    FAIL_IF(
-        !SDL_RenamePath(from, to), "Cannot rename %s to %s: %s", from, to,
-        SDL_GetError());
+    char *const system_from = IoBackend_SystemPath(from);
+    char *const system_to = IoBackend_SystemPath(to);
+    const bool renamed = SDL_RenamePath(system_from, system_to);
+    Mem_Free(system_to);
+    Mem_Free(system_from);
+    FAIL_IF(!renamed, "Cannot rename %s to %s: %s", from, to, SDL_GetError());
     return OK;
 }
 
 RESULT File_Remove(const char *const path)
 {
-    FAIL_IF(
-        File_Exists(path) && !SDL_RemovePath(path), "Cannot remove %s: %s",
-        path, SDL_GetError());
+    char *const system_path = IoBackend_SystemPath(path);
+    const bool removed =
+        !SDL_GetPathInfo(system_path, nullptr) || SDL_RemovePath(system_path);
+    Mem_Free(system_path);
+    FAIL_IF(!removed, "Cannot remove %s: %s", path, SDL_GetError());
     return OK;
 }
 
@@ -133,7 +148,10 @@ RESULT File_ListDir(
     FILE_LIST *const list)
 {
     Array_Init(list, allocator);
-    if (!SDL_EnumerateDirectory(path, M_AddName, list)) {
+    char *const system_path = IoBackend_SystemPath(path);
+    const bool listed = SDL_EnumerateDirectory(system_path, M_AddName, list);
+    Mem_Free(system_path);
+    if (!listed) {
         const RESULT result = FAIL("Cannot list %s: %s", path, SDL_GetError());
         File_FreeList(list);
         return result;

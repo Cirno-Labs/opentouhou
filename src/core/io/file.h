@@ -8,7 +8,8 @@
 
 // Queries the file system. Paths are UTF-8, in the platform's form; '/'
 // separates directories on every platform. READER and WRITER read and write
-// the files themselves.
+// the files themselves. On Windows, these functions and READER and WRITER
+// accept paths longer than the 260 characters of MAX_PATH.
 
 // Holds the names of the entries of a directory. Each name is a
 // NUL-terminated UTF-8 string from the allocator of the array.

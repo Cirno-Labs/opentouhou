@@ -5,6 +5,7 @@
 #include "core/base/assert.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
+#include "core/io/backend.h"
 
 #include <SDL3/SDL.h>
 #include <stdarg.h>
@@ -209,7 +210,9 @@ void Reader_OpenOwnedBuffer(
 RESULT Reader_OpenFile(READER *const reader, const char *const path)
 {
     Reader_OpenBuffer(reader, nullptr, 0);
-    SDL_IOStream *const stream = SDL_IOFromFile(path, "rb");
+    char *const system_path = IoBackend_SystemPath(path);
+    SDL_IOStream *const stream = SDL_IOFromFile(system_path, "rb");
+    Mem_Free(system_path);
     FAIL_IF(stream == nullptr, "Cannot open %s: %s", path, SDL_GetError());
     const Sint64 size = SDL_GetIOSize(stream);
     if (size < 0 || (uint64_t)size > SIZE_MAX) {

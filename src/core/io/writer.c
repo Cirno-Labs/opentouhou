@@ -5,6 +5,7 @@
 #include "core/base/assert.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
+#include "core/io/backend.h"
 
 #include <SDL3/SDL.h>
 #include <stdckdint.h>
@@ -15,11 +16,13 @@
 
 // Holds the open temporary file of a file writer, and the block of it that
 // is kept in memory: the bytes from buffer_start, which are written to the
-// file before another block is started.
+// file before another block is started. path names the file in messages,
+// and the system paths reach the file system.
 struct WRITER_FILE {
     SDL_IOStream *stream;
     char *path;
-    char *temp_path;
+    char *system_path;
+    char *system_temp_path;
     char *error;
     size_t buffer_start;
     size_t buffer_length;
@@ -108,16 +111,18 @@ static RESULT M_CloseFile(WRITER *const writer)
     if (!SDL_CloseIO(file->stream) && !writer->failed) {
         M_Fail(writer, "write");
     }
-    if (!writer->failed && !SDL_RenamePath(file->temp_path, file->path)) {
+    if (!writer->failed
+        && !SDL_RenamePath(file->system_temp_path, file->system_path)) {
         M_Fail(writer, "replace");
     }
     RESULT result = OK;
     if (writer->failed) {
         result = FAIL("%s", file->error);
-        SDL_RemovePath(file->temp_path);
+        SDL_RemovePath(file->system_temp_path);
     }
     Mem_Free(file->path);
-    Mem_Free(file->temp_path);
+    Mem_Free(file->system_path);
+    Mem_Free(file->system_temp_path);
     Mem_Free(file->error);
     Mem_Free(file);
     return result;
@@ -175,18 +180,21 @@ void Writer_OpenBuffer(WRITER *const writer, const ALLOCATOR *const allocator)
 RESULT Writer_OpenFile(WRITER *const writer, const char *const path)
 {
     *writer = (WRITER) {};
-    char *const temp_path = Str_Format("%s.tmp", path);
-    SDL_IOStream *const stream = SDL_IOFromFile(temp_path, "wb");
+    char *const system_path = IoBackend_SystemPath(path);
+    char *const system_temp_path = Str_Format("%s.tmp", system_path);
+    SDL_IOStream *const stream = SDL_IOFromFile(system_temp_path, "wb");
     if (stream == nullptr) {
         const RESULT result =
-            FAIL("Cannot create %s: %s", temp_path, SDL_GetError());
-        Mem_Free(temp_path);
+            FAIL("Cannot create %s.tmp: %s", path, SDL_GetError());
+        Mem_Free(system_temp_path);
+        Mem_Free(system_path);
         return result;
     }
     WRITER_FILE *const file = Mem_AllocZ(sizeof(*file));
     file->stream = stream;
     file->path = Str_Dup(path);
-    file->temp_path = temp_path;
+    file->system_path = system_path;
+    file->system_temp_path = system_temp_path;
     writer->file = file;
     return OK;
 }

@@ -239,3 +239,48 @@ TEST(list_of_a_missing_directory_fails)
     Mem_Free(path);
     Mem_Free(directory);
 }
+
+TEST(every_call_reaches_a_path_longer_than_max_path)
+{
+    char *directory = TestDir_Prepare("long_path");
+    for (int i = 0; i < 10; i++) {
+        char *const deeper =
+            TestDir_Join(directory, "a_directory_with_a_long_name");
+        Mem_Free(directory);
+        directory = deeper;
+    }
+    CHECK(strlen(directory) > 260);
+    CHECK(Result_Log(File_MakeDir(directory), LOG_LEVEL_ERROR));
+    FILE_TYPE type = FILE_TYPE_OTHER;
+    CHECK(Result_Log(File_GetType(directory, &type), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(type, FILE_TYPE_DIR);
+
+    char *const written = TestDir_Join(directory, "東方紅魔郷.dat");
+    char *const renamed = TestDir_Join(directory, "renamed.dat");
+    TestDir_Write(written, "abc", 3);
+    CHECK(Result_Log(File_Rename(written, renamed), LOG_LEVEL_ERROR));
+    CHECK(!File_Exists(written));
+    char *const data = TestDir_Read(renamed);
+    CHECK(data != nullptr);
+    if (data != nullptr) {
+        CHECK_EQ_STR(data, "abc");
+    }
+    Mem_Free(data);
+
+    FILE_LIST list;
+    CHECK(Result_Log(
+        File_ListDir(directory, &g_HeapAllocator, &list), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(list.count, 1);
+    if (list.count == 1) {
+        CHECK_EQ_STR(list.items[0], "renamed.dat");
+    }
+    File_FreeList(&list);
+
+    CHECK(Result_Log(File_Remove(renamed), LOG_LEVEL_ERROR));
+    CHECK(!File_Exists(renamed));
+    CHECK(Result_Log(File_Remove(directory), LOG_LEVEL_ERROR));
+    CHECK(!File_Exists(directory));
+    Mem_Free(renamed);
+    Mem_Free(written);
+    Mem_Free(directory);
+}

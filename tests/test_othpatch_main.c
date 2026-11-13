@@ -314,7 +314,7 @@ TEST(run_updates_installed_patches)
     M_CheckOutput(&test, "Done: 2 patches");
     char *const kept = Server_Read(test.patches, "thpatch/tool/tool.js");
     CHECK_EQ_STR(kept, "changed");
-    SDL_free(kept);
+    Mem_Free(kept);
     M_Close(&test);
     Mem_Free(files);
     Mem_Free(entry);
@@ -475,7 +475,7 @@ static void M_CheckOthpatch(const M_CASE *const test, const char *const text)
     char *const othpatch =
         Server_Read(test->program, Install_GetPlatform()->othpatch);
     CHECK_EQ_STR(othpatch, text);
-    SDL_free(othpatch);
+    Mem_Free(othpatch);
 }
 
 // Checks that the othpatch beside the game is the one that prints

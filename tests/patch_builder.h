@@ -26,9 +26,7 @@
         TEST_FAIL("cannot create %s", full);
     }
     *slash = '/';
-    if (!SDL_SaveFile(full, content, strlen(content))) {
-        TEST_FAIL("cannot create %s: %s", full, SDL_GetError());
-    }
+    TestDir_Write(full, content, strlen(content));
     Mem_Free(full);
 }
 

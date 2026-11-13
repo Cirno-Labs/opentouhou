@@ -9,6 +9,8 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -74,4 +76,39 @@ static char *TestDir_Prepare(const char *const name)
 [[maybe_unused]] static char *TestDir_FileUrl(const char *const path)
 {
     return Str_Format("file://%s%s", path[0] == '/' ? "" : "/", path);
+}
+
+// Writes size bytes of data to the file at path, and stops the test when it
+// cannot.
+[[maybe_unused]] static void TestDir_Write(
+    const char *const path, const void *const data, const size_t size)
+{
+    WRITER writer;
+    if (!Result_Log(Writer_OpenFile(&writer, path), LOG_LEVEL_ERROR)) {
+        abort();
+    }
+    Writer_WriteBytes(&writer, data, size);
+    if (!Result_Log(Writer_Close(&writer), LOG_LEVEL_ERROR)) {
+        abort();
+    }
+}
+
+// Returns the contents of the file at path with a NUL after them, or nullptr
+// when the file cannot be read. Mem_Free releases them.
+[[maybe_unused]] static char *TestDir_Read(const char *const path)
+{
+    READER reader;
+    if (!Result_Ignore(Reader_OpenFile(&reader, path))) {
+        return nullptr;
+    }
+    const size_t size = Reader_Size(&reader);
+    char *data = Mem_Alloc(size + 1);
+    Reader_ReadBytes(&reader, data, size);
+    data[size] = '\0';
+    Reader_Close(&reader);
+    if (!Result_Ignore(Reader_Result(&reader))) {
+        Mem_Free(data);
+        data = nullptr;
+    }
+    return data;
 }

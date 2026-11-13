@@ -242,18 +242,18 @@ TEST(result_still_names_the_path_after_close)
 
 TEST(a_long_path_is_cut_at_the_start)
 {
-    // Stays under the 248 characters that Windows allows for a folder, and
-    // still makes the message longer than READER_ERROR_SIZE.
+    // Nests the file past the 260 characters that Windows allows for a path
+    // without the extended form.
     char *directory = TestDir_Prepare("long_path");
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 10; i++) {
         char *const deeper =
             TestDir_Join(directory, "a_directory_with_a_long_name");
-        CHECK(SDL_CreateDirectory(deeper));
         Mem_Free(directory);
         directory = deeper;
     }
+    CHECK(Result_Log(File_MakeDir(directory), LOG_LEVEL_ERROR));
     char *const path = TestDir_Join(directory, "紅魔郷CM.DAT");
-    M_Create(path, "abc", 3);
+    TestDir_Write(path, "abc", 3);
     READER reader;
     CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
     Reader_ReadU32(&reader);

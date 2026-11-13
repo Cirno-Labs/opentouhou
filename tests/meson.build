@@ -58,6 +58,7 @@ foreach name : [
   'reader',
   'reader_file',
   'reader_owned_buffer',
+  'system_path',
   'writer',
   'writer_file',
 ]
