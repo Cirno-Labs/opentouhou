@@ -592,8 +592,9 @@ TEST(unknown_language_lists_the_codes)
     CHECK_EQ_INT(M_Run(&test, 1, "baboon"), 1);
     M_CheckAll(
         &test,
-        "Setting up the language...\n"
-        "There is no language \"baboon\".\n"
+        "Installing baboon...\n"
+        "Could not install baboon: no repository in the network has a patch "
+        "baboon.\n"
         "Languages for oth06: de, en, ja (original)\n" M_OTHPATCH_SECTION
             M_SOMETHING_FAILED);
     CHECK(M_ReadConfig(&test) == nullptr);
