@@ -48,7 +48,7 @@ othpatch_lib = static_library(
   othpatch_version,
   c_args: [layer_include['othpatch']] + core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
-  dependencies: [curl, sdl3, zlib],
+  dependencies: [curl, zlib],
 )
 
 othpatch_libs = [othpatch_lib, core_json_lib, core_io_lib, core_base_lib]

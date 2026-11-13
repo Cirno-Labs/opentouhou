@@ -41,6 +41,7 @@ core_io_lib = static_library(
   'io/file.c',
   'io/locale.c',
   'io/path.c',
+  'io/process.c',
   'io/reader.c',
   'io/writer.c',
   c_args: core_include,

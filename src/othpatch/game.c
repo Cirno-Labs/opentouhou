@@ -1,32 +1,10 @@
 #include "othpatch/game.h"
 
-#include <SDL3/SDL.h>
+#include "core/base/memory.h"
+#include "core/io/process.h"
+
 #include <stdio.h>
 #include <string.h>
-
-static RESULT M_Run(const char *const path, char **const out, int *const status)
-{
-    const char *const args[] = { path, "--version", nullptr };
-    const SDL_PropertiesID properties = SDL_CreateProperties();
-    SDL_SetPointerProperty(
-        properties, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, (void *)args);
-    SDL_SetNumberProperty(
-        properties, SDL_PROP_PROCESS_CREATE_STDIN_NUMBER,
-        SDL_PROCESS_STDIO_NULL);
-    SDL_SetNumberProperty(
-        properties, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER,
-        SDL_PROCESS_STDIO_APP);
-    SDL_SetNumberProperty(
-        properties, SDL_PROP_PROCESS_CREATE_STDERR_NUMBER,
-        SDL_PROCESS_STDIO_NULL);
-    SDL_Process *const process = SDL_CreateProcessWithProperties(properties);
-    SDL_DestroyProperties(properties);
-    FAIL_IF(process == nullptr, "cannot start it: %s", SDL_GetError());
-    *out = SDL_ReadProcess(process, nullptr, status);
-    SDL_DestroyProcess(process);
-    FAIL_IF(*out == nullptr, "cannot read its output: %s", SDL_GetError());
-    return OK;
-}
 
 void Game_GetProductName(const char *const game, char name[GAME_NAME_SIZE])
 {
@@ -36,9 +14,10 @@ void Game_GetProductName(const char *const game, char name[GAME_NAME_SIZE])
 RESULT Game_GetVersion(const char *const path, char version[GAME_VERSION_SIZE])
 {
     version[0] = '\0';
+    const char *const args[] = { path, "--version", nullptr };
     char *output = nullptr;
     int status = -1;
-    MUST(M_Run(path, &output, &status));
+    MUST(Process_Run(args, &output, &status));
     output[strcspn(output, "\r\n")] = '\0';
     const char *const space = strrchr(output, ' ');
     const char *const word = space != nullptr ? space + 1 : "";
@@ -51,6 +30,6 @@ RESULT Game_GetVersion(const char *const path, char version[GAME_VERSION_SIZE])
     } else {
         memcpy(version, word, length + 1);
     }
-    SDL_free(output);
+    Mem_Free(output);
     return result;
 }
