@@ -1,4 +1,4 @@
-#include "core/base/sha1.h"
+#include "core/hash/sha1.h"
 
 #include "test.h"
 

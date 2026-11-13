@@ -3,9 +3,9 @@
 // Builds repository networks of file:// URLs for the othpatch tests, in the
 // test directories of test_dir.h.
 
-#include "core/base/crc32.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/hash/crc32.h"
 
 #include "patch_builder.h"
 

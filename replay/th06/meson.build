@@ -51,8 +51,14 @@ core_base_lib = static_library(
   src_root / 'core/base/log.c',
   src_root / 'core/base/memory.c',
   src_root / 'core/base/result.c',
-  src_root / 'core/base/sha1.c',
   src_root / 'core/base/string.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
+core_hash_lib = static_library(
+  'core_hash',
+  src_root / 'core/hash/sha1.c',
   c_args: core_include,
   implicit_include_directories: false,
 )
@@ -91,7 +97,7 @@ executable(
   '../core/workdir.c',
   c_args: core_include,
   implicit_include_directories: false,
-  link_with: [core_base_lib, core_io_lib],
+  link_with: [core_base_lib, core_hash_lib, core_io_lib],
   dependencies: [sdl3, zlib],
 )
 

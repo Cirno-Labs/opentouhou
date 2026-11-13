@@ -2,8 +2,8 @@
 
 // Builds zip archives in memory for the othpatch tests.
 
-#include "core/base/crc32.h"
 #include "core/base/memory.h"
+#include "core/hash/crc32.h"
 
 #include "test.h"
 

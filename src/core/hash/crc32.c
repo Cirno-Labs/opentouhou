@@ -1,4 +1,4 @@
-#include "core/base/crc32.h"
+#include "core/hash/crc32.h"
 
 static uint32_t m_Table[256];
 static bool m_TableReady;

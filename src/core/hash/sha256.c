@@ -1,4 +1,4 @@
-#include "othpatch/sha256.h"
+#include "core/hash/sha256.h"
 
 #include <stdio.h>
 #include <string.h>

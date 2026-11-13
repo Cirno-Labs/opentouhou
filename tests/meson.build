@@ -1,18 +1,16 @@
-# The tests of core/base, core/json, core/io and the tools are in the suite
-# core or tools. Every build runs them, whatever programs it has.
+# The tests of core/base, core/hash, core/json, core/io and the tools are
+# in the suite core or tools. Every build runs them, whatever programs it has.
 
 # Each part of core/base has a test named after it.
 foreach part : [
   'arena',
   'array',
   'cp932',
-  'crc32',
   'hash_map',
   'log',
   'log_fatal_handler',
   'memory',
   'result',
-  'sha1',
   'string',
 ]
   test(
@@ -23,6 +21,25 @@ foreach part : [
       c_args: core_include,
       implicit_include_directories: false,
       link_with: core_base_lib,
+    ),
+    suite: ['unit', 'core'],
+  )
+endforeach
+
+# Each part of core/hash has a test named after it.
+foreach part : [
+  'crc32',
+  'sha1',
+  'sha256',
+]
+  test(
+    'core/hash/' + part,
+    executable(
+      'test_' + part,
+      'test_' + part + '.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_hash_lib, core_base_lib],
     ),
     suite: ['unit', 'core'],
   )
@@ -137,7 +154,7 @@ if build_othpatch
     'fake_program.c',
     implicit_include_directories: false,
   )
-  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'repo', 'sha256', 'update', 'zip']
+  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'repo', 'update', 'zip']
     test(
       'othpatch/' + part,
       executable(

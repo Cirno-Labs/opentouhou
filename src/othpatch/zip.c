@@ -1,7 +1,7 @@
 #include "othpatch/zip.h"
 
-#include "core/base/crc32.h"
 #include "core/base/memory.h"
+#include "core/hash/crc32.h"
 #include "core/io/reader.h"
 
 #include <string.h>

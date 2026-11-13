@@ -1,6 +1,7 @@
 #include "othpatch/install.h"
 #include "othpatch/main.h"
-#include "othpatch/sha256.h"
+
+#include "core/hash/sha256.h"
 
 #include "fake_program.h"
 #include "othpatch_server.h"
