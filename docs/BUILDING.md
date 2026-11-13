@@ -285,7 +285,7 @@ replay inputs stay outside the repository. Original files are only
 read.
 
 The runner reports skipped columns and the first calc with any
-difference. Its [public header](../replay/th06/runner/run.h) describes
+difference. Its [public header](../replay/th06/runner/context.h) describes
 the supported capture format and the checks for full replay coverage.
 
 ## Releasing
