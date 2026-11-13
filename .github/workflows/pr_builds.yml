@@ -10,6 +10,11 @@ permissions:
   contents: read
   packages: read
 
+# A new push to a pull request cancels the builds of its older commits.
+concurrency:
+  group: pr-builds-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
@@ -31,20 +36,38 @@ jobs:
 
   build_linux:
     name: Linux
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - debug
+          - release
     uses: ./.github/workflows/job_build.yml
     with:
       platform: linux
-      target: debug
+      target: ${{ matrix.target }}
 
   build_win:
     name: Windows
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - debug
+          - release
     uses: ./.github/workflows/job_build.yml
     with:
       platform: win
-      target: debug
+      target: ${{ matrix.target }}
 
   build_mac:
     name: macOS
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - debug
+          - release
     uses: ./.github/workflows/job_build_macos.yml
     with:
-      target: debug
+      target: ${{ matrix.target }}

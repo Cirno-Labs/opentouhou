@@ -1,0 +1,79 @@
+name: Link the pull request builds
+
+# Runs after "Build a pull request" in the context of the base repository,
+# with a token that can write pull request comments, also for a pull
+# request from a fork. It never checks out or runs code of the pull
+# request: it only lists the artifacts of the build and writes one comment.
+on:
+  workflow_run:
+    workflows:
+      - Build a pull request
+    types:
+      - completed
+
+permissions:
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    name: Comment
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write the download links
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
+
+            // A pull request from a fork is missing from run.pull_requests,
+            // so the pull request is found by its head commit.
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+            const pull = pulls.find((item) => item.head.sha === run.head_sha);
+            if (pull === undefined) {
+              core.warning(`No open pull request has the commit ${run.head_sha}.`);
+              return;
+            }
+
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              { owner, repo, run_id: run.id, per_page: 100 },
+            );
+            // The pull request names its artifacts, so a name loses every
+            // character that could leave the link text.
+            const label = (name) => String(name).replace(/[^A-Za-z0-9._-]/g, '');
+            const links = artifacts
+              .filter((item) => !item.expired)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((item) => `- [${label(item.name)}](https://github.com/${owner}/${repo}/actions/runs/${run.id}/artifacts/${item.id})`);
+            if (links.length === 0) {
+              core.warning(`The run ${run.id} has no artifacts.`);
+              return;
+            }
+
+            const marker = '<!-- pr-build-links -->';
+            const body = [
+              marker,
+              `Builds of ${run.head_sha.slice(0, 7)}, for a signed-in GitHub account:`,
+              '',
+              ...links,
+            ].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: pull.number, per_page: 100,
+            });
+            const previous = comments.find(
+              (item) => item.user.login === 'github-actions[bot]' && item.body.startsWith(marker),
+            );
+            if (previous === undefined) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: pull.number, body,
+              });
+            } else {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: previous.id, body,
+              });
+            }
