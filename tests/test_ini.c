@@ -274,3 +274,52 @@ TEST(no_leaks_through_parsing_setting_removing_and_freeing)
     CHECK_EQ_INT(test.live_blocks, 0);
     CHECK_EQ_INT(test.size_errors, 0);
 }
+
+TEST(merge_sets_only_the_changed_keys_over_the_file)
+{
+    INI *const base = M_Parse(
+        &g_HeapAllocator,
+        "[video]\nfullscreen = false\ninterpolation = true\n"
+        "[patches]\nlanguage = en\n");
+    INI *const changed = M_Parse(
+        &g_HeapAllocator,
+        "[video]\nfullscreen = true\ninterpolation = true\n"
+        "[patches]\nlanguage = en\n");
+    INI *const disk = M_Parse(
+        &g_HeapAllocator,
+        "; my settings\n"
+        "[patches]\n"
+        "language = de ; set by othpatch\n"
+        "[video]\n"
+        "interpolation = false\n");
+    Ini_MergeChanges(disk, base, changed);
+    char *const written = M_WriteToBuffer(disk);
+    CHECK_EQ_STR(
+        written,
+        "; my settings\n"
+        "[patches]\n"
+        "language = de ; set by othpatch\n"
+        "[video]\n"
+        "interpolation = false\n"
+        "fullscreen = true\n");
+    Mem_Free(written);
+    Ini_Free(disk);
+    Ini_Free(changed);
+    Ini_Free(base);
+}
+
+TEST(merge_adds_the_keys_that_the_file_lacks)
+{
+    INI *const base =
+        M_Parse(&g_HeapAllocator, "[video]\nfullscreen = false\n");
+    INI *const changed = M_Parse(
+        &g_HeapAllocator, "[video]\nfullscreen = false\n[new]\nkey = 1\n");
+    INI *const disk = M_Parse(&g_HeapAllocator, "");
+    Ini_MergeChanges(disk, base, changed);
+    char *const written = M_WriteToBuffer(disk);
+    CHECK_EQ_STR(written, "[video]\nfullscreen = false\n\n[new]\nkey = 1\n");
+    Mem_Free(written);
+    Ini_Free(disk);
+    Ini_Free(changed);
+    Ini_Free(base);
+}

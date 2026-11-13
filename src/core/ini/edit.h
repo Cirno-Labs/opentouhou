@@ -17,3 +17,9 @@ void Ini_Set(INI *ini, const char *section, const char *key, const char *value);
 // Removes every line that sets key in section. Removing the section's last
 // key leaves its header in place.
 void Ini_Remove(INI *ini, const char *section, const char *key);
+
+// Sets in target every key of changed whose value differs from its value in
+// base, and every key of changed that target lacks, as Ini_Set sets it.
+// Every other line of target stays as it is. A key that appears more than
+// once counts with its last value.
+void Ini_MergeChanges(INI *target, const INI *base, const INI *changed);
