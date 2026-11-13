@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "../core/clock.h"
 #include "../core/overlay.h"
 #include "../core/patch.h"

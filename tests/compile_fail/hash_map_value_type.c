@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then reads a map's value through a pointer to another type.
 #include "core/base/hash_map.h"

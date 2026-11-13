@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "log_file.h"
 
 #include "core/base/log.h"

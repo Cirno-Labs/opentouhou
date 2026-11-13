@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "anm_builder.h"
 
 #include "core/base/assert.h"

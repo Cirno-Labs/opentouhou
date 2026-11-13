@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "th06_scene_stubs.h"
 
 #include "th06/screens/result.h"

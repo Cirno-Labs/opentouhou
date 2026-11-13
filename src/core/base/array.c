@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/base/array.h"
 
 #include "core/base/assert.h"

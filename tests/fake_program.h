@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Builds programs that print a given output and exit with a given status,

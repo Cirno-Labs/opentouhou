@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/audio/decoder.h"
 
 #include "core/base/memory.h"

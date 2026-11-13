@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-only
 """Print one section of a game's changelog without its heading.
 
 The section is the version's, or the unreleased changes by default.

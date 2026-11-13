@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Builds repository networks of file:// URLs for the othpatch tests, in the

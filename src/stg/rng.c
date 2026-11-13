@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "stg/rng.h"
 
 void Rng_SetSeed(RNG *const rng, const uint16_t seed)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-only
 """Print the programs whose version is not in the release index yet.
 
 Prints two lines for $GITHUB_OUTPUT: othpatch=<version>, empty when the

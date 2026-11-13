@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Includes every part of core/base.

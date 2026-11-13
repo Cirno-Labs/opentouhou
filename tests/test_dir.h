@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Gives each test case an empty directory of its own. The directories are

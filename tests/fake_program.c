@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Stands in for a game or othpatch in the othpatch tests. fake_program.h
 // appends an output and an exit status to a copy of this executable. The
 // copy prints that output and exits with that status.

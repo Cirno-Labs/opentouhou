@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"

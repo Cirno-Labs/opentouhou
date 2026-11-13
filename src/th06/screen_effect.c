@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "th06/screen_effect.h"
 
 #include "th06/chain.h"

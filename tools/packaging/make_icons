@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-only
 """Render a program's icon into the Windows .ico and the macOS .icns.
 
 The source is <program>/icon.png beside this script, a square image of at

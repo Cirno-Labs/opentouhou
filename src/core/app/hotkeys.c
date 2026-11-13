@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "hotkeys.h"
 
 static const INPUT_ACTION m_Actions[] = {

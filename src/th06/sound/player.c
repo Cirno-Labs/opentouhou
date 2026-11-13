@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "th06/sound/player.h"
 
 #include "th06/files.h"

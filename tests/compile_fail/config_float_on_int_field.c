@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then declares a CONFIG_FLOAT option over an int32_t field.
 #include "core/config.h"

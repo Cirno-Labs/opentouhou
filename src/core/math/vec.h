@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Vectors, matrices, and the subset of D3DX8's vector and matrix maths

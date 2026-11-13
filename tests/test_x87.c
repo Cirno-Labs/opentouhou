@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/math/x87.h"
 
 #include "core/math/common.h"

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then declares an INPUT_STICK over a field pair with a gap between them.
 #include "core/input.h"

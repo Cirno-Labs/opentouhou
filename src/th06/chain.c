@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "th06/chain.h"
 
 #include "core/base/assert.h"

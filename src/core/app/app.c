@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #define SDL_MAIN_USE_CALLBACKS
 #define SDL_MAIN_NOIMPL
 #include "core/app.h"

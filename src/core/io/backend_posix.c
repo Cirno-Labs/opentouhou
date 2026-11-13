@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/io/backend.h"
 
 #include "core/base/string.h"

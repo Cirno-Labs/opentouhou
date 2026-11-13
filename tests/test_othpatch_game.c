@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "othpatch/game.h"
 
 #include "fake_program.h"

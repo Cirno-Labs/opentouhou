@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-3.0-only
 """Tests of tools/release_index and tools/release_plan against a fake R2
 bucket."""
 
