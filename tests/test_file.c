@@ -55,6 +55,27 @@ TEST(make_dir_fails_below_a_file)
     Mem_Free(directory);
 }
 
+TEST(get_type_tells_files_from_directories)
+{
+    char *const directory = TestDir_Prepare("get_type");
+    char *const file = TestDir_Join(directory, "東方.dat");
+    char *const missing = TestDir_Join(directory, "missing");
+    M_Create(file);
+    FILE_TYPE type = FILE_TYPE_OTHER;
+    CHECK(Result_Log(File_GetType(file, &type), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(type, FILE_TYPE_FILE);
+    CHECK(Result_Log(File_GetType(directory, &type), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(type, FILE_TYPE_DIR);
+    char *const prefix = Str_Format("Cannot query %s: ", missing);
+    const RESULT result = File_GetType(missing, &type);
+    CHECK(!IS_OK(result) && Str_StartsWith(result.message, prefix));
+    Result_Ignore(result);
+    Mem_Free(prefix);
+    Mem_Free(missing);
+    Mem_Free(file);
+    Mem_Free(directory);
+}
+
 static void M_CheckContent(const char *const path, const char *const expected)
 {
     size_t size = 0;

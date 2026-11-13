@@ -14,17 +14,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static SDL_EnumerationResult SDLCALL M_TestDirRemove(
-    void *const userdata, const char *const directory, const char *const name)
+// Removes path and, when it is a directory, everything in it.
+static void M_TestDirRemove(const char *const path)
 {
-    char *const path = Str_Format("%s%s", directory, name);
-    SDL_PathInfo info;
-    if (SDL_GetPathInfo(path, &info) && info.type == SDL_PATHTYPE_DIRECTORY) {
-        SDL_EnumerateDirectory(path, M_TestDirRemove, nullptr);
+    FILE_TYPE type;
+    FILE_LIST list;
+    if (Result_Ignore(File_GetType(path, &type)) && type == FILE_TYPE_DIR
+        && Result_Ignore(File_ListDir(path, &g_HeapAllocator, &list))) {
+        for (int32_t i = 0; i < list.count; i++) {
+            char *const child = Str_Format("%s/%s", path, list.items[i]);
+            M_TestDirRemove(child);
+            Mem_Free(child);
+        }
+        File_FreeList(&list);
     }
-    SDL_RemovePath(path);
-    Mem_Free(path);
-    return SDL_ENUM_CONTINUE;
+    Result_Ignore(File_Remove(path));
 }
 
 static bool M_TestDirIsInTmp(const char *const root)
@@ -50,7 +54,7 @@ static char *TestDir_Prepare(const char *const name)
         abort();
     }
     char *const directory = Str_Format("%s/%s", root, name);
-    SDL_EnumerateDirectory(directory, M_TestDirRemove, nullptr);
+    M_TestDirRemove(directory);
     if (!Result_Log(File_MakeDir(directory), LOG_LEVEL_ERROR)) {
         abort();
     }

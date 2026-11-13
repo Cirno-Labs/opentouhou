@@ -10,7 +10,6 @@
 #include "core/io/reader.h"
 #include "core/vfs/normalize.h"
 
-#include <SDL3/SDL.h>
 #include <string.h>
 
 // Caps how deep the directory tree may nest, so that a symbolic link cycle
@@ -83,13 +82,12 @@ static RESULT M_Walk(
         const char *const name = list.items[i];
         char *const disk_path = Path_Join(dir->allocator, disk_dir, name);
         char *const vfs_path = Path_Join(dir->allocator, vfs_dir, name);
-        SDL_PathInfo info;
+        FILE_TYPE type;
         bool recorded = false;
-        if (!SDL_GetPathInfo(disk_path, &info)) {
-            result = FAIL("%s: %s", disk_path, SDL_GetError());
-        } else if (info.type == SDL_PATHTYPE_DIRECTORY) {
+        result = File_GetType(disk_path, &type);
+        if (IS_OK(result) && type == FILE_TYPE_DIR) {
             result = M_Walk(dir, disk_path, vfs_path, depth + 1);
-        } else {
+        } else if (IS_OK(result)) {
             // M_Record takes ownership of disk_path, whether it succeeds or
             // fails.
             result = M_Record(dir, vfs_path, disk_path);

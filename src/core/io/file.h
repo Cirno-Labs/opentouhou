@@ -14,9 +14,20 @@
 // NUL-terminated UTF-8 string from the allocator of the array.
 typedef ARRAY(char *) FILE_LIST;
 
+// Tells what kind of entry a path names.
+typedef enum {
+    FILE_TYPE_FILE,
+    FILE_TYPE_DIR,
+    FILE_TYPE_OTHER,
+} FILE_TYPE;
+
 // Returns whether path names an existing file, directory or other entry. A
 // symbolic link counts as what it points to.
 bool File_Exists(const char *path);
+
+// Returns in *type the kind of entry at path. A symbolic link counts as what
+// it points to. The query fails when path names nothing.
+RESULT File_GetType(const char *path, FILE_TYPE *type);
 
 // Creates the directory at path, and the directories above it that do not
 // exist. A directory that exists already is a success.

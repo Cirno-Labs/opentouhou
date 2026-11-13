@@ -25,9 +25,10 @@ static RESULT M_Path(
         "Cannot read screenshot date: %s", SDL_GetError());
     char *const directory =
         Path_Join(&g_HeapAllocator, user_dir, "screenshots");
-    if (!SDL_CreateDirectory(directory)) {
+    const RESULT made = File_MakeDir(directory);
+    if (!IS_OK(made)) {
         Mem_Free(directory);
-        return FAIL("Cannot create screenshot directory: %s", SDL_GetError());
+        return made;
     }
     const char *const extension =
         settings->screenshot_format == 0 ? "png" : "jpg";

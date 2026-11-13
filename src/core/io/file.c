@@ -67,6 +67,26 @@ bool File_Exists(const char *const path)
     return SDL_GetPathInfo(path, nullptr);
 }
 
+RESULT File_GetType(const char *const path, FILE_TYPE *const type)
+{
+    SDL_PathInfo info;
+    FAIL_IF(
+        !SDL_GetPathInfo(path, &info), "Cannot query %s: %s", path,
+        SDL_GetError());
+    switch (info.type) {
+    case SDL_PATHTYPE_FILE:
+        *type = FILE_TYPE_FILE;
+        break;
+    case SDL_PATHTYPE_DIRECTORY:
+        *type = FILE_TYPE_DIR;
+        break;
+    default:
+        *type = FILE_TYPE_OTHER;
+        break;
+    }
+    return OK;
+}
+
 // Creates each missing parent before the directory, because on Windows
 // SDL_CreateDirectory cannot create the parents of a path without a drive,
 // such as "/dir", or of a UNC path.

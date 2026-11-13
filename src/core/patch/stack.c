@@ -13,7 +13,6 @@
 #include "core/json.h"
 #include "core/vfs/normalize.h"
 
-#include <SDL3/SDL.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -89,12 +88,12 @@ static void M_IndexDir(
     for (int32_t i = 0; i < list.count; i++) {
         const char *const name = list.items[i];
         char *const disk_path = Path_Join(&g_HeapAllocator, disk_dir, name);
-        SDL_PathInfo info;
-        if (!SDL_GetPathInfo(disk_path, &info)) {
+        FILE_TYPE type;
+        if (!Result_Ignore(File_GetType(disk_path, &type))) {
             Mem_Free(disk_path);
             continue;
         }
-        if (info.type == SDL_PATHTYPE_DIRECTORY) {
+        if (type == FILE_TYPE_DIR) {
             if (recursive) {
                 char *const sub_prefix = Str_Format("%s%s/", prefix, name);
                 M_ToLower(sub_prefix);
