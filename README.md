@@ -23,25 +23,27 @@ and replays, the music room and the endings. Replays recorded with the
 original game play back in the port; the 17 world-record replays match
 the original frame by frame.
 
-Next: English and other translations, the fixes and optional changes
-known from the community's patches, then th07.
+othpatch, which comes with each game, downloads the English and other
+translations of thpatch.net. It also updates the games and itself.
+
+Next: the fixes and optional changes known from the community's patches,
+then th07.
 
 ## Playing
 
-Download the package for your system from the releases, and put the
-executable into the folder of your copy of th06:
-
-- Windows: `oth06.exe` from `oth06-<version>-Windows.zip`
-- Linux: `oth06-<version>-Linux.AppImage`
-- macOS: `oth06.app` from `oth06-<version>-macOS.zip`
+Download the zip for your system from <https://opentouhou.org/>:
+`oth06-<version>-Windows.zip`, `oth06-<version>-Linux.zip` or
+`oth06-<version>-macOS.zip`. Each zip holds the game (`oth06.exe`,
+`oth06.AppImage` or `oth06.app`) and othpatch. Put both into the folder
+of your copy of th06.
 
 The executables start with an "o" so that they never replace the
-original's `th06.exe`. To keep the port elsewhere, start it with
-`--data <folder>`. `oth06 --help` lists the options and shows where the
-settings, scores and replays go. The data folder is only read.
+original's `th06.exe`. The data folder is only read.
 
-Settings are in `config.ini` in that user folder: the video, screenshot
-and key settings, and the game's own options.
+The zip also holds
+[`README.txt`](tools/packaging/th06/README.txt), which is inside
+`oth06.app` on macOS. It tells where your files go, and
+describes portable mode, the keys, the settings and othpatch.
 
 ## Features
 
@@ -57,14 +59,27 @@ and key settings, and the game's own options.
 ## Layout
 
 ```
-src/core/   shared by every game: window, rendering, input, audio,
-            text, file IO, settings, frame pacing
-src/stg/    shared by the shooting games: archives, random numbers
-src/th06/   one directory per game
-replay/     tools that capture cases from the original game and compare
-            the port against them
-tools/      build, packaging and release tools
-docs/       documentation: ARCHITECTURE.md, BUILDING.md, TH06.md
+src/core/      shared by every game: window, rendering, input, audio,
+               text, file IO, settings, frame pacing
+src/stg/       shared by the shooting games: archives, random numbers
+src/th06/      one directory per game
+src/othpatch/  the patch downloader and updater
+tests/         unit tests
+replay/        tools that capture cases from the original game and
+               compare the port against them
+tools/         build, packaging and release tools
+docs/          documentation: ARCHITECTURE.md, BUILDING.md, TH06.md,
+               and a changelog per program
+```
+
+## Building
+
+You need Docker, just and Python 3.11 or newer:
+
+```sh
+just build-linux                 # build every game and othpatch
+just test                        # run the unit tests
+just run th06 --data <folder>    # build th06 and start it
 ```
 
 [docs/BUILDING.md](docs/BUILDING.md) describes how to build, test and

@@ -21,7 +21,8 @@ beside its .dat files:
 - macOS: oth06.app and othpatch
 
 Then start the program. The program never changes the files in that
-folder.
+folder. On macOS, the program has no developer signature, so macOS asks
+before the first start: open oth06.app from its context menu.
 
 To keep the program in a different folder, give it the folder of the
 game when you start it:
@@ -50,6 +51,8 @@ The user folder is:
 - Linux: ~/.local/share/opentouhou/th06/
 - macOS: ~/Library/Application Support/opentouhou/th06/
 
+On Linux, $XDG_DATA_HOME replaces ~/.local/share when it is set.
+
 The files have the format of the original game. To keep your scores and
 replays from the original game, copy its score.dat and replay/ folder
 into the user folder.
@@ -57,6 +60,9 @@ into the user folder.
 To use a different user folder, start the program with:
 
     oth06 --user-dir <folder>
+
+--user-dir moves only the user folder. The patches folder stays where
+it is, so all games of one installation share it.
 
 
 Portable mode
@@ -75,8 +81,35 @@ F11 or Alt+Enter changes between window and full screen. F12 or Print
 Screen saves a screenshot.
 
 
+Settings
+--------
+
+config.ini in the user folder holds the settings: the video, screenshot
+and key settings, and the options of the game.
+
+- [video] interpolation: smooths motion between the 60 Hz steps of the
+  game on faster displays. It is on by default. Set it to false to show
+  each step as the game drew it.
+- [screenshot] resolution: native or window. format: png or jpg.
+  jpeg_quality: 1 to 100.
+- [patches] enabled: set it to false to turn off all patches.
+  disabled: patch ids to leave out, separated by commas, for example
+  thpatch/lang_de.
+
+
 Translations and updates
 ------------------------
+
+The program applies the thcrap patches in the patches folder:
+
+- Windows: %APPDATA%\opentouhou\patches\
+- Linux: ~/.local/share/opentouhou/patches/
+- macOS: ~/Library/Application Support/opentouhou/patches/
+- Portable mode: patches/ beside the program
+
+The patches folder has the layout of the repos/ folder of thcrap, so a
+copy of that folder works: one folder per repository, and in it one
+folder per patch. Every patch applies, after the patches it needs.
 
 Keep othpatch in the same folder as the program. othpatch downloads
 the translations of thpatch.net into the patches folder. To get the
