@@ -33,6 +33,10 @@
 #define M_NAME_LENGTH 8
 #define M_CLEAR_STAGE 99
 #define M_SPELL_PAGE_SIZE 10
+#define M_CAPTURE_OFFSET 368.0f
+// Moves the capture rates of base_tsa right, past its longest spell card
+// name.
+#define M_BASE_TSA_CAPTURE_OFFSET 472.0f
 
 #define M_UP 0x10
 #define M_DOWN 0x20
@@ -137,13 +141,18 @@ static void M_Interrupt(M_SCREEN *const screen, const int16_t interrupt)
     }
 }
 
+// Renders the names of the two shot types of the character, centered, or
+// at the left of their rows with base_tsa, as its executable patches do.
 static void M_RenderShotNames(M_SCREEN *const screen)
 {
     for (int32_t i = 0; i < 2; i++) {
+        ANM_VM *const vm = &screen->text_sprites[i];
+        const char *const name =
+            g_Strings[m_ShotNames[screen->character * 2 + i]];
         Result_Log(
-            Anm_RenderTextCentered(
-                &screen->text_sprites[i], 0xffffff, 0, "%s",
-                g_Strings[m_ShotNames[screen->character * 2 + i]]),
+            Translation_HasBaseTsa()
+                ? Anm_RenderText(vm, 0xffffff, 0, "%s", name)
+                : Anm_RenderTextCentered(vm, 0xffffff, 0, "%s", name),
             LOG_LEVEL_WARNING);
     }
 }
@@ -931,9 +940,17 @@ static void M_DrawSpellCards(M_SCREEN *const screen, VEC3 pos)
             AsciiText_AddFormat(pos, "No.%.2d", index + 1);
             text->pos.x += 96.0f;
             M_DrawSprite(text, 0x100 + (uint32_t)i);
-            pos.x += 368.0f;
-            AsciiText_AddFormat(pos, "%3d/%3d", card->captures, card->attempts);
-            pos.x -= 368.0f;
+            if (Translation_HasBaseTsa()) {
+                VEC3 capture = pos;
+                capture.x += M_BASE_TSA_CAPTURE_OFFSET;
+                AsciiText_AddFormat(
+                    capture, "%3d/%3d", card->captures, card->attempts);
+            } else {
+                pos.x += M_CAPTURE_OFFSET;
+                AsciiText_AddFormat(
+                    pos, "%3d/%3d", card->captures, card->attempts);
+                pos.x -= M_CAPTURE_OFFSET;
+            }
         }
         pos.y += 30.0f;
     }

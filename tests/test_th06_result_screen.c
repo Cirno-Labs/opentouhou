@@ -4,11 +4,13 @@
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
 #include "th06/anm.h"
+#include "th06/anm/private.h"
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
@@ -17,10 +19,12 @@
 #include "th06/scene.h"
 #include "th06/screens/result/private.h"
 #include "th06/sound.h"
+#include "th06/translation.h"
 
 #include "core/base/memory.h"
 #include "core/io/file.h"
 #include "core/image.h"
+#include "core/patch.h"
 
 #include <string.h>
 
@@ -29,6 +33,7 @@ RNG g_Rng;
 BUTTONS g_Buttons;
 
 static char *m_Directory;
+static PATCH_STACK *m_Patches;
 static SCENE m_Requested;
 static TH06_INPUT m_Input;
 static CHAIN_ELEM m_InputElem;
@@ -109,9 +114,8 @@ static void M_WriteData(const char *const case_name)
     Image_Free(&image);
 }
 
-static void M_Setup(const char *const case_name)
+static void M_Start(void)
 {
-    M_WriteData(case_name);
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
@@ -126,6 +130,12 @@ static void M_Setup(const char *const case_name)
     Chain_InitElem(&m_InputElem, M_Input, nullptr);
     CHECK(
         Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+}
+
+static void M_Setup(const char *const case_name)
+{
+    M_WriteData(case_name);
+    M_Start();
 }
 
 static void M_Teardown(void)
@@ -566,4 +576,132 @@ TEST(the_unlock_sequence_needs_focus_or_skip_held)
     M_Tick();
     CHECK_EQ_INT(g_GameManager.records.clears[3].with_continues[4], 1);
     M_Teardown();
+}
+
+// Layout with nmlgc/base_tsa
+
+// Sets up as M_Setup does, with text.anm holding the 16 text rows of the
+// screen, 256 x 16 each, and the text font. With base_tsa, puts
+// nmlgc/base_tsa in the patch stack of the translations.
+static void M_SetupText(const char *const case_name, const bool base_tsa)
+{
+    M_WriteData(case_name);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 256, 256);
+    for (int32_t i = 0; i < 16; i++) {
+        AnmBuilder_AddSprite(&builder, 8 + i, 0.0f, 16.0f * i, 256.0f, 16.0f);
+    }
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, "data/text.anm", bytes, size);
+    M_Start();
+    CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Anm_CreateTexture(0, 256, 256, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    if (base_tsa) {
+        char *const patches = TestDir_Join(m_Directory, "patches");
+        PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+        CHECK(Result_Log(
+            Patch_OpenStack(
+                patches, "th06", &g_PatchGame, nullptr, 0, &m_Patches),
+            LOG_LEVEL_ERROR));
+        Mem_Free(patches);
+        Translation_Init(m_Patches);
+        CHECK(Translation_HasBaseTsa());
+    }
+}
+
+static void M_TeardownText(void)
+{
+    M_Teardown();
+    Anm_ShutdownText();
+    Translation_Shutdown();
+    Patch_CloseStack(m_Patches);
+    m_Patches = nullptr;
+}
+
+// Returns the leftmost column of text row row that text drew into, or -1.
+static int32_t M_LeftmostDrawn(const int32_t row)
+{
+    const IMAGE *const image = AnmTexture_GetImage(0);
+    int32_t leftmost = -1;
+    for (int32_t y = row * 16; y < row * 16 + 16; y++) {
+        for (int32_t x = 0; x < image->width; x++) {
+            const size_t at = ((size_t)y * (size_t)image->width + (size_t)x);
+            if (image->pixels[at * 4 + 3] != 0
+                && (leftmost < 0 || x < leftmost)) {
+                leftmost = x;
+            }
+        }
+    }
+    return leftmost;
+}
+
+TEST(the_shot_names_are_centered_in_their_rows)
+{
+    M_SetupText("shot_names_centered", false);
+    M_StartGame(5000000);
+    CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
+    M_Tick();
+    CHECK(M_LeftmostDrawn(0) > 32);
+    CHECK(M_LeftmostDrawn(1) > 32);
+    M_TeardownText();
+}
+
+TEST(base_tsa_puts_the_shot_names_at_the_left_of_their_rows)
+{
+    M_SetupText("shot_names_left", true);
+    M_StartGame(5000000);
+    CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
+    M_Tick();
+    CHECK(M_LeftmostDrawn(0) >= 0 && M_LeftmostDrawn(0) < 4);
+    CHECK(M_LeftmostDrawn(1) >= 0 && M_LeftmostDrawn(1) < 4);
+    M_TeardownText();
+}
+
+// Opens the spell card page of the browser, four entries below Normal,
+// draws it once, and returns how far right of its number the capture rate
+// of the first card is drawn.
+static float M_CaptureOffset(void)
+{
+    M_StartGame(0);
+    CHECK(Result_Log(ResultScreen_Register(0), LOG_LEVEL_ERROR));
+    M_Run(21);
+    for (int32_t i = 0; i < 4; i++) {
+        M_Press((TH06_INPUT) { .down = true });
+    }
+    M_Press((TH06_INPUT) { .shoot = true });
+    M_Run(25);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    float number = -1.0f;
+    float capture = -1.0f;
+    for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const string = &g_AsciiText.strings[i];
+        if (strcmp(string->text, "No.01") == 0) {
+            number = string->pos.x;
+        } else if (
+            number >= 0.0f && capture < 0.0f
+            && strcmp(string->text, "  0/  0") == 0) {
+            capture = string->pos.x;
+        }
+    }
+    CHECK(number >= 0.0f && capture >= 0.0f);
+    return capture - number;
+}
+
+TEST(the_capture_rates_are_368_pixels_right_of_the_numbers)
+{
+    M_SetupText("capture_retail", false);
+    CHECK(M_CaptureOffset() == 368.0f);
+    M_TeardownText();
+}
+
+TEST(base_tsa_moves_the_capture_rates_472_pixels_right)
+{
+    M_SetupText("capture_base_tsa", true);
+    CHECK(M_CaptureOffset() == 472.0f);
+    M_TeardownText();
 }
