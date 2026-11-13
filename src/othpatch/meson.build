@@ -40,8 +40,6 @@ othpatch_lib = static_library(
   othpatch_fetch_backends[host_machine.system()],
   'main.c',
   'release.c',
-  'repo.c',
-  'update.c',
   'zip.c',
   othpatch_version,
   c_args: [layer_include['othpatch']] + shell_include + ['-I' + meson.current_build_dir()],

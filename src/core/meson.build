@@ -70,12 +70,16 @@ core_ini_lib = static_library(
   dependencies: [sdl3],
 )
 
-# core/patch's selection needs core/base, core/io, core/ini and core/json,
-# so that othpatch can link it without core/vfs.
+# core/patch's selection and manager need core/base, core/hash, core/io,
+# core/ini and core/json, so that othpatch can link them without core/vfs.
 core_patch_select_lib = static_library(
   'core_patch_select',
+  'patch/fetch.c',
   'patch/language.c',
+  'patch/manager.c',
+  'patch/repo.c',
   'patch/select.c',
+  'patch/update.c',
   c_args: core_include,
   implicit_include_directories: false,
   link_with: core_ini_lib,

@@ -107,6 +107,9 @@ static void M_AddPatch(
     } else {
         patch.entry.patch_js = patch_js;
     }
+    const char *const title =
+        Json_GetString(Json_Get(patch.entry.patch_js, "title"), "");
+    patch.entry.title = title[0] != '\0' ? title : patch.entry.id;
     Array_Append(&selection->patches, patch);
 }
 

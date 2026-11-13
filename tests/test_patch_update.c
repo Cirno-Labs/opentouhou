@@ -1,6 +1,6 @@
-#include "othpatch/update.h"
+#include "core/patch/update.h"
 
-#include "othpatch_server.h"
+#include "patch_server.h"
 #include "test.h"
 #include "test_dir.h"
 
@@ -15,21 +15,36 @@ typedef struct {
     char *server;
     char *patches;
     ARENA arena;
-    REPO_PATCH_LIST list;
+    PATCH_REMOTE_LIST list;
     // Hold the reports of the last update, done and total each.
     int32_t reports[M_MAX_REPORTS][2];
     int32_t report_count;
 } M_CASE;
 
 static void M_Record(
-    void *const context, const int32_t done, const int32_t total)
+    M_CASE *const test, const int32_t done, const int32_t total)
 {
-    M_CASE *const test = context;
     if (test->report_count < M_MAX_REPORTS) {
         test->reports[test->report_count][0] = done;
         test->reports[test->report_count][1] = total;
     }
     test->report_count++;
+}
+
+static void M_RecordStarted(
+    void *const user, const PATCH_ENTRY *const patch, const int32_t files)
+{
+    CHECK_EQ_STR(patch->id, "first/p");
+    M_Record(user, 0, files);
+}
+
+static void M_RecordFileDone(
+    void *const user, const PATCH_ENTRY *const patch, const char *const file)
+{
+    M_CASE *const test = user;
+    CHECK_EQ_STR(patch->id, "first/p");
+    const int32_t last = test->report_count - 1;
+    M_Record(test, test->reports[last][0] + 1, test->reports[last][1]);
 }
 
 // Prepares a server with the repository "first" that has the patch "p",
@@ -53,24 +68,30 @@ static M_CASE M_Prepare(const char *const name, const char *const files)
     return M_PrepareIn(TestDir_Prepare(name), files);
 }
 
-static RESULT M_Update(M_CASE *const test, UPDATE_COUNTS *const counts)
+static RESULT M_Update(M_CASE *const test, PATCH_COUNTS *const counts)
 {
     Arena_Init(&test->arena, "test", M_ARENA_SIZE);
     Array_Init(&test->list, Arena_Allocator(&test->arena));
     char *const server_url = TestDir_FileUrl(test->server);
     char *const url = Str_Format("%s/first/", server_url);
     Mem_Free(server_url);
-    REPO_NETWORK *network;
-    RESULT result = Repo_Open(url, &test->arena, &network);
+    PATCH_NETWORK *network;
+    RESULT result = PatchRepo_Open(url, Server_Fetch, &test->arena, &network);
     Mem_Free(url);
     if (IS_OK(result)) {
-        result = Repo_AddPatch(network, "first/p", &test->list);
+        result = PatchRepo_AddPatch(network, "first/p", &test->list);
     }
-    const UPDATE_PROGRESS progress = { .report = M_Record, .context = test };
+    const PATCH_EVENTS events = {
+        .user = test,
+        .patch_started = M_RecordStarted,
+        .file_done = M_RecordFileDone,
+    };
+    const PATCH_ENTRY entry = { .id = "first/p" };
     test->report_count = 0;
     if (IS_OK(result)) {
-        result = Update_Patch(
-            test->patches, test->list.items[0], m_Games, 1, &progress, counts);
+        result = PatchUpdate_Patch(
+            test->patches, test->list.items[0], m_Games, 1, Server_Fetch,
+            &events, &entry, counts);
     }
     Arena_Free(&test->arena);
     return result;
@@ -101,7 +122,7 @@ TEST(update_downloads_shared_and_game_files_only)
     Server_AddFile(test.server, "first", "p", "font.ttf", "font");
     Server_AddFile(test.server, "first", "p", "th06/msg1.dat.jdiff", "msg");
     Server_AddFile(test.server, "first", "p", "th07/msg1.dat.jdiff", "other");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 2);
     CHECK_EQ_INT(counts.up_to_date, 0);
@@ -145,7 +166,7 @@ TEST(update_reports_the_files_as_they_arrive)
     PatchBuilder_Write(test.patches, "first/p/kept", "kept");
     Server_AddFile(test.server, "first", "p", "th06/a", "a");
     Server_AddFile(test.server, "first", "p", "th06/b", "b");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     M_CheckReports(&test, 2, 2);
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
@@ -162,7 +183,7 @@ TEST(update_skips_files_with_the_right_crc)
     char *const files = Server_Entry("th06/a.png", "image");
     M_CASE test = M_Prepare("crc_skip", files);
     PatchBuilder_Write(test.patches, "first/p/th06/a.png", "image");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 0);
     CHECK_EQ_INT(counts.up_to_date, 1);
@@ -177,7 +198,7 @@ TEST(update_replaces_a_file_with_the_wrong_crc)
     M_CASE test = M_Prepare("crc_replace", files);
     Server_AddFile(test.server, "first", "p", "th06/a.png", "new");
     PatchBuilder_Write(test.patches, "first/p/th06/a.png", "old");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 1);
     CHECK_EQ_INT(counts.up_to_date, 0);
@@ -195,7 +216,7 @@ TEST(update_rejects_a_download_with_a_bad_crc)
     Server_AddFile(test.server, "first", "p", "th06/good", "good");
     Server_AddFile(test.server, "first", "p", "th06/bad", "corrupt");
     PatchBuilder_Write(test.patches, "first/p/th06/good", "old");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     const RESULT result = M_Update(&test, &counts);
     CHECK(!IS_OK(result));
     CHECK(
@@ -223,7 +244,7 @@ TEST(update_removes_null_entries)
     M_CASE test = M_Prepare("null", files);
     Server_AddFile(test.server, "first", "p", "th06/kept", "kept");
     PatchBuilder_Write(test.patches, "first/p/th06/gone", "old");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 1);
     CHECK_EQ_INT(counts.removed, 1);
@@ -243,7 +264,7 @@ TEST(update_replaces_an_interrupted_part_file)
     PatchBuilder_Write(test.patches, "first/p/th06/a.part", "half");
     PatchBuilder_Write(test.patches, "first/p/th06/b", "b");
     PatchBuilder_Write(test.patches, "first/p/th06/b.part", "stale");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 1);
     CHECK_EQ_INT(counts.up_to_date, 1);
@@ -263,7 +284,7 @@ TEST(update_leaves_out_unsafe_paths)
     char *const back = Server_Entry("th06\\\\x", "x");
     char *const files = Str_Format("%s, %s, %s", up, dot, back);
     M_CASE test = M_Prepare("unsafe", files);
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 0);
     CHECK(!Server_Exists(test.patches, "first/escape"));
@@ -279,7 +300,7 @@ TEST(update_escapes_file_urls)
     char *const files = Server_Entry("th06/a b%.txt", "spaced");
     M_CASE test = M_Prepare("escape", files);
     Server_AddFile(test.server, "first", "p", "th06/a b%.txt", "spaced");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     M_CheckFile(&test, "first/p/th06/a b%.txt", "spaced");
     M_Close(&test);
@@ -295,9 +316,9 @@ TEST(list_installed_reads_the_update_flag)
     PatchBuilder_Write(dir, "r/repo.js", "{}");
     ARENA arena;
     Arena_Init(&arena, "test", M_ARENA_SIZE);
-    UPDATE_INSTALLED_LIST list;
-    CHECK(
-        Result_Log(Update_ListInstalled(dir, &arena, &list), LOG_LEVEL_ERROR));
+    PATCH_INSTALLED_LIST list;
+    CHECK(Result_Log(
+        PatchUpdate_ListInstalled(dir, &arena, &list), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(list.count, 2);
     if (list.count == 2) {
         CHECK_EQ_STR(list.items[0].id, "r/a");
@@ -315,9 +336,9 @@ TEST(list_installed_of_a_missing_folder_is_empty)
     char *const missing = TestDir_Join(dir, "missing");
     ARENA arena;
     Arena_Init(&arena, "test", M_ARENA_SIZE);
-    UPDATE_INSTALLED_LIST list;
+    PATCH_INSTALLED_LIST list;
     CHECK(Result_Log(
-        Update_ListInstalled(missing, &arena, &list), LOG_LEVEL_ERROR));
+        PatchUpdate_ListInstalled(missing, &arena, &list), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(list.count, 0);
     Arena_Free(&arena);
     Mem_Free(missing);
@@ -335,13 +356,13 @@ TEST(remove_deletes_the_patch_files_and_keeps_others)
     PatchBuilder_Write(dir, "r/p/th06/sub/b.part", "b");
     PatchBuilder_Write(dir, "r/q/patch.js", "{}");
     PatchBuilder_Write(dir, "r/q/th06/a", "a");
-    CHECK(Result_Log(Update_RemovePatch(dir, "r/p"), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(PatchUpdate_RemovePatch(dir, "r/p"), LOG_LEVEL_ERROR));
     CHECK(!Server_Exists(dir, "r/p"));
     CHECK(Server_Exists(dir, "r/q/th06/a"));
     PatchBuilder_Write(dir, "r/s/files.js", "{\"a\": 1}");
     PatchBuilder_Write(dir, "r/s/patch.js", "{}");
     PatchBuilder_Write(dir, "r/s/mine.txt", "mine");
-    CHECK(Result_Log(Update_RemovePatch(dir, "r/s"), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(PatchUpdate_RemovePatch(dir, "r/s"), LOG_LEVEL_ERROR));
     CHECK(!Server_Exists(dir, "r/s/patch.js"));
     CHECK(Server_Exists(dir, "r/s/mine.txt"));
     Mem_Free(dir);
@@ -362,7 +383,7 @@ TEST(update_tries_the_servers_in_order)
     Server_AddFile(test.server, "first", "p", "th06/b", "b");
     PatchBuilder_Write(test.server, "mirror/files.js", "{}");
     PatchBuilder_Write(test.server, "mirror/th06/a", "a");
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 0);
     char *const mirror_files = Str_Format("{%s, %s}", a, b);
@@ -391,7 +412,7 @@ TEST(update_writes_below_a_folder_longer_than_max_path)
     M_CASE test = M_PrepareIn(dir, files);
     Server_AddFile(test.server, "first", "p", "th06/紅魔郷.msg.jdiff", "msg");
     CHECK(strlen(test.patches) > 260);
-    UPDATE_COUNTS counts;
+    PATCH_COUNTS counts;
     CHECK(Result_Log(M_Update(&test, &counts), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(counts.downloaded, 1);
     M_CheckFile(&test, "first/p/th06/紅魔郷.msg.jdiff", "msg");

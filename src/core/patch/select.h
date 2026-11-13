@@ -68,6 +68,8 @@ const char *Patch_GetRoleName(PATCH_ROLE role);
 typedef struct {
     // Holds "<repo>/<patch>".
     const char *id;
+    // Holds the title from patch.js, or the id when patch.js has none.
+    const char *title;
     // Ends with '/'.
     const char *dir;
     // Holds nullptr when patch.js does not parse as an object.
