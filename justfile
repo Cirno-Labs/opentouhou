@@ -103,6 +103,36 @@ test programs="all":
     cat "$log"
     exit "$status"
 
+# Build the Windows unit tests in the Windows images (all, games or othpatch).
+[group('test')]
+build-win-tests programs="all":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{programs}}" in
+        all) just _build win media debug && just _build win othpatch debug ;;
+        games) just _build win media debug ;;
+        othpatch) just _build win othpatch debug ;;
+        *) echo "Unknown programs {{programs}}: all, games or othpatch" >&2; exit 1 ;;
+    esac
+
+# Run the Windows unit tests under wine, when it is installed (all, games or othpatch).
+[group('test')]
+test-win programs="all":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v wine > /dev/null; then
+        echo "wine is not installed, so the Windows unit tests do not run here" >&2
+        exit 0
+    fi
+    just build-win-tests "{{programs}}"
+    dirs=()
+    case "{{programs}}" in
+        all) dirs=(build/win/debug build/win/othpatch/debug) ;;
+        games) dirs=(build/win/debug) ;;
+        othpatch) dirs=(build/win/othpatch/debug) ;;
+    esac
+    exec tools/run_tests --wrapper wine --no-suite tools "${dirs[@]}"
+
 # Run the tests of the Python tools on this machine.
 [group('test')]
 test-tools:

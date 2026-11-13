@@ -43,7 +43,7 @@ prek -a             # run the checks on the whole tree
 
 Send your change as a pull request on GitHub against `main`. CI runs the
 checks, builds the change for Linux, Windows and macOS, and runs the
-unit tests on Linux and macOS. A change that players notice adds an
+unit tests on each of them. A change that players notice adds an
 entry under `## Unreleased` in the changelog of each program that it
 affects.
 

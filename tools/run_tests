@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
+"""Run the tests of Meson build directories without Meson.
+
+Reads the test list that Meson wrote into each build directory, so the
+tests run on a machine without Meson, and in another place than the one
+where they were built, such as the Windows tests on Windows. Paths in a
+test's command, environment and working directory that start with the
+build or source directory of the build are changed to the given build
+directory and to --source. A Python script runs with the Python that
+runs this script.
+
+A test with the name of a test in an earlier build directory is left
+out, so the suites that every build has run once. --no-suite leaves out
+the tests of a Meson suite, as in Meson. --wrapper runs each executable
+through a program, such as wine. Exit status 77 means that the test is
+skipped, as in Meson.
+"""
+
+import argparse
+import concurrent.futures
+import json
+import os
+import shlex
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parents[1]
+SKIP_STATUS = 77
+
+
+@dataclass
+class Test:
+    name: str
+    suites: list[str]
+    cmd: list[str]
+    env: dict[str, str]
+    workdir: Path
+    timeout: float | None
+
+
+@dataclass
+class Outcome:
+    test: Test
+    status: str
+    seconds: float
+    output: str
+
+
+def local_path(value: str, prefixes: list[tuple[str, Path]]) -> str:
+    for original, local in prefixes:
+        if value == original or value.startswith(original + "/"):
+            return local.as_posix() + value[len(original) :]
+    return value
+
+
+def load_tests(build_dir: Path, source_dir: Path, wrapper: list[str]) -> list[Test]:
+    info = json.loads((build_dir / "meson-info/meson-info.json").read_text())
+    directories = info["directories"]
+    prefixes = [
+        (directories["build"], build_dir.resolve()),
+        (directories["source"], source_dir.resolve()),
+    ]
+    tests = []
+    for entry in json.loads((build_dir / "meson-info/intro-tests.json").read_text()):
+        cmd = []
+        for index, arg in enumerate(entry["cmd"]):
+            arg = local_path(arg, prefixes)
+            if index == 0 and Path(arg).name.startswith("python"):
+                arg = sys.executable
+            if arg.endswith(".exe"):
+                cmd += wrapper
+            cmd.append(arg)
+        env = {
+            name: local_path(value, prefixes) for name, value in entry["env"].items()
+        }
+        workdir = entry["workdir"]
+        tests.append(
+            Test(
+                name=entry["name"],
+                suites=[suite.split(":")[-1] for suite in entry["suite"]],
+                cmd=cmd,
+                env=env,
+                workdir=Path(local_path(workdir, prefixes)) if workdir else build_dir,
+                timeout=entry["timeout"] or None,
+            )
+        )
+    return tests
+
+
+def run_test(test: Test) -> Outcome:
+    start = time.monotonic()
+    try:
+        result = subprocess.run(
+            test.cmd,
+            cwd=test.workdir,
+            env={**os.environ, **test.env},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=test.timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        output = (error.stdout or b"").decode(errors="replace")
+        return Outcome(test, "TIMEOUT", time.monotonic() - start, output)
+    if result.returncode == 0:
+        status = "OK"
+    elif result.returncode == SKIP_STATUS:
+        status = "SKIP"
+    else:
+        status = f"FAIL ({result.returncode})"
+    output = result.stdout.decode(errors="replace")
+    return Outcome(test, status, time.monotonic() - start, output)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("build_dirs", nargs="+", type=Path, metavar="build_dir")
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=REPO_DIR,
+        help="the source directory, by default the one of this script",
+    )
+    parser.add_argument(
+        "--wrapper", default="", help="the program that runs each executable"
+    )
+    parser.add_argument(
+        "--no-suite",
+        action="append",
+        default=[],
+        dest="skipped",
+        help="leave out the tests of a Meson suite",
+    )
+    parser.add_argument("--jobs", type=int, default=os.cpu_count())
+    args = parser.parse_args()
+
+    wrapper = shlex.split(args.wrapper)
+    tests = []
+    names = set()
+    for build_dir in args.build_dirs:
+        for test in load_tests(build_dir, args.source, wrapper):
+            if test.name not in names and not set(test.suites) & set(args.skipped):
+                names.add(test.name)
+                tests.append(test)
+
+    failed = []
+    skipped = 0
+    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+        outcomes = pool.map(run_test, tests)
+        for number, outcome in enumerate(outcomes, 1):
+            print(
+                f"{number:>3}/{len(tests)} {outcome.test.name:<40}"
+                f" {outcome.status:<10} {outcome.seconds:6.2f}s",
+                flush=True,
+            )
+            if outcome.status == "SKIP":
+                skipped += 1
+            elif outcome.status != "OK":
+                failed.append(outcome)
+
+    for outcome in failed:
+        print(f"\n--- {outcome.test.name}: {outcome.status}")
+        print(shlex.join(outcome.test.cmd))
+        print(outcome.output, end="")
+    passed = len(tests) - len(failed) - skipped
+    print(f"\nOk: {passed}  Skipped: {skipped}  Failed: {len(failed)}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

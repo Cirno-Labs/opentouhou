@@ -71,6 +71,7 @@ the folders, the keys and the settings for players.
 just test           # unit tests, inside the Linux images
 just test othpatch  # only othpatch's tests (or games)
 just test-tools     # only the tests of the Python tools, without Docker
+just test-win       # the Windows unit tests, under wine
 ```
 
 Unit tests live in `tests/`. They need nothing but the source, and they
@@ -78,6 +79,13 @@ run in CI. Each image runs the tests of its programs. The tests of
 core/base, core/json, core/io and the tools run in both images, except
 in `just test`: it runs the two images at the same time and runs these
 tests in the media image only.
+
+The Windows images build the unit tests too, but cannot run them.
+`just test-win` builds them and runs them under wine, or only prints a
+message when wine is not installed. CI runs them on Windows.
+`tools/run_tests` runs them outside the image, from the test list that
+Meson writes into each build directory. The tests of the Python tools
+do not run on Windows.
 
 The graphics pixel tests also need an OpenGL driver. Run the built test
 outside Docker, with SDL's offscreen video driver. The second command

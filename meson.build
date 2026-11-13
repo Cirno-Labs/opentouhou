@@ -141,6 +141,8 @@ if build_othpatch
   )
 endif
 
-if not meson.is_cross_build()
+# A cross build builds the tests only for Windows, where they run outside
+# the build image.
+if not meson.is_cross_build() or host_machine.system() == 'windows'
   subdir('tests')
 endif
