@@ -4,12 +4,11 @@
 #include "othpatch/main.h"
 #include "othpatch/sha256.h"
 
+#include "fake_program.h"
 #include "othpatch_server.h"
 #include "test.h"
 #include "test_dir.h"
 #include "zip_builder.h"
-
-#include <sys/stat.h>
 
 typedef struct {
     char *dir;
@@ -427,40 +426,44 @@ TEST(help_and_version_print_and_succeed)
     M_Close(&test);
 }
 
-// Writes a game beside othpatch, a shell script in the form of the
-// platform's packages that prints version.
-static void M_WriteGame(const M_CASE *const test, const char *const version)
+// Returns the path of the game beside othpatch, relative to the program
+// folder. Mem_Free releases the path.
+static char *M_GamePath(const M_CASE *const test)
 {
     ARENA arena;
     Arena_Init(&arena, "main test", 1 << 16);
     const char *const path = Install_GetGamePath(
         Install_GetPlatform(), test->program, "th06", &arena);
-    const char *const relative = path + strlen(test->program) + 1;
-    char *const script = Str_Format("#!/bin/sh\necho \"th06 %s\"\n", version);
-    PatchBuilder_Write(test->program, relative, script);
-    CHECK(chmod(path, 0755) == 0);
-    Mem_Free(script);
+    char *const relative = Str_Dup(path + strlen(test->program) + 1);
     Arena_Free(&arena);
+    return relative;
 }
 
-// Returns the contents of the game beside othpatch. SDL_free releases
-// them.
-static char *M_ReadGame(const M_CASE *const test)
+// Writes a game beside othpatch, in the form of the platform's packages,
+// that prints output and exits with status.
+static void M_WriteGameProgram(
+    const M_CASE *const test, const char *const output, const int status)
 {
-    ARENA arena;
-    Arena_Init(&arena, "main test", 1 << 16);
-    char *const data = SDL_LoadFile(
-        Install_GetGamePath(
-            Install_GetPlatform(), test->program, "th06", &arena),
-        nullptr);
-    Arena_Free(&arena);
-    return data;
+    char *const path = M_GamePath(test);
+    FakeProgram_Write(test->program, path, output, status);
+    Mem_Free(path);
 }
 
-// Returns an othpatch that prints version, a shell script.
-static char *M_Othpatch(const char *const version)
+// Writes a game beside othpatch that prints version.
+static void M_WriteGame(const M_CASE *const test, const char *const version)
 {
-    return Str_Format("#!/bin/sh\necho \"othpatch %s\"\n", version);
+    char *const output = Str_Format("th06 %s\n", version);
+    M_WriteGameProgram(test, output, 0);
+    Mem_Free(output);
+}
+
+// Returns an othpatch that prints version.
+static FAKE_PROGRAM M_Othpatch(const char *const version)
+{
+    char *const output = Str_Format("othpatch %s\n", version);
+    const FAKE_PROGRAM program = FakeProgram_Build(output, 0);
+    Mem_Free(output);
+    return program;
 }
 
 static void M_CheckOthpatch(const M_CASE *const test, const char *const text)
@@ -471,6 +474,17 @@ static void M_CheckOthpatch(const M_CASE *const test, const char *const text)
     SDL_free(othpatch);
 }
 
+// Checks that the othpatch beside the game is the one that prints
+// version.
+static void M_CheckOthpatchVersion(
+    const M_CASE *const test, const char *const version)
+{
+    char *const output = Str_Format("othpatch %s\n", version);
+    CHECK(FakeProgram_Equals(
+        test->program, Install_GetPlatform()->othpatch, output, 0));
+    Mem_Free(output);
+}
+
 // Writes the package of release version to the server, with the game
 // that prints version and an othpatch that prints othpatch_version, and
 // returns its digest.
@@ -479,14 +493,16 @@ static void M_WritePackage(
     const char *const othpatch_version, char digest[SHA256_HEX_SIZE])
 {
     const INSTALL_PLATFORM *const platform = Install_GetPlatform();
-    char *const script = Str_Format("#!/bin/sh\necho \"th06 %s\"\n", version);
-    char *const othpatch = M_Othpatch(othpatch_version);
+    char *const output = Str_Format("th06 %s\n", version);
+    const FAKE_PROGRAM script = FakeProgram_Build(output, 0);
+    Mem_Free(output);
+    const FAKE_PROGRAM othpatch = M_Othpatch(othpatch_version);
     char *const game = platform->bundle
         ? Str_Format("oth06%s/Contents/MacOS/oth06", platform->game_suffix)
         : Str_Format("oth06%s", platform->game_suffix);
     const ZIP_BUILDER_ENTRY entries[] = {
-        { game, script, strlen(script), 0100755, true },
-        { platform->othpatch, othpatch, strlen(othpatch), 0100755, true },
+        { game, script.data, script.size, 0100755, true },
+        { platform->othpatch, othpatch.data, othpatch.size, 0100755, true },
         { "README.txt", "readme", 6, 0100644, true },
     };
     const ZIP_BUILDER_ARCHIVE archive = ZipBuilder_Build(entries, 3);
@@ -497,8 +513,8 @@ static void M_WritePackage(
     Mem_Free(path);
     Mem_Free(archive.data);
     Mem_Free(game);
-    Mem_Free(othpatch);
-    Mem_Free(script);
+    Mem_Free(othpatch.data);
+    Mem_Free(script.data);
 }
 
 // Writes the index with one release of oth06, whose package has digest,
@@ -544,11 +560,11 @@ static M_CASE M_PrepareUpdate(
 
 static void M_CheckGame(const M_CASE *const test, const char *const version)
 {
-    char *const game = M_ReadGame(test);
-    char *const expected = Str_Format("#!/bin/sh\necho \"th06 %s\"\n", version);
-    CHECK_EQ_STR(game, expected);
-    Mem_Free(expected);
-    SDL_free(game);
+    char *const path = M_GamePath(test);
+    char *const output = Str_Format("th06 %s\n", version);
+    CHECK(FakeProgram_Equals(test->program, path, output, 0));
+    Mem_Free(output);
+    Mem_Free(path);
 }
 
 TEST(newer_release_without_a_terminal_is_only_announced)
@@ -576,9 +592,7 @@ TEST(update_option_installs_the_game_and_othpatch)
         "othpatch 0.5.0 is installed too; the next run uses it\n"
         "othpatch 0.5.0 is up to date\n");
     M_CheckGame(&test, "0.10.0");
-    char *const othpatch = M_Othpatch("0.5.0");
-    M_CheckOthpatch(&test, othpatch);
-    Mem_Free(othpatch);
+    M_CheckOthpatchVersion(&test, "0.5.0");
     CHECK(!Server_Exists(test.program, "README.txt"));
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckOutput(&test, "oth06 0.10.0 is up to date\n");
@@ -715,15 +729,7 @@ TEST(failed_check_does_not_fail_the_patches)
 TEST(game_that_gives_no_version_is_skipped)
 {
     M_CASE test = M_PrepareUpdate("update_broken", "0.1.0", "0.2.0");
-    ARENA arena;
-    Arena_Init(&arena, "main test", 1 << 16);
-    CHECK(
-        chmod(
-            Install_GetGamePath(
-                Install_GetPlatform(), test.program, "th06", &arena),
-            0644)
-        == 0);
-    Arena_Free(&arena);
+    M_WriteGameProgram(&test, "", 1);
     CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(&test, "oth06: cannot read its version: ");
     M_Close(&test);
@@ -857,9 +863,7 @@ TEST(othpatch_of_a_game_package_counts_for_its_own_release)
         &test,
         "othpatch 0.5.0 is installed too; the next run uses it\n"
         "othpatch 0.5.0 is up to date\n");
-    char *const othpatch = M_Othpatch("0.5.0");
-    M_CheckOthpatch(&test, othpatch);
-    Mem_Free(othpatch);
+    M_CheckOthpatchVersion(&test, "0.5.0");
     M_Close(&test);
 }
 
