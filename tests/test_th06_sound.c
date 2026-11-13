@@ -135,10 +135,10 @@ static char *M_Prepare(const char *const name, const int32_t skip)
     char *const directory = TestDir_Prepare(name);
     Th06Data_WriteArchives(directory, -1);
     char *const wav = Str_Format("%s/data/wav", directory);
-    CHECK(SDL_CreateDirectory(wav));
+    CHECK(Result_Log(File_MakeDir(wav), LOG_LEVEL_ERROR));
     Mem_Free(wav);
     char *const bgm = Str_Format("%s/bgm", directory);
-    CHECK(SDL_CreateDirectory(bgm));
+    CHECK(Result_Log(File_MakeDir(bgm), LOG_LEVEL_ERROR));
     Mem_Free(bgm);
     for (int32_t i = 0; i < EFFECT_FILE_COUNT; i++) {
         if (i == skip) {

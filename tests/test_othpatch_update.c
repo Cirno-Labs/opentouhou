@@ -37,7 +37,9 @@ static RESULT M_Update(M_CASE *const test, UPDATE_COUNTS *const counts)
 {
     Arena_Init(&test->arena, "test", M_ARENA_SIZE);
     Array_Init(&test->list, Arena_Allocator(&test->arena));
-    char *const url = Str_Format("file://%s/first/", test->server);
+    char *const server_url = TestDir_FileUrl(test->server);
+    char *const url = Str_Format("%s/first/", server_url);
+    Mem_Free(server_url);
     REPO_NETWORK *network;
     RESULT result = Repo_Open(url, &test->arena, &network);
     Mem_Free(url);
@@ -292,8 +294,10 @@ TEST(update_tries_the_servers_in_order)
     char *const b = Server_Entry("th06/b", "b");
     char *const files = Str_Format("%s, %s", a, b);
     M_CASE test = M_Prepare("servers", files);
+    char *const server_url = TestDir_FileUrl(test.server);
     char *const members =
-        Str_Format("\"servers\": [\"file://%s/mirror/\"]", test.server);
+        Str_Format("\"servers\": [\"%s/mirror/\"]", server_url);
+    Mem_Free(server_url);
     Server_AddPatch(test.server, "first", "p", members);
     Server_AddFile(test.server, "first", "p", "th06/a", "a");
     Server_AddFile(test.server, "first", "p", "th06/b", "b");

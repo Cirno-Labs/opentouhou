@@ -19,7 +19,9 @@ typedef struct {
 static void M_Open(M_CASE *const test)
 {
     Arena_Init(&test->arena, "test", M_ARENA_SIZE);
-    char *const url = Str_Format("file://%s/first/repo.js", test->dir);
+    char *const dir_url = TestDir_FileUrl(test->dir);
+    char *const url = Str_Format("%s/first/repo.js", dir_url);
+    Mem_Free(dir_url);
     CHECK(Result_Log(
         Repo_Open(url, &test->arena, &test->network), LOG_LEVEL_ERROR));
     Mem_Free(url);
@@ -64,7 +66,9 @@ TEST(open_of_a_missing_repository_fails)
     char *const dir = TestDir_Prepare("open_missing");
     ARENA arena;
     Arena_Init(&arena, "test", M_ARENA_SIZE);
-    char *const url = Str_Format("file://%s/none/", dir);
+    char *const dir_url = TestDir_FileUrl(dir);
+    char *const url = Str_Format("%s/none/", dir_url);
+    Mem_Free(dir_url);
     REPO_NETWORK *network;
     const RESULT result = Repo_Open(url, &arena, &network);
     CHECK(!IS_OK(result));
@@ -239,7 +243,9 @@ TEST(patch_servers_come_before_the_repository_folder)
     const REPO_PATCH *const patch = test.list.items[0];
     CHECK_EQ_INT(patch->server_count, 2);
     CHECK_EQ_STR(patch->servers[0], "https://example.com/a/");
-    char *const local = Str_Format("file://%s/first/a/", test.dir);
+    char *const dir_url = TestDir_FileUrl(test.dir);
+    char *const local = Str_Format("%s/first/a/", dir_url);
+    Mem_Free(dir_url);
     CHECK_EQ_STR(patch->servers[1], local);
     Mem_Free(local);
     M_Close(&test);

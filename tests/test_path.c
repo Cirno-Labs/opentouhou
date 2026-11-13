@@ -12,6 +12,14 @@
 
 #include <SDL3/SDL.h>
 
+#ifdef _WIN32
+    #define M_SEPARATOR "\\"
+    #define M_EXECUTABLE "test_path.exe"
+#else
+    #define M_SEPARATOR "/"
+    #define M_EXECUTABLE "test_path"
+#endif
+
 TEST(join_adds_one_separator)
 {
     const char *const cases[][3] = {
@@ -37,18 +45,19 @@ TEST(join_adds_one_separator)
 TEST(the_executable_directory_holds_the_executable)
 {
     const char *const directory = Path_GetExeDir();
-    CHECK(directory != nullptr && Str_EndsWith(directory, "/"));
+    CHECK(directory != nullptr && Str_EndsWith(directory, M_SEPARATOR));
     if (directory != nullptr) {
         char *const executable =
-            Path_Join(&g_HeapAllocator, directory, "test_path");
+            Path_Join(&g_HeapAllocator, directory, M_EXECUTABLE);
         CHECK(File_Exists(executable));
         Allocator_Free(&g_HeapAllocator, executable, strlen(executable) + 1);
     }
 }
 
 // macOS keeps the user directory in ~/Library/Application Support and
-// ignores XDG_DATA_HOME, so this test would write there.
-#ifndef __APPLE__
+// Windows in %APPDATA%. Both ignore XDG_DATA_HOME, so these tests would
+// write there.
+#if !defined(__APPLE__) && !defined(_WIN32)
 TEST(the_user_directory_is_made_in_the_data_home)
 {
     // meson points XDG_DATA_HOME into the build directory, so that the test
@@ -91,11 +100,7 @@ TEST(a_portable_patches_folder_is_in_the_program_folder)
     char *const program = TestDir_Prepare("portable_patches");
     char *directory;
     CHECK(Result_Log(Path_GetPatchesDir(program, &directory), LOG_LEVEL_ERROR));
-#ifdef _WIN32
-    char *const expected = Str_Format("%s/patches\\", program);
-#else
-    char *const expected = Str_Format("%s/patches/", program);
-#endif
+    char *const expected = Str_Format("%s/patches" M_SEPARATOR, program);
     CHECK_EQ_STR(directory, expected);
     SDL_PathInfo info;
     CHECK(

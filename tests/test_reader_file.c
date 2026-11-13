@@ -268,6 +268,9 @@ TEST(a_long_path_is_cut_at_the_start)
     Mem_Free(directory);
 }
 
+// Windows does not let a file that a READER has open shrink, so this
+// test runs elsewhere only.
+#ifndef _WIN32
 TEST(a_file_that_shrinks_fails_with_the_reason)
 {
     char *const path = M_PrepareFile("shrinks");
@@ -285,6 +288,7 @@ TEST(a_file_that_shrinks_fails_with_the_reason)
     CHECK(M_FailsIn(&reader, expected, path));
     Mem_Free(path);
 }
+#endif
 
 TEST(an_empty_file_has_nothing_to_read)
 {

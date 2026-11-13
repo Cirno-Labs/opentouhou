@@ -78,6 +78,7 @@ static void Test_Register(const char *const name, void (*const func)(void))
 
 int main(void)
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     int failed = 0;
     for (int i = 0; i < m_TestCaseCount; i++) {
         const int failures_before = m_TestFailures;

@@ -20,7 +20,9 @@ TEST(file_url_reads_the_file_and_ignores_the_query)
 {
     char *const dir = TestDir_Prepare("file");
     PatchBuilder_Write(dir, "a b/c.txt", "hello");
-    char *const url = Str_Format("file://%s/a%%20b/c.txt?crc32=1234", dir);
+    char *const dir_url = TestDir_FileUrl(dir);
+    char *const url = Str_Format("%s/a%%20b/c.txt?crc32=1234", dir_url);
+    Mem_Free(dir_url);
     FETCH fetch = M_Fetch(url);
     CHECK(Result_Log(fetch.result, LOG_LEVEL_ERROR));
     fetch.result = OK;
@@ -35,7 +37,10 @@ TEST(file_url_of_an_empty_file_gives_no_bytes)
 {
     char *const dir = TestDir_Prepare("empty");
     PatchBuilder_Write(dir, "empty", "");
-    char *const url = Str_Format("file://localhost%s/empty", dir);
+    char *const dir_url = TestDir_FileUrl(dir);
+    char *const url =
+        Str_Format("file://localhost%s/empty", dir_url + strlen("file://"));
+    Mem_Free(dir_url);
     FETCH fetch = M_Fetch(url);
     CHECK(Result_Log(fetch.result, LOG_LEVEL_ERROR));
     fetch.result = OK;
@@ -49,7 +54,9 @@ TEST(file_url_of_an_empty_file_gives_no_bytes)
 TEST(file_url_of_a_missing_file_fails)
 {
     char *const dir = TestDir_Prepare("missing");
-    char *const url = Str_Format("file://%s/missing", dir);
+    char *const dir_url = TestDir_FileUrl(dir);
+    char *const url = Str_Format("%s/missing", dir_url);
+    Mem_Free(dir_url);
     FETCH fetch = M_Fetch(url);
     CHECK(!IS_OK(fetch.result));
     CHECK(fetch.data == nullptr);
@@ -93,7 +100,9 @@ TEST(run_fetches_more_urls_than_transfers)
         snprintf(name, sizeof(name), "f%d", i);
         snprintf(content, sizeof(content), "content %d", i);
         PatchBuilder_Write(dir, name, content);
-        urls[i] = Str_Format("file://%s/%s", dir, name);
+        char *const dir_url = TestDir_FileUrl(dir);
+        urls[i] = Str_Format("%s/%s", dir_url, name);
+        Mem_Free(dir_url);
         fetches[i] = (FETCH) { .url = urls[i] };
     }
     Fetch_Run(fetches, COUNT);

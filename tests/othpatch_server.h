@@ -19,7 +19,10 @@
 [[maybe_unused]] static char *Server_RepoUrl(
     const char *const root, const char *const repo)
 {
-    return Str_Format("file://%s/%s/", root, repo);
+    char *const root_url = TestDir_FileUrl(root);
+    char *const url = Str_Format("%s/%s/", root_url, repo);
+    Mem_Free(root_url);
+    return url;
 }
 
 // Writes <root>/<repo>/repo.js with the given neighbors, a JSON array of

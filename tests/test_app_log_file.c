@@ -9,6 +9,22 @@
 #include "test_dir.h"
 
 #include <SDL3/SDL.h>
+#include <stdio.h>
+
+// Returns the text of the log at path, or nullptr when it cannot be read.
+// stdio reads it as text, so a line ends with "\n" on every platform, and
+// on Windows it shares the file with the log that is still open.
+static char *M_LoadLog(const char *const path)
+{
+    FILE *const file = fopen(path, "r");
+    if (file == nullptr) {
+        return nullptr;
+    }
+    char *const text = Mem_Alloc(4096);
+    text[fread(text, 1, 4095, file)] = '\0';
+    fclose(file);
+    return text;
+}
 
 TEST(file_is_named_after_the_executable)
 {
@@ -29,14 +45,14 @@ TEST(file_holds_the_lines_logged_while_open)
     CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
     Log_Message(LOG_LEVEL_WARNING, "src/core/foo.c", 9, "while %s", "open");
     char *const path = TestDir_Join(dir, "oth06.log");
-    char *text = SDL_LoadFile(path, nullptr);
+    char *text = M_LoadLog(path);
     CHECK_EQ_STR(text, "WARNING foo.c:9: while open\n");
-    SDL_free(text);
+    Mem_Free(text);
     AppLogFile_Close();
     LOG_INFO("after");
-    text = SDL_LoadFile(path, nullptr);
+    text = M_LoadLog(path);
     CHECK_EQ_STR(text, "WARNING foo.c:9: while open\n");
-    SDL_free(text);
+    Mem_Free(text);
     Mem_Free(path);
     Mem_Free(dir);
 }
@@ -51,9 +67,9 @@ TEST(file_of_an_earlier_start_is_replaced)
     Log_Message(LOG_LEVEL_INFO, "src/core/foo.c", 2, "second start");
     AppLogFile_Close();
     char *const path = TestDir_Join(dir, "oth06.log");
-    char *const text = SDL_LoadFile(path, nullptr);
+    char *const text = M_LoadLog(path);
     CHECK_EQ_STR(text, "INFO foo.c:2: second start\n");
-    SDL_free(text);
+    Mem_Free(text);
     Mem_Free(path);
     Mem_Free(dir);
 }

@@ -13,6 +13,8 @@
 typedef struct {
     char *dir;
     char *server;
+    // Holds the file:// URL of server.
+    char *server_url;
     char *patches;
     char *program;
     char *repo;
@@ -48,10 +50,11 @@ static M_CASE M_PrepareBeside(
 {
     M_CASE test = { .dir = TestDir_Prepare(name) };
     test.server = TestDir_Join(test.dir, "server");
+    test.server_url = TestDir_FileUrl(test.server);
     test.patches = TestDir_Join(test.dir, "patches");
     test.program = TestDir_Join(test.dir, "program");
-    test.repo = Str_Format("file://%s/thpatch/repo.js", test.server);
-    test.releases = Str_Format("file://%s/releases.json", test.server);
+    test.repo = Str_Format("%s/thpatch/repo.js", test.server_url);
+    test.releases = Str_Format("%s/releases.json", test.server_url);
     test.game_entries = Str_Dup("");
     test.othpatch_entries = Str_Dup("{\"version\": \"0.1.0\", \"files\": {}}");
     test.version = "0.1.0";
@@ -146,6 +149,7 @@ static void M_Close(M_CASE *const test)
     Mem_Free(test->repo);
     Mem_Free(test->program);
     Mem_Free(test->patches);
+    Mem_Free(test->server_url);
     Mem_Free(test->server);
     Mem_Free(test->dir);
 }
@@ -531,8 +535,8 @@ static void M_WriteReleases(
     char *const file = files
         ? Str_Format(
               "\"%s\": {\"name\": \"oth06-%s-%s.zip\", \"url\": "
-              "\"file://%s/oth06-%s-%s.zip\"%s}",
-              platform, version, platform, test->server, version, platform,
+              "\"%s/oth06-%s-%s.zip\"%s}",
+              platform, version, platform, test->server_url, version, platform,
               digest_member)
         : Str_Dup("");
     Mem_Free(test->game_entries);
@@ -715,7 +719,7 @@ TEST(failed_check_does_not_fail_the_patches)
     M_CASE test = M_PrepareBeside("update_offline", nullptr);
     M_AddNetwork(&test);
     Mem_Free(test.releases);
-    test.releases = Str_Format("file://%s/missing.json", test.server);
+    test.releases = Str_Format("%s/missing.json", test.server_url);
     M_WriteGame(&test, "0.1.0");
     CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(&test, "Done: 2 patches");
@@ -798,8 +802,8 @@ static void M_WriteOthpatchRelease(
     test->othpatch_entries = Str_Format(
         "{\"version\": \"9.9.9-dev\", \"files\": {}}, "
         "{\"version\": \"%s\", \"files\": {\"%s\": {\"name\": \"%s\", "
-        "\"url\": \"file://%s/%s\", \"sha256\": \"%s\"}}}",
-        version, platform->name, name, test->server, name,
+        "\"url\": \"%s/%s\", \"sha256\": \"%s\"}}}",
+        version, platform->name, name, test->server_url, name,
         digest != nullptr ? digest : computed);
     M_WriteIndex(test);
     Mem_Free(name);
@@ -872,7 +876,7 @@ TEST(failed_check_of_othpatch_does_not_fail_the_patches)
     M_CASE test = M_PrepareBeside("self_offline", nullptr);
     M_AddNetwork(&test);
     Mem_Free(test.releases);
-    test.releases = Str_Format("file://%s/missing.json", test.server);
+    test.releases = Str_Format("%s/missing.json", test.server_url);
     CHECK_EQ_INT(M_Run(&test, 4, "--update", "--game", "th06", "en"), 0);
     M_CheckOutput(&test, "Done: 2 patches");
     M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");

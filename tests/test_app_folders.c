@@ -11,6 +11,12 @@
 
 #include <SDL3/SDL.h>
 
+#ifdef _WIN32
+    #define M_SEPARATOR "\\"
+#else
+    #define M_SEPARATOR "/"
+#endif
+
 static void M_WriteFile(const char *const dir, const char *const name)
 {
     char *const path = TestDir_Join(dir, name);
@@ -25,9 +31,9 @@ static bool M_IsDir(const char *const path)
 }
 
 // macOS keeps the platform folders in ~/Library/Application Support and
-// ignores XDG_DATA_HOME, so the tests of the platform folders would write
-// there.
-#ifndef __APPLE__
+// Windows in %APPDATA%. Both ignore XDG_DATA_HOME, so the tests of the
+// platform folders would write there.
+#if !defined(__APPLE__) && !defined(_WIN32)
 static char *M_PlatformDir(const char *const name)
 {
     return Str_Format("%s/opentouhou/%s/", getenv("XDG_DATA_HOME"), name);
@@ -63,7 +69,7 @@ static void M_CheckPatchesDir(
     Mem_Free(dir);
 }
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(_WIN32)
 TEST(default_mode_uses_the_platform_folders)
 {
     char *const dir = TestDir_Prepare("default");
@@ -92,10 +98,10 @@ TEST(portable_mode_keeps_everything_in_new_program_subfolders)
     APP_FOLDERS folders;
     M_Find(dir, true, nullptr, &folders);
     CHECK_EQ_INT(folders.mode, APP_FOLDERS_PORTABLE);
-    char *const user_dir = Str_Format("%s/userdata/", dir);
+    char *const user_dir = Str_Format("%s/userdata" M_SEPARATOR, dir);
     CHECK_EQ_STR(folders.user_dir, user_dir);
     CHECK(M_IsDir(user_dir));
-    char *const patches_dir = Str_Format("%s/patches/", dir);
+    char *const patches_dir = Str_Format("%s/patches" M_SEPARATOR, dir);
     M_CheckPatchesDir(&folders, patches_dir);
     char *const data_dir = Str_Format("%s/", dir);
     CHECK_EQ_STR(folders.data_dir, data_dir);
@@ -106,7 +112,7 @@ TEST(portable_mode_keeps_everything_in_new_program_subfolders)
     Mem_Free(dir);
 }
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(_WIN32)
 TEST(user_dir_moves_only_the_user_folder)
 {
     char *const dir = TestDir_Prepare("user_dir");
@@ -114,7 +120,7 @@ TEST(user_dir_moves_only_the_user_folder)
     APP_FOLDERS folders;
     M_Find(dir, false, user_arg, &folders);
     CHECK_EQ_INT(folders.mode, APP_FOLDERS_USER_DIR);
-    char *const user_dir = Str_Format("%s/", user_arg);
+    char *const user_dir = Str_Format("%s" M_SEPARATOR, user_arg);
     CHECK_EQ_STR(folders.user_dir, user_dir);
     CHECK(M_IsDir(user_dir));
     char *const patches_dir = M_PlatformDir("patches");
@@ -137,7 +143,7 @@ TEST(user_dir_wins_over_portable_mode_but_keeps_its_patches_folder)
     CHECK_EQ_STR(folders.user_dir, user_arg);
     char *const userdata = Str_Format("%s/userdata", dir);
     CHECK(!File_Exists(userdata));
-    char *const patches_dir = Str_Format("%s/patches/", dir);
+    char *const patches_dir = Str_Format("%s/patches" M_SEPARATOR, dir);
     M_CheckPatchesDir(&folders, patches_dir);
     AppFolders_Free(&folders);
     Mem_Free(patches_dir);

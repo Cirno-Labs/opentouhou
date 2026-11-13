@@ -7,10 +7,17 @@ expected text. Fails when it exits normally, crashes in any other way,
 or reports a different fatal error.
 """
 
-import resource
 import signal
 import subprocess
 import sys
+
+if sys.platform != "win32":
+    import resource
+
+# Holds the exit statuses of an aborted program: killed by SIGABRT on
+# POSIX, and status 3 from the C runtime's abort() on Windows. A Windows
+# program under wine also exits with status 3.
+ABORT_STATUSES = [-signal.SIGABRT, 3]
 
 
 def disable_core_dumps() -> None:
@@ -28,14 +35,14 @@ def main() -> int:
         capture_output=True,
         text=True,
         check=False,
-        preexec_fn=disable_core_dumps,
+        preexec_fn=None if sys.platform == "win32" else disable_core_dumps,
     )
     fatal_lines = [
         line for line in result.stderr.splitlines() if line.startswith("FATAL ")
     ]
 
     errors = []
-    if result.returncode != -signal.SIGABRT:
+    if result.returncode not in ABORT_STATUSES:
         errors.append(
             f"expected the program to abort, got exit status {result.returncode}"
         )
