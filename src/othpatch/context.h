@@ -152,9 +152,10 @@ int32_t StepPatches_SortPacks(
 const PATCH_LISTED *StepPatches_FindLanguageOfCode(
     const PATCH_LISTED *listed, int32_t count, const char *code);
 
-// Returns the title of the language pack pack, as repo.js gives it, or the
-// code of the pack when repo.js gives none.
-const char *StepPatches_GetPackTitle(const PATCH_LISTED *pack);
+// Returns the name of the language of pack: its title in repo.js without a
+// trailing " language pack", or the code of the pack when repo.js gives no
+// title. The string comes from arena when the title is cut.
+const char *StepPatches_GetLanguageName(const PATCH_LISTED *pack, ARENA *arena);
 
 // Returns whether the language code name is the original Japanese.
 bool StepPatches_IsOriginal(const char *name);
