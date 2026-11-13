@@ -49,11 +49,11 @@ endif
 
 # Each layer has its own include root in the build directory. The root
 # holds one link, named after the layer, to the layer's source directory,
-# so that a file includes "core/app.h" and a layer cannot include a layer
+# so that a file includes "shell/game.h" and a layer cannot include a layer
 # that is not on its include path.
 include_root = meson.current_build_dir() / 'include'
 layer_include = {}
-foreach layer : ['core', 'stg', 'th06', 'othpatch']
+foreach layer : ['core', 'shell', 'stg', 'th06', 'othpatch']
   run_command(
     python3,
     files('tools/meson/link_layer'),
@@ -87,6 +87,7 @@ if build_games
 endif
 
 subdir('src/core')
+subdir('src/shell')
 if build_games
   subdir('src/stg')
 
@@ -105,7 +106,7 @@ if build_games
       c_args: game['c_args'],
       link_with: game.get('link_with', []),
       implicit_include_directories: false,
-      dependencies: [core_app_dep, stg_dep],
+      dependencies: [shell_game_dep, stg_dep],
       win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
     )
   endforeach
@@ -126,13 +127,13 @@ if build_games
 endif
 
 if build_othpatch
-  # othpatch downloads patches. It is a program on core alone, and the only
-  # one that links curl.
+  # othpatch downloads patches. It is a program on core and shell alone, and
+  # the only one that links curl.
   subdir('src/othpatch')
   executable(
     'othpatch',
     othpatch_entry,
-    c_args: [layer_include['othpatch'], othpatch_version_include] + core_include,
+    c_args: [layer_include['othpatch'], othpatch_version_include] + shell_include,
     implicit_include_directories: false,
     link_with: othpatch_libs,
     dependencies: othpatch_deps,

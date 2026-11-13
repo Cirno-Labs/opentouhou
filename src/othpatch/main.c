@@ -8,7 +8,7 @@
 #include "othpatch/sha256.h"
 #include "othpatch/update.h"
 
-#include "core/app/folders.h"
+#include "shell/folders.h"
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"

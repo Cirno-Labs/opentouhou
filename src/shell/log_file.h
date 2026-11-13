@@ -4,7 +4,7 @@
 
 // Keeps the log of a game in a file, o<game id>.log in the user folder,
 // with the name stem of the game's executable. The log still writes to the
-// standard error stream too. Only core/app opens the file, so the tests,
+// standard error stream too. Only shell/game opens the file, so the tests,
 // the replay runner and othpatch write none.
 
 // Opens the log file of game game_id in user_dir, replacing the file of an

@@ -7,7 +7,7 @@
 #include "th06/scene.h"
 #include "th06/screens/result.h"
 
-#include "core/app.h"
+#include "shell/game.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 

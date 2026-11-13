@@ -74,17 +74,9 @@ core_patch_select_lib = static_library(
   dependencies: [sdl3],
 )
 
-# core/app's folder rules need core/base and core/io only, so that othpatch
-# finds the folders of a game as the game does.
-core_app_folders_lib = static_library(
-  'core_app_folders',
-  'app/folders.c',
-  c_args: core_include,
-  implicit_include_directories: false,
-)
-
-# othpatch links core/base, core/json, core/io, core/ini, core/patch's
-# selection and core/app's folder rules only, so a build of othpatch alone needs none of the libraries below.
+# othpatch links core/base, core/json, core/io, core/ini and core/patch's
+# selection only, so a build of othpatch alone needs none of the libraries
+# below.
 if not build_games
   subdir_done()
 endif
@@ -227,29 +219,6 @@ core_text_lib = static_library(
   dependencies: [sdl3_ttf, sdl3, cc_libm],
 )
 
-core_lib = static_library(
-  'core',
-  'app/app.c',
-  'app/clock.c',
-  'app/fatal.c',
-  'app/log_file.c',
-  'app/tick_rate.c',
-  'app/hotkeys.c',
-  'app/request_queue.c',
-  'app/settings.c',
-  'app/screenshot.c',
-  c_args: core_include,
-  implicit_include_directories: false,
-  dependencies: [sdl3],
-)
-
-core_main_lib = static_library(
-  'core_main',
-  'app/main.c',
-  implicit_include_directories: false,
-  dependencies: [sdl3],
-)
-
 # SDL is a dependency of the library, not of its users: layers above core
 # link it, but never see its headers.
 core_dep = declare_dependency(
@@ -270,14 +239,4 @@ core_dep = declare_dependency(
     swresample.partial_dependency(links: true),
     cc_libm,
   ],
-)
-
-# core/app runs the game, so only a game executable links it. The layers
-# above core call its game-facing functions and get them from the game,
-# or from a stand-in in the replay runner and the tests.
-# The folder rules are a separate library, which othpatch links too.
-core_app_dep = declare_dependency(
-  link_with: [core_lib, core_app_folders_lib],
-  link_whole: core_main_lib,
-  dependencies: core_dep,
 )

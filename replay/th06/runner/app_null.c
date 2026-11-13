@@ -1,4 +1,4 @@
-#include "core/app.h"
+#include "shell/game.h"
 
 #include <stdint.h>
 

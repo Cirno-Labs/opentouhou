@@ -1,6 +1,6 @@
 #pragma once
 
-// The folders follow the rule in src/core/app/folders.h.
+// The folders follow the rule in src/shell/folders.h.
 
 // Returns the folder with the original game's data: the --data argument,
 // or the program folder without one.

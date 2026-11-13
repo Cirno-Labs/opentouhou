@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 // Holds the settings of the original's 東方紅魔郷.cfg that change what the
-// port does. core/app keeps them in the [game] section of config.ini. The
+// port does. shell/game keeps them in the [game] section of config.ini. The
 // title's option menu changes them during a tick, as the original changes
 // its configuration.
 //
@@ -17,9 +17,9 @@
 //   colour blending, the reference rasterizer, fog and DirectInput;
 // - the pad axis thresholds, which core's [input] settings own.
 //
-// The window mode and the pad button mapping are core's [video]
+// The window mode and the pad button mapping are the shell's [video]
 // fullscreen and [input] bindings. The title's options change them through
-// core/app.
+// shell/game.
 
 typedef enum {
     SETTINGS_MUSIC_OFF = 0,

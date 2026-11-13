@@ -1,6 +1,6 @@
 #define SDL_MAIN_USE_CALLBACKS
 #define SDL_MAIN_NOIMPL
-#include "core/app.h"
+#include "shell/game.h"
 
 #include "core/audio.h"
 
@@ -15,12 +15,12 @@
 #include "core/io/path.h"
 #include "core/patch.h"
 #include "core/vfs.h"
+#include "shell/fatal.h"
+#include "shell/folders.h"
+#include "shell/log_file.h"
 
 #include "clock.h"
-#include "fatal.h"
-#include "folders.h"
 #include "hotkeys.h"
-#include "log_file.h"
 #include "request_queue.h"
 #include "settings.h"
 #include "screenshot.h"

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "core/app.h"
+#include "shell/game.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-// Stands in for core/app in the th06 tests: the functions that th06 calls
+// Stands in for shell/game in the th06 tests: the functions that th06 calls
 // read g_FakeApp and record their requests in it. FakeApp_Reset gives the
-// state of the replay runner's core/app before its first measurement: no
+// state of the replay runner's shell/game before its first measurement: no
 // pad press, no tick rate, no bindings, no requests and the windowed mode.
 
 #define FAKE_APP_REQUEST_COUNT 32

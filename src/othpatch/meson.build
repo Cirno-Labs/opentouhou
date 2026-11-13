@@ -45,13 +45,13 @@ othpatch_lib = static_library(
   'update.c',
   'zip.c',
   othpatch_version,
-  c_args: [layer_include['othpatch']] + core_include + ['-I' + meson.current_build_dir()],
+  c_args: [layer_include['othpatch']] + shell_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [curl, zlib],
 )
 
 othpatch_libs = [
-  othpatch_lib, core_app_folders_lib, core_patch_select_lib, core_ini_lib,
+  othpatch_lib, shell_lib, core_patch_select_lib, core_ini_lib,
   core_json_lib, core_io_lib, core_base_lib,
 ]
 othpatch_deps = [curl, sdl3, zlib]

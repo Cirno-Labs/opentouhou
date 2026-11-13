@@ -1,4 +1,4 @@
-#include "core/app/screenshot.h"
+#include "shell/game/screenshot.h"
 #include "core/gfx.h"
 #include "core/io/file.h"
 #include "core/io/path.h"

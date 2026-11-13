@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Queues what a game asks of core/app during a tick, so that core/app
+// Queues what a game asks of shell/game during a tick, so that shell/game
 // changes its own state only after the tick.
 
 #define APP_REQUEST_COUNT 64

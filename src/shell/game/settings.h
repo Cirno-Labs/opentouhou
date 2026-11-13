@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-// Holds core's own settings, loaded and saved by core/app.
+// Holds the shell's own settings, loaded and saved by shell/game.
 typedef struct {
     bool fullscreen;
     bool interpolation; // smooths motion between ticks

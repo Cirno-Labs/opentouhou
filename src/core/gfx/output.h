@@ -7,7 +7,7 @@
 
 typedef struct SDL_Window SDL_Window;
 
-// Starts the renderer on core/app's window, with a logical screen of
+// Starts the renderer on the program's window, with a logical screen of
 // width x height. Without Gfx_Init, every gfx call draws nothing and
 // textures keep only their size.
 RESULT Gfx_Init(SDL_Window *window, int32_t width, int32_t height);

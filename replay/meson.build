@@ -16,7 +16,7 @@ th06_runner_lib = static_library(
   'th06/runner/run.c',
   'th06/runner/state.c',
   runner_backend,
-  c_args: [layer_include['th06']] + core_include + stg_include,
+  c_args: [layer_include['th06']] + stg_include + shell_include,
   implicit_include_directories: false,
   dependencies: [sdl3, zlib, cc_libm],
   link_with: [

@@ -27,7 +27,7 @@ public header describes the module itself.
   [BUILDING.md](BUILDING.md) has the details.
 - Platform code lives only in a module's `backend_<platform>.c`. Meson
   picks one platform per build. Public headers never include platform
-  headers. Only `core` uses SDL.
+  headers. Only `core` and `shell` use SDL.
 - The web build ships later but constrains the design now: the main
   loop returns to the browser every frame, threads are optional, and
   files live in browser storage.
@@ -37,17 +37,22 @@ public header describes the module itself.
 ```
 src/core/      every game: platform, rendering, audio, input, text,
                files, patches, maths
+src/shell/     the frame that turns core into a program: folders, log
+               file, fatal errors, and the main loop of the games
 src/stg/       what the shooting games share beyond core
 src/thXX/      one directory per game
-src/othpatch/  the patch downloader and updater, a program on core alone
+src/othpatch/  the patch downloader and updater, a program on core and shell
 ```
 
-- `core` depends on no other layer and has no game concepts.
-- `stg` depends on `core`. A game depends on `stg` and `core`. Games
-  never depend on each other.
+- `core` depends on no other layer, has no game concepts and holds no
+  program code.
+- `shell` depends on `core`. `stg` depends on `core` and never on
+  `shell`. A game depends on `core`, `stg` and `shell`. othpatch depends
+  on `core` and `shell`, but not on `shell/game`. Games never depend on
+  each other.
 - Code moves into `stg` when a second game needs it, not before.
 - The build enforces this: each layer is a static library that sees only
-  its own and its dependencies' headers. Code includes `core/app.h`.
+  its own and its dependencies' headers. Code includes `shell/game.h`.
 
 Inside a layer, each module has one public header that other modules
 include: `src/core/vfs.h`. Its code is one source file beside the
@@ -59,7 +64,7 @@ group of related modules together in one folder.
 
 ## Program structure
 
-`core/app` owns SDL3's main callbacks and drives the game through one
+`shell/game` owns SDL3's main callbacks and drives the game through one
 table that each game defines:
 
 ```c
@@ -90,11 +95,11 @@ A **tick** is one 60 Hz step of the game. A **display frame** is one
 image on screen. Each display frame reads the input devices, runs as
 many ticks as the clock allows, and shows the last tick in the window.
 
-A game reaches core state that is not part of its simulation, such as
-its input bindings and the window mode, through core/app. It reads
-values that core/app took before the ticks of the display frame, and it
-asks for changes. core/app queues the requests and applies them after
-the tick that made them, so that core never changes during a tick.
+A game reaches state that is not part of its simulation, such as its
+input bindings and the window mode, through shell/game. It reads values
+that shell/game took before the ticks of the display frame, and it asks
+for changes. shell/game queues the requests and applies them after the
+tick that made them, so that this state never changes during a tick.
 
 `tick` updates the game and draws it in one call, because the originals
 interleave the two and some of their drawing code changes state.
@@ -116,7 +121,7 @@ stores its state is the game's own decision.
   back.
 - It never reads the clock, the file system after loading, audio or
   window state, or anything another thread writes. A value such as a
-  measured frame rate comes from `core/app` as a per-tick value that
+  measured frame rate comes from `shell/game` as a per-tick value that
   replays record.
 
 ### Floating point
@@ -155,11 +160,13 @@ core/text     fonts, layout, text to texture
 core/audio    device, mixer, sources, DSP
 core/input    devices, bindings, per-player input for each tick
 core/config   our settings
-core/app      main loop, window, frame pacing, the GAME_DESC driver
+shell         folder rules, the log file, fatal error boxes
+shell/game    main loop, window, frame pacing, the GAME_DESC driver
 ```
 
 Dependencies inside `core` go down this list, except that `gfx` and
-`text` use `image`, and `app` uses everything.
+`text` use `image`. `shell` uses `core/base` and `core/io`, and
+`shell/game` uses everything.
 
 Two rules hold across modules:
 

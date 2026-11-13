@@ -7,7 +7,7 @@
 // Gfx_Init, returns identity matrices and an empty viewport.
 GFX_VIEW GfxView_Screen(void);
 
-// Starts drawing a tick on the logical screen, cleared to clear. core/app
+// Starts drawing a tick on the logical screen, cleared to clear. The program
 // calls Gfx_BeginTick and Gfx_EndTick around each tick of the game.
 void Gfx_BeginTick(GFX_COLOR clear);
 // Sets the view of the quads that follow. The first view of a tick is

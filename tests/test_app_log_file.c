@@ -1,4 +1,4 @@
-#include "core/app/log_file.h"
+#include "shell/log_file.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
