@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Read and write the files of the R2 bucket through the AWS CLI.
 
 The environment gives the bucket: R2_ACCOUNT_ID and R2_BUCKET name it,

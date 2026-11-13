@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "othpatch/zip.h"
 
 #include "core/base/crc32.h"

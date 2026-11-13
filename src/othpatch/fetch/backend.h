@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #pragma once
 
 // Finds the CA certificates of the platform for HTTPS.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "th06/timer.h"
 
 void Timer_Init(TIMER *const timer)

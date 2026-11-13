@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "th06/gui/private.h"
 
 #include "th06/ascii.h"

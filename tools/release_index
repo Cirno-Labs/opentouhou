@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
 """Publish files to the R2 bucket and record them in releases.json.
 
   fetch OUT       writes the index of the bucket into OUT, or an empty

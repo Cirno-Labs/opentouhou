@@ -31,6 +31,19 @@ repos:
     language: python
     files: ^docs/[^/]+/CHANGELOG\.md$
 
+  - id: check-spdx-c
+    name: C sources start with the SPDX licence line
+    entry: tools/lint/check_spdx
+    language: python
+    files: ^(src|tests|replay)/.*\.[ch]$
+    exclude: ^src/core/math/libm/[a-z0-9_]+(\.c|_internal\.h)$
+
+  - id: check-spdx-scripts
+    name: Scripts start with the SPDX licence line
+    entry: tools/lint/check_spdx
+    language: python
+    types_or: [python, shell]
+
   - id: actionlint
     name: actionlint
     entry: actionlint

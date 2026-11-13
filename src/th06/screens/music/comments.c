@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "th06/screens/music/comments.h"
 
 #include "core/base/cp932.h"

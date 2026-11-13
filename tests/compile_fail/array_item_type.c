@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then passes an array an item of another type.
 #include "core/base/array.h"

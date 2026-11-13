@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #pragma once
 
 // Writes th06 data directories for tests: the six archives Files_Init

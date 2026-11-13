@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Tests of the changelog format and of tools/lint/check_changelog."""
 
 import contextlib

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
 """Set the version of a program for its next release.
 
 Writes the version into src/<program>/version.txt and turns the

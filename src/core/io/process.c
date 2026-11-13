@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "core/io/process.h"
 
 #include "core/base/memory.h"

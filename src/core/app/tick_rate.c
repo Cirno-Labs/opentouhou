@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "tick_rate.h"
 
 #define PERIOD_NS 500000000ULL

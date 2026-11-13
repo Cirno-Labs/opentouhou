@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "request_queue.h"
 
 #include "core/base/log.h"

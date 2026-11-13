@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #pragma once
 
 // The folders follow the rule in src/core/app/folders.h.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "core/image.h"
 
 // Returns the number of bytes a width x height RGBA8 image occupies.

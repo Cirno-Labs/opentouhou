@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
 """Name, build and push the build images.
 
 Each platform has three images: base, and media and othpatch, which are

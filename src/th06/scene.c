@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "th06/scene.h"
 
 #include "th06/game.h"

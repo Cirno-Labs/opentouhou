@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Stand in for the R2 bucket that tools/shared/r2.py reads and writes.
 
 FakeR2 keeps the objects in memory and answers the AWS CLI commands that

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 // Checks core/math/x87 against the real x87 instructions, run at 24-bit
 // precision through inline asm, on x86 with a compiler that supports GCC's
 // inline asm syntax. On every other target, this test file compiles to an

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "core/app/screenshot.h"
 #include "core/gfx.h"
 #include "core/io/file.h"

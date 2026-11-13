@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #pragma once
 
 // Lists the text of the executable that the player sees, as

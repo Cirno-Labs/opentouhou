@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "settings.h"
 
 static const char *const m_ScreenshotResolutions[] = { "native", "window",

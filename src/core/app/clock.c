@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "clock.h"
 
 #define NS_PER_SECOND 1000000000ULL

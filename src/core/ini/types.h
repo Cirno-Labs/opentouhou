@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #pragma once
 
 // Reads and writes INI files: our own settings format, one file per game in

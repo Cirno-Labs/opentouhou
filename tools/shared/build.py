@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Configure, compile and test the Meson build directories of the programs.
 
 tools/docker/entrypoint.py and tools/mac/build build through these

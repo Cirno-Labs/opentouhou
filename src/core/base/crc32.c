@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "core/base/crc32.h"
 
 static uint32_t m_Table[256];

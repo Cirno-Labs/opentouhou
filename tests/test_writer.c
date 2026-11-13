@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 #include "core/io/writer.h"

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "th06/buttons.h"
 
 #include "core/base/utils.h"

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #pragma once
 
 // Marks a function that takes a printf-style format at parameter fmt_ and its

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "othpatch/game.h"
 
 #include "patch_builder.h"

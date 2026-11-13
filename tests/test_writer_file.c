@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 // Declares symlink, which the tests use to make a file that cannot be
 // written to.
 #define _POSIX_C_SOURCE 200809L

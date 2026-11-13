@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
 """Fail when a program's version file or changelog is out of order.
 
 Each src/<program>/version.txt must hold one version X.Y.Z, and the

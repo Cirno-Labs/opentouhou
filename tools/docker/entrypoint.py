@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
 """Build and package opentouhou inside a build image.
 
 package writes the game packages into build/packages/, each with the

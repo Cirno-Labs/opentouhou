@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "app_fake.h"
 
 #include "core/base/assert.h"

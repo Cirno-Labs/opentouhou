@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Read and write releases.json, the index of the published files.
 
 The index lives at the root of the R2 bucket, beside the files it lists.

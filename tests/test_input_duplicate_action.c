@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "core/input.h"
 
 #include "input_backend_fake.h"

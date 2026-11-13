@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Tests of the othpatch that packaging puts into the game packages."""
 
 import contextlib
