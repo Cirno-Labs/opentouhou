@@ -154,7 +154,7 @@ if build_othpatch
     'fake_program.c',
     implicit_include_directories: false,
   )
-  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'repo', 'update', 'zip']
+  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'zip']
     test(
       'othpatch/' + part,
       executable(
@@ -1140,7 +1140,11 @@ test(
   suite: 'unit',
 )
 
-foreach part : ['language', 'select']
+# The tests of the manager read repository networks from their own
+# directories with a fetch function that reads files. The manager allocates
+# its arena with malloc, which MALLOC_PERTURB_ would fill byte by byte, so
+# the tests turn it off.
+foreach part : ['language', 'manager', 'repo', 'select', 'update']
   test(
     'core/patch/' + part,
     executable(
@@ -1148,10 +1152,16 @@ foreach part : ['language', 'select']
       'test_patch_' + part + '.c',
       c_args: core_include,
       implicit_include_directories: false,
-      link_with: [core_patch_select_lib, core_json_lib, core_io_lib, core_base_lib],
+      link_with: [
+        core_patch_select_lib, core_ini_lib, core_json_lib, core_io_lib,
+        core_hash_lib, core_base_lib,
+      ],
       dependencies: [sdl3],
     ),
-    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'patch_' + part},
+    env: {
+      'TEST_DIR': meson.current_build_dir() / 'tmp' / 'patch_' + part,
+      'MALLOC_PERTURB_': '0',
+    },
     suite: 'unit',
   )
 endforeach

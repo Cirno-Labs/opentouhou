@@ -1,15 +1,18 @@
 #pragma once
 
-// Builds repository networks of file:// URLs for the othpatch tests, in the
-// test directories of test_dir.h.
+// Builds repository networks of file:// URLs for the tests of core/patch
+// and othpatch, in the test directories of test_dir.h, and fetches them
+// without a server.
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/hash/crc32.h"
+#include "core/io/reader.h"
+#include "core/patch/fetch.h"
 
 #include "patch_builder.h"
 
-#include <SDL3/SDL.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Returns the URL of the repository folder <root>/<repo>/. Mem_Free
@@ -96,6 +99,57 @@
     char *const data = TestDir_Read(full);
     Mem_Free(full);
     return data;
+}
+
+// Fetches file:// URLs as a PATCH_FETCH_FN: decodes the percent escapes of
+// the path, leaves out a query, and reads the file.
+[[maybe_unused]] static void Server_Fetch(
+    PATCH_FETCH *const fetches, const int32_t count,
+    const PATCH_FETCH_PROGRESS *const progress)
+{
+    for (int32_t i = 0; i < count; i++) {
+        PATCH_FETCH *const fetch = &fetches[i];
+        *fetch = (PATCH_FETCH) { .url = fetch->url };
+        const char *start = fetch->url + strlen("file://");
+        if (start[0] == '/' && start[2] == ':') {
+            start++;
+        }
+        const size_t length = strcspn(start, "?");
+        char *const path = Mem_Alloc(length + 1);
+        size_t size = 0;
+        for (size_t j = 0; j < length; j++) {
+            char hex[3] = { 0 };
+            if (start[j] == '%' && j + 2 < length) {
+                memcpy(hex, start + j + 1, 2);
+                path[size++] = (char)strtol(hex, nullptr, 16);
+                j += 2;
+            } else {
+                path[size++] = start[j];
+            }
+        }
+        path[size] = '\0';
+        READER reader;
+        const RESULT opened = Reader_OpenFile(&reader, path);
+        if (!IS_OK(opened)) {
+            Result_Ignore(opened);
+            fetch->result = FAIL("cannot read %s", path);
+            Mem_Free(path);
+            continue;
+        }
+        Mem_Free(path);
+        const size_t file_size = Reader_Size(&reader);
+        fetch->data = Mem_Alloc(file_size + 1);
+        Reader_ReadBytes(&reader, fetch->data, file_size);
+        Reader_Close(&reader);
+        fetch->result = Reader_Result(&reader);
+        fetch->size = file_size;
+        if (progress != nullptr && progress->received != nullptr) {
+            progress->received(progress->context, fetch, file_size, file_size);
+        }
+        if (progress != nullptr && progress->ended != nullptr) {
+            progress->ended(progress->context, fetch);
+        }
+    }
 }
 
 // Returns whether <root>/<path> exists.

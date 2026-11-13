@@ -4,7 +4,7 @@
 #include "core/hash/sha256.h"
 
 #include "fake_program.h"
-#include "othpatch_server.h"
+#include "patch_server.h"
 #include "test.h"
 #include "test_dir.h"
 #include "zip_builder.h"

@@ -4,8 +4,6 @@
 #include "othpatch/game.h"
 #include "othpatch/install.h"
 #include "othpatch/release.h"
-#include "othpatch/repo.h"
-#include "othpatch/update.h"
 
 #include "shell/folders.h"
 #include "core/base/arena.h"
@@ -19,7 +17,9 @@
 #include "core/json/get.h"
 #include "core/json/parse.h"
 #include "core/patch/language.h"
+#include "core/patch/repo.h"
 #include "core/patch/select.h"
+#include "core/patch/update.h"
 
 #include "version.h"
 
@@ -98,7 +98,7 @@ typedef enum {
 // Holds the state of the language section.
 typedef struct {
     M_RUN *run;
-    UPDATE_INSTALLED_LIST installed;
+    PATCH_INSTALLED_LIST installed;
     const char *games[M_GAME_COUNT];
     int32_t game_count;
     M_KIND kind;
@@ -343,15 +343,29 @@ static const char *M_Files(const int32_t total)
     return total == 1 ? "file" : "files";
 }
 
-static void M_ReportFiles(
-    void *const context, const int32_t done, const int32_t total)
+static void M_DrawFiles(M_BAR *const bar)
 {
-    M_BAR *const bar = context;
-    bar->done = done;
-    bar->total = total;
     char amount[64];
-    snprintf(amount, sizeof(amount), "%d/%d %s", done, total, M_Files(total));
-    M_DrawBar(bar, (double)done / total, amount);
+    snprintf(
+        amount, sizeof(amount), "%d/%d %s", bar->done, bar->total,
+        M_Files(bar->total));
+    M_DrawBar(bar, (double)bar->done / bar->total, amount);
+}
+
+static void M_ReportStarted(
+    void *const user, const PATCH_ENTRY *const patch, const int32_t files)
+{
+    M_BAR *const bar = user;
+    bar->total = files;
+    M_DrawFiles(bar);
+}
+
+static void M_ReportFileDone(
+    void *const user, const PATCH_ENTRY *const patch, const char *const file)
+{
+    M_BAR *const bar = user;
+    bar->done++;
+    M_DrawFiles(bar);
 }
 
 static void M_EndFiles(M_BAR *const bar)
@@ -384,7 +398,8 @@ static void M_FormatBytes(
 }
 
 static void M_ReportBytes(
-    void *const context, const size_t received, const size_t expected)
+    void *const context, const PATCH_FETCH *const fetch, const size_t received,
+    const size_t expected)
 {
     M_BAR *const bar = context;
     bar->received = received;
@@ -423,7 +438,8 @@ static int M_CompareMembers(const void *const a, const void *const b)
 
 // Returns the language packs of repo, in byte order of their names.
 static int32_t M_SortPacks(
-    const REPO *const repo, ARENA *const arena, const JSON_MEMBER ***const out)
+    const PATCH_REPO *const repo, ARENA *const arena,
+    const JSON_MEMBER ***const out)
 {
     const JSON_VALUE *const patches = repo->patches;
     const int32_t count = patches != nullptr ? patches->object.count : 0;
@@ -442,7 +458,7 @@ static int32_t M_SortPacks(
 }
 
 static const char *M_FindLanguagePack(
-    const REPO *const repo, const char *const tag)
+    const PATCH_REPO *const repo, const char *const tag)
 {
     const JSON_VALUE *const patches = repo->patches;
     const int32_t count = patches != nullptr ? patches->object.count : 0;
@@ -457,7 +473,7 @@ static const char *M_FindLanguagePack(
 }
 
 static const char *M_FindLanguageOfCode(
-    const REPO *const repo, const char *const code)
+    const PATCH_REPO *const repo, const char *const code)
 {
     char tags[PATCH_LANGUAGE_MAX_TAGS][PATCH_LANGUAGE_TAG_SIZE];
     const int32_t count = Patch_GetLanguageTags(code, tags);
@@ -473,7 +489,7 @@ static const char *M_FindLanguageOfCode(
 // Returns the title of the language pack name of repo, as repo.js gives
 // it, or the code of the pack when repo.js gives none.
 static const char *M_GetPackTitle(
-    const REPO *const repo, const char *const name)
+    const PATCH_REPO *const repo, const char *const name)
 {
     const char *const code = name + strlen(M_LANGUAGE_PREFIX);
     const char *const title = Json_GetString(Json_Get(repo->patches, name), "");
@@ -487,7 +503,8 @@ static bool M_IsOriginal(const char *const name)
         && Patch_IsOriginalLanguage(tags[0]);
 }
 
-static bool M_Contains(const REPO_PATCH_LIST *const list, const char *const id)
+static bool M_Contains(
+    const PATCH_REMOTE_LIST *const list, const char *const id)
 {
     for (int32_t i = 0; i < list->count; i++) {
         if (strcmp(list->items[i]->id, id) == 0) {
@@ -498,7 +515,7 @@ static bool M_Contains(const REPO_PATCH_LIST *const list, const char *const id)
 }
 
 static bool M_IsInstalled(
-    const UPDATE_INSTALLED_LIST *const installed, const char *const id)
+    const PATCH_INSTALLED_LIST *const installed, const char *const id)
 {
     for (int32_t i = 0; i < installed->count; i++) {
         if (strcmp(installed->items[i].id, id) == 0) {
@@ -526,7 +543,7 @@ static bool M_IsBeside(
 
 static bool M_IsDownloaded(
     ARENA *const arena, const char *const dir,
-    const UPDATE_INSTALLED_LIST *const installed, const char *const game)
+    const PATCH_INSTALLED_LIST *const installed, const char *const game)
 {
     const ALLOCATOR *const allocator = Arena_Allocator(arena);
     for (int32_t i = 0; i < installed->count; i++) {
@@ -544,7 +561,7 @@ static bool M_IsDownloaded(
 // there are.
 static int32_t M_PickGames(
     const char *const exe_dir, const char *const dir,
-    const UPDATE_INSTALLED_LIST *const installed, ARENA *const arena,
+    const PATCH_INSTALLED_LIST *const installed, ARENA *const arena,
     const char *games[M_GAME_COUNT])
 {
     int32_t count = 0;
@@ -629,7 +646,7 @@ static const char *M_ReadLanguage(
 
 // Returns the codes of the language packs of repo, separated by ", ". The
 // string comes from arena.
-static const char *M_ListCodes(const REPO *const repo, ARENA *const arena)
+static const char *M_ListCodes(const PATCH_REPO *const repo, ARENA *const arena)
 {
     const JSON_MEMBER **packs;
     const int32_t pack_count = M_SortPacks(repo, arena, &packs);
@@ -641,7 +658,8 @@ static const char *M_ListCodes(const REPO *const repo, ARENA *const arena)
     return text;
 }
 
-static const char *M_GetLabel(const REPO_PATCH *const patch, ARENA *const arena)
+static const char *M_GetLabel(
+    const PATCH_REMOTE *const patch, ARENA *const arena)
 {
     if (strcmp(patch->title, patch->id) == 0) {
         return patch->id;
@@ -681,7 +699,7 @@ static void M_Head(M_LANGUAGE *const language)
 }
 
 static void M_PrintNoLanguage(
-    const M_LANGUAGE *const language, const REPO *const first,
+    const M_LANGUAGE *const language, const PATCH_REPO *const first,
     const char *const code)
 {
     ARENA *const arena = language->run->arena;
@@ -694,10 +712,11 @@ static void M_PrintNoLanguage(
 }
 
 static bool M_OpenNetwork(
-    M_LANGUAGE *const language, REPO_NETWORK **const network)
+    M_LANGUAGE *const language, PATCH_NETWORK **const network)
 {
     M_RUN *const run = language->run;
-    const RESULT opened = Repo_Open(run->args->repo, run->arena, network);
+    const RESULT opened =
+        PatchRepo_Open(run->args->repo, Fetch_Run, run->arena, network);
     if (IS_OK(opened)) {
         return true;
     }
@@ -710,16 +729,16 @@ static bool M_OpenNetwork(
 // Adds the installed patches that let themselves update to list. A patch
 // that the network lacks stays as it is.
 static void M_AddInstalled(
-    const M_LANGUAGE *const language, REPO_NETWORK *const network,
-    REPO_PATCH_LIST *const list)
+    const M_LANGUAGE *const language, PATCH_NETWORK *const network,
+    PATCH_REMOTE_LIST *const list)
 {
     M_RUN *const run = language->run;
     for (int32_t i = 0; i < language->installed.count; i++) {
-        const UPDATE_INSTALLED *const patch = &language->installed.items[i];
+        const PATCH_INSTALLED *const patch = &language->installed.items[i];
         if (!patch->update || M_Contains(list, patch->id)) {
             continue;
         }
-        const RESULT result = Repo_AddPatch(network, patch->id, list);
+        const RESULT result = PatchRepo_AddPatch(network, patch->id, list);
         if (IS_OK(result)) {
             continue;
         }
@@ -748,7 +767,7 @@ static bool M_HasUpdates(const M_LANGUAGE *const language)
 // first, from the last, so that the patch comes before what it needs.
 // Stops at the first patch that fails.
 static bool M_UpdateList(
-    const M_LANGUAGE *const language, const REPO_PATCH_LIST *const list,
+    const M_LANGUAGE *const language, const PATCH_REMOTE_LIST *const list,
     const int32_t target_count, bool *const changed)
 {
     M_RUN *const run = language->run;
@@ -759,21 +778,22 @@ static bool M_UpdateList(
             width, M_CountCodePoints(M_GetLabel(list->items[i], run->arena)));
     }
     for (int32_t i = 0; i < list->count; i++) {
-        const REPO_PATCH *const patch =
+        const PATCH_REMOTE *const patch =
             list->items[i < target_count ? target_count - 1 - i : i];
         M_BAR bar = {
             .run = run,
             .label = M_GetLabel(patch, run->arena),
             .width = width,
         };
-        const UPDATE_PROGRESS progress = {
-            .report = M_ReportFiles,
-            .context = &bar,
+        const PATCH_EVENTS events = {
+            .user = &bar,
+            .patch_started = M_ReportStarted,
+            .file_done = M_ReportFileDone,
         };
-        UPDATE_COUNTS counts;
-        const RESULT result = Update_Patch(
-            run->dir, patch, language->games, language->game_count, &progress,
-            &counts);
+        PATCH_COUNTS counts;
+        const RESULT result = PatchUpdate_Patch(
+            run->dir, patch, language->games, language->game_count, Fetch_Run,
+            &events, nullptr, &counts);
         if (bar.total > 0) {
             M_EndFiles(&bar);
         }
@@ -880,11 +900,11 @@ static bool M_UpdateOriginal(M_LANGUAGE *const language)
         M_PrintUpdated(run->out, false);
         return true;
     }
-    REPO_NETWORK *network;
+    PATCH_NETWORK *network;
     if (!M_OpenNetwork(language, &network)) {
         return false;
     }
-    REPO_PATCH_LIST list;
+    PATCH_REMOTE_LIST list;
     Array_Init(&list, Arena_Allocator(run->arena));
     M_AddInstalled(language, network, &list);
     bool changed;
@@ -900,12 +920,13 @@ static bool M_UpdateOriginal(M_LANGUAGE *const language)
 // *pack to the repository and *pack_name to the name of a language pack,
 // or both to nullptr for another patch.
 static bool M_Resolve(
-    M_LANGUAGE *const language, REPO_NETWORK *const network,
+    M_LANGUAGE *const language, PATCH_NETWORK *const network,
     const char *const code, const bool system, const char **const id,
-    const REPO **const pack, const char **const pack_name, bool *const matched)
+    const PATCH_REPO **const pack, const char **const pack_name,
+    bool *const matched)
 {
     M_RUN *const run = language->run;
-    const REPO *const first = Repo_GetFirst(network);
+    const PATCH_REPO *const first = PatchRepo_GetFirst(network);
     *pack = nullptr;
     *pack_name = nullptr;
     *matched = true;
@@ -913,7 +934,7 @@ static bool M_Resolve(
         *id = code;
         if (Patch_IsLanguagePack(code)) {
             const size_t length = (size_t)(strchr(code, '/') - code);
-            *pack = Repo_FindRepo(
+            *pack = PatchRepo_FindRepo(
                 network, M_Format(run->arena, "%.*s", (int)length, code));
             *pack_name = code + length + 1;
         }
@@ -932,9 +953,9 @@ static bool M_Resolve(
         M_PrintNoLanguage(language, first, code);
         return false;
     }
-    const REPO *repos[M_MAX_AMBIGUOUS];
+    const PATCH_REPO *repos[M_MAX_AMBIGUOUS];
     const int32_t count =
-        Repo_FindAllPatch(network, code, repos, M_MAX_AMBIGUOUS);
+        PatchRepo_FindAllPatch(network, code, repos, M_MAX_AMBIGUOUS);
     if (count == 0) {
         M_Head(language);
         M_PrintNoLanguage(language, first, code);
@@ -963,12 +984,12 @@ static bool M_Install(
 {
     M_RUN *const run = language->run;
     FILE *const out = run->out;
-    REPO_NETWORK *network;
+    PATCH_NETWORK *network;
     if (!M_OpenNetwork(language, &network)) {
         return false;
     }
     const char *id;
-    const REPO *pack;
+    const PATCH_REPO *pack;
     const char *pack_name;
     bool matched;
     if (!M_Resolve(
@@ -985,19 +1006,20 @@ static bool M_Install(
                             : pack_name + strlen(M_LANGUAGE_PREFIX));
     }
 
-    REPO_PATCH_LIST list;
+    PATCH_REMOTE_LIST list;
     Array_Init(&list, Arena_Allocator(run->arena));
-    const RESULT added = Repo_AddPatch(network, id, &list);
+    const RESULT added = PatchRepo_AddPatch(network, id, &list);
     if (!IS_OK(added)) {
         M_PrintFailure(
             out, M_Format(run->arena, "Could not install %s", id), added);
         return false;
     }
-    const REPO_PATCH *const target = list.items[list.count - 1];
+    const PATCH_REMOTE *const target = list.items[list.count - 1];
     if (pack_name != nullptr) {
         bool has_files;
-        const RESULT checked = Update_HasGameFiles(
-            target, language->games, language->game_count, &has_files);
+        const RESULT checked = PatchUpdate_HasGameFiles(
+            target, language->games, language->game_count, Fetch_Run,
+            &has_files);
         if (!IS_OK(checked)) {
             M_PrintFailure(
                 out, M_Format(run->arena, "Could not download %s", id),
@@ -1039,7 +1061,7 @@ static bool M_RunLanguage(M_RUN *const run, bool *const first_run)
     *first_run = false;
     M_LANGUAGE language = { .run = run };
     const RESULT listed =
-        Update_ListInstalled(run->dir, run->arena, &language.installed);
+        PatchUpdate_ListInstalled(run->dir, run->arena, &language.installed);
     if (IS_OK(listed)) {
         language.game_count = M_PickGames(
             run->exe_dir, run->dir, &language.installed, run->arena,
@@ -1101,8 +1123,9 @@ static int M_List(M_RUN *const run)
 {
     FILE *const out = run->out;
     ARENA *const arena = run->arena;
-    UPDATE_INSTALLED_LIST installed;
-    const RESULT listed = Update_ListInstalled(run->dir, arena, &installed);
+    PATCH_INSTALLED_LIST installed;
+    const RESULT listed =
+        PatchUpdate_ListInstalled(run->dir, arena, &installed);
     if (!IS_OK(listed)) {
         M_PrintFailure(out, "Could not read the patches folder", listed);
         return 1;
@@ -1110,13 +1133,14 @@ static int M_List(M_RUN *const run)
     const char *games[M_GAME_COUNT];
     const int32_t game_count =
         M_PickGames(run->exe_dir, run->dir, &installed, arena, games);
-    REPO_NETWORK *network;
-    const RESULT opened = Repo_Open(run->args->repo, arena, &network);
+    PATCH_NETWORK *network;
+    const RESULT opened =
+        PatchRepo_Open(run->args->repo, Fetch_Run, arena, &network);
     if (!IS_OK(opened)) {
         M_PrintFailure(out, "Could not download the patch list", opened);
         return 1;
     }
-    const REPO *const first = Repo_GetFirst(network);
+    const PATCH_REPO *const first = PatchRepo_GetFirst(network);
     const char *const code =
         M_ReadLanguage(run->exe_dir, games, game_count, arena);
     const bool original = code != nullptr && M_IsOriginal(code);
@@ -1294,7 +1318,7 @@ static bool M_RemoveFound(
             continue;
         }
         const char *const id = Patch_GetEntry(selection, i)->id;
-        const RESULT result = Update_RemovePatch(run->dir, id);
+        const RESULT result = PatchUpdate_RemovePatch(run->dir, id);
         if (!IS_OK(result)) {
             M_PrintFailure(
                 out, M_Format(run->arena, "Could not remove %s", id), result);
@@ -1351,15 +1375,15 @@ static int M_Remove(M_RUN *const run)
 }
 
 static RESULT M_Fetch(
-    const char *const url, const FETCH_PROGRESS *const progress,
-    FETCH *const fetch)
+    const char *const url, const PATCH_FETCH_PROGRESS *const progress,
+    PATCH_FETCH *const fetch)
 {
-    *fetch = (FETCH) { .url = url };
+    *fetch = (PATCH_FETCH) { .url = url };
     Fetch_Run(fetch, 1, progress);
     const RESULT result = fetch->result;
     fetch->result = OK;
     if (!IS_OK(result)) {
-        Fetch_Release(fetch);
+        PatchFetch_Release(fetch);
     }
     return result;
 }
@@ -1368,11 +1392,11 @@ static RESULT M_FetchReleases(
     const char *const url, ARENA *const arena, JSON_VALUE **const out)
 {
     *out = nullptr;
-    FETCH fetch;
+    PATCH_FETCH fetch;
     MUST(M_Fetch(url, nullptr, &fetch));
     const RESULT parsed = Json_Parse(
         (const char *)fetch.data, fetch.size, Arena_Allocator(arena), out);
-    Fetch_Release(&fetch);
+    PatchFetch_Release(&fetch);
     return parsed;
 }
 
@@ -1385,10 +1409,10 @@ static void M_FormatVersion(
 }
 
 // Downloads the package of release and checks its SHA-256 digest. name is
-// the program that it holds. Fetch_Release releases *out.
+// the program that it holds. PatchFetch_Release releases *out.
 static RESULT M_Download(
     const M_UPDATE *const update, const char *const name,
-    const RELEASE *const release, FETCH *const out)
+    const RELEASE *const release, PATCH_FETCH *const out)
 {
     FAIL_IF(
         release->sha256 == nullptr, "the index gives no SHA-256 digest of %s",
@@ -1399,7 +1423,7 @@ static RESULT M_Download(
         .run = update->run,
         .label = M_Format(update->run->arena, "%s %s", name, newest),
     };
-    const FETCH_PROGRESS progress = {
+    const PATCH_FETCH_PROGRESS progress = {
         .received = M_ReportBytes,
         .context = &bar,
     };
@@ -1411,7 +1435,7 @@ static RESULT M_Download(
     char digest[SHA256_HEX_SIZE];
     Sha256_ComputeHex(out->data, out->size, digest);
     if (!Str_EqualIgnoreCase(digest, release->sha256)) {
-        Fetch_Release(out);
+        PatchFetch_Release(out);
         return FAIL(
             "%s has the SHA-256 digest %s instead of %s", release->package,
             digest, release->sha256);
@@ -1555,13 +1579,13 @@ static RESULT M_InstallGame(
     const RELEASE *const release, bool *const othpatch_replaced)
 {
     *othpatch_replaced = false;
-    FETCH fetch;
+    PATCH_FETCH fetch;
     MUST(M_Download(update, name, release, &fetch));
     const RESULT result = Install_Package(
         update->platform, update->run->exe_dir, game, fetch.data, fetch.size,
         update->othpatch_is_release ? &update->othpatch_version : nullptr,
         update->run->arena, othpatch_replaced);
-    Fetch_Release(&fetch);
+    PatchFetch_Release(&fetch);
     return result;
 }
 
@@ -1622,12 +1646,12 @@ static bool M_UpdateGame(
 static RESULT M_InstallOthpatch(
     const M_UPDATE *const update, const RELEASE *const release)
 {
-    FETCH fetch;
+    PATCH_FETCH fetch;
     MUST(M_Download(update, "othpatch", release, &fetch));
     const RESULT result = Install_Othpatch(
         update->platform, update->run->exe_dir, fetch.data, fetch.size,
         update->run->arena);
-    Fetch_Release(&fetch);
+    PatchFetch_Release(&fetch);
     return result;
 }
 

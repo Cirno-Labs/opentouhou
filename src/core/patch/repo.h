@@ -5,24 +5,15 @@
 #include "core/base/result.h"
 #include "core/base/types.h"
 #include "core/json/types.h"
+#include "core/patch/fetch.h"
+#include "core/patch/manager.h"
 
-// Finds patches in a network of thcrap repositories, with the patches that
-// they depend on.
-//
-// A repository is a folder on a server with a repo.js: its id, its title,
-// servers (the URLs of copies of the folder), neighbors (the URLs of other
-// repositories) and patches (an object from patch name to title). The
-// patch "<name>" of a repository is the folder <server><name>/ with a
-// patch.js, and has the id "<repository id>/<name>".
-//
-// The network is walked breadth-first from its first repository, through
-// the servers and the neighbors of each repo.js, and only as far as a
-// lookup needs. A repository that cannot be fetched or parsed is skipped,
-// and so is a repository whose id is known already. Ids and patch names
-// become folder names, so one that is empty, "." or "..", or has a control
-// character or one of / \ : * ? " < > | is skipped too.
+// Walks the network of thcrap repositories that manager.h describes, and
+// finds patches in it with the patches that they depend on. Ids and patch
+// names become folder names, so one that is empty, "." or "..", or has a
+// control character or one of / \ : * ? " < > | is skipped.
 
-// Holds one repository.
+// Holds one repository of the network.
 typedef struct {
     const char *id;
     // Holds the title, or the id when repo.js has none.
@@ -36,11 +27,11 @@ typedef struct {
     // Holds repo.js as it was fetched.
     const uint8_t *text;
     size_t size;
-} REPO;
+} PATCH_REPO;
 
 // Holds one patch.
 typedef struct {
-    const REPO *repo;
+    const PATCH_REPO *repo;
     const char *name;
     const char *id;
     // Holds the title from patch.js, or the id when patch.js has none.
@@ -54,40 +45,41 @@ typedef struct {
     // server of the repository.
     const char **servers;
     int32_t server_count;
-} REPO_PATCH;
+} PATCH_REMOTE;
 
-typedef ARRAY(const REPO_PATCH *) REPO_PATCH_LIST;
+typedef ARRAY(const PATCH_REMOTE *) PATCH_REMOTE_LIST;
 
-typedef struct REPO_NETWORK REPO_NETWORK;
+typedef struct PATCH_NETWORK PATCH_NETWORK;
 
-// Fetches the first repository of a network: the repo.js at url when url
-// ends with "repo.js", or at <url>/repo.js. Every allocation of the
-// network and of what it returns comes from arena, so that releasing the
+// Fetches the first repository of a network with fetch: the repo.js at
+// url when url ends with "repo.js", or at <url>/repo.js. Every allocation of
+// the network and of what it returns comes from arena, so that releasing the
 // arena releases the network. A repo.js or patch.js larger than 1 MiB
 // counts as one that cannot be fetched.
-RESULT Repo_Open(const char *url, ARENA *arena, REPO_NETWORK **out);
+RESULT PatchRepo_Open(
+    const char *url, PATCH_FETCH_FN fetch, ARENA *arena, PATCH_NETWORK **out);
 
 // Returns the first repository of a network.
-const REPO *Repo_GetFirst(const REPO_NETWORK *network);
+const PATCH_REPO *PatchRepo_GetFirst(const PATCH_NETWORK *network);
 
 // Returns the repository with an id, or nullptr when the network has none.
-const REPO *Repo_FindRepo(REPO_NETWORK *network, const char *id);
+const PATCH_REPO *PatchRepo_FindRepo(PATCH_NETWORK *network, const char *id);
 
 // Returns the repository that has the patch name: preferred when it has
 // it, or else the first repository in the order of the walk that has it,
 // or nullptr when none has it. preferred may be nullptr.
-const REPO *Repo_FindPatch(
-    REPO_NETWORK *network, const REPO *preferred, const char *name);
+const PATCH_REPO *PatchRepo_FindPatch(
+    PATCH_NETWORK *network, const PATCH_REPO *preferred, const char *name);
 
 // Walks the whole network and returns the number of repositories that have
 // the patch name. Writes the first capacity of them into repos, in the
 // order of the walk.
-int32_t Repo_FindAllPatch(
-    REPO_NETWORK *network, const char *name, const REPO **repos,
+int32_t PatchRepo_FindAllPatch(
+    PATCH_NETWORK *network, const char *name, const PATCH_REPO **repos,
     int32_t capacity);
 
 // Returns whether the patches of a repository list name.
-bool Repo_HasPatch(const REPO *repo, const char *name);
+bool PatchRepo_HasPatch(const PATCH_REPO *repo, const char *name);
 
 // Adds the patch id to list, after each patch that it depends on, unless
 // the list holds them already. id is "<repository id>/<name>", or a bare
@@ -97,5 +89,5 @@ bool Repo_HasPatch(const REPO *repo, const char *name);
 // names it, as thcrap's configurator does. A dependency that leads back to
 // a patch that is being added is left out. On failure, such as for a patch
 // or a dependency that the network does not have, the list is as it was.
-RESULT Repo_AddPatch(
-    REPO_NETWORK *network, const char *id, REPO_PATCH_LIST *list);
+RESULT PatchRepo_AddPatch(
+    PATCH_NETWORK *network, const char *id, PATCH_REMOTE_LIST *list);
