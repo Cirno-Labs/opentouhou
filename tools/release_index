@@ -82,7 +82,9 @@ def upload(packages: Path, files: dict, prefix: str, base_url: str) -> dict:
     return entries
 
 
-def upload_checksums(entries: list[dict], prefix: str, base_url: str, work: Path) -> dict:
+def upload_checksums(
+    entries: list[dict], prefix: str, base_url: str, work: Path
+) -> dict:
     """Upload SHA256SUMS and SHA1SUMS of file entries, and return the map
     from each name to its URL."""
     urls = {}
@@ -192,7 +194,10 @@ def snapshot(args: argparse.Namespace, work: Path, repo_dir: Path) -> None:
 
 def reset(work: Path, repo_dir: Path) -> None:
     index = fetch_index(work / INDEX_KEY)
-    names = sorted({product_name(program) for program in programs(repo_dir)} | set(index["programs"]))
+    names = sorted(
+        {product_name(program) for program in programs(repo_dir)}
+        | set(index["programs"])
+    )
     cleared = index_file.empty()
     if "snapshot" in index:
         cleared["snapshot"] = index["snapshot"]

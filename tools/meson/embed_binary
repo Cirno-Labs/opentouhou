@@ -7,8 +7,13 @@ from pathlib import Path
 def main() -> None:
     output = Path(sys.argv[1])
     data = Path(sys.argv[2]).read_bytes()
-    rows = [", ".join(f"0x{byte:02x}" for byte in data[i : i + 16]) for i in range(0, len(data), 16)]
-    output.write_text("static const uint8_t m_DefaultFont[] = {\n" + ",\n".join(rows) + "\n};\n")
+    rows = [
+        ", ".join(f"0x{byte:02x}" for byte in data[i : i + 16])
+        for i in range(0, len(data), 16)
+    ]
+    output.write_text(
+        "static const uint8_t m_DefaultFont[] = {\n" + ",\n".join(rows) + "\n};\n"
+    )
 
 
 if __name__ == "__main__":

@@ -62,7 +62,11 @@ def git_env() -> dict[str, str]:
 def git(repo: Path, *args: str) -> None:
     config = ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
     subprocess.run(
-        ["git", *config, *args], cwd=repo, env=git_env(), check=True, capture_output=True
+        ["git", *config, *args],
+        cwd=repo,
+        env=git_env(),
+        check=True,
+        capture_output=True,
     )
 
 
@@ -95,7 +99,9 @@ class FormatTest(unittest.TestCase):
         self.assertIn("without other text", self.errors(text)[0])
 
     def test_empty_unreleased_fails(self) -> None:
-        text = GOOD.replace("- Added a thing.\n- Fixed a thing that a release\n  shipped.\n", "")
+        text = GOOD.replace(
+            "- Added a thing.\n- Fixed a thing that a release\n  shipped.\n", ""
+        )
         self.assertIn("remove the heading", self.errors(text)[0])
 
     def test_unreleased_below_a_version_fails(self) -> None:
@@ -122,10 +128,14 @@ class FormatTest(unittest.TestCase):
 
     def test_entry_without_a_verb_fails(self) -> None:
         text = GOOD.replace("- Added one.", "- Adds one.")
-        self.assertIn("must start with Added, Changed, Fixed or Removed", self.errors(text)[0])
+        self.assertIn(
+            "must start with Added, Changed, Fixed or Removed", self.errors(text)[0]
+        )
 
     def test_entries_out_of_order_fail(self) -> None:
-        text = GOOD.replace("- Added two.\n- Changed three.", "- Changed three.\n- Added two.")
+        text = GOOD.replace(
+            "- Added two.\n- Changed three.", "- Changed three.\n- Added two."
+        )
         self.assertIn("out of order", self.errors(text)[0])
 
     def test_wrapped_line_needs_two_spaces(self) -> None:
@@ -169,7 +179,9 @@ class FrozenTest(unittest.TestCase):
         path.write_text(text)
         stderr = io.StringIO()
         with (
-            mock.patch.dict(os.environ, git_env() | {"CHANGELOG_AMEND": amend or ""}, clear=True),
+            mock.patch.dict(
+                os.environ, git_env() | {"CHANGELOG_AMEND": amend or ""}, clear=True
+            ),
             contextlib.redirect_stderr(stderr),
         ):
             code = CHECK_CHANGELOG.main(["check_changelog", str(path)])
@@ -182,7 +194,9 @@ class FrozenTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_unreleased_changes_pass(self) -> None:
-        result = self.run_check(GOOD.replace("- Added a thing.", "- Added another thing."))
+        result = self.run_check(
+            GOOD.replace("- Added a thing.", "- Added another thing.")
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_changed_released_section_fails(self) -> None:
@@ -208,7 +222,6 @@ class FrozenTest(unittest.TestCase):
         self.assertEqual(self.run_check(text, "1.1.0").returncode, 1)
         result = self.run_check(text, "1.1.0, 1.0.0")
         self.assertEqual(result.returncode, 0, result.stderr)
-
 
     def test_file_new_in_the_commit_passes(self) -> None:
         path = self.repo / "docs" / "th07" / "CHANGELOG.md"
@@ -237,6 +250,7 @@ class CommandLineTest(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 1)
             self.assertIn("CHANGELOG_AMEND=1.1.0", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

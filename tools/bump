@@ -63,7 +63,9 @@ def add_change(path: Path, entry: str) -> None:
     entries of the same verb, and add the section when it is absent."""
     lines = path.read_text().splitlines()
     if f"## {UNRELEASED}" not in lines:
-        first = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+        first = next(
+            (i for i, line in enumerate(lines) if line.startswith("## ")), len(lines)
+        )
         lines[first:first] = [f"## {UNRELEASED}", "", entry, ""]
         path.write_text("\n".join(lines) + "\n")
         return
@@ -75,7 +77,10 @@ def add_change(path: Path, entry: str) -> None:
     rank = VERBS.index(entry[2:].split(" ", 1)[0])
     at = start + 2 if start + 1 < end and not lines[start + 1].strip() else start + 1
     for i in range(start + 1, end):
-        if lines[i].startswith("- ") and VERBS.index(lines[i][2:].split(" ", 1)[0]) > rank:
+        if (
+            lines[i].startswith("- ")
+            and VERBS.index(lines[i][2:].split(" ", 1)[0]) > rank
+        ):
             break
         if lines[i].strip():
             at = i + 1
@@ -88,7 +93,9 @@ def ship_othpatch(game: str, version: str) -> list[Path]:
     the files it changed."""
     major, minor, patch = read_version(version_path(game)).split(".")
     othpatch_pin_path(game).write_text(f"{version}\n")
-    add_change(changelog_path(game), f"- Changed the packages to ship othpatch {version}.")
+    add_change(
+        changelog_path(game), f"- Changed the packages to ship othpatch {version}."
+    )
     return [othpatch_pin_path(game), *bump(game, f"{major}.{minor}.{int(patch) + 1}")]
 
 

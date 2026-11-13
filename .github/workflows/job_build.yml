@@ -61,9 +61,9 @@ jobs:
           PLATFORM: ${{ inputs.platform }}
         run: |
           for image in base media othpatch; do
-            echo "$image=$(tools/docker/image tag $PLATFORM $image)" >> "$GITHUB_OUTPUT"
+            echo "$image=$(tools/docker/image tag "$PLATFORM" "$image")" >> "$GITHUB_OUTPUT"
           done
-          case "$(tools/docker/image tag $PLATFORM base)" in
+          case "$(tools/docker/image tag "$PLATFORM" base)" in
             */*) echo "local=false" >> "$GITHUB_OUTPUT" ;;
             *) echo "local=true" >> "$GITHUB_OUTPUT" ;;
           esac
@@ -128,10 +128,10 @@ jobs:
           TARGET: ${{ inputs.target }}
         run: |
           case "$PACKAGES" in
-            games|all) just package-$PLATFORM $TARGET ;;
+            games|all) just "package-$PLATFORM" "$TARGET" ;;
           esac
           case "$PACKAGES" in
-            othpatch|all) just package-othpatch-$PLATFORM $TARGET ;;
+            othpatch|all) just "package-othpatch-$PLATFORM" "$TARGET" ;;
           esac
 
       - name: Run the unit tests

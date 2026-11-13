@@ -131,7 +131,9 @@ def check_body(item: Section) -> list[str]:
         if lines and not lines[0].startswith("- "):
             errors.append(f"{item.heading}: the summary must be one paragraph")
     if not lines and item.title == UNRELEASED:
-        return errors + ["## Unreleased has no entries; remove the heading until it has one"]
+        return errors + [
+            "## Unreleased has no entries; remove the heading until it has one"
+        ]
     if not lines:
         return errors + [f"{item.heading}: the section has no entries"]
     order = -1
@@ -168,9 +170,13 @@ def check(text: str, program: str) -> list[str]:
     if not lines or lines[0] != title:
         return [f"the first line must be '{title}'"]
     errors = []
-    first = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+    first = next(
+        (i for i, line in enumerate(lines) if line.startswith("## ")), len(lines)
+    )
     if any(line.strip() for line in lines[1:first]):
-        errors.append("the title must be followed by the first section, without other text")
+        errors.append(
+            "the title must be followed by the first section, without other text"
+        )
     errors += [
         f"the heading '{line}' is not allowed; use only '## ' headings and"
         " list the entries without subsections"
@@ -193,7 +199,9 @@ def check(text: str, program: str) -> list[str]:
                 datetime.date.fromisoformat(item.date)
             except ValueError:
                 errors.append(f"{item.heading}: {item.date} is not a date")
-            if previous is not None and version_key(item.title) >= version_key(previous):
+            if previous is not None and version_key(item.title) >= version_key(
+                previous
+            ):
                 errors.append(
                     f"{item.heading}: the versions must go newest first,"
                     f" and {item.title} follows {previous}"

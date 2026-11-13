@@ -22,7 +22,9 @@ class FakeR2:
         self.log: list[str] = []
         self.fail = ""
 
-    def run(self, command: list[str], env: dict[str, str]) -> subprocess.CompletedProcess:
+    def run(
+        self, command: list[str], env: dict[str, str]
+    ) -> subprocess.CompletedProcess:
         code, stdout, stderr = self.aws(command[1:])
         return subprocess.CompletedProcess(command, code, stdout, stderr)
 

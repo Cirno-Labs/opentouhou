@@ -28,7 +28,10 @@ def main() -> None:
     program_dir = PACKAGING_DIR / program
     source = Image.open(program_dir / "icon.png").convert("RGBA")
     if source.width != source.height or source.width < max(ICNS_SIZES):
-        raise SystemExit(f"{program}/icon.png must be square and at least {max(ICNS_SIZES)} pixels wide")
+        raise SystemExit(
+            f"{program}/icon.png must be square and at least"
+            f" {max(ICNS_SIZES)} pixels wide"
+        )
     largest = render(source, max(ICNS_SIZES))
     images = {size: render(source, size) for size in ICO_SIZES}
     images[ICO_SIZES[-1]].save(

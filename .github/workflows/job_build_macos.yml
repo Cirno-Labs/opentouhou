@@ -64,10 +64,10 @@ jobs:
           TARGET: ${{ inputs.target }}
         run: |
           case "$PACKAGES" in
-            games|all) tools/mac/build package --target $TARGET ;;
+            games|all) tools/mac/build package --target "$TARGET" ;;
           esac
           case "$PACKAGES" in
-            othpatch|all) tools/mac/build package-othpatch --target $TARGET ;;
+            othpatch|all) tools/mac/build package-othpatch --target "$TARGET" ;;
           esac
 
       - name: Upload the packages

@@ -113,6 +113,14 @@ test-tools:
 lint:
     prek -a
 
+# Format the C code with clang-format and the Python tools with ruff.
+[group('misc')]
+format:
+    #!/usr/bin/env sh
+    # A hook that changes files fails, so a second run reports what is left.
+    prek run --all-files clang-format ruff-format > /dev/null \
+        || prek run --all-files clang-format ruff-format
+
 # Print the version that a build of a program reports.
 [group('misc')]
 version program="th06":

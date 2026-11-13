@@ -39,11 +39,7 @@ def main(argv: Sequence[str]) -> int:
 
     # `git commit -v` appends a diff below a scissors line; ignore it.
     cut = next(
-        (
-            i
-            for i, line in enumerate(raw_lines)
-            if ">8" in line and line[:1] == "#"
-        ),
+        (i for i, line in enumerate(raw_lines) if ">8" in line and line[:1] == "#"),
         None,
     )
     if cut is not None:
@@ -59,9 +55,7 @@ def main(argv: Sequence[str]) -> int:
     subject = lines[0]
     if not subject.startswith(EXEMPT_PREFIXES):
         if len(subject) > MAX_SUBJECT:
-            errors.append(
-                f"subject is {len(subject)} chars (max {MAX_SUBJECT})"
-            )
+            errors.append(f"subject is {len(subject)} chars (max {MAX_SUBJECT})")
         head = subject.split(":")[0]
         if head.split("(")[0].split("/")[0] in CONVENTIONAL_TYPES:
             errors.append(
@@ -88,9 +82,7 @@ def main(argv: Sequence[str]) -> int:
         errors.append("second line must be blank (subject, blank, body)")
     for number, line in enumerate(lines[2:], start=3):
         if len(line) > MAX_BODY:
-            errors.append(
-                f"body line {number} is {len(line)} chars (max {MAX_BODY})"
-            )
+            errors.append(f"body line {number} is {len(line)} chars (max {MAX_BODY})")
 
     if errors:
         sys.stderr.write("Commit message breaks the 50/72 rule:\n")

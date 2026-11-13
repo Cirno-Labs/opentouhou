@@ -10,8 +10,12 @@ def main() -> None:
     declarations: list[str] = []
     for source in sys.argv[2:]:
         path = Path(source)
-        literal = "\n".join(json.dumps(line + "\n") for line in path.read_text().splitlines())
-        declarations.append(f"static const char m_{path.stem.title()}Shader[] =\n{literal};\n")
+        literal = "\n".join(
+            json.dumps(line + "\n") for line in path.read_text().splitlines()
+        )
+        declarations.append(
+            f"static const char m_{path.stem.title()}Shader[] =\n{literal};\n"
+        )
     output.write_text("\n".join(declarations))
 
 

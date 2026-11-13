@@ -70,7 +70,9 @@ CHANGELOGS = {
 def load_tool(name: str) -> ModuleType:
     """Load a tool under tools/, a script without .py, as a module."""
     loader = importlib.machinery.SourceFileLoader(name, str(TOOLS_DIR / name))
-    module = importlib.util.module_from_spec(importlib.util.spec_from_loader(name, loader))
+    module = importlib.util.module_from_spec(
+        importlib.util.spec_from_loader(name, loader)
+    )
     loader.exec_module(module)
     return module
 
@@ -89,7 +91,9 @@ def write_repo(repo: Path) -> None:
     (repo / "src/th06/othpatch.txt").write_text("0.1.0\n")
 
 
-def run_main(tool: ModuleType, args: list[str], repo: Path) -> subprocess.CompletedProcess:
+def run_main(
+    tool: ModuleType, args: list[str], repo: Path
+) -> subprocess.CompletedProcess:
     """Run the main function of a tool and return its outcome as a process
     would report it."""
     stdout, stderr = io.StringIO(), io.StringIO()
@@ -130,7 +134,10 @@ class ReleaseIndexTest(unittest.TestCase):
 
     def run_tool(self, *args: str, fail: str = "") -> subprocess.CompletedProcess:
         self.r2.fail = fail
-        with mock.patch.dict(os.environ, self.env), mock.patch.object(r2, "run", self.r2.run):
+        with (
+            mock.patch.dict(os.environ, self.env),
+            mock.patch.object(r2, "run", self.r2.run),
+        ):
             return run_main(RELEASE_INDEX, list(args), self.repo)
 
     def package(self, name: str, contents: bytes = b"contents") -> None:
@@ -215,7 +222,9 @@ class ReleaseIndexTest(unittest.TestCase):
         )
         for tool, name in [("sha256sum", "SHA256SUMS"), ("sha1sum", "SHA1SUMS")]:
             if shutil.which(tool) is not None:
-                result = subprocess.run([tool, "-c", name], cwd=folder, capture_output=True)
+                result = subprocess.run(
+                    [tool, "-c", name], cwd=folder, capture_output=True
+                )
                 self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_releases_stay_newest_first(self) -> None:
@@ -271,10 +280,14 @@ class ReleaseIndexTest(unittest.TestCase):
         release = releases[1]
         self.assertEqual(release["published"], published)
         self.assertEqual(sorted(release["files"]), ["Linux"])
-        self.assertEqual(release["files"]["Linux"]["sha256"], hashlib.sha256(b"new").hexdigest())
+        self.assertEqual(
+            release["files"]["Linux"]["sha256"], hashlib.sha256(b"new").hexdigest()
+        )
         folder = self.folder("othpatch/0.1.1/")
         self.assertEqual(folder["othpatch-0.1.1-Linux"], b"new")
-        self.assertEqual(sorted(folder), ["SHA1SUMS", "SHA256SUMS", "othpatch-0.1.1-Linux"])
+        self.assertEqual(
+            sorted(folder), ["SHA1SUMS", "SHA256SUMS", "othpatch-0.1.1-Linux"]
+        )
         self.assertIn(hashlib.sha256(b"new").hexdigest(), folder["SHA256SUMS"].decode())
 
     def test_replace_after_24_hours_fails(self) -> None:
@@ -312,7 +325,10 @@ class ReleaseIndexTest(unittest.TestCase):
             time = now - datetime.timedelta(hours=hours)
             return {"version": "0.1.0", "published": time.isoformat()}
 
-        index = {"format": 1, "programs": {"othpatch": [release(30)], "oth06": [release(2)]}}
+        index = {
+            "format": 1,
+            "programs": {"othpatch": [release(30)], "oth06": [release(2)]},
+        }
         result = self.plan(index)
         self.assertEqual(result.stdout, "othpatch=\ngames=\n")
         result = self.plan(index, "--replace")
@@ -326,7 +342,9 @@ class ReleaseIndexTest(unittest.TestCase):
 
     def test_game_release_records_its_othpatch(self) -> None:
         self.package("oth06-0.1.1-Linux.zip")
-        self.assertEqual(self.publish("th06", "0.1.1", "--othpatch", "0.1.2").returncode, 0)
+        self.assertEqual(
+            self.publish("th06", "0.1.1", "--othpatch", "0.1.2").returncode, 0
+        )
         release = self.index()["programs"]["oth06"][0]
         self.assertEqual(release["othpatch"], "0.1.2")
         self.assertEqual(release["files"]["Linux"]["name"], "oth06-0.1.1-Linux.zip")
@@ -397,14 +415,20 @@ class ReleaseIndexTest(unittest.TestCase):
         (self.root / "packages").mkdir()
         self.package("oth06-0.1.2-dev-abcdef0-Linux.zip")
         result = self.run_tool(
-            "snapshot", "--packages", str(self.root / "packages"), "--commit", "abcdef0123"
+            "snapshot",
+            "--packages",
+            str(self.root / "packages"),
+            "--commit",
+            "abcdef0123",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         snapshot = self.index()["snapshot"]
 
         result = self.run_tool("reset")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.index(), {"format": 1, "programs": {}, "snapshot": snapshot})
+        self.assertEqual(
+            self.index(), {"format": 1, "programs": {}, "snapshot": snapshot}
+        )
         self.assertEqual(self.folder("othpatch/"), {})
         self.assertEqual(self.folder("oth06/"), {})
         self.assertIn("snapshot/oth06-0.1.2-dev-abcdef0-Linux.zip", self.r2.objects)
@@ -426,7 +450,11 @@ class ReleaseIndexTest(unittest.TestCase):
         self.package("oth06-0.1.2-dev-abcdef0-Linux.zip")
         self.package("oth06-0.1.2-dev-abcdef0-Windows.zip")
         result = self.run_tool(
-            "snapshot", "--packages", str(self.root / "packages"), "--commit", "abcdef0123"
+            "snapshot",
+            "--packages",
+            str(self.root / "packages"),
+            "--commit",
+            "abcdef0123",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         index = self.index()
@@ -501,26 +529,35 @@ class CommandLineTest(unittest.TestCase):
             index = json.loads((root / "objects/releases.json").read_text())
             self.assertEqual(index["programs"]["othpatch"][0]["version"], "0.1.1")
             self.assertEqual(
-                (root / "objects/othpatch/0.1.1/othpatch-0.1.1-Linux").read_bytes(), b"linux"
+                (root / "objects/othpatch/0.1.1/othpatch-0.1.1-Linux").read_bytes(),
+                b"linux",
             )
             log = (root / "log").read_text().splitlines()
             self.assertTrue(log[0].startswith("s3api get-object --bucket bucket"))
-            self.assertIn("--endpoint-url https://account.r2.cloudflarestorage.com", log[0])
+            self.assertIn(
+                "--endpoint-url https://account.r2.cloudflarestorage.com", log[0]
+            )
 
 
 class ReplaceRuleTest(unittest.TestCase):
     NOW = datetime.datetime(2026, 11, 12, 12, 0, tzinfo=datetime.UTC)
 
     def error(self, release: dict) -> str | None:
-        return release_index.replace_error("th06", {"version": "1.0.0", **release}, self.NOW)
+        return release_index.replace_error(
+            "th06", {"version": "1.0.0", **release}, self.NOW
+        )
 
     def test_release_younger_than_24_hours_can_be_replaced(self) -> None:
         self.assertIsNone(self.error({"published": "2026-11-12T11:59:59Z"}))
         self.assertIsNone(self.error({"published": "2026-11-11T12:00:01Z"}))
 
     def test_release_of_24_hours_or_more_cannot_be_replaced(self) -> None:
-        self.assertIn("24 hours or more", self.error({"published": "2026-11-11T12:00:00Z"}))
-        self.assertIn("24 hours or more", self.error({"published": "2026-10-01T00:00:00Z"}))
+        self.assertIn(
+            "24 hours or more", self.error({"published": "2026-11-11T12:00:00Z"})
+        )
+        self.assertIn(
+            "24 hours or more", self.error({"published": "2026-10-01T00:00:00Z"})
+        )
 
     def test_release_without_a_time_cannot_be_replaced(self) -> None:
         self.assertIn("no time", self.error({"date": "2026-11-12"}))

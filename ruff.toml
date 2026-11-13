@@ -1,0 +1,7 @@
+# Configures ruff for the Python tools under tools/ and their tests.
+target-version = "py311"
+
+[lint]
+select = ["E", "W", "F", "I", "UP", "B"]
+# The tools put tools/ on sys.path before they import the shared modules.
+ignore = ["E402"]

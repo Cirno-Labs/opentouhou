@@ -12,7 +12,7 @@ out of the same images.
 - Docker (or Podman with its Docker-compatible CLI)
 - just
 - git
-- Python 3, for the tools under `tools/`
+- Python 3.11 or newer, for the tools under `tools/`
 
 That is all. The compilers, Meson and the libraries live in the images.
 
@@ -403,15 +403,18 @@ that only appear there may not be fixed.
 
 ## Code style and checks
 
-Formatting is clang-format, with the configuration in `.clang-format`.
-The checks run through [prek](https://github.com/j178/prek), configured
-in `.pre-commit-config.yaml`. prek installs the version of clang-format
-that the configuration names, so that every machine and CI format
-alike:
+Formatting is clang-format, with the configuration in `.clang-format`,
+for C and ruff, with the configuration in `ruff.toml`, for the Python
+tools. ruff also checks the tools, and actionlint checks the GitHub
+workflows. The checks run through [prek](https://github.com/j178/prek),
+configured in `.pre-commit-config.yaml`. prek installs the versions of
+these tools that the configuration names, so that every machine and CI
+check alike:
 
 ```sh
 prek install    # once: runs the checks on every commit and commit message
 prek -a         # runs them on the whole tree
+just format     # formats the C code and the Python tools
 ```
 
 The style and commit rules the checks enforce are in

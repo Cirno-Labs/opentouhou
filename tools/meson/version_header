@@ -29,7 +29,8 @@ def define(value: str) -> tuple[str, str]:
     name, _, text = value.partition("=")
     if not re.fullmatch(r"[A-Z0-9_]+", name) or not re.fullmatch(r"[!#-\[\]-~]+", text):
         raise argparse.ArgumentTypeError(
-            f"not NAME=TEXT, the text printable ASCII without spaces, quotes or backslashes: {value}"
+            "not NAME=TEXT, the text printable ASCII without spaces, quotes or"
+            f" backslashes: {value}"
         )
     return name, text
 

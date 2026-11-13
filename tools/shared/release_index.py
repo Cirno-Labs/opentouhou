@@ -65,9 +65,10 @@ files.
 A release's files, with its SHA256SUMS and SHA1SUMS, are at
 <product>/<version>/<name> in the bucket, such as oth06/0.1.1/, and a
 snapshot's at snapshot/<name>. The git tag of a release is
-<product>-v<version>, such as oth06-v0.1.1. A version in the index changes only when it is
-replaced, less than REPLACE_WINDOW after its "published" time. The
-replacement keeps that time, so that the window does not grow.
+<product>-v<version>, such as oth06-v0.1.1. A version in the index
+changes only when it is replaced, less than REPLACE_WINDOW after its
+"published" time. The replacement keeps that time, so that the window
+does not grow.
 """
 
 import datetime
@@ -155,7 +156,11 @@ def match_files(program: str, version: str | None, names: list[str]) -> dict:
     for platform in PLATFORMS:
         suffix = file_suffix(program, platform)
         if version is not None:
-            matches = [name for name in names if name == prefix + file_version(version) + suffix]
+            matches = [
+                name
+                for name in names
+                if name == prefix + file_version(version) + suffix
+            ]
         else:
             matches = [
                 name

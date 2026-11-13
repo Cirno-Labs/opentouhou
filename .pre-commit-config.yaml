@@ -30,3 +30,18 @@ repos:
     entry: tools/lint/check_changelog
     language: python
     files: ^docs/[^/]+/CHANGELOG\.md$
+
+  - id: actionlint
+    name: actionlint
+    entry: actionlint
+    language: python
+    additional_dependencies: [actionlint-py==1.7.12.25, shellcheck-py==0.11.0.1]
+    files: ^\.github/workflows/.*\.ya?ml$
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.17.5
+  hooks:
+  - id: ruff-check
+    files: ^(tools|tests/tools)/
+  - id: ruff-format
+    files: ^(tools|tests/tools)/

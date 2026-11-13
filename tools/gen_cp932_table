@@ -67,7 +67,7 @@ def generate() -> str:
     for byte, code_point in enumerate(single):
         if code_point >= 0x80:
             forms.setdefault(code_point, []).append(byte)
-    for lead, row in zip(LEADS, double):
+    for lead, row in zip(LEADS, double, strict=True):
         for trail, code_point in enumerate(row, start=TRAIL_FIRST):
             if code_point != 0:
                 forms.setdefault(code_point, []).append((lead << 8) | trail)
@@ -86,10 +86,9 @@ def generate() -> str:
         *format_values([f"0x{cp:04X}" for cp in single], "    "),
         "};",
         "",
-        "const uint16_t g_Cp932DoubleByte[CP932_LEAD_COUNT][CP932_TRAIL_COUNT]"
-        " = {",
+        "const uint16_t g_Cp932DoubleByte[CP932_LEAD_COUNT][CP932_TRAIL_COUNT] = {",
     ]
-    for lead, row in zip(LEADS, double):
+    for lead, row in zip(LEADS, double, strict=True):
         lines.append(f"    // Lead byte 0x{lead:02X}")
         lines.append("    {")
         lines += format_values([f"0x{cp:04X}" for cp in row], "        ")

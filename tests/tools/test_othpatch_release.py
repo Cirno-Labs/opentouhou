@@ -55,9 +55,7 @@ class PinnedOthpatchTest(unittest.TestCase):
             ]
         }
 
-    def pinned(
-        self, release: bool = False, url: str | None = None
-    ) -> tuple[Path, str]:
+    def pinned(self, release: bool = False, url: str | None = None) -> tuple[Path, str]:
         env = {
             "RELEASE_INDEX_URL": url or (self.root / "releases.json").as_uri(),
             "OPENTOUHOU_RELEASE": "1" if release else "",

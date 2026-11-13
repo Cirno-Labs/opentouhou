@@ -189,9 +189,7 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
     shutil.copy2(PACKAGING_DIR / game / "icon.icns", resources / f"{game}.icns")
     # An ad-hoc signature lets the bundle run on Apple silicon. Without a
     # developer identity, Gatekeeper still asks before the first start.
-    subprocess.check_call(
-        ["codesign", "--force", "--deep", "--sign", "-", str(bundle)]
-    )
+    subprocess.check_call(["codesign", "--force", "--deep", "--sign", "-", str(bundle)])
 
 
 def run_package(deps: Path, target: str) -> None:
@@ -224,10 +222,7 @@ def build_othpatch(deps: Path, target: str) -> Path:
         [
             "lipo",
             "-create",
-            *(
-                str(build_dir(arch, "othpatch", target) / "othpatch")
-                for arch in ARCHS
-            ),
+            *(str(build_dir(arch, "othpatch", target) / "othpatch") for arch in ARCHS),
             "-output",
             str(output),
         ]

@@ -58,9 +58,18 @@ def get(key: str, path: Path) -> bool:
     return True
 
 
-def put(path: Path, key: str, content_type: str, cache_control: str | None = None) -> None:
+def put(
+    path: Path, key: str, content_type: str, cache_control: str | None = None
+) -> None:
     """Upload a file as an object, replacing the object of that key."""
-    args = ["s3", "cp", str(path), f"s3://{bucket()}/{key}", "--content-type", content_type]
+    args = [
+        "s3",
+        "cp",
+        str(path),
+        f"s3://{bucket()}/{key}",
+        "--content-type",
+        content_type,
+    ]
     if cache_control is not None:
         args += ["--cache-control", cache_control]
     check(aws(*args), f"upload {key}")
