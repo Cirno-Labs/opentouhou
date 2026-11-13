@@ -7,7 +7,7 @@ public header describes the module itself.
 ## Goals
 
 - One native executable per game, needing only the original game data.
-- Linux and Windows first, macOS and the web later. No x86-only code.
+- Linux, Windows and macOS, and the web later. No x86-only code.
 - Replays recorded with the original games play back exactly.
 - Game logic at a fixed 60 Hz, rendering at any refresh rate.
 - Everything thcrap does, native and optional.
@@ -15,9 +15,10 @@ public header describes the module itself.
 ## Platform and tooling
 
 - **SDL3** for the window, OpenGL context, events, input, audio device,
-  paths and the main loop. **SDL3_ttf** for text. **FFmpeg** for image
-  and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and WebGL 2 share one
-  set of `.glsl` shaders, compiled by the driver at startup.
+  paths, processes and the main loop. **SDL3_ttf** for text. **FFmpeg**
+  for image and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and
+  WebGL 2 share one set of `.glsl` shaders, compiled by the driver at
+  startup.
 - **C23**, **Meson**, one static library per layer and one executable
   per game. Dependencies are built from source, statically, in Docker
   images per target: a base image with what every program links, and
@@ -140,7 +141,8 @@ generator.
 ## Modules
 
 ```
-core/base     types, asserts, logging, allocators, containers, strings, hashes
+core/base     types, asserts, logging, allocators, containers,
+              strings, hashes
 core/io       readers and writers, files, paths, the locale, processes
 core/ini      the INI format our settings are stored in
 core/vfs      the file namespace the games load from
@@ -166,10 +168,10 @@ Two rules hold across modules:
 - Text is UTF-8 everywhere. Shift-JIS exists only when original data is
   read or original-format files are written.
 
-`stg` holds ZUN's archive formats, the random number generator, the ANM
-sprite engine, MSG dialogue, the ECL script VM, the gameplay managers
-and the original file formats, as far as games share them. Each `src/thXX/` holds that game's
-`GAME_DESC`, scenes, rules, tables and features.
+`stg` holds what the shooting games share: ZUN's PBG3 archive format
+and the random number generator. Each `src/thXX/` holds the rest of its
+game: the `GAME_DESC`, the scenes, the rules and tables, the features,
+and its script engines, such as ANM and ECL.
 
 ## Data, saves and config
 
@@ -190,7 +192,8 @@ default:
 
 ## Testing
 
-Unit tests cover `core` and the format readers, and run in CI.
+Unit tests cover every layer, othpatch, the replay tools and the
+Python tools, and run in CI.
 
 ### Replay tests
 
@@ -199,7 +202,8 @@ tick. They run locally against the developer's own game data, so
 neither the cases nor the data are in this repository or in CI.
 
 A case is one binary file: a header naming the game and an initial
-checkpoint, then one row of named values per calc, written and read through
-`replay/core/case.h`. A capture tool per game, in `replay/thXX/`,
-produces cases from the original executable. Each game's headless
-runner drives its input and reports the first calc where a value differs.
+checkpoint, then one row of named values per calc, written and read
+through `replay/core/case.h`. A capture tool per game, in
+`replay/thXX/`, produces cases from the original executable. Each
+game's headless runner drives its input and reports the first calc
+where a value differs.
