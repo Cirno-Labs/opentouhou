@@ -1,4 +1,5 @@
 #include "othpatch/context.h"
+#include "othpatch/step.h"
 
 #include "othpatch/game.h"
 
@@ -618,11 +619,10 @@ static bool M_Install(
         language, strchr(id, '/') + 1 + strlen(APP_LANGUAGE_PREFIX));
 }
 
-bool StepPatches_Run(APP_CONTEXT *const run, bool *const first_run)
+static bool M_Run(APP_CONTEXT *const run)
 {
-    *first_run = false;
     M_LANGUAGE language = { .run = run };
-    const RESULT opened = Installed_Open(run);
+    const RESULT opened = App_OpenPatches(run);
     const char *const name = run->args->name;
     const char *code = name;
     if (name == nullptr && IS_OK(opened)) {
@@ -661,6 +661,8 @@ bool StepPatches_Run(APP_CONTEXT *const run, bool *const first_run)
     const bool set = system[0] != '\0' && StepPatches_IsOriginal(system)
         ? M_SetOriginal(&language, true)
         : M_Install(&language, system, true);
-    *first_run = set;
+    run->first_run = set;
     return set;
 }
+
+const APP_STEP g_StepPatches = { .run = M_Run };

@@ -10,10 +10,9 @@
 
 #include <stdio.h>
 
-// Holds what the steps of one run of othpatch share: main.c parses the
-// arguments and runs the steps in order, step_patches.c sets up the language
-// and updates the patches, installed.c lists and removes the installed
-// patches, step_upgrade.c installs new releases, and console.c prints.
+// Holds what the steps of one run of othpatch share. main.c parses the
+// arguments and runs the steps of a command (step.h), context.c opens the
+// patch manager, and console.c prints.
 
 #define APP_GAME_COUNT 1
 #define APP_LANGUAGE_PREFIX "lang_"
@@ -50,10 +49,14 @@ typedef struct {
     bool ansi;
     int32_t sections;
     // Holds the games whose files to download, and the patch manager for
-    // them, which Installed_Open opens.
+    // them, which App_OpenPatches opens.
     const char *games[APP_GAME_COUNT];
     int32_t game_count;
     PATCH_MANAGER *manager;
+    // Holds the version of the running othpatch.
+    const char *version;
+    // Tells whether the patches step set the language of the system.
+    bool first_run;
 } APP_CONTEXT;
 
 // Holds a progress bar: a label padded to width code points, and the
@@ -165,19 +168,6 @@ const char *StepPatches_ListProducts(const APP_CONTEXT *run);
 // or nullptr when none does. The string comes from the arena of run.
 const char *StepPatches_ReadLanguage(const APP_CONTEXT *run);
 
-// Runs the first section: sets up, updates or installs the language or the
-// patch that the arguments name, and updates every installed patch.
-// *first_run tells whether the language of the system was set.
-bool StepPatches_Run(APP_CONTEXT *run, bool *first_run);
-
 // Opens the patch manager for the games whose files to download: the games
 // beside othpatch and the games that an installed patch has a folder for.
-RESULT Installed_Open(APP_CONTEXT *run);
-
-// Runs --list and --remove, and returns the exit code.
-int Installed_List(APP_CONTEXT *run);
-int Installed_Remove(APP_CONTEXT *run);
-
-// Runs the section of othpatch and then of each game beside it. Returns
-// whether every section ended well.
-bool StepUpgrade_Run(APP_CONTEXT *run, const char *version);
+RESULT App_OpenPatches(APP_CONTEXT *run);

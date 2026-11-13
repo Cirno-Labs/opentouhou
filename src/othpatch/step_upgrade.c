@@ -1,4 +1,5 @@
 #include "othpatch/context.h"
+#include "othpatch/step.h"
 
 #include "othpatch/fetch.h"
 #include "othpatch/game.h"
@@ -339,8 +340,9 @@ static bool M_UpdateOthpatch(M_UPDATE *const update, const char *const running)
     return true;
 }
 
-bool StepUpgrade_Run(APP_CONTEXT *const run, const char *const version)
+static bool M_Run(APP_CONTEXT *const run)
 {
+    const char *const version = run->version;
     if (run->exe_dir == nullptr) {
         return true;
     }
@@ -360,3 +362,5 @@ bool StepUpgrade_Run(APP_CONTEXT *const run, const char *const version)
     }
     return ok;
 }
+
+const APP_STEP g_StepUpgrade = { .run = M_Run };
