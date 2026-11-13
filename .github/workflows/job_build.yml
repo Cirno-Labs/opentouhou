@@ -134,14 +134,7 @@ jobs:
             othpatch|all) just "package-othpatch-$PLATFORM" "$TARGET" ;;
           esac
 
-      - name: Run the unit tests
-        if: ${{ inputs.platform == 'linux' }}
-        env:
-          RELEASES_URL: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json', vars.R2_PUBLIC_URL) || '' }}
-          PACKAGES: ${{ inputs.packages }}
-        run: just test "$PACKAGES"
-
-      # The Windows unit tests build here and run in the job test_win, on
+      # The Windows unit tests build here and run in the job test, on
       # Windows. The upload holds the test list and the executables of each
       # build directory, at their paths in the repository. The executables
       # lose their symbols and go into one zstd archive with a long window:
@@ -266,35 +259,68 @@ jobs:
           path: build/packages/
           compression-level: 0
 
-  test_win:
-    name: Windows tests
+  # The Linux unit tests build and run in this job, in the images. The
+  # Windows unit tests that the build job uploads run on Windows.
+  test:
+    name: Test (${{ inputs.platform }}, ${{ inputs.target }})
     needs: build
-    if: ${{ inputs.platform == 'win' }}
-    runs-on: windows-latest
+    runs-on: ${{ inputs.platform == 'win' && 'windows-latest' || 'ubuntu-latest' }}
     permissions:
       contents: read
+      packages: read
+    env:
+      OPENTOUHOU_WERROR: 1
 
     steps:
+      - name: Install just
+        if: ${{ inputs.platform == 'linux' }}
+        uses: taiki-e/install-action@6d97d0d47ea06f0bb4e81bc7911476e7cc61b312 # just
+
       - name: Check out the code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Log in to the container registry
+        if: ${{ inputs.platform == 'linux' }}
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Restore ccache
+        if: ${{ inputs.platform == 'linux' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .cache/ccache
+          key: ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-
+
+      - name: Run the Linux unit tests
+        if: ${{ inputs.platform == 'linux' }}
+        env:
+          RELEASES_URL: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json', vars.R2_PUBLIC_URL) || '' }}
+          PACKAGES: ${{ inputs.packages }}
+        run: just test "$PACKAGES"
+
       - name: Set up Python
+        if: ${{ inputs.platform == 'win' }}
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.14"
 
       - name: Download the Windows unit tests
+        if: ${{ inputs.platform == 'win' }}
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: win-tests-${{ inputs.packages }}-${{ inputs.target }}
 
       - name: Unpack the Windows unit tests
+        if: ${{ inputs.platform == 'win' }}
         run: python -c "import tarfile; tarfile.open('win-tests.tar.zst', 'r:zst').extractall(filter='data')"
 
       # The tests of the Python tools run on Linux, where the tools run.
-      - name: Run the unit tests
+      - name: Run the Windows unit tests
+        if: ${{ inputs.platform == 'win' }}
         shell: bash
         run: |
           dirs=()
