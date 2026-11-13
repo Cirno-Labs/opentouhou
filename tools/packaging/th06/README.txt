@@ -94,7 +94,8 @@ and key settings, and the options of the game.
   jpeg_quality: 1 to 100.
 - [patches] enabled: set it to false to turn off all patches.
   disabled: patch ids to leave out, separated by commas, for example
-  thpatch/lang_de.
+  thpatch/lang_de. language: the code of the language pack to use, for
+  example de, or ja for the original game without a translation.
 
 
 Translations and updates
@@ -109,7 +110,11 @@ The program applies the thcrap patches in the patches folder:
 
 The patches folder has the layout of the repos/ folder of thcrap, so a
 copy of that folder works: one folder per repository, and in it one
-folder per patch. Every patch applies, after the patches it needs.
+folder per patch. The program uses one language pack and every other
+patch that no patch needs, each with the patches that it needs. The
+language is [patches] language. Without it, the program uses the only
+language pack, or of several, the one for the language of your system.
+oth06.log tells which patches apply and why.
 
 Keep othpatch in the same folder as the program. othpatch downloads
 the translations of thpatch.net into the patches folder. To get the
@@ -120,6 +125,15 @@ translation into the language of your system, type:
 To get a different language, give its code, for example English:
 
     othpatch en
+
+othpatch then sets [patches] language in the config.ini of the
+program. Your other languages stay in the patches folder. To play the
+original game without a translation, type:
+
+    othpatch ja
+
+If you start the program with --user-dir, othpatch cannot find that
+config.ini: add the line that othpatch prints under [patches] there.
 
 Each time, othpatch also updates the translations that you have. Then
 it looks for a newer release of the program and of othpatch, and asks
