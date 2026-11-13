@@ -27,7 +27,8 @@ public header describes the module itself.
   [BUILDING.md](BUILDING.md) has the details.
 - Platform code lives only in a module's `backend_<platform>.c`. Meson
   picks one platform per build. Public headers never include platform
-  headers. Only `core` and `shell` use SDL.
+  headers. Only `core` and `shell` use SDL, and the entry file of each
+  game, which includes only `SDL_main.h`.
 - The web build ships later but constrains the design now: the main
   loop returns to the browser every frame, threads are optional, and
   files live in browser storage.
@@ -64,8 +65,10 @@ group of related modules together in one folder.
 
 ## Program structure
 
-`shell/game` owns SDL3's main callbacks and drives the game through one
-table that each game defines:
+Each game owns its entry point: one entry file defines SDL3's main
+callbacks and forwards each of them to `shell/game`. `shell/game` owns
+the main loop and drives the game through one table that the game
+passes to it:
 
 ```c
 typedef struct {

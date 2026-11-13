@@ -1,4 +1,5 @@
-#include "shell/game.h"
+#include "th06/main.h"
+
 #include "core/base/log.h"
 #include "core/patch.h"
 
