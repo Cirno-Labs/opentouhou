@@ -5,9 +5,18 @@
 // case. The executable exits with failure if any check fails, which is what
 // meson test reads.
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef _WIN32
+    #include <unistd.h>
+#endif
+#if __has_include(<execinfo.h>)
+    #include <execinfo.h>
+    #define M_TEST_HAS_BACKTRACE 1
+#endif
 
 #define TEST_MAX_CASES 128
 
@@ -19,6 +28,7 @@ typedef struct {
 static TEST_CASE m_TestCases[TEST_MAX_CASES];
 static int m_TestCaseCount;
 static int m_TestFailures;
+static const char *volatile m_TestRunning;
 
 static void Test_Register(const char *const name, void (*const func)(void))
 {
@@ -74,12 +84,38 @@ static void Test_Register(const char *const name, void (*const func)(void))
         }                                                                      \
     } while (0)
 
+#ifndef _WIN32
+// Names the case that runs when meson stops a test that ran out of time,
+// with a backtrace where the C library has one, and then ends as the
+// signal would have. Calls only functions that are safe in a handler.
+static void M_TestOnTerm(const int signal_number)
+{
+    const char *const name = m_TestRunning;
+    static const char before[] = "  KILLED  ";
+    write(STDOUT_FILENO, before, sizeof(before) - 1);
+    if (name != nullptr) {
+        write(STDOUT_FILENO, name, strlen(name));
+    }
+    write(STDOUT_FILENO, "\n", 1);
+    #ifdef M_TEST_HAS_BACKTRACE
+    void *frames[64];
+    backtrace_symbols_fd(frames, backtrace(frames, 64), STDOUT_FILENO);
+    #endif
+    signal(signal_number, SIG_DFL);
+    raise(signal_number);
+}
+#endif
+
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
+#ifndef _WIN32
+    signal(SIGTERM, M_TestOnTerm);
+#endif
     int failed = 0;
     for (int i = 0; i < m_TestCaseCount; i++) {
         const int failures_before = m_TestFailures;
+        m_TestRunning = m_TestCases[i].name;
         m_TestCases[i].func();
         if (m_TestFailures == failures_before) {
             printf("  PASS  %s\n", m_TestCases[i].name);
