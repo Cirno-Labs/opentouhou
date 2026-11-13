@@ -242,8 +242,10 @@ TEST(result_still_names_the_path_after_close)
 
 TEST(a_long_path_is_cut_at_the_start)
 {
+    // Stays under the 248 characters that Windows allows for a folder, and
+    // still makes the message longer than READER_ERROR_SIZE.
     char *directory = TestDir_Prepare("long_path");
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 3; i++) {
         char *const deeper =
             TestDir_Join(directory, "a_directory_with_a_long_name");
         CHECK(SDL_CreateDirectory(deeper));
