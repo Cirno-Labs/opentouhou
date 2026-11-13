@@ -26,14 +26,14 @@ typedef struct {
     bool othpatch_replaced;
 } M_CASE;
 
-static M_CASE M_Prepare(const char *const name)
+// Prepares test in place, because its arena must not move.
+static void M_Prepare(M_CASE *const test, const char *const name)
 {
-    M_CASE test = {
+    *test = (M_CASE) {
         .dir = TestDir_Prepare(name),
         .othpatch_version = { 0, 1, 0 },
     };
-    Arena_Init(&test.arena, "install test", 1 << 20);
-    return test;
+    Arena_Init(&test->arena, "install test", 1 << 20);
 }
 
 static RESULT M_Install(
@@ -100,7 +100,8 @@ static ZIP_BUILDER_ENTRY M_Entry(
 
 TEST(linux_package_replaces_the_appimage_and_othpatch)
 {
-    M_CASE test = M_Prepare("linux");
+    M_CASE test;
+    M_Prepare(&test, "linux");
     PatchBuilder_Write(test.dir, "oth06.AppImage", "old game");
     PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     PatchBuilder_Write(test.dir, "README.txt", "the user's notes");
@@ -127,7 +128,8 @@ TEST(same_or_older_othpatch_is_left_alone)
 {
     const RELEASE_VERSION versions[] = { { 0, 2, 0 }, { 1, 0, 0 } };
     for (size_t i = 0; i < ARRAY_SIZE(versions); i++) {
-        M_CASE test = M_Prepare("same_othpatch");
+        M_CASE test;
+        M_Prepare(&test, "same_othpatch");
         test.othpatch_version = versions[i];
         PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
         char *const path = TestDir_Join(test.dir, "othpatch");
@@ -151,7 +153,8 @@ TEST(same_or_older_othpatch_is_left_alone)
 
 TEST(development_othpatch_is_left_alone)
 {
-    M_CASE test = M_Prepare("development_othpatch");
+    M_CASE test;
+    M_Prepare(&test, "development_othpatch");
     test.othpatch_development = true;
     PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     const ZIP_BUILDER_ENTRY entries[] = {
@@ -168,7 +171,8 @@ TEST(development_othpatch_is_left_alone)
 
 TEST(othpatch_without_a_version_is_left_alone)
 {
-    M_CASE test = M_Prepare("othpatch_without_a_version");
+    M_CASE test;
+    M_Prepare(&test, "othpatch_without_a_version");
     PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     const ZIP_BUILDER_ENTRY entries[] = {
         M_Entry("oth06.AppImage", "new game", 0),
@@ -187,7 +191,8 @@ TEST(othpatch_installs_from_its_own_release)
     const INSTALL_PLATFORM *const platforms[] = { &g_InstallLinux,
                                                   &g_InstallWindows };
     for (size_t i = 0; i < ARRAY_SIZE(platforms); i++) {
-        M_CASE test = M_Prepare("othpatch_release");
+        M_CASE test;
+        M_Prepare(&test, "othpatch_release");
         const char *const name = platforms[i]->othpatch;
         PatchBuilder_Write(test.dir, name, M_OLD_OTHPATCH);
         CHECK(Result_Log(
@@ -208,7 +213,8 @@ TEST(othpatch_installs_from_its_own_release)
 
 TEST(windows_package_moves_the_old_files_aside)
 {
-    M_CASE test = M_Prepare("windows");
+    M_CASE test;
+    M_Prepare(&test, "windows");
     PatchBuilder_Write(test.dir, "oth06.exe", "old game");
     PatchBuilder_Write(test.dir, "othpatch.exe", M_OLD_OTHPATCH);
     PatchBuilder_Write(test.dir, "oth06.exe.old", "from an earlier update");
@@ -229,7 +235,8 @@ TEST(windows_package_moves_the_old_files_aside)
 
 TEST(macos_package_replaces_the_whole_bundle)
 {
-    M_CASE test = M_Prepare("macos");
+    M_CASE test;
+    M_Prepare(&test, "macos");
     PatchBuilder_Write(test.dir, "oth06.app/Contents/MacOS/oth06", "old game");
     PatchBuilder_Write(test.dir, "oth06.app/Contents/Resources/gone", "x");
     PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
@@ -257,7 +264,8 @@ TEST(macos_package_replaces_the_whole_bundle)
 
 TEST(bundle_path_out_of_the_bundle_fails)
 {
-    M_CASE test = M_Prepare("unsafe");
+    M_CASE test;
+    M_Prepare(&test, "unsafe");
     PatchBuilder_Write(test.dir, "oth06.app/Contents/MacOS/oth06", "old game");
     const ZIP_BUILDER_ENTRY entries[] = {
         M_Entry("oth06.app/../evil", "x", 0100644),
@@ -271,7 +279,8 @@ TEST(bundle_path_out_of_the_bundle_fails)
 
 TEST(bundle_with_a_symbolic_link_fails)
 {
-    M_CASE test = M_Prepare("link");
+    M_CASE test;
+    M_Prepare(&test, "link");
     const ZIP_BUILDER_ENTRY entries[] = {
         M_Entry("oth06.app/Contents/link", "/etc", 0120755),
         M_Entry("othpatch", M_NEW_OTHPATCH, 0100755),
@@ -284,7 +293,8 @@ TEST(bundle_with_a_symbolic_link_fails)
 
 TEST(package_without_the_game_changes_nothing)
 {
-    M_CASE test = M_Prepare("no_game");
+    M_CASE test;
+    M_Prepare(&test, "no_game");
     PatchBuilder_Write(test.dir, "oth06.AppImage", "old game");
     PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     const ZIP_BUILDER_ENTRY entries[] = {
@@ -302,7 +312,8 @@ TEST(package_without_the_game_changes_nothing)
 
 TEST(package_without_othpatch_installs_the_game_only)
 {
-    M_CASE test = M_Prepare("no_othpatch");
+    M_CASE test;
+    M_Prepare(&test, "no_othpatch");
     PatchBuilder_Write(test.dir, "oth06.AppImage", "old game");
     PatchBuilder_Write(test.dir, "othpatch", M_OLD_OTHPATCH);
     const ZIP_BUILDER_ENTRY entries[] = {
@@ -317,7 +328,8 @@ TEST(package_without_othpatch_installs_the_game_only)
 
 TEST(leftovers_are_removed_and_other_files_stay)
 {
-    M_CASE test = M_Prepare("leftovers");
+    M_CASE test;
+    M_Prepare(&test, "leftovers");
     PatchBuilder_Write(test.dir, "othpatch.exe.old", "x");
     PatchBuilder_Write(test.dir, "oth06.exe.old", "x");
     PatchBuilder_Write(test.dir, "oth06.exe.new", "x");

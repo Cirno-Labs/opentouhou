@@ -108,9 +108,11 @@ TEST(open_reads_the_score_file_and_the_replay_slots)
     char *const replay_dir = TestDir_Join(directory, "replay");
     char *const replay_path = TestDir_Join(replay_dir, "th6_02.rpy");
     size_t size;
-    M_Save(score_path, M_ScoreBytes(4000000, &size), size);
+    uint8_t *const score = M_ScoreBytes(4000000, &size);
+    M_Save(score_path, score, size);
     CHECK(Result_Log(File_MakeDir(replay_dir), LOG_LEVEL_ERROR));
-    M_Save(replay_path, M_ReplayBytes(&size), size);
+    uint8_t *const replay = M_ReplayBytes(&size);
+    M_Save(replay_path, replay, size);
     ResultScreen_OpenSaves(directory);
     CHECK_EQ_INT(
         ScoreFile_GetHighScore(ResultSaves_GetScoreFile(), 2, 1), 4000000);
@@ -194,7 +196,8 @@ TEST(saves_without_a_user_directory_stay_in_memory)
 {
     ResultScreen_OpenSaves(nullptr);
     size_t size;
-    ResultSaves_PutScoreFile(M_ScoreBytes(6000000, &size), size);
+    uint8_t *const score = M_ScoreBytes(6000000, &size);
+    ResultSaves_PutScoreFile(score, size);
     CHECK_EQ_INT(
         ScoreFile_GetHighScore(ResultSaves_GetScoreFile(), 2, 1), 6000000);
     CHECK(Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_ERROR));
@@ -209,7 +212,8 @@ TEST(a_failed_write_is_dropped)
     M_Save(blocker, byte, 1);
     ResultScreen_OpenSaves(directory);
     size_t size;
-    ResultSaves_PutReplay(0, M_ReplayBytes(&size), size);
+    uint8_t *const replay = M_ReplayBytes(&size);
+    ResultSaves_PutReplay(0, replay, size);
     const RESULT result = ResultScreen_WriteSaves();
     CHECK(!IS_OK(result));
     Result_Ignore(result);
@@ -341,7 +345,8 @@ TEST(load_game_records_reads_the_saved_score_file)
 {
     ResultScreen_OpenSaves(nullptr);
     size_t size;
-    ResultSaves_PutScoreFile(M_ScoreBytes(3000000, &size), size);
+    uint8_t *const score = M_ScoreBytes(3000000, &size);
+    ResultSaves_PutScoreFile(score, size);
     GAME_MANAGER *const gm = &g_GameManager;
     gm->records.spell_cards[2].bonus = 77;
     uint32_t high = 0;
@@ -371,7 +376,8 @@ TEST(list_gives_the_slots_then_the_user_replays)
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
         char *const path = TestDir_Join(replay_dir, names[i]);
         size_t size;
-        M_Save(path, M_ReplayBytes(&size), size);
+        uint8_t *const replay = M_ReplayBytes(&size);
+        M_Save(path, replay, size);
         Mem_Free(path);
     }
     char *const junk_path = TestDir_Join(replay_dir, "th6_ud0002.rpy");
@@ -411,7 +417,8 @@ TEST(list_follows_a_saved_slot)
     static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 0);
     size_t size;
-    ResultSaves_PutReplay(4, M_ReplayBytes(&size), size);
+    uint8_t *const replay = M_ReplayBytes(&size);
+    ResultSaves_PutReplay(4, replay, size);
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
     CHECK_EQ_STR(list[0].label, "No.05");
     CHECK_EQ_STR(list[0].path, "replay/th6_05.rpy");
@@ -426,7 +433,8 @@ TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
     char *const first = TestDir_Join(replay_dir, "th6_ud0001.rpy");
     char *const second = TestDir_Join(replay_dir, "th6_ud0002.rpy");
     size_t size;
-    M_Save(first, M_ReplayBytes(&size), size);
+    uint8_t *const first_replay = M_ReplayBytes(&size);
+    M_Save(first, first_replay, size);
     ResultScreen_OpenSaves(directory);
     static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
@@ -435,7 +443,8 @@ TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
     memcpy(kept, list[0].path, sizeof(kept));
 
     SDL_RemovePath(first);
-    M_Save(second, M_ReplayBytes(&size), size);
+    uint8_t *const second_replay = M_ReplayBytes(&size);
+    M_Save(second, second_replay, size);
     const int32_t scan = ResultScreen_GetReplayScan();
     ResultScreen_ScanReplays();
     CHECK_EQ_INT(ResultScreen_GetReplayScan(), scan);

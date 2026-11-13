@@ -13,15 +13,17 @@ typedef struct {
     ZIP_ENTRY_LIST list;
 } M_CASE;
 
-static M_CASE M_Open(const ZIP_BUILDER_ENTRY *const entries, const int count)
+// Opens test in place, because its arena must not move.
+static void M_Open(
+    M_CASE *const test, const ZIP_BUILDER_ENTRY *const entries, const int count)
 {
-    M_CASE test = {};
-    Arena_Init(&test.arena, "zip test", 1 << 20);
-    test.archive = ZipBuilder_Build(entries, count);
+    *test = (M_CASE) {};
+    Arena_Init(&test->arena, "zip test", 1 << 20);
+    test->archive = ZipBuilder_Build(entries, count);
     CHECK(Result_Log(
-        Zip_List(test.archive.data, test.archive.size, &test.arena, &test.list),
+        Zip_List(
+            test->archive.data, test->archive.size, &test->arena, &test->list),
         LOG_LEVEL_ERROR));
-    return test;
 }
 
 static void M_Close(M_CASE *const test)
@@ -56,7 +58,8 @@ TEST(list_gives_the_names_and_modes_in_order)
         { "othpatch", "b", 1, 0100755, true },
         { "oth06.app/", "", 0, 040755, false },
     };
-    M_CASE test = M_Open(entries, 3);
+    M_CASE test;
+    M_Open(&test, entries, 3);
     CHECK_EQ_INT(test.list.count, 3);
     CHECK_EQ_STR(test.list.items[0].name, "oth06.exe");
     CHECK_EQ_INT(test.list.items[0].mode, 0);
@@ -78,7 +81,8 @@ TEST(stored_and_deflated_entries_unpack)
         { "deflated", text, strlen(text), 0100644, true },
         { "empty", "", 0, 0100644, true },
     };
-    M_CASE test = M_Open(entries, 3);
+    M_CASE test;
+    M_Open(&test, entries, 3);
     CHECK(test.list.items[1].packed_size < test.list.items[1].size);
     M_CheckRead(&test, "stored", text, strlen(text));
     M_CheckRead(&test, "deflated", text, strlen(text));
@@ -91,7 +95,8 @@ TEST(damaged_data_fails_its_crc)
     const ZIP_BUILDER_ENTRY entries[] = {
         { "file", M_TEXT, strlen(M_TEXT), 0, false },
     };
-    M_CASE test = M_Open(entries, 1);
+    M_CASE test;
+    M_Open(&test, entries, 1);
     test.archive.data[30 + strlen("file")] ^= 1;
     uint8_t *data;
     size_t size;
