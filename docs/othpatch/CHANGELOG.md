@@ -1,6 +1,6 @@
 # othpatch changelog
 
-## Unreleased
+## 1.0.0 (2026-11-13)
 
 - Added downloads of the thpatch.net translations for the games beside
   it: the language of the system, or the patch named on the command
