@@ -169,7 +169,8 @@ static bool M_SameState(const GFX_STATE *const a, const GFX_STATE *const b)
 {
     return a->blend == b->blend && a->color_op == b->color_op
         && a->depth_test == b->depth_test && a->depth_write == b->depth_write
-        && a->alpha_test == b->alpha_test && a->repeat == b->repeat;
+        && a->alpha_test == b->alpha_test && a->repeat == b->repeat
+        && a->filter == b->filter;
 }
 
 // Folds the viewport of view into its projection, so that the projection

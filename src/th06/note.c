@@ -484,7 +484,11 @@ static void M_DrawNote(const M_NOTE *const note, const uint32_t age)
     const GFX_VIEW view = GfxView_Screen();
     Gfx_SetView(&view);
     Gfx_DrawQuad(
-        &(GFX_STATE) { .blend = GFX_BLEND_ALPHA }, note->texture, vertices, 0);
+        &(GFX_STATE) {
+            .blend = GFX_BLEND_ALPHA,
+            .filter = GFX_FILTER_LINEAR,
+        },
+        note->texture, vertices, 0);
 }
 
 void Note_Init(const PATCH_STACK *const patches)
