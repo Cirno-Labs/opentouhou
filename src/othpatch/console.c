@@ -39,7 +39,7 @@ void Console_Fail(
 PRINTF_FORMAT(2, 3)
 void Console_StartSection(APP_CONTEXT *const run, const char *const fmt, ...)
 {
-    if (run->sections++ > 0) {
+    if (run->sections > 0) {
         fputc('\n', run->out);
     }
     va_list args;
@@ -47,6 +47,9 @@ void Console_StartSection(APP_CONTEXT *const run, const char *const fmt, ...)
     vfprintf(run->out, fmt, args);
     va_end(args);
     fputc('\n', run->out);
+    if (run->sections++ == 0) {
+        fprintf(run->out, "Patches folder: %s\n", run->dir);
+    }
 }
 
 int32_t Console_CountCodePoints(const char *const text)

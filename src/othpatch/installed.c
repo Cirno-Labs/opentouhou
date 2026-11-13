@@ -257,9 +257,6 @@ int Installed_Remove(APP_CONTEXT *const run)
     Console_StartSection(
         run, "Removing %s...",
         index >= 0 ? PatchManager_Get(run->manager, index)->id : name);
-    if (run->args->verbose) {
-        fprintf(out, "Patches folder: %s\n", run->dir);
-    }
     if (!IS_OK(opened)) {
         Console_Fail(
             out, opened, "Could not read the patches folder: %s.",

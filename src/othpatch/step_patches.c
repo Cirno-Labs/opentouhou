@@ -240,7 +240,6 @@ static void M_Head(M_LANGUAGE *const language)
     if (!run->args->verbose) {
         return;
     }
-    fprintf(run->out, "Patches folder: %s\n", run->dir);
     for (int32_t i = 0; i < run->game_count; i++) {
         const char *path;
         if (Result_Ignore(

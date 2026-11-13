@@ -81,6 +81,7 @@ PRINTF_FORMAT(3, 4)
 void Console_Fail(FILE *out, RESULT result, const char *fmt, ...);
 
 // Starts a section: a blank line after the section before, then heading.
+// Under the heading of the first section, it prints the patches folder.
 PRINTF_FORMAT(2, 3)
 void Console_StartSection(APP_CONTEXT *run, const char *fmt, ...);
 
