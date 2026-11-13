@@ -20,10 +20,10 @@ from pathlib import Path
 
 from shared import release_index
 from shared.changelog import changelog_path, section
-from shared.versioning import games, read_version, version_path
+from shared.versioning import REPO_DIR, games, read_version, version_path
 
 
-def main() -> None:
+def main(argv: list[str] | None = None, repo_dir: Path = REPO_DIR) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--index", type=Path, required=True)
     parser.add_argument(
@@ -31,14 +31,14 @@ def main() -> None:
         action="store_true",
         help="also publish again the versions published less than 24 hours ago",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     index = release_index.load(args.index)
     now = datetime.datetime.now(datetime.UTC)
     refused = []
 
     def unreleased(program: str) -> str | None:
-        version = read_version(version_path(program))
-        if section(changelog_path(program).read_text(), version) is None:
+        version = read_version(version_path(program, repo_dir))
+        if section(changelog_path(program, repo_dir).read_text(), version) is None:
             sys.stderr.write(f"{program} {version} has no changelog section yet\n")
             return None
         published = release_index.find(index, program, version)
@@ -52,7 +52,7 @@ def main() -> None:
         return None
 
     othpatch = unreleased("othpatch")
-    names = [game for game in games() if unreleased(game)]
+    names = [game for game in games(repo_dir) if unreleased(game)]
     if args.replace and othpatch is None and not names:
         sys.exit("\n".join(refused) or "No version to publish or replace")
     for error in refused:

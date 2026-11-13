@@ -1,11 +1,16 @@
 """Tests of the changelog format and of tools/lint/check_changelog."""
 
+import contextlib
+import importlib.machinery
+import importlib.util
+import io
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TOOLS_DIR = Path(__file__).resolve().parents[2] / "tools"
 CHECK = TOOLS_DIR / "lint" / "check_changelog"
@@ -13,6 +18,12 @@ CHECK = TOOLS_DIR / "lint" / "check_changelog"
 sys.path.insert(0, str(TOOLS_DIR))
 
 from shared.changelog import check, date, section
+
+LOADER = importlib.machinery.SourceFileLoader("check_changelog", str(CHECK))
+CHECK_CHANGELOG = importlib.util.module_from_spec(
+    importlib.util.spec_from_loader(LOADER.name, LOADER)
+)
+LOADER.exec_module(CHECK_CHANGELOG)
 
 GOOD = """# th06 changelog
 
@@ -36,6 +47,23 @@ over two lines.
 
 - Added the game.
 """
+
+
+def git_env() -> dict[str, str]:
+    """Return the environment without the variables of the git process and
+    the changelog check that the tests run in."""
+    return {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_") and name != "CHANGELOG_AMEND"
+    }
+
+
+def git(repo: Path, *args: str) -> None:
+    config = ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+    subprocess.run(
+        ["git", *config, *args], cwd=repo, env=git_env(), check=True, capture_output=True
+    )
 
 
 class FormatTest(unittest.TestCase):
@@ -119,43 +147,33 @@ class FormatTest(unittest.TestCase):
 
 
 class FrozenTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.dir = tempfile.TemporaryDirectory()
-        self.repo = Path(self.dir.name)
-        self.path = self.repo / "docs" / "th06" / "CHANGELOG.md"
-        self.path.parent.mkdir(parents=True)
-        self.git("init", "-q")
-        self.path.write_text(GOOD)
-        self.git("add", ".")
-        self.git("commit", "-q", "-m", "t")
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dir = tempfile.TemporaryDirectory()
+        cls.repo = Path(cls.dir.name)
+        cls.path = cls.repo / "docs" / "th06" / "CHANGELOG.md"
+        cls.path.parent.mkdir(parents=True)
+        git(cls.repo, "init", "-q")
+        cls.path.write_text(GOOD)
+        git(cls.repo, "add", ".")
+        git(cls.repo, "commit", "-q", "-m", "t")
 
-    def tearDown(self) -> None:
-        self.dir.cleanup()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.dir.cleanup()
 
-    def git(self, *args: str) -> None:
-        config = ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
-        subprocess.run(
-            ["git", *config, *args], cwd=self.repo, env=self.env(), check=True, capture_output=True
-        )
-
-    def env(self) -> dict:
-        return {
-            name: value
-            for name, value in os.environ.items()
-            if not name.startswith("GIT_") and name != "CHANGELOG_AMEND"
-        }
-
-    def run_check(self, text: str, amend: str | None = None) -> subprocess.CompletedProcess:
-        self.path.write_text(text)
-        env = self.env()
-        if amend is not None:
-            env["CHANGELOG_AMEND"] = amend
-        return subprocess.run(
-            [sys.executable, str(CHECK), str(self.path)],
-            env=env,
-            capture_output=True,
-            text=True,
-        )
+    def run_check(
+        self, text: str, amend: str | None = None, path: Path | None = None
+    ) -> subprocess.CompletedProcess:
+        path = path or self.path
+        path.write_text(text)
+        stderr = io.StringIO()
+        with (
+            mock.patch.dict(os.environ, git_env() | {"CHANGELOG_AMEND": amend or ""}, clear=True),
+            contextlib.redirect_stderr(stderr),
+        ):
+            code = CHECK_CHANGELOG.main(["check_changelog", str(path)])
+        return subprocess.CompletedProcess([], code, "", stderr.getvalue())
 
     def test_unchanged_and_new_sections_pass(self) -> None:
         self.assertEqual(self.run_check(GOOD).returncode, 0)
@@ -191,12 +209,34 @@ class FrozenTest(unittest.TestCase):
         result = self.run_check(text, "1.1.0, 1.0.0")
         self.assertEqual(result.returncode, 0, result.stderr)
 
+
     def test_file_new_in_the_commit_passes(self) -> None:
-        self.git("rm", "-q", "--cached", str(self.path))
-        self.git("commit", "-q", "-m", "t")
-        result = self.run_check(GOOD.replace("- Added two.", "- Added 2."))
+        path = self.repo / "docs" / "th07" / "CHANGELOG.md"
+        path.parent.mkdir(exist_ok=True)
+        text = GOOD.replace("# th06", "# th07").replace("- Added two.", "- Added 2.")
+        result = self.run_check(text, path=path)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+
+class CommandLineTest(unittest.TestCase):
+    def test_changed_released_section_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as name:
+            repo = Path(name)
+            path = repo / "docs" / "th06" / "CHANGELOG.md"
+            path.parent.mkdir(parents=True)
+            git(repo, "init", "-q")
+            path.write_text(GOOD)
+            git(repo, "add", ".")
+            git(repo, "commit", "-q", "-m", "t")
+            path.write_text(GOOD.replace("- Added two.", "- Added 2."))
+            result = subprocess.run(
+                [sys.executable, str(CHECK), str(path)],
+                env=git_env(),
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CHANGELOG_AMEND=1.1.0", result.stderr)
 
 if __name__ == "__main__":
     unittest.main()

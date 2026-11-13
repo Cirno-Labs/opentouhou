@@ -27,17 +27,20 @@ def bucket() -> str:
     return require("R2_BUCKET")
 
 
+def run(command: list[str], env: dict[str, str]) -> subprocess.CompletedProcess:
+    """Run an AWS CLI command line and return its outcome.
+
+    The tests replace this function with a fake bucket in memory.
+    """
+    return subprocess.run(command, capture_output=True, text=True, env=env)
+
+
 def aws(*args: str) -> subprocess.CompletedProcess:
     """Run an AWS CLI command against the R2 endpoint and return its
     outcome without checking it."""
     endpoint = f"https://{require('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com"
     env = dict(os.environ, AWS_DEFAULT_REGION="auto", AWS_PAGER="")
-    return subprocess.run(
-        ["aws", *args, "--endpoint-url", endpoint],
-        capture_output=True,
-        text=True,
-        env=env,
-    )
+    return run(["aws", *args, "--endpoint-url", endpoint], env)
 
 
 def check(result: subprocess.CompletedProcess, what: str) -> str:

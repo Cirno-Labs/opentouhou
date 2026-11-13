@@ -44,7 +44,14 @@ from pathlib import Path
 from shared import r2
 from shared import release_index as index_file
 from shared.changelog import changelog_path, date, section
-from shared.versioning import games, othpatch_pin_path, product_name, programs, read_version
+from shared.versioning import (
+    REPO_DIR,
+    games,
+    othpatch_pin_path,
+    product_name,
+    programs,
+    read_version,
+)
 
 INDEX_KEY = "releases.json"
 
@@ -91,9 +98,9 @@ def public_url() -> str:
     return r2.require("R2_PUBLIC_URL").rstrip("/")
 
 
-def publish(args: argparse.Namespace, work: Path) -> None:
+def publish(args: argparse.Namespace, work: Path, repo_dir: Path) -> None:
     base_url = public_url()
-    text = changelog_path(args.program).read_text()
+    text = changelog_path(args.program, repo_dir).read_text()
     changes = section(text, args.version)
     released = date(text, args.version)
     if changes is None or released is None:
@@ -120,8 +127,10 @@ def publish(args: argparse.Namespace, work: Path) -> None:
         "date": released,
         "published": published["published"] if published else index_file.utc_time(now),
     }
-    if args.program in games():
-        release["othpatch"] = args.othpatch or read_version(othpatch_pin_path(args.program))
+    if args.program in games(repo_dir):
+        release["othpatch"] = args.othpatch or read_version(
+            othpatch_pin_path(args.program, repo_dir)
+        )
     release["changes"] = changes
     prefix = index_file.folder(args.program, args.version)
     release["files"] = upload(args.packages, files, prefix, base_url)
@@ -140,17 +149,17 @@ def publish(args: argparse.Namespace, work: Path) -> None:
     print(f"{verb} {args.program} {args.version}: {', '.join(files.values())}")
 
 
-def snapshot(args: argparse.Namespace, work: Path) -> None:
+def snapshot(args: argparse.Namespace, work: Path, repo_dir: Path) -> None:
     base_url = public_url()
     names = [path.name for path in args.packages.iterdir() if path.is_file()]
     entries = {}
     uploaded = set()
-    for program in programs():
+    for program in programs(repo_dir):
         files = index_file.match_files(program, None, names)
         if not files:
             continue
         platform, name = next(iter(files.items()))
-        changes = section(changelog_path(program).read_text(), "Unreleased")
+        changes = section(changelog_path(program, repo_dir).read_text(), "Unreleased")
         entries[product_name(program)] = {
             "version": index_file.file_version_of(program, platform, name),
             "changes": changes or "",
@@ -181,9 +190,9 @@ def snapshot(args: argparse.Namespace, work: Path) -> None:
     print(f"Published the snapshot of {args.commit}")
 
 
-def reset(work: Path) -> None:
+def reset(work: Path, repo_dir: Path) -> None:
     index = fetch_index(work / INDEX_KEY)
-    names = sorted({product_name(program) for program in programs()} | set(index["programs"]))
+    names = sorted({product_name(program) for program in programs(repo_dir)} | set(index["programs"]))
     cleared = index_file.empty()
     if "snapshot" in index:
         cleared["snapshot"] = index["snapshot"]
@@ -194,7 +203,7 @@ def reset(work: Path) -> None:
     print(f"Deleted the releases of {', '.join(names)}")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None, repo_dir: Path = REPO_DIR) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -221,7 +230,7 @@ def main() -> None:
     snap = commands.add_parser("snapshot")
     snap.add_argument("--packages", type=Path, required=True)
     snap.add_argument("--commit", required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     try:
         with tempfile.TemporaryDirectory() as work:
@@ -232,13 +241,13 @@ def main() -> None:
                 index = fetch_index(work / INDEX_KEY)
                 sys.exit(0 if index_file.find(index, args.program, args.version) else 1)
             elif args.command == "publish":
-                publish(args, work)
+                publish(args, work, repo_dir)
             elif args.command == "reset":
-                reset(work)
+                reset(work, repo_dir)
             elif args.command == "tag":
                 print(index_file.tag(args.program, args.version))
             else:
-                snapshot(args, work)
+                snapshot(args, work, repo_dir)
     except (RuntimeError, ValueError) as error:
         sys.exit(str(error))
 
