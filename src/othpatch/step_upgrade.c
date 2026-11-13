@@ -43,18 +43,6 @@ static RESULT M_Fetch(
     return result;
 }
 
-static RESULT M_FetchReleases(
-    const char *const url, ARENA *const arena, JSON_VALUE **const out)
-{
-    *out = nullptr;
-    PATCH_FETCH fetch;
-    MUST(M_Fetch(url, nullptr, &fetch));
-    const RESULT parsed = Json_Parse(
-        (const char *)fetch.data, fetch.size, Arena_Allocator(arena), out);
-    PatchFetch_Release(&fetch);
-    return parsed;
-}
-
 static void M_FormatVersion(
     const RELEASE_VERSION version, char out[GAME_VERSION_SIZE])
 {
@@ -124,8 +112,14 @@ static const JSON_VALUE *M_GetReleases(M_UPDATE *const update)
     APP_CONTEXT *const run = update->run;
     if (!update->releases_fetched) {
         update->releases_fetched = true;
-        const RESULT fetched =
-            M_FetchReleases(run->args->releases, run->arena, &update->releases);
+        PATCH_FETCH fetch;
+        RESULT fetched = M_Fetch(run->args->releases, nullptr, &fetch);
+        if (IS_OK(fetched)) {
+            fetched = Json_Parse(
+                (const char *)fetch.data, fetch.size,
+                Arena_Allocator(run->arena), &update->releases);
+            PatchFetch_Release(&fetch);
+        }
         if (!IS_OK(fetched)) {
             update->releases = nullptr;
             update->releases_error =
