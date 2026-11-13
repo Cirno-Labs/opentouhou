@@ -117,8 +117,9 @@ language pack, or of several, the one for the language of your system.
 oth06.log tells which patches apply and why.
 
 Keep othpatch in the same folder as the program. othpatch downloads
-the translations of thpatch.net into the patches folder. To get the
-translation into the language of your system, type:
+the translations of thpatch.net into the patches folder. The first
+time, it gets the translation into the language of your system. Start
+othpatch, or type:
 
     othpatch
 
@@ -132,12 +133,17 @@ original game without a translation, type:
 
     othpatch ja
 
-If you start the program with --user-dir, othpatch cannot find that
-config.ini: add the line that othpatch prints under [patches] there.
+To see every language and the mods that you have, type:
 
-Each time, othpatch also updates the translations that you have. Then
-it looks for a newer release of the program and of othpatch, and asks
-before it installs it. To install the updates without a question, type:
+    othpatch --list
+
+If you start the program with --user-dir, othpatch cannot find that
+config.ini: add the line language = <code> under [patches] there.
+
+Each time, othpatch also updates the translations and the mods that
+you have. Then it looks for a newer release of othpatch and of the
+program, and asks before it installs it. To install the updates
+without a question, type:
 
     othpatch --update
 
