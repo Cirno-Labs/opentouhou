@@ -10,6 +10,7 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
+#include "core/ini/edit.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
 #include "core/io/reader.h"
@@ -722,6 +723,16 @@ static int32_t M_SkipGroup(const M_PATCH *const patch)
     return 2;
 }
 
+static bool M_IsWord(const char *const text, const char *const *const words)
+{
+    for (int32_t i = 0; words[i] != nullptr; i++) {
+        if (Str_EqualIgnoreCase(text, words[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 JSON_VALUE *PatchSelect_ReadJson(
     const char *const path, const ALLOCATOR *const allocator)
 {
@@ -745,6 +756,21 @@ JSON_VALUE *PatchSelect_ReadJson(
         Allocator_Free(&g_HeapAllocator, text, size);
     }
     return value;
+}
+
+void Patch_ReadChoice(const INI *const ini, PATCH_CHOICE *const choice)
+{
+    static const char *const no[] = { "false", "no", "off", "0", nullptr };
+    static const char *const yes[] = { "true", "yes", "on", "1", nullptr };
+    const char *const enabled = Ini_Get(ini, "patches", "enabled");
+    choice->enabled = enabled == nullptr || !M_IsWord(enabled, no);
+    if (enabled != nullptr && choice->enabled && !M_IsWord(enabled, yes)) {
+        LOG_WARNING(
+            "patches.enabled: invalid value \"%s\", keeping the default",
+            enabled);
+    }
+    choice->disabled = Ini_Get(ini, "patches", "disabled");
+    choice->language = Ini_Get(ini, "patches", "language");
 }
 
 RESULT Patch_Select(

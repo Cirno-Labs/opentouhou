@@ -2,6 +2,7 @@
 
 #include "core/base/result.h"
 #include "core/base/types.h"
+#include "core/ini/types.h"
 #include "core/io/locale.h"
 #include "core/json/types.h"
 
@@ -48,6 +49,12 @@ typedef struct {
     const LOCALE *locales;
     int32_t locale_count;
 } PATCH_CHOICE;
+
+// Reads enabled, disabled and language of the [patches] section of ini into
+// choice, and leaves the locales as they are. The strings belong to ini.
+// enabled is true unless it is false, no, off or 0; a value that is not a
+// boolean is a warning.
+void Patch_ReadChoice(const INI *ini, PATCH_CHOICE *choice);
 
 typedef enum {
     PATCH_ROLE_LANGUAGE,
