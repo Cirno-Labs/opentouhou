@@ -13,3 +13,4 @@
 - Added `--user-dir` to keep your files in another folder.
 - Added a message box when the game cannot start or stops on an error.
 - Added a log of the last start in `oth06.log` in the user folder.
+- Added support for paths longer than 260 characters on Windows.

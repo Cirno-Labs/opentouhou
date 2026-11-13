@@ -86,3 +86,23 @@ TEST(missing_folder_reports_failure)
     Mem_Free(missing);
     Mem_Free(dir);
 }
+
+TEST(file_in_a_folder_longer_than_max_path_holds_the_lines)
+{
+    char *dir = TestDir_Prepare("long_path");
+    for (int i = 0; i < 10; i++) {
+        char *const deeper = TestDir_Join(dir, "a_directory_with_a_long_name");
+        Mem_Free(dir);
+        dir = deeper;
+    }
+    CHECK(Result_Log(File_MakeDir(dir), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(AppLogFile_Open(dir, "th06"), LOG_LEVEL_ERROR));
+    Log_Message(LOG_LEVEL_INFO, "src/core/foo.c", 3, "deep");
+    AppLogFile_Close();
+    char *const path = TestDir_Join(dir, "oth06.log");
+    char *const text = TestDir_Read(path);
+    CHECK(text != nullptr && Str_StartsWith(text, "INFO foo.c:3: deep"));
+    Mem_Free(text);
+    Mem_Free(path);
+    Mem_Free(dir);
+}

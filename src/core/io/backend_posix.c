@@ -8,3 +8,8 @@ char *IoBackend_SystemPath(const char *const path)
 {
     return Str_Dup(path);
 }
+
+FILE *IoBackend_CreateText(const char *const system_path)
+{
+    return fopen(system_path, "w");
+}

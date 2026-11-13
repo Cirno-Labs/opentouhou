@@ -6,6 +6,7 @@
 #include "core/io/backend.h"
 
 #include <SDL3/SDL.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -161,6 +162,16 @@ RESULT File_ListDir(
             list->items, (size_t)list->count, sizeof(list->items[0]),
             M_CompareNames);
     }
+    return OK;
+}
+
+RESULT File_CreateText(const char *const path, FILE **const out)
+{
+    char *const system_path = IoBackend_SystemPath(path);
+    *out = IoBackend_CreateText(system_path);
+    const int error = errno;
+    Mem_Free(system_path);
+    FAIL_IF(*out == nullptr, "Cannot create %s: %s", path, strerror(error));
     return OK;
 }
 

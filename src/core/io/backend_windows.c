@@ -5,6 +5,7 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
+#include <errno.h>
 #include <string.h>
 #include <windows.h>
 
@@ -80,4 +81,16 @@ char *IoBackend_SystemPath(const char *const path)
         : Str_Format("\\\\?\\%s", full);
     Mem_Free(full);
     return system_path;
+}
+
+FILE *IoBackend_CreateText(const char *const system_path)
+{
+    wchar_t *const wide = M_ToWide(system_path);
+    if (wide == nullptr) {
+        errno = EINVAL;
+        return nullptr;
+    }
+    FILE *const file = _wfopen(wide, L"w");
+    Mem_Free(wide);
+    return file;
 }

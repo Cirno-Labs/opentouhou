@@ -6,6 +6,8 @@
 #include "core/base/memory.h"
 #include "core/base/result.h"
 
+#include <stdio.h>
+
 // Queries the file system. Paths are UTF-8, in the platform's form; '/'
 // separates directories on every platform. READER and WRITER read and write
 // the files themselves. On Windows, these functions and READER and WRITER
@@ -49,6 +51,10 @@ RESULT File_Remove(const char *path);
 // releases the list in both cases.
 RESULT File_ListDir(
     const char *path, const ALLOCATOR *allocator, FILE_LIST *list);
+
+// Creates the file at path, or empties it, and opens it for writing as text.
+// *out is a C stream that fclose closes. On failure, *out is nullptr.
+RESULT File_CreateText(const char *path, FILE **out);
 
 // Releases the names and the storage of a list, and leaves it empty.
 void File_FreeList(FILE_LIST *list);
