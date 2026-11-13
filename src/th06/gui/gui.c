@@ -8,6 +8,7 @@
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/note.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
@@ -60,6 +61,7 @@ typedef struct {
     int16_t index;
     int32_t value;
     char *text; // the text of opcodes 3 and 8, in UTF-8
+    bool removes_note; // drawing text hides the shown translator note
 } M_INSTR;
 
 typedef struct {
@@ -80,6 +82,10 @@ typedef struct {
     int32_t line;
     int32_t last_opcode; // the opcode of the last replaced line, or -1
     int32_t last_line; // the position in out of the last replaced line
+    // Holds the lines of the box whose replaced line had a translator note.
+    // Holds entry until the first replaced line, and nullptr after a line
+    // that hides the note.
+    const JSON_VALUE *noted;
 } M_PATCH_STATE;
 
 // Tells how a frame of the dialogue script ended.
@@ -304,6 +310,23 @@ static void M_SetText(M_INSTR *const instr, const char *const text)
     instr->text = Str_Dup(text);
 }
 
+// Gives instr a replaced line of the box. As thcrap's MSG patcher marks
+// the lines, the line hides the shown translator note when it has no note
+// and it is the first replaced line of the script, or the first one of
+// another box after a line with a note.
+static void M_TakeLine(
+    M_PATCH_STATE *const state, M_INSTR *const instr, const char *const text)
+{
+    M_SetText(instr, text);
+    instr->removes_note = false;
+    if (strchr(text, '\x14') != nullptr) {
+        state->noted = state->lines;
+    } else if (state->noted != nullptr && state->noted != state->lines) {
+        instr->removes_note = true;
+        state->noted = nullptr;
+    }
+}
+
 // Adds the lines of the box that its instructions did not take, after the
 // last replaced line, as copies of it.
 static void M_EndBox(M_PATCH_STATE *const state)
@@ -325,7 +348,8 @@ static void M_EndBox(M_PATCH_STATE *const state)
             }
             M_INSTR instr = state->out.items[state->last_line];
             instr.index = (int16_t)state->line;
-            instr.text = Str_Dup(text);
+            instr.text = nullptr;
+            M_TakeLine(state, &instr, text);
             state->last_line++;
             Array_Insert(&state->out, state->last_line, instr);
         }
@@ -363,7 +387,7 @@ static bool M_PatchLine(M_PATCH_STATE *const state, M_INSTR *const instr)
     if (text == nullptr) {
         return false;
     }
-    M_SetText(instr, text);
+    M_TakeLine(state, instr, text);
     state->last_opcode = instr->opcode;
     state->last_line = state->out.count - 1;
     return true;
@@ -388,6 +412,7 @@ static void M_PatchScript(M_SCRIPT *const script, const JSON_VALUE *const entry)
         .time = -1,
         .box = -1,
         .last_opcode = -1,
+        .noted = entry,
     };
     Array_Init(&state.out, &g_HeapAllocator);
     for (int32_t i = 0; i < script->count; i++) {
@@ -661,6 +686,9 @@ static void M_ShowLine(const M_INSTR *const instr)
     line->font_height = M_LINE_FONT_SIZE;
     line->font_width = line->font_height;
     g_Gui.msg.line_texts[instr->index] = instr->text;
+    if (instr->removes_note) {
+        Note_Remove();
+    }
     Result_Log(
         Anm_RenderText(line, m_TextColors[instr->who], 0, "%s", instr->text),
         LOG_LEVEL_WARNING);
@@ -760,6 +788,9 @@ static M_RUN M_RunInstrs(void)
             Anm_StartScript(nameplate, instr->index + M_NAMEPLATE_SCRIPT);
             g_Gui.msg.nameplate_texts[instr->index] = instr->text;
             if (!GuiTextImage_Replaces(M_NAMEPLATE_SCRIPT)) {
+                if (instr->removes_note) {
+                    Note_Remove();
+                }
                 Result_Log(
                     Anm_RenderTextRightAligned(
                         nameplate, m_TextColors[instr->who], 0, "%s",
@@ -1102,6 +1133,7 @@ void Gui_EndBombName(void)
 
 void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
 {
+    Note_Remove();
     Anm_StartScript(&g_Gui.banners.spell_portrait, M_SPELL_PORTRAIT_SCRIPT);
     Anm_SetSprite(
         &g_Gui.banners.spell_portrait, sprite + M_SPELL_PORTRAIT_SPRITE);

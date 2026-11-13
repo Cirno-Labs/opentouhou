@@ -25,7 +25,7 @@ void Anm_ShutdownText(void);
 // region 2 pixels narrower and lower than the doubled row, which stretches
 // the text vertically. With nmlgc/base_tsa, the region is twice the row
 // width by 32 pixels, as its executable patches make it, so the text keeps
-// its proportions.
+// its proportions. Shows the translator note of text, as Note_Show does.
 RESULT Anm_RenderTextToTextureIndex(
     int32_t texture, int32_t x, int32_t y, int32_t width, int32_t font_height,
     uint32_t color, uint32_t shadow, const char *text);

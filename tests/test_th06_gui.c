@@ -16,6 +16,7 @@
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/note.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
@@ -1835,4 +1836,160 @@ TEST(a_jdiff_for_another_script_changes_nothing)
     M_Run(11);
     CHECK_EQ_STR(g_Gui.msg.line_texts[0], "紅魔");
     M_Teardown();
+}
+
+// Translator notes
+
+// Sets up stage 1 as M_SetupPatched does, with nmlgc/base_tsa and its
+// notes region, and a text.anm whose dialogue lines show their rows.
+static void M_SetupNotes(const char *const case_name, const char *const diff)
+{
+    M_WriteData(case_name);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 64, 128);
+    for (int32_t i = 0; i < 6; i++) {
+        AnmBuilder_AddSprite(&builder, i, 0.0f, 16.0f * i, 64.0f, 16.0f);
+    }
+    for (uint32_t sprite = 2; sprite < 4; sprite++) {
+        const int32_t script =
+            AnmBuilder_BeginScript(&builder, (int32_t)sprite);
+        AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+        AnmBuilder_Instr(&builder, script, 1000, 15, nullptr, 0);
+    }
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, "data/text.anm", bytes, size);
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/global.js",
+        "{tlnotes: {reference_resolution: [1280, 960], "
+        "region_topleft: [864, 516], region_size: [384, 412]}}");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    PatchBuilder_Write(patches, "a/lang/th06/msg1.dat.jdiff", diff);
+    m_Patches = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, 0, &m_Patches),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Files_SetPatches(m_Patches);
+    Translation_Init(m_Patches);
+    GfxRecorder_Start();
+    Anm_Init(&g_HeapAllocator, &g_Rng);
+    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Anm_CreateTexture(0, 64, 128, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
+    Note_Init(m_Patches);
+    AsciiText_Initialize();
+    Chain_Init(&g_Chain);
+    GameManager_Create(&g_GameManager);
+    g_GameManager.run.stage = 1;
+    g_GameManager.run.difficulty = 1;
+    g_Buttons = (BUTTONS) {};
+    Scene_Request(SCENE_GAMEPLAY);
+    m_ScriptCount = 0;
+    CHECK(Result_Log(Gui_Register(), LOG_LEVEL_ERROR));
+}
+
+static void M_TeardownNotes(void)
+{
+    Chain_Release(&g_Chain);
+    Note_Shutdown();
+    Anm_ShutdownText();
+    Translation_Shutdown();
+    M_Teardown();
+    GfxRecorder_Stop();
+}
+
+// Returns whether a translator note shows in a tick.
+static bool M_NoteShows(void)
+{
+    Gfx_BeginTick((GFX_COLOR) {});
+    Note_Draw();
+    Gfx_EndTick();
+    return GfxRecorder_QuadCount() == 1;
+}
+
+// Writes script 0 of msg1.dat: a box of two lines at time 10, a box of
+// one line at time 20, then a halt.
+static void M_WriteNoteBoxes(void)
+{
+    M_SCRIPT *const script = M_Script();
+    M_OpText(script, 10, 3, 0, 0, M_KOUMA);
+    M_OpText(script, 10, 3, 0, 1, M_KOUMA);
+    M_OpText(script, 20, 3, 0, 0, M_KOUMA);
+    M_Op(script, 20, 10);
+}
+
+TEST(a_jdiff_note_shows_with_its_line_until_the_next_box)
+{
+    M_WriteNoteBoxes();
+    M_SetupNotes(
+        "note_next_box",
+        "{'0': {'10_0': ['One', 'Two\\u0014A note'], '20_0': ['Three']}}");
+    Gui_StartMsg(0);
+    CHECK(!M_NoteShows());
+    M_Run(11);
+    CHECK(M_NoteShows());
+    M_Run(10);
+    CHECK(!M_NoteShows());
+    M_TeardownNotes();
+}
+
+TEST(a_jdiff_note_stays_through_its_own_box)
+{
+    M_WriteNoteBoxes();
+    M_SetupNotes(
+        "note_own_box", "{'0': {'10_0': ['One\\u0014A note', 'Two']}}");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK(M_NoteShows());
+    M_TeardownNotes();
+}
+
+TEST(an_untranslated_box_keeps_the_note)
+{
+    M_WriteNoteBoxes();
+    M_SetupNotes(
+        "note_untranslated", "{'0': {'10_0': ['One', 'Two\\u0014A note']}}");
+    Gui_StartMsg(0);
+    M_Run(21);
+    CHECK(M_NoteShows());
+    M_TeardownNotes();
+}
+
+TEST(the_first_translated_line_of_a_script_hides_the_note)
+{
+    M_WriteNoteBoxes();
+    M_SetupNotes("note_script", "{'0': {'20_0': ['Three']}}");
+    Note_Show(
+        "\x14"
+        "A note");
+    Gui_StartMsg(0);
+    M_Run(11);
+    CHECK(M_NoteShows());
+    M_Run(10);
+    CHECK(!M_NoteShows());
+    M_TeardownNotes();
+}
+
+TEST(a_spell_card_and_an_anm_file_hide_the_note)
+{
+    M_WriteNoteBoxes();
+    M_SetupNotes("note_spell", "{}");
+    Note_Show(
+        "\x14"
+        "A note");
+    CHECK(M_NoteShows());
+    Gui_ShowSpellCardName(1, "Sign");
+    CHECK(!M_NoteShows());
+    Note_Show(
+        "\x14"
+        "A note");
+    CHECK(
+        Result_Log(Anm_Load(0x20, "data/face00a.anm", 0x7f0), LOG_LEVEL_ERROR));
+    CHECK(!M_NoteShows());
+    M_TeardownNotes();
 }

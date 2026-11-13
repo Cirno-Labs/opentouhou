@@ -8,11 +8,18 @@
 
 #include <string.h>
 
+typedef struct {
+    uintptr_t handle;
+    uint8_t *pixels;
+} M_TEXTURE;
+
 typedef ARRAY(GFX_RECORDED_QUAD) M_QUAD_ARRAY;
 typedef ARRAY(GFX_VERTEX) M_VERTEX_ARRAY;
+typedef ARRAY(M_TEXTURE) M_TEXTURE_ARRAY;
 
 static M_QUAD_ARRAY m_Quads;
 static M_VERTEX_ARRAY m_Window;
+static M_TEXTURE_ARRAY m_Textures;
 static GFX_PASS m_Pass;
 static int32_t m_Copies;
 static uintptr_t m_NextHandle;
@@ -32,6 +39,12 @@ static RESULT M_CreateTexture(
     void **const out)
 {
     *out = (void *)++m_NextHandle;
+    if (pixels != nullptr) {
+        const size_t size = (size_t)width * (size_t)height * 4;
+        uint8_t *const copy = Mem_Alloc(size);
+        memcpy(copy, pixels, size);
+        Array_Append(&m_Textures, ((M_TEXTURE) { m_NextHandle, copy }));
+    }
     return OK;
 }
 
@@ -117,6 +130,7 @@ void GfxRecorder_Start(void)
 {
     Array_Init(&m_Quads, &g_HeapAllocator);
     Array_Init(&m_Window, &g_HeapAllocator);
+    Array_Init(&m_Textures, &g_HeapAllocator);
     m_Copies = 0;
     if (!Result_Log(
             GfxFrontend_Start(&m_Backend, nullptr, 640, 480),
@@ -130,6 +144,20 @@ void GfxRecorder_Stop(void)
     GfxFrontend_Stop();
     Array_Free(&m_Quads);
     Array_Free(&m_Window);
+    for (int32_t i = 0; i < m_Textures.count; i++) {
+        Mem_Free(m_Textures.items[i].pixels);
+    }
+    Array_Free(&m_Textures);
+}
+
+const uint8_t *GfxRecorder_TexturePixels(const GFX_TEXTURE *const texture)
+{
+    for (int32_t i = 0; i < m_Textures.count; i++) {
+        if ((void *)m_Textures.items[i].handle == texture->handle) {
+            return m_Textures.items[i].pixels;
+        }
+    }
+    return nullptr;
 }
 
 int32_t GfxRecorder_QuadCount(void)

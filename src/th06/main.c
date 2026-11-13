@@ -9,6 +9,7 @@
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
+#include "th06/note.h"
 #include "th06/screens/main.h"
 #include "th06/replay.h"
 #include "th06/screens/result.h"
@@ -63,6 +64,7 @@ static RESULT M_Init(void)
     int32_t font_count;
     const char *const *const fonts = Translation_GetFontFiles(&font_count);
     MUST(Anm_InitText(Translation_GetFont(), fonts, font_count));
+    Note_Init(App_GetPatches());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(App_GetUserDir());
     Result_Log(M_KeepDemo(), LOG_LEVEL_WARNING);
@@ -95,6 +97,7 @@ static void M_Shutdown(void)
     ResultScreen_CloseSaves();
     Replay_ClearFiles();
     SoundPlayer_Shutdown();
+    Note_Shutdown();
     Anm_ShutdownText();
     Translation_Shutdown();
     Files_Shutdown();

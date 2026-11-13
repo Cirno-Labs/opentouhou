@@ -6,6 +6,7 @@
 #include "th06/ascii.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/note.h"
 #include "th06/replay.h"
 #include "th06/scene.h"
 #include "th06/screens/result/private.h"
@@ -731,6 +732,11 @@ static void M_UpdateSpellCards(M_SCREEN *const screen)
             }
             const SPELL_CARD_RECORD *const card =
                 &g_GameManager.records.spell_cards[i];
+            // Hides the translator note, as base_tsa's hook of the spell
+            // card name does for each card that shows its name.
+            if (card->attempts != 0) {
+                Note_Remove();
+            }
             Result_Log(
                 Anm_RenderText(
                     &screen->text_sprites[i % M_SPELL_PAGE_SIZE], 0xffffff, 0,

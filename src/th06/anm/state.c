@@ -5,6 +5,7 @@
 
 #include "th06/angle.h"
 #include "th06/files.h"
+#include "th06/note.h"
 #include "th06/timer.h"
 
 #include "core/base/assert.h"
@@ -233,6 +234,7 @@ RESULT Anm_Load(
     const int32_t slot, const char *const path, const int32_t first_sprite)
 {
     ASSERT(slot >= 0 && slot < ANM_SLOT_COUNT);
+    Note_Remove();
     Anm_Release(slot);
     READER reader;
     MUST(Files_Load(path, &reader), "%s", path);

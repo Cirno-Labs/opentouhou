@@ -122,7 +122,10 @@ extern GUI g_Gui;
 // is neither UTF-8 nor CP932, or an instruction names a side, a line or a
 // song out of range. The jdiff of the dialogue file from the patches then
 // changes the text of its lines, as thcrap's MSG patcher does, and a line
-// past the second of a box is dropped.
+// past the second of a box is dropped. A replaced line with a translator
+// note shows the note. As thcrap marks the lines, the note hides at the
+// first replaced line of a script and at the first replaced line of
+// another box after the note.
 RESULT Gui_Register(void);
 // Removes both elements and releases the stage's portraits and dialogue
 // file. Outside SCENE_NEXT_STAGE, also releases the rest.
@@ -147,7 +150,8 @@ void Gui_ShowBombName(int32_t sprite, const char *name);
 // Makes the name of the bomb leave.
 void Gui_EndBombName(void);
 // Shows the name of a spell card with portrait sprite 0x4a8 + sprite.
-// Name stays in use until the next call.
+// Name stays in use until the next call. Hides the shown translator note
+// first, as thcrap does when a spell card starts.
 void Gui_ShowSpellCardName(int32_t sprite, const char *name);
 // Makes the name of the spell card leave.
 void Gui_EndSpellCardName(void);

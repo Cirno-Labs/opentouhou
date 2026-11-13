@@ -25,7 +25,9 @@ void Anm_Shutdown(void);
 // the file, has more than 16 bytes of arguments, or jumps to a position
 // that is not an instruction. A failed load leaves slot empty. An image
 // that a patch replaces keeps its own alpha when the patch does not also
-// replace its alpha mask, as thcrap does.
+// replace its alpha mask, as thcrap does. Hides the shown translator
+// note, as thcrap does for each .anm and .std file that loads; th06 loads
+// each .std file after an .anm file.
 RESULT Anm_Load(int32_t slot, const char *path, int32_t first_sprite);
 // Releases the ANM file loaded into slot. Does nothing when slot is not
 // loaded.

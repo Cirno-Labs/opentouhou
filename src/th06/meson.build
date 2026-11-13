@@ -29,6 +29,7 @@ th06_lib = static_library(
   'gui/draw.c',
   'gui/text_image.c',
   'item.c',
+  'note.c',
   'player.c',
   'replay/chain.c',
   'replay/format.c',

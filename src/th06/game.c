@@ -5,6 +5,7 @@
 #include "th06/anm.h"
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
+#include "th06/note.h"
 #include "th06/scene.h"
 #include "th06/screens/result.h"
 
@@ -35,6 +36,7 @@ bool Game_Tick(const TH06_INPUT *const input)
         ResultScreen_CountFrames(tick_rate);
     }
     Chain_RunDraw(&g_Chain);
+    Note_Draw();
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
     Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
     if (run == CHAIN_RUN_RESET) {

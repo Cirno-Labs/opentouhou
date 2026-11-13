@@ -3,6 +3,7 @@
 #include "th06/anm/text.h"
 
 #include "th06/anm/texture.h"
+#include "th06/note.h"
 #include "th06/translation.h"
 
 #include "core/base/log.h"
@@ -117,6 +118,7 @@ RESULT Anm_RenderTextToTextureIndex(
     FAIL_IF(
         texture < 0 || texture >= ANM_TEXTURE_COUNT || text == nullptr,
         "Invalid text texture or string");
+    Note_Show(text);
     if (m_Font == nullptr) {
         return OK;
     }

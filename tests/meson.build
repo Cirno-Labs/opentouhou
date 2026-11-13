@@ -798,6 +798,24 @@ test(
 )
 
 test(
+  'th06/note',
+  executable(
+    'test_th06_note',
+    'test_th06_note.c',
+    'gfx_recorder.c',
+    c_args: [layer_include['th06']] + core_include,
+    implicit_include_directories: false,
+    link_with: [
+      th06_lib, core_patch_lib, core_json_lib, core_io_lib, core_base_lib,
+      core_gfx_lib, core_image_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_note'},
+  suite: 'unit',
+)
+
+test(
   'th06/translation',
   executable(
     'test_th06_translation',
