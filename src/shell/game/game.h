@@ -45,6 +45,3 @@ typedef struct {
     // Releases what init acquired. Called once, also when init failed.
     void (*shutdown)(void);
 } GAME_DESC;
-
-// Describes the game that shell/game runs. Each game executable defines it.
-extern const GAME_DESC g_GameDesc;

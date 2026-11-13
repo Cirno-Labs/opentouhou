@@ -1,4 +1,4 @@
-# Everything but main.c, so the replay runner and the tests link it too.
+# Everything but main.c and entry.c, so the replay runner and the tests link it too.
 # The shell/game functions that it calls come from shell/game in the game,
 # from replay/th06/runner/shell_null.c in the runner and from
 # tests/shell_fake.c in the tests.
@@ -65,7 +65,21 @@ th06_version = custom_target(
   command: [python3, files('../../tools/meson/version_header'), 'th06', '@OUTPUT@'],
   build_always_stale: true,
 )
-th06_sources = [files('main.c'), th06_version]
+
+th06_main_lib = static_library(
+  'th06_main',
+  'main.c',
+  th06_version,
+  c_args: [layer_include['th06'], layer_include['shell'], '-I' + meson.current_build_dir()],
+  implicit_include_directories: false,
+  dependencies: [core_dep, stg_dep],
+)
+
+# entry.c is the only source of the game that sees SDL's headers. It is a
+# source of the executable, not of a library, because the entry point that
+# Windows starts from (WinMain) is looked up only after the libraries are
+# searched.
+th06_sources = [files('entry.c')]
 if host_machine.system() == 'windows'
   th06_sources += import('windows').compile_resources(
     'th06.rc',
@@ -79,7 +93,7 @@ endif
 games += {
   'th06': {
     'sources': th06_sources,
-    'c_args': [layer_include['th06'], '-I' + meson.current_build_dir()],
-    'link_with': [th06_lib],
+    'c_args': [layer_include['th06']],
+    'link_with': [th06_main_lib, th06_lib],
   },
 }

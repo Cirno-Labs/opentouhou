@@ -31,18 +31,10 @@ shell_game_lib = static_library(
   dependencies: [sdl3],
 )
 
-shell_main_lib = static_library(
-  'shell_main',
-  'game/main.c',
-  implicit_include_directories: false,
-  dependencies: [sdl3],
-)
-
 # shell/game runs the game, so only a game executable links it. The replay
 # runner and the tests replace its game-facing functions with stand-ins.
 shell_game_dep = declare_dependency(
   compile_args: [layer_include['shell']],
   link_with: [shell_game_lib, shell_lib],
-  link_whole: shell_main_lib,
   dependencies: core_dep,
 )

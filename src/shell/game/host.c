@@ -1,6 +1,5 @@
-#define SDL_MAIN_USE_CALLBACKS
-#define SDL_MAIN_NOIMPL
 #include "shell/game.h"
+#include "shell/game/entry.h"
 
 #include "core/audio.h"
 
@@ -27,7 +26,6 @@
 #include "tick_rate.h"
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -40,9 +38,14 @@
 #define MAX_TICKS_PER_FRAME 4
 #define M_MAX_LOCALES 8
 
+static_assert((int)SHELL_CONTINUE == (int)SDL_APP_CONTINUE);
+static_assert((int)SHELL_SUCCESS == (int)SDL_APP_SUCCESS);
+static_assert((int)SHELL_FAILURE == (int)SDL_APP_FAILURE);
+
 typedef struct SHELL_CONTEXT SHELL_CONTEXT;
 
 struct SHELL_CONTEXT {
+    const GAME_DESC *desc;
     SDL_Window *window;
     SDL_GLContext gl_context;
     CLOCK clock;
@@ -52,11 +55,11 @@ struct SHELL_CONTEXT {
     bool vsync;
     bool game_init_called;
     INPUT_STATE *input;
-    // Holds g_GameDesc.input_schema->players input structs, one after
+    // Holds desc->input_schema->players input structs, one after
     // another.
     void *input_buffer;
     FOLDERS folders;
-    // Points at the entry of g_GameDesc.data_files that the data folder
+    // Points at the entry of desc->data_files that the data folder
     // lacks, or is nullptr.
     const char *missing_data_file;
     // Holds config.ini's path, or nullptr when the user directory could
@@ -80,7 +83,7 @@ static SHELL_CONTEXT m_Context;
 
 static void M_OpenPatches(SHELL_CONTEXT *const ctx)
 {
-    if (g_GameDesc.patch_game == nullptr) {
+    if (ctx->desc->patch_game == nullptr) {
         return;
     }
     char *dir;
@@ -96,7 +99,7 @@ static void M_OpenPatches(SHELL_CONTEXT *const ctx)
     Patch_ReadChoice(ctx->ini, &choice);
     Result_Log(
         Patch_OpenStack(
-            dir, g_GameDesc.id, g_GameDesc.patch_game, &choice, &ctx->patches),
+            dir, ctx->desc->id, ctx->desc->patch_game, &choice, &ctx->patches),
         LOG_LEVEL_ERROR);
     Mem_Free(dir);
 }
@@ -104,8 +107,8 @@ static void M_OpenPatches(SHELL_CONTEXT *const ctx)
 static void M_WriteSettings(const SHELL_CONTEXT *const ctx, INI *const ini)
 {
     Config_Save(&g_ShellSettingsSchema, ini, &ctx->settings);
-    if (g_GameDesc.settings_schema != nullptr) {
-        Config_Save(g_GameDesc.settings_schema, ini, g_GameDesc.settings);
+    if (ctx->desc->settings_schema != nullptr) {
+        Config_Save(ctx->desc->settings_schema, ini, ctx->desc->settings);
     }
     Input_Save(ctx->input, ini);
 }
@@ -132,13 +135,13 @@ static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
 
 static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
 {
-    if (g_GameDesc.data_file_count == 0) {
+    if (ctx->desc->data_file_count == 0) {
         return OK;
     }
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     RESULT result = Vfs_MountDir(vfs, ctx->folders.data_dir, 0);
-    for (int32_t i = 0; IS_OK(result) && i < g_GameDesc.data_file_count; i++) {
-        const char *const name = g_GameDesc.data_files[i];
+    for (int32_t i = 0; IS_OK(result) && i < ctx->desc->data_file_count; i++) {
+        const char *const name = ctx->desc->data_files[i];
         READER file;
         result = Vfs_Open(vfs, name, VFS_STREAM, &file);
         if (IS_OK(result)) {
@@ -151,7 +154,7 @@ static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
     Vfs_Destroy(vfs);
     // A data folder that cannot be read lacks every file.
     if (!IS_OK(result) && ctx->missing_data_file == nullptr) {
-        ctx->missing_data_file = g_GameDesc.data_files[0];
+        ctx->missing_data_file = ctx->desc->data_files[0];
     }
     return result;
 }
@@ -170,7 +173,7 @@ static RESULT M_CreateWindow(SHELL_CONTEXT *const ctx)
 #endif
 
     ctx->window = SDL_CreateWindow(
-        g_GameDesc.title, g_GameDesc.logical_width, g_GameDesc.logical_height,
+        ctx->desc->title, ctx->desc->logical_width, ctx->desc->logical_height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     FAIL_IF(
         ctx->window == nullptr, "Cannot create the window: %s", SDL_GetError());
@@ -181,7 +184,7 @@ static RESULT M_CreateWindow(SHELL_CONTEXT *const ctx)
         "Cannot create an OpenGL 3.3 core context: %s", SDL_GetError());
 
     MUST(Gfx_Init(
-        ctx->window, g_GameDesc.logical_width, g_GameDesc.logical_height));
+        ctx->window, ctx->desc->logical_width, ctx->desc->logical_height));
 
     ctx->vsync = SDL_GL_SetSwapInterval(1);
     if (!ctx->vsync) {
@@ -206,7 +209,8 @@ static void M_OpenStdout(void)
 }
 
 // Prints the usage, the mode and the folders to stdout.
-static void M_PrintHelp(const FOLDERS *const folders)
+static void M_PrintHelp(
+    const GAME_DESC *const desc, const FOLDERS *const folders)
 {
     M_OpenStdout();
     char *patches_dir = nullptr;
@@ -226,7 +230,7 @@ static void M_PrintHelp(const FOLDERS *const folders)
         "Data folder:     %s\n"
         "User folder:     %s\n"
         "Patches folder:  %s\n",
-        folders->program_name, g_GameDesc.title, g_GameDesc.version,
+        folders->program_name, desc->title, desc->version,
         Folders_GetModeName(folders->mode),
         folders->program_dir != nullptr ? folders->program_dir : "unknown",
         folders->data_dir != nullptr ? folders->data_dir : "unknown",
@@ -248,10 +252,10 @@ static RESULT M_ParseValue(
 }
 
 // Prints "<game id> <version>" to stdout.
-static void M_PrintVersion(void)
+static void M_PrintVersion(const GAME_DESC *const desc)
 {
     M_OpenStdout();
-    printf("%s %s\n", g_GameDesc.id, g_GameDesc.version);
+    printf("%s %s\n", desc->id, desc->version);
     fflush(stdout);
 }
 
@@ -305,26 +309,26 @@ static RESULT M_Init(
     MUST(M_ParseArgs(argc, argv, &input, &help, &version));
     *done = help || version;
     if (version && !help) {
-        M_PrintVersion();
+        M_PrintVersion(ctx->desc);
         return OK;
     }
     const bool found = Result_Log(
-        Folders_Find(&input, g_GameDesc.id, &ctx->folders), LOG_LEVEL_ERROR);
+        Folders_Find(&input, ctx->desc->id, &ctx->folders), LOG_LEVEL_ERROR);
     if (help) {
-        M_PrintHelp(&ctx->folders);
+        M_PrintHelp(ctx->desc, &ctx->folders);
         return OK;
     }
     if (found) {
         Result_Log(
-            LogFile_Open(ctx->folders.user_dir, g_GameDesc.id),
+            LogFile_Open(ctx->folders.user_dir, ctx->desc->id),
             LOG_LEVEL_WARNING);
     }
     FAIL_IF(
         ctx->folders.data_dir == nullptr,
         "Cannot find the executable's directory");
-    LOG_INFO("%s %s", g_GameDesc.id, g_GameDesc.version);
+    LOG_INFO("%s %s", ctx->desc->id, ctx->desc->version);
     LOG_INFO("Folder mode: %s", Folders_GetModeName(ctx->folders.mode));
-    MUST(M_CheckData(ctx), "%s failed to start", g_GameDesc.id);
+    MUST(M_CheckData(ctx), "%s failed to start", ctx->desc->id);
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
@@ -345,8 +349,8 @@ static RESULT M_Init(
         MUST(Ini_Parse("", 0, &g_HeapAllocator, &ctx->ini));
     }
     Config_Load(&g_ShellSettingsSchema, ctx->ini, &ctx->settings);
-    if (g_GameDesc.settings_schema != nullptr) {
-        Config_Load(g_GameDesc.settings_schema, ctx->ini, g_GameDesc.settings);
+    if (ctx->desc->settings_schema != nullptr) {
+        Config_Load(ctx->desc->settings_schema, ctx->ini, ctx->desc->settings);
     }
     M_OpenPatches(ctx);
     if (ctx->settings.fullscreen
@@ -354,7 +358,7 @@ static RESULT M_Init(
         ctx->settings.fullscreen = false;
     }
 
-    ctx->input = Input_Create(g_GameDesc.input_schema, &g_HeapAllocator);
+    ctx->input = Input_Create(ctx->desc->input_schema, &g_HeapAllocator);
     Input_AddSchema(ctx->input, &g_HotkeysSchema);
     Input_Load(ctx->input, ctx->ini);
     MUST(Ini_Parse("", 0, &g_HeapAllocator, &ctx->loaded_settings));
@@ -362,13 +366,13 @@ static RESULT M_Init(
 
     ctx->input_buffer = Allocator_AllocZ(
         &g_HeapAllocator,
-        g_GameDesc.input_schema->size
-            * (size_t)g_GameDesc.input_schema->players);
+        ctx->desc->input_schema->size
+            * (size_t)ctx->desc->input_schema->players);
 
     Result_Log(Audio_Init(), LOG_LEVEL_WARNING);
 
     ctx->game_init_called = true;
-    MUST(g_GameDesc.init(), "%s failed to start", g_GameDesc.id);
+    MUST(ctx->desc->init(), "%s failed to start", ctx->desc->id);
     return OK;
 }
 
@@ -390,7 +394,7 @@ const PATCH_STACK *Shell_GetPatches(void)
 static void M_ApplyRequests(SHELL_CONTEXT *const ctx)
 {
     ShellRequests_ApplyInput(
-        &ctx->requests, ctx->input, g_GameDesc.input_schema);
+        &ctx->requests, ctx->input, ctx->desc->input_schema);
     if (ctx->requests.fullscreen >= 0) {
         const bool fullscreen = ctx->requests.fullscreen != 0;
         ctx->requests.fullscreen = -1;
@@ -411,14 +415,15 @@ bool Shell_GetPadPress(INPUT_BINDING *const out)
 size_t Shell_GetBindings(
     const size_t action, INPUT_BINDING *const out, const size_t capacity)
 {
-    ASSERT(action < g_GameDesc.input_schema->count);
+    ASSERT(action < m_Context.desc->input_schema->count);
     return Input_GetBindings(
-        m_Context.input, g_GameDesc.input_schema, 0, action, out, capacity);
+        m_Context.input, m_Context.desc->input_schema, 0, action, out,
+        capacity);
 }
 
 void Shell_RequestBind(const size_t action, const INPUT_BINDING binding)
 {
-    ASSERT(action < g_GameDesc.input_schema->count);
+    ASSERT(action < m_Context.desc->input_schema->count);
     ShellRequests_Add(
         &m_Context.requests,
         (SHELL_REQUEST) { SHELL_REQUEST_BIND, action, binding });
@@ -426,7 +431,7 @@ void Shell_RequestBind(const size_t action, const INPUT_BINDING binding)
 
 void Shell_RequestUnbind(const size_t action, const INPUT_BINDING binding)
 {
-    ASSERT(action < g_GameDesc.input_schema->count);
+    ASSERT(action < m_Context.desc->input_schema->count);
     ShellRequests_Add(
         &m_Context.requests,
         (SHELL_REQUEST) { SHELL_REQUEST_UNBIND, action, binding });
@@ -457,13 +462,14 @@ void Shell_RequestFullscreen(const bool fullscreen)
     m_Context.requests.fullscreen = fullscreen ? 1 : 0;
 }
 
-SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
+SHELL_STATUS Shell_Init(const GAME_DESC *const desc, int argc, char *argv[])
 {
-    Fatal_Install(g_GameDesc.id);
+    m_Context.desc = desc;
+    Fatal_Install(desc->id);
     bool done = false;
     const RESULT result = M_Init(&m_Context, argc, argv, &done);
     if (IS_OK(result)) {
-        return done ? SDL_APP_SUCCESS : SDL_APP_CONTINUE;
+        return done ? SHELL_SUCCESS : SHELL_CONTINUE;
     }
     char text[4096];
     if (m_Context.missing_data_file != nullptr) {
@@ -476,23 +482,23 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     }
     Result_Log(result, LOG_LEVEL_ERROR);
     Fatal_ShowStartupError(text);
-    return SDL_APP_FAILURE;
+    return SHELL_FAILURE;
 }
 
-SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
+SHELL_STATUS Shell_Event(const SDL_Event *const event)
 {
     if (event->type == SDL_EVENT_QUIT) {
-        return SDL_APP_SUCCESS;
+        return SHELL_SUCCESS;
     }
     if (event->type == SDL_EVENT_WINDOW_ENTER_FULLSCREEN) {
         m_Context.settings.fullscreen = true;
     } else if (event->type == SDL_EVENT_WINDOW_LEAVE_FULLSCREEN) {
         m_Context.settings.fullscreen = false;
     }
-    return SDL_APP_CONTINUE;
+    return SHELL_CONTINUE;
 }
 
-SDL_AppResult SDL_AppIterate(void *appstate)
+SHELL_STATUS Shell_Iterate(void)
 {
     SHELL_CONTEXT *const ctx = &m_Context;
 
@@ -523,13 +529,13 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     }
     for (int i = 0; i < ticks; i++) {
         Gfx_BeginTick((GFX_COLOR) { 0, 0, 0, 255 });
-        const bool running = g_GameDesc.tick(ctx->input_buffer);
+        const bool running = ctx->desc->tick(ctx->input_buffer);
         Gfx_EndTick();
         ctx->pad_pressed = false;
         ctx->tick_rate_measured = false;
         M_ApplyRequests(ctx);
         if (!running) {
-            return SDL_APP_SUCCESS;
+            return SHELL_SUCCESS;
         }
     }
 
@@ -546,12 +552,12 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             Gfx_Present(
                 ctx->settings.interpolation, t > 1.0f ? 1.0f : t, &output),
             LOG_LEVEL_ERROR)) {
-        return SDL_APP_FAILURE;
+        return SHELL_FAILURE;
     }
     if (ctx->screenshot_pending) {
         Result_Log(
             Screenshot_Save(
-                ctx->folders.user_dir, g_GameDesc.id, &ctx->settings),
+                ctx->folders.user_dir, ctx->desc->id, &ctx->settings),
             LOG_LEVEL_WARNING);
         ctx->screenshot_pending = false;
     }
@@ -560,14 +566,14 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     if (!ctx->vsync) {
         SDL_DelayNS(Clock_NsUntilNextTick(&ctx->clock));
     }
-    return SDL_APP_CONTINUE;
+    return SHELL_CONTINUE;
 }
 
-void SDL_AppQuit(void *appstate, SDL_AppResult result)
+void Shell_Quit(void)
 {
     SHELL_CONTEXT *const ctx = &m_Context;
     if (ctx->game_init_called) {
-        g_GameDesc.shutdown();
+        ctx->desc->shutdown();
     }
     Patch_CloseStack(ctx->patches);
     Audio_Shutdown();
@@ -581,8 +587,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     if (ctx->input_buffer != nullptr) {
         Allocator_Free(
             &g_HeapAllocator, ctx->input_buffer,
-            g_GameDesc.input_schema->size
-                * (size_t)g_GameDesc.input_schema->players);
+            ctx->desc->input_schema->size
+                * (size_t)ctx->desc->input_schema->players);
     }
     Input_Destroy(ctx->input);
     Gfx_Shutdown();
