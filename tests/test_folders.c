@@ -67,6 +67,25 @@ static void M_CheckPatchesDir(
     Mem_Free(dir);
 }
 
+// Finds the patches folder for a program in dir, with portable.txt there
+// when portable is set, and checks that it is expected.
+static void M_CheckFoundPatchesDir(
+    const char *const dir, const bool portable, const char *const expected)
+{
+    if (portable) {
+        M_WriteFile(dir, "portable.txt");
+    }
+    char *const exe_dir = Str_Format("%s/", dir);
+    const FOLDERS_INPUT input = { .exe_dir = exe_dir };
+    char *patches_dir;
+    CHECK(Result_Log(
+        Folders_FindPatchesDir(&input, &patches_dir), LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(patches_dir, expected);
+    CHECK(M_IsDir(patches_dir));
+    Mem_Free(patches_dir);
+    Mem_Free(exe_dir);
+}
+
 #if !defined(__APPLE__) && !defined(_WIN32)
 TEST(default_mode_uses_the_platform_folders)
 {
@@ -107,6 +126,29 @@ TEST(portable_mode_keeps_everything_in_new_program_subfolders)
     Mem_Free(data_dir);
     Mem_Free(patches_dir);
     Mem_Free(user_dir);
+    Mem_Free(dir);
+}
+
+#if !defined(__APPLE__) && !defined(_WIN32)
+TEST(patches_folder_without_a_game_is_the_platform_folder_by_default)
+{
+    char *const dir = TestDir_Prepare("patches_default");
+    char *const patches_dir = M_PlatformDir("patches");
+    M_CheckFoundPatchesDir(dir, false, patches_dir);
+    Mem_Free(patches_dir);
+    Mem_Free(dir);
+}
+#endif
+
+TEST(patches_folder_without_a_game_is_portable_and_makes_no_user_folder)
+{
+    char *const dir = TestDir_Prepare("patches_portable");
+    char *const patches_dir = Str_Format("%s/patches" M_SEPARATOR, dir);
+    M_CheckFoundPatchesDir(dir, true, patches_dir);
+    char *const userdata = Str_Format("%s/userdata", dir);
+    CHECK(!File_Exists(userdata));
+    Mem_Free(userdata);
+    Mem_Free(patches_dir);
     Mem_Free(dir);
 }
 

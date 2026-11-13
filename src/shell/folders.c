@@ -160,6 +160,16 @@ RESULT Folders_GetPatchesDir(const FOLDERS *const folders, char **const out)
     return Path_GetPatchesDir(portable ? folders->program_dir : nullptr, out);
 }
 
+RESULT Folders_FindPatchesDir(
+    const FOLDERS_INPUT *const input, char **const out)
+{
+    char *const program_dir = M_ProgramDirOf(input);
+    const RESULT result = Path_GetPatchesDir(
+        M_IsPortable(program_dir) ? program_dir : nullptr, out);
+    Mem_Free(program_dir);
+    return result;
+}
+
 const char *Folders_GetModeName(const FOLDERS_MODE mode)
 {
     switch (mode) {

@@ -212,11 +212,8 @@ static RESULT M_FindDir(
         *out = Str_Dup(args->dir);
         return OK;
     }
-    FOLDERS folders;
-    Result_Ignore(M_FindFolders(exe_dir, m_Games[0], &folders));
-    const RESULT result = Folders_GetPatchesDir(&folders, out);
-    Folders_Free(&folders);
-    return result;
+    const FOLDERS_INPUT input = { .exe_dir = exe_dir };
+    return Folders_FindPatchesDir(&input, out);
 }
 
 static int M_CompareMembers(const void *const a, const void *const b)
