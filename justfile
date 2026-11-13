@@ -23,21 +23,21 @@ build-linux target="debug": (_build "linux" "media" target) (_build "linux" "oth
 [group('build')]
 build-win target="debug": (_build "win" "media" target) (_build "win" "othpatch" target)
 
-# Package every game for Linux into build/packages/. The othpatch of the
-# commit is built too, for the packages to carry when its version has no
-# release.
+# The othpatch of the commit is built too, for the packages to carry when
+# its version has no release.
+[doc("Package every game for Linux into build/packages/ (debug or release).")]
 [group('build')]
 package-linux target="debug": (_build "linux" "othpatch" target) (_build "linux" "media" target) (_docker_run "linux" "media" "package" "--target" target)
 
-# Package every game for Windows into build/packages/, as for Linux.
+# Package every game for Windows into build/packages/ (debug or release).
 [group('build')]
 package-win target="debug": (_build "win" "othpatch" target) (_build "win" "media" target) (_docker_run "win" "media" "package" "--target" target)
 
-# Write othpatch for Linux into build/packages/.
+# Write othpatch for Linux into build/packages/ (debug or release).
 [group('build')]
 package-othpatch-linux target="debug": (_build "linux" "othpatch" target) (_docker_run "linux" "othpatch" "package-othpatch" "--target" target)
 
-# Write othpatch for Windows into build/packages/.
+# Write othpatch for Windows into build/packages/ (debug or release).
 [group('build')]
 package-othpatch-win target="debug": (_build "win" "othpatch" target) (_docker_run "win" "othpatch" "package-othpatch" "--target" target)
 
@@ -46,17 +46,17 @@ package-othpatch-win target="debug": (_build "win" "othpatch" target) (_docker_r
 deps-mac:
     tools/mac/build deps
 
-# Build every game for macOS, arm64 and x86-64 (debug or release).
+# Build every game and othpatch for macOS, arm64 and x86-64 (debug or release).
 [group('build')]
 build-mac target="debug":
     tools/mac/build build --target {{target}}
 
-# Package every game for macOS into build/packages/.
+# Package every game for macOS into build/packages/ (debug or release).
 [group('build')]
 package-mac target="debug":
     tools/mac/build package --target {{target}}
 
-# Write the universal othpatch for macOS into build/packages/.
+# Write the universal othpatch for macOS into build/packages/ (debug or release).
 [group('build')]
 package-othpatch-mac target="debug":
     tools/mac/build package-othpatch --target {{target}}
@@ -65,6 +65,15 @@ package-othpatch-mac target="debug":
 [group('test')]
 test-mac:
     tools/mac/build test
+
+# Build the Linux games (debug) and run one, such as `just run th06 --data DIR`.
+[group('build')]
+[no-cd]
+[positional-arguments]
+run game *args: (_build "linux" "media" "debug")
+    #!/usr/bin/env bash
+    shift
+    exec {{quote(justfile_directory())}}/build/linux/debug/o{{game}} "$@"
 
 [group('test')]
 _test image: (_docker_build "linux" image) (_docker_run "linux" image "test")

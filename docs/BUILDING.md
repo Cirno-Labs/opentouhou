@@ -243,8 +243,8 @@ player's replay input and its captured case:
 
 ```sh
 build/linux/debug/th06replay --data <data-dir> --replay <input.rpy> <case.otrc>
-just replay::run <case-or-dir> <data-dir> <replay-dir>
-just replay::run-fast <case-or-dir> <data-dir> <replay-dir> [jobs]
+just replay::run <game> <case-or-dir> <data-dir> <replay-dir>
+just replay::run-fast <game> <case-or-dir> <data-dir> <replay-dir> [jobs]
 ```
 
 `run-fast` uses a release build and runs one process per case, as many
@@ -267,6 +267,7 @@ that holds it, either by putting the executable there or by passing it:
 
 ```sh
 build/linux/debug/o<game> --data ~/games/<game>
+just run <game> --data ~/games/<game>   # builds the Linux debug games first
 ```
 
 `o<game> --help` lists the arguments and prints the folder mode and the
