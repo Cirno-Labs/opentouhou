@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Parses JSON5 text into a JSON_VALUE tree. The parser is derived from the
 // one in TRX (https://github.com/LostArtefacts/TRX, GPL-3.0), which is
 // derived from json.h by Neil Henning (https://github.com/sheredom/json.h),

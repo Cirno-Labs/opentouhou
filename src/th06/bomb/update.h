@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Runs the bombs of the four shot types on the bomb state of g_Player

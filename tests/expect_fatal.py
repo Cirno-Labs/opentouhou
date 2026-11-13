@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-only
 """Run a test program that must stop with a fatal error.
 
 Passes when the program aborts and its fatal log line contains the

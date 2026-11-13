@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-only
 """Build, test and package the games on macOS, for arm64 and x86-64.
 
 The dependencies come from tools/mac/build_deps, one root per

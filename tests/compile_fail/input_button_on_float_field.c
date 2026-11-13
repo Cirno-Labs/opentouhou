@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then declares an INPUT_BUTTON over a float field.
 #include "core/input.h"

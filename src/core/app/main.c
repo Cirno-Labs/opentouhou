@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Defines the program's entry point, which hands control to the SDL main
 // callbacks in app.c. The executable links this file whole, because the
 // entry point that Windows starts from (WinMain) is looked up only after

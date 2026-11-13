@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 // Compiles as it is, and fails to compile with BREAK defined, because it
 // then declares a CONFIG_BOOL option over a float field.
 #include "core/config.h"

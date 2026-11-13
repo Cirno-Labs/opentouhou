@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/patch/files.h"
 
 #include "core/base/hash_map.h"

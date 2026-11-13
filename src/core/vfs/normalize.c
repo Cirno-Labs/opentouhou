@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/vfs/normalize.h"
 
 #include <string.h>

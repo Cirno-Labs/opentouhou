@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/vfs/dir_source.h"
 
 #include "core/base/array.h"

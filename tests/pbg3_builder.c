@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "pbg3_builder.h"
 
 #include <string.h>

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "overlay.h"
 
 #include "core/base/log.h"

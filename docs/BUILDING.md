@@ -109,7 +109,7 @@ the configuration names, so that every machine and CI check alike.
 clang-format formats the C code (`.clang-format`). ruff formats and
 checks the Python tools (`ruff.toml`). actionlint checks the GitHub
 workflows. The scripts in `tools/lint/` check the commit messages, the
-versions, the changelogs and the SPDX licence lines.
+versions and the changelogs.
 
 ```sh
 prek install    # once: checks every commit and commit message

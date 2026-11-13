@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: GPL-3.0-only
 # Builds the macOS dependencies for one architecture, in the sets of the
 # Linux images, at the versions of tools/docker/pins and with the options
 # of the Linux Dockerfiles, so that every platform links the same

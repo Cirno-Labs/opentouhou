@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "othpatch/install.h"
 #include "othpatch/main.h"
 #include "othpatch/sha256.h"

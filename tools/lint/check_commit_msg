@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-only
 """Fail the commit if its message breaks the 50/72 rule.
 
 Subject line <= 50 chars, a blank line, then body wrapped at <= 72 chars.

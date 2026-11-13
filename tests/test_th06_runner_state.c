@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "../replay/th06/runner/state.h"
 
 #include "test.h"

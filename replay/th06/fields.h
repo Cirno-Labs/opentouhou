@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #pragma once
 
 // Lists the columns of a th06 case, in file order. X(name, kind) for each,

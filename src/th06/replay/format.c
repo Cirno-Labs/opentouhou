@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "format.h"
 
 #include "th06/replay/file.h"

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 #include "core/math/vec.h"
 
 #include "core/base/types.h"
