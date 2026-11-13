@@ -81,6 +81,11 @@ test programs="all":
         *) echo "Unknown programs {{programs}}: all, games or othpatch" >&2; exit 1 ;;
     esac
 
+# Run the tests of the Python tools on this machine.
+[group('test')]
+test-tools:
+    python3 -m unittest discover --start-directory tests/tools --pattern 'test_*.py'
+
 # Run the checks on the whole tree.
 [group('test')]
 lint:

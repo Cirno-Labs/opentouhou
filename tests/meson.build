@@ -111,6 +111,17 @@ foreach name, expected : {
   )
 endforeach
 
+# The tests of the Python tools under tools/ run with the Python of the
+# build. They need neither a built program nor the network.
+foreach name : ['changelog', 'othpatch_release', 'release_index']
+  test(
+    'tools/' + name,
+    python,
+    args: [files('tools/test_' + name + '.py')],
+    suite: ['unit', 'tools'],
+  )
+endforeach
+
 if build_othpatch
   # Each part of othpatch has a test named after it. The tests use
   # repository networks of file:// URLs in their own directories, so no test
@@ -132,18 +143,6 @@ if build_othpatch
         'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'othpatch_' + part,
         'MALLOC_PERTURB_': '0',
       },
-      suite: 'unit',
-    )
-  endforeach
-
-  # The release tools run their tests with the Python of the build. The
-  # release index test replaces the AWS CLI with tools/fake_r2.py, so no
-  # test needs the network.
-  foreach name : ['othpatch_release', 'release_index']
-    test(
-      'tools/' + name,
-      python,
-      args: [files('tools/test_' + name + '.py')],
       suite: 'unit',
     )
   endforeach

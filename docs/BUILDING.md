@@ -419,6 +419,7 @@ The style and commit rules the checks enforce are in
 ```sh
 just test           # unit tests, inside the Linux images
 just test othpatch  # only othpatch's tests (or games)
+just test-tools     # only the tests of the Python tools, without Docker
 ```
 
 Each image runs the tests of its programs. The tests of core/base,
