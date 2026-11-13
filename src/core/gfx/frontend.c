@@ -491,6 +491,7 @@ GFX_PASS_OUTPUT GfxOutput_Fit(
         .offset_y = (float)rect.y,
         .rect = rect,
         .border = output->border,
+        .filter = output->filter,
     };
 }
 

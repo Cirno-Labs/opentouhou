@@ -7,6 +7,8 @@
 - Added native packages for Windows, Linux and macOS.
 - Added English and other languages through othpatch.
 - Added smooth motion between ticks on fast displays.
+- Added `[video] scaling` in config.ini: sharp, smooth or integer
+  scaling of the screen to the window.
 - Added F11 and Alt+Enter to switch between window and fullscreen.
 - Added rebindable keys and gamepad buttons.
 - Added portable mode with a `portable.txt` beside the game.

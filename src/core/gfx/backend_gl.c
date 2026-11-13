@@ -441,11 +441,14 @@ static void M_SetState(const GFX_STATE *const state, GFX_TEXTURE *const texture)
     gl->uniform_1i(at->textured, textured ? 1 : 0);
     gl->bind_texture(
         GL_TEXTURE_2D, textured ? (GLuint)(uintptr_t)texture->handle : 0);
+    const bool linear = state->filter == GFX_FILTER_LINEAR
+        || (m_Backend.pass == GFX_PASS_WINDOW
+            && m_Backend.pass_output.filter == GFX_FILTER_LINEAR);
     gl->bind_sampler(
         0,
         m_Backend.samplers
             [(state->repeat ? M_SAMPLER_REPEAT : 0)
-             | (state->filter == GFX_FILTER_LINEAR ? M_SAMPLER_LINEAR : 0)]);
+             | (linear ? M_SAMPLER_LINEAR : 0)]);
 }
 
 static RESULT M_Init(
@@ -656,7 +659,7 @@ static void M_BlitScreen(const GFX_PASS_OUTPUT *const output)
     gl->blit_framebuffer(
         0, 0, m_Backend.screen.width, m_Backend.screen.height, rect.x, rect.y,
         rect.x + rect.width, rect.y + rect.height, GL_COLOR_BUFFER_BIT,
-        GL_NEAREST);
+        output->filter == GFX_FILTER_LINEAR ? GL_LINEAR : GL_NEAREST);
     m_Backend.output.drawn = true;
     M_ShowOutput();
 }

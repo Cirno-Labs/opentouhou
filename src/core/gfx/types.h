@@ -90,4 +90,7 @@ typedef struct {
     int32_t width, height; // window pixels
     bool integer_scale; // whole multiples when they fit
     GFX_COLOR border;
+    // Samples the screen where it is scaled to the window: the screen
+    // image, or the textures that the window draws again.
+    GFX_FILTER filter;
 } GFX_OUTPUT;

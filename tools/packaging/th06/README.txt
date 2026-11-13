@@ -90,6 +90,10 @@ and key settings, and the options of the game.
 - [video] interpolation: smooths motion between the 60 Hz steps of the
   game on faster displays. It is on by default. Set it to false to show
   each step as the game drew it.
+- [video] scaling: sharp, smooth or integer. sharp (the default) shows
+  square pixels as large as the window allows, smooth scales with soft
+  edges, and integer shows square pixels at a whole multiple of 640x480,
+  with a black border around them.
 - [screenshot] resolution: native or window. format: png or jpg.
   jpeg_quality: 1 to 100.
 - [patches] enabled: set it to false to turn off all patches.

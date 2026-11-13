@@ -20,6 +20,7 @@ typedef struct {
     float offset_x, offset_y;
     GFX_RECT rect;
     GFX_COLOR border;
+    GFX_FILTER filter;
 } GFX_PASS_OUTPUT;
 
 // Holds a view as a backend draws it. projection includes the viewport, so

@@ -545,7 +545,11 @@ SHELL_STATUS Shell_Iterate(void)
     const GFX_OUTPUT output = {
         .width = width,
         .height = height,
+        .integer_scale = ctx->settings.scaling == SHELL_SCALING_INTEGER,
         .border = { 0, 0, 0, 255 },
+        .filter = ctx->settings.scaling == SHELL_SCALING_SMOOTH
+            ? GFX_FILTER_LINEAR
+            : GFX_FILTER_NEAREST,
     };
     const float t = (float)((double)ctx->clock.pending / 1000000000.0);
     if (!Result_Log(
