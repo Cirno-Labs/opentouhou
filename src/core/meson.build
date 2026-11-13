@@ -50,19 +50,32 @@ core_io_lib = static_library(
   dependencies: [sdl3],
 )
 
-# core/patch's selection needs core/base, core/io and core/json, so that
-# othpatch can link it without core/vfs.
+# core/ini needs core/base and core/io, which needs SDL for its files.
+core_ini_lib = static_library(
+  'core_ini',
+  'ini/edit.c',
+  'ini/ini.c',
+  'ini/parse.c',
+  'ini/write.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
+# core/patch's selection needs core/base, core/io, core/ini and core/json,
+# so that othpatch can link it without core/vfs.
 core_patch_select_lib = static_library(
   'core_patch_select',
   'patch/language.c',
   'patch/select.c',
   c_args: core_include,
   implicit_include_directories: false,
+  link_with: core_ini_lib,
   dependencies: [sdl3],
 )
 
-# othpatch links core/base, core/json, core/io and core/patch's selection
-# only, so a build of othpatch alone needs none of the libraries below.
+# othpatch links core/base, core/json, core/io, core/ini and core/patch's
+# selection only, so a build of othpatch alone needs none of the libraries below.
 if not build_games
   subdir_done()
 endif
@@ -88,18 +101,6 @@ core_math_lib = static_library(
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [cc_libm],
-)
-
-# core/ini needs core/base and core/io, which needs SDL for its files.
-core_ini_lib = static_library(
-  'core_ini',
-  'ini/edit.c',
-  'ini/ini.c',
-  'ini/parse.c',
-  'ini/write.c',
-  c_args: core_include,
-  implicit_include_directories: false,
-  dependencies: [sdl3],
 )
 
 # core/config needs core/base and core/ini (and so core/io), so the tests

@@ -2,6 +2,7 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/ini.h"
 
 #include "patch_builder.h"
 #include "test.h"
@@ -445,4 +446,55 @@ TEST(entries_hold_roles_and_dependencies)
     Mem_Free(expected);
     Patch_FreeSelection(selection);
     Mem_Free(dir);
+}
+
+static PATCH_CHOICE M_ReadChoice(const char *const text, INI **const ini)
+{
+    CHECK(Result_Log(
+        Ini_Parse(text, strlen(text), &g_HeapAllocator, ini), LOG_LEVEL_ERROR));
+    PATCH_CHOICE choice = {};
+    Patch_ReadChoice(*ini, &choice);
+    return choice;
+}
+
+TEST(the_choice_comes_from_the_patches_section)
+{
+    INI *ini;
+    const PATCH_CHOICE choice = M_ReadChoice(
+        "[patches]\nenabled = Off\ndisabled = a/b, c/d\nlanguage = de\n", &ini);
+    CHECK(!choice.enabled);
+    CHECK_EQ_STR(choice.disabled, "a/b, c/d");
+    CHECK_EQ_STR(choice.language, "de");
+    Ini_Free(ini);
+}
+
+TEST(the_choice_without_settings_is_enabled)
+{
+    INI *ini;
+    const PATCH_CHOICE choice =
+        M_ReadChoice("[video]\nfullscreen = true\n", &ini);
+    CHECK(choice.enabled);
+    CHECK(choice.disabled == nullptr);
+    CHECK(choice.language == nullptr);
+    Ini_Free(ini);
+}
+
+TEST(enabled_takes_the_boolean_words_and_defaults_to_true)
+{
+    const char *const values[] = { "1", "yes", "TRUE", "on", "maybe" };
+    for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++) {
+        char *const text = Str_Format("[patches]\nenabled = %s\n", values[i]);
+        INI *ini;
+        CHECK(M_ReadChoice(text, &ini).enabled);
+        Ini_Free(ini);
+        Mem_Free(text);
+    }
+    const char *const offs[] = { "0", "no", "FALSE", "off" };
+    for (size_t i = 0; i < sizeof(offs) / sizeof(offs[0]); i++) {
+        char *const text = Str_Format("[patches]\nenabled = %s\n", offs[i]);
+        INI *ini;
+        CHECK(!M_ReadChoice(text, &ini).enabled);
+        Ini_Free(ini);
+        Mem_Free(text);
+    }
 }

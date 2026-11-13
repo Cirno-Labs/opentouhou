@@ -86,12 +86,11 @@ static void M_OpenPatches(APP_CONTEXT *const ctx)
         return;
     }
     LOCALE locales[M_MAX_LOCALES];
-    const PATCH_CHOICE choice = {
-        .enabled = ctx->settings.patches_enabled,
-        .disabled = ctx->settings.patches_disabled,
+    PATCH_CHOICE choice = {
         .locales = locales,
         .locale_count = Locale_ListPreferred(locales, M_MAX_LOCALES),
     };
+    Patch_ReadChoice(ctx->ini, &choice);
     Result_Log(
         Patch_OpenStack(
             dir, g_GameDesc.id, g_GameDesc.patch_game, &choice, &ctx->patches),
