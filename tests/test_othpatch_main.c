@@ -214,36 +214,21 @@ TEST(game_in_the_patches_folder_is_downloaded)
     M_Close(&test);
 }
 
-TEST(game_named_with_an_option_is_downloaded)
-{
-    M_CASE test = M_PrepareBeside("named_game", nullptr);
-    M_AddNetwork(&test);
-    CHECK_EQ_INT(M_Run(&test, 3, "--game", "th06", "en"), 0);
-    M_CheckOutput(&test, "Games: th06 (named on the command line)\n");
-    CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/msg1.dat.jdiff"));
-    M_Close(&test);
-}
-
-TEST(failure_of_an_unknown_game_is_one_message)
-{
-    M_CASE test = M_Prepare("unknown_game");
-    CHECK_EQ_INT(M_Run(&test, 3, "--game", "th99", "en"), 1);
-    CHECK_EQ_STR(
-        test.output, "othpatch: unknown game th99; othpatch knows th06\n");
-    M_Close(&test);
-}
-
 TEST(failure_without_a_game_is_one_message)
 {
     M_CASE test = M_PrepareBeside("no_game", "oth07");
     M_AddNetwork(&test);
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 1);
-    M_CheckOutput(
-        &test,
-        "othpatch: no opentouhou game is beside othpatch; name one with "
-        "--game th06\n");
+    M_CheckOutput(&test, "othpatch: no opentouhou game is beside othpatch\n");
     CHECK(!Server_Exists(test.patches, "thpatch"));
     M_Close(&test);
+}
+
+// Gives the test a config.ini of its own: without portable.txt, every test
+// shares the one in XDG_DATA_HOME.
+static void M_MakePortable(const M_CASE *const test)
+{
+    PatchBuilder_Write(test->program, "portable.txt", "");
 }
 
 // SDL reads the locale from the environment on Linux only. macOS and
@@ -261,6 +246,7 @@ static void M_SetLocale(const char *const lang)
 TEST(no_name_picks_the_language_of_the_locale)
 {
     M_CASE test = M_Prepare("locale");
+    M_MakePortable(&test);
     M_AddNetwork(&test);
     M_SetLocale("de_AT.UTF-8");
     CHECK_EQ_INT(M_Run(&test, 0), 0);
@@ -272,6 +258,7 @@ TEST(no_name_picks_the_language_of_the_locale)
 TEST(no_name_without_a_pack_for_the_locale_picks_english)
 {
     M_CASE test = M_Prepare("locale_fallback");
+    M_MakePortable(&test);
     M_AddNetwork(&test);
     M_SetLocale("fr_FR.UTF-8");
     CHECK_EQ_INT(M_Run(&test, 0), 0);
@@ -282,13 +269,6 @@ TEST(no_name_without_a_pack_for_the_locale_picks_english)
     M_Close(&test);
 }
 #endif
-
-// Gives the test a config.ini of its own: without portable.txt, every test
-// shares the one in XDG_DATA_HOME.
-static void M_MakePortable(const M_CASE *const test)
-{
-    PatchBuilder_Write(test->program, "portable.txt", "");
-}
 
 static char *M_ReadConfig(const M_CASE *const test)
 {
@@ -336,6 +316,24 @@ TEST(language_switch_keeps_the_other_pack)
         test.patches);
     M_CheckOutput(&test, selection);
     Mem_Free(selection);
+    M_Close(&test);
+}
+
+TEST(no_name_keeps_the_language_of_config_ini)
+{
+    M_CASE test = M_Prepare("keep_language");
+    M_MakePortable(&test);
+    M_AddNetwork(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "de"), 0);
+    CHECK_EQ_INT(M_Run(&test, 0), 0);
+    M_CheckOutput(
+        &test,
+        "Language: thpatch/lang_de (Patch lang_de), from [patches] language\n");
+    M_CheckConfig(&test, "[patches]\nlanguage = de\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "ja"), 0);
+    CHECK_EQ_INT(M_Run(&test, 0), 0);
+    M_CheckOutput(
+        &test, "Language: the original, ja; othpatch downloads nothing\n");
     M_Close(&test);
 }
 
@@ -488,7 +486,8 @@ static void M_InstallTool(M_CASE *const test)
     const char *const neighbors[] = { "nmlgc" };
     Server_AddRepo(
         test->server, "thpatch", neighbors, 1,
-        "\"lang_en\": \"English\", \"tool\": \"\", \"own\": \"\"");
+        "\"lang_en\": \"English\", \"lang_de\": \"German\", \"tool\": "
+        "\"\", \"own\": \"\"");
     Server_AddPatch(
         test->server, "thpatch", "tool",
         "\"dependencies\": [\"nmlgc/base\", \"own\"]");
@@ -528,24 +527,7 @@ TEST(remove_fails_for_a_patch_that_another_needs)
     CHECK_EQ_INT(M_Run(&test, 2, "--remove", "nothing"), 1);
     M_CheckOutput(
         &test,
-        "othpatch: no installed patch is nothing; --installed lists them\n");
-    M_Close(&test);
-}
-
-TEST(installed_lists_the_roles)
-{
-    M_CASE test = M_Prepare("installed_roles");
-    M_InstallTool(&test);
-    CHECK_EQ_INT(M_Run(&test, 1, "--installed"), 0);
-    char *const expected = Str_Format(
-        "Patches folder: %s\n"
-        "nmlgc/base                       library\n"
-        "thpatch/lang_en                  language\n"
-        "thpatch/own                      library\n"
-        "thpatch/tool                     mod\n",
-        test.patches);
-    CHECK_EQ_STR(test.output, expected);
-    Mem_Free(expected);
+        "othpatch: no installed patch is nothing; --list lists the mods\n");
     M_Close(&test);
 }
 
@@ -587,15 +569,33 @@ TEST(run_keeps_installed_patches_that_the_network_lacks)
     M_Close(&test);
 }
 
-TEST(list_prints_the_language_packs_sorted)
+TEST(list_prints_the_languages_and_the_mods)
 {
     M_CASE test = M_Prepare("list");
+    M_MakePortable(&test);
     M_AddNetwork(&test);
     CHECK_EQ_INT(M_Run(&test, 1, "--list"), 0);
     CHECK_EQ_STR(
         test.output,
-        "lang_de              German\n"
-        "lang_en              English\n");
+        "Languages for oth06:\n"
+        "  de       German\n"
+        "  en       English\n"
+        "  ja       original Japanese\n"
+        "Installed mods: none\n");
+    M_InstallTool(&test);
+    CHECK_EQ_INT(M_Run(&test, 1, "de"), 0);
+    CHECK_EQ_INT(M_Run(&test, 1, "--list"), 0);
+    CHECK_EQ_STR(
+        test.output,
+        "Languages for oth06:\n"
+        "  de       German (in use)\n"
+        "  en       English (installed)\n"
+        "  ja       original Japanese\n"
+        "Installed mods:\n"
+        "  Patch tool (thpatch/tool)\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "ja"), 0);
+    CHECK_EQ_INT(M_Run(&test, 1, "--list"), 0);
+    M_CheckOutput(&test, "  ja       original Japanese (in use)\n");
     M_Close(&test);
 }
 
@@ -667,6 +667,13 @@ TEST(bad_arguments_fail_with_one_message)
         "othpatch: unknown option --bogus; --help lists the options\n");
     CHECK_EQ_INT(M_Run(&test, 2, "en", "de"), 1);
     CHECK_EQ_STR(test.output, "othpatch: name one patch only, not en and de\n");
+    CHECK_EQ_INT(M_Run(&test, 2, "--game", "th06"), 1);
+    CHECK_EQ_STR(
+        test.output,
+        "othpatch: unknown option --game; --help lists the options\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "--installed"), 1);
+    CHECK_EQ_INT(M_Run(&test, 2, "--list", "en"), 1);
+    CHECK_EQ_STR(test.output, "othpatch: --list takes no patch to install\n");
     char *argv[] = { "othpatch", "--dir" };
     FILE *const out = tmpfile();
     CHECK_EQ_INT(
@@ -680,8 +687,13 @@ TEST(help_and_version_print_and_succeed)
     M_CASE test = M_Prepare("help");
     CHECK_EQ_INT(M_Run(&test, 1, "--help"), 0);
     M_CheckOutput(&test, "Usage: othpatch");
+    M_CheckOutput(&test, "Developer options:\n  --dir <folder>");
     CHECK_EQ_INT(M_Run(&test, 1, "--version"), 0);
-    M_CheckOutput(&test, "othpatch 0.1.0\n");
+    CHECK_EQ_STR(test.output, "othpatch 0.1.0\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "-v"), 0);
+    CHECK_EQ_STR(test.output, "othpatch 0.1.0\n");
+    CHECK_EQ_INT(M_Run(&test, 1, "-h"), 0);
+    M_CheckOutput(&test, "Usage: othpatch");
     M_Close(&test);
 }
 
@@ -1066,10 +1078,10 @@ static void M_WriteOthpatchRelease(
 
 TEST(newer_othpatch_release_is_installed)
 {
-    M_CASE test = M_PrepareBeside("self_update", nullptr);
+    M_CASE test = M_Prepare("self_update");
     M_AddNetwork(&test);
     M_WriteOthpatchRelease(&test, "0.2.0", "othpatch 0.2.0", nullptr);
-    CHECK_EQ_INT(M_Run(&test, 3, "--game", "th06", "en"), 0);
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckOutput(
         &test,
         "Checking for updates...\n"
@@ -1077,7 +1089,7 @@ TEST(newer_othpatch_release_is_installed)
         "to install it\n");
     M_CheckOthpatch(&test, "");
     test.answer = "y\n";
-    CHECK_EQ_INT(M_Run(&test, 3, "--game", "th06", "en"), 0);
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckOutput(
         &test,
         "othpatch 0.2.0 is available (you have 0.1.0). Update now? [y/N] "
@@ -1088,11 +1100,11 @@ TEST(newer_othpatch_release_is_installed)
 
 TEST(same_othpatch_release_is_up_to_date)
 {
-    M_CASE test = M_PrepareBeside("self_same", nullptr);
+    M_CASE test = M_Prepare("self_same");
     M_AddNetwork(&test);
     M_WriteOthpatchRelease(&test, "0.2.0", "othpatch 0.2.0", nullptr);
     test.version = "0.2.0";
-    CHECK_EQ_INT(M_Run(&test, 4, "--update", "--game", "th06", "en"), 0);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(
         &test, "Checking for updates...\nothpatch 0.2.0 is up to date\n");
     M_CheckOthpatch(&test, "");
@@ -1101,12 +1113,12 @@ TEST(same_othpatch_release_is_up_to_date)
 
 TEST(othpatch_digest_mismatch_fails_the_update)
 {
-    M_CASE test = M_PrepareBeside("self_digest", nullptr);
+    M_CASE test = M_Prepare("self_digest");
     M_AddNetwork(&test);
     M_WriteOthpatchRelease(
         &test, "0.2.0", "othpatch 0.2.0",
         "0000000000000000000000000000000000000000000000000000000000000000");
-    CHECK_EQ_INT(M_Run(&test, 4, "--update", "--game", "th06", "en"), 1);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 1);
     M_CheckOutput(&test, "othpatch: cannot install 0.2.0: othpatch-0.2.0-");
     M_CheckOutput(&test, " instead of 0000");
     M_CheckOthpatch(&test, "");
@@ -1128,11 +1140,11 @@ TEST(othpatch_of_a_game_package_counts_for_its_own_release)
 
 TEST(failed_check_of_othpatch_does_not_fail_the_patches)
 {
-    M_CASE test = M_PrepareBeside("self_offline", nullptr);
+    M_CASE test = M_Prepare("self_offline");
     M_AddNetwork(&test);
     Mem_Free(test.releases);
     test.releases = Str_Format("%s/missing.json", test.server_url);
-    CHECK_EQ_INT(M_Run(&test, 4, "--update", "--game", "th06", "en"), 0);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(&test, "Done: 2 patches");
     M_CheckOutput(&test, "Checking for updates...\nCannot check for updates: ");
     M_Close(&test);
