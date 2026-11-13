@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
     APP_CONTEXT *run;
     M_LANGUAGE *language;
-    CONSOLE_BAR bar;
+    CONSOLE_PATCH patch;
     bool queued;
     int32_t width;
     bool changed;
@@ -314,28 +314,29 @@ static void M_StartPatch(
     M_HeadPatch(progress, patch);
     const char *const label = M_GetLabel(patch, run->arena);
     progress->width = MAX(progress->width, Console_CountCodePoints(label));
-    progress->bar = (CONSOLE_BAR) {
-        .run = run,
-        .label = label,
-        .width = progress->width,
-        .total = files,
-    };
-    Console_DrawFiles(&progress->bar);
+    Console_StartPatch(&progress->patch, run, label, progress->width, files);
+}
+
+static void M_ReceiveFile(
+    void *const user, const PATCH_ENTRY *const patch, const char *const file,
+    const size_t received, const size_t size)
+{
+    M_PROGRESS *const progress = user;
+    Console_ReceiveFile(&progress->patch, file, received, size);
 }
 
 static void M_EndFile(
     void *const user, const PATCH_ENTRY *const patch, const char *const file)
 {
     M_PROGRESS *const progress = user;
-    progress->bar.done++;
-    Console_DrawFiles(&progress->bar);
+    Console_EndFile(&progress->patch, file);
 }
 
 static void M_EndBarOf(M_PROGRESS *const progress)
 {
-    if (progress->bar.total > 0) {
-        Console_EndFiles(&progress->bar);
-        progress->bar.total = 0;
+    if (progress->patch.bar.total > 0) {
+        Console_EndPatch(&progress->patch);
+        progress->patch.bar.total = 0;
     }
 }
 
@@ -384,6 +385,7 @@ static PATCH_EVENTS M_GetEvents(M_PROGRESS *const progress)
         .user = progress,
         .patch_queued = M_QueuePatch,
         .patch_started = M_StartPatch,
+        .file_progress = M_ReceiveFile,
         .file_done = M_EndFile,
         .patch_done = M_EndPatch,
         .patch_failed = M_FailPatch,

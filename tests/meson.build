@@ -154,7 +154,7 @@ if build_othpatch
     'fake_program.c',
     implicit_include_directories: false,
   )
-  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'zip']
+  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'console', 'zip']
     test(
       'othpatch/' + part,
       executable(

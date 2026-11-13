@@ -33,8 +33,8 @@ typedef struct {
     // Holds the answer to the question of othpatch, or nullptr for a run
     // without a terminal.
     const char *answer;
-    // Tells othpatch that its output is a terminal.
-    bool terminal;
+    // Tells othpatch what its output is.
+    MAIN_OUTPUT terminal;
     // Holds the size of the game package in MB, as othpatch prints it.
     char package_size[16];
     char *output;
@@ -327,7 +327,7 @@ TEST(later_run_downloads_what_changed)
 TEST(terminal_redraws_the_bars_in_place)
 {
     M_CASE test = M_PreparePortable("terminal");
-    test.terminal = true;
+    test.terminal = MAIN_OUTPUT_TERMINAL;
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
     M_CheckAll(
         &test,
@@ -338,6 +338,39 @@ TEST(terminal_redraws_the_bars_in_place)
         "\rBase patch (nmlgc/base)   [....................] 0/2 files"
         "\rBase patch (nmlgc/base)   [##########..........] 1/2 files"
         "\rBase patch (nmlgc/base)   [####################] 2/2 files\n"
+        "Saved language = en to %1$s\n" M_OTHPATCH_SECTION M_ALL_DONE);
+    M_Close(&test);
+}
+
+TEST(ansi_terminal_shows_the_files_under_their_patch)
+{
+    M_CASE test = M_PreparePortable("ansi");
+    test.terminal = MAIN_OUTPUT_ANSI;
+    CHECK_EQ_INT(M_Run(&test, 1, "en"), 0);
+    M_CheckAll(
+        &test,
+        "Setting up the language...\n"
+        "Language: English\n"
+        "\x1b[2KEnglish (thpatch/lang_en) [....................] 0/1 file\n"
+        "\x1b[1A\x1b[2KEnglish (thpatch/lang_en) [....................] 0/1 "
+        "file\n"
+        "\x1b[2K  th06/lang_en.jdiff      [####################] 18/18 B\n"
+        "\x1b[2A\x1b[2KEnglish (thpatch/lang_en) [####################] 1/1 "
+        "file\n"
+        "\x1b[2K\n\x1b[1A"
+        "\x1b[2KBase patch (nmlgc/base)   [....................] 0/2 files\n"
+        "\x1b[1A\x1b[2KBase patch (nmlgc/base)   [....................] 0/2 "
+        "files\n"
+        "\x1b[2K  base.js                 [####################] 7/7 B\n"
+        "\x1b[2A\x1b[2KBase patch (nmlgc/base)   [##########..........] 1/2 "
+        "files\n"
+        "\x1b[2K\n\x1b[1A"
+        "\x1b[1A\x1b[2KBase patch (nmlgc/base)   [##########..........] 1/2 "
+        "files\n"
+        "\x1b[2K  th06/base.js            [####################] 12/12 B\n"
+        "\x1b[2A\x1b[2KBase patch (nmlgc/base)   [####################] 2/2 "
+        "files\n"
+        "\x1b[2K\n\x1b[1A"
         "Saved language = en to %1$s\n" M_OTHPATCH_SECTION M_ALL_DONE);
     M_Close(&test);
 }
@@ -927,7 +960,10 @@ TEST(bad_arguments_fail_with_one_message)
     char *argv[] = { "othpatch", "--dir" };
     FILE *const out = tmpfile();
     CHECK_EQ_INT(
-        Main_Run(2, argv, test.version, test.program, nullptr, out, false), 1);
+        Main_Run(
+            2, argv, test.version, test.program, nullptr, out,
+            MAIN_OUTPUT_FILE),
+        1);
     fclose(out);
     M_Close(&test);
 }
@@ -1131,7 +1167,7 @@ TEST(update_option_installs_the_game_and_othpatch)
 TEST(terminal_redraws_the_bar_of_a_release)
 {
     M_CASE test = M_PrepareUpdate("update_terminal", "0.1.0", "0.2.0");
-    test.terminal = true;
+    test.terminal = MAIN_OUTPUT_TERMINAL;
     CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(
         &test,

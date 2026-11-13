@@ -18,6 +18,22 @@ static bool M_OwnsConsole(void)
     return GetConsoleProcessList(processes, 2) == 1;
 }
 
+// Returns what stdout is: an ANSI terminal when the console takes escape
+// sequences, or else a terminal or a file.
+static MAIN_OUTPUT M_GetOutput(void)
+{
+    if (!_isatty(_fileno(stdout))) {
+        return MAIN_OUTPUT_FILE;
+    }
+    const HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode = 0;
+    if (GetConsoleMode(console, &mode)
+        && SetConsoleMode(console, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+        return MAIN_OUTPUT_ANSI;
+    }
+    return MAIN_OUTPUT_TERMINAL;
+}
+
 int wmain(const int argc, wchar_t **const argv)
 {
     SetConsoleOutputCP(CP_UTF8);
@@ -44,7 +60,7 @@ int wmain(const int argc, wchar_t **const argv)
         FILE *const in = _isatty(_fileno(stdin)) ? stdin : nullptr;
         result = Main_Run(
             argc, utf8, OTHPATCH_VERSION, Path_GetExeDir(), in, stdout,
-            _isatty(_fileno(stdout)));
+            M_GetOutput());
     } else {
         fputs("othpatch: cannot convert the arguments to UTF-8\n", stdout);
     }
