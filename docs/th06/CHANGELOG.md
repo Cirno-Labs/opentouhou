@@ -1,6 +1,6 @@
 # th06 changelog
 
-## Unreleased
+## 1.0.0 (2026-11-13)
 
 - Added th06, compatible with the original down to its replays: the 17
   world record replays play back frame for frame.
