@@ -117,5 +117,6 @@ extern STAGE g_Stage;
 // file with an offset, a quad list or a script that runs past its end,
 // or a keyframe with no keyframe after it, fails the add.
 RESULT Stage_Register(void);
+
 // Removes the three elements and releases the stage's files.
 void Stage_Remove(void);

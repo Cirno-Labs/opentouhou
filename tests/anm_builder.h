@@ -36,12 +36,15 @@ typedef struct {
 
 // Clears b to an empty file of width by height pixels.
 void AnmBuilder_Init(ANM_BUILDER *b, int32_t width, int32_t height);
+
 // Adds a sprite entry, in pixels.
 void AnmBuilder_AddSprite(
     ANM_BUILDER *b, int32_t id, float x, float y, float w, float h);
+
 // Starts a new, empty script numbered script_id, and returns its index for
 // AnmBuilder_Instr.
 int32_t AnmBuilder_BeginScript(ANM_BUILDER *b, int32_t script_id);
+
 // Appends one instruction to the script at script_index. args holds
 // args_words 32-bit words (args_words * 4 bytes, at most 4 words), packed
 // as the file's raw argument bytes; a float argument is passed
@@ -50,6 +53,7 @@ int32_t AnmBuilder_BeginScript(ANM_BUILDER *b, int32_t script_id);
 int32_t AnmBuilder_Instr(
     ANM_BUILDER *b, int32_t script_index, int16_t time, uint8_t opcode,
     const uint32_t *args, int32_t args_words);
+
 // Assembles the whole file into out (at least ANM_BUILDER_MAX_SIZE bytes)
 // and returns its size.
 size_t AnmBuilder_Build(const ANM_BUILDER *b, uint8_t *out);

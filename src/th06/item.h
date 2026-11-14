@@ -52,11 +52,14 @@ const ITEM *Item_GetSlots(void);
 
 // Removes every item.
 void Item_Reset(void);
+
 // Moves the items and collects those that touch the graze box.
 void Item_Update(void);
+
 // Drops an item of type at pos in the first free slot from the one after
 // the last used. Does nothing when no slot is free.
 void Item_Spawn(VEC3 pos, ITEM_TYPE type, ITEM_STATE state);
+
 // Makes every item fly to the player.
 void Item_CollectAll(void);
 

@@ -201,6 +201,7 @@ extern BULLET_MANAGER g_Bullets;
 // SCENE_NEXT_STAGE, which keeps them. It then sets the bullet types up
 // from the sprites and removes every item.
 RESULT Bullet_Register(void);
+
 // Removes both elements. Releases the bullet sprites, except in
 // SCENE_NEXT_STAGE.
 void Bullet_Remove(void);
@@ -208,16 +209,19 @@ void Bullet_Remove(void);
 // Fires the pattern of shooter into free bullets, aimed at the player in
 // the modes that aim. Stops at the first bullet that finds no free slot.
 void Bullet_FirePattern(const BULLET_SHOOTER *shooter);
+
 // Starts a laser from shooter in the first free slot. Returns the laser,
 // or a spare laser that never runs when no slot is free.
 LASER *Bullet_SpawnLaser(const BULLET_SHOOTER *shooter);
 
 // Makes every bullet fade out and every laser end.
 void Bullet_ClearAll(void);
+
 // Turns every bullet that is not fading into a star item (ITEM_STAR).
 // Ends every laser, and drops a star item every 32 pixels along each
 // laser that was not ending yet.
 void Bullet_ClearAllToItems(void);
+
 // Makes every bullet fade out and every laser end, and scores each
 // bullet, fading ones too: 2000 for the first, then 10 more for each next
 // one, capped at max_bonus from the second one on.

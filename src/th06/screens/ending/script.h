@@ -38,21 +38,27 @@ typedef struct {
 // patches. Reports failure when the file cannot be read; *out is then
 // empty.
 RESULT EndingScript_Load(const char *path, ENDING_SCRIPT *out);
+
 // Prepares a script over a copy of the size bytes of data, with whole
 // lines or with halves of 32 bytes.
 void EndingScript_Init(
     const void *data, size_t size, bool whole_lines, ENDING_SCRIPT *out);
+
 // Returns a copy of the size bytes of data with the jdiff diff applied,
 // and sets *out_size to its size. Mem_Free releases the copy.
 uint8_t *EndingScript_ApplyDiff(
     const uint8_t *data, size_t size, const JSON_VALUE *diff, size_t *out_size);
+
 // Releases a script and leaves it empty.
 void EndingScript_Free(ENDING_SCRIPT *script);
+
 // Returns the byte at offset, or 0 past the end.
 uint8_t EndingScript_Byte(const ENDING_SCRIPT *script, size_t offset);
+
 // Returns the end of the half that starts at start: the byte after up to
 // 32 bytes of pairs, or the command or line break that ends it first.
 size_t EndingScript_HalfEnd(const ENDING_SCRIPT *script, size_t start);
+
 // Returns the UTF-8 text of the half that starts at offset, or nullptr
 // where no half starts. Halves start at the start of the script, after a
 // line break or a NUL, and after a full half. With whole lines, a half

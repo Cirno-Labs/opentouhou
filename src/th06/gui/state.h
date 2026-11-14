@@ -126,6 +126,7 @@ extern GUI g_Gui;
 // first replaced line of a script and at the first replaced line of
 // another box after the note.
 RESULT Gui_Register(void);
+
 // Removes both elements and releases the stage's portraits and dialogue
 // file. Outside SCENE_NEXT_STAGE, also releases the rest.
 void Gui_Remove(void);
@@ -136,9 +137,11 @@ void Gui_Remove(void);
 // the boss. A failed load is logged.
 void Gui_StartMsg(int32_t index);
 bool Gui_IsMsgRunning(void);
+
 // Returns whether a dialogue runs and grants the timeline no release.
 bool Gui_MsgHoldsTimeline(void);
 bool Gui_IsMsgSkippable(void);
+
 // Returns whether the loading screen is fully up: its sprite shows and
 // its script waits at a stop. The stage background is not drawn then.
 bool Gui_IsLoadingShown(void);
@@ -146,17 +149,23 @@ bool Gui_IsLoadingShown(void);
 // Shows the name of the bomb with portrait sprite. Name stays in use
 // until the next call.
 void Gui_ShowBombName(int32_t sprite, const char *name);
+
 // Makes the name of the bomb leave.
 void Gui_EndBombName(void);
+
 // Shows the name of a spell card with portrait sprite 0x4a8 + sprite.
 // Name stays in use until the next call. Hides the shown translator note
 // first, as thcrap does when a spell card starts.
 void Gui_ShowSpellCardName(int32_t sprite, const char *name);
+
 // Makes the name of the spell card leave.
 void Gui_EndSpellCardName(void);
+
 // Shows bonus in popups.spell_bonus until its timer reaches 280.
 void Gui_ShowSpellCardBonus(int32_t bonus);
+
 // Shows bonus in popups.bonus until its timer reaches 250.
 void Gui_ShowBonusPopup(int32_t bonus);
+
 // Shows popups.full_power until its timer reaches 180.
 void Gui_ShowFullPowerPopup(void);
