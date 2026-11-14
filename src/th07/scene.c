@@ -1,6 +1,7 @@
 #include "th07/scene.h"
 
 #include "th07/game.h"
+#include "th07/settings.h"
 #include "th07/stubs.h"
 
 static SCENE m_Current;
@@ -153,9 +154,9 @@ static CHAIN_STATUS M_Switch(void)
 static CHAIN_STATUS M_Calc(void *const arg)
 {
     if (!g_GameManager.mode.calc_dropped) {
-        Buttons_Update(&g_Buttons, &g_Input);
+        Buttons_Update(&g_Buttons, &g_Input, g_Settings.shoot_focuses);
     } else {
-        Buttons_Merge(&g_Buttons, &g_Input);
+        Buttons_Merge(&g_Buttons, &g_Input, g_Settings.shoot_focuses);
     }
     if (m_Current != m_Requested) {
         m_Previous = m_Current;

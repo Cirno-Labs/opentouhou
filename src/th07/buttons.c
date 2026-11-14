@@ -1,5 +1,6 @@
 #include "th07/buttons.h"
 
+#include "shell/game.h"
 #include "core/base/utils.h"
 
 #include <stddef.h>
@@ -88,10 +89,39 @@ TH07_INPUT Buttons_FromWord(const uint16_t word)
     return input;
 }
 
-void Buttons_Update(BUTTONS *const buttons, const TH07_INPUT *const input)
+static uint16_t M_Read(
+    BUTTONS *const buttons, const TH07_INPUT *const input,
+    const bool shoot_focuses)
+{
+    TH07_INPUT read = *input;
+    if (shoot_focuses) {
+        TH07_INPUT gamepad;
+        TH07_INPUT joystick;
+        Shell_GetDeviceInput(INPUT_DEVICE_GAMEPAD, &gamepad);
+        Shell_GetDeviceInput(INPUT_DEVICE_JOYSTICK, &joystick);
+        const bool shoot = gamepad.shoot || joystick.shoot;
+        int32_t *const frames = &buttons->shot_held_frames;
+        bool focus = false;
+        if (shoot) {
+            *frames = MIN(*frames + 1, 20);
+            focus = *frames >= 10;
+        } else if (*frames > 10) {
+            *frames -= 10;
+            focus = true;
+        } else {
+            *frames = 0;
+        }
+        read.focus = input->focus || focus;
+    }
+    return Buttons_ToWord(&read);
+}
+
+void Buttons_Update(
+    BUTTONS *const buttons, const TH07_INPUT *const input,
+    const bool shoot_focuses)
 {
     buttons->previous_word = buttons->word;
-    buttons->word = Buttons_ToWord(input);
+    buttons->word = M_Read(buttons, input, shoot_focuses);
     buttons->repeat = false;
     if (buttons->previous_word == buttons->word) {
         if (buttons->held_frames >= 30) {
@@ -111,9 +141,11 @@ void Buttons_Update(BUTTONS *const buttons, const TH07_INPUT *const input)
     buttons->held.move_y = input->move_y;
 }
 
-void Buttons_Merge(BUTTONS *const buttons, const TH07_INPUT *const input)
+void Buttons_Merge(
+    BUTTONS *const buttons, const TH07_INPUT *const input,
+    const bool shoot_focuses)
 {
-    buttons->word |= Buttons_ToWord(input);
+    buttons->word |= M_Read(buttons, input, shoot_focuses);
     M_Derive(buttons);
     buttons->held.move_x = input->move_x;
     buttons->held.move_y = input->move_y;
