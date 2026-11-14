@@ -28,8 +28,8 @@ the original frame by frame.
 othpatch, which comes with each game, downloads the English and other
 translations of thpatch.net. It also updates the games and itself.
 
-Next: the fixes and optional changes known from the community's patches,
-then th07.
+Next: th07, then the fixes and optional changes known from the
+community's patches.
 
 ## Playing
 
@@ -72,7 +72,7 @@ tests/         unit tests
 replay/        tools that capture cases from the original game and
                compare the port against them
 tools/         build, packaging and release tools
-docs/          documentation: ARCHITECTURE.md, BUILDING.md, TH06.md,
+docs/          documentation: ARCHITECTURE.md, BUILDING.md, TH06.md, TH07.md,
                and a changelog per program
 ```
 

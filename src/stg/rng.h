@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-// Holds the random number generator that th06 and th10 share. A game
+// Holds the random number generator that the games share. A game
 // keeps one for gameplay and a second one for randomness outside it.
 typedef struct {
     uint16_t seed;

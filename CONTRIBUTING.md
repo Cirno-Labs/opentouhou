@@ -11,6 +11,7 @@ touches before you make it.
 - `docs/ARCHITECTURE.md`: platform and tooling, layers, program
   structure, determinism rules, the module map.
 - `docs/TH06.md`: how th06 is structured and maps onto the design.
+- `docs/TH07.md`: how th07 is structured and maps onto the design.
 - `docs/BUILDING.md`: building, packaging, checks, tests.
 - `docs/REPLAY.md`: the replay harness, its backends and its cases.
 
