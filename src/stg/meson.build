@@ -9,6 +9,13 @@ stg_chain_lib = static_library(
   implicit_include_directories: false,
 )
 
+stg_lzss_lib = static_library(
+  'stg_lzss',
+  'lzss.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+)
+
 stg_pbg3_lib = static_library(
   'stg_pbg3',
   'pbg3.c',
@@ -26,6 +33,6 @@ stg_rng_lib = static_library(
 
 stg_dep = declare_dependency(
   compile_args: [layer_include['stg']],
-  link_with: [stg_chain_lib, stg_pbg3_lib, stg_rng_lib],
+  link_with: [stg_chain_lib, stg_lzss_lib, stg_pbg3_lib, stg_rng_lib],
   dependencies: [core_dep],
 )

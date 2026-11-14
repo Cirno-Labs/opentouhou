@@ -1218,6 +1218,19 @@ test(
 )
 
 test(
+  'stg/lzss',
+  executable(
+    'test_lzss',
+    'test_lzss.c',
+    'pbg3_builder.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_lzss_lib, core_hash_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'stg/pbg3',
   executable(
     'test_pbg3',
