@@ -1153,6 +1153,19 @@ test(
   suite: 'unit',
 )
 
+test(
+  'replay/th07/fields',
+  executable(
+    'test_th07_capture_fields',
+    'test_th07_capture_fields.c',
+    c_args: core_include + replay_include,
+    implicit_include_directories: false,
+    link_with: [replay_case_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3, zlib],
+  ),
+  suite: 'unit',
+)
+
 # The tests include shell's private headers, so they compile against the
 # sources directly instead of the library.
 test(
