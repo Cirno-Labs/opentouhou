@@ -40,6 +40,7 @@ endif
 
 sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
 zlib = dependency('zlib', static: true)
+winmm = cc.find_library('winmm')
 
 core_base_lib = static_library(
   'core_base',
@@ -88,7 +89,7 @@ shared_library(
   c_args: core_include,
   implicit_include_directories: false,
   link_with: [core_base_lib, core_io_lib],
-  dependencies: [sdl3, zlib],
+  dependencies: [sdl3, zlib, winmm],
 )
 
 executable(
@@ -121,4 +122,14 @@ executable(
   implicit_include_directories: false,
   link_with: [core_base_lib, core_io_lib],
   dependencies: [sdl3, zlib],
+)
+
+executable(
+  'clock_test',
+  '../core/clock.c',
+  '../core/clock_test.c',
+  '../core/iat.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+  dependencies: [winmm],
 )

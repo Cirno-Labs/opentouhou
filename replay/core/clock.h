@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 
-// Makes module's timeGetTime count from 0. With step 0 it follows real
-// time; otherwise each call returns step ms more than the one before.
-// th06's frame wait computes in single precision and never ends after a
-// few days of uptime. Returns whether module imports timeGetTime.
+// Makes module's timeGetTime and QueryPerformanceCounter count from 0, on
+// one clock. With step 0 they follow real time; otherwise each call moves
+// the clock step ms on. QueryPerformanceFrequency reports 1,000,000 per
+// second. Returns whether module imports either.
 bool Clock_Install(HMODULE module, uint32_t step);
