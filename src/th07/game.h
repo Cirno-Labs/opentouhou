@@ -10,6 +10,8 @@ extern CHAIN g_Chain;
 // Draws all of the gameplay randomness.
 extern RNG g_Rng;
 extern BUTTONS g_Buttons;
+// 1 for full speed, less while ECL slows the game.
+extern float g_GameSpeed;
 // Set by Game_Tick to the input the current tick runs with.
 extern TH07_INPUT g_Input;
 
