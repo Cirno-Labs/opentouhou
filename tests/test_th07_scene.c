@@ -2,18 +2,31 @@
 
 #include "test.h"
 #include "th07_scene_stubs.h"
+#include "shell_fake.h"
 
 #include "th07/buttons.h"
 #include "th07/game.h"
+#include "th07/settings.h"
 #include "th07/stubs.h"
 
 static const TH07_INPUT m_NoInput;
+static const TH07_INPUT m_Shoot = { .shoot = true };
+
+static void M_SetDevice(const INPUT_DEVICE device, const TH07_INPUT *input)
+{
+    FakeShell_SetDeviceInput(device, input, sizeof(*input));
+}
 
 static void M_Setup(void)
 {
     SceneStubCalls_Reset();
     Chain_Release(&g_Chain);
     g_Buttons = (BUTTONS) {};
+    FakeShell_Reset();
+    for (int32_t device = 0; device < INPUT_DEVICE_COUNT; device++) {
+        M_SetDevice((INPUT_DEVICE)device, &m_NoInput);
+    }
+    g_Settings.shoot_focuses = true;
     Result_Ignore(Game_Init());
 }
 
@@ -226,4 +239,23 @@ TEST(a_dropped_calc_merges_the_next_buttons)
     Game_Tick(&bomb);
     CHECK_EQ_INT(g_Buttons.word, 0x3);
     CHECK_EQ_INT(g_Buttons.previous_word, 0);
+}
+
+TEST(the_shoot_focuses_setting_reaches_the_buttons)
+{
+    M_Setup();
+    M_SetDevice(INPUT_DEVICE_GAMEPAD, &m_Shoot);
+    for (int32_t calc = 0; calc < 10; calc++) {
+        Game_Tick(&m_Shoot);
+    }
+    CHECK(g_Buttons.held.focus);
+
+    M_Setup();
+    g_Settings.shoot_focuses = false;
+    M_SetDevice(INPUT_DEVICE_GAMEPAD, &m_Shoot);
+    for (int32_t calc = 0; calc < 10; calc++) {
+        Game_Tick(&m_Shoot);
+    }
+    CHECK(!g_Buttons.held.focus);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
 }
