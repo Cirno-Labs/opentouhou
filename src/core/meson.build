@@ -86,6 +86,15 @@ core_patch_select_lib = static_library(
   dependencies: [sdl3],
 )
 
+# core/archive needs core/base, core/io and core/vfs's types, so that
+# othpatch can link it without core/vfs.
+core_archive_lib = static_library(
+  'core_archive',
+  'archive/archive.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
 # othpatch links core/base, core/json, core/io, core/ini and core/patch's
 # selection only, so a build of othpatch alone needs none of the libraries
 # below.
@@ -237,7 +246,7 @@ core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
     core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_patch_lib,
-    core_patch_select_lib, core_vfs_lib,
+    core_patch_select_lib, core_archive_lib, core_vfs_lib,
     core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
     core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
   ],
