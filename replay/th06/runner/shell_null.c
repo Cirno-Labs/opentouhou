@@ -1,12 +1,19 @@
 #include "shell/game.h"
+#include "th06/buttons.h"
 
 #include <stdint.h>
+#include <string.h>
 
 static int32_t m_TickRateCalls;
 
 bool Shell_GetPadPress(INPUT_BINDING *const out)
 {
     return false;
+}
+
+void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
+{
+    memset(out, 0, sizeof(TH06_INPUT));
 }
 
 size_t Shell_GetBindings(
