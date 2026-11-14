@@ -10,7 +10,6 @@
 #include "th06/anm.h"
 #include "th06/anm/private.h"
 #include "th06/ascii.h"
-#include "th06/chain.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -28,6 +27,8 @@
 #include "core/math/x87.h"
 #include "core/patch.h"
 #include "core/base/utils.h"
+
+#include "stg/chain.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>

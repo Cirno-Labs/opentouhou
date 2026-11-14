@@ -34,7 +34,7 @@ typedef struct CHAIN_ELEM {
     struct CHAIN_ELEM *next;
 } CHAIN_ELEM;
 
-// Holds th06's update and draw chains. Each lists elements by priority,
+// Holds a game's update and draw chains. Each lists elements by priority,
 // lower first; an element added at an existing priority runs after the
 // elements already there.
 typedef struct {
