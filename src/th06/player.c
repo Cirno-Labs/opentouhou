@@ -1,6 +1,6 @@
 #include "th06/player.h"
 
-#include "th06/angle.h"
+#include "stg/angle.h"
 #include "th06/anm.h"
 #include "th06/bomb.h"
 #include "th06/bullet.h"

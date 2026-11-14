@@ -1,7 +1,7 @@
 #include "th06/anm.h"
 #include "th06/anm/private.h"
 
-#include "th06/angle.h"
+#include "stg/angle.h"
 #include "th06/files.h"
 #include "th06/note.h"
 

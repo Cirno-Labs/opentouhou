@@ -1,4 +1,4 @@
-#include "th06/angle.h"
+#include "stg/angle.h"
 
 #include "test.h"
 

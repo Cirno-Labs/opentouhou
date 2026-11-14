@@ -1,6 +1,6 @@
 #include "th06/enemy.h"
 
-#include "th06/angle.h"
+#include "stg/angle.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
