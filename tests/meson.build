@@ -1225,7 +1225,9 @@ test(
     'pbg3_builder.c',
     c_args: stg_include,
     implicit_include_directories: false,
-    link_with: [stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib],
+    link_with: [
+      stg_pbg3_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
+    ],
   ),
   suite: 'unit',
 )

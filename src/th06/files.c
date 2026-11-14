@@ -1,5 +1,6 @@
 #include "th06/files.h"
 
+#include "core/archive.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
@@ -57,13 +58,13 @@ static RESULT M_MountArchive(const char *const name, const int32_t priority)
 {
     READER file;
     MUST(Vfs_Open(m_Vfs, name, VFS_STREAM, &file));
-    VFS_SOURCE *source;
-    MUST(Pbg3_Open(&file, name, &g_HeapAllocator, &source));
-    if (!source->funcs->contains(source, "ver0102.dat")) {
-        source->funcs->close(source);
+    ARCHIVE *archive;
+    MUST(Archive_Open(&g_Pbg3Format, &file, &g_HeapAllocator, &archive));
+    if (Archive_Find(archive, "ver0102.dat") == nullptr) {
+        Archive_Close(archive);
         return FAIL("%s has no ver0102.dat", name);
     }
-    Vfs_MountSource(m_Vfs, source, priority);
+    Vfs_MountSource(m_Vfs, Archive_ToSource(archive), priority);
     return OK;
 }
 
