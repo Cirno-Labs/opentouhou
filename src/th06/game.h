@@ -2,8 +2,8 @@
 
 #include "core/base/result.h"
 #include "th06/buttons.h"
-#include "th06/chain.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 extern CHAIN g_Chain;

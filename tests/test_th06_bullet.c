@@ -9,7 +9,6 @@
 #include "th06/angle.h"
 #include "th06/anm.h"
 #include "th06/ascii.h"
-#include "th06/chain.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -24,6 +23,7 @@
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 #include <SDL3/SDL.h>

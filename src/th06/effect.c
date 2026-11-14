@@ -1,11 +1,11 @@
 #include "th06/effect.h"
 
-#include "th06/chain.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
 #include "core/math/x87.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 #define M_ANM_SLOT 11

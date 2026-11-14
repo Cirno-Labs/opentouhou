@@ -7,13 +7,14 @@
 #include "th06_data.h"
 
 #include "th06/anm.h"
-#include "th06/chain.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
+
+#include "stg/chain.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>

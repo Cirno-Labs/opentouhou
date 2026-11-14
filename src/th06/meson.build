@@ -16,7 +16,6 @@ th06_lib = static_library(
   'bomb/draw.c',
   'bullet.c',
   'buttons.c',
-  'chain.c',
   'ecl.c',
   'effect.c',
   'enemy.c',

@@ -169,7 +169,7 @@ For commit messages, documentation and pull requests:
 
 - Subject: `module-prefix: imperative description`, at most 50
   characters. The prefix names the module the change touches most,
-  spelled as its path: `core/gfx`, `stg/anm`, `th06/chain`, `docs`,
+  spelled as its path: `core/gfx`, `stg/anm`, `th06/player`, `docs`,
   `tools`. Two modules equally: `core+stg`. Never a change type (`feat`,
   `fix`, `chore`, ...).
 - A blank line, then a body wrapped at 72 characters that says what and

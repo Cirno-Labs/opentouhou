@@ -1,6 +1,5 @@
 #include "th06/screen_effect.h"
 
-#include "th06/chain.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/timer.h"
@@ -10,6 +9,7 @@
 #include "core/gfx.h"
 #include "core/math/x87.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 #define M_POOL_SIZE 16

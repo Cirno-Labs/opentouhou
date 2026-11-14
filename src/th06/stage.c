@@ -1,6 +1,5 @@
 #include "th06/stage.h"
 
-#include "th06/chain.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -10,6 +9,8 @@
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
+
+#include "stg/chain.h"
 
 #include <string.h>
 
