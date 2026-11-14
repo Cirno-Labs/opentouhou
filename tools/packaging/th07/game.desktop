@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Touhou 7: Perfect Cherry Blossom
+Name[ja]=東方妖々夢 ~ Perfect Cherry Blossom
+Comment=Runs the original game's data on opentouhou
+Exec=oth07
+Icon=th07
+Categories=Game;ArcadeGame;
+Terminal=false
