@@ -53,8 +53,10 @@ typedef struct {
 // Adds the update element (priority 10) and the draw element (priority
 // 8). Adding loads the effect sprites of g_GameManager.run.stage.
 RESULT Effect_Register(void);
+
 // Removes both elements and releases the effect sprites.
 void Effect_Remove(void);
+
 // Starts count effects of type at pos in color, in free slots from the
 // one after the last used. Returns the last effect started, or a spare
 // effect that never runs when no slot was free.

@@ -48,6 +48,7 @@ typedef struct {
 extern FAKE_SHELL g_FakeShell;
 
 void FakeShell_Reset(void);
+
 // Sets what Shell_GetDeviceInput writes for device: size bytes of input,
 // the game's input struct. Every device read must be set first.
 void FakeShell_SetDeviceInput(

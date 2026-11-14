@@ -30,6 +30,7 @@ void AudioStream_Stop(AUDIO_STREAM *stream);
 bool AudioStream_IsFinished(const AUDIO_STREAM *stream);
 RESULT AudioStream_SetVolume(AUDIO_STREAM *stream, float volume);
 RESULT AudioStream_SetPan(AUDIO_STREAM *stream, float pan);
+
 // Reports rates that exceed the stream buffering capacity.
 RESULT AudioStream_SetPitch(AUDIO_STREAM *stream, float pitch);
 

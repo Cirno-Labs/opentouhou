@@ -48,17 +48,23 @@ typedef struct {
 } CHAIN;
 
 void Chain_Init(CHAIN *chain);
+
 // Sets callback and arg and clears everything else.
 void Chain_InitElem(
     CHAIN_ELEM *elem, CHAIN_STATUS (*callback)(void *), void *arg);
+
 // Inserts elem by priority, which must be at least 0, then calls added.
 RESULT Chain_AddCalc(CHAIN *chain, CHAIN_ELEM *elem, int16_t priority);
 RESULT Chain_AddDraw(CHAIN *chain, CHAIN_ELEM *elem, int16_t priority);
+
 // Unlinks elem and calls deleted. Does nothing when elem is in no chain.
 void Chain_Remove(CHAIN_ELEM *elem);
+
 // Runs the update chain. A run in which no callback ran also quits.
 CHAIN_RUN Chain_RunCalc(CHAIN *chain);
+
 // Runs the draw chain. CHAIN_RESTART counts as CHAIN_CONTINUE there.
 void Chain_RunDraw(CHAIN *chain);
+
 // Removes every element: the update chain's first, in order.
 void Chain_Release(CHAIN *chain);

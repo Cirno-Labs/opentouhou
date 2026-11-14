@@ -80,9 +80,11 @@ void Sound_Queue(int32_t sound);
 // drops a fade asked for earlier in the tick. A path that does not fit in
 // SOUND_PATH_SIZE is ignored.
 void Sound_PlayMusic(const char *path);
+
 // Asks for the music to stop, and drops a fade asked for earlier in the
 // tick.
 void Sound_StopMusic(void);
+
 // Asks for the music to fade out over seconds and then stop. After
 // Sound_StopMusic in the same tick, does nothing.
 void Sound_FadeOutMusic(float seconds);

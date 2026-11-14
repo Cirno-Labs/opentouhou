@@ -26,13 +26,16 @@ RESULT Anm_LoadTextureAlpha(
 RESULT Anm_CreateTexture(
     int32_t slot, int32_t width, int32_t height, ANM_TEXTURE_FORMAT format);
 void Anm_ReleaseTexture(int32_t slot);
+
 // Returns the texture without transferring ownership.
 GFX_TEXTURE *Anm_GetTexture(int32_t slot);
+
 // Replaces a texture rectangle with pixels quantized to its loaded format.
 RESULT Anm_UpdateTexture(int32_t slot, GFX_RECT rectangle, const IMAGE *image);
 
 RESULT Anm_LoadSurface(int32_t surface, const char *path);
 void Anm_ReleaseSurface(int32_t surface);
+
 // Draw the surface, or rectangle of it, at x, y of the screen, unblended,
 // as the original's CopyRects does.
 void Anm_CopySurfaceToBackBuffer(
@@ -44,7 +47,9 @@ void Anm_CopySurfaceRectToBackBuffer(
 // drawn so far. Sprites that cover the whole texture show the whole
 // rectangle, as the original's stretching copy does.
 RESULT Anm_CopyBackBufferToTexture(int32_t slot, GFX_RECT rectangle);
+
 // Requests one copy after the current draw and update chains finish.
 void Anm_SetPendingCopy(int32_t slot, GFX_RECT rectangle);
+
 // Makes the requested copy.
 RESULT Anm_DoPendingCopy(void);

@@ -27,20 +27,26 @@ extern const char *const g_FilesArchives[FILES_ARCHIVE_COUNT];
 // in more than one archive comes from the earliest in that order. An
 // archive that is missing, or that has no ver0102.dat, is a failure.
 RESULT Files_Init(const char *data_dir);
+
 // Mounts the files of patches above the archives, so that a file of a
 // patch replaces the archived file of the same name. The stack must stay
 // open until Files_Shutdown. A nullptr stack mounts nothing.
 void Files_SetPatches(const PATCH_STACK *patches);
+
 // Releases what Files_Init mounted.
 void Files_Shutdown(void);
+
 // Opens path in memory, from the archives or else the data directory.
 // The archives find a file by the last component of its path.
 RESULT Files_Load(const char *path, READER *out);
+
 // Opens path as Files_Load does, but reads a file of the data directory
 // from the disk as the reader reaches it, so it is never all in memory.
 RESULT Files_Stream(const char *path, READER *out);
+
 // Returns the merged jdiff of path from the patches, from allocator, or
 // nullptr when no patch has one.
 JSON_VALUE *Files_LoadDiff(const char *path, const ALLOCATOR *allocator);
+
 // Returns whether a patch replaces path or has a jdiff for it.
 bool Files_IsPatched(const char *path);
