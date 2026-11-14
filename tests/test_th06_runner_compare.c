@@ -38,7 +38,7 @@ static void M_WriteCase(
 {
     *fixture = (FIXTURE) {};
     WRITER output;
-    Writer_OpenBuffer(&output, &g_HeapAllocator);
+    Writer_OpenBuffer(&output, &g_HeapAllocator, nullptr);
     const CASE_HEADER header = {
         .game_id = "th06",
         .info = "synthetic runner test",
@@ -59,7 +59,7 @@ static RESULT M_Open(
     FIXTURE *const fixture, const RUNNER_OPTIONS *const options)
 {
     Arena_Init(&fixture->arena, "runner comparison test", 1048576);
-    Reader_OpenBuffer(&fixture->input, fixture->bytes, fixture->size);
+    Reader_OpenBuffer(&fixture->input, fixture->bytes, fixture->size, nullptr);
     MUST(Case_OpenReader(&fixture->input, &fixture->arena, &fixture->reader));
     return RunnerCompare_Open(fixture->reader, options, &fixture->compare);
 }

@@ -172,7 +172,7 @@ static void M_Open(uint8_t *const data, const int32_t size)
 static SCORE_FILE M_Read(const M_BYTES *const bytes)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, bytes->data, (size_t)bytes->size);
+    Reader_OpenBuffer(&reader, bytes->data, (size_t)bytes->size, nullptr);
     SCORE_FILE file;
     CHECK(Result_Log(ScoreFile_Read(&reader, &file), LOG_LEVEL_ERROR));
     return file;
@@ -181,7 +181,7 @@ static SCORE_FILE M_Read(const M_BYTES *const bytes)
 static bool M_ReadFails(const M_BYTES *const bytes)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, bytes->data, (size_t)bytes->size);
+    Reader_OpenBuffer(&reader, bytes->data, (size_t)bytes->size, nullptr);
     SCORE_FILE file;
     const RESULT result = ScoreFile_Read(&reader, &file);
     const bool failed = !IS_OK(result);
@@ -218,7 +218,7 @@ static uint8_t *M_Write(
     size_t *const size)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const SCORE_RECORDS records = M_Records();
     ScoreFile_Write(&writer, previous, m_Lists, &records, key, random);
     uint8_t *const data = Writer_TakeBuffer(&writer, size);

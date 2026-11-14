@@ -60,7 +60,7 @@ static RESULT M_Load(M_REPLAY *const replay)
     const uint8_t *const data = Replay_FindFile(replay->path, &size);
     FAIL_IF(data == nullptr, "no replay is kept for %s", replay->path);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     MUST(Replay_Read(&reader, &replay->file), "%s", replay->path);
     for (int32_t i = 1; i <= 7; i++) {
         if (replay->file->stages[i] != nullptr) {

@@ -26,7 +26,7 @@ static bool M_ReadsAs(READER *const reader, const char *const expected)
     return matches && Result_Ignore(Reader_Result(reader));
 }
 
-TEST(nested_mixed_case_files_open_in_both_modes)
+TEST(nested_mixed_case_files_open_in_both_modes_named_by_path)
 {
     char *const directory = TestDir_Prepare("nested");
     char *const sub = TestDir_Join(directory, "BGM");
@@ -47,12 +47,14 @@ TEST(nested_mixed_case_files_open_in_both_modes)
     READER reader;
     CHECK(Result_Log(
         Vfs_Open(vfs, "title00.jpg", VFS_IN_MEMORY, &reader), LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(Reader_GetName(&reader), top_file);
     CHECK(M_ReadsAs(&reader, "a title"));
     Reader_Close(&reader);
 
     CHECK(Result_Log(
         Vfs_Open(vfs, "BGM/TH06_01.WAV", VFS_STREAM, &reader),
         LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(Reader_GetName(&reader), nested_file);
     CHECK(M_ReadsAs(&reader, "a song"));
     Reader_Close(&reader);
 

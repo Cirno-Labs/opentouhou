@@ -13,7 +13,6 @@
 
 struct READER_FILE {
     SDL_IOStream *stream;
-    char *path;
     char *error;
     size_t size;
     size_t buffer_start;
@@ -82,17 +81,17 @@ static uint64_t M_Absolute(const READER *const reader, const uint64_t position)
     return offset;
 }
 
-// Returns where the part of path to keep starts, so that " in ...<part>"
+// Returns where the part of name to keep starts, so that " in ...<part>"
 // fits in capacity bytes with its terminator: at a '/' when one leaves
 // enough room, else at the first whole UTF-8 character that does.
-static const char *M_PathTail(const char *const path, const size_t capacity)
+static const char *M_PathTail(const char *const name, const size_t capacity)
 {
     const size_t fixed = strlen(" in ...") + 1;
-    const size_t length = strlen(path);
+    const size_t length = strlen(name);
     if (capacity <= fixed) {
-        return path + length;
+        return name + length;
     }
-    const char *tail = path + length - MIN(length, capacity - fixed);
+    const char *tail = name + length - MIN(length, capacity - fixed);
     for (const char *slash = tail; *slash != '\0'; slash++) {
         if (*slash == '/') {
             return slash;
@@ -114,18 +113,18 @@ static void M_Fail(READER *const reader, const char *const fmt, ...)
     va_start(args, fmt);
     vsnprintf(reader->error, sizeof(reader->error), fmt, args);
     va_end(args);
-    if (reader->file == nullptr) {
+    if (reader->name == nullptr) {
         return;
     }
 
-    const char *const path = reader->file->path;
+    const char *const name = reader->name;
     const size_t used = strlen(reader->error);
     const size_t capacity = sizeof(reader->error) - used;
     char *const end = reader->error + used;
-    if (strlen(" in ") + strlen(path) < capacity) {
-        snprintf(end, capacity, " in %s", path);
+    if (strlen(" in ") + strlen(name) < capacity) {
+        snprintf(end, capacity, " in %s", name);
     } else {
-        snprintf(end, capacity, " in ...%s", M_PathTail(path, capacity));
+        snprintf(end, capacity, " in ...%s", M_PathTail(name, capacity));
     }
 }
 
@@ -188,26 +187,29 @@ static uint64_t M_ReadLittleEndian(READER *const reader, const size_t size)
 }
 
 void Reader_OpenBuffer(
-    READER *const reader, const void *const data, const size_t size)
+    READER *const reader, const void *const data, const size_t size,
+    const char *const name)
 {
     ASSERT(data != nullptr || size == 0);
     *reader = (READER) {
         .data = data != nullptr ? data : m_NoData,
         .size = size,
+        .name = name != nullptr ? Str_Dup(name) : nullptr,
+        .owns_name = name != nullptr,
     };
 }
 
 void Reader_OpenOwnedBuffer(
     READER *const reader, void *const data, const size_t size,
-    const ALLOCATOR *const allocator)
+    const ALLOCATOR *const allocator, const char *const name)
 {
-    Reader_OpenBuffer(reader, data, size);
+    Reader_OpenBuffer(reader, data, size, name);
     reader->buffer_allocator = allocator;
 }
 
 RESULT Reader_OpenFile(READER *const reader, const char *const path)
 {
-    Reader_OpenBuffer(reader, nullptr, 0);
+    Reader_OpenBuffer(reader, nullptr, 0, nullptr);
     char *const system_path = IoBackend_SystemPath(path);
     SDL_IOStream *const stream = SDL_IOFromFile(system_path, "rb");
     Mem_Free(system_path);
@@ -223,37 +225,48 @@ RESULT Reader_OpenFile(READER *const reader, const char *const path)
 
     READER_FILE *const file = Mem_AllocZ(sizeof(*file));
     file->stream = stream;
-    file->path = Str_Dup(path);
     file->size = (size_t)size;
     reader->file = file;
     reader->owns_file = true;
+    reader->name = Str_Dup(path);
+    reader->owns_name = true;
     reader->size = file->size;
     return OK;
 }
 
 void Reader_Close(READER *const reader)
 {
+    if (!reader->owns_file && reader->buffer_allocator == nullptr
+        && !reader->owns_name) {
+        return;
+    }
     if (reader->owns_file) {
         READER_FILE *const file = reader->file;
         SDL_CloseIO(file->stream);
-        Mem_Free(file->path);
         Mem_Free(file->error);
         Mem_Free(file);
-    } else if (reader->buffer_allocator != nullptr) {
-        if (reader->data != m_NoData) {
-            Allocator_Free(
-                reader->buffer_allocator, (void *)reader->data, reader->size);
-        }
-    } else {
-        return;
+    } else if (
+        reader->buffer_allocator != nullptr && reader->data != m_NoData) {
+        Allocator_Free(
+            reader->buffer_allocator, (void *)reader->data, reader->size);
+    }
+    if (reader->owns_name) {
+        Mem_Free(reader->name);
     }
     reader->data = m_NoData;
     reader->file = nullptr;
     reader->owns_file = false;
     reader->buffer_allocator = nullptr;
+    reader->name = nullptr;
+    reader->owns_name = false;
     reader->origin = 0;
     reader->size = 0;
     reader->position = 0;
+}
+
+const char *Reader_GetName(const READER *const reader)
+{
+    return reader->name;
 }
 
 bool Reader_Failed(const READER *const reader)
@@ -409,12 +422,14 @@ READER Reader_Slice(READER *const reader, const size_t size)
         slice = *reader;
         slice.owns_file = false;
         slice.buffer_allocator = nullptr;
+        slice.owns_name = false;
         slice.size = 0;
         slice.position = 0;
         return slice;
     }
     slice.owns_file = false;
     slice.buffer_allocator = nullptr;
+    slice.owns_name = false;
     slice.origin = offset;
     slice.size = size;
     slice.position = 0;

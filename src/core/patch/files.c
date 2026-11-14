@@ -86,7 +86,7 @@ static RESULT M_Open(
     const RESULT result = Reader_Result(&file);
     Reader_Close(&file);
     MUST(result, "%s", disk_path);
-    Reader_OpenOwnedBuffer(out, data, size, source->allocator);
+    Reader_OpenOwnedBuffer(out, data, size, source->allocator, disk_path);
     return OK;
 }
 

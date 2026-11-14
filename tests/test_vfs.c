@@ -44,12 +44,12 @@ static RESULT M_Open(
     const FAKE_ENTRY *const entry = M_FindEntry(fake, path);
     FAIL_IF(entry == nullptr, "%s: not found in %s", path, source->name);
     if (mode == VFS_STREAM && entry->can_stream) {
-        Reader_OpenBuffer(out, entry->data, entry->size);
+        Reader_OpenBuffer(out, entry->data, entry->size, nullptr);
         return OK;
     }
     void *const copy = Allocator_Alloc(fake->allocator, entry->size);
     memcpy(copy, entry->data, entry->size);
-    Reader_OpenOwnedBuffer(out, copy, entry->size, fake->allocator);
+    Reader_OpenOwnedBuffer(out, copy, entry->size, fake->allocator, nullptr);
     return OK;
 }
 
@@ -198,7 +198,7 @@ static RESULT M_UppercaseHook(
     }
     FAIL_IF(!IS_OK(Reader_Result(file)), "%s: cannot read for the hook", path);
     Reader_Close(file);
-    Reader_OpenOwnedBuffer(file, upper, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(file, upper, size, &g_HeapAllocator, nullptr);
     return OK;
 }
 

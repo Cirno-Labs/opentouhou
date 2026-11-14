@@ -13,7 +13,7 @@
 static char *M_WriteToBuffer(const INI *const ini)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Ini_Write(ini, &writer);
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);

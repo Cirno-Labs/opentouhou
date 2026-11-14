@@ -14,11 +14,10 @@
 
 // Holds the open temporary file of a file writer, and the block of it that
 // is kept in memory: the bytes from buffer_start, which are written to the
-// file before another block is started. path names the file in messages,
-// and the system paths reach the file system.
+// file before another block is started. The system paths reach the file
+// system.
 struct WRITER_FILE {
     SDL_IOStream *stream;
-    char *path;
     char *system_path;
     char *system_temp_path;
     char *error;
@@ -37,7 +36,7 @@ static void M_Fail(WRITER *const writer, const char *const action)
     WRITER_FILE *const file = writer->file;
     writer->failed = true;
     file->error =
-        Str_Format("Cannot %s %s: %s", action, file->path, SDL_GetError());
+        Str_Format("Cannot %s %s: %s", action, writer->name, SDL_GetError());
 }
 
 static bool M_WriteStream(
@@ -118,7 +117,6 @@ static RESULT M_CloseFile(WRITER *const writer)
         result = FAIL("%s", file->error);
         SDL_RemovePath(file->system_temp_path);
     }
-    Mem_Free(file->path);
     Mem_Free(file->system_path);
     Mem_Free(file->system_temp_path);
     Mem_Free(file->error);
@@ -170,9 +168,14 @@ static void M_WriteLittleEndian(
     M_Write(writer, bytes, size);
 }
 
-void Writer_OpenBuffer(WRITER *const writer, const ALLOCATOR *const allocator)
+void Writer_OpenBuffer(
+    WRITER *const writer, const ALLOCATOR *const allocator,
+    const char *const name)
 {
-    *writer = (WRITER) { .allocator = allocator };
+    *writer = (WRITER) {
+        .allocator = allocator,
+        .name = name != nullptr ? Str_Dup(name) : nullptr,
+    };
 }
 
 RESULT Writer_OpenFile(WRITER *const writer, const char *const path)
@@ -190,10 +193,10 @@ RESULT Writer_OpenFile(WRITER *const writer, const char *const path)
     }
     WRITER_FILE *const file = Mem_AllocZ(sizeof(*file));
     file->stream = stream;
-    file->path = Str_Dup(path);
     file->system_path = system_path;
     file->system_temp_path = system_temp_path;
     writer->file = file;
+    writer->name = Str_Dup(path);
     return OK;
 }
 
@@ -210,7 +213,7 @@ uint8_t *Writer_TakeBuffer(WRITER *const writer, size_t *const size)
             Allocator_Realloc(allocator, data, writer->capacity, writer->size);
     }
     *size = writer->size;
-    Writer_OpenBuffer(writer, allocator);
+    *writer = (WRITER) { .allocator = allocator, .name = writer->name };
     return data;
 }
 
@@ -222,8 +225,14 @@ RESULT Writer_Close(WRITER *const writer)
     } else if (writer->allocator != nullptr) {
         Allocator_Free(writer->allocator, writer->data, writer->capacity);
     }
+    Mem_Free(writer->name);
     *writer = (WRITER) {};
     return result;
+}
+
+const char *Writer_GetName(const WRITER *const writer)
+{
+    return writer->name;
 }
 
 bool Writer_Failed(const WRITER *const writer)

@@ -1262,7 +1262,7 @@ static void M_WriteTextImage(
         image.pixels[i * 4 + 3] = 255;
     }
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodePng(&image, &writer);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);

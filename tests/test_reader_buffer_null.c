@@ -5,6 +5,6 @@
 int main(void)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, nullptr, 4);
+    Reader_OpenBuffer(&reader, nullptr, 4, nullptr);
     return EXIT_SUCCESS;
 }

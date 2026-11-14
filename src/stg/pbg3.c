@@ -239,7 +239,8 @@ static RESULT M_Open(
     FAIL_IF(entry == nullptr, "%s: %s: not found", pbg3->name, path);
     void *data;
     MUST(M_Decode(pbg3, entry, &data), "%s: %s", pbg3->name, path);
-    Reader_OpenOwnedBuffer(out, data, entry->decoded_size, pbg3->allocator);
+    Reader_OpenOwnedBuffer(
+        out, data, entry->decoded_size, pbg3->allocator, nullptr);
     return OK;
 }
 

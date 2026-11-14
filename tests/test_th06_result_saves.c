@@ -38,7 +38,7 @@ static uint8_t *M_ScoreBytes(const uint32_t score, size_t *const size)
     ScoreList_Insert(&lists[1][2], &entry);
     const SCORE_RECORDS records = { cards, clears, practice };
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     ScoreFile_Write(&writer, &empty, lists, &records, 0x21, 0x43);
     uint8_t *const data = Writer_TakeBuffer(&writer, size);
     Result_Ignore(Writer_Close(&writer));
@@ -64,7 +64,7 @@ static uint8_t *M_ReplayBytes(size_t *const size)
     REPLAY_FORMAT_SAVE prepared;
     CHECK(Result_Log(ReplayFormat_Prepare(&info, &prepared), LOG_LEVEL_ERROR));
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const uint8_t random[4] = { 70, 1, 2, 3 };
     CHECK(Result_Log(
         ReplayFormat_Write(&writer, &file, &prepared, random),

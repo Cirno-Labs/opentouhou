@@ -18,6 +18,11 @@
 // Writer_Close renames it over the target. A crash or a failure therefore
 // leaves the old file or the new one, never a part of the new one.
 //
+// Every writer may have a name, which its failure messages use. A file writer
+// is named by its target path, and a buffer writer by the name it is opened
+// with, or by none when that name is nullptr. The writer keeps its own copy
+// of the name, which Writer_Close releases.
+//
 // The first write to a file that fails sets the error flag and records the
 // reason. After that, every write does nothing, and Writer_Close removes
 // the temporary file and returns the failure. A buffer writer never fails.
@@ -50,6 +55,7 @@ typedef struct {
     size_t position;
     const ALLOCATOR *allocator;
     WRITER_FILE *file;
+    char *name;
     bool failed;
 } WRITER;
 
@@ -59,14 +65,16 @@ typedef struct {
 // the writer is closed.
 RESULT Writer_OpenFile(WRITER *writer, const char *path);
 
-// Opens a writer into a growable buffer that the writer owns, with its
-// memory from allocator. It allocates nothing until the first write.
-void Writer_OpenBuffer(WRITER *writer, const ALLOCATOR *allocator);
+// Opens a writer named name into a growable buffer that the writer owns,
+// with its memory from allocator. It allocates nothing from allocator until
+// the first write.
+void Writer_OpenBuffer(
+    WRITER *writer, const ALLOCATOR *allocator, const char *name);
 
 // Hands the bytes of a buffer writer to the caller, and sets *size to their
 // number. Allocator_Free(allocator, data, *size), with the allocator of the
 // writer, releases them. The writer is left as an empty buffer writer with
-// the same allocator.
+// the same allocator and name.
 uint8_t *Writer_TakeBuffer(WRITER *writer, size_t *size);
 
 // Closes a writer. For a file writer, writes the bytes kept in memory,
@@ -77,6 +85,9 @@ uint8_t *Writer_TakeBuffer(WRITER *writer, size_t *size);
 // did not take, and returns OK. Closing a closed writer does nothing and
 // returns OK.
 RESULT Writer_Close(WRITER *writer);
+
+// Returns the writer's name, or nullptr when it has none.
+const char *Writer_GetName(const WRITER *writer);
 
 // Returns whether the error flag is set.
 bool Writer_Failed(const WRITER *writer);

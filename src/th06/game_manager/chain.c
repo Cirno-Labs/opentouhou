@@ -45,7 +45,7 @@ static void M_InitSpellCard(SPELL_CARD_RECORD *const card, const uint16_t index)
         bytes[i + 1] = (uint8_t)(value >> 8);
     }
     READER reader;
-    Reader_OpenBuffer(&reader, bytes, sizeof(bytes));
+    Reader_OpenBuffer(&reader, bytes, sizeof(bytes), nullptr);
     Reader_Skip(&reader, 9);
     Reader_ReadBytes(
         &reader, card->header.reserved, sizeof(card->header.reserved));

@@ -23,7 +23,7 @@ TEST(decode_rejects_unrecognized_data)
 {
     const uint8_t data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     READER reader;
-    Reader_OpenBuffer(&reader, data, sizeof(data));
+    Reader_OpenBuffer(&reader, data, sizeof(data), nullptr);
     IMAGE image;
     const RESULT result = Image_Decode(&reader, &g_HeapAllocator, &image);
     CHECK(!IS_OK(result));
@@ -37,14 +37,14 @@ TEST(png_round_trip_is_exact)
 {
     IMAGE image = M_MakeGradient(6, 5);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodePng(&image, &writer);
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     Result_Ignore(Writer_Close(&writer));
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     IMAGE decoded;
     const RESULT result = Image_Decode(&reader, &g_HeapAllocator, &decoded);
     CHECK(IS_OK(result));
@@ -63,7 +63,7 @@ TEST(jpeg_round_trip_decodes)
 {
     IMAGE image = M_MakeGradient(8, 8);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodeJpeg(&image, 85, &writer);
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
@@ -71,7 +71,7 @@ TEST(jpeg_round_trip_decodes)
     CHECK(size >= 2 && data[0] == 0xff && data[1] == 0xd8);
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     IMAGE decoded;
     const RESULT result = Image_Decode(&reader, &g_HeapAllocator, &decoded);
     CHECK(IS_OK(result));

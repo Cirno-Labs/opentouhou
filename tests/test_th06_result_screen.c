@@ -102,7 +102,7 @@ static void M_WriteData(const char *const case_name)
     M_WriteAnm("data/result03.anm", 1);
     IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodePng(&image, &writer);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);

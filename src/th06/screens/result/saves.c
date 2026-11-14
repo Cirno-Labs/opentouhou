@@ -99,7 +99,7 @@ static void M_ReadReplay(
 {
     *out = (SAVED_REPLAY) {};
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     REPLAY_FILE *file = nullptr;
     if (!Result_Ignore(Replay_Read(&reader, &file))) {
         return;
@@ -385,7 +385,7 @@ const SCORE_FILE *ResultSaves_GetScoreFile(void)
 void ResultSaves_PutScoreFile(uint8_t *const data, const size_t size)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     M_LoadScore(&reader);
     M_Queue(Str_Dup(M_SCORE_PATH), data, size);
 }
