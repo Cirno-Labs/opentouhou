@@ -6,32 +6,13 @@
 #include <stddef.h>
 
 static const INPUT_ACTION m_Actions[] = {
-    INPUT_BUTTON(TH07_INPUT, shoot, "z", "south", "joy_button_0"),
-    INPUT_BUTTON(TH07_INPUT, bomb, "x", "east", "joy_button_1"),
-    INPUT_BUTTON(
-        TH07_INPUT, focus, "left_shift, right_shift", "west", "joy_button_2"),
-    INPUT_BUTTON(TH07_INPUT, menu, "escape", "start", "joy_button_3"),
-    INPUT_BUTTON(
-        TH07_INPUT, up, "up, keypad_8, keypad_7, keypad_9",
-        "dpad_up, left_stick_up", "joy_hat_up, joy_axis_1-"),
-    INPUT_BUTTON(
-        TH07_INPUT, down, "down, keypad_2, keypad_1, keypad_3",
-        "dpad_down, left_stick_down", "joy_hat_down, joy_axis_1+"),
-    INPUT_BUTTON(
-        TH07_INPUT, left, "left, keypad_4, keypad_7, keypad_1",
-        "dpad_left, left_stick_left", "joy_hat_left, joy_axis_0-"),
-    INPUT_BUTTON(
-        TH07_INPUT, right, "right, keypad_6, keypad_9, keypad_3",
-        "dpad_right, left_stick_right", "joy_hat_right, joy_axis_0+"),
-    INPUT_BUTTON(
-        TH07_INPUT, skip, "left_ctrl, right_ctrl", "north", "joy_button_4"),
-    INPUT_BUTTON(TH07_INPUT, quit, "q", nullptr, nullptr),
-    INPUT_BUTTON(TH07_INPUT, unlock_end, "s", nullptr, nullptr),
-    INPUT_BUTTON(TH07_INPUT, unlock_start, "home", nullptr, nullptr),
-    INPUT_BUTTON(TH07_INPUT, confirm, "return", nullptr, nullptr),
-    INPUT_BUTTON(TH07_INPUT, cheat, "d", nullptr, "joy_button_7"),
-    INPUT_BUTTON(TH07_INPUT, retry, "r", nullptr, nullptr),
-    INPUT_STICK(TH07_INPUT, move, "left_stick", "joy_axis_0, joy_axis_1"),
+#define M_BUTTON(field_, bit_, keyboard_, gamepad_, joystick_)                 \
+    INPUT_BUTTON(TH07_INPUT, field_, keyboard_, gamepad_, joystick_),
+#define M_STICK(field_, gamepad_, joystick_)                                   \
+    INPUT_STICK(TH07_INPUT, field_, gamepad_, joystick_),
+    TH07_ACTIONS(M_BUTTON, M_STICK)
+#undef M_BUTTON
+#undef M_STICK
 };
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH07_INPUT, m_Actions, 1);
 
@@ -40,22 +21,13 @@ typedef struct {
     uint16_t bit;
 } BUTTON_BIT;
 
+// Maps each button to its bit in the button word, from TH07_ACTIONS.
 static const BUTTON_BIT m_Bits[] = {
-    { offsetof(TH07_INPUT, shoot), 0x1 },
-    { offsetof(TH07_INPUT, bomb), 0x2 },
-    { offsetof(TH07_INPUT, focus), 0x4 },
-    { offsetof(TH07_INPUT, menu), 0x8 },
-    { offsetof(TH07_INPUT, up), 0x10 },
-    { offsetof(TH07_INPUT, down), 0x20 },
-    { offsetof(TH07_INPUT, left), 0x40 },
-    { offsetof(TH07_INPUT, right), 0x80 },
-    { offsetof(TH07_INPUT, skip), 0x100 },
-    { offsetof(TH07_INPUT, quit), 0x200 },
-    { offsetof(TH07_INPUT, unlock_end), 0x400 },
-    { offsetof(TH07_INPUT, unlock_start), 0x800 },
-    { offsetof(TH07_INPUT, confirm), 0x1000 },
-    { offsetof(TH07_INPUT, cheat), 0x2000 },
-    { offsetof(TH07_INPUT, retry), 0x4000 },
+#define M_BIT(field_, bit_, ...) { offsetof(TH07_INPUT, field_), bit_ },
+#define M_NO_BIT(...)
+    TH07_ACTIONS(M_BIT, M_NO_BIT)
+#undef M_BIT
+#undef M_NO_BIT
 };
 
 static void M_Derive(BUTTONS *const buttons)
