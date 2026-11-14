@@ -7,36 +7,17 @@
 #include <string.h>
 
 enum {
-    M_ACTION_SHOOT = 0,
-    M_ACTION_FOCUS = 2,
     M_MAX_BINDINGS = 16,
 };
 
 static const INPUT_ACTION m_Actions[] = {
-    INPUT_BUTTON(TH06_INPUT, shoot, "z", "south", "joy_button_0"),
-    INPUT_BUTTON(TH06_INPUT, bomb, "x", "east", "joy_button_1"),
-    INPUT_BUTTON(
-        TH06_INPUT, focus, "left_shift, right_shift", "west", "joy_button_2"),
-    INPUT_BUTTON(TH06_INPUT, menu, "escape", "start", "joy_button_3"),
-    INPUT_BUTTON(
-        TH06_INPUT, up, "up, keypad_8, keypad_7, keypad_9",
-        "dpad_up, left_stick_up", "joy_hat_up, joy_axis_1-"),
-    INPUT_BUTTON(
-        TH06_INPUT, down, "down, keypad_2, keypad_1, keypad_3",
-        "dpad_down, left_stick_down", "joy_hat_down, joy_axis_1+"),
-    INPUT_BUTTON(
-        TH06_INPUT, left, "left, keypad_4, keypad_7, keypad_1",
-        "dpad_left, left_stick_left", "joy_hat_left, joy_axis_0-"),
-    INPUT_BUTTON(
-        TH06_INPUT, right, "right, keypad_6, keypad_9, keypad_3",
-        "dpad_right, left_stick_right", "joy_hat_right, joy_axis_0+"),
-    INPUT_BUTTON(
-        TH06_INPUT, skip, "left_ctrl, right_ctrl", "north", "joy_button_4"),
-    INPUT_BUTTON(TH06_INPUT, quit, "q", nullptr, nullptr),
-    INPUT_BUTTON(TH06_INPUT, unlock_end, "s", nullptr, nullptr),
-    INPUT_BUTTON(TH06_INPUT, unlock_start, "home", nullptr, nullptr),
-    INPUT_BUTTON(TH06_INPUT, confirm, "return", nullptr, nullptr),
-    INPUT_STICK(TH06_INPUT, move, "left_stick", "joy_axis_0, joy_axis_1"),
+#define M_BUTTON(field_, bit_, keyboard_, gamepad_, joystick_)                 \
+    INPUT_BUTTON(TH06_INPUT, field_, keyboard_, gamepad_, joystick_),
+#define M_STICK(field_, gamepad_, joystick_)                                   \
+    INPUT_STICK(TH06_INPUT, field_, gamepad_, joystick_),
+    TH06_ACTIONS(M_BUTTON, M_STICK)
+#undef M_BUTTON
+#undef M_STICK
 };
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH06_INPUT, m_Actions, 1);
 
@@ -45,21 +26,13 @@ typedef struct {
     uint16_t bit;
 } BUTTON_BIT;
 
-// The only place the button word's bit layout appears.
+// Maps each button to its bit in the button word, from TH06_ACTIONS.
 static const BUTTON_BIT m_Bits[] = {
-    { offsetof(TH06_INPUT, shoot), 0x1 },
-    { offsetof(TH06_INPUT, bomb), 0x2 },
-    { offsetof(TH06_INPUT, focus), 0x4 },
-    { offsetof(TH06_INPUT, menu), 0x8 },
-    { offsetof(TH06_INPUT, up), 0x10 },
-    { offsetof(TH06_INPUT, down), 0x20 },
-    { offsetof(TH06_INPUT, left), 0x40 },
-    { offsetof(TH06_INPUT, right), 0x80 },
-    { offsetof(TH06_INPUT, skip), 0x100 },
-    { offsetof(TH06_INPUT, quit), 0x200 },
-    { offsetof(TH06_INPUT, unlock_end), 0x400 },
-    { offsetof(TH06_INPUT, unlock_start), 0x800 },
-    { offsetof(TH06_INPUT, confirm), 0x1000 },
+#define M_BIT(field_, bit_, ...) { offsetof(TH06_INPUT, field_), bit_ },
+#define M_NO_BIT(...)
+    TH06_ACTIONS(M_BIT, M_NO_BIT)
+#undef M_BIT
+#undef M_NO_BIT
 };
 
 static void M_Update(BUTTONS *const buttons)
@@ -121,10 +94,10 @@ void Buttons_ReadSharedFocus(BUTTONS *const buttons)
     INPUT_BINDING shoot[M_MAX_BINDINGS];
     INPUT_BINDING focus[M_MAX_BINDINGS];
     const size_t shoot_count =
-        MIN(Shell_GetBindings(M_ACTION_SHOOT, shoot, M_MAX_BINDINGS),
+        MIN(Shell_GetBindings(TH06_ACTION_shoot, shoot, M_MAX_BINDINGS),
             (size_t)M_MAX_BINDINGS);
     const size_t focus_count =
-        MIN(Shell_GetBindings(M_ACTION_FOCUS, focus, M_MAX_BINDINGS),
+        MIN(Shell_GetBindings(TH06_ACTION_focus, focus, M_MAX_BINDINGS),
             (size_t)M_MAX_BINDINGS);
     buttons->shared_focus = false;
     for (size_t i = 0; i < focus_count; i++) {
