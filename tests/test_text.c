@@ -105,7 +105,7 @@ TEST(invalid_font_and_size)
     CHECK(font == nullptr);
     READER reader;
     const uint8_t invalid[] = { 1, 2, 3, 4 };
-    Reader_OpenBuffer(&reader, invalid, sizeof(invalid));
+    Reader_OpenBuffer(&reader, invalid, sizeof(invalid), nullptr);
     CHECK(!Result_Ignore(TextFont_Load(&reader, 15, &font)));
     CHECK(font == nullptr);
     Reader_Close(&reader);
@@ -211,7 +211,7 @@ static TEXT_FONT *M_LoadWithCell(
     }
     CHECK(found);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     TEXT_FONT *font = nullptr;
     CHECK(IS_OK(TextFont_Load(&reader, pixel_height, &font)));
     Reader_Close(&reader);

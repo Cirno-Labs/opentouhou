@@ -70,7 +70,7 @@ static void M_WriteWave(
     int16_t (*const value)(uint32_t))
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteBytes(&writer, "RIFF", 4);
     Writer_WriteU32(&writer, 36 + frames * 4);
     Writer_WriteBytes(&writer, "WAVEfmt ", 8);

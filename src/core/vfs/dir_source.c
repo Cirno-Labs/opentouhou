@@ -119,7 +119,7 @@ static RESULT M_ReadWhole(
     if (!IS_OK(result)) {
         return result;
     }
-    Reader_OpenOwnedBuffer(out, data, size, allocator);
+    Reader_OpenOwnedBuffer(out, data, size, allocator, real_path);
     return OK;
 }
 

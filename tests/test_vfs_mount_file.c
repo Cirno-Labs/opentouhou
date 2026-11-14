@@ -26,7 +26,7 @@ static RESULT M_Open(
     [[maybe_unused]] const VFS_MODE mode, READER *const out)
 {
     const FAKE_SOURCE *const fake = (const FAKE_SOURCE *)source;
-    Reader_OpenBuffer(out, fake->data, fake->size);
+    Reader_OpenBuffer(out, fake->data, fake->size, nullptr);
     return OK;
 }
 

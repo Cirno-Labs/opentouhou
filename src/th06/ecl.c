@@ -2249,7 +2249,7 @@ static RESULT M_ReadTimelineEntry(
         reader, bytes,
         MIN((size_t)size - M_TIMELINE_HEADER_SIZE, sizeof(bytes)));
     READER args;
-    Reader_OpenBuffer(&args, bytes, sizeof(bytes));
+    Reader_OpenBuffer(&args, bytes, sizeof(bytes), nullptr);
     entry->args.spawn.pos.x = Reader_ReadF32(&args);
     entry->args.spawn.pos.y = Reader_ReadF32(&args);
     entry->args.spawn.pos.z = Reader_ReadF32(&args);

@@ -17,7 +17,7 @@ static READER M_Wave(void)
 {
     const uint32_t frames = 4096;
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteBytes(&writer, "RIFF", 4);
     Writer_WriteU32(&writer, 36 + frames * 4);
     Writer_WriteBytes(&writer, "WAVEfmt ", 8);
@@ -38,7 +38,7 @@ static READER M_Wave(void)
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     M_CheckResult(Writer_Close(&writer));
     READER reader;
-    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
     return reader;
 }
 

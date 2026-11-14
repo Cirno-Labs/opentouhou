@@ -136,7 +136,7 @@ static void M_WriteData(const char *const case_name)
     }
     IMAGE image = Image_Create(640, 960, &g_HeapAllocator);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodePng(&image, &writer);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
