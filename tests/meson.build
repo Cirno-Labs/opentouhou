@@ -951,16 +951,22 @@ test(
   suite: 'unit',
 )
 
-foreach anm_test : ['draw']
+# The text test runs against IPAGothic, and again against MS Gothic where
+# $OPENTOUHOU_MSGOTHIC names a msgothic.ttc.
+foreach anm_test : [
+  ['th07/anm/draw', 'test_th07_anm_draw', 'test_th07_anm_draw.c', []],
+  ['th07/anm/text', 'test_th07_anm_text', 'test_th07_anm_text.c', []],
+  ['th07/anm/text/ms_gothic', 'test_th07_anm_text_ms', 'test_th07_anm_text.c', ['-DTEST_MS_GOTHIC']],
+]
   test(
-    'th07/anm/' + anm_test,
+    anm_test[0],
     executable(
-      'test_th07_anm_' + anm_test,
-      'test_th07_anm_' + anm_test + '.c',
+      anm_test[1],
+      anm_test[2],
       'th07_scene_stubs.c',
       shell_fake,
       'gfx_recorder.c',
-      c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
+      c_args: [layer_include['th07']] + core_include + stg_include + shell_include + anm_test[3],
       implicit_include_directories: false,
       link_with: [
         th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
@@ -971,6 +977,9 @@ foreach anm_test : ['draw']
       dependencies: [sdl3],
     ),
     suite: 'unit',
+    env: {
+      'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+    },
   )
 endforeach
 

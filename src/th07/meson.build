@@ -5,6 +5,7 @@ th07_lib = static_library(
   'th07_lib',
   'anm/draw.c',
   'anm/state.c',
+  'anm/text.c',
   'anm/texture.c',
   'buttons.c',
   'files.c',
