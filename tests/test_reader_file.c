@@ -206,6 +206,35 @@ TEST(slices_read_through_the_file)
     Mem_Free(path);
 }
 
+TEST(a_narrowed_file_reader_reads_through_the_file_until_its_close)
+{
+    char *const path = M_PrepareFile("narrow");
+    READER reader;
+    CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
+    const size_t start = READER_BUFFER_SIZE - 6;
+    const size_t size = READER_BUFFER_SIZE + 16;
+    CHECK(Result_Log(Reader_Narrow(&reader, start, size), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(Reader_Size(&reader), size);
+    bool matches = true;
+    for (size_t i = 0; i < size; i += 8) {
+        matches =
+            matches && Reader_ReadU64(&reader) == M_PatternAt(start + i, 8);
+    }
+    CHECK(matches);
+    Reader_Seek(&reader, 4);
+    CHECK(Reader_ReadU32(&reader) == M_PatternAt(start + 4, 4));
+    CHECK_EQ_STR(Reader_GetName(&reader), path);
+    Reader_Seek(&reader, size);
+    Reader_ReadU8(&reader);
+    char *const expected = Str_Format(
+        "read of 1 bytes at 0x%zx past end 0x%zx", start + size, start + size);
+    CHECK(M_FailsIn(&reader, expected, path));
+    Reader_Close(&reader);
+    CHECK(Reader_GetName(&reader) == nullptr);
+    Mem_Free(expected);
+    Mem_Free(path);
+}
+
 TEST(reading_past_the_end_names_the_path)
 {
     char *const directory = TestDir_Prepare("past_end");

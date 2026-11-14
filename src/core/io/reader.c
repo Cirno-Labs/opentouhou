@@ -205,6 +205,7 @@ void Reader_OpenOwnedBuffer(
 {
     Reader_OpenBuffer(reader, data, size, name);
     reader->buffer_allocator = allocator;
+    reader->buffer_size = size;
 }
 
 RESULT Reader_OpenFile(READER *const reader, const char *const path)
@@ -248,7 +249,8 @@ void Reader_Close(READER *const reader)
     } else if (
         reader->buffer_allocator != nullptr && reader->data != m_NoData) {
         Allocator_Free(
-            reader->buffer_allocator, (void *)reader->data, reader->size);
+            reader->buffer_allocator, (void *)reader->data,
+            reader->buffer_size);
     }
     if (reader->owns_name) {
         Mem_Free(reader->name);
@@ -257,6 +259,7 @@ void Reader_Close(READER *const reader)
     reader->file = nullptr;
     reader->owns_file = false;
     reader->buffer_allocator = nullptr;
+    reader->buffer_size = 0;
     reader->name = nullptr;
     reader->owns_name = false;
     reader->origin = 0;
@@ -434,6 +437,26 @@ READER Reader_Slice(READER *const reader, const size_t size)
     slice.size = size;
     slice.position = 0;
     return slice;
+}
+
+RESULT Reader_Narrow(
+    READER *const reader, const size_t offset, const size_t size)
+{
+    if (reader->error[0] == '\0'
+        && (offset > reader->size || size > reader->size - offset)) {
+        M_Fail(
+            reader, "narrow to %llu bytes at 0x%llx past end 0x%llx",
+            (unsigned long long)size,
+            (unsigned long long)M_Absolute(reader, offset),
+            (unsigned long long)M_Absolute(reader, reader->size));
+    }
+    if (reader->error[0] != '\0') {
+        return Reader_Result(reader);
+    }
+    reader->origin += offset;
+    reader->size = size;
+    reader->position = 0;
+    return OK;
 }
 
 void ReaderImpl_ReadU8(READER *const reader, uint8_t *const value)
