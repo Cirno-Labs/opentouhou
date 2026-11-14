@@ -4,7 +4,6 @@
 # tests/shell_fake.c in the tests.
 th06_lib = static_library(
   'th06_lib',
-  'angle.c',
   'anm/state.c',
   'anm/draw.c',
   'anm/texture.c',
