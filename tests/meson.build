@@ -1218,6 +1218,19 @@ test(
 )
 
 test(
+  'stg/lzss',
+  executable(
+    'test_lzss',
+    'test_lzss.c',
+    'pbg3_builder.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_lzss_lib, core_hash_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'stg/pbg3',
   executable(
     'test_pbg3',
@@ -1227,6 +1240,20 @@ test(
     implicit_include_directories: false,
     link_with: [
       stg_pbg3_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
+    ],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'stg/pbg4',
+  executable(
+    'test_pbg4',
+    'test_pbg4.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      stg_pbg4_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
     ],
   ),
   suite: 'unit',
