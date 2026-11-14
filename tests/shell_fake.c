@@ -19,6 +19,15 @@ void FakeShell_Reset(void)
     g_FakeShell = (FAKE_SHELL) {};
 }
 
+void FakeShell_SetDeviceInput(
+    const INPUT_DEVICE device, const void *const input, const size_t size)
+{
+    ASSERT(device < INPUT_DEVICE_COUNT);
+    ASSERT(size > 0 && size <= FAKE_SHELL_DEVICE_INPUT_SIZE);
+    memcpy(g_FakeShell.device_input[device], input, size);
+    g_FakeShell.device_input_sizes[device] = size;
+}
+
 bool Shell_GetPadPress(INPUT_BINDING *const out)
 {
     const bool pending = g_FakeShell.pad_pending;
@@ -32,7 +41,9 @@ bool Shell_GetPadPress(INPUT_BINDING *const out)
 void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
 {
     ASSERT(device < INPUT_DEVICE_COUNT);
-    memcpy(out, &g_FakeShell.device_input[device], sizeof(TH06_INPUT));
+    const size_t size = g_FakeShell.device_input_sizes[device];
+    ASSERT(size > 0);
+    memcpy(out, g_FakeShell.device_input[device], size);
 }
 
 size_t Shell_GetBindings(
