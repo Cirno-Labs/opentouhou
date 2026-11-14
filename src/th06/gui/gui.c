@@ -206,7 +206,7 @@ static RESULT M_ReadInstr(READER *const reader, M_INSTR *const instr)
     uint8_t args[UINT8_MAX] = {};
     Reader_ReadBytes(reader, args, size);
     READER fields;
-    Reader_OpenBuffer(&fields, args, size);
+    Reader_OpenBuffer(&fields, args, size, nullptr);
     switch (instr->opcode) {
     case M_OP_WAIT:
     case M_OP_SONG:

@@ -84,6 +84,19 @@ TEST(close_puts_the_file_in_place)
     Mem_Free(directory);
 }
 
+TEST(a_file_writer_is_named_by_its_target_path)
+{
+    char *const directory = TestDir_Prepare("name");
+    char *const path = TestDir_Join(directory, "score.dat");
+    WRITER writer;
+    CHECK(Result_Log(Writer_OpenFile(&writer, path), LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(Writer_GetName(&writer), path);
+    CHECK(Result_Log(Writer_Close(&writer), LOG_LEVEL_ERROR));
+    CHECK(Writer_GetName(&writer) == nullptr);
+    Mem_Free(path);
+    Mem_Free(directory);
+}
+
 TEST(close_replaces_an_existing_file)
 {
     char *const directory = TestDir_Prepare("replace");

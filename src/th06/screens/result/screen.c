@@ -439,7 +439,7 @@ static void M_SaveReplay(M_SCREEN *const screen)
         .expected_frames = clock->expected_frames,
     };
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const bool saved =
         Result_Log(Replay_Save(&writer, &info), LOG_LEVEL_WARNING);
     size_t size;
@@ -1192,7 +1192,7 @@ static void M_SaveScoreFile(const M_SCREEN *const screen)
         .practice = gm->records.practice,
     };
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     ScoreFile_Write(
         &writer, ResultSaves_GetScoreFile(), screen->scores, &records, key,
         random);

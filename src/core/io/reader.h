@@ -19,6 +19,13 @@
 // allocation or a loop must be checked before it is used, with Reader_Failed or
 // against Reader_Remaining.
 //
+// Every reader may have a name, which its failure messages end with
+// (" in <name>") and which the parsers that read it can use in theirs. A file
+// reader is named by its path, a slice by its parent, and a buffer reader by
+// the name it is opened with, or by none when that name is nullptr: its
+// messages then have no " in" part. The reader keeps its own copy of the
+// name.
+//
 // Positions count from the start of the reader's range. The offsets in
 // failure messages count from the start of the buffer or the file, also in a
 // slice, so that they match the offsets in the file.
@@ -49,6 +56,8 @@ typedef struct {
     READER_FILE *file;
     bool owns_file;
     const ALLOCATOR *buffer_allocator;
+    char *name;
+    bool owns_name;
     size_t origin;
     size_t size;
     size_t position;
@@ -57,18 +66,21 @@ typedef struct {
     char error[READER_ERROR_SIZE];
 } READER;
 
-// Prepares a reader over size bytes of data, at position 0. The reader never
-// owns the data, which must stay valid and unchanged while the reader and
-// its slices are in use. A data of nullptr is allowed when size is 0.
-void Reader_OpenBuffer(READER *reader, const void *data, size_t size);
+// Prepares a reader over size bytes of data, at position 0, named name. The
+// reader never owns the data, which must stay valid and unchanged while the
+// reader and its slices are in use. A data of nullptr is allowed when size is
+// 0. Reader_Close releases the reader's copy of name.
+void Reader_OpenBuffer(
+    READER *reader, const void *data, size_t size, const char *name);
 
-// Prepares a reader over size bytes of data, at position 0, and gives the
-// reader ownership of data: Reader_Close releases it with allocator.
-// Reader_Borrow works on it like on any buffer reader, but the pointers it
-// returns, and the ranges of any slice taken before the close, stay valid
-// only until Reader_Close runs.
+// Prepares a reader over size bytes of data, at position 0, named name, and
+// gives the reader ownership of data: Reader_Close releases it with
+// allocator. Reader_Borrow works on it like on any buffer reader, but the
+// pointers it returns, and the ranges of any slice taken before the close,
+// stay valid only until Reader_Close runs.
 void Reader_OpenOwnedBuffer(
-    READER *reader, void *data, size_t size, const ALLOCATOR *allocator);
+    READER *reader, void *data, size_t size, const ALLOCATOR *allocator,
+    const char *name);
 
 // Opens a file for reading, at position 0. The reader reads the file in
 // blocks of READER_BUFFER_SIZE bytes as the position reaches them, and never
@@ -76,12 +88,15 @@ void Reader_OpenOwnedBuffer(
 // Reader_Close does nothing.
 RESULT Reader_OpenFile(READER *reader, const char *path);
 
-// Closes the file of a reader that Reader_OpenFile opened, or releases the
-// data of a reader that Reader_OpenOwnedBuffer opened, and leaves the reader
-// empty. The slices of the reader become invalid. The error flag and its
-// message stay unchanged. For a reader that owns neither, and for a slice,
-// does nothing.
+// Closes the file of a reader that Reader_OpenFile opened, releases the data
+// of a reader that Reader_OpenOwnedBuffer opened, and releases the name, and
+// leaves the reader empty. The slices of the reader become invalid. The error
+// flag and its message stay unchanged. For an unnamed reader over a buffer
+// that it does not own, and for a slice, does nothing.
 void Reader_Close(READER *reader);
+
+// Returns the reader's name, or nullptr when it has none.
+const char *Reader_GetName(const READER *reader);
 
 // Returns whether the error flag is set.
 bool Reader_Failed(const READER *reader);
@@ -89,11 +104,11 @@ bool Reader_Failed(const READER *reader);
 // Returns a failure that names the first failed operation and its offset,
 // such as "read of 4 bytes at 0x1234 past end 0x1230", or OK when the error
 // flag is not set. For a file, an error of the file adds the reason that
-// the platform gives, and the message ends with " in <path>". When the path
-// does not fit in READER_ERROR_SIZE, its start is replaced with "...", cut
-// at a '/' where possible, so the file name stays whole. The message was
-// formatted when the operation failed, so it still names the path after
-// Reader_Close.
+// the platform gives. For a named reader, the message ends with
+// " in <name>". When the name does not fit in READER_ERROR_SIZE, its start
+// is replaced with "...", cut at a '/' where possible, so the file name
+// stays whole. The message was formatted when the operation failed, so it
+// still names the reader after Reader_Close.
 RESULT Reader_Result(const READER *reader);
 
 // Return the position, the size of the range, and the number of bytes from
@@ -166,11 +181,12 @@ void *Reader_ReadAlloc(READER *reader, size_t size, const ALLOCATOR *allocator);
 const void *Reader_Borrow(READER *reader, size_t size);
 
 // Returns a reader over the next size bytes, and moves this reader past
-// them. The slice has its own position and error flag. A slice of a file
-// reader reads through the file of the reader that Reader_OpenFile opened,
-// so it is valid until that reader is closed, and needs no Reader_Close of
-// its own. On failure, the slice is empty and has the failure of this
-// reader, so that the result of either one reports it.
+// them. The slice has its own position and error flag, and the name of this
+// reader. A slice of a file reader reads through the file of the reader
+// that Reader_OpenFile opened, and a slice of a named reader shares its
+// name, so either is valid until that reader is closed. A slice needs no
+// Reader_Close of its own. On failure, the slice is empty and has the failure
+// of this reader, so that the result of either one reports it.
 READER Reader_Slice(READER *reader, size_t size);
 
 // The rest of this header is the implementation behind Reader_Read.

@@ -71,7 +71,7 @@ static void M_WriteImage(const char *const name)
 {
     IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodePng(&image, &writer);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
@@ -334,7 +334,7 @@ static uint8_t *M_ReplayBytes(const int32_t first, size_t *const size)
     REPLAY_FORMAT_SAVE prepared;
     CHECK(Result_Log(ReplayFormat_Prepare(&info, &prepared), LOG_LEVEL_ERROR));
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const uint8_t random[4] = { 70, 1, 2, 3 };
     CHECK(Result_Log(
         ReplayFormat_Write(&writer, &file, &prepared, random),

@@ -134,7 +134,7 @@ static RESULT M_Read(READER *const reader, REPLAY_FILE *const file)
 static RESULT M_Validate(uint8_t *const bytes, const size_t size)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, bytes, size);
+    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     Reader_Seek(&reader, 8);
     const uint32_t expected = Reader_ReadU32(&reader);
     Reader_Skip(&reader, 2);
@@ -233,8 +233,9 @@ RESULT Replay_Read(READER *const reader, REPLAY_FILE **const out)
     if (IS_OK(result)) {
         file = Mem_AllocZ(sizeof(REPLAY_FILE));
         READER decoded;
-        Reader_OpenBuffer(&decoded, bytes, size);
+        Reader_OpenBuffer(&decoded, bytes, size, Reader_GetName(reader));
         result = M_Read(&decoded, file);
+        Reader_Close(&decoded);
     }
     Mem_Free(bytes);
     if (!IS_OK(result)) {
@@ -321,7 +322,7 @@ RESULT ReplayFormat_Write(
     const REPLAY_FORMAT_SAVE *const info, const uint8_t random[4])
 {
     WRITER buffer;
-    Writer_OpenBuffer(&buffer, &g_HeapAllocator);
+    Writer_OpenBuffer(&buffer, &g_HeapAllocator, nullptr);
     RESULT result = M_Write(&buffer, file, info, random);
     if (!IS_OK(result)) {
         Result_Ignore(Writer_Close(&buffer));

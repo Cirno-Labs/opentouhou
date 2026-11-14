@@ -224,6 +224,24 @@ TEST(reading_past_the_end_names_the_path)
     Mem_Free(directory);
 }
 
+TEST(a_file_reader_and_its_slices_are_named_by_the_path)
+{
+    char *const directory = TestDir_Prepare("name");
+    char *const path = TestDir_Join(directory, "short.dat");
+    M_Create(path, "abc", 3);
+    READER reader;
+    CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(Reader_GetName(&reader), path);
+    READER slice = Reader_Slice(&reader, 2);
+    CHECK_EQ_STR(Reader_GetName(&slice), path);
+    Reader_ReadU32(&slice);
+    CHECK(M_FailsIn(&slice, "read of 4 bytes at 0x0 past end 0x2", path));
+    Reader_Close(&reader);
+    CHECK(Reader_GetName(&reader) == nullptr);
+    Mem_Free(path);
+    Mem_Free(directory);
+}
+
 TEST(result_still_names_the_path_after_close)
 {
     char *const directory = TestDir_Prepare("after_close");

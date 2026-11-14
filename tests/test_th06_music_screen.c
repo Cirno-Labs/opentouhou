@@ -50,7 +50,7 @@ SCENE Scene_GetRequested(void)
 static int32_t M_Parse(const char *const text)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, text, strlen(text));
+    Reader_OpenBuffer(&reader, text, strlen(text), nullptr);
     int32_t count = -1;
     memset(m_Tunes, 0xcc, sizeof(m_Tunes));
     CHECK(Result_Log(
@@ -179,7 +179,7 @@ static void M_WriteData(const char *const case_name, const int32_t tunes)
     }
     IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Image_EncodePng(&image, &writer);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);

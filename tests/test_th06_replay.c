@@ -29,7 +29,7 @@ static TH06_INPUT m_Input;
 RESULT Files_Load(const char *const path, READER *const out)
 {
     m_Loads++;
-    Reader_OpenBuffer(out, m_Bytes, m_Size);
+    Reader_OpenBuffer(out, m_Bytes, m_Size, nullptr);
     return OK;
 }
 
@@ -118,7 +118,7 @@ static void M_Fixture(void)
     CHECK(Result_Ignore(ReplayFormat_Prepare(&info, &prepared)));
     const uint8_t random[4] = { 123, 4, 5, 6 };
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CHECK(Result_Ignore(ReplayFormat_Write(&writer, &file, &prepared, random)));
     m_Bytes = Writer_TakeBuffer(&writer, &m_Size);
     CHECK(Result_Ignore(Writer_Close(&writer)));
@@ -128,13 +128,13 @@ static void M_Fixture(void)
 static REPLAY_FILE *M_Save(void)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const REPLAY_SAVE_INFO info = { "Player", "11/10/26", 60.0f, 60.0f };
     CHECK(Result_Ignore(Replay_Save(&writer, &info)));
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
     READER reader;
-    Reader_OpenBuffer(&reader, bytes, size);
+    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     REPLAY_FILE *file = nullptr;
     CHECK(Result_Log(Replay_Read(&reader, &file), LOG_LEVEL_ERROR));
     Mem_Free(bytes);
@@ -331,7 +331,7 @@ TEST(playback_save_discards_without_writing_or_using_rng)
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
     const RNG before = g_Rng;
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CHECK(Result_Ignore(Replay_Save(&writer, nullptr)));
     CHECK_EQ_INT(Writer_Tell(&writer), 0);
     CHECK_EQ_INT(g_Rng.seed, before.seed);
@@ -366,7 +366,7 @@ TEST(invalid_save_metadata_keeps_recording_and_rng_unchanged_for_retry)
     g_Buttons.word = 1;
     Chain_RunCalc(&g_Chain);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const REPLAY_SAVE_INFO info = { "Name too long", "11/10/26", 60.0f, 60.0f };
     const RNG before = g_Rng;
     CHECK(!Result_Ignore(Replay_Save(&writer, &info)));
@@ -390,7 +390,7 @@ TEST(playback_reads_the_kept_file_and_opens_no_file)
     g_GameManager.run.stage = 1;
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
     READER reader;
-    Reader_OpenBuffer(&reader, m_Bytes, m_Size);
+    Reader_OpenBuffer(&reader, m_Bytes, m_Size, nullptr);
     REPLAY_FILE *file = nullptr;
     CHECK(Result_Ignore(Replay_Read(&reader, &file)));
     CHECK_EQ_INT(g_GameManager.run.difficulty, file->difficulty);

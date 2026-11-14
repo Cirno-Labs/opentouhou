@@ -123,7 +123,7 @@ static RESULT M_LoadFile(
 RESULT TextFont_LoadDefault(const float pixel_height, TEXT_FONT **const out)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_DefaultFont, sizeof(m_DefaultFont));
+    Reader_OpenBuffer(&reader, m_DefaultFont, sizeof(m_DefaultFont), nullptr);
     return TextFont_Load(&reader, pixel_height, out);
 }
 

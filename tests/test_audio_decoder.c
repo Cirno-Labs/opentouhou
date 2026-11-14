@@ -6,7 +6,7 @@
 static READER M_Wave(const uint16_t channels, const uint32_t frames)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteBytes(&writer, "RIFF", 4);
     Writer_WriteU32(&writer, 36 + frames * channels * 2);
     Writer_WriteBytes(&writer, "WAVEfmt ", 8);
@@ -28,7 +28,7 @@ static READER M_Wave(const uint16_t channels, const uint32_t frames)
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     Result_Ignore(Writer_Close(&writer));
     READER reader;
-    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
     return reader;
 }
 
@@ -107,7 +107,7 @@ TEST(stereo_and_repeated_seeks_preserve_samples)
 TEST(rejects_unknown_audio)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, "not audio", 9);
+    Reader_OpenBuffer(&reader, "not audio", 9, nullptr);
     AUDIO_DECODER *decoder = nullptr;
     CHECK(!Result_Ignore(AudioDecoder_Open(&reader, &decoder)));
     CHECK(decoder == nullptr);

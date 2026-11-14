@@ -25,7 +25,7 @@ TEST(a_new_buffer_writer_is_empty_and_allocates_nothing)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &test.allocator);
+    Writer_OpenBuffer(&writer, &test.allocator, nullptr);
     CHECK_EQ_INT(Writer_Tell(&writer), 0);
     CHECK_EQ_INT(test.live_blocks, 0);
     CHECK(Result_Ignore(Writer_Close(&writer)));
@@ -34,7 +34,7 @@ TEST(a_new_buffer_writer_is_empty_and_allocates_nothing)
 TEST(values_are_written_little_endian)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteU8(&writer, 0x01);
     Writer_WriteU16(&writer, 0x0302);
     Writer_WriteU32(&writer, 0x07060504);
@@ -69,7 +69,7 @@ TEST(write_picks_the_function_by_type_and_reads_back)
     const float f32 = 0.1f;
     double f64 = -0.1;
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_Write(&writer, &u8);
     Writer_Write(&writer, &u16);
     Writer_Write(&writer, &u32);
@@ -85,7 +85,7 @@ TEST(write_picks_the_function_by_type_and_reads_back)
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     uint8_t r8;
     uint16_t r16;
     uint32_t r32;
@@ -126,7 +126,7 @@ TEST(float_bits_survive_a_round_trip)
         0x8000000000000000, 0x0000000000000001, 0x800FFFFFFFFFFFFF,
     };
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     for (size_t i = 0; i < ARRAY_SIZE(singles); i++) {
         float value;
         memcpy(&value, &singles[i], sizeof(value));
@@ -141,7 +141,7 @@ TEST(float_bits_survive_a_round_trip)
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     for (size_t i = 0; i < ARRAY_SIZE(singles); i++) {
         const float value = Reader_ReadF32(&reader);
         uint32_t bits;
@@ -163,7 +163,7 @@ TEST(float_bits_survive_a_round_trip)
 TEST(seeking_back_patches_a_field)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteBytes(&writer, "CHNK", 4);
     const size_t size_position = Writer_Tell(&writer);
     Writer_WriteU32(&writer, 0);
@@ -181,7 +181,7 @@ TEST(seeking_back_patches_a_field)
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     CHECK_EQ_INT(size, end + 1);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     Reader_Skip(&reader, 4);
     READER chunk = Reader_Slice(&reader, Reader_ReadU32(&reader));
     CHECK_EQ_INT(Reader_Size(&chunk), 20);
@@ -197,7 +197,7 @@ TEST(seeking_back_patches_a_field)
 TEST(a_write_across_the_end_extends_the_data)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteU32(&writer, 0x04030201);
     Writer_Seek(&writer, 2);
     Writer_WriteU32(&writer, 0x08070605);
@@ -213,7 +213,7 @@ TEST(growth_keeps_every_byte)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &test.allocator);
+    Writer_OpenBuffer(&writer, &test.allocator, nullptr);
     for (uint32_t i = 0; i < 10000; i++) {
         Writer_WriteU32(&writer, i);
     }
@@ -224,7 +224,7 @@ TEST(growth_keeps_every_byte)
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     CHECK_EQ_INT(size, 40000);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     bool in_order = true;
     for (uint32_t i = 0; i < 10000; i++) {
         in_order = in_order && Reader_ReadU32(&reader) == i;
@@ -242,7 +242,7 @@ TEST(take_buffer_hands_over_exactly_the_bytes)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &test.allocator);
+    Writer_OpenBuffer(&writer, &test.allocator, nullptr);
     Writer_WriteBytes(&writer, "abc", 3);
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
@@ -270,7 +270,7 @@ TEST(take_buffer_of_an_empty_writer_gives_an_empty_block)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &test.allocator);
+    Writer_OpenBuffer(&writer, &test.allocator, nullptr);
     size_t size = 1;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     CHECK(data != nullptr);
@@ -286,11 +286,35 @@ TEST(close_releases_a_buffer_that_was_not_taken)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     WRITER writer;
-    Writer_OpenBuffer(&writer, &test.allocator);
+    Writer_OpenBuffer(&writer, &test.allocator, nullptr);
     Writer_WriteU64(&writer, 1);
     CHECK_EQ_INT(test.live_blocks, 1);
     CHECK(Result_Ignore(Writer_Close(&writer)));
     CHECK_EQ_INT(test.live_blocks, 0);
     CHECK_EQ_INT(test.size_errors, 0);
     CHECK(Result_Ignore(Writer_Close(&writer)));
+}
+
+TEST(an_unnamed_buffer_writer_has_no_name)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    CHECK(Writer_GetName(&writer) == nullptr);
+    CHECK(Result_Ignore(Writer_Close(&writer)));
+}
+
+TEST(a_buffer_writer_keeps_a_copy_of_its_name_until_the_close)
+{
+    char name[] = "first.dat";
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, name);
+    memcpy(name, "other.dat", sizeof(name));
+    CHECK_EQ_STR(Writer_GetName(&writer), "first.dat");
+    Writer_WriteU8(&writer, 1);
+    size_t size;
+    uint8_t *const data = Writer_TakeBuffer(&writer, &size);
+    Allocator_Free(&g_HeapAllocator, data, size);
+    CHECK_EQ_STR(Writer_GetName(&writer), "first.dat");
+    CHECK(Result_Ignore(Writer_Close(&writer)));
+    CHECK(Writer_GetName(&writer) == nullptr);
 }

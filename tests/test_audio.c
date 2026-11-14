@@ -57,7 +57,7 @@ static uint8_t *M_Wave(
     const uint32_t frames, const uint32_t sample_rate, size_t *const size)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteBytes(&writer, "RIFF", 4);
     Writer_WriteU32(&writer, 36 + frames * 4);
     Writer_WriteBytes(&writer, "WAVEfmt ", 8);
@@ -84,7 +84,7 @@ static READER M_WaveReader(const uint32_t frames)
     size_t size;
     uint8_t *const data = M_Wave(frames, 48000, &size);
     READER reader;
-    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
     return reader;
 }
 
@@ -95,7 +95,7 @@ static READER M_SineReader(
     const uint32_t frames, const uint32_t rate, const double frequency)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     Writer_WriteBytes(&writer, "RIFF", 4);
     Writer_WriteU32(&writer, 36 + frames * 2);
     Writer_WriteBytes(&writer, "WAVEfmt ", 8);
@@ -116,7 +116,7 @@ static READER M_SineReader(
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     M_CheckResult(Writer_Close(&writer));
     READER reader;
-    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
     return reader;
 }
 
@@ -306,7 +306,7 @@ TEST(sample_load_transfers_reader_and_decodes_off_main_thread)
     size_t size;
     uint8_t *const data = M_Wave(16, 48000, &size);
     READER reader;
-    Reader_OpenOwnedBuffer(&reader, data, size, &allocator);
+    Reader_OpenOwnedBuffer(&reader, data, size, &allocator, nullptr);
     AUDIO_SAMPLE *sample = nullptr;
     M_CheckResult(AudioSample_Load(&reader, &sample));
     CHECK_EQ_INT(Reader_Size(&reader), 0);
@@ -339,7 +339,7 @@ TEST(cancelled_loads_release_owned_readers_before_free_returns)
         size_t size;
         uint8_t *data = M_Wave(65536, 48000, &size);
         READER reader;
-        Reader_OpenOwnedBuffer(&reader, data, size, &allocator);
+        Reader_OpenOwnedBuffer(&reader, data, size, &allocator, nullptr);
         AUDIO_SAMPLE *sample = nullptr;
         M_CheckResult(AudioSample_Load(&reader, &sample));
         AudioSample_Free(sample);
@@ -347,7 +347,7 @@ TEST(cancelled_loads_release_owned_readers_before_free_returns)
         CHECK(atomic_load(&tracker.released_by) != SDL_GetCurrentThreadID());
         atomic_store(&tracker.released_by, 0);
         data = M_Wave(65536, 48000, &size);
-        Reader_OpenOwnedBuffer(&reader, data, size, &allocator);
+        Reader_OpenOwnedBuffer(&reader, data, size, &allocator, nullptr);
         AUDIO_PLAY_OPTIONS options = M_Options();
         AUDIO_STREAM *stream = nullptr;
         M_CheckResult(AudioStream_Load(&reader, &options, &stream));
@@ -364,13 +364,13 @@ TEST(sample_load_rejects_borrowed_reader_and_slice)
     size_t size;
     uint8_t *const data = M_Wave(8, 48000, &size);
     READER borrowed;
-    Reader_OpenBuffer(&borrowed, data, size);
+    Reader_OpenBuffer(&borrowed, data, size, nullptr);
     AUDIO_SAMPLE *sample = nullptr;
     CHECK(!Result_Ignore(AudioSample_Load(&borrowed, &sample)));
     CHECK_EQ_INT(Reader_Size(&borrowed), size);
     CHECK(sample == nullptr);
     READER owned;
-    Reader_OpenOwnedBuffer(&owned, data, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(&owned, data, size, &g_HeapAllocator, nullptr);
     READER slice = Reader_Slice(&owned, size);
     CHECK(!Result_Ignore(AudioSample_Load(&slice, &sample)));
     CHECK_EQ_INT(Reader_Size(&slice), size);
@@ -383,7 +383,7 @@ TEST(sample_load_reports_async_failure_repeatedly)
     M_CheckResult(Audio_Init());
     READER reader;
     Reader_OpenOwnedBuffer(
-        &reader, Mem_Dup("invalid audio", 13), 13, &g_HeapAllocator);
+        &reader, Mem_Dup("invalid audio", 13), 13, &g_HeapAllocator, nullptr);
     AUDIO_SAMPLE *sample = nullptr;
     M_CheckResult(AudioSample_Load(&reader, &sample));
     M_WaitSample(sample);
@@ -497,7 +497,7 @@ TEST(source_sample_rate_controls_output_playback_speed)
     size_t size;
     uint8_t *const data = M_Wave(8, 24000, &size);
     READER reader;
-    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator);
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
     AUDIO_SAMPLE *sample = nullptr;
     M_CheckResult(AudioSample_Load(&reader, &sample));
     M_WaitSample(sample);
