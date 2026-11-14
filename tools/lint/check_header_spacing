@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""Fail when a commented function declaration in a header follows the
+declaration before it without a blank line.
+
+Takes the paths of C headers. A function declaration at the top level of
+a header whose // comment starts right after another line of code is an
+error: the comment needs a blank line above it, so that each documented
+function stands apart. --fix inserts the blank lines instead.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+NOT_FUNCTIONS = ("#", "typedef", "struct", "union", "enum", "extern", "}")
+
+
+def is_function(lines: list[str], index: int) -> bool:
+    """Return whether the top-level statement that starts at index declares
+    a function."""
+    line = lines[index]
+    if not line or line[0].isspace() or line.startswith(NOT_FUNCTIONS):
+        return False
+    statement = ""
+    for text in lines[index:]:
+        statement += text
+        if ";" in text or "{" in text:
+            break
+    return "(" in statement.split(";")[0].split("{")[0]
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of the comment lines that need a blank line
+    above them."""
+    found = []
+    index = 0
+    while index < len(lines):
+        if not lines[index].startswith("//"):
+            index += 1
+            continue
+        start = index
+        while index < len(lines) and lines[index].startswith("//"):
+            index += 1
+        above = lines[start - 1] if start > 0 else ""
+        if above.strip() and index < len(lines) and is_function(lines, index):
+            found.append(start)
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--fix", action="store_true", help="insert the blank lines")
+    parser.add_argument("paths", nargs="*", type=Path)
+    args = parser.parse_args(argv)
+    failed = False
+    for path in args.paths:
+        lines = path.read_text().split("\n")
+        found = errors(lines)
+        if not found:
+            continue
+        if args.fix:
+            for start in reversed(found):
+                lines.insert(start, "")
+            path.write_text("\n".join(lines))
+            continue
+        failed = True
+        for start in found:
+            print(f"{path}:{start + 1}: put a blank line above this comment")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

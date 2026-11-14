@@ -74,6 +74,8 @@ Rules:
   instead, so the signature says which of the two it is.
 - No `(void)unused;` statements.
 - Comments are `//` only.
+- In a header, a blank line comes before each commented function
+  declaration, so that every documented function stands apart.
 - clang-format formats everything; never hand-format against it.
 
 ## Comments
