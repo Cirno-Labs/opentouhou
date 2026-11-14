@@ -601,7 +601,9 @@ TEST(a_pad_press_takes_the_row_and_swaps_the_other_row)
     M_OpenPadConfig();
     M_PressPad("east");
     CHECK_EQ_INT(g_FakeShell.request_count, 0);
+    g_Buttons.shared_focus = true;
     M_LeavePadConfig();
+    CHECK(!g_Buttons.shared_focus);
     CHECK_EQ_INT(g_FakeShell.request_count, 4);
     M_CheckRequest(0, 'u', 0, "south");
     M_CheckRequest(1, 'b', 0, "east");
@@ -618,9 +620,11 @@ TEST(shoot_and_focus_may_share_a_pad_button)
     M_OpenPadConfig();
     M_PressPad("west");
     M_LeavePadConfig();
+    CHECK(g_Buttons.shared_focus);
     CHECK_EQ_INT(g_FakeShell.request_count, 2);
     M_CheckRequest(0, 'u', 0, "south");
     M_CheckRequest(1, 'b', 0, "west");
+    g_Buttons.shared_focus = false;
     FakeShell_Reset();
     M_Teardown();
 }

@@ -20,6 +20,7 @@ RESULT Game_Init(void)
 {
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
+    Buttons_ReadSharedFocus(&g_Buttons);
     GameManager_Create(&g_GameManager);
     MUST(Scene_Register());
     MUST(Anm_Load(0, "data/text.anm", 0x700));

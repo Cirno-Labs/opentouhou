@@ -275,8 +275,9 @@ foreach ascii_test : ['ascii', 'ascii_menu']
     executable(
       'test_th06_' + ascii_test,
       'test_th06_' + ascii_test + '.c',
+      'shell_fake.c',
       'gfx_recorder.c',
-      c_args: [layer_include['th06']] + core_include + stg_include,
+      c_args: [layer_include['th06']] + stg_include + shell_include,
       implicit_include_directories: false,
       link_with: [
         th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
@@ -292,7 +293,8 @@ foreach replay_test : ['replay', 'replay_format']
     executable(
       'test_th06_' + replay_test,
       'test_th06_' + replay_test + '.c',
-      c_args: [layer_include['th06']] + core_include + stg_include,
+      'shell_fake.c',
+      c_args: [layer_include['th06']] + stg_include + shell_include,
       implicit_include_directories: false,
       link_with: [
         th06_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
@@ -308,7 +310,8 @@ test(
   executable(
     'test_th06_game_manager_chain',
     'test_th06_game_manager_chain.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    'shell_fake.c',
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, core_io_lib, core_math_lib, core_base_lib,
@@ -354,11 +357,12 @@ test(
   executable(
     'test_th06_result_screen',
     'test_th06_result_screen.c',
+    'shell_fake.c',
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -402,11 +406,12 @@ test(
   executable(
     'test_th06_ending',
     'test_th06_ending.c',
+    'shell_fake.c',
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -425,11 +430,12 @@ test(
   executable(
     'test_th06_music_screen',
     'test_th06_music_screen.c',
+    'shell_fake.c',
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -487,7 +493,8 @@ test(
   executable(
     'test_th06_buttons',
     'test_th06_buttons.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    'shell_fake.c',
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
