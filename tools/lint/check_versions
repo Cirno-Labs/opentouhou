@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Fail when a program's version file or changelog is out of order.
 
-Each src/<program>/version.txt must hold one version X.Y.Z, and the
-program's changelog, docs/<program>/CHANGELOG.md, must have a section
-for it. Each game's src/<game>/othpatch.txt must hold the version X.Y.Z
-of the othpatch that its packages ship.
+Each src/<program>/version.txt must hold one version X.Y.Z, or a
+development version X.Y.Z-dev, and the program must have a changelog,
+docs/<program>/CHANGELOG.md. For a version X.Y.Z, the changelog must
+have a section for it, or unreleased changes. A development version has
+no release, so it needs no section. Each game's src/<game>/othpatch.txt
+must hold the version X.Y.Z of the othpatch that its packages ship.
 """
 
 import sys
@@ -16,41 +18,48 @@ from shared.changelog import changelog_path, section
 from shared.versioning import (
     REPO_DIR,
     games,
+    is_dev,
     othpatch_pin_path,
+    program_version,
     programs,
     read_version,
-    version_path,
 )
 
 
-def check_program(program: str) -> list[str]:
+def check_program(program: str, repo_dir: Path) -> list[str]:
     try:
-        version = read_version(version_path(program))
+        version = program_version(program, repo_dir)
     except ValueError as error:
         return [str(error)]
-    changelog = changelog_path(program)
+    changelog = changelog_path(program, repo_dir)
     if not changelog.exists():
-        return [f"{changelog.relative_to(REPO_DIR)} does not exist"]
+        return [f"{changelog.relative_to(repo_dir)} does not exist"]
+    if is_dev(version):
+        return []
     text = changelog.read_text()
     if section(text, version) is None and not section(text, "Unreleased"):
         return [
-            f"{changelog.relative_to(REPO_DIR)} has no section ## {version}"
+            f"{changelog.relative_to(repo_dir)} has no section ## {version}"
             " and no unreleased changes"
         ]
     return []
 
 
-def check_pin(game: str) -> list[str]:
+def check_pin(game: str, repo_dir: Path) -> list[str]:
     try:
-        read_version(othpatch_pin_path(game))
+        read_version(othpatch_pin_path(game, repo_dir))
     except (OSError, ValueError) as error:
         return [str(error)]
     return []
 
 
-def main() -> int:
-    errors = [error for program in programs() for error in check_program(program)]
-    errors += [error for game in games() for error in check_pin(game)]
+def main(repo_dir: Path = REPO_DIR) -> int:
+    errors = [
+        error
+        for program in programs(repo_dir)
+        for error in check_program(program, repo_dir)
+    ]
+    errors += [error for game in games(repo_dir) for error in check_pin(game, repo_dir)]
     for error in errors:
         sys.stderr.write(f"{error}\n")
     return 1 if errors else 0

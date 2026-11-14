@@ -6,7 +6,8 @@ othpatch that src/<game>/othpatch.txt names, downloaded as the release
 index gives it. Without that release, or outside a release build
 without the index, the packages carry the othpatch in
 build/<platform>/othpatch/<target>/, which the othpatch image built
-from the same commit before. package-othpatch writes the executable of
+from the same commit before. A release build leaves out the games with a
+development version. package-othpatch writes the executable of
 othpatch there, as its release names it.
 
 Each image runs this script with its platform and the programs that it
@@ -36,6 +37,7 @@ from shared.versioning import (
     generate_package_name,
     generate_version,
     othpatch_asset_name,
+    packaged_games,
     product_name,
 )
 
@@ -166,7 +168,10 @@ def built_othpatch(platform: str, target: str) -> Path:
 
 def run_package(platform: str, target: str) -> None:
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    for game in games(REPO_DIR):
+    packaged = packaged_games(REPO_DIR)
+    for game in sorted(set(games(REPO_DIR)) - set(packaged)):
+        print(f"Left out {game}: a release build has no development versions.")
+    for game in packaged:
         version = generate_version(game, REPO_DIR)
         othpatch = pinned_othpatch(
             game, platform, lambda: built_othpatch(platform, target), REPO_DIR

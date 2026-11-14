@@ -300,6 +300,15 @@ other build adds `-dev` and the commit, as `1.2.0-dev+abcdef0`, or
 git worktree. The environment variable `OPENTOUHOU_RELEASE=1` makes a
 build a release build. `just version th06` prints the version.
 
+A program in development, which has no release yet, has a development
+version, such as `0.1.0-dev`. Its builds report `0.1.0-dev+abcdef0`. A
+development version is never released: the release workflow leaves it
+out, and `tools/release_index publish` refuses it. A release build
+compiles such a program, but does not package it, and `just version`
+fails for it. Bumping it to `0.1.0` makes its first release, as for
+any other version. `tools/bump` never sets a development version; write
+it into `version.txt` by hand.
+
 Each program has its own changelog, `docs/<program>/CHANGELOG.md`,
 which collects the changes for players under `## Unreleased` as they
 land. core has no version: a change in core goes into the changelog of
@@ -315,7 +324,7 @@ released section. To correct a released section on purpose, set
 `tools/lint/check_versions` makes sure that each changelog has a section
 for the version in `version.txt`, or unreleased changes when that
 version has no release yet, and that each `othpatch.txt` holds a
-version.
+version. A development version needs only the changelog file.
 
 A release has two steps: a commit that sets the versions, and a manual
 run of the "Publish the releases" workflow. To release th06 1.2.0:
@@ -335,6 +344,8 @@ in a new patch release:
 ```sh
 tools/bump othpatch 0.2.0 --with-games --commit
 ```
+
+A game with a development version gets the new `othpatch.txt` only.
 
 The workflow publishes every program whose `version.txt` names a
 version that the release index does not have, from the commit it runs
@@ -371,7 +382,8 @@ The R2 bucket holds the downloads:
 Every push to `main` replaces the development snapshot, when the
 repository variable `PRERELEASE_ENABLE` is `true`. It holds the game
 packages with the othpatch that they ship, the othpatch of the commit,
-and each program's unreleased changes.
+and each program's unreleased changes. It includes the games with a
+development version.
 
 The manual "Delete the releases" workflow deletes every release from
 the bucket and the index and keeps the snapshot. It asks for the word
