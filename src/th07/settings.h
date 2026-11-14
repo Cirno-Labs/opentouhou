@@ -33,6 +33,8 @@ typedef struct {
     int32_t music; // a SETTINGS_MUSIC
     // Plays sound effects, and music unless music is SETTINGS_MUSIC_OFF.
     bool sound;
+    // Focuses while a pad holds shoot.
+    bool shoot_focuses;
 } TH07_SETTINGS;
 
 extern TH07_SETTINGS g_Settings;
