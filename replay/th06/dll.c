@@ -251,7 +251,7 @@ static void M_Attach(void)
     const uint32_t step =
         M_GetEnv(L"TH06CAPTURE_FAST", flag, 4) ? FAST_CLOCK_STEP : 0;
     if (!Clock_Install(GetModuleHandleW(nullptr), step)) {
-        LOG_ERROR("timeGetTime is not imported");
+        LOG_ERROR("no clock function is imported");
         TerminateProcess(GetCurrentProcess(), 1);
     }
     M_Patch(Patch_Call(
