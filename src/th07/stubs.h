@@ -90,12 +90,6 @@ typedef struct {
 
 extern GUI g_Gui;
 
-// Names th07/sound's effects that th07/ascii plays.
-typedef enum {
-    SOUND_PLAYER_SHOT = 0,
-    SOUND_OK = 10,
-} SOUND;
-
 RESULT TitleScene_SetUp(int32_t mode);
 RESULT GameManager_Register(void);
 void GameManager_Remove(void);
@@ -108,10 +102,6 @@ void Replay_Discard(void);
 // original keeps in ascii.cpp. The reroll draws two random numbers.
 void GameManager_RerollChecksumKeys(void);
 void GameManager_SetBombs(int32_t bombs);
-
-void Sound_Queue(int32_t sound);
-void Sound_PauseMusic(void);
-void Sound_ResumeMusic(void);
 
 // Stand in for App::AddTotalPlayTime and the restart of its clock.
 void PlayTime_Add(void);

@@ -972,6 +972,32 @@ foreach ascii_test : ['ascii', 'ascii_menu']
 endforeach
 
 test(
+  'th07/sound',
+  executable(
+    'test_th07_sound',
+    'test_th07_sound.c',
+    'audio_backend_fake.c',
+    'th07_data.c',
+    'th07_scene_stubs.c',
+    'shell_fake.c',
+    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_chain_lib, stg_pbg4_lib, stg_lzss_lib, core_patch_lib,
+      core_json_lib, core_vfs_lib, core_archive_lib, core_audio_lib,
+      core_io_lib, core_config_lib, core_ini_lib, core_math_lib,
+      core_base_lib,
+    ],
+    dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_sound',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_sound',
+  },
+  suite: 'unit',
+)
+
+test(
   'th07/files',
   executable(
     'test_th07_files',

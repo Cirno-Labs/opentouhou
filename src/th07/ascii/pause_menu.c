@@ -3,6 +3,7 @@
 #include "th07/ascii/text.h"
 #include "th07/game.h"
 #include "th07/scene.h"
+#include "th07/sound.h"
 #include "th07/stubs.h"
 
 #define M_HIGHLIGHT 0xffff8080u
