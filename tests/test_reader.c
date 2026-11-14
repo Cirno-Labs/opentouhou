@@ -427,6 +427,46 @@ TEST(a_slice_past_the_end_fails_both_readers)
     CHECK(M_FailsWith(&after, expected));
 }
 
+TEST(narrow_keeps_part_of_the_range_from_position_0)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
+    Reader_Skip(&reader, 3);
+    CHECK(Result_Log(Reader_Narrow(&reader, 4, 8), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(Reader_Tell(&reader), 0);
+    CHECK_EQ_INT(Reader_Size(&reader), 8);
+    CHECK_EQ_INT(Reader_ReadU32(&reader), 0x08070605);
+    CHECK(Reader_Borrow(&reader, 4) == m_Counting + 8);
+    CHECK(Result_Log(Reader_Narrow(&reader, 2, 4), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(Reader_ReadU32(&reader), 0x0A090807);
+    CHECK(Result_Log(Reader_Narrow(&reader, 4, 0), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(Reader_Remaining(&reader), 0);
+    Reader_ReadU8(&reader);
+    CHECK(M_FailsWith(&reader, "read of 1 bytes at 0xa past end 0xa"));
+}
+
+TEST(narrowing_past_the_end_fails_and_keeps_the_range)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
+    Reader_Skip(&reader, 2);
+    CHECK(Result_Log(Reader_Narrow(&reader, 2, 12), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Reader_Narrow(&reader, 12, 0), LOG_LEVEL_ERROR));
+    const RESULT result = Reader_Narrow(&reader, 1, 0);
+    CHECK(!Result_Ignore(result));
+    CHECK(M_FailsWith(&reader, "narrow to 0 bytes at 0xf past end 0xe"));
+    CHECK_EQ_INT(Reader_Size(&reader), 0);
+
+    READER wide;
+    Reader_OpenBuffer(&wide, m_Counting, sizeof(m_Counting), nullptr);
+    CHECK(!Result_Ignore(Reader_Narrow(&wide, 8, SIZE_MAX - 4)));
+    CHECK(M_FailsWith(
+        &wide, "narrow to 18446744073709551611 bytes at 0x8 past end 0x10"));
+    CHECK_EQ_INT(Reader_Size(&wide), 16);
+    CHECK(!Result_Ignore(Reader_Narrow(&wide, 0, 1)));
+    CHECK_EQ_INT(Reader_Size(&wide), 16);
+}
+
 TEST(an_unnamed_reader_has_no_name_in_its_messages)
 {
     READER reader;
