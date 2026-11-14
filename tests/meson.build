@@ -1193,6 +1193,18 @@ test(
 )
 
 test(
+  'core/archive',
+  executable(
+    'test_archive',
+    'test_archive.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'stg/pbg3',
   executable(
     'test_pbg3',
