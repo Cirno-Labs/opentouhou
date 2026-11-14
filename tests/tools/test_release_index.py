@@ -64,7 +64,19 @@ CHANGELOGS = {
 
 - Added the first release.
 """,
+    "th99": """# th99 changelog
+
+## Unreleased
+
+- Added th99.
+
+## 0.1.0 (2026-11-12)
+
+- Added a version section that the development version must not use.
+""",
 }
+# Gives the versions of the programs that are not 0.1.0.
+VERSIONS = {"th99": "0.1.0-dev"}
 
 
 def load_tool(name: str) -> ModuleType:
@@ -87,8 +99,10 @@ def write_repo(repo: Path) -> None:
         (repo / "docs" / program).mkdir(parents=True)
         (repo / "docs" / program / "CHANGELOG.md").write_text(changelog)
         (repo / "src" / program).mkdir(parents=True)
-        (repo / "src" / program / "version.txt").write_text("0.1.0\n")
+        version = VERSIONS.get(program, "0.1.0")
+        (repo / "src" / program / "version.txt").write_text(f"{version}\n")
     (repo / "src/th06/othpatch.txt").write_text("0.1.0\n")
+    (repo / "src/th99/othpatch.txt").write_text("0.1.0\n")
 
 
 def run_main(
@@ -340,6 +354,19 @@ class ReleaseIndexTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("th06 0.1.0 cannot be replaced", result.stderr)
 
+    def test_plan_leaves_out_a_dev_version(self) -> None:
+        result = self.plan({"format": 1, "programs": {}})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "othpatch=0.1.0\ngames=th06\n")
+        self.assertIn("th99 0.1.0-dev is a development version", result.stderr)
+
+    def test_publish_refuses_a_dev_version(self) -> None:
+        self.package("oth99-0.1.0-dev-Linux.zip")
+        result = self.publish("th99", "0.1.0-dev")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("th99 0.1.0-dev is a development version", result.stderr)
+        self.assertEqual(self.r2.log, [])
+
     def test_game_release_records_its_othpatch(self) -> None:
         self.package("oth06-0.1.1-Linux.zip")
         self.assertEqual(
@@ -449,6 +476,7 @@ class ReleaseIndexTest(unittest.TestCase):
         self.r2.objects["snapshot/oth06-0.1.0-dev-1111111-Linux.zip"] = b""
         self.package("oth06-0.1.2-dev-abcdef0-Linux.zip")
         self.package("oth06-0.1.2-dev-abcdef0-Windows.zip")
+        self.package("oth99-0.1.0-dev-abcdef0-Linux.zip")
         result = self.run_tool(
             "snapshot",
             "--packages",
@@ -469,6 +497,10 @@ class ReleaseIndexTest(unittest.TestCase):
             f"{PUBLIC_URL}/snapshot/oth06-0.1.2-dev-abcdef0-Windows.zip",
         )
         self.assertIn("othpatch", snapshot["programs"])
+        dev_game = snapshot["programs"]["oth99"]
+        self.assertEqual(dev_game["version"], "0.1.0-dev-abcdef0")
+        self.assertEqual(dev_game["changes"], "- Added th99.")
+        self.assertNotIn("oth99", index["programs"])
         self.assertEqual(
             sorted(self.folder("snapshot/")),
             [
@@ -476,11 +508,12 @@ class ReleaseIndexTest(unittest.TestCase):
                 "SHA256SUMS",
                 "oth06-0.1.2-dev-abcdef0-Linux.zip",
                 "oth06-0.1.2-dev-abcdef0-Windows.zip",
+                "oth99-0.1.0-dev-abcdef0-Linux.zip",
                 "othpatch-0.1.1-Linux",
             ],
         )
         sums = self.r2.objects["snapshot/SHA256SUMS"].decode()
-        self.assertEqual(len(sums.splitlines()), 3)
+        self.assertEqual(len(sums.splitlines()), 4)
         self.assertEqual(
             snapshot["checksums"]["SHA1SUMS"], f"{PUBLIC_URL}/snapshot/SHA1SUMS"
         )
