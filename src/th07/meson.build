@@ -1,8 +1,11 @@
-# Everything but main.c and entry.c, so the tests link it too.
+# Everything but main.c, entry.c and stubs.c, so the tests link it too;
+# stubs.c stays out so a test can link its own stand-ins for the unported
+# modules instead.
 th07_lib = static_library(
   'th07_lib',
   'files.c',
   'game.c',
+  'scene.c',
   'settings.c',
   c_args: [layer_include['th07']],
   implicit_include_directories: false,
@@ -30,7 +33,7 @@ th07_main_lib = static_library(
 # searched.
 games += {
   'th07': {
-    'sources': files('entry.c'),
+    'sources': files('entry.c', 'stubs.c'),
     'c_args': [layer_include['th07']],
     'link_with': [th07_main_lib, th07_lib],
   },
