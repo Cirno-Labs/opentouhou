@@ -36,8 +36,21 @@ typedef struct {
     uint16_t word;
     uint16_t previous_word;
     int32_t held_frames;
+    // Holds whether focus shares a gamepad or joystick binding with shoot.
+    // Buttons_Update then gives pad focus as the original gives it for one
+    // pad button mapped to both: the pad's shoot counts its calcs held in
+    // shot_held_frames, up to 16, and focuses from the 8th; a release takes
+    // 8 off a count above 8 and sets a lower one to 0. Keyboard focus stays
+    // immediate.
+    bool shared_focus;
+    int32_t shot_held_frames;
 } BUTTONS;
 
+// Sets shared_focus from the bindings that Shell_GetBindings gives.
+void Buttons_ReadSharedFocus(BUTTONS *buttons);
+
+// Reads input into the word of this calc, with the focus of shared_focus
+// from Shell_GetDeviceInput.
 void Buttons_Update(BUTTONS *buttons, const TH06_INPUT *input);
 
 // Replaces the gameplay bits with replay_word and repeats the input
@@ -51,7 +64,8 @@ bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);
 // down on a calc that repeats.
 bool Buttons_WasPressedOrRepeated(const BUTTONS *buttons, uint16_t mask);
 
-// Clears everything but held_frames, as a scene switch does.
+// Clears the buttons but not held_frames and the focus delay, as a scene
+// switch does.
 void Buttons_Clear(BUTTONS *buttons);
 
 // Converts to and from the button word that replays store.

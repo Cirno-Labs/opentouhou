@@ -332,7 +332,8 @@ static void M_ReassignButton(
 }
 
 // Asks shell/game for the bindings that make the rows true: the pad defaults
-// first when they were chosen, then each row that changed.
+// first when they were chosen, then each row that changed. Sets
+// g_Buttons.shared_focus by the shoot and focus rows.
 static void M_CommitMapping(const M_MENU *const menu)
 {
     if (menu->reset_pad) {
@@ -351,6 +352,9 @@ static void M_CommitMapping(const M_MENU *const menu)
             Shell_RequestBind(i, after->binding);
         }
     }
+    const M_PAD_BUTTON *const buttons = menu->mapping.buttons;
+    g_Buttons.shared_focus =
+        buttons[0].bound && M_SameButton(&buttons[0], &buttons[2]);
 }
 
 static void M_HighlightEntry(

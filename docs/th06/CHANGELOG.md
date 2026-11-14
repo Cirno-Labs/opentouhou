@@ -8,6 +8,8 @@
   which keeps their high frequencies.
 - Changed the text of `--help` and of command-line errors to a new
   format.
+- Fixed a gamepad or joystick button bound to both shoot and focus: it
+  now focuses only after it is held for 8 frames, as in the original.
 
 ## 1.0.1 (2026-11-15)
 
