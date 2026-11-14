@@ -1246,6 +1246,20 @@ test(
 )
 
 test(
+  'stg/pbg4',
+  executable(
+    'test_pbg4',
+    'test_pbg4.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      stg_pbg4_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
+    ],
+  ),
+  suite: 'unit',
+)
+
+test(
   'core/vfs/mount_dir',
   executable(
     'test_vfs_mount_dir',
