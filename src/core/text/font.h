@@ -20,6 +20,7 @@ RESULT TextFont_Load(READER *reader, float pixel_height, TEXT_FONT **out);
 
 // Opens the bundled BIZ UDGothic Bold font under the SIL Open Font License.
 RESULT TextFont_LoadDefault(float pixel_height, TEXT_FONT **out);
+
 // Opens the first file of paths whose family name is family, ignoring ASCII
 // case, at the given pixel height. The bundled font draws the characters
 // that the file lacks. A file that does not open is left out, with a log
@@ -27,6 +28,7 @@ RESULT TextFont_LoadDefault(float pixel_height, TEXT_FONT **out);
 RESULT TextFont_LoadFamily(
     const char *const *paths, int32_t count, const char *family,
     float pixel_height, TEXT_FONT **out);
+
 // Changes the size from loaded font data without reading files.
 RESULT TextFont_SetSize(TEXT_FONT *font, float pixel_height);
 void TextFont_Free(TEXT_FONT *font);

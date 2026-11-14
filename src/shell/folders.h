@@ -73,16 +73,20 @@ typedef struct {
 // folders are set then too.
 RESULT Folders_Find(
     const FOLDERS_INPUT *input, const char *game_id, FOLDERS *out);
+
 // Returns the patches folder of the mode in folders, and creates it, as
 // Path_GetPatchesDir does. Mem_Free releases *out. On failure, *out is
 // nullptr.
 RESULT Folders_GetPatchesDir(const FOLDERS *folders, char **out);
+
 // Returns the patches folder that the games of input's program folder
 // use, and creates it, as Folders_GetPatchesDir does. Finds no game's
 // folders, so it creates no user folder. Mem_Free releases *out. On
 // failure, *out is nullptr.
 RESULT Folders_FindPatchesDir(const FOLDERS_INPUT *input, char **out);
+
 // Returns the name of a mode, as --help prints it.
 const char *Folders_GetModeName(FOLDERS_MODE mode);
+
 // Releases the strings of folders.
 void Folders_Free(FOLDERS *folders);

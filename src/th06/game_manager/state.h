@@ -102,14 +102,18 @@ extern GAME_MANAGER g_GameManager;
 // Sets gm up for a new game: zeroed, with the play area at 32, 16,
 // 384 x 448.
 void GameManager_Create(GAME_MANAGER *gm);
+
 // Returns whether a box centred at x, y lies at least partly inside the
 // play area.
 bool GameManager_IsInPlayArea(float x, float y, float width, float height);
+
 // Returns whether shot of character opens the Extra stage: a clear of
 // Normal, Hard or Lunatic without continues. A clear of Easy and a clear
 // with continues do not count.
 bool GameManager_IsExtraUnlocked(int32_t character, int32_t shot);
+
 // Adds amount hundredths to the rank, up to rank.max.
 void GameManager_AddRank(int32_t amount);
+
 // Takes amount hundredths from the rank, down to rank.min.
 void GameManager_SubRank(int32_t amount);

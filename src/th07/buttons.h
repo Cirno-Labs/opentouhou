@@ -67,16 +67,20 @@ typedef struct {
 // and joystick input of Shell_GetDeviceInput.
 void Buttons_Update(
     BUTTONS *buttons, const TH07_INPUT *input, bool shoot_focuses);
+
 // Adds the buttons of input to the word, without a new previous word or
 // repeat, as the original does on the calc after one that slow mode drops.
 // The shoot count steps as in Buttons_Update.
 void Buttons_Merge(
     BUTTONS *buttons, const TH07_INPUT *input, bool shoot_focuses);
+
 // Returns whether the masked word is nonzero and changed this calc.
 bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);
+
 // Returns whether Buttons_WasPressed holds for mask, or a bit of mask is
 // down on a calc that repeats.
 bool Buttons_WasPressedOrRepeated(const BUTTONS *buttons, uint16_t mask);
+
 // Clears the words, the repeat and what derives from them, as a scene
 // switch does. held_frames and shot_held_frames stay.
 void Buttons_Clear(BUTTONS *buttons);

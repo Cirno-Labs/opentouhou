@@ -234,6 +234,7 @@ extern ENEMY_MANAGER g_Enemies;
 // g_GameManager.run.stage and draws the first drop counter and drop index
 // from g_Rng.
 RESULT Enemy_Register(void);
+
 // Removes both elements and releases the enemy sprites.
 void Enemy_Remove(void);
 
@@ -243,13 +244,17 @@ void Enemy_Remove(void);
 // enemy, or a spare enemy that never runs when no slot is free.
 ENEMY *Enemy_Spawn(
     int32_t sub, VEC3 pos, int16_t life, int16_t item, int32_t score);
+
 // Keeps the position of enemy within its bounds, while flags.clamp_pos is
 // set.
 void Enemy_ClampPos(ENEMY *enemy);
+
 // Renews sprite presentation identities after an instant position change.
 void Enemy_RenewPresentation(ENEMY *enemy);
+
 // Makes the orbit effects of enemy fade out and forgets them.
 void Enemy_ReleaseOrbits(ENEMY *enemy);
+
 // Kills every active enemy except the bosses: sets its life to 0, and
 // starts the death subroutine of one that cannot be shot.
 void Enemy_KillAll(void);

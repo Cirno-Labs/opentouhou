@@ -42,12 +42,14 @@
 // with the files of the previous scan, and the scanned files from the
 // second calc on.
 RESULT TitleScene_SetUp(int32_t mode);
+
 // Sets g_GameManager up to play the replay at path from stage, from 0 for
 // stage 1, as the replay menu does, and requests SCENE_GAMEPLAY. The lives
 // and bombs come from the first stage of the replay, not from stage.
 // Reports failure when path does not fit g_GameManager.
 RESULT TitleScene_SetUpReplay(
     const REPLAY_SUMMARY *summary, const char *path, int32_t stage);
+
 // Removes the title, as leaving it for a scene does. Does nothing while the
 // title is not added.
 void TitleScene_Remove(void);

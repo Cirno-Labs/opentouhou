@@ -17,6 +17,7 @@ typedef struct {
 // than eight CP932 bytes.
 RESULT ReplayFormat_Prepare(
     const REPLAY_SAVE_INFO *info, REPLAY_FORMAT_SAVE *out);
+
 // Writes file as an original-format replay. Stores the four random bytes
 // in the header, then the checksum, and encrypts the body with a key that
 // starts at random[0].

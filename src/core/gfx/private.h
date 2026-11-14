@@ -90,6 +90,7 @@ extern const GFX_BACKEND g_GfxBackendNull;
 RESULT GfxFrontend_Start(
     const GFX_BACKEND *backend, SDL_Window *window, int32_t width,
     int32_t height);
+
 // Releases the textures waiting to be freed and stops the backend.
 void GfxFrontend_Stop(void);
 

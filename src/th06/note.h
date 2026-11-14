@@ -29,6 +29,7 @@
 // patch stack. Call after Translation_Init and Anm_InitText. A setting
 // that is not valid keeps its default, with a log line.
 void Note_Init(const PATCH_STACK *patches);
+
 // Releases the notes and the font. Call before Anm_ShutdownText.
 void Note_Shutdown(void);
 
@@ -36,8 +37,10 @@ void Note_Shutdown(void);
 // one or to the end. A text without a note, or with an empty one, changes
 // nothing.
 void Note_Show(const char *text);
+
 // Hides the shown note.
 void Note_Remove(void);
+
 // Draws the shown note over the screen, as thcrap does when the original
 // ends its scene: once a tick, after the draw chain. A note starts to
 // fade in on the first call that finds it shown in place of another note

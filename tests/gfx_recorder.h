@@ -20,13 +20,17 @@ void GfxRecorder_Stop(void);
 // one of them.
 int32_t GfxRecorder_QuadCount(void);
 const GFX_RECORDED_QUAD *GfxRecorder_Quad(int32_t index);
+
 // Returns the id that quad index was drawn with.
 uint64_t GfxRecorder_QuadId(int32_t index);
+
 // Returns the RGBA8 pixels that texture was created with, or nullptr for a
 // texture created empty. Uploads do not change them.
 const uint8_t *GfxRecorder_TexturePixels(const GFX_TEXTURE *texture);
+
 // Returns how many copies of the screen were made since GfxRecorder_Start.
 int32_t GfxRecorder_CopyCount(void);
+
 // Presents the last tick, blended toward the tick before by t, and returns
 // the vertices of quad index as the window draws them.
 const GFX_VERTEX *GfxRecorder_Blend(float t, int32_t index);
