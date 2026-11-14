@@ -12,12 +12,12 @@
 #include "th06/item.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
-#include "th06/timer.h"
 
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
+#include "stg/timer.h"
 
 #define M_CALC_PRIORITY 7
 #define M_DRAW_PRIORITY 5

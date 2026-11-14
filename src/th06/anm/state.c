@@ -4,12 +4,13 @@
 #include "th06/angle.h"
 #include "th06/files.h"
 #include "th06/note.h"
-#include "th06/timer.h"
 
 #include "core/base/assert.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
+
+#include "stg/timer.h"
 
 #include <string.h>
 
