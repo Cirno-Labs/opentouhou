@@ -22,10 +22,13 @@ static bool M_ReadsAs(READER *const reader, const char *const expected)
     return matches && Result_Ignore(Reader_Result(reader));
 }
 
-TEST(the_data_files_are_th07_dat)
+TEST(the_data_files_are_th07_dat_and_thbgm_dat)
 {
     CHECK_EQ_INT(FILES_ARCHIVE_COUNT, 1);
     CHECK_EQ_STR(g_FilesArchives[0], "th07.dat");
+    CHECK_EQ_INT(FILES_DATA_COUNT, 2);
+    CHECK_EQ_STR(g_FilesData[0], "th07.dat");
+    CHECK_EQ_STR(g_FilesData[1], "thbgm.dat");
 }
 
 TEST(loads_an_archive_file_by_its_name_and_a_loose_file)
@@ -36,7 +39,8 @@ TEST(loads_an_archive_file_by_its_name_and_a_loose_file)
         { "text.anm", "from-archive" },
     };
     Th07Data_WriteArchive(directory, files, 2);
-    Th07Data_WriteFile(directory, "thbgm.dat", "from-loose", 10);
+    Th07Data_WriteMusic(directory, nullptr, 0);
+    Th07Data_WriteFile(directory, "loose.dat", "from-loose", 10);
 
     CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
 
@@ -45,7 +49,7 @@ TEST(loads_an_archive_file_by_its_name_and_a_loose_file)
     CHECK(M_ReadsAs(&reader, "from-archive"));
     Reader_Close(&reader);
 
-    CHECK(Result_Log(Files_Stream("thbgm.dat", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Files_Stream("loose.dat", &reader), LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "from-loose"));
     Reader_Close(&reader);
 
@@ -61,6 +65,7 @@ TEST(an_archive_file_wins_over_a_loose_file_of_the_same_name)
         { "same.txt", "archive-version" },
     };
     Th07Data_WriteArchive(directory, files, 2);
+    Th07Data_WriteMusic(directory, nullptr, 0);
     Th07Data_WriteFile(directory, "same.txt", "loose-version", 13);
 
     CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
@@ -98,6 +103,41 @@ TEST(an_archive_without_the_version_file_fails_naming_it)
     Mem_Free(directory);
 }
 
+TEST(a_missing_thbgm_dat_fails_naming_it)
+{
+    char *const directory = TestDir_Prepare("no_music");
+    Th07Data_WriteArchive(directory, &m_Version, 1);
+    const RESULT result = Files_Init(directory);
+    CHECK(!IS_OK(result));
+    CHECK(strstr(result.message, "thbgm.dat") != nullptr);
+    Result_Ignore(result);
+    Files_Shutdown();
+    Mem_Free(directory);
+}
+
+TEST(a_thbgm_dat_of_another_version_fails)
+{
+    char *const directory = TestDir_Prepare("other_music");
+    Th07Data_WriteArchive(directory, &m_Version, 1);
+    const uint8_t headers[][16] = {
+        { 'Z', 'W', 'A', 'V', 2, 0, 0, 0, 0, 7, 0, 0 },
+        { 'Z', 'W', 'A', 'V', 1, 0, 0, 0, 0, 8, 0, 0 },
+        { 'Z', 'W', 'A', 'X', 1, 0, 0, 0, 0, 7, 0, 0 },
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(headers); i++) {
+        Th07Data_WriteFile(directory, "thbgm.dat", headers[i], 16);
+        const RESULT result = Files_Init(directory);
+        CHECK(!IS_OK(result));
+        CHECK(strstr(result.message, "thbgm.dat") != nullptr);
+        Result_Ignore(result);
+        Files_Shutdown();
+    }
+    Th07Data_WriteFile(directory, "thbgm.dat", "ZWAV", 4);
+    CHECK(!Result_Ignore(Files_Init(directory)));
+    Files_Shutdown();
+    Mem_Free(directory);
+}
+
 TEST(shutdown_without_init_is_safe)
 {
     Files_Shutdown();
@@ -112,6 +152,7 @@ TEST(a_patch_file_replaces_the_archived_file_by_its_path)
         { "eff01.anm", "archive" },
     };
     Th07Data_WriteArchive(directory, files, 3);
+    Th07Data_WriteMusic(directory, nullptr, 0);
     char *const patches = TestDir_Join(directory, "patches");
     PatchBuilder_AddPatch(patches, "a/lang", "{}");
     PatchBuilder_Write(patches, "a/lang/th07/data/end00.end", "patched");

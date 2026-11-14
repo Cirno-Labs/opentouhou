@@ -50,6 +50,7 @@ static RESULT M_Start(const char *const case_name, const bool capture)
     g_GameSpeed = 1.0f;
     m_Directory = TestDir_Prepare(case_name);
     Th07Data_WriteArchive(m_Directory, &m_Version, 1);
+    Th07Data_WriteMusic(m_Directory, nullptr, 0);
     char *const data = Str_Format("%s/data", m_Directory);
     CHECK(SDL_CreateDirectory(data));
     Mem_Free(data);
