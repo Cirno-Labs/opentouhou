@@ -2,6 +2,8 @@
 
 #include "core/base/assert.h"
 
+#include <string.h>
+
 FAKE_SHELL g_FakeShell;
 
 static void M_Record(
@@ -25,6 +27,12 @@ bool Shell_GetPadPress(INPUT_BINDING *const out)
     }
     g_FakeShell.pad_pending = false;
     return pending;
+}
+
+void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
+{
+    ASSERT(device < INPUT_DEVICE_COUNT);
+    memcpy(out, &g_FakeShell.device_input[device], sizeof(TH06_INPUT));
 }
 
 size_t Shell_GetBindings(
