@@ -9,7 +9,8 @@ build/mac-<arch>/othpatch/<target>/. The package is a universal application
 bundle per game, signed ad hoc, in a zip under build/packages/, with
 the othpatch that src/<game>/othpatch.txt names, downloaded as the
 release index gives it, or built from the same commit when that
-othpatch has no release.
+othpatch has no release. A release build leaves out the games with a
+development version.
 package-othpatch writes the universal executable of othpatch, signed ad
 hoc, as its release names it.
 
@@ -38,6 +39,7 @@ from shared.versioning import (
     generate_package_name,
     generate_version,
     othpatch_asset_name,
+    packaged_games,
     product_name,
 )
 
@@ -141,7 +143,10 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
 def run_package(deps: Path, target: str) -> None:
     run_build(deps, "games", target, ARCHS)
     PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-    for game in games(REPO_DIR):
+    packaged = packaged_games(REPO_DIR)
+    for game in sorted(set(games(REPO_DIR)) - set(packaged)):
+        print(f"Left out {game}: a release build has no development versions.")
+    for game in packaged:
         version = generate_version(game, REPO_DIR)
         othpatch = pinned_othpatch(
             game, "mac", lambda: build_othpatch(deps, target), REPO_DIR

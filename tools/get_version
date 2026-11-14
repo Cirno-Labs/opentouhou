@@ -2,9 +2,13 @@
 """Print the version that a build of a program reports."""
 
 import argparse
+import sys
 
 from shared.versioning import generate_version
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("program", help="such as th06 or othpatch")
-print(generate_version(parser.parse_args().program))
+try:
+    print(generate_version(parser.parse_args().program))
+except ValueError as error:
+    sys.exit(str(error))

@@ -5,6 +5,10 @@ from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parents[2]
 VERSION = re.compile(r"\d+\.\d+\.\d+")
+# Marks a development version, such as 0.1.0-dev: the version of a
+# program in development, which is never released.
+DEV_SUFFIX = "-dev"
+PROGRAM_VERSION = re.compile(VERSION.pattern + f"(?:{DEV_SUFFIX})?")
 # Names the environment variable that makes a build a release build.
 RELEASE_ENV = "OPENTOUHOU_RELEASE"
 
@@ -32,6 +36,27 @@ def read_version(path: Path) -> str:
     return text
 
 
+def is_dev(version: str) -> bool:
+    """Return whether a version is a development version, such as
+    0.1.0-dev."""
+    return version.endswith(DEV_SUFFIX)
+
+
+def program_version(program: str, repo_dir: Path = REPO_DIR) -> str:
+    """Return the version in src/<program>/version.txt: a version X.Y.Z,
+    or a development version X.Y.Z-dev.
+
+    Raises ValueError when the file holds anything else.
+    """
+    path = version_path(program, repo_dir)
+    text = path.read_text().strip()
+    if not PROGRAM_VERSION.fullmatch(text):
+        raise ValueError(
+            f"{path} holds {text!r} instead of a version X.Y.Z or X.Y.Z{DEV_SUFFIX}"
+        )
+    return text
+
+
 def programs(repo_dir: Path = REPO_DIR) -> list[str]:
     """Return the programs that have a version file, in name order."""
     return sorted(path.parent.name for path in (repo_dir / "src").glob("*/version.txt"))
@@ -42,17 +67,65 @@ def games(repo_dir: Path = REPO_DIR) -> list[str]:
     return [program for program in programs(repo_dir) if program != "othpatch"]
 
 
+def is_release_build() -> bool:
+    """Return whether the environment variable OPENTOUHOU_RELEASE makes
+    this build a release build."""
+    return os.environ.get(RELEASE_ENV) == "1"
+
+
 def generate_version(program: str, repo_dir: Path = REPO_DIR) -> str:
     """Return the version that a build of a program reports.
 
     A release build, with the environment variable OPENTOUHOU_RELEASE set
     to 1, reports the version of src/<program>/version.txt, such as 1.2.0.
     Every other build adds -dev and the short commit, as in
-    1.2.0-dev+abcdef0, or -dev alone when git cannot name the commit.
+    1.2.0-dev+abcdef0, or -dev alone when git cannot name the commit. A
+    development version, such as 0.1.0-dev, gets the commit alone, as in
+    0.1.0-dev+abcdef0.
+
+    Raises ValueError for a development version in a release build: it
+    has no release.
     """
-    version = read_version(version_path(program, repo_dir))
-    if os.environ.get(RELEASE_ENV) == "1":
+    version = program_version(program, repo_dir)
+    if is_release_build():
+        if is_dev(version):
+            raise ValueError(
+                f"{program} {version} is a development version, so it has no"
+                " release build. Set its release version with tools/bump first."
+            )
         return version
+    return dev_version(version, repo_dir)
+
+
+def build_version(program: str, repo_dir: Path = REPO_DIR) -> str:
+    """Return the version that a program's executable reports.
+
+    It is generate_version's, except that a release build gives a
+    program with a development version that version alone, such as
+    0.1.0-dev. Such a program compiles with the release builds of the
+    others, and packaged_games leaves it out.
+    """
+    version = program_version(program, repo_dir)
+    if is_release_build() and is_dev(version):
+        return version
+    return generate_version(program, repo_dir)
+
+
+def packaged_games(repo_dir: Path = REPO_DIR) -> list[str]:
+    """Return the games that a build packages: every game, but in a
+    release build only those without a development version."""
+    if not is_release_build():
+        return games(repo_dir)
+    return [
+        game for game in games(repo_dir) if not is_dev(program_version(game, repo_dir))
+    ]
+
+
+def dev_version(version: str, repo_dir: Path = REPO_DIR) -> str:
+    """Return the version of a build that is not a release build: version
+    with -dev, when it has none, and the short commit."""
+    if not is_dev(version):
+        version += DEV_SUFFIX
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short=7", "HEAD"],
@@ -61,11 +134,11 @@ def generate_version(program: str, repo_dir: Path = REPO_DIR) -> str:
             text=True,
         )
     except OSError:
-        return f"{version}-dev"
+        return version
     commit = result.stdout.strip()
     if result.returncode != 0 or not commit:
-        return f"{version}-dev"
-    return f"{version}-dev+{commit}"
+        return version
+    return f"{version}+{commit}"
 
 
 def product_name(program: str) -> str:

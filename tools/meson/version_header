@@ -2,7 +2,8 @@
 """Write a C header with the version of a game or of othpatch, for the
 executable and its Windows resources.
 
-GAME_VERSION is the version string from tools/shared/versioning.py.
+GAME_VERSION is the version string from build_version in
+tools/shared/versioning.py.
 GAME_VERSION_RC holds its numbers for VERSIONINFO: major, minor, patch
 and 0.
 --prefix replaces GAME in both names, such as OTHPATCH_VERSION.
@@ -18,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from shared.versioning import generate_version
+from shared.versioning import build_version
 
 
 def numbers(version: str) -> str:
@@ -42,7 +43,7 @@ def main() -> None:
     parser.add_argument("--prefix", default="GAME")
     parser.add_argument("--define", type=define, action="append", default=[])
     args = parser.parse_args()
-    version = generate_version(args.program)
+    version = build_version(args.program)
     text = (
         "#pragma once\n\n"
         f'#define {args.prefix}_VERSION "{version}"\n'
