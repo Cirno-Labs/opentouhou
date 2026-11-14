@@ -3,6 +3,7 @@ th07_lib = static_library(
   'th07_lib',
   'files.c',
   'game.c',
+  'settings.c',
   c_args: [layer_include['th07']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],

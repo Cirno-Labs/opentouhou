@@ -2,6 +2,7 @@
 
 #include "th07/files.h"
 #include "th07/game.h"
+#include "th07/settings.h"
 
 #include "version.h"
 
@@ -45,6 +46,8 @@ const GAME_DESC g_GameDesc = {
     .logical_width = 640,
     .logical_height = 480,
     .input_schema = &m_InputSchema,
+    .settings_schema = &g_SettingsSchema,
+    .settings = &g_Settings,
     .patch_game = &g_PatchGame,
     .data_files = g_FilesArchives,
     .data_file_count = FILES_ARCHIVE_COUNT,
