@@ -12,6 +12,12 @@ repos:
     additional_dependencies: [clang-format==22.1.8]
     files: \.[ch]$
 
+  - id: header-spacing
+    name: A commented function in a header has a blank line above it
+    entry: tools/lint/check_header_spacing
+    language: python
+    files: \.h$
+
   - id: global-reset
     name: A global is reset with memset, not a compound literal
     entry: tools/lint/check_global_reset
