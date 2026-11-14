@@ -3,6 +3,8 @@
 # modules instead.
 th07_lib = static_library(
   'th07_lib',
+  'anm/state.c',
+  'anm/texture.c',
   'buttons.c',
   'files.c',
   'game.c',
