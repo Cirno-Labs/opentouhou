@@ -181,8 +181,9 @@ Two rules hold across modules:
 - Text is UTF-8 everywhere. Shift-JIS exists only when original data is
   read or original-format files are written.
 
-`stg` holds what the shooting games share: ZUN's PBG3 archive format
-and the random number generator. Each `src/thXX/` holds the rest of its
+`stg` holds what the shooting games share: the task chain, the frame
+timer, ZUN's LZSS coder, the PBG3 and PBG4 archive formats and the
+random number generator. Each `src/thXX/` holds the rest of its
 game: the `GAME_DESC`, the scenes, the rules and tables, the features,
 and its script engines, such as ANM and ECL.
 
