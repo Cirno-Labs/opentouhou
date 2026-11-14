@@ -2,8 +2,9 @@
 
 #include "othpatch/game.h"
 #include "othpatch/install/backend.h"
-#include "othpatch/zip.h"
 
+#include "core/archive.h"
+#include "core/archive/zip.h"
 #include "core/base/memory.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
@@ -112,14 +113,14 @@ static RESULT M_Swap(
 }
 
 static RESULT M_Unpack(
-    const uint8_t *const package, const size_t size,
-    const ZIP_ENTRY *const entry, const char *const path, const bool executable)
+    ARCHIVE *const package, const ARCHIVE_ENTRY *const entry,
+    const char *const path, const bool executable)
 {
     uint8_t *data;
-    size_t data_size;
-    MUST(Zip_Read(package, size, entry, &data, &data_size));
-    const RESULT result = M_WriteFile(path, data, data_size, executable);
-    Mem_Free(data);
+    MUST(Archive_Read(package, entry, &data));
+    const size_t size = ArchiveEntry_GetSize(entry);
+    const RESULT result = M_WriteFile(path, data, size, executable);
+    Allocator_Free(&g_HeapAllocator, data, size);
     return result;
 }
 
@@ -147,26 +148,27 @@ static bool M_IsSafePath(const char *const path)
 // Writes every entry below the folder prefix of the archive into the folder
 // staged.
 static RESULT M_UnpackBundle(
-    const uint8_t *const package, const size_t size,
-    const ZIP_ENTRY_LIST *const entries, const char *const prefix,
-    const char *const staged, ARENA *const arena)
+    ARCHIVE *const package, const char *const prefix, const char *const staged,
+    ARENA *const arena)
 {
     MUST(M_RemoveTree(staged, arena));
     MUST(File_MakeDir(staged));
     int32_t count = 0;
-    for (int32_t i = 0; i < entries->count; i++) {
-        const ZIP_ENTRY *const entry = &entries->items[i];
-        if (strncmp(entry->name, prefix, strlen(prefix)) != 0) {
+    for (int32_t i = 0; i < Archive_GetCount(package); i++) {
+        const ARCHIVE_ENTRY *const entry = Archive_GetEntry(package, i);
+        const char *const name = ArchiveEntry_GetName(entry);
+        const uint32_t mode = ArchiveEntry_GetMode(entry);
+        if (strncmp(name, prefix, strlen(prefix)) != 0) {
             continue;
         }
-        const char *const relative = entry->name + strlen(prefix);
+        const char *const relative = name + strlen(prefix);
         if (relative[0] == '\0') {
             continue;
         }
-        FAIL_IF(!M_IsSafePath(relative), "%s is not a safe path", entry->name);
+        FAIL_IF(!M_IsSafePath(relative), "%s is not a safe path", name);
         FAIL_IF(
-            (entry->mode & M_FILE_TYPE_MASK) == M_FILE_TYPE_LINK,
-            "%s is a symbolic link, which is not supported", entry->name);
+            (mode & M_FILE_TYPE_MASK) == M_FILE_TYPE_LINK,
+            "%s is a symbolic link, which is not supported", name);
         char *const path = Path_Join(Arena_Allocator(arena), staged, relative);
         const size_t length = strlen(path);
         if (path[length - 1] == '/') {
@@ -177,7 +179,7 @@ static RESULT M_UnpackBundle(
         char *const parent = M_Format(arena, "%s", path);
         *strrchr(parent, '/') = '\0';
         MUST(File_MakeDir(parent));
-        MUST(M_Unpack(package, size, entry, path, (entry->mode & 0111) != 0));
+        MUST(M_Unpack(package, entry, path, (mode & 0111) != 0));
         count++;
     }
     FAIL_IF(count == 0, "the package has no %s", prefix);
@@ -186,19 +188,18 @@ static RESULT M_UnpackBundle(
 
 static RESULT M_InstallGame(
     const INSTALL_PLATFORM *const platform, const char *const dir,
-    const char *const game, const uint8_t *const package, const size_t size,
-    const ZIP_ENTRY_LIST *const entries, ARENA *const arena)
+    const char *const game, ARCHIVE *const package, ARENA *const arena)
 {
     const char *const name = M_GameName(platform, game, arena);
     const char *const path = Path_Join(Arena_Allocator(arena), dir, name);
     const char *const staged = M_Format(arena, "%s.new", path);
     if (platform->bundle) {
         const char *const prefix = M_Format(arena, "%s/", name);
-        MUST(M_UnpackBundle(package, size, entries, prefix, staged, arena));
+        MUST(M_UnpackBundle(package, prefix, staged, arena));
     } else {
-        const ZIP_ENTRY *const entry = Zip_Find(entries, name);
+        const ARCHIVE_ENTRY *const entry = Archive_Find(package, name);
         FAIL_IF(entry == nullptr, "the package has no %s", name);
-        MUST(M_Unpack(package, size, entry, staged, true));
+        MUST(M_Unpack(package, entry, staged, true));
     }
     return M_Swap(platform, path, arena);
 }
@@ -220,17 +221,16 @@ static RESULT M_StageOthpatch(
 // *current. A package othpatch that gives no version is skipped.
 static RESULT M_InstallNewerOthpatch(
     const INSTALL_PLATFORM *const platform, const char *const dir,
-    const uint8_t *const package, const size_t size,
-    const ZIP_ENTRY *const entry, RELEASE_VERSION *const current,
-    ARENA *const arena, bool *const replaced)
+    ARCHIVE *const package, const ARCHIVE_ENTRY *const entry,
+    RELEASE_VERSION *const current, ARENA *const arena, bool *const replaced)
 {
     uint8_t *data;
-    size_t data_size;
-    MUST(Zip_Read(package, size, entry, &data, &data_size));
+    MUST(Archive_Read(package, entry, &data));
+    const size_t size = ArchiveEntry_GetSize(entry);
     const char *staged;
     const RESULT written =
-        M_StageOthpatch(platform, dir, data, data_size, arena, &staged);
-    Mem_Free(data);
+        M_StageOthpatch(platform, dir, data, size, arena, &staged);
+    Allocator_Free(&g_HeapAllocator, data, size);
     MUST(written);
     char text[GAME_VERSION_SIZE];
     RELEASE_VERSION version;
@@ -262,6 +262,25 @@ char *Install_GetGamePath(
         M_Format(arena, "%s/Contents/MacOS/%s", name, product));
 }
 
+static RESULT M_InstallPackage(
+    const INSTALL_PLATFORM *const platform, const char *const dir,
+    const char *const game, ARCHIVE *const package,
+    RELEASE_VERSION *const othpatch_version, ARENA *const arena,
+    bool *const othpatch_replaced)
+{
+    const ARCHIVE_ENTRY *const othpatch =
+        Archive_Find(package, platform->othpatch);
+    MUST(M_InstallGame(platform, dir, game, package, arena));
+    if (othpatch != nullptr && othpatch_version != nullptr) {
+        MUST(
+            M_InstallNewerOthpatch(
+                platform, dir, package, othpatch, othpatch_version, arena,
+                othpatch_replaced),
+            "%s", platform->othpatch);
+    }
+    return OK;
+}
+
 RESULT Install_Package(
     const INSTALL_PLATFORM *const platform, const char *const dir,
     const char *const game, const uint8_t *const package, const size_t size,
@@ -269,18 +288,17 @@ RESULT Install_Package(
     bool *const othpatch_replaced)
 {
     *othpatch_replaced = false;
-    ZIP_ENTRY_LIST entries;
-    MUST(Zip_List(package, size, arena, &entries), "the package");
-    const ZIP_ENTRY *const othpatch = Zip_Find(&entries, platform->othpatch);
-    MUST(M_InstallGame(platform, dir, game, package, size, &entries, arena));
-    if (othpatch != nullptr && othpatch_version != nullptr) {
-        MUST(
-            M_InstallNewerOthpatch(
-                platform, dir, package, size, othpatch, othpatch_version, arena,
-                othpatch_replaced),
-            "%s", platform->othpatch);
-    }
-    return OK;
+    READER reader;
+    Reader_OpenBuffer(&reader, package, size, nullptr);
+    ARCHIVE *archive;
+    MUST(
+        Archive_Open(&g_ZipFormat, &reader, &g_HeapAllocator, &archive),
+        "the package");
+    const RESULT result = M_InstallPackage(
+        platform, dir, game, archive, othpatch_version, arena,
+        othpatch_replaced);
+    Archive_Close(archive);
+    return result;
 }
 
 RESULT Install_Othpatch(
