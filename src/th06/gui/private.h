@@ -1,7 +1,8 @@
 #pragma once
 
 #include "th06/gui.h"
-#include "th06/chain.h"
+
+#include "stg/chain.h"
 
 #define M_CALC_PRIORITY 12
 #define M_DRAW_PRIORITY 11

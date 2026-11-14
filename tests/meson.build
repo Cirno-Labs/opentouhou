@@ -484,20 +484,6 @@ test(
 )
 
 test(
-  'th06/chain',
-  executable(
-    'test_th06_chain',
-    'test_th06_chain.c',
-    c_args: [layer_include['th06']] + core_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-  ),
-  suite: 'unit',
-)
-
-test(
   'th06/game_manager',
   executable(
     'test_th06_game_manager',
@@ -865,6 +851,18 @@ test(
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_files',
     'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_files',
   },
+  suite: 'unit',
+)
+
+test(
+  'stg/chain',
+  executable(
+    'test_chain',
+    'test_chain.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_chain_lib, core_base_lib],
+  ),
   suite: 'unit',
 )
 

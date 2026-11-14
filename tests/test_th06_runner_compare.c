@@ -3,7 +3,8 @@
 #include "test.h"
 
 #include "core/base/memory.h"
-#include "th06/chain.h"
+
+#include "stg/chain.h"
 
 #include <string.h>
 
