@@ -72,21 +72,6 @@ void GameManager_SetBombs(const int32_t bombs)
     g_SceneStubCalls.set_bombs_lives = g_GameManager.player.lives;
 }
 
-void Sound_Queue(const int32_t sound)
-{
-    g_SceneStubCalls.sounds[g_SceneStubCalls.sound_count++ % 16] = sound;
-}
-
-void Sound_PauseMusic(void)
-{
-    g_SceneStubCalls.pause_music++;
-}
-
-void Sound_ResumeMusic(void)
-{
-    g_SceneStubCalls.resume_music++;
-}
-
 void PlayTime_Add(void)
 {
     g_SceneStubCalls.play_time_add++;
