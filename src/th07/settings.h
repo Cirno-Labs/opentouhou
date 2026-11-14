@@ -31,8 +31,7 @@ typedef struct {
     // is Extra and 5 Phantasm.
     int32_t difficulty;
     int32_t music; // a SETTINGS_MUSIC
-    // Plays sound effects, and music unless music is SETTINGS_MUSIC_OFF.
-    bool sound;
+    bool sound; // plays sound effects
     // Focuses while a pad holds shoot.
     bool shoot_focuses;
 } TH07_SETTINGS;
