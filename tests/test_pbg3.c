@@ -205,7 +205,9 @@ TEST(a_decoded_size_smaller_than_the_stream_produces_fails)
     READER reader;
     const RESULT result =
         source->funcs->open(source, "y.txt", VFS_IN_MEMORY, &reader);
-    CHECK(!IS_OK(result));
+    // Decoding stops at the recorded size, so the second literal is never
+    // read and the sum misses its last byte.
+    CHECK_EQ_STR(result.message, "test.dat: y.txt: checksum mismatch");
     Result_Ignore(result);
     source->funcs->close(source);
     CHECK_EQ_INT(test.live_blocks, 0);
@@ -238,7 +240,70 @@ TEST(a_decoded_size_larger_than_the_stream_produces_fails)
     READER reader;
     const RESULT result =
         source->funcs->open(source, "z.txt", VFS_IN_MEMORY, &reader);
-    CHECK(!IS_OK(result));
+    CHECK_EQ_STR(
+        result.message,
+        "test.dat: z.txt: decoded data is shorter than recorded");
+    Result_Ignore(result);
+    source->funcs->close(source);
+    CHECK_EQ_INT(test.live_blocks, 0);
+}
+
+TEST(a_decoded_size_past_what_the_stream_can_hold_fails)
+{
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'a');
+    Pbg3Builder_WriteStop(&bw);
+    Pbg3Builder_FlushByte(&bw);
+
+    const PBG3_BUILDER_ENTRY entry = {
+        .name = "w.txt",
+        .compressed = bw.bytes,
+        .compressed_size = bw.length,
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
+        .decoded_size = 0xffffffff,
+    };
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
+
+    VFS_SOURCE *source;
+    const RESULT result = M_Open(archive, size, &g_HeapAllocator, &source);
+    CHECK_EQ_STR(
+        result.message,
+        "test.dat: w.txt: entry is longer than its packed data can hold");
+    Result_Ignore(result);
+}
+
+TEST(a_match_past_the_decoded_size_fails)
+{
+    PBG3_BUILDER_WRITER bw;
+    Pbg3Builder_Init(&bw);
+    Pbg3Builder_WriteLiteral(&bw, 'a');
+    Pbg3Builder_WriteBackref(&bw, 1, 3);
+    Pbg3Builder_FlushByte(&bw);
+
+    const PBG3_BUILDER_ENTRY entry = {
+        .name = "w.txt",
+        .compressed = bw.bytes,
+        .compressed_size = bw.length,
+        .checksum = Pbg3Builder_Checksum(bw.bytes, bw.length),
+        .decoded_size = 3, // the match ends at 4 bytes
+    };
+    uint8_t archive[PBG3_BUILDER_MAX_ARCHIVE_SIZE];
+    const size_t size = Pbg3Builder_BuildArchive(&entry, 1, archive);
+
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS_SOURCE *source;
+    CHECK(Result_Log(
+        M_Open(archive, size, &test.allocator, &source), LOG_LEVEL_ERROR));
+
+    READER reader;
+    const RESULT result =
+        source->funcs->open(source, "w.txt", VFS_IN_MEMORY, &reader);
+    CHECK_EQ_STR(
+        result.message,
+        "test.dat: w.txt: decoded data is longer than recorded");
     Result_Ignore(result);
     source->funcs->close(source);
     CHECK_EQ_INT(test.live_blocks, 0);
