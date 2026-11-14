@@ -49,6 +49,23 @@ void Th07Data_WriteArchive(
     Allocator_Free(&g_HeapAllocator, bytes, size);
 }
 
+void Th07Data_WriteMusic(
+    const char *const directory, const void *const pcm, const size_t size)
+{
+    WRITER out;
+    Writer_OpenBuffer(&out, &g_HeapAllocator, nullptr);
+    Writer_WriteBytes(&out, "ZWAV", 4);
+    Writer_WriteU32(&out, 1);
+    Writer_WriteU32(&out, 0x700);
+    Writer_WriteU32(&out, 0);
+    Writer_WriteBytes(&out, pcm, size);
+    size_t total;
+    uint8_t *const bytes = Writer_TakeBuffer(&out, &total);
+    Result_Ignore(Writer_Close(&out));
+    Th07Data_WriteFile(directory, "thbgm.dat", bytes, total);
+    Allocator_Free(&g_HeapAllocator, bytes, total);
+}
+
 void Th07Data_WriteFile(
     const char *const directory, const char *const name, const void *const data,
     const size_t size)

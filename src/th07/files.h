@@ -23,9 +23,16 @@ extern const PATCH_GAME g_PatchGame;
 // Names the archive that Files_Init mounts.
 extern const char *const g_FilesArchives[FILES_ARCHIVE_COUNT];
 
+#define FILES_DATA_COUNT 2
+
+// Names the files that the data directory must hold: th07.dat and
+// thbgm.dat.
+extern const char *const g_FilesData[FILES_DATA_COUNT];
+
 // Mounts data_dir and th07.dat from it. An archive that is missing, or
 // that has no th07_0100b.ver, is a failure: the original refuses to start
-// without the version file of 1.00b.
+// without the version file of 1.00b. So is a thbgm.dat that is missing or
+// is not that of 1.00, which the original refuses as well.
 RESULT Files_Init(const char *data_dir);
 
 // Mounts the files of patches above the archive, so that a file of a

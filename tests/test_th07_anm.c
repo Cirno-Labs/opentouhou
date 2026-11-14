@@ -26,6 +26,7 @@ static char *M_SetupFiles(
 {
     char *const directory = TestDir_Prepare(case_name);
     Th07Data_WriteArchive(directory, &m_Version, 1);
+    Th07Data_WriteMusic(directory, nullptr, 0);
     if (builder != nullptr) {
         Th07AnmBuilder_WriteFile(builder, directory, name);
     }
@@ -330,6 +331,7 @@ TEST(load_fails_on_a_version_other_than_2)
         anm->version = versions[i];
         char *const directory = TestDir_Prepare("version");
         Th07Data_WriteArchive(directory, &m_Version, 1);
+        Th07Data_WriteMusic(directory, nullptr, 0);
         Th07AnmBuilder_WriteFile(&builder, directory, "test.anm");
         M_Setup(directory);
         const bool loads =

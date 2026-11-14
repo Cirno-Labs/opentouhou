@@ -12,10 +12,15 @@
 #include <string.h>
 
 #define M_VERSION_FILE "th07_0100b.ver"
+#define M_MUSIC_FILE "thbgm.dat"
+#define M_MUSIC_MAGIC "ZWAV"
+#define M_MUSIC_VERSION 1
+#define M_MUSIC_GAME_VERSION 0x700
 #define M_PATCH_PRIORITY 100
 #define M_ARCHIVE_PRIORITY 16
 
 const char *const g_FilesArchives[FILES_ARCHIVE_COUNT] = { "th07.dat" };
+const char *const g_FilesData[FILES_DATA_COUNT] = { "th07.dat", M_MUSIC_FILE };
 
 static VFS *m_Vfs = nullptr;
 static const PATCH_STACK *m_Patches = nullptr;
@@ -66,6 +71,25 @@ static RESULT M_MountArchive(const char *const name, const int32_t priority)
     return OK;
 }
 
+// Checks the header of thbgm.dat: "ZWAV", version 1, game version 0x700.
+static RESULT M_CheckMusic(void)
+{
+    READER file;
+    MUST(Vfs_Open(m_Vfs, M_MUSIC_FILE, VFS_STREAM, &file));
+    char magic[4];
+    Reader_ReadBytes(&file, magic, sizeof(magic));
+    const uint32_t version = Reader_ReadU32(&file);
+    const uint32_t game_version = Reader_ReadU32(&file);
+    Reader_Close(&file);
+    MUST(Reader_Result(&file));
+    FAIL_IF(
+        memcmp(magic, M_MUSIC_MAGIC, sizeof(magic)) != 0
+            || version != M_MUSIC_VERSION
+            || game_version != M_MUSIC_GAME_VERSION,
+        "%s is not the music of th07 1.00", M_MUSIC_FILE);
+    return OK;
+}
+
 const PATCH_GAME g_PatchGame = {
     .build = "v1.00b",
     .layout = PATCH_LAYOUT_PATHS,
@@ -78,6 +102,9 @@ RESULT Files_Init(const char *const data_dir)
     RESULT result = Vfs_MountDir(m_Vfs, data_dir, 0);
     if (IS_OK(result)) {
         result = M_MountArchive(g_FilesArchives[0], M_ARCHIVE_PRIORITY);
+    }
+    if (IS_OK(result)) {
+        result = M_CheckMusic();
     }
     if (!IS_OK(result)) {
         Vfs_Destroy(m_Vfs);
