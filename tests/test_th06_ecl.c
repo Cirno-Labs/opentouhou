@@ -8,7 +8,7 @@
 #include "th06_data.h"
 #include "th06_scene_stubs.h"
 
-#include "th06/angle.h"
+#include "stg/angle.h"
 #include "th06/anm.h"
 #include "th06/bullet.h"
 #include "th06/effect.h"
