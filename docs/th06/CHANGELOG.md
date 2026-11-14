@@ -1,5 +1,10 @@
 # th06 changelog
 
+## Unreleased
+
+- Fixed a gamepad or joystick button bound to both shoot and focus: it
+  now focuses only after it is held for 8 frames, as in the original.
+
 ## 1.0.0 (2026-11-13)
 
 - Added th06, compatible with the original down to its replays: the 17

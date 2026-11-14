@@ -1,5 +1,6 @@
 #include "th06/buttons.h"
 
+#include "shell_fake.h"
 #include "test.h"
 
 #include "core/base/utils.h"
@@ -185,4 +186,106 @@ TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
         CHECK(!Buttons_WasPressedOrRepeated(&buttons, 0x20));
     }
     CHECK_EQ_INT(count, 2);
+}
+
+static void M_HoldPadShoot(BUTTONS *const buttons, const bool held)
+{
+    g_FakeShell.device_input[INPUT_DEVICE_GAMEPAD].shoot = held;
+    const TH06_INPUT input = { .shoot = held, .focus = held };
+    Buttons_Update(buttons, &input);
+}
+
+static void M_Bind(const size_t action, const char *const name)
+{
+    INPUT_BINDING *const binding =
+        &g_FakeShell.bindings[action][g_FakeShell.binding_counts[action]++];
+    CHECK(Input_BindingFromName(name, binding));
+}
+
+TEST(shared_pad_shoot_focuses_from_the_8th_calc)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = { .shared_focus = true };
+    for (int calc = 1; calc <= 7; calc++) {
+        M_HoldPadShoot(&buttons, true);
+        CHECK(buttons.held.shoot);
+        CHECK(!buttons.held.focus);
+    }
+    M_HoldPadShoot(&buttons, true);
+    CHECK(buttons.held.focus);
+}
+
+TEST(shared_pad_shoot_counts_up_to_16)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = { .shared_focus = true };
+    for (int calc = 0; calc < 20; calc++) {
+        M_HoldPadShoot(&buttons, true);
+    }
+    CHECK_EQ_INT(buttons.shot_held_frames, 16);
+}
+
+TEST(shared_pad_release_above_8_takes_8_off_without_focus)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = { .shared_focus = true, .shot_held_frames = 16 };
+    M_HoldPadShoot(&buttons, false);
+    CHECK(!buttons.held.focus);
+    CHECK_EQ_INT(buttons.shot_held_frames, 8);
+    M_HoldPadShoot(&buttons, false);
+    CHECK_EQ_INT(buttons.shot_held_frames, 0);
+}
+
+TEST(shared_pad_quick_repress_focuses_at_once)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = { .shared_focus = true, .shot_held_frames = 16 };
+    M_HoldPadShoot(&buttons, false);
+    M_HoldPadShoot(&buttons, true);
+    CHECK(buttons.held.focus);
+    CHECK_EQ_INT(buttons.shot_held_frames, 9);
+}
+
+TEST(shared_joystick_shoot_counts_like_the_gamepad)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = { .shared_focus = true, .shot_held_frames = 7 };
+    g_FakeShell.device_input[INPUT_DEVICE_JOYSTICK].shoot = true;
+    const TH06_INPUT input = { .shoot = true, .focus = true };
+    Buttons_Update(&buttons, &input);
+    CHECK(buttons.held.focus);
+}
+
+TEST(shared_keyboard_focus_is_immediate)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = { .shared_focus = true };
+    g_FakeShell.device_input[INPUT_DEVICE_KEYBOARD].focus = true;
+    const TH06_INPUT input = { .focus = true };
+    Buttons_Update(&buttons, &input);
+    CHECK(buttons.held.focus);
+}
+
+TEST(unshared_focus_is_the_inputs)
+{
+    FakeShell_Reset();
+    BUTTONS buttons = {};
+    M_HoldPadShoot(&buttons, true);
+    CHECK(buttons.held.focus);
+    CHECK_EQ_INT(buttons.shot_held_frames, 0);
+}
+
+TEST(read_shared_focus_finds_a_pad_binding_of_shoot_and_focus)
+{
+    FakeShell_Reset();
+    M_Bind(0, "z");
+    M_Bind(0, "joy_button_3");
+    M_Bind(2, "z");
+    BUTTONS buttons = { .shared_focus = true };
+    Buttons_ReadSharedFocus(&buttons);
+    CHECK(!buttons.shared_focus);
+    M_Bind(2, "joy_button_3");
+    Buttons_ReadSharedFocus(&buttons);
+    CHECK(buttons.shared_focus);
+    FakeShell_Reset();
 }
