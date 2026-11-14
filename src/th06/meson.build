@@ -49,7 +49,6 @@ th06_lib = static_library(
   'sound/player.c',
   'stage.c',
   'strings.c',
-  'timer.c',
   'translation.c',
   c_args: [layer_include['th06'], layer_include['shell']],
   implicit_include_directories: false,
