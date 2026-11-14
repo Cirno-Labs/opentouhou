@@ -10,7 +10,9 @@
 // original does, so "data/title00.jpg" finds the entry "title00.jpg";
 // names are compared without regard to ASCII case. Entry names are
 // converted from CP932 to UTF-8 when the archive is opened. An entry is
-// decompressed whole when it is opened, so every open returns it in memory.
+// decompressed whole when it is opened, so every open returns it in memory,
+// in a reader named "<archive name>/<entry name>", such as
+// "紅魔郷CM.DAT/title00.jpg".
 //
 // Example:
 // MUST(Vfs_MountDir(vfs, data_dir, 0));

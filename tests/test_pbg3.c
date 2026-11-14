@@ -459,7 +459,7 @@ static const VFS_SOURCE_FUNCS M_RawFuncs = {
     .close = M_RawClose,
 };
 
-TEST(mounting_through_vfs_mount_file_reads_an_entry)
+TEST(mounting_through_vfs_mount_file_reads_a_named_entry)
 {
     uint8_t compressed[16];
     PBG3_BUILDER_WRITER bw;
@@ -494,6 +494,7 @@ TEST(mounting_through_vfs_mount_file_reads_an_entry)
     READER reader;
     CHECK(Result_Log(
         Vfs_Open(vfs, "q.txt", VFS_IN_MEMORY, &reader), LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(Reader_GetName(&reader), "archive.dat/q.txt");
     CHECK(M_ReadsAs(&reader, "q"));
     Reader_Close(&reader);
     Vfs_Destroy(vfs);
