@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/gfx.h"
+
 #include <stdint.h>
 
 // Counts calls into the th07/stubs.h functions this test links instead
@@ -19,9 +21,26 @@ typedef struct {
     // were last called.
     int32_t replay_discard_scene;
     int32_t game_manager_register_scene;
+    int reroll_checksum_keys;
+    int set_bombs;
+    int32_t set_bombs_value;
+    // The lives when GameManager_SetBombs was last called.
+    float set_bombs_lives;
+    int32_t sound_count;
+    int32_t sounds[16];
+    int pause_music;
+    int resume_music;
+    int play_time_add;
+    int play_time_restart;
+    int pending_copies;
+    int32_t copy_slot;
+    GFX_RECT copy_source;
+    GFX_RECT copy_dest;
+    // Makes Anm_SetPendingCopy report a copy pending.
+    bool copy_pending;
 } SCENE_STUB_CALLS;
 
 extern SCENE_STUB_CALLS g_SceneStubCalls;
 
-// Clears the counts and g_GameManager.
+// Clears the counts, g_GameManager, g_Player and g_Gui.
 void SceneStubCalls_Reset(void);

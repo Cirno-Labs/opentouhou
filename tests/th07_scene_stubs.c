@@ -4,12 +4,16 @@
 #include "th07/stubs.h"
 
 GAME_MANAGER g_GameManager;
+PLAYER g_Player;
+GUI g_Gui;
 SCENE_STUB_CALLS g_SceneStubCalls;
 
 void SceneStubCalls_Reset(void)
 {
     g_SceneStubCalls = (SCENE_STUB_CALLS) {};
     g_GameManager = (GAME_MANAGER) {};
+    g_Player = (PLAYER) {};
+    g_Gui = (GUI) {};
 }
 
 RESULT TitleScene_SetUp(const int32_t mode)
@@ -54,4 +58,54 @@ void Replay_Discard(void)
 {
     g_SceneStubCalls.replay_discard++;
     g_SceneStubCalls.replay_discard_scene = Scene_GetRequested();
+}
+
+void GameManager_RerollChecksumKeys(void)
+{
+    g_SceneStubCalls.reroll_checksum_keys++;
+}
+
+void GameManager_SetBombs(const int32_t bombs)
+{
+    g_SceneStubCalls.set_bombs++;
+    g_SceneStubCalls.set_bombs_value = bombs;
+    g_SceneStubCalls.set_bombs_lives = g_GameManager.player.lives;
+}
+
+void Sound_Queue(const int32_t sound)
+{
+    g_SceneStubCalls.sounds[g_SceneStubCalls.sound_count++ % 16] = sound;
+}
+
+void Sound_PauseMusic(void)
+{
+    g_SceneStubCalls.pause_music++;
+}
+
+void Sound_ResumeMusic(void)
+{
+    g_SceneStubCalls.resume_music++;
+}
+
+void PlayTime_Add(void)
+{
+    g_SceneStubCalls.play_time_add++;
+}
+
+void PlayTime_Restart(void)
+{
+    g_SceneStubCalls.play_time_restart++;
+}
+
+bool Anm_SetPendingCopy(
+    const int32_t slot, const GFX_RECT source, const GFX_RECT dest)
+{
+    if (g_SceneStubCalls.copy_pending) {
+        return false;
+    }
+    g_SceneStubCalls.pending_copies++;
+    g_SceneStubCalls.copy_slot = slot;
+    g_SceneStubCalls.copy_source = source;
+    g_SceneStubCalls.copy_dest = dest;
+    return true;
 }
