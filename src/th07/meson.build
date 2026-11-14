@@ -3,6 +3,7 @@
 # modules instead.
 th07_lib = static_library(
   'th07_lib',
+  'buttons.c',
   'files.c',
   'game.c',
   'scene.c',
