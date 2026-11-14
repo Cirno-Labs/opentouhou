@@ -65,6 +65,7 @@ core_hash_lib = static_library(
 
 core_io_lib = static_library(
   'core_io',
+  src_root / 'core/io/backend_windows.c',
   src_root / 'core/io/file.c',
   src_root / 'core/io/path.c',
   src_root / 'core/io/reader.c',
