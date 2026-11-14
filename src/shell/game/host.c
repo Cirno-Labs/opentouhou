@@ -64,6 +64,9 @@ struct SHELL_CONTEXT {
     // Holds desc->input_schema->players input structs, one after
     // another.
     void *input_buffer;
+    // Holds the input struct of each device kind, as Input_GetDevice writes
+    // it.
+    void *device_input[INPUT_DEVICE_COUNT];
     FOLDERS folders;
     // Points at the entry of desc->data_files that the data folder
     // lacks, or is nullptr.
@@ -354,6 +357,12 @@ static RESULT M_Init(
         &g_HeapAllocator,
         ctx->desc->input_schema->size
             * (size_t)ctx->desc->input_schema->players);
+    for (int device = 0; device < INPUT_DEVICE_COUNT; device++) {
+        ctx->device_input[device] = Allocator_AllocZ(
+            &g_HeapAllocator,
+            ctx->desc->input_schema->size
+                * (size_t)ctx->desc->input_schema->players);
+    }
 
     Result_Log(Audio_Init(), LOG_LEVEL_WARNING);
 
@@ -396,6 +405,15 @@ bool Shell_GetPadPress(INPUT_BINDING *const out)
         *out = m_Context.pad_press;
     }
     return m_Context.pad_pressed;
+}
+
+void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
+{
+    ASSERT(device < INPUT_DEVICE_COUNT);
+    memcpy(
+        out, m_Context.device_input[device],
+        m_Context.desc->input_schema->size
+            * (size_t)m_Context.desc->input_schema->players);
 }
 
 size_t Shell_GetBindings(
@@ -497,6 +515,9 @@ SHELL_STATUS Shell_Iterate(void)
         ctx->measured_tick_rate = tick_rate;
     }
     Input_Update(ctx->input, ctx->input_buffer);
+    for (int device = 0; device < INPUT_DEVICE_COUNT; device++) {
+        Input_GetDevice(ctx->input, device, ctx->device_input[device]);
+    }
     HOTKEYS hotkeys;
     Input_Read(ctx->input, &g_HotkeysSchema, &hotkeys);
     Input_Debounce(
@@ -580,6 +601,14 @@ void Shell_Quit(void)
             &g_HeapAllocator, ctx->input_buffer,
             ctx->desc->input_schema->size
                 * (size_t)ctx->desc->input_schema->players);
+    }
+    for (int device = 0; device < INPUT_DEVICE_COUNT; device++) {
+        if (ctx->device_input[device] != nullptr) {
+            Allocator_Free(
+                &g_HeapAllocator, ctx->device_input[device],
+                ctx->desc->input_schema->size
+                    * (size_t)ctx->desc->input_schema->players);
+        }
     }
     Input_Destroy(ctx->input);
     Gfx_Shutdown();

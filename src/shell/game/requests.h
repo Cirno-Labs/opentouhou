@@ -13,6 +13,11 @@
 // before, and writes that one control into out. shell/game reads the pads
 // once per display frame, and only the first tick after a press sees it.
 bool Shell_GetPadPress(INPUT_BINDING *out);
+// Writes into out the input of the game's schema that one kind of device
+// gave, as Input_GetDevice does. shell/game takes it with the tick's input,
+// before the ticks of the display frame, so every tick of a display frame
+// sees the same values as its input.
+void Shell_GetDeviceInput(INPUT_DEVICE device, void *out);
 // Writes up to capacity bindings of action, of player 1 in the game's input
 // schema, into out, and returns how many the action has.
 size_t Shell_GetBindings(size_t action, INPUT_BINDING *out, size_t capacity);

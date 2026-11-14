@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shell/game.h"
+#include "th06/buttons.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -8,7 +9,8 @@
 // Stands in for shell/game in the th06 tests: the functions that th06 calls
 // read g_FakeShell and record their requests in it. FakeShell_Reset gives the
 // state of the replay runner's shell/game before its first measurement: no
-// pad press, no tick rate, no bindings, no requests and the windowed mode.
+// pad press, no tick rate, no device input, no bindings, no requests and the
+// windowed mode.
 
 #define FAKE_SHELL_REQUEST_COUNT 32
 #define FAKE_SHELL_BINDING_COUNT 4
@@ -28,6 +30,8 @@ typedef struct {
     // Holds the tick rate that the next Shell_GetTickRate returns once.
     bool tick_rate_measured;
     float tick_rate;
+    // Holds what Shell_GetDeviceInput returns for each device kind.
+    TH06_INPUT device_input[INPUT_DEVICE_COUNT];
     // Holds the bindings that Shell_GetBindings returns for each action.
     INPUT_BINDING bindings[INPUT_MAX_ACTIONS][FAKE_SHELL_BINDING_COUNT];
     size_t binding_counts[INPUT_MAX_ACTIONS];
