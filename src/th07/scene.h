@@ -25,8 +25,9 @@ typedef enum {
     SCENE_NEXT_STAGE_AGAIN,
 } SCENE;
 
-// Adds the element that runs first in every calc: it sets up the requested
-// scene. Requests start at SCENE_QUIT, which boot ignores.
+// Adds the element that runs first in every calc: it updates g_Buttons
+// from the tick's input, then sets up the requested scene. Requests start
+// at SCENE_QUIT, which boot ignores.
 RESULT Scene_Register(void);
 // Requests a switch at the start of the next calc.
 void Scene_Request(SCENE scene);

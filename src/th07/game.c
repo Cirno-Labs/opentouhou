@@ -6,6 +6,8 @@
 
 CHAIN g_Chain;
 RNG g_Rng;
+BUTTONS g_Buttons;
+TH07_INPUT g_Input;
 
 RESULT Game_Init(void)
 {
@@ -13,8 +15,9 @@ RESULT Game_Init(void)
     return Scene_Register();
 }
 
-bool Game_Tick(void)
+bool Game_Tick(const TH07_INPUT *const input)
 {
+    g_Input = *input;
     Chain_RunDraw(&g_Chain);
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
     if (run == CHAIN_RUN_RESET) {
