@@ -24,6 +24,14 @@ stg_pbg3_lib = static_library(
   link_with: [core_archive_lib, stg_lzss_lib],
 )
 
+stg_pbg4_lib = static_library(
+  'stg_pbg4',
+  'pbg4.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+  link_with: [core_archive_lib, stg_lzss_lib],
+)
+
 stg_rng_lib = static_library(
   'stg_rng',
   'rng.c',
@@ -33,6 +41,8 @@ stg_rng_lib = static_library(
 
 stg_dep = declare_dependency(
   compile_args: [layer_include['stg']],
-  link_with: [stg_chain_lib, stg_lzss_lib, stg_pbg3_lib, stg_rng_lib],
+  link_with: [
+    stg_chain_lib, stg_lzss_lib, stg_pbg3_lib, stg_pbg4_lib, stg_rng_lib,
+  ],
   dependencies: [core_dep],
 )
