@@ -16,6 +16,9 @@ typedef struct {
     } run;
     struct {
         bool in_practice;
+        // Set on a calc that slow mode drops. The next calc adds its
+        // buttons to those of the dropped calc.
+        bool calc_dropped;
     } mode;
     struct {
         int32_t clears;
