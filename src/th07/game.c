@@ -1,5 +1,7 @@
 #include "th07/game.h"
 
+#include "th07/scene.h"
+
 #include "core/base/log.h"
 
 CHAIN g_Chain;
@@ -8,7 +10,7 @@ RNG g_Rng;
 RESULT Game_Init(void)
 {
     Chain_Init(&g_Chain);
-    return OK;
+    return Scene_Register();
 }
 
 bool Game_Tick(void)
