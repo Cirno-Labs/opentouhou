@@ -156,7 +156,7 @@ core/hash     CRC-32, SHA-1 and SHA-256
 core/io       readers and writers, files, paths, the locale, processes
 core/ini      the INI format our settings are stored in
 core/vfs      the file namespace the games load from
-core/archive  one interface over archive formats
+core/archive  one interface over archive formats, zip
 core/json     JSON5 parsing, lookups, indexes, merging
 core/patch    thcrap patch repositories, the patches folder, stacks
 core/math     vectors, matrices, replay-exact primitives

@@ -1,6 +1,6 @@
 #pragma once
 
-// Builds zip archives in memory for the othpatch tests.
+// Builds zip archives in memory for the tests.
 
 #include "core/base/memory.h"
 #include "core/hash/crc32.h"
