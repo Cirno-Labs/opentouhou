@@ -24,6 +24,12 @@ extern const PATCH_GAME g_PatchGame;
 // Names the archive that Files_Mount mounts.
 extern const char *const g_FilesArchives[FILES_ARCHIVE_COUNT];
 
+#define FILES_DATA_COUNT 2
+
+// Names the files that the data directory must hold, as g_GameDesc's
+// data_files: th07.dat and thbgm.dat.
+extern const char *const g_FilesData[FILES_DATA_COUNT];
+
 // Mounts th07.dat of Shell_GetFiles into it at priority 11. An archive that
 // is missing, or that has no th07_0100b.ver, is a failure: the original
 // refuses to start without the version file of 1.00b. So is a thbgm.dat
