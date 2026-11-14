@@ -37,6 +37,8 @@ typedef struct {
     CHAIN_ELEM elems[4];
     ELEM args[4];
     int calc_ends;
+    // Makes on_calc_end return false.
+    bool hold;
 } FIXTURE;
 
 static void M_Log(LOG *const log, const char tag)
@@ -80,7 +82,7 @@ static bool M_CalcEnd(void *const arg)
 {
     FIXTURE *const fixture = arg;
     fixture->calc_ends++;
-    return true;
+    return !fixture->hold;
 }
 
 // Adds one element per spec, in order, to the draw chain when draw is
@@ -161,6 +163,42 @@ TEST(restart_runs_from_the_start_and_ends_a_calc)
     CHECK_EQ_INT(fixture.calc_ends, 2);
 }
 
+TEST(calc_end_false_holds_a_pending_restart)
+{
+    FIXTURE fixture;
+    BUILD(
+        &fixture, false, { '1', CHAIN_CONTINUE, 0 }, { '2', CHAIN_RESTART, 1 });
+    fixture.hold = true;
+    CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_CONTINUE);
+    CHECK_EQ_STR(fixture.log.text, "12");
+    CHECK_EQ_INT(fixture.calc_ends, 1);
+}
+
+TEST(calc_end_false_turns_quit_and_reset_into_continue)
+{
+    static const CHAIN_STATUS statuses[] = { CHAIN_QUIT, CHAIN_RESET };
+    for (size_t i = 0; i < ARRAY_SIZE(statuses); i++) {
+        FIXTURE fixture;
+        BUILD(&fixture, false, { '1', statuses[i], 0 });
+        fixture.hold = true;
+        CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_CONTINUE);
+        CHECK_EQ_INT(fixture.calc_ends, 1);
+    }
+}
+
+TEST(restart_runs_again_without_calc_end)
+{
+    FIXTURE fixture;
+    BUILD(
+        &fixture, false, { '1', CHAIN_CONTINUE, 0 },
+        { '2', CHAIN_CONTINUE, 1 });
+    fixture.chain.on_calc_end = nullptr;
+    fixture.args[1].status = CHAIN_RESTART;
+    fixture.args[1].repeat = 1;
+    CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_CONTINUE);
+    CHECK_EQ_STR(fixture.log.text, "1212");
+}
+
 TEST(an_empty_run_quits)
 {
     FIXTURE fixture;
@@ -177,6 +215,30 @@ TEST(priority_orders_and_equal_priorities_keep_insertion_order)
         { 'b', CHAIN_CONTINUE, 5 }, { 'B', CHAIN_CONTINUE, 5 });
     CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_CONTINUE);
     CHECK_EQ_STR(fixture.log.text, "abBc");
+}
+
+TEST(an_element_without_callback_is_skipped_and_not_counted)
+{
+    FIXTURE fixture;
+    BUILD(&fixture, false, { '1', CHAIN_CONTINUE, 0 });
+    fixture.elems[0].callback = nullptr;
+    CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_QUIT);
+    CHECK_EQ_STR(fixture.log.text, "");
+}
+
+TEST(removing_every_element_is_not_an_empty_run)
+{
+    FIXTURE fixture;
+    BUILD(&fixture, false, { '1', CHAIN_REMOVE, 0 });
+    CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_CONTINUE);
+    CHECK(fixture.chain.calc.next == nullptr);
+}
+
+TEST(stopping_on_the_first_callback_is_not_an_empty_run)
+{
+    FIXTURE fixture;
+    BUILD(&fixture, false, { '1', CHAIN_STOP, 0 });
+    CHECK(Chain_RunCalc(&fixture.chain) == CHAIN_RUN_CONTINUE);
 }
 
 TEST(removing_the_next_element_skips_it)
@@ -202,6 +264,38 @@ TEST(removing_itself_ends_the_run)
     CHECK_EQ_STR(fixture.log.text, "1");
 }
 
+TEST(each_status_decides_the_draw_run)
+{
+    static const struct {
+        CHAIN_STATUS status;
+        const char *log;
+        int deleted_calls;
+    } cases[] = {
+        { CHAIN_REMOVE, "12", 1 }, { CHAIN_CONTINUE, "12", 0 },
+        { CHAIN_STOP, "1", 0 },    { CHAIN_QUIT, "1", 0 },
+        { CHAIN_RESET, "1", 0 },   { CHAIN_RESTART, "12", 0 },
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
+        FIXTURE fixture;
+        BUILD(
+            &fixture, true, { '1', cases[i].status, 0 },
+            { '2', CHAIN_CONTINUE, 1 });
+        Chain_RunDraw(&fixture.chain);
+        CHECK_EQ_STR(fixture.log.text, cases[i].log);
+        CHECK_EQ_INT(fixture.args[0].deleted_calls, cases[i].deleted_calls);
+    }
+}
+
+TEST(draw_calls_the_same_callback_again)
+{
+    FIXTURE fixture;
+    BUILD(&fixture, true, { '1', CHAIN_CONTINUE, 0 });
+    fixture.args[0].status = CHAIN_AGAIN;
+    fixture.args[0].repeat = 2;
+    Chain_RunDraw(&fixture.chain);
+    CHECK_EQ_STR(fixture.log.text, "111");
+}
+
 TEST(draw_treats_restart_as_continue)
 {
     FIXTURE fixture;
@@ -210,6 +304,16 @@ TEST(draw_treats_restart_as_continue)
     Chain_RunDraw(&fixture.chain);
     CHECK_EQ_STR(fixture.log.text, "12");
     CHECK_EQ_INT(fixture.calc_ends, 0);
+}
+
+TEST(draw_priority_orders_and_equal_priorities_keep_insertion_order)
+{
+    FIXTURE fixture;
+    BUILD(
+        &fixture, true, { 'b', CHAIN_CONTINUE, 5 }, { 'a', CHAIN_CONTINUE, 0 },
+        { 'B', CHAIN_CONTINUE, 5 }, { 'A', CHAIN_CONTINUE, 0 });
+    Chain_RunDraw(&fixture.chain);
+    CHECK_EQ_STR(fixture.log.text, "aAbB");
 }
 
 TEST(added_runs_once_and_its_failure_is_returned)
@@ -227,13 +331,14 @@ TEST(added_runs_once_and_its_failure_is_returned)
     CHECK(elem.added == nullptr);
 }
 
-TEST(remove_calls_deleted_once)
+TEST(remove_calls_deleted_once_and_clears_the_callback)
 {
     FIXTURE fixture;
     BUILD(&fixture, false, { '1', CHAIN_CONTINUE, 0 });
     Chain_Remove(&fixture.elems[0]);
     Chain_Remove(&fixture.elems[0]);
     CHECK_EQ_INT(fixture.args[0].deleted_calls, 1);
+    CHECK(fixture.elems[0].callback == nullptr);
 }
 
 TEST(release_removes_the_update_chain_first_in_order)
