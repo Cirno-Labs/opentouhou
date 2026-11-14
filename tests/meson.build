@@ -919,7 +919,7 @@ test(
   suite: 'unit',
 )
 
-foreach anm_test : ['draw']
+foreach anm_test : ['draw', 'text']
   test(
     'th07/anm/' + anm_test,
     executable(
