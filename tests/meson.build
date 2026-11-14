@@ -854,6 +854,27 @@ test(
 )
 
 test(
+  'th07/files',
+  executable(
+    'test_th07_files',
+    'test_th07_files.c',
+    'th07_data.c',
+    c_args: [layer_include['th07']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
+      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_files',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_files',
+  },
+  suite: 'unit',
+)
+
+test(
   'stg/chain',
   executable(
     'test_chain',

@@ -1,6 +1,7 @@
 # Everything but main.c and entry.c, so the tests link it too.
 th07_lib = static_library(
   'th07_lib',
+  'files.c',
   'game.c',
   c_args: [layer_include['th07']],
   implicit_include_directories: false,
