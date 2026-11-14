@@ -9,10 +9,16 @@ released section never changes after it, so the date is set here.
 The release workflow then publishes every program whose version has no
 release yet. --commit commits the change.
 
+The version is never a development version, such as 0.1.0-dev: a
+program gets one by hand, in its version.txt. Bumping a program with a
+development version to X.Y.Z is its first release of that version.
+
 --with-games, for othpatch, also makes every game ship that othpatch:
 it writes the version into src/<game>/othpatch.txt, adds "Changed the
 packages to ship othpatch X.Y.Z." to the game's unreleased changes and
-raises the game's patch version by one in the same way.
+raises the game's patch version by one in the same way. A game with a
+development version gets the othpatch.txt alone: it has no release to
+raise.
 """
 
 import argparse
@@ -27,35 +33,37 @@ from shared.versioning import (
     REPO_DIR,
     VERSION,
     games,
+    is_dev,
     othpatch_pin_path,
+    program_version,
     programs,
-    read_version,
     version_path,
 )
 
 
-def git(*args: str) -> str:
+def git(repo_dir: Path, *args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=REPO_DIR, check=True, capture_output=True, text=True
+        ["git", *args], cwd=repo_dir, check=True, capture_output=True, text=True
     ).stdout.strip()
 
 
-def release_changelog(path: Path, version: str) -> None:
+def release_changelog(path: Path, version: str, repo_dir: Path) -> None:
     """Turn the Unreleased section of a changelog into the section of
     version, dated today in UTC."""
     lines = path.read_text().splitlines()
     if f"## {UNRELEASED}" not in lines:
-        sys.exit(f"{path.relative_to(REPO_DIR)} has no unreleased changes")
+        sys.exit(f"{path.relative_to(repo_dir)} has no unreleased changes")
     today = datetime.datetime.now(datetime.UTC).date().isoformat()
     lines[lines.index(f"## {UNRELEASED}")] = heading(version, today)
     path.write_text("\n".join(lines) + "\n")
 
 
-def bump(program: str, version: str) -> list[Path]:
+def bump(program: str, version: str, repo_dir: Path) -> list[Path]:
     """Set the version of program and return the files it changed."""
-    version_path(program).write_text(f"{version}\n")
-    release_changelog(changelog_path(program), version)
-    return [version_path(program), changelog_path(program)]
+    changelog = changelog_path(program, repo_dir)
+    release_changelog(changelog, version, repo_dir)
+    version_path(program, repo_dir).write_text(f"{version}\n")
+    return [version_path(program, repo_dir), changelog]
 
 
 def add_change(path: Path, entry: str) -> None:
@@ -88,20 +96,26 @@ def add_change(path: Path, entry: str) -> None:
     path.write_text("\n".join(lines) + "\n")
 
 
-def ship_othpatch(game: str, version: str) -> list[Path]:
-    """Make a game ship othpatch version in a new patch release, and return
-    the files it changed."""
-    major, minor, patch = read_version(version_path(game)).split(".")
-    othpatch_pin_path(game).write_text(f"{version}\n")
+def ship_othpatch(game: str, version: str, repo_dir: Path) -> list[Path]:
+    """Make a game ship othpatch version in a new patch release, or a game
+    with a development version in its next release, and return the files
+    it changed."""
+    current = program_version(game, repo_dir)
+    pin = othpatch_pin_path(game, repo_dir)
+    pin.write_text(f"{version}\n")
+    if is_dev(current):
+        return [pin]
+    major, minor, patch = current.split(".")
     add_change(
-        changelog_path(game), f"- Changed the packages to ship othpatch {version}."
+        changelog_path(game, repo_dir),
+        f"- Changed the packages to ship othpatch {version}.",
     )
-    return [othpatch_pin_path(game), *bump(game, f"{major}.{minor}.{int(patch) + 1}")]
+    return [pin, *bump(game, f"{major}.{minor}.{int(patch) + 1}", repo_dir)]
 
 
-def main() -> None:
+def main(argv: list[str] | None = None, repo_dir: Path = REPO_DIR) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("program", choices=programs())
+    parser.add_argument("program", choices=programs(repo_dir))
     parser.add_argument("version", help="such as 1.2.0")
     parser.add_argument(
         "--with-games",
@@ -109,27 +123,34 @@ def main() -> None:
         help="for othpatch: make every game ship it in a new patch release",
     )
     parser.add_argument("--commit", action="store_true", help="commit the change")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     version = args.version.removeprefix("v")
+    if is_dev(version):
+        sys.exit(
+            "A release needs a version without -dev. Write a development"
+            " version into version.txt by hand."
+        )
     if not VERSION.fullmatch(version):
         sys.exit("The version must look like 1.2.0")
     if args.with_games and args.program != "othpatch":
         sys.exit("--with-games is for othpatch only")
-    if args.commit and git("status", "--porcelain"):
+    if args.commit and git(repo_dir, "status", "--porcelain"):
         sys.exit("The working tree has uncommitted changes")
 
-    changed = bump(args.program, version)
+    changed = bump(args.program, version, repo_dir)
     released = [f"{args.program} {version}"]
     if args.with_games:
-        for game in games():
-            changed += ship_othpatch(game, version)
-            released.append(f"{game} {read_version(version_path(game))}")
+        for game in games(repo_dir):
+            changed += ship_othpatch(game, version, repo_dir)
+            game_version = program_version(game, repo_dir)
+            if not is_dev(game_version):
+                released.append(f"{game} {game_version}")
     for path in changed:
-        print(f"Changed {path.relative_to(REPO_DIR)}")
+        print(f"Changed {path.relative_to(repo_dir)}")
     if args.commit:
         body = f"Set the versions for the release of {', '.join(released)}."
         message = f"{args.program}: release {version}\n\n{textwrap.fill(body, 72)}\n"
-        git("commit", "-q", "-m", message, "--", *map(str, changed))
+        git(repo_dir, "commit", "-q", "-m", message, "--", *map(str, changed))
         print("Committed. Push it, then run the release workflow.")
 
 

@@ -14,7 +14,8 @@
                   index has it, unless
                   --replace is given and the release is less than 24
                   hours old, in which case it replaces the files and
-                  the release
+                  the release; fails for a development version, such
+                  as 0.1.0-dev
   snapshot --packages DIR --commit SHA
                   uploads every program's files in DIR to snapshot/,
                   replaces the snapshot of the index, then deletes the
@@ -47,6 +48,7 @@ from shared.changelog import changelog_path, date, section
 from shared.versioning import (
     REPO_DIR,
     games,
+    is_dev,
     othpatch_pin_path,
     product_name,
     programs,
@@ -101,6 +103,11 @@ def public_url() -> str:
 
 
 def publish(args: argparse.Namespace, work: Path, repo_dir: Path) -> None:
+    if is_dev(args.version):
+        sys.exit(
+            f"{args.program} {args.version} is a development version, which is"
+            " never released"
+        )
     base_url = public_url()
     text = changelog_path(args.program, repo_dir).read_text()
     changes = section(text, args.version)
