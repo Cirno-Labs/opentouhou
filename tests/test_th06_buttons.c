@@ -42,6 +42,27 @@ TEST(word_round_trips_each_bit)
     }
 }
 
+// The INI keys and the pad configuration rows follow this order.
+TEST(schema_keeps_the_action_order)
+{
+    CHECK_EQ_INT(g_InputSchema.count, 14);
+    CHECK_EQ_INT(TH06_ACTION_shoot, 0);
+    CHECK_EQ_INT(TH06_ACTION_focus, 2);
+    CHECK_EQ_INT(TH06_ACTION_skip, 8);
+    CHECK_EQ_INT(TH06_ACTION_confirm, 12);
+    CHECK_EQ_INT(TH06_ACTION_move, 13);
+    CHECK_EQ_STR(g_InputSchema.actions[0].name, "shoot");
+    CHECK_EQ_STR(g_InputSchema.actions[2].name, "focus");
+    CHECK_EQ_STR(g_InputSchema.actions[8].name, "skip");
+    CHECK_EQ_STR(g_InputSchema.actions[12].name, "confirm");
+    CHECK_EQ_STR(g_InputSchema.actions[13].name, "move");
+    CHECK_EQ_STR(
+        g_InputSchema.actions[2].defaults[INPUT_DEVICE_KEYBOARD],
+        "left_shift, right_shift");
+    CHECK_EQ_STR(
+        g_InputSchema.actions[8].defaults[INPUT_DEVICE_GAMEPAD], "north");
+}
+
 TEST(from_word_leaves_the_stick_at_zero)
 {
     const TH06_INPUT input = Buttons_FromWord(0x1fff);
@@ -292,13 +313,13 @@ TEST(unshared_focus_is_the_inputs)
 TEST(read_shared_focus_finds_a_pad_binding_of_shoot_and_focus)
 {
     FakeShell_Reset();
-    M_Bind(0, "z");
-    M_Bind(0, "joy_button_3");
-    M_Bind(2, "z");
+    M_Bind(TH06_ACTION_shoot, "z");
+    M_Bind(TH06_ACTION_shoot, "joy_button_3");
+    M_Bind(TH06_ACTION_focus, "z");
     BUTTONS buttons = { .shared_focus = true };
     Buttons_ReadSharedFocus(&buttons);
     CHECK(!buttons.shared_focus);
-    M_Bind(2, "joy_button_3");
+    M_Bind(TH06_ACTION_focus, "joy_button_3");
     Buttons_ReadSharedFocus(&buttons);
     CHECK(buttons.shared_focus);
     FakeShell_Reset();

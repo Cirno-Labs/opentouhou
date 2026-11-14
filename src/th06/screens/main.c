@@ -24,7 +24,7 @@
 #define M_DRAWN_VM_COUNT 0x62
 #define M_IDLE_FRAMES 720
 #define M_TITLE_MUSIC "bgm/th06_01.mid"
-#define M_MAPPING_COUNT 9
+#define M_MAPPING_COUNT (TH06_ACTION_skip + 1)
 
 #define M_UP 0x10
 #define M_DOWN 0x20
@@ -323,7 +323,7 @@ static void M_ReassignButton(
 {
     M_PAD_BUTTON *const buttons = menu->mapping.buttons;
     for (int32_t i = 0; i < M_MAPPING_COUNT; i++) {
-        const bool shared = i == 0 || i == 2;
+        const bool shared = i == TH06_ACTION_shoot || i == TH06_ACTION_focus;
         if ((!keep_shared || !shared) && M_SameButton(&buttons[i], button)) {
             buttons[i] = replacement;
         }
@@ -352,8 +352,9 @@ static void M_CommitMapping(const M_MENU *const menu)
         }
     }
     const M_PAD_BUTTON *const buttons = menu->mapping.buttons;
-    g_Buttons.shared_focus =
-        buttons[0].bound && M_SameButton(&buttons[0], &buttons[2]);
+    g_Buttons.shared_focus = buttons[TH06_ACTION_shoot].bound
+        && M_SameButton(&buttons[TH06_ACTION_shoot],
+                        &buttons[TH06_ACTION_focus]);
 }
 
 static void M_HighlightEntry(
@@ -782,7 +783,9 @@ static void M_UpdatePadConfig(M_MENU *const menu)
         M_PAD_BUTTON *const row = &menu->mapping.buttons[menu->cursor];
         const M_PAD_BUTTON button = { true, pressed };
         M_ReassignButton(
-            menu, &button, *row, menu->cursor == 0 || menu->cursor == 2);
+            menu, &button, *row,
+            menu->cursor == TH06_ACTION_shoot
+                || menu->cursor == TH06_ACTION_focus);
         *row = button;
     }
     if (!M_Pressed(M_CONFIRM)) {
