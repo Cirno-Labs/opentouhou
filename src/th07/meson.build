@@ -13,16 +13,19 @@ th07_lib = static_library(
   dependencies: [core_dep, stg_dep],
 )
 
-# th07 joins the release trains, with src/th07/version.txt, once it is
-# packaged. Until then every build reports this development version.
-th07_version = configure_file(
+# Rewritten on every build; the compile reruns only when the version
+# changed.
+th07_version = custom_target(
+  'th07_version',
   output: 'version.h',
-  configuration: {'GAME_VERSION': '"0.0.0-dev"'},
+  command: [python3, files('../../tools/meson/version_header'), 'th07', '@OUTPUT@'],
+  build_always_stale: true,
 )
 
 th07_main_lib = static_library(
   'th07_main',
   'main.c',
+  th07_version,
   c_args: [layer_include['th07'], layer_include['shell'], '-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],
@@ -32,9 +35,20 @@ th07_main_lib = static_library(
 # source of the executable, not of a library, because the entry point that
 # Windows starts from (WinMain) is looked up only after the libraries are
 # searched.
+th07_sources = [files('entry.c', 'stubs.c')]
+if host_machine.system() == 'windows'
+  th07_sources += import('windows').compile_resources(
+    'th07.rc',
+    args: ['--include-dir', meson.current_build_dir(),
+           '--include-dir', meson.project_source_root() / 'tools/packaging/th07'],
+    depends: th07_version,
+    depend_files: files('../../tools/packaging/th07/icon.ico'),
+  )
+endif
+
 games += {
   'th07': {
-    'sources': files('entry.c', 'stubs.c'),
+    'sources': th07_sources,
     'c_args': [layer_include['th07']],
     'link_with': [th07_main_lib, th07_lib],
   },
