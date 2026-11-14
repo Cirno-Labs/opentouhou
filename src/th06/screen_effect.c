@@ -2,7 +2,6 @@
 
 #include "th06/game.h"
 #include "th06/game_manager.h"
-#include "th06/timer.h"
 
 #include "core/base/assert.h"
 #include "core/base/log.h"
@@ -11,6 +10,7 @@
 
 #include "stg/chain.h"
 #include "stg/rng.h"
+#include "stg/timer.h"
 
 #define M_POOL_SIZE 16
 #define M_CALC_PRIORITY 14

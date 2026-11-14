@@ -10,7 +10,6 @@
 #include "th06/player.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
-#include "th06/timer.h"
 
 #include "core/base/assert.h"
 #include "core/base/utils.h"
@@ -18,6 +17,7 @@
 
 #include "stg/chain.h"
 #include "stg/rng.h"
+#include "stg/timer.h"
 
 #define M_CALC_PRIORITY 11
 #define M_DRAW_PRIORITY 9

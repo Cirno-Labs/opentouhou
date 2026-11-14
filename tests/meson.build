@@ -310,7 +310,7 @@ test(
   executable(
     'test_th06_score',
     'test_th06_score.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [th06_lib, core_io_lib, core_base_lib],
   ),
@@ -435,7 +435,7 @@ test(
   executable(
     'test_th06_angle',
     'test_th06_angle.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
@@ -474,7 +474,7 @@ test(
   executable(
     'test_th06_buttons',
     'test_th06_buttons.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
@@ -488,7 +488,7 @@ test(
   executable(
     'test_th06_game_manager',
     'test_th06_game_manager.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, core_gfx_lib, core_image_lib, core_math_lib,
@@ -682,20 +682,6 @@ test(
 )
 
 test(
-  'th06/timer',
-  executable(
-    'test_th06_timer',
-    'test_th06_timer.c',
-    c_args: [layer_include['th06']] + core_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-  ),
-  suite: 'unit',
-)
-
-test(
   'th06/ecl',
   executable(
     'test_th06_ecl',
@@ -806,7 +792,7 @@ test(
     'test_th06_note',
     'test_th06_note.c',
     'gfx_recorder.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, core_patch_lib, core_json_lib, core_io_lib, core_base_lib,
@@ -823,7 +809,7 @@ test(
   executable(
     'test_th06_translation',
     'test_th06_translation.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [th06_lib, core_patch_lib, core_json_lib, core_io_lib],
     dependencies: [sdl3],
@@ -839,7 +825,7 @@ test(
     'test_th06_files.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include,
+    c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_pbg3_lib, core_patch_lib, core_json_lib, core_vfs_lib,
@@ -874,6 +860,18 @@ test(
     c_args: stg_include,
     implicit_include_directories: false,
     link_with: [stg_rng_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'stg/timer',
+  executable(
+    'test_timer',
+    'test_timer.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_timer_lib],
   ),
   suite: 'unit',
 )
