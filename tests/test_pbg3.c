@@ -2,8 +2,10 @@
 
 #include "pbg3_builder.h"
 
+#include "core/archive.h"
 #include "core/base/cp932.h"
 #include "core/base/string.h"
+#include "core/vfs.h"
 #include "test.h"
 #include "test_allocator.h"
 
@@ -13,11 +15,12 @@ static RESULT M_Open(
     const uint8_t *const bytes, const size_t size,
     const ALLOCATOR *const allocator, VFS_SOURCE **const out)
 {
-    READER *const reader = Mem_Alloc(sizeof(*reader));
-    Reader_OpenBuffer(reader, bytes, size, nullptr);
-    const RESULT result = Pbg3_Open(reader, "test.dat", allocator, out);
-    Mem_Free(reader);
-    return result;
+    READER reader;
+    Reader_OpenBuffer(&reader, bytes, size, "test.dat");
+    ARCHIVE *archive;
+    MUST(Archive_Open(&g_Pbg3Format, &reader, allocator, &archive));
+    *out = Archive_ToSource(archive);
+    return OK;
 }
 
 static bool M_ReadsAs(READER *const reader, const char *const expected)
@@ -168,8 +171,7 @@ TEST(a_wrong_checksum_fails)
     READER reader;
     const RESULT result =
         source->funcs->open(source, "x.txt", VFS_IN_MEMORY, &reader);
-    CHECK(!IS_OK(result));
-    CHECK(strstr(result.message, "test.dat") != nullptr);
+    CHECK_EQ_STR(result.message, "test.dat: x.txt: checksum mismatch");
     Result_Ignore(result);
     source->funcs->close(source);
     CHECK_EQ_INT(test.live_blocks, 0);
@@ -260,7 +262,8 @@ TEST(a_truncated_table_fails)
 
     VFS_SOURCE *source;
     const RESULT result = M_Open(archive, size - 2, &g_HeapAllocator, &source);
-    CHECK(!IS_OK(result));
+    CHECK_EQ_STR(
+        result.message, "test.dat: table runs past the end of the archive");
     Result_Ignore(result);
 }
 
@@ -270,7 +273,7 @@ TEST(a_bad_magic_fails)
     VFS_SOURCE *source;
     const RESULT result =
         M_Open(archive, sizeof(archive), &g_HeapAllocator, &source);
-    CHECK(!IS_OK(result));
+    CHECK_EQ_STR(result.message, "test.dat: bad magic");
     Result_Ignore(result);
 }
 
@@ -415,8 +418,7 @@ TEST(listing_visits_entry_names_folded_in_table_order)
 }
 
 // A source that answers to one fixed path with raw bytes, standing in for
-// a mounted archive file so Vfs_MountFile has something to open as a
-// stream before handing it to Pbg3_Open.
+// the directory that holds an archive file.
 typedef struct {
     VFS_SOURCE base;
     char *data;
@@ -434,7 +436,7 @@ static RESULT M_RawOpen(
     [[maybe_unused]] const VFS_MODE mode, READER *const out)
 {
     const RAW_FILE_SOURCE *const raw = (const RAW_FILE_SOURCE *)source;
-    Reader_OpenBuffer(out, raw->data, raw->size, nullptr);
+    Reader_OpenBuffer(out, raw->data, raw->size, "archive.dat");
     return OK;
 }
 
@@ -459,7 +461,7 @@ static const VFS_SOURCE_FUNCS M_RawFuncs = {
     .close = M_RawClose,
 };
 
-TEST(mounting_through_vfs_mount_file_reads_a_named_entry)
+TEST(an_archive_opened_through_a_vfs_names_its_entries_by_it)
 {
     uint8_t compressed[16];
     PBG3_BUILDER_WRITER bw;
@@ -488,8 +490,14 @@ TEST(mounting_through_vfs_mount_file_reads_a_named_entry)
     raw->size = size;
     Vfs_MountSource(vfs, &raw->base, 0);
 
+    READER file;
     CHECK(Result_Log(
-        Vfs_MountFile(vfs, "archive.dat", Pbg3_Open, 100), LOG_LEVEL_ERROR));
+        Vfs_Open(vfs, "archive.dat", VFS_STREAM, &file), LOG_LEVEL_ERROR));
+    ARCHIVE *mounted;
+    CHECK(Result_Log(
+        Archive_Open(&g_Pbg3Format, &file, &test.allocator, &mounted),
+        LOG_LEVEL_ERROR));
+    Vfs_MountSource(vfs, Archive_ToSource(mounted), 100);
 
     READER reader;
     CHECK(Result_Log(

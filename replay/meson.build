@@ -20,8 +20,9 @@ th06_runner_lib = static_library(
   implicit_include_directories: false,
   dependencies: [sdl3, zlib, cc_libm],
   link_with: [
-    th06_lib, replay_case_lib, stg_pbg3_lib, stg_rng_lib, core_vfs_lib,
-    core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
+    th06_lib, replay_case_lib, stg_pbg3_lib, stg_rng_lib, core_archive_lib,
+    core_vfs_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib,
+    core_image_lib,
   ],
 )
 

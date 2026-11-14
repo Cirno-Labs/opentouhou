@@ -1,36 +1,28 @@
 #include "stg/pbg3.h"
 
+#include "core/archive/format.h"
 #include "core/base/array.h"
 #include "core/base/cp932.h"
-#include "core/base/hash_map.h"
 #include "core/base/memory.h"
-#include "core/base/string.h"
-
-#include <string.h>
 
 #define M_MAGIC 0x33474250u
 #define M_MAX_NAME_LENGTH 255
 #define M_DICT_SIZE 0x2000u
 
+// Holds where the packed data of an entry lies, and its check value.
 typedef struct {
-    char *name;
     uint32_t checksum;
     uint32_t data_offset;
     uint32_t data_size;
+} PBG3_RECORD;
+
+typedef struct {
+    char *name;
     uint32_t decoded_size;
+    PBG3_RECORD record;
 } PBG3_ENTRY;
 
 typedef ARRAY(PBG3_ENTRY) PBG3_ENTRY_ARRAY;
-typedef HASH_MAP(char *, int32_t) PBG3_ENTRY_INDEX;
-
-typedef struct {
-    VFS_SOURCE base;
-    READER archive;
-    PBG3_ENTRY_ARRAY entries;
-    PBG3_ENTRY_INDEX by_name;
-    char *name;
-    const ALLOCATOR *allocator;
-} PBG3_SOURCE;
 
 // Reads bits most significant bit first out of a READER, and keeps the
 // wrapping sum of every byte it fetches from the reader, for the entry
@@ -88,30 +80,13 @@ static RESULT M_ReadName(BIT_READER *const br, char **const out)
     return Cp932_Decode((const char *)bytes, (size_t)length, out);
 }
 
-// Folds the ASCII letters of text to lower case in place, matching how the
-// VFS normalises the paths that contains and open receive.
-static void M_FoldAscii(char *const text)
+static RESULT M_ReadEntries(
+    READER *const archive, const uint32_t entry_count,
+    const uint32_t table_offset, PBG3_ENTRY_ARRAY *const entries)
 {
-    for (char *c = text; *c != '\0'; c++) {
-        if (*c >= 'A' && *c <= 'Z') {
-            *c = (char)(*c - 'A' + 'a');
-        }
-    }
-}
-
-static const char *M_LastComponent(const char *const path)
-{
-    const char *const slash = strrchr(path, '/');
-    return slash == nullptr ? path : slash + 1;
-}
-
-static RESULT M_ReadTable(
-    PBG3_SOURCE *const source, const uint32_t entry_count,
-    const uint32_t table_offset)
-{
-    Reader_Seek(&source->archive, table_offset);
+    Reader_Seek(archive, table_offset);
     BIT_READER br;
-    M_BitReader_Init(&br, &source->archive);
+    M_BitReader_Init(&br, archive);
 
     for (uint32_t i = 0; i < entry_count; i++) {
         M_ReadVarint(&br); // unk1, unused
@@ -120,63 +95,83 @@ static RESULT M_ReadTable(
         const uint32_t data_offset = M_ReadVarint(&br);
         const uint32_t decoded_size = M_ReadVarint(&br);
         char *name;
-        const RESULT name_result = M_ReadName(&br, &name);
-        if (!IS_OK(name_result)) {
-            return Result_Prefix(name_result, "%s", source->name);
-        }
-        if (Reader_Failed(&source->archive)) {
+        MUST(M_ReadName(&br, &name));
+        if (Reader_Failed(archive)) {
             Mem_Free(name);
-            return FAIL(
-                "%s: table runs past the end of the archive", source->name);
+            return FAIL("table runs past the end of the archive");
         }
 
-        PBG3_ENTRY *const entry = Array_AddOne(&source->entries);
+        PBG3_ENTRY *const entry = Array_AddOne(entries);
         entry->name = name;
-        entry->checksum = checksum;
-        entry->data_offset = data_offset;
         entry->decoded_size = decoded_size;
-        entry->data_size = 0;
+        entry->record = (PBG3_RECORD) {
+            .checksum = checksum,
+            .data_offset = data_offset,
+        };
     }
 
-    for (int32_t i = 0; i < source->entries.count; i++) {
-        PBG3_ENTRY *const entry = &source->entries.items[i];
-        const uint32_t end = i + 1 < source->entries.count
-            ? source->entries.items[i + 1].data_offset
+    for (int32_t i = 0; i < entries->count; i++) {
+        PBG3_RECORD *const record = &entries->items[i].record;
+        const uint32_t end = i + 1 < entries->count
+            ? entries->items[i + 1].record.data_offset
             : table_offset;
         FAIL_IF(
-            end < entry->data_offset, "%s: %s: entry data overlaps the table",
-            source->name, entry->name);
-        entry->data_size = end - entry->data_offset;
-
-        char *const key = Str_Dup(entry->name);
-        M_FoldAscii(key);
-        HashMap_Put(&source->by_name, key, i);
-        Mem_Free(key);
+            end < record->data_offset, "%s: entry data overlaps the table",
+            entries->items[i].name);
+        record->data_size = end - record->data_offset;
     }
     return OK;
 }
 
-// Decompresses the LZSS stream of one entry's data into a new block of
-// exactly entry->decoded_size bytes.
-static RESULT M_Decode(
-    PBG3_SOURCE *const source, const PBG3_ENTRY *const entry, void **const out)
+static RESULT M_ReadTable(READER *const archive, ARCHIVE_TABLE *const table)
 {
-    *out = nullptr;
-    Reader_Seek(&source->archive, entry->data_offset);
-    READER slice = Reader_Slice(&source->archive, entry->data_size);
+    uint32_t magic;
+    Reader_Read(archive, &magic);
+    FAIL_IF(magic != M_MAGIC || Reader_Failed(archive), "bad magic");
+
+    BIT_READER br;
+    M_BitReader_Init(&br, archive);
+    const uint32_t entry_count = M_ReadVarint(&br);
+    const uint32_t table_offset = M_ReadVarint(&br);
+    FAIL_IF(Reader_Failed(archive), "header runs past the end");
+
+    PBG3_ENTRY_ARRAY entries;
+    Array_Init(&entries, &g_HeapAllocator);
+    const RESULT result =
+        M_ReadEntries(archive, entry_count, table_offset, &entries);
+    for (int32_t i = 0; i < entries.count; i++) {
+        const PBG3_ENTRY *const entry = &entries.items[i];
+        if (IS_OK(result)) {
+            ArchiveTable_Add(
+                table, entry->name, entry->decoded_size, 0, &entry->record,
+                sizeof(entry->record));
+        }
+        Mem_Free(entry->name);
+    }
+    Array_Free(&entries);
+    return result;
+}
+
+// Decompresses the LZSS stream of one entry's data into out, which has
+// room for exactly size bytes, the entry's unpacked size.
+static RESULT M_ReadEntry(
+    READER *const archive, const void *const data, uint8_t *const out,
+    const size_t size)
+{
+    const PBG3_RECORD *const record = data;
+    Reader_Seek(archive, record->data_offset);
+    READER slice = Reader_Slice(archive, record->data_size);
     BIT_READER br;
     M_BitReader_Init(&br, &slice);
 
     uint8_t dict[M_DICT_SIZE] = { 0 };
     uint32_t dict_pos = 1;
-    uint8_t *const decoded =
-        Allocator_Alloc(source->allocator, entry->decoded_size);
-    uint32_t decoded_count = 0;
+    size_t decoded_count = 0;
 
-    while (decoded_count < entry->decoded_size) {
+    while (decoded_count < size) {
         if (M_ReadBits(&br, 1) != 0) {
             const uint8_t byte = (uint8_t)M_ReadBits(&br, 8);
-            decoded[decoded_count++] = byte;
+            out[decoded_count++] = byte;
             dict[dict_pos] = byte;
             dict_pos = (dict_pos + 1) & (M_DICT_SIZE - 1);
             continue;
@@ -187,135 +182,22 @@ static RESULT M_Decode(
         }
         const uint32_t length = M_ReadBits(&br, 4) + 3;
         for (uint32_t i = 0; i < length; i++) {
-            if (decoded_count >= entry->decoded_size) {
-                Allocator_Free(source->allocator, decoded, entry->decoded_size);
-                return FAIL(
-                    "%s: %s: decoded data is longer than recorded",
-                    source->name, entry->name);
-            }
+            FAIL_IF(
+                decoded_count >= size, "decoded data is longer than recorded");
             const uint8_t byte = dict[(offset + i) & (M_DICT_SIZE - 1)];
-            decoded[decoded_count++] = byte;
+            out[decoded_count++] = byte;
             dict[dict_pos] = byte;
             dict_pos = (dict_pos + 1) & (M_DICT_SIZE - 1);
         }
     }
 
-    if (decoded_count != entry->decoded_size) {
-        Allocator_Free(source->allocator, decoded, entry->decoded_size);
-        return FAIL(
-            "%s: %s: decoded data is shorter than recorded", source->name,
-            entry->name);
-    }
-    if (br.checksum != entry->checksum) {
-        Allocator_Free(source->allocator, decoded, entry->decoded_size);
-        return FAIL("%s: %s: checksum mismatch", source->name, entry->name);
-    }
-    *out = decoded;
+    FAIL_IF(decoded_count != size, "decoded data is shorter than recorded");
+    FAIL_IF(br.checksum != record->checksum, "checksum mismatch");
     return OK;
 }
 
-static const PBG3_ENTRY *M_Find(
-    const PBG3_SOURCE *const source, const char *const path)
-{
-    const char *const component = M_LastComponent(path);
-    char *const key = Str_Dup(component);
-    M_FoldAscii(key);
-    const int32_t *const index = HashMap_Get(&source->by_name, key);
-    Mem_Free(key);
-    return index == nullptr ? nullptr : &source->entries.items[*index];
-}
-
-static bool M_Contains(const VFS_SOURCE *const source, const char *const path)
-{
-    return M_Find((const PBG3_SOURCE *)source, path) != nullptr;
-}
-
-static RESULT M_Open(
-    VFS_SOURCE *const source, const char *const path,
-    [[maybe_unused]] const VFS_MODE mode, READER *const out)
-{
-    PBG3_SOURCE *const pbg3 = (PBG3_SOURCE *)source;
-    const PBG3_ENTRY *const entry = M_Find(pbg3, path);
-    FAIL_IF(entry == nullptr, "%s: %s: not found", pbg3->name, path);
-    void *data;
-    MUST(M_Decode(pbg3, entry, &data), "%s: %s", pbg3->name, path);
-    char *const name = Str_Format("%s/%s", pbg3->name, entry->name);
-    Reader_OpenOwnedBuffer(
-        out, data, entry->decoded_size, pbg3->allocator, name);
-    Mem_Free(name);
-    return OK;
-}
-
-static void M_List(
-    const VFS_SOURCE *const source,
-    void (*const visit)(void *user, const char *path), void *const user)
-{
-    const PBG3_SOURCE *const pbg3 = (const PBG3_SOURCE *)source;
-    for (int32_t i = 0; i < pbg3->entries.count; i++) {
-        char *const name = Str_Dup(pbg3->entries.items[i].name);
-        M_FoldAscii(name);
-        visit(user, name);
-        Mem_Free(name);
-    }
-}
-
-static void M_Close(VFS_SOURCE *const source)
-{
-    PBG3_SOURCE *const pbg3 = (PBG3_SOURCE *)source;
-    for (int32_t i = 0; i < pbg3->entries.count; i++) {
-        Mem_Free(pbg3->entries.items[i].name);
-    }
-    Array_Free(&pbg3->entries);
-    HashMap_Free(&pbg3->by_name);
-    Reader_Close(&pbg3->archive);
-    Mem_Free(pbg3->name);
-    Allocator_Free(pbg3->allocator, pbg3, sizeof(*pbg3));
-}
-
-static const VFS_SOURCE_FUNCS M_Funcs = {
-    .contains = M_Contains,
-    .open = M_Open,
-    .list = M_List,
-    .close = M_Close,
+const ARCHIVE_FORMAT g_Pbg3Format = {
+    .lookup = ARCHIVE_LOOKUP_LAST_NOCASE,
+    .read_table = M_ReadTable,
+    .read_entry = M_ReadEntry,
 };
-
-RESULT Pbg3_Open(
-    READER *const archive, const char *const name,
-    const ALLOCATOR *const allocator, VFS_SOURCE **const out)
-{
-    *out = nullptr;
-    uint32_t magic;
-    Reader_Read(archive, &magic);
-    if (magic != M_MAGIC || Reader_Failed(archive)) {
-        const RESULT result = FAIL("%s: bad magic", name);
-        Reader_Close(archive);
-        return result;
-    }
-
-    BIT_READER br;
-    M_BitReader_Init(&br, archive);
-    const uint32_t entry_count = M_ReadVarint(&br);
-    const uint32_t table_offset = M_ReadVarint(&br);
-    if (Reader_Failed(archive)) {
-        const RESULT result = FAIL("%s: header runs past the end", name);
-        Reader_Close(archive);
-        return result;
-    }
-
-    PBG3_SOURCE *const source = Allocator_AllocZ(allocator, sizeof(*source));
-    source->base.funcs = &M_Funcs;
-    source->archive = *archive;
-    source->name = Str_Dup(name);
-    source->base.name = source->name;
-    source->allocator = allocator;
-    Array_Init(&source->entries, allocator);
-    HashMap_Init(&source->by_name, allocator);
-
-    const RESULT result = M_ReadTable(source, entry_count, table_offset);
-    if (!IS_OK(result)) {
-        M_Close(&source->base);
-        return result;
-    }
-    *out = &source->base;
-    return OK;
-}

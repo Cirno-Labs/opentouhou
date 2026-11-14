@@ -1,5 +1,5 @@
-# The tests of core/base, core/hash, core/json, core/io and the tools are
-# in the suite core or tools. Every build runs them, whatever programs it has.
+# The tests of core/base, core/hash, core/json, core/io, core/archive/zip
+# and the tools are in the suite core or tools. Every build runs them, whatever programs it has.
 
 # Each part of core/base has a test named after it.
 foreach part : [
@@ -44,6 +44,19 @@ foreach part : [
     suite: ['unit', 'core'],
   )
 endforeach
+
+test(
+  'core/archive/zip',
+  executable(
+    'test_archive_zip',
+    'test_archive_zip.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
+    dependencies: [zlib],
+  ),
+  suite: ['unit', 'core'],
+)
 
 # Each part of core/json has a test named after it.
 foreach part : [
@@ -154,7 +167,7 @@ if build_othpatch
     'fake_program.c',
     implicit_include_directories: false,
   )
-  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'console', 'zip']
+  foreach part : ['fetch', 'game', 'install', 'main', 'release', 'console']
     test(
       'othpatch/' + part,
       executable(
@@ -1193,6 +1206,18 @@ test(
 )
 
 test(
+  'core/archive',
+  executable(
+    'test_archive',
+    'test_archive.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'stg/pbg3',
   executable(
     'test_pbg3',
@@ -1200,19 +1225,9 @@ test(
     'pbg3_builder.c',
     c_args: stg_include,
     implicit_include_directories: false,
-    link_with: [stg_pbg3_lib, core_vfs_lib, core_io_lib, core_base_lib],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'core/vfs/mount_file',
-  executable(
-    'test_vfs_mount_file',
-    'test_vfs_mount_file.c',
-    c_args: core_include,
-    implicit_include_directories: false,
-    link_with: [core_vfs_lib, core_io_lib, core_base_lib],
+    link_with: [
+      stg_pbg3_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
+    ],
   ),
   suite: 'unit',
 )
