@@ -86,6 +86,30 @@ static READER M_WaveReader(const uint32_t frames)
     return reader;
 }
 
+// Returns an owned reader over pad bytes of zeros and then frames sample
+// frames of raw PCM with the values of M_Wave, or only their left channel.
+static READER M_PcmReader(
+    const uint32_t frames, const uint32_t channels, const size_t pad)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    for (size_t i = 0; i < pad; i++) {
+        Writer_WriteU8(&writer, 0);
+    }
+    for (uint32_t i = 0; i < frames; i++) {
+        Writer_WriteI16(&writer, (int16_t)((i % 8 + 1) * 1024));
+        if (channels == 2) {
+            Writer_WriteI16(&writer, (int16_t)(-(int32_t)(i % 8 + 1) * 512));
+        }
+    }
+    size_t size;
+    uint8_t *const data = Writer_TakeBuffer(&writer, &size);
+    M_CheckResult(Writer_Close(&writer));
+    READER reader;
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
+    return reader;
+}
+
 static void M_RecordFree(
     void *const context, void *const memory, const size_t size)
 {
@@ -156,6 +180,98 @@ static AUDIO_STREAM *M_LoadStream(
         M_CheckResult(AudioStream_GetResult(stream));
     }
     return stream;
+}
+
+static AUDIO_STREAM *M_LoadPcmStream(
+    const uint32_t frames, const AUDIO_PLAY_OPTIONS *const options)
+{
+    READER reader = M_PcmReader(frames, 2, 0);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, options, &stream));
+    Reader_Close(&reader);
+    if (stream != nullptr) {
+        M_WaitStream(stream);
+        M_CheckResult(AudioStream_GetResult(stream));
+    }
+    return stream;
+}
+
+// Returns the value of the ramp of M_RampReader at a position in frames,
+// between two frames as linear interpolation gives it.
+static float M_Ramp(const double position)
+{
+    return (float)((8.0 * position + 1.0) / 32768.0);
+}
+
+static float M_Lerp(const float from, const float to, const double fraction)
+{
+    return from + (to - from) * (float)fraction;
+}
+
+// Returns an owned reader over frames mono frames of raw PCM: frame i has
+// 8 (i % 4096) + 1, so that no frame is silent.
+static READER M_RampReader(const uint32_t frames)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    for (uint32_t i = 0; i < frames; i++) {
+        Writer_WriteI16(&writer, (int16_t)(i % 4096 * 8 + 1));
+    }
+    size_t size;
+    uint8_t *const data = Writer_TakeBuffer(&writer, &size);
+    M_CheckResult(Writer_Close(&writer));
+    READER reader;
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
+    return reader;
+}
+
+static AUDIO_STREAM *M_LoadRampStream(
+    const uint32_t frames, const AUDIO_PLAY_OPTIONS *const options)
+{
+    READER reader = M_RampReader(frames);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 44100, .channels = 1 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, options, &stream));
+    Reader_Close(&reader);
+    if (stream != nullptr) {
+        M_WaitStream(stream);
+        M_CheckResult(AudioStream_GetResult(stream));
+    }
+    return stream;
+}
+
+// Mixes stream until it finishes, and writes the left channel of the
+// frames that it plays to out. Returns their count. Skips the frames that
+// an underrun leaves silent, so the stream must have no silent frame.
+static uint32_t M_MixToEnd(
+    AUDIO_STREAM *const stream, float *const out, const uint32_t capacity)
+{
+    const Uint64 deadline = SDL_GetTicks() + WAIT_MILLISECONDS;
+    uint32_t count = 0;
+    float chunk[1024 * 2];
+    while (!AudioStream_IsFinished(stream)) {
+        if (SDL_GetTicks() >= deadline) {
+            TEST_FAIL("the stream did not finish");
+            break;
+        }
+        memset(chunk, 0, sizeof(chunk));
+        M_Mix(chunk, 1024);
+        uint32_t played = 0;
+        for (uint32_t i = 0; i < 1024; i++) {
+            if (chunk[i * 2] != 0.0f) {
+                if (count < capacity) {
+                    out[count] = chunk[i * 2];
+                }
+                count++;
+                played++;
+            }
+        }
+        if (played < 1024) {
+            SDL_Delay(1);
+        }
+    }
+    return count;
 }
 
 TEST(sample_load_transfers_reader_and_decodes_off_main_thread)
@@ -691,6 +807,203 @@ TEST(stream_missing_file_reports_async_failure)
     CHECK_EQ_INT(AudioStream_GetState(stream), AUDIO_FAILED);
     CHECK(!Result_Ignore(AudioStream_GetResult(stream)));
     CHECK(!Result_Ignore(AudioStream_Play(stream)));
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_plays_the_frames_of_its_reader)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_STREAM *const stream = M_LoadPcmStream(32, &options);
+    AUDIO_INFO info;
+    M_CheckResult(AudioStream_GetInfo(stream, &info));
+    CHECK_EQ_INT(info.sample_rate, 48000);
+    CHECK_EQ_INT(info.channels, 2);
+    CHECK(info.length_known);
+    CHECK_EQ_INT(info.length, 32);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[64];
+    M_Mix(output, 32);
+    for (uint32_t i = 0; i < 32; i++) {
+        M_CheckNear(output[i * 2], M_Left(i));
+        M_CheckNear(output[i * 2 + 1], M_Right(i));
+    }
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_of_a_narrowed_reader_plays_only_its_range)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(16, 2, 6);
+    M_CheckResult(Reader_Narrow(&reader, 6 + 3 * 4, 4 * 4));
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, &options, &stream));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    M_CheckResult(AudioStream_Play(stream));
+    float output[12];
+    M_Mix(output, 6);
+    for (uint32_t i = 0; i < 4; i++) {
+        M_CheckNear(output[i * 2], M_Left(i + 3));
+    }
+    M_CheckNear(output[8], 0.0f);
+    M_CheckNear(output[10], 0.0f);
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_loop_repeats_exact_frames)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    options.loop = (AUDIO_LOOP) { .enabled = true, .begin = 2, .end = 5 };
+    AUDIO_STREAM *const stream = M_LoadPcmStream(16, &options);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[18];
+    M_Mix(output, 9);
+    const uint32_t expected[] = { 0, 1, 2, 3, 4, 2, 3, 4, 2 };
+    for (size_t i = 0; i < 9; i++) {
+        M_CheckNear(output[i * 2], M_Left(expected[i]));
+        M_CheckNear(output[i * 2 + 1], M_Right(expected[i]));
+    }
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_seeks_to_a_frame)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_STREAM *const stream = M_LoadPcmStream(32, &options);
+    M_CheckResult(AudioStream_Seek(stream, 13));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 13);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[4];
+    M_Mix(output, 2);
+    M_CheckNear(output[0], M_Left(13));
+    M_CheckNear(output[2], M_Left(14));
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 15);
+    CHECK(!Result_Ignore(AudioStream_Seek(stream, 33)));
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_mono_plays_on_both_channels)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(4, 1, 0);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 1 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, &options, &stream));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    AUDIO_INFO info;
+    M_CheckResult(AudioStream_GetInfo(stream, &info));
+    CHECK_EQ_INT(info.length, 4);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[8];
+    M_Mix(output, 4);
+    for (uint32_t i = 0; i < 4; i++) {
+        M_CheckNear(output[i * 2], M_Left(i));
+        M_CheckNear(output[i * 2 + 1], M_Left(i));
+    }
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_that_is_not_whole_frames_fails_and_keeps_the_reader)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(4, 2, 2);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    CHECK(!Result_Ignore(
+        AudioStream_LoadPcm(&reader, format, &options, &stream)));
+    CHECK(stream == nullptr);
+    CHECK_EQ_INT(Reader_Size(&reader), 18);
+    const AUDIO_PCM_FORMAT no_rate = { .sample_rate = 0, .channels = 2 };
+    M_CheckResult(Reader_Narrow(&reader, 2, 16));
+    CHECK(!Result_Ignore(
+        AudioStream_LoadPcm(&reader, no_rate, &options, &stream)));
+    const AUDIO_PCM_FORMAT surround = { .sample_rate = 48000, .channels = 4 };
+    CHECK(!Result_Ignore(
+        AudioStream_LoadPcm(&reader, surround, &options, &stream)));
+    CHECK(stream == nullptr);
+    Reader_Close(&reader);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_rejects_a_slice)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(4, 2, 0);
+    READER slice = Reader_Slice(&reader, 8);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    CHECK(
+        !Result_Ignore(AudioStream_LoadPcm(&slice, format, &options, &stream)));
+    CHECK(stream == nullptr);
+    Reader_Close(&reader);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_at_44100_hz_interpolates_to_the_output_rate)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_STREAM *const stream = M_LoadRampStream(44100, &options);
+    AUDIO_INFO info;
+    M_CheckResult(AudioStream_GetInfo(stream, &info));
+    CHECK_EQ_INT(info.sample_rate, 44100);
+    M_CheckResult(AudioStream_Play(stream));
+    const uint32_t capacity = 48100;
+    float *const output = Mem_AllocArr(capacity, sizeof(*output));
+    const uint32_t count = M_MixToEnd(stream, output, capacity);
+    CHECK(count >= 47999 && count <= 48001);
+    // Each output frame steps 44100 / 48000 source frames. Past the last
+    // source frame the output holds it, and the ramp drops every 4096
+    // frames.
+    for (uint32_t i = 0; i < count && i < capacity; i++) {
+        const double position = i * 0.91875;
+        const double ramp = fmod(position, 4096.0);
+        if (position >= 44099.0) {
+            M_CheckNear(output[i], M_Ramp(44099 % 4096));
+        } else if (ramp < 4095.0) {
+            M_CheckNear(output[i], M_Ramp(ramp));
+        }
+    }
+    Mem_Free(output);
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+// Steps 44100 / 48000 source frames each output frame: output frame 217 is
+// at source frame 199.36875, between the loop end and the loop begin.
+TEST(pcm_stream_at_44100_hz_loops_at_its_source_frames)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    options.loop = (AUDIO_LOOP) { .enabled = true, .begin = 100, .end = 200 };
+    AUDIO_STREAM *const stream = M_LoadRampStream(4096, &options);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[400 * 2];
+    M_Mix(output, 400);
+    M_CheckNear(output[100 * 2], M_Ramp(91.875));
+    M_CheckNear(output[216 * 2], M_Ramp(198.45));
+    M_CheckNear(output[217 * 2], M_Lerp(M_Ramp(199.0), M_Ramp(100.0), 0.36875));
+    M_CheckNear(output[218 * 2], M_Ramp(100.2875));
+    M_CheckNear(output[250 * 2], M_Ramp(129.6875));
+    M_CheckNear(output[326 * 2], M_Lerp(M_Ramp(199.0), M_Ramp(100.0), 0.5125));
+    M_CheckNear(output[327 * 2], M_Ramp(100.43125));
     AudioStream_Free(stream);
     Audio_Shutdown();
 }

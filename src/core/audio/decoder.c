@@ -15,6 +15,8 @@
 
 #define AUDIO_IO_BUFFER_SIZE 32768
 #define AUDIO_OUTPUT_CHANNELS 2
+#define AUDIO_PCM_READ_FRAMES 4096
+#define AUDIO_PCM_SAMPLE_BYTES 2
 
 struct AUDIO_DECODER {
     READER *reader;
@@ -32,6 +34,10 @@ struct AUDIO_DECODER {
     uint32_t pending_frames;
     bool flushing;
     bool finished;
+    // Set for raw PCM, which is read without FFmpeg.
+    bool raw;
+    uint32_t frame_bytes;
+    uint8_t *raw_buffer;
 };
 
 static RESULT M_Error(const char *const operation, const int error)
@@ -99,6 +105,7 @@ static void M_Close(AUDIO_DECODER *const decoder)
         avio_context_free(&decoder->io);
     }
     Mem_Free(decoder->buffer);
+    Mem_Free(decoder->raw_buffer);
 }
 
 static RESULT M_Open(AUDIO_DECODER *const decoder)
@@ -234,6 +241,70 @@ RESULT AudioDecoder_Open(READER *const reader, AUDIO_DECODER **const out)
     return OK;
 }
 
+RESULT AudioDecoder_CheckPcm(const size_t size, const AUDIO_PCM_FORMAT format)
+{
+    FAIL_IF(format.sample_rate == 0, "raw PCM has no sample rate");
+    FAIL_IF(
+        format.channels == 0 || format.channels > AUDIO_OUTPUT_CHANNELS,
+        "raw PCM has %u channels", (unsigned)format.channels);
+    FAIL_IF(
+        size % (format.channels * AUDIO_PCM_SAMPLE_BYTES) != 0,
+        "raw PCM of %zu bytes is not whole sample frames", size);
+    return OK;
+}
+
+RESULT AudioDecoder_OpenPcm(
+    READER *const reader, const AUDIO_PCM_FORMAT format,
+    AUDIO_DECODER **const out)
+{
+    *out = nullptr;
+    FAIL_IF(Reader_Failed(reader), "audio reader has failed");
+    MUST(AudioDecoder_CheckPcm(Reader_Size(reader), format));
+    const uint32_t frame_bytes = format.channels * AUDIO_PCM_SAMPLE_BYTES;
+    Reader_Seek(reader, 0);
+    AUDIO_DECODER *const decoder = Mem_AllocZ(sizeof(*decoder));
+    decoder->reader = reader;
+    decoder->raw = true;
+    decoder->frame_bytes = frame_bytes;
+    decoder->info = (AUDIO_INFO) {
+        .sample_rate = format.sample_rate,
+        .channels = format.channels,
+        .length_known = true,
+        .length = Reader_Size(reader) / frame_bytes,
+    };
+    decoder->raw_buffer = Mem_Alloc(AUDIO_PCM_READ_FRAMES * frame_bytes);
+    decoder->buffer = Mem_AllocArr(
+        AUDIO_PCM_READ_FRAMES, AUDIO_OUTPUT_CHANNELS * sizeof(float));
+    decoder->capacity = AUDIO_PCM_READ_FRAMES;
+    *out = decoder;
+    return OK;
+}
+
+static RESULT M_ReadPcm(
+    AUDIO_DECODER *const decoder, const float **const out,
+    uint32_t *const frames)
+{
+    READER *const reader = decoder->reader;
+    const uint32_t count = (uint32_t)MIN(
+        Reader_Remaining(reader) / decoder->frame_bytes,
+        (size_t)AUDIO_PCM_READ_FRAMES);
+    Reader_ReadBytes(reader, decoder->raw_buffer, count * decoder->frame_bytes);
+    MUST(Reader_Result(reader));
+    const uint32_t channels = decoder->info.channels;
+    for (uint32_t i = 0; i < count; i++) {
+        for (uint32_t channel = 0; channel < AUDIO_OUTPUT_CHANNELS; channel++) {
+            const uint8_t *const sample = decoder->raw_buffer
+                + (i * channels + channel % channels) * AUDIO_PCM_SAMPLE_BYTES;
+            const int16_t value = (int16_t)(sample[0] | sample[1] << 8);
+            decoder->buffer[i * AUDIO_OUTPUT_CHANNELS + channel] =
+                (float)value * (1.0f / 32768.0f);
+        }
+    }
+    *out = decoder->buffer;
+    *frames = count;
+    return OK;
+}
+
 void AudioDecoder_Free(AUDIO_DECODER *const decoder)
 {
     if (decoder != nullptr) {
@@ -253,6 +324,9 @@ RESULT AudioDecoder_Read(
 {
     *out = nullptr;
     *frames = 0;
+    if (decoder->raw) {
+        return M_ReadPcm(decoder, out, frames);
+    }
     if (decoder->pending_frames != 0) {
         *out =
             decoder->buffer + AUDIO_OUTPUT_CHANNELS * decoder->pending_offset;
@@ -313,6 +387,10 @@ RESULT AudioDecoder_Seek(AUDIO_DECODER *const decoder, uint64_t position)
     FAIL_IF(
         decoder->info.length_known && position > decoder->info.length,
         "audio position is past the source end");
+    if (decoder->raw) {
+        Reader_Seek(decoder->reader, (size_t)position * decoder->frame_bytes);
+        return Reader_Result(decoder->reader);
+    }
     const AVStream *const stream = decoder->format->streams[decoder->stream];
     const AVCodecDescriptor *const description =
         avcodec_descriptor_get(decoder->codec->codec_id);
