@@ -1,5 +1,6 @@
 #include "th07/main.h"
 
+#include "th07/buttons.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/settings.h"
@@ -9,9 +10,6 @@
 #include <time.h>
 
 static bool m_GameInitialized;
-
-// Has no actions: oth07 reads no input.
-static const INPUT_SCHEMA m_InputSchema = { .players = 1 };
 
 static RESULT M_Init(void)
 {
@@ -45,7 +43,7 @@ const GAME_DESC g_GameDesc = {
     .version = GAME_VERSION,
     .logical_width = 640,
     .logical_height = 480,
-    .input_schema = &m_InputSchema,
+    .input_schema = &g_InputSchema,
     .settings_schema = &g_SettingsSchema,
     .settings = &g_Settings,
     .patch_game = &g_PatchGame,
