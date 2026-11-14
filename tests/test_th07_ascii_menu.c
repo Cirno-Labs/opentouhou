@@ -3,6 +3,7 @@
 #include "th07/ascii/text.h"
 #include "th07/game.h"
 #include "th07/scene.h"
+#include "th07/sound.h"
 #include "th07/stubs.h"
 
 #include "test.h"
@@ -44,6 +45,7 @@ static ANM_SCRIPT m_Script = { m_Instrs, 9, 0 };
 static void M_Setup(void)
 {
     SceneStubCalls_Reset();
+    Sound_Reset();
     g_GameSpeed = 1.0f;
     Anm_Init(&g_HeapAllocator, &m_Rng);
     const ANM_SPRITE sprite = {
@@ -142,7 +144,7 @@ TEST(pause_navigation_waits_four_frames_and_wraps_through_retry)
     CHECK_EQ_INT(menu->state, 1);
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 3);
-    CHECK_EQ_INT(g_SceneStubCalls.sounds[0], SOUND_PLAYER_SHOT);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_PLAYER_SHOT);
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 2);
     M_Press(M_DOWN);
@@ -192,7 +194,7 @@ TEST(pause_resume_closes_after_twenty_frames)
     for (int32_t i = 0; i < 4; i++) {
         CHECK_EQ_INT(menu->sprites[i].int_vars[0], 2);
     }
-    CHECK_EQ_INT(g_SceneStubCalls.sounds[0], SOUND_OK);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_OK);
     M_Press(0);
     M_PauseFrames(menu, 19);
     CHECK_EQ_INT(g_GameManager.mode.paused, 2);
@@ -202,7 +204,7 @@ TEST(pause_resume_closes_after_twenty_frames)
     for (int32_t i = 0; i < ASCII_PAUSE_SPRITE_COUNT; i++) {
         CHECK(!menu->sprites[i].shown);
     }
-    CHECK_EQ_INT(g_SceneStubCalls.resume_music, 1);
+    CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
     CHECK_EQ_INT(g_SceneStubCalls.play_time_restart, 1);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_GAMEPLAY);
     M_Teardown();
@@ -215,12 +217,12 @@ TEST(pause_resume_keeps_stage_6_music_off_for_300_frames)
     g_Gui.frames = 299;
     PAUSE_MENU *const menu = M_Pause(4, 20);
     PauseMenu_UpdatePauseMenu(menu);
-    CHECK_EQ_INT(g_SceneStubCalls.resume_music, 0);
+    CHECK(g_SoundEvents.pause != SOUND_RESUME_MUSIC);
     g_Gui.frames = 300;
     menu->state = 4;
     menu->state_frames = 20;
     PauseMenu_UpdatePauseMenu(menu);
-    CHECK_EQ_INT(g_SceneStubCalls.resume_music, 1);
+    CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
     M_Teardown();
 }
 
@@ -249,7 +251,7 @@ TEST(pause_quit_confirms_and_requests_the_title)
     M_PauseFrames(menu, 20);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_TITLE);
     CHECK_EQ_INT(g_GameManager.mode.paused, 0);
-    CHECK_EQ_INT(g_SceneStubCalls.resume_music, 0);
+    CHECK(g_SoundEvents.pause != SOUND_RESUME_MUSIC);
     M_Teardown();
 }
 
@@ -382,11 +384,11 @@ TEST(continue_opens_on_give_up_after_a_frame_of_continue)
     }
     CHECK_EQ_INT(menu->sprites[2].color, 0xffff8080u);
     CHECK_EQ_INT(menu->sprites[3].color, 0x80808080u);
-    CHECK_EQ_INT(g_SceneStubCalls.pause_music, 1);
+    CHECK_EQ_INT(g_SoundEvents.pause, SOUND_PAUSE_MUSIC);
     CHECK_EQ_INT(g_SceneStubCalls.play_time_add, 1);
     PauseMenu_UpdateContinueMenu(menu);
     CHECK_EQ_INT(menu->sprites[3].color, 0xffff8080u);
-    CHECK_EQ_INT(g_SceneStubCalls.pause_music, 1);
+    CHECK_EQ_INT(g_SoundEvents.pause, SOUND_PAUSE_MUSIC);
     M_Teardown();
 }
 
@@ -468,7 +470,7 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     CHECK_EQ_INT(gm->play_counts[6].plays[4], 1);
     CHECK_EQ_INT(gm->play_counts[2].continues, 1);
     CHECK_EQ_INT(gm->play_counts[6].continues, 999999);
-    CHECK_EQ_INT(g_SceneStubCalls.resume_music, 1);
+    CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_GAMEPLAY);
     M_Teardown();
 }

@@ -15,6 +15,7 @@ th07_lib = static_library(
   'game.c',
   'scene.c',
   'settings.c',
+  'sound/events.c',
   c_args: [layer_include['th07'], layer_include['shell']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],

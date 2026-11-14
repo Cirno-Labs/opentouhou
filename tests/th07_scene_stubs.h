@@ -26,10 +26,6 @@ typedef struct {
     int32_t set_bombs_value;
     // The lives when GameManager_SetBombs was last called.
     float set_bombs_lives;
-    int32_t sound_count;
-    int32_t sounds[16];
-    int pause_music;
-    int resume_music;
     int play_time_add;
     int play_time_restart;
     int pending_copies;
