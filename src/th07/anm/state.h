@@ -33,3 +33,38 @@ const ANM_SPRITE *Anm_GetSpriteEntry(int32_t index);
 
 // Replaces the sprite at index with a copy of sprite.
 void Anm_SetSpriteEntry(int32_t index, const ANM_SPRITE *sprite);
+
+// Renews the presentation identity after copying a VM or teleporting it.
+// Does not change animation state or consume random values.
+void Anm_RenewPresentation(ANM_VM *vm);
+
+// Sets vm up as new: zeroed, with no sprite.
+void Anm_CreateVm(ANM_VM *vm);
+
+// Resets the animation state of vm, keeping pos, the sprite and the script.
+void Anm_InitVm(ANM_VM *vm);
+
+// Shows sprite on vm. Does nothing when sprite is out of range or unused.
+void Anm_SetSprite(ANM_VM *vm, int32_t sprite);
+
+// Resets vm and starts script on it, running its first frame at once.
+// Without a loaded script at that number, clears all of vm.
+void Anm_StartScript(ANM_VM *vm, int32_t script);
+
+// Like Anm_StartScript, after zeroing pos and pos_offset and setting
+// font_width and font_height to 15.
+void Anm_StartScriptAtOrigin(ANM_VM *vm, int32_t script);
+
+// Runs vm's script for one frame at g_GameSpeed. Returns true once the
+// script has ended.
+bool Anm_Step(ANM_VM *vm);
+
+// Steps each of vms whose script_index is not negative.
+void Anm_StepVms(ANM_VM *vms, int32_t count);
+
+// Starts script + i at the origin on vms[i] and makes its sprite its
+// base_sprite.
+void Anm_StartVmSeries(ANM_VM *vms, int32_t script, int32_t count);
+
+// Sends interrupt to each of vms that shows a sprite of a loaded texture.
+void Anm_SendInterrupt(ANM_VM *vms, int32_t count, int16_t interrupt);
