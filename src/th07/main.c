@@ -4,6 +4,7 @@
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/settings.h"
+#include "th07/sound.h"
 
 #include "version.h"
 
@@ -15,6 +16,7 @@ static RESULT M_Init(void)
 {
     MUST(Files_Mount());
     Files_SetPatches(Shell_GetPatches());
+    Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     m_GameInitialized = true;
     MUST(Game_Init());
     // Seeds the gameplay RNG from the clock once, outside the ticks, as the
@@ -25,7 +27,9 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
-    return Game_Tick(input);
+    const bool running = Game_Tick(input);
+    SoundPlayer_Update();
+    return running;
 }
 
 static void M_Shutdown(void)
@@ -34,6 +38,7 @@ static void M_Shutdown(void)
         Game_Shutdown();
         m_GameInitialized = false;
     }
+    SoundPlayer_Shutdown();
 }
 
 const GAME_DESC g_GameDesc = {
