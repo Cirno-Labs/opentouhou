@@ -535,6 +535,11 @@ static const char *const m_PadNames[9] = {
 static void M_SetUpApp(void)
 {
     FakeShell_Reset();
+    static const TH06_INPUT no_input;
+    for (int32_t device = 0; device < INPUT_DEVICE_COUNT; device++) {
+        FakeShell_SetDeviceInput(
+            (INPUT_DEVICE)device, &no_input, sizeof(no_input));
+    }
     for (size_t action = 0; action < 9; action++) {
         INPUT_BINDING *const bindings = g_FakeShell.bindings[action];
         CHECK(Input_BindingFromName("z", &bindings[0]));
