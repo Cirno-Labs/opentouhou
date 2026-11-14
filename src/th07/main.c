@@ -25,7 +25,7 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
-    return Game_Tick();
+    return Game_Tick(input);
 }
 
 static void M_Shutdown(void)

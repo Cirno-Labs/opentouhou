@@ -152,12 +152,18 @@ static CHAIN_STATUS M_Switch(void)
 
 static CHAIN_STATUS M_Calc(void *const arg)
 {
+    if (!g_GameManager.mode.calc_dropped) {
+        Buttons_Update(&g_Buttons, &g_Input);
+    } else {
+        Buttons_Merge(&g_Buttons, &g_Input);
+    }
     if (m_Current != m_Requested) {
         m_Previous = m_Current;
         const CHAIN_STATUS status = M_Switch();
         if (status == CHAIN_QUIT || status == CHAIN_RESET) {
             return status;
         }
+        Buttons_Clear(&g_Buttons);
     }
     m_Current = m_Requested;
     m_Frames++;
