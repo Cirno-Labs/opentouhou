@@ -50,34 +50,44 @@ typedef struct {
 // match th6_ud????.rpy, in byte order, as the original reads the first 45
 // that Windows lists.
 void ResultScreen_OpenSaves(const char *user_dir);
+
 // Writes the files that the simulation saved since the last call. Reports
 // the first failure. A file that fails to write is dropped, so a later
 // call never writes it.
 RESULT ResultScreen_WriteSaves(void);
+
 // Releases the files in memory and drops the saves not written.
 void ResultScreen_CloseSaves(void);
+
 // Asks for a scan of the replay directory after the tick.
 void ResultScreen_RequestReplayScan(void);
+
 // Scans the replay directory again when a tick asked for it: forgets the
 // replays read before and reads the slots and the user replays, as
 // ResultScreen_OpenSaves does.
 void ResultScreen_ScanReplays(void);
+
 // Returns a number that changes with each scan of the replay directory.
 int32_t ResultScreen_GetReplayScan(void);
+
 // Copies the valid replays into out in the replay menu's order: the
 // numbered slots, as the simulation last saved them, then the th6_ud files.
 // Returns their number.
 int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT]);
+
 // Sets the date that the next ticks read, as MM/DD/YY.
 void ResultScreen_SetDate(const char *date);
+
 // Adds one measurement of the tick rate, in ticks per second, to the frame
 // counts while g_GameManager.mode.playing is set, as the original's frame
 // rate display does every half second. The frames due grow by 60. The
 // frames that ran grow by 60 above 54 ticks per second, by 48 above 42, by
 // 36 above 30 and by 30 below.
 void ResultScreen_CountFrames(float tick_rate);
+
 // Sets the frame counts to 0, as a new game starts.
 void ResultScreen_ResetFrames(void);
+
 // Makes the replay save menu refuse every game, as it refuses a game with
 // a continue, or accept games again. th06 refuses them while patches
 // change gameplay, because such a replay would not play back in the

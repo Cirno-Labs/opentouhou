@@ -118,14 +118,17 @@ typedef struct {
 // instruction, or whose spell card names are not CP932 text, fails the
 // load.
 RESULT Ecl_Load(void);
+
 // Releases the file loaded by Ecl_Load.
 void Ecl_Release(void);
+
 // Returns the timeline of the loaded file.
 const ECL_TIMELINE_ENTRY *Ecl_GetTimeline(void);
 
 // Starts subroutine sub on state at its frame 0. Keeps the variables, the
 // comparison and the frame function of state.
 void Ecl_StartSub(ECL_STATE *state, int16_t sub);
+
 // Runs a frame of the script of enemy: the instructions due, including
 // calls, returns and interrupts, then the movement and, while the enemy
 // has life, the timed shots, the sprite direction and the frame function.

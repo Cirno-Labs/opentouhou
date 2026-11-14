@@ -13,27 +13,35 @@
 // before, and writes that one control into out. shell/game reads the pads
 // once per display frame, and only the first tick after a press sees it.
 bool Shell_GetPadPress(INPUT_BINDING *out);
+
 // Writes into out the input of the game's schema that one kind of device
 // gave, as Input_GetDevice does. shell/game takes it with the tick's input,
 // before the ticks of the display frame, so every tick of a display frame
 // sees the same values as its input.
 void Shell_GetDeviceInput(INPUT_DEVICE device, void *out);
+
 // Writes up to capacity bindings of action, of player 1 in the game's input
 // schema, into out, and returns how many the action has.
 size_t Shell_GetBindings(size_t action, INPUT_BINDING *out, size_t capacity);
+
 // Asks to add binding to action of player 1 in the game's input schema.
 void Shell_RequestBind(size_t action, INPUT_BINDING binding);
+
 // Asks to remove binding from action of player 1 in the game's input
 // schema.
 void Shell_RequestUnbind(size_t action, INPUT_BINDING binding);
+
 // Asks to set the gamepad and joystick bindings of the game's actions back
 // to the defaults. The keyboard bindings stay.
 void Shell_RequestResetPadBindings(void);
+
 // Returns whether the window is fullscreen.
 bool Shell_IsFullscreen(void);
+
 // Asks for the fullscreen or the windowed mode, as the fullscreen hotkey
 // toggles it.
 void Shell_RequestFullscreen(bool fullscreen);
+
 // Returns whether shell/game measured the tick rate since the tick before,
 // and writes the rate, in ticks per second, into out. shell/game counts the
 // ticks of each period of half a second or more, outside the ticks, and

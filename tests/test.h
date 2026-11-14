@@ -85,6 +85,7 @@ static void Test_Register(const char *const name, void (*const func)(void))
     } while (0)
 
 #ifndef _WIN32
+
 // Names the case that runs when meson stops a test that ran out of time,
 // with a backtrace where the C library has one, and then ends as the
 // signal would have. Calls only functions that are safe in a handler.

@@ -14,6 +14,7 @@ extern BUTTONS g_Buttons;
 extern TH06_INPUT g_Input;
 
 RESULT Game_Init(void);
+
 // Runs one tick with input: the draw chain, then the update chain. A
 // reset tears the game down and starts it again from boot. Returns false
 // when the game quits.

@@ -57,12 +57,14 @@ typedef struct {
 // offsets reach past the data, or when the original's scan finds no TH6K
 // chunk. *out is then empty. ScoreFile_Free releases *out in both cases.
 RESULT ScoreFile_Read(READER *reader, SCORE_FILE *out);
+
 // Releases the bytes of file and leaves it empty.
 void ScoreFile_Free(SCORE_FILE *file);
 
 // Fills list with the ten defaults of difficulty: "Nanashi ", stage 1,
 // from 1,000,000 down to 100,000.
 void ScoreList_InitDefaults(SCORE_LIST *list, int32_t difficulty);
+
 // Inserts entry before the first entry whose score is not higher, so that
 // a tie places entry first. Returns the rank of entry, from 0. A rank of
 // SCORE_LIST_SIZE leaves list unchanged.
@@ -72,18 +74,22 @@ int32_t ScoreList_Insert(SCORE_LIST *list, const HIGH_SCORE *entry);
 // file order.
 void ScoreFile_LoadHighScores(
     const SCORE_FILE *file, SCORE_LIST *list, int32_t shot, int32_t difficulty);
+
 // Returns the best high score of shot and difficulty in file, but at least
 // SCORE_DEFAULT_HIGH_SCORE.
 uint32_t ScoreFile_GetHighScore(
     const SCORE_FILE *file, int32_t shot, int32_t difficulty);
+
 // Copies the spell-card records of file over cards, by their index, and
 // leaves the records that file does not have unchanged.
 void ScoreFile_LoadSpellCards(
     const SCORE_FILE *file, SPELL_CARD_RECORD cards[SPELL_CARD_COUNT]);
+
 // Sets every clear record to stage 1, then copies the clear records of
 // file over them, by shot.
 void ScoreFile_LoadClears(
     const SCORE_FILE *file, CLEAR_RECORD clears[SCORE_SHOT_COUNT]);
+
 // Sets every practice score to 0, then copies the practice records of file
 // over them. The original indexes its array by shot * 24 + stage * 4 +
 // difficulty and admits difficulty 4 and stage 6, so such a record lands

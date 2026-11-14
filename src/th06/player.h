@@ -190,12 +190,14 @@ extern PLAYER g_Player;
 // character, except in SCENE_NEXT_STAGE, which keeps them. It then places
 // the player at the bottom of the play area, respawning.
 RESULT Player_Register(void);
+
 // Removes the three elements. Releases the sprites of the character,
 // except in SCENE_NEXT_STAGE.
 void Player_Remove(void);
 
 // Returns the angle from pos to the player, or pi / 2 when they coincide.
 float Player_AngleFrom(VEC3 pos);
+
 // Returns the angle from the player to pos, or pi / 2 when they coincide.
 float Player_AngleTo(VEC3 pos);
 
@@ -205,19 +207,23 @@ float Player_AngleTo(VEC3 pos);
 // PLAYER_CONTACT_NONE. A touch of the hitbox kills the player when it is
 // PLAYER_ALIVE, but returns PLAYER_CONTACT_BOX in every state.
 PLAYER_CONTACT Player_CheckHit(VEC3 pos, VEC3 size);
+
 // Is like Player_CheckHit, with the box grown by 20 on each side, and
 // grazes instead of killing. A touch of the hitbox returns
 // PLAYER_CONTACT_NONE while the player is dying or respawning.
 PLAYER_CONTACT Player_CheckGraze(VEC3 pos, VEC3 size);
+
 // Tests a laser: the box of size centred on pos, turned by angle around
 // origin. A touch of the hitbox kills the player when it is
 // PLAYER_ALIVE. Otherwise, with can_graze, a box within 48 pixels of the
 // hitbox grazes it, except while the player is dying or respawning.
 void Player_CheckLaserHit(
     VEC3 pos, VEC3 size, VEC3 origin, float angle, bool can_graze);
+
 // Returns whether the box of size centred on pos touches the graze box
 // while the player is alive or invulnerable.
 bool Player_TouchesGrazeBox(VEC3 pos, VEC3 size);
+
 // Returns the damage that the shots and the bomb deal this frame to the
 // box of size centred on pos, an enemy. Each shot that touches the box
 // deals its damage, or a third of it (at least 1) during a bomb. A

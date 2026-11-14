@@ -26,15 +26,19 @@ typedef struct {
 
 // Clears writer to an empty bitstream.
 void Pbg3Builder_Init(PBG3_BUILDER_WRITER *writer);
+
 // Appends one literal byte.
 void Pbg3Builder_WriteLiteral(PBG3_BUILDER_WRITER *writer, uint8_t byte);
+
 // Appends a back-reference copying length bytes (3 to 18) starting at
 // dict index offset. dict[k] holds the (k - 1)th byte the stream has
 // produced, so offset is one more than the index of the byte to repeat.
 void Pbg3Builder_WriteBackref(
     PBG3_BUILDER_WRITER *writer, uint32_t offset, uint32_t length);
+
 // Appends the stream's stop code.
 void Pbg3Builder_WriteStop(PBG3_BUILDER_WRITER *writer);
+
 // Pads the last partial byte with zero bits, if any.
 void Pbg3Builder_FlushByte(PBG3_BUILDER_WRITER *writer);
 
