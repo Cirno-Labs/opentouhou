@@ -46,16 +46,15 @@ othpatch_lib = static_library(
   'step_patches.c',
   'step_remove.c',
   'step_upgrade.c',
-  'zip.c',
   othpatch_version,
   c_args: [layer_include['othpatch']] + shell_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
-  dependencies: [curl, zlib],
+  dependencies: [curl],
 )
 
 othpatch_libs = [
   othpatch_lib, shell_lib, core_patch_select_lib, core_ini_lib,
-  core_json_lib, core_io_lib, core_hash_lib, core_base_lib,
+  core_archive_lib, core_json_lib, core_io_lib, core_hash_lib, core_base_lib,
 ]
 othpatch_deps = [curl, sdl3, zlib]
 othpatch_entry = [
