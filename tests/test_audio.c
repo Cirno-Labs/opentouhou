@@ -88,29 +88,21 @@ static READER M_WaveReader(const uint32_t frames)
     return reader;
 }
 
-// Returns an owned reader over a mono WAV file of frames frames of a sine
-// of frequency hertz at rate, with amplitude 0.4 about 0.5, so that no
-// frame is silent.
-static READER M_SineReader(
-    const uint32_t frames, const uint32_t rate, const double frequency)
+// Returns an owned reader over pad bytes of zeros and then frames sample
+// frames of raw PCM with the values of M_Wave, or only their left channel.
+static READER M_PcmReader(
+    const uint32_t frames, const uint32_t channels, const size_t pad)
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    Writer_WriteBytes(&writer, "RIFF", 4);
-    Writer_WriteU32(&writer, 36 + frames * 2);
-    Writer_WriteBytes(&writer, "WAVEfmt ", 8);
-    Writer_WriteU32(&writer, 16);
-    Writer_WriteU16(&writer, 1);
-    Writer_WriteU16(&writer, 1);
-    Writer_WriteU32(&writer, rate);
-    Writer_WriteU32(&writer, rate * 2);
-    Writer_WriteU16(&writer, 2);
-    Writer_WriteU16(&writer, 16);
-    Writer_WriteBytes(&writer, "data", 4);
-    Writer_WriteU32(&writer, frames * 2);
+    for (size_t i = 0; i < pad; i++) {
+        Writer_WriteU8(&writer, 0);
+    }
     for (uint32_t i = 0; i < frames; i++) {
-        const double value = 0.5 + 0.4 * sin(TAU * frequency * i / rate);
-        Writer_WriteI16(&writer, (int16_t)lround(value * 32767.0));
+        Writer_WriteI16(&writer, (int16_t)((i % 8 + 1) * 1024));
+        if (channels == 2) {
+            Writer_WriteI16(&writer, (int16_t)(-(int32_t)(i % 8 + 1) * 512));
+        }
     }
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
@@ -192,13 +184,13 @@ static AUDIO_STREAM *M_LoadStream(
     return stream;
 }
 
-static AUDIO_STREAM *M_LoadSineStream(
-    const uint32_t frames, const double frequency,
-    const AUDIO_PLAY_OPTIONS *const options)
+static AUDIO_STREAM *M_LoadPcmStream(
+    const uint32_t frames, const AUDIO_PLAY_OPTIONS *const options)
 {
-    READER reader = M_SineReader(frames, 44100, frequency);
+    READER reader = M_PcmReader(frames, 2, 0);
     AUDIO_STREAM *stream = nullptr;
-    M_CheckResult(AudioStream_Load(&reader, options, &stream));
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, options, &stream));
     Reader_Close(&reader);
     if (stream != nullptr) {
         M_WaitStream(stream);
@@ -207,8 +199,78 @@ static AUDIO_STREAM *M_LoadSineStream(
     return stream;
 }
 
-// Checks that frames [from, to) of a sine of M_SineReader keep its
-// amplitude within 2.5% and its frequency within 1% at the output rate.
+// Writes frames mono frames of a sine of frequency hertz at rate, with
+// amplitude 0.4 about 0.5, so that no frame is silent.
+static void M_WriteSine(
+    WRITER *const writer, const uint32_t frames, const uint32_t rate,
+    const double frequency)
+{
+    for (uint32_t i = 0; i < frames; i++) {
+        const double value = 0.5 + 0.4 * sin(TAU * frequency * i / rate);
+        Writer_WriteI16(writer, (int16_t)lround(value * 32767.0));
+    }
+}
+
+// Writes a mono WAV file of a sine of M_WriteSine.
+static void M_WriteSineWave(
+    WRITER *const writer, const uint32_t frames, const uint32_t rate,
+    const double frequency)
+{
+    Writer_WriteBytes(writer, "RIFF", 4);
+    Writer_WriteU32(writer, 36 + frames * 2);
+    Writer_WriteBytes(writer, "WAVEfmt ", 8);
+    Writer_WriteU32(writer, 16);
+    Writer_WriteU16(writer, 1);
+    Writer_WriteU16(writer, 1);
+    Writer_WriteU32(writer, rate);
+    Writer_WriteU32(writer, rate * 2);
+    Writer_WriteU16(writer, 2);
+    Writer_WriteU16(writer, 16);
+    Writer_WriteBytes(writer, "data", 4);
+    Writer_WriteU32(writer, frames * 2);
+    M_WriteSine(writer, frames, rate, frequency);
+}
+
+static READER M_TakeReader(WRITER *const writer)
+{
+    size_t size;
+    uint8_t *const data = Writer_TakeBuffer(writer, &size);
+    M_CheckResult(Writer_Close(writer));
+    READER reader;
+    Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
+    return reader;
+}
+
+// Loads a stream of a sine at 44100 Hz from raw PCM or from a WAV file.
+static AUDIO_STREAM *M_LoadSineStream(
+    const uint32_t frames, const double frequency,
+    const AUDIO_PLAY_OPTIONS *const options, const bool raw)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    if (raw) {
+        M_WriteSine(&writer, frames, 44100, frequency);
+    } else {
+        M_WriteSineWave(&writer, frames, 44100, frequency);
+    }
+    READER reader = M_TakeReader(&writer);
+    AUDIO_STREAM *stream = nullptr;
+    if (raw) {
+        const AUDIO_PCM_FORMAT format = { .sample_rate = 44100, .channels = 1 };
+        M_CheckResult(AudioStream_LoadPcm(&reader, format, options, &stream));
+    } else {
+        M_CheckResult(AudioStream_Load(&reader, options, &stream));
+    }
+    Reader_Close(&reader);
+    if (stream != nullptr) {
+        M_WaitStream(stream);
+        M_CheckResult(AudioStream_GetResult(stream));
+    }
+    return stream;
+}
+
+// Checks that frames [from, to) of a sine of M_WriteSine keep its amplitude
+// within 2.5% and its frequency within 1% at the output rate.
 static void M_CheckSine(
     const float *const frames, const uint32_t from, const uint32_t to,
     const double frequency)
@@ -522,7 +584,10 @@ TEST(source_sample_rate_controls_output_playback_speed)
 TEST(sample_at_44100_hz_keeps_its_high_frequencies)
 {
     M_CheckResult(Audio_Init());
-    READER reader = M_SineReader(4410, 44100, 15000.0);
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    M_WriteSineWave(&writer, 4410, 44100, 15000.0);
+    READER reader = M_TakeReader(&writer);
     AUDIO_SAMPLE *sample = nullptr;
     M_CheckResult(AudioSample_Load(&reader, &sample));
     M_WaitSample(sample);
@@ -857,11 +922,156 @@ TEST(stream_missing_file_reports_async_failure)
     Audio_Shutdown();
 }
 
-TEST(stream_at_44100_hz_resamples_to_the_output_length)
+TEST(pcm_stream_plays_the_frames_of_its_reader)
 {
     M_CheckResult(Audio_Init());
     AUDIO_PLAY_OPTIONS options = M_Options();
-    AUDIO_STREAM *const stream = M_LoadSineStream(44100, 1000.0, &options);
+    AUDIO_STREAM *const stream = M_LoadPcmStream(32, &options);
+    AUDIO_INFO info;
+    M_CheckResult(AudioStream_GetInfo(stream, &info));
+    CHECK_EQ_INT(info.sample_rate, 48000);
+    CHECK_EQ_INT(info.channels, 2);
+    CHECK(info.length_known);
+    CHECK_EQ_INT(info.length, 32);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[64];
+    M_Mix(output, 32);
+    for (uint32_t i = 0; i < 32; i++) {
+        M_CheckNear(output[i * 2], M_Left(i));
+        M_CheckNear(output[i * 2 + 1], M_Right(i));
+    }
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_of_a_narrowed_reader_plays_only_its_range)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(16, 2, 6);
+    M_CheckResult(Reader_Narrow(&reader, 6 + 3 * 4, 4 * 4));
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, &options, &stream));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    M_CheckResult(AudioStream_Play(stream));
+    float output[12];
+    M_Mix(output, 6);
+    for (uint32_t i = 0; i < 4; i++) {
+        M_CheckNear(output[i * 2], M_Left(i + 3));
+    }
+    M_CheckNear(output[8], 0.0f);
+    M_CheckNear(output[10], 0.0f);
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_loop_repeats_exact_frames)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    options.loop = (AUDIO_LOOP) { .enabled = true, .begin = 2, .end = 5 };
+    AUDIO_STREAM *const stream = M_LoadPcmStream(16, &options);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[18];
+    M_Mix(output, 9);
+    const uint32_t expected[] = { 0, 1, 2, 3, 4, 2, 3, 4, 2 };
+    for (size_t i = 0; i < 9; i++) {
+        M_CheckNear(output[i * 2], M_Left(expected[i]));
+        M_CheckNear(output[i * 2 + 1], M_Right(expected[i]));
+    }
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_seeks_to_a_frame)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_STREAM *const stream = M_LoadPcmStream(32, &options);
+    M_CheckResult(AudioStream_Seek(stream, 13));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 13);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[4];
+    M_Mix(output, 2);
+    M_CheckNear(output[0], M_Left(13));
+    M_CheckNear(output[2], M_Left(14));
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 15);
+    CHECK(!Result_Ignore(AudioStream_Seek(stream, 33)));
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_mono_plays_on_both_channels)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(4, 1, 0);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 1 };
+    M_CheckResult(AudioStream_LoadPcm(&reader, format, &options, &stream));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    AUDIO_INFO info;
+    M_CheckResult(AudioStream_GetInfo(stream, &info));
+    CHECK_EQ_INT(info.length, 4);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[8];
+    M_Mix(output, 4);
+    for (uint32_t i = 0; i < 4; i++) {
+        M_CheckNear(output[i * 2], M_Left(i));
+        M_CheckNear(output[i * 2 + 1], M_Left(i));
+    }
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(pcm_that_is_not_whole_frames_fails_and_keeps_the_reader)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(4, 2, 2);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    CHECK(!Result_Ignore(
+        AudioStream_LoadPcm(&reader, format, &options, &stream)));
+    CHECK(stream == nullptr);
+    CHECK_EQ_INT(Reader_Size(&reader), 18);
+    const AUDIO_PCM_FORMAT no_rate = { .sample_rate = 0, .channels = 2 };
+    M_CheckResult(Reader_Narrow(&reader, 2, 16));
+    CHECK(!Result_Ignore(
+        AudioStream_LoadPcm(&reader, no_rate, &options, &stream)));
+    const AUDIO_PCM_FORMAT surround = { .sample_rate = 48000, .channels = 4 };
+    CHECK(!Result_Ignore(
+        AudioStream_LoadPcm(&reader, surround, &options, &stream)));
+    CHECK(stream == nullptr);
+    Reader_Close(&reader);
+    Audio_Shutdown();
+}
+
+TEST(pcm_stream_rejects_a_slice)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    READER reader = M_PcmReader(4, 2, 0);
+    READER slice = Reader_Slice(&reader, 8);
+    AUDIO_STREAM *stream = nullptr;
+    const AUDIO_PCM_FORMAT format = { .sample_rate = 48000, .channels = 2 };
+    CHECK(
+        !Result_Ignore(AudioStream_LoadPcm(&slice, format, &options, &stream)));
+    CHECK(stream == nullptr);
+    Reader_Close(&reader);
+    Audio_Shutdown();
+}
+
+static void M_CheckStreamLength(const bool raw)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_STREAM *const stream = M_LoadSineStream(44100, 1000.0, &options, raw);
     AUDIO_INFO info;
     M_CheckResult(AudioStream_GetInfo(stream, &info));
     CHECK_EQ_INT(info.sample_rate, 44100);
@@ -877,15 +1087,26 @@ TEST(stream_at_44100_hz_resamples_to_the_output_length)
     Audio_Shutdown();
 }
 
-// Linear interpolation leaves about 0.7 of the amplitude of 15 kHz.
-TEST(stream_at_44100_hz_keeps_its_high_frequencies)
+TEST(stream_at_44100_hz_resamples_to_the_output_length)
+{
+    M_CheckStreamLength(false);
+}
+
+TEST(pcm_stream_at_44100_hz_resamples_to_the_output_length)
+{
+    M_CheckStreamLength(true);
+}
+
+// Catches a linear resampler, which leaves about 0.7 of the amplitude of
+// 15 kHz.
+static void M_CheckStreamFrequencies(const bool raw)
 {
     M_CheckResult(Audio_Init());
     const double frequencies[] = { 1000.0, 15000.0 };
     for (size_t i = 0; i < 2; i++) {
         AUDIO_PLAY_OPTIONS options = M_Options();
         AUDIO_STREAM *const stream =
-            M_LoadSineStream(44100, frequencies[i], &options);
+            M_LoadSineStream(44100, frequencies[i], &options, raw);
         M_CheckResult(AudioStream_Play(stream));
         const uint32_t capacity = 48100;
         float *const output = Mem_AllocArr(capacity, sizeof(*output));
@@ -900,14 +1121,24 @@ TEST(stream_at_44100_hz_keeps_its_high_frequencies)
     Audio_Shutdown();
 }
 
+TEST(stream_at_44100_hz_keeps_its_high_frequencies)
+{
+    M_CheckStreamFrequencies(false);
+}
+
+TEST(pcm_stream_at_44100_hz_keeps_its_high_frequencies)
+{
+    M_CheckStreamFrequencies(true);
+}
+
 // Loops whole periods of 441 Hz, 100 source frames, so that the signal
 // stays continuous at the loop seam.
-TEST(stream_at_44100_hz_loops_without_a_click)
+static void M_CheckStreamLoop(const bool raw)
 {
     M_CheckResult(Audio_Init());
     AUDIO_PLAY_OPTIONS options = M_Options();
     options.loop = (AUDIO_LOOP) { .enabled = true, .begin = 1000, .end = 3000 };
-    AUDIO_STREAM *const stream = M_LoadSineStream(8192, 441.0, &options);
+    AUDIO_STREAM *const stream = M_LoadSineStream(8192, 441.0, &options, raw);
     M_CheckResult(AudioStream_Play(stream));
     const uint32_t frames = 12000;
     float *const output = Mem_AllocArr(frames, sizeof(*output));
@@ -932,11 +1163,21 @@ TEST(stream_at_44100_hz_loops_without_a_click)
     Audio_Shutdown();
 }
 
-TEST(stream_at_44100_hz_seeks_in_source_frames)
+TEST(stream_at_44100_hz_loops_without_a_click)
+{
+    M_CheckStreamLoop(false);
+}
+
+TEST(pcm_stream_at_44100_hz_loops_without_a_click)
+{
+    M_CheckStreamLoop(true);
+}
+
+static void M_CheckStreamSeek(const bool raw)
 {
     M_CheckResult(Audio_Init());
     AUDIO_PLAY_OPTIONS options = M_Options();
-    AUDIO_STREAM *const stream = M_LoadSineStream(44100, 1000.0, &options);
+    AUDIO_STREAM *const stream = M_LoadSineStream(44100, 1000.0, &options, raw);
     M_CheckResult(AudioStream_Seek(stream, 22050));
     M_WaitStream(stream);
     M_CheckResult(AudioStream_GetResult(stream));
@@ -949,6 +1190,16 @@ TEST(stream_at_44100_hz_seeks_in_source_frames)
     M_CheckSine(output, 100, 4800, 1000.0);
     AudioStream_Free(stream);
     Audio_Shutdown();
+}
+
+TEST(stream_at_44100_hz_seeks_in_source_frames)
+{
+    M_CheckStreamSeek(false);
+}
+
+TEST(pcm_stream_at_44100_hz_seeks_in_source_frames)
+{
+    M_CheckStreamSeek(true);
 }
 
 TEST(shutdown_cancels_pending_loads_and_accepts_reinitialization)

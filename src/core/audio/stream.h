@@ -4,6 +4,13 @@
 #include "core/base/result.h"
 #include "core/io/reader.h"
 
+// Describes raw PCM: signed 16-bit little-endian samples, the channels of
+// each sample frame interleaved. One or two channels.
+typedef struct {
+    uint32_t sample_rate;
+    uint32_t channels;
+} AUDIO_PCM_FORMAT;
+
 // Copies the path and queues loading and buffering of a paused stream.
 // Performs opening, reading, decoding and format conversion on the worker.
 RESULT AudioStream_LoadFile(
@@ -15,6 +22,13 @@ RESULT AudioStream_LoadFile(
 // until Free returns.
 RESULT AudioStream_Load(
     READER *reader, const AUDIO_PLAY_OPTIONS *options, AUDIO_STREAM **out);
+
+// Loads a paused stream of the raw PCM that is the whole of reader, as
+// AudioStream_Load does for an encoded file. A size that is not whole
+// sample frames is a failure.
+RESULT AudioStream_LoadPcm(
+    READER *reader, AUDIO_PCM_FORMAT format, const AUDIO_PLAY_OPTIONS *options,
+    AUDIO_STREAM **out);
 
 // Returns readiness without waiting. READY means initial buffering is complete.
 AUDIO_LOAD_STATE AudioStream_GetState(const AUDIO_STREAM *stream);
