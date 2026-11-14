@@ -19,6 +19,9 @@
 typedef struct {
     READER reader;
     char *path;
+    // Set for raw PCM in pcm_format, which AudioDecoder_OpenPcm reads.
+    bool raw;
+    AUDIO_PCM_FORMAT pcm_format;
     AUDIO_DECODER *decoder;
     const float *frames;
     uint32_t count;
@@ -185,7 +188,12 @@ static RESULT M_OpenJob(AUDIO_JOB *const job)
     if (job->path != nullptr) {
         MUST(Reader_OpenFile(&job->reader, job->path));
     }
-    MUST(AudioDecoder_Open(&job->reader, &job->decoder));
+    if (job->raw) {
+        MUST(
+            AudioDecoder_OpenPcm(&job->reader, job->pcm_format, &job->decoder));
+    } else {
+        MUST(AudioDecoder_Open(&job->reader, &job->decoder));
+    }
     job->opened = true;
     return OK;
 }
@@ -902,6 +910,25 @@ RESULT AudioStream_Load(
     MUST(M_CheckReader(reader));
     AUDIO_STREAM *const stream = M_CreateStream(options);
     stream->job.reader = *reader;
+    *reader = (READER) {};
+    M_AddStream(stream);
+    *out = stream;
+    return OK;
+}
+
+RESULT AudioStream_LoadPcm(
+    READER *const reader, const AUDIO_PCM_FORMAT format,
+    const AUDIO_PLAY_OPTIONS *const options, AUDIO_STREAM **const out)
+{
+    *out = nullptr;
+    MUST(M_CheckInitialized());
+    MUST(M_CheckOptions(options));
+    MUST(M_CheckReader(reader));
+    MUST(AudioDecoder_CheckPcm(Reader_Size(reader), format));
+    AUDIO_STREAM *const stream = M_CreateStream(options);
+    stream->job.reader = *reader;
+    stream->job.raw = true;
+    stream->job.pcm_format = format;
     *reader = (READER) {};
     M_AddStream(stream);
     *out = stream;
