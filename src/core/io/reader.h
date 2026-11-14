@@ -56,6 +56,7 @@ typedef struct {
     READER_FILE *file;
     bool owns_file;
     const ALLOCATOR *buffer_allocator;
+    size_t buffer_size;
     char *name;
     bool owns_name;
     size_t origin;
@@ -188,6 +189,12 @@ const void *Reader_Borrow(READER *reader, size_t size);
 // Reader_Close of its own. On failure, the slice is empty and has the failure
 // of this reader, so that the result of either one reports it.
 READER Reader_Slice(READER *reader, size_t size);
+
+// Narrows reader to size bytes from offset of its range, at position 0.
+// The reader keeps what it owns, so a narrowed file reader can still be
+// handed on as an owned reader. Offsets in failure messages still count
+// from the start of the file. A range past the end is a failure.
+RESULT Reader_Narrow(READER *reader, size_t offset, size_t size);
 
 // The rest of this header is the implementation behind Reader_Read.
 

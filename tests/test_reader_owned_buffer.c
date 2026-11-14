@@ -83,3 +83,18 @@ TEST(an_owned_buffer_has_its_name_until_the_close)
         result.message, "read of 4 bytes at 0x0 past end 0x2 in owned.dat");
     Result_Ignore(result);
 }
+
+TEST(a_narrowed_owned_buffer_frees_the_whole_block)
+{
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    void *const data = M_Copy("hello world", 11, &test.allocator);
+    READER reader;
+    Reader_OpenOwnedBuffer(&reader, data, 11, &test.allocator, nullptr);
+    CHECK(Result_Log(Reader_Narrow(&reader, 6, 3), LOG_LEVEL_ERROR));
+    const void *const borrowed = Reader_Borrow(&reader, 3);
+    CHECK(borrowed != nullptr && memcmp(borrowed, "wor", 3) == 0);
+    Reader_Close(&reader);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    CHECK_EQ_INT(test.size_errors, 0);
+}
