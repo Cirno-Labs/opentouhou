@@ -1,3 +1,4 @@
+#include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 
@@ -92,7 +93,7 @@ static bool M_FailsWith(const READER *const reader, const char *const message)
 TEST(unsigned_values_are_little_endian)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     CHECK_EQ_INT(Reader_ReadU8(&reader), 0x01);
     CHECK_EQ_INT(Reader_ReadU16(&reader), 0x0302);
     CHECK_EQ_INT(Reader_ReadU32(&reader), 0x07060504);
@@ -110,7 +111,7 @@ TEST(signed_values_are_twos_complement)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x7F,
     };
     READER reader;
-    Reader_OpenBuffer(&reader, data, sizeof(data));
+    Reader_OpenBuffer(&reader, data, sizeof(data), nullptr);
     CHECK_EQ_INT(Reader_ReadI8(&reader), -1);
     CHECK_EQ_INT(Reader_ReadI16(&reader), INT16_MIN);
     CHECK_EQ_INT(Reader_ReadI32(&reader), -2);
@@ -128,7 +129,7 @@ TEST(read_picks_the_function_by_type)
         0x3F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0,
     };
     READER reader;
-    Reader_OpenBuffer(&reader, data, sizeof(data));
+    Reader_OpenBuffer(&reader, data, sizeof(data), nullptr);
     uint8_t u8;
     uint16_t u16;
     uint32_t u32;
@@ -185,7 +186,7 @@ TEST(floats_keep_their_bits)
             data[b] = (uint8_t)(singles[i] >> (8 * b));
         }
         READER reader;
-        Reader_OpenBuffer(&reader, data, sizeof(data));
+        Reader_OpenBuffer(&reader, data, sizeof(data), nullptr);
         float value;
         Reader_Read(&reader, &value);
         uint32_t bits;
@@ -198,7 +199,7 @@ TEST(floats_keep_their_bits)
             data[b] = (uint8_t)(doubles[i] >> (8 * b));
         }
         READER reader;
-        Reader_OpenBuffer(&reader, data, sizeof(data));
+        Reader_OpenBuffer(&reader, data, sizeof(data), nullptr);
         CHECK(M_ReadF64(&reader) == doubles[i]);
     }
 }
@@ -208,7 +209,7 @@ TEST(every_width_fails_one_byte_short_and_names_the_offset)
     for (size_t i = 0; i < ARRAY_SIZE(m_ReadFuncs); i++) {
         const READ_FUNC *const func = &m_ReadFuncs[i];
         READER reader;
-        Reader_OpenBuffer(&reader, m_Counting, 3 + func->size - 1);
+        Reader_OpenBuffer(&reader, m_Counting, 3 + func->size - 1, nullptr);
         Reader_Skip(&reader, 3);
         const uint64_t value = func->read(&reader);
         char expected[64];
@@ -227,7 +228,7 @@ TEST(every_width_fails_on_empty_data)
 {
     for (size_t i = 0; i < ARRAY_SIZE(m_ReadFuncs); i++) {
         READER reader;
-        Reader_OpenBuffer(&reader, nullptr, 0);
+        Reader_OpenBuffer(&reader, nullptr, 0, nullptr);
         if (m_ReadFuncs[i].read(&reader) != 0 || !Reader_Failed(&reader)) {
             TEST_FAIL("%s", m_ReadFuncs[i].name);
         }
@@ -238,7 +239,7 @@ TEST(every_width_reads_up_to_the_end)
 {
     for (size_t i = 0; i < ARRAY_SIZE(m_ReadFuncs); i++) {
         READER reader;
-        Reader_OpenBuffer(&reader, m_Counting, m_ReadFuncs[i].size);
+        Reader_OpenBuffer(&reader, m_Counting, m_ReadFuncs[i].size, nullptr);
         m_ReadFuncs[i].read(&reader);
         if (Reader_Failed(&reader) || Reader_Remaining(&reader) != 0) {
             TEST_FAIL("%s", m_ReadFuncs[i].name);
@@ -249,7 +250,7 @@ TEST(every_width_reads_up_to_the_end)
 TEST(reads_after_a_failure_return_zero)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, 3);
+    Reader_OpenBuffer(&reader, m_Counting, 3, nullptr);
     uint8_t value = 0xAA;
     CHECK_EQ_INT(Reader_ReadU32(&reader), 0);
     CHECK_EQ_INT(Reader_ReadU8(&reader), 0);
@@ -266,7 +267,7 @@ TEST(reads_after_a_failure_return_zero)
 TEST(only_the_first_failure_is_reported)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, 6);
+    Reader_OpenBuffer(&reader, m_Counting, 6, nullptr);
     Reader_Skip(&reader, 4);
     Reader_ReadU32(&reader);
     Reader_Seek(&reader, 100);
@@ -277,7 +278,7 @@ TEST(only_the_first_failure_is_reported)
 TEST(seek_tell_and_skip_move_the_position)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     Reader_Seek(&reader, 10);
     CHECK_EQ_INT(Reader_ReadU8(&reader), 0x0B);
     Reader_Skip(&reader, 2);
@@ -292,7 +293,7 @@ TEST(seek_tell_and_skip_move_the_position)
 TEST(seeking_past_the_end_fails)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, 8);
+    Reader_OpenBuffer(&reader, m_Counting, 8, nullptr);
     Reader_Seek(&reader, 9);
     CHECK(M_FailsWith(&reader, "seek to 0x9 past end 0x8"));
     CHECK_EQ_INT(Reader_Tell(&reader), 0);
@@ -301,7 +302,7 @@ TEST(seeking_past_the_end_fails)
 TEST(skipping_past_the_end_fails)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, 8);
+    Reader_OpenBuffer(&reader, m_Counting, 8, nullptr);
     Reader_Skip(&reader, 6);
     Reader_Skip(&reader, 3);
     CHECK(M_FailsWith(&reader, "skip of 3 bytes at 0x6 past end 0x8"));
@@ -311,13 +312,13 @@ TEST(skipping_past_the_end_fails)
 TEST(huge_sizes_do_not_wrap_around)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, 8);
+    Reader_OpenBuffer(&reader, m_Counting, 8, nullptr);
     Reader_Skip(&reader, 4);
     Reader_Skip(&reader, SIZE_MAX);
     CHECK(Reader_Failed(&reader));
     CHECK_EQ_INT(Reader_Tell(&reader), 4);
 
-    Reader_OpenBuffer(&reader, m_Counting, 8);
+    Reader_OpenBuffer(&reader, m_Counting, 8, nullptr);
     Reader_Skip(&reader, 4);
     const READER slice = Reader_Slice(&reader, SIZE_MAX - 2);
     CHECK(Reader_Failed(&reader));
@@ -327,7 +328,7 @@ TEST(huge_sizes_do_not_wrap_around)
 TEST(borrow_points_into_the_buffer)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     Reader_Skip(&reader, 2);
     CHECK(Reader_Borrow(&reader, 4) == m_Counting + 2);
     CHECK(Reader_Borrow(&reader, 0) == m_Counting + 6);
@@ -340,7 +341,7 @@ TEST(borrow_points_into_the_buffer)
 TEST(read_bytes_copies_or_zeroes)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, 6);
+    Reader_OpenBuffer(&reader, m_Counting, 6, nullptr);
     uint8_t buffer[4];
     Reader_ReadBytes(&reader, buffer, sizeof(buffer));
     CHECK(memcmp(buffer, m_Counting, sizeof(buffer)) == 0);
@@ -354,7 +355,7 @@ TEST(read_alloc_copies_into_an_owned_block)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     Reader_Skip(&reader, 4);
     uint8_t *const block = Reader_ReadAlloc(&reader, 8, &test.allocator);
     CHECK(block != nullptr && block != m_Counting + 4);
@@ -374,7 +375,7 @@ TEST(read_alloc_copies_into_an_owned_block)
 TEST(slice_takes_the_next_bytes)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     Reader_Skip(&reader, 4);
     READER slice = Reader_Slice(&reader, 4);
     CHECK_EQ_INT(Reader_Tell(&reader), 8);
@@ -392,7 +393,7 @@ TEST(slice_takes_the_next_bytes)
 TEST(a_failing_slice_names_the_outer_offset)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     Reader_Skip(&reader, 4);
     READER chunk = Reader_Slice(&reader, 8);
     Reader_Skip(&chunk, 2);
@@ -410,7 +411,7 @@ TEST(a_failing_slice_names_the_outer_offset)
 TEST(a_slice_past_the_end_fails_both_readers)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting));
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), nullptr);
     Reader_Skip(&reader, 8);
     READER chunk = Reader_Slice(&reader, 8);
     Reader_Skip(&chunk, 6);
@@ -424,4 +425,84 @@ TEST(a_slice_past_the_end_fails_both_readers)
 
     READER after = Reader_Slice(&chunk, 1);
     CHECK(M_FailsWith(&after, expected));
+}
+
+TEST(an_unnamed_reader_has_no_name_in_its_messages)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, 2, nullptr);
+    CHECK(Reader_GetName(&reader) == nullptr);
+    Reader_ReadU32(&reader);
+    CHECK(M_FailsWith(&reader, "read of 4 bytes at 0x0 past end 0x2"));
+    Reader_Close(&reader);
+}
+
+TEST(a_named_reader_ends_its_messages_with_the_name)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, 2, "data/stage1.ecl");
+    CHECK_EQ_STR(Reader_GetName(&reader), "data/stage1.ecl");
+    Reader_ReadU32(&reader);
+    const char *const expected =
+        "read of 4 bytes at 0x0 past end 0x2 in data/stage1.ecl";
+    CHECK(M_FailsWith(&reader, expected));
+    Reader_Close(&reader);
+    CHECK(Reader_GetName(&reader) == nullptr);
+    CHECK(M_FailsWith(&reader, expected));
+}
+
+TEST(a_reader_keeps_a_copy_of_its_name)
+{
+    char name[] = "first.dat";
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, 2, name);
+    memcpy(name, "other.dat", sizeof(name));
+    CHECK_EQ_STR(Reader_GetName(&reader), "first.dat");
+    Reader_Skip(&reader, 3);
+    CHECK(M_FailsWith(
+        &reader, "skip of 3 bytes at 0x0 past end 0x2 in first.dat"));
+    Reader_Close(&reader);
+}
+
+TEST(a_slice_has_the_name_of_its_reader)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, sizeof(m_Counting), "outer.dat");
+    Reader_Skip(&reader, 4);
+    READER chunk = Reader_Slice(&reader, 8);
+    READER entry = Reader_Slice(&chunk, 4);
+    CHECK_EQ_STR(Reader_GetName(&chunk), "outer.dat");
+    CHECK_EQ_STR(Reader_GetName(&entry), "outer.dat");
+    Reader_Seek(&entry, 5);
+    CHECK(M_FailsWith(&entry, "seek to 0x9 past end 0x8 in outer.dat"));
+    Reader_Close(&entry);
+    CHECK_EQ_STR(Reader_GetName(&reader), "outer.dat");
+    READER failed = Reader_Slice(&reader, 16);
+    CHECK_EQ_STR(Reader_GetName(&failed), "outer.dat");
+    CHECK(M_FailsWith(
+        &failed, "slice of 16 bytes at 0xc past end 0x10 in outer.dat"));
+    Reader_Close(&reader);
+}
+
+TEST(a_long_name_is_cut_at_the_start)
+{
+    char name[300];
+    size_t length = 0;
+    while (length + strlen("a_directory/") < 250) {
+        memcpy(name + length, "a_directory/", strlen("a_directory/"));
+        length += strlen("a_directory/");
+    }
+    memcpy(name + length, "紅魔郷CM.DAT", strlen("紅魔郷CM.DAT") + 1);
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, 2, name);
+    CHECK_EQ_STR(Reader_GetName(&reader), name);
+    Reader_ReadU32(&reader);
+    const RESULT result = Reader_Result(&reader);
+    CHECK(!IS_OK(result));
+    CHECK(Str_StartsWith(
+        result.message, "read of 4 bytes at 0x0 past end 0x2 in .../"));
+    CHECK(Str_EndsWith(result.message, "/紅魔郷CM.DAT"));
+    CHECK(strlen(result.message) < READER_ERROR_SIZE);
+    Result_Ignore(result);
+    Reader_Close(&reader);
 }

@@ -40,7 +40,7 @@ TEST(a_case_round_trips_through_a_buffer)
         M_MakeHeader(&arena, "th06", "a test replay", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     const uint32_t rows[][2] = {
         { 0, 0 },
@@ -58,7 +58,7 @@ TEST(a_case_round_trips_through_a_buffer)
     Result_Ignore(Writer_Close(&writer));
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     CASE_READER *case_reader;
     CHECK(Result_Log(
         Case_OpenReader(&reader, &arena, &case_reader), LOG_LEVEL_ERROR));
@@ -98,7 +98,7 @@ TEST(a_case_with_zero_rows_round_trips)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     CHECK(Result_Log(Case_CloseWriter(case_writer), LOG_LEVEL_ERROR));
 
@@ -107,7 +107,7 @@ TEST(a_case_with_zero_rows_round_trips)
     Result_Ignore(Writer_Close(&writer));
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     CASE_READER *case_reader;
     CHECK(Result_Log(
         Case_OpenReader(&reader, &arena, &case_reader), LOG_LEVEL_ERROR));
@@ -126,7 +126,7 @@ TEST(a_long_case_compresses_small)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     const uint32_t row[2] = { 7, 9 };
     const int32_t row_count = 100000;
@@ -141,7 +141,7 @@ TEST(a_long_case_compresses_small)
     CHECK(size < (size_t)row_count * 8 / 10);
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     CASE_READER *case_reader;
     CHECK(Result_Log(
         Case_OpenReader(&reader, &arena, &case_reader), LOG_LEVEL_ERROR));
@@ -160,7 +160,7 @@ TEST(a_bad_magic_fails)
 {
     uint8_t bytes[] = "XXXXrest-of-the-bytes-dont-matter";
     READER reader;
-    Reader_OpenBuffer(&reader, bytes, sizeof(bytes));
+    Reader_OpenBuffer(&reader, bytes, sizeof(bytes), nullptr);
     ARENA arena;
     Arena_Init(&arena, "test", M_ARENA_SIZE);
     CASE_READER *case_reader;
@@ -179,7 +179,7 @@ TEST(a_wrong_version_fails)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     CHECK(Result_Log(Case_CloseWriter(case_writer), LOG_LEVEL_ERROR));
     size_t size;
@@ -188,7 +188,7 @@ TEST(a_wrong_version_fails)
     data[4] = 2; // the version field, little-endian u16, right after the magic
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     CASE_READER *case_reader;
     const RESULT result = Case_OpenReader(&reader, &arena, &case_reader);
     CHECK(!IS_OK(result));
@@ -207,7 +207,7 @@ TEST(a_truncated_header_fails)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     CHECK(Result_Log(Case_CloseWriter(case_writer), LOG_LEVEL_ERROR));
     size_t size;
@@ -215,7 +215,7 @@ TEST(a_truncated_header_fails)
     Result_Ignore(Writer_Close(&writer));
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, 10); // cuts off inside the header
+    Reader_OpenBuffer(&reader, data, 10, nullptr); // cuts off inside the header
     CASE_READER *case_reader;
     const RESULT result = Case_OpenReader(&reader, &arena, &case_reader);
     CHECK(!IS_OK(result));
@@ -233,7 +233,7 @@ TEST(a_truncated_stream_fails)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     const uint32_t row[2] = { 1, 2 };
     Case_WriteRow(case_writer, row);
@@ -244,7 +244,8 @@ TEST(a_truncated_stream_fails)
     Result_Ignore(Writer_Close(&writer));
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size - 2); // cuts off inside the stream
+    Reader_OpenBuffer(
+        &reader, data, size - 2, nullptr); // cuts off inside the stream
     CASE_READER *case_reader;
     CHECK(Result_Log(
         Case_OpenReader(&reader, &arena, &case_reader), LOG_LEVEL_ERROR));
@@ -265,7 +266,7 @@ TEST(trailing_bytes_after_the_stream_fail)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     const uint32_t row[2] = { 1, 2 };
     Case_WriteRow(case_writer, row);
@@ -282,7 +283,7 @@ TEST(trailing_bytes_after_the_stream_fail)
     size += 4;
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     CASE_READER *case_reader;
     CHECK(Result_Log(
         Case_OpenReader(&reader, &arena, &case_reader), LOG_LEVEL_ERROR));
@@ -319,7 +320,7 @@ static RESULT M_OpenRawHeader(
     const char *const *const calc_names, const uint32_t calc_count)
 {
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     M_WriteRawHeader(&writer, calc_names, calc_count);
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
@@ -328,7 +329,7 @@ static RESULT M_OpenRawHeader(
     ARENA arena;
     Arena_Init(&arena, "test", M_ARENA_SIZE);
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     CASE_READER *case_reader;
     const RESULT result = Case_OpenReader(&reader, &arena, &case_reader);
     if (IS_OK(result)) {
@@ -364,7 +365,7 @@ TEST(reading_after_a_failure_returns_nullptr)
     const CASE_HEADER header = M_MakeHeader(&arena, "th06", "", start_values);
 
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CASE_WRITER *const case_writer = Case_OpenWriter(&writer, &header);
     const uint32_t row[2] = { 1, 2 };
     Case_WriteRow(case_writer, row);
@@ -374,7 +375,7 @@ TEST(reading_after_a_failure_returns_nullptr)
     Result_Ignore(Writer_Close(&writer));
 
     READER reader;
-    Reader_OpenBuffer(&reader, data, size - 6);
+    Reader_OpenBuffer(&reader, data, size - 6, nullptr);
     CASE_READER *case_reader;
     CHECK(Result_Log(
         Case_OpenReader(&reader, &arena, &case_reader), LOG_LEVEL_ERROR));

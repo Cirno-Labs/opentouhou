@@ -38,7 +38,7 @@ static uint8_t M_RotateKey(const uint8_t key)
 static READER M_ReaderAt(const SCORE_FILE *const file, const int32_t position)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, file->data, (size_t)file->size);
+    Reader_OpenBuffer(&reader, file->data, (size_t)file->size, nullptr);
     Reader_Seek(&reader, (size_t)position);
     return reader;
 }
@@ -500,7 +500,7 @@ void ScoreFile_Write(
     const SCORE_RECORDS *const records, const uint8_t key, const uint8_t random)
 {
     WRITER plain;
-    Writer_OpenBuffer(&plain, &g_HeapAllocator);
+    Writer_OpenBuffer(&plain, &g_HeapAllocator, nullptr);
     Writer_WriteU8(&plain, previous->data != nullptr ? previous->data[0] : 0);
     Writer_WriteU8(&plain, key);
     Writer_WriteU16(&plain, 0);

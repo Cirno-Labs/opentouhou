@@ -85,7 +85,7 @@ RESULT Zip_List(
     size_t end = 0;
     MUST(M_FindEnd(data, size, &end));
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     Reader_Seek(&reader, end + 4);
     const uint16_t disk = Reader_ReadU16(&reader);
     const uint16_t directory_disk = Reader_ReadU16(&reader);
@@ -152,7 +152,7 @@ static RESULT M_Unpack(
     uint8_t *const out)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, data, size);
+    Reader_OpenBuffer(&reader, data, size, nullptr);
     Reader_Seek(&reader, entry->header_offset);
     const uint32_t signature = Reader_ReadU32(&reader);
     Reader_Skip(&reader, 22);

@@ -50,9 +50,10 @@ static RESULT M_StartReplay(const char *const path, int32_t *const last_stage)
     MUST(result);
     Replay_AddFile(path, data, size);
     READER buffer;
-    Reader_OpenBuffer(&buffer, data, size);
+    Reader_OpenBuffer(&buffer, data, size, path);
     REPLAY_FILE *file = nullptr;
     result = Replay_Read(&buffer, &file);
+    Reader_Close(&buffer);
     if (data != nullptr) {
         Allocator_Free(&g_HeapAllocator, data, size);
     }

@@ -80,7 +80,7 @@ static void M_Encrypt(uint8_t *const bytes, const size_t size)
 static REPLAY_FILE *M_Read(uint8_t *const bytes, const size_t size)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, bytes, size);
+    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     REPLAY_FILE *file = nullptr;
     CHECK(Result_Log(Replay_Read(&reader, &file), LOG_LEVEL_ERROR));
     return file;
@@ -89,7 +89,7 @@ static REPLAY_FILE *M_Read(uint8_t *const bytes, const size_t size)
 static void M_Reject(uint8_t *const bytes, const size_t size)
 {
     READER reader;
-    Reader_OpenBuffer(&reader, bytes, size);
+    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     REPLAY_FILE *file = nullptr;
     CHECK(!Result_Ignore(Replay_Read(&reader, &file)));
     CHECK(file == nullptr);
@@ -316,7 +316,7 @@ TEST(writes_the_original_wire_layout_and_encryption)
     };
     const uint8_t random[] = { 99, 88, 77, 66 };
     WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator);
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     CHECK(Result_Log(M_Write(&writer, &file, &info, random), LOG_LEVEL_ERROR));
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
@@ -372,7 +372,7 @@ TEST(rejects_names_that_do_not_fit_original_files)
     const uint8_t random[] = { 64, 0, 0, 0 };
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
         WRITER writer;
-        Writer_OpenBuffer(&writer, &g_HeapAllocator);
+        Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
         info.name = names[i];
         CHECK(!Result_Ignore(M_Write(&writer, &file, &info, random)));
         CHECK_EQ_INT(Writer_Tell(&writer), 0);

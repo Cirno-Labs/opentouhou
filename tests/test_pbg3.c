@@ -14,7 +14,7 @@ static RESULT M_Open(
     const ALLOCATOR *const allocator, VFS_SOURCE **const out)
 {
     READER *const reader = Mem_Alloc(sizeof(*reader));
-    Reader_OpenBuffer(reader, bytes, size);
+    Reader_OpenBuffer(reader, bytes, size, nullptr);
     const RESULT result = Pbg3_Open(reader, "test.dat", allocator, out);
     Mem_Free(reader);
     return result;
@@ -434,7 +434,7 @@ static RESULT M_RawOpen(
     [[maybe_unused]] const VFS_MODE mode, READER *const out)
 {
     const RAW_FILE_SOURCE *const raw = (const RAW_FILE_SOURCE *)source;
-    Reader_OpenBuffer(out, raw->data, raw->size);
+    Reader_OpenBuffer(out, raw->data, raw->size, nullptr);
     return OK;
 }
 
