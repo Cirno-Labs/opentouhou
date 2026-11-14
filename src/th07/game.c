@@ -7,11 +7,13 @@
 CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
+float g_GameSpeed = 1.0f;
 TH07_INPUT g_Input;
 
 RESULT Game_Init(void)
 {
     Chain_Init(&g_Chain);
+    g_GameSpeed = 1.0f;
     return Scene_Register();
 }
 
