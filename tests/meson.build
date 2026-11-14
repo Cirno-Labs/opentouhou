@@ -879,6 +879,19 @@ test(
 )
 
 test(
+  'th07/buttons',
+  executable(
+    'test_th07_buttons',
+    'test_th07_buttons.c',
+    shell_fake,
+    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
+    implicit_include_directories: false,
+    link_with: [th07_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/scene',
   executable(
     'test_th07_scene',
