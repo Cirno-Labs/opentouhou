@@ -21,7 +21,7 @@ stg_pbg3_lib = static_library(
   'pbg3.c',
   c_args: stg_include,
   implicit_include_directories: false,
-  link_with: core_archive_lib,
+  link_with: [core_archive_lib, stg_lzss_lib],
 )
 
 stg_rng_lib = static_library(
