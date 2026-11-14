@@ -11,7 +11,6 @@
 #include "th06/angle.h"
 #include "th06/anm.h"
 #include "th06/bullet.h"
-#include "th06/chain.h"
 #include "th06/ecl.h"
 #include "th06/effect.h"
 #include "th06/files.h"
@@ -28,6 +27,7 @@
 #include "core/base/utils.h"
 #include "core/math/vec.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 #include <SDL3/SDL.h>

@@ -1,7 +1,6 @@
 #include "th06/gui.h"
 #include "th06/gui/private.h"
 
-#include "th06/chain.h"
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
@@ -22,6 +21,8 @@
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 #include "core/json.h"
+
+#include "stg/chain.h"
 
 #include <string.h>
 #include <stdio.h>

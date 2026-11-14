@@ -3,7 +3,6 @@
 
 #include "th06/angle.h"
 #include "th06/anm.h"
-#include "th06/chain.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
@@ -17,6 +16,7 @@
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 #define M_CALC_PRIORITY 11

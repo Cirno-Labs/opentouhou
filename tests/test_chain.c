@@ -1,4 +1,4 @@
-#include "th06/chain.h"
+#include "stg/chain.h"
 
 #include "test.h"
 

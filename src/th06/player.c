@@ -4,7 +4,6 @@
 #include "th06/anm.h"
 #include "th06/bomb.h"
 #include "th06/bullet.h"
-#include "th06/chain.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"
 #include "th06/game.h"
@@ -17,6 +16,8 @@
 
 #include "core/base/utils.h"
 #include "core/math/x87.h"
+
+#include "stg/chain.h"
 
 #define M_CALC_PRIORITY 7
 #define M_DRAW_PRIORITY 5

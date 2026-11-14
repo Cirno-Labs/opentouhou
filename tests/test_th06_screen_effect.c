@@ -3,12 +3,12 @@
 #include "gfx_recorder.h"
 #include "test.h"
 
-#include "th06/chain.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
 #include "core/gfx/private.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 static void M_Setup(void)

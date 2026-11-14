@@ -9,7 +9,6 @@
 #include "th06/anm.h"
 #include "th06/bomb.h"
 #include "th06/bullet.h"
-#include "th06/chain.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"
 #include "th06/files.h"
@@ -24,6 +23,7 @@
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
 
+#include "stg/chain.h"
 #include "stg/rng.h"
 
 #include <SDL3/SDL.h>
