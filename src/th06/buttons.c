@@ -1,8 +1,16 @@
 #include "th06/buttons.h"
 
+#include "shell/game.h"
 #include "core/base/utils.h"
 
 #include <stddef.h>
+#include <string.h>
+
+enum {
+    M_ACTION_SHOOT = 0,
+    M_ACTION_FOCUS = 2,
+    M_MAX_BINDINGS = 16,
+};
 
 static const INPUT_ACTION m_Actions[] = {
     INPUT_BUTTON(TH06_INPUT, shoot, "z", "south", "joy_button_0"),
@@ -101,10 +109,52 @@ TH06_INPUT Buttons_FromWord(const uint16_t word)
     return input;
 }
 
+static bool M_SamePadBinding(const INPUT_BINDING a, const INPUT_BINDING b)
+{
+    return a.device != INPUT_DEVICE_KEYBOARD && a.device == b.device
+        && a.count == b.count
+        && memcmp(a.codes, b.codes, a.count * sizeof(a.codes[0])) == 0;
+}
+
+void Buttons_ReadSharedFocus(BUTTONS *const buttons)
+{
+    INPUT_BINDING shoot[M_MAX_BINDINGS];
+    INPUT_BINDING focus[M_MAX_BINDINGS];
+    const size_t shoot_count =
+        MIN(Shell_GetBindings(M_ACTION_SHOOT, shoot, M_MAX_BINDINGS),
+            (size_t)M_MAX_BINDINGS);
+    const size_t focus_count =
+        MIN(Shell_GetBindings(M_ACTION_FOCUS, focus, M_MAX_BINDINGS),
+            (size_t)M_MAX_BINDINGS);
+    buttons->shared_focus = false;
+    for (size_t i = 0; i < focus_count; i++) {
+        for (size_t j = 0; j < shoot_count; j++) {
+            buttons->shared_focus |= M_SamePadBinding(focus[i], shoot[j]);
+        }
+    }
+}
+
 void Buttons_Update(BUTTONS *const buttons, const TH06_INPUT *const input)
 {
+    TH06_INPUT read = *input;
+    if (buttons->shared_focus) {
+        TH06_INPUT keyboard;
+        TH06_INPUT gamepad;
+        TH06_INPUT joystick;
+        Shell_GetDeviceInput(INPUT_DEVICE_KEYBOARD, &keyboard);
+        Shell_GetDeviceInput(INPUT_DEVICE_GAMEPAD, &gamepad);
+        Shell_GetDeviceInput(INPUT_DEVICE_JOYSTICK, &joystick);
+        const bool shoot = gamepad.shoot || joystick.shoot;
+        int32_t *const frames = &buttons->shot_held_frames;
+        if (shoot) {
+            *frames = MIN(*frames + 1, 16);
+        } else {
+            *frames = *frames > 8 ? *frames - 8 : 0;
+        }
+        read.focus = keyboard.focus || (shoot && *frames >= 8);
+    }
     buttons->previous_word = buttons->word;
-    buttons->word = Buttons_ToWord(input);
+    buttons->word = Buttons_ToWord(&read);
     M_Update(buttons);
     buttons->held.move_x = input->move_x;
     buttons->held.move_y = input->move_y;
