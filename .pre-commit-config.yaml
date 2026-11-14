@@ -12,6 +12,12 @@ repos:
     additional_dependencies: [clang-format==22.1.8]
     files: \.[ch]$
 
+  - id: header-spacing
+    name: A commented function in a header has a blank line above it
+    entry: tools/lint/check_header_spacing
+    language: python
+    files: \.h$
+
   - id: commit-msg
     name: Commit message has a module prefix and follows 50/72
     entry: tools/lint/check_commit_msg
