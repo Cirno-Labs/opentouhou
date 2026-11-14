@@ -44,6 +44,30 @@ TEST(word_round_trips_each_bit)
     }
 }
 
+// The INI keys follow this order.
+TEST(schema_keeps_the_action_order)
+{
+    CHECK_EQ_INT(g_InputSchema.count, 16);
+    CHECK_EQ_INT(TH07_ACTION_shoot, 0);
+    CHECK_EQ_INT(TH07_ACTION_focus, 2);
+    CHECK_EQ_INT(TH07_ACTION_confirm, 12);
+    CHECK_EQ_INT(TH07_ACTION_cheat, 13);
+    CHECK_EQ_INT(TH07_ACTION_retry, 14);
+    CHECK_EQ_INT(TH07_ACTION_move, 15);
+    CHECK_EQ_STR(g_InputSchema.actions[0].name, "shoot");
+    CHECK_EQ_STR(g_InputSchema.actions[2].name, "focus");
+    CHECK_EQ_STR(g_InputSchema.actions[12].name, "confirm");
+    CHECK_EQ_STR(g_InputSchema.actions[13].name, "cheat");
+    CHECK_EQ_STR(g_InputSchema.actions[14].name, "retry");
+    CHECK_EQ_STR(g_InputSchema.actions[15].name, "move");
+    CHECK_EQ_STR(
+        g_InputSchema.actions[13].defaults[INPUT_DEVICE_JOYSTICK],
+        "joy_button_7");
+    CHECK_EQ_STR(
+        g_InputSchema.actions[2].defaults[INPUT_DEVICE_KEYBOARD],
+        "left_shift, right_shift");
+}
+
 TEST(from_word_leaves_the_stick_at_zero)
 {
     const TH07_INPUT input = Buttons_FromWord(0x7fff);
