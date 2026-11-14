@@ -8,12 +8,12 @@
 #include "th06/gui.h"
 #include "th06/player.h"
 #include "th06/sound.h"
-#include "th06/timer.h"
 
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
+#include "stg/timer.h"
 
 #include <stdint.h>
 

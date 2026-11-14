@@ -10,11 +10,11 @@
 #include "th06/screen_effect.h"
 #include "th06/sound.h"
 #include "th06/strings.h"
-#include "th06/timer.h"
 
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
+#include "stg/timer.h"
 
 #define M_PI 3.1415927f
 #define M_TWO_PI 6.2831855f

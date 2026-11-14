@@ -2,7 +2,6 @@
 #include "th06/anm/private.h"
 
 #include "th06/files.h"
-#include "th06/timer.h"
 #include "th06/translation.h"
 
 #include "anm_builder.h"
@@ -19,6 +18,7 @@
 #include "core/text.h"
 
 #include "stg/rng.h"
+#include "stg/timer.h"
 
 #include <string.h>
 

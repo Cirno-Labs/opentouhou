@@ -39,10 +39,18 @@ stg_rng_lib = static_library(
   implicit_include_directories: false,
 )
 
+stg_timer_lib = static_library(
+  'stg_timer',
+  'timer.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+)
+
 stg_dep = declare_dependency(
   compile_args: [layer_include['stg']],
   link_with: [
     stg_chain_lib, stg_lzss_lib, stg_pbg3_lib, stg_pbg4_lib, stg_rng_lib,
+    stg_timer_lib,
   ],
   dependencies: [core_dep],
 )

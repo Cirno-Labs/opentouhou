@@ -1,4 +1,4 @@
-#include "th06/timer.h"
+#include "stg/timer.h"
 
 void Timer_Init(TIMER *const timer)
 {
