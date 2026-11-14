@@ -5,9 +5,10 @@
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 
+#include "stg/lzss.h"
+
 #define M_MAGIC 0x33474250u
 #define M_MAX_NAME_LENGTH 255
-#define M_DICT_SIZE 0x2000u
 
 // Holds where the packed data of an entry lies, and its check value.
 typedef struct {
@@ -24,14 +25,11 @@ typedef struct {
 
 typedef ARRAY(PBG3_ENTRY) PBG3_ENTRY_ARRAY;
 
-// Reads bits most significant bit first out of a READER, and keeps the
-// wrapping sum of every byte it fetches from the reader, for the entry
-// decoder's checksum.
+// Reads bits most significant bit first out of a READER.
 typedef struct {
     READER *reader;
     uint32_t byte;
     int32_t bits_left;
-    uint32_t checksum;
 } BIT_READER;
 
 static void M_BitReader_Init(BIT_READER *const br, READER *const reader)
@@ -39,7 +37,6 @@ static void M_BitReader_Init(BIT_READER *const br, READER *const reader)
     br->reader = reader;
     br->byte = 0;
     br->bits_left = 0;
-    br->checksum = 0;
 }
 
 static uint32_t M_ReadBits(BIT_READER *const br, const int32_t count)
@@ -48,7 +45,6 @@ static uint32_t M_ReadBits(BIT_READER *const br, const int32_t count)
     for (int32_t i = 0; i < count; i++) {
         if (br->bits_left == 0) {
             br->byte = Reader_ReadU8(br->reader);
-            br->checksum += br->byte;
             br->bits_left = 8;
         }
         br->bits_left--;
@@ -152,8 +148,6 @@ static RESULT M_ReadTable(READER *const archive, ARCHIVE_TABLE *const table)
     return result;
 }
 
-// Decompresses the LZSS stream of one entry's data into out, which has
-// room for exactly size bytes, the entry's unpacked size.
 static RESULT M_ReadEntry(
     READER *const archive, const void *const data, uint8_t *const out,
     const size_t size)
@@ -161,38 +155,13 @@ static RESULT M_ReadEntry(
     const PBG3_RECORD *const record = data;
     Reader_Seek(archive, record->data_offset);
     READER slice = Reader_Slice(archive, record->data_size);
-    BIT_READER br;
-    M_BitReader_Init(&br, &slice);
-
-    uint8_t dict[M_DICT_SIZE] = { 0 };
-    uint32_t dict_pos = 1;
-    size_t decoded_count = 0;
-
-    while (decoded_count < size) {
-        if (M_ReadBits(&br, 1) != 0) {
-            const uint8_t byte = (uint8_t)M_ReadBits(&br, 8);
-            out[decoded_count++] = byte;
-            dict[dict_pos] = byte;
-            dict_pos = (dict_pos + 1) & (M_DICT_SIZE - 1);
-            continue;
-        }
-        const uint32_t offset = M_ReadBits(&br, 13);
-        if (offset == 0) {
-            break;
-        }
-        const uint32_t length = M_ReadBits(&br, 4) + 3;
-        for (uint32_t i = 0; i < length; i++) {
-            FAIL_IF(
-                decoded_count >= size, "decoded data is longer than recorded");
-            const uint8_t byte = dict[(offset + i) & (M_DICT_SIZE - 1)];
-            out[decoded_count++] = byte;
-            dict[dict_pos] = byte;
-            dict_pos = (dict_pos + 1) & (M_DICT_SIZE - 1);
-        }
-    }
-
-    FAIL_IF(decoded_count != size, "decoded data is shorter than recorded");
-    FAIL_IF(br.checksum != record->checksum, "checksum mismatch");
+    size_t decoded;
+    uint32_t checksum;
+    FAIL_IF(
+        !Result_Ignore(Lzss_Decode(&slice, out, size, &decoded, &checksum)),
+        "decoded data is longer than recorded");
+    FAIL_IF(decoded != size, "decoded data is shorter than recorded");
+    FAIL_IF(checksum != record->checksum, "checksum mismatch");
     return OK;
 }
 
