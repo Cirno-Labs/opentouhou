@@ -854,6 +854,19 @@ test(
 )
 
 test(
+  'th07/scene',
+  executable(
+    'test_th07_scene',
+    'test_th07_scene.c',
+    'th07_scene_stubs.c',
+    c_args: [layer_include['th07']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th07_lib, stg_chain_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/files',
   executable(
     'test_th07_files',
