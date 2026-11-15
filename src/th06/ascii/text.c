@@ -4,6 +4,7 @@
 #include "core/base/string.h"
 
 #include <stdarg.h>
+#include <string.h>
 
 ASCII_TEXT g_AsciiText;
 
@@ -39,13 +40,12 @@ void AsciiText_Initialize(void)
     }
     const bool capture_background = g_AsciiText.capture_background;
     const bool highlight_font = g_AsciiText.highlight_font;
-    g_AsciiText = (ASCII_TEXT) {
-        .color = 0xffffffffu,
-        .scale_x = 1.0f,
-        .scale_y = 1.0f,
-        .capture_background = capture_background,
-        .highlight_font = highlight_font,
-    };
+    memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    g_AsciiText.color = 0xffffffffu;
+    g_AsciiText.scale_x = 1.0f;
+    g_AsciiText.scale_y = 1.0f;
+    g_AsciiText.capture_background = capture_background;
+    g_AsciiText.highlight_font = highlight_font;
     g_AsciiText.digit.anchor = 3;
     Anm_InitVm(&g_AsciiText.digit);
     Anm_SetSprite(&g_AsciiText.digit, 0);

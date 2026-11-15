@@ -19,6 +19,8 @@
 
 #include "core/math/x87.h"
 
+#include <string.h>
+
 CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
@@ -186,7 +188,7 @@ static void M_Setup(void)
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     Rng_SetSeed(&g_Rng, 1234);
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_GameManager.run.difficulty = 1;
     g_GameManager.player.lives = 3;
     g_GameManager.player.bombs = 2;

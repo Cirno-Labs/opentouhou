@@ -20,6 +20,8 @@
 #include "stg/chain.h"
 #include "stg/timer.h"
 
+#include <string.h>
+
 #define M_CALC_PRIORITY 7
 #define M_DRAW_PRIORITY 5
 #define M_DRAW2_PRIORITY 7
@@ -1275,7 +1277,7 @@ static void M_Deleted(void *const arg)
 
 RESULT Player_Register(void)
 {
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     Timer_Set(&g_Player.state.timer, 0);
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;

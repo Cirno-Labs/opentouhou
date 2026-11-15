@@ -111,8 +111,8 @@ static void M_Setup(const char *const case_name)
     GameManager_Create(&g_GameManager);
     ResultScreen_OpenSaves(nullptr);
     Config_SetDefaults(&g_SettingsSchema, &g_Settings);
-    g_Buttons = (BUTTONS) {};
-    m_Input = (TH06_INPUT) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    memset(&m_Input, 0, sizeof(m_Input));
     m_Previous = SCENE_BOOT;
     m_Requested = SCENE_TITLE;
     m_Calcs = 0;
@@ -155,7 +155,7 @@ static void M_Press(const TH06_INPUT input)
 {
     m_Input = input;
     M_Tick();
-    m_Input = (TH06_INPUT) {};
+    memset(&m_Input, 0, sizeof(m_Input));
     M_Tick();
 }
 
@@ -418,9 +418,10 @@ TEST(input_restarts_the_demo_count)
     M_Setup("demo_input");
     CHECK(Result_Log(TitleScene_SetUp(0), LOG_LEVEL_ERROR));
     M_Run(700);
-    m_Input = (TH06_INPUT) { .skip = true };
+    memset(&m_Input, 0, sizeof(m_Input));
+    m_Input.skip = true;
     M_Tick();
-    m_Input = (TH06_INPUT) {};
+    memset(&m_Input, 0, sizeof(m_Input));
     M_Run(700);
     CHECK(m_Requested != SCENE_GAMEPLAY);
     M_Teardown();
@@ -773,7 +774,7 @@ TEST(the_title_menu_asks_for_a_scan_when_the_replay_menu_opens)
     const int32_t scan = ResultScreen_GetReplayScan();
     m_Input = m_Shoot;
     M_Tick();
-    m_Input = (TH06_INPUT) {};
+    memset(&m_Input, 0, sizeof(m_Input));
     ResultScreen_ScanReplays();
     CHECK(ResultScreen_GetReplayScan() != scan);
     M_Run(62);

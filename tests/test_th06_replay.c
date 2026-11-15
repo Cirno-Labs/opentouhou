@@ -10,6 +10,8 @@
 
 #include "core/base/memory.h"
 
+#include <string.h>
+
 CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
@@ -75,18 +77,20 @@ static void M_SetUp(void)
     m_Skippable = false;
     m_Calcs = 0;
     m_CalcEnds = 0;
-    m_Input = (TH06_INPUT) {};
-    g_Buttons = (BUTTONS) {};
-    g_GameManager = (GAME_MANAGER) {
-        .run = { .stage = 1, .difficulty = 1, .rng_seed = 0x1234 },
-        .player = { .lives = 3,
-                    .bombs = 2,
-                    .power = 64,
-                    .point_items_total = 55,
-                    .power_item_combo = 6 },
-        .rank = { .value = 19 },
-        .mode = { .playing = true, .in_demo = true },
-    };
+    memset(&m_Input, 0, sizeof(m_Input));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    g_GameManager.run.stage = 1;
+    g_GameManager.run.difficulty = 1;
+    g_GameManager.run.rng_seed = 0x1234;
+    g_GameManager.player.lives = 3;
+    g_GameManager.player.bombs = 2;
+    g_GameManager.player.power = 64;
+    g_GameManager.player.point_items_total = 55;
+    g_GameManager.player.power_item_combo = 6;
+    g_GameManager.rank.value = 19;
+    g_GameManager.mode.playing = true;
+    g_GameManager.mode.in_demo = true;
     Rng_SetSeed(&g_Rng, 0x4321);
 }
 

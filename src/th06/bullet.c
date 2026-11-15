@@ -20,6 +20,8 @@
 #include "stg/rng.h"
 #include "stg/timer.h"
 
+#include <string.h>
+
 #define M_CALC_PRIORITY 11
 #define M_DRAW_PRIORITY 9
 #define M_ANM_SLOT 6
@@ -836,11 +838,11 @@ static int32_t M_ClearAll(
 
 RESULT Bullet_Register(void)
 {
-    g_Bullets = (BULLET_MANAGER) {};
+    memset(&g_Bullets, 0, sizeof(g_Bullets));
     for (int32_t i = 0; i < BULLET_TYPE_COUNT; i++) {
         m_Types[i] = (BULLET_SPRITES) {};
     }
-    m_SpareLaser = (LASER) {};
+    memset(&m_SpareLaser, 0, sizeof(m_SpareLaser));
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;
