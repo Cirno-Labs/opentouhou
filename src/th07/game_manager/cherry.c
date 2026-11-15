@@ -1,7 +1,7 @@
 #include "th07/game_manager.h"
 
+#include "th07/gui.h"
 #include "th07/player.h"
-#include "th07/stubs.h"
 
 #define M_BORDER_PLUS 50000
 #define M_MAX_LIMIT 9999990
