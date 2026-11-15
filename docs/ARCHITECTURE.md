@@ -152,6 +152,7 @@ generator.
 ```
 core/base     types, asserts, logging, allocators, containers,
               strings
+core/args     command-line options
 core/hash     CRC-32, SHA-1 and SHA-256
 core/io       readers and writers, files, paths, the locale, processes
 core/ini      the INI format our settings are stored in
