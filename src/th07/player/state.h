@@ -2,6 +2,7 @@
 
 #include "th07/anm.h"
 #include "th07/effect.h"
+#include "th07/item.h"
 #include "th07/player/shot_type.h"
 
 #include "core/base/result.h"
@@ -133,7 +134,7 @@ typedef struct {
     float x, y, width, height;
     float radius, radius_growth;
     int32_t frames_left;
-    int32_t item; // what a cleared bullet turns into
+    ITEM_TYPE item; // what a cleared bullet turns into
 } PLAYER_CLEAR_AREA;
 
 typedef struct {
@@ -176,8 +177,8 @@ typedef struct {
 
     PLAYER_BORDER border_state;
     // Holds the item of the clear area that the last hit test touched. The
-    // hit tests set it to 6 first.
-    int32_t clear_item;
+    // hit tests set it to ITEM_STAR first.
+    ITEM_TYPE clear_item;
 
     struct {
         PLAYER_OPTIONS state;
@@ -298,9 +299,9 @@ void Player_EndBorder(void);
 // Sets the first free clear area, else the last, to a width by height box
 // at pos that lasts until the next update, and returns it.
 PLAYER_CLEAR_AREA *Player_AddClearArea(
-    VEC3 pos, float width, float height, int32_t item);
+    VEC3 pos, float width, float height, ITEM_TYPE item);
 
 // Is like Player_AddClearArea for a circle of radius that grows by growth
 // each frame for frames frames.
 PLAYER_CLEAR_AREA *Player_AddClearCircle(
-    VEC3 pos, float radius, float growth, int32_t frames, int32_t item);
+    VEC3 pos, float radius, float growth, int32_t frames, ITEM_TYPE item);

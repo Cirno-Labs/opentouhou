@@ -58,8 +58,8 @@ typedef struct {
 
 typedef struct {
     VEC3 pos;
-    int32_t type;
-    int32_t state;
+    ITEM_TYPE type;
+    ITEM_STATE state;
 } M_ITEM_CALL;
 
 CHAIN g_Chain;
@@ -741,7 +741,7 @@ TEST(a_bullet_on_the_hitbox_kills_and_marks_the_hit)
     CHECK_EQ_INT(g_Rng.seed, expected.seed);
     CHECK(m_ReservedTypes[3] == EFFECT_SHOCKWAVE);
     CHECK(M_Queued(SOUND_PLAYER_DEATH));
-    CHECK_EQ_INT(g_Player.clear_item, 6);
+    CHECK_EQ_INT(g_Player.clear_item, ITEM_STAR);
     M_TearDown();
 }
 
@@ -792,7 +792,7 @@ TEST(a_hit_in_the_border_breaks_it)
     const PLAYER_CLEAR_AREA *const area = &g_Player.clear_areas[0];
     CHECK(area->radius == 32.0f && area->radius_growth == 16.0f);
     CHECK_EQ_INT(area->frames_left, 50);
-    CHECK_EQ_INT(area->item, 8);
+    CHECK_EQ_INT(area->item, ITEM_BORDER_STAR);
     CHECK_EQ_INT(M_CountEffects(EFFECT_DIVERGE), 32);
     CHECK(m_Effects[0].type == EFFECT_DIVERGE);
     const EFFECT *const effect = &m_Reserved[4];
@@ -811,11 +811,11 @@ TEST(a_hit_in_the_border_breaks_it)
 TEST(a_clear_area_wins_over_the_hitbox_and_gives_its_item)
 {
     M_SetUpAlive("clear_area", 0);
-    Player_AddClearArea(M_At(M_START_X, M_START_Y), 10.0f, 10.0f, 3);
+    Player_AddClearArea(M_At(M_START_X, M_START_Y), 10.0f, 10.0f, ITEM_BOMB);
     CHECK(
         Player_CheckHit(M_At(M_START_X + 5.5f, M_START_Y), m_Small)
         == PLAYER_CONTACT_CLEARED);
-    CHECK_EQ_INT(g_Player.clear_item, 3);
+    CHECK_EQ_INT(g_Player.clear_item, ITEM_BOMB);
     CHECK(g_Player.state.value == PLAYER_ALIVE);
     CHECK(m_Events == 0);
     M_TearDown();
@@ -824,30 +824,31 @@ TEST(a_clear_area_wins_over_the_hitbox_and_gives_its_item)
 TEST(a_clear_circle_tests_only_the_centre_of_the_box)
 {
     M_SetUpAlive("clear_circle", 0);
-    Player_AddClearCircle(M_At(100.0f, 100.0f), 10.0f, 0.0f, 5, 4);
+    Player_AddClearCircle(
+        M_At(100.0f, 100.0f), 10.0f, 0.0f, 5, ITEM_FULL_POWER);
     const VEC3 large = { 8.0f, 8.0f, 0.0f };
     CHECK(
         Player_CheckGraze(M_At(111.0f, 100.0f), large) == PLAYER_CONTACT_NONE);
-    CHECK_EQ_INT(g_Player.clear_item, 6);
+    CHECK_EQ_INT(g_Player.clear_item, ITEM_STAR);
     CHECK(
         Player_CheckGraze(M_At(109.9f, 100.0f), m_Small)
         == PLAYER_CONTACT_CLEARED);
-    CHECK_EQ_INT(g_Player.clear_item, 4);
+    CHECK_EQ_INT(g_Player.clear_item, ITEM_FULL_POWER);
     M_TearDown();
 }
 
 TEST(a_clear_circle_grows_and_is_freed_after_its_frames)
 {
     M_SetUpAlive("circle_frames", 0);
-    PLAYER_CLEAR_AREA *const area =
-        Player_AddClearCircle(M_At(100.0f, 100.0f), 10.0f, 2.0f, 2, 4);
+    PLAYER_CLEAR_AREA *const area = Player_AddClearCircle(
+        M_At(100.0f, 100.0f), 10.0f, 2.0f, 2, ITEM_FULL_POWER);
     M_Frame();
     CHECK(area->radius == 12.0f);
     M_Frame();
     CHECK(area->radius == 14.0f);
     M_Frame();
     CHECK(area->radius == 0.0f);
-    Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, 0);
+    Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, ITEM_POWER);
     M_Frame();
     CHECK(area->width == 0.0f);
     M_TearDown();
@@ -857,20 +858,20 @@ TEST(the_clear_areas_take_the_first_free_else_the_last)
 {
     M_SetUpAlive("clear_slots", 0);
     PLAYER_CLEAR_AREA *const first =
-        Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, 0);
+        Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, ITEM_POWER);
     CHECK(first == &g_Player.clear_areas[0]);
     CHECK(
-        Player_AddClearCircle(M_At(1.0f, 1.0f), 4.0f, 0.0f, 9, 0)
+        Player_AddClearCircle(M_At(1.0f, 1.0f), 4.0f, 0.0f, 9, ITEM_POWER)
         == &g_Player.clear_areas[1]);
     first->width = 0.0f;
     CHECK(
-        Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, 0)
+        Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, ITEM_POWER)
         == &g_Player.clear_areas[0]);
     for (int32_t i = 0; i < PLAYER_CLEAR_AREA_COUNT; i++) {
         g_Player.clear_areas[i].width = 1.0f;
     }
     CHECK(
-        Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, 0)
+        Player_AddClearArea(M_At(1.0f, 1.0f), 4.0f, 4.0f, ITEM_POWER)
         == &g_Player.clear_areas[PLAYER_CLEAR_AREA_COUNT - 1]);
     M_TearDown();
 }
@@ -1124,9 +1125,9 @@ TEST(the_life_goes_when_the_window_closes)
     CHECK_EQ_INT(g_GameManager.player.power_item_combo, 0);
     CHECK(!g_Enemies.spell_card.capturable);
     CHECK_EQ_INT(m_ItemCount, 6);
-    CHECK_EQ_INT(m_Items[0].type, 2);
-    CHECK_EQ_INT(m_Items[0].state, 2);
-    CHECK_EQ_INT(m_Items[5].type, 0);
+    CHECK_EQ_INT(m_Items[0].type, ITEM_BIG_POWER);
+    CHECK_EQ_INT(m_Items[0].state, ITEM_THROWN);
+    CHECK_EQ_INT(m_Items[5].type, ITEM_POWER);
     CHECK(m_Items[5].pos.x == 50.0f);
     // A quarter of 12345 is 3086, rounded down to 3080.
     CHECK_EQ_INT(g_GameManager.cherry.value, 1000 + 12345 - 3080);
@@ -1168,7 +1169,7 @@ TEST(the_last_life_drops_full_power_items)
     Player_CheckHit(M_At(M_START_X, M_START_Y), m_Small);
     M_Frames(8);
     CHECK_EQ_INT(m_ItemCount, 5);
-    CHECK_EQ_INT(m_Items[4].type, 4);
+    CHECK_EQ_INT(m_Items[4].type, ITEM_FULL_POWER);
     CHECK(g_GameManager.player.power == 0.0f);
     CHECK_EQ_INT(g_GameManager.cherry.value, cherry);
     CHECK_EQ_INT(m_DropCalls, 0);

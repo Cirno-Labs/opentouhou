@@ -57,17 +57,11 @@
 #define M_LASER_GRAZE_MARGIN 48.0f
 #define M_SAKUYA 2
 #define M_SHOT_TYPE_B 1
-#define M_NO_CLEAR_ITEM 6
-#define M_BREAK_CLEAR_ITEM 8
 #define M_BREAK_SPARKS 0x20
 #define M_BOSS_MARKERS 3 // of the four
 #define M_SLOT_FOCUS 2
 #define M_SLOT_SHOCKWAVE 3
 #define M_SLOT_BORDER 4
-#define M_ITEM_POWER 0
-#define M_ITEM_BIG_POWER 2
-#define M_ITEM_FULL_POWER 4
-#define M_ITEM_THROWN 2
 #define M_EFFECT_DEATH ((EFFECT_TYPE)(EFFECT_PARTICLE + 2))
 #define M_EFFECT_GRAZE ((EFFECT_TYPE)(EFFECT_PARTICLE + 4))
 #define M_COLOR_WHITE 0xffffffffu
@@ -157,7 +151,7 @@ static void M_BreakBorder(void)
     Timer_Set(&player->state.timer, M_AFTER_BORDER_FRAMES);
     player->state.bomb_cooldown = M_AFTER_BORDER_FRAMES;
     g_GameManager.cherry.plus = g_GameManager.cherry.offset;
-    Player_AddClearCircle(player->pos, 32.0f, 16.0f, 50, M_BREAK_CLEAR_ITEM);
+    Player_AddClearCircle(player->pos, 32.0f, 16.0f, 50, ITEM_BORDER_STAR);
     float angle = -MATH_PI;
     for (int32_t i = 0; i < M_BREAK_SPARKS; i++, angle += MATH_PI / 16.0f) {
         effect = Effect_Spawn(EFFECT_DIVERGE, player->pos, 1, M_COLOR_WHITE);
@@ -642,9 +636,9 @@ static void M_DropItems(void)
         } else {
             GameManager_AddPower(-16);
         }
-        Item_Spawn(pos, M_ITEM_BIG_POWER, M_ITEM_THROWN);
+        Item_Spawn(pos, ITEM_BIG_POWER, ITEM_THROWN);
         for (int32_t i = 0; i < 5; i++) {
-            Item_Spawn(pos, M_ITEM_POWER, M_ITEM_THROWN);
+            Item_Spawn(pos, ITEM_POWER, ITEM_THROWN);
         }
         int32_t loss =
             X87_Ftol((float)M_Cherry() * player->shot_type.death_cherry_share);
@@ -660,7 +654,7 @@ static void M_DropItems(void)
         g_GameManager.player.power = 0.0f;
         GameManager_DrawChecksumKeys();
         for (int32_t i = 0; i < 5; i++) {
-            Item_Spawn(pos, M_ITEM_FULL_POWER, M_ITEM_THROWN);
+            Item_Spawn(pos, ITEM_FULL_POWER, ITEM_THROWN);
         }
     }
 }
@@ -1039,7 +1033,7 @@ float Player_AngleFrom(const VEC3 pos)
 
 PLAYER_CONTACT Player_CheckHit(const VEC3 pos, const VEC3 size)
 {
-    g_Player.clear_item = M_NO_CLEAR_ITEM;
+    g_Player.clear_item = ITEM_STAR;
     if (M_TouchesClearArea(pos, size)) {
         return PLAYER_CONTACT_CLEARED;
     }
@@ -1056,7 +1050,7 @@ PLAYER_CONTACT Player_CheckHit(const VEC3 pos, const VEC3 size)
 
 PLAYER_CONTACT Player_CheckGraze(const VEC3 pos, const VEC3 size)
 {
-    g_Player.clear_item = M_NO_CLEAR_ITEM;
+    g_Player.clear_item = ITEM_STAR;
     if (M_TouchesClearArea(pos, size)) {
         return PLAYER_CONTACT_CLEARED;
     }
@@ -1208,7 +1202,7 @@ static PLAYER_CLEAR_AREA *M_FreeClearArea(void)
 }
 
 PLAYER_CLEAR_AREA *Player_AddClearArea(
-    const VEC3 pos, const float width, const float height, const int32_t item)
+    const VEC3 pos, const float width, const float height, const ITEM_TYPE item)
 {
     PLAYER_CLEAR_AREA *const area = M_FreeClearArea();
     area->x = pos.x;
@@ -1222,7 +1216,7 @@ PLAYER_CLEAR_AREA *Player_AddClearArea(
 
 PLAYER_CLEAR_AREA *Player_AddClearCircle(
     const VEC3 pos, const float radius, const float growth,
-    const int32_t frames, const int32_t item)
+    const int32_t frames, const ITEM_TYPE item)
 {
     PLAYER_CLEAR_AREA *const area = M_FreeClearArea();
     area->x = pos.x;
