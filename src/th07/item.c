@@ -4,6 +4,7 @@
 #include "th07/ascii.h"
 #include "th07/bullet.h"
 #include "th07/effect.h"
+#include "th07/enemy.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/player.h"
@@ -93,7 +94,7 @@ static void M_FillPower(const int32_t slot)
 {
     g_GameManager.player.power = (float)M_FULL_POWER;
     GameManager_DrawChecksumKeys();
-    if (!g_Enemies.spell_card.active) {
+    if (g_Enemies.spell_card.state == ENEMY_SPELL_NONE) {
         Bullet_ClearAllToItems();
     }
     Gui_ShowFullPowerPopup();

@@ -399,6 +399,32 @@ test(
 )
 
 test(
+  'th07/enemy',
+  executable(
+    'test_th07_enemy',
+    'test_th07_enemy.c',
+    'th07_anm_builder.c',
+    'th07_data.c',
+    'shell_fake.c',
+    'gfx_recorder.c',
+    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
+      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
+      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
+      core_gfx_lib, core_image_lib, core_math_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_enemy',
+    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_enemy',
+  },
+  suite: 'unit',
+)
+
+test(
   'th07/player',
   executable(
     'test_th07_player',

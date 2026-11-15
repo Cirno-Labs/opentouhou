@@ -15,6 +15,7 @@ th07_lib = static_library(
   'bullet.c',
   'buttons.c',
   'effect.c',
+  'enemy.c',
   'files.c',
   'game.c',
   'game_manager/chain.c',

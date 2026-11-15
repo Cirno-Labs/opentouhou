@@ -11,6 +11,7 @@
 #include "th07/bomb.h"
 #include "th07/buttons.h"
 #include "th07/effect.h"
+#include "th07/enemy.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
@@ -66,7 +67,7 @@ CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
 float g_GameSpeed;
-ENEMIES g_Enemies;
+ENEMY_MANAGER g_Enemies;
 ASCII_TEXT g_AsciiText;
 
 static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
@@ -1015,7 +1016,7 @@ TEST(the_angle_points_from_a_position_to_the_player)
 TEST(the_bomb_button_starts_a_bomb)
 {
     M_SetUpAlive("bomb", 0);
-    g_Enemies.spell_card.active = true;
+    g_Enemies.spell_card.state = ENEMY_SPELL_RUNNING;
     g_Enemies.spell_card.capturable = true;
     g_Enemies.spell_card.bonus = 500;
     g_Player.move.focused = true;
