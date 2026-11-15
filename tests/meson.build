@@ -860,6 +860,19 @@ test(
 )
 
 test(
+  'th07/replay',
+  executable(
+    'test_th07_replay',
+    'test_th07_replay.c',
+    'shell_fake.c',
+    c_args: [layer_include['th07']] + stg_include + shell_include,
+    implicit_include_directories: false,
+    link_with: [th07_lib, stg_lzss_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/scene',
   executable(
     'test_th07_scene',
