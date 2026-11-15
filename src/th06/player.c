@@ -14,6 +14,7 @@
 #include "th06/sound.h"
 
 #include "core/base/utils.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
@@ -43,7 +44,6 @@
 #define M_RESPAWN_CLEAR_FRAMES 90
 #define M_GRAZE_MARGIN 20.0f
 #define M_LASER_GRAZE_MARGIN 48.0f
-#define M_HALF_PI 1.5707964f
 #define M_HOMING_FRAMES 40
 #define M_MAX_SHOT_SPEED 10.0f
 #define M_NO_TARGET -100.0f
@@ -1299,7 +1299,7 @@ float Player_AngleFrom(const VEC3 pos)
     const float x = g_Player.pos.x - pos.x;
     const float y = g_Player.pos.y - pos.y;
     if (y == 0.0f && x == 0.0f) {
-        return M_HALF_PI;
+        return MATH_HALF_PI;
     }
     return X87_Atan2(y, x);
 }
@@ -1309,7 +1309,7 @@ float Player_AngleTo(const VEC3 pos)
     const float x = pos.x - g_Player.pos.x;
     const float y = pos.y - g_Player.pos.y;
     if (y == 0.0f && x == 0.0f) {
-        return M_HALF_PI;
+        return MATH_HALF_PI;
     }
     return X87_Atan2(y, x);
 }

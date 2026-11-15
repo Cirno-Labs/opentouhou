@@ -13,6 +13,7 @@
 
 #include "core/base/assert.h"
 #include "core/base/utils.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
@@ -29,9 +30,6 @@
 #define M_LASER_ORIGIN_SPRITE 0x28c
 #define M_COLOR_OFFSETS_16 0
 #define M_COLOR_OFFSETS_32 16
-#define M_PI 3.1415927f
-#define M_HALF_PI 1.5707964f
-#define M_TWO_PI 6.2831855f
 #define M_OUT_OF_BOUNDS_FRAMES 0x100
 #define M_START_FAST_FRAMES 16
 #define M_LASER_FADE_FRAMES 30
@@ -167,15 +165,15 @@ static float M_Aim(
         angle += aim_angle;
         [[fallthrough]];
     case BULLET_AIM_RING:
-        angle += (float)col * M_TWO_PI / (float)shooter->columns;
+        angle += (float)col * MATH_TWO_PI / (float)shooter->columns;
         angle += (float)row * shooter->angle2 + shooter->angle1;
         break;
     case BULLET_AIM_RING_OFFSET_AT_PLAYER:
         angle += aim_angle;
         [[fallthrough]];
     case BULLET_AIM_RING_OFFSET:
-        angle += M_PI / (float)shooter->columns;
-        angle += (float)col * M_TWO_PI / (float)shooter->columns;
+        angle += MATH_PI / (float)shooter->columns;
+        angle += (float)col * MATH_TWO_PI / (float)shooter->columns;
         angle += shooter->angle1;
         break;
     case BULLET_AIM_RANDOM_ANGLE:
@@ -185,7 +183,7 @@ static float M_Aim(
     case BULLET_AIM_RING_RANDOM_SPEED:
         *speed = Rng_F32(&g_Rng) * (shooter->speed1 - shooter->speed2)
             + shooter->speed2;
-        angle += (float)col * M_TWO_PI / (float)shooter->columns;
+        angle += (float)col * MATH_TWO_PI / (float)shooter->columns;
         angle += (float)row * shooter->angle2 + shooter->angle1;
         break;
     case BULLET_AIM_RANDOM:
@@ -329,7 +327,7 @@ static void M_Bounce(BULLET *const bullet, const BULLET_FLAG flag)
         return;
     }
     if (bullet->pos.x < 0.0f || bullet->pos.x >= 384.0f) {
-        bullet->angle = -bullet->angle - M_PI;
+        bullet->angle = -bullet->angle - MATH_PI;
         bullet->angle = Angle_AddNormalize(bullet->angle, 0.0f);
     }
     if (bullet->pos.y < 0.0f
@@ -533,7 +531,7 @@ static bool M_UpdateLaser(LASER *const laser)
         laser->beam.scale_y =
             (laser->end_offset - laser->start_offset) / sprite->height;
     }
-    laser->beam.rotation.z = M_HALF_PI - laser->angle;
+    laser->beam.rotation.z = MATH_HALF_PI - laser->angle;
     switch (laser->state) {
     case LASER_STARTING:
         if ((laser->flags & BULLET_FLAG_START_FAST) != 0) {

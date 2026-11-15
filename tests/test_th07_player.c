@@ -21,6 +21,7 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -29,7 +30,6 @@
 
 #include <SDL3/SDL.h>
 
-#define M_HALF_PI 1.5707964f
 #define M_FAN_ANGLE 0.22439948f
 #define M_START_X 192.0f
 #define M_START_Y 384.0f
@@ -210,7 +210,7 @@ static void M_WriteSht(const char *const name)
         .interval = 4,
         .size_x = 12.0f,
         .size_y = 12.0f,
-        .angle = -M_HALF_PI,
+        .angle = -MATH_HALF_PI,
         .speed = 10.0f,
         .damage = 10,
         .kind = SHOT_KIND_PLAIN,
@@ -391,7 +391,7 @@ TEST(register_reads_the_shot_type_and_places_the_player_respawning)
     CHECK(g_Player.box.collect_size.x == 12.0f);
     CHECK(g_Player.box.collect_size.z == 5.0f);
     CHECK_EQ_INT(g_Player.state.bomb_window, 8);
-    CHECK(g_Player.shots.aim_angle == -M_HALF_PI);
+    CHECK(g_Player.shots.aim_angle == -MATH_HALF_PI);
     CHECK(g_Player.options.state == PLAYER_OPTIONS_OUT);
     CHECK_EQ_INT(g_Player.shot_type_focused.table_count, 1);
     CHECK(Anm_GetScript(0x480) != nullptr);
@@ -602,8 +602,8 @@ TEST(sakuya_b_fans_the_options_along_the_aim_angle)
     M_SetUpAlive("fan", 5);
     g_Player.shots.aim_angle = -1.0f;
     M_Frame();
-    const float side_x = X87_Cos(-1.0f + M_HALF_PI) * 24.0f;
-    const float side_y = X87_Sin(-1.0f + M_HALF_PI) * 24.0f;
+    const float side_x = X87_Cos(-1.0f + MATH_HALF_PI) * 24.0f;
+    const float side_y = X87_Sin(-1.0f + MATH_HALF_PI) * 24.0f;
     CHECK(g_Player.options.pos[0].x == M_START_X - side_x);
     CHECK(g_Player.options.pos[0].y == M_START_Y - side_y);
     CHECK(g_Player.options.pos[1].y == M_START_Y + side_y);
@@ -628,7 +628,7 @@ TEST(sakuya_b_fans_out_over_8_frames)
     M_Frame();
     const float angle = g_Player.shots.aim_angle;
     const float t = 2.0f / 8.0f;
-    const float side = X87_Cos(angle + M_HALF_PI) * 24.0f;
+    const float side = X87_Cos(angle + MATH_HALF_PI) * 24.0f;
     const float spread = X87_Cos(angle + M_FAN_ANGLE) * 24.0f;
     CHECK(
         g_Player.options.pos[1].x == M_START_X + ((spread - side) * t + side));
@@ -643,7 +643,7 @@ TEST(the_aim_angle_turns_against_the_move_up_to_its_limit)
     M_Hold(M_SHOOT | M_RIGHT);
     M_Frame();
     const float step = -(4.0f / 4.0f) * 3.1415927f / 5.0f / 10.0f;
-    CHECK(g_Player.shots.aim_angle == -M_HALF_PI - step);
+    CHECK(g_Player.shots.aim_angle == -MATH_HALF_PI - step);
     M_Frames(20);
     CHECK(g_Player.shots.aim_angle == -0.9424778f);
     M_Hold(M_SHOOT | M_RIGHT | M_FOCUS);
@@ -661,9 +661,9 @@ TEST(the_aim_angle_returns_upwards_while_still)
     M_Hold(M_SHOOT);
     M_Frame();
     CHECK(g_Player.shots.aim_angle == -1.0f + -0.062831856f * 0.5f);
-    g_Player.shots.aim_angle = -M_HALF_PI + 0.03f;
+    g_Player.shots.aim_angle = -MATH_HALF_PI + 0.03f;
     M_Frame();
-    CHECK(g_Player.shots.aim_angle == -M_HALF_PI);
+    CHECK(g_Player.shots.aim_angle == -MATH_HALF_PI);
     m_MsgRunning = true;
     g_Player.shots.aim_angle = -1.0f;
     M_Frame();
@@ -948,9 +948,9 @@ TEST(a_laser_test_turns_the_player_into_the_laser)
     const VEC3 origin = M_At(M_START_X, M_START_Y - 100.0f);
     const VEC3 size = { 4.0f, 200.0f, 0.0f };
     const VEC3 pos = M_At(M_START_X + 100.0f, M_START_Y - 100.0f);
-    Player_CheckLaserHit(pos, size, origin, -M_HALF_PI, false);
+    Player_CheckLaserHit(pos, size, origin, -MATH_HALF_PI, false);
     CHECK(g_Player.state.value == PLAYER_ALIVE);
-    Player_CheckLaserHit(pos, size, origin, M_HALF_PI, false);
+    Player_CheckLaserHit(pos, size, origin, MATH_HALF_PI, false);
     CHECK(g_Player.state.value == PLAYER_DYING);
     CHECK(m_Events == REPLAY_EVENT_HIT);
     M_TearDown();
@@ -999,7 +999,7 @@ TEST(items_touch_the_collect_box_unless_dying_or_respawning)
 TEST(the_angle_points_from_a_position_to_the_player)
 {
     M_SetUpAlive("angle", 0);
-    CHECK(Player_AngleFrom(M_At(M_START_X, M_START_Y)) == M_HALF_PI);
+    CHECK(Player_AngleFrom(M_At(M_START_X, M_START_Y)) == MATH_HALF_PI);
     CHECK(
         Player_AngleFrom(M_At(M_START_X - 10.0f, M_START_Y - 10.0f))
         == X87_Atan2(10.0f, 10.0f));

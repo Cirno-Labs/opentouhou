@@ -13,6 +13,7 @@
 #include "th07/stubs.h"
 
 #include "core/base/utils.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -32,8 +33,6 @@
 #define M_SCRIPT_TURN_RIGHT 0x403
 #define M_SCRIPT_FROM_RIGHT 0x404
 #define M_SCRIPT_OPTION 0x480
-#define M_PI_F 3.1415927f
-#define M_HALF_PI 1.5707964f
 #define M_FAN_ANGLE 0.22439948f
 #define M_AIM_MIN -2.1991148f
 #define M_AIM_MAX -0.9424778f
@@ -156,8 +155,8 @@ static void M_BreakBorder(void)
     player->state.bomb_cooldown = M_AFTER_BORDER_FRAMES;
     g_GameManager.cherry.plus = g_GameManager.cherry.offset;
     Player_AddClearCircle(player->pos, 32.0f, 16.0f, 50, M_BREAK_CLEAR_ITEM);
-    float angle = -M_PI_F;
-    for (int32_t i = 0; i < M_BREAK_SPARKS; i++, angle += M_PI_F / 16.0f) {
+    float angle = -MATH_PI;
+    for (int32_t i = 0; i < M_BREAK_SPARKS; i++, angle += MATH_PI / 16.0f) {
         effect = Effect_Spawn(EFFECT_DIVERGE, player->pos, 1, M_COLOR_WHITE);
         effect->axis.x = X87_Cos(angle);
         effect->axis.y = X87_Sin(angle);
@@ -365,7 +364,7 @@ static VEC3 M_Along(const float offset)
 // spread either side of the aim angle (1).
 static void M_FanAt(const float t)
 {
-    const VEC3 side = M_Along(M_HALF_PI);
+    const VEC3 side = M_Along(MATH_HALF_PI);
     VEC3 spread = M_Along(M_FAN_ANGLE);
     spread.x = (spread.x - side.x) * t + side.x;
     spread.y = (spread.y - side.y) * t + side.y;
@@ -390,7 +389,7 @@ static void M_FanOptions(void)
         Timer_Set(timer, 0);
         break;
     case PLAYER_OPTIONS_OUT:
-        offset = M_Along(M_HALF_PI);
+        offset = M_Along(MATH_HALF_PI);
         Timer_Set(timer, 0);
         if (!focused) {
             g_Player.options.pos[0].x -= offset.x;
@@ -454,18 +453,18 @@ static void M_Aim(void)
     float *const angle = &g_Player.shots.aim_angle;
     if (g_Player.move.delta_x != 0.0f) {
         const float step =
-            -(g_Player.move.delta_x / 4.0f) * M_PI_F / 5.0f / 10.0f;
+            -(g_Player.move.delta_x / 4.0f) * MATH_PI / 5.0f / 10.0f;
         *angle -= step;
         if (*angle < M_AIM_MIN) {
             *angle = M_AIM_MIN;
         } else if (*angle > M_AIM_MAX) {
             *angle = M_AIM_MAX;
         }
-    } else if (fabsf(*angle - -M_HALF_PI) > M_AIM_SNAP) {
-        *angle += *angle < -M_HALF_PI ? M_AIM_RETURN * g_GameSpeed
-                                      : -M_AIM_RETURN * g_GameSpeed;
+    } else if (fabsf(*angle - -MATH_HALF_PI) > M_AIM_SNAP) {
+        *angle += *angle < -MATH_HALF_PI ? M_AIM_RETURN * g_GameSpeed
+                                         : -M_AIM_RETURN * g_GameSpeed;
     } else {
-        *angle = -M_HALF_PI;
+        *angle = -MATH_HALF_PI;
     }
 }
 
@@ -973,7 +972,7 @@ static RESULT M_Added(void *const arg)
     }
     Timer_Set(&player->shots.fire_timer, -1);
     player->bomb.running = false;
-    player->shots.aim_angle = -M_HALF_PI;
+    player->shots.aim_angle = -MATH_HALF_PI;
     player->move.speed_scale_y = 1.0f;
     player->move.speed_scale_x = 1.0f;
     player->state.bomb_window = player->shot_type.bomb_window;
@@ -1030,7 +1029,7 @@ float Player_AngleFrom(const VEC3 pos)
     const float x = g_Player.pos.x - pos.x;
     const float y = g_Player.pos.y - pos.y;
     if (y == 0.0f && x == 0.0f) {
-        return M_HALF_PI;
+        return MATH_HALF_PI;
     }
     return X87_Atan2(y, x);
 }

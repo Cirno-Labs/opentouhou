@@ -6,6 +6,7 @@
 #include "th07/stage.h"
 #include "th07/stubs.h"
 
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -18,8 +19,6 @@
 #define M_SLOT_COUNT 4
 #define M_PETAL_SPRITE 0x2d8
 #define M_RUN_COUNT (EFFECT_COUNT + EFFECT_RESERVED_COUNT)
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
 
 typedef enum {
     M_LIST_PLAY_AREA,
@@ -93,7 +92,7 @@ static VEC3 M_Neg(const VEC3 v)
 
 static float M_RandomAngle(void)
 {
-    return Rng_F32(&g_Rng) * M_TWO_PI - M_PI;
+    return Rng_F32(&g_Rng) * MATH_TWO_PI - MATH_PI;
 }
 
 static VEC3 M_CameraCenter(void)
