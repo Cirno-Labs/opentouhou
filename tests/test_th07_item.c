@@ -9,6 +9,7 @@
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/effect.h"
+#include "th07/enemy.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
@@ -57,7 +58,7 @@ typedef struct {
 RNG g_Rng;
 float g_GameSpeed;
 PLAYER g_Player;
-ENEMIES g_Enemies;
+ENEMY_MANAGER g_Enemies;
 
 static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
 static VEC3 m_Probes[ITEM_COUNT];
@@ -694,7 +695,7 @@ TEST(reaching_full_power_in_a_spell_card_keeps_the_bullets)
 {
     M_Setup();
     g_GameManager.player.power = 125.0f;
-    g_Enemies.spell_card.active = true;
+    g_Enemies.spell_card.state = ENEMY_SPELL_RUNNING;
     M_Collect(ITEM_BIG_POWER, 300.0f);
     CHECK(g_GameManager.player.power == 128.0f);
     CHECK_EQ_INT(m_ClearCalls, 0);
@@ -980,7 +981,7 @@ TEST(a_full_power_item_fills_the_power)
 {
     M_Setup();
     g_GameManager.player.power = 20.0f;
-    g_Enemies.spell_card.active = true;
+    g_Enemies.spell_card.state = ENEMY_SPELL_RUNNING;
     Item_Spawn((VEC3) { 10.0f, 300.0f, 0.0f }, ITEM_POWER, ITEM_FALLING);
     Item_Spawn(
         (VEC3) { M_TOUCH_X, 300.0f, 0.0f }, ITEM_FULL_POWER, ITEM_FALLING);

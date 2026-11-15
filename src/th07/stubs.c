@@ -22,17 +22,6 @@ RESULT Ending_Register(void)
     return OK;
 }
 
-RESULT Enemy_Register(void)
-{
-    LOG_INFO("Enemy_Register is not ported");
-    return OK;
-}
-
-void Enemy_Remove(void)
-{
-    LOG_INFO("Enemy_Remove is not ported");
-}
-
 RESULT Gui_Register(void)
 {
     LOG_INFO("Gui_Register is not ported");
@@ -130,18 +119,12 @@ void Gui_EndBombName(void)
     LOG_INFO("Gui_EndBombName is not ported");
 }
 
-bool Enemy_IsBossActive(void)
-{
-    return false;
-}
-
 RESULT ResultScreen_LoadGameRecords(void)
 {
     LOG_INFO("ResultScreen_LoadGameRecords is not ported");
     return OK;
 }
 
-ENEMIES g_Enemies;
 GUI g_Gui;
 uint8_t g_EffectsQuality = 2;
 

@@ -6,6 +6,7 @@
 #include "th07/bullet.h"
 #include "th07/buttons.h"
 #include "th07/effect.h"
+#include "th07/enemy.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/item.h"
@@ -584,7 +585,8 @@ static void M_StartBomb(void)
     g_Enemies.spell_card.bonus = 0;
     g_Enemies.spell_card.capturable = false;
     GameManager_SubRank(200);
-    g_Enemies.spell_card.bombed = g_Enemies.spell_card.active;
+    g_Enemies.spell_card.bombed =
+        g_Enemies.spell_card.state != ENEMY_SPELL_NONE;
     player->state.bomb_window += M_BOMB_WINDOW_GAIN;
     if (player->state.bomb_window > player->shot_type.bomb_window) {
         player->state.bomb_window = player->shot_type.bomb_window;
