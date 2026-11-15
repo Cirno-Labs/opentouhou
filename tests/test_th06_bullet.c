@@ -18,6 +18,7 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/gfx/private.h"
@@ -1434,8 +1435,9 @@ TEST(clear_all_with_bonus_scores_every_bullet_up_to_the_cap)
     CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 0);
     CHECK_EQ_INT(g_AsciiText.popups[1].digits[1], 1);
     CHECK_EQ_INT(g_AsciiText.popups[2].digits[0], 5);
-    CHECK_EQ_INT(g_AsciiText.popups[0].color, 0xffffffffu);
-    CHECK_EQ_INT(g_AsciiText.popups[2].color, 0xffffff00u);
+    CHECK_EQ_INT(g_AsciiText.popups[0].color, COLOR_WHITE);
+    CHECK_EQ_INT(
+        g_AsciiText.popups[2].color, COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     for (int32_t i = 0; i < 3; i++) {
         CHECK(g_Bullets.bullets[i].state == BULLET_FADING);
     }

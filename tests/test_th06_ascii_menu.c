@@ -7,6 +7,8 @@
 #include "th06/game_manager.h"
 #include "th06/scene.h"
 
+#include "core/base/color.h"
+
 #include <string.h>
 
 ASCII_TEXT g_AsciiText;
@@ -89,7 +91,7 @@ TEST(pause_starts_all_lines_and_falls_through_to_resume)
         CHECK_EQ_INT(menu->sprites[i].pending_interrupt, i < 3 ? 1 : 0);
         CHECK(m_Steps[i] == &menu->sprites[i]);
     }
-    CHECK_EQ_INT(menu->sprites[1].color, 0xffff8080);
+    CHECK_EQ_INT(menu->sprites[1].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     CHECK(menu->sprites[1].scale_x == 1.7f);
     CHECK(menu->sprites[1].pos_offset.x == -4.0f);
 }
@@ -267,12 +269,12 @@ TEST(continue_starts_in_state_two_but_uses_state_one_visuals_once)
     CHECK_EQ_INT(m_StartScripts[1], 9);
     CHECK_EQ_INT(m_StartScripts[2], 6);
     CHECK_EQ_INT(m_StartScripts[3], 7);
-    CHECK_EQ_INT(menu->sprites[2].color, 0xffff8080);
-    CHECK_EQ_INT(menu->sprites[3].color, 0x80808080);
+    CHECK_EQ_INT(menu->sprites[2].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
+    CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0x80, 0x80, 0x80, 0x80));
     CHECK_EQ_INT(m_StepCount, 4);
     PauseMenu_UpdateContinueMenu(menu);
-    CHECK_EQ_INT(menu->sprites[2].color, 0x80808080);
-    CHECK_EQ_INT(menu->sprites[3].color, 0xffff8080);
+    CHECK_EQ_INT(menu->sprites[2].color, COLOR_ARGB(0x80, 0x80, 0x80, 0x80));
+    CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
 }
 
 TEST(continue_no_waits_thirty_frames_but_yes_waits_four)

@@ -11,6 +11,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 
@@ -79,11 +80,11 @@ TEST(registering_loads_the_stage_effects)
 TEST(spawn_returns_the_last_effect_started)
 {
     M_Setup("spawn", 2);
-    EFFECT *const effect =
-        Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 3, 0x80ffffffu);
+    EFFECT *const effect = Effect_Spawn(
+        EFFECT_EXPLOSION, m_Origin, 3, COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     CHECK(effect->active);
     CHECK(effect->pos.x == 100.0f && effect->pos.y == 200.0f);
-    CHECK(effect->vm.color == 0x80ffffffu);
+    CHECK(effect->vm.color == COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     CHECK(effect->vm.script == Anm_GetScript(669));
     M_Teardown();
 }
@@ -152,7 +153,7 @@ TEST(drawing_places_the_sprite_at_the_effect)
 TEST(an_orbit_fades_out_over_sixteen_frames)
 {
     M_Setup("orbit", 2);
-    EFFECT *const effect = Effect_Spawn(EFFECT_ORBIT, m_Origin, 1, 0xffffffffu);
+    EFFECT *const effect = Effect_Spawn(EFFECT_ORBIT, m_Origin, 1, COLOR_WHITE);
     effect->origin = m_Origin;
     effect->axis = (VEC3) { 0.0f, 0.0f, 1.0f };
     effect->radius = 10.0f;
@@ -176,7 +177,7 @@ TEST(effect_draws_identify_each_spawn_without_consuming_random_values)
     const ANM_SPRITE sprite = { .slot = 100, .width = 16, .height = 16 };
     for (int32_t i = 0; i < 2; i++) {
         EFFECT *const effect =
-            Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, 0xffffffff);
+            Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, COLOR_WHITE);
         effect->vm.sprite_data = &sprite;
         effect->vm.shown = true;
         effect->vm.visible = true;

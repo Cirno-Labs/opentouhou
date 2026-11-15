@@ -19,6 +19,7 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/math/common.h"
@@ -921,7 +922,7 @@ TEST(a_bullet_on_the_hitbox_kills_the_player)
     CHECK_EQ_INT(g_Player.shots.laser_timers[1].current, 2);
     CHECK_EQ_INT(m_EffectCount, 2);
     CHECK_EQ_INT(m_Effects[0].type, EFFECT_SHOCKWAVE);
-    CHECK_EQ_INT(m_Effects[0].color, 0xff4040ffu);
+    CHECK_EQ_INT(m_Effects[0].color, COLOR_ARGB(0xff, 0x40, 0x40, 0xff));
     CHECK_EQ_INT(m_Effects[1].type, EFFECT_PARTICLE + 2);
     CHECK_EQ_INT(m_Effects[1].count, 16);
     M_Teardown();

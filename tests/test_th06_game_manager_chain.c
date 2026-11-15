@@ -17,6 +17,7 @@
 #include "th06/screens/result.h"
 #include "th06/replay.h"
 
+#include "core/base/color.h"
 #include "core/math/x87.h"
 
 #include <string.h>
@@ -199,7 +200,7 @@ static void M_Setup(void)
     m_ReplayFailed = false;
     m_RestoreReplay = false;
     m_FadeFrames = 0;
-    m_FadeColor = 0xffffffff;
+    m_FadeColor = COLOR_WHITE;
     m_AfterCalls = 0;
     m_FrameResets = 0;
     g_Stage.data.song_paths[0] = m_SongPath;

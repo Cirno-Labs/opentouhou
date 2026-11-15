@@ -5,6 +5,8 @@
 #include "th06/game_manager.h"
 #include "th06/scene.h"
 
+#include "core/base/color.h"
+
 static void M_SetViewport(void)
 {
     VIEWPORT *const viewport = &g_GameManager.camera.viewport;
@@ -52,8 +54,8 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         }
         [[fallthrough]];
     case 1:
-        menu->sprites[1].color = 0xffff8080;
-        menu->sprites[2].color = 0x80808080;
+        menu->sprites[1].color = COLOR_ARGB(0xff, 0xff, 0x80, 0x80);
+        menu->sprites[2].color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
         menu->sprites[1].scale_y = 1.7f;
         menu->sprites[1].scale_x = 1.7f;
         menu->sprites[2].scale_y = 1.5f;
@@ -76,8 +78,8 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         }
         break;
     case 2:
-        menu->sprites[1].color = 0x80808080;
-        menu->sprites[2].color = 0xffff8080;
+        menu->sprites[1].color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
+        menu->sprites[2].color = COLOR_ARGB(0xff, 0xff, 0x80, 0x80);
         menu->sprites[1].scale_y = 1.5f;
         menu->sprites[1].scale_x = 1.5f;
         menu->sprites[2].scale_y = 1.7f;
@@ -111,8 +113,8 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         }
         break;
     case 4:
-        menu->sprites[4].color = 0xffff8080;
-        menu->sprites[5].color = 0x80808080;
+        menu->sprites[4].color = COLOR_ARGB(0xff, 0xff, 0x80, 0x80);
+        menu->sprites[5].color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
         menu->sprites[4].scale_y = 1.7f;
         menu->sprites[4].scale_x = 1.7f;
         menu->sprites[5].scale_y = 1.5f;
@@ -134,8 +136,8 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         }
         break;
     case 5:
-        menu->sprites[4].color = 0x80808080;
-        menu->sprites[5].color = 0xffff8080;
+        menu->sprites[4].color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
+        menu->sprites[5].color = COLOR_ARGB(0xff, 0xff, 0x80, 0x80);
         menu->sprites[4].scale_y = 1.5f;
         menu->sprites[4].scale_x = 1.5f;
         menu->sprites[5].scale_y = 1.7f;
@@ -247,8 +249,8 @@ void PauseMenu_UpdateContinueMenu(PAUSE_MENU *const menu)
         menu->state_frames = 0;
         [[fallthrough]];
     case 1:
-        menu->sprites[2].color = 0xffff8080;
-        menu->sprites[3].color = 0x80808080;
+        menu->sprites[2].color = COLOR_ARGB(0xff, 0xff, 0x80, 0x80);
+        menu->sprites[3].color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
         menu->sprites[2].scale_y = 1.7f;
         menu->sprites[2].scale_x = 1.7f;
         menu->sprites[3].scale_y = 1.5f;
@@ -271,8 +273,8 @@ void PauseMenu_UpdateContinueMenu(PAUSE_MENU *const menu)
         }
         break;
     case 2:
-        menu->sprites[3].color = 0xffff8080;
-        menu->sprites[2].color = 0x80808080;
+        menu->sprites[3].color = COLOR_ARGB(0xff, 0xff, 0x80, 0x80);
+        menu->sprites[2].color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
         menu->sprites[2].scale_y = 1.5f;
         menu->sprites[2].scale_x = 1.5f;
         menu->sprites[3].scale_y = 1.7f;
