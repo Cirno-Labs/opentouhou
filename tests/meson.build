@@ -452,6 +452,7 @@ test(
   executable(
     'test_th07_ecl_patterns',
     'test_th07_ecl_patterns.c',
+    'th07_play_setup.c',
     'th07_anm_builder.c',
     'th07_data.c',
     'gfx_recorder.c',
