@@ -40,6 +40,8 @@ typedef struct {
     int load_title_records;
     // Runs in ResultScreen_LoadTitleRecords, unless nullptr.
     void (*on_load_title_records)(void);
+    // Makes Gui_IsLoadingShown return true.
+    bool loading_shown;
 } SCENE_STUB_CALLS;
 
 extern SCENE_STUB_CALLS g_SceneStubCalls;

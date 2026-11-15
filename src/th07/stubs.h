@@ -113,29 +113,6 @@ typedef struct {
 
 extern PLAYER g_Player;
 
-// Stands in for th07/stage's camera.
-typedef struct {
-    VEC3 eye;
-    VEC3 at; // relative to eye
-    VEC3 up;
-    VEC3 dir; // at, normalized
-    VEC3 right; // sizes projected sprites, through Anm_SetCameras
-    float fov;
-} STAGE_CAMERA;
-
-// Stands in for the part of th07/stage's state that th07/effect reads and
-// writes.
-typedef struct {
-    struct {
-        STAGE_CAMERA current;
-    } camera;
-    struct {
-        int32_t count, offset;
-    } spell_background;
-} STAGE;
-
-extern STAGE g_Stage;
-
 // Stands in for the effects quality of the original's configuration, from
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
@@ -171,3 +148,6 @@ void PlayTime_Restart(void);
 // Stands in for the copy of source of the screen, scaled to dest of the
 // texture of slot, after the frame. Returns false while a copy is pending.
 bool Anm_SetPendingCopy(int32_t slot, GFX_RECT source, GFX_RECT dest);
+
+// Stands in for th07/gui's check that the loading sprite shows.
+bool Gui_IsLoadingShown(void);
