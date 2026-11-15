@@ -27,8 +27,6 @@ RESULT Ending_Register(void);
 // ends with each stage.
 RESULT Enemy_Register(void);
 void Enemy_Remove(void);
-RESULT Ecl_Load(void);
-void Ecl_Release(void);
 RESULT Gui_Register(void);
 void Gui_Remove(void);
 
