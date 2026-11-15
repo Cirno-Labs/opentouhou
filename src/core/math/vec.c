@@ -33,7 +33,7 @@ VEC3 Vec3_Normalize(const VEC3 v)
     return Vec3_Scale(v, 1.0f / Vec3_Length(v));
 }
 
-static VEC3 M_Cross(const VEC3 a, const VEC3 b)
+VEC3 Vec3_Cross(const VEC3 a, const VEC3 b)
 {
     return (VEC3) {
         a.y * b.z - a.z * b.y,
@@ -112,8 +112,8 @@ MAT4 Mat4_RotationQuaternion(const VEC4 q)
 MAT4 Mat4_LookAtLH(const VEC3 eye, const VEC3 at, const VEC3 up)
 {
     const VEC3 z_axis = Vec3_Normalize(Vec3_Sub(at, eye));
-    const VEC3 x_axis = Vec3_Normalize(M_Cross(up, z_axis));
-    const VEC3 y_axis = M_Cross(z_axis, x_axis);
+    const VEC3 x_axis = Vec3_Normalize(Vec3_Cross(up, z_axis));
+    const VEC3 y_axis = Vec3_Cross(z_axis, x_axis);
 
     MAT4 m = Mat4_Identity();
     m.m[0][0] = x_axis.x;

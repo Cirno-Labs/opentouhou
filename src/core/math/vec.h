@@ -53,6 +53,9 @@ float Vec3_Length(VEC3 v);
 // zero vector, as D3DXVec3Normalize's is.
 VEC3 Vec3_Normalize(VEC3 v);
 
+// Returns the cross product a x b, as D3DXVec3Cross does.
+VEC3 Vec3_Cross(VEC3 a, VEC3 b);
+
 // Transforms v as a point (w = 1) by m and divides by the transformed w,
 // as D3DXVec3TransformCoord does.
 VEC3 Vec3_TransformCoord(VEC3 v, const MAT4 *m);
