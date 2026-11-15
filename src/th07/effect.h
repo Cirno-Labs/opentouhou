@@ -98,6 +98,9 @@ void Effect_OffsetPetals(VEC3 offset);
 // Makes the petals of EFFECT_PETAL_DRIFT start falling.
 void Effect_StartPetalsFalling(void);
 
+// Sets the scale of each channel of the effect colours (opcode 140).
+void Effect_SetColorScale(float red, float green, float blue, float alpha);
+
 // Draws the petals, as the stage's draw does after the stage. Effects
 // quality 0 and 1 draw none.
 void Effect_DrawPetals(void);
