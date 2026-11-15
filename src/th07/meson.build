@@ -11,6 +11,7 @@ th07_lib = static_library(
   'ascii/pause_menu.c',
   'ascii/text.c',
   'buttons.c',
+  'effect.c',
   'files.c',
   'game.c',
   'replay/format.c',
