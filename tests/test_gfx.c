@@ -24,6 +24,7 @@ typedef enum {
     EVENT_DRAW,
     EVENT_END,
     EVENT_BLIT,
+    EVENT_READ,
 } EVENT;
 
 typedef struct {
@@ -37,6 +38,9 @@ typedef struct {
     GFX_PASS_VIEW views[MAX_VIEWS];
     GFX_PASS_OUTPUT output;
     uintptr_t next_handle;
+    // Makes a screen read return WIDTH x HEIGHT pixels whose red and green
+    // are their x and y.
+    bool readable;
 } RECORDING;
 
 static RECORDING m_Recording;
@@ -130,7 +134,18 @@ static void M_BlitScreen(const GFX_PASS_OUTPUT *const output)
 static RESULT M_ReadPixels(
     const GFX_PASS pass, const ALLOCATOR *const allocator, IMAGE *const out)
 {
-    return FAIL("not recorded");
+    M_Record(EVENT_READ, 0);
+    FAIL_IF(!m_Recording.readable || pass != GFX_PASS_SCREEN, "not recorded");
+    *out = Image_Create(WIDTH, HEIGHT, allocator);
+    for (int32_t y = 0; y < HEIGHT; y++) {
+        for (int32_t x = 0; x < WIDTH; x++) {
+            uint8_t *const pixel = &out->pixels[(y * WIDTH + x) * 4];
+            pixel[0] = (uint8_t)x;
+            pixel[1] = (uint8_t)y;
+            pixel[3] = 255;
+        }
+    }
+    return OK;
 }
 
 static const GFX_BACKEND m_RecordingBackend = {
@@ -542,5 +557,80 @@ TEST(a_repeated_view_id_blends_with_the_same_repetition)
     M_Present(0.5f);
     M_CheckNear(m_Recording.views[1].scissor_x, 1.0f);
     M_CheckNear(m_Recording.views[2].scissor_x, 15.0f);
+    M_Stop();
+}
+
+TEST(a_screen_rect_reads_after_the_quads_drawn_so_far)
+{
+    M_Start();
+    m_Recording.readable = true;
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0.0f, 0);
+    IMAGE image;
+    CHECK(Result_Log(
+        Gfx_ReadScreenRect((GFX_RECT) { 5, 7, 3, 2 }, &g_HeapAllocator, &image),
+        LOG_LEVEL_ERROR));
+    M_Draw4(&m_Alpha, nullptr, 8.0f, 0);
+    Gfx_EndTick();
+    M_CheckEvents(
+        (EVENT[]) { EVENT_BEGIN_SCREEN, EVENT_DRAW, EVENT_READ, EVENT_DRAW,
+                    EVENT_END },
+        5);
+    CHECK_EQ_INT(image.width, 3);
+    CHECK_EQ_INT(image.height, 2);
+    for (int32_t y = 0; y < 2; y++) {
+        for (int32_t x = 0; x < 3; x++) {
+            const uint8_t *const pixel = &image.pixels[(y * 3 + x) * 4];
+            CHECK_EQ_INT(pixel[0], 5 + x);
+            CHECK_EQ_INT(pixel[1], 7 + y);
+        }
+    }
+    Image_Free(&image);
+    M_Stop();
+}
+
+TEST(a_screen_rect_outside_the_screen_fails)
+{
+    M_Start();
+    m_Recording.readable = true;
+    const GFX_RECT outside[] = {
+        { -1, 0, 4, 4 },         { 0, -1, 4, 4 }, { WIDTH - 3, 0, 4, 4 },
+        { 0, HEIGHT - 3, 4, 4 }, { 0, 0, 0, 4 },  { 0, 0, 4, 0 },
+    };
+    for (size_t i = 0; i < sizeof(outside) / sizeof(outside[0]); i++) {
+        IMAGE image;
+        CHECK(!Result_Log(
+            Gfx_ReadScreenRect(outside[i], &g_HeapAllocator, &image),
+            LOG_LEVEL_INFO));
+        CHECK(image.pixels == nullptr);
+    }
+    CHECK_EQ_INT(m_Recording.count, 0);
+    IMAGE whole;
+    CHECK(Result_Log(
+        Gfx_ReadScreenRect(
+            (GFX_RECT) { 0, 0, WIDTH, HEIGHT }, &g_HeapAllocator, &whole),
+        LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(whole.width, WIDTH);
+    Image_Free(&whole);
+    M_Stop();
+}
+
+TEST(a_screen_rect_fails_while_the_renderer_is_stopped)
+{
+    IMAGE image;
+    CHECK(!Result_Log(
+        Gfx_ReadScreenRect((GFX_RECT) { 0, 0, 1, 1 }, &g_HeapAllocator, &image),
+        LOG_LEVEL_INFO));
+    CHECK(image.pixels == nullptr);
+}
+
+TEST(a_failed_screen_read_fails_the_screen_rect)
+{
+    M_Start();
+    IMAGE image;
+    CHECK(!Result_Log(
+        Gfx_ReadScreenRect((GFX_RECT) { 0, 0, 1, 1 }, &g_HeapAllocator, &image),
+        LOG_LEVEL_INFO));
+    CHECK(image.pixels == nullptr);
     M_Stop();
 }

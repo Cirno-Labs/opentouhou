@@ -747,3 +747,36 @@ RESULT Gfx_ReadOutput(const ALLOCATOR *const allocator, IMAGE *const out)
     FAIL_IF(!m_Frontend.started, "The renderer is not started");
     return m_Frontend.backend->read_pixels(GFX_PASS_WINDOW, allocator, out);
 }
+
+RESULT Gfx_ReadScreenRect(
+    const GFX_RECT source, const ALLOCATOR *const allocator, IMAGE *const out)
+{
+    *out = (IMAGE) {};
+    FAIL_IF(!m_Frontend.started, "The renderer is not started");
+    FAIL_IF(
+        source.x < 0 || source.y < 0 || source.width <= 0 || source.height <= 0
+            || source.width > m_Frontend.width - source.x
+            || source.height > m_Frontend.height - source.y,
+        "The rectangle is outside the screen");
+    M_Flush();
+    IMAGE screen;
+    MUST(m_Frontend.backend->read_pixels(
+        GFX_PASS_SCREEN, &g_HeapAllocator, &screen));
+    if (screen.width != m_Frontend.width
+        || screen.height != m_Frontend.height) {
+        Image_Free(&screen);
+        return FAIL("The screen read back has the wrong size");
+    }
+    *out = Image_Create(source.width, source.height, allocator);
+    for (int32_t row = 0; row < source.height; row++) {
+        memcpy(
+            out->pixels + (size_t)row * (size_t)source.width * 4,
+            screen.pixels
+                + ((size_t)(source.y + row) * (size_t)screen.width
+                   + (size_t)source.x)
+                    * 4,
+            (size_t)source.width * 4);
+    }
+    Image_Free(&screen);
+    return OK;
+}
