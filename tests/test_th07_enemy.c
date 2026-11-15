@@ -269,11 +269,11 @@ void Gui_ShowCherryFullPopup(const int32_t cherry)
 
 static void M_WriteAnm(void)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, M_SPRITE_SIZE, M_SPRITE_SIZE);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, "data/stg1enm.anm");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, M_SPRITE_SIZE, M_SPRITE_SIZE);
+    AnmBuilder_WriteFile(&builder, m_Directory, "data/stg1enm.anm");
 }
 
 static void M_ResetCalls(void)

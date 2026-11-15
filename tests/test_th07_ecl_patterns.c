@@ -241,14 +241,14 @@ bool Gui_IsLoadingShown(void)
 }
 
 static void M_AddScript(
-    TH07_ANM_BUILDER_ANM *const anm, const int32_t script, const int32_t sprite,
+    ANM_BUILDER_ANM *const anm, const int32_t script, const int32_t sprite,
     const int16_t end)
 {
-    const int32_t index = Th07AnmBuilder_BeginScript(anm, script - M_SPRITE);
+    const int32_t index = AnmBuilder_BeginScript(anm, script - M_SPRITE);
     const uint32_t arg = (uint32_t)(sprite - M_SPRITE);
-    Th07AnmBuilder_Instr(anm, index, M_SPRITE_OP, 0, 0, &arg, 1);
-    Th07AnmBuilder_Instr(anm, index, M_DELETE_OP, end, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, index);
+    AnmBuilder_Instr(anm, index, M_SPRITE_OP, 0, 0, &arg, 1);
+    AnmBuilder_Instr(anm, index, M_DELETE_OP, end, 0, nullptr, 0);
+    AnmBuilder_End(anm, index);
 }
 
 // Writes etama.anm as th07/bullet's test does: 16 sprites each 8, 16, 32
@@ -256,15 +256,14 @@ static void M_AddScript(
 // the first sprite of each height.
 static void M_WriteEtama(void)
 {
-    static TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 256, 256, "@");
+    static ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 256, 256, "@");
     for (int32_t i = 0; i < 16; i++) {
-        Th07AnmBuilder_AddSprite(anm, i, 0.0f, 0.0f, 8.0f, 8.0f);
-        Th07AnmBuilder_AddSprite(anm, 16 + i, 0.0f, 0.0f, 16.0f, 16.0f);
-        Th07AnmBuilder_AddSprite(anm, 32 + i, 0.0f, 0.0f, 32.0f, 32.0f);
-        Th07AnmBuilder_AddSprite(anm, 48 + i, 0.0f, 0.0f, 64.0f, 64.0f);
+        AnmBuilder_AddSprite(anm, i, 0.0f, 0.0f, 8.0f, 8.0f);
+        AnmBuilder_AddSprite(anm, 16 + i, 0.0f, 0.0f, 16.0f, 16.0f);
+        AnmBuilder_AddSprite(anm, 32 + i, 0.0f, 0.0f, 32.0f, 32.0f);
+        AnmBuilder_AddSprite(anm, 48 + i, 0.0f, 0.0f, 64.0f, 64.0f);
     }
     M_AddScript(anm, 512, M_SPRITE_8, 1000);
     for (int32_t i = 513; i <= 518; i++) {
@@ -284,17 +283,17 @@ static void M_WriteEtama(void)
     }
     M_AddScript(anm, 536, M_SPRITE_32, 3);
     M_AddScript(anm, 682, M_SPRITE_64, 3);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, "data/etama.anm");
+    AnmBuilder_WriteFile(&builder, m_Directory, "data/etama.anm");
 }
 
 static void M_WriteOneSprite(const char *const name)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
-    Th07AnmBuilder_End(anm, Th07AnmBuilder_BeginScript(anm, 0));
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, name);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
+    AnmBuilder_End(anm, AnmBuilder_BeginScript(anm, 0));
+    AnmBuilder_WriteFile(&builder, m_Directory, name);
 }
 
 static void M_SetUp(const char *const case_name)

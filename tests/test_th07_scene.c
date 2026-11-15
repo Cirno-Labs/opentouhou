@@ -41,14 +41,13 @@ static void M_MountFiles(void)
         char *const data = TestDir_Join(directory, "data");
         CHECK(Result_Log(File_MakeDir(data), LOG_LEVEL_ERROR));
         Mem_Free(data);
-        TH07_ANM_BUILDER builder;
-        Th07AnmBuilder_Init(&builder);
-        TH07_ANM_BUILDER_ANM *const anm =
-            Th07AnmBuilder_Add(&builder, 32, 32, "@");
-        Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
-        Th07AnmBuilder_WriteFile(&builder, directory, "data/text.anm");
-        Th07AnmBuilder_WriteFile(&builder, directory, "data/ascii.anm");
-        Th07AnmBuilder_WriteFile(&builder, directory, "data/capture.anm");
+        ANM_BUILDER builder;
+        AnmBuilder_Init(&builder);
+        ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 32, 32, "@");
+        AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+        AnmBuilder_WriteFile(&builder, directory, "data/text.anm");
+        AnmBuilder_WriteFile(&builder, directory, "data/ascii.anm");
+        AnmBuilder_WriteFile(&builder, directory, "data/capture.anm");
         CHECK(Result_Log(Th07Data_Mount(directory), LOG_LEVEL_ERROR));
         mounted = true;
     }

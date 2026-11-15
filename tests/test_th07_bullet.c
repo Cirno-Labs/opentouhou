@@ -178,16 +178,16 @@ void Sound_Queue(const int32_t sound)
 }
 
 static void M_AddScript(
-    TH07_ANM_BUILDER_ANM *const anm, const int32_t script, const int32_t sprite,
+    ANM_BUILDER_ANM *const anm, const int32_t script, const int32_t sprite,
     const int16_t end)
 {
-    const int32_t index = Th07AnmBuilder_BeginScript(anm, script - M_SPRITE);
+    const int32_t index = AnmBuilder_BeginScript(anm, script - M_SPRITE);
     if (sprite >= 0) {
         const uint32_t arg = (uint32_t)(sprite - M_SPRITE);
-        Th07AnmBuilder_Instr(anm, index, M_SPRITE_OP, 0, 0, &arg, 1);
+        AnmBuilder_Instr(anm, index, M_SPRITE_OP, 0, 0, &arg, 1);
     }
-    Th07AnmBuilder_Instr(anm, index, M_DELETE_OP, end, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, index);
+    AnmBuilder_Instr(anm, index, M_DELETE_OP, end, 0, nullptr, 0);
+    AnmBuilder_End(anm, index);
 }
 
 // Writes etama.anm: 16 sprites each 8, 16, 32 and 64 high from M_SPRITE_8,
@@ -197,15 +197,14 @@ static void M_AddScript(
 // 4, flying scripts at 1000. Laser type 0 shows M_SPRITE_16.
 static void M_WriteEtama(const int32_t large_sprite)
 {
-    static TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 256, 256, "@");
+    static ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 256, 256, "@");
     for (int32_t i = 0; i < 16; i++) {
-        Th07AnmBuilder_AddSprite(anm, i, 0.0f, 0.0f, 8.0f, 8.0f);
-        Th07AnmBuilder_AddSprite(anm, 16 + i, 0.0f, 0.0f, 16.0f, 16.0f);
-        Th07AnmBuilder_AddSprite(anm, 32 + i, 0.0f, 0.0f, 32.0f, 32.0f);
-        Th07AnmBuilder_AddSprite(anm, 48 + i, 0.0f, 0.0f, 64.0f, 64.0f);
+        AnmBuilder_AddSprite(anm, i, 0.0f, 0.0f, 8.0f, 8.0f);
+        AnmBuilder_AddSprite(anm, 16 + i, 0.0f, 0.0f, 16.0f, 16.0f);
+        AnmBuilder_AddSprite(anm, 32 + i, 0.0f, 0.0f, 32.0f, 32.0f);
+        AnmBuilder_AddSprite(anm, 48 + i, 0.0f, 0.0f, 64.0f, 64.0f);
     }
     M_AddScript(anm, 512, M_SPRITE_8, 1000);
     for (int32_t i = 513; i <= 518; i++) {
@@ -226,7 +225,7 @@ static void M_WriteEtama(const int32_t large_sprite)
     M_AddScript(anm, 536, M_SPRITE_32, 3);
     M_AddScript(anm, M_LASER_SCRIPT, M_SPRITE_16, 1000);
     M_AddScript(anm, 682, M_SPRITE_64, 3);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, "data/etama.anm");
+    AnmBuilder_WriteFile(&builder, m_Directory, "data/etama.anm");
 }
 
 static void M_Prepare(const char *const case_name, const int32_t large_sprite)
