@@ -18,6 +18,12 @@ repos:
     language: python
     files: \.h$
 
+  - id: global-reset
+    name: A global is reset with memset, not a compound literal
+    entry: tools/lint/check_global_reset
+    language: python
+    files: ^(src|tests)/.*\.[ch]$
+
   - id: commit-msg
     name: Commit message has a module prefix and follows 50/72
     entry: tools/lint/check_commit_msg
