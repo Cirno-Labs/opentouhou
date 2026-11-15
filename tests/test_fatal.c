@@ -26,7 +26,7 @@ TEST(missing_data_names_file_folder_and_fix)
 {
     char text[1024];
     Fatal_FormatMissingData(
-        text, sizeof(text), "紅魔郷CM.DAT", "/games/th06", nullptr);
+        text, sizeof(text), "紅魔郷CM.DAT", "/games/th06", "oth06", nullptr);
     CHECK_EQ_STR(
         text,
         "Cannot find the game data file 紅魔郷CM.DAT.\n"
@@ -41,7 +41,8 @@ TEST(missing_data_names_the_log_file)
 {
     char text[1024];
     Fatal_FormatMissingData(
-        text, sizeof(text), "紅魔郷CM.DAT", "/games/th06", "/u/oth06.log");
+        text, sizeof(text), "紅魔郷CM.DAT", "/games/th06", "oth06",
+        "/u/oth06.log");
     CHECK_EQ_STR(
         text,
         "Cannot find the game data file 紅魔郷CM.DAT.\n"
@@ -52,6 +53,27 @@ TEST(missing_data_names_the_log_file)
         "it with --data <folder>.\n"
         "\n"
         "Log file: /u/oth06.log");
+}
+
+TEST(missing_data_in_translocated_bundle_names_the_fix)
+{
+    char text[1024];
+    Fatal_FormatMissingData(
+        text, sizeof(text), "紅魔郷IN.DAT",
+        "/private/var/folders/x/T/AppTranslocation/ABCD/d/", "oth06", nullptr);
+    CHECK_EQ_STR(
+        text,
+        "Cannot find the game data file 紅魔郷IN.DAT.\n"
+        "\n"
+        "Searched folder: /private/var/folders/x/T/AppTranslocation/ABCD/d/\n"
+        "\n"
+        "macOS started a temporary copy of the program, because the "
+        "program came from the internet. In Terminal, go to the folder "
+        "of the original game and type:\n"
+        "\n"
+        "xattr -dr com.apple.quarantine oth06.app\n"
+        "\n"
+        "Then start the program again.");
 }
 
 TEST(startup_error_names_message_and_log_file)
@@ -100,7 +122,7 @@ TEST(internal_error_names_the_log_file)
 TEST(text_is_truncated_to_size)
 {
     char text[8];
-    Fatal_FormatMissingData(text, sizeof(text), "a", "b", nullptr);
+    Fatal_FormatMissingData(text, sizeof(text), "a", "b", "c", nullptr);
     CHECK_EQ_STR(text, "Cannot ");
     Fatal_FormatStartupError(text, sizeof(text), "Failed", "/log");
     CHECK_EQ_STR(text, "Failed\n");
