@@ -1,7 +1,5 @@
 #pragma once
 
-#include "th07/replay/types.h"
-
 #include "core/base/result.h"
 #include "core/gfx.h"
 #include "core/math/vec.h"
@@ -47,11 +45,6 @@ RESULT Ecl_Load(void);
 void Ecl_Release(void);
 RESULT Gui_Register(void);
 void Gui_Remove(void);
-
-// Stand in for th07/replay's recording and playback of a stage.
-RESULT Replay_Register(REPLAY_MODE mode, const char *path);
-void Replay_EndStage(void);
-void Replay_Discard(void);
 
 // Stands in for the start of the Supernatural Border.
 void Player_StartBorder(void);
