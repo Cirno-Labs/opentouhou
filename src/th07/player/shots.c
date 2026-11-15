@@ -7,6 +7,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
 
@@ -30,7 +31,6 @@
 #define M_MARISA 1
 #define M_SHOT_TYPE_B 1
 #define M_EFFECT_SHOT_HIT ((EFFECT_TYPE)(EFFECT_PARTICLE + 1))
-#define M_COLOR_WHITE 0xffffffffu
 
 static void M_Box(
     const VEC3 pos, const VEC3 size, VEC3 *const min, VEC3 *const max)
@@ -393,7 +393,7 @@ static bool M_Hit(PLAYER_BULLET *const bullet, const VEC3 pos)
             M_Linger(bullet, Rng_F32(&g_Rng) * 1.5707964f - 2.3561945f);
         }
         if (bullet->timer.current % 6 == 0) {
-            Effect_Spawn(M_EFFECT_SHOT_HIT, pos, 1, M_COLOR_WHITE);
+            Effect_Spawn(M_EFFECT_SHOT_HIT, pos, 1, COLOR_WHITE);
         }
         return false;
     case SHOT_HIT_SPARK:
@@ -401,7 +401,7 @@ static bool M_Hit(PLAYER_BULLET *const bullet, const VEC3 pos)
         if (g_Player.shots.hit_counter % M_SPARK_HITS == 0) {
             VEC3 at = pos;
             at.x = bullet->pos.x;
-            Effect_Spawn(M_EFFECT_SHOT_HIT, at, 1, M_COLOR_WHITE);
+            Effect_Spawn(M_EFFECT_SHOT_HIT, at, 1, COLOR_WHITE);
         }
         return false;
     default:
@@ -631,7 +631,7 @@ int32_t Player_CalcDamage(
         if (bullet->state == PLAYER_BULLET_FLYING) {
             Anm_StartScript(
                 &bullet->vm, bullet->vm.script_index + M_SCRIPT_HIT_OFFSET);
-            Effect_Spawn(M_EFFECT_SHOT_HIT, bullet->pos, 1, M_COLOR_WHITE);
+            Effect_Spawn(M_EFFECT_SHOT_HIT, bullet->pos, 1, COLOR_WHITE);
             bullet->pos.z = 0.1f;
         }
         bullet->state = PLAYER_BULLET_HIT;
@@ -659,7 +659,7 @@ int32_t Player_CalcDamage(
             Effect_Spawn(
                 i < PLAYER_LASER_BOX_FIRST ? EFFECT_BOMB_SPARK
                                            : M_EFFECT_SHOT_HIT,
-                pos, 1, M_COLOR_WHITE);
+                pos, 1, COLOR_WHITE);
         }
         if (g_Player.bomb.running) {
             *hit_by_bomb = true;

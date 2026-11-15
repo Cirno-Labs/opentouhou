@@ -19,6 +19,7 @@
 #include "th07_ecl_builder.h"
 #include "th07_play_setup.h"
 
+#include "core/base/color.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -1671,7 +1672,7 @@ TEST(orbit_spawns_a_pale_orbit_effect)
     const EFFECT *const orbit = m_Enemy.orbits.effects[0];
     CHECK_EQ_INT(orbit->type, EFFECT_ORBIT);
     CHECK(orbit->axis.x == 1.0f && orbit->axis.z == 3.0f);
-    CHECK_EQ_INT(orbit->vm.color, 0xffffe0e0);
+    CHECK_EQ_INT(orbit->vm.color, COLOR_ARGB(0xff, 0xff, 0xe0, 0xe0));
     M_TearDown();
 }
 
@@ -1679,7 +1680,7 @@ TEST(effect_reads_its_color_through_the_variable_table)
 {
     M_SetUp("effect_117");
     EclBuilder_BeginSub(&m_Builder);
-    M_INSTR(0, 0, 4, 1, 10000, (uint32_t)0xff00ff00);
+    M_INSTR(0, 0, 4, 1, 10000, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     M_INSTR(0, 1, 117, 4, 0, 1, 10000);
     M_INSTR(0, 2, 117, 4, 0, 1, 10018);
     M_INSTR(0, 3, 118, 4, 0, 1, 10000, M_F(1.0f), M_F(2.0f), M_F(3.0f));
@@ -1690,11 +1691,11 @@ TEST(effect_reads_its_color_through_the_variable_table)
     M_Frames(1);
     CHECK_EQ_INT(before[1].type, EFFECT_EXPLOSION);
     CHECK(before[1].pos.x == 7.0f);
-    CHECK_EQ_INT(before[1].vm.color, 0xff00ff00);
+    CHECK_EQ_INT(before[1].vm.color, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     M_Frames(1);
     CHECK_EQ_INT(before[2].vm.color, 10018);
     M_Frames(1);
-    CHECK_EQ_INT(before[3].vm.color, 0xff00ff00);
+    CHECK_EQ_INT(before[3].vm.color, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     CHECK(before[3].velocity.y == 2.0f);
     M_TearDown();
 }

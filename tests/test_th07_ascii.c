@@ -13,6 +13,7 @@
 #include "th07_data.h"
 #include "th07_scene_stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 
 #include "stg/rng.h"
@@ -164,7 +165,7 @@ TEST(strings_advance_by_glyph_width_and_scale)
     g_AsciiText.scale_x = 2.0f;
     g_AsciiText.scale_y = 0.5f;
     g_AsciiText.glyph_width = 11;
-    AsciiText_SetColor(0xff102030u);
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
     AsciiText_AddString((VEC3) { 100.0f, 50.0f, 0.0f }, "AB C\nD");
     g_AsciiText.highlight_font = true;
     AsciiText_SetHighlight(true);
@@ -176,9 +177,9 @@ TEST(strings_advance_by_glyph_width_and_scale)
     CHECK(M_X(1) == 122.0f);
     CHECK(M_X(2) == 166.0f);
     CHECK(M_X(3) == 100.0f && M_Y(3) == 58.0f);
-    CHECK_EQ_INT(M_Color(0), 0xff102030u);
+    CHECK_EQ_INT(M_Color(0), COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
     CHECK_EQ_INT(M_Sprite(4), 'A' + 0x7c);
-    CHECK_EQ_INT(M_Color(4), 0xffffffffu);
+    CHECK_EQ_INT(M_Color(4), COLOR_WHITE);
     CHECK_EQ_INT(g_AsciiText.string_count, 0);
     M_Teardown();
 }
@@ -186,7 +187,8 @@ TEST(strings_advance_by_glyph_width_and_scale)
 TEST(popups_start_in_the_play_area_and_end_after_sixty_frames)
 {
     M_Setup("popup_lifetime");
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 105, 0xff00ff00u);
+    AsciiText_AddPopup(
+        (VEC3) { 10.0f, 20.0f, 0.0f }, 105, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     const ASCII_POPUP *const popup = &g_AsciiText.popups[0];
     CHECK(popup->pos.x == 42.0f && popup->pos.y == 36.0f);
     CHECK_EQ_INT(popup->digit_count, 3);
@@ -203,7 +205,7 @@ TEST(popups_start_in_the_play_area_and_end_after_sixty_frames)
 TEST(popups_move_and_count_at_the_game_speed)
 {
     M_Setup("popup_speed");
-    AsciiText_AddPopup2((VEC3) {}, -3, 0xffffffffu);
+    AsciiText_AddPopup2((VEC3) {}, -3, COLOR_WHITE);
     const ASCII_POPUP *const popup = &g_AsciiText.popups[0x2d0];
     CHECK_EQ_INT(popup->digits[0], 10);
     g_GameSpeed = 0.5f;
@@ -234,9 +236,12 @@ TEST(popup_slots_wrap)
 TEST(popups_fade_near_the_player_and_swap_digits_late)
 {
     M_Setup("popup_draw");
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 105, 0xff00ff00u);
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, -1, 0xff00ff00u);
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 7, 0xff00ff00u);
+    AsciiText_AddPopup(
+        (VEC3) { 10.0f, 20.0f, 0.0f }, 105, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
+    AsciiText_AddPopup(
+        (VEC3) { 10.0f, 20.0f, 0.0f }, -1, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
+    AsciiText_AddPopup(
+        (VEC3) { 10.0f, 20.0f, 0.0f }, 7, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     g_AsciiText.popups[1].timer.current = 56;
     g_AsciiText.popups[2].timer.current = 52;
     g_Player.pos = (VEC3) { 74.0f, 68.0f, 0.0f };
@@ -246,7 +251,7 @@ TEST(popups_fade_near_the_player_and_swap_digits_late)
     CHECK_EQ_INT(M_Sprite(1), 0);
     CHECK_EQ_INT(M_Sprite(2), 5);
     CHECK(M_X(0) == 26.0f && M_X(1) == 34.0f);
-    CHECK_EQ_INT(M_Color(0), 0x7a00ff00u);
+    CHECK_EQ_INT(M_Color(0), COLOR_ARGB(0x7a, 0x00, 0xff, 0x00));
     CHECK_EQ_INT(GfxRecorder_Quad(0)->state.depth_test, GFX_DEPTH_ALWAYS);
     CHECK_EQ_INT(M_Sprite(3), 10);
     CHECK_EQ_INT(M_Sprite(4), 7 + 0xb);
@@ -256,8 +261,8 @@ TEST(popups_fade_near_the_player_and_swap_digits_late)
 TEST(popup_alpha_bounds)
 {
     M_Setup("popup_alpha");
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 1, 0xffffffffu);
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 3, 0xffffffffu);
+    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 1, COLOR_WHITE);
+    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 3, COLOR_WHITE);
     g_AsciiText.popups[1].timer.current = 56;
     g_Player.pos = (VEC3) { 42.75f, 77.75f, 0.0f };
     M_Draw();
@@ -265,13 +270,13 @@ TEST(popup_alpha_bounds)
     CHECK_EQ_INT(M_Sprite(1), 3 + 0x15);
     M_Teardown();
     M_Setup("popup_alpha_near");
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 1, 0xffffffffu);
+    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 1, COLOR_WHITE);
     g_Player.pos = (VEC3) { 42.0f, 36.0f, 0.0f };
     M_Draw();
     CHECK_EQ_INT(M_Color(0) >> 24, 0x50);
     M_Teardown();
     M_Setup("popup_alpha_far");
-    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 1, 0xffffffffu);
+    AsciiText_AddPopup((VEC3) { 10.0f, 20.0f, 0.0f }, 1, COLOR_WHITE);
     M_Draw();
     CHECK_EQ_INT(M_Color(0) >> 24, 0xd0);
     M_Teardown();
@@ -290,9 +295,9 @@ TEST(boss_markers_fade_near_the_player_and_turn_blue)
     M_Draw();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 3);
     CHECK_EQ_INT(M_Sprite(0), 0x106);
-    CHECK_EQ_INT(M_Color(0), 0x40ffffffu);
-    CHECK_EQ_INT(M_Color(1), 0x80ffffffu);
-    CHECK_EQ_INT(M_Color(2), 0x804040ffu);
+    CHECK_EQ_INT(M_Color(0), COLOR_ARGB(0x40, 0xff, 0xff, 0xff));
+    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
+    CHECK_EQ_INT(M_Color(2), COLOR_ARGB(0x80, 0x40, 0x40, 0xff));
     M_Teardown();
 }
 
@@ -303,7 +308,7 @@ TEST(boss_markers_beyond_64_pixels_stay_dim)
     g_AsciiText.boss_markers[0].pos = (VEC3) { 392.0f, 470.0f, 0.0f };
     g_Player.pos.x = 296.0f;
     M_Draw();
-    CHECK_EQ_INT(M_Color(0), 0xb0ffffffu);
+    CHECK_EQ_INT(M_Color(0), COLOR_ARGB(0xb0, 0xff, 0xff, 0xff));
     M_Teardown();
 }
 
@@ -313,7 +318,7 @@ static void M_ShowSummary(void)
     Anm_StartScript(&g_AsciiText.summary_digit, 3);
     Anm_StartScript(&g_AsciiText.summary_bomb_icon, 5);
     g_AsciiText.summary.pos = (VEC3) { 100.0f, 200.0f, 0.0f };
-    g_AsciiText.summary.color = 0xc0ffffffu;
+    g_AsciiText.summary.color = COLOR_ARGB(0xc0, 0xff, 0xff, 0xff);
     g_GameManager.cherry.offset = 777;
     g_GameManager.cherry.value = 777;
     g_GameManager.cherry.max = 777;
@@ -332,13 +337,13 @@ TEST(summary_shows_cherry_and_its_maximum)
     CHECK_EQ_INT(M_Sprite(1), 0x85);
     CHECK(M_X(1) == 149.0f && M_Y(1) == 207.0f);
     CHECK(M_X(5) == 177.0f);
-    CHECK_EQ_INT(M_Color(1), 0xc0ffffffu);
+    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0xff, 0xff, 0xff));
     CHECK_EQ_INT(M_Sprite(6), 0x85);
     CHECK(M_X(6) == 193.0f);
-    CHECK_EQ_INT(M_Color(6), 0xc0e0d0f0u);
+    CHECK_EQ_INT(M_Color(6), COLOR_ARGB(0xc0, 0xe0, 0xd0, 0xf0));
     CHECK_EQ_INT(M_Sprite(13), 0x84);
     CHECK(M_X(13) == 177.0f && M_Y(13) == 198.0f);
-    CHECK_EQ_INT(M_Color(13), 0xc0c080b0u);
+    CHECK_EQ_INT(M_Color(13), COLOR_ARGB(0xc0, 0xc0, 0x80, 0xb0));
     M_Teardown();
 }
 
@@ -349,14 +354,14 @@ TEST(summary_colours_full_and_high_cherry)
     g_GameManager.cherry.value = 777 + 50000;
     g_GameManager.cherry.max = 777 + 60000;
     M_Draw();
-    CHECK_EQ_INT(M_Color(1), 0xc080ffffu);
+    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0x80, 0xff, 0xff));
     M_Teardown();
     M_Setup("summary_max");
     M_ShowSummary();
     g_GameManager.cherry.value = 777 + 60000;
     g_GameManager.cherry.max = 777 + 60000;
     M_Draw();
-    CHECK_EQ_INT(M_Color(1), 0xc080d0ffu);
+    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0x80, 0xd0, 0xff));
     M_Teardown();
 }
 
@@ -373,7 +378,7 @@ TEST(summary_pulses_during_the_border_with_the_bomb_icon)
     CHECK(M_X(3) == 149.0f && M_Y(3) == 194.0f);
     CHECK(M_X(4) == 159.0f);
     CHECK(GfxRecorder_Quad(3)->vertices[1].position.x == 161.0f);
-    CHECK_EQ_INT(M_Color(3), 0xc0ff8787u);
+    CHECK_EQ_INT(M_Color(3), COLOR_ARGB(0xc0, 0xff, 0x87, 0x87));
     CHECK_EQ_INT(M_Sprite(count - 1), 0x105);
     CHECK(M_X(count - 1) == 120.0f && M_Y(count - 1) == 204.0f);
     M_Teardown();

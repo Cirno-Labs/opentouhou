@@ -22,6 +22,7 @@
 #include "th07/stage.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/math/common.h"
@@ -459,7 +460,7 @@ TEST(the_first_update_makes_the_player_invulnerable)
     CHECK(g_Player.state.value == PLAYER_INVULNERABLE);
     CHECK_EQ_INT(g_Player.state.timer.current, 239);
     CHECK_EQ_INT(g_Player.state.bomb_window, 8);
-    CHECK(g_Player.vm.color == 0xffffffffu);
+    CHECK(g_Player.vm.color == COLOR_WHITE);
     M_TearDown();
 }
 
@@ -476,10 +477,10 @@ TEST(invulnerability_blinks_and_ends_after_240_frames)
     M_SetUp("invulnerable", 0);
     M_Frames(2);
     CHECK_EQ_INT(g_Player.state.timer.current, 238);
-    CHECK(g_Player.vm.color == 0xffffffffu);
+    CHECK(g_Player.vm.color == COLOR_WHITE);
     M_Frames(6);
     CHECK_EQ_INT(g_Player.state.timer.current, 232);
-    CHECK(g_Player.vm.color == 0xff404040u);
+    CHECK(g_Player.vm.color == COLOR_ARGB(0xff, 0x40, 0x40, 0x40));
     M_Frames(232);
     CHECK(g_Player.state.value == PLAYER_ALIVE);
     CHECK_EQ_INT(g_Player.state.timer.current, 0);
@@ -914,7 +915,7 @@ TEST(a_graze_in_the_border_adds_to_the_cherry)
     CHECK_EQ_INT(g_GameManager.cherry.value, 1000 + 80);
     CHECK_EQ_INT(g_GameManager.cherry.max, 1000 + 100000 + 80);
     CHECK_EQ_INT(m_Effects[0].count, 3);
-    CHECK(m_Effects[0].color == 0xffff8080u);
+    CHECK(m_Effects[0].color == COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     g_Player.move.focused = true;
     Player_CheckGraze(M_At(M_START_X, M_START_Y), m_Small);
     CHECK_EQ_INT(g_GameManager.cherry.value, 1000 + 110);
@@ -1304,14 +1305,14 @@ TEST(the_border_runs_the_plus_down_and_tints_the_stage)
     M_Frame();
     CHECK_EQ_INT(g_GameManager.cherry.plus, 1000 + 50000);
     CHECK_EQ_INT(g_Player.state.timer.current, 539);
-    CHECK(m_Tint == 0x807e7e7eu);
-    CHECK(g_Player.vm.color == 0xffffffffu);
+    CHECK(m_Tint == COLOR_ARGB(0x80, 0x7e, 0x7e, 0x7e));
+    CHECK(g_Player.vm.color == COLOR_WHITE);
     M_Frames(2);
-    CHECK(g_Player.vm.color == 0xffff0000u);
+    CHECK(g_Player.vm.color == COLOR_ARGB(0xff, 0xff, 0x00, 0x00));
     M_Frames(98);
     CHECK_EQ_INT(g_GameManager.cherry.plus, 1000 + 440 * 50000 / 540);
-    CHECK(m_Tint == 0x80303030u);
-    CHECK(g_Player.vm.color == 0xffffffffu);
+    CHECK(m_Tint == COLOR_ARGB(0x80, 0x30, 0x30, 0x30));
+    CHECK(g_Player.vm.color == COLOR_WHITE);
     M_Frames(420);
     CHECK_EQ_INT(g_Player.state.timer.current, 19);
     CHECK(m_Tint == (uint32_t)(0x80 - 19 * 80 / 30) * 0x10101u + 0x80000000u);
@@ -1375,7 +1376,7 @@ TEST(the_draw_blinks_and_tints_through_the_border)
     Player_StartBorder();
     Timer_Set(&g_Player.state.timer, 300);
     Chain_RunDraw(&g_Chain);
-    CHECK(m_Tint == 0x80303030u);
-    CHECK(g_Player.vm.color == 0xffff0000u);
+    CHECK(m_Tint == COLOR_ARGB(0x80, 0x30, 0x30, 0x30));
+    CHECK(g_Player.vm.color == COLOR_ARGB(0xff, 0xff, 0x00, 0x00));
     M_TearDown();
 }

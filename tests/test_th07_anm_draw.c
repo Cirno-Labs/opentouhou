@@ -3,6 +3,7 @@
 #include "gfx_recorder.h"
 #include "test.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
 
@@ -94,11 +95,11 @@ TEST(colors_modulate_and_color2_replaces_color)
     M_Setup(&vm);
     const ANM_DRAW draw = Anm_ScreenDraw();
     vm.pos = (VEC3) { 100.0f, 100.0f, 0.0f };
-    vm.color = 0x80402010u;
-    Anm_SetColorModulation(0x80ff4080u);
+    vm.color = COLOR_ARGB(0x80, 0x40, 0x20, 0x10);
+    Anm_SetColorModulation(COLOR_ARGB(0x80, 0xff, 0x40, 0x80));
     Anm_DrawNoRound(&vm, &draw);
     Anm_ResetColorModulation();
-    vm.color2 = 0x11223344u;
+    vm.color2 = COLOR_ARGB(0x11, 0x22, 0x33, 0x44);
     vm.use_color2 = true;
     Anm_DrawNoRound(&vm, &draw);
     Gfx_EndTick();

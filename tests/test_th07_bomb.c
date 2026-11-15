@@ -23,6 +23,7 @@
 #include "th07/stage.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/math/common.h"
@@ -545,7 +546,7 @@ TEST(the_bomb_aura_becomes_a_shrinking_spell_circle)
     CHECK(vm->scale_to.x == 0.0625f && vm->scale_to.y == 0.0625f);
     CHECK_EQ_INT(vm->int_vars[0], 200);
     CHECK(vm->rotation_speed.z == -0.5f);
-    CHECK_EQ_INT(vm->color, 0xffff4040u);
+    CHECK_EQ_INT(vm->color, COLOR_ARGB(0xff, 0xff, 0x40, 0x40));
     M_TearDown();
 }
 
@@ -1110,7 +1111,7 @@ TEST(the_knives_start_with_the_knife_effect)
     CHECK_EQ_INT(m_Effects[0].type, EFFECT_KNIFE_BOMB);
     CHECK(m_Effects[0].pos.x == M_START_X && m_Effects[0].pos.y == M_START_Y);
     CHECK_EQ_INT(m_Effects[0].count, 1);
-    CHECK_EQ_INT(m_Effects[0].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Effects[0].color, COLOR_WHITE);
     CHECK(g_Player.bomb.parts[0].effect == &m_SpareEffect);
     CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_POWER_0);
     M_TearDown();
@@ -1345,7 +1346,7 @@ TEST(a_doll_knife_bursts_on_its_first_hit)
     CHECK_EQ_INT(m_EffectCount, 1);
     CHECK_EQ_INT(m_Effects[0].type, EFFECT_EXPLOSION);
     CHECK(m_Effects[0].pos.x == pos.x && m_Effects[0].pos.y == pos.y);
-    CHECK_EQ_INT(m_Effects[0].color, 0xffff80ffu);
+    CHECK_EQ_INT(m_Effects[0].color, COLOR_ARGB(0xff, 0xff, 0x80, 0xff));
     M_Frame();
     CHECK_EQ_INT(m_EffectCount, 1);
     M_TearDown();
@@ -1537,9 +1538,14 @@ TEST(the_draw_tints_the_stage_over_the_first_and_last_60_frames)
         int32_t frame;
         uint32_t tint;
     } cases[] = {
-        { 0, 0x80808080u },   { 30, 0x80585858u },  { 59, 0x80323232u },
-        { 60, 0x80303030u },  { 99, 0x80303030u },  { 100, 0x80303030u },
-        { 159, 0x807f7f7fu }, { 160, 0x80808080u },
+        { 0, COLOR_ARGB(0x80, 0x80, 0x80, 0x80) },
+        { 30, COLOR_ARGB(0x80, 0x58, 0x58, 0x58) },
+        { 59, COLOR_ARGB(0x80, 0x32, 0x32, 0x32) },
+        { 60, COLOR_ARGB(0x80, 0x30, 0x30, 0x30) },
+        { 99, COLOR_ARGB(0x80, 0x30, 0x30, 0x30) },
+        { 100, COLOR_ARGB(0x80, 0x30, 0x30, 0x30) },
+        { 159, COLOR_ARGB(0x80, 0x7f, 0x7f, 0x7f) },
+        { 160, COLOR_ARGB(0x80, 0x80, 0x80, 0x80) },
     };
     M_SetUp("draw_tint", M_SAKUYA_A);
     M_StartBomb(false);
@@ -1725,7 +1731,7 @@ TEST(a_private_square_draws_its_trail_fading_out)
     M_SetUp("draw_private_square", M_SAKUYA_B);
     M_StartBomb(true);
     PLAYER_BOMB_PART *const square = &g_Player.bomb.parts[0];
-    square->vms[0].color = 0xc0102030u;
+    square->vms[0].color = COLOR_ARGB(0xc0, 0x10, 0x20, 0x30);
     for (int32_t k = 0; k < 32; k++) {
         square->trail[k] = (VEC3) { (float)k, 100.0f, 0.0f };
     }
@@ -1739,6 +1745,6 @@ TEST(a_private_square_draws_its_trail_fading_out)
     }
     const ANM_VM *const vm = &square->vms[0];
     CHECK(vm->pos.x == 32.0f + 31.0f && vm->pos.y == 16.0f + 100.0f);
-    CHECK_EQ_INT(vm->color, 0xc0102030u);
+    CHECK_EQ_INT(vm->color, COLOR_ARGB(0xc0, 0x10, 0x20, 0x30));
     M_TearDown();
 }

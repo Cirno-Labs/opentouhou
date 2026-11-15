@@ -3,6 +3,7 @@
 
 #include "test.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
 
@@ -403,9 +404,9 @@ TEST(color_and_alpha_interpolations_truncate)
     CHECK_EQ_INT(vm.color >> 24, 212);
     Anm_Step(&vm);
     Anm_Step(&vm);
-    CHECK_EQ_INT(vm.color, 0x7fff8000u);
+    CHECK_EQ_INT(vm.color, COLOR_ARGB(0x7f, 0xff, 0x80, 0x00));
     START(&vm, INSTR(15, 0, 0, I(0x100), I(2)), END);
-    CHECK_EQ_INT(vm.color, 0x7fffffffu);
+    CHECK_EQ_INT(vm.color, COLOR_ARGB(0x7f, 0xff, 0xff, 0xff));
     Anm_Shutdown();
 }
 

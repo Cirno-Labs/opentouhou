@@ -10,6 +10,7 @@
 #include "th07/stubs.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -41,8 +42,7 @@
 #define M_CLEAR_BONUS_STEP 30
 #define M_ORBIT_GROWTH 0.3f
 #define M_ORBIT_TURN 0.031415928f
-#define M_WHITE 0xffffffffu
-#define M_YELLOW 0xffffff00u
+#define M_YELLOW COLOR_ARGB(0xff, 0xff, 0xff, 0x00)
 #define M_FLASH_COLOR 0xff80c0u
 #define M_DROP_COUNT 0x20
 #define M_MARKER_OFFSET 32.0f
@@ -579,11 +579,11 @@ static void M_DropItem(const ENEMY *const enemy, const bool by_bomb)
     const EFFECT_TYPE particle =
         (EFFECT_TYPE)(EFFECT_PARTICLE + enemy->death.particle_color);
     if (enemy->death.item >= 0) {
-        Effect_Spawn(particle, enemy->move.pos, 3, M_WHITE);
+        Effect_Spawn(particle, enemy->move.pos, 3, COLOR_WHITE);
         Item_Spawn(enemy->move.pos, (ITEM_TYPE)enemy->death.item, state);
     } else if (enemy->death.item == -1) {
         if (g_Enemies.drops.counter % 3 == 0) {
-            Effect_Spawn(particle, enemy->move.pos, 6, M_WHITE);
+            Effect_Spawn(particle, enemy->move.pos, 6, COLOR_WHITE);
             Item_Spawn(
                 enemy->move.pos, (ITEM_TYPE)m_ItemDrops[g_Enemies.drops.index],
                 state);
@@ -598,7 +598,8 @@ static void M_DropItem(const ENEMY *const enemy, const bool by_bomb)
 
 static void M_SpawnDeathEffect(const ENEMY *const enemy)
 {
-    Effect_Spawn((EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1, M_WHITE);
+    Effect_Spawn(
+        (EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1, COLOR_WHITE);
 }
 
 static void M_Die(ENEMY *const enemy, const int32_t slot, const bool by_bomb)
@@ -653,7 +654,7 @@ static void M_Die(ENEMY *const enemy, const int32_t slot, const bool by_bomb)
         M_SpawnDeathEffect(enemy);
         Effect_Spawn(
             (EFFECT_TYPE)(EFFECT_PARTICLE + enemy->death.particle_color),
-            enemy->move.pos, 4, M_WHITE);
+            enemy->move.pos, 4, COLOR_WHITE);
     }
     if (enemy->script.death_sub >= 0) {
         M_ClearCallbacks(enemy);
@@ -1281,7 +1282,8 @@ static int32_t M_PopBonus(
 {
     const int32_t popped = *bonus;
     Item_Spawn(pos, ITEM_STAR, ITEM_HOMING);
-    AsciiText_AddPopup(pos, popped, popped >= max_bonus ? M_YELLOW : M_WHITE);
+    AsciiText_AddPopup(
+        pos, popped, popped >= max_bonus ? M_YELLOW : COLOR_WHITE);
     *bonus += M_CLEAR_BONUS_STEP;
     if (*bonus > max_bonus) {
         *bonus = max_bonus;

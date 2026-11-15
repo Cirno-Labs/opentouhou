@@ -14,6 +14,7 @@
 #include "th07/stubs.h"
 
 #include "shell/game.h"
+#include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/utils.h"
 
@@ -1638,7 +1639,7 @@ static void M_DrawSplash(const M_MENU *const menu)
 
 static void M_SetRowColor(const bool chosen, const uint32_t other)
 {
-    AsciiText_SetColor(chosen ? 0xffffffff : other);
+    AsciiText_SetColor(chosen ? COLOR_WHITE : other);
 }
 
 static void M_DrawReplays(const M_MENU *const menu)
@@ -1650,7 +1651,8 @@ static void M_DrawReplays(const M_MENU *const menu)
         const SAVED_REPLAY *const replay = &menu->replays[j];
         text++;
         AsciiText_SetHighlight(j == menu->replay_cursor);
-        M_SetRowColor(j == menu->replay_cursor, 0xff808080);
+        M_SetRowColor(
+            j == menu->replay_cursor, COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
         AsciiText_AddFormat(
             text->pos, "%s %8s  %6s %7s  %8s", replay->label,
             replay->summary.name, replay->summary.date,
@@ -1661,7 +1663,7 @@ static void M_DrawReplays(const M_MENU *const menu)
         || menu->sub_state == M_SUB_REPLAY_PLAYBACK) {
         const REPLAY_SUMMARY *const summary =
             &menu->replays[menu->replay_cursor].summary;
-        AsciiText_SetColor(0xffffffff);
+        AsciiText_SetColor(COLOR_WHITE);
         AsciiText_SetHighlight(false);
         AsciiText_AddFormat(
             menu->sprites[0x85].pos, "       %2.3f%%",
@@ -1671,9 +1673,11 @@ static void M_DrawReplays(const M_MENU *const menu)
             const bool chosen = i == menu->replay_stage;
             if (menu->sub_state != M_SUB_REPLAY_PLAYBACK) {
                 AsciiText_SetHighlight(chosen);
-                M_SetRowColor(chosen, 0xff808080);
+                M_SetRowColor(chosen, COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
             } else {
-                AsciiText_SetColor(chosen ? 0x60ffffff : 0x60808080);
+                AsciiText_SetColor(
+                    chosen ? COLOR_ARGB(0x60, 0xff, 0xff, 0xff)
+                           : COLOR_ARGB(0x60, 0x80, 0x80, 0x80));
             }
             const char *const name = i < 6 || summary->difficulty <= 4
                 ? m_StageNames[i]
@@ -1687,14 +1691,14 @@ static void M_DrawReplays(const M_MENU *const menu)
             }
         }
     }
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
     AsciiText_SetHighlight(false);
 }
 
 static void M_DrawPracticeScores(const M_MENU *const menu)
 {
     const GAME_MANAGER *const gm = &g_GameManager;
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
     AsciiText_SetHighlight(false);
     VEC3 pos = menu->sprites[0x83].pos;
     AsciiText_AddString(pos, "Stage    HI-Score");
@@ -1705,11 +1709,11 @@ static void M_DrawPracticeScores(const M_MENU *const menu)
     for (int32_t i = 0; i < 6; i++) {
         AsciiText_SetHighlight(i == menu->cursor);
         if (i == menu->cursor) {
-            AsciiText_SetColor(0xffffffff);
+            AsciiText_SetColor(COLOR_WHITE);
         } else if (i < cleared) {
-            AsciiText_SetColor(0xffa0a0a0);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0xa0, 0xa0, 0xa0));
         } else {
-            AsciiText_SetColor(0xff404040);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0x40, 0x40, 0x40));
         }
         AsciiText_AddFormat(
             pos, "%s %9d0 (%3d)", m_PracticeStageNames[i],
@@ -1717,7 +1721,7 @@ static void M_DrawPracticeScores(const M_MENU *const menu)
             (int32_t)gm->records.practice[shot][i][difficulty].play_count);
         pos.y += 16.0f;
     }
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
     AsciiText_SetHighlight(false);
 }
 

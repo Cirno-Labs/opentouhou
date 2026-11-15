@@ -11,6 +11,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
 
@@ -56,9 +57,8 @@
 #define M_AURA_SCALE 0.0625f
 #define M_AURA_COLOR 0xff4040u
 #define M_EFFECT_SPARKS ((EFFECT_TYPE)(EFFECT_PARTICLE + 2))
-#define M_COLOR_WHITE 0xffffffffu
-#define M_COLOR_SHOCKWAVE 0xff4040ffu
-#define M_COLOR_KNIFE_HIT 0xffff80ffu
+#define M_COLOR_SHOCKWAVE COLOR_ARGB(0xff, 0x40, 0x40, 0xff)
+#define M_COLOR_KNIFE_HIT COLOR_ARGB(0xff, 0xff, 0x80, 0xff)
 
 typedef struct {
     int32_t sprite; // of the portrait
@@ -181,8 +181,8 @@ static void M_StartAura(void)
     if (player->effects.bomb_aura != nullptr) {
         player->effects.bomb_aura->active = false;
     }
-    EFFECT *const effect = Effect_SpawnReserved(
-        EFFECT_SPELL_CIRCLE, player->pos, 0, M_COLOR_WHITE);
+    EFFECT *const effect =
+        Effect_SpawnReserved(EFFECT_SPELL_CIRCLE, player->pos, 0, COLOR_WHITE);
     ANM_VM *const vm = &effect->vm;
     Timer_Set(&vm->interp_time[ANM_INTERP_SCALE], 0);
     vm->interp_length[ANM_INTERP_SCALE] = player->state.timer.current;
@@ -216,7 +216,7 @@ static void M_BurstOrb(
 {
     PLAYER_BOMB_PART *const orb = &g_Player.bomb.parts[i];
     PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[i];
-    Effect_Spawn(M_EFFECT_SPARKS, orb->pos, 8, M_COLOR_WHITE);
+    Effect_Spawn(M_EFFECT_SPARKS, orb->pos, 8, COLOR_WHITE);
     Effect_Spawn(EFFECT_SHOCKWAVE, orb->pos, 1, M_COLOR_SHOCKWAVE);
     orb->state = M_PART_BURST;
     for (int32_t k = 0; k < M_ORB_SPRITES; k++) {
@@ -763,7 +763,7 @@ static void M_MarisaBFocused(void)
 static void M_SpawnKnifeEffect(void)
 {
     g_Player.bomb.parts[0].effect =
-        Effect_Spawn(EFFECT_KNIFE_BOMB, g_Player.pos, 1, M_COLOR_WHITE);
+        Effect_Spawn(EFFECT_KNIFE_BOMB, g_Player.pos, 1, COLOR_WHITE);
     Sound_Queue(SOUND_POWER_0);
 }
 
