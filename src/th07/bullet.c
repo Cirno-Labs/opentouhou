@@ -34,6 +34,11 @@
 #define M_FIRST_BONUS 2000
 #define M_BONUS_STEP 20
 #define M_LASER_ITEM_SPACING 32.0f
+#define M_FIRST_LASER_SCRIPT 0x20a
+#define M_LASER_ORIGIN_SPRITE 0x292
+#define M_LASER_GROW_FRAMES 30
+#define M_LASER_GRAZE_INTERVAL 12
+#define M_LASER_MAX_START 640.0f
 
 typedef enum {
     M_SCRIPT_FLYING = 0,
@@ -62,6 +67,7 @@ static const int32_t m_ColorOffsets32[] = {
 
 BULLET_MANAGER g_Bullets;
 
+static LASER m_SpareLaser;
 static CHAIN_ELEM m_CalcElem;
 static CHAIN_ELEM m_DrawElem;
 
@@ -594,6 +600,121 @@ static bool M_UpdateBullet(BULLET *const bullet)
     }
 }
 
+// Tests laser against the player: the box of size centred on pos, in the
+// frame of the laser.
+static void M_HitLaser(
+    const LASER *const laser, const VEC3 pos, const VEC3 size)
+{
+    Player_CheckLaserHit(
+        pos, size, laser->pos, laser->angle,
+        laser->timer.current % M_LASER_GRAZE_INTERVAL == 0);
+}
+
+// Sets the alpha of the beam from the timer over start_frames. The ending
+// uses start_frames too, so the beam fades in again as it ends.
+static void M_FadeLaser(LASER *const laser)
+{
+    int32_t alpha = X87_Ftol(
+        Timer_AsFloat(&laser->timer) * 255.0f / (float)laser->start_frames);
+    if (alpha > 0xff) {
+        alpha = 0xff;
+    }
+    laser->beam.color = (uint32_t)alpha << 24;
+}
+
+// Runs laser for this frame. Returns false when it ended, which skips the
+// rest of its frame.
+static bool M_UpdateLaser(LASER *const laser)
+{
+    laser->end_offset = g_GameSpeed * laser->speed + laser->end_offset;
+    if (laser->end_offset - laser->start_offset > laser->max_length) {
+        laser->start_offset = laser->end_offset - laser->max_length;
+    }
+    if (laser->start_offset < 0.0f) {
+        laser->start_offset = 0.0f;
+    }
+    VEC3 size = {
+        .x = laser->end_offset - laser->start_offset,
+        .y = laser->width / 2.0f,
+    };
+    const VEC3 center = {
+        .x = (laser->end_offset - laser->start_offset) / 2.0f
+            + laser->start_offset + laser->pos.x,
+        .y = laser->pos.y,
+    };
+    const ANM_SPRITE *const sprite = laser->beam.sprite_data;
+    if (sprite != nullptr) {
+        laser->beam.scale_x = laser->width / sprite->width;
+        laser->beam.scale_y =
+            (laser->end_offset - laser->start_offset) / sprite->height;
+    }
+    laser->beam.rotation.z = Angle_AddNormalize(laser->angle, MATH_HALF_PI);
+    laser->beam.rotation_changed = true;
+    switch (laser->state) {
+    case LASER_STARTING:
+        if ((laser->flags & LASER_FLAG_FADE) != 0) {
+            M_FadeLaser(laser);
+        } else {
+            const int32_t grow_frames =
+                laser->start_frames > M_LASER_GROW_FRAMES ? M_LASER_GROW_FRAMES
+                                                          : laser->start_frames;
+            const float width =
+                laser->start_frames - grow_frames < laser->timer.current
+                ? Timer_AsFloat(&laser->timer) * laser->width
+                    / (float)laser->start_frames
+                : 1.2f;
+            laser->shown_width = width;
+            laser->beam.scale_x = width / 16.0f;
+            size.x = width / 2.0f;
+        }
+        if (laser->timer.current >= laser->hit_start_frame) {
+            M_HitLaser(laser, center, size);
+        }
+        if (laser->timer.current < laser->start_frames) {
+            break;
+        }
+        Timer_Set(&laser->timer, 0);
+        laser->state = LASER_FIRING;
+        laser->shown_width = laser->width;
+        // Tests the player a second time in the frame that starts firing.
+        [[fallthrough]];
+    case LASER_FIRING:
+        M_HitLaser(laser, center, size);
+        if (laser->timer.current < laser->duration_frames) {
+            break;
+        }
+        Timer_Set(&laser->timer, 0);
+        laser->state = LASER_ENDING;
+        if (laser->end_frames == 0) {
+            laser->active = false;
+            return false;
+        }
+        [[fallthrough]];
+    case LASER_ENDING:
+        if ((laser->flags & LASER_FLAG_FADE) != 0) {
+            M_FadeLaser(laser);
+        } else if (laser->end_frames > 0) {
+            const float width = laser->width
+                - Timer_AsFloat(&laser->timer) * laser->width
+                    / (float)laser->end_frames;
+            laser->beam.scale_x = width / 16.0f;
+            size.x = width / 2.0f;
+        }
+        if (laser->timer.current < laser->end_hit_frames) {
+            M_HitLaser(laser, center, size);
+        }
+        if (laser->timer.current < laser->end_frames) {
+            break;
+        }
+        laser->active = false;
+        return false;
+    }
+    if (laser->start_offset >= M_LASER_MAX_START) {
+        laser->active = false;
+    }
+    return true;
+}
+
 static CHAIN_STATUS M_Update(void *const arg)
 {
     Item_Update();
@@ -618,6 +739,14 @@ static CHAIN_STATUS M_Update(void *const arg)
         BULLET **const list = &g_Bullets.draw_lists[bullet->sprites.size_class];
         bullet->next_drawn = *list;
         *list = bullet;
+    }
+    for (int32_t i = 0; i < LASER_COUNT; i++) {
+        LASER *const laser = &g_Bullets.lasers[i];
+        if (!laser->active || !M_UpdateLaser(laser)) {
+            continue;
+        }
+        Timer_TickAt(&laser->timer, g_GameSpeed);
+        Anm_Step(&laser->beam);
     }
     if (g_Bullets.clear_frames != 0) {
         g_Bullets.clear_frames--;
@@ -812,6 +941,53 @@ void Bullet_FirePattern(const BULLET_SHOOTER *const shooter)
     if ((shooter->flags & BULLET_FLAG_SOUND) != 0) {
         Sound_Queue(shooter->sound);
     }
+}
+
+LASER *Bullet_SpawnLaser(const BULLET_SHOOTER *const shooter)
+{
+    if (g_Bullets.clear_frames != 0
+        && (shooter->flags & LASER_FLAG_RESIST_CLEAR) == 0) {
+        return &g_Bullets.lasers[0];
+    }
+    ASSERT(
+        shooter->color >= 0
+        && shooter->color < (int32_t)ARRAY_SIZE(m_ColorOffsets16));
+    for (int32_t i = 0; i < LASER_COUNT; i++) {
+        LASER *const laser = &g_Bullets.lasers[i];
+        if (laser->active) {
+            continue;
+        }
+        Anm_StartScript(&laser->beam, shooter->type + M_FIRST_LASER_SCRIPT);
+        Anm_SetSprite(&laser->beam, laser->beam.sprite + shooter->color);
+        Anm_InitVm(&laser->origin);
+        Anm_SetSprite(
+            &laser->origin,
+            M_LASER_ORIGIN_SPRITE + m_ColorOffsets16[shooter->color]);
+        laser->origin.blend_add = true;
+        laser->pos = shooter->pos;
+        laser->active = true;
+        laser->angle = shooter->angle1;
+        if (shooter->aim == BULLET_AIM_FAN_AT_PLAYER) {
+            laser->angle += Player_AngleFrom(shooter->pos);
+        }
+        laser->flags = (uint16_t)shooter->flags;
+        Timer_Set(&laser->timer, 0);
+        laser->start_offset = shooter->laser.start_offset;
+        laser->end_offset = shooter->laser.end_offset;
+        laser->max_length = shooter->laser.max_length;
+        laser->width = shooter->laser.width;
+        laser->speed = shooter->speed1;
+        laser->start_frames = shooter->laser.start_frames;
+        laser->duration_frames = shooter->laser.firing_frames;
+        laser->end_frames = shooter->laser.end_frames;
+        laser->hit_start_frame = shooter->laser.hit_start_frame;
+        laser->end_hit_frames = shooter->laser.end_hit_frames;
+        // Keeps shown_width from the slot's last laser.
+        laser->hide_origin_while_starting = false;
+        laser->state = laser->start_frames == 0 ? LASER_FIRING : LASER_STARTING;
+        return laser;
+    }
+    return &m_SpareLaser;
 }
 
 void Bullet_ClearAll(void)
