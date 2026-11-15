@@ -32,6 +32,16 @@ IMAGE Image_Create(int32_t width, int32_t height, const ALLOCATOR *allocator);
 
 void Image_Free(IMAGE *image);
 
+// Returns a copy of the width x height rectangle of image at x, y. A
+// rectangle that does not lie inside image is a failure.
+RESULT Image_Crop(
+    const IMAGE *image, int32_t x, int32_t y, int32_t width, int32_t height,
+    const ALLOCATOR *allocator, IMAGE *out);
+
+// Copies source into image with its top-left pixel at x, y. A source that
+// does not fit inside image is a failure, and image is left unchanged.
+RESULT Image_Paste(IMAGE *image, int32_t x, int32_t y, const IMAGE *source);
+
 // Sets alpha to 0 on every pixel whose colour is rgb (0xRRGGBB).
 void Image_ColorKey(IMAGE *image, uint32_t rgb);
 
