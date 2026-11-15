@@ -172,6 +172,10 @@ void GameManager_AddBombsUsed(int32_t bombs);
 // follows each direct change to lives, bombs or power.
 void GameManager_DrawChecksumKeys(void);
 
+// Draws the eight random numbers of the original's life checksum keys,
+// which a killing hit makes before the death.
+void GameManager_DrawLifeChecksumKeys(void);
+
 // Adds amount hundredths to the rank, up to rank.max.
 void GameManager_AddRank(int32_t amount);
 
