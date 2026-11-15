@@ -190,6 +190,11 @@ SCENE Scene_Get(void)
     return m_Current;
 }
 
+SCENE Scene_GetPrevious(void)
+{
+    return m_Previous;
+}
+
 SCENE Scene_GetRequested(void)
 {
     return m_Requested;

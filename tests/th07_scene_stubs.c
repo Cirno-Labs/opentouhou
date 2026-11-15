@@ -20,6 +20,7 @@ RESULT TitleScene_SetUp(const int32_t mode)
 {
     g_SceneStubCalls.title_set_up++;
     g_SceneStubCalls.title_set_up_mode = mode;
+    g_SceneStubCalls.title_set_up_previous = Scene_GetPrevious();
     return OK;
 }
 
