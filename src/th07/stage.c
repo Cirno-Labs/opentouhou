@@ -6,6 +6,7 @@
 #include "th07/game_manager.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
@@ -856,7 +857,9 @@ static CHAIN_STATUS M_Draw(void *const arg)
 {
     Anm_SetLastCamera(-1);
     if (g_Stage.clear_once) {
-        M_Clear((GFX_RECT) { 32, 16, 384, 448 }, 0xff000000u);
+        M_Clear(
+            (GFX_RECT) { 32, 16, 384, 448 },
+            COLOR_ARGB(0xff, 0x00, 0x00, 0x00));
         g_Stage.clear_once = false;
     }
     const uint32_t tint = g_Stage.tint.color;
@@ -864,7 +867,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
     if (modulate) {
         Anm_SetColorModulation(tint);
     }
-    g_Stage.tint.color = 0x00808080u;
+    g_Stage.tint.color = COLOR_ARGB(0x00, 0x80, 0x80, 0x80);
     if (M_LayersShown()) {
         const ANM_DRAW draw = M_PlayAreaDraw();
         for (int32_t i = 0; i < 2; i++) {
@@ -942,7 +945,7 @@ static RESULT M_Added(void *const arg)
     g_Stage.fog.current = (STAGE_FOG) {
         .near = 200.0f,
         .far = 500.0f,
-        .color = 0xff000000u,
+        .color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00),
     };
     STAGE_CAMERA *const camera = &g_Stage.camera.current;
     camera->eye = (VEC3) { 0.0f, 0.0f, 1000.0f };

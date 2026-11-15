@@ -16,6 +16,7 @@
 #include "th07_anm_builder.h"
 #include "th07_data.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
@@ -157,7 +158,7 @@ void Item_Update(void)
 // Draws an untextured quad, which marks where the items are drawn.
 void Item_Draw(void)
 {
-    Anm_DrawRect((GFX_RECT) { 0, 0, 1, 1 }, 0xff00ff00u);
+    Anm_DrawRect((GFX_RECT) { 0, 0, 1, 1 }, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
 }
 
 void AsciiText_AddPopup(
@@ -1734,14 +1735,14 @@ TEST(a_bullet_draws_the_sprite_of_its_state_in_white_and_turned)
     BULLET *const bullet = M_Fire(&shooter);
     M_Frame();
     ANM_VM *const vm = &bullet->sprites.spawning[1];
-    vm->color = 0x80123456u;
+    vm->color = COLOR_ARGB(0x80, 0x12, 0x34, 0x56);
     vm->auto_rotate = 1;
     vm->rotation_changed = false;
     M_DrawFrame();
     CHECK(vm->pos.x == 32.0f + bullet->pos.x);
     CHECK(vm->pos.y == 16.0f + bullet->pos.y);
     CHECK(vm->pos.z == 0.05f);
-    CHECK(vm->color == 0x80ffffffu);
+    CHECK(vm->color == COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     CHECK(vm->rotation.z == Angle_AddNormalize(bullet->angle, MATH_HALF_PI));
     CHECK(vm->rotation_changed);
     CHECK(bullet->sprites.flying.pos.z != 0.05f);
@@ -1761,7 +1762,7 @@ TEST(a_laser_draws_its_beam_and_origin_before_the_items_and_bullets)
     LASER *const laser = Bullet_SpawnLaser(&shooter);
     M_FireStill();
     M_Frame();
-    laser->beam.color = 0x40123456u;
+    laser->beam.color = COLOR_ARGB(0x40, 0x12, 0x34, 0x56);
     M_DrawFrame();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 4);
     CHECK(!M_IsItemQuad(0) && !M_IsItemQuad(1));
@@ -1779,7 +1780,7 @@ TEST(a_laser_draws_its_beam_and_origin_before_the_items_and_bullets)
     CHECK(origin->pos.x == 32.0f + (c * laser->start_offset + 100.0f));
     CHECK(origin->pos.y == 16.0f + (s * laser->start_offset + 100.0f));
     CHECK(origin->pos.z == 0.05f);
-    CHECK(origin->color == 0xff123456u);
+    CHECK(origin->color == COLOR_ARGB(0xff, 0x12, 0x34, 0x56));
     const float scale = 8.0f / 10.0f * ((16.0f - laser->start_offset) / 16.0f);
     CHECK(origin->scale_x == scale && origin->scale_y == scale);
     GfxRecorder_Stop();
@@ -1949,7 +1950,9 @@ TEST(clear_all_with_bonus_scores_every_bullet_up_to_the_cap)
     CHECK_EQ_INT(m_PopupCount, 4);
     for (int32_t i = 0; i < 4; i++) {
         CHECK_EQ_INT(m_Popups[i].value, scores[i]);
-        CHECK(m_Popups[i].color == (i == 3 ? 0xffffff00u : 0xffffffffu));
+        CHECK(
+            m_Popups[i].color
+            == (i == 3 ? COLOR_ARGB(0xff, 0xff, 0xff, 0x00) : COLOR_WHITE));
         CHECK(g_Bullets.bullets[i].state == BULLET_FADING);
     }
     CHECK_EQ_INT(m_ItemCount, 4);
@@ -1964,7 +1967,7 @@ TEST(clear_all_with_bonus_gives_the_first_bullet_2000_above_the_cap)
     M_FireStill();
     M_FireStill();
     CHECK_EQ_INT(Bullet_ClearAllWithBonus(1000, false), 3000);
-    CHECK(m_Popups[0].color == 0xffffff00u);
+    CHECK(m_Popups[0].color == COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     CHECK_EQ_INT(Bullet_ClearAllWithBonus(1000, false), 3000);
     M_Teardown();
 }

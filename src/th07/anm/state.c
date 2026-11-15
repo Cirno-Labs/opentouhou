@@ -5,6 +5,7 @@
 #include "th07/game.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/common.h"
@@ -500,7 +501,7 @@ void Anm_InitVm(ANM_VM *const vm)
     vm->matrix = Mat4_Identity();
     vm->draw_matrix = (MAT4) {};
     vm->size_matrix = (MAT4) {};
-    vm->color = 0xffffffffu;
+    vm->color = COLOR_WHITE;
     vm->color2 = 0;
     vm->shown = true;
     vm->visible = true;

@@ -2,6 +2,7 @@
 
 #include "th07/game_manager.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
@@ -57,7 +58,7 @@ void AsciiText_Initialize(void)
     text->highlight = false;
     text->next_popup = 0;
     text->next_popup2 = 0;
-    text->color = 0xffffffffu;
+    text->color = COLOR_WHITE;
     text->scale_x = 1.0f;
     text->scale_y = 1.0f;
     // Retail anchors digit here, then InitVm clears the anchor again.

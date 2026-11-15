@@ -8,12 +8,13 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/math/x87.h"
 
-#define M_HIGHLIGHT 0xffff8080u
-#define M_DIM 0x80808080u
-#define M_PAUSE_HIGHLIGHT 0xffffffffu
-#define M_PAUSE_DIM 0x80303030u
+#define M_HIGHLIGHT COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
+#define M_DIM COLOR_ARGB(0x80, 0x80, 0x80, 0x80)
+#define M_PAUSE_HIGHLIGHT COLOR_WHITE
+#define M_PAUSE_DIM COLOR_ARGB(0x80, 0x30, 0x30, 0x30)
 
 static const VEC3 m_Raised = { -4.0f, -4.0f, 0.0f };
 

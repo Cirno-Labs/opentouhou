@@ -15,6 +15,7 @@
 #include "th07_data.h"
 #include "th07_scene_stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/math/common.h"
@@ -179,11 +180,11 @@ TEST(registering_loads_the_stage_effects)
 TEST(spawn_returns_the_last_effect_started)
 {
     M_Setup("spawn", 9);
-    EFFECT *const effect =
-        Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 3, 0x80ffffffu);
+    EFFECT *const effect = Effect_Spawn(
+        EFFECT_EXPLOSION, m_Origin, 3, COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     CHECK(effect->active);
     CHECK(effect->pos.x == 100.0f && effect->pos.y == 200.0f);
-    CHECK(effect->vm.color == 0x80ffffffu);
+    CHECK(effect->vm.color == COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     CHECK(effect->vm.script == Anm_GetScript(0x2ab));
     CHECK(effect->vm.z_write_off);
     CHECK_EQ_INT(effect->draw_list, 0);
@@ -304,7 +305,7 @@ TEST(a_fast_drift_slows_over_twenty_frames)
 TEST(an_orbit_draws_projected_and_fades_out_over_sixteen_frames)
 {
     M_Setup("orbit", 9);
-    EFFECT *const effect = Effect_Spawn(EFFECT_ORBIT, m_Origin, 1, 0xffffffffu);
+    EFFECT *const effect = Effect_Spawn(EFFECT_ORBIT, m_Origin, 1, COLOR_WHITE);
     CHECK_EQ_INT(effect->draw_list, 2);
     effect->origin = m_Origin;
     effect->axis = (VEC3) { 0.0f, 0.0f, 1.0f };
@@ -401,9 +402,10 @@ TEST(play_area_lists_draw_offset_with_additive_ones_last)
     M_Setup("lists", 9);
     Anm_SetScriptEntry(0x2ab, &m_Add);
     g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
-    EFFECT *const add = Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, 0xffffffff);
+    EFFECT *const add =
+        Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, COLOR_WHITE);
     EFFECT *const normal = Effect_Spawn(
-        EFFECT_SHOCKWAVE, (VEC3) { 300.0f, 200.0f, 0.0f }, 1, 0xffffffff);
+        EFFECT_SHOCKWAVE, (VEC3) { 300.0f, 200.0f, 0.0f }, 1, COLOR_WHITE);
     Chain_RunCalc(&g_Chain);
     M_Tick();
     CHECK(add->vm.pos.x == 132.0f && add->vm.pos.y == 216.0f);
@@ -581,7 +583,7 @@ TEST(petals_draw_by_the_effects_quality)
 {
     M_Setup("petal_quality", 9);
     M_SetCamera();
-    Effect_Spawn(EFFECT_PETAL_DRIFT, m_Origin, 1, 0xffffffffu);
+    Effect_Spawn(EFFECT_PETAL_DRIFT, m_Origin, 1, COLOR_WHITE);
     Chain_RunCalc(&g_Chain);
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
@@ -599,7 +601,7 @@ TEST(the_first_petal_type_draws_transparent_and_keeps_its_color)
     M_Setup("petal_scale", 9);
     M_SetCamera();
     g_GameManager.cherry.value = 100;
-    EFFECT *const effect = Effect_Spawn(EFFECT_PETAL, m_Origin, 1, 0xffffffffu);
+    EFFECT *const effect = Effect_Spawn(EFFECT_PETAL, m_Origin, 1, COLOR_WHITE);
     effect->true_pos = (VEC3) { 0.0f, 0.0f, -8000.0f };
     effect->step = (VEC3) {};
     effect->acceleration = (VEC3) {};
@@ -607,7 +609,7 @@ TEST(the_first_petal_type_draws_transparent_and_keeps_its_color)
     CHECK(effect->active);
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
-    CHECK(effect->vm.color == 0xffffffffu);
+    CHECK(effect->vm.color == COLOR_WHITE);
     M_Teardown();
 }
 
@@ -617,12 +619,13 @@ TEST(the_first_petal_type_draws_in_the_color_scale)
     M_SetCamera();
     g_GameManager.cherry.value = 100;
     Effect_SetColorScale(0.5f, 2.0f, 3.0f, 0.5f);
-    EFFECT *const effect = Effect_Spawn(EFFECT_PETAL, m_Origin, 1, 0xff804020u);
+    EFFECT *const effect = Effect_Spawn(
+        EFFECT_PETAL, m_Origin, 1, COLOR_ARGB(0xff, 0x80, 0x40, 0x20));
     effect->true_pos = (VEC3) { 0.0f, 0.0f, -8000.0f };
     effect->step = (VEC3) {};
     effect->acceleration = (VEC3) {};
     Chain_RunCalc(&g_Chain);
-    effect->vm.color = 0xff804020u;
+    effect->vm.color = COLOR_ARGB(0xff, 0x80, 0x40, 0x20);
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     const GFX_COLOR color = GfxRecorder_Quad(0)->vertices[0].color;
@@ -630,7 +633,7 @@ TEST(the_first_petal_type_draws_in_the_color_scale)
     CHECK_EQ_INT(color.green, 0x80);
     CHECK_EQ_INT(color.blue, 0x60);
     CHECK_EQ_INT(color.alpha, 0x7f);
-    CHECK(effect->vm.color == 0xff804020u);
+    CHECK(effect->vm.color == COLOR_ARGB(0xff, 0x80, 0x40, 0x20));
     M_Teardown();
 }
 
@@ -639,7 +642,7 @@ TEST(an_effect_at_the_camera_draws_in_3d_with_the_petals)
     M_Setup("at_camera", 9);
     M_SetCamera();
     EFFECT *const effect =
-        Effect_Spawn(EFFECT_AT_CAMERA, m_Origin, 1, 0xffffffffu);
+        Effect_Spawn(EFFECT_AT_CAMERA, m_Origin, 1, COLOR_WHITE);
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(effect->draw_list, 3);
     CHECK(effect->true_pos.z == -6000.0f);

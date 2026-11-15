@@ -1,5 +1,6 @@
 #include "th07/anm/draw.h"
 
+#include "core/base/color.h"
 #include "core/math/x87.h"
 
 #include <math.h>
@@ -16,7 +17,7 @@ typedef struct {
 
 static M_STATE m_State = {
     .last_camera = -1,
-    .modulate_color = 0x80808080u,
+    .modulate_color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80),
 };
 
 static const VEC3 m_Quad[4] = {
@@ -317,7 +318,7 @@ void Anm_SetColorModulation(const uint32_t color)
 void Anm_ResetColorModulation(void)
 {
     m_State.modulate = false;
-    m_State.modulate_color = 0x80808080u;
+    m_State.modulate_color = COLOR_ARGB(0x80, 0x80, 0x80, 0x80);
 }
 
 void Anm_SetShake(const float x, const float y)

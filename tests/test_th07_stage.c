@@ -14,6 +14,7 @@
 #include "th07/game_manager.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 
 #include "stg/chain.h"
@@ -161,7 +162,7 @@ static EFFECT *M_StartPetal(void)
     Anm_SetScriptEntry(M_PETAL_SCRIPT, Anm_GetScript(M_STAGE_SPRITE));
     Anm_SetSpriteEntry(M_PETAL_SPRITE, Anm_GetSpriteEntry(M_STAGE_SPRITE));
     EFFECT *const petal =
-        Effect_Spawn(EFFECT_PETAL_FALLING, (VEC3) {}, 1, 0xffffffffu);
+        Effect_Spawn(EFFECT_PETAL_FALLING, (VEC3) {}, 1, COLOR_WHITE);
     petal->true_pos = (VEC3) { 0.0f, 0.0f, -100.0f };
     petal->step = (VEC3) {};
     petal->acceleration = (VEC3) {};
@@ -195,7 +196,7 @@ TEST(registering_loads_the_data_file)
     CHECK(g_Stage.data.sprites[0].script == Anm_GetScript(0x300));
     CHECK(g_Stage.camera.current.eye.z == 1000.0f);
     CHECK(g_Stage.camera.start.fov == 0.5235988f);
-    CHECK(g_Stage.fog.current.color == 0xff000000u);
+    CHECK(g_Stage.fog.current.color == COLOR_ARGB(0xff, 0x00, 0x00, 0x00));
     M_Teardown();
 }
 
@@ -357,17 +358,20 @@ TEST(the_fog_fades_to_the_new_fog)
     const STAGE_INSTR script[] = {
         { 0, STAGE_OP_KEYFRAME, { 0.0f, 0.0f, 0.0f } },
         { 0, STAGE_OP_FOG_FADE, { M_Bits(4), 0.0f, 0.0f } },
-        { 0, STAGE_OP_FOG, { M_Bits((int32_t)0xff8040c0), 100.0f, 300.0f } },
+        { 0,
+          STAGE_OP_FOG,
+          { M_Bits((int32_t)COLOR_ARGB(0xff, 0x80, 0x40, 0xc0)), 100.0f,
+            300.0f } },
         { -1, STAGE_OP_KEYFRAME, { 0.0f, 0.0f, 0.0f } },
     };
     CHECK(Result_Log(M_Setup("fog", script, 4, 0), LOG_LEVEL_ERROR));
     M_Run(1);
     CHECK(g_Stage.fog.current.near == 175.0f);
     CHECK(g_Stage.fog.current.far == 450.0f);
-    CHECK_EQ_INT(g_Stage.fog.current.color, 0xff201030);
+    CHECK_EQ_INT(g_Stage.fog.current.color, COLOR_ARGB(0xff, 0x20, 0x10, 0x30));
     M_Run(3);
     CHECK_EQ_INT(g_Stage.fog.frames, 0);
-    CHECK_EQ_INT(g_Stage.fog.current.color, 0xff8040c0);
+    CHECK_EQ_INT(g_Stage.fog.current.color, COLOR_ARGB(0xff, 0x80, 0x40, 0xc0));
     M_Teardown();
 }
 
@@ -376,7 +380,10 @@ TEST(the_fog_fade_runs_on_the_game_speed)
     const STAGE_INSTR script[] = {
         { 0, STAGE_OP_KEYFRAME, { 0.0f, 0.0f, 0.0f } },
         { 0, STAGE_OP_FOG_FADE, { M_Bits(4), 0.0f, 0.0f } },
-        { 0, STAGE_OP_FOG, { M_Bits((int32_t)0xff000000), 100.0f, 300.0f } },
+        { 0,
+          STAGE_OP_FOG,
+          { M_Bits((int32_t)COLOR_ARGB(0xff, 0x00, 0x00, 0x00)), 100.0f,
+            300.0f } },
         { -1, STAGE_OP_KEYFRAME, { 0.0f, 0.0f, 0.0f } },
     };
     CHECK(Result_Log(M_Setup("fog_speed", script, 4, 0), LOG_LEVEL_ERROR));
@@ -438,12 +445,12 @@ TEST(a_spell_card_runs_its_sprites_and_fades_in_over_sixty_frames)
 TEST(set_tint_averages_with_a_tint_already_set)
 {
     CHECK(Result_Log(M_Setup("tint", m_Keyframes, 3, 0), LOG_LEVEL_ERROR));
-    Stage_SetTint(0x40ff2010u);
-    CHECK_EQ_INT(g_Stage.tint.color, 0x40ff2010u);
-    Stage_SetTint(0xc0013040u);
-    CHECK_EQ_INT(g_Stage.tint.color, 0x80802828u);
+    Stage_SetTint(COLOR_ARGB(0x40, 0xff, 0x20, 0x10));
+    CHECK_EQ_INT(g_Stage.tint.color, COLOR_ARGB(0x40, 0xff, 0x20, 0x10));
+    Stage_SetTint(COLOR_ARGB(0xc0, 0x01, 0x30, 0x40));
+    CHECK_EQ_INT(g_Stage.tint.color, COLOR_ARGB(0x80, 0x80, 0x28, 0x28));
     Chain_RunDraw(&g_Chain);
-    CHECK_EQ_INT(g_Stage.tint.color, 0x00808080u);
+    CHECK_EQ_INT(g_Stage.tint.color, COLOR_ARGB(0x00, 0x80, 0x80, 0x80));
     M_Teardown();
 }
 
@@ -505,7 +512,7 @@ TEST(stage_layers_draw_through_the_stage_camera_in_fog)
 {
     CHECK(Result_Log(M_Setup("draw", m_Camera, 4, 0), LOG_LEVEL_ERROR));
     g_Stage.data.sprites[0].stage_camera = true;
-    Stage_SetTint(0xff404040u);
+    Stage_SetTint(COLOR_ARGB(0xff, 0x40, 0x40, 0x40));
     M_StartPetal();
     M_Run(1);
     GfxRecorder_Start();
@@ -579,7 +586,7 @@ TEST(projected_sprites_fade_into_the_fog_by_hand)
     CHECK(!quad->view.fog.enabled);
     CHECK_EQ_INT(quad->vertices[0].color.red, 0x80);
     CHECK_EQ_INT(quad->vertices[0].color.alpha, 0x7f);
-    CHECK_EQ_INT(vm->color, 0xffffffffu);
+    CHECK_EQ_INT(vm->color, COLOR_WHITE);
     CHECK(vm->pos.x == 224.0f);
     CHECK(vm->scale_x == vm->scale_y);
     GfxRecorder_Stop();
