@@ -665,3 +665,101 @@ TEST(quads_interpolate_across_the_strip_diagonal)
     M_CheckPixel(&image, 4, 4, (GFX_COLOR) { 112, 223, 32, 255 }, 1);
     Image_Free(&image);
 }
+
+TEST(indexed_uploads_preserve_rows_and_palette_indices)
+{
+    REQUIRE_GL();
+    GFX_TEXTURE *texture = nullptr;
+    CHECK_OK(GfxTexture_CreateIndexed(3, 2, &texture));
+    const uint8_t indices[] = { 0, 15, 255, 255, 15, 0 };
+    GfxTexture_UploadIndices(texture, (GFX_RECT) { 0, 0, 3, 2 }, indices);
+    GfxTexture_UploadPalette(texture, 0, 1, &RED);
+    GfxTexture_UploadPalette(texture, 15, 1, &GREEN);
+    GfxTexture_UploadPalette(texture, 255, 1, &BLUE);
+    Gfx_BeginTick(BLACK);
+    M_Fill(&m_Opaque, texture, WHITE);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 0, 0, RED, 0);
+    M_CheckPixel(&image, 3, 0, GREEN, 0);
+    M_CheckPixel(&image, 7, 0, BLUE, 0);
+    M_CheckPixel(&image, 0, 7, BLUE, 0);
+    M_CheckPixel(&image, 3, 7, GREEN, 0);
+    M_CheckPixel(&image, 7, 7, RED, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
+TEST(index_and_palette_updates_preserve_draw_order)
+{
+    REQUIRE_GL();
+    GFX_TEXTURE *texture = nullptr;
+    CHECK_OK(GfxTexture_CreateIndexed(1, 1, &texture));
+    const GFX_COLOR palette[] = { RED, GREEN };
+    GfxTexture_UploadPalette(texture, 0, 2, palette);
+    Gfx_BeginTick(BLACK);
+    M_Rect(&m_Opaque, texture, 0, 0, 2, SIZE, 0.5f, WHITE, 1.0f);
+    GfxTexture_UploadPalette(texture, 0, 1, &BLUE);
+    M_Rect(&m_Opaque, texture, 2, 0, 4, SIZE, 0.5f, WHITE, 1.0f);
+    const uint8_t index = 1;
+    GfxTexture_UploadIndices(texture, (GFX_RECT) { 0, 0, 1, 1 }, &index);
+    M_Rect(&m_Opaque, texture, 4, 0, 6, SIZE, 0.5f, WHITE, 1.0f);
+    GFX_TEXTURE *const rgba = M_Texture(1, 1, &WHITE);
+    M_Rect(&m_Opaque, rgba, 6, 0, 8, SIZE, 0.5f, WHITE, 1.0f);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 0, 0, RED, 0);
+    M_CheckPixel(&image, 2, 0, BLUE, 0);
+    M_CheckPixel(&image, 4, 0, GREEN, 0);
+    M_CheckPixel(&image, 6, 0, WHITE, 0);
+    Image_Free(&image);
+    GfxTexture_Free(rgba);
+    GfxTexture_Free(texture);
+}
+
+TEST(indexed_textures_use_palette_alpha_and_nearest_sampling)
+{
+    REQUIRE_GL();
+    GFX_TEXTURE *texture = nullptr;
+    CHECK_OK(GfxTexture_CreateIndexed(2, 1, &texture));
+    const uint8_t indices[] = { 0, 1 };
+    const GFX_COLOR palette[] = { { 255, 0, 0, 0 }, GREEN };
+    GfxTexture_UploadIndices(texture, (GFX_RECT) { 0, 0, 2, 1 }, indices);
+    GfxTexture_UploadPalette(texture, 0, 2, palette);
+    const GFX_STATE state = {
+        .filter = GFX_FILTER_LINEAR,
+        .alpha_test = true,
+    };
+    Gfx_BeginTick(BLUE);
+    M_Fill(&state, texture, WHITE);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 3, 0, BLUE, 0);
+    M_CheckPixel(&image, 4, 0, GREEN, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
+TEST(indexed_partial_upload_and_palette_only_tick)
+{
+    REQUIRE_GL();
+    GFX_TEXTURE *texture = nullptr;
+    CHECK_OK(GfxTexture_CreateIndexed(3, 2, &texture));
+    const GFX_COLOR palette[] = { RED, GREEN };
+    GfxTexture_UploadPalette(texture, 0, 2, palette);
+    const uint8_t indices[] = { 1, 1 };
+    GfxTexture_UploadIndices(texture, (GFX_RECT) { 1, 0, 1, 2 }, indices);
+    Gfx_BeginTick(BLACK);
+    M_Fill(&m_Opaque, texture, WHITE);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 0, 7, RED, 0);
+    M_CheckPixel(&image, 3, 7, GREEN, 0);
+    M_CheckPixel(&image, 7, 7, RED, 0);
+    Image_Free(&image);
+    GfxTexture_UploadPalette(texture, 1, 1, &BLUE);
+    Gfx_BeginTick(BLACK);
+    M_Fill(&m_Opaque, texture, WHITE);
+    image = M_Screen();
+    M_CheckPixel(&image, 0, 7, RED, 0);
+    M_CheckPixel(&image, 3, 7, BLUE, 0);
+    M_CheckPixel(&image, 7, 7, RED, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}

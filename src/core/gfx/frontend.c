@@ -541,6 +541,62 @@ RESULT GfxTexture_Create(const IMAGE *const image, GFX_TEXTURE **const out)
     return OK;
 }
 
+RESULT GfxTexture_CreateIndexed(
+    const int32_t width, const int32_t height, GFX_TEXTURE **const out)
+{
+    *out = nullptr;
+    FAIL_IF(width <= 0 || height <= 0, "Invalid texture size");
+    GFX_TEXTURE *const texture = Mem_AllocZ(sizeof(*texture));
+    texture->width = width;
+    texture->height = height;
+    texture->indexed = true;
+    if (m_Frontend.started) {
+        if (m_Frontend.backend->create_indexed == nullptr) {
+            Mem_Free(texture);
+            return FAIL("Indexed textures are not supported by this backend");
+        }
+        const RESULT result =
+            m_Frontend.backend->create_indexed(width, height, &texture->handle);
+        if (!IS_OK(result)) {
+            Mem_Free(texture);
+            return result;
+        }
+    }
+    texture->next = m_Frontend.textures;
+    m_Frontend.textures = texture;
+    *out = texture;
+    return OK;
+}
+
+void GfxTexture_UploadIndices(
+    GFX_TEXTURE *const texture, const GFX_RECT rect,
+    const uint8_t *const indices)
+{
+    ASSERT(texture->indexed && indices != nullptr);
+    ASSERT(
+        rect.x >= 0 && rect.y >= 0 && rect.width >= 0 && rect.height >= 0
+        && (int64_t)rect.x + rect.width <= texture->width
+        && (int64_t)rect.y + rect.height <= texture->height);
+    if (texture->handle == nullptr || rect.width == 0 || rect.height == 0) {
+        return;
+    }
+    M_Flush();
+    m_Frontend.backend->upload_indices(texture->handle, rect, indices);
+}
+
+void GfxTexture_UploadPalette(
+    GFX_TEXTURE *const texture, const int32_t first, const int32_t count,
+    const GFX_COLOR *const colors)
+{
+    ASSERT(texture->indexed && colors != nullptr);
+    ASSERT(first >= 0 && count >= 0 && (int64_t)first + count <= 256);
+    if (texture->handle == nullptr || count == 0) {
+        return;
+    }
+    M_Flush();
+    m_Frontend.backend->upload_palette(texture->handle, first, count, colors);
+}
+
 RESULT GfxTexture_CreateEmpty(
     const int32_t width, const int32_t height, GFX_TEXTURE **const out)
 {
@@ -576,6 +632,7 @@ int32_t GfxTexture_GetHeight(const GFX_TEXTURE *const texture)
 void GfxTexture_Upload(
     GFX_TEXTURE *const texture, const GFX_RECT rect, const IMAGE *const image)
 {
+    ASSERT(!texture->indexed);
     ASSERT(
         rect.x >= 0 && rect.y >= 0 && rect.width == image->width
         && rect.height == image->height
@@ -591,6 +648,7 @@ void GfxTexture_Upload(
 void GfxTexture_CopyFromScreen(
     GFX_TEXTURE *const texture, GFX_RECT source, int32_t x, int32_t y)
 {
+    ASSERT(!texture->indexed);
     if (texture->handle == nullptr) {
         return;
     }

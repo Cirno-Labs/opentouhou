@@ -18,6 +18,24 @@ static RESULT M_CreateTexture(
     return OK;
 }
 
+static RESULT M_CreateIndexed(
+    const int32_t width, const int32_t height, void **const out)
+{
+    *out = nullptr;
+    return OK;
+}
+
+static void M_UploadIndices(
+    void *const handle, const GFX_RECT rect, const uint8_t *const indices)
+{
+}
+
+static void M_UploadPalette(
+    void *const handle, const int32_t first, const int32_t count,
+    const GFX_COLOR *const colors)
+{
+}
+
 static void M_UploadTexture(
     void *const handle, const GFX_RECT rect, const IMAGE *const image)
 {
@@ -68,6 +86,9 @@ const GFX_BACKEND g_GfxBackendNull = {
     .init = M_Init,
     .shutdown = M_Shutdown,
     .create_texture = M_CreateTexture,
+    .create_indexed = M_CreateIndexed,
+    .upload_indices = M_UploadIndices,
+    .upload_palette = M_UploadPalette,
     .upload_texture = M_UploadTexture,
     .copy_from_screen = M_CopyFromScreen,
     .free_texture = M_FreeTexture,

@@ -750,3 +750,25 @@ TEST(a_projection_pixel_offset_keeps_the_viewport_and_depth)
         memcmp(&shifted.viewport, &view.viewport, sizeof(view.viewport)) == 0);
     CHECK(view.projection.m[2][0] == 0.0f);
 }
+
+TEST(indexed_textures_support_the_null_backend)
+{
+    CHECK(Result_Log(
+        GfxFrontend_Start(&g_GfxBackendNull, nullptr, WIDTH, HEIGHT),
+        LOG_LEVEL_ERROR));
+    GFX_TEXTURE *texture = nullptr;
+    CHECK(
+        Result_Log(GfxTexture_CreateIndexed(3, 2, &texture), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(GfxTexture_GetWidth(texture), 3);
+    CHECK_EQ_INT(GfxTexture_GetHeight(texture), 2);
+    const uint8_t indices[] = { 0, 1, 0, 1, 0, 1 };
+    const GFX_COLOR palette[] = { { 0, 0, 0, 255 }, { 255, 255, 255, 255 } };
+    GfxTexture_UploadIndices(texture, (GFX_RECT) { 0, 0, 3, 2 }, indices);
+    GfxTexture_UploadPalette(texture, 0, 2, palette);
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, texture, 0.0f, 0);
+    Gfx_EndTick();
+    CHECK(Result_Log(Gfx_Present(false, 0.0f, &m_Output), LOG_LEVEL_ERROR));
+    GfxTexture_Free(texture);
+    GfxFrontend_Stop();
+}

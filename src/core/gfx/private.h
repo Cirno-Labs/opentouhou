@@ -46,6 +46,7 @@ typedef struct {
 
 struct GFX_TEXTURE {
     int32_t width, height;
+    bool indexed;
     void *handle; // the backend's, nullptr without a backend
     // Links the live textures, or the freed ones that wait for the next
     // tick, because the last tick may still draw them.
@@ -59,6 +60,10 @@ typedef struct {
     // contents when pixels is nullptr.
     RESULT (*create_texture)(
         int32_t width, int32_t height, const uint8_t *pixels, void **out);
+    RESULT (*create_indexed)(int32_t width, int32_t height, void **out);
+    void (*upload_indices)(void *handle, GFX_RECT rect, const uint8_t *indices);
+    void (*upload_palette)(
+        void *handle, int32_t first, int32_t count, const GFX_COLOR *colors);
     void (*upload_texture)(void *handle, GFX_RECT rect, const IMAGE *image);
     void (*copy_from_screen)(
         void *handle, GFX_RECT source, int32_t x, int32_t y);

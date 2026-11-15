@@ -146,7 +146,7 @@ typedef struct {
 
 typedef struct {
     GLint view, projection, output;
-    GLint texture, textured, color_add, alpha_test;
+    GLint texture, palette, indexed, textured, color_add, alpha_test;
     GLint fog, fog_range, fog_color;
 } M_LOCATIONS;
 
@@ -165,6 +165,10 @@ typedef struct {
     // Holds each vertex's texel rect: min u, min v, max u, max v.
     float (*rects)[4];
 } M_BACKEND;
+
+typedef struct {
+    GLuint pixels, palette;
+} M_TEXTURE;
 
 static M_BACKEND m_Backend;
 
@@ -243,6 +247,8 @@ static RESULT M_CreateProgram(void)
     at->projection = gl->get_uniform_location(program, "u_projection");
     at->output = gl->get_uniform_location(program, "u_output");
     at->texture = gl->get_uniform_location(program, "u_texture");
+    at->palette = gl->get_uniform_location(program, "u_palette");
+    at->indexed = gl->get_uniform_location(program, "u_indexed");
     at->textured = gl->get_uniform_location(program, "u_textured");
     at->color_add = gl->get_uniform_location(program, "u_color_add");
     at->alpha_test = gl->get_uniform_location(program, "u_alpha_test");
@@ -251,6 +257,7 @@ static RESULT M_CreateProgram(void)
     at->fog_color = gl->get_uniform_location(program, "u_fog_color");
     gl->use_program(program);
     gl->uniform_1i(at->texture, 0);
+    gl->uniform_1i(at->palette, 1);
     return OK;
 }
 
@@ -504,14 +511,20 @@ static void M_SetState(const GFX_STATE *const state, GFX_TEXTURE *const texture)
     gl->uniform_1i(at->alpha_test, state->alpha_test ? 1 : 0);
     const bool textured = texture != nullptr && texture->handle != nullptr;
     gl->uniform_1i(at->textured, textured ? 1 : 0);
-    gl->bind_texture(
-        GL_TEXTURE_2D, textured ? (GLuint)(uintptr_t)texture->handle : 0);
+    const M_TEXTURE *const handle = textured ? texture->handle : nullptr;
+    const bool indexed = textured && texture->indexed;
+    gl->uniform_1i(at->indexed, indexed ? 1 : 0);
+    gl->active_texture(GL_TEXTURE1);
+    gl->bind_texture(GL_TEXTURE_2D, indexed ? handle->palette : 0);
+    gl->bind_sampler(1, m_Backend.samplers[0]);
+    gl->active_texture(GL_TEXTURE0);
+    gl->bind_texture(GL_TEXTURE_2D, textured ? handle->pixels : 0);
     // The output's filter samples what the window pass magnifies, as when it
     // scales the screen, so a sprite's edge never blends with the texels
-    // past it.
-    const bool smooth = m_Backend.pass == GFX_PASS_WINDOW
+    // past it. Indexed textures always sample their nearest index.
+    const bool smooth = !indexed && m_Backend.pass == GFX_PASS_WINDOW
         && m_Backend.pass_output.filter == GFX_FILTER_LINEAR;
-    const bool linear = state->filter == GFX_FILTER_LINEAR;
+    const bool linear = !indexed && state->filter == GFX_FILTER_LINEAR;
     const bool linear_mag = m_Backend.pass == GFX_PASS_WINDOW ? smooth : linear;
     gl->bind_sampler(
         0,
@@ -597,9 +610,9 @@ static void M_Shutdown(void)
     memset(&m_Backend, 0, sizeof(m_Backend));
 }
 
-static RESULT M_CreateTexture(
+static RESULT M_CreatePixels(
     const int32_t width, const int32_t height, const uint8_t *const pixels,
-    void **const out)
+    const bool indexed, void **const out)
 {
     const M_GL *const gl = &m_Backend.gl;
     GLuint texture = 0;
@@ -607,20 +620,79 @@ static RESULT M_CreateTexture(
     FAIL_IF(texture == 0, "Cannot create a texture");
     gl->bind_texture(GL_TEXTURE_2D, texture);
     gl->tex_image_2d(
-        GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-        pixels);
+        GL_TEXTURE_2D, 0, indexed ? GL_R8 : GL_RGBA8, width, height, 0,
+        indexed ? GL_RED : GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     gl->tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     gl->tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     gl->tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    *out = (void *)(uintptr_t)texture;
+    M_TEXTURE *const handle = Mem_AllocZ(sizeof(*handle));
+    handle->pixels = texture;
+    *out = handle;
     return OK;
+}
+
+static RESULT M_CreateTexture(
+    const int32_t width, const int32_t height, const uint8_t *const pixels,
+    void **const out)
+{
+    return M_CreatePixels(width, height, pixels, false, out);
+}
+
+static RESULT M_CreateIndexed(
+    const int32_t width, const int32_t height, void **const out)
+{
+    uint8_t *const indices = Mem_AllocZ((size_t)width * (size_t)height);
+    const RESULT result = M_CreatePixels(width, height, indices, true, out);
+    Mem_Free(indices);
+    if (!IS_OK(result)) {
+        return result;
+    }
+    M_TEXTURE *const texture = *out;
+    const M_GL *const gl = &m_Backend.gl;
+    gl->gen_textures(1, &texture->palette);
+    if (texture->palette == 0) {
+        gl->delete_textures(1, &texture->pixels);
+        Mem_Free(texture);
+        *out = nullptr;
+        return FAIL("Cannot create a palette texture");
+    }
+    const GFX_COLOR colors[256] = {};
+    gl->bind_texture(GL_TEXTURE_2D, texture->palette);
+    gl->tex_image_2d(
+        GL_TEXTURE_2D, 0, GL_RGBA8, 256, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+        colors);
+    gl->tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    gl->tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    gl->tex_parameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    return OK;
+}
+
+static void M_UploadIndices(
+    void *const handle, const GFX_RECT rect, const uint8_t *const indices)
+{
+    const M_GL *const gl = &m_Backend.gl;
+    gl->bind_texture(GL_TEXTURE_2D, ((M_TEXTURE *)handle)->pixels);
+    gl->tex_sub_image_2d(
+        GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_RED,
+        GL_UNSIGNED_BYTE, indices);
+}
+
+static void M_UploadPalette(
+    void *const handle, const int32_t first, const int32_t count,
+    const GFX_COLOR *const colors)
+{
+    const M_GL *const gl = &m_Backend.gl;
+    gl->bind_texture(GL_TEXTURE_2D, ((M_TEXTURE *)handle)->palette);
+    gl->tex_sub_image_2d(
+        GL_TEXTURE_2D, 0, first, 0, count, 1, GL_RGBA, GL_UNSIGNED_BYTE,
+        colors);
 }
 
 static void M_UploadTexture(
     void *const handle, const GFX_RECT rect, const IMAGE *const image)
 {
     const M_GL *const gl = &m_Backend.gl;
-    gl->bind_texture(GL_TEXTURE_2D, (GLuint)(uintptr_t)handle);
+    gl->bind_texture(GL_TEXTURE_2D, ((M_TEXTURE *)handle)->pixels);
     gl->tex_sub_image_2d(
         GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_RGBA,
         GL_UNSIGNED_BYTE, image->pixels);
@@ -631,7 +703,7 @@ static void M_CopyFromScreen(
 {
     const M_GL *const gl = &m_Backend.gl;
     gl->bind_framebuffer(GL_READ_FRAMEBUFFER, m_Backend.screen.framebuffer);
-    gl->bind_texture(GL_TEXTURE_2D, (GLuint)(uintptr_t)handle);
+    gl->bind_texture(GL_TEXTURE_2D, ((M_TEXTURE *)handle)->pixels);
     gl->copy_tex_sub_image_2d(
         GL_TEXTURE_2D, 0, x, y, source.x, source.y, source.width,
         source.height);
@@ -642,8 +714,10 @@ static void M_CopyFromScreen(
 
 static void M_FreeTexture(void *const handle)
 {
-    const GLuint texture = (GLuint)(uintptr_t)handle;
-    m_Backend.gl.delete_textures(1, &texture);
+    M_TEXTURE *const texture = handle;
+    m_Backend.gl.delete_textures(1, &texture->pixels);
+    m_Backend.gl.delete_textures(1, &texture->palette);
+    Mem_Free(texture);
 }
 
 static void M_BeginPass(
@@ -840,6 +914,9 @@ static const GFX_BACKEND m_GlBackend = {
     .init = M_Init,
     .shutdown = M_Shutdown,
     .create_texture = M_CreateTexture,
+    .create_indexed = M_CreateIndexed,
+    .upload_indices = M_UploadIndices,
+    .upload_palette = M_UploadPalette,
     .upload_texture = M_UploadTexture,
     .copy_from_screen = M_CopyFromScreen,
     .free_texture = M_FreeTexture,
