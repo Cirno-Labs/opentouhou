@@ -1,6 +1,7 @@
 #include "th07_scene_stubs.h"
 
 #include "th07/scene.h"
+#include "th07/screens/main.h"
 #include "th07/stubs.h"
 
 GAME_MANAGER g_GameManager;
@@ -16,12 +17,27 @@ void SceneStubCalls_Reset(void)
     g_Gui = (GUI) {};
 }
 
+#ifndef TH07_TITLE_TEST
 RESULT TitleScene_SetUp(const int32_t mode)
 {
     g_SceneStubCalls.title_set_up++;
     g_SceneStubCalls.title_set_up_mode = mode;
     g_SceneStubCalls.title_set_up_previous = Scene_GetPrevious();
     return OK;
+}
+#endif
+
+void ResultScreen_LoadTitleRecords(void)
+{
+    g_SceneStubCalls.load_title_records++;
+    if (g_SceneStubCalls.on_load_title_records != nullptr) {
+        g_SceneStubCalls.on_load_title_records();
+    }
+}
+
+void ScreenEffect_FadeIn(const int32_t frames, const uint32_t color)
+{
+    g_SceneStubCalls.fade_ins++;
 }
 
 RESULT GameManager_Register(void)

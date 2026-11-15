@@ -5,15 +5,41 @@
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/replay.h"
+#include "th07/screens/main.h"
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
+
+#include "core/base/log.h"
+#include "core/base/memory.h"
 
 #include "version.h"
 
 #include <time.h>
 
 static bool m_GameInitialized;
+
+// Keeps the demo replays of the title for playback, as the saves keep the
+// user's replays. The original plays no demo whose file is missing.
+static void M_KeepDemos(void)
+{
+    for (int32_t i = 0; i < TITLE_DEMO_COUNT; i++) {
+        const char *const path = g_DemoReplayPaths[i];
+        READER reader;
+        if (!Result_Log(Files_Load(path, &reader), LOG_LEVEL_WARNING)) {
+            continue;
+        }
+        const size_t size = Reader_Remaining(&reader);
+        uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
+        if (Result_Log(Reader_Result(&reader), LOG_LEVEL_WARNING)) {
+            Replay_AddFile(path, data, size);
+        }
+        Reader_Close(&reader);
+        if (data != nullptr) {
+            Allocator_Free(&g_HeapAllocator, data, size);
+        }
+    }
+}
 
 static RESULT M_Init(void)
 {
@@ -22,6 +48,7 @@ static RESULT M_Init(void)
     MUST(Anm_InitText(nullptr, nullptr, 0));
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(Shell_GetUserDir());
+    M_KeepDemos();
     m_GameInitialized = true;
     MUST(Game_Init());
     // Seeds the gameplay RNG from the clock once, outside the ticks, as the

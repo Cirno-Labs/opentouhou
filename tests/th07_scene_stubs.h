@@ -6,7 +6,8 @@
 
 // Counts calls into the th07/stubs.h functions this test links instead
 // of src/th07/stubs.c, so a test can check which targets the scene
-// switch called.
+// switch called. A test of the title defines TH07_TITLE_TEST, which leaves
+// out the stand-in for TitleScene_SetUp.
 typedef struct {
     int title_set_up;
     int game_manager_register;
@@ -36,6 +37,10 @@ typedef struct {
     GFX_RECT copy_dest;
     // Makes Anm_SetPendingCopy report a copy pending.
     bool copy_pending;
+    int load_title_records;
+    // Runs in ResultScreen_LoadTitleRecords, unless nullptr.
+    void (*on_load_title_records)(void);
+    int fade_ins;
 } SCENE_STUB_CALLS;
 
 extern SCENE_STUB_CALLS g_SceneStubCalls;
