@@ -881,12 +881,11 @@ static CHAIN_STATUS M_Draw(void *const arg)
             g_Stage.clear_color);
     }
     const uint32_t color = g_Stage.fog.current.color;
-    m_Fog = (GFX_FOG) {
-        .enabled = true,
-        .begin = g_Stage.fog.current.near,
-        .end = g_Stage.fog.current.far,
-        .color = M_Rgba(modulate ? M_ModulateFog(color, tint) : color),
-    };
+    memset(&m_Fog, 0, sizeof(m_Fog));
+    m_Fog.enabled = true;
+    m_Fog.begin = g_Stage.fog.current.near;
+    m_Fog.end = g_Stage.fog.current.far;
+    m_Fog.color = M_Rgba(modulate ? M_ModulateFog(color, tint) : color);
     if (M_LayersShown()) {
         M_DrawLayer(0);
         M_DrawLayer(1);
@@ -967,7 +966,7 @@ static void M_Deleted(void *const arg)
 
 RESULT Stage_Register(void)
 {
-    g_Stage = (STAGE) {};
+    memset(&g_Stage, 0, sizeof(g_Stage));
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;

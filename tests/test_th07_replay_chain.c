@@ -208,7 +208,7 @@ static void M_SetUp(const int32_t stage)
     m_Boss = false;
     m_Calcs = 0;
     m_SeenPlayWord = 0;
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
     g_GameManager.mode.playing = true;

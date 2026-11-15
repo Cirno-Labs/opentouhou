@@ -25,6 +25,7 @@
 
 #include <SDL3/SDL.h>
 #include <math.h>
+#include <string.h>
 
 #define M_FIRST_SCRIPT 0x2c4
 #define M_TOUCH_X 50.0f
@@ -170,12 +171,12 @@ static void M_Setup(void)
     g_GameManager.player.lives = 2.0f;
     g_GameManager.player.bombs = 3.0f;
     g_GameSpeed = 1.0f;
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     g_Player.pos.y = 400.0f;
     g_Player.shot_type.item_line = M_ITEM_LINE;
     g_Player.shot_type.item_pull_speed = M_PULL_SPEED;
     g_Player.shot_type.item_collect_size = M_COLLECT_SIZE;
-    g_Enemies = (ENEMIES) {};
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
     m_ProbeCount = 0;
     m_TouchX = M_NO_TOUCH;
     m_Angle = 1.0f;

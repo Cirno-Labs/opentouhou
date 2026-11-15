@@ -252,11 +252,13 @@ static void M_Setup(void)
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     Rng_SetSeed(&g_Rng, 1234);
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_GameSpeed = 0.5f;
-    g_Settings = (TH07_SETTINGS) { .lives = 3 };
-    g_Player = (PLAYER) { .shot_type.bombs = 3.0f };
-    g_Gui = (GUI) {};
+    memset(&g_Settings, 0, sizeof(g_Settings));
+    g_Settings.lives = 3;
+    memset(&g_Player, 0, sizeof(g_Player));
+    g_Player.shot_type.bombs = 3.0f;
+    memset(&g_Gui, 0, sizeof(g_Gui));
     g_GameManager.run.difficulty = 1;
     g_GameManager.run.character = 1;
     g_GameManager.run.shot_type = 1;

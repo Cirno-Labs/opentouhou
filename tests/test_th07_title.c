@@ -185,7 +185,7 @@ static void M_Setup(const char *const case_name)
             (INPUT_DEVICE)device, &m_NoInput, sizeof(m_NoInput));
     }
     Config_SetDefaults(&g_SettingsSchema, &g_Settings);
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Sound_Reset();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Anm_SetScriptEntry(0x706, &m_HelpScript);

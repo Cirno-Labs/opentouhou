@@ -352,9 +352,9 @@ static void M_SetUp(const char *const case_name, const uint8_t shot)
     g_GameManager.cherry.max = 1000 + 200000;
     g_GameManager.player.lives = 2.0f;
     g_GameManager.player.bombs = 3.0f;
-    g_Enemies = (ENEMIES) {};
-    g_AsciiText = (ASCII_TEXT) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
+    memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_GameSpeed = 1.0f;
     CHECK(Result_Log(Player_Register(), LOG_LEVEL_ERROR));
     Chain_RunCalc(&g_Chain);

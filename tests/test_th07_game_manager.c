@@ -8,6 +8,7 @@
 #include "stg/rng.h"
 
 #include <math.h>
+#include <string.h>
 
 #define M_CHERRY_OFFSET 54321
 
@@ -32,7 +33,7 @@ void Gui_ShowCherryFullPopup(const int32_t cherry)
 static void M_Setup(void)
 {
     GameManager_Create(&g_GameManager);
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     m_BorderStarts = 0;
     m_FullPopups = 0;
     m_FullPopupCherry = 0;

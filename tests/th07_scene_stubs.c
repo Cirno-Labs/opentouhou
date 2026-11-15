@@ -8,6 +8,8 @@
 #include "th07/player.h"
 #include "th07/stubs.h"
 
+#include <string.h>
+
 PLAYER g_Player;
 GUI g_Gui;
 uint8_t g_EffectsQuality;
@@ -15,11 +17,11 @@ SCENE_STUB_CALLS g_SceneStubCalls;
 
 void SceneStubCalls_Reset(void)
 {
-    g_SceneStubCalls = (SCENE_STUB_CALLS) {};
-    g_GameManager = (GAME_MANAGER) {};
-    g_Player = (PLAYER) {};
-    g_Gui = (GUI) {};
-    g_Stage = (STAGE) {};
+    memset(&g_SceneStubCalls, 0, sizeof(g_SceneStubCalls));
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    memset(&g_Player, 0, sizeof(g_Player));
+    memset(&g_Gui, 0, sizeof(g_Gui));
+    memset(&g_Stage, 0, sizeof(g_Stage));
     g_EffectsQuality = 2;
 }
 

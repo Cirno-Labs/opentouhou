@@ -15,6 +15,8 @@
 
 #include "stg/rng.h"
 
+#include <string.h>
+
 #define I(x) { .i = (x) }
 #define INSTR(op_, mask_, ...)                                                 \
     {                                                                          \
@@ -65,8 +67,8 @@ static void M_Setup(void)
         Anm_SetScriptEntry(i, &m_Script);
     }
     Anm_SetScriptEntry(0x724, &m_Script);
-    g_AsciiText = (ASCII_TEXT) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Scene_Request(SCENE_GAMEPLAY);
     g_GameManager.mode.paused = 2;
     g_GameManager.run.max_continues = 3;
