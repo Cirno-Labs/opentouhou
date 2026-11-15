@@ -34,6 +34,9 @@ typedef struct {
     bool sound; // plays sound effects
     // Focuses while a pad holds shoot.
     bool shoot_focuses;
+    // Slows the game down where many bullets show. Such a game saves no
+    // score and no replay.
+    bool slowdown;
 } TH07_SETTINGS;
 
 extern TH07_SETTINGS g_Settings;

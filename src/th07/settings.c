@@ -16,6 +16,7 @@ static const CONFIG_OPTION m_Options[] = {
         m_MusicNames),
     CONFIG_BOOL(TH07_SETTINGS, "game", "sound", sound, true),
     CONFIG_BOOL(TH07_SETTINGS, "game", "shoot_focuses", shoot_focuses, true),
+    CONFIG_BOOL(TH07_SETTINGS, "game", "slowdown", slowdown, false),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =
