@@ -167,41 +167,37 @@ static wchar_t *M_Environment(
     const LAUNCHER_GAME *const game, const M_ARGS *const args,
     const wchar_t *const work_dir, const wchar_t *const case_path)
 {
-    wchar_t prefix[16];
-    swprintf(prefix, ARRAY_SIZE(prefix), L"%lsCAPTURE_", game->game_id);
-    _wcsupr(prefix);
     wchar_t lines[7][ENV_LINE_SIZE];
     const wchar_t *extra[7];
     size_t count = 0;
-    swprintf(lines[count], ENV_LINE_SIZE, L"%lsWORK=%ls", prefix, work_dir);
+    swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_WORK=%ls", work_dir);
     count++;
     if (args->replay != nullptr) {
         swprintf(
-            lines[count], ENV_LINE_SIZE, L"%lsREPLAY=./%ls", prefix,
+            lines[count], ENV_LINE_SIZE, L"CAPTURE_REPLAY=./%ls",
             game->replay_copy);
         count++;
     }
     if (args->fast) {
-        swprintf(lines[count], ENV_LINE_SIZE, L"%lsFAST=1", prefix);
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_FAST=1");
         count++;
     }
     if (args->draw) {
-        swprintf(lines[count], ENV_LINE_SIZE, L"%lsDRAW=1", prefix);
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_DRAW=1");
         count++;
     }
     if (args->result) {
-        swprintf(lines[count], ENV_LINE_SIZE, L"%lsRESULT=1", prefix);
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_RESULT=1");
         count++;
     }
     if (args->quit_after > 0) {
         swprintf(
-            lines[count], ENV_LINE_SIZE, L"%lsQUIT_AFTER=%d", prefix,
+            lines[count], ENV_LINE_SIZE, L"CAPTURE_QUIT_AFTER=%d",
             args->quit_after);
         count++;
     }
     if (!args->dry_run) {
-        swprintf(
-            lines[count], ENV_LINE_SIZE, L"%lsCASE=%ls", prefix, case_path);
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_CASE=%ls", case_path);
         count++;
     }
     for (size_t i = 0; i < count; i++) {

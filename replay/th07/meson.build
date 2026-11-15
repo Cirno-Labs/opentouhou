@@ -87,6 +87,7 @@ shared_library(
   'th07capture',
   'dll.c',
   'state.c',
+  '../core/capture.c',
   '../core/clock.c',
   '../core/iat.c',
   '../core/null_d3d8.c',
