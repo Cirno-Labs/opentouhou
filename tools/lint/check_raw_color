@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Fail when a colour is written as a raw 0xAARRGGBB literal.
+
+Takes the paths of C files. Flags an 8-digit hex literal that is
+assigned or compared to a name with "color" in it, passed first to a
+function with "Color" in its name, or defined as a macro with "COLOR"
+in its name, unless an operator follows it, as a mask does. Such a
+colour is written with COLOR_ARGB or COLOR_WHITE from core/base/color.h
+instead.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+LITERAL = r"0x[0-9a-fA-F]{8}[uU]?(?=\s*([;),:?]|$))"
+RAW_COLOR_RE = re.compile(
+    rf"\b\w*colou?r\w*\s*==?\s*{LITERAL}"
+    rf"|\b\w*Colou?r\w*\(\s*{LITERAL}"
+    rf"|^#define\s+\w*COLOU?R\w*\s+{LITERAL}",
+    re.IGNORECASE,
+)
+MESSAGE = "write a colour with COLOR_ARGB or COLOR_WHITE"
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of the lines that write a raw colour literal."""
+    return [index for index, line in enumerate(lines) if RAW_COLOR_RE.search(line)]
+
+
+def main(argv: list[str] | None = None) -> int:
+    paths = [Path(path) for path in (sys.argv[1:] if argv is None else argv)]
+    failed = False
+    for path in paths:
+        for index in errors(path.read_text().split("\n")):
+            failed = True
+            print(f"{path}:{index + 1}: {MESSAGE}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
