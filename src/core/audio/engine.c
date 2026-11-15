@@ -2,6 +2,7 @@
 
 #include "core/audio/backend.h"
 #include "core/audio/decoder.h"
+#include "core/audio/resampler.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
@@ -26,6 +27,13 @@ typedef struct {
     uint64_t position;
     bool opened;
     bool eof;
+    AUDIO_RESAMPLER *resampler;
+    // Holds resampled frames at the output rate, each with its source frame.
+    const float *output;
+    const uint64_t *output_positions;
+    uint32_t output_count;
+    uint32_t output_offset;
+    bool flushed;
 } AUDIO_JOB;
 
 typedef struct {
@@ -128,14 +136,11 @@ static RESULT M_CheckLoop(const AUDIO_LOOP loop, const AUDIO_INFO *const info)
     return OK;
 }
 
-static RESULT M_CheckStreamPitch(
-    const float pitch, const AUDIO_INFO *const info)
+static RESULT M_CheckStreamPitch(const float pitch)
 {
     MUST(M_CheckPitch(pitch));
     FAIL_IF(
-        info->sample_rate != 0
-            && (double)pitch * info->sample_rate / AUDIO_OUTPUT_RATE
-                > STREAM_CAPACITY - 2,
+        (double)pitch > STREAM_CAPACITY - 2,
         "Audio stream playback rate exceeds the buffer capacity");
     return OK;
 }
@@ -169,6 +174,10 @@ static void M_CloseJob(AUDIO_JOB *const job)
 {
     AudioDecoder_Free(job->decoder);
     job->decoder = nullptr;
+    AudioResampler_Free(job->resampler);
+    job->resampler = nullptr;
+    job->output_count = 0;
+    job->output_offset = 0;
     Reader_Close(&job->reader);
     Mem_Free(job->path);
     job->path = nullptr;
@@ -186,6 +195,8 @@ static RESULT M_OpenJob(AUDIO_JOB *const job)
         MUST(Reader_OpenFile(&job->reader, job->path));
     }
     MUST(AudioDecoder_Open(&job->reader, &job->decoder));
+    MUST(AudioResampler_Open(
+        AudioDecoder_GetInfo(job->decoder).sample_rate, &job->resampler));
     job->opened = true;
     return OK;
 }
@@ -210,6 +221,67 @@ static RESULT M_SeekJob(AUDIO_JOB *const job, const uint64_t position)
     job->count = 0;
     job->eof = false;
     return OK;
+}
+
+// Seeks to a source position and drops the resampler history.
+static RESULT M_RestartJob(AUDIO_JOB *const job, const uint64_t position)
+{
+    MUST(M_SeekJob(job, position));
+    job->output_count = 0;
+    job->output_offset = 0;
+    job->flushed = false;
+    return AudioResampler_Reset(job->resampler);
+}
+
+static RESULT M_ConvertJob(AUDIO_JOB *const job, const uint32_t count)
+{
+    MUST(AudioResampler_Convert(
+        job->resampler, job->frames + (size_t)job->offset * 2, count,
+        job->position, &job->output, &job->output_positions,
+        &job->output_count));
+    job->output_offset = 0;
+    job->offset += count;
+    job->position += count;
+    return OK;
+}
+
+static RESULT M_FlushJob(AUDIO_JOB *const job)
+{
+    MUST(AudioResampler_Convert(
+        job->resampler, nullptr, 0, 0, &job->output, &job->output_positions,
+        &job->output_count));
+    job->output_offset = 0;
+    job->flushed = true;
+    return OK;
+}
+
+// Reads and resamples the next source frames, jumping to the loop begin at
+// the loop end, so that the resampler sees one continuous signal.
+static RESULT M_FeedStreamJob(AUDIO_JOB *const job, const AUDIO_LOOP loop)
+{
+    if (job->flushed) {
+        if (!loop.enabled) {
+            return OK;
+        }
+        job->flushed = false;
+        MUST(AudioResampler_Reset(job->resampler));
+    }
+    FAIL_IF(
+        loop.enabled && job->eof && job->position < loop.end,
+        "Audio loop exceeds the source length");
+    if (loop.enabled && (job->position >= loop.end || job->eof)) {
+        MUST(M_SeekJob(job, loop.begin));
+    }
+    MUST(M_ReadJob(job));
+    if (job->eof) {
+        FAIL_IF(loop.enabled, "Audio loop reaches an empty source range");
+        return M_FlushJob(job);
+    }
+    uint32_t count = MIN(job->count - job->offset, WORK_FRAMES);
+    if (loop.enabled) {
+        count = (uint32_t)MIN((uint64_t)count, loop.end - job->position);
+    }
+    return M_ConvertJob(job, count);
 }
 
 static void M_FreeSample(AUDIO_SAMPLE *const sample)
@@ -264,38 +336,14 @@ static void M_StreamFailure(
     Result_Ignore(result);
 }
 
-static bool M_PumpSample(AUDIO_SAMPLE *const sample)
+static RESULT M_AppendSample(AUDIO_SAMPLE *const sample, AUDIO_JOB *const job)
 {
-    RESULT result = M_OpenJob(&sample->job);
-    if (!IS_OK(result)) {
-        M_SampleFailure(sample, result);
-        return true;
-    }
-    result = M_ReadJob(&sample->job);
-    if (!IS_OK(result)) {
-        M_SampleFailure(sample, result);
-        return true;
-    }
-    AUDIO_JOB *const job = &sample->job;
-    if (job->eof) {
-        AUDIO_INFO info = AudioDecoder_GetInfo(job->decoder);
-        info.length = sample->count;
-        info.length_known = true;
-        M_CloseJob(job);
-        SDL_LockMutex(m_Mutex);
-        sample->info = info;
-        sample->state = AUDIO_READY;
-        SDL_UnlockMutex(m_Mutex);
-        return true;
-    }
-    const uint32_t count = MIN(job->count - job->offset, WORK_FRAMES);
-    if (sample->count > SIZE_MAX / (2 * sizeof(float)) - count) {
-        M_SampleFailure(sample, FAIL("Decoded audio sample is too large"));
-        return true;
-    }
+    const uint32_t count = job->output_count - job->output_offset;
+    const size_t maximum = SIZE_MAX / (2 * sizeof(float));
+    FAIL_IF(
+        sample->count > maximum - count, "Decoded audio sample is too large");
     if (sample->count + count > sample->capacity) {
         const size_t required = sample->count + count;
-        const size_t maximum = SIZE_MAX / (2 * sizeof(float));
         sample->capacity = sample->capacity > maximum / 2
             ? required
             : MAX(required, MAX((size_t)4096, sample->capacity * 2));
@@ -303,10 +351,42 @@ static bool M_PumpSample(AUDIO_SAMPLE *const sample)
             Mem_ReallocArr(sample->pcm, sample->capacity, 2 * sizeof(float));
     }
     memcpy(
-        sample->pcm + sample->count * 2, job->frames + job->offset * 2,
+        sample->pcm + sample->count * 2, job->output + job->output_offset * 2,
         count * 2 * sizeof(float));
     sample->count += count;
-    job->offset += count;
+    job->output_offset = job->output_count;
+    return OK;
+}
+
+static bool M_PumpSample(AUDIO_SAMPLE *const sample)
+{
+    AUDIO_JOB *const job = &sample->job;
+    RESULT result = M_OpenJob(job);
+    if (IS_OK(result)) {
+        result = M_ReadJob(job);
+    }
+    if (IS_OK(result)) {
+        result = job->eof
+            ? M_FlushJob(job)
+            : M_ConvertJob(job, MIN(job->count - job->offset, WORK_FRAMES));
+    }
+    if (IS_OK(result)) {
+        result = M_AppendSample(sample, job);
+    }
+    if (!IS_OK(result)) {
+        M_SampleFailure(sample, result);
+        return true;
+    }
+    if (job->eof) {
+        AUDIO_INFO info = AudioDecoder_GetInfo(job->decoder);
+        info.length = job->position;
+        info.length_known = true;
+        M_CloseJob(job);
+        SDL_LockMutex(m_Mutex);
+        sample->info = info;
+        sample->state = AUDIO_READY;
+        SDL_UnlockMutex(m_Mutex);
+    }
     return true;
 }
 
@@ -336,14 +416,14 @@ static bool M_PumpStream(AUDIO_STREAM *const stream)
         SDL_LockMutex(m_Mutex);
         const float pitch = stream->options.pitch;
         SDL_UnlockMutex(m_Mutex);
-        result = M_CheckStreamPitch(pitch, &info);
+        result = M_CheckStreamPitch(pitch);
     }
     if (!IS_OK(result)) {
         M_StreamFailure(stream, generation, configuration, result);
         return true;
     }
     if (needs_seek) {
-        result = M_SeekJob(job, desired);
+        result = M_RestartJob(job, desired);
         if (!IS_OK(result)) {
             M_StreamFailure(stream, generation, configuration, result);
             return true;
@@ -360,57 +440,40 @@ static bool M_PumpStream(AUDIO_STREAM *const stream)
         }
         SDL_UnlockMutex(m_Mutex);
     }
-    if (loop.enabled && job->eof && job->position < loop.end) {
-        M_StreamFailure(
-            stream, generation, configuration,
-            FAIL("Audio loop exceeds the source length"));
-        return true;
-    }
-    if (loop.enabled && (job->position >= loop.end || job->eof)) {
-        result = M_SeekJob(job, loop.begin);
+    const uint64_t fed = job->position;
+    const bool flushed = job->flushed;
+    if (job->output_offset == job->output_count) {
+        result = M_FeedStreamJob(job, loop);
         if (!IS_OK(result)) {
             M_StreamFailure(stream, generation, configuration, result);
             return true;
         }
     }
-    result = M_ReadJob(job);
-    if (!IS_OK(result)) {
-        M_StreamFailure(stream, generation, configuration, result);
-        return true;
-    }
-    if (job->eof && loop.enabled) {
-        M_StreamFailure(
-            stream, generation, configuration,
-            FAIL("Audio loop reaches an empty source range"));
-        return true;
-    }
+    const bool progress = job->position != fed || job->flushed != flushed;
     SDL_LockMutex(m_Mutex);
     if (stream->generation != generation || stream->disposed) {
         SDL_UnlockMutex(m_Mutex);
         return true;
     }
     const uint64_t space = STREAM_CAPACITY - (stream->write - stream->read);
-    uint32_t count = (uint32_t)MIN(
-        (uint64_t)MIN(job->count - job->offset, WORK_FRAMES), space);
-    if (loop.enabled) {
-        count = (uint32_t)MIN((uint64_t)count, loop.end - job->position);
-    }
+    const uint32_t count = (uint32_t)MIN(
+        (uint64_t)(job->output_count - job->output_offset), space);
     for (uint32_t i = 0; i < count; i++) {
         const size_t at = (size_t)((stream->write + i) % STREAM_CAPACITY);
-        stream->pcm[at * 2] = job->frames[(job->offset + i) * 2];
-        stream->pcm[at * 2 + 1] = job->frames[(job->offset + i) * 2 + 1];
-        stream->positions[at] = job->position + i;
+        const uint32_t from = job->output_offset + i;
+        stream->pcm[at * 2] = job->output[from * 2];
+        stream->pcm[at * 2 + 1] = job->output[from * 2 + 1];
+        stream->positions[at] = job->output_positions[from];
     }
     stream->write += count;
-    job->offset += count;
-    job->position += count;
-    stream->eof = job->eof;
+    job->output_offset += count;
+    stream->eof = job->flushed && job->output_offset == job->output_count;
     if (stream->state == AUDIO_LOADING
         && (stream->write - stream->read >= STREAM_PREFILL || stream->eof)) {
         stream->state = AUDIO_READY;
     }
     SDL_UnlockMutex(m_Mutex);
-    return count != 0 || needs_seek;
+    return count != 0 || progress || needs_seek;
 }
 
 static int M_Worker(void *const user)
@@ -490,10 +553,13 @@ static void M_MixPlayback(
     }
     const AUDIO_SAMPLE *const sample = playback->sample;
     const AUDIO_LOOP loop = playback->options.loop;
-    const double limit =
-        loop.enabled ? (double)loop.end : (double)sample->count;
-    const double step = (double)sample->info.sample_rate / AUDIO_OUTPUT_RATE
-        * playback->options.pitch;
+    // Maps the loop from source frames to the resampled frames.
+    const double scale = (double)AUDIO_OUTPUT_RATE / sample->info.sample_rate;
+    const double limit = loop.enabled
+        ? MIN((double)loop.end * scale, (double)sample->count)
+        : (double)sample->count;
+    const double begin = MIN((double)loop.begin * scale, MAX(limit - 1.0, 0.0));
+    const double step = playback->options.pitch;
     const float left = M_Gain(&playback->options, 0);
     const float right = M_Gain(&playback->options, 1);
     for (uint32_t i = 0; i < frames; i++) {
@@ -502,14 +568,13 @@ static void M_MixPlayback(
                 playback->finished = true;
                 break;
             }
-            playback->position = loop.begin
-                + fmod(playback->position - loop.begin,
-                       (double)(loop.end - loop.begin));
+            playback->position =
+                begin + fmod(playback->position - begin, limit - begin);
         }
         const size_t at = (size_t)playback->position;
         size_t next = at + 1;
         if ((double)next >= limit) {
-            next = loop.enabled ? (size_t)loop.begin : at;
+            next = loop.enabled ? (size_t)begin : at;
         }
         const float fraction = (float)(playback->position - (double)at);
         out[i * 2] +=
@@ -535,8 +600,7 @@ static void M_MixStream(
         || m_Groups[stream->options.group].paused) {
         return;
     }
-    const double step = (double)stream->info.sample_rate / AUDIO_OUTPUT_RATE
-        * stream->options.pitch;
+    const double step = stream->options.pitch;
     for (uint32_t i = 0; i < frames; i++) {
         const uint64_t available = stream->write - stream->read;
         const double advance = stream->phase + step;
@@ -996,7 +1060,7 @@ RESULT AudioStream_SetPitch(AUDIO_STREAM *const stream, const float pitch)
 {
     MUST(M_CheckPitch(pitch));
     SDL_LockMutex(m_Mutex);
-    const RESULT result = M_CheckStreamPitch(pitch, &stream->info);
+    const RESULT result = M_CheckStreamPitch(pitch);
     if (IS_OK(result)) {
         stream->options.pitch = pitch;
         stream->configuration++;

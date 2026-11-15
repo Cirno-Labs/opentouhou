@@ -1,5 +1,10 @@
 # th06 changelog
 
+## Unreleased
+
+- Changed the conversion of music and sound effects to the output rate,
+  which keeps their high frequencies.
+
 ## 1.0.1 (2026-11-15)
 
 - Fixed the message about missing game data on macOS when macOS starts
