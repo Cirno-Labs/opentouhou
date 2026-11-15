@@ -238,23 +238,15 @@ RESULT Anm_UpdateTexture(
             || (int64_t)rectangle.x + rectangle.width > texture->image.width
             || (int64_t)rectangle.y + rectangle.height > texture->image.height,
         "Invalid ANM texture update rectangle");
-    IMAGE pixels = Image_Create(image->width, image->height, &g_HeapAllocator);
-    memcpy(
-        pixels.pixels, image->pixels,
-        (size_t)image->width * (size_t)image->height * 4);
+    IMAGE pixels;
+    MUST(Image_Crop(
+        image, 0, 0, image->width, image->height, &g_HeapAllocator, &pixels));
     M_Quantize(&pixels, texture->format);
     GfxTexture_Upload(texture->texture, rectangle, &pixels);
-    for (int32_t row = 0; row < image->height; row++) {
-        memcpy(
-            texture->image.pixels
-                + ((size_t)(rectangle.y + row) * (size_t)texture->image.width
-                   + (size_t)rectangle.x)
-                    * 4,
-            pixels.pixels + (size_t)row * (size_t)image->width * 4,
-            (size_t)image->width * 4);
-    }
+    const RESULT result =
+        Image_Paste(&texture->image, rectangle.x, rectangle.y, &pixels);
     Image_Free(&pixels);
-    return OK;
+    return result;
 }
 
 RESULT Anm_CopyTextureRect(
@@ -273,16 +265,10 @@ RESULT Anm_CopyTextureRect(
             || (int64_t)source.y + source.height > from->image.height
             || dest.width <= 0 || dest.height <= 0,
         "Invalid ANM texture copy rectangle");
-    IMAGE pixels = Image_Create(source.width, source.height, &g_HeapAllocator);
-    for (int32_t row = 0; row < source.height; row++) {
-        memcpy(
-            pixels.pixels + (size_t)row * (size_t)source.width * 4,
-            from->image.pixels
-                + ((size_t)(source.y + row) * (size_t)from->image.width
-                   + (size_t)source.x)
-                    * 4,
-            (size_t)source.width * 4);
-    }
+    IMAGE pixels;
+    MUST(Image_Crop(
+        &from->image, source.x, source.y, source.width, source.height,
+        &g_HeapAllocator, &pixels));
     if (source.width != dest.width || source.height != dest.height) {
         Image_Resize(&pixels, dest.width, dest.height);
     }
