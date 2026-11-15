@@ -16,6 +16,7 @@ th07_lib = static_library(
   'buttons.c',
   'ecl/file.c',
   'ecl/patterns.c',
+  'ecl/run.c',
   'effect.c',
   'enemy.c',
   'files.c',
