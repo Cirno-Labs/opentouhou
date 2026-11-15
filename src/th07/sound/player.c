@@ -334,7 +334,7 @@ static void M_PlayQueued(void)
 
 RESULT SoundPlayer_Init(void)
 {
-    m_Player = (M_PLAYER) {};
+    memset(&m_Player, 0, sizeof(m_Player));
     FAIL_IF(!Audio_IsInitialized(), "audio is not initialized");
     m_Player.enabled = true;
     const RESULT effects = M_LoadEffects();
@@ -370,5 +370,5 @@ void SoundPlayer_Shutdown(void)
     M_FreeMusic();
     M_FreeEffects();
     Bgm_FreeList(&m_Player.tracks);
-    m_Player = (M_PLAYER) {};
+    memset(&m_Player, 0, sizeof(m_Player));
 }

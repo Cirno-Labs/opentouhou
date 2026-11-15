@@ -30,6 +30,7 @@
 #include <SDL3/SDL.h>
 
 #include <math.h>
+#include <string.h>
 
 #define M_SPRITE 0x200
 #define M_SPRITE_8 (M_SPRITE + 0)
@@ -243,7 +244,7 @@ static void M_Prepare(const char *const case_name, const int32_t large_sprite)
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     m_Scene = SCENE_GAMEPLAY;
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     g_Player.clear_item = ITEM_STAR;
     m_AimAngle = 0.0f;
     m_AngleCalls = 0;

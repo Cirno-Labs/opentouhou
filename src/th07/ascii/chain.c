@@ -10,6 +10,7 @@
 #include "core/math/x87.h"
 
 #include <math.h>
+#include <string.h>
 
 static CHAIN_ELEM m_CalcElem;
 static CHAIN_ELEM m_DrawElem;
@@ -334,10 +335,9 @@ static RESULT M_Added(void *const arg)
 {
     const bool capture_background = g_AsciiText.capture_background;
     const bool highlight_font = g_AsciiText.highlight_font;
-    g_AsciiText = (ASCII_TEXT) {
-        .capture_background = capture_background,
-        .highlight_font = highlight_font,
-    };
+    memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    g_AsciiText.capture_background = capture_background;
+    g_AsciiText.highlight_font = highlight_font;
     MUST(Anm_Load(1, "data/ascii.anm", 0));
     MUST(Anm_Load(4, "data/capture.anm", 0x724));
     AsciiText_Initialize();

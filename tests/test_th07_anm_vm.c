@@ -59,11 +59,10 @@ static void M_Start(
     const int32_t sprite_offset)
 {
     memcpy(m_Instrs, instrs, (size_t)count * sizeof(ANM_INSTR));
-    m_Script = (ANM_SCRIPT) {
-        .instrs = m_Instrs,
-        .count = count,
-        .sprite_offset = sprite_offset,
-    };
+    memset(&m_Script, 0, sizeof(m_Script));
+    m_Script.instrs = m_Instrs;
+    m_Script.count = count;
+    m_Script.sprite_offset = sprite_offset;
     Anm_SetScriptEntry(M_SCRIPT, &m_Script);
     Anm_CreateVm(vm);
     Anm_StartScript(vm, M_SCRIPT);

@@ -31,6 +31,7 @@
 #include "stg/rng.h"
 
 #include <SDL3/SDL.h>
+#include <string.h>
 
 #define M_FAN_ANGLE 0.22439948f
 #define M_START_X 192.0f
@@ -239,9 +240,9 @@ static void M_WriteSht(const char *const name)
 
 static void M_Reset(void)
 {
-    g_Enemies = (ENEMIES) {};
-    g_AsciiText = (ASCII_TEXT) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
+    memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_GameSpeed = 1.0f;
     m_Scene = SCENE_GAMEPLAY;
     m_MsgRunning = false;

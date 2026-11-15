@@ -17,6 +17,8 @@
 #include "core/base/memory.h"
 #include "core/io/file.h"
 
+#include <string.h>
+
 static const TH07_INPUT m_NoInput;
 static const TH07_INPUT m_Shoot = { .shoot = true };
 
@@ -57,7 +59,7 @@ static void M_Setup(void)
     M_MountFiles();
     SceneStubCalls_Reset();
     Chain_Release(&g_Chain);
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     FakeShell_Reset();
     for (int32_t device = 0; device < INPUT_DEVICE_COUNT; device++) {
         M_SetDevice((INPUT_DEVICE)device, &m_NoInput);

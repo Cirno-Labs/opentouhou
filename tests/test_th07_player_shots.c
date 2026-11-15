@@ -19,6 +19,8 @@
 #include "stg/rng.h"
 #include "stg/timer.h"
 
+#include <string.h>
+
 #define I(x) { .i = (x) }
 #define INSTR(op_, time_, ...)                                                 \
     {                                                                          \
@@ -133,11 +135,11 @@ static void M_SetUp(void)
     for (int32_t i = 0x460; i < 0x480; i++) {
         Anm_SetScriptEntry(i, &m_Short);
     }
-    g_GameManager = (GAME_MANAGER) {};
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
     g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
     g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
     g_GameSpeed = 1.0f;
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     for (int32_t i = 0; i < PLAYER_BULLET_COUNT; i++) {
         Anm_InitVm(&g_Player.shots.bullets[i].vm);
     }
