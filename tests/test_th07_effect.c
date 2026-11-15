@@ -72,12 +72,12 @@ static ANM_SCRIPT m_Add = { m_AddInstrs, 3, 0 };
 
 static void M_WriteAnm(const char *const name, const int32_t script)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
-    Th07AnmBuilder_End(anm, Th07AnmBuilder_BeginScript(anm, script));
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, name);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
+    AnmBuilder_End(anm, AnmBuilder_BeginScript(anm, script));
+    AnmBuilder_WriteFile(&builder, m_Directory, name);
 }
 
 // Installs a script that runs for 1000 frames at every script number of

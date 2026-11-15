@@ -195,17 +195,17 @@ EFFECT *Effect_SpawnReserved(
 static void M_WriteAnm(const char *const name)
 {
     static const int32_t scripts[] = { 0, 1, 2, 3, 4, 0x40, 0x80, 0x81 };
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
     const uint32_t sprite = 0;
     for (size_t i = 0; i < ARRAY_SIZE(scripts); i++) {
-        const int32_t script = Th07AnmBuilder_BeginScript(anm, scripts[i]);
-        Th07AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
-        Th07AnmBuilder_End(anm, script);
+        const int32_t script = AnmBuilder_BeginScript(anm, scripts[i]);
+        AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
+        AnmBuilder_End(anm, script);
     }
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, name);
+    AnmBuilder_WriteFile(&builder, m_Directory, name);
 }
 
 static void M_WriteSht(const char *const name)

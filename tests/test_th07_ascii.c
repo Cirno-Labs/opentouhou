@@ -37,12 +37,11 @@ static ANM_SCRIPT m_Scripts[8];
 
 static void M_WriteAnm(const char *const name)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 256, 256, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, name);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 256, 256, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
+    AnmBuilder_WriteFile(&builder, m_Directory, name);
 }
 
 static RESULT M_Start(const char *const case_name, const bool capture)
