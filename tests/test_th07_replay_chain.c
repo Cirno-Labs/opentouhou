@@ -568,3 +568,11 @@ TEST(registering_clears_the_play_words)
     Replay_EndStage();
     M_TearDown();
 }
+
+TEST(marking_an_event_without_a_recording_does_nothing)
+{
+    M_SetUp(1);
+    Replay_MarkEvent(REPLAY_EVENT_HIT);
+    CHECK(g_Chain.calc.next == nullptr);
+    M_TearDown();
+}
