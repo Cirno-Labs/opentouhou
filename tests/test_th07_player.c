@@ -8,6 +8,7 @@
 
 #include "th07/anm.h"
 #include "th07/ascii.h"
+#include "th07/bomb.h"
 #include "th07/buttons.h"
 #include "th07/effect.h"
 #include "th07/files.h"
@@ -138,7 +139,7 @@ void Bomb_Update(void)
     m_BombCalls++;
 }
 
-void Bomb_Draw(void)
+void Bomb_Draw(const ANM_DRAW *const draw)
 {
     m_BombDraws++;
 }
