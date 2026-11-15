@@ -4,6 +4,16 @@ build game:
     just -f {{justfile_directory()}}/justfile _docker_build win media
     just -f {{justfile_directory()}}/justfile _docker_run win media replay {{game}}
 
+# Run a game's capture tracer under wine, without audio drivers (the
+# original stalls on its title screen when DirectSound has no device)
+# and in a Japanese locale for its file names.
+[group('replay')]
+[no-cd]
+capture game *args:
+    WINEDLLOVERRIDES="winealsa.drv,winepulse.drv,wineoss.drv,winecoreaudio.drv=" \
+        LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8 \
+        wine {{quote(justfile_directory())}}/build/replay/{{game}}/{{game}}capture.exe {{args}}
+
 # Compare a game's case or directory against its original .rpy inputs.
 [group('replay')]
 [no-cd]
