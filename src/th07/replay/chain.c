@@ -16,7 +16,6 @@
 #define M_RECORD_PRIORITY 16
 #define M_RESTART_PRIORITY 17
 #define M_DRAW_PRIORITY 14
-#define M_EVENT_PAUSE 0x100
 #define M_FPS_FRAMES 30
 // The port runs at the rate the original aims for and keeps no clock
 // streak, so recording stores 60 without the fast clock bit.
@@ -201,7 +200,7 @@ static CHAIN_STATUS M_Mark(void *const arg)
     replay->events = 0;
     g_Rng.generated = 0;
     if (g_GameManager.mode.pause_requested) {
-        replay->events |= M_EVENT_PAUSE;
+        replay->events |= REPLAY_EVENT_PAUSE;
     }
     g_GameManager.mode.pause_requested = false;
     return CHAIN_CONTINUE;
@@ -369,5 +368,12 @@ void Replay_Discard(void)
 {
     if (m_Replay != nullptr) {
         Chain_Remove(&m_Replay->calc);
+    }
+}
+
+void Replay_MarkEvent(const REPLAY_EVENT event)
+{
+    if (m_Replay != nullptr && m_Replay->mode == REPLAY_RECORD) {
+        m_Replay->events |= (uint16_t)event;
     }
 }

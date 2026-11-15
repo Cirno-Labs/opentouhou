@@ -7,13 +7,24 @@ typedef enum {
     REPLAY_PLAY = 1,
 } REPLAY_MODE;
 
+// Marks what happened in a calc of a recording.
+typedef enum {
+    REPLAY_EVENT_BOMB = 0x1,
+    REPLAY_EVENT_HIT = 0x2,
+    REPLAY_EVENT_DEATH = 0x4,
+    REPLAY_EVENT_BORDER = 0x8,
+    REPLAY_EVENT_BORDER_BROKEN = 0x10,
+    REPLAY_EVENT_ENEMY_GONE = 0x20,
+    REPLAY_EVENT_ITEM = 0x40,
+    REPLAY_EVENT_PAUSE = 0x100, // a pause was requested
+} REPLAY_EVENT;
+
 // Holds what one calc of a recording stores. Recording stores a frame on
 // every calc of a stage.
 typedef struct {
     uint16_t buttons;
-    // Holds the events of the calc (2: the player is hit, 0x100: a pause
-    // was requested). The empty frames at the start and the end of a
-    // stage hold uninitialized words.
+    // Holds the REPLAY_EVENT bits of the calc. The empty frames at the
+    // start and the end of a stage hold uninitialized words.
     uint16_t events;
 } REPLAY_FRAME;
 
