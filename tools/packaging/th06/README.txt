@@ -21,13 +21,23 @@ beside its .dat files:
 - macOS: oth06.app and othpatch
 
 Then start the program. The program never changes the files in that
-folder. On macOS, the program has no developer signature, so macOS asks
-before the first start: open oth06.app from its context menu.
+folder.
+
+On macOS, the program has no developer signature, and macOS runs a
+downloaded program from a temporary copy that cannot see the files
+beside it. Before the first start, open Terminal in the folder of the
+game and type:
+
+    xattr -dr com.apple.quarantine oth06.app othpatch
 
 To keep the program in a different folder, give it the folder of the
 game when you start it:
 
     oth06 --data <folder of the game>
+
+On macOS, the program inside oth06.app takes the arguments:
+
+    oth06.app/Contents/MacOS/oth06 --data <folder of the game>
 
 To see all arguments and the folders that the program uses, type:
 
