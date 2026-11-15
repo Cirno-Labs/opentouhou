@@ -671,6 +671,15 @@ void Effect_StartPetalsFalling(void)
     }
 }
 
+void Effect_SetColorScale(
+    const float red, const float green, const float blue, const float alpha)
+{
+    m_ColorScale[0] = red;
+    m_ColorScale[1] = green;
+    m_ColorScale[2] = blue;
+    m_ColorScale[3] = alpha;
+}
+
 void Effect_DrawPetals(void)
 {
     // Quality 1 draws none either: the original stops at the first odd
