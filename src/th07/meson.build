@@ -13,6 +13,7 @@ th07_lib = static_library(
   'buttons.c',
   'files.c',
   'game.c',
+  'replay/format.c',
   'scene.c',
   'settings.c',
   'sound/bgm.c',
