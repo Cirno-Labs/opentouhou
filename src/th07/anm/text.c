@@ -242,13 +242,9 @@ RESULT Anm_RenderTextToTextureIndex(
         shadow == UINT32_MAX);
     const int32_t source_width =
         width * 2 < M_SURFACE_WIDTH ? width * 2 : M_SURFACE_WIDTH;
-    IMAGE source = Image_Create(source_width, font * 2, &g_HeapAllocator);
-    for (int32_t row = 0; row < source.height; row++) {
-        memcpy(
-            source.pixels + (size_t)row * (size_t)source_width * 4,
-            surface.pixels + (size_t)row * M_SURFACE_WIDTH * 4,
-            (size_t)source_width * 4);
-    }
+    IMAGE source;
+    MUST(Image_Crop(
+        &surface, 0, 0, source_width, font * 2, &g_HeapAllocator, &source));
     Image_Free(&surface);
     Image_Resize(&source, width, dest);
     const RESULT result =
