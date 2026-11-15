@@ -41,12 +41,23 @@
 #define M_LASER_FIRST_SCRIPT 0x40c
 #define M_SPARK_SPRITES 4
 #define M_SPARK_FIRST_SCRIPT 0x408
+#define M_KNIFE_COUNT 0x60
+#define M_KNIFE_FIRST_SCRIPT 0x405
+#define M_DOLL_FIRST_SCRIPT 0x407
+#define M_KNIFE_HIT_SCRIPT 0x460
+#define M_KNIFE_SPENT 999 // damage_dealt once a knife has hit
+#define M_KNIVES_PER_CALL 5
+#define M_SQUARE_COUNT 4
+#define M_SQUARE_FIRST_SCRIPT 0x409
+#define M_PRIVATE_SQUARE_COUNT 2
+#define M_PRIVATE_SQUARE_FIRST_SCRIPT 0x40d
 #define M_SHAKE_FRAME 60
 #define M_AURA_SCALE 0.0625f
 #define M_AURA_COLOR 0xff4040u
 #define M_EFFECT_SPARKS ((EFFECT_TYPE)(EFFECT_PARTICLE + 2))
 #define M_COLOR_WHITE 0xffffffffu
 #define M_COLOR_SHOCKWAVE 0xff4040ffu
+#define M_COLOR_KNIFE_HIT 0xffff80ffu
 
 typedef struct {
     int32_t sprite; // of the portrait
@@ -87,9 +98,14 @@ static int32_t M_Index(void)
     return g_GameManager.run.shot_index * 2 + (g_Player.bomb.focused ? 1 : 0);
 }
 
+static bool M_TimerHasTickedTo(const TIMER *const timer, const int32_t frame)
+{
+    return Timer_HasTicked(timer) && timer->current == frame;
+}
+
 static bool M_HasTickedTo(const int32_t frame)
 {
-    return Timer_HasTicked(M_Timer()) && M_Timer()->current == frame;
+    return M_TimerHasTickedTo(M_Timer(), frame);
 }
 
 static bool M_Starts(void)
@@ -743,6 +759,350 @@ static void M_MarisaBFocused(void)
     M_Finish();
 }
 
+static void M_SpawnKnifeEffect(void)
+{
+    g_Player.bomb.parts[0].effect =
+        Effect_Spawn(EFFECT_KNIFE_BOMB, g_Player.pos, 1, M_COLOR_WHITE);
+    Sound_Queue(SOUND_POWER_0);
+}
+
+// Throws knife i from 24 out of where the bomb started, at a random angle,
+// speed, speed step and turn.
+static void M_ThrowKnife(const int32_t i)
+{
+    PLAYER *const player = &g_Player;
+    PLAYER_BOMB_PART *const knife = &player->bomb.parts[i];
+    knife->state = M_PART_FLYING;
+    Anm_StartScriptAtOrigin(&knife->vms[0], (i & 1) + M_KNIFE_FIRST_SCRIPT);
+    knife->angle = Rng_F32(&g_Rng) * MATH_TWO_PI - MATH_PI;
+    knife->speed = Rng_F32(&g_Rng) * 6.0f + 5.5f;
+    knife->speed_step = Rng_F32(&g_Rng) * 0.1f + 0.1f;
+    // acceleration.x holds the turn of each call.
+    knife->acceleration.x = Rng_F32(&g_Rng) * 0.06283186f - 0.031415927f;
+    X87_SinCosScale(
+        knife->angle, 24.0f, &knife->velocity.x, &knife->velocity.y);
+    knife->pos = Vec3_Add(player->bomb.start_pos, knife->velocity);
+    knife->velocity.z = 0.0f;
+    player->damage_boxes[i].damage_dealt = 0;
+}
+
+// Turns and speeds knife i up, and moves its box and clear circle with it
+// until it has dealt 30 damage. Frees it outside the play area.
+static void M_MoveKnife(const int32_t i)
+{
+    PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[i];
+    PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[i];
+    knife->angle = Angle_AddNormalize(knife->angle, knife->acceleration.x);
+    knife->speed += knife->speed_step;
+    X87_SinCosScale(
+        knife->angle, knife->speed, &knife->velocity.x, &knife->velocity.y);
+    if (box->damage_dealt < 30) {
+        knife->pos =
+            Vec3_Add(knife->pos, Vec3_Scale(knife->velocity, g_GameSpeed));
+        M_AddClearCircle(knife->pos, 32.0f);
+        box->size.x = 24.0f;
+        box->size.y = 24.0f;
+        box->pos = knife->pos;
+        box->damage = 10;
+    } else if (box->damage_dealt < M_KNIFE_SPENT) {
+        Anm_StartScriptAtOrigin(&knife->vms[0], M_KNIFE_HIT_SCRIPT);
+        box->damage_dealt = M_KNIFE_SPENT;
+    }
+    if (!GameManager_IsInPlayArea(knife->pos.x, knife->pos.y, 64.0f, 64.0f)) {
+        knife->state = M_PART_FREE;
+    }
+    Anm_Step(&knife->vms[0]);
+}
+
+// Throws knives in all directions from where the bomb started, from frame
+// 60 to frame 120.
+static void M_SakuyaA(void)
+{
+    PLAYER *const player = &g_Player;
+    if (M_Ends()) {
+        return;
+    }
+    if (M_Starts()) {
+        Item_CollectAll();
+        M_ShowName();
+        player->bomb.duration = 160;
+        Timer_Set(&player->state.timer, 210);
+        M_StartAura();
+        player->bomb.start_pos = player->pos;
+        for (int32_t i = 0; i < M_KNIFE_COUNT; i++) {
+            player->bomb.parts[i].state = M_PART_FREE;
+        }
+        M_SetDrain(6000, 0.28f);
+        M_SpawnKnifeEffect();
+    }
+    // Throws, moves and turns the knives on each call, not each frame.
+    if (M_Timer()->current >= 60) {
+        int32_t remaining = M_KNIVES_PER_CALL;
+        for (int32_t i = 0; i < M_KNIFE_COUNT; i++) {
+            if (player->bomb.parts[i].state != M_PART_FREE) {
+                M_MoveKnife(i);
+            } else if (M_Timer()->current <= 120 && remaining != 0) {
+                M_ThrowKnife(i);
+                remaining--;
+            }
+        }
+    }
+    M_Finish();
+}
+
+// Throws knife i from 24 out of the player, one of a ring of 96.
+static void M_ThrowDollKnife(const int32_t i)
+{
+    PLAYER *const player = &g_Player;
+    PLAYER_BOMB_PART *const knife = &player->bomb.parts[i];
+    knife->state = M_PART_FLYING;
+    Anm_StartScriptAtOrigin(&knife->vms[0], (i & 1) + M_DOLL_FIRST_SCRIPT);
+    knife->angle = (float)i * MATH_TWO_PI / 96.0f - MATH_PI;
+    knife->speed = Rng_F32(&g_Rng) * 1.0f + 0.5f;
+    knife->speed_step = Rng_F32(&g_Rng) * 0.1f + 0.03f;
+    // Draws below 1, so every knife spins the negative way.
+    knife->acceleration.x =
+        Rng_U16InRange(&g_Rng, 1) != 0 ? 0.15707964f : -0.15707964f;
+    X87_SinCosScale(
+        knife->angle, 24.0f, &knife->velocity.x, &knife->velocity.y);
+    knife->pos = Vec3_Add(player->pos, knife->velocity);
+    Timer_Set(&knife->timer, 0);
+    knife->velocity.z = 0.0f;
+    player->damage_boxes[i].damage_dealt = 0;
+}
+
+// Flies knife i out, spins it in place from its frame 30 to 70, then sends
+// it at the homing target at speed 14. Its box acts until its first hit,
+// which bursts it.
+static void M_MoveDollKnife(const int32_t i)
+{
+    PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[i];
+    PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[i];
+    if (knife->timer.current < 30 || knife->timer.current >= 70) {
+        if (M_TimerHasTickedTo(&knife->timer, 70)) {
+            const VEC3 target = g_Player.homing_target;
+            if (target.x > M_NO_TARGET) {
+                knife->angle = Angle_AddNormalize(
+                    X87_Atan2(target.y - knife->pos.y, target.x - knife->pos.x),
+                    0.0f);
+            }
+            knife->speed = 14.0f;
+        }
+        knife->speed += knife->speed_step;
+        X87_SinCosScale(
+            knife->angle, knife->speed, &knife->velocity.x, &knife->velocity.y);
+    } else {
+        knife->angle = Angle_AddNormalize(knife->angle, knife->acceleration.x);
+        knife->velocity.x = 0.0f;
+        knife->velocity.y = 0.0f;
+    }
+    if (box->damage_dealt == 0) {
+        knife->pos =
+            Vec3_Add(knife->pos, Vec3_Scale(knife->velocity, g_GameSpeed));
+        M_AddClearCircle(knife->pos, 32.0f);
+        box->size.x = 24.0f;
+        box->size.y = 24.0f;
+        box->pos = knife->pos;
+        box->damage = 22;
+    } else if (box->damage_dealt < M_KNIFE_SPENT) {
+        Anm_StartScriptAtOrigin(&knife->vms[0], M_KNIFE_HIT_SCRIPT);
+        box->damage_dealt = M_KNIFE_SPENT;
+        Effect_Spawn(EFFECT_EXPLOSION, knife->pos, 1, M_COLOR_KNIFE_HIT);
+    }
+    Anm_Step(&knife->vms[0]);
+    Timer_TickAt(&knife->timer, g_GameSpeed);
+}
+
+// Throws a ring of 96 knives from the player, two every 2 frames from frame
+// 20, and slows the player.
+static void M_SakuyaAFocused(void)
+{
+    PLAYER *const player = &g_Player;
+    const TIMER *const timer = M_Timer();
+    if (M_Ends()) {
+        M_Slow(1.0f);
+        return;
+    }
+    if (M_Starts()) {
+        Item_CollectAll();
+        M_ShowName();
+        player->bomb.duration = 250;
+        Timer_Set(&player->state.timer, 290);
+        M_StartAura();
+        for (int32_t i = 0; i < M_KNIFE_COUNT; i++) {
+            player->bomb.parts[i].state = M_PART_FREE;
+        }
+        M_SetDrain(6500, 0.29f);
+        M_Slow(0.3f);
+        M_SpawnKnifeEffect();
+    }
+    if (timer->current >= 0 && timer->current <= 60) {
+        player->bomb.parts[0].effect->pos = player->pos;
+    }
+    if (timer->current >= 20 && timer->current < 116) {
+        for (int32_t i = 0; i < M_KNIFE_COUNT; i++) {
+            if (M_HasTickedTo(i % 48 * 2 + 20)) {
+                M_ThrowDollKnife(i);
+            }
+        }
+        // Restarts on each call, not each frame.
+        Sound_Queue(SOUND_POWER_1);
+        ScreenEffect_Shake(120, 4, 1);
+    }
+    for (int32_t i = 0; i < M_KNIFE_COUNT; i++) {
+        if (player->bomb.parts[i].state != M_PART_FREE) {
+            M_MoveDollKnife(i);
+        }
+    }
+    M_Finish();
+}
+
+// Stops every enemy bullet at frames 0, 60 and 120, puts four sprites in
+// the corners around the centre, hits the whole play area every 4 frames,
+// and speeds the player up. Clears the play area as it ends.
+static void M_SakuyaB(void)
+{
+    PLAYER *const player = &g_Player;
+    const TIMER *const timer = M_Timer();
+    if (M_Ends()) {
+        M_Slow(1.0f);
+        M_AddClearCircle(player->pos, 800.0f);
+        return;
+    }
+    if (M_Starts()) {
+        Item_CollectAll();
+        M_ShowName();
+        player->bomb.duration = 160;
+        Timer_Set(&player->state.timer, 260);
+        M_StartAura();
+        for (int32_t i = 0; i < M_SQUARE_COUNT; i++) {
+            player->bomb.parts[i].state = M_PART_FREE;
+        }
+        Sound_Queue(SOUND_SPARK);
+        M_SetDrain(5500, 0.26f);
+        M_Slow(2.0f);
+        Bullet_StopAll();
+    }
+    if (M_HasTickedTo(60)) {
+        Bullet_StopAll();
+    }
+    if (M_HasTickedTo(120)) {
+        Bullet_StopAll();
+    }
+    if (M_HasTickedTo(30)) {
+        for (int32_t i = 0; i < M_SQUARE_COUNT; i++) {
+            PLAYER_BOMB_PART *const part = &player->bomb.parts[i];
+            ANM_VM *const vm = &part->vms[0];
+            part->state = M_PART_FLYING;
+            Anm_StartScriptAtOrigin(vm, i + M_SQUARE_FIRST_SCRIPT);
+            vm->pos.x = 192.0f + ((i & 1) != 0 ? 128.0f : -128.0f);
+            vm->pos.y = 224.0f + (i / 2 != 0 ? 128.0f : -128.0f);
+            vm->pos.z = 0.49f;
+            part->velocity.z = 0.0f;
+        }
+    }
+    // Acts on the frames that are multiples of 4, unlike the other bombs.
+    if (timer->current >= 30 && Timer_HasTicked(timer)
+        && timer->current % 4 == 0) {
+        PLAYER_DAMAGE_BOX *const box = &player->damage_boxes[0];
+        box->pos.x = 192.0f;
+        box->pos.y = 224.0f;
+        box->size.x = 352.0f;
+        box->size.y = 416.0f;
+        box->damage = 3;
+    }
+    if (M_HasTickedTo(40)) {
+        ScreenEffect_Shake(60, 1, 7);
+    }
+    if (M_HasTickedTo(100)) {
+        ScreenEffect_Shake(70, 24, 0);
+    }
+    for (int32_t i = 0; i < M_SQUARE_COUNT; i++) {
+        if (player->bomb.parts[i].state != M_PART_FREE) {
+            Anm_Step(&player->bomb.parts[i].vms[0]);
+        }
+    }
+    M_Finish();
+}
+
+// Sends two sprites out from the player that are pulled back to it, each
+// trailing its last 32 positions. Stops every enemy bullet at frames 40 and
+// 100, speeds the player up, and clears the play area as it ends.
+static void M_SakuyaBFocused(void)
+{
+    PLAYER *const player = &g_Player;
+    PLAYER_BOMB_PART *const first = &player->bomb.parts[0];
+    if (M_Ends()) {
+        M_Slow(1.0f);
+        M_AddClearCircle(player->pos, 800.0f);
+        // Overwrites the first clear area, whichever bomb set it.
+        PLAYER_CLEAR_AREA *const area = &player->clear_areas[0];
+        area->x = 192.0f;
+        area->y = 224.0f;
+        area->width = 448.0f;
+        area->height = 512.0f;
+        return;
+    }
+    if (M_Starts()) {
+        Item_CollectAll();
+        M_ShowName();
+        player->bomb.duration = 300;
+        Timer_Set(&player->state.timer, 420);
+        M_StartAura();
+        player->state.bomb_started = false;
+        for (int32_t i = 0; i < M_PRIVATE_SQUARE_COUNT; i++) {
+            PLAYER_BOMB_PART *const part = &player->bomb.parts[i];
+            part->state = M_PART_FLYING;
+            Anm_StartScriptAtOrigin(
+                &part->vms[0], i + M_PRIVATE_SQUARE_FIRST_SCRIPT);
+            part->pos = player->pos;
+            for (int32_t k = PLAYER_BOMB_PART_TRAIL_COUNT - 1; k >= 0; k--) {
+                part->trail[k] = part->pos;
+            }
+            part->velocity = (VEC3) {};
+            part->acceleration = (VEC3) { 0.0f, -0.008f, 0.0f };
+        }
+        M_Slow(1.5f);
+        Sound_Queue(SOUND_SPARK);
+        M_SetDrain(6000, 0.29f);
+    }
+    // Acts on each call, not each frame.
+    M_AddClearCircle(first->pos, 96.0f);
+    PLAYER_DAMAGE_BOX *const box = &player->damage_boxes[0];
+    box->pos.x = first->pos.x;
+    box->pos.y = first->pos.y;
+    box->size.x = 160.0f;
+    box->size.y = 160.0f;
+    box->damage = 1;
+    if (M_HasTickedTo(40)) {
+        ScreenEffect_Shake(60, 1, 7);
+        Bullet_StopAll();
+    }
+    if (M_HasTickedTo(100)) {
+        Bullet_StopAll();
+        ScreenEffect_Shake(70, 24, 0);
+    }
+    for (int32_t i = 0; i < M_PRIVATE_SQUARE_COUNT; i++) {
+        PLAYER_BOMB_PART *const part = &player->bomb.parts[i];
+        if (part->state == M_PART_FREE) {
+            continue;
+        }
+        part->acceleration = Vec3_Scale(
+            Vec3_Scale(Vec3_Sub(player->pos, part->pos), 1.0f / 1700.0f),
+            g_GameSpeed);
+        part->velocity = Vec3_Add(
+            part->velocity, Vec3_Scale(part->acceleration, g_GameSpeed));
+        for (int32_t k = PLAYER_BOMB_PART_TRAIL_COUNT - 1; k > 0; k--) {
+            part->trail[k] = part->trail[k - 1];
+        }
+        part->trail[0] = part->pos;
+        part->pos =
+            Vec3_Add(part->pos, Vec3_Scale(part->velocity, g_GameSpeed));
+        Anm_Step(&part->vms[0]);
+    }
+    M_Finish();
+}
+
 void Bomb_Update(void)
 {
     switch (M_Index()) {
@@ -770,10 +1130,19 @@ void Bomb_Update(void)
     case 7:
         M_MarisaBFocused();
         break;
+    case 8:
+        M_SakuyaA();
+        break;
+    case 9:
+        M_SakuyaAFocused();
+        break;
+    case 10:
+        M_SakuyaB();
+        break;
+    case 11:
+        M_SakuyaBFocused();
+        break;
     default:
-        // Sakuya's bombs end at once.
-        g_Player.bomb.running = false;
-        g_Player.state.bomb_started = false;
         break;
     }
 }

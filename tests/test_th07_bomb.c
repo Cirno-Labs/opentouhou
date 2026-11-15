@@ -48,6 +48,7 @@
 #define M_MARISA_A 2
 #define M_MARISA_B 3
 #define M_SAKUYA_A 4
+#define M_SAKUYA_B 5
 
 // The test runs the bombs through the real player update. It links these
 // instead of the modules they stand for. Each records its calls.
@@ -78,6 +79,7 @@ static int32_t m_NameSprite;
 static const char *m_Name;
 static int32_t m_NameEnds;
 static int32_t m_CollectCalls;
+static int32_t m_StopCalls;
 static M_EFFECT_CALL m_Effects[M_MAX_CALLS];
 static int32_t m_EffectCount;
 static M_SHAKE_CALL m_Shakes[M_MAX_CALLS];
@@ -134,6 +136,11 @@ void AsciiText_SetSummaryInterrupt(const int16_t interrupt)
 
 void Bullet_ClearAll(void)
 {
+}
+
+void Bullet_StopAll(void)
+{
+    m_StopCalls++;
 }
 
 void Bomb_Draw(void)
@@ -257,6 +264,7 @@ static void M_WriteAnm(const int32_t character)
         for (int32_t i = 0x05; i < 0x0f; i++) {
             M_AddScript(anm, i);
         }
+        M_AddScript(anm, 0x60);
     }
     char *const name = Str_Format("data/player0%d.anm", character);
     Th07AnmBuilder_WriteFile(&builder, m_Directory, name);
@@ -298,6 +306,7 @@ static void M_Reset(void)
     m_Name = nullptr;
     m_NameEnds = 0;
     m_CollectCalls = 0;
+    m_StopCalls = 0;
     m_EffectCount = 0;
     m_ShakeCount = 0;
     for (int32_t i = 0; i < EFFECT_RESERVED_COUNT; i++) {
@@ -447,6 +456,13 @@ static const M_BOMB_CASE m_Bombs[] = {
       300, 0.4f, 110 },
     { M_MARISA_B, true, 0x4a2, "恋符「マスタースパーク」", 340, 390, 0.2f,
       120 },
+    { M_SAKUYA_A, false, 0x4a1, "幻符「インディスクリミネイト」", 160, 210,
+      1.0f, 170 },
+    { M_SAKUYA_A, true, 0x4a1, "幻符「殺人ドール」", 250, 290, 0.3f, 110 },
+    { M_SAKUYA_B, false, 0x4a3, "時符「パーフェクトスクウェア」", 160, 260,
+      2.0f, 160 },
+    { M_SAKUYA_B, true, 0x4a3, "時符「プライベートスクウェア」", 300, 420, 1.5f,
+      90 },
 };
 
 TEST(each_bomb_starts_with_its_name_items_drain_and_state_timer)
@@ -529,15 +545,6 @@ TEST(the_bomb_aura_becomes_a_shrinking_spell_circle)
     CHECK_EQ_INT(vm->int_vars[0], 200);
     CHECK(vm->rotation_speed.z == -0.5f);
     CHECK_EQ_INT(vm->color, 0xffff4040u);
-    M_TearDown();
-}
-
-TEST(sakuya_bombs_end_at_once)
-{
-    M_SetUp("sakuya", M_SAKUYA_A);
-    M_StartBomb(false);
-    CHECK(!g_Player.bomb.running);
-    CHECK(!g_Player.state.bomb_started);
     M_TearDown();
 }
 
@@ -1076,5 +1083,437 @@ TEST(the_spark_shakes_the_screen_at_frames_60_and_120)
     M_RunTo(120);
     CHECK_EQ_INT(m_ShakeCount, 2);
     CHECK(M_SameShake(&m_Shakes[1], 200, 24, 0));
+    M_TearDown();
+}
+
+// Sakuya A
+
+typedef struct {
+    float angle, speed, speed_step, turn;
+} M_KNIFE;
+
+static M_KNIFE M_DrawKnife(RNG *const rng)
+{
+    M_KNIFE knife;
+    knife.angle = Rng_F32(rng) * MATH_TWO_PI - MATH_PI;
+    knife.speed = Rng_F32(rng) * 6.0f + 5.5f;
+    knife.speed_step = Rng_F32(rng) * 0.1f + 0.1f;
+    knife.turn = Rng_F32(rng) * 0.06283186f - 0.031415927f;
+    return knife;
+}
+
+TEST(the_knives_start_with_the_knife_effect)
+{
+    M_SetUp("sakuya_a_start", M_SAKUYA_A);
+    M_StartBomb(false);
+    CHECK_EQ_INT(m_Effects[0].type, EFFECT_KNIFE_BOMB);
+    CHECK(m_Effects[0].pos.x == M_START_X && m_Effects[0].pos.y == M_START_Y);
+    CHECK_EQ_INT(m_Effects[0].count, 1);
+    CHECK_EQ_INT(m_Effects[0].color, 0xffffffffu);
+    CHECK(g_Player.bomb.parts[0].effect == &m_SpareEffect);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_POWER_0);
+    M_TearDown();
+}
+
+TEST(the_knives_fly_five_at_a_time_from_frame_60_to_120)
+{
+    M_SetUp("sakuya_a_throw", M_SAKUYA_A);
+    M_StartBomb(false);
+    g_Player.pos.x = 100.0f;
+    M_RunTo(59);
+    CHECK_EQ_INT(g_Player.bomb.parts[0].state, 0);
+    RNG rng = g_Rng;
+    M_RunTo(60);
+    M_KNIFE expected[5];
+    for (int32_t i = 0; i < 5; i++) {
+        expected[i] = M_DrawKnife(&rng);
+        CHECK_EQ_INT(g_Player.bomb.parts[i].state, 1);
+        CHECK_EQ_INT(g_Player.bomb.parts[i].vms[0].script_index, 0x405 + i % 2);
+    }
+    CHECK_EQ_INT(g_Rng.generated, rng.generated);
+    CHECK_EQ_INT(g_Player.bomb.parts[5].state, 0);
+    PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[0];
+    VEC3 velocity = {};
+    X87_SinCosScale(expected[0].angle, 24.0f, &velocity.x, &velocity.y);
+    CHECK(knife->angle == expected[0].angle);
+    CHECK(knife->speed == expected[0].speed);
+    CHECK(knife->speed_step == expected[0].speed_step);
+    CHECK(knife->acceleration.x == expected[0].turn);
+    CHECK(knife->pos.x == M_START_X + velocity.x);
+    CHECK(knife->pos.y == M_START_Y + velocity.y);
+    const VEC3 pos = knife->pos;
+    M_Frame();
+    CHECK_EQ_INT(g_Player.bomb.parts[9].state, 1);
+    CHECK_EQ_INT(g_Player.bomb.parts[10].state, 0);
+    const float angle = Angle_AddNormalize(expected[0].angle, expected[0].turn);
+    const float speed = expected[0].speed + expected[0].speed_step;
+    X87_SinCosScale(angle, speed, &velocity.x, &velocity.y);
+    CHECK(knife->angle == angle && knife->speed == speed);
+    CHECK(knife->velocity.x == velocity.x && knife->velocity.y == velocity.y);
+    CHECK(knife->pos.x == pos.x + velocity.x);
+    CHECK(knife->pos.y == pos.y + velocity.y);
+    const PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[0];
+    CHECK(box->pos.x == knife->pos.x && box->pos.y == knife->pos.y);
+    CHECK(box->size.x == 24.0f && box->size.y == 24.0f);
+    CHECK_EQ_INT(box->damage, 10);
+    CHECK(M_FindCircle(knife->pos.x, knife->pos.y, 32.0f) != nullptr);
+    M_RunTo(120);
+    const int32_t generated = g_Rng.generated;
+    M_Frame();
+    CHECK_EQ_INT(g_Rng.generated, generated);
+    M_TearDown();
+}
+
+TEST(the_knives_throw_turn_and_speed_up_on_each_call_below_full_speed)
+{
+    M_SetUp("sakuya_a_slow", M_SAKUYA_A);
+    M_StartBomb(false);
+    M_RunTo(59);
+    g_GameSpeed = 0.5f;
+    Bomb_Update();
+    CHECK_EQ_INT(g_Player.bomb.timer.current, 60);
+    const PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[0];
+    const float angle = knife->angle;
+    const float speed = knife->speed;
+    const VEC3 pos = knife->pos;
+    CHECK_EQ_INT(g_Player.bomb.parts[5].state, 0);
+    Bomb_Update();
+    CHECK_EQ_INT(g_Player.bomb.timer.current, 61);
+    CHECK_EQ_INT(g_Player.bomb.parts[9].state, 1);
+    CHECK(knife->angle == Angle_AddNormalize(angle, knife->acceleration.x));
+    CHECK(knife->speed == speed + knife->speed_step);
+    CHECK(knife->pos.x == pos.x + knife->velocity.x * 0.5f);
+    M_TearDown();
+}
+
+TEST(a_knife_stops_hitting_after_30_damage_and_frees_off_the_play_area)
+{
+    M_SetUp("sakuya_a_hit", M_SAKUYA_A);
+    M_StartBomb(false);
+    M_RunTo(60);
+    PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[0];
+    PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[0];
+    box->damage_dealt = 30;
+    const VEC3 pos = knife->pos;
+    const float speed = knife->speed;
+    M_Frame();
+    CHECK_EQ_INT(knife->vms[0].script_index, 0x460);
+    CHECK_EQ_INT(box->damage_dealt, 999);
+    CHECK(box->size.x == 0.0f);
+    CHECK(knife->pos.x == pos.x && knife->pos.y == pos.y);
+    CHECK(knife->speed == speed + knife->speed_step);
+    CHECK_EQ_INT(knife->state, 1);
+    knife->pos.x = -100.0f;
+    M_Frame();
+    CHECK_EQ_INT(knife->state, 0);
+    CHECK_EQ_INT(knife->vms[0].script_index, 0x460);
+    M_TearDown();
+}
+
+// Sakuya A focused
+
+TEST(the_doll_throws_two_knives_every_2_frames_from_frame_20)
+{
+    M_SetUp("sakuya_a_focused_throw", M_SAKUYA_A);
+    M_StartBomb(true);
+    M_RunTo(19);
+    CHECK_EQ_INT(m_ShakeCount, 0);
+    RNG rng = g_Rng;
+    M_RunTo(20);
+    for (int32_t k = 0; k < 2; k++) {
+        const int32_t i = k * 48;
+        const PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[i];
+        const float speed = Rng_F32(&rng) * 1.0f + 0.5f;
+        const float step = Rng_F32(&rng) * 0.1f + 0.03f;
+        CHECK_EQ_INT(Rng_U16InRange(&rng, 1), 0);
+        const float angle = (float)i * MATH_TWO_PI / 96.0f - MATH_PI;
+        CHECK_EQ_INT(knife->state, 1);
+        CHECK_EQ_INT(knife->vms[0].script_index, 0x407);
+        CHECK(knife->angle == angle);
+        CHECK(knife->speed == speed + step);
+        CHECK(knife->acceleration.x == -0.15707964f);
+        CHECK_EQ_INT(knife->timer.current, 1);
+        VEC3 out = {};
+        VEC3 velocity = {};
+        X87_SinCosScale(angle, 24.0f, &out.x, &out.y);
+        X87_SinCosScale(angle, speed + step, &velocity.x, &velocity.y);
+        CHECK(knife->pos.x == M_START_X + out.x + velocity.x);
+        CHECK(knife->pos.y == M_START_Y + out.y + velocity.y);
+        const PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[i];
+        CHECK(box->pos.x == knife->pos.x && box->size.x == 24.0f);
+        CHECK_EQ_INT(box->damage, 22);
+    }
+    CHECK_EQ_INT(g_Rng.generated, rng.generated);
+    CHECK_EQ_INT(g_Player.bomb.parts[1].state, 0);
+    M_RunTo(22);
+    CHECK_EQ_INT(g_Player.bomb.parts[1].vms[0].script_index, 0x408);
+    CHECK_EQ_INT(g_Player.bomb.parts[49].state, 1);
+    M_RunTo(114);
+    CHECK_EQ_INT(g_Player.bomb.parts[47].state, 1);
+    CHECK_EQ_INT(g_Player.bomb.parts[95].state, 1);
+    M_TearDown();
+}
+
+TEST(the_doll_restarts_its_sound_and_shake_on_each_call)
+{
+    M_SetUp("sakuya_a_focused_shake", M_SAKUYA_A);
+    M_StartBomb(true);
+    M_RunTo(19);
+    g_GameSpeed = 0.5f;
+    Sound_Reset();
+    Bomb_Update();
+    CHECK_EQ_INT(m_ShakeCount, 1);
+    CHECK(M_SameShake(&m_Shakes[0], 120, 4, 1));
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_POWER_1);
+    Sound_Reset();
+    const int32_t generated = g_Rng.generated;
+    Bomb_Update();
+    CHECK_EQ_INT(g_Player.bomb.timer.current, 21);
+    CHECK_EQ_INT(m_ShakeCount, 2);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_POWER_1);
+    CHECK_EQ_INT(g_Rng.generated, generated);
+    g_GameSpeed = 1.0f;
+    M_RunTo(115);
+    const int32_t shakes = m_ShakeCount;
+    M_Frame();
+    CHECK_EQ_INT(m_ShakeCount, shakes);
+    M_TearDown();
+}
+
+TEST(the_knife_effect_follows_the_player_to_frame_60)
+{
+    M_SetUp("sakuya_a_focused_effect", M_SAKUYA_A);
+    M_StartBomb(true);
+    M_RunTo(59);
+    g_Player.pos.x = 100.0f;
+    M_Frame();
+    CHECK(m_SpareEffect.pos.x == 100.0f);
+    g_Player.pos.x = 120.0f;
+    M_Frame();
+    CHECK(m_SpareEffect.pos.x == 100.0f);
+    M_TearDown();
+}
+
+TEST(a_doll_knife_spins_in_place_then_flies_at_the_target)
+{
+    M_SetUp("sakuya_a_focused_spin", M_SAKUYA_A);
+    M_StartBomb(true);
+    M_RunTo(48);
+    PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[0];
+    CHECK_EQ_INT(knife->timer.current, 29);
+    M_Frame();
+    const VEC3 pos = knife->pos;
+    float angle = knife->angle;
+    for (int32_t i = 0; i < 40; i++) {
+        M_Frame();
+        angle = Angle_AddNormalize(angle, -0.15707964f);
+        CHECK(knife->angle == angle);
+        CHECK(knife->velocity.x == 0.0f && knife->velocity.y == 0.0f);
+        CHECK(knife->pos.x == pos.x && knife->pos.y == pos.y);
+    }
+    CHECK_EQ_INT(knife->timer.current, 70);
+    const VEC3 target = { 300.0f, 50.0f, 0.0f };
+    g_Player.homing_target = target;
+    M_Frame();
+    angle =
+        Angle_AddNormalize(X87_Atan2(target.y - pos.y, target.x - pos.x), 0.0f);
+    CHECK(knife->angle == angle);
+    CHECK(knife->speed == 14.0f + knife->speed_step);
+    float vx;
+    float vy;
+    X87_SinCosScale(angle, knife->speed, &vx, &vy);
+    CHECK(knife->pos.x == pos.x + vx && knife->pos.y == pos.y + vy);
+    M_TearDown();
+}
+
+TEST(a_doll_knife_bursts_on_its_first_hit)
+{
+    M_SetUp("sakuya_a_focused_hit", M_SAKUYA_A);
+    M_StartBomb(true);
+    M_RunTo(20);
+    PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[0];
+    PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[0];
+    box->damage_dealt = 1;
+    m_EffectCount = 0;
+    const VEC3 pos = knife->pos;
+    M_Frame();
+    CHECK_EQ_INT(knife->vms[0].script_index, 0x460);
+    CHECK_EQ_INT(box->damage_dealt, 999);
+    CHECK(box->size.x == 0.0f);
+    CHECK(knife->pos.x == pos.x && knife->pos.y == pos.y);
+    CHECK_EQ_INT(m_EffectCount, 1);
+    CHECK_EQ_INT(m_Effects[0].type, EFFECT_EXPLOSION);
+    CHECK(m_Effects[0].pos.x == pos.x && m_Effects[0].pos.y == pos.y);
+    CHECK_EQ_INT(m_Effects[0].color, 0xffff80ffu);
+    M_Frame();
+    CHECK_EQ_INT(m_EffectCount, 1);
+    M_TearDown();
+}
+
+// Sakuya B
+
+TEST(the_square_stops_the_bullets_at_frames_0_60_and_120)
+{
+    M_SetUp("sakuya_b_stop", M_SAKUYA_B);
+    M_StartBomb(false);
+    CHECK_EQ_INT(m_StopCalls, 1);
+    CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_SPARK);
+    M_RunTo(59);
+    CHECK_EQ_INT(m_StopCalls, 1);
+    M_RunTo(60);
+    CHECK_EQ_INT(m_StopCalls, 2);
+    M_RunTo(119);
+    CHECK_EQ_INT(m_StopCalls, 2);
+    M_RunTo(120);
+    CHECK_EQ_INT(m_StopCalls, 3);
+    CHECK(g_Player.state.bomb_started);
+    M_TearDown();
+}
+
+TEST(the_square_puts_four_sprites_in_the_corners_at_frame_30)
+{
+    M_SetUp("sakuya_b_corners", M_SAKUYA_B);
+    M_StartBomb(false);
+    M_RunTo(29);
+    CHECK_EQ_INT(g_Player.bomb.parts[0].state, 0);
+    M_RunTo(30);
+    static const VEC2 corners[] = {
+        { 64.0f, 96.0f },
+        { 320.0f, 96.0f },
+        { 64.0f, 352.0f },
+        { 320.0f, 352.0f },
+    };
+    for (int32_t i = 0; i < 4; i++) {
+        const PLAYER_BOMB_PART *const part = &g_Player.bomb.parts[i];
+        CHECK_EQ_INT(part->state, 1);
+        CHECK_EQ_INT(part->vms[0].script_index, 0x409 + i);
+        CHECK(part->vms[0].pos.x == corners[i].x);
+        CHECK(part->vms[0].pos.y == corners[i].y);
+        CHECK(part->vms[0].pos.z == 0.49f);
+    }
+    M_TearDown();
+}
+
+TEST(the_square_hits_the_play_area_on_multiples_of_4_from_frame_30)
+{
+    M_SetUp("sakuya_b_box", M_SAKUYA_B);
+    M_StartBomb(false);
+    const PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[0];
+    M_RunTo(28);
+    CHECK(box->size.x == 0.0f);
+    M_RunTo(31);
+    CHECK(box->size.x == 0.0f);
+    M_RunTo(32);
+    CHECK(box->pos.x == 192.0f && box->pos.y == 224.0f);
+    CHECK(box->size.x == 352.0f && box->size.y == 416.0f);
+    CHECK_EQ_INT(box->damage, 3);
+    M_RunTo(33);
+    CHECK(box->size.x == 0.0f);
+    M_TearDown();
+}
+
+TEST(the_squares_shake_the_screen_at_frames_40_and_100)
+{
+    for (int32_t focused = 0; focused < 2; focused++) {
+        M_SetUp("sakuya_b_shake", M_SAKUYA_B);
+        M_StartBomb(focused != 0);
+        M_RunTo(39);
+        CHECK_EQ_INT(m_ShakeCount, 0);
+        M_RunTo(40);
+        CHECK(M_SameShake(&m_Shakes[0], 60, 1, 7));
+        M_RunTo(100);
+        CHECK_EQ_INT(m_ShakeCount, 2);
+        CHECK(M_SameShake(&m_Shakes[1], 70, 24, 0));
+        M_TearDown();
+    }
+}
+
+TEST(the_square_clears_a_circle_of_800_as_it_ends)
+{
+    for (int32_t focused = 0; focused < 2; focused++) {
+        M_SetUp("sakuya_b_end", M_SAKUYA_B);
+        M_StartBomb(focused != 0);
+        M_RunTo(g_Player.bomb.duration - 1);
+        g_Player.pos.x = 100.0f;
+        M_Frame();
+        CHECK(!g_Player.bomb.running);
+        const PLAYER_CLEAR_AREA *const area = &g_Player.clear_areas[0];
+        CHECK(area->radius == 800.0f);
+        if (focused == 0) {
+            CHECK(area->x == 100.0f && area->y == M_START_Y);
+            CHECK(area->width == 0.0f);
+        } else {
+            CHECK(area->x == 192.0f && area->y == 224.0f);
+            CHECK(area->width == 448.0f && area->height == 512.0f);
+        }
+        M_TearDown();
+    }
+}
+
+// Sakuya B focused
+
+TEST(the_private_square_stops_the_bullets_at_frames_40_and_100)
+{
+    M_SetUp("sakuya_b_focused_stop", M_SAKUYA_B);
+    M_StartBomb(true);
+    CHECK_EQ_INT(m_StopCalls, 0);
+    CHECK(!g_Player.state.bomb_started);
+    M_RunTo(39);
+    CHECK_EQ_INT(m_StopCalls, 0);
+    M_RunTo(40);
+    CHECK_EQ_INT(m_StopCalls, 1);
+    M_RunTo(100);
+    CHECK_EQ_INT(m_StopCalls, 2);
+    M_TearDown();
+}
+
+TEST(the_private_square_hits_around_its_first_sprite_on_each_call)
+{
+    M_SetUp("sakuya_b_focused_box", M_SAKUYA_B);
+    M_StartBomb(true);
+    const PLAYER_BOMB_PART *const part = &g_Player.bomb.parts[0];
+    CHECK_EQ_INT(part->vms[0].script_index, 0x40d);
+    CHECK_EQ_INT(g_Player.bomb.parts[1].vms[0].script_index, 0x40e);
+    const PLAYER_DAMAGE_BOX *const box = &g_Player.damage_boxes[0];
+    CHECK(box->pos.x == M_START_X && box->pos.y == M_START_Y);
+    CHECK(box->size.x == 160.0f && box->size.y == 160.0f);
+    CHECK_EQ_INT(box->damage, 1);
+    CHECK(M_FindCircle(M_START_X, M_START_Y, 96.0f) != nullptr);
+    const int32_t areas = M_CountAreas();
+    g_GameSpeed = 0.5f;
+    Bomb_Update();
+    Bomb_Update();
+    CHECK_EQ_INT(M_CountAreas(), areas + 2);
+    M_TearDown();
+}
+
+TEST(the_private_square_pulls_its_sprites_back_to_the_player)
+{
+    M_SetUp("sakuya_b_focused_pull", M_SAKUYA_B);
+    M_StartBomb(true);
+    PLAYER_BOMB_PART *const part = &g_Player.bomb.parts[1];
+    CHECK(part->pos.x == M_START_X && part->pos.y == M_START_Y);
+    CHECK(part->acceleration.y == 0.0f);
+    CHECK(part->trail[31].x == M_START_X);
+    part->velocity = (VEC3) { 1.0f, -2.0f, 0.0f };
+    part->pos = (VEC3) { 100.0f, 200.0f, 0.0f };
+    g_GameSpeed = 0.5f;
+    M_Frame();
+    const VEC3 acceleration = Vec3_Scale(
+        Vec3_Scale(
+            Vec3_Sub(
+                (VEC3) { M_START_X, M_START_Y, 0.0f },
+                (VEC3) { 100.0f, 200.0f, 0.0f }),
+            1.0f / 1700.0f),
+        0.5f);
+    CHECK(part->acceleration.x == acceleration.x);
+    CHECK(part->acceleration.y == acceleration.y);
+    const VEC3 velocity =
+        Vec3_Add((VEC3) { 1.0f, -2.0f, 0.0f }, Vec3_Scale(acceleration, 0.5f));
+    CHECK(part->velocity.x == velocity.x && part->velocity.y == velocity.y);
+    CHECK(part->trail[0].x == 100.0f && part->trail[0].y == 200.0f);
+    CHECK(part->trail[1].x == M_START_X);
+    CHECK(part->pos.x == 100.0f + velocity.x * 0.5f);
+    CHECK(part->pos.y == 200.0f + velocity.y * 0.5f);
     M_TearDown();
 }
