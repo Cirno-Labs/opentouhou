@@ -10,7 +10,9 @@
 // Loads and runs the enemy scripts of a stage (ECL): the subroutines that
 // move each enemy, fire its patterns, run its spell cards and branch on
 // its state, and the 16 timelines that enemy.h walks to spawn enemies.
-// The loaded file is module state.
+// The loaded file is module state. Timers and movement run at g_GameSpeed,
+// which pattern functions 10 and 11 change. The shared variables 10037 to
+// 10044 last across loads, as in the original.
 
 typedef struct ENEMY ENEMY;
 
@@ -21,8 +23,37 @@ typedef struct ENEMY ENEMY;
 
 // Selects one of the pattern functions that an enemy script calls once
 // (opcode 121) or sets as the frame function of its state (opcode 122).
+// Scripts pick them by number, so the numbers are fixed. Each function
+// receives word 1 of the instruction that selected it.
 typedef enum {
     ECL_FUNC_NONE = -1,
+    // Takes the position, velocity and angle of boss arg.
+    ECL_FUNC_WARP_TO_BOSS = 0,
+    // Shakes, flashes and turns the bullets not turned yet.
+    ECL_FUNC_SPIN_BULLETS = 1,
+    ECL_FUNC_FANS_FROM_NEAR_BULLETS = 2,
+    ECL_FUNC_NOP = 3,
+    // Puts the position of a tall bullet into floats 0 and 1.
+    ECL_FUNC_TALL_BULLET_TO_EFFECT = 4,
+    ECL_FUNC_COPY_BOSS_CIRCLE = 5,
+    ECL_FUNC_FANS_BACK_FROM_BULLETS = 6,
+    ECL_FUNC_TURN_AT_LASER_EDGES = 7,
+    ECL_FUNC_DEFLECT_OFF_LASERS = 8,
+    ECL_FUNC_START_PETALS_FALLING = 9,
+    ECL_FUNC_SLOW_DOWN = 10, // sets the game speed to 1 / arg
+    ECL_FUNC_END_SLOW_DOWN = 11,
+    ECL_FUNC_BURST_TALL_BULLETS = 12, // by difficulty
+    ECL_FUNC_TURN_BULLETS_BELOW = 13,
+    ECL_FUNC_AIM_TURNED_BULLETS = 14,
+    ECL_FUNC_FLASH = 15,
+    ECL_FUNC_FIRE_BACK_FROM_UNTURNED = 16,
+    ECL_FUNC_BULLETS_TO_ENEMIES = 17,
+    ECL_FUNC_COUNT_UNTURNED = 18, // into ints 0
+    ECL_FUNC_FADE_OUT_MUSIC = 19,
+    ECL_FUNC_PLAY_BOSS_MUSIC = 20,
+    ECL_FUNC_BURST_TALL_BULLETS_FIXED = 21,
+    ECL_FUNC_FIRE_FROM_TALL_BULLETS = 22,
+    ECL_FUNC_FIRE_FROM_TALL_BULLETS_2 = 23,
     ECL_FUNC_COUNT = 24,
 } ECL_FUNC;
 
@@ -39,10 +70,13 @@ typedef struct {
     TIMER timer;
     int32_t duration;
     int32_t kind; // 0 to 6 linear, 7 Hermite
-    int32_t ease;
+    int32_t ease; // ENEMY_EASE
     float from, to;
     float tangent_from, tangent_to;
-    int32_t var;
+    // Holds the file's float operand. One that names no float variable
+    // takes the values itself.
+    float var;
+    bool active;
 } ECL_INTERP;
 
 // Holds where one enemy is in its script. A call or an interrupt saves
@@ -52,11 +86,10 @@ typedef struct {
     int32_t pc;
     TIMER timer;
     ECL_FUNC frame_func;
-    int32_t frame_func_pc; // the opcode 122 instruction it reads
+    int32_t frame_func_arg; // word 1 of its opcode 122
     ECL_VARS vars;
     TIMER wait; // holds the instructions while above 0 (opcode 45)
     ECL_INTERP interps[ECL_INTERP_COUNT];
-    int32_t compare;
     // Is set by the timed call of opcode 144. Its return copies vars to
     // the periodic vars of the enemy.
     bool in_timed_call;
@@ -114,7 +147,13 @@ typedef struct {
     } args;
 } ECL_TIMELINE_ENTRY;
 
-// Loads the enemy script file of g_GameManager.run.stage.
+// Loads the enemy script file of g_GameManager.run.stage. A file whose
+// header, subroutine table, timelines or instructions run past its end,
+// whose instruction is shorter than its opcode reads, that jumps to a
+// position that is not an instruction of its subroutine, that names a
+// subroutine, pattern function or curve it does not have, or whose spell
+// card has no CP932 name in its 48 bytes or a number past the last card,
+// fails the load.
 RESULT Ecl_Load(void);
 
 // Releases the file loaded by Ecl_Load.
@@ -126,9 +165,13 @@ int32_t Ecl_GetTimelineCount(void);
 // Returns timeline index of the loaded file, ended by a negative time.
 const ECL_TIMELINE_ENTRY *Ecl_GetTimeline(int32_t index);
 
-// Starts subroutine sub on state at its frame 0.
+// Starts subroutine sub on state at its frame 0. Keeps the variables, the
+// frame function, the curves and the timed call mark of state.
 void Ecl_StartSub(ECL_STATE *state, int16_t sub);
 
-// Runs a frame of the script of enemy. Returns ECL_RUN_DELETE once the
-// script ends.
+// Runs a frame of the script of enemy: a pending interrupt or a due
+// periodic call, the instructions due unless opcode 45's wait holds them,
+// the movement and, while the enemy has life, the timed shots, the sprite
+// direction, the frame function and the curves; then boss 0's spell card
+// bonus. Returns ECL_RUN_DELETE once the script ends.
 ECL_RUN Ecl_RunEnemy(ENEMY *enemy);
