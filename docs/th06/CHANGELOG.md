@@ -6,6 +6,9 @@
   format.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
+
+## 1.0.1 (2026-11-15)
+
 - Fixed the message about missing game data on macOS when macOS starts
   a temporary copy of the program: it now tells how to stop that.
 
