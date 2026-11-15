@@ -91,6 +91,16 @@ void Gui_ShowBorderBonusPopup(const int32_t points)
     LOG_INFO("Gui_ShowBorderBonusPopup is not ported");
 }
 
+void Gui_ShowBombName(const int32_t sprite, const char *const name)
+{
+    LOG_INFO("Gui_ShowBombName is not ported");
+}
+
+void Gui_EndBombName(void)
+{
+    LOG_INFO("Gui_EndBombName is not ported");
+}
+
 void Bomb_Update(void)
 {
     LOG_INFO("Bomb_Update is not ported");
@@ -119,6 +129,11 @@ void Item_DropPulled(void)
 
 void Bullet_ClearAll(void)
 {
+}
+
+void Bullet_StopAll(void)
+{
+    LOG_INFO("Bullet_StopAll is not ported");
 }
 
 bool Enemy_IsBossActive(void)

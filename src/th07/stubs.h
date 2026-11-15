@@ -47,6 +47,11 @@ void Gui_ShowCherryFullPopup(int32_t cherry);
 void Gui_ShowBorderStartPopup(void);
 void Gui_ShowBorderBonusPopup(int32_t points);
 
+// Stand in for th07/gui's display of the bomb's name with portrait sprite,
+// and its end. The name stays in use until the next call.
+void Gui_ShowBombName(int32_t sprite, const char *name);
+void Gui_EndBombName(void);
+
 // Stand in for th07/bomb's update and draw of the shot type's bomb,
 // unfocused or focused as the bomb started. The stand-in ends the bomb at
 // once.
@@ -62,6 +67,9 @@ void Item_DropPulled(void);
 
 // Stands in for th07/bullet's clearing of every enemy bullet.
 void Bullet_ClearAll(void);
+
+// Stands in for th07/bullet's stop of every enemy bullet in play.
+void Bullet_StopAll(void);
 
 // Stands in for the spell card state of th07/enemy that the player moves.
 typedef struct {
