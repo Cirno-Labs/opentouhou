@@ -4,6 +4,7 @@
 #include "th07/effect.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/item.h"
 #include "th07/player.h"
 #include "th07/screen_effect.h"
 #include "th07/sound.h"

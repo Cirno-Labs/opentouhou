@@ -13,6 +13,7 @@
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/item.h"
 #include "th07/player.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
@@ -146,7 +147,7 @@ void Bullet_StopAll(void)
     m_StopCalls++;
 }
 
-void Item_Spawn(const VEC3 pos, const int32_t type, const int32_t state)
+void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
 {
 }
 

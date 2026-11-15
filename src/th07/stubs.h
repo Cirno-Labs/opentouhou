@@ -2,7 +2,6 @@
 
 #include "core/base/result.h"
 #include "core/gfx.h"
-#include "core/math/vec.h"
 
 #include <stdint.h>
 
@@ -43,6 +42,9 @@ bool Gui_IsMsgSkippable(void);
 // Stands in for th07/gui's popup of a full cherry.
 void Gui_ShowCherryFullPopup(int32_t cherry);
 
+// Stands in for th07/gui's popup of full power.
+void Gui_ShowFullPowerPopup(void);
+
 // Stand in for th07/gui's popups of the Border's start and of its bonus.
 void Gui_ShowBorderStartPopup(void);
 void Gui_ShowBorderBonusPopup(int32_t points);
@@ -52,15 +54,11 @@ void Gui_ShowBorderBonusPopup(int32_t points);
 void Gui_ShowBombName(int32_t sprite, const char *name);
 void Gui_EndBombName(void);
 
-// Stand in for th07/item's spawn of an item of type in state at pos, its
-// collection of every item, and its drop of the items that the player
-// pulls in.
-void Item_Spawn(VEC3 pos, int32_t type, int32_t state);
-void Item_CollectAll(void);
-void Item_DropPulled(void);
-
 // Stands in for th07/bullet's clearing of every enemy bullet.
 void Bullet_ClearAll(void);
+
+// Stands in for th07/bullet's clearing of every enemy bullet into homing items.
+void Bullet_ClearAllToItems(void);
 
 // Stands in for th07/bullet's stop of every enemy bullet in play.
 void Bullet_StopAll(void);

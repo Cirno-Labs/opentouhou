@@ -14,6 +14,7 @@
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/item.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
@@ -143,7 +144,7 @@ void Bomb_Draw(const ANM_DRAW *const draw)
     m_BombDraws++;
 }
 
-void Item_Spawn(const VEC3 pos, const int32_t type, const int32_t state)
+void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
 {
     if (m_ItemCount < M_MAX_CALLS) {
         m_Items[m_ItemCount] = (M_ITEM_CALL) { pos, type, state };
