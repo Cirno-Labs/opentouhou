@@ -1,6 +1,7 @@
 #include "shell/game.h"
 #include "shell/game/entry.h"
 
+#include "core/args.h"
 #include "core/audio.h"
 
 #include "core/base/assert.h"
@@ -42,6 +43,11 @@ static_assert((int)SHELL_CONTINUE == (int)SDL_APP_CONTINUE);
 static_assert((int)SHELL_SUCCESS == (int)SDL_APP_SUCCESS);
 static_assert((int)SHELL_FAILURE == (int)SDL_APP_FAILURE);
 
+typedef struct {
+    FOLDERS_INPUT folders;
+    bool version;
+} M_ARGS;
+
 typedef struct SHELL_CONTEXT SHELL_CONTEXT;
 
 struct SHELL_CONTEXT {
@@ -80,6 +86,16 @@ struct SHELL_CONTEXT {
 };
 
 static SHELL_CONTEXT m_Context;
+
+static const ARG_OPTION m_Options[] = {
+    ARG_STRING_OF(
+        M_ARGS, "--data", folders.data_dir, "<dir>",
+        "read the original game's data from <dir>"),
+    ARG_STRING_OF(
+        M_ARGS, "--user-dir", folders.user_dir, "<dir>",
+        "keep settings, scores and replays in <dir>"),
+    ARG_FLAG_OF(M_ARGS, "--version", version, "print the version and quit"),
+};
 
 static void M_OpenPatches(SHELL_CONTEXT *const ctx)
 {
@@ -208,29 +224,21 @@ static void M_OpenStdout(void)
 #endif
 }
 
-// Prints the usage, the mode and the folders to stdout.
+// Prints the help, the mode and the folders to stdout.
 static void M_PrintHelp(
-    const GAME_DESC *const desc, const FOLDERS *const folders)
+    const ARG_SCHEMA *const schema, const FOLDERS *const folders)
 {
     M_OpenStdout();
+    Args_PrintHelp(schema, stdout);
     char *patches_dir = nullptr;
     Result_Ignore(Folders_GetPatchesDir(folders, &patches_dir));
     printf(
-        "Usage: %s [--data DIR] [--user-dir DIR]\n"
-        "\n"
-        "Runs %s, version %s.\n"
-        "\n"
-        "  --data DIR      read the original game's data from DIR\n"
-        "  --user-dir DIR  keep settings, scores and replays in DIR\n"
-        "  --help          print this help and quit\n"
-        "  --version       print the version and quit\n"
         "\n"
         "Mode:            %s\n"
         "Program folder:  %s\n"
         "Data folder:     %s\n"
         "User folder:     %s\n"
         "Patches folder:  %s\n",
-        folders->program_name, desc->title, desc->version,
         Folders_GetModeName(folders->mode),
         folders->program_dir != nullptr ? folders->program_dir : "unknown",
         folders->data_dir != nullptr ? folders->data_dir : "unknown",
@@ -240,47 +248,12 @@ static void M_PrintHelp(
     Mem_Free(patches_dir);
 }
 
-// Reads the option at argv[*i] that takes a value into *value.
-static RESULT M_ParseValue(
-    const int argc, char *const argv[], int *const i, const char **const value)
-{
-    const char *const name = argv[*i];
-    FAIL_IF(*i + 1 >= argc, "%s needs a directory", name);
-    FAIL_IF(*value != nullptr, "%s is given twice", name);
-    *value = argv[++*i];
-    return OK;
-}
-
 // Prints "<game id> <version>" to stdout.
 static void M_PrintVersion(const GAME_DESC *const desc)
 {
     M_OpenStdout();
     printf("%s %s\n", desc->id, desc->version);
     fflush(stdout);
-}
-
-// Reads the command line into input. Sets *help when it asks for the
-// usage, and *version when it asks for the version.
-static RESULT M_ParseArgs(
-    const int argc, char *const argv[], FOLDERS_INPUT *const input,
-    bool *const help, bool *const version)
-{
-    *help = false;
-    *version = false;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-            *help = true;
-        } else if (strcmp(argv[i], "--version") == 0) {
-            *version = true;
-        } else if (strcmp(argv[i], "--data") == 0) {
-            MUST(M_ParseValue(argc, argv, &i, &input->data_dir));
-        } else if (strcmp(argv[i], "--user-dir") == 0) {
-            MUST(M_ParseValue(argc, argv, &i, &input->user_dir));
-        } else {
-            return FAIL("Unknown argument: %s (see --help)", argv[i]);
-        }
-    }
-    return OK;
 }
 
 static RESULT M_SetFullscreen(SHELL_CONTEXT *const ctx, const bool fullscreen)
@@ -298,26 +271,39 @@ static RESULT M_Init(
     SHELL_CONTEXT *const ctx, const int argc, char *const argv[],
     bool *const done)
 {
-    FOLDERS_INPUT input = {
-        .exe_dir = Path_GetExeDir(),
-        .appimage = getenv("APPIMAGE"),
-        .appdir = getenv("APPDIR"),
-        .program = argc > 0 ? argv[0] : nullptr,
+    M_ARGS args = {
+        .folders = {
+            .exe_dir = Path_GetExeDir(),
+            .appimage = getenv("APPIMAGE"),
+            .appdir = getenv("APPDIR"),
+            .program = argc > 0 ? argv[0] : nullptr,
+        },
     };
+    char *const program = Str_Format("o%s", ctx->desc->id);
+    char *const summary = Str_Format(
+        "Runs %s, version %s.", ctx->desc->title, ctx->desc->version);
+    const ARG_SCHEMA schema = ARG_SCHEMA_OF(program, summary, m_Options);
     bool help;
-    bool version;
-    MUST(M_ParseArgs(argc, argv, &input, &help, &version));
-    *done = help || version;
-    if (version && !help) {
+    const RESULT result = Args_Parse(&schema, argc, argv, &args, &help);
+    if (IS_OK(result) && help) {
+        Result_Log(
+            Folders_Find(&args.folders, ctx->desc->id, &ctx->folders),
+            LOG_LEVEL_ERROR);
+        M_PrintHelp(&schema, &ctx->folders);
+    }
+    Mem_Free(summary);
+    Mem_Free(program);
+    MUST(result);
+    *done = help || args.version;
+    if (args.version && !help) {
         M_PrintVersion(ctx->desc);
+    }
+    if (*done) {
         return OK;
     }
     const bool found = Result_Log(
-        Folders_Find(&input, ctx->desc->id, &ctx->folders), LOG_LEVEL_ERROR);
-    if (help) {
-        M_PrintHelp(ctx->desc, &ctx->folders);
-        return OK;
-    }
+        Folders_Find(&args.folders, ctx->desc->id, &ctx->folders),
+        LOG_LEVEL_ERROR);
     if (found) {
         Result_Log(
             LogFile_Open(ctx->folders.user_dir, ctx->desc->id),
