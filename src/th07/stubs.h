@@ -12,9 +12,16 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
-// Stands in for the part of th07/gui's state that th07/ascii reads.
+// Stands in for the part of th07/gui's state that th07/ascii and
+// th07/enemy use.
 typedef struct {
     int32_t frames; // counts the stage's update calls
+    // Hold the boss bar: whether it shows, the seconds left and the life.
+    struct {
+        bool present;
+        int32_t seconds;
+        float health;
+    } boss;
 } GUI;
 
 extern GUI g_Gui;
@@ -34,6 +41,14 @@ void Gui_Remove(void);
 // dialogue may be skipped.
 bool Gui_IsMsgRunning(void);
 bool Gui_IsMsgSkippable(void);
+
+// Stand in for th07/gui's start of dialogue index, and its check that the
+// dialogue holds the timelines back.
+void Gui_StartMsg(int32_t index);
+bool Gui_MsgHoldsTimeline(void);
+
+// Stands in for th07/gui's popup of the bonus of a boss's clear.
+void Gui_ShowBonusPopup(int32_t bonus);
 
 // Stands in for th07/gui's popup of a full cherry.
 void Gui_ShowCherryFullPopup(int32_t cherry);
