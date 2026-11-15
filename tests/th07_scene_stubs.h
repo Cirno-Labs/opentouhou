@@ -44,5 +44,6 @@ typedef struct {
 
 extern SCENE_STUB_CALLS g_SceneStubCalls;
 
-// Clears the counts, g_GameManager, g_Player and g_Gui.
+// Clears the counts, g_GameManager, g_Player, g_Gui and g_Stage, and sets
+// g_EffectsQuality to its default.
 void SceneStubCalls_Reset(void);

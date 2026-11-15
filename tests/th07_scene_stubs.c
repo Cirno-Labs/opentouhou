@@ -9,6 +9,8 @@
 GAME_MANAGER g_GameManager;
 PLAYER g_Player;
 GUI g_Gui;
+STAGE g_Stage;
+uint8_t g_EffectsQuality;
 SCENE_STUB_CALLS g_SceneStubCalls;
 
 void SceneStubCalls_Reset(void)
@@ -17,6 +19,8 @@ void SceneStubCalls_Reset(void)
     memset(&g_GameManager, 0, sizeof(g_GameManager));
     memset(&g_Player, 0, sizeof(g_Player));
     memset(&g_Gui, 0, sizeof(g_Gui));
+    memset(&g_Stage, 0, sizeof(g_Stage));
+    g_EffectsQuality = 2;
 }
 
 #ifndef TH07_TITLE_TEST
