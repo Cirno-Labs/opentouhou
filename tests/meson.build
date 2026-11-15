@@ -430,7 +430,10 @@ test(
     'test_th07_ecl',
     'test_th07_ecl.c',
     'th07_ecl_builder.c',
+    'th07_play_setup.c',
+    'th07_anm_builder.c',
     'th07_data.c',
+    'gfx_recorder.c',
     c_args: [layer_include['th07']] + core_include + stg_include,
     implicit_include_directories: false,
     link_with: [
