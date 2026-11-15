@@ -286,6 +286,12 @@ void Bullet_Remove(void);
 // included, while BULLET_COUNT bullets were in play at the last update.
 void Bullet_FirePattern(const BULLET_SHOOTER *shooter);
 
+// Starts a laser from shooter in the first free slot. Returns the laser,
+// or a spare laser that never runs when no slot is free. In the 10 frames
+// after a clear, a laser without LASER_FLAG_RESIST_CLEAR does not start,
+// and the first laser is returned.
+LASER *Bullet_SpawnLaser(const BULLET_SHOOTER *shooter);
+
 // Makes every bullet fade out, and every laser without
 // LASER_FLAG_RESIST_CLEAR end.
 void Bullet_ClearAll(void);
