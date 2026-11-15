@@ -20,3 +20,6 @@ void Replay_EndStage(void);
 
 // Releases the session without saving.
 void Replay_Discard(void);
+
+// Marks event in the calc being recorded. Does nothing without a recording.
+void Replay_MarkEvent(REPLAY_EVENT event);
