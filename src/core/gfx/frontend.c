@@ -1,4 +1,5 @@
 #include "core/gfx/private.h"
+#include "core/math/common.h"
 
 #include "core/base/array.h"
 #include "core/base/assert.h"
@@ -7,8 +8,6 @@
 
 #include <math.h>
 #include <string.h>
-
-#define M_PI_F 3.14159265f
 
 typedef struct {
     uint64_t id;
@@ -343,11 +342,11 @@ static void M_BlendViews(const float t)
 
 static float M_ShorterTurn(const float from, const float to)
 {
-    float turn = fmodf(to - from, 2.0f * M_PI_F);
-    if (turn > M_PI_F) {
-        turn -= 2.0f * M_PI_F;
-    } else if (turn < -M_PI_F) {
-        turn += 2.0f * M_PI_F;
+    float turn = fmodf(to - from, 2.0f * MATH_PI);
+    if (turn > MATH_PI) {
+        turn -= 2.0f * MATH_PI;
+    } else if (turn < -MATH_PI) {
+        turn += 2.0f * MATH_PI;
     }
     return turn;
 }

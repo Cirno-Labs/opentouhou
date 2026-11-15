@@ -21,6 +21,7 @@
 
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
@@ -29,7 +30,6 @@
 #include <SDL3/SDL.h>
 #include <math.h>
 
-#define M_HALF_PI 1.5707964f
 #define M_START_X 192.0f
 #define M_START_Y 384.0f
 #define M_MAX_CALLS 64
@@ -523,8 +523,8 @@ TEST(the_shot_button_fires_a_burst)
     CHECK(bullet->pos.x == M_START_X && bullet->pos.y == M_START_Y);
     CHECK(bullet->pos.z == 0.495f);
     CHECK(bullet->size.x == 12.0f && bullet->size.z == 1.0f);
-    CHECK(bullet->velocity.x == X87_Cos(-M_HALF_PI) * 12.0f);
-    CHECK(bullet->velocity.y == X87_Sin(-M_HALF_PI) * 12.0f);
+    CHECK(bullet->velocity.x == X87_Cos(-MATH_HALF_PI) * 12.0f);
+    CHECK(bullet->velocity.y == X87_Sin(-MATH_HALF_PI) * 12.0f);
     CHECK_EQ_INT(g_Player.shots.fire_timer.current, 1);
     M_Teardown();
 }
@@ -713,7 +713,7 @@ TEST(a_rising_shot_accelerates_upwards)
     M_Shoot();
     const PLAYER_BULLET *const bullet = &g_Player.shots.bullets[1];
     CHECK_EQ_INT(bullet->type, PLAYER_BULLET_RISING);
-    const float vy = X87_Sin(-M_HALF_PI) * 3.0f;
+    const float vy = X87_Sin(-MATH_HALF_PI) * 3.0f;
     M_Frame();
     CHECK(bullet->velocity.y == vy - 0.3f);
     CHECK(bullet->pos.y == M_START_Y + (vy - 0.3f));
@@ -1037,12 +1037,12 @@ TEST(a_laser_test_turns_the_player_into_the_laser)
     M_SetupAlive("laser_turn", 0, 0);
     const VEC3 origin = M_At(M_START_X - 100.0f, M_START_Y);
     Player_CheckLaserHit(
-        g_Player.pos, (VEC3) { 4.0f, 4.0f, 0.0f }, origin, M_HALF_PI, true);
+        g_Player.pos, (VEC3) { 4.0f, 4.0f, 0.0f }, origin, MATH_HALF_PI, true);
     CHECK_EQ_INT(g_Player.state.value, PLAYER_ALIVE);
     CHECK_EQ_INT(g_GameManager.player.graze, 0);
     Player_CheckLaserHit(
         M_At(M_START_X - 100.0f, M_START_Y - 100.0f),
-        (VEC3) { 4.0f, 4.0f, 0.0f }, origin, M_HALF_PI, true);
+        (VEC3) { 4.0f, 4.0f, 0.0f }, origin, MATH_HALF_PI, true);
     CHECK_EQ_INT(g_Player.state.value, PLAYER_DYING);
     M_Teardown();
 }
@@ -1085,8 +1085,8 @@ TEST(the_angles_point_between_the_player_and_a_position)
     const VEC3 above = M_At(M_START_X + 30.0f, M_START_Y - 100.0f);
     CHECK(Player_AngleFrom(above) == X87_Atan2(100.0f, -30.0f));
     CHECK(Player_AngleTo(above) == X87_Atan2(-100.0f, 30.0f));
-    CHECK(Player_AngleFrom(g_Player.pos) == M_HALF_PI);
-    CHECK(Player_AngleTo(g_Player.pos) == M_HALF_PI);
+    CHECK(Player_AngleFrom(g_Player.pos) == MATH_HALF_PI);
+    CHECK(Player_AngleTo(g_Player.pos) == MATH_HALF_PI);
     M_Teardown();
 }
 

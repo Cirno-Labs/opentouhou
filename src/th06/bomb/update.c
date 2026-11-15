@@ -11,13 +11,12 @@
 #include "th06/sound.h"
 #include "th06/strings.h"
 
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/rng.h"
 #include "stg/timer.h"
 
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
 #define M_NO_TARGET -100.0f
 #define M_ORB_SPRITES 4
 #define M_ORB_FIRST_SCRIPT 0x485
@@ -86,7 +85,7 @@ static void M_LaunchOrb(const int32_t i)
     orb->state = 1;
     orb->speed = 4.0f;
     orb->pos = g_Player.pos;
-    const float angle = Rng_F32(&g_Rng) * M_TWO_PI - M_PI;
+    const float angle = Rng_F32(&g_Rng) * MATH_TWO_PI - MATH_PI;
     orb->velocity.x = X87_Cos(angle) * orb->speed;
     orb->velocity.y = X87_Sin(angle) * orb->speed;
     g_Player.bomb.hits[i].damage_dealt = 0;
@@ -285,7 +284,7 @@ static void M_MarisaA(void)
             Anm_StartScriptAtOrigin(
                 &player->bomb.vms[i], i % 3 + M_STAR_FIRST_SCRIPT);
             star->pos = player->pos;
-            const float angle = (float)i * M_TWO_PI / 8.0f;
+            const float angle = (float)i * MATH_TWO_PI / 8.0f;
             star->velocity.x = X87_Cos(angle) * 2.0f;
             star->velocity.y = X87_Sin(angle) * 2.0f;
             star->velocity.z = 0.0f;

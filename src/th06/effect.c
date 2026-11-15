@@ -3,6 +3,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
@@ -12,8 +13,6 @@
 #define M_FIRST_SPRITE 0x2b3
 #define M_CALC_PRIORITY 10
 #define M_DRAW_PRIORITY 8
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
 
 typedef struct {
     int32_t script;
@@ -117,7 +116,7 @@ static bool M_Converge(EFFECT *const effect, const float frames)
 {
     if (M_IsFirstFrame(effect)) {
         effect->origin = effect->pos;
-        const float angle = Rng_F32InRange(&g_Rng, M_TWO_PI) - M_PI;
+        const float angle = Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI;
         effect->axis = (VEC3) { X87_Cos(angle), X87_Sin(angle), 0.0f };
     }
     const float distance =
