@@ -180,6 +180,7 @@ core_audio_lib = static_library(
   'core_audio',
   'audio/engine.c',
   'audio/decoder.c',
+  'audio/resampler.c',
   'audio/backend_sdl.c',
   c_args: core_include,
   implicit_include_directories: false,
