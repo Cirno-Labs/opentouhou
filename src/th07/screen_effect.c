@@ -2,7 +2,7 @@
 
 #include "th07/anm.h"
 #include "th07/game.h"
-#include "th07/stubs.h"
+#include "th07/game_manager.h"
 
 #include "core/base/assert.h"
 #include "core/base/log.h"
@@ -129,9 +129,6 @@ static float M_ShakeAxis(const float shake)
 static CHAIN_STATUS M_Shake(void *const arg)
 {
     M_EFFECT *const effect = arg;
-    if (g_GameManager.mode.frozen) {
-        return CHAIN_CONTINUE;
-    }
     if (g_GameManager.run.stage_frames <= 1) {
         return CHAIN_REMOVE;
     }

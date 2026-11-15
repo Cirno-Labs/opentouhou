@@ -4,6 +4,7 @@
 #include "th07/buttons.h"
 #include "th07/files.h"
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/replay.h"
 #include "th07/screens/main.h"
 #include "th07/screens/result/saves.h"
@@ -53,6 +54,7 @@ static RESULT M_Init(void)
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves();
     M_KeepDemos();
+    GameManager_Create(&g_GameManager);
     m_GameInitialized = true;
     MUST(Game_Init());
     // Seeds the gameplay RNG from the clock once, outside the ticks, as the

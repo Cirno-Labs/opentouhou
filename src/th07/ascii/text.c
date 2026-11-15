@@ -1,6 +1,6 @@
 #include "th07/ascii/text.h"
 
-#include "th07/stubs.h"
+#include "th07/game_manager.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"

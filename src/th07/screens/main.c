@@ -4,6 +4,7 @@
 #include "th07/ascii.h"
 #include "th07/buttons.h"
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/screen_effect.h"
@@ -218,56 +219,6 @@ static const char *M_Name(
     return index >= 0 && (size_t)index < count ? names[index] : "";
 }
 
-static bool M_HasExtraOpen(const int32_t shot)
-{
-    const uint8_t *const cleared =
-        g_GameManager.records.clears[shot].no_continues;
-    return cleared[0] == 99 || cleared[1] == 99 || cleared[2] == 99
-        || cleared[3] == 99;
-}
-
-static bool M_AnyShotHasExtraOpen(void)
-{
-    for (int32_t shot = 0; shot < 6; shot++) {
-        if (M_HasExtraOpen(shot)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static int32_t M_SpellCardsCaptured(void)
-{
-    int32_t count = 0;
-    for (size_t i = 0; i < ARRAY_SIZE(g_GameManager.records.spell_captures);
-         i++) {
-        if (g_GameManager.records.spell_captures[i] > 0) {
-            count++;
-        }
-    }
-    return count;
-}
-
-// Phantasm opens for a shot type that cleared Extra once 60 spell cards
-// are captured, and stays open: the original marks it in the clears.
-static bool M_HasPhantasmOpen(const int32_t shot)
-{
-    uint8_t *const cleared = g_GameManager.records.clears[shot].no_continues;
-    if (M_SpellCardsCaptured() >= 60 && cleared[4] == 99) {
-        cleared[5] = 99;
-    }
-    return cleared[5] == 99;
-}
-
-static bool M_IsPhantasmOpen(void)
-{
-    bool open = false;
-    for (int32_t shot = 0; shot < 6; shot++) {
-        open = M_HasPhantasmOpen(shot) || open;
-    }
-    return open;
-}
-
 static void M_SetSprite(ANM_VM *const vm, const int32_t variant)
 {
     Anm_SetSprite(vm, vm->base_sprite + variant);
@@ -434,7 +385,7 @@ static bool M_StartDemo(M_MENU *const menu)
     gm->run.stage = slot - 1;
     Replay_Free(file);
     Scene_Request(SCENE_GAMEPLAY);
-    gm->mode.replay_menu_choice = 0;
+    gm->mode.replay_speed = 0;
     return true;
 }
 
@@ -475,7 +426,7 @@ static CHAIN_STATUS M_ConfirmTitleEntry(M_MENU *const menu, bool *const stay)
                                  : M_STATE_DIFFICULTY);
         return CHAIN_CONTINUE;
     case 1:
-        if (M_AnyShotHasExtraOpen()) {
+        if (GameManager_AnyShotHasExtraOpen()) {
             gm->mode.in_practice = false;
             menu->cursor = g_Settings.difficulty == 5;
             M_OpenSelect(menu, M_STATE_EXTRA_DIFFICULTY);
@@ -563,7 +514,7 @@ static CHAIN_STATUS M_UpdateTitleMenu(M_MENU *const menu)
 {
     const int32_t moved = M_MoveCursor(menu, 8);
     if (moved != 0) {
-        while (!M_AnyShotHasExtraOpen() && menu->cursor == 1) {
+        while (!GameManager_AnyShotHasExtraOpen() && menu->cursor == 1) {
             menu->cursor += moved;
         }
         M_Highlight(menu, 1, 8, menu->cursor);
@@ -1006,11 +957,11 @@ static bool M_CharacterOpen(const int32_t character)
 {
     switch (g_Settings.difficulty) {
     case 4:
-        return M_HasExtraOpen(character * 2)
-            || M_HasExtraOpen(character * 2 + 1);
+        return GameManager_HasExtraOpen(character * 2)
+            || GameManager_HasExtraOpen(character * 2 + 1);
     case 5:
-        return M_HasPhantasmOpen(character * 2)
-            || M_HasPhantasmOpen(character * 2 + 1);
+        return GameManager_HasPhantasmOpen(character * 2)
+            || GameManager_HasPhantasmOpen(character * 2 + 1);
     default:
         return true;
     }
@@ -1021,9 +972,9 @@ static bool M_ShotOpen(const int32_t shot)
     const int32_t index = g_GameManager.run.character * 2 + shot;
     switch (g_Settings.difficulty) {
     case 4:
-        return M_HasExtraOpen(index);
+        return GameManager_HasExtraOpen(index);
     case 5:
-        return M_HasPhantasmOpen(index);
+        return GameManager_HasPhantasmOpen(index);
     default:
         return true;
     }
@@ -1091,7 +1042,7 @@ static void M_MarkDifficulty(M_MENU *const menu)
     const int32_t difficulty = g_Settings.difficulty;
     if (difficulty < 4) {
         menu->sprites[difficulty + 0x43].pending_interrupt = 9;
-    } else if (!M_IsPhantasmOpen()) {
+    } else if (!GameManager_IsPhantasmOpen()) {
         menu->sprites[0xa1].pending_interrupt = 9;
     } else {
         menu->sprites[difficulty + 0x9e].pending_interrupt = 9;
@@ -1130,7 +1081,7 @@ static CHAIN_STATUS M_UpdateDifficulty(M_MENU *const menu)
             menu->cursor = g_Settings.difficulty;
             if (!extra) {
                 M_Interrupt(menu, 7);
-            } else if (!M_IsPhantasmOpen()) {
+            } else if (!GameManager_IsPhantasmOpen()) {
                 M_Interrupt(menu, 12);
                 menu->cursor = 4;
             } else {
@@ -1160,7 +1111,8 @@ static CHAIN_STATUS M_UpdateDifficulty(M_MENU *const menu)
         }
         break;
     case M_SUB_MENU: {
-        const int32_t count = !extra ? 4 : (M_IsPhantasmOpen() ? 2 : 1);
+        const int32_t count =
+            !extra ? 4 : (GameManager_IsPhantasmOpen() ? 2 : 1);
         if (M_MoveCursor(menu, count) != 0 && (!extra || count == 2)) {
             M_HighlightDifficulty(menu);
         }
@@ -1864,9 +1816,9 @@ static RESULT M_Added(void *const arg)
     } else {
         gm->run.max_continues = 5;
     }
-    const bool open = M_IsPhantasmOpen();
-    if (!gm->phantasm_was_open && open) {
-        gm->phantasm_was_open = open;
+    const bool open = GameManager_IsPhantasmOpen();
+    if (!gm->records.phantasm_was_open && open) {
+        gm->records.phantasm_was_open = open;
         Result_Log(
             Anm_LoadSurface(0, "data/title/phantasm.jpg"), LOG_LEVEL_WARNING);
         menu->splash = true;
@@ -1875,7 +1827,7 @@ static RESULT M_Added(void *const arg)
         menu->added = true;
         return OK;
     }
-    gm->phantasm_was_open = open;
+    gm->records.phantasm_was_open = open;
     MUST(M_FinishAdded(menu));
     menu->added = true;
     return OK;
@@ -1928,7 +1880,7 @@ RESULT TitleScene_SetUpReplay(
     gm->run.shot_index = summary->shot;
     gm->run.stage = gm->run.difficulty >= 5 ? 7 : stage;
     Scene_Request(SCENE_GAMEPLAY);
-    gm->mode.replay_menu_choice = (uint8_t)playback;
+    gm->mode.replay_speed = (uint8_t)playback;
     Sound_StopMusic();
     return OK;
 }
