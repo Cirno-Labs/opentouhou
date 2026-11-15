@@ -96,6 +96,16 @@ void GameManager_DrawChecksumKeys(void)
     Rng_U32InRange(&g_Rng, 100000);
 }
 
+void GameManager_DrawLifeChecksumKeys(void)
+{
+    for (int32_t i = 0; i < 5; i++) {
+        Rng_U32InRange(&g_Rng, 100000);
+    }
+    for (int32_t i = 0; i < 3; i++) {
+        Rng_F32(&g_Rng);
+    }
+}
+
 void GameManager_AddLives(const int32_t lives)
 {
     g_GameManager.player.lives += (float)lives;
