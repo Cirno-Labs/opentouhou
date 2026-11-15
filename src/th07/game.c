@@ -6,6 +6,7 @@
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/gfx.h"
 
 CHAIN g_Chain;
 RNG g_Rng;
@@ -28,7 +29,9 @@ bool Game_Tick(const TH07_INPUT *const input)
     g_Input = *input;
     Chain_RunDraw(&g_Chain);
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
-    Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
+    if (Gfx_IsStarted()) {
+        Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
+    }
     if (run == CHAIN_RUN_RESET) {
         Game_Shutdown();
         return Result_Log(Game_Init(), LOG_LEVEL_ERROR);
