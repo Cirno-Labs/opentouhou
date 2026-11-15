@@ -86,6 +86,11 @@ void Gui_ShowSpellCardBonus(int32_t bonus);
 void ResultScreen_AddSpellCardAttempt(int32_t index, const char *name);
 void ResultScreen_AddSpellCardCapture(int32_t index, int32_t bonus);
 
+// Stands in for th07/resultscreen's record of spell card index for the shot
+// of g_GameManager.run.shot_index: its captures and its attempts.
+void ResultScreen_GetSpellCardRecord(
+    int32_t index, int32_t *captures, int32_t *attempts);
+
 // Stands in for the reads of score.dat that a new game makes into
 // g_GameManager: the high score and its continues, the spell cards, the
 // clears and the practice scores.
@@ -95,6 +100,10 @@ RESULT ResultScreen_LoadGameRecords(void);
 // g_GameManager.records: LoadClears, LoadPracticeScores, LoadSpellCards and
 // the play time.
 void ResultScreen_LoadTitleRecords(void);
+
+// Stands in for th07/replay's save of the replay being played again, when
+// the score differs from the one the replay holds.
+void Replay_ResaveIfScoreChanged(void);
 
 // Stand in for App::AddTotalPlayTime, the restart of its clock, and the
 // stop of that clock with App::AddPlayTime.
