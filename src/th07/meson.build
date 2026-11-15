@@ -10,6 +10,7 @@ th07_lib = static_library(
   'ascii/chain.c',
   'ascii/pause_menu.c',
   'ascii/text.c',
+  'bomb/update.c',
   'buttons.c',
   'effect.c',
   'files.c',
