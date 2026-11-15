@@ -2,8 +2,10 @@
 #include "th07/anm/private.h"
 
 #include "th07/files.h"
+#include "th07/game.h"
 
 #include "test.h"
+#include "gfx_recorder.h"
 #include "test_dir.h"
 #include "th07_anm_builder.h"
 #include "th07_data.h"
@@ -773,4 +775,153 @@ TEST(copy_texture_rect_outside_either_texture_fails)
         LOG_LEVEL_INFO));
     Anm_ReleaseTexture(200);
     Anm_ReleaseTexture(201);
+}
+
+// Sets the recorded screen to blue with source a gradient whose red and
+// green are the position in it.
+static void M_SetScreen(const GFX_RECT source)
+{
+    IMAGE screen = Image_Create(640, 480, &g_HeapAllocator);
+    for (int32_t y = 0; y < 480; y++) {
+        for (int32_t x = 0; x < 640; x++) {
+            uint8_t *const pixel = &screen.pixels[(y * 640 + x) * 4];
+            const bool inside = x >= source.x && x < source.x + source.width
+                && y >= source.y && y < source.y + source.height;
+            pixel[0] = inside ? (uint8_t)((x - source.x) * 40) : 0;
+            pixel[1] = inside ? (uint8_t)((y - source.y) * 60) : 0;
+            pixel[2] = inside ? 0x80 : 0xff;
+            pixel[3] = 0xff;
+        }
+    }
+    GfxRecorder_SetScreen(&screen);
+    Image_Free(&screen);
+}
+
+static GFX_RECT m_CopySource = { 30, 20, 4, 3 };
+static GFX_RECT m_CopyDest = { 2, 1, 8, 6 };
+
+static void M_CheckCopied(const int32_t slot)
+{
+    IMAGE expected =
+        Image_Create(m_CopySource.width, m_CopySource.height, &g_HeapAllocator);
+    for (int32_t y = 0; y < m_CopySource.height; y++) {
+        for (int32_t x = 0; x < m_CopySource.width; x++) {
+            uint8_t *const pixel =
+                &expected.pixels[(y * m_CopySource.width + x) * 4];
+            pixel[0] = (uint8_t)(x * 40);
+            pixel[1] = (uint8_t)(y * 60);
+            pixel[2] = 0x80;
+            pixel[3] = 0xff;
+        }
+    }
+    Image_Resize(&expected, m_CopyDest.width, m_CopyDest.height);
+    const IMAGE *const image = AnmTexture_GetImage(slot);
+    for (int32_t y = 0; y < image->height; y++) {
+        for (int32_t x = 0; x < image->width; x++) {
+            const int32_t dx = x - m_CopyDest.x;
+            const int32_t dy = y - m_CopyDest.y;
+            const bool inside = dx >= 0 && dx < m_CopyDest.width && dy >= 0
+                && dy < m_CopyDest.height;
+            const uint8_t *const wanted = inside
+                ? &expected.pixels[(dy * m_CopyDest.width + dx) * 4]
+                : (const uint8_t[4]) {};
+            CHECK(
+                memcmp(&image->pixels[(y * image->width + x) * 4], wanted, 4)
+                == 0);
+        }
+    }
+    Image_Free(&expected);
+}
+
+TEST(a_pending_copy_refuses_another_until_it_is_made)
+{
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, m_CopyDest));
+    CHECK(!Anm_SetPendingCopy(201, m_CopySource, m_CopyDest));
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK(Anm_SetPendingCopy(201, m_CopySource, m_CopyDest));
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+}
+
+TEST(a_pending_copy_scales_the_screen_into_dest)
+{
+    GfxRecorder_Start();
+    M_SetScreen(m_CopySource);
+    CHECK(IS_OK(Anm_CreateTexture(200, 12, 8, ANM_TEXTURE_RGBA8)));
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 0);
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, m_CopyDest));
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
+    M_CheckCopied(200);
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
+    Anm_ReleaseTexture(200);
+    GfxRecorder_Stop();
+}
+
+TEST(a_pending_copy_into_a_texture_not_loaded_does_nothing)
+{
+    GfxRecorder_Start();
+    M_SetScreen(m_CopySource);
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, m_CopyDest));
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 0);
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, m_CopyDest));
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    GfxRecorder_Stop();
+}
+
+TEST(a_failed_pending_copy_is_dropped)
+{
+    GfxRecorder_Start();
+    CHECK(IS_OK(Anm_CreateTexture(200, 12, 8, ANM_TEXTURE_RGBA8)));
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, m_CopyDest));
+    CHECK(!Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_INFO));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
+    M_SetScreen(m_CopySource);
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
+    CHECK(Anm_SetPendingCopy(200, (GFX_RECT) { 638, 0, 4, 3 }, m_CopyDest));
+    CHECK(!Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_INFO));
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, (GFX_RECT) { 6, 4, 8, 6 }));
+    CHECK(!Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_INFO));
+    CHECK_EQ_INT(AnmTexture_GetImage(200)->pixels[0], 0);
+    Anm_ReleaseTexture(200);
+    GfxRecorder_Stop();
+}
+
+static int32_t m_ReadsInCalc;
+
+static CHAIN_STATUS M_RequestCopy(void *const arg)
+{
+    CHECK(Anm_SetPendingCopy(200, m_CopySource, m_CopyDest));
+    return CHAIN_CONTINUE;
+}
+
+static CHAIN_STATUS M_CountReads(void *const arg)
+{
+    m_ReadsInCalc = GfxRecorder_ReadCount();
+    return CHAIN_CONTINUE;
+}
+
+TEST(the_game_makes_the_pending_copy_after_the_draw_and_update_chains)
+{
+    GfxRecorder_Start();
+    M_SetScreen(m_CopySource);
+    CHECK(IS_OK(Anm_CreateTexture(200, 12, 8, ANM_TEXTURE_RGBA8)));
+    Chain_Init(&g_Chain);
+    CHAIN_ELEM draw;
+    CHAIN_ELEM calc;
+    Chain_InitElem(&draw, M_RequestCopy, nullptr);
+    Chain_InitElem(&calc, M_CountReads, nullptr);
+    CHECK(IS_OK(Chain_AddDraw(&g_Chain, &draw, 1)));
+    CHECK(IS_OK(Chain_AddCalc(&g_Chain, &calc, 1)));
+    m_ReadsInCalc = -1;
+    CHECK(Game_Tick(&(TH07_INPUT) {}));
+    CHECK_EQ_INT(m_ReadsInCalc, 0);
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
+    M_CheckCopied(200);
+    Chain_Release(&g_Chain);
+    Anm_ReleaseTexture(200);
+    GfxRecorder_Stop();
 }

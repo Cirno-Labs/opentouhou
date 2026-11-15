@@ -1,6 +1,5 @@
 #include "th07_scene_stubs.h"
 
-#include "th07/anm/texture.h"
 #include "th07/game_manager.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
@@ -89,19 +88,6 @@ void PlayTime_Add(void)
 void PlayTime_Restart(void)
 {
     g_SceneStubCalls.play_time_restart++;
-}
-
-bool Anm_SetPendingCopy(
-    const int32_t slot, const GFX_RECT source, const GFX_RECT dest)
-{
-    if (g_SceneStubCalls.copy_pending) {
-        return false;
-    }
-    g_SceneStubCalls.pending_copies++;
-    g_SceneStubCalls.copy_slot = slot;
-    g_SceneStubCalls.copy_source = source;
-    g_SceneStubCalls.copy_dest = dest;
-    return true;
 }
 
 bool Gui_IsLoadingShown(void)

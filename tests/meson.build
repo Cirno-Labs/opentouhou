@@ -996,6 +996,7 @@ test(
     'th07_data.c',
     'th07_scene_stubs.c',
     shell_fake,
+    'gfx_recorder.c',
     c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [

@@ -1,5 +1,6 @@
 #include "th07/ascii/pause_menu.h"
 
+#include "th07/anm/private.h"
 #include "th07/ascii/text.h"
 #include "th07/game.h"
 #include "th07/scene.h"
@@ -8,6 +9,7 @@
 #include "th07/player.h"
 #include "th07/stubs.h"
 
+#include "gfx_recorder.h"
 #include "test.h"
 #include "th07_scene_stubs.h"
 
@@ -79,6 +81,7 @@ static void M_Setup(void)
 static void M_Teardown(void)
 {
     Anm_Shutdown();
+    Result_Ignore(Anm_DoPendingCopy());
 }
 
 static void M_Press(const uint16_t mask)
@@ -123,7 +126,7 @@ TEST(pause_opens_ten_lines_and_runs_resume_at_once)
     CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0x80, 0x30, 0x30, 0x30));
     CHECK(menu->sprites[1].pos_offset.x == -4.0f);
     CHECK(menu->sprites[3].pos_offset.x == 0.0f);
-    CHECK_EQ_INT(g_SceneStubCalls.pending_copies, 0);
+    CHECK(Anm_SetPendingCopy(4, (GFX_RECT) {}, (GFX_RECT) {}));
     M_Teardown();
 }
 
@@ -305,9 +308,32 @@ TEST(pause_menu_quit_and_retry_buttons_act_at_once)
     M_Teardown();
 }
 
+static uint32_t M_TexturePixel(const int32_t x, const int32_t y)
+{
+    const IMAGE *const image = AnmTexture_GetImage(4);
+    const uint8_t *const pixel = &image->pixels[(y * image->width + x) * 4];
+    return (uint32_t)pixel[0] << 24 | (uint32_t)pixel[1] << 16
+        | (uint32_t)pixel[2] << 8 | pixel[3];
+}
+
 TEST(pause_capture_copies_the_play_area_scaled_to_the_sprite)
 {
     M_Setup();
+    GfxRecorder_Start();
+    IMAGE screen = Image_Create(640, 480, &g_HeapAllocator);
+    for (int32_t y = 0; y < 480; y++) {
+        for (int32_t x = 0; x < 640; x++) {
+            const bool play_area = x >= 32 && x < 416 && y >= 16 && y < 464;
+            const uint32_t rgba = play_area ? 0xff0000ffu : 0x0000ffffu;
+            for (int32_t c = 0; c < 4; c++) {
+                screen.pixels[(y * 640 + x) * 4 + c] =
+                    (uint8_t)(rgba >> (24 - c * 8));
+            }
+        }
+    }
+    GfxRecorder_SetScreen(&screen);
+    Image_Free(&screen);
+    CHECK(IS_OK(Anm_CreateTexture(4, 512, 512, ANM_TEXTURE_RGBA8)));
     g_AsciiText.capture_background = true;
     ANM_SPRITE sprite = *Anm_GetSpriteEntry(0);
     sprite.x0 = 3.0f;
@@ -317,23 +343,27 @@ TEST(pause_capture_copies_the_play_area_scaled_to_the_sprite)
     Anm_SetSpriteEntry(0, &sprite);
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
     PauseMenu_UpdatePauseMenu(menu);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_slot, 4);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_source.x, 32);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_source.height, 448);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_dest.x, 3);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_dest.y, 5);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_dest.width, 500);
-    CHECK_EQ_INT(g_SceneStubCalls.copy_dest.height, 400);
+    CHECK(IS_OK(Anm_DoPendingCopy()));
+    CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
+    CHECK_EQ_INT(M_TexturePixel(3, 5), 0xff0000ff);
+    CHECK_EQ_INT(M_TexturePixel(502, 5), 0xff0000ff);
+    CHECK_EQ_INT(M_TexturePixel(3, 404), 0xff0000ff);
+    CHECK_EQ_INT(M_TexturePixel(502, 404), 0xff0000ff);
+    CHECK_EQ_INT(M_TexturePixel(2, 5), 0);
+    CHECK_EQ_INT(M_TexturePixel(503, 5), 0);
+    CHECK_EQ_INT(M_TexturePixel(3, 4), 0);
+    CHECK_EQ_INT(M_TexturePixel(3, 405), 0);
     CHECK_EQ_INT(menu->background.script_index, 0x724);
     CHECK(menu->background.pos.x == 32.0f && menu->background.pos.y == 16.0f);
     M_Teardown();
+    GfxRecorder_Stop();
 }
 
 TEST(pause_retries_opening_while_a_copy_is_pending)
 {
     M_Setup();
     g_AsciiText.capture_background = true;
-    g_SceneStubCalls.copy_pending = true;
+    CHECK(Anm_SetPendingCopy(4, (GFX_RECT) {}, (GFX_RECT) {}));
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 0);
