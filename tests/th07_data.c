@@ -76,3 +76,50 @@ void Th07Data_WriteFile(
     }
     Mem_Free(path);
 }
+
+uint8_t *Th07Data_BuildSht(const TH07_SHT *const sht, size_t *const size)
+{
+    WRITER out;
+    Writer_OpenBuffer(&out, &g_HeapAllocator, nullptr);
+    Writer_WriteU16(&out, 0);
+    Writer_WriteU16(&out, (uint16_t)sht->table_count);
+    Writer_WriteF32(&out, sht->bombs);
+    Writer_WriteI32(&out, sht->bomb_window);
+    for (int32_t i = 0; i < 10; i++) {
+        Writer_WriteF32(&out, sht->floats[i]);
+    }
+    size_t offset = Writer_Tell(&out) + (size_t)sht->table_count * 8;
+    for (int32_t i = 0; i < sht->table_count; i++) {
+        Writer_WriteU32(&out, (uint32_t)offset);
+        Writer_WriteI32(&out, sht->tables[i].max_power);
+        offset += ((size_t)sht->tables[i].count + 1) * 0x34;
+    }
+    for (int32_t i = 0; i < sht->table_count; i++) {
+        const TH07_SHT_TABLE *const table = &sht->tables[i];
+        for (int32_t j = 0; j <= table->count; j++) {
+            const TH07_SHT_SHOT shot = j < table->count
+                ? table->shots[j]
+                : (TH07_SHT_SHOT) { .interval = -1 };
+            Writer_WriteI16(&out, shot.interval);
+            Writer_WriteI16(&out, shot.phase);
+            Writer_WriteF32(&out, shot.offset_x);
+            Writer_WriteF32(&out, shot.offset_y);
+            Writer_WriteF32(&out, shot.size_x);
+            Writer_WriteF32(&out, shot.size_y);
+            Writer_WriteF32(&out, shot.angle);
+            Writer_WriteF32(&out, shot.speed);
+            Writer_WriteI16(&out, shot.damage);
+            Writer_WriteU8(&out, shot.option);
+            Writer_WriteU8(&out, shot.kind);
+            Writer_WriteI16(&out, shot.script);
+            Writer_WriteI16(&out, shot.sound);
+            Writer_WriteU32(&out, shot.fire);
+            Writer_WriteU32(&out, shot.move);
+            Writer_WriteU32(&out, shot.draw);
+            Writer_WriteU32(&out, shot.hit);
+        }
+    }
+    uint8_t *const bytes = Writer_TakeBuffer(&out, size);
+    Result_Ignore(Writer_Close(&out));
+    return bytes;
+}
