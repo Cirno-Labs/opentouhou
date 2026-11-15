@@ -29,7 +29,6 @@ typedef struct {
     const char *name;
     const char *remove;
     bool list;
-    bool help;
     bool version;
     bool update;
     bool verbose;

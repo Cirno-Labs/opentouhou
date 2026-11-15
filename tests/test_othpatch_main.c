@@ -980,17 +980,16 @@ TEST(bad_arguments_fail_with_one_message)
     M_CASE test = M_Prepare("arguments");
     CHECK_EQ_INT(M_Run(&test, 1, "--bogus"), 1);
     CHECK_EQ_STR(
-        test.output,
-        "othpatch: unknown option --bogus; --help lists the options\n");
+        test.output, "othpatch: unknown option --bogus (see --help)\n");
     CHECK_EQ_INT(M_Run(&test, 2, "en", "de"), 1);
-    CHECK_EQ_STR(test.output, "othpatch: name one patch only, not en and de\n");
-    CHECK_EQ_INT(M_Run(&test, 2, "--game", "th06"), 1);
     CHECK_EQ_STR(
-        test.output,
-        "othpatch: unknown option --game; --help lists the options\n");
+        test.output, "othpatch: unexpected argument de (see --help)\n");
+    CHECK_EQ_INT(M_Run(&test, 2, "--game", "th06"), 1);
+    CHECK_EQ_STR(test.output, "othpatch: unknown option --game (see --help)\n");
     CHECK_EQ_INT(M_Run(&test, 1, "--installed"), 1);
     CHECK_EQ_INT(M_Run(&test, 2, "--list", "en"), 1);
-    CHECK_EQ_STR(test.output, "othpatch: --list takes no patch to install\n");
+    CHECK_EQ_STR(
+        test.output, "othpatch: <patch> cannot go with --list (see --help)\n");
     char *argv[] = { "othpatch", "--dir" };
     FILE *const out = tmpfile();
     CHECK_EQ_INT(
@@ -1008,7 +1007,7 @@ TEST(help_and_version_print_and_succeed)
     CHECK_EQ_INT(M_Run(&test, 1, "--help"), 0);
     M_CheckOutput(&test, "Usage: othpatch");
     M_CheckOutput(&test, "  --verbose ");
-    M_CheckOutput(&test, "Developer options:\n  --dir <folder>");
+    M_CheckOutput(&test, "  --dir <folder> ");
     CHECK_EQ_INT(M_Run(&test, 1, "--version"), 0);
     CHECK_EQ_STR(test.output, "othpatch 0.1.0\n");
     CHECK_EQ_INT(M_Run(&test, 1, "-v"), 0);
