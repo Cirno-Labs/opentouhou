@@ -49,13 +49,16 @@ extern const INPUT_SCHEMA g_InputSchema;
 
 // Holds a frame's buttons, as the original derives them from the raw
 // input: what is down, what is new this calc and what counts as held
-// for a menu repeat.
+// for a menu repeat. Gameplay acts on play_word, which the replay sets
+// from the live word or from the recording.
 typedef struct {
     TH07_INPUT held; // down this calc
     TH07_INPUT pressed; // down this calc, up the calc before
     TH07_INPUT repeated; // pressed, or held on a calc that repeats
     uint16_t word;
     uint16_t previous_word;
+    uint16_t play_word;
+    uint16_t previous_play_word;
     int32_t held_frames;
     bool repeat; // this calc repeats
     // Counts a pad's held shoot, for the focus that shoot_focuses gives.
@@ -73,6 +76,10 @@ void Buttons_Update(
 // The shoot count steps as in Buttons_Update.
 void Buttons_Merge(
     BUTTONS *buttons, const TH07_INPUT *input, bool shoot_focuses);
+
+// Sets the play word to word, and steps held_frames and repeat on it as
+// Buttons_Update does on the live word, as replay playback does.
+void Buttons_Play(BUTTONS *buttons, uint16_t word);
 
 // Returns whether the masked word is nonzero and changed this calc.
 bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);

@@ -136,6 +136,32 @@ TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
     CHECK_EQ_INT(count, 2);
 }
 
+TEST(play_sets_the_play_word_and_leaves_the_live_word)
+{
+    BUTTONS buttons = { .word = 0x1008 };
+    Buttons_Play(&buttons, 0x11);
+    Buttons_Play(&buttons, 0x13);
+    CHECK_EQ_INT(buttons.play_word, 0x13);
+    CHECK_EQ_INT(buttons.previous_play_word, 0x11);
+    CHECK_EQ_INT(buttons.word, 0x1008);
+    CHECK_EQ_INT(buttons.held_frames, 0);
+}
+
+TEST(play_repeats_every_8_calcs_once_the_play_word_holds_30)
+{
+    BUTTONS buttons = { .play_word = 0x1 };
+    for (int calc = 0; calc <= 73; calc++) {
+        Buttons_Play(&buttons, 0x1);
+        const bool should_repeat = calc == 32 || calc == 40 || calc == 48
+            || calc == 56 || calc == 64 || calc == 72;
+        CHECK_EQ_INT(buttons.repeat, should_repeat);
+    }
+    CHECK_EQ_INT(buttons.held_frames, 34);
+    Buttons_Play(&buttons, 0x2);
+    CHECK(!buttons.repeat);
+    CHECK_EQ_INT(buttons.held_frames, 0);
+}
+
 TEST(merge_adds_bits_and_keeps_the_previous_word_and_repeat)
 {
     BUTTONS buttons = {};
