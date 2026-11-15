@@ -140,6 +140,8 @@ static RESULT M_Setup(
     g_GameSpeed = 1.0f;
     g_GameManager.run.stage = 1;
     g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0, 1 };
+    // Resets the effects, so no petal of an earlier test is drawn.
+    MUST(Effect_Register());
     return Stage_Register();
 }
 
@@ -151,13 +153,12 @@ static void M_Teardown(void)
     Mem_Free(m_Directory);
 }
 
-// Registers th07/effect and starts a still petal 100 in front of the eye
-// of m_Camera, drawn with the stage's sprite.
+// Starts a still petal 100 in front of the eye of m_Camera, drawn with the
+// stage's sprite.
 static EFFECT *M_StartPetal(void)
 {
     Anm_SetScriptEntry(M_PETAL_SCRIPT, Anm_GetScript(M_STAGE_SPRITE));
     Anm_SetSpriteEntry(M_PETAL_SPRITE, Anm_GetSpriteEntry(M_STAGE_SPRITE));
-    CHECK(Result_Log(Effect_Register(), LOG_LEVEL_ERROR));
     EFFECT *const petal =
         Effect_Spawn(EFFECT_PETAL_FALLING, (VEC3) {}, 1, 0xffffffffu);
     petal->true_pos = (VEC3) { 0.0f, 0.0f, -100.0f };
