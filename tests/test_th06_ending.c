@@ -172,8 +172,8 @@ static void M_Setup(const char *const case_name)
         }
     }
     g_GameManager.run.difficulty = 1;
-    g_Buttons = (BUTTONS) {};
-    m_Input = (TH06_INPUT) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    memset(&m_Input, 0, sizeof(m_Input));
     m_Requested = SCENE_ENDING;
     m_Music[0] = '\0';
     m_Fade = 0.0f;
@@ -287,7 +287,8 @@ TEST(a_line_wait_ends_early_with_skip_after_a_clear)
     CHECK(
         Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
-    m_Input = (TH06_INPUT) { .skip = true };
+    memset(&m_Input, 0, sizeof(m_Input));
+    m_Input.skip = true;
     CHECK_EQ_INT(M_TicksToEnd(20), 1);
 
     M_Teardown();
@@ -300,7 +301,8 @@ TEST(skip_runs_nothing_more_before_a_clear)
         "@w10\0"
         "0\0\r\n@z\r\n");
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
-    m_Input = (TH06_INPUT) { .skip = true };
+    memset(&m_Input, 0, sizeof(m_Input));
+    m_Input.skip = true;
     CHECK_EQ_INT(M_TicksToEnd(20), 12);
     M_Teardown();
 }
@@ -313,13 +315,15 @@ TEST(the_minimum_frames_hold_a_wait_against_confirm)
         "3\0\r\n@z\r\n");
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
     M_Tick();
-    m_Input = (TH06_INPUT) { .shoot = true };
+    memset(&m_Input, 0, sizeof(m_Input));
+    m_Input.shoot = true;
     M_Tick();
-    m_Input = (TH06_INPUT) {};
+    memset(&m_Input, 0, sizeof(m_Input));
     M_Tick();
     CHECK(m_Requested != SCENE_GAME_RESULT);
     M_Tick();
-    m_Input = (TH06_INPUT) { .shoot = true };
+    memset(&m_Input, 0, sizeof(m_Input));
+    m_Input.shoot = true;
     M_Tick();
     CHECK(m_Requested != SCENE_GAME_RESULT);
     M_Tick();

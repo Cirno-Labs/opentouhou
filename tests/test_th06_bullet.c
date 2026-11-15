@@ -28,6 +28,7 @@
 #include "stg/rng.h"
 
 #include <SDL3/SDL.h>
+#include <string.h>
 
 #define M_SPRITE 0x200
 #define M_SPRITE_8 (M_SPRITE + 0)
@@ -200,7 +201,7 @@ static void M_Prepare(const char *const case_name, const int32_t flying_sprite)
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
     Scene_Request(SCENE_GAMEPLAY);
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     m_AimAngle = 0.0f;
     m_AngleCalls = 0;
     m_Graze = PLAYER_CONTACT_NONE;

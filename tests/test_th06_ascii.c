@@ -83,10 +83,9 @@ static void M_Setup(void)
     Chain_Release(&g_Chain);
     AsciiText_Initialize();
     Chain_Init(&g_Chain);
-    g_GameManager = (GAME_MANAGER) {
-        .play_area = { 32.0f, 16.0f, 384.0f, 448.0f },
-    };
-    g_Buttons = (BUTTONS) {};
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_AsciiText.capture_background = false;
     g_AsciiText.highlight_font = false;
     m_LoadCount = 0;

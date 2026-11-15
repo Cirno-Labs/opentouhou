@@ -227,7 +227,7 @@ static RESULT M_SetupStage(const char *const case_name, const int32_t stage)
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
     g_GameManager.run.difficulty = 1;
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Scene_Request(SCENE_GAMEPLAY);
     m_ScriptCount = 0;
     return Gui_Register();
@@ -258,7 +258,7 @@ static void M_SetupPatched(const char *const case_name, const char *const diff)
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     g_GameManager.run.difficulty = 1;
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Scene_Request(SCENE_GAMEPLAY);
     m_ScriptCount = 0;
     CHECK(Result_Log(Gui_Register(), LOG_LEVEL_ERROR));
@@ -1352,7 +1352,7 @@ static void M_SetupTextImages(
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
     g_GameManager.run.difficulty = 1;
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_Stage.data.name = name;
     g_Stage.data.song_names[0] = song;
     g_Stage.data.song_names[1] = song;
@@ -1886,7 +1886,7 @@ static void M_SetupNotes(const char *const case_name, const char *const diff)
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     g_GameManager.run.difficulty = 1;
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Scene_Request(SCENE_GAMEPLAY);
     m_ScriptCount = 0;
     CHECK(Result_Log(Gui_Register(), LOG_LEVEL_ERROR));

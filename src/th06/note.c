@@ -527,7 +527,7 @@ void Note_Shutdown(void)
         }
         Array_Free(&m_Notes);
     }
-    m_Notes = (M_NOTE_ARRAY) {};
+    memset(&m_Notes, 0, sizeof(m_Notes));
     TextFont_Free(m_Font);
     m_Font = nullptr;
     m_Enabled = false;
