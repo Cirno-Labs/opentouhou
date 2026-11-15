@@ -1,4 +1,5 @@
 #include "../core/clock.h"
+#include "../core/null_d3d8.h"
 #include "../core/overlay.h"
 #include "../core/patch.h"
 #include "fields.h"
@@ -248,10 +249,14 @@ static void M_Attach(void)
     }
     M_Patch(Overlay_Install(game, work));
     wchar_t flag[4];
-    const uint32_t step =
-        M_GetEnv(L"TH06CAPTURE_FAST", flag, 4) ? FAST_CLOCK_STEP : 0;
-    if (!Clock_Install(GetModuleHandleW(nullptr), step)) {
+    const bool fast = M_GetEnv(L"TH06CAPTURE_FAST", flag, 4);
+    if (!Clock_Install(GetModuleHandleW(nullptr), fast ? FAST_CLOCK_STEP : 0)) {
         LOG_ERROR("no clock function is imported");
+        TerminateProcess(GetCurrentProcess(), 1);
+    }
+    if (fast && !M_GetEnv(L"TH06CAPTURE_DRAW", flag, 4)
+        && !NullD3d8_Install(GetModuleHandleW(nullptr))) {
+        LOG_ERROR("Direct3DCreate8 is not imported");
         TerminateProcess(GetCurrentProcess(), 1);
     }
     M_Patch(Patch_Call(

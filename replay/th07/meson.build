@@ -82,6 +82,7 @@ shared_library(
   'state.c',
   '../core/clock.c',
   '../core/iat.c',
+  '../core/null_d3d8.c',
   '../core/overlay.c',
   '../core/patch.c',
   '../core/case.c',
