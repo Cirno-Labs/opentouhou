@@ -196,9 +196,9 @@ test(
   suite: 'unit',
 )
 
-foreach part : ['audio', 'audio_decoder']
+foreach part : ['audio', 'audio_decoder', 'audio_resampler']
   test(
-    part == 'audio' ? 'core/audio' : 'core/audio/decoder',
+    'core/' + part.replace('_', '/'),
     executable(
       'test_' + part,
       'test_' + part + '.c',
