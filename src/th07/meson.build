@@ -14,6 +14,7 @@ th07_lib = static_library(
   'bomb/update.c',
   'bullet.c',
   'buttons.c',
+  'ecl/patterns.c',
   'effect.c',
   'enemy.c',
   'files.c',
