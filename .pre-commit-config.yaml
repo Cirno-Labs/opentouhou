@@ -24,6 +24,12 @@ repos:
     language: python
     files: ^(src|tests)/.*\.[ch]$
 
+  - id: raw-color
+    name: A colour is written with COLOR_ARGB, not a raw literal
+    entry: tools/lint/check_raw_color
+    language: python
+    files: ^(src/th06/|tests/(test_)?th06).*\.[ch]$
+
   - id: commit-msg
     name: Commit message has a module prefix and follows 50/72
     entry: tools/lint/check_commit_msg
