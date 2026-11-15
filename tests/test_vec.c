@@ -39,6 +39,16 @@ TEST(normalize_gives_unit_length)
     CHECK(M_Near(Vec3_Length(n), 1.0f));
 }
 
+TEST(cross_follows_the_right_hand_rule)
+{
+    const VEC3 c =
+        Vec3_Cross((VEC3) { 1.0f, 0.0f, 0.0f }, (VEC3) { 0.0f, 1.0f, 0.0f });
+    CHECK(c.x == 0.0f && c.y == 0.0f && c.z == 1.0f);
+    const VEC3 d =
+        Vec3_Cross((VEC3) { 1.0f, 2.0f, 3.0f }, (VEC3) { 4.0f, 5.0f, 6.0f });
+    CHECK(d.x == -3.0f && d.y == 6.0f && d.z == -3.0f);
+}
+
 TEST(identity_leaves_a_point_unchanged)
 {
     const MAT4 identity = Mat4_Identity();
