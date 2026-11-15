@@ -85,6 +85,21 @@ bool Gui_IsMsgSkippable(void)
     return false;
 }
 
+void Gui_StartMsg(const int32_t index)
+{
+    LOG_INFO("Gui_StartMsg is not ported");
+}
+
+bool Gui_MsgHoldsTimeline(void)
+{
+    return false;
+}
+
+void Gui_ShowBonusPopup(const int32_t bonus)
+{
+    LOG_INFO("Gui_ShowBonusPopup is not ported");
+}
+
 void Gui_ShowCherryFullPopup(const int32_t cherry)
 {
     LOG_INFO("Gui_ShowCherryFullPopup is not ported");
