@@ -88,14 +88,10 @@ static uint16_t M_Read(
     return Buttons_ToWord(&read);
 }
 
-void Buttons_Update(
-    BUTTONS *const buttons, const TH07_INPUT *const input,
-    const bool shoot_focuses)
+static void M_StepRepeat(BUTTONS *const buttons, const bool same)
 {
-    buttons->previous_word = buttons->word;
-    buttons->word = M_Read(buttons, input, shoot_focuses);
     buttons->repeat = false;
-    if (buttons->previous_word == buttons->word) {
+    if (same) {
         if (buttons->held_frames >= 30) {
             if (buttons->held_frames % 8 == 0) {
                 buttons->repeat = true;
@@ -108,6 +104,15 @@ void Buttons_Update(
     } else {
         buttons->held_frames = 0;
     }
+}
+
+void Buttons_Update(
+    BUTTONS *const buttons, const TH07_INPUT *const input,
+    const bool shoot_focuses)
+{
+    buttons->previous_word = buttons->word;
+    buttons->word = M_Read(buttons, input, shoot_focuses);
+    M_StepRepeat(buttons, buttons->previous_word == buttons->word);
     M_Derive(buttons);
     buttons->held.move_x = input->move_x;
     buttons->held.move_y = input->move_y;
@@ -121,6 +126,13 @@ void Buttons_Merge(
     M_Derive(buttons);
     buttons->held.move_x = input->move_x;
     buttons->held.move_y = input->move_y;
+}
+
+void Buttons_Play(BUTTONS *const buttons, const uint16_t word)
+{
+    buttons->previous_play_word = buttons->play_word;
+    buttons->play_word = word;
+    M_StepRepeat(buttons, buttons->previous_play_word == buttons->play_word);
 }
 
 bool Buttons_WasPressed(const BUTTONS *const buttons, const uint16_t mask)
