@@ -20,17 +20,6 @@ RESULT Ending_Register(void)
     return OK;
 }
 
-RESULT Bullet_Register(void)
-{
-    LOG_INFO("Bullet_Register is not ported");
-    return OK;
-}
-
-void Bullet_Remove(void)
-{
-    LOG_INFO("Bullet_Remove is not ported");
-}
-
 RESULT Enemy_Register(void)
 {
     LOG_INFO("Enemy_Register is not ported");
@@ -104,27 +93,9 @@ void Gui_EndBombName(void)
     LOG_INFO("Gui_EndBombName is not ported");
 }
 
-void Bullet_ClearAll(void)
-{
-}
-
-void Bullet_ClearAllToItems(void)
-{
-}
-
-void Bullet_StopAll(void)
-{
-    LOG_INFO("Bullet_StopAll is not ported");
-}
-
 bool Enemy_IsBossActive(void)
 {
     return false;
-}
-
-int32_t Bullet_Count(void)
-{
-    return 0;
 }
 
 RESULT ResultScreen_LoadGameRecords(void)

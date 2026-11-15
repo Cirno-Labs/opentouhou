@@ -2,6 +2,7 @@
 
 #include "th07/anm.h"
 #include "th07/ascii.h"
+#include "th07/bullet.h"
 #include "th07/effect.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
