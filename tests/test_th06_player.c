@@ -29,6 +29,7 @@
 
 #include <SDL3/SDL.h>
 #include <math.h>
+#include <string.h>
 
 #define M_START_X 192.0f
 #define M_START_Y 384.0f
@@ -179,8 +180,8 @@ static void M_Setup(
     g_GameManager.rank.value = 20;
     g_GameManager.rank.max = 99;
     Scene_Request(SCENE_GAMEPLAY);
-    g_Enemies = (ENEMY_MANAGER) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     m_MsgRunning = false;
     m_ClearCalls = 0;
     m_BombCalls = 0;
@@ -407,7 +408,7 @@ TEST(the_player_stays_in_the_player_area)
     g_Buttons.held.down = true;
     M_Frame();
     CHECK(g_Player.pos.x == 376.0f && g_Player.pos.y == 432.0f);
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_Player.pos = M_At(9.0f, 17.0f);
     g_Buttons.held.left = true;
     g_Buttons.held.up = true;

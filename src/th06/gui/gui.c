@@ -1022,7 +1022,7 @@ static void M_ShowPopup(GUI_POPUP *const popup, const int32_t value)
 RESULT Gui_Register(void)
 {
     if (!M_KeepsInterface()) {
-        g_Gui = (GUI) {};
+        memset(&g_Gui, 0, sizeof(g_Gui));
     }
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;

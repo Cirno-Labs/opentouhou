@@ -24,12 +24,12 @@ BUTTONS g_Buttons;
 
 static void M_Reset(void)
 {
-    g_GameManager = (GAME_MANAGER) {};
-    g_Player = (PLAYER) {};
-    g_Bullets = (BULLET_MANAGER) {};
-    g_Enemies = (ENEMY_MANAGER) {};
-    g_Rng = (RNG) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    memset(&g_Player, 0, sizeof(g_Player));
+    memset(&g_Bullets, 0, sizeof(g_Bullets));
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
+    memset(&g_Rng, 0, sizeof(g_Rng));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Item_Reset();
 }
 

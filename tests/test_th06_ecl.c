@@ -169,7 +169,12 @@ ENEMY *Enemy_Spawn(
     const int32_t sub, const VEC3 pos, const int16_t life, const int16_t item,
     const int32_t score)
 {
-    m_SpawnCall = (M_SPAWN_CALL) { sub, pos, life, item, score };
+    memset(&m_SpawnCall, 0, sizeof(m_SpawnCall));
+    m_SpawnCall.sub = sub;
+    m_SpawnCall.pos = pos;
+    m_SpawnCall.life = life;
+    m_SpawnCall.item = item;
+    m_SpawnCall.score = score;
     m_SpawnCount++;
     return &m_SpareEnemy;
 }
@@ -327,8 +332,12 @@ static void M_Begin(const char *const case_name)
     M_ResetCalls();
     m_AimAngle = 0.0f;
     m_AwayAngle = 0.0f;
-    m_LargeSprite = (ANM_SPRITE) { .slot = -1, .height = 32.0f };
-    m_SmallSprite = (ANM_SPRITE) { .slot = -1, .height = 16.0f };
+    memset(&m_LargeSprite, 0, sizeof(m_LargeSprite));
+    m_LargeSprite.slot = -1;
+    m_LargeSprite.height = 32.0f;
+    memset(&m_SmallSprite, 0, sizeof(m_SmallSprite));
+    m_SmallSprite.slot = -1;
+    m_SmallSprite.height = 16.0f;
     EclBuilder_Init(&m_Builder);
     m_Sub = EclBuilder_BeginSub(&m_Builder);
 }

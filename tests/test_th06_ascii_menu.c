@@ -7,6 +7,8 @@
 #include "th06/game_manager.h"
 #include "th06/scene.h"
 
+#include <string.h>
+
 ASCII_TEXT g_AsciiText;
 GAME_MANAGER g_GameManager;
 BUTTONS g_Buttons;
@@ -23,9 +25,9 @@ static int32_t m_SetSprite;
 
 static void M_Reset(void)
 {
-    g_AsciiText = (ASCII_TEXT) {};
-    g_GameManager = (GAME_MANAGER) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     m_Requested = SCENE_NONE;
     m_ShownAtRequest = 0;
     m_ContinueAtRequest = false;

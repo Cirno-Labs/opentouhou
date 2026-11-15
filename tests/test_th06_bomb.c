@@ -207,8 +207,8 @@ static void M_Setup(
     g_GameManager.run.character = character;
     g_GameManager.run.shot_type = shot_type;
     Scene_Request(SCENE_GAMEPLAY);
-    g_Enemies = (ENEMY_MANAGER) {};
-    g_Buttons = (BUTTONS) {};
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     Sound_Reset();
     m_NameSprite = 0;
     m_Name = nullptr;
