@@ -1008,6 +1008,33 @@ foreach anm_test : [
   )
 endforeach
 
+test(
+  'th07/screens/main',
+  executable(
+    'test_th07_title',
+    'test_th07_title.c',
+    'th07_scene_stubs.c',
+    'th07_anm_builder.c',
+    'th07_data.c',
+    shell_fake,
+    'gfx_recorder.c',
+    c_args: [layer_include['th07'], '-DTH07_TITLE_TEST'] + core_include + stg_include + shell_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
+      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
+      core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
+      core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
+      core_math_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_title',
+  },
+  suite: 'unit',
+)
+
 foreach ascii_test : ['ascii', 'ascii_menu']
   test(
     'th07/' + ascii_test,

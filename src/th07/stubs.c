@@ -2,13 +2,10 @@
 
 #include "core/base/log.h"
 
-GAME_MANAGER g_GameManager;
-
-RESULT TitleScene_SetUp(const int32_t mode)
-{
-    LOG_INFO("TitleScene_SetUp is not ported");
-    return OK;
-}
+GAME_MANAGER g_GameManager = {
+    .mode.demo_index = 2,
+    .phantasm_was_open = true,
+};
 
 RESULT GameManager_Register(void)
 {
@@ -55,6 +52,16 @@ void GameManager_RerollChecksumKeys(void)
 void GameManager_SetBombs(const int32_t bombs)
 {
     LOG_INFO("GameManager_SetBombs is not ported");
+}
+
+void ResultScreen_LoadTitleRecords(void)
+{
+    LOG_INFO("ResultScreen_LoadTitleRecords is not ported");
+}
+
+void ScreenEffect_FadeIn(const int32_t frames, const uint32_t color)
+{
+    LOG_INFO("ScreenEffect_FadeIn is not ported");
 }
 
 void PlayTime_Add(void)
