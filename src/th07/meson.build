@@ -19,6 +19,7 @@ th07_lib = static_library(
   'game_manager/chain.c',
   'game_manager/cherry.c',
   'game_manager/state.c',
+  'item.c',
   'player/chain.c',
   'player/shot_type.c',
   'player/shots.c',
