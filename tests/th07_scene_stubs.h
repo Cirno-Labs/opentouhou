@@ -40,7 +40,6 @@ typedef struct {
     int load_title_records;
     // Runs in ResultScreen_LoadTitleRecords, unless nullptr.
     void (*on_load_title_records)(void);
-    int fade_ins;
 } SCENE_STUB_CALLS;
 
 extern SCENE_STUB_CALLS g_SceneStubCalls;
