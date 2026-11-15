@@ -35,6 +35,7 @@ typedef struct {
     bool live;
     bool dry_run;
     bool fast;
+    bool draw;
     bool result;
     int quit_after;
     const char *out_dir;
@@ -59,6 +60,8 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
             args->dry_run = true;
         } else if (strcmp(argv[i], "--fast") == 0) {
             args->fast = true;
+        } else if (strcmp(argv[i], "--draw") == 0) {
+            args->draw = true;
         } else if (strcmp(argv[i], "--quit-after") == 0 && has_value) {
             args->quit_after = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--result") == 0) {
@@ -79,7 +82,7 @@ static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
     }
     return args->game_dir != nullptr && (args->replay != nullptr) != args->live
         && !(args->fast && args->live) && !(args->fast && args->quit_after > 0)
-        && !(args->result && !args->live);
+        && !(args->draw && !args->fast) && !(args->result && !args->live);
 }
 
 static wchar_t *M_Wide(const char *const text)
@@ -222,8 +225,8 @@ static RESULT M_Keep(const ARGS *const args, const wchar_t *const work_dir)
 static wchar_t *M_Environment(
     const ARGS *const args, const wchar_t *work_dir, const wchar_t *case_path)
 {
-    wchar_t lines[6][MAX_PATH + 32];
-    const wchar_t *extra[6];
+    wchar_t lines[7][MAX_PATH + 32];
+    const wchar_t *extra[7];
     size_t count = 0;
     swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_WORK=%ls", work_dir);
     count++;
@@ -235,6 +238,10 @@ static wchar_t *M_Environment(
     }
     if (args->fast) {
         swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_FAST=1");
+        count++;
+    }
+    if (args->draw) {
+        swprintf(lines[count], MAX_PATH + 32, L"TH06CAPTURE_DRAW=1");
         count++;
     }
     if (args->result) {
@@ -311,12 +318,13 @@ int main(void)
         fprintf(
             stderr,
             "usage: th06capture.exe --game <dir> "
-            "(--replay <file.rpy> | --live) [--dry-run] [--fast] "
+            "(--replay <file.rpy> | --live) [--dry-run] [--fast [--draw]] "
             "[--result] [--quit-after <seconds>] [--out <dir>] "
             "[--seed <file>]... [--keep <name>]...\n"
             "  --seed <file>  copy the file into the work directory first\n"
             "  --keep <name>  copy the file from the work directory to --out "
             "at the end\n"
+            "  --draw         with --fast, still draw the frames\n"
             "  --result       with --live, open the result screen, which "
             "saves score.dat when the game closes\n");
         return 1;
