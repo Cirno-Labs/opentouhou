@@ -675,3 +675,102 @@ TEST(sprite_and_script_numbers_fit_the_tables)
     CHECK(!M_LoadsNumbers("sprite_negative", -1, 0, 0));
     CHECK(!M_LoadsNumbers("script_negative", 0, -2, 1));
 }
+
+static void M_FillTexture(
+    const int32_t slot, const int32_t width, const int32_t height,
+    const uint32_t base)
+{
+    IMAGE image = Image_Create(width, height, &g_HeapAllocator);
+    for (int32_t i = 0; i < width * height; i++) {
+        const uint32_t rgba = base + (uint32_t)i * 0x01010100u;
+        for (int32_t c = 0; c < 4; c++) {
+            image.pixels[i * 4 + c] = (uint8_t)(rgba >> (24 - c * 8));
+        }
+    }
+    CHECK(IS_OK(
+        Anm_UpdateTexture(slot, (GFX_RECT) { 0, 0, width, height }, &image)));
+    Image_Free(&image);
+}
+
+TEST(copy_texture_rect_copies_the_kept_pixels)
+{
+    CHECK(IS_OK(Anm_CreateTexture(200, 4, 4, ANM_TEXTURE_RGBA8)));
+    CHECK(IS_OK(Anm_CreateTexture(201, 8, 4, ANM_TEXTURE_RGBA8)));
+    M_FillTexture(200, 4, 4, 0x102030ffu);
+    CHECK(IS_OK(Anm_CopyTextureRect(
+        201, (GFX_RECT) { 5, 1, 2, 2 }, 200, (GFX_RECT) { 1, 2, 2, 2 })));
+    CHECK_EQ_INT(M_Pixel(201, 1 * 8 + 5), M_Pixel(200, 2 * 4 + 1));
+    CHECK_EQ_INT(M_Pixel(201, 1 * 8 + 6), M_Pixel(200, 2 * 4 + 2));
+    CHECK_EQ_INT(M_Pixel(201, 2 * 8 + 5), M_Pixel(200, 3 * 4 + 1));
+    CHECK_EQ_INT(M_Pixel(201, 2 * 8 + 6), M_Pixel(200, 3 * 4 + 2));
+    CHECK_EQ_INT(M_Pixel(201, 1 * 8 + 4), 0);
+    CHECK_EQ_INT(M_Pixel(201, 1 * 8 + 7), 0);
+    CHECK_EQ_INT(M_Pixel(201, 0 * 8 + 5), 0);
+    CHECK_EQ_INT(M_Pixel(201, 3 * 8 + 6), 0);
+    CHECK_EQ_INT(GfxTexture_GetWidth(Anm_GetTexture(201)), 8);
+    Anm_ReleaseTexture(200);
+    Anm_ReleaseTexture(201);
+}
+
+TEST(copy_texture_rect_scales_to_dest_and_its_format)
+{
+    CHECK(IS_OK(Anm_CreateTexture(200, 2, 2, ANM_TEXTURE_RGBA8)));
+    CHECK(IS_OK(Anm_CreateTexture(201, 8, 8, ANM_TEXTURE_A1R5G5B5)));
+    IMAGE image = Image_Create(2, 2, &g_HeapAllocator);
+    for (int32_t i = 0; i < 4; i++) {
+        image.pixels[i * 4 + 0] = 0x47;
+        image.pixels[i * 4 + 1] = 0x86;
+        image.pixels[i * 4 + 2] = 0xc5;
+        image.pixels[i * 4 + 3] = 0xff;
+    }
+    CHECK(IS_OK(Anm_UpdateTexture(200, (GFX_RECT) { 0, 0, 2, 2 }, &image)));
+    Image_Quantize(&image, IMAGE_DEPTH_A1R5G5B5);
+    const uint8_t *const pixel = image.pixels;
+    const uint32_t expected = (uint32_t)pixel[0] << 24
+        | (uint32_t)pixel[1] << 16 | (uint32_t)pixel[2] << 8 | pixel[3];
+    Image_Free(&image);
+    CHECK(expected != 0x4786c5ff);
+    CHECK(IS_OK(Anm_CopyTextureRect(
+        201, (GFX_RECT) { 2, 2, 4, 6 }, 200, (GFX_RECT) { 0, 0, 2, 2 })));
+    for (int32_t y = 0; y < 8; y++) {
+        for (int32_t x = 0; x < 8; x++) {
+            const bool inside = x >= 2 && x < 6 && y >= 2;
+            CHECK_EQ_INT(M_Pixel(201, y * 8 + x), inside ? expected : 0);
+        }
+    }
+    Anm_ReleaseTexture(200);
+    Anm_ReleaseTexture(201);
+}
+
+TEST(copy_texture_rect_skips_textures_not_loaded)
+{
+    CHECK(IS_OK(Anm_CreateTexture(200, 2, 2, ANM_TEXTURE_RGBA8)));
+    M_FillTexture(200, 2, 2, 0x102030ffu);
+    CHECK(IS_OK(Anm_CopyTextureRect(
+        201, (GFX_RECT) { 0, 0, 2, 2 }, 200, (GFX_RECT) { 0, 0, 2, 2 })));
+    CHECK(IS_OK(Anm_CopyTextureRect(
+        200, (GFX_RECT) { 0, 0, 2, 2 }, 201, (GFX_RECT) { 0, 0, 2, 2 })));
+    CHECK_EQ_INT(M_Pixel(200, 0), 0x102030ff);
+    CHECK_EQ_INT(M_Pixel(200, 3), 0x132333ff);
+    Anm_ReleaseTexture(200);
+}
+
+TEST(copy_texture_rect_outside_either_texture_fails)
+{
+    CHECK(IS_OK(Anm_CreateTexture(200, 4, 4, ANM_TEXTURE_RGBA8)));
+    CHECK(IS_OK(Anm_CreateTexture(201, 4, 4, ANM_TEXTURE_RGBA8)));
+    CHECK(!Result_Log(
+        Anm_CopyTextureRect(
+            201, (GFX_RECT) { 0, 0, 2, 2 }, 200, (GFX_RECT) { 3, 0, 2, 2 }),
+        LOG_LEVEL_INFO));
+    CHECK(!Result_Log(
+        Anm_CopyTextureRect(
+            201, (GFX_RECT) { 3, 3, 2, 2 }, 200, (GFX_RECT) { 0, 0, 2, 2 }),
+        LOG_LEVEL_INFO));
+    CHECK(!Result_Log(
+        Anm_CopyTextureRect(
+            201, (GFX_RECT) { 0, 0, 0, 2 }, 200, (GFX_RECT) { 0, 0, 2, 2 }),
+        LOG_LEVEL_INFO));
+    Anm_ReleaseTexture(200);
+    Anm_ReleaseTexture(201);
+}
