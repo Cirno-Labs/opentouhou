@@ -896,6 +896,7 @@ test(
   executable(
     'test_th07_gui_msg',
     'test_th07_gui_msg.c',
+    'th07_gui_setup.c',
     'th07_anm_builder.c',
     'th07_data.c',
     'th07_msg_builder.c',
