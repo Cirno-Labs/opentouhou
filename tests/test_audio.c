@@ -2,6 +2,7 @@
 
 #include "core/audio/backend.h"
 #include "core/base/memory.h"
+#include "core/base/utils.h"
 #include "core/io/writer.h"
 
 #include "test.h"
@@ -12,6 +13,7 @@
 #include <stdatomic.h>
 
 #define WAIT_MILLISECONDS 5000
+#define TAU 6.283185307179586
 
 typedef struct {
     atomic_uint_fast64_t released_by;
@@ -197,48 +199,129 @@ static AUDIO_STREAM *M_LoadPcmStream(
     return stream;
 }
 
-// Returns the value of the ramp of M_RampReader at a position in frames,
-// between two frames as linear interpolation gives it.
-static float M_Ramp(const double position)
+// Writes frames mono frames of a sine of frequency hertz at rate, with
+// amplitude 0.4 about 0.5, so that no frame is silent.
+static void M_WriteSine(
+    WRITER *const writer, const uint32_t frames, const uint32_t rate,
+    const double frequency)
 {
-    return (float)((8.0 * position + 1.0) / 32768.0);
-}
-
-static float M_Lerp(const float from, const float to, const double fraction)
-{
-    return from + (to - from) * (float)fraction;
-}
-
-// Returns an owned reader over frames mono frames of raw PCM: frame i has
-// 8 (i % 4096) + 1, so that no frame is silent.
-static READER M_RampReader(const uint32_t frames)
-{
-    WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     for (uint32_t i = 0; i < frames; i++) {
-        Writer_WriteI16(&writer, (int16_t)(i % 4096 * 8 + 1));
+        const double value = 0.5 + 0.4 * sin(TAU * frequency * i / rate);
+        Writer_WriteI16(writer, (int16_t)lround(value * 32767.0));
     }
+}
+
+// Writes a mono WAV file of a sine of M_WriteSine.
+static void M_WriteSineWave(
+    WRITER *const writer, const uint32_t frames, const uint32_t rate,
+    const double frequency)
+{
+    Writer_WriteBytes(writer, "RIFF", 4);
+    Writer_WriteU32(writer, 36 + frames * 2);
+    Writer_WriteBytes(writer, "WAVEfmt ", 8);
+    Writer_WriteU32(writer, 16);
+    Writer_WriteU16(writer, 1);
+    Writer_WriteU16(writer, 1);
+    Writer_WriteU32(writer, rate);
+    Writer_WriteU32(writer, rate * 2);
+    Writer_WriteU16(writer, 2);
+    Writer_WriteU16(writer, 16);
+    Writer_WriteBytes(writer, "data", 4);
+    Writer_WriteU32(writer, frames * 2);
+    M_WriteSine(writer, frames, rate, frequency);
+}
+
+static READER M_TakeReader(WRITER *const writer)
+{
     size_t size;
-    uint8_t *const data = Writer_TakeBuffer(&writer, &size);
-    M_CheckResult(Writer_Close(&writer));
+    uint8_t *const data = Writer_TakeBuffer(writer, &size);
+    M_CheckResult(Writer_Close(writer));
     READER reader;
     Reader_OpenOwnedBuffer(&reader, data, size, &g_HeapAllocator, nullptr);
     return reader;
 }
 
-static AUDIO_STREAM *M_LoadRampStream(
-    const uint32_t frames, const AUDIO_PLAY_OPTIONS *const options)
+// Loads a stream of a sine at 44100 Hz from raw PCM or from a WAV file.
+static AUDIO_STREAM *M_LoadSineStream(
+    const uint32_t frames, const double frequency,
+    const AUDIO_PLAY_OPTIONS *const options, const bool raw)
 {
-    READER reader = M_RampReader(frames);
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    if (raw) {
+        M_WriteSine(&writer, frames, 44100, frequency);
+    } else {
+        M_WriteSineWave(&writer, frames, 44100, frequency);
+    }
+    READER reader = M_TakeReader(&writer);
     AUDIO_STREAM *stream = nullptr;
-    const AUDIO_PCM_FORMAT format = { .sample_rate = 44100, .channels = 1 };
-    M_CheckResult(AudioStream_LoadPcm(&reader, format, options, &stream));
+    if (raw) {
+        const AUDIO_PCM_FORMAT format = { .sample_rate = 44100, .channels = 1 };
+        M_CheckResult(AudioStream_LoadPcm(&reader, format, options, &stream));
+    } else {
+        M_CheckResult(AudioStream_Load(&reader, options, &stream));
+    }
     Reader_Close(&reader);
     if (stream != nullptr) {
         M_WaitStream(stream);
         M_CheckResult(AudioStream_GetResult(stream));
     }
     return stream;
+}
+
+// Checks that frames [from, to) of a sine of M_WriteSine keep its amplitude
+// within 2.5% and its frequency within 1% at the output rate.
+static void M_CheckSine(
+    const float *const frames, const uint32_t from, const uint32_t to,
+    const double frequency)
+{
+    double sum = 0.0;
+    for (uint32_t i = from; i < to; i++) {
+        sum += frames[i];
+    }
+    const double mean = sum / (to - from);
+    double power = 0.0;
+    uint32_t crossings = 0;
+    for (uint32_t i = from; i < to; i++) {
+        power += (frames[i] - mean) * (frames[i] - mean);
+        if (i > from && (frames[i - 1] < mean) != (frames[i] < mean)) {
+            crossings++;
+        }
+    }
+    const double amplitude = sqrt(2.0 * power / (to - from));
+    if (amplitude < 0.39 || amplitude > 0.41) {
+        TEST_FAIL("%.0f Hz has amplitude %.4f, not 0.4", frequency, amplitude);
+    }
+    const double expected = 2.0 * frequency * (to - from) / 48000.0;
+    if (fabs(crossings - expected) > expected * 0.01) {
+        TEST_FAIL(
+            "%.0f Hz crosses its mean %u times, not %.0f", frequency, crossings,
+            expected);
+    }
+}
+
+// Mixes stream until frames frames play, and writes their left channel to
+// out. Skips the frames that an underrun leaves silent.
+static void M_MixPlayed(
+    AUDIO_STREAM *const stream, float *const out, const uint32_t frames)
+{
+    const Uint64 deadline = SDL_GetTicks() + WAIT_MILLISECONDS;
+    uint32_t count = 0;
+    float chunk[1024 * 2];
+    while (count < frames) {
+        if (SDL_GetTicks() >= deadline) {
+            TEST_FAIL("the stream played %u frames, not %u", count, frames);
+            break;
+        }
+        const uint32_t size = MIN(frames - count, 1024);
+        M_Mix(chunk, size);
+        for (uint32_t i = 0; i < size; i++) {
+            if (chunk[i * 2] != 0.0f) {
+                out[count++] = chunk[i * 2];
+            }
+        }
+        SDL_Delay(1);
+    }
 }
 
 // Mixes stream until it finishes, and writes the left channel of the
@@ -487,12 +570,40 @@ TEST(source_sample_rate_controls_output_playback_speed)
     CHECK_EQ_INT(info.length, 8);
     AUDIO_PLAY_OPTIONS options = M_Options();
     AUDIO_PLAYBACK *const playback = M_Play(sample, &options);
-    float output[8];
-    M_Mix(output, 4);
-    M_CheckNear(output[0], M_Left(0));
-    M_CheckNear(output[2], (M_Left(0) + M_Left(1)) * 0.5f);
-    M_CheckNear(output[4], M_Left(1));
-    M_CheckNear(output[6], (M_Left(1) + M_Left(2)) * 0.5f);
+    // Plays 8 frames at 24000 Hz in 16 frames at 48000 Hz.
+    float output[32];
+    M_Mix(output, 15);
+    CHECK(!AudioPlayback_IsFinished(playback));
+    M_Mix(output, 1);
+    CHECK(AudioPlayback_IsFinished(playback));
+    AudioPlayback_Free(playback);
+    AudioSample_Free(sample);
+    Audio_Shutdown();
+}
+
+TEST(sample_at_44100_hz_keeps_its_high_frequencies)
+{
+    M_CheckResult(Audio_Init());
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    M_WriteSineWave(&writer, 4410, 44100, 15000.0);
+    READER reader = M_TakeReader(&writer);
+    AUDIO_SAMPLE *sample = nullptr;
+    M_CheckResult(AudioSample_Load(&reader, &sample));
+    M_WaitSample(sample);
+    M_CheckResult(AudioSample_GetResult(sample));
+    AUDIO_INFO info;
+    M_CheckResult(AudioSample_GetInfo(sample, &info));
+    CHECK_EQ_INT(info.length, 4410);
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_PLAYBACK *const playback = M_Play(sample, &options);
+    float output[4800 * 2];
+    M_Mix(output, 4800);
+    float left[4800];
+    for (uint32_t i = 0; i < 4800; i++) {
+        left[i] = output[i * 2];
+    }
+    M_CheckSine(left, 200, 4600, 15000.0);
     AudioPlayback_Free(playback);
     AudioSample_Free(sample);
     Audio_Shutdown();
@@ -956,56 +1067,138 @@ TEST(pcm_stream_rejects_a_slice)
     Audio_Shutdown();
 }
 
-TEST(pcm_stream_at_44100_hz_interpolates_to_the_output_rate)
+static void M_CheckStreamLength(const bool raw)
 {
     M_CheckResult(Audio_Init());
     AUDIO_PLAY_OPTIONS options = M_Options();
-    AUDIO_STREAM *const stream = M_LoadRampStream(44100, &options);
+    AUDIO_STREAM *const stream = M_LoadSineStream(44100, 1000.0, &options, raw);
     AUDIO_INFO info;
     M_CheckResult(AudioStream_GetInfo(stream, &info));
     CHECK_EQ_INT(info.sample_rate, 44100);
+    CHECK_EQ_INT(info.length, 44100);
     M_CheckResult(AudioStream_Play(stream));
     const uint32_t capacity = 48100;
     float *const output = Mem_AllocArr(capacity, sizeof(*output));
     const uint32_t count = M_MixToEnd(stream, output, capacity);
-    CHECK(count >= 47999 && count <= 48001);
-    // Each output frame steps 44100 / 48000 source frames. Past the last
-    // source frame the output holds it, and the ramp drops every 4096
-    // frames.
-    for (uint32_t i = 0; i < count && i < capacity; i++) {
-        const double position = i * 0.91875;
-        const double ramp = fmod(position, 4096.0);
-        if (position >= 44099.0) {
-            M_CheckNear(output[i], M_Ramp(44099 % 4096));
-        } else if (ramp < 4095.0) {
-            M_CheckNear(output[i], M_Ramp(ramp));
-        }
-    }
+    CHECK(count >= 47998 && count <= 48002);
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 44100);
     Mem_Free(output);
     AudioStream_Free(stream);
     Audio_Shutdown();
 }
 
-// Steps 44100 / 48000 source frames each output frame: output frame 217 is
-// at source frame 199.36875, between the loop end and the loop begin.
-TEST(pcm_stream_at_44100_hz_loops_at_its_source_frames)
+TEST(stream_at_44100_hz_resamples_to_the_output_length)
+{
+    M_CheckStreamLength(false);
+}
+
+TEST(pcm_stream_at_44100_hz_resamples_to_the_output_length)
+{
+    M_CheckStreamLength(true);
+}
+
+// Linear interpolation leaves about 0.7 of the amplitude of 15 kHz.
+static void M_CheckStreamFrequencies(const bool raw)
+{
+    M_CheckResult(Audio_Init());
+    const double frequencies[] = { 1000.0, 15000.0 };
+    for (size_t i = 0; i < 2; i++) {
+        AUDIO_PLAY_OPTIONS options = M_Options();
+        AUDIO_STREAM *const stream =
+            M_LoadSineStream(44100, frequencies[i], &options, raw);
+        M_CheckResult(AudioStream_Play(stream));
+        const uint32_t capacity = 48100;
+        float *const output = Mem_AllocArr(capacity, sizeof(*output));
+        const uint32_t count = M_MixToEnd(stream, output, capacity);
+        CHECK(count >= 46000);
+        if (count >= 46000) {
+            M_CheckSine(output, 2000, 46000, frequencies[i]);
+        }
+        Mem_Free(output);
+        AudioStream_Free(stream);
+    }
+    Audio_Shutdown();
+}
+
+TEST(stream_at_44100_hz_keeps_its_high_frequencies)
+{
+    M_CheckStreamFrequencies(false);
+}
+
+TEST(pcm_stream_at_44100_hz_keeps_its_high_frequencies)
+{
+    M_CheckStreamFrequencies(true);
+}
+
+// Loops whole periods of 441 Hz, 100 source frames, so that the signal
+// stays continuous at the loop seam.
+static void M_CheckStreamLoop(const bool raw)
 {
     M_CheckResult(Audio_Init());
     AUDIO_PLAY_OPTIONS options = M_Options();
-    options.loop = (AUDIO_LOOP) { .enabled = true, .begin = 100, .end = 200 };
-    AUDIO_STREAM *const stream = M_LoadRampStream(4096, &options);
+    options.loop = (AUDIO_LOOP) { .enabled = true, .begin = 1000, .end = 3000 };
+    AUDIO_STREAM *const stream = M_LoadSineStream(8192, 441.0, &options, raw);
     M_CheckResult(AudioStream_Play(stream));
-    float output[400 * 2];
-    M_Mix(output, 400);
-    M_CheckNear(output[100 * 2], M_Ramp(91.875));
-    M_CheckNear(output[216 * 2], M_Ramp(198.45));
-    M_CheckNear(output[217 * 2], M_Lerp(M_Ramp(199.0), M_Ramp(100.0), 0.36875));
-    M_CheckNear(output[218 * 2], M_Ramp(100.2875));
-    M_CheckNear(output[250 * 2], M_Ramp(129.6875));
-    M_CheckNear(output[326 * 2], M_Lerp(M_Ramp(199.0), M_Ramp(100.0), 0.5125));
-    M_CheckNear(output[327 * 2], M_Ramp(100.43125));
+    const uint32_t frames = 12000;
+    float *const output = Mem_AllocArr(frames, sizeof(*output));
+    M_MixPlayed(stream, output, frames);
+    // Bounds the step between two output frames by the steepest slope of
+    // the sine, with room for rounding to 16 bits.
+    const double slope = 0.4 * TAU * 441.0 / 48000.0 * 1.05;
+    double steepest = 0.0;
+    for (uint32_t i = 100; i < frames; i++) {
+        steepest = fmax(steepest, fabs(output[i] - output[i - 1]));
+    }
+    if (steepest > slope) {
+        TEST_FAIL(
+            "a step of %.4f exceeds the sine slope %.4f", steepest, slope);
+    }
+    M_CheckSine(output, 100, frames, 441.0);
+    const uint64_t position = AudioStream_GetPosition(stream);
+    CHECK(position >= 1000 && position < 3000);
+    CHECK(!AudioStream_IsFinished(stream));
+    Mem_Free(output);
     AudioStream_Free(stream);
     Audio_Shutdown();
+}
+
+TEST(stream_at_44100_hz_loops_without_a_click)
+{
+    M_CheckStreamLoop(false);
+}
+
+TEST(pcm_stream_at_44100_hz_loops_without_a_click)
+{
+    M_CheckStreamLoop(true);
+}
+
+static void M_CheckStreamSeek(const bool raw)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    AUDIO_STREAM *const stream = M_LoadSineStream(44100, 1000.0, &options, raw);
+    M_CheckResult(AudioStream_Seek(stream, 22050));
+    M_WaitStream(stream);
+    M_CheckResult(AudioStream_GetResult(stream));
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 22050);
+    M_CheckResult(AudioStream_Play(stream));
+    float output[4800];
+    M_MixPlayed(stream, output, 4800);
+    // Plays 4800 output frames, 4410 source frames.
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 22050 + 4410);
+    M_CheckSine(output, 100, 4800, 1000.0);
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}
+
+TEST(stream_at_44100_hz_seeks_in_source_frames)
+{
+    M_CheckStreamSeek(false);
+}
+
+TEST(pcm_stream_at_44100_hz_seeks_in_source_frames)
+{
+    M_CheckStreamSeek(true);
 }
 
 TEST(shutdown_cancels_pending_loads_and_accepts_reinitialization)
