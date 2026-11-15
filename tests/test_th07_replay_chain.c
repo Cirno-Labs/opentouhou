@@ -446,6 +446,30 @@ TEST(phantasm_plays_slot_7)
     M_TearDown();
 }
 
+TEST(has_stage_tells_the_slots_of_the_replay_being_played)
+{
+    M_SetUp(5);
+    CHECK(!Replay_HasStage(5));
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[5], 0, 4);
+    M_Frames(&spec.slots[7], 0, 4);
+    M_Play(&spec);
+    for (int32_t stage = 1; stage <= 7; stage++) {
+        CHECK(Replay_HasStage(stage) == (stage == 5 || stage == 7));
+    }
+    M_TearDown();
+    CHECK(!Replay_HasStage(5));
+}
+
+TEST(has_stage_is_false_while_recording)
+{
+    M_SetUp(1);
+    g_GameManager.mode.in_replay = false;
+    CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
+    CHECK(!Replay_HasStage(1));
+    M_TearDown();
+}
+
 TEST(next_stage_restores_its_slot_and_starts_its_frames_again)
 {
     M_SetUp(1);

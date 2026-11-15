@@ -6,6 +6,7 @@
 #include "th07/player.h"
 #include "th07/stubs.h"
 
+#include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
@@ -378,4 +379,12 @@ void Replay_MarkEvent(const REPLAY_EVENT event)
     if (m_Replay != nullptr && m_Replay->mode == REPLAY_RECORD) {
         m_Replay->events |= (uint16_t)event;
     }
+}
+
+bool Replay_HasStage(const int32_t stage)
+{
+    ASSERT(stage >= 1 && stage <= 7);
+    const M_REPLAY *const replay = m_Replay;
+    return replay != nullptr && replay->mode == REPLAY_PLAY
+        && replay->file != nullptr && replay->file->stages[stage] != nullptr;
 }
