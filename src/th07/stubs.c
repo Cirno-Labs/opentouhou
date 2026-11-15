@@ -2,17 +2,6 @@
 
 #include "core/base/log.h"
 
-RESULT GameManager_Register(void)
-{
-    LOG_INFO("GameManager_Register is not ported");
-    return OK;
-}
-
-void GameManager_Remove(void)
-{
-    LOG_INFO("GameManager_Remove is not ported");
-}
-
 RESULT ResultScreen_Register(const int32_t mode)
 {
     LOG_INFO("ResultScreen_Register is not ported");
@@ -31,6 +20,72 @@ RESULT Ending_Register(void)
     return OK;
 }
 
+RESULT Player_Register(void)
+{
+    LOG_INFO("Player_Register is not ported");
+    return OK;
+}
+
+void Player_Remove(void)
+{
+    LOG_INFO("Player_Remove is not ported");
+}
+
+RESULT Bullet_Register(void)
+{
+    LOG_INFO("Bullet_Register is not ported");
+    return OK;
+}
+
+void Bullet_Remove(void)
+{
+    LOG_INFO("Bullet_Remove is not ported");
+}
+
+RESULT Enemy_Register(void)
+{
+    LOG_INFO("Enemy_Register is not ported");
+    return OK;
+}
+
+void Enemy_Remove(void)
+{
+    LOG_INFO("Enemy_Remove is not ported");
+}
+
+RESULT Gui_Register(void)
+{
+    LOG_INFO("Gui_Register is not ported");
+    return OK;
+}
+
+void Gui_Remove(void)
+{
+    LOG_INFO("Gui_Remove is not ported");
+}
+
+RESULT Ecl_Load(void)
+{
+    LOG_INFO("Ecl_Load is not ported");
+    return OK;
+}
+
+void Ecl_Release(void)
+{
+    LOG_INFO("Ecl_Release is not ported");
+}
+
+RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
+{
+    LOG_INFO("Replay_Register is not ported");
+    return OK;
+}
+
+void Replay_EndStage(void)
+{
+    LOG_INFO("Replay_EndStage is not ported");
+}
+
 void Replay_Discard(void)
 {
     LOG_INFO("Replay_Discard is not ported");
@@ -41,9 +96,35 @@ void Player_StartBorder(void)
     LOG_INFO("Player_StartBorder is not ported");
 }
 
+bool Gui_IsMsgRunning(void)
+{
+    return false;
+}
+
+bool Gui_IsMsgSkippable(void)
+{
+    return false;
+}
+
 void Gui_ShowCherryFullPopup(const int32_t cherry)
 {
     LOG_INFO("Gui_ShowCherryFullPopup is not ported");
+}
+
+bool Enemy_IsBossActive(void)
+{
+    return false;
+}
+
+int32_t Bullet_Count(void)
+{
+    return 0;
+}
+
+RESULT ResultScreen_LoadGameRecords(void)
+{
+    LOG_INFO("ResultScreen_LoadGameRecords is not ported");
+    return OK;
 }
 
 PLAYER g_Player;
@@ -63,6 +144,11 @@ void PlayTime_Add(void)
 void PlayTime_Restart(void)
 {
     LOG_INFO("PlayTime_Restart is not ported");
+}
+
+void PlayTime_Stop(void)
+{
+    LOG_INFO("PlayTime_Stop is not ported");
 }
 
 bool Anm_SetPendingCopy(
