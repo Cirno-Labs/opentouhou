@@ -12,6 +12,7 @@
 #include "th06/strings.h"
 
 #include "shell/game.h"
+#include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/utils.h"
 
@@ -375,12 +376,12 @@ static void M_HighlightOption(
     const int32_t value, const int32_t current)
 {
     if (value != current) {
-        vm->color = 0x80202050;
+        vm->color = COLOR_ARGB(0x80, 0x20, 0x20, 0x50);
         vm->scale_x = 1.0f;
         vm->scale_y = 1.0f;
         vm->pos_offset = (VEC3) {};
     } else {
-        vm->color = 0x800000ff;
+        vm->color = COLOR_ARGB(0x80, 0x00, 0x00, 0xff);
         vm->pos_offset = (VEC3) { -2.0f, -2.0f, 0.0f };
     }
     if (row != menu->cursor) {
@@ -402,7 +403,7 @@ static void M_StartScripts(
         vm->shown = false;
         if (colored) {
             vm->color_op = true;
-            vm->color = 0xff000000;
+            vm->color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
             vm->pos_offset = (VEC3) {};
         }
         vm->base_sprite = vm->sprite;
@@ -477,7 +478,7 @@ static CHAIN_STATUS M_StartTitle(M_MENU *const menu)
         ANM_VM *const vm = &menu->sprites[i];
         vm->pending_interrupt = 1;
         vm->color_op = true;
-        vm->color = 0xff000000;
+        vm->color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
         vm->pos_offset = (VEC3) {};
     }
     menu->state = M_STATE_WAIT_FOR_KEY;
@@ -493,10 +494,10 @@ static bool M_WaitForKey(M_MENU *const menu)
     menu->state_frames = 0;
     menu->state = M_STATE_TITLE_MENU;
     M_Interrupt(menu, 2);
-    menu->sprites[menu->cursor].color = 0xffff0000;
+    menu->sprites[menu->cursor].color = COLOR_ARGB(0xff, 0xff, 0x00, 0x00);
     menu->sprites[menu->cursor].pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
     menu->fade_from_color = 0;
-    menu->fade_to_color = 0x40000000;
+    menu->fade_to_color = COLOR_ARGB(0x40, 0x00, 0x00, 0x00);
     menu->fade_frame = 0;
     menu->fade_in_frames = 60;
     return false;
@@ -507,8 +508,8 @@ static void M_OpenScreen(M_MENU *const menu, const M_STATE state)
     M_Interrupt(menu, 4);
     menu->state = state;
     menu->state_frames = 0;
-    menu->fade_from_color = 0x40000000;
-    menu->fade_to_color = 0xff000000;
+    menu->fade_from_color = COLOR_ARGB(0x40, 0x00, 0x00, 0x00);
+    menu->fade_to_color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
     menu->fade_frame = 0;
     menu->fade_in_frames = 60;
     Sound_Queue(SOUND_OK);
@@ -534,7 +535,9 @@ static void M_UpdateTitleMenu(M_MENU *const menu)
     }
     for (int32_t i = 0; i < 8; i++) {
         M_HighlightEntry(
-            &menu->sprites[i], i, menu->cursor, 0xffff0000, 0x80300000);
+            &menu->sprites[i], i, menu->cursor,
+            COLOR_ARGB(0xff, 0xff, 0x00, 0x00),
+            COLOR_ARGB(0x80, 0x30, 0x00, 0x00));
     }
     if (menu->state_frames < 20) {
         return;
@@ -835,11 +838,11 @@ static void M_UpdateDifficulty(M_MENU *const menu)
         M_MoveCursor(menu, 4);
         for (int32_t i = 0; i < 4; i++) {
             if (i != menu->cursor) {
-                entries[i].color = 0x60000000;
+                entries[i].color = COLOR_ARGB(0x60, 0x00, 0x00, 0x00);
                 entries[i].pos_offset = (VEC3) {};
                 entries[i].fade_time = 0;
             } else {
-                entries[i].color = 0xff000000;
+                entries[i].color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
                 entries[i].pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
             }
         }
@@ -848,7 +851,7 @@ static void M_UpdateDifficulty(M_MENU *const menu)
         for (int32_t i = 0; i < 4; i++) {
             entries[i].visible = false;
         }
-        entries[4].color = 0xff000000;
+        entries[4].color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
         entries[4].pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
     }
     if (M_Pressed(M_CANCEL)) {
@@ -999,10 +1002,10 @@ static CHAIN_STATUS M_UpdateShot(M_MENU *const menu)
         vm->color_op = true;
         vm->shown = true;
         if (i != menu->cursor) {
-            vm->color = 0xa0000000;
+            vm->color = COLOR_ARGB(0xa0, 0x00, 0x00, 0x00);
             vm->pos_offset = (VEC3) {};
         } else {
-            vm->color = 0xff202020;
+            vm->color = COLOR_ARGB(0xff, 0x20, 0x20, 0x20);
             vm->pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
         }
     }
@@ -1328,7 +1331,9 @@ static void M_DrawReplays(const M_MENU *const menu)
     const int32_t top = menu->replay_cursor - menu->replay_cursor % 15;
     for (int32_t i = top; i < top + 15 && i < menu->replay_count; i++) {
         const SAVED_REPLAY *const replay = &menu->replays[i];
-        AsciiText_SetColor(i == menu->replay_cursor ? 0xffff8080 : 0xff808080);
+        AsciiText_SetColor(
+            i == menu->replay_cursor ? COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
+                                     : COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
         AsciiText_AddFormat(
             menu->sprites[0x63 + i - top].pos, g_Strings[STRING_MENU_REPLAY],
             replay->label, (const char *)replay->name, replay->summary.date,
@@ -1338,7 +1343,7 @@ static void M_DrawReplays(const M_MENU *const menu)
     if (menu->state == M_STATE_REPLAY_STAGE) {
         const REPLAY_SUMMARY *const summary =
             &menu->replays[menu->replay_cursor].summary;
-        AsciiText_SetColor(0xffffffff);
+        AsciiText_SetColor(COLOR_WHITE);
         AsciiText_SetHighlight(false);
         AsciiText_AddFormat(
             menu->sprites[0x61].pos, "       %2.3f%%",
@@ -1347,7 +1352,9 @@ static void M_DrawReplays(const M_MENU *const menu)
             menu->sprites[0x72].pos, g_Strings[STRING_MENU_STAGE_HEADER]);
         for (int32_t i = 0; i < 7; i++) {
             const VEC3 pos = menu->sprites[0x73 + i].pos;
-            AsciiText_SetColor(i == menu->cursor ? 0xffff8080 : 0xff808080);
+            AsciiText_SetColor(
+                i == menu->cursor ? COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
+                                  : COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
             if (summary->stages[i + 1]) {
                 AsciiText_AddFormat(
                     pos, g_Strings[STRING_MENU_STAGE],
@@ -1359,7 +1366,7 @@ static void M_DrawReplays(const M_MENU *const menu)
             }
         }
     }
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
     AsciiText_SetHighlight(false);
 }
 
@@ -1386,7 +1393,7 @@ static void M_DrawPracticeScores(const M_MENU *const menu)
                 .score);
         pos.y += 24.0f;
     }
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
 }
 
 static CHAIN_STATUS M_Draw(void *const arg)
@@ -1446,10 +1453,10 @@ static RESULT M_Added(void *const arg)
         menu->cursor = 2;
     }
     gm->mode.in_practice = false;
-    menu->unselected_color = 0x80004000;
-    menu->selected_color = 0xff008000;
+    menu->unselected_color = COLOR_ARGB(0x80, 0x00, 0x40, 0x00);
+    menu->selected_color = COLOR_ARGB(0xff, 0x00, 0x80, 0x00);
     menu->fade_from_color = 0;
-    menu->fade_to_color = 0x40000000;
+    menu->fade_to_color = COLOR_ARGB(0x40, 0x00, 0x00, 0x00);
     menu->fade_frame = 0;
     menu->fade_in_frames = 0;
     ResultScreen_LoadTitleRecords(gm->records.clears, gm->records.practice);

@@ -4,6 +4,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 
 static CHAIN_ELEM m_CalcElem;
@@ -74,7 +75,7 @@ static void M_DrawStrings(void)
                     text->glyph.color = string->color;
                 } else {
                     Anm_SetSprite(&text->glyph, *c + 0x61);
-                    text->glyph.color = 0xffffffffu;
+                    text->glyph.color = COLOR_WHITE;
                 }
                 ANM_DRAW draw = Anm_ScreenDraw();
                 draw.view = Anm_ScreenView(

@@ -16,6 +16,7 @@
 #include "th06/player.h"
 #include "th06/sound.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
@@ -404,7 +405,8 @@ TEST(reaching_full_power_clears_the_bullets)
     CHECK_EQ_INT(g_GameManager.score.value, 10);
     CHECK_EQ_INT(g_AsciiText.popups[0].digit_count, 1);
     CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 10);
-    CHECK_EQ_INT(g_AsciiText.popups[0].color, 0xff80c0ffu);
+    CHECK_EQ_INT(
+        g_AsciiText.popups[0].color, COLOR_ARGB(0xff, 0x80, 0xc0, 0xff));
     M_Teardown();
 }
 

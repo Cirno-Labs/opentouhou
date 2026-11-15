@@ -7,6 +7,7 @@
 #include "th06/game_manager.h"
 #include "th06/scene.h"
 
+#include "core/base/color.h"
 #include "core/gfx/private.h"
 
 #include <limits.h>
@@ -53,7 +54,7 @@ void Anm_InitVm(ANM_VM *const vm)
     vm->anchor = 0;
     vm->scale_x = 1.0f;
     vm->scale_y = 1.0f;
-    vm->color = 0xffffffffu;
+    vm->color = COLOR_WHITE;
     vm->shown = true;
     Timer_Init(&vm->script_time);
 }
@@ -170,14 +171,15 @@ TEST(strings_copy_utf8_and_capture_the_style_at_enqueue)
     g_AsciiText.scale_y = 3.0f;
     g_AsciiText.in_arena = true;
     g_AsciiText.highlight_font = true;
-    AsciiText_SetColor(0x12345678);
+    AsciiText_SetColor(COLOR_ARGB(0x12, 0x34, 0x56, 0x78));
     AsciiText_SetHighlight(true);
     AsciiText_AddString((VEC3) { 5.0f, 6.0f, 7.0f }, text);
     text[0] = 'x';
     AsciiText_SetColor(0);
     AsciiText_SetHighlight(false);
     CHECK_EQ_STR(g_AsciiText.strings[0].text, "東方 text");
-    CHECK_EQ_INT(g_AsciiText.strings[0].color, 0x12345678);
+    CHECK_EQ_INT(
+        g_AsciiText.strings[0].color, COLOR_ARGB(0x12, 0x34, 0x56, 0x78));
     CHECK(g_AsciiText.strings[0].scale_x == 2.0f);
     CHECK(g_AsciiText.strings[0].scale_y == 3.0f);
     CHECK(g_AsciiText.strings[0].highlight);
@@ -227,14 +229,14 @@ TEST(initialize_resets_contents_and_keeps_external_presentation_facts)
     CHECK(!g_AsciiText.popups[0].active);
     CHECK(g_AsciiText.capture_background);
     CHECK(g_AsciiText.highlight_font);
-    CHECK_EQ_INT(g_AsciiText.color, 0xffffffffu);
+    CHECK_EQ_INT(g_AsciiText.color, COLOR_WHITE);
     CHECK(g_AsciiText.scale_x == 1.0f && g_AsciiText.scale_y == 1.0f);
 }
 
 TEST(popups_keep_decimal_digits_and_wrap_the_two_pools_independently)
 {
     M_Setup();
-    AsciiText_AddPopup((VEC3) {}, 1203, 0xabcdef01);
+    AsciiText_AddPopup((VEC3) {}, 1203, COLOR_ARGB(0xab, 0xcd, 0xef, 0x01));
     CHECK_EQ_INT(g_AsciiText.popups[0].digit_count, 4);
     CHECK_EQ_INT(g_AsciiText.popups[0].digits[0], 3);
     CHECK_EQ_INT(g_AsciiText.popups[0].digits[1], 0);
@@ -286,7 +288,8 @@ TEST(draw_keeps_string_layout_and_popup_position_state)
 {
     M_Setup();
     M_Register();
-    AsciiText_AddPopup((VEC3) { 40.0f, 25.0f, 3.0f }, 123, 0x55555555);
+    AsciiText_AddPopup(
+        (VEC3) { 40.0f, 25.0f, 3.0f }, 123, COLOR_ARGB(0x55, 0x55, 0x55, 0x55));
     g_AsciiText.scale_x = 2.0f;
     g_AsciiText.scale_y = 2.0f;
     AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "A \nB");
@@ -354,8 +357,8 @@ TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
     g_AsciiText.digit.uv_scale_x = g_AsciiText.digit.uv_scale_y = 0.03125f;
     g_GameManager.camera.view = Mat4_Identity();
     g_GameManager.camera.projection = Mat4_Identity();
-    AsciiText_AddPopup((VEC3) { 20, 30, 0 }, 12, 0xffffffff);
-    AsciiText_AddPopup((VEC3) { 40, 30, 0 }, 12, 0xffffffff);
+    AsciiText_AddPopup((VEC3) { 20, 30, 0 }, 12, COLOR_WHITE);
+    AsciiText_AddPopup((VEC3) { 40, 30, 0 }, 12, COLOR_WHITE);
     Gfx_BeginTick((GFX_COLOR) {});
     Chain_RunDraw(&g_Chain);
     Gfx_EndTick();
@@ -373,7 +376,7 @@ TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
     CHECK(GfxRecorder_Blend(0.0f, 2)[0].position.x == second.x);
     CHECK(GfxRecorder_Blend(0.0f, 2)[0].position.y == second.y);
     g_AsciiText.next_popup = 0;
-    AsciiText_AddPopup((VEC3) { 20, 0, 0 }, 12, 0xffffffff);
+    AsciiText_AddPopup((VEC3) { 20, 0, 0 }, 12, COLOR_WHITE);
     Gfx_BeginTick((GFX_COLOR) {});
     Chain_RunDraw(&g_Chain);
     Gfx_EndTick();

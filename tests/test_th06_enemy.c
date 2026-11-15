@@ -22,6 +22,7 @@
 #include "th06/sound.h"
 #include "th06/stage.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/base/utils.h"
@@ -696,11 +697,11 @@ TEST(a_color_given_before_the_step_is_lost)
     M_INSTR(1, M_OP_START_SCRIPT, M_SCRIPT_LARGE);
     M_Load();
     ENEMY *const enemy = M_Spawn();
-    CHECK(enemy->color == 0xffffffffu);
+    CHECK(enemy->color == COLOR_WHITE);
     M_Frame();
     CHECK(enemy->vm.sprite == 0x101);
-    CHECK(enemy->vm.color == 0xffffffffu);
-    CHECK(enemy->color == 0xffffffffu);
+    CHECK(enemy->vm.color == COLOR_WHITE);
+    CHECK(enemy->color == COLOR_WHITE);
     M_End();
 }
 
@@ -711,9 +712,9 @@ TEST(a_color_given_on_the_first_frame_is_kept)
     M_INSTR(0, M_OP_START_SCRIPT, M_SCRIPT_LARGE);
     M_Load();
     ENEMY *const enemy = M_Spawn();
-    CHECK(enemy->color == 0xff00ff00u);
+    CHECK(enemy->color == COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     M_Frame();
-    CHECK(enemy->vm.color == 0xff00ff00u);
+    CHECK(enemy->vm.color == COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     M_End();
 }
 
@@ -1095,7 +1096,7 @@ TEST(death_remove_scores_frees_and_spawns_the_effects)
     CHECK_EQ_INT(m_EffectCount, 2);
     CHECK_EQ_INT(m_EffectCalls[0].type, EFFECT_EXPLOSION_LARGE);
     CHECK_EQ_INT(m_EffectCalls[0].count, 1);
-    CHECK(m_EffectCalls[0].color == 0xffffffffu);
+    CHECK(m_EffectCalls[0].color == COLOR_WHITE);
     CHECK_EQ_INT(m_EffectCalls[1].type, EFFECT_PARTICLE + 1);
     CHECK_EQ_INT(m_EffectCalls[1].count, 4);
     CHECK_EQ_INT(m_ItemCount, 0);
@@ -1543,7 +1544,7 @@ TEST(enemy_draws_do_not_share_copied_template_identities)
     second->vm.sprite_data = &sprite;
     first->vm.shown = second->vm.shown = true;
     first->vm.visible = second->vm.visible = true;
-    first->vm.color = second->vm.color = 0xffffffff;
+    first->vm.color = second->vm.color = COLOR_WHITE;
     first->vm.scale_x = second->vm.scale_x = 1;
     first->vm.scale_y = second->vm.scale_y = 1;
     first->vm.uv_scale_x = second->vm.uv_scale_x = 0.0625f;

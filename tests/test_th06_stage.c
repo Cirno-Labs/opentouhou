@@ -11,6 +11,7 @@
 #include "th06/game.h"
 #include "th06/game_manager.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 
@@ -196,7 +197,10 @@ TEST(the_fog_fades_to_the_new_fog)
     const STAGE_INSTR script[] = {
         { 0, STAGE_OP_KEYFRAME, { 0.0f, 0.0f, 0.0f } },
         { 0, STAGE_OP_FOG_FADE, { M_Bits(4), 0.0f, 0.0f } },
-        { 0, STAGE_OP_FOG, { M_Bits((int32_t)0xff8040c0), 100.0f, 300.0f } },
+        { 0,
+          STAGE_OP_FOG,
+          { M_Bits((int32_t)COLOR_ARGB(0xff, 0x80, 0x40, 0xc0)), 100.0f,
+            300.0f } },
         { -1, STAGE_OP_KEYFRAME, { 0.0f, 0.0f, 0.0f } },
         { -1, -1, { 0.0f, 0.0f, 0.0f } },
     };
@@ -207,12 +211,12 @@ TEST(the_fog_fades_to_the_new_fog)
     Chain_RunCalc(&g_Chain);
     CHECK(g_Stage.fog.current.near == 175.0f);
     CHECK(g_Stage.fog.current.far == 450.0f);
-    CHECK_EQ_INT(g_Stage.fog.current.color, 0xff201030);
+    CHECK_EQ_INT(g_Stage.fog.current.color, COLOR_ARGB(0xff, 0x20, 0x10, 0x30));
     for (int i = 0; i < 3; i++) {
         Chain_RunCalc(&g_Chain);
     }
     CHECK_EQ_INT(g_Stage.fog.frames, 0);
-    CHECK_EQ_INT(g_Stage.fog.current.color, 0xff8040c0);
+    CHECK_EQ_INT(g_Stage.fog.current.color, COLOR_ARGB(0xff, 0x80, 0x40, 0xc0));
     M_Teardown();
 }
 
@@ -253,7 +257,9 @@ TEST(a_frozen_game_only_tints_the_spell_card_background)
     Chain_RunCalc(&g_Chain);
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(g_Stage.script.time.current, 0);
-    CHECK_EQ_INT(g_Stage.spell_card.background.color, 0x60803030);
+    CHECK_EQ_INT(
+        g_Stage.spell_card.background.color,
+        COLOR_ARGB(0x60, 0x80, 0x30, 0x30));
     M_Teardown();
 }
 
@@ -324,7 +330,7 @@ TEST(stage_layers_record_current_fog_and_instance_geometry)
     vm->sprite_data = &sprite;
     vm->shown = true;
     vm->visible = true;
-    vm->color = 0xffffffffu;
+    vm->color = COLOR_WHITE;
     vm->uv_scale_x = 1.0f;
     vm->uv_scale_y = 1.0f;
     g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0.5f, 1.0f };
@@ -357,7 +363,7 @@ TEST(repeated_stage_instances_keep_separate_draw_parts)
     vm->sprite_data = &sprite;
     vm->shown = true;
     vm->visible = true;
-    vm->color = 0xffffffff;
+    vm->color = COLOR_WHITE;
     vm->uv_scale_x = vm->uv_scale_y = 1;
     g_Stage.data.instances = Mem_ReallocArr(
         g_Stage.data.instances, 2, sizeof(*g_Stage.data.instances));

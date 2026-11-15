@@ -23,6 +23,7 @@
 #include "th06/stage.h"
 #include "th06/translation.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/patch.h"
@@ -1812,7 +1813,7 @@ TEST(an_orbit_follows_the_enemy)
     M_Frame();
     CHECK_EQ_INT(m_EffectCount, 1);
     CHECK_EQ_INT(m_EffectCalls[0].type, EFFECT_ORBIT);
-    CHECK_EQ_INT(m_EffectCalls[0].color, 0xffff2020u);
+    CHECK_EQ_INT(m_EffectCalls[0].color, COLOR_ARGB(0xff, 0xff, 0x20, 0x20));
     CHECK(m_EffectCalls[0].pos.x == 3.0f);
     CHECK(m_Enemy.orbits.effects[0] == &m_Effects[0]);
     CHECK(m_Effects[0].axis.y == 0.5f && m_Effects[0].axis.z == 1.0f);
@@ -1824,7 +1825,7 @@ TEST(an_orbit_follows_the_enemy)
 TEST(effects_and_items_drop_at_the_enemy)
 {
     M_Begin("drops");
-    M_INSTR(0, 118, 4, 3, 0xff00ff00u);
+    M_INSTR(0, 118, 4, 3, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     M_INSTR(0, 119, 3);
     M_INSTR(0, 124, 5);
     M_INSTR(1, 119, 1);
@@ -1835,7 +1836,7 @@ TEST(effects_and_items_drop_at_the_enemy)
     M_Frame();
     CHECK_EQ_INT(m_EffectCalls[0].type, 4);
     CHECK_EQ_INT(m_EffectCalls[0].count, 3);
-    CHECK_EQ_INT(m_EffectCalls[0].color, 0xff00ff00u);
+    CHECK_EQ_INT(m_EffectCalls[0].color, COLOR_ARGB(0xff, 0x00, 0xff, 0x00));
     CHECK_EQ_INT(m_ItemCount, 4);
     for (int32_t i = 0; i < 3; i++) {
         const float x = 100.0f + (Rng_F32InRange(&expected, 144.0f) - 72.0f);
@@ -2210,7 +2211,7 @@ TEST(spark_circle_spawns_pairs_of_sparks)
     CHECK(m_EffectCalls[1].pos.x == 100.0f - X87_Cos(angle) * r);
     CHECK(m_EffectCalls[1].pos.y == 100.0f + X87_Sin(angle) * r);
     CHECK_EQ_INT(m_EffectCalls[0].type, EFFECT_SPARK);
-    CHECK_EQ_INT(m_EffectCalls[0].color, 0xff3030ffu);
+    CHECK_EQ_INT(m_EffectCalls[0].color, COLOR_ARGB(0xff, 0x30, 0x30, 0xff));
     for (int32_t i = 0; i < 2; i++) {
         const float vx = (Rng_F32(&expected) * 40.0f - 20.0f) / 60.0f;
         const float vy = 8.0f * (float)k / 60.0f - 0.26666668f;

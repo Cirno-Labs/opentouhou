@@ -13,6 +13,7 @@
 #include "th06/translation.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -287,10 +288,10 @@ static void M_StartNameEntry(M_SCREEN *const screen)
     M_Interrupt(screen, (int16_t)(screen->difficulty + 3));
     M_RenderShotNames(screen);
     if (g_GameManager.run.shot_type != 0) {
-        screen->text_sprites[0].color = 0x80ffffff;
+        screen->text_sprites[0].color = COLOR_ARGB(0x80, 0xff, 0xff, 0xff);
     }
     if (g_GameManager.run.shot_type != 1) {
-        screen->text_sprites[1].color = 0x80ffffff;
+        screen->text_sprites[1].color = COLOR_ARGB(0x80, 0xff, 0xff, 0xff);
     }
     const int32_t shot = screen->character * 2 + g_GameManager.run.shot_type;
     screen->entry = (HIGH_SCORE) {
@@ -593,10 +594,10 @@ static void M_HighlightMenu(M_SCREEN *const screen)
     for (int32_t i = 0; i <= 6; i++) {
         ANM_VM *const sprite = &screen->sprites[1 + i];
         if (i == screen->cursor) {
-            sprite->color = 0xff505050;
+            sprite->color = COLOR_ARGB(0xff, 0x50, 0x50, 0x50);
             sprite->pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         } else {
-            sprite->color = 0xb0000000;
+            sprite->color = COLOR_ARGB(0xb0, 0x00, 0x00, 0x00);
             sprite->pos_offset = (VEC3) {};
         }
     }
@@ -892,28 +893,28 @@ static void M_DrawScores(M_SCREEN *const screen, VEC3 pos)
         const HIGH_SCORE *const first = &left->entries[i];
         const HIGH_SCORE *const second = &right->entries[i];
         if (!naming) {
-            AsciiText_SetColor(0xffffc0c0);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xc0, 0xc0));
         } else if (shot_type != 0) {
-            AsciiText_SetColor(0x80ffc0c0);
+            AsciiText_SetColor(COLOR_ARGB(0x80, 0xff, 0xc0, 0xc0));
         } else if (first->is_new) {
-            AsciiText_SetColor(0xfff0f0ff);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0xf0, 0xf0, 0xff));
             M_AddNameCursor(screen, pos, "   %8s");
         } else {
-            AsciiText_SetColor(0x80ffffc0);
+            AsciiText_SetColor(COLOR_ARGB(0x80, 0xff, 0xff, 0xc0));
         }
         AsciiText_AddFormat(pos, g_Strings[STRING_RESULT_RANK], i + 1);
         pos.x += 36.0f;
         M_AddEntry(pos, first);
         pos.x += 300.0f;
         if (!naming) {
-            AsciiText_SetColor(0xffc0c0ff);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0xc0, 0xc0, 0xff));
         } else if (shot_type != 1) {
-            AsciiText_SetColor(0x80c0c0ff);
+            AsciiText_SetColor(COLOR_ARGB(0x80, 0xc0, 0xc0, 0xff));
         } else if (second->is_new) {
-            AsciiText_SetColor(0xfffff0f0);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xf0, 0xf0));
             M_AddNameCursor(screen, pos, "%8s");
         } else {
-            AsciiText_SetColor(0xc0c0c0ff);
+            AsciiText_SetColor(COLOR_ARGB(0xc0, 0xc0, 0xc0, 0xff));
         }
         M_AddEntry(pos, second);
         pos.x -= 336.0f;
@@ -935,11 +936,12 @@ static void M_DrawSpellCards(M_SCREEN *const screen, VEC3 pos)
             ANM_VM *const text = &screen->text_sprites[i];
             text->pos = pos;
             if (card->attempts == 0) {
-                AsciiText_SetColor(0x80c0c0ff);
+                AsciiText_SetColor(COLOR_ARGB(0x80, 0xc0, 0xc0, 0xff));
             } else if (card->captures == 0) {
-                AsciiText_SetColor(0xffc0a0a0);
+                AsciiText_SetColor(COLOR_ARGB(0xff, 0xc0, 0xa0, 0xa0));
             } else {
-                AsciiText_SetColor(0xfff0f0ffu - (uint32_t)i * 0x80800);
+                AsciiText_SetColor(
+                    COLOR_ARGB(0xff, 0xf0, 0xf0, 0xff) - (uint32_t)i * 0x80800);
             }
             AsciiText_AddFormat(pos, "No.%.2d", index + 1);
             text->pos.x += 96.0f;
@@ -969,7 +971,7 @@ static void M_DrawAlphabet(const M_SCREEN *const screen)
             const int32_t index = row * 16 + column;
             float shift = 0.0f;
             if (screen->char_index == index) {
-                AsciiText_SetColor(0xffffffc0);
+                AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0xc0));
                 float scale;
                 if (screen->frame % 64 < 32) {
                     scale = 0.8f * (float)(screen->frame % 32) / 32.0f + 1.2f;
@@ -980,7 +982,7 @@ static void M_DrawAlphabet(const M_SCREEN *const screen)
                 g_AsciiText.scale_y = scale;
                 shift = -(scale - 1.0f) * 8.0f;
             } else {
-                AsciiText_SetColor(0x60c0c0c0);
+                AsciiText_SetColor(COLOR_ARGB(0x60, 0xc0, 0xc0, 0xc0));
                 g_AsciiText.scale_x = 1.0f;
                 g_AsciiText.scale_y = 1.0f;
             }
@@ -1010,14 +1012,16 @@ static void M_DrawSlots(M_SCREEN *const screen)
         g_GameManager.run.character * 2 + g_GameManager.run.shot_type;
     for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
         const VEC3 pos = screen->sprites[M_SLOT_SPRITE + i].pos;
-        AsciiText_SetColor(i == screen->replay_slot ? 0xffff8080 : 0xff808080);
+        AsciiText_SetColor(
+            i == screen->replay_slot ? COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
+                                     : COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
         const SAVED_REPLAY *const slot = &screen->slots[i];
         if (screen->state == M_STATE_REPLAY_NAME) {
             AsciiText_AddFormat(
                 pos, g_Strings[STRING_REPLAY_SAVE_SLOT], i + 1,
                 (const char *)screen->name, screen->replay_date,
                 g_Strings[m_ShotTypeNames[shot]], screen->replay_score);
-            AsciiText_SetColor(0xfff0f0ff);
+            AsciiText_SetColor(COLOR_ARGB(0xff, 0xf0, 0xf0, 0xff));
             M_AddNameCursor(screen, pos, "      %8s");
         } else if (!slot->valid) {
             AsciiText_AddFormat(
@@ -1071,7 +1075,7 @@ static void M_DrawStatistics(const M_SCREEN *const screen)
     slowdown = (1.0f - slowdown) * 100.0f;
     pos.y += 22.0f;
     AsciiText_AddFormat(pos, "    %3.2f%%", (double)slowdown);
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
 }
 
 static CHAIN_STATUS M_DrawScreen(void *const arg)
@@ -1106,7 +1110,7 @@ static CHAIN_STATUS M_DrawScreen(void *const arg)
         && screen->state <= M_STATE_REPLAY_OVERWRITE) {
         M_DrawSlots(screen);
     }
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
     if (screen->state == M_STATE_STATISTICS
         || screen->state == M_STATE_STATISTICS_LEAVE) {
         M_DrawStatistics(screen);
