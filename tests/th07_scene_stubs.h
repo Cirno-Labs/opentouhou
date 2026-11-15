@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/gfx.h"
-
 #include <stdint.h>
 
 // Counts calls into the th07/stubs.h functions and GameManager_Register
@@ -27,12 +25,6 @@ typedef struct {
     int32_t game_manager_register_scene;
     int play_time_add;
     int play_time_restart;
-    int pending_copies;
-    int32_t copy_slot;
-    GFX_RECT copy_source;
-    GFX_RECT copy_dest;
-    // Makes Anm_SetPendingCopy report a copy pending.
-    bool copy_pending;
     int load_title_records;
     // Runs in ResultScreen_LoadTitleRecords, unless nullptr.
     void (*on_load_title_records)(void);

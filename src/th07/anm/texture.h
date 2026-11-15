@@ -47,6 +47,10 @@ RESULT Anm_CopyTextureRect(
 // pending.
 bool Anm_SetPendingCopy(int32_t slot, GFX_RECT source, GFX_RECT dest);
 
+// Makes the copy that Anm_SetPendingCopy requested, if any: reads the
+// screen, scales it to dest with Image_Resize and updates the texture.
+RESULT Anm_DoPendingCopy(void);
+
 RESULT Anm_LoadSurface(int32_t surface, const char *path);
 void Anm_ReleaseSurface(int32_t surface);
 
