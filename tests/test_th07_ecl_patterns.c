@@ -1,47 +1,27 @@
 #include "th07/ecl/patterns.h"
 
 #include "th07/anm.h"
-#include "th07/ascii.h"
 #include "th07/bullet.h"
 #include "th07/effect.h"
 #include "th07/enemy.h"
-#include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/player.h"
-#include "th07/replay.h"
-#include "th07/scene.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
-#include "th07/stubs.h"
 
-#include "gfx_recorder.h"
 #include "test.h"
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
+#include "th07_play_setup.h"
 
 #include "core/base/color.h"
-#include "core/base/memory.h"
-#include "core/base/string.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
-#include "stg/chain.h"
 #include "stg/rng.h"
-#include "stg/timer.h"
 
-#include <SDL3/SDL.h>
 #include <string.h>
 
-#define M_SPRITE 0x200
-#define M_SPRITE_8 (M_SPRITE + 0)
-#define M_SPRITE_16 (M_SPRITE + 16)
-#define M_SPRITE_32 (M_SPRITE + 32)
-#define M_SPRITE_64 (M_SPRITE + 48)
-#define M_SPRITE_OP 3
-#define M_DELETE_OP 1
 #define M_SEED 99
 #define M_MAX_CALLS 64
 // The pattern functions fire into the slots from here on.
@@ -71,16 +51,6 @@ typedef struct {
     VEC3 pos;
 } M_SPAWN_CALL;
 
-RNG g_Rng;
-CHAIN g_Chain;
-float g_GameSpeed;
-PLAYER g_Player;
-GUI g_Gui;
-ASCII_TEXT g_AsciiText;
-uint8_t g_EffectsQuality = 2;
-
-static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
-static char *m_Directory;
 static ENEMY m_Enemy;
 static ENEMY m_Boss;
 static float m_AimAngle;
@@ -157,178 +127,20 @@ float Player_AngleFrom(const VEC3 pos)
     return m_AimAngle;
 }
 
-PLAYER_CONTACT Player_CheckGraze(const VEC3 pos, const VEC3 size)
-{
-    return PLAYER_CONTACT_NONE;
-}
-
-PLAYER_CONTACT Player_CheckHit(const VEC3 pos, const VEC3 size)
-{
-    return PLAYER_CONTACT_NONE;
-}
-
-void Player_CheckLaserHit(
-    const VEC3 pos, const VEC3 size, const VEC3 origin, const float angle,
-    const bool can_graze)
-{
-}
-
-int32_t Player_CalcDamage(
-    const VEC3 pos, const VEC3 size, bool *const hit_by_bomb)
-{
-    return 0;
-}
-
-void Player_StartBorder(void)
-{
-}
-
 void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
 {
 }
 
-void Item_Reset(void)
-{
-}
-
-void Item_Update(void)
-{
-}
-
-void Item_Draw(void)
-{
-}
-
-void AsciiText_AddPopup(
-    const VEC3 pos, const int32_t value, const uint32_t color)
-{
-}
-
-void Replay_MarkEvent(const REPLAY_EVENT event)
-{
-}
-
-SCENE Scene_GetRequested(void)
-{
-    return SCENE_GAMEPLAY;
-}
-
-void Gui_StartMsg(const int32_t index)
-{
-}
-
-bool Gui_MsgHoldsTimeline(void)
-{
-    return false;
-}
-
-bool Gui_IsMsgRunning(void)
-{
-    return false;
-}
-
-void Gui_ShowBonusPopup(const int32_t bonus)
-{
-}
-
-void Gui_ShowCherryFullPopup(const int32_t cherry)
-{
-}
-
-bool Gui_IsLoadingShown(void)
-{
-    return false;
-}
-
-static void M_AddScript(
-    ANM_BUILDER_ANM *const anm, const int32_t script, const int32_t sprite,
-    const int16_t end)
-{
-    const int32_t index = AnmBuilder_BeginScript(anm, script - M_SPRITE);
-    const uint32_t arg = (uint32_t)(sprite - M_SPRITE);
-    AnmBuilder_Instr(anm, index, M_SPRITE_OP, 0, 0, &arg, 1);
-    AnmBuilder_Instr(anm, index, M_DELETE_OP, end, 0, nullptr, 0);
-    AnmBuilder_End(anm, index);
-}
-
-// Writes etama.anm as th07/bullet's test does: 16 sprites each 8, 16, 32
-// and 64 high. The flying scripts of types 0, 1 to 6, 7 to 9 and 10 show
-// the first sprite of each height.
-static void M_WriteEtama(void)
-{
-    static ANM_BUILDER builder;
-    AnmBuilder_Init(&builder);
-    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 256, 256, "@");
-    for (int32_t i = 0; i < 16; i++) {
-        AnmBuilder_AddSprite(anm, i, 0.0f, 0.0f, 8.0f, 8.0f);
-        AnmBuilder_AddSprite(anm, 16 + i, 0.0f, 0.0f, 16.0f, 16.0f);
-        AnmBuilder_AddSprite(anm, 32 + i, 0.0f, 0.0f, 32.0f, 32.0f);
-        AnmBuilder_AddSprite(anm, 48 + i, 0.0f, 0.0f, 64.0f, 64.0f);
-    }
-    M_AddScript(anm, 512, M_SPRITE_8, 1000);
-    for (int32_t i = 513; i <= 518; i++) {
-        M_AddScript(anm, i, M_SPRITE_16, 1000);
-    }
-    for (int32_t i = 519; i <= 521; i++) {
-        M_AddScript(anm, i, M_SPRITE_32, 1000);
-    }
-    M_AddScript(anm, 680, M_SPRITE_64, 1000);
-    M_AddScript(anm, 527, M_SPRITE_8, 4);
-    M_AddScript(anm, 528, M_SPRITE_16, 4);
-    M_AddScript(anm, 529, M_SPRITE_32, 4);
-    M_AddScript(anm, 681, M_SPRITE_64, 4);
-    for (int32_t i = 0; i < 3; i++) {
-        M_AddScript(anm, 530 + i, M_SPRITE_8, (int16_t)(2 + i));
-        M_AddScript(anm, 533 + i, M_SPRITE_16, (int16_t)(2 + i));
-    }
-    M_AddScript(anm, 536, M_SPRITE_32, 3);
-    M_AddScript(anm, 682, M_SPRITE_64, 3);
-    AnmBuilder_WriteFile(&builder, m_Directory, "data/etama.anm");
-}
-
-static void M_WriteOneSprite(const char *const name)
-{
-    ANM_BUILDER builder;
-    AnmBuilder_Init(&builder);
-    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
-    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 8.0f, 8.0f);
-    AnmBuilder_End(anm, AnmBuilder_BeginScript(anm, 0));
-    AnmBuilder_WriteFile(&builder, m_Directory, name);
-}
-
 static void M_SetUp(const char *const case_name)
 {
-    m_Directory = TestDir_Prepare(case_name);
-    Th07Data_WriteArchive(m_Directory, &m_Version, 1);
-    Th07Data_WriteMusic(m_Directory, nullptr, 0);
-    char *const data = Str_Format("%s/data", m_Directory);
-    CHECK(SDL_CreateDirectory(data));
-    Mem_Free(data);
-    M_WriteEtama();
-    M_WriteOneSprite("data/eff01.anm");
-    M_WriteOneSprite("data/stg1enm.anm");
-    CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
-    Rng_SetSeed(&g_Rng, M_SEED);
-    Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
-    GameManager_Create(&g_GameManager);
-    g_GameManager.run.stage = 1;
-    g_GameManager.run.difficulty = 1;
-    memset(&g_Player, 0, sizeof(g_Player));
-    memset(&g_Stage, 0, sizeof(g_Stage));
-    g_GameSpeed = 1.0f;
-    CHECK(Result_Log(Bullet_Register(), LOG_LEVEL_ERROR));
-    CHECK(Result_Log(Effect_Register(), LOG_LEVEL_ERROR));
-    CHECK(Result_Log(Enemy_Register(), LOG_LEVEL_ERROR));
-    // Gives every effect type a script that runs on.
-    for (int32_t i = 0x2ab; i <= 0x304; i++) {
-        Anm_SetScriptEntry(i, Anm_GetScript(0x2dc));
-    }
+    Th07PlaySetup_SetUp(case_name, M_SEED);
     // Stands in for the sprites that the slow down and the patterns pick,
     // which lie past the test sprites.
-    Anm_SetSpriteEntry(M_SLOW_SPRITE, Anm_GetSpriteEntry(M_SPRITE_16));
-    Anm_SetSpriteEntry(M_SLOW_SPRITE - 4, Anm_GetSpriteEntry(M_SPRITE_16 + 1));
-    m_TallSprite = *Anm_GetSpriteEntry(M_SPRITE_64);
+    Anm_SetSpriteEntry(
+        M_SLOW_SPRITE, Anm_GetSpriteEntry(TH07_PLAY_SETUP_SPRITE_16));
+    Anm_SetSpriteEntry(
+        M_SLOW_SPRITE - 4, Anm_GetSpriteEntry(TH07_PLAY_SETUP_SPRITE_16 + 1));
+    m_TallSprite = *Anm_GetSpriteEntry(TH07_PLAY_SETUP_SPRITE_64);
     m_TallSprite.height = 61.0f;
     m_EdgeSprite = m_TallSprite;
     m_EdgeSprite.height = 60.0f;
@@ -341,15 +153,11 @@ static void M_SetUp(const char *const case_name)
     m_AimAngle = 0.0f;
     m_ScreenCount = 0;
     m_SpawnCount = 0;
-    Sound_Reset();
 }
 
 static void M_TearDown(void)
 {
-    Chain_Release(&g_Chain);
-    Anm_Shutdown();
-    Th07Data_Unmount();
-    Mem_Free(m_Directory);
+    Th07PlaySetup_TearDown();
 }
 
 static void M_Run(const ECL_FUNC func, const int32_t arg)
