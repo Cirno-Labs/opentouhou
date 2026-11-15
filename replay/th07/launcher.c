@@ -1,6 +1,7 @@
 #include "../core/launch.h"
 #include "../core/workdir.h"
 
+#include "core/args.h"
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -26,7 +27,6 @@
 
 #define DEFAULT_OUT_DIR "../opentouhou-cases/th07"
 
-#define MAX_FILES 8
 #define MAX_ARGS 40
 
 typedef struct {
@@ -37,53 +37,56 @@ typedef struct {
     bool fast;
     bool draw;
     bool result;
-    int quit_after;
+    int32_t quit_after;
     const char *out_dir;
-    const char *seeds[MAX_FILES];
-    size_t seed_count;
-    const char *keeps[MAX_FILES];
-    size_t keep_count;
-} ARGS;
+    ARG_ITEMS seeds;
+    ARG_ITEMS keeps;
+} M_ARGS;
 
-static bool M_ParseArgs(const int argc, char **const argv, ARGS *const args)
-{
-    *args = (ARGS) { .out_dir = DEFAULT_OUT_DIR };
-    for (int i = 1; i < argc; i++) {
-        const bool has_value = i + 1 < argc;
-        if (strcmp(argv[i], "--game") == 0 && has_value) {
-            args->game_dir = argv[++i];
-        } else if (strcmp(argv[i], "--replay") == 0 && has_value) {
-            args->replay = argv[++i];
-        } else if (strcmp(argv[i], "--live") == 0) {
-            args->live = true;
-        } else if (strcmp(argv[i], "--dry-run") == 0) {
-            args->dry_run = true;
-        } else if (strcmp(argv[i], "--fast") == 0) {
-            args->fast = true;
-        } else if (strcmp(argv[i], "--draw") == 0) {
-            args->draw = true;
-        } else if (strcmp(argv[i], "--quit-after") == 0 && has_value) {
-            args->quit_after = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "--result") == 0) {
-            args->result = true;
-        } else if (strcmp(argv[i], "--out") == 0 && has_value) {
-            args->out_dir = argv[++i];
-        } else if (
-            strcmp(argv[i], "--seed") == 0 && has_value
-            && args->seed_count < MAX_FILES) {
-            args->seeds[args->seed_count++] = argv[++i];
-        } else if (
-            strcmp(argv[i], "--keep") == 0 && has_value
-            && args->keep_count < MAX_FILES) {
-            args->keeps[args->keep_count++] = argv[++i];
-        } else {
-            return false;
-        }
-    }
-    return args->game_dir != nullptr && (args->replay != nullptr) != args->live
-        && !(args->fast && args->live) && !(args->fast && args->quit_after > 0)
-        && !(args->draw && !args->fast) && !(args->result && !args->live);
-}
+static const ARG_OPTION m_Options[] = {
+    ARG_STRING_OF(
+        M_ARGS, "--game", game_dir, nullptr, "<dir>",
+        "the folder of the original game", ARG_REQUIRED),
+    ARG_STRING_OF(
+        M_ARGS, "--replay", replay, nullptr, "<file.rpy>",
+        "capture the playback of a replay"),
+    ARG_FLAG_OF(M_ARGS, "--live", live, "capture a game that you play"),
+    ARG_FLAG_OF(
+        M_ARGS, "--dry-run", dry_run,
+        "inject the tracer, then stop the game before it runs"),
+    ARG_FLAG_OF(M_ARGS, "--fast", fast, "run the replay as fast as it can"),
+    ARG_FLAG_OF(M_ARGS, "--draw", draw, "with --fast, still draw the frames"),
+    ARG_FLAG_OF(
+        M_ARGS, "--result", result,
+        "with --live, open the result screen, which saves score.dat when "
+        "the game closes"),
+    ARG_INT_OF(
+        M_ARGS, "--quit-after", quit_after, 0, "<seconds>",
+        "close the game after <seconds>"),
+    ARG_STRING_OF(
+        M_ARGS, "--out", out_dir, DEFAULT_OUT_DIR, "<dir>",
+        "write the case to <dir>, " DEFAULT_OUT_DIR " by default"),
+    ARG_LIST_OF(
+        M_ARGS, "--seed", seeds, "<file>",
+        "copy the file into the work directory first"),
+    ARG_LIST_OF(
+        M_ARGS, "--keep", keeps, "<name>",
+        "copy the file from the work directory to --out at the end"),
+};
+
+static const ARG_RULE m_Rules[] = {
+    { ARG_ONE_OF, { "--replay", "--live" } },
+    { ARG_EXCLUSIVE, { "--fast", "--live" } },
+    { ARG_EXCLUSIVE, { "--fast", "--quit-after" } },
+    { ARG_REQUIRES, { "--draw", "--fast" } },
+    { ARG_REQUIRES, { "--result", "--live" } },
+};
+
+static const ARG_SCHEMA m_Schema = ARG_SCHEMA_OF(
+    "th07capture",
+    "Runs the original th07 with the capture tracer and writes the case "
+    "of one run.",
+    m_Options, m_Rules);
 
 static wchar_t *M_Wide(const char *const text)
 {
@@ -151,7 +154,7 @@ static RESULT M_WriteConfig(const char *const work_dir)
     return Writer_Close(&writer);
 }
 
-static RESULT M_OutDir(const ARGS *const args, wchar_t dir[MAX_PATH])
+static RESULT M_OutDir(const M_ARGS *const args, wchar_t dir[MAX_PATH])
 {
     wchar_t *const out_dir = M_Wide(args->out_dir);
     const DWORD length = GetFullPathNameW(out_dir, MAX_PATH, dir, nullptr);
@@ -162,7 +165,7 @@ static RESULT M_OutDir(const ARGS *const args, wchar_t dir[MAX_PATH])
 }
 
 // Names the case after the replay, or after the time for --live.
-static RESULT M_CasePath(const ARGS *const args, wchar_t out[MAX_PATH])
+static RESULT M_CasePath(const M_ARGS *const args, wchar_t out[MAX_PATH])
 {
     wchar_t dir[MAX_PATH];
     MUST(M_OutDir(args, dir));
@@ -183,7 +186,7 @@ static RESULT M_CasePath(const ARGS *const args, wchar_t out[MAX_PATH])
     return OK;
 }
 
-static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
+static RESULT M_Prepare(const M_ARGS *const args, const wchar_t *const work_dir)
 {
     char work_dir_utf8[MAX_PATH];
     WideCharToMultiByte(
@@ -199,8 +202,8 @@ static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
         Mem_Free(source);
         FAIL_IF(!copied, "cannot copy %s", args->replay);
     }
-    for (size_t i = 0; i < args->seed_count; i++) {
-        wchar_t *const seed = M_Wide(args->seeds[i]);
+    for (size_t i = 0; i < args->seeds.count; i++) {
+        wchar_t *const seed = M_Wide(args->seeds.items[i]);
         const RESULT copied = Workdir_CopyIn(work_dir, seed);
         Mem_Free(seed);
         MUST(copied);
@@ -208,25 +211,25 @@ static RESULT M_Prepare(const ARGS *const args, const wchar_t *const work_dir)
     return OK;
 }
 
-static RESULT M_Keep(const ARGS *const args, const wchar_t *const work_dir)
+static RESULT M_Keep(const M_ARGS *const args, const wchar_t *const work_dir)
 {
     wchar_t out_dir[MAX_PATH];
     MUST(M_OutDir(args, out_dir));
     size_t kept = 0;
-    for (size_t i = 0; i < args->keep_count; i++) {
-        wchar_t *const name = M_Wide(args->keeps[i]);
+    for (size_t i = 0; i < args->keeps.count; i++) {
+        wchar_t *const name = M_Wide(args->keeps.items[i]);
         if (Result_Log(
                 Workdir_CopyOut(work_dir, name, out_dir), LOG_LEVEL_ERROR)) {
             kept++;
         }
         Mem_Free(name);
     }
-    FAIL_IF(kept != args->keep_count, "some files were not kept");
+    FAIL_IF(kept != args->keeps.count, "some files were not kept");
     return OK;
 }
 
 static wchar_t *M_Environment(
-    const ARGS *const args, const wchar_t *work_dir, const wchar_t *case_path)
+    const M_ARGS *const args, const wchar_t *work_dir, const wchar_t *case_path)
 {
     wchar_t lines[7][MAX_PATH + 32];
     const wchar_t *extra[7];
@@ -268,7 +271,7 @@ static wchar_t *M_Environment(
     return Launch_BuildEnvironment(extra, count);
 }
 
-static RESULT M_Run(const ARGS *const args, const wchar_t *const work_dir)
+static RESULT M_Run(const M_ARGS *const args, const wchar_t *const work_dir)
 {
     wchar_t case_path[MAX_PATH];
     MUST(M_CasePath(args, case_path));
@@ -316,21 +319,17 @@ int main(void)
     }
     LocalFree(wide_argv);
 
-    ARGS args;
-    if (argc > MAX_ARGS || !M_ParseArgs(argc, argv, &args)) {
-        fprintf(
-            stderr,
-            "usage: th07capture.exe --game <dir> "
-            "(--replay <file.rpy> | --live) [--dry-run] [--fast [--draw]] "
-            "[--result] [--quit-after <seconds>] [--out <dir>] "
-            "[--seed <file>]... [--keep <name>]...\n"
-            "  --seed <file>  copy the file into the work directory first\n"
-            "  --keep <name>  copy the file from the work directory to --out "
-            "at the end\n"
-            "  --draw         with --fast, still draw the frames\n"
-            "  --result       with --live, open the result screen, which "
-            "saves score.dat when the game closes\n");
+    M_ARGS args;
+    bool help;
+    const RESULT parsed = argc > MAX_ARGS
+        ? Args_Fail(&m_Schema, "more than %d arguments", MAX_ARGS)
+        : Args_Parse(&m_Schema, argc, argv, &args, &help);
+    if (!Result_Log(parsed, LOG_LEVEL_ERROR)) {
         return 1;
+    }
+    if (help) {
+        Args_PrintHelp(&m_Schema, stdout);
+        return 0;
     }
     char exe[MAX_PATH];
     snprintf(exe, MAX_PATH, "%s/%s", args.game_dir, GAME_EXE_NAME);
