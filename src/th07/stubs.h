@@ -48,11 +48,13 @@ typedef struct {
         uint8_t start_lives;
         int32_t max_continues;
         bool score_disabled;
+        int32_t stage_frames;
     } run;
     struct {
         uint8_t continues_used;
     } stats;
     struct {
+        bool frozen; // holds the screen shake still
         uint8_t paused; // 0, 1 while the pause menu opens, 2 while it is open
         bool in_continue_menu;
         bool in_practice;
@@ -134,9 +136,6 @@ void GameManager_SetBombs(int32_t bombs);
 // g_GameManager.records: LoadClears, LoadPracticeScores, LoadSpellCards and
 // the play time.
 void ResultScreen_LoadTitleRecords(void);
-
-// Stands in for th07/screen_effect's fade in from color over frames.
-void ScreenEffect_FadeIn(int32_t frames, uint32_t color);
 
 // Stand in for App::AddTotalPlayTime and the restart of its clock.
 void PlayTime_Add(void);
