@@ -103,6 +103,7 @@ shared_library(
 executable(
   'th07capture',
   'launcher.c',
+  '../core/launcher.c',
   '../core/launch.c',
   '../core/workdir.c',
   c_args: core_include,
