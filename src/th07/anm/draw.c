@@ -427,3 +427,42 @@ void Anm_Draw3D(ANM_VM *const vm, const ANM_DRAW *const draw)
     };
     M_Record(vm, draw, M_Camera(), positions, uv0, uv1, nullptr);
 }
+
+void Anm_DrawStrip(
+    const ANM_VM *const vm, const ANM_STRIP_VERTEX *const vertices,
+    const int32_t count, const ANM_DRAW *const draw)
+{
+    if (!M_Visible(vm)) {
+        return;
+    }
+    const GFX_STATE state = {
+        .blend = vm->blend_add ? GFX_BLEND_ADD : GFX_BLEND_ALPHA,
+        .color_op = GFX_COLOR_MODULATE,
+        .depth_test = draw->depth_test,
+        .depth_write = draw->depth_write && !vm->z_write_off,
+        .alpha_test = true,
+        .repeat = true,
+    };
+    GFX_TEXTURE *const texture = Anm_GetTexture(vm->sprite_data->slot);
+    Gfx_SetView(&draw->view);
+    // Each quad is two triangles of the strip, in perimeter order.
+    static const int32_t corners[4] = { 0, 1, 3, 2 };
+    for (int32_t i = 0; i + 4 <= count; i += 2) {
+        GFX_VERTEX quad[4];
+        for (int32_t c = 0; c < 4; c++) {
+            const ANM_STRIP_VERTEX *const from = &vertices[i + corners[c]];
+            quad[c] = (GFX_VERTEX) {
+                { from->pos.x + 0.5f, from->pos.y + 0.5f, from->pos.z },
+                { (uint8_t)(from->color >> 16), (uint8_t)(from->color >> 8),
+                  (uint8_t)from->color, (uint8_t)(from->color >> 24) },
+                from->uv,
+            };
+        }
+        const uint64_t id =
+            draw->interpolate && vm->presentation_generation != 0
+            ? ((uint64_t)vm->presentation_generation << 32)
+                | (draw->part + (uint32_t)i / 2)
+            : 0;
+        Gfx_DrawQuad(&state, texture, quad, id);
+    }
+}

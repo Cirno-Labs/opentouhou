@@ -202,3 +202,50 @@ TEST(draw_3d_sets_up_the_camera_of_its_flag)
     CHECK(GfxRecorder_Quad(3)->view.projection.m[0][0] == 2.0f * fixed);
     M_Teardown();
 }
+
+TEST(strips_draw_a_quad_per_vertex_pair)
+{
+    ANM_VM vm;
+    M_Setup(&vm);
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.interpolate = true;
+    draw.part = 5;
+    vm.blend_add = true;
+    ANM_STRIP_VERTEX vertices[6];
+    for (int32_t i = 0; i < 6; i++) {
+        vertices[i] = (ANM_STRIP_VERTEX) {
+            { 10.0f * (float)(i / 2), 20.0f * (float)(i % 2), 0.5f },
+            0x40000000u | (uint32_t)i,
+            { (float)i, 0.0f },
+        };
+    }
+    Anm_DrawStrip(&vm, vertices, 6, &draw);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    const GFX_RECORDED_QUAD *const second = GfxRecorder_Quad(1);
+    CHECK(second->state.blend == GFX_BLEND_ADD);
+    CHECK(second->vertices[0].position.x == 10.5f);
+    CHECK(second->vertices[0].position.y == 0.5f);
+    CHECK(second->vertices[1].uv.x == 3.0f);
+    CHECK(second->vertices[2].uv.x == 5.0f);
+    CHECK(second->vertices[3].uv.x == 4.0f);
+    CHECK_EQ_INT(second->vertices[2].color.blue, 5);
+    CHECK_EQ_INT(second->vertices[2].color.alpha, 0x40);
+    M_Teardown();
+}
+
+TEST(strips_of_hidden_or_transparent_sprites_are_skipped)
+{
+    ANM_VM vm;
+    M_Setup(&vm);
+    const ANM_DRAW draw = Anm_ScreenDraw();
+    const ANM_STRIP_VERTEX vertices[4] = {};
+    vm.visible = false;
+    Anm_DrawStrip(&vm, vertices, 4, &draw);
+    vm.visible = true;
+    vm.color &= 0x00ffffffu;
+    Anm_DrawStrip(&vm, vertices, 4, &draw);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
+    M_Teardown();
+}
