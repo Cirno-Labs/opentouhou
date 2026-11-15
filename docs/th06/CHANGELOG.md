@@ -1,6 +1,6 @@
 # th06 changelog
 
-## Unreleased
+## 1.0.1 (2026-11-15)
 
 - Fixed the message about missing game data on macOS when macOS starts
   a temporary copy of the program: it now tells how to stop that.
