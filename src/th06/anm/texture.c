@@ -152,23 +152,15 @@ RESULT Anm_UpdateTexture(
             || (int64_t)rectangle.x + rectangle.width > texture->image.width
             || (int64_t)rectangle.y + rectangle.height > texture->image.height,
         "Invalid ANM texture update rectangle");
-    IMAGE pixels = Image_Create(image->width, image->height, &g_HeapAllocator);
-    memcpy(
-        pixels.pixels, image->pixels,
-        (size_t)image->width * (size_t)image->height * 4);
+    IMAGE pixels;
+    MUST(Image_Crop(
+        image, 0, 0, image->width, image->height, &g_HeapAllocator, &pixels));
     M_Quantize(&pixels, texture->format);
     GfxTexture_Upload(texture->texture, rectangle, &pixels);
-    for (int32_t row = 0; row < image->height; row++) {
-        memcpy(
-            texture->image.pixels
-                + ((size_t)(rectangle.y + row) * (size_t)texture->image.width
-                   + (size_t)rectangle.x)
-                    * 4,
-            pixels.pixels + (size_t)row * (size_t)image->width * 4,
-            (size_t)image->width * 4);
-    }
+    const RESULT result =
+        Image_Paste(&texture->image, rectangle.x, rectangle.y, &pixels);
     Image_Free(&pixels);
-    return OK;
+    return result;
 }
 
 const IMAGE *AnmTexture_GetImage(const int32_t slot)
