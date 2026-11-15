@@ -1,9 +1,34 @@
 #include "core/image.h"
 
+#include <string.h>
+
 // Returns the number of bytes a width x height RGBA8 image occupies.
 static size_t M_PixelsSize(const int32_t width, const int32_t height)
 {
     return (size_t)width * (size_t)height * 4;
+}
+
+static bool M_Contains(
+    const IMAGE *const image, const int32_t x, const int32_t y,
+    const int32_t width, const int32_t height)
+{
+    return x >= 0 && y >= 0 && width >= 0 && height >= 0
+        && (int64_t)x + width <= image->width
+        && (int64_t)y + height <= image->height;
+}
+
+// Copies height rows of width pixels from source to target, whose rows are
+// source_width and target_width pixels long.
+static void M_CopyRows(
+    uint8_t *const target, const int32_t target_width,
+    const uint8_t *const source, const int32_t source_width,
+    const int32_t width, const int32_t height)
+{
+    for (int32_t row = 0; row < height; row++) {
+        memcpy(
+            target + (size_t)row * (size_t)target_width * 4,
+            source + (size_t)row * (size_t)source_width * 4, (size_t)width * 4);
+    }
 }
 
 // Repeats the top bits bits times until every bit of an 8-bit value is
@@ -45,6 +70,42 @@ void Image_Free(IMAGE *const image)
         image->allocator, image->pixels,
         M_PixelsSize(image->width, image->height));
     *image = (IMAGE) {};
+}
+
+RESULT Image_Crop(
+    const IMAGE *const image, const int32_t x, const int32_t y,
+    const int32_t width, const int32_t height, const ALLOCATOR *const allocator,
+    IMAGE *const out)
+{
+    FAIL_IF(
+        !M_Contains(image, x, y, width, height),
+        "crop rectangle %dx%d at %d,%d is outside the %dx%d image", width,
+        height, x, y, image->width, image->height);
+    *out = Image_Create(width, height, allocator);
+    if (width != 0 && height != 0) {
+        M_CopyRows(
+            out->pixels, width,
+            image->pixels + ((size_t)y * (size_t)image->width + (size_t)x) * 4,
+            image->width, width, height);
+    }
+    return OK;
+}
+
+RESULT Image_Paste(
+    IMAGE *const image, const int32_t x, const int32_t y,
+    const IMAGE *const source)
+{
+    FAIL_IF(
+        !M_Contains(image, x, y, source->width, source->height),
+        "pasted %dx%d image at %d,%d is outside the %dx%d image", source->width,
+        source->height, x, y, image->width, image->height);
+    if (source->width != 0 && source->height != 0) {
+        M_CopyRows(
+            image->pixels + ((size_t)y * (size_t)image->width + (size_t)x) * 4,
+            image->width, source->pixels, source->width, source->width,
+            source->height);
+    }
+    return OK;
 }
 
 void Image_ColorKey(IMAGE *const image, const uint32_t rgb)
