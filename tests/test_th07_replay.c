@@ -682,3 +682,25 @@ TEST(summary_holds_what_the_replay_menu_shows)
     CHECK_EQ_INT(summary.stage_scores[7], 700);
     CHECK_EQ_INT(summary.stage_scores[3], 0);
 }
+
+TEST(a_kept_file_is_a_copy_that_a_new_copy_replaces)
+{
+    uint8_t first[] = { 1, 2, 3 };
+    const uint8_t second[] = { 4, 5 };
+    Replay_AddFile("a.rpy", first, sizeof(first));
+    first[0] = 9;
+    Replay_AddFile("b.rpy", first, sizeof(first));
+    size_t size = 0;
+    const uint8_t *data = Replay_FindFile("a.rpy", &size);
+    CHECK(data != nullptr && size == 3 && data[0] == 1);
+    Replay_AddFile("a.rpy", second, sizeof(second));
+    data = Replay_FindFile("a.rpy", &size);
+    CHECK(data != nullptr && size == 2 && data[0] == 4);
+    Replay_RemoveFile("a.rpy");
+    Replay_RemoveFile("missing.rpy");
+    CHECK(Replay_FindFile("a.rpy", &size) == nullptr);
+    data = Replay_FindFile("b.rpy", &size);
+    CHECK(data != nullptr && size == 3 && data[0] == 9);
+    Replay_ClearFiles();
+    CHECK(Replay_FindFile("b.rpy", &size) == nullptr);
+}
