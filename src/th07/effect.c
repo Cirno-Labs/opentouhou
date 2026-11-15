@@ -1,6 +1,7 @@
 #include "th07/effect.h"
 
 #include "th07/game.h"
+#include "th07/stage.h"
 #include "th07/stubs.h"
 
 #include "core/math/x87.h"

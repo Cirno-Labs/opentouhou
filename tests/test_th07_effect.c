@@ -3,6 +3,7 @@
 #include "th07/anm.h"
 #include "th07/files.h"
 #include "th07/game.h"
+#include "th07/stage.h"
 #include "th07/stubs.h"
 
 #include "gfx_recorder.h"

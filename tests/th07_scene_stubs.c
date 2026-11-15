@@ -2,6 +2,7 @@
 
 #include "th07/scene.h"
 #include "th07/screens/main.h"
+#include "th07/stage.h"
 #include "th07/stubs.h"
 
 #include <string.h>
@@ -9,7 +10,6 @@
 GAME_MANAGER g_GameManager;
 PLAYER g_Player;
 GUI g_Gui;
-STAGE g_Stage;
 uint8_t g_EffectsQuality;
 SCENE_STUB_CALLS g_SceneStubCalls;
 
@@ -111,4 +111,9 @@ bool Anm_SetPendingCopy(
     g_SceneStubCalls.copy_source = source;
     g_SceneStubCalls.copy_dest = dest;
     return true;
+}
+
+bool Gui_IsLoadingShown(void)
+{
+    return g_SceneStubCalls.loading_shown;
 }
