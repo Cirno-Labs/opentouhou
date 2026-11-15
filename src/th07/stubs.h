@@ -52,9 +52,6 @@ void Gui_ShowBorderBonusPopup(int32_t points);
 void Gui_ShowBombName(int32_t sprite, const char *name);
 void Gui_EndBombName(void);
 
-// Stands in for th07/bomb's draw of the running bomb.
-void Bomb_Draw(void);
-
 // Stand in for th07/item's spawn of an item of type in state at pos, its
 // collection of every item, and its drop of the items that the player
 // pulls in.

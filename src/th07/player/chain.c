@@ -883,7 +883,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
     const ANM_DRAW draw = M_DrawContext();
     Player_DrawShots(PLAYER_BULLET_FLYING, &draw);
     if (player->bomb.running) {
-        Bomb_Draw();
+        Bomb_Draw(&draw);
     }
     if (!g_GameManager.mode.in_continue_menu) {
         player->vm.pos = (VEC3) {

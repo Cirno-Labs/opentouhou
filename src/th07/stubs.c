@@ -99,10 +99,6 @@ void Gui_EndBombName(void)
     LOG_INFO("Gui_EndBombName is not ported");
 }
 
-void Bomb_Draw(void)
-{
-}
-
 void Item_Spawn(const VEC3 pos, const int32_t type, const int32_t state)
 {
     LOG_INFO("Item_Spawn is not ported");

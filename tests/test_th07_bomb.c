@@ -72,6 +72,7 @@ BUTTONS g_Buttons;
 float g_GameSpeed;
 ENEMIES g_Enemies;
 ASCII_TEXT g_AsciiText;
+STAGE g_Stage;
 
 static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
 static char *m_Directory;
@@ -80,6 +81,7 @@ static const char *m_Name;
 static int32_t m_NameEnds;
 static int32_t m_CollectCalls;
 static int32_t m_StopCalls;
+static uint32_t m_Tint;
 static M_EFFECT_CALL m_Effects[M_MAX_CALLS];
 static int32_t m_EffectCount;
 static M_SHAKE_CALL m_Shakes[M_MAX_CALLS];
@@ -127,6 +129,7 @@ void Replay_MarkEvent(const REPLAY_EVENT event)
 
 void Stage_SetTint(const uint32_t color)
 {
+    m_Tint = color;
 }
 
 void AsciiText_SetSummaryInterrupt(const int16_t interrupt)
@@ -141,10 +144,6 @@ void Bullet_ClearAll(void)
 void Bullet_StopAll(void)
 {
     m_StopCalls++;
-}
-
-void Bomb_Draw(void)
-{
 }
 
 void Item_Spawn(const VEC3 pos, const int32_t type, const int32_t state)
@@ -1515,5 +1514,229 @@ TEST(the_private_square_pulls_its_sprites_back_to_the_player)
     CHECK(part->trail[1].x == M_START_X);
     CHECK(part->pos.x == 100.0f + velocity.x * 0.5f);
     CHECK(part->pos.y == 200.0f + velocity.y * 0.5f);
+    M_TearDown();
+}
+
+// Drawing
+
+// Draws the bomb on the screen as a tick of its own.
+static void M_Draw(void)
+{
+    Gfx_BeginTick((GFX_COLOR) {});
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.interpolate = true;
+    Bomb_Draw(&draw);
+    Gfx_EndTick();
+}
+
+TEST(the_draw_tints_the_stage_over_the_first_and_last_60_frames)
+{
+    static const struct {
+        int32_t frame;
+        uint32_t tint;
+    } cases[] = {
+        { 0, 0x80808080u },   { 30, 0x80585858u },  { 59, 0x80323232u },
+        { 60, 0x80303030u },  { 99, 0x80303030u },  { 100, 0x80303030u },
+        { 159, 0x807f7f7fu }, { 160, 0x80808080u },
+    };
+    M_SetUp("draw_tint", M_SAKUYA_A);
+    M_StartBomb(false);
+    for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
+        g_Player.bomb.timer.current = cases[i].frame;
+        g_Stage.tint.keep = false;
+        M_Draw();
+        CHECK_EQ_INT(m_Tint, cases[i].tint);
+        CHECK(g_Stage.tint.keep);
+    }
+    M_TearDown();
+}
+
+typedef struct {
+    uint8_t shot;
+    bool focused;
+    int32_t frame;
+    int32_t quads;
+} M_DRAW_CASE;
+
+TEST(each_bomb_draws_its_sprites_without_the_rng)
+{
+    // Reimu A has 4 orbs out at frame 30, Reimu A focused 1 at 80; Marisa
+    // A focused 2 stars at 6; Sakuya A 5 knives at 60, focused 2 at 20.
+    static const M_DRAW_CASE cases[] = {
+        { M_REIMU_A, false, 30, 16 }, { M_REIMU_A, true, 80, 4 },
+        { M_REIMU_B, false, 1, 4 },   { M_REIMU_B, true, 1, 3 },
+        { M_MARISA_A, false, 1, 24 }, { M_MARISA_A, true, 6, 6 },
+        { M_MARISA_B, false, 1, 3 },  { M_MARISA_B, true, 1, 4 },
+        { M_SAKUYA_A, false, 60, 5 }, { M_SAKUYA_A, true, 20, 2 },
+        { M_SAKUYA_B, false, 30, 4 }, { M_SAKUYA_B, true, 1, 18 },
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(cases); i++) {
+        M_SetUp("draw_each", cases[i].shot);
+        M_StartBomb(cases[i].focused);
+        M_RunTo(cases[i].frame);
+        const RNG rng = g_Rng;
+        M_Draw();
+        CHECK_EQ_INT(GfxRecorder_QuadCount(), cases[i].quads);
+        CHECK_EQ_INT(g_Rng.generated, rng.generated);
+        M_TearDown();
+    }
+}
+
+TEST(the_orbs_draw_at_their_offsets_in_the_play_area)
+{
+    for (int32_t focused = 0; focused < 2; focused++) {
+        M_SetUp("draw_orbs", M_REIMU_A);
+        M_StartBomb(focused != 0);
+        M_RunTo(focused != 0 ? 80 : 12);
+        const PLAYER_BOMB_PART *const orb =
+            &g_Player.bomb.parts[focused != 0 ? 1 : 0];
+        M_Draw();
+        for (int32_t k = 0; k < 4; k++) {
+            const ANM_VM *const vm = &orb->vms[k];
+            CHECK(vm->pos.x == 32.0f + (orb->pos.x + vm->pos_offset.x));
+            CHECK(vm->pos.y == 16.0f + (orb->pos.y + vm->pos_offset.y));
+            CHECK(vm->pos.z == 0.0f);
+        }
+        M_TearDown();
+    }
+}
+
+TEST(the_barriers_and_boundary_draw_at_their_offsets)
+{
+    M_SetUp("draw_barriers", M_REIMU_B);
+    M_StartBombAt(false, (VEC3) { 100.0f, 300.0f, 0.0f });
+    M_Draw();
+    const ANM_VM *vm = &g_Player.bomb.parts[1].vms[0];
+    CHECK(vm->pos.x == 32.0f + 192.0f + M_OFFSET_X);
+    CHECK(vm->pos.y == 16.0f + 300.0f + M_OFFSET_Y);
+    CHECK(vm->pos.z == 0.0f);
+    M_TearDown();
+    M_SetUp("draw_boundary", M_REIMU_B);
+    M_StartBombAt(true, (VEC3) { 100.0f, 300.0f, 0.0f });
+    g_Player.pos.x = 50.0f;
+    M_Draw();
+    vm = &g_Player.bomb.parts[0].vms[2];
+    CHECK(vm->pos.x == 32.0f + 100.0f + M_OFFSET_X);
+    CHECK(vm->pos.y == 16.0f + 300.0f + M_OFFSET_Y);
+    M_TearDown();
+}
+
+TEST(a_star_draws_three_times_the_third_moved_twice)
+{
+    M_SetUp("draw_stars", M_MARISA_A);
+    M_StartBomb(false);
+    const PLAYER_BOMB_PART *const star = &g_Player.bomb.parts[1];
+    M_Draw();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 24);
+    VEC3 pos = { 32.0f + star->pos.x, 16.0f + star->pos.y, 0.0f };
+    pos = Vec3_Sub(pos, Vec3_Scale(star->velocity, 6.0f));
+    pos.x += -32.0f;
+    pos.y += -32.0f;
+    pos = Vec3_Sub(pos, Vec3_Scale(star->velocity, 2.0f));
+    pos.x += 64.0f;
+    pos.y += 64.0f;
+    pos = Vec3_Sub(pos, Vec3_Scale(star->velocity, 2.0f));
+    pos.x += -32.0f;
+    pos.y += -32.0f;
+    const ANM_VM *const vm = &star->vms[0];
+    CHECK(vm->pos.x == pos.x && vm->pos.y == pos.y && vm->pos.z == 0.0f);
+    CHECK(vm->scale_x == 1.0f && vm->scale_y == 1.0f);
+    CHECK(GfxRecorder_QuadId(3) != GfxRecorder_QuadId(4));
+    CHECK(GfxRecorder_QuadId(4) != GfxRecorder_QuadId(5));
+    M_TearDown();
+}
+
+TEST(a_milky_way_star_draws_with_two_trail_positions)
+{
+    M_SetUp("draw_milky_way", M_MARISA_A);
+    M_StartBomb(true);
+    M_RunTo(8);
+    const PLAYER_BOMB_PART *const star = &g_Player.bomb.parts[0];
+    M_Draw();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 6);
+    const ANM_VM *const vm = &star->vms[0];
+    CHECK(vm->pos.x == 32.0f + star->trail[7].x);
+    CHECK(vm->pos.y == 16.0f + star->trail[7].y);
+    CHECK(vm->pos.z == 0.34f);
+    CHECK(vm->scale_x == 1.3f && vm->scale_y == 1.3f);
+    CHECK(GfxRecorder_QuadId(0) != GfxRecorder_QuadId(1));
+    M_TearDown();
+}
+
+TEST(the_beams_draw_along_their_angles_turned_a_quarter)
+{
+    for (int32_t focused = 0; focused < 2; focused++) {
+        M_SetUp("draw_beams", M_MARISA_B);
+        M_StartBomb(focused != 0);
+        M_Frame();
+        g_Player.pos.x = 100.0f;
+        M_Draw();
+        const int32_t i = 2;
+        const ANM_VM *const vm = focused != 0 ? &g_Player.bomb.parts[0].vms[i]
+                                              : &g_Player.bomb.parts[i].vms[0];
+        const float angle = focused != 0
+            ? 0.62831855f * (float)i / 3.0f - MATH_PI + 1.2566371f
+            : g_Player.bomb.parts[i].laser_angle;
+        const float half = M_SPRITE_SIZE * vm->scale_y / 2.0f;
+        CHECK(vm->pos.x == 32.0f + (100.0f + X87_Cos(angle) * half));
+        CHECK(vm->pos.y == 16.0f + (M_START_Y + X87_Sin(angle) * half));
+        CHECK(vm->rotation.z == Angle_AddNormalize(angle, MATH_HALF_PI));
+        CHECK(vm->rotation_changed);
+        M_TearDown();
+    }
+}
+
+TEST(the_knives_draw_without_the_play_area_offset_unless_focused)
+{
+    for (int32_t focused = 0; focused < 2; focused++) {
+        M_SetUp("draw_knives", M_SAKUYA_A);
+        M_StartBomb(focused != 0);
+        M_RunTo(focused != 0 ? 20 : 60);
+        M_Draw();
+        const PLAYER_BOMB_PART *const knife = &g_Player.bomb.parts[0];
+        const ANM_VM *const vm = &knife->vms[0];
+        const float x = focused != 0 ? 32.0f + knife->pos.x : knife->pos.x;
+        const float y = focused != 0 ? 16.0f + knife->pos.y : knife->pos.y;
+        CHECK(vm->pos.x == x && vm->pos.y == y && vm->pos.z == 0.0f);
+        CHECK(vm->rotation.z == Angle_AddNormalize(knife->angle, MATH_HALF_PI));
+        CHECK(vm->rotation_changed);
+        M_TearDown();
+    }
+}
+
+TEST(the_squares_draw_in_the_play_area_and_move_back)
+{
+    M_SetUp("draw_squares", M_SAKUYA_B);
+    M_StartBomb(false);
+    M_RunTo(30);
+    g_GameManager.play_area.x = 0.7f;
+    M_Draw();
+    const ANM_VM *const vm = &g_Player.bomb.parts[0].vms[0];
+    CHECK(vm->pos.x == (64.0f + 0.7f) - 0.7f);
+    CHECK(vm->pos.x != 64.0f);
+    CHECK(vm->pos.y == 96.0f && vm->pos.z == 0.0f);
+    M_TearDown();
+}
+
+TEST(a_private_square_draws_its_trail_fading_out)
+{
+    M_SetUp("draw_private_square", M_SAKUYA_B);
+    M_StartBomb(true);
+    PLAYER_BOMB_PART *const square = &g_Player.bomb.parts[0];
+    square->vms[0].color = 0xc0102030u;
+    for (int32_t k = 0; k < 32; k++) {
+        square->trail[k] = (VEC3) { (float)k, 100.0f, 0.0f };
+    }
+    M_Draw();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 18);
+    for (int32_t j = 0; j < 9; j++) {
+        const int32_t k = j * 4 - 1;
+        const int32_t alpha = j == 0 ? 0xc0 : 0xc0 - 0xc0 * k / 32;
+        CHECK_EQ_INT(GfxRecorder_Quad(j)->vertices[0].color.alpha, alpha);
+        CHECK(GfxRecorder_QuadId(j) != GfxRecorder_QuadId(j + 1));
+    }
+    const ANM_VM *const vm = &square->vms[0];
+    CHECK(vm->pos.x == 32.0f + 31.0f && vm->pos.y == 16.0f + 100.0f);
+    CHECK_EQ_INT(vm->color, 0xc0102030u);
     M_TearDown();
 }
