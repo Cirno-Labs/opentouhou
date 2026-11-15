@@ -53,7 +53,7 @@ endif
 # that is not on its include path.
 include_root = meson.current_build_dir() / 'include'
 layer_include = {}
-foreach layer : ['core', 'shell', 'stg', 'th06', 'th07', 'othpatch']
+foreach layer : ['core', 'shell', 'stg', 'th01', 'th06', 'th07', 'othpatch']
   run_command(
     python3,
     files('tools/meson/link_layer'),
@@ -100,6 +100,7 @@ if build_games
   # in the same folder. A game's 'fonts' lists its built-in fonts, as
   # paths below src/shell/builtin, which its programs carry in a zip.
   games = {}
+  subdir('src/th01')
   subdir('src/th06')
   subdir('src/th07')
 

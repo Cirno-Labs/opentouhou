@@ -2327,3 +2327,20 @@ test(
   ),
   suite: 'unit',
 )
+
+if build_games
+  foreach part : ['bfnt', 'logo']
+    test(
+      'th01/' + part,
+      executable(
+        'test_th01_' + part,
+        'test_th01_' + part + '.c',
+        c_args: [layer_include['th01']] + core_include + stg_include,
+        implicit_include_directories: false,
+        link_with: [th01_lib, core_io_lib, core_base_lib],
+        dependencies: [sdl3],
+      ),
+      suite: 'unit',
+    )
+  endforeach
+endif

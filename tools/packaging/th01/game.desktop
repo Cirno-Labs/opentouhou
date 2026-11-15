@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Touhou 1: Highly Responsive to Prayers
+Name[ja]=東方靈異伝 ~ Highly Responsive to Prayers
+Comment=Runs the ZUNSOFT logo with the original game data
+Exec=oth01
+Icon=th01
+Categories=Game;ArcadeGame;
+Terminal=false
