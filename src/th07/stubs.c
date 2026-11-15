@@ -1,7 +1,5 @@
 #include "th07/stubs.h"
 
-#include "th07/player.h"
-
 #include "core/base/log.h"
 
 RESULT ResultScreen_Register(const int32_t mode)
@@ -99,13 +97,6 @@ void Gui_ShowBombName(const int32_t sprite, const char *const name)
 void Gui_EndBombName(void)
 {
     LOG_INFO("Gui_EndBombName is not ported");
-}
-
-void Bomb_Update(void)
-{
-    LOG_INFO("Bomb_Update is not ported");
-    g_Player.bomb.running = false;
-    g_Player.state.bomb_started = false;
 }
 
 void Bomb_Draw(void)
