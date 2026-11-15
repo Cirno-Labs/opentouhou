@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Fail when a global or module variable is assigned a compound literal.
+
+Takes the paths of C files. MinGW builds `g_X = (TYPE) {...};` as a
+temporary of sizeof(TYPE) on the stack, which overflows the 1 MB stack
+of Windows for a large struct. A global is reset with memset instead.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+RESET_RE = re.compile(r"\b[gm]_[A-Za-z]+ = \([A-Z][A-Z0-9_]*\) \{")
+MESSAGE = "reset a global with memset, not a compound literal"
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of the lines that reset a global by compound
+    literal."""
+    return [index for index, line in enumerate(lines) if RESET_RE.search(line)]
+
+
+def main(argv: list[str] | None = None) -> int:
+    paths = [Path(path) for path in (sys.argv[1:] if argv is None else argv)]
+    failed = False
+    for path in paths:
+        for index in errors(path.read_text().split("\n")):
+            failed = True
+            print(f"{path}:{index + 1}: {MESSAGE}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

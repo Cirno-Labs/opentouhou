@@ -72,6 +72,9 @@ Rules:
 - `bool` states a fact. A function that can fail returns a result type
   instead, so the signature says which of the two it is.
 - No `(void)unused;` statements.
+- Reset a global or module variable with `memset`, then assign its
+  non-zero fields, never with a compound literal: MinGW builds the
+  literal on the stack, and a large struct overflows it.
 - Comments are `//` only.
 - clang-format formats everything; never hand-format against it.
 
