@@ -3,6 +3,7 @@
 #include "test.h"
 
 #include "th07/ascii.h"
+#include "th07/ecl.h"
 #include "th07/effect.h"
 #include "th07/game.h"
 #include "th07/replay.h"
