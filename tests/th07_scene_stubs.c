@@ -5,6 +5,7 @@
 #include "th07/scene.h"
 #include "th07/screens/main.h"
 #include "th07/stage.h"
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 PLAYER g_Player;
