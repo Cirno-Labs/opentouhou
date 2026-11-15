@@ -1,6 +1,7 @@
 #include "th07/stubs.h"
 
 #include "th07/ecl.h"
+#include "th07/game_manager.h"
 
 #include "core/base/log.h"
 
@@ -117,6 +118,35 @@ void Gui_ShowBombName(const int32_t sprite, const char *const name)
 void Gui_EndBombName(void)
 {
     LOG_INFO("Gui_EndBombName is not ported");
+}
+
+void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
+{
+    LOG_INFO("Gui_ShowSpellCardName is not ported");
+}
+
+void Gui_EndSpellCardName(void)
+{
+    LOG_INFO("Gui_EndSpellCardName is not ported");
+}
+
+void Gui_ShowSpellCardBonus(const int32_t bonus)
+{
+    LOG_INFO("Gui_ShowSpellCardBonus is not ported");
+}
+
+void ResultScreen_AddSpellCardAttempt(
+    const int32_t index, const char *const name)
+{
+    LOG_INFO("ResultScreen_AddSpellCardAttempt is not ported");
+}
+
+void ResultScreen_AddSpellCardCapture(const int32_t index, const int32_t bonus)
+{
+    int32_t *const captures = &g_GameManager.records.spell_captures[index];
+    if (*captures < 9999) {
+        (*captures)++;
+    }
 }
 
 RESULT ResultScreen_LoadGameRecords(void)
