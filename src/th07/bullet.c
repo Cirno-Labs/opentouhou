@@ -754,8 +754,96 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
+static ANM_DRAW M_DrawContext(void)
+{
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.view =
+        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
+    draw.interpolate = true;
+    return draw;
+}
+
+// Draws the glow at the start of laser, with sine and cosine of its angle.
+static void M_DrawOrigin(
+    LASER *const laser, const float sine, const float cosine,
+    const ANM_DRAW *const draw)
+{
+    ANM_VM *const origin = &laser->origin;
+    origin->pos = (VEC3) {
+        g_GameManager.play_area.x
+            + (cosine * laser->start_offset + laser->pos.x),
+        g_GameManager.play_area.y + (sine * laser->start_offset + laser->pos.y),
+        0.05f,
+    };
+    origin->color = (laser->beam.color & 0xffffffu) | 0xff000000u;
+    origin->scale_x =
+        laser->width / 10.0f * ((16.0f - laser->start_offset) / 16.0f);
+    origin->scale_y = origin->scale_x;
+    if (origin->scale_y <= 0.0f) {
+        origin->scale_x = laser->width / 10.0f;
+        origin->scale_y = origin->scale_x;
+    }
+    Anm_Draw(origin, draw);
+}
+
+static void M_DrawLaser(LASER *const laser, const ANM_DRAW *const draw)
+{
+    float sine;
+    float cosine;
+    X87_SinCos(laser->angle, &sine, &cosine);
+    const float length =
+        (laser->end_offset - laser->start_offset) / 2.0f + laser->start_offset;
+    laser->beam.pos = (VEC3) {
+        g_GameManager.play_area.x + (cosine * length + laser->pos.x),
+        g_GameManager.play_area.y + (sine * length + laser->pos.y),
+        0.05f,
+    };
+    Anm_Draw(&laser->beam, draw);
+    if ((laser->start_offset < 16.0f || laser->speed == 0.0f)
+        && (!laser->hide_origin_while_starting
+            || laser->state != LASER_STARTING)) {
+        M_DrawOrigin(laser, sine, cosine, draw);
+    }
+}
+
+static void M_DrawBullet(BULLET *const bullet, const ANM_DRAW *const draw)
+{
+    ANM_VM *vm = &bullet->sprites.flying;
+    if (bullet->state >= BULLET_SPAWNING_1
+        && bullet->state <= BULLET_SPAWNING_3) {
+        vm = &bullet->sprites.spawning[bullet->state - BULLET_SPAWNING_1];
+    } else if (bullet->state == BULLET_FADING) {
+        vm = &bullet->sprites.fading;
+    }
+    vm->pos = (VEC3) {
+        g_GameManager.play_area.x + bullet->pos.x,
+        g_GameManager.play_area.y + bullet->pos.y,
+        0.05f,
+    };
+    vm->color = (vm->color & 0xff000000u) | 0xffffffu;
+    if (vm->auto_rotate != 0) {
+        vm->rotation.z = Angle_AddNormalize(bullet->angle, MATH_HALF_PI);
+        vm->rotation_changed = true;
+    }
+    Anm_Draw(vm, draw);
+}
+
 static CHAIN_STATUS M_Draw(void *const arg)
 {
+    const ANM_DRAW draw = M_DrawContext();
+    for (int32_t i = 0; i < LASER_COUNT; i++) {
+        LASER *const laser = &g_Bullets.lasers[i];
+        if (laser->active) {
+            M_DrawLaser(laser, &draw);
+        }
+    }
+    Item_Draw();
+    for (int32_t i = 0; i < BULLET_SIZE_CLASS_COUNT; i++) {
+        for (BULLET *bullet = g_Bullets.draw_lists[i]; bullet != nullptr;
+             bullet = bullet->next_drawn) {
+            M_DrawBullet(bullet, &draw);
+        }
+    }
     return CHAIN_CONTINUE;
 }
 
