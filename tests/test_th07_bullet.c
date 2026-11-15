@@ -10,6 +10,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "gfx_recorder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th07_anm_builder.h"
@@ -28,6 +29,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <math.h>
 #include <string.h>
 
 #define M_SPRITE 0x200
@@ -37,6 +39,7 @@
 #define M_SPRITE_64 (M_SPRITE + 48)
 #define M_SPRITE_ORIGIN 0x292
 #define M_LASER_SCRIPT 0x20a
+#define M_SLOT 0xb
 #define M_SPRITE_OP 3
 #define M_DELETE_OP 1
 #define M_MAX_CALLS 64
@@ -149,6 +152,12 @@ void Item_Update(void)
 {
     m_ItemUpdates++;
     m_CountAtItemUpdate = g_Bullets.count;
+}
+
+// Draws an untextured quad, which marks where the items are drawn.
+void Item_Draw(void)
+{
+    Anm_DrawRect((GFX_RECT) { 0, 0, 1, 1 }, 0xff00ff00u);
 }
 
 void AsciiText_AddPopup(
@@ -1658,6 +1667,149 @@ TEST(a_laser_ends_once_its_start_reaches_640)
     CHECK(laser->start_offset == 645.0f);
     CHECK(!laser->active);
     CHECK_EQ_INT(laser->timer.current, 1);
+    M_Teardown();
+}
+
+static void M_StartDraw(void)
+{
+    GfxRecorder_Start();
+    if (Anm_GetTexture(M_SLOT) == nullptr) {
+        CHECK(IS_OK(Anm_CreateTexture(M_SLOT, 256, 256, ANM_TEXTURE_RGBA8)));
+    }
+    g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
+    g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
+}
+
+static void M_DrawFrame(void)
+{
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+}
+
+static bool M_IsItemQuad(const int32_t index)
+{
+    return GfxRecorder_Quad(index)->texture == nullptr;
+}
+
+static float M_QuadCenterX(const int32_t index)
+{
+    const GFX_VERTEX *const v = GfxRecorder_Quad(index)->vertices;
+    return (v[0].position.x + v[1].position.x + v[2].position.x
+            + v[3].position.x)
+        / 4.0f;
+}
+
+TEST(the_bullets_draw_by_size_class_each_against_the_walk)
+{
+    M_Setup("draw_classes");
+    M_StartDraw();
+    static const int16_t types[] = { 1, 0, 10, 1 };
+    BULLET *bullets[4];
+    for (int32_t i = 0; i < 4; i++) {
+        BULLET_SHOOTER shooter = M_Shooter(types[i], 0.0f, 0.0f);
+        shooter.pos.x = 110.0f + 10.0f * (float)i;
+        bullets[i] = M_Fire(&shooter);
+    }
+    M_Frame();
+    M_DrawFrame();
+    static const int32_t order[] = { 2, 3, 0, 1 };
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 5);
+    CHECK(M_IsItemQuad(0));
+    for (int32_t i = 0; i < 4; i++) {
+        const float x = 32.0f + 110.0f + 10.0f * (float)order[i];
+        CHECK(fabsf(M_QuadCenterX(1 + i) - x) <= 1.0f);
+        CHECK(bullets[i]->sprites.flying.pos.y == 16.0f + 100.0f);
+        CHECK(bullets[i]->sprites.flying.pos.z == 0.05f);
+    }
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(a_bullet_draws_the_sprite_of_its_state_in_white_and_turned)
+{
+    M_Setup("draw_bullet");
+    M_StartDraw();
+    BULLET_SHOOTER shooter = M_Shooter(1, 0.5f, 0.0f);
+    shooter.flags = BULLET_FLAG_SPAWN_2;
+    BULLET *const bullet = M_Fire(&shooter);
+    M_Frame();
+    ANM_VM *const vm = &bullet->sprites.spawning[1];
+    vm->color = 0x80123456u;
+    vm->auto_rotate = 1;
+    vm->rotation_changed = false;
+    M_DrawFrame();
+    CHECK(vm->pos.x == 32.0f + bullet->pos.x);
+    CHECK(vm->pos.y == 16.0f + bullet->pos.y);
+    CHECK(vm->pos.z == 0.05f);
+    CHECK(vm->color == 0x80ffffffu);
+    CHECK(vm->rotation.z == Angle_AddNormalize(bullet->angle, MATH_HALF_PI));
+    CHECK(vm->rotation_changed);
+    CHECK(bullet->sprites.flying.pos.z != 0.05f);
+    bullet->state = BULLET_FADING;
+    M_DrawFrame();
+    CHECK(bullet->sprites.fading.pos.z == 0.05f);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(a_laser_draws_its_beam_and_origin_before_the_items_and_bullets)
+{
+    M_Setup("draw_laser");
+    M_StartDraw();
+    BULLET_SHOOTER shooter = M_LaserShooter();
+    shooter.aim = BULLET_AIM_FAN;
+    LASER *const laser = Bullet_SpawnLaser(&shooter);
+    M_FireStill();
+    M_Frame();
+    laser->beam.color = 0x40123456u;
+    M_DrawFrame();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 4);
+    CHECK(!M_IsItemQuad(0) && !M_IsItemQuad(1));
+    CHECK(M_IsItemQuad(2) && !M_IsItemQuad(3));
+    CHECK(fabsf(M_QuadCenterX(3) - (32.0f + 100.0f)) <= 1.0f);
+    float s;
+    float c;
+    X87_SinCos(laser->angle, &s, &c);
+    const float length =
+        (laser->end_offset - laser->start_offset) / 2.0f + laser->start_offset;
+    CHECK(laser->beam.pos.x == 32.0f + (c * length + 100.0f));
+    CHECK(laser->beam.pos.y == 16.0f + (s * length + 100.0f));
+    CHECK(laser->beam.pos.z == 0.05f);
+    const ANM_VM *const origin = &laser->origin;
+    CHECK(origin->pos.x == 32.0f + (c * laser->start_offset + 100.0f));
+    CHECK(origin->pos.y == 16.0f + (s * laser->start_offset + 100.0f));
+    CHECK(origin->pos.z == 0.05f);
+    CHECK(origin->color == 0xff123456u);
+    const float scale = 8.0f / 10.0f * ((16.0f - laser->start_offset) / 16.0f);
+    CHECK(origin->scale_x == scale && origin->scale_y == scale);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(a_laser_hides_its_origin_past_16_or_while_starting_hidden)
+{
+    M_Setup("draw_origin");
+    M_StartDraw();
+    BULLET_SHOOTER shooter = M_LaserShooter();
+    shooter.aim = BULLET_AIM_FAN;
+    LASER *const laser = Bullet_SpawnLaser(&shooter);
+    laser->hide_origin_while_starting = true;
+    M_DrawFrame();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    laser->state = LASER_FIRING;
+    M_DrawFrame();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 3);
+    laser->start_offset = 16.0f;
+    M_DrawFrame();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    laser->speed = 0.0f;
+    laser->origin.scale_x = 0.0f;
+    M_DrawFrame();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 3);
+    CHECK(laser->origin.scale_x == 8.0f / 10.0f);
+    CHECK(laser->origin.scale_y == 8.0f / 10.0f);
+    GfxRecorder_Stop();
     M_Teardown();
 }
 
