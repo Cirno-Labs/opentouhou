@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/base/result.h"
-#include "core/gfx.h"
 
 #include <stdint.h>
 
@@ -102,10 +101,6 @@ void ResultScreen_LoadTitleRecords(void);
 void PlayTime_Add(void);
 void PlayTime_Restart(void);
 void PlayTime_Stop(void);
-
-// Stands in for the copy of source of the screen, scaled to dest of the
-// texture of slot, after the frame. Returns false while a copy is pending.
-bool Anm_SetPendingCopy(int32_t slot, GFX_RECT source, GFX_RECT dest);
 
 // Stands in for th07/gui's check that the loading sprite shows.
 bool Gui_IsLoadingShown(void);

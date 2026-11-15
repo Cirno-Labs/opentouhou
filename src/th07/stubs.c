@@ -1,5 +1,6 @@
 #include "th07/stubs.h"
 
+#include "th07/anm/texture.h"
 #include "th07/game_manager.h"
 
 #include "core/base/log.h"

@@ -257,6 +257,40 @@ RESULT Anm_UpdateTexture(
     return OK;
 }
 
+RESULT Anm_CopyTextureRect(
+    const int32_t dest_slot, const GFX_RECT dest, const int32_t source_slot,
+    const GFX_RECT source)
+{
+    ASSERT(dest_slot >= 0 && dest_slot < ANM_TEXTURE_COUNT);
+    ASSERT(source_slot >= 0 && source_slot < ANM_TEXTURE_COUNT);
+    const M_TEXTURE *const from = &m_Textures[source_slot];
+    if (m_Textures[dest_slot].texture == nullptr || from->texture == nullptr) {
+        return OK;
+    }
+    FAIL_IF(
+        source.x < 0 || source.y < 0 || source.width <= 0 || source.height <= 0
+            || (int64_t)source.x + source.width > from->image.width
+            || (int64_t)source.y + source.height > from->image.height
+            || dest.width <= 0 || dest.height <= 0,
+        "Invalid ANM texture copy rectangle");
+    IMAGE pixels = Image_Create(source.width, source.height, &g_HeapAllocator);
+    for (int32_t row = 0; row < source.height; row++) {
+        memcpy(
+            pixels.pixels + (size_t)row * (size_t)source.width * 4,
+            from->image.pixels
+                + ((size_t)(source.y + row) * (size_t)from->image.width
+                   + (size_t)source.x)
+                    * 4,
+            (size_t)source.width * 4);
+    }
+    if (source.width != dest.width || source.height != dest.height) {
+        Image_Resize(&pixels, dest.width, dest.height);
+    }
+    const RESULT result = Anm_UpdateTexture(dest_slot, dest, &pixels);
+    Image_Free(&pixels);
+    return result;
+}
+
 const IMAGE *AnmTexture_GetImage(const int32_t slot)
 {
     ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
