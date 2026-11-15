@@ -2,6 +2,7 @@
 
 #include "core/base/result.h"
 #include "core/gfx.h"
+#include "core/math/vec.h"
 
 #include <stdint.h>
 
@@ -41,6 +42,39 @@ bool Gui_IsMsgSkippable(void);
 
 // Stands in for th07/gui's popup of a full cherry.
 void Gui_ShowCherryFullPopup(int32_t cherry);
+
+// Stand in for th07/gui's popups of the Border's start and of its bonus.
+void Gui_ShowBorderStartPopup(void);
+void Gui_ShowBorderBonusPopup(int32_t points);
+
+// Stand in for th07/bomb's update and draw of the shot type's bomb,
+// unfocused or focused as the bomb started. The stand-in ends the bomb at
+// once.
+void Bomb_Update(void);
+void Bomb_Draw(void);
+
+// Stand in for th07/item's spawn of an item of type in state at pos, its
+// collection of every item, and its drop of the items that the player
+// pulls in.
+void Item_Spawn(VEC3 pos, int32_t type, int32_t state);
+void Item_CollectAll(void);
+void Item_DropPulled(void);
+
+// Stands in for th07/bullet's clearing of every enemy bullet.
+void Bullet_ClearAll(void);
+
+// Stands in for the spell card state of th07/enemy that the player moves.
+typedef struct {
+    struct {
+        bool active;
+        bool capturable;
+        bool bombed;
+        int32_t bonus;
+        int32_t graze_bonus;
+    } spell_card;
+} ENEMIES;
+
+extern ENEMIES g_Enemies;
 
 // Stands in for th07/enemy's check that a boss fights.
 bool Enemy_IsBossActive(void);

@@ -22,17 +22,6 @@ RESULT Ending_Register(void)
     return OK;
 }
 
-RESULT Player_Register(void)
-{
-    LOG_INFO("Player_Register is not ported");
-    return OK;
-}
-
-void Player_Remove(void)
-{
-    LOG_INFO("Player_Remove is not ported");
-}
-
 RESULT Bullet_Register(void)
 {
     LOG_INFO("Bullet_Register is not ported");
@@ -77,11 +66,6 @@ void Ecl_Release(void)
     LOG_INFO("Ecl_Release is not ported");
 }
 
-void Player_StartBorder(void)
-{
-    LOG_INFO("Player_StartBorder is not ported");
-}
-
 bool Gui_IsMsgRunning(void)
 {
     return false;
@@ -95,6 +79,46 @@ bool Gui_IsMsgSkippable(void)
 void Gui_ShowCherryFullPopup(const int32_t cherry)
 {
     LOG_INFO("Gui_ShowCherryFullPopup is not ported");
+}
+
+void Gui_ShowBorderStartPopup(void)
+{
+    LOG_INFO("Gui_ShowBorderStartPopup is not ported");
+}
+
+void Gui_ShowBorderBonusPopup(const int32_t points)
+{
+    LOG_INFO("Gui_ShowBorderBonusPopup is not ported");
+}
+
+void Bomb_Update(void)
+{
+    LOG_INFO("Bomb_Update is not ported");
+    g_Player.bomb.running = false;
+    g_Player.state.bomb_started = false;
+}
+
+void Bomb_Draw(void)
+{
+}
+
+void Item_Spawn(const VEC3 pos, const int32_t type, const int32_t state)
+{
+    LOG_INFO("Item_Spawn is not ported");
+}
+
+void Item_CollectAll(void)
+{
+    LOG_INFO("Item_CollectAll is not ported");
+}
+
+void Item_DropPulled(void)
+{
+    LOG_INFO("Item_DropPulled is not ported");
+}
+
+void Bullet_ClearAll(void)
+{
 }
 
 bool Enemy_IsBossActive(void)
@@ -113,7 +137,7 @@ RESULT ResultScreen_LoadGameRecords(void)
     return OK;
 }
 
-PLAYER g_Player;
+ENEMIES g_Enemies;
 GUI g_Gui;
 uint8_t g_EffectsQuality = 2;
 
