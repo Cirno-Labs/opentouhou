@@ -1,5 +1,10 @@
 # th06 changelog
 
+## Unreleased
+
+- Fixed the message about missing game data on macOS when macOS starts
+  a temporary copy of the program: it now tells how to stop that.
+
 ## 1.0.0 (2026-11-13)
 
 - Added th06, compatible with the original down to its replays: the 17

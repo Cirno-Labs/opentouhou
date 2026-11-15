@@ -70,17 +70,37 @@ void Fatal_ShowStartupError(const char *const text)
 
 void Fatal_FormatMissingData(
     char *const out, const size_t size, const char *const file,
-    const char *const data_dir, const char *const log_path)
+    const char *const data_dir, const char *const program_name,
+    const char *const log_path)
 {
-    snprintf(
-        out, size,
-        "Cannot find the game data file %s.\n"
-        "\n"
-        "Searched folder: %s\n"
-        "\n"
-        "Put the program into the folder of the original game, or start "
-        "it with --data <folder>.",
-        file, data_dir);
+    // macOS starts a downloaded bundle from a random read-only copy under
+    // this folder until its quarantine attribute is removed.
+    if (strstr(data_dir, "/AppTranslocation/") != nullptr) {
+        snprintf(
+            out, size,
+            "Cannot find the game data file %s.\n"
+            "\n"
+            "Searched folder: %s\n"
+            "\n"
+            "macOS started a temporary copy of the program, because the "
+            "program came from the internet. In Terminal, go to the folder "
+            "of the original game and type:\n"
+            "\n"
+            "xattr -dr com.apple.quarantine %s.app\n"
+            "\n"
+            "Then start the program again.",
+            file, data_dir, program_name);
+    } else {
+        snprintf(
+            out, size,
+            "Cannot find the game data file %s.\n"
+            "\n"
+            "Searched folder: %s\n"
+            "\n"
+            "Put the program into the folder of the original game, or "
+            "start it with --data <folder>.",
+            file, data_dir);
+    }
     M_AddLogPath(out, size, log_path);
 }
 

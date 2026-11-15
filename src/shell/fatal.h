@@ -32,10 +32,12 @@ void Fatal_ShowStartupError(const char *text);
 // bytes. When log_path is not nullptr, the text ends with a line that
 // names the log file.
 
-// Writes the text for a game data file that the data folder lacks.
+// Writes the text for a game data file that the data folder lacks. When
+// macOS translocated the bundle, the text tells how to stop it for the
+// bundle <program_name>.app.
 void Fatal_FormatMissingData(
     char *out, size_t size, const char *file, const char *data_dir,
-    const char *log_path);
+    const char *program_name, const char *log_path);
 
 // Writes the text for a failed start with the failure's message.
 void Fatal_FormatStartupError(
