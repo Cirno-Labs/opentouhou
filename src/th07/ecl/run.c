@@ -485,6 +485,20 @@ static float *M_FloatVar(
     return M_ResolveFloat(enemy, &instr->args[n].f, instr->param_mask, n);
 }
 
+static void M_SetInt(
+    ENEMY *const enemy, ECL_INSTR *const instr, const int32_t n,
+    const int32_t value)
+{
+    M_Store(M_IntVar(enemy, instr, n), value);
+}
+
+static void M_SetFloat(
+    ENEMY *const enemy, ECL_INSTR *const instr, const int32_t n,
+    const float value)
+{
+    *M_FloatVar(enemy, instr, n) = value;
+}
+
 static int16_t M_ArgShort(const ECL_INSTR *const instr, const int32_t index)
 {
     const uint32_t word = (uint32_t)instr->args[index / 2].i;
@@ -1070,55 +1084,56 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
     // order of the decompilation.
     switch (instr->opcode) {
     case 4:
-        M_Store(M_IntVar(enemy, instr, 0), M_IntArg(enemy, instr, 1));
+        M_SetInt(enemy, instr, 0, M_IntArg(enemy, instr, 1));
         break;
     case 5:
-        *M_FloatVar(enemy, instr, 0) = M_FloatArg(enemy, instr, 1);
+        M_SetFloat(enemy, instr, 0, M_FloatArg(enemy, instr, 1));
         break;
     case 40:
-        *M_FloatVar(enemy, instr, 0) =
-            Angle_AddNormalize(M_FloatArg(enemy, instr, 0), 0.0f);
+        M_SetFloat(
+            enemy, instr, 0,
+            Angle_AddNormalize(M_FloatArg(enemy, instr, 0), 0.0f));
         break;
     case 6: {
         const uint32_t range = (uint32_t)M_IntArg(enemy, instr, 1);
-        M_Store(
-            M_IntVar(enemy, instr, 0), (int32_t)Rng_U32InRange(&g_Rng, range));
+        M_SetInt(enemy, instr, 0, (int32_t)Rng_U32InRange(&g_Rng, range));
         break;
     }
     case 7: {
         const uint32_t range = (uint32_t)M_IntArg(enemy, instr, 1);
         const int32_t value = (int32_t)Rng_U32InRange(&g_Rng, range);
-        M_Store(
-            M_IntVar(enemy, instr, 0),
+        M_SetInt(
+            enemy, instr, 0,
             M_Wrap((int64_t)value + M_IntArg(enemy, instr, 2)));
         break;
     }
     case 8:
-        *M_FloatVar(enemy, instr, 0) =
-            Rng_F32InRange(&g_Rng, M_FloatArg(enemy, instr, 1));
+        M_SetFloat(
+            enemy, instr, 0,
+            Rng_F32InRange(&g_Rng, M_FloatArg(enemy, instr, 1)));
         break;
     case 9: {
         const float value = Rng_F32InRange(&g_Rng, M_FloatArg(enemy, instr, 1));
-        *M_FloatVar(enemy, instr, 0) = value + M_FloatArg(enemy, instr, 2);
+        M_SetFloat(enemy, instr, 0, value + M_FloatArg(enemy, instr, 2));
         break;
     }
     case 10: {
         const int32_t sign = (Rng_U16(&g_Rng) & 1) != 0 ? 1 : -1;
-        M_Store(
-            M_IntVar(enemy, instr, 0),
-            M_Wrap((int64_t)sign * M_IntArg(enemy, instr, 1)));
+        M_SetInt(
+            enemy, instr, 0, M_Wrap((int64_t)sign * M_IntArg(enemy, instr, 1)));
         break;
     }
     case 11: {
         const float sign = (Rng_U16(&g_Rng) & 1) != 0 ? 1.0f : -1.0f;
-        *M_FloatVar(enemy, instr, 0) = sign * M_FloatArg(enemy, instr, 1);
+        M_SetFloat(enemy, instr, 0, sign * M_FloatArg(enemy, instr, 1));
         break;
     }
     case 17:
     case 18: {
-        const M_INT_REF ref = M_IntVar(enemy, instr, 0);
-        M_Store(
-            ref, M_Wrap((int64_t)M_Load(ref) + (instr->opcode == 17 ? 1 : -1)));
+        const int32_t value = M_Load(M_IntVar(enemy, instr, 0));
+        M_SetInt(
+            enemy, instr, 0,
+            M_Wrap((int64_t)value + (instr->opcode == 17 ? 1 : -1)));
         break;
     }
     case 43: {
@@ -1128,7 +1143,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
             ASSERT(boss != nullptr);
             value = M_GetInt(boss, instr->args[1].i);
         }
-        M_Store(M_IntVar(enemy, instr, 0), value);
+        M_SetInt(enemy, instr, 0, value);
         break;
     }
     case 44: {
@@ -1138,7 +1153,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
             ASSERT(boss != nullptr);
             value = M_GetFloat(boss, instr->args[1].f);
         }
-        *M_FloatVar(enemy, instr, 0) = value;
+        M_SetFloat(enemy, instr, 0, value);
         break;
     }
     case 12:
@@ -1163,7 +1178,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
             value = M_Divide(a, b, instr->opcode == 16);
             break;
         }
-        M_Store(M_IntVar(enemy, instr, 0), value);
+        M_SetInt(enemy, instr, 0, value);
         break;
     }
     case 19:
@@ -1191,21 +1206,21 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
             value = Math_Fmod(a, b);
             break;
         }
-        *M_FloatVar(enemy, instr, 0) = value;
+        M_SetFloat(enemy, instr, 0, value);
         break;
     }
     case 24:
-        *M_FloatVar(enemy, instr, 0) = X87_Sin(M_FloatArg(enemy, instr, 1));
+        M_SetFloat(enemy, instr, 0, X87_Sin(M_FloatArg(enemy, instr, 1)));
         break;
     case 25:
-        *M_FloatVar(enemy, instr, 0) = X87_Cos(M_FloatArg(enemy, instr, 1));
+        M_SetFloat(enemy, instr, 0, X87_Cos(M_FloatArg(enemy, instr, 1)));
         break;
     case 26: {
         const float y =
             M_FloatArg(enemy, instr, 4) - M_FloatArg(enemy, instr, 2);
         const float x =
             M_FloatArg(enemy, instr, 3) - M_FloatArg(enemy, instr, 1);
-        *M_FloatVar(enemy, instr, 0) = X87_Atan2(y, x);
+        M_SetFloat(enemy, instr, 0, X87_Atan2(y, x));
         break;
     }
     case 159: {
@@ -1213,7 +1228,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
             M_FloatArg(enemy, instr, 1) - M_FloatArg(enemy, instr, 2);
         const float value =
             scale * M_FloatArg(enemy, instr, 3) + M_FloatArg(enemy, instr, 2);
-        *M_FloatVar(enemy, instr, 0) = value;
+        M_SetFloat(enemy, instr, 0, value);
         break;
     }
     case 51: {
@@ -1221,11 +1236,11 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         const float range = high - M_FloatArg(enemy, instr, 1);
         const float value =
             Rng_F32InRange(&g_Rng, range) + M_FloatArg(enemy, instr, 1);
-        *M_FloatVar(enemy, instr, 0) = value;
+        M_SetFloat(enemy, instr, 0, value);
         break;
     }
     case 52:
-        *M_FloatVar(enemy, instr, 0) = M_RandomAngleInBounds(enemy);
+        M_SetFloat(enemy, instr, 0, M_RandomAngleInBounds(enemy));
         break;
     case 27:
         M_SetInterp(enemy, instr);
@@ -1233,10 +1248,10 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
     case 151: {
         const float y =
             X87_Sin(M_FloatArg(enemy, instr, 2)) * M_FloatArg(enemy, instr, 3);
-        *M_ResolveFloat(enemy, &instr->args[1].f, instr->param_mask, 1) = y;
+        M_SetFloat(enemy, instr, 1, y);
         const float x =
             X87_Cos(M_FloatArg(enemy, instr, 2)) * M_FloatArg(enemy, instr, 3);
-        *M_FloatVar(enemy, instr, 0) = x;
+        M_SetFloat(enemy, instr, 0, x);
         break;
     }
     case 155: {
@@ -1248,7 +1263,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         } else {
             angle = Rng_F32InRange(&g_Rng, M_HALF_PI) - M_QUARTER_PI;
         }
-        *M_FloatVar(enemy, instr, 0) = angle;
+        M_SetFloat(enemy, instr, 0, angle);
         break;
     }
     default:
@@ -1830,8 +1845,8 @@ static M_STEP M_Step(
         return M_STEP_NEXT;
     case 3: {
         // The count of a constant operand lives in the instruction.
-        const M_INT_REF count = M_IntVar(enemy, instr, 2);
-        M_Store(count, M_Wrap((int64_t)M_Load(count) - 1));
+        const int32_t count = M_Load(M_IntVar(enemy, instr, 2));
+        M_SetInt(enemy, instr, 2, M_Wrap((int64_t)count - 1));
         if (M_IntArg(enemy, instr, 2) <= 0) {
             return M_STEP_NEXT;
         }
