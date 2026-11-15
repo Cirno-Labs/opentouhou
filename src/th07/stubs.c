@@ -118,6 +118,18 @@ void ResultScreen_AddSpellCardCapture(const int32_t index, const int32_t bonus)
     }
 }
 
+void ResultScreen_GetSpellCardRecord(
+    const int32_t index, int32_t *const captures, int32_t *const attempts)
+{
+    *captures = 0;
+    *attempts = 0;
+}
+
+void Replay_ResaveIfScoreChanged(void)
+{
+    LOG_INFO("Replay_ResaveIfScoreChanged is not ported");
+}
+
 RESULT ResultScreen_LoadGameRecords(void)
 {
     LOG_INFO("ResultScreen_LoadGameRecords is not ported");
