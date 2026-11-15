@@ -133,14 +133,13 @@ void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
 
 static void M_SetUp(const char *const case_name)
 {
-    Th07PlaySetup_SetUp(case_name, M_SEED);
+    PlaySetup_SetUp(case_name, M_SEED);
     // Stands in for the sprites that the slow down and the patterns pick,
     // which lie past the test sprites.
+    Anm_SetSpriteEntry(M_SLOW_SPRITE, Anm_GetSpriteEntry(PLAY_SETUP_SPRITE_16));
     Anm_SetSpriteEntry(
-        M_SLOW_SPRITE, Anm_GetSpriteEntry(TH07_PLAY_SETUP_SPRITE_16));
-    Anm_SetSpriteEntry(
-        M_SLOW_SPRITE - 4, Anm_GetSpriteEntry(TH07_PLAY_SETUP_SPRITE_16 + 1));
-    m_TallSprite = *Anm_GetSpriteEntry(TH07_PLAY_SETUP_SPRITE_64);
+        M_SLOW_SPRITE - 4, Anm_GetSpriteEntry(PLAY_SETUP_SPRITE_16 + 1));
+    m_TallSprite = *Anm_GetSpriteEntry(PLAY_SETUP_SPRITE_64);
     m_TallSprite.height = 61.0f;
     m_EdgeSprite = m_TallSprite;
     m_EdgeSprite.height = 60.0f;
@@ -157,7 +156,7 @@ static void M_SetUp(const char *const case_name)
 
 static void M_TearDown(void)
 {
-    Th07PlaySetup_TearDown();
+    PlaySetup_TearDown();
 }
 
 static void M_Run(const ECL_FUNC func, const int32_t arg)

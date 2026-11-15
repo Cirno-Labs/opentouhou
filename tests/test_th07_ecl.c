@@ -142,7 +142,7 @@ void ScreenEffect_Flash(
 
 static void M_SetUp(const char *const case_name)
 {
-    m_Directory = Th07PlaySetup_SetUp(case_name, M_SEED);
+    m_Directory = PlaySetup_SetUp(case_name, M_SEED);
     m_ItemCount = 0;
     memset(&m_Spell, 0, sizeof(m_Spell));
     EclBuilder_Init(&m_Builder);
@@ -151,7 +151,7 @@ static void M_SetUp(const char *const case_name)
 static void M_TearDown(void)
 {
     Ecl_Release();
-    Th07PlaySetup_TearDown();
+    PlaySetup_TearDown();
 }
 
 // Writes size bytes of m_File as the stage's script file and loads it.
