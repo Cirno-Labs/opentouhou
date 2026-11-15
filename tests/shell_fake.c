@@ -16,7 +16,7 @@ static void M_Record(
 
 void FakeShell_Reset(void)
 {
-    g_FakeShell = (FAKE_SHELL) {};
+    memset(&g_FakeShell, 0, sizeof(g_FakeShell));
 }
 
 void FakeShell_SetDeviceInput(
