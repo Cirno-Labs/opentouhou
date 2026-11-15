@@ -1,6 +1,7 @@
 #include "th07/scene.h"
 
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/screens/main.h"
 #include "th07/settings.h"
 #include "th07/stubs.h"
@@ -77,7 +78,8 @@ static CHAIN_STATUS M_FromGameplay(void)
         GameManager_Remove();
         return M_DiscardToTitle(1);
     case SCENE_ENDING:
-        g_GameManager.play_counts[g_GameManager.run.difficulty].clears++;
+        g_GameManager.records.play_counts[g_GameManager.run.difficulty]
+            .clears++;
         GameManager_Remove();
         return M_Status(Ending_Register());
     default:

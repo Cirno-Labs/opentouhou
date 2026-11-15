@@ -1,11 +1,11 @@
 #include "th07_scene_stubs.h"
 
+#include "th07/game_manager.h"
 #include "th07/scene.h"
 #include "th07/screens/main.h"
 #include "th07/stage.h"
 #include "th07/stubs.h"
 
-GAME_MANAGER g_GameManager;
 PLAYER g_Player;
 GUI g_Gui;
 uint8_t g_EffectsQuality;
@@ -74,18 +74,6 @@ void Replay_Discard(void)
 {
     g_SceneStubCalls.replay_discard++;
     g_SceneStubCalls.replay_discard_scene = Scene_GetRequested();
-}
-
-void GameManager_RerollChecksumKeys(void)
-{
-    g_SceneStubCalls.reroll_checksum_keys++;
-}
-
-void GameManager_SetBombs(const int32_t bombs)
-{
-    g_SceneStubCalls.set_bombs++;
-    g_SceneStubCalls.set_bombs_value = bombs;
-    g_SceneStubCalls.set_bombs_lives = g_GameManager.player.lives;
 }
 
 void PlayTime_Add(void)

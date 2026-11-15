@@ -16,6 +16,7 @@
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
+#include "th07/game_manager.h"
 #include "th07/stubs.h"
 
 #include "core/base/memory.h"
@@ -177,7 +178,7 @@ static void M_Setup(const char *const case_name)
     GfxRecorder_Start();
     SceneStubCalls_Reset();
     g_GameManager.mode.demo_index = 2;
-    g_GameManager.phantasm_was_open = true;
+    g_GameManager.records.phantasm_was_open = true;
     FakeShell_Reset();
     for (int32_t device = 0; device < INPUT_DEVICE_COUNT; device++) {
         FakeShell_SetDeviceInput(
@@ -485,7 +486,7 @@ TEST(the_replay_menu_starts_a_stage_with_the_playback_choice)
     M_Press(m_Shoot);
     CHECK(M_PlayRequested());
     CHECK(g_GameManager.mode.in_replay);
-    CHECK_EQ_INT(g_GameManager.mode.replay_menu_choice, 2);
+    CHECK_EQ_INT(g_GameManager.mode.replay_speed, 2);
     CHECK_EQ_INT(g_GameManager.run.stage, 3);
     CHECK_EQ_INT(g_GameManager.run.difficulty, 2);
     CHECK_EQ_INT(g_GameManager.run.character, 1);
@@ -505,7 +506,7 @@ TEST(the_replay_menu_starts_at_the_first_stage_and_skips_missing_ones)
     M_Press(m_Shoot);
     M_Press(m_Shoot);
     CHECK_EQ_INT(g_GameManager.run.stage, 2);
-    CHECK_EQ_INT(g_GameManager.mode.replay_menu_choice, 0);
+    CHECK_EQ_INT(g_GameManager.mode.replay_speed, 0);
     M_Teardown();
     M_Setup("replay_stage_up");
     M_WriteReplay("replay/th7_01.rpy", 0, 0, 1 << 3 | 1 << 6);
@@ -516,7 +517,7 @@ TEST(the_replay_menu_starts_at_the_first_stage_and_skips_missing_ones)
     M_Press(m_Up);
     M_Press(m_Shoot);
     CHECK_EQ_INT(g_GameManager.run.stage, 5);
-    CHECK_EQ_INT(g_GameManager.mode.replay_menu_choice, 2);
+    CHECK_EQ_INT(g_GameManager.mode.replay_speed, 2);
     M_Teardown();
 }
 
@@ -782,13 +783,13 @@ static void M_UnlockOnLoad(void)
 TEST(the_phantasm_splash_shows_once_for_nine_hundred_calcs)
 {
     M_Setup("splash");
-    g_GameManager.phantasm_was_open = false;
+    g_GameManager.records.phantasm_was_open = false;
     g_SceneStubCalls.on_load_title_records = M_UnlockOnLoad;
     M_Run(900);
     CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_KEEP);
     M_Tick(m_NoInput);
     CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_PLAY);
-    CHECK(g_GameManager.phantasm_was_open);
+    CHECK(g_GameManager.records.phantasm_was_open);
     M_Teardown();
     M_Setup("splash_open");
     g_SceneStubCalls.on_load_title_records = M_UnlockOnLoad;
@@ -800,7 +801,7 @@ TEST(the_phantasm_splash_shows_once_for_nine_hundred_calcs)
 TEST(a_held_key_cuts_the_splash_short_at_the_120th_calc)
 {
     M_Setup("splash_skip");
-    g_GameManager.phantasm_was_open = false;
+    g_GameManager.records.phantasm_was_open = false;
     g_SceneStubCalls.on_load_title_records = M_UnlockOnLoad;
     for (int32_t i = 0; i < 120; i++) {
         M_Tick(m_Bomb);
