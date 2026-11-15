@@ -124,7 +124,7 @@ if build_games
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
     dependencies: [sdl3, zlib, cc_libm],
-    link_with: [th06_runner_lib],
+    link_with: [th06_runner_lib, core_args_lib],
     link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
     win_subsystem: 'console',
   )
