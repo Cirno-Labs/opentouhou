@@ -13,6 +13,9 @@ typedef struct SDL_Window SDL_Window;
 RESULT Gfx_Init(SDL_Window *window, int32_t width, int32_t height);
 void Gfx_Shutdown(void);
 
+// Returns whether the renderer is started.
+bool Gfx_IsStarted(void);
+
 // Shows the last tick in the window, letterboxed, at its aspect ratio.
 // With interpolate off, scales the tick's logical-screen image. With it
 // on, draws the last tick again at window resolution, with positions
