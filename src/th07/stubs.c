@@ -34,28 +34,6 @@ void Gui_Remove(void)
     LOG_INFO("Gui_Remove is not ported");
 }
 
-RESULT Ecl_Load(void)
-{
-    LOG_INFO("Ecl_Load is not ported");
-    return OK;
-}
-
-void Ecl_Release(void)
-{
-    LOG_INFO("Ecl_Release is not ported");
-}
-
-int32_t Ecl_GetTimelineCount(void)
-{
-    return 0;
-}
-
-const ECL_TIMELINE_ENTRY *Ecl_GetTimeline(const int32_t index)
-{
-    static const ECL_TIMELINE_ENTRY end = { .time = -1 };
-    return &end;
-}
-
 void Ecl_StartSub(ECL_STATE *const state, const int16_t sub)
 {
 }
