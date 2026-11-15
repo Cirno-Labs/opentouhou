@@ -230,9 +230,9 @@ typedef struct ENEMY {
     uint8_t draw_list; // ENEMY_DRAW_LIST
     ENEMY_FLAGS flags;
 
-    // Hold the scripts, from 0x100, that the sprite turns with: to still
-    // at first, to still from left and from right, to left and to right.
-    // With left negative, the sprite never turns.
+    // Hold the scripts, counted from 0x900, that the sprite turns with: to
+    // still at first, to still from left and from right, to left and to
+    // right. With left negative, the sprite never turns.
     struct {
         int16_t still, still_from_left, still_from_right;
         int16_t left, right;
