@@ -12,6 +12,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
@@ -34,10 +35,9 @@
 #define M_MAX_BOMBS 8
 #define M_MAX_LIVES 8
 #define M_POINT_VALUE 50000
-#define M_WHITE 0xffffffffu
-#define M_YELLOW 0xffffff00u
-#define M_LEVEL_UP_COLOR 0xffffc0a0u
-#define M_CHERRY_COLOR 0xffff4040u
+#define M_YELLOW COLOR_ARGB(0xff, 0xff, 0xff, 0x00)
+#define M_LEVEL_UP_COLOR COLOR_ARGB(0xff, 0xff, 0xc0, 0xa0)
+#define M_CHERRY_COLOR COLOR_ARGB(0xff, 0xff, 0x40, 0x40)
 
 // Holds the score of a power item collected at full power, by
 // power_item_combo.
@@ -81,7 +81,7 @@ static void M_ConvertPowerItems(const int32_t except)
             if (item->velocity.y > M_RISE_SPEED) {
                 item->velocity = (VEC3) { 0.0f, M_RISE_SPEED, 0.0f };
             }
-            Effect_Spawn(EFFECT_EXPLOSION, item->pos, 1, M_WHITE);
+            Effect_Spawn(EFFECT_EXPLOSION, item->pos, 1, COLOR_WHITE);
             item->type = ITEM_CHERRY;
             Anm_StartScript(&item->vm, M_FIRST_SCRIPT + ITEM_CHERRY);
         }
@@ -121,7 +121,7 @@ static void M_AddPower(
         AsciiText_AddPopup(item->pos, -1, M_LEVEL_UP_COLOR);
         Sound_Queue(SOUND_POWER_UP);
     } else {
-        AsciiText_AddPopup(item->pos, 10, M_WHITE);
+        AsciiText_AddPopup(item->pos, 10, COLOR_WHITE);
     }
 }
 
@@ -147,7 +147,7 @@ static void M_CollectPower(
         *amount = M_AddCombo();
         GameManager_AddScore(*amount);
         AsciiText_AddPopup(
-            item->pos, *amount, *amount >= 12800 ? M_YELLOW : M_WHITE);
+            item->pos, *amount, *amount >= 12800 ? M_YELLOW : COLOR_WHITE);
     } else {
         g_GameManager.player.power_item_combo = 0;
         M_AddPower(item, slot, 1);
@@ -162,7 +162,7 @@ static void M_CollectBigPower(
 {
     if (M_Power() >= M_FULL_POWER) {
         AsciiText_AddPopup(
-            item->pos, amount, amount >= 1000 ? M_YELLOW : M_WHITE);
+            item->pos, amount, amount >= 1000 ? M_YELLOW : COLOR_WHITE);
     } else {
         M_AddPower(item, slot, 8);
     }
@@ -184,7 +184,7 @@ static uint32_t M_PointColor(const ITEM *const item)
 {
     return item->pos.y < g_Player.shot_type.item_line || item->full_value
         ? M_YELLOW
-        : M_WHITE;
+        : COLOR_WHITE;
 }
 
 static int32_t M_NextExtendItems(const int32_t extends)
@@ -266,7 +266,7 @@ static void M_CollectFullPower(const ITEM *const item, const int32_t slot)
     g_GameManager.player.power = (float)M_FULL_POWER;
     GameManager_DrawChecksumKeys();
     GameManager_AddScore(1000);
-    AsciiText_AddPopup(item->pos, 1000, M_WHITE);
+    AsciiText_AddPopup(item->pos, 1000, COLOR_WHITE);
 }
 
 static int32_t M_GrazeValue(void)
@@ -281,7 +281,7 @@ static void M_CollectStar(
     const ITEM *const item, const int32_t slot, int32_t *const amount)
 {
     *amount = g_Player.state.bomb_started ? 100 : M_GrazeValue();
-    AsciiText_AddPopup2(item->pos, *amount, M_WHITE);
+    AsciiText_AddPopup2(item->pos, *amount, COLOR_WHITE);
     GameManager_AddScore(*amount);
     if (!g_Player.bomb.running) {
         GameManager_AddCherry(20);
@@ -311,7 +311,7 @@ static void M_CollectBossStar(const ITEM *const item, int32_t *const amount)
 {
     *amount = M_GrazeValue();
     if (M_IsCherryFull()) {
-        AsciiText_AddPopup(item->pos, *amount, M_WHITE);
+        AsciiText_AddPopup(item->pos, *amount, COLOR_WHITE);
     }
     GameManager_AddScore(*amount);
     *amount = 100;
@@ -516,7 +516,7 @@ void Item_Spawn(const VEC3 pos, ITEM_TYPE type, const ITEM_STATE state)
             item->velocity = item->pos;
         }
         Anm_StartScript(&item->vm, (int32_t)type + M_FIRST_SCRIPT);
-        item->vm.color = M_WHITE;
+        item->vm.color = COLOR_WHITE;
         item->vm.z_write_off = true;
         item->full_value = false;
         item->on_screen = true;
@@ -575,7 +575,7 @@ void Item_Draw(void)
         } else if (!item->on_screen) {
             Anm_SetSprite(&item->vm, item->type + M_FIRST_SPRITE);
             item->on_screen = true;
-            item->vm.color = M_WHITE;
+            item->vm.color = COLOR_WHITE;
             item->vm.z_write_off = true;
         }
         Anm_Draw(&item->vm, &draw);

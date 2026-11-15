@@ -16,6 +16,7 @@
 #include "th07/stage.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/utils.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
@@ -66,11 +67,10 @@
 #define M_SLOT_BORDER 4
 #define M_EFFECT_DEATH ((EFFECT_TYPE)(EFFECT_PARTICLE + 2))
 #define M_EFFECT_GRAZE ((EFFECT_TYPE)(EFFECT_PARTICLE + 4))
-#define M_COLOR_WHITE 0xffffffffu
-#define M_COLOR_SHOCKWAVE 0xff4040ffu
-#define M_COLOR_GRAZE_BORDER 0xffff8080u
-#define M_COLOR_BLINK 0xff404040u
-#define M_COLOR_BORDER_BLINK 0xffff0000u
+#define M_COLOR_SHOCKWAVE COLOR_ARGB(0xff, 0x40, 0x40, 0xff)
+#define M_COLOR_GRAZE_BORDER COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
+#define M_COLOR_BLINK COLOR_ARGB(0xff, 0x40, 0x40, 0x40)
+#define M_COLOR_BORDER_BLINK COLOR_ARGB(0xff, 0xff, 0x00, 0x00)
 
 PLAYER g_Player;
 
@@ -132,7 +132,7 @@ static void M_BreakBorder(void)
     PLAYER *const player = &g_Player;
     M_EndEffect(&player->effects.border);
     EFFECT *effect = Effect_SpawnReserved(
-        EFFECT_BORDER, player->pos, M_SLOT_BORDER, M_COLOR_WHITE);
+        EFFECT_BORDER, player->pos, M_SLOT_BORDER, COLOR_WHITE);
     ANM_VM *const vm = &effect->vm;
     Timer_Set(&vm->interp_time[ANM_INTERP_SCALE], 0);
     vm->interp_length[ANM_INTERP_SCALE] = M_BORDER_FADE_FRAMES;
@@ -156,7 +156,7 @@ static void M_BreakBorder(void)
     Player_AddClearCircle(player->pos, 32.0f, 16.0f, 50, ITEM_BORDER_STAR);
     float angle = -MATH_PI;
     for (int32_t i = 0; i < M_BREAK_SPARKS; i++, angle += MATH_PI / 16.0f) {
-        effect = Effect_Spawn(EFFECT_DIVERGE, player->pos, 1, M_COLOR_WHITE);
+        effect = Effect_Spawn(EFFECT_DIVERGE, player->pos, 1, COLOR_WHITE);
         effect->axis.x = X87_Cos(angle);
         effect->axis.y = X87_Sin(angle);
     }
@@ -219,7 +219,7 @@ static void M_Graze(const VEC3 pos)
     if (border && !focused) {
         Effect_Spawn(M_EFFECT_GRAZE, mid, 3, M_COLOR_GRAZE_BORDER);
     } else {
-        Effect_Spawn(M_EFFECT_GRAZE, mid, 1, M_COLOR_WHITE);
+        Effect_Spawn(M_EFFECT_GRAZE, mid, 1, COLOR_WHITE);
     }
     GameManager_AddRank(6);
     Sound_Queue(SOUND_GRAZE);
@@ -237,7 +237,7 @@ static void M_Die(void)
     GameManager_DrawChecksumKeys();
     Effect_SpawnReserved(
         EFFECT_SHOCKWAVE, g_Player.pos, M_SLOT_SHOCKWAVE, M_COLOR_SHOCKWAVE);
-    Effect_Spawn(M_EFFECT_DEATH, g_Player.pos, 16, M_COLOR_WHITE);
+    Effect_Spawn(M_EFFECT_DEATH, g_Player.pos, 16, COLOR_WHITE);
     g_Player.state.value = PLAYER_DYING;
     Timer_Set(&g_Player.state.timer, 0);
     Sound_Queue(SOUND_PLAYER_DEATH);
@@ -268,7 +268,7 @@ static float M_SlideT(const TIMER *const timer)
 static void M_StartFocusAura(void)
 {
     g_Player.effects.focus = Effect_SpawnReserved(
-        EFFECT_PLAYER_AURA, g_Player.pos, M_SLOT_FOCUS, M_COLOR_WHITE);
+        EFFECT_PLAYER_AURA, g_Player.pos, M_SLOT_FOCUS, COLOR_WHITE);
 }
 
 static void M_EndFocusAura(void)
@@ -681,7 +681,7 @@ static void M_UpdateRespawning(void)
         player->state.value = PLAYER_INVULNERABLE;
         player->vm.scale_x = 1.0f;
         player->vm.scale_y = 1.0f;
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
         player->vm.blend_add = false;
         Timer_Set(&player->state.timer, M_INVULNERABLE_FRAMES);
         player->state.bomb_window = player->shot_type.bomb_window;
@@ -747,7 +747,7 @@ static bool M_UpdateDying(void)
 static void M_ShowBorder(void)
 {
     const int32_t frames = g_Player.state.timer.current;
-    g_Player.vm.color = frames % 4 < 2 ? M_COLOR_BORDER_BLINK : M_COLOR_WHITE;
+    g_Player.vm.color = frames % 4 < 2 ? M_COLOR_BORDER_BLINK : COLOR_WHITE;
     uint8_t shade;
     if (frames >= M_BORDER_FRAMES - M_BORDER_FADE_FRAMES) {
         shade =
@@ -773,11 +773,11 @@ static void M_UpdateInvulnerable(void)
         M_EndEffect(&player->effects.bomb_aura);
         player->state.value = PLAYER_ALIVE;
         Timer_Set(&player->state.timer, 0);
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
     } else if (player->state.timer.current % 8 < 2) {
         player->vm.color = M_COLOR_BLINK;
     } else {
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
     }
 }
 
@@ -797,7 +797,7 @@ static void M_UpdateInBorder(void)
     g_GameManager.cherry.plus = plus + g_GameManager.cherry.offset;
     Timer_SubAt(&player->state.timer, 1, g_GameSpeed);
     if (player->state.timer.current <= 0) {
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
         Player_EndBorder();
     } else {
         M_ShowBorder();
@@ -1152,7 +1152,7 @@ void Player_StartBorder(void)
     }
     M_EndEffect(&player->effects.bomb_aura);
     EFFECT *const effect = Effect_SpawnReserved(
-        EFFECT_BORDER, player->pos, M_SLOT_BORDER, M_COLOR_WHITE);
+        EFFECT_BORDER, player->pos, M_SLOT_BORDER, COLOR_WHITE);
     ANM_VM *const vm = &effect->vm;
     Timer_Set(&vm->interp_time[ANM_INTERP_SCALE], 0);
     vm->interp_length[ANM_INTERP_SCALE] = player->state.timer.current;
@@ -1181,7 +1181,7 @@ void Player_EndBorder(void)
     if (player->state.value == PLAYER_RESPAWNING) {
         player->vm.scale_x = 1.0f;
         player->vm.scale_y = 1.0f;
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
         player->vm.blend_add = false;
         player->state.bomb_window = player->shot_type.bomb_window;
     }

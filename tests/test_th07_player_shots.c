@@ -11,6 +11,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
@@ -948,7 +949,7 @@ TEST(flying_shots_draw_turned_in_the_play_area_with_their_trail)
     shot.draw = SHOT_DRAW_TRAIL;
     PLAYER_BULLET *const bullet = M_FireOne(shot);
     bullet->vm.auto_rotate = 1;
-    bullet->vm.color = 0x80ffffffu;
+    bullet->vm.color = COLOR_ARGB(0x80, 0xff, 0xff, 0xff);
     bullet->trail_length = 4;
     for (int32_t i = 0; i < PLAYER_TRAIL_COUNT; i++) {
         bullet->trail[i] = (VEC3) { 10.0f * (float)i, 20.0f, 0.3f };
@@ -971,6 +972,6 @@ TEST(flying_shots_draw_turned_in_the_play_area_with_their_trail)
         bullet->vm.rotation.z
         == Angle_AddNormalize(bullet->angle, MATH_HALF_PI));
     CHECK(bullet->vm.pos.x == 20.0f + 32.0f && bullet->vm.pos.y == 36.0f);
-    CHECK(bullet->vm.color == 0x80ffffffu);
+    CHECK(bullet->vm.color == COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     M_TearDown();
 }

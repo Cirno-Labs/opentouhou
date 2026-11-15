@@ -18,6 +18,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
@@ -638,7 +639,7 @@ TEST(a_power_item_below_full_power_adds_one_power)
     CHECK_EQ_INT(m_ClearCalls, 0);
     CHECK_EQ_INT(m_PopupCount, 1);
     CHECK_EQ_INT(m_Popups[0].value, 10);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_WHITE);
     M_Teardown();
 }
 
@@ -648,7 +649,7 @@ TEST(a_new_power_level_shows_the_level_up)
     g_GameManager.player.power = 7.5f;
     M_Collect(ITEM_POWER, 300.0f);
     CHECK_EQ_INT(m_Popups[0].value, -1);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffc0a0u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0xc0, 0xa0));
     CHECK(M_IsQueued(SOUND_POWER_UP));
     CHECK(M_IsQueued(SOUND_ITEM));
     M_Teardown();
@@ -681,7 +682,7 @@ TEST(reaching_full_power_clears_the_bullets_and_converts_the_others)
     CHECK_EQ_INT(m_EffectCount, 3);
     CHECK_EQ_INT(m_Effects[0].type, EFFECT_EXPLOSION);
     CHECK_EQ_INT(m_Effects[0].count, 1);
-    CHECK_EQ_INT(m_Effects[0].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Effects[0].color, COLOR_WHITE);
     CHECK(m_Effects[2].pos.x == 40.0f && m_Effects[2].pos.y == 300.0f);
     // The thrown item loses where it dropped; the faster ones keep their
     // speed.
@@ -738,7 +739,7 @@ TEST(the_power_item_combo_stops_at_thirty)
     M_CollectComboPower(30);
     CHECK_EQ_INT(g_GameManager.player.power_item_combo, 30);
     CHECK_EQ_INT(g_GameManager.score.value, 5120);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffff00u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     M_Teardown();
 }
 
@@ -782,7 +783,7 @@ TEST(a_big_power_item_at_full_power_shows_the_last_amount_only)
     M_Frame();
     CHECK_EQ_INT(m_PopupCount, 3);
     CHECK_EQ_INT(m_Popups[0].value, 0);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_WHITE);
     CHECK_EQ_INT(m_Popups[1].value, 400);
     CHECK_EQ_INT(m_Popups[2].value, 400);
     CHECK_EQ_INT(g_GameManager.score.value, 40);
@@ -818,7 +819,7 @@ TEST(a_point_item_scores_less_per_whole_pixel_below_the_item_line)
     CHECK(pos.y > M_ITEM_LINE + 3.0f && pos.y < M_ITEM_LINE + 4.0f);
     CHECK_EQ_INT(g_GameManager.score.value, 4970);
     CHECK_EQ_INT(m_Popups[0].value, 49700);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_WHITE);
     CHECK_EQ_INT(g_GameManager.player.point_items, 1);
     CHECK_EQ_INT(g_GameManager.player.point_items_total, 1);
     M_Teardown();
@@ -830,7 +831,7 @@ TEST(a_point_item_scores_in_full_above_the_item_line)
     const VEC3 pos = M_Collect(ITEM_POINT, M_ITEM_LINE + 2.1f);
     CHECK(pos.y < M_ITEM_LINE);
     CHECK_EQ_INT(g_GameManager.score.value, 5000);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffff00u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     M_Teardown();
 }
 
@@ -844,7 +845,7 @@ TEST(a_point_item_pulled_in_by_the_border_scores_in_full)
     m_TouchX = M_TOUCH_X;
     M_Frame();
     CHECK_EQ_INT(g_GameManager.score.value, 5000);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffff00u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     M_Teardown();
 }
 
@@ -1068,7 +1069,7 @@ TEST(a_cherry_item_adds_cherry_by_the_captures)
     CHECK_EQ_INT(g_GameManager.score.value, 0);
     CHECK_EQ_INT(m_PopupCount, 1);
     CHECK_EQ_INT(m_Popups[0].value, 1300);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffff4040u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0x40, 0x40));
     M_Teardown();
 }
 
@@ -1080,7 +1081,7 @@ TEST(a_cherry_item_scores_as_a_point_item_once_the_cherry_is_full)
     CHECK(pos.y > M_ITEM_LINE + 3.0f);
     CHECK_EQ_INT(g_GameManager.score.value, 4970);
     CHECK_EQ_INT(m_PopupCount, 1);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_WHITE);
     CHECK_EQ_INT(M_Cherry(), 0);
     CHECK_EQ_INT(M_Plus(), 1000);
     M_Teardown();
@@ -1095,12 +1096,12 @@ TEST(a_boss_star_scores_by_the_graze_and_adds_100_cherry)
     CHECK_EQ_INT(M_Cherry(), 100);
     CHECK_EQ_INT(m_PopupCount, 1);
     CHECK_EQ_INT(m_Popups[0].value, 100);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffff4040u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0x40, 0x40));
     g_GameManager.cherry.max = g_GameManager.cherry.value;
     M_Collect(ITEM_BOSS_STAR, 300.0f);
     CHECK_EQ_INT(m_PopupCount, 2);
     CHECK_EQ_INT(m_Popups[1].value, 320);
-    CHECK_EQ_INT(m_Popups[1].color, 0xffffffffu);
+    CHECK_EQ_INT(m_Popups[1].color, COLOR_WHITE);
     M_Teardown();
 }
 

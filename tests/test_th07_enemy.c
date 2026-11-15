@@ -17,6 +17,7 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
@@ -824,7 +825,7 @@ TEST(bonus_clears_start_at_2000_even_above_the_maximum)
     CHECK_EQ_INT(Enemy_ClearForBonus(0, 5), 5 + 2000);
     CHECK_EQ_INT(m_PopupCount, 3);
     CHECK_EQ_INT(m_Popups[0].value, 2000);
-    CHECK_EQ_INT(m_Popups[0].color, 0xffffff00u);
+    CHECK_EQ_INT(m_Popups[0].color, COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     CHECK_EQ_INT(m_Popups[1].value, 0);
     CHECK_EQ_INT(m_ItemCount, 3);
     CHECK_EQ_INT(m_Items[2].type, ITEM_STAR);
@@ -833,8 +834,8 @@ TEST(bonus_clears_start_at_2000_even_above_the_maximum)
     CHECK_EQ_INT(grazeable->life, 0);
     CHECK_EQ_INT(m_Starts[0], 12);
     CHECK_EQ_INT(Enemy_ClearForBonus(2050, 0), 2000 + 2030 + 2050);
-    CHECK_EQ_INT(m_Popups[4].color, 0xffffffffu);
-    CHECK_EQ_INT(m_Popups[5].color, 0xffffff00u);
+    CHECK_EQ_INT(m_Popups[4].color, COLOR_WHITE);
+    CHECK_EQ_INT(m_Popups[5].color, COLOR_ARGB(0xff, 0xff, 0xff, 0x00));
     M_TearDown();
 }
 

@@ -6,6 +6,7 @@
 #include "th07/player.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
 
@@ -156,7 +157,7 @@ static void M_DrawStrings(ASCII_TEXT *const text)
                     text->glyph.color = string->color;
                 } else {
                     Anm_SetSprite(&text->glyph, *c + 0x7c);
-                    text->glyph.color = 0xffffffffu;
+                    text->glyph.color = COLOR_WHITE;
                 }
                 Anm_DrawUnrotated(&text->glyph, &draw);
                 text->glyph.pos.x += advance;

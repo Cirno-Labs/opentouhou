@@ -11,6 +11,7 @@
 #include "test.h"
 #include "th07_scene_stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 
 #include "stg/rng.h"
@@ -117,9 +118,9 @@ TEST(pause_opens_ten_lines_and_runs_resume_at_once)
     CHECK_EQ_INT(menu->sprites[7].sprite, 0x10f);
     CHECK(!menu->sprites[8].shown);
     CHECK(!menu->sprites[9].shown);
-    CHECK_EQ_INT(menu->sprites[1].color, 0xffffffffu);
-    CHECK_EQ_INT(menu->sprites[2].color, 0x80303030u);
-    CHECK_EQ_INT(menu->sprites[3].color, 0x80303030u);
+    CHECK_EQ_INT(menu->sprites[1].color, COLOR_WHITE);
+    CHECK_EQ_INT(menu->sprites[2].color, COLOR_ARGB(0x80, 0x30, 0x30, 0x30));
+    CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0x80, 0x30, 0x30, 0x30));
     CHECK(menu->sprites[1].pos_offset.x == -4.0f);
     CHECK(menu->sprites[3].pos_offset.x == 0.0f);
     CHECK_EQ_INT(g_SceneStubCalls.pending_copies, 0);
@@ -152,10 +153,10 @@ TEST(pause_navigation_waits_four_frames_and_wraps_through_retry)
     M_Press(M_DOWN);
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 3);
-    CHECK_EQ_INT(menu->sprites[2].color, 0xffffffffu);
+    CHECK_EQ_INT(menu->sprites[2].color, COLOR_WHITE);
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 1);
-    CHECK_EQ_INT(menu->sprites[3].color, 0xffffffffu);
+    CHECK_EQ_INT(menu->sprites[3].color, COLOR_WHITE);
     CHECK(menu->sprites[3].pos_offset.y == -4.0f);
     M_Press(M_UP | M_DOWN);
     PauseMenu_UpdatePauseMenu(menu);
@@ -242,12 +243,12 @@ TEST(pause_quit_confirms_and_requests_the_title)
     M_Press(M_UP);
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 5);
-    CHECK_EQ_INT(menu->sprites[5].color, 0x80808080u);
-    CHECK_EQ_INT(menu->sprites[6].color, 0xffff8080u);
+    CHECK_EQ_INT(menu->sprites[5].color, COLOR_ARGB(0x80, 0x80, 0x80, 0x80));
+    CHECK_EQ_INT(menu->sprites[6].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     M_Press(M_SHOOT);
     PauseMenu_UpdatePauseMenu(menu);
     CHECK_EQ_INT(menu->state, 9);
-    CHECK_EQ_INT(menu->sprites[5].color, 0xffff8080u);
+    CHECK_EQ_INT(menu->sprites[5].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     CHECK(menu->sprites[5].pos_offset.x == -4.0f);
     M_Press(0);
     M_PauseFrames(menu, 20);
@@ -384,12 +385,12 @@ TEST(continue_opens_on_give_up_after_a_frame_of_continue)
     for (int32_t i = 0; i < 5; i++) {
         CHECK_EQ_INT(menu->sprites[i].int_vars[0], 1);
     }
-    CHECK_EQ_INT(menu->sprites[2].color, 0xffff8080u);
-    CHECK_EQ_INT(menu->sprites[3].color, 0x80808080u);
+    CHECK_EQ_INT(menu->sprites[2].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
+    CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0x80, 0x80, 0x80, 0x80));
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_PAUSE_MUSIC);
     CHECK_EQ_INT(g_SceneStubCalls.play_time_add, 1);
     PauseMenu_UpdateContinueMenu(menu);
-    CHECK_EQ_INT(menu->sprites[3].color, 0xffff8080u);
+    CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_PAUSE_MUSIC);
     M_Teardown();
 }

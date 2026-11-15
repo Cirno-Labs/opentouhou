@@ -9,6 +9,7 @@
 #include "th07/game_manager.h"
 #include "th07/stubs.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 
@@ -165,7 +166,7 @@ TEST(fades_record_the_original_rectangles_and_preceding_calc_alpha)
 TEST(a_flash_fades_the_play_area_from_its_alpha)
 {
     M_Setup();
-    ScreenEffect_Flash(4, 1, 0x80cfcfff);
+    ScreenEffect_Flash(4, 1, COLOR_ARGB(0x80, 0xcf, 0xcf, 0xff));
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(M_DrawnAlpha(0), 0x80);
     const GFX_VERTEX *const quad = GfxRecorder_Quad(0)->vertices;
@@ -188,7 +189,7 @@ TEST(a_flash_fades_the_play_area_from_its_alpha)
 TEST(a_flash_truncates_the_faded_part_before_subtracting)
 {
     M_Setup();
-    ScreenEffect_Flash(3, 1, 0x50ffffff);
+    ScreenEffect_Flash(3, 1, COLOR_ARGB(0x50, 0xff, 0xff, 0xff));
     Chain_RunCalc(&g_Chain);
     Chain_RunCalc(&g_Chain);
     // 80 - trunc(26.67), not trunc(80 - 26.67).
@@ -199,7 +200,7 @@ TEST(a_flash_truncates_the_faded_part_before_subtracting)
 TEST(each_flash_after_the_first_starts_a_frame_in)
 {
     M_Setup();
-    ScreenEffect_Flash(2, 3, 0x80ffffff);
+    ScreenEffect_Flash(2, 3, COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     const int expected[6] = { 128, 64, 0, 64, 0, 64 };
     for (int i = 0; i < 6; i++) {
         Chain_RunCalc(&g_Chain);
