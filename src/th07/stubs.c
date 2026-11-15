@@ -43,6 +43,8 @@ void Replay_Discard(void)
 
 PLAYER g_Player;
 GUI g_Gui;
+STAGE g_Stage;
+uint8_t g_EffectsQuality = 2;
 
 void GameManager_RerollChecksumKeys(void)
 {
