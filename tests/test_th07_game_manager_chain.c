@@ -5,6 +5,7 @@
 #include "th07/ascii.h"
 #include "th07/effect.h"
 #include "th07/game.h"
+#include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/screen_effect.h"
 #include "th07/settings.h"

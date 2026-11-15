@@ -75,22 +75,6 @@ void Ecl_Release(void)
     LOG_INFO("Ecl_Release is not ported");
 }
 
-RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
-{
-    LOG_INFO("Replay_Register is not ported");
-    return OK;
-}
-
-void Replay_EndStage(void)
-{
-    LOG_INFO("Replay_EndStage is not ported");
-}
-
-void Replay_Discard(void)
-{
-    LOG_INFO("Replay_Discard is not ported");
-}
-
 void Player_StartBorder(void)
 {
     LOG_INFO("Player_StartBorder is not ported");
