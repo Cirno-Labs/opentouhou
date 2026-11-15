@@ -362,6 +362,7 @@ TEST(pause_capture_copies_the_play_area_scaled_to_the_sprite)
 TEST(pause_retries_opening_while_a_copy_is_pending)
 {
     M_Setup();
+    GfxRecorder_Start();
     g_AsciiText.capture_background = true;
     CHECK(Anm_SetPendingCopy(4, (GFX_RECT) {}, (GFX_RECT) {}));
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
@@ -369,6 +370,18 @@ TEST(pause_retries_opening_while_a_copy_is_pending)
     CHECK_EQ_INT(menu->state, 0);
     CHECK_EQ_INT(menu->state_frames, 0);
     CHECK_EQ_INT(menu->sprites[0].int_vars[0], 0);
+    M_Teardown();
+    GfxRecorder_Stop();
+}
+
+TEST(pause_without_a_renderer_opens_with_no_copy)
+{
+    M_Setup();
+    g_AsciiText.capture_background = true;
+    PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
+    PauseMenu_UpdatePauseMenu(menu);
+    CHECK(Anm_SetPendingCopy(4, (GFX_RECT) {}, (GFX_RECT) {}));
+    CHECK_EQ_INT(menu->background.script_index, 0x724);
     M_Teardown();
 }
 

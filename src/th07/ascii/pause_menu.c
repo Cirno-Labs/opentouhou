@@ -10,6 +10,7 @@
 #include "th07/stubs.h"
 
 #include "core/base/color.h"
+#include "core/gfx.h"
 #include "core/math/x87.h"
 
 #define M_HIGHLIGHT COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
@@ -65,7 +66,8 @@ static bool M_StartBackground(ANM_VM *const background)
         dest = (GFX_RECT) { (int32_t)sprite->x0, (int32_t)sprite->y0,
                             (int32_t)sprite->height, (int32_t)sprite->width };
     }
-    if (!Anm_SetPendingCopy(4, (GFX_RECT) { 32, 16, 384, 448 }, dest)) {
+    if (Gfx_IsStarted()
+        && !Anm_SetPendingCopy(4, (GFX_RECT) { 32, 16, 384, 448 }, dest)) {
         return false;
     }
     background->pos = (VEC3) { 32.0f, 16.0f, 0.0f };
