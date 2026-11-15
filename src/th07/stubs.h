@@ -32,8 +32,6 @@ RESULT Ending_Register(void);
 
 // Stand in for the gameplay modules that th07/game_manager starts and
 // ends with each stage.
-RESULT Enemy_Register(void);
-void Enemy_Remove(void);
 RESULT Gui_Register(void);
 void Gui_Remove(void);
 
@@ -64,22 +62,6 @@ void Gui_ShowBorderBonusPopup(int32_t points);
 // and its end. The name stays in use until the next call.
 void Gui_ShowBombName(int32_t sprite, const char *name);
 void Gui_EndBombName(void);
-
-// Stands in for the spell card state of th07/enemy that the player moves.
-typedef struct {
-    struct {
-        bool active;
-        bool capturable;
-        bool bombed;
-        int32_t bonus;
-        int32_t graze_bonus;
-    } spell_card;
-} ENEMIES;
-
-extern ENEMIES g_Enemies;
-
-// Stands in for th07/enemy's check that a boss fights.
-bool Enemy_IsBossActive(void);
 
 // Stands in for the reads of score.dat that a new game makes into
 // g_GameManager: the high score and its continues, the spell cards, the

@@ -10,6 +10,7 @@
 #include "th07/ascii.h"
 #include "th07/buttons.h"
 #include "th07/effect.h"
+#include "th07/enemy.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
@@ -71,7 +72,7 @@ CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
 float g_GameSpeed;
-ENEMIES g_Enemies;
+ENEMY_MANAGER g_Enemies;
 ASCII_TEXT g_AsciiText;
 STAGE g_Stage;
 

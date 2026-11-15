@@ -2,6 +2,7 @@
 
 #include "test.h"
 
+#include "th07/enemy.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/player.h"
