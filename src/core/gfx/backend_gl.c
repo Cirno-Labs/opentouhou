@@ -669,14 +669,18 @@ static RESULT M_ReadPixels(
 {
     const M_TARGET *const target =
         pass == GFX_PASS_SCREEN ? &m_Backend.screen : &m_Backend.output;
-    FAIL_IF(!target->drawn, "Nothing is drawn to read back");
+    FAIL_IF(
+        !target->drawn && m_Backend.target != target,
+        "Nothing is drawn to read back");
     const M_GL *const gl = &m_Backend.gl;
     *out = Image_Create(target->width, target->height, allocator);
     gl->bind_framebuffer(GL_READ_FRAMEBUFFER, target->framebuffer);
     gl->read_pixels(
         0, 0, target->width, target->height, GL_RGBA, GL_UNSIGNED_BYTE,
         out->pixels);
-    gl->bind_framebuffer(GL_FRAMEBUFFER, 0);
+    gl->bind_framebuffer(
+        GL_FRAMEBUFFER,
+        m_Backend.target != nullptr ? m_Backend.target->framebuffer : 0);
     const GLenum error = gl->get_error();
     if (error != GL_NO_ERROR) {
         Image_Free(out);
