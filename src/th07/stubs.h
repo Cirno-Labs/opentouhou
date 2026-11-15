@@ -11,73 +11,9 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
-#define GUI_BOSS_SECTION_COUNT 8
-
-// Stands in for the part of th07/gui's state that th07/ascii, th07/enemy
-// and th07/ecl use.
-typedef struct {
-    int32_t frames; // counts the stage's update calls
-    // Hold the boss bar: whether it shows, the seconds left, the life and
-    // the lives left (opcode 126).
-    struct {
-        bool present;
-        int32_t seconds;
-        float health;
-        int32_t lives;
-        // Hold the bar sections that opcode 139 sets, as fractions of the
-        // bar; unused while end is 0.
-        struct {
-            float start, end;
-            int32_t color;
-        } sections[GUI_BOSS_SECTION_COUNT];
-    } boss;
-} GUI;
-
-extern GUI g_Gui;
-
 RESULT ResultScreen_Register(int32_t mode);
 RESULT MusicScreen_Register(void);
 RESULT Ending_Register(void);
-
-// Stand in for the gameplay modules that th07/game_manager starts and
-// ends with each stage.
-RESULT Gui_Register(void);
-void Gui_Remove(void);
-
-// Stand in for th07/gui's checks that a dialogue runs, and that the
-// dialogue may be skipped.
-bool Gui_IsMsgRunning(void);
-bool Gui_IsMsgSkippable(void);
-
-// Stand in for th07/gui's start of dialogue index, and its check that the
-// dialogue holds the timelines back.
-void Gui_StartMsg(int32_t index);
-bool Gui_MsgHoldsTimeline(void);
-
-// Stands in for th07/gui's popup of the bonus of a boss's clear.
-void Gui_ShowBonusPopup(int32_t bonus);
-
-// Stands in for th07/gui's popup of a full cherry.
-void Gui_ShowCherryFullPopup(int32_t cherry);
-
-// Stands in for th07/gui's popup of full power.
-void Gui_ShowFullPowerPopup(void);
-
-// Stand in for th07/gui's popups of the Border's start and of its bonus.
-void Gui_ShowBorderStartPopup(void);
-void Gui_ShowBorderBonusPopup(int32_t points);
-
-// Stand in for th07/gui's display of the bomb's name with portrait sprite,
-// and its end. The name stays in use until the next call.
-void Gui_ShowBombName(int32_t sprite, const char *name);
-void Gui_EndBombName(void);
-
-// Stand in for th07/gui's display of the spell card's name with portrait
-// sprite, its end, and the display of its bonus. The name stays in use
-// until the next call.
-void Gui_ShowSpellCardName(int32_t sprite, const char *name);
-void Gui_EndSpellCardName(void);
-void Gui_ShowSpellCardBonus(int32_t bonus);
 
 // Stand in for th07/resultscreen's records of an attempt at spell card
 // index, and of its capture with bonus, for the shot of
@@ -110,6 +46,3 @@ void Replay_ResaveIfScoreChanged(void);
 void PlayTime_Add(void);
 void PlayTime_Restart(void);
 void PlayTime_Stop(void);
-
-// Stands in for th07/gui's check that the loading sprite shows.
-bool Gui_IsLoadingShown(void);

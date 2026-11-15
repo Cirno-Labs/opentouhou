@@ -2,8 +2,8 @@
 
 #include "test.h"
 
+#include "th07/gui.h"
 #include "th07/player.h"
-#include "th07/stubs.h"
 
 #include "stg/rng.h"
 

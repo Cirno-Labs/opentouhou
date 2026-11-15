@@ -6,6 +6,7 @@
 #include "th07/effect.h"
 #include "th07/enemy.h"
 #include "th07/game.h"
+#include "th07/gui.h"
 #include "th07/player.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
