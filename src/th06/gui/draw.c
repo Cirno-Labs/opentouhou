@@ -5,6 +5,7 @@
 #include "th06/sound.h"
 #include "th06/translation.h"
 
+#include "core/base/color.h"
 #include "core/base/utils.h"
 
 #include <stdio.h>
@@ -84,7 +85,8 @@ static void M_DrawMsg(void)
         + g_GameManager.play_area.x;
     M_Gradient(
         center - 16.0f, 384.0f, center + width + 16.0f, 384.0f + height, 0.0f,
-        0xd0000000u, 0xd0000000u, 0x90000000u, 0x90000000u);
+        COLOR_ARGB(0xd0, 0x00, 0x00, 0x00), COLOR_ARGB(0xd0, 0x00, 0x00, 0x00),
+        COLOR_ARGB(0x90, 0x00, 0x00, 0x00), COLOR_ARGB(0x90, 0x00, 0x00, 0x00));
     for (int32_t i = 0; i < GUI_MSG_LINE_COUNT; i++) {
         Anm_DrawUnrotated(&g_Gui.msg.lines[i], &draw);
     }
@@ -102,29 +104,29 @@ static void M_DrawStageClear(void)
         return;
     }
     VEC3 cursor = { 74.0f, 128.0f, 0.0f };
-    AsciiText_SetColor(0xffffff40u);
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x40));
     AsciiText_AddString(
         cursor,
         g_GameManager.run.stage < 6 ? "Stage Clear\n\n" : "All Clear!\n\n");
     cursor.y += 32.0f;
-    AsciiText_SetColor(0xffffffffu);
+    AsciiText_SetColor(COLOR_WHITE);
     AsciiText_AddFormat(
         cursor, "Stage * 1000 = %5d\n", g_GameManager.run.stage * 1000);
     cursor.y += 16.0f;
-    AsciiText_SetColor(0xffe0e0ffu);
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0xe0, 0xe0, 0xff));
     AsciiText_AddFormat(
         cursor, "Power *  100 = %5d\n", g_GameManager.player.power * 100);
     cursor.y += 16.0f;
-    AsciiText_SetColor(0xffd0d0ffu);
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0xd0, 0xd0, 0xff));
     AsciiText_AddFormat(
         cursor, "Graze *   10 = %5d\n", g_GameManager.player.graze * 10);
     cursor.y += 16.0f;
-    AsciiText_SetColor(0xffff8080u);
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     AsciiText_AddFormat(
         cursor, "    * Point Item %3d\n", g_GameManager.player.point_items);
     if (g_GameManager.run.stage >= 6) {
         cursor.y += 16.0f;
-        AsciiText_SetColor(0xffffff80u);
+        AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x80));
         AsciiText_AddFormat(
             cursor, "Player    = %8d\n", g_GameManager.player.lives * 3000000);
         cursor.y += 16.0f;
@@ -137,7 +139,7 @@ static void M_DrawStageClear(void)
         "Hard Rank      * 1.2\n", "Lunatic Rank   * 1.5\n",
         "Extra Rank     * 2.0\n",
     };
-    AsciiText_SetColor(0xffff8080u);
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     if (g_GameManager.run.difficulty >= 0
         && (size_t)g_GameManager.run.difficulty < ARRAY_SIZE(ranks)) {
         AsciiText_AddString(cursor, ranks[g_GameManager.run.difficulty]);
@@ -153,7 +155,7 @@ static void M_DrawStageClear(void)
             cursor.y += 16.0f;
         }
     }
-    AsciiText_SetColor(0xffffffffu);
+    AsciiText_SetColor(COLOR_WHITE);
     AsciiText_AddFormat(cursor, "Total     = %8d", g_Gui.stage_clear.total);
 }
 
@@ -211,7 +213,7 @@ static void M_DrawBanners(void)
             pos.x = 136.0f;
             AsciiText_AddString(pos, " DEMO PLAY");
         }
-        AsciiText_SetColor(0xffffffffu);
+        AsciiText_SetColor(COLOR_WHITE);
     }
     if (g_Gui.banners.song_name.shown && !g_GameManager.mode.in_demo) {
         Anm_Draw3DRounded(&g_Gui.banners.song_name, &world);
@@ -268,8 +270,10 @@ static void M_DrawHud(void)
         Anm_DrawUnrotated(health, &draw);
         AsciiText_SetColor((g_Gui.hud.boss_bar_alpha << 24) | 0xffff80u);
         AsciiText_AddFormat((VEC3) { 80, 16, 0 }, "%d", g_Gui.boss.lives);
-        static const uint32_t colors[] = { 0x00a0d0ff, 0x00a080ff, 0x00e080c0,
-                                           0x00ff4040 };
+        static const uint32_t colors[] = { COLOR_ARGB(0x00, 0xa0, 0xd0, 0xff),
+                                           COLOR_ARGB(0x00, 0xa0, 0x80, 0xff),
+                                           COLOR_ARGB(0x00, 0xe0, 0x80, 0xc0),
+                                           COLOR_ARGB(0x00, 0xff, 0x40, 0x40) };
         const uint32_t color = colors
             [g_Gui.boss.seconds >= 20       ? 0
                  : g_Gui.boss.seconds >= 10 ? 1
@@ -283,7 +287,7 @@ static void M_DrawHud(void)
             Sound_Queue(SOUND_TIMEOUT);
         }
         AsciiText_AddFormat((VEC3) { 384, 16, 0 }, "%.2d", seconds);
-        AsciiText_SetColor(0xffffffffu);
+        AsciiText_SetColor(COLOR_WHITE);
         g_Gui.hud.boss_seconds_drawn = g_Gui.boss.seconds;
     }
     g_GameManager.camera.viewport.x = 0.0f;
@@ -327,7 +331,10 @@ static void M_DrawHud(void)
     if (g_GameManager.player.power > 0) {
         M_Gradient(
             496, 186, (float)g_GameManager.player.power + 496.0f, 202, 0.1f,
-            0xe0e0e0ffu, 0x80e0e0ffu, 0xe0e0e0ffu, 0x80e0e0ffu);
+            COLOR_ARGB(0xe0, 0xe0, 0xe0, 0xff),
+            COLOR_ARGB(0x80, 0xe0, 0xe0, 0xff),
+            COLOR_ARGB(0xe0, 0xe0, 0xe0, 0xff),
+            COLOR_ARGB(0x80, 0xe0, 0xe0, 0xff));
         if (g_GameManager.player.power >= M_MAX_POWER) {
             sprites[M_FULL_POWER_SPRITE].pos = (VEC3) { 496, 186, 0 };
             Anm_DrawUnrotated(&sprites[M_FULL_POWER_SPRITE], &draw);
@@ -351,18 +358,18 @@ static void M_DrawPopups(void)
 {
     g_AsciiText.in_arena = true;
     if (g_Gui.popups.bonus.shown) {
-        AsciiText_SetColor(0xffffff80u);
+        AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x80));
         AsciiText_AddFormat(
             g_Gui.popups.bonus.pos, "BONUS %8d", g_Gui.popups.bonus.value);
-        AsciiText_SetColor(0xffffffffu);
+        AsciiText_SetColor(COLOR_WHITE);
     }
     if (g_Gui.popups.full_power.shown) {
-        AsciiText_SetColor(0xffc0b0ffu);
+        AsciiText_SetColor(COLOR_ARGB(0xff, 0xc0, 0xb0, 0xff));
         AsciiText_AddString(g_Gui.popups.full_power.pos, "Full Power Mode!!");
-        AsciiText_SetColor(0xffffffffu);
+        AsciiText_SetColor(COLOR_WHITE);
     }
     if (g_Gui.popups.spell_bonus.shown) {
-        AsciiText_SetColor(0xffff0000u);
+        AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0x00, 0x00));
         GUI_POPUP *const popup = &g_Gui.popups.spell_bonus;
         popup->pos.x =
             (384.0f - (float)strlen("Spell Card Bonus!") * 16.0f) / 2.0f
@@ -373,13 +380,13 @@ static void M_DrawPopups(void)
         snprintf(buffer, sizeof(buffer), "+%d", g_Gui.popups.spell_bonus.value);
         g_AsciiText.scale_x = 2.0f;
         g_AsciiText.scale_y = 2.0f;
-        AsciiText_SetColor(0xffff8080u);
+        AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
         popup->pos.x = (384.0f - (float)strlen(buffer) * 32.0f) / 2.0f + 32.0f;
         popup->pos.y += 16.0f;
         AsciiText_AddString(popup->pos, buffer);
         g_AsciiText.scale_x = 1.0f;
         g_AsciiText.scale_y = 1.0f;
-        AsciiText_SetColor(0xffffffffu);
+        AsciiText_SetColor(COLOR_WHITE);
     }
     g_AsciiText.in_arena = false;
 }

@@ -11,6 +11,7 @@
 #include "th06/sound.h"
 #include "th06/strings.h"
 
+#include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
 
@@ -34,8 +35,7 @@
 #define M_BEAM_FIRST_SCRIPT 0x408
 #define M_BEAM_SPEED_SCALE 0.3f
 #define M_SHAKE_WARMUP_FRAMES 60
-#define M_COLOR_WHITE 0xffffffffu
-#define M_COLOR_SHOCKWAVE 0xff4040ffu
+#define M_COLOR_SHOCKWAVE COLOR_ARGB(0xff, 0x40, 0x40, 0xff)
 
 // Holds the widths and heights of the pillars of Reimu B.
 static const VEC2 m_PillarSizes[M_PILLAR_COUNT] = {
@@ -100,8 +100,7 @@ static void M_BurstOrb(const int32_t i)
 {
     PLAYER_BOMB_PART *const orb = &g_Player.bomb.parts[i];
     PLAYER_BOMB_HIT *const hit = &g_Player.bomb.hits[i];
-    Effect_Spawn(
-        (EFFECT_TYPE)(EFFECT_PARTICLE + 2), orb->pos, 8, M_COLOR_WHITE);
+    Effect_Spawn((EFFECT_TYPE)(EFFECT_PARTICLE + 2), orb->pos, 8, COLOR_WHITE);
     Effect_Spawn(EFFECT_SHOCKWAVE, orb->pos, 1, M_COLOR_SHOCKWAVE);
     orb->state = 2;
     for (int32_t k = 0; k < M_ORB_SPRITES; k++) {

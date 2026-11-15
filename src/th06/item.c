@@ -9,6 +9,7 @@
 #include "th06/player.h"
 #include "th06/sound.h"
 
+#include "core/base/color.h"
 #include "core/base/utils.h"
 #include "core/math/x87.h"
 
@@ -93,7 +94,8 @@ static void M_AddPower(const VEC3 pos, const int32_t amount)
     }
     AsciiText_AddPopup(
         pos, level != previous_level ? -1 : 10,
-        level != previous_level ? 0xff80c0ffu : 0xffffffffu);
+        level != previous_level ? COLOR_ARGB(0xff, 0x80, 0xc0, 0xff)
+                                : COLOR_WHITE);
     if (level != previous_level) {
         Sound_Queue(SOUND_POWER_UP);
     }
@@ -105,7 +107,8 @@ static void M_CollectPower(const VEC3 pos)
         const int32_t amount = M_AddCombo(1);
         g_GameManager.score.value += (uint32_t)amount;
         AsciiText_AddPopup(
-            pos, amount, amount >= 12800 ? 0xffffff00u : 0xffffffffu);
+            pos, amount,
+            amount >= 12800 ? COLOR_ARGB(0xff, 0xff, 0xff, 0x00) : COLOR_WHITE);
     } else {
         g_GameManager.player.power_item_combo = 0;
         M_AddPower(pos, 1);
@@ -121,7 +124,8 @@ static void M_CollectBigPower(const VEC3 pos)
         const int32_t amount = M_AddCombo(8);
         g_GameManager.score.value += (uint32_t)amount;
         AsciiText_AddPopup(
-            pos, amount, amount >= 12800 ? 0xffffff00u : 0xffffffffu);
+            pos, amount,
+            amount >= 12800 ? COLOR_ARGB(0xff, 0xff, 0xff, 0x00) : COLOR_WHITE);
     } else {
         M_AddPower(pos, 8);
     }
@@ -139,7 +143,9 @@ static void M_CollectPoint(const VEC3 pos)
             ? value->high
             : value->base - (y - M_COLLECT_LINE) * value->step;
         AsciiText_AddPopup(
-            pos, amount, amount >= value->high ? 0xffffff00u : 0xffffffffu);
+            pos, amount,
+            amount >= value->high ? COLOR_ARGB(0xff, 0xff, 0xff, 0x00)
+                                  : COLOR_WHITE);
         g_GameManager.score.value += (uint32_t)amount;
     }
     g_GameManager.player.point_items++;
@@ -177,18 +183,19 @@ static void M_Collect(const ITEM *const item)
             Bullet_ClearAllToItems();
             Gui_ShowFullPowerPopup();
             Sound_Queue(SOUND_POWER_UP);
-            AsciiText_AddPopup(item->pos, -1, 0xff80c0ffu);
+            AsciiText_AddPopup(
+                item->pos, -1, COLOR_ARGB(0xff, 0x80, 0xc0, 0xff));
         }
         g_GameManager.player.power = M_FULL_POWER;
         g_GameManager.score.value += 1000;
-        AsciiText_AddPopup(item->pos, 1000, 0xffffffffu);
+        AsciiText_AddPopup(item->pos, 1000, COLOR_WHITE);
         break;
     case ITEM_STAR: {
         const int32_t amount = g_Player.bomb.running
             ? 100
             : g_GameManager.player.graze / 3 * 10 + 500;
         g_GameManager.score.value += (uint32_t)amount;
-        AsciiText_AddPopup2(item->pos, amount, 0xffffffffu);
+        AsciiText_AddPopup2(item->pos, amount, COLOR_WHITE);
     } break;
     default:
         break;
@@ -319,7 +326,7 @@ void Item_Spawn(const VEC3 pos, const ITEM_TYPE type, const ITEM_STATE state)
             item->velocity = item->pos;
         }
         Anm_StartScript(&item->vm, (int32_t)type + M_FIRST_SCRIPT);
-        item->vm.color = 0xffffffffu;
+        item->vm.color = COLOR_WHITE;
         item->on_screen = true;
         return;
     }
@@ -362,7 +369,7 @@ void Item_Draw(void)
         } else if (!item->on_screen) {
             Anm_SetSprite(&item->vm, item->type + 0x200);
             item->on_screen = true;
-            item->vm.color = 0xffffffffu;
+            item->vm.color = COLOR_WHITE;
         }
         Anm_DrawUnrotated(&item->vm, &draw);
     }

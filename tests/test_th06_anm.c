@@ -11,6 +11,7 @@
 #include "test_dir.h"
 #include "th06_data.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/io/writer.h"
@@ -682,7 +683,7 @@ TEST(draw_variants_copy_geometry_and_preserve_vm_state)
     vm.uv_scale_x = 32.0f / 256.0f;
     vm.uv_scale_y = 16.0f / 128.0f;
     vm.uv_scroll_x = 0.125f;
-    vm.color = 0x80402010;
+    vm.color = COLOR_ARGB(0x80, 0x40, 0x20, 0x10);
     vm.blend_add = true;
     vm.color_op = true;
     GfxRecorder_Start();

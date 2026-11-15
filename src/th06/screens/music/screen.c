@@ -9,6 +9,7 @@
 #include "th06/sound.h"
 #include "th06/translation.h"
 
+#include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 
@@ -167,7 +168,9 @@ static CHAIN_STATUS M_Draw(void *const arg)
             continue;
         }
         ANM_VM *const title = &screen->titles[i];
-        const uint32_t color = screen->cursor != i ? 0xe0808080 : 0xffffffff;
+        const uint32_t color = screen->cursor != i
+            ? COLOR_ARGB(0xe0, 0x80, 0x80, 0x80)
+            : COLOR_WHITE;
         title->color = color;
         AsciiText_SetColor(color);
         title->pos = (VEC3) {
@@ -187,7 +190,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
     for (int32_t i = 0; i < M_COMMENT_SPRITES; i++) {
         M_DrawSprite(&screen->comment[i], M_COMMENT_PARTS + (uint32_t)i);
     }
-    AsciiText_SetColor(0xffffffff);
+    AsciiText_SetColor(COLOR_WHITE);
     return CHAIN_CONTINUE;
 }
 
