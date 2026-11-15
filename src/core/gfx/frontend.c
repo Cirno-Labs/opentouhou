@@ -424,13 +424,13 @@ RESULT GfxFrontend_Start(
     FAIL_IF(m_Frontend.started, "The renderer is already started");
     FAIL_IF(width <= 0 || height <= 0, "Invalid logical screen size");
     MUST(backend->init(window, width, height));
-    m_Frontend = (M_FRONTEND) {
-        .backend = backend,
-        .started = true,
-        .width = width,
-        .height = height,
-        .textures = m_Frontend.textures,
-    };
+    GFX_TEXTURE *const textures = m_Frontend.textures;
+    memset(&m_Frontend, 0, sizeof(m_Frontend));
+    m_Frontend.backend = backend;
+    m_Frontend.started = true;
+    m_Frontend.width = width;
+    m_Frontend.height = height;
+    m_Frontend.textures = textures;
     M_InitTick(&m_Frontend.ticks[0]);
     M_InitTick(&m_Frontend.ticks[1]);
     Array_Init(&m_Frontend.pass_views, &g_HeapAllocator);
@@ -456,7 +456,9 @@ void GfxFrontend_Stop(void)
     Array_Free(&m_Frontend.pass_views);
     Array_Free(&m_Frontend.blended);
     m_Frontend.backend->shutdown();
-    m_Frontend = (M_FRONTEND) { .textures = m_Frontend.textures };
+    GFX_TEXTURE *const textures = m_Frontend.textures;
+    memset(&m_Frontend, 0, sizeof(m_Frontend));
+    m_Frontend.textures = textures;
 }
 
 uint64_t GfxFrontend_GetQuadId(const int32_t index)
