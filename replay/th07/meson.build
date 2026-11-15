@@ -1,8 +1,8 @@
 # The th07 capture tracer: a DLL injected into the original, 32-bit
 # th07.exe under Wine, to record replay test cases. It is its own Meson
 # project, cross-built for i686-w64-mingw32 (see
-# tools/docker/win/meson_cross_i686.txt), and links core/base and
-# core/io statically from ../../src.
+# tools/docker/win/meson_cross_i686.txt), and links core/base, core/args
+# and core/io statically from ../../src.
 
 project(
   'opentouhou-capture-th07',
@@ -57,6 +57,13 @@ core_base_lib = static_library(
   implicit_include_directories: false,
 )
 
+core_args_lib = static_library(
+  'core_args',
+  src_root / 'core/args.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
 core_hash_lib = static_library(
   'core_hash',
   src_root / 'core/hash/sha1.c',
@@ -100,6 +107,6 @@ executable(
   '../core/workdir.c',
   c_args: core_include,
   implicit_include_directories: false,
-  link_with: [core_base_lib, core_hash_lib, core_io_lib],
+  link_with: [core_args_lib, core_base_lib, core_hash_lib, core_io_lib],
   dependencies: [sdl3, zlib],
 )
