@@ -128,8 +128,8 @@ static void M_AddScript(
     const int16_t end)
 {
     const int32_t index =
-        AnmBuilder_BeginScript(anm, script - TH07_PLAY_SETUP_SPRITE_8);
-    const uint32_t arg = (uint32_t)(sprite - TH07_PLAY_SETUP_SPRITE_8);
+        AnmBuilder_BeginScript(anm, script - PLAY_SETUP_SPRITE_8);
+    const uint32_t arg = (uint32_t)(sprite - PLAY_SETUP_SPRITE_8);
     AnmBuilder_Instr(anm, index, M_SPRITE_OP, 0, 0, &arg, 1);
     AnmBuilder_Instr(anm, index, M_DELETE_OP, end, 0, nullptr, 0);
     AnmBuilder_End(anm, index);
@@ -147,24 +147,24 @@ static void M_WriteEtama(void)
         AnmBuilder_AddSprite(anm, 32 + i, 0.0f, 0.0f, 32.0f, 32.0f);
         AnmBuilder_AddSprite(anm, 48 + i, 0.0f, 0.0f, 64.0f, 64.0f);
     }
-    M_AddScript(anm, 512, TH07_PLAY_SETUP_SPRITE_8, 1000);
+    M_AddScript(anm, 512, PLAY_SETUP_SPRITE_8, 1000);
     for (int32_t i = 513; i <= 518; i++) {
-        M_AddScript(anm, i, TH07_PLAY_SETUP_SPRITE_16, 1000);
+        M_AddScript(anm, i, PLAY_SETUP_SPRITE_16, 1000);
     }
     for (int32_t i = 519; i <= 521; i++) {
-        M_AddScript(anm, i, TH07_PLAY_SETUP_SPRITE_32, 1000);
+        M_AddScript(anm, i, PLAY_SETUP_SPRITE_32, 1000);
     }
-    M_AddScript(anm, 680, TH07_PLAY_SETUP_SPRITE_64, 1000);
-    M_AddScript(anm, 527, TH07_PLAY_SETUP_SPRITE_8, 4);
-    M_AddScript(anm, 528, TH07_PLAY_SETUP_SPRITE_16, 4);
-    M_AddScript(anm, 529, TH07_PLAY_SETUP_SPRITE_32, 4);
-    M_AddScript(anm, 681, TH07_PLAY_SETUP_SPRITE_64, 4);
+    M_AddScript(anm, 680, PLAY_SETUP_SPRITE_64, 1000);
+    M_AddScript(anm, 527, PLAY_SETUP_SPRITE_8, 4);
+    M_AddScript(anm, 528, PLAY_SETUP_SPRITE_16, 4);
+    M_AddScript(anm, 529, PLAY_SETUP_SPRITE_32, 4);
+    M_AddScript(anm, 681, PLAY_SETUP_SPRITE_64, 4);
     for (int32_t i = 0; i < 3; i++) {
-        M_AddScript(anm, 530 + i, TH07_PLAY_SETUP_SPRITE_8, (int16_t)(2 + i));
-        M_AddScript(anm, 533 + i, TH07_PLAY_SETUP_SPRITE_16, (int16_t)(2 + i));
+        M_AddScript(anm, 530 + i, PLAY_SETUP_SPRITE_8, (int16_t)(2 + i));
+        M_AddScript(anm, 533 + i, PLAY_SETUP_SPRITE_16, (int16_t)(2 + i));
     }
-    M_AddScript(anm, 536, TH07_PLAY_SETUP_SPRITE_32, 3);
-    M_AddScript(anm, 682, TH07_PLAY_SETUP_SPRITE_64, 3);
+    M_AddScript(anm, 536, PLAY_SETUP_SPRITE_32, 3);
+    M_AddScript(anm, 682, PLAY_SETUP_SPRITE_64, 3);
     AnmBuilder_WriteFile(&builder, m_Directory, "data/etama.anm");
 }
 
@@ -178,8 +178,7 @@ static void M_WriteOneSprite(const char *const name)
     AnmBuilder_WriteFile(&builder, m_Directory, name);
 }
 
-const char *Th07PlaySetup_SetUp(
-    const char *const case_name, const uint16_t seed)
+const char *PlaySetup_SetUp(const char *const case_name, const uint16_t seed)
 {
     m_Directory = TestDir_Prepare(case_name);
     Th07Data_WriteArchive(m_Directory, &m_Version, 1);
@@ -212,7 +211,7 @@ const char *Th07PlaySetup_SetUp(
     return m_Directory;
 }
 
-void Th07PlaySetup_TearDown(void)
+void PlaySetup_TearDown(void)
 {
     Chain_Release(&g_Chain);
     Anm_Shutdown();
