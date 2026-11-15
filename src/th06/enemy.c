@@ -9,6 +9,7 @@
 #include "th06/sound.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 
 #include "stg/chain.h"
 #include "stg/rng.h"
@@ -32,7 +33,6 @@
 #define M_BOSS_CLEAR_BONUS 0x3200
 #define M_ORBIT_GROWTH 0.3f
 #define M_ORBIT_TURN 0.031415928f
-#define M_WHITE 0xffffffffu
 #define M_DROP_COUNT 0x20
 
 // The spawn opcodes of the timeline combine three bits.
@@ -359,11 +359,11 @@ static void M_DropItem(const ENEMY *const enemy, const bool by_bomb)
     const EFFECT_TYPE particle =
         (EFFECT_TYPE)(EFFECT_PARTICLE + enemy->death.particle_color);
     if (enemy->death.item >= 0) {
-        Effect_Spawn(particle, enemy->move.pos, 3, M_WHITE);
+        Effect_Spawn(particle, enemy->move.pos, 3, COLOR_WHITE);
         Item_Spawn(enemy->move.pos, (ITEM_TYPE)enemy->death.item, state);
     } else if (enemy->death.item == -1) {
         if (g_Enemies.drops.counter % 3 == 0) {
-            Effect_Spawn(particle, enemy->move.pos, 6, M_WHITE);
+            Effect_Spawn(particle, enemy->move.pos, 6, COLOR_WHITE);
             Item_Spawn(
                 enemy->move.pos, (ITEM_TYPE)m_ItemDrops[g_Enemies.drops.index],
                 state);
@@ -388,7 +388,8 @@ static void M_Die(ENEMY *const enemy, const bool by_bomb)
         g_Gui.boss.present = false;
         for (int32_t i = 0; i < 3; i++) {
             Effect_Spawn(
-                (EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1, M_WHITE);
+                (EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1,
+                COLOR_WHITE);
         }
         break;
     case ENEMY_DEATH_REMOVE:
@@ -416,10 +417,11 @@ static void M_Die(ENEMY *const enemy, const bool by_bomb)
         break;
     }
     Sound_Queue((int32_t)(enemy - g_Enemies.enemies) % 2 + SOUND_ENEMY_DEATH_0);
-    Effect_Spawn((EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1, M_WHITE);
+    Effect_Spawn(
+        (EFFECT_TYPE)enemy->death.effect, enemy->move.pos, 1, COLOR_WHITE);
     Effect_Spawn(
         (EFFECT_TYPE)(EFFECT_PARTICLE + enemy->death.particle_color),
-        enemy->move.pos, 4, M_WHITE);
+        enemy->move.pos, 4, COLOR_WHITE);
     if (enemy->script.death_sub >= 0) {
         M_ResetRankGrowth(enemy);
         enemy->script.depth = 0;

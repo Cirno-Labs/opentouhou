@@ -12,6 +12,7 @@
 #include "th06/sound.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 #include "core/base/utils.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
@@ -786,7 +787,8 @@ static int32_t M_ClearAll(
             }
             AsciiText_AddPopup(
                 bullet->pos, score,
-                score >= max_bonus ? 0xffffff00u : 0xffffffffu);
+                score >= max_bonus ? COLOR_ARGB(0xff, 0xff, 0xff, 0x00)
+                                   : COLOR_WHITE);
             total += score;
             score += M_BONUS_STEP;
             if (score > max_bonus) {

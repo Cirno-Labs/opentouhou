@@ -5,6 +5,7 @@
 #include "th06/game_manager.h"
 #include "th06/gui.h"
 
+#include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
@@ -370,7 +371,8 @@ static CHAIN_STATUS M_Update(void *const arg)
         return CHAIN_CONTINUE;
     }
     if (g_GameManager.mode.frozen) {
-        g_Stage.spell_card.background.color = 0x60803030u;
+        g_Stage.spell_card.background.color =
+            COLOR_ARGB(0x60, 0x80, 0x30, 0x30);
         return CHAIN_CONTINUE;
     }
     const STAGE_INSTR *const instr = M_RunScript();
@@ -577,7 +579,7 @@ static RESULT M_Added(void *const arg)
     g_Stage.fog.current = (STAGE_FOG) {
         .near = 200.0f,
         .far = 500.0f,
-        .color = 0xff000000u,
+        .color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00),
     };
     g_Stage.offset.to = (VEC3) { 0.0f, 0.0f, 1.0f };
     g_Stage.offset.from = (VEC3) { 0.0f, 0.0f, 1.0f };

@@ -20,6 +20,7 @@
 #include "th06/screen_effect.h"
 #include "th06/sound.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
@@ -290,7 +291,7 @@ TEST(the_orbs_bomb_starts_with_its_name_and_a_clear_area)
     CHECK_EQ_INT(m_CollectCalls, 1);
     CHECK_EQ_INT(m_EffectCount, 1);
     CHECK_EQ_INT(m_Effects[0].type, EFFECT_SHOCKWAVE);
-    CHECK_EQ_INT(m_Effects[0].color, 0xff4040ffu);
+    CHECK_EQ_INT(m_Effects[0].color, COLOR_ARGB(0xff, 0x40, 0x40, 0xff));
     const PLAYER_CLEAR_AREA area = g_Player.bomb.clear_areas[8];
     CHECK(area.x == M_START_X && area.y == M_START_Y);
     CHECK(area.width == 256.0f && area.height == 256.0f);

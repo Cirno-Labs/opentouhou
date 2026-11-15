@@ -6,6 +6,7 @@
 #include "th06/note.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
@@ -373,7 +374,7 @@ void Anm_InitVm(ANM_VM *const vm)
     vm->scale_y = 1.0f;
     vm->fade_time = 0;
     vm->scale_time = 0;
-    vm->color = 0xffffffffu;
+    vm->color = COLOR_WHITE;
     vm->uv_scale_x = 1.0f;
     vm->uv_scale_y = 1.0f;
     vm->shown = true;

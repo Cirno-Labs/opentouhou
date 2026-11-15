@@ -17,6 +17,7 @@
 #include "th06/translation.h"
 
 #include "core/base/assert.h"
+#include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
@@ -232,11 +233,20 @@ static const int32_t m_ShotTypeValues[2][2][3] = {
 };
 
 static const uint32_t m_OrbitColors[0x1c] = {
-    0xff000000, 0xff303030, 0xff606060, 0xff500000, 0xff900000, 0xffff2020,
-    0xff400040, 0xff800080, 0xffff30ff, 0xff000050, 0xff000090, 0xff2020ff,
-    0xff203060, 0xff304090, 0xff3080ff, 0xff005000, 0xff009000, 0xff20ff20,
-    0xff206000, 0xff409010, 0xff80ff20, 0xff505000, 0xff909000, 0xffffff20,
-    0xff603000, 0xff904010, 0xfff08020, 0xffffffff,
+    COLOR_ARGB(0xff, 0x00, 0x00, 0x00), COLOR_ARGB(0xff, 0x30, 0x30, 0x30),
+    COLOR_ARGB(0xff, 0x60, 0x60, 0x60), COLOR_ARGB(0xff, 0x50, 0x00, 0x00),
+    COLOR_ARGB(0xff, 0x90, 0x00, 0x00), COLOR_ARGB(0xff, 0xff, 0x20, 0x20),
+    COLOR_ARGB(0xff, 0x40, 0x00, 0x40), COLOR_ARGB(0xff, 0x80, 0x00, 0x80),
+    COLOR_ARGB(0xff, 0xff, 0x30, 0xff), COLOR_ARGB(0xff, 0x00, 0x00, 0x50),
+    COLOR_ARGB(0xff, 0x00, 0x00, 0x90), COLOR_ARGB(0xff, 0x20, 0x20, 0xff),
+    COLOR_ARGB(0xff, 0x20, 0x30, 0x60), COLOR_ARGB(0xff, 0x30, 0x40, 0x90),
+    COLOR_ARGB(0xff, 0x30, 0x80, 0xff), COLOR_ARGB(0xff, 0x00, 0x50, 0x00),
+    COLOR_ARGB(0xff, 0x00, 0x90, 0x00), COLOR_ARGB(0xff, 0x20, 0xff, 0x20),
+    COLOR_ARGB(0xff, 0x20, 0x60, 0x00), COLOR_ARGB(0xff, 0x40, 0x90, 0x10),
+    COLOR_ARGB(0xff, 0x80, 0xff, 0x20), COLOR_ARGB(0xff, 0x50, 0x50, 0x00),
+    COLOR_ARGB(0xff, 0x90, 0x90, 0x00), COLOR_ARGB(0xff, 0xff, 0xff, 0x20),
+    COLOR_ARGB(0xff, 0x60, 0x30, 0x00), COLOR_ARGB(0xff, 0x90, 0x40, 0x10),
+    COLOR_ARGB(0xff, 0xf0, 0x80, 0x20), COLOR_WHITE,
 };
 
 static M_SUB *m_Subs;
@@ -840,7 +850,7 @@ static void M_SetColor(BULLET *const bullet, const int16_t color)
 static void M_FreezeBullets(ENEMY *const enemy, const M_INSTR *const instr)
 {
     const int32_t choice = M_FuncArg(instr);
-    Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, 0xffffffff);
+    Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, COLOR_WHITE);
     for (int32_t i = 0; i < BULLET_COUNT; i++) {
         BULLET *const bullet = &g_Bullets.bullets[i];
         if (!M_IsShown(bullet)) {
@@ -978,7 +988,7 @@ static void M_FreezeOrSendOff(ENEMY *const enemy, const M_INSTR *const instr)
 {
     const int32_t arg = M_FuncArg(instr);
     if (arg < 2) {
-        Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, 0xffffffff);
+        Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, COLOR_WHITE);
         g_GameManager.mode.frozen = (int8_t)arg != 0;
     } else if (g_GameManager.run.difficulty <= 1) {
         M_SendOff(14, 2.3561945f, MATH_QUARTER_PI);
@@ -1038,7 +1048,8 @@ static void M_SideArcFans(ENEMY *const enemy)
 
 static void M_SpawnSpark(const VEC3 pos, const int32_t k)
 {
-    EFFECT *const effect = Effect_Spawn(EFFECT_SPARK, pos, 1, 0xff3030ff);
+    EFFECT *const effect =
+        Effect_Spawn(EFFECT_SPARK, pos, 1, COLOR_ARGB(0xff, 0x30, 0x30, 0xff));
     effect->velocity.x = (Rng_F32(&g_Rng) * 40.0f - 20.0f) / 60.0f;
     effect->velocity.y = 8.0f * (float)k / 60.0f - 0.26666668f;
     effect->velocity.z = 0.0f;
@@ -1184,7 +1195,7 @@ static void M_StartStopped(BULLET *const bullet)
 static void M_SwirlStoppedBullets(ENEMY *const enemy)
 {
     const float base = Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI;
-    Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, 0xffffffff);
+    Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, COLOR_WHITE);
     for (int32_t i = 0; i < BULLET_COUNT; i++) {
         BULLET *const bullet = &g_Bullets.bullets[i];
         if (!M_IsShown(bullet) || !M_IsSmallStopped(bullet)) {
@@ -1205,7 +1216,7 @@ static void M_SwirlStoppedBullets(ENEMY *const enemy)
 static void M_ScatterStoppedBullets(ENEMY *const enemy)
 {
     Rng_F32InRange(&g_Rng, MATH_TWO_PI);
-    Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, 0xffffffff);
+    Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, COLOR_WHITE);
     for (int32_t i = 0; i < BULLET_COUNT; i++) {
         BULLET *const bullet = &g_Bullets.bullets[i];
         if (!M_IsShown(bullet) || !M_IsSmallStopped(bullet)) {

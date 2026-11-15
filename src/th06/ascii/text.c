@@ -1,5 +1,6 @@
 #include "th06/ascii/text.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
@@ -41,7 +42,7 @@ void AsciiText_Initialize(void)
     const bool capture_background = g_AsciiText.capture_background;
     const bool highlight_font = g_AsciiText.highlight_font;
     memset(&g_AsciiText, 0, sizeof(g_AsciiText));
-    g_AsciiText.color = 0xffffffffu;
+    g_AsciiText.color = COLOR_WHITE;
     g_AsciiText.scale_x = 1.0f;
     g_AsciiText.scale_y = 1.0f;
     g_AsciiText.capture_background = capture_background;

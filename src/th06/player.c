@@ -13,6 +13,7 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 
+#include "core/base/color.h"
 #include "core/base/utils.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
@@ -51,8 +52,7 @@
 #define M_NO_TARGET -100.0f
 #define M_EFFECT_SHOT_HIT ((EFFECT_TYPE)(EFFECT_PARTICLE + 1))
 #define M_EFFECT_DEATH ((EFFECT_TYPE)(EFFECT_PARTICLE + 2))
-#define M_COLOR_WHITE 0xffffffffu
-#define M_COLOR_SHOCKWAVE 0xff4040ffu
+#define M_COLOR_SHOCKWAVE COLOR_ARGB(0xff, 0x40, 0x40, 0xff)
 
 // Holds one shot of a power level. A shot fires on the frames of the
 // burst where frame % interval is phase. A laser instead fires when its
@@ -598,7 +598,7 @@ static void M_Graze(const VEC3 pos)
         }
     }
     const VEC3 mid = Vec3_Scale(Vec3_Add(g_Player.pos, pos), 1.0f / 2.0f);
-    Effect_Spawn(EFFECT_SMALL_PARTICLE, mid, 1, M_COLOR_WHITE);
+    Effect_Spawn(EFFECT_SMALL_PARTICLE, mid, 1, COLOR_WHITE);
     g_GameManager.score.value += 500;
     GameManager_AddRank(6);
     Sound_Queue(SOUND_GRAZE);
@@ -608,7 +608,7 @@ static void M_Die(void)
 {
     g_Enemies.spell_card.capturable = false;
     Effect_Spawn(EFFECT_SHOCKWAVE, g_Player.pos, 1, M_COLOR_SHOCKWAVE);
-    Effect_Spawn(M_EFFECT_DEATH, g_Player.pos, 16, M_COLOR_WHITE);
+    Effect_Spawn(M_EFFECT_DEATH, g_Player.pos, 16, COLOR_WHITE);
     g_Player.state.value = PLAYER_DYING;
     Timer_Set(&g_Player.state.timer, 0);
     Sound_Queue(SOUND_PLAYER_DEATH);
@@ -643,7 +643,7 @@ static void M_Weaken(PLAYER_BULLET *const bullet)
         break;
     }
     if (bullet->timer.current % 6 == 0) {
-        Effect_Spawn(M_EFFECT_SHOT_HIT, bullet->pos, 1, M_COLOR_WHITE);
+        Effect_Spawn(M_EFFECT_SHOT_HIT, bullet->pos, 1, COLOR_WHITE);
     }
 }
 
@@ -1042,7 +1042,7 @@ static void M_UpdateRespawning(void)
         player->state.value = PLAYER_INVULNERABLE;
         player->vm.scale_x = 1.0f;
         player->vm.scale_y = 1.0f;
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
         player->vm.blend_add = false;
         Timer_Set(&player->state.timer, M_INVULNERABLE_FRAMES);
         player->state.bomb_window = M_RESPAWN_BOMB_WINDOW;
@@ -1104,13 +1104,13 @@ static void M_UpdateInvulnerable(void)
         player->state.value = PLAYER_ALIVE;
         Timer_Set(&player->state.timer, 0);
         player->vm.color_op = false;
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
     } else if (player->state.timer.current % 8 < 2) {
         player->vm.color_op = true;
-        player->vm.color = 0xff404040u;
+        player->vm.color = COLOR_ARGB(0xff, 0x40, 0x40, 0x40);
     } else {
         player->vm.color_op = false;
-        player->vm.color = M_COLOR_WHITE;
+        player->vm.color = COLOR_WHITE;
     }
 }
 
@@ -1435,7 +1435,7 @@ int32_t Player_CalcDamage(
             if (bullet->state == PLAYER_BULLET_FLYING) {
                 Anm_StartScript(
                     &bullet->vm, bullet->vm.script_index + M_SCRIPT_HIT_OFFSET);
-                Effect_Spawn(M_EFFECT_SHOT_HIT, bullet->pos, 1, M_COLOR_WHITE);
+                Effect_Spawn(M_EFFECT_SHOT_HIT, bullet->pos, 1, COLOR_WHITE);
                 bullet->pos.z = 0.1f;
             }
             bullet->state = PLAYER_BULLET_HIT;
@@ -1446,7 +1446,7 @@ int32_t Player_CalcDamage(
             if (g_Player.shots.hit_counter % 8 == 0) {
                 VEC3 at = pos;
                 at.x = bullet->pos.x;
-                Effect_Spawn(M_EFFECT_SHOT_HIT, at, 1, M_COLOR_WHITE);
+                Effect_Spawn(M_EFFECT_SHOT_HIT, at, 1, COLOR_WHITE);
             }
         }
     }
@@ -1465,7 +1465,7 @@ int32_t Player_CalcDamage(
         hit->damage_dealt += hit->damage;
         g_Player.shots.hit_counter++;
         if (g_Player.shots.hit_counter % 4 == 0) {
-            Effect_Spawn(EFFECT_BOMB_SPARK, pos, 1, M_COLOR_WHITE);
+            Effect_Spawn(EFFECT_BOMB_SPARK, pos, 1, COLOR_WHITE);
         }
         if (g_Player.bomb.running) {
             *hit_by_bomb = true;
