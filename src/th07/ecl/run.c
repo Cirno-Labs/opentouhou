@@ -52,12 +52,6 @@ typedef enum {
     M_STEP_DELETE,
 } M_STEP;
 
-// Points at an int operand. The item of an enemy is a byte.
-typedef struct {
-    int32_t *value;
-    int8_t *byte;
-} M_INT_REF;
-
 static const int32_t m_SpellCardBonuses[ECL_SPELL_CARD_COUNT] = {
     2000000, 2000000, 2200000, 2200000, 2400000, 2400000, 2400000, 2400000,
     2400000, 2400000, 2600000, 2600000, 2600000, 2600000, 2600000, 2600000,
@@ -213,54 +207,46 @@ static int32_t M_GetInt(ENEMY *const enemy, const int32_t id)
 // Returns the int variable that operand names, or operand itself when it
 // names none or when bit is not negative and clear in mask. This table
 // names fewer variables than M_GetInt reads.
-static M_INT_REF M_ResolveInt(
+static int32_t *M_ResolveInt(
     ENEMY *const enemy, int32_t *const operand, const uint16_t mask,
     const int32_t bit)
 {
-    M_INT_REF ref = { operand, nullptr };
     if (bit >= 0 && (mask & (1u << bit)) == 0) {
-        return ref;
+        return operand;
     }
     ECL_VARS *const vars = M_Vars(enemy);
     const int32_t id = *operand;
     if (id >= 10000 && id <= 10003) {
-        ref.value = &vars->ints[id - 10000];
-    } else if (id >= 10029 && id <= 10032) {
-        ref.value = &vars->ints[8 + id - 10029];
-    } else if (id >= 10012 && id <= 10015) {
-        ref.value = &vars->ints[4 + id - 10012];
-    } else if (id >= 10037 && id <= 10040) {
-        ref.value = &m_SharedInts[id - 10037];
-    } else if (id == 10016) {
-        ref.value = &g_GameManager.run.difficulty;
-    } else if (id == 10017) {
-        ref.value = &g_GameManager.rank.value;
-    } else if (id == 10025) {
-        ref.value = &enemy->callbacks.timer.current;
-    } else if (id == 10027) {
-        ref.value = &enemy->life;
-    } else if (id == 10070) {
-        ref.value = nullptr;
-        ref.byte = &enemy->death.item;
-    } else if (id == 10071) {
-        ref.value = &enemy->score;
+        return &vars->ints[id - 10000];
     }
-    return ref;
-}
-
-static int32_t M_Load(const M_INT_REF ref)
-{
-    return ref.value != nullptr ? *ref.value : *ref.byte;
-}
-
-// Stores value through ref. The item keeps only its low byte.
-static void M_Store(const M_INT_REF ref, const int32_t value)
-{
-    if (ref.value != nullptr) {
-        *ref.value = value;
-    } else {
-        *ref.byte = (int8_t)value;
+    if (id >= 10029 && id <= 10032) {
+        return &vars->ints[8 + id - 10029];
     }
+    if (id >= 10012 && id <= 10015) {
+        return &vars->ints[4 + id - 10012];
+    }
+    if (id >= 10037 && id <= 10040) {
+        return &m_SharedInts[id - 10037];
+    }
+    if (id == 10016) {
+        return &g_GameManager.run.difficulty;
+    }
+    if (id == 10017) {
+        return &g_GameManager.rank.value;
+    }
+    if (id == 10025) {
+        return &enemy->callbacks.timer.current;
+    }
+    if (id == 10027) {
+        return &enemy->life;
+    }
+    if (id == 10070) {
+        return &enemy->death.item;
+    }
+    if (id == 10071) {
+        return &enemy->score;
+    }
+    return operand;
 }
 
 // Returns the value of float operand id as M_GetInt does, with its own
@@ -473,7 +459,7 @@ static float M_FloatArg(
     return M_FloatOp(enemy, instr, instr->args[n].f, (uint16_t)(1u << n));
 }
 
-static M_INT_REF M_IntVar(
+static int32_t *M_IntVar(
     ENEMY *const enemy, ECL_INSTR *const instr, const int32_t n)
 {
     return M_ResolveInt(enemy, &instr->args[n].i, instr->param_mask, n);
@@ -489,7 +475,7 @@ static void M_SetInt(
     ENEMY *const enemy, ECL_INSTR *const instr, const int32_t n,
     const int32_t value)
 {
-    M_Store(M_IntVar(enemy, instr, n), value);
+    *M_IntVar(enemy, instr, n) = value;
 }
 
 static void M_SetFloat(
@@ -1130,7 +1116,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
     }
     case 17:
     case 18: {
-        const int32_t value = M_Load(M_IntVar(enemy, instr, 0));
+        const int32_t value = *M_IntVar(enemy, instr, 0);
         M_SetInt(
             enemy, instr, 0,
             M_Wrap((int64_t)value + (instr->opcode == 17 ? 1 : -1)));
@@ -1755,7 +1741,7 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         // The arguments evaluate in the order of the decompilation.
         const int32_t type = M_IntArg(enemy, instr, 0);
         const int32_t count = M_IntArg(enemy, instr, 1);
-        const int32_t color = M_Load(M_IntVar(enemy, instr, 2));
+        const int32_t color = *M_IntVar(enemy, instr, 2);
         Effect_Spawn(
             (EFFECT_TYPE)type, enemy->move.pos, count, (uint32_t)color);
         break;
@@ -1768,7 +1754,7 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         };
         const int32_t type = M_IntArg(enemy, instr, 0);
         const int32_t count = M_IntArg(enemy, instr, 1);
-        const int32_t color = M_Load(M_IntVar(enemy, instr, 2));
+        const int32_t color = *M_IntVar(enemy, instr, 2);
         Effect_SpawnMoving(
             (EFFECT_TYPE)type, enemy->move.pos, velocity, count,
             (uint32_t)color);
@@ -1845,7 +1831,7 @@ static M_STEP M_Step(
         return M_STEP_NEXT;
     case 3: {
         // The count of a constant operand lives in the instruction.
-        const int32_t count = M_Load(M_IntVar(enemy, instr, 2));
+        const int32_t count = *M_IntVar(enemy, instr, 2);
         M_SetInt(enemy, instr, 2, M_Wrap((int64_t)count - 1));
         if (M_IntArg(enemy, instr, 2) <= 0) {
             return M_STEP_NEXT;
