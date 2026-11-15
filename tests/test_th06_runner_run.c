@@ -11,6 +11,8 @@
 #include "th06/scene.h"
 #include "th06/screens/main.h"
 
+#include <string.h>
+
 CHAIN g_Chain;
 GAME_MANAGER g_GameManager;
 
@@ -30,7 +32,7 @@ RESULT Game_Init(void)
 {
     m_InitCalls++;
     Chain_Init(&g_Chain);
-    g_GameManager = (GAME_MANAGER) {};
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
     m_Current = SCENE_BOOT;
     m_Requested = SCENE_NONE;
     m_Ticks = 0;

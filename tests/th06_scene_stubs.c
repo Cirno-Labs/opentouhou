@@ -6,11 +6,13 @@
 #include "th06/screens/ending.h"
 #include "th06/replay.h"
 
+#include <string.h>
+
 SCENE_STUB_CALLS g_SceneStubCalls;
 
 void SceneStubCalls_Reset(void)
 {
-    g_SceneStubCalls = (SCENE_STUB_CALLS) {};
+    memset(&g_SceneStubCalls, 0, sizeof(g_SceneStubCalls));
 }
 
 RESULT TitleScene_SetUp(const int32_t mode)

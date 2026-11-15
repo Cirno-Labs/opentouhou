@@ -205,8 +205,8 @@ static void M_Setup(const char *const case_name, const int32_t tunes)
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
-    g_Buttons = (BUTTONS) {};
-    m_Input = (TH06_INPUT) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    memset(&m_Input, 0, sizeof(m_Input));
     m_Requested = SCENE_MUSIC_ROOM;
     Sound_Reset();
     Chain_InitElem(&m_InputElem, M_InputUpdate, nullptr);

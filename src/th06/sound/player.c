@@ -313,7 +313,7 @@ static void M_PlayQueued(void)
 
 RESULT SoundPlayer_Init(void)
 {
-    m_Player = (M_PLAYER) {};
+    memset(&m_Player, 0, sizeof(m_Player));
     FAIL_IF(!Audio_IsInitialized(), "audio is not initialized");
     m_Player.enabled = true;
     for (int32_t i = 0; i < M_FILE_COUNT; i++) {
@@ -354,5 +354,5 @@ void SoundPlayer_Shutdown(void)
 {
     M_StopMusic();
     M_FreeEffects();
-    m_Player = (M_PLAYER) {};
+    memset(&m_Player, 0, sizeof(m_Player));
 }

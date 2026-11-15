@@ -594,7 +594,7 @@ static void M_Deleted(void *const arg)
 
 RESULT Stage_Register(void)
 {
-    g_Stage = (STAGE) {};
+    memset(&g_Stage, 0, sizeof(g_Stage));
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;

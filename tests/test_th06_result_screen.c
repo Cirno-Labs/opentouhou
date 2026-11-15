@@ -121,8 +121,8 @@ static void M_Start(void)
     GameManager_Create(&g_GameManager);
     ResultScreen_OpenSaves(nullptr);
     Rng_SetSeed(&g_Rng, 0x1357);
-    g_Buttons = (BUTTONS) {};
-    m_Input = (TH06_INPUT) {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    memset(&m_Input, 0, sizeof(m_Input));
     m_Requested = SCENE_GAME_RESULT;
     memset(m_Sounds, 0, sizeof(m_Sounds));
     Chain_InitElem(&m_InputElem, M_Input, nullptr);
@@ -182,7 +182,7 @@ static void M_Press(const TH06_INPUT input)
 {
     m_Input = input;
     M_Tick();
-    m_Input = (TH06_INPUT) {};
+    memset(&m_Input, 0, sizeof(m_Input));
     M_Tick();
 }
 
@@ -489,7 +489,8 @@ TEST(the_unlock_sequence_marks_every_game_cleared)
         M_Tick();
     }
     CHECK_EQ_INT(g_GameManager.records.clears[3].with_continues[4], 1);
-    m_Input = (TH06_INPUT) { .focus = true };
+    memset(&m_Input, 0, sizeof(m_Input));
+    m_Input.focus = true;
     M_Tick();
     CHECK_EQ_INT(g_GameManager.records.clears[3].with_continues[4], 99);
     CHECK_EQ_INT(g_GameManager.records.clears[0].without_continues[0], 99);
@@ -508,15 +509,15 @@ TEST(a_wrong_key_restarts_the_unlock_sequence)
     }
     M_Press((TH06_INPUT) { .shoot = true });
     for (int32_t i = 0; i < 11; i++) {
-        m_Input = (TH06_INPUT) {
-            .focus = true,
-            .unlock_start = i < 5,
-            .quit = i == 5 || i == 7,
-            .menu = i == 6,
-            .unlock_end = i >= 8,
-        };
+        memset(&m_Input, 0, sizeof(m_Input));
+        m_Input.focus = true;
+        m_Input.unlock_start = i < 5;
+        m_Input.quit = i == 5 || i == 7;
+        m_Input.menu = i == 6;
+        m_Input.unlock_end = i >= 8;
         M_Tick();
-        m_Input = (TH06_INPUT) { .focus = true };
+        memset(&m_Input, 0, sizeof(m_Input));
+        m_Input.focus = true;
         M_Tick();
     }
     M_Tick();

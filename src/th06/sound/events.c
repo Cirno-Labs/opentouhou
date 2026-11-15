@@ -10,7 +10,10 @@ SOUND_EVENTS g_SoundEvents = { .queue = { -1, -1, -1 } };
 
 void Sound_Reset(void)
 {
-    g_SoundEvents = (SOUND_EVENTS) { .queue = { -1, -1, -1 } };
+    memset(&g_SoundEvents, 0, sizeof(g_SoundEvents));
+    for (int32_t i = 0; i < SOUND_QUEUE_SIZE; i++) {
+        g_SoundEvents.queue[i] = -1;
+    }
 }
 
 void Sound_Queue(const int32_t sound)

@@ -24,6 +24,7 @@
 
 #include <SDL3/SDL.h>
 #include <math.h>
+#include <string.h>
 
 #define M_FIRST_SCRIPT 0x215
 #define M_TOUCH_X 50.0f
@@ -80,7 +81,7 @@ static void M_Setup(void)
     GameManager_Create(&g_GameManager);
     g_GameManager.rank.value = 10;
     g_GameManager.rank.max = 99;
-    g_Player = (PLAYER) {};
+    memset(&g_Player, 0, sizeof(g_Player));
     g_Player.pos.y = 400.0f;
     m_ProbeCount = 0;
     m_TouchX = M_NO_TOUCH;
