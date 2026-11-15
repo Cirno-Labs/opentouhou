@@ -754,7 +754,7 @@ TEST(operands_name_different_variables_in_each_table)
     CHECK(M_Floats()[2] == 2.0f);
     CHECK(M_Floats()[3] == 1.25f);
     CHECK_EQ_INT(Ecl_GetInstr(0, 7)->args[0].i, 10070);
-    CHECK_EQ_INT(m_Enemy.death.item, 300 - 256);
+    CHECK_EQ_INT(m_Enemy.death.item, 300);
     M_TearDown();
 }
 
