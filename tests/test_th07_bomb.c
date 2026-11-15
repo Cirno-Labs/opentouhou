@@ -205,40 +205,40 @@ static uint32_t M_Bits(const float value)
     return bits;
 }
 
-static void M_AddScript(TH07_ANM_BUILDER_ANM *const anm, const int32_t id)
+static void M_AddScript(ANM_BUILDER_ANM *const anm, const int32_t id)
 {
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, id);
+    const int32_t script = AnmBuilder_BeginScript(anm, id);
     const uint32_t sprite = 0;
-    Th07AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
-    Th07AnmBuilder_Instr(anm, script, 20, 0, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, script);
+    AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
+    AnmBuilder_Instr(anm, script, 20, 0, 0, nullptr, 0);
+    AnmBuilder_End(anm, script);
 }
 
 // Adds an orb script that waits at a stop and ends at interrupt 1.
-static void M_AddOrbScript(TH07_ANM_BUILDER_ANM *const anm, const int32_t id)
+static void M_AddOrbScript(ANM_BUILDER_ANM *const anm, const int32_t id)
 {
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, id);
+    const int32_t script = AnmBuilder_BeginScript(anm, id);
     const uint32_t sprite = 0;
     const uint32_t label = 1;
-    Th07AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
-    Th07AnmBuilder_Instr(anm, script, 20, 0, 0, nullptr, 0);
-    Th07AnmBuilder_Instr(anm, script, 21, 0, 0, &label, 1);
-    Th07AnmBuilder_Instr(anm, script, 1, 0, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, script);
+    AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
+    AnmBuilder_Instr(anm, script, 20, 0, 0, nullptr, 0);
+    AnmBuilder_Instr(anm, script, 21, 0, 0, &label, 1);
+    AnmBuilder_Instr(anm, script, 1, 0, 0, nullptr, 0);
+    AnmBuilder_End(anm, script);
 }
 
 // Adds a script that sets its position offset to M_OFFSET_X, M_OFFSET_Y.
-static void M_AddOffsetScript(TH07_ANM_BUILDER_ANM *const anm, const int32_t id)
+static void M_AddOffsetScript(ANM_BUILDER_ANM *const anm, const int32_t id)
 {
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, id);
+    const int32_t script = AnmBuilder_BeginScript(anm, id);
     const uint32_t sprite = 0;
     const uint32_t use_offset = 1;
     const uint32_t offset[] = { M_Bits(M_OFFSET_X), M_Bits(M_OFFSET_Y), 0 };
-    Th07AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
-    Th07AnmBuilder_Instr(anm, script, 24, 0, 0, &use_offset, 1);
-    Th07AnmBuilder_Instr(anm, script, 6, 0, 0, offset, 3);
-    Th07AnmBuilder_Instr(anm, script, 20, 0, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, script);
+    AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
+    AnmBuilder_Instr(anm, script, 24, 0, 0, &use_offset, 1);
+    AnmBuilder_Instr(anm, script, 6, 0, 0, offset, 3);
+    AnmBuilder_Instr(anm, script, 20, 0, 0, nullptr, 0);
+    AnmBuilder_End(anm, script);
 }
 
 // Writes the player ANM file of character, numbered from 0x400: the
@@ -247,10 +247,10 @@ static void M_AddOffsetScript(TH07_ANM_BUILDER_ANM *const anm, const int32_t id)
 static void M_WriteAnm(const int32_t character)
 {
     static const int32_t scripts[] = { 0, 1, 2, 3, 4, 0x40, 0x80, 0x81 };
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, M_SPRITE_SIZE, M_SPRITE_SIZE);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, M_SPRITE_SIZE, M_SPRITE_SIZE);
     for (size_t i = 0; i < ARRAY_SIZE(scripts); i++) {
         M_AddScript(anm, scripts[i]);
     }
@@ -268,7 +268,7 @@ static void M_WriteAnm(const int32_t character)
         M_AddScript(anm, 0x60);
     }
     char *const name = Str_Format("data/player0%d.anm", character);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, name);
+    AnmBuilder_WriteFile(&builder, m_Directory, name);
     Mem_Free(name);
 }
 

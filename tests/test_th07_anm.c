@@ -22,13 +22,13 @@ static RNG m_Rng;
 
 static char *M_SetupFiles(
     const char *const case_name, const char *const name,
-    const TH07_ANM_BUILDER *const builder)
+    const ANM_BUILDER *const builder)
 {
     char *const directory = TestDir_Prepare(case_name);
     Th07Data_WriteArchive(directory, &m_Version, 1);
     Th07Data_WriteMusic(directory, nullptr, 0);
     if (builder != nullptr) {
-        Th07AnmBuilder_WriteFile(builder, directory, name);
+        AnmBuilder_WriteFile(builder, directory, name);
     }
     return directory;
 }
@@ -47,13 +47,13 @@ static void M_Teardown(char *const directory)
     Mem_Free(directory);
 }
 
-static void M_AddEmptyScript(TH07_ANM_BUILDER_ANM *const anm, const int32_t id)
+static void M_AddEmptyScript(ANM_BUILDER_ANM *const anm, const int32_t id)
 {
-    Th07AnmBuilder_End(anm, Th07AnmBuilder_BeginScript(anm, id));
+    AnmBuilder_End(anm, AnmBuilder_BeginScript(anm, id));
 }
 
 static bool M_Loads(
-    const char *const case_name, const TH07_ANM_BUILDER *const builder,
+    const char *const case_name, const ANM_BUILDER *const builder,
     const int32_t slot, const int32_t first_sprite, char **const directory)
 {
     *directory = M_SetupFiles(case_name, "test.anm", builder);
@@ -91,12 +91,11 @@ static uint32_t M_Pixel(const int32_t slot, const int32_t index)
 
 TEST(load_reads_sprites_and_uvs)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 256, 128, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 16.0f, 32.0f, 48.0f, 64.0f);
-    Th07AnmBuilder_AddSprite(anm, 3, 0.0f, 0.0f, 8.0f, 8.0f);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 256, 128, "@");
+    AnmBuilder_AddSprite(anm, 0, 16.0f, 32.0f, 48.0f, 64.0f);
+    AnmBuilder_AddSprite(anm, 3, 0.0f, 0.0f, 8.0f, 8.0f);
     char *directory;
     CHECK(M_Loads("sprites", &builder, 2, 100, &directory));
 
@@ -127,27 +126,26 @@ TEST(load_reads_sprites_and_uvs)
 
 TEST(load_reads_instructions_and_resolves_jumps)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 5);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    const int32_t script = AnmBuilder_BeginScript(anm, 5);
     const uint32_t sprite[] = { 7 };
-    const int32_t first =
-        Th07AnmBuilder_Instr(anm, script, 3, 2, 0x5, sprite, 1);
-    const int32_t second = Th07AnmBuilder_Instr(
-        anm, script, 37, 4, 0, (uint32_t[]) { 10000, 3 }, 2);
-    Th07AnmBuilder_Instr(
+    const int32_t first = AnmBuilder_Instr(anm, script, 3, 2, 0x5, sprite, 1);
+    const int32_t second =
+        AnmBuilder_Instr(anm, script, 37, 4, 0, (uint32_t[]) { 10000, 3 }, 2);
+    AnmBuilder_Instr(
         anm, script, 4, 6, 0, (uint32_t[]) { (uint32_t)second, 1 }, 2);
-    Th07AnmBuilder_Instr(
+    AnmBuilder_Instr(
         anm, script, 5, 6, 1, (uint32_t[]) { 10000, (uint32_t)first, 0 }, 3);
     for (int16_t opcode = 67; opcode <= 78; opcode++) {
-        Th07AnmBuilder_Instr(
+        AnmBuilder_Instr(
             anm, script, opcode, 7, 0,
             (uint32_t[]) { 1, 2, (uint32_t)second, 9 }, 4);
     }
-    Th07AnmBuilder_Instr(
+    AnmBuilder_Instr(
         anm, script, 66, 8, 0, (uint32_t[]) { (uint32_t)second }, 1);
-    Th07AnmBuilder_End(anm, script);
+    AnmBuilder_End(anm, script);
     char *directory;
     CHECK(M_Loads("instructions", &builder, 0, 200, &directory));
 
@@ -180,13 +178,13 @@ TEST(load_reads_instructions_and_resolves_jumps)
 
 TEST(only_jumps_have_their_offsets_resolved)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
-    Th07AnmBuilder_Instr(anm, script, 66, 0, 0, (uint32_t[]) { 0, 0, 24 }, 3);
-    Th07AnmBuilder_Instr(anm, script, 79, 0, 0, (uint32_t[]) { 0, 0, 24 }, 3);
-    Th07AnmBuilder_End(anm, script);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    const int32_t script = AnmBuilder_BeginScript(anm, 0);
+    AnmBuilder_Instr(anm, script, 66, 0, 0, (uint32_t[]) { 0, 0, 24 }, 3);
+    AnmBuilder_Instr(anm, script, 79, 0, 0, (uint32_t[]) { 0, 0, 24 }, 3);
+    AnmBuilder_End(anm, script);
     char *directory;
     CHECK(M_Loads("no_jump", &builder, 0, 0, &directory));
     CHECK_EQ_INT(Anm_GetScript(0)->instrs[0].args[2].i, 24);
@@ -196,13 +194,13 @@ TEST(only_jumps_have_their_offsets_resolved)
 
 TEST(a_jump_between_instructions_fails)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 8, 8);
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
-    Th07AnmBuilder_Instr(anm, script, 4, 0, 0, (uint32_t[]) { 4, 0 }, 2);
-    Th07AnmBuilder_End(anm, script);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 8, 8);
+    const int32_t script = AnmBuilder_BeginScript(anm, 0);
+    AnmBuilder_Instr(anm, script, 4, 0, 0, (uint32_t[]) { 4, 0 }, 2);
+    AnmBuilder_End(anm, script);
     char *directory;
     CHECK(!M_Loads("bad_jump", &builder, 0, 0, &directory));
     CHECK(Anm_GetScript(0) == nullptr);
@@ -215,13 +213,12 @@ TEST(an_instruction_takes_up_to_eight_arguments)
 {
     const uint32_t args[9] = {};
     for (int32_t count = 8; count <= 9; count++) {
-        TH07_ANM_BUILDER builder;
-        Th07AnmBuilder_Init(&builder);
-        TH07_ANM_BUILDER_ANM *const anm =
-            Th07AnmBuilder_Add(&builder, 64, 64, "@");
-        const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
-        Th07AnmBuilder_Instr(anm, script, 30, 0, 0, args, count);
-        Th07AnmBuilder_End(anm, script);
+        ANM_BUILDER builder;
+        AnmBuilder_Init(&builder);
+        ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+        const int32_t script = AnmBuilder_BeginScript(anm, 0);
+        AnmBuilder_Instr(anm, script, 30, 0, 0, args, count);
+        AnmBuilder_End(anm, script);
         char *directory;
         CHECK_EQ_INT(
             M_Loads(count == 8 ? "args8" : "args9", &builder, 0, 0, &directory),
@@ -232,12 +229,12 @@ TEST(an_instruction_takes_up_to_eight_arguments)
 
 static bool M_LoadsInstrSize(const char *const case_name, const uint16_t size)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
-    Th07AnmBuilder_Instr(anm, script, 30, 0, 0, (uint32_t[]) { 0, 0 }, 2);
-    Th07AnmBuilder_End(anm, script);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    const int32_t script = AnmBuilder_BeginScript(anm, 0);
+    AnmBuilder_Instr(anm, script, 30, 0, 0, (uint32_t[]) { 0, 0 }, 2);
+    AnmBuilder_End(anm, script);
     anm->scripts[script].bytes[2] = (uint8_t)size;
     anm->scripts[script].bytes[3] = (uint8_t)(size >> 8);
     char *directory;
@@ -256,12 +253,12 @@ TEST(an_instruction_is_whole_words_of_at_least_8_bytes)
 
 // Loads builder cut to cut bytes, with the word at patch set to value.
 static bool M_LoadsChanged(
-    const char *const case_name, const TH07_ANM_BUILDER *const builder,
+    const char *const case_name, const ANM_BUILDER *const builder,
     const size_t cut, const size_t patch, const uint32_t value)
 {
     char *const directory = M_SetupFiles(case_name, "test.anm", nullptr);
     size_t size;
-    uint8_t *const bytes = Th07AnmBuilder_Build(builder, &size);
+    uint8_t *const bytes = AnmBuilder_Build(builder, &size);
     CHECK(cut <= size && (patch == M_NO_PATCH || patch + 4 <= size));
     if (patch != M_NO_PATCH) {
         for (int32_t i = 0; i < 4; i++) {
@@ -279,12 +276,12 @@ static bool M_LoadsChanged(
 
 TEST(a_script_without_an_end_marker_fails)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
-    Th07AnmBuilder_Instr(anm, script, 1, 0, 0, nullptr, 0);
-    Th07AnmBuilder_Instr(anm, script, 2, 0, 0, nullptr, 0);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    const int32_t script = AnmBuilder_BeginScript(anm, 0);
+    AnmBuilder_Instr(anm, script, 1, 0, 0, nullptr, 0);
+    AnmBuilder_Instr(anm, script, 2, 0, 0, nullptr, 0);
     char *directory;
     CHECK(!M_Loads("no_end", &builder, 0, 0, &directory));
     M_Teardown(directory);
@@ -292,16 +289,15 @@ TEST(a_script_without_an_end_marker_fails)
 
 TEST(truncated_files_fail)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
     const uint8_t pixels[8] = {};
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 2, 1, "x");
-    Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 2, 1);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 2, 1, "x");
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 2, 1);
     M_AddEmptyScript(anm, 0);
-    Th07AnmBuilder_SetImage(anm, ANM_TEXTURE_RGBA8, 2, 1, pixels, 8);
+    AnmBuilder_SetImage(anm, ANM_TEXTURE_RGBA8, 2, 1, pixels, 8);
     size_t size;
-    Allocator_Free(
-        &g_HeapAllocator, Th07AnmBuilder_Build(&builder, &size), size);
+    Allocator_Free(&g_HeapAllocator, AnmBuilder_Build(&builder, &size), size);
     const size_t sprite_offset = 0x40;
     const size_t script_offset = 0x40 + 4 + 4;
     const size_t image = 0x40 + 4 + 8 + 20 + 8 + 2;
@@ -323,16 +319,15 @@ TEST(load_fails_on_a_version_other_than_2)
 {
     const int32_t versions[] = { 0, 1, 3, 2 };
     for (int32_t i = 0; i < 4; i++) {
-        TH07_ANM_BUILDER builder;
-        Th07AnmBuilder_Init(&builder);
-        TH07_ANM_BUILDER_ANM *const anm =
-            Th07AnmBuilder_Add(&builder, 64, 64, "@");
-        Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 8, 8);
+        ANM_BUILDER builder;
+        AnmBuilder_Init(&builder);
+        ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+        AnmBuilder_AddSprite(anm, 0, 0, 0, 8, 8);
         anm->version = versions[i];
         char *const directory = TestDir_Prepare("version");
         Th07Data_WriteArchive(directory, &m_Version, 1);
         Th07Data_WriteMusic(directory, nullptr, 0);
-        Th07AnmBuilder_WriteFile(&builder, directory, "test.anm");
+        AnmBuilder_WriteFile(&builder, directory, "test.anm");
         M_Setup(directory);
         const bool loads =
             Result_Log(Anm_Load(0, "test.anm", 0), LOG_LEVEL_INFO);
@@ -347,12 +342,11 @@ static void M_LoadImage(
     const char *const case_name, const int16_t source, const uint8_t *pixels,
     const size_t size, const int32_t format, uint32_t *const out)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 2, 1, "stored.png");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 2, 1, "stored.png");
     anm->format = format;
-    Th07AnmBuilder_SetImage(anm, source, 2, 1, pixels, size);
+    AnmBuilder_SetImage(anm, source, 2, 1, pixels, size);
     char *directory;
     CHECK(M_Loads(case_name, &builder, 1, 0, &directory));
     CHECK_EQ_INT(AnmTexture_GetImage(1)->width, 2);
@@ -427,11 +421,11 @@ TEST(a_stored_image_of_format_0_or_out_of_range_fails)
     const uint8_t pixels[16] = {};
     const int16_t formats[] = { 0, 6, -1 };
     for (int32_t i = 0; i < 3; i++) {
-        TH07_ANM_BUILDER builder;
-        Th07AnmBuilder_Init(&builder);
-        TH07_ANM_BUILDER_ANM *const anm =
-            Th07AnmBuilder_Add(&builder, 2, 1, "stored.png");
-        Th07AnmBuilder_SetImage(anm, formats[i], 2, 1, pixels, 16);
+        ANM_BUILDER builder;
+        AnmBuilder_Init(&builder);
+        ANM_BUILDER_ANM *const anm =
+            AnmBuilder_Add(&builder, 2, 1, "stored.png");
+        AnmBuilder_SetImage(anm, formats[i], 2, 1, pixels, 16);
         char *directory;
         CHECK(!M_Loads("image_format", &builder, 0, 0, &directory));
         M_Teardown(directory);
@@ -441,12 +435,11 @@ TEST(a_stored_image_of_format_0_or_out_of_range_fails)
 TEST(sprites_scale_to_a_texture_larger_than_the_header)
 {
     uint8_t pixels[8 * 4 * 4] = {};
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 4, 1, "stored.png");
-    Th07AnmBuilder_SetImage(anm, 1, 8, 4, pixels, sizeof(pixels));
-    Th07AnmBuilder_AddSprite(anm, 0, 1.0f, 0.25f, 2.0f, 0.5f);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 4, 1, "stored.png");
+    AnmBuilder_SetImage(anm, 1, 8, 4, pixels, sizeof(pixels));
+    AnmBuilder_AddSprite(anm, 0, 1.0f, 0.25f, 2.0f, 0.5f);
     char *directory;
     CHECK(M_Loads("scale", &builder, 0, 0, &directory));
     const ANM_SPRITE *const sprite = Anm_GetSpriteEntry(0);
@@ -469,12 +462,11 @@ TEST(a_scaled_sprite_rounds_as_the_original)
 {
     // 3 / 7 is inexact, so the last bits show the original's operation order.
     uint8_t pixels[3 * 4] = {};
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 7, 1, "stored.png");
-    Th07AnmBuilder_SetImage(anm, 1, 3, 1, pixels, sizeof(pixels));
-    Th07AnmBuilder_AddSprite(anm, 0, 1.1f, 0.0f, 2.3f, 1.0f);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 7, 1, "stored.png");
+    AnmBuilder_SetImage(anm, 1, 3, 1, pixels, sizeof(pixels));
+    AnmBuilder_AddSprite(anm, 0, 1.1f, 0.0f, 2.3f, 1.0f);
     char *directory;
     CHECK(M_Loads("scale_rounding", &builder, 0, 0, &directory));
     const ANM_SPRITE *const sprite = Anm_GetSpriteEntry(0);
@@ -496,9 +488,9 @@ TEST(a_scaled_sprite_rounds_as_the_original)
 
 TEST(a_blank_texture_has_the_header_size)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 32, "@");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 32, "@");
     anm->format = ANM_TEXTURE_A1R5G5B5;
     char *directory;
     CHECK(M_Loads("blank", &builder, 3, 0, &directory));
@@ -510,13 +502,12 @@ TEST(a_blank_texture_has_the_header_size)
 
 TEST(a_named_image_takes_the_alpha_of_its_mask)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm =
-        Th07AnmBuilder_Add(&builder, 2, 2, "img.png");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 2, 2, "img.png");
     anm->alpha_name = "img_a.png";
     anm->format = ANM_TEXTURE_RGBA8;
-    Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 2, 2);
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 2, 2);
     char *const directory = M_SetupFiles("mask", "test.anm", &builder);
     M_WritePng(directory, "img.png", 4, 4, 0xff0000ff);
     M_WritePng(directory, "img_a.png", 4, 4, 0x00004cff);
@@ -531,10 +522,10 @@ TEST(a_named_image_takes_the_alpha_of_its_mask)
 TEST(a_missing_named_image_or_mask_fails)
 {
     for (int32_t i = 0; i < 2; i++) {
-        TH07_ANM_BUILDER builder;
-        Th07AnmBuilder_Init(&builder);
-        TH07_ANM_BUILDER_ANM *const anm =
-            Th07AnmBuilder_Add(&builder, 4, 4, i == 0 ? "gone.png" : "img.png");
+        ANM_BUILDER builder;
+        AnmBuilder_Init(&builder);
+        ANM_BUILDER_ANM *const anm =
+            AnmBuilder_Add(&builder, 4, 4, i == 0 ? "gone.png" : "img.png");
         anm->alpha_name = "gone_a.png";
         char *const directory = M_SetupFiles("missing", "test.anm", &builder);
         M_WritePng(directory, "img.png", 4, 4, 0xff0000ff);
@@ -547,20 +538,17 @@ TEST(a_missing_named_image_or_mask_fails)
 
 TEST(chained_anms_take_the_next_slots_and_numbers)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const first =
-        Th07AnmBuilder_Add(&builder, 16, 16, "@");
-    Th07AnmBuilder_AddSprite(first, 0, 0, 0, 1, 1);
-    Th07AnmBuilder_AddSprite(first, 2, 0, 0, 1, 1);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const first = AnmBuilder_Add(&builder, 16, 16, "@");
+    AnmBuilder_AddSprite(first, 0, 0, 0, 1, 1);
+    AnmBuilder_AddSprite(first, 2, 0, 0, 1, 1);
     M_AddEmptyScript(first, 5);
-    TH07_ANM_BUILDER_ANM *const second =
-        Th07AnmBuilder_Add(&builder, 32, 16, "@");
-    Th07AnmBuilder_AddSprite(second, 1, 0, 0, 1, 1);
+    ANM_BUILDER_ANM *const second = AnmBuilder_Add(&builder, 32, 16, "@");
+    AnmBuilder_AddSprite(second, 1, 0, 0, 1, 1);
     M_AddEmptyScript(second, 0);
-    TH07_ANM_BUILDER_ANM *const third =
-        Th07AnmBuilder_Add(&builder, 64, 16, "@");
-    Th07AnmBuilder_AddSprite(third, 0, 0, 0, 1, 1);
+    ANM_BUILDER_ANM *const third = AnmBuilder_Add(&builder, 64, 16, "@");
+    AnmBuilder_AddSprite(third, 0, 0, 0, 1, 1);
     char *directory;
     CHECK(M_Loads("chain", &builder, 4, 10, &directory));
 
@@ -590,12 +578,11 @@ TEST(chained_anms_take_the_next_slots_and_numbers)
 
 TEST(an_empty_anm_takes_one_number)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    Th07AnmBuilder_Add(&builder, 16, 16, "@");
-    TH07_ANM_BUILDER_ANM *const second =
-        Th07AnmBuilder_Add(&builder, 16, 16, "@");
-    Th07AnmBuilder_AddSprite(second, 0, 0, 0, 1, 1);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    AnmBuilder_Add(&builder, 16, 16, "@");
+    ANM_BUILDER_ANM *const second = AnmBuilder_Add(&builder, 16, 16, "@");
+    AnmBuilder_AddSprite(second, 0, 0, 0, 1, 1);
     char *directory;
     CHECK(M_Loads("chain_empty", &builder, 0, 0, &directory));
     CHECK_EQ_INT(Anm_GetSpriteEntry(0)->slot, -1);
@@ -605,16 +592,16 @@ TEST(an_empty_anm_takes_one_number)
 
 TEST(releasing_a_chain_releases_its_slots_loaded_again)
 {
-    TH07_ANM_BUILDER chain;
-    Th07AnmBuilder_Init(&chain);
-    Th07AnmBuilder_Add(&chain, 16, 16, "@");
-    Th07AnmBuilder_Add(&chain, 16, 16, "@");
-    TH07_ANM_BUILDER single;
-    Th07AnmBuilder_Init(&single);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&single, 8, 8, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 1, 1);
+    ANM_BUILDER chain;
+    AnmBuilder_Init(&chain);
+    AnmBuilder_Add(&chain, 16, 16, "@");
+    AnmBuilder_Add(&chain, 16, 16, "@");
+    ANM_BUILDER single;
+    AnmBuilder_Init(&single);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&single, 8, 8, "@");
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 1, 1);
     char *const directory = M_SetupFiles("chain_again", "test.anm", &chain);
-    Th07AnmBuilder_WriteFile(&single, directory, "single.anm");
+    AnmBuilder_WriteFile(&single, directory, "single.anm");
     M_Setup(directory);
     CHECK(Result_Log(Anm_Load(0, "test.anm", 0), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Anm_Load(1, "single.anm", 100), LOG_LEVEL_ERROR));
@@ -627,11 +614,11 @@ TEST(releasing_a_chain_releases_its_slots_loaded_again)
 
 TEST(a_chain_past_the_last_slot_fails_and_leaves_its_slots_empty)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 16, 16, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 1, 1);
-    Th07AnmBuilder_Add(&builder, 16, 16, "@");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 16, 16, "@");
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 1, 1);
+    AnmBuilder_Add(&builder, 16, 16, "@");
     char *directory;
     CHECK(M_Loads(
         "chain_last_slot", &builder, ANM_SLOT_COUNT - 2, 0, &directory));
@@ -645,12 +632,12 @@ TEST(a_chain_past_the_last_slot_fails_and_leaves_its_slots_empty)
 
 TEST(a_failed_anm_of_a_chain_leaves_the_slots_before_it_empty)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 16, 16, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0, 0, 1, 1);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 16, 16, "@");
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 1, 1);
     M_AddEmptyScript(anm, 0);
-    Th07AnmBuilder_Add(&builder, 16, 16, "@")->version = 0;
+    AnmBuilder_Add(&builder, 16, 16, "@")->version = 0;
     char *directory;
     CHECK(!M_Loads("chain_fails", &builder, 2, 0, &directory));
     CHECK(Anm_GetTexture(2) == nullptr);
@@ -664,10 +651,10 @@ static bool M_LoadsNumbers(
     const char *const case_name, const int32_t sprite, const int32_t script,
     const int32_t first_sprite)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 16, 16, "@");
-    Th07AnmBuilder_AddSprite(anm, sprite, 0, 0, 1, 1);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 16, 16, "@");
+    AnmBuilder_AddSprite(anm, sprite, 0, 0, 1, 1);
     M_AddEmptyScript(anm, script);
     char *directory;
     const bool loads =

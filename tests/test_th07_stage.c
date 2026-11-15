@@ -107,15 +107,15 @@ static void M_BuildStd(
 // its third frame.
 static void M_WriteAnm(const char *const directory, const char *const name)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
-    Th07AnmBuilder_Instr(anm, script, 3, 0, 0, (uint32_t[]) { 0 }, 1);
-    Th07AnmBuilder_Instr(anm, script, 2, 2, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, script);
-    Th07AnmBuilder_WriteFile(&builder, directory, name);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    const int32_t script = AnmBuilder_BeginScript(anm, 0);
+    AnmBuilder_Instr(anm, script, 3, 0, 0, (uint32_t[]) { 0 }, 1);
+    AnmBuilder_Instr(anm, script, 2, 2, 0, nullptr, 0);
+    AnmBuilder_End(anm, script);
+    AnmBuilder_WriteFile(&builder, directory, name);
 }
 
 static RESULT M_Setup(

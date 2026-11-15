@@ -25,7 +25,7 @@ static void M_PutU32(uint8_t *const out, const uint32_t value)
     }
 }
 
-static size_t M_Size(const TH07_ANM_BUILDER_ANM *const anm)
+static size_t M_Size(const ANM_BUILDER_ANM *const anm)
 {
     size_t size = M_HEADER_SIZE
         + (size_t)anm->sprite_count * (4 + M_SPRITE_SIZE)
@@ -46,7 +46,7 @@ static size_t M_Size(const TH07_ANM_BUILDER_ANM *const anm)
 }
 
 static void M_WriteAnm(
-    WRITER *const out, const TH07_ANM_BUILDER_ANM *const anm, const bool last)
+    WRITER *const out, const ANM_BUILDER_ANM *const anm, const bool last)
 {
     const size_t sprites = M_HEADER_SIZE + (size_t)anm->sprite_count * 4
         + (size_t)anm->script_count * 8;
@@ -91,7 +91,7 @@ static void M_WriteAnm(
         scripts += anm->scripts[i].length;
     }
     for (int32_t i = 0; i < anm->sprite_count; i++) {
-        const TH07_ANM_BUILDER_SPRITE *const s = &anm->sprites[i];
+        const ANM_BUILDER_SPRITE *const s = &anm->sprites[i];
         Writer_WriteI32(out, s->id);
         Writer_WriteF32(out, s->x);
         Writer_WriteF32(out, s->y);
@@ -118,25 +118,25 @@ static void M_WriteAnm(
     }
 }
 
-void Th07AnmBuilder_Init(TH07_ANM_BUILDER *const b)
+void AnmBuilder_Init(ANM_BUILDER *const b)
 {
-    *b = (TH07_ANM_BUILDER) {};
+    *b = (ANM_BUILDER) {};
 }
 
-TH07_ANM_BUILDER_ANM *Th07AnmBuilder_Add(
-    TH07_ANM_BUILDER *const b, const int32_t width, const int32_t height,
+ANM_BUILDER_ANM *AnmBuilder_Add(
+    ANM_BUILDER *const b, const int32_t width, const int32_t height,
     const char *const name)
 {
-    ASSERT(b->count < TH07_ANM_BUILDER_MAX_ANMS);
-    TH07_ANM_BUILDER_ANM *const anm = &b->anms[b->count++];
-    *anm = (TH07_ANM_BUILDER_ANM) {
+    ASSERT(b->count < ANM_BUILDER_MAX_ANMS);
+    ANM_BUILDER_ANM *const anm = &b->anms[b->count++];
+    *anm = (ANM_BUILDER_ANM) {
         .width = width, .height = height, .version = 2, .name = name
     };
     return anm;
 }
 
-void Th07AnmBuilder_SetImage(
-    TH07_ANM_BUILDER_ANM *const anm, const int16_t format, const int16_t width,
+void AnmBuilder_SetImage(
+    ANM_BUILDER_ANM *const anm, const int16_t format, const int16_t width,
     const int16_t height, const uint8_t *const pixels, const size_t size)
 {
     anm->image_format = format;
@@ -146,32 +146,30 @@ void Th07AnmBuilder_SetImage(
     anm->image_size = size;
 }
 
-void Th07AnmBuilder_AddSprite(
-    TH07_ANM_BUILDER_ANM *const anm, const int32_t id, const float x,
-    const float y, const float w, const float h)
+void AnmBuilder_AddSprite(
+    ANM_BUILDER_ANM *const anm, const int32_t id, const float x, const float y,
+    const float w, const float h)
 {
-    ASSERT(anm->sprite_count < TH07_ANM_BUILDER_MAX_SPRITES);
-    anm->sprites[anm->sprite_count++] =
-        (TH07_ANM_BUILDER_SPRITE) { id, x, y, w, h };
+    ASSERT(anm->sprite_count < ANM_BUILDER_MAX_SPRITES);
+    anm->sprites[anm->sprite_count++] = (ANM_BUILDER_SPRITE) { id, x, y, w, h };
 }
 
-int32_t Th07AnmBuilder_BeginScript(
-    TH07_ANM_BUILDER_ANM *const anm, const int32_t id)
+int32_t AnmBuilder_BeginScript(ANM_BUILDER_ANM *const anm, const int32_t id)
 {
-    ASSERT(anm->script_count < TH07_ANM_BUILDER_MAX_SCRIPTS);
+    ASSERT(anm->script_count < ANM_BUILDER_MAX_SCRIPTS);
     const int32_t index = anm->script_count++;
-    anm->scripts[index] = (TH07_ANM_BUILDER_SCRIPT) { .id = id };
+    anm->scripts[index] = (ANM_BUILDER_SCRIPT) { .id = id };
     return index;
 }
 
-int32_t Th07AnmBuilder_Instr(
-    TH07_ANM_BUILDER_ANM *const anm, const int32_t script_index,
+int32_t AnmBuilder_Instr(
+    ANM_BUILDER_ANM *const anm, const int32_t script_index,
     const int16_t opcode, const int16_t time, const uint16_t param_mask,
     const uint32_t *const args, const int32_t count)
 {
-    TH07_ANM_BUILDER_SCRIPT *const script = &anm->scripts[script_index];
+    ANM_BUILDER_SCRIPT *const script = &anm->scripts[script_index];
     const size_t size = 8 + (size_t)count * 4;
-    ASSERT(script->length + size <= TH07_ANM_BUILDER_MAX_SCRIPT_BYTES);
+    ASSERT(script->length + size <= ANM_BUILDER_MAX_SCRIPT_BYTES);
     uint8_t *const out = &script->bytes[script->length];
     M_PutU16(out, (uint16_t)opcode);
     M_PutU16(out + 2, (uint16_t)size);
@@ -185,19 +183,17 @@ int32_t Th07AnmBuilder_Instr(
     return offset;
 }
 
-void Th07AnmBuilder_End(
-    TH07_ANM_BUILDER_ANM *const anm, const int32_t script_index)
+void AnmBuilder_End(ANM_BUILDER_ANM *const anm, const int32_t script_index)
 {
-    TH07_ANM_BUILDER_SCRIPT *const script = &anm->scripts[script_index];
-    ASSERT(script->length + 8 <= TH07_ANM_BUILDER_MAX_SCRIPT_BYTES);
+    ANM_BUILDER_SCRIPT *const script = &anm->scripts[script_index];
+    ASSERT(script->length + 8 <= ANM_BUILDER_MAX_SCRIPT_BYTES);
     uint8_t *const out = &script->bytes[script->length];
     memset(out, 0, 8);
     M_PutU16(out, 0xffff);
     script->length += 8;
 }
 
-uint8_t *Th07AnmBuilder_Build(
-    const TH07_ANM_BUILDER *const b, size_t *const size)
+uint8_t *AnmBuilder_Build(const ANM_BUILDER *const b, size_t *const size)
 {
     WRITER out;
     Writer_OpenBuffer(&out, &g_HeapAllocator, nullptr);
@@ -209,12 +205,12 @@ uint8_t *Th07AnmBuilder_Build(
     return bytes;
 }
 
-void Th07AnmBuilder_WriteFile(
-    const TH07_ANM_BUILDER *const b, const char *const directory,
+void AnmBuilder_WriteFile(
+    const ANM_BUILDER *const b, const char *const directory,
     const char *const name)
 {
     size_t size;
-    uint8_t *const bytes = Th07AnmBuilder_Build(b, &size);
+    uint8_t *const bytes = AnmBuilder_Build(b, &size);
     Th07Data_WriteFile(directory, name, bytes, size);
     Allocator_Free(&g_HeapAllocator, bytes, size);
 }

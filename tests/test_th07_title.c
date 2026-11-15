@@ -166,11 +166,11 @@ static void M_Setup(const char *const case_name)
         CHECK(Result_Log(File_MakeDir(dir), LOG_LEVEL_ERROR));
         Mem_Free(dir);
     }
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 32, 32, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, "data/title01.anm");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 32, 32, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    AnmBuilder_WriteFile(&builder, m_Directory, "data/title01.anm");
     M_WriteImage("data/title/title00.jpg");
     M_WriteImage("data/title/select00.jpg");
     M_WriteImage("data/title/phantasm.jpg");

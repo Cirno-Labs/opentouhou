@@ -1138,16 +1138,16 @@ TEST(an_unknown_type_is_collected_without_effect)
 // shows each step of the script in its time.
 static void M_WriteAnm(void)
 {
-    TH07_ANM_BUILDER builder;
-    Th07AnmBuilder_Init(&builder);
-    TH07_ANM_BUILDER_ANM *const anm = Th07AnmBuilder_Add(&builder, 64, 64, "@");
-    Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
-    const int32_t script = Th07AnmBuilder_BeginScript(anm, 0);
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 64, 64, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    const int32_t script = AnmBuilder_BeginScript(anm, 0);
     const uint32_t sprite = 0;
-    Th07AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
-    Th07AnmBuilder_Instr(anm, script, 2, 1000, 0, nullptr, 0);
-    Th07AnmBuilder_End(anm, script);
-    Th07AnmBuilder_WriteFile(&builder, m_Directory, "item.anm");
+    AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
+    AnmBuilder_Instr(anm, script, 2, 1000, 0, nullptr, 0);
+    AnmBuilder_End(anm, script);
+    AnmBuilder_WriteFile(&builder, m_Directory, "item.anm");
 }
 
 static void M_LoadAnm(const char *const name)
