@@ -5,6 +5,7 @@
 #include "test.h"
 
 #include <math.h>
+#include <string.h>
 
 #define MAX_EVENTS 32
 #define MAX_VERTICES 64
@@ -152,7 +153,7 @@ static const GFX_OUTPUT m_Output = { .width = WIDTH, .height = HEIGHT };
 
 static void M_Start(void)
 {
-    m_Recording = (RECORDING) {};
+    memset(&m_Recording, 0, sizeof(m_Recording));
     CHECK(Result_Log(
         GfxFrontend_Start(&m_RecordingBackend, nullptr, WIDTH, HEIGHT),
         LOG_LEVEL_ERROR));
@@ -218,7 +219,7 @@ static void M_CheckNear(const float actual, const float expected)
 
 TEST(headless_textures_keep_their_size_and_draws_do_nothing)
 {
-    m_Recording = (RECORDING) {};
+    memset(&m_Recording, 0, sizeof(m_Recording));
     GFX_TEXTURE *texture = nullptr;
     CHECK(Result_Log(GfxTexture_CreateEmpty(16, 8, &texture), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(GfxTexture_GetWidth(texture), 16);
