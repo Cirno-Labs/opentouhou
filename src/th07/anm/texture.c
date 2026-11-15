@@ -13,8 +13,15 @@ typedef struct {
     ANM_TEXTURE_FORMAT format;
 } M_TEXTURE;
 
+typedef struct {
+    int32_t slot; // -1 while no copy is pending
+    GFX_RECT source;
+    GFX_RECT dest;
+} M_PENDING_COPY;
+
 static M_TEXTURE m_Textures[ANM_TEXTURE_COUNT];
 static GFX_TEXTURE *m_Surfaces[ANM_SURFACE_COUNT];
+static M_PENDING_COPY m_PendingCopy = { .slot = -1 };
 
 static void M_Quantize(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
 {
@@ -273,6 +280,39 @@ RESULT Anm_CopyTextureRect(
         Image_Resize(&pixels, dest.width, dest.height);
     }
     const RESULT result = Anm_UpdateTexture(dest_slot, dest, &pixels);
+    Image_Free(&pixels);
+    return result;
+}
+
+bool Anm_SetPendingCopy(
+    const int32_t slot, const GFX_RECT source, const GFX_RECT dest)
+{
+    ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
+    if (m_PendingCopy.slot >= 0) {
+        return false;
+    }
+    m_PendingCopy =
+        (M_PENDING_COPY) { .slot = slot, .source = source, .dest = dest };
+    return true;
+}
+
+RESULT Anm_DoPendingCopy(void)
+{
+    const M_PENDING_COPY copy = m_PendingCopy;
+    m_PendingCopy.slot = -1;
+    if (copy.slot < 0 || m_Textures[copy.slot].texture == nullptr) {
+        return OK;
+    }
+    FAIL_IF(
+        copy.dest.width <= 0 || copy.dest.height <= 0,
+        "Invalid screen copy rectangle");
+    IMAGE pixels;
+    MUST(Gfx_ReadScreenRect(copy.source, &g_HeapAllocator, &pixels));
+    if (copy.source.width != copy.dest.width
+        || copy.source.height != copy.dest.height) {
+        Image_Resize(&pixels, copy.dest.width, copy.dest.height);
+    }
+    const RESULT result = Anm_UpdateTexture(copy.slot, copy.dest, &pixels);
     Image_Free(&pixels);
     return result;
 }

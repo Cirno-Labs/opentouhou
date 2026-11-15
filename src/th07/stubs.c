@@ -1,6 +1,5 @@
 #include "th07/stubs.h"
 
-#include "th07/anm/texture.h"
 #include "th07/game_manager.h"
 
 #include "core/base/log.h"
@@ -157,13 +156,6 @@ void PlayTime_Restart(void)
 void PlayTime_Stop(void)
 {
     LOG_INFO("PlayTime_Stop is not ported");
-}
-
-bool Anm_SetPendingCopy(
-    const int32_t slot, const GFX_RECT source, const GFX_RECT dest)
-{
-    LOG_INFO("Anm_SetPendingCopy is not ported");
-    return true;
 }
 
 bool Gui_IsLoadingShown(void)

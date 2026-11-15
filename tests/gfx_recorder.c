@@ -20,6 +20,8 @@ static M_VERTEX_ARRAY m_Window;
 static M_TEXTURE_ARRAY m_Textures;
 static GFX_PASS m_Pass;
 static int32_t m_Copies;
+static IMAGE m_Screen;
+static int32_t m_Reads;
 static uintptr_t m_NextHandle;
 
 static RESULT M_Init(
@@ -107,7 +109,13 @@ static void M_BlitScreen(const GFX_PASS_OUTPUT *const output)
 static RESULT M_ReadPixels(
     const GFX_PASS pass, const ALLOCATOR *const allocator, IMAGE *const out)
 {
-    return FAIL("The recorder keeps no pixels");
+    m_Reads++;
+    FAIL_IF(m_Screen.pixels == nullptr, "The recorder keeps no pixels");
+    *out = Image_Create(m_Screen.width, m_Screen.height, allocator);
+    memcpy(
+        out->pixels, m_Screen.pixels,
+        (size_t)m_Screen.width * (size_t)m_Screen.height * 4);
+    return OK;
 }
 
 static const GFX_BACKEND m_Backend = {
@@ -130,6 +138,7 @@ void GfxRecorder_Start(void)
     Array_Init(&m_Window, &g_HeapAllocator);
     Array_Init(&m_Textures, &g_HeapAllocator);
     m_Copies = 0;
+    m_Reads = 0;
     if (!Result_Log(
             GfxFrontend_Start(&m_Backend, nullptr, 640, 480),
             LOG_LEVEL_ERROR)) {
@@ -146,6 +155,9 @@ void GfxRecorder_Stop(void)
         Mem_Free(m_Textures.items[i].pixels);
     }
     Array_Free(&m_Textures);
+    if (m_Screen.pixels != nullptr) {
+        Image_Free(&m_Screen);
+    }
 }
 
 const uint8_t *GfxRecorder_TexturePixels(const GFX_TEXTURE *const texture)
@@ -176,6 +188,22 @@ uint64_t GfxRecorder_QuadId(const int32_t index)
 int32_t GfxRecorder_CopyCount(void)
 {
     return m_Copies;
+}
+
+void GfxRecorder_SetScreen(const IMAGE *const image)
+{
+    if (m_Screen.pixels != nullptr) {
+        Image_Free(&m_Screen);
+    }
+    m_Screen = Image_Create(image->width, image->height, &g_HeapAllocator);
+    memcpy(
+        m_Screen.pixels, image->pixels,
+        (size_t)image->width * (size_t)image->height * 4);
+}
+
+int32_t GfxRecorder_ReadCount(void)
+{
+    return m_Reads;
 }
 
 const GFX_VERTEX *GfxRecorder_Blend(const float t, const int32_t index)

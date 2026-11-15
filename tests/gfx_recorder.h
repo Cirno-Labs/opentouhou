@@ -31,6 +31,13 @@ const uint8_t *GfxRecorder_TexturePixels(const GFX_TEXTURE *texture);
 // Returns how many copies of the screen were made since GfxRecorder_Start.
 int32_t GfxRecorder_CopyCount(void);
 
+// Makes the screen read back as a copy of image, which is 640 x 480, until
+// GfxRecorder_Stop. Before it, a read back fails.
+void GfxRecorder_SetScreen(const IMAGE *image);
+
+// Returns how many times the screen was read back since GfxRecorder_Start.
+int32_t GfxRecorder_ReadCount(void);
+
 // Presents the last tick, blended toward the tick before by t, and returns
 // the vertices of quad index as the window draws them.
 const GFX_VERTEX *GfxRecorder_Blend(float t, int32_t index);
