@@ -1,5 +1,6 @@
-# The tests of core/base, core/hash, core/json, core/io, core/archive/zip
-# and the tools are in the suite core or tools. Every build runs them, whatever programs it has.
+# The tests of core/base, core/args, core/hash, core/json, core/io,
+# core/archive/zip and the tools are in the suite core or tools. Every build
+# runs them, whatever programs it has.
 
 # Each part of core/base has a test named after it.
 foreach part : [
@@ -44,6 +45,18 @@ foreach part : [
     suite: ['unit', 'core'],
   )
 endforeach
+
+test(
+  'core/args',
+  executable(
+    'test_core_args',
+    'test_core_args.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_args_lib, core_base_lib],
+  ),
+  suite: ['unit', 'core'],
+)
 
 test(
   'core/archive/zip',
@@ -144,6 +157,23 @@ foreach name, expected : {
     suite: ['unit', 'core'],
   )
 endforeach
+
+test(
+  'core/args/bad_rule',
+  python,
+  args: [
+    expect_fatal,
+    'args: rule names --slow, which tool lacks',
+    executable(
+      'test_core_args_bad_rule',
+      'test_core_args_bad_rule.c',
+      c_args: core_include,
+      implicit_include_directories: false,
+      link_with: [core_args_lib, core_base_lib],
+    ),
+  ],
+  suite: ['unit', 'core'],
+)
 
 # The tests of the Python tools under tools/ run with the Python of the
 # build. They need neither a built program nor the network.

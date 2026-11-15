@@ -23,6 +23,15 @@ core_base_lib = static_library(
   implicit_include_directories: false,
 )
 
+# core/args needs only core/base, so every program and the tests link it
+# without SDL.
+core_args_lib = static_library(
+  'core_args',
+  'args.c',
+  c_args: core_include,
+  implicit_include_directories: false,
+)
+
 # core/hash needs only core/base, so the tests link it without SDL.
 core_hash_lib = static_library(
   'core_hash',
@@ -250,7 +259,8 @@ core_dep = declare_dependency(
     core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_patch_lib,
     core_patch_select_lib, core_archive_lib, core_vfs_lib,
     core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
-    core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_base_lib,
+    core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_args_lib,
+    core_base_lib,
   ],
   dependencies: [
     sdl3.partial_dependency(links: true),
