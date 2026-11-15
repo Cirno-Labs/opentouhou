@@ -5,8 +5,8 @@
 #include "th07/enemy.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/gui.h"
 #include "th07/player.h"
-#include "th07/stubs.h"
 
 #include "core/base/log.h"
 

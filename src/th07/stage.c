@@ -3,7 +3,7 @@
 #include "th07/effect.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
-#include "th07/stubs.h"
+#include "th07/gui.h"
 
 #include "shell/game.h"
 #include "core/vfs.h"
