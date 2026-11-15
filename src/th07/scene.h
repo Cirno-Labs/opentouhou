@@ -34,6 +34,9 @@ RESULT Scene_Register(void);
 void Scene_Request(SCENE scene);
 SCENE Scene_Get(void);
 
+// Returns the scene that the last switch left, which the title reads.
+SCENE Scene_GetPrevious(void);
+
 // Returns the scene last requested. While a switch sets a scene up, this
 // is the scene being set up, and Scene_Get returns the scene before it.
 SCENE Scene_GetRequested(void);
