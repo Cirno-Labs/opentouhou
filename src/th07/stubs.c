@@ -79,6 +79,11 @@ void Gui_ShowCherryFullPopup(const int32_t cherry)
     LOG_INFO("Gui_ShowCherryFullPopup is not ported");
 }
 
+void Gui_ShowFullPowerPopup(void)
+{
+    LOG_INFO("Gui_ShowFullPowerPopup is not ported");
+}
+
 void Gui_ShowBorderStartPopup(void)
 {
     LOG_INFO("Gui_ShowBorderStartPopup is not ported");
@@ -99,22 +104,11 @@ void Gui_EndBombName(void)
     LOG_INFO("Gui_EndBombName is not ported");
 }
 
-void Item_Spawn(const VEC3 pos, const int32_t type, const int32_t state)
-{
-    LOG_INFO("Item_Spawn is not ported");
-}
-
-void Item_CollectAll(void)
-{
-    LOG_INFO("Item_CollectAll is not ported");
-}
-
-void Item_DropPulled(void)
-{
-    LOG_INFO("Item_DropPulled is not ported");
-}
-
 void Bullet_ClearAll(void)
+{
+}
+
+void Bullet_ClearAllToItems(void)
 {
 }
 
