@@ -1,5 +1,6 @@
 #include "th07/main.h"
 
+#include "th07/anm.h"
 #include "th07/buttons.h"
 #include "th07/files.h"
 #include "th07/game.h"
@@ -16,6 +17,7 @@ static RESULT M_Init(void)
 {
     MUST(Files_Init(Shell_GetDataDir()));
     Files_SetPatches(Shell_GetPatches());
+    MUST(Anm_InitText(nullptr, nullptr, 0));
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     m_GameInitialized = true;
     MUST(Game_Init());
@@ -39,6 +41,7 @@ static void M_Shutdown(void)
         m_GameInitialized = false;
     }
     SoundPlayer_Shutdown();
+    Anm_ShutdownText();
     Files_Shutdown();
 }
 

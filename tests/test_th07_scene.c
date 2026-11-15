@@ -1,13 +1,20 @@
 #include "th07/scene.h"
 
 #include "test.h"
+#include "th07_anm_builder.h"
+#include "th07_data.h"
 #include "th07_scene_stubs.h"
 #include "shell_fake.h"
+#include "test_dir.h"
 
 #include "th07/buttons.h"
+#include "th07/files.h"
 #include "th07/game.h"
 #include "th07/settings.h"
 #include "th07/stubs.h"
+
+#include "core/base/memory.h"
+#include "core/io/file.h"
 
 static const TH07_INPUT m_NoInput;
 static const TH07_INPUT m_Shoot = { .shoot = true };
@@ -17,8 +24,36 @@ static void M_SetDevice(const INPUT_DEVICE device, const TH07_INPUT *input)
     FakeShell_SetDeviceInput(device, input, sizeof(*input));
 }
 
+// Mounts a data directory with the sprite files that the game loads at
+// start-up.
+static void M_MountFiles(void)
+{
+    static bool mounted;
+    if (!mounted) {
+        static const TH07_DATA_FILE version = { "th07_0100b.ver", "0100b" };
+        static char *directory;
+        directory = TestDir_Prepare("scene");
+        Th07Data_WriteArchive(directory, &version, 1);
+        Th07Data_WriteMusic(directory, nullptr, 0);
+        char *const data = TestDir_Join(directory, "data");
+        CHECK(Result_Log(File_MakeDir(data), LOG_LEVEL_ERROR));
+        Mem_Free(data);
+        TH07_ANM_BUILDER builder;
+        Th07AnmBuilder_Init(&builder);
+        TH07_ANM_BUILDER_ANM *const anm =
+            Th07AnmBuilder_Add(&builder, 32, 32, "@");
+        Th07AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+        Th07AnmBuilder_WriteFile(&builder, directory, "data/text.anm");
+        Th07AnmBuilder_WriteFile(&builder, directory, "data/ascii.anm");
+        Th07AnmBuilder_WriteFile(&builder, directory, "data/capture.anm");
+        CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+        mounted = true;
+    }
+}
+
 static void M_Setup(void)
 {
+    M_MountFiles();
     SceneStubCalls_Reset();
     Chain_Release(&g_Chain);
     g_Buttons = (BUTTONS) {};

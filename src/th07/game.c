@@ -1,8 +1,11 @@
 #include "th07/game.h"
 
+#include "th07/anm.h"
+#include "th07/ascii.h"
 #include "th07/scene.h"
 
 #include "core/base/log.h"
+#include "core/base/memory.h"
 
 CHAIN g_Chain;
 RNG g_Rng;
@@ -12,9 +15,12 @@ TH07_INPUT g_Input;
 
 RESULT Game_Init(void)
 {
+    Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     g_GameSpeed = 1.0f;
-    return Scene_Register();
+    MUST(Scene_Register());
+    MUST(Anm_Load(0, "data/text.anm", 0x700));
+    return AsciiText_Register();
 }
 
 bool Game_Tick(const TH07_INPUT *const input)
@@ -32,4 +38,5 @@ bool Game_Tick(const TH07_INPUT *const input)
 void Game_Shutdown(void)
 {
     Chain_Release(&g_Chain);
+    Anm_Shutdown();
 }
