@@ -37,6 +37,16 @@ GFX_TEXTURE *Anm_GetTexture(int32_t slot);
 // Replaces a texture rectangle with pixels quantized to its loaded format.
 RESULT Anm_UpdateTexture(int32_t slot, GFX_RECT rectangle, const IMAGE *image);
 
+// Copies source of a texture, scaled to dest of another, through their kept
+// pixels. Does nothing while either is not loaded.
+RESULT Anm_CopyTextureRect(
+    int32_t dest_slot, GFX_RECT dest, int32_t source_slot, GFX_RECT source);
+
+// Requests a copy of source of the screen, scaled to dest of the texture of
+// slot, after the draw and update chains. Returns false while a copy is
+// pending.
+bool Anm_SetPendingCopy(int32_t slot, GFX_RECT source, GFX_RECT dest);
+
 RESULT Anm_LoadSurface(int32_t surface, const char *path);
 void Anm_ReleaseSurface(int32_t surface);
 

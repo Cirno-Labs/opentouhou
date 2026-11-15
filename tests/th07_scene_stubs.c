@@ -1,5 +1,6 @@
 #include "th07_scene_stubs.h"
 
+#include "th07/anm/texture.h"
 #include "th07/game_manager.h"
 #include "th07/replay.h"
 #include "th07/scene.h"

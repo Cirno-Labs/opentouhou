@@ -1,5 +1,6 @@
 #include "th07/ascii/pause_menu.h"
 
+#include "th07/anm/texture.h"
 #include "th07/ascii/text.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
