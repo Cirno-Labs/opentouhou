@@ -611,6 +611,29 @@ TEST(the_first_petal_type_draws_transparent_and_keeps_its_color)
     M_Teardown();
 }
 
+TEST(the_first_petal_type_draws_in_the_color_scale)
+{
+    M_Setup("petal_color_scale", 9);
+    M_SetCamera();
+    g_GameManager.cherry.value = 100;
+    Effect_SetColorScale(0.5f, 2.0f, 3.0f, 0.5f);
+    EFFECT *const effect = Effect_Spawn(EFFECT_PETAL, m_Origin, 1, 0xff804020u);
+    effect->true_pos = (VEC3) { 0.0f, 0.0f, -8000.0f };
+    effect->step = (VEC3) {};
+    effect->acceleration = (VEC3) {};
+    Chain_RunCalc(&g_Chain);
+    effect->vm.color = 0xff804020u;
+    M_Tick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    const GFX_COLOR color = GfxRecorder_Quad(0)->vertices[0].color;
+    CHECK_EQ_INT(color.red, 0x40);
+    CHECK_EQ_INT(color.green, 0x80);
+    CHECK_EQ_INT(color.blue, 0x60);
+    CHECK_EQ_INT(color.alpha, 0x7f);
+    CHECK(effect->vm.color == 0xff804020u);
+    M_Teardown();
+}
+
 TEST(an_effect_at_the_camera_draws_in_3d_with_the_petals)
 {
     M_Setup("at_camera", 9);
