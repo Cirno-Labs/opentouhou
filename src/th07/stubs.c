@@ -1,6 +1,5 @@
 #include "th07/stubs.h"
 
-#include "th07/ecl.h"
 #include "th07/game_manager.h"
 
 #include "core/base/log.h"
@@ -32,15 +31,6 @@ RESULT Gui_Register(void)
 void Gui_Remove(void)
 {
     LOG_INFO("Gui_Remove is not ported");
-}
-
-void Ecl_StartSub(ECL_STATE *const state, const int16_t sub)
-{
-}
-
-ECL_RUN Ecl_RunEnemy(ENEMY *const enemy)
-{
-    return ECL_RUN_CONTINUE;
 }
 
 bool Gui_IsMsgRunning(void)

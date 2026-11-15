@@ -54,6 +54,8 @@ static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
 static char *m_Directory;
 static ECL_BUILDER m_Builder;
 static uint8_t m_File[ECL_BUILDER_MAX_SIZE];
+static ENEMY m_Enemy;
+static ENEMY m_Other;
 
 float Player_AngleFrom(const VEC3 pos)
 {
@@ -192,6 +194,7 @@ static void M_SetUp(const char *const case_name)
     g_GameManager.run.difficulty = 1;
     memset(&g_Player, 0, sizeof(g_Player));
     memset(&g_Stage, 0, sizeof(g_Stage));
+    memset(&g_Enemies, 0, sizeof(g_Enemies));
     g_GameSpeed = 1.0f;
     EclBuilder_Init(&m_Builder);
 }
@@ -220,6 +223,70 @@ static size_t M_Build(void)
 static bool M_Loads(void)
 {
     return M_LoadBytes(M_Build());
+}
+
+// Sets enemy up as Enemy_Spawn would leave it, at frame 0 of sub.
+static void M_InitEnemy(ENEMY *const enemy, const int16_t sub)
+{
+    memset(enemy, 0, sizeof(*enemy));
+    enemy->life = 1;
+    enemy->script.death_sub = -1;
+    enemy->script.pending_interrupt = -1;
+    enemy->script.periodic.sub = -1;
+    enemy->script.state.frame_func = ECL_FUNC_NONE;
+    enemy->turns.left = -1;
+    Ecl_StartSub(&enemy->script.state, sub);
+}
+
+static void M_Start(void)
+{
+    CHECK(M_Loads());
+    M_InitEnemy(&m_Enemy, 0);
+}
+
+static ECL_RUN M_Frame(void)
+{
+    return Ecl_RunEnemy(&m_Enemy);
+}
+
+static void M_Frames(const int32_t count)
+{
+    for (int32_t i = 0; i < count; i++) {
+        CHECK(M_Frame() == ECL_RUN_CONTINUE);
+    }
+}
+
+static int32_t *M_Ints(void)
+{
+    return m_Enemy.script.state.vars.ints;
+}
+
+static float *M_Floats(void)
+{
+    return m_Enemy.script.state.vars.floats;
+}
+
+// Returns the shared int variable index, read through opcode 4 in place
+// of instruction 0 of subroutine 0, with instruction 1 held back.
+static int32_t M_Shared(const int32_t index)
+{
+    static ENEMY reader;
+    M_InitEnemy(&reader, 0);
+    ECL_INSTR *const instr = Ecl_GetInstr(0, 0);
+    ECL_INSTR *const next = Ecl_GetInstr(0, 1);
+    const ECL_INSTR saved = *instr;
+    const int32_t time = next->time;
+    *instr = (ECL_INSTR) {
+        .opcode = 4,
+        .difficulty_mask = M_ALL,
+        .param_mask = 3,
+        .args = { { .i = 10000 }, { .i = 10037 + index } },
+    };
+    next->time = 999;
+    Ecl_RunEnemy(&reader);
+    *instr = saved;
+    next->time = time;
+    return reader.script.state.vars.ints[0];
 }
 
 TEST(load_reads_subroutines_and_timelines)
@@ -445,5 +512,278 @@ TEST(load_rejects_a_timeline_past_the_file)
     CHECK(!M_LoadBytes(size - 8));
     m_File[size - 4 - 32 + 6] = 7;
     CHECK(!M_LoadBytes(size));
+    M_TearDown();
+}
+
+TEST(run_steps_the_instructions_due_on_each_frame)
+{
+    M_SetUp("run_frames");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 4, 1, 10000, 1);
+    M_INSTR(0, 2, 4, 1, 10001, 2);
+    EclBuilder_Instr(
+        &m_Builder, 0, 2, 4, 1 << 2, 1, (const uint32_t[]) { 10002, 3 }, 2);
+    M_NOARGS(0, 3, 1);
+    M_Start();
+    M_Frames(2);
+    CHECK_EQ_INT(M_Ints()[0], 1);
+    CHECK_EQ_INT(M_Ints()[1], 0);
+    M_Frames(1);
+    CHECK_EQ_INT(M_Ints()[1], 2);
+    CHECK_EQ_INT(M_Ints()[2], 0);
+    CHECK(M_Frame() == ECL_RUN_DELETE);
+    M_TearDown();
+}
+
+TEST(run_loop_counts_down_in_the_shared_instruction)
+{
+    M_SetUp("run_loop");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 17, 1, 10000);
+    M_INSTR(0, 1, 3, 0, 0, (uint32_t)-16, 3);
+    M_Start();
+    M_Frames(6);
+    CHECK_EQ_INT(M_Ints()[0], 3);
+    CHECK_EQ_INT(Ecl_GetInstr(0, 1)->args[2].i, 0);
+    CHECK_EQ_INT(m_Enemy.script.state.pc, 2);
+    M_InitEnemy(&m_Other, 0);
+    for (int32_t i = 0; i < 4; i++) {
+        Ecl_RunEnemy(&m_Other);
+    }
+    CHECK_EQ_INT(m_Other.script.state.vars.ints[0], 1);
+    M_TearDown();
+}
+
+TEST(run_jumps_on_int_and_float_comparisons)
+{
+    M_SetUp("run_compare");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 5, 1, M_F(10004.0f), M_F(1.5f));
+    M_INSTR(0, 0, 33, 1, M_F(10004.0f), M_F(2.0f), 5, 48);
+    M_INSTR(0, 0, 4, 1, 10000, 1);
+    M_INSTR(0, 5, 28, 1, 10000, 0, 7, 48);
+    M_INSTR(0, 5, 4, 1, 10001, 1);
+    M_INSTR(0, 7, 4, 1, 10002, 1);
+    M_Start();
+    M_Frames(1);
+    CHECK_EQ_INT(M_Ints()[0], 0);
+    CHECK_EQ_INT(M_Ints()[1], 0);
+    CHECK_EQ_INT(M_Ints()[2], 1);
+    CHECK_EQ_INT(m_Enemy.script.state.timer.current, 8);
+    M_TearDown();
+}
+
+TEST(run_wait_holds_the_instructions_and_the_timer)
+{
+    M_SetUp("run_wait");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 45, 0, 3);
+    M_INSTR(0, 1, 4, 1, 10000, 1);
+    M_Start();
+    M_Frames(4);
+    CHECK_EQ_INT(M_Ints()[0], 0);
+    CHECK_EQ_INT(m_Enemy.script.state.timer.current, 1);
+    M_Frames(1);
+    CHECK_EQ_INT(M_Ints()[0], 1);
+    M_TearDown();
+}
+
+TEST(run_call_passes_the_shared_variables_and_returns)
+{
+    M_SetUp("run_call");
+    EclBuilder_BeginSub(&m_Builder);
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 4, 1, 10037, 7);
+    M_INSTR(0, 0, 5, 1, M_F(10041.0f), M_F(2.5f));
+    M_INSTR(0, 0, 4, 1, 10000, 3);
+    M_INSTR(0, 0, 41, 0, 1);
+    M_INSTR(0, 0, 4, 3, 10001, 10038);
+    M_INSTR(1, 0, 4, 3, 10038, 10029);
+    M_INSTR(1, 0, 5, 3, M_F(10004.0f), M_F(10033.0f));
+    M_INSTR(1, 0, 5, 3, M_F(10042.0f), M_F(10004.0f));
+    M_NOARGS(1, 0, 42);
+    M_Start();
+    M_Frames(1);
+    CHECK_EQ_INT(m_Enemy.script.depth, 0);
+    CHECK_EQ_INT(m_Enemy.script.state.sub, 0);
+    CHECK_EQ_INT(M_Ints()[0], 3);
+    CHECK_EQ_INT(M_Ints()[1], 7);
+    CHECK_EQ_INT(M_Shared(5), 2);
+    M_TearDown();
+}
+
+TEST(run_call_depth_stops_at_15)
+{
+    M_SetUp("run_depth");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 17, 1, 10000);
+    M_INSTR(0, 1, 41, 0, 0);
+    M_Start();
+    M_Frames(40);
+    CHECK_EQ_INT(m_Enemy.script.depth, 15);
+    CHECK_EQ_INT(m_Enemy.script.stack[15].sub, 0);
+    CHECK_EQ_INT(m_Enemy.script.stack[14].vars.ints[0], 15);
+    M_TearDown();
+}
+
+TEST(run_call_without_a_stack_keeps_the_depth)
+{
+    M_SetUp("run_no_stack");
+    for (int32_t i = 0; i < 3; i++) {
+        EclBuilder_BeginSub(&m_Builder);
+    }
+    M_INSTR(0, 0, 41, 0, 1);
+    M_INSTR(0, 0, 41, 0, 2);
+    M_INSTR(1, 0, 130, 0, 1);
+    M_NOARGS(1, 0, 42);
+    M_INSTR(2, 0, 4, 1, 10000, 9);
+    M_NOARGS(2, 5, 1);
+    M_Start();
+    M_Frames(1);
+    CHECK(m_Enemy.flags.no_call_stack);
+    CHECK_EQ_INT(m_Enemy.script.depth, 0);
+    CHECK_EQ_INT(m_Enemy.script.state.sub, 2);
+    CHECK_EQ_INT(M_Ints()[0], 9);
+    CHECK_EQ_INT(m_Enemy.script.stack[0].sub, 0);
+    CHECK_EQ_INT(m_Enemy.script.stack[0].pc, 1);
+    M_TearDown();
+}
+
+TEST(run_interrupt_now_resumes_after_it)
+{
+    M_SetUp("run_interrupt");
+    EclBuilder_BeginSub(&m_Builder);
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 108, 0, 1, 4);
+    M_INSTR(0, 0, 109, 0, 4);
+    M_INSTR(0, 0, 4, 1, 10037, 1);
+    M_INSTR(1, 0, 4, 1, 10038, 1);
+    M_NOARGS(1, 0, 42);
+    M_Start();
+    M_Frames(1);
+    CHECK_EQ_INT(m_Enemy.script.interrupts[4], 1);
+    CHECK_EQ_INT(m_Enemy.script.pending_interrupt, -1);
+    CHECK_EQ_INT(M_Shared(0), 1);
+    CHECK_EQ_INT(M_Shared(1), 1);
+    CHECK_EQ_INT(m_Enemy.script.depth, 0);
+    M_TearDown();
+}
+
+TEST(run_pending_interrupt_skips_the_next_instruction)
+{
+    M_SetUp("run_pending");
+    EclBuilder_BeginSub(&m_Builder);
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 108, 0, 1, 0);
+    M_INSTR(0, 0, 4, 1, 10037, 0);
+    M_INSTR(0, 0, 4, 1, 10038, 0);
+    M_INSTR(0, 2, 4, 1, 10037, 5);
+    M_INSTR(0, 2, 4, 1, 10038, 5);
+    M_INSTR(0, 2, 145, 0, 1, 3);
+    M_NOARGS(1, 0, 42);
+    M_Start();
+    M_Frames(2);
+    m_Enemy.script.pending_interrupt = 0;
+    g_Enemies.bosses[1] = &m_Other;
+    m_Other.script.pending_interrupt = -1;
+    M_Frames(1);
+    CHECK_EQ_INT(M_Shared(0), 0);
+    CHECK_EQ_INT(M_Shared(1), 5);
+    CHECK_EQ_INT(m_Other.script.pending_interrupt, 3);
+    M_TearDown();
+}
+
+TEST(run_periodic_call_ticks_again_after_each_restart)
+{
+    M_SetUp("run_periodic");
+    EclBuilder_BeginSub(&m_Builder);
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 4, 1, 10037, 0);
+    M_INSTR(0, 0, 4, 1, 10000, 4);
+    M_INSTR(0, 0, 144, 0, 3, 1);
+    M_NOARGS(0, 100, 1);
+    M_INSTR(1, 0, 17, 1, 10000);
+    M_INSTR(1, 0, 4, 3, 10037, 10000);
+    M_NOARGS(1, 0, 42);
+    M_Start();
+    M_Frames(3);
+    CHECK_EQ_INT(M_Shared(0), 0);
+    M_Frames(1);
+    CHECK_EQ_INT(M_Shared(0), 5);
+    CHECK_EQ_INT(m_Enemy.script.periodic.vars.ints[0], 5);
+    CHECK_EQ_INT(M_Ints()[0], 4);
+    CHECK(!m_Enemy.script.state.in_timed_call);
+    M_Frames(2);
+    CHECK_EQ_INT(M_Shared(0), 6);
+    M_TearDown();
+}
+
+TEST(run_timer_add_jumps_ahead)
+{
+    M_SetUp("run_timer_add");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 123, 0, 5);
+    M_INSTR(0, 6, 4, 1, 10000, 1);
+    M_Start();
+    M_Frames(1);
+    CHECK_EQ_INT(m_Enemy.script.state.timer.current, 6);
+    M_Frames(1);
+    CHECK_EQ_INT(M_Ints()[0], 1);
+    M_TearDown();
+}
+
+TEST(operands_name_different_variables_in_each_table)
+{
+    M_SetUp("operands_tables");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 4, 1, 10018, 5);
+    M_INSTR(0, 0, 5, 1, M_F(10018.0f), M_F(3.5f));
+    M_INSTR(0, 0, 5, 1, M_F(10005.0f), M_F(2.75f));
+    M_INSTR(0, 0, 4, 3, 10000, 10005);
+    M_INSTR(0, 0, 4, 3, 10001, 10057);
+    M_INSTR(0, 0, 5, 3, M_F(10006.0f), M_F(10000.0f));
+    M_INSTR(0, 0, 5, 3, M_F(10007.0f), M_F(10057.0f));
+    M_INSTR(0, 0, 4, 3, 10070, 300);
+    M_Start();
+    m_Enemy.move.delta.x = 1.25f;
+    M_Frames(1);
+    CHECK_EQ_INT(Ecl_GetInstr(0, 0)->args[0].i, 5);
+    CHECK(m_Enemy.move.pos.x == 3.5f);
+    CHECK_EQ_INT(M_Ints()[0], 2);
+    CHECK_EQ_INT(M_Ints()[1], 10057);
+    CHECK(M_Floats()[2] == 2.0f);
+    CHECK(M_Floats()[3] == 1.25f);
+    CHECK_EQ_INT(Ecl_GetInstr(0, 7)->args[0].i, 10070);
+    CHECK_EQ_INT(m_Enemy.death.item, 300 - 256);
+    M_TearDown();
+}
+
+TEST(operands_draw_random_values)
+{
+    M_SetUp("operands_random");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 4, 3, 10000, 10055);
+    M_INSTR(0, 0, 5, 3, M_F(10004.0f), M_F(10060.0f));
+    M_INSTR(0, 0, 4, 1, 10029, 10);
+    M_INSTR(0, 0, 4, 1, 10030, 100);
+    M_INSTR(0, 0, 4, 3, 10001, 10056);
+    M_Start();
+    RNG expected = g_Rng;
+    M_Frames(1);
+    CHECK_EQ_INT(M_Ints()[0], (int32_t)Rng_U32(&expected));
+    CHECK(M_Floats()[0] == Rng_F32(&expected) * 6.2831855f - 3.1415927f);
+    CHECK_EQ_INT(M_Ints()[1], (int32_t)Rng_U32InRange(&expected, 10) + 100);
+    M_TearDown();
+}
+
+TEST(operands_shared_variables_last_across_loads)
+{
+    M_SetUp("operands_shared");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 4, 1, 10040, 77);
+    M_Start();
+    M_Frames(1);
+    CHECK(M_Loads());
+    CHECK_EQ_INT(M_Shared(3), 77);
     M_TearDown();
 }
