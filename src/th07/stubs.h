@@ -12,15 +12,25 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
-// Stands in for the part of th07/gui's state that th07/ascii and
-// th07/enemy use.
+#define GUI_BOSS_SECTION_COUNT 8
+
+// Stands in for the part of th07/gui's state that th07/ascii, th07/enemy
+// and th07/ecl use.
 typedef struct {
     int32_t frames; // counts the stage's update calls
-    // Hold the boss bar: whether it shows, the seconds left and the life.
+    // Hold the boss bar: whether it shows, the seconds left, the life and
+    // the lives left (opcode 126).
     struct {
         bool present;
         int32_t seconds;
         float health;
+        int32_t lives;
+        // Hold the bar sections that opcode 139 sets, as fractions of the
+        // bar; unused while end is 0.
+        struct {
+            float start, end;
+            int32_t color;
+        } sections[GUI_BOSS_SECTION_COUNT];
     } boss;
 } GUI;
 
@@ -62,6 +72,20 @@ void Gui_ShowBorderBonusPopup(int32_t points);
 // and its end. The name stays in use until the next call.
 void Gui_ShowBombName(int32_t sprite, const char *name);
 void Gui_EndBombName(void);
+
+// Stand in for th07/gui's display of the spell card's name with portrait
+// sprite, its end, and the display of its bonus. The name stays in use
+// until the next call.
+void Gui_ShowSpellCardName(int32_t sprite, const char *name);
+void Gui_EndSpellCardName(void);
+void Gui_ShowSpellCardBonus(int32_t bonus);
+
+// Stand in for th07/resultscreen's records of an attempt at spell card
+// index, and of its capture with bonus, for the shot of
+// g_GameManager.run.shot_index. Neither runs in replays. The capture adds
+// one to g_GameManager.records.spell_captures[index], up to 9999.
+void ResultScreen_AddSpellCardAttempt(int32_t index, const char *name);
+void ResultScreen_AddSpellCardCapture(int32_t index, int32_t bonus);
 
 // Stands in for the reads of score.dat that a new game makes into
 // g_GameManager: the high score and its continues, the spell cards, the
