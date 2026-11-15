@@ -220,7 +220,7 @@ typedef struct ENEMY {
         uint8_t particle_color;
         // Holds the item dropped on death: an ITEM_TYPE, -1 for the drop
         // table on every third such enemy, or below -1 for none.
-        int8_t item;
+        int32_t item;
     } death;
 
     uint8_t boss_index; // the slot in g_Enemies.bosses
