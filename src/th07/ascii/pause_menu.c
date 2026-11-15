@@ -3,9 +3,12 @@
 #include "th07/ascii/text.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/player.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
 #include "th07/stubs.h"
+
+#include "core/math/x87.h"
 
 #define M_HIGHLIGHT 0xffff8080u
 #define M_DIM 0x80808080u
@@ -338,7 +341,7 @@ static void M_Continue(void)
     gm->score.value = gm->score.shown;
     gm->player.lives = (float)gm->run.start_lives;
     GameManager_DrawChecksumKeys();
-    gm->player.bombs = (float)g_Player.shot_bombs;
+    gm->player.bombs = (float)X87_Ftol(g_Player.shot_type.bombs);
     gm->player.graze = 0;
     gm->player.point_items = 0;
     gm->player.point_items_total = 0;

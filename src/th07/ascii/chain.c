@@ -3,6 +3,7 @@
 #include "th07/ascii/pause_menu.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 #include "core/base/memory.h"
@@ -283,7 +284,7 @@ static void M_DrawSummary(ASCII_TEXT *const text, ANM_DRAW *const draw)
     digit->pos.y = text->summary.pos.y + 2.0f;
     const int32_t plus = g_GameManager.cherry.plus - offset;
     float step;
-    if (g_Player.border_state != 0) {
+    if (g_Player.border_state != PLAYER_BORDER_NONE) {
         int32_t pulse = plus % 4000;
         if (pulse >= 2000) {
             pulse = 4000 - pulse;
@@ -303,7 +304,7 @@ static void M_DrawSummary(ASCII_TEXT *const text, ANM_DRAW *const draw)
     M_DrawSummaryNumber(text, plus, 10000, 5, step, draw);
     digit->scale_x = 1.0f;
     digit->scale_y = 1.0f;
-    if (g_Player.border_state == 1) {
+    if (g_Player.border_state == PLAYER_BORDER_RUNNING) {
         text->summary_bomb_icon.pos = text->summary.pos;
         text->summary_bomb_icon.pos.x += 24.0f;
         text->summary_bomb_icon.pos.y += 8.0f;

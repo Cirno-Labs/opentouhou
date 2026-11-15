@@ -3,6 +3,7 @@
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 #include "gfx_recorder.h"
@@ -365,7 +366,7 @@ TEST(summary_pulses_during_the_border_with_the_bomb_icon)
     M_Setup("summary_border");
     M_ShowSummary();
     g_GameManager.cherry.plus = 777 + 27000;
-    g_Player.border_state = 1;
+    g_Player.border_state = PLAYER_BORDER_RUNNING;
     M_Draw();
     const int32_t count = GfxRecorder_QuadCount();
     CHECK_EQ_INT(count, 1 + 1 + 1 + 5 + 1);
@@ -383,7 +384,7 @@ TEST(summary_hides_the_bomb_icon_unless_the_border_runs)
 {
     M_Setup("summary_border_pending");
     M_ShowSummary();
-    g_Player.border_state = 2;
+    g_Player.border_state = PLAYER_BORDER_PENDING;
     M_Draw();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1 + 1 + 1 + 1);
     M_Teardown();

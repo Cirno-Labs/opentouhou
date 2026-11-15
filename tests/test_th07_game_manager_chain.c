@@ -11,6 +11,7 @@
 #include "th07/settings.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 #include <string.h>
@@ -256,7 +257,7 @@ static void M_Setup(void)
     memset(&g_Settings, 0, sizeof(g_Settings));
     g_Settings.lives = 3;
     memset(&g_Player, 0, sizeof(g_Player));
-    g_Player.shot_bombs = 3;
+    g_Player.shot_type.bombs = 3.0f;
     memset(&g_Gui, 0, sizeof(g_Gui));
     g_GameManager.run.difficulty = 1;
     g_GameManager.run.character = 1;

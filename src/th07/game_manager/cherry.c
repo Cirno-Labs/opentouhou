@@ -1,5 +1,6 @@
 #include "th07/game_manager.h"
 
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 #define M_BORDER_PLUS 50000
@@ -28,7 +29,7 @@ static void M_ShowFull(const int32_t previous)
 void GameManager_AddCherry(const int32_t amount)
 {
     const int32_t previous = M_Add(amount);
-    if (amount > 0 && g_Player.border_state == 0) {
+    if (amount > 0 && g_Player.border_state == PLAYER_BORDER_NONE) {
         const int32_t full = g_GameManager.cherry.offset + M_BORDER_PLUS;
         g_GameManager.cherry.plus += amount;
         if (g_GameManager.cherry.plus >= full) {

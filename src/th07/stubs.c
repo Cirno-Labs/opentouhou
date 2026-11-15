@@ -1,5 +1,7 @@
 #include "th07/stubs.h"
 
+#include "th07/player.h"
+
 #include "core/base/log.h"
 
 RESULT ResultScreen_Register(const int32_t mode)

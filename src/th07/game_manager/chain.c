@@ -3,6 +3,7 @@
 #include "th07/ascii.h"
 #include "th07/effect.h"
 #include "th07/game.h"
+#include "th07/player.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/screen_effect.h"
@@ -13,6 +14,7 @@
 
 #include "core/base/log.h"
 #include "core/base/utils.h"
+#include "core/math/x87.h"
 
 #define M_CALC_PRIORITY 2
 #define M_DRAW_PRIORITY 2
@@ -146,7 +148,7 @@ static RESULT M_NewGame(GAME_MANAGER *const gm)
     if (!gm->mode.in_replay) {
         gm->player.lives = (float)gm->run.start_lives;
         GameManager_DrawChecksumKeys();
-        gm->player.bombs = (float)g_Player.shot_bombs;
+        gm->player.bombs = (float)X87_Ftol(g_Player.shot_type.bombs);
     }
     M_ResetPlayArea(gm);
     gm->player_area = (PLAY_RECT) { 8.0f, 16.0f, 368.0f, 416.0f };
