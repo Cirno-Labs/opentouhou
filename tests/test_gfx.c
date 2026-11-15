@@ -249,6 +249,15 @@ TEST(headless_textures_keep_their_size_and_draws_do_nothing)
     CHECK_EQ_INT(m_Recording.count, 0);
 }
 
+TEST(the_renderer_is_started_between_start_and_stop)
+{
+    CHECK(!Gfx_IsStarted());
+    M_Start();
+    CHECK(Gfx_IsStarted());
+    M_Stop();
+    CHECK(!Gfx_IsStarted());
+}
+
 TEST(state_texture_and_view_changes_split_batches)
 {
     M_Start();

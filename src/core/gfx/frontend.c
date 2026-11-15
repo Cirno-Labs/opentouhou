@@ -417,6 +417,11 @@ static void M_BlendVertices(const float t)
     }
 }
 
+bool Gfx_IsStarted(void)
+{
+    return m_Frontend.started;
+}
+
 RESULT GfxFrontend_Start(
     const GFX_BACKEND *const backend, SDL_Window *const window,
     const int32_t width, const int32_t height)
