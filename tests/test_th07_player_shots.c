@@ -12,6 +12,7 @@
 #include "th07/stubs.h"
 
 #include "core/base/memory.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -25,7 +26,6 @@
         .time = (time_),                                                       \
         .args = { __VA_ARGS__ },                                               \
     }
-#define M_HALF_PI 1.5707964f
 #define M_SPRITE 0
 #define M_SPRITE_OP 3
 #define M_END_OP -1
@@ -89,7 +89,7 @@ static SHOT M_Plain(void)
         .interval = 1,
         .size_x = 12.0f,
         .size_y = 12.0f,
-        .angle = -M_HALF_PI,
+        .angle = -MATH_HALF_PI,
         .speed = 10.0f,
         .damage = 30,
         .script = M_SCRIPT_SHOT,
@@ -305,7 +305,7 @@ TEST(a_homing_fire_turns_to_the_aim_target_at_one_and_a_half_speed)
     g_Player.aim_target = (VEC3) { 100.0f, 200.0f, 0.0f };
     bullet = M_FireOne(shot);
     const float angle = Angle_AddNormalize(
-        X87_Atan2(200.0f - 384.0f, 100.0f - 192.0f), -1.4f + M_HALF_PI);
+        X87_Atan2(200.0f - 384.0f, 100.0f - 192.0f), -1.4f + MATH_HALF_PI);
     float x;
     float y;
     X87_SinCosScale(angle, 10.0f * 1.5f, &x, &y);
@@ -322,7 +322,7 @@ TEST(an_aimed_fire_turns_by_the_aim_angle)
     shot.angle = -1.3f;
     g_Player.shots.aim_angle = -2.0f;
     const PLAYER_BULLET *const bullet = M_FireOne(shot);
-    const float angle = Angle_AddNormalize(-2.0f, -1.3f + M_HALF_PI);
+    const float angle = Angle_AddNormalize(-2.0f, -1.3f + MATH_HALF_PI);
     float x;
     float y;
     X87_SinCosScale(angle, 10.0f, &x, &y);
@@ -966,7 +966,8 @@ TEST(flying_shots_draw_turned_in_the_play_area_with_their_trail)
     CHECK_EQ_INT(
         GfxRecorder_Quad(3)->vertices[0].color.alpha, 0x80 - 0x80 * 2 / 4);
     CHECK(
-        bullet->vm.rotation.z == Angle_AddNormalize(bullet->angle, M_HALF_PI));
+        bullet->vm.rotation.z
+        == Angle_AddNormalize(bullet->angle, MATH_HALF_PI));
     CHECK(bullet->vm.pos.x == 20.0f + 32.0f && bullet->vm.pos.y == 36.0f);
     CHECK(bullet->vm.color == 0x80ffffffu);
     M_TearDown();

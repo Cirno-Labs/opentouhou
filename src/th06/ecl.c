@@ -39,9 +39,6 @@
 #define M_MAX_DEPTH 7
 #define M_FIRST_SCRIPT 0x100
 #define M_LARGE_HEIGHT 30.0f
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
-#define M_HALF_PI 1.5707964f
 #define M_QUARTER_PI 0.7853982f
 
 typedef enum {
@@ -600,17 +597,17 @@ static void M_RandomAngleInBounds(
     const float high = M_ArgFloat(instr, 1);
     float angle = Rng_F32InRange(&g_Rng, high - low) + low;
     if (enemy->move.bounds_min.x + 96.0f > enemy->move.pos.x) {
-        if (angle > M_HALF_PI) {
-            angle = M_PI - angle;
-        } else if (angle < -M_HALF_PI) {
-            angle = -M_PI - angle;
+        if (angle > MATH_HALF_PI) {
+            angle = MATH_PI - angle;
+        } else if (angle < -MATH_HALF_PI) {
+            angle = -MATH_PI - angle;
         }
     }
     if (enemy->move.bounds_max.x - 96.0f < enemy->move.pos.x) {
-        if (angle < M_HALF_PI && angle >= 0.0f) {
-            angle = M_PI - angle;
-        } else if (angle > -M_HALF_PI && angle <= 0.0f) {
-            angle = -M_PI - angle;
+        if (angle < MATH_HALF_PI && angle >= 0.0f) {
+            angle = MATH_PI - angle;
+        } else if (angle > -MATH_HALF_PI && angle <= 0.0f) {
+            angle = -MATH_PI - angle;
         }
     }
     if (enemy->move.bounds_min.y + 48.0f > enemy->move.pos.y && angle < 0.0f) {
@@ -861,8 +858,8 @@ static void M_FreezeBullets(ENEMY *const enemy, const M_INSTR *const instr)
             bullet->change.frames = 220;
             Timer_Set(&bullet->timer, 0);
             M_SinCosScale(
-                &bullet->change.accel, Rng_F32InRange(&g_Rng, M_TWO_PI) - M_PI,
-                0.01f);
+                &bullet->change.accel,
+                Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI, 0.01f);
             break;
         default:
             break;
@@ -898,7 +895,7 @@ static void M_StarPattern(ENEMY *const enemy)
     if (state->int_vars[2] == 0) {
         m_Star.from = enemy->move.pos;
         m_Star.to = g_Player.pos;
-        m_Star.angles[0] = Rng_F32InRange(&g_Rng, M_TWO_PI) - M_PI;
+        m_Star.angles[0] = Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI;
         m_Star.angles[1] = Angle_AddNormalize(m_Star.angles[0], 2.5132742f);
     }
     if (state->int_vars[2] % 30 == 0) {
@@ -965,8 +962,9 @@ static void M_SendOff(int32_t count, const float range, const float offset)
             if (X87_Sqrt(dy * dy + dx * dx) > 128.0f) {
                 bullet->angle = Rng_F32InRange(&g_Rng, range) + offset;
             } else {
-                const float turn = Rng_F32InRange(&g_Rng, M_TWO_PI);
-                bullet->angle = Player_AngleTo(bullet->pos) + M_HALF_PI + turn;
+                const float turn = Rng_F32InRange(&g_Rng, MATH_TWO_PI);
+                bullet->angle =
+                    Player_AngleTo(bullet->pos) + MATH_HALF_PI + turn;
             }
             M_SinCosScale(&bullet->velocity, bullet->angle, bullet->speed);
             count--;
@@ -986,7 +984,7 @@ static void M_FreezeOrSendOff(ENEMY *const enemy, const M_INSTR *const instr)
     } else if (g_GameManager.run.difficulty <= 1) {
         M_SendOff(14, 2.3561945f, M_QUARTER_PI);
     } else {
-        M_SendOff(52, M_TWO_PI, 0.0f);
+        M_SendOff(52, MATH_TWO_PI, 0.0f);
     }
     enemy->script.state.int_vars[2] = 0;
 }
@@ -1064,7 +1062,7 @@ static void M_SparkCircle(ENEMY *const enemy)
     }
     enemy->sparks.angle += 0.017453292f;
     if (enemy->sparks.angle >= M_QUARTER_PI) {
-        enemy->sparks.angle -= M_HALF_PI;
+        enemy->sparks.angle -= MATH_HALF_PI;
     }
     const TIMER *const timer = &enemy->sparks.timer;
     if (Timer_HasTicked(timer)
@@ -1075,9 +1073,9 @@ static void M_SparkCircle(ENEMY *const enemy)
         int32_t k = timer->current % 16;
         k = Rng_U16InRange(&g_Rng, (uint16_t)(k / 2)) + k / 2;
         float r = (float)k * 160.0f / 16.0f + 32.0f;
-        const float angle = enemy->sparks.angle - (float)k * M_PI / 40.0f;
+        const float angle = enemy->sparks.angle - (float)k * MATH_PI / 40.0f;
         if (r < -M_QUARTER_PI) {
-            r += M_HALF_PI;
+            r += MATH_HALF_PI;
         }
         VEC3 pos = enemy->move.pos;
         pos.x += X87_Cos(angle) * r;
@@ -1099,9 +1097,10 @@ static void M_TwoRingShots(ENEMY *const enemy, const M_INSTR *const instr)
     const int32_t mode = M_FuncArg(instr);
     BULLET_SHOOTER shooter = {};
     VEC3 at[8];
-    const float origin = Rng_F32InRange(&g_Rng, M_TWO_PI);
+    const float origin = Rng_F32InRange(&g_Rng, MATH_TWO_PI);
     for (int32_t half = 0; half < 2; half++) {
-        const float start = half == 0 ? -M_PI + origin : -2.7488937f + origin;
+        const float start =
+            half == 0 ? -MATH_PI + origin : -2.7488937f + origin;
         const float step = half == 0 ? M_QUARTER_PI : -M_QUARTER_PI;
         float angle = start;
         float radius = 32.0f;
@@ -1142,7 +1141,7 @@ static void M_TwoRingShots(ENEMY *const enemy, const M_INSTR *const instr)
                 at[i].y += X87_Sin(angle) * radius;
                 angle += M_QUARTER_PI;
             }
-            angle += step - M_TWO_PI;
+            angle += step - MATH_TWO_PI;
         }
     }
 }
@@ -1161,7 +1160,7 @@ static void M_ShootFromLargeBullets(ENEMY *const enemy)
         shooter.pos = bullet->pos;
         shooter.type = 3;
         shooter.color = 1;
-        shooter.angle1 = Rng_F32InRange(&g_Rng, M_TWO_PI) - M_PI;
+        shooter.angle1 = Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI;
         shooter.speed1 = 0.0f;
         shooter.columns = 1;
         shooter.rows = 1;
@@ -1185,7 +1184,7 @@ static void M_StartStopped(BULLET *const bullet)
 
 static void M_SwirlStoppedBullets(ENEMY *const enemy)
 {
-    const float base = Rng_F32InRange(&g_Rng, M_TWO_PI) - M_PI;
+    const float base = Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI;
     Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, 0xffffffff);
     for (int32_t i = 0; i < BULLET_COUNT; i++) {
         BULLET *const bullet = &g_Bullets.bullets[i];
@@ -1198,7 +1197,7 @@ static void M_SwirlStoppedBullets(ENEMY *const enemy)
         float dist = dx * dx + dy * dy;
         dist = dist > 0.1f ? X87_Sqrt(dist) : 0.0f;
         M_SinCosScale(
-            &bullet->change.accel, dist * M_PI / 256.0f + base, 0.01f);
+            &bullet->change.accel, dist * MATH_PI / 256.0f + base, 0.01f);
     }
 }
 
@@ -1206,7 +1205,7 @@ static void M_SwirlStoppedBullets(ENEMY *const enemy)
 // direction. It draws the base angle of the swirl all the same.
 static void M_ScatterStoppedBullets(ENEMY *const enemy)
 {
-    Rng_F32InRange(&g_Rng, M_TWO_PI);
+    Rng_F32InRange(&g_Rng, MATH_TWO_PI);
     Effect_Spawn(EFFECT_SHOCKWAVE, enemy->move.pos, 1, 0xffffffff);
     for (int32_t i = 0; i < BULLET_COUNT; i++) {
         BULLET *const bullet = &g_Bullets.bullets[i];
@@ -1215,8 +1214,8 @@ static void M_ScatterStoppedBullets(ENEMY *const enemy)
         }
         M_StartStopped(bullet);
         M_SinCosScale(
-            &bullet->change.accel, Rng_F32InRange(&g_Rng, M_TWO_PI) - M_PI,
-            0.01f);
+            &bullet->change.accel,
+            Rng_F32InRange(&g_Rng, MATH_TWO_PI) - MATH_PI, 0.01f);
     }
 }
 
@@ -1272,7 +1271,8 @@ static void M_ArenaCircleShots(ENEMY *const enemy, const M_INSTR *const instr)
     const int32_t count = M_FuncArg(instr);
     float angle = state->float_vars[2];
     if (state->int_vars[3] % 6 == 0) {
-        for (int32_t i = 0; i < count; i++, angle += M_TWO_PI / (float)count) {
+        for (int32_t i = 0; i < count;
+             i++, angle += MATH_TWO_PI / (float)count) {
             M_SinCosScale(&shooter.pos, angle, state->float_vars[3]);
             shooter.pos.x += 192.0f;
             shooter.pos.y += 224.0f;

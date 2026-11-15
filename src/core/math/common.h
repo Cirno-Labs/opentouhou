@@ -5,6 +5,11 @@
 // reproduce and no "fast" variant to pick from. Unlike core/math/x87, these
 // are safe to use outside the simulation too.
 
+// Pi, half pi and two pi as the float constants the originals use.
+#define MATH_PI 3.1415927f
+#define MATH_HALF_PI 1.5707964f
+#define MATH_TWO_PI 6.2831855f
+
 // Returns the absolute value of x. Flips the sign bit; NaN keeps its
 // payload, with the sign bit cleared.
 float Math_Abs(float x);

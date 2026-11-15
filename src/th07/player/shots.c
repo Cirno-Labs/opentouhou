@@ -7,13 +7,13 @@
 #include "th07/sound.h"
 #include "th07/stubs.h"
 
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
 #include "stg/rng.h"
 #include "stg/timer.h"
 
-#define M_HALF_PI 1.5707964f
 #define M_NO_TARGET -100.0f
 #define M_NO_TRAIL -999.0f
 #define M_TRAIL_SET -900.0f
@@ -145,7 +145,7 @@ static bool M_FireHoming(
         const float dx = target.x - bullet->pos.x;
         const float dy = target.y - bullet->pos.y;
         const float angle =
-            Angle_AddNormalize(X87_Atan2(dy, dx), shot->angle + M_HALF_PI);
+            Angle_AddNormalize(X87_Atan2(dy, dx), shot->angle + MATH_HALF_PI);
         M_Turn(bullet, angle, shot->speed * 1.5f);
     }
     return true;
@@ -158,8 +158,8 @@ static bool M_FireAimed(
         return false;
     }
     M_FireShot(bullet, shot);
-    const float angle =
-        Angle_AddNormalize(g_Player.shots.aim_angle, shot->angle + M_HALF_PI);
+    const float angle = Angle_AddNormalize(
+        g_Player.shots.aim_angle, shot->angle + MATH_HALF_PI);
     M_Turn(bullet, angle, shot->speed);
     return true;
 }
@@ -575,7 +575,7 @@ void Player_DrawShots(
         }
         if (bullet->vm.auto_rotate != 0) {
             bullet->vm.rotation.z =
-                Angle_AddNormalize(bullet->angle, M_HALF_PI);
+                Angle_AddNormalize(bullet->angle, MATH_HALF_PI);
             bullet->vm.rotation_changed = true;
         }
         bullet->vm.pos.x = g_GameManager.play_area.x + bullet->pos.x;
