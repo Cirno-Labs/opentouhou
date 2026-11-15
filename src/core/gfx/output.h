@@ -26,3 +26,9 @@ RESULT Gfx_Present(bool interpolate, float t, const GFX_OUTPUT *output);
 // window, as top-down RGBA.
 RESULT Gfx_ReadScreen(const ALLOCATOR *allocator, IMAGE *out);
 RESULT Gfx_ReadOutput(const ALLOCATOR *allocator, IMAGE *out);
+
+// Reads back source of the logical screen as drawn so far in this tick,
+// as top-down RGBA. A source outside the screen, or a renderer that is not
+// started, is a failure.
+RESULT Gfx_ReadScreenRect(
+    GFX_RECT source, const ALLOCATOR *allocator, IMAGE *out);

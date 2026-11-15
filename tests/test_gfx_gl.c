@@ -441,3 +441,24 @@ TEST(the_screen_reads_back_without_window_scaling_or_borders)
     Image_Free(&screen);
     Image_Free(&window);
 }
+
+TEST(a_screen_rect_reads_mid_tick_and_drawing_goes_on)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    M_Rect(&m_Opaque, nullptr, 0, 0, SIZE, 4, 0.5f, RED, 1.0f);
+    IMAGE rect;
+    CHECK_OK(
+        Gfx_ReadScreenRect((GFX_RECT) { 2, 3, 4, 2 }, &g_HeapAllocator, &rect));
+    M_Rect(&m_Opaque, nullptr, 0, 4, SIZE, SIZE, 0.5f, GREEN, 1.0f);
+    IMAGE screen = M_Screen();
+    CHECK_EQ_INT(rect.width, 4);
+    CHECK_EQ_INT(rect.height, 2);
+    M_CheckPixel(&rect, 0, 0, RED, 0);
+    M_CheckPixel(&rect, 3, 0, RED, 0);
+    M_CheckPixel(&rect, 0, 1, BLACK, 0);
+    M_CheckPixel(&screen, 0, 0, RED, 0);
+    M_CheckPixel(&screen, 7, 7, GREEN, 0);
+    Image_Free(&screen);
+    Image_Free(&rect);
+}

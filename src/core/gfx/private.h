@@ -77,7 +77,8 @@ typedef struct {
     // Shows the logical screen of the last screen pass in the window,
     // scaled into output->rect.
     void (*blit_screen)(const GFX_PASS_OUTPUT *output);
-    // Reads the target of the last pass of the given kind.
+    // Reads the target of the open pass of the given kind, or else of the
+    // last one.
     RESULT (*read_pixels)(
         GFX_PASS pass, const ALLOCATOR *allocator, IMAGE *out);
 } GFX_BACKEND;
