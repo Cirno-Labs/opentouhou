@@ -35,11 +35,6 @@ void ResultScreen_LoadTitleRecords(void)
     }
 }
 
-void ScreenEffect_FadeIn(const int32_t frames, const uint32_t color)
-{
-    g_SceneStubCalls.fade_ins++;
-}
-
 RESULT GameManager_Register(void)
 {
     g_SceneStubCalls.game_manager_register++;

@@ -250,6 +250,16 @@ static bool M_TitleAdded(void)
     return false;
 }
 
+static int M_FadeCount(void)
+{
+    int count = 0;
+    for (const CHAIN_ELEM *elem = g_Chain.draw.next; elem != nullptr;
+         elem = elem->next) {
+        count += elem->priority == 17;
+    }
+    return count;
+}
+
 // Boots to the title menu and waits until it takes input.
 static void M_OpenTitle(void)
 {
@@ -819,7 +829,7 @@ TEST(the_title_music_keeps_playing_back_from_the_scores)
     Scene_Request(SCENE_TITLE);
     M_Tick(m_NoInput);
     CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_KEEP);
-    CHECK_EQ_INT(g_SceneStubCalls.fade_ins, 2);
+    CHECK_EQ_INT(M_FadeCount(), 2);
     M_Teardown();
 }
 

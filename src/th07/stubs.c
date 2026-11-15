@@ -59,11 +59,6 @@ void ResultScreen_LoadTitleRecords(void)
     LOG_INFO("ResultScreen_LoadTitleRecords is not ported");
 }
 
-void ScreenEffect_FadeIn(const int32_t frames, const uint32_t color)
-{
-    LOG_INFO("ScreenEffect_FadeIn is not ported");
-}
-
 void PlayTime_Add(void)
 {
     LOG_INFO("PlayTime_Add is not ported");
