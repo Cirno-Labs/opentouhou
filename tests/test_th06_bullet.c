@@ -19,8 +19,9 @@
 #include "th06/sound.h"
 
 #include "core/base/memory.h"
-#include "core/gfx/private.h"
 #include "core/base/utils.h"
+#include "core/gfx/private.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
@@ -28,8 +29,6 @@
 
 #include <SDL3/SDL.h>
 
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
 #define M_SPRITE 0x200
 #define M_SPRITE_8 (M_SPRITE + 0)
 #define M_SPRITE_16 (M_SPRITE + 16)
@@ -447,11 +446,11 @@ TEST(a_ring_spaces_its_columns_and_turns_each_row)
                     angle += 0.3f;
                 }
                 if (aim <= BULLET_AIM_RING) {
-                    angle += (float)col * M_TWO_PI / 5.0f;
+                    angle += (float)col * MATH_TWO_PI / 5.0f;
                     angle += (float)row * 0.1f + 0.25f;
                 } else {
-                    angle += M_PI / 5.0f;
-                    angle += (float)col * M_TWO_PI / 5.0f;
+                    angle += MATH_PI / 5.0f;
+                    angle += (float)col * MATH_TWO_PI / 5.0f;
                     angle += 0.25f;
                 }
                 const BULLET *const bullet =
@@ -488,7 +487,7 @@ TEST(the_random_modes_draw_the_angle_before_the_speed)
                     speed = Rng_F32(&expected) * (3.0f - 1.0f) + 1.0f;
                 }
                 if (aim == BULLET_AIM_RING_RANDOM_SPEED) {
-                    angle += (float)col * M_TWO_PI / 3.0f;
+                    angle += (float)col * MATH_TWO_PI / 3.0f;
                     angle += (float)row * -0.5f + 1.5f;
                 }
                 const BULLET *const bullet =
@@ -839,7 +838,7 @@ TEST(a_turning_bullet_slows_between_turns_and_adds_the_turn_angle)
         }
     }
     CHECK(bullet->angle == angle);
-    CHECK(bullet->angle > M_TWO_PI);
+    CHECK(bullet->angle > MATH_TWO_PI);
     CHECK_EQ_INT(bullet->turn.count, 2);
     CHECK_EQ_INT(bullet->flags, 0);
     M_Teardown();
@@ -916,8 +915,8 @@ TEST(a_bouncing_bullet_turns_back_off_a_side)
     shooter.ex_ints[0] = 2;
     BULLET *const bullet = M_Fire(&shooter);
     M_Frame();
-    const float angle = Angle_AddNormalize(-1.603f - M_PI, 0.0f);
-    CHECK(angle != M_PI - 1.603f);
+    const float angle = Angle_AddNormalize(-1.603f - MATH_PI, 0.0f);
+    CHECK(angle != MATH_PI - 1.603f);
     CHECK(bullet->angle == angle);
     CHECK(bullet->speed == 2.0f);
     CHECK(M_SameVec(bullet->velocity, M_Velocity(angle, 2.0f)));

@@ -35,9 +35,6 @@
 #include <SDL3/SDL.h>
 #include <string.h>
 
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
-#define M_HALF_PI 1.5707964f
 #define M_QUARTER_PI 0.7853982f
 #define M_MAX_CALLS 64
 #define M_ALL 0xff
@@ -1333,7 +1330,8 @@ TEST(a_random_angle_turns_away_from_the_bounds)
     CHECK(m_Enemy.flags.clamp_pos);
     CHECK(m_Enemy.move.bounds_max.y == 448.0f);
     CHECK(
-        m_Enemy.move.angle == M_PI - (Rng_F32InRange(&expected, 1.0f) + 2.0f));
+        m_Enemy.move.angle
+        == MATH_PI - (Rng_F32InRange(&expected, 1.0f) + 2.0f));
     M_Frame();
     CHECK(m_Enemy.move.angle == Rng_F32InRange(&expected, 2.0f) + -1.0f);
     CHECK(!m_Enemy.flags.clamp_pos);
@@ -1912,7 +1910,7 @@ TEST(freeze_bullets_stops_or_scatters_them)
         float x;
         float y;
         X87_SinCosScale(
-            Rng_F32InRange(&expected, M_TWO_PI) - M_PI, 0.01f, &x, &y);
+            Rng_F32InRange(&expected, MATH_TWO_PI) - MATH_PI, 0.01f, &x, &y);
         CHECK_EQ_INT(bullet->flags, BULLET_FLAG_ACCELERATE);
         CHECK_EQ_INT(bullet->change.frames, 220);
         CHECK_EQ_INT(bullet->timer.current, 0);
@@ -1967,7 +1965,7 @@ TEST(star_pattern_fires_five_points_every_sixth_frame)
     g_Player.pos = (VEC3) { 200.0f, 300.0f, 0.0f };
     RNG expected = g_Rng;
     float angles[6];
-    angles[0] = Rng_F32InRange(&expected, M_TWO_PI) - M_PI;
+    angles[0] = Rng_F32InRange(&expected, MATH_TWO_PI) - MATH_PI;
     angles[1] = Angle_AddNormalize(angles[0], 2.5132742f);
     for (int32_t frame = 0; frame < 13; frame++) {
         const int32_t fired = m_FiredCount;
@@ -2084,10 +2082,10 @@ TEST(freeze_or_send_off_sends_large_bullets_off)
             if (bullet->pos.x > 128.0f) {
                 angle = difficulty <= 1
                     ? Rng_F32InRange(&expected, 2.3561945f) + M_QUARTER_PI
-                    : Rng_F32InRange(&expected, M_TWO_PI);
+                    : Rng_F32InRange(&expected, MATH_TWO_PI);
             } else {
-                const float turn = Rng_F32InRange(&expected, M_TWO_PI);
-                angle = 0.5f + M_HALF_PI + turn;
+                const float turn = Rng_F32InRange(&expected, MATH_TWO_PI);
+                angle = 0.5f + MATH_HALF_PI + turn;
             }
             float x;
             float y;
@@ -2192,13 +2190,13 @@ TEST(spark_circle_spawns_pairs_of_sparks)
     m_Enemy.sparks.timer = (TIMER) { .previous = 124, .current = 125 };
     RNG expected = g_Rng;
     M_Frame();
-    const float spark_angle = 0.78f + 0.017453292f - M_HALF_PI;
+    const float spark_angle = 0.78f + 0.017453292f - MATH_HALF_PI;
     CHECK(m_Enemy.sparks.angle == spark_angle);
     CHECK_EQ_INT(m_Enemy.sparks.timer.current, 126);
     CHECK_EQ_INT(m_EffectCount, 2);
     const int32_t k = Rng_U16InRange(&expected, 6) + 6;
     const float r = (float)k * 160.0f / 16.0f + 32.0f;
-    const float angle = spark_angle - (float)k * M_PI / 40.0f;
+    const float angle = spark_angle - (float)k * MATH_PI / 40.0f;
     CHECK(m_EffectCalls[0].pos.x == 100.0f + X87_Cos(angle) * r);
     CHECK(m_EffectCalls[1].pos.x == 100.0f - X87_Cos(angle) * r);
     CHECK(m_EffectCalls[1].pos.y == 100.0f + X87_Sin(angle) * r);
@@ -2233,7 +2231,8 @@ static void M_TwoRings(
 {
     int32_t n = 0;
     for (int32_t half = 0; half < 2; half++) {
-        const float start = half == 0 ? -M_PI + origin : -2.7488937f + origin;
+        const float start =
+            half == 0 ? -MATH_PI + origin : -2.7488937f + origin;
         const float step = half == 0 ? M_QUARTER_PI : -M_QUARTER_PI;
         VEC3 at[8];
         float angle = start;
@@ -2255,7 +2254,7 @@ static void M_TwoRings(
                 at[i].y += X87_Sin(angle) * radius;
                 angle += M_QUARTER_PI;
             }
-            angle += step - M_TWO_PI;
+            angle += step - MATH_TWO_PI;
         }
     }
 }
@@ -2275,8 +2274,8 @@ TEST(two_ring_shots_fire_lasers_or_the_shooter)
     float angles[48];
     float radii[48];
     M_TwoRings(
-        m_Enemy.move.pos, Rng_F32InRange(&expected, M_TWO_PI), points, angles,
-        radii);
+        m_Enemy.move.pos, Rng_F32InRange(&expected, MATH_TWO_PI), points,
+        angles, radii);
     CHECK_EQ_INT(m_LaserCount, 48);
     for (int32_t i = 0; i < 48; i++) {
         const BULLET_SHOOTER *const shooter = &m_LaserShots[i];
@@ -2295,8 +2294,8 @@ TEST(two_ring_shots_fire_lasers_or_the_shooter)
     expected = g_Rng;
     M_Frame();
     M_TwoRings(
-        m_Enemy.move.pos, Rng_F32InRange(&expected, M_TWO_PI), points, angles,
-        radii);
+        m_Enemy.move.pos, Rng_F32InRange(&expected, MATH_TWO_PI), points,
+        angles, radii);
     CHECK_EQ_INT(m_FiredCount, 48);
     for (int32_t i = 0; i < 48; i++) {
         CHECK(
@@ -2324,7 +2323,9 @@ TEST(shoot_from_large_bullets_counts_them)
     CHECK_EQ_INT(M_State()->int_vars[3], 2);
     CHECK(m_Fired[0].pos.x == 1.0f && m_Fired[1].pos.y == 4.0f);
     for (int32_t i = 0; i < 2; i++) {
-        CHECK(m_Fired[i].angle1 == Rng_F32InRange(&expected, M_TWO_PI) - M_PI);
+        CHECK(
+            m_Fired[i].angle1
+            == Rng_F32InRange(&expected, MATH_TWO_PI) - MATH_PI);
         CHECK_EQ_INT(m_Fired[i].type, 3);
         CHECK_EQ_INT(m_Fired[i].color, 1);
         CHECK_EQ_INT(m_Fired[i].flags, BULLET_FLAG_SPAWN_3);
@@ -2351,13 +2352,13 @@ TEST(swirl_and_scatter_start_the_small_stopped_bullets)
     M_AddBullet(3, BULLET_FLYING, &m_LargeSprite, (VEC3) {}, 0.0f);
     RNG expected = g_Rng;
     M_Frame();
-    const float base = Rng_F32InRange(&expected, M_TWO_PI) - M_PI;
+    const float base = Rng_F32InRange(&expected, MATH_TWO_PI) - MATH_PI;
     const float dists[2] = { X87_Sqrt(9.0f + 16.0f), 0.0f };
     for (int32_t i = 0; i < 2; i++) {
         const BULLET *const bullet = &g_Bullets.bullets[i];
         float x;
         float y;
-        X87_SinCosScale(dists[i] * M_PI / 256.0f + base, 0.01f, &x, &y);
+        X87_SinCosScale(dists[i] * MATH_PI / 256.0f + base, 0.01f, &x, &y);
         CHECK(bullet->change.accel.x == x && bullet->change.accel.y == y);
         CHECK_EQ_INT(bullet->flags, BULLET_FLAG_ACCELERATE);
         CHECK_EQ_INT(bullet->color, 2);
@@ -2375,12 +2376,12 @@ TEST(swirl_and_scatter_start_the_small_stopped_bullets)
     M_InitEnemy(&m_Enemy, 1);
     expected = g_Rng;
     M_Frame();
-    Rng_F32InRange(&expected, M_TWO_PI);
+    Rng_F32InRange(&expected, MATH_TWO_PI);
     for (int32_t i = 0; i < 5; i += 4) {
         float x;
         float y;
         X87_SinCosScale(
-            Rng_F32InRange(&expected, M_TWO_PI) - M_PI, 0.01f, &x, &y);
+            Rng_F32InRange(&expected, MATH_TWO_PI) - MATH_PI, 0.01f, &x, &y);
         CHECK(g_Bullets.bullets[i].change.accel.x == x);
         CHECK(g_Bullets.bullets[i].change.accel.y == y);
     }
@@ -2452,7 +2453,7 @@ TEST(arena_circle_shots_fire_every_sixth_call)
     CHECK_EQ_INT(m_FiredCount, 4);
     CHECK_EQ_INT(M_State()->int_vars[3], 1);
     float angle = 0.5f;
-    for (int32_t i = 0; i < 4; i++, angle += M_TWO_PI / 4.0f) {
+    for (int32_t i = 0; i < 4; i++, angle += MATH_TWO_PI / 4.0f) {
         float x;
         float y;
         X87_SinCosScale(angle, 100.0f, &x, &y);
