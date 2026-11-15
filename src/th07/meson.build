@@ -16,6 +16,7 @@ th07_lib = static_library(
   'replay/format.c',
   'replay/store.c',
   'scene.c',
+  'screens/result/saves.c',
   'settings.c',
   'sound/bgm.c',
   'sound/events.c',
