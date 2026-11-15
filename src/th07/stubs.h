@@ -52,10 +52,7 @@ void Gui_ShowBorderBonusPopup(int32_t points);
 void Gui_ShowBombName(int32_t sprite, const char *name);
 void Gui_EndBombName(void);
 
-// Stand in for th07/bomb's update and draw of the shot type's bomb,
-// unfocused or focused as the bomb started. The stand-in ends the bomb at
-// once.
-void Bomb_Update(void);
+// Stands in for th07/bomb's draw of the running bomb.
 void Bomb_Draw(void);
 
 // Stand in for th07/item's spawn of an item of type in state at pos, its
