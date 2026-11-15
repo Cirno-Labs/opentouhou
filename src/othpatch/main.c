@@ -6,14 +6,13 @@
 #include "othpatch/step.h"
 
 #include "shell/folders.h"
+#include "core/args.h"
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
 
 #include "version.h"
-
-#include <string.h>
 
 #define M_DEFAULT_REPO "https://srv.thpatch.net/repo.js"
 
@@ -23,91 +22,53 @@
 
 const char *const g_Games[APP_GAME_COUNT] = { "th06" };
 
-static const char m_Usage[] =
-    "Usage: othpatch [--update] [--verbose]\n"
-    "                [<language> | <repo>/<patch> | <patch>]\n"
-    "       othpatch --remove <patch>\n"
-    "       othpatch --list | --help | --version\n"
-    "\n"
-    "Downloads thcrap patches for the opentouhou games beside othpatch,\n"
-    "such as oth06 or oth06.exe, and updates the patches that you have.\n"
-    "Then it checks for a newer release of othpatch and of each game, and\n"
+static const ARG_OPTION m_Options[] = {
+    ARG_STRING_OF(
+        APP_ARGS, "patch", name, "<patch>",
+        "a language code, such as de or pt-br, or ja for the original "
+        "Japanese; a patch of one repository, such as nmlgc/aero; or the "
+        "patch of the one repository that has it"),
+    ARG_STRING_OF(
+        APP_ARGS, "--remove", remove, "<patch>",
+        "remove a patch and the patches that only it needs"),
+    ARG_FLAG_OF(
+        APP_ARGS, "--list", list, "list the languages and the installed mods"),
+    ARG_FLAG_OF(
+        APP_ARGS, "--update", update, "install new releases without asking"),
+    ARG_FLAG_OF(
+        APP_ARGS, "--verbose", verbose,
+        "also print the folders and each patch"),
+    ARG_FLAG_OF(
+        APP_ARGS, "--version", version, "print the version", ARG_SHORT("-v")),
+    ARG_STRING_OF(
+        APP_ARGS, "--dir", dir, "<folder>",
+        "for developers: the patches folder"),
+    ARG_STRING_OF(
+        APP_ARGS, "--repo", repo, "<url>",
+        "for developers: the first repository, " M_DEFAULT_REPO " by default",
+        ARG_FALLBACK(M_DEFAULT_REPO)),
+    ARG_STRING_OF(
+        APP_ARGS, "--releases", releases, "<url>",
+        "for developers: the release index of the games and "
+        "othpatch, " OTHPATCH_RELEASES_URL " by default",
+        ARG_FALLBACK(OTHPATCH_RELEASES_URL)),
+};
+
+static const ARG_RULE m_Rules[] = {
+    { ARG_EXCLUSIVE, { "patch", "--remove", "--list" } },
+};
+
+static const ARG_SCHEMA m_Schema = ARG_SCHEMA_OF(
+    "othpatch",
+    "Downloads thcrap patches for the opentouhou games beside othpatch, "
+    "such as oth06 or oth06.exe, and updates the patches that you have. "
+    "Then it checks for a newer release of othpatch and of each game, and "
     "asks before it installs one.\n"
     "\n"
-    "Without an argument, othpatch updates the language and every patch\n"
-    "that you have. When no language is set yet, it sets the language of\n"
-    "the system.\n"
-    "\n"
-    "  <language>        a language code, such as de or pt-br, or ja for\n"
-    "                    the original Japanese\n"
-    "  <repo>/<patch>    a patch of one repository, such as nmlgc/aero\n"
-    "  <patch>           the patch of the one repository that has it\n"
-    "  --remove <patch>  remove a patch and the patches that only it needs\n"
-    "  --list            list the languages and the installed mods\n"
-    "  --update          install new releases without asking\n"
-    "  --verbose         also print the folders and each patch\n"
-    "  -h, --help        print this help\n"
-    "  -v, --version     print the version\n"
-    "\n"
-    "Developer options:\n"
-    "  --dir <folder>    the patches folder\n"
-    "  --repo <url>      the first repository, " M_DEFAULT_REPO
-    "\n"
-    "                    by default\n"
-    "  --releases <url>  the release index of the games and othpatch,\n"
-    "                    " OTHPATCH_RELEASES_URL " by default\n";
-
-static RESULT M_ParseArgs(
-    const int argc, char **const argv, APP_ARGS *const args)
-{
-    *args = (APP_ARGS) {
-        .repo = M_DEFAULT_REPO,
-        .releases = OTHPATCH_RELEASES_URL,
-    };
-    for (int i = 1; i < argc; i++) {
-        const char *const arg = argv[i];
-        const bool valued = strcmp(arg, "--dir") == 0
-            || strcmp(arg, "--repo") == 0 || strcmp(arg, "--releases") == 0
-            || strcmp(arg, "--remove") == 0;
-        if (valued && i + 1 >= argc) {
-            return FAIL("%s needs a value", arg);
-        }
-        if (strcmp(arg, "--dir") == 0) {
-            args->dir = argv[++i];
-        } else if (strcmp(arg, "--repo") == 0) {
-            args->repo = argv[++i];
-        } else if (strcmp(arg, "--releases") == 0) {
-            args->releases = argv[++i];
-        } else if (strcmp(arg, "--remove") == 0) {
-            args->remove = argv[++i];
-        } else if (strcmp(arg, "--update") == 0) {
-            args->update = true;
-        } else if (strcmp(arg, "--verbose") == 0) {
-            args->verbose = true;
-        } else if (strcmp(arg, "--list") == 0) {
-            args->list = true;
-        } else if (strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0) {
-            args->help = true;
-        } else if (strcmp(arg, "--version") == 0 || strcmp(arg, "-v") == 0) {
-            args->version = true;
-        } else if (arg[0] == '-') {
-            return FAIL("unknown option %s; --help lists the options", arg);
-        } else if (args->name != nullptr) {
-            return FAIL("name one patch only, not %s and %s", args->name, arg);
-        } else {
-            args->name = arg;
-        }
-    }
-    if (args->list && args->remove != nullptr) {
-        return FAIL("use --list or --remove, not both");
-    }
-    if (args->name != nullptr && (args->remove != nullptr || args->list)) {
-        return FAIL(
-            "%s takes no patch to install",
-            args->remove != nullptr ? "--remove" : "--list");
-    }
-    return OK;
-}
+    "Without an argument, othpatch updates the language and every patch "
+    "that you have. When no language is set yet, it sets the language of "
+    "the system.",
+    m_Options, m_Rules);
 
 // Returns the patches folder: --dir, or else the patches folder of the
 // games beside othpatch. Mem_Free releases *out.
@@ -171,13 +132,14 @@ int Main_Run(
     const MAIN_OUTPUT output)
 {
     APP_ARGS args;
-    const RESULT parsed = M_ParseArgs(argc, argv, &args);
+    bool help;
+    const RESULT parsed = Args_Parse(&m_Schema, argc, argv, &args, &help);
     if (!IS_OK(parsed)) {
-        Console_Fail(out, parsed, "othpatch: %s", parsed.message);
+        Console_Fail(out, parsed, "%s", parsed.message);
         return 1;
     }
-    if (args.help) {
-        fputs(m_Usage, out);
+    if (help) {
+        Args_PrintHelp(&m_Schema, out);
         return 0;
     }
     if (args.version) {
