@@ -14,6 +14,7 @@ th07_lib = static_library(
   'effect.c',
   'files.c',
   'game.c',
+  'game_manager/chain.c',
   'game_manager/cherry.c',
   'game_manager/state.c',
   'replay/format.c',

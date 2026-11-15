@@ -942,6 +942,21 @@ test(
 )
 
 test(
+  'th07/game_manager/chain',
+  executable(
+    'test_th07_game_manager_chain',
+    'test_th07_game_manager_chain.c',
+    'shell_fake.c',
+    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_chain_lib, stg_rng_lib, core_base_lib,
+    ],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/scene',
   executable(
     'test_th07_scene',

@@ -4,10 +4,11 @@
 
 #include <stdint.h>
 
-// Counts calls into the th07/stubs.h functions this test links instead
-// of src/th07/stubs.c, so a test can check which targets the scene
-// switch called. A test of the title defines TH07_TITLE_TEST, which leaves
-// out the stand-in for TitleScene_SetUp.
+// Counts calls into the th07/stubs.h functions and GameManager_Register
+// and GameManager_Remove, which this test links instead of src/th07/stubs.c
+// and th07/game_manager's chain, so a test can check which targets the
+// scene switch called. A test of the title defines TH07_TITLE_TEST, which
+// leaves out the stand-in for TitleScene_SetUp.
 typedef struct {
     int title_set_up;
     int game_manager_register;

@@ -2,6 +2,11 @@
 
 #include <stdint.h>
 
+typedef enum {
+    REPLAY_RECORD = 0,
+    REPLAY_PLAY = 1,
+} REPLAY_MODE;
+
 // Holds what one calc of a recording stores. Recording stores a frame on
 // every calc of a stage.
 typedef struct {
