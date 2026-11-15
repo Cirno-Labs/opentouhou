@@ -475,7 +475,8 @@ SHELL_STATUS Shell_Init(const GAME_DESC *const desc, int argc, char *argv[])
     if (m_Context.missing_data_file != nullptr) {
         Fatal_FormatMissingData(
             text, sizeof(text), m_Context.missing_data_file,
-            m_Context.folders.data_dir, LogFile_GetPath());
+            m_Context.folders.data_dir, m_Context.folders.program_name,
+            LogFile_GetPath());
     } else {
         Fatal_FormatStartupError(
             text, sizeof(text), result.message, LogFile_GetPath());
