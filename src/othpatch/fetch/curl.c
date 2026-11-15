@@ -168,7 +168,8 @@ RESULT Fetch_Init(void)
     m_Ready = true;
     const char *const cert_file = getenv("SSL_CERT_FILE");
     if (cert_file != nullptr && cert_file[0] != '\0') {
-        m_Ca = (FETCH_CA) { .file = cert_file };
+        memset(&m_Ca, 0, sizeof(m_Ca));
+        m_Ca.file = cert_file;
     } else {
         m_Ca = FetchBackend_FindCa();
     }

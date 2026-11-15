@@ -455,7 +455,7 @@ static RESULT M_Init(
     SDL_Window *const window, const int32_t width, const int32_t height)
 {
     FAIL_IF(SDL_GL_GetCurrentContext() == nullptr, "No current OpenGL context");
-    m_Backend = (M_BACKEND) {};
+    memset(&m_Backend, 0, sizeof(m_Backend));
     MUST(M_LoadFunctions());
     const M_GL *const gl = &m_Backend.gl;
     const char *const version = (const char *)gl->get_string(GL_VERSION);
@@ -516,7 +516,7 @@ static void M_Shutdown(void)
     gl->delete_vertex_arrays(1, &m_Backend.vertex_array);
     gl->delete_program(m_Backend.program);
     Mem_Free(m_Backend.indices);
-    m_Backend = (M_BACKEND) {};
+    memset(&m_Backend, 0, sizeof(m_Backend));
 }
 
 static RESULT M_CreateTexture(
