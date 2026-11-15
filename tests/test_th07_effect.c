@@ -17,6 +17,7 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/math/common.h"
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
@@ -39,8 +40,6 @@
 #define M_ROTATION_SPEED_OP 13
 #define M_BLEND_OP 16
 #define M_END_OP -1
-#define M_PI 3.1415927f
-#define M_TWO_PI 6.2831855f
 
 static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
 static const VEC3 m_Origin = { 100.0f, 200.0f, 0.0f };
@@ -329,7 +328,7 @@ TEST(a_charge_comes_in_at_z_zero)
     RNG expected = g_Rng;
     const VEC3 pos = { 100.0f, 200.0f, 5.0f };
     EFFECT *const effect = Effect_Spawn(EFFECT_CHARGE, pos, 1, 0);
-    const float angle = Rng_F32(&expected) * M_TWO_PI - M_PI;
+    const float angle = Rng_F32(&expected) * MATH_TWO_PI - MATH_PI;
     CHECK(effect->origin.z == 0.0f);
     CHECK(effect->axis.x == X87_Cos(angle));
     Chain_RunCalc(&g_Chain);
@@ -365,7 +364,7 @@ TEST(a_burst_from_minus_990_picks_a_random_angle)
     RNG expected = g_Rng;
     EFFECT *const effect = Effect_SpawnMoving(
         EFFECT_BURST + 10, m_Origin, (VEC3) { -990.0f, 0.0f, 0.0f }, 1, 0);
-    const float angle = Rng_F32(&expected) * M_TWO_PI - M_PI;
+    const float angle = Rng_F32(&expected) * MATH_TWO_PI - MATH_PI;
     const float length = Rng_F32(&expected) * 1.5f + 1.0f;
     CHECK(effect->axis.x == X87_Cos(angle) * length);
     M_Teardown();
@@ -430,7 +429,7 @@ TEST(a_petal_starts_around_the_camera_and_falls_through_its_view)
     const float step_x = Rng_F32(&expected) * 0.06f - 0.03f;
     Rng_F32(&expected);
     const float step_z = -(Rng_F32(&expected) * 0.1f) + 0.5f;
-    const float spin = Rng_F32(&expected) * M_TWO_PI - M_PI;
+    const float spin = Rng_F32(&expected) * MATH_TWO_PI - MATH_PI;
     CHECK(effect->true_pos.x == x + 0.0f);
     CHECK(effect->true_pos.z == z + -8000.0f);
     CHECK(effect->step.x == step_x * 0.5f);
