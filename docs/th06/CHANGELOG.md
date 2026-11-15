@@ -6,6 +6,8 @@
   `oth06_licenses.txt` so they do not replace the original game's readme.
 - Changed the conversion of music and sound effects to the output rate,
   which keeps their high frequencies.
+- Changed the text of `--help` and of command-line errors to a new
+  format.
 
 ## 1.0.1 (2026-11-15)
 
