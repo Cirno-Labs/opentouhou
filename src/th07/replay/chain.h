@@ -23,3 +23,7 @@ void Replay_Discard(void);
 
 // Marks event in the calc being recorded. Does nothing without a recording.
 void Replay_MarkEvent(REPLAY_EVENT event);
+
+// Returns whether the replay being played holds stage (1 to 7); false
+// without playback.
+bool Replay_HasStage(int32_t stage);
