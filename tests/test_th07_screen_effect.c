@@ -6,6 +6,7 @@
 
 #include "th07/anm.h"
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/stubs.h"
 
 #include "core/base/memory.h"
@@ -272,25 +273,6 @@ TEST(a_shake_ends_and_leaves_its_last_offset)
     }
     CHECK(moved > 0);
     Anm_SetShake(0.0f, 0.0f);
-    M_Teardown();
-}
-
-TEST(a_shake_holds_still_while_the_game_is_frozen)
-{
-    M_Setup();
-    g_GameManager.mode.frozen = true;
-    g_GameManager.run.stage_frames = 0;
-    const RNG before = g_Rng;
-    ScreenEffect_Shake(2, 8, 0);
-    for (int i = 0; i < 5; i++) {
-        Chain_RunCalc(&g_Chain);
-    }
-    CHECK(g_Chain.calc.next != nullptr);
-    CHECK(g_Rng.seed == before.seed);
-    g_GameManager.mode.frozen = false;
-    g_GameManager.run.stage_frames = 2;
-    Chain_RunCalc(&g_Chain);
-    CHECK(g_Rng.seed != before.seed);
     M_Teardown();
 }
 

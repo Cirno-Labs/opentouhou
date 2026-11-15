@@ -2,11 +2,6 @@
 
 #include "core/base/log.h"
 
-GAME_MANAGER g_GameManager = {
-    .mode.demo_index = 2,
-    .phantasm_was_open = true,
-};
-
 RESULT GameManager_Register(void)
 {
     LOG_INFO("GameManager_Register is not ported");
@@ -41,19 +36,19 @@ void Replay_Discard(void)
     LOG_INFO("Replay_Discard is not ported");
 }
 
+void Player_StartBorder(void)
+{
+    LOG_INFO("Player_StartBorder is not ported");
+}
+
+void Gui_ShowCherryFullPopup(const int32_t cherry)
+{
+    LOG_INFO("Gui_ShowCherryFullPopup is not ported");
+}
+
 PLAYER g_Player;
 GUI g_Gui;
 uint8_t g_EffectsQuality = 2;
-
-void GameManager_RerollChecksumKeys(void)
-{
-    LOG_INFO("GameManager_RerollChecksumKeys is not ported");
-}
-
-void GameManager_SetBombs(const int32_t bombs)
-{
-    LOG_INFO("GameManager_SetBombs is not ported");
-}
 
 void ResultScreen_LoadTitleRecords(void)
 {

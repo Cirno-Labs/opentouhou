@@ -2,6 +2,7 @@
 
 #include "th07/ascii/text.h"
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
 #include "th07/stubs.h"
@@ -336,23 +337,23 @@ static void M_Continue(void)
     gm->score.step = 0;
     gm->score.value = gm->score.shown;
     gm->player.lives = (float)gm->run.start_lives;
-    GameManager_RerollChecksumKeys();
-    GameManager_SetBombs(g_Player.shot_bombs);
+    GameManager_DrawChecksumKeys();
+    gm->player.bombs = (float)g_Player.shot_bombs;
     gm->player.graze = 0;
     gm->player.point_items = 0;
     gm->player.point_items_total = 0;
     gm->player.power = 0.0f;
-    GameManager_RerollChecksumKeys();
+    GameManager_DrawChecksumKeys();
     gm->player.extends = 0;
     gm->player.next_extend_items = 50;
     gm->cherry.value = gm->cherry.offset;
     const int32_t shot = gm->run.shot_index + 1;
-    M_CountUp(&gm->play_counts[gm->run.difficulty].plays[0]);
-    M_CountUp(&gm->play_counts[6].plays[0]);
-    M_CountUp(&gm->play_counts[gm->run.difficulty].plays[shot]);
-    M_CountUp(&gm->play_counts[6].plays[shot]);
-    M_CountUp(&gm->play_counts[gm->run.difficulty].continues);
-    M_CountUp(&gm->play_counts[6].continues);
+    M_CountUp(&gm->records.play_counts[gm->run.difficulty].plays[0]);
+    M_CountUp(&gm->records.play_counts[6].plays[0]);
+    M_CountUp(&gm->records.play_counts[gm->run.difficulty].plays[shot]);
+    M_CountUp(&gm->records.play_counts[6].plays[shot]);
+    M_CountUp(&gm->records.play_counts[gm->run.difficulty].continues);
+    M_CountUp(&gm->records.play_counts[6].continues);
     Sound_ResumeMusic();
     PlayTime_Restart();
 }

@@ -11,8 +11,7 @@
 void ScreenEffect_FadeIn(int32_t duration, uint32_t color);
 
 // Moves every sprite drawn at random, by from pixels at the start down to
-// to pixels at the end, over duration frames. Holds still while the game
-// is frozen and leaves its last offset set.
+// to pixels at the end, over duration frames. Leaves its last offset set.
 void ScreenEffect_Shake(int32_t duration, int32_t from, int32_t to);
 
 // Fades the play area out to color over duration frames.

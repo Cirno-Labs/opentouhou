@@ -4,6 +4,7 @@
 #include "th07/game.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
+#include "th07/game_manager.h"
 #include "th07/stubs.h"
 
 #include "test.h"
@@ -435,8 +436,9 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     gm->player.extends = 2;
     gm->cherry.offset = 321;
     gm->cherry.value = 40000;
-    gm->play_counts[6].continues = 999999;
+    gm->records.play_counts[6].continues = 999999;
     g_Player.shot_bombs = 3;
+    const int32_t generated = g_Rng.generated;
     menu->state = 1;
     menu->state_frames = 4;
     M_Press(M_SHOOT);
@@ -453,9 +455,8 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     CHECK_EQ_INT(gm->score.shown, 2);
     CHECK_EQ_INT(gm->score.step, 0);
     CHECK(gm->player.lives == 4.0f);
-    CHECK_EQ_INT(g_SceneStubCalls.set_bombs_value, 3);
-    CHECK(g_SceneStubCalls.set_bombs_lives == 4.0f);
-    CHECK_EQ_INT(g_SceneStubCalls.reroll_checksum_keys, 2);
+    CHECK(gm->player.bombs == 3.0f);
+    CHECK_EQ_INT(g_Rng.generated - generated, 8);
     CHECK_EQ_INT(gm->player.graze, 0);
     CHECK_EQ_INT(gm->player.point_items, 0);
     CHECK_EQ_INT(gm->player.point_items_total, 0);
@@ -463,11 +464,11 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     CHECK_EQ_INT(gm->player.extends, 0);
     CHECK_EQ_INT(gm->player.next_extend_items, 50);
     CHECK_EQ_INT(gm->cherry.value, 321);
-    CHECK_EQ_INT(gm->play_counts[2].plays[0], 1);
-    CHECK_EQ_INT(gm->play_counts[2].plays[4], 1);
-    CHECK_EQ_INT(gm->play_counts[6].plays[4], 1);
-    CHECK_EQ_INT(gm->play_counts[2].continues, 1);
-    CHECK_EQ_INT(gm->play_counts[6].continues, 999999);
+    CHECK_EQ_INT(gm->records.play_counts[2].plays[0], 1);
+    CHECK_EQ_INT(gm->records.play_counts[2].plays[4], 1);
+    CHECK_EQ_INT(gm->records.play_counts[6].plays[4], 1);
+    CHECK_EQ_INT(gm->records.play_counts[2].continues, 1);
+    CHECK_EQ_INT(gm->records.play_counts[6].continues, 999999);
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_GAMEPLAY);
     M_Teardown();

@@ -24,11 +24,6 @@ typedef struct {
     // were last called.
     int32_t replay_discard_scene;
     int32_t game_manager_register_scene;
-    int reroll_checksum_keys;
-    int set_bombs;
-    int32_t set_bombs_value;
-    // The lives when GameManager_SetBombs was last called.
-    float set_bombs_lives;
     int play_time_add;
     int play_time_restart;
     int pending_copies;

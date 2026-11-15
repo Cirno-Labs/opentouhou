@@ -2,6 +2,7 @@
 
 #include "th07/ascii/pause_menu.h"
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/stubs.h"
 
 #include "core/base/memory.h"
