@@ -892,6 +892,19 @@ test(
 )
 
 test(
+  'th07/msg_builder',
+  executable(
+    'test_th07_msg_builder',
+    'test_th07_msg_builder.c',
+    'th07_msg_builder.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: core_base_lib,
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/replay',
   executable(
     'test_th07_replay',
