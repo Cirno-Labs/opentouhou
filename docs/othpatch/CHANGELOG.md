@@ -1,5 +1,12 @@
 # othpatch changelog
 
+## Unreleased
+
+- Changed the text of `--help` and of command-line errors to a new
+  format.
+- Changed `--dir`, `--repo`, `--releases` and `--remove` given twice
+  from using the last one to an error.
+
 ## 1.0.0 (2026-11-13)
 
 - Added downloads of the thpatch.net translations for the games beside

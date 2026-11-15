@@ -54,7 +54,8 @@ othpatch_lib = static_library(
 
 othpatch_libs = [
   othpatch_lib, shell_lib, core_patch_select_lib, core_ini_lib,
-  core_archive_lib, core_json_lib, core_io_lib, core_hash_lib, core_base_lib,
+  core_archive_lib, core_json_lib, core_io_lib, core_hash_lib, core_args_lib,
+  core_base_lib,
 ]
 othpatch_deps = [curl, sdl3, zlib]
 othpatch_entry = [
