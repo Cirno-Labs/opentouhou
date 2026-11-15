@@ -171,7 +171,7 @@ typedef struct {
         int32_t respawn_clear_frames; // of clearing every bullet, from 60
         TIMER border_length; // the timer when the Border started
         int32_t bomb_cooldown; // 40 after the Border
-        bool bomb_started; // on the frame a bomb starts
+        bool bomb_started; // set as a bomb starts, until the bomb clears it
     } state;
 
     PLAYER_BORDER border_state;
