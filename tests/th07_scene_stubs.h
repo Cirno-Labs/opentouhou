@@ -16,6 +16,8 @@ typedef struct {
     int ending_register;
     int replay_discard;
     int32_t title_set_up_mode;
+    // The scene that the switch left when TitleScene_SetUp was last called.
+    int32_t title_set_up_previous;
     int32_t result_screen_register_mode;
     // The scene requested when Replay_Discard and GameManager_Register
     // were last called.

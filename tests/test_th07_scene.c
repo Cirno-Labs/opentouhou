@@ -108,6 +108,19 @@ TEST(title_goes_to_scores_and_music_room_and_back)
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up, 3);
 }
 
+TEST(the_title_sees_the_scene_it_came_from)
+{
+    M_Setup();
+    Game_Tick(&m_NoInput);
+    CHECK_EQ_INT(g_SceneStubCalls.title_set_up_previous, SCENE_BOOT);
+    Scene_Request(SCENE_SCORES);
+    Game_Tick(&m_NoInput);
+    Scene_Request(SCENE_TITLE);
+    Game_Tick(&m_NoInput);
+    CHECK_EQ_INT(g_SceneStubCalls.title_set_up_previous, SCENE_SCORES);
+    CHECK_EQ_INT(Scene_GetPrevious(), SCENE_SCORES);
+}
+
 TEST(next_stage_reregisters_the_game)
 {
     M_StartGameplay(2);
