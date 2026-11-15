@@ -17,6 +17,7 @@ th07_lib = static_library(
   'game_manager/chain.c',
   'game_manager/cherry.c',
   'game_manager/state.c',
+  'player/shot_type.c',
   'replay/chain.c',
   'replay/format.c',
   'replay/store.c',
