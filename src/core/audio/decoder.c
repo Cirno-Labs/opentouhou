@@ -25,7 +25,7 @@ struct AUDIO_DECODER {
     AVCodecContext *codec;
     AVPacket *packet;
     AVFrame *frame;
-    SwrContext *resampler;
+    SwrContext *converter;
     int stream;
     AUDIO_INFO info;
     float *buffer;
@@ -95,7 +95,7 @@ static int64_t M_Seek(void *const opaque, const int64_t offset, int whence)
 
 static void M_Close(AUDIO_DECODER *const decoder)
 {
-    swr_free(&decoder->resampler);
+    swr_free(&decoder->converter);
     av_frame_free(&decoder->frame);
     av_packet_free(&decoder->packet);
     avcodec_free_context(&decoder->codec);
@@ -181,7 +181,7 @@ static RESULT M_Open(AUDIO_DECODER *const decoder)
     }
     AVChannelLayout stereo = AV_CHANNEL_LAYOUT_STEREO;
     error = swr_alloc_set_opts2(
-        &decoder->resampler, &stereo, AV_SAMPLE_FMT_FLT,
+        &decoder->converter, &stereo, AV_SAMPLE_FMT_FLT,
         decoder->codec->sample_rate, &decoder->codec->ch_layout,
         decoder->codec->sample_fmt, decoder->codec->sample_rate, 0, nullptr);
     if (error < 0) {
@@ -189,12 +189,12 @@ static RESULT M_Open(AUDIO_DECODER *const decoder)
     }
     if (decoder->info.channels == 1) {
         const double matrix[2] = { 1.0, 1.0 };
-        error = swr_set_matrix(decoder->resampler, matrix, 1);
+        error = swr_set_matrix(decoder->converter, matrix, 1);
         if (error < 0) {
             return M_Error("cannot configure mono audio conversion", error);
         }
     }
-    error = swr_init(decoder->resampler);
+    error = swr_init(decoder->converter);
     return error < 0 ? M_Error("cannot start audio conversion", error) : OK;
 }
 
@@ -202,7 +202,7 @@ static RESULT M_Convert(
     AUDIO_DECODER *const decoder, const uint8_t **const input, const int frames,
     const float **const out, uint32_t *const out_frames)
 {
-    const int capacity = swr_get_out_samples(decoder->resampler, frames);
+    const int capacity = swr_get_out_samples(decoder->converter, frames);
     if (capacity < 0) {
         return M_Error("cannot size audio conversion", capacity);
     }
@@ -214,7 +214,7 @@ static RESULT M_Convert(
     }
     uint8_t *buffer = (uint8_t *)decoder->buffer;
     const int count =
-        swr_convert(decoder->resampler, &buffer, capacity, input, frames);
+        swr_convert(decoder->converter, &buffer, capacity, input, frames);
     if (count < 0) {
         return M_Error("cannot convert audio", count);
     }
@@ -405,8 +405,8 @@ RESULT AudioDecoder_Seek(AUDIO_DECODER *const decoder, uint64_t position)
             AVSEEK_FLAG_BACKWARD);
         if (error >= 0) {
             avcodec_flush_buffers(decoder->codec);
-            swr_close(decoder->resampler);
-            const int convert_error = swr_init(decoder->resampler);
+            swr_close(decoder->converter);
+            const int convert_error = swr_init(decoder->converter);
             if (convert_error < 0) {
                 return M_Error("cannot reset audio conversion", convert_error);
             }
