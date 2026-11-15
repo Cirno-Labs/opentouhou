@@ -2,21 +2,11 @@
 
 #include "core/base/result.h"
 #include "core/gfx.h"
-#include "core/math/vec.h"
 
 #include <stdint.h>
 
 // Stands in for a module not yet ported. Each declaration here moves out
 // into its own module, under its own name, once that module exists.
-
-// Stands in for the part of th07/player's state that th07/ascii reads.
-typedef struct {
-    VEC3 pos; // play-area pixels
-    int32_t border_state; // 1 while the Supernatural Border runs
-    int32_t shot_bombs; // the bombs a life of the shot type starts with
-} PLAYER;
-
-extern PLAYER g_Player;
 
 // Stands in for the effects quality of the original's configuration, from
 // 0 to 2, 2 by default.
@@ -35,8 +25,6 @@ RESULT Ending_Register(void);
 
 // Stand in for the gameplay modules that th07/game_manager starts and
 // ends with each stage.
-RESULT Player_Register(void);
-void Player_Remove(void);
 RESULT Bullet_Register(void);
 void Bullet_Remove(void);
 RESULT Enemy_Register(void);
@@ -45,9 +33,6 @@ RESULT Ecl_Load(void);
 void Ecl_Release(void);
 RESULT Gui_Register(void);
 void Gui_Remove(void);
-
-// Stands in for the start of the Supernatural Border.
-void Player_StartBorder(void);
 
 // Stand in for th07/gui's checks that a dialogue runs, and that the
 // dialogue may be skipped.

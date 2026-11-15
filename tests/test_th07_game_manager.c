@@ -2,6 +2,7 @@
 
 #include "test.h"
 
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 #include "stg/rng.h"
@@ -234,7 +235,7 @@ TEST(a_full_plus_starts_the_border_once)
     GameManager_AddCherry(5);
     CHECK_EQ_INT(g_GameManager.cherry.plus, M_CHERRY_OFFSET + 50000);
     CHECK_EQ_INT(m_BorderStarts, 1);
-    g_Player.border_state = 1;
+    g_Player.border_state = PLAYER_BORDER_RUNNING;
     GameManager_AddCherry(5);
     CHECK_EQ_INT(g_GameManager.cherry.plus, M_CHERRY_OFFSET + 50000);
     CHECK_EQ_INT(m_BorderStarts, 1);

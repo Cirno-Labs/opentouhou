@@ -5,6 +5,7 @@
 #include "th07/scene.h"
 #include "th07/sound.h"
 #include "th07/game_manager.h"
+#include "th07/player.h"
 #include "th07/stubs.h"
 
 #include "test.h"
@@ -437,7 +438,7 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     gm->cherry.offset = 321;
     gm->cherry.value = 40000;
     gm->records.play_counts[6].continues = 999999;
-    g_Player.shot_bombs = 3;
+    g_Player.shot_type.bombs = 3.0f;
     const int32_t generated = g_Rng.generated;
     menu->state = 1;
     menu->state_frames = 4;
