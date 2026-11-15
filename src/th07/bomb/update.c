@@ -18,7 +18,6 @@
 #include "stg/timer.h"
 
 #define M_NO_TARGET -100.0f
-#define M_NO_ITEM 6
 #define M_PART_FREE 0
 #define M_PART_FLYING 1
 #define M_PART_BURST 2
@@ -197,7 +196,7 @@ static void M_StartAura(void)
 
 static void M_AddClearCircle(const VEC3 pos, const float radius)
 {
-    Player_AddClearCircle(pos, radius, 0.0f, 0, M_NO_ITEM);
+    Player_AddClearCircle(pos, radius, 0.0f, 0, ITEM_STAR);
 }
 
 static void M_StepOrb(PLAYER_BOMB_PART *const orb)
@@ -226,7 +225,7 @@ static void M_BurstOrb(
     box->size.x = 256.0f;
     box->size.y = 256.0f;
     box->damage = M_ORB_BURST_DAMAGE;
-    Player_AddClearCircle(orb->pos, radius, growth, frames, M_NO_ITEM);
+    Player_AddClearCircle(orb->pos, radius, growth, frames, ITEM_STAR);
     Sound_Queue(SOUND_SHOT_0_ALT);
     ScreenEffect_Shake(16, 8, 0);
 }
@@ -268,7 +267,7 @@ static void M_ReimuA(void)
         }
         Item_CollectAll();
         Effect_Spawn(EFFECT_SHOCKWAVE, player->pos, 1, M_COLOR_SHOCKWAVE);
-        Player_AddClearCircle(player->pos, 32.0f, 8.0f, 16, M_NO_ITEM);
+        Player_AddClearCircle(player->pos, 32.0f, 8.0f, 16, ITEM_STAR);
         player->bomb.start_pos = player->pos;
         M_SetDrain(4000, 0.2f);
     }
@@ -391,7 +390,7 @@ static void M_ReimuAFocused(void)
         }
         Item_CollectAll();
         Effect_Spawn(EFFECT_SHOCKWAVE, player->pos, 1, M_COLOR_SHOCKWAVE);
-        Player_AddClearCircle(player->pos, 32.0f, 8.0f, 16, M_NO_ITEM);
+        Player_AddClearCircle(player->pos, 32.0f, 8.0f, 16, ITEM_STAR);
         M_SetDrain(5000, 0.22f);
         M_Slow(0.6f);
     }
@@ -460,7 +459,7 @@ static void M_ReimuB(void)
         for (int32_t i = 0; i < M_BARRIER_COUNT; i++) {
             areas[i] = Player_AddClearArea(
                 player->pos, m_BarrierSizes[i].x, m_BarrierSizes[i].y,
-                M_NO_ITEM);
+                ITEM_STAR);
         }
         for (int32_t i = 0; i < M_BARRIER_COUNT; i++) {
             const PLAYER_BOMB_PART *const barrier = &player->bomb.parts[i];
@@ -505,7 +504,7 @@ static void M_ReimuBFocused(void)
         player->bomb.start_pos = player->pos;
         M_SetDrain(3000, 0.17f);
         M_Slow(0.4f);
-        Player_AddClearCircle(player->pos, 192.0f, 0.384f, 210, M_NO_ITEM);
+        Player_AddClearCircle(player->pos, 192.0f, 0.384f, 210, ITEM_STAR);
     } else {
         if (M_Timer()->current == M_SHAKE_FRAME) {
             ScreenEffect_Shake(80, 20, 0);
@@ -751,7 +750,7 @@ static void M_MarisaBFocused(void)
             box->pos.x = 192.0f;
             box->pos.y = player->pos.y / 2.0f;
             box->damage = 23;
-            Player_AddClearArea(box->pos, 384.0f, player->pos.y, M_NO_ITEM);
+            Player_AddClearArea(box->pos, 384.0f, player->pos.y, ITEM_STAR);
         }
         for (int32_t i = 0; i < M_SPARK_SPRITES; i++) {
             Anm_Step(&part->vms[i]);
