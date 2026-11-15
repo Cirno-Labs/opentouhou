@@ -12,6 +12,7 @@ th07_lib = static_library(
   'ascii/text.c',
   'bomb/draw.c',
   'bomb/update.c',
+  'bullet.c',
   'buttons.c',
   'effect.c',
   'files.c',

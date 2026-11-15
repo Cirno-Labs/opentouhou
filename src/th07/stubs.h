@@ -25,8 +25,6 @@ RESULT Ending_Register(void);
 
 // Stand in for the gameplay modules that th07/game_manager starts and
 // ends with each stage.
-RESULT Bullet_Register(void);
-void Bullet_Remove(void);
 RESULT Enemy_Register(void);
 void Enemy_Remove(void);
 RESULT Ecl_Load(void);
@@ -54,15 +52,6 @@ void Gui_ShowBorderBonusPopup(int32_t points);
 void Gui_ShowBombName(int32_t sprite, const char *name);
 void Gui_EndBombName(void);
 
-// Stands in for th07/bullet's clearing of every enemy bullet.
-void Bullet_ClearAll(void);
-
-// Stands in for th07/bullet's clearing of every enemy bullet into homing items.
-void Bullet_ClearAllToItems(void);
-
-// Stands in for th07/bullet's stop of every enemy bullet in play.
-void Bullet_StopAll(void);
-
 // Stands in for the spell card state of th07/enemy that the player moves.
 typedef struct {
     struct {
@@ -78,9 +67,6 @@ extern ENEMIES g_Enemies;
 
 // Stands in for th07/enemy's check that a boss fights.
 bool Enemy_IsBossActive(void);
-
-// Stands in for th07/bullet's count of the bullets in play.
-int32_t Bullet_Count(void);
 
 // Stands in for the reads of score.dat that a new game makes into
 // g_GameManager: the high score and its continues, the spell cards, the
