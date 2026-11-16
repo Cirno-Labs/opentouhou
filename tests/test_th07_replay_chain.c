@@ -9,6 +9,7 @@
 #include "th07/gui.h"
 #include "th07/player.h"
 #include "th07/screens/result/saves.h"
+#include "th07/settings.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -787,5 +788,71 @@ TEST(resave_ignores_the_config_in_practice_extra_and_phantasm)
     M_SetUp(7);
     M_PlayAndResave(4, 7, &rng);
     CHECK_EQ_INT(m_Resaves, 1);
+    M_TearDown();
+}
+
+// Records count calcs of stage 2 and sets the score that a save stores.
+static void M_Record(const int32_t count, const bool slow_mode)
+{
+    M_SetUp(2);
+    g_GameManager.mode.in_replay = false;
+    g_GameManager.run.score_disabled = slow_mode;
+    g_GameManager.run.start_lives = (uint8_t)g_Settings.lives;
+    CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
+    g_Buttons.word = 0x3;
+    M_Calcs(count);
+    g_GameManager.score.value = 4444;
+    g_GameManager.score.shown = 4440;
+}
+
+static const REPLAY_SAVE_INFO m_SaveInfo = {
+    .name = "KUU",
+    .date = "11/16",
+    .slowdown = 1.5f,
+};
+
+TEST(save_writes_the_recording_with_its_name_and_three_new_keys)
+{
+    M_Record(3, false);
+    RNG rng = g_Rng;
+    Rng_U16InRange(&rng, 128);
+    Rng_U16InRange(&rng, 256);
+    Rng_U16InRange(&rng, 256);
+    Replay_Save(M_PATH, &m_SaveInfo);
+    CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
+    CHECK_EQ_INT(m_Resaves, 1);
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Resaved, m_ResavedSize, nullptr);
+    REPLAY_FILE *file = nullptr;
+    CHECK(Result_Log(Replay_Read(&reader, &file), LOG_LEVEL_ERROR));
+    Reader_Close(&reader);
+    CHECK_EQ_STR(file->name, "KUU");
+    CHECK_EQ_STR(file->date, "11/16");
+    CHECK(file->slowdown == 1.5f);
+    CHECK_EQ_INT(file->score, 4440);
+    const REPLAY_STAGE *const stage = file->stages[2];
+    CHECK_EQ_INT(stage->score, 4444);
+    CHECK_EQ_INT(stage->frame_count, 5);
+    CHECK_EQ_INT(stage->frames[1].buttons, 0x3);
+    CHECK_EQ_INT(stage->frames[stage->frame_count - 1].buttons, 0);
+    Replay_Free(file);
+    M_TearDown();
+}
+
+TEST(save_of_a_slow_mode_recording_or_a_playback_writes_nothing)
+{
+    M_Record(3, true);
+    const RNG rng = g_Rng;
+    Replay_Save(M_PATH, &m_SaveInfo);
+    CHECK_EQ_INT(m_Resaves, 0);
+    CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
+    M_TearDown();
+    M_SetUp(3);
+    M_SPEC spec = { .difficulty = 1 };
+    M_Frames(&spec.slots[3], 0x10, 4);
+    M_Play(&spec);
+    Replay_Save(M_PATH, &m_SaveInfo);
+    CHECK_EQ_INT(m_Resaves, 0);
+    CHECK(!Replay_HasStage(3));
     M_TearDown();
 }
