@@ -2,6 +2,7 @@ th01_lib = static_library(
   'th01_lib',
   'bfnt.c',
   'logo.c',
+  'math.c',
   'video.c',
   'pf.c',
   'pi.c',

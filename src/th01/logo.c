@@ -1,16 +1,9 @@
 #include "th01/logo.h"
+#include "th01/math.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
-
-static const int16_t m_Sine8[65] = {
-    0,   6,   13,  19,  25,  31,  38,  44,  50,  56,  62,  68,  74,
-    80,  86,  92,  98,  104, 109, 115, 121, 126, 132, 137, 142, 147,
-    152, 157, 162, 167, 172, 177, 181, 185, 190, 194, 198, 202, 206,
-    209, 213, 216, 220, 223, 226, 229, 231, 234, 237, 239, 241, 243,
-    245, 247, 248, 250, 251, 252, 253, 254, 255, 255, 256, 256, 256
-};
 
 static const int16_t m_Sine7[65] = {
     0,   3,   6,   9,   12,  15,  18,  21,  24,  28,  31,  34,  37,
@@ -32,12 +25,6 @@ static int32_t M_Shift(const int32_t value, const int32_t bits)
 {
     const int32_t divisor = 1 << bits;
     return value >= 0 ? value / divisor : -((-value + divisor - 1) / divisor);
-}
-
-static uint32_t M_Random(LOGO *const logo)
-{
-    logo->random = logo->random * UINT32_C(0x015a4e35) + 1;
-    return (logo->random >> 16) & 0x7fff;
 }
 
 static void M_Pixel(
@@ -142,9 +129,9 @@ void Logo_Init(LOGO *const logo, VIDEO *const video)
         logo->velocity[i] = (LOGO_POINT) { -8, 8 };
     }
     for (int32_t i = 0; i < 50; i++) {
-        logo->stars[i].x = (int32_t)(M_Random(logo) % 640);
-        logo->stars[i].y = (int32_t)(M_Random(logo) % 400);
-        logo->speeds[i] = (uint8_t)(M_Random(logo) % 32 + 6);
+        logo->stars[i].x = (int32_t)(Math_Random(&logo->random) % 640);
+        logo->stars[i].y = (int32_t)(Math_Random(&logo->random) % 400);
+        logo->speeds[i] = (uint8_t)(Math_Random(&logo->random) % 32 + 6);
     }
 }
 
@@ -171,10 +158,8 @@ bool Logo_Tick(
     for (int32_t i = 0; i < 50; i++) {
         LOGO_POINT *const star = &logo->stars[i];
         M_Pixel(page, star->x, star->y, 5);
-        star->x += M_Shift(
-            logo->speeds[i] * M_Sine(logo->star_phase + 64, m_Sine8), 8);
-        star->y +=
-            M_Shift(logo->speeds[i] * M_Sine(logo->star_phase, m_Sine8), 8);
+        star->x += M_Shift(logo->speeds[i] * Math_Cos8(logo->star_phase), 8);
+        star->y += M_Shift(logo->speeds[i] * Math_Sin8(logo->star_phase), 8);
         star->x = (star->x + LOGO_WIDTH) % LOGO_WIDTH;
         star->y = (star->y + LOGO_HEIGHT) % LOGO_HEIGHT;
     }
