@@ -16,6 +16,8 @@
 #include "th07/stage.h"
 #include "th07/screens/result/records.h"
 
+#include "stg/translation.h"
+
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/math/common.h"
@@ -828,7 +830,11 @@ static void M_RunInterps(ENEMY *const enemy)
 
 static void M_StartSpellCard(ENEMY *const enemy, const ECL_INSTR *const instr)
 {
-    Gui_ShowSpellCardName(M_ArgShort(instr, 0), instr->text);
+    // The name is translated only where it is drawn. The record of the
+    // card keeps the ECL's name, because the score file checks its bytes.
+    Gui_ShowSpellCardName(
+        M_ArgShort(instr, 0),
+        Translation_GetSpellName(M_ArgShort(instr, 1), instr->text));
     Bullet_ClearAllToItems();
     g_Stage.spell_card.state = 1;
     g_Stage.spell_card.frames = 0;
