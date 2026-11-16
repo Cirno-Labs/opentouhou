@@ -3,6 +3,7 @@
 #include "test.h"
 
 #include "replay_lzss_literals.h"
+#include "th07/exe_identity.h"
 
 #include "core/base/memory.h"
 
@@ -562,6 +563,8 @@ TEST(write_lays_out_every_chunk_in_order)
     CHECK_EQ_INT(M_Get16(card, 0x28), 7);
     const uint8_t *const version = chunk - 0x1c;
     CHECK(memcmp(version + 12, "0100b", 6) == 0);
+    CHECK_EQ_INT(M_Get32(version, 20), TH07_EXE_SIZE);
+    CHECK_EQ_INT(M_Get32(version, 24), TH07_EXE_CHECKSUM);
     ScoreFile_Free(&file);
 }
 

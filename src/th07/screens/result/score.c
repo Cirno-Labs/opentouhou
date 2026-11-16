@@ -1,5 +1,7 @@
 #include "th07/screens/result/score.h"
 
+#include "th07/exe_identity.h"
+
 #include "stg/lzss.h"
 
 #include "core/base/memory.h"
@@ -630,8 +632,8 @@ static void M_WriteChunks(
         M_GAME_VERSION_SIZE);
     M_WriteHeader(writer, &version);
     Writer_WriteBytes(writer, "0100b\0\0", 8);
-    Writer_WriteU32(writer, 0);
-    Writer_WriteU32(writer, 0);
+    Writer_WriteU32(writer, TH07_EXE_SIZE);
+    Writer_WriteU32(writer, TH07_EXE_CHECKSUM);
 }
 
 static void M_PutI32(uint8_t *const data, const int32_t at, const int32_t value)
