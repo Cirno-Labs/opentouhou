@@ -1338,6 +1338,38 @@ TEST(release_under_the_game_id_is_not_found)
     M_Close(&test);
 }
 
+TEST(game_without_a_release_skips_the_upgrade_but_downloads_its_patches)
+{
+    M_CASE test = M_PrepareUpdate("two_games", "0.1.0", "0.2.0");
+    ARENA arena;
+    Arena_Init(&arena, "main test", 1 << 16);
+    const char *const th99_path = Install_GetGamePath(
+        Install_GetPlatform(), test.program, "th99", &arena);
+    FakeProgram_Write(
+        test.program, th99_path + strlen(test.program) + 1, "th99 0.1.0\n", 0);
+    Arena_Free(&arena);
+    const char *const neighbors[] = { "nmlgc" };
+    Server_AddRepo(
+        test.server, "thpatch", neighbors, 1,
+        "\"lang_en\": \"English language pack\"");
+    Server_AddRepo(test.server, "nmlgc", nullptr, 0, "\"base\": \"\"");
+    M_AddTitledPatch(
+        test.server, "thpatch", "lang_en", "English",
+        "\"dependencies\": [\"nmlgc/base\"]");
+    const char *const lang_files[] = { "th06/lang_en.jdiff",
+                                       "th99/lang_en.jdiff" };
+    M_AddFiles(test.server, "thpatch", "lang_en", lang_files, 2);
+    M_AddTitledPatch(test.server, "nmlgc", "base", "Base patch", "");
+    const char *const base_files[] = { "base.js" };
+    M_AddFiles(test.server, "nmlgc", "base", base_files, 1);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
+    M_CheckOutput(&test, "There is no release of oth99 yet.\n" M_ALL_DONE);
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/th06/lang_en.jdiff"));
+    CHECK(Server_Exists(test.patches, "thpatch/lang_en/th99/lang_en.jdiff"));
+    M_CheckGame(&test, "0.2.0");
+    M_Close(&test);
+}
+
 TEST(failed_check_fails_each_section_but_not_the_patches)
 {
     M_CASE test = M_PrepareBeside("update_offline", nullptr);
