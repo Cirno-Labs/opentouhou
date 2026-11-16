@@ -23,6 +23,17 @@
 
 static bool m_GameInitialized;
 
+static void M_SetDate(void)
+{
+    char date[6] = "01/01";
+    const time_t now = time(nullptr);
+    const struct tm *const local = localtime(&now);
+    if (local != nullptr) {
+        strftime(date, sizeof(date), "%m/%d", local);
+    }
+    ResultScreen_SetDate(date);
+}
+
 // Keeps the demo replays of the title for playback, as the saves keep the
 // user's replays. The original plays no demo whose file is missing.
 static void M_KeepDemos(void)
@@ -67,6 +78,11 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
+    float tick_rate;
+    if (Shell_GetTickRate(&tick_rate)) {
+        ResultScreen_CountFrames(tick_rate);
+    }
+    M_SetDate();
     const bool running = Game_Tick(input);
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_ScanReplays();

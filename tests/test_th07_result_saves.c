@@ -298,6 +298,52 @@ TEST(put_replay_file_keeps_a_path_outside_the_replay_directory_in_memory)
     Mem_Free(directory);
 }
 
+TEST(put_replay_file_fills_an_empty_slot)
+{
+    char *const directory = TestDir_Prepare("new_slot");
+    M_SetUp(directory);
+    char *const path = ResultScreen_GetSlotPath(4);
+    CHECK(!ResultSaves_GetSlot(4)->valid);
+    size_t size;
+    uint8_t *const data = M_ReplayBytes(333, &size);
+    ResultScreen_PutReplayFile(path, data, size);
+    const SAVED_REPLAY *const slot = ResultSaves_GetSlot(4);
+    CHECK(slot->valid);
+    CHECK_EQ_STR(slot->path, path);
+    CHECK_EQ_STR(slot->label, "No.05");
+    CHECK_EQ_INT(slot->summary.score, 333);
+    size_t kept_size;
+    CHECK(Replay_FindFile(path, &kept_size) != nullptr);
+    CHECK(Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_ERROR));
+    char *const disk_path = TestDir_Join(directory, path);
+    CHECK(File_Exists(disk_path));
+    Mem_Free(disk_path);
+    M_TearDown();
+    Mem_Free(path);
+    Mem_Free(directory);
+}
+
+TEST(the_clock_counts_frames_only_while_playing)
+{
+    M_SetUp(nullptr);
+    ResultScreen_ResetFrames();
+    ResultScreen_SetDate("12/24");
+    ResultScreen_CountFrames(60.0f);
+    g_GameManager.mode.playing = true;
+    const float rates[] = { 60.0f, 50.0f, 40.0f, 20.0f };
+    for (int32_t i = 0; i < 4; i++) {
+        ResultScreen_CountFrames(rates[i]);
+    }
+    const RESULT_SCREEN_CLOCK *const clock = ResultSaves_GetClock();
+    CHECK_EQ_STR(clock->date, "12/24");
+    CHECK(clock->expected_frames == 240.0f);
+    CHECK(clock->achieved_frames == 60.0f + 48.0f + 36.0f + 30.0f);
+    ResultScreen_ResetFrames();
+    CHECK(clock->expected_frames == 0.0f);
+    CHECK(clock->achieved_frames == 0.0f);
+    M_TearDown();
+}
+
 TEST(attempt_stores_the_name_and_counts_for_the_shot_and_every_shot)
 {
     M_SetUp(nullptr);

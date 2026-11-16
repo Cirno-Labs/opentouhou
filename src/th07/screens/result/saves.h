@@ -18,6 +18,17 @@
 // as the original reads the directory then. th07/main.c runs the scan
 // after that tick, so the menu sees the new list from the next tick on.
 
+// Holds the values that the result screen takes from outside the
+// simulation.
+typedef struct {
+    char date[6]; // the local date, as MM/DD
+    // Count the frames that ran and the frames that were due during play,
+    // as ResultScreen_CountFrames adds them. The slowdown that the result
+    // screen shows and stores comes from them.
+    float achieved_frames;
+    float expected_frames;
+} RESULT_SCREEN_CLOCK;
+
 #define SAVED_REPLAY_SLOT_COUNT 15
 #define SAVED_REPLAY_USER_COUNT 45
 #define SAVED_REPLAY_COUNT (SAVED_REPLAY_SLOT_COUNT + SAVED_REPLAY_USER_COUNT)
@@ -51,8 +62,8 @@ void ResultScreen_CloseSaves(void);
 // Replaces the replay at path, as g_GameManager.mode.replay_path names it,
 // with the size bytes of data, and takes data, a block from
 // g_HeapAllocator. Playback and the replay menu read the new bytes at
-// once. Only a path in the replay directory of the user directory is
-// written to disk.
+// once, also in a numbered slot that was empty. Only a path in replay/ is
+// written to Shell_GetUserFiles.
 void ResultScreen_PutReplayFile(const char *path, uint8_t *data, size_t size);
 
 // Asks for a scan of the replay directory after the tick.
@@ -68,3 +79,26 @@ int32_t ResultScreen_GetReplayScan(void);
 // Copies the valid replays into out in the replay menu's order: the
 // numbered slots, then the th7_ud files. Returns their number.
 int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT]);
+
+// Returns the path of numbered replay slot slot, from 0, as
+// g_GameManager.mode.replay_path takes it. Mem_Free releases it.
+char *ResultScreen_GetSlotPath(int32_t slot);
+
+// Sets the date that the next ticks read, as MM/DD.
+void ResultScreen_SetDate(const char *date);
+
+// Adds one measurement of the tick rate, in ticks per second, to the frame
+// counts while g_GameManager.mode.playing is set, as the original's frame
+// rate display does every half second. The frames due grow by 60. The
+// frames that ran grow by 60 above 54 ticks per second, by 48 above 42, by
+// 36 above 30 and by 30 below.
+void ResultScreen_CountFrames(float tick_rate);
+
+// Sets the frame counts to 0, as a new game starts.
+void ResultScreen_ResetFrames(void);
+
+// Makes the replay save menu refuse every game, as it refuses a continued
+// game, or accept games again. th07 refuses them while patches
+// change gameplay, because such a replay would not play back in the
+// original.
+void ResultScreen_RefuseReplays(bool refuse);
