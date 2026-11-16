@@ -72,6 +72,43 @@ static void M_DrawOffset(ANM_VM *const vm, const ANM_DRAW *const draw)
     vm->pos = pos;
 }
 
+// Draws a stage-clear line as retail's fixed "label = value" string.
+static void M_AddRetailStageResultLine(
+    const VEC3 cursor, const char *const retail, const int32_t value)
+{
+    AsciiText_AddFormat(cursor, retail, value);
+}
+
+// Draws a stage-clear line as base_tsa's stage_result_align codecave
+// does: the label, then the value right after it as it measures, so a
+// longer translated label pushes the value right instead of
+// overlapping it.
+static void M_AddPatchedStageResultLine(
+    const VEC3 cursor, const char *const label, const char *const format,
+    const int32_t value)
+{
+    AsciiText_AddFormat(cursor, "%s =", label);
+    const VEC3 value_pos = {
+        cursor.x + (float)g_AsciiText.glyph_width * (float)(strlen(label) + 1)
+            + 14.0f,
+        cursor.y, cursor.z
+    };
+    AsciiText_AddFormat(value_pos, format, value);
+}
+
+// Draws a stage-clear line, with base_tsa's column when it is active and
+// retail's fixed one otherwise.
+static void M_AddStageResultLine(
+    const VEC3 cursor, const char *const label, const char *const retail,
+    const char *const format, const int32_t value)
+{
+    if (Translation_HasBaseTsa()) {
+        M_AddPatchedStageResultLine(cursor, label, format, value);
+    } else {
+        M_AddRetailStageResultLine(cursor, retail, value);
+    }
+}
+
 static void M_DrawStageClear(void)
 {
     if (g_Gui.stage_clear.state == GUI_STAGE_CLEAR_NONE) {
@@ -84,24 +121,30 @@ static void M_DrawStageClear(void)
         cursor, gm->run.stage < 6 ? "Stage Clear" : "All Clear!");
     cursor.y += 32.0f;
     AsciiText_SetColor(COLOR_WHITE);
-    AsciiText_AddFormat(cursor, "Clear  = %8d", gm->run.stage * 1000000);
+    M_AddStageResultLine(
+        cursor, "Clear", "Clear  = %8d", "%8d", gm->run.stage * 1000000);
     cursor.y += 16.0f;
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xe0, 0xe0, 0xff));
-    AsciiText_AddFormat(
-        cursor, "Point  = %8d", g_Gui.stage_clear.point_items * 50000);
+    M_AddStageResultLine(
+        cursor, "Point", "Point  = %8d", "%8d",
+        g_Gui.stage_clear.point_items * 50000);
     cursor.y += 16.0f;
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xd0, 0xd0, 0xff));
-    AsciiText_AddFormat(cursor, "Graze  = %8d", g_Gui.stage_clear.graze * 500);
+    M_AddStageResultLine(
+        cursor, "Graze", "Graze  = %8d", "%8d", g_Gui.stage_clear.graze * 500);
     cursor.y += 16.0f;
-    AsciiText_AddFormat(cursor, "Cherry = %8d", g_Gui.stage_clear.cherry * 10);
+    M_AddStageResultLine(
+        cursor, "Cherry", "Cherry = %8d", "%8d", g_Gui.stage_clear.cherry * 10);
     if (GuiStageClear_CountsLivesAndBombs()) {
         cursor.y += 16.0f;
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x80));
-        AsciiText_AddFormat(
-            cursor, "Player =%9d", X87_Ftol(gm->player.lives) * 20000000);
+        M_AddStageResultLine(
+            cursor, "Player", "Player =%9d", "%9d",
+            X87_Ftol(gm->player.lives) * 20000000);
         cursor.y += 16.0f;
-        AsciiText_AddFormat(
-            cursor, "Bomb   = %8d", X87_Ftol(gm->player.bombs) * 4000000);
+        M_AddStageResultLine(
+            cursor, "Bomb", "Bomb   = %8d", "%8d",
+            X87_Ftol(gm->player.bombs) * 4000000);
     }
     cursor.y += 32.0f;
     static const char *const ranks[] = {
@@ -123,7 +166,8 @@ static void M_DrawStageClear(void)
         cursor.y += 16.0f;
     }
     AsciiText_SetColor(COLOR_WHITE);
-    AsciiText_AddFormat(cursor, "Total = %8d0", g_Gui.stage_clear.total);
+    M_AddStageResultLine(
+        cursor, "Total", "Total = %8d0", "%8d0", g_Gui.stage_clear.total);
 }
 
 static void M_DrawMsg(void)
