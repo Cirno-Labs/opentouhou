@@ -8,6 +8,8 @@
 #include "th07/screens/music/comments.h"
 #include "th07/sound.h"
 
+#include "stg/translation.h"
+
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -74,7 +76,10 @@ static void M_ShowComment(M_SCREEN *const screen)
     const MUSIC_TUNE *const tune = &screen->tunes[screen->playing];
     for (int32_t i = 0; i < MUSIC_COMMENT_ROWS; i++) {
         ANM_VM *const vm = &screen->comment[i];
-        const char *const row = tune->comment[i];
+        const char *const translated =
+            Translation_GetMusicComment(screen->playing, i);
+        const char *const row =
+            translated != nullptr ? translated : tune->comment[i];
         if (row[0] != '\0') {
             vm->visible = true;
             Result_Log(
@@ -226,7 +231,8 @@ static RESULT M_Added(void *const arg)
         Anm_StartScript(title, M_FIRST_TITLE_SPRITE + i);
         Result_Log(
             Anm_RenderText(
-                title, 0xc0e0ff, 0x302080, "%s", screen->tunes[i].title),
+                title, 0xc0e0ff, 0x302080, "%s",
+                Translation_GetMusicTitle(i, screen->tunes[i].title)),
             LOG_LEVEL_WARNING);
         title->pos =
             (VEC3) { 93.0f, 104.0f + (float)((i + 1) * 18) - 20.0f, 0.0f };
