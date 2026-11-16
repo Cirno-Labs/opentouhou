@@ -3,7 +3,7 @@
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
 #include "th06/sound.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/color.h"
 #include "core/base/utils.h"

@@ -1,7 +1,4 @@
-#include "th06/translation.h"
-
-#include "th06/files.h"
-#include "th06/strings.h"
+#include "stg/translation.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -11,6 +8,41 @@
 #include "test.h"
 
 #include <string.h>
+
+// A synthetic string table and game descriptor, so this test needs no
+// game's own strings or patch classification.
+#define TEST_STRINGS(X)                                                        \
+    X(SONG_NAME_FORMAT, 0x401000, "@%s")                                       \
+    X(BOMB_NAME, 0x402000, "Bomb Name")                                        \
+    X(UNKNOWN_SPELL_CARD, 0, "？？？？？")
+
+#define M_STRING_ID(id_, address_, text_) STRING_##id_,
+#define M_DEFAULT(id_, address_, text_) [STRING_##id_] = text_,
+#define M_ADDRESS(id_, address_, text_) [STRING_##id_] = address_,
+
+typedef enum {
+    TEST_STRINGS(M_STRING_ID) STRING_COUNT,
+} STRING;
+
+static const char *g_Strings[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
+static const char *const m_Defaults[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
+static const uint32_t m_Addresses[STRING_COUNT] = { TEST_STRINGS(M_ADDRESS) };
+
+static const TRANSLATION_GAME m_Game = {
+    .id = "game",
+    .image_base = 0x400000,
+    .strings = g_Strings,
+    .defaults = m_Defaults,
+    .addresses = m_Addresses,
+    .string_count = STRING_COUNT,
+    .spell_count = 4,
+    .stage_count = 2,
+};
+
+static const PATCH_GAME m_PatchGame = {
+    .build = "v1",
+    .layout = PATCH_LAYOUT_FLAT,
+};
 
 static PATCH_STACK *m_Stack;
 static char *m_Directory;
@@ -29,9 +61,9 @@ static void M_Begin(
     }
     m_Stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(m_Directory, "th06", &g_PatchGame, nullptr, &m_Stack),
+        Patch_OpenStack(m_Directory, "game", &m_PatchGame, nullptr, &m_Stack),
         LOG_LEVEL_ERROR));
-    Translation_Init(m_Stack);
+    Translation_Init(m_Stack, &m_Game);
 }
 
 static void M_End(void)
@@ -44,83 +76,57 @@ static void M_End(void)
 TEST(exe_strings_take_their_translation_by_address)
 {
     const char *const files[] = {
-        "nmlgc/base_tsa/th06/stringlocs.v1.02h.js",
-        ("{Rx6a98c: 'th06 BGM In-game format', "
-         "Rx6a3f4: 'th06 Bomb Reimu A', "
-         "Rx6c4c8: 'th06_practice_format'}"),
+        "nmlgc/base_tsa/game/stringlocs.v1.js",
+        "{Rx1000: 'game BGM In-game format', Rx2000: 'game Bomb Name'}",
         "thpatch/lang/stringdefs.js",
-        ("{'th06 BGM In-game format': 'BGM: %s', "
-         "'th06 Bomb Reimu A': 'Spirit Sign <b$\"Fantasy Seal\"$>', "
-         "th06_practice_format: 'STAGE %s'}"),
+        ("{'game BGM In-game format': 'BGM: %s', "
+         "'game Bomb Name': 'Spirit Sign <b$\"Fantasy Seal\"$>'}"),
     };
     M_Begin("exe_strings", files, 4);
     CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "BGM: %s");
-    CHECK_EQ_STR(
-        g_Strings[STRING_BOMB_NAME_REIMU_A], "Spirit Sign \"Fantasy Seal\"");
-    CHECK_EQ_STR(g_Strings[STRING_MENU_PRACTICE_SCORE], "STAGE %d  %.9d");
-    CHECK_EQ_STR(g_Strings[STRING_MENU_STAGE_1], "Stage1");
+    CHECK_EQ_STR(g_Strings[STRING_BOMB_NAME], "Spirit Sign \"Fantasy Seal\"");
     M_End();
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "♪%s");
-    CHECK_EQ_STR(g_Strings[STRING_BOMB_NAME_REIMU_A], "霊符「夢想封印」");
-}
-
-TEST(shot_names_take_their_translation_by_address)
-{
-    const char *const files[] = {
-        "nmlgc/base_tsa/th06/stringlocs.js",
-        ("{Rx6bb98: 'Stats ReimuA', Rx6bb88: 'Stats ReimuB', "
-         "Rx6bb74: 'Stats MarisaA', Rx6bb60: 'Stats MarisaB'}"),
-        "thpatch/lang/stringdefs.js",
-        ("{'Stats ReimuA': 'Reimu (Spirit)', 'Stats ReimuB': 'Reimu (Dream)', "
-         "'Stats MarisaA': 'Marisa (Magic)', 'Stats MarisaB': 'Marisa "
-         "(Love)'}"),
-    };
-    M_Begin("shot_names", files, 4);
-    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_REIMU_A], "Reimu (Spirit)");
-    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_REIMU_B], "Reimu (Dream)");
-    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_MARISA_A], "Marisa (Magic)");
-    CHECK_EQ_STR(g_Strings[STRING_SHOT_NAME_MARISA_B], "Marisa (Love)");
-    M_End();
+    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
+    CHECK_EQ_STR(g_Strings[STRING_BOMB_NAME], "Bomb Name");
 }
 
 TEST(markup_that_drops_a_conversion_is_rejected)
 {
     const char *const files[] = {
-        "nmlgc/base_tsa/th06/stringlocs.js",
-        "{Rx6a98c: 'song'}",
+        "nmlgc/base_tsa/game/stringlocs.js",
+        "{Rx1000: 'song'}",
         "thpatch/lang/stringdefs.js",
         "{song: '<s$%s$> hidden'}",
     };
     M_Begin("markup_rejected", files, 4);
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "♪%s");
+    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
     M_End();
 }
 
-TEST(spell_cards_stages_and_songs_are_translated)
+TEST(spell_cards_stages_and_the_theme_are_translated)
 {
     const char *const files[] = {
-        "thpatch/lang/th06/spells.js",
-        "{'0': 'Moon Sign \"Moonlight Ray\"', '63': 'Last'}",
-        "thpatch/lang/th06/stages.js",
-        "{'1': 'Scroll of the Night', '7': ['Extra', 'second line']}",
+        "thpatch/lang/game/spells.js",
+        "{'0': 'Moon Sign \"Moonlight Ray\"', '3': 'Last'}",
+        "thpatch/lang/game/stages.js",
+        "{'1': 'Scroll of the Night', '2': ['Extra', 'second line']}",
         "thpatch/lang/themes.js",
-        ("{th06_01: 'Title', th06_02: 'Stage 1', th06_03: 'Boss 1', "
-         "th06_15: 'Extra boss'}"),
+        "{game_01: 'Title', game_02: 'Stage 1', game_03: 'Boss 1'}",
     };
     M_Begin("names", files, 6);
     CHECK_EQ_STR(
         Translation_GetSpellName(0, "月符"), "Moon Sign \"Moonlight Ray\"");
-    CHECK_EQ_STR(Translation_GetSpellName(63, "x"), "Last");
+    CHECK_EQ_STR(Translation_GetSpellName(3, "x"), "Last");
     CHECK_EQ_STR(Translation_GetSpellName(1, "original"), "original");
-    CHECK_EQ_STR(Translation_GetSpellName(64, "original"), "original");
+    CHECK_EQ_STR(Translation_GetSpellName(4, "original"), "original");
     CHECK_EQ_STR(Translation_GetSpellName(-1, "original"), "original");
     CHECK_EQ_STR(Translation_GetStageName(1, "x"), "Scroll of the Night");
-    CHECK_EQ_STR(Translation_GetStageName(7, "x"), "Extra");
-    CHECK_EQ_STR(Translation_GetStageName(2, "original"), "original");
-    CHECK_EQ_STR(Translation_GetSongName(1, 0, "x"), "Stage 1");
-    CHECK_EQ_STR(Translation_GetSongName(1, 1, "x"), "Boss 1");
-    CHECK_EQ_STR(Translation_GetSongName(7, 1, "x"), "Extra boss");
-    CHECK_EQ_STR(Translation_GetSongName(1, 2, "original"), "original");
+    CHECK_EQ_STR(Translation_GetStageName(2, "x"), "Extra");
+    CHECK_EQ_STR(Translation_GetStageName(3, "original"), "original");
+    CHECK_EQ_STR(Translation_GetTheme(1, "x"), "Title");
+    CHECK_EQ_STR(Translation_GetTheme(2, "x"), "Stage 1");
+    CHECK_EQ_STR(Translation_GetTheme(3, "x"), "Boss 1");
+    CHECK_EQ_STR(Translation_GetTheme(4, "original"), "original");
     CHECK_EQ_STR(Translation_GetMusicTitle(0, "x"), "Title");
     CHECK_EQ_STR(Translation_GetMusicTitle(2, "x"), "Boss 1");
     CHECK_EQ_STR(Translation_GetMusicTitle(3, "original"), "original");
@@ -131,10 +137,10 @@ TEST(music_comments_fill_every_row_and_keep_markup)
 {
     const char *const files[] = {
         "thpatch/lang/themes.js",
-        "{th06_01: 'A Dream More Scarlet than Red'}",
+        "{game_01: 'A Dream More Scarlet than Red'}",
         "nmlgc/base_tsa/stringdefs.js",
         "{'Music Room Numbered Title': 'No. <r$%2d$99>  %s'}",
-        "thpatch/lang/th06/musiccmt.js",
+        "thpatch/lang/game/musiccmt.js",
         "{'1': ['@', 'The title theme.', '<c$centred$x>']}",
     };
     M_Begin("music", files, 6);
@@ -154,8 +160,8 @@ TEST(a_numbered_title_without_its_format_is_the_title_alone)
 {
     const char *const files[] = {
         "thpatch/lang/themes.js",
-        "{th06_02: 'Lunate Elf'}",
-        "thpatch/lang/th06/musiccmt.js",
+        "{game_02: 'Lunate Elf'}",
+        "thpatch/lang/game/musiccmt.js",
         "{'2': ['@']}",
     };
     M_Begin("music_plain", files, 4);
@@ -172,7 +178,7 @@ TEST(the_font_comes_from_the_settings_and_the_patches)
         "{dependencies: ['nmlgc/base_tsa'], fonts: {'Lang.otf': true}}",
         "nmlgc/base_tsa/global.js",
         "{font: 'Global'}",
-        "thpatch/lang/th06.js",
+        "thpatch/lang/game.js",
         "{font: 'Aroania'}",
     };
     M_Begin("font", files, 8);
@@ -188,14 +194,14 @@ TEST(the_font_comes_from_the_settings_and_the_patches)
 
 TEST(no_patches_translate_nothing)
 {
-    Translation_Init(nullptr);
+    Translation_Init(nullptr, &m_Game);
     CHECK(!Translation_HasBaseTsa());
     CHECK(Translation_GetFont() == nullptr);
     int32_t count;
     Translation_GetFontFiles(&count);
     CHECK_EQ_INT(count, 0);
     CHECK_EQ_STR(Translation_GetSpellName(0, "original"), "original");
-    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "♪%s");
+    CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
     CHECK(Translation_GetMusicComment(0, 0) == nullptr);
     Translation_Shutdown();
 }
