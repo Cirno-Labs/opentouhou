@@ -347,16 +347,20 @@ RESULT AnmTexture_LoadSlot(READER *const reader, const int32_t slot)
     FAIL_IF(
         format < ANM_TEXTURE_DEFAULT || format > ANM_TEXTURE_A4R4G4B4,
         "ANM texture format %d is not supported", format);
-    if (has_image) {
+    const char *name = nullptr;
+    if (name_offset != 0) {
+        MUST(M_ReadName(reader, name_offset, &name));
+    }
+    // As thcrap, a patch replaces an embedded image by its name; only an
+    // entry with no patch for that name falls back to the embedded image.
+    if (has_image && (name == nullptr || !Files_IsPatched(name))) {
         FAIL_IF(
             image_offset >= Reader_Size(reader),
             "ANM image is outside the file");
         Reader_Seek(reader, image_offset);
         return Anm_CreateTextureFromImage(slot, reader, format);
     }
-    FAIL_IF(name_offset == 0, "ANM names no image");
-    const char *name;
-    MUST(M_ReadName(reader, name_offset, &name));
+    FAIL_IF(name == nullptr, "ANM names no image");
     if (name[0] == '@') {
         MUST(Anm_CreateTexture(slot, width, height, format));
     } else {

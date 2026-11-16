@@ -4,6 +4,9 @@
 #include "th07/files.h"
 #include "th07/game.h"
 
+#include "core/patch.h"
+
+#include "patch_builder.h"
 #include "test.h"
 #include "gfx_recorder.h"
 #include "test_dir.h"
@@ -11,6 +14,8 @@
 #include "th07_data.h"
 
 #include "core/base/memory.h"
+#include "core/base/string.h"
+#include "core/io/file.h"
 #include "core/io/writer.h"
 
 #include "stg/rng.h"
@@ -433,6 +438,63 @@ TEST(a_stored_image_of_format_0_or_out_of_range_fails)
         CHECK(!M_Loads("image_format", &builder, 0, 0, &directory));
         M_Teardown(directory);
     }
+}
+
+static void M_WritePatchedPng(
+    const char *const patches, const char *const path, const int32_t width,
+    const int32_t height, const uint32_t rgba)
+{
+    char *const dir = Str_Dup(path);
+    char *const slash = strrchr(dir, '/');
+    *slash = '\0';
+    char *const full_dir = Str_Format("%s/%s", patches, dir);
+    CHECK(Result_Log(File_MakeDir(full_dir), LOG_LEVEL_ERROR));
+    Mem_Free(full_dir);
+    Mem_Free(dir);
+    M_WritePng(patches, path, width, height, rgba);
+}
+
+TEST(a_patch_replaces_a_stored_image_by_its_name)
+{
+    const uint8_t stored[] = { 0, 0, 0, 0xff, 0, 0, 0, 0xff };
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 2, 1, "data/img.png");
+    anm->format = ANM_TEXTURE_RGBA8;
+    AnmBuilder_SetImage(anm, 1, 2, 1, stored, sizeof(stored));
+    char *const directory =
+        M_SetupFiles("stored_patched", "test.anm", &builder);
+
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    M_WritePatchedPng(patches, "a/lang/th07/data/img.png", 2, 1, 0xff0000ff);
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+
+    M_Setup(directory);
+    Files_SetPatches(stack);
+    CHECK(Result_Log(Anm_Load(0, "test.anm", 0), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(M_Pixel(0, 0), 0xff0000ff);
+
+    Patch_CloseStack(stack);
+    M_Teardown(directory);
+}
+
+TEST(a_stored_image_with_no_patch_keeps_its_embedded_pixels)
+{
+    const uint8_t stored[] = { 0, 0, 0, 0xff, 0, 0, 0, 0xff };
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 2, 1, "data/img.png");
+    anm->format = ANM_TEXTURE_RGBA8;
+    AnmBuilder_SetImage(anm, 1, 2, 1, stored, sizeof(stored));
+    char *directory;
+    CHECK(M_Loads("stored_unpatched", &builder, 0, 0, &directory));
+    CHECK_EQ_INT(M_Pixel(0, 0), 0x000000ff);
+    M_Teardown(directory);
 }
 
 TEST(sprites_scale_to_a_texture_larger_than_the_header)
