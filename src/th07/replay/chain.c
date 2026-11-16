@@ -388,3 +388,20 @@ bool Replay_HasStage(const int32_t stage)
     return replay != nullptr && replay->mode == REPLAY_PLAY
         && replay->file != nullptr && replay->file->stages[stage] != nullptr;
 }
+
+uint16_t Replay_GetLastEvents(void)
+{
+    const M_REPLAY *const replay = m_Replay;
+    if (replay == nullptr || !M_IsReady(replay)) {
+        return 0;
+    }
+    if (replay->cursor <= 0) {
+        return 0;
+    }
+    const REPLAY_STAGE *const stage = replay->file->stages[M_Slot()];
+    // Recording writes frame cursor last; playback reads frame cursor - 1
+    // last, cursor having moved past it.
+    const int32_t index =
+        replay->mode == REPLAY_RECORD ? replay->cursor : replay->cursor - 1;
+    return stage->frames[index].events;
+}
