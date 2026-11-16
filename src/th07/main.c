@@ -7,6 +7,7 @@
 #include "th07/game_manager.h"
 #include "th07/replay.h"
 #include "th07/screens/main.h"
+#include "th07/screens/result/records.h"
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
@@ -51,6 +52,7 @@ static RESULT M_Init(void)
     ResultScreen_OpenSaves(Shell_GetUserDir());
     M_KeepDemos();
     GameManager_Create(&g_GameManager);
+    ResultScreen_LoadPlayStats();
     m_GameInitialized = true;
     MUST(Game_Init());
     // Seeds the gameplay RNG from the clock once, outside the ticks, as the
@@ -62,6 +64,7 @@ static RESULT M_Init(void)
 static bool M_Tick(const void *const input)
 {
     const bool running = Game_Tick(input);
+    Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_ScanReplays();
     SoundPlayer_Update();
     return running;
@@ -70,9 +73,12 @@ static bool M_Tick(const void *const input)
 static void M_Shutdown(void)
 {
     if (m_GameInitialized) {
+        // The original saves score.dat as it exits.
+        ResultScreen_SaveScore();
         Game_Shutdown();
         m_GameInitialized = false;
     }
+    Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_CloseSaves();
     Replay_ClearFiles();
     SoundPlayer_Shutdown();

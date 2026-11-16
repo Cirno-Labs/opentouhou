@@ -1261,6 +1261,25 @@ test(
 )
 
 test(
+  'th07/result_saves',
+  executable(
+    'test_th07_result_saves',
+    'test_th07_result_saves.c',
+    c_args: [layer_include['th07']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_rng_lib, stg_lzss_lib, core_io_lib, core_base_lib,
+      core_math_lib,
+    ],
+    dependencies: [sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_result_saves',
+  },
+  suite: 'unit',
+)
+
+test(
   'th07/replay/chain',
   executable(
     'test_th07_replay_chain',

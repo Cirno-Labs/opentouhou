@@ -4,6 +4,8 @@
 
 #include "core/base/utils.h"
 
+#include <string.h>
+
 #define M_SHOT_COUNT 6
 #define M_PHANTASM_CAPTURES 60
 
@@ -12,9 +14,9 @@ GAME_MANAGER g_GameManager;
 static int32_t M_SpellCardsCaptured(void)
 {
     int32_t count = 0;
-    for (size_t i = 0; i < ARRAY_SIZE(g_GameManager.records.spell_captures);
-         i++) {
-        if (g_GameManager.records.spell_captures[i] > 0) {
+    for (size_t i = 0; i < ARRAY_SIZE(g_GameManager.records.spell_cards); i++) {
+        if (g_GameManager.records.spell_cards[i].captures[SCORE_ALL_SHOTS]
+            > 0) {
             count++;
         }
     }
@@ -23,12 +25,11 @@ static int32_t M_SpellCardsCaptured(void)
 
 void GameManager_Create(GAME_MANAGER *const gm)
 {
-    *gm = (GAME_MANAGER) {
-        .play_area = { 32.0f, 16.0f, 384.0f, 448.0f },
-        .mode.demo_index = 2,
-        .mode.replay_fps = 60,
-        .records.phantasm_was_open = true,
-    };
+    memset(gm, 0, sizeof(*gm));
+    gm->play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
+    gm->mode.demo_index = 2;
+    gm->mode.replay_fps = 60;
+    gm->records.phantasm_was_open = true;
 }
 
 bool GameManager_IsInPlayArea(

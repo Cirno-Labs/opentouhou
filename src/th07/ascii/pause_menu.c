@@ -356,12 +356,12 @@ static void M_Continue(void)
     gm->player.next_extend_items = 50;
     gm->cherry.value = gm->cherry.offset;
     const int32_t shot = gm->run.shot_index + 1;
-    M_CountUp(&gm->records.play_counts[gm->run.difficulty].plays[0]);
-    M_CountUp(&gm->records.play_counts[6].plays[0]);
-    M_CountUp(&gm->records.play_counts[gm->run.difficulty].plays[shot]);
-    M_CountUp(&gm->records.play_counts[6].plays[shot]);
-    M_CountUp(&gm->records.play_counts[gm->run.difficulty].continues);
-    M_CountUp(&gm->records.play_counts[6].continues);
+    M_CountUp(&gm->records.play_stats.counts[gm->run.difficulty].plays[0]);
+    M_CountUp(&gm->records.play_stats.counts[6].plays[0]);
+    M_CountUp(&gm->records.play_stats.counts[gm->run.difficulty].plays[shot]);
+    M_CountUp(&gm->records.play_stats.counts[6].plays[shot]);
+    M_CountUp(&gm->records.play_stats.counts[gm->run.difficulty].continues);
+    M_CountUp(&gm->records.play_stats.counts[6].continues);
     Sound_ResumeMusic();
     PlayTime_Restart();
 }

@@ -314,7 +314,7 @@ static void M_NextScene(void)
             gm->records.clears[gm->run.shot_index].no_continues[4] = 99;
         }
         if (gm->run.difficulty >= 4) {
-            gm->records.play_counts[gm->run.difficulty].clears++;
+            gm->records.play_stats.counts[gm->run.difficulty].clears++;
         }
         gm->mode.game_cleared = true;
         Scene_Request(

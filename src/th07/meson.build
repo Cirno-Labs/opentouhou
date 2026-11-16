@@ -37,6 +37,7 @@ th07_lib = static_library(
   'scene.c',
   'screen_effect.c',
   'screens/main.c',
+  'screens/result/records.c',
   'screens/result/saves.c',
   'screens/result/score.c',
   'settings.c',

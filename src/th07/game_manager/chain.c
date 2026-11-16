@@ -14,6 +14,7 @@
 #include "th07/settings.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
+#include "th07/screens/result/records.h"
 #include "th07/stubs.h"
 
 #include "core/base/log.h"
@@ -68,22 +69,18 @@ static void M_ResetPlayArea(GAME_MANAGER *const gm)
 
 // Saves score.dat, then reads the high score and the records of the game
 // from it. A practice takes its high score from the practice scores.
-static RESULT M_LoadScoreFile(GAME_MANAGER *const gm)
+static void M_LoadScoreFile(GAME_MANAGER *const gm)
 {
-    Result_Log(ResultScreen_Register(2), LOG_LEVEL_WARNING);
-    for (size_t i = 0; i < ARRAY_SIZE(gm->records.spell_captures); i++) {
-        gm->records.spell_captures[i] = 0;
-    }
-    MUST(ResultScreen_LoadGameRecords(), "score file");
+    ResultScreen_SaveScore();
+    ResultScreen_LoadGameRecords();
     if (gm->mode.in_practice) {
-        typeof(gm->records.practice[0][0][0]) *const practice =
+        PRACTICE_RECORD *const practice =
             &gm->records.practice[gm->run.shot_index][gm->run.stage]
                                  [gm->run.difficulty];
         gm->score.high = practice->score;
         practice->play_count++;
         gm->score.high_continues = 0;
     }
-    return OK;
 }
 
 static void M_SetUpCherry(GAME_MANAGER *const gm)
@@ -111,7 +108,8 @@ static void M_SetUpCherry(GAME_MANAGER *const gm)
 
 static void M_CountPlay(GAME_MANAGER *const gm)
 {
-    typeof(gm->records.play_counts[0]) *const counts = gm->records.play_counts;
+    typeof(gm->records.play_stats.counts[0]) *const counts =
+        gm->records.play_stats.counts;
     const int32_t difficulty = gm->run.difficulty;
     const int32_t shot = gm->run.shot_index + 1;
     M_CountUp(&counts[difficulty].plays[0]);
@@ -173,7 +171,7 @@ static RESULT M_NewGame(GAME_MANAGER *const gm)
         gm->run.score_disabled = false;
     }
     gm->player.extends = 0;
-    MUST(M_LoadScoreFile(gm));
+    M_LoadScoreFile(gm);
     M_SetRankForDifficulty(gm);
     gm->stats.deaths = 0.0f;
     GameManager_DrawChecksumKeys();

@@ -807,16 +807,16 @@ TEST(clearing_extra_and_phantasm_counts_the_clear)
     M_SetUpNextScene("extra", 7, 4);
     GuiSetup_Run(1);
     CHECK_EQ_INT(g_GameManager.records.clears[3].no_continues[4], 99);
-    CHECK_EQ_INT(g_GameManager.records.play_counts[4].clears, 1);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[4].clears, 1);
     GuiSetup_TearDown();
     M_SetUpNextScene("phantasm", 8, 5);
     GuiSetup_Run(1);
     CHECK_EQ_INT(g_GameManager.records.clears[3].no_continues[4], 0);
-    CHECK_EQ_INT(g_GameManager.records.play_counts[5].clears, 1);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[5].clears, 1);
     GuiSetup_TearDown();
     M_SetUpNextScene("ending", 6, 3);
     GuiSetup_Run(1);
-    CHECK_EQ_INT(g_GameManager.records.play_counts[3].clears, 0);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[3].clears, 0);
     GuiSetup_TearDown();
 }
 
@@ -832,7 +832,7 @@ TEST(only_a_phantasm_replay_is_saved_again)
     g_GameManager.mode.in_replay = true;
     GuiSetup_Run(1);
     CHECK_EQ_INT(g_GuiCalls.resaves, 0);
-    CHECK_EQ_INT(g_GameManager.records.play_counts[4].clears, 0);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[4].clears, 0);
     GuiSetup_TearDown();
 }
 

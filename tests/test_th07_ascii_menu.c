@@ -483,7 +483,7 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     gm->player.extends = 2;
     gm->cherry.offset = 321;
     gm->cherry.value = 40000;
-    gm->records.play_counts[6].continues = 999999;
+    gm->records.play_stats.counts[6].continues = 999999;
     g_Player.shot_type.bombs = 3.0f;
     const int32_t generated = g_Rng.generated;
     menu->state = 1;
@@ -511,11 +511,11 @@ TEST(continue_resets_the_run_and_counts_the_continue)
     CHECK_EQ_INT(gm->player.extends, 0);
     CHECK_EQ_INT(gm->player.next_extend_items, 50);
     CHECK_EQ_INT(gm->cherry.value, 321);
-    CHECK_EQ_INT(gm->records.play_counts[2].plays[0], 1);
-    CHECK_EQ_INT(gm->records.play_counts[2].plays[4], 1);
-    CHECK_EQ_INT(gm->records.play_counts[6].plays[4], 1);
-    CHECK_EQ_INT(gm->records.play_counts[2].continues, 1);
-    CHECK_EQ_INT(gm->records.play_counts[6].continues, 999999);
+    CHECK_EQ_INT(gm->records.play_stats.counts[2].plays[0], 1);
+    CHECK_EQ_INT(gm->records.play_stats.counts[2].plays[4], 1);
+    CHECK_EQ_INT(gm->records.play_stats.counts[6].plays[4], 1);
+    CHECK_EQ_INT(gm->records.play_stats.counts[2].continues, 1);
+    CHECK_EQ_INT(gm->records.play_stats.counts[6].continues, 999999);
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_GAMEPLAY);
     M_Teardown();
