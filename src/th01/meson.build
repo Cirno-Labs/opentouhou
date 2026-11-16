@@ -54,6 +54,7 @@ th01_lib = static_library(
   'grf.c',
   'grz.c',
   'stage_data.c',
+  'scene.c',
   'stage_objects.c',
   'stage.c',
   'stage_obstacles.c',
