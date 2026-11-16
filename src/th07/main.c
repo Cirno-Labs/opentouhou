@@ -11,6 +11,10 @@
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
+
+#include "stg/note.h"
+#include "stg/translation.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -58,7 +62,11 @@ static RESULT M_Init(void)
 {
     MUST(Files_Init(Shell_GetDataDir()));
     Files_SetPatches(Shell_GetPatches());
-    MUST(Anm_InitText(nullptr, nullptr, 0));
+    Translation_Init(Shell_GetPatches(), &g_TranslationGame);
+    int32_t font_count;
+    const char *const *const fonts = Translation_GetFontFiles(&font_count);
+    MUST(Anm_InitText(Translation_GetFont(), fonts, font_count));
+    Note_Init(Shell_GetPatches());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves(Shell_GetUserDir());
     M_KeepDemos();
@@ -98,7 +106,9 @@ static void M_Shutdown(void)
     ResultScreen_CloseSaves();
     Replay_ClearFiles();
     SoundPlayer_Shutdown();
+    Note_Shutdown();
     Anm_ShutdownText();
+    Translation_Shutdown();
     Files_Shutdown();
 }
 

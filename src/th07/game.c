@@ -4,6 +4,8 @@
 #include "th07/ascii.h"
 #include "th07/scene.h"
 
+#include "stg/note.h"
+
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/gfx.h"
@@ -28,6 +30,7 @@ bool Game_Tick(const TH07_INPUT *const input)
 {
     g_Input = *input;
     Chain_RunDraw(&g_Chain);
+    Note_Draw();
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
     if (Gfx_IsStarted()) {
         Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
