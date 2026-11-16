@@ -10,6 +10,7 @@
 #include "th07/scene.h"
 #include "th07/screens/result/private.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
 
 #include "stg/note.h"
 #include "stg/translation.h"
@@ -133,19 +134,23 @@ static const char m_NameAlphabet[M_ALPHABET_SIZE + 1] =
     "0123456789#!?'\"$(){}[]<>&\\|~^ --";
 
 // Names the shots by shot index, then every shot.
-static const char *const m_ShotNames[M_SPELL_SHOT_COUNT] = {
-    "博麗 霊夢 (霊)　", "博麗 霊夢 (夢)　", "霧雨 魔理沙 (魔)",
-    "霧雨 魔理沙 (恋)", "十六夜 咲夜 (幻)", "十六夜 咲夜 (時)",
-    "全主人公合計  　",
+static const STRING m_ShotNames[M_SPELL_SHOT_COUNT] = {
+    STRING_SHOT_NAME_REIMU_A,  STRING_SHOT_NAME_REIMU_B,
+    STRING_SHOT_NAME_MARISA_A, STRING_SHOT_NAME_MARISA_B,
+    STRING_SHOT_NAME_SAKUYA_A, STRING_SHOT_NAME_SAKUYA_B,
+    STRING_SHOT_NAME_TOTAL,
 };
 
-static const char *const m_ShotTypeNames[SCORE_SHOT_COUNT] = {
-    "ReimuA ", "ReimuB ", "MarisaA", "MarisaB", "SakuyaA", "SakuyaB",
+static const STRING m_ShotTypeNames[SCORE_SHOT_COUNT] = {
+    STRING_SHOT_TYPE_REIMU_A,  STRING_SHOT_TYPE_REIMU_B,
+    STRING_SHOT_TYPE_MARISA_A, STRING_SHOT_TYPE_MARISA_B,
+    STRING_SHOT_TYPE_SAKUYA_A, STRING_SHOT_TYPE_SAKUYA_B,
 };
 
-static const char *const m_DifficultyNames[SCORE_DIFFICULTY_COUNT] = {
-    "      Easy", "    Normal", "      Hard",
-    "   Lunatic", "     Extra", "  Phantasm",
+static const STRING m_DifficultyNames[SCORE_DIFFICULTY_COUNT] = {
+    STRING_RESULT_DIFFICULTY_EASY,  STRING_RESULT_DIFFICULTY_NORMAL,
+    STRING_RESULT_DIFFICULTY_HARD,  STRING_RESULT_DIFFICULTY_LUNATIC,
+    STRING_RESULT_DIFFICULTY_EXTRA, STRING_RESULT_DIFFICULTY_PHANTASM,
 };
 
 static M_SCREEN m_Screen;
@@ -342,7 +347,7 @@ static void M_RenderShotName(M_SCREEN *const screen)
     ANM_VM *const vm = &screen->text_sprites[0];
     Result_Log(
         Anm_RenderTextCentered(
-            vm, 0xffffff, 0, "%s", m_ShotNames[screen->shot]),
+            vm, 0xffffff, 0, "%s", g_Strings[m_ShotNames[screen->shot]]),
         LOG_LEVEL_WARNING);
     M_SetAlpha(vm, 0xff);
 }
@@ -825,7 +830,9 @@ static void M_RenderSpellCards(M_SCREEN *const screen)
         ANM_VM *const vm = &screen->text_sprites[i % M_SPELL_PAGE_SIZE];
         if (card->attempts[SCORE_ALL_SHOTS] == 0) {
             Result_Log(
-                Anm_RenderText(vm, 0xffffff, 0, "？？？？？"),
+                Anm_RenderText(
+                    vm, 0xffffff, 0, "%s",
+                    g_Strings[STRING_RESULT_UNKNOWN_SPELL_CARD]),
                 LOG_LEVEL_WARNING);
         } else {
             size_t length = 0;
@@ -852,8 +859,8 @@ static void M_RenderSpellCards(M_SCREEN *const screen)
     ANM_VM *const title = &screen->text_sprites[M_SPELL_PAGE_SIZE];
     Result_Log(
         Anm_RenderText(
-            title, 0xffffff, 0, "%s %3d枚中%3d枚取得（キャラ切り替え↓↑）",
-            m_ShotNames[screen->shown_spell_shot], SPELL_CARD_COUNT,
+            title, 0xffffff, 0, g_Strings[STRING_SPELL_RESULT_HEADER],
+            g_Strings[m_ShotNames[screen->shown_spell_shot]], SPELL_CARD_COUNT,
             screen->captured_counts[screen->spell_shot]),
         LOG_LEVEL_WARNING);
     M_SetAlpha(title, 0xff);
@@ -883,8 +890,8 @@ static void M_UpdateSpellCards(M_SCREEN *const screen)
     }
 }
 
-// Renders label and the counts by difficulty, then the totals. Leaves out
-// Phantasm while it is closed.
+// Renders a shot's name and its counts by difficulty, then the totals.
+// Leaves out Phantasm while it is closed.
 static void M_RenderCounts(
     ANM_VM *const vm, const char *const label,
     const int32_t counts[PLAY_STATS_DIFFICULTY_COUNT])
@@ -902,14 +909,38 @@ static void M_RenderCounts(
     Result_Log(Anm_RenderText(vm, 0xffffff, 0, "%s", text), LOG_LEVEL_WARNING);
 }
 
+// Renders one of the clear/continue/practice/retries rows. row is the
+// label plus its six non-Phantasm counts as one translatable format
+// string, matching resultscreen.cpp's sprintf for the row; row_phantasm is
+// the row with its untranslated seventh column, for while Phantasm is
+// open.
+static void M_RenderStatRow(
+    ANM_VM *const vm, const char *const row, const char *const row_phantasm,
+    const int32_t counts[PLAY_STATS_DIFFICULTY_COUNT])
+{
+    if (GameManager_IsPhantasmOpen()) {
+        Result_Log(
+            Anm_RenderText(
+                vm, 0xffffff, 0, row_phantasm, counts[0], counts[1], counts[2],
+                counts[3], counts[4], counts[5], counts[6]),
+            LOG_LEVEL_WARNING);
+    } else {
+        Result_Log(
+            Anm_RenderText(
+                vm, 0xffffff, 0, row, counts[0], counts[1], counts[2],
+                counts[3], counts[4], counts[6]),
+            LOG_LEVEL_WARNING);
+    }
+}
+
 static void M_RenderRunTime(M_SCREEN *const screen)
 {
     const PLAY_STATS_RECORD *const stats = &g_GameManager.records.play_stats;
     Result_Log(
         Anm_RenderText(
             &screen->text_sprites[0], 0xffffff, 0,
-            "総起動時間   %.2d:%.2d:%.2d", stats->run_hours, stats->run_minutes,
-            stats->run_seconds),
+            g_Strings[STRING_STATS_TIME_SINCE_STARTUP], stats->run_hours,
+            stats->run_minutes, stats->run_seconds),
         LOG_LEVEL_WARNING);
 }
 
@@ -929,8 +960,8 @@ static void M_RenderPlayStats(M_SCREEN *const screen)
     vm->pos = pos;
     Result_Log(
         Anm_RenderText(
-            vm, 0xffffff, 0, "総プレイ時間 %.2d:%.2d:%.2d", stats->play_hours,
-            stats->play_minutes, stats->play_seconds),
+            vm, 0xffffff, 0, g_Strings[STRING_STATS_TOTAL_PLAYTIME],
+            stats->play_hours, stats->play_minutes, stats->play_seconds),
         LOG_LEVEL_WARNING);
     vm++;
     pos.y += 17.0f;
@@ -939,10 +970,8 @@ static void M_RenderPlayStats(M_SCREEN *const screen)
         Anm_RenderText(
             vm, 0xffffff, 0, "%s",
             GameManager_IsPhantasmOpen()
-                ? "プレイ回数　　　 　Easy 　Norm 　Hard 　Luna  Extra "
-                  "Phants  Total"
-                : "プレイ回数　　　 　Easy 　Norm 　Hard 　Luna  Extra  "
-                  "Total"),
+                ? g_Strings[STRING_STATS_PLAY_COUNT_HEADER_PHANTASM]
+                : g_Strings[STRING_STATS_PLAY_COUNT_HEADER]),
         LOG_LEVEL_WARNING);
     for (int32_t i = 0; i <= SCORE_SHOT_COUNT; i++) {
         vm++;
@@ -954,16 +983,24 @@ static void M_RenderPlayStats(M_SCREEN *const screen)
         for (int32_t d = 0; d < PLAY_STATS_DIFFICULTY_COUNT; d++) {
             plays[d] = counts[d].plays[column];
         }
-        M_RenderCounts(vm, m_ShotNames[i], plays);
+        M_RenderCounts(vm, g_Strings[m_ShotNames[i]], plays);
     }
     stats->counts[6].clears = counts[0].clears + counts[1].clears
         + counts[2].clears + counts[3].clears + counts[4].clears
         + counts[5].clears;
-    static const char *const labels[4] = {
-        "クリア回数  　　",
-        "コンティニュー  ",
-        "プラクティス　  ",
-        "リトライ回数  　",
+    static const STRING labels[4] = {
+        STRING_STATS_CLEAR_COUNT_LABEL,
+        STRING_STATS_CONTINUE_LABEL,
+        STRING_STATS_PRACTICE_LABEL,
+        STRING_STATS_RETRIES_LABEL,
+    };
+    // Untranslated, as resultscreen.cpp never exposes this seventh column
+    // through a translatable format string of its own.
+    static const char *const labels_phantasm[4] = {
+        "クリア回数  　　 %6d %6d %6d %6d %6d %6d %6d",
+        "コンティニュー   %6d %6d %6d %6d %6d %6d %6d",
+        "プラクティス　   %6d %6d %6d %6d %6d %6d %6d",
+        "リトライ回数  　 %6d %6d %6d %6d %6d %6d %6d",
     };
     int32_t rows[4][PLAY_STATS_DIFFICULTY_COUNT];
     for (int32_t d = 0; d < PLAY_STATS_DIFFICULTY_COUNT; d++) {
@@ -977,7 +1014,7 @@ static void M_RenderPlayStats(M_SCREEN *const screen)
         vm++;
         pos.y += 17.0f;
         vm->pos = pos;
-        M_RenderCounts(vm, labels[i], rows[i]);
+        M_RenderStatRow(vm, g_Strings[labels[i]], labels_phantasm[i], rows[i]);
     }
 }
 
@@ -1159,7 +1196,7 @@ static void M_DrawScores(M_SCREEN *const screen, VEC3 pos)
     pos.y += 18.0f;
     pos.x += 24.0f;
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xe0, 0xe0, 0xef));
-    AsciiText_AddString(pos, "No  Name      Score(Stage)  Date   Slow");
+    AsciiText_AddString(pos, g_Strings[STRING_RESULTS_HEADER]);
     pos.y += 18.0f;
     const SCORE_LIST *const list =
         M_List(screen, screen->difficulty, screen->shot);
@@ -1176,7 +1213,7 @@ static void M_DrawScores(M_SCREEN *const screen, VEC3 pos)
         } else {
             AsciiText_SetColor(COLOR_ARGB(0xc0, 0xff, 0xc0, 0xc0));
         }
-        AsciiText_AddFormat(pos, "%2d", i + 1);
+        AsciiText_AddFormat(pos, g_Strings[STRING_RESULT_RANK], i + 1);
         pos.x += 48.0f;
         if (naming && entry->is_new) {
             M_AddNameCursor(screen, pos, "%8s");
@@ -1233,7 +1270,7 @@ static void M_DrawSpellCards(M_SCREEN *const screen, VEC3 pos)
             if (card->attempts[shot] != 0) {
                 AsciiText_AddFormat(
                     (VEC3) { pos.x + 424.0f, pos.y - 13.0f, pos.z },
-                    "MaxBonus %8d", card->max_bonus[shot]);
+                    g_Strings[STRING_MAX_BONUS], card->max_bonus[shot]);
             }
             g_AsciiText.scale_x = 1.0f;
             g_AsciiText.scale_y = 1.0f;
@@ -1298,7 +1335,7 @@ static void M_DrawSlots(M_SCREEN *const screen)
     }
     AsciiText_AddString(
         screen->sprites[M_SLOT_HEADER_SPRITE].pos,
-        "No.   Name     Date   Player Score");
+        g_Strings[STRING_REPLAY_SAVE_HEADER]);
     const int32_t shot = g_GameManager.run.shot_index;
     char name[sizeof(screen->name) + 1] = {};
     memcpy(name, screen->name, sizeof(screen->name));
@@ -1312,17 +1349,18 @@ static void M_DrawSlots(M_SCREEN *const screen)
         const SAVED_REPLAY *const slot = &screen->slots[i];
         if (screen->state == M_STATE_REPLAY_NAME) {
             AsciiText_AddFormat(
-                pos, "No.%.2d %8s %5s  %7s %9d0", i + 1, name, date,
-                m_ShotTypeNames[shot], screen->replay_score);
+                pos, g_Strings[STRING_REPLAY_SAVE_SLOT], i + 1, name, date,
+                g_Strings[m_ShotTypeNames[shot]], screen->replay_score);
             AsciiText_SetColor(COLOR_ARGB(0xff, 0xf0, 0xf0, 0xff));
             M_AddNameCursor(screen, pos, "      %8s");
         } else if (!slot->valid) {
             AsciiText_AddFormat(
-                pos, "No.%.2d -------- --/--  -------          0", i + 1);
+                pos, g_Strings[STRING_REPLAY_SAVE_EMPTY], i + 1);
         } else {
             AsciiText_AddFormat(
-                pos, "No.%.2d %8s %5s  %7s %9d0", i + 1, slot->summary.name,
-                slot->summary.date, m_ShotTypeNames[slot->summary.shot],
+                pos, g_Strings[STRING_REPLAY_SAVE_SLOT], i + 1,
+                slot->summary.name, slot->summary.date,
+                g_Strings[m_ShotTypeNames[slot->summary.shot]],
                 slot->summary.score);
         }
     }
@@ -1345,7 +1383,7 @@ static void M_DrawStatistics(const M_SCREEN *const screen)
     AsciiText_AddFormat(pos, "%1d", gm->stats.continues_used);
     pos.x -= 126.0f;
     pos.y += 22.0f;
-    AsciiText_AddString(pos, m_DifficultyNames[gm->run.difficulty]);
+    AsciiText_AddString(pos, g_Strings[m_DifficultyNames[gm->run.difficulty]]);
     pos.x += 14.0f;
     pos.y += 22.0f;
     if (!gm->mode.game_cleared) {

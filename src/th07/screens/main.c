@@ -12,6 +12,7 @@
 #include "th07/settings.h"
 #include "th07/sound.h"
 #include "th07/screens/result/records.h"
+#include "th07/strings.h"
 
 #include "shell/game.h"
 #include "core/base/color.h"
@@ -185,8 +186,10 @@ static const char *const m_KeyConfigHelp[] = {
     "おおよそ終了します",
 };
 
-static const char *const m_ShotNames[6] = {
-    "ReimuA ", "ReimuB ", "MarisaA", "MarisaB", "SakuyaA", "SakuyaB",
+static const STRING m_ShotNames[6] = {
+    STRING_SHOT_TYPE_REIMU_A,  STRING_SHOT_TYPE_REIMU_B,
+    STRING_SHOT_TYPE_MARISA_A, STRING_SHOT_TYPE_MARISA_B,
+    STRING_SHOT_TYPE_SAKUYA_A, STRING_SHOT_TYPE_SAKUYA_B,
 };
 
 static const char *const m_DifficultyNames[6] = {
@@ -198,8 +201,9 @@ static const char *const m_StageNames[8] = {
     "Stage5  ", "Stage6  ", "Extra   ", "Phantasm",
 };
 
-static const char *const m_PracticeStageNames[6] = {
-    "Stage1", "Stage2", "Stage3", "Stage4", "Stage5", "Stage6",
+static const STRING m_PracticeStageNames[6] = {
+    STRING_PRACTICE_STAGE_1, STRING_PRACTICE_STAGE_2, STRING_PRACTICE_STAGE_3,
+    STRING_PRACTICE_STAGE_4, STRING_PRACTICE_STAGE_5, STRING_PRACTICE_STAGE_6,
 };
 
 static M_MENU m_Menu;
@@ -218,6 +222,12 @@ static const char *M_Name(
     const char *const *const names, const size_t count, const int32_t index)
 {
     return index >= 0 && (size_t)index < count ? names[index] : "";
+}
+
+static const char *M_StringName(
+    const STRING *const names, const size_t count, const int32_t index)
+{
+    return index >= 0 && (size_t)index < count ? g_Strings[names[index]] : "";
 }
 
 static void M_SetSprite(ANM_VM *const vm, const int32_t variant)
@@ -1645,7 +1655,7 @@ static void M_SetRowColor(const bool chosen, const uint32_t other)
 static void M_DrawReplays(const M_MENU *const menu)
 {
     const ANM_VM *text = &menu->sprites[0x86];
-    AsciiText_AddString(text->pos, "No.   Name       Date  Player   Rank");
+    AsciiText_AddString(text->pos, g_Strings[STRING_MENU_REPLAY_HEADER]);
     const int32_t top = menu->replay_cursor - menu->replay_cursor % M_PAGE;
     for (int32_t j = top; j < top + M_PAGE && j < menu->replay_count; j++) {
         const SAVED_REPLAY *const replay = &menu->replays[j];
@@ -1654,9 +1664,9 @@ static void M_DrawReplays(const M_MENU *const menu)
         M_SetRowColor(
             j == menu->replay_cursor, COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
         AsciiText_AddFormat(
-            text->pos, "%s %8s  %6s %7s  %8s", replay->label,
+            text->pos, g_Strings[STRING_MENU_REPLAY], replay->label,
             replay->summary.name, replay->summary.date,
-            M_Name(m_ShotNames, 6, replay->summary.shot),
+            M_StringName(m_ShotNames, 6, replay->summary.shot),
             M_Name(m_DifficultyNames, 6, replay->summary.difficulty));
     }
     if (menu->sub_state == M_SUB_REPLAY_STAGE
@@ -1668,7 +1678,8 @@ static void M_DrawReplays(const M_MENU *const menu)
         AsciiText_AddFormat(
             menu->sprites[0x85].pos, "       %2.3f%%",
             (double)summary->slowdown);
-        AsciiText_AddString(menu->sprites[0x96].pos, "Stage    LastScore");
+        AsciiText_AddString(
+            menu->sprites[0x96].pos, g_Strings[STRING_MENU_STAGE_HEADER]);
         for (int32_t i = 0; i < 7; i++) {
             const bool chosen = i == menu->replay_stage;
             if (menu->sub_state != M_SUB_REPLAY_PLAYBACK) {
@@ -1685,9 +1696,11 @@ static void M_DrawReplays(const M_MENU *const menu)
             const VEC3 pos = menu->sprites[0x97 + i].pos;
             if (summary->stages[i + 1]) {
                 AsciiText_AddFormat(
-                    pos, "%s %9d0", name, summary->stage_scores[i + 1]);
+                    pos, g_Strings[STRING_MENU_STAGE], name,
+                    summary->stage_scores[i + 1]);
             } else {
-                AsciiText_AddFormat(pos, "%s ----------", name);
+                AsciiText_AddFormat(
+                    pos, g_Strings[STRING_MENU_STAGE_EMPTY], name);
             }
         }
     }
@@ -1701,7 +1714,7 @@ static void M_DrawPracticeScores(const M_MENU *const menu)
     AsciiText_SetColor(COLOR_WHITE);
     AsciiText_SetHighlight(false);
     VEC3 pos = menu->sprites[0x83].pos;
-    AsciiText_AddString(pos, "Stage    HI-Score");
+    AsciiText_AddString(pos, g_Strings[STRING_PRACTICE_STAGE_HEADER]);
     pos.y += 16.0f;
     const int32_t shot = gm->run.character * 2 + gm->run.shot_type;
     const int32_t difficulty = g_Settings.difficulty;
@@ -1716,7 +1729,8 @@ static void M_DrawPracticeScores(const M_MENU *const menu)
             AsciiText_SetColor(COLOR_ARGB(0xff, 0x40, 0x40, 0x40));
         }
         AsciiText_AddFormat(
-            pos, "%s %9d0 (%3d)", m_PracticeStageNames[i],
+            pos, g_Strings[STRING_PRACTICE_SCORE],
+            g_Strings[m_PracticeStageNames[i]],
             (int32_t)gm->records.practice[shot][i][difficulty].score,
             (int32_t)gm->records.practice[shot][i][difficulty].play_count);
         pos.y += 16.0f;
