@@ -146,13 +146,10 @@ bool StepPatches_IsOriginal(const char *const name)
 
 const char *StepPatches_ListProducts(const APP_CONTEXT *const run)
 {
-    const char *const *const names = run->game_count > 0 ? run->games : g_Games;
-    const int32_t count =
-        run->game_count > 0 ? run->game_count : APP_GAME_COUNT;
     const char *text = "";
-    for (int32_t i = 0; i < count; i++) {
+    for (int32_t i = 0; i < run->games.count; i++) {
         char product[GAME_NAME_SIZE];
-        Game_GetProductName(names[i], product);
+        Game_GetProductName(run->games.items[i], product);
         text = Console_Format(
             run->arena, "%s%s%s", text, i > 0 ? ", " : "", product);
     }
@@ -189,11 +186,11 @@ static RESULT M_WriteLanguage(const char *const path, const char *const code)
 
 const char *StepPatches_ReadLanguage(const APP_CONTEXT *const run)
 {
-    for (int32_t i = 0; i < run->game_count; i++) {
+    for (int32_t i = 0; i < run->games.count; i++) {
         const char *path;
         INI *ini = nullptr;
-        if (!Result_Ignore(
-                M_FindConfig(run->exe_dir, run->games[i], run->arena, &path))
+        if (!Result_Ignore(M_FindConfig(
+                run->exe_dir, run->games.items[i], run->arena, &path))
             || !Result_Ignore(Ini_Load(path, &g_HeapAllocator, &ini))) {
             continue;
         }
@@ -253,12 +250,12 @@ static void M_Head(M_LANGUAGE *const language)
     if (!run->args->verbose) {
         return;
     }
-    for (int32_t i = 0; i < run->game_count; i++) {
+    for (int32_t i = 0; i < run->games.count; i++) {
         const char *path;
-        if (Result_Ignore(
-                M_FindConfig(run->exe_dir, run->games[i], run->arena, &path))) {
+        if (Result_Ignore(M_FindConfig(
+                run->exe_dir, run->games.items[i], run->arena, &path))) {
             char product[GAME_NAME_SIZE];
-            Game_GetProductName(run->games[i], product);
+            Game_GetProductName(run->games.items[i], product);
             fprintf(run->out, "config.ini of %s: %s\n", product, path);
         }
     }
@@ -459,13 +456,13 @@ static bool M_SaveLanguage(
 {
     APP_CONTEXT *const run = language->run;
     bool saved = true;
-    for (int32_t i = 0; i < run->game_count; i++) {
+    for (int32_t i = 0; i < run->games.count; i++) {
         const char *path;
         const RESULT found =
-            M_FindConfig(run->exe_dir, run->games[i], run->arena, &path);
+            M_FindConfig(run->exe_dir, run->games.items[i], run->arena, &path);
         if (!IS_OK(found)) {
             char product[GAME_NAME_SIZE];
-            Game_GetProductName(run->games[i], product);
+            Game_GetProductName(run->games.items[i], product);
             Console_Fail(
                 run->out, found, "Could not find the config.ini of %s: %s.",
                 product, found.message);
@@ -656,7 +653,7 @@ static bool M_Run(APP_CONTEXT *const run)
             opened.message);
         return false;
     }
-    if (run->game_count == 0) {
+    if (run->games.count == 0) {
         M_Head(&language);
         fputs("There is no opentouhou game beside othpatch.\n", run->out);
         return false;

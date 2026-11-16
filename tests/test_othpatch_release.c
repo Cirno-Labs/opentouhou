@@ -170,16 +170,14 @@ TEST(file_without_a_sha256_digest_has_none)
     Arena_Free(&test.arena);
 }
 
-TEST(index_without_a_release_of_the_game_fails)
+TEST(index_without_a_release_of_the_game_finds_none)
 {
     char *const release = M_Release("1.0.0-rc1", "");
     char *const programs =
         Str_Format("\"oth06\": [%s], \"othpatch\": [%s]", release, release);
     M_CASE test;
-    const RESULT result = M_Find(&test, programs);
-    CHECK(!IS_OK(result));
-    CHECK(strstr(result.message, "no release of oth06") != nullptr);
-    Result_Ignore(result);
+    CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
+    CHECK(!test.release.found);
     Arena_Free(&test.arena);
     Mem_Free(programs);
     Mem_Free(release);

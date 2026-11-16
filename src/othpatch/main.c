@@ -1,6 +1,7 @@
 #include "othpatch/main.h"
 
 #include "othpatch/fetch.h"
+#include "othpatch/game.h"
 #include "othpatch/install.h"
 #include "othpatch/context.h"
 #include "othpatch/step.h"
@@ -19,8 +20,6 @@
 // Sets the size of the arena of one run, which holds its strings and the
 // release index.
 #define M_ARENA_SIZE ((size_t)64 * 1024 * 1024)
-
-const char *const g_Games[APP_GAME_COUNT] = { "th06" };
 
 static const ARG_OPTION m_Options[] = {
     ARG_STRING_OF(
@@ -61,9 +60,10 @@ static const ARG_RULE m_Rules[] = {
 static const ARG_SCHEMA m_Schema = ARG_SCHEMA_OF(
     "othpatch",
     "Downloads thcrap patches for the opentouhou games beside othpatch, "
-    "such as oth06 or oth06.exe, and updates the patches that you have. "
-    "Then it checks for a newer release of othpatch and of each game, and "
-    "asks before it installs one.\n"
+    "such as oth06 or oth06.exe, and for the games of the patches that you "
+    "have. Then it checks for a newer release of othpatch and of each "
+    "game it finds beside it, and asks before it installs one. A renamed "
+    "game is not found.\n"
     "\n"
     "Without an argument, othpatch updates the language and every patch "
     "that you have. When no language is set yet, it sets the language of "
@@ -149,8 +149,10 @@ int Main_Run(
     ARENA arena;
     Arena_Init(&arena, "othpatch", M_ARENA_SIZE);
     if (exe_dir != nullptr && !args.list) {
+        GAME_LIST games = {};
+        Game_FindBeside(&games, &arena, exe_dir, out);
         Install_RemoveLeftovers(
-            Install_GetPlatform(), exe_dir, g_Games, APP_GAME_COUNT, &arena);
+            Install_GetPlatform(), exe_dir, games.items, games.count, &arena);
     }
     char *dir = nullptr;
     const RESULT found = M_FindDir(&args, exe_dir, &dir);

@@ -417,7 +417,7 @@ TEST(game_in_the_patches_folder_is_downloaded)
 
 TEST(failure_without_a_game_fails_the_section)
 {
-    M_CASE test = M_PrepareBeside("no_game", "oth07");
+    M_CASE test = M_PrepareBeside("no_game", "the_game");
     M_AddNetwork(&test);
     CHECK_EQ_INT(M_Run(&test, 1, "en"), 1);
     M_CheckAll(
@@ -1331,12 +1331,9 @@ TEST(release_under_the_game_id_is_not_found)
         test.game_entries, test.othpatch_entries);
     PatchBuilder_Write(test.server, "releases.json", text);
     Mem_Free(text);
-    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 1);
+    CHECK_EQ_INT(M_Run(&test, 2, "--update", "en"), 0);
     M_CheckOutput(
-        &test,
-        M_GAME_HEADING
-        "Could not check for updates: the index has no release of "
-        "oth06.\n" M_SOMETHING_FAILED);
+        &test, M_GAME_HEADING "There is no release of oth06 yet.\n" M_ALL_DONE);
     M_CheckGame(&test, "0.1.0");
     M_Close(&test);
 }
