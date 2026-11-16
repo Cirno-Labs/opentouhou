@@ -1193,6 +1193,20 @@ test(
 )
 
 test(
+  'core/recorder_bot',
+  executable(
+    'test_core_recorder_bot',
+    'test_core_recorder_bot.c',
+    '../replay/core/recorder/bot.c',
+    c_args: core_include + stg_include
+      + ['-I' + meson.current_source_dir() / '../replay/core/recorder'],
+    implicit_include_directories: false,
+    link_with: [stg_rng_lib, core_base_lib, core_math_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/gui',
   executable(
     'test_th07_gui',

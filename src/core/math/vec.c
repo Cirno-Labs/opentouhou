@@ -3,6 +3,21 @@
 #include "core/base/types.h"
 #include "core/math/x87.h"
 
+VEC2 Vec2_Sub(const VEC2 a, const VEC2 b)
+{
+    return (VEC2) { a.x - b.x, a.y - b.y };
+}
+
+float Vec2_Dot(const VEC2 a, const VEC2 b)
+{
+    return a.x * b.x + a.y * b.y;
+}
+
+float Vec2_Length(const VEC2 v)
+{
+    return X87_Sqrt(Vec2_Dot(v, v));
+}
+
 VEC3 Vec3_Add(const VEC3 a, const VEC3 b)
 {
     return (VEC3) { a.x + b.x, a.y + b.y, a.z + b.z };

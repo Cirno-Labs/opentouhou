@@ -22,6 +22,17 @@ replay_runner_lib = static_library(
   link_with: [replay_case_lib, core_base_lib, core_io_lib],
 )
 
+replay_recorder_lib = static_library(
+  'replay_recorder',
+  'core/recorder/main.c',
+  'core/recorder/bot.c',
+  'core/runner/shell_null.c',
+  c_args: core_include + replay_include + stg_include + shell_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, zlib, cc_libm],
+  link_with: [core_base_lib, stg_rng_lib],
+)
+
 th06_runner_lib = static_library(
   'th06_runner',
   'th06/runner/game.c',
