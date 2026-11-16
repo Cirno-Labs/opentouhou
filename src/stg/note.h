@@ -4,7 +4,7 @@
 
 // Shows translator notes over the screen, as thcrap shows them with
 // nmlgc/base_tsa in the patch stack. A note is the text after U+0014 in a
-// text that th06 draws. The "tlnotes" object of the patch settings sets
+// text a game draws. The "tlnotes" object of the patch settings sets
 // where and how notes show:
 // - region_topleft and region_size give the region, in pixels of
 //   reference_resolution, which spans the whole screen;
@@ -19,7 +19,7 @@
 // centered in the region and aligned by valign. It fades in over fade_ms
 // and stays until Note_Remove. A note taller than the region scrolls
 // through it in the time that reading its bytes takes, then starts again.
-// thcrap counts this time in milliseconds of the clock; th06 counts 1000/60
+// thcrap counts this time in milliseconds of the clock; a game counts 1000/60
 // milliseconds a tick.
 //
 // Without nmlgc/base_tsa, or without a region in the settings, notes do
