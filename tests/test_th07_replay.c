@@ -654,6 +654,129 @@ TEST(decodes_twelve_byte_cp932_names)
     Replay_Free(replay);
 }
 
+TEST(write_then_read_round_trips_every_field)
+{
+    REPLAY_FRAME frames1[3] = {
+        { .buttons = 0x11, .events = 0x22 },
+        { .buttons = 0x33, .events = 0x44 },
+        { .buttons = 0x55, .events = 0x66 },
+    };
+    REPLAY_STAGE stage1 = {
+        .score = 123456,
+        .rng_seed = 0xabcd,
+        .point_items_total = 7,
+        .power = 8,
+        .lives = 2,
+        .bombs = 3,
+        .rank = 4,
+        .power_item_combo = 5,
+        .cherry = 10,
+        .cherry_max = 20,
+        .cherry_plus = 30,
+        .graze_total = 40,
+        .spell_cards = 6,
+        .point_extends = -1,
+        .next_extend_points = 50,
+        .frames = frames1,
+        .frame_count = 3,
+    };
+    REPLAY_FRAME frames7[2] = {
+        { .buttons = 0x77, .events = 0x88 },
+        { .buttons = 0x99, .events = 0xaa },
+    };
+    REPLAY_STAGE stage7 = { .score = 654321,
+                            .frames = frames7,
+                            .frame_count = 2 };
+    uint8_t fps1[2] = { 60, 61 };
+    uint8_t fps7[3] = { 30, 31, 32 };
+    REPLAY_FILE file = {
+        .shot = 5,
+        .difficulty = 3,
+        .score = 999999,
+        .slowdown = 12.5f,
+        .stages = { [1] = &stage1, [7] = &stage7 },
+        .fps = { [1] = fps1, [7] = fps7 },
+        .fps_counts = { [1] = 2, [7] = 3 },
+        .exe_size = 650752,
+        .exe_checksum = 0x1234abcd,
+    };
+    memcpy(file.date, "11/15", 6);
+    memcpy(file.name, "魂魄妖夢", strlen("魂魄妖夢") + 1);
+    for (int32_t i = 0; i < 0x38; i++) {
+        file.config[i] = (uint8_t)(i * 3 + 1);
+    }
+    file.config[0x25] = 0;
+    memcpy(file.exe_version, "0100b", 6);
+
+    const uint8_t random[3] = { 0xc3, 0x5a, 0x11 };
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    CHECK(Result_Log(Replay_Write(&file, &writer, random), LOG_LEVEL_ERROR));
+    size_t size;
+    uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
+    CHECK(Result_Log(Writer_Close(&writer), LOG_LEVEL_ERROR));
+
+    REPLAY_FILE *const replay = M_ReadBytes(bytes, size);
+    Mem_Free(bytes);
+    if (replay == nullptr) {
+        return;
+    }
+    CHECK_EQ_INT(replay->shot, file.shot);
+    CHECK_EQ_INT(replay->difficulty, file.difficulty);
+    CHECK_EQ_STR(replay->date, file.date);
+    CHECK_EQ_STR(replay->name, file.name);
+    CHECK_EQ_INT(replay->score, file.score);
+    CHECK(replay->slowdown == file.slowdown);
+    for (int32_t i = 0; i < 0x38; i++) {
+        CHECK_EQ_INT(replay->config[i], file.config[i]);
+    }
+    CHECK_EQ_INT(replay->exe_size, file.exe_size);
+    CHECK_EQ_INT(replay->exe_checksum, file.exe_checksum);
+    CHECK_EQ_STR(replay->exe_version, file.exe_version);
+    for (int32_t slot = 0; slot < 8; slot++) {
+        CHECK(
+            (replay->stages[slot] == nullptr)
+            == (file.stages[slot] == nullptr));
+    }
+    CHECK_EQ_INT(replay->stages[1]->score, stage1.score);
+    CHECK_EQ_INT(replay->stages[1]->rng_seed, stage1.rng_seed);
+    CHECK_EQ_INT(
+        replay->stages[1]->point_items_total, stage1.point_items_total);
+    CHECK_EQ_INT(replay->stages[1]->power, stage1.power);
+    CHECK_EQ_INT(replay->stages[1]->lives, stage1.lives);
+    CHECK_EQ_INT(replay->stages[1]->bombs, stage1.bombs);
+    CHECK_EQ_INT(replay->stages[1]->rank, stage1.rank);
+    CHECK_EQ_INT(replay->stages[1]->power_item_combo, stage1.power_item_combo);
+    CHECK_EQ_INT(replay->stages[1]->cherry, stage1.cherry);
+    CHECK_EQ_INT(replay->stages[1]->cherry_max, stage1.cherry_max);
+    CHECK_EQ_INT(replay->stages[1]->cherry_plus, stage1.cherry_plus);
+    CHECK_EQ_INT(replay->stages[1]->graze_total, stage1.graze_total);
+    CHECK_EQ_INT(replay->stages[1]->spell_cards, stage1.spell_cards);
+    CHECK_EQ_INT(replay->stages[1]->point_extends, stage1.point_extends);
+    CHECK_EQ_INT(
+        replay->stages[1]->next_extend_points, stage1.next_extend_points);
+    CHECK_EQ_INT(replay->stages[1]->frame_count, stage1.frame_count);
+    for (int32_t i = 0; i < stage1.frame_count; i++) {
+        CHECK_EQ_INT(replay->stages[1]->frames[i].buttons, frames1[i].buttons);
+        CHECK_EQ_INT(replay->stages[1]->frames[i].events, frames1[i].events);
+    }
+    CHECK_EQ_INT(replay->fps_counts[1], 2);
+    CHECK_EQ_INT(replay->fps[1][0], fps1[0]);
+    CHECK_EQ_INT(replay->fps[1][1], fps1[1]);
+
+    CHECK_EQ_INT(replay->stages[7]->score, stage7.score);
+    CHECK_EQ_INT(replay->stages[7]->frame_count, stage7.frame_count);
+    for (int32_t i = 0; i < stage7.frame_count; i++) {
+        CHECK_EQ_INT(replay->stages[7]->frames[i].buttons, frames7[i].buttons);
+        CHECK_EQ_INT(replay->stages[7]->frames[i].events, frames7[i].events);
+    }
+    CHECK_EQ_INT(replay->fps_counts[7], 3);
+    for (int32_t i = 0; i < 3; i++) {
+        CHECK_EQ_INT(replay->fps[7][i], fps7[i]);
+    }
+    Replay_Free(replay);
+}
+
 TEST(summary_holds_what_the_replay_menu_shows)
 {
     REPLAY_STAGE second = { .score = 100, .lives = 4 };
