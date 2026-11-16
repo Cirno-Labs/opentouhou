@@ -4,6 +4,7 @@
 #include "th07/game_manager.h"
 #include "th07/replay.h"
 #include "th07/screens/main.h"
+#include "th07/screens/result/screen.h"
 #include "th07/settings.h"
 #include "th07/stubs.h"
 

@@ -40,6 +40,7 @@ th07_lib = static_library(
   'screens/result/records.c',
   'screens/result/saves.c',
   'screens/result/score.c',
+  'screens/result/screen.c',
   'settings.c',
   'sound/bgm.c',
   'sound/events.c',

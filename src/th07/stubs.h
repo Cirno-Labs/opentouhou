@@ -11,9 +11,6 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
-// Stands in for th07/resultscreen's screen in mode 0 or 1.
-RESULT ResultScreen_Register(int32_t mode);
-
 RESULT MusicScreen_Register(void);
 RESULT Ending_Register(void);
 
@@ -22,3 +19,7 @@ RESULT Ending_Register(void);
 void PlayTime_Add(void);
 void PlayTime_Restart(void);
 void PlayTime_Stop(void);
+
+// Stands in for App::AddPlayTime alone, which adds the time since the game
+// started to the run time of the play statistics.
+void PlayTime_AddRun(void);
