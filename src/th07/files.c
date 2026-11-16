@@ -145,7 +145,12 @@ RESULT Files_Stream(const char *const path, READER *const out)
 JSON_VALUE *Files_LoadDiff(
     const char *const path, const ALLOCATOR *const allocator)
 {
-    return Patch_LoadDiff(m_Patches, path, allocator);
+    // thcrap's th07 patches name a dialogue or ending jdiff after the file
+    // alone, at the top of the game directory, not after its "data/" path
+    // inside th07.dat.
+    const char *const key =
+        Str_StartsWith(path, "data/") ? path + strlen("data/") : path;
+    return Patch_LoadDiff(m_Patches, key, allocator);
 }
 
 bool Files_IsPatched(const char *const path)
