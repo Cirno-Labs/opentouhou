@@ -6,6 +6,7 @@ th01_lib = static_library(
   'bos.c',
   'boss_entity.c',
   'boss_render.c',
+  'boss_hit.c',
   'sprite.c',
   'shape.c',
   'particles.c',
