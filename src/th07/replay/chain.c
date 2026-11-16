@@ -16,6 +16,7 @@
 #include "core/math/x87.h"
 
 #include <limits.h>
+#include <stdio.h>
 #include <string.h>
 
 #define M_PLAY_PRIORITY 5
@@ -532,18 +533,22 @@ uint16_t Replay_GetLastEvents(void)
     return stage->frames[index].events;
 }
 
-// Writes the replay being played to path again, as the original's
-// ResaveReplay does.
-static void M_Resave(M_REPLAY *const replay, const char *const path)
+// Returns whether file was recorded with the current config, which the
+// original asks only outside practice, Extra and Phantasm.
+static bool M_HasCurrentConfig(const REPLAY_FILE *const file)
 {
-    GAME_MANAGER *const gm = &g_GameManager;
-    REPLAY_FILE *const file = replay->file;
+    const GAME_MANAGER *const gm = &g_GameManager;
     uint8_t config[M_CONFIG_SIZE];
     M_BuildConfig(config, (uint8_t)g_Settings.lives, g_Settings.slowdown);
-    if (!gm->mode.in_practice && gm->run.difficulty < 4
-        && memcmp(config, file->config, M_CONFIG_SIZE) != 0) {
-        return;
-    }
+    return gm->mode.in_practice || gm->run.difficulty >= 4
+        || memcmp(config, file->config, M_CONFIG_SIZE) == 0;
+}
+
+// Sets the score of the current slot and of the file, then writes file to
+// path with new keys drawn from the gameplay RNG.
+static void M_WriteFile(REPLAY_FILE *const file, const char *const path)
+{
+    GAME_MANAGER *const gm = &g_GameManager;
     file->stages[M_Slot()]->score = (int32_t)gm->score.value;
     file->score = gm->score.shown;
     uint8_t random[3];
@@ -568,6 +573,26 @@ void Replay_ResaveIfScoreChanged(void)
     if (replay == nullptr || g_GameManager.score.value == replay->file->score) {
         return;
     }
-    M_Resave(replay, g_GameManager.mode.replay_path);
+    if (M_HasCurrentConfig(replay->file)) {
+        M_WriteFile(replay->file, g_GameManager.mode.replay_path);
+    }
+    Chain_Remove(&replay->calc);
+}
+
+void Replay_Save(const char *const path, const REPLAY_SAVE_INFO *const info)
+{
+    M_REPLAY *const replay = m_Replay;
+    if (replay == nullptr) {
+        return;
+    }
+    REPLAY_FILE *const file = replay->file;
+    if (replay->mode == REPLAY_RECORD && M_IsReady(replay)
+        && M_HasCurrentConfig(file) && file->config[M_CONFIG_SLOWDOWN] == 0) {
+        Replay_EndStage();
+        file->slowdown = info->slowdown;
+        snprintf(file->name, sizeof(file->name), "%s", info->name);
+        memcpy(file->date, info->date, sizeof(file->date));
+        M_WriteFile(file, path);
+    }
     Chain_Remove(&replay->calc);
 }
