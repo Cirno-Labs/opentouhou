@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/base/result.h"
-#include "core/json/types.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -32,11 +31,6 @@ RESULT EndingScript_Load(const char *path, ENDING_SCRIPT *out);
 
 // Prepares a script over a copy of the size bytes of data.
 void EndingScript_Init(const void *data, size_t size, ENDING_SCRIPT *out);
-
-// Returns a copy of the size bytes of data with the jdiff diff applied,
-// and sets *out_size to its size. Mem_Free releases the copy.
-uint8_t *EndingScript_ApplyDiff(
-    const uint8_t *data, size_t size, const JSON_VALUE *diff, size_t *out_size);
 
 // Releases a script and leaves it empty.
 void EndingScript_Free(ENDING_SCRIPT *script);

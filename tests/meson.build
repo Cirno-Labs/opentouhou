@@ -719,8 +719,8 @@ test(
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
+      th06_lib, stg_translation_lib, stg_note_lib, stg_end_diff_lib, stg_rng_lib, stg_pbg3_lib,
+      core_vfs_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -1116,6 +1116,20 @@ test(
 )
 
 test(
+  'stg/end_diff',
+  executable(
+    'test_end_diff',
+    'test_end_diff.c',
+    c_args: core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_end_diff_lib, core_json_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_end_diff'},
+  suite: 'unit',
+)
+
+test(
   'stg/translation',
   executable(
     'test_translation',
@@ -1318,7 +1332,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
+      stg_pbg4_lib, stg_lzss_lib, stg_end_diff_lib, core_patch_lib, core_json_lib,
       core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
       core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
       core_math_lib,
