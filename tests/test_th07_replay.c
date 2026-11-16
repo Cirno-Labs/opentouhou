@@ -2,6 +2,7 @@
 
 #include "test.h"
 
+#include "replay_lzss_literals.h"
 #include "stg/lzss.h"
 
 #include "core/base/memory.h"
@@ -142,13 +143,9 @@ static M_IMAGE M_Pack(const M_IMAGE *const image)
 {
     M_IMAGE file = {};
     memcpy(file.bytes, image->bytes, M_PLAIN_SIZE);
-    M_BITS bits = { .bytes = file.bytes + M_PLAIN_SIZE };
-    for (size_t i = M_PLAIN_SIZE; i < image->size; i++) {
-        M_PutBits(&bits, 1, 1);
-        M_PutBits(&bits, image->bytes[i], 8);
-    }
-    M_PutBits(&bits, 0, 14);
-    const size_t packed = bits.bit / 8;
+    const size_t packed = ReplayTestLzss_EncodeLiterals(
+        image->bytes + M_PLAIN_SIZE, image->size - M_PLAIN_SIZE,
+        file.bytes + M_PLAIN_SIZE);
     file.size = M_PLAIN_SIZE + packed;
     M_PutU32(file.bytes, 0x10, (uint32_t)image->size);
     M_PutU32(file.bytes, 0x14, (uint32_t)packed);
