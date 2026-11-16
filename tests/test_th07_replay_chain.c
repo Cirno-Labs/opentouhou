@@ -2,6 +2,7 @@
 
 #include "test.h"
 
+#include "replay_lzss_literals.h"
 #include "th07/enemy.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
@@ -41,11 +42,6 @@ typedef struct {
     uint8_t difficulty;
     M_SLOT slots[8];
 } M_SPEC;
-
-typedef struct {
-    uint8_t *bytes;
-    uint32_t bit;
-} M_BITS;
 
 static uint8_t m_Image[M_MAX_SIZE];
 static uint8_t m_File[M_MAX_SIZE];
@@ -87,16 +83,6 @@ static void M_PutU32(uint8_t *const b, const size_t at, const uint32_t value)
 {
     for (size_t i = 0; i < 4; i++) {
         b[at + i] = (uint8_t)(value >> (8 * i));
-    }
-}
-
-static void M_PutBits(M_BITS *const bits, const uint32_t value, const int count)
-{
-    for (int i = count - 1; i >= 0; i--) {
-        if ((value >> i & 1) != 0) {
-            bits->bytes[bits->bit / 8] |= (uint8_t)(0x80 >> (bits->bit % 8));
-        }
-        bits->bit++;
     }
 }
 
@@ -158,13 +144,9 @@ static void M_Keep(const M_SPEC *const spec)
     }
     memset(m_File, 0, sizeof(m_File));
     memcpy(m_File, b, M_PLAIN_SIZE);
-    M_BITS bits = { .bytes = m_File + M_PLAIN_SIZE };
-    for (size_t i = M_PLAIN_SIZE; i < offset; i++) {
-        M_PutBits(&bits, 1, 1);
-        M_PutBits(&bits, b[i], 8);
-    }
-    M_PutBits(&bits, 0, 14);
-    const size_t size = M_PLAIN_SIZE + bits.bit / 8;
+    const size_t packed = ReplayTestLzss_EncodeLiterals(
+        b + M_PLAIN_SIZE, offset - M_PLAIN_SIZE, m_File + M_PLAIN_SIZE);
+    const size_t size = M_PLAIN_SIZE + packed;
     M_PutU32(m_File, 0x10, (uint32_t)offset);
     M_PutU32(m_File, 0x14, (uint32_t)(size - M_PLAIN_SIZE));
     M_PutU32(m_File, 0x18, (uint32_t)(offset - M_PLAIN_SIZE));

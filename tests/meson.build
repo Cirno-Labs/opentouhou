@@ -965,6 +965,7 @@ test(
   executable(
     'test_th07_replay',
     'test_th07_replay.c',
+    'replay_lzss_literals.c',
     shell_fake,
     c_args: [layer_include['th07']] + stg_include + shell_include,
     implicit_include_directories: false,
@@ -978,6 +979,7 @@ test(
   executable(
     'test_th07_replay_chain',
     'test_th07_replay_chain.c',
+    'replay_lzss_literals.c',
     shell_fake,
     c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
