@@ -1,5 +1,7 @@
 #include "th01/sprite.h"
 
+#include "th01/shape.h"
+
 #include "test.h"
 
 #include <string.h>
@@ -60,8 +62,14 @@ TEST(rect_restore_covers_extra_word_and_wraps_rows)
     VIDEO video = M_Video();
     Sprite_Restore16(&video, 636, 398, 16, 16);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        const bool restored = (i >= 398 * 640 + 624 && i < 399 * 640 + 16)
-            || i >= 399 * 640 + 624;
+        bool restored = false;
+        for (int32_t y = 398; y < 414; y++) {
+            for (int32_t x = 624; x < 656; x++) {
+                if ((((uint32_t)(y * 640 + x)) & 0x3ffffu) == (uint32_t)i) {
+                    restored = true;
+                }
+            }
+        }
         CHECK_EQ_INT(m_Pages[0][i], restored ? m_Pages[1][i] : 7);
     }
     CHECK_EQ_INT(video.drawing_page, 0);
@@ -107,4 +115,25 @@ TEST(player_overlap_preserves_uncovered_old_pixels_only)
                 x == 24 + delta ? 3 : m_Pages[1][1280 + x]);
         }
     }
+}
+
+TEST(egc_hidden_rows_and_plane_boundary_are_distinct)
+{
+    VIDEO video = M_Video();
+    Sprite_Restore16(&video, 0, 400, 8, 1);
+    CHECK(memcmp(m_Pages[0], m_Expected, VIDEO_PAGE_SIZE) == 0);
+    Sprite_Restore16(&video, 384, 409, 8, 1);
+    for (int32_t i = 0; i < 16; i++) {
+        CHECK_EQ_INT(m_Pages[0][i], m_Pages[1][i]);
+    }
+    CHECK_EQ_INT(m_Pages[0][16], 7);
+}
+
+TEST(bottom_card_splash_restores_wrapped_top_row)
+{
+    VIDEO video = M_Video();
+    Shape_EllipseArcErase(&video, 16, 368, 44, 44, 8, 0, 255);
+    // The quarter-turn sample is (16, 412), planar byte offset 32962.
+    CHECK_EQ_INT(m_Pages[0][1552], m_Pages[1][1552]);
+    CHECK_EQ_INT(m_Pages[0][1567], m_Pages[1][1567]);
 }

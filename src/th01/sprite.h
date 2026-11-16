@@ -18,8 +18,10 @@ void Sprite_PtnErase(
     int16_t left, int16_t top);
 
 // Restores full word groups from page 1 to page 0. Rounds left down and
-// left+width up to 16 pixels. Preserves linear row wrapping and excludes
-// outside-page accesses as above. Requires positive width and height.
+// left+width up to 16 pixels. Wraps EGC addresses at the 32768-byte planar
+// boundary; hidden offsets 32000..32767 have no visible storage. This can
+// restore top rows when an ellipse reaches below row 409. Keeps raw PTN
+// and BOS address semantics separate. Requires positive width and height.
 void Sprite_Restore16(
     VIDEO *video, int16_t left, int16_t top, int16_t width, int16_t height);
 

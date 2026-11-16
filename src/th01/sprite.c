@@ -92,7 +92,11 @@ void Sprite_Restore16(
     for (int32_t y = 0; y < height; y++) {
         for (int32_t x = M_Floor(left, 16); x < left + width; x += 16) {
             for (int32_t bit = 0; bit < 16; bit++) {
-                M_Write(video, (top + y) * 640 + x + bit, 0, true);
+                const uint32_t offset =
+                    (uint32_t)((top + y) * 640 + x + bit) & 0x3ffffu;
+                if (offset < VIDEO_PAGE_SIZE) {
+                    video->pages[0][offset] = video->pages[1][offset];
+                }
             }
         }
     }
