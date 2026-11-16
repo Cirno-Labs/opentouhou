@@ -7,7 +7,7 @@
 #include "th06/scene.h"
 #include "th06/screens/music/comments.h"
 #include "th06/sound.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/color.h"
 #include "core/base/log.h"

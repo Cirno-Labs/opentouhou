@@ -5,12 +5,10 @@
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
-#include "th06/note.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/strings.h"
-#include "th06/translation.h"
 
 #include "core/base/arena.h"
 #include "core/base/array.h"
@@ -23,6 +21,8 @@
 #include "core/json.h"
 
 #include "stg/chain.h"
+#include "th06/note.h"
+#include "stg/translation.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -131,6 +131,18 @@ static M_SCRIPT *m_Scripts;
 static int32_t m_ScriptCount;
 static CHAIN_ELEM m_CalcElem;
 static CHAIN_ELEM m_DrawElem;
+
+// Returns the title of the song of stage, or original. song 0 is the
+// stage's theme and 1 its boss theme, which are the tracks stage * 2 and
+// stage * 2 + 1.
+static const char *M_GetSongName(
+    const int32_t stage, const int32_t song, const char *const original)
+{
+    if (song < 0 || song > 1) {
+        return original;
+    }
+    return Translation_GetTheme(stage * 2 + song, original);
+}
 
 static bool M_IsFinal(const uint8_t opcode)
 {
@@ -773,7 +785,7 @@ static M_RUN M_RunInstrs(void)
                     Anm_RenderTextRightAligned(
                         &g_Gui.banners.song_name, 0xe0ffff, 0,
                         g_Strings[STRING_SONG_NAME_FORMAT],
-                        Translation_GetSongName(
+                        M_GetSongName(
                             g_GameManager.run.stage, instr->value,
                             g_Stage.data.song_names[instr->value])),
                     LOG_LEVEL_WARNING);
@@ -951,7 +963,7 @@ static void M_StartBanners(void)
             Anm_RenderTextRightAligned(
                 &g_Gui.banners.song_name, 0xe0ffff, 0,
                 g_Strings[STRING_SONG_NAME_FORMAT],
-                Translation_GetSongName(
+                M_GetSongName(
                     g_GameManager.run.stage, 0, g_Stage.data.song_names[0])),
             LOG_LEVEL_WARNING);
     }

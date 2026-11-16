@@ -5,7 +5,8 @@
 #include "test.h"
 
 #include "th06/files.h"
-#include "th06/translation.h"
+#include "th06/strings.h"
+#include "stg/translation.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -42,7 +43,7 @@ static void M_Begin(
     CHECK(Result_Log(
         Patch_OpenStack(m_Directory, "th06", &g_PatchGame, nullptr, &m_Stack),
         LOG_LEVEL_ERROR));
-    Translation_Init(m_Stack);
+    Translation_Init(m_Stack, &g_TranslationGame);
     CHECK(Result_Log(Text_Init(), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Note_Init(m_Stack);

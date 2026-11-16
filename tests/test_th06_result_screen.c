@@ -17,7 +17,8 @@
 #include "th06/scene.h"
 #include "th06/screens/result/private.h"
 #include "th06/sound.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
+#include "th06/strings.h"
 
 #include "core/base/memory.h"
 #include "core/io/file.h"
@@ -605,7 +606,7 @@ static void M_SetupText(const char *const case_name, const bool base_tsa)
             Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &m_Patches),
             LOG_LEVEL_ERROR));
         Mem_Free(patches);
-        Translation_Init(m_Patches);
+        Translation_Init(m_Patches, &g_TranslationGame);
         CHECK(Translation_HasBaseTsa());
     }
 }
