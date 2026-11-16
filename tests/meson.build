@@ -2330,6 +2330,19 @@ test(
 
 if build_games
   test(
+    'th01/text',
+    executable(
+      'test_th01_text',
+      'test_th01_text.c',
+      c_args: [layer_include['th01']] + core_include + stg_include,
+      implicit_include_directories: false,
+      link_with: [th01_lib, core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3_ttf, sdl3, cc_libm],
+    ),
+    env: {'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts'},
+    suite: 'unit',
+  )
+  test(
     'th01/input',
     executable(
       'test_th01_input',
