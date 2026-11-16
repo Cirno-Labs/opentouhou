@@ -137,6 +137,9 @@ void ResultScreen_LoadGameRecords(void)
     ScoreFile_LoadSpellCards(file, gm->records.spell_cards);
     ScoreFile_LoadClears(file, gm->records.clears);
     ScoreFile_LoadPractice(file, gm->records.practice);
+    memcpy(
+        gm->records.saved_spell_cards, gm->records.spell_cards,
+        sizeof(gm->records.saved_spell_cards));
 }
 
 void ResultScreen_LoadTitleRecords(void)
