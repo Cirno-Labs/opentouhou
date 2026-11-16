@@ -1,5 +1,6 @@
 #include "th07/stubs.h"
 
+#include "th07/game.h"
 #include "th07/game_manager.h"
 
 #include "core/base/log.h"
@@ -7,6 +8,12 @@
 RESULT ResultScreen_Register(const int32_t mode)
 {
     LOG_INFO("ResultScreen_Register is not ported");
+    if (mode == 2) {
+        // Mode 2 saves score.dat at once, which draws the file's key and
+        // random byte.
+        Rng_U16InRange(&g_Rng, 256);
+        Rng_U16InRange(&g_Rng, 256);
+    }
     return OK;
 }
 
