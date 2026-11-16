@@ -161,36 +161,40 @@ bool StageObjects_ResumeEntrance(
     if (objects->entrance_waiting && !Frame_DelayReady(vsync, 1)) {
         return false;
     }
-    int32_t done = 0;
-    for (int32_t i = 0; i < objects->card_count; i++) {
-        STAGE_CARD *const card = &objects->cards[i];
-        if (card->entrance_frame == -1) {
-            done++;
+    for (;;) {
+        int32_t done = 0;
+        for (int32_t i = 0; i < objects->card_count; i++) {
+            STAGE_CARD *const card = &objects->cards[i];
+            if (card->entrance_frame == -1) {
+                done++;
+            }
+            if (card->entrance_frame < 12) {
+                continue;
+            }
+            if (card->entrance_frame % 6 == 0) {
+                Sprite_PtnPut(
+                    video, sprites,
+                    StageObjects_CardImage(card->hp + 1, card->entrance_frame),
+                    -1, card->left, card->top);
+            }
+            card->entrance_frame++;
+            if (card->entrance_frame > 24) {
+                card->entrance_frame = -1;
+            }
         }
-        if (card->entrance_frame < 12) {
-            continue;
+        if (done >= objects->card_count) {
+            objects->entrance_done = true;
+            return true;
         }
-        if (card->entrance_frame % 6 == 0) {
-            Sprite_PtnPut(
-                video, sprites,
-                StageObjects_CardImage(card->hp + 1, card->entrance_frame), -1,
-                card->left, card->top);
+        if (objects->entrance_total < objects->card_count) {
+            objects->cards[objects->entrance_total].entrance_frame = 12;
         }
-        card->entrance_frame++;
-        if (card->entrance_frame > 24) {
-            card->entrance_frame = -1;
+        objects->entrance_total++;
+        objects->entrance_waiting = true;
+        if (!Frame_DelayReady(vsync, 1)) {
+            return false;
         }
     }
-    if (done >= objects->card_count) {
-        objects->entrance_done = true;
-        return true;
-    }
-    if (objects->entrance_total < objects->card_count) {
-        objects->cards[objects->entrance_total].entrance_frame = 12;
-    }
-    objects->entrance_total++;
-    objects->entrance_waiting = true;
-    return false;
 }
 
 void StageObjects_PutBackgroundAndObject(
@@ -236,9 +240,11 @@ void StageObjects_CopyToBackground(
 {
     for (int32_t i = 0; i < objects->obstacle_count; i++) {
         M_Copy(video, objects->obstacles[i].left, objects->obstacles[i].top);
+        Video_SelectDrawingPage(video, 0);
     }
     for (int32_t i = 0; i < objects->card_count; i++) {
         M_Copy(video, objects->cards[i].left, objects->cards[i].top);
+        Video_SelectDrawingPage(video, 0);
     }
 }
 

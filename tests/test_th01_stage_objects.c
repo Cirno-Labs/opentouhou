@@ -103,54 +103,52 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
         Video_ReadPixel(&state.video, 1, 96, 64), (64 * 640 + 96) % 13);
     StageObjects_CopyToBackground(&state.objects, &state.video);
     CHECK_EQ_INT(Video_ReadPixel(&state.video, 1, 96, 64), 11);
-    CHECK_EQ_INT(state.video.drawing_page, 1);
+    CHECK_EQ_INT(state.video.drawing_page, 0);
     CHECK_EQ_INT(state.arena.used, used);
     Arena_Free(&state.arena);
 }
 
-TEST(entrance_preserves_source_delay_phase_and_safe_large_counts)
+TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
 {
     const int32_t counts[] = { 0, 1, 43, 76, 200 };
+    const int16_t raw_counts[] = { 0, 1, 7, -1 };
     for (int32_t variant = 0; variant < 5; variant++) {
-        CASE state;
-        M_Init(&state);
-        for (int32_t i = 0; i < counts[variant]; i++) {
-            state.layouts[0].cells[i / 20][i % 20].card = true;
-            state.layouts[0].cells[i / 20][i % 20].card_extra_hp = i % 4;
-        }
-        M_Begin(&state, false);
-        const size_t used = state.arena.used;
-        FRAME_VSYNC vsync = { .count1 = -1, .count2 = 42 };
-        CHECK_EQ_INT(
-            StageObjects_ResumeEntrance(
-                &state.objects, &state.video, &state.sprites, &vsync),
-            counts[variant] == 0);
-        CHECK_EQ_INT(vsync.count1, -1);
-        int32_t iterations = 0;
-        while (!state.objects.entrance_done && iterations < 240) {
-            if (iterations > 0) {
+        for (int32_t timing = 0; timing < 4; timing++) {
+            CASE state;
+            M_Init(&state);
+            for (int32_t i = 0; i < counts[variant]; i++) {
+                state.layouts[0].cells[i / 20][i % 20].card = true;
+                state.layouts[0].cells[i / 20][i % 20].card_extra_hp = i % 4;
+            }
+            M_Begin(&state, false);
+            const size_t used = state.arena.used;
+            FRAME_VSYNC vsync = { .count1 = raw_counts[timing], .count2 = 42 };
+            int32_t edges = 0;
+            while (!StageObjects_ResumeEntrance(
+                       &state.objects, &state.video, &state.sprites, &vsync)
+                   && edges < 240) {
                 const int32_t total = state.objects.entrance_total;
                 CHECK(!StageObjects_ResumeEntrance(
                     &state.objects, &state.video, &state.sprites, &vsync));
                 CHECK_EQ_INT(state.objects.entrance_total, total);
                 Frame_VSync(&vsync);
+                edges++;
             }
-            StageObjects_ResumeEntrance(
-                &state.objects, &state.video, &state.sprites, &vsync);
-            iterations++;
-        }
-        CHECK_EQ_INT(
-            iterations, counts[variant] == 0 ? 0 : counts[variant] + 13);
-        CHECK_EQ_INT(state.arena.used, used);
-        CHECK_EQ_INT(
-            vsync.count2, counts[variant] == 0 ? 42 : counts[variant] + 54);
-        for (int32_t i = 0; i < counts[variant]; i++) {
-            const STAGE_CARD *const card = &state.objects.cards[i];
-            CHECK_EQ_INT(card->entrance_frame, -1);
+            const int32_t delays =
+                counts[variant] == 0 ? 0 : counts[variant] + 13;
             CHECK_EQ_INT(
-                Video_ReadPixel(&state.video, 0, card->left, card->top),
-                StageObjects_CardImage(card->hp, 0) % 15);
+                edges, delays - (delays != 0 && raw_counts[timing] != 0));
+            CHECK_EQ_INT(state.arena.used, used);
+            CHECK_EQ_INT(vsync.count2, 42 + edges);
+            CHECK_EQ_INT(vsync.count1, delays == 0 ? raw_counts[timing] : 0);
+            for (int32_t i = 0; i < counts[variant]; i++) {
+                const STAGE_CARD *const card = &state.objects.cards[i];
+                CHECK_EQ_INT(card->entrance_frame, -1);
+                CHECK_EQ_INT(
+                    Video_ReadPixel(&state.video, 0, card->left, card->top),
+                    StageObjects_CardImage(card->hp, 0) % 15);
+            }
+            Arena_Free(&state.arena);
         }
-        Arena_Free(&state.arena);
     }
 }

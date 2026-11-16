@@ -72,7 +72,7 @@ void StageObjects_PutBackgroundAndObject(
     int16_t left, int16_t top, int32_t image, int32_t slot);
 void StageObjects_PutAllBackgrounds(const STAGE_OBJECTS *objects, VIDEO *video);
 
-// Copies obstacles, then cards, from page 0 to page 1. Leaves selectors
-// unchanged. Boss initialization has zero objects, so copies nothing.
+// Copies obstacles, then cards, from page 0 to page 1. Leaves drawing
+// on page 0 after any copy. Zero-object/boss calls preserve selectors.
 void StageObjects_CopyToBackground(const STAGE_OBJECTS *objects, VIDEO *video);
 int32_t StageObjects_CardImage(uint8_t hp, int16_t frame);
