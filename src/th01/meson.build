@@ -6,6 +6,7 @@ th01_lib = static_library(
   'bos.c',
   'sprite.c',
   'shape.c',
+  'particles.c',
   'items.c',
   'hud.c',
   'timer.c',
