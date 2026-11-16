@@ -289,6 +289,22 @@ TEST(a_shake_ends_at_once_early_in_a_stage)
     M_Teardown();
 }
 
+TEST(shakes_started_every_frame_all_run)
+{
+    M_Setup();
+    for (int i = 0; i < 120; i++) {
+        ScreenEffect_Shake(240, 4, 1);
+        Chain_RunCalc(&g_Chain);
+    }
+    int count = 0;
+    for (const CHAIN_ELEM *elem = g_Chain.calc.next; elem != nullptr;
+         elem = elem->next) {
+        count++;
+    }
+    CHECK_EQ_INT(count, 120);
+    M_Teardown();
+}
+
 TEST(releasing_the_chain_frees_every_effect)
 {
     M_Setup();
