@@ -331,7 +331,7 @@ static void M_NextScene(void)
 
 // Starts the portrait script or sprite of instr. Retail reads the width of
 // the new sprite at once, so a script or sprite without one crashes it.
-static void M_ShowPortrait(const GUI_MSG_INSTR *const instr)
+static void M_ShowPortrait(const MSG_INSTR *const instr)
 {
     ANM_VM *const portrait = &g_Gui.msg.portraits[instr->who];
     if (instr->opcode == GUI_MSG_OP_PORTRAIT_SCRIPT) {
@@ -360,7 +360,7 @@ static void M_ShowPortrait(const GUI_MSG_INSTR *const instr)
     }
 }
 
-static void M_ShowLine(const GUI_MSG_INSTR *const instr)
+static void M_ShowLine(const MSG_INSTR *const instr)
 {
     if (instr->index == 0 && g_Gui.msg.lines[1].script_index >= 0) {
         Result_Log(
@@ -381,7 +381,7 @@ static void M_ShowLine(const GUI_MSG_INSTR *const instr)
 // Returns whether the wait of instr holds the script this frame. The
 // shoot button ends it only after 12 frames, and only on the frame it is
 // pressed.
-static bool M_Waits(const GUI_MSG_INSTR *const instr)
+static bool M_Waits(const MSG_INSTR *const instr)
 {
     if (M_SkipHeld()
         || (M_ShootPressed() && g_Gui.msg.wait_frames >= M_SHOOT_WAIT_FRAMES)) {
@@ -423,9 +423,9 @@ static void M_ClearStage(void)
 
 static M_RUN M_RunInstrs(void)
 {
-    const GUI_MSG_SCRIPT *const script = &m_Msg.scripts[g_Gui.msg.script];
+    const MSG_SCRIPT *const script = &m_Msg.scripts[g_Gui.msg.script];
     for (;;) {
-        const GUI_MSG_INSTR *const instr = &script->instrs[g_Gui.msg.pc];
+        const MSG_INSTR *const instr = &script->instrs[g_Gui.msg.pc];
         if (g_Gui.msg.timer.current < instr->time) {
             return M_RUN_WAITING;
         }

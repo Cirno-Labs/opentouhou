@@ -72,7 +72,7 @@ TEST(a_good_file_reads_every_instruction)
     CHECK_EQ_INT(file.scripts[0].count, 13);
     CHECK_EQ_INT(file.scripts[1].count, 1);
     CHECK_EQ_INT(file.scripts[2].count, 1);
-    const GUI_MSG_INSTR *const in = file.scripts[0].instrs;
+    const MSG_INSTR *const in = file.scripts[0].instrs;
     for (int32_t i = 0; i < 13; i++) {
         CHECK_EQ_INT(in[i].time, i);
     }

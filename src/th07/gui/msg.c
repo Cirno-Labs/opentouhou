@@ -35,7 +35,7 @@ static size_t M_ArgsSize(const uint8_t opcode)
     }
 }
 
-static RESULT M_CheckInstr(const GUI_MSG_INSTR *const instr)
+static RESULT M_CheckInstr(const MSG_INSTR *const instr)
 {
     switch (instr->opcode) {
     case GUI_MSG_OP_PORTRAIT_SCRIPT:
@@ -71,7 +71,7 @@ static RESULT M_CheckInstr(const GUI_MSG_INSTR *const instr)
 
 // Reads the instruction at the position into instr, and moves to the next
 // one. On failure, instr->text may hold a text to release.
-static RESULT M_ReadInstr(READER *const reader, GUI_MSG_INSTR *const instr)
+static RESULT M_ReadInstr(READER *const reader, MSG_INSTR *const instr)
 {
     const size_t start = Reader_Tell(reader);
     instr->time = Reader_ReadU16(reader);
@@ -130,11 +130,11 @@ static RESULT M_ReadInstr(READER *const reader, GUI_MSG_INSTR *const instr)
 
 // Reads the script at offset up to the first instruction it stops on.
 static RESULT M_ReadScript(
-    READER *const reader, const size_t offset, GUI_MSG_SCRIPT *const script)
+    READER *const reader, const size_t offset, MSG_SCRIPT *const script)
 {
     Reader_Seek(reader, offset);
     int32_t count = 0;
-    GUI_MSG_INSTR instr;
+    MSG_INSTR instr;
     do {
         memset(&instr, 0, sizeof(instr));
         const RESULT result = M_ReadInstr(reader, &instr);
@@ -143,7 +143,7 @@ static RESULT M_ReadScript(
         count++;
     } while (!M_IsFinal(instr.opcode));
 
-    script->instrs = Mem_AllocArrZ((size_t)count, sizeof(GUI_MSG_INSTR));
+    script->instrs = Mem_AllocArrZ((size_t)count, sizeof(MSG_INSTR));
     script->count = count;
     Reader_Seek(reader, offset);
     for (int32_t i = 0; i < count; i++) {
@@ -159,7 +159,7 @@ static RESULT M_Read(READER *const reader, GUI_MSG_FILE *const out)
         Reader_Failed(reader) || count < 0
             || (size_t)count > Reader_Remaining(reader) / 4,
         "bad header");
-    out->scripts = Mem_AllocArrZ((size_t)count, sizeof(GUI_MSG_SCRIPT));
+    out->scripts = Mem_AllocArrZ((size_t)count, sizeof(MSG_SCRIPT));
     out->count = count;
     for (int32_t i = 0; i < count; i++) {
         Reader_Seek(reader, 4 + 4 * (size_t)i);
