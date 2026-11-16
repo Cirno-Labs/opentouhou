@@ -8,15 +8,25 @@ replay_case_lib = static_library(
   dependencies: [zlib],
 )
 
-runner_backend = host_machine.system() == 'windows' ? 'th06/runner/backend_windows.c' : 'th06/runner/backend_posix.c'
+runner_debug = host_machine.system() == 'windows' ? 'core/runner/debug_windows.c' : 'core/runner/debug_posix.c'
+replay_runner_lib = static_library(
+  'replay_runner',
+  'core/runner/shell_null.c',
+  'core/runner/compare.c',
+  'core/runner/run.c',
+  'core/runner/main.c',
+  runner_debug,
+  c_args: core_include + replay_include + stg_include + shell_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, zlib, cc_libm],
+  link_with: [replay_case_lib, core_base_lib, core_io_lib],
+)
+
 th06_runner_lib = static_library(
   'th06_runner',
-  'th06/runner/shell_null.c',
-  'th06/runner/compare.c',
-  'th06/runner/run.c',
+  'th06/runner/game.c',
   'th06/runner/state.c',
-  runner_backend,
-  c_args: [layer_include['th06']] + stg_include + shell_include,
+  c_args: [layer_include['th06']] + core_include + replay_include + stg_include + shell_include,
   implicit_include_directories: false,
   dependencies: [sdl3, zlib, cc_libm],
   link_with: [
@@ -25,4 +35,3 @@ th06_runner_lib = static_library(
     core_image_lib,
   ],
 )
-

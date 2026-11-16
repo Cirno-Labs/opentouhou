@@ -1,5 +1,4 @@
 #pragma once
 
-#include "runner/compare.h"
-#include "runner/run.h"
+#include "../core/runner.h"
 #include "runner/state.h"

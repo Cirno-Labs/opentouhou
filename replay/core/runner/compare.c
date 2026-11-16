@@ -10,21 +10,9 @@
 
 #define M_CONTEXT_ROWS 3
 
-typedef enum {
-    M_U32,
-    M_I32,
-    M_F32,
-    M_HASH,
-} M_KIND;
-
-typedef struct {
-    const char *name;
-    M_KIND kind;
-    bool ported;
-} M_FIELD;
-
 struct RUNNER_COMPARE {
     CASE_READER *reader;
+    const RUNNER_GAME *game;
     RUNNER_OPTIONS options;
     RUNNER_REPORT report;
     int32_t *start_map;
@@ -35,17 +23,13 @@ struct RUNNER_COMPARE {
     bool done;
 };
 
-#define M_FIELD(name, kind) { #name, M_##kind, true },
-static const M_FIELD m_StartFields[] = { TH06_START_FIELDS(M_FIELD) };
-static const M_FIELD m_CalcFields[] = { TH06_CALC_FIELDS(M_FIELD) };
-#undef M_FIELD
-
 static int32_t M_FindField(
-    const M_FIELD *const fields, const size_t count, const char *const name)
+    const RUNNER_FIELD *const fields, const int32_t count,
+    const char *const name)
 {
-    for (size_t i = 0; i < count; i++) {
+    for (int32_t i = 0; i < count; i++) {
         if (strcmp(fields[i].name, name) == 0) {
-            return (int32_t)i;
+            return i;
         }
     }
     return -1;
@@ -53,22 +37,21 @@ static int32_t M_FindField(
 
 static int32_t M_MapColumns(
     RUNNER_COMPARE *const compare, const CASE_NAMES *const names,
-    const M_FIELD *const fields, const size_t count, int32_t *const map,
+    const RUNNER_FIELD *const fields, const int32_t count, int32_t *const map,
     const char *const table)
 {
     int32_t compared = 0;
     for (int32_t i = 0; i < names->count; i++) {
         const int32_t field = M_FindField(fields, count, names->items[i]);
-        map[i] = field >= 0 && fields[field].ported ? field : -1;
+        map[i] = field;
         if (map[i] >= 0) {
             compared++;
         } else {
             compare->report.skipped_columns++;
             if (compare->options.output != nullptr) {
                 fprintf(
-                    compare->options.output, "skipped %s column %s (%s)\n",
-                    table, names->items[i],
-                    field < 0 ? "unknown" : "not ported");
+                    compare->options.output, "skipped %s column %s (unknown)\n",
+                    table, names->items[i]);
             }
         }
     }
@@ -76,17 +59,17 @@ static int32_t M_MapColumns(
 }
 
 static void M_PrintValue(
-    FILE *const output, const M_KIND kind, const uint32_t value)
+    FILE *const output, const RUNNER_KIND kind, const uint32_t value)
 {
-    if (kind == M_F32) {
+    if (kind == RUNNER_F32) {
         float number;
         memcpy(&number, &value, sizeof(number));
         fprintf(output, "%.9g [0x%08" PRIx32 "]", (double)number, value);
-    } else if (kind == M_I32) {
+    } else if (kind == RUNNER_I32) {
         int32_t number;
         memcpy(&number, &value, sizeof(number));
         fprintf(output, "%" PRId32, number);
-    } else if (kind == M_HASH) {
+    } else if (kind == RUNNER_HASH) {
         fprintf(output, "0x%08" PRIx32, value);
     } else {
         fprintf(output, "%" PRIu32, value);
@@ -94,7 +77,7 @@ static void M_PrintValue(
 }
 
 static void M_PrintDifference(
-    RUNNER_COMPARE *const compare, const M_FIELD *const field,
+    RUNNER_COMPARE *const compare, const RUNNER_FIELD *const field,
     const char *const prefix, const uint32_t expected, const uint32_t actual)
 {
     FILE *const output = compare->options.output;
@@ -116,7 +99,7 @@ static void M_PrintDifference(
 static void M_CompareTable(
     RUNNER_COMPARE *const compare, const uint32_t *const expected,
     const uint32_t *const actual, const int32_t *const map, const int32_t count,
-    const M_FIELD *const fields, const char *const prefix)
+    const RUNNER_FIELD *const fields, const char *const prefix)
 {
     for (int32_t i = 0; i < count; i++) {
         const int32_t field = map[i];
@@ -154,30 +137,31 @@ static void M_PrintInputs(RUNNER_COMPARE *const compare, const uint32_t current)
 }
 
 RESULT RunnerCompare_Open(
-    CASE_READER *const reader, const RUNNER_OPTIONS *const options,
-    RUNNER_COMPARE **const out)
+    CASE_READER *const reader, const RUNNER_GAME *const game,
+    const RUNNER_OPTIONS *const options, RUNNER_COMPARE **const out)
 {
     *out = nullptr;
     const CASE_HEADER *const header = Case_GetHeader(reader);
     FAIL_IF(
-        strcmp(header->game_id, "th06") != 0, "case is for %s, not th06",
-        header->game_id);
+        strcmp(header->game_id, game->id) != 0, "case is for %s, not %s",
+        header->game_id, game->id);
     RUNNER_COMPARE *const compare = Mem_AllocZ(sizeof(RUNNER_COMPARE));
     compare->reader = reader;
+    compare->game = game;
     compare->options = *options;
     compare->start_map =
         Mem_AllocArr((size_t)header->start_names.count, sizeof(int32_t));
     compare->calc_map =
         Mem_AllocArr((size_t)header->calc_names.count, sizeof(int32_t));
     compare->report.start_columns = M_MapColumns(
-        compare, &header->start_names, m_StartFields, ARRAY_SIZE(m_StartFields),
+        compare, &header->start_names, game->start_fields, game->start_count,
         compare->start_map, "START");
     compare->report.calc_columns = M_MapColumns(
-        compare, &header->calc_names, m_CalcFields, ARRAY_SIZE(m_CalcFields),
+        compare, &header->calc_names, game->calc_fields, game->calc_count,
         compare->calc_map, "calc");
     compare->report.complete_schema =
-        compare->report.start_columns == TH06_START_COUNT
-        && compare->report.calc_columns == TH06_CALC_COUNT;
+        compare->report.start_columns == game->start_count
+        && compare->report.calc_columns == game->calc_count;
     if (compare->report.calc_columns == 0) {
         Mem_Free(compare->start_map);
         Mem_Free(compare->calc_map);
@@ -192,8 +176,8 @@ RESULT RunnerCompare_Open(
 }
 
 bool RunnerCompare_Calc(
-    RUNNER_COMPARE *const compare, const uint32_t start[TH06_START_COUNT],
-    const uint32_t calc[TH06_CALC_COUNT])
+    RUNNER_COMPARE *const compare, const uint32_t *const start,
+    const uint32_t *const calc)
 {
     if (compare->done) {
         return false;
@@ -214,11 +198,11 @@ bool RunnerCompare_Calc(
     if (compare->report.rows == 0) {
         M_CompareTable(
             compare, header->start.items, start, compare->start_map,
-            header->start_names.count, m_StartFields, "START.");
+            header->start_names.count, compare->game->start_fields, "START.");
     }
     M_CompareTable(
         compare, compare->expected, calc, compare->calc_map,
-        header->calc_names.count, m_CalcFields, "");
+        header->calc_names.count, compare->game->calc_fields, "");
     if (compare->report.differences != before) {
         compare->report.different = true;
         compare->report.first_diff = compare->report.rows;

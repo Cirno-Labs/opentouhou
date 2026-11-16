@@ -262,12 +262,12 @@ This cross-builds a game's capture tools, which capture replay test
 cases from the original game. They are used locally and never packaged
 or released. Each game's own notes describe how to capture with them.
 
-`th06replay` compares captured calc rows with headless playback. It is
+`<game>replay` compares captured calc rows with headless playback. It is
 built with the games and never packaged. Pass the original data, the
 player's replay input and its captured case:
 
 ```sh
-build/linux/debug/th06replay --data <data-dir> --replay <input.rpy> \
+build/linux/debug/<game>replay --data <data-dir> --replay <input.rpy> \
     <case.otrc>
 just replay::run <game> <case-or-dir> <data-dir> <replay-dir>
 just replay::run-fast <game> <case-or-dir> <data-dir> <replay-dir> \
@@ -285,8 +285,8 @@ replay inputs stay outside the repository. Original files are only
 read.
 
 The runner reports skipped columns and the first calc with any
-difference. Its [public header](../replay/th06/runner/context.h) describes
-the supported capture format and the checks for full replay coverage.
+difference. Its [public header](../replay/core/runner.h) describes the
+supported capture format and the checks for full replay coverage.
 
 ## Releasing
 
