@@ -19,19 +19,22 @@ RESULT PelletAssets_Load(
     READER *reader, uint8_t *scratch, size_t scratch_size,
     const ALLOCATOR *allocator, PELLET_ASSETS **out);
 
-// Draws white masked pellets with the source's eight pre-shifted images.
+// Draws color 7 masked pellets with the source's eight pre-shifted images.
 // Uses the drawing page. Native gameplay renders only at 0 < left < 632
 // and 64 <= top < 400. Preserves linear row overflow and the source's
-// signed row-end test; hidden planar bytes are discarded.
+// signed row-end test; hidden planar bytes are discarded. Requires image
+// 0 through 2.
 void PelletAssets_Put(
     VIDEO *video, const PELLET_ASSETS *assets, int16_t left, int16_t top,
     int16_t image);
 
 // Draws or restores 16 by 16 delay clouds, quantizing X down to eight
-// pixels. Restore selects page 0 and copies masked pixels from page 1.
+// pixels. Restore first clears the mask on the drawing page, then ORs
+// masked page 1 pixels onto page 0. Selects page 0 for nonempty rows only.
 // Wraps GRCG writes at 32768 bytes; hidden bytes are discarded. Raw
-// restore above that boundary aliases the red and green planes only,
-// leaving blue and intensity cleared. Does not model non-VRAM writes.
+// restore above that boundary aliases red and green only; the second
+// byte at 65536 aliases green only. Ignores non-VRAM writes. Requires
+// image 0 or 1.
 void PelletAssets_Cloud(
     VIDEO *video, const PELLET_ASSETS *assets, int16_t left, int16_t top,
     int16_t image, bool restore);

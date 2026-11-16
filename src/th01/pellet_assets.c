@@ -8,7 +8,7 @@
 
 static void M_Row(
     VIDEO *const video, const uint8_t *const mask, const uint16_t offset,
-    const bool restore)
+    const bool restore, const uint8_t color)
 {
     for (int32_t byte = 0; byte < 2; byte++) {
         const uint32_t address = ((uint32_t)offset + byte) & 0x7fffu;
@@ -19,11 +19,12 @@ static void M_Row(
             if ((mask[byte] & (0x80u >> bit)) != 0) {
                 const uint32_t pixel = address * 8 + bit;
                 video->pages[video->drawing_page][pixel] = restore
-                    ? (video->pages[1][pixel]
-                       & (offset + byte >= 0x10000      ? 4
-                              : offset + byte >= 0x8000 ? 6
-                                                        : 15))
-                    : 15;
+                    ? (video->pages[video->drawing_page][pixel]
+                       | (video->pages[1][pixel]
+                          & (offset + byte >= 0x10000      ? 4
+                                 : offset + byte >= 0x8000 ? 6
+                                                           : 15)))
+                    : color;
             }
         }
     }
@@ -75,7 +76,7 @@ void PelletAssets_Put(
     for (int32_t row = 0; row < 8; row++) {
         M_Row(
             video, assets->pellets[image][(uint16_t)left & 7][row], offset,
-            false);
+            false, 7);
         offset = (uint16_t)(offset + 80);
         if (Math_Wrap16(offset) >= 32000) {
             return;
@@ -87,12 +88,22 @@ void PelletAssets_Cloud(
     VIDEO *const video, const PELLET_ASSETS *const assets, const int16_t left,
     const int16_t top, const int16_t image, const bool restore)
 {
-    if (restore) {
-        Video_SelectDrawingPage(video, 0);
-    }
-    uint16_t offset = (uint16_t)(left / 8 - (left % 8 < 0) + top * 80);
+    const uint16_t origin = (uint16_t)(left / 8 - (left % 8 < 0) + top * 80);
+    uint16_t offset = origin;
     for (int32_t row = 0; row < 16; row++) {
-        M_Row(video, assets->clouds[image][row], offset, restore);
+        M_Row(
+            video, assets->clouds[image][row], offset, false, restore ? 0 : 7);
         offset = (uint16_t)(offset + 80);
+    }
+    if (restore) {
+        offset = origin;
+        for (int32_t row = 0; row < 16; row++) {
+            const uint8_t *const mask = assets->clouds[image][row];
+            if (mask[0] != 0 || mask[1] != 0) {
+                Video_SelectDrawingPage(video, 0);
+                M_Row(video, mask, offset, true, 0);
+            }
+            offset = (uint16_t)(offset + 80);
+        }
     }
 }

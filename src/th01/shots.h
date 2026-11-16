@@ -43,7 +43,7 @@ RESULT Shots_ValidateSprites(const PTN *sprites);
 bool Shots_Add(SHOTS *shots, int16_t left, int16_t top, SHOTS_OUTPUT output);
 void Shots_EraseAndReset(SHOTS *shots, SHOTS_OUTPUT output);
 
-// Call inside the future pellet composite, after pellet motion/clipping and
+// Called by the pellet composite after pellet motion/clipping and
 // before pellet rendering. Player spawning precedes ordinary Orb motion;
 // this update follows the Orb composite's wait. Do not also update shots
 // during player update. Orb hits precede top clipping and move the Orb an
