@@ -4,6 +4,8 @@
 
 - Changed the text of `--help` and of command-line errors to a new
   format.
+- Changed othpatch to find the games beside it and in the installed
+  patches, so it handles th07.
 
 ## 1.0.0 (2026-11-13)
 

@@ -9,6 +9,7 @@
 #include "core/base/string.h"
 #include "core/hash/sha256.h"
 #include "core/io/file.h"
+#include "core/json/get.h"
 #include "core/json/parse.h"
 
 #include <ctype.h>
@@ -150,6 +151,10 @@ static bool M_FindUpdate(
     const JSON_VALUE *const index = M_GetReleases(update);
     if (index == nullptr) {
         *failed = true;
+        return false;
+    }
+    if (Json_Get(Json_Get(index, "programs"), program) == nullptr) {
+        fprintf(stream, "There is no release of %s yet.\n", program);
         return false;
     }
     const RESULT found =
@@ -353,10 +358,10 @@ static bool M_Run(APP_CONTEXT *const run)
     update.othpatch_is_release =
         Release_ParseVersion(version, &update.othpatch_version);
     bool ok = M_UpdateOthpatch(&update, version);
-    for (int32_t i = 0; i < APP_GAME_COUNT; i++) {
+    for (int32_t i = 0; i < run->game_count; i++) {
         const char *const path = Install_GetGamePath(
-            update.platform, run->exe_dir, g_Games[i], run->arena);
-        if (File_Exists(path) && !M_UpdateGame(&update, g_Games[i], path)) {
+            update.platform, run->exe_dir, run->games[i], run->arena);
+        if (File_Exists(path) && !M_UpdateGame(&update, run->games[i], path)) {
             ok = false;
         }
     }
