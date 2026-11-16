@@ -146,13 +146,10 @@ bool StepPatches_IsOriginal(const char *const name)
 
 const char *StepPatches_ListProducts(const APP_CONTEXT *const run)
 {
-    const char *const *const names = run->game_count > 0 ? run->games : g_Games;
-    const int32_t count =
-        run->game_count > 0 ? run->game_count : APP_GAME_COUNT;
     const char *text = "";
-    for (int32_t i = 0; i < count; i++) {
+    for (int32_t i = 0; i < run->game_count; i++) {
         char product[GAME_NAME_SIZE];
-        Game_GetProductName(names[i], product);
+        Game_GetProductName(run->games[i], product);
         text = Console_Format(
             run->arena, "%s%s%s", text, i > 0 ? ", " : "", product);
     }
