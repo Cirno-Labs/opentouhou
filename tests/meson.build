@@ -1248,6 +1248,19 @@ test(
 )
 
 test(
+  'th07/score',
+  executable(
+    'test_th07_score',
+    'test_th07_score.c',
+    'replay_lzss_literals.c',
+    c_args: [layer_include['th07']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [th07_lib, stg_lzss_lib, core_io_lib, core_base_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'th07/replay/chain',
   executable(
     'test_th07_replay_chain',
