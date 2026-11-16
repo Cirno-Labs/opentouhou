@@ -51,8 +51,8 @@ static void M_FireShot(PLAYER_BULLET *const bullet, const SHOT *const shot)
     bullet->size = (VEC3) { shot->size_x, shot->size_y, 1.0f };
     bullet->angle = shot->angle;
     bullet->speed = shot->speed;
-    bullet->velocity.x = X87_Cos(shot->angle) * shot->speed;
-    bullet->velocity.y = X87_Sin(shot->angle) * shot->speed;
+    X87_SinCosScale(
+        shot->angle, shot->speed, &bullet->velocity.x, &bullet->velocity.y);
     Timer_Set(&bullet->timer, 0);
     bullet->kind = shot->kind;
     bullet->damage = shot->damage;

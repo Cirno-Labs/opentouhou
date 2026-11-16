@@ -216,8 +216,10 @@ TEST(a_shot_starts_from_its_option_with_its_offset_and_velocity)
     CHECK(bullet->size.x == 12.0f && bullet->size.y == 24.0f);
     CHECK(bullet->size.z == 1.0f);
     CHECK(bullet->angle == -1.2f && bullet->speed == 10.0f);
-    CHECK(bullet->velocity.x == X87_Cos(-1.2f) * 10.0f);
-    CHECK(bullet->velocity.y == X87_Sin(-1.2f) * 10.0f);
+    float x;
+    float y;
+    X87_SinCosScale(-1.2f, 10.0f, &x, &y);
+    CHECK(bullet->velocity.x == x && bullet->velocity.y == y);
     CHECK_EQ_INT(bullet->kind, SHOT_KIND_PIERCING);
     CHECK_EQ_INT(bullet->damage, 30);
     CHECK_EQ_INT(bullet->vm.script_index, M_SCRIPT_SHOT);
@@ -225,6 +227,19 @@ TEST(a_shot_starts_from_its_option_with_its_offset_and_velocity)
     CHECK(bullet->shot == &m_Shots[0]);
     CHECK_EQ_INT(bullet->timer.current, 0);
     CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_PLAYER_SHOT);
+    M_TearDown();
+}
+
+TEST(a_shot_velocity_rounds_its_trig_product_once)
+{
+    M_SetUp();
+    SHOT shot = M_Plain();
+    shot.angle = -1.57079637f;
+    shot.speed = 12.0f;
+    const PLAYER_BULLET *const bullet = M_FireOne(shot);
+    // Rounding the cosine to float first gives -5.2453663e-07.
+    CHECK(bullet->velocity.x == -5.245367e-07f);
+    CHECK(bullet->velocity.y == -12.0f);
     M_TearDown();
 }
 
