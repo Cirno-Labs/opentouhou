@@ -7,6 +7,7 @@ th01_lib = static_library(
   'ptn.c',
   'grc.c',
   'grf.c',
+  'grz.c',
   c_args: [layer_include['th01']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],
