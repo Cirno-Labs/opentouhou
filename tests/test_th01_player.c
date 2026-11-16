@@ -396,3 +396,45 @@ TEST(actor_validates_required_sprites_and_wraps_counters)
     Player_MoveAndClamp(&state.player, 6);
     CHECK_EQ_INT(state.player.left, 608);
 }
+
+TEST(split_bomb_matches_sync_without_replaying_prefix)
+{
+    const uint32_t frames[] = { 0, 60, 61, 140, 0xffff8000, UINT32_MAX };
+    for (int32_t i = 0; i < 6; i++) {
+        CASE sync = M_Case();
+        sync.player.bomb_flag = i == 0 ? PLAYER_BOMB_START : PLAYER_BOMB_ACTIVE;
+        sync.player.bomb_frame = frames[i];
+        sync.player.bombing = true;
+        sync.input.shot = sync.input.strike = sync.input.bomb = true;
+        sync.orb.force_frame = 22;
+        sync.bomb_done = i == 3;
+        CASE split = sync;
+        M_Tick(&sync);
+        PLAYER_BOMB_CONTINUATION continuation = {};
+        CHECK(Player_BeginUpdate(
+            &continuation, &split.player, &split.input, &split.orb,
+            &split.shots, &split.rng,
+            (PLAYER_OUTPUT) { M_Action, M_Bomb, &split }));
+        CHECK(continuation.pending);
+        CHECK_EQ_INT(split.bomb_calls, 0);
+        CHECK(split.input.shot);
+        CHECK(split.input.strike);
+        const int32_t prefix_actions = split.action_count;
+        const int8_t dash = split.player.dash_cycle;
+        const uint32_t rng = split.rng;
+        const bool done = M_Bomb(
+            &split, &split.player, (int16_t)(split.player.bomb_frame & 0xffff));
+        Player_FinishBombUpdate(&continuation, done);
+        CHECK(!continuation.pending);
+        CHECK_EQ_INT(split.player.dash_cycle, dash);
+        CHECK_EQ_INT(split.rng, rng);
+        CHECK_EQ_INT(prefix_actions, i == 0 ? 1 : 0);
+        CHECK(memcmp(&split.player, &sync.player, sizeof(PLAYER)) == 0);
+        CHECK(memcmp(&split.input, &sync.input, sizeof(GAME_INPUT)) == 0);
+        CHECK(memcmp(&split.orb, &sync.orb, sizeof(ORB)) == 0);
+        CHECK(memcmp(&split.shots, &sync.shots, sizeof(SHOTS)) == 0);
+        CHECK_EQ_INT(split.rng, sync.rng);
+        CHECK_EQ_INT(split.action_count, sync.action_count);
+        CHECK(memcmp(split.actions, sync.actions, sizeof(split.actions)) == 0);
+    }
+}

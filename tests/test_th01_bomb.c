@@ -169,3 +169,73 @@ TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
     CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 600, 367), 5);
     Arena_Free(&state.arena);
 }
+
+typedef struct {
+    CASE *state;
+    int32_t hud, draws;
+} PLAYER_CASE;
+
+static void M_PlayerAction(void *const user, const PLAYER_ACTION action)
+{
+    PLAYER_CASE *const actor = user;
+    if (action.kind == PLAYER_ACTION_HUD_BOMBS) {
+        actor->hud++;
+    } else {
+        CHECK_EQ_INT(action.kind, PLAYER_ACTION_PTN_PUT);
+        actor->draws++;
+        Player_RenderAction(
+            &actor->state->video,
+            &(PLAYER_SPRITES) { .miko = &actor->state->miko }, nullptr, action);
+    }
+}
+
+TEST(player_continuation_spans_real_bomb_scroll_wait)
+{
+    CASE state;
+    M_Init(&state);
+    state.player.remaining_bombs = 2;
+    state.player.bomb_flag = PLAYER_BOMB_START;
+    GAME_INPUT input = { .shot = true, .strike = true, .bomb = true };
+    ORB orb = { .left = 500, .top = 100 };
+    SHOTS shots = {};
+    uint32_t rng = 1;
+    PLAYER_CASE actor = { .state = &state };
+    const PLAYER_OUTPUT output = { .action = M_PlayerAction, .user = &actor };
+    PLAYER_BOMB_CONTINUATION continuation = {};
+    const BOMB_CONTEXT context = M_Context(&state);
+    CHECK(Player_BeginUpdate(
+        &continuation, &state.player, &input, &orb, &shots, &rng, output));
+    CHECK_EQ_INT(actor.hud, 1);
+    CHECK_EQ_INT(state.player.remaining_bombs, 1);
+    CHECK_EQ_INT(
+        Bomb_BeginUpdate(&state.bomb, &context, 0, &state.vsync),
+        BOMB_UPDATE_RUNNING);
+    Player_FinishBombUpdate(&continuation, false);
+    state.player.bomb_frame = 64;
+    input.shot = input.strike = true;
+    CHECK(Player_BeginUpdate(
+        &continuation, &state.player, &input, &orb, &shots, &rng, output));
+    const int8_t dash = state.player.dash_cycle;
+    CHECK_EQ_INT(
+        Bomb_BeginUpdate(&state.bomb, &context, 64, &state.vsync),
+        BOMB_UPDATE_WAIT);
+    CHECK_EQ_INT(
+        Bomb_ResumeUpdate(&state.bomb, &context, &state.vsync),
+        BOMB_UPDATE_WAIT);
+    CHECK(continuation.pending);
+    CHECK(input.shot && input.strike);
+    CHECK_EQ_INT(actor.draws, 0);
+    Frame_VSync(&state.vsync);
+    CHECK_EQ_INT(
+        Bomb_ResumeUpdate(&state.bomb, &context, &state.vsync),
+        BOMB_UPDATE_RUNNING);
+    Player_FinishBombUpdate(&continuation, false);
+    CHECK(!continuation.pending);
+    CHECK_EQ_INT(state.player.dash_cycle, dash);
+    CHECK_EQ_INT(actor.hud, 1);
+    CHECK_EQ_INT(actor.draws, 1);
+    CHECK_EQ_INT(state.player.bomb_frame, 64);
+    CHECK(!input.shot && !input.strike);
+    CHECK(Frame_DelayReady(&state.vsync, 1));
+    Arena_Free(&state.arena);
+}

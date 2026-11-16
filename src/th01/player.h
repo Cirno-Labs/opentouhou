@@ -76,6 +76,15 @@ typedef struct {
     void *user;
 } PLAYER_OUTPUT;
 
+// Keeps the suspended bomb branch. Zero-initialize before its first use.
+// The fields belong to the Player_ functions; never copy a pending token.
+typedef struct {
+    PLAYER *player;
+    GAME_INPUT *input;
+    PLAYER_OUTPUT output;
+    bool pending;
+} PLAYER_BOMB_CONTINUATION;
+
 typedef struct {
     const PTN *miko;
     const BOS *miko_ac, *miko_ac2;
@@ -102,17 +111,30 @@ void Player_MoveAndClamp(PLAYER *player, int16_t delta);
 // Orb repulsion precedes bomb_update; its result controls drawing and input
 // consumption. bomb_update implements the real external bomb operation and
 // may change shared player invincibility, invincibility_time, bomb_damaging
-// and position. frame is the low signed 16 bits of bomb_frame. Future bomb
-// integration must also preserve its nested waits and palette operations.
+// and position. frame is the low signed 16 bits of bomb_frame. Use BeginUpdate
+// and FinishBombUpdate when the bomb operation suspends for nested waits.
 //
-// Regular lethal Orb tests, invincibility sprites/timer, miss/respawn, HUD,
-// items, pellets, bomb implementation and gameplay scene remain external.
+// Regular lethal Orb tests, invincibility sprites/timer, HUD, items,
+// pellets and gameplay scene integration remain external. Bomb and Miss
+// provide their reusable cooperative operations in separate modules.
 // is_hit is set by real Orb repulsion tests if their friction reaches zero.
 // A miss requires its complete cooperative sequence before updates resume;
 // resetting alone does not implement a miss or change lives and bombs.
 void Player_UpdateAndRender(
     PLAYER *player, GAME_INPUT *input, ORB *orb, SHOTS *shots, uint32_t *rng,
     PLAYER_OUTPUT output);
+
+// Runs the same update until completion or the bomb callback boundary.
+// Returns true only when HUD decrement and Orb repulsion have completed and
+// the real bomb operation must now run. It does not invoke bomb_update.
+// Keep player/input/output alive and stable while suspended; the bomb may
+// change the shared fields described above. Call Finish exactly once after
+// that operation completes, including its nested waits. Never begin another
+// player update while continuation.pending. No action prefix is replayed.
+bool Player_BeginUpdate(
+    PLAYER_BOMB_CONTINUATION *continuation, PLAYER *player, GAME_INPUT *input,
+    ORB *orb, SHOTS *shots, uint32_t *rng, PLAYER_OUTPUT output);
+void Player_FinishBombUpdate(PLAYER_BOMB_CONTINUATION *continuation, bool done);
 
 // Runs only drawing actions. Coordinates are regular player left values;
 // converts BOS to left-8 and top 352/368. Effects, HUD and pellet operations

@@ -2,6 +2,8 @@
 
 #include "th01/math.h"
 
+#include "core/base/assert.h"
+
 enum {
     M_LEFT_STILL = 0,
     M_LEFT_DASH = 1,
@@ -502,10 +504,12 @@ void Player_MoveAndClamp(PLAYER *const player, const int16_t delta)
     }
 }
 
-void Player_UpdateAndRender(
-    PLAYER *const player, GAME_INPUT *const input, ORB *const orb,
-    SHOTS *const shots, uint32_t *const rng, const PLAYER_OUTPUT output)
+bool Player_BeginUpdate(
+    PLAYER_BOMB_CONTINUATION *const continuation, PLAYER *const player,
+    GAME_INPUT *const input, ORB *const orb, SHOTS *const shots,
+    uint32_t *const rng, const PLAYER_OUTPUT output)
 {
+    ASSERT(!continuation->pending);
     PLAYER_UPDATE update = { player, input, orb, shots, rng, output };
     player->dash_cycle = M_Wrap8(player->dash_cycle + 1) & 7;
     if ((player->remaining_bombs != 0 || player->bombing)
@@ -524,23 +528,13 @@ void Player_UpdateAndRender(
                 });
         }
         M_Repel(&update, 1);
-        const bool done = output.bomb_update(
-            output.user, player, Math_Wrap16(player->bomb_frame & 0xffff));
-        player->bomb_flag = done ? PLAYER_BOMB_NONE : PLAYER_BOMB_ACTIVE;
-        if (done) {
-            player->bombing = false;
-            input->bomb = false;
-            M_Draw(&update, PLAYER_ACTION_PTN_PUT, M_LEFT_STILL);
-            player->previous_ptn = M_LEFT_STILL;
-        } else if (player->bomb_frame > 60) {
-            M_Draw(&update, PLAYER_ACTION_PTN_PUT, M_LEFT_CAST);
-        }
-        input->shot = false;
-        input->strike = false;
-        player->mode = PLAYER_MODE_REGULAR;
-        if (player->bomb_flag == PLAYER_BOMB_NONE) {
-            player->deflecting = false;
-        }
+        *continuation = (PLAYER_BOMB_CONTINUATION) {
+            .player = player,
+            .input = input,
+            .output = output,
+            .pending = true,
+        };
+        return true;
     } else if (
         input->bomb && player->mode != PLAYER_MODE_SPECIAL_FIRST
         && player->remaining_bombs != 0) {
@@ -562,6 +556,45 @@ void Player_UpdateAndRender(
         player->mode >= PLAYER_MODE_SPECIAL_FIRST
         && player->mode <= PLAYER_MODE_SPECIAL_THIRD) {
         M_Special(&update);
+    }
+    return false;
+}
+
+void Player_FinishBombUpdate(
+    PLAYER_BOMB_CONTINUATION *const continuation, const bool done)
+{
+    ASSERT(continuation->pending);
+    continuation->pending = false;
+    PLAYER *const player = continuation->player;
+    GAME_INPUT *const input = continuation->input;
+    PLAYER_UPDATE update = { .player = player, .output = continuation->output };
+    player->bomb_flag = done ? PLAYER_BOMB_NONE : PLAYER_BOMB_ACTIVE;
+    if (done) {
+        player->bombing = false;
+        input->bomb = false;
+        M_Draw(&update, PLAYER_ACTION_PTN_PUT, M_LEFT_STILL);
+        player->previous_ptn = M_LEFT_STILL;
+    } else if (player->bomb_frame > 60) {
+        M_Draw(&update, PLAYER_ACTION_PTN_PUT, M_LEFT_CAST);
+    }
+    input->shot = false;
+    input->strike = false;
+    player->mode = PLAYER_MODE_REGULAR;
+    if (player->bomb_flag == PLAYER_BOMB_NONE) {
+        player->deflecting = false;
+    }
+}
+
+void Player_UpdateAndRender(
+    PLAYER *const player, GAME_INPUT *const input, ORB *const orb,
+    SHOTS *const shots, uint32_t *const rng, const PLAYER_OUTPUT output)
+{
+    PLAYER_BOMB_CONTINUATION continuation = {};
+    if (Player_BeginUpdate(
+            &continuation, player, input, orb, shots, rng, output)) {
+        const bool done = output.bomb_update(
+            output.user, player, Math_Wrap16(player->bomb_frame & 0xffff));
+        Player_FinishBombUpdate(&continuation, done);
     }
 }
 

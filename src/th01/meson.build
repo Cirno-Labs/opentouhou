@@ -8,6 +8,7 @@ th01_lib = static_library(
   'shots.c',
   'player.c',
   'bomb.c',
+  'miss.c',
   'logo.c',
   'opening.c',
   'opening_load.c',
