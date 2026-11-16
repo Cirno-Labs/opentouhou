@@ -547,6 +547,9 @@ static void M_InitPairEffectAtSsg0(
     effects->bytes[128] = 0xff;
     effects->entries[0].stream_offsets[0] = 128;
     effects->entries[0].stream_offsets[1] = 128;
+    MdrvSeq_InitEffects(
+        &effects->sequence, &effects->effects, Arena_Allocator(&effects->arena),
+        M_Event, events);
     CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects->sequence, 1)));
 }
 
@@ -632,14 +635,11 @@ TEST(paired_retrigger_fewer_channels_and_stop_one_instance)
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
     CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_OUTPUT_MASK), 3);
     CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects.sequence, 2)));
-    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 3);
-    for (size_t i = 0; i < 3; i++) {
-        CHECK_EQ_INT(M_Find(&music, MDRV_EVENT_KEY_OFF, i)->channel, 0x40 + i);
-    }
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_OUTPUT_MASK), 5);
-    CHECK(!music.sequence.tracks[0].suppressed);
-    CHECK(!music.sequence.tracks[1].suppressed);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_OUTPUT_MASK), 3);
+    CHECK(music.sequence.tracks[0].suppressed);
+    CHECK(music.sequence.tracks[1].suppressed);
     CHECK(music.sequence.tracks[2].suppressed);
     CHECK_EQ_INT(music.sequence.tracks[0].remaining, 19);
     MdrvSeq_Stop(&music.sequence);
@@ -1222,4 +1222,61 @@ TEST(q_zero_notes_hold_through_ordinary_rest)
         CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_KEY_OFF, 0)->pulse, 5);
         Arena_Free(&fixture.arena);
     }
+}
+
+TEST(partial_effect_retrigger_retains_slots_and_wraps_counter)
+{
+    const uint8_t music_code[] = { 0xea, 0, 0x40, 30, 0xff };
+    const uint8_t effect_code[] = { 0xea, 0, 0x47, 2, 0xff };
+    FIXTURE music, effects;
+    M_Init(&music, music_code, sizeof(music_code), 0x40);
+    music.tracks[1] = (MDRV_TRACK) { .offset = 32, .channel = 0x41 };
+    music.tracks[2] = (MDRV_TRACK) { .offset = 32, .channel = 0x42 };
+    music.music.track_count = 3;
+    MdrvSeq_InitMusic(
+        &music.sequence, &music.music, Arena_Allocator(&music.arena), M_Event,
+        &music);
+    CHECK(Result_Ignore(MdrvSeq_Play(&music.sequence)));
+    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 2);
+    const uint8_t old_slot[] = { 0xea, 0, 0x49, 4, 0xff };
+    const uint8_t replacement[] = { 0xea, 0, 0x4a, 1, 0xff };
+    memcpy(effects.bytes + 128, old_slot, sizeof(old_slot));
+    memcpy(effects.bytes + 160, replacement, sizeof(replacement));
+    effects.entries[0].stream_offsets[1] = 128;
+    effects.entries[1].stream_offsets[0] = 160;
+    MdrvSeq_InitEffects(
+        &effects.sequence, &effects.effects, Arena_Allocator(&effects.arena),
+        M_Event, &music);
+    CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects.sequence, 1)));
+    music.event_count = 0;
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    const size_t used = effects.arena.used;
+    const uint32_t position = effects.sequence.tracks[1].position;
+    CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects.sequence, 2)));
+    CHECK_EQ_INT(effects.sequence.track_count, 2);
+    CHECK_EQ_INT(effects.sequence.tracks[1].position, position);
+    CHECK_EQ_INT(effects.sequence.tracks[1].remaining, 4);
+    CHECK_EQ_INT(effects.sequence.tracks[1].effect_number, 1);
+    CHECK_EQ_INT(effects.sequence.tracks[1].source_channel, 0x41);
+    CHECK_EQ_INT(effects.sequence.effect_counter, 1);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_STOP), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
+    for (int i = 0; i < 2; i++) {
+        CHECK(Result_Ignore(
+            MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    }
+    CHECK_EQ_INT(effects.sequence.effect_counter, 0);
+    CHECK(effects.sequence.tracks[1].active);
+    CHECK(!music.sequence.tracks[2].suppressed);
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK(!music.sequence.tracks[1].suppressed);
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(effects.sequence.effect_counter, 255);
+    CHECK(!effects.sequence.playing);
+    CHECK(music.sequence.tracks[1].suppressed);
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK(!music.sequence.tracks[1].suppressed);
+    CHECK_EQ_INT(effects.arena.used, used);
+    Arena_Free(&effects.arena);
+    Arena_Free(&music.arena);
 }

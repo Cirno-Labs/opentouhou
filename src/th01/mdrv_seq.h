@@ -50,6 +50,7 @@ typedef struct {
     uint32_t return_position, repeat_one_start, repeat_one_end,
         repeat_two_start;
     uint32_t loops;
+    uint16_t effect_number;
     uint8_t channel, source_channel, note, gate, program, volume, pan;
     int8_t detune, transpose;
     uint8_t repeat_one_count, repeat_two_count;
@@ -65,7 +66,7 @@ typedef struct {
     uint32_t commands_start, commands_end;
     uint16_t track_count, capacity, effect_number;
     uint64_t pulse, loops;
-    uint8_t tempo, sync;
+    uint8_t tempo, sync, effect_counter;
     bool playing, failed;
     MDRV_EVENT_CALLBACK callback;
     void *context;
@@ -81,18 +82,25 @@ typedef struct {
 //
 // Init allocates one lifetime group from allocator. Keep the asset and that
 // allocation alive as long as the sequence. Use separate instances for music
-// and single-mode effects. Play resets the mutable command copy and counters;
+// and single-mode effects. Play resets the mutable music copy and counters;
 // TriggerEffect uses DOS's 1-based numbering (zero leaves playback unchanged).
-// Neither operation nor successful Pulse allocates. Effects interrupt the
-// driver's last SSG slots: pointer zero uses SSG2, pointer one SSG1, then SSG0.
-// Their identity is the pointer's track index and their channel is its output
-// SSG tag. source_channel retains the descriptor tag plus pointer index. A
-// future mixer must arbitrate these against music, which continues.
-// Music assigns physical channel slots by family ordinal in directory order;
-// low descriptor bits do not select hardware channels. channel names that
-// resolved slot, and source_channel retains the raw descriptor tag. Supports
-// six FM, one PCM, one rhythm and three SSG slots. Play rejects larger groups
-// before changing playback state. The immutable directory stays unchanged.
+// Neither operation nor successful Pulse allocates. TriggerEffect replaces
+// only the new effect's reverse SSG slots; remaining old effect slots keep
+// their work, stream, source identity and clocks. Emits START without invented
+// key-offs or STOP on retrigger. Keeps effect command work between triggers.
+// Replaced slots retain controls and slur state but begin a new parser context.
+// effect_counter holds the driver's overwritten, wrapping active-count byte;
+// it can differ from the number of live pointers after a partial retrigger.
+// Effects interrupt the driver's last SSG slots: pointer zero uses SSG2,
+// pointer one SSG1, then SSG0. Their identity is the pointer's track index and
+// their channel is its output SSG tag. source_channel retains the descriptor
+// tag plus pointer index. A future mixer must arbitrate these against music,
+// which continues. Music assigns physical channel slots by family ordinal in
+// directory order; low descriptor bits do not select hardware channels. channel
+// names that resolved slot, and source_channel retains the raw descriptor tag.
+// Supports six FM, one PCM, one rhythm and three SSG slots. Play rejects larger
+// groups before changing playback state. The immutable directory stays
+// unchanged.
 //
 // Pulse advances one driver clock, starting at zero on the first call after
 // Play/TriggerEffect. The original advances music and effects on timer B IRQs;
@@ -130,6 +138,8 @@ typedef struct {
 // pointer with one return slot. F6/F7 counters share a player-local byte copy.
 // E0/E4 are single-level; F6 permits nested repeats. FF returns from FA, ends
 // a track, or restarts all music tracks when header flag 80 requests repeat.
+// An effect FF key-off uses opcode FF before TRACK_END to denote immediate
+// mute without starting a software-envelope release.
 // F3 emits LOOP and updates sync to FE; completion sets sync FF, F8 sets it
 // raw.
 //
@@ -180,12 +190,14 @@ RESULT MdrvSeq_Pulse(MDRV_SEQUENCE *sequence);
 // music state and control events continue while masked. Marks ordinary SSG
 // output events suppressed, leaving raw REGISTER and global control events
 // unmasked. Synth code must maintain music envelope/LFO state during masking.
-// Keeps an ending channel masked through its music step while another effect
-// remains active. The last active effect releases before that clock's active
-// music step. An ended music SSG keeps its envelope clock masked until the
-// next clock, as do earlier simultaneously ending effect channels. OUTPUT_MASK
-// release permits subsequent music output; it neither restores a cached
-// register snapshot nor emits a replacement note. Stop/retrigger actions
+// Uses the raw effect_counter after each effect step to gate active music.
+// Zero unmasks active music, even with live effect pointers after a partial
+// retrigger; nonzero retains that slot's pointer ownership through the step.
+// An ended music SSG keeps its envelope clock masked until the next clock.
+// With ordinary triggers, the last ending effect unmasks active music on the
+// same clock; earlier simultaneously ending slots release on the next clock.
+// OUTPUT_MASK release permits subsequent music output; it neither restores a
+// cached register snapshot nor emits a replacement note. Stop/retrigger actions
 // between calls emit immediately. A failed advance stops both instances and
 // latches both failed. Standalone Pulse removes paired output masks and
 // advances just that instance.

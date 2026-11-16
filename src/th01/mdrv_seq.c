@@ -46,7 +46,10 @@ static void M_Emit(
         .offset = offset,
         .duration = duration,
         .track = track,
-        .effect_number = sequence->effect_number,
+        .effect_number =
+            sequence->effects != nullptr && track < sequence->track_count
+            ? sequence->tracks[track].effect_number
+            : sequence->effect_number,
         .source_channel = track < sequence->track_count
             ? sequence->tracks[track].source_channel
             : 0,
@@ -64,15 +67,16 @@ static void M_Emit(
     sequence->callback(sequence->context, &event);
 }
 
-static void M_KeyOff(MDRV_SEQUENCE *const sequence, const uint16_t track)
+static void M_KeyOff(
+    MDRV_SEQUENCE *const sequence, const uint16_t track, const uint8_t opcode)
 {
     MDRV_CHANNEL_STATE *const state = &sequence->tracks[track];
     state->gate_remaining = 0;
     if (state->key_on) {
         state->key_on = false;
         M_Emit(
-            sequence, track, MDRV_EVENT_KEY_OFF, state->position, 0, nullptr, 0,
-            0, false);
+            sequence, track, MDRV_EVENT_KEY_OFF, state->position, opcode,
+            nullptr, 0, 0, false);
     }
 }
 
@@ -267,7 +271,7 @@ static RESULT M_Duration(
         if (!slur && gate != 0) {
             state->gate_remaining = gate - 1;
             if (state->gate_remaining == 0) {
-                M_KeyOff(sequence, track);
+                M_KeyOff(sequence, track, 0);
             }
         }
     }
@@ -461,7 +465,8 @@ static RESULT M_Command(
             kind = MDRV_EVENT_PATTERN;
         } else {
             if (sequence->effects != nullptr) {
-                M_KeyOff(sequence, track);
+                M_KeyOff(sequence, track, 0xff);
+                sequence->effect_counter--;
             }
             state->active = false;
             kind = MDRV_EVENT_TRACK_END;
@@ -485,7 +490,7 @@ static RESULT M_Advance(MDRV_SEQUENCE *const sequence, const uint16_t track)
         return OK;
     }
     if (state->gate_remaining != 0 && --state->gate_remaining == 0) {
-        M_KeyOff(sequence, track);
+        M_KeyOff(sequence, track, 0);
     }
     if (state->remaining != 0 && --state->remaining != 0) {
         return OK;
@@ -685,6 +690,11 @@ void MdrvSeq_InitEffects(
     sequence->effects = effects;
     sequence->commands_start = 16 + (uint32_t)effects->effect_count * 4;
     sequence->commands_end = effects->ssg_offset;
+    memcpy(sequence->work, effects->bytes, effects->size);
+    for (uint16_t i = 0; i < sequence->capacity; i++) {
+        M_ResetTrack(&sequence->tracks[i], 0x42 - i, M_NO_POSITION);
+        sequence->tracks[i].active = false;
+    }
 }
 
 RESULT MdrvSeq_Play(MDRV_SEQUENCE *const sequence)
@@ -714,14 +724,33 @@ RESULT MdrvSeq_TriggerEffect(
         return OK;
     }
     FAIL_IF(number > sequence->effects->effect_count, "Invalid MDRV effect");
-    MdrvSeq_Stop(sequence);
-    M_Reset(sequence, sequence->effects->bytes);
+    if (sequence->failed) {
+        memcpy(sequence->work, sequence->effects->bytes, sequence->work_size);
+    }
+    sequence->failed = false;
+    sequence->playing = true;
+    sequence->pulse = 0;
+    sequence->loops = 0;
+    sequence->tempo = 0;
+    sequence->sync = 0;
     sequence->effect_number = number;
     const MDRV_EFFECT *const effect = &sequence->effects->effects[number - 1];
-    sequence->track_count = effect->channel_count;
-    for (uint16_t i = 0; i < sequence->track_count; i++) {
-        M_ResetTrack(&sequence->tracks[i], 0x42 - i, effect->stream_offsets[i]);
-        sequence->tracks[i].source_channel = effect->base_channel + i;
+    sequence->effect_counter = effect->channel_count;
+    if (sequence->track_count < effect->channel_count) {
+        sequence->track_count = effect->channel_count;
+    }
+    for (uint16_t i = 0; i < effect->channel_count; i++) {
+        MDRV_CHANNEL_STATE *const state = &sequence->tracks[i];
+        state->position = effect->stream_offsets[i];
+        state->remaining = 0;
+        state->gate_remaining = 0;
+        state->active = true;
+        state->source_channel = effect->base_channel + i;
+        state->effect_number = number;
+        state->repeat_one = false;
+        state->repeat_two = false;
+        state->repeat_one_end = M_NO_POSITION;
+        state->return_position = M_NO_POSITION;
     }
     M_Emit(sequence, UINT16_MAX, MDRV_EVENT_START, 0, 0, nullptr, 0, 0, false);
     return OK;
@@ -782,11 +811,7 @@ RESULT MdrvSeq_PulsePair(
         }
         M_Mask(music, channel, owned, false);
         result = M_AdvanceGroup(effects, channel, 0xff, false);
-        bool any_effect = false;
-        for (uint16_t i = 0; i < effects->track_count; i++) {
-            any_effect |= effects->tracks[i].active;
-        }
-        if (!any_effect) {
+        if (effects->effect_counter == 0) {
             M_Mask(music, channel, false, true);
         }
         music->tempo = effects->tempo;
@@ -823,7 +848,7 @@ void MdrvSeq_Stop(MDRV_SEQUENCE *const sequence)
             const uint16_t i = M_TrackIndex(sequence, ordinal);
             MDRV_CHANNEL_STATE *const state = &sequence->tracks[i];
             if ((state->channel & 0xf0) == m_ChannelOrder[group]) {
-                M_KeyOff(sequence, i);
+                M_KeyOff(sequence, i, 0);
                 state->active = false;
                 state->remaining = 0;
                 state->legato = false;
