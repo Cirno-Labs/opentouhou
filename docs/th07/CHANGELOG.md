@@ -5,6 +5,7 @@
 - Added th07, compatible with the original down to its replays: the 36
   world record replays play back frame for frame as in the original.
 - Added native packages for Windows, Linux and macOS.
+- Added English and other languages through othpatch.
 - Added smooth motion between ticks on fast displays.
 - Added `[video] scaling` in config.ini: sharp, smooth or integer
   scaling of the screen to the window.
