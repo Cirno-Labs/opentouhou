@@ -123,7 +123,8 @@ static RESULT M_PlayAdded(void *const arg)
     // The original puts the replay's whole configuration in place.
     gm->run.start_lives = file->config[M_CONFIG_LIVES];
     gm->run.score_disabled = file->config[M_CONFIG_SLOWDOWN] != 0;
-    Rng_SetSeed(&g_Rng, stage->rng_seed);
+    // Unlike th06's, th07's seed change leaves generated counting.
+    g_Rng.seed = stage->rng_seed;
     gm->stats.spell_cards_captured = stage->spell_cards;
     gm->player.extends = stage->point_extends;
     gm->player.next_extend_items = stage->next_extend_points;

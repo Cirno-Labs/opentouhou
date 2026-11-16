@@ -407,7 +407,8 @@ TEST(restoring_a_stage_takes_its_state_and_the_replay_config)
     CHECK_EQ_INT(gm->player.extends, 2);
     CHECK_EQ_INT(gm->player.next_extend_items, 16);
     CHECK_EQ_INT(g_Rng.seed, 0xab01);
-    CHECK_EQ_INT(g_Rng.generated, 0);
+    // The seed keeps the count of the two checksum key draws.
+    CHECK_EQ_INT(g_Rng.generated, 8);
     CHECK(gm->player.power == 101.0f);
     CHECK(gm->player.lives == 3.0f);
     CHECK(gm->player.bombs == 2.0f);
