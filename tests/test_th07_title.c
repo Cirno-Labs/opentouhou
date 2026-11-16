@@ -378,7 +378,7 @@ TEST(extra_starts_at_stage_seven_with_an_open_shot)
 static void M_OpenPhantasm(void)
 {
     for (int32_t i = 0; i < 60; i++) {
-        g_GameManager.records.spell_captures[i * 2] = 1;
+        g_GameManager.records.spell_cards[i * 2].captures[SCORE_ALL_SHOTS] = 1;
     }
     g_GameManager.records.clears[4].no_continues[0] = 99;
     g_GameManager.records.clears[4].no_continues[4] = 99;

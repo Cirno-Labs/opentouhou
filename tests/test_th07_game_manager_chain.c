@@ -15,6 +15,7 @@
 #include "th07/sound.h"
 #include "th07/stage.h"
 #include "th07/player.h"
+#include "th07/screens/result/records.h"
 #include "th07/stubs.h"
 
 #include <string.h>
@@ -42,7 +43,6 @@ static int32_t m_ReplayGenerated;
 static uint16_t m_ReplaySeed;
 static int32_t m_BulletCount;
 static bool m_MsgRunning;
-static int32_t m_SaveMode;
 static int32_t m_FadeFrames;
 static float m_MusicFade;
 static int32_t m_PlayTimeAdds;
@@ -170,20 +170,16 @@ RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
     return m_ReplayFails ? FAIL("test replay failure") : OK;
 }
 
-RESULT ResultScreen_Register(const int32_t mode)
+void ResultScreen_SaveScore(void)
 {
     M_Event('D');
-    m_SaveMode = mode;
-    return OK;
 }
 
-RESULT ResultScreen_LoadGameRecords(void)
+void ResultScreen_LoadGameRecords(void)
 {
     M_Event('H');
-    CHECK_EQ_INT(g_GameManager.records.spell_captures[5], 0);
     g_GameManager.score.high = 1234567;
     g_GameManager.score.high_continues = 2;
-    return m_Fail == 'H' ? FAIL("test score failure") : OK;
 }
 
 void PlayTime_Add(void)
@@ -265,7 +261,6 @@ static void M_Setup(void)
     g_GameManager.run.difficulty = 1;
     g_GameManager.run.character = 1;
     g_GameManager.run.shot_type = 1;
-    g_GameManager.records.spell_captures[5] = 7;
     strcpy(g_GameManager.mode.replay_path, "replay/test.rpy");
     m_Scene = SCENE_GAMEPLAY;
     m_EventCount = 0;
@@ -274,7 +269,6 @@ static void M_Setup(void)
     m_ReplayFails = false;
     m_BulletCount = 0;
     m_MsgRunning = false;
-    m_SaveMode = -1;
     m_FadeFrames = 0;
     m_MusicFade = 0.0f;
     m_PlayTimeAdds = 0;
@@ -316,7 +310,6 @@ TEST(new_game_registers_in_original_order)
     M_Setup();
     CHECK(Result_Ignore(GameManager_Register()));
     CHECK_EQ_STR(m_Events, "PDHSBELFGWMA");
-    CHECK_EQ_INT(m_SaveMode, 2);
     CHECK(g_GameSpeed == 1.0f);
     CHECK_EQ_INT(m_PlayTimeRestarts, 1);
     CHECK_EQ_INT(g_GameManager.run.stage, 1);
@@ -399,7 +392,6 @@ TEST(new_game_sets_the_starting_counts)
     CHECK_EQ_INT(g_GameManager.rank.min, 10);
     CHECK_EQ_INT(g_GameManager.rank.max, 32);
     CHECK(g_GameManager.player_area.width == 368.0f);
-    CHECK_EQ_INT(g_GameManager.records.spell_captures[5], 0);
 }
 
 TEST(extra_and_practice_set_their_lives)
@@ -475,10 +467,10 @@ TEST(new_game_counts_the_play_retry_and_practice)
     M_Setup();
     m_Scene = SCENE_RETRY;
     g_GameManager.mode.in_practice = true;
-    g_GameManager.records.play_counts[6].plays[4] = 999999;
+    g_GameManager.records.play_stats.counts[6].plays[4] = 999999;
     CHECK(Result_Ignore(GameManager_Register()));
-    typeof(g_GameManager.records.play_counts[0]) *const counts =
-        g_GameManager.records.play_counts;
+    typeof(g_GameManager.records.play_stats.counts[0]) *const counts =
+        g_GameManager.records.play_stats.counts;
     CHECK_EQ_INT(counts[1].plays[0], 1);
     CHECK_EQ_INT(counts[6].plays[0], 1);
     CHECK_EQ_INT(counts[1].plays[4], 1);
@@ -494,13 +486,13 @@ TEST(slow_mode_and_replays_count_no_play)
     M_Setup();
     g_Settings.slowdown = true;
     CHECK(Result_Ignore(GameManager_Register()));
-    CHECK_EQ_INT(g_GameManager.records.play_counts[6].plays[0], 0);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[6].plays[0], 0);
     M_Setup();
     g_GameManager.mode.in_replay = true;
     g_GameManager.run.score_disabled = true;
     g_Settings.slowdown = true;
     CHECK(Result_Ignore(GameManager_Register()));
-    CHECK_EQ_INT(g_GameManager.records.play_counts[6].plays[0], 0);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[6].plays[0], 0);
     CHECK(!g_GameManager.run.score_disabled);
 }
 
@@ -558,7 +550,7 @@ TEST(a_stage_records_the_stages_cleared)
 
 TEST(a_failed_setup_fails_the_register)
 {
-    const char steps[] = "PHSBELFG";
+    const char steps[] = "PSBELFG";
     for (size_t i = 0; i < strlen(steps); i++) {
         M_Setup();
         m_Fail = steps[i];

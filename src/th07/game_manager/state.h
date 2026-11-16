@@ -1,5 +1,7 @@
 #pragma once
 
+#include "th07/screens/result/types.h"
+
 #include "core/math/vec.h"
 
 #include <stdint.h>
@@ -93,30 +95,14 @@ typedef struct {
         int16_t replay_fps; // the frame rate that slow playback follows
     } mode;
 
-    // Holds what the game reads of score.dat.
+    // Holds the records of score.dat that the game keeps during play.
     struct {
-        // By shot_index, the stages cleared on each difficulty, 99 for the
-        // whole game: without continues and with.
-        struct {
-            uint8_t no_continues[6];
-            uint8_t with_continues[6];
-        } clears[6];
+        CLEAR_RECORD clears[SCORE_SHOT_COUNT];
         // By shot_index, stage and difficulty.
-        struct {
-            uint32_t play_count;
-            uint32_t score; // in units of ten points
-        } practice[6][6][4];
-        // By spell card, the captures with every shot type.
-        int32_t spell_captures[0x8d];
-        uint32_t play_hours;
-        // By difficulty, then the totals.
-        struct {
-            int32_t plays[7]; // with every shot type, then by shot_index
-            int32_t retries;
-            int32_t clears;
-            int32_t continues;
-            int32_t practices;
-        } play_counts[7];
+        PRACTICE_RECORD practice[SCORE_SHOT_COUNT][SCORE_STAGE_COUNT]
+                                [SCORE_PRACTICE_DIFFICULTY_COUNT];
+        SPELL_CARD_RECORD spell_cards[SPELL_CARD_COUNT];
+        PLAY_STATS_RECORD play_stats;
         // Phantasm was open when the title last came up.
         bool phantasm_was_open;
     } records;

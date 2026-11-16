@@ -42,7 +42,7 @@ static void M_Setup(void)
 static void M_SetCaptures(const int32_t count)
 {
     for (int32_t i = 0; i < count; i++) {
-        g_GameManager.records.spell_captures[i] = 1;
+        g_GameManager.records.spell_cards[i].captures[SCORE_ALL_SHOTS] = 1;
     }
 }
 
@@ -123,7 +123,7 @@ TEST(phantasm_opens_for_an_extra_clear_with_60_captures)
     CHECK(GameManager_HasPhantasmOpen(1));
     CHECK_EQ_INT(g_GameManager.records.clears[1].no_continues[5], 99);
     for (int32_t i = 0; i < 60; i++) {
-        g_GameManager.records.spell_captures[i] = 0;
+        g_GameManager.records.spell_cards[i].captures[SCORE_ALL_SHOTS] = 0;
     }
     CHECK(GameManager_HasPhantasmOpen(1));
 }

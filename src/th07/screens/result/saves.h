@@ -2,11 +2,17 @@
 
 #include "th07/replay/types.h"
 
+#include "core/base/result.h"
+
+#include <stddef.h>
 #include <stdint.h>
 
-// Keeps the replays of the replay directory in memory, so that a tick
-// never opens a file. The whole replay files go to th07/replay's store,
-// which playback reads.
+// Keeps score.dat and the replays of the replay directory in memory, so
+// that the simulation reads and saves them without the file system: a
+// tick never opens a file. The whole replay files go to th07/replay's
+// store, which playback reads. Every file is read and written through
+// Shell_GetUserFiles, in the original format, after the tick that saved
+// it.
 //
 // The replay menu asks for a scan of the replay directory when it opens,
 // as the original reads the directory then. th07/main.c runs the scan
@@ -27,15 +33,27 @@ typedef struct {
     REPLAY_SUMMARY summary;
 } SAVED_REPLAY;
 
-// Reads replay/th7_01.rpy to replay/th7_15.rpy, then the first 45 files
-// of replay/ whose names match th7_ud????.rpy, in byte order, as the
-// original reads the first 45 that Windows lists. A missing or invalid
-// file counts as empty. A replay's path is its path in
+// Reads score.dat and replay/th7_01.rpy to replay/th7_15.rpy. A missing or
+// invalid file counts as empty. Also reads the first 45 files of replay/
+// whose names match th7_ud????.rpy, in byte order, as the original reads
+// the first 45 that Windows lists. A replay's path is its path in
 // Shell_GetUserFiles, spelt as listed.
 void ResultScreen_OpenSaves(void);
 
-// Releases the files in memory.
+// Writes the files that the simulation saved since the last call. Reports
+// the first failure. A file that fails to write is dropped, so a later
+// call never writes it.
+RESULT ResultScreen_WriteSaves(void);
+
+// Releases the files in memory and drops the saves not written.
 void ResultScreen_CloseSaves(void);
+
+// Replaces the replay at path, as g_GameManager.mode.replay_path names it,
+// with the size bytes of data, and takes data, a block from
+// g_HeapAllocator. Playback and the replay menu read the new bytes at
+// once. Only a path in the replay directory of the user directory is
+// written to disk.
+void ResultScreen_PutReplayFile(const char *path, uint8_t *data, size_t size);
 
 // Asks for a scan of the replay directory after the tick.
 void ResultScreen_RequestReplayScan(void);

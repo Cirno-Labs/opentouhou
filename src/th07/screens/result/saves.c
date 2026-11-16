@@ -1,4 +1,4 @@
-#include "th07/screens/result/saves.h"
+#include "th07/screens/result/private.h"
 
 #include "th07/replay.h"
 
@@ -11,9 +11,19 @@
 #include <stdio.h>
 #include <string.h>
 
+#define M_SCORE_PATH "score.dat"
 #define M_REPLAY_DIR "replay"
+#define M_PENDING_COUNT 2
 
 typedef struct {
+    char *path; // in Shell_GetUserFiles
+    uint8_t *data;
+    size_t size;
+} M_PENDING;
+
+typedef struct {
+    SCORE_FILE score;
+    M_PENDING pending[M_PENDING_COUNT];
     SAVED_REPLAY slots[SAVED_REPLAY_SLOT_COUNT];
     SAVED_REPLAY user[SAVED_REPLAY_USER_COUNT];
     // Counts the scans of the replay directory.
@@ -23,12 +33,49 @@ typedef struct {
 
 static M_SAVES m_Saves;
 
+static void M_FreePending(M_PENDING *const pending)
+{
+    Mem_Free(pending->path);
+    if (pending->data != nullptr) {
+        Allocator_Free(&g_HeapAllocator, pending->data, pending->size);
+    }
+    memset(pending, 0, sizeof(*pending));
+}
+
+// Queues the write of data to path, in Shell_GetUserFiles, in place of a
+// write to the same path still queued. Takes path and data.
+static void M_Queue(char *const path, uint8_t *const data, const size_t size)
+{
+    M_PENDING *target = nullptr;
+    for (int32_t i = 0; i < M_PENDING_COUNT; i++) {
+        M_PENDING *const pending = &m_Saves.pending[i];
+        if (pending->path != nullptr && strcmp(pending->path, path) == 0) {
+            target = pending;
+            break;
+        }
+        if (pending->path == nullptr && target == nullptr) {
+            target = pending;
+        }
+    }
+    if (target == nullptr) {
+        LOG_WARNING("Dropped the save of %s", path);
+        Mem_Free(path);
+        Allocator_Free(&g_HeapAllocator, data, size);
+        return;
+    }
+    M_FreePending(target);
+    target->path = path;
+    target->data = data;
+    target->size = size;
+}
+
 // Reads the replay of size bytes of data into out, and keeps the bytes for
 // playback when the replay is valid.
 static void M_ReadReplay(
     const uint8_t *const data, const size_t size, const char *const path,
     const char *const label, SAVED_REPLAY *const out)
 {
+    memset(out, 0, sizeof(*out));
     READER reader;
     Reader_OpenBuffer(&reader, data, size, nullptr);
     REPLAY_FILE *file = nullptr;
@@ -48,7 +95,7 @@ static void M_ReadReplay(
 static void M_ReadFile(
     const char *const name, const char *const label, SAVED_REPLAY *const out)
 {
-    *out = (SAVED_REPLAY) {};
+    memset(out, 0, sizeof(*out));
     VFS *const files = Shell_GetUserFiles();
     READER reader;
     if (Vfs_Exists(files, name)
@@ -109,7 +156,7 @@ static void M_Forget(SAVED_REPLAY *const replays, const int32_t count)
         if (replays[i].valid) {
             Replay_RemoveFile(replays[i].path);
         }
-        replays[i] = (SAVED_REPLAY) {};
+        memset(&replays[i], 0, sizeof(replays[i]));
     }
 }
 
@@ -128,14 +175,58 @@ static void M_ScanReplays(void)
     m_Saves.scan++;
 }
 
+static void M_LoadScore(READER *const reader)
+{
+    ScoreFile_Free(&m_Saves.score);
+    Result_Log(ScoreFile_Read(reader, &m_Saves.score), LOG_LEVEL_INFO);
+}
+
 void ResultScreen_OpenSaves(void)
 {
     ResultScreen_CloseSaves();
+    VFS *const files = Shell_GetUserFiles();
+    READER reader;
+    if (Vfs_Exists(files, M_SCORE_PATH)
+        && Result_Log(
+            Vfs_Open(files, M_SCORE_PATH, VFS_IN_MEMORY, &reader),
+            LOG_LEVEL_WARNING)) {
+        M_LoadScore(&reader);
+        Reader_Close(&reader);
+    }
     M_ScanReplays();
+}
+
+static RESULT M_Write(const M_PENDING *const pending)
+{
+    return Vfs_Write(
+        Shell_GetUserFiles(), pending->path, pending->data, pending->size);
+}
+
+RESULT ResultScreen_WriteSaves(void)
+{
+    RESULT first = OK;
+    for (int32_t i = 0; i < M_PENDING_COUNT; i++) {
+        M_PENDING *const pending = &m_Saves.pending[i];
+        if (pending->path == nullptr) {
+            continue;
+        }
+        const RESULT result = M_Write(pending);
+        if (IS_OK(first)) {
+            first = result;
+        } else {
+            Result_Log(result, LOG_LEVEL_WARNING);
+        }
+        M_FreePending(pending);
+    }
+    return first;
 }
 
 void ResultScreen_CloseSaves(void)
 {
+    for (int32_t i = 0; i < M_PENDING_COUNT; i++) {
+        M_FreePending(&m_Saves.pending[i]);
+    }
+    ScoreFile_Free(&m_Saves.score);
     M_Forget(m_Saves.slots, SAVED_REPLAY_SLOT_COUNT);
     M_Forget(m_Saves.user, SAVED_REPLAY_USER_COUNT);
     m_Saves.scan_requested = false;
@@ -173,4 +264,60 @@ int32_t ResultScreen_ListReplays(SAVED_REPLAY out[SAVED_REPLAY_COUNT])
         }
     }
     return count;
+}
+
+const SCORE_FILE *ResultSaves_GetScoreFile(void)
+{
+    return &m_Saves.score;
+}
+
+void ResultSaves_PutScoreFile(uint8_t *const data, const size_t size)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, data, size, nullptr);
+    M_LoadScore(&reader);
+    M_Queue(Str_Dup(M_SCORE_PATH), data, size);
+}
+
+static SAVED_REPLAY *M_FindReplay(const char *const path)
+{
+    SAVED_REPLAY *const lists[] = { m_Saves.slots, m_Saves.user };
+    const int32_t counts[] = {
+        SAVED_REPLAY_SLOT_COUNT,
+        SAVED_REPLAY_USER_COUNT,
+    };
+    for (int32_t list = 0; list < 2; list++) {
+        for (int32_t i = 0; i < counts[list]; i++) {
+            SAVED_REPLAY *const saved = &lists[list][i];
+            if (saved->valid && strcmp(saved->path, path) == 0) {
+                return saved;
+            }
+        }
+    }
+    return nullptr;
+}
+
+// Returns whether path names a file of the replay directory.
+static bool M_IsInReplayDir(const char *const path)
+{
+    return strncmp(path, M_REPLAY_DIR "/", strlen(M_REPLAY_DIR) + 1) == 0;
+}
+
+void ResultScreen_PutReplayFile(
+    const char *const path, uint8_t *const data, const size_t size)
+{
+    SAVED_REPLAY *const saved = M_FindReplay(path);
+    if (saved != nullptr) {
+        char label[sizeof(saved->label)];
+        memcpy(label, saved->label, sizeof(label));
+        Replay_RemoveFile(saved->path);
+        M_ReadReplay(data, size, path, label, saved);
+    } else {
+        Replay_AddFile(path, data, size);
+    }
+    if (M_IsInReplayDir(path)) {
+        M_Queue(Str_Dup(path), data, size);
+    } else {
+        Allocator_Free(&g_HeapAllocator, data, size);
+    }
 }

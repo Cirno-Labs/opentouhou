@@ -11,7 +11,7 @@
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
-#include "th07/stubs.h"
+#include "th07/screens/result/records.h"
 
 #include "shell/game.h"
 #include "core/base/color.h"
@@ -1813,9 +1813,9 @@ static RESULT M_Added(void *const arg)
         gm->mode.in_replay = false;
     }
     ResultScreen_LoadTitleRecords();
-    if (gm->records.play_hours < 7) {
+    if (gm->records.play_stats.play_hours < 7) {
         gm->run.max_continues = 3;
-    } else if (gm->records.play_hours < 14) {
+    } else if (gm->records.play_stats.play_hours < 14) {
         gm->run.max_continues = 4;
     } else {
         gm->run.max_continues = 5;

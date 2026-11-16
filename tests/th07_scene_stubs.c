@@ -7,6 +7,7 @@
 #include "th07/screens/main.h"
 #include "th07/stage.h"
 #include "th07/player.h"
+#include "th07/screens/result/records.h"
 #include "th07/stubs.h"
 
 #include <string.h>
