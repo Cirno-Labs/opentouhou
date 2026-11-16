@@ -11,8 +11,6 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
-RESULT Ending_Register(void);
-
 // Stand in for App::AddTotalPlayTime, the restart of its clock, and the
 // stop of that clock with App::AddPlayTime.
 void PlayTime_Add(void);
