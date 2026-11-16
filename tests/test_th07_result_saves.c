@@ -428,6 +428,19 @@ TEST(load_game_records_empties_the_spell_cards)
     M_TearDown();
 }
 
+TEST(load_game_records_keeps_a_copy_of_the_spell_cards)
+{
+    M_SetUp(nullptr);
+    ResultScreen_LoadGameRecords();
+    const GAME_MANAGER *const gm = &g_GameManager;
+    CHECK(
+        memcmp(
+            gm->records.saved_spell_cards, gm->records.spell_cards,
+            sizeof(gm->records.spell_cards))
+        == 0);
+    M_TearDown();
+}
+
 TEST(load_title_records_keeps_the_spell_cards)
 {
     M_SetUp(nullptr);

@@ -102,6 +102,9 @@ typedef struct {
         PRACTICE_RECORD practice[SCORE_SHOT_COUNT][SCORE_STAGE_COUNT]
                                 [SCORE_PRACTICE_DIFFICULTY_COUNT];
         SPELL_CARD_RECORD spell_cards[SPELL_CARD_COUNT];
+        // Holds spell_cards as the game started; the result screen puts
+        // them back when the game records no score.
+        SPELL_CARD_RECORD saved_spell_cards[SPELL_CARD_COUNT];
         PLAY_STATS_RECORD play_stats;
         // Phantasm was open when the title last came up.
         bool phantasm_was_open;

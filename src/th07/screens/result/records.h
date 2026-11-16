@@ -26,7 +26,7 @@ void ResultScreen_GetSpellCardRecord(
 // Loads the records of score.dat as a new game starts: empties the spell
 // cards, then loads the high score of the shot and difficulty and its
 // continues, the spell cards that the file has, the clears and the
-// practice scores.
+// practice scores. Keeps a copy of the spell cards in saved_spell_cards.
 void ResultScreen_LoadGameRecords(void);
 
 // Loads the clears, the practice scores and the spell cards of score.dat,
