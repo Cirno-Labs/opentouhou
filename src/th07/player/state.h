@@ -66,6 +66,8 @@ typedef struct {
     VEC3 pos;
     VEC3 trail[PLAYER_TRAIL_COUNT]; // newest first
     VEC3 size;
+    // A laser keeps its horizontal offset in z, which later shots in the
+    // slot keep.
     VEC3 velocity;
     float speed;
     float angle;
@@ -73,11 +75,10 @@ typedef struct {
     int16_t damage;
     PLAYER_BULLET_STATE state;
     SHOT_KIND kind;
-    // Hold the laser of a laser or trail laser: its entry of lasers, its
-    // option from 1, and its horizontal offset.
+    // Hold the laser of a laser or trail laser: its entry of lasers and
+    // its option from 1.
     int16_t laser;
     int16_t option;
-    float laser_offset_x;
     int16_t trail_length; // the trail points that a trail laser uses
     const SHOT *shot; // the shot fired into the bullet
 } PLAYER_BULLET;
