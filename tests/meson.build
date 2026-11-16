@@ -256,20 +256,6 @@ foreach part : ['audio', 'audio_decoder', 'audio_resampler']
 endforeach
 
 test(
-  'th06/runner/run',
-  executable(
-    'test_th06_runner_run',
-    'test_th06_runner_run.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th06_runner_lib],
-    dependencies: [sdl3, zlib],
-  ),
-  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_runner' },
-  suite: 'unit',
-)
-
-test(
   'th06/runner/state',
   executable(
     'test_th06_runner_state',
@@ -287,13 +273,27 @@ test(
 )
 
 test(
-  'th06/runner/compare',
+  'replay/core/runner/run',
   executable(
-    'test_th06_runner_compare',
-    'test_th06_runner_compare.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    'test_replay_runner_run',
+    'test_replay_runner_run.c',
+    c_args: core_include + replay_include + stg_include + shell_include,
     implicit_include_directories: false,
-    link_with: [th06_runner_lib],
+    link_with: [replay_runner_lib, stg_chain_lib],
+    dependencies: [sdl3, zlib],
+  ),
+  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'replay_runner' },
+  suite: 'unit',
+)
+
+test(
+  'replay/core/runner/compare',
+  executable(
+    'test_replay_runner_compare',
+    'test_replay_runner_compare.c',
+    c_args: core_include + replay_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [replay_runner_lib, stg_chain_lib],
     dependencies: [sdl3, zlib],
   ),
   suite: 'unit',

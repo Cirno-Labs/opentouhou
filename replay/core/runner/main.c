@@ -1,13 +1,10 @@
-#include "run.h"
-
-#include "main.h"
+#include "../runner.h"
 
 #include "core/args.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
-#include "th06/files.h"
 
 #include <inttypes.h>
 #include <limits.h>
@@ -48,25 +45,20 @@ static const ARG_RULE m_Rules[] = {
     { ARG_ONE_OF, { "--replay", "--replays" } },
 };
 
-static const ARG_SCHEMA m_Schema = ARG_SCHEMA_OF(
-    "th06replay",
-    "Pairs OTRC assertions with original .rpy input. Original files are "
-    "read-only.",
-    m_Options, m_Rules);
-
-static RESULT M_ReadCalc(const char *const text, uint64_t *const out)
+static RESULT M_ReadCalc(
+    const ARG_SCHEMA *const schema, const char *const text, uint64_t *const out)
 {
     if (text[0] == '\0') {
-        return Args_Fail(&m_Schema, "--break-at needs a calc number");
+        return Args_Fail(schema, "--break-at needs a calc number");
     }
     uint64_t value = 0;
     for (const char *p = text; *p != '\0'; p++) {
         if (*p < '0' || *p > '9') {
-            return Args_Fail(&m_Schema, "invalid calc number %s", text);
+            return Args_Fail(schema, "invalid calc number %s", text);
         }
         const uint64_t digit = (uint64_t)(*p - '0');
         if (value > (UINT64_MAX - digit) / 10) {
-            return Args_Fail(&m_Schema, "calc number %s is too large", text);
+            return Args_Fail(schema, "calc number %s is too large", text);
         }
         value = value * 10 + digit;
     }
@@ -86,8 +78,8 @@ static const char *M_Basename(const char *const path)
 }
 
 static RESULT M_RunFile(
-    const M_ARGS *const args, const RUNNER_OPTIONS *const options,
-    const char *const case_path)
+    const RUNNER_GAME *const game, const M_ARGS *const args,
+    const RUNNER_OPTIONS *const options, const char *const case_path)
 {
     char *replay_path = nullptr;
     if (args->replay != nullptr) {
@@ -105,15 +97,20 @@ static RESULT M_RunFile(
     }
     printf("%s\n", case_path);
     RUNNER_REPORT report;
-    const RESULT result = Runner_Run(case_path, replay_path, options, &report);
+    const RESULT result =
+        Runner_Run(game, case_path, replay_path, options, &report);
     Mem_Free(replay_path);
     if (IS_OK(result)) {
         printf(
             "  matched %" PRIu64
             " calcs, %d START and %d calc columns, %d skipped; replay "
-            "complete\n",
+            "complete",
             report.rows, report.start_columns, report.calc_columns,
             report.skipped_columns);
+        if (report.restarted_calcs != 0) {
+            printf(", %" PRIu64 " restarted calcs", report.restarted_calcs);
+        }
+        putchar('\n');
     } else {
         printf(
             "  failed after %" PRIu64 " calcs (%d skipped columns)\n",
@@ -123,13 +120,14 @@ static RESULT M_RunFile(
 }
 
 static RESULT M_RunCases(
-    const M_ARGS *const args, const RUNNER_OPTIONS *const options)
+    const RUNNER_GAME *const game, const M_ARGS *const args,
+    const RUNNER_OPTIONS *const options)
 {
     FILE_LIST files;
     RESULT listed = File_ListDir(args->cases, &g_HeapAllocator, &files);
     if (!IS_OK(listed)) {
         Result_Ignore(listed);
-        return M_RunFile(args, options, args->cases);
+        return M_RunFile(game, args, options, args->cases);
     }
     if (args->replay != nullptr) {
         File_FreeList(&files);
@@ -143,7 +141,8 @@ static RESULT M_RunCases(
         }
         char *const path =
             Path_Join(&g_HeapAllocator, args->cases, files.items[i]);
-        if (!Result_Log(M_RunFile(args, options, path), LOG_LEVEL_ERROR)) {
+        if (!Result_Log(
+                M_RunFile(game, args, options, path), LOG_LEVEL_ERROR)) {
             failed++;
         }
         Mem_Free(path);
@@ -156,33 +155,40 @@ static RESULT M_RunCases(
     return OK;
 }
 
-int RunnerMain_Run(const int argc, char **const argv)
+int Runner_Main(
+    const RUNNER_GAME *const game, const int argc, char **const argv)
 {
+    const ARG_SCHEMA schema = ARG_SCHEMA_OF(
+        game->program,
+        "Pairs OTRC assertions with original .rpy input. Original files are "
+        "read-only.",
+        m_Options, m_Rules);
     M_ARGS args;
     bool help;
     RUNNER_OPTIONS options = {
         .output = stdout,
     };
     if (!Result_Log(
-            Args_Parse(&m_Schema, argc, argv, &args, &help), LOG_LEVEL_ERROR)) {
+            Args_Parse(&schema, argc, argv, &args, &help), LOG_LEVEL_ERROR)) {
         return 1;
     }
     if (help) {
-        Args_PrintHelp(&m_Schema, stdout);
+        Args_PrintHelp(&schema, stdout);
         return 0;
     }
     options.break_on_diff = args.break_on_diff;
     options.has_break_at = args.break_at != nullptr;
     if (options.has_break_at
         && !Result_Log(
-            M_ReadCalc(args.break_at, &options.break_at), LOG_LEVEL_ERROR)) {
+            M_ReadCalc(&schema, args.break_at, &options.break_at),
+            LOG_LEVEL_ERROR)) {
         return 1;
     }
-    if (!Result_Log(Files_Init(args.data), LOG_LEVEL_ERROR)) {
+    if (!Result_Log(game->open_data(args.data), LOG_LEVEL_ERROR)) {
         return 1;
     }
     const bool passed =
-        Result_Log(M_RunCases(&args, &options), LOG_LEVEL_ERROR);
-    Files_Shutdown();
+        Result_Log(M_RunCases(game, &args, &options), LOG_LEVEL_ERROR);
+    game->close_data();
     return passed ? 0 : 1;
 }

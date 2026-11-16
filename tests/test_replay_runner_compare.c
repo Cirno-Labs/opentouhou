@@ -1,4 +1,4 @@
-#include "../replay/th06/runner/compare.h"
+#include "../replay/core/runner/compare.h"
 
 #include "test.h"
 
@@ -7,6 +7,27 @@
 #include "stg/chain.h"
 
 #include <string.h>
+
+enum { START_rank, START_score, START_COUNT };
+enum { CALC_buttons, CALC_rank, CALC_score, CALC_player_x, CALC_COUNT };
+
+static const RUNNER_FIELD m_StartFields[] = {
+    { "rank", RUNNER_I32 },
+    { "score", RUNNER_U32 },
+};
+static const RUNNER_FIELD m_CalcFields[] = {
+    { "buttons", RUNNER_U32 },
+    { "rank", RUNNER_I32 },
+    { "score", RUNNER_U32 },
+    { "player_x", RUNNER_F32 },
+};
+static const RUNNER_GAME m_Game = {
+    .id = "test",
+    .start_fields = m_StartFields,
+    .start_count = START_COUNT,
+    .calc_fields = m_CalcFields,
+    .calc_count = CALC_COUNT,
+};
 
 typedef struct {
     ARENA arena;
@@ -40,7 +61,7 @@ static void M_WriteCase(
     WRITER output;
     Writer_OpenBuffer(&output, &g_HeapAllocator, nullptr);
     const CASE_HEADER header = {
-        .game_id = "th06",
+        .game_id = "test",
         .info = "synthetic runner test",
         .start_names = { .items = (const char **)starts, .count = start_count },
         .start = { .items = (uint32_t *)start, .count = start_count },
@@ -61,7 +82,8 @@ static RESULT M_Open(
     Arena_Init(&fixture->arena, "runner comparison test", 1048576);
     Reader_OpenBuffer(&fixture->input, fixture->bytes, fixture->size, nullptr);
     MUST(Case_OpenReader(&fixture->input, &fixture->arena, &fixture->reader));
-    return RunnerCompare_Open(fixture->reader, options, &fixture->compare);
+    return RunnerCompare_Open(
+        fixture->reader, &m_Game, options, &fixture->compare);
 }
 
 static RESULT M_Close(FIXTURE *const fixture, RUNNER_REPORT *const report)
@@ -85,9 +107,9 @@ static CHAIN_STATUS M_Restart(void *const arg)
 static bool M_CalcEnd(void *const arg)
 {
     RESTART_FIXTURE *const fixture = arg;
-    uint32_t start[TH06_START_COUNT] = {};
-    uint32_t calc[TH06_CALC_COUNT] = {};
-    calc[TH06_CALC_rank] = (uint32_t)fixture->calcs;
+    uint32_t start[START_COUNT] = {};
+    uint32_t calc[CALC_COUNT] = {};
+    calc[CALC_rank] = (uint32_t)fixture->calcs;
     return RunnerCompare_Calc(fixture->compare, start, calc);
 }
 
@@ -102,13 +124,13 @@ TEST(matches_reordered_named_columns_and_checks_start_once)
     const RUNNER_OPTIONS options = {};
     CHECK(Result_Ignore(M_Open(&fixture, &options)));
     for (int32_t i = 0; i < 3; i++) {
-        uint32_t start[TH06_START_COUNT] = {};
-        uint32_t actual[TH06_CALC_COUNT] = {};
-        start[TH06_START_rank] = i == 0 ? 17 : 99;
-        start[TH06_START_score] = i == 0 ? 100 : 999;
-        actual[TH06_CALC_rank] = rows[i * 3];
-        actual[TH06_CALC_buttons] = rows[i * 3 + 1];
-        actual[TH06_CALC_score] = rows[i * 3 + 2];
+        uint32_t start[START_COUNT] = {};
+        uint32_t actual[CALC_COUNT] = {};
+        start[START_rank] = i == 0 ? 17 : 99;
+        start[START_score] = i == 0 ? 100 : 999;
+        actual[CALC_rank] = rows[i * 3];
+        actual[CALC_buttons] = rows[i * 3 + 1];
+        actual[CALC_score] = rows[i * 3 + 2];
         CHECK_EQ_INT(RunnerCompare_Calc(fixture.compare, start, actual), i < 2);
     }
     RUNNER_REPORT report;
@@ -122,18 +144,18 @@ TEST(matches_reordered_named_columns_and_checks_start_once)
 
 TEST(compares_all_current_columns_and_float_bits)
 {
-    static const char *const starts[] = { TH06_START_NAMES };
-    static const char *const names[] = { TH06_CALC_NAMES };
-    uint32_t start[TH06_START_COUNT] = {};
-    uint32_t actual[TH06_CALC_COUNT] = {};
-    actual[TH06_CALC_player_x] = 0x80000000;
+    static const char *const starts[] = { "rank", "score" };
+    static const char *const names[] = { "buttons", "rank", "score",
+                                         "player_x" };
+    uint32_t start[START_COUNT] = {};
+    uint32_t actual[CALC_COUNT] = {};
+    actual[CALC_player_x] = 0x80000000;
     FIXTURE fixture;
     M_WriteCase(
-        &fixture, starts, start, TH06_START_COUNT, names, TH06_CALC_COUNT,
-        actual, 1);
+        &fixture, starts, start, START_COUNT, names, CALC_COUNT, actual, 1);
     const RUNNER_OPTIONS options = {};
     CHECK(Result_Ignore(M_Open(&fixture, &options)));
-    actual[TH06_CALC_player_x] = 0;
+    actual[CALC_player_x] = 0;
     CHECK(!RunnerCompare_Calc(fixture.compare, start, actual));
     RUNNER_REPORT report;
     CHECK(Result_Ignore(M_Close(&fixture, &report)));
@@ -159,9 +181,9 @@ TEST(reports_every_first_calc_difference_with_input_context)
                                      .break_at = 0 };
     m_Breaks = 0;
     CHECK(Result_Ignore(M_Open(&fixture, &options)));
-    uint32_t start[TH06_START_COUNT] = {};
-    uint32_t actual[TH06_CALC_COUNT] = {};
-    actual[TH06_CALC_buttons] = 1;
+    uint32_t start[START_COUNT] = {};
+    uint32_t actual[CALC_COUNT] = {};
+    actual[CALC_buttons] = 1;
     CHECK(!RunnerCompare_Calc(fixture.compare, start, actual));
     CHECK_EQ_INT(m_Breaks, 2);
     RUNNER_REPORT report;
@@ -187,9 +209,9 @@ TEST(skips_unknown_columns_but_compares_implemented_columns)
     M_WriteCase(&fixture, nullptr, nullptr, 0, names, 2, rows, 1);
     const RUNNER_OPTIONS options = {};
     CHECK(Result_Ignore(M_Open(&fixture, &options)));
-    uint32_t start[TH06_START_COUNT] = {};
-    uint32_t actual[TH06_CALC_COUNT] = {};
-    actual[TH06_CALC_rank] = 17;
+    uint32_t start[START_COUNT] = {};
+    uint32_t actual[CALC_COUNT] = {};
+    actual[CALC_rank] = 17;
     CHECK(!RunnerCompare_Calc(fixture.compare, start, actual));
     RUNNER_REPORT report;
     CHECK(Result_Ignore(M_Close(&fixture, &report)));
@@ -218,8 +240,8 @@ TEST(reports_a_truncated_stream_when_comparison_closes)
     fixture.size--;
     const RUNNER_OPTIONS options = {};
     CHECK(Result_Ignore(M_Open(&fixture, &options)));
-    uint32_t start[TH06_START_COUNT] = {};
-    uint32_t actual[TH06_CALC_COUNT] = {};
+    uint32_t start[START_COUNT] = {};
+    uint32_t actual[CALC_COUNT] = {};
     for (int32_t i = 0; i < 101 && !RunnerCompare_IsDone(fixture.compare);
          i++) {
         RunnerCompare_Calc(fixture.compare, start, actual);

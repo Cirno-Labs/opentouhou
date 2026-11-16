@@ -1,10 +1,17 @@
+#include "shell_null.h"
+
 #include "shell/game.h"
-#include "th06/buttons.h"
 
 #include <stdint.h>
 #include <string.h>
 
 static int32_t m_TickRateCalls;
+static size_t m_InputSize;
+
+void RunnerShell_SetInputSize(const size_t size)
+{
+    m_InputSize = size;
+}
 
 bool Shell_GetPadPress(INPUT_BINDING *const out)
 {
@@ -13,7 +20,7 @@ bool Shell_GetPadPress(INPUT_BINDING *const out)
 
 void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
 {
-    memset(out, 0, sizeof(TH06_INPUT));
+    memset(out, 0, m_InputSize);
 }
 
 size_t Shell_GetBindings(
