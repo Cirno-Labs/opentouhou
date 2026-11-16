@@ -373,7 +373,7 @@ TEST(a_laser_fires_once_while_the_options_are_out)
     CHECK_EQ_INT(laser->timer.current, 120);
     CHECK_EQ_INT(M_Bullet(0)->laser, 1);
     CHECK_EQ_INT(M_Bullet(0)->option, 2);
-    CHECK(M_Bullet(0)->laser_offset_x == 4.0f);
+    CHECK(M_Bullet(0)->velocity.z == 4.0f);
     M_TearDown();
 }
 

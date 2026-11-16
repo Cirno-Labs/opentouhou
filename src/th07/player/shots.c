@@ -95,7 +95,7 @@ static void M_StartLaser(
     g_Player.shots.lasers[shot->phase].bullet = bullet;
     bullet->laser = shot->phase;
     bullet->option = shot->option;
-    bullet->laser_offset_x = shot->offset_x;
+    bullet->velocity.z = shot->offset_x;
 }
 
 static bool M_FireLaser(PLAYER_BULLET *const bullet, const SHOT *const shot)
@@ -251,7 +251,7 @@ static bool M_HoldLaser(PLAYER_BULLET *const bullet)
         return true;
     }
     bullet->pos = g_Player.options.pos[bullet->option - 1];
-    bullet->pos.x += bullet->laser_offset_x;
+    bullet->pos.x += bullet->velocity.z;
     bullet->pos.z = 0.44f;
     if (g_Player.state.value == PLAYER_DYING) {
         return true;
@@ -286,7 +286,7 @@ static bool M_HoldTrailLaser(PLAYER_BULLET *const bullet)
         return true;
     }
     bullet->pos = g_Player.pos;
-    bullet->pos.x += bullet->laser_offset_x;
+    bullet->pos.x += bullet->velocity.z;
     bullet->pos.z = 0.44f;
     bullet->vm.scale_y = (bullet->pos.y + 64.0f) / 14.0f;
     bullet->size.y = g_Player.pos.y + 64.0f;
