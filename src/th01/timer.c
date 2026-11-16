@@ -45,7 +45,7 @@ static void M_Rain(STAGE_TIMER *const timer, const TIMER_CONTEXT *const c)
     if (timer->hurry_cycle % frequency != 0) {
         return;
     }
-    for (int32_t i = 0; i <= c->display->rank; i++) {
+    for (uint32_t i = 0; i <= (uint32_t)c->display->rank; i++) {
         const int16_t left = (int16_t)(Math_Random(c->rng) % 640);
         Pellets_AddGroup(
             c->pellets, c->shared, c->display->player, c->rng, c->display->rank,
