@@ -226,7 +226,7 @@ TEST(portal_suspends_motion_but_preserves_main_loop_force_age)
 TEST(composite_preserves_source_order_and_erases_with_the_new_image)
 {
     static const ORB_ACTION_KIND order[] = {
-        ORB_ACTION_WAIT_VSYNC,     ORB_ACTION_PELLETS,
+        ORB_ACTION_DELAY_ONE,      ORB_ACTION_PELLETS,
         ORB_ACTION_CARDS_HITTEST,  ORB_ACTION_OBSTACLES,
         ORB_ACTION_PLAYER_HITTEST, ORB_ACTION_ERASE,
         ORB_ACTION_CARDS_RENDER,   ORB_ACTION_PUT,
@@ -261,7 +261,7 @@ TEST(composite_reads_portal_changes_after_obstacles_and_updates_previous)
     int16_t combo = 7;
     ORB_COMPOSITE composite = Orb_BeginComposite(&orb, 0, &rng, &combo);
     CHECK_EQ_INT(
-        Orb_NextAction(&orb, &composite, false).kind, ORB_ACTION_WAIT_VSYNC);
+        Orb_NextAction(&orb, &composite, false).kind, ORB_ACTION_DELAY_ONE);
     CHECK_EQ_INT(
         Orb_NextAction(&orb, &composite, false).kind, ORB_ACTION_PELLETS);
     CHECK_EQ_INT(
@@ -278,7 +278,7 @@ TEST(composite_reads_portal_changes_after_obstacles_and_updates_previous)
     CHECK_EQ_INT(orb.previous_top, 100);
     composite = Orb_BeginComposite(&orb, 9, &rng, &combo);
     CHECK_EQ_INT(
-        Orb_NextAction(&orb, &composite, true).kind, ORB_ACTION_WAIT_VSYNC);
+        Orb_NextAction(&orb, &composite, true).kind, ORB_ACTION_DELAY_ONE);
     CHECK_EQ_INT(
         Orb_NextAction(&orb, &composite, true).kind, ORB_ACTION_PELLETS);
     orb.in_portal = false;

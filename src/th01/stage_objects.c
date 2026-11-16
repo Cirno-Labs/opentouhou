@@ -80,7 +80,14 @@ void StageObjects_Init(
     const ALLOCATOR *const allocator, VIDEO *const video,
     const PTN *const sprites, uint32_t *const rng)
 {
-    *objects = (STAGE_OBJECTS) { .entrance_done = true };
+    *objects = (STAGE_OBJECTS) {
+        .entrance_done = true,
+        .vertical_bar_active = objects->vertical_bar_active,
+        .portal_active = objects->portal_active,
+        .entered_portal = objects->entered_portal,
+        .destination_left = objects->destination_left,
+        .destination_top = objects->destination_top,
+    };
     if (stage_id % 5 == 4) {
         return;
     }

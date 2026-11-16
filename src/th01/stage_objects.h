@@ -39,7 +39,10 @@ typedef struct {
 // 32 images; boss slot 4 accepts the reduced seven-image stage set.
 RESULT StageObjects_ValidateSprites(const PTN *sprites, int16_t stage_id);
 
-// Instantiates the normalized layout in source enumeration order. All
+// Zero-initialize objects once and reuse it across stage changes. Preserve
+// obstacle static history, including stale portal destinations after reset
+// and across boss loads. Instantiates the normalized layout in source order.
+// Requires nonnegative stage_id and validated sprites. All
 // mutable objects, entrance timers and raw background snapshots belong to
 // the supplied stage-lifetime allocator group. Release that group between
 // stages; there are no individual frees. Snapshot cards before obstacles,

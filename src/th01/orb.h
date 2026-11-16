@@ -102,7 +102,7 @@ bool Orb_PlayerHitTest(
 
 typedef enum {
     ORB_ACTION_DONE,
-    ORB_ACTION_WAIT_VSYNC,
+    ORB_ACTION_DELAY_ONE,
     ORB_ACTION_PELLETS,
     ORB_ACTION_CARDS_HITTEST,
     ORB_ACTION_OBSTACLES,
@@ -124,9 +124,10 @@ typedef struct {
 
 // Begins the composite after motion, with the zero-based source stage ID.
 // Requires the caller to execute every yielded action before requesting
-// the next. Future pellet, card, obstacle and player modules must supply
-// their real operations; these actions implement no collision behavior.
-// The wait yields one source VSync; simulation timing belongs to the caller.
+// the next. Stage executes collision and rendering actions; the iterator
+// itself implements no collision behavior.
+// The delay consumes count1 when ready; yield only while count1 is zero.
+// Simulation timing belongs to the caller; no forced next-edge wait applies.
 ORB_COMPOSITE Orb_BeginComposite(
     ORB *orb, int16_t stage_id, uint32_t *rng, int16_t *card_combo);
 

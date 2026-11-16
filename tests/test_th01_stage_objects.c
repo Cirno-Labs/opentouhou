@@ -152,3 +152,30 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
         }
     }
 }
+
+TEST(stage_reloads_keep_static_obstacle_history)
+{
+    CASE state;
+    M_Init(&state);
+    state.layouts[0].cells[0][0].card = true;
+    state.objects.destination_left = 256;
+    state.objects.destination_top = 192;
+    state.objects.entered_portal = 4;
+    state.objects.portal_active = true;
+    state.objects.vertical_bar_active = true;
+    M_Begin(&state, true);
+    CHECK_EQ_INT(state.objects.destination_left, 256);
+    CHECK_EQ_INT(state.objects.destination_top, 192);
+    CHECK_EQ_INT(state.objects.entered_portal, 4);
+    CHECK(state.objects.portal_active);
+    CHECK(state.objects.vertical_bar_active);
+    StageObjects_Init(
+        &state.objects, nullptr, 4, false, nullptr, nullptr, nullptr, nullptr);
+    CHECK_EQ_INT(state.objects.card_count, 0);
+    CHECK_EQ_INT(state.objects.destination_left, 256);
+    CHECK_EQ_INT(state.objects.destination_top, 192);
+    CHECK_EQ_INT(state.objects.entered_portal, 4);
+    CHECK(state.objects.portal_active);
+    CHECK(state.objects.vertical_bar_active);
+    Arena_Free(&state.arena);
+}

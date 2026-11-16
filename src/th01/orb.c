@@ -230,7 +230,7 @@ ORB_ACTION Orb_NextAction(
         ORB_ACTION_KIND kind;
         switch (composite->phase) {
         case 0:
-            kind = ORB_ACTION_WAIT_VSYNC;
+            kind = ORB_ACTION_DELAY_ONE;
             break;
         case 1:
             kind = ORB_ACTION_PELLETS;
