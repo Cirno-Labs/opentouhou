@@ -25,11 +25,17 @@
 #include "core/math/x87.h"
 
 #include "stg/chain.h"
+#include "stg/msg_diff.h"
+#include "stg/note.h"
+
+#include "core/base/arena.h"
+#include "core/json.h"
 
 #include <stdio.h>
 #include <string.h>
 
 #define M_PATH_SIZE 32
+#define M_DIFF_ARENA_CAPACITY (16 * 1024 * 1024)
 
 // Tells how a frame of the dialogue script ended.
 typedef enum {
@@ -372,6 +378,9 @@ static void M_ShowLine(const MSG_INSTR *const instr)
     Anm_StartScript(line, instr->index + M_LINE_SCRIPT);
     line->font_height = M_LINE_FONT_SIZE;
     line->font_width = line->font_height;
+    if (instr->removes_note) {
+        Note_Remove();
+    }
     Result_Log(
         Anm_RenderText(line, m_TextColors[instr->who], 0, "%s", instr->text),
         LOG_LEVEL_WARNING);
@@ -463,6 +472,9 @@ static M_RUN M_RunInstrs(void)
         case GUI_MSG_OP_NAMEPLATE: {
             ANM_VM *const nameplate = &g_Gui.msg.nameplates[instr->index];
             Anm_StartScript(nameplate, instr->index + M_NAMEPLATE_SCRIPT);
+            if (instr->removes_note) {
+                Note_Remove();
+            }
             Result_Log(
                 Anm_RenderTextRightAligned(
                     nameplate, m_TextColors[instr->who], 0, "%s", instr->text),
@@ -602,6 +614,23 @@ static void M_StartTransition(void)
     g_Gui.loading.tiles_running = GUI_TILE_COUNT;
 }
 
+static void M_PatchMsg(const char *const path)
+{
+    ARENA arena;
+    Arena_Init(&arena, "dialogue jdiff", M_DIFF_ARENA_CAPACITY);
+    const JSON_VALUE *const diff =
+        Files_LoadDiff(path, Arena_Allocator(&arena));
+    MsgDiff_Apply(
+        m_Msg.scripts, m_Msg.count, diff,
+        (MSG_DIFF_FORMAT) {
+            .line = GUI_MSG_OP_LINE,
+            .nameplate = GUI_MSG_OP_NAMEPLATE,
+            .line_count = GUI_MSG_LINE_COUNT,
+            .is_final = GuiMsg_IsFinal,
+        });
+    Arena_Free(&arena);
+}
+
 static RESULT M_LoadMsg(const char *const path)
 {
     GuiMsg_Free(&m_Msg);
@@ -610,6 +639,7 @@ static RESULT M_LoadMsg(const char *const path)
     const RESULT result = GuiMsg_Read(&reader, &m_Msg);
     Reader_Close(&reader);
     MUST(result, "%s", path);
+    M_PatchMsg(path);
     g_Gui.msg.script = GUI_MSG_NONE;
     g_Gui.msg.pc = 0;
     return OK;
@@ -844,6 +874,7 @@ void Gui_EndBombName(void)
 
 void Gui_ShowSpellCardName(const int32_t sprite, const char *const name)
 {
+    Note_Remove();
     GUI *const gui = &g_Gui;
     if (sprite >= 0) {
         ANM_VM *const portrait = &gui->banners.spell_portrait;
