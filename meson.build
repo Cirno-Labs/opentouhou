@@ -148,6 +148,16 @@ if build_games
     link_with: [th07_lib, replay_recorder_lib],
     win_subsystem: 'console',
   )
+  executable(
+    'th06record',
+    'replay/th06/recorder/main.c',
+    'replay/th06/recorder/game.c',
+    c_args: [layer_include['th06']] + shell_include,
+    implicit_include_directories: false,
+    dependencies: [core_dep, stg_dep, sdl3, sdl3_ttf, zlib],
+    link_with: [th06_lib, replay_recorder_lib],
+    win_subsystem: 'console',
+  )
 endif
 
 if build_othpatch
