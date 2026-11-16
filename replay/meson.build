@@ -35,3 +35,19 @@ th06_runner_lib = static_library(
     core_image_lib,
   ],
 )
+
+th07_runner_lib = static_library(
+  'th07_runner',
+  'th07/runner/game.c',
+  'th07/runner/replay.c',
+  'th07/runner/state.c',
+  '../src/th07/stubs.c',
+  c_args: [layer_include['th07']] + core_include + replay_include + stg_include + shell_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, zlib, cc_libm],
+  link_with: [
+    th07_lib, replay_case_lib, stg_pbg3_lib, stg_rng_lib, core_archive_lib,
+    core_vfs_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib,
+    core_image_lib,
+  ],
+)

@@ -127,6 +127,16 @@ if build_games
     link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
     win_subsystem: 'console',
   )
+  executable(
+    'th07replay',
+    runner_entry,
+    c_args: [layer_include['th07']] + core_include + stg_include,
+    implicit_include_directories: false,
+    dependencies: [sdl3, zlib, cc_libm],
+    link_with: [th07_runner_lib, replay_runner_lib, core_args_lib],
+    link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+    win_subsystem: 'console',
+  )
 endif
 
 if build_othpatch
