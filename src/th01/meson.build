@@ -9,6 +9,7 @@ th01_lib = static_library(
   'frame.c',
   'math.c',
   'finite.c',
+  'orb.c',
   'input.c',
   'settings.c',
   'video.c',
