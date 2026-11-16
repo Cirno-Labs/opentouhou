@@ -832,11 +832,6 @@ static bool M_LayersShown(void)
     return g_Stage.spell_card.state <= 1 && !Gui_IsLoadingShown();
 }
 
-static void M_Clear(const GFX_RECT rect, const uint32_t color)
-{
-    Anm_DrawRect(rect, color | 0xff000000u);
-}
-
 // Returns the fog color modulated by tint: red, green and blue only,
 // though the sprites' modulation scales alpha too.
 static uint32_t M_ModulateFog(const uint32_t color, const uint32_t tint)
@@ -857,9 +852,14 @@ static CHAIN_STATUS M_Draw(void *const arg)
 {
     Anm_SetLastCamera(-1);
     if (g_Stage.clear_once) {
-        M_Clear(
-            (GFX_RECT) { 32, 16, 384, 448 },
-            COLOR_ARGB(0xff, 0x00, 0x00, 0x00));
+        if (Gfx_IsStarted()) {
+            GFX_VIEW view = GfxView_Screen();
+            view.viewport =
+                (VIEWPORT) { 32.0f, 16.0f, 384.0f, 448.0f, 0.0f, 1.0f };
+            Gfx_SetView(&view);
+            Gfx_Clear(
+                GFX_CLEAR_COLOR, M_Rgba(COLOR_ARGB(0xff, 0x00, 0x00, 0x00)));
+        }
         g_Stage.clear_once = false;
     }
     const uint32_t tint = g_Stage.tint.color;
@@ -876,12 +876,14 @@ static CHAIN_STATUS M_Draw(void *const arg)
             }
         }
     }
-    if (g_Stage.clear_color != 0) {
-        const VIEWPORT *const viewport = &g_GameManager.camera.viewport;
-        M_Clear(
-            (GFX_RECT) { (int32_t)viewport->x, (int32_t)viewport->y,
-                         (int32_t)viewport->width, (int32_t)viewport->height },
-            g_Stage.clear_color);
+    if (Gfx_IsStarted()) {
+        GFX_VIEW view =
+            Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
+        Gfx_SetView(&view);
+        Gfx_Clear(
+            g_Stage.clear_color != 0 ? GFX_CLEAR_COLOR | GFX_CLEAR_DEPTH
+                                     : GFX_CLEAR_DEPTH,
+            M_Rgba(g_Stage.clear_color));
     }
     const uint32_t color = g_Stage.fog.current.color;
     memset(&m_Fog, 0, sizeof(m_Fog));
