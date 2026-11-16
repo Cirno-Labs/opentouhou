@@ -185,11 +185,9 @@ TEST(an_unknown_opcode_fails_the_read)
 
 TEST(a_bad_text_fails_the_read)
 {
-    // Without its NUL, with a lead byte that no trail byte follows, and in
-    // UTF-8.
+    // Without its NUL, and with a lead byte that no trail byte follows.
     static const uint8_t no_end[] = { 0, 0, 0, 0, 'a', 'b' };
     static const uint8_t bad[] = { 0, 0, 0, 0, 0x81, 0x20, 0 };
-    static const uint8_t utf8[] = { 0, 0, 0, 0, 0xe7, 0xb4, 0x85, 0 };
     MSG_BUILDER msg;
     MsgBuilder_Init(&msg);
     int32_t s = MsgBuilder_BeginScript(&msg);
@@ -201,11 +199,22 @@ TEST(a_bad_text_fails_the_read)
     MsgBuilder_Instr(&msg, s, 0, GUI_MSG_OP_NAMEPLATE, bad, sizeof(bad));
     MsgBuilder_Op(&msg, s, 0, GUI_MSG_OP_END);
     M_CheckRejected(&msg);
+}
+
+// A UTF-8 replacement file loads, as Cp932_DecodeText reads valid UTF-8
+// bytes as themselves instead of as CP932.
+TEST(a_utf8_text_reads_as_itself)
+{
+    static const uint8_t utf8[] = { 0, 0, 0, 0, 0xe7, 0xb4, 0x85, 0 };
+    MSG_BUILDER msg;
     MsgBuilder_Init(&msg);
-    s = MsgBuilder_BeginScript(&msg);
+    const int32_t s = MsgBuilder_BeginScript(&msg);
     MsgBuilder_Instr(&msg, s, 0, GUI_MSG_OP_LINE, utf8, sizeof(utf8));
     MsgBuilder_Op(&msg, s, 0, GUI_MSG_OP_END);
-    M_CheckRejected(&msg);
+    GUI_MSG_FILE file = {};
+    CHECK(IS_OK(M_Read(&msg, &file)));
+    CHECK_EQ_STR(file.scripts[0].instrs[0].text, "\xe7\xb4\x85");
+    GuiMsg_Free(&file);
 }
 
 TEST(names_out_of_range_fail_the_read)
