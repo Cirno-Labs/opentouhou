@@ -2368,7 +2368,7 @@ if build_games
     ),
     suite: 'unit',
   )
-  foreach part : ['bfnt', 'bos', 'sprite', 'shape', 'items', 'shots', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'stage_objects', 'stage', 'stage_obstacles']
+  foreach part : ['bfnt', 'bos', 'sprite', 'shape', 'items', 'shots', 'pellet_assets', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'stage_objects', 'stage', 'stage_obstacles']
     test(
       'th01/' + part,
       executable(
@@ -2376,7 +2376,7 @@ if build_games
         'test_th01_' + part + '.c',
         c_args: [layer_include['th01']] + core_include + stg_include,
         implicit_include_directories: false,
-        link_with: [th01_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib],
+        link_with: [th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib],
         dependencies: [sdl3],
       ),
       suite: 'unit',
