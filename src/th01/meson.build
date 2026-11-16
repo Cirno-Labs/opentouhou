@@ -3,6 +3,7 @@ subdir('opna')
 th01_lib = static_library(
   'th01_lib',
   'bfnt.c',
+  'bos.c',
   'logo.c',
   'opening.c',
   'opening_load.c',
