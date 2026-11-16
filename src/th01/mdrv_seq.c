@@ -109,6 +109,28 @@ static void M_ResetTrack(
     };
 }
 
+static uint8_t M_PhysicalChannel(const uint8_t source, uint8_t counts[4])
+{
+    for (size_t group = 0; group < sizeof(m_ChannelOrder); group++) {
+        if ((source & 0xf0) == m_ChannelOrder[group]) {
+            return m_ChannelOrder[group] + counts[group]++;
+        }
+    }
+    return 0;
+}
+
+static RESULT M_ValidateMusic(const MDRV_MUSIC *const music)
+{
+    uint8_t counts[4] = {};
+    for (uint16_t i = 0; i < music->track_count; i++) {
+        M_PhysicalChannel(music->tracks[i].channel, counts);
+        FAIL_IF(
+            counts[0] > 6 || counts[1] > 1 || counts[2] > 1 || counts[3] > 3,
+            "MDRV music exceeds physical channel slots");
+    }
+    return OK;
+}
+
 static void M_Reset(MDRV_SEQUENCE *const sequence, const uint8_t *const bytes)
 {
     memcpy(sequence->work, bytes, sequence->work_size);
@@ -572,11 +594,15 @@ static void M_CompleteMusic(
     MDRV_SEQUENCE *const music, MDRV_SEQUENCE *const effects)
 {
     const bool restart = (music->music->flags & 0x80) != 0;
+    uint8_t counts[4] = {};
     for (uint16_t i = 0; i < music->track_count; i++) {
         const MDRV_TRACK *const track = &music->music->tracks[i];
         const uint8_t volume = music->tracks[i].volume;
         const uint8_t program = music->tracks[i].program;
-        M_ResetTrack(&music->tracks[i], track->channel, track->offset);
+        M_ResetTrack(
+            &music->tracks[i], M_PhysicalChannel(track->channel, counts),
+            track->offset);
+        music->tracks[i].source_channel = track->channel;
         music->tracks[i].active &= restart;
         music->tracks[i].volume = volume;
         music->tracks[i].program = program;
@@ -667,12 +693,17 @@ void MdrvSeq_InitEffects(
 RESULT MdrvSeq_Play(MDRV_SEQUENCE *const sequence)
 {
     FAIL_IF(sequence->music == nullptr, "MDRV sequence has no music");
+    MUST(M_ValidateMusic(sequence->music));
     MdrvSeq_Stop(sequence);
     M_Reset(sequence, sequence->music->bytes);
     sequence->track_count = sequence->music->track_count;
+    uint8_t counts[4] = {};
     for (uint16_t i = 0; i < sequence->track_count; i++) {
         const MDRV_TRACK *const track = &sequence->music->tracks[i];
-        M_ResetTrack(&sequence->tracks[i], track->channel, track->offset);
+        M_ResetTrack(
+            &sequence->tracks[i], M_PhysicalChannel(track->channel, counts),
+            track->offset);
+        sequence->tracks[i].source_channel = track->channel;
     }
     M_Emit(sequence, UINT16_MAX, MDRV_EVENT_START, 0, 0, nullptr, 0, 0, false);
     return OK;

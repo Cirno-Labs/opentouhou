@@ -6,7 +6,7 @@
 typedef struct {
     ARENA arena;
     uint8_t bytes[512];
-    MDRV_TRACK tracks[3];
+    MDRV_TRACK tracks[12];
     MDRV_MUSIC music;
     MDRV_EFFECT entries[3];
     MDRV_EFFECTS effects;
@@ -539,6 +539,17 @@ static void M_InitPairEffect(
     CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects->sequence, 1)));
 }
 
+static void M_InitPairEffectAtSsg0(
+    FIXTURE *const effects, FIXTURE *const events, const uint8_t *const code,
+    const size_t length)
+{
+    M_InitPairEffect(effects, events, code, length, 3);
+    effects->bytes[128] = 0xff;
+    effects->entries[0].stream_offsets[0] = 128;
+    effects->entries[0].stream_offsets[1] = 128;
+    CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects->sequence, 1)));
+}
+
 static const MDRV_EVENT *M_SourceEvent(
     const FIXTURE *const fixture, const MDRV_EVENT_KIND kind,
     const uint16_t effect, const size_t index)
@@ -564,7 +575,7 @@ TEST(paired_effect_ownership_and_same_pulse_event_order)
     const uint8_t effect_code[] = { 0xeb, 0x81, 0x40, 2, 0xff };
     FIXTURE music, effects;
     M_Init(&music, music_code, sizeof(music_code), 0x42);
-    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    M_InitPairEffectAtSsg0(&effects, &music, effect_code, sizeof(effect_code));
     music.event_count = 0;
     for (uint32_t i = 0; i < 4; i++) {
         CHECK(Result_Ignore(
@@ -719,7 +730,7 @@ TEST(paired_global_controls_remain_shared_in_command_order)
                                     210,  0xf8, 21,   0x42, 2,    0xff };
     FIXTURE music, effects;
     M_Init(&music, music_code, sizeof(music_code), 0x42);
-    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    M_InitPairEffectAtSsg0(&effects, &music, effect_code, sizeof(effect_code));
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
     CHECK_EQ_INT(music.sequence.tempo, 100);
     CHECK_EQ_INT(effects.sequence.tempo, 100);
@@ -754,7 +765,7 @@ TEST(paired_header_repeat_cancels_effects_and_preserves_music_counters)
     FIXTURE music, effects;
     M_Init(&music, music_code, sizeof(music_code), 0x42);
     music.music.flags = 0x80;
-    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    M_InitPairEffectAtSsg0(&effects, &music, effect_code, sizeof(effect_code));
     music.event_count = 0;
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
     CHECK_EQ_INT(music.sequence.loops, 1);
@@ -771,8 +782,8 @@ TEST(paired_header_repeat_cancels_effects_and_preserves_music_counters)
     CHECK(!music.sequence.tracks[0].suppressed);
     CHECK(!effects.sequence.playing);
     CHECK(!effects.sequence.tracks[0].active);
-    CHECK_EQ_INT(effects.sequence.tracks[0].volume, 12);
-    CHECK_EQ_INT(effects.sequence.tracks[0].program, 0x81);
+    CHECK_EQ_INT(effects.sequence.tracks[2].volume, 12);
+    CHECK_EQ_INT(effects.sequence.tracks[2].program, 0x81);
     CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
     CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 1);
     CHECK_EQ_INT(M_Find(&music, MDRV_EVENT_DRIVER_RESET, 0)->parameters[0], 1);
@@ -920,9 +931,8 @@ TEST(paired_final_ssg_ff_preserves_earlier_events_and_skips_later_effect)
     M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 3);
     music.event_count = 0;
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 2);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 1);
     CHECK_EQ_INT(M_SourceEvent(&music, MDRV_EVENT_NOTE, 1, 0)->channel, 0x40);
-    CHECK_EQ_INT(M_SourceEvent(&music, MDRV_EVENT_NOTE, 1, 1)->channel, 0x41);
     CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
     CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 1);
     size_t reset = 0;
@@ -1050,11 +1060,11 @@ TEST(paired_clocks_keep_slot_order_and_ownership)
     const uint8_t effect_code[] = { 0x42, 3, 0xff };
     FIXTURE music, effects;
     M_Init(&music, music_code, sizeof(music_code), 0x42);
-    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    M_InitPairEffectAtSsg0(&effects, &music, effect_code, sizeof(effect_code));
     music.clocks = true;
     music.event_count = 0;
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_CLOCK), 2);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_CLOCK), 4);
     const MDRV_EVENT *const effect = M_Find(&music, MDRV_EVENT_CLOCK, 0);
     const MDRV_EVENT *const song = M_Find(&music, MDRV_EVENT_CLOCK, 1);
     CHECK_EQ_INT(effect->effect_number, 1);
@@ -1071,12 +1081,12 @@ TEST(effects_only_clock_masks_music_release_envelope)
     const uint8_t code[] = { 0x40, 8, 0xff };
     FIXTURE music, effects;
     M_Init(&music, code, sizeof(code), 0x42);
-    M_InitPairEffect(&effects, &music, code, sizeof(code), 1);
+    M_InitPairEffectAtSsg0(&effects, &music, code, sizeof(code));
     MdrvSeq_Stop(&music.sequence);
     music.clocks = true;
     music.event_count = 0;
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_CLOCK), 2);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_CLOCK), 4);
     const MDRV_EVENT *const release = M_Find(&music, MDRV_EVENT_CLOCK, 1);
     CHECK_EQ_INT(release->effect_number, 0);
     CHECK_EQ_INT(release->parameters[0], 0);
@@ -1101,14 +1111,14 @@ TEST(ended_ssg_release_stays_masked_on_last_effect_end)
     CHECK(Result_Ignore(MdrvSeq_Play(&music.sequence)));
     M_Pulses(&music, 2);
     CHECK(!music.sequence.tracks[0].active);
-    M_InitPairEffect(&effects, &music, code, sizeof(code), 1);
+    M_InitPairEffectAtSsg0(&effects, &music, code, sizeof(code));
     music.clocks = true;
     music.event_count = 0;
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
     CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
     const MDRV_EVENT *const release =
         M_SourceEvent(&music, MDRV_EVENT_CLOCK, 0, 3);
-    CHECK_EQ_INT(release->channel, 0x42);
+    CHECK_EQ_INT(release->channel, 0x40);
     CHECK_EQ_INT(release->parameters[0], 0);
     CHECK(release->suppressed);
     CHECK(!effects.sequence.playing);
@@ -1116,4 +1126,82 @@ TEST(ended_ssg_release_stays_masked_on_last_effect_end)
     CHECK(!M_SourceEvent(&music, MDRV_EVENT_CLOCK, 0, 5)->suppressed);
     Arena_Free(&effects.arena);
     Arena_Free(&music.arena);
+}
+
+TEST(sparse_music_tags_resolve_by_family_order)
+{
+    const uint8_t code[] = { 0x40, 2, 0xff };
+    FIXTURE fixture;
+    M_Init(&fixture, code, sizeof(code), 0x41);
+    fixture.tracks[1] = (MDRV_TRACK) { .offset = 32, .channel = 0x42 };
+    fixture.music.track_count = 2;
+    fixture.music.flags = 0x80;
+    MdrvSeq_InitMusic(
+        &fixture.sequence, &fixture.music, Arena_Allocator(&fixture.arena),
+        M_Event, &fixture);
+    CHECK(Result_Ignore(MdrvSeq_Play(&fixture.sequence)));
+    for (uint16_t i = 0; i < 2; i++) {
+        CHECK_EQ_INT(fixture.sequence.tracks[i].channel, 0x40 + i);
+        CHECK_EQ_INT(fixture.sequence.tracks[i].source_channel, 0x41 + i);
+    }
+    fixture.event_count = 0;
+    M_Pulses(&fixture, 3);
+    CHECK_EQ_INT(fixture.sequence.loops, 1);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 0)->channel, 0x40);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 0)->source_channel, 0x41);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 1)->channel, 0x41);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 1)->source_channel, 0x42);
+    CHECK_EQ_INT(fixture.tracks[0].channel, 0x41);
+    CHECK_EQ_INT(fixture.tracks[1].channel, 0x42);
+    CHECK_EQ_INT(fixture.sequence.tracks[0].channel, 0x40);
+    CHECK_EQ_INT(fixture.sequence.tracks[1].source_channel, 0x42);
+    Arena_Free(&fixture.arena);
+}
+
+TEST(interleaved_music_families_have_independent_slots)
+{
+    const uint8_t code[] = { 0x40, 8, 0xff };
+    const uint8_t tags[] = {
+        0x85, 0x42, 0x83, 0, 0x10, 0x80, 0x41, 0x84, 0x82
+    };
+    const uint8_t channels[] = { 0x80, 0x40, 0x81, 0,   0x10,
+                                 0x82, 0x41, 0x83, 0x84 };
+    FIXTURE fixture;
+    M_Init(&fixture, code, sizeof(code), 0x80);
+    fixture.music.track_count = sizeof(tags);
+    for (size_t i = 0; i < sizeof(tags); i++) {
+        fixture.tracks[i] = (MDRV_TRACK) { .offset = 32, .channel = tags[i] };
+    }
+    MdrvSeq_InitMusic(
+        &fixture.sequence, &fixture.music, Arena_Allocator(&fixture.arena),
+        M_Event, &fixture);
+    CHECK(Result_Ignore(MdrvSeq_Play(&fixture.sequence)));
+    for (size_t i = 0; i < sizeof(tags); i++) {
+        CHECK_EQ_INT(fixture.sequence.tracks[i].channel, channels[i]);
+        CHECK_EQ_INT(fixture.sequence.tracks[i].source_channel, tags[i]);
+    }
+    fixture.event_count = 0;
+    M_Pulses(&fixture, 1);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 4)->channel, 0x84);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 5)->channel, 0x10);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 6)->channel, 0x40);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_NOTE, 7)->channel, 0x41);
+    Arena_Free(&fixture.arena);
+}
+
+TEST(oversized_music_family_is_rejected_before_play)
+{
+    const uint8_t code[] = { 0x40, 8, 0xff };
+    FIXTURE fixture;
+    M_Init(&fixture, code, sizeof(code), 0x80);
+    fixture.music.track_count = 7;
+    for (uint16_t i = 1; i < 7; i++) {
+        fixture.tracks[i] = (MDRV_TRACK) { .offset = 32, .channel = 0x80 };
+    }
+    const uint8_t volume = fixture.sequence.tracks[0].volume;
+    CHECK(!Result_Ignore(MdrvSeq_Play(&fixture.sequence)));
+    CHECK(fixture.sequence.playing);
+    CHECK_EQ_INT(fixture.sequence.track_count, 1);
+    CHECK_EQ_INT(fixture.sequence.tracks[0].volume, volume);
+    Arena_Free(&fixture.arena);
 }

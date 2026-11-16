@@ -88,6 +88,11 @@ typedef struct {
 // Their identity is the pointer's track index and their channel is its output
 // SSG tag. source_channel retains the descriptor tag plus pointer index. A
 // future mixer must arbitrate these against music, which continues.
+// Music assigns physical channel slots by family ordinal in directory order;
+// low descriptor bits do not select hardware channels. channel names that
+// resolved slot, and source_channel retains the raw descriptor tag. Supports
+// six FM, one PCM, one rhythm and three SSG slots. Play rejects larger groups
+// before changing playback state. The immutable directory stays unchanged.
 //
 // Pulse advances one driver clock, starting at zero on the first call after
 // Play/TriggerEffect. The original advances music and effects on timer B IRQs;
