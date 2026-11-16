@@ -605,10 +605,13 @@ TEST(a_slide_that_turns_back_starts_where_the_other_was)
 TEST(sakuya_b_fans_the_options_along_the_aim_angle)
 {
     M_SetUpAlive("fan", 5);
-    g_Player.shots.aim_angle = -1.0f;
+    // Rounding the cosine to float before the product misses by a bit.
+    const float aim = -0.0054f;
+    g_Player.shots.aim_angle = aim;
     M_Frame();
-    const float side_x = X87_Cos(-1.0f + MATH_HALF_PI) * 24.0f;
-    const float side_y = X87_Sin(-1.0f + MATH_HALF_PI) * 24.0f;
+    float side_x;
+    float side_y;
+    X87_SinCosScale(aim + MATH_HALF_PI, 24.0f, &side_x, &side_y);
     CHECK(g_Player.options.pos[0].x == M_START_X - side_x);
     CHECK(g_Player.options.pos[0].y == M_START_Y - side_y);
     CHECK(g_Player.options.pos[1].y == M_START_Y + side_y);
@@ -616,12 +619,12 @@ TEST(sakuya_b_fans_the_options_along_the_aim_angle)
     M_Frames(9);
     CHECK(g_Player.options.state == PLAYER_OPTIONS_IN);
     M_Frame();
-    CHECK(
-        g_Player.options.pos[1].x
-        == M_START_X + X87_Cos(-1.0f + M_FAN_ANGLE) * 24.0f);
-    CHECK(
-        g_Player.options.pos[0].y
-        == M_START_Y + X87_Sin(-1.0f - M_FAN_ANGLE) * 24.0f);
+    float spread_x;
+    float spread_y;
+    X87_SinCosScale(aim + M_FAN_ANGLE, 24.0f, &spread_x, &spread_y);
+    CHECK(g_Player.options.pos[1].x == M_START_X + spread_x);
+    X87_SinCosScale(aim - M_FAN_ANGLE, 24.0f, &spread_x, &spread_y);
+    CHECK(g_Player.options.pos[0].y == M_START_Y + spread_y);
     M_TearDown();
 }
 

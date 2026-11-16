@@ -355,8 +355,10 @@ static void M_SlideOptions(void)
 // Returns 24 pixels along the aim angle turned by offset.
 static VEC3 M_Along(const float offset)
 {
-    const float angle = g_Player.shots.aim_angle + offset;
-    return (VEC3) { X87_Cos(angle) * 24.0f, X87_Sin(angle) * 24.0f, 0.0f };
+    VEC3 along = {};
+    X87_SinCosScale(
+        g_Player.shots.aim_angle + offset, 24.0f, &along.x, &along.y);
+    return along;
 }
 
 // Places the options of a fan at t, from beside the player (0) to the
