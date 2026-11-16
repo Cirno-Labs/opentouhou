@@ -11,6 +11,7 @@ th01_lib = static_library(
   'text.c',
   'tram.c',
   'mdrv_data.c',
+  'mdrv_seq.c',
   'pf.c',
   'pi.c',
   'ptn.c',
