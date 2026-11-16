@@ -16,6 +16,11 @@ bool Shell_GetPadPress(INPUT_BINDING *const out)
     return false;
 }
 
+bool Shell_GetKeyPress(INPUT_BINDING *const out)
+{
+    return false;
+}
+
 void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
 {
     memset(out, 0, m_InputSize);

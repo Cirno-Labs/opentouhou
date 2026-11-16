@@ -22,6 +22,13 @@ bool Shell_GetPadPress(INPUT_BINDING *out);
 // sees the same values as its input.
 void Shell_GetDeviceInput(INPUT_DEVICE device, void *out);
 
+// Returns whether a keyboard control went down since the tick before,
+// including keys outside the game's bindings. Writes its chord into out.
+// Keeps a pending press across display frames without ticks; only the
+// first tick sees it. Ordinary triggers replace pending modifier-only or
+// lock-only triggers. Modifier-only presses are included otherwise.
+bool Shell_GetKeyPress(INPUT_BINDING *out);
+
 // Writes up to capacity bindings of action, of player 1 in the game's input
 // schema, into out, and returns how many the action has.
 size_t Shell_GetBindings(size_t action, INPUT_BINDING *out, size_t capacity);

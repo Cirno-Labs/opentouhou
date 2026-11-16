@@ -8,6 +8,7 @@
 - Added `[video] scaling` in config.ini: sharp, smooth or integer
   scaling of the screen to the window.
 - Added F11 and Alt+Enter to switch between window and fullscreen.
+- Added rebindable keys and gamepad buttons.
 - Added screenshots with F12 or Print Screen.
 - Added portable mode with a `portable.txt` beside the game.
 - Added `--user-dir` to keep your files in another folder.

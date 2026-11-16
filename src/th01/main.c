@@ -1,6 +1,7 @@
 #include "th01/main.h"
 
 #include "th01/logo.h"
+#include "th01/input.h"
 #include "th01/settings.h"
 
 #include "core/base/arena.h"
@@ -13,22 +14,13 @@
 
 #define M_ASSET_CAPACITY (64 * 1024 * 1024)
 
-typedef struct {
-    bool skip;
-} LOGO_INPUT;
-
-static const INPUT_ACTION m_Actions[] = {
-    INPUT_BUTTON(
-        LOGO_INPUT, skip, "return, escape, space, z, x, q",
-        "south, east, start", "joy_button_0, joy_button_1"),
-};
-static const INPUT_SCHEMA m_Input = INPUT_SCHEMA_OF(LOGO_INPUT, m_Actions, 1);
 static const char *const m_DataFiles[] = { "TOUHOU.DAT" };
 static ARENA m_Assets;
 static BFNT m_Sprites;
 static LOGO m_Logo;
 static VIDEO m_Video;
 static GFX_TEXTURE *m_Pages[2];
+static bool m_IntroPressed;
 
 static RESULT M_LoadAssets(void)
 {
@@ -57,6 +49,7 @@ static RESULT M_Init(void)
             || m_Sprites.count != 16,
         "TOUHOU.DAT must contain sixteen 64 by 16 logo sprites");
     Video_Init(&m_Video, Arena_Allocator(&m_Assets));
+    m_IntroPressed = false;
     Logo_Init(&m_Logo, &m_Video);
     for (int32_t i = 0; i < 2; i++) {
         MUST(GfxTexture_CreateIndexed(LOGO_WIDTH, LOGO_HEIGHT, &m_Pages[i]));
@@ -70,7 +63,10 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
-    if (((const LOGO_INPUT *)input)->skip) {
+    INPUT_BINDING key;
+    const bool key_pressed = Shell_GetKeyPress(&key);
+    GameInput_LatchIntro(&m_IntroPressed, input, key_pressed ? &key : nullptr);
+    if (m_IntroPressed) {
         return false;
     }
     int32_t changed;
@@ -118,7 +114,7 @@ const GAME_DESC g_GameDesc = {
     .version = GAME_VERSION,
     .logical_width = LOGO_WIDTH,
     .logical_height = LOGO_HEIGHT,
-    .input_schema = &m_Input,
+    .input_schema = &g_InputSchema,
     .settings_schema = &g_SettingsSchema,
     .settings = &g_Settings,
     .data_files = m_DataFiles,

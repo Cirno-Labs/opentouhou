@@ -88,8 +88,7 @@ struct SHELL_CONTEXT {
     HOTKEYS hotkeys_edges;
     bool screenshot_pending;
     SHELL_REQUESTS requests;
-    bool pad_pressed;
-    INPUT_BINDING pad_press;
+    SHELL_INPUT_PRESSES presses;
 };
 
 static SHELL_CONTEXT m_Context;
@@ -409,10 +408,18 @@ static void M_ApplyRequests(SHELL_CONTEXT *const ctx)
 
 bool Shell_GetPadPress(INPUT_BINDING *const out)
 {
-    if (m_Context.pad_pressed) {
-        *out = m_Context.pad_press;
+    if (m_Context.presses.pad_pending) {
+        *out = m_Context.presses.pad;
     }
-    return m_Context.pad_pressed;
+    return m_Context.presses.pad_pending;
+}
+
+bool Shell_GetKeyPress(INPUT_BINDING *const out)
+{
+    if (m_Context.presses.key_pending) {
+        *out = m_Context.presses.key;
+    }
+    return m_Context.presses.key_pending;
 }
 
 void Shell_GetDeviceInput(const INPUT_DEVICE device, void *const out)
@@ -543,16 +550,12 @@ SHELL_STATUS Shell_Iterate(void)
     if (ctx->hotkeys_edges.screenshot) {
         ctx->screenshot_pending = true;
     }
-    INPUT_BINDING press;
-    if (ShellRequests_ReadPadPress(ctx->input, &press) && !ctx->pad_pressed) {
-        ctx->pad_pressed = true;
-        ctx->pad_press = press;
-    }
+    ShellRequests_PollPresses(&ctx->presses, ctx->input);
     for (int i = 0; i < ticks; i++) {
         Gfx_BeginTick((GFX_COLOR) { 0, 0, 0, 255 });
         const bool running = ctx->desc->tick(ctx->input_buffer);
         Gfx_EndTick();
-        ctx->pad_pressed = false;
+        ShellRequests_ClearPresses(&ctx->presses);
         ctx->tick_rate_measured = false;
         M_ApplyRequests(ctx);
         if (!running) {

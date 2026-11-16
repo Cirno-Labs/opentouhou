@@ -1,8 +1,17 @@
 #include "request_queue.h"
 
 #include "core/base/log.h"
+#include "core/input/codes.h"
 
 #define M_MAX_BINDINGS 32
+
+static bool M_IsModifierOrLock(const INPUT_BINDING binding)
+{
+    const uint16_t trigger = binding.codes[binding.count - 1];
+    return (trigger >= KEY_LEFT_MODIFIERS
+            && trigger < KEY_RIGHT_MODIFIERS + KEY_MODIFIER_COUNT)
+        || trigger == 0x39 || trigger == 0x47 || trigger == 0x53;
+}
 
 static void M_ResetPad(
     INPUT_STATE *const input, const INPUT_SCHEMA *const schema)
@@ -54,6 +63,30 @@ bool ShellRequests_ReadPadPress(
         .codes = { chord->codes[chord->count - 1] },
     };
     return true;
+}
+
+void ShellRequests_PollPresses(
+    SHELL_INPUT_PRESSES *const presses, INPUT_STATE *const input)
+{
+    INPUT_BINDING key;
+    if (Input_LastPressed(input, INPUT_DEVICE_KEYBOARD, &key)
+        && (!presses->key_pending
+            || (M_IsModifierOrLock(presses->key)
+                && !M_IsModifierOrLock(key)))) {
+        presses->key_pending = true;
+        presses->key = key;
+    }
+    INPUT_BINDING pad;
+    if (ShellRequests_ReadPadPress(input, &pad) && !presses->pad_pending) {
+        presses->pad_pending = true;
+        presses->pad = pad;
+    }
+}
+
+void ShellRequests_ClearPresses(SHELL_INPUT_PRESSES *const presses)
+{
+    presses->key_pending = false;
+    presses->pad_pending = false;
 }
 
 void ShellRequests_Add(

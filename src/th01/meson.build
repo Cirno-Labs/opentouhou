@@ -3,6 +3,7 @@ th01_lib = static_library(
   'bfnt.c',
   'logo.c',
   'math.c',
+  'input.c',
   'settings.c',
   'video.c',
   'pf.c',

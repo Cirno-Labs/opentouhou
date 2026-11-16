@@ -2329,6 +2329,19 @@ test(
 )
 
 if build_games
+  test(
+    'th01/input',
+    executable(
+      'test_th01_input',
+      'test_th01_input.c',
+      'input_backend_fake.c',
+      c_args: [layer_include['th01']] + core_include + stg_include,
+      implicit_include_directories: false,
+      link_with: [th01_lib, core_input_lib, core_config_lib, core_ini_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
   foreach part : ['bfnt', 'logo', 'math', 'settings', 'video', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz']
     test(
       'th01/' + part,

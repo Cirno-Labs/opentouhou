@@ -30,6 +30,20 @@ typedef struct {
     int32_t fullscreen;
 } SHELL_REQUESTS;
 
+typedef struct {
+    bool key_pending, pad_pending;
+    INPUT_BINDING key, pad;
+} SHELL_INPUT_PRESSES;
+
+// Polls unbound keyboard and pad presses before ticks. Keeps the first
+// pending press of each kind until a tick consumes the snapshot, preferring
+// an ordinary keyboard trigger over a modifier-only or lock-only trigger.
+void ShellRequests_PollPresses(
+    SHELL_INPUT_PRESSES *presses, INPUT_STATE *input);
+
+// Clears presses after one tick, also when a display frame runs more ticks.
+void ShellRequests_ClearPresses(SHELL_INPUT_PRESSES *presses);
+
 // Returns whether a gamepad control, or else a joystick control, went down
 // since the previous call, and writes that one control into out.
 bool ShellRequests_ReadPadPress(INPUT_STATE *input, INPUT_BINDING *out);
