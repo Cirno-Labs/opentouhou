@@ -1152,6 +1152,36 @@ TEST(aim_and_move_at_angle_set_the_angle_move)
     M_TearDown();
 }
 
+TEST(timed_move_at_angle_rounds_each_product_once)
+{
+    M_SetUp("move_54_rounding");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 54, 0, 60, 0, M_F(1.0f), M_F(1.25f));
+    M_Start();
+    M_Frames(1);
+    float x;
+    float y;
+    X87_SinCosScale(1.0f, 1.25f, &x, &y);
+    CHECK(m_Enemy.move.delta.x == x * 60.0f);
+    CHECK(m_Enemy.move.delta.y == y * 60.0f);
+    M_TearDown();
+}
+
+TEST(polar_operands_round_each_product_once)
+{
+    M_SetUp("polar_151");
+    EclBuilder_BeginSub(&m_Builder);
+    M_INSTR(0, 0, 151, 3, M_F(10004.0f), M_F(10005.0f), M_F(1.0f), M_F(1.25f));
+    M_Start();
+    M_Frames(1);
+    float x;
+    float y;
+    X87_SinCosScale(1.0f, 1.25f, &x, &y);
+    CHECK(M_Floats()[0] == x);
+    CHECK(M_Floats()[1] == y);
+    M_TearDown();
+}
+
 // Returns the velocity.x after the first frame of a move to x 1 over 4
 // frames with ease.
 static float M_EasedStep(const int32_t ease)
