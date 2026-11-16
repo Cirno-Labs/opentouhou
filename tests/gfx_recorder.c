@@ -98,6 +98,12 @@ static void M_Draw(
     }
 }
 
+static void M_Clear(
+    const uint32_t flags, const GFX_COLOR color,
+    const GFX_PASS_VIEW *const view)
+{
+}
+
 static void M_EndPass(void)
 {
 }
@@ -127,6 +133,7 @@ static const GFX_BACKEND m_Backend = {
     .free_texture = M_FreeTexture,
     .begin_pass = M_BeginPass,
     .draw = M_Draw,
+    .clear = M_Clear,
     .end_pass = M_EndPass,
     .blit_screen = M_BlitScreen,
     .read_pixels = M_ReadPixels,

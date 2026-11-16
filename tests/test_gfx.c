@@ -22,6 +22,7 @@ typedef enum {
     EVENT_BEGIN_SCREEN,
     EVENT_BEGIN_WINDOW,
     EVENT_DRAW,
+    EVENT_CLEAR,
     EVENT_END,
     EVENT_BLIT,
     EVENT_READ,
@@ -38,6 +39,9 @@ typedef struct {
     GFX_PASS_VIEW views[MAX_VIEWS];
     GFX_PASS_OUTPUT output;
     uintptr_t next_handle;
+    uint32_t clear_flags;
+    GFX_COLOR clear_color;
+    GFX_PASS_VIEW clear_view;
     // Makes a screen read return WIDTH x HEIGHT pixels whose red and green
     // are their x and y.
     bool readable;
@@ -120,6 +124,16 @@ static void M_Draw(
         m_Recording.views, views, sizeof(GFX_PASS_VIEW) * (size_t)view_count);
 }
 
+static void M_Clear(
+    const uint32_t flags, const GFX_COLOR color,
+    const GFX_PASS_VIEW *const view)
+{
+    M_Record(EVENT_CLEAR, 0);
+    m_Recording.clear_flags = flags;
+    m_Recording.clear_color = color;
+    m_Recording.clear_view = *view;
+}
+
 static void M_EndPass(void)
 {
     M_Record(EVENT_END, 0);
@@ -157,6 +171,7 @@ static const GFX_BACKEND m_RecordingBackend = {
     .free_texture = M_FreeTexture,
     .begin_pass = M_BeginPass,
     .draw = M_Draw,
+    .clear = M_Clear,
     .end_pass = M_EndPass,
     .blit_screen = M_BlitScreen,
     .read_pixels = M_ReadPixels,
@@ -287,6 +302,70 @@ TEST(state_texture_and_view_changes_split_batches)
     CHECK_EQ_INT(m_Recording.batches[3].count, 8);
     GfxTexture_Free(a);
     GfxTexture_Free(b);
+    M_Stop();
+}
+
+TEST(a_clear_draws_in_order_with_the_quads_around_it)
+{
+    M_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0.0f, 1);
+    M_ClearEvents();
+    Gfx_Clear(GFX_CLEAR_COLOR, (GFX_COLOR) { 1, 2, 3, 4 });
+    M_Draw4(&m_Alpha, nullptr, 4.0f, 2);
+    Gfx_EndTick();
+    const EVENT expected[] = { EVENT_DRAW, EVENT_CLEAR, EVENT_DRAW, EVENT_END };
+    M_CheckEvents(expected, 4);
+    M_Stop();
+}
+
+TEST(clear_flags_and_colour_reach_the_backend)
+{
+    M_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Gfx_Clear(GFX_CLEAR_DEPTH, (GFX_COLOR) { 10, 20, 30, 40 });
+    Gfx_EndTick();
+    CHECK_EQ_INT(m_Recording.clear_flags, GFX_CLEAR_DEPTH);
+    CHECK_EQ_INT(m_Recording.clear_color.red, 10);
+    CHECK_EQ_INT(m_Recording.clear_color.green, 20);
+    CHECK_EQ_INT(m_Recording.clear_color.blue, 30);
+    CHECK_EQ_INT(m_Recording.clear_color.alpha, 40);
+    M_Stop();
+}
+
+TEST(a_clear_scissors_to_the_current_view)
+{
+    M_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    GFX_VIEW view = GfxView_Screen();
+    view.viewport = (VIEWPORT) { 4.0f, 8.0f, 16.0f, 12.0f, 0.0f, 1.0f };
+    Gfx_SetView(&view);
+    Gfx_Clear(GFX_CLEAR_COLOR | GFX_CLEAR_DEPTH, (GFX_COLOR) {});
+    Gfx_EndTick();
+    CHECK(m_Recording.clear_view.scissor_x == 4.0f);
+    CHECK(m_Recording.clear_view.scissor_y == 8.0f);
+    CHECK(m_Recording.clear_view.scissor_width == 16.0f);
+    CHECK(m_Recording.clear_view.scissor_height == 12.0f);
+    M_Stop();
+}
+
+TEST(a_clear_between_quads_blends_into_the_present)
+{
+    M_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0.0f, 1);
+    Gfx_Clear(GFX_CLEAR_COLOR, (GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 4.0f, 2);
+    Gfx_EndTick();
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0.0f, 1);
+    Gfx_Clear(GFX_CLEAR_COLOR, (GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 4.0f, 2);
+    Gfx_EndTick();
+    M_Present(0.5f);
+    const EVENT expected[] = { EVENT_BEGIN_WINDOW, EVENT_DRAW, EVENT_CLEAR,
+                               EVENT_DRAW, EVENT_END };
+    M_CheckEvents(expected, 5);
     M_Stop();
 }
 

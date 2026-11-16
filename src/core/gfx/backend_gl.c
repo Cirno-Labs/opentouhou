@@ -382,19 +382,12 @@ static void M_EnsureIndices(const int32_t quads)
     m_Backend.index_quads = capacity;
 }
 
-static void M_SetView(const GFX_PASS_VIEW *const view)
+// Scissors to view's rect, mapped from logical-screen pixels to the
+// output target.
+static void M_SetScissor(const GFX_PASS_VIEW *const view)
 {
     const M_GL *const gl = &m_Backend.gl;
-    const M_LOCATIONS *const at = &m_Backend.locations;
     const GFX_PASS_OUTPUT *const output = &m_Backend.pass_output;
-    gl->uniform_matrix_4fv(at->view, 1, GL_FALSE, &view->view.m[0][0]);
-    gl->uniform_matrix_4fv(
-        at->projection, 1, GL_FALSE, &view->projection.m[0][0]);
-    gl->uniform_1i(at->fog, view->fog.enabled ? 1 : 0);
-    gl->uniform_2f(at->fog_range, view->fog.begin, view->fog.end);
-    gl->uniform_3f(
-        at->fog_color, view->fog.color.red / 255.0f,
-        view->fog.color.green / 255.0f, view->fog.color.blue / 255.0f);
     const long x0 =
         lroundf(view->scissor_x * output->scale_x + output->offset_x);
     const long y0 =
@@ -408,6 +401,21 @@ static void M_SetView(const GFX_PASS_VIEW *const view)
     gl->scissor(
         (GLint)x0, (GLint)y0, (GLsizei)MAX(x1 - x0, 0),
         (GLsizei)MAX(y1 - y0, 0));
+}
+
+static void M_SetView(const GFX_PASS_VIEW *const view)
+{
+    const M_GL *const gl = &m_Backend.gl;
+    const M_LOCATIONS *const at = &m_Backend.locations;
+    gl->uniform_matrix_4fv(at->view, 1, GL_FALSE, &view->view.m[0][0]);
+    gl->uniform_matrix_4fv(
+        at->projection, 1, GL_FALSE, &view->projection.m[0][0]);
+    gl->uniform_1i(at->fog, view->fog.enabled ? 1 : 0);
+    gl->uniform_2f(at->fog_range, view->fog.begin, view->fog.end);
+    gl->uniform_3f(
+        at->fog_color, view->fog.color.red / 255.0f,
+        view->fog.color.green / 255.0f, view->fog.color.blue / 255.0f);
+    M_SetScissor(view);
 }
 
 static void M_SetState(const GFX_STATE *const state, GFX_TEXTURE *const texture)
@@ -628,6 +636,30 @@ static void M_Draw(
     }
 }
 
+static void M_Clear(
+    const uint32_t flags, const GFX_COLOR color,
+    const GFX_PASS_VIEW *const view)
+{
+    if (m_Backend.target == nullptr) {
+        return;
+    }
+    const M_GL *const gl = &m_Backend.gl;
+    M_SetScissor(view);
+    GLbitfield bits = 0;
+    if (flags & GFX_CLEAR_COLOR) {
+        M_ClearColor(color);
+        bits |= GL_COLOR_BUFFER_BIT;
+    }
+    if (flags & GFX_CLEAR_DEPTH) {
+        gl->depth_mask(GL_TRUE);
+        M_ClearDepth();
+        bits |= GL_DEPTH_BUFFER_BIT;
+    }
+    if (bits != 0) {
+        gl->clear(bits);
+    }
+}
+
 static void M_EndPass(void)
 {
     if (m_Backend.target == nullptr) {
@@ -698,6 +730,7 @@ static const GFX_BACKEND m_GlBackend = {
     .free_texture = M_FreeTexture,
     .begin_pass = M_BeginPass,
     .draw = M_Draw,
+    .clear = M_Clear,
     .end_pass = M_EndPass,
     .blit_screen = M_BlitScreen,
     .read_pixels = M_ReadPixels,
