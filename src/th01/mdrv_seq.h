@@ -30,6 +30,7 @@ typedef enum {
     MDRV_EVENT_SYNC,
     MDRV_EVENT_EXTENDED,
     MDRV_EVENT_OUTPUT_MASK,
+    MDRV_EVENT_DRIVER_RESET,
 } MDRV_EVENT_KIND;
 
 typedef struct {
@@ -102,8 +103,9 @@ typedef struct {
 // and program. Retains compiled volume bytes and encoded SSG program/mode bits.
 // An FM program sets pan to center. A music FF holds a Q0 note until the
 // remaining tracks end; effect FF silences that effect channel. Header repeat
-// resets Q/pan/detune/transpose and retains volume, program and ownership,
-// together with the mutable shared command counters. Fresh Play clears all.
+// resets Q/pan/detune/transpose and retains volume, program and mutable shared
+// command counters. Natural completion and header repeat set sync FF; fresh
+// Play clears sync to zero and resets all controls and command counters.
 // Merges adjacent same-pitch ties before Q arithmetic. A differing-pitch tie
 // marks the following note legato and suppresses gate key-off. Q0 holds notes;
 // other Q values key off at floor(duration*Q/8)-1 clocks from note onset.
@@ -117,7 +119,10 @@ typedef struct {
 // F3 emits LOOP and updates sync to FE; completion sets sync FF, F8 sets it
 // raw.
 //
-// Stop emits key-offs then STOP. Pulse errors preserve delivered events,
+// Stop affects only its instance and emits key-offs then logical STOP. It is
+// not the original driver API's combined music/effect stop. A STOP event alone
+// does not request chip silence: handle KEY_OFF and DRIVER_RESET separately.
+// Pulse errors preserve delivered events,
 // stop all tracks, emit key-offs and STOP, and latch failed until Play/Trigger.
 // Rejects invalid offsets, parameters, unsupported opcodes,
 // nested FA/E0/E4 and streams exceeding 4096 commands per track per pulse.
@@ -142,6 +147,21 @@ RESULT MdrvSeq_Pulse(MDRV_SEQUENCE *sequence);
 // its effect before its music. Music still advances while its SSG is owned.
 // Shares tempo and sync in that order; both instances hold the final globals
 // on return. Effect completion alone does not signal global music completion.
+// The last natural music FF immediately ends the shared clock, including all
+// later groups and effects. Emits one DRIVER_RESET after TRACK_END, then a
+// logical effect STOP if needed and music STOP or LOOP. Its parameter is 0
+// for completion with hardware silence, or 1 for header restart without a
+// hardware silence command. Both forms cancel all effect timelines, clear
+// output ownership and reset Q/pan/detune/transpose. Effect controls inherit
+// the reset music SSG program/volume where routed, with no note replay or
+// register snapshot restoration. No KEY_OFF or OUTPUT_MASK events are invented
+// for this reset. The reset event must update the later synth control work;
+// restart alone must not silence or retrigger notes. Both local pulse counters
+// consume this clock if playing, even when later effect commands were skipped.
+// Leaves shared music command counters intact. F3 is an ordinary branch and
+// does not reset effects. Music already stopped at clock entry permits effect
+// playback. A stale DOS effect count after reset has no native output meaning:
+// all effect pointers are cleared, so subsequent music output is unmasked.
 // Emits OUTPUT_MASK with parameter 1 on takeover and 0 on release; persistent
 // music state and control events continue while masked. Marks ordinary SSG
 // output events suppressed, leaving raw REGISTER and global control events

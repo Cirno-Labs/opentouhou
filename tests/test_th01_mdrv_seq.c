@@ -698,8 +698,12 @@ TEST(q_zero_ended_music_holds_until_all_tracks_stop)
     CHECK(fixture.sequence.tracks[0].key_on);
     CHECK_EQ_INT(M_Count(&fixture, MDRV_EVENT_KEY_OFF), 0);
     M_Pulses(&fixture, 2);
-    CHECK_EQ_INT(M_Count(&fixture, MDRV_EVENT_KEY_OFF), 2);
-    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_KEY_OFF, 0)->pulse, 3);
+    CHECK_EQ_INT(M_Count(&fixture, MDRV_EVENT_KEY_OFF), 0);
+    CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_DRIVER_RESET, 0)->pulse, 3);
+    CHECK_EQ_INT(
+        M_Find(&fixture, MDRV_EVENT_DRIVER_RESET, 0)->parameters[0], 0);
+    CHECK(!fixture.sequence.tracks[0].key_on);
+    CHECK(!fixture.sequence.tracks[1].key_on);
     Arena_Free(&fixture.arena);
 }
 
@@ -737,39 +741,71 @@ TEST(paired_global_controls_remain_shared_in_command_order)
     Arena_Free(&effects.arena);
 }
 
-TEST(paired_header_repeat_keeps_ownership_and_effect_only_controls)
+TEST(paired_header_repeat_cancels_effects_and_preserves_music_counters)
 {
-    const uint8_t music_code[] = { 0x40, 1, 0xff };
-    const uint8_t effect_code[] = { 0xe9, 200, 0xf8, 20, 0x42, 10, 0xff };
+    const uint8_t music_code[] = { 0xeb, 0x81, 0xec, 12, 0xe6, 2,
+                                   0xe7, 3,    0xf1, 1,  0xea, 4,
+                                   0xf7, 2,    1,    0,  0xff };
+    const uint8_t effect_code[] = { 0xeb, 0x82, 0x42, 10, 0xff };
     FIXTURE music, effects;
     M_Init(&music, music_code, sizeof(music_code), 0x42);
     music.music.flags = 0x80;
     M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
     music.event_count = 0;
-    for (int i = 0; i < 6; i++) {
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(music.sequence.loops, 1);
+    CHECK_EQ_INT(music.sequence.sync, 0xff);
+    CHECK_EQ_INT(effects.sequence.sync, 0xff);
+    CHECK_EQ_INT(music.sequence.work[45], 1);
+    CHECK_EQ_INT(music.bytes[45], 2);
+    CHECK_EQ_INT(music.sequence.tracks[0].volume, 12);
+    CHECK_EQ_INT(music.sequence.tracks[0].program, 0x81);
+    CHECK_EQ_INT(music.sequence.tracks[0].gate, 8);
+    CHECK_EQ_INT(music.sequence.tracks[0].pan, 3);
+    CHECK_EQ_INT(music.sequence.tracks[0].detune, 0);
+    CHECK_EQ_INT(music.sequence.tracks[0].transpose, 0);
+    CHECK(!music.sequence.tracks[0].suppressed);
+    CHECK(!effects.sequence.playing);
+    CHECK(!effects.sequence.tracks[0].active);
+    CHECK_EQ_INT(effects.sequence.tracks[0].volume, 12);
+    CHECK_EQ_INT(effects.sequence.tracks[0].program, 0x81);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 1);
+    CHECK_EQ_INT(M_Find(&music, MDRV_EVENT_DRIVER_RESET, 0)->parameters[0], 1);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_OUTPUT_MASK), 1);
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(music.sequence.loops, 2);
+    CHECK_EQ_INT(music.sequence.work[45], 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_OUTPUT_MASK), 1);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 1);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 2);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_STOP), 1);
+    CHECK_EQ_INT(effects.sequence.pulse, 1);
+    Arena_Free(&music.arena);
+    Arena_Free(&effects.arena);
+}
+
+TEST(paired_already_stopped_music_permits_effect_only_controls)
+{
+    const uint8_t music_code[] = { 0x40, 1, 0xff };
+    const uint8_t effect_code[] = { 0xe9, 200, 0xf8, 20, 0x42, 2, 0xff };
+    FIXTURE music, effects;
+    M_Init(&music, music_code, sizeof(music_code), 0x42);
+    MdrvSeq_Stop(&music.sequence);
+    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    music.event_count = 0;
+    for (int i = 0; i < 4; i++) {
         CHECK(Result_Ignore(
             MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-        CHECK(music.sequence.tracks[0].suppressed);
     }
-    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_OUTPUT_MASK), 1);
-    CHECK_EQ_INT(music.sequence.loops, 3);
-    CHECK(Result_Ignore(MdrvSeq_Play(&music.sequence)));
-    CHECK(!music.sequence.tracks[0].suppressed);
-    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-    CHECK(music.sequence.tracks[0].suppressed);
-    MdrvSeq_Stop(&music.sequence);
-    CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects.sequence, 1)));
-    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
     CHECK(!music.sequence.playing);
+    CHECK(!effects.sequence.playing);
     CHECK_EQ_INT(music.sequence.tempo, 200);
     CHECK_EQ_INT(music.sequence.sync, 20);
-    for (int i = 0; i < 11; i++) {
-        CHECK(Result_Ignore(
-            MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
-    }
-    CHECK(!effects.sequence.playing);
-    CHECK_EQ_INT(music.sequence.sync, 20);
     CHECK_EQ_INT(effects.sequence.sync, 20);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 1);
+    CHECK_EQ_INT(M_SourceEvent(&music, MDRV_EVENT_NOTE, 1, 0)->pulse, 0);
     Arena_Free(&music.arena);
     Arena_Free(&effects.arena);
 }
@@ -826,4 +862,129 @@ TEST(header_repeat_retains_volume_program_but_fresh_play_clears)
     CHECK_EQ_INT(fixture.sequence.tracks[0].volume, 0);
     CHECK_EQ_INT(fixture.sequence.tracks[0].program, 0);
     Arena_Free(&fixture.arena);
+}
+
+TEST(paired_final_fm_ff_aborts_later_effect_clock)
+{
+    const uint8_t music_code[] = { 0xff };
+    const uint8_t effect_code[] = { 0xe9, 200,  0xf8, 20,  0xeb,
+                                    0x82, 0x42, 10,   0xff };
+    FIXTURE music, effects;
+    M_Init(&music, music_code, sizeof(music_code), 0x80);
+    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    music.event_count = 0;
+    const size_t music_used = music.arena.used,
+                 effect_used = effects.arena.used;
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(music.event_count, 4);
+    CHECK_EQ_INT(music.events[0].kind, MDRV_EVENT_TRACK_END);
+    CHECK_EQ_INT(music.events[1].kind, MDRV_EVENT_DRIVER_RESET);
+    CHECK_EQ_INT(music.events[1].parameters[0], 0);
+    CHECK_EQ_INT(music.events[2].kind, MDRV_EVENT_STOP);
+    CHECK_EQ_INT(music.events[2].effect_number, 1);
+    CHECK_EQ_INT(music.events[3].kind, MDRV_EVENT_STOP);
+    CHECK_EQ_INT(music.events[3].effect_number, 0);
+    CHECK(!music.sequence.playing);
+    CHECK(!effects.sequence.playing);
+    CHECK_EQ_INT(music.sequence.tempo, 0);
+    CHECK_EQ_INT(music.sequence.sync, 0xff);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_PROGRAM), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_SYNC), 0);
+    CHECK_EQ_INT(music.sequence.pulse, 1);
+    CHECK_EQ_INT(effects.sequence.pulse, 1);
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(music.event_count, 4);
+    CHECK_EQ_INT(music.sequence.pulse, 1);
+    CHECK_EQ_INT(effects.sequence.pulse, 1);
+    CHECK_EQ_INT(music.arena.used, music_used);
+    CHECK_EQ_INT(effects.arena.used, effect_used);
+    CHECK(Result_Ignore(MdrvSeq_TriggerEffect(&effects.sequence, 1)));
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 1);
+    CHECK_EQ_INT(music.sequence.sync, 20);
+    Arena_Free(&music.arena);
+    Arena_Free(&effects.arena);
+}
+
+TEST(paired_final_ssg_ff_preserves_earlier_events_and_skips_later_effect)
+{
+    const uint8_t music_code[] = { 0xff };
+    const uint8_t effect_code[] = { 0xeb, 0x80, 0x47, 10, 0xff };
+    FIXTURE music, effects;
+    M_Init(&music, music_code, sizeof(music_code), 0x41);
+    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 3);
+    music.event_count = 0;
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 2);
+    CHECK_EQ_INT(M_SourceEvent(&music, MDRV_EVENT_NOTE, 1, 0)->channel, 0x40);
+    CHECK_EQ_INT(M_SourceEvent(&music, MDRV_EVENT_NOTE, 1, 1)->channel, 0x41);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 1);
+    size_t reset = 0;
+    for (size_t i = 0; i < music.event_count; i++) {
+        if (music.events[i].kind == MDRV_EVENT_DRIVER_RESET) {
+            reset = i;
+        }
+    }
+    CHECK_EQ_INT(music.events[reset - 1].kind, MDRV_EVENT_TRACK_END);
+    CHECK_EQ_INT(music.events[reset + 1].kind, MDRV_EVENT_STOP);
+    CHECK_EQ_INT(music.events[reset + 2].kind, MDRV_EVENT_STOP);
+    CHECK(!effects.sequence.tracks[0].active);
+    CHECK(!effects.sequence.tracks[1].active);
+    CHECK(!effects.sequence.tracks[2].active);
+    CHECK(!music.sequence.tracks[0].suppressed);
+    const size_t count = music.event_count;
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(music.event_count, count);
+    Arena_Free(&music.arena);
+    Arena_Free(&effects.arena);
+}
+
+TEST(paired_header_repeat_on_fm_cancels_effect_before_it_advances)
+{
+    const uint8_t music_code[] = { 0xeb, 7, 0xec, 119, 0xf8, 42, 0xff };
+    const uint8_t effect_code[] = { 0x47, 10, 0xff };
+    FIXTURE music, effects;
+    M_Init(&music, music_code, sizeof(music_code), 0x80);
+    music.music.flags = 0x80;
+    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    music.event_count = 0;
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_KEY_OFF), 0);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_LOOP), 1);
+    CHECK_EQ_INT(M_Find(&music, MDRV_EVENT_DRIVER_RESET, 0)->parameters[0], 1);
+    CHECK_EQ_INT(music.sequence.tracks[0].position, 32);
+    CHECK_EQ_INT(music.sequence.tracks[0].volume, 119);
+    CHECK_EQ_INT(music.sequence.tracks[0].program, 7);
+    CHECK_EQ_INT(music.sequence.sync, 0xff);
+    CHECK(music.sequence.playing);
+    CHECK(!effects.sequence.playing);
+    CHECK(Result_Ignore(MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    CHECK_EQ_INT(music.sequence.loops, 2);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_STOP), 1);
+    Arena_Free(&music.arena);
+    Arena_Free(&effects.arena);
+}
+
+TEST(paired_f3_branch_does_not_reset_active_effects)
+{
+    const uint8_t music_code[] = { 0x40, 1, 0xf3, 0xfc, 0xff };
+    const uint8_t effect_code[] = { 0x47, 10, 0xff };
+    FIXTURE music, effects;
+    M_Init(&music, music_code, sizeof(music_code), 0x80);
+    M_InitPairEffect(&effects, &music, effect_code, sizeof(effect_code), 1);
+    music.event_count = 0;
+    for (int i = 0; i < 4; i++) {
+        CHECK(Result_Ignore(
+            MdrvSeq_PulsePair(&music.sequence, &effects.sequence)));
+    }
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_DRIVER_RESET), 0);
+    CHECK_EQ_INT(music.sequence.loops, 3);
+    CHECK_EQ_INT(effects.sequence.tracks[0].remaining, 7);
+    CHECK(effects.sequence.playing);
+    CHECK_EQ_INT(M_Count(&music, MDRV_EVENT_NOTE), 5);
+    Arena_Free(&music.arena);
+    Arena_Free(&effects.arena);
 }

@@ -538,37 +538,82 @@ static RESULT M_AdvanceGroup(
     return OK;
 }
 
+static bool M_AnyActive(const MDRV_SEQUENCE *const sequence)
+{
+    for (uint16_t i = 0; i < sequence->track_count; i++) {
+        if (sequence->tracks[i].active) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool M_MusicFinished(const MDRV_SEQUENCE *const sequence)
+{
+    return sequence->music != nullptr && sequence->playing
+        && !M_AnyActive(sequence);
+}
+
+static void M_CompleteMusic(
+    MDRV_SEQUENCE *const music, MDRV_SEQUENCE *const effects)
+{
+    const bool restart = (music->music->flags & 0x80) != 0;
+    for (uint16_t i = 0; i < music->track_count; i++) {
+        const MDRV_TRACK *const track = &music->music->tracks[i];
+        const uint8_t volume = music->tracks[i].volume;
+        const uint8_t program = music->tracks[i].program;
+        M_ResetTrack(&music->tracks[i], track->channel, track->offset);
+        music->tracks[i].active &= restart;
+        music->tracks[i].volume = volume;
+        music->tracks[i].program = program;
+    }
+    music->sync = 0xff;
+    music->playing = restart;
+    bool stopped_effects = false;
+    if (effects != nullptr) {
+        stopped_effects = effects->playing;
+        effects->playing = false;
+        effects->tempo = music->tempo;
+        effects->sync = music->sync;
+        for (uint16_t i = 0; i < effects->capacity; i++) {
+            const uint8_t source_channel = effects->tracks[i].source_channel;
+            M_ResetTrack(&effects->tracks[i], 0x42 - i, M_NO_POSITION);
+            effects->tracks[i].active = false;
+            effects->tracks[i].source_channel = source_channel;
+            for (uint16_t track = 0; track < music->track_count; track++) {
+                if (music->tracks[track].channel
+                    == effects->tracks[i].channel) {
+                    effects->tracks[i].volume = music->tracks[track].volume;
+                    effects->tracks[i].program = music->tracks[track].program;
+                }
+            }
+        }
+    }
+    const uint8_t parameter = restart;
+    M_Emit(
+        music, UINT16_MAX, MDRV_EVENT_DRIVER_RESET, 0, 0xff, &parameter, 1, 0,
+        false);
+    if (stopped_effects) {
+        M_Emit(
+            effects, UINT16_MAX, MDRV_EVENT_STOP, 0, 0, nullptr, 0, 0, false);
+        effects->pulse++;
+    }
+    if (restart) {
+        music->loops++;
+    }
+    M_Emit(
+        music, UINT16_MAX, restart ? MDRV_EVENT_LOOP : MDRV_EVENT_STOP, 0, 0xff,
+        nullptr, 0, 0, false);
+    music->pulse++;
+}
+
 static void M_Finish(MDRV_SEQUENCE *const sequence)
 {
     if (!sequence->playing) {
         return;
     }
-    bool active = false;
-    for (uint16_t i = 0; i < sequence->track_count; i++) {
-        active |= sequence->tracks[i].active;
-    }
-    if (!active) {
-        if (sequence->music != nullptr
-            && (sequence->music->flags & 0x80) != 0) {
-            for (uint16_t i = 0; i < sequence->track_count; i++) {
-                const MDRV_TRACK *const track = &sequence->music->tracks[i];
-                const bool suppressed = sequence->tracks[i].suppressed;
-                const uint8_t volume = sequence->tracks[i].volume;
-                const uint8_t program = sequence->tracks[i].program;
-                M_ResetTrack(
-                    &sequence->tracks[i], track->channel, track->offset);
-                sequence->tracks[i].suppressed = suppressed;
-                sequence->tracks[i].volume = volume;
-                sequence->tracks[i].program = program;
-            }
-            sequence->loops++;
-            M_Emit(
-                sequence, UINT16_MAX, MDRV_EVENT_LOOP, 0, 0xff, nullptr, 0, 0,
-                false);
-        } else {
-            sequence->sync = 0xff;
-            MdrvSeq_Stop(sequence);
-        }
+    if (!M_AnyActive(sequence)) {
+        MdrvSeq_Stop(sequence);
     }
     sequence->pulse++;
 }
@@ -652,6 +697,10 @@ RESULT MdrvSeq_Pulse(MDRV_SEQUENCE *const sequence)
             M_Failed(sequence);
             return result;
         }
+        if (M_MusicFinished(sequence)) {
+            M_CompleteMusic(sequence, nullptr);
+            return OK;
+        }
     }
     M_Finish(sequence);
     return OK;
@@ -674,6 +723,10 @@ RESULT MdrvSeq_PulsePair(
         result = M_AdvanceGroup(music, m_ChannelOrder[group], 0xf0);
         if (!IS_OK(result)) {
             break;
+        }
+        if (M_MusicFinished(music)) {
+            M_CompleteMusic(music, effects);
+            return OK;
         }
     }
     effects->tempo = music->tempo;
@@ -699,6 +752,10 @@ RESULT MdrvSeq_PulsePair(
             result = M_AdvanceGroup(music, channel, 0xff);
             effects->tempo = music->tempo;
             effects->sync = music->sync;
+            if (IS_OK(result) && M_MusicFinished(music)) {
+                M_CompleteMusic(music, effects);
+                return OK;
+            }
         }
     }
     if (!IS_OK(result)) {
