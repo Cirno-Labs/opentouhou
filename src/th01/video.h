@@ -18,6 +18,7 @@ typedef struct {
     uint8_t *pages[2];
     int32_t drawing_page, visible_page;
     GFX_COLOR palette[16];
+    int16_t scroll_top;
 } VIDEO;
 
 // Views immutable row-major indices. stride and coverage_stride are byte
@@ -109,3 +110,13 @@ void Video_SetDac(
 // Quantize the upper four bits of each 8-bit resource channel to the DAC.
 // Ignore resource alpha. Palette storage may alias video->palette.
 void Video_SetPalette(VIDEO *video, const GFX_COLOR palette[16]);
+
+// Sets a display row origin modulo 400, without changing either page.
+// Presentation reads row (screen_y + scroll_top) modulo 400 from visible_page.
+void Video_SetScroll(VIDEO *video, int16_t top);
+
+// Toggles one indexed plane bit in a byte-aligned 32 by 32 square. Rejects
+// left < 0, top < 0, left >= 608 or top >= 368 without partial clipping.
+// Accepted X rounds down to eight. plane_bit must be 1, 2, 4 or 8.
+// Uses the drawing page; returns false when the source rejects the square.
+bool Video_Invert32(VIDEO *video, int16_t left, int16_t top, uint8_t plane_bit);

@@ -400,3 +400,26 @@ void Video_SetPalette(VIDEO *const video, const GFX_COLOR palette[16])
             palette[i].blue >> 4);
     }
 }
+
+void Video_SetScroll(VIDEO *const video, const int16_t top)
+{
+    const int16_t reduced = top % VIDEO_HEIGHT;
+    video->scroll_top = reduced < 0 ? reduced + VIDEO_HEIGHT : reduced;
+}
+
+bool Video_Invert32(
+    VIDEO *const video, const int16_t left, const int16_t top,
+    const uint8_t plane_bit)
+{
+    ASSERT(
+        plane_bit == 1 || plane_bit == 2 || plane_bit == 4 || plane_bit == 8);
+    if (left < 0 || top < 0 || left >= 608 || top >= 368) {
+        return false;
+    }
+    for (int32_t y = top; y < top + 32; y++) {
+        for (int32_t x = left / 8 * 8; x < left / 8 * 8 + 32; x++) {
+            video->pages[video->drawing_page][y * VIDEO_WIDTH + x] ^= plane_bit;
+        }
+    }
+    return true;
+}
