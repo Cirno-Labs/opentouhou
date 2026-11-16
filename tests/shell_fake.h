@@ -39,6 +39,8 @@ typedef struct {
     size_t binding_counts[INPUT_MAX_ACTIONS];
     // Holds the window mode that Shell_IsFullscreen returns.
     bool fullscreen;
+    // Holds the wall clock that Shell_GetWallClock returns.
+    uint64_t wall_clock;
     FAKE_SHELL_REQUEST requests[FAKE_SHELL_REQUEST_COUNT];
     int32_t request_count;
 } FAKE_SHELL;

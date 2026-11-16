@@ -7,7 +7,6 @@
 #include "th07/player.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
-#include "th07/stubs.h"
 
 #include "core/base/assert.h"
 #include "core/base/color.h"

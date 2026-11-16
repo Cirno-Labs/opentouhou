@@ -14,7 +14,6 @@
 #include "th07/game_manager.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
-#include "th07/stubs.h"
 
 #include "core/gfx.h"
 

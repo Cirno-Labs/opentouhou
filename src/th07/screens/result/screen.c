@@ -5,11 +5,11 @@
 #include "th07/buttons.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/play_time.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/screens/result/private.h"
 #include "th07/sound.h"
-#include "th07/stubs.h"
 
 #include "core/base/color.h"
 #include "core/base/cp932.h"

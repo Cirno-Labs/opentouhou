@@ -110,6 +110,13 @@ typedef struct {
         bool phantasm_was_open;
     } records;
 
+    // Holds the wall clock milliseconds that play_time.h's functions last
+    // measured from, 0 while the play clock is stopped.
+    struct {
+        uint64_t run_tick;
+        uint64_t play_tick;
+    } play_time;
+
     // The play area moves while ScreenEffect_Shake runs; the pause puts
     // it back.
     PLAY_RECT play_area;

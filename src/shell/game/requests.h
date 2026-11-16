@@ -2,6 +2,8 @@
 
 #include "core/input.h"
 
+#include <stdint.h>
+
 // The functions below let a game read the shell's tick rate and read and
 // change the shell's input bindings and window mode from a tick. The reads
 // give values that shell/game took before the ticks of the display frame.
@@ -49,3 +51,7 @@ void Shell_RequestFullscreen(bool fullscreen);
 // SHELL_TICK_RATE at full speed and falls when the computer cannot keep up,
 // because shell/game drops the ticks that it cannot catch up.
 bool Shell_GetTickRate(float *out);
+
+// Returns the wall clock in milliseconds, from an unspecified start, for
+// play-time statistics; a game's simulation and RNG never read it.
+uint64_t Shell_GetWallClock(void);
