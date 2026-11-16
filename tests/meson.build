@@ -2329,7 +2329,7 @@ test(
 )
 
 if build_games
-  foreach part : ['bfnt', 'logo', 'pf', 'pi', 'ptn']
+  foreach part : ['bfnt', 'logo', 'pf', 'pi', 'ptn', 'grc']
     test(
       'th01/' + part,
       executable(
