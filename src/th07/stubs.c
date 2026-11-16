@@ -2,8 +2,6 @@
 
 #include "core/base/log.h"
 
-uint8_t g_EffectsQuality = 2;
-
 void PlayTime_Add(void)
 {
     LOG_INFO("PlayTime_Add is not ported");

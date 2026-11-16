@@ -3,8 +3,8 @@
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/player.h"
+#include "th07/settings.h"
 #include "th07/stage.h"
-#include "th07/stubs.h"
 
 #include "core/math/common.h"
 #include "core/math/x87.h"
@@ -684,7 +684,7 @@ void Effect_DrawPetals(void)
 {
     // Quality 1 draws none either: the original stops at the first odd
     // petal count, which is that of the first petal.
-    if (g_EffectsQuality <= 1) {
+    if (g_Settings.effects_quality <= 1) {
         return;
     }
     const ANM_DRAW draw = M_DrawContext();

@@ -39,7 +39,6 @@ float g_GameSpeed;
 PLAYER g_Player;
 GUI g_Gui;
 ASCII_TEXT g_AsciiText;
-uint8_t g_EffectsQuality = 2;
 
 static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
 static char *m_Directory;
