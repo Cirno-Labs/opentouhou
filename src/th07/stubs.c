@@ -2,12 +2,6 @@
 
 #include "core/base/log.h"
 
-RESULT MusicScreen_Register(void)
-{
-    LOG_INFO("MusicScreen_Register is not ported");
-    return OK;
-}
-
 RESULT Ending_Register(void)
 {
     LOG_INFO("Ending_Register is not ported");

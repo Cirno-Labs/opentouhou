@@ -11,7 +11,6 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
-RESULT MusicScreen_Register(void);
 RESULT Ending_Register(void);
 
 // Stand in for App::AddTotalPlayTime, the restart of its clock, and the
