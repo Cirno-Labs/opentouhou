@@ -3,7 +3,7 @@
 
 #include "stg/angle.h"
 #include "th06/files.h"
-#include "th06/note.h"
+#include "stg/note.h"
 
 #include "core/base/assert.h"
 #include "core/base/color.h"

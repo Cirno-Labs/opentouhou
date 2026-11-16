@@ -21,7 +21,7 @@
 #include "core/json.h"
 
 #include "stg/chain.h"
-#include "th06/note.h"
+#include "stg/note.h"
 #include "stg/translation.h"
 
 #include <string.h>

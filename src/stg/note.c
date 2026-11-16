@@ -1,4 +1,4 @@
-#include "th06/note.h"
+#include "stg/note.h"
 
 #include "stg/translation.h"
 
