@@ -22,9 +22,19 @@ typedef struct {
     uint32_t occurrence;
 } M_VIEW_KEY;
 
+// A clear command, positioned among the tick's batches by at_batch: it
+// happens after the first at_batch batches of the tick have drawn.
+typedef struct {
+    int32_t at_batch;
+    int32_t view;
+    uint32_t flags;
+    GFX_COLOR color;
+} M_CLEAR;
+
 typedef ARRAY(GFX_VERTEX) M_VERTEX_ARRAY;
 typedef ARRAY(M_QUAD) M_QUAD_ARRAY;
 typedef ARRAY(GFX_BATCH) M_BATCH_ARRAY;
+typedef ARRAY(M_CLEAR) M_CLEAR_ARRAY;
 typedef ARRAY(GFX_VIEW) M_VIEW_ARRAY;
 typedef ARRAY(GFX_PASS_VIEW) M_PASS_VIEW_ARRAY;
 typedef HASH_MAP(uint64_t, int32_t) M_QUAD_INDEX;
@@ -36,6 +46,7 @@ typedef struct {
     M_VERTEX_ARRAY vertices;
     M_QUAD_ARRAY quads;
     M_BATCH_ARRAY batches;
+    M_CLEAR_ARRAY clears;
     M_VIEW_ARRAY views;
     M_VIEW_KEY_ARRAY view_keys;
     M_QUAD_INDEX quad_ids;
@@ -77,6 +88,7 @@ static void M_InitTick(M_TICK *const tick)
     Array_Init(&tick->vertices, &g_HeapAllocator);
     Array_Init(&tick->quads, &g_HeapAllocator);
     Array_Init(&tick->batches, &g_HeapAllocator);
+    Array_Init(&tick->clears, &g_HeapAllocator);
     Array_Init(&tick->views, &g_HeapAllocator);
     Array_Init(&tick->view_keys, &g_HeapAllocator);
     HashMap_Init(&tick->quad_ids, &g_HeapAllocator);
@@ -90,6 +102,7 @@ static void M_ClearTick(M_TICK *const tick)
     Array_Clear(&tick->vertices);
     Array_Clear(&tick->quads);
     Array_Clear(&tick->batches);
+    Array_Clear(&tick->clears);
     Array_Clear(&tick->views);
     Array_Clear(&tick->view_keys);
     HashMap_Clear(&tick->quad_ids);
@@ -103,6 +116,7 @@ static void M_FreeTick(M_TICK *const tick)
     Array_Free(&tick->vertices);
     Array_Free(&tick->quads);
     Array_Free(&tick->batches);
+    Array_Free(&tick->clears);
     Array_Free(&tick->views);
     Array_Free(&tick->view_keys);
     HashMap_Free(&tick->quad_ids);
@@ -694,6 +708,24 @@ void Gfx_DrawSprite(
     M_AddQuad(state, texture, vertices, motion, id);
 }
 
+void Gfx_Clear(const uint32_t flags, const GFX_COLOR color)
+{
+    if (!m_Frontend.in_tick) {
+        return;
+    }
+    M_Flush();
+    M_TICK *const tick = M_Current();
+    M_BuildPassViews(&tick->views);
+    Array_Append(
+        &tick->clears,
+        ((M_CLEAR) { .at_batch = tick->batches.count,
+                     .view = m_Frontend.view,
+                     .flags = flags,
+                     .color = color }));
+    m_Frontend.backend->clear(
+        flags, color, &m_Frontend.pass_views.items[m_Frontend.view]);
+}
+
 void Gfx_EndTick(void)
 {
     if (!m_Frontend.in_tick) {
@@ -730,10 +762,23 @@ RESULT Gfx_Present(
     M_BlendViews(t);
     M_BlendVertices(t);
     m_Frontend.backend->begin_pass(GFX_PASS_WINDOW, current->clear, &fit);
-    if (current->batches.count > 0) {
+    int32_t drawn = 0;
+    for (int32_t i = 0; i < current->clears.count; i++) {
+        const M_CLEAR *const clear = &current->clears.items[i];
+        if (clear->at_batch > drawn) {
+            m_Frontend.backend->draw(
+                m_Frontend.pass_views.items, current->batches.items + drawn,
+                clear->at_batch - drawn, m_Frontend.blended.items);
+        }
+        m_Frontend.backend->clear(
+            clear->flags, clear->color,
+            &m_Frontend.pass_views.items[clear->view]);
+        drawn = clear->at_batch;
+    }
+    if (current->batches.count > drawn) {
         m_Frontend.backend->draw(
-            m_Frontend.pass_views.items, current->batches.items,
-            current->batches.count, m_Frontend.blended.items);
+            m_Frontend.pass_views.items, current->batches.items + drawn,
+            current->batches.count - drawn, m_Frontend.blended.items);
     }
     m_Frontend.backend->end_pass();
     return OK;
