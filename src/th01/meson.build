@@ -8,6 +8,7 @@ th01_lib = static_library(
   'shape.c',
   'items.c',
   'hud.c',
+  'timer.c',
   'shots.c',
   'reiiden_image.c',
   'pellet_assets.c',
