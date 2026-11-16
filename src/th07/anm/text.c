@@ -2,6 +2,8 @@
 
 #include "th07/anm/texture.h"
 
+#include "stg/note.h"
+
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
@@ -109,7 +111,7 @@ static RESULT M_Measure(
     MUST(TextFont_SetSize(m_Font, (float)(font_height * 2 - 2)));
     const TEXT_STYLE style = M_Style();
     int32_t height;
-    MUST(Text_Measure(m_Font, text, &style, width, &height));
+    MUST(Text_MeasureMarkup(m_Font, text, &style, width, &height));
     return OK;
 }
 
@@ -193,6 +195,7 @@ RESULT Anm_RenderTextToTextureIndex(
     FAIL_IF(
         texture < 0 || texture >= ANM_TEXTURE_COUNT || text == nullptr,
         "Invalid text texture or string");
+    Note_Show(text);
     if (m_Font == nullptr) {
         return OK;
     }
@@ -211,7 +214,7 @@ RESULT Anm_RenderTextToTextureIndex(
     MUST(TextFont_SetSize(m_Font, (float)(font * 2 - 2)));
     const TEXT_STYLE style = M_Style();
     IMAGE glyphs;
-    MUST(Text_Render(m_Font, text, &style, &g_HeapAllocator, &glyphs));
+    MUST(Text_RenderMarkup(m_Font, text, &style, &g_HeapAllocator, &glyphs));
     IMAGE surface =
         Image_Create(M_SURFACE_WIDTH, M_SURFACE_HEIGHT, &g_HeapAllocator);
     if (glyphs.pixels != nullptr) {
