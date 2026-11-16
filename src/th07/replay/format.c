@@ -5,6 +5,7 @@
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
+#include "core/io/writer.h"
 
 #include <limits.h>
 #include <string.h>
@@ -16,6 +17,9 @@
 #define M_STAGE_HEADER_SIZE 0x2c
 #define M_FRAME_SIZE 4
 #define M_VERSION 0x1100
+#define M_VERSION_BYTE 0x62
+#define M_SUB_VERSION 0x100
+#define M_FORMAT_VERSION 30
 #define M_CHECKSUM_START 0x3f000318u
 #define M_CONFIG_SCORE_DISABLED 0x25
 // SaveReplay packs the data from a buffer of 1 MiB.
@@ -235,6 +239,189 @@ static RESULT M_Decode(
     }
     Mem_Free(data);
     return result;
+}
+
+static void M_WriteStage(WRITER *const writer, const REPLAY_STAGE *const stage)
+{
+    Writer_WriteI32(writer, stage->score);
+    Writer_WriteI32(writer, stage->point_items_total);
+    Writer_WriteI32(writer, stage->cherry);
+    Writer_WriteI32(writer, stage->cherry_max);
+    Writer_WriteI32(writer, stage->cherry_plus);
+    Writer_WriteI32(writer, stage->graze_total);
+    Writer_WriteI32(writer, stage->point_extends);
+    Writer_WriteI32(writer, stage->next_extend_points);
+    Writer_WriteU16(writer, stage->rng_seed);
+    Writer_WriteU8(writer, stage->power);
+    Writer_WriteU8(writer, stage->lives);
+    Writer_WriteU8(writer, stage->bombs);
+    Writer_WriteU8(writer, stage->rank);
+    Writer_WriteU8(writer, stage->power_item_combo);
+    Writer_WriteU8(writer, stage->spell_cards);
+    Writer_WriteU32(writer, 0);
+    for (int32_t i = 0; i < stage->frame_count; i++) {
+        Writer_WriteU16(writer, stage->frames[i].buttons);
+        Writer_WriteU16(writer, stage->frames[i].events);
+    }
+}
+
+// Writes the header and every present slot's stage and frame rates, as
+// SaveReplay lays out the data before it is compressed. Leaves the
+// checksum and compressedSize fields zero, for M_Encode to fill once the
+// data is compressed.
+static RESULT M_Write(
+    WRITER *const writer, const REPLAY_FILE *const file,
+    const uint8_t random[3])
+{
+    uint32_t stage_offsets[7] = {};
+    uint32_t fps_offsets[7] = {};
+    size_t offset = M_HEADER_SIZE;
+    for (int32_t slot = 1; slot <= 7; slot++) {
+        if (file->stages[slot] == nullptr) {
+            continue;
+        }
+        FAIL_IF(
+            file->stages[slot]->frame_count < 0
+                || file->stages[slot]->frame_count
+                    > (INT32_MAX - M_STAGE_HEADER_SIZE) / M_FRAME_SIZE,
+            "replay frame count exceeds its size range");
+        const size_t stage_size = M_STAGE_HEADER_SIZE
+            + (size_t)file->stages[slot]->frame_count * M_FRAME_SIZE;
+        FAIL_IF(
+            offset > UINT32_MAX || stage_size > UINT32_MAX - offset,
+            "replay exceeds its offset range");
+        stage_offsets[slot - 1] = (uint32_t)offset;
+        offset += stage_size;
+    }
+    for (int32_t slot = 1; slot <= 7; slot++) {
+        if (file->stages[slot] == nullptr) {
+            continue;
+        }
+        FAIL_IF(
+            offset > UINT32_MAX
+                || (size_t)file->fps_counts[slot] > UINT32_MAX - offset,
+            "replay exceeds its offset range");
+        fps_offsets[slot - 1] = (uint32_t)offset;
+        offset += (size_t)file->fps_counts[slot];
+    }
+    FAIL_IF(
+        offset < M_PLAIN_SIZE || offset - M_PLAIN_SIZE > M_MAX_DATA_SIZE,
+        "replay data exceeds its size range");
+
+    char *name;
+    MUST(Cp932_Encode(file->name, strlen(file->name), &name), "replay name");
+    const size_t name_size = strlen(name);
+    if (name_size > 12) {
+        Mem_Free(name);
+        return FAIL("replay name exceeds twelve CP932 bytes");
+    }
+    uint8_t name_bytes[12] = {};
+    memcpy(name_bytes, name, name_size);
+    Mem_Free(name);
+
+    Writer_WriteBytes(writer, "T7RP", 4);
+    Writer_WriteU16(writer, M_VERSION);
+    Writer_WriteU16(writer, 0);
+    Writer_WriteU32(writer, 0);
+    Writer_WriteU8(writer, random[2]);
+    Writer_WriteU8(writer, random[0]);
+    Writer_WriteU16(writer, 0);
+    Writer_WriteU32(writer, (uint32_t)offset);
+    Writer_WriteU32(writer, 0);
+    Writer_WriteU32(writer, (uint32_t)(offset - M_PLAIN_SIZE));
+    for (int32_t i = 0; i < 7; i++) {
+        Writer_WriteU32(writer, stage_offsets[i]);
+    }
+    for (int32_t i = 0; i < 7; i++) {
+        Writer_WriteU32(writer, fps_offsets[i]);
+    }
+    Writer_WriteU8(writer, random[1]);
+    Writer_WriteU8(writer, M_VERSION_BYTE);
+    Writer_WriteU8(writer, file->shot);
+    Writer_WriteU8(writer, file->difficulty);
+    Writer_WriteBytes(writer, file->date, sizeof(file->date));
+    Writer_WriteBytes(writer, name_bytes, sizeof(name_bytes));
+    Writer_WriteU16(writer, M_SUB_VERSION);
+    Writer_WriteU32(writer, file->score);
+    Writer_WriteBytes(writer, file->config, sizeof(file->config));
+    uint8_t pad[0x20] = {};
+    Writer_WriteBytes(writer, pad, sizeof(pad));
+    Writer_WriteF32(writer, file->slowdown + 1.12f);
+    Writer_WriteF32(writer, file->slowdown);
+    Writer_WriteF32(writer, file->slowdown + 2.34f);
+    Writer_WriteU32(writer, M_FORMAT_VERSION);
+    Writer_WriteU32(writer, file->exe_size);
+    Writer_WriteU32(writer, file->exe_checksum);
+    Writer_WriteBytes(writer, file->exe_version, sizeof(file->exe_version));
+    Writer_WriteU16(writer, 0);
+    for (int32_t slot = 1; slot <= 7; slot++) {
+        if (file->stages[slot] != nullptr) {
+            M_WriteStage(writer, file->stages[slot]);
+        }
+    }
+    for (int32_t slot = 1; slot <= 7; slot++) {
+        if (file->stages[slot] != nullptr) {
+            Writer_WriteBytes(
+                writer, file->fps[slot], (size_t)file->fps_counts[slot]);
+        }
+    }
+    return Writer_Result(writer);
+}
+
+// Compresses the data M_Write lays out, then seals it: fills the
+// compressedSize and checksum fields and encrypts everything from the key
+// on, the inverse of M_Decrypt and M_Decompress.
+static RESULT M_Encode(
+    const REPLAY_FILE *const file, const uint8_t random[3], WRITER *const out)
+{
+    WRITER plain;
+    Writer_OpenBuffer(&plain, &g_HeapAllocator, nullptr);
+    RESULT result = M_Write(&plain, file, random);
+    if (!IS_OK(result)) {
+        Result_Ignore(Writer_Close(&plain));
+        return result;
+    }
+    size_t plain_size = Writer_Tell(&plain);
+    WRITER packed;
+    Writer_OpenBuffer(&packed, &g_HeapAllocator, nullptr);
+    Lzss_Encode(plain.data + M_PLAIN_SIZE, plain_size - M_PLAIN_SIZE, &packed);
+    size_t compressed_size = Writer_Tell(&packed);
+    Writer_Seek(&plain, 20);
+    Writer_WriteU32(&plain, (uint32_t)compressed_size);
+    uint32_t checksum = M_CHECKSUM_START;
+    for (size_t i = M_KEY_OFFSET; i < M_PLAIN_SIZE; i++) {
+        checksum += plain.data[i];
+    }
+    for (size_t i = 0; i < compressed_size; i++) {
+        checksum += packed.data[i];
+    }
+    Writer_Seek(&plain, 8);
+    Writer_WriteU32(&plain, checksum);
+    uint8_t *const header = Writer_TakeBuffer(&plain, &plain_size);
+    Result_Ignore(Writer_Close(&plain));
+    uint8_t *const body = Writer_TakeBuffer(&packed, &compressed_size);
+    Result_Ignore(Writer_Close(&packed));
+    uint8_t key = header[M_KEY_OFFSET];
+    for (size_t i = M_CIPHER_START; i < M_PLAIN_SIZE; i++) {
+        header[i] = (uint8_t)(header[i] + key);
+        key = (uint8_t)(key + 7);
+    }
+    for (size_t i = 0; i < compressed_size; i++) {
+        body[i] = (uint8_t)(body[i] + key);
+        key = (uint8_t)(key + 7);
+    }
+    Writer_WriteBytes(out, header, M_PLAIN_SIZE);
+    Writer_WriteBytes(out, body, compressed_size);
+    Mem_Free(header);
+    Mem_Free(body);
+    return Writer_Result(out);
+}
+
+RESULT Replay_Write(
+    const REPLAY_FILE *const file, WRITER *const writer,
+    const uint8_t random[3])
+{
+    return M_Encode(file, random, writer);
 }
 
 RESULT Replay_Read(READER *const reader, REPLAY_FILE **const out)
