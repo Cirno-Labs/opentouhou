@@ -137,6 +137,17 @@ if build_games
     link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
     win_subsystem: 'console',
   )
+  executable(
+    'th07record',
+    'replay/th07/recorder/main.c',
+    'replay/th07/recorder/game.c',
+    'src/th07/play_time.c',
+    c_args: [layer_include['th07']] + shell_include,
+    implicit_include_directories: false,
+    dependencies: [core_dep, stg_dep, sdl3, sdl3_ttf, zlib],
+    link_with: [th07_lib, replay_recorder_lib],
+    win_subsystem: 'console',
+  )
 endif
 
 if build_othpatch

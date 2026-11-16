@@ -41,6 +41,12 @@ typedef struct {
     float x, y, width, height, min_z, max_z;
 } VIEWPORT;
 
+VEC2 Vec2_Sub(VEC2 a, VEC2 b);
+float Vec2_Dot(VEC2 a, VEC2 b);
+
+// Returns sqrt(Vec2_Dot(v, v)).
+float Vec2_Length(VEC2 v);
+
 VEC3 Vec3_Add(VEC3 a, VEC3 b);
 VEC3 Vec3_Sub(VEC3 a, VEC3 b);
 VEC3 Vec3_Scale(VEC3 v, float s);
