@@ -59,7 +59,11 @@ static void M_Observe(RUNNER_POINT *const out)
     *out = (RUNNER_POINT) {
         .stage = g_GameManager.run.stage,
         .in_play = g_GameManager.mode.playing,
-        .replay_ending = Scene_GetRequested() == SCENE_REPLAY_END,
+        // A practice replay does not know it is one: clearing its stage
+        // requests the next, which the replay lacks, and the game falls
+        // back to the title.
+        .replay_ending = Scene_GetRequested() == SCENE_REPLAY_END
+            || Scene_GetRequested() == SCENE_NEXT_STAGE,
         .at_title = Scene_Get() == SCENE_TITLE,
     };
 }
