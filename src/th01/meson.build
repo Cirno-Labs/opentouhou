@@ -5,6 +5,7 @@ th01_lib = static_library(
   'bfnt.c',
   'bos.c',
   'sprite.c',
+  'shape.c',
   'shots.c',
   'player.c',
   'bomb.c',

@@ -2368,7 +2368,7 @@ if build_games
     ),
     suite: 'unit',
   )
-  foreach part : ['bfnt', 'bos', 'sprite', 'shots', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'stage_objects', 'stage', 'stage_obstacles']
+  foreach part : ['bfnt', 'bos', 'sprite', 'shape', 'shots', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'stage_objects', 'stage', 'stage_obstacles']
     test(
       'th01/' + part,
       executable(
