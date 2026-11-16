@@ -110,3 +110,16 @@ CHAIN_STATUS GuiDraw_Frame(void);
 // after stage 6, and after stage 6 itself outside practice and outside a
 // replay that does not hold stage 5.
 bool GuiStageClear_CountsLivesAndBombs(void);
+
+// Loads base_tsa's nameplate text images (the speaker's name and their
+// title) when the active patches hold their files. A nullptr stack does
+// nothing.
+void GuiTextImage_Load(void);
+void GuiTextImage_Release(void);
+
+// Selects the row of a stage's nameplate text images and shows them in
+// place of a live-rendered name or title.
+void GuiTextImage_ShowStage(int32_t stage);
+
+// Returns whether a text image currently replaces sprite.
+bool GuiTextImage_Replaces(int32_t sprite);
