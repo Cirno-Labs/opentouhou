@@ -2,7 +2,7 @@
 
 #include "th06/anm/texture.h"
 #include "th06/note.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/log.h"
 #include "core/text.h"

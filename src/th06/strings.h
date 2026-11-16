@@ -1,10 +1,12 @@
 #pragma once
 
+#include "stg/translation.h"
+
 // Lists the text of the executable that the player sees, as
 // X(id, address, text). address is the string's address in the retail
 // 1.02h executable, or 0 where it is not known yet. text is the UTF-8
 // default. A replacement of a format string keeps its conversions.
-// th06/translation replaces the entries with the translations of patches.
+// stg/translation replaces the entries with the translations of patches.
 #define TH06_STRINGS(X)                                                        \
     X(SHOT_NAME_REIMU_A, 0x46bb98, "博麗 霊夢 (霊)")                           \
     X(SHOT_NAME_REIMU_B, 0x46bb88, "博麗 霊夢 (夢)")                           \
@@ -63,3 +65,6 @@ typedef enum {
 } STRING;
 
 extern const char *g_Strings[STRING_COUNT];
+
+// Describes th06 to Translation_Init.
+extern const TRANSLATION_GAME g_TranslationGame;

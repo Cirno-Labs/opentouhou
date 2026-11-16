@@ -1,6 +1,6 @@
 #include "th06/anm/draw.h"
 
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/utils.h"

@@ -3,18 +3,20 @@
 #include "core/base/log.h"
 #include "core/patch.h"
 
+#include "th06/note.h"
+#include "stg/translation.h"
+
 #include "th06/buttons.h"
 #include "th06/anm.h"
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
-#include "th06/note.h"
 #include "th06/screens/main.h"
 #include "th06/replay.h"
 #include "th06/screens/result.h"
 #include "th06/settings.h"
 #include "th06/sound.h"
-#include "th06/translation.h"
+#include "th06/strings.h"
 
 #include "version.h"
 
@@ -55,7 +57,7 @@ static RESULT M_Init(void)
 {
     MUST(Files_Init(Shell_GetDataDir()));
     Files_SetPatches(Shell_GetPatches());
-    Translation_Init(Shell_GetPatches());
+    Translation_Init(Shell_GetPatches(), &g_TranslationGame);
     if (Patch_ChangesGameplay(Shell_GetPatches())) {
         LOG_INFO("The patches change gameplay, so replays are not saved");
         ResultScreen_RefuseReplays(true);

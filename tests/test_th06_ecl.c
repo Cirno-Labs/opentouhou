@@ -21,7 +21,8 @@
 #include "th06/player.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
+#include "th06/strings.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -1585,7 +1586,7 @@ TEST(a_translated_spell_card_name_is_shown_but_not_recorded)
     CHECK(Result_Log(
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
-    Translation_Init(stack);
+    Translation_Init(stack, &g_TranslationGame);
     const uint8_t args[] = { 2, 0, 9, 0, 'S', 'p', 'e', 'l', 'l', 0, 0, 0 };
     EclBuilder_InstrBytes(&m_Builder, m_Sub, 0, 93, M_ALL, args, sizeof(args));
     M_Load();

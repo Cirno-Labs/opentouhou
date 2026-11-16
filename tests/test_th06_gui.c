@@ -17,7 +17,8 @@
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
+#include "th06/strings.h"
 
 #include "core/base/memory.h"
 #include "core/image.h"
@@ -1078,7 +1079,7 @@ static void M_UseBaseTsa(void)
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &m_Patches),
         LOG_LEVEL_ERROR));
     Mem_Free(patches);
-    Translation_Init(m_Patches);
+    Translation_Init(m_Patches, &g_TranslationGame);
     CHECK(Translation_HasBaseTsa());
 }
 
@@ -1341,7 +1342,7 @@ static void M_SetupTextImages(
     Mem_Free(patches);
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     Files_SetPatches(m_Patches);
-    Translation_Init(m_Patches);
+    Translation_Init(m_Patches, &g_TranslationGame);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
@@ -1873,7 +1874,7 @@ static void M_SetupNotes(const char *const case_name, const char *const diff)
     Mem_Free(patches);
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     Files_SetPatches(m_Patches);
-    Translation_Init(m_Patches);
+    Translation_Init(m_Patches, &g_TranslationGame);
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));

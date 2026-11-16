@@ -2,7 +2,8 @@
 #include "th06/anm/private.h"
 
 #include "th06/files.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
+#include "th06/strings.h"
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
@@ -1024,7 +1025,7 @@ TEST(base_tsa_world_sprites_take_their_size_in_pixels)
     CHECK(Result_Log(
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
-    Translation_Init(stack);
+    Translation_Init(stack, &g_TranslationGame);
     const VEC2 size = M_Draw3DSize();
     CHECK(size.x == 384.0f);
     CHECK(size.y == -16.0f);
@@ -1113,7 +1114,7 @@ TEST(base_tsa_text_rows_scale_twice_the_row_by_32_pixels)
     CHECK(Result_Log(
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
-    Translation_Init(stack);
+    Translation_Init(stack, &g_TranslationGame);
     CHECK(M_DrawsScaledRow(400, 32));
     Translation_Shutdown();
     Patch_CloseStack(stack);
