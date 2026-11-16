@@ -62,3 +62,8 @@ bool Shell_IsFullscreen(void)
 void Shell_RequestFullscreen(const bool fullscreen)
 {
 }
+
+uint64_t Shell_GetWallClock(void)
+{
+    return 0;
+}

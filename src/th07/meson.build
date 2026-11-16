@@ -77,7 +77,7 @@ th07_main_lib = static_library(
 # source of the executable, not of a library, because the entry point that
 # Windows starts from (WinMain) is looked up only after the libraries are
 # searched.
-th07_sources = [files('entry.c', 'stubs.c')]
+th07_sources = [files('entry.c', 'play_time.c')]
 if host_machine.system() == 'windows'
   th07_sources += import('windows').compile_resources(
     'th07.rc',

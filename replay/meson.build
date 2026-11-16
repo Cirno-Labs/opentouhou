@@ -41,7 +41,7 @@ th07_runner_lib = static_library(
   'th07/runner/game.c',
   'th07/runner/replay.c',
   'th07/runner/state.c',
-  '../src/th07/stubs.c',
+  '../src/th07/play_time.c',
   c_args: [layer_include['th07']] + core_include + replay_include + stg_include + shell_include,
   implicit_include_directories: false,
   dependencies: [sdl3, zlib, cc_libm],

@@ -8,7 +8,6 @@
 #include "th07/screens/music/screen.h"
 #include "th07/screens/result/screen.h"
 #include "th07/settings.h"
-#include "th07/stubs.h"
 
 static SCENE m_Current;
 static SCENE m_Requested;

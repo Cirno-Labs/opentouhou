@@ -7,7 +7,6 @@
 #include "th07/anm.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
-#include "th07/stubs.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
