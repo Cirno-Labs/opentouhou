@@ -8,6 +8,7 @@ th01_lib = static_library(
   'shape.c',
   'particles.c',
   'wave.c',
+  'interleave.c',
   'items.c',
   'hud.c',
   'timer.c',
