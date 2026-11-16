@@ -455,6 +455,32 @@ TEST(stages_2_to_6_take_the_previous_slot_score)
     }
 }
 
+// Plays stage 1 of four frames for calcs, ends it and starts stage 3,
+// which takes the score of slot 2, 0x12345678.
+static int32_t M_ScoreAfterEnding(const int32_t calcs)
+{
+    M_SetUp(1);
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[1], 0x10, 4);
+    M_Frames(&spec.slots[2], 0x20, 4);
+    M_Frames(&spec.slots[3], 0x30, 4);
+    spec.slots[2].score = 0x12345678;
+    M_Play(&spec);
+    M_Calcs(calcs);
+    Replay_EndStage();
+    g_GameManager.run.stage = 3;
+    CHECK(Result_Log(Replay_Register(REPLAY_PLAY, M_PATH), LOG_LEVEL_ERROR));
+    const int32_t score = (int32_t)g_GameManager.score.value;
+    M_TearDown();
+    return score;
+}
+
+TEST(ending_a_played_stage_a_calc_late_clears_the_next_score_low_word)
+{
+    CHECK_EQ_INT(M_ScoreAfterEnding(2), 0x12345678);
+    CHECK_EQ_INT(M_ScoreAfterEnding(3), 0x12340000);
+}
+
 TEST(phantasm_plays_slot_7)
 {
     M_SetUp(8);
