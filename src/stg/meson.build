@@ -17,6 +17,14 @@ stg_chain_lib = static_library(
   implicit_include_directories: false,
 )
 
+stg_end_diff_lib = static_library(
+  'stg_end_diff',
+  'end_diff.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+  dependencies: [core_dep],
+)
+
 stg_lzss_lib = static_library(
   'stg_lzss',
   'lzss.c',
@@ -74,8 +82,9 @@ stg_note_lib = static_library(
 stg_dep = declare_dependency(
   compile_args: [layer_include['stg']],
   link_with: [
-    stg_angle_lib, stg_chain_lib, stg_lzss_lib, stg_note_lib, stg_pbg3_lib,
-    stg_pbg4_lib, stg_rng_lib, stg_timer_lib, stg_translation_lib,
+    stg_angle_lib, stg_chain_lib, stg_end_diff_lib, stg_lzss_lib,
+    stg_note_lib, stg_pbg3_lib, stg_pbg4_lib, stg_rng_lib, stg_timer_lib,
+    stg_translation_lib,
   ],
   dependencies: [core_dep],
 )

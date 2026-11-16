@@ -727,8 +727,8 @@ test(
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
+      th06_lib, stg_translation_lib, stg_note_lib, stg_end_diff_lib, stg_rng_lib, stg_pbg3_lib,
+      core_vfs_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
     ],
     dependencies: [sdl3],
   ),
@@ -833,6 +833,20 @@ test(
     dependencies: [sdl3],
   ),
   env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_note'},
+  suite: 'unit',
+)
+
+test(
+  'stg/end_diff',
+  executable(
+    'test_end_diff',
+    'test_end_diff.c',
+    c_args: core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_end_diff_lib, core_json_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_end_diff'},
   suite: 'unit',
 )
 
