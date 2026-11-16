@@ -222,7 +222,7 @@ void Hud_ScoreAndCombo(HUD *const hud, const HUD_CONTEXT *const c)
             const int32_t left = bank == 1 ? 256 : 400;
             uint32_t divisor = bank == 1 ? 1000000 : 10;
             for (int32_t i = 0; i < count; i++, divisor /= 10) {
-                const int64_t current = bank == 1 ? value : combo;
+                const int64_t current = bank == 1 ? (int64_t)value : combo;
                 if (hud->force_numbers
                     || current / divisor % 10
                         != M_Signed32(previous) / divisor % 10) {

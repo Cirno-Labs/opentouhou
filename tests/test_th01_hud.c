@@ -140,3 +140,19 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
     CHECK_EQ_INT(f.hud.maximum_combo, 0);
     Arena_Free(&f.arena);
 }
+
+TEST(negative_unchanged_combo_keeps_glyphs_and_background)
+{
+    FIXTURE f;
+    M_Init(&f);
+    Hud_SnapNumbers(&f.hud, &f.context, true);
+    for (int32_t page = 0; page < 2; page++) {
+        memset(f.video.pages[page] + 17 * 640 + 400, 7, 32);
+    }
+    f.gameplay.combo = -1;
+    f.hud.combo_previous = -1;
+    Hud_ScoreAndCombo(&f.hud, &f.context);
+    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 400, 17), 7);
+    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 400, 17), 7);
+    Arena_Free(&f.arena);
+}
