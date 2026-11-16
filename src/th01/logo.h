@@ -26,7 +26,7 @@ typedef struct {
 // Keep video and its page storage alive while the logo is in use.
 void Logo_Init(LOGO *logo, VIDEO *video);
 
-// Advances one 60 Hz shell tick. Each animation update spans two ticks.
+// Advances one reference VSync. Each animation update spans two VSyncs.
 // changed names the page drawn this tick, or -1. Returns false at the end
 // of the fade. sprites must contain at least sixteen 64 by 16 patterns.
 bool Logo_Tick(LOGO *logo, const BFNT *sprites, int32_t *changed);

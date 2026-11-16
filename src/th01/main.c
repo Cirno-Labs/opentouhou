@@ -1,6 +1,7 @@
 #include "th01/main.h"
 
 #include "th01/logo.h"
+#include "th01/frame.h"
 #include "th01/input.h"
 #include "th01/settings.h"
 
@@ -14,11 +15,14 @@
 
 #define M_ASSET_CAPACITY (64 * 1024 * 1024)
 
+static_assert(SHELL_TICK_RATE == 60);
+
 static const char *const m_DataFiles[] = { "TOUHOU.DAT" };
 static ARENA m_Assets;
 static BFNT m_Sprites;
 static LOGO m_Logo;
 static VIDEO m_Video;
+static FRAME_CLOCK m_Frame;
 static GFX_TEXTURE *m_Pages[2];
 static bool m_IntroPressed;
 
@@ -49,6 +53,7 @@ static RESULT M_Init(void)
             || m_Sprites.count != 16,
         "TOUHOU.DAT must contain sixteen 64 by 16 logo sprites");
     Video_Init(&m_Video, Arena_Allocator(&m_Assets));
+    memset(&m_Frame, 0, sizeof(m_Frame));
     m_IntroPressed = false;
     Logo_Init(&m_Logo, &m_Video);
     for (int32_t i = 0; i < 2; i++) {
@@ -69,19 +74,21 @@ static bool M_Tick(const void *const input)
     if (m_IntroPressed) {
         return false;
     }
-    int32_t changed;
-    if (!Logo_Tick(&m_Logo, &m_Sprites, &changed)) {
-        return false;
-    }
-    if (changed >= 0) {
-        GfxTexture_UploadIndices(
-            m_Pages[changed], (GFX_RECT) { 0, 0, LOGO_WIDTH, LOGO_HEIGHT },
-            m_Video.pages[changed]);
-        GFX_COLOR palette[16];
-        Logo_Palette(&m_Logo, &m_Sprites, palette);
-        Video_SetPalette(&m_Video, palette);
-        for (int32_t i = 0; i < 2; i++) {
-            GfxTexture_UploadPalette(m_Pages[i], 0, 16, m_Video.palette);
+    if (Frame_Advance(&m_Frame)) {
+        int32_t changed;
+        if (!Logo_Tick(&m_Logo, &m_Sprites, &changed)) {
+            return false;
+        }
+        if (changed >= 0) {
+            GfxTexture_UploadIndices(
+                m_Pages[changed], (GFX_RECT) { 0, 0, LOGO_WIDTH, LOGO_HEIGHT },
+                m_Video.pages[changed]);
+            GFX_COLOR palette[16];
+            Logo_Palette(&m_Logo, &m_Sprites, palette);
+            Video_SetPalette(&m_Video, palette);
+            for (int32_t i = 0; i < 2; i++) {
+                GfxTexture_UploadPalette(m_Pages[i], 0, 16, m_Video.palette);
+            }
         }
     }
     const GFX_COLOR white = { 255, 255, 255, 255 };
