@@ -36,6 +36,8 @@ th07_lib = static_library(
   'replay/store.c',
   'scene.c',
   'screen_effect.c',
+  'screens/ending/screen.c',
+  'screens/ending/script.c',
   'screens/main.c',
   'screens/music/comments.c',
   'screens/music/screen.c',
