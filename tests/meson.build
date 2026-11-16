@@ -851,6 +851,20 @@ test(
 )
 
 test(
+  'stg/msg_diff',
+  executable(
+    'test_msg_diff',
+    'test_msg_diff.c',
+    c_args: core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_msg_diff_lib, core_json_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
+  ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_msg_diff'},
+  suite: 'unit',
+)
+
+test(
   'stg/translation',
   executable(
     'test_translation',

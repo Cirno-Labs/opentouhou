@@ -11,21 +11,18 @@
 #include "th06/strings.h"
 
 #include "core/base/arena.h"
-#include "core/base/array.h"
 #include "core/base/cp932.h"
-#include "core/base/log.h"
 #include "core/base/memory.h"
-#include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 #include "core/json.h"
 
 #include "stg/chain.h"
+#include "stg/msg_diff.h"
 #include "stg/note.h"
 #include "stg/translation.h"
 
 #include <string.h>
-#include <stdio.h>
 
 #define M_DIFF_ARENA_CAPACITY (16 * 1024 * 1024)
 
@@ -53,40 +50,6 @@ typedef enum {
 // lines. index is the script or sprite of opcodes 1 and 2, the line of
 // opcodes 3 and 8, and the label of opcode 5. value holds the argument of
 // opcodes 4, 7 and 13.
-typedef struct {
-    int32_t time;
-    uint8_t opcode;
-    int16_t who;
-    int16_t index;
-    int32_t value;
-    char *text; // the text of opcodes 3 and 8, in UTF-8
-    bool removes_note; // drawing text hides the shown translator note
-} M_INSTR;
-
-typedef struct {
-    M_INSTR *instrs;
-    int32_t count;
-} M_SCRIPT;
-
-typedef ARRAY(M_INSTR) M_INSTR_ARRAY;
-
-// Holds the state of applying the jdiff of one script, as thcrap's MSG
-// patcher keeps it. A box is the lines from a line 0 to the next line 0.
-typedef struct {
-    const JSON_VALUE *entry;
-    M_INSTR_ARRAY out;
-    int32_t time;
-    int32_t box; // counts the line instructions of a time without a diff
-    const JSON_VALUE *lines; // the lines of the box, or nullptr
-    int32_t line;
-    int32_t last_opcode; // the opcode of the last replaced line, or -1
-    int32_t last_line; // the position in out of the last replaced line
-    // Holds the lines of the box whose replaced line had a translator note.
-    // Holds entry until the first replaced line, and nullptr after a line
-    // that hides the note.
-    const JSON_VALUE *noted;
-} M_PATCH_STATE;
-
 // Tells how a frame of the dialogue script ended.
 typedef enum {
     M_RUN_ENDED,
@@ -127,7 +90,7 @@ static const M_STAGE_FILES m_StageFiles[] = {
       "data/msg7.dat" },
 };
 
-static M_SCRIPT *m_Scripts;
+static MSG_SCRIPT *m_Scripts;
 static int32_t m_ScriptCount;
 static CHAIN_ELEM m_CalcElem;
 static CHAIN_ELEM m_DrawElem;
@@ -170,7 +133,7 @@ static size_t M_ArgsSize(const uint8_t opcode)
     }
 }
 
-static RESULT M_CheckInstr(const M_INSTR *const instr)
+static RESULT M_CheckInstr(const MSG_INSTR *const instr)
 {
     switch (instr->opcode) {
     case M_OP_PORTRAIT_SCRIPT:
@@ -203,7 +166,7 @@ static RESULT M_CheckInstr(const M_INSTR *const instr)
 
 // Reads the instruction at the position into instr, and moves to the next
 // one. On failure, instr->text may hold a text to release.
-static RESULT M_ReadInstr(READER *const reader, M_INSTR *const instr)
+static RESULT M_ReadInstr(READER *const reader, MSG_INSTR *const instr)
 {
     const size_t start = Reader_Tell(reader);
     instr->time = Reader_ReadU16(reader);
@@ -256,20 +219,20 @@ static RESULT M_ReadInstr(READER *const reader, M_INSTR *const instr)
 
 // Parses the script at offset up to the first instruction it stops on.
 static RESULT M_ParseScript(
-    READER *const reader, const size_t offset, M_SCRIPT *const script)
+    READER *const reader, const size_t offset, MSG_SCRIPT *const script)
 {
     Reader_Seek(reader, offset);
     int32_t count = 0;
-    M_INSTR instr;
+    MSG_INSTR instr;
     do {
-        instr = (M_INSTR) {};
+        instr = (MSG_INSTR) {};
         const RESULT result = M_ReadInstr(reader, &instr);
         Mem_Free(instr.text);
         MUST(result, "instruction %d", count);
         count++;
     } while (!M_IsFinal(instr.opcode));
 
-    script->instrs = Mem_AllocArrZ((size_t)count, sizeof(M_INSTR));
+    script->instrs = Mem_AllocArrZ((size_t)count, sizeof(MSG_INSTR));
     script->count = count;
     Reader_Seek(reader, offset);
     for (int32_t i = 0; i < count; i++) {
@@ -285,7 +248,7 @@ static RESULT M_ParseMsg(READER *const reader)
         Reader_Failed(reader) || count < 0
             || (size_t)count > Reader_Remaining(reader) / 4,
         "bad header");
-    m_Scripts = Mem_AllocArrZ((size_t)count, sizeof(M_SCRIPT));
+    m_Scripts = Mem_AllocArrZ((size_t)count, sizeof(MSG_SCRIPT));
     m_ScriptCount = count;
     for (int32_t i = 0; i < count; i++) {
         Reader_Seek(reader, 4 + 4 * (size_t)i);
@@ -315,167 +278,20 @@ static void M_FreeMsg(void)
     }
 }
 
-static void M_SetText(M_INSTR *const instr, const char *const text)
-{
-    Mem_Free(instr->text);
-    instr->text = Str_Dup(text);
-}
-
-// Gives instr a replaced line of the box. As thcrap's MSG patcher marks
-// the lines, the line hides the shown translator note when it has no note
-// and it is the first replaced line of the script, or the first one of
-// another box after a line with a note.
-static void M_TakeLine(
-    M_PATCH_STATE *const state, M_INSTR *const instr, const char *const text)
-{
-    M_SetText(instr, text);
-    instr->removes_note = false;
-    if (strchr(text, '\x14') != nullptr) {
-        state->noted = state->lines;
-    } else if (state->noted != nullptr && state->noted != state->lines) {
-        instr->removes_note = true;
-        state->noted = nullptr;
-    }
-}
-
-// Adds the lines of the box that its instructions did not take, after the
-// last replaced line, as copies of it.
-static void M_EndBox(M_PATCH_STATE *const state)
-{
-    if (state->last_opcode >= 0 && state->lines != nullptr) {
-        const int32_t count = state->lines->array.count;
-        for (; state->line < count; state->line++) {
-            const char *const text =
-                Json_GetString(Json_At(state->lines, state->line), nullptr);
-            if (text == nullptr) {
-                continue;
-            }
-            if (state->line >= GUI_MSG_LINE_COUNT) {
-                LOG_WARNING(
-                    "Dropped the dialogue line %d at time %d: a box has %d "
-                    "lines",
-                    state->line, state->time, GUI_MSG_LINE_COUNT);
-                continue;
-            }
-            M_INSTR instr = state->out.items[state->last_line];
-            instr.index = (int16_t)state->line;
-            instr.text = nullptr;
-            M_TakeLine(state, &instr, text);
-            state->last_line++;
-            Array_Insert(&state->out, state->last_line, instr);
-        }
-    }
-    state->line = 0;
-    state->lines = nullptr;
-}
-
-// Applies the diff to the line instruction instr, which is the last of
-// out. Returns whether instr stays.
-static bool M_PatchLine(M_PATCH_STATE *const state, M_INSTR *const instr)
-{
-    if (state->lines == nullptr) {
-        state->box++;
-        char key[48];
-        if (instr->opcode == M_OP_NAMEPLATE) {
-            snprintf(key, sizeof(key), "%d_h1_%d", state->time, state->box);
-        } else {
-            snprintf(key, sizeof(key), "%d_%d", state->time, state->box);
-        }
-        const JSON_VALUE *lines = Json_Get(state->entry, key);
-        if (lines != nullptr && lines->type == JSON_OBJECT) {
-            lines = Json_Get(lines, "lines");
-        }
-        if (lines != nullptr && lines->type == JSON_ARRAY) {
-            state->lines = lines;
-        }
-    }
-    if (state->lines == nullptr) {
-        return true;
-    }
-    const char *const text =
-        Json_GetString(Json_At(state->lines, state->line), nullptr);
-    state->line++;
-    if (text == nullptr) {
-        return false;
-    }
-    M_TakeLine(state, instr, text);
-    state->last_opcode = instr->opcode;
-    state->last_line = state->out.count - 1;
-    return true;
-}
-
-// Returns whether the box counter starts again for a line 0 of opcode
-// after a line of last_opcode. thcrap keeps counting only between two
-// lines of opcode 3.
-static bool M_RestartsBoxes(const int32_t last_opcode, const uint8_t opcode)
-{
-    return last_opcode == M_OP_NAMEPLATE || opcode == M_OP_NAMEPLATE;
-}
-
-// Applies the jdiff entry of a script, as thcrap's th06 MSG patcher does:
-// each box of a time code takes its lines from "<time>_<box>", or from
-// "<time>_h1_<box>" for nameplates. Fewer lines delete the extra line
-// instructions; more lines add copies of the last one.
-static void M_PatchScript(M_SCRIPT *const script, const JSON_VALUE *const entry)
-{
-    M_PATCH_STATE state = {
-        .entry = entry,
-        .time = -1,
-        .box = -1,
-        .last_opcode = -1,
-        .noted = entry,
-    };
-    Array_Init(&state.out, &g_HeapAllocator);
-    for (int32_t i = 0; i < script->count; i++) {
-        M_INSTR instr = script->instrs[i];
-        if (M_IsFinal(instr.opcode)) {
-            M_EndBox(&state);
-        }
-        if (instr.time != state.time) {
-            state.time = instr.time;
-            state.box = -1;
-        }
-        Array_Append(&state.out, instr);
-        if (instr.opcode != M_OP_LINE && instr.opcode != M_OP_NAMEPLATE) {
-            continue;
-        }
-        if (instr.index == 0) {
-            M_EndBox(&state);
-            if (state.last_opcode >= 0
-                && M_RestartsBoxes(state.last_opcode, instr.opcode)) {
-                state.box = -1;
-            }
-        }
-        state.line = instr.index;
-        M_INSTR *const last = &state.out.items[state.out.count - 1];
-        if (!M_PatchLine(&state, last)) {
-            Mem_Free(last->text);
-            state.out.count--;
-        }
-    }
-    Mem_Free(script->instrs);
-    script->instrs = Mem_AllocArr((size_t)state.out.count, sizeof(M_INSTR));
-    memcpy(
-        script->instrs, state.out.items,
-        (size_t)state.out.count * sizeof(M_INSTR));
-    script->count = state.out.count;
-    Array_Free(&state.out);
-}
-
 static void M_PatchMsg(const char *const path)
 {
     ARENA arena;
     Arena_Init(&arena, "dialogue jdiff", M_DIFF_ARENA_CAPACITY);
     const JSON_VALUE *const diff =
         Files_LoadDiff(path, Arena_Allocator(&arena));
-    for (int32_t i = 0; diff != nullptr && i < m_ScriptCount; i++) {
-        char key[16];
-        snprintf(key, sizeof(key), "%d", i);
-        const JSON_VALUE *const entry = Json_Get(diff, key);
-        if (entry != nullptr && entry->type == JSON_OBJECT) {
-            M_PatchScript(&m_Scripts[i], entry);
-        }
-    }
+    MsgDiff_Apply(
+        m_Scripts, m_ScriptCount, diff,
+        (MSG_DIFF_FORMAT) {
+            .line = M_OP_LINE,
+            .nameplate = M_OP_NAMEPLATE,
+            .line_count = GUI_MSG_LINE_COUNT,
+            .is_final = M_IsFinal,
+        });
     Arena_Free(&arena);
 }
 
@@ -683,7 +499,7 @@ static void M_NextScene(void)
     }
 }
 
-static void M_ShowLine(const M_INSTR *const instr)
+static void M_ShowLine(const MSG_INSTR *const instr)
 {
     if (instr->index == 0 && g_Gui.msg.lines[1].script_index >= 0) {
         g_Gui.msg.line_texts[1] = " ";
@@ -709,7 +525,7 @@ static void M_ShowLine(const M_INSTR *const instr)
 // Returns whether the wait of instr holds the script this frame. The
 // shoot button ends it only after 8 frames, and only on the frame it is
 // pressed.
-static bool M_Waits(const M_INSTR *const instr)
+static bool M_Waits(const MSG_INSTR *const instr)
 {
     if (M_SkipHeld()
         || (g_Buttons.pressed.shoot
@@ -725,12 +541,12 @@ static bool M_Waits(const M_INSTR *const instr)
 
 static M_RUN M_RunInstrs(void)
 {
-    const M_SCRIPT *const script = &m_Scripts[g_Gui.msg.script];
+    const MSG_SCRIPT *const script = &m_Scripts[g_Gui.msg.script];
     if (M_SkipHeld()) {
         Timer_Set(&g_Gui.msg.timer, script->instrs[g_Gui.msg.pc].time);
     }
     for (;;) {
-        const M_INSTR *const instr = &script->instrs[g_Gui.msg.pc];
+        const MSG_INSTR *const instr = &script->instrs[g_Gui.msg.pc];
         if (g_Gui.msg.timer.current < instr->time) {
             return M_RUN_WAITING;
         }
