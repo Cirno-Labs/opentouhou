@@ -66,11 +66,12 @@ void Video_Box(
 // Reproduce the source's integer-slope clipping and Bresenham rounding.
 // Coordinates must fit signed 16 bits. Oblique lines omit their final
 // accumulated byte/row group; horizontal and vertical lines include both
-// endpoints. Intermediate clipping and cursor arithmetic must fit signed
-// 16 bits. Mask writes use 15-bit planar addresses; hidden bytes are ignored.
-// Patterned lines rotate a 16-bit horizontal mask at each cursor, with low
-// byte first. Horizontal lines ignore the pattern; vertical lines repeat it.
-// These operations allocate nothing and preserve the drawing page.
+// endpoints. Clip differences, integer slopes, interpolation distances and
+// cursor arithmetic wrap to signed 16 bits, including raw laser resets. Mask
+// writes use 15-bit planar addresses; hidden bytes are ignored. Patterned lines
+// rotate a 16-bit horizontal mask at each cursor, with low byte first.
+// Horizontal lines ignore the pattern; vertical lines repeat it. These
+// operations allocate nothing and preserve the drawing page.
 void Video_Line(
     VIDEO *video, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
     uint8_t color);

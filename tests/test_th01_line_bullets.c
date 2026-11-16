@@ -118,3 +118,24 @@ TEST(mask_writes_wrap_planar_addresses_and_keep_page_selection)
     CHECK_EQ_INT(video.drawing_page, 1);
     Mem_Free(video.pages[0]);
 }
+
+TEST(raw_reset_coordinates_wrap_before_clipping)
+{
+    VIDEO video;
+    Video_Init(&video, &g_HeapAllocator);
+    memset(video.pages[1], 15, VIDEO_PAGE_SIZE);
+    Video_SelectDrawingPage(&video, 1);
+    Video_LineErase(&video, -11095, -16673, 15360, 23552);
+    CHECK_EQ_INT(video.drawing_page, 1);
+    for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
+        CHECK_EQ_INT(video.pages[0][i], 0);
+    }
+    Video_LineErase(&video, 277, -32317, 16384, 16384);
+    CHECK_EQ_INT(video.drawing_page, 0);
+    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 264, 0), 15);
+    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 295, 0), 15);
+    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 296, 0), 0);
+    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 264, 1), 15);
+    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 624, 398), 15);
+    Mem_Free(video.pages[0]);
+}
