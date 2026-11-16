@@ -13,6 +13,7 @@ th01_lib = static_library(
   'wave.c',
   'interleave.c',
   'transition.c',
+  'scale2x.c',
   'items.c',
   'hud.c',
   'timer.c',
