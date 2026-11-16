@@ -5,7 +5,7 @@
 #include "th07/game_manager.h"
 
 #include "core/base/assert.h"
-#include "core/base/log.h"
+#include "core/base/memory.h"
 #include "core/gfx.h"
 #include "core/math/x87.h"
 
@@ -13,7 +13,6 @@
 #include "stg/rng.h"
 #include "stg/timer.h"
 
-#define M_POOL_SIZE 32
 #define M_CALC_PRIORITY 15
 #define M_DRAW_PRIORITY 17
 
@@ -23,7 +22,6 @@ typedef enum {
 } M_AREA;
 
 typedef struct {
-    bool in_use;
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
     TIMER timer;
@@ -37,8 +35,6 @@ typedef struct {
     int32_t flash_alpha; // where each flash starts
 } M_EFFECT;
 
-static M_EFFECT m_Pool[M_POOL_SIZE];
-
 static RESULT M_Added(void *const arg)
 {
     M_EFFECT *const effect = arg;
@@ -50,7 +46,7 @@ static void M_Deleted(void *const arg)
 {
     M_EFFECT *const effect = arg;
     Chain_Remove(&effect->draw);
-    effect->in_use = false;
+    Mem_Free(effect);
 }
 
 static CHAIN_STATUS M_Draw(void *const arg)
@@ -150,14 +146,8 @@ static void M_Start(
     CHAIN_STATUS (*const update)(void *), const bool draws,
     const M_EFFECT *const setup)
 {
-    M_EFFECT *effect = m_Pool;
-    while (effect->in_use) {
-        if (++effect == m_Pool + M_POOL_SIZE) {
-            LOG_FATAL("more than %d screen effects", M_POOL_SIZE);
-        }
-    }
-    *effect = *setup;
-    effect->in_use = true;
+    // Unbounded, as the original's: a bomb can start a shake every frame.
+    M_EFFECT *const effect = Mem_Dup(setup, sizeof(*setup));
     Chain_InitElem(&effect->calc, update, effect);
     effect->calc.added = M_Added;
     effect->calc.deleted = M_Deleted;
