@@ -11,7 +11,10 @@
 // 0 to 2, 2 by default.
 extern uint8_t g_EffectsQuality;
 
+// Stands in for th07/resultscreen's screen in mode 0 or 1; mode 2 only
+// makes the RNG draws of its save of score.dat.
 RESULT ResultScreen_Register(int32_t mode);
+
 RESULT MusicScreen_Register(void);
 RESULT Ending_Register(void);
 
