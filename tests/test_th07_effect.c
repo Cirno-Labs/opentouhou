@@ -6,7 +6,7 @@
 #include "th07/stage.h"
 #include "th07/game_manager.h"
 #include "th07/player.h"
-#include "th07/stubs.h"
+#include "th07/settings.h"
 
 #include "gfx_recorder.h"
 #include "test.h"
@@ -587,10 +587,10 @@ TEST(petals_draw_by_the_effects_quality)
     Chain_RunCalc(&g_Chain);
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
-    g_EffectsQuality = 1;
+    g_Settings.effects_quality = 1;
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
-    g_EffectsQuality = 0;
+    g_Settings.effects_quality = 0;
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
     M_Teardown();

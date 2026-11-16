@@ -37,6 +37,8 @@ typedef struct {
     // Slows the game down where many bullets show. Such a game saves no
     // score and no replay.
     bool slowdown;
+    // How many visual effects draw, from 0 to 2.
+    int32_t effects_quality;
 } TH07_SETTINGS;
 
 extern TH07_SETTINGS g_Settings;

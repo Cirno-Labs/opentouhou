@@ -3,6 +3,7 @@
 #define M_LIVES 2
 #define M_BOMBS 3
 #define M_DIFFICULTY 1
+#define M_EFFECTS_QUALITY 2
 
 static const char *const m_MusicNames[] = { "off", "wave", "midi", nullptr };
 
@@ -17,6 +18,9 @@ static const CONFIG_OPTION m_Options[] = {
     CONFIG_BOOL(TH07_SETTINGS, "game", "sound", sound, true),
     CONFIG_BOOL(TH07_SETTINGS, "game", "shoot_focuses", shoot_focuses, true),
     CONFIG_BOOL(TH07_SETTINGS, "game", "slowdown", slowdown, false),
+    CONFIG_INT(
+        TH07_SETTINGS, "game", "effects_quality", effects_quality,
+        M_EFFECTS_QUALITY, 0, 2),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =
@@ -29,4 +33,5 @@ TH07_SETTINGS g_Settings = {
     .music = SETTINGS_MUSIC_WAVE,
     .sound = true,
     .shoot_focuses = true,
+    .effects_quality = M_EFFECTS_QUALITY,
 };
