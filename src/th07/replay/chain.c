@@ -5,10 +5,13 @@
 #include "th07/game_manager.h"
 #include "th07/gui.h"
 #include "th07/player.h"
+#include "th07/settings.h"
 
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/base/utils.h"
+#include "core/io/writer.h"
 #include "core/math/x87.h"
 
 #include <limits.h>
@@ -25,6 +28,7 @@
 #define M_RECORD_FPS 60
 #define M_CONFIG_LIVES 0x1c
 #define M_CONFIG_SLOWDOWN 0x25
+#define M_CONFIG_SIZE 0x38
 #define M_BORDER_PLUS 50000
 #define M_STAGE_HEADER_WORDS 11 // a stage header's size in frames
 
@@ -138,6 +142,49 @@ static RESULT M_PlayAdded(void *const arg)
     return OK;
 }
 
+// Builds the th07.cfg-shaped config the original records, as
+// replay/th07/launcher.c's M_WriteConfig does for the same bytes: the
+// shipped key mapping and the pad thresholds, which the port does not
+// keep per-game, and the settings it does keep. gm holds the two bytes
+// that gameplay reads back (lives at M_CONFIG_LIVES, score-disabled at
+// M_CONFIG_SLOWDOWN).
+static void M_BuildConfig(
+    uint8_t config[M_CONFIG_SIZE], const GAME_MANAGER *const gm)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, "replay config");
+    // Shoot, bomb, focus, menu, up, down, left, right, skip.
+    const int16_t buttons[] = { 0, 1, 2, 4, -1, -1, -1, -1, 3 };
+    for (size_t i = 0; i < ARRAY_SIZE(buttons); i++) {
+        Writer_Write(&writer, &buttons[i]);
+    }
+    Writer_WriteU16(&writer, 0);
+    Writer_WriteU32(&writer, 0x70002); // version
+    Writer_WriteI16(&writer, 600); // pad threshold x
+    Writer_WriteI16(&writer, 600); // pad threshold y
+    Writer_WriteU8(&writer, (uint8_t)gm->run.start_lives);
+    Writer_WriteU8(&writer, (uint8_t)g_Settings.bombs);
+    Writer_WriteU8(&writer, 0); // 32-bit colour
+    Writer_WriteU8(&writer, (uint8_t)g_Settings.music);
+    Writer_WriteU8(&writer, g_Settings.sound ? 1 : 0);
+    Writer_WriteU8(&writer, (uint8_t)g_Settings.difficulty);
+    Writer_WriteU8(&writer, 1); // windowed
+    Writer_WriteU8(&writer, 0); // frame skip
+    Writer_WriteU8(&writer, 2); // effects quality
+    Writer_WriteU8(&writer, gm->run.score_disabled ? 1 : 0);
+    Writer_WriteU8(&writer, g_Settings.shoot_focuses ? 1 : 0);
+    for (int i = 0; i < 13; i++) {
+        Writer_WriteU8(&writer, 0);
+    }
+    Writer_WriteU32(&writer, 1); // flags: colour-add emulation
+    size_t size;
+    uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
+    ASSERT(size == M_CONFIG_SIZE);
+    memcpy(config, bytes, M_CONFIG_SIZE);
+    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Result_Ignore(Writer_Close(&writer));
+}
+
 static RESULT M_RecordAdded(void *const arg)
 {
     M_REPLAY *const replay = arg;
@@ -155,8 +202,11 @@ static RESULT M_RecordAdded(void *const arg)
         // The original copies four bytes of "NO NAME".
         memcpy(file->name, "NO N", 4);
         memcpy(file->exe_version, "0100b", 6);
-        file->config[M_CONFIG_LIVES] = gm->run.start_lives;
-        file->config[M_CONFIG_SLOWDOWN] = gm->run.score_disabled;
+        // The original checksums its own executable file (unsorted433e90.cpp,
+        // ChecksumExecutable) and stores the sum and the file's size;
+        // Replay_Read never checks either, so the port leaves both 0 rather
+        // than checksum a binary that is not the original's.
+        M_BuildConfig(file->config, gm);
     } else if (replay->file->stages[stage_number - 1] != nullptr) {
         // Stage n's previous slot is n - 1, so Phantasm (stage 8) writes
         // into its own slot, as the original does.
