@@ -1205,3 +1205,21 @@ TEST(oversized_music_family_is_rejected_before_play)
     CHECK_EQ_INT(fixture.sequence.tracks[0].volume, volume);
     Arena_Free(&fixture.arena);
 }
+
+TEST(q_zero_notes_hold_through_ordinary_rest)
+{
+    const uint8_t code[] = { 0xea, 0, 0x40, 2, 0x90, 3, 0xe3, 0x42, 8, 0xff };
+    for (uint8_t channel = 0x40; channel <= 0x80; channel += 0x40) {
+        FIXTURE fixture;
+        M_Init(&fixture, code, sizeof(code), channel);
+        M_Pulses(&fixture, 3);
+        CHECK(fixture.sequence.tracks[0].key_on);
+        CHECK_EQ_INT(M_Count(&fixture, MDRV_EVENT_REST), 1);
+        CHECK_EQ_INT(M_Count(&fixture, MDRV_EVENT_KEY_OFF), 0);
+        M_Pulses(&fixture, 3);
+        CHECK_EQ_INT(M_Count(&fixture, MDRV_EVENT_KEY_OFF), 1);
+        CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_KEY_OFF, 0)->opcode, 0xe3);
+        CHECK_EQ_INT(M_Find(&fixture, MDRV_EVENT_KEY_OFF, 0)->pulse, 5);
+        Arena_Free(&fixture.arena);
+    }
+}

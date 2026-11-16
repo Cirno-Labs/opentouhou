@@ -252,9 +252,6 @@ static RESULT M_Duration(
     state->remaining = duration;
     state->gate_remaining = 0;
     if (opcode == 0x90) {
-        if (!legato) {
-            M_KeyOff(sequence, track);
-        }
         M_Emit(
             sequence, track, MDRV_EVENT_REST, offset, opcode, params, 1,
             duration, legato);

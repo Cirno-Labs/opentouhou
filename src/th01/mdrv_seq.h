@@ -120,8 +120,9 @@ typedef struct {
 // command counters. Natural completion and header repeat set sync FF; fresh
 // Play clears sync to zero and resets all controls and command counters.
 // Merges adjacent same-pitch ties before Q arithmetic. A differing-pitch tie
-// marks the following note legato and suppresses gate key-off. Q0 holds notes;
-// other Q values key off at floor(duration*Q/8)-1 clocks from note onset.
+// marks the following note legato and suppresses gate key-off. REST emits no
+// key-off; Q0 holds notes through rests until an explicit key-off or reset.
+// Other Q values key off at floor(duration*Q/8)-1 clocks from note onset.
 // A duration byte zero advances no clock, as in TH01's driver. A portamento
 // retains its encoded starting pitch, duration and signed chip-domain delta;
 // its evolution is deferred to the synth, as are LFO/envelope/fade evolution.
