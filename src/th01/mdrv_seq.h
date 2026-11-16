@@ -31,6 +31,7 @@ typedef enum {
     MDRV_EVENT_EXTENDED,
     MDRV_EVENT_OUTPUT_MASK,
     MDRV_EVENT_DRIVER_RESET,
+    MDRV_EVENT_CLOCK,
 } MDRV_EVENT_KIND;
 
 typedef struct {
@@ -97,6 +98,13 @@ typedef struct {
 // Callbacks run synchronously in FM, PCM, rhythm, SSG order, retaining
 // directory order within music groups and ascending SSG output order for
 // effects. Do not reenter the sequence.
+// Emits CLOCK at each active channel slot before gate countdown and parsing.
+// Parameter 0 is 1 for full periodic work and 0 for envelope-only work on an
+// ended music SSG track while either timeline continues. Ended FM/PCM/rhythm
+// and ended effects emit no clocks. A clock retains output suppression; advance
+// control state even when suppressed, but suppress ordinary register output.
+// Raw REGISTER and global commands still bypass ownership. Held notes get
+// clocks without new commands. All clocks cease when both timelines stop.
 // Events borrow no temporary parameter data beyond the callback's duration.
 //
 // Starts tracks with Q8, zero detune/transpose, centered pan and zero volume
@@ -167,12 +175,13 @@ RESULT MdrvSeq_Pulse(MDRV_SEQUENCE *sequence);
 // output events suppressed, leaving raw REGISTER and global control events
 // unmasked. Synth code must maintain music envelope/LFO state during masking.
 // Keeps an ending channel masked through its music step while another effect
-// remains active. The last active effect releases before that clock's music
-// step; earlier channels release on the next clock. OUTPUT_MASK release permits
-// subsequent music output;
-// it neither restores a cached register snapshot nor emits a replacement note.
-// Stop/retrigger actions between calls emit immediately. A failed advance
-// stops both instances and latches both failed. Standalone Pulse removes
-// paired output masks and advances just that instance.
+// remains active. The last active effect releases before that clock's active
+// music step. An ended music SSG keeps its envelope clock masked until the
+// next clock, as do earlier simultaneously ending effect channels. OUTPUT_MASK
+// release permits subsequent music output; it neither restores a cached
+// register snapshot nor emits a replacement note. Stop/retrigger actions
+// between calls emit immediately. A failed advance stops both instances and
+// latches both failed. Standalone Pulse removes paired output masks and
+// advances just that instance.
 RESULT MdrvSeq_PulsePair(MDRV_SEQUENCE *music, MDRV_SEQUENCE *effects);
 void MdrvSeq_Stop(MDRV_SEQUENCE *sequence);

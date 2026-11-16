@@ -10,6 +10,7 @@ static const uint8_t m_ChannelOrder[] = { 0x80, 0x20, 0x10, 0x40 };
 static bool M_OutputEvent(const MDRV_EVENT_KIND kind)
 {
     switch (kind) {
+    case MDRV_EVENT_CLOCK:
     case MDRV_EVENT_NOTE:
     case MDRV_EVENT_REST:
     case MDRV_EVENT_KEY_OFF:
@@ -457,6 +458,13 @@ static RESULT M_Command(
 static RESULT M_Advance(MDRV_SEQUENCE *const sequence, const uint16_t track)
 {
     MDRV_CHANNEL_STATE *const state = &sequence->tracks[track];
+    const uint8_t full = state->active;
+    M_Emit(
+        sequence, track, MDRV_EVENT_CLOCK, state->position, 0, &full, 1, 0,
+        false);
+    if (!state->active) {
+        return OK;
+    }
     if (state->gate_remaining != 0 && --state->gate_remaining == 0) {
         M_KeyOff(sequence, track);
     }
@@ -498,14 +506,17 @@ static RESULT M_Advance(MDRV_SEQUENCE *const sequence, const uint16_t track)
 }
 
 static void M_Mask(
-    MDRV_SEQUENCE *const music, const uint8_t channel, const bool suppressed)
+    MDRV_SEQUENCE *const music, const uint8_t channel, const bool suppressed,
+    const bool active_only)
 {
     for (uint16_t i = 0; i < music->track_count; i++) {
         MDRV_CHANNEL_STATE *const state = &music->tracks[i];
+        if (state->channel != channel || (active_only && !state->active)) {
+            continue;
+        }
         if (!music->playing) {
-            state->suppressed = false;
-        } else if (
-            state->channel == channel && state->suppressed != suppressed) {
+            state->suppressed = suppressed;
+        } else if (state->suppressed != suppressed) {
             state->suppressed = suppressed;
             const uint8_t parameter = suppressed;
             M_Emit(
@@ -523,15 +534,18 @@ static uint16_t M_TrackIndex(
 }
 
 static RESULT M_AdvanceGroup(
-    MDRV_SEQUENCE *const sequence, const uint8_t group, const uint8_t mask)
+    MDRV_SEQUENCE *const sequence, const uint8_t group, const uint8_t mask,
+    const bool idle_ssg)
 {
-    if (!sequence->playing) {
+    if (!sequence->playing && !idle_ssg) {
         return OK;
     }
     for (uint16_t ordinal = 0; ordinal < sequence->track_count; ordinal++) {
         const uint16_t i = M_TrackIndex(sequence, ordinal);
-        if (sequence->tracks[i].active
-            && (sequence->tracks[i].channel & mask) == group) {
+        const MDRV_CHANNEL_STATE *const state = &sequence->tracks[i];
+        const bool clock = state->active
+            || (sequence->music != nullptr && (state->channel & 0xf0) == 0x40);
+        if (clock && (state->channel & mask) == group) {
             MUST(M_Advance(sequence, i));
         }
     }
@@ -689,10 +703,11 @@ RESULT MdrvSeq_Pulse(MDRV_SEQUENCE *const sequence)
 {
     FAIL_IF(sequence->failed, "MDRV sequence is in failed state");
     for (uint8_t channel = 0x40; channel <= 0x42; channel++) {
-        M_Mask(sequence, channel, false);
+        M_Mask(sequence, channel, false, false);
     }
     for (size_t group = 0; group < sizeof(m_ChannelOrder); group++) {
-        RESULT result = M_AdvanceGroup(sequence, m_ChannelOrder[group], 0xf0);
+        RESULT result =
+            M_AdvanceGroup(sequence, m_ChannelOrder[group], 0xf0, false);
         if (!IS_OK(result)) {
             M_Failed(sequence);
             return result;
@@ -720,7 +735,7 @@ RESULT MdrvSeq_PulsePair(
     effects->sync = music->sync;
     RESULT result = OK;
     for (size_t group = 0; group < 3; group++) {
-        result = M_AdvanceGroup(music, m_ChannelOrder[group], 0xf0);
+        result = M_AdvanceGroup(music, m_ChannelOrder[group], 0xf0, false);
         if (!IS_OK(result)) {
             break;
         }
@@ -737,19 +752,19 @@ RESULT MdrvSeq_PulsePair(
             owned |= effects->tracks[i].active
                 && effects->tracks[i].channel == channel;
         }
-        M_Mask(music, channel, owned);
-        result = M_AdvanceGroup(effects, channel, 0xff);
+        M_Mask(music, channel, owned, false);
+        result = M_AdvanceGroup(effects, channel, 0xff, false);
         bool any_effect = false;
         for (uint16_t i = 0; i < effects->track_count; i++) {
             any_effect |= effects->tracks[i].active;
         }
         if (!any_effect) {
-            M_Mask(music, channel, false);
+            M_Mask(music, channel, false, true);
         }
         music->tempo = effects->tempo;
         music->sync = effects->sync;
         if (IS_OK(result)) {
-            result = M_AdvanceGroup(music, channel, 0xff);
+            result = M_AdvanceGroup(music, channel, 0xff, effects->playing);
             effects->tempo = music->tempo;
             effects->sync = music->sync;
             if (IS_OK(result) && M_MusicFinished(music)) {
