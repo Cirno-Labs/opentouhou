@@ -8,8 +8,10 @@
 #include "th07/game_manager.h"
 #include "th07/gui.h"
 #include "th07/player.h"
+#include "th07/screens/result/saves.h"
 
 #include "core/base/log.h"
+#include "core/base/memory.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -71,6 +73,21 @@ bool Gui_IsMsgSkippable(void)
 bool Enemy_IsBossActive(void)
 {
     return m_Boss;
+}
+
+static uint8_t m_Resaved[M_MAX_SIZE];
+static size_t m_ResavedSize;
+static int32_t m_Resaves;
+
+void ResultScreen_PutReplayFile(
+    const char *const path, uint8_t *const data, const size_t size)
+{
+    CHECK_EQ_STR(path, M_PATH);
+    CHECK(size <= sizeof(m_Resaved));
+    memcpy(m_Resaved, data, size);
+    m_ResavedSize = size;
+    m_Resaves++;
+    Allocator_Free(&g_HeapAllocator, data, size);
 }
 
 static void M_PutU16(uint8_t *const b, const size_t at, const uint16_t value)
@@ -202,6 +219,7 @@ static void M_SetUp(const int32_t stage)
     m_Boss = false;
     m_Calcs = 0;
     m_SeenPlayWord = 0;
+    m_Resaves = 0;
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
@@ -676,5 +694,98 @@ TEST(get_last_events_is_0_during_playback)
     M_Play(&spec);
     M_Calcs(2);
     CHECK_EQ_INT(Replay_GetLastEvents(), 0);
+    M_TearDown();
+}
+
+// Plays a replay of difficulty with frames in slot, then resaves it with
+// a changed score. Sets *before to the RNG as the resave starts.
+static void M_PlayAndResave(
+    const uint8_t difficulty, const int32_t slot, RNG *const before)
+{
+    M_SPEC spec = { .difficulty = difficulty };
+    M_Frames(&spec.slots[slot], 0x10, 4);
+    M_Play(&spec);
+    M_Calcs(2);
+    snprintf(
+        g_GameManager.mode.replay_path, sizeof(g_GameManager.mode.replay_path),
+        "%s", M_PATH);
+    g_GameManager.score.value = 7777;
+    g_GameManager.score.shown = 7770;
+    *before = g_Rng;
+    Replay_ResaveIfScoreChanged();
+}
+
+TEST(resave_writes_the_new_scores_with_three_new_keys)
+{
+    M_SetUp(8);
+    RNG rng;
+    M_PlayAndResave(5, 7, &rng);
+    uint8_t random[3];
+    random[0] = (uint8_t)(Rng_U16InRange(&rng, 128) + 64);
+    random[1] = (uint8_t)Rng_U16InRange(&rng, 256);
+    random[2] = (uint8_t)Rng_U16InRange(&rng, 256);
+    CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
+    CHECK_EQ_INT(m_Resaves, 1);
+    CHECK_EQ_INT(m_Resaved[0xd], random[0]);
+    CHECK_EQ_INT(m_Resaved[0xc], random[2]);
+    CHECK(!Replay_HasStage(7));
+
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Resaved, m_ResavedSize, nullptr);
+    REPLAY_FILE *file = nullptr;
+    CHECK(Result_Log(Replay_Read(&reader, &file), LOG_LEVEL_ERROR));
+    Reader_Close(&reader);
+    CHECK_EQ_INT(file->score, 7770);
+    CHECK_EQ_INT(file->stages[7]->score, 7777);
+    CHECK_EQ_INT(file->stages[7]->frames[1].buttons, 0x11);
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    CHECK(Result_Log(Replay_Write(file, &writer, random), LOG_LEVEL_ERROR));
+    size_t size;
+    uint8_t *const expected = Writer_TakeBuffer(&writer, &size);
+    Result_Ignore(Writer_Close(&writer));
+    CHECK_EQ_INT(size, m_ResavedSize);
+    CHECK(memcmp(expected, m_Resaved, size) == 0);
+    Allocator_Free(&g_HeapAllocator, expected, size);
+    Replay_Free(file);
+    M_TearDown();
+}
+
+TEST(resave_does_nothing_while_the_score_is_unchanged)
+{
+    M_SetUp(8);
+    M_SPEC spec = { .difficulty = 5 };
+    M_Frames(&spec.slots[7], 0x10, 4);
+    M_Play(&spec);
+    const RNG rng = g_Rng;
+    Replay_ResaveIfScoreChanged();
+    CHECK_EQ_INT(m_Resaves, 0);
+    CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
+    CHECK(Replay_HasStage(7));
+    M_TearDown();
+}
+
+TEST(resave_of_another_config_ends_playback_without_a_write)
+{
+    M_SetUp(3);
+    RNG rng;
+    M_PlayAndResave(1, 3, &rng);
+    CHECK_EQ_INT(m_Resaves, 0);
+    CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
+    CHECK(!Replay_HasStage(3));
+    M_TearDown();
+}
+
+TEST(resave_ignores_the_config_in_practice_extra_and_phantasm)
+{
+    M_SetUp(3);
+    g_GameManager.mode.in_practice = true;
+    RNG rng;
+    M_PlayAndResave(1, 3, &rng);
+    CHECK_EQ_INT(m_Resaves, 1);
+    M_TearDown();
+    M_SetUp(7);
+    M_PlayAndResave(4, 7, &rng);
+    CHECK_EQ_INT(m_Resaves, 1);
     M_TearDown();
 }
