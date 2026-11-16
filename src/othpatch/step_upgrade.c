@@ -160,6 +160,10 @@ static bool M_FindUpdate(
         *failed = true;
         return false;
     }
+    if (!out->found) {
+        fprintf(stream, "There is no release of %s yet.\n", program);
+        return false;
+    }
     if (Release_CompareVersions(out->version, installed) <= 0) {
         fprintf(
             stream, "You already have the newest %s (%s).\n", program, version);
@@ -353,10 +357,11 @@ static bool M_Run(APP_CONTEXT *const run)
     update.othpatch_is_release =
         Release_ParseVersion(version, &update.othpatch_version);
     bool ok = M_UpdateOthpatch(&update, version);
-    for (int32_t i = 0; i < APP_GAME_COUNT; i++) {
+    for (int32_t i = 0; i < run->games.count; i++) {
         const char *const path = Install_GetGamePath(
-            update.platform, run->exe_dir, g_Games[i], run->arena);
-        if (File_Exists(path) && !M_UpdateGame(&update, g_Games[i], path)) {
+            update.platform, run->exe_dir, run->games.items[i], run->arena);
+        if (File_Exists(path)
+            && !M_UpdateGame(&update, run->games.items[i], path)) {
             ok = false;
         }
     }

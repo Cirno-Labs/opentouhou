@@ -1,9 +1,13 @@
 #pragma once
 
+#include "core/base/arena.h"
 #include "core/base/result.h"
+#include "core/base/types.h"
 
-// Names the games as they are published, and asks an installed game, or a
-// new othpatch, for its version.
+#include <stdio.h>
+
+// Names the games as they are published, asks an installed game, or a new
+// othpatch, for its version, and finds the games that othpatch handles.
 
 // Sets the size of a version, NUL included.
 #define GAME_VERSION_SIZE 64
@@ -11,16 +15,31 @@
 // Sets the size of a product name, NUL included.
 #define GAME_NAME_SIZE 32
 
-// Writes the product name of game, the game id with an "o" before it, into
-// name: "oth06" for "th06". The executable, the packages and the releases
-// in the release index carry this name, so that the executable does not
-// clash with the original game's executable in the same folder. The thcrap
-// patches keep the game id.
+// Sets the upper bound on the games that a GAME_LIST holds.
+#define GAME_MAX_COUNT 32
+
+// Holds the games that othpatch finds, sorted by id with no duplicate.
+typedef struct {
+    const char *items[GAME_MAX_COUNT];
+    int32_t count;
+} GAME_LIST;
+
+// Writes the product name of game, "oth06" for "th06", into name.
 void Game_GetProductName(const char *game, char name[GAME_NAME_SIZE]);
 
-// Runs the executable at path with --version and writes the version that
-// it prints into version. The program prints one line, "<id> <version>",
-// such as "th06 0.1.0" or "othpatch 0.2.0". The run fails when the program
-// cannot start, ends with a status other than 0, or prints no such line. Its
-// standard input and standard error are closed.
+// Runs the executable at path with --version and writes the last word of
+// the line that it prints, such as "0.1.0" of "th06 0.1.0", into version.
 RESULT Game_GetVersion(const char *path, char version[GAME_VERSION_SIZE]);
+
+// Adds game to list unless it is there, with a warning on out past
+// GAME_MAX_COUNT games.
+void Game_AddFound(GAME_LIST *list, const char *game, FILE *out);
+
+// Adds "th<digits>" for every "oth<digits>" in exe_dir, bare or with
+// ".exe", ".AppImage" or ".app", and nothing for a nullptr exe_dir.
+void Game_FindBeside(
+    GAME_LIST *list, ARENA *arena, const char *exe_dir, FILE *out);
+
+// Adds every folder named "th<digits>" directly inside dir.
+void Game_FindDownloaded(
+    GAME_LIST *list, ARENA *arena, const char *dir, FILE *out);

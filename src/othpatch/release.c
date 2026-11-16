@@ -74,7 +74,10 @@ RESULT Release_FindNewest(
             out->version = version;
         }
     }
-    FAIL_IF(newest == nullptr, "the index has no release of %s", program);
+    if (newest == nullptr) {
+        return OK;
+    }
+    out->found = true;
     const JSON_VALUE *const file =
         Json_Get(Json_Get(newest, "files"), platform);
     out->package = Json_GetString(Json_Get(file, "name"), nullptr);

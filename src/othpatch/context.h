@@ -1,5 +1,7 @@
 #pragma once
 
+#include "othpatch/game.h"
+
 #include "core/base/arena.h"
 #include "core/base/result.h"
 #include "core/base/types.h"
@@ -14,13 +16,8 @@
 // arguments and runs the steps of a command (step.h), context.c opens the
 // patch manager, and console.c prints.
 
-#define APP_GAME_COUNT 1
 #define APP_LANGUAGE_PREFIX "lang_"
 #define APP_ORIGINAL_TITLE "original Japanese"
-
-// Lists the games whose files othpatch can download, besides the files
-// that every game shares.
-extern const char *const g_Games[APP_GAME_COUNT];
 
 typedef struct {
     const char *dir;
@@ -49,8 +46,7 @@ typedef struct {
     int32_t sections;
     // Holds the games whose files to download, and the patch manager for
     // them, which App_OpenPatches opens.
-    const char *games[APP_GAME_COUNT];
-    int32_t game_count;
+    GAME_LIST games;
     PATCH_MANAGER *manager;
     // Holds the version of the running othpatch.
     const char *version;

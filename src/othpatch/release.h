@@ -16,6 +16,9 @@ typedef struct {
 
 // Holds the newest release of a program.
 typedef struct {
+    // Tells whether the index has a release of the program; every other
+    // field is empty when it has none.
+    bool found;
     RELEASE_VERSION version;
     // Holds the name of the package for the platform, such as
     // "oth06-X.Y.Z-Linux.zip", and its URL, or nullptr for both when the
@@ -39,8 +42,7 @@ int32_t Release_CompareVersions(RELEASE_VERSION a, RELEASE_VERSION b);
 // Finds the newest release of program, such as "oth06" or "othpatch", in
 // index, and its package for platform, such as "Linux". Only the releases
 // with a version "X.Y.Z" count. The strings of out come from index.
-// Reports failure when index is not a release index or has no release of
-// the program.
+// Reports failure when index is not a release index.
 RESULT Release_FindNewest(
     const JSON_VALUE *index, const char *program, const char *platform,
     RELEASE *out);
