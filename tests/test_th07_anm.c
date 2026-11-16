@@ -299,7 +299,8 @@ TEST(truncated_files_fail)
     M_AddEmptyScript(anm, 0);
     AnmBuilder_SetImage(anm, ANM_TEXTURE_RGBA8, 2, 1, pixels, 8);
     size_t size;
-    Allocator_Free(&g_HeapAllocator, AnmBuilder_Build(&builder, &size), size);
+    uint8_t *const built = AnmBuilder_Build(&builder, &size);
+    Allocator_Free(&g_HeapAllocator, built, size);
     const size_t sprite_offset = 0x40;
     const size_t script_offset = 0x40 + 4 + 4;
     const size_t image = 0x40 + 4 + 8 + 20 + 8 + 2;
