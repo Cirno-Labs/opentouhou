@@ -79,7 +79,7 @@ static CHAIN_STATUS M_FromGameplay(void)
         GameManager_Remove();
         return M_DiscardToTitle(1);
     case SCENE_ENDING:
-        g_GameManager.records.play_counts[g_GameManager.run.difficulty]
+        g_GameManager.records.play_stats.counts[g_GameManager.run.difficulty]
             .clears++;
         GameManager_Remove();
         return M_Status(Ending_Register());

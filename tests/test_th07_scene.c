@@ -245,7 +245,7 @@ TEST(ending_counts_a_clear_of_the_difficulty)
     Scene_Request(SCENE_ENDING);
     Game_Tick(&m_NoInput);
     CHECK_EQ_INT(Scene_Get(), SCENE_ENDING);
-    CHECK_EQ_INT(g_GameManager.records.play_counts[2].clears, 1);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.counts[2].clears, 1);
     CHECK_EQ_INT(g_SceneStubCalls.ending_register, 1);
     Scene_Request(SCENE_GAME_RESULT);
     Game_Tick(&m_NoInput);
