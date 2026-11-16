@@ -5,6 +5,7 @@
 #include "th07/game_manager.h"
 #include "th07/gui.h"
 #include "th07/player.h"
+#include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 
 #include "core/base/assert.h"
@@ -145,11 +146,11 @@ static RESULT M_PlayAdded(void *const arg)
 // Builds the th07.cfg-shaped config the original records, as
 // replay/th07/launcher.c's M_WriteConfig does for the same bytes: the
 // shipped key mapping and the pad thresholds, which the port does not
-// keep per-game, and the settings it does keep. gm holds the two bytes
-// that gameplay reads back (lives at M_CONFIG_LIVES, score-disabled at
-// M_CONFIG_SLOWDOWN).
+// keep per-game, and the settings it does keep, with lives at
+// M_CONFIG_LIVES and score_disabled at M_CONFIG_SLOWDOWN.
 static void M_BuildConfig(
-    uint8_t config[M_CONFIG_SIZE], const GAME_MANAGER *const gm)
+    uint8_t config[M_CONFIG_SIZE], const uint8_t lives,
+    const bool score_disabled)
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, "replay config");
@@ -162,7 +163,7 @@ static void M_BuildConfig(
     Writer_WriteU32(&writer, 0x70002); // version
     Writer_WriteI16(&writer, 600); // pad threshold x
     Writer_WriteI16(&writer, 600); // pad threshold y
-    Writer_WriteU8(&writer, (uint8_t)gm->run.start_lives);
+    Writer_WriteU8(&writer, lives);
     Writer_WriteU8(&writer, (uint8_t)g_Settings.bombs);
     Writer_WriteU8(&writer, 0); // 32-bit colour
     Writer_WriteU8(&writer, (uint8_t)g_Settings.music);
@@ -171,7 +172,7 @@ static void M_BuildConfig(
     Writer_WriteU8(&writer, 1); // windowed
     Writer_WriteU8(&writer, 0); // frame skip
     Writer_WriteU8(&writer, 2); // effects quality
-    Writer_WriteU8(&writer, gm->run.score_disabled ? 1 : 0);
+    Writer_WriteU8(&writer, score_disabled ? 1 : 0);
     Writer_WriteU8(&writer, g_Settings.shoot_focuses ? 1 : 0);
     for (int i = 0; i < 13; i++) {
         Writer_WriteU8(&writer, 0);
@@ -206,7 +207,8 @@ static RESULT M_RecordAdded(void *const arg)
         // ChecksumExecutable) and stores the sum and the file's size;
         // Replay_Read never checks either, so the port leaves both 0 rather
         // than checksum a binary that is not the original's.
-        M_BuildConfig(file->config, gm);
+        M_BuildConfig(
+            file->config, gm->run.start_lives, gm->run.score_disabled);
     } else if (replay->file->stages[stage_number - 1] != nullptr) {
         // Stage n's previous slot is n - 1, so Phantasm (stage 8) writes
         // into its own slot, as the original does.
@@ -528,4 +530,44 @@ uint16_t Replay_GetLastEvents(void)
     const int32_t index =
         replay->mode == REPLAY_RECORD ? replay->cursor : replay->cursor - 1;
     return stage->frames[index].events;
+}
+
+// Writes the replay being played to path again, as the original's
+// ResaveReplay does.
+static void M_Resave(M_REPLAY *const replay, const char *const path)
+{
+    GAME_MANAGER *const gm = &g_GameManager;
+    REPLAY_FILE *const file = replay->file;
+    uint8_t config[M_CONFIG_SIZE];
+    M_BuildConfig(config, (uint8_t)g_Settings.lives, g_Settings.slowdown);
+    if (!gm->mode.in_practice && gm->run.difficulty < 4
+        && memcmp(config, file->config, M_CONFIG_SIZE) != 0) {
+        return;
+    }
+    file->stages[M_Slot()]->score = (int32_t)gm->score.value;
+    file->score = gm->score.shown;
+    uint8_t random[3];
+    random[0] = (uint8_t)(Rng_U16InRange(&g_Rng, 128) + 64);
+    random[1] = (uint8_t)Rng_U16InRange(&g_Rng, 256);
+    random[2] = (uint8_t)Rng_U16InRange(&g_Rng, 256);
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, path);
+    if (!Result_Log(Replay_Write(file, &writer, random), LOG_LEVEL_WARNING)) {
+        Result_Ignore(Writer_Close(&writer));
+        return;
+    }
+    size_t size;
+    uint8_t *const data = Writer_TakeBuffer(&writer, &size);
+    Result_Ignore(Writer_Close(&writer));
+    ResultScreen_PutReplayFile(path, data, size);
+}
+
+void Replay_ResaveIfScoreChanged(void)
+{
+    M_REPLAY *const replay = m_Replay;
+    if (replay == nullptr || g_GameManager.score.value == replay->file->score) {
+        return;
+    }
+    M_Resave(replay, g_GameManager.mode.replay_path);
+    Chain_Remove(&replay->calc);
 }
