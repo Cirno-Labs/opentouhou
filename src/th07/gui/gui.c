@@ -27,6 +27,7 @@
 #include "stg/chain.h"
 #include "stg/msg_diff.h"
 #include "stg/note.h"
+#include "stg/translation.h"
 
 #include "core/base/arena.h"
 #include "core/json.h"
@@ -476,8 +477,13 @@ static M_RUN M_RunInstrs(void)
                 Note_Remove();
             }
             Result_Log(
-                Anm_RenderTextRightAligned(
-                    nameplate, m_TextColors[instr->who], 0, "%s", instr->text),
+                Translation_HasBaseTsa()
+                    ? Anm_RenderText(
+                          nameplate, m_TextColors[instr->who], 0, "%s",
+                          instr->text)
+                    : Anm_RenderTextRightAligned(
+                          nameplate, m_TextColors[instr->who], 0, "%s",
+                          instr->text),
                 LOG_LEVEL_WARNING);
             g_Gui.msg.wait_frames = 0;
             break;
