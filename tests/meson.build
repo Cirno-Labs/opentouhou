@@ -273,6 +273,36 @@ test(
 )
 
 test(
+  'th07/runner/state',
+  executable(
+    'test_th07_runner_state',
+    'test_th07_runner_state.c',
+    '../replay/th07/runner/state.c',
+    '../src/th07/stubs.c',
+    'shell_fake.c',
+    c_args: [layer_include['th07'], layer_include['shell']] + core_include + stg_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_lib, stg_rng_lib, core_math_lib, core_io_lib, core_base_lib,
+      replay_case_lib, core_gfx_lib, core_image_lib,
+    ],
+    dependencies: [sdl3, zlib],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'th07/runner/replay',
+  executable(
+    'test_th07_runner_replay',
+    'test_th07_runner_replay.c',
+    '../replay/th07/runner/replay.c',
+    implicit_include_directories: false,
+  ),
+  suite: 'unit',
+)
+
+test(
   'replay/core/runner/run',
   executable(
     'test_replay_runner_run',
