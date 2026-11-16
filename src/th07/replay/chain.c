@@ -173,7 +173,7 @@ static void M_BuildConfig(
     Writer_WriteU8(&writer, (uint8_t)g_Settings.difficulty);
     Writer_WriteU8(&writer, 1); // windowed
     Writer_WriteU8(&writer, 0); // frame skip
-    Writer_WriteU8(&writer, 2); // effects quality
+    Writer_WriteU8(&writer, (uint8_t)g_Settings.effects_quality);
     Writer_WriteU8(&writer, score_disabled ? 1 : 0);
     Writer_WriteU8(&writer, g_Settings.shoot_focuses ? 1 : 0);
     for (int i = 0; i < 13; i++) {

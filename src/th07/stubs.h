@@ -7,10 +7,6 @@
 // Stands in for a module not yet ported. Each declaration here moves out
 // into its own module, under its own name, once that module exists.
 
-// Stands in for the effects quality of the original's configuration, from
-// 0 to 2, 2 by default.
-extern uint8_t g_EffectsQuality;
-
 // Stand in for App::AddTotalPlayTime, the restart of its clock, and the
 // stop of that clock with App::AddPlayTime.
 void PlayTime_Add(void);
