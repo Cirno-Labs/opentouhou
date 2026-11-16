@@ -9,7 +9,7 @@
 
 #define M_TEXT_OFFSET 4
 
-static bool M_IsFinal(const uint8_t opcode)
+bool GuiMsg_IsFinal(const uint8_t opcode)
 {
     return opcode == GUI_MSG_OP_END || opcode == GUI_MSG_OP_HALT
         || opcode == GUI_MSG_OP_NEXT_SCENE;
@@ -112,7 +112,7 @@ static RESULT M_ReadInstr(READER *const reader, MSG_INSTR *const instr)
             end == nullptr, "the text at 0x%zx runs past its instruction",
             start);
         MUST(
-            Cp932_Decode(
+            Cp932_DecodeText(
                 (const char *)text, (size_t)(end - text), &instr->text),
             "the text at 0x%zx", start);
         break;
@@ -141,7 +141,7 @@ static RESULT M_ReadScript(
         Mem_Free(instr.text);
         MUST(result, "instruction %d", count);
         count++;
-    } while (!M_IsFinal(instr.opcode));
+    } while (!GuiMsg_IsFinal(instr.opcode));
 
     script->instrs = Mem_AllocArrZ((size_t)count, sizeof(MSG_INSTR));
     script->count = count;
