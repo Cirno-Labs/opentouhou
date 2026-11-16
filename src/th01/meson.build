@@ -10,6 +10,7 @@ th01_lib = static_library(
   'palette.c',
   'text.c',
   'tram.c',
+  'mdrv_data.c',
   'pf.c',
   'pi.c',
   'ptn.c',
