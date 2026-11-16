@@ -2329,7 +2329,7 @@ test(
 )
 
 if build_games
-  foreach part : ['bfnt', 'logo', 'math', 'video', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz']
+  foreach part : ['bfnt', 'logo', 'math', 'settings', 'video', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz']
     test(
       'th01/' + part,
       executable(
@@ -2337,10 +2337,11 @@ if build_games
         'test_th01_' + part + '.c',
         c_args: [layer_include['th01']] + core_include + stg_include,
         implicit_include_directories: false,
-        link_with: [th01_lib, core_vfs_lib, core_io_lib, core_base_lib],
+        link_with: [th01_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib],
         dependencies: [sdl3],
       ),
       suite: 'unit',
+      env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th01' / part},
     )
   endforeach
 endif

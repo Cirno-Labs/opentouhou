@@ -1,6 +1,7 @@
 #include "th01/main.h"
 
 #include "th01/logo.h"
+#include "th01/settings.h"
 
 #include "core/base/arena.h"
 #include "core/gfx.h"
@@ -29,11 +30,14 @@ static LOGO m_Logo;
 static VIDEO m_Video;
 static GFX_TEXTURE *m_Pages[2];
 
-static RESULT M_LoadSprites(void)
+static RESULT M_LoadAssets(void)
 {
     VFS *const vfs = Shell_GetFiles();
     RESULT result = OK;
     if (IS_OK(result)) {
+        Result_Log(
+            Settings_ImportOriginal(vfs, Shell_GetUserFiles(), &g_Settings),
+            LOG_LEVEL_WARNING);
         READER reader;
         result = Vfs_Open(vfs, "TOUHOU.DAT", VFS_STREAM, &reader);
         if (IS_OK(result)) {
@@ -47,7 +51,7 @@ static RESULT M_LoadSprites(void)
 static RESULT M_Init(void)
 {
     Arena_Init(&m_Assets, "TH01 assets", M_ASSET_CAPACITY);
-    MUST(M_LoadSprites());
+    MUST(M_LoadAssets());
     FAIL_IF(
         m_Sprites.width != 64 || m_Sprites.height != 16
             || m_Sprites.count != 16,
@@ -115,6 +119,8 @@ const GAME_DESC g_GameDesc = {
     .logical_width = LOGO_WIDTH,
     .logical_height = LOGO_HEIGHT,
     .input_schema = &m_Input,
+    .settings_schema = &g_SettingsSchema,
+    .settings = &g_Settings,
     .data_files = m_DataFiles,
     .data_file_count = 1,
     .init = M_Init,

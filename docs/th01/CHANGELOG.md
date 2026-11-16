@@ -11,5 +11,7 @@
 - Added screenshots with F12 or Print Screen.
 - Added portable mode with a `portable.txt` beside the game.
 - Added `--user-dir` to keep your files in another folder.
+- Added settings in config.ini, taken from REIIDEN.CFG on the first
+  start.
 - Added a message box when the game cannot start or stops on an error.
 - Added a log of the last start in `oth01.log` in the user folder.
