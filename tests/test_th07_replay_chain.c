@@ -31,6 +31,7 @@ typedef struct {
     int32_t score;
     int32_t cherry_plus;
     uint16_t buttons[M_MAX_FRAMES];
+    uint16_t events[M_MAX_FRAMES];
     int32_t frame_count;
     uint8_t fps[M_MAX_FPS];
     int32_t fps_count;
@@ -118,6 +119,7 @@ static void M_PutStage(uint8_t *const s, const M_SLOT *const slot, int32_t n)
     s[0x27] = (uint8_t)(40 + n);
     for (int32_t i = 0; i < slot->frame_count; i++) {
         M_PutU16(s, M_STAGE_HEADER_SIZE + 4 * (size_t)i, slot->buttons[i]);
+        M_PutU16(s, M_STAGE_HEADER_SIZE + 4 * (size_t)i + 2, slot->events[i]);
     }
 }
 
@@ -197,6 +199,15 @@ static CHAIN_STATUS M_Observe(void *const arg)
     return CHAIN_CONTINUE;
 }
 
+static REPLAY_EVENT m_EventToMark;
+static CHAIN_ELEM m_MarkerElem;
+
+static CHAIN_STATUS M_MarkEvent(void *const arg)
+{
+    Replay_MarkEvent(m_EventToMark);
+    return CHAIN_CONTINUE;
+}
+
 static void M_SetUp(const int32_t stage)
 {
     Replay_Discard();
@@ -222,6 +233,15 @@ static void M_Observer(const int16_t priority)
 {
     Chain_InitElem(&m_ObserverElem, M_Observe, nullptr);
     CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_ObserverElem, priority)));
+}
+
+// Marks event at priority 7, between the mark element's reset (6) and the
+// record element's write (16).
+static void M_MarksEvent(const REPLAY_EVENT event)
+{
+    m_EventToMark = event;
+    Chain_InitElem(&m_MarkerElem, M_MarkEvent, nullptr);
+    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_MarkerElem, 7)));
 }
 
 static void M_Play(const M_SPEC *const spec)
@@ -600,5 +620,52 @@ TEST(marking_an_event_without_a_recording_does_nothing)
     M_SetUp(1);
     Replay_MarkEvent(REPLAY_EVENT_HIT);
     CHECK(g_Chain.calc.next == nullptr);
+    M_TearDown();
+}
+
+TEST(get_last_events_is_0_before_the_first_calc)
+{
+    M_SetUp(1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), 0);
+    M_TearDown();
+}
+
+TEST(get_last_events_returns_the_recorded_calcs_events)
+{
+    M_SetUp(1);
+    g_GameManager.mode.in_replay = false;
+    CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
+    M_MarksEvent(REPLAY_EVENT_HIT);
+    M_Calcs(1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_HIT);
+    m_EventToMark = REPLAY_EVENT_BOMB;
+    M_Calcs(1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_BOMB);
+    M_TearDown();
+}
+
+TEST(get_last_events_returns_the_played_frames_events)
+{
+    M_SetUp(1);
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[1], 0x40, 4);
+    spec.slots[1].events[0] = 73;
+    spec.slots[1].events[1] = REPLAY_EVENT_BOMB;
+    M_Play(&spec);
+    M_Calcs(1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), 73);
+    M_Calcs(1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_BOMB);
+    M_TearDown();
+}
+
+TEST(get_last_events_is_0_during_playback)
+{
+    M_SetUp(1);
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[1], 0x40, 4);
+    M_Play(&spec);
+    M_Calcs(2);
+    CHECK_EQ_INT(Replay_GetLastEvents(), 0);
     M_TearDown();
 }
