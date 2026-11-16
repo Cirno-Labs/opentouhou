@@ -50,12 +50,19 @@ void Hud_BombsPut(HUD *hud, const HUD_CONTEXT *context, int16_t previous);
 // maximum_combo is the separate source uint8 HUD maximum, not gameplay max.
 void Hud_ScoreAndCombo(HUD *hud, const HUD_CONTEXT *context);
 
-// Snaps stage and resources only on first_stage. Resets the displayed combo
-// and its HUD maximum on every call. Draws rank and stage on both pages.
-// Timer initialization, timer snapshots and final forced numeric rendering
-// are separate operations supplied by the gameplay owner.
+// Snapshots the stage label from the current page, draws it, then copies
+// the 16-pixel row from page 0 to page 1 and finishes on drawing page 0.
 void Hud_SnapStage(HUD *hud, const HUD_CONTEXT *context);
+
+// Draws rank and restores/redraws the stage label on page 1 then page 0.
 void Hud_PutStage(HUD *hud, const HUD_CONTEXT *context);
+
+// Snapshots score/combo backgrounds from page 1 on first_stage. Otherwise
+// restores combo backgrounds on the currently selected page. Draws score
+// and high score only on first_stage, resets the displayed combo and HUD
+// maximum, then copies both numeric rows from page 0 to page 1. Previous
+// digit caches persist. Timer initialization/snapshots and forced numeric
+// rendering are separate operations; Timer_Redraw supplies their full order.
 void Hud_SnapNumbers(HUD *hud, const HUD_CONTEXT *context, bool first_stage);
 
 // Preserves the duplicate first-quarter snapshot at x=512 for both halves.
