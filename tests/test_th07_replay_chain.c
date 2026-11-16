@@ -4,6 +4,7 @@
 
 #include "replay_lzss_literals.h"
 #include "th07/enemy.h"
+#include "th07/exe_identity.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/gui.h"
@@ -830,6 +831,8 @@ TEST(save_writes_the_recording_with_its_name_and_three_new_keys)
     CHECK_EQ_STR(file->date, "11/16");
     CHECK(file->slowdown == 1.5f);
     CHECK_EQ_INT(file->score, 4440);
+    CHECK_EQ_INT(file->exe_size, TH07_EXE_SIZE);
+    CHECK_EQ_INT(file->exe_checksum, TH07_EXE_CHECKSUM);
     const REPLAY_STAGE *const stage = file->stages[2];
     CHECK_EQ_INT(stage->score, 4444);
     CHECK_EQ_INT(stage->frame_count, 5);

@@ -1,6 +1,7 @@
 #include "th07/replay.h"
 
 #include "th07/enemy.h"
+#include "th07/exe_identity.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/gui.h"
@@ -204,10 +205,8 @@ static RESULT M_RecordAdded(void *const arg)
         // The original copies four bytes of "NO NAME".
         memcpy(file->name, "NO N", 4);
         memcpy(file->exe_version, "0100b", 6);
-        // The original checksums its own executable file (unsorted433e90.cpp,
-        // ChecksumExecutable) and stores the sum and the file's size;
-        // Replay_Read never checks either, so the port leaves both 0 rather
-        // than checksum a binary that is not the original's.
+        file->exe_size = TH07_EXE_SIZE;
+        file->exe_checksum = TH07_EXE_CHECKSUM;
         M_BuildConfig(
             file->config, gm->run.start_lives, gm->run.score_disabled);
     } else if (replay->file->stages[stage_number - 1] != nullptr) {
