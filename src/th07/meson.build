@@ -27,6 +27,7 @@ th07_lib = static_library(
   'gui/draw.c',
   'gui/gui.c',
   'gui/msg.c',
+  'gui/text_image.c',
   'item.c',
   'player/chain.c',
   'player/shot_type.c',

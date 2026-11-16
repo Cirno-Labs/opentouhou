@@ -474,15 +474,17 @@ static M_RUN M_RunInstrs(void)
             if (instr->removes_note) {
                 Note_Remove();
             }
-            Result_Log(
-                Translation_HasBaseTsa()
-                    ? Anm_RenderText(
-                          nameplate, m_TextColors[instr->who], 0, "%s",
-                          instr->text)
-                    : Anm_RenderTextRightAligned(
-                          nameplate, m_TextColors[instr->who], 0, "%s",
-                          instr->text),
-                LOG_LEVEL_WARNING);
+            if (!GuiTextImage_Replaces(M_NAMEPLATE_SCRIPT)) {
+                Result_Log(
+                    Translation_HasBaseTsa()
+                        ? Anm_RenderText(
+                              nameplate, m_TextColors[instr->who], 0, "%s",
+                              instr->text)
+                        : Anm_RenderTextRightAligned(
+                              nameplate, m_TextColors[instr->who], 0, "%s",
+                              instr->text),
+                    LOG_LEVEL_WARNING);
+            }
             g_Gui.msg.wait_frames = 0;
             break;
         }
@@ -711,6 +713,7 @@ static void M_Release(void)
         Anm_Release(slot);
     }
     GuiMsg_Free(&m_Msg);
+    GuiTextImage_Release();
     if (!M_KeepsInterface()) {
         Anm_Release(M_FRONT_SLOT);
         Anm_Release(M_LOADING_SLOT);
@@ -738,6 +741,8 @@ static RESULT M_Load(void)
         }
     }
     M_StartBanners();
+    GuiTextImage_Load();
+    GuiTextImage_ShowStage(g_GameManager.run.stage);
     return OK;
 }
 
