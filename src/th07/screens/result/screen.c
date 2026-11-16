@@ -11,6 +11,9 @@
 #include "th07/screens/result/private.h"
 #include "th07/sound.h"
 
+#include "stg/note.h"
+#include "stg/translation.h"
+
 #include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
@@ -829,10 +832,15 @@ static void M_RenderSpellCards(M_SCREEN *const screen)
             }
             char *name;
             if (Result_Log(
-                    Cp932_Decode((const char *)card->name, length, &name),
+                    Cp932_DecodeText((const char *)card->name, length, &name),
                     LOG_LEVEL_WARNING)) {
+                // Hides the translator note, as base_tsa's hook of the
+                // spell card name does for each card that shows its name.
+                Note_Remove();
                 Result_Log(
-                    Anm_RenderText(vm, 0xffffff, 0, "%s", name),
+                    Anm_RenderText(
+                        vm, 0xffffff, 0, "%s",
+                        Translation_GetSpellName(i, name)),
                     LOG_LEVEL_WARNING);
                 Mem_Free(name);
             }
