@@ -10,6 +10,7 @@ th01_lib = static_library(
   'shots.c',
   'pellet_assets.c',
   'pellets.c',
+  'missiles.c',
   'player.c',
   'bomb.c',
   'miss.c',
