@@ -20,11 +20,6 @@ RESULT Ending_Register(void)
     return OK;
 }
 
-void Replay_ResaveIfScoreChanged(void)
-{
-    LOG_INFO("Replay_ResaveIfScoreChanged is not ported");
-}
-
 uint8_t g_EffectsQuality = 2;
 
 void PlayTime_Add(void)

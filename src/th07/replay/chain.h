@@ -24,6 +24,14 @@ void Replay_Discard(void);
 // Marks event in the calc being recorded. Does nothing without a recording.
 void Replay_MarkEvent(REPLAY_EVENT event);
 
+// Writes the replay being played to g_GameManager.mode.replay_path again
+// when the score differs from the one it holds: with the score set at the
+// end of the current slot and in its header, and with new keys drawn from
+// the gameplay RNG. Writes nothing when the replay was recorded with
+// another config than the current one, outside practice, Extra and
+// Phantasm. Then ends playback either way.
+void Replay_ResaveIfScoreChanged(void);
+
 // Returns whether the replay being played holds stage (1 to 7); false
 // without playback.
 bool Replay_HasStage(int32_t stage);

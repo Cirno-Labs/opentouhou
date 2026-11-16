@@ -17,10 +17,6 @@ RESULT ResultScreen_Register(int32_t mode);
 RESULT MusicScreen_Register(void);
 RESULT Ending_Register(void);
 
-// Stands in for th07/replay's save of the replay being played again, when
-// the score differs from the one the replay holds.
-void Replay_ResaveIfScoreChanged(void);
-
 // Stand in for App::AddTotalPlayTime, the restart of its clock, and the
 // stop of that clock with App::AddPlayTime.
 void PlayTime_Add(void);

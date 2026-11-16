@@ -13,7 +13,6 @@
 #include "th07/screen_effect.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
-#include "th07/stubs.h"
 
 #include "shell/game.h"
 #include "core/vfs.h"
