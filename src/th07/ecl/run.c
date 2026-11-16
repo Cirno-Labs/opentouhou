@@ -588,10 +588,18 @@ static float M_Ease(const int32_t ease, float t)
 static void M_MoveAngle(ENEMY *const enemy, const ECL_INSTR *const instr)
 {
     const float angle = Angle_AddNormalize(M_FloatArg(enemy, instr, 2), 0.0f);
-    enemy->move.delta.x = X87_Cos(angle) * M_FloatArg(enemy, instr, 3)
-        * (float)M_IntArg(enemy, instr, 0);
-    enemy->move.delta.y = X87_Sin(angle) * M_FloatArg(enemy, instr, 3)
-        * (float)M_IntArg(enemy, instr, 0);
+    // Each product rounds once: the trig result stays at extended
+    // precision into the first multiply.
+    float x;
+    float y;
+    float speed = M_FloatArg(enemy, instr, 3);
+    float frames = (float)M_IntArg(enemy, instr, 0);
+    X87_SinCosScale(angle, speed, &x, &y);
+    enemy->move.delta.x = x * frames;
+    speed = M_FloatArg(enemy, instr, 3);
+    frames = (float)M_IntArg(enemy, instr, 0);
+    X87_SinCosScale(angle, speed, &x, &y);
+    enemy->move.delta.y = y * frames;
     enemy->move.delta.z = 0.0f;
     enemy->move.start = enemy->move.pos;
     enemy->move.duration = M_IntArg(enemy, instr, 0);
@@ -1257,11 +1265,14 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetInterp(enemy, instr);
         break;
     case 151: {
-        const float y =
-            X87_Sin(M_FloatArg(enemy, instr, 2)) * M_FloatArg(enemy, instr, 3);
+        // The second pair of operands is read after the first store.
+        float x;
+        float y;
+        float angle = M_FloatArg(enemy, instr, 2);
+        X87_SinCosScale(angle, M_FloatArg(enemy, instr, 3), &x, &y);
         M_SetFloat(enemy, instr, 1, y);
-        const float x =
-            X87_Cos(M_FloatArg(enemy, instr, 2)) * M_FloatArg(enemy, instr, 3);
+        angle = M_FloatArg(enemy, instr, 2);
+        X87_SinCosScale(angle, M_FloatArg(enemy, instr, 3), &x, &y);
         M_SetFloat(enemy, instr, 0, x);
         break;
     }
