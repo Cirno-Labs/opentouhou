@@ -1,5 +1,7 @@
 #include "th01/orb.h"
 
+#include "th01/sprite.h"
+
 #include "th01/finite.h"
 #include "th01/math.h"
 
@@ -274,25 +276,13 @@ void Orb_RenderAction(
     if (action.kind != ORB_ACTION_ERASE && action.kind != ORB_ACTION_PUT) {
         return;
     }
-    const uint8_t *const pixels = sprites->pixels
-        + (ORB_FIRST_IMAGE + action.image) * PTN_WIDTH * PTN_HEIGHT;
-    const int32_t left = action.left - ((action.left % 8 + 8) % 8);
     if (action.kind == ORB_ACTION_ERASE) {
-        Video_SelectDrawingPage(video, 0);
-    }
-    for (int32_t y = 0; y < ORB_HEIGHT; y++) {
-        for (int32_t x = 0; x < ORB_WIDTH; x++) {
-            const uint8_t color = pixels[y * PTN_WIDTH + x];
-            if (color != PTN_TRANSPARENT) {
-                const int32_t offset =
-                    (action.top + y) * VIDEO_WIDTH + left + x;
-                if (offset >= 0 && offset < VIDEO_PAGE_SIZE) {
-                    video->pages[video->drawing_page][offset] =
-                        action.kind == ORB_ACTION_ERASE
-                        ? video->pages[1][offset]
-                        : color;
-                }
-            }
-        }
+        Sprite_PtnErase(
+            video, sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
+            action.top);
+    } else {
+        Sprite_PtnPut(
+            video, sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
+            action.top);
     }
 }

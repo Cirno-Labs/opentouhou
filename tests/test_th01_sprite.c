@@ -1,0 +1,110 @@
+#include "th01/sprite.h"
+
+#include "test.h"
+
+#include <string.h>
+
+static uint8_t m_Pages[2][VIDEO_PAGE_SIZE];
+static uint8_t m_Expected[VIDEO_PAGE_SIZE];
+
+static VIDEO M_Video(void)
+{
+    for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
+        m_Pages[0][i] = 7;
+        m_Pages[1][i] = i % 16;
+        m_Expected[i] = 7;
+    }
+    return (VIDEO) { .pages = { m_Pages[0], m_Pages[1] } };
+}
+
+TEST(ptn_quarters_restore_and_row_wrapping)
+{
+    uint8_t pixels[1024];
+    for (int32_t i = 0; i < 1024; i++) {
+        pixels[i] = i % 17 == 0 ? 15 : (i / 16) % 15;
+    }
+    const PTN sprites = { .count = 1, .pixels = pixels };
+    const int16_t positions[] = { -8, -4, 0, 4, 608, 612, 616, 636 };
+    for (int32_t q = -1; q < 4; q++) {
+        for (size_t p = 0; p < ARRAY_SIZE(positions); p++) {
+            VIDEO video = M_Video();
+            const int32_t width = q < 0 ? 32 : 16;
+            const int32_t x0 = q < 0 ? 0 : (q % 2) * 16;
+            const int32_t y0 = q < 0 ? 0 : (q / 2) * 16;
+            const int32_t byte_x =
+                positions[p] >= 0 ? positions[p] / 8 : (positions[p] - 7) / 8;
+            for (int32_t y = 0; y < width; y++) {
+                for (int32_t x = 0; x < width; x++) {
+                    const uint8_t pixel = pixels[(y + y0) * 32 + x + x0];
+                    const int32_t offset = (384 + y) * 640 + byte_x * 8 + x;
+                    if (offset >= 0 && offset < VIDEO_PAGE_SIZE
+                        && pixel != 15) {
+                        m_Expected[offset] = pixel;
+                    }
+                }
+            }
+            Sprite_PtnPut(&video, &sprites, 0, q, positions[p], 384);
+            CHECK(memcmp(m_Pages[0], m_Expected, VIDEO_PAGE_SIZE) == 0);
+            Sprite_PtnErase(&video, &sprites, 0, q, positions[p], 384);
+            for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
+                if (m_Expected[i] != 7) {
+                    CHECK_EQ_INT(m_Pages[0][i], m_Pages[1][i]);
+                }
+            }
+        }
+    }
+}
+
+TEST(rect_restore_covers_extra_word_and_wraps_rows)
+{
+    VIDEO video = M_Video();
+    Sprite_Restore16(&video, 636, 398, 16, 16);
+    for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
+        const bool restored = (i >= 398 * 640 + 624 && i < 399 * 640 + 16)
+            || i >= 399 * 640 + 624;
+        CHECK_EQ_INT(m_Pages[0][i], restored ? m_Pages[1][i] : 7);
+    }
+    CHECK_EQ_INT(video.drawing_page, 0);
+}
+
+TEST(player_masks_raw_color_and_retains_clipping_quirk)
+{
+    uint8_t pixels[48 * 2];
+    uint8_t coverage[48 * 2];
+    memset(pixels, 14, sizeof(pixels));
+    memset(coverage, 1, sizeof(coverage));
+    coverage[8] = 0;
+    const BOS sprites = { 48, 2, 1, pixels, coverage };
+    VIDEO video = M_Video();
+    Sprite_PlayerPut(&video, &sprites, 0, -4, 1);
+    CHECK_EQ_INT(m_Pages[0][632], 7);
+    CHECK_EQ_INT(m_Pages[0][640], 7);
+    CHECK_EQ_INT(m_Pages[0][641], 14);
+    Sprite_PlayerErase(&video, &sprites, 0, -4, 1);
+    CHECK_EQ_INT(m_Pages[0][641], m_Pages[1][641]);
+    video = M_Video();
+    Sprite_PlayerPut(&video, &sprites, 0, 636, 1);
+    CHECK_EQ_INT(m_Pages[0][1279], 14);
+    CHECK_EQ_INT(m_Pages[0][1280], 7);
+}
+
+TEST(player_overlap_preserves_uncovered_old_pixels_only)
+{
+    uint8_t pixels[48 * 2];
+    uint8_t coverage[48 * 2];
+    memset(pixels, 3, sizeof(pixels));
+    memset(coverage, 1, 48);
+    memset(coverage + 48, 0, 48);
+    coverage[48 + 8] = 1;
+    const BOS sprites = { 48, 1, 2, pixels, coverage };
+    for (int16_t delta = -8; delta <= 8; delta += 8) {
+        VIDEO video = M_Video();
+        Sprite_PlayerPut(&video, &sprites, 0, 16, 2);
+        Sprite_PlayerOverlap(&video, &sprites, 1, 0, 16 + delta, 2, 16, 2);
+        for (int32_t x = 16; x < 64; x++) {
+            CHECK_EQ_INT(
+                m_Pages[0][1280 + x],
+                x == 24 + delta ? 3 : m_Pages[1][1280 + x]);
+        }
+    }
+}
