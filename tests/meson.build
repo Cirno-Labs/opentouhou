@@ -2343,6 +2343,19 @@ if build_games
     suite: 'unit',
   )
   test(
+    'th01/opening',
+    executable(
+      'test_th01_opening',
+      'test_th01_opening.c',
+      'input_backend_fake.c',
+      c_args: [layer_include['th01']] + core_include + stg_include,
+      implicit_include_directories: false,
+      link_with: [th01_lib, core_text_lib, core_image_lib, core_input_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3_ttf, sdl3, cc_libm],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th01/input',
     executable(
       'test_th01_input',

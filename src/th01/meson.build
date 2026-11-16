@@ -4,6 +4,8 @@ th01_lib = static_library(
   'th01_lib',
   'bfnt.c',
   'logo.c',
+  'opening.c',
+  'opening_load.c',
   'frame.c',
   'math.c',
   'input.c',
