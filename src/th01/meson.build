@@ -9,6 +9,7 @@ th01_lib = static_library(
   'video.c',
   'palette.c',
   'text.c',
+  'tram.c',
   'pf.c',
   'pi.c',
   'ptn.c',

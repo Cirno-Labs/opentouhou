@@ -2355,7 +2355,7 @@ if build_games
     ),
     suite: 'unit',
   )
-  foreach part : ['bfnt', 'logo', 'frame', 'math', 'settings', 'video', 'palette', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz']
+  foreach part : ['bfnt', 'logo', 'frame', 'math', 'settings', 'video', 'palette', 'tram', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz']
     test(
       'th01/' + part,
       executable(
