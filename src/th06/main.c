@@ -3,7 +3,7 @@
 #include "core/base/log.h"
 #include "core/patch.h"
 
-#include "th06/note.h"
+#include "stg/note.h"
 #include "stg/translation.h"
 
 #include "th06/buttons.h"

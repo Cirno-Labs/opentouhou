@@ -1,11 +1,9 @@
-#include "th06/note.h"
+#include "stg/note.h"
 
 #include "gfx_recorder.h"
 #include "patch_builder.h"
 #include "test.h"
 
-#include "th06/files.h"
-#include "th06/strings.h"
 #include "stg/translation.h"
 
 #include "core/base/memory.h"
@@ -16,12 +14,28 @@
 
 #include <string.h>
 
-// Holds base_tsa's notes settings: the region of its th06.js at the
-// reference resolution of its global.js.
+// Holds base_tsa's notes settings: the region of its global.js, at a
+// synthetic reference resolution.
 #define M_BASE_TSA_NOTES                                                       \
     "reference_resolution: [1280, 960], region_topleft: [864, 516], "          \
     "region_size: [384, 412], font: \"'MS Gothic' 32 0 400 "                   \
     "DEFAULT_QUALITY\""
+
+static const TRANSLATION_GAME m_Game = {
+    .id = "game",
+    .image_base = 0x400000,
+    .strings = nullptr,
+    .defaults = nullptr,
+    .addresses = nullptr,
+    .string_count = 0,
+    .spell_count = 0,
+    .stage_count = 0,
+};
+
+static const PATCH_GAME m_PatchGame = {
+    .build = "v1",
+    .layout = PATCH_LAYOUT_FLAT,
+};
 
 static PATCH_STACK *m_Stack;
 static char *m_Directory;
@@ -41,9 +55,9 @@ static void M_Begin(
     Mem_Free(settings);
     m_Stack = nullptr;
     CHECK(Result_Log(
-        Patch_OpenStack(m_Directory, "th06", &g_PatchGame, nullptr, &m_Stack),
+        Patch_OpenStack(m_Directory, "game", &m_PatchGame, nullptr, &m_Stack),
         LOG_LEVEL_ERROR));
-    Translation_Init(m_Stack, &g_TranslationGame);
+    Translation_Init(m_Stack, &m_Game);
     CHECK(Result_Log(Text_Init(), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Note_Init(m_Stack);
