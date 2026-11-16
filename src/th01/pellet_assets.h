@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core/io/reader.h"
+#include "th01/reiiden_image.h"
 #include "th01/video.h"
 
-#define PELLET_EXECUTABLE_SIZE 238612
+#define PELLET_EXECUTABLE_SIZE REIIDEN_IMAGE_SIZE
 
 typedef struct {
     uint8_t pellets[3][8][8][2];

@@ -2,10 +2,6 @@
 
 #include "th01/math.h"
 
-#include "core/hash/sha256.h"
-
-#include <string.h>
-
 static void M_Row(
     VIDEO *const video, const uint8_t *const mask, const uint16_t offset,
     const bool restore, const uint8_t color)
@@ -35,28 +31,8 @@ RESULT PelletAssets_Load(
     const ALLOCATOR *const allocator, PELLET_ASSETS **const out)
 {
     *out = nullptr;
-    FAIL_IF(
-        Reader_Size(reader) != PELLET_EXECUTABLE_SIZE,
-        "Unsupported REIIDEN.EXE length");
-    FAIL_IF(
-        scratch == nullptr || scratch_size < PELLET_EXECUTABLE_SIZE,
-        "Missing executable scratch storage");
-    Reader_Seek(reader, 0);
-    Reader_ReadBytes(reader, scratch, PELLET_EXECUTABLE_SIZE);
-    MUST(Reader_Result(reader));
-    char digest[SHA256_HEX_SIZE];
-    Sha256_ComputeHex(scratch, PELLET_EXECUTABLE_SIZE, digest);
-    FAIL_IF(
-        strcmp(
-            digest,
-            "76a5d241dead706e768bd1516d6aa539b589445e5941877073e8cb9e9ae8f62a")
-            != 0,
-        "Unsupported REIIDEN.EXE version");
     READER source;
-    Reader_OpenBuffer(&source, scratch, PELLET_EXECUTABLE_SIZE, nullptr);
-    FAIL_IF(Reader_ReadU16(&source) != 0x5a4d, "Invalid MZ signature");
-    Reader_Seek(&source, 8);
-    FAIL_IF(Reader_ReadU16(&source) != 896, "Unsupported MZ header");
+    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &source));
     PELLET_ASSETS masks;
     Reader_Seek(&source, 0x398cf);
     Reader_ReadBytes(&source, masks.pellets, sizeof(masks.pellets));
