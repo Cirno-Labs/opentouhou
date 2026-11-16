@@ -26,6 +26,7 @@
 #define M_CONFIG_LIVES 0x1c
 #define M_CONFIG_SLOWDOWN 0x25
 #define M_BORDER_PLUS 50000
+#define M_STAGE_HEADER_WORDS 11 // a stage header's size in frames
 
 typedef struct {
     REPLAY_FILE *file;
@@ -351,14 +352,86 @@ RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
     return Chain_AddDraw(&g_Chain, &replay->draw, M_DRAW_PRIORITY);
 }
 
+static int32_t M_ClearLowWord(const int32_t value)
+{
+    return (int32_t)((uint32_t)value & 0xffff0000u);
+}
+
+// Clears the buttons word of frame index of slot where the original finds
+// it in the loaded file: past a slot's frames come the next present
+// slot's header, then that slot's frames.
+static void M_ClearButtons(REPLAY_FILE *const file, int32_t slot, int32_t index)
+{
+    REPLAY_STAGE *stage = file->stages[slot];
+    while (index >= stage->frame_count) {
+        index -= stage->frame_count;
+        do {
+            slot++;
+        } while (slot < 8 && file->stages[slot] == nullptr);
+        if (slot == 8) {
+            LOG_WARNING("replay end of stage clears a frame rate byte");
+            return;
+        }
+        stage = file->stages[slot];
+        if (index < M_STAGE_HEADER_WORDS) {
+            switch (index) {
+            case 0:
+                stage->score = M_ClearLowWord(stage->score);
+                break;
+            case 1:
+                stage->point_items_total =
+                    M_ClearLowWord(stage->point_items_total);
+                break;
+            case 2:
+                stage->cherry = M_ClearLowWord(stage->cherry);
+                break;
+            case 3:
+                stage->cherry_max = M_ClearLowWord(stage->cherry_max);
+                break;
+            case 4:
+                stage->cherry_plus = M_ClearLowWord(stage->cherry_plus);
+                break;
+            case 5:
+                stage->graze_total = M_ClearLowWord(stage->graze_total);
+                break;
+            case 6:
+                stage->point_extends = M_ClearLowWord(stage->point_extends);
+                break;
+            case 7:
+                stage->next_extend_points =
+                    M_ClearLowWord(stage->next_extend_points);
+                break;
+            case 8:
+                stage->rng_seed = 0;
+                break;
+            case 9:
+                stage->bombs = 0;
+                stage->rank = 0;
+                break;
+            default: // padding
+                break;
+            }
+            return;
+        }
+        index -= M_STAGE_HEADER_WORDS;
+    }
+    stage->frames[index].buttons = 0;
+}
+
 void Replay_EndStage(void)
 {
     M_REPLAY *const replay = m_Replay;
-    if (replay == nullptr || replay->mode != REPLAY_RECORD
-        || !M_IsReady(replay)) {
+    if (replay == nullptr || !M_IsReady(replay)) {
         return;
     }
     const int32_t slot = M_Slot();
+    if (replay->mode == REPLAY_PLAY) {
+        // The original closes a played stage too, in the loaded file: one
+        // that ran a calc long clears the low word of the next score.
+        replay->cursor++;
+        M_ClearButtons(replay->file, slot, replay->cursor);
+        return;
+    }
     REPLAY_STAGE *const stage = replay->file->stages[slot];
     replay->cursor++;
     stage->frames = M_Grow(
