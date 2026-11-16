@@ -5,26 +5,17 @@
 
 #include "core/base/utils.h"
 
-#include <string.h>
-
-static uint32_t M_F32Bits(float value)
-{
-    uint32_t bits;
-    memcpy(&bits, &value, sizeof(bits));
-    return bits;
-}
-
 static uint32_t M_HashVec3(uint32_t hash, const RETAIL_VEC3 *const vec)
 {
-    hash = Case_Hash(hash, M_F32Bits(vec->x));
-    hash = Case_Hash(hash, M_F32Bits(vec->y));
-    return Case_Hash(hash, M_F32Bits(vec->z));
+    hash = Case_Hash(hash, Case_F32Bits(vec->x));
+    hash = Case_Hash(hash, Case_F32Bits(vec->y));
+    return Case_Hash(hash, Case_F32Bits(vec->z));
 }
 
 static uint32_t M_HashTimer(uint32_t hash, const RETAIL_TIMER *const timer)
 {
     hash = Case_Hash(hash, (uint32_t)timer->current);
-    return Case_Hash(hash, M_F32Bits(timer->sub_frame));
+    return Case_Hash(hash, Case_F32Bits(timer->sub_frame));
 }
 
 static uint32_t M_HashShots(const RETAIL_PLAYER *player, uint32_t *count)
@@ -44,7 +35,7 @@ static uint32_t M_HashShots(const RETAIL_PLAYER *player, uint32_t *count)
                 | (uint32_t)(uint16_t)bullet->damage << 16);
         hash = M_HashVec3(hash, &bullet->pos);
         hash = M_HashVec3(hash, &bullet->velocity);
-        hash = Case_Hash(hash, M_F32Bits(bullet->angle));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->angle));
         hash = M_HashTimer(hash, &bullet->timer);
     }
     return hash;
@@ -69,8 +60,8 @@ static uint32_t M_HashBullets(
             (uint32_t)bullet->active_flags | (uint32_t)bullet->grazed << 16);
         hash = M_HashVec3(hash, &bullet->pos);
         hash = M_HashVec3(hash, &bullet->velocity);
-        hash = Case_Hash(hash, M_F32Bits(bullet->speed));
-        hash = Case_Hash(hash, M_F32Bits(bullet->angle));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->speed));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->angle));
         hash = M_HashTimer(hash, &bullet->timer);
         hash = Case_Hash(hash, (uint32_t)bullet->command_index);
         for (uint32_t j = 0; j < ARRAY_SIZE(bullet->ex); j++) {
@@ -96,10 +87,10 @@ static uint32_t M_HashLasers(
         hash = Case_Hash(
             hash, (uint32_t)laser->state | (uint32_t)laser->flags << 16);
         hash = M_HashVec3(hash, &laser->pos);
-        hash = Case_Hash(hash, M_F32Bits(laser->angle));
-        hash = Case_Hash(hash, M_F32Bits(laser->start_offset));
-        hash = Case_Hash(hash, M_F32Bits(laser->end_offset));
-        hash = Case_Hash(hash, M_F32Bits(laser->width));
+        hash = Case_Hash(hash, Case_F32Bits(laser->angle));
+        hash = Case_Hash(hash, Case_F32Bits(laser->start_offset));
+        hash = Case_Hash(hash, Case_F32Bits(laser->end_offset));
+        hash = Case_Hash(hash, Case_F32Bits(laser->width));
         hash = M_HashTimer(hash, &laser->timer);
     }
     return hash;
@@ -119,8 +110,8 @@ static uint32_t M_HashEnemies(
         hash = Case_Hash(hash, i);
         hash = M_HashVec3(hash, &enemy->pos);
         hash = Case_Hash(hash, (uint32_t)enemy->life);
-        hash = Case_Hash(hash, M_F32Bits(enemy->angle));
-        hash = Case_Hash(hash, M_F32Bits(enemy->speed));
+        hash = Case_Hash(hash, Case_F32Bits(enemy->angle));
+        hash = Case_Hash(hash, Case_F32Bits(enemy->speed));
         hash = M_HashTimer(hash, &enemy->script_timer);
     }
     return hash;
@@ -185,9 +176,9 @@ void State_Start(uint32_t row[TH07_START_COUNT])
     row[TH07_START_character] = game->character;
     row[TH07_START_shot_type] = game->shot_type;
     row[TH07_START_stage] = (uint32_t)game->stage;
-    row[TH07_START_lives] = M_F32Bits(stats->lives);
-    row[TH07_START_bombs] = M_F32Bits(stats->bombs);
-    row[TH07_START_power] = M_F32Bits(stats->power);
+    row[TH07_START_lives] = Case_F32Bits(stats->lives);
+    row[TH07_START_bombs] = Case_F32Bits(stats->bombs);
+    row[TH07_START_power] = Case_F32Bits(stats->power);
     row[TH07_START_score] = stats->score;
     row[TH07_START_rng_seed] = RETAIL_RNG_AT->seed;
     row[TH07_START_rank] = (uint32_t)game->rank;
@@ -210,12 +201,12 @@ void State_Calc(uint32_t row[TH07_CALC_COUNT])
     row[TH07_CALC_stage] = (uint32_t)game->stage;
     row[TH07_CALC_stage_frames] = (uint32_t)game->stage_frames;
     row[TH07_CALC_flags] = flags;
-    row[TH07_CALC_game_speed] = M_F32Bits(RETAIL_APP_AT->game_speed);
+    row[TH07_CALC_game_speed] = Case_F32Bits(RETAIL_APP_AT->game_speed);
     row[TH07_CALC_score] = stats->score;
     row[TH07_CALC_gui_score] = stats->gui_score;
-    row[TH07_CALC_lives] = M_F32Bits(stats->lives);
-    row[TH07_CALC_bombs] = M_F32Bits(stats->bombs);
-    row[TH07_CALC_power] = M_F32Bits(stats->power);
+    row[TH07_CALC_lives] = Case_F32Bits(stats->lives);
+    row[TH07_CALC_bombs] = Case_F32Bits(stats->bombs);
+    row[TH07_CALC_power] = Case_F32Bits(stats->power);
     row[TH07_CALC_graze] = (uint32_t)stats->graze;
     row[TH07_CALC_graze_total] = (uint32_t)stats->graze_total;
     row[TH07_CALC_point_items] = (uint32_t)stats->point_items;
@@ -235,8 +226,8 @@ void State_Calc(uint32_t row[TH07_CALC_COUNT])
     uint32_t shot_count;
     row[TH07_CALC_shot_hash] = M_HashShots(player, &shot_count);
     row[TH07_CALC_shot_count] = shot_count;
-    row[TH07_CALC_player_x] = M_F32Bits(player->position.x);
-    row[TH07_CALC_player_y] = M_F32Bits(player->position.y);
+    row[TH07_CALC_player_x] = Case_F32Bits(player->position.x);
+    row[TH07_CALC_player_y] = Case_F32Bits(player->position.y);
     row[TH07_CALC_player_state] = (uint8_t)player->player_state;
 
     const RETAIL_BULLET_MANAGER *const bullets = RETAIL_BULLET_MANAGER_AT;
