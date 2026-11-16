@@ -56,14 +56,171 @@ static bool M_Region(
     return true;
 }
 
+static int32_t M_LineColumn(const int32_t x)
+{
+    return x / 8 - (x % 8 < 0);
+}
+
+static uint16_t M_LinePattern(const uint16_t pattern, const int32_t x)
+{
+    const int32_t shift = x & 7;
+    return (uint16_t)((uint32_t)pattern >> shift
+                      | (uint32_t)pattern << (16 - shift));
+}
+
 static void M_FlushLine(
     VIDEO *const video, const int32_t column, const int32_t row,
-    const uint8_t mask, const uint8_t color)
+    const uint16_t mask, const uint8_t color)
 {
-    for (int32_t i = 0; i < 8; i++) {
-        if ((mask & (0x80 >> i)) != 0) {
-            Video_Pixel(video, column * 8 + i, row, color);
+    for (int32_t byte = 0; byte < 2; byte++) {
+        const uint32_t offset = (uint32_t)(row * 80 + column + byte) & 0x7fffu;
+        if (offset >= 32000) {
+            continue;
         }
+        for (int32_t bit = 0; bit < 8; bit++) {
+            if ((mask & (0x80u << (byte * 8) >> bit)) != 0) {
+                video->pages[video->drawing_page][offset * 8 + bit] =
+                    color & 15;
+            }
+        }
+    }
+}
+
+static void M_RestoreRawLine(VIDEO *const video, const uint16_t offset)
+{
+    Video_SelectDrawingPage(video, 0);
+    for (uint32_t byte = offset; byte < (uint32_t)offset + 4; byte++) {
+        uint32_t planar = byte;
+        uint8_t mask = 15;
+        if (byte >= 65536) {
+            planar -= 65536;
+            mask = 4;
+        } else if (byte >= 32768) {
+            planar -= 32768;
+            mask = 6;
+        }
+        if (planar >= 32000) {
+            continue;
+        }
+        for (int32_t bit = 0; bit < 8; bit++) {
+            const uint32_t pixel = planar * 8 + bit;
+            video->pages[0][pixel] =
+                (uint8_t)((video->pages[0][pixel] & ~mask)
+                          | (video->pages[1][pixel] & mask));
+        }
+    }
+}
+
+static void M_Line(
+    VIDEO *const video, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
+    const uint8_t color, const uint16_t pattern, const bool erase)
+{
+    ASSERT(x1 >= INT16_MIN && x1 <= INT16_MAX);
+    ASSERT(x2 >= INT16_MIN && x2 <= INT16_MAX);
+    ASSERT(y1 >= INT16_MIN && y1 <= INT16_MAX);
+    ASSERT(y2 >= INT16_MIN && y2 <= INT16_MAX);
+    if (!erase && x1 == x2) {
+        M_Order(&y1, &y2);
+        y1 = (int32_t)M_Max(y1, 0);
+        y2 = (int32_t)M_Min(y2, VIDEO_HEIGHT - 1);
+        const uint16_t mask = M_LinePattern(pattern, x1);
+        for (int32_t y = y1; y <= y2; y++) {
+            M_FlushLine(video, M_LineColumn(x1), y, mask, color);
+        }
+        return;
+    }
+    if (!erase && y1 == y2) {
+        M_Order(&x1, &x2);
+        x1 = (int32_t)M_Max(x1, 0);
+        x2 = (int32_t)M_Min(x2, VIDEO_WIDTH - 1);
+        for (int32_t x = x1; x <= x2; x++) {
+            M_FlushLine(
+                video, M_LineColumn(x), y1, (uint16_t)(0x80u >> (x & 7)),
+                color);
+        }
+        return;
+    }
+    if (x1 > x2) {
+        M_Order(&x1, &x2);
+        const int32_t swap = y1;
+        y1 = y2;
+        y2 = swap;
+    }
+    if (x1 < 0) {
+        if (x2 < 0) {
+            return;
+        }
+        y1 += ((y2 - y1) / (x2 - x1)) * -x1;
+        x1 = 0;
+    }
+    if (x2 >= VIDEO_WIDTH) {
+        if (x1 >= VIDEO_WIDTH) {
+            return;
+        }
+        y2 -= ((y2 - y1) / (x2 - x1)) * (x2 - (VIDEO_WIDTH - 1));
+        x2 = VIDEO_WIDTH - 1;
+    }
+    if (y1 < 0) {
+        if (y2 < 0) {
+            return;
+        }
+        x1 += ((x2 - x1) / (y2 - y1)) * -y1;
+        y1 = 0;
+    }
+    if (y2 >= VIDEO_HEIGHT) {
+        if (y1 >= VIDEO_HEIGHT) {
+            return;
+        }
+        x2 -= ((x2 - x1) / (y2 - y1)) * (y2 - (VIDEO_HEIGHT - 1));
+        y2 = VIDEO_HEIGHT - 1;
+    }
+    if (y2 < 0) {
+        x2 += ((x2 - x1) / (y2 - y1)) * -y2;
+        y2 = 0;
+    }
+    if (y1 >= VIDEO_HEIGHT) {
+        x1 -= ((x2 - x1) / (y2 - y1)) * (y1 - (VIDEO_HEIGHT - 1));
+        y1 = VIDEO_HEIGHT - 1;
+    }
+    const int32_t direction = y1 < y2 ? 1 : -1;
+    const int32_t dx = x2 - x1;
+    const int32_t dy = (y2 - y1) * direction;
+    const int32_t length = dx > dy ? dx : dy;
+    int32_t error = length / 2;
+    int32_t x = x1;
+    int32_t y = y1;
+    int32_t column = M_LineColumn(x);
+    int32_t row = y;
+    uint16_t mask = 0;
+    for (int32_t i = 0; i <= length; i++) {
+        if (M_LineColumn(x) != column || y != row) {
+            if (erase) {
+                M_RestoreRawLine(video, (uint16_t)(row * 80 + column - 1));
+            } else {
+                M_FlushLine(video, column, row, mask, color);
+            }
+            mask = 0;
+            column = M_LineColumn(x);
+            row = y;
+        }
+        mask |= M_LinePattern(pattern, x);
+        error -= dx > dy ? dy : dx;
+        if (dx > dy) {
+            x++;
+        } else {
+            y += direction;
+        }
+        if (error < 0) {
+            error += length;
+            if (dx > dy) {
+                y += direction;
+            } else {
+                x++;
+            }
+        }
+    }
+    if (erase) {
+        M_RestoreRawLine(video, (uint16_t)(y * 80 + M_LineColumn(x) - 1));
     }
 }
 
@@ -164,96 +321,24 @@ void Video_Box(
 }
 
 void Video_Line(
-    VIDEO *const video, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
-    const uint8_t color)
+    VIDEO *const video, const int32_t x1, const int32_t y1, const int32_t x2,
+    const int32_t y2, const uint8_t color)
 {
-    ASSERT(x1 >= INT16_MIN && x1 <= INT16_MAX);
-    ASSERT(x2 >= INT16_MIN && x2 <= INT16_MAX);
-    ASSERT(y1 >= INT16_MIN && y1 <= INT16_MAX);
-    ASSERT(y2 >= INT16_MIN && y2 <= INT16_MAX);
-    if (x1 == x2) {
-        Video_VerticalLine(video, x1, y1, y2, color);
-        return;
-    }
-    if (y1 == y2) {
-        Video_HorizontalLine(video, x1, x2, y1, color);
-        return;
-    }
-    if (x1 > x2) {
-        M_Order(&x1, &x2);
-        const int32_t swap = y1;
-        y1 = y2;
-        y2 = swap;
-    }
-    if (x1 < 0) {
-        if (x2 < 0) {
-            return;
-        }
-        y1 += ((y2 - y1) / (x2 - x1)) * -x1;
-        x1 = 0;
-    }
-    if (x2 >= VIDEO_WIDTH) {
-        if (x1 >= VIDEO_WIDTH) {
-            return;
-        }
-        y2 -= ((y2 - y1) / (x2 - x1)) * (x2 - (VIDEO_WIDTH - 1));
-        x2 = VIDEO_WIDTH - 1;
-    }
-    if (y1 < 0) {
-        if (y2 < 0) {
-            return;
-        }
-        x1 += ((x2 - x1) / (y2 - y1)) * -y1;
-        y1 = 0;
-    }
-    if (y2 >= VIDEO_HEIGHT) {
-        if (y1 >= VIDEO_HEIGHT) {
-            return;
-        }
-        x2 -= ((x2 - x1) / (y2 - y1)) * (y2 - (VIDEO_HEIGHT - 1));
-        y2 = VIDEO_HEIGHT - 1;
-    }
-    if (y2 < 0) {
-        x2 += ((x2 - x1) / (y2 - y1)) * -y2;
-        y2 = 0;
-    }
-    if (y1 >= VIDEO_HEIGHT) {
-        x1 -= ((x2 - x1) / (y2 - y1)) * (y1 - (VIDEO_HEIGHT - 1));
-        y1 = VIDEO_HEIGHT - 1;
-    }
-    const int32_t direction = y1 < y2 ? 1 : -1;
-    const int32_t dx = x2 - x1;
-    const int32_t dy = (y2 - y1) * direction;
-    const int32_t length = dx > dy ? dx : dy;
-    int32_t error = length / 2;
-    int32_t x = x1;
-    int32_t y = y1;
-    int32_t column = x / 8;
-    int32_t row = y;
-    uint8_t mask = 0;
-    for (int32_t i = 0; i <= length; i++) {
-        if (x / 8 != column || y != row) {
-            M_FlushLine(video, column, row, mask, color);
-            mask = 0;
-            column = x / 8;
-            row = y;
-        }
-        mask |= (uint8_t)(0x80 >> (x & 7));
-        error -= dx > dy ? dy : dx;
-        if (dx > dy) {
-            x++;
-        } else {
-            y += direction;
-        }
-        if (error < 0) {
-            error += length;
-            if (dx > dy) {
-                y += direction;
-            } else {
-                x++;
-            }
-        }
-    }
+    M_Line(video, x1, y1, x2, y2, color, 0x80, false);
+}
+
+void Video_LinePatterned(
+    VIDEO *const video, const int32_t x1, const int32_t y1, const int32_t x2,
+    const int32_t y2, const uint8_t color, const uint16_t pattern)
+{
+    M_Line(video, x1, y1, x2, y2, color, pattern, false);
+}
+
+void Video_LineErase(
+    VIDEO *const video, const int32_t x1, const int32_t y1, const int32_t x2,
+    const int32_t y2)
+{
+    M_Line(video, x1, y1, x2, y2, 0, 0x80, true);
 }
 
 void Video_Blit(

@@ -66,10 +66,29 @@ void Video_Box(
 // Reproduce the source's integer-slope clipping and Bresenham rounding.
 // Coordinates must fit signed 16 bits. Oblique lines omit their final
 // accumulated byte/row group; horizontal and vertical lines include both
-// endpoints. Out-of-screen writes are discarded, with no VRAM aliasing.
+// endpoints. Intermediate clipping and cursor arithmetic must fit signed
+// 16 bits. Mask writes use 15-bit planar addresses; hidden bytes are ignored.
+// Patterned lines rotate a 16-bit horizontal mask at each cursor, with low
+// byte first. Horizontal lines ignore the pattern; vertical lines repeat it.
+// These operations allocate nothing and preserve the drawing page.
 void Video_Line(
     VIDEO *video, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
     uint8_t color);
+
+void Video_LinePatterned(
+    VIDEO *video, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint8_t color,
+    uint16_t pattern);
+
+// Restores raw four-byte groups from page 1 to page 0, starting one byte
+// before each cached cursor. Uses the general cursor even for axis-aligned
+// lines and points. The final restore follows the one-past cursor, including
+// its off-by-one row. Selects drawing page 0 only when a restore is reached.
+// Raw addresses above 32767 alias visible red/green planes independently;
+// hidden/non-VRAM bytes have no storage. Completes physical byte copies
+// across offset 65535 as a presentation extension instead of reproducing
+// the original machine's possible segment protection fault.
+void Video_LineErase(
+    VIDEO *video, int32_t x1, int32_t y1, int32_t x2, int32_t y2);
 
 // Use half-open GFX_RECT bounds; nonpositive dimensions draw no pixels.
 // Map the source rectangle's origin to (x, y) on the drawing page. Clip to
