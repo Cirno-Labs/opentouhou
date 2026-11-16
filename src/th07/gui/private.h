@@ -6,6 +6,7 @@
 #include "core/io/reader.h"
 
 #include "stg/chain.h"
+#include "stg/msg_diff.h"
 
 #include <stdint.h>
 
@@ -79,27 +80,15 @@ typedef enum {
     GUI_MSG_OP_FADE_OUT_SCREEN = 14,
 } GUI_MSG_OP;
 
-// Holds one parsed dialogue instruction. Opcodes 1, 2, 3, 5 and 8 use
-// who: 0 is the player and 1 the boss, and opcode 5 takes 2 and 3 for the
-// lines. index is the script or sprite of opcodes 1 and 2, the line of
-// opcodes 3 and 8, and the interrupt of opcode 5. value holds the argument
-// of opcodes 4, 7 and 13.
-typedef struct {
-    int32_t time;
-    uint8_t opcode;
-    int16_t who;
-    int16_t index;
-    int32_t value;
-    char *text; // the text of opcodes 3 and 8
-} GUI_MSG_INSTR;
+// MSG_INSTR and MSG_SCRIPT (stg/msg_diff.h) hold a dialogue instruction
+// and script. Opcodes 1, 2, 3, 5 and 8 use who: 0 is the player and 1
+// the boss, and opcode 5 takes 2 and 3 for the lines. index is the
+// script or sprite of opcodes 1 and 2, the line of opcodes 3 and 8, and
+// the interrupt of opcode 5. value holds the argument of opcodes 4, 7
+// and 13.
 
 typedef struct {
-    GUI_MSG_INSTR *instrs;
-    int32_t count;
-} GUI_MSG_SCRIPT;
-
-typedef struct {
-    GUI_MSG_SCRIPT *scripts;
+    MSG_SCRIPT *scripts;
     int32_t count;
 } GUI_MSG_FILE;
 
