@@ -8,6 +8,7 @@
 #include "stg/chain.h"
 #include "stg/msg_diff.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define M_CALC_PRIORITY 13
@@ -99,6 +100,9 @@ typedef struct {
 // empty.
 RESULT GuiMsg_Read(READER *reader, GUI_MSG_FILE *out);
 void GuiMsg_Free(GUI_MSG_FILE *file);
+
+// Returns whether opcode stops a script: 0, 10 or 11.
+bool GuiMsg_IsFinal(uint8_t opcode);
 
 CHAIN_STATUS GuiDraw_Frame(void);
 
