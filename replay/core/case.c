@@ -378,3 +378,10 @@ uint32_t Case_Hash(uint32_t hash, const uint32_t value)
     }
     return hash;
 }
+
+uint32_t Case_F32Bits(const float value)
+{
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    return bits;
+}

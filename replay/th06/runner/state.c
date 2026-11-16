@@ -11,15 +11,6 @@
 
 #include "core/base/utils.h"
 
-#include <string.h>
-
-static uint32_t M_F32Bits(float value)
-{
-    uint32_t bits;
-    memcpy(&bits, &value, sizeof(bits));
-    return bits;
-}
-
 static uint32_t M_HashShots(const PLAYER *player, uint32_t *count)
 {
     uint32_t hash = CASE_HASH_INIT;
@@ -35,9 +26,9 @@ static uint32_t M_HashShots(const PLAYER *player, uint32_t *count)
             hash,
             (uint32_t)(uint16_t)bullet->state
                 | (uint32_t)(uint16_t)bullet->damage << 16);
-        hash = Case_Hash(hash, M_F32Bits(bullet->pos.x));
-        hash = Case_Hash(hash, M_F32Bits(bullet->pos.y));
-        hash = Case_Hash(hash, M_F32Bits(bullet->pos.z));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->pos.x));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->pos.y));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->pos.z));
     }
     return hash;
 }
@@ -55,14 +46,14 @@ static uint32_t M_HashBullets(const BULLET_MANAGER *bullets, uint32_t *count)
         hash = Case_Hash(hash, i);
         hash = Case_Hash(
             hash, (uint32_t)bullet->state | (uint32_t)bullet->flags << 16);
-        hash = Case_Hash(hash, M_F32Bits(bullet->pos.x));
-        hash = Case_Hash(hash, M_F32Bits(bullet->pos.y));
-        hash = Case_Hash(hash, M_F32Bits(bullet->pos.z));
-        hash = Case_Hash(hash, M_F32Bits(bullet->velocity.x));
-        hash = Case_Hash(hash, M_F32Bits(bullet->velocity.y));
-        hash = Case_Hash(hash, M_F32Bits(bullet->velocity.z));
-        hash = Case_Hash(hash, M_F32Bits(bullet->speed));
-        hash = Case_Hash(hash, M_F32Bits(bullet->angle));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->pos.x));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->pos.y));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->pos.z));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->velocity.x));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->velocity.y));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->velocity.z));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->speed));
+        hash = Case_Hash(hash, Case_F32Bits(bullet->angle));
         hash = Case_Hash(hash, (uint32_t)bullet->timer.current);
         hash = Case_Hash(hash, bullet->grazed);
     }
@@ -81,12 +72,12 @@ static uint32_t M_HashLasers(const BULLET_MANAGER *bullets, uint32_t *count)
         (*count)++;
         hash = Case_Hash(hash, i);
         hash = Case_Hash(hash, (uint32_t)laser->state);
-        hash = Case_Hash(hash, M_F32Bits(laser->pos.x));
-        hash = Case_Hash(hash, M_F32Bits(laser->pos.y));
-        hash = Case_Hash(hash, M_F32Bits(laser->pos.z));
-        hash = Case_Hash(hash, M_F32Bits(laser->angle));
-        hash = Case_Hash(hash, M_F32Bits(laser->start_offset));
-        hash = Case_Hash(hash, M_F32Bits(laser->end_offset));
+        hash = Case_Hash(hash, Case_F32Bits(laser->pos.x));
+        hash = Case_Hash(hash, Case_F32Bits(laser->pos.y));
+        hash = Case_Hash(hash, Case_F32Bits(laser->pos.z));
+        hash = Case_Hash(hash, Case_F32Bits(laser->angle));
+        hash = Case_Hash(hash, Case_F32Bits(laser->start_offset));
+        hash = Case_Hash(hash, Case_F32Bits(laser->end_offset));
         hash = Case_Hash(hash, (uint32_t)laser->timer.current);
     }
     return hash;
@@ -103,9 +94,9 @@ static uint32_t M_HashEnemies(const ENEMY_MANAGER *enemies, uint32_t *count)
         }
         (*count)++;
         hash = Case_Hash(hash, i);
-        hash = Case_Hash(hash, M_F32Bits(enemy->move.pos.x));
-        hash = Case_Hash(hash, M_F32Bits(enemy->move.pos.y));
-        hash = Case_Hash(hash, M_F32Bits(enemy->move.pos.z));
+        hash = Case_Hash(hash, Case_F32Bits(enemy->move.pos.x));
+        hash = Case_Hash(hash, Case_F32Bits(enemy->move.pos.y));
+        hash = Case_Hash(hash, Case_F32Bits(enemy->move.pos.z));
         hash = Case_Hash(hash, (uint32_t)enemy->life);
     }
     return hash;
@@ -126,9 +117,9 @@ static uint32_t M_HashItems(const ITEM *items, uint32_t *count)
             hash,
             (uint32_t)(uint8_t)item->type
                 | (uint32_t)(uint8_t)item->state << 8);
-        hash = Case_Hash(hash, M_F32Bits(item->pos.x));
-        hash = Case_Hash(hash, M_F32Bits(item->pos.y));
-        hash = Case_Hash(hash, M_F32Bits(item->pos.z));
+        hash = Case_Hash(hash, Case_F32Bits(item->pos.x));
+        hash = Case_Hash(hash, Case_F32Bits(item->pos.y));
+        hash = Case_Hash(hash, Case_F32Bits(item->pos.z));
     }
     return hash;
 }
@@ -176,8 +167,8 @@ void RunnerState_Calc(uint32_t row[TH06_CALC_COUNT])
     const PLAYER *const player = &g_Player;
     uint32_t shot_count;
     const uint32_t shot_hash = M_HashShots(player, &shot_count);
-    row[TH06_CALC_player_x] = M_F32Bits(player->pos.x);
-    row[TH06_CALC_player_y] = M_F32Bits(player->pos.y);
+    row[TH06_CALC_player_x] = Case_F32Bits(player->pos.x);
+    row[TH06_CALC_player_y] = Case_F32Bits(player->pos.y);
     row[TH06_CALC_player_state] = (uint8_t)player->state.value;
     row[TH06_CALC_shot_count] = shot_count;
     row[TH06_CALC_shot_hash] = shot_hash;

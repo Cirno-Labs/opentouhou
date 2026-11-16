@@ -87,3 +87,6 @@ int32_t Case_FindColumn(const CASE_NAMES *names, const char *name);
 // Folds value into hash with FNV-1a, one byte at a time in little-endian
 // order. CASE_HASH_INIT is the FNV-1a initial value.
 uint32_t Case_Hash(uint32_t hash, uint32_t value);
+
+// Returns value's bits, for a calc column of kind F32.
+uint32_t Case_F32Bits(float value);
