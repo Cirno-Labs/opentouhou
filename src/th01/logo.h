@@ -1,9 +1,10 @@
 #pragma once
 
 #include "th01/bfnt.h"
+#include "th01/video.h"
 
-#define LOGO_WIDTH 640
-#define LOGO_HEIGHT 400
+#define LOGO_WIDTH VIDEO_WIDTH
+#define LOGO_HEIGHT VIDEO_HEIGHT
 
 typedef struct {
     int32_t x, y;
@@ -18,12 +19,12 @@ typedef struct {
     int32_t frame, tone, sprite, period, phase, amplitude;
     uint32_t random;
     bool half_tick;
-    int32_t drawing_page, visible_page;
-    uint8_t pages[2][LOGO_WIDTH * LOGO_HEIGHT];
+    VIDEO *video;
 } LOGO;
 
-// Initializes the two graphics pages and the deterministic animation state.
-void Logo_Init(LOGO *logo);
+// Clears both pages of an initialized VIDEO and sets the animation state.
+// Keep video and its page storage alive while the logo is in use.
+void Logo_Init(LOGO *logo, VIDEO *video);
 
 // Advances one 60 Hz shell tick. Each animation update spans two ticks.
 // changed names the page drawn this tick, or -1. Returns false at the end

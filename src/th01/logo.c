@@ -85,7 +85,7 @@ static void M_Sprite(
     const int32_t index, const bool wave)
 {
     ASSERT(index >= 0 && index < sprites->count);
-    uint8_t *const page = logo->pages[logo->drawing_page];
+    uint8_t *const page = logo->video->pages[logo->video->drawing_page];
     const uint8_t *const pixels = sprites->pixels + index * 64 * 16;
     const int32_t period = logo->period < 0 ? -logo->period : logo->period;
     for (int32_t row = 0; row < 16; row++) {
@@ -127,11 +127,16 @@ static void M_Animate(LOGO *const logo, const BFNT *const sprites)
     }
 }
 
-void Logo_Init(LOGO *const logo)
+void Logo_Init(LOGO *const logo, VIDEO *const video)
 {
-    *logo = (LOGO) {
-        .random = 1, .period = 23, .star_phase = 64, .visible_page = 1
-    };
+    *logo =
+        (LOGO) { .random = 1, .period = 23, .star_phase = 64, .video = video };
+    Video_SelectDrawingPage(video, 0);
+    Video_Clear(video, 0);
+    Video_SelectDrawingPage(video, 1);
+    Video_Clear(video, 0);
+    Video_SelectDrawingPage(video, 0);
+    Video_SelectVisiblePage(video, 1);
     for (int32_t i = 0; i < 4; i++) {
         logo->circles[i] = (LOGO_POINT) { (i + 1) * 128, 320 - i * 80 };
         logo->velocity[i] = (LOGO_POINT) { -8, 8 };
@@ -148,8 +153,8 @@ bool Logo_Tick(
 {
     *changed = -1;
     if (logo->half_tick) {
-        logo->visible_page = logo->drawing_page;
-        logo->drawing_page ^= 1;
+        Video_SelectVisiblePage(logo->video, logo->video->drawing_page);
+        Video_SelectDrawingPage(logo->video, logo->video->drawing_page ^ 1);
         logo->frame++;
         logo->half_tick = false;
         return logo->frame <= 180 || logo->tone > 0;
@@ -159,7 +164,7 @@ bool Logo_Tick(
     } else if (logo->tone < 100) {
         logo->tone += 2;
     }
-    uint8_t *const page = logo->pages[logo->drawing_page];
+    uint8_t *const page = logo->video->pages[logo->video->drawing_page];
     for (int32_t y = 100; y <= 299; y++) {
         memset(page + y * LOGO_WIDTH + 96, 0, 448);
     }
@@ -188,7 +193,7 @@ bool Logo_Tick(
         }
     }
     M_Animate(logo, sprites);
-    *changed = logo->drawing_page;
+    *changed = logo->video->drawing_page;
     logo->half_tick = true;
     return true;
 }
