@@ -15,6 +15,7 @@
 #include "th07/sound.h"
 #include "th07/stage.h"
 #include "th07/screens/result/records.h"
+#include "th07/screens/result/saves.h"
 #include "th07/stubs.h"
 
 #include "core/base/log.h"
@@ -251,6 +252,9 @@ static RESULT M_Added(void *const arg)
     }
     gm->mode.in_continue_menu = false;
     gm->mode.playing = true;
+    if (Scene_GetRequested() != SCENE_NEXT_STAGE) {
+        ResultScreen_ResetFrames();
+    }
     gm->score.value = 0;
     gm->mode.game_cleared = false;
     AsciiText_Initialize();

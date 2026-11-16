@@ -1,5 +1,6 @@
 #include "th07/screens/result/private.h"
 
+#include "th07/game_manager.h"
 #include "th07/replay.h"
 
 #include "core/base/log.h"
@@ -25,6 +26,7 @@ typedef struct {
     char *user_dir;
     SCORE_FILE score;
     M_PENDING pending[M_PENDING_COUNT];
+    RESULT_SCREEN_CLOCK clock;
     SAVED_REPLAY slots[SAVED_REPLAY_SLOT_COUNT];
     SAVED_REPLAY user[SAVED_REPLAY_USER_COUNT];
     // Counts the scans of the replay directory.
@@ -181,14 +183,24 @@ static void M_Forget(SAVED_REPLAY *const replays, const int32_t count)
     }
 }
 
+static char *M_SlotName(const int32_t slot)
+{
+    return Str_Format(M_REPLAY_DIR "/th7_%.2d.rpy", slot + 1);
+}
+
+static void M_SlotLabel(const int32_t slot, char label[8])
+{
+    snprintf(label, 8, "No.%.2d", slot + 1);
+}
+
 static void M_ScanReplays(void)
 {
     M_Forget(m_Saves.slots, SAVED_REPLAY_SLOT_COUNT);
     M_Forget(m_Saves.user, SAVED_REPLAY_USER_COUNT);
     for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
-        char *const name = Str_Format(M_REPLAY_DIR "/th7_%.2d.rpy", i + 1);
+        char *const name = M_SlotName(i);
         char label[8];
-        snprintf(label, sizeof(label), "No.%.2d", i + 1);
+        M_SlotLabel(i, label);
         M_ReadFile(name, label, &m_Saves.slots[i]);
         Mem_Free(name);
     }
@@ -357,15 +369,34 @@ static const char *M_ReplayName(const char *const path)
     return inside ? path + strlen(m_Saves.user_dir) + 1 : nullptr;
 }
 
+// Returns the number of the replay slot at path, or -1.
+static int32_t M_FindSlot(const char *const path)
+{
+    for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
+        char *const slot_path = ResultScreen_GetSlotPath(i);
+        const bool found = strcmp(slot_path, path) == 0;
+        Mem_Free(slot_path);
+        if (found) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void ResultScreen_PutReplayFile(
     const char *const path, uint8_t *const data, const size_t size)
 {
     SAVED_REPLAY *const saved = M_FindReplay(path);
+    const int32_t slot = saved == nullptr ? M_FindSlot(path) : -1;
     if (saved != nullptr) {
         char label[sizeof(saved->label)];
         memcpy(label, saved->label, sizeof(label));
         Replay_RemoveFile(saved->path);
         M_ReadReplay(data, size, path, label, saved);
+    } else if (slot >= 0) {
+        char label[8];
+        M_SlotLabel(slot, label);
+        M_ReadReplay(data, size, path, label, &m_Saves.slots[slot]);
     } else {
         Replay_AddFile(path, data, size);
     }
@@ -375,4 +406,52 @@ void ResultScreen_PutReplayFile(
     } else {
         Allocator_Free(&g_HeapAllocator, data, size);
     }
+}
+
+char *ResultScreen_GetSlotPath(const int32_t slot)
+{
+    char *const name = M_SlotName(slot);
+    char *const path = M_FullPath(name);
+    Mem_Free(name);
+    return path;
+}
+
+const SAVED_REPLAY *ResultSaves_GetSlot(const int32_t slot)
+{
+    return &m_Saves.slots[slot];
+}
+
+const RESULT_SCREEN_CLOCK *ResultSaves_GetClock(void)
+{
+    return &m_Saves.clock;
+}
+
+void ResultScreen_SetDate(const char *const date)
+{
+    snprintf(m_Saves.clock.date, sizeof(m_Saves.clock.date), "%s", date);
+}
+
+void ResultScreen_CountFrames(const float tick_rate)
+{
+    if (!g_GameManager.mode.playing) {
+        return;
+    }
+    const float target = 60.0f;
+    RESULT_SCREEN_CLOCK *const clock = &m_Saves.clock;
+    clock->expected_frames += target;
+    if (target * 0.9f < tick_rate) {
+        clock->achieved_frames += target;
+    } else if (target * 0.7f < tick_rate) {
+        clock->achieved_frames += target * 0.8f;
+    } else if (target * 0.5f < tick_rate) {
+        clock->achieved_frames += target * 0.6f;
+    } else {
+        clock->achieved_frames += target * 0.5f;
+    }
+}
+
+void ResultScreen_ResetFrames(void)
+{
+    m_Saves.clock.achieved_frames = 0.0f;
+    m_Saves.clock.expected_frames = 0.0f;
 }
