@@ -34,6 +34,7 @@ th01_lib = static_library(
   'grz.c',
   'stage_data.c',
   'stage_objects.c',
+  'stage.c',
   c_args: [layer_include['th01']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep, opna_dep],
