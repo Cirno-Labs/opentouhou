@@ -1,7 +1,7 @@
 #include "th06/anm/text.h"
 
 #include "th06/anm/texture.h"
-#include "th06/note.h"
+#include "stg/note.h"
 #include "stg/translation.h"
 
 #include "core/base/log.h"

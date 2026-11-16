@@ -13,7 +13,7 @@
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
-#include "th06/note.h"
+#include "stg/note.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"

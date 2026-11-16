@@ -4,7 +4,7 @@
 #include "th06/ascii.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
-#include "th06/note.h"
+#include "stg/note.h"
 #include "th06/replay.h"
 #include "th06/scene.h"
 #include "th06/screens/result/private.h"
