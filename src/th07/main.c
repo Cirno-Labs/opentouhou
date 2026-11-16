@@ -11,8 +11,13 @@
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
+
+#include "stg/note.h"
+#include "stg/translation.h"
 
 #include "shell/game.h"
+#include "core/patch.h"
 #include "core/vfs.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -62,7 +67,13 @@ static RESULT M_Init(void)
 {
     MUST(Files_Mount());
     Files_SetPatches(Shell_GetPatches());
-    MUST(Anm_InitText(nullptr));
+    Translation_Init(Shell_GetPatches(), &g_TranslationGame);
+    if (Patch_ChangesGameplay(Shell_GetPatches())) {
+        LOG_INFO("The patches change gameplay, so replays are not saved");
+        ResultScreen_RefuseReplays(true);
+    }
+    MUST(Anm_InitText(Translation_GetFont()));
+    Note_Init(Shell_GetPatches());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
     ResultScreen_OpenSaves();
     M_KeepDemos();
@@ -102,7 +113,9 @@ static void M_Shutdown(void)
     ResultScreen_CloseSaves();
     Replay_ClearFiles();
     SoundPlayer_Shutdown();
+    Note_Shutdown();
     Anm_ShutdownText();
+    Translation_Shutdown();
 }
 
 const GAME_DESC g_GameDesc = {

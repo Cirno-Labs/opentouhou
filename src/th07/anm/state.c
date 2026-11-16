@@ -13,6 +13,7 @@
 #include "core/math/x87.h"
 
 #include "stg/angle.h"
+#include "stg/note.h"
 #include "stg/timer.h"
 
 #include <string.h>
@@ -355,6 +356,7 @@ RESULT Anm_Load(
     const int32_t slot, const char *const path, const int32_t first_sprite)
 {
     ASSERT(slot >= 0 && slot < ANM_SLOT_COUNT);
+    Note_Remove();
     READER reader;
     MUST(Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader), "%s", path);
     int32_t end;
