@@ -161,45 +161,65 @@ void ResultScreen_LoadPlayStats(void)
     ScoreFile_LoadPlayStats(ResultSaves_GetScoreFile(), stats);
 }
 
-void ResultScreen_SaveScore(void)
+void ResultRecords_LoadLists(
+    SCORE_LIST lists[SCORE_DIFFICULTY_COUNT][SCORE_SHOT_COUNT])
 {
-    GAME_MANAGER *const gm = &g_GameManager;
     const SCORE_FILE *const file = ResultSaves_GetScoreFile();
     for (int32_t difficulty = 0; difficulty < SCORE_DIFFICULTY_COUNT;
          difficulty++) {
         for (int32_t shot = 0; shot < SCORE_SHOT_COUNT; shot++) {
-            SCORE_LIST *const list = &m_Lists[difficulty][shot];
+            SCORE_LIST *const list = &lists[difficulty][shot];
             ScoreList_InitDefaults(list, difficulty);
             ScoreFile_LoadHighScores(file, list, shot, difficulty);
         }
     }
-    LAST_NAME_RECORD last_name = {
-        .header = { .magic = M_LAST_NAME_MAGIC,
-                    .size = 0x18,
-                    .size2 = 0x18,
-                    .version = 1 },
-    };
-    memcpy(last_name.name, "        ", 9);
-    ScoreFile_LoadLastName(file, &last_name);
-    ScoreFile_LoadSpellCards(file, gm->records.spell_cards);
-    ScoreFile_LoadClears(file, gm->records.clears);
-    GameManager_IsPhantasmOpen();
-    ScoreFile_LoadPractice(file, gm->records.practice);
+}
 
+bool ResultRecords_LoadLastName(LAST_NAME_RECORD *const name)
+{
+    memset(name, 0, sizeof(*name));
+    name->header.magic = M_LAST_NAME_MAGIC;
+    name->header.size = 0x18;
+    name->header.size2 = 0x18;
+    name->header.version = 1;
+    memcpy(name->name, "        ", 9);
+    return ScoreFile_LoadLastName(ResultSaves_GetScoreFile(), name);
+}
+
+void ResultRecords_WriteScore(
+    const SCORE_LIST lists[SCORE_DIFFICULTY_COUNT][SCORE_SHOT_COUNT],
+    const LAST_NAME_RECORD *const last_name)
+{
+    GAME_MANAGER *const gm = &g_GameManager;
     const SCORE_RECORDS records = {
         .spell_cards = gm->records.spell_cards,
         .clears = gm->records.clears,
         .practice = gm->records.practice,
-        .last_name = &last_name,
+        .last_name = last_name,
         .play_stats = &gm->records.play_stats,
     };
     const uint8_t key = (uint8_t)Rng_U16InRange(&g_Rng, 256);
     const uint8_t random = (uint8_t)Rng_U16InRange(&g_Rng, 256);
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    ScoreFile_Write(&writer, file, m_Lists, &records, key, random);
+    ScoreFile_Write(
+        &writer, ResultSaves_GetScoreFile(), lists, &records, key, random);
     size_t size;
     uint8_t *const data = Writer_TakeBuffer(&writer, &size);
     Result_Ignore(Writer_Close(&writer));
     ResultSaves_PutScoreFile(data, size);
+}
+
+void ResultScreen_SaveScore(void)
+{
+    GAME_MANAGER *const gm = &g_GameManager;
+    const SCORE_FILE *const file = ResultSaves_GetScoreFile();
+    ResultRecords_LoadLists(m_Lists);
+    LAST_NAME_RECORD last_name;
+    ResultRecords_LoadLastName(&last_name);
+    ScoreFile_LoadSpellCards(file, gm->records.spell_cards);
+    ScoreFile_LoadClears(file, gm->records.clears);
+    GameManager_IsPhantasmOpen();
+    ScoreFile_LoadPractice(file, gm->records.practice);
+    ResultRecords_WriteScore(m_Lists, &last_name);
 }
