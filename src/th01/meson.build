@@ -8,6 +8,7 @@ th01_lib = static_library(
   'boss_render.c',
   'boss_hit.c',
   'boss_defeat.c',
+  'route_select.c',
   'sprite.c',
   'shape.c',
   'particles.c',
