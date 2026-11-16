@@ -10,7 +10,7 @@
 #include "th06/screens/result/private.h"
 #include "th06/sound.h"
 #include "th06/strings.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/color.h"

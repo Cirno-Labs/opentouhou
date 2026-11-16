@@ -1,6 +1,6 @@
 #include "th06/note.h"
 
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/arena.h"
 #include "core/base/array.h"

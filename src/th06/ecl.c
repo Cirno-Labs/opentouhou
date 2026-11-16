@@ -14,7 +14,7 @@
 #include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/screens/result.h"
-#include "th06/translation.h"
+#include "stg/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/color.h"
