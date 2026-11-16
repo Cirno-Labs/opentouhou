@@ -6,6 +6,8 @@
 #include "th07/sound.h"
 #include "th07/screens/result/records.h"
 
+#include "stg/translation.h"
+
 #include "core/base/color.h"
 #include "core/math/x87.h"
 
@@ -147,8 +149,13 @@ static void M_DrawMsg(void)
     for (int32_t i = 0; i < GUI_MSG_LINE_COUNT; i++) {
         Anm_DrawUnrotated(&g_Gui.msg.lines[i], &draw);
     }
+    // base_tsa's bosstitle_line_order binhacks render the two nameplate
+    // lines (name and title) in the opposite order.
+    const bool reversed = Translation_HasBaseTsa();
     for (int32_t i = 0; i < GUI_MSG_LINE_COUNT; i++) {
-        Anm_DrawUnrotated(&g_Gui.msg.nameplates[i], &draw);
+        Anm_DrawUnrotated(
+            &g_Gui.msg.nameplates[reversed ? GUI_MSG_LINE_COUNT - 1 - i : i],
+            &draw);
     }
 }
 
