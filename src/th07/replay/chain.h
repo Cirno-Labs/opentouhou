@@ -27,3 +27,7 @@ void Replay_MarkEvent(REPLAY_EVENT event);
 // Returns whether the replay being played holds stage (1 to 7); false
 // without playback.
 bool Replay_HasStage(int32_t stage);
+
+// Returns the event word of the frame played or recorded last in the
+// stage, 0 before the first.
+uint16_t Replay_GetLastEvents(void);
