@@ -18,6 +18,14 @@ RESULT Replay_Register(REPLAY_MODE mode, const char *path);
 // Appends the empty frame that ends the stage being recorded.
 void Replay_EndStage(void);
 
+// Ends the stage being recorded and writes the recording to path, as
+// g_GameManager.mode.replay_path names it, with the score and info, through
+// ResultScreen_PutReplayFile. Draws three values from the gameplay RNG when
+// it writes. Writes nothing for a recording in slow mode, or for one made
+// with another config than the current one outside practice, Extra and
+// Phantasm. Then releases the session, also a playback session.
+void Replay_Save(const char *path, const REPLAY_SAVE_INFO *info);
+
 // Releases the session without saving.
 void Replay_Discard(void);
 

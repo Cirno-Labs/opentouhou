@@ -90,3 +90,10 @@ typedef struct {
     // points.
     int32_t stage_scores[8];
 } REPLAY_SUMMARY;
+
+// Holds what the result screen stores in a replay that it saves.
+typedef struct {
+    const char *name; // UTF-8, at most twelve CP932 bytes
+    const char *date; // MM/DD
+    float slowdown; // percent
+} REPLAY_SAVE_INFO;
