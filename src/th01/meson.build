@@ -1,3 +1,5 @@
+subdir('opna')
+
 th01_lib = static_library(
   'th01_lib',
   'bfnt.c',
@@ -12,6 +14,7 @@ th01_lib = static_library(
   'tram.c',
   'mdrv_data.c',
   'mdrv_seq.c',
+  'opna/opna.c',
   'pf.c',
   'pi.c',
   'ptn.c',
@@ -20,7 +23,7 @@ th01_lib = static_library(
   'grz.c',
   c_args: [layer_include['th01']],
   implicit_include_directories: false,
-  dependencies: [core_dep, stg_dep],
+  dependencies: [core_dep, stg_dep, opna_dep],
 )
 
 th01_version = custom_target(
