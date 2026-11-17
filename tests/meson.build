@@ -2368,7 +2368,7 @@ if build_games
     ),
     suite: 'unit',
   )
-  foreach part : ['bfnt', 'bos', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
+  foreach part : ['bfnt', 'bos', 'boss_b05', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
     test(
       'th01/' + part,
       executable(
