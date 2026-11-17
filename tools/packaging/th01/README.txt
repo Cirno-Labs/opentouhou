@@ -30,7 +30,8 @@ Or keep the program elsewhere and pass the original data folder:
     oth01 --data /path/to/th01
 
 On Linux, use ./oth01.AppImage in place of oth01 in these commands.
-On Windows, use oth01.exe. No DOS executables or emulator are needed.
+On Windows, use oth01.exe. Keep REIIDEN.EXE in the data folder; it supplies
+graphics masks. The game runs natively without a DOS emulator.
 The program reads the original files and never changes them.
 
 To see the arguments and the folders in use:
