@@ -43,7 +43,7 @@ The executables start with an "o" so that they never replace the
 original's `th06.exe`. The data folder is only read.
 
 The zip also holds
-[`README.txt`](tools/packaging/th06/README.txt), which is inside
+[`oth06_readme.txt`](tools/packaging/th06/oth06_readme.txt), which is inside
 `oth06.app` on macOS. It tells where your files go, and
 describes portable mode, the keys, the settings and othpatch.
 

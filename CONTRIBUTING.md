@@ -122,7 +122,7 @@ inside that job changes:
 - `docs/BUILDING.md`: building, packaging, checks and tests.
 - `docs/<program>/CHANGELOG.md`: the changes that players notice.
 - `README.md`: what the project is, its status, and where to get it.
-- `tools/packaging/<game>/README.txt`: what a player of the package
+- `tools/packaging/<game>/o<game>_readme.txt`: what a player of the package
   needs: installing, the folders, the keys, the settings and othpatch.
 - `CONTRIBUTING.md`: how to send a change, and the rules for every
   change.

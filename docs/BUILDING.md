@@ -44,8 +44,8 @@ original game's executable in the same folder. othpatch lands in
 
 A game needs the original game's data: pass its folder with `--data`,
 or put the executable into that folder. The game's
-`tools/packaging/<game>/README.txt`, which the packages ship, describes
-the folders, the keys and the settings for players.
+`tools/packaging/<game>/o<game>_readme.txt`, which the packages ship,
+describes the folders, the keys and the settings for players.
 
 ### Build options
 
@@ -136,9 +136,10 @@ This writes one zip per game to `build/packages/`:
 - `o<game>-<version>-macOS.zip`: `o<game>.app`, one universal bundle
   for Apple silicon and Intel Macs. It has an ad-hoc signature only.
 
-Each zip also holds othpatch and the game's readme, which is inside the
-bundle on macOS. `tools/packaging/<game>/` holds the readme, icons and
-desktop entry of a game's packages. No package contains a file of the
+Each zip also holds othpatch, o<game>_readme.txt and
+o<game>_licenses.txt. The documents are inside the bundle on macOS.
+`tools/packaging/<game>/` holds the readme, icons and desktop entry of
+a game's packages. No package contains a file of the
 original game.
 
 The packages ship the othpatch that `src/<game>/othpatch.txt` names.

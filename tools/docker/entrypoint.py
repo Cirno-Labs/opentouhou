@@ -31,6 +31,7 @@ from pathlib import Path
 
 from shared.build import compile_programs, run_tests
 from shared.othpatch_release import pinned_othpatch
+from shared.package_docs import package_documents
 from shared.versioning import (
     games,
     generate_package_name,
@@ -97,18 +98,25 @@ def run_test(platform: str, programs: str, target: str, skipped: list[str]) -> N
     run_tests(build_dir(platform, programs, target), skipped)
 
 
-def write_zip(output: Path, files: list[tuple[Path, str]]) -> None:
+def write_zip(
+    output: Path,
+    files: list[tuple[Path, str]],
+    documents: dict[str, bytes] | None = None,
+) -> None:
     """Write files into a zip, keeping the executable bit of each."""
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as handle:
         for source, name in files:
             info = zipfile.ZipInfo.from_file(source, name)
             info.compress_type = zipfile.ZIP_DEFLATED
             handle.writestr(info, source.read_bytes())
+        for name, data in (documents or {}).items():
+            handle.writestr(name, data)
 
 
 def package_linux(
     game: str, exe: Path, othpatch: Path, output: Path, version: str
 ) -> None:
+    documents = package_documents(game, REPO_DIR)
     with tempfile.TemporaryDirectory() as tmp:
         app_dir = Path(tmp) / f"{game}.AppDir"
         (app_dir / "usr/bin").mkdir(parents=True)
@@ -116,7 +124,8 @@ def package_linux(
         doc_dir.mkdir(parents=True)
 
         shutil.copy2(exe, app_dir / "usr/bin" / product_name(game))
-        shutil.copy2(PACKAGING_DIR / game / "README.txt", doc_dir / "README.txt")
+        for name, data in documents.items():
+            (doc_dir / name).write_bytes(data)
         desktop = (PACKAGING_DIR / game / "game.desktop").read_text()
         (app_dir / f"{game}.desktop").write_text(
             desktop.rstrip("\n") + f"\nX-AppImage-Version={version}\n"
@@ -140,18 +149,18 @@ def package_linux(
             [
                 (Path(tmp) / "app.AppImage", f"{product_name(game)}.AppImage"),
                 (othpatch, "othpatch"),
-                (PACKAGING_DIR / game / "README.txt", "README.txt"),
             ],
+            documents,
         )
 
 
 def package_win(game: str, exe: Path, othpatch: Path, output: Path) -> None:
+    documents = package_documents(game, REPO_DIR)
     files = [
         (exe, f"{product_name(game)}.exe"),
         (othpatch, "othpatch.exe"),
-        (PACKAGING_DIR / game / "README.txt", "README.txt"),
     ]
-    write_zip(output, files)
+    write_zip(output, files, documents)
 
 
 def built_othpatch(platform: str, target: str) -> Path:

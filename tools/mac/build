@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from shared.build import SHARED_SUITES, compile_programs, run_tests
 from shared.othpatch_release import pinned_othpatch
+from shared.package_docs import package_documents
 from shared.versioning import (
     games,
     generate_package_name,
@@ -98,6 +99,7 @@ def run_test(deps: Path, target: str) -> None:
 
 
 def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
+    documents = package_documents(game, REPO_DIR)
     contents = bundle / "Contents"
     (contents / "MacOS").mkdir(parents=True)
     (contents / "Resources").mkdir()
@@ -131,7 +133,8 @@ def write_bundle(game: str, version: str, target: str, bundle: Path) -> None:
             handle,
         )
     resources = contents / "Resources"
-    shutil.copy2(PACKAGING_DIR / game / "README.txt", resources / "README.txt")
+    for name, data in documents.items():
+        (resources / name).write_bytes(data)
     shutil.copy2(PACKAGING_DIR / game / "icon.icns", resources / f"{game}.icns")
     # An ad-hoc signature lets the bundle run on Apple silicon. Without a
     # developer identity, Gatekeeper still asks before the first start.
