@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from shared.package_docs import package_documents
+from shared.versioning import games
 
 
 def load_tool(name: str, path: Path) -> types.ModuleType:
@@ -32,12 +33,14 @@ MAC = load_tool("document_mac", ROOT / "tools/mac/build")
 
 class PackageDocumentsTest(unittest.TestCase):
     def setUp(self) -> None:
+        self.games: list[str] = games(ROOT)
+        self.assertTrue(self.games, "No games declared in the repository")
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.packaging = self.root / "tools/packaging"
         self.packaging.mkdir(parents=True)
-        for game in ("th01", "th06"):
+        for game in self.games:
             folder = self.packaging / game
             folder.mkdir()
             (folder / f"o{game}_readme.txt").write_bytes(game.encode())
@@ -57,16 +60,21 @@ class PackageDocumentsTest(unittest.TestCase):
     def expected(self, game: str) -> dict[str, bytes]:
         return {
             f"o{game}_readme.txt": game.encode(),
-            f"o{game}_licenses.txt": b"common notices\n"
-            + (b"\n\nTH01 notices\n" if game == "th01" else b""),
+            f"o{game}_licenses.txt": f"{game} license notices\n".encode(),
         }
 
-    def test_windows_extract_preserves_original_and_other_game(self) -> None:
+    def test_windows_extract_preserves_original_and_unrelated_documents(self) -> None:
         destination = self.root / "game"
         destination.mkdir()
         original = destination / "README.txt"
         original.write_bytes(b"original game readme")
-        for game in ("th01", "th06"):
+        unrelated = {
+            "other_readme.txt": b"another program's readme",
+            "other_licenses.txt": b"another program's license notices",
+        }
+        for name, content in unrelated.items():
+            (destination / name).write_bytes(content)
+        for game in self.games:
             with self.subTest(game=game):
                 output = self.root / f"{game}.zip"
                 DOCKER.package_win(game, self.exe, self.exe, output)
@@ -77,15 +85,17 @@ class PackageDocumentsTest(unittest.TestCase):
                     )
                     archive.extractall(destination)
                 self.assertEqual(original.read_bytes(), b"original game readme")
+                for name, content in unrelated.items():
+                    self.assertEqual((destination / name).read_bytes(), content)
                 for name, content in self.expected(game).items():
                     self.assertEqual((destination / name).read_bytes(), content)
-        for game in ("th01", "th06"):
+        for game in self.games:
             self.assertEqual(package_documents(game, self.root), self.expected(game))
             for name, content in self.expected(game).items():
                 self.assertEqual((destination / name).read_bytes(), content)
 
     def test_linux_zip_and_appimage_have_same_documents(self) -> None:
-        for game in ("th01", "th06"):
+        for game in self.games:
             with self.subTest(game=game):
 
                 def appimage(
@@ -112,7 +122,7 @@ class PackageDocumentsTest(unittest.TestCase):
                         self.assertEqual(archive.read(name), content)
 
     def test_mac_documents_are_present_before_signing(self) -> None:
-        for game in ("th01", "th06"):
+        for game in self.games:
             with self.subTest(game=game):
                 bundle = self.root / f"o{game}.app"
 
