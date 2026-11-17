@@ -23,6 +23,9 @@ typedef enum {
 typedef struct {
     TH01_SETTINGS settings;
     uint32_t score, highest_score, frame_rand;
+    // Separates the loaded rank-table leader and unsigned live HUD maximum
+    // from highest_score, which tracks the run for Continue and results.
+    uint32_t table_high_score, high_score;
     int32_t continues_total, bonus_per_stage[SESSION_HISTORY_COUNT];
     uint16_t continues_per_scene[SESSION_HISTORY_COUNT], point_value;
     int16_t stage_id, lives, bombs, pellet_speed;

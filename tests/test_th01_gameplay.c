@@ -1,4 +1,5 @@
 #include "th01/gameplay_internal.h"
+#include "th01/score.h"
 
 #include "core/base/arena.h"
 
@@ -384,5 +385,98 @@ TEST(gameover_redraws_orb_before_copying_the_miss_frame)
     Gameplay_Tick(g, &(TH01_INPUT) {}, true, 2);
     CHECK_EQ_INT(g->phase, GP_GAMEOVER);
     CHECK_EQ_INT(f.video.pages[1][g->orb.top * VIDEO_WIDTH + g->orb.left], 6);
+    Arena_Free(&f.arena);
+}
+
+TEST(real_gameover_score_registration_precedes_continue)
+{
+    for (uint8_t route = 0; route < 2; route++) {
+        FIXTURE f;
+        M_Init(&f);
+        GAMEPLAY *const g = &f.game;
+        f.session.route = route;
+        f.session.stage_id = 7;
+        f.session.lives = 0;
+        f.session.table_high_score = 3000;
+        f.session.high_score = 4000;
+        f.session.highest_score = 5000;
+        g->metrics.score = 2345;
+        g->player.is_hit = true;
+        uint64_t tick = 0;
+        while (tick < 1000 && g->request != GAMEPLAY_REQUEST_SCORE) {
+            Gameplay_Tick(g, &(TH01_INPUT) {}, true, ++tick);
+        }
+        CHECK_EQ_INT(g->request, GAMEPLAY_REQUEST_SCORE);
+        SCORE_SAVES saves = {};
+        for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
+            ScoreData_Defaults(&saves.tables[rank]);
+        }
+        SCORE_ASSETS assets = {
+            .gameover = { .pixels = f.assets.backgrounds[0].pixels },
+            .font = f.assets.menu_font
+        };
+        const GAMEPLAY_SCORE_CONTEXT context = Gameplay_ScoreContext(g);
+        const uint64_t edge = context.vsync->edge;
+        const int16_t count = context.vsync->count1;
+        const SCORE_ENTRY entry = { .score = (int32_t)f.session.score,
+                                    .stage = (int16_t)(f.session.stage_id + 1),
+                                    .route = "魔" };
+        SCORE_ENTRY routed = entry;
+        strcpy(routed.route, route == 0 ? "魔" : "地");
+        SCORE_SCENE score;
+        const size_t used = f.arena.used;
+        f.arena.capacity = used;
+        Score_Begin(
+            &score, &assets, &f.video, &saves, context.vsync, context.input,
+            SCORE_GAMEOVER, 1, &routed);
+        for (int32_t i = 0; i < 32; i++) {
+            Gameplay_AdvanceAudio(g);
+            CHECK(!Score_Tick(&score, &(TH01_INPUT) {}, true, ++tick));
+        }
+        CHECK_EQ_INT(context.vsync->edge, edge + 32);
+        CHECK_EQ_INT(context.vsync->count1, count + 32);
+        CHECK_EQ_INT(g->phase, GP_TERMINAL);
+        CHECK_EQ_INT(f.session.continues_total, 0);
+        CHECK(Score_Tick(&score, &(TH01_INPUT) { .ok = true }, true, ++tick));
+        CHECK(saves.pending[1]);
+        CHECK_EQ_INT(saves.tables[1].entries[0].score, 2345);
+        CHECK_EQ_INT(saves.tables[1].entries[0].stage, 8);
+        CHECK_EQ_STR(
+            saves.tables[1].entries[0].route, route == 0 ? "魔" : "地");
+        f.session.table_high_score = (uint32_t)saves.tables[1].entries[0].score;
+        Gameplay_ResumeAfterScore(g);
+        CHECK_EQ_INT(g->phase, GP_CONTINUE);
+        CHECK_EQ_INT(f.session.continues_total, 1);
+        CHECK_EQ_INT(f.session.highest_score, 5000);
+        CHECK_EQ_INT(context.vsync->edge, edge + 33);
+        Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
+        CHECK_EQ_INT(g->request, GAMEPLAY_REQUEST_NONE);
+        CHECK_EQ_INT(g->phase, GP_STAGE_LABEL);
+        CHECK_EQ_INT(f.session.high_score, 2345);
+        CHECK_EQ_INT(f.session.highest_score, 5000);
+        CHECK_EQ_INT(f.session.stage_id, 7);
+        CHECK_EQ_INT(f.session.route, route);
+        CHECK_EQ_INT(f.arena.used, used);
+        Arena_Free(&f.arena);
+    }
+}
+
+TEST(live_hud_high_score_is_distinct_from_run_history)
+{
+    FIXTURE f;
+    M_Init(&f);
+    f.session.table_high_score = 1000;
+    f.session.high_score = 0xffffffff;
+    f.session.highest_score = 42;
+    Gameplay_ResetWorld(&f.game);
+    CHECK_EQ_INT(f.session.high_score, 1000);
+    CHECK_EQ_INT(f.session.highest_score, 42);
+    f.game.metrics.score = 0x80000000;
+    Hud_ScoreAndCombo(&f.game.hud, &f.game.display);
+    CHECK_EQ_INT(f.session.high_score, 0x80000000);
+    CHECK_EQ_INT(f.session.highest_score, 42);
+    Gameplay_ResetWorld(&f.game);
+    CHECK_EQ_INT(f.session.high_score, 1000);
+    CHECK_EQ_INT(f.session.highest_score, 42);
     Arena_Free(&f.arena);
 }

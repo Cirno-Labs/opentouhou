@@ -72,6 +72,7 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     Frame_SwitchProgram(&g->vsync);
     Tram_Clear(&g->tram);
     Tram_SetVisible(&g->tram, true);
+    g->session->high_score = g->session->table_high_score;
     g->metrics.score = g->session->score;
     g->player.remaining_bombs = g->session->bombs;
     g->player.left = 304;
@@ -199,4 +200,9 @@ void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
         break;
     }
     }
+}
+
+GAMEPLAY_SCORE_CONTEXT Gameplay_ScoreContext(GAMEPLAY *const g)
+{
+    return (GAMEPLAY_SCORE_CONTEXT) { .vsync = &g->vsync, .input = &g->input };
 }

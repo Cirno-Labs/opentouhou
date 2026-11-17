@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th01/gameplay_assets.h"
+#include "th01/frame.h"
 #include "th01/session.h"
 #include "th01/opening.h"
 
@@ -48,3 +49,12 @@ const TRAM *Gameplay_TextLayer(const GAMEPLAY *gameplay);
 // advances audio itself, including during nested waits and terminal frames.
 void Gameplay_OpeningAudio(GAMEPLAY *gameplay, OPENING_EVENTS events);
 void Gameplay_AdvanceAudio(GAMEPLAY *gameplay);
+
+// Borrows the shared source counters and input flags during score ownership.
+// The score owner advances VSync while gameplay is suspended. Keep gameplay
+// alive and resume through Gameplay_ResumeAfterScore after completion.
+typedef struct {
+    FRAME_VSYNC *vsync;
+    GAME_INPUT *input;
+} GAMEPLAY_SCORE_CONTEXT;
+GAMEPLAY_SCORE_CONTEXT Gameplay_ScoreContext(GAMEPLAY *gameplay);

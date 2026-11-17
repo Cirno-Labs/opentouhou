@@ -2368,7 +2368,7 @@ if build_games
     ),
     suite: 'unit',
   )
-  foreach part : ['bfnt', 'bos', 'boss_b05', 'boss_b10m', 'boss_b10j', 'boss_b15j', 'boss_b15m', 'boss_b20j', 'boss_b20m', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'bonus', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'score_data', 'session', 'invincibility', 'gameplay', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
+  foreach part : ['bfnt', 'bos', 'boss_b05', 'boss_b10m', 'boss_b10j', 'boss_b15j', 'boss_b15m', 'boss_b20j', 'boss_b20m', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'bonus', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'logo', 'frame', 'math', 'finite', 'orb', 'settings', 'score_data', 'score', 'session', 'invincibility', 'gameplay', 'video', 'palette', 'tram', 'mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'pf', 'pi', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
     test(
       'th01/' + part,
       executable(
@@ -2376,7 +2376,7 @@ if build_games
         'test_th01_' + part + '.c',
         c_args: [layer_include['th01']] + core_include + stg_include,
         implicit_include_directories: false,
-        link_with: [th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib] + (part == 'gameplay' ? [core_text_lib, core_image_lib] : []),
+        link_with: [th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib] + (part in ['gameplay', 'score'] ? [core_text_lib, core_image_lib] : []),
         dependencies: [sdl3],
       ),
       suite: 'unit',

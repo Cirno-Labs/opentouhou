@@ -182,7 +182,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .font = &a->hud_font,
         .gameplay = &g->metrics,
         .player = &g->player,
-        .high_score = &s->highest_score,
+        .high_score = &s->high_score,
         .remaining_lives = &s->lives,
         .stage_number = (uint16_t)(s->stage_id + 1),
         .rank = (SETTINGS_DIFFICULTY)s->settings.difficulty,
