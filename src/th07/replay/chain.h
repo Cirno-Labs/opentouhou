@@ -10,12 +10,21 @@
 // on them. It restarts the calc chain at priority 17 on 2 calcs of 3 during
 // skippable dialogue and 4 of 5 during fast playback without a boss.
 // Recording marks pause events at 6 and keeps the buttons at 16.
+// With [fixes] replay_desync enabled, playback keeps stage headers intact
+// and treats shoot on a pause marker during dialogue as held. This avoids
+// score corruption and a new shoot press from the missing paused input.
+// Recording is unchanged. With the fix disabled, playback reproduces
+// retail's stage-end writes and pause input edges.
 
 // Starts recording or playback, or sets up the next stage of the active
-// session. Playback loads path on the first registration.
+// session. Playback loads path and takes the replay_desync setting on the
+// first registration; the setting stays for the whole playback.
 RESULT Replay_Register(REPLAY_MODE mode, const char *path);
 
-// Appends the empty frame that ends the stage being recorded.
+// Appends the empty frame that ends a recorded stage. During playback,
+// does nothing with replay_desync enabled. With it disabled, clears the
+// next input in the loaded file too; a stage that runs a calc late can
+// clear the low word of the next stage's saved score.
 void Replay_EndStage(void);
 
 // Ends the stage being recorded and writes the recording to path, as
@@ -37,7 +46,7 @@ void Replay_MarkEvent(REPLAY_EVENT event);
 // end of the current slot and in its header, and with new keys drawn from
 // the gameplay RNG. Writes nothing when the replay was recorded with
 // another config than the current one, outside practice, Extra and
-// Phantasm. Then ends playback either way.
+// Phantasm, or when replay_desync is enabled. Then ends playback either way.
 void Replay_ResaveIfScoreChanged(void);
 
 // Returns whether the replay being played holds stage (1 to 7); false

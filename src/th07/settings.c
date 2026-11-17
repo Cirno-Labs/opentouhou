@@ -21,6 +21,8 @@ static const CONFIG_OPTION m_Options[] = {
     CONFIG_INT(
         TH07_SETTINGS, "game", "effects_quality", effects_quality,
         M_EFFECTS_QUALITY, 0, 2),
+    CONFIG_BOOL(
+        TH07_SETTINGS, "fixes", "replay_desync", fix_replay_desync, true),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =
@@ -34,4 +36,5 @@ TH07_SETTINGS g_Settings = {
     .sound = true,
     .shoot_focuses = true,
     .effects_quality = M_EFFECTS_QUALITY,
+    .fix_replay_desync = true,
 };

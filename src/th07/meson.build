@@ -1,6 +1,3 @@
-# Everything but main.c, entry.c and stubs.c, so the tests link it too;
-# stubs.c stays out so a test can link its own stand-ins for the unported
-# modules instead.
 th07_lib = static_library(
   'th07_lib',
   'anm/draw.c',
