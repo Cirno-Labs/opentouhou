@@ -50,6 +50,7 @@ th01_lib = static_library(
   'orb.c',
   'input.c',
   'settings.c',
+  'session.c',
   'video.c',
   'palette.c',
   'text.c',
