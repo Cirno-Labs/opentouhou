@@ -30,7 +30,7 @@ typedef struct {
     uint32_t part;
 } ANM_DRAW;
 
-// Returns a draw on the screen view, with depth test and writes.
+// Returns a draw on the screen view, with unconditional depth writes.
 ANM_DRAW Anm_ScreenDraw(void);
 
 // Returns the screen view clipped to viewport, with positions in screen

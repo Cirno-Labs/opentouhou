@@ -247,7 +247,7 @@ ANM_DRAW Anm_ScreenDraw(void)
 {
     ANM_DRAW draw = {
         .view = GfxView_Screen(),
-        .depth_test = GFX_DEPTH_LESS_EQUAL,
+        .depth_test = GFX_DEPTH_ALWAYS,
         .depth_write = true,
     };
     draw.view.id = ANM_VIEW_SCREEN;

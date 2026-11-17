@@ -89,6 +89,27 @@ TEST(sprites_outside_the_viewport_are_skipped)
     M_Teardown();
 }
 
+TEST(screen_sprites_blend_without_rejecting_overlapping_depths)
+{
+    ANM_VM vm;
+    M_Setup(&vm);
+    const ANM_DRAW draw = Anm_ScreenDraw();
+    vm.pos = (VEC3) { 100.0f, 100.0f, 0.0f };
+    Anm_DrawNoRound(&vm, &draw);
+    vm.pos.z = 0.5f;
+    vm.blend_add = true;
+    Anm_DrawNoRound(&vm, &draw);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
+    CHECK_EQ_INT(GfxRecorder_Quad(0)->state.blend, GFX_BLEND_ALPHA);
+    CHECK_EQ_INT(GfxRecorder_Quad(1)->state.blend, GFX_BLEND_ADD);
+    for (int32_t i = 0; i < 2; i++) {
+        CHECK_EQ_INT(GfxRecorder_Quad(i)->state.depth_test, GFX_DEPTH_ALWAYS);
+        CHECK(GfxRecorder_Quad(i)->state.depth_write);
+    }
+    M_Teardown();
+}
+
 TEST(colors_modulate_and_color2_replaces_color)
 {
     ANM_VM vm;

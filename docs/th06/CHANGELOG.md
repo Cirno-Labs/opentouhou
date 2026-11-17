@@ -8,6 +8,7 @@
   which keeps their high frequencies.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
+- Fixed excessive spacing in bold translated text.
 
 ## 1.0.1 (2026-11-15)
 
