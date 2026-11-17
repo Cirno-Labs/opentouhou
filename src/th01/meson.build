@@ -14,6 +14,7 @@ th01_lib = static_library(
   'boss_b15j.c',
   'boss_b15m.c',
   'boss_b20j.c',
+  'boss_b20m.c',
   'route_select.c',
   'sprite.c',
   'shape.c',
