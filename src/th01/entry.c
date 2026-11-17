@@ -16,7 +16,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    return (SDL_AppResult)Shell_Iterate();
+    const SDL_AppResult result = (SDL_AppResult)Shell_Iterate();
+    Th01_FlushSaves();
+    return result;
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)

@@ -40,6 +40,7 @@ int32_t ScoreData_Insert(SCORE_TABLE *table, const SCORE_ENTRY *entry);
 const char *ScoreData_File(int32_t rank);
 
 // Loads user files before optional original imports, otherwise uses defaults.
+// Queues missing native tables for creation in user_files.
 // Never writes original files. Invalid existing user files disable writes
 // for that rank to preserve them. user_files is borrowed until saves expire.
 // Reports invalid files while leaving all four tables usable.

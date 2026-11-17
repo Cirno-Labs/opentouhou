@@ -187,3 +187,70 @@ TEST(failed_write_consumes_request_without_changing_simulation)
     Vfs_Destroy(user_files);
     Mem_Free(directory);
 }
+
+TEST(missing_native_tables_queue_default_creation)
+{
+    char *const directory = TestDir_Prepare("create");
+    VFS *const user_files = M_UserFiles(directory);
+    SCORE_SAVES saves;
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
+        CHECK(saves.pending[rank]);
+    }
+    CHECK(Result_Ignore(ScoreData_WriteSaves(&saves)));
+    for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
+        char *const path = TestDir_Join(directory, ScoreData_File(rank));
+        READER reader;
+        CHECK(Result_Ignore(Reader_OpenFile(&reader, path)));
+        SCORE_TABLE table;
+        CHECK(Result_Ignore(ScoreData_Read(&reader, &table)));
+        CHECK_EQ_INT(table.entries[0].score, 1000);
+        Reader_Close(&reader);
+        Mem_Free(path);
+    }
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
+        CHECK(!saves.pending[rank]);
+    }
+    Vfs_Destroy(user_files);
+    Mem_Free(directory);
+}
+
+TEST(invalid_queued_name_does_not_replace_a_valid_file)
+{
+    char *const directory = TestDir_Prepare("invalid-save");
+    VFS *const user_files = M_UserFiles(directory);
+    SCORE_SAVES saves;
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    CHECK(Result_Ignore(ScoreData_WriteSaves(&saves)));
+    strcpy(saves.tables[0].entries[0].name, "short");
+    ScoreData_Queue(&saves, 0);
+    CHECK(!Result_Ignore(ScoreData_WriteSaves(&saves)));
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    CHECK_EQ_STR(saves.tables[0].entries[0].name, "東方★靈異伝　　");
+    Vfs_Destroy(user_files);
+    Mem_Free(directory);
+}
+
+TEST(existing_lowercase_native_file_keeps_its_spelling)
+{
+    char *const directory = TestDir_Prepare("lowercase");
+    VFS *const user_files = M_UserFiles(directory);
+    char *const path = TestDir_Join(directory, "reyhies.dat");
+    SCORE_TABLE table;
+    ScoreData_Defaults(&table);
+    size_t size;
+    uint8_t *const bytes = M_Encode(&table, &size);
+    TestDir_Write(path, bytes, size);
+    Allocator_Free(&g_HeapAllocator, bytes, size);
+    SCORE_SAVES saves;
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    saves.tables[0].entries[0].score = 45678;
+    ScoreData_Queue(&saves, 0);
+    CHECK(Result_Ignore(ScoreData_WriteSaves(&saves)));
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    CHECK_EQ_INT(saves.tables[0].entries[0].score, 45678);
+    Mem_Free(path);
+    Vfs_Destroy(user_files);
+    Mem_Free(directory);
+}

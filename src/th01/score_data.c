@@ -142,6 +142,7 @@ RESULT ScoreData_Load(
         READER reader;
         RESULT result = OK;
         out->writable[rank] = true;
+        out->pending[rank] = !native;
         if (native) {
             result = Vfs_Open(user_files, m_Files[rank], VFS_STREAM, &reader);
         } else if (original != nullptr && Vfs_Exists(original, m_Files[rank])) {

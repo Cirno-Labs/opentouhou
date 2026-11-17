@@ -7,6 +7,7 @@
 #include "th01/frame.h"
 #include "th01/input.h"
 #include "th01/settings.h"
+#include "th01/score.h"
 
 #include "core/base/arena.h"
 #include "core/gfx.h"
@@ -27,7 +28,10 @@ static LOGO m_Logo;
 static OPENING_ASSETS m_OpeningAssets;
 static OPENING m_Opening;
 static bool m_InOpening;
-static bool m_InGameplay;
+static bool m_InGameplay, m_InScore;
+static SCORE_SAVES m_Scores;
+static SCORE_ASSETS m_ScoreAssets;
+static SCORE_SCENE m_Score;
 static GAMEPLAY_REQUEST m_ReportedRequest;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
@@ -41,6 +45,7 @@ static GFX_TEXTURE *m_Pages[2];
 static uint8_t *m_UploadedPages[2];
 static GFX_COLOR m_UploadedPalette[16];
 static bool m_IntroPressed;
+static bool m_Initialized;
 
 static RESULT M_LoadAssets(void)
 {
@@ -68,11 +73,19 @@ static RESULT M_LoadAssets(void)
         result = GameplayAssets_Load(
             vfs, Arena_Allocator(&m_Assets), &m_GameplayAssets);
     }
+    if (IS_OK(result)) {
+        Result_Log(
+            ScoreData_Load(vfs, Shell_GetUserFiles(), &m_Scores),
+            LOG_LEVEL_WARNING);
+        result = Score_LoadAssets(
+            vfs, &m_Scores, Arena_Allocator(&m_Assets), &m_ScoreAssets);
+    }
     return result;
 }
 
 static RESULT M_Init(void)
 {
+    m_Initialized = false;
     Arena_Init(&m_Assets, "TH01 assets", M_ASSET_CAPACITY);
     MUST(M_LoadAssets());
     FAIL_IF(
@@ -84,6 +97,7 @@ static RESULT M_Init(void)
     m_IntroPressed = false;
     m_InOpening = false;
     m_InGameplay = false;
+    m_InScore = false;
     m_ReportedRequest = GAMEPLAY_REQUEST_NONE;
     m_HostTick = 0;
     memset(&m_Session, 0, sizeof(m_Session));
@@ -110,6 +124,7 @@ static RESULT M_Init(void)
     GfxTexture_UploadIndices(
         m_TextTexture, (GFX_RECT) { 0, 0, 640, 400 }, m_UploadedText);
     GfxTexture_UploadPalette(m_TextTexture, 0, 9, g_TramPalette);
+    m_Initialized = true;
     return OK;
 }
 
@@ -130,6 +145,8 @@ static bool M_OpeningEvents(
             events.action == OPENING_ACTION_START ? SESSION_START
                                                   : SESSION_CONTINUE,
             &g_Settings, m_Opening.frame_rand);
+        m_Session.table_high_score =
+            (uint32_t)m_Scores.tables[g_Settings.difficulty].entries[0].score;
         Gameplay_Begin(m_Gameplay, raw, m_HostTick);
         m_InGameplay = true;
         m_InOpening = false;
@@ -159,17 +176,40 @@ static bool M_Tick(const void *const input)
     GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
     m_HostTick++;
     const bool reference_edge = Frame_Advance(&m_Frame);
-    if (m_InGameplay) {
+    if (m_InScore) {
+        Gameplay_AdvanceAudio(m_Gameplay);
+        if (Score_Tick(&m_Score, raw, reference_edge, m_HostTick)) {
+            m_Session.table_high_score =
+                (uint32_t)m_Scores.tables[m_Session.settings.difficulty]
+                    .entries[0]
+                    .score;
+            m_InScore = false;
+            Gameplay_ResumeAfterScore(m_Gameplay);
+        }
+    } else if (m_InGameplay) {
         const GAMEPLAY_REQUEST request =
             Gameplay_Tick(m_Gameplay, raw, reference_edge, m_HostTick);
         if (request == GAMEPLAY_REQUEST_OPENING) {
             M_BeginOpening(true, raw);
+        } else if (request == GAMEPLAY_REQUEST_SCORE) {
+            const GAMEPLAY_SCORE_CONTEXT context =
+                Gameplay_ScoreContext(m_Gameplay);
+            SCORE_ENTRY entry = { .score = (int32_t)m_Session.score,
+                                  .stage = (int16_t)(m_Session.stage_id + 1) };
+            strcpy(
+                entry.route,
+                m_Session.stage_id < 5                       ? "社"
+                    : m_Session.route == SESSION_ROUTE_MAKAI ? "魔"
+                                                             : "地");
+            Score_Begin(
+                &m_Score, &m_ScoreAssets, &m_Video, &m_Scores, context.vsync,
+                context.input, SCORE_GAMEOVER, m_Session.settings.difficulty,
+                &entry);
+            m_InScore = true;
         } else if (
-            request != GAMEPLAY_REQUEST_NONE && request != m_ReportedRequest) {
-            LOG_WARNING(
-                "TH01 %s handoff awaits its scene owner",
-                request == GAMEPLAY_REQUEST_ENDING ? "ending"
-                                                   : "score registration");
+            request == GAMEPLAY_REQUEST_ENDING
+            && request != m_ReportedRequest) {
+            LOG_WARNING("TH01 ending handoff awaits its scene owner");
             m_ReportedRequest = request;
         }
     } else {
@@ -226,7 +266,7 @@ static bool M_Tick(const void *const input)
         }
     }
     const TRAM *const text =
-        m_InGameplay ? Gameplay_TextLayer(m_Gameplay) : nullptr;
+        m_InGameplay && !m_InScore ? Gameplay_TextLayer(m_Gameplay) : nullptr;
     if (text != nullptr
         && memcmp(m_UploadedText, text->pixels, VIDEO_PAGE_SIZE) != 0) {
         GfxTexture_UploadIndices(
@@ -251,6 +291,8 @@ static bool M_Tick(const void *const input)
 
 static void M_Shutdown(void)
 {
+    Th01_FlushSaves();
+    m_Initialized = false;
     for (int32_t i = 0; i < 2; i++) {
         GfxTexture_Free(m_Pages[i]);
         m_Pages[i] = nullptr;
@@ -268,6 +310,13 @@ static void M_Shutdown(void)
     memset(&m_Logo, 0, sizeof(m_Logo));
     memset(&m_Opening, 0, sizeof(m_Opening));
     memset(&m_OpeningAssets, 0, sizeof(m_OpeningAssets));
+}
+
+void Th01_FlushSaves(void)
+{
+    if (m_Initialized) {
+        Result_Log(ScoreData_WriteSaves(&m_Scores), LOG_LEVEL_WARNING);
+    }
 }
 
 const GAME_DESC g_GameDesc = {

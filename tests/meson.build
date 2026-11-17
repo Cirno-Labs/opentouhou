@@ -2330,6 +2330,18 @@ test(
 
 if build_games
   test(
+    'th01/entry',
+    executable(
+      'test_th01_entry',
+      'test_th01_entry.c',
+      '../src/th01/entry.c',
+      c_args: [layer_include['th01'], '-DSDL_MAIN_HANDLED'] + shell_include,
+      implicit_include_directories: false,
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th01/text',
     executable(
       'test_th01_text',
