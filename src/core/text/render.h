@@ -23,6 +23,8 @@ typedef struct {
     GFX_COLOR shadow;
     int32_t shadow_x;
     int32_t shadow_y;
+    // Uses GDI's outlines and grayscale coverage, with rounded font sizing.
+    bool gdi_raster;
 } TEXT_STYLE;
 
 // Returns opaque white text at its natural width, without a shadow.
@@ -63,3 +65,12 @@ RESULT Text_MeasureMarkup(
 RESULT Text_RenderMarkup(
     const TEXT_FONT *font, const char *text, const TEXT_STYLE *style,
     const ALLOCATOR *allocator, IMAGE *out);
+
+// Converts normalized glyph coverage to GDI's white-on-black intensity
+// on a surface with eight bits per color channel.
+uint8_t Text_GdiIntensity(uint8_t coverage);
+
+// Paints normalized GDI coverage into a 16-bit GDI-style surface, with
+// opaque touched pixels, five-bit RGB and the GDI intensity curve.
+void Text_StampGdi(
+    IMAGE *surface, const IMAGE *glyphs, int32_t x, int32_t y, GFX_COLOR color);

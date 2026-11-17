@@ -10,10 +10,12 @@ layout(location = 2) in vec2 a_uv;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 uniform vec4 u_output;
+uniform int u_fog;
+uniform vec2 u_fog_range;
 
 out vec4 v_color;
 out vec2 v_uv;
-out float v_depth;
+out float v_fog;
 
 void main()
 {
@@ -24,5 +26,8 @@ void main()
         clip.z * 2.0 - clip.w, clip.w);
     v_color = a_color;
     v_uv = a_uv;
-    v_depth = view_position.z;
+    v_fog = u_fog != 0
+        ? (u_fog_range.y - view_position.z)
+            / (u_fog_range.y - u_fog_range.x)
+        : 1.0;
 }

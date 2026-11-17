@@ -25,6 +25,8 @@ typedef enum {
     IMAGE_DEPTH_A1R5G5B5,
     IMAGE_DEPTH_A4R4G4B4,
     IMAGE_DEPTH_R5G6B5,
+    IMAGE_DEPTH_RGBA8,
+    IMAGE_DEPTH_RGB8,
 } IMAGE_DEPTH;
 
 // Creates an image of width x height with every pixel 0.
@@ -51,3 +53,7 @@ RESULT Image_AlphaFrom(IMAGE *image, const IMAGE *alpha);
 
 // Rounds every channel to depth, keeping 8-bit storage.
 void Image_Quantize(IMAGE *image, IMAGE_DEPTH depth);
+
+// Converts channels to depth with a repeating 4-by-4 ordered dither,
+// keeping 8-bit storage. Starts the pattern at the image's top left.
+void Image_QuantizeDithered(IMAGE *image, IMAGE_DEPTH depth);

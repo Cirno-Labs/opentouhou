@@ -111,6 +111,10 @@ void Anm_Shutdown(void)
 {
 }
 
+void AsciiText_SetFrameRate(const float rate)
+{
+}
+
 RESULT AsciiText_Register(void)
 {
     return OK;

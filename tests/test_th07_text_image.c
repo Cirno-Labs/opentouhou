@@ -1,4 +1,5 @@
 #include "th07/anm.h"
+#include "th07/anm/private.h"
 #include "th07/files.h"
 #include "th07/gui/private.h"
 #include "th07/strings.h"
@@ -122,5 +123,44 @@ TEST(base_tsa_without_nameplate_images_keeps_the_game_s_sprites)
     GuiTextImage_ShowStage(1);
     CHECK(!GuiTextImage_Replaces(M_NAMEPLATE_SCRIPT));
     CHECK(!GuiTextImage_Replaces(M_NAMEPLATE_SCRIPT + 1));
+    M_TearDown(directory);
+}
+
+static int32_t M_TextColumn(void)
+{
+    const IMAGE *const image = AnmTexture_GetImage(100);
+    for (int32_t x = 0; x < image->width; x++) {
+        for (int32_t y = 16; y < 31; y++) {
+            if (image->pixels[((size_t)y * image->width + x) * 4 + 3] > 32) {
+                return x;
+            }
+        }
+    }
+    return -1;
+}
+
+TEST(translated_text_uses_the_patch_s_alignment_padding)
+{
+    char *const directory = M_SetUp("alignment_padding", false);
+    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    CHECK(IS_OK(Anm_CreateTexture(100, 512, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100,
+        .y0 = 16,
+        .width = 128,
+        .texture_width = 512,
+        .texture_height = 64,
+        .scale_x = 1,
+        .scale_y = 1,
+    };
+    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15, .font_height = 15 };
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, 0, "%s", "■")));
+    const int32_t left = M_TextColumn();
+    CHECK(left >= 0);
+    CHECK(IS_OK(Anm_RenderTextRightAligned(&vm, 0xffffff, 0, "%s", "■")));
+    CHECK_EQ_INT(M_TextColumn() - left, 110);
+    CHECK(IS_OK(Anm_RenderTextCentered(&vm, 0xffffff, 0, "%s", "■")));
+    CHECK_EQ_INT(M_TextColumn() - left, 53);
+    Anm_ShutdownText();
     M_TearDown(directory);
 }

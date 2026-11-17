@@ -189,11 +189,16 @@ TEST(color_ops_modulate_or_add_and_alpha_multiplies)
     GfxTexture_Free(texture);
 }
 
-TEST(alpha_test_discards_alpha_zero_with_its_depth)
+TEST(alpha_test_discards_alpha_below_four_with_its_depth)
 {
     REQUIRE_GL();
-    const GFX_COLOR texels[2] = { { 255, 255, 255, 0 }, WHITE };
-    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    const GFX_COLOR texels[4] = {
+        { 255, 255, 255, 0 },
+        { 255, 255, 255, 1 },
+        { 255, 255, 255, 3 },
+        { 255, 255, 255, 4 },
+    };
+    GFX_TEXTURE *const texture = M_Texture(4, 1, texels);
     Gfx_BeginTick(BLACK);
     const GFX_STATE tested = {
         .depth_test = GFX_DEPTH_LESS_EQUAL,
@@ -208,6 +213,8 @@ TEST(alpha_test_discards_alpha_zero_with_its_depth)
     M_Rect(&behind, nullptr, 0, 0, SIZE, SIZE, 0.6f, RED, 1.0f);
     IMAGE image = M_Screen();
     M_CheckPixel(&image, 1, 1, RED, 0);
+    M_CheckPixel(&image, 2, 1, RED, 0);
+    M_CheckPixel(&image, 4, 1, RED, 0);
     M_CheckPixel(&image, 6, 1, WHITE, 0);
     Image_Free(&image);
     GfxTexture_Free(texture);
@@ -234,6 +241,21 @@ TEST(depth_less_equal_always_and_off)
     Image_Free(&image);
 }
 
+TEST(nearby_depths_compare_at_sixteen_bit_precision)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE state = {
+        .depth_test = GFX_DEPTH_LESS_EQUAL,
+        .depth_write = true,
+    };
+    M_Rect(&state, nullptr, 0, 0, SIZE, SIZE, 0.500001f, RED, 1.0f);
+    M_Rect(&state, nullptr, 0, 0, SIZE, SIZE, 0.500002f, GREEN, 1.0f);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 4, 4, GREEN, 0);
+    Image_Free(&image);
+}
+
 TEST(fog_mixes_toward_its_colour_by_view_depth)
 {
     REQUIRE_GL();
@@ -249,6 +271,55 @@ TEST(fog_mixes_toward_its_colour_by_view_depth)
     M_CheckPixel(&image, 0, 0, RED, 0);
     M_CheckPixel(&image, 4, 0, (GFX_COLOR) { 128, 0, 128, 255 }, 1);
     Image_Free(&image);
+}
+
+TEST(fog_is_clamped_after_interpolation)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    GFX_VIEW view = GfxView_Screen();
+    view.projection.m[2][2] = 0.0f;
+    view.projection.m[3][2] = 0.5f;
+    view.fog = (GFX_FOG) {
+        .enabled = true, .begin = 1.0f, .end = 2.0f, .color = BLUE
+    };
+    Gfx_SetView(&view);
+    const GFX_VERTEX vertices[4] = {
+        { { 0, 0, 0 }, RED, { 0, 0 } },
+        { { SIZE, 0, 4 }, RED, { 0, 0 } },
+        { { SIZE, SIZE, 4 }, RED, { 0, 0 } },
+        { { 0, SIZE, 0 }, RED, { 0, 0 } },
+    };
+    Gfx_DrawQuad(&m_Opaque, nullptr, vertices, 0);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 0, 4, RED, 0);
+    M_CheckPixel(&image, 2, 4, (GFX_COLOR) { 191, 0, 64, 255 }, 1);
+    M_CheckPixel(&image, 4, 4, BLUE, 0);
+    Image_Free(&image);
+}
+
+TEST(persistent_screens_keep_colour_and_clear_depth_in_both_presentations)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE state = { .depth_test = GFX_DEPTH_LESS_EQUAL,
+                              .depth_write = true };
+    M_Rect(&state, nullptr, 0, 0, SIZE, SIZE, 0.1f, RED, 1.0f);
+    Gfx_EndTick();
+    Gfx_SetPersistentScreen(true);
+    Gfx_BeginTick(BLUE);
+    M_Rect(&state, nullptr, 0, 0, 4, SIZE, 0.7f, GREEN, 1.0f);
+    IMAGE screen = M_Screen();
+    M_CheckPixel(&screen, 1, 1, GREEN, 0);
+    M_CheckPixel(&screen, 6, 1, RED, 0);
+    Image_Free(&screen);
+    for (int32_t interpolate = 0; interpolate <= 1; interpolate++) {
+        IMAGE output = M_Output(interpolate != 0, 16);
+        M_CheckPixel(&output, 2, 2, GREEN, 0);
+        M_CheckPixel(&output, 12, 2, RED, 0);
+        Image_Free(&output);
+    }
+    Gfx_SetPersistentScreen(false);
 }
 
 TEST(repeat_wraps_and_clamp_stretches_the_edge)
@@ -461,4 +532,45 @@ TEST(a_screen_rect_reads_mid_tick_and_drawing_goes_on)
     M_CheckPixel(&screen, 7, 7, GREEN, 0);
     Image_Free(&screen);
     Image_Free(&rect);
+}
+
+TEST(alpha_test_keeps_fractional_alpha_until_the_comparison)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[] = { { 255, 255, 255, 128 },
+                                 { 255, 255, 255, 146 } };
+    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE tested = { .depth_test = GFX_DEPTH_LESS_EQUAL,
+                               .depth_write = true,
+                               .alpha_test = true };
+    M_Rect(
+        &tested, texture, 0, 0, SIZE, SIZE, 0.2f,
+        (GFX_COLOR) { 255, 255, 255, 7 }, 1.0f);
+    const GFX_STATE behind = { .depth_test = GFX_DEPTH_LESS_EQUAL,
+                               .depth_write = true };
+    M_Rect(&behind, nullptr, 0, 0, SIZE, SIZE, 0.6f, RED, 1.0f);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 1, 1, RED, 0);
+    M_CheckPixel(&image, 6, 1, WHITE, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
+TEST(quads_interpolate_across_the_strip_diagonal)
+{
+    REQUIRE_GL();
+    const GFX_COLOR yellow = { 255, 255, 0, 255 };
+    const GFX_VERTEX vertices[4] = {
+        { { 0, 0, 0.5f }, RED, {} },
+        { { SIZE, 0, 0.5f }, GREEN, {} },
+        { { SIZE, SIZE, 0.5f }, BLUE, {} },
+        { { 0, SIZE, 0.5f }, yellow, {} },
+    };
+    Gfx_BeginTick(BLACK);
+    Gfx_DrawQuad(&m_Opaque, nullptr, vertices, 0);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 3, 3, (GFX_COLOR) { 143, 223, 0, 255 }, 1);
+    M_CheckPixel(&image, 4, 4, (GFX_COLOR) { 112, 223, 32, 255 }, 1);
+    Image_Free(&image);
 }

@@ -25,6 +25,9 @@ void AsciiText_Remove(void);
 // highlight_font, and sends summary_interrupt to the summary again.
 void AsciiText_Initialize(void);
 
+// Updates the frame rate shown at the bottom of the screen.
+void AsciiText_SetFrameRate(float rate);
+
 void AsciiText_SetColor(uint32_t color);
 void AsciiText_SetHighlight(bool highlight);
 

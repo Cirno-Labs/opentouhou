@@ -56,6 +56,8 @@ typedef struct {
     bool boss_marker_blue[ASCII_BOSS_MARKER_COUNT];
     ASCII_STRING strings[ASCII_STRING_COUNT];
     int32_t string_count;
+    char frame_rate[32];
+    char replay_rate[8];
     uint32_t color;
     float scale_x, scale_y;
     bool in_arena;

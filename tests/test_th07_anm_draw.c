@@ -106,6 +106,7 @@ TEST(screen_sprites_blend_without_rejecting_overlapping_depths)
     for (int32_t i = 0; i < 2; i++) {
         CHECK_EQ_INT(GfxRecorder_Quad(i)->state.depth_test, GFX_DEPTH_ALWAYS);
         CHECK(GfxRecorder_Quad(i)->state.depth_write);
+        CHECK_EQ_INT(GfxRecorder_Quad(i)->state.filter, GFX_FILTER_LINEAR);
     }
     M_Teardown();
 }

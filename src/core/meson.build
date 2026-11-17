@@ -237,7 +237,7 @@ core_gfx_gl_lib = static_library(
 
 text_font = custom_target(
   'text_font',
-  input: 'text/fonts/BIZUDGothic-Bold.ttf',
+  input: 'text/fonts/msgothic.ttc',
   output: 'text_font.h',
   command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', '@INPUT@'],
 )
@@ -245,12 +245,13 @@ text_font = custom_target(
 core_text_lib = static_library(
   'core_text',
   'text/font.c',
+  'text/gdi.c',
   'text/glyphs.c',
   'text/render.c',
   text_font,
   c_args: core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
-  dependencies: [sdl3_ttf, sdl3, cc_libm],
+  dependencies: [sdl3_ttf, sdl3, freetype, cc_libm],
 )
 
 # SDL is a dependency of the library, not of its users: layers above core

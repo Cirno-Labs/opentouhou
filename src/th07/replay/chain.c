@@ -334,6 +334,8 @@ static CHAIN_STATUS M_Play(void *const arg)
         if (replay->fps_cursor + 1 < file->fps_counts[slot]) {
             g_GameManager.mode.replay_fps =
                 file->fps[slot][replay->fps_cursor + 1] & 0x7f;
+            g_GameManager.mode.replay_fps_warning =
+                (file->fps[slot][replay->fps_cursor + 1] & 0x80) != 0;
         }
         replay->fps_cursor++;
     }

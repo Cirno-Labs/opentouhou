@@ -154,6 +154,12 @@ TEST(a_short_note_sits_centered_at_the_bottom_of_the_region)
     CHECK(quad->vertices[0].uv.x == 0.0f && quad->vertices[2].uv.x == 1.0f);
     CHECK_EQ_INT(quad->state.blend, GFX_BLEND_ALPHA);
     CHECK_EQ_INT(quad->state.depth_test, GFX_DEPTH_OFF);
+    const VEC3 projected =
+        Vec3_TransformCoord(quad->vertices[0].position, &quad->view.projection);
+    const float shift_x = projected.x - quad->vertices[0].position.x;
+    const float shift_y = projected.y - quad->vertices[0].position.y;
+    CHECK(shift_x > 0.49f && shift_x < 0.51f);
+    CHECK(shift_y > 0.49f && shift_y < 0.51f);
     M_End();
 }
 
@@ -407,5 +413,21 @@ TEST(the_outline_is_a_disc_of_its_radius)
         }
     }
     CHECK_EQ_INT(wrong, 0);
+    M_End();
+}
+
+TEST(the_game_font_cache_overrides_the_note_weight)
+{
+    M_Begin("cached_weight", true, M_BASE_TSA_NOTES);
+    Note_Show("\x14MMMM");
+    const int32_t regular_width = GfxTexture_GetWidth(M_Draw()->texture);
+    TRANSLATION_GAME game = m_Game;
+    game.font_cache_weight = 700;
+    Translation_Init(m_Stack, &game);
+    Note_Init(m_Stack);
+    Note_Show("\x14MMMM");
+    const GFX_RECORDED_QUAD *const bold = M_Draw();
+    CHECK(bold != nullptr);
+    CHECK_EQ_INT(GfxTexture_GetWidth(bold->texture), regular_width + 4);
     M_End();
 }

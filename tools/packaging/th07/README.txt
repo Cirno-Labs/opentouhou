@@ -177,8 +177,9 @@ Credits
 The original game is by ZUN (Team Shanghai Alice). The translations are
 by the thpatch.net community, in the patch format of thcrap.
 
-The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, zlib and the
-BIZ UDGothic font.
+The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg and zlib.
+The bundled MS Gothic font is supplied with Microsoft Windows:
+© 2017 data: RICOH Co., Ltd.; typeface: RYOBI IMAGIX CO.
 
 Source code, documentation and licences:
 https://github.com/Cirno-Labs/opentouhou

@@ -3,6 +3,8 @@
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/scene.h"
+#include "th07/screens/result/saves.h"
+#include "shell/game.h"
 
 #include "stg/note.h"
 
@@ -18,6 +20,7 @@ TH07_INPUT g_Input;
 
 RESULT Game_Init(void)
 {
+    Gfx_SetPersistentScreen(true);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     g_GameSpeed = 1.0f;
@@ -29,6 +32,11 @@ RESULT Game_Init(void)
 bool Game_Tick(const TH07_INPUT *const input)
 {
     g_Input = *input;
+    float tick_rate;
+    if (Shell_GetTickRate(&tick_rate)) {
+        ResultScreen_CountFrames(tick_rate);
+        AsciiText_SetFrameRate(tick_rate);
+    }
     Chain_RunDraw(&g_Chain);
     Note_Draw();
     const CHAIN_RUN run = Chain_RunCalc(&g_Chain);

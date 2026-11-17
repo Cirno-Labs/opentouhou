@@ -2,6 +2,7 @@
 #include "th07/gui/private.h"
 
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "th07_anm_builder.h"
 #include "th07_gui_setup.h"
@@ -10,14 +11,17 @@
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/enemy.h"
+#include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
 
 #include "core/gfx.h"
 
 #include "stg/timer.h"
+#include "stg/translation.h"
 
 #include <string.h>
 
@@ -860,6 +864,11 @@ TEST(the_draw_runs_from_the_stage_clear_to_the_popups)
     }
     CHECK(frame > box);
     CHECK(GfxRecorder_Quad(box)->vertices[2].position.y == 384.0f + 48.0f);
+    const GFX_RECORDED_QUAD *const gradient = GfxRecorder_Quad(box);
+    const VEC3 projected = Vec3_TransformCoord(
+        gradient->vertices[0].position, &gradient->view.projection);
+    CHECK(projected.x > 48.49f && projected.x < 48.51f);
+    CHECK(projected.y > 384.49f && projected.y < 384.51f);
     M_TearDown();
 }
 
@@ -886,5 +895,106 @@ TEST(only_the_boss_portrait_moves_by_its_offset)
     }
     CHECK_EQ_INT(found, 2);
     CHECK(left[1] - left[0] == 150.0f);
+    M_TearDown();
+}
+
+TEST(base_tsa_centers_translated_notices_at_their_adjusted_position)
+{
+    M_SetUp("translated_notice", 1);
+    char *const patches = TestDir_Prepare("translated_notice_patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th07/stringlocs.js",
+        "{\"Rx983a0\":\"th07 Border Bonus Format\"}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/stringdefs.js",
+        "{\"th07 Border Bonus Format\":\"Bonus %7d\"}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(
+        IS_OK(Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack)));
+    Translation_Init(stack, &g_TranslationGame);
+    Gui_ShowBorderBonusPopup(2947100);
+    g_Gui.popups.notice.pos.x = 104.0f;
+    M_Draw();
+    const ASCII_STRING *const notice = M_FindString("Bonus 2947100");
+    CHECK(notice != nullptr);
+    CHECK(notice->pos.x > 140.59f && notice->pos.x < 140.61f);
+    CHECK(g_Gui.popups.notice.pos.x == 104.0f);
+    Gui_ShowFullPowerPopup();
+    M_Draw();
+    const ASCII_STRING *const full = M_FindString("Full Power Mode!");
+    CHECK(full != nullptr);
+    CHECK(full->pos.x == 424.5f);
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+    M_TearDown();
+}
+
+TEST(base_tsa_aligns_the_translated_spell_bonus_label)
+{
+    M_SetUp("translated_spell_bonus", 1);
+    char *const patches = TestDir_Prepare("translated_spell_bonus_patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th07/stringlocs.js",
+        "{\"Rx9838c\":\"th06_ascii_centered_spell_bonus\"}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/stringdefs.js",
+        "{\"th06_ascii_centered_spell_bonus\":\"Captured!\"}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(
+        IS_OK(Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack)));
+    Translation_Init(stack, &g_TranslationGame);
+    Gui_ShowSpellCardBonus(12345);
+    M_Draw();
+    const ASCII_STRING *const label = M_FindString("Captured!");
+    CHECK(label != nullptr);
+    CHECK(label->pos.x == 161.5f);
+    CHECK(label->pos.y == 80.0f);
+    CHECK(g_Gui.popups.spell_bonus.pos.x == 128.0f);
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+    M_TearDown();
+}
+
+TEST(base_tsa_aligns_the_translated_stage_clear_table)
+{
+    M_SetUp("translated_stage_clear", 2);
+    g_Gui.stage_clear.state = GUI_STAGE_CLEAR_SHOWN;
+    M_Draw();
+    CHECK(M_FindString("Stage Clear")->pos.x == 144.0f);
+    char *const patches = TestDir_Prepare("translated_stage_clear_patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th07/stringlocs.js",
+        "{\"Rx98518\":\"title\",\"Rx984fc\":\"clear\",\"Rx98474\":\"rank\","
+        "\"Rx98400\":\"total\"}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/stringdefs.js",
+        "{\"title\":\"Complete\",\"clear\":\"Stage = %8d\",\"rank\":\"Hard "
+        "x1.2\",\"total\":\"Sum = %8d0\"}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(
+        IS_OK(Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack)));
+    Translation_Init(stack, &g_TranslationGame);
+    g_GameManager.run.difficulty = 2;
+    g_Gui.stage_clear.total = 312452;
+    M_Draw();
+    const ASCII_STRING *const title = M_FindString("Complete");
+    const ASCII_STRING *const clear = M_FindString("Stage =  2000000");
+    const ASCII_STRING *const rank = M_FindString("Hard x1.2");
+    const ASCII_STRING *const total = M_FindString("Sum =   3124520");
+    CHECK(
+        title != nullptr && clear != nullptr && rank != nullptr
+        && total != nullptr);
+    CHECK(title->pos.x == 112.0f);
+    CHECK(clear->pos.x == title->pos.x && clear->pos.y == 160.0f);
+    CHECK(rank->pos.x == title->pos.x && rank->pos.y == 240.0f);
+    CHECK(total->pos.x == title->pos.x && total->pos.y == 256.0f);
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
     M_TearDown();
 }

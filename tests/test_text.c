@@ -166,7 +166,7 @@ TEST(a_family_opens_the_file_that_has_it)
     char *const missing = TestDir_Join(dir, "missing.ttf");
     const char *const paths[] = { missing, broken, SDL_getenv("TEST_FONT") };
     TEXT_FONT *font = nullptr;
-    CHECK(IS_OK(TextFont_LoadFamily(paths, 3, "biz udgothic", 15, &font)));
+    CHECK(IS_OK(TextFont_LoadFamily(paths, 3, "ms gothic", 15, &font)));
     CHECK(font != nullptr);
     CHECK(IS_OK(TextFont_SetSize(font, 30)));
     TEXT_FONT *bundled = nullptr;
@@ -194,10 +194,13 @@ static TEXT_FONT *M_LoadWithCell(
     size_t size;
     uint8_t *const data = SDL_LoadFile(SDL_getenv("TEST_FONT"), &size);
     CHECK(data != nullptr);
-    const int32_t count = data[4] << 8 | data[5];
+    const size_t base = memcmp(data, "ttcf", 4) == 0 ? (size_t)data[12] << 24
+            | (size_t)data[13] << 16 | (size_t)data[14] << 8 | data[15]
+                                                     : 0;
+    const int32_t count = data[base + 4] << 8 | data[base + 5];
     bool found = false;
     for (int32_t i = 0; i < count; i++) {
-        const uint8_t *const record = data + 12 + i * 16;
+        const uint8_t *const record = data + base + 12 + i * 16;
         if (memcmp(record, "OS/2", 4) == 0) {
             uint8_t *const table = data
                 + ((size_t)record[8] << 24 | (size_t)record[9] << 16
@@ -219,12 +222,12 @@ static TEXT_FONT *M_LoadWithCell(
     return font;
 }
 
-TEST(the_bundled_font_cell_is_its_em)
+TEST(the_bundled_font_uses_its_windows_cell)
 {
     CHECK(IS_OK(Text_Init()));
     TEXT_FONT *bundled = nullptr;
     CHECK(IS_OK(TextFont_LoadDefault(30, &bundled)));
-    TEXT_FONT *const em = M_LoadWithCell(0, 0, 30);
+    TEXT_FONT *const em = M_LoadWithCell(0, 0, 30.0f);
     const TEXT_STYLE style = TextStyle_Default();
     IMAGE expected, image;
     CHECK(IS_OK(Text_Render(
@@ -245,10 +248,94 @@ TEST(the_bundled_font_cell_is_its_em)
     Text_Shutdown();
 }
 
+TEST(rounded_cells_use_whole_em_pixels_and_windows_baselines)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *const font = M_LoadWithCell(220, 80, 30);
+    TEXT_FONT *const em = M_LoadWithCell(0, 0, 26);
+    TEXT_FONT *const low_ascent = M_LoadWithCell(100, 200, 30);
+    int32_t offset, low_offset;
+    CHECK(IS_OK(TextFont_SetSizeRounded(font, 30, &offset)));
+    CHECK(IS_OK(TextFont_SetSizeRounded(low_ascent, 30, &low_offset)));
+    CHECK_EQ_INT(low_offset - offset, -12);
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    IMAGE expected, image;
+    CHECK(IS_OK(Text_Render(
+        em, "Night Sign 霊夢", &style, &g_HeapAllocator, &expected)));
+    CHECK(IS_OK(Text_Render(
+        font, "Night Sign 霊夢", &style, &g_HeapAllocator, &image)));
+    CHECK_EQ_INT(image.width, expected.width);
+    CHECK_EQ_INT(image.height, expected.height);
+    CHECK(
+        memcmp(
+            image.pixels, expected.pixels,
+            (size_t)image.width * (size_t)image.height * 4)
+        == 0);
+    Image_Free(&image);
+    Image_Free(&expected);
+    CHECK(!Result_Ignore(TextFont_SetSizeRounded(font, NAN, &offset)));
+    CHECK(!Result_Ignore(TextFont_SetSizeRounded(font, 30, nullptr)));
+    TextFont_Free(low_ascent);
+    TextFont_Free(em);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_raster_uses_quantized_glyph_coverage)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    int32_t offset;
+    CHECK(IS_OK(TextFont_SetSizeRounded(font, 30, &offset)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    IMAGE image;
+    CHECK(IS_OK(Text_Render(font, "東", &style, &g_HeapAllocator, &image)));
+    int32_t visible = 0;
+    int32_t opaque = 0;
+    for (int32_t i = 0; i < image.width * image.height; i++) {
+        const uint8_t alpha = image.pixels[(size_t)i * 4 + 3];
+        const int32_t level = (alpha * 16 + 127) / 255;
+        CHECK_EQ_INT(alpha, (level * 255 + 8) / 16);
+        visible += alpha != 0;
+        opaque += alpha == 255;
+    }
+    CHECK(visible > opaque && opaque > 0);
+    Image_Free(&image);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_paint_uses_the_intensity_curve_and_five_bit_colors)
+{
+    IMAGE glyphs = Image_Create(5, 1, &g_HeapAllocator);
+    const uint8_t coverage[5] = { 0, 16, 32, 128, 255 };
+    for (int32_t i = 0; i < 5; i++) {
+        glyphs.pixels[(size_t)i * 4 + 3] = coverage[i];
+    }
+    IMAGE surface = Image_Create(5, 1, &g_HeapAllocator);
+    Text_StampGdi(&surface, &glyphs, 0, 0, (GFX_COLOR) { 240, 240, 255, 255 });
+    const uint8_t expected[20] = {
+        0,   0,   0,   0,   0,   0,   0,   0,   99,  99,
+        107, 255, 181, 181, 189, 255, 247, 247, 255, 255,
+    };
+    CHECK(memcmp(surface.pixels, expected, sizeof(expected)) == 0);
+    memset(surface.pixels, 255, 20);
+    Text_StampGdi(&surface, &glyphs, 0, 0, (GFX_COLOR) { 0, 0, 0, 255 });
+    CHECK_EQ_INT(surface.pixels[12], 189);
+    CHECK_EQ_INT(surface.pixels[13], 189);
+    CHECK_EQ_INT(surface.pixels[14], 189);
+    Image_Free(&surface);
+    Image_Free(&glyphs);
+}
+
 TEST(a_tall_cell_shrinks_the_em)
 {
     CHECK(IS_OK(Text_Init()));
-    TEXT_FONT *const tall = M_LoadWithCell(1802, 4096 - 1802, 30);
+    TEXT_FONT *const tall = M_LoadWithCell(220, 512 - 220, 30);
     TEXT_FONT *half = nullptr;
     CHECK(IS_OK(TextFont_LoadDefault(15, &half)));
     const TEXT_STYLE style = TextStyle_Default();
@@ -303,7 +390,7 @@ TEST(faces_change_the_glyphs)
     TEXT_STYLE style = TextStyle_Default();
     const int32_t plain = M_CountInk(font, "Reimu", &style);
     style.face = TEXT_FACE_BOLD;
-    CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
+    CHECK(M_CountInk(font, "Reimu", &style) > plain);
     style.face = TEXT_FACE_UNDERLINE;
     CHECK(M_CountInk(font, "Reimu", &style) > plain);
     style.face = TEXT_FACE_ITALIC;
@@ -322,9 +409,12 @@ static TEXT_FONT *M_LoadRegularFont(void)
     size_t size;
     uint8_t *const data = SDL_LoadFile(SDL_getenv("TEST_FONT"), &size);
     CHECK(data != nullptr);
-    const int32_t count = data[4] << 8 | data[5];
+    const size_t base = memcmp(data, "ttcf", 4) == 0 ? (size_t)data[12] << 24
+            | (size_t)data[13] << 16 | (size_t)data[14] << 8 | data[15]
+                                                     : 0;
+    const int32_t count = data[base + 4] << 8 | data[base + 5];
     for (int32_t i = 0; i < count; i++) {
-        const uint8_t *const record = data + 12 + i * 16;
+        const uint8_t *const record = data + base + 12 + i * 16;
         uint8_t *const table = data
             + ((size_t)record[8] << 24 | (size_t)record[9] << 16
                | (size_t)record[10] << 8 | record[11]);
@@ -537,13 +627,15 @@ TEST(right_aligns_the_text_at_the_column_end)
     Text_Shutdown();
 }
 
-TEST(left_and_faces_keep_the_text_width)
+TEST(left_markup_preserves_width_and_bold_advances)
 {
     TEXT_FONT *const font = M_OpenMarkupFont();
     const int32_t a = M_Width(font, "Reimu");
     const int32_t b = M_Width(font, " Hakurei");
     CHECK_EQ_INT(M_Width(font, "<l$Reimu> Hakurei"), a + b);
-    CHECK_EQ_INT(M_Width(font, "<ub$Reimu> Hakurei"), a + b);
+    const int32_t bold = M_Width(font, "<ub$Reimu>");
+    CHECK(bold >= a + 5);
+    CHECK_EQ_INT(M_Width(font, "<ub$Reimu> Hakurei"), bold + b);
     CHECK_EQ_INT(
         M_Width(font, "<l$Reimu$Reimu Hakurei>!"),
         M_Width(font, "Reimu Hakurei") + M_Width(font, "!"));
@@ -586,6 +678,101 @@ TEST(incomplete_markup_is_text)
     CHECK_EQ_INT(M_Width(font, "<text>"), width);
     CHECK_EQ_INT(
         M_Width(font, "x<c$a>"), M_Width(font, "x") + M_Width(font, "a"));
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_latin_text_keeps_individual_letters_and_advances)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    const char *const text = "AV Night office";
+    IMAGE line;
+    CHECK(IS_OK(Text_Render(font, text, &style, &g_HeapAllocator, &line)));
+    int32_t pen = 0;
+    for (const char *p = text; *p != 0; p++) {
+        const char letter[] = { *p, 0 };
+        IMAGE glyph;
+        CHECK(
+            IS_OK(Text_Render(font, letter, &style, &g_HeapAllocator, &glyph)));
+        CHECK_EQ_INT(glyph.height, line.height);
+        CHECK(pen + glyph.width <= line.width);
+        for (int32_t y = 0; y < glyph.height; y++) {
+            for (int32_t x = 0; x < glyph.width; x++) {
+                CHECK_EQ_INT(
+                    line.pixels[((size_t)y * line.width + pen + x) * 4 + 3],
+                    glyph.pixels[((size_t)y * glyph.width + x) * 4 + 3]);
+            }
+        }
+        pen += glyph.width;
+        Image_Free(&glyph);
+    }
+    CHECK_EQ_INT(pen, line.width);
+    Image_Free(&line);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_white_text_uses_eight_bit_intensity)
+{
+    CHECK_EQ_INT(Text_GdiIntensity(0), 0);
+    CHECK_EQ_INT(Text_GdiIntensity(16), 0);
+    CHECK_EQ_INT(Text_GdiIntensity(32), 104);
+    CHECK_EQ_INT(Text_GdiIntensity(128), 189);
+    CHECK_EQ_INT(Text_GdiIntensity(255), 255);
+}
+
+TEST(gdi_mixed_latin_and_han_keep_individual_glyphs)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(32, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    IMAGE line;
+    CHECK(IS_OK(Text_Render(font, "A十Vā—", &style, &g_HeapAllocator, &line)));
+    const char *const letters[] = { "A", "十", "V", "ā", "—" };
+    int32_t pen = 0;
+    for (size_t i = 0; i < sizeof(letters) / sizeof(letters[0]); i++) {
+        IMAGE glyph;
+        CHECK(IS_OK(
+            Text_Render(font, letters[i], &style, &g_HeapAllocator, &glyph)));
+        CHECK_EQ_INT(glyph.height, line.height);
+        CHECK(pen + glyph.width <= line.width);
+        for (int32_t y = 0; y < glyph.height; y++) {
+            for (int32_t x = 0; x < glyph.width; x++) {
+                CHECK_EQ_INT(
+                    line.pixels[((size_t)y * line.width + pen + x) * 4 + 3],
+                    glyph.pixels[((size_t)y * glyph.width + x) * 4 + 3]);
+            }
+        }
+        pen += glyph.width;
+        Image_Free(&glyph);
+    }
+    CHECK_EQ_INT(pen, line.width);
+    Image_Free(&line);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_combining_accents_keep_shaped_advances)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(32, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    int32_t gdi, shaped, height;
+    CHECK(IS_OK(Text_Measure(font, "é", &style, &gdi, &height)));
+    style.gdi_raster = false;
+    CHECK(IS_OK(Text_Measure(font, "é", &style, &shaped, &height)));
+    CHECK_EQ_INT(gdi, shaped);
     TextFont_Free(font);
     Text_Shutdown();
 }

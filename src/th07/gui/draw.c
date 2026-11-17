@@ -4,11 +4,14 @@
 #include "th07/enemy.h"
 #include "th07/game_manager.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
 #include "th07/screens/result/records.h"
 
 #include "stg/translation.h"
 
 #include "core/base/color.h"
+#include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/math/x87.h"
 
 #include <stdio.h>
@@ -49,6 +52,7 @@ static void M_Gradient(
         { { x0, y1, depth }, M_DrawColor(left_bottom), {} },
     };
     GFX_VIEW view = GfxView_Screen();
+    view = GfxView_OffsetPixels(&view, 0.5f, 0.5f);
     view.id = ANM_VIEW_SCREEN;
     Gfx_SetView(&view);
     Gfx_DrawQuad(
@@ -72,43 +76,6 @@ static void M_DrawOffset(ANM_VM *const vm, const ANM_DRAW *const draw)
     vm->pos = pos;
 }
 
-// Draws a stage-clear line as retail's fixed "label = value" string.
-static void M_AddRetailStageResultLine(
-    const VEC3 cursor, const char *const retail, const int32_t value)
-{
-    AsciiText_AddFormat(cursor, retail, value);
-}
-
-// Draws a stage-clear line as base_tsa's stage_result_align codecave
-// does: the label, then the value right after it as it measures, so a
-// longer translated label pushes the value right instead of
-// overlapping it.
-static void M_AddPatchedStageResultLine(
-    const VEC3 cursor, const char *const label, const char *const format,
-    const int32_t value)
-{
-    AsciiText_AddFormat(cursor, "%s =", label);
-    const VEC3 value_pos = {
-        cursor.x + (float)g_AsciiText.glyph_width * (float)(strlen(label) + 1)
-            + 14.0f,
-        cursor.y, cursor.z
-    };
-    AsciiText_AddFormat(value_pos, format, value);
-}
-
-// Draws a stage-clear line, with base_tsa's column when it is active and
-// retail's fixed one otherwise.
-static void M_AddStageResultLine(
-    const VEC3 cursor, const char *const label, const char *const retail,
-    const char *const format, const int32_t value)
-{
-    if (Translation_HasBaseTsa()) {
-        M_AddPatchedStageResultLine(cursor, label, format, value);
-    } else {
-        M_AddRetailStageResultLine(cursor, retail, value);
-    }
-}
-
 static void M_DrawStageClear(void)
 {
     if (g_Gui.stage_clear.state == GUI_STAGE_CLEAR_NONE) {
@@ -116,44 +83,50 @@ static void M_DrawStageClear(void)
     }
     const GAME_MANAGER *const gm = &g_GameManager;
     VEC3 cursor = { 144.0f, 128.0f, 0.0f };
+    if (Translation_HasBaseTsa()) {
+        cursor.x = 200.0f - (float)strlen(g_Strings[STRING_CLEAR_STAGE]) * 8.0f;
+    }
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x40));
     AsciiText_AddString(
-        cursor, gm->run.stage < 6 ? "Stage Clear" : "All Clear!");
+        cursor,
+        g_Strings
+            [gm->run.stage < 6 ? STRING_STAGE_CLEAR_TITLE
+                               : STRING_ALL_CLEAR_TITLE]);
     cursor.y += 32.0f;
     AsciiText_SetColor(COLOR_WHITE);
-    M_AddStageResultLine(
-        cursor, "Clear", "Clear  = %8d", "%8d", gm->run.stage * 1000000);
+    AsciiText_AddFormat(
+        cursor, g_Strings[STRING_CLEAR_STAGE], gm->run.stage * 1000000);
     cursor.y += 16.0f;
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xe0, 0xe0, 0xff));
-    M_AddStageResultLine(
-        cursor, "Point", "Point  = %8d", "%8d",
+    AsciiText_AddFormat(
+        cursor, g_Strings[STRING_CLEAR_POINT],
         g_Gui.stage_clear.point_items * 50000);
     cursor.y += 16.0f;
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xd0, 0xd0, 0xff));
-    M_AddStageResultLine(
-        cursor, "Graze", "Graze  = %8d", "%8d", g_Gui.stage_clear.graze * 500);
+    AsciiText_AddFormat(
+        cursor, g_Strings[STRING_CLEAR_GRAZE], g_Gui.stage_clear.graze * 500);
     cursor.y += 16.0f;
-    M_AddStageResultLine(
-        cursor, "Cherry", "Cherry = %8d", "%8d", g_Gui.stage_clear.cherry * 10);
+    AsciiText_AddFormat(
+        cursor, g_Strings[STRING_CLEAR_CHERRY], g_Gui.stage_clear.cherry * 10);
     if (GuiStageClear_CountsLivesAndBombs()) {
         cursor.y += 16.0f;
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x80));
-        M_AddStageResultLine(
-            cursor, "Player", "Player =%9d", "%9d",
+        AsciiText_AddFormat(
+            cursor, g_Strings[STRING_CLEAR_PLAYER],
             X87_Ftol(gm->player.lives) * 20000000);
         cursor.y += 16.0f;
-        M_AddStageResultLine(
-            cursor, "Bomb", "Bomb   = %8d", "%8d",
+        AsciiText_AddFormat(
+            cursor, g_Strings[STRING_CLEAR_BOMB],
             X87_Ftol(gm->player.bombs) * 4000000);
     }
     cursor.y += 32.0f;
-    static const char *const ranks[] = {
-        "Easy Rank    *0.5", "Normal Rank  *1.0", "Hard Rank    *1.2",
-        "Lunatic Rank *1.5", "Extra Rank   *2.0", "Phantasm Rank*2.0",
+    static const STRING ranks[] = {
+        STRING_CLEAR_EASY,    STRING_CLEAR_NORMAL, STRING_CLEAR_HARD,
+        STRING_CLEAR_LUNATIC, STRING_CLEAR_EXTRA,  STRING_CLEAR_PHANTASM,
     };
     if (gm->run.difficulty >= 0 && gm->run.difficulty < 6) {
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
-        AsciiText_AddString(cursor, ranks[gm->run.difficulty]);
+        AsciiText_AddString(cursor, g_Strings[ranks[gm->run.difficulty]]);
     }
     cursor.y += 16.0f;
     if (gm->run.difficulty < 4 && !gm->mode.in_practice
@@ -161,13 +134,14 @@ static void M_DrawStageClear(void)
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
         AsciiText_AddString(
             cursor,
-            gm->run.start_lives == 3 ? "Player Penalty*0.5"
-                                     : "Player Penalty*0.2");
+            g_Strings
+                [gm->run.start_lives == 3 ? STRING_CLEAR_PENALTY_HALF
+                                          : STRING_CLEAR_PENALTY_FIFTH]);
         cursor.y += 16.0f;
     }
     AsciiText_SetColor(COLOR_WHITE);
-    M_AddStageResultLine(
-        cursor, "Total", "Total = %8d0", "%8d0", g_Gui.stage_clear.total);
+    AsciiText_AddFormat(
+        cursor, g_Strings[STRING_CLEAR_TOTAL], g_Gui.stage_clear.total);
 }
 
 static void M_DrawMsg(void)
@@ -468,14 +442,29 @@ static void M_DrawHud(void)
     }
 }
 
+static void M_DrawNoticeText(
+    VEC3 pos, const char *const base, const char *const text,
+    const float offset)
+{
+    if (Translation_HasBaseTsa()) {
+        const float advance = 14.0f * g_AsciiText.scale_y;
+        const float center =
+            pos.x + (float)strlen(base) * advance / 2.0f + offset;
+        pos.x = center - (float)strlen(text) * advance / 2.0f;
+    }
+    AsciiText_AddString(pos, text);
+}
+
 // Draws text at the narrow style of the Border notices.
-static void M_DrawNarrow(const VEC3 pos, const char *const text)
+static void M_DrawNarrow(
+    const VEC3 pos, const char *const base, const char *const text,
+    const float offset)
 {
     g_AsciiText.scale_y = 0.9f;
     g_AsciiText.scale_x = 1.0f;
     g_AsciiText.glyph_width = 11;
     AsciiText_SetColor(COLOR_ARGB(0xff, 0xe0, 0xb0, 0xff));
-    AsciiText_AddString(pos, text);
+    M_DrawNoticeText(pos, base, text, offset);
     AsciiText_SetColor(COLOR_WHITE);
     g_AsciiText.scale_y = 1.0f;
     g_AsciiText.scale_x = 1.0f;
@@ -488,25 +477,33 @@ static void M_DrawNotice(void)
     if (!notice->shown) {
         return;
     }
-    char buffer[32];
     switch (g_Gui.popups.notice_kind) {
     case GUI_NOTICE_FULL_POWER:
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xc0, 0xb0, 0xff));
-        AsciiText_AddString(notice->pos, "Full Power Mode!");
+        M_DrawNoticeText(
+            notice->pos, "Full Power Mode!",
+            g_Strings[STRING_NOTICE_FULL_POWER], 8.5f);
         AsciiText_SetColor(COLOR_WHITE);
         break;
     case GUI_NOTICE_BORDER_START:
-        M_DrawNarrow(notice->pos, "Supernatural Border!!");
+        M_DrawNarrow(
+            notice->pos, "Supernatural Border!!",
+            g_Strings[STRING_NOTICE_BORDER_START], -11.5f);
         break;
     case GUI_NOTICE_CHERRY_MAX:
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xc0, 0xb0, 0xff));
-        AsciiText_AddString(notice->pos, "CherryPoint Max!");
+        M_DrawNoticeText(
+            notice->pos, "CherryPoint Max!",
+            g_Strings[STRING_NOTICE_CHERRY_MAX], 8.5f);
         AsciiText_SetColor(COLOR_WHITE);
         break;
-    case GUI_NOTICE_BORDER_BONUS:
-        snprintf(buffer, sizeof(buffer), "Border Bonus %7d", notice->value);
-        M_DrawNarrow(notice->pos, buffer);
+    case GUI_NOTICE_BORDER_BONUS: {
+        char *const text =
+            Str_Format(g_Strings[STRING_NOTICE_BORDER_BONUS], notice->value);
+        M_DrawNarrow(notice->pos, "Border Bonus 1234567", text, -7.5f);
+        Mem_Free(text);
         break;
+    }
     default:
         break;
     }
@@ -529,7 +526,9 @@ static void M_DrawPopups(void)
             (384.0f - (float)strlen("Spell Card Bonus!") * 16.0f) / 2.0f
             + 32.0f;
         popup->pos.y = 80.0f;
-        AsciiText_AddString(popup->pos, "Spell Card Bonus!");
+        M_DrawNoticeText(
+            popup->pos, "Spell Card Bonus!",
+            g_Strings[STRING_SPELL_BONUS_NOTICE], 17.5f);
         popup->pos.y += 16.0f;
         char buffer[32];
         snprintf(buffer, sizeof(buffer), "+%d", popup->value);

@@ -92,6 +92,7 @@ typedef struct {
         // buttons to those of the dropped calc.
         bool calc_dropped;
         uint32_t drop_frames; // counts the calcs of slow playback and slow mode
+        bool replay_fps_warning;
         int16_t replay_fps; // the frame rate that slow playback follows
     } mode;
 

@@ -16,6 +16,7 @@ typedef struct {
 } M_CLUSTER;
 
 typedef struct {
+    const TEXT_FONT *font;
     TTF_Text *text;
     M_CLUSTER *clusters;
     int32_t count;
@@ -77,7 +78,7 @@ static RESULT M_Open(
     const TEXT_FONT *const font, const char *const text, const size_t size,
     M_RUN *const run)
 {
-    *run = (M_RUN) {};
+    *run = (M_RUN) { .font = font };
     run->text = TTF_CreateText(&m_Engine, font->font, text, size);
     FAIL_IF(run->text == nullptr, "Cannot lay out glyphs: %s", SDL_GetError());
     FAIL_IF(
@@ -156,7 +157,8 @@ static RESULT M_Open(
     return OK;
 }
 
-static RESULT M_Render(const M_RUN *const run, SDL_Surface **const out)
+static RESULT M_Render(
+    const M_RUN *const run, const bool gdi, SDL_Surface **const out)
 {
     SDL_Surface *const surface =
         SDL_CreateSurface(run->width, run->height, SDL_PIXELFORMAT_RGBA32);
@@ -177,16 +179,38 @@ static RESULT M_Render(const M_RUN *const run, SDL_Surface **const out)
                 break;
             }
         } else if (op->cmd == TTF_DRAW_COMMAND_COPY) {
-            SDL_Surface *const glyph = TTF_GetGlyphImageForIndex(
-                op->copy.glyph_font, op->copy.glyph_index, nullptr);
+            SDL_Surface *glyph;
+            int32_t offset_x = 0;
+            int32_t offset_y = 0;
+            if (gdi) {
+                const TEXT_FONT *font = run->font;
+                while (font != nullptr && font->font != op->copy.glyph_font) {
+                    font = font->fallback;
+                }
+                result = font != nullptr ? TextRaster_Glyph(
+                                               font, op->copy.glyph_index,
+                                               &glyph, &offset_x, &offset_y)
+                                         : FAIL("Glyph has no loaded font");
+                if (!IS_OK(result)) {
+                    break;
+                }
+                if (glyph == nullptr) {
+                    continue;
+                }
+            } else {
+                glyph = TTF_GetGlyphImageForIndex(
+                    op->copy.glyph_font, op->copy.glyph_index, nullptr);
+            }
             if (glyph == nullptr) {
                 result = FAIL("Cannot render glyph: %s", SDL_GetError());
                 break;
             }
             SDL_Rect dest = op->copy.dst;
             dest.x += M_Find(run, op->copy.text_offset)->shift;
-            const bool drawn =
-                SDL_BlitSurface(glyph, &op->copy.src, surface, &dest);
+            dest.x += offset_x;
+            dest.y += offset_y;
+            const bool drawn = SDL_BlitSurface(
+                glyph, gdi ? nullptr : &op->copy.src, surface, &dest);
             SDL_DestroySurface(glyph);
             if (!drawn) {
                 result = FAIL("Cannot draw glyph: %s", SDL_GetError());
@@ -204,8 +228,11 @@ static RESULT M_Render(const M_RUN *const run, SDL_Surface **const out)
 
 RESULT TextGlyphs_Measure(
     const TEXT_FONT *const font, const char *const text, const size_t size,
-    int32_t *const width, int32_t *const height)
+    const bool gdi, int32_t *const width, int32_t *const height)
 {
+    if (gdi && TextRaster_IsSimple(font, text, size)) {
+        return TextRaster_MeasureSimple(font, text, size, width, height);
+    }
     if (!M_NeedsAdjustment(font)) {
         FAIL_IF(
             !TTF_GetStringSize(font->font, text, size, width, height),
@@ -224,10 +251,13 @@ RESULT TextGlyphs_Measure(
 
 RESULT TextGlyphs_Render(
     const TEXT_FONT *const font, const char *const text, const size_t size,
-    SDL_Surface **const out)
+    const bool gdi, SDL_Surface **const out)
 {
     *out = nullptr;
-    if (!M_NeedsAdjustment(font)) {
+    if (gdi && TextRaster_IsSimple(font, text, size)) {
+        return TextRaster_RenderSimple(font, text, size, out);
+    }
+    if (!gdi && !M_NeedsAdjustment(font)) {
         SDL_Surface *const rendered = TTF_RenderText_Blended(
             font->font, text, size, (SDL_Color) { 255, 255, 255, 255 });
         FAIL_IF(rendered == nullptr, "Cannot render text: %s", SDL_GetError());
@@ -240,7 +270,7 @@ RESULT TextGlyphs_Render(
     M_RUN run;
     RESULT result = M_Open(font, text, size, &run);
     if (IS_OK(result)) {
-        result = M_Render(&run, out);
+        result = M_Render(&run, gdi, out);
     }
     M_Close(&run);
     return result;

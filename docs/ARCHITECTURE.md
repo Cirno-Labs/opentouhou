@@ -15,7 +15,8 @@ public header describes the module itself.
 ## Platform and tooling
 
 - **SDL3** for the window, OpenGL context, events, input, audio device,
-  paths, processes and the main loop. **SDL3_ttf** for text. **FFmpeg**
+  paths, processes and the main loop. **SDL3_ttf** for text layout and
+  **FreeType** for GDI glyph rasterization. **FFmpeg**
   for image and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and
   WebGL 2 share one set of `.glsl` shaders, compiled by the driver at
   startup.

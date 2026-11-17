@@ -10,6 +10,7 @@
 #include "shell/game.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/gfx.h"
 
 CHAIN g_Chain;
 RNG g_Rng;
@@ -18,6 +19,7 @@ TH06_INPUT g_Input;
 
 RESULT Game_Init(void)
 {
+    Gfx_SetPersistentScreen(true);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     Buttons_ReadSharedFocus(&g_Buttons);
@@ -33,6 +35,7 @@ bool Game_Tick(const TH06_INPUT *const input)
     float tick_rate;
     if (Shell_GetTickRate(&tick_rate)) {
         ResultScreen_CountFrames(tick_rate);
+        AsciiText_SetFrameRate(tick_rate);
     }
     Chain_RunDraw(&g_Chain);
     Note_Draw();

@@ -24,8 +24,10 @@ static uint32_t M_ReadBe(const uint8_t *const data, const int32_t bytes)
 // head table over usWinAscent + usWinDescent of the OS/2 table. Returns 1
 // when the data lacks either table. A collection uses its first font, as
 // the font opens it.
-static float M_CellScale(const uint8_t *const data, const size_t size)
+static float M_CellScale(
+    const uint8_t *const data, const size_t size, float *const ascent_scale)
 {
+    *ascent_scale = 0.0f;
     size_t base = 0;
     if (size >= 16 && memcmp(data, "ttcf", 4) == 0) {
         base = M_ReadBe(data + 12, 4);
@@ -36,6 +38,7 @@ static float M_CellScale(const uint8_t *const data, const size_t size)
     const uint32_t count = M_ReadBe(data + base + 4, 2);
     uint32_t units = 0;
     uint32_t cell = 0;
+    uint32_t ascent = 0;
     for (uint32_t i = 0; i < count; i++) {
         const size_t record = base + 12 + (size_t)i * 16;
         if (record + 16 > size) {
@@ -49,9 +52,12 @@ static float M_CellScale(const uint8_t *const data, const size_t size)
         if (memcmp(data + record, "head", 4) == 0 && length >= 20) {
             units = M_ReadBe(data + offset + 18, 2);
         } else if (memcmp(data + record, "OS/2", 4) == 0 && length >= 78) {
-            cell = M_ReadBe(data + offset + 74, 2)
-                + M_ReadBe(data + offset + 76, 2);
+            ascent = M_ReadBe(data + offset + 74, 2);
+            cell = ascent + M_ReadBe(data + offset + 76, 2);
         }
+    }
+    if (units != 0 && cell != 0) {
+        *ascent_scale = (float)ascent / (float)units;
     }
     return units != 0 && cell != 0 ? (float)units / (float)cell : 1.0f;
 }
@@ -84,6 +90,11 @@ RESULT Text_Init(void)
 {
     if (!m_Initialized) {
         FAIL_IF(!TTF_Init(), "Cannot initialize fonts: %s", SDL_GetError());
+        const RESULT raster = TextRaster_Init();
+        if (!IS_OK(raster)) {
+            TTF_Quit();
+            return raster;
+        }
         m_Initialized = true;
     }
     return OK;
@@ -92,6 +103,7 @@ RESULT Text_Init(void)
 void Text_Shutdown(void)
 {
     if (m_Initialized) {
+        TextRaster_Shutdown();
         TTF_Quit();
         m_Initialized = false;
     }
@@ -119,7 +131,8 @@ RESULT TextFont_Load(
         Mem_Free(data);
         return FAIL("Cannot open font data: %s", SDL_GetError());
     }
-    const float cell_scale = M_CellScale(data, size);
+    float ascent_scale;
+    const float cell_scale = M_CellScale(data, size, &ascent_scale);
     TTF_Font *const face =
         TTF_OpenFontIO(stream, true, pixel_height * cell_scale);
     if (face == nullptr) {
@@ -131,8 +144,15 @@ RESULT TextFont_Load(
         .font = face,
         .data = data,
         .cell_scale = cell_scale,
+        .ascent_scale = ascent_scale,
         .native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0,
     };
+    const RESULT raster =
+        TextRaster_Open(data, size, TTF_GetFontSize(face), &font->raster_face);
+    if (!IS_OK(raster)) {
+        TextFont_Free(font);
+        return raster;
+    }
     const RESULT metrics = M_UpdateBoldAdvance(font);
     if (!IS_OK(metrics)) {
         TextFont_Free(font);
@@ -195,21 +215,48 @@ RESULT TextFont_LoadFamily(
     return FAIL("No font file has the family %s", family);
 }
 
-RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
+static RESULT M_SetSize(
+    TEXT_FONT *const font, const float pixel_height, const bool rounded)
 {
     FAIL_IF(
         font == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
             || pixel_height > 4096.0f,
         "Invalid font size");
-    const float size = pixel_height * font->cell_scale;
+    float size = pixel_height * font->cell_scale;
+    if (rounded) {
+        size = roundf(size);
+        if (size < 1.0f) {
+            size = 1.0f;
+        }
+    }
     if (TTF_GetFontSize(font->font) != size) {
         FAIL_IF(
             !TTF_SetFontSize(font->font, size), "Cannot resize font: %s",
             SDL_GetError());
+        MUST(TextRaster_SetSize(font->raster_face, size));
         MUST(M_UpdateBoldAdvance(font));
     }
     if (font->fallback != nullptr) {
-        MUST(TextFont_SetSize(font->fallback, pixel_height));
+        MUST(M_SetSize(font->fallback, pixel_height, rounded));
+    }
+    return OK;
+}
+
+RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
+{
+    return M_SetSize(font, pixel_height, false);
+}
+
+RESULT TextFont_SetSizeRounded(
+    TEXT_FONT *const font, const float pixel_height, int32_t *const offset_y)
+{
+    FAIL_IF(offset_y == nullptr, "Missing font baseline offset");
+    *offset_y = 0;
+    MUST(M_SetSize(font, pixel_height, true));
+    if (font->ascent_scale > 0.0f) {
+        *offset_y =
+            (int32_t)roundf(TTF_GetFontSize(font->font) * font->ascent_scale)
+            - TTF_GetFontAscent(font->font);
     }
     return OK;
 }
@@ -217,6 +264,7 @@ RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
 void TextFont_Free(TEXT_FONT *const font)
 {
     if (font != nullptr) {
+        TextRaster_Close(font->raster_face);
         TTF_CloseFont(font->font);
         TextFont_Free(font->fallback);
         Mem_Free(font->data);

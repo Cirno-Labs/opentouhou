@@ -270,8 +270,27 @@ TEST(quantize_a4r4g4b4_replicates_nibble)
     const uint8_t p[4] = { 0x3f, 0x3f, 0x3f, 0x3f };
     IMAGE image = M_Make2x2(p, p, p, p);
     Image_Quantize(&image, IMAGE_DEPTH_A4R4G4B4);
-    // 0x3f truncates to the top 4 bits, 0x3, which replicates to 0x33.
-    CHECK_EQ_INT(image.pixels[0], 0x33);
+    CHECK_EQ_INT(image.pixels[0], 0x44);
+    Image_Free(&image);
+}
+
+TEST(quantize_rounds_channels_up_and_down)
+{
+    const uint8_t low[4] = { 15, 15, 15, 15 };
+    const uint8_t high[4] = { 240, 240, 240, 240 };
+    IMAGE image = M_Make2x2(low, high, low, high);
+    Image_Quantize(&image, IMAGE_DEPTH_A4R4G4B4);
+    for (int32_t channel = 0; channel < 4; channel++) {
+        CHECK_EQ_INT(image.pixels[channel], 17);
+        CHECK_EQ_INT(image.pixels[4 + channel], 238);
+    }
+    Image_Free(&image);
+    const uint8_t rgb[4] = { 5, 3, 250, 0 };
+    image = M_Make2x2(rgb, rgb, rgb, rgb);
+    Image_Quantize(&image, IMAGE_DEPTH_R5G6B5);
+    CHECK_EQ_INT(image.pixels[0], 8);
+    CHECK_EQ_INT(image.pixels[1], 4);
+    CHECK_EQ_INT(image.pixels[2], 247);
     Image_Free(&image);
 }
 
@@ -304,5 +323,171 @@ TEST(resize_interpolates_a_gradient)
     Image_Resize(&image, 4, 1);
     CHECK_EQ_INT(image.pixels[0 * 4], 0);
     CHECK_EQ_INT(image.pixels[3 * 4], 100);
+    Image_Free(&image);
+}
+
+TEST(triangle_downsampling_wraps_the_source_edges)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    memset(image.pixels, 255, 4);
+    Image_DownsampleTriangle(
+        &image, 2, 2, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_RGBA8);
+    const uint8_t expected[] = { 49, 7, 7, 1 };
+    for (int32_t i = 0; i < 4; i++) {
+        for (int32_t c = 0; c < 4; c++) {
+            CHECK_EQ_INT(image.pixels[i * 4 + c], expected[i]);
+        }
+    }
+    Image_Free(&image);
+}
+
+TEST(triangle_downsampling_keeps_source_channel_precision)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    for (int32_t i = 0; i < 16; i++) {
+        image.pixels[i * 4] = 24;
+        image.pixels[i * 4 + 3] = 255;
+    }
+    Image_DownsampleTriangle(
+        &image, 2, 2, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_RGBA8);
+    for (int32_t i = 0; i < 4; i++) {
+        CHECK_EQ_INT(image.pixels[i * 4], 25);
+        CHECK_EQ_INT(image.pixels[i * 4 + 1], 0);
+        CHECK_EQ_INT(image.pixels[i * 4 + 2], 0);
+        CHECK_EQ_INT(image.pixels[i * 4 + 3], 255);
+    }
+    Image_Free(&image);
+}
+
+TEST(triangle_filter_keeps_both_axes_when_one_size_changes)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    memset(image.pixels, 255, 4);
+    Image_DownsampleTriangle(
+        &image, 4, 2, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_RGBA8);
+    const uint8_t expected[] = { 84, 14, 0, 14, 12, 2, 0, 2 };
+    for (int32_t i = 0; i < 8; i++) {
+        for (int32_t c = 0; c < 4; c++) {
+            CHECK_EQ_INT(image.pixels[i * 4 + c], expected[i]);
+        }
+    }
+    Image_Free(&image);
+}
+
+TEST(dithered_surface_copies_keep_the_ordered_packed_colors)
+{
+    static const struct {
+        IMAGE_DEPTH depth;
+        uint16_t pixels[16];
+    } cases[] = {
+        { IMAGE_DEPTH_R5G6B5,
+          {
+              0x8410,
+              0x8410,
+              0x8410,
+              0x7bef,
+              0x7bef,
+              0x8410,
+              0x7bef,
+              0x8410,
+              0x8410,
+              0x7bef,
+              0x8410,
+              0x7c0f,
+              0x7bef,
+              0x8410,
+              0x7bef,
+              0x8410,
+          } },
+        { IMAGE_DEPTH_A1R5G5B5,
+          {
+              0xc210,
+              0x4210,
+              0xc210,
+              0x3def,
+              0x3def,
+              0xc210,
+              0x3def,
+              0xc210,
+              0xc210,
+              0x3def,
+              0xc210,
+              0x3def,
+              0x3def,
+              0xc210,
+              0x3def,
+              0xc210,
+          } },
+        { IMAGE_DEPTH_A4R4G4B4,
+          {
+              0x8888,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x8888,
+              0x8888,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x8888,
+          } },
+    };
+    for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+        IMAGE image = Image_Create(8, 8, &g_HeapAllocator);
+        memset(image.pixels, 128, 8 * 8 * 4);
+        Image_QuantizeDithered(&image, cases[c].depth);
+        for (int32_t y = 0; y < 8; y++) {
+            for (int32_t x = 0; x < 8; x++) {
+                const uint8_t *const pixel = image.pixels + (y * 8 + x) * 4;
+                uint16_t packed;
+                if (cases[c].depth == IMAGE_DEPTH_R5G6B5) {
+                    packed = (pixel[0] >> 3) << 11 | (pixel[1] >> 2) << 5
+                        | pixel[2] >> 3;
+                    CHECK_EQ_INT(pixel[3], 255);
+                } else if (cases[c].depth == IMAGE_DEPTH_A1R5G5B5) {
+                    packed = (pixel[3] >> 7) << 15 | (pixel[0] >> 3) << 10
+                        | (pixel[1] >> 3) << 5 | pixel[2] >> 3;
+                } else {
+                    packed = (pixel[3] >> 4) << 12 | (pixel[0] >> 4) << 8
+                        | (pixel[1] >> 4) << 4 | pixel[2] >> 4;
+                }
+                CHECK_EQ_INT(packed, cases[c].pixels[y % 4 * 4 + x % 4]);
+            }
+        }
+        Image_Free(&image);
+    }
+}
+
+TEST(dithering_preserves_full_precision_and_extreme_channels)
+{
+    static const IMAGE_DEPTH depths[] = {
+        IMAGE_DEPTH_R5G6B5, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_A4R4G4B4,
+        IMAGE_DEPTH_RGBA8,  IMAGE_DEPTH_RGB8,
+    };
+    const uint8_t black[4] = { 0, 0, 0, 0 };
+    const uint8_t white[4] = { 255, 255, 255, 255 };
+    for (size_t i = 0; i < sizeof(depths) / sizeof(depths[0]); i++) {
+        IMAGE image = M_Make2x2(black, white, white, black);
+        Image_QuantizeDithered(&image, depths[i]);
+        for (int32_t channel = 0; channel < 3; channel++) {
+            CHECK_EQ_INT(image.pixels[channel], 0);
+            CHECK_EQ_INT(image.pixels[4 + channel], 255);
+        }
+        Image_Free(&image);
+    }
+    const uint8_t color[4] = { 13, 47, 139, 221 };
+    IMAGE image = M_Make2x2(color, color, color, color);
+    Image_QuantizeDithered(&image, IMAGE_DEPTH_RGBA8);
+    for (int32_t i = 0; i < 4; i++) {
+        CHECK(memcmp(image.pixels + i * 4, color, 4) == 0);
+    }
+    Image_QuantizeDithered(&image, IMAGE_DEPTH_RGB8);
+    CHECK_EQ_INT(image.pixels[3], 255);
     Image_Free(&image);
 }

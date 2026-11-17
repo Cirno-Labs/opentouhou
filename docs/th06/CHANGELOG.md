@@ -2,13 +2,30 @@
 
 ## Unreleased
 
+- Added the frame rate display at the bottom of the screen.
+- Changed the bundled Japanese font to MS Gothic.
 - Changed the text of `--help` and of command-line errors to a new
   format.
 - Changed the conversion of music and sound effects to the output rate,
   which keeps their high frequencies.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
-- Fixed excessive spacing in bold translated text.
+- Fixed the letters and spacing in translated text.
+- Fixed the size, shape, shading, sharpness and placement of text in
+  spell names, dialogue, translator notes and Japanese stage and song
+  titles.
+- Fixed sprite placement, fading backgrounds, fog, texture colors,
+  filtering and faint sprite edges.
+- Fixed texture distortion and shading seams in sprites and
+  backgrounds.
+- Fixed transparency in translated textures.
+- Fixed gradient sampling in the power bar and dialogue box.
+- Fixed the alignment of translated stage labels, bonus notices and
+  spell card bonus labels.
+- Fixed white flashes on enemies when player shots hit them.
+- Fixed the colors of orbiting boss effects.
+- Fixed depth ordering for overlapping sprites and clipping at the
+  playfield edges.
 
 ## 1.0.1 (2026-11-15)
 
