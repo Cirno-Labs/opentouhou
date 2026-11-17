@@ -8,6 +8,7 @@
 // that is not bold emboldens its glyphs, as GDI does for a heavier weight;
 // bold on a bold font changes nothing. Italic on a font that is not italic
 // slants its glyphs.
+// Synthetic bold adds one pixel to each glyph's advance, as GDI does.
 typedef enum {
     TEXT_FACE_BOLD = 1 << 0,
     TEXT_FACE_ITALIC = 1 << 1,

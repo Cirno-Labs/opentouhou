@@ -317,6 +317,123 @@ TEST(faces_change_the_glyphs)
     Text_Shutdown();
 }
 
+static TEXT_FONT *M_LoadRegularFont(void)
+{
+    size_t size;
+    uint8_t *const data = SDL_LoadFile(SDL_getenv("TEST_FONT"), &size);
+    CHECK(data != nullptr);
+    const int32_t count = data[4] << 8 | data[5];
+    for (int32_t i = 0; i < count; i++) {
+        const uint8_t *const record = data + 12 + i * 16;
+        uint8_t *const table = data
+            + ((size_t)record[8] << 24 | (size_t)record[9] << 16
+               | (size_t)record[10] << 8 | record[11]);
+        if (memcmp(record, "OS/2", 4) == 0) {
+            table[4] = 1;
+            table[5] = 0x90;
+            table[63] &= (uint8_t)~0x20;
+        } else if (memcmp(record, "head", 4) == 0) {
+            table[45] &= (uint8_t)~1;
+        }
+    }
+    READER reader;
+    Reader_OpenBuffer(&reader, data, size, nullptr);
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_Load(&reader, 30.0f, &font)));
+    Reader_Close(&reader);
+    SDL_free(data);
+    return font;
+}
+
+TEST(synthetic_bold_advances_one_pixel_per_glyph_at_every_size)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *const font = M_LoadRegularFont();
+    const int32_t sizes[] = { 8, 15, 30, 60 };
+    for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+        CHECK(IS_OK(TextFont_SetSize(font, (float)sizes[i])));
+        TEXT_STYLE style = TextStyle_Default();
+        int32_t regular, bold, height;
+        CHECK(IS_OK(Text_Measure(font, "      ", &style, &regular, &height)));
+        style.face = TEXT_FACE_BOLD;
+        CHECK(IS_OK(Text_Measure(font, "      ", &style, &bold, &height)));
+        CHECK_EQ_INT(bold, regular + 6);
+        IMAGE image;
+        CHECK(IS_OK(
+            Text_Render(font, "      ", &style, &g_HeapAllocator, &image)));
+        CHECK_EQ_INT(image.width, bold);
+        CHECK_EQ_INT(image.height, height);
+        Image_Free(&image);
+    }
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(synthetic_bold_moves_glyphs_without_scaling_their_pixels)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *const font = M_LoadRegularFont();
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    int32_t space, height;
+    CHECK(IS_OK(Text_Measure(font, " ", &style, &space, &height)));
+    IMAGE single, repeated, markup;
+    CHECK(IS_OK(Text_Render(font, "I", &style, &g_HeapAllocator, &single)));
+    CHECK(IS_OK(Text_Render(font, "I I", &style, &g_HeapAllocator, &repeated)));
+    style.face = 0;
+    CHECK(IS_OK(
+        Text_RenderMarkup(font, "<b$I I>", &style, &g_HeapAllocator, &markup)));
+    CHECK_EQ_INT(markup.width, repeated.width);
+    CHECK_EQ_INT(markup.height, repeated.height);
+    CHECK(
+        memcmp(
+            markup.pixels, repeated.pixels,
+            (size_t)markup.width * (size_t)markup.height * 4)
+        == 0);
+    CHECK(repeated.width >= space * 2 + single.width);
+    for (int32_t y = 0; y < single.height; y++) {
+        for (int32_t x = 0; x < single.width; x++) {
+            const size_t from =
+                ((size_t)y * (size_t)single.width + (size_t)x) * 4;
+            const size_t first =
+                ((size_t)y * (size_t)repeated.width + (size_t)x) * 4;
+            const size_t last = first + (size_t)space * 8;
+            CHECK_EQ_INT(repeated.pixels[first + 3], single.pixels[from + 3]);
+            CHECK_EQ_INT(repeated.pixels[last + 3], single.pixels[from + 3]);
+        }
+    }
+    Image_Free(&markup);
+    Image_Free(&repeated);
+    Image_Free(&single);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(synthetic_bold_keeps_shaped_text_and_decorations_within_its_bounds)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *const font = M_LoadRegularFont();
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD | TEXT_FACE_ITALIC | TEXT_FACE_UNDERLINE;
+    style.width_scale = 0.75f;
+    style.shadow = (GFX_COLOR) { 0, 0, 0, 255 };
+    style.shadow_x = -2;
+    style.shadow_y = 1;
+    const char *const strings[] = { "Á Â", "霊夢 A", "שלום", "مرحبا" };
+    for (size_t i = 0; i < sizeof(strings) / sizeof(strings[0]); i++) {
+        int32_t width, height;
+        CHECK(IS_OK(Text_Measure(font, strings[i], &style, &width, &height)));
+        IMAGE image;
+        CHECK(IS_OK(
+            Text_Render(font, strings[i], &style, &g_HeapAllocator, &image)));
+        CHECK_EQ_INT(image.width, width);
+        CHECK_EQ_INT(image.height, height);
+        Image_Free(&image);
+    }
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
 static int32_t M_Width(const TEXT_FONT *const font, const char *const text)
 {
     const TEXT_STYLE style = TextStyle_Default();
