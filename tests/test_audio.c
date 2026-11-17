@@ -1234,3 +1234,42 @@ TEST(initialized_state_follows_init_and_shutdown)
     Audio_Shutdown();
     CHECK(!Audio_IsInitialized());
 }
+
+TEST(live_bus_pause_advances_while_samples_and_streams_remain_paused)
+{
+    M_CheckResult(Audio_Init());
+    AUDIO_PLAY_OPTIONS options = M_Options();
+    options.group = AUDIO_GROUP_MUSIC;
+    AUDIO_SAMPLE *const sample = M_LoadSample(8);
+    AUDIO_PLAYBACK *const playback = M_Play(sample, &options);
+    AUDIO_STREAM *const stream = M_LoadStream(8, &options);
+    M_CheckResult(AudioStream_Play(stream));
+    const AUDIO_GROUP group = AUDIO_GROUP_MUSIC;
+    AUDIO_PCM *input = nullptr;
+    M_CheckResult(AudioPcm_Create(&group, 1, 4, &input));
+    const float pcm[] = { 0.125f, -0.125f, 0.25f, -0.25f,
+                          0.375f, -0.375f, 0.5f,  -0.5f };
+    const float *const buses[] = { pcm };
+    M_CheckResult(AudioPcm_Submit(input, buses, 4));
+    Audio_SetGroupPaused(group, true);
+    float output[4];
+    M_Mix(output, 2);
+    for (int i = 0; i < 4; i++) {
+        M_CheckNear(output[i], 0.0f);
+    }
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 0);
+    CHECK(!AudioPlayback_IsFinished(playback));
+    Audio_SetGroupPaused(group, false);
+    M_Mix(output, 1);
+    M_CheckNear(output[0], M_Left(0) * 2 + 0.375f);
+    M_CheckNear(output[1], M_Right(0) * 2 - 0.375f);
+    CHECK_EQ_INT(AudioStream_GetPosition(stream), 1);
+    M_Mix(output, 1);
+    M_CheckNear(output[0], M_Left(1) * 2 + 0.5f);
+    M_CheckNear(output[1], M_Right(1) * 2 - 0.5f);
+    AudioPcm_Free(input);
+    AudioPlayback_Free(playback);
+    AudioSample_Free(sample);
+    AudioStream_Free(stream);
+    Audio_Shutdown();
+}

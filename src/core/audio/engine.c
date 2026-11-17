@@ -96,12 +96,23 @@ struct AUDIO_STREAM {
     bool fade_stop;
 };
 
+struct AUDIO_PCM {
+    AUDIO_PCM *next;
+    float *pcm;
+    AUDIO_GROUP groups[GROUP_COUNT];
+    uint32_t bus_count;
+    uint32_t capacity;
+    uint32_t read;
+    uint32_t count;
+};
+
 static SDL_Mutex *m_Mutex;
 static SDL_Thread *m_Worker;
 static atomic_bool m_Stop;
 static AUDIO_SAMPLE *m_Samples;
 static AUDIO_PLAYBACK *m_Playbacks;
 static AUDIO_STREAM *m_Streams;
+static AUDIO_PCM *m_PcmInputs;
 static AUDIO_GROUP_STATE m_Groups[GROUP_COUNT];
 static float m_Volume;
 static bool m_Muted;
@@ -315,6 +326,12 @@ static void M_FreeStream(AUDIO_STREAM *const stream)
     if (released != nullptr) {
         atomic_store(released, true);
     }
+}
+
+static void M_FreePcm(AUDIO_PCM *const input)
+{
+    Mem_Free(input->pcm);
+    Mem_Free(input);
 }
 
 static void M_SampleFailure(AUDIO_SAMPLE *const sample, const RESULT result)
@@ -663,6 +680,31 @@ static void M_MixStream(
     }
 }
 
+static void M_MixPcm(
+    AUDIO_PCM *const input, float *const out, const uint32_t frames)
+{
+    const uint32_t count = MIN(frames, input->count);
+    for (uint32_t bus = 0; bus < input->bus_count; bus++) {
+        const AUDIO_GROUP group = input->groups[bus];
+        const AUDIO_PLAY_OPTIONS options = { .group = group, .volume = 1.0f };
+        const float gain = m_Groups[group].paused ? 0.0f : M_Gain(&options, 0);
+        if (gain == 0.0f) {
+            continue;
+        }
+        const float *const pcm = input->pcm + (size_t)bus * input->capacity * 2;
+        uint32_t at = input->read;
+        for (uint32_t i = 0; i < count; i++) {
+            out[(size_t)i * 2] += pcm[(size_t)at * 2] * gain;
+            out[(size_t)i * 2 + 1] += pcm[(size_t)at * 2 + 1] * gain;
+            if (++at == input->capacity) {
+                at = 0;
+            }
+        }
+    }
+    input->read = (uint32_t)(((uint64_t)input->read + count) % input->capacity);
+    input->count -= count;
+}
+
 static AUDIO_STREAM *M_CreateStream(const AUDIO_PLAY_OPTIONS *const options)
 {
     AUDIO_STREAM *const stream = Mem_AllocZ(sizeof(*stream));
@@ -731,6 +773,11 @@ void Audio_Shutdown(void)
         m_Streams = stream->next;
         M_FreeStream(stream);
     }
+    while (m_PcmInputs != nullptr) {
+        AUDIO_PCM *const input = m_PcmInputs;
+        m_PcmInputs = input->next;
+        M_FreePcm(input);
+    }
     SDL_DestroyMutex(m_Mutex);
     m_Mutex = nullptr;
 }
@@ -754,8 +801,116 @@ bool AudioBackend_Mix(float *const out, const uint32_t frames)
          stream = stream->next) {
         M_MixStream(stream, out, frames);
     }
+    for (AUDIO_PCM *input = m_PcmInputs; input != nullptr;
+         input = input->next) {
+        M_MixPcm(input, out, frames);
+    }
     SDL_UnlockMutex(m_Mutex);
     return true;
+}
+
+RESULT AudioPcm_Create(
+    const AUDIO_GROUP *const groups, const uint32_t bus_count,
+    const uint32_t capacity_frames, AUDIO_PCM **const out)
+{
+    FAIL_IF(out == nullptr, "Missing live PCM output pointer");
+    *out = nullptr;
+    MUST(M_CheckInitialized());
+    FAIL_IF(groups == nullptr, "Missing live PCM groups");
+    FAIL_IF(
+        bus_count == 0 || bus_count > GROUP_COUNT,
+        "Invalid live PCM bus count");
+    FAIL_IF(capacity_frames == 0, "Invalid live PCM capacity");
+    FAIL_IF(
+        capacity_frames > SIZE_MAX / (bus_count * 2 * sizeof(float)),
+        "Live PCM capacity exceeds addressable storage");
+    for (uint32_t i = 0; i < bus_count; i++) {
+        FAIL_IF(!M_ValidGroup(groups[i]), "Invalid live PCM group");
+        for (uint32_t j = 0; j < i; j++) {
+            FAIL_IF(groups[i] == groups[j], "Duplicate live PCM group");
+        }
+    }
+    AUDIO_PCM *const input = Mem_AllocZ(sizeof(*input));
+    input->capacity = capacity_frames;
+    input->bus_count = bus_count;
+    memcpy(input->groups, groups, bus_count * sizeof(*groups));
+    input->pcm = Mem_AllocArr(capacity_frames, bus_count * 2 * sizeof(float));
+    SDL_LockMutex(m_Mutex);
+    input->next = m_PcmInputs;
+    m_PcmInputs = input;
+    SDL_UnlockMutex(m_Mutex);
+    *out = input;
+    return OK;
+}
+
+RESULT AudioPcm_Submit(
+    AUDIO_PCM *const input, const float *const *const buses,
+    const uint32_t frames)
+{
+    MUST(M_CheckInitialized());
+    FAIL_IF(input == nullptr, "Missing live PCM input");
+    if (frames == 0) {
+        return OK;
+    }
+    FAIL_IF(buses == nullptr, "Missing live PCM buffers");
+    const size_t samples = (size_t)frames * 2;
+    FAIL_IF(
+        samples / 2 != frames || samples > SIZE_MAX / sizeof(float),
+        "Live PCM submission exceeds addressable storage");
+    for (uint32_t bus = 0; bus < input->bus_count; bus++) {
+        FAIL_IF(buses[bus] == nullptr, "Missing live PCM bus buffer");
+        for (size_t i = 0; i < samples; i++) {
+            FAIL_IF(!isfinite(buses[bus][i]), "Nonfinite live PCM sample");
+        }
+    }
+    const uint32_t count = MIN(frames, input->capacity);
+    const size_t skip = (size_t)(frames - count) * 2;
+    SDL_LockMutex(m_Mutex);
+    const uint32_t dropped = count - MIN(count, input->capacity - input->count);
+    input->read =
+        (uint32_t)(((uint64_t)input->read + dropped) % input->capacity);
+    input->count -= dropped;
+    const uint32_t at =
+        (uint32_t)(((uint64_t)input->read + input->count) % input->capacity);
+    const uint32_t first = MIN(count, input->capacity - at);
+    for (uint32_t bus = 0; bus < input->bus_count; bus++) {
+        float *const pcm = input->pcm + (size_t)bus * input->capacity * 2;
+        memcpy(
+            pcm + (size_t)at * 2, buses[bus] + skip,
+            (size_t)first * 2 * sizeof(float));
+        memcpy(
+            pcm, buses[bus] + skip + (size_t)first * 2,
+            (size_t)(count - first) * 2 * sizeof(float));
+    }
+    input->count += count;
+    SDL_UnlockMutex(m_Mutex);
+    return OK;
+}
+
+void AudioPcm_Clear(AUDIO_PCM *const input)
+{
+    if (input == nullptr) {
+        return;
+    }
+    SDL_LockMutex(m_Mutex);
+    input->read = 0;
+    input->count = 0;
+    SDL_UnlockMutex(m_Mutex);
+}
+
+void AudioPcm_Free(AUDIO_PCM *const input)
+{
+    if (input == nullptr) {
+        return;
+    }
+    SDL_LockMutex(m_Mutex);
+    AUDIO_PCM **link = &m_PcmInputs;
+    while (*link != input) {
+        link = &(*link)->next;
+    }
+    *link = input->next;
+    SDL_UnlockMutex(m_Mutex);
+    M_FreePcm(input);
 }
 
 RESULT AudioSample_LoadFile(const char *const path, AUDIO_SAMPLE **const out)
