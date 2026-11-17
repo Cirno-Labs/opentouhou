@@ -3,10 +3,13 @@
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
 #include "th06/sound.h"
+#include "th06/strings.h"
 #include "stg/translation.h"
 
 #include "core/base/color.h"
 #include "core/base/utils.h"
+#include "core/base/string.h"
+#include "core/base/memory.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -39,6 +42,7 @@ static void M_Gradient(
         { { x0, y1, depth }, M_DrawColor(left_bottom), {} },
     };
     GFX_VIEW view = GfxView_Screen();
+    view = GfxView_OffsetPixels(&view, 0.5f, 0.5f);
     view.id = ANM_VIEW_SCREEN;
     Gfx_SetView(&view);
     Gfx_DrawQuad(
@@ -187,6 +191,17 @@ static void M_DrawPatchedBanner(
     Anm_DrawUnrotated(&cropped, draw);
 }
 
+static void M_DrawStageLabel(VEC3 pos, const char *const format)
+{
+    char *const text = Str_Format(format, g_GameManager.run.stage);
+    if (Translation_HasBaseTsa()) {
+        pos.x =
+            224.0f - (float)strlen(text) * 14.0f * g_AsciiText.scale_x / 2.0f;
+    }
+    AsciiText_AddString(pos, text);
+    Mem_Free(text);
+}
+
 static void M_DrawBanners(void)
 {
     ANM_DRAW world = GameManager_GetDrawContext();
@@ -201,17 +216,19 @@ static void M_DrawBanners(void)
             Anm_Draw3DRounded(&g_Gui.banners.stage_name, &world);
             const bool logo = GuiTextImage_ShowsStageLogo();
             if (!logo && g_GameManager.run.stage < 6) {
-                AsciiText_AddFormat(pos, "STAGE %d", g_GameManager.run.stage);
+                M_DrawStageLabel(pos, g_Strings[STRING_STAGE_LABEL]);
             } else if (!logo) {
                 pos.x = 136.0f;
-                AsciiText_AddString(
+                M_DrawStageLabel(
                     pos,
-                    g_GameManager.run.stage == 6 ? "FINAL STAGE"
-                                                 : "EXTRA STAGE");
+                    g_Strings
+                        [g_GameManager.run.stage == 6
+                             ? STRING_STAGE_LABEL_FINAL
+                             : STRING_STAGE_LABEL_EXTRA]);
             }
         } else {
             pos.x = 136.0f;
-            AsciiText_AddString(pos, " DEMO PLAY");
+            M_DrawStageLabel(pos, g_Strings[STRING_STAGE_LABEL_DEMO]);
         }
         AsciiText_SetColor(COLOR_WHITE);
     }
@@ -359,8 +376,14 @@ static void M_DrawPopups(void)
     g_AsciiText.in_arena = true;
     if (g_Gui.popups.bonus.shown) {
         AsciiText_SetColor(COLOR_ARGB(0xff, 0xff, 0xff, 0x80));
-        AsciiText_AddFormat(
-            g_Gui.popups.bonus.pos, "BONUS %8d", g_Gui.popups.bonus.value);
+        char *const text = Str_Format(
+            g_Strings[STRING_ASCII_BONUS_FORMAT], g_Gui.popups.bonus.value);
+        VEC3 pos = g_Gui.popups.bonus.pos;
+        if (Translation_HasBaseTsa()) {
+            pos.x += 120.0f - (float)strlen(text) * 7.0f * g_AsciiText.scale_x;
+        }
+        AsciiText_AddString(pos, text);
+        Mem_Free(text);
         AsciiText_SetColor(COLOR_WHITE);
     }
     if (g_Gui.popups.full_power.shown) {
@@ -375,7 +398,13 @@ static void M_DrawPopups(void)
             (384.0f - (float)strlen("Spell Card Bonus!") * 16.0f) / 2.0f
             + 32.0f;
         popup->pos.y = 80.0f;
-        AsciiText_AddString(popup->pos, "Spell Card Bonus!");
+        VEC3 label_pos = popup->pos;
+        const char *const label = g_Strings[STRING_SPELL_BONUS_NOTICE];
+        if (Translation_HasBaseTsa()) {
+            label_pos.x =
+                224.0f - (float)strlen(label) * 7.0f * g_AsciiText.scale_x;
+        }
+        AsciiText_AddString(label_pos, label);
         char buffer[32];
         snprintf(buffer, sizeof(buffer), "+%d", g_Gui.popups.spell_bonus.value);
         g_AsciiText.scale_x = 2.0f;

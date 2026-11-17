@@ -269,6 +269,13 @@ const char *Translation_GetFont(void)
     return m_Font;
 }
 
+int32_t Translation_GetFontWeight(const int32_t requested)
+{
+    return m_HasBaseTsa && m_Game != nullptr && m_Game->font_cache_weight > 0
+        ? m_Game->font_cache_weight
+        : requested;
+}
+
 const char *const *Translation_GetFontFiles(int32_t *const count)
 {
     *count = m_FontFileCount;

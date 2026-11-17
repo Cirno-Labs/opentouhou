@@ -22,6 +22,7 @@
 #include "th07/screen_effect.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
+#include "th07/strings.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -486,6 +487,17 @@ TEST(each_bomb_starts_with_its_name_items_drain_and_state_timer)
         CHECK_EQ_INT(g_Player.bomb.timer.current, 1);
         M_TearDown();
     }
+}
+
+TEST(the_bomb_banner_uses_the_translated_name)
+{
+    M_SetUp("translated_name", M_REIMU_B);
+    const char *const original = g_Strings[STRING_BOMB_REIMU_B_FOCUSED];
+    g_Strings[STRING_BOMB_REIMU_B_FOCUSED] = "Dream Sign \"Duplex Barrier\"";
+    M_StartBomb(true);
+    CHECK_EQ_STR(m_Name, "Dream Sign \"Duplex Barrier\"");
+    g_Strings[STRING_BOMB_REIMU_B_FOCUSED] = original;
+    M_TearDown();
 }
 
 TEST(each_bomb_ends_after_its_duration_and_restores_the_speed)

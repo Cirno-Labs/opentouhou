@@ -120,7 +120,7 @@ void Bomb_Draw(void)
         return;
     }
     M_Dim();
-    ANM_DRAW draw = Anm_ScreenDraw();
+    ANM_DRAW draw = GameManager_GetScreenDrawContext();
     draw.interpolate = true;
     switch (g_GameManager.run.character * 2 + g_GameManager.run.shot_type) {
     case 0:

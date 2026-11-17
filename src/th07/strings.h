@@ -8,6 +8,24 @@
 // default. A replacement of a format string keeps its conversions.
 // stg/translation replaces the entries with the translations of patches.
 #define TH07_STRINGS(X)                                                        \
+    X(STAGE_CLEAR_TITLE, 0x498518, "Stage Clear")                              \
+    X(ALL_CLEAR_TITLE, 0x49850c, "All Clear!")                                 \
+    X(CLEAR_STAGE, 0x4984fc, "Clear  = %8d")                                   \
+    X(CLEAR_POINT, 0x4984ec, "Point  = %8d")                                   \
+    X(CLEAR_GRAZE, 0x4984dc, "Graze  = %8d")                                   \
+    X(CLEAR_CHERRY, 0x4984cc, "Cherry = %8d")                                  \
+    X(CLEAR_PLAYER, 0x4984c0, "Player =%9d")                                   \
+    X(CLEAR_BOMB, 0x4984b0, "Bomb   = %8d")                                    \
+    X(CLEAR_EASY, 0x49849c, "Easy Rank    *0.5")                               \
+    X(CLEAR_NORMAL, 0x498488, "Normal Rank  *1.0")                             \
+    X(CLEAR_HARD, 0x498474, "Hard Rank    *1.2")                               \
+    X(CLEAR_LUNATIC, 0x498460, "Lunatic Rank *1.5")                            \
+    X(CLEAR_EXTRA, 0x49844c, "Extra Rank   *2.0")                              \
+    X(CLEAR_PHANTASM, 0x498438, "Phantasm Rank*2.0")                           \
+    X(CLEAR_PENALTY_HALF, 0x498424, "Player Penalty*0.5")                      \
+    X(CLEAR_PENALTY_FIFTH, 0x498410, "Player Penalty*0.2")                     \
+    X(CLEAR_TOTAL, 0x498400, "Total = %8d0")                                   \
+    X(SPELL_BONUS_NOTICE, 0x49838c, "Spell Card Bonus!")                       \
     X(SHOT_NAME_REIMU_A, 0x4969b0, "博麗 霊夢 (霊)　")                         \
     X(SHOT_NAME_REIMU_B, 0x49699c, "博麗 霊夢 (夢)　")                         \
     X(SHOT_NAME_MARISA_A, 0x496988, "霧雨 魔理沙 (魔)")                        \
@@ -27,6 +45,19 @@
     X(RESULT_DIFFICULTY_LUNATIC, 0x495604, "   Lunatic")                       \
     X(RESULT_DIFFICULTY_EXTRA, 0x4955f8, "     Extra")                         \
     X(RESULT_DIFFICULTY_PHANTASM, 0x4955ec, "  Phantasm")                      \
+    X(BOMB_REIMU_A_UNFOCUSED, 0x498874, "霊符「夢想封印　散」")                \
+    X(BOMB_REIMU_A_FOCUSED, 0x49885c, "霊符「夢想封印　集」")                  \
+    X(BOMB_REIMU_B_UNFOCUSED, 0x49884c, "夢符「封魔陣」")                      \
+    X(BOMB_REIMU_B_FOCUSED, 0x498838, "夢符「二重結界」")                      \
+    X(BOMB_MARISA_A_UNFOCUSED, 0x498818, "魔符「スターダストレヴァリエ」")     \
+    X(BOMB_MARISA_A_FOCUSED, 0x498800, "魔符「ミルキーウェイ」")               \
+    X(BOMB_MARISA_B_UNFOCUSED, 0x4987d8,                                       \
+      "恋符「ノンディレクショナルレーザー」")                                  \
+    X(BOMB_MARISA_B_FOCUSED, 0x4987bc, "恋符「マスタースパーク」")             \
+    X(BOMB_SAKUYA_A_UNFOCUSED, 0x49879c, "幻符「インディスクリミネイト」")     \
+    X(BOMB_SAKUYA_A_FOCUSED, 0x498788, "幻符「殺人ドール」")                   \
+    X(BOMB_SAKUYA_B_UNFOCUSED, 0x498768, "時符「パーフェクトスクウェア」")     \
+    X(BOMB_SAKUYA_B_FOCUSED, 0x498748, "時符「プライベートスクウェア」")       \
     X(RESULT_UNKNOWN_SPELL_CARD, 0, "？？？？？")                              \
     X(RESULT_RANK, 0x496460, "%2d")                                            \
     X(REPLAY_SAVE_HEADER, 0x49641c, "No.   Name     Date   Player Score")      \
@@ -47,6 +78,10 @@
     X(PRACTICE_STAGE_5, 0x495400, "Stage5")                                    \
     X(PRACTICE_STAGE_6, 0x4954f8, "Stage6")                                    \
     X(MAX_BONUS, 0x496440, "MaxBonus %8d")                                     \
+    X(NOTICE_FULL_POWER, 0x4983e0, "Full Power Mode!")                         \
+    X(NOTICE_BORDER_START, 0x4983c8, "Supernatural Border!!")                  \
+    X(NOTICE_CHERRY_MAX, 0x4983b4, "CherryPoint Max!")                         \
+    X(NOTICE_BORDER_BONUS, 0x4983a0, "Border Bonus %7d")                       \
     X(RESULTS_HEADER, 0x4964b4, "No  Name      Score(Stage)  Date   Slow")     \
     X(SPELL_RESULT_HEADER, 0x4967ec,                                           \
       "%s %3d枚中%3d枚取得（キャラ切り替え↓↑）")                               \

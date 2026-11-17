@@ -64,9 +64,11 @@ typedef struct {
         void *handle, GFX_RECT source, int32_t x, int32_t y);
     void (*free_texture)(void *handle);
     // Starts drawing into the target of pass. Clears the border to
-    // output->border and output->rect to clear, with depth 1.
+    // output->border and output->rect to clear, with depth 1. With preserve,
+    // keeps the previous screen's colour as the background instead.
     void (*begin_pass)(
-        GFX_PASS pass, GFX_COLOR clear, const GFX_PASS_OUTPUT *output);
+        GFX_PASS pass, GFX_COLOR clear, const GFX_PASS_OUTPUT *output,
+        bool preserve);
     // Draws batches, whose vertices are in vertices and whose views are in
     // views.
     void (*draw)(

@@ -97,6 +97,47 @@ TEST(a_patch_file_replaces_the_game_file_in_patch_order)
     Mem_Free(dir);
 }
 
+typedef struct {
+    char text[128];
+    int32_t count;
+    bool fail;
+} M_VISITS;
+
+static RESULT M_VisitFile(void *const user, READER *const reader)
+{
+    M_VISITS *const visits = user;
+    const size_t start = strlen(visits->text);
+    const size_t size = Reader_Remaining(reader);
+    CHECK(start + size < sizeof(visits->text));
+    Reader_ReadBytes(reader, visits->text + start, size);
+    visits->count++;
+    FAIL_IF(visits->fail, "stop visiting");
+    return Reader_Result(reader);
+}
+
+TEST(visiting_files_keeps_patch_order_and_both_build_variants)
+{
+    char *const dir = TestDir_Prepare("visit_files");
+    PatchBuilder_AddPatch(dir, "a/base", "{}");
+    PatchBuilder_AddPatch(dir, "a/top", "{dependencies: ['base']}");
+    PatchBuilder_Write(dir, "a/base/th06/file.dat", "base ");
+    PatchBuilder_Write(dir, "a/base/th06/file.v1.02h.dat", "build ");
+    PatchBuilder_Write(dir, "a/top/th06/file.dat", "top");
+    PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
+    M_VISITS visits = {};
+    CHECK(
+        IS_OK(Patch_VisitFiles(stack, "data/FILE.DAT", M_VisitFile, &visits)));
+    CHECK_EQ_STR(visits.text, "base build top");
+    CHECK_EQ_INT(visits.count, 3);
+    CHECK(IS_OK(Patch_VisitFiles(stack, "missing.dat", M_VisitFile, &visits)));
+    CHECK_EQ_INT(visits.count, 3);
+    visits.fail = true;
+    CHECK(!IS_OK(Patch_VisitFiles(stack, "file.dat", M_VisitFile, &visits)));
+    CHECK_EQ_INT(visits.count, 4);
+    Patch_CloseStack(stack);
+    Mem_Free(dir);
+}
+
 TEST(a_build_specific_name_beats_the_plain_one_in_the_same_patch)
 {
     char *const dir = TestDir_Prepare("build");

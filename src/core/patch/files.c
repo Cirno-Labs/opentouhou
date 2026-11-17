@@ -155,6 +155,44 @@ VFS_SOURCE *Patch_CreateSource(
     return &source->base;
 }
 
+RESULT Patch_VisitFiles(
+    const PATCH_STACK *const stack, const char *const path,
+    RESULT (*const visit)(void *user, READER *reader), void *const user)
+{
+    if (stack == nullptr) {
+        return OK;
+    }
+    char *const key = PatchStack_GetGameKey(stack, path);
+    if (key == nullptr) {
+        return OK;
+    }
+    RESULT result = OK;
+    for (int32_t i = 0; i < stack->count && IS_OK(result); i++) {
+        const PATCH_FILE *const file =
+            HashMap_Get(&stack->patches[i].game, key);
+        if (file == nullptr || !PatchStack_IsOverlaid(stack, key)) {
+            continue;
+        }
+        const char *const names[] = { file->plain, file->build };
+        for (size_t j = 0; j < ARRAY_SIZE(names) && IS_OK(result); j++) {
+            if (names[j] == nullptr) {
+                continue;
+            }
+            READER reader;
+            result = Reader_OpenFile(&reader, names[j]);
+            if (IS_OK(result)) {
+                result = visit(user, &reader);
+                if (IS_OK(result)) {
+                    result = Reader_Result(&reader);
+                }
+                Reader_Close(&reader);
+            }
+        }
+    }
+    Mem_Free(key);
+    return result;
+}
+
 JSON_VALUE *Patch_LoadJson(
     const PATCH_STACK *const stack, const PATCH_SCOPE scope,
     const char *const name, const ALLOCATOR *const allocator)

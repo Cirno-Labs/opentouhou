@@ -11,3 +11,6 @@ void GameManager_SetUpFixedCamera(float extra_far);
 
 // Returns the current gameplay camera without changing its state.
 ANM_DRAW GameManager_GetDrawContext(void);
+
+// Returns screen coordinates clipped and depth-mapped by the camera viewport.
+ANM_DRAW GameManager_GetScreenDrawContext(void);

@@ -75,6 +75,7 @@ static void M_Record(
         .depth_write = draw->depth_write && !vm->z_write_off,
         .alpha_test = true,
         .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
     };
     const uint64_t id = draw->interpolate && vm->presentation_generation != 0
         ? ((uint64_t)vm->presentation_generation << 32) | draw->part
@@ -426,7 +427,8 @@ void Anm_Draw3D(ANM_VM *const vm, const ANM_DRAW *const draw)
         vm->size_matrix.m[0][0] + uv0.x,
         vm->size_matrix.m[1][1] + uv0.y,
     };
-    M_Record(vm, draw, M_Camera(), positions, uv0, uv1, nullptr);
+    const GFX_VIEW view = GfxView_OffsetPixels(M_Camera(), 0.5f, 0.5f);
+    M_Record(vm, draw, &view, positions, uv0, uv1, nullptr);
 }
 
 void Anm_DrawStrip(
@@ -443,6 +445,7 @@ void Anm_DrawStrip(
         .depth_write = draw->depth_write && !vm->z_write_off,
         .alpha_test = true,
         .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
     };
     GFX_TEXTURE *const texture = Anm_GetTexture(vm->sprite_data->slot);
     Gfx_SetView(&draw->view);

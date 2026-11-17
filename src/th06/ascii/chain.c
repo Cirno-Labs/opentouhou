@@ -91,6 +91,24 @@ static void M_DrawStrings(void)
 static CHAIN_STATUS M_Draw(void *const arg)
 {
     ASCII_TEXT *const text = arg;
+    if (text->frame_rate[0] != '\0') {
+        const uint32_t color = text->color;
+        const float scale_x = text->scale_x;
+        const float scale_y = text->scale_y;
+        const bool highlight = text->highlight;
+        const bool in_arena = text->in_arena;
+        text->color = COLOR_WHITE;
+        text->scale_x = 1.0f;
+        text->scale_y = 1.0f;
+        text->highlight = false;
+        text->in_arena = false;
+        AsciiText_AddString((VEC3) { 512.0f, 464.0f, 0.0f }, text->frame_rate);
+        text->color = color;
+        text->scale_x = scale_x;
+        text->scale_y = scale_y;
+        text->highlight = highlight;
+        text->in_arena = in_arena;
+    }
     M_DrawStrings();
     for (int32_t i = 0; i < text->string_count; i++) {
         Mem_Free(text->strings[i].text);

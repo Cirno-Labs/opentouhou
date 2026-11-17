@@ -7,16 +7,26 @@
 // Gfx_Init, returns identity matrices and an empty viewport.
 GFX_VIEW GfxView_Screen(void);
 
+// Moves projected positions by x and y logical-screen pixels without
+// moving the viewport or its scissor.
+GFX_VIEW GfxView_OffsetPixels(const GFX_VIEW *view, float x, float y);
+
 // Starts drawing a tick on the logical screen, cleared to clear. The program
 // calls Gfx_BeginTick and Gfx_EndTick around each tick of the game.
 void Gfx_BeginTick(GFX_COLOR clear);
+
+// Keeps the previous screen's colour behind each new tick, including its
+// interpolated presentations. Depth still starts at 1. Off by default;
+// set before Gfx_BeginTick.
+void Gfx_SetPersistentScreen(bool enabled);
 
 // Sets the view of the quads that follow. The first view of a tick is
 // GfxView_Screen().
 void Gfx_SetView(const GFX_VIEW *view);
 
-// Draws a quad, vertices in perimeter order, without a texture when
-// texture is nullptr. id identifies the quad across ticks and must be
+// Draws a quad, vertices in perimeter order, with triangles sharing the
+// edge between vertices 1 and 3, without a texture when texture is nullptr.
+// id identifies the quad across ticks and must be
 // unique within one tick; 0 draws it without blending. A duplicate id is
 // fatal in debug builds; in release builds one of the quads blends against
 // the wrong one for a frame. Interpolation blends vertex positions.

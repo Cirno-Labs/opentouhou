@@ -154,6 +154,13 @@ static const VFS_SOURCE_FUNCS M_PatchFuncs = {
     .close = M_ClosePatched,
 };
 
+RESULT Files_VisitPatches(
+    const char *const path, RESULT (*const visit)(void *user, READER *reader),
+    void *const user)
+{
+    return Patch_VisitFiles(m_Patches, path, visit, user);
+}
+
 static VFS_SOURCE *M_WrapPatchSource(VFS_SOURCE *const inner)
 {
     M_PATCH_SOURCE *const source = Mem_Alloc(sizeof(*source));

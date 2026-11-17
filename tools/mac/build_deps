@@ -88,9 +88,29 @@ tar -xzf "$work/freetype.tar.gz" --strip-components=1 -C "$ttf_dir/external/free
 fetch "https://codeload.github.com/libsdl-org/harfbuzz/tar.gz/$(pin HARFBUZZ_COMMIT)" \
     "$(pin HARFBUZZ_SHA256)" "$work/harfbuzz.tar.gz"
 tar -xzf "$work/harfbuzz.tar.gz" --strip-components=1 -C "$ttf_dir/external/harfbuzz"
+cmake -S "$ttf_dir/external/freetype" -B "$work/freetype-build" "${cmake_options[@]}" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DFT_DISABLE_ZLIB=ON \
+    -DFT_DISABLE_BZIP2=ON \
+    -DFT_DISABLE_PNG=ON \
+    -DFT_DISABLE_BROTLI=ON \
+    -DFT_DISABLE_HARFBUZZ=ON
+cmake --build "$work/freetype-build" -j"$jobs"
+cmake --install "$work/freetype-build"
+echo 'find_package(Freetype REQUIRED)' > "$work/harfbuzz-freetype.cmake"
+cmake -S "$ttf_dir/external/harfbuzz" -B "$work/harfbuzz-build" "${cmake_options[@]}" \
+    -DCMAKE_PROJECT_INCLUDE="$work/harfbuzz-freetype.cmake" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DHB_BUILD_UTILS=OFF \
+    -DHB_BUILD_SUBSET=OFF \
+    -DHB_HAVE_FREETYPE=ON \
+    -DHB_HAVE_GLIB=OFF \
+    -DHB_HAVE_ICU=OFF
+cmake --build "$work/harfbuzz-build" -j"$jobs"
+cmake --install "$work/harfbuzz-build"
 cmake -S "$ttf_dir" -B "$work/ttf-build" "${cmake_options[@]}" \
     -DBUILD_SHARED_LIBS=OFF \
-    -DSDLTTF_VENDORED=ON \
+    -DSDLTTF_VENDORED=OFF \
     -DSDLTTF_HARFBUZZ=ON \
     -DSDLTTF_PLUTOSVG=OFF \
     -DSDLTTF_SAMPLES=OFF

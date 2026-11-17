@@ -7,6 +7,7 @@
 #include "core/base/string.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 
 ASCII_TEXT g_AsciiText;
 
@@ -69,6 +70,16 @@ void AsciiText_Initialize(void)
     text->digit.pos.z = 0.1f;
     text->glyph_width = 14;
     AsciiText_SetSummaryInterrupt(text->summary_interrupt);
+}
+
+void AsciiText_SetFrameRate(const float rate)
+{
+    snprintf(
+        g_AsciiText.frame_rate, sizeof(g_AsciiText.frame_rate), "%.02ffps",
+        (double)rate);
+    snprintf(
+        g_AsciiText.replay_rate, sizeof(g_AsciiText.replay_rate), "%2d",
+        (int)g_GameManager.mode.replay_fps);
 }
 
 void AsciiText_SetColor(const uint32_t color)
