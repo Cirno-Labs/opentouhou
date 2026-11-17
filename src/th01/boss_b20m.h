@@ -9,6 +9,7 @@
 #include "th01/shootout_lasers.h"
 #include "th01/stage_objects.h"
 #include "th01/tram.h"
+#include "th01/timer.h"
 #include "th01/transition.h"
 
 typedef struct {
@@ -83,6 +84,7 @@ typedef struct {
     PAGE_TRANSITION transition;
     FRAME_WAIT wait;
     uint64_t wait_tick;
+    uint16_t wait_frames;
     uint8_t rings_angle, radial_angle, radial_velocity, wait_kind, sequence,
         sequence_stage, resume_stage;
     int8_t phase, call_phase;
@@ -100,6 +102,9 @@ typedef struct {
     STAGE_OBJECTS *objects;
     TRAM *tram;
     GAME_INPUT *input;
+    STAGE_TIMER *timer;
+    bool *first_stage;
+    const bool *timer_initialized;
     uint32_t *rng;
     bool *game_cleared;
     void (*audio)(
@@ -118,5 +123,22 @@ RESULT B20M_ValidateAssets(const B20M_ASSETS *assets);
 void B20M_Init(B20M *boss, const ALLOCATOR *allocator);
 
 // Binds actor images, resets the first form and retains pattern history.
-// Run after the separately completed entrance. Performs no allocation or IO.
+// Run before the separate cached entrance. Performs no allocation or IO.
 void B20M_Setup(B20M *boss, const B20M_CONTEXT *context);
+RESULT B20M_ValidateContext(const B20M_CONTEXT *context);
+
+// Starts the cached load/scroll/diagonal entrance. Advance reference VSyncs
+// and a monotonic 60 Hz host serial while polling; pending polls stay inert.
+void B20M_BeginEntrance(B20M *boss, const B20M_CONTEXT *context);
+bool B20M_ResumeEntrance(
+    B20M *boss, const B20M_CONTEXT *context, FRAME_VSYNC *vsync,
+    uint64_t host_tick);
+
+// Runs one battle call or resumes its nested waits. False suspends the world.
+// Implements both forms and the final 50,000-point bonus and game clear.
+// Quantizes the bird safety delay to six 60 Hz host ticks. Audio/effect
+// consumers may post events but must not mutate borrowed simulation state.
+// Borrows stable context bindings and allocates nothing and performs no IO.
+bool B20M_UpdateAndRender(
+    B20M *boss, const B20M_CONTEXT *context, FRAME_VSYNC *vsync,
+    uint64_t host_tick);
