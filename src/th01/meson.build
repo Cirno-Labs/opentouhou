@@ -25,6 +25,7 @@ th01_lib = static_library(
   'scale2x.c',
   'items.c',
   'bonus_transition.c',
+  'bonus.c',
   'hud.c',
   'timer.c',
   'hud_hp.c',
