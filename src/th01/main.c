@@ -1,5 +1,7 @@
 #include "th01/main.h"
 
+#include "th01/gameplay.h"
+
 #include "th01/logo.h"
 #include "th01/opening.h"
 #include "th01/frame.h"
@@ -25,7 +27,14 @@ static LOGO m_Logo;
 static OPENING_ASSETS m_OpeningAssets;
 static OPENING m_Opening;
 static bool m_InOpening;
-static bool m_GameplayReported;
+static bool m_InGameplay;
+static GAMEPLAY_REQUEST m_ReportedRequest;
+static GAMEPLAY_ASSETS m_GameplayAssets;
+static GAMEPLAY *m_Gameplay;
+static SESSION m_Session;
+static uint64_t m_HostTick;
+static GFX_TEXTURE *m_TextTexture;
+static uint8_t *m_UploadedText, *m_ScrolledPage;
 static VIDEO m_Video;
 static FRAME_CLOCK m_Frame;
 static GFX_TEXTURE *m_Pages[2];
@@ -55,6 +64,10 @@ static RESULT M_LoadAssets(void)
         result = Opening_LoadAssets(
             vfs, Arena_Allocator(&m_Assets), &m_OpeningAssets);
     }
+    if (IS_OK(result)) {
+        result = GameplayAssets_Load(
+            vfs, Arena_Allocator(&m_Assets), &m_GameplayAssets);
+    }
     return result;
 }
 
@@ -70,7 +83,13 @@ static RESULT M_Init(void)
     memset(&m_Frame, 0, sizeof(m_Frame));
     m_IntroPressed = false;
     m_InOpening = false;
-    m_GameplayReported = false;
+    m_InGameplay = false;
+    m_ReportedRequest = GAMEPLAY_REQUEST_NONE;
+    m_HostTick = 0;
+    memset(&m_Session, 0, sizeof(m_Session));
+    MUST(Gameplay_Prepare(
+        Arena_Allocator(&m_Assets), &m_GameplayAssets, &m_Video, &m_Session,
+        &m_Gameplay));
     Logo_Init(&m_Logo, &m_Video);
     for (int32_t i = 0; i < 2; i++) {
         MUST(GfxTexture_CreateIndexed(LOGO_WIDTH, LOGO_HEIGHT, &m_Pages[i]));
@@ -83,10 +102,19 @@ static RESULT M_Init(void)
         memcpy(m_UploadedPages[i], m_Video.pages[i], VIDEO_PAGE_SIZE);
     }
     memcpy(m_UploadedPalette, m_Video.palette, sizeof(m_UploadedPalette));
+    MUST(GfxTexture_CreateIndexed(VIDEO_WIDTH, VIDEO_HEIGHT, &m_TextTexture));
+    m_UploadedText =
+        Allocator_AllocZ(Arena_Allocator(&m_Assets), VIDEO_PAGE_SIZE);
+    m_ScrolledPage =
+        Allocator_Alloc(Arena_Allocator(&m_Assets), VIDEO_PAGE_SIZE);
+    GfxTexture_UploadIndices(
+        m_TextTexture, (GFX_RECT) { 0, 0, 640, 400 }, m_UploadedText);
+    GfxTexture_UploadPalette(m_TextTexture, 0, 9, g_TramPalette);
     return OK;
 }
 
-static bool M_OpeningEvents(const OPENING_EVENTS events)
+static bool M_OpeningEvents(
+    const OPENING_EVENTS events, const TH01_INPUT *const raw)
 {
     if (events.clear_key_buffer) {
         m_IntroPressed = false;
@@ -94,22 +122,33 @@ static bool M_OpeningEvents(const OPENING_EVENTS events)
     if (events.action == OPENING_ACTION_QUIT) {
         return false;
     }
-    if ((events.action == OPENING_ACTION_START
-         || events.action == OPENING_ACTION_CONTINUE)
-        && !m_GameplayReported) {
-        LOG_WARNING(
-            "%s requested: the gameplay scene is not implemented",
-            events.action == OPENING_ACTION_START ? "Start" : "Continue");
-        m_GameplayReported = true;
+    Gameplay_OpeningAudio(m_Gameplay, events);
+    if (events.action == OPENING_ACTION_START
+        || events.action == OPENING_ACTION_CONTINUE) {
+        Session_Begin(
+            &m_Session,
+            events.action == OPENING_ACTION_START ? SESSION_START
+                                                  : SESSION_CONTINUE,
+            &g_Settings, m_Opening.frame_rand);
+        Gameplay_Begin(m_Gameplay, raw, m_HostTick);
+        m_InGameplay = true;
+        m_InOpening = false;
+        m_ReportedRequest = GAMEPLAY_REQUEST_NONE;
     }
     return true;
 }
 
-static void M_BeginOpening(void)
+static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
 {
     m_InOpening = true;
+    m_InGameplay = false;
+    Video_SetScroll(&m_Video, 0);
     M_OpeningEvents(
-        Opening_Init(&m_Opening, &m_Video, &g_Settings, &m_OpeningAssets));
+        Opening_Init(&m_Opening, &m_Video, &g_Settings, &m_OpeningAssets), raw);
+    if (switched) {
+        // Counts the VSync latched by the program switch (Frame_SwitchProgram).
+        m_Opening.count1 = 1;
+    }
 }
 
 static bool M_Tick(const void *const input)
@@ -118,34 +157,62 @@ static bool M_Tick(const void *const input)
     INPUT_BINDING key;
     const bool key_pressed = Shell_GetKeyPress(&key);
     GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
-    if (!raw->ok && !raw->shot) {
-        m_GameplayReported = false;
-    }
-    if (Frame_Advance(&m_Frame)) {
-        if (!m_InOpening && m_IntroPressed) {
-            M_BeginOpening();
-        } else if (m_InOpening) {
-            if (!M_OpeningEvents(
-                    Opening_Tick(&m_Opening, raw, m_IntroPressed))) {
-                return false;
-            }
-        } else {
-            int32_t changed;
-            if (!Logo_Tick(&m_Logo, &m_Sprites, &changed)) {
-                M_BeginOpening();
+    m_HostTick++;
+    const bool reference_edge = Frame_Advance(&m_Frame);
+    if (m_InGameplay) {
+        const GAMEPLAY_REQUEST request =
+            Gameplay_Tick(m_Gameplay, raw, reference_edge, m_HostTick);
+        if (request == GAMEPLAY_REQUEST_OPENING) {
+            M_BeginOpening(true, raw);
+        } else if (
+            request != GAMEPLAY_REQUEST_NONE && request != m_ReportedRequest) {
+            LOG_WARNING(
+                "TH01 %s handoff awaits its scene owner",
+                request == GAMEPLAY_REQUEST_ENDING ? "ending"
+                                                   : "score registration");
+            m_ReportedRequest = request;
+        }
+    } else {
+        Gameplay_AdvanceAudio(m_Gameplay);
+        if (reference_edge) {
+            if (!m_InOpening && m_IntroPressed) {
+                M_BeginOpening(false, raw);
+            } else if (m_InOpening) {
+                if (!M_OpeningEvents(
+                        Opening_Tick(&m_Opening, raw, m_IntroPressed), raw)) {
+                    return false;
+                }
             } else {
-                GFX_COLOR palette[16];
-                Logo_Palette(&m_Logo, &m_Sprites, palette);
-                Video_SetPalette(&m_Video, palette);
+                int32_t changed;
+                if (!Logo_Tick(&m_Logo, &m_Sprites, &changed)) {
+                    M_BeginOpening(false, raw);
+                } else {
+                    GFX_COLOR palette[16];
+                    Logo_Palette(&m_Logo, &m_Sprites, palette);
+                    Video_SetPalette(&m_Video, palette);
+                }
             }
         }
+    }
+    {
         for (int32_t i = 0; i < 2; i++) {
-            if (memcmp(m_UploadedPages[i], m_Video.pages[i], VIDEO_PAGE_SIZE)
-                != 0) {
+            const uint8_t *pixels = m_Video.pages[i];
+            if (m_Video.scroll_top != 0) {
+                for (int32_t y = 0; y < VIDEO_HEIGHT; y++) {
+                    memcpy(
+                        m_ScrolledPage + y * VIDEO_WIDTH,
+                        pixels
+                            + ((y + m_Video.scroll_top) % VIDEO_HEIGHT)
+                                * VIDEO_WIDTH,
+                        VIDEO_WIDTH);
+                }
+                pixels = m_ScrolledPage;
+            }
+            if (memcmp(m_UploadedPages[i], pixels, VIDEO_PAGE_SIZE) != 0) {
                 GfxTexture_UploadIndices(
                     m_Pages[i], (GFX_RECT) { 0, 0, LOGO_WIDTH, LOGO_HEIGHT },
-                    m_Video.pages[i]);
-                memcpy(m_UploadedPages[i], m_Video.pages[i], VIDEO_PAGE_SIZE);
+                    pixels);
+                memcpy(m_UploadedPages[i], pixels, VIDEO_PAGE_SIZE);
             }
         }
         if (memcmp(
@@ -158,6 +225,14 @@ static bool M_Tick(const void *const input)
                 m_UploadedPalette, m_Video.palette, sizeof(m_UploadedPalette));
         }
     }
+    const TRAM *const text =
+        m_InGameplay ? Gameplay_TextLayer(m_Gameplay) : nullptr;
+    if (text != nullptr
+        && memcmp(m_UploadedText, text->pixels, VIDEO_PAGE_SIZE) != 0) {
+        GfxTexture_UploadIndices(
+            m_TextTexture, (GFX_RECT) { 0, 0, 640, 400 }, text->pixels);
+        memcpy(m_UploadedText, text->pixels, VIDEO_PAGE_SIZE);
+    }
     const GFX_COLOR white = { 255, 255, 255, 255 };
     const GFX_VERTEX vertices[4] = {
         { { 0, 0, 0 }, white, { 0, 0 } },
@@ -167,6 +242,10 @@ static bool M_Tick(const void *const input)
     };
     const GFX_STATE state = {};
     Gfx_DrawQuad(&state, m_Pages[m_Video.visible_page], vertices, 0);
+    if (text != nullptr && text->visible) {
+        const GFX_STATE overlay = { .blend = GFX_BLEND_ALPHA };
+        Gfx_DrawQuad(&overlay, m_TextTexture, vertices, 0);
+    }
     return true;
 }
 
@@ -177,6 +256,12 @@ static void M_Shutdown(void)
         m_Pages[i] = nullptr;
         m_UploadedPages[i] = nullptr;
     }
+    GfxTexture_Free(m_TextTexture);
+    m_TextTexture = nullptr;
+    m_UploadedText = nullptr;
+    m_ScrolledPage = nullptr;
+    m_Gameplay = nullptr;
+    memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);
     memset(&m_Sprites, 0, sizeof(m_Sprites));
     memset(&m_Video, 0, sizeof(m_Video));
