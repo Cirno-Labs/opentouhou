@@ -1,0 +1,22 @@
+[
+  [
+    "LICENSE",
+    "LICENSE.txt"
+  ],
+  [
+    "tools/packaging/th01/THIRD_PARTY.txt",
+    "THIRD_PARTY.txt"
+  ],
+  [
+    "src/th01/opna/vendor/COPYING.BSD-3-Clause",
+    "COPYING.BSD-3-Clause"
+  ],
+  [
+    "src/th01/opna/vendor/COPYING.GPL-2",
+    "COPYING.GPL-2"
+  ],
+  [
+    "src/shell/builtin/fonts/IPA_Font_License_Agreement_v1.0.txt",
+    "IPA_Font_License_Agreement_v1.0.txt"
+  ]
+]

@@ -2,7 +2,7 @@
 Type=Application
 Name=Touhou 1: Highly Responsive to Prayers
 Name[ja]=東方靈異伝 ~ Highly Responsive to Prayers
-Comment=Runs the ZUNSOFT logo with the original game data
+Comment=Play Touhou 1 with your original game data
 Exec=oth01
 Icon=th01
 Categories=Game;ArcadeGame;
