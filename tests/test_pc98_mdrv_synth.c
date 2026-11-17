@@ -1,4 +1,4 @@
-#include "th01/mdrv_synth.h"
+#include "pc98/mdrv_synth.h"
 
 #include "core/base/arena.h"
 #include "test.h"
@@ -113,15 +113,22 @@ static void M_Init(
     };
 }
 
-static void M_Start(FIXTURE *const fixture)
+static void M_StartConfigured(
+    FIXTURE *const fixture, const MDRV_SYNTH_CONFIG config)
 {
     CHECK(Result_Log(
         MdrvSynth_Init(
-            fixture->songs, 2, &fixture->effect_bank, &fixture->allocator,
-            M_Write, fixture, &fixture->synth),
+            fixture->songs, 2, &fixture->effect_bank, config,
+            &fixture->allocator, M_Write, fixture, &fixture->synth),
         LOG_LEVEL_ERROR));
     CHECK(Result_Log(MdrvSynth_Play(fixture->synth, 0), LOG_LEVEL_ERROR));
     fixture->write_count = 0;
+}
+
+static void M_Start(FIXTURE *const fixture)
+{
+    M_StartConfigured(
+        fixture, (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 });
 }
 
 static void M_Pulses(FIXTURE *const fixture, const uint64_t count)
@@ -146,6 +153,56 @@ static const WRITE *M_Last(const FIXTURE *const fixture, const uint16_t reg)
     }
     TEST_FAIL("missing register %03x", reg);
     return &fixture->writes[0];
+}
+
+TEST(balance_configuration_is_retained_across_controls)
+{
+    const uint8_t code[] = { 0xeb, 0, 0xec, 110, 0x40, 8, 0xff };
+    FIXTURE fixture;
+    M_Init(&fixture, code, sizeof(code), 0x80);
+    fixture.tracks[0][1].channel = 0x10;
+    const uint8_t rhythm[] = {
+        0xec, 46, 31, 31, 31, 31, 31, 31, 0x40, 8, 0xff,
+    };
+    memcpy(fixture.bytes[0] + 160, rhythm, sizeof(rhythm));
+    M_StartConfigured(
+        &fixture, (MDRV_SYNTH_CONFIG) { .fm_balance = 2, .rhythm_balance = 5 });
+    const size_t allocations = fixture.allocations;
+    for (size_t control = 0; control < 3; control++) {
+        M_Pulses(&fixture, 1);
+        CHECK_EQ_INT(M_Last(&fixture, 0x40)->value, 22);
+        CHECK_EQ_INT(M_Last(&fixture, 0x4c)->value, 28);
+        CHECK_EQ_INT(M_Last(&fixture, 0x11)->value, 42);
+        if (control == 0) {
+            MdrvSynth_Stop(fixture.synth);
+        } else {
+            MdrvSynth_Reset(fixture.synth);
+        }
+        CHECK(Result_Ignore(MdrvSynth_Play(fixture.synth, 0)));
+    }
+    CHECK_EQ_INT(fixture.allocations, allocations);
+    Arena_Free(&fixture.arena);
+}
+
+TEST(balance_configuration_validates_before_allocation)
+{
+    const uint8_t code[] = { 0x40, 8, 0xff };
+    const MDRV_SYNTH_CONFIG configs[] = {
+        { .fm_balance = 128 },
+        { .rhythm_balance = 64 },
+    };
+    FIXTURE fixture;
+    M_Init(&fixture, code, sizeof(code), 0x80);
+    const size_t allocations = fixture.allocations;
+    for (size_t i = 0; i < sizeof(configs) / sizeof(configs[0]); i++) {
+        MDRV_SYNTH *synth;
+        CHECK(!Result_Ignore(MdrvSynth_Init(
+            fixture.songs, 2, &fixture.effect_bank, configs[i],
+            &fixture.allocator, nullptr, nullptr, &synth)));
+        CHECK(synth == nullptr);
+        CHECK_EQ_INT(fixture.allocations, allocations);
+    }
+    Arena_Free(&fixture.arena);
 }
 
 TEST(timer_status_phase_and_tempo_reload)
@@ -353,8 +410,9 @@ TEST(external_pcm_is_rejected)
     fixture.tracks[0][0].channel = 0x20;
     MDRV_SYNTH *other;
     CHECK(!Result_Ignore(MdrvSynth_Init(
-        fixture.songs, 2, &fixture.effect_bank, &fixture.allocator, nullptr,
-        nullptr, &other)));
+        fixture.songs, 2, &fixture.effect_bank,
+        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 },
+        &fixture.allocator, nullptr, nullptr, &other)));
     CHECK(other == nullptr);
     Arena_Free(&fixture.arena);
 }
@@ -459,8 +517,9 @@ TEST(instrument_ranges_are_checked_before_playback)
     fixture.songs[1].size = 799;
     MDRV_SYNTH *synth;
     CHECK(!Result_Ignore(MdrvSynth_Init(
-        fixture.songs, 2, &fixture.effect_bank, &fixture.allocator, nullptr,
-        nullptr, &synth)));
+        fixture.songs, 2, &fixture.effect_bank,
+        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 },
+        &fixture.allocator, nullptr, nullptr, &synth)));
     CHECK(synth == nullptr);
     Arena_Free(&fixture.arena);
 }
@@ -524,8 +583,9 @@ TEST(invalid_topology_and_switch_do_not_change_playback)
     }
     MDRV_SYNTH *invalid;
     CHECK(!Result_Ignore(MdrvSynth_Init(
-        fixture.songs, 2, &fixture.effect_bank, &fixture.allocator, nullptr,
-        nullptr, &invalid)));
+        fixture.songs, 2, &fixture.effect_bank,
+        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 },
+        &fixture.allocator, nullptr, nullptr, &invalid)));
     CHECK(invalid == nullptr);
     fixture.songs[1].track_count = 2;
     M_Start(&fixture);

@@ -41,7 +41,7 @@ SOFTWARE.
 OPNA emulation
 --------------
 
-The C cores and required headers in src/th01/opna/vendor come from
+The C cores and required headers in src/pc98/opna/vendor come from
 libvgm, revision c5c03a2c2514d38d2ab7b7e8dbd021af0b8292cb:
 https://github.com/ValleyBell/libvgm
 

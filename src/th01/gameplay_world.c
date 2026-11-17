@@ -21,7 +21,8 @@ RESULT Gameplay_Prepare(
     B15M_Init(&g->world.b15m, allocator);
     B20M_Init(&g->world.b20m, allocator);
     MUST(MdrvSynth_Init(
-        assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, allocator,
+        assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects,
+        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 }, allocator,
         nullptr, nullptr, &g->storage.audio));
     B20J_Init(&g->world.b20j);
     Palette_Init(&g->world.palette);

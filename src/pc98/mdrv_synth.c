@@ -1,4 +1,4 @@
-#include "th01/mdrv_synth.h"
+#include "pc98/mdrv_synth.h"
 
 #include <string.h>
 
@@ -34,6 +34,7 @@ typedef struct {
 } M_VOICE;
 
 struct MDRV_SYNTH {
+    MDRV_SYNTH_CONFIG config;
     OPNA *chip;
     M_SONG *songs;
     size_t song_count, song;
@@ -209,9 +210,13 @@ static void M_ResetControls(MDRV_SYNTH *const synth)
     synth->fade_amount = 0;
 }
 
-static uint8_t M_Tl(const M_VOICE *const voice, const uint8_t base)
+static uint8_t M_Tl(
+    const MDRV_SYNTH *const synth, const M_VOICE *const voice,
+    const uint8_t base)
 {
-    const uint8_t effective = voice->volume < 8 ? 0 : voice->volume - 8;
+    const uint8_t balance = synth->config.fm_balance;
+    const uint8_t effective =
+        voice->volume < balance ? 0 : voice->volume - balance;
     const uint8_t tl = base + (uint8_t)(127 - effective) + voice->attenuation;
     return tl >= 128 ? 127 : tl;
 }
@@ -224,25 +229,30 @@ static void M_Volume(
     if ((event->channel & 0x80) != 0) {
         const uint8_t algorithm = voice->algorithm & 7;
         M_Output(
-            synth, event, 0x4c + channel, M_Tl(voice, voice->tl[3]), false);
+            synth, event, 0x4c + channel, M_Tl(synth, voice, voice->tl[3]),
+            false);
         if (algorithm >= 4) {
             M_Output(
-                synth, event, 0x48 + channel, M_Tl(voice, voice->tl[2]), false);
+                synth, event, 0x48 + channel, M_Tl(synth, voice, voice->tl[2]),
+                false);
         }
         if (algorithm >= 5) {
             M_Output(
-                synth, event, 0x44 + channel, M_Tl(voice, voice->tl[1]), false);
+                synth, event, 0x44 + channel, M_Tl(synth, voice, voice->tl[1]),
+                false);
         }
         if (algorithm == 7) {
             M_Output(
-                synth, event, 0x40 + channel, M_Tl(voice, voice->tl[0]), false);
+                synth, event, 0x40 + channel, M_Tl(synth, voice, voice->tl[0]),
+                false);
         }
     } else if (event->channel == 0x10) {
         const uint8_t attenuation = voice->attenuation >> 1;
         uint8_t value = 0;
         if (voice->volume >= attenuation) {
             const uint8_t level = (voice->volume - attenuation) & 0x3f;
-            value = (level < 8 ? 0 : level - 8) + 1;
+            const uint8_t balance = synth->config.rhythm_balance;
+            value = (level < balance ? 0 : level - balance) + 1;
         }
         M_Output(synth, event, 0x11, value, false);
     } else if ((voice->program & 0xc0) != 0) {
@@ -856,11 +866,14 @@ static void M_ReadSsg(READER *const reader, M_SSG_PROGRAM *const out)
 
 RESULT MdrvSynth_Init(
     const MDRV_MUSIC *const songs, const size_t song_count,
-    const MDRV_EFFECTS *const effects, const ALLOCATOR *const allocator,
-    const MDRV_REGISTER_CALLBACK callback, void *const context,
-    MDRV_SYNTH **const out)
+    const MDRV_EFFECTS *const effects, const MDRV_SYNTH_CONFIG config,
+    const ALLOCATOR *const allocator, const MDRV_REGISTER_CALLBACK callback,
+    void *const context, MDRV_SYNTH **const out)
 {
     *out = nullptr;
+    FAIL_IF(
+        config.fm_balance > 127 || config.rhythm_balance > 63,
+        "Invalid MDRV balance configuration");
     FAIL_IF(song_count == 0 || song_count > 256, "Invalid MDRV song bank size");
     size_t max_size = 0;
     uint16_t max_tracks = 0;
@@ -892,6 +905,7 @@ RESULT MdrvSynth_Init(
     synth->songs =
         Allocator_AllocZ(allocator, song_count * sizeof(*synth->songs));
     synth->song_count = song_count;
+    synth->config = config;
     synth->effects = effects;
     synth->callback = callback;
     synth->context = context;

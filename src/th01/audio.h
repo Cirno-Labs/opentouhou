@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/mdrv_synth.h"
+#include "pc98/mdrv_synth.h"
 
 typedef struct GAME_AUDIO GAME_AUDIO;
 

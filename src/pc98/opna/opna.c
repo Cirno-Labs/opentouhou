@@ -1,6 +1,6 @@
 #define SNDDEV_YM2608
 
-#include "th01/opna.h"
+#include "pc98/opna.h"
 
 #include "core/base/assert.h"
 #include "vendor/emu/cores/ayintf.h"
@@ -23,15 +23,15 @@ struct OPNA {
     bool irq, rendering;
 };
 
-size_t th01_ym2608_size(void);
-uint32_t th01_ym2608_divider(void *chip);
-void *th01_ym2608_init(
+size_t pc98_ym2608_size(void);
+uint32_t pc98_ym2608_divider(void *chip);
+void *pc98_ym2608_init(
     void *storage, void *param, uint32_t clock, uint32_t rate,
     FM_TIMERHANDLER timer_handler, FM_IRQHANDLER irq_handler);
-size_t th01_ay8910_size(void);
-uint32_t th01_ay8910_init(
+size_t pc98_ay8910_size(void);
+uint32_t pc98_ay8910_init(
     void *storage, void **chip, uint32_t clock, uint8_t type, uint8_t flags);
-void th01_ay8910_output(void *chip, int32_t *output);
+void pc98_ay8910_output(void *chip, int32_t *output);
 
 static size_t M_Align(const size_t size)
 {
@@ -57,7 +57,7 @@ static void M_Irq(void *const context, const uint8_t irq)
 
 static void M_Dividers(OPNA *const chip)
 {
-    const uint32_t fm_period = th01_ym2608_divider(chip->fm) * 5;
+    const uint32_t fm_period = pc98_ym2608_divider(chip->fm) * 5;
     const uint32_t ssg_period = 7987200 / ay8910_get_sample_rate(chip->ssg) * 5;
     if (fm_period != chip->fm_period) {
         chip->fm_period = fm_period;
@@ -88,7 +88,7 @@ static void M_Events(OPNA *const chip)
         DEV_SMPL left, right;
         DEV_SMPL *out[2] = { &left, &right };
         ay8910_update_one(chip->ssg, 1, out);
-        th01_ay8910_output(chip->ssg, &chip->held[2]);
+        pc98_ay8910_output(chip->ssg, &chip->held[2]);
         chip->ssg_next += chip->ssg_period;
     }
 }
@@ -98,9 +98,9 @@ OPNA *Opna_Init(
     void *const context)
 {
     const size_t fm_offset = M_Align(sizeof(OPNA));
-    const size_t ssg_offset = fm_offset + M_Align(th01_ym2608_size());
+    const size_t ssg_offset = fm_offset + M_Align(pc98_ym2608_size());
     OPNA *const chip =
-        Allocator_AllocZ(allocator, ssg_offset + th01_ay8910_size());
+        Allocator_AllocZ(allocator, ssg_offset + pc98_ay8910_size());
     chip->fm_storage = (unsigned char *)chip + fm_offset;
     chip->ssg_storage = (unsigned char *)chip + ssg_offset;
     chip->callback = callback;
@@ -117,10 +117,10 @@ void Opna_Reset(OPNA *const chip)
     chip->fm_period = chip->ssg_period = 0;
     memset(chip->held, 0, sizeof(chip->held));
     chip->irq = false;
-    th01_ay8910_init(
+    pc98_ay8910_init(
         chip->ssg_storage, &chip->ssg, 1996800, AYTYPE_YM2608,
         AY8910_LEGACY_OUTPUT);
-    chip->fm = th01_ym2608_init(
+    chip->fm = pc98_ym2608_init(
         chip->fm_storage, chip, 7987200, 55466, M_Timer, M_Irq);
     const ssg_callbacks callbacks = {
         ay8910_set_clock,

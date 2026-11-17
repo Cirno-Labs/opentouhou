@@ -1,4 +1,4 @@
-#include "th01/opna.h"
+#include "pc98/opna.h"
 
 #include "core/base/arena.h"
 #include "test.h"

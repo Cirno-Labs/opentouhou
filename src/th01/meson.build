@@ -1,5 +1,3 @@
-subdir('opna')
-
 th01_lib = static_library(
   'th01_lib',
   'audio.c',
@@ -67,10 +65,6 @@ th01_lib = static_library(
   'palette.c',
   'text.c',
   'tram.c',
-  'mdrv_data.c',
-  'mdrv_seq.c',
-  'mdrv_synth.c',
-  'opna/opna.c',
   'pf.c',
   'pi.c',
   'ptn.c',
@@ -85,7 +79,7 @@ th01_lib = static_library(
   'stage_orb.c',
   c_args: [layer_include['th01']],
   implicit_include_directories: false,
-  dependencies: [core_dep, stg_dep, opna_dep],
+  dependencies: [core_dep, stg_dep, pc98_dep],
 )
 
 th01_version = custom_target(
@@ -101,7 +95,7 @@ th01_main_lib = static_library(
   th01_version,
   c_args: [layer_include['th01'], layer_include['shell'], '-I' + meson.current_build_dir()],
   implicit_include_directories: false,
-  dependencies: [core_dep, stg_dep],
+  dependencies: [core_dep, stg_dep, pc98_dep],
 )
 
 th01_sources = [files('entry.c')]

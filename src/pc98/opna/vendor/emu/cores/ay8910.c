@@ -1337,9 +1337,9 @@ static void ay8910_set_type(ay8910_context *info, UINT8 chip_type)
 	return;
 }
 
-size_t th01_ay8910_size(void) { return sizeof(ay8910_context); }
+size_t pc98_ay8910_size(void) { return sizeof(ay8910_context); }
 
-UINT32 th01_ay8910_init(void *storage, void **chip, UINT32 clock, UINT8 ay_type, UINT8 ay_flags)
+UINT32 pc98_ay8910_init(void *storage, void **chip, UINT32 clock, UINT8 ay_type, UINT8 ay_flags)
 {
 	ay8910_context *info;
 
@@ -1576,7 +1576,7 @@ void ay8910_set_log_cb(void* chip, DEVCB_LOG func, void* param)
 	return;
 }
 
-void th01_ay8910_output(void *chip, INT32 *output)
+void pc98_ay8910_output(void *chip, INT32 *output)
 {
 	ay8910_context *psg = (ay8910_context *)chip;
 	memcpy(output, psg->th01_output, sizeof(psg->th01_output));

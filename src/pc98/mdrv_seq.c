@@ -1,4 +1,4 @@
-#include "th01/mdrv_seq.h"
+#include "pc98/mdrv_seq.h"
 
 #include <string.h>
 

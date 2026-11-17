@@ -3199,10 +3199,10 @@ static void YM2608_deltat_status_reset(void *chip, UINT8 changebits)
 	FM_STATUS_RESET(&(F2608->OPN.ST), changebits);
 }
 /* YM2608(OPNA) */
-size_t th01_ym2608_size(void) { return sizeof(YM2608); }
-UINT32 th01_ym2608_divider(void *chip) { return ((YM2608 *)chip)->OPN.ST.timer_prescaler; }
+size_t pc98_ym2608_size(void) { return sizeof(YM2608); }
+UINT32 pc98_ym2608_divider(void *chip) { return ((YM2608 *)chip)->OPN.ST.timer_prescaler; }
 
-void * th01_ym2608_init(void *storage, void *param, UINT32 clock, UINT32 rate,
+void * pc98_ym2608_init(void *storage, void *param, UINT32 clock, UINT32 rate,
 				FM_TIMERHANDLER timer_handler,FM_IRQHANDLER IRQHandler)
 {
 	YM2608 *F2608;

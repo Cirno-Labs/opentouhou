@@ -43,6 +43,7 @@ src/core/      every game: platform, rendering, audio, input, text,
 src/shell/     the frame that turns core into a program: folders, log
                file, fatal errors, and the main loop of the games
 src/stg/       what the shooting games share beyond core
+src/pc98/      PC-98 audio chips, music formats and driver playback
 src/thXX/      one directory per game
 src/othpatch/  the patch downloader and updater, a program on core and shell
 ```
@@ -54,6 +55,9 @@ src/othpatch/  the patch downloader and updater, a program on core and shell
   on `core` and `shell`, but not on `shell/game`. Games never depend on
   each other.
 - Code moves into `stg` when a second game needs it, not before.
+- `pc98` depends only on `core`. Games can depend on `pc98`; `core`,
+  `shell` and `stg` never depend on it. Game-specific audio controls and
+  balance settings belong to the game.
 - The build enforces this: each layer is a static library that sees only
   its own and its dependencies' headers. Code includes `shell/game.h`.
 
@@ -172,6 +176,8 @@ core/config   our settings
 shell         folder rules, the log file, fatal error boxes, the
               built-in fonts
 shell/game    main loop, window, frame pacing, the GAME_DESC driver
+pc98/opna     YM2608 register, timer and sample synthesis
+pc98/mdrv     MDRV data readers, sequencing and synthesis
 ```
 
 Dependencies inside `core` go down this list, except that `gfx` and

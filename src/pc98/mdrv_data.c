@@ -1,4 +1,4 @@
-#include "th01/mdrv_data.h"
+#include "pc98/mdrv_data.h"
 
 #include "core/base/arena.h"
 #include "core/base/cp932.h"

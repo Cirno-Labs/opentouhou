@@ -1,0 +1,18 @@
+subdir('opna')
+
+pc98_include = [layer_include['pc98']]
+pc98_lib = static_library(
+  'pc98',
+  'mdrv_data.c',
+  'mdrv_seq.c',
+  'mdrv_synth.c',
+  'opna/opna.c',
+  c_args: pc98_include,
+  implicit_include_directories: false,
+  dependencies: [core_dep, opna_dep],
+)
+pc98_dep = declare_dependency(
+  compile_args: pc98_include,
+  link_with: pc98_lib,
+  dependencies: [core_dep, opna_dep],
+)

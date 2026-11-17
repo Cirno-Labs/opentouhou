@@ -1,9 +1,13 @@
 #pragma once
 
-#include "th01/mdrv_seq.h"
-#include "th01/opna.h"
+#include "pc98/mdrv_seq.h"
+#include "pc98/opna.h"
 
 typedef struct MDRV_SYNTH MDRV_SYNTH;
+
+typedef struct {
+    uint8_t fm_balance, rhythm_balance;
+} MDRV_SYNTH_CONFIG;
 
 typedef struct {
     int32_t music[2], effects[2];
@@ -22,8 +26,10 @@ typedef void (*MDRV_REGISTER_CALLBACK)(
 // shared OPNA. Derives driver controls from the original MDRV98.COM 3.4f
 // binary and the author's MDRV2 documentation. Models one YM2608 board.
 // Uses no original executable code in playback. See opna.h for chip-model
-// provenance and limitations. Uses the game's default FM and rhythm balance
-// offsets of eight.
+// provenance and limitations. Copies config at initialization; FM balance
+// (0..127) and rhythm balance (0..63) subtract from driver volume before
+// register conversion. Zero applies no balance offset. Reset, Stop and Play
+// retain these settings.
 //
 // Init reads instrument fields through READER and reserves all playback work
 // from allocator. Keep the assets and allocator's lifetime group alive until
@@ -63,8 +69,8 @@ typedef void (*MDRV_REGISTER_CALLBACK)(
 // error. Play or Reset clears failure. No files or platform APIs enter clocks.
 RESULT MdrvSynth_Init(
     const MDRV_MUSIC *songs, size_t song_count, const MDRV_EFFECTS *effects,
-    const ALLOCATOR *allocator, MDRV_REGISTER_CALLBACK callback, void *context,
-    MDRV_SYNTH **out);
+    MDRV_SYNTH_CONFIG config, const ALLOCATOR *allocator,
+    MDRV_REGISTER_CALLBACK callback, void *context, MDRV_SYNTH **out);
 void MdrvSynth_Reset(MDRV_SYNTH *synth);
 RESULT MdrvSynth_Play(MDRV_SYNTH *synth, size_t song);
 RESULT MdrvSynth_RestartFadeIn(MDRV_SYNTH *synth);

@@ -3,7 +3,7 @@
 #include "th01/boss_hit.h"
 #include "th01/boss_render.h"
 #include "th01/grc.h"
-#include "th01/mdrv_data.h"
+#include "pc98/mdrv_data.h"
 #include "th01/pi.h"
 #include "th01/pellets.h"
 #include "th01/shootout_lasers.h"

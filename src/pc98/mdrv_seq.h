@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/mdrv_data.h"
+#include "pc98/mdrv_data.h"
 
 typedef enum {
     MDRV_EVENT_START,

@@ -53,7 +53,7 @@ endif
 # that is not on its include path.
 include_root = meson.current_build_dir() / 'include'
 layer_include = {}
-foreach layer : ['core', 'shell', 'stg', 'th01', 'th06', 'th07', 'othpatch']
+foreach layer : ['core', 'shell', 'stg', 'pc98', 'th01', 'th06', 'th07', 'othpatch']
   run_command(
     python3,
     files('tools/meson/link_layer'),
@@ -92,6 +92,7 @@ subdir('src/core')
 subdir('src/shell')
 if build_games
   subdir('src/stg')
+  subdir('src/pc98')
 
   # Each game's directory adds the game to this dictionary. The executables
   # are declared here, so that they land in the root of the build directory.

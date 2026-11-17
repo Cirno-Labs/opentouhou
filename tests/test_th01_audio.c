@@ -98,8 +98,9 @@ static void M_Start(FIXTURE *const fixture)
     const uint8_t code[] = { 0xeb, 0, 0xec, 110, 0xea, 0, 0x40, 255, 0xff };
     M_Init(fixture, code, sizeof(code), 0x80);
     CHECK(Result_Ignore(MdrvSynth_Init(
-        fixture->songs, 2, &fixture->effect_bank, &fixture->allocator, nullptr,
-        nullptr, &fixture->synth)));
+        fixture->songs, 2, &fixture->effect_bank,
+        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 },
+        &fixture->allocator, nullptr, nullptr, &fixture->synth)));
     CHECK(Result_Ignore(MdrvSynth_Play(fixture->synth, 0)));
     CHECK(Result_Ignore(MdrvSynth_EffectPlay(fixture->synth, 2)));
 }

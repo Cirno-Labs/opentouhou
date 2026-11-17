@@ -1,5 +1,5 @@
 opna_backend = static_library(
-  'th01_opna_backend',
+  'pc98_opna_backend',
   'vendor/emu/cores/fmopn.c',
   'vendor/emu/cores/ay8910.c',
   'vendor/emu/cores/ymdeltat.c',
