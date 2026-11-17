@@ -14,5 +14,7 @@
 - Added `--user-dir` to keep your files in another folder.
 - Added settings in config.ini, taken from REIIDEN.CFG on the first
   start.
+- Added score files in the user folder, read from the game folder
+  until the first new score.
 - Added a message box when the game cannot start or stops on an error.
 - Added a log of the last start in `oth01.log` in the user folder.

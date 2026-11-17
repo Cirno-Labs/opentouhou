@@ -51,6 +51,7 @@ th01_lib = static_library(
   'input.c',
   'settings.c',
   'session.c',
+  'score_data.c',
   'invincibility.c',
   'gameplay_assets.c',
   'gameplay_bind.c',
