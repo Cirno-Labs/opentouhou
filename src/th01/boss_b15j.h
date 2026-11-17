@@ -59,3 +59,16 @@ RESULT B15J_ValidateAssets(const B15J_ASSETS *assets);
 // and black defeat palette. Keeps actor and pattern history. The background
 // owner applies its palette before entering the battle. No allocation or IO.
 void B15J_Setup(B15J *boss, const B15J_CONTEXT *context);
+
+RESULT B15J_ValidateContext(const B15J_CONTEXT *context);
+
+// Runs one ordinary call. False suspends the world during the barn-door
+// and ring entrance or regular defeat. Advance only independent audio and
+// reference VSyncs before polling again. Pending polls preserve actor state.
+// Restores default Player and Orb sprites without advancing them. Preserves
+// the current-Orb upper hitbox, overlapping ripple strips, shared pattern
+// intervals, four-laser cleanup and silent HP timeout. Activates cached
+// scene 6 after defeat. Finished calls are inert until setup or state reset.
+// Keep borrowed resources stable. Allocates nothing and performs no IO.
+bool B15J_UpdateAndRender(
+    B15J *boss, const B15J_CONTEXT *context, FRAME_VSYNC *vsync);
