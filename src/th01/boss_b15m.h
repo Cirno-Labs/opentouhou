@@ -49,7 +49,7 @@ typedef struct {
     FRAME_WAIT wait;
     uint64_t pending_tick;
     uint8_t entrance_stage, entrance_angle, pending, transform_stage;
-    int8_t phase;
+    int8_t phase, call_phase;
     bool teleport_done, hp_bar_filled;
     bool entrance_active, entrance_waiting, trails_offscreen;
     bool transform_bat, defeating, finished;
@@ -89,3 +89,19 @@ void B15M_Init(B15M *boss, const ALLOCATOR *allocator);
 // retains missile, actor, hit and pattern history. The background owner
 // applies its palette before entering. Allocates nothing and performs no IO.
 void B15M_Setup(B15M *boss, const B15M_CONTEXT *context);
+
+RESULT B15M_ValidateContext(const B15M_CONTEXT *context);
+
+// Runs one ordinary call including the missile prefix. False suspends its
+// world during entrance, raw scroll, safety-circle delay or defeat. Advance
+// independent audio and reference VSyncs and supply a monotonic 60 Hz host
+// serial while polling. Polls never repeat prefixes, RNG or previous effects.
+// Retains byte-aligned background snapshots, wasted teleport RNG draws,
+// bat hitbox quirks and all ten broken laser resets; activates cached scene 5.
+// Skips six entrance restores that read uninitialized source trail history.
+// Uses initialized history thereafter. Does not model those undefined pixels
+// or CPU drawing cost. Keeps borrowed bindings stable; allocates nothing and
+// performs no IO. Finished calls remain inert until setup or program reset.
+bool B15M_UpdateAndRender(
+    B15M *boss, const B15M_CONTEXT *context, FRAME_VSYNC *vsync,
+    uint64_t host_tick);
