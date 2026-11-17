@@ -3,6 +3,8 @@
 #include "th01/math.h"
 #include "th01/sprite.h"
 
+#include <string.h>
+
 static const uint8_t m_CardAnimation[5][5] = {
     { 17, 18, 19, 20, 21 }, { 14, 15, 16, 18, 17 }, { 11, 12, 13, 15, 14 },
     { 8, 9, 10, 12, 11 },   { 8, 9, 10, 9, 8 },
@@ -74,11 +76,11 @@ RESULT StageObjects_ValidateSprites(
     return OK;
 }
 
-void StageObjects_Init(
+static void M_Init(
     STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
     const int16_t stage_id, const bool first_in_scene,
-    const ALLOCATOR *const allocator, VIDEO *const video,
-    const PTN *const sprites, uint32_t *const rng)
+    const ALLOCATOR *const allocator, STAGE_OBJECT_STORAGE *const storage,
+    VIDEO *const video, const PTN *const sprites, uint32_t *const rng)
 {
     *objects = (STAGE_OBJECTS) {
         .entrance_done = true,
@@ -99,19 +101,34 @@ void StageObjects_Init(
                 layout->cells[y][x].obstacle != STAGE_DATA_OBSTACLE_NONE;
         }
     }
-    if (objects->card_count + objects->obstacle_count != 0) {
-        objects->backgrounds = Allocator_AllocZ(
-            allocator,
-            (size_t)(objects->card_count + objects->obstacle_count) * 1024);
-    }
-    if (objects->card_count != 0) {
-        objects->cards = Allocator_AllocZ(
-            allocator, (size_t)objects->card_count * sizeof(STAGE_CARD));
-    }
-    if (objects->obstacle_count != 0) {
-        objects->obstacles = Allocator_AllocZ(
-            allocator,
+    if (storage != nullptr) {
+        objects->cards = storage->cards;
+        objects->obstacles = storage->obstacles;
+        objects->backgrounds = storage->backgrounds;
+        memset(
+            objects->cards, 0,
+            (size_t)objects->card_count * sizeof(STAGE_CARD));
+        memset(
+            objects->obstacles, 0,
             (size_t)objects->obstacle_count * sizeof(STAGE_OBSTACLE));
+        memset(
+            objects->backgrounds, 0,
+            (size_t)(objects->card_count + objects->obstacle_count) * 1024);
+    } else {
+        if (objects->card_count + objects->obstacle_count != 0) {
+            objects->backgrounds = Allocator_AllocZ(
+                allocator,
+                (size_t)(objects->card_count + objects->obstacle_count) * 1024);
+        }
+        if (objects->card_count != 0) {
+            objects->cards = Allocator_AllocZ(
+                allocator, (size_t)objects->card_count * sizeof(STAGE_CARD));
+        }
+        if (objects->obstacle_count != 0) {
+            objects->obstacles = Allocator_AllocZ(
+                allocator,
+                (size_t)objects->obstacle_count * sizeof(STAGE_OBSTACLE));
+        }
     }
     Math_Random(rng);
     int32_t card = 0;
@@ -156,6 +173,39 @@ void StageObjects_Init(
                 c->top);
         }
     }
+}
+
+void StageObjects_Prepare(
+    STAGE_OBJECT_STORAGE *const storage, const ALLOCATOR *const allocator)
+{
+    const size_t cells = STAGE_DATA_ROWS * STAGE_DATA_COLUMNS;
+    *storage = (STAGE_OBJECT_STORAGE) {
+        .cards = Allocator_Alloc(allocator, cells * sizeof(STAGE_CARD)),
+        .obstacles = Allocator_Alloc(allocator, cells * sizeof(STAGE_OBSTACLE)),
+        .backgrounds = Allocator_Alloc(allocator, cells * 2 * 1024),
+    };
+}
+
+void StageObjects_Init(
+    STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
+    const int16_t stage_id, const bool first_in_scene,
+    const ALLOCATOR *const allocator, VIDEO *const video,
+    const PTN *const sprites, uint32_t *const rng)
+{
+    M_Init(
+        objects, data, stage_id, first_in_scene, allocator, nullptr, video,
+        sprites, rng);
+}
+
+void StageObjects_InitPrepared(
+    STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
+    const int16_t stage_id, const bool first_in_scene,
+    STAGE_OBJECT_STORAGE *const storage, VIDEO *const video,
+    const PTN *const sprites, uint32_t *const rng)
+{
+    M_Init(
+        objects, data, stage_id, first_in_scene, nullptr, storage, video,
+        sprites, rng);
 }
 
 bool StageObjects_ResumeEntrance(

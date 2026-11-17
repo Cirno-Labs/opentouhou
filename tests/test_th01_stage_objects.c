@@ -179,3 +179,90 @@ TEST(stage_reloads_keep_static_obstacle_history)
     CHECK(state.objects.vertical_bar_active);
     Arena_Free(&state.arena);
 }
+
+TEST(prepared_storage_matches_allocated_stages_without_growth)
+{
+    CASE allocated;
+    CASE prepared;
+    M_Init(&allocated);
+    M_Init(&prepared);
+    STAGE_OBJECT_STORAGE storage;
+    StageObjects_Prepare(&storage, Arena_Allocator(&prepared.arena));
+    const size_t used = prepared.arena.used;
+    for (int32_t stage = 0; stage < 5; stage++) {
+        for (int32_t y = 0; y < 10; y++) {
+            for (int32_t x = 0; x < 20; x++) {
+                const STAGE_DATA_CELL cell = {
+                    .card = (x + y + stage) % 3 == 0,
+                    .card_extra_hp = (uint8_t)((x + stage) % 4),
+                    .obstacle = (x + y) % 5 == 0 ? STAGE_DATA_PORTAL
+                                                 : STAGE_DATA_OBSTACLE_NONE,
+                };
+                allocated.layouts[stage].cells[y][x] = cell;
+                prepared.layouts[stage].cells[y][x] = cell;
+            }
+        }
+    }
+    for (int32_t stage = 0; stage < 15; stage++) {
+        const STAGE_DATA a = { .stages = allocated.layouts };
+        const STAGE_DATA p = { .stages = prepared.layouts };
+        allocated.objects.destination_left = 256;
+        prepared.objects.destination_left = 256;
+        StageObjects_Init(
+            &allocated.objects, &a, (int16_t)stage, stage % 2 == 0,
+            Arena_Allocator(&allocated.arena), &allocated.video,
+            &allocated.sprites, &allocated.rng);
+        StageObjects_InitPrepared(
+            &prepared.objects, &p, (int16_t)stage, stage % 2 == 0, &storage,
+            &prepared.video, &prepared.sprites, &prepared.rng);
+        CHECK_EQ_INT(prepared.arena.used, used);
+        CHECK_EQ_INT(prepared.rng, allocated.rng);
+        CHECK_EQ_INT(prepared.objects.destination_left, 256);
+        CHECK_EQ_INT(prepared.objects.card_count, allocated.objects.card_count);
+        CHECK_EQ_INT(
+            prepared.objects.obstacle_count, allocated.objects.obstacle_count);
+        if (stage % 5 != 4) {
+            CHECK_EQ_INT(
+                memcmp(
+                    prepared.objects.cards, allocated.objects.cards,
+                    (size_t)prepared.objects.card_count * sizeof(STAGE_CARD)),
+                0);
+            CHECK_EQ_INT(
+                memcmp(
+                    prepared.objects.obstacles, allocated.objects.obstacles,
+                    (size_t)prepared.objects.obstacle_count
+                        * sizeof(STAGE_OBSTACLE)),
+                0);
+            CHECK_EQ_INT(
+                memcmp(
+                    prepared.objects.backgrounds, allocated.objects.backgrounds,
+                    (size_t)(prepared.objects.card_count
+                             + prepared.objects.obstacle_count)
+                        * 1024),
+                0);
+        }
+        FRAME_VSYNC av = {};
+        FRAME_VSYNC pv = {};
+        while (!StageObjects_ResumeEntrance(
+            &allocated.objects, &allocated.video, &allocated.sprites, &av)) {
+            CHECK(!StageObjects_ResumeEntrance(
+                &prepared.objects, &prepared.video, &prepared.sprites, &pv));
+            Frame_VSync(&av);
+            Frame_VSync(&pv);
+        }
+        CHECK(StageObjects_ResumeEntrance(
+            &prepared.objects, &prepared.video, &prepared.sprites, &pv));
+        CHECK_EQ_INT(
+            memcmp(
+                allocated.video.pages[0], prepared.video.pages[0],
+                VIDEO_PAGE_SIZE),
+            0);
+        CHECK_EQ_INT(
+            memcmp(
+                allocated.video.pages[1], prepared.video.pages[1],
+                VIDEO_PAGE_SIZE),
+            0);
+    }
+    Arena_Free(&allocated.arena);
+    Arena_Free(&prepared.arena);
+}

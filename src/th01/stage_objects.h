@@ -35,6 +35,26 @@ typedef struct {
     int16_t destination_left, destination_top;
 } STAGE_OBJECTS;
 
+typedef struct {
+    STAGE_CARD *cards;
+    STAGE_OBSTACLE *obstacles;
+    uint8_t *backgrounds;
+} STAGE_OBJECT_STORAGE;
+
+// Prepares reusable storage for all possible cells in a normalized layout.
+// Retain the caller's allocator group across all stages. Initialize distinct
+// objects with distinct storage when their mutable lifetimes overlap.
+void StageObjects_Prepare(
+    STAGE_OBJECT_STORAGE *storage, const ALLOCATOR *allocator);
+
+// Instantiates through the same path as Init without allocating. Clears the
+// active storage while retaining the objects' obstacle history. Requires
+// storage prepared before simulation; boss stages do not access storage.
+void StageObjects_InitPrepared(
+    STAGE_OBJECTS *objects, const STAGE_DATA *data, int16_t stage_id,
+    bool first_in_scene, STAGE_OBJECT_STORAGE *storage, VIDEO *video,
+    const PTN *sprites, uint32_t *rng);
+
 // Validates immutable sprites before initialization. Ordinary layouts need
 // 32 images; boss slot 4 accepts the reduced seven-image stage set.
 RESULT StageObjects_ValidateSprites(const PTN *sprites, int16_t stage_id);
