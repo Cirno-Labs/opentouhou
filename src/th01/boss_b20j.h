@@ -54,7 +54,8 @@ typedef struct {
     FRAME_WAIT wait;
     int8_t phase;
     uint8_t cup_angle, spray_offset, spray_angle;
-    uint8_t entrance_stage, defeat_stage, wait_kind, resume_stage;
+    uint16_t delay_frames;
+    uint8_t entrance_stage, defeat_stage, wait_kind;
     bool direction_can_change, laser_right_to_left, hp_bar_filled;
     bool entrance_active, defeating, finished;
 } B20J;
@@ -89,3 +90,25 @@ void B20J_Init(B20J *boss);
 // Binds all three actors and resets HP, phase and face state. Captures the
 // current palette for hits. Does not run the separate load/entrance sequence.
 void B20J_Setup(B20J *boss, const B20J_CONTEXT *context);
+
+RESULT B20J_ValidateContext(const B20J_CONTEXT *context);
+
+// Starts the cached load sequence on the current drawing page, snapshots
+// its scroll palette and invokes the real empty boss-stage initializer.
+// Required audio consumers are synchronous, nonblocking and allocate nothing.
+void B20J_BeginEntrance(B20J *boss, const B20J_CONTEXT *context);
+
+// Suspends the world until all scroll, shake, pan and palette waits finish.
+// Advance reference VSync counters while polling. Pending polls repeat no
+// effects or drawing. Call Setup after completion. Allocates nothing; no IO.
+bool B20J_ResumeEntrance(
+    B20J *boss, const B20J_CONTEXT *context, FRAME_VSYNC *vsync);
+
+// Runs one ordinary battle call, or resumes the custom final defeat.
+// False suspends the world until subsequent reference VSyncs satisfy waits.
+// Victory draws all nine kuji images, finishes the final scroll, adds 50,000
+// points and sets game_cleared. Finished calls stay inert. No Scene activation,
+// allocations, IO or device reads occur. Audio/effect consumers must not
+// mutate borrowed boss, palette, score, player or projectile state.
+bool B20J_UpdateAndRender(
+    B20J *boss, const B20J_CONTEXT *context, FRAME_VSYNC *vsync);
