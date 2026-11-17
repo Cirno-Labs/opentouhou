@@ -134,7 +134,7 @@ endforeach
 
 # The tests of the Python tools under tools/ run with the Python of the
 # build. They need neither a built program nor the network.
-foreach name : ['changelog', 'othpatch_release', 'release_index']
+foreach name : ['changelog', 'othpatch_release', 'release_index', 'package_docs']
   test(
     'tools/' + name,
     python,
