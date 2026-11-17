@@ -163,7 +163,7 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
     Arena_Free(&f.arena);
 }
 
-TEST(held_input_is_consumed_and_four_frame_wait_resets_count1)
+TEST(results_input_wait_resets_at_entry_and_preserves_elapsed_count)
 {
     FIXTURE f;
     M_Init(&f);
@@ -171,13 +171,13 @@ TEST(held_input_is_consumed_and_four_frame_wait_resets_count1)
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK_EQ_INT(f.scene.cursor, 1);
     CHECK_EQ_INT(f.scene.phase, SCORE_ENTRY_DELAY);
-    for (int32_t i = 0; i < 2; i++) {
+    for (int32_t i = 0; i < 3; i++) {
         CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
         CHECK_EQ_INT(f.scene.phase, SCORE_ENTRY_DELAY);
     }
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK_EQ_INT(f.scene.phase, SCORE_ENTRY_INPUT);
-    CHECK_EQ_INT(f.vsync.count1, 0);
+    CHECK_EQ_INT(f.vsync.count1, 4);
     CHECK_EQ_INT(f.scene.inputs, 1);
     CHECK_EQ_INT(f.scene.cursor, 1);
     CHECK(!M_Tick(&f, (TH01_INPUT) {}));
@@ -214,6 +214,7 @@ TEST(results_retain_background_palette_and_have_no_input_timeout)
     M_Begin(&f, SCORE_ENDING, 9000);
     CHECK_EQ_INT(f.video.pages[0][399 * 640 + 639], 4);
     CHECK_EQ_INT(f.video.pages[1][399 * 640 + 639], 6);
+    CHECK_EQ_INT(f.video.pages[1][0], 0);
     CHECK_EQ_INT(f.video.palette[7].red, 34);
     CHECK_EQ_INT(f.video.palette[7].green, 68);
     f.scene.inputs = 1001;
@@ -222,5 +223,28 @@ TEST(results_retain_background_palette_and_have_no_input_timeout)
     f.scene.context = SCORE_GAMEOVER;
     CHECK(M_Tick(&f, (TH01_INPUT) {}));
     CHECK(f.saves.pending[1]);
+    Arena_Free(&f.arena);
+}
+
+TEST(results_ignore_keypad_and_never_generate_bomb_taps)
+{
+    FIXTURE f;
+    M_Init(&f);
+    M_Begin(&f, SCORE_ENDING, 9000);
+    CHECK(!M_Tick(
+        &f, (TH01_INPUT) { .keypad_down = true, .keypad_right = true }));
+    CHECK_EQ_INT(f.scene.row, 0);
+    CHECK_EQ_INT(f.scene.column, 0);
+    CHECK_EQ_INT(f.scene.phase, SCORE_ENTRY_INPUT);
+    CHECK(!M_Tick(&f, (TH01_INPUT) { .down = true }));
+    CHECK_EQ_INT(f.scene.row, 1);
+    for (int32_t i = 0; i < 5; i++) {
+        GameInput_SenseEnding(&f.input, &(TH01_INPUT) {});
+        GameInput_SenseEnding(
+            &f.input, &(TH01_INPUT) { .shot = true, .strike = true });
+    }
+    CHECK(!f.input.bomb);
+    CHECK_EQ_INT(f.input.shot_presses, 0);
+    CHECK_EQ_INT(f.input.strike_presses, 0);
     Arena_Free(&f.arena);
 }

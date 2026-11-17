@@ -8,6 +8,7 @@
 #include "th01/input.h"
 #include "th01/settings.h"
 #include "th01/score.h"
+#include "th01/ending.h"
 
 #include "core/base/arena.h"
 #include "core/gfx.h"
@@ -32,7 +33,9 @@ static bool m_InGameplay, m_InScore;
 static SCORE_SAVES m_Scores;
 static SCORE_ASSETS m_ScoreAssets;
 static SCORE_SCENE m_Score;
-static GAMEPLAY_REQUEST m_ReportedRequest;
+static ENDING_ASSETS m_EndingAssets;
+static ENDING *m_Ending;
+static bool m_InEnding;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
 static SESSION m_Session;
@@ -80,7 +83,22 @@ static RESULT M_LoadAssets(void)
         result = Score_LoadAssets(
             vfs, &m_Scores, Arena_Allocator(&m_Assets), &m_ScoreAssets);
     }
+    if (IS_OK(result)) {
+        result =
+            Ending_LoadAssets(vfs, Arena_Allocator(&m_Assets), &m_EndingAssets);
+    }
     return result;
+}
+
+static void M_EndingAudio(void *const context, const ENDING_AUDIO command)
+{
+    static const OPENING_EVENTS events[] = {
+        { .audio = OPENING_AUDIO_PLAY, .track = 14 },
+        { .audio = OPENING_AUDIO_FADE },
+        { .audio = OPENING_AUDIO_STOP },
+        { .audio = OPENING_AUDIO_PLAY, .track = 3 },
+    };
+    Gameplay_OpeningAudio(context, events[command]);
 }
 
 static RESULT M_Init(void)
@@ -98,12 +116,18 @@ static RESULT M_Init(void)
     m_InOpening = false;
     m_InGameplay = false;
     m_InScore = false;
-    m_ReportedRequest = GAMEPLAY_REQUEST_NONE;
+    m_InEnding = false;
     m_HostTick = 0;
     memset(&m_Session, 0, sizeof(m_Session));
     MUST(Gameplay_Prepare(
         Arena_Allocator(&m_Assets), &m_GameplayAssets, &m_Video, &m_Session,
         &m_Gameplay));
+    const GAMEPLAY_SCORE_CONTEXT ending_context =
+        Gameplay_ScoreContext(m_Gameplay);
+    Ending_Prepare(
+        Arena_Allocator(&m_Assets), &m_EndingAssets, &m_Video,
+        ending_context.vsync, ending_context.input, M_EndingAudio, m_Gameplay,
+        &m_Ending);
     Logo_Init(&m_Logo, &m_Video);
     for (int32_t i = 0; i < 2; i++) {
         MUST(GfxTexture_CreateIndexed(LOGO_WIDTH, LOGO_HEIGHT, &m_Pages[i]));
@@ -150,7 +174,6 @@ static bool M_OpeningEvents(
         Gameplay_Begin(m_Gameplay, raw, m_HostTick);
         m_InGameplay = true;
         m_InOpening = false;
-        m_ReportedRequest = GAMEPLAY_REQUEST_NONE;
     }
     return true;
 }
@@ -184,7 +207,29 @@ static bool M_Tick(const void *const input)
                     .entries[0]
                     .score;
             m_InScore = false;
-            Gameplay_ResumeAfterScore(m_Gameplay);
+            if (m_Score.context == SCORE_ENDING) {
+                Ending_Clear(&m_Session);
+                M_BeginOpening(true, raw);
+            } else {
+                Gameplay_ResumeAfterScore(m_Gameplay);
+            }
+        }
+    } else if (m_InEnding) {
+        Gameplay_AdvanceAudio(m_Gameplay);
+        if (Ending_Tick(m_Ending, raw, reference_edge)) {
+            const END_RESULT *const result = Ending_Result(m_Ending);
+            const GAMEPLAY_SCORE_CONTEXT context =
+                Gameplay_ScoreContext(m_Gameplay);
+            SCORE_ENTRY entry = { .stage = result->route == SESSION_END_MAKAI
+                                      ? 50
+                                      : 60,
+                                  .route = "完" };
+            memcpy(&entry.score, &result->score, sizeof(entry.score));
+            Score_Begin(
+                &m_Score, &m_ScoreAssets, &m_Video, &m_Scores, context.vsync,
+                context.input, SCORE_ENDING, result->rank, &entry);
+            m_InScore = true;
+            m_InEnding = false;
         }
     } else if (m_InGameplay) {
         const GAMEPLAY_REQUEST request =
@@ -206,11 +251,11 @@ static bool M_Tick(const void *const input)
                 context.input, SCORE_GAMEOVER, m_Session.settings.difficulty,
                 &entry);
             m_InScore = true;
-        } else if (
-            request == GAMEPLAY_REQUEST_ENDING
-            && request != m_ReportedRequest) {
-            LOG_WARNING("TH01 ending handoff awaits its scene owner");
-            m_ReportedRequest = request;
+        } else if (request == GAMEPLAY_REQUEST_ENDING) {
+            Ending_Begin(m_Ending, &m_Session);
+            Ending_Tick(m_Ending, raw, false);
+            m_InGameplay = false;
+            m_InEnding = true;
         }
     } else {
         Gameplay_AdvanceAudio(m_Gameplay);
@@ -302,6 +347,9 @@ static void M_Shutdown(void)
     m_TextTexture = nullptr;
     m_UploadedText = nullptr;
     m_ScrolledPage = nullptr;
+    m_Ending = nullptr;
+    memset(&m_EndingAssets, 0, sizeof(m_EndingAssets));
+    m_InEnding = false;
     m_Gameplay = nullptr;
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);

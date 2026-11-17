@@ -49,6 +49,10 @@ typedef struct {
 // original recursive debug screens. A zero-initialized state is ready.
 bool GameInput_SenseGame(GAME_INPUT *state, const TH01_INPUT *raw, bool debug);
 
+// Senses ending arrows, Z/X, Return and Escape without keypad, debug
+// keys or bomb double taps. Preserves unrelated gameplay fields.
+void GameInput_SenseEnding(GAME_INPUT *state, const TH01_INPUT *raw);
+
 // Clears repeat history and double-tap counts, keeping debug-key history,
 // held flags, pause and bomb_frame. Clears the pending bomb flag.
 void GameInput_ResetRepeat(GAME_INPUT *state);

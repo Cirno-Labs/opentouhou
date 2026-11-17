@@ -130,6 +130,47 @@ bool GameInput_SenseGame(
     return player_hit;
 }
 
+void GameInput_SenseEnding(GAME_INPUT *const state, const TH01_INPUT *const raw)
+{
+    TH01_INPUT *const previous = &state->previous;
+    if (raw->up != previous->up) {
+        state->up = raw->up;
+    }
+    if (raw->down != previous->down) {
+        state->down = raw->down;
+    }
+    if (raw->left != previous->left) {
+        state->horizontal = raw->left
+            ? state->horizontal | GAME_INPUT_LEFT
+            : state->horizontal & (uint8_t)~GAME_INPUT_LEFT;
+    }
+    if (raw->right != previous->right) {
+        state->horizontal = raw->right
+            ? state->horizontal | GAME_INPUT_RIGHT
+            : state->horizontal & (uint8_t)~GAME_INPUT_RIGHT;
+    }
+    if (raw->shot != previous->shot) {
+        state->shot = raw->shot;
+    }
+    if (raw->strike != previous->strike) {
+        state->strike = raw->strike;
+    }
+    if (raw->cancel && !previous->cancel) {
+        state->paused = !state->paused;
+    }
+    if (raw->ok != previous->ok) {
+        state->ok = raw->ok;
+    }
+    previous->up = raw->up;
+    previous->down = raw->down;
+    previous->left = raw->left;
+    previous->right = raw->right;
+    previous->shot = raw->shot;
+    previous->strike = raw->strike;
+    previous->cancel = raw->cancel;
+    previous->ok = raw->ok;
+}
+
 void GameInput_ResetRepeat(GAME_INPUT *const state)
 {
     state->previous = (TH01_INPUT) {

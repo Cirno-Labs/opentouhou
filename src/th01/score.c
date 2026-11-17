@@ -120,11 +120,10 @@ static void M_Initial(SCORE_SCENE *const s)
 {
     const bool gameover = s->context == SCORE_GAMEOVER;
     Video_SelectDrawingPage(s->video, 1);
-    M_Draw(
-        s, m_Title, 0, gameover ? 384 : 0, 7, GAME_TEXT_BOLD, false, gameover);
+    M_Draw(s, m_Title, 0, gameover ? 384 : 0, 7, GAME_TEXT_BOLD, false, true);
     M_Draw(
         s, m_Ranks[s->rank], 192, gameover ? 384 : 0, 7, GAME_TEXT_BOLD, false,
-        gameover);
+        true);
     Video_SelectDrawingPage(s->video, 0);
     Scale2x_Copy(s->video, 48, 0, 0, gameover ? 384 : 0, 288, 16);
     if (gameover) {
@@ -345,14 +344,19 @@ bool Score_Tick(
             M_Initial(s);
             break;
         case SCORE_ENTRY_DELAY:
-            if (!Frame_DelayReady(s->vsync, 4)) {
+            if (s->context == SCORE_ENDING ? (uint16_t)s->vsync->count1 < 4
+                                           : !Frame_DelayReady(s->vsync, 4)) {
                 return false;
             }
             s->inputs++;
             s->phase = SCORE_ENTRY_INPUT;
             break;
         case SCORE_ENTRY_INPUT: {
-            GameInput_SenseGame(s->input, raw, false);
+            if (s->context == SCORE_ENDING) {
+                GameInput_SenseEnding(s->input, raw);
+            } else {
+                GameInput_SenseGame(s->input, raw, false);
+            }
             const bool action = s->input->up || s->input->down
                 || s->input->horizontal == GAME_INPUT_LEFT
                 || s->input->horizontal == GAME_INPUT_RIGHT || s->input->shot
@@ -366,11 +370,18 @@ bool Score_Tick(
             if (!action) {
                 return false;
             }
+            if (s->context == SCORE_ENDING) {
+                s->vsync->count1 = 0;
+            }
             s->phase = SCORE_ENTRY_DELAY;
             break;
         }
         case SCORE_RELEASE:
-            GameInput_SenseGame(s->input, raw, false);
+            if (s->context == SCORE_ENDING) {
+                GameInput_SenseEnding(s->input, raw);
+            } else {
+                GameInput_SenseGame(s->input, raw, false);
+            }
             if (!s->input->ok || !s->input->shot) {
                 s->phase = SCORE_DONE;
                 return true;

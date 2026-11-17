@@ -648,6 +648,7 @@ static GAMEPLAY_REQUEST M_Run(
                 return g->request;
             }
             Video_SetScroll(g->video, 0);
+            g->session->exit_rand = g->session->frame_rand;
             g->test_damage = false;
             g->player.bomb_frame = 200;
             if (g->metrics.cleared) {

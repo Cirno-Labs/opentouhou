@@ -52,9 +52,11 @@ RESULT Score_LoadAssets(
 // Borrows the world interrupt counters and input flags across registration.
 // Game Over loads and fades its prepared background; the results screen retains
 // the handed pages and palette. The results screen omits the last-slot jump and
-// timeout. Entry stage uses source values: ordinary stage 1..20, clear 50
-// or 60. Begin and Tick allocate nothing and perform no IO. Completion queues a
-// save; drain it outside simulation with ScoreData_WriteSaves.
+// timeout. The results screen senses arrows only and resets count1 at
+// four-frame wait entry; Game Over also senses keypad directions and resets
+// count1 on wait exit. Entry stage uses source values: ordinary stage 1..20,
+// clear 50 or 60. Begin and Tick allocate nothing and perform no IO. Completion
+// queues a save; drain it outside simulation with ScoreData_WriteSaves.
 void Score_Begin(
     SCORE_SCENE *scene, const SCORE_ASSETS *assets, VIDEO *video,
     SCORE_SAVES *saves, FRAME_VSYNC *vsync, GAME_INPUT *input,

@@ -480,3 +480,23 @@ TEST(live_hud_high_score_is_distinct_from_run_history)
     CHECK_EQ_INT(f.session.highest_score, 42);
     Arena_Free(&f.arena);
 }
+
+TEST(ending_seed_is_saved_after_the_life_exit_scroll_wait)
+{
+    FIXTURE f;
+    M_Init(&f);
+    GAMEPLAY *const g = &f.game;
+    g->phase = GP_LIFE_EXIT;
+    f.session.lives = 0;
+    f.session.frame_rand = 1234567;
+    f.session.exit_rand = 99;
+    Frame_BeginWait(&g->wait, &g->vsync);
+    Gameplay_Tick(g, &(TH01_INPUT) {}, false, 1);
+    CHECK_EQ_INT(f.session.exit_rand, 99);
+    CHECK_EQ_INT(g->phase, GP_LIFE_EXIT);
+    Gameplay_Tick(g, &(TH01_INPUT) {}, true, 2);
+    CHECK_EQ_INT(f.session.exit_rand, 1234567);
+    CHECK_EQ_INT(g->phase, GP_GAMEOVER);
+    CHECK_EQ_INT(f.video.scroll_top, 0);
+    Arena_Free(&f.arena);
+}

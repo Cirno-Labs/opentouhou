@@ -16,6 +16,7 @@ TEST(start_clears_all_run_history_and_restores_credit)
     CHECK_EQ_INT(session.score, 0);
     CHECK_EQ_INT(session.highest_score, 0);
     CHECK_EQ_INT(session.frame_rand, 0xfffffff0);
+    CHECK_EQ_INT(session.exit_rand, 0xfffffff0);
     CHECK_EQ_INT(session.route, SESSION_ROUTE_MAKAI);
     CHECK_EQ_INT(session.stage_id, 0);
     CHECK_EQ_INT(session.lives, 4);
@@ -55,6 +56,7 @@ TEST(continue_preserves_run_history_with_fresh_credit)
     CHECK_EQ_INT(session.score, 0);
     CHECK_EQ_INT(session.highest_score, 654321);
     CHECK_EQ_INT(session.frame_rand, 42);
+    CHECK_EQ_INT(session.exit_rand, 42);
     CHECK_EQ_INT(session.stage_id, 14);
     CHECK_EQ_INT(session.route, SESSION_ROUTE_JIGOKU);
     CHECK_EQ_INT(session.ending, SESSION_END_JIGOKU);

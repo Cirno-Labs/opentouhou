@@ -1,0 +1,43 @@
+#pragma once
+
+static const char m_BAD_ENDING_CAPTION[] = "Try to 'No continue'!!";
+static const char m_BAD_ENDING_NAME_MAKAI[] = "      Bad Ending1     ";
+static const char m_BAD_ENDING_NAME_JIGOKU[] = "      Bad Ending2     ";
+static const char m_GOOD_ENDING_CAPTION[] = "Congratulations!";
+static const char m_GOOD_ENDING_NAME_MAKAI[] = "     Good Ending1     ";
+static const char m_GOOD_ENDING_NAME_JIGOKU[] = "     Good Ending2     ";
+static const char m_BOSS_STAGE_5[] = "STAGE 5 BOSS";
+static const char m_BOSS_STAGE_10[] = "STAGE 10 BOSS";
+static const char m_BOSS_STAGE_15[] = "STAGE 15 BOSS";
+static const char m_BOSS_STAGE_20[] = "STAGE 20 BOSS";
+static const char m_BOSS_NAME_5[] = "Gatekeeper 'SinGyoku'";
+static const char m_BOSS_NAME_10_MAKAI[] = "EvilEyes 'YuugenMagan'";
+static const char m_BOSS_NAME_10_JIGOKU[] = "Revengeful Ghost 'Mima'";
+static const char m_BOSS_NAME_15_MAKAI[] = "Innocence Devil 'Elis'";
+static const char m_BOSS_NAME_15_JIGOKU[] = "HellMoon 'Kikuri'";
+static const char m_BOSS_NAME_20_MAKAI[] = "Angel of Death'Sariel'";
+static const char m_BOSS_NAME_20_JIGOKU[] = "Astral Knight 'Konngara'";
+static const char m_RESULT_DIFFICULTY[] = "難易度　　　　　　　　　　  ";
+static const char m_RESULT_HIGH_SCORE[] = "今回の最高得点　　　　　　  ";
+static const char m_RESULT_FINAL_SCORE[] = "最終得点　　　　　　　　　  ";
+static const char m_RESULT_CONTINUES[] = "コンティニュー回数";
+static const char m_RESULT_SHRINE[] = "　神社　　　　（１面～５面） 　 ";
+static const char m_RESULT_MAKAI_1[] = "　ゲート　　　（６面～１０面）  ";
+static const char m_RESULT_MAKAI_2[] = "  ヴィナの廃墟（１１面～１５面）";
+static const char m_RESULT_MAKAI_3[] = "  堕ちたる神殿（１５面～２０面）";
+static const char m_RESULT_JIGOKU_1[] = "　祠　　　　　（６面～１０面）  ";
+static const char m_RESULT_JIGOKU_2[] = "　炎の腐界　　（１１面～１５面）";
+static const char m_RESULT_JIGOKU_3[] = "　静かなる神殿（１５面～２０面）";
+static const char m_RESULT_MAKAI_TOTAL[] = "  魔界ルート総合　　　　　　  ";
+static const char m_RESULT_JIGOKU_TOTAL[] = "　地獄ルート総合　　　　　　　";
+static const char m_RESULT_THANKS[] = "    Thank you for Playing !! ";
+static const char m_RESULT_TITLE_HEADING[] = "★★★あなたの称号★★★";
+
+static const char *const m_PlayerTitles[3][6] = {
+    { "　モンキー　", "　類人猿", "ホモサピエンス", "　超人", "　靈神　",
+      "　神を超越" },
+    { "お子様ゲーマー", "似非スコアラー", "ミドルスコアラー", "ハイスコアラー",
+      "スーパーゲーマー", "ゲーマーを超越" },
+    { "腐ったみかん", "ザックームの実", "禁断の林檎", "世界樹の葉",
+      "黄帝九鼎神丹経", "　アムリタ" },
+};

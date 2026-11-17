@@ -9,6 +9,7 @@ void Session_Begin(
     }
     session->settings = *settings;
     session->frame_rand = frame_rand;
+    session->exit_rand = frame_rand;
     session->score = 0;
     session->lives = (int16_t)(settings->lives_extra + 2);
     session->bombs = (int16_t)settings->bombs;

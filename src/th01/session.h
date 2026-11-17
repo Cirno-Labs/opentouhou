@@ -23,6 +23,8 @@ typedef enum {
 typedef struct {
     TH01_SETTINGS settings;
     uint32_t score, highest_score, frame_rand;
+    // Retains the last life-exit checkpoint for the ending RNG seed.
+    uint32_t exit_rand;
     // Separates the loaded rank-table leader and unsigned live HUD maximum
     // from highest_score, which tracks the run for Continue and results.
     uint32_t table_high_score, high_score;
