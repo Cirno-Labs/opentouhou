@@ -8,6 +8,7 @@
   which keeps their high frequencies.
 - Changed the text of `--help` and of command-line errors to a new
   format.
+- Fixed the spacing in translated text.
 
 ## 1.0.1 (2026-11-15)
 
