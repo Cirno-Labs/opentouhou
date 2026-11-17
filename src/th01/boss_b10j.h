@@ -86,9 +86,23 @@ void B10J_Init(B10J *boss, const ALLOCATOR *allocator);
 // Keep resources stable and advance independent audio and VSyncs while
 // suspended. Supply a monotonic 60 Hz host serial for the ten-ms waits;
 // visibility is quantized to host ticks without modeling CPU drawing cost.
+// Begin with black pages; the owning stage draws the background afterward.
 // Neither operation allocates or reads files or devices.
 void B10J_BeginSetup(
     B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync);
 bool B10J_ResumeSetup(
     B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync,
     uint64_t host_tick);
+
+RESULT B10J_ValidateContext(const B10J_CONTEXT *context);
+
+// Runs one ordinary call, including missile and particle prefixes. False
+// suspends the owning world during the entrance or regular defeat; advance
+// only independent audio and reference VSyncs before polling again. Pending
+// polls do not repeat prefixes or age actors. Activates cached scene 4 after
+// defeat. Preserves old square-corner spawn positions, hop palette resets,
+// delayed HP gates, broken sprite strips and five-laser cleanup. Calls after
+// completion are inert. Keep borrowed resources stable through every wait.
+// Requires completed setup. Allocates nothing and performs no IO.
+bool B10J_UpdateAndRender(
+    B10J *boss, const B10J_CONTEXT *context, FRAME_VSYNC *vsync);
