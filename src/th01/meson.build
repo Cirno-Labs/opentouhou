@@ -52,6 +52,10 @@ th01_lib = static_library(
   'settings.c',
   'session.c',
   'invincibility.c',
+  'gameplay_assets.c',
+  'gameplay_bind.c',
+  'gameplay_world.c',
+  'gameplay.c',
   'video.c',
   'palette.c',
   'text.c',
@@ -109,6 +113,6 @@ games += {
     'sources': th01_sources,
     'c_args': [layer_include['th01']],
     'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
-    'link_with': [th01_main_lib, th01_lib],
+    'link_with': [th01_main_lib, th01_lib, core_hash_lib],
   },
 }
