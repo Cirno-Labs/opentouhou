@@ -51,6 +51,7 @@ th01_lib = static_library(
   'input.c',
   'settings.c',
   'session.c',
+  'invincibility.c',
   'video.c',
   'palette.c',
   'text.c',
