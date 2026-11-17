@@ -347,7 +347,7 @@ static void M_AfterBonus(GAMEPLAY *const g)
     }
     Gameplay_SyncSession(g);
     if (g->session->stage_id % 5 == 4 || g->boss != 0) {
-        MdrvSynth_Fade(g->audio, 1);
+        Gameplay_Fade(g);
         Gameplay_ResetWorld(g);
         Gameplay_Play(g, 11);
     } else {
@@ -784,14 +784,14 @@ static GAMEPLAY_REQUEST M_Run(
                 } else {
                     g->player.is_hit = false;
                     g->input.paused = false;
-                    MdrvSynth_Stop(g->audio);
+                    Gameplay_Stop(g);
                     M_RequestOpening(g);
                 }
             } else if (g->continue_frame > 3000 || g->input.paused) {
                 g->player.is_hit = false;
                 g->input.paused = false;
                 if (g->continue_frame > 3000) {
-                    MdrvSynth_Stop(g->audio);
+                    Gameplay_Stop(g);
                 }
                 M_RequestOpening(g);
             } else {

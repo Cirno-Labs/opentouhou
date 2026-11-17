@@ -126,6 +126,8 @@ void Gameplay_Bind(GAMEPLAY *gameplay);
 void Gameplay_ResetWorld(GAMEPLAY *gameplay);
 void Gameplay_Effect(void *user, int16_t number);
 void Gameplay_Play(GAMEPLAY *gameplay, size_t song);
+void Gameplay_Fade(void *user);
+void Gameplay_Stop(GAMEPLAY *gameplay);
 void Gameplay_ResetInput(GAMEPLAY *gameplay);
 void Gameplay_DefaultActors(GAMEPLAY *gameplay);
 bool Gameplay_BossTick(GAMEPLAY *gameplay, const TH01_INPUT *raw);

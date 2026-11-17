@@ -5,7 +5,9 @@
 void Gameplay_Effect(void *const user, const int16_t number)
 {
     GAMEPLAY *const g = user;
-    ASSERT(Result_Ignore(MdrvSynth_EffectPlay(g->audio, (uint16_t)number)));
+    if (g->session->settings.music != SETTINGS_MUSIC_OFF) {
+        ASSERT(Result_Ignore(MdrvSynth_EffectPlay(g->audio, (uint16_t)number)));
+    }
 }
 
 void Gameplay_Play(GAMEPLAY *const g, const size_t song)
@@ -16,10 +18,19 @@ void Gameplay_Play(GAMEPLAY *const g, const size_t song)
     }
 }
 
-static void M_Fade(void *const user)
+void Gameplay_Fade(void *const user)
 {
     GAMEPLAY *const g = user;
-    MdrvSynth_Fade(g->audio, 1);
+    if (g->session->settings.music != SETTINGS_MUSIC_OFF) {
+        MdrvSynth_Fade(g->audio, 1);
+    }
+}
+
+void Gameplay_Stop(GAMEPLAY *const g)
+{
+    if (g->session->settings.music != SETTINGS_MUSIC_OFF) {
+        MdrvSynth_Stop(g->audio);
+    }
 }
 
 static void M_HudScore(void *const user)
@@ -132,10 +143,10 @@ static void M_AudioJ(
         Gameplay_Play(g, g->song);
         break;
     case B20J_AUDIO_STOP:
-        MdrvSynth_Stop(g->audio);
+        Gameplay_Stop(g);
         break;
     case B20J_AUDIO_FADE:
-        M_Fade(g);
+        Gameplay_Fade(g);
         break;
     }
 }
@@ -158,10 +169,10 @@ static void M_AudioM(
         Gameplay_Play(g, g->song);
         break;
     case B20M_AUDIO_STOP:
-        MdrvSynth_Stop(g->audio);
+        Gameplay_Stop(g);
         break;
     case B20M_AUDIO_FADE:
-        M_Fade(g);
+        Gameplay_Fade(g);
         break;
     }
 }
@@ -319,7 +330,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
                              .rng = &g->rng,
                              .miko = &a->miko,
                              .route = &g->route,
-                             .fade_music = M_Fade };
+                             .fade_music = Gameplay_Fade };
     g->c10j = (B10J_CONTEXT) { .assets = &a->b10j,
                                .sprites = &g->sprites,
                                .hit = &g->hit,
@@ -333,7 +344,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                .miko = &a->miko,
                                .scene = &g->scene,
                                .stage_cleared = &g->metrics.cleared,
-                               .fade_music = M_Fade };
+                               .fade_music = Gameplay_Fade };
     g->c10m = (B10M_CONTEXT) { .assets = &a->b10m,
                                .sprites = &g->sprites,
                                .hit = &g->hit,
@@ -347,7 +358,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                .miko = &a->miko,
                                .scene = &g->scene,
                                .stage_cleared = &g->metrics.cleared,
-                               .fade_music = M_Fade };
+                               .fade_music = Gameplay_Fade };
     g->c15j = (B15J_CONTEXT) { .assets = &a->b15j,
                                .sprites = &g->sprites,
                                .hit = &g->hit,
@@ -360,7 +371,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                .miko = &a->miko,
                                .scene = &g->scene,
                                .stage_cleared = &g->metrics.cleared,
-                               .fade_music = M_Fade };
+                               .fade_music = Gameplay_Fade };
     g->c15m = (B15M_CONTEXT) { .assets = &a->b15m,
                                .sprites = &g->sprites,
                                .hit = &g->hit,
@@ -373,7 +384,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                .miko = &a->miko,
                                .scene = &g->scene,
                                .stage_cleared = &g->metrics.cleared,
-                               .fade_music = M_Fade };
+                               .fade_music = Gameplay_Fade };
     g->c20j = (B20J_CONTEXT) { .assets = &a->b20j,
                                .sprites = &g->sprites,
                                .hit = &g->hit,

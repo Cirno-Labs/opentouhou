@@ -16,7 +16,7 @@ typedef struct {
     SHOOTOUT_LASERS_ASSETS lasers;
     MDRV_TRACK track;
     MDRV_EFFECT effects[17];
-    uint8_t music_bytes[1], effect_bytes[118];
+    uint8_t music_bytes[3], effect_bytes[118];
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f)
@@ -29,11 +29,12 @@ static void M_Init(FIXTURE *const f)
     g->assets = &f->assets;
     g->video = &f->video;
     g->session = &f->session;
-    f->session = (SESSION) {
-        .lives = 4,
-        .bombs = 1,
-        .settings = { .difficulty = 1, .bombs = 1, .lives_extra = 2 }
-    };
+    f->session = (SESSION) { .lives = 4,
+                             .bombs = 1,
+                             .settings = { .difficulty = 1,
+                                           .bombs = 1,
+                                           .lives_extra = 2,
+                                           .music = SETTINGS_MUSIC_FM } };
     f->assets.stage =
         (PTN) { .count = 34, .pixels = Allocator_Alloc(a, 34 * 1024) };
     memset(f->assets.stage.pixels, PTN_TRANSPARENT, 34 * 1024);
@@ -84,10 +85,12 @@ static void M_Init(FIXTURE *const f)
                                          .ssg_count = 1,
                                          .effects = f->effects,
                                          .effect_count = 17 };
-    f->track = (MDRV_TRACK) {};
+    memcpy(f->music_bytes, (const uint8_t[]) { 0x90, 255, 0xff }, 3);
+    f->track = (MDRV_TRACK) { .channel = 0x80 };
     for (int32_t i = 0; i < GAMEPLAY_SONG_COUNT; i++) {
         f->assets.songs[i] = (MDRV_MUSIC) { .bytes = f->music_bytes,
-                                            .size = 1,
+                                            .size = 3,
+                                            .fm_offset = 3,
                                             .tracks = &f->track,
                                             .track_count = 1 };
     }
@@ -498,5 +501,80 @@ TEST(ending_seed_is_saved_after_the_life_exit_scroll_wait)
     CHECK_EQ_INT(f.session.exit_rand, 1234567);
     CHECK_EQ_INT(g->phase, GP_GAMEOVER);
     CHECK_EQ_INT(f.video.scroll_top, 0);
+    Arena_Free(&f.arena);
+}
+
+TEST(disabled_gameplay_cannot_start_effects)
+{
+    FIXTURE f;
+    M_Init(&f);
+    f.session.settings.music = SETTINGS_MUSIC_OFF;
+    Gameplay_Effect(&f.game, 5);
+    Gameplay_AdvanceAudio(&f.game);
+    CHECK(!MdrvSynth_Status(f.game.audio).effects_playing);
+    f.session.settings.music = SETTINGS_MUSIC_FM;
+    Gameplay_Effect(&f.game, 5);
+    CHECK(MdrvSynth_Status(f.game.audio).effects_playing);
+    Arena_Free(&f.arena);
+}
+
+TEST(disabled_gameplay_preserves_an_existing_opening_fade)
+{
+    FIXTURE f;
+    M_Init(&f);
+    GAMEPLAY *const g = &f.game;
+    f.session.settings.music = SETTINGS_MUSIC_OFF;
+    const size_t used = f.arena.used;
+    Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY });
+    Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_FADE });
+    for (int32_t i = 0; i < 10; i++) {
+        Gameplay_AdvanceAudio(g);
+    }
+    const MDRV_SYNTH_STATUS before = MdrvSynth_Status(g->audio);
+    CHECK(before.music_playing && before.fading);
+    CHECK(before.fade_attenuation > 0);
+    Gameplay_Effect(g, 5);
+    Gameplay_Play(g, 3);
+    Gameplay_Stop(g);
+    Gameplay_Fade(g);
+    g->c20j.audio(g, B20J_AUDIO_STOP, nullptr);
+    g->c20m.audio(g, B20M_AUDIO_STOP, nullptr);
+    const MDRV_SYNTH_STATUS after = MdrvSynth_Status(g->audio);
+    CHECK(after.music_playing && after.fading);
+    CHECK(!after.effects_playing);
+    CHECK_EQ_INT(after.time, before.time);
+    CHECK_EQ_INT(after.pulses, before.pulses);
+    CHECK_EQ_INT(after.fade_attenuation, before.fade_attenuation);
+    CHECK_EQ_INT(g->song, 3);
+    Gameplay_AdvanceAudio(g);
+    CHECK(MdrvSynth_Status(g->audio).time > after.time);
+    CHECK(MdrvSynth_Status(g->audio).fading);
+    Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_STOP });
+    CHECK(!MdrvSynth_Status(g->audio).music_playing);
+    CHECK(!MdrvSynth_Status(g->audio).fading);
+    CHECK_EQ_INT(f.arena.used, used);
+    Arena_Free(&f.arena);
+}
+
+TEST(enabled_gameplay_controls_the_prepared_producer)
+{
+    FIXTURE f;
+    M_Init(&f);
+    GAMEPLAY *const g = &f.game;
+    Gameplay_Play(g, 3);
+    Gameplay_Effect(g, 5);
+    CHECK(MdrvSynth_Status(g->audio).music_playing);
+    CHECK(MdrvSynth_Status(g->audio).effects_playing);
+    Gameplay_Fade(g);
+    CHECK(MdrvSynth_Status(g->audio).fading);
+    Gameplay_Play(g, 4);
+    CHECK(MdrvSynth_Status(g->audio).music_playing);
+    CHECK(!MdrvSynth_Status(g->audio).effects_playing);
+    CHECK(!MdrvSynth_Status(g->audio).fading);
+    g->c20j.audio(g, B20J_AUDIO_STOP, nullptr);
+    CHECK(!MdrvSynth_Status(g->audio).music_playing);
+    Gameplay_Play(g, 5);
+    g->c20m.audio(g, B20M_AUDIO_STOP, nullptr);
+    CHECK(!MdrvSynth_Status(g->audio).music_playing);
     Arena_Free(&f.arena);
 }
