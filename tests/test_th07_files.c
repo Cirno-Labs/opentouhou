@@ -1,5 +1,7 @@
 #include "th07/files.h"
 
+#include "core/base/arena.h"
+#include "core/json.h"
 #include "core/patch.h"
 
 #include "patch_builder.h"
@@ -178,6 +180,69 @@ TEST(a_patch_file_replaces_the_archived_file_by_its_path)
     CHECK(Files_IsPatched("data/front.anm"));
     CHECK(!Files_IsPatched("data/eff01.anm"));
     CHECK(!Files_IsPatched("end00.end"));
+
+    Files_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(directory);
+}
+
+TEST(a_patch_file_replaces_a_nested_path_by_its_archive_name)
+{
+    // thcrap's lang_en ships data/title/th07logo.jpg flat, as "th07logo.jpg",
+    // since that is the name th07.dat itself stores it by.
+    char *const directory = TestDir_Prepare("archive_name_fallback");
+    const TH07_DATA_FILE files[] = {
+        m_Version,
+        { "th07logo.jpg", "archive" },
+    };
+    Th07Data_WriteArchive(directory, files, 2);
+    Th07Data_WriteMusic(directory, nullptr, 0);
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    PatchBuilder_Write(patches, "a/lang/th07/th07logo.jpg", "patched");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    Files_SetPatches(stack);
+
+    READER reader;
+    CHECK(Result_Log(
+        Files_Load("data/title/th07logo.jpg", &reader), LOG_LEVEL_ERROR));
+    CHECK(M_ReadsAs(&reader, "patched"));
+    Reader_Close(&reader);
+    CHECK(Files_IsPatched("data/title/th07logo.jpg"));
+
+    Files_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(directory);
+}
+
+TEST(a_dialogue_jdiff_is_found_by_its_archive_name)
+{
+    char *const directory = TestDir_Prepare("jdiff_archive_name");
+    Th07Data_WriteArchive(directory, &m_Version, 1);
+    Th07Data_WriteMusic(directory, nullptr, 0);
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    PatchBuilder_Write(patches, "a/lang/th07/msg1.dat.jdiff", "{'0': {}}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    Mem_Free(patches);
+    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    Files_SetPatches(stack);
+
+    ARENA arena;
+    Arena_Init(&arena, "test", 1 << 16);
+    const JSON_VALUE *const diff =
+        Files_LoadDiff("data/msg1.dat", Arena_Allocator(&arena));
+    CHECK(diff != nullptr && Json_Get(diff, "0") != nullptr);
+    CHECK(Files_IsPatched("data/msg1.dat"));
+    Arena_Free(&arena);
 
     Files_Shutdown();
     Patch_CloseStack(stack);
