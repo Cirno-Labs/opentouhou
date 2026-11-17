@@ -65,3 +65,29 @@ RESULT B05_ValidateAssets(const B05_ASSETS *assets);
 // Requires no pending operation. All contexts share video, palette and player.
 // Setup allocates nothing, reads no file, and does not draw the background.
 void B05_Setup(B05 *boss, const B05_CONTEXT *context);
+
+// Validates all borrowed battle resources before simulation. Hit and route
+// contexts share video, palette and player. Update borrows the hit context's
+// effects consumer and frame_rand, but binds its own HP and boss palette.
+// fade_music posts the original nonblocking fade request to the audio owner
+// through hit->user; it must not mutate battle state or read an audio device.
+RESULT B05_ValidateContext(const B05_CONTEXT *context);
+
+// Runs one ordinary boss call, or resumes its pending entrance/defeat/route
+// operation. False suspends the owning world: advance only reference VSyncs
+// and independent audio, then poll again. No prefix is replayed; the boss
+// never advances player, Orb, pellets, shots or the world's frame_rand.
+// Supply held raw input while pending; only the real route poll senses it.
+// Entrance includes all 200 delays, then returns without an attack step.
+// Death resets moving pellets and composes the real defeat and route
+// modules, activating cached scene data before setting final flags.
+//
+// Retains the sphere's left-strip typo, slam overshoot, late crossing fire,
+// male image 5 cache and transform overlays. Shared RNG is consumed before
+// spawn attempts even when the pool is full. Keep contexts and assets bound
+// identically until completion. frame_rand changes only between completed
+// ordinary calls. Successful operations allocate nothing and perform no IO.
+// After route completion, calls are inert until Setup or program reset.
+bool B05_UpdateAndRender(
+    B05 *boss, const B05_CONTEXT *context, const TH01_INPUT *raw,
+    FRAME_VSYNC *vsync);

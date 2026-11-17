@@ -38,10 +38,11 @@ typedef struct {
 RESULT BossDefeat_ValidateSprites(const PTN *miko);
 
 // Starts with a fresh raw VSync wait, without drawing or resetting counters.
-// Zero-initialize once and begin only when done. Keep context and borrowed
-// storage alive until completion. origin_top is the live Orb top for regular
-// bosses or SinGyoku entity top; its center (+16 or +48) must be in 0..399.
-// Assets must be validated and post_defeat components must stay in 0..15.
+// Zero-initialize once and begin only when done. Keep borrowed storage alive
+// and supply the same context bindings until completion. origin_top is the live
+// Orb top for regular bosses or SinGyoku entity top; its center (+16 or +48)
+// must be in 0..399. Assets must be validated and post_defeat components must
+// stay in 0..15.
 void BossDefeat_Begin(
     BOSS_DEFEAT *defeat, BOSS_DEFEAT_KIND kind, const FRAME_VSYNC *vsync);
 
