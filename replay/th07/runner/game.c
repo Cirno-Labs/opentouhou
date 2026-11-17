@@ -11,6 +11,7 @@
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/screens/main.h"
+#include "th07/settings.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,6 +22,7 @@ static const RUNNER_FIELD m_CalcFields[] = { TH07_CALC_FIELDS(RUNNER_FIELD) };
 // Creates GameManager before the game, as th07's main does once at start.
 static RESULT M_Init(void)
 {
+    g_Settings.fix_replay_desync = false;
     GameManager_Create(&g_GameManager);
     return Game_Init();
 }

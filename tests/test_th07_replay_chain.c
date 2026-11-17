@@ -222,6 +222,7 @@ static void M_SetUp(const int32_t stage)
     m_Calcs = 0;
     m_SeenPlayWord = 0;
     m_Resaves = 0;
+    g_Settings.fix_replay_desync = false;
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
@@ -280,6 +281,58 @@ TEST(playback_starts_on_the_leading_empty_frame)
     CHECK_EQ_INT(g_Buttons.previous_play_word, 0x40);
     CHECK_EQ_INT(g_Buttons.word, 0x1008);
     M_TearDown();
+}
+
+TEST(a_pause_marker_keeps_the_shoot_edge_from_the_recorded_frames)
+{
+    M_SetUp(1);
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[1], 0, 3);
+    spec.slots[1].buttons[1] = 1;
+    spec.slots[1].events[1] = REPLAY_EVENT_PAUSE;
+    M_Play(&spec);
+    M_Calcs(2);
+    CHECK_EQ_INT(g_Buttons.play_word, 1);
+    CHECK_EQ_INT(g_Buttons.previous_play_word, 0);
+    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
+    M_TearDown();
+}
+
+TEST(the_replay_fix_defaults_on_and_can_be_disabled)
+{
+    TH07_SETTINGS settings;
+    Config_SetDefaults(&g_SettingsSchema, &settings);
+    CHECK(settings.fix_replay_desync);
+    INI *ini;
+    const char *const text = "[fixes]\nreplay_desync = false\n";
+    CHECK(IS_OK(Ini_Parse(text, strlen(text), &g_HeapAllocator, &ini)));
+    Config_Load(&g_SettingsSchema, ini, &settings);
+    CHECK(!settings.fix_replay_desync);
+    Ini_Free(ini);
+}
+
+TEST(the_replay_fix_suppresses_only_the_resume_shoot_edge_in_dialogue)
+{
+    for (int32_t dialogue = 0; dialogue <= 1; dialogue++) {
+        M_SetUp(1);
+        g_Settings.fix_replay_desync = true;
+        M_SPEC spec = {};
+        M_Frames(&spec.slots[1], 0, 5);
+        spec.slots[1].buttons[1] = 3;
+        spec.slots[1].events[1] = REPLAY_EVENT_PAUSE;
+        spec.slots[1].buttons[2] = 0;
+        spec.slots[1].buttons[3] = 1;
+        M_Play(&spec);
+        m_Dialogue = dialogue != 0;
+        M_Calcs(2);
+        CHECK_EQ_INT(g_Buttons.play_word, 3);
+        CHECK_EQ_INT(g_Buttons.previous_play_word, dialogue != 0 ? 1 : 0);
+        CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
+        M_Calcs(2);
+        CHECK_EQ_INT(g_Buttons.play_word, 1);
+        CHECK_EQ_INT(g_Buttons.previous_play_word, 0);
+        M_TearDown();
+    }
 }
 
 TEST(playback_steps_key_repeat_on_the_play_word)
@@ -459,9 +512,10 @@ TEST(stages_2_to_6_take_the_previous_slot_score)
 
 // Plays stage 1 of four frames for calcs, ends it and starts stage 3,
 // which takes the score of slot 2, 0x12345678.
-static int32_t M_ScoreAfterEnding(const int32_t calcs)
+static int32_t M_ScoreAfterEnding(const int32_t calcs, const bool fix)
 {
     M_SetUp(1);
+    g_Settings.fix_replay_desync = fix;
     M_SPEC spec = {};
     M_Frames(&spec.slots[1], 0x10, 4);
     M_Frames(&spec.slots[2], 0x20, 4);
@@ -479,8 +533,14 @@ static int32_t M_ScoreAfterEnding(const int32_t calcs)
 
 TEST(ending_a_played_stage_a_calc_late_clears_the_next_score_low_word)
 {
-    CHECK_EQ_INT(M_ScoreAfterEnding(2), 0x12345678);
-    CHECK_EQ_INT(M_ScoreAfterEnding(3), 0x12340000);
+    CHECK_EQ_INT(M_ScoreAfterEnding(2, false), 0x12345678);
+    CHECK_EQ_INT(M_ScoreAfterEnding(3, false), 0x12340000);
+}
+
+TEST(the_replay_fix_preserves_saved_scores_when_a_stage_ends_late)
+{
+    CHECK_EQ_INT(M_ScoreAfterEnding(2, true), 0x12345678);
+    CHECK_EQ_INT(M_ScoreAfterEnding(3, true), 0x12345678);
 }
 
 TEST(phantasm_plays_slot_7)
@@ -764,6 +824,18 @@ TEST(resave_does_nothing_while_the_score_is_unchanged)
     CHECK_EQ_INT(m_Resaves, 0);
     CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
     CHECK(Replay_HasStage(7));
+    M_TearDown();
+}
+
+TEST(the_replay_fix_keeps_the_source_recording_when_playback_ends)
+{
+    M_SetUp(8);
+    g_Settings.fix_replay_desync = true;
+    RNG rng;
+    M_PlayAndResave(5, 7, &rng);
+    CHECK_EQ_INT(m_Resaves, 0);
+    CHECK(memcmp(&g_Rng, &rng, sizeof(rng)) == 0);
+    CHECK(!Replay_HasStage(7));
     M_TearDown();
 }
 

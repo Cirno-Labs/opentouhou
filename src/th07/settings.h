@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 
-// Holds the settings of the original's th07.cfg that change what the port
-// does. shell/game keeps them in the [game] section of config.ini. The
+// Holds the game settings and optional fixes. shell/game keeps them in
+// the [game] and [fixes] sections of config.ini. The
 // title's option menu changes them during a tick, as the original changes
 // its configuration.
 //
@@ -39,6 +39,8 @@ typedef struct {
     bool slowdown;
     // How many visual effects draw, from 0 to 2.
     int32_t effects_quality;
+    // Prevents replay score corruption and false shoot presses on resume.
+    bool fix_replay_desync;
 } TH07_SETTINGS;
 
 extern TH07_SETTINGS g_Settings;

@@ -103,10 +103,10 @@ static RESULT M_RunFile(
     if (IS_OK(result)) {
         printf(
             "  matched %" PRIu64
-            " calcs, %d START and %d calc columns, %d skipped; replay "
-            "complete",
+            " calcs, %d START and %d calc columns, %d skipped; %s complete",
             report.rows, report.start_columns, report.calc_columns,
-            report.skipped_columns);
+            report.skipped_columns,
+            game->end == RUNNER_END_WITH_PLAY ? "captured playback" : "replay");
         if (report.restarted_calcs != 0) {
             printf(", %" PRIu64 " restarted calcs", report.restarted_calcs);
         }
