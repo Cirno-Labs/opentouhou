@@ -1,0 +1,68 @@
+#include "th01/audio.h"
+
+#include "core/audio/pcm.h"
+
+#define M_BLOCK_FRAMES 800
+#define M_QUEUE_FRAMES (M_BLOCK_FRAMES * 4)
+
+struct GAME_AUDIO {
+    AUDIO_PCM *input;
+    MDRV_SYNTH_FRAME raw[M_BLOCK_FRAMES];
+    float buses[2][M_BLOCK_FRAMES * 2];
+    float previous_input[2][2], previous_output[2][2];
+};
+
+RESULT GameAudio_Prepare(
+    const ALLOCATOR *const allocator, GAME_AUDIO **const out)
+{
+    *out = nullptr;
+    const AUDIO_GROUP groups[] = { AUDIO_GROUP_MUSIC, AUDIO_GROUP_EFFECTS };
+    AUDIO_PCM *input = nullptr;
+    MUST(AudioPcm_Create(groups, 2, M_QUEUE_FRAMES, &input));
+    GAME_AUDIO *const output = Allocator_AllocZ(allocator, sizeof(*output));
+    output->input = input;
+    *out = output;
+    return OK;
+}
+
+RESULT GameAudio_Render(
+    GAME_AUDIO *const output, MDRV_SYNTH *const synth, size_t frames)
+{
+    if (output == nullptr) {
+        return MdrvSynth_Render(synth, nullptr, frames);
+    }
+    while (frames != 0) {
+        const size_t count = frames < M_BLOCK_FRAMES ? frames : M_BLOCK_FRAMES;
+        MUST(MdrvSynth_Render(synth, output->raw, count));
+        for (size_t i = 0; i < count; i++) {
+            const int32_t *const components[] = {
+                output->raw[i].music,
+                output->raw[i].effects,
+            };
+            for (size_t bus = 0; bus < 2; bus++) {
+                for (size_t channel = 0; channel < 2; channel++) {
+                    const float input =
+                        (float)components[bus][channel] / 65536.0f;
+                    const float filtered = input
+                        - output->previous_input[bus][channel]
+                        + 0.99738543f * output->previous_output[bus][channel];
+                    output->previous_input[bus][channel] = input;
+                    output->previous_output[bus][channel] = filtered;
+                    output->buses[bus][i * 2 + channel] = filtered;
+                }
+            }
+        }
+        const float *const buses[] = { output->buses[0], output->buses[1] };
+        MUST(AudioPcm_Submit(output->input, buses, (uint32_t)count));
+        frames -= count;
+    }
+    return OK;
+}
+
+void GameAudio_Free(GAME_AUDIO *const output)
+{
+    if (output != nullptr) {
+        AudioPcm_Free(output->input);
+        output->input = nullptr;
+    }
+}

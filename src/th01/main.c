@@ -11,6 +11,7 @@
 #include "th01/ending.h"
 
 #include "core/base/arena.h"
+#include "core/audio.h"
 #include "core/gfx.h"
 #include "core/vfs.h"
 
@@ -38,6 +39,7 @@ static ENDING *m_Ending;
 static bool m_InEnding;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
+static GAME_AUDIO *m_Audio;
 static SESSION m_Session;
 static uint64_t m_HostTick;
 static GFX_TEXTURE *m_TextTexture;
@@ -122,6 +124,12 @@ static RESULT M_Init(void)
     MUST(Gameplay_Prepare(
         Arena_Allocator(&m_Assets), &m_GameplayAssets, &m_Video, &m_Session,
         &m_Gameplay));
+    if (Audio_IsInitialized()) {
+        Result_Log(
+            GameAudio_Prepare(Arena_Allocator(&m_Assets), &m_Audio),
+            LOG_LEVEL_WARNING);
+        Gameplay_BindAudio(m_Gameplay, m_Audio);
+    }
     const GAMEPLAY_SCORE_CONTEXT ending_context =
         Gameplay_ScoreContext(m_Gameplay);
     Ending_Prepare(
@@ -338,6 +346,11 @@ static void M_Shutdown(void)
 {
     Th01_FlushSaves();
     m_Initialized = false;
+    if (m_Gameplay != nullptr) {
+        Gameplay_BindAudio(m_Gameplay, nullptr);
+    }
+    GameAudio_Free(m_Audio);
+    m_Audio = nullptr;
     for (int32_t i = 0; i < 2; i++) {
         GfxTexture_Free(m_Pages[i]);
         m_Pages[i] = nullptr;

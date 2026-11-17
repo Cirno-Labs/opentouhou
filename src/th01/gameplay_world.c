@@ -10,135 +10,116 @@ RESULT Gameplay_Prepare(
 {
     *out = nullptr;
     GAMEPLAY *const g = Allocator_AllocZ(allocator, sizeof(*g));
-    g->assets = assets;
-    g->video = video;
-    g->session = session;
-    StageObjects_Prepare(&g->storage, allocator);
-    Hud_Init(&g->hud, allocator);
-    HudHp_Init(&g->health, allocator);
-    Tram_Init(&g->tram, allocator);
-    B10J_Init(&g->b10j, allocator);
-    B15M_Init(&g->b15m, allocator);
-    B20M_Init(&g->b20m, allocator);
+    g->storage.assets = assets;
+    g->storage.video = video;
+    g->storage.session = session;
+    StageObjects_Prepare(&g->storage.objects, allocator);
+    Hud_Init(&g->world.hud, allocator);
+    HudHp_Init(&g->world.health, allocator);
+    Tram_Init(&g->world.tram, allocator);
+    B10J_Init(&g->world.b10j, allocator);
+    B15M_Init(&g->world.b15m, allocator);
+    B20M_Init(&g->world.b20m, allocator);
     MUST(MdrvSynth_Init(
         assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, allocator,
-        nullptr, nullptr, &g->audio));
+        nullptr, nullptr, &g->storage.audio));
+    B20J_Init(&g->world.b20j);
+    Palette_Init(&g->world.palette);
+    g->world.first_stage = true;
+    g->world.wait_for_shot = true;
+    g->world.phase = GP_STAGE_BEGIN;
+    GAMEPLAY_WORLD *const initial =
+        Allocator_Alloc(allocator, sizeof(*initial));
+    memcpy(initial, &g->world, sizeof(*initial));
+    g->storage.initial = initial;
     Gameplay_Bind(g);
-    MUST(B05_ValidateContext(&g->c05));
-    MUST(B10J_ValidateContext(&g->c10j));
-    MUST(B10M_ValidateContext(&g->c10m));
-    MUST(B15J_ValidateContext(&g->c15j));
-    MUST(B15M_ValidateContext(&g->c15m));
-    MUST(B20J_ValidateContext(&g->c20j));
-    MUST(B20M_ValidateContext(&g->c20m));
+    MUST(B05_ValidateContext(&g->bindings.c05));
+    MUST(B10J_ValidateContext(&g->bindings.c10j));
+    MUST(B10M_ValidateContext(&g->bindings.c10m));
+    MUST(B15J_ValidateContext(&g->bindings.c15j));
+    MUST(B15M_ValidateContext(&g->bindings.c15m));
+    MUST(B20J_ValidateContext(&g->bindings.c20j));
+    MUST(B20M_ValidateContext(&g->bindings.c20m));
     *out = g;
     return OK;
 }
 
 void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
-    const HUD hud = g->hud;
-    const HUD_HP health = g->health;
-    *g = (GAMEPLAY) {
-        .assets = g->assets,
-        .video = g->video,
-        .session = g->session,
-        .audio = g->audio,
-        .song = g->song,
-        .host_tick = g->host_tick,
-        .storage = g->storage,
-        .tram = g->tram,
-        .hud = { .lives = hud.lives,
-                 .bombs = hud.bombs,
-                 .numbers = hud.numbers,
-                 .stage = hud.stage,
-                 .timer = hud.timer },
-        .health = { .backgrounds = health.backgrounds },
-        .b10j = { .background = g->b10j.background,
-                  .meteor_active = true,
-                  .spread_interval = 4,
-                  .spread_speed = 8 },
-        .b15m = { .background = g->b15m.background },
-        .b20m = { .wand_background = g->b20m.wand_background,
-                  .ray_previous_x = 999,
-                  .ray_previous_y = 999,
-                  .flake_state = -1 },
-        .first_stage = true,
-        .wait_for_shot = true,
-        .phase = GP_STAGE_BEGIN,
-    };
-    B20J_Init(&g->b20j);
-    Palette_Init(&g->palette);
-    Frame_SwitchProgram(&g->vsync);
-    Tram_Clear(&g->tram);
-    Tram_SetVisible(&g->tram, true);
-    g->session->high_score = g->session->table_high_score;
-    g->metrics.score = g->session->score;
-    g->player.remaining_bombs = g->session->bombs;
-    g->player.left = 304;
-    g->pellet_shared.speed = g->session->pellet_speed;
-    g->retained_lives = (int8_t)g->session->lives;
-    g->next_extend = Extend_NextForScore(g->session->score);
-    g->rng = g->session->frame_rand;
-    g->metrics.flip_cycle = (uint8_t)(Math_Random(&g->rng) % 60);
-    g->boss_stage = g->session->stage_id % 5 == 4;
-    Scene_Activate(&g->scene, &g->assets->scenes[Session_Scene(g->session)]);
-    Video_SelectDrawingPage(g->video, 0);
-    Video_SelectVisiblePage(g->video, 0);
-    Video_SetScroll(g->video, 0);
-    Video_Clear(g->video, 0);
+    memcpy(&g->world, g->storage.initial, sizeof(g->world));
+    Frame_SwitchProgram(&g->world.vsync);
+    Tram_Clear(&g->world.tram);
+    Tram_SetVisible(&g->world.tram, true);
+    g->storage.session->high_score = g->storage.session->table_high_score;
+    g->world.metrics.score = g->storage.session->score;
+    g->world.player.remaining_bombs = g->storage.session->bombs;
+    g->world.player.left = 304;
+    g->world.pellet_shared.speed = g->storage.session->pellet_speed;
+    g->world.retained_lives = (int8_t)g->storage.session->lives;
+    g->world.next_extend = Extend_NextForScore(g->storage.session->score);
+    g->world.rng = g->storage.session->frame_rand;
+    g->world.metrics.flip_cycle = (uint8_t)(Math_Random(&g->world.rng) % 60);
+    g->world.boss_stage = g->storage.session->stage_id % 5 == 4;
+    Scene_Activate(
+        &g->world.scene,
+        &g->storage.assets->scenes[Session_Scene(g->storage.session)]);
+    Video_SelectDrawingPage(g->storage.video, 0);
+    Video_SelectVisiblePage(g->storage.video, 0);
+    Video_SetScroll(g->storage.video, 0);
+    Video_Clear(g->storage.video, 0);
     Gameplay_Bind(g);
 }
 
 void Gameplay_ResetInput(GAMEPLAY *const g)
 {
-    GameInput_ResetGame(&g->input);
+    GameInput_ResetGame(&g->world.input);
 }
 
 void Gameplay_DefaultActors(GAMEPLAY *const g)
 {
     Sprite_PtnPut(
-        g->video, &g->assets->miko, 0, -1, g->player.left, PLAYER_TOP);
+        g->storage.video, &g->storage.assets->miko, 0, -1, g->world.player.left,
+        PLAYER_TOP);
     Orb_RenderAction(
-        g->video, g->stage.sprites,
+        g->storage.video, g->bindings.stage.sprites,
         (ORB_ACTION) {
             .kind = ORB_ACTION_PUT,
-            .left = g->orb.left,
-            .top = g->orb.top,
+            .left = g->world.orb.left,
+            .top = g->world.orb.top,
             .image = 0,
         });
 }
 
 void Gameplay_SyncSession(GAMEPLAY *const g)
 {
-    g->session->score = g->metrics.score;
-    g->session->bombs = g->player.remaining_bombs;
-    g->session->pellet_speed = g->pellet_shared.speed;
+    g->storage.session->score = g->world.metrics.score;
+    g->storage.session->bombs = g->world.player.remaining_bombs;
+    g->storage.session->pellet_speed = g->world.pellet_shared.speed;
 }
 
 void Gameplay_BossSetup(GAMEPLAY *const g)
 {
-    switch (g->boss) {
+    switch (g->world.boss) {
     case 1:
-        B05_Setup(&g->b05, &g->c05);
+        B05_Setup(&g->world.b05, &g->bindings.c05);
         break;
     case 2:
-        B10M_Setup(&g->b10m, &g->c10m);
+        B10M_Setup(&g->world.b10m, &g->bindings.c10m);
         break;
     case 3:
-        B10J_BeginSetup(&g->b10j, &g->c10j, &g->vsync);
+        B10J_BeginSetup(&g->world.b10j, &g->bindings.c10j, &g->world.vsync);
         break;
     case 4:
-        B15J_Setup(&g->b15j, &g->c15j);
+        B15J_Setup(&g->world.b15j, &g->bindings.c15j);
         break;
     case 5:
-        B15M_Setup(&g->b15m, &g->c15m);
+        B15M_Setup(&g->world.b15m, &g->bindings.c15m);
         break;
     case 6:
-        B20M_Setup(&g->b20m, &g->c20m);
+        B20M_Setup(&g->world.b20m, &g->bindings.c20m);
         break;
     case 7:
-        B20J_Setup(&g->b20j, &g->c20j);
+        B20J_Setup(&g->world.b20j, &g->bindings.c20j);
         break;
     default:
         break;
@@ -147,23 +128,30 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
 
 bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
-    switch (g->boss) {
+    switch (g->world.boss) {
     case 1:
-        return B05_UpdateAndRender(&g->b05, &g->c05, raw, &g->vsync);
+        return B05_UpdateAndRender(
+            &g->world.b05, &g->bindings.c05, raw, &g->world.vsync);
     case 2:
-        return B10M_UpdateAndRender(&g->b10m, &g->c10m, &g->vsync);
+        return B10M_UpdateAndRender(
+            &g->world.b10m, &g->bindings.c10m, &g->world.vsync);
     case 3:
-        return B10J_UpdateAndRender(&g->b10j, &g->c10j, &g->vsync);
+        return B10J_UpdateAndRender(
+            &g->world.b10j, &g->bindings.c10j, &g->world.vsync);
     case 4:
-        return B15J_UpdateAndRender(&g->b15j, &g->c15j, &g->vsync);
+        return B15J_UpdateAndRender(
+            &g->world.b15j, &g->bindings.c15j, &g->world.vsync);
     case 5:
         return B15M_UpdateAndRender(
-            &g->b15m, &g->c15m, &g->vsync, g->host_tick);
+            &g->world.b15m, &g->bindings.c15m, &g->world.vsync,
+            g->storage.host_tick);
     case 6:
         return B20M_UpdateAndRender(
-            &g->b20m, &g->c20m, &g->vsync, g->host_tick);
+            &g->world.b20m, &g->bindings.c20m, &g->world.vsync,
+            g->storage.host_tick);
     case 7:
-        return B20J_UpdateAndRender(&g->b20j, &g->c20j, &g->vsync);
+        return B20J_UpdateAndRender(
+            &g->world.b20j, &g->bindings.c20j, &g->world.vsync);
     default:
         return true;
     }
@@ -171,12 +159,13 @@ bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 
 const TRAM *Gameplay_TextLayer(const GAMEPLAY *const g)
 {
-    return &g->tram;
+    return &g->world.tram;
 }
 
 void Gameplay_AdvanceAudio(GAMEPLAY *const g)
 {
-    ASSERT(Result_Ignore(MdrvSynth_Render(g->audio, nullptr, 800)));
+    Gameplay_RequireAudio(
+        GameAudio_Render(g->storage.audio_output, g->storage.audio, 800));
 }
 
 void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
@@ -185,18 +174,19 @@ void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
     case OPENING_AUDIO_NONE:
         break;
     case OPENING_AUDIO_STOP:
-        MdrvSynth_Stop(g->audio);
+        MdrvSynth_Stop(g->storage.audio);
         break;
     case OPENING_AUDIO_FADE:
-        MdrvSynth_Fade(g->audio, 1);
+        MdrvSynth_Fade(g->storage.audio, 1);
         break;
     case OPENING_AUDIO_PLAY: {
         static const uint8_t songs[OPENING_TRACK_COUNT] = {
             15, 16, 0, 1, 2, 3, 4, 5, 7, 8, 9, 13, 14, 12, 17,
         };
         ASSERT(events.track >= 0 && events.track < OPENING_TRACK_COUNT);
-        g->song = songs[events.track];
-        ASSERT(Result_Ignore(MdrvSynth_Play(g->audio, g->song)));
+        g->storage.song = songs[events.track];
+        Gameplay_RequireAudio(
+            MdrvSynth_Play(g->storage.audio, g->storage.song));
         break;
     }
     }
@@ -204,5 +194,19 @@ void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
 
 GAMEPLAY_SCORE_CONTEXT Gameplay_ScoreContext(GAMEPLAY *const g)
 {
-    return (GAMEPLAY_SCORE_CONTEXT) { .vsync = &g->vsync, .input = &g->input };
+    return (GAMEPLAY_SCORE_CONTEXT) { .vsync = &g->world.vsync,
+                                      .input = &g->world.input };
+}
+
+void Gameplay_BindAudio(GAMEPLAY *const g, GAME_AUDIO *const output)
+{
+    g->storage.audio_output = output;
+}
+
+void Gameplay_RequireAudio(const RESULT result)
+{
+    if (!IS_OK(result)) {
+        Result_Log(Result_Prefix(result, "TH01 audio"), LOG_LEVEL_ERROR);
+        LOG_FATAL("TH01 audio playback failed");
+    }
 }

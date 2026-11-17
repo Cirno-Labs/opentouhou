@@ -42,17 +42,11 @@ typedef enum {
     GP_TERMINAL,
 } GAMEPLAY_PHASE;
 
-struct GAMEPLAY {
-    const GAMEPLAY_ASSETS *assets;
-    VIDEO *video;
-    SESSION *session;
-    MDRV_SYNTH *audio;
-    size_t song;
+typedef struct {
     GAMEPLAY_REQUEST request;
     GAMEPLAY_PHASE phase, after_player;
     FRAME_VSYNC vsync;
     FRAME_WAIT wait;
-    uint64_t host_tick;
     uint32_t rng, frame, score_bonus;
     int16_t next_extend;
     int8_t retained_lives;
@@ -64,7 +58,6 @@ struct GAMEPLAY {
     uint16_t continue_frame;
     STAGE_GAMEPLAY metrics;
     STAGE_OBJECTS objects;
-    STAGE_OBJECT_STORAGE storage;
     STAGE_ORB_COMPOSITE composite;
     PLAYER player;
     GAME_INPUT input;
@@ -97,6 +90,22 @@ struct GAMEPLAY {
     B20M b20m;
     BONUS bonus;
     BONUS_TOTAL total;
+
+} GAMEPLAY_WORLD;
+
+typedef struct {
+    const GAMEPLAY_ASSETS *assets;
+    VIDEO *video;
+    SESSION *session;
+    MDRV_SYNTH *audio;
+    GAME_AUDIO *audio_output;
+    size_t song;
+    uint64_t host_tick;
+    STAGE_OBJECT_STORAGE objects;
+    const GAMEPLAY_WORLD *initial;
+} GAMEPLAY_STORAGE;
+
+typedef struct {
     PLAYER_SPRITES player_sprites;
     PLAYER_OUTPUT player_output;
     SHOTS_OUTPUT shots_output;
@@ -120,9 +129,16 @@ struct GAMEPLAY {
     B20M_CONTEXT c20m;
     BONUS_CONTEXT bonus_context;
     BONUS_TOTAL_CONTEXT total_context;
+} GAMEPLAY_BINDINGS;
+
+struct GAMEPLAY {
+    GAMEPLAY_STORAGE storage;
+    GAMEPLAY_WORLD world;
+    GAMEPLAY_BINDINGS bindings;
 };
 
 void Gameplay_Bind(GAMEPLAY *gameplay);
+void Gameplay_RequireAudio(RESULT result);
 void Gameplay_ResetWorld(GAMEPLAY *gameplay);
 void Gameplay_Effect(void *user, int16_t number);
 void Gameplay_Play(GAMEPLAY *gameplay, size_t song);

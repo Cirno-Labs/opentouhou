@@ -5,8 +5,7 @@ oth01 is an unofficial native port of Touhou 1, Highly Responsive to
 Prayers. One program runs the logo, title, menus, options, music room,
 both gameplay routes, endings, verdicts and high-score registration.
 
-This development build has no audible music or sound effects, including
-in the music room. Sound playback through an audio device is unfinished.
+Music and sound effects play through the system audio device.
 Full original-game playback and timing parity have not been established.
 Linux and Windows builds have local checks. macOS runtime behavior has
 not been verified.
@@ -85,7 +84,8 @@ folder if it has no saved table in the user folder. New scores go only
 to the user folder. Original settings and scores stay unchanged.
 
 Use Options to select difficulty, music mode, bombs and extra lives.
-The music setting currently produces no audible output. config.ini
+Music OFF suppresses gameplay music and effect commands; the opening,
+music room and endings retain their own music controls. config.ini
 also holds the video scaling, screenshot and input settings. In [video],
 scaling can be sharp, smooth or integer.
 

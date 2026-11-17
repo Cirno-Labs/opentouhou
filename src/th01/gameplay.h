@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th01/gameplay_assets.h"
+#include "th01/audio.h"
 #include "th01/frame.h"
 #include "th01/session.h"
 #include "th01/opening.h"
@@ -33,8 +34,7 @@ void Gameplay_Begin(
 // Advances one host tick with supplied raw input and reference VSync edge.
 // Advance the application's fractional frame clock across internal states.
 // Nested waits suspend their owning prefix, preserving source call order.
-// Pure prepared audio advances into discard output until device delivery is
-// available. Terminal requests retain the current actual game frame.
+// Terminal requests retain the current actual game frame.
 GAMEPLAY_REQUEST Gameplay_Tick(
     GAMEPLAY *gameplay, const TH01_INPUT *input, bool reference_edge,
     uint64_t host_tick);
@@ -49,6 +49,10 @@ const TRAM *Gameplay_TextLayer(const GAMEPLAY *gameplay);
 // advances audio itself, including during nested waits and terminal frames.
 void Gameplay_OpeningAudio(GAMEPLAY *gameplay, OPENING_EVENTS events);
 void Gameplay_AdvanceAudio(GAMEPLAY *gameplay);
+
+// Borrows prepared output across world resets. Null selects silent output.
+// Unbind before freeing output; does not change the shared producer clock.
+void Gameplay_BindAudio(GAMEPLAY *gameplay, GAME_AUDIO *output);
 
 // Borrows the shared source counters and input flags during score ownership.
 // The score owner advances VSync while gameplay is suspended. Keep gameplay
