@@ -1,7 +1,14 @@
 #pragma once
 
+#include "th01/extend.h"
 #include "th01/frame.h"
+#include "th01/input.h"
 #include "th01/palette.h"
+#include "th01/pi.h"
+#include "th01/reiiden_image.h"
+#include "th01/timer.h"
+
+#include "core/vfs.h"
 
 typedef struct {
     uint16_t transferred[VIDEO_HEIGHT];
@@ -24,11 +31,6 @@ void Bonus_BeginRowTransition(BONUS_ROW_TRANSITION *transition);
 bool Bonus_ResumeRowTransition(
     BONUS_ROW_TRANSITION *transition, VIDEO *video, PALETTE_STATE *palette,
     const PALETTE *target, FRAME_VSYNC *vsync);
-
-#include "th01/extend.h"
-#include "th01/input.h"
-#include "th01/timer.h"
-#include "th01/reiiden_image.h"
 
 typedef struct {
     uint8_t box[4];
@@ -95,3 +97,77 @@ bool Bonus_BeginStage(
 bool Bonus_Resume(
     BONUS *bonus, const BONUS_CONTEXT *context, const TH01_INPUT *raw,
     FRAME_VSYNC *vsync);
+
+typedef struct {
+    PI_IMAGE background;
+    PTN numerals;
+    PALETTE palette;
+} BONUS_TOTAL_ASSETS;
+
+typedef enum {
+    BONUS_TOTAL_DONE,
+    BONUS_TOTAL_INITIAL_WAIT,
+    BONUS_TOTAL_TRANSITION,
+    BONUS_TOTAL_STAGE_WAIT,
+    BONUS_TOTAL_PREPARE_METRIC,
+    BONUS_TOTAL_DIGIT,
+    BONUS_TOTAL_DIGIT_WAIT,
+    BONUS_TOTAL_METRIC_WAIT,
+    BONUS_TOTAL_CONFIRM,
+} BONUS_TOTAL_PHASE;
+
+typedef struct {
+    BONUS_TOTAL_PHASE phase;
+    BONUS_ROW_TRANSITION transition;
+    uint64_t last_tick;
+    uint32_t credit;
+    int16_t stage_number, digits[6], top, metric, place, digit_count, spin;
+} BONUS_TOTAL;
+
+typedef struct {
+    const BONUS_CONTEXT *common;
+    const BONUS_TOTAL_ASSETS *assets;
+    SHOTS *shots;
+    SHOTS_OUTPUT shots_output;
+    PELLETS *pellets;
+    uint16_t *continues_per_scene;
+    const int32_t *continues_total;
+    void (*effect)(void *user, int16_t number);
+    void *user;
+} BONUS_TOTAL_CONTEXT;
+
+// Loads CLEAR3.GRP and NUMB.PTN into the caller's grouped allocator before
+// simulation. Keeps no file handles; failed loads leave out empty and any
+// intermediate allocations in that group. No individual resource frees occur.
+RESULT Bonus_LoadTotalAssets(
+    VFS *vfs, const ALLOCATOR *allocator, BONUS_TOTAL_ASSETS *out);
+RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
+
+// Starts a boss-stage total for stage 5, 10, 15 or 20. Uses real shot and
+// pellet reset operations before the initial fifty-frame wait. Page 1 becomes
+// the cached total background, then alternating rows transfer it to page 0.
+// Awards the score after all four metrics, before the six-digit sum. Total
+// does not update the HUD or extend threshold. Saves the low sixteen bits of
+// live continues_total after resetting input, before the confirmation loop.
+// Requires a synchronous effect consumer that composes preloaded audio;
+// callback must not change borrowed bonus or gameplay state.
+bool Bonus_BeginTotal(
+    BONUS_TOTAL *bonus, const BONUS_TOTAL_CONTEXT *context,
+    int16_t stage_number, const TH01_INPUT *raw, FRAME_VSYNC *vsync,
+    uint64_t host_tick);
+
+// Resumes source frame delays with count1 carry and four-millisecond digit
+// delays with fractional credit from a monotonic 60 Hz host serial. Several
+// digit steps can execute in one host tick. Discards unused millisecond
+// credit when the next source frame delay begins; time spent waiting for
+// frames does not prepay later digit delays. Visibility is host-quantized;
+// CPU drawing cost and DOS delay calibration are not modeled. Numeral spins
+// retain the source's scrambled second loop, including its two blank quarters.
+// Final digits outside the numeral table draw blank, preserving arithmetic
+// without reproducing undefined source table reads.
+// Uses the same release confirmation and bounded caller storage as stage
+// bonuses. Advance only independent VSync/audio while the world is suspended.
+// Successful updates and pending polls allocate nothing and perform no IO.
+bool Bonus_ResumeTotal(
+    BONUS_TOTAL *bonus, const BONUS_TOTAL_CONTEXT *context,
+    const TH01_INPUT *raw, FRAME_VSYNC *vsync, uint64_t host_tick);
