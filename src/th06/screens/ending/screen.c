@@ -3,6 +3,7 @@
 #include "th06/screens/ending/script.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -559,6 +560,7 @@ static RESULT M_Added(void *const arg)
     M_ENDING *const ending = arg;
     GAME_MANAGER *const gm = &g_GameManager;
     gm->mode.game_cleared = true;
+    g_AsciiText.hide_frame_rate = true;
     MUST(Anm_Load(0x2c, "data/staff01.anm", 0x600));
     MUST(Anm_Load(0x2d, "data/staff02.anm", 0x607));
     MUST(Anm_Load(0x2e, "data/staff03.anm", 0x60e));
@@ -580,6 +582,7 @@ static RESULT M_Added(void *const arg)
 
 static void M_Deleted(void *const arg)
 {
+    g_AsciiText.hide_frame_rate = false;
     M_ENDING *const ending = arg;
     Anm_Release(0x2c);
     Anm_Release(0x2d);

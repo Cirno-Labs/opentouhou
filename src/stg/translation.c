@@ -56,11 +56,15 @@ static const char *M_GetTextAt(const JSON_VALUE *const object, const int32_t n)
 static void M_TranslateStrings(const PATCH_STRINGS *const strings)
 {
     for (int32_t i = 0; i < m_Game->string_count; i++) {
-        if (m_Game->addresses[i] == 0) {
+        const char *const key =
+            m_Game->string_keys != nullptr ? m_Game->string_keys[i] : nullptr;
+        if (key == nullptr && m_Game->addresses[i] == 0) {
             continue;
         }
-        const char *const text = Patch_TranslateAt(
-            strings, m_Game->addresses[i], m_Game->defaults[i]);
+        const char *const text = key != nullptr
+            ? Patch_Translate(strings, key, m_Game->defaults[i])
+            : Patch_TranslateAt(
+                  strings, m_Game->addresses[i], m_Game->defaults[i]);
         if (text == m_Game->defaults[i]) {
             continue;
         }

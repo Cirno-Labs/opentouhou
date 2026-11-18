@@ -28,6 +28,8 @@ typedef struct {
                           // translations replace its entries
     const char *const *defaults;
     const uint32_t *addresses; // 0 where a string's address is not known
+    // Optional named stringdefs keys, used instead of the retail addresses.
+    const char *const *string_keys;
     int32_t string_count;
     int32_t spell_count;
     int32_t stage_count;

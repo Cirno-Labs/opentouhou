@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added the frame rate display at the bottom of the screen.
+- Added the frame rate display outside ending scenes.
 - Changed the bundled Japanese font to MS Gothic.
 - Changed the text of `--help` and of command-line errors to a new
   format.
@@ -12,8 +12,11 @@
   now focuses only after it is held for 8 frames, as in the original.
 - Fixed the letters and spacing in translated text.
 - Fixed the right half of translated Music Room comments.
-- Fixed menu highlight colors and the selected graphics setting.
+- Fixed menu highlight colors, difficulty and character selection
+  colors, and the selected graphics setting.
 - Fixed JPEG background colors and shading.
+- Fixed missing results-screen labels and darkened results artwork.
+- Fixed score widths on translated results screens.
 - Fixed the size, shape, shading, sharpness and placement of text in
   spell names, dialogue, translator notes and Japanese stage and song
   titles.
