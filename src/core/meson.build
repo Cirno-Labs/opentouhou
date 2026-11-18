@@ -183,17 +183,18 @@ core_patch_lib = static_library(
   dependencies: [sdl3],
 )
 
-# core/image needs core/base and core/io, plus FFmpeg for decoding and
-# encoding; the tests link it without SDL beyond what core/io needs.
+# core/image needs core/base and core/io, plus libjpeg and FFmpeg;
+# the tests link it without SDL beyond what core/io needs.
 core_image_lib = static_library(
   'core_image',
   'image/decode.c',
+  'image/jpeg.c',
   'image/encode.c',
   'image/pixels.c',
   'image/resize.c',
   c_args: core_include,
   implicit_include_directories: false,
-  dependencies: [avcodec, avutil, swscale, cc_libm],
+  dependencies: [avcodec, avutil, swscale, jpeg, cc_libm],
 )
 
 core_audio_lib = static_library(
@@ -266,6 +267,7 @@ core_dep = declare_dependency(
   dependencies: [
     sdl3.partial_dependency(links: true),
     sdl3_ttf.partial_dependency(links: true),
+    jpeg.partial_dependency(links: true),
     avcodec.partial_dependency(links: true),
     avutil.partial_dependency(links: true),
     swscale.partial_dependency(links: true),

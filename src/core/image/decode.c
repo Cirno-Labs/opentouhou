@@ -2,6 +2,7 @@
 
 #include "core/base/memory.h"
 #include "core/image/codec.h"
+#include "core/image/jpeg.h"
 
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
@@ -52,6 +53,16 @@ RESULT Image_Decode(
     if (codec_id == AV_CODEC_ID_NONE) {
         Mem_Free(data);
         return FAIL("unrecognized image format");
+    }
+    if (codec_id == AV_CODEC_ID_MJPEG) {
+        bool handled;
+        const RESULT decoding =
+            Image_DecodeJpeg(data, size, allocator, out, &handled);
+        if (handled || !IS_OK(decoding)) {
+            Mem_Free(data);
+            return decoding;
+        }
+        Result_Ignore(decoding);
     }
     const AVCodec *const codec = avcodec_find_decoder(codec_id);
     AVCodecContext *context = avcodec_alloc_context3(codec);
