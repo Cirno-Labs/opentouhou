@@ -251,7 +251,7 @@ core_text_lib = static_library(
   text_font,
   c_args: core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
-  dependencies: [sdl3_ttf, sdl3, cc_libm],
+  dependencies: [sdl3_ttf, sdl3, freetype, cc_libm],
 )
 
 # SDL is a dependency of the library, not of its users: layers above core
