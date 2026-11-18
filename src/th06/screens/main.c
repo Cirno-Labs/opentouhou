@@ -10,6 +10,7 @@
 #include "th06/settings.h"
 #include "th06/sound.h"
 #include "th06/strings.h"
+#include "th06/time.h"
 
 #include "shell/game.h"
 #include "core/base/color.h"
@@ -1465,6 +1466,9 @@ static RESULT M_Added(void *const arg)
             Sound_PlayMusic(M_TITLE_MUSIC);
             ScreenEffect_FadeIn(120, 0xffffff);
         } else {
+            if (Scene_Get() == SCENE_BOOT) {
+                GameTime_Hold();
+            }
             ScreenEffect_FadeIn(200, 0xffffff);
         }
     }

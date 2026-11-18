@@ -5,6 +5,7 @@
 
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/time.h"
 
 #include "core/gfx/private.h"
 
@@ -138,6 +139,26 @@ TEST(fades_record_the_original_rectangles_and_preceding_calc_alpha)
     CHECK(!GfxRecorder_Quad(0)->state.depth_write);
     CHECK(GfxRecorder_Quad(0)->texture == nullptr);
     CHECK_EQ_INT(g_Rng.seed, before.seed);
+    GfxRecorder_Stop();
+    Chain_Release(&g_Chain);
+}
+
+TEST(title_initialization_holds_the_first_fade_step)
+{
+    M_Setup();
+    GfxRecorder_Start();
+    GameTime_Hold();
+    ScreenEffect_FadeIn(4, 0xffffff);
+    for (int frame = 0; frame < 3; frame++) {
+        Chain_RunCalc(&g_Chain);
+        Gfx_BeginTick((GFX_COLOR) {});
+        Chain_RunDraw(&g_Chain);
+        Gfx_EndTick();
+        CHECK_EQ_INT(
+            GfxRecorder_Quad(0)->vertices[0].color.alpha,
+            frame < 2 ? 255 : 191);
+        GameTime_Resume();
+    }
     GfxRecorder_Stop();
     Chain_Release(&g_Chain);
 }

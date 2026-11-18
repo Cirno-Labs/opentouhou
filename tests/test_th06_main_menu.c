@@ -18,6 +18,7 @@
 #include "th06/screens/result/private.h"
 #include "th06/settings.h"
 #include "th06/sound.h"
+#include "th06/time.h"
 
 #include "core/base/memory.h"
 #include "core/image.h"
@@ -103,6 +104,7 @@ static void M_WriteData(const char *const case_name)
 
 static void M_Setup(const char *const case_name)
 {
+    GameTime_Resume();
     M_WriteData(case_name);
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
@@ -141,6 +143,7 @@ static void M_Tick(void)
     Gfx_EndTick();
     AsciiText_Initialize();
     Chain_RunCalc(&g_Chain);
+    GameTime_Resume();
     Sound_Reset();
 }
 
