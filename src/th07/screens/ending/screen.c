@@ -474,7 +474,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
                 ANM_VIEW_SCREEN);
             draw.interpolate = true;
             draw.part = (uint32_t)i;
-            Anm_DrawUnrotated(vm, &draw);
+            Anm_Draw(vm, &draw);
         }
     }
     const uint32_t color = M_StepFade(ending);
