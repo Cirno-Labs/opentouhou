@@ -62,6 +62,7 @@ typedef struct {
 
 typedef struct {
     bool enabled;
+    // Clamps the fog factor after interpolation across a triangle.
     float begin, end; // view-space depth
     GFX_COLOR color;
 } GFX_FOG;

@@ -5,14 +5,13 @@ precision highp int;
 
 in vec4 v_color;
 in vec2 v_uv;
-in float v_depth;
+in float v_fog;
 
 uniform sampler2D u_texture;
 uniform int u_textured;
 uniform int u_color_add;
 uniform int u_alpha_test;
 uniform int u_fog;
-uniform vec2 u_fog_range;
 uniform vec3 u_fog_color;
 
 out vec4 out_color;
@@ -31,10 +30,7 @@ void main()
         discard;
     }
     if (u_fog != 0) {
-        float factor = clamp(
-            (u_fog_range.y - v_depth) / (u_fog_range.y - u_fog_range.x),
-            0.0, 1.0);
-        color.rgb = mix(u_fog_color, color.rgb, factor);
+        color.rgb = mix(u_fog_color, color.rgb, clamp(v_fog, 0.0, 1.0));
     }
     out_color = color;
 }

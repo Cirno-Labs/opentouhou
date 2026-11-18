@@ -15,6 +15,7 @@
 - Fixed texture colors.
 - Fixed transparency in translated textures.
 - Fixed JPEG background colors and shading.
+- Fixed how stage backgrounds fade into fog with distance.
 
 ## 1.0.1 (2026-11-15)
 

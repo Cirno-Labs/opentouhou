@@ -251,6 +251,31 @@ TEST(fog_mixes_toward_its_colour_by_view_depth)
     Image_Free(&image);
 }
 
+TEST(fog_is_clamped_after_interpolation)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    GFX_VIEW view = GfxView_Screen();
+    view.projection.m[2][2] = 0.0f;
+    view.projection.m[3][2] = 0.5f;
+    view.fog = (GFX_FOG) {
+        .enabled = true, .begin = 1.0f, .end = 2.0f, .color = BLUE
+    };
+    Gfx_SetView(&view);
+    const GFX_VERTEX vertices[4] = {
+        { { 0, 0, 0 }, RED, { 0, 0 } },
+        { { SIZE, 0, 4 }, RED, { 0, 0 } },
+        { { SIZE, SIZE, 4 }, RED, { 0, 0 } },
+        { { 0, SIZE, 0 }, RED, { 0, 0 } },
+    };
+    Gfx_DrawQuad(&m_Opaque, nullptr, vertices, 0);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 0, 4, RED, 0);
+    M_CheckPixel(&image, 2, 4, (GFX_COLOR) { 191, 0, 64, 255 }, 1);
+    M_CheckPixel(&image, 4, 4, BLUE, 0);
+    Image_Free(&image);
+}
+
 TEST(repeat_wraps_and_clamp_stretches_the_edge)
 {
     REQUIRE_GL();
