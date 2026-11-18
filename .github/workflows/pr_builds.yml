@@ -58,6 +58,21 @@ jobs:
       platform: win
       target: ${{ matrix.target }}
 
+  # Named as the build, so that the dashboard shows the Windows build and
+  # its tests side by side.
+  test_win:
+    name: Windows
+    needs: build_win
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - debug
+          - release
+    uses: ./.github/workflows/job_test_win.yml
+    with:
+      target: ${{ matrix.target }}
+
   # macOS runners are scarce, so macOS builds and tests the release target
   # only, as the snapshot and the releases do.
   build_mac:

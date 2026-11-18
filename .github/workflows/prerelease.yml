@@ -39,6 +39,13 @@ jobs:
       target: release
       release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
+  test_win:
+    name: Windows
+    needs: build_win
+    uses: ./.github/workflows/job_test_win.yml
+    with:
+      target: release
+
   build_mac:
     name: macOS
     if: vars.PRERELEASE_ENABLE == 'true'
@@ -52,6 +59,7 @@ jobs:
     needs:
       - build_linux
       - build_win
+      - test_win
       - build_mac
     runs-on: ubuntu-latest
     environment: release

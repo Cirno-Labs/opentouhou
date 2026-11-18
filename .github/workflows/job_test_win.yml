@@ -1,0 +1,54 @@
+name: Test on Windows
+
+# Runs the Windows unit tests that job_build.yml builds and uploads for
+# the same packages and target; the caller runs it after that build.
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        description: "Build type: debug or release"
+        required: true
+      packages:
+        type: string
+        description: "What was packaged: games, othpatch or all"
+        default: all
+
+jobs:
+  test:
+    name: Test (win, ${{ inputs.target }})
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Download the Windows unit tests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: win-tests-${{ inputs.packages }}-${{ inputs.target }}
+
+      - name: Unpack the Windows unit tests
+        run: python -c "import tarfile; tarfile.open('win-tests.tar.zst', 'r:zst').extractall(filter='data')"
+
+      # The tests of the Python tools run on Linux, where the tools run.
+      - name: Run the Windows unit tests
+        shell: bash
+        run: |
+          dirs=()
+          for dir in build/win/debug build/win/othpatch/debug; do
+            if [ -e "$dir/meson-info/intro-tests.json" ]; then
+              dirs+=("$dir")
+            fi
+          done
+          python tools/run_tests --no-suite tools "${dirs[@]}"

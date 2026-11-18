@@ -95,6 +95,17 @@ jobs:
       release: true
       packages: othpatch
 
+  othpatch_win_test:
+    name: othpatch, Windows
+    needs:
+      - plan
+      - othpatch_win
+    if: needs.plan.outputs.othpatch != ''
+    uses: ./.github/workflows/job_test_win.yml
+    with:
+      target: release
+      packages: othpatch
+
   othpatch_mac:
     name: othpatch, macOS
     needs: plan
@@ -111,6 +122,7 @@ jobs:
       - plan
       - othpatch_linux
       - othpatch_win
+      - othpatch_win_test
       - othpatch_mac
     runs-on: ubuntu-latest
     environment: release
@@ -183,6 +195,17 @@ jobs:
       packages: games
       release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
+  games_win_test:
+    name: Games, Windows
+    needs:
+      - plan
+      - games_win
+    if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
+    uses: ./.github/workflows/job_test_win.yml
+    with:
+      target: release
+      packages: games
+
   games_mac:
     name: Games, macOS
     needs:
@@ -202,6 +225,7 @@ jobs:
       - plan
       - games_linux
       - games_win
+      - games_win_test
       - games_mac
     if: ${{ !failure() && !cancelled() && needs.plan.outputs.games != '' }}
     runs-on: ubuntu-latest
