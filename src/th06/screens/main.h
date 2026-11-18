@@ -20,8 +20,8 @@
 // screen asks shell/game for the changed bindings. The original's defaults
 // become the port's default pad bindings. The window row of the options
 // shows and changes shell/game's window mode, which changes when the options
-// close. The colour depth row shows no choice and ignores changes (see
-// th06/settings.h).
+// close. The colour depth row shows 32-bit colour as chosen and ignores
+// changes (see th06/settings.h).
 //
 // The original measures the frame rate on the title to slow the game down
 // on fast displays, and waits until three seconds after the start before
