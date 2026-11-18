@@ -18,6 +18,8 @@
 - Fixed how stage backgrounds fade into fog with distance.
 - Fixed faint, almost transparent sprite edges that the original does
   not draw.
+- Fixed texture distortion and colour seams across sprites and
+  backgrounds, which split along the wrong diagonal.
 
 ## 1.0.1 (2026-11-15)
 

@@ -517,3 +517,21 @@ TEST(alpha_test_keeps_fractional_alpha_until_the_comparison)
     Image_Free(&image);
     GfxTexture_Free(texture);
 }
+
+TEST(quads_interpolate_across_the_strip_diagonal)
+{
+    REQUIRE_GL();
+    const GFX_COLOR yellow = { 255, 255, 0, 255 };
+    const GFX_VERTEX vertices[4] = {
+        { { 0, 0, 0.5f }, RED, {} },
+        { { SIZE, 0, 0.5f }, GREEN, {} },
+        { { SIZE, SIZE, 0.5f }, BLUE, {} },
+        { { 0, SIZE, 0.5f }, yellow, {} },
+    };
+    Gfx_BeginTick(BLACK);
+    Gfx_DrawQuad(&m_Opaque, nullptr, vertices, 0);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 3, 3, (GFX_COLOR) { 143, 223, 0, 255 }, 1);
+    M_CheckPixel(&image, 4, 4, (GFX_COLOR) { 112, 223, 32, 255 }, 1);
+    Image_Free(&image);
+}

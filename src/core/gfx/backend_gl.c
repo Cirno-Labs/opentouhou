@@ -370,8 +370,8 @@ static void M_EnsureIndices(const int32_t quads)
         uint32_t *const quad = &m_Backend.indices[i * 6];
         quad[0] = base;
         quad[1] = base + 1;
-        quad[2] = base + 2;
-        quad[3] = base;
+        quad[2] = base + 3;
+        quad[3] = base + 1;
         quad[4] = base + 2;
         quad[5] = base + 3;
     }
