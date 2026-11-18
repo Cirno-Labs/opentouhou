@@ -25,6 +25,8 @@ typedef enum {
     IMAGE_DEPTH_A1R5G5B5,
     IMAGE_DEPTH_A4R4G4B4,
     IMAGE_DEPTH_R5G6B5,
+    IMAGE_DEPTH_RGBA8,
+    IMAGE_DEPTH_RGB8,
 } IMAGE_DEPTH;
 
 // Creates an image of width x height with every pixel 0.
