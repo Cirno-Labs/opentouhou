@@ -97,6 +97,9 @@ Settings
 config.ini in the user folder holds the settings: the video, screenshot
 and key settings, and the options of the game.
 
+- [game] show_fps: shows the frame rate outside ending scenes. It is
+  enabled by default. Set it to false to hide the counter.
+
 - [video] interpolation: smooths motion between the 60 Hz steps of the
   game on faster displays. It is on by default. Set it to false to show
   each step as the game drew it.

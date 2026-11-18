@@ -32,6 +32,8 @@ typedef struct {
     int32_t difficulty;
     int32_t music; // a SETTINGS_MUSIC
     bool sound; // plays sound effects
+    // Shows the frame rate outside ending scenes.
+    bool show_fps;
     // Focuses while a pad holds shoot.
     bool shoot_focuses;
     // Slows the game down where many bullets show. Such a game saves no

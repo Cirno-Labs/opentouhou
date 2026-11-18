@@ -1,3 +1,4 @@
+#include "th06/settings.h"
 #include "th06/ascii.h"
 
 #include "gfx_recorder.h"
@@ -371,6 +372,13 @@ TEST(frame_rate_keeps_its_style_across_text_initialization)
     CHECK_EQ_INT(g_AsciiText.color, COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
     CHECK(g_AsciiText.scale_x == 2.0f);
     CHECK(g_AsciiText.highlight && g_AsciiText.in_arena);
+    g_Settings.show_fps = false;
+    AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "A");
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    g_Settings.show_fps = true;
     g_AsciiText.hide_frame_rate = true;
     AsciiText_Initialize();
     CHECK(g_AsciiText.hide_frame_rate);

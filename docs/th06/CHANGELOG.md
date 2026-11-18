@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Added the frame rate display outside ending scenes.
+- Added an optional frame rate display outside ending scenes, enabled by
+  default.
 - Changed the bundled Japanese font to MS Gothic.
 - Changed the text of `--help` and of command-line errors to a new
   format.
