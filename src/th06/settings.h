@@ -35,6 +35,8 @@ typedef struct {
     int32_t music; // a SETTINGS_MUSIC
     // Plays sound effects, and music unless music is SETTINGS_MUSIC_OFF.
     bool sound;
+    // Shows the frame rate outside ending scenes.
+    bool show_fps;
 } TH06_SETTINGS;
 
 extern TH06_SETTINGS g_Settings;

@@ -3,6 +3,7 @@
 #include "th06/ascii/pause_menu.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/settings.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -91,7 +92,8 @@ static void M_DrawStrings(void)
 static CHAIN_STATUS M_Draw(void *const arg)
 {
     ASCII_TEXT *const text = arg;
-    if (!text->hide_frame_rate && text->frame_rate[0] != '\0') {
+    if (g_Settings.show_fps && !text->hide_frame_rate
+        && text->frame_rate[0] != '\0') {
         const uint32_t color = text->color;
         const float scale_x = text->scale_x;
         const float scale_y = text->scale_y;
