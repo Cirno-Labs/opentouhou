@@ -8,6 +8,8 @@
 // default. A replacement of a format string keeps its conversions.
 // stg/translation replaces the entries with the translations of patches.
 #define TH06_STRINGS(X)                                                        \
+    X(SPELL_BONUS_NOTICE, 0x46a7f8, "Spell Card Bonus!")                       \
+    X(ASCII_BONUS_FORMAT, 0x46a828, "BONUS %8d")                               \
     X(SHOT_NAME_REIMU_A, 0x46bb98, "博麗 霊夢 (霊)")                           \
     X(SHOT_NAME_REIMU_B, 0x46bb88, "博麗 霊夢 (夢)")                           \
     X(SHOT_NAME_MARISA_A, 0x46bb74, "霧雨 魔理沙 (魔)")                        \
@@ -53,6 +55,10 @@
     X(MENU_DIFFICULTY_EXTRA, 0x46c420, "Extra  ")                              \
     X(MENU_PRACTICE_SCORE, 0x46c4c8, "STAGE %d  %.9d")                         \
     X(SONG_NAME_FORMAT, 0x46a98c, "♪%s")                                       \
+    X(STAGE_LABEL, 0x46aca4, "STAGE %d")                                       \
+    X(STAGE_LABEL_FINAL, 0x46ac94, "FINAL STAGE")                              \
+    X(STAGE_LABEL_EXTRA, 0x46ac88, "EXTRA STAGE")                              \
+    X(STAGE_LABEL_DEMO, 0x46ac7c, " DEMO PLAY")                                \
     X(BOMB_NAME_REIMU_A, 0x46a3f4, "霊符「夢想封印」")                         \
     X(BOMB_NAME_REIMU_B, 0x46a410, "夢符「封魔陣」")                           \
     X(BOMB_NAME_MARISA_A, 0x46a420, "魔符「スターダストレヴァリエ」")          \

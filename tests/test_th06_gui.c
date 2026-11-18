@@ -1997,3 +1997,101 @@ TEST(a_spell_card_and_an_anm_file_hide_the_note)
     CHECK(!M_NoteShows());
     M_TeardownNotes();
 }
+
+TEST(base_tsa_centers_the_translated_stage_label)
+{
+    m_ScriptCount = 0;
+    M_Setup("stage_label_center");
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th06/stringlocs.js",
+        "{\"Rx6aca4\":\"th06_ascii_centered_stage\"}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/stringdefs.js",
+        "{\"th06_ascii_centered_stage\":\"AREA %d\"}");
+    Mem_Free(patches);
+    M_UseBaseTsa();
+    g_Gui.banners.stage_name.shown = true;
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    bool found = false;
+    for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const text = &g_AsciiText.strings[i];
+        if (strcmp(text->text, "AREA 1") == 0) {
+            CHECK(text->pos.x == 182.0f);
+            CHECK(text->pos.y == 198.0f);
+            found = true;
+        }
+    }
+    CHECK(found);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(base_tsa_centers_the_translated_bonus_notice)
+{
+    m_ScriptCount = 0;
+    M_Setup("bonus_notice_center");
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th06/stringlocs.js",
+        "{\"Rx6a828\":\"th06_ascii_bonus_format\"}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/stringdefs.js",
+        "{\"th06_ascii_bonus_format\":\"Prize %d\"}");
+    Mem_Free(patches);
+    M_UseBaseTsa();
+    Gui_ShowBonusPopup(191600);
+    g_Gui.popups.bonus.pos.x = 104.0f;
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    bool found = false;
+    for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const text = &g_AsciiText.strings[i];
+        if (strcmp(text->text, "Prize 191600") == 0) {
+            CHECK(text->pos.x == 140.0f);
+            found = true;
+        }
+    }
+    CHECK(found);
+    CHECK(g_Gui.popups.bonus.pos.x == 104.0f);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(base_tsa_centers_the_translated_spell_bonus_label)
+{
+    m_ScriptCount = 0;
+    M_Setup("spell_bonus_center");
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th06/stringlocs.js",
+        "{\"Rx6a7f8\":\"th06_ascii_centered_spell_bonus\"}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/stringdefs.js",
+        "{\"th06_ascii_centered_spell_bonus\":\"Captured!\"}");
+    Mem_Free(patches);
+    M_UseBaseTsa();
+    Gui_ShowSpellCardBonus(500000);
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    bool found = false;
+    for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const text = &g_AsciiText.strings[i];
+        if (strcmp(text->text, "Captured!") == 0) {
+            CHECK(text->pos.x == 161.0f);
+            CHECK(text->pos.y == 80.0f);
+            found = true;
+        }
+    }
+    CHECK(found);
+    CHECK(g_Gui.popups.spell_bonus.pos.x == 112.0f);
+    GfxRecorder_Stop();
+    M_Teardown();
+}
