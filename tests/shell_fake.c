@@ -91,3 +91,8 @@ void Shell_RequestFullscreen(const bool fullscreen)
 {
     M_Record('f', fullscreen ? 1 : 0, (INPUT_BINDING) {});
 }
+
+uint64_t Shell_GetWallClock(void)
+{
+    return g_FakeShell.wall_clock;
+}
