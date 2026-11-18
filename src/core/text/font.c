@@ -84,6 +84,11 @@ RESULT Text_Init(void)
 {
     if (!m_Initialized) {
         FAIL_IF(!TTF_Init(), "Cannot initialize fonts: %s", SDL_GetError());
+        const RESULT raster = TextRaster_Init();
+        if (!IS_OK(raster)) {
+            TTF_Quit();
+            return raster;
+        }
         m_Initialized = true;
     }
     return OK;
@@ -92,6 +97,7 @@ RESULT Text_Init(void)
 void Text_Shutdown(void)
 {
     if (m_Initialized) {
+        TextRaster_Shutdown();
         TTF_Quit();
         m_Initialized = false;
     }
@@ -133,6 +139,12 @@ RESULT TextFont_Load(
         .cell_scale = cell_scale,
         .native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0,
     };
+    const RESULT raster =
+        TextRaster_Open(data, size, TTF_GetFontSize(face), &font->raster_face);
+    if (!IS_OK(raster)) {
+        TextFont_Free(font);
+        return raster;
+    }
     const RESULT metrics = M_UpdateBoldAdvance(font);
     if (!IS_OK(metrics)) {
         TextFont_Free(font);
@@ -206,6 +218,7 @@ RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
         FAIL_IF(
             !TTF_SetFontSize(font->font, size), "Cannot resize font: %s",
             SDL_GetError());
+        MUST(TextRaster_SetSize(font->raster_face, size));
         MUST(M_UpdateBoldAdvance(font));
     }
     if (font->fallback != nullptr) {
@@ -217,6 +230,7 @@ RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
 void TextFont_Free(TEXT_FONT *const font)
 {
     if (font != nullptr) {
+        TextRaster_Close(font->raster_face);
         TTF_CloseFont(font->font);
         TextFont_Free(font->fallback);
         Mem_Free(font->data);

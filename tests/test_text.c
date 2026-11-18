@@ -245,6 +245,54 @@ TEST(the_bundled_font_cell_is_its_em)
     Text_Shutdown();
 }
 
+TEST(gdi_raster_uses_quantized_glyph_coverage)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    IMAGE image;
+    CHECK(IS_OK(Text_Render(font, "東", &style, &g_HeapAllocator, &image)));
+    int32_t visible = 0;
+    int32_t opaque = 0;
+    for (int32_t i = 0; i < image.width * image.height; i++) {
+        const uint8_t alpha = image.pixels[(size_t)i * 4 + 3];
+        const int32_t level = (alpha * 16 + 127) / 255;
+        CHECK_EQ_INT(alpha, (level * 255 + 8) / 16);
+        visible += alpha != 0;
+        opaque += alpha == 255;
+    }
+    CHECK(visible > opaque && opaque > 0);
+    Image_Free(&image);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_paint_uses_the_intensity_curve_and_five_bit_colors)
+{
+    IMAGE glyphs = Image_Create(5, 1, &g_HeapAllocator);
+    const uint8_t coverage[5] = { 0, 16, 32, 128, 255 };
+    for (int32_t i = 0; i < 5; i++) {
+        glyphs.pixels[(size_t)i * 4 + 3] = coverage[i];
+    }
+    IMAGE surface = Image_Create(5, 1, &g_HeapAllocator);
+    Text_StampGdi(&surface, &glyphs, 0, 0, (GFX_COLOR) { 240, 240, 255, 255 });
+    const uint8_t expected[20] = {
+        0,   0,   0,   0,   0,   0,   0,   0,   99,  99,
+        107, 255, 181, 181, 189, 255, 247, 247, 255, 255,
+    };
+    CHECK(memcmp(surface.pixels, expected, sizeof(expected)) == 0);
+    memset(surface.pixels, 255, 20);
+    Text_StampGdi(&surface, &glyphs, 0, 0, (GFX_COLOR) { 0, 0, 0, 255 });
+    CHECK_EQ_INT(surface.pixels[12], 189);
+    CHECK_EQ_INT(surface.pixels[13], 189);
+    CHECK_EQ_INT(surface.pixels[14], 189);
+    Image_Free(&surface);
+    Image_Free(&glyphs);
+}
+
 TEST(a_tall_cell_shrinks_the_em)
 {
     CHECK(IS_OK(Text_Init()));
@@ -586,6 +634,101 @@ TEST(incomplete_markup_is_text)
     CHECK_EQ_INT(M_Width(font, "<text>"), width);
     CHECK_EQ_INT(
         M_Width(font, "x<c$a>"), M_Width(font, "x") + M_Width(font, "a"));
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_latin_text_keeps_individual_letters_and_advances)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    const char *const text = "AV Night office";
+    IMAGE line;
+    CHECK(IS_OK(Text_Render(font, text, &style, &g_HeapAllocator, &line)));
+    int32_t pen = 0;
+    for (const char *p = text; *p != 0; p++) {
+        const char letter[] = { *p, 0 };
+        IMAGE glyph;
+        CHECK(
+            IS_OK(Text_Render(font, letter, &style, &g_HeapAllocator, &glyph)));
+        CHECK_EQ_INT(glyph.height, line.height);
+        CHECK(pen + glyph.width <= line.width);
+        for (int32_t y = 0; y < glyph.height; y++) {
+            for (int32_t x = 0; x < glyph.width; x++) {
+                CHECK_EQ_INT(
+                    line.pixels[((size_t)y * line.width + pen + x) * 4 + 3],
+                    glyph.pixels[((size_t)y * glyph.width + x) * 4 + 3]);
+            }
+        }
+        pen += glyph.width;
+        Image_Free(&glyph);
+    }
+    CHECK_EQ_INT(pen, line.width);
+    Image_Free(&line);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_white_text_uses_eight_bit_intensity)
+{
+    CHECK_EQ_INT(Text_GdiIntensity(0), 0);
+    CHECK_EQ_INT(Text_GdiIntensity(16), 0);
+    CHECK_EQ_INT(Text_GdiIntensity(32), 104);
+    CHECK_EQ_INT(Text_GdiIntensity(128), 189);
+    CHECK_EQ_INT(Text_GdiIntensity(255), 255);
+}
+
+TEST(gdi_mixed_latin_and_han_keep_individual_glyphs)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(32, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    IMAGE line;
+    CHECK(IS_OK(Text_Render(font, "A十Vā—", &style, &g_HeapAllocator, &line)));
+    const char *const letters[] = { "A", "十", "V", "ā", "—" };
+    int32_t pen = 0;
+    for (size_t i = 0; i < sizeof(letters) / sizeof(letters[0]); i++) {
+        IMAGE glyph;
+        CHECK(IS_OK(
+            Text_Render(font, letters[i], &style, &g_HeapAllocator, &glyph)));
+        CHECK_EQ_INT(glyph.height, line.height);
+        CHECK(pen + glyph.width <= line.width);
+        for (int32_t y = 0; y < glyph.height; y++) {
+            for (int32_t x = 0; x < glyph.width; x++) {
+                CHECK_EQ_INT(
+                    line.pixels[((size_t)y * line.width + pen + x) * 4 + 3],
+                    glyph.pixels[((size_t)y * glyph.width + x) * 4 + 3]);
+            }
+        }
+        pen += glyph.width;
+        Image_Free(&glyph);
+    }
+    CHECK_EQ_INT(pen, line.width);
+    Image_Free(&line);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(gdi_combining_accents_keep_shaped_advances)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *font = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(32, &font)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    int32_t gdi, shaped, height;
+    CHECK(IS_OK(Text_Measure(font, "é", &style, &gdi, &height)));
+    style.gdi_raster = false;
+    CHECK(IS_OK(Text_Measure(font, "é", &style, &shaped, &height)));
+    CHECK_EQ_INT(gdi, shaped);
     TextFont_Free(font);
     Text_Shutdown();
 }
