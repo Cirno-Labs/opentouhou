@@ -1188,7 +1188,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
     M_DrawShots(PLAYER_BULLET_FLYING);
     Bomb_Draw();
     PLAYER *const player = &g_Player;
-    ANM_DRAW draw = Anm_ScreenDraw();
+    ANM_DRAW draw = GameManager_GetScreenDrawContext();
     draw.interpolate = true;
     player->vm.pos =
         (VEC3) { g_GameManager.play_area.x + player->pos.x,

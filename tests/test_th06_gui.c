@@ -1647,6 +1647,10 @@ TEST(gui_drawing_records_the_hud_and_dialogue_gradient)
             && vertices[0].color.alpha == 0xd0) {
             CHECK(vertices[2].position.y == 432.0f);
             CHECK_EQ_INT(vertices[2].color.alpha, 0x90);
+            const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(i);
+            const VEC3 projected = Vec3_TransformCoord(
+                vertices[0].position, &quad->view.projection);
+            CHECK(projected.y > 384.49f && projected.y < 384.51f);
             found_dialogue = true;
         }
     }

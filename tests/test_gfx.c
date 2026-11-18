@@ -1,6 +1,7 @@
 #include "core/gfx/private.h"
 
 #include "core/base/memory.h"
+#include "core/math/vec.h"
 
 #include "test.h"
 
@@ -95,7 +96,7 @@ static void M_FreeTexture(void *const handle)
 
 static void M_BeginPass(
     const GFX_PASS pass, const GFX_COLOR clear,
-    const GFX_PASS_OUTPUT *const output)
+    const GFX_PASS_OUTPUT *const output, const bool preserve)
 {
     M_Record(
         pass == GFX_PASS_SCREEN ? EVENT_BEGIN_SCREEN : EVENT_BEGIN_WINDOW, 0);
@@ -721,4 +722,31 @@ TEST(a_failed_screen_read_fails_the_screen_rect)
         LOG_LEVEL_INFO));
     CHECK(image.pixels == nullptr);
     M_Stop();
+}
+
+TEST(a_projection_pixel_offset_keeps_the_viewport_and_depth)
+{
+    const GFX_VIEW view = {
+        .id = 17,
+        .view = Mat4_Identity(),
+        .projection = Mat4_PerspectiveFovLH(0.5f, 0.75f, 30.0f, 1800.0f),
+        .viewport = { 32, 16, 384, 448, 0, 1 },
+    };
+    const GFX_VIEW shifted = GfxView_OffsetPixels(&view, 0.5f, 0.5f);
+    const MAT4 world = Mat4_Identity();
+    const VEC3 points[] = { { 3, 4, 100 }, { 3, 4, 500 } };
+    for (size_t i = 0; i < 2; i++) {
+        const VEC3 before = Vec3_Project(
+            points[i], &view.viewport, &view.projection, &view.view, &world);
+        const VEC3 after = Vec3_Project(
+            points[i], &shifted.viewport, &shifted.projection, &shifted.view,
+            &world);
+        CHECK(fabsf(after.x - before.x - 0.5f) < 0.0001f);
+        CHECK(fabsf(after.y - before.y - 0.5f) < 0.0001f);
+        CHECK(after.z == before.z);
+    }
+    CHECK_EQ_INT(shifted.id, view.id);
+    CHECK(
+        memcmp(&shifted.viewport, &view.viewport, sizeof(view.viewport)) == 0);
+    CHECK(view.projection.m[2][0] == 0.0f);
 }

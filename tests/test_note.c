@@ -154,6 +154,12 @@ TEST(a_short_note_sits_centered_at_the_bottom_of_the_region)
     CHECK(quad->vertices[0].uv.x == 0.0f && quad->vertices[2].uv.x == 1.0f);
     CHECK_EQ_INT(quad->state.blend, GFX_BLEND_ALPHA);
     CHECK_EQ_INT(quad->state.depth_test, GFX_DEPTH_OFF);
+    const VEC3 projected =
+        Vec3_TransformCoord(quad->vertices[0].position, &quad->view.projection);
+    const float shift_x = projected.x - quad->vertices[0].position.x;
+    const float shift_y = projected.y - quad->vertices[0].position.y;
+    CHECK(shift_x > 0.49f && shift_x < 0.51f);
+    CHECK(shift_y > 0.49f && shift_y < 0.51f);
     M_End();
 }
 

@@ -492,7 +492,8 @@ static void M_DrawNote(const M_NOTE *const note, const uint32_t age)
         { { x1, y1, 0.0f }, color, { 1.0f, v + v_size } },
         { { x0, y1, 0.0f }, color, { 0.0f, v + v_size } },
     };
-    const GFX_VIEW view = GfxView_Screen();
+    GFX_VIEW view = GfxView_Screen();
+    view = GfxView_OffsetPixels(&view, 0.5f, 0.5f);
     Gfx_SetView(&view);
     Gfx_DrawQuad(
         &(GFX_STATE) {

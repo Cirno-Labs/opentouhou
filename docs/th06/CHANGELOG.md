@@ -14,9 +14,18 @@
 - Fixed the size, shape, shading, sharpness and placement of text in
   spell names, dialogue, translator notes and Japanese stage and song
   titles.
+- Fixed sprite placement, fading backgrounds, fog, texture colors,
+  filtering and faint sprite edges.
+- Fixed texture distortion and shading seams in sprites and
+  backgrounds.
 - Fixed transparency in translated textures.
+- Fixed gradient sampling in the power bar and dialogue box.
 - Fixed the alignment of translated stage labels, bonus notices and
   spell card bonus labels.
+- Fixed white flashes on enemies when player shots hit them.
+- Fixed the colors of orbiting boss effects.
+- Fixed depth ordering for overlapping sprites and clipping at the
+  playfield edges.
 
 ## 1.0.1 (2026-11-15)
 

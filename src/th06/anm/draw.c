@@ -41,11 +41,12 @@ static void M_Record(
     };
     const GFX_STATE state = {
         .blend = vm->blend_add ? GFX_BLEND_ADD : GFX_BLEND_ALPHA,
-        .color_op = vm->color_op ? GFX_COLOR_ADD : GFX_COLOR_MODULATE,
+        .color_op = GFX_COLOR_MODULATE,
         .depth_test = context->depth_test,
         .depth_write = context->depth_write && !vm->z_write_off,
         .alpha_test = true,
         .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
     };
     const uint64_t id = context->interpolate && vm->presentation_generation != 0
         ? ((uint64_t)vm->presentation_generation << 32) | context->part
@@ -144,7 +145,9 @@ static void M_World(
     for (int32_t i = 0; i < 4; i++) {
         positions[i] = Vec3_TransformCoord(positions[i], &world);
     }
-    M_Record(vm, draw, positions, nullptr);
+    ANM_DRAW shifted = *draw;
+    shifted.view = GfxView_OffsetPixels(&draw->view, 0.5f, 0.5f);
+    M_Record(vm, &shifted, positions, nullptr);
 }
 
 ANM_DRAW Anm_ScreenDraw(void)
@@ -161,14 +164,11 @@ ANM_DRAW Anm_ScreenDraw(void)
 GFX_VIEW Anm_ScreenView(const VIEWPORT viewport, const uint32_t id)
 {
     GFX_VIEW view = GfxView_Screen();
-    const float depth = viewport.max_z - viewport.min_z;
     view.projection = Mat4_Identity();
     view.projection.m[0][0] = 2.0f / viewport.width;
     view.projection.m[1][1] = -2.0f / viewport.height;
-    view.projection.m[2][2] = depth != 0.0f ? 1.0f / depth : 1.0f;
     view.projection.m[3][0] = -2.0f * viewport.x / viewport.width - 1.0f;
     view.projection.m[3][1] = 2.0f * viewport.y / viewport.height + 1.0f;
-    view.projection.m[3][2] = depth != 0.0f ? -viewport.min_z / depth : 0.0f;
     view.viewport = viewport;
     view.id = id;
     return view;

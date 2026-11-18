@@ -343,7 +343,7 @@ void Item_CollectAll(void)
 
 void Item_Draw(void)
 {
-    ANM_DRAW draw = Anm_ScreenDraw();
+    ANM_DRAW draw = GameManager_GetScreenDrawContext();
     draw.interpolate = true;
     for (int32_t i = 0; i < ITEM_COUNT; i++) {
         ITEM *const item = &m_Items[i];

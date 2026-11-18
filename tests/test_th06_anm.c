@@ -706,6 +706,9 @@ TEST(draw_variants_copy_geometry_and_preserve_vm_state)
     CHECK(memcmp(&before, &vm, sizeof(vm)) == 0);
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 5);
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        CHECK(GfxRecorder_Quad(i)->state.color_op == GFX_COLOR_MODULATE);
+    }
     const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);
     CHECK(quad->vertices[0].position.x == 84.0f);
     CHECK(quad->vertices[0].position.y == 43.0f);
@@ -713,7 +716,7 @@ TEST(draw_variants_copy_geometry_and_preserve_vm_state)
     CHECK(quad->vertices[0].uv.x == 0.375f);
     CHECK_EQ_INT(quad->vertices[0].color.alpha, 0x80);
     CHECK(quad->state.blend == GFX_BLEND_ADD);
-    CHECK(quad->state.color_op == GFX_COLOR_ADD);
+    CHECK(quad->state.color_op == GFX_COLOR_MODULATE);
     CHECK(quad->state.alpha_test && quad->state.repeat);
     CHECK(quad->texture == Anm_GetTexture(0));
     CHECK(GfxRecorder_Quad(1)->vertices[0].position.x == 84.75f);

@@ -155,7 +155,7 @@ typedef struct {
     int32_t index_quads;
     GLuint samplers[M_SAMPLER_COUNT];
     M_LOCATIONS locations;
-    M_TARGET screen, output;
+    M_TARGET screen, output, history;
     M_TARGET *target;
     GFX_PASS pass;
     GFX_PASS_OUTPUT pass_output;
@@ -276,7 +276,7 @@ static RESULT M_CreateTarget(
     gl->gen_renderbuffers(1, &target->depth);
     gl->bind_renderbuffer(GL_RENDERBUFFER, target->depth);
     gl->renderbuffer_storage(
-        GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+        GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
     gl->gen_framebuffers(1, &target->framebuffer);
     gl->bind_framebuffer(GL_FRAMEBUFFER, target->framebuffer);
     gl->framebuffer_texture_2d(
@@ -370,8 +370,8 @@ static void M_EnsureIndices(const int32_t quads)
         uint32_t *const quad = &m_Backend.indices[i * 6];
         quad[0] = base;
         quad[1] = base + 1;
-        quad[2] = base + 2;
-        quad[3] = base;
+        quad[2] = base + 3;
+        quad[3] = base + 1;
         quad[4] = base + 2;
         quad[5] = base + 3;
     }
@@ -518,6 +518,7 @@ static void M_Shutdown(void)
     const M_GL *const gl = &m_Backend.gl;
     M_FreeTarget(&m_Backend.screen);
     M_FreeTarget(&m_Backend.output);
+    M_FreeTarget(&m_Backend.history);
     gl->delete_samplers(2, m_Backend.samplers);
     gl->delete_buffers(1, &m_Backend.vertex_buffer);
     gl->delete_buffers(1, &m_Backend.index_buffer);
@@ -578,7 +579,7 @@ static void M_FreeTexture(void *const handle)
 
 static void M_BeginPass(
     const GFX_PASS pass, const GFX_COLOR clear,
-    const GFX_PASS_OUTPUT *const output)
+    const GFX_PASS_OUTPUT *const output, const bool preserve)
 {
     const M_GL *const gl = &m_Backend.gl;
     if (pass == GFX_PASS_WINDOW
@@ -592,7 +593,36 @@ static void M_BeginPass(
     m_Backend.target = target;
     m_Backend.pass = pass;
     m_Backend.pass_output = *output;
+    if (pass == GFX_PASS_SCREEN && preserve && target->drawn) {
+        M_TARGET *const history = &m_Backend.history;
+        if (history->framebuffer == 0
+            && !Result_Log(
+                M_CreateTarget(history, target->width, target->height),
+                LOG_LEVEL_ERROR)) {
+            m_Backend.target = nullptr;
+            return;
+        }
+        gl->disable(GL_SCISSOR_TEST);
+        gl->color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        gl->bind_framebuffer(GL_READ_FRAMEBUFFER, target->framebuffer);
+        gl->bind_framebuffer(GL_DRAW_FRAMEBUFFER, history->framebuffer);
+        gl->blit_framebuffer(
+            0, 0, target->width, target->height, 0, 0, target->width,
+            target->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        history->drawn = true;
+    }
     M_ClearTarget(target, output->rect, output->border, clear);
+    if (preserve && m_Backend.history.drawn) {
+        const M_TARGET *const history = &m_Backend.history;
+        const GFX_RECT rect = output->rect;
+        gl->bind_framebuffer(GL_READ_FRAMEBUFFER, history->framebuffer);
+        gl->bind_framebuffer(GL_DRAW_FRAMEBUFFER, target->framebuffer);
+        gl->blit_framebuffer(
+            0, 0, history->width, history->height, rect.x, rect.y,
+            rect.x + rect.width, rect.y + rect.height, GL_COLOR_BUFFER_BIT,
+            output->filter == GFX_FILTER_LINEAR ? GL_LINEAR : GL_NEAREST);
+        gl->bind_framebuffer(GL_FRAMEBUFFER, target->framebuffer);
+    }
     gl->color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
     gl->enable(GL_SCISSOR_TEST);
     gl->use_program(m_Backend.program);
