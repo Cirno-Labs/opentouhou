@@ -31,6 +31,7 @@
   sampled without the original's smoothing.
 - Fixed orbiting boss effects in dark, saturated colours instead of the
   original's pale tints.
+- Fixed the spacing of bold translated text.
 
 ## 1.0.1 (2026-11-15)
 

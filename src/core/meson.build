@@ -246,6 +246,7 @@ text_font = custom_target(
 core_text_lib = static_library(
   'core_text',
   'text/font.c',
+  'text/glyphs.c',
   'text/render.c',
   text_font,
   c_args: core_include + ['-I' + meson.current_build_dir()],

@@ -56,6 +56,30 @@ static float M_CellScale(const uint8_t *const data, const size_t size)
     return units != 0 && cell != 0 ? (float)units / (float)cell : 1.0f;
 }
 
+// Keeps GDI's one-pixel advance for synthetic bold instead of SDL_ttf's
+// size-dependent overhang.
+static RESULT M_UpdateBoldAdvance(TEXT_FONT *const font)
+{
+    font->bold_advance_adjust = 0;
+    if (font->native_bold) {
+        return OK;
+    }
+    const TTF_FontStyleFlags previous = TTF_GetFontStyle(font->font);
+    int regular, bold;
+    TTF_SetFontStyle(font->font, TTF_STYLE_NORMAL);
+    const bool measured_regular = TTF_GetGlyphMetrics(
+        font->font, ' ', nullptr, nullptr, nullptr, nullptr, &regular);
+    TTF_SetFontStyle(font->font, TTF_STYLE_BOLD);
+    const bool measured_bold = TTF_GetGlyphMetrics(
+        font->font, ' ', nullptr, nullptr, nullptr, nullptr, &bold);
+    TTF_SetFontStyle(font->font, previous);
+    FAIL_IF(
+        !measured_regular || !measured_bold, "Cannot measure bold advance: %s",
+        SDL_GetError());
+    font->bold_advance_adjust = regular + 1 - bold;
+    return OK;
+}
+
 RESULT Text_Init(void)
 {
     if (!m_Initialized) {
@@ -103,8 +127,17 @@ RESULT TextFont_Load(
         return FAIL("Cannot open font: %s", SDL_GetError());
     }
     TEXT_FONT *const font = Mem_Alloc(sizeof(*font));
-    *font =
-        (TEXT_FONT) { .font = face, .data = data, .cell_scale = cell_scale };
+    *font = (TEXT_FONT) {
+        .font = face,
+        .data = data,
+        .cell_scale = cell_scale,
+        .native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0,
+    };
+    const RESULT metrics = M_UpdateBoldAdvance(font);
+    if (!IS_OK(metrics)) {
+        TextFont_Free(font);
+        return metrics;
+    }
     *out = font;
     return OK;
 }
@@ -168,9 +201,13 @@ RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
         font == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
             || pixel_height > 4096.0f,
         "Invalid font size");
-    FAIL_IF(
-        !TTF_SetFontSize(font->font, pixel_height * font->cell_scale),
-        "Cannot resize font: %s", SDL_GetError());
+    const float size = pixel_height * font->cell_scale;
+    if (TTF_GetFontSize(font->font) != size) {
+        FAIL_IF(
+            !TTF_SetFontSize(font->font, size), "Cannot resize font: %s",
+            SDL_GetError());
+        MUST(M_UpdateBoldAdvance(font));
+    }
     if (font->fallback != nullptr) {
         MUST(TextFont_SetSize(font->fallback, pixel_height));
     }
