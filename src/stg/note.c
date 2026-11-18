@@ -63,6 +63,7 @@ static bool m_Enabled;
 static M_SETTINGS m_Settings;
 static TEXT_FONT *m_Font;
 static int32_t m_LineHeight;
+static int32_t m_FontOffsetY;
 static TEXT_STYLE m_Style;
 static M_NOTE_ARRAY m_Notes;
 static int32_t m_Shown = -1;
@@ -235,19 +236,22 @@ static RESULT M_LoadFont(const char *const rule)
         }
     }
     m_LineHeight = height;
+    weight = Translation_GetFontWeight(weight);
     m_Style = TextStyle_Default();
     m_Style.face = weight >= M_BOLD_WEIGHT ? TEXT_FACE_BOLD : 0;
+    m_Style.gdi_raster = true;
+    bool opened = false;
     if (family != nullptr) {
         int32_t count;
         const char *const *const paths = Translation_GetFontFiles(&count);
-        if (Result_Log(
-                TextFont_LoadFamily(
-                    paths, count, family, (float)height, &m_Font),
-                LOG_LEVEL_WARNING)) {
-            return OK;
-        }
+        opened = Result_Log(
+            TextFont_LoadFamily(paths, count, family, (float)height, &m_Font),
+            LOG_LEVEL_WARNING);
     }
-    return TextFont_LoadDefault((float)height, &m_Font);
+    if (!opened) {
+        MUST(TextFont_LoadDefault((float)height, &m_Font));
+    }
+    return TextFont_SetSizeRounded(m_Font, (float)height, &m_FontOffsetY);
 }
 
 static RESULT M_Measure(
@@ -340,13 +344,20 @@ static RESULT M_RenderLine(
         Text_Render(m_Font, span, &m_Style, &g_HeapAllocator, &glyphs);
     Mem_Free(span);
     MUST(result);
-    for (int32_t row = 0; row < glyphs.height && y + row < bottom; row++) {
+    for (int32_t row = 0; row < glyphs.height; row++) {
+        const int32_t target_y = y + row + m_FontOffsetY;
+        if (target_y < y || target_y >= y + m_LineHeight
+            || target_y >= bottom) {
+            continue;
+        }
         for (int32_t column = 0; column < glyphs.width && x + column < right;
              column++) {
-            coverage[(size_t)(y + row) * (size_t)width + (size_t)(x + column)] =
-                glyphs.pixels
-                    [((size_t)row * (size_t)glyphs.width + (size_t)column) * 4
-                     + 3];
+            coverage[(size_t)target_y * (size_t)width + (size_t)(x + column)] =
+                Text_GdiIntensity(
+                    glyphs.pixels
+                        [((size_t)row * (size_t)glyphs.width + (size_t)column)
+                             * 4
+                         + 3]);
         }
     }
     Image_Free(&glyphs);
@@ -531,6 +542,7 @@ void Note_Shutdown(void)
     memset(&m_Notes, 0, sizeof(m_Notes));
     TextFont_Free(m_Font);
     m_Font = nullptr;
+    m_FontOffsetY = 0;
     m_Enabled = false;
     m_Shown = -1;
     m_Drawn = -1;

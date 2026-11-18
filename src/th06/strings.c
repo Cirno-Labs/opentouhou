@@ -10,6 +10,7 @@ static const uint32_t m_Addresses[STRING_COUNT] = { TH06_STRINGS(M_ADDRESS) };
 const TRANSLATION_GAME g_TranslationGame = {
     .id = "th06",
     .image_base = 0x400000,
+    .font_cache_weight = 700,
     .strings = g_Strings,
     .defaults = m_Defaults,
     .addresses = m_Addresses,
