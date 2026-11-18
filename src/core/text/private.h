@@ -26,7 +26,13 @@ RESULT TextGlyphs_Render(
 
 RESULT TextRaster_Init(void);
 void TextRaster_Shutdown(void);
-RESULT TextRaster_Open(const uint8_t *data, size_t size, float em, void **out);
+
+// Finds a collection face by family. Returns -1 when none matches.
+RESULT TextRaster_FindFace(
+    const uint8_t *data, size_t size, const char *family, int32_t *index);
+
+RESULT TextRaster_Open(
+    const uint8_t *data, size_t size, int32_t index, float em, void **out);
 void TextRaster_Close(void *face);
 RESULT TextRaster_SetSize(void *face, float em);
 RESULT TextRaster_Glyph(

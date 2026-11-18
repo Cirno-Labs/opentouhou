@@ -10,7 +10,7 @@
   which keeps their high frequencies.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
-- Fixed the letters and spacing in translated text.
+- Fixed the font, letters and spacing in translated text.
 - Fixed the right half of translated Music Room comments.
 - Fixed menu highlight colors, difficulty and character selection
   colors, and the selected graphics setting.
