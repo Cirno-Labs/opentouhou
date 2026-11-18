@@ -1,6 +1,6 @@
 # check=skip=InvalidDefaultArgInFrom
-# opentouhou media build image for Windows: the base image with SDL3_ttf
-# and FFmpeg, for the games, the replay runner and their tests. It also
+# opentouhou media build image for Windows: the base image with SDL3_ttf,
+# libjpeg-turbo and FFmpeg, for the games, replay runner and tests. It also
 # has MinGW-w64 for i686 with a static SDL3 and zlib, for the capture
 # tools under replay/.
 #
@@ -65,6 +65,35 @@ RUN curl -fsSL -o /tmp/ttf.tar.gz \
     && DESTDIR=/stage cmake --install /tmp/ttf-build \
     && rm -rf /tmp/ttf.tar.gz /tmp/freetype.tar.gz /tmp/harfbuzz.tar.gz \
         /tmp/SDL3_ttf-${SDL_TTF_VERSION} /tmp/ttf-build
+
+
+
+# libjpeg supplies the integer JPEG transform and chroma upsampling.
+FROM base AS jpeg
+ARG JPEG_VERSION
+ARG JPEG_SHA256
+RUN curl -fsSL -o /tmp/jpeg.tar.gz \
+        https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${JPEG_VERSION}/libjpeg-turbo-${JPEG_VERSION}.tar.gz \
+    && echo "${JPEG_SHA256}  /tmp/jpeg.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/jpeg.tar.gz -C /tmp \
+    && cmake -S /tmp/libjpeg-turbo-${JPEG_VERSION} -B /tmp/jpeg-build \
+        -DCMAKE_SYSTEM_NAME=Windows \
+        -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
+        -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix \
+        -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DENABLE_SHARED=OFF \
+        -DENABLE_STATIC=ON \
+        -DWITH_SIMD=OFF \
+        -DWITH_TURBOJPEG=OFF \
+        -DWITH_TOOLS=OFF \
+        -DWITH_TESTS=OFF \
+    && cmake --build /tmp/jpeg-build -j"$(nproc)" \
+    && DESTDIR=/stage cmake --install /tmp/jpeg-build \
+    && rm -rf /tmp/jpeg.tar.gz /tmp/libjpeg-turbo-${JPEG_VERSION} /tmp/jpeg-build
 
 
 
@@ -178,6 +207,7 @@ RUN curl -fsSL -o /tmp/zlib.tar.gz \
 # opentouhou games
 FROM toolchain-i686
 COPY --from=sdl-ttf /stage/ext/ /ext/
+COPY --from=jpeg /stage/ext/ /ext/
 COPY --from=ffmpeg /stage/ext/ /ext/
 COPY --from=sdl-i686 /stage/ext/i686/ /ext/i686/
 COPY --from=zlib-i686 /stage/ext/i686/ /ext/i686/

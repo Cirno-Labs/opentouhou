@@ -1125,7 +1125,7 @@ test(
     'test_image_codec.c',
     c_args: core_include,
     implicit_include_directories: false,
-    link_with: [core_image_lib, core_io_lib, core_base_lib],
+    link_with: [core_image_lib, core_io_lib, core_base_lib, core_hash_lib],
     dependencies: [avcodec, avutil, swscale, cc_libm],
   ),
   suite: 'unit',

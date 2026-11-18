@@ -12,6 +12,7 @@
   now focuses only after it is held for 8 frames, as in the original.
 - Fixed texture colors.
 - Fixed transparency in translated textures.
+- Fixed JPEG background colors and shading.
 
 ## 1.0.1 (2026-11-15)
 

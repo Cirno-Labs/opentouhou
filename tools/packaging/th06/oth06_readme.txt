@@ -202,7 +202,9 @@ Credits
 
 - ZUN (Team Shanghai Alice): the original game, characters, art and music.
 - thpatch.net community: translations in the patch format of thcrap.
-- SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg and zlib: shared libraries.
+- SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo and zlib:
+  shared libraries. This software is based in part on the work of the
+  Independent JPEG Group.
 - BIZ UDGothic: the bundled font.
 
 Source and documentation:

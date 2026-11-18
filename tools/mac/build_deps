@@ -3,7 +3,8 @@
 # Linux images, at the versions of tools/docker/pins and with the options
 # of the Linux Dockerfiles, so that every platform links the same
 # libraries. Each set has its own prefix under the root: base (SDL3 and
-# zlib), media (SDL3_ttf and FFmpeg) and othpatch (mbedTLS and curl).
+# zlib), media (SDL3_ttf, libjpeg-turbo and FFmpeg) and othpatch
+# (mbedTLS and curl).
 # media and othpatch build against base.
 #
 #     tools/mac/build_deps <arm64|x86_64> <root>
@@ -96,6 +97,20 @@ cmake -S "$ttf_dir" -B "$work/ttf-build" "${cmake_options[@]}" \
     -DSDLTTF_SAMPLES=OFF
 cmake --build "$work/ttf-build" -j"$jobs"
 cmake --install "$work/ttf-build"
+
+jpeg_version=$(pin JPEG_VERSION)
+fetch "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/$jpeg_version/libjpeg-turbo-$jpeg_version.tar.gz" \
+    "$(pin JPEG_SHA256)" "$work/jpeg.tar.gz"
+tar -xzf "$work/jpeg.tar.gz" -C "$work"
+cmake -S "$work/libjpeg-turbo-$jpeg_version" -B "$work/jpeg-build" "${cmake_options[@]}" \
+    -DENABLE_SHARED=OFF \
+    -DENABLE_STATIC=ON \
+    -DWITH_SIMD=OFF \
+    -DWITH_TURBOJPEG=OFF \
+    -DWITH_TOOLS=OFF \
+    -DWITH_TESTS=OFF
+cmake --build "$work/jpeg-build" -j"$jobs"
+cmake --install "$work/jpeg-build"
 
 # FFmpeg takes the configure options of the Linux media image, which list
 # the codecs, and disables all assembly, as the image does for x86.

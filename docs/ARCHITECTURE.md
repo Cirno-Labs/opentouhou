@@ -15,10 +15,10 @@ public header describes the module itself.
 ## Platform and tooling
 
 - **SDL3** for the window, OpenGL context, events, input, audio device,
-  paths, processes and the main loop. **SDL3_ttf** for text. **FFmpeg**
-  for image and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and
-  WebGL 2 share one set of `.glsl` shaders, compiled by the driver at
-  startup.
+  paths, processes and the main loop. **SDL3_ttf** for text.
+  **libjpeg-turbo** for JPEG decoding and **FFmpeg** for the other image
+  and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and WebGL 2 share one
+  set of `.glsl` shaders, compiled by the driver at startup.
 - **C23**, **Meson**, one static library per layer and one executable
   per game. Dependencies are built from source, statically, in Docker
   images per target: a base image with what every program links, and
