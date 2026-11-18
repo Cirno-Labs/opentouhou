@@ -254,6 +254,10 @@ static RESULT M_Start(
         &state->session, args->inputs, shim->bindings, shim->binding_count));
     MUST(
         Session_SetActions(&state->session, shim->actions, shim->action_count));
+    FAIL_IF(
+        state->session.script.fps.count != 0
+            && (shim->set_fps == nullptr || shim->comparison == nullptr),
+        "game cannot replay FPS observations");
     state->headless = args->headless;
     state->session.fast = args->fast;
     state->session.screenshots = !args->headless;
@@ -311,6 +315,14 @@ static RESULT M_Start(
     return OK;
 }
 
+static CHAIN_STATUS M_FpsDraw(void *const arg)
+{
+    M_NATIVE *const state = arg;
+    state->shim->set_fps(
+        Script_Fps(&state->session.script, state->session.frame));
+    return CHAIN_REMOVE;
+}
+
 static RESULT M_Play(const SESSION_GAME *const shim, M_NATIVE *const state)
 {
     const GAME_DESC *const game = shim->game;
@@ -330,8 +342,14 @@ static RESULT M_Play(const SESSION_GAME *const shim, M_NATIVE *const state)
         }
         shim->set_buttons(
             state->input, Script_Buttons(&session->script, session->frame));
+        CHAIN_ELEM fps_draw;
+        Chain_InitElem(&fps_draw, M_FpsDraw, state);
+        if (session->script.fps.count != 0) {
+            MUST(Chain_AddDraw(shim->comparison->chain, &fps_draw, 0));
+        }
         Gfx_BeginTick((GFX_COLOR) { 0, 0, 0, 255 });
         const bool running = game->tick(state->input);
+        Chain_Remove(&fps_draw);
         Gfx_EndTick();
         if (state->compare != nullptr
             && shim->comparison->chain->on_calc_end != M_CalcEnd) {

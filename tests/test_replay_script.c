@@ -97,6 +97,15 @@ TEST(invalid_scripts_leave_the_output_unchanged)
         "OTINPUT 1\nframes 2\naction 0 ending",
         "OTINPUT 1\nframes 2\naction 0 ../ending 1",
         "OTINPUT 1\nframes 2\naction 0 ending -1",
+        "OTINPUT 1\nframes 2\nfps 0 nan",
+        "OTINPUT 1\nframes 2\nfps 0 inf",
+        "OTINPUT 1\nframes 2\nfps 0 -1",
+        "OTINPUT 1\nframes 2\nfps 2 60",
+        "OTINPUT 1\nframes 2\nfps 0",
+        "OTINPUT 1\nframes 2\nfps 0 60 extra",
+        "OTINPUT 1\nframes 2\nfps 0 60\nfps 0 61",
+        "OTINPUT 1\nframes 2\nfps 0 60\nfps 1 none",
+
     };
     for (size_t i = 0; i < ARRAY_SIZE(invalid); i++) {
         INPUT_SCRIPT script = { .frames = 123 };
@@ -183,4 +192,20 @@ TEST(unknown_actions_fail_before_advancing_the_session)
     CHECK(!Result_Ignore(Session_SetActions(&session, nullptr, 0)));
     CHECK(session.frame == 0);
     Session_Close(&session);
+}
+
+TEST(fps_observations_keep_availability_and_changes)
+{
+    INPUT_SCRIPT script = {};
+    CHECK(IS_OK(M_Read(
+        "OTINPUT 1\nframes 100\nfps 0 none\nfps 30 59.94\nfps 60 60.00",
+        &script)));
+    CHECK(!Script_Fps(&script, 0)->available);
+    CHECK(!Script_Fps(&script, 29)->available);
+    CHECK(Script_Fps(&script, 30)->available);
+    CHECK(Script_Fps(&script, 59)->rate == 59.94f);
+    CHECK(Script_Fps(&script, 60)->rate == 60.0f);
+    CHECK(Script_Fps(&script, 99)->rate == 60.0f);
+    CHECK(Script_Fps(&script, 100) == nullptr);
+    Script_Free(&script);
 }

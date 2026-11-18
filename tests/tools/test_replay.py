@@ -100,6 +100,47 @@ class ReplayTests(unittest.TestCase):
             *options,
         )
 
+    def test_recorded_fps_is_inside_the_portable_script(self) -> None:
+        text = self.backend.read_text(encoding="utf-8")
+        marker = "if '--headless' not in args:"
+        text = text.replace(
+            marker,
+            "if '--compare-state' not in args:\n"
+            "    print('SESSION fps 0 none', flush=True)\n"
+            "    print('SESSION fps 1 59.94fps', flush=True)\n" + marker,
+        )
+        self.backend.write_text(text, encoding="utf-8")
+        self.assertEqual(self.record("--fast"), 0)
+        with CaseArchive(self.case) as archive:
+            archive.verify()
+            with archive.member("inputs.txt") as stream:
+                recorded = stream.read().decode("utf-8")
+            self.assertIn("fps 0 none\nfps 1 59.94\n", recorded)
+        self.assertNotIn("fps ", self.inputs.read_text(encoding="utf-8"))
+        self.assertEqual(
+            self.invoke(
+                "run",
+                str(self.case),
+                "--data",
+                str(self.root),
+                "--build-dir",
+                str(self.root),
+                "--headless",
+            ),
+            0,
+        )
+
+    def test_capture_rejects_existing_tab_separated_fps_observations(self) -> None:
+        self.inputs.write_text("OTINPUT 1\nframes 3\nfps\t0\t60.00\n", encoding="utf-8")
+        self.backend.write_text(
+            "print('SESSION fps 0 none', flush=True)\n"
+            + self.backend.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(self.record("--headless"), 1)
+        self.assertFalse(self.case.exists())
+
     def test_one_file_round_trip_includes_state_inputs_and_screenshots(self) -> None:
         self.assertEqual(self.record("--fast"), 0)
         with CaseArchive(self.case) as archive:

@@ -12,6 +12,8 @@ typedef struct {
     size_t binding_count;
     const char *replay_copy;
     void (*set_buttons)(void *input, uint16_t word);
+    // Replaces only the displayed counter, leaving rate measurements alone.
+    void (*set_fps)(const SCRIPT_FPS *observation);
     // Sets the same initial RNG and sound settings as the retail shim.
     void (*prepare)(void);
     const RUNNER_GAME *comparison;

@@ -53,6 +53,45 @@ class CaptureTests(unittest.TestCase):
             self.assertEqual((out / "frame-0007.png").read_bytes(), b"synthetic image")
             self.assertEqual(json.loads((out / "manifest.json").read_text()), result)
 
+    def test_fps_observations_are_recorded_without_capturing_pixels(self) -> None:
+        program = (
+            "print('SESSION fps 0 none', flush=True)\n"
+            "print('SESSION fps 30 59.94fps', flush=True)\n"
+            "print('SESSION fps 60 60.00fps', flush=True)\n"
+            "print('SESSION end 90', flush=True)\n"
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            result = SESSION.capture(
+                [sys.executable, "-c", program], Path(folder) / "out", 5
+            )
+            self.assertEqual(
+                result["fps"],
+                [
+                    {"frame": 0, "value": "none"},
+                    {"frame": 30, "value": "59.94"},
+                    {"frame": 60, "value": "60.00"},
+                ],
+            )
+            self.assertEqual(result["captures"], [])
+
+    def test_invalid_fps_timelines_fail(self) -> None:
+        cases = [
+            ["SESSION fps 0 nanfps"],
+            ["SESSION fps 0 -1.00fps"],
+            ["SESSION fps 0 60.00fps", "SESSION fps 0 59.94fps"],
+            ["SESSION fps 0 60.00fps", "SESSION fps 1 none"],
+            ["SESSION fps 3 60.00fps"],
+        ]
+        for lines in cases:
+            program = "\n".join(
+                f"print({line!r}, flush=True)" for line in [*lines, "SESSION end 3"]
+            )
+            with self.subTest(lines=lines), tempfile.TemporaryDirectory() as folder:
+                with self.assertRaises(ValueError):
+                    SESSION.capture(
+                        [sys.executable, "-c", program], Path(folder) / "out", 5
+                    )
+
     def test_an_early_exit_is_incomplete_even_with_exit_status_zero(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             out = Path(folder) / "capture"

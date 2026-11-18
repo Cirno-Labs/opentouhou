@@ -5,12 +5,18 @@
 #include "session.h"
 
 #include <d3d8.h>
+#include <stdio.h>
+#include <string.h>
 
 static CAPTURE_SESSION m_Session;
 static bool m_Opened;
 static bool m_ClockStarted;
 static bool m_CalcSeen;
 static bool m_InCalc;
+static const char *m_FpsText;
+static char m_DrawnFps[32];
+static char m_ReportedFps[32];
+static bool m_FpsReported;
 static HRESULT(STDMETHODCALLTYPE *m_Present)(
     IDirect3DDevice8 *, const RECT *, const RECT *, HWND, const RGNDATA *);
 
@@ -34,6 +40,14 @@ static HRESULT STDMETHODCALLTYPE M_Present(
         GetClientRect(target, &rect) && ClientToScreen(target, &origin)
             ? OK
             : FAIL("cannot query the retail capture rectangle"));
+    if (!m_FpsReported || strcmp(m_DrawnFps, m_ReportedFps) != 0) {
+        printf(
+            "SESSION fps %u %s\n", m_Session.frame,
+            m_DrawnFps[0] != '\0' ? m_DrawnFps : "none");
+        fflush(stdout);
+        memcpy(m_ReportedFps, m_DrawnFps, sizeof(m_ReportedFps));
+        m_FpsReported = true;
+    }
     Capture_Check(Session_Presented(
         &m_Session, origin.x, origin.y, rect.right, rect.bottom));
     if (Session_Done(&m_Session)) {
@@ -45,8 +59,10 @@ static HRESULT STDMETHODCALLTYPE M_Present(
 
 RESULT SessionRetail_Open(
     const SCRIPT_BINDING *const bindings, const size_t count,
-    const SESSION_ACTION *const actions, const size_t action_count)
+    const SESSION_ACTION *const actions, const size_t action_count,
+    const char *const fps_text)
 {
+    m_FpsText = fps_text;
     wchar_t wide[32768];
     const DWORD font_length =
         GetEnvironmentVariableW(L"CAPTURE_FONT", wide, ARRAY_SIZE(wide));
@@ -81,6 +97,8 @@ void SessionRetail_BeforeCalc(void *const device)
     if (!m_Opened) {
         return;
     }
+    memcpy(m_DrawnFps, m_FpsText, sizeof(m_DrawnFps) - 1);
+    m_DrawnFps[sizeof(m_DrawnFps) - 1] = '\0';
     m_InCalc = true;
     if (m_CalcSeen) {
         if (!m_ClockStarted) {

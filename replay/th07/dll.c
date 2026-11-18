@@ -329,7 +329,7 @@ static void M_Attach(void)
         Overlay_SetPrivatePaths(private_paths, ARRAY_SIZE(private_paths));
         Capture_Check(SessionRetail_Open(
             m_Bindings, ARRAY_SIZE(m_Bindings), m_Actions,
-            ARRAY_SIZE(m_Actions)));
+            ARRAY_SIZE(m_Actions), RETAIL_FPS_TEXT));
         Capture_Check(Patch_CallsIn(
             RETAIL_APP_ON_UPDATE, RETAIL_APP_ON_UPDATE_SIZE,
             RETAIL_READ_BUTTONS, (uintptr_t)SessionRetail_Buttons, 2));

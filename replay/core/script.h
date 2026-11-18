@@ -13,6 +13,8 @@
 // and '#' comments are allowed. A capture follows that frame's presentation.
 // "action FRAME NAME VALUE" runs a named game setup after that capture.
 // Actions at the same frame run in source order.
+// "fps FRAME RATE" records the displayed frame rate, or "none" before
+// the first measurement. FPS observations stay in effect until changed.
 
 typedef struct {
     const char *name;
@@ -31,10 +33,17 @@ typedef struct {
 } SCRIPT_ACTION;
 
 typedef struct {
+    uint32_t frame;
+    float rate;
+    bool available;
+} SCRIPT_FPS;
+
+typedef struct {
     uint32_t frames;
     ARRAY(SCRIPT_INPUT) inputs;
     ARRAY(uint32_t) captures;
     ARRAY(SCRIPT_ACTION) actions;
+    ARRAY(SCRIPT_FPS) fps;
 } INPUT_SCRIPT;
 
 // Reads at most 1 MiB. On failure, leaves out unchanged. Does not close in.
@@ -50,3 +59,6 @@ uint16_t Script_Buttons(const INPUT_SCRIPT *script, uint32_t frame);
 
 // Returns whether frame requests a screenshot.
 bool Script_Capture(const INPUT_SCRIPT *script, uint32_t frame);
+
+// Returns the latest FPS observation, or nullptr before the first one.
+const SCRIPT_FPS *Script_Fps(const INPUT_SCRIPT *script, uint32_t frame);

@@ -9,7 +9,7 @@
 // The launcher must already have installed the write overlay and clocks.
 RESULT SessionRetail_Open(
     const SCRIPT_BINDING *bindings, size_t count, const SESSION_ACTION *actions,
-    size_t action_count);
+    size_t action_count, const char *fps_text);
 
 // Hooks the device's presentation on the first calc. device is the game's
 // IDirect3DDevice8, kept opaque outside this Windows-only implementation.

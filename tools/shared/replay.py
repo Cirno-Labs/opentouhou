@@ -172,6 +172,21 @@ def bundle(
         raise ValueError("backend did not record the complete session state schema")
     captures = cast(list[dict[str, object]], manifest["captures"])
     screenshots = {int(item["frame"]): output / str(item["file"]) for item in captures}
+    fps = cast(list[dict[str, object]], manifest.get("fps", []))
+    if fps:
+        text = inputs.read_text(encoding="utf-8")
+        if any(
+            line.split("#", 1)[0].split()[:1] == ["fps"] for line in text.splitlines()
+        ):
+            raise ValueError("cannot overwrite FPS observations in the input script")
+        recorded_inputs = output / "recorded-inputs.txt"
+        recorded_inputs.write_text(
+            text
+            + "\n"
+            + "".join(f"fps {item['frame']} {item['value']}\n" for item in fps),
+            encoding="utf-8",
+        )
+        inputs = recorded_inputs
     write_case(
         destination,
         game=game,

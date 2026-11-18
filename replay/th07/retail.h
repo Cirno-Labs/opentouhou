@@ -391,3 +391,6 @@ typedef struct {
     RETAIL_ITEM items[0x44d];
 } RETAIL_ITEM_MANAGER;
 #define RETAIL_ITEM_MANAGER_AT ((RETAIL_ITEM_MANAGER *)0x00575c70)
+
+// The text most recently formatted by DrawFps.
+#define RETAIL_FPS_TEXT ((const char *)0x0135e0f0)

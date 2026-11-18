@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import queue
+import re
 import signal
 import subprocess
 import sys
@@ -72,6 +73,8 @@ def capture(
         "captures": [],
     }
     captures: list[dict[str, object]] = []
+    fps: list[dict[str, object]] = []
+    manifest["fps"] = fps
     manifest["captures"] = captures
     save_manifest(out, manifest)
     process: subprocess.Popen[str] | None = None
@@ -135,9 +138,28 @@ def capture(
                     last_frame = frame
                     if not quiet:
                         print(f"captured {frame}: {out / name}", flush=True)
+                elif parts[:2] == ["SESSION", "fps"]:
+                    if ended or len(parts) != 4:
+                        raise ValueError(f"invalid FPS observation: {line!r}")
+                    frame = int(parts[2])
+                    token = parts[3]
+                    if frame < 0 or (fps and frame <= int(fps[-1]["frame"])):
+                        raise ValueError(f"invalid FPS frame: {line!r}")
+                    if token == "none" and fps:
+                        raise ValueError(
+                            f"FPS availability cannot be cleared: {line!r}"
+                        )
+                    if len(token) > 31 or (
+                        token != "none"
+                        and re.fullmatch(r"[0-9]+\.[0-9]{2}fps", token) is None
+                    ):
+                        raise ValueError(f"invalid FPS value: {line!r}")
+                    fps.append({"frame": frame, "value": token.removesuffix("fps")})
                 elif parts[:2] == ["SESSION", "end"]:
                     if ended or len(parts) != 3 or int(parts[2]) <= last_frame:
                         raise ValueError(f"invalid session end: {line!r}")
+                    if fps and int(fps[-1]["frame"]) >= int(parts[2]):
+                        raise ValueError("FPS observation is outside the session")
                     manifest["frames"] = int(parts[2])
                     ended = True
         code = process.wait(timeout=timeout)

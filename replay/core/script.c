@@ -1,6 +1,7 @@
 #include "script.h"
 
 #include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -114,6 +115,29 @@ static RESULT M_Line(
             MUST(M_Buttons(
                 M_Token(&cursor), bindings, binding_count, &input.buttons));
             Array_Append(&script->inputs, input);
+        } else if (strcmp(command, "fps") == 0) {
+            FAIL_IF(
+                script->fps.count != 0
+                    && frame <= script->fps.items[script->fps.count - 1].frame,
+                "FPS frames must increase strictly");
+            const char *const token = M_Token(&cursor);
+            FAIL_IF(token == nullptr, "expected FPS or none");
+            SCRIPT_FPS observation = { .frame = frame };
+            if (strcmp(token, "none") != 0) {
+                errno = 0;
+                char *end;
+                observation.rate = strtof(token, &end);
+                FAIL_IF(
+                    errno != 0 || end == token || *end != '\0'
+                        || !isfinite(observation.rate) || observation.rate < 0,
+                    "invalid FPS %s", token);
+                observation.available = true;
+            } else {
+                FAIL_IF(
+                    script->fps.count != 0,
+                    "none must be the first FPS observation");
+            }
+            Array_Append(&script->fps, observation);
         } else if (strcmp(command, "capture") == 0) {
             FAIL_IF(
                 script->captures.count != 0
@@ -194,6 +218,10 @@ static RESULT M_Read(
             && script->actions.items[script->actions.count - 1].frame
                 >= script->frames,
         "action is outside the script");
+    FAIL_IF(
+        script->fps.count != 0
+            && script->fps.items[script->fps.count - 1].frame >= script->frames,
+        "FPS observation is outside the script");
     return OK;
 }
 
@@ -205,6 +233,7 @@ RESULT Script_Read(
     Array_Init(&script.inputs, &g_HeapAllocator);
     Array_Init(&script.captures, &g_HeapAllocator);
     Array_Init(&script.actions, &g_HeapAllocator);
+    Array_Init(&script.fps, &g_HeapAllocator);
     const RESULT result = M_Read(in, bindings, binding_count, &script);
     if (!IS_OK(result)) {
         Script_Free(&script);
@@ -219,6 +248,7 @@ void Script_Free(INPUT_SCRIPT *const script)
     Array_Free(&script->inputs);
     Array_Free(&script->captures);
     Array_Free(&script->actions);
+    Array_Free(&script->fps);
     memset(script, 0, sizeof(*script));
 }
 
@@ -253,4 +283,23 @@ bool Script_Capture(const INPUT_SCRIPT *const script, const uint32_t frame)
         }
     }
     return low < script->captures.count && script->captures.items[low] == frame;
+}
+
+const SCRIPT_FPS *Script_Fps(
+    const INPUT_SCRIPT *const script, const uint32_t frame)
+{
+    if (frame >= script->frames) {
+        return nullptr;
+    }
+    int32_t low = 0;
+    int32_t high = script->fps.count;
+    while (low < high) {
+        const int32_t middle = low + (high - low) / 2;
+        if (script->fps.items[middle].frame <= frame) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    return low == 0 ? nullptr : &script->fps.items[low - 1];
 }

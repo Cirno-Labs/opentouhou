@@ -1,11 +1,14 @@
 #include "../core/session_native.h"
 
 #include "th07/buttons.h"
+#include "th07/ascii.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/scene.h"
 #include "th07/main.h"
 #include "th07/settings.h"
+
+#include <stdio.h>
 
 static RESULT M_Result(uint32_t score);
 static RESULT M_Ending(uint32_t score);
@@ -28,6 +31,17 @@ static const SESSION_ACTION m_Actions[] = {
 static void M_Buttons(void *const input, const uint16_t word)
 {
     *(TH07_INPUT *)input = Buttons_FromWord(word);
+}
+
+static void M_Fps(const SCRIPT_FPS *const observation)
+{
+    if (observation != nullptr && observation->available) {
+        snprintf(
+            g_AsciiText.frame_rate, sizeof(g_AsciiText.frame_rate), "%.02ffps",
+            (double)observation->rate);
+    } else {
+        g_AsciiText.frame_rate[0] = '\0';
+    }
 }
 
 static void M_Prepare(void)
@@ -98,6 +112,7 @@ const SESSION_GAME g_SessionGame = {
     .binding_count = ARRAY_SIZE(m_Bindings),
     .replay_copy = "replay/th7_ud0000.rpy",
     .set_buttons = M_Buttons,
+    .set_fps = M_Fps,
     .prepare = M_Prepare,
     .comparison = &g_RunnerGame,
     .case_ready = M_CaseReady,
