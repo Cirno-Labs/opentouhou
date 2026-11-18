@@ -849,6 +849,24 @@ static void M_AddEntry(VEC3 pos, const HIGH_SCORE *const entry)
     char name[9];
     memcpy(name, entry->name, sizeof(name) - 1);
     name[8] = 0;
+    // base_tsa draws the name, a 10-digit score at 0.9 width and the stage
+    // or clear label as three strings.
+    if (Translation_HasBaseTsa()) {
+        AsciiText_AddString(pos, name);
+        const float scale = g_AsciiText.scale_x;
+        pos.x += 9.0f * (14.0f * scale);
+        g_AsciiText.scale_x = 0.9f;
+        AsciiText_AddFormat(pos, "%10d", (int32_t)entry->score);
+        pos.x += 10.0f * (14.0f * g_AsciiText.scale_x);
+        g_AsciiText.scale_x = scale;
+        if (entry->stage >= 8) {
+            AsciiText_AddString(pos, g_Strings[STRING_RESULT_CLEAR_LABEL]);
+        } else {
+            AsciiText_AddFormat(
+                pos, "(%d)", entry->stage == 7 ? 1 : entry->stage);
+        }
+        return;
+    }
     if (entry->stage <= 6) {
         AsciiText_AddFormat(
             pos, g_Strings[STRING_RESULT_SCORE], name, entry->score,

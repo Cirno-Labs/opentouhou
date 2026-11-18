@@ -27,6 +27,7 @@
     X(RESULT_SCORE, 0x46bdc0, "%8s %9d(%d)")                                   \
     X(RESULT_SCORE_EXTRA, 0x46bdb4, "%8s %9d(1)")                              \
     X(RESULT_SCORE_CLEAR, 0x46bda8, "%8s %9d(C)")                              \
+    X(RESULT_CLEAR_LABEL, 0, "(C)")                                            \
     X(RESULT_UNKNOWN_SPELL_CARD, 0, "？？？？？")                              \
     X(REPLAY_SAVE_HEADER, 0x46bd5c, "No.   Name     Date     Player Score")    \
     X(REPLAY_SAVE_SLOT, 0x46bd44, "No.%.2d %8s %8s %7s %9d")                   \
