@@ -40,6 +40,10 @@
   patches bring.
 - Fixed the alignment of translated stage labels, bonus notices and
   spell card bonus labels.
+- Fixed the colors of highlighted entries in the title, options and
+  pad button menus.
+- Fixed the options menu showing no color depth as chosen: it now shows
+  32-bit color.
 
 ## 1.0.1 (2026-11-15)
 
