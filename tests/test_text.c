@@ -245,11 +245,47 @@ TEST(the_bundled_font_cell_is_its_em)
     Text_Shutdown();
 }
 
+TEST(rounded_cells_use_whole_em_pixels_and_windows_baselines)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *const font = M_LoadWithCell(1760, 640, 30);
+    TEXT_FONT *const em = M_LoadWithCell(0, 0, 26);
+    TEXT_FONT *const low_ascent = M_LoadWithCell(800, 1600, 30);
+    int32_t offset, low_offset;
+    CHECK(IS_OK(TextFont_SetSizeRounded(font, 30, &offset)));
+    CHECK(IS_OK(TextFont_SetSizeRounded(low_ascent, 30, &low_offset)));
+    CHECK_EQ_INT(low_offset - offset, -12);
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    IMAGE expected, image;
+    CHECK(IS_OK(Text_Render(
+        em, "Night Sign 霊夢", &style, &g_HeapAllocator, &expected)));
+    CHECK(IS_OK(Text_Render(
+        font, "Night Sign 霊夢", &style, &g_HeapAllocator, &image)));
+    CHECK_EQ_INT(image.width, expected.width);
+    CHECK_EQ_INT(image.height, expected.height);
+    CHECK(
+        memcmp(
+            image.pixels, expected.pixels,
+            (size_t)image.width * (size_t)image.height * 4)
+        == 0);
+    Image_Free(&image);
+    Image_Free(&expected);
+    CHECK(!Result_Ignore(TextFont_SetSizeRounded(font, NAN, &offset)));
+    CHECK(!Result_Ignore(TextFont_SetSizeRounded(font, 30, nullptr)));
+    TextFont_Free(low_ascent);
+    TextFont_Free(em);
+    TextFont_Free(font);
+    Text_Shutdown();
+}
+
 TEST(gdi_raster_uses_quantized_glyph_coverage)
 {
     CHECK(IS_OK(Text_Init()));
     TEXT_FONT *font = nullptr;
     CHECK(IS_OK(TextFont_LoadDefault(30, &font)));
+    int32_t offset;
+    CHECK(IS_OK(TextFont_SetSizeRounded(font, 30, &offset)));
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;

@@ -31,4 +31,12 @@ RESULT TextFont_LoadFamily(
 
 // Changes the size from loaded font data without reading files.
 RESULT TextFont_SetSize(TEXT_FONT *font, float pixel_height);
+
+// Rounds each face's em size to whole pixels for the given cell height.
+// Gives the image's vertical offset for a baseline rounded from the font's
+// Windows ascent, as GDI places the glyphs. Leaves fractional sizing to
+// TextFont_SetSize.
+RESULT TextFont_SetSizeRounded(
+    TEXT_FONT *font, float pixel_height, int32_t *offset_y);
+
 void TextFont_Free(TEXT_FONT *font);
