@@ -658,6 +658,21 @@ GFX_VIEW GfxView_Screen(void)
     return view;
 }
 
+GFX_VIEW GfxView_OffsetPixels(
+    const GFX_VIEW *const view, const float x, const float y)
+{
+    GFX_VIEW shifted = *view;
+    const float dx =
+        view->viewport.width > 0.0f ? x * 2.0f / view->viewport.width : 0.0f;
+    const float dy =
+        view->viewport.height > 0.0f ? -y * 2.0f / view->viewport.height : 0.0f;
+    for (int32_t row = 0; row < 4; row++) {
+        shifted.projection.m[row][0] += dx * view->projection.m[row][3];
+        shifted.projection.m[row][1] += dy * view->projection.m[row][3];
+    }
+    return shifted;
+}
+
 void Gfx_BeginTick(const GFX_COLOR clear)
 {
     if (!m_Frontend.started) {

@@ -25,6 +25,8 @@
   playfield.
 - Fixed background fades starting from black instead of from the
   previous frame.
+- Fixed sprites, the power bar, the dialogue box and translator notes
+  sitting half a pixel off.
 
 ## 1.0.1 (2026-11-15)
 

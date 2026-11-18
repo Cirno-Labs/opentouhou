@@ -7,6 +7,10 @@
 // Gfx_Init, returns identity matrices and an empty viewport.
 GFX_VIEW GfxView_Screen(void);
 
+// Moves projected positions by x and y logical-screen pixels without
+// moving the viewport or its scissor.
+GFX_VIEW GfxView_OffsetPixels(const GFX_VIEW *view, float x, float y);
+
 // Starts drawing a tick on the logical screen, cleared to clear. The program
 // calls Gfx_BeginTick and Gfx_EndTick around each tick of the game.
 void Gfx_BeginTick(GFX_COLOR clear);

@@ -39,6 +39,7 @@ static void M_Gradient(
         { { x0, y1, depth }, M_DrawColor(left_bottom), {} },
     };
     GFX_VIEW view = GfxView_Screen();
+    view = GfxView_OffsetPixels(&view, 0.5f, 0.5f);
     view.id = ANM_VIEW_SCREEN;
     Gfx_SetView(&view);
     Gfx_DrawQuad(
