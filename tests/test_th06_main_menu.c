@@ -790,3 +790,83 @@ TEST(the_title_menu_asks_for_a_scan_when_the_replay_menu_opens)
         == 0);
     M_Teardown();
 }
+
+TEST(the_title_logo_keeps_its_texture_colors)
+{
+    M_Setup("title_logo_colors");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 32, 32);
+    builder.blank_texture = true;
+    AnmBuilder_AddSprite(&builder, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+    const int32_t script = AnmBuilder_BeginScript(&builder, 0);
+    const uint32_t interrupt = 1;
+    const uint32_t sprite = 0;
+    AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+    AnmBuilder_Instr(&builder, script, 0, 21, nullptr, 0);
+    AnmBuilder_Instr(&builder, script, 0, 22, &interrupt, 1);
+    AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+    AnmBuilder_Instr(&builder, script, 0, 15, nullptr, 0);
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, "data/title01.anm", bytes, size);
+    CHECK(Result_Log(TitleScene_SetUp(0), LOG_LEVEL_ERROR));
+    M_Run(3);
+    int32_t logos = 0;
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        const uint64_t id = GfxRecorder_QuadId(i);
+        if (id == 0 || (uint32_t)id != 0) {
+            continue;
+        }
+        const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(i);
+        CHECK(quad->state.color_op == GFX_COLOR_MODULATE);
+        for (int32_t v = 0; v < 4; v++) {
+            CHECK_EQ_INT(quad->vertices[v].color.red, 255);
+            CHECK_EQ_INT(quad->vertices[v].color.green, 255);
+            CHECK_EQ_INT(quad->vertices[v].color.blue, 255);
+        }
+        logos++;
+    }
+    CHECK_EQ_INT(logos, 1);
+    M_Teardown();
+}
+
+TEST(options_use_the_precolored_selected_sprites)
+{
+    M_Setup("option_colors");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder, 32, 32);
+    builder.blank_texture = true;
+    for (int32_t i = 0; i < 32; i++) {
+        AnmBuilder_AddSprite(&builder, i, 0.0f, 0.0f, 16.0f, 16.0f);
+        AnmBuilder_AddSprite(&builder, i + 0x7a, 16.0f, 0.0f, 16.0f, 16.0f);
+        const int32_t script = AnmBuilder_BeginScript(&builder, i);
+        const uint32_t sprite = (uint32_t)i;
+        AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+        AnmBuilder_Instr(&builder, script, 0, 21, nullptr, 0);
+        for (uint32_t label = 1; label <= 3; label++) {
+            AnmBuilder_Instr(&builder, script, 0, 22, &label, 1);
+            AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
+            AnmBuilder_Instr(&builder, script, 0, 21, nullptr, 0);
+        }
+        AnmBuilder_Instr(&builder, script, 1000, 0, nullptr, 0);
+    }
+    uint8_t bytes[ANM_BUILDER_MAX_SIZE];
+    const size_t size = AnmBuilder_Build(&builder, bytes);
+    Th06Data_WriteFile(m_Directory, "data/title01.anm", bytes, size);
+    M_OpenOptions();
+    int32_t selected = 0;
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        const uint64_t id = GfxRecorder_QuadId(i);
+        if (id == 0 || ((uint32_t)id != 8 && (uint32_t)id != 16)) {
+            continue;
+        }
+        const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(i);
+        CHECK(quad->vertices[0].uv.x == 0.5f);
+        CHECK_EQ_INT(quad->vertices[0].color.red, 255);
+        CHECK_EQ_INT(quad->vertices[0].color.green, 255);
+        CHECK_EQ_INT(quad->vertices[0].color.blue, 255);
+        selected++;
+    }
+    CHECK_EQ_INT(selected, 2);
+    M_Teardown();
+}

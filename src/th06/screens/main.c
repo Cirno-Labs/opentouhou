@@ -360,13 +360,16 @@ static void M_CommitMapping(const M_MENU *const menu)
 
 static void M_HighlightEntry(
     ANM_VM *const vm, const int32_t index, const int32_t cursor,
-    const uint32_t selected_color, const uint32_t color)
+    const uint32_t selected_color, const uint32_t color,
+    const int32_t sprite_offset)
 {
     if (index == cursor) {
-        vm->color = selected_color;
+        Anm_SetSprite(vm, vm->base_sprite + sprite_offset);
+        vm->color = (selected_color & 0xff000000) | 0xffffff;
         vm->pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
     } else {
-        vm->color = color;
+        Anm_SetSprite(vm, vm->base_sprite);
+        vm->color = (color & 0xff000000) | 0xffffff;
         vm->pos_offset = (VEC3) {};
     }
 }
@@ -376,12 +379,13 @@ static void M_HighlightOption(
     const int32_t value, const int32_t current)
 {
     if (value != current) {
-        vm->color = COLOR_ARGB(0x80, 0x20, 0x20, 0x50);
+        Anm_SetSprite(vm, vm->base_sprite);
         vm->scale_x = 1.0f;
         vm->scale_y = 1.0f;
         vm->pos_offset = (VEC3) {};
     } else {
-        vm->color = COLOR_ARGB(0x80, 0x00, 0x00, 0xff);
+        Anm_SetSprite(
+            vm, vm->base_sprite + (vm->base_sprite < 0x122 ? 0x7a : 0x73));
         vm->pos_offset = (VEC3) { -2.0f, -2.0f, 0.0f };
     }
     if (row != menu->cursor) {
@@ -478,7 +482,7 @@ static CHAIN_STATUS M_StartTitle(M_MENU *const menu)
         ANM_VM *const vm = &menu->sprites[i];
         vm->pending_interrupt = 1;
         vm->color_op = true;
-        vm->color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
+        vm->color = COLOR_WHITE;
         vm->pos_offset = (VEC3) {};
     }
     menu->state = M_STATE_WAIT_FOR_KEY;
@@ -537,7 +541,7 @@ static void M_UpdateTitleMenu(M_MENU *const menu)
         M_HighlightEntry(
             &menu->sprites[i], i, menu->cursor,
             COLOR_ARGB(0xff, 0xff, 0x00, 0x00),
-            COLOR_ARGB(0x80, 0x30, 0x00, 0x00));
+            COLOR_ARGB(0x80, 0x30, 0x00, 0x00), 0x7a);
     }
     if (menu->state_frames < 20) {
         return;
@@ -675,7 +679,7 @@ static void M_UpdateOptions(M_MENU *const menu)
         M_HighlightOption(menu, &menu->sprites[vm++], 1, i, g_Settings.bombs);
     }
     for (int32_t i = 0; i < 2; i++) {
-        M_HighlightOption(menu, &menu->sprites[vm++], 2, i, -1);
+        M_HighlightOption(menu, &menu->sprites[vm++], 2, i, 0);
     }
     for (int32_t i = 0; i < 2; i++) {
         M_HighlightOption(
@@ -751,7 +755,7 @@ static void M_UpdatePadConfig(M_MENU *const menu)
     for (int32_t i = 0; i < 11; i++) {
         M_HighlightEntry(
             &menu->sprites[vm++], i, menu->cursor, menu->selected_color,
-            menu->unselected_color);
+            menu->unselected_color, 0x73);
     }
     for (int32_t i = 0; i < M_MAPPING_COUNT; i++) {
         ANM_VM *const sprite = &menu->sprites[vm++];
@@ -759,7 +763,7 @@ static void M_UpdatePadConfig(M_MENU *const menu)
         if (sprite->visible) {
             M_HighlightEntry(
                 sprite, i, menu->cursor, menu->selected_color,
-                menu->unselected_color);
+                menu->unselected_color, 0x73);
         }
     }
     for (int32_t i = 0; i < M_MAPPING_COUNT * 2; i++) {
@@ -774,7 +778,7 @@ static void M_UpdatePadConfig(M_MENU *const menu)
         sprite->base_sprite = sprite->sprite;
         M_HighlightEntry(
             sprite, i / 2, menu->cursor, menu->selected_color,
-            menu->unselected_color);
+            menu->unselected_color, 0x7a);
     }
     if (menu->state_frames < 0x20) {
         return;

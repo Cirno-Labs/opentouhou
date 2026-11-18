@@ -148,42 +148,26 @@ static const char *const m_GamepadButtons[] = {
     "right_stick_press",
 };
 
-static const char *const m_TitleHelp[] = {
-    "ゲームを開始します",
-    "エキストラステージを開始します",
-    "ステージを選択し、練習を開始します",
-    "リプレイを鑑賞できます",
-    "過去のスコアやスペルカードの取得歴を見られます",
-    "音楽を聴けます",
-    "各種設定できます",
-    "いろいろと終了します",
+static const STRING m_TitleHelp[] = {
+    STRING_HELP_MENU_START,          STRING_HELP_MENU_EXTRA_START,
+    STRING_HELP_MENU_PRACTICE_START, STRING_HELP_MENU_REPLAY,
+    STRING_HELP_MENU_RESULT,         STRING_HELP_MENU_MUSIC_ROOM,
+    STRING_HELP_MENU_OPTION,         STRING_HELP_MENU_QUIT,
 };
 
-static const char *const m_OptionsHelp[] = {
-    "プレイヤーの初期数を変更します。（初期設定　３）",
-    "画面の色数を変更します。３２ＢＩＴだと最も綺麗に表示されます。",
-    "ＢＧＭの再生方法を変更します。（初期設定　ＷＡＶ）",
-    "効果音を再生するか選択します",
-    "ウィンドウかフルスクリーンか選択します",
-    "弾が多い場面でわざと処理落ちさせます(スコア、リプレイ記録不可)",
-    "全て初期設定にします",
-    "パッド操作のボタン配置を変更します",
-    "おいそれと終了します",
+static const STRING m_OptionsHelp[] = {
+    STRING_HELP_OPTION_PLAYER,      STRING_HELP_OPTION_GRAPHIC,
+    STRING_HELP_OPTION_BGM,         STRING_HELP_OPTION_SOUND,
+    STRING_HELP_OPTION_WINDOW_MODE, STRING_HELP_OPTION_SLOW_MODE,
+    STRING_HELP_OPTION_RESET,       STRING_HELP_OPTION_KEY_CONFIG,
+    STRING_HELP_OPTION_QUIT,
 };
 
-static const char *const m_KeyConfigHelp[] = {
-    "ショット、決定ボタンを設定します",
-    "ボム、キャンセルボタンを設定します",
-    "低速移動ボタンを設定します",
-    "メッセージスキップボタンを設定します",
-    "ポーズボタンを設定します",
-    "上移動ボタンを設定します",
-    "下移動ボタンを設定します",
-    "左移動ボタンを設定します",
-    "右移動ボタンを設定します",
-    "ショット押しっぱなしで低速移動になるようにします",
-    "初期設定に戻します",
-    "おおよそ終了します",
+static const STRING m_KeyConfigHelp[] = {
+    STRING_HELP_KEY_SHOT,     STRING_HELP_KEY_BOMB,  STRING_HELP_KEY_SLOW,
+    STRING_HELP_KEY_SKIP,     STRING_HELP_KEY_PAUSE, STRING_HELP_KEY_UP,
+    STRING_HELP_KEY_DOWN,     STRING_HELP_KEY_LEFT,  STRING_HELP_KEY_RIGHT,
+    STRING_HELP_KEY_SHOTSLOW, STRING_HELP_KEY_RESET, STRING_HELP_KEY_QUIT,
 };
 
 static const STRING m_ShotNames[6] = {
@@ -260,12 +244,13 @@ static void M_InterruptHelp(M_MENU *const menu, const int16_t interrupt)
 }
 
 static void M_RenderHelp(
-    M_MENU *const menu, const char *const *const texts, const size_t count)
+    M_MENU *const menu, const STRING *const texts, const size_t count)
 {
     for (size_t i = 0; i < count; i++) {
         Result_Log(
             Anm_RenderTextCentered(
-                &menu->help_sprites[i], 0xfff0e0, 0x300000, "%s", texts[i]),
+                &menu->help_sprites[i], 0xfff0e0, 0x300000, "%s",
+                g_Strings[texts[i]]),
             LOG_LEVEL_WARNING);
     }
 }
@@ -668,7 +653,7 @@ static CHAIN_STATUS M_UpdateOptions(M_MENU *const menu)
         }
         M_ShowHelp(menu);
         M_Highlight(menu, 0x12, 5, g_Settings.lives);
-        M_SetSprite(&menu->sprites[0x17], 1);
+        M_SetSprite(&menu->sprites[0x17], 0);
         M_SetSprite(&menu->sprites[0x18], 1);
         M_Highlight(menu, 0x19, 3, g_Settings.music);
         M_Highlight(menu, 0x1c, 2, g_Settings.sound ? 1 : 0);

@@ -11,11 +11,13 @@
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
 - Fixed the letters and spacing in translated text.
+- Fixed the right half of translated Music Room comments.
+- Fixed menu highlight colors and the selected graphics setting.
 - Fixed the size, shape, shading, sharpness and placement of text in
   spell names, dialogue, translator notes and Japanese stage and song
   titles.
 - Fixed sprite placement, fading backgrounds, fog, texture colors,
-  filtering and faint sprite edges.
+  title logo colors, filtering and faint sprite edges.
 - Fixed texture distortion and shading seams in sprites and
   backgrounds.
 - Fixed transparency in translated textures.
