@@ -47,6 +47,8 @@
 - Fixed the right half of translated Music Room comments.
 - Fixed score widths and the untranslated clear label on translated
   results screens.
+- Fixed the brightness of entries in the shot type select and the
+  results menu.
 
 ## 1.0.1 (2026-11-15)
 
