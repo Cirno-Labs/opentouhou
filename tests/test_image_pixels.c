@@ -306,3 +306,51 @@ TEST(resize_interpolates_a_gradient)
     CHECK_EQ_INT(image.pixels[3 * 4], 100);
     Image_Free(&image);
 }
+
+TEST(triangle_downsampling_wraps_the_source_edges)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    memset(image.pixels, 255, 4);
+    Image_DownsampleTriangle(
+        &image, 2, 2, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_RGBA8);
+    const uint8_t expected[] = { 49, 7, 7, 1 };
+    for (int32_t i = 0; i < 4; i++) {
+        for (int32_t c = 0; c < 4; c++) {
+            CHECK_EQ_INT(image.pixels[i * 4 + c], expected[i]);
+        }
+    }
+    Image_Free(&image);
+}
+
+TEST(triangle_downsampling_keeps_source_channel_precision)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    for (int32_t i = 0; i < 16; i++) {
+        image.pixels[i * 4] = 24;
+        image.pixels[i * 4 + 3] = 255;
+    }
+    Image_DownsampleTriangle(
+        &image, 2, 2, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_RGBA8);
+    for (int32_t i = 0; i < 4; i++) {
+        CHECK_EQ_INT(image.pixels[i * 4], 25);
+        CHECK_EQ_INT(image.pixels[i * 4 + 1], 0);
+        CHECK_EQ_INT(image.pixels[i * 4 + 2], 0);
+        CHECK_EQ_INT(image.pixels[i * 4 + 3], 255);
+    }
+    Image_Free(&image);
+}
+
+TEST(triangle_filter_keeps_both_axes_when_one_size_changes)
+{
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    memset(image.pixels, 255, 4);
+    Image_DownsampleTriangle(
+        &image, 4, 2, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_RGBA8);
+    const uint8_t expected[] = { 84, 14, 0, 14, 12, 2, 0, 2 };
+    for (int32_t i = 0; i < 8; i++) {
+        for (int32_t c = 0; c < 4; c++) {
+            CHECK_EQ_INT(image.pixels[i * 4 + c], expected[i]);
+        }
+    }
+    Image_Free(&image);
+}

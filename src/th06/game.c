@@ -32,6 +32,7 @@ bool Game_Tick(const TH06_INPUT *const input)
     float tick_rate;
     if (Shell_GetTickRate(&tick_rate)) {
         ResultScreen_CountFrames(tick_rate);
+        AsciiText_SetFrameRate(tick_rate);
     }
     Chain_RunDraw(&g_Chain);
     Note_Draw();

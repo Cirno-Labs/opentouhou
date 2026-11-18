@@ -496,7 +496,7 @@ test(
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_anm',
     'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_anm',
-    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
+    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'msgothic.ttc',
   },
   suite: 'unit',
 )
@@ -1437,6 +1437,6 @@ test(
   suite: 'unit',
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'text',
-    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
+    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'msgothic.ttc',
   },
 )

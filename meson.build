@@ -76,6 +76,7 @@ zlib = dependency('zlib', static: true)
 
 if build_games
   sdl3_ttf = dependency('sdl3-ttf', version: '>=3.2.2', static: true)
+  freetype = dependency('freetype2', static: true)
 
   # FFmpeg supplies image codecs and audio decoding and conversion.
   # The Dockerfiles enable only the formats these modules support.

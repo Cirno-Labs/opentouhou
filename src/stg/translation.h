@@ -31,6 +31,8 @@ typedef struct {
     int32_t string_count;
     int32_t spell_count;
     int32_t stage_count;
+    // The weight that base_tsa caches for this game; 0 keeps each request.
+    int32_t font_cache_weight;
 } TRANSLATION_GAME;
 
 // Holds the number of music room tunes that musiccmt.js can comment on.
@@ -43,6 +45,10 @@ typedef struct {
 // Returns the font family that the patch settings name, from thcrap's
 // "font" setting, or nullptr when they name none.
 const char *Translation_GetFont(void);
+
+// Returns base_tsa's cached font weight for the game, or requested when
+// the patch or its font cache is absent.
+int32_t Translation_GetFontWeight(int32_t requested);
 
 // Returns the font files of the patches, the patch that applies last
 // first, and sets *count to their number. The paths belong to the stack of

@@ -2,13 +2,20 @@
 
 ## Unreleased
 
+- Added the frame rate display at the bottom of the screen.
 - Changed package documents to `oth06_readme.txt` and
   `oth06_licenses.txt` so they do not replace the original game's readme.
+- Changed the bundled Japanese font to MS Gothic.
 - Changed the conversion of music and sound effects to the output rate,
   which keeps their high frequencies.
 - Changed the text of `--help` and of command-line errors to a new
   format.
-- Fixed the spacing in translated text.
+- Fixed the letters and spacing in translated text.
+- Fixed the size, shape, shading, sharpness and placement of text in
+  spell names, dialogue, translator notes and Japanese stage and song
+  titles.
+- Fixed the alignment of translated stage labels, bonus notices and
+  spell card bonus labels.
 
 ## 1.0.1 (2026-11-15)
 

@@ -159,6 +159,11 @@ void Image_Quantize(IMAGE *const image, const IMAGE_DEPTH depth)
             pixel[2] = M_QuantizeChannel(pixel[2], 5);
             pixel[3] = 255;
             break;
+        case IMAGE_DEPTH_RGB8:
+            pixel[3] = 255;
+            break;
+        case IMAGE_DEPTH_RGBA8:
+            break;
         }
     }
 }

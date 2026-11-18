@@ -203,7 +203,9 @@ Credits
 - ZUN (Team Shanghai Alice): the original game, characters, art and music.
 - thpatch.net community: translations in the patch format of thcrap.
 - SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg and zlib: shared libraries.
-- BIZ UDGothic: the bundled font.
+- MS Gothic and MS UI Gothic: the bundled fonts, supplied with
+  Microsoft Windows. © 2017 data: RICOH Co., Ltd.; typeface: RYOBI
+  IMAGIX CO.
 
 Source and documentation:
 https://github.com/Cirno-Labs/opentouhou

@@ -41,13 +41,13 @@ RUN curl -fsSL -o /tmp/ttf.tar.gz \
     && echo "${HARFBUZZ_SHA256}  /tmp/harfbuzz.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/harfbuzz.tar.gz --strip-components=1 \
         -C /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/harfbuzz \
-    && cmake -S /tmp/SDL3_ttf-${SDL_TTF_VERSION} -B /tmp/ttf-build \
+    && cmake -S /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/freetype -B /tmp/freetype-build \
         -DCMAKE_SYSTEM_NAME=Windows \
         -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
         -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix \
         -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++-posix \
         -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres \
-        -DCMAKE_FIND_ROOT_PATH=/usr/x86_64-w64-mingw32 \
+        -DCMAKE_FIND_ROOT_PATH="/usr/x86_64-w64-mingw32;/ext" \
         -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
         -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
         -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
@@ -57,14 +57,64 @@ RUN curl -fsSL -o /tmp/ttf.tar.gz \
         -DCMAKE_PREFIX_PATH=/ext \
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
         -DBUILD_SHARED_LIBS=OFF \
-        -DSDLTTF_VENDORED=ON \
+        -DFT_DISABLE_ZLIB=ON \
+        -DFT_DISABLE_BZIP2=ON \
+        -DFT_DISABLE_PNG=ON \
+        -DFT_DISABLE_BROTLI=ON \
+        -DFT_DISABLE_HARFBUZZ=ON \
+    && cmake --build /tmp/freetype-build -j"$(nproc)" \
+    && cmake --install /tmp/freetype-build \
+    && DESTDIR=/stage cmake --install /tmp/freetype-build \
+    && echo 'find_package(Freetype REQUIRED)' > /tmp/harfbuzz-freetype.cmake \
+    && cmake -S /tmp/SDL3_ttf-${SDL_TTF_VERSION}/external/harfbuzz -B /tmp/harfbuzz-build \
+        -DCMAKE_PROJECT_INCLUDE=/tmp/harfbuzz-freetype.cmake \
+        -DCMAKE_SYSTEM_NAME=Windows \
+        -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
+        -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix \
+        -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++-posix \
+        -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres \
+        -DCMAKE_FIND_ROOT_PATH="/usr/x86_64-w64-mingw32;/ext" \
+        -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+        -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+        -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_PREFIX_PATH=/ext \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DHB_BUILD_UTILS=OFF \
+        -DHB_BUILD_SUBSET=OFF \
+        -DHB_HAVE_FREETYPE=ON \
+        -DHB_HAVE_GLIB=OFF \
+        -DHB_HAVE_ICU=OFF \
+    && cmake --build /tmp/harfbuzz-build -j"$(nproc)" \
+    && cmake --install /tmp/harfbuzz-build \
+    && DESTDIR=/stage cmake --install /tmp/harfbuzz-build \
+    && cmake -S /tmp/SDL3_ttf-${SDL_TTF_VERSION} -B /tmp/ttf-build \
+        -DCMAKE_SYSTEM_NAME=Windows \
+        -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
+        -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix \
+        -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++-posix \
+        -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres \
+        -DCMAKE_FIND_ROOT_PATH="/usr/x86_64-w64-mingw32;/ext" \
+        -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+        -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+        -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_PREFIX_PATH=/ext \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DSDLTTF_VENDORED=OFF \
         -DSDLTTF_HARFBUZZ=ON \
         -DSDLTTF_PLUTOSVG=OFF \
         -DSDLTTF_SAMPLES=OFF \
     && cmake --build /tmp/ttf-build -j"$(nproc)" \
     && DESTDIR=/stage cmake --install /tmp/ttf-build \
     && rm -rf /tmp/ttf.tar.gz /tmp/freetype.tar.gz /tmp/harfbuzz.tar.gz \
-        /tmp/SDL3_ttf-${SDL_TTF_VERSION} /tmp/ttf-build
+        /tmp/SDL3_ttf-${SDL_TTF_VERSION} /tmp/ttf-build /tmp/freetype-build /tmp/harfbuzz-build /tmp/harfbuzz-freetype.cmake
 
 
 
