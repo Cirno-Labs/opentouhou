@@ -20,6 +20,7 @@
 #include "th06/sound.h"
 #include "th06/time.h"
 
+#include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/image.h"
 #include "core/io/file.h"
@@ -908,5 +909,40 @@ TEST(the_selected_difficulty_keeps_its_texture_colors)
         found++;
     }
     CHECK_EQ_INT(found, 1);
+    M_Teardown();
+}
+
+TEST(replay_selections_use_the_second_glyph_set)
+{
+    M_Setup("replay_selection_font");
+    char *const replays = TestDir_Join(m_Directory, "replay");
+    CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
+    Mem_Free(replays);
+    M_WriteReplay("replay/th6_01.rpy", 2);
+    ResultScreen_OpenSaves(m_Directory);
+    CHECK(Result_Log(TitleScene_SetUp(1), LOG_LEVEL_ERROR));
+    M_Tick();
+    ResultScreen_ScanReplays();
+    M_Run(40);
+    M_Press(m_Shoot);
+    M_Run(40);
+    AsciiText_Initialize();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    int32_t selected = 0;
+    int32_t others = 0;
+    for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const string = &g_AsciiText.strings[i];
+        if (string->highlight) {
+            CHECK_EQ_INT(string->color, COLOR_WHITE);
+            selected++;
+        } else if (string->color == COLOR_ARGB(0xff, 0x80, 0x80, 0x80)) {
+            others++;
+        }
+    }
+    CHECK_EQ_INT(selected, 2);
+    CHECK(others > 0);
+    CHECK(!g_AsciiText.highlight);
     M_Teardown();
 }

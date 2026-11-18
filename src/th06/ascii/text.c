@@ -44,7 +44,6 @@ void AsciiText_Initialize(void)
     memcpy(frame_rate, g_AsciiText.frame_rate, sizeof(frame_rate));
     const bool hide_frame_rate = g_AsciiText.hide_frame_rate;
     const bool capture_background = g_AsciiText.capture_background;
-    const bool highlight_font = g_AsciiText.highlight_font;
     memset(&g_AsciiText, 0, sizeof(g_AsciiText));
     memcpy(g_AsciiText.frame_rate, frame_rate, sizeof(frame_rate));
     g_AsciiText.hide_frame_rate = hide_frame_rate;
@@ -52,7 +51,6 @@ void AsciiText_Initialize(void)
     g_AsciiText.scale_x = 1.0f;
     g_AsciiText.scale_y = 1.0f;
     g_AsciiText.capture_background = capture_background;
-    g_AsciiText.highlight_font = highlight_font;
     g_AsciiText.digit.anchor = 3;
     Anm_InitVm(&g_AsciiText.digit);
     Anm_SetSprite(&g_AsciiText.digit, 0);
@@ -92,7 +90,7 @@ void AsciiText_AddString(const VEC3 pos, const char *const text)
         .scale_x = g_AsciiText.scale_x,
         .scale_y = g_AsciiText.scale_y,
         .in_arena = g_AsciiText.in_arena,
-        .highlight = g_AsciiText.highlight_font && g_AsciiText.highlight,
+        .highlight = g_AsciiText.highlight,
     };
 }
 

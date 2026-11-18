@@ -20,13 +20,16 @@ RESULT AsciiText_Register(void);
 void AsciiText_Remove(void);
 
 // Clears strings, menus and popups, then resets the drawing style and glyphs.
-// Keeps capture_background and highlight_font.
+// Keeps capture_background.
 void AsciiText_Initialize(void);
 
 // Updates the frame rate shown at the bottom of the screen.
 void AsciiText_SetFrameRate(float rate);
 
 void AsciiText_SetColor(uint32_t color);
+
+// Draws the strings queued next with the second glyph set in white, as the
+// original does with its default colour add emulation.
 void AsciiText_SetHighlight(bool highlight);
 
 // Copies UTF-8 text with the current style into the queue. Drops strings

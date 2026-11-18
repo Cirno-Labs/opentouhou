@@ -49,6 +49,8 @@
   results screens.
 - Fixed the brightness of entries in the shot type select and the
   results menu.
+- Fixed the selected rows of the replay menu, which showed in pink
+  instead of the original's white selection font.
 
 ## 1.0.1 (2026-11-15)
 
