@@ -20,6 +20,8 @@ void Anm_ShutdownText(void);
 // with red in the low byte. Disables the shadow for 0xffffffff. Defaults
 // font_height to 15 when it is not positive. Draws the glyphs at double
 // size and scales them to the row, as the game does. The game scales a
+// 16-bit GDI surface with opaque glyph coverage and a color gradient,
+// including the RGB of transparent pixels. Its source is a
 // region 2 pixels narrower and lower than the doubled row, which stretches
 // the text vertically. With nmlgc/base_tsa, the region is twice the row
 // width by 32 pixels, as its executable patches make it, so the text keeps
