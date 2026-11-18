@@ -27,6 +27,8 @@
   previous frame.
 - Fixed sprites, the power bar, the dialogue box and translator notes
   sitting half a pixel off.
+- Fixed enemies flashing white when player shots hit them, and sprites
+  sampled without the original's smoothing.
 
 ## 1.0.1 (2026-11-15)
 

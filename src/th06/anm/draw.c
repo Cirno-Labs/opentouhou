@@ -41,11 +41,12 @@ static void M_Record(
     };
     const GFX_STATE state = {
         .blend = vm->blend_add ? GFX_BLEND_ADD : GFX_BLEND_ALPHA,
-        .color_op = vm->color_op ? GFX_COLOR_ADD : GFX_COLOR_MODULATE,
+        .color_op = GFX_COLOR_MODULATE,
         .depth_test = context->depth_test,
         .depth_write = context->depth_write && !vm->z_write_off,
         .alpha_test = true,
         .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
     };
     const uint64_t id = context->interpolate && vm->presentation_generation != 0
         ? ((uint64_t)vm->presentation_generation << 32) | context->part
