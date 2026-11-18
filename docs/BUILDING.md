@@ -285,11 +285,12 @@ game can advance. Its manifest records UTC times, RGB hashes, the
 command and completion status. It does not read GPU buffers or modify
 the pixels.
 
-Frame 0 is the first draw/calc/present cycle, before the first title
-update has drawn a menu. Startup logo copies before the frame loop
-are outside this counter. Calc-chain restarts stay in the same
-presented frame. Retail time advances at 60 Hz after startup; query
-count and capture delays do not advance it.
+Frame 0 is the first outer frame-loop presentation. Startup logo copies
+before the first calc are outside this counter. TH07 runs 30 startup
+updates before its first draw; they all use frame 0's input. Calc-chain
+restarts and loading-screen copies inside calc stay in the same input
+frame. Retail time advances at 60 Hz after startup; query count and
+capture delays do not advance it.
 
 Both sides start with private saves. `--stage-replay <file.rpy>`
 places a replay in the first menu slot without starting playback.

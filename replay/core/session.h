@@ -3,8 +3,9 @@
 #include "script.h"
 
 // Holds the presented-frame cursor shared by retail and native drivers.
-// The first draw/calc/present cycle is frame 0. A calc-chain restart stays
-// in that frame. Inputs apply before calc; capture follows presentation.
+// The first outer frame-loop presentation is frame 0. Startup updates,
+// calc-chain restarts and loading-screen copies inside calc stay in that
+// frame. Inputs apply before calc; capture follows presentation.
 typedef struct {
     INPUT_SCRIPT script;
     uint32_t frame;

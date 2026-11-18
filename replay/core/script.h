@@ -5,8 +5,9 @@
 
 // Drives a game independently of its .rpy format. OTINPUT 1 scripts contain
 // "frames N", "input FRAME BUTTONS" and "capture FRAME" lines. Frames start
-// at zero and count rendered ticks from the first title update. Inputs stay
-// held until the next input line; "none" releases every button. BUTTONS is
+// at zero and count outer frame-loop presentations. Startup updates and
+// calc-chain restarts keep the same input frame. Inputs stay held until
+// the next input line; "none" releases every button. BUTTONS is
 // a '+'-separated list of names from the game's binding table. Each input
 // and capture list must increase strictly and stay below N. Blank lines
 // and '#' comments are allowed. A capture follows that frame's presentation.
