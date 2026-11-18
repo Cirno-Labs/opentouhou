@@ -47,7 +47,7 @@ static RESULT M_Decode(
     const RESULT result = Image_Decode(&reader, &g_HeapAllocator, out);
     Reader_Close(&reader);
     MUST(result);
-    if (color_key != 0) {
+    if (color_key != 0 && !Files_IsPatched(path)) {
         Image_ColorKey(out, color_key & 0xffffff);
     }
     return OK;
