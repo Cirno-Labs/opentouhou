@@ -19,8 +19,8 @@
 
 // Describes a game to Translation_Init: its thcrap id (the directory of
 // its lang patches below thpatch/lang), the base address of its retail
-// executable, its string table (defaults, retail addresses and count) and
-// its spell card and stage counts.
+// executable, its string table (defaults, retail addresses or stringdefs
+// keys, and count) and its spell card and stage counts.
 typedef struct {
     const char *id;
     uint32_t image_base;
@@ -28,6 +28,9 @@ typedef struct {
                           // translations replace its entries
     const char *const *defaults;
     const uint32_t *addresses; // 0 where a string's address is not known
+    // The stringdefs key that replaces a string's address, or nullptr.
+    // nullptr for a game without keys.
+    const char *const *string_keys;
     int32_t string_count;
     int32_t spell_count;
     int32_t stage_count;
