@@ -22,7 +22,8 @@ RESULT TextFont_Load(READER *reader, float pixel_height, TEXT_FONT **out);
 RESULT TextFont_LoadDefault(float pixel_height, TEXT_FONT **out);
 
 // Opens the first matching family in paths, including collection faces,
-// ignoring ASCII case. Bundled MS UI Gothic draws missing characters.
+// ignoring ASCII case. Bundled MS UI Gothic draws missing characters at
+// the base font's em size.
 // A file that does not open is left out, with a log line. Reports failure
 // when no file has the family.
 RESULT TextFont_LoadFamily(
