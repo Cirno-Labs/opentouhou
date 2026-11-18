@@ -556,6 +556,29 @@ TEST(the_screen_steps_and_draws_every_sprite)
     M_Teardown();
 }
 
+TEST(the_results_menu_preserves_precolored_artwork)
+{
+    M_Setup("menu_colors");
+    CHECK(Result_Log(ResultScreen_Register(0), LOG_LEVEL_ERROR));
+    M_Run(3);
+    int32_t found = 0;
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        const uint64_t id = GfxRecorder_QuadId(i);
+        const uint32_t part = (uint32_t)id;
+        if (id == 0 || (part != 0 && part != 1 && part != 2 && part != 0x25)) {
+            continue;
+        }
+        const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(i);
+        CHECK_EQ_INT(quad->vertices[0].color.red, 255);
+        CHECK_EQ_INT(quad->vertices[0].color.green, 255);
+        CHECK_EQ_INT(quad->vertices[0].color.blue, 255);
+        CHECK_EQ_INT(quad->vertices[0].color.alpha, part == 1 ? 0xb0 : 0xff);
+        found++;
+    }
+    CHECK_EQ_INT(found, 4);
+    M_Teardown();
+}
+
 TEST(the_unlock_sequence_needs_focus_or_skip_held)
 {
     M_Setup("unlock_held");

@@ -594,10 +594,10 @@ static void M_HighlightMenu(M_SCREEN *const screen)
     for (int32_t i = 0; i <= 6; i++) {
         ANM_VM *const sprite = &screen->sprites[1 + i];
         if (i == screen->cursor) {
-            sprite->color = COLOR_ARGB(0xff, 0x50, 0x50, 0x50);
+            sprite->color = COLOR_WHITE;
             sprite->pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         } else {
-            sprite->color = COLOR_ARGB(0xb0, 0x00, 0x00, 0x00);
+            sprite->color = COLOR_ARGB(0xb0, 0xff, 0xff, 0xff);
             sprite->pos_offset = (VEC3) {};
         }
     }
@@ -609,7 +609,6 @@ static void M_OpenMenu(M_SCREEN *const screen)
         M_Interrupt(screen, 1);
         for (int32_t i = 0; i < M_SPRITE_COUNT; i++) {
             screen->sprites[i].color_op = true;
-            screen->sprites[i].color &= 0xff000000;
         }
         M_HighlightMenu(screen);
     }
