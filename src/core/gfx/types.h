@@ -55,7 +55,7 @@ typedef struct {
     GFX_COLOR_OP color_op;
     GFX_DEPTH_TEST depth_test;
     bool depth_write;
-    bool alpha_test; // discards pixels with alpha 0
+    bool alpha_test; // discards alpha below 4/255
     bool repeat; // texture coordinates wrap instead of clamping
     GFX_FILTER filter;
 } GFX_STATE;

@@ -1,6 +1,7 @@
 #ifdef GL_ES
 precision highp float;
 precision highp int;
+precision highp sampler2D;
 #endif
 
 in vec4 v_color;
@@ -26,7 +27,9 @@ void main()
             : texel.rgb * v_color.rgb;
         color.a = texel.a * v_color.a;
     }
-    if (u_alpha_test != 0 && color.a < 0.5 / 255.0) {
+    // Keep byte alpha 4 despite sampler normalization error.
+    const float alpha_ref = uintBitsToFloat(floatBitsToUint(4.0 / 255.0) - 2u);
+    if (u_alpha_test != 0 && color.a < alpha_ref) {
         discard;
     }
     if (u_fog != 0) {

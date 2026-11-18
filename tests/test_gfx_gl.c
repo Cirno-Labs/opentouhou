@@ -189,11 +189,16 @@ TEST(color_ops_modulate_or_add_and_alpha_multiplies)
     GfxTexture_Free(texture);
 }
 
-TEST(alpha_test_discards_alpha_zero_with_its_depth)
+TEST(alpha_test_discards_alpha_below_four_with_its_depth)
 {
     REQUIRE_GL();
-    const GFX_COLOR texels[2] = { { 255, 255, 255, 0 }, WHITE };
-    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    const GFX_COLOR texels[4] = {
+        { 255, 255, 255, 0 },
+        { 255, 255, 255, 1 },
+        { 255, 255, 255, 3 },
+        { 255, 255, 255, 4 },
+    };
+    GFX_TEXTURE *const texture = M_Texture(4, 1, texels);
     Gfx_BeginTick(BLACK);
     const GFX_STATE tested = {
         .depth_test = GFX_DEPTH_LESS_EQUAL,
@@ -208,6 +213,8 @@ TEST(alpha_test_discards_alpha_zero_with_its_depth)
     M_Rect(&behind, nullptr, 0, 0, SIZE, SIZE, 0.6f, RED, 1.0f);
     IMAGE image = M_Screen();
     M_CheckPixel(&image, 1, 1, RED, 0);
+    M_CheckPixel(&image, 2, 1, RED, 0);
+    M_CheckPixel(&image, 4, 1, RED, 0);
     M_CheckPixel(&image, 6, 1, WHITE, 0);
     Image_Free(&image);
     GfxTexture_Free(texture);
@@ -486,4 +493,27 @@ TEST(a_screen_rect_reads_mid_tick_and_drawing_goes_on)
     M_CheckPixel(&screen, 7, 7, GREEN, 0);
     Image_Free(&screen);
     Image_Free(&rect);
+}
+
+TEST(alpha_test_keeps_fractional_alpha_until_the_comparison)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[] = { { 255, 255, 255, 128 },
+                                 { 255, 255, 255, 146 } };
+    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE tested = { .depth_test = GFX_DEPTH_LESS_EQUAL,
+                               .depth_write = true,
+                               .alpha_test = true };
+    M_Rect(
+        &tested, texture, 0, 0, SIZE, SIZE, 0.2f,
+        (GFX_COLOR) { 255, 255, 255, 7 }, 1.0f);
+    const GFX_STATE behind = { .depth_test = GFX_DEPTH_LESS_EQUAL,
+                               .depth_write = true };
+    M_Rect(&behind, nullptr, 0, 0, SIZE, SIZE, 0.6f, RED, 1.0f);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 1, 1, RED, 0);
+    M_CheckPixel(&image, 6, 1, WHITE, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
 }
