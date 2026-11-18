@@ -349,6 +349,40 @@ TEST(a_text_line_shows_on_the_line_sprites)
     M_Teardown();
 }
 
+TEST(staff_sprites_keep_their_animation_rotation)
+{
+    M_Setup("rotated_staff");
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 32, 32, "@");
+    AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 32.0f, 8.0f);
+    const int32_t script = AnmBuilder_BeginScript(anm, 1);
+    const uint32_t sprite = 0;
+    const float rotation[3] = { 0.0f, 0.0f, 1.5707964f };
+    uint32_t angles[3];
+    memcpy(angles, rotation, sizeof(angles));
+    AnmBuilder_Instr(anm, script, 3, 0, 0, &sprite, 1);
+    AnmBuilder_Instr(anm, script, 12, 0, 0, angles, 3);
+    AnmBuilder_Instr(anm, script, 20, 10000, 0, nullptr, 0);
+    AnmBuilder_End(anm, script);
+    AnmBuilder_WriteFile(&builder, m_Directory, "data/staff01.anm");
+    M_RUN(
+        "@a0\0"
+        "1\0"
+        "0\0\r\n@r100\0"
+        "100\0\r\n");
+    CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
+    M_Tick();
+    M_Tick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    const GFX_VERTEX *const vertices = GfxRecorder_Quad(0)->vertices;
+    const float dx = vertices[1].position.x - vertices[0].position.x;
+    const float dy = vertices[1].position.y - vertices[0].position.y;
+    CHECK(dx > -0.001f && dx < 0.001f);
+    CHECK(dy > 31.999f && dy < 32.001f);
+    M_Teardown();
+}
+
 TEST(a_fade_out_holds_its_last_colour)
 {
     M_Setup("fade");
