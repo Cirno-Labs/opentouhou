@@ -15,8 +15,9 @@ void Gfx_BeginTick(GFX_COLOR clear);
 // GfxView_Screen().
 void Gfx_SetView(const GFX_VIEW *view);
 
-// Draws a quad, vertices in perimeter order, without a texture when
-// texture is nullptr. id identifies the quad across ticks and must be
+// Draws a quad, vertices in perimeter order, with triangles sharing the
+// edge between vertices 1 and 3, without a texture when texture is nullptr.
+// id identifies the quad across ticks and must be
 // unique within one tick; 0 draws it without blending. A duplicate id is
 // fatal in debug builds; in release builds one of the quads blends against
 // the wrong one for a frame. Interpolation blends vertex positions.
