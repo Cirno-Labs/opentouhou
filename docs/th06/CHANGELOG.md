@@ -35,6 +35,7 @@
   original's pale tints.
 - Fixed the spacing of bold translated text.
 - Fixed the shading of text in spell names, dialogue and stage titles.
+- Fixed the placement of translated stage and song titles.
 
 ## 1.0.1 (2026-11-15)
 
