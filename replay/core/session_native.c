@@ -340,7 +340,9 @@ static RESULT M_Play(const SESSION_GAME *const shim, M_NATIVE *const state)
             shim->comparison->chain->on_calc_end = M_CalcEnd;
             shim->comparison->chain->on_calc_end_arg = state;
         }
-        if (!state->headless) {
+        if (!state->headless
+            && (!session->fast
+                || Script_Capture(&session->script, session->frame))) {
             result = Gfx_Present(false, 1, &output);
             if (!IS_OK(result)) {
                 break;
