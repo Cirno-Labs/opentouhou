@@ -1,5 +1,7 @@
 #include "core/text/private.h"
 
+#include "core/base/string.h"
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
@@ -75,15 +77,45 @@ RESULT TextRaster_SetSize(void *const handle, const float em)
     return OK;
 }
 
+RESULT TextRaster_FindFace(
+    const uint8_t *const data, const size_t size, const char *const family,
+    int32_t *const index)
+{
+    *index = -1;
+    FAIL_IF(size > LONG_MAX, "Font data exceeds the rasterizer limit");
+    FT_Face face;
+    FAIL_IF(
+        FT_New_Memory_Face(m_Library, data, (FT_Long)size, 0, &face) != 0,
+        "Cannot read font families");
+    const FT_Long count = face->num_faces;
+    for (FT_Long i = 0; i < count; i++) {
+        if (i != 0) {
+            FAIL_IF(
+                FT_New_Memory_Face(m_Library, data, (FT_Long)size, i, &face)
+                    != 0,
+                "Cannot read font family %ld", i);
+        }
+        const bool matches = face->family_name != nullptr
+            && Str_EqualIgnoreCase(face->family_name, family);
+        FT_Done_Face(face);
+        if (matches) {
+            FAIL_IF(i > INT32_MAX, "Font face index exceeds the limit");
+            *index = (int32_t)i;
+            break;
+        }
+    }
+    return OK;
+}
+
 RESULT TextRaster_Open(
-    const uint8_t *const data, const size_t size, const float em,
-    void **const out)
+    const uint8_t *const data, const size_t size, const int32_t index,
+    const float em, void **const out)
 {
     *out = nullptr;
     FAIL_IF(size > LONG_MAX, "Font data exceeds the rasterizer limit");
     FT_Face face;
     FAIL_IF(
-        FT_New_Memory_Face(m_Library, data, (FT_Long)size, 0, &face) != 0,
+        FT_New_Memory_Face(m_Library, data, (FT_Long)size, index, &face) != 0,
         "Cannot open glyph rasterizer font");
     const RESULT result = TextRaster_SetSize(face, em);
     if (!IS_OK(result)) {
@@ -108,7 +140,7 @@ RESULT TextRaster_Glyph(
     *out = nullptr;
     FT_Face const face = font->raster_face;
     FAIL_IF(
-        FT_Load_Glyph(face, index, FT_LOAD_DEFAULT | FT_LOAD_TARGET_NORMAL)
+        FT_Load_Glyph(face, index, FT_LOAD_NO_BITMAP | FT_LOAD_TARGET_NORMAL)
             != 0,
         "Cannot load GDI glyph");
     const int32_t left =
@@ -185,6 +217,8 @@ bool TextRaster_IsSimple(
         const uint32_t c = SDL_StepUTF8(&cursor, &remaining);
         if (!((c >= 32 && c <= 126) || (c >= 0xa0 && c <= 0x24f)
               || (c >= 0x2000 && c <= 0x200a) || (c >= 0x2010 && c <= 0x2027)
+              || (c >= 0x3000 && c <= 0x3029) || (c >= 0x3030 && c <= 0x3098)
+              || (c >= 0x309b && c <= 0x30ff)
               || (c >= 0x3400 && c <= 0x9fff))) {
             return false;
         }
@@ -208,7 +242,7 @@ static RESULT M_Advance(
 {
     FT_Face const face = font->raster_face;
     FAIL_IF(
-        FT_Load_Glyph(face, index, FT_LOAD_DEFAULT | FT_LOAD_TARGET_NORMAL)
+        FT_Load_Glyph(face, index, FT_LOAD_NO_BITMAP | FT_LOAD_TARGET_NORMAL)
             != 0,
         "Cannot measure GDI glyph");
     const bool bold = (TTF_GetFontStyle(font->font) & TTF_STYLE_BOLD) != 0

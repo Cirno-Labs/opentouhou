@@ -1,4 +1,5 @@
 #include "core/text.h"
+#include "core/text/private.h"
 
 #include "test.h"
 #include "test_dir.h"
@@ -154,6 +155,59 @@ TEST(resize_uses_loaded_font_data)
     CHECK(resized_height > height);
     CHECK(!Result_Ignore(TextFont_SetSize(font, NAN)));
     TextFont_Free(font);
+    Text_Shutdown();
+}
+
+TEST(collection_families_use_the_same_face_for_layout_and_rasterization)
+{
+    CHECK(IS_OK(Text_Init()));
+    const char *const paths[] = { SDL_getenv("TEST_FONT") };
+    const char *const families[] = { "MS Gothic", "MS PGothic",
+                                     "MS UI Gothic" };
+    const int32_t advances[] = { 23, 22, 19 };
+    const int32_t latin_advances[] = { 12, 15, 15 };
+    const int32_t space_advances[] = { 23, 16, 16 };
+    for (int32_t i = 0; i < 3; i++) {
+        TEXT_FONT *font = nullptr;
+        CHECK(IS_OK(TextFont_LoadFamily(paths, 1, families[i], 22, &font)));
+        CHECK_EQ_STR(TTF_GetFontFamilyName(font->font), families[i]);
+        CHECK(font->fallback != nullptr);
+        CHECK_EQ_STR(
+            TTF_GetFontFamilyName(font->fallback->font), "MS UI Gothic");
+        TEXT_STYLE style = TextStyle_Default();
+        style.face = TEXT_FACE_BOLD;
+        int32_t width, height;
+        CHECK(IS_OK(Text_Measure(font, "あ", &style, &width, &height)));
+        CHECK(width > 0);
+        style.gdi_raster = true;
+        CHECK(IS_OK(Text_Measure(font, "あ", &style, &width, &height)));
+        CHECK_EQ_INT(width, advances[i]);
+        CHECK(IS_OK(Text_Measure(font, "A", &style, &width, &height)));
+        CHECK_EQ_INT(width, latin_advances[i]);
+        CHECK(IS_OK(Text_Measure(font, "　", &style, &width, &height)));
+        CHECK_EQ_INT(width, space_advances[i]);
+        IMAGE glyph;
+        CHECK(IS_OK(Text_Render(font, "あ", &style, &g_HeapAllocator, &glyph)));
+        CHECK_EQ_INT(glyph.width, advances[i]);
+        bool antialiased = false;
+        for (int32_t p = 0; p < glyph.width * glyph.height; p++) {
+            const uint8_t alpha = glyph.pixels[(size_t)p * 4 + 3];
+            antialiased |= alpha != 0 && alpha != 255;
+        }
+        CHECK(antialiased);
+        Image_Free(&glyph);
+        CHECK(IS_OK(Text_Render(font, "　", &style, &g_HeapAllocator, &glyph)));
+        CHECK_EQ_INT(glyph.width, space_advances[i]);
+        for (int32_t p = 0; p < glyph.width * glyph.height; p++) {
+            CHECK_EQ_INT(glyph.pixels[(size_t)p * 4 + 3], 0);
+        }
+        Image_Free(&glyph);
+        CHECK(IS_OK(TextFont_SetSize(font, 30)));
+        CHECK_EQ_STR(TTF_GetFontFamilyName(font->font), families[i]);
+        CHECK(IS_OK(Text_Measure(font, "あ", &style, &width, &height)));
+        CHECK(width > advances[i]);
+        TextFont_Free(font);
+    }
     Text_Shutdown();
 }
 
@@ -769,10 +823,14 @@ TEST(gdi_combining_accents_keep_shaped_advances)
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
     int32_t gdi, shaped, height;
-    CHECK(IS_OK(Text_Measure(font, "é", &style, &gdi, &height)));
-    style.gdi_raster = false;
-    CHECK(IS_OK(Text_Measure(font, "é", &style, &shaped, &height)));
-    CHECK_EQ_INT(gdi, shaped);
+    const char *const texts[] = { "é", "が", "ガ" };
+    for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); i++) {
+        style.gdi_raster = true;
+        CHECK(IS_OK(Text_Measure(font, texts[i], &style, &gdi, &height)));
+        style.gdi_raster = false;
+        CHECK(IS_OK(Text_Measure(font, texts[i], &style, &shaped, &height)));
+        CHECK_EQ_INT(gdi, shaped);
+    }
     TextFont_Free(font);
     Text_Shutdown();
 }

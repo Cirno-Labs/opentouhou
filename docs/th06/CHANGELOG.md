@@ -10,7 +10,7 @@
   which keeps their high frequencies.
 - Changed the text of `--help` and of command-line errors to a new
   format.
-- Fixed the letters and spacing in translated text.
+- Fixed the font, letters and spacing in translated text.
 - Fixed the size, shape, shading, sharpness and placement of text in
   spell names, dialogue, translator notes and Japanese stage and song
   titles.
