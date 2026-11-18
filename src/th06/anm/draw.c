@@ -161,14 +161,11 @@ ANM_DRAW Anm_ScreenDraw(void)
 GFX_VIEW Anm_ScreenView(const VIEWPORT viewport, const uint32_t id)
 {
     GFX_VIEW view = GfxView_Screen();
-    const float depth = viewport.max_z - viewport.min_z;
     view.projection = Mat4_Identity();
     view.projection.m[0][0] = 2.0f / viewport.width;
     view.projection.m[1][1] = -2.0f / viewport.height;
-    view.projection.m[2][2] = depth != 0.0f ? 1.0f / depth : 1.0f;
     view.projection.m[3][0] = -2.0f * viewport.x / viewport.width - 1.0f;
     view.projection.m[3][1] = 2.0f * viewport.y / viewport.height + 1.0f;
-    view.projection.m[3][2] = depth != 0.0f ? -viewport.min_z / depth : 0.0f;
     view.viewport = viewport;
     view.id = id;
     return view;

@@ -542,7 +542,7 @@ static CHAIN_STATUS M_Draw2(void *const arg)
             Anm_StartScript(
                 &g_Stage.spell_card.background, M_SPELL_CARD_SCRIPT);
         }
-        ANM_DRAW screen = Anm_ScreenDraw();
+        ANM_DRAW screen = GameManager_GetScreenDrawContext();
         screen.interpolate = true;
         Anm_Draw(&g_Stage.spell_card.background, &screen);
     }

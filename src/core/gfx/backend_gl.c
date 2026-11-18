@@ -276,7 +276,7 @@ static RESULT M_CreateTarget(
     gl->gen_renderbuffers(1, &target->depth);
     gl->bind_renderbuffer(GL_RENDERBUFFER, target->depth);
     gl->renderbuffer_storage(
-        GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+        GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
     gl->gen_framebuffers(1, &target->framebuffer);
     gl->bind_framebuffer(GL_FRAMEBUFFER, target->framebuffer);
     gl->framebuffer_texture_2d(

@@ -20,6 +20,9 @@
   not draw.
 - Fixed texture distortion and colour seams across sprites and
   backgrounds, which split along the wrong diagonal.
+- Fixed overlapping sprites drawing in the wrong order, and items, the
+  player, bombs and spell card backgrounds showing outside the
+  playfield.
 
 ## 1.0.1 (2026-11-15)
 
