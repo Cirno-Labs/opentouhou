@@ -1,5 +1,14 @@
 replay_include = ['-I' + meson.current_source_dir() / 'core']
 
+replay_script_lib = static_library(
+  'replay_script',
+  'core/script.c',
+  'core/session.c',
+  c_args: core_include + replay_include,
+  implicit_include_directories: false,
+  link_with: [core_io_lib, core_base_lib],
+)
+
 replay_case_lib = static_library(
   'replay_case',
   'core/case.c',
@@ -62,3 +71,20 @@ th07_runner_lib = static_library(
     core_image_lib,
   ],
 )
+
+foreach game : ['th06', 'th07']
+  session_sources = game == 'th07' ? ['../src/th07/play_time.c'] : []
+  executable(
+    game + 'session',
+    game / 'session.c',
+    'core/session_native.c',
+    'core/session_compare.c',
+    'core/runner/shell_null.c',
+    session_sources,
+    c_args: [layer_include[game]] + core_include + replay_include + stg_include + shell_include,
+    implicit_include_directories: false,
+    dependencies: [core_dep, stg_dep, sdl3, sdl3_ttf, zlib],
+    link_with: [get_variable(game + '_main_lib'), get_variable(game + '_lib'), replay_script_lib, core_args_lib, get_variable(game + '_runner_lib'), replay_runner_lib],
+    win_subsystem: 'console',
+  )
+endforeach

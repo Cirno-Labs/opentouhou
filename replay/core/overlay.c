@@ -47,6 +47,8 @@ static wchar_t m_OutDirW[MAX_PATH];
 static char m_GameDirA[MAX_PATH];
 static size_t m_GameDirALen;
 static char m_VirtualDir[MAX_PATH];
+static const char *const *m_PrivatePaths;
+static size_t m_PrivateCount;
 
 static CRITICAL_SECTION m_Lock;
 static FIND_STATE *m_FindHandles[MAX_FIND_HANDLES];
@@ -78,6 +80,22 @@ static bool M_IsRelative(const char *path)
 {
     return path[0] != '\\' && path[0] != '/' && path[0] != '\0'
         && path[1] != ':';
+}
+
+static bool M_IsPrivate(const char *const full)
+{
+    const char *relative = full + m_GameDirALen;
+    while (*relative == '\\') {
+        relative++;
+    }
+    for (size_t i = 0; i < m_PrivateCount; i++) {
+        const size_t length = strlen(m_PrivatePaths[i]);
+        if (_strnicmp(relative, m_PrivatePaths[i], length) == 0
+            && (relative[length] == '\0' || relative[length] == '\\')) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static bool M_FullPath(const char *path, char full[MAX_PATH])
@@ -200,6 +218,10 @@ static HANDLE WINAPI M_CreateFileA(
             M_LogCall("CreateFileA", path, "out");
             return handle;
         }
+        if (M_IsPrivate(full)) {
+            SetLastError(ERROR_FILE_NOT_FOUND);
+            return INVALID_HANDLE_VALUE;
+        }
         M_LogCall("CreateFileA", path, "game");
         return m_RealCreateFileA(
             full, access, share, sa, disposition, flags, template_file);
@@ -313,7 +335,9 @@ static HANDLE WINAPI M_FindFirstFileA(LPCSTR pattern, LPWIN32_FIND_DATAA data)
     }
 
     WIN32_FIND_DATAA game_data;
-    HANDLE game_handle = m_RealFindFirstFileA(full, &game_data);
+    HANDLE game_handle = M_IsPrivate(full)
+        ? INVALID_HANDLE_VALUE
+        : m_RealFindFirstFileA(full, &game_data);
     if (game_handle != INVALID_HANDLE_VALUE) {
         do {
             if (count < ARRAYSIZE(entries)
@@ -502,4 +526,10 @@ RESULT Overlay_Install(const wchar_t *game_dir, const wchar_t *out_dir)
         }
     }
     return OK;
+}
+
+void Overlay_SetPrivatePaths(const char *const *const paths, const size_t count)
+{
+    m_PrivatePaths = paths;
+    m_PrivateCount = count;
 }

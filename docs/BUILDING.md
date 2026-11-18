@@ -256,6 +256,60 @@ differently, and bugs that only appear there may not be fixed.
 
 ## Replay tools
 
+### Scripted window captures
+
+`<game>session` runs the native application with frame-indexed inputs.
+The retail capture launcher accepts the same script with `--inputs`.
+Both use the driver in `replay/core`; each game supplies its bindings
+and retail hooks. The [script header](../replay/core/script.h) defines
+the format. [TH06](../replay/scripts/th06-results.inputs) and
+[TH07](../replay/scripts/th07-results.inputs) examples open the results
+screen and a score table through their menus.
+
+The controller needs Python's Pillow with screen capture support. Run
+it and the game on the same desktop, or within one `xvfb-run`:
+
+```sh
+tools/replay_session --out /tmp/th06-native-YYYYMMDD-HHMMSS -- \
+    build/linux/debug/replay/th06session --data <data-dir> \
+    --inputs replay/scripts/th06-results.inputs --out '{work}'
+tools/replay_session --out /tmp/th06-retail-YYYYMMDD-HHMMSS -- \
+    wine build/replay/th06/th06capture.exe --game <game-dir> \
+    --inputs <script-path-under-Wine> --out '{work}'
+```
+
+Each output directory must be new. The controller replaces `{work}`
+with its private game directory, captures the actual 640×480 client
+area after presentation, and acknowledges each saved PNG before the
+game can advance. Its manifest records UTC times, RGB hashes, the
+command and completion status. It does not read GPU buffers or modify
+the pixels.
+
+Frame 0 is the first draw/calc/present cycle, before the first title
+update has drawn a menu. Startup logo copies before the frame loop
+are outside this counter. Calc-chain restarts stay in the same
+presented frame. Retail time advances at 60 Hz after startup; query
+count and capture delays do not advance it.
+
+Both sides start with private saves. `--stage-replay <file.rpy>`
+places a replay in the first menu slot without starting playback.
+The input script selects it. Retail also accepts `--seed` for save
+fixtures, and records a version-1 `.otrc` when gameplay starts.
+`--font <file>` privately registers a font for a retail session.
+For an English reference, pass `--thcrap-dll <32-bit-dll>` and
+`--thcrap-config <run-config>` to the retail launcher. Use a thcrap
+installation without other capture plugins.
+
+`<game>session --compare <case.otrc>` also compares the scripted run's
+calc rows with a retail case, starting at the first non-demo gameplay
+calc. It uses the existing version-1 format and named column checks,
+including calc-chain restarts. The script must cover exactly the same
+recording interval as the retail run; missing or extra rows fail.
+Captures still follow the input script. This checks a finite session;
+use the headless runner below to check full replay coverage.
+
+### Gameplay cases
+
 ```sh
 just replay::build <game>
 ```

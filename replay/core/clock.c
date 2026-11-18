@@ -13,9 +13,24 @@ static TIMEGETTIME_FN m_RealTimeGetTime;
 static DWORD m_Start;
 static uint32_t m_Step;
 static volatile LONG m_Time;
+static bool m_UsesFrames;
+static uint64_t m_Frames;
+static DWORD m_FrameOrigin;
+static volatile LONG m_PacingTime;
+static const CLOCK_WAIT_RANGE *m_PacingRanges;
+static size_t m_PacingCount;
 
-static DWORD M_Now(void)
+static DWORD M_Now(const uintptr_t caller)
 {
+    if (m_UsesFrames) {
+        for (size_t i = 0; i < m_PacingCount; i++) {
+            const CLOCK_WAIT_RANGE *const range = &m_PacingRanges[i];
+            if (caller >= range->start && caller - range->start < range->size) {
+                return (DWORD)InterlockedExchangeAdd(&m_PacingTime, 1);
+            }
+        }
+        return (DWORD)InterlockedCompareExchange(&m_Time, 0, 0);
+    }
     if (m_Step == 0) {
         return m_RealTimeGetTime() - m_Start;
     }
@@ -24,12 +39,13 @@ static DWORD M_Now(void)
 
 static DWORD WINAPI M_TimeGetTime(void)
 {
-    return M_Now();
+    return M_Now((uintptr_t)__builtin_return_address(0));
 }
 
 static BOOL WINAPI M_QueryPerformanceCounter(LARGE_INTEGER *const count)
 {
-    count->QuadPart = (LONGLONG)M_Now() * COUNTS_PER_MS;
+    count->QuadPart =
+        (LONGLONG)M_Now((uintptr_t)__builtin_return_address(0)) * COUNTS_PER_MS;
     return TRUE;
 }
 
@@ -58,4 +74,28 @@ bool Clock_Install(const HMODULE module, const uint32_t step)
             (uintptr_t)M_QueryPerformanceFrequency, &original);
     }
     return time || counter;
+}
+
+void Clock_UseFrames(void)
+{
+    m_FrameOrigin = M_Now(0);
+    m_UsesFrames = true;
+    m_Frames = 0;
+    InterlockedExchange(&m_Time, (LONG)m_FrameOrigin);
+    InterlockedExchange(&m_PacingTime, (LONG)m_FrameOrigin);
+}
+
+void Clock_AdvanceFrame(void)
+{
+    m_Frames++;
+    const LONG time = (LONG)(m_FrameOrigin + (m_Frames * 1000 + 59) / 60);
+    InterlockedExchange(&m_Time, time);
+    InterlockedExchange(&m_PacingTime, time);
+}
+
+void Clock_SetPacingRanges(
+    const CLOCK_WAIT_RANGE *const ranges, const size_t count)
+{
+    m_PacingRanges = ranges;
+    m_PacingCount = count;
 }

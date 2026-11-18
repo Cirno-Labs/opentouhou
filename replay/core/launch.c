@@ -56,6 +56,20 @@ RESULT Launch_Start(
     }
     out_process->process = process_info.hProcess;
     out_process->thread = process_info.hThread;
+    out_process->job = CreateJobObjectW(nullptr, nullptr);
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {};
+    limits.BasicLimitInformation.LimitFlags =
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    if (out_process->job == nullptr
+        || !SetInformationJobObject(
+            out_process->job, JobObjectExtendedLimitInformation, &limits,
+            sizeof(limits))
+        || !AssignProcessToJobObject(out_process->job, process_info.hProcess)) {
+        const DWORD error = GetLastError();
+        Launch_Stop(out_process);
+        return FAIL(
+            "cannot contain the game process: %lu", (unsigned long)error);
+    }
     return OK;
 }
 
@@ -103,6 +117,7 @@ int Launch_ResumeAndWait(LAUNCH_PROCESS *process)
     DWORD exit_code = 0;
     GetExitCodeProcess(process->process, &exit_code);
     CloseHandle(process->process);
+    CloseHandle(process->job);
     return (int)exit_code;
 }
 
@@ -112,4 +127,7 @@ void Launch_Stop(LAUNCH_PROCESS *process)
     WaitForSingleObject(process->process, INFINITE);
     CloseHandle(process->thread);
     CloseHandle(process->process);
+    if (process->job != nullptr) {
+        CloseHandle(process->job);
+    }
 }

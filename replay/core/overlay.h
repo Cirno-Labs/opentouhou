@@ -10,3 +10,8 @@
 // are full paths without a trailing backslash. Reports failure when an
 // import is missing.
 RESULT Overlay_Install(const wchar_t *game_dir, const wchar_t *out_dir);
+
+// Makes these relative files or directories read only from the output
+// directory, so a scripted run starts without the player's saves. The
+// names use backslashes and remain valid until the process exits.
+void Overlay_SetPrivatePaths(const char *const *paths, size_t count);

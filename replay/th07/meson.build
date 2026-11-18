@@ -41,6 +41,7 @@ endif
 sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
 zlib = dependency('zlib', static: true)
 winmm = cc.find_library('winmm')
+gdi32 = cc.find_library('gdi32')
 
 core_base_lib = static_library(
   'core_base',
@@ -88,6 +89,9 @@ shared_library(
   'dll.c',
   'state.c',
   '../core/capture.c',
+  '../core/script.c',
+  '../core/session.c',
+  '../core/session_retail.c',
   '../core/clock.c',
   '../core/iat.c',
   '../core/null_d3d8.c',
@@ -98,7 +102,7 @@ shared_library(
   c_args: core_include,
   implicit_include_directories: false,
   link_with: [core_base_lib, core_io_lib],
-  dependencies: [sdl3, zlib, winmm],
+  dependencies: [sdl3, zlib, winmm, gdi32],
 )
 
 executable(

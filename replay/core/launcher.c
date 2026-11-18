@@ -22,9 +22,30 @@
 
 #define ENV_LINE_SIZE (MAX_PATH + 32)
 
+static DWORD WINAPI M_WatchController(LPVOID unused)
+{
+    const HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+    if (GetFileType(input) != FILE_TYPE_PIPE) {
+        return 0;
+    }
+    for (;;) {
+        if (!PeekNamedPipe(input, nullptr, 0, nullptr, nullptr, nullptr)
+            && GetLastError() == ERROR_BROKEN_PIPE) {
+            TerminateProcess(GetCurrentProcess(), 1);
+            return 0;
+        }
+        Sleep(100);
+    }
+}
+
 typedef struct {
     const char *game_dir;
     const char *replay;
+    const char *inputs;
+    const char *stage_replay;
+    const char *font;
+    const char *thcrap_dll;
+    const char *thcrap_config;
     bool live;
     bool dry_run;
     bool fast;
@@ -37,7 +58,12 @@ typedef struct {
 } M_ARGS;
 
 static const ARG_RULE m_Rules[] = {
-    { ARG_ONE_OF, { "--replay", "--live" } },
+    { ARG_ONE_OF, { "--replay", "--live", "--inputs" } },
+    { ARG_REQUIRES, { "--stage-replay", "--inputs" } },
+    { ARG_EXCLUSIVE, { "--inputs", "--fast" } },
+    { ARG_REQUIRES, { "--thcrap-dll", "--thcrap-config" } },
+    { ARG_REQUIRES, { "--thcrap-config", "--thcrap-dll" } },
+    { ARG_REQUIRES, { "--font", "--inputs" } },
     { ARG_EXCLUSIVE, { "--fast", "--live" } },
     { ARG_EXCLUSIVE, { "--fast", "--quit-after" } },
     { ARG_REQUIRES, { "--draw", "--fast" } },
@@ -103,8 +129,10 @@ static RESULT M_CasePath(const M_ARGS *const args, wchar_t out[MAX_PATH])
     MUST(M_OutDir(args, dir));
 
     wchar_t name[MAX_PATH];
-    if (args->replay != nullptr) {
-        wchar_t *const replay = M_Wide(args->replay);
+    const char *const replay_path =
+        args->stage_replay != nullptr ? args->stage_replay : args->replay;
+    if (replay_path != nullptr) {
+        wchar_t *const replay = M_Wide(replay_path);
         _wsplitpath(replay, nullptr, nullptr, name, nullptr);
         Mem_Free(replay);
     } else {
@@ -126,16 +154,18 @@ static RESULT M_Prepare(
     WideCharToMultiByte(
         CP_UTF8, 0, work_dir, -1, work_dir_utf8, MAX_PATH, nullptr, nullptr);
     MUST(M_WriteConfig(game, work_dir_utf8));
-    if (args->replay != nullptr) {
+    const char *const replay_path =
+        args->stage_replay != nullptr ? args->stage_replay : args->replay;
+    if (replay_path != nullptr) {
         wchar_t copy[MAX_PATH];
         swprintf(copy, MAX_PATH, L"%ls\\%ls", work_dir, game->replay_copy);
         *wcsrchr(copy, L'\\') = L'\0';
         CreateDirectoryW(copy, nullptr);
         swprintf(copy, MAX_PATH, L"%ls\\%ls", work_dir, game->replay_copy);
-        wchar_t *const source = M_Wide(args->replay);
+        wchar_t *const source = M_Wide(replay_path);
         const bool copied = CopyFileW(source, copy, FALSE);
         Mem_Free(source);
-        FAIL_IF(!copied, "cannot copy %s", args->replay);
+        FAIL_IF(!copied, "cannot copy %s", replay_path);
     }
     for (size_t i = 0; i < args->seeds.count; i++) {
         wchar_t *const seed = M_Wide(args->seeds.items[i]);
@@ -167,11 +197,33 @@ static wchar_t *M_Environment(
     const LAUNCHER_GAME *const game, const M_ARGS *const args,
     const wchar_t *const work_dir, const wchar_t *const case_path)
 {
-    wchar_t lines[7][ENV_LINE_SIZE];
-    const wchar_t *extra[7];
+    wchar_t lines[9][ENV_LINE_SIZE];
+    const wchar_t *extra[9];
     size_t count = 0;
     swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_WORK=%ls", work_dir);
     count++;
+    if (args->inputs != nullptr) {
+        wchar_t *const inputs = M_Wide(args->inputs);
+        wchar_t full[MAX_PATH];
+        const DWORD length = GetFullPathNameW(inputs, MAX_PATH, full, nullptr);
+        Mem_Free(inputs);
+        if (length == 0 || length >= MAX_PATH) {
+            LOG_FATAL("bad --inputs path");
+        }
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_INPUTS=%ls", full);
+        count++;
+    }
+    if (args->font != nullptr) {
+        wchar_t *const font = M_Wide(args->font);
+        wchar_t full[MAX_PATH];
+        const DWORD length = GetFullPathNameW(font, MAX_PATH, full, nullptr);
+        Mem_Free(font);
+        if (length == 0 || length >= MAX_PATH) {
+            LOG_FATAL("bad --font path");
+        }
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_FONT=%ls", full);
+        count++;
+    }
     if (args->replay != nullptr) {
         swprintf(
             lines[count], ENV_LINE_SIZE, L"CAPTURE_REPLAY=./%ls",
@@ -206,6 +258,34 @@ static wchar_t *M_Environment(
     return Launch_BuildEnvironment(extra, count);
 }
 
+static RESULT M_InjectPatches(
+    const M_ARGS *const args, const LAUNCH_PROCESS *const process)
+{
+    if (args->thcrap_dll == nullptr) {
+        return OK;
+    }
+    wchar_t *const path = M_Wide(args->thcrap_dll);
+    wchar_t absolute[MAX_PATH];
+    const DWORD length = GetFullPathNameW(path, MAX_PATH, absolute, nullptr);
+    Mem_Free(path);
+    FAIL_IF(length == 0 || length >= MAX_PATH, "invalid thcrap DLL path");
+    const HMODULE module =
+        LoadLibraryExW(absolute, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+    FAIL_IF(
+        module == nullptr, "cannot load thcrap: %lu",
+        (unsigned long)GetLastError());
+    typedef int(__cdecl * INJECT_FN)(HANDLE, const char *);
+    const INJECT_FN inject = (INJECT_FN)(uintptr_t)GetProcAddress(
+        module, "thcrap_inject_into_running");
+    RESULT result = OK;
+    if (inject == nullptr
+        || inject(process->process, args->thcrap_config) != 0) {
+        result = FAIL("cannot inject thcrap");
+    }
+    FreeLibrary(module);
+    return result;
+}
+
 static RESULT M_Run(
     const LAUNCHER_GAME *const game, const M_ARGS *const args,
     const wchar_t *const work_dir)
@@ -228,6 +308,12 @@ static RESULT M_Run(
     Mem_Free(game_dir);
     Mem_Free(environment);
     MUST(started);
+
+    const RESULT patched = M_InjectPatches(args, &process);
+    if (!IS_OK(patched)) {
+        Launch_Stop(&process);
+        return patched;
+    }
 
     wchar_t dll[MAX_PATH];
     GetModuleFileNameW(nullptr, dll, MAX_PATH);
@@ -272,6 +358,21 @@ int Launcher_Main(
         ARG_STRING_OF(
             M_ARGS, "--replay", replay, nullptr, "<file.rpy>",
             "capture the playback of a replay"),
+        ARG_STRING_OF(
+            M_ARGS, "--inputs", inputs, nullptr, "<file>",
+            "drive the game with an OTINPUT script"),
+        ARG_STRING_OF(
+            M_ARGS, "--stage-replay", stage_replay, nullptr, "<file.rpy>",
+            "with --inputs, place a replay in the first menu slot"),
+        ARG_STRING_OF(
+            M_ARGS, "--font", font, nullptr, "<file>",
+            "privately register this retail font for the session"),
+        ARG_STRING_OF(
+            M_ARGS, "--thcrap-dll", thcrap_dll, nullptr, "<dll>",
+            "32-bit thcrap DLL for a patched reference"),
+        ARG_STRING_OF(
+            M_ARGS, "--thcrap-config", thcrap_config, nullptr, "<file>",
+            "thcrap run configuration"),
         ARG_FLAG_OF(M_ARGS, "--live", live, "capture a game that you play"),
         ARG_FLAG_OF(
             M_ARGS, "--dry-run", dry_run,
@@ -307,6 +408,15 @@ int Launcher_Main(
         return 0;
     }
     char exe[MAX_PATH];
+    if (args.inputs != nullptr) {
+        const HANDLE watcher =
+            CreateThread(nullptr, 0, M_WatchController, nullptr, 0, nullptr);
+        if (watcher == nullptr) {
+            LOG_ERROR("cannot watch the capture controller");
+            return 1;
+        }
+        CloseHandle(watcher);
+    }
     snprintf(exe, MAX_PATH, "%s/%s", args.game_dir, game->exe_name);
     wchar_t work_dir[MAX_PATH];
     if (!Result_Log(M_CheckGameVersion(game, exe), LOG_LEVEL_ERROR)

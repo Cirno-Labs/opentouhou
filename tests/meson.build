@@ -177,7 +177,7 @@ test(
 
 # The tests of the Python tools under tools/ run with the Python of the
 # build. They need neither a built program nor the network.
-foreach name : ['changelog', 'header_spacing', 'othpatch_release', 'release_index', 'versioning']
+foreach name : ['changelog', 'header_spacing', 'othpatch_release', 'release_index', 'replay_session', 'versioning']
   test(
     'tools/' + name,
     python,
@@ -1781,6 +1781,18 @@ test(
 )
 
 test(
+  'replay/core/script',
+  executable(
+    'test_replay_script',
+    'test_replay_script.c',
+    c_args: core_include + replay_include,
+    implicit_include_directories: false,
+    link_with: [replay_script_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
   'replay/core/case',
   executable(
     'test_case',
@@ -2285,3 +2297,19 @@ test(
     'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'msgothic.ttc',
   },
 )
+
+if build_games
+  test(
+    'replay/core/session_compare',
+    executable(
+      'test_replay_session_compare',
+      'test_replay_session_compare.c',
+      '../replay/core/session_compare.c',
+      c_args: core_include + replay_include + stg_include,
+      implicit_include_directories: false,
+      link_with: [replay_runner_lib, stg_chain_lib],
+      dependencies: [sdl3, zlib],
+    ),
+    suite: 'unit',
+  )
+endif

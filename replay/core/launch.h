@@ -7,6 +7,7 @@
 typedef struct {
     HANDLE process;
     HANDLE thread;
+    HANDLE job;
 } LAUNCH_PROCESS;
 
 // Returns this process's environment plus the NAME=value lines in extra.

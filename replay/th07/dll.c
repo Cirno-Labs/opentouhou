@@ -1,5 +1,8 @@
 #include "../core/capture.h"
+#include "../core/clock.h"
 #include "../core/patch.h"
+#include "../core/session_retail.h"
+#include "../core/overlay.h"
 #include "fields.h"
 #include "retail.h"
 #include "state.h"
@@ -7,6 +10,7 @@
 #include "core/base/log.h"
 #include "core/base/result.h"
 #include "core/base/utils.h"
+#include "th07/buttons.h"
 
 #include <windows.h>
 
@@ -42,6 +46,16 @@ static bool m_ReplayStarted;
 static bool m_ReplayEnded;
 static bool m_ResultOpened;
 static uint32_t m_FastForwards;
+static bool m_Scripted;
+static bool m_ScriptSeeded;
+
+static const SCRIPT_BINDING m_Bindings[] = {
+#define M_BUTTON(field_, bit_, ...) { #field_, bit_ },
+#define M_STICK(...)
+    TH07_ACTIONS(M_BUTTON, M_STICK)
+#undef M_BUTTON
+#undef M_STICK
+};
 
 static void M_CaseClosed(const uint32_t rows)
 {
@@ -70,6 +84,12 @@ static void M_EndOfCalc(void)
 #pragma GCC diagnostic ignored "-Wattributes"
 static int __attribute__((thiscall)) M_RunCalcChain(void *chain)
 {
+    if (m_Scripted && !m_ScriptSeeded) {
+        RETAIL_RNG_AT->seed = 0;
+        RETAIL_RNG_AT->generated = 0;
+        m_ScriptSeeded = true;
+    }
+    SessionRetail_BeforeCalc(*(void **)((uint8_t *)RETAIL_APP_AT + 8));
     const int result = ((RUN_CALC_CHAIN_FN)RETAIL_RUN_CALC_CHAIN)(chain);
     M_EndOfCalc();
     return result;
@@ -231,6 +251,21 @@ static void M_Attach(void)
         Capture_Check(M_PatchValueIn(
             RETAIL_SET_UP_TITLE_SCENE, RETAIL_SET_UP_TITLE_SCENE_SIZE,
             RETAIL_MAIN_MENU_ON_UPDATE, (uintptr_t)M_MainMenuOnUpdate));
+        Capture_Check(M_PatchValueIn(
+            RETAIL_REGISTER_REPLAY_CHAIN, RETAIL_REGISTER_REPLAY_CHAIN_SIZE,
+            RETAIL_PLAY_ON_UPDATE_2, (uintptr_t)M_PlayOnUpdate2));
+    } else if (mode == CAPTURE_SCRIPT) {
+        m_Scripted = true;
+        static const CLOCK_WAIT_RANGE waits[] = {
+            { RETAIL_RUN_FRAME, RETAIL_RUN_FRAME_SIZE },
+        };
+        Clock_SetPacingRanges(waits, ARRAY_SIZE(waits));
+        static const char *const private_paths[] = { "score.dat", "replay" };
+        Overlay_SetPrivatePaths(private_paths, ARRAY_SIZE(private_paths));
+        Capture_Check(SessionRetail_Open(m_Bindings, ARRAY_SIZE(m_Bindings)));
+        Capture_Check(Patch_CallsIn(
+            RETAIL_APP_ON_UPDATE, RETAIL_APP_ON_UPDATE_SIZE,
+            RETAIL_READ_BUTTONS, (uintptr_t)SessionRetail_Buttons, 2));
         Capture_Check(M_PatchValueIn(
             RETAIL_REGISTER_REPLAY_CHAIN, RETAIL_REGISTER_REPLAY_CHAIN_SIZE,
             RETAIL_PLAY_ON_UPDATE_2, (uintptr_t)M_PlayOnUpdate2));

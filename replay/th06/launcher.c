@@ -19,7 +19,7 @@ static void M_WriteConfig(WRITER *const writer)
     Writer_WriteU32(writer, 0x102); // version
     Writer_WriteU8(writer, 2); // lives
     Writer_WriteU8(writer, 3); // bombs
-    Writer_WriteU8(writer, 0); // 16-bit colour
+    Writer_WriteU8(writer, 0); // 32-bit colour
     Writer_WriteU8(writer, 0); // music mode
     Writer_WriteU8(writer, 0); // sound effects
     Writer_WriteU8(writer, 1); // difficulty

@@ -298,6 +298,36 @@ static void M_CheckOutsidePathRefused(void)
     }
 }
 
+static void M_CheckPrivatePaths(const char *const out_full)
+{
+    M_WriteFileRaw("private.dat", "player save");
+    M_WriteFileRaw("private.dat.bak", "ordinary asset");
+    static const char *const paths[] = { "private.dat", "private-dir" };
+    Overlay_SetPrivatePaths(paths, ARRAYSIZE(paths));
+    M_Check(
+        !M_ReadMatches("private.dat", "player save"),
+        "private save does not fall back to G");
+    M_Check(
+        M_ReadMatches("private.dat.bak", "ordinary asset"),
+        "private path matches whole components");
+    char path[MAX_PATH];
+    snprintf(path, sizeof(path), "%s\\private.dat", out_full);
+    M_WriteFileRaw(path, "session save");
+    M_Check(
+        M_ReadMatches("private.dat", "session save"), "private save reads O");
+    CreateDirectoryW(L"private-dir", nullptr);
+    M_WriteFileRaw("private-dir\\old.rpy", "player replay");
+    WIN32_FIND_DATAA data;
+    HANDLE handle = FindFirstFileA("private-dir\\*.rpy", &data);
+    M_Check(
+        handle == INVALID_HANDLE_VALUE,
+        "private directory does not enumerate G");
+    if (handle != INVALID_HANDLE_VALUE) {
+        FindClose(handle);
+    }
+    Overlay_SetPrivatePaths(nullptr, 0);
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -326,6 +356,7 @@ int main(int argc, char **argv)
     M_CheckChangeDirectory(game_full, out_full);
     M_CheckFindFirstFile();
     M_CheckOutsidePathRefused();
+    M_CheckPrivatePaths(out_full);
 
     if (m_Failures == 0) {
         printf("all checks passed\n");

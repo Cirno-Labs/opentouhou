@@ -1,0 +1,20 @@
+#pragma once
+
+#include "runner.h"
+
+typedef struct SESSION_COMPARE SESSION_COMPARE;
+
+// Opens a version-1 case for a finite scripted session. Keeps input open
+// until Close; the caller owns input. Reuses the runner's named columns.
+RESULT SessionCompare_Open(
+    READER *input, const RUNNER_GAME *game, SESSION_COMPARE **out);
+
+// Samples every completed calc, including chain restarts. Begins when
+// ready is first true and stops when ended is true. The game shim uses
+// the same boundaries as its retail recorder. Does not stop the chain.
+void SessionCompare_Calc(SESSION_COMPARE *compare, bool ready, bool ended);
+
+// Requires all case rows and the complete current column schema to match,
+// with no extra recorded calcs. Checks this session's finite recording;
+// it does not certify full replay coverage. Releases compare.
+RESULT SessionCompare_Close(SESSION_COMPARE *compare, RUNNER_REPORT *report);

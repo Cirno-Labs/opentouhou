@@ -48,6 +48,37 @@ static void M_CheckStepping(void)
     M_Check(timeGetTime() == 2 * STEP, "each call moves the clock on");
     M_Check(M_Frequency() == 1000000, "the frequency is 1,000,000");
     M_Check(timeGetTime() == 3 * STEP, "the frequency leaves the clock");
+    const DWORD origin = 4 * STEP;
+    Clock_UseFrames();
+    M_Check(
+        timeGetTime() == origin && M_Counter() == (LONGLONG)origin * 1000,
+        "frame clock preserves its origin");
+    Clock_AdvanceFrame();
+    M_Check(
+        timeGetTime() == origin + 17 && timeGetTime() == origin + 17,
+        "clock queries do not advance a frame");
+    M_Check(
+        M_Counter() == (LONGLONG)(origin + 17) * 1000,
+        "frame counter shares the millisecond clock");
+    Clock_AdvanceFrame();
+    M_Check(timeGetTime() == origin + 34, "second frame rounds upward");
+    Clock_AdvanceFrame();
+    M_Check(
+        timeGetTime() == origin + 50,
+        "third frame avoids accumulated rounding");
+    for (int i = 3; i < 60; i++) {
+        Clock_AdvanceFrame();
+    }
+    M_Check(timeGetTime() == origin + 1000, "sixty frames count one second");
+    static const CLOCK_WAIT_RANGE waits[] = { { 0, UINTPTR_MAX } };
+    Clock_SetPacingRanges(waits, ARRAYSIZE(waits));
+    M_Check(
+        timeGetTime() == origin + 1000 && timeGetTime() == origin + 1001,
+        "pacing reads can finish a rounding-sensitive wait");
+    Clock_SetPacingRanges(nullptr, 0);
+    M_Check(
+        timeGetTime() == origin + 1000 && timeGetTime() == origin + 1000,
+        "pacing reads leave frame time unchanged");
 }
 
 static bool M_RunStepping(void)

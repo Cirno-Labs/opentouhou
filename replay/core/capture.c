@@ -82,12 +82,18 @@ CAPTURE_MODE Capture_Attach(
     }
     Capture_Check(Overlay_Install(game, work));
     wchar_t flag[4];
+    wchar_t script[MAX_PATH];
+    const bool scripted = M_GetEnv(L"CAPTURE_INPUTS", script, MAX_PATH);
     const bool fast = M_GetEnv(L"CAPTURE_FAST", flag, 4);
-    if (!Clock_Install(GetModuleHandleW(nullptr), fast ? FAST_CLOCK_STEP : 0)) {
+    if (!Clock_Install(
+            GetModuleHandleW(nullptr),
+            scripted   ? 1
+                : fast ? FAST_CLOCK_STEP
+                       : 0)) {
         LOG_ERROR("no clock function is imported");
         TerminateProcess(GetCurrentProcess(), 1);
     }
-    if (fast && !M_GetEnv(L"CAPTURE_DRAW", flag, 4)
+    if (!scripted && fast && !M_GetEnv(L"CAPTURE_DRAW", flag, 4)
         && !NullD3d8_Install(GetModuleHandleW(nullptr))) {
         LOG_ERROR("Direct3DCreate8 is not imported");
         TerminateProcess(GetCurrentProcess(), 1);
@@ -100,6 +106,9 @@ CAPTURE_MODE Capture_Attach(
     }
 
     wchar_t replay_w[MAX_PATH];
+    if (scripted) {
+        return CAPTURE_SCRIPT;
+    }
     if (M_GetEnv(L"CAPTURE_REPLAY", replay_w, MAX_PATH)) {
         WideCharToMultiByte(
             CP_ACP, 0, replay_w, -1, replay, (int)size, nullptr, nullptr);

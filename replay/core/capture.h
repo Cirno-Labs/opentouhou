@@ -12,6 +12,7 @@ typedef enum {
     CAPTURE_LIVE,
     CAPTURE_REPLAY,
     CAPTURE_RESULT,
+    CAPTURE_SCRIPT,
 } CAPTURE_MODE;
 
 typedef struct {

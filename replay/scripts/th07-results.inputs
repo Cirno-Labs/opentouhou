@@ -1,0 +1,18 @@
+OTINPUT 1
+frames 1041
+input 385 down
+input 386 none
+input 387 down
+input 388 none
+input 389 down
+input 390 none
+input 400 shoot
+input 401 none
+capture 460
+capture 680
+input 800 shoot
+input 801 none
+capture 840
+input 900 right
+input 901 none
+capture 1040
