@@ -3,6 +3,7 @@
 
 #include "stg/angle.h"
 #include "th06/files.h"
+#include "th06/time.h"
 #include "stg/note.h"
 
 #include "core/base/assert.h"
@@ -439,7 +440,8 @@ void Anm_StartScriptAtOrigin(ANM_VM *const vm, const int32_t script)
 // interrupt, or else the -1 label, before the script's end. Sets *pc past
 // the label and returns true, or holds script_time and returns false
 // when there is neither.
-static bool M_HandleInterrupt(ANM_VM *const vm, int32_t *const pc)
+static bool M_HandleInterrupt(
+    ANM_VM *const vm, int32_t *const pc, const float step)
 {
     int32_t found = -1;
     int32_t fallback = -1;
@@ -461,7 +463,7 @@ static bool M_HandleInterrupt(ANM_VM *const vm, int32_t *const pc)
     vm->stopped = false;
     const int32_t label = found >= 0 ? found : fallback;
     if (label < 0) {
-        vm->script_time.current -= 1;
+        Timer_SubAt(&vm->script_time, 1, step);
         return false;
     }
     *pc = label + 1;
@@ -475,10 +477,11 @@ bool Anm_Step(ANM_VM *const vm)
     if (vm->script == nullptr || vm->pc < 0) {
         return true;
     }
+    const float step = GameTime_Step();
     int32_t pc = vm->pc;
     bool running = true;
     if (vm->pending_interrupt != 0) {
-        running = M_HandleInterrupt(vm, &pc);
+        running = M_HandleInterrupt(vm, &pc, step);
     }
     while (running && pc >= 0 && pc < vm->script->count
            && vm->script->instrs[pc].time <= vm->script_time.current) {
@@ -606,10 +609,10 @@ bool Anm_Step(ANM_VM *const vm)
         case M_OP_STOP:
             if (vm->pending_interrupt == 0) {
                 vm->stopped = true;
-                vm->script_time.current -= 1;
+                Timer_SubAt(&vm->script_time, 1, step);
                 running = false;
             } else {
-                running = M_HandleInterrupt(vm, &pc);
+                running = M_HandleInterrupt(vm, &pc, step);
             }
             continue;
         case M_OP_SHOWN:
@@ -648,19 +651,19 @@ bool Anm_Step(ANM_VM *const vm)
 
     if (vm->rotation_speed.x != 0.0f) {
         vm->rotation.x =
-            Angle_AddNormalize(vm->rotation.x, vm->rotation_speed.x);
+            Angle_AddNormalize(vm->rotation.x, step * vm->rotation_speed.x);
     }
     if (vm->rotation_speed.y != 0.0f) {
         vm->rotation.y =
-            Angle_AddNormalize(vm->rotation.y, vm->rotation_speed.y);
+            Angle_AddNormalize(vm->rotation.y, step * vm->rotation_speed.y);
     }
     if (vm->rotation_speed.z != 0.0f) {
         vm->rotation.z =
-            Angle_AddNormalize(vm->rotation.z, vm->rotation_speed.z);
+            Angle_AddNormalize(vm->rotation.z, step * vm->rotation_speed.z);
     }
 
     if (vm->scale_time > 0) {
-        Timer_Tick(&vm->scale_timer);
+        Timer_TickAt(&vm->scale_timer, step);
         if (vm->scale_timer.current >= vm->scale_time) {
             vm->scale_x = vm->scale_target_x;
             vm->scale_y = vm->scale_target_y;
@@ -680,12 +683,12 @@ bool Anm_Step(ANM_VM *const vm)
             vm->scale_y *= -1.0f;
         }
     } else {
-        vm->scale_y += vm->scale_speed_y;
-        vm->scale_x += vm->scale_speed_x;
+        vm->scale_y += step * vm->scale_speed_y;
+        vm->scale_x += step * vm->scale_speed_x;
     }
 
     if (vm->fade_time > 0) {
-        Timer_Tick(&vm->fade_timer);
+        Timer_TickAt(&vm->fade_timer, step);
         float alpha = (float)vm->fade_timer.current / (float)vm->fade_time;
         if (alpha >= 1.0f) {
             alpha = 1.0f;
@@ -733,10 +736,10 @@ bool Anm_Step(ANM_VM *const vm)
         if (vm->move_timer.current >= vm->move_time) {
             vm->move_time = 0;
         }
-        Timer_Tick(&vm->move_timer);
+        Timer_TickAt(&vm->move_timer, step);
     }
 
     vm->pc = pc;
-    Timer_Tick(&vm->script_time);
+    Timer_TickAt(&vm->script_time, step);
     return false;
 }
