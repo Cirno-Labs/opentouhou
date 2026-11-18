@@ -2,16 +2,20 @@
 
 #include "anm_builder.h"
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
 #include "th06/anm.h"
+#include "th06/anm/private.h"
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
+#include "th06/strings.h"
+#include "stg/translation.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -166,9 +170,16 @@ static void M_WriteData(const char *const case_name, const int32_t tunes)
     };
     for (size_t i = 0; i < 3; i++) {
         ANM_BUILDER builder;
-        AnmBuilder_Init(&builder, 32, 32);
+        AnmBuilder_Init(&builder, i == 2 ? 512 : 32, i == 2 ? 256 : 32);
         builder.blank_texture = true;
         AnmBuilder_AddSprite(&builder, 0, 0.0f, 0.0f, 16.0f, 16.0f);
+        if (i == 2) {
+            for (int32_t row = 0; row < MUSIC_COMMENT_ROWS * 2; row++) {
+                AnmBuilder_AddSprite(
+                    &builder, 0x708 - 0x111 + row, 0.0f, (float)(row * 16),
+                    512.0f, 16.0f);
+            }
+        }
         const uint32_t sprite = 0;
         const int32_t script = AnmBuilder_BeginScript(&builder, 0);
         AnmBuilder_Instr(&builder, script, 0, 1, &sprite, 1);
@@ -329,4 +340,42 @@ TEST(the_screen_draws_every_quad_once)
     M_Tick((TH06_INPUT) {});
     CHECK(GfxRecorder_QuadCount() >= 2);
     M_Teardown();
+}
+
+TEST(base_tsa_overlaps_both_halves_of_a_translated_comment)
+{
+    M_Setup("translated_comment", 3);
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PatchBuilder_AddPatch(
+        patches, "thpatch/lang", "{dependencies: ['nmlgc/base_tsa']}");
+    PatchBuilder_Write(
+        patches, "thpatch/lang/th06/musiccmt.js",
+        "{'1': ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    Translation_Init(stack, &g_TranslationGame);
+    CHECK(Translation_HasBaseTsa());
+    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    M_Run(9);
+    M_Press(m_Shoot);
+    const IMAGE *const image = AnmTexture_GetImage(0x2b);
+    int32_t visible = 0;
+    for (int32_t y = 0; y < 16; y++) {
+        for (int32_t x = 1; x < 200; x++) {
+            const size_t first = ((size_t)y * 512 + (size_t)x + 247) * 4 + 3;
+            const size_t second = ((size_t)(y + 16) * 512 + (size_t)x) * 4 + 3;
+            CHECK_EQ_INT(image->pixels[first], image->pixels[second]);
+            visible += image->pixels[second] != 0;
+        }
+    }
+    CHECK(visible > 100);
+    M_Teardown();
+    Anm_ShutdownText();
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
 }

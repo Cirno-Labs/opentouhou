@@ -44,6 +44,7 @@
   pad button menus.
 - Fixed the options menu showing no color depth as chosen: it now shows
   32-bit color.
+- Fixed the right half of translated Music Room comments.
 
 ## 1.0.1 (2026-11-15)
 

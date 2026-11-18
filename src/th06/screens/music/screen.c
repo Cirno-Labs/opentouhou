@@ -63,16 +63,30 @@ static void M_ShowComment(M_SCREEN *const screen)
         ANM_VM *const vm = &screen->comment[i];
         const char *half = tune->comment[i / 2][i % 2];
         // A translated row shows whole on the sprite of its first half.
+        // With base_tsa, the second sprite draws the same row 247 pixels
+        // to the left, so it shows the part that the first one cuts off.
         const char *const translated =
             Translation_GetMusicComment(screen->playing, i / 2);
+        const bool overlap = translated != nullptr && Translation_HasBaseTsa();
         if (translated != nullptr) {
-            half = i % 2 == 0 ? translated : "";
+            half = overlap || i % 2 == 0 ? translated : "";
         }
-        if (half[0] != '\0') {
+        if (overlap || half[0] != '\0') {
             vm->visible = true;
-            Result_Log(
-                Anm_RenderText(vm, 0xffe0c0, 0x300000, "%s", half),
-                LOG_LEVEL_WARNING);
+            if (overlap && i % 2 != 0) {
+                const ANM_SPRITE *const sprite = vm->sprite_data;
+                Result_Log(
+                    Anm_RenderTextToTextureIndex(
+                        sprite->slot, -247, (int32_t)sprite->y0,
+                        (int32_t)sprite->texture_width, vm->font_width,
+                        0xffe0c0, 0x300000, half),
+                    LOG_LEVEL_WARNING);
+                vm->shown = true;
+            } else {
+                Result_Log(
+                    Anm_RenderText(vm, 0xffe0c0, 0x300000, "%s", half),
+                    LOG_LEVEL_WARNING);
+            }
         } else {
             vm->visible = false;
         }
