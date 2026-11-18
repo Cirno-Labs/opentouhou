@@ -48,7 +48,8 @@ static RESULT M_Measure(
     }
     M_SetFace(font, style->face);
     int natural_width, natural_height;
-    MUST(TextGlyphs_Measure(font, text, size, &natural_width, &natural_height));
+    MUST(TextGlyphs_Measure(
+        font, text, size, style->gdi_raster, &natural_width, &natural_height));
     const double scaled_width =
         ceil(natural_width * (double)style->width_scale);
     FAIL_IF(
@@ -321,7 +322,8 @@ static RESULT M_DrawPieces(
         }
         M_SetFace(font, piece->face);
         SDL_Surface *surface;
-        MUST(TextGlyphs_Render(font, piece->text, piece->size, &surface));
+        MUST(TextGlyphs_Render(
+            font, piece->text, piece->size, style->gdi_raster, &surface));
         const double width = ceil(surface->w * (double)style->width_scale);
         if (width <= INT32_MAX) {
             M_Composite(image, surface, (int32_t)width, x + piece->x, y, color);
@@ -389,7 +391,8 @@ RESULT Text_Render(
         return OK;
     }
     SDL_Surface *surface;
-    MUST(TextGlyphs_Render(font, text, strlen(text), &surface));
+    MUST(TextGlyphs_Render(
+        font, text, strlen(text), style->gdi_raster, &surface));
     const bool shadow = style->shadow.alpha != 0;
     const int32_t shadow_x = shadow ? style->shadow_x : 0;
     const int32_t shadow_y = shadow ? style->shadow_y : 0;
