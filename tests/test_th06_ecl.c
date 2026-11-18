@@ -1814,12 +1814,23 @@ TEST(an_orbit_follows_the_enemy)
     M_Frame();
     CHECK_EQ_INT(m_EffectCount, 1);
     CHECK_EQ_INT(m_EffectCalls[0].type, EFFECT_ORBIT);
-    CHECK_EQ_INT(m_EffectCalls[0].color, COLOR_ARGB(0xff, 0xff, 0x20, 0x20));
+    CHECK_EQ_INT(m_EffectCalls[0].color, COLOR_ARGB(0xff, 0xff, 0xe0, 0xe0));
     CHECK(m_EffectCalls[0].pos.x == 3.0f);
     CHECK(m_Enemy.orbits.effects[0] == &m_Effects[0]);
     CHECK(m_Effects[0].axis.y == 0.5f && m_Effects[0].axis.z == 1.0f);
     CHECK(m_Enemy.orbits.radius == 40.0f);
     CHECK_EQ_INT(m_Enemy.orbits.count, 1);
+    M_End();
+}
+
+TEST(rumia_orbits_use_the_pale_color_add_palette)
+{
+    M_Begin("white_orbit");
+    M_INSTR(0, 102, 2, M_F(0.0f), M_F(0.5f), M_F(1.0f), M_F(40.0f));
+    M_Load();
+    M_Frame();
+    CHECK_EQ_INT(m_EffectCount, 1);
+    CHECK_EQ_INT(m_EffectCalls[0].color, COLOR_WHITE);
     M_End();
 }
 
