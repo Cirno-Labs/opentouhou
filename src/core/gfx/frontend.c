@@ -53,12 +53,14 @@ typedef struct {
     M_VIEW_INDEX view_ids;
     M_VIEW_COUNTS view_counts;
     GFX_COLOR clear;
+    bool preserve;
     bool drawn;
 } M_TICK;
 
 typedef struct {
     const GFX_BACKEND *backend;
     bool started;
+    bool preserve;
     int32_t width, height;
     M_TICK ticks[2];
     int32_t current;
@@ -669,12 +671,19 @@ void Gfx_BeginTick(const GFX_COLOR clear)
     M_TICK *const tick = M_Current();
     M_ClearTick(tick);
     tick->clear = clear;
+    tick->preserve = m_Frontend.preserve;
     m_Frontend.in_tick = true;
     m_Frontend.flushed = 0;
     const GFX_VIEW screen = GfxView_Screen();
     M_AddView(tick, &screen);
     const GFX_PASS_OUTPUT output = M_ScreenOutput();
-    m_Frontend.backend->begin_pass(GFX_PASS_SCREEN, clear, &output);
+    m_Frontend.backend->begin_pass(
+        GFX_PASS_SCREEN, clear, &output, tick->preserve);
+}
+
+void Gfx_SetPersistentScreen(const bool enabled)
+{
+    m_Frontend.preserve = enabled;
 }
 
 void Gfx_SetView(const GFX_VIEW *const view)
@@ -751,7 +760,8 @@ RESULT Gfx_Present(
         GfxOutput_Fit(output, m_Frontend.width, m_Frontend.height);
     const M_TICK *const current = M_Current();
     if (!current->drawn) {
-        m_Frontend.backend->begin_pass(GFX_PASS_WINDOW, output->border, &fit);
+        m_Frontend.backend->begin_pass(
+            GFX_PASS_WINDOW, output->border, &fit, current->preserve);
         m_Frontend.backend->end_pass();
         return OK;
     }
@@ -761,7 +771,8 @@ RESULT Gfx_Present(
     }
     M_BlendViews(t);
     M_BlendVertices(t);
-    m_Frontend.backend->begin_pass(GFX_PASS_WINDOW, current->clear, &fit);
+    m_Frontend.backend->begin_pass(
+        GFX_PASS_WINDOW, current->clear, &fit, current->preserve);
     int32_t drawn = 0;
     for (int32_t i = 0; i < current->clears.count; i++) {
         const M_CLEAR *const clear = &current->clears.items[i];

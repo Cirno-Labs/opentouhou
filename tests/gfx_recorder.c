@@ -63,7 +63,7 @@ static void M_FreeTexture(void *const handle)
 
 static void M_BeginPass(
     const GFX_PASS pass, const GFX_COLOR clear,
-    const GFX_PASS_OUTPUT *const output)
+    const GFX_PASS_OUTPUT *const output, const bool preserve)
 {
     m_Pass = pass;
     if (pass == GFX_PASS_SCREEN) {

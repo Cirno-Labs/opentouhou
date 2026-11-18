@@ -11,6 +11,11 @@ GFX_VIEW GfxView_Screen(void);
 // calls Gfx_BeginTick and Gfx_EndTick around each tick of the game.
 void Gfx_BeginTick(GFX_COLOR clear);
 
+// Keeps the previous screen's colour behind each new tick, including its
+// interpolated presentations. Depth still starts at 1. Off by default;
+// set before Gfx_BeginTick.
+void Gfx_SetPersistentScreen(bool enabled);
+
 // Sets the view of the quads that follow. The first view of a tick is
 // GfxView_Screen().
 void Gfx_SetView(const GFX_VIEW *view);
