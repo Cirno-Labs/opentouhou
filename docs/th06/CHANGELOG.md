@@ -15,6 +15,7 @@
 - Fixed texture colors.
 - Fixed transparency in translated textures.
 - Fixed JPEG background colors and shading.
+- Fixed a black screen showing instead of the startup logo.
 - Fixed how stage backgrounds fade into fog with distance.
 - Fixed faint, almost transparent sprite edges that the original does
   not draw.

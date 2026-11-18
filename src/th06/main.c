@@ -11,6 +11,7 @@
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
+#include "th06/scene.h"
 #include "th06/screens/main.h"
 #include "th06/replay.h"
 #include "th06/screens/result.h"
@@ -81,6 +82,15 @@ static RESULT M_Init(void)
 static bool M_Tick(const void *const input)
 {
     M_SetDate();
+    if (Scene_Get() == SCENE_BOOT) {
+        if (!Result_Log(
+                Anm_LoadSurface(0, "data/title/th06logo.jpg"),
+                LOG_LEVEL_ERROR)) {
+            return false;
+        }
+        Anm_CopySurfaceToBackBuffer(0, 0, 0, 0, 0);
+        Anm_ReleaseSurface(0);
+    }
     const bool running = Game_Tick(input);
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_ScanReplays();
