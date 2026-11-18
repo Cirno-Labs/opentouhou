@@ -750,3 +750,175 @@ TEST(a_projection_pixel_offset_keeps_the_viewport_and_depth)
         memcmp(&shifted.viewport, &view.viewport, sizeof(view.viewport)) == 0);
     CHECK(view.projection.m[2][0] == 0.0f);
 }
+
+TEST(deferred_full_screen_replacements_discard_only_undrawn_ticks)
+{
+    M_Start();
+    Gfx_SetDeferredTicks(true);
+    Gfx_SetPersistentScreen(true);
+    const GFX_STATE state = {};
+    const GFX_VERTEX vertices[4] = {
+        { .position = { 0, 0, 0 } },
+        { .position = { WIDTH, 0, 0 } },
+        { .position = { WIDTH, HEIGHT, 0 } },
+        { .position = { 0, HEIGHT, 0 } },
+    };
+    for (int32_t i = 0; i < 3; i++) {
+        Gfx_BeginTick((GFX_COLOR) {});
+        Gfx_DrawQuad(&state, nullptr, vertices, 0);
+        Gfx_EndTick();
+    }
+    CHECK_EQ_INT(m_Recording.count, 0);
+    CHECK(IS_OK(Gfx_Present(false, 1, &m_Output)));
+    const EVENT expected[] = {
+        EVENT_BEGIN_SCREEN,
+        EVENT_DRAW,
+        EVENT_END,
+        EVENT_BLIT,
+    };
+    M_CheckEvents(expected, ARRAY_SIZE(expected));
+    M_Stop();
+}
+
+TEST(deferred_blending_keeps_the_previous_frame)
+{
+    M_Start();
+    Gfx_SetDeferredTicks(true);
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0, 0);
+    Gfx_EndTick();
+    CHECK_EQ_INT(m_Recording.count, 0);
+    Gfx_SetPersistentScreen(true);
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 4, 0);
+    Gfx_EndTick();
+    CHECK_EQ_INT(m_Recording.count, 3);
+    CHECK(IS_OK(Gfx_Present(false, 1, &m_Output)));
+    const EVENT expected[] = {
+        EVENT_BEGIN_SCREEN, EVENT_DRAW, EVENT_END,  EVENT_BEGIN_SCREEN,
+        EVENT_DRAW,         EVENT_END,  EVENT_BLIT,
+    };
+    M_CheckEvents(expected, ARRAY_SIZE(expected));
+    M_Stop();
+}
+
+TEST(deferred_texture_uploads_flush_the_previous_contents)
+{
+    M_Start();
+    Gfx_SetDeferredTicks(true);
+    GFX_TEXTURE *texture = nullptr;
+    CHECK(IS_OK(GfxTexture_CreateEmpty(4, 4, &texture)));
+    IMAGE image = Image_Create(4, 4, &g_HeapAllocator);
+    M_ClearEvents();
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, texture, 0, 0);
+    Gfx_EndTick();
+    GfxTexture_Upload(texture, (GFX_RECT) { 0, 0, 4, 4 }, &image);
+    const EVENT expected[] = {
+        EVENT_BEGIN_SCREEN,
+        EVENT_DRAW,
+        EVENT_END,
+        EVENT_UPLOAD,
+    };
+    M_CheckEvents(expected, ARRAY_SIZE(expected));
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+    M_Stop();
+}
+
+TEST(deferred_copies_flush_the_screen_before_the_copy)
+{
+    M_Start();
+    Gfx_SetDeferredTicks(true);
+    GFX_TEXTURE *texture = nullptr;
+    CHECK(IS_OK(GfxTexture_CreateEmpty(4, 4, &texture)));
+    M_ClearEvents();
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0, 0);
+    Gfx_EndTick();
+    GfxTexture_CopyFromScreen(texture, (GFX_RECT) { 0, 0, 4, 4 }, 0, 0);
+    const EVENT expected[] = {
+        EVENT_BEGIN_SCREEN,
+        EVENT_DRAW,
+        EVENT_END,
+        EVENT_COPY,
+    };
+    M_CheckEvents(expected, ARRAY_SIZE(expected));
+    GfxTexture_Free(texture);
+    M_Stop();
+}
+
+TEST(deferred_full_screen_draws_keep_history_when_fragments_can_be_rejected)
+{
+    const GFX_STATE states[] = {
+        { .alpha_test = true },
+        { .depth_test = GFX_DEPTH_LESS_EQUAL },
+        { .blend = GFX_BLEND_ALPHA },
+        { .blend = GFX_BLEND_ADD },
+    };
+    const GFX_VERTEX vertices[4] = {
+        { .position = { 0, 0, 0 } },
+        { .position = { WIDTH, 0, 0 } },
+        { .position = { WIDTH, HEIGHT, 0 } },
+        { .position = { 0, HEIGHT, 0 } },
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(states); i++) {
+        M_Start();
+        Gfx_SetDeferredTicks(true);
+        Gfx_BeginTick((GFX_COLOR) {});
+        M_Draw4(&m_Alpha, nullptr, 0, 0);
+        Gfx_EndTick();
+        Gfx_SetPersistentScreen(true);
+        Gfx_BeginTick((GFX_COLOR) {});
+        Gfx_DrawQuad(&states[i], nullptr, vertices, 0);
+        Gfx_EndTick();
+        const EVENT expected[] = {
+            EVENT_BEGIN_SCREEN,
+            EVENT_DRAW,
+            EVENT_END,
+        };
+        M_CheckEvents(expected, ARRAY_SIZE(expected));
+        M_Stop();
+    }
+}
+
+TEST(deferred_texture_free_flushes_before_releasing_the_texture)
+{
+    M_Start();
+    Gfx_SetDeferredTicks(true);
+    GFX_TEXTURE *texture = nullptr;
+    CHECK(IS_OK(GfxTexture_CreateEmpty(4, 4, &texture)));
+    M_ClearEvents();
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, texture, 0, 0);
+    Gfx_EndTick();
+    CHECK_EQ_INT(m_Recording.count, 0);
+    GfxTexture_Free(texture);
+    Gfx_BeginTick((GFX_COLOR) {});
+    const EVENT expected[] = {
+        EVENT_BEGIN_SCREEN,
+        EVENT_DRAW,
+        EVENT_END,
+        EVENT_FREE,
+    };
+    M_CheckEvents(expected, ARRAY_SIZE(expected));
+    Gfx_EndTick();
+    M_Stop();
+}
+
+TEST(deferred_ticks_require_a_new_tick_before_interpolation)
+{
+    M_Start();
+    Gfx_SetDeferredTicks(true);
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0, 0);
+    Gfx_EndTick();
+    CHECK(!Result_Ignore(Gfx_Present(true, 0.5f, &m_Output)));
+    Gfx_SetDeferredTicks(false);
+    CHECK(!Result_Ignore(Gfx_Present(true, 0.5f, &m_Output)));
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw4(&m_Alpha, nullptr, 0, 0);
+    Gfx_EndTick();
+    CHECK(IS_OK(Gfx_Present(true, 0.5f, &m_Output)));
+    M_Stop();
+}

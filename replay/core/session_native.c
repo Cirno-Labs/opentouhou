@@ -295,6 +295,7 @@ static RESULT M_Start(
         FAIL_IF(!SDL_SyncWindow(state->window), "%s", SDL_GetError());
         SDL_GL_SetSwapInterval(0);
         MUST(Gfx_Init(state->window, 640, 480));
+        Gfx_SetDeferredTicks(args->fast);
         state->gfx_started = true;
     }
     Config_SetDefaults(game->settings_schema, game->settings);

@@ -54,7 +54,9 @@ typedef struct {
     M_VIEW_COUNTS view_counts;
     GFX_COLOR clear;
     bool preserve;
-    bool drawn;
+    bool complete;
+    bool pending;
+    bool deferred;
 } M_TICK;
 
 typedef struct {
@@ -65,6 +67,8 @@ typedef struct {
     M_TICK ticks[2];
     int32_t current;
     bool in_tick;
+    bool defer;
+    bool pass_started;
     int32_t view;
     int32_t flushed;
     GFX_TEXTURE *textures;
@@ -96,7 +100,8 @@ static void M_InitTick(M_TICK *const tick)
     HashMap_Init(&tick->quad_ids, &g_HeapAllocator);
     HashMap_Init(&tick->view_ids, &g_HeapAllocator);
     HashMap_Init(&tick->view_counts, &g_HeapAllocator);
-    tick->drawn = false;
+    tick->complete = false;
+    tick->pending = false;
 }
 
 static void M_ClearTick(M_TICK *const tick)
@@ -110,7 +115,8 @@ static void M_ClearTick(M_TICK *const tick)
     HashMap_Clear(&tick->quad_ids);
     HashMap_Clear(&tick->view_ids);
     HashMap_Clear(&tick->view_counts);
-    tick->drawn = false;
+    tick->complete = false;
+    tick->pending = false;
 }
 
 static void M_FreeTick(M_TICK *const tick)
@@ -220,19 +226,6 @@ static void M_BuildPassViews(const M_VIEW_ARRAY *const views)
     }
 }
 
-static void M_Flush(void)
-{
-    M_TICK *const tick = M_Current();
-    if (!m_Frontend.in_tick || tick->batches.count == m_Frontend.flushed) {
-        return;
-    }
-    M_BuildPassViews(&tick->views);
-    m_Frontend.backend->draw(
-        m_Frontend.pass_views.items, tick->batches.items + m_Frontend.flushed,
-        tick->batches.count - m_Frontend.flushed, tick->vertices.items);
-    m_Frontend.flushed = tick->batches.count;
-}
-
 static GFX_PASS_OUTPUT M_ScreenOutput(void)
 {
     return (GFX_PASS_OUTPUT) {
@@ -242,6 +235,91 @@ static GFX_PASS_OUTPUT M_ScreenOutput(void)
         .scale_y = 1.0f,
         .rect = { 0, 0, m_Frontend.width, m_Frontend.height },
     };
+}
+
+static bool M_ReplacesScreen(const M_TICK *const tick)
+{
+    if (!tick->preserve) {
+        return true;
+    }
+    if (tick->batches.count == 0) {
+        return false;
+    }
+    const GFX_BATCH *const first = &tick->batches.items[0];
+    const GFX_VIEW screen = GfxView_Screen();
+    if (first->state.blend != GFX_BLEND_NONE || first->state.alpha_test
+        || first->state.depth_test != GFX_DEPTH_OFF
+        || !M_SameView(&tick->views.items[first->view], &screen)) {
+        return false;
+    }
+    const GFX_VERTEX *const v = tick->vertices.items + first->first;
+    const float width = (float)m_Frontend.width;
+    const float height = (float)m_Frontend.height;
+    return v[0].position.x == 0 && v[0].position.y == 0
+        && v[1].position.x == width && v[1].position.y == 0
+        && v[2].position.x == width && v[2].position.y == height
+        && v[3].position.x == 0 && v[3].position.y == height
+        && v[0].position.z == 0 && v[1].position.z == 0 && v[2].position.z == 0
+        && v[3].position.z == 0;
+}
+
+static void M_DrawPending(M_TICK *const tick)
+{
+    if (!tick->pending) {
+        return;
+    }
+    const GFX_PASS_OUTPUT output = M_ScreenOutput();
+    m_Frontend.backend->begin_pass(
+        GFX_PASS_SCREEN, tick->clear, &output, tick->preserve);
+    M_BuildPassViews(&tick->views);
+    if (tick->batches.count != 0) {
+        m_Frontend.backend->draw(
+            m_Frontend.pass_views.items, tick->batches.items,
+            tick->batches.count, tick->vertices.items);
+    }
+    m_Frontend.backend->end_pass();
+    tick->pending = false;
+}
+
+static void M_PreparePrevious(void)
+{
+    M_TICK *const previous = M_Previous();
+    if (M_ReplacesScreen(M_Current())) {
+        previous->pending = false;
+    } else {
+        M_DrawPending(previous);
+    }
+}
+
+static void M_StartPass(void)
+{
+    if (m_Frontend.pass_started) {
+        return;
+    }
+    M_PreparePrevious();
+    const M_TICK *const tick = M_Current();
+    const GFX_PASS_OUTPUT output = M_ScreenOutput();
+    m_Frontend.backend->begin_pass(
+        GFX_PASS_SCREEN, tick->clear, &output, tick->preserve);
+    m_Frontend.pass_started = true;
+}
+
+static void M_Flush(void)
+{
+    M_TICK *const tick = M_Current();
+    if (!m_Frontend.in_tick) {
+        M_DrawPending(tick);
+        return;
+    }
+    M_StartPass();
+    if (tick->batches.count == m_Frontend.flushed) {
+        return;
+    }
+    M_BuildPassViews(&tick->views);
+    m_Frontend.backend->draw(
+        m_Frontend.pass_views.items, tick->batches.items + m_Frontend.flushed,
+        tick->batches.count - m_Frontend.flushed, tick->vertices.items);
+    m_Frontend.flushed = tick->batches.count;
 }
 
 static void M_AddView(M_TICK *const tick, const GFX_VIEW *const view)
@@ -346,7 +424,7 @@ static void M_BlendViews(const float t)
     Array_Clear(&m_Frontend.pass_views);
     for (int32_t i = 0; i < current->views.count; i++) {
         const GFX_VIEW *const view = &current->views.items[i];
-        const int32_t *const match = view->id != 0 && previous->drawn
+        const int32_t *const match = view->id != 0 && previous->complete
             ? HashMap_Get(&previous->view_ids, current->view_keys.items[i])
             : nullptr;
         const GFX_VIEW blended = match != nullptr
@@ -405,7 +483,7 @@ static void M_BlendVertices(const float t)
     Array_Clear(&m_Frontend.blended);
     Array_AppendSlice(
         &m_Frontend.blended, current->vertices.items, current->vertices.count);
-    if (!previous->drawn) {
+    if (!previous->complete) {
         return;
     }
     for (int32_t i = 0; i < current->quads.count; i++) {
@@ -635,6 +713,9 @@ void GfxTexture_Free(GFX_TEXTURE *const texture)
         Mem_Free(texture);
         return;
     }
+    if (m_Frontend.defer) {
+        M_Flush();
+    }
     texture->next = m_Frontend.freed;
     m_Frontend.freed = texture;
 }
@@ -687,13 +768,15 @@ void Gfx_BeginTick(const GFX_COLOR clear)
     M_ClearTick(tick);
     tick->clear = clear;
     tick->preserve = m_Frontend.preserve;
+    tick->deferred = m_Frontend.defer;
     m_Frontend.in_tick = true;
     m_Frontend.flushed = 0;
+    m_Frontend.pass_started = false;
     const GFX_VIEW screen = GfxView_Screen();
     M_AddView(tick, &screen);
-    const GFX_PASS_OUTPUT output = M_ScreenOutput();
-    m_Frontend.backend->begin_pass(
-        GFX_PASS_SCREEN, clear, &output, tick->preserve);
+    if (!m_Frontend.defer) {
+        M_StartPass();
+    }
 }
 
 void Gfx_SetPersistentScreen(const bool enabled)
@@ -755,10 +838,25 @@ void Gfx_EndTick(void)
     if (!m_Frontend.in_tick) {
         return;
     }
-    M_Flush();
-    m_Frontend.backend->end_pass();
+    if (m_Frontend.defer && !m_Frontend.pass_started) {
+        M_PreparePrevious();
+        M_Current()->pending = true;
+    } else {
+        M_Flush();
+        m_Frontend.backend->end_pass();
+    }
     m_Frontend.in_tick = false;
-    M_Current()->drawn = true;
+    M_Current()->complete = true;
+}
+
+void Gfx_SetDeferredTicks(const bool enabled)
+{
+    if (m_Frontend.defer != enabled) {
+        if (m_Frontend.started) {
+            M_Flush();
+        }
+        m_Frontend.defer = enabled;
+    }
 }
 
 RESULT Gfx_Present(
@@ -768,13 +866,17 @@ RESULT Gfx_Present(
         return OK;
     }
     FAIL_IF(!isfinite(t) || t < 0.0f || t > 1.0f, "Invalid blend factor");
+    FAIL_IF(
+        interpolate && (m_Frontend.defer || M_Current()->deferred),
+        "Deferred ticks require noninterpolated presentation");
     if (m_Frontend.in_tick) {
         Gfx_EndTick();
     }
+    M_DrawPending(M_Current());
     const GFX_PASS_OUTPUT fit =
         GfxOutput_Fit(output, m_Frontend.width, m_Frontend.height);
     const M_TICK *const current = M_Current();
-    if (!current->drawn) {
+    if (!current->complete) {
         m_Frontend.backend->begin_pass(
             GFX_PASS_WINDOW, output->border, &fit, current->preserve);
         m_Frontend.backend->end_pass();
@@ -814,6 +916,9 @@ RESULT Gfx_ReadScreen(const ALLOCATOR *const allocator, IMAGE *const out)
 {
     *out = (IMAGE) {};
     FAIL_IF(!m_Frontend.started, "The renderer is not started");
+    if (m_Frontend.defer) {
+        M_Flush();
+    }
     return m_Frontend.backend->read_pixels(GFX_PASS_SCREEN, allocator, out);
 }
 

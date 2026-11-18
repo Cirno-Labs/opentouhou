@@ -574,3 +574,37 @@ TEST(quads_interpolate_across_the_strip_diagonal)
     M_CheckPixel(&image, 4, 4, (GFX_COLOR) { 112, 223, 32, 255 }, 1);
     Image_Free(&image);
 }
+
+TEST(deferred_frames_preserve_blending_and_captured_textures)
+{
+    REQUIRE_GL();
+    Gfx_SetDeferredTicks(true);
+    Gfx_SetPersistentScreen(true);
+    Gfx_BeginTick(BLACK);
+    M_Rect(&m_Opaque, nullptr, 0, 0, SIZE, SIZE, 0, RED, 1);
+    Gfx_EndTick();
+    Gfx_BeginTick(BLACK);
+    M_Rect(&m_Opaque, nullptr, 0, 0, SIZE, SIZE, 0, BLUE, 1);
+    Gfx_EndTick();
+    GFX_TEXTURE *texture = nullptr;
+    CHECK_OK(GfxTexture_CreateEmpty(SIZE, SIZE, &texture));
+    GfxTexture_CopyFromScreen(texture, (GFX_RECT) { 0, 0, SIZE, SIZE }, 0, 0);
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE alpha = { .blend = GFX_BLEND_ALPHA };
+    M_Rect(
+        &alpha, nullptr, 0, 0, SIZE / 2, SIZE, 0,
+        (GFX_COLOR) { 255, 0, 0, 128 }, 1);
+    IMAGE blended = M_Screen();
+    M_CheckPixel(&blended, 1, 1, (GFX_COLOR) { 128, 0, 127, 255 }, 1);
+    M_CheckPixel(&blended, SIZE - 1, 1, BLUE, 0);
+    Image_Free(&blended);
+    Gfx_BeginTick(BLACK);
+    M_Rect(&m_Opaque, texture, 0, 0, SIZE, SIZE, 0, WHITE, 1);
+    IMAGE copied = M_Screen();
+    M_CheckPixel(&copied, 1, 1, BLUE, 0);
+    M_CheckPixel(&copied, SIZE - 1, 1, BLUE, 0);
+    Image_Free(&copied);
+    GfxTexture_Free(texture);
+    Gfx_SetDeferredTicks(false);
+    Gfx_SetPersistentScreen(false);
+}

@@ -45,6 +45,13 @@ void Gfx_DrawSprite(
 // Finishes the tick's drawing of the logical screen.
 void Gfx_EndTick(void);
 
+// Defers GPU drawing until presentation or readback. Discards an undrawn
+// tick only when the next tick replaces the entire logical screen before
+// reading it. Texture changes flush drawing that still uses those textures.
+// Disabled by default. Does not skip the game's draw callbacks.
+// Requires noninterpolated presentation until a new, nondeferred tick.
+void Gfx_SetDeferredTicks(bool enabled);
+
 // Clears the viewport of the current view mid-tick, in draw order: the
 // colour to color with GFX_CLEAR_COLOR, the depth to 1 with GFX_CLEAR_DEPTH.
 void Gfx_Clear(uint32_t flags, GFX_COLOR color);
