@@ -241,6 +241,21 @@ TEST(depth_less_equal_always_and_off)
     Image_Free(&image);
 }
 
+TEST(nearby_depths_compare_at_sixteen_bit_precision)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE state = {
+        .depth_test = GFX_DEPTH_LESS_EQUAL,
+        .depth_write = true,
+    };
+    M_Rect(&state, nullptr, 0, 0, SIZE, SIZE, 0.500001f, RED, 1.0f);
+    M_Rect(&state, nullptr, 0, 0, SIZE, SIZE, 0.500002f, GREEN, 1.0f);
+    IMAGE image = M_Screen();
+    M_CheckPixel(&image, 4, 4, GREEN, 0);
+    Image_Free(&image);
+}
+
 TEST(fog_mixes_toward_its_colour_by_view_depth)
 {
     REQUIRE_GL();

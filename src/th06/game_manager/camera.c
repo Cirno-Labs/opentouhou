@@ -39,6 +39,14 @@ void GameManager_SetUpFixedCamera(const float extra_far)
         Mat4_PerspectiveFovLH(fov, aspect, 100.0f, 10000.0f + extra_far);
 }
 
+ANM_DRAW GameManager_GetScreenDrawContext(void)
+{
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.view =
+        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
+    return draw;
+}
+
 ANM_DRAW GameManager_GetDrawContext(void)
 {
     ANM_DRAW draw = Anm_ScreenDraw();

@@ -4,6 +4,36 @@
 
 #include <math.h>
 
+TEST(screen_sprites_keep_their_pixels_and_use_viewport_depth)
+{
+    GameManager_Create(&g_GameManager);
+    g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0, 0.5f };
+    GameManager_SetUpFixedCamera(0.0f);
+    const MAT4 world = Mat4_Identity();
+    const ANM_DRAW screen = GameManager_GetScreenDrawContext();
+    const VEC3 player = Vec3_Project(
+        (VEC3) { 224, 96, 0.49f }, &screen.view.viewport,
+        &screen.view.projection, &screen.view.view, &world);
+    CHECK(fabsf(player.x - 224.0f) < 0.0001f);
+    CHECK(fabsf(player.y - 96.0f) < 0.0001f);
+    CHECK(fabsf(player.z - 0.245f) < 0.000001f);
+    CHECK(screen.view.viewport.x == 32.0f);
+    CHECK(screen.view.viewport.width == 384.0f);
+    const ANM_DRAW camera = GameManager_GetDrawContext();
+    const VEC3 enemy = Vec3_Project(
+        (VEC3) { 192, -96, 0.494f }, &camera.view.viewport,
+        &camera.view.projection, &camera.view.view, &world);
+    CHECK(player.z < enemy.z);
+
+    g_GameManager.camera.viewport.min_z = 0.5f;
+    g_GameManager.camera.viewport.max_z = 1.0f;
+    const GFX_VIEW background = GameManager_GetScreenDrawContext().view;
+    const VEC3 back = Vec3_Project(
+        (VEC3) { 224, 96, 0.49f }, &background.viewport, &background.projection,
+        &background.view, &world);
+    CHECK(fabsf(back.z - 0.745f) < 0.000001f);
+}
+
 TEST(create_zeroes_and_places_the_play_area)
 {
     g_GameManager.player.lives = 3;
