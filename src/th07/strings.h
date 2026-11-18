@@ -97,7 +97,45 @@
       "コンティニュー   %6d %6d %6d %6d %6d %6d")                              \
     X(STATS_PRACTICE_LABEL, 0x4965b0,                                          \
       "プラクティス　   %6d %6d %6d %6d %6d %6d")                              \
-    X(STATS_RETRIES_LABEL, 0x496554, "リトライ回数  　 %6d %6d %6d %6d %6d %6d")
+    X(STATS_RETRIES_LABEL, 0x496554,                                           \
+      "リトライ回数  　 %6d %6d %6d %6d %6d %6d")                              \
+    X(HELP_MENU_START, 0x495aa4, "ゲームを開始します")                         \
+    X(HELP_MENU_EXTRA_START, 0x495a84, "エキストラステージを開始します")       \
+    X(HELP_MENU_PRACTICE_START, 0x495a60,                                      \
+      "ステージを選択し、練習を開始します")                                    \
+    X(HELP_MENU_REPLAY, 0x495a48, "リプレイを鑑賞できます")                    \
+    X(HELP_MENU_RESULT, 0x495a18,                                              \
+      "過去のスコアやスペルカードの取得歴を見られます")                        \
+    X(HELP_MENU_MUSIC_ROOM, 0x495a08, "音楽を聴けます")                        \
+    X(HELP_MENU_OPTION, 0x4959f4, "各種設定できます")                          \
+    X(HELP_MENU_QUIT, 0x4959dc, "いろいろと終了します")                        \
+    X(HELP_OPTION_PLAYER, 0x49596c,                                            \
+      "プレイヤーの初期数を変更します。（初期設定　３）")                      \
+    X(HELP_OPTION_GRAPHIC, 0x49592c,                                           \
+      "画面の色数を変更します。３２ＢＩＴだと最も綺麗に表示されます。")        \
+    X(HELP_OPTION_BGM, 0x4958f8,                                               \
+      "ＢＧＭの再生方法を変更します。（初期設定　ＷＡＶ）")                    \
+    X(HELP_OPTION_SOUND, 0x4958d8, "効果音を再生するか選択します")             \
+    X(HELP_OPTION_WINDOW_MODE, 0x4958b0,                                       \
+      "ウィンドウかフルスクリーンか選択します")                                \
+    X(HELP_OPTION_SLOW_MODE, 0x495870,                                         \
+      "弾が多い場面でわざと処理落ちさせます(スコア、リプレイ記録不可)")        \
+    X(HELP_OPTION_RESET, 0x495858, "全て初期設定にします")                     \
+    X(HELP_OPTION_KEY_CONFIG, 0x495834, "パッド操作のボタン配置を変更します")  \
+    X(HELP_OPTION_QUIT, 0x49581c, "おいそれと終了します")                      \
+    X(HELP_KEY_SHOT, 0x4957e8, "ショット、決定ボタンを設定します")             \
+    X(HELP_KEY_BOMB, 0x4957c4, "ボム、キャンセルボタンを設定します")           \
+    X(HELP_KEY_SLOW, 0x4957a8, "低速移動ボタンを設定します")                   \
+    X(HELP_KEY_SKIP, 0x495780, "メッセージスキップボタンを設定します")         \
+    X(HELP_KEY_PAUSE, 0x495764, "ポーズボタンを設定します")                    \
+    X(HELP_KEY_UP, 0x495748, "上移動ボタンを設定します")                       \
+    X(HELP_KEY_DOWN, 0x49572c, "下移動ボタンを設定します")                     \
+    X(HELP_KEY_LEFT, 0x495710, "左移動ボタンを設定します")                     \
+    X(HELP_KEY_RIGHT, 0x4956f4, "右移動ボタンを設定します")                    \
+    X(HELP_KEY_SHOTSLOW, 0x4956c0,                                             \
+      "ショット押しっぱなしで低速移動になるようにします")                      \
+    X(HELP_KEY_RESET, 0x4956ac, "初期設定に戻します")                          \
+    X(HELP_KEY_QUIT, 0x495698, "おおよそ終了します")
 
 #define TH07_STRING_ID(id_, address_, text_) STRING_##id_,
 
