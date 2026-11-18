@@ -461,6 +461,11 @@ bool Shell_IsFullscreen(void)
     return m_Context.settings.fullscreen;
 }
 
+uint64_t Shell_GetWallClock(void)
+{
+    return SDL_GetTicksNS() / 1000000;
+}
+
 void Shell_RequestFullscreen(const bool fullscreen)
 {
     m_Context.requests.fullscreen = fullscreen ? 1 : 0;
