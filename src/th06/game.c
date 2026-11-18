@@ -21,6 +21,7 @@ TH06_INPUT g_Input;
 RESULT Game_Init(void)
 {
     GameTime_Resume();
+    g_AsciiText.highlight_font = true;
     Gfx_SetPersistentScreen(true);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
