@@ -90,7 +90,14 @@ static RESULT M_Init(void)
 static bool M_Tick(const void *const input)
 {
     M_SetDate();
-    const bool running = Game_Tick(input);
+    const CHAIN_RUN warmup = Game_Warmup(input);
+    bool running;
+    if (warmup == CHAIN_RUN_RESET) {
+        Game_Shutdown();
+        running = Result_Log(Game_Init(), LOG_LEVEL_ERROR);
+    } else {
+        running = warmup != CHAIN_RUN_QUIT && Game_Tick(input);
+    }
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_ScanReplays();
     SoundPlayer_Update();

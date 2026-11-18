@@ -29,6 +29,21 @@ RESULT Game_Init(void)
     return AsciiText_Register();
 }
 
+CHAIN_RUN Game_Warmup(const TH07_INPUT *const input)
+{
+    if (Scene_Get() != SCENE_BOOT) {
+        return CHAIN_RUN_CONTINUE;
+    }
+    g_Input = *input;
+    for (int32_t frame = 0; frame < 30; frame++) {
+        const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
+        if (run != CHAIN_RUN_CONTINUE) {
+            return run;
+        }
+    }
+    return CHAIN_RUN_CONTINUE;
+}
+
 bool Game_Tick(const TH07_INPUT *const input)
 {
     g_Input = *input;
