@@ -834,3 +834,35 @@ TEST(gdi_combining_accents_keep_shaped_advances)
     TextFont_Free(font);
     Text_Shutdown();
 }
+
+TEST(fallback_glyphs_follow_the_base_character_size)
+{
+    CHECK(IS_OK(Text_Init()));
+    TEXT_FONT *const font = M_LoadWithCell(220, 80, 28);
+    CHECK(IS_OK(TextFont_LoadDefault(28, &font->fallback)));
+    TEXT_FONT *expected = nullptr;
+    CHECK(IS_OK(TextFont_LoadDefault(24, &expected)));
+    int32_t offset;
+    CHECK(IS_OK(TextFont_SetSizeRounded(font, 28, &offset)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    int32_t width, height, expected_width, expected_height;
+    CHECK(
+        IS_OK(Text_Measure(font->fallback, "十　あ", &style, &width, &height)));
+    CHECK(IS_OK(Text_Measure(
+        expected, "十　あ", &style, &expected_width, &expected_height)));
+    CHECK_EQ_INT(width, expected_width);
+    CHECK_EQ_INT(height, expected_height);
+    CHECK(IS_OK(TextFont_SetSize(font, 35)));
+    CHECK(IS_OK(TextFont_SetSize(expected, 35.0f * 256.0f / 300.0f)));
+    CHECK(
+        IS_OK(Text_Measure(font->fallback, "十　あ", &style, &width, &height)));
+    CHECK(IS_OK(Text_Measure(
+        expected, "十　あ", &style, &expected_width, &expected_height)));
+    CHECK_EQ_INT(width, expected_width);
+    CHECK_EQ_INT(height, expected_height);
+    TextFont_Free(expected);
+    TextFont_Free(font);
+    Text_Shutdown();
+}

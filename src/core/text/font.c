@@ -240,8 +240,8 @@ RESULT TextFont_LoadFamily(
         if (font == nullptr) {
             continue;
         }
-        const RESULT fallback =
-            M_LoadDefault(pixel_height, "MS UI Gothic", &font->fallback);
+        const RESULT fallback = M_LoadDefault(
+            pixel_height * font->cell_scale, "MS UI Gothic", &font->fallback);
         if (!IS_OK(fallback)) {
             TextFont_Free(font);
             return fallback;
@@ -280,7 +280,8 @@ static RESULT M_SetSize(
         MUST(M_UpdateBoldAdvance(font));
     }
     if (font->fallback != nullptr) {
-        MUST(M_SetSize(font->fallback, pixel_height, rounded));
+        MUST(M_SetSize(
+            font->fallback, size / font->fallback->cell_scale, rounded));
     }
     return OK;
 }
