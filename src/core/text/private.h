@@ -9,6 +9,7 @@ struct TEXT_FONT {
     uint8_t *data;
     // The em size for each pixel of cell height.
     float cell_scale;
+    float ascent_scale;
     void *raster_face;
     bool native_bold;
     int32_t bold_advance_adjust;
