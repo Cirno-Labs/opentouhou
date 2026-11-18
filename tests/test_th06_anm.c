@@ -1039,77 +1039,52 @@ TEST(base_tsa_world_sprites_take_their_size_in_pixels)
     Mem_Free(directory);
 }
 
-// Draws text as a text row of the bundled font does when it scales a
-// region of surface_width x surface_height pixels at the doubled size to
-// width x 16 pixels, and returns the row.
-static IMAGE M_ScaleRow(
-    const char *const text, const int32_t width, const int32_t surface_width,
-    const int32_t surface_height)
-{
-    TEXT_FONT *font;
-    CHECK(IS_OK(TextFont_LoadDefault(30.0f, &font)));
-    TEXT_STYLE style = TextStyle_Default();
-    style.face = TEXT_FACE_BOLD;
-    style.color = (GFX_COLOR) { 0xee, 0x22, 0x11, 255 };
-    style.shadow_x = 3;
-    style.shadow_y = 2;
-    IMAGE glyphs;
-    CHECK(IS_OK(
-        Text_RenderMarkup(font, text, &style, &g_HeapAllocator, &glyphs)));
-    TextFont_Free(font);
-    IMAGE row = Image_Create(surface_width, surface_height, &g_HeapAllocator);
-    for (int32_t y = 0; y < glyphs.height && y < row.height; y++) {
-        memcpy(
-            row.pixels + (size_t)y * (size_t)row.width * 4,
-            glyphs.pixels + (size_t)y * (size_t)glyphs.width * 4,
-            (size_t)(glyphs.width < row.width ? glyphs.width : row.width) * 4);
-    }
-    Image_Free(&glyphs);
-    Image_Quantize(&row, IMAGE_DEPTH_A1R5G5B5);
-    Image_Resize(&row, width, 16);
-    return row;
-}
-
-// Draws "Night Sign" in a row of width 200 at y 16 and returns whether the
-// row holds the pixels of M_ScaleRow for the given region.
-static bool M_DrawsScaledRow(
-    const int32_t surface_width, const int32_t surface_height)
+static void M_CheckTextSurfaceGradient(void)
 {
     CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
     CHECK(IS_OK(Anm_CreateTexture(100, 256, 64, ANM_TEXTURE_RGBA8)));
-    const ANM_SPRITE sprite = {
-        .slot = 100,
-        .texture_width = 256,
-        .texture_height = 64,
-        .y0 = 16,
-        .x1 = 200,
-        .width = 200,
-    };
-    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
-    const char *const text = "Night Sign";
-    CHECK(IS_OK(Anm_RenderText(&vm, 0x001122ee, UINT32_MAX, "%s", text)));
-    IMAGE expected = M_ScaleRow(text, 200, surface_width, surface_height);
+    CHECK(IS_OK(Anm_RenderTextToTextureIndex(
+        100, 0, 16, 256, 15, 0xffffff, UINT32_MAX, " ")));
     const IMAGE *const image = AnmTexture_GetImage(100);
-    bool same = true;
+    const uint8_t *const top = image->pixels + (size_t)16 * 256 * 4;
+    const uint8_t *const bottom = image->pixels + (size_t)31 * 256 * 4;
+    CHECK(top[0] > bottom[0]);
+    CHECK(bottom[2] > bottom[0]);
+    CHECK(top[3] == 0 && bottom[3] == 0);
+    CHECK_EQ_INT(M_FirstTextPixel(image, 0), -1);
+    CHECK_EQ_INT(M_FirstTextPixel(image, 16), -1);
+
+    CHECK(IS_OK(Anm_RenderTextToTextureIndex(
+        100, 0, 16, 256, 15, 0xffffff, UINT32_MAX, "■■■■■■")));
+    int32_t upper = 0;
+    int32_t lower = 0;
+    bool blue = false;
     for (int32_t y = 0; y < 16; y++) {
-        same = same
-            && memcmp(
-                   image->pixels + ((size_t)(16 + y) * 256) * 4,
-                   expected.pixels + (size_t)y * 200 * 4, 200 * 4)
-                == 0;
+        for (int32_t x = 0; x < 256; x++) {
+            const uint8_t *const pixel =
+                image->pixels + ((size_t)(y + 16) * 256 + (size_t)x) * 4;
+            if (pixel[3] >= 250) {
+                int32_t *const brightest = y < 8 ? &upper : &lower;
+                if (pixel[0] > *brightest) {
+                    *brightest = pixel[0];
+                }
+                blue |= pixel[2] > pixel[0];
+            }
+        }
     }
-    Image_Free(&expected);
+    CHECK(upper > lower + 16);
+    CHECK(lower > 0);
+    CHECK(blue);
     Anm_ReleaseTexture(100);
     Anm_ShutdownText();
-    return same;
 }
 
-TEST(text_rows_scale_the_doubled_row_less_two_pixels)
+TEST(text_shades_glyphs_and_transparent_rgb_before_scaling)
 {
-    CHECK(M_DrawsScaledRow(398, 28));
+    M_CheckTextSurfaceGradient();
 }
 
-TEST(base_tsa_text_rows_scale_twice_the_row_by_32_pixels)
+TEST(base_tsa_keeps_the_gdi_text_gradient)
 {
     char *const directory = TestDir_Prepare("anm_text_base_tsa");
     char *const patches = TestDir_Join(directory, "patches");
@@ -1119,7 +1094,7 @@ TEST(base_tsa_text_rows_scale_twice_the_row_by_32_pixels)
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
         LOG_LEVEL_ERROR));
     Translation_Init(stack, &g_TranslationGame);
-    CHECK(M_DrawsScaledRow(400, 32));
+    M_CheckTextSurfaceGradient();
     Translation_Shutdown();
     Patch_CloseStack(stack);
     Mem_Free(patches);

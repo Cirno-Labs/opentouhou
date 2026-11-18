@@ -23,7 +23,39 @@ static TEXT_STYLE M_Style(void)
 {
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
     return style;
+}
+
+static uint8_t M_Expand5(const int32_t value)
+{
+    return (uint8_t)((value << 3) | (value >> 2));
+}
+
+// Shades a span in memory order, including the RGB of transparent pixels.
+static void M_Shade(IMAGE *const surface, const int32_t count)
+{
+    for (int32_t i = 0; i < surface->width * surface->height; i++) {
+        uint8_t *const pixel = surface->pixels + (size_t)i * 4;
+        if (i >= count) {
+            pixel[3] = 0;
+            continue;
+        }
+        int32_t r = pixel[0] >> 3;
+        int32_t g = pixel[1] >> 3;
+        int32_t b = pixel[2] >> 3;
+        if (pixel[3] != 0) {
+            r -= r * i / count / 2;
+            g -= g * i / count / 2;
+            b -= b * i / count / 4;
+        } else {
+            r = g = 31 - i * 31 / count / 2;
+            b = 31 - i * 31 / count / 4;
+        }
+        pixel[0] = M_Expand5(r);
+        pixel[1] = M_Expand5(g);
+        pixel[2] = M_Expand5(b);
+    }
 }
 
 // Measures text as a row of font_height draws it, at the doubled size.
@@ -35,7 +67,8 @@ static RESULT M_MeasureRow(
         return OK;
     }
     FAIL_IF(font_height < 2 || font_height > 255, "Invalid ANM font height");
-    MUST(TextFont_SetSize(m_Font, (float)font_height * 2.0f));
+    int32_t offset_y;
+    MUST(TextFont_SetSizeRounded(m_Font, (float)font_height * 2.0f, &offset_y));
     const TEXT_STYLE style = M_Style();
     int32_t height;
     MUST(Text_MeasureMarkup(m_Font, text, &style, width, &height));
@@ -129,39 +162,45 @@ RESULT Anm_RenderTextToTextureIndex(
         "Text row exceeds the texture");
     const int32_t height = font_height > 0 ? font_height : 15;
     FAIL_IF(height < 2 || height > 255, "Invalid ANM font height");
-    MUST(TextFont_SetSize(m_Font, (float)height * 2.0f));
-    TEXT_STYLE style = M_Style();
-    style.color = M_Color(color);
-    style.shadow = shadow == UINT32_MAX ? (GFX_COLOR) {} : M_Color(shadow);
-    style.shadow_x = 3;
-    style.shadow_y = 2;
+    const bool halved = Translation_HasBaseTsa();
+    const int32_t surface_width = halved ? 1024 : 640;
+    const int32_t source_width = halved ? width * 2 : width * 2 - 2;
+    const int32_t source_height = halved ? 32 : height * 2 - 2;
+    FAIL_IF(
+        source_width > surface_width || source_height > 64,
+        "Text row exceeds the GDI surface");
+    int32_t offset_y;
+    MUST(TextFont_SetSizeRounded(m_Font, (float)height * 2.0f, &offset_y));
+    const TEXT_STYLE style = M_Style();
     IMAGE glyphs;
     MUST(Text_RenderMarkup(m_Font, text, &style, &g_HeapAllocator, &glyphs));
-    const bool halved = Translation_HasBaseTsa();
-    IMAGE surface = Image_Create(
-        halved ? width * 2 : width * 2 - 2, halved ? 32 : height * 2 - 2,
-        &g_HeapAllocator);
-    for (int32_t row = 0; row < glyphs.height && row < surface.height; row++) {
-        for (int32_t column = 0; column < glyphs.width; column++) {
-            const int32_t target = column + x * 2;
-            if (target >= 0 && target < surface.width) {
-                memcpy(
-                    surface.pixels
-                        + ((size_t)row * (size_t)surface.width + (size_t)target)
-                            * 4,
-                    glyphs.pixels
-                        + ((size_t)row * (size_t)glyphs.width + (size_t)column)
-                            * 4,
-                    4);
-            }
-        }
+    IMAGE surface = Image_Create(surface_width, 64, &g_HeapAllocator);
+    if (shadow != UINT32_MAX) {
+        Text_StampGdi(
+            &surface, &glyphs, x * 2 + 3, offset_y + 2, M_Color(shadow));
     }
+    Text_StampGdi(&surface, &glyphs, x * 2, offset_y, M_Color(color));
     Image_Free(&glyphs);
-    Image_Quantize(&surface, IMAGE_DEPTH_A1R5G5B5);
-    Image_Resize(&surface, width, 16);
-    const RESULT result =
-        Anm_UpdateTexture(texture, (GFX_RECT) { 0, y, width, 16 }, &surface);
+    const int64_t span =
+        (int64_t)(halved ? surface_width : width * 2) * (height * 2 + 6);
+    M_Shade(
+        &surface,
+        span < surface_width * 64 ? (int32_t)span : surface_width * 64);
+    IMAGE source;
+    const RESULT cropping = Image_Crop(
+        &surface, 0, 0, source_width, source_height, &g_HeapAllocator, &source);
     Image_Free(&surface);
+    MUST(cropping);
+    if (width <= source.width && 16 <= source.height) {
+        Image_DownsampleTriangle(
+            &source, width, 16, IMAGE_DEPTH_A1R5G5B5,
+            Anm_GetTextureDepth(texture));
+    } else {
+        Image_Resize(&source, width, 16);
+    }
+    const RESULT result =
+        Anm_UpdateTexture(texture, (GFX_RECT) { 0, y, width, 16 }, &source);
+    Image_Free(&source);
     return result;
 }
 
