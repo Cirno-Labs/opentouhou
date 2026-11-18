@@ -14,6 +14,7 @@
 #include "th07/game_manager.h"
 
 #include "core/base/memory.h"
+#include "core/base/utils.h"
 #include "core/io/file.h"
 
 #include <string.h>
@@ -73,6 +74,79 @@ static void M_StartGameplay(const int32_t stage)
     Scene_Request(SCENE_GAMEPLAY);
     Game_Tick(&m_NoInput);
     g_GameManager.run.stage = stage;
+}
+
+typedef struct {
+    int32_t calcs;
+    int32_t draws;
+    int32_t stop_at;
+    CHAIN_STATUS status;
+} M_WARMUP;
+
+static CHAIN_STATUS M_WarmupCalc(void *const arg)
+{
+    M_WARMUP *const warmup = arg;
+    warmup->calcs++;
+    CHECK(g_Input.shoot);
+    return warmup->calcs == warmup->stop_at ? warmup->status : CHAIN_CONTINUE;
+}
+
+static CHAIN_STATUS M_WarmupDraw(void *const arg)
+{
+    M_WARMUP *const warmup = arg;
+    warmup->draws++;
+    return CHAIN_CONTINUE;
+}
+
+TEST(warmup_updates_thirty_times_without_drawing)
+{
+    M_Setup();
+    M_WARMUP warmup = {};
+    CHAIN_ELEM calc, draw;
+    Chain_InitElem(&calc, M_WarmupCalc, &warmup);
+    Chain_InitElem(&draw, M_WarmupDraw, &warmup);
+    CHECK(Result_Log(Chain_AddCalc(&g_Chain, &calc, 1), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddDraw(&g_Chain, &draw, 1), LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(Game_Warmup(&m_Shoot), CHAIN_RUN_CONTINUE);
+    CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
+    CHECK_EQ_INT(warmup.calcs, 30);
+    CHECK_EQ_INT(warmup.draws, 0);
+    CHECK_EQ_INT(Game_Warmup(&m_Shoot), CHAIN_RUN_CONTINUE);
+    CHECK_EQ_INT(warmup.calcs, 30);
+    CHECK(Game_Tick(&m_Shoot));
+    CHECK_EQ_INT(warmup.calcs, 31);
+    CHECK_EQ_INT(warmup.draws, 1);
+    Game_Shutdown();
+}
+
+TEST(warmup_does_not_run_after_an_ordinary_boot_tick)
+{
+    M_Setup();
+    M_WARMUP warmup = {};
+    CHAIN_ELEM calc;
+    Chain_InitElem(&calc, M_WarmupCalc, &warmup);
+    CHECK(Result_Log(Chain_AddCalc(&g_Chain, &calc, 1), LOG_LEVEL_ERROR));
+    CHECK(Game_Tick(&m_Shoot));
+    CHECK_EQ_INT(warmup.calcs, 1);
+    CHECK_EQ_INT(Game_Warmup(&m_Shoot), CHAIN_RUN_CONTINUE);
+    CHECK_EQ_INT(warmup.calcs, 1);
+    Game_Shutdown();
+}
+
+TEST(warmup_stops_for_quit_and_reset)
+{
+    const CHAIN_STATUS status[] = { CHAIN_QUIT, CHAIN_RESET };
+    const CHAIN_RUN expected[] = { CHAIN_RUN_QUIT, CHAIN_RUN_RESET };
+    for (size_t i = 0; i < ARRAY_SIZE(status); i++) {
+        M_Setup();
+        M_WARMUP warmup = { .stop_at = 4, .status = status[i] };
+        CHAIN_ELEM calc;
+        Chain_InitElem(&calc, M_WarmupCalc, &warmup);
+        CHECK(Result_Log(Chain_AddCalc(&g_Chain, &calc, 1), LOG_LEVEL_ERROR));
+        CHECK_EQ_INT(Game_Warmup(&m_Shoot), expected[i]);
+        CHECK_EQ_INT(warmup.calcs, 4);
+        Game_Shutdown();
+    }
 }
 
 TEST(boot_goes_to_title)
