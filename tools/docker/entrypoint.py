@@ -33,6 +33,7 @@ from pathlib import Path
 from shared.build import compile_programs, run_tests
 from shared.othpatch_release import pinned_othpatch
 from shared.package_docs import package_documents
+from shared.package_files import copy_package_files, package_files
 from shared.versioning import (
     games,
     generate_package_name,
@@ -119,6 +120,7 @@ def package_linux(
     game: str, exe: Path, othpatch: Path, output: Path, version: str
 ) -> None:
     documents = package_documents(game, REPO_DIR)
+    extra_files = package_files(game, REPO_DIR)
     with tempfile.TemporaryDirectory() as tmp:
         app_dir = Path(tmp) / f"{game}.AppDir"
         (app_dir / "usr/bin").mkdir(parents=True)
@@ -128,6 +130,7 @@ def package_linux(
         shutil.copy2(exe, app_dir / "usr/bin" / product_name(game))
         for name, data in documents.items():
             (doc_dir / name).write_bytes(data)
+        copy_package_files(extra_files, doc_dir)
         desktop = (PACKAGING_DIR / game / "game.desktop").read_text()
         (app_dir / f"{game}.desktop").write_text(
             desktop.rstrip("\n") + f"\nX-AppImage-Version={version}\n"
@@ -151,6 +154,7 @@ def package_linux(
             [
                 (Path(tmp) / "app.AppImage", f"{product_name(game)}.AppImage"),
                 (othpatch, "othpatch"),
+                *extra_files,
             ],
             documents,
         )
@@ -158,9 +162,11 @@ def package_linux(
 
 def package_win(game: str, exe: Path, othpatch: Path, output: Path) -> None:
     documents = package_documents(game, REPO_DIR)
+    extra_files = package_files(game, REPO_DIR)
     files = [
         (exe, f"{product_name(game)}.exe"),
         (othpatch, "othpatch.exe"),
+        *extra_files,
     ]
     write_zip(output, files, documents)
 

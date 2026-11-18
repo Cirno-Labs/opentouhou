@@ -139,7 +139,9 @@ This writes one zip per game to `build/packages/`:
 Each zip also holds othpatch, o<game>_readme.txt and
 o<game>_licenses.txt. The documents are inside the bundle on macOS.
 `tools/packaging/<game>/` holds the readme, icons and desktop entry of
-a game's packages. No package contains a file of the
+a game's packages. Its optional `files.json` lists more files to ship,
+as `[source in the repository, path in the package]` pairs, which go
+next to the documents. No package contains a file of the
 original game.
 
 The packages ship the othpatch that `src/<game>/othpatch.txt` names.
