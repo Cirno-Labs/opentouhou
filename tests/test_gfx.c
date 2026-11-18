@@ -95,7 +95,7 @@ static void M_FreeTexture(void *const handle)
 
 static void M_BeginPass(
     const GFX_PASS pass, const GFX_COLOR clear,
-    const GFX_PASS_OUTPUT *const output)
+    const GFX_PASS_OUTPUT *const output, const bool preserve)
 {
     M_Record(
         pass == GFX_PASS_SCREEN ? EVENT_BEGIN_SCREEN : EVENT_BEGIN_WINDOW, 0);

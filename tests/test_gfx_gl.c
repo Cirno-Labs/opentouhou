@@ -298,6 +298,30 @@ TEST(fog_is_clamped_after_interpolation)
     Image_Free(&image);
 }
 
+TEST(persistent_screens_keep_colour_and_clear_depth_in_both_presentations)
+{
+    REQUIRE_GL();
+    Gfx_BeginTick(BLACK);
+    const GFX_STATE state = { .depth_test = GFX_DEPTH_LESS_EQUAL,
+                              .depth_write = true };
+    M_Rect(&state, nullptr, 0, 0, SIZE, SIZE, 0.1f, RED, 1.0f);
+    Gfx_EndTick();
+    Gfx_SetPersistentScreen(true);
+    Gfx_BeginTick(BLUE);
+    M_Rect(&state, nullptr, 0, 0, 4, SIZE, 0.7f, GREEN, 1.0f);
+    IMAGE screen = M_Screen();
+    M_CheckPixel(&screen, 1, 1, GREEN, 0);
+    M_CheckPixel(&screen, 6, 1, RED, 0);
+    Image_Free(&screen);
+    for (int32_t interpolate = 0; interpolate <= 1; interpolate++) {
+        IMAGE output = M_Output(interpolate != 0, 16);
+        M_CheckPixel(&output, 2, 2, GREEN, 0);
+        M_CheckPixel(&output, 12, 2, RED, 0);
+        Image_Free(&output);
+    }
+    Gfx_SetPersistentScreen(false);
+}
+
 TEST(repeat_wraps_and_clamp_stretches_the_edge)
 {
     REQUIRE_GL();

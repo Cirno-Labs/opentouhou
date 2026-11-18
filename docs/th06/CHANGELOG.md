@@ -23,6 +23,8 @@
 - Fixed overlapping sprites drawing in the wrong order, and items, the
   player, bombs and spell card backgrounds showing outside the
   playfield.
+- Fixed background fades starting from black instead of from the
+  previous frame.
 
 ## 1.0.1 (2026-11-15)
 
