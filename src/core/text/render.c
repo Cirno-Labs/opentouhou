@@ -48,10 +48,7 @@ static RESULT M_Measure(
     }
     M_SetFace(font, style->face);
     int natural_width, natural_height;
-    FAIL_IF(
-        !TTF_GetStringSize(
-            font->font, text, size, &natural_width, &natural_height),
-        "Cannot measure text: %s", SDL_GetError());
+    MUST(TextGlyphs_Measure(font, text, size, &natural_width, &natural_height));
     const double scaled_width =
         ceil(natural_width * (double)style->width_scale);
     FAIL_IF(
@@ -323,16 +320,8 @@ static RESULT M_DrawPieces(
             continue;
         }
         M_SetFace(font, piece->face);
-        SDL_Surface *const rendered = TTF_RenderText_Blended(
-            font->font, piece->text, piece->size,
-            (SDL_Color) { 255, 255, 255, 255 });
-        FAIL_IF(rendered == nullptr, "Cannot render text: %s", SDL_GetError());
-        SDL_Surface *const surface =
-            SDL_ConvertSurface(rendered, SDL_PIXELFORMAT_RGBA32);
-        SDL_DestroySurface(rendered);
-        FAIL_IF(
-            surface == nullptr, "Cannot convert text pixels: %s",
-            SDL_GetError());
+        SDL_Surface *surface;
+        MUST(TextGlyphs_Render(font, piece->text, piece->size, &surface));
         const double width = ceil(surface->w * (double)style->width_scale);
         if (width <= INT32_MAX) {
             M_Composite(image, surface, (int32_t)width, x + piece->x, y, color);
@@ -399,14 +388,8 @@ RESULT Text_Render(
     if (width == 0 || height == 0) {
         return OK;
     }
-    SDL_Surface *const rendered = TTF_RenderText_Blended(
-        font->font, text, strlen(text), (SDL_Color) { 255, 255, 255, 255 });
-    FAIL_IF(rendered == nullptr, "Cannot render text: %s", SDL_GetError());
-    SDL_Surface *const surface =
-        SDL_ConvertSurface(rendered, SDL_PIXELFORMAT_RGBA32);
-    SDL_DestroySurface(rendered);
-    FAIL_IF(
-        surface == nullptr, "Cannot convert text pixels: %s", SDL_GetError());
+    SDL_Surface *surface;
+    MUST(TextGlyphs_Render(font, text, strlen(text), &surface));
     const bool shadow = style->shadow.alpha != 0;
     const int32_t shadow_x = shadow ? style->shadow_x : 0;
     const int32_t shadow_y = shadow ? style->shadow_y : 0;
