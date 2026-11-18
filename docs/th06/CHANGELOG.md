@@ -29,6 +29,8 @@
   sitting half a pixel off.
 - Fixed enemies flashing white when player shots hit them, and sprites
   sampled without the original's smoothing.
+- Fixed orbiting boss effects in dark, saturated colours instead of the
+  original's pale tints.
 
 ## 1.0.1 (2026-11-15)
 
