@@ -41,6 +41,7 @@ typedef struct {
     ASCII_STRING strings[ASCII_STRING_COUNT];
     int32_t string_count;
     char frame_rate[32];
+    bool hide_frame_rate;
     uint32_t color;
     float scale_x, scale_y;
     bool in_arena;

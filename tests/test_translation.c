@@ -14,7 +14,8 @@
 #define TEST_STRINGS(X)                                                        \
     X(SONG_NAME_FORMAT, 0x401000, "@%s")                                       \
     X(BOMB_NAME, 0x402000, "Bomb Name")                                        \
-    X(UNKNOWN_SPELL_CARD, 0, "？？？？？")
+    X(UNKNOWN_SPELL_CARD, 0, "？？？？？")                                     \
+    X(CLEAR_LABEL, 0, "(C)")
 
 #define M_STRING_ID(id_, address_, text_) STRING_##id_,
 #define M_DEFAULT(id_, address_, text_) [STRING_##id_] = text_,
@@ -27,6 +28,9 @@ typedef enum {
 static const char *g_Strings[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
 static const char *const m_Defaults[STRING_COUNT] = { TEST_STRINGS(M_DEFAULT) };
 static const uint32_t m_Addresses[STRING_COUNT] = { TEST_STRINGS(M_ADDRESS) };
+static const char *const m_StringKeys[STRING_COUNT] = {
+    [STRING_CLEAR_LABEL] = "game clear label",
+};
 
 static const TRANSLATION_GAME m_Game = {
     .id = "game",
@@ -34,6 +38,7 @@ static const TRANSLATION_GAME m_Game = {
     .strings = g_Strings,
     .defaults = m_Defaults,
     .addresses = m_Addresses,
+    .string_keys = m_StringKeys,
     .string_count = STRING_COUNT,
     .spell_count = 4,
     .stage_count = 2,
@@ -71,6 +76,18 @@ static void M_End(void)
     Translation_Shutdown();
     Patch_CloseStack(m_Stack);
     Mem_Free(m_Directory);
+}
+
+TEST(named_patch_strings_do_not_need_a_retail_address)
+{
+    const char *const files[] = {
+        "thpatch/lang/stringdefs.js",
+        "{'game clear label': '(Clear)'}",
+    };
+    M_Begin("named_string", files, 2);
+    CHECK_EQ_STR(g_Strings[STRING_CLEAR_LABEL], "(Clear)");
+    M_End();
+    CHECK_EQ_STR(g_Strings[STRING_CLEAR_LABEL], "(C)");
 }
 
 TEST(exe_strings_take_their_translation_by_address)

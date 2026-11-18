@@ -438,6 +438,18 @@ TEST(frame_rate_keeps_its_style_and_shows_replay_speed)
     g_GameManager.mode.replay_fps_warning = true;
     M_Draw();
     CHECK_EQ_INT(M_Color(8), COLOR_ARGB(0xff, 0xff, 0x40, 0x40));
+    g_AsciiText.hide_frame_rate = true;
+    AsciiText_Initialize();
+    CHECK(g_AsciiText.hide_frame_rate);
+    AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "A");
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    CHECK(M_X(0) == 10.0f && M_Y(0) == 20.0f);
+    g_AsciiText.hide_frame_rate = false;
+    Gfx_BeginTick((GFX_COLOR) {});
+    M_Draw();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 10);
     g_AsciiText.frame_rate[0] = '\0';
     g_AsciiText.replay_rate[0] = '\0';
     g_GameManager.mode.in_replay = false;

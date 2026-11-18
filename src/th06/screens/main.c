@@ -407,7 +407,7 @@ static void M_StartScripts(
         vm->shown = false;
         if (colored) {
             vm->color_op = true;
-            vm->color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
+            vm->color = COLOR_WHITE;
             vm->pos_offset = (VEC3) {};
         }
         vm->base_sprite = vm->sprite;
@@ -842,11 +842,11 @@ static void M_UpdateDifficulty(M_MENU *const menu)
         M_MoveCursor(menu, 4);
         for (int32_t i = 0; i < 4; i++) {
             if (i != menu->cursor) {
-                entries[i].color = COLOR_ARGB(0x60, 0x00, 0x00, 0x00);
+                entries[i].color = COLOR_ARGB(0x60, 0xff, 0xff, 0xff);
                 entries[i].pos_offset = (VEC3) {};
                 entries[i].fade_time = 0;
             } else {
-                entries[i].color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
+                entries[i].color = COLOR_WHITE;
                 entries[i].pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
             }
         }
@@ -855,7 +855,7 @@ static void M_UpdateDifficulty(M_MENU *const menu)
         for (int32_t i = 0; i < 4; i++) {
             entries[i].visible = false;
         }
-        entries[4].color = COLOR_ARGB(0xff, 0x00, 0x00, 0x00);
+        entries[4].color = COLOR_WHITE;
         entries[4].pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
     }
     if (M_Pressed(M_CANCEL)) {
@@ -1006,10 +1006,10 @@ static CHAIN_STATUS M_UpdateShot(M_MENU *const menu)
         vm->color_op = true;
         vm->shown = true;
         if (i != menu->cursor) {
-            vm->color = COLOR_ARGB(0xa0, 0x00, 0x00, 0x00);
+            vm->color = COLOR_ARGB(0xa0, 0xd0, 0xd0, 0xd0);
             vm->pos_offset = (VEC3) {};
         } else {
-            vm->color = COLOR_ARGB(0xff, 0x20, 0x20, 0x20);
+            vm->color = COLOR_WHITE;
             vm->pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
         }
     }

@@ -594,10 +594,10 @@ static void M_HighlightMenu(M_SCREEN *const screen)
     for (int32_t i = 0; i <= 6; i++) {
         ANM_VM *const sprite = &screen->sprites[1 + i];
         if (i == screen->cursor) {
-            sprite->color = COLOR_ARGB(0xff, 0x50, 0x50, 0x50);
+            sprite->color = COLOR_WHITE;
             sprite->pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         } else {
-            sprite->color = COLOR_ARGB(0xb0, 0x00, 0x00, 0x00);
+            sprite->color = COLOR_ARGB(0xb0, 0xff, 0xff, 0xff);
             sprite->pos_offset = (VEC3) {};
         }
     }
@@ -609,7 +609,6 @@ static void M_OpenMenu(M_SCREEN *const screen)
         M_Interrupt(screen, 1);
         for (int32_t i = 0; i < M_SPRITE_COUNT; i++) {
             screen->sprites[i].color_op = true;
-            screen->sprites[i].color &= 0xff000000;
         }
         M_HighlightMenu(screen);
     }
@@ -849,6 +848,22 @@ static void M_AddEntry(VEC3 pos, const HIGH_SCORE *const entry)
     char name[9];
     memcpy(name, entry->name, sizeof(name) - 1);
     name[8] = 0;
+    if (Translation_HasBaseTsa()) {
+        AsciiText_AddString(pos, name);
+        const float scale = g_AsciiText.scale_x;
+        pos.x += 9.0f * (14.0f * scale);
+        g_AsciiText.scale_x = 0.9f;
+        AsciiText_AddFormat(pos, "%10d", (int32_t)entry->score);
+        pos.x += 10.0f * (14.0f * g_AsciiText.scale_x);
+        g_AsciiText.scale_x = scale;
+        if (entry->stage >= 8) {
+            AsciiText_AddString(pos, g_Strings[STRING_RESULT_CLEAR_LABEL]);
+        } else {
+            AsciiText_AddFormat(
+                pos, "(%d)", entry->stage == 7 ? 1 : entry->stage % 10);
+        }
+        return;
+    }
     if (entry->stage <= 6) {
         AsciiText_AddFormat(
             pos, g_Strings[STRING_RESULT_SCORE], name, entry->score,

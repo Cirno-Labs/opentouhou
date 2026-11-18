@@ -8,6 +8,7 @@
 #include "th06_data.h"
 
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -26,6 +27,8 @@
 CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
+
+ASCII_TEXT g_AsciiText;
 
 static char *m_Directory;
 static SCENE m_Requested;
@@ -251,9 +254,11 @@ TEST(the_clear_records_99_with_and_without_continues)
     g_GameManager.run.shot_type = 1;
     g_GameManager.run.difficulty = 2;
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
+    CHECK(g_AsciiText.hide_frame_rate);
     CHECK_EQ_INT(g_GameManager.records.clears[3].without_continues[2], 99);
     CHECK_EQ_INT(g_GameManager.records.clears[3].with_continues[2], 99);
     Chain_Release(&g_Chain);
+    CHECK(!g_AsciiText.hide_frame_rate);
     Chain_Init(&g_Chain);
     g_GameManager.stats.continues_used = 1;
     g_GameManager.run.difficulty = 3;
