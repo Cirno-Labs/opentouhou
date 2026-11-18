@@ -138,7 +138,8 @@ static RESULT M_Start(
     FAIL_IF(state->window == nullptr, "%s", SDL_GetError());
     state->context = SDL_GL_CreateContext(state->window);
     FAIL_IF(state->context == nullptr, "%s", SDL_GetError());
-    SDL_SetWindowPosition(state->window, 0, 0);
+    FAIL_IF(!SDL_SetWindowPosition(state->window, 0, 0), "%s", SDL_GetError());
+    FAIL_IF(!SDL_SyncWindow(state->window), "%s", SDL_GetError());
     SDL_GL_SetSwapInterval(0);
     MUST(Gfx_Init(state->window, 640, 480));
     state->gfx_started = true;
