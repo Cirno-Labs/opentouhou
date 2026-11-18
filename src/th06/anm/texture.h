@@ -30,6 +30,9 @@ void Anm_ReleaseTexture(int32_t slot);
 // Returns the texture without transferring ownership.
 GFX_TEXTURE *Anm_GetTexture(int32_t slot);
 
+// Returns the loaded texture's channel depth.
+IMAGE_DEPTH Anm_GetTextureDepth(int32_t slot);
+
 // Replaces a texture rectangle with pixels quantized to its loaded format.
 RESULT Anm_UpdateTexture(int32_t slot, GFX_RECT rectangle, const IMAGE *image);
 

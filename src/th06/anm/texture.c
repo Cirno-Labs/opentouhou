@@ -137,6 +137,12 @@ GFX_TEXTURE *Anm_GetTexture(const int32_t slot)
     return m_Textures[slot].texture;
 }
 
+IMAGE_DEPTH Anm_GetTextureDepth(const int32_t slot)
+{
+    ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
+    return M_Depth(m_Textures[slot].format);
+}
+
 RESULT Anm_UpdateTexture(
     const int32_t slot, const GFX_RECT rectangle, const IMAGE *const image)
 {
