@@ -14,6 +14,7 @@
 - Fixed the size, shape, shading, sharpness and placement of text in
   spell names, dialogue, translator notes and Japanese stage and song
   titles.
+- Fixed transparency in translated textures.
 - Fixed the alignment of translated stage labels, bonus notices and
   spell card bonus labels.
 

@@ -5,6 +5,7 @@
 #include "core/json/types.h"
 #include "core/patch/stack.h"
 #include "core/vfs/types.h"
+#include "core/io/reader.h"
 
 // Reads the files of a patch stack. A game path maps to a file in the game
 // directory of each patch as the stack's PATCH_LAYOUT says. A later patch
@@ -19,6 +20,14 @@
 // source.
 VFS_SOURCE *Patch_CreateSource(
     const PATCH_STACK *stack, const ALLOCATOR *allocator);
+
+// Visits each replacement of path in patch order, with the plain file
+// before the build-specific file. Opens a reader for each visit and
+// closes it afterwards. Stops and reports the first open or visit failure.
+// A missing path or nullptr stack has no visits.
+RESULT Patch_VisitFiles(
+    const PATCH_STACK *stack, const char *path,
+    RESULT (*visit)(void *user, READER *reader), void *user);
 
 // Selects the directory of a patch that a JSON file is in.
 typedef enum {
