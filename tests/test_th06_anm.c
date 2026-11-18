@@ -2,6 +2,7 @@
 #include "th06/anm/private.h"
 
 #include "th06/files.h"
+#include "th06/time.h"
 #include "stg/translation.h"
 #include "th06/strings.h"
 
@@ -1272,4 +1273,50 @@ TEST(a_patch_keeps_black_pixels_with_partial_alpha)
     M_Teardown(directory);
     Patch_CloseStack(stack);
     Mem_Free(patches);
+}
+
+TEST(title_initialization_runs_commands_without_advancing_animation)
+{
+    ANM_BUILDER builder;
+    const int32_t script = M_StartBuilder(&builder, 0);
+    uint32_t speed[2];
+    memcpy(&speed[0], &(float) { 0.5f }, 4);
+    memcpy(&speed[1], &(float) { 1.0f }, 4);
+    AnmBuilder_Instr(&builder, script, 0, 11, speed, 2);
+    const uint32_t fade[2] = { 0, 4 };
+    AnmBuilder_Instr(&builder, script, 0, 12, fade, 2);
+    AnmBuilder_Instr(&builder, script, 8, 0, nullptr, 0);
+    const int32_t stop_script = AnmBuilder_BeginScript(&builder, 1);
+    AnmBuilder_Instr(&builder, stop_script, 0, 21, nullptr, 0);
+    AnmBuilder_Instr(&builder, stop_script, 1, 0, nullptr, 0);
+    char *const directory =
+        M_SetupFiles("title_initialization", "test.anm", &builder);
+    M_Setup(directory);
+    CHECK(IS_OK(Anm_Load(0, "test.anm", 0)));
+    GameTime_Hold();
+    ANM_VM vm;
+    Anm_CreateVm(&vm);
+    Anm_StartScript(&vm, 0);
+    CHECK_EQ_INT(vm.fade_time, 4);
+    CHECK(vm.scale_speed_x == 0.5f);
+    CHECK_EQ_INT(vm.script_time.current, 0);
+    CHECK_EQ_INT(vm.color >> 24, 255);
+    CHECK(vm.scale_x == 1.0f);
+    CHECK(vm.scale_y == 1.0f);
+    GameTime_Resume();
+    Anm_Step(&vm);
+    CHECK_EQ_INT(vm.script_time.current, 1);
+    CHECK_EQ_INT(vm.color >> 24, 191);
+    CHECK(vm.scale_x == 1.5f);
+    CHECK(vm.scale_y == 2.0f);
+    GameTime_Hold();
+    ANM_VM stopped;
+    Anm_CreateVm(&stopped);
+    Anm_StartScript(&stopped, 1);
+    CHECK(stopped.stopped);
+    CHECK_EQ_INT(stopped.script_time.current, 0);
+    Anm_Step(&stopped);
+    CHECK_EQ_INT(stopped.script_time.current, 0);
+    GameTime_Resume();
+    M_Teardown(directory);
 }

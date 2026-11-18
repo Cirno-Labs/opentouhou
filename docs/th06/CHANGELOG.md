@@ -15,7 +15,7 @@
 - Fixed menu highlight colors, difficulty and character selection
   colors, and the selected graphics setting.
 - Fixed JPEG background colors and shading.
-- Fixed the startup logo being replaced by a black screen.
+- Fixed the startup logo and the timing of its fade into the title screen.
 - Fixed missing results-screen labels and darkened results artwork.
 - Fixed score widths on translated results screens.
 - Fixed the size, shape, shading, sharpness and placement of text in

@@ -1,6 +1,7 @@
 #include "th06/screen_effect.h"
 
 #include "th06/game.h"
+#include "th06/time.h"
 #include "th06/game_manager.h"
 
 #include "core/base/assert.h"
@@ -70,7 +71,7 @@ static CHAIN_STATUS M_Fade(M_EFFECT *const effect, const bool in)
     if (effect->timer.current >= effect->duration) {
         return CHAIN_REMOVE;
     }
-    Timer_Tick(&effect->timer);
+    Timer_TickAt(&effect->timer, GameTime_Step());
     return CHAIN_CONTINUE;
 }
 
@@ -92,7 +93,7 @@ static CHAIN_STATUS M_Shake(void *const arg)
         *area = m_PlayArea;
         return CHAIN_CONTINUE;
     }
-    Timer_Tick(&effect->timer);
+    Timer_TickAt(&effect->timer, GameTime_Step());
     if (effect->timer.current >= effect->duration) {
         *area = m_PlayArea;
         return CHAIN_REMOVE;
