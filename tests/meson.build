@@ -179,7 +179,7 @@ test(
 # build. They need neither a built program nor the network.
 foreach name : [
   'changelog', 'header_spacing', 'othpatch_release', 'package_docs',
-  'release_index', 'versioning',
+  'package_files', 'release_index', 'versioning',
 ]
   test(
     'tools/' + name,
