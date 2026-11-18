@@ -920,12 +920,11 @@ bool Gui_IsLoadingShown(void)
     return g_Gui.loading.sprite >= 0 && g_Gui.loading.stopped;
 }
 
-// Returns the width of the bar under a banner name: the name as a row of
-// height 15 draws it, and 16 pixels more. With the bundled font, this is
-// the original's 7.5 pixels for each CP932 byte. With base_tsa, the name
-// takes whole pixels, rounded down, and 4 pixels more, up to the texture
-// width of its sprite. A name of whole pixels draws its crop of the row
-// one texel to one pixel.
+// Returns the width of the bar under a banner name: the name as
+// Anm_MeasureText measures it at height 15, and 16 pixels more. With
+// base_tsa, the name takes whole pixels, rounded down, and 4 pixels more,
+// up to the texture width of its sprite. A name of whole pixels draws its
+// crop of the row one texel to one pixel.
 static float M_BannerWidth(const ANM_VM *const vm, const char *const name)
 {
     float width;

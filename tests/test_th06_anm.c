@@ -953,10 +953,16 @@ TEST(text_aligns_by_the_drawn_width_and_fills_the_sprite_row)
     CHECK_EQ_INT(plain, right);
     CHECK(IS_OK(Anm_RenderTextCentered(&vm, 0xffffff, UINT32_MAX, "%s", "Ab")));
     CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), center);
+    float width;
+    CHECK(IS_OK(Anm_MeasureText("<l$Ab>", 15, &width)));
+    moved.x0 = (float)(int32_t)(192.0f - width);
+    vm.sprite_data = &moved;
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "<l$Ab>")));
+    const int32_t markup = M_FirstTextPixel(AnmTexture_GetImage(100), 16);
+    vm.sprite_data = &sprite;
     CHECK(IS_OK(
         Anm_RenderTextRightAligned(&vm, 0xffffff, UINT32_MAX, "%s", "<l$Ab>")));
-    CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), plain);
-    float width;
+    CHECK_EQ_INT(M_FirstTextPixel(AnmTexture_GetImage(100), 16), markup);
     CHECK(IS_OK(Anm_MeasureText("Ab", 15, &width)));
     CHECK(width == 15.0f);
     CHECK(IS_OK(Anm_MeasureText("<c$東$東東>", 15, &width)));

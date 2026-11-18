@@ -30,14 +30,14 @@ RESULT Anm_RenderTextToTextureIndex(
     int32_t texture, int32_t x, int32_t y, int32_t width, int32_t font_height,
     uint32_t color, uint32_t shadow, const char *text);
 
-// Measures text in thcrap's layout markup as a row of font_height draws it,
-// in texture pixels. Gives 0 while text is uninitialized.
+// Measures unpatched CP932 text on the original byte grid, and translated
+// text and markup by their drawn width. Gives 0 while text is uninitialized.
 RESULT Anm_MeasureText(const char *text, int32_t font_height, float *width);
 
 // Formats text into the row of the VM's sprite, as wide as the sprite, and
-// sets shown. Right and centered text align by the measured width scaled
-// by (h + 1) / h for the font height h. With the bundled font, this is the
-// original's rule of h + 1 pixels for each CP932 byte.
+// sets shown. Right and centered CP932 text align on the original grid of
+// h + 1 pixels per byte for font height h. Translations and markup align by
+// their measured glyph widths.
 PRINTF_FORMAT(4, 5)
 RESULT Anm_RenderText(
     ANM_VM *vm, uint32_t color, uint32_t shadow, const char *format, ...);

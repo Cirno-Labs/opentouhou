@@ -5,6 +5,7 @@
 #include "stg/translation.h"
 
 #include "core/base/log.h"
+#include "core/base/cp932.h"
 #include "core/text.h"
 
 #include <stdarg.h>
@@ -75,6 +76,21 @@ static RESULT M_MeasureRow(
     return OK;
 }
 
+static int32_t M_ByteLength(const char *const text)
+{
+    if (Translation_HasBaseTsa() || strchr(text, '<') != nullptr
+        || strchr(text, '\x14') != nullptr) {
+        return -1;
+    }
+    char *bytes;
+    if (!IS_OK(Cp932_Encode(text, strlen(text), &bytes))) {
+        return -1;
+    }
+    const int32_t count = (int32_t)strlen(bytes);
+    Mem_Free(bytes);
+    return count;
+}
+
 static RESULT M_Format(
     ANM_VM *const vm, const uint32_t color, const uint32_t shadow,
     const char *const format, va_list args, const int32_t alignment)
@@ -93,14 +109,19 @@ static RESULT M_Format(
     const int32_t font_height = vm->font_width > 0 ? vm->font_width : 15;
     int32_t x = (int32_t)sprite->x0;
     if (alignment != 0) {
-        int32_t measured;
-        const RESULT measuring = M_MeasureRow(text, font_height, &measured);
-        if (!IS_OK(measuring)) {
-            Mem_Free(text);
-            return measuring;
+        const int32_t count = M_ByteLength(text);
+        float advance;
+        if (count >= 0) {
+            advance = (float)count * (float)(font_height + 1);
+        } else {
+            int32_t measured;
+            const RESULT measuring = M_MeasureRow(text, font_height, &measured);
+            if (!IS_OK(measuring)) {
+                Mem_Free(text);
+                return measuring;
+            }
+            advance = (float)measured;
         }
-        const float advance =
-            (float)measured * (float)(font_height + 1) / (float)font_height;
         x = alignment == 1
             ? (int32_t)(sprite->x0 + sprite->width - advance / 2.0f)
             : (int32_t)(sprite->x0 + sprite->width / 2.0f - advance / 4.0f);
@@ -242,6 +263,14 @@ RESULT Anm_MeasureText(
 {
     *width = 0.0f;
     FAIL_IF(text == nullptr, "Invalid text");
+    if (m_Font == nullptr) {
+        return OK;
+    }
+    const int32_t count = M_ByteLength(text);
+    if (count >= 0) {
+        *width = (float)count * (float)font_height / 2.0f;
+        return OK;
+    }
     int32_t measured;
     MUST(M_MeasureRow(text, font_height, &measured));
     *width = (float)measured / 2.0f;
