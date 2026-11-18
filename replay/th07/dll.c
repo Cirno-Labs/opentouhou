@@ -92,6 +92,7 @@ static int __attribute__((thiscall)) M_RunCalcChain(void *chain)
     SessionRetail_BeforeCalc(*(void **)((uint8_t *)RETAIL_APP_AT + 8));
     const int result = ((RUN_CALC_CHAIN_FN)RETAIL_RUN_CALC_CHAIN)(chain);
     M_EndOfCalc();
+    SessionRetail_AfterCalc();
     return result;
 }
 

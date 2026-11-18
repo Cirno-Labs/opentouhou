@@ -12,5 +12,9 @@ RESULT SessionRetail_Open(const SCRIPT_BINDING *bindings, size_t count);
 // IDirect3DDevice8, kept opaque outside this Windows-only implementation.
 void SessionRetail_BeforeCalc(void *device);
 
+// Ends the outer calc. Presents inside a calc, such as loading-screen
+// copies, do not advance the input cursor or request a capture.
+void SessionRetail_AfterCalc(void);
+
 // Supplies the current frame's input to the original ReadButtons call sites.
 uint16_t __cdecl SessionRetail_Buttons(void);

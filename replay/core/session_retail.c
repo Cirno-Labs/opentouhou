@@ -10,6 +10,7 @@ static CAPTURE_SESSION m_Session;
 static bool m_Opened;
 static bool m_ClockStarted;
 static bool m_CalcSeen;
+static bool m_InCalc;
 static HRESULT(STDMETHODCALLTYPE *m_Present)(
     IDirect3DDevice8 *, const RECT *, const RECT *, HWND, const RGNDATA *);
 
@@ -18,7 +19,7 @@ static HRESULT STDMETHODCALLTYPE M_Present(
     const RECT *const dst, const HWND window, const RGNDATA *const dirty)
 {
     const HRESULT result = m_Present(device, src, dst, window, dirty);
-    if (FAILED(result) || Session_Done(&m_Session)) {
+    if (FAILED(result) || m_InCalc || Session_Done(&m_Session)) {
         return result;
     }
     D3DDEVICE_CREATION_PARAMETERS parameters;
@@ -74,6 +75,7 @@ void SessionRetail_BeforeCalc(void *const device)
     if (!m_Opened) {
         return;
     }
+    m_InCalc = true;
     if (m_CalcSeen) {
         if (!m_ClockStarted) {
             Clock_UseFrames();
@@ -97,6 +99,11 @@ void SessionRetail_BeforeCalc(void *const device)
     table->Present = M_Present;
     DWORD ignored;
     VirtualProtect(&table->Present, sizeof(table->Present), previous, &ignored);
+}
+
+void SessionRetail_AfterCalc(void)
+{
+    m_InCalc = false;
 }
 
 uint16_t __cdecl SessionRetail_Buttons(void)
