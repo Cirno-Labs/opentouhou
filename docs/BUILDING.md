@@ -175,7 +175,8 @@ Each target platform has three images, defined under
 - `base`: the compiler, Meson, Ninja, ccache, and SDL3 and zlib, which
   every program links.
 - `media`, built on `base`: SDL3_ttf with FreeType and HarfBuzz, and
-  FFmpeg. The games, the replay runner and their tests build in it.
+  libjpeg-turbo and FFmpeg. The games, the replay runner and their
+  tests build in it.
 - `othpatch`, built on `base`: curl, and mbedTLS on Linux. othpatch and
   its tests build in it, so othpatch never links FFmpeg or SDL3_ttf.
 
@@ -241,7 +242,8 @@ othpatch sets.
 
 Possible, not supported. You need a C23 compiler (clang 18 or GCC 14 or
 newer), Meson 1.4 or newer, Ninja, pkg-config, SDL3 3.2 or newer,
-SDL3_ttf 3.2.2 or newer, and the FFmpeg 7.1 development libraries
+SDL3_ttf 3.2.2 or newer, the libjpeg-turbo development library, and
+the FFmpeg 7.1 development libraries
 (avcodec, avformat, avutil, swresample and swscale). Then:
 
 ```sh

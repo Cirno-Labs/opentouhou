@@ -16,8 +16,8 @@ public header describes the module itself.
 
 - **SDL3** for the window, OpenGL context, events, input, audio device,
   paths, processes and the main loop. **SDL3_ttf** for text layout and
-  **FreeType** for GDI glyph rasterization. **FFmpeg**
-  for image and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and
+  **FreeType** for GDI glyph rasterization. **libjpeg-turbo** for JPEG decoding and
+  **FFmpeg** for the other image and audio codecs. OpenGL 3.3 core, OpenGL ES 3.0 and
   WebGL 2 share one set of `.glsl` shaders, compiled by the driver at
   startup.
 - **C23**, **Meson**, one static library per layer and one executable

@@ -11,6 +11,7 @@
 - Changed the text of `--help` and of command-line errors to a new
   format.
 - Fixed the font, letters and spacing in translated text.
+- Fixed JPEG background colors and shading.
 - Fixed the size, shape, shading, sharpness and placement of text in
   spell names, dialogue, translator notes and Japanese stage and song
   titles.
