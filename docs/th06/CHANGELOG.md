@@ -38,6 +38,8 @@
 - Fixed the placement of translated stage and song titles.
 - Fixed the shape of translator notes, and their weight in fonts that
   patches bring.
+- Fixed the alignment of translated stage labels, bonus notices and
+  spell card bonus labels.
 
 ## 1.0.1 (2026-11-15)
 
