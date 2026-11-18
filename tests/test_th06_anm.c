@@ -1161,7 +1161,7 @@ TEST(texture_updates_keep_the_loaded_color_depth)
     const uint8_t *const pixel = AnmTexture_GetImage(100)->pixels + 12;
     CHECK_EQ_INT(pixel[0], 136);
     CHECK_EQ_INT(pixel[1], 34);
-    CHECK_EQ_INT(pixel[2], 255);
+    CHECK_EQ_INT(pixel[2], 238);
     CHECK_EQ_INT(pixel[3], 136);
     CHECK_EQ_INT(image.pixels[0], 128);
     Image_Free(&image);

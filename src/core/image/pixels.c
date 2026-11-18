@@ -45,11 +45,12 @@ static uint8_t M_Replicate(const uint32_t value, const int bits)
     return (uint8_t)(result >> (filled - 8));
 }
 
-// Rounds an 8-bit channel down to bits bits and expands it back to 8 bits
-// by bit replication.
+// Rounds an 8-bit channel to the nearest value at bits bits and expands it
+// back to 8 bits by bit replication.
 static uint8_t M_QuantizeChannel(const uint8_t value, const int bits)
 {
-    return M_Replicate(value >> (8 - bits), bits);
+    const uint32_t maximum = (1u << bits) - 1u;
+    return M_Replicate(((uint32_t)value * maximum + 127u) / 255u, bits);
 }
 
 IMAGE Image_Create(
@@ -158,6 +159,11 @@ void Image_Quantize(IMAGE *const image, const IMAGE_DEPTH depth)
             pixel[1] = M_QuantizeChannel(pixel[1], 6);
             pixel[2] = M_QuantizeChannel(pixel[2], 5);
             pixel[3] = 255;
+            break;
+        case IMAGE_DEPTH_RGB8:
+            pixel[3] = 255;
+            break;
+        case IMAGE_DEPTH_RGBA8:
             break;
         }
     }

@@ -270,8 +270,27 @@ TEST(quantize_a4r4g4b4_replicates_nibble)
     const uint8_t p[4] = { 0x3f, 0x3f, 0x3f, 0x3f };
     IMAGE image = M_Make2x2(p, p, p, p);
     Image_Quantize(&image, IMAGE_DEPTH_A4R4G4B4);
-    // 0x3f truncates to the top 4 bits, 0x3, which replicates to 0x33.
-    CHECK_EQ_INT(image.pixels[0], 0x33);
+    CHECK_EQ_INT(image.pixels[0], 0x44);
+    Image_Free(&image);
+}
+
+TEST(quantize_rounds_channels_up_and_down)
+{
+    const uint8_t low[4] = { 15, 15, 15, 15 };
+    const uint8_t high[4] = { 240, 240, 240, 240 };
+    IMAGE image = M_Make2x2(low, high, low, high);
+    Image_Quantize(&image, IMAGE_DEPTH_A4R4G4B4);
+    for (int32_t channel = 0; channel < 4; channel++) {
+        CHECK_EQ_INT(image.pixels[channel], 17);
+        CHECK_EQ_INT(image.pixels[4 + channel], 238);
+    }
+    Image_Free(&image);
+    const uint8_t rgb[4] = { 5, 3, 250, 0 };
+    image = M_Make2x2(rgb, rgb, rgb, rgb);
+    Image_Quantize(&image, IMAGE_DEPTH_R5G6B5);
+    CHECK_EQ_INT(image.pixels[0], 8);
+    CHECK_EQ_INT(image.pixels[1], 4);
+    CHECK_EQ_INT(image.pixels[2], 247);
     Image_Free(&image);
 }
 

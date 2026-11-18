@@ -18,26 +18,25 @@ static GFX_TEXTURE *m_Surfaces[ANM_SURFACE_COUNT];
 static int32_t m_PendingTexture = -1;
 static GFX_RECT m_PendingRectangle;
 
-static void M_Quantize(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
+static IMAGE_DEPTH M_Depth(const ANM_TEXTURE_FORMAT format)
 {
     switch (format) {
     case ANM_TEXTURE_A1R5G5B5:
-        Image_Quantize(image, IMAGE_DEPTH_A1R5G5B5);
-        break;
-    case ANM_TEXTURE_R5G6B5:
-        Image_Quantize(image, IMAGE_DEPTH_R5G6B5);
-        break;
+        return IMAGE_DEPTH_A1R5G5B5;
     case ANM_TEXTURE_A4R4G4B4:
-        Image_Quantize(image, IMAGE_DEPTH_A4R4G4B4);
-        break;
+        return IMAGE_DEPTH_A4R4G4B4;
+    case ANM_TEXTURE_R5G6B5:
+        return IMAGE_DEPTH_R5G6B5;
     case ANM_TEXTURE_RGB8:
-        for (int64_t i = 0; i < (int64_t)image->width * image->height; i++) {
-            image->pixels[i * 4 + 3] = 255;
-        }
-        break;
+        return IMAGE_DEPTH_RGB8;
     default:
-        break;
+        return IMAGE_DEPTH_RGBA8;
     }
+}
+
+static void M_Quantize(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
+{
+    Image_Quantize(image, M_Depth(format));
 }
 
 static RESULT M_Decode(
