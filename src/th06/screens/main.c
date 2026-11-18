@@ -1331,6 +1331,13 @@ static uint32_t M_FadeColor(const M_MENU *const menu, const int32_t frames)
         | (menu->fade_to_color & 0xffffff);
 }
 
+static void M_SelectReplayText(const bool selected)
+{
+    AsciiText_SetHighlight(selected);
+    AsciiText_SetColor(
+        selected ? COLOR_WHITE : COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
+}
+
 static void M_DrawReplays(const M_MENU *const menu)
 {
     AsciiText_AddString(
@@ -1338,9 +1345,7 @@ static void M_DrawReplays(const M_MENU *const menu)
     const int32_t top = menu->replay_cursor - menu->replay_cursor % 15;
     for (int32_t i = top; i < top + 15 && i < menu->replay_count; i++) {
         const SAVED_REPLAY *const replay = &menu->replays[i];
-        AsciiText_SetColor(
-            i == menu->replay_cursor ? COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
-                                     : COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
+        M_SelectReplayText(i == menu->replay_cursor);
         AsciiText_AddFormat(
             menu->sprites[0x63 + i - top].pos, g_Strings[STRING_MENU_REPLAY],
             replay->label, (const char *)replay->name, replay->summary.date,
@@ -1359,9 +1364,7 @@ static void M_DrawReplays(const M_MENU *const menu)
             menu->sprites[0x72].pos, g_Strings[STRING_MENU_STAGE_HEADER]);
         for (int32_t i = 0; i < 7; i++) {
             const VEC3 pos = menu->sprites[0x73 + i].pos;
-            AsciiText_SetColor(
-                i == menu->cursor ? COLOR_ARGB(0xff, 0xff, 0x80, 0x80)
-                                  : COLOR_ARGB(0xff, 0x80, 0x80, 0x80));
+            M_SelectReplayText(i == menu->cursor);
             if (summary->stages[i + 1]) {
                 AsciiText_AddFormat(
                     pos, g_Strings[STRING_MENU_STAGE],

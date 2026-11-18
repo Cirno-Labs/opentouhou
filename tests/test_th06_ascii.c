@@ -89,7 +89,6 @@ static void M_Setup(void)
     g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_AsciiText.capture_background = false;
-    g_AsciiText.highlight_font = false;
     m_LoadCount = 0;
     m_FailLoad = 0;
     m_ReleaseCount = 0;
@@ -171,7 +170,6 @@ TEST(strings_copy_utf8_and_capture_the_style_at_enqueue)
     g_AsciiText.scale_x = 2.0f;
     g_AsciiText.scale_y = 3.0f;
     g_AsciiText.in_arena = true;
-    g_AsciiText.highlight_font = true;
     AsciiText_SetColor(COLOR_ARGB(0x12, 0x34, 0x56, 0x78));
     AsciiText_SetHighlight(true);
     AsciiText_AddString((VEC3) { 5.0f, 6.0f, 7.0f }, text);
@@ -204,22 +202,10 @@ TEST(string_queue_is_bounded_and_draw_clears_it)
     CHECK_EQ_INT(strlen(g_AsciiText.strings[0].text), 80);
 }
 
-TEST(highlight_depends_on_the_original_presentation_flag)
-{
-    M_Setup();
-    AsciiText_SetHighlight(true);
-    AsciiText_AddString((VEC3) {}, "plain");
-    CHECK(!g_AsciiText.strings[0].highlight);
-    g_AsciiText.highlight_font = true;
-    AsciiText_AddString((VEC3) {}, "highlight");
-    CHECK(g_AsciiText.strings[1].highlight);
-}
-
 TEST(initialize_resets_contents_and_keeps_external_presentation_facts)
 {
     M_Setup();
     g_AsciiText.capture_background = true;
-    g_AsciiText.highlight_font = true;
     AsciiText_AddString((VEC3) {}, "queued");
     AsciiText_AddPopup((VEC3) {}, 45, 0);
     g_AsciiText.pause_menu.state = 6;
@@ -229,7 +215,6 @@ TEST(initialize_resets_contents_and_keeps_external_presentation_facts)
     CHECK_EQ_INT(g_AsciiText.next_popup, 0);
     CHECK(!g_AsciiText.popups[0].active);
     CHECK(g_AsciiText.capture_background);
-    CHECK(g_AsciiText.highlight_font);
     CHECK_EQ_INT(g_AsciiText.color, COLOR_WHITE);
     CHECK(g_AsciiText.scale_x == 1.0f && g_AsciiText.scale_y == 1.0f);
 }

@@ -54,6 +54,4 @@ typedef struct {
     // Enables the menu background scripts when framebuffer capture is
     // available.
     bool capture_background;
-    // Enables the alternate font for highlighted strings.
-    bool highlight_font;
 } ASCII_TEXT;
