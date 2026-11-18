@@ -1261,3 +1261,31 @@ TEST(a_patch_mask_gives_the_patch_image_alpha)
 {
     CHECK_EQ_INT(M_LoadMaskedAlpha("mask_both", true, true), 99);
 }
+
+TEST(a_patch_keeps_black_pixels_with_partial_alpha)
+{
+    char *const directory = TestDir_Prepare("patch_black_alpha");
+    Th06Data_WriteArchives(directory, -1);
+    M_WritePng(directory, "img.png", 0, 0, 255);
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    char *const game_dir = TestDir_Join(patches, "a/lang/th06");
+    CHECK(Result_Log(File_MakeDir(game_dir), LOG_LEVEL_ERROR));
+    Mem_Free(game_dir);
+    M_WritePng(directory, "patches/a/lang/th06/img.png", 0, 0, 153);
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    M_Setup(directory);
+    CHECK(IS_OK(Anm_LoadTexture(
+        100, "img.png", ANM_TEXTURE_A4R4G4B4, COLOR_ARGB(255, 0, 0, 0))));
+    CHECK_EQ_INT(AnmTexture_GetImage(100)->pixels[3], 0);
+    Files_SetPatches(stack);
+    CHECK(IS_OK(Anm_LoadTexture(
+        100, "img.png", ANM_TEXTURE_A4R4G4B4, COLOR_ARGB(255, 0, 0, 0))));
+    CHECK_EQ_INT(AnmTexture_GetImage(100)->pixels[3], 153);
+    M_Teardown(directory);
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+}
