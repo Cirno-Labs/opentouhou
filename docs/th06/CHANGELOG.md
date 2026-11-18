@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added the frame rate display at the bottom of the screen.
 - Changed package documents to `oth06_readme.txt` and
   `oth06_licenses.txt` so they do not replace the original game's readme.
 - Changed the conversion of music and sound effects to the output rate,

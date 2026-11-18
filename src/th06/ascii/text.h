@@ -23,6 +23,9 @@ void AsciiText_Remove(void);
 // Keeps capture_background and highlight_font.
 void AsciiText_Initialize(void);
 
+// Updates the frame rate shown at the bottom of the screen.
+void AsciiText_SetFrameRate(float rate);
+
 void AsciiText_SetColor(uint32_t color);
 void AsciiText_SetHighlight(bool highlight);
 

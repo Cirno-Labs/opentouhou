@@ -345,6 +345,38 @@ TEST(strings_record_the_atlas_glyphs_at_their_screen_positions)
     GfxRecorder_Stop();
 }
 
+TEST(frame_rate_keeps_its_style_across_text_initialization)
+{
+    M_Setup();
+    M_Register();
+    GfxRecorder_Start();
+    const ANM_SPRITE sprite = {
+        .slot = 0, .width = 8.0f, .height = 16.0f, .u1 = 1.0f, .v1 = 1.0f
+    };
+    CHECK(Result_Ignore(Anm_CreateTexture(0, 8, 16, ANM_TEXTURE_RGBA8)));
+    AsciiText_SetFrameRate(59.5f);
+    AsciiText_Initialize();
+    g_AsciiText.glyph.sprite_data = &sprite;
+    g_AsciiText.glyph.visible = true;
+    AsciiText_SetColor(COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
+    g_AsciiText.scale_x = 2.0f;
+    g_AsciiText.highlight = true;
+    g_AsciiText.in_arena = true;
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 8);
+    CHECK(GfxRecorder_Quad(0)->vertices[0].position.x == 512.0f);
+    CHECK(GfxRecorder_Quad(0)->vertices[0].position.y == 464.0f);
+    CHECK_EQ_INT(g_AsciiText.color, COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
+    CHECK(g_AsciiText.scale_x == 2.0f);
+    CHECK(g_AsciiText.highlight && g_AsciiText.in_arena);
+    g_AsciiText.frame_rate[0] = '\0';
+    Anm_ReleaseTexture(0);
+    Chain_Release(&g_Chain);
+    GfxRecorder_Stop();
+}
+
 TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
 {
     M_Setup();

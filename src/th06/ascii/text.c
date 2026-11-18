@@ -5,6 +5,7 @@
 #include "core/base/string.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 ASCII_TEXT g_AsciiText;
@@ -39,9 +40,12 @@ void AsciiText_Initialize(void)
     for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
         Mem_Free(g_AsciiText.strings[i].text);
     }
+    char frame_rate[sizeof(g_AsciiText.frame_rate)];
+    memcpy(frame_rate, g_AsciiText.frame_rate, sizeof(frame_rate));
     const bool capture_background = g_AsciiText.capture_background;
     const bool highlight_font = g_AsciiText.highlight_font;
     memset(&g_AsciiText, 0, sizeof(g_AsciiText));
+    memcpy(g_AsciiText.frame_rate, frame_rate, sizeof(frame_rate));
     g_AsciiText.color = COLOR_WHITE;
     g_AsciiText.scale_x = 1.0f;
     g_AsciiText.scale_y = 1.0f;
@@ -53,6 +57,13 @@ void AsciiText_Initialize(void)
     Anm_InitVm(&g_AsciiText.glyph);
     Anm_SetSprite(&g_AsciiText.glyph, 0x20);
     g_AsciiText.digit.pos.z = 0.1f;
+}
+
+void AsciiText_SetFrameRate(const float rate)
+{
+    snprintf(
+        g_AsciiText.frame_rate, sizeof(g_AsciiText.frame_rate), "%.02ffps",
+        (double)rate);
 }
 
 void AsciiText_SetColor(const uint32_t color)
