@@ -2,7 +2,6 @@
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
-#include "core/base/string.h"
 
 #include <math.h>
 #include <string.h>
@@ -22,15 +21,20 @@ static uint32_t M_ReadBe(const uint8_t *const data, const int32_t bytes)
 
 // Returns the em size for each pixel of cell height: units per em of the
 // head table over usWinAscent + usWinDescent of the OS/2 table. Returns 1
-// when the data lacks either table. A collection uses its first font, as
-// the font opens it.
+// when the data lacks either table. Uses the selected collection face.
 static float M_CellScale(
-    const uint8_t *const data, const size_t size, float *const ascent_scale)
+    const uint8_t *const data, const size_t size, const int32_t face_index,
+    float *const ascent_scale)
 {
     *ascent_scale = 0.0f;
     size_t base = 0;
     if (size >= 16 && memcmp(data, "ttcf", 4) == 0) {
-        base = M_ReadBe(data + 12, 4);
+        const uint32_t count = M_ReadBe(data + 8, 4);
+        if ((uint32_t)face_index >= count
+            || (size_t)face_index >= (size - 12) / 4) {
+            return 1.0f;
+        }
+        base = M_ReadBe(data + 12 + (size_t)face_index * 4, 4);
     }
     if (base > size || size - base < 12) {
         return 1.0f;
@@ -86,6 +90,106 @@ static RESULT M_UpdateBoldAdvance(TEXT_FONT *const font)
     return OK;
 }
 
+static RESULT M_Load(
+    READER *const reader, const float pixel_height, const char *const family,
+    TEXT_FONT **const out)
+{
+    *out = nullptr;
+    FAIL_IF(!m_Initialized, "Fonts are not initialized");
+    FAIL_IF(
+        reader == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
+            || pixel_height > 4096.0f,
+        "Invalid font data or size");
+    const size_t size = Reader_Remaining(reader);
+    FAIL_IF(size == 0, "Empty font data");
+    uint8_t *const data = Reader_ReadAlloc(reader, size, &g_HeapAllocator);
+    const RESULT read = Reader_Result(reader);
+    if (!IS_OK(read)) {
+        Mem_Free(data);
+        return read;
+    }
+    int32_t face_index = 0;
+    if (family != nullptr) {
+        const RESULT found =
+            TextRaster_FindFace(data, size, family, &face_index);
+        if (!IS_OK(found) || face_index < 0) {
+            Mem_Free(data);
+            return found;
+        }
+    }
+    SDL_IOStream *const stream = SDL_IOFromConstMem(data, size);
+    if (stream == nullptr) {
+        Mem_Free(data);
+        return FAIL("Cannot open font data: %s", SDL_GetError());
+    }
+    float ascent_scale;
+    const float cell_scale = M_CellScale(data, size, face_index, &ascent_scale);
+    const SDL_PropertiesID props = SDL_CreateProperties();
+    const bool configured =
+        props != 0
+        && SDL_SetPointerProperty(
+            props, TTF_PROP_FONT_CREATE_IOSTREAM_POINTER, stream)
+        && SDL_SetBooleanProperty(
+            props, TTF_PROP_FONT_CREATE_IOSTREAM_AUTOCLOSE_BOOLEAN, true)
+        && SDL_SetFloatProperty(
+            props, TTF_PROP_FONT_CREATE_SIZE_FLOAT, pixel_height * cell_scale)
+        && SDL_SetNumberProperty(
+            props, TTF_PROP_FONT_CREATE_FACE_NUMBER, face_index);
+    TTF_Font *const face =
+        configured ? TTF_OpenFontWithProperties(props) : nullptr;
+    SDL_DestroyProperties(props);
+    if (!configured) {
+        SDL_CloseIO(stream);
+    }
+    if (face == nullptr) {
+        Mem_Free(data);
+        return FAIL("Cannot open font: %s", SDL_GetError());
+    }
+    TEXT_FONT *const font = Mem_Alloc(sizeof(*font));
+    *font = (TEXT_FONT) {
+        .font = face,
+        .data = data,
+        .cell_scale = cell_scale,
+        .ascent_scale = ascent_scale,
+        .native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0,
+    };
+    const RESULT raster = TextRaster_Open(
+        data, size, face_index, TTF_GetFontSize(face), &font->raster_face);
+    if (!IS_OK(raster)) {
+        TextFont_Free(font);
+        return raster;
+    }
+    const RESULT metrics = M_UpdateBoldAdvance(font);
+    if (!IS_OK(metrics)) {
+        TextFont_Free(font);
+        return metrics;
+    }
+    *out = font;
+    return OK;
+}
+
+static RESULT M_LoadFile(
+    const char *const path, const float pixel_height, const char *const family,
+    TEXT_FONT **const out)
+{
+    READER reader;
+    MUST(Reader_OpenFile(&reader, path));
+    const RESULT result = M_Load(&reader, pixel_height, family, out);
+    Reader_Close(&reader);
+    MUST(result, "%s", path);
+    return OK;
+}
+
+static RESULT M_LoadDefault(
+    const float pixel_height, const char *const family, TEXT_FONT **const out)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_DefaultFont, sizeof(m_DefaultFont), nullptr);
+    MUST(M_Load(&reader, pixel_height, family, out));
+    FAIL_IF(*out == nullptr, "Bundled font family is unavailable");
+    return OK;
+}
+
 RESULT Text_Init(void)
 {
     if (!m_Initialized) {
@@ -112,72 +216,12 @@ void Text_Shutdown(void)
 RESULT TextFont_Load(
     READER *const reader, const float pixel_height, TEXT_FONT **const out)
 {
-    *out = nullptr;
-    FAIL_IF(!m_Initialized, "Fonts are not initialized");
-    FAIL_IF(
-        reader == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
-            || pixel_height > 4096.0f,
-        "Invalid font data or size");
-    const size_t size = Reader_Remaining(reader);
-    FAIL_IF(size == 0, "Empty font data");
-    uint8_t *const data = Reader_ReadAlloc(reader, size, &g_HeapAllocator);
-    const RESULT read = Reader_Result(reader);
-    if (!IS_OK(read)) {
-        Mem_Free(data);
-        return read;
-    }
-    SDL_IOStream *const stream = SDL_IOFromConstMem(data, size);
-    if (stream == nullptr) {
-        Mem_Free(data);
-        return FAIL("Cannot open font data: %s", SDL_GetError());
-    }
-    float ascent_scale;
-    const float cell_scale = M_CellScale(data, size, &ascent_scale);
-    TTF_Font *const face =
-        TTF_OpenFontIO(stream, true, pixel_height * cell_scale);
-    if (face == nullptr) {
-        Mem_Free(data);
-        return FAIL("Cannot open font: %s", SDL_GetError());
-    }
-    TEXT_FONT *const font = Mem_Alloc(sizeof(*font));
-    *font = (TEXT_FONT) {
-        .font = face,
-        .data = data,
-        .cell_scale = cell_scale,
-        .ascent_scale = ascent_scale,
-        .native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0,
-    };
-    const RESULT raster =
-        TextRaster_Open(data, size, TTF_GetFontSize(face), &font->raster_face);
-    if (!IS_OK(raster)) {
-        TextFont_Free(font);
-        return raster;
-    }
-    const RESULT metrics = M_UpdateBoldAdvance(font);
-    if (!IS_OK(metrics)) {
-        TextFont_Free(font);
-        return metrics;
-    }
-    *out = font;
-    return OK;
-}
-
-static RESULT M_LoadFile(
-    const char *const path, const float pixel_height, TEXT_FONT **const out)
-{
-    READER reader;
-    MUST(Reader_OpenFile(&reader, path));
-    const RESULT result = TextFont_Load(&reader, pixel_height, out);
-    Reader_Close(&reader);
-    MUST(result, "%s", path);
-    return OK;
+    return M_Load(reader, pixel_height, nullptr, out);
 }
 
 RESULT TextFont_LoadDefault(const float pixel_height, TEXT_FONT **const out)
 {
-    READER reader;
-    Reader_OpenBuffer(&reader, m_DefaultFont, sizeof(m_DefaultFont), nullptr);
-    return TextFont_Load(&reader, pixel_height, out);
+    return M_LoadDefault(pixel_height, nullptr, out);
 }
 
 RESULT TextFont_LoadFamily(
@@ -189,16 +233,15 @@ RESULT TextFont_LoadFamily(
     for (int32_t i = 0; i < count; i++) {
         TEXT_FONT *font;
         if (!Result_Log(
-                M_LoadFile(paths[i], pixel_height, &font), LOG_LEVEL_WARNING)) {
+                M_LoadFile(paths[i], pixel_height, family, &font),
+                LOG_LEVEL_WARNING)) {
             continue;
         }
-        const char *const name = TTF_GetFontFamilyName(font->font);
-        if (name == nullptr || !Str_EqualIgnoreCase(name, family)) {
-            TextFont_Free(font);
+        if (font == nullptr) {
             continue;
         }
         const RESULT fallback =
-            TextFont_LoadDefault(pixel_height, &font->fallback);
+            M_LoadDefault(pixel_height, "MS UI Gothic", &font->fallback);
         if (!IS_OK(fallback)) {
             TextFont_Free(font);
             return fallback;
