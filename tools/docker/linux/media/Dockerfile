@@ -1,6 +1,6 @@
 # check=skip=InvalidDefaultArgInFrom
 # opentouhou media build image for Linux: the base image with SDL3_ttf,
-# FFmpeg and appimagetool, for the games, the replay runner and their
+# libjpeg-turbo, FFmpeg and appimagetool, for the games, replay runner and
 # tests.
 #
 # Multi-stage: each dependency is built in its own stage on the base image
@@ -90,6 +90,31 @@ RUN curl -fsSL -o /tmp/ttf.tar.gz \
 
 
 
+# libjpeg supplies the integer JPEG transform and chroma upsampling.
+FROM base AS jpeg
+ARG JPEG_VERSION
+ARG JPEG_SHA256
+RUN curl -fsSL -o /tmp/jpeg.tar.gz \
+        https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${JPEG_VERSION}/libjpeg-turbo-${JPEG_VERSION}.tar.gz \
+    && echo "${JPEG_SHA256}  /tmp/jpeg.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/jpeg.tar.gz -C /tmp \
+    && cmake -S /tmp/libjpeg-turbo-${JPEG_VERSION} -B /tmp/jpeg-build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DENABLE_SHARED=OFF \
+        -DENABLE_STATIC=ON \
+        -DWITH_SIMD=OFF \
+        -DWITH_TURBOJPEG=OFF \
+        -DWITH_TOOLS=OFF \
+        -DWITH_TESTS=OFF \
+    && cmake --build /tmp/jpeg-build -j"$(nproc)" \
+    && DESTDIR=/stage cmake --install /tmp/jpeg-build \
+    && rm -rf /tmp/jpeg.tar.gz /tmp/libjpeg-turbo-${JPEG_VERSION} /tmp/jpeg-build
+
+
+
 # FFmpeg supplies image codecs and audio demuxers, decoders and conversion.
 # Disable assembly so each platform uses the same C implementations.
 # Keep the default LGPL configuration; no GPL component is enabled.
@@ -150,6 +175,7 @@ RUN curl -fsSL -o /opt/appimage-runtime-x86_64 \
 FROM base
 RUN dnf -y install file && dnf clean all
 COPY --from=sdl-ttf /stage/ext/ /ext/
+COPY --from=jpeg /stage/ext/ /ext/
 COPY --from=ffmpeg /stage/ext/ /ext/
 COPY --from=appimage /opt/ /opt/
 RUN ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool

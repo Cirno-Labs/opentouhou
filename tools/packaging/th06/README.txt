@@ -172,7 +172,9 @@ Credits
 The original game is by ZUN (Team Shanghai Alice). The translations are
 by the thpatch.net community, in the patch format of thcrap.
 
-The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg and zlib.
+The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo
+and zlib. This software is based in part on the work of the Independent
+JPEG Group.
 The bundled MS Gothic font is supplied with Microsoft Windows:
 © 2017 data: RICOH Co., Ltd.; typeface: RYOBI IMAGIX CO.
 
