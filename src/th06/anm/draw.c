@@ -144,7 +144,9 @@ static void M_World(
     for (int32_t i = 0; i < 4; i++) {
         positions[i] = Vec3_TransformCoord(positions[i], &world);
     }
-    M_Record(vm, draw, positions, nullptr);
+    ANM_DRAW shifted = *draw;
+    shifted.view = GfxView_OffsetPixels(&draw->view, 0.5f, 0.5f);
+    M_Record(vm, &shifted, positions, nullptr);
 }
 
 ANM_DRAW Anm_ScreenDraw(void)
