@@ -15,6 +15,7 @@ static const CONFIG_OPTION m_Options[] = {
         TH06_SETTINGS, "game", "music", music, SETTINGS_MUSIC_WAVE,
         m_MusicNames),
     CONFIG_BOOL(TH06_SETTINGS, "game", "sound", sound, true),
+    CONFIG_BOOL(TH06_SETTINGS, "game", "show_fps", show_fps, true),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =
@@ -26,4 +27,5 @@ TH06_SETTINGS g_Settings = {
     .difficulty = M_DIFFICULTY,
     .music = SETTINGS_MUSIC_WAVE,
     .sound = true,
+    .show_fps = true,
 };
