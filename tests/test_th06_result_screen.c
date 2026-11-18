@@ -659,6 +659,67 @@ TEST(base_tsa_puts_the_shot_names_at_the_left_of_their_rows)
     M_TeardownText();
 }
 
+TEST(base_tsa_fits_ten_score_digits_into_nine_cells)
+{
+    M_SetupText("score_width", true);
+    CHECK(Result_Log(ResultScreen_Register(0), LOG_LEVEL_ERROR));
+    M_Run(21);
+    M_Press((TH06_INPUT) { .shoot = true });
+    M_Run(22);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    int32_t found = 0;
+    for (int32_t i = 0; i + 2 < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const name = &g_AsciiText.strings[i];
+        if (strcmp(name->text, "Nanashi ") != 0) {
+            continue;
+        }
+        const ASCII_STRING *const score = &g_AsciiText.strings[i + 1];
+        const ASCII_STRING *const stage = &g_AsciiText.strings[i + 2];
+        CHECK_EQ_INT(strlen(score->text), 10);
+        CHECK(score->scale_x == 0.9f);
+        CHECK(score->scale_y == name->scale_y);
+        CHECK(score->pos.x == name->pos.x + 126.0f);
+        CHECK_EQ_STR(stage->text, "(1)");
+        CHECK(stage->scale_x == name->scale_x);
+        CHECK(stage->pos.x > score->pos.x + 125.9f);
+        CHECK(stage->pos.x < score->pos.x + 126.1f);
+        found++;
+    }
+    CHECK_EQ_INT(found, 20);
+    M_TeardownText();
+}
+
+TEST(base_tsa_keeps_the_clear_label_outside_a_ten_digit_score)
+{
+    M_SetupText("clear_score_width", true);
+    M_StartGame(1234567890);
+    g_GameManager.mode.game_cleared = true;
+    g_Strings[STRING_RESULT_CLEAR_LABEL] = "(Done)";
+    CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
+    M_Run(3);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw(&g_Chain);
+    Gfx_EndTick();
+    int32_t found = 0;
+    for (int32_t i = 0; i + 1 < g_AsciiText.string_count; i++) {
+        const ASCII_STRING *const score = &g_AsciiText.strings[i];
+        if (strcmp(score->text, "1234567890") != 0) {
+            continue;
+        }
+        const ASCII_STRING *const label = &g_AsciiText.strings[i + 1];
+        CHECK(score->scale_x == 0.9f);
+        CHECK_EQ_STR(label->text, "(Done)");
+        CHECK(label->scale_x == 1.0f);
+        CHECK(label->pos.x > score->pos.x + 125.9f);
+        CHECK(label->pos.x < score->pos.x + 126.1f);
+        found++;
+    }
+    CHECK_EQ_INT(found, 1);
+    M_TeardownText();
+}
+
 // Opens the spell card page of the browser, four entries below Normal,
 // draws it once, and returns how far right of its number the capture rate
 // of the first card is drawn.
