@@ -192,6 +192,20 @@ TEST(the_font_comes_from_the_settings_and_the_patches)
     M_End();
 }
 
+TEST(base_tsa_applies_the_font_cache_weight)
+{
+    M_Begin("font_weight", nullptr, 0);
+    CHECK_EQ_INT(Translation_GetFontWeight(400), 400);
+    Translation_Shutdown();
+    TRANSLATION_GAME game = m_Game;
+    game.font_cache_weight = 700;
+    Translation_Init(m_Stack, &game);
+    CHECK_EQ_INT(Translation_GetFontWeight(400), 700);
+    M_End();
+    Translation_Init(nullptr, &game);
+    CHECK_EQ_INT(Translation_GetFontWeight(400), 400);
+}
+
 TEST(no_patches_translate_nothing)
 {
     Translation_Init(nullptr, &m_Game);

@@ -36,6 +36,8 @@
 - Fixed the spacing of bold translated text.
 - Fixed the shading of text in spell names, dialogue and stage titles.
 - Fixed the placement of translated stage and song titles.
+- Fixed the shape of translator notes, and their weight in fonts that
+  patches bring.
 
 ## 1.0.1 (2026-11-15)
 
