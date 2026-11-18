@@ -12,6 +12,8 @@
 #include "th06/screens/result.h"
 #include "th06/screens/result/private.h"
 
+ASCII_TEXT g_AsciiText;
+
 static const TH06_INPUT m_NoInput;
 
 static void M_Setup(void)
@@ -24,6 +26,7 @@ static void M_Setup(void)
 TEST(boot_goes_to_title)
 {
     M_Setup();
+    CHECK(g_AsciiText.highlight_font);
     CHECK(Game_Tick(&m_NoInput));
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up, 1);

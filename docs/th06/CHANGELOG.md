@@ -13,7 +13,7 @@
 - Fixed the font, letters and spacing in translated text.
 - Fixed the right half of translated Music Room comments.
 - Fixed menu highlight colors, difficulty and character selection
-  colors, and the selected graphics setting.
+  colors, replay-menu text, and the selected graphics setting.
 - Fixed JPEG background colors and shading.
 - Fixed the startup logo and the timing of its fade into the title screen.
 - Fixed missing results-screen labels and darkened results artwork.

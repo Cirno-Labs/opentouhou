@@ -21,6 +21,7 @@
 #include "th06/time.h"
 
 #include "core/base/memory.h"
+#include "core/base/color.h"
 #include "core/image.h"
 #include "core/io/file.h"
 
@@ -105,6 +106,7 @@ static void M_WriteData(const char *const case_name)
 static void M_Setup(const char *const case_name)
 {
     GameTime_Resume();
+    g_AsciiText.highlight_font = false;
     M_WriteData(case_name);
     CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
@@ -909,4 +911,42 @@ TEST(the_selected_difficulty_keeps_its_texture_colors)
     }
     CHECK_EQ_INT(found, 1);
     M_Teardown();
+}
+
+TEST(replay_selection_uses_the_requested_font_path)
+{
+    for (int32_t alternate = 0; alternate < 2; alternate++) {
+        M_Setup("replay_font_path");
+        char *const replays = TestDir_Join(m_Directory, "replay");
+        CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
+        Mem_Free(replays);
+        M_WriteReplay("replay/th6_01.rpy", 2);
+        ResultScreen_OpenSaves(m_Directory);
+        CHECK(Result_Log(TitleScene_SetUp(1), LOG_LEVEL_ERROR));
+        M_Tick();
+        ResultScreen_ScanReplays();
+        M_Run(40);
+        M_Press(m_Shoot);
+        M_Run(40);
+        g_AsciiText.highlight_font = alternate != 0;
+        AsciiText_Initialize();
+        Gfx_BeginTick((GFX_COLOR) {});
+        Chain_RunDraw(&g_Chain);
+        Gfx_EndTick();
+        int32_t selected = 0;
+        for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
+            const ASCII_STRING *const string = &g_AsciiText.strings[i];
+            if (alternate != 0 && string->highlight) {
+                CHECK_EQ_INT(string->color, COLOR_WHITE);
+                selected++;
+            } else if (
+                alternate == 0
+                && string->color == COLOR_ARGB(0xff, 0xff, 0x80, 0x80)) {
+                CHECK(!string->highlight);
+                selected++;
+            }
+        }
+        CHECK_EQ_INT(selected, 2);
+        M_Teardown();
+    }
 }
