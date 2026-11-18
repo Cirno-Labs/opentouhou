@@ -91,6 +91,7 @@ shared_library(
   '../core/capture.c',
   '../core/script.c',
   '../core/session.c',
+  '../core/session_state.c',
   '../core/session_retail.c',
   '../core/clock.c',
   '../core/iat.c',

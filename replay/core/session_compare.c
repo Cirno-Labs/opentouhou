@@ -65,10 +65,21 @@ void SessionCompare_Calc(
     }
     if (!state->started) {
         state->game->fill_start(state->start);
-        state->started = true;
     }
     state->game->fill_calc(state->calc);
-    RunnerCompare_Calc(state->compare, state->start, state->calc);
+    SessionCompare_Row(state, state->start, state->calc);
+}
+
+void SessionCompare_Row(
+    SESSION_COMPARE *const state, const uint32_t *const start,
+    const uint32_t *const calc)
+{
+    if (RunnerCompare_IsDone(state->compare)) {
+        state->extra = true;
+        return;
+    }
+    state->started = true;
+    RunnerCompare_Calc(state->compare, start, calc);
 }
 
 RESULT SessionCompare_Close(

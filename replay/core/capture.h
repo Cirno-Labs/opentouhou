@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/base/result.h"
+#include "session_state.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -48,6 +49,12 @@ void Capture_CloseCase(void);
 
 // Writes the calc's row while the case is open.
 void Capture_WriteRow(void);
+
+// Returns whether the launcher requested state from every scene.
+bool Capture_RecordsSession(void);
+
+// Records one completed calc with the same schema as the native session.
+void Capture_WriteSessionRow(const SESSION_POINT *point);
 
 // Counts frames on the title; true on the frame where the replay or the
 // result screen starts.

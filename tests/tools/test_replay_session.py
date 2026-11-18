@@ -3,29 +3,31 @@
 from __future__ import annotations
 
 import contextlib
-import importlib.machinery
-import importlib.util
 import io
 import json
+import os
+import signal
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import ModuleType
 from unittest.mock import Mock, patch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 
-def load_tool() -> ModuleType:
-    path = Path(__file__).resolve().parents[2] / "tools/replay_session"
-    loader = importlib.machinery.SourceFileLoader("replay_session", str(path))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    assert spec is not None
-    module = importlib.util.module_from_spec(spec)
-    loader.exec_module(module)
-    return module
+from shared import replay_session as SESSION
 
 
-SESSION = load_tool()
+def fake_image() -> Mock:
+    image = Mock()
+    image.size = (640, 480)
+    image.tobytes.return_value = b"synthetic RGB"
+
+    def save(path: Path) -> None:
+        path.write_bytes(b"synthetic image")
+
+    image.save.side_effect = save
+    return image
 
 
 class CaptureTests(unittest.TestCase):
@@ -35,16 +37,10 @@ class CaptureTests(unittest.TestCase):
             "assert input() == 'CAPTURED 7'\n"
             "print('SESSION end 8', flush=True)\n"
         )
-        image = Mock()
-        image.size = (640, 480)
-        image.tobytes.return_value = b"synthetic RGB"
+        image = fake_image()
         with tempfile.TemporaryDirectory() as folder:
             out = Path(folder) / "capture"
 
-            def save(path: Path) -> None:
-                path.write_bytes(b"synthetic image")
-
-            image.save.side_effect = save
             with (
                 patch.object(SESSION, "grab_window", return_value=image) as grab,
                 contextlib.redirect_stdout(io.StringIO()),
@@ -74,9 +70,7 @@ class CaptureTests(unittest.TestCase):
         ]
         for program in programs:
             with self.subTest(program=program), tempfile.TemporaryDirectory() as folder:
-                image = Mock()
-                image.size = (640, 480)
-                image.tobytes.return_value = b"RGB"
+                image = fake_image()
                 with (
                     patch.object(SESSION, "grab_window", return_value=image),
                     contextlib.redirect_stdout(io.StringIO()),
@@ -96,6 +90,39 @@ class CaptureTests(unittest.TestCase):
             self.assertEqual(
                 json.loads((out / "manifest.json").read_text())["status"], "failed"
             )
+
+    @unittest.skipUnless(os.name == "posix", "requires POSIX process groups")
+    def test_a_dead_launcher_does_not_leave_its_child_running(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            child_pid = root / "child.pid"
+            ready = root / "ready"
+            terminated = root / "terminated"
+            child = (
+                "import pathlib, signal, sys, time\n"
+                "def terminate(signum, frame):\n"
+                f"    pathlib.Path({str(terminated)!r}).touch()\n"
+                "    sys.exit(0)\n"
+                "signal.signal(signal.SIGTERM, terminate)\n"
+                f"pathlib.Path({str(ready)!r}).touch()\n"
+                "time.sleep(60)\n"
+            )
+            program = (
+                "import pathlib, subprocess, sys, time\n"
+                f"child = subprocess.Popen([sys.executable, '-c', {child!r}])\n"
+                f"pathlib.Path({str(child_pid)!r}).write_text(str(child.pid))\n"
+                f"while not pathlib.Path({str(ready)!r}).exists(): time.sleep(.01)\n"
+            )
+            pid = None
+            try:
+                with self.assertRaises(TimeoutError):
+                    SESSION.capture([sys.executable, "-c", program], root / "out", 2)
+                pid = int(child_pid.read_text())
+                self.assertTrue(terminated.exists(), "capture left its child running")
+            finally:
+                if pid is not None:
+                    with contextlib.suppress(ProcessLookupError):
+                        os.kill(pid, signal.SIGKILL)
 
     def test_an_existing_output_is_never_overwritten(self) -> None:
         with tempfile.TemporaryDirectory() as folder:

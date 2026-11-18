@@ -1,4 +1,4 @@
-#include "../runner.h"
+#include "session_native.h"
 
 #include "core/base/memory.h"
 
@@ -27,7 +27,7 @@ int wmain(const int argc, wchar_t **const argv)
     }
     int result = 1;
     if (converted == argc) {
-        result = Runner_Main(&g_RunnerGame, argc, utf8);
+        result = Session_Main(&g_SessionGame, argc, utf8);
     } else {
         fputs("cannot convert command-line arguments to UTF-8\n", stderr);
     }

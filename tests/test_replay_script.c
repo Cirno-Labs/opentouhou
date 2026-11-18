@@ -1,4 +1,5 @@
 #include "script.h"
+#include "session.h"
 
 #include "core/base/utils.h"
 #include "test.h"
@@ -91,6 +92,11 @@ TEST(invalid_scripts_leave_the_output_unchanged)
         "OTINPUT 1\nframes 2\ninput 0",
         "OTINPUT 1\nframes 2\ncapture 0 extra",
         "OTINPUT 1\nframes 2\nunknown 0",
+        "OTINPUT 1\nframes 2\naction 2 ending 1",
+        "OTINPUT 1\nframes 2\naction 1 ending 1\naction 0 ending 1",
+        "OTINPUT 1\nframes 2\naction 0 ending",
+        "OTINPUT 1\nframes 2\naction 0 ../ending 1",
+        "OTINPUT 1\nframes 2\naction 0 ending -1",
     };
     for (size_t i = 0; i < ARRAY_SIZE(invalid); i++) {
         INPUT_SCRIPT script = { .frames = 123 };
@@ -126,4 +132,55 @@ TEST(sparse_scripts_do_not_allocate_per_frame)
     CHECK(Script_Buttons(&script, 2147483646) == 1);
     CHECK(Script_Capture(&script, 2147483646));
     Script_Free(&script);
+}
+
+TEST(headless_frames_keep_capture_points_without_waiting_for_pixels)
+{
+    CAPTURE_SESSION session = {};
+    CHECK(Result_Ignore(
+        M_Read("OTINPUT 1\nframes 2\ncapture 0\ncapture 1", &session.script)));
+    CHECK(Script_Capture(&session.script, 0));
+    CHECK(Result_Ignore(Session_Presented(&session, 0, 0, 0, 0)));
+    CHECK(session.frame == 1 && !Session_Done(&session));
+    CHECK(Script_Capture(&session.script, 1));
+    CHECK(Result_Ignore(Session_Presented(&session, 0, 0, 0, 0)));
+    CHECK(session.frame == 2 && Session_Done(&session));
+    CHECK(!Result_Ignore(Session_Presented(&session, 0, 0, 0, 0)));
+    Session_Close(&session);
+}
+
+static uint32_t m_ActionValues;
+
+static RESULT M_Action(const uint32_t value)
+{
+    m_ActionValues = m_ActionValues * 100 + value;
+    return OK;
+}
+
+TEST(actions_run_once_after_their_frame_in_source_order)
+{
+    CAPTURE_SESSION session = {};
+    CHECK(Result_Ignore(M_Read(
+        "OTINPUT 1\nframes 2\naction 0 mark 11\naction 0 mark 22\n"
+        "action 1 mark 33\ncapture 0",
+        &session.script)));
+    const SESSION_ACTION actions[] = { { "mark", M_Action } };
+    CHECK(Result_Ignore(Session_SetActions(&session, actions, 1)));
+    m_ActionValues = 0;
+    CHECK(Result_Ignore(Session_Presented(&session, 0, 0, 0, 0)));
+    CHECK(m_ActionValues == 1122);
+    CHECK(Result_Ignore(Session_Presented(&session, 0, 0, 0, 0)));
+    CHECK(m_ActionValues == 112233);
+    CHECK(Session_Done(&session));
+    Session_Close(&session);
+}
+
+TEST(unknown_actions_fail_before_advancing_the_session)
+{
+    CAPTURE_SESSION session = {};
+    CHECK(Result_Ignore(
+        M_Read("OTINPUT 1\nframes 1\naction 0 unknown 1", &session.script)));
+    CHECK(!Result_Ignore(Session_SetActions(&session, nullptr, 0)));
+    CHECK(session.frame == 0);
+    Session_Close(&session);
 }

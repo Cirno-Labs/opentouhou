@@ -217,9 +217,10 @@ Replay tests check that a game does what its original did, tick for
 tick. They run locally against the developer's own game data, so
 neither the cases nor the data are in this repository or in CI.
 
-A case is one binary file: a header naming the game and an initial
-checkpoint, then one row of named values per calc, written and read
-through `replay/core/case.h`. A capture tool per game, in
-`replay/thXX/`, produces cases from the original executable. Each
-game's headless runner drives its input and reports the first calc
-where a value differs.
+A portable case is one `.otrc` ZIP file with a readable manifest and
+input timeline, binary rows of named state values, and optional
+screenshots. `tools/replay` captures retail or native sessions and runs
+them through the same frame driver in `replay/core`. Each game supplies
+its bindings, state schema and retail hooks. The state rows use the
+binary format in `replay/core/case.h`. Existing binary gameplay cases
+and their replay input remain supported by each game's runner.

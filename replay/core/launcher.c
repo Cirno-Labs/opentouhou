@@ -51,6 +51,8 @@ typedef struct {
     bool fast;
     bool draw;
     bool result;
+    bool session_state;
+    bool headless;
     int32_t quit_after;
     const char *out_dir;
     ARG_ITEMS seeds;
@@ -60,7 +62,9 @@ typedef struct {
 static const ARG_RULE m_Rules[] = {
     { ARG_ONE_OF, { "--replay", "--live", "--inputs" } },
     { ARG_REQUIRES, { "--stage-replay", "--inputs" } },
-    { ARG_EXCLUSIVE, { "--inputs", "--fast" } },
+    { ARG_REQUIRES, { "--session-state", "--inputs" } },
+    { ARG_REQUIRES, { "--headless", "--inputs" } },
+    { ARG_EXCLUSIVE, { "--headless", "--draw" } },
     { ARG_REQUIRES, { "--thcrap-dll", "--thcrap-config" } },
     { ARG_REQUIRES, { "--thcrap-config", "--thcrap-dll" } },
     { ARG_REQUIRES, { "--font", "--inputs" } },
@@ -197,8 +201,8 @@ static wchar_t *M_Environment(
     const LAUNCHER_GAME *const game, const M_ARGS *const args,
     const wchar_t *const work_dir, const wchar_t *const case_path)
 {
-    wchar_t lines[9][ENV_LINE_SIZE];
-    const wchar_t *extra[9];
+    wchar_t lines[12][ENV_LINE_SIZE];
+    const wchar_t *extra[12];
     size_t count = 0;
     swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_WORK=%ls", work_dir);
     count++;
@@ -222,6 +226,14 @@ static wchar_t *M_Environment(
             LOG_FATAL("bad --font path");
         }
         swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_FONT=%ls", full);
+        count++;
+    }
+    if (args->session_state) {
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_SESSION_STATE=1");
+        count++;
+    }
+    if (args->headless) {
+        swprintf(lines[count], ENV_LINE_SIZE, L"CAPTURE_HEADLESS=1");
         count++;
     }
     if (args->replay != nullptr) {
@@ -374,6 +386,12 @@ int Launcher_Main(
             M_ARGS, "--thcrap-config", thcrap_config, nullptr, "<file>",
             "thcrap run configuration"),
         ARG_FLAG_OF(M_ARGS, "--live", live, "capture a game that you play"),
+        ARG_FLAG_OF(
+            M_ARGS, "--session-state", session_state,
+            "record calc state from every scene in the input session"),
+        ARG_FLAG_OF(
+            M_ARGS, "--headless", headless,
+            "run the input session without drawing or screenshots"),
         ARG_FLAG_OF(
             M_ARGS, "--dry-run", dry_run,
             "inject the tracer, then stop the game before it runs"),

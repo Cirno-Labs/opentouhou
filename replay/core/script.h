@@ -11,6 +11,8 @@
 // a '+'-separated list of names from the game's binding table. Each input
 // and capture list must increase strictly and stay below N. Blank lines
 // and '#' comments are allowed. A capture follows that frame's presentation.
+// "action FRAME NAME VALUE" runs a named game setup after that capture.
+// Actions at the same frame run in source order.
 
 typedef struct {
     const char *name;
@@ -23,9 +25,16 @@ typedef struct {
 } SCRIPT_INPUT;
 
 typedef struct {
+    uint32_t frame;
+    char name[32];
+    uint32_t value;
+} SCRIPT_ACTION;
+
+typedef struct {
     uint32_t frames;
     ARRAY(SCRIPT_INPUT) inputs;
     ARRAY(uint32_t) captures;
+    ARRAY(SCRIPT_ACTION) actions;
 } INPUT_SCRIPT;
 
 // Reads at most 1 MiB. On failure, leaves out unchanged. Does not close in.

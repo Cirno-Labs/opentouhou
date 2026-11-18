@@ -256,34 +256,37 @@ differently, and bugs that only appear there may not be fixed.
 
 ## Replay tools
 
-### Scripted window captures
+### Portable session cases
 
-`<game>session` runs the native application with frame-indexed inputs.
-The retail capture launcher accepts the same script with `--inputs`.
-Both use the driver in `replay/core`; each game supplies its bindings
-and retail hooks. The [script header](../replay/core/script.h) defines
-the format. [TH06](../replay/scripts/th06-results.inputs) and
-[TH07](../replay/scripts/th07-results.inputs) examples open the results
-screen and a score table through their menus.
+`tools/replay` drives retail and native through the same frame-indexed
+input script. Each `.otrc` is one ZIP file with a readable manifest and
+input timeline, binary state rows and optional PNG screenshots. The
+[script header](../replay/core/script.h) defines the input format.
+[TH06](../replay/scripts/th06-results.inputs) and
+[TH07](../replay/scripts/th07-results.inputs) examples open results and
+score tables through their menus.
 
-The controller needs Python's Pillow with screen capture support. Run
-it and the game on the same desktop, or within one `xvfb-run`:
+Build the native runners with the games. Build retail shims with
+`just replay::build <game>`. Retail capture needs Windows or Wine. On
+Linux the controller starts Xvfb when no display is available. Window
+capture needs Python's Pillow with screen capture support.
 
 ```sh
-tools/replay_session --out /tmp/th06-native-YYYYMMDD-HHMMSS -- \
-    build/linux/debug/replay/th06session --data <data-dir> \
-    --inputs replay/scripts/th06-results.inputs --out '{work}'
-tools/replay_session --out /tmp/th06-retail-YYYYMMDD-HHMMSS -- \
-    wine build/replay/th06/th06capture.exe --game <game-dir> \
-    --inputs <script-path-under-Wine> --out '{work}'
+tools/replay capture --game th06 --backend retail --data <game-dir> \
+    --inputs replay/scripts/th06-results.inputs --out reference.otrc
+tools/replay run reference.otrc --data <data-dir> --out actual.otrc
+tools/replay run reference.otrc --data <data-dir> --headless --fast
+tools/replay inspect reference.otrc --inputs
 ```
 
-Each output directory must be new. The controller replaces `{work}`
-with its private game directory, captures the actual 640×480 client
-area after presentation, and acknowledges each saved PNG before the
-game can advance. Its manifest records UTC times, RGB hashes, the
-command and completion status. It does not read GPU buffers or modify
-the pixels.
+`capture --backend native` records the native application instead.
+`run` compares every recorded calc, including menus and startup updates,
+and reports the first state difference. `--out` saves the new run as
+another portable case. Screenshot comparison is a separate tool.
+`--headless` skips screenshots while retaining their input markers.
+Native headless runs need no display; retail uses a private virtual
+window on Linux. `--fast` removes the common 60 Hz presentation limit.
+Drawing callbacks still run so that they can update simulation state.
 
 Frame 0 is the first outer frame-loop presentation. Startup logo copies
 before the first calc are outside this counter. TH07 runs 30 startup
@@ -292,22 +295,34 @@ restarts and loading-screen copies inside calc stay in the same input
 frame. Retail time advances at 60 Hz after startup; query count and
 capture delays do not advance it.
 
-Both sides start with private saves. `--stage-replay <file.rpy>`
-places a replay in the first menu slot without starting playback.
-The input script selects it. Retail also accepts `--seed` for save
-fixtures, and records a version-1 `.otrc` when gameplay starts.
-`--font <file>` privately registers a font for a retail session.
-For an English reference, pass `--thcrap-dll <32-bit-dll>` and
-`--thcrap-config <run-config>` to the retail launcher. Use a thcrap
-installation without other capture plugins.
+Both backends use private saves. `capture --stage-replay <file.rpy>`
+embeds a replay and places it in the first menu slot without starting
+playback. The input script selects it. Setup actions `result`, `ending`
+and `bad-ending` enter those scenes from active gameplay after the
+specified frame's screenshot. Their value sets the score in the game's
+internal units of ten points.
 
-`<game>session --compare <case.otrc>` also compares the scripted run's
-calc rows with a retail case, starting at the first non-demo gameplay
-calc. It uses the existing version-1 format and named column checks,
-including calc-chain restarts. The script must cover exactly the same
-recording interval as the retail run; missing or extra rows fail.
-Captures still follow the input script. This checks a finite session;
-use the headless runner below to check full replay coverage.
+For translated native text, use `--patches <patches-dir>` and
+`--language en`. For translated retail text, use `--thcrap-dll <dll>`
+and `--thcrap-config <run-config>` with no other capture plugins.
+The language is stored in the case. Retail privately registers the
+bundled Microsoft font; `--font <file>` selects another file.
+
+Existing binary cases can be bundled without recapturing:
+
+```sh
+tools/replay import old.otrc --replay input.rpy --out portable.otrc
+tools/replay run portable.otrc --data <data-dir> --headless
+```
+
+Imported gameplay cases use their original checkpoint and replay input.
+They have no UI input or screenshot timeline. Their playback requires
+`--headless` and does not produce a new case.
+
+The native `<game>replay session` command and retail launcher also accept
+scripts directly. `tools/replay_session` controls their raw screenshot
+handshake, saving PNGs and a timestamped manifest to a new directory.
+It acknowledges each saved screenshot before the game can advance.
 
 ### Gameplay cases
 

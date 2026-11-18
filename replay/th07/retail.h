@@ -24,6 +24,8 @@
 #define RETAIL_CHAIN_RESTART 6
 
 #define RETAIL_SCENE_GAMEPLAY 2
+#define RETAIL_SCENE_GAME_RESULT 6
+#define RETAIL_SCENE_ENDING 9
 #define RETAIL_SCENE_RESULT 5
 
 #define RETAIL_DIFFICULTY_PHANTASM 5
@@ -52,6 +54,7 @@ typedef int(__attribute__((fastcall)) * RETAIL_CALLBACK)(void *arg);
 #define RETAIL_LAST_FILE_SIZE (*(int32_t *)0x004b9e64)
 
 // The buttons the game plays by, g_PlayButtons at 0x4b9e50.
+#define RETAIL_BUTTONS (*(uint16_t *)0x004b9e4c)
 #define RETAIL_PLAY_BUTTONS (*(uint16_t *)0x004b9e50)
 
 // g_Rng at 0x49fe20.
@@ -84,7 +87,8 @@ typedef struct {
     int32_t graze;
     int32_t graze_total;
     int32_t spell_cards_captured;
-    uint8_t pad_0020[0x04];
+    uint8_t continues_used;
+    uint8_t pad_0021[0x03];
     int32_t point_items;
     int32_t point_items_total;
     uint8_t pad_002c[0x24];
@@ -100,6 +104,7 @@ typedef struct {
     int32_t graze_count;
 } RETAIL_GAME_STATS;
 static_assert(offsetof(RETAIL_GAME_STATS, graze) == 0x14);
+static_assert(offsetof(RETAIL_GAME_STATS, continues_used) == 0x20);
 static_assert(offsetof(RETAIL_GAME_STATS, point_items) == 0x24);
 static_assert(offsetof(RETAIL_GAME_STATS, deaths) == 0x50);
 static_assert(offsetof(RETAIL_GAME_STATS, lives) == 0x5c);

@@ -177,7 +177,7 @@ test(
 
 # The tests of the Python tools under tools/ run with the Python of the
 # build. They need neither a built program nor the network.
-foreach name : ['changelog', 'header_spacing', 'othpatch_release', 'release_index', 'replay_session', 'versioning']
+foreach name : ['changelog', 'header_spacing', 'othpatch_release', 'release_index', 'replay', 'replay_case', 'replay_session', 'versioning']
   test(
     'tools/' + name,
     python,
@@ -1788,6 +1788,19 @@ test(
     c_args: core_include + replay_include,
     implicit_include_directories: false,
     link_with: [replay_script_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'replay/core/session_state',
+  executable(
+    'test_replay_session_state',
+    'test_replay_session_state.c',
+    c_args: core_include + replay_include,
+    implicit_include_directories: false,
+    link_with: [replay_session_state_lib],
+    dependencies: [zlib],
   ),
   suite: 'unit',
 )

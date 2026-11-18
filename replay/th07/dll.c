@@ -29,6 +29,16 @@ static void M_CaseClosed(uint32_t rows);
 static const char *const m_StartNames[] = { TH07_START_NAMES };
 static const char *const m_CalcNames[] = { TH07_CALC_NAMES };
 
+static RESULT M_Result(uint32_t score);
+static RESULT M_Ending(uint32_t score);
+static RESULT M_BadEnding(uint32_t score);
+
+static const SESSION_ACTION m_Actions[] = {
+    { "result", M_Result },
+    { "ending", M_Ending },
+    { "bad-ending", M_BadEnding },
+};
+
 static const CAPTURE_CASE m_Capture = {
     .game_id = "th07",
     .info = "th07 1.00b",
@@ -57,6 +67,38 @@ static const SCRIPT_BINDING m_Bindings[] = {
 #undef M_STICK
 };
 
+static RESULT M_Finish(
+    const uint32_t score, const bool continued, const int32_t scene)
+{
+    RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
+    FAIL_IF(
+        RETAIL_APP_AT->cur_scene != RETAIL_SCENE_GAMEPLAY
+            || game->stats == nullptr
+            || (game->state_flags & RETAIL_STATE_PLAYING) == 0
+            || (game->state_flags & RETAIL_STATE_DEMO) != 0,
+        "finish setup requires gameplay");
+    game->stats->score = score;
+    game->stats->gui_score = score;
+    game->stats->continues_used = continued;
+    RETAIL_APP_AT->scene = scene;
+    return OK;
+}
+
+static RESULT M_Result(const uint32_t score)
+{
+    return M_Finish(score, false, RETAIL_SCENE_GAME_RESULT);
+}
+
+static RESULT M_Ending(const uint32_t score)
+{
+    return M_Finish(score, false, RETAIL_SCENE_ENDING);
+}
+
+static RESULT M_BadEnding(const uint32_t score)
+{
+    return M_Finish(score, true, RETAIL_SCENE_ENDING);
+}
+
 static void M_CaseClosed(const uint32_t rows)
 {
     LOG_INFO("case: closed, %u rows, %u fast-forwards", rows, m_FastForwards);
@@ -70,6 +112,28 @@ static void M_EndOfCalc(void)
     Capture_CountCalc();
     const RETAIL_GAME_MANAGER *const game = RETAIL_GAME_MANAGER_AT;
     const bool gameplay = RETAIL_APP_AT->cur_scene == RETAIL_SCENE_GAMEPLAY;
+    if (Capture_RecordsSession()) {
+        const int32_t scene = RETAIL_APP_AT->cur_scene;
+        const bool score_valid = game->stats != nullptr
+            && (scene == RETAIL_SCENE_GAMEPLAY || scene == RETAIL_SCENE_ENDING
+                || scene == RETAIL_SCENE_GAME_RESULT);
+        const SESSION_POINT point = {
+            .frame = SessionRetail_Frame(),
+            .scene = (uint32_t)RETAIL_APP_AT->cur_scene,
+            .requested_scene = (uint32_t)RETAIL_APP_AT->scene,
+            .buttons = RETAIL_BUTTONS,
+            .rng_seed = RETAIL_RNG_AT->seed,
+            .rng_generated = RETAIL_RNG_AT->generated,
+            .score_valid = score_valid,
+            .score = score_valid ? game->stats->score : 0,
+            .shown_score = score_valid ? game->stats->gui_score : 0,
+            .gameplay = gameplay
+                && (game->state_flags & RETAIL_STATE_PLAYING) != 0
+                && (game->state_flags & RETAIL_STATE_DEMO) == 0,
+        };
+        Capture_WriteSessionRow(&point);
+        return;
+    }
     if (!gameplay) {
         Capture_CloseCase();
     }
@@ -263,7 +327,9 @@ static void M_Attach(void)
         Clock_SetPacingRanges(waits, ARRAY_SIZE(waits));
         static const char *const private_paths[] = { "score.dat", "replay" };
         Overlay_SetPrivatePaths(private_paths, ARRAY_SIZE(private_paths));
-        Capture_Check(SessionRetail_Open(m_Bindings, ARRAY_SIZE(m_Bindings)));
+        Capture_Check(SessionRetail_Open(
+            m_Bindings, ARRAY_SIZE(m_Bindings), m_Actions,
+            ARRAY_SIZE(m_Actions)));
         Capture_Check(Patch_CallsIn(
             RETAIL_APP_ON_UPDATE, RETAIL_APP_ON_UPDATE_SIZE,
             RETAIL_READ_BUTTONS, (uintptr_t)SessionRetail_Buttons, 2));

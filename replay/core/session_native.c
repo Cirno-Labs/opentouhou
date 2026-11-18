@@ -13,6 +13,7 @@
 #include "core/patch.h"
 
 #include <SDL3/SDL.h>
+#include <string.h>
 
 typedef struct {
     const char *data;
@@ -22,11 +23,135 @@ typedef struct {
     const char *language;
     const char *stage_replay;
     const char *compare;
+    const char *compare_state;
+    bool record_state;
+    bool headless;
+    bool fast;
 } M_ARGS;
+
+typedef struct {
+    SESSION_STATE *state;
+    CASE_WRITER *writer;
+    WRITER output;
+    bool output_open;
+    READER expected;
+    bool expected_open;
+    SESSION_COMPARE *compare;
+    RUNNER_GAME game;
+    RUNNER_FIELD *fields;
+} M_TRACE;
 
 static const char *m_Data;
 static char *m_User;
 static PATCH_STACK *m_Patches;
+
+static SESSION_STATE *M_State(const RUNNER_GAME *const game)
+{
+    const int32_t count = game->start_count + game->calc_count;
+    const char **const names = Mem_AllocArr((size_t)count, sizeof(*names));
+    for (int32_t i = 0; i < game->start_count; i++) {
+        names[i] = game->start_fields[i].name;
+    }
+    for (int32_t i = 0; i < game->calc_count; i++) {
+        names[game->start_count + i] = game->calc_fields[i].name;
+    }
+    const SESSION_STATE_GAME schema = {
+        .id = game->id,
+        .start_names = names,
+        .start_count = game->start_count,
+        .calc_names = names + game->start_count,
+        .calc_count = game->calc_count,
+        .start = game->fill_start,
+        .calc = game->fill_calc,
+    };
+    SESSION_STATE *const state = SessionState_Create(&schema);
+    Mem_Free(names);
+    return state;
+}
+
+static RESULT M_OpenTrace(
+    const SESSION_GAME *const shim, const M_ARGS *const args,
+    M_TRACE *const trace)
+{
+    if (!args->record_state && args->compare_state == nullptr) {
+        return OK;
+    }
+    FAIL_IF(
+        shim->point == nullptr || shim->comparison == nullptr,
+        "game has no session state schema");
+    trace->state = M_State(shim->comparison);
+    if (args->record_state) {
+        char *const path =
+            Path_Join(&g_HeapAllocator, args->out, "session.otrc");
+        const RESULT result = Writer_OpenFile(&trace->output, path);
+        Mem_Free(path);
+        MUST(result);
+        trace->output_open = true;
+        trace->writer = SessionState_OpenWriter(trace->state, &trace->output);
+    }
+    if (args->compare_state == nullptr) {
+        return OK;
+    }
+    MUST(Reader_OpenFile(&trace->expected, args->compare_state));
+    trace->expected_open = true;
+    const CASE_NAMES *const columns = SessionState_Columns(trace->state);
+    trace->fields =
+        Mem_AllocArr((size_t)columns->count, sizeof(*trace->fields));
+    const int32_t common = columns->count - shim->comparison->start_count
+        - shim->comparison->calc_count;
+    for (int32_t i = 0; i < columns->count; i++) {
+        RUNNER_KIND kind = RUNNER_U32;
+        if (i >= common + shim->comparison->start_count) {
+            kind = shim->comparison
+                       ->calc_fields[i - common - shim->comparison->start_count]
+                       .kind;
+        } else if (i >= common) {
+            kind = shim->comparison->start_fields[i - common].kind;
+        }
+        trace->fields[i] =
+            (RUNNER_FIELD) { .name = columns->items[i], .kind = kind };
+    }
+    trace->game.id = shim->game->id;
+    trace->game.calc_fields = trace->fields;
+    trace->game.calc_count = columns->count;
+    return SessionCompare_Open(&trace->expected, &trace->game, &trace->compare);
+}
+
+static RESULT M_CloseTrace(M_TRACE *const trace)
+{
+    RESULT result = OK;
+    if (trace->writer != nullptr) {
+        result = Case_CloseWriter(trace->writer);
+    }
+    if (trace->output_open) {
+        const RESULT closed = Writer_Close(&trace->output);
+        if (IS_OK(result)) {
+            result = closed;
+        } else {
+            Result_Ignore(closed);
+        }
+    }
+    if (trace->compare != nullptr) {
+        RUNNER_REPORT report;
+        const RESULT compared = SessionCompare_Close(trace->compare, &report);
+        if (IS_OK(result)) {
+            result = compared;
+        } else {
+            Result_Ignore(compared);
+        }
+        if (IS_OK(result)) {
+            fprintf(
+                stderr, "matched %llu session calcs\n",
+                (unsigned long long)report.rows);
+        }
+    }
+    if (trace->expected_open) {
+        Reader_Close(&trace->expected);
+    }
+    Mem_Free(trace->fields);
+    SessionState_Free(trace->state);
+    return result;
+}
 
 static RESULT M_StageReplay(
     const SESSION_GAME *const game, const char *const source)
@@ -93,13 +218,31 @@ typedef struct {
     bool case_open;
     SESSION_COMPARE *compare;
     const SESSION_GAME *shim;
+    bool headless;
+    M_TRACE trace;
 } M_NATIVE;
 
 static bool M_CalcEnd(void *const arg)
 {
     M_NATIVE *const state = arg;
-    SessionCompare_Calc(
-        state->compare, state->shim->case_ready(), state->shim->case_ended());
+    if (state->compare != nullptr) {
+        SessionCompare_Calc(
+            state->compare, state->shim->case_ready(),
+            state->shim->case_ended());
+    }
+    M_TRACE *const trace = &state->trace;
+    if (trace->state != nullptr) {
+        SESSION_POINT point = {};
+        state->shim->point(&point);
+        point.frame = state->session.frame;
+        const uint32_t *const row = SessionState_Sample(trace->state, &point);
+        if (trace->writer != nullptr) {
+            Case_WriteRow(trace->writer, row);
+        }
+        if (trace->compare != nullptr) {
+            SessionCompare_Row(trace->compare, nullptr, row);
+        }
+    }
     return true;
 }
 
@@ -109,6 +252,12 @@ static RESULT M_Start(
 {
     MUST(Session_Open(
         &state->session, args->inputs, shim->bindings, shim->binding_count));
+    MUST(
+        Session_SetActions(&state->session, shim->actions, shim->action_count));
+    state->headless = args->headless;
+    state->session.fast = args->fast;
+    state->session.screenshots = !args->headless;
+    state->shim = shim;
     if (args->compare != nullptr) {
         MUST(Reader_OpenFile(&state->case_file, args->compare));
         state->case_open = true;
@@ -117,6 +266,7 @@ static RESULT M_Start(
     }
     FAIL_IF(File_Exists(args->out), "--out must name a new directory");
     MUST(File_MakeDir(args->out));
+    MUST(M_OpenTrace(shim, args, &state->trace));
     m_User = Path_Join(&g_HeapAllocator, args->out, "saves");
     MUST(File_MakeDir(m_User));
     MUST(M_StageReplay(shim, args->stage_replay));
@@ -128,28 +278,31 @@ static RESULT M_Start(
         MUST(Patch_OpenStack(
             args->patches, game->id, game->patch_game, &choice, &m_Patches));
     }
-    FAIL_IF(!SDL_Init(SDL_INIT_VIDEO), "%s", SDL_GetError());
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(
-        SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    state->window =
-        SDL_CreateWindow("opentouhou capture", 640, 480, SDL_WINDOW_OPENGL);
-    FAIL_IF(state->window == nullptr, "%s", SDL_GetError());
-    state->context = SDL_GL_CreateContext(state->window);
-    FAIL_IF(state->context == nullptr, "%s", SDL_GetError());
-    FAIL_IF(!SDL_SetWindowPosition(state->window, 0, 0), "%s", SDL_GetError());
-    FAIL_IF(!SDL_SyncWindow(state->window), "%s", SDL_GetError());
-    SDL_GL_SetSwapInterval(0);
-    MUST(Gfx_Init(state->window, 640, 480));
-    state->gfx_started = true;
+    FAIL_IF(
+        !SDL_Init(args->headless ? 0 : SDL_INIT_VIDEO), "%s", SDL_GetError());
+    if (!args->headless) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(
+            SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        state->window =
+            SDL_CreateWindow("opentouhou capture", 640, 480, SDL_WINDOW_OPENGL);
+        FAIL_IF(state->window == nullptr, "%s", SDL_GetError());
+        state->context = SDL_GL_CreateContext(state->window);
+        FAIL_IF(state->context == nullptr, "%s", SDL_GetError());
+        FAIL_IF(
+            !SDL_SetWindowPosition(state->window, 0, 0), "%s", SDL_GetError());
+        FAIL_IF(!SDL_SyncWindow(state->window), "%s", SDL_GetError());
+        SDL_GL_SetSwapInterval(0);
+        MUST(Gfx_Init(state->window, 640, 480));
+        state->gfx_started = true;
+    }
     Config_SetDefaults(game->settings_schema, game->settings);
     RunnerShell_SetInputSize(game->input_schema->size);
     state->game_started = true;
     MUST(game->init());
     shim->prepare();
-    if (state->compare != nullptr) {
-        state->shim = shim;
+    if (state->compare != nullptr || state->trace.state != nullptr) {
         shim->comparison->chain->on_calc_end = M_CalcEnd;
         shim->comparison->chain->on_calc_end_arg = state;
     }
@@ -166,10 +319,12 @@ static RESULT M_Play(const SESSION_GAME *const shim, M_NATIVE *const state)
                                 .filter = GFX_FILTER_NEAREST };
     RESULT result = OK;
     while (!Session_Done(session)) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                return FAIL("capture window was closed");
+        if (!state->headless) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_EVENT_QUIT) {
+                    return FAIL("capture window was closed");
+                }
             }
         }
         shim->set_buttons(
@@ -181,18 +336,28 @@ static RESULT M_Play(const SESSION_GAME *const shim, M_NATIVE *const state)
             && shim->comparison->chain->on_calc_end != M_CalcEnd) {
             return FAIL("game reset during session comparison");
         }
-        result = Gfx_Present(false, 1, &output);
-        if (!IS_OK(result)) {
-            break;
+        if (state->trace.state != nullptr) {
+            shim->comparison->chain->on_calc_end = M_CalcEnd;
+            shim->comparison->chain->on_calc_end_arg = state;
         }
-        SDL_GL_SwapWindow(state->window);
+        if (!state->headless) {
+            result = Gfx_Present(false, 1, &output);
+            if (!IS_OK(result)) {
+                break;
+            }
+            SDL_GL_SwapWindow(state->window);
+        }
         if (!running) {
             result = FAIL("game quit at frame %u", session->frame);
             break;
         }
-        int x, y, width, height;
-        SDL_GetWindowPosition(state->window, &x, &y);
-        SDL_GetWindowSize(state->window, &width, &height);
+        int x = 0, y = 0, width = 0, height = 0;
+        if (!state->headless) {
+            FAIL_IF(
+                !SDL_GetWindowPosition(state->window, &x, &y)
+                    || !SDL_GetWindowSize(state->window, &width, &height),
+                "%s", SDL_GetError());
+        }
         result = Session_Presented(session, x, y, width, height);
         if (!IS_OK(result)) {
             break;
@@ -229,6 +394,16 @@ static RESULT M_Run(const SESSION_GAME *const shim, const M_ARGS *const args)
     if (state.case_open) {
         Reader_Close(&state.case_file);
     }
+    const RESULT traced = M_CloseTrace(&state.trace);
+    if (IS_OK(result)) {
+        result = traced;
+    } else {
+        Result_Ignore(traced);
+    }
+    if (state.game_started) {
+        shim->comparison->chain->on_calc_end = nullptr;
+        shim->comparison->chain->on_calc_end_arg = nullptr;
+    }
     Mem_Free(state.input);
     if (state.game_started) {
         shim->game->shutdown();
@@ -253,7 +428,7 @@ static RESULT M_Run(const SESSION_GAME *const shim, const M_ARGS *const args)
     return result;
 }
 
-int Session_NativeMain(
+static int M_NativeMain(
     const SESSION_GAME *const game, const int argc, char **const argv)
 {
     const ARG_OPTION options[] = {
@@ -277,6 +452,17 @@ int Session_NativeMain(
         ARG_STRING_OF(
             M_ARGS, "--compare", compare, nullptr, "<case.otrc>",
             "compare this scripted session's gameplay calcs"),
+        ARG_FLAG_OF(
+            M_ARGS, "--headless", headless,
+            "run the same input without a window or screenshots"),
+        ARG_FLAG_OF(
+            M_ARGS, "--fast", fast, "run without real-time frame waits"),
+        ARG_FLAG_OF(
+            M_ARGS, "--record-state", record_state,
+            "record every scene's calc state in session.otrc"),
+        ARG_STRING_OF(
+            M_ARGS, "--compare-state", compare_state, nullptr, "<trace>",
+            "compare every scene's calc state with a recorded session"),
     };
     const ARG_SCHEMA schema = ARG_SCHEMA_OF(
         "session",
@@ -293,4 +479,13 @@ int Session_NativeMain(
         return 0;
     }
     return Result_Log(M_Run(game, &args), LOG_LEVEL_ERROR) ? 0 : 1;
+}
+
+int Session_Main(
+    const SESSION_GAME *const game, const int argc, char **const argv)
+{
+    if (argc > 1 && strcmp(argv[1], "session") == 0) {
+        return M_NativeMain(game, argc - 1, argv + 1);
+    }
+    return Runner_Main(game->comparison, argc, argv);
 }

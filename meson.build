@@ -118,27 +118,20 @@ if build_games
   endforeach
 
   subdir('replay')
-  runner_entry = host_machine.system() == 'windows' ? 'replay/core/runner/entry_windows.c' : 'replay/core/runner/entry_posix.c'
-  executable(
-    'th06replay',
-    runner_entry,
-    c_args: [layer_include['th06']] + core_include + stg_include,
-    implicit_include_directories: false,
-    dependencies: [sdl3, zlib, cc_libm],
-    link_with: [th06_runner_lib, replay_runner_lib, core_args_lib],
-    link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
-    win_subsystem: 'console',
-  )
-  executable(
-    'th07replay',
-    runner_entry,
-    c_args: [layer_include['th07']] + core_include + stg_include,
-    implicit_include_directories: false,
-    dependencies: [sdl3, zlib, cc_libm],
-    link_with: [th07_runner_lib, replay_runner_lib, core_args_lib],
-    link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
-    win_subsystem: 'console',
-  )
+  replay_entry = host_machine.system() == 'windows' ? 'replay/core/entry_windows.c' : 'replay/core/entry_posix.c'
+  foreach game : ['th06', 'th07']
+    executable(
+      game + 'replay',
+      replay_entry,
+      'replay' / game / 'session.c',
+      c_args: [layer_include[game]] + core_include + replay_include + stg_include + shell_include,
+      implicit_include_directories: false,
+      dependencies: [core_dep, stg_dep, sdl3, sdl3_ttf, zlib],
+      link_with: [get_variable(game + '_main_lib'), get_variable(game + '_lib'), get_variable(game + '_runner_lib'), replay_session_native_lib],
+      link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+      win_subsystem: 'console',
+    )
+  endforeach
   executable(
     'th07record',
     'replay/th07/recorder/main.c',

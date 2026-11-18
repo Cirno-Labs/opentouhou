@@ -121,6 +121,26 @@ static RESULT M_Line(
                         <= script->captures.items[script->captures.count - 1],
                 "capture frames must increase strictly");
             Array_Append(&script->captures, frame);
+        } else if (strcmp(command, "action") == 0) {
+            FAIL_IF(
+                script->actions.count != 0
+                    && frame < script->actions.items[script->actions.count - 1]
+                                   .frame,
+                "action frames must not decrease");
+            const char *const name = M_Token(&cursor);
+            SCRIPT_ACTION action = { .frame = frame };
+            FAIL_IF(
+                name == nullptr || strlen(name) >= sizeof(action.name),
+                "invalid action name");
+            for (const char *c = name; *c != '\0'; c++) {
+                FAIL_IF(
+                    !((*c >= 'a' && *c <= 'z') || (*c >= '0' && *c <= '9')
+                      || *c == '-' || *c == '_'),
+                    "invalid action name %s", name);
+            }
+            memcpy(action.name, name, strlen(name) + 1);
+            MUST(M_Number(M_Token(&cursor), &action.value));
+            Array_Append(&script->actions, action);
         } else {
             return FAIL("unknown command %s", command);
         }
@@ -169,6 +189,11 @@ static RESULT M_Read(
             && script->captures.items[script->captures.count - 1]
                 >= script->frames,
         "capture is outside the script");
+    FAIL_IF(
+        script->actions.count != 0
+            && script->actions.items[script->actions.count - 1].frame
+                >= script->frames,
+        "action is outside the script");
     return OK;
 }
 
@@ -179,6 +204,7 @@ RESULT Script_Read(
     INPUT_SCRIPT script = {};
     Array_Init(&script.inputs, &g_HeapAllocator);
     Array_Init(&script.captures, &g_HeapAllocator);
+    Array_Init(&script.actions, &g_HeapAllocator);
     const RESULT result = M_Read(in, bindings, binding_count, &script);
     if (!IS_OK(result)) {
         Script_Free(&script);
@@ -192,6 +218,7 @@ void Script_Free(INPUT_SCRIPT *const script)
 {
     Array_Free(&script->inputs);
     Array_Free(&script->captures);
+    Array_Free(&script->actions);
     memset(script, 0, sizeof(*script));
 }
 

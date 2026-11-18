@@ -34,6 +34,8 @@ static CASE_WRITER *m_Case;
 static uint32_t *m_Row;
 static uint32_t m_CaseRows;
 static bool m_CaseDone;
+static bool m_FullSession;
+static SESSION_STATE *m_SessionState;
 
 static bool M_GetEnv(const wchar_t *name, wchar_t *out, DWORD size)
 {
@@ -84,6 +86,19 @@ CAPTURE_MODE Capture_Attach(
     wchar_t flag[4];
     wchar_t script[MAX_PATH];
     const bool scripted = M_GetEnv(L"CAPTURE_INPUTS", script, MAX_PATH);
+    m_FullSession = scripted && M_GetEnv(L"CAPTURE_SESSION_STATE", flag, 4);
+    if (m_FullSession) {
+        const SESSION_STATE_GAME schema = {
+            .id = capture->game_id,
+            .start_names = capture->start_names,
+            .start_count = (int32_t)capture->start_count,
+            .calc_names = capture->calc_names,
+            .calc_count = (int32_t)capture->calc_count,
+            .start = capture->start,
+            .calc = capture->calc,
+        };
+        m_SessionState = SessionState_Create(&schema);
+    }
     const bool fast = M_GetEnv(L"CAPTURE_FAST", flag, 4);
     if (!Clock_Install(
             GetModuleHandleW(nullptr),
@@ -93,7 +108,8 @@ CAPTURE_MODE Capture_Attach(
         LOG_ERROR("no clock function is imported");
         TerminateProcess(GetCurrentProcess(), 1);
     }
-    if (!scripted && fast && !M_GetEnv(L"CAPTURE_DRAW", flag, 4)
+    const bool headless = M_GetEnv(L"CAPTURE_HEADLESS", flag, 4);
+    if ((headless || (!scripted && fast && !M_GetEnv(L"CAPTURE_DRAW", flag, 4)))
         && !NullD3d8_Install(GetModuleHandleW(nullptr))) {
         LOG_ERROR("Direct3DCreate8 is not imported");
         TerminateProcess(GetCurrentProcess(), 1);
@@ -149,6 +165,12 @@ void Capture_OpenCase(void)
         return;
     }
 
+    if (m_SessionState != nullptr) {
+        m_Case = SessionState_OpenWriter(m_SessionState, &m_CaseFile);
+        m_CaseRows = 0;
+        LOG_INFO("case: opened %s", path);
+        return;
+    }
     uint32_t *const start_row =
         Mem_AllocArr(m_Capture->start_count, sizeof(uint32_t));
     m_Capture->start(start_row);
@@ -181,6 +203,23 @@ void Capture_CloseCase(void)
         LOG_INFO("case: closed, %u rows", m_CaseRows);
     }
     m_Case = nullptr;
+    SessionState_Free(m_SessionState);
+    m_SessionState = nullptr;
+}
+
+bool Capture_RecordsSession(void)
+{
+    return m_FullSession;
+}
+
+void Capture_WriteSessionRow(const SESSION_POINT *const point)
+{
+    Capture_OpenCase();
+    if (m_Case != nullptr) {
+        const uint32_t *const row = SessionState_Sample(m_SessionState, point);
+        Case_WriteRow(m_Case, row);
+        m_CaseRows++;
+    }
 }
 
 void Capture_WriteRow(void)

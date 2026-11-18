@@ -14,6 +14,12 @@ RESULT SessionCompare_Open(
 // the same boundaries as its retail recorder. Does not stop the chain.
 void SessionCompare_Calc(SESSION_COMPARE *compare, bool ready, bool ended);
 
+// Compares a sampled row without calling the game's snapshot callbacks.
+// start and calc follow the schema passed to Open. Empty START tables
+// allow nullptr for start.
+void SessionCompare_Row(
+    SESSION_COMPARE *compare, const uint32_t *start, const uint32_t *calc);
+
 // Requires all case rows and the complete current column schema to match,
 // with no extra recorded calcs. Checks this session's finite recording;
 // it does not certify full replay coverage. Releases compare.

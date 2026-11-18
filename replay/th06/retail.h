@@ -27,6 +27,8 @@
 #define RETAIL_MAIN_MENU_TITLE_KEY 2
 
 #define RETAIL_SCENE_GAMEPLAY 2
+#define RETAIL_SCENE_GAME_RESULT 7
+#define RETAIL_SCENE_ENDING 10
 #define RETAIL_SCENE_RESULT 6
 
 typedef int(__cdecl *RETAIL_CALLBACK)(void *arg);
@@ -64,7 +66,8 @@ typedef struct {
     uint16_t power;
     uint8_t pad_1812[0x02];
     uint16_t point_items;
-    uint8_t pad_1816[0x03];
+    uint8_t pad_1816[0x02];
+    uint8_t continues_used;
     int8_t power_item_combo;
     int8_t lives;
     int8_t bombs;
@@ -92,6 +95,7 @@ static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_replay) == 0x1c);
 static_assert(offsetof(RETAIL_GAME_MANAGER, is_frozen) == 0x2c);
 static_assert(offsetof(RETAIL_GAME_MANAGER, power) == 0x1810);
 static_assert(offsetof(RETAIL_GAME_MANAGER, point_items) == 0x1814);
+static_assert(offsetof(RETAIL_GAME_MANAGER, continues_used) == 0x1818);
 static_assert(offsetof(RETAIL_GAME_MANAGER, power_item_combo) == 0x1819);
 static_assert(offsetof(RETAIL_GAME_MANAGER, lives) == 0x181a);
 static_assert(offsetof(RETAIL_GAME_MANAGER, next_extend) == 0x181c);
@@ -107,9 +111,11 @@ static_assert(offsetof(RETAIL_GAME_MANAGER, rank) == 0x1a70);
 static_assert(offsetof(RETAIL_GAME_MANAGER, sub_rank) == 0x1a7c);
 
 typedef struct {
-    uint8_t pad_0000[0x18c];
+    uint8_t pad_0000[0x188];
+    int32_t cur_scene;
     int32_t scene;
 } RETAIL_APP;
+static_assert(offsetof(RETAIL_APP, cur_scene) == 0x188);
 static_assert(offsetof(RETAIL_APP, scene) == 0x18c);
 
 typedef struct {

@@ -44,7 +44,8 @@ static HRESULT STDMETHODCALLTYPE M_Present(
 }
 
 RESULT SessionRetail_Open(
-    const SCRIPT_BINDING *const bindings, const size_t count)
+    const SCRIPT_BINDING *const bindings, const size_t count,
+    const SESSION_ACTION *const actions, const size_t action_count)
 {
     wchar_t wide[32768];
     const DWORD font_length =
@@ -66,6 +67,11 @@ RESULT SessionRetail_Open(
             == 0,
         "invalid input script path");
     MUST(Session_Open(&m_Session, path, bindings, count));
+    MUST(Session_SetActions(&m_Session, actions, action_count));
+    wchar_t flag[4];
+    m_Session.fast = GetEnvironmentVariableW(L"CAPTURE_FAST", flag, 4) != 0;
+    m_Session.screenshots =
+        GetEnvironmentVariableW(L"CAPTURE_HEADLESS", flag, 4) == 0;
     m_Opened = true;
     return OK;
 }
@@ -104,6 +110,11 @@ void SessionRetail_BeforeCalc(void *const device)
 void SessionRetail_AfterCalc(void)
 {
     m_InCalc = false;
+}
+
+uint32_t SessionRetail_Frame(void)
+{
+    return m_Session.frame;
 }
 
 uint16_t __cdecl SessionRetail_Buttons(void)

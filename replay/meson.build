@@ -7,6 +7,7 @@ replay_script_lib = static_library(
   c_args: core_include + replay_include,
   implicit_include_directories: false,
   link_with: [core_io_lib, core_base_lib],
+  dependencies: [sdl3],
 )
 
 replay_case_lib = static_library(
@@ -15,6 +16,14 @@ replay_case_lib = static_library(
   c_args: core_include + replay_include,
   implicit_include_directories: false,
   dependencies: [zlib],
+)
+
+replay_session_state_lib = static_library(
+  'replay_session_state',
+  'core/session_state.c',
+  c_args: core_include + replay_include,
+  implicit_include_directories: false,
+  link_with: [replay_case_lib, core_base_lib, core_io_lib],
 )
 
 runner_debug = host_machine.system() == 'windows' ? 'core/runner/debug_windows.c' : 'core/runner/debug_posix.c'
@@ -72,19 +81,12 @@ th07_runner_lib = static_library(
   ],
 )
 
-foreach game : ['th06', 'th07']
-  session_sources = game == 'th07' ? ['../src/th07/play_time.c'] : []
-  executable(
-    game + 'session',
-    game / 'session.c',
-    'core/session_native.c',
-    'core/session_compare.c',
-    'core/runner/shell_null.c',
-    session_sources,
-    c_args: [layer_include[game]] + core_include + replay_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    dependencies: [core_dep, stg_dep, sdl3, sdl3_ttf, zlib],
-    link_with: [get_variable(game + '_main_lib'), get_variable(game + '_lib'), replay_script_lib, core_args_lib, get_variable(game + '_runner_lib'), replay_runner_lib],
-    win_subsystem: 'console',
-  )
-endforeach
+replay_session_native_lib = static_library(
+  'replay_session_native',
+  'core/session_native.c',
+  'core/session_compare.c',
+  c_args: core_include + replay_include + stg_include + shell_include,
+  implicit_include_directories: false,
+  dependencies: [core_dep, stg_dep, sdl3, sdl3_ttf, zlib],
+  link_with: [replay_script_lib, replay_session_state_lib, core_args_lib, replay_runner_lib],
+)
