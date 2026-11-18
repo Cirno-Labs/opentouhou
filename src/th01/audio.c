@@ -1,12 +1,12 @@
 #include "th01/audio.h"
 
-#include "core/audio/pcm.h"
+#include "core/audio/live.h"
 
 #define M_BLOCK_FRAMES 800
 #define M_QUEUE_FRAMES (M_BLOCK_FRAMES * 4)
 
 struct GAME_AUDIO {
-    AUDIO_PCM *input;
+    AUDIO_LIVE *input;
     MDRV_SYNTH_FRAME raw[M_BLOCK_FRAMES];
     float buses[2][M_BLOCK_FRAMES * 2];
     float previous_input[2][2], previous_output[2][2];
@@ -17,8 +17,8 @@ RESULT GameAudio_Prepare(
 {
     *out = nullptr;
     const AUDIO_GROUP groups[] = { AUDIO_GROUP_MUSIC, AUDIO_GROUP_EFFECTS };
-    AUDIO_PCM *input = nullptr;
-    MUST(AudioPcm_Create(groups, 2, M_QUEUE_FRAMES, &input));
+    AUDIO_LIVE *input = nullptr;
+    MUST(AudioLive_Create(groups, 2, M_QUEUE_FRAMES, &input));
     GAME_AUDIO *const output = Allocator_AllocZ(allocator, sizeof(*output));
     output->input = input;
     *out = output;
@@ -53,7 +53,7 @@ RESULT GameAudio_Render(
             }
         }
         const float *const buses[] = { output->buses[0], output->buses[1] };
-        MUST(AudioPcm_Submit(output->input, buses, (uint32_t)count));
+        MUST(AudioLive_Submit(output->input, buses, (uint32_t)count));
         frames -= count;
     }
     return OK;
@@ -62,7 +62,7 @@ RESULT GameAudio_Render(
 void GameAudio_Free(GAME_AUDIO *const output)
 {
     if (output != nullptr) {
-        AudioPcm_Free(output->input);
+        AudioLive_Free(output->input);
         output->input = nullptr;
     }
 }

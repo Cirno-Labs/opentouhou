@@ -245,7 +245,7 @@ test(
   suite: 'unit',
 )
 
-foreach part : ['audio', 'audio_decoder', 'audio_resampler', 'audio_pcm']
+foreach part : ['audio', 'audio_decoder', 'audio_resampler', 'audio_live']
   test(
     'core/' + part.replace('_', '/'),
     executable(

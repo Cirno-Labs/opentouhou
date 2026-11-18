@@ -1245,12 +1245,12 @@ TEST(live_bus_pause_advances_while_samples_and_streams_remain_paused)
     AUDIO_STREAM *const stream = M_LoadStream(8, &options);
     M_CheckResult(AudioStream_Play(stream));
     const AUDIO_GROUP group = AUDIO_GROUP_MUSIC;
-    AUDIO_PCM *input = nullptr;
-    M_CheckResult(AudioPcm_Create(&group, 1, 4, &input));
+    AUDIO_LIVE *input = nullptr;
+    M_CheckResult(AudioLive_Create(&group, 1, 4, &input));
     const float pcm[] = { 0.125f, -0.125f, 0.25f, -0.25f,
                           0.375f, -0.375f, 0.5f,  -0.5f };
     const float *const buses[] = { pcm };
-    M_CheckResult(AudioPcm_Submit(input, buses, 4));
+    M_CheckResult(AudioLive_Submit(input, buses, 4));
     Audio_SetGroupPaused(group, true);
     float output[4];
     M_Mix(output, 2);
@@ -1267,7 +1267,7 @@ TEST(live_bus_pause_advances_while_samples_and_streams_remain_paused)
     M_Mix(output, 1);
     M_CheckNear(output[0], M_Left(1) * 2 + 0.5f);
     M_CheckNear(output[1], M_Right(1) * 2 - 0.5f);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     AudioPlayback_Free(playback);
     AudioSample_Free(sample);
     AudioStream_Free(stream);

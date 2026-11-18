@@ -41,20 +41,20 @@ static void M_Mix(float *const out, const uint32_t frames)
     }
 }
 
-static AUDIO_PCM *M_Create(const uint32_t capacity)
+static AUDIO_LIVE *M_Create(const uint32_t capacity)
 {
     const AUDIO_GROUP groups[] = { AUDIO_GROUP_MUSIC, AUDIO_GROUP_EFFECTS };
-    AUDIO_PCM *input = nullptr;
-    M_CheckResult(AudioPcm_Create(groups, 2, capacity, &input));
+    AUDIO_LIVE *input = nullptr;
+    M_CheckResult(AudioLive_Create(groups, 2, capacity, &input));
     return input;
 }
 
 static void M_Submit(
-    AUDIO_PCM *const input, const float *const music,
+    AUDIO_LIVE *const input, const float *const music,
     const float *const effects, const uint32_t frames)
 {
     const float *const buses[] = { music, effects };
-    M_CheckResult(AudioPcm_Submit(input, buses, frames));
+    M_CheckResult(AudioLive_Submit(input, buses, frames));
 }
 
 static void M_CheckFrames(
@@ -99,26 +99,26 @@ static void M_WaitMixes(MIX_CHECK *const check, const unsigned target)
 
 TEST(create_checks_initialization_groups_and_capacity)
 {
-    AUDIO_PCM *input = nullptr;
+    AUDIO_LIVE *input = nullptr;
     AUDIO_GROUP groups[] = { AUDIO_GROUP_MUSIC, AUDIO_GROUP_EFFECTS,
                              AUDIO_GROUP_INTERFACE };
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 2, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 2, 4, &input)));
     CHECK(input == nullptr);
-    CHECK(!Result_Ignore(AudioPcm_Submit(nullptr, nullptr, 0)));
-    AudioPcm_Free(nullptr);
-    AudioPcm_Clear(nullptr);
+    CHECK(!Result_Ignore(AudioLive_Submit(nullptr, nullptr, 0)));
+    AudioLive_Free(nullptr);
+    AudioLive_Clear(nullptr);
     M_CheckResult(Audio_Init());
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 2, 4, nullptr)));
-    CHECK(!Result_Ignore(AudioPcm_Create(nullptr, 2, 4, &input)));
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 0, 4, &input)));
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 4, 4, &input)));
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 2, 0, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 2, 4, nullptr)));
+    CHECK(!Result_Ignore(AudioLive_Create(nullptr, 2, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 0, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 4, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 2, 0, &input)));
     groups[1] = groups[0];
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 2, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 2, 4, &input)));
     groups[1] = (AUDIO_GROUP)-1;
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 2, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 2, 4, &input)));
     groups[1] = (AUDIO_GROUP)3;
-    CHECK(!Result_Ignore(AudioPcm_Create(groups, 2, 4, &input)));
+    CHECK(!Result_Ignore(AudioLive_Create(groups, 2, 4, &input)));
     CHECK(input == nullptr);
     float out[2] = { 1.0f, 1.0f };
     M_Mix(out, 1);
@@ -131,8 +131,8 @@ TEST(submit_copies_samples_and_group_descriptors)
 {
     M_CheckResult(Audio_Init());
     AUDIO_GROUP groups[] = { AUDIO_GROUP_MUSIC, AUDIO_GROUP_EFFECTS };
-    AUDIO_PCM *input = nullptr;
-    M_CheckResult(AudioPcm_Create(groups, 2, 2, &input));
+    AUDIO_LIVE *input = nullptr;
+    M_CheckResult(AudioLive_Create(groups, 2, 2, &input));
     groups[0] = AUDIO_GROUP_INTERFACE;
     groups[1] = AUDIO_GROUP_INTERFACE;
     float music[] = { 0.5f, 0.25f, -0.5f, -0.25f };
@@ -150,7 +150,7 @@ TEST(submit_copies_samples_and_group_descriptors)
     M_CheckNear(out[1], 0.0f);
     M_CheckNear(out[2], -0.15625f);
     M_CheckNear(out[3], 0.0f);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     Audio_Shutdown();
 }
 
@@ -159,13 +159,13 @@ TEST(three_buses_stay_synchronized_through_pause_and_mute)
     M_CheckResult(Audio_Init());
     const AUDIO_GROUP groups[] = { AUDIO_GROUP_MUSIC, AUDIO_GROUP_EFFECTS,
                                    AUDIO_GROUP_INTERFACE };
-    AUDIO_PCM *input = nullptr;
-    M_CheckResult(AudioPcm_Create(groups, 3, 4, &input));
+    AUDIO_LIVE *input = nullptr;
+    M_CheckResult(AudioLive_Create(groups, 3, 4, &input));
     const float music[] = { 1, 1, 2, 2, 3, 3, 4, 4 };
     const float effects[] = { 10, 10, 20, 20, 30, 30, 40, 40 };
     const float ui[] = { 100, 100, 200, 200, 300, 300, 400, 400 };
     const float *const buses[] = { music, effects, ui };
-    M_CheckResult(AudioPcm_Submit(input, buses, 4));
+    M_CheckResult(AudioLive_Submit(input, buses, 4));
     float out[2];
     Audio_SetGroupPaused(AUDIO_GROUP_MUSIC, true);
     M_Mix(out, 1);
@@ -185,14 +185,14 @@ TEST(three_buses_stay_synchronized_through_pause_and_mute)
     M_Mix(out, 1);
     M_CheckNear(out[0], 444);
     M_CheckNear(out[1], 444);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     Audio_Shutdown();
 }
 
 TEST(ring_wrap_preserves_order_and_drops_oldest_frames_together)
 {
     M_CheckResult(Audio_Init());
-    AUDIO_PCM *const input = M_Create(4);
+    AUDIO_LIVE *const input = M_Create(4);
     const float music[] = { 1, 0, 2, 0, 3, 0, 4,  0, 5,  0, 6,  0,
                             7, 0, 8, 0, 9, 0, 10, 0, 11, 0, 12, 0 };
     const float effects[] = { 0, 11, 0, 12, 0, 13, 0, 14, 0, 15, 0, 16,
@@ -208,14 +208,14 @@ TEST(ring_wrap_preserves_order_and_drops_oldest_frames_together)
     M_Submit(input, music + 18, effects + 18, 3);
     M_Mix(out, 4);
     M_CheckFrames(out, 9, 4);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     Audio_Shutdown();
 }
 
 TEST(oversized_submit_replaces_backlog_with_newest_frames)
 {
     M_CheckResult(Audio_Init());
-    AUDIO_PCM *const input = M_Create(3);
+    AUDIO_LIVE *const input = M_Create(3);
     const float music[] = { 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0 };
     const float effects[] = { 0, 11, 0, 12, 0, 13, 0, 14, 0, 15, 0, 16 };
     M_Submit(input, music, effects, 2);
@@ -223,14 +223,14 @@ TEST(oversized_submit_replaces_backlog_with_newest_frames)
     float out[6];
     M_Mix(out, 3);
     M_CheckFrames(out, 4, 3);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     Audio_Shutdown();
 }
 
 TEST(underrun_is_silent_and_new_frames_start_together)
 {
     M_CheckResult(Audio_Init());
-    AUDIO_PCM *const input = M_Create(2);
+    AUDIO_LIVE *const input = M_Create(2);
     const float music[] = { 1, 0, 2, 0 };
     const float effects[] = { 0, 11, 0, 12 };
     M_Submit(input, music, effects, 1);
@@ -245,54 +245,54 @@ TEST(underrun_is_silent_and_new_frames_start_together)
     M_CheckFrames(out, 2, 1);
     M_CheckNear(out[2], 0);
     M_CheckNear(out[3], 0);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     Audio_Shutdown();
 }
 
 TEST(invalid_bus_or_sample_leaves_every_queued_bus_unchanged)
 {
     M_CheckResult(Audio_Init());
-    AUDIO_PCM *const input = M_Create(2);
+    AUDIO_LIVE *const input = M_Create(2);
     const float music[] = { 1, 0, 2, 0, 3, 0 };
     const float effects[] = { 0, 11, 0, 12, 0, 13 };
     M_Submit(input, music, effects, 2);
-    CHECK(!Result_Ignore(AudioPcm_Submit(nullptr, nullptr, 1)));
-    CHECK(!Result_Ignore(AudioPcm_Submit(input, nullptr, 1)));
+    CHECK(!Result_Ignore(AudioLive_Submit(nullptr, nullptr, 1)));
+    CHECK(!Result_Ignore(AudioLive_Submit(input, nullptr, 1)));
     const float *buses[] = { music, nullptr };
-    CHECK(!Result_Ignore(AudioPcm_Submit(input, buses, 1)));
+    CHECK(!Result_Ignore(AudioLive_Submit(input, buses, 1)));
     float invalid[] = { NAN, 0, 0, 12, 0, 13 };
     buses[1] = invalid;
-    CHECK(!Result_Ignore(AudioPcm_Submit(input, buses, 3)));
+    CHECK(!Result_Ignore(AudioLive_Submit(input, buses, 3)));
     invalid[0] = INFINITY;
-    CHECK(!Result_Ignore(AudioPcm_Submit(input, buses, 1)));
+    CHECK(!Result_Ignore(AudioLive_Submit(input, buses, 1)));
     invalid[0] = -INFINITY;
-    CHECK(!Result_Ignore(AudioPcm_Submit(input, buses, 1)));
-    M_CheckResult(AudioPcm_Submit(input, nullptr, 0));
+    CHECK(!Result_Ignore(AudioLive_Submit(input, buses, 1)));
+    M_CheckResult(AudioLive_Submit(input, nullptr, 0));
     float out[4];
     M_Mix(out, 2);
     M_CheckFrames(out, 1, 2);
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     Audio_Shutdown();
 }
 
 TEST(clear_free_and_shutdown_release_independent_inputs)
 {
     M_CheckResult(Audio_Init());
-    AUDIO_PCM *const first = M_Create(2);
-    AUDIO_PCM *const middle = M_Create(2);
-    AUDIO_PCM *const last = M_Create(2);
+    AUDIO_LIVE *const first = M_Create(2);
+    AUDIO_LIVE *const middle = M_Create(2);
+    AUDIO_LIVE *const last = M_Create(2);
     const float music[] = { 1, 0 };
     const float effects[] = { 0, 11 };
     M_Submit(first, music, effects, 1);
     M_Submit(middle, music, effects, 1);
     M_Submit(last, music, effects, 1);
-    AudioPcm_Clear(first);
-    AudioPcm_Free(middle);
+    AudioLive_Clear(first);
+    AudioLive_Free(middle);
     float out[2];
     M_Mix(out, 1);
     M_CheckFrames(out, 1, 1);
     M_Submit(first, music, effects, 1);
-    AudioPcm_Free(last);
+    AudioLive_Free(last);
     M_Mix(out, 1);
     M_CheckFrames(out, 1, 1);
     M_Submit(first, music, effects, 1);
@@ -302,28 +302,28 @@ TEST(clear_free_and_shutdown_release_independent_inputs)
     M_CheckNear(out[0], 0);
     M_CheckNear(out[1], 0);
     const AUDIO_GROUP group = AUDIO_GROUP_INTERFACE;
-    AUDIO_PCM *single = nullptr;
-    M_CheckResult(AudioPcm_Create(&group, 1, 1, &single));
+    AUDIO_LIVE *single = nullptr;
+    M_CheckResult(AudioLive_Create(&group, 1, 1, &single));
     const float *const bus[] = { music };
-    M_CheckResult(AudioPcm_Submit(single, bus, 1));
+    M_CheckResult(AudioLive_Submit(single, bus, 1));
     M_Mix(out, 1);
     M_CheckNear(out[0], 1);
     M_CheckNear(out[1], 0);
-    AudioPcm_Free(single);
+    AudioLive_Free(single);
     Audio_Shutdown();
-    AudioPcm_Free(nullptr);
+    AudioLive_Free(nullptr);
 }
 
 TEST(submit_clear_and_free_share_the_actual_mixer_lock)
 {
     M_CheckResult(Audio_Init());
-    AUDIO_PCM *const input = M_Create(64);
+    AUDIO_LIVE *const input = M_Create(64);
     MIX_CHECK check = {};
     SDL_Thread *const thread =
         SDL_CreateThread(M_CheckMixThread, "PCM mixer test", &check);
     CHECK(thread != nullptr);
     if (thread == nullptr) {
-        AudioPcm_Free(input);
+        AudioLive_Free(input);
         Audio_Shutdown();
         return;
     }
@@ -341,10 +341,10 @@ TEST(submit_clear_and_free_share_the_actual_mixer_lock)
             M_WaitMixes(&check, atomic_load(&check.mixes) + 1);
         }
         if (step % 17 == 0) {
-            AudioPcm_Clear(input);
+            AudioLive_Clear(input);
         }
     }
-    AudioPcm_Free(input);
+    AudioLive_Free(input);
     const unsigned target = atomic_load(&check.mixes) + 4;
     M_WaitMixes(&check, target);
     atomic_store(&check.stop, true);

@@ -96,8 +96,8 @@ struct AUDIO_STREAM {
     bool fade_stop;
 };
 
-struct AUDIO_PCM {
-    AUDIO_PCM *next;
+struct AUDIO_LIVE {
+    AUDIO_LIVE *next;
     float *pcm;
     AUDIO_GROUP groups[GROUP_COUNT];
     uint32_t bus_count;
@@ -112,7 +112,7 @@ static atomic_bool m_Stop;
 static AUDIO_SAMPLE *m_Samples;
 static AUDIO_PLAYBACK *m_Playbacks;
 static AUDIO_STREAM *m_Streams;
-static AUDIO_PCM *m_PcmInputs;
+static AUDIO_LIVE *m_LiveInputs;
 static AUDIO_GROUP_STATE m_Groups[GROUP_COUNT];
 static float m_Volume;
 static bool m_Muted;
@@ -328,7 +328,7 @@ static void M_FreeStream(AUDIO_STREAM *const stream)
     }
 }
 
-static void M_FreePcm(AUDIO_PCM *const input)
+static void M_FreeLive(AUDIO_LIVE *const input)
 {
     Mem_Free(input->pcm);
     Mem_Free(input);
@@ -680,8 +680,8 @@ static void M_MixStream(
     }
 }
 
-static void M_MixPcm(
-    AUDIO_PCM *const input, float *const out, const uint32_t frames)
+static void M_MixLive(
+    AUDIO_LIVE *const input, float *const out, const uint32_t frames)
 {
     const uint32_t count = MIN(frames, input->count);
     for (uint32_t bus = 0; bus < input->bus_count; bus++) {
@@ -773,10 +773,10 @@ void Audio_Shutdown(void)
         m_Streams = stream->next;
         M_FreeStream(stream);
     }
-    while (m_PcmInputs != nullptr) {
-        AUDIO_PCM *const input = m_PcmInputs;
-        m_PcmInputs = input->next;
-        M_FreePcm(input);
+    while (m_LiveInputs != nullptr) {
+        AUDIO_LIVE *const input = m_LiveInputs;
+        m_LiveInputs = input->next;
+        M_FreeLive(input);
     }
     SDL_DestroyMutex(m_Mutex);
     m_Mutex = nullptr;
@@ -801,17 +801,17 @@ bool AudioBackend_Mix(float *const out, const uint32_t frames)
          stream = stream->next) {
         M_MixStream(stream, out, frames);
     }
-    for (AUDIO_PCM *input = m_PcmInputs; input != nullptr;
+    for (AUDIO_LIVE *input = m_LiveInputs; input != nullptr;
          input = input->next) {
-        M_MixPcm(input, out, frames);
+        M_MixLive(input, out, frames);
     }
     SDL_UnlockMutex(m_Mutex);
     return true;
 }
 
-RESULT AudioPcm_Create(
+RESULT AudioLive_Create(
     const AUDIO_GROUP *const groups, const uint32_t bus_count,
-    const uint32_t capacity_frames, AUDIO_PCM **const out)
+    const uint32_t capacity_frames, AUDIO_LIVE **const out)
 {
     FAIL_IF(out == nullptr, "Missing live PCM output pointer");
     *out = nullptr;
@@ -830,21 +830,21 @@ RESULT AudioPcm_Create(
             FAIL_IF(groups[i] == groups[j], "Duplicate live PCM group");
         }
     }
-    AUDIO_PCM *const input = Mem_AllocZ(sizeof(*input));
+    AUDIO_LIVE *const input = Mem_AllocZ(sizeof(*input));
     input->capacity = capacity_frames;
     input->bus_count = bus_count;
     memcpy(input->groups, groups, bus_count * sizeof(*groups));
     input->pcm = Mem_AllocArr(capacity_frames, bus_count * 2 * sizeof(float));
     SDL_LockMutex(m_Mutex);
-    input->next = m_PcmInputs;
-    m_PcmInputs = input;
+    input->next = m_LiveInputs;
+    m_LiveInputs = input;
     SDL_UnlockMutex(m_Mutex);
     *out = input;
     return OK;
 }
 
-RESULT AudioPcm_Submit(
-    AUDIO_PCM *const input, const float *const *const buses,
+RESULT AudioLive_Submit(
+    AUDIO_LIVE *const input, const float *const *const buses,
     const uint32_t frames)
 {
     MUST(M_CheckInitialized());
@@ -887,7 +887,7 @@ RESULT AudioPcm_Submit(
     return OK;
 }
 
-void AudioPcm_Clear(AUDIO_PCM *const input)
+void AudioLive_Clear(AUDIO_LIVE *const input)
 {
     if (input == nullptr) {
         return;
@@ -898,19 +898,19 @@ void AudioPcm_Clear(AUDIO_PCM *const input)
     SDL_UnlockMutex(m_Mutex);
 }
 
-void AudioPcm_Free(AUDIO_PCM *const input)
+void AudioLive_Free(AUDIO_LIVE *const input)
 {
     if (input == nullptr) {
         return;
     }
     SDL_LockMutex(m_Mutex);
-    AUDIO_PCM **link = &m_PcmInputs;
+    AUDIO_LIVE **link = &m_LiveInputs;
     while (*link != input) {
         link = &(*link)->next;
     }
     *link = input->next;
     SDL_UnlockMutex(m_Mutex);
-    M_FreePcm(input);
+    M_FreeLive(input);
 }
 
 RESULT AudioSample_LoadFile(const char *const path, AUDIO_SAMPLE **const out)
