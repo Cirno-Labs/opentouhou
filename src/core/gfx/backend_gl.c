@@ -586,7 +586,7 @@ static void M_Shutdown(void)
     M_FreeTarget(&m_Backend.screen);
     M_FreeTarget(&m_Backend.output);
     M_FreeTarget(&m_Backend.history);
-    gl->delete_samplers(2, m_Backend.samplers);
+    gl->delete_samplers(M_SAMPLER_COUNT, m_Backend.samplers);
     gl->delete_buffers(1, &m_Backend.vertex_buffer);
     gl->delete_buffers(1, &m_Backend.index_buffer);
     gl->delete_buffers(1, &m_Backend.rect_buffer);
