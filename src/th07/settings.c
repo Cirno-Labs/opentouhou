@@ -16,6 +16,7 @@ static const CONFIG_OPTION m_Options[] = {
         TH07_SETTINGS, "game", "music", music, SETTINGS_MUSIC_WAVE,
         m_MusicNames),
     CONFIG_BOOL(TH07_SETTINGS, "game", "sound", sound, true),
+    CONFIG_BOOL(TH07_SETTINGS, "game", "show_fps", show_fps, true),
     CONFIG_BOOL(TH07_SETTINGS, "game", "shoot_focuses", shoot_focuses, true),
     CONFIG_BOOL(TH07_SETTINGS, "game", "slowdown", slowdown, false),
     CONFIG_INT(
@@ -34,6 +35,7 @@ TH07_SETTINGS g_Settings = {
     .difficulty = M_DIFFICULTY,
     .music = SETTINGS_MUSIC_WAVE,
     .sound = true,
+    .show_fps = true,
     .shoot_focuses = true,
     .effects_quality = M_EFFECTS_QUALITY,
     .fix_replay_desync = true,
