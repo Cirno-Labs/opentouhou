@@ -45,6 +45,7 @@ typedef struct {
     int32_t capacities[8];
     int32_t fps_capacities[8];
     uint16_t events;
+    bool fix_desync;
     bool past_end_logged;
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
@@ -310,7 +311,14 @@ static CHAIN_STATUS M_Play(void *const arg)
     const REPLAY_FILE *const file = replay->file;
     const REPLAY_STAGE *const stage = file->stages[slot];
     if (replay->cursor < stage->frame_count) {
-        Buttons_Play(&g_Buttons, stage->frames[replay->cursor].buttons);
+        const REPLAY_FRAME *const frame = &stage->frames[replay->cursor];
+        Buttons_Play(&g_Buttons, frame->buttons);
+        // Paused input is absent from the recording. Treat shoot on resume
+        // as held so it cannot advance dialogue as a new press.
+        if (replay->fix_desync && (frame->events & REPLAY_EVENT_PAUSE) != 0
+            && Gui_IsMsgRunning()) {
+            g_Buttons.previous_play_word |= frame->buttons & 1;
+        }
         replay->cursor++;
     } else {
         // The original reads on into whatever follows the stage.
@@ -384,6 +392,7 @@ RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
     M_REPLAY *const replay = Mem_AllocZ(sizeof(M_REPLAY));
     m_Replay = replay;
     replay->mode = mode;
+    replay->fix_desync = g_Settings.fix_replay_desync;
     replay->path = path != nullptr ? Mem_Dup(path, strlen(path) + 1) : nullptr;
     if (mode == REPLAY_RECORD) {
         Chain_InitElem(&replay->calc, M_Record, replay);
@@ -478,6 +487,9 @@ void Replay_EndStage(void)
     }
     const int32_t slot = M_Slot();
     if (replay->mode == REPLAY_PLAY) {
+        if (replay->fix_desync) {
+            return;
+        }
         // The original closes a played stage too, in the loaded file: one
         // that ran a calc long clears the low word of the next score.
         replay->cursor++;
@@ -569,6 +581,10 @@ static void M_WriteFile(REPLAY_FILE *const file, const char *const path)
 void Replay_ResaveIfScoreChanged(void)
 {
     M_REPLAY *const replay = m_Replay;
+    if (replay != nullptr && replay->fix_desync) {
+        Chain_Remove(&replay->calc);
+        return;
+    }
     if (replay == nullptr || g_GameManager.score.value == replay->file->score) {
         return;
     }
