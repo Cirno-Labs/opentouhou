@@ -49,10 +49,10 @@ describes the folders, the keys and the settings for players.
 
 ### Build options
 
-- `programs` selects what a build contains: `games`, the games and the
-  replay runner, `othpatch`, or `all`, the default. Each comes with its
-  tests. A build of `othpatch` needs only SDL3, zlib and curl, and a
-  build of `games` does not need curl.
+- `programs` selects what a build contains: `games`, the games, their
+  native backends and their replay recorders, `othpatch`, or `all`, the
+  default. Each comes with its tests. A build of `othpatch` needs only
+  SDL3, zlib and curl, and a build of `games` does not need curl.
 - `werror` makes every compiler warning fail the build. CI sets it. The
   environment variable `OPENTOUHOU_WERROR=1` sets it for the Docker and
   macOS builds.
@@ -177,7 +177,7 @@ Each target platform has three images, defined under
 - `base`: the compiler, Meson, Ninja, ccache, and SDL3 and zlib, which
   every program links.
 - `media`, built on `base`: SDL3_ttf with FreeType and HarfBuzz, and
-  libjpeg-turbo and FFmpeg. The games, the replay runner and their
+  libjpeg-turbo and FFmpeg. The games, their native backends and their
   tests build in it.
 - `othpatch`, built on `base`: curl, and mbedTLS on Linux. othpatch and
   its tests build in it, so othpatch never links FFmpeg or SDL3_ttf.
@@ -187,7 +187,8 @@ On Linux the images are based on AlmaLinux 8, with clang. Its glibc
 also has appimagetool for the AppImages. On Windows the images have
 MinGW-w64 for x86-64 and use the Meson cross file
 `tools/docker/win/meson_cross_x86_64.txt`. The media image also has
-MinGW-w64 for i686 with SDL3 and zlib, for the capture tools. The
+MinGW-w64 for i686 with SDL3, zlib, libjpeg and FFmpeg, for the retail
+backends of the replay harness. The
 dependencies are static libraries, and the Windows executables link the
 MinGW runtime statically, so they need no DLLs beyond those of Windows.
 
@@ -263,35 +264,19 @@ differently, and bugs that only appear there may not be fixed.
 just replay::build <game>
 ```
 
-This cross-builds a game's capture tools, which capture replay test
-cases from the original game. They are used locally and never packaged
-or released. Each game's own notes describe how to capture with them.
+This cross-builds a game's retail backend, which runs the original game
+under the replay harness ([REPLAY.md](REPLAY.md)), into
+`build/retail/<game>/`. The backends are one Meson project,
+`replay/retail/`, and `replay/retail/<game>/meson.build` lists a game's
+own sources. The games' builds hold their native backends, such as
+`th06native`, and their replay recorders, such as `th06record`. All are
+used locally and never packaged or released.
 
-`th06replay` compares captured calc rows with headless playback. It is
-built with the games and never packaged. Pass the original data, the
-player's replay input and its captured case:
-
-```sh
-build/linux/debug/th06replay --data <data-dir> --replay <input.rpy> \
-    <case.otrc>
-just replay::run <game> <case-or-dir> <data-dir> <replay-dir>
-just replay::run-fast <game> <case-or-dir> <data-dir> <replay-dir> \
-    [jobs]
-```
-
-`run-fast` uses a release build and runs one process per case, as many
-at once as there are CPUs unless `jobs` says otherwise. It prints each
-case's result and the output of the failed ones.
-
-`--replays <dir>` matches each case to a `.rpy` with the same basename.
-`--break-on-diff` stops in the debugger at the first differing calc.
-`--break-at N` stops at calc N; calc numbers start at 0. Cases and
-replay inputs stay outside the repository. Original files are only
-read.
-
-The runner reports skipped columns and the first calc with any
-difference. Its [public header](../replay/th06/runner/context.h) describes
-the supported capture format and the checks for full replay coverage.
+`tools/harness` captures and replays cases on either backend, and
+`tools/stage_rpy` captures a case that plays a game's own `.rpy` file.
+[REPLAY.md](REPLAY.md) gives the recipes that run them. Cases, `.rpy`
+files and screenshots stay outside the repository. Original files are
+only read.
 
 ## Releasing
 

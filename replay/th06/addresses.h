@@ -1,0 +1,281 @@
+#pragma once
+
+#include <stddef.h>
+#include <stdint.h>
+
+// Describes retail 1.02h. It has no relocations, so addresses are absolute.
+
+// Patch sites, each followed by the value it holds.
+#define RETAIL_PLAY_ON_UPDATE_2_SITE 0x0042a3d8
+#define RETAIL_PLAY_ON_UPDATE_2 0x0042a510
+#define RETAIL_RUN_CALC_CHAIN_CALL 0x00420853
+#define RETAIL_RUN_CALC_CHAIN 0x0041ca10
+
+// Restarts the update chain within the frame; returned by PlayOnUpdate2.
+#define RETAIL_CHAIN_RESTART 6
+
+// Functions, each followed by its size.
+#define RETAIL_APP_ON_UPDATE 0x0042333b
+#define RETAIL_APP_ON_UPDATE_SIZE 1098
+#define RETAIL_RUN_FRAME 0x004206e0
+#define RETAIL_RUN_FRAME_SIZE 1126
+#define RETAIL_START_TITLE 0x004378a2
+#define RETAIL_START_TITLE_SIZE 322
+#define RETAIL_DRAW_FPS 0x00423f3f
+#define RETAIL_DRAW_FPS_SIZE 433
+
+// ReadButtons, which App::OnUpdate calls once.
+#define RETAIL_READ_BUTTONS 0x0041d820
+// AsciiText::AddString, a thiscall of (pos, text), which DrawFps calls once.
+#define RETAIL_ADD_STRING 0x00401530
+
+#define RETAIL_SCENE_TITLE 1
+
+// MainMenu states at its title menu and its replay list.
+#define RETAIL_MAIN_MENU_TITLE_MENU 2
+#define RETAIL_MAIN_MENU_REPLAYS 13
+
+// The held buttons, g_Buttons at 0x69d904.
+#define RETAIL_BUTTONS (*(uint16_t *)0x0069d904)
+
+// g_Random at 0x69d8f8.
+typedef struct {
+    uint16_t seed;
+    uint8_t pad_02[0x02];
+    int32_t generated;
+} RETAIL_RNG;
+static_assert(offsetof(RETAIL_RNG, generated) == 0x04);
+#define RETAIL_RNG_AT ((RETAIL_RNG *)0x0069d8f8)
+
+typedef struct {
+    uint32_t gui_score;
+    uint32_t score;
+    uint8_t pad_0008[0x08];
+    int32_t difficulty;
+    int32_t graze;
+    uint8_t pad_0018[0x04];
+    uint32_t is_in_replay;
+    uint8_t pad_0020[0x0c];
+    int8_t is_frozen;
+    uint8_t pad_002d[0x17e3];
+    uint16_t power;
+    uint8_t pad_1812[0x02];
+    uint16_t point_items;
+    uint8_t pad_1816[0x03];
+    int8_t power_item_combo;
+    int8_t lives;
+    int8_t bombs;
+    int8_t next_extend;
+    uint8_t character;
+    uint8_t shot_type;
+    uint8_t is_paused;
+    uint8_t is_in_continue_menu;
+    uint8_t is_playing;
+    uint8_t pad_1822[0x02];
+    uint8_t is_in_demo;
+    uint8_t pad_1825[0x07];
+    char replay_file[0x200];
+    uint8_t pad_1a2c[0x04];
+    int32_t stage_frames;
+    int32_t stage;
+    uint8_t pad_1a38[0x38];
+    int32_t rank;
+    uint8_t pad_1a74[0x08];
+    int32_t sub_rank;
+} RETAIL_GAME_MANAGER;
+static_assert(offsetof(RETAIL_GAME_MANAGER, score) == 0x04);
+static_assert(offsetof(RETAIL_GAME_MANAGER, graze) == 0x14);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_replay) == 0x1c);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_frozen) == 0x2c);
+static_assert(offsetof(RETAIL_GAME_MANAGER, power) == 0x1810);
+static_assert(offsetof(RETAIL_GAME_MANAGER, point_items) == 0x1814);
+static_assert(offsetof(RETAIL_GAME_MANAGER, power_item_combo) == 0x1819);
+static_assert(offsetof(RETAIL_GAME_MANAGER, lives) == 0x181a);
+static_assert(offsetof(RETAIL_GAME_MANAGER, next_extend) == 0x181c);
+static_assert(offsetof(RETAIL_GAME_MANAGER, character) == 0x181d);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_paused) == 0x181f);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_continue_menu) == 0x1820);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_playing) == 0x1821);
+static_assert(offsetof(RETAIL_GAME_MANAGER, is_in_demo) == 0x1824);
+static_assert(offsetof(RETAIL_GAME_MANAGER, replay_file) == 0x182c);
+static_assert(offsetof(RETAIL_GAME_MANAGER, stage_frames) == 0x1a30);
+static_assert(offsetof(RETAIL_GAME_MANAGER, stage) == 0x1a34);
+static_assert(offsetof(RETAIL_GAME_MANAGER, rank) == 0x1a70);
+static_assert(offsetof(RETAIL_GAME_MANAGER, sub_rank) == 0x1a7c);
+
+typedef struct {
+    uint8_t pad_0000[0x188];
+    int32_t cur_scene;
+    uint8_t pad_018c[0x0c];
+    // Counts the frames left that draw the side panel's frame, labels and
+    // logo; drawing the frame marks every value for a redraw. A scene change
+    // sets it to RETAIL_REPAINT_FRAMES.
+    int32_t repaint_frames;
+} RETAIL_APP;
+static_assert(offsetof(RETAIL_APP, cur_scene) == 0x188);
+static_assert(offsetof(RETAIL_APP, repaint_frames) == 0x198);
+
+#define RETAIL_REPAINT_FRAMES 3
+
+typedef struct {
+    uint8_t pad_0000[0x81f0];
+    int32_t state;
+} RETAIL_MAIN_MENU;
+static_assert(offsetof(RETAIL_MAIN_MENU, state) == 0x81f0);
+#define RETAIL_MAIN_MENU_AT ((RETAIL_MAIN_MENU *)0x006d46c0)
+
+#define RETAIL_GAME_MANAGER_AT ((RETAIL_GAME_MANAGER *)0x0069bca0)
+#define RETAIL_APP_AT ((RETAIL_APP *)0x006c6d18)
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} RETAIL_VEC3;
+
+// Player::bullets[i], a shot of the player's own fire.
+typedef struct {
+    uint8_t pad_0000[0x110];
+    RETAIL_VEC3 pos;
+    uint8_t pad_011c[0x30];
+    int16_t damage;
+    int16_t state;
+    uint8_t pad_0150[0x08];
+} RETAIL_PLAYER_BULLET;
+static_assert(offsetof(RETAIL_PLAYER_BULLET, pos) == 0x110);
+static_assert(offsetof(RETAIL_PLAYER_BULLET, damage) == 0x14c);
+static_assert(offsetof(RETAIL_PLAYER_BULLET, state) == 0x14e);
+static_assert(sizeof(RETAIL_PLAYER_BULLET) == 0x158);
+
+// g_Player at 0x6ca628.
+typedef struct {
+    uint8_t pad_0000[0x440];
+    RETAIL_VEC3 position;
+    uint8_t pad_044c[0x594];
+    int8_t player_state;
+    uint8_t pad_09e1[0x47];
+    RETAIL_PLAYER_BULLET bullets[0x50];
+} RETAIL_PLAYER;
+static_assert(offsetof(RETAIL_PLAYER, position) == 0x440);
+static_assert(offsetof(RETAIL_PLAYER, player_state) == 0x9e0);
+static_assert(offsetof(RETAIL_PLAYER, bullets) == 0xa28);
+#define RETAIL_PLAYER_AT ((RETAIL_PLAYER *)0x006ca628)
+
+// BulletManager::bullets[i], one enemy bullet.
+typedef struct {
+    uint8_t pad_0000[0x560];
+    RETAIL_VEC3 pos;
+    RETAIL_VEC3 velocity;
+    uint8_t pad_0578[0x0c];
+    float speed;
+    uint8_t pad_0588[0x08];
+    float angle;
+    uint8_t pad_0594[0x10];
+    int32_t timer_current;
+    uint8_t pad_05a8[0x10];
+    uint16_t flags;
+    uint8_t pad_05ba[0x04];
+    uint16_t state;
+    uint8_t pad_05c0[0x03];
+    uint8_t grazed;
+} RETAIL_BULLET;
+static_assert(offsetof(RETAIL_BULLET, pos) == 0x560);
+static_assert(offsetof(RETAIL_BULLET, velocity) == 0x56c);
+static_assert(offsetof(RETAIL_BULLET, speed) == 0x584);
+static_assert(offsetof(RETAIL_BULLET, angle) == 0x590);
+static_assert(offsetof(RETAIL_BULLET, timer_current) == 0x5a4);
+static_assert(offsetof(RETAIL_BULLET, flags) == 0x5b8);
+static_assert(offsetof(RETAIL_BULLET, state) == 0x5be);
+static_assert(offsetof(RETAIL_BULLET, grazed) == 0x5c3);
+static_assert(sizeof(RETAIL_BULLET) == 0x5c4);
+
+// BulletManager::lasers[i], one enemy laser.
+typedef struct {
+    uint8_t pad_0000[0x220];
+    RETAIL_VEC3 pos;
+    float angle;
+    float start_offset;
+    float end_offset;
+    uint8_t pad_0238[0x20];
+    int32_t active;
+    uint8_t pad_025c[0x08];
+    int32_t timer_current;
+    uint8_t pad_0268[0x04];
+    uint8_t state;
+    uint8_t pad_026d[0x03];
+} RETAIL_LASER;
+static_assert(offsetof(RETAIL_LASER, pos) == 0x220);
+static_assert(offsetof(RETAIL_LASER, angle) == 0x22c);
+static_assert(offsetof(RETAIL_LASER, start_offset) == 0x230);
+static_assert(offsetof(RETAIL_LASER, end_offset) == 0x234);
+static_assert(offsetof(RETAIL_LASER, active) == 0x258);
+static_assert(offsetof(RETAIL_LASER, timer_current) == 0x264);
+static_assert(offsetof(RETAIL_LASER, state) == 0x26c);
+static_assert(sizeof(RETAIL_LASER) == 0x270);
+
+// g_BulletManager at 0x5a5ff8.
+typedef struct {
+    uint8_t pad_0000[0x5600];
+    RETAIL_BULLET bullets[0x280];
+    RETAIL_LASER lasers[0x40];
+} RETAIL_BULLET_MANAGER;
+static_assert(offsetof(RETAIL_BULLET_MANAGER, bullets) == 0x5600);
+static_assert(offsetof(RETAIL_BULLET_MANAGER, lasers) == 0xec000);
+#define RETAIL_BULLET_MANAGER_AT ((RETAIL_BULLET_MANAGER *)0x005a5ff8)
+
+// EnemyFlags::active, the first byte of Enemy::flags.
+#define RETAIL_ENEMY_FLAGS_ACTIVE 0x80
+
+// EnemyManager::enemies[i], one enemy.
+typedef struct {
+    uint8_t pad_0000[0xc6c];
+    RETAIL_VEC3 pos;
+    uint8_t pad_0c78[0x6c];
+    int32_t life;
+    uint8_t pad_0ce8[0x168];
+    uint8_t flags;
+    uint8_t pad_0e51[0x77];
+} RETAIL_ENEMY;
+static_assert(offsetof(RETAIL_ENEMY, pos) == 0xc6c);
+static_assert(offsetof(RETAIL_ENEMY, life) == 0xce4);
+static_assert(offsetof(RETAIL_ENEMY, flags) == 0xe50);
+static_assert(sizeof(RETAIL_ENEMY) == 0xec8);
+
+// g_EnemyManager at 0x4b79c8.
+typedef struct {
+    uint8_t pad_0000[0xed0];
+    RETAIL_ENEMY enemies[0x101];
+    uint8_t pad_0ee598[0x2c];
+    int32_t spell_card_capture;
+    int32_t spell_card_active;
+    int32_t spell_card_bonus;
+    int32_t spell_card_index;
+} RETAIL_ENEMY_MANAGER;
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, enemies) == 0xed0);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_capture) == 0xee5c4);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_active) == 0xee5c8);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_bonus) == 0xee5cc);
+static_assert(offsetof(RETAIL_ENEMY_MANAGER, spell_card_index) == 0xee5d0);
+#define RETAIL_ENEMY_MANAGER_AT ((RETAIL_ENEMY_MANAGER *)0x004b79c8)
+
+// ItemManager::items[i], one item.
+typedef struct {
+    uint8_t pad_0000[0x110];
+    RETAIL_VEC3 pos;
+    uint8_t pad_011c[0x24];
+    uint8_t type;
+    uint8_t active;
+    uint8_t pad_0142[0x01];
+    uint8_t state;
+} RETAIL_ITEM;
+static_assert(offsetof(RETAIL_ITEM, pos) == 0x110);
+static_assert(offsetof(RETAIL_ITEM, type) == 0x140);
+static_assert(offsetof(RETAIL_ITEM, active) == 0x141);
+static_assert(offsetof(RETAIL_ITEM, state) == 0x143);
+static_assert(sizeof(RETAIL_ITEM) == 0x144);
+
+// g_ItemManager at 0x69e268.
+typedef struct {
+    RETAIL_ITEM items[0x201];
+} RETAIL_ITEM_MANAGER;
+#define RETAIL_ITEM_MANAGER_AT ((RETAIL_ITEM_MANAGER *)0x0069e268)

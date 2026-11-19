@@ -20,5 +20,5 @@ option(
   type: 'combo',
   choices: ['all', 'games', 'othpatch'],
   value: 'all',
-  description: 'Programs to build: the games and the replay runner, othpatch, or both',
+  description: 'Programs to build: the games and their native backends, othpatch, or both',
 )

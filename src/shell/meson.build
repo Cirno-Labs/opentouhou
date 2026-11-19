@@ -33,9 +33,11 @@ shell_game_lib = static_library(
 
 # The stand-ins for shell/game where a game runs without it (see null.h).
 shell_null_files = files('null/files.c')
+shell_null_devices = files('null/devices.c')
 
-# shell/game runs the game, so only a game executable links it. The replay
-# runner and the tests replace its game-facing functions with stand-ins.
+# shell/game runs the game, so only a game executable links it. The
+# harness's backends, the recorders and the tests replace its game-facing
+# functions with stand-ins.
 shell_game_dep = declare_dependency(
   compile_args: [layer_include['shell']],
   link_with: [shell_game_lib, shell_lib],

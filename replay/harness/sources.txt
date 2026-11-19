@@ -1,0 +1,10 @@
+# The sources of the harness library, which replay/meson.build and the
+# retail backends' project, replay/retail/meson.build, both build.
+case.c
+compare.c
+driver.c
+game.c
+run.c
+script.c
+staged.c
+state.c

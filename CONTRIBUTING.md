@@ -12,6 +12,7 @@ touches before you make it.
   structure, determinism rules, the module map.
 - `docs/TH06.md`: how th06 is structured and maps onto the design.
 - `docs/BUILDING.md`: building, packaging, checks, tests.
+- `docs/REPLAY.md`: the replay harness, its backends and its cases.
 
 The layer rules and the determinism rules in `docs/ARCHITECTURE.md`
 bind every change; simulation code in particular must follow "Simulation
@@ -125,6 +126,8 @@ inside that job changes:
 - `docs/<GAME>.md`: what the original game is like, and the decisions
   that follow from it for more than one module.
 - `docs/BUILDING.md`: building, packaging, checks and tests.
+- `docs/REPLAY.md`: how the replay harness drives games and what a
+  case holds.
 - `docs/<program>/CHANGELOG.md`: the changes that players notice.
 - `README.md`: what the project is, its status, and where to get it.
 - `tools/packaging/<game>/o<game>_readme.txt`: what a player of the package

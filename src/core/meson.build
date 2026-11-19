@@ -1,6 +1,8 @@
 core_include = [layer_include['core']]
 
 # Reads sources.txt into core_sources, a list of sources by library.
+# sources.txt lists only the libraries that replay/retail's own project
+# builds too; the others list their sources here.
 core_sources = {}
 core_library = ''
 foreach line : import('fs').read('sources.txt').split('\n')
@@ -196,8 +198,8 @@ core_audio_lib = static_library(
 )
 
 # core/gfx's frontend batches, keeps the last two ticks and blends them
-# without a GPU, so the tests and the replay runner link it alone. The
-# OpenGL backend, with Gfx_Init, is a separate library.
+# without a GPU, so the tests link it alone. The OpenGL backend, with
+# Gfx_Init, is a separate library.
 core_gfx_lib = static_library(
   'core_gfx',
   'gfx/backend_null.c',

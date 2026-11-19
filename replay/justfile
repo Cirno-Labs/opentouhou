@@ -1,59 +1,139 @@
-# Build a game's capture tracer (dev only, see docs/BUILDING.md).
+# Build a game's retail backend (dev only, see docs/BUILDING.md).
 [group('replay')]
 build game:
     just -f {{justfile_directory()}}/justfile _docker_build win media
     just -f {{justfile_directory()}}/justfile _docker_run win media replay {{game}}
 
-# Run a game's capture tracer under wine, without audio drivers (the
-# original stalls on its title screen when DirectSound has no device),
-# in a Japanese locale for its file names, and on a private X server
-# when xvfb-run is installed (the original skips frames while its window
-# is inactive).
+# Build the native backends of this platform's build (debug or release), as
+# tools/harness finds them, and print the program of game.
 [group('replay')]
-[no-cd]
-capture game *args:
+_native game target:
     #!/usr/bin/env bash
     set -euo pipefail
-    export WINEDLLOVERRIDES="winealsa.drv,winepulse.drv,wineoss.drv,winecoreaudio.drv="
-    export LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8
-    display=()
-    if command -v xvfb-run > /dev/null; then
-        display=(xvfb-run -a -s '-screen 0 1024x768x24')
+    root={{quote(justfile_directory())}}
+    case "$(uname -s)" in
+        Darwin)
+            "$root/tools/mac/build" build --target {{target}} >&2
+            echo "$root/build/mac-$(uname -m)/{{target}}/{{game}}native" ;;
+        MINGW* | MSYS* | CYGWIN*)
+            just -f "$root/justfile" _build win media {{target}} >&2
+            echo "$root/build/win/{{target}}/{{game}}native.exe" ;;
+        *)
+            just -f "$root/justfile" _build linux media {{target}} >&2
+            echo "$root/build/linux/{{target}}/{{game}}native" ;;
+    esac
+
+# Capture a person's play of a game's original into the case file case: the
+# retail backend runs it in a window on the current display, paced to the
+# game's frame rate, and records the held buttons until the game quits.
+[group('replay')]
+[no-cd]
+live game data case:
+    just -f {{justfile_directory()}}/justfile replay::build {{game}}
+    {{quote(justfile_directory())}}/tools/harness capture {{game}} {{quote(case)}} \
+        --backend retail --data {{quote(data)}} --live --window
+
+# Check a game's native backend on its data: capture its native.txt, then
+# replay the case headless and twice with screenshots, and fail unless
+# every state row and every screenshot pair matches.
+[group('replay')]
+[no-cd]
+native game data:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    program=$(just -f "$root/justfile" replay::_native {{game}} debug)
+    dir=$(mktemp -d)
+    trap 'rm -rf "$dir"' EXIT
+    harness=("$root/tools/harness")
+    data=(--data {{quote(data)}} --program "$program")
+    "${harness[@]}" capture {{game}} "$dir/case.otrc" "${data[@]}" --script "$root/replay/{{game}}/native.txt"
+    shots=(--shots 0,100,every:300)
+    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --out "$dir/headless" --headless
+    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --out "$dir/first" "${shots[@]}"
+    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --out "$dir/second" "${shots[@]}" --against "$dir/first"
+    echo "{{game}} native: $(grep -x 'rows = .*' "$dir/headless/report.ini"), $(grep -x 'shots = .*' "$dir/second/report.ini") match"
+
+# Check a game's native port against its original: capture the original
+# on the retail backend with an input script and replay the case on the
+# native backend headless. With shots, also replay the case on the
+# original with those screenshots and compare the native ones with them.
+# Keeps the case and every run in out when it is given. Fails unless every
+# state row matches, since the two backends draw differently.
+[group('replay')]
+[no-cd]
+retail game data script shots="" out="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    just -f "$root/justfile" replay::build {{game}}
+    program=$(just -f "$root/justfile" replay::_native {{game}} debug)
+    dir=$(mktemp -d)
+    trap 'rm -rf "$dir"' EXIT
+    harness=("$root/tools/harness")
+    data=(--data {{quote(data)}})
+    "${harness[@]}" capture {{game}} "$dir/case.otrc" "${data[@]}" --backend retail --script {{quote(script)}}
+    native=(--headless)
+    if [ -n {{quote(shots)}} ]; then
+        "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --backend retail --out "$dir/retail" --shots {{quote(shots)}}
+        native=(--shots {{quote(shots)}} --against "$dir/retail")
     fi
-    exec "${display[@]}" wine {{quote(justfile_directory())}}/build/replay/{{game}}/{{game}}capture.exe {{args}}
+    status=0
+    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --program "$program" --out "$dir/native" "${native[@]}" || status=$?
+    cat "$dir/native/report.ini"
+    if [ -n {{quote(shots)}} ]; then cat "$dir/native/shots.tsv"; fi
+    if [ -n {{quote(out)}} ]; then
+        mkdir -p {{quote(out)}}
+        cp -r "$dir/case.otrc" "$dir/native" {{quote(out)}}
+        if [ -d "$dir/retail" ]; then cp -r "$dir/retail" {{quote(out)}}; fi
+    fi
+    [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$dir/native/report.ini"
 
-# Compare a game's case or directory against its original .rpy inputs.
+# Capture one case per .rpy file of the directory replays into out: the
+# retail backend stages each into the original's replay slot and plays it.
 [group('replay')]
 [no-cd]
-run game cases data replays:
-    just -f {{justfile_directory()}}/justfile _build linux media debug
-    {{quote(justfile_directory())}}/build/linux/debug/{{game}}replay --data {{quote(data)}} --replays {{quote(replays)}} {{quote(cases)}}
-
-# Compare like `run`, with a release build and one process per case.
-[group('replay')]
-[no-cd]
-run-fast game cases data replays jobs=num_cpus():
+rpy-cases game data replays out:
     #!/usr/bin/env bash
     set -euo pipefail
-    just -f {{quote(justfile_directory())}}/justfile _build linux media release
-    runner={{quote(justfile_directory())}}/build/linux/release/{{game}}replay
-    cases={{quote(cases)}}
-    if [ -d "$cases" ]; then shopt -s nullglob; list=("$cases"/*.otrc); else list=("$cases"); fi
-    logs=$(mktemp -d)
-    trap 'rm -rf "$logs"' EXIT
+    root={{quote(justfile_directory())}}
+    just -f "$root/justfile" replay::build {{game}}
+    mkdir -p {{quote(out)}}
+    shopt -s nullglob
+    for rpy in {{quote(replays)}}/*.rpy; do
+        name=$(basename "$rpy" .rpy)
+        "$root/tools/stage_rpy" {{game}} "$rpy" {{quote(out)}}/"$name.otrc" \
+            --backend retail --data {{quote(data)}} --headless > /dev/null
+        echo "captured $name"
+    done
+
+# Replay every case file of the directory cases on the native backend
+# headless, with a release build and one process per case, and fail unless
+# every state row of every case matches.
+[group('replay')]
+[no-cd]
+check game data cases jobs=num_cpus():
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    program=$(just -f "$root/justfile" replay::_native {{game}} release)
+    shopt -s nullglob
+    list=({{quote(cases)}}/*.otrc)
+    out=$(mktemp -d)
+    trap 'rm -rf "$out"' EXIT
     printf '%s\0' "${list[@]}" | xargs -0 -P {{jobs}} -I{} sh -c \
-        'name=$(basename "$1" .otrc); "$2" --data "$3" --replay "$4/$name.rpy" "$1" > "$5/$name.log" 2>&1 || touch "$5/$name.fail"' \
-        _ {} "$runner" {{quote(data)}} {{quote(replays)}} "$logs"
+        'name=$(basename "$1" .otrc); "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || touch "$4/$name.fail"' \
+        _ {} "$root" {{quote(data)}} "$out" "$program"
     failed=0
     for case in "${list[@]}"; do
         name=$(basename "$case" .otrc)
-        if [ -e "$logs/$name.fail" ]; then
+        if [ -e "$out/$name.fail" ]; then
             failed=$((failed + 1))
             echo "FAIL $name"
-            cat "$logs/$name.log"
+            cat "$out/$name.log" "$out/$name/report.ini" 2> /dev/null || true
         else
-            echo "ok   $name"
+            echo "ok   $name $(grep -x 'rows = .*' "$out/$name/report.ini")"
         fi
     done
     echo "${#list[@]} cases, $failed failed"
-    [ "$failed" -eq 0 ]
+    [ "${#list[@]}" -gt 0 ] && [ "$failed" -eq 0 ]

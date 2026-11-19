@@ -1,5 +1,6 @@
-# The sources of the core libraries, by library. A [library] line starts
-# each list. core/io adds its platform's backend.
+# The sources of the core libraries that the retail backends' own project,
+# replay/retail/meson.build, builds too. A [library] line starts each list.
+# core/io adds its platform's backend.
 
 [base]
 base/arena.c

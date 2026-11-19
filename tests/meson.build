@@ -178,7 +178,7 @@ test(
 # The tests of the Python tools under tools/ run with the Python of the
 # build. They need neither a built program nor the network.
 foreach name : [
-  'changelog', 'header_spacing', 'othpatch_release', 'package_docs',
+  'changelog', 'harness', 'header_spacing', 'othpatch_release', 'package_docs',
   'package_files', 'release_index', 'versioning',
 ]
   test(
@@ -260,46 +260,6 @@ foreach part : ['audio', 'audio_decoder', 'audio_resampler']
     suite: 'unit',
   )
 endforeach
-
-test(
-  'th06/runner/run',
-  executable(
-    'test_th06_runner_run',
-    'test_th06_runner_run.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th06_runner_lib],
-    dependencies: [sdl3, zlib],
-  ),
-  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_runner' },
-  suite: 'unit',
-)
-
-test(
-  'th06/runner/state',
-  executable(
-    'test_th06_runner_state',
-    'test_th06_runner_state.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
-    implicit_include_directories: false,
-    link_with: [th06_runner_lib],
-    dependencies: [sdl3, zlib],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th06/runner/compare',
-  executable(
-    'test_th06_runner_compare',
-    'test_th06_runner_compare.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
-    implicit_include_directories: false,
-    link_with: [th06_runner_lib],
-    dependencies: [sdl3, zlib],
-  ),
-  suite: 'unit',
-)
 
 foreach ascii_test : ['ascii', 'ascii_menu']
   test(
@@ -961,17 +921,34 @@ test(
 )
 
 test(
-  'replay/core/case',
+  'replay/bot',
   executable(
-    'test_case',
-    'test_case.c',
-    c_args: core_include + replay_include,
+    'test_bot',
+    'test_bot.c',
+    '../replay/bot/bot.c',
+    c_args: stg_include + bot_include,
     implicit_include_directories: false,
-    link_with: [replay_case_lib, core_io_lib, core_base_lib],
-    dependencies: [sdl3, zlib],
+    link_with: [stg_rng_lib, core_base_lib],
+    dependencies: [cc_libm],
   ),
   suite: 'unit',
 )
+
+foreach part : ['script', 'case', 'state', 'compare', 'driver']
+  test(
+    'replay/harness/' + part,
+    executable(
+      'test_harness_' + part,
+      'test_harness_' + part + '.c',
+      c_args: core_include + harness_include,
+      implicit_include_directories: false,
+      link_with: harness_lib,
+      dependencies: [sdl3, zlib, avcodec, avutil, swscale, jpeg, cc_libm],
+    ),
+    env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'harness_' + part },
+    suite: 'unit',
+  )
+endforeach
 
 # The tests include shell's private headers, so they compile against the
 # sources directly instead of the library.

@@ -73,8 +73,8 @@ def run_build(platform: str, programs: str, target: str) -> None:
 
 
 def run_capture_build(game: str) -> None:
-    source_dir = REPO_DIR / "replay" / game
-    build_dir = REPO_DIR / "build/replay" / game
+    source_dir = REPO_DIR / "replay/retail"
+    build_dir = REPO_DIR / "build/retail" / game
     if not (build_dir / "build.ninja").exists():
         # The image sets PKG_CONFIG_PATH for the x86_64 "win" target. It
         # takes priority over the cross file's pkg_config_libdir, which
@@ -88,6 +88,7 @@ def run_capture_build(game: str) -> None:
                 "meson",
                 "setup",
                 f"--cross-file={CAPTURE_CROSS_FILE}",
+                f"-Dgame={game}",
                 str(build_dir),
                 str(source_dir),
             ],

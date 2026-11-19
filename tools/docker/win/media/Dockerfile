@@ -1,8 +1,8 @@
 # check=skip=InvalidDefaultArgInFrom
 # opentouhou media build image for Windows: the base image with SDL3_ttf,
-# libjpeg-turbo and FFmpeg, for the games, replay runner and tests. It also
-# has MinGW-w64 for i686 with a static SDL3 and zlib, for the capture
-# tools under replay/.
+# libjpeg-turbo and FFmpeg, for the games, native backends and tests. It also
+# has MinGW-w64 for i686 with a static SDL3, zlib, libjpeg and FFmpeg, for
+# the retail backends under replay/.
 #
 # Multi-stage: each dependency is built in its own stage on the base image
 # and installed into /stage/ext, so that the final stage adds only the new
@@ -193,7 +193,7 @@ RUN curl -fsSL -o /tmp/ffmpeg.tar.xz \
 
 
 
-# MinGW-w64 for i686, for the capture tools.
+# MinGW-w64 for i686, for the retail backends.
 FROM base AS toolchain-i686
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -204,7 +204,7 @@ RUN apt-get update \
 
 
 
-# SDL3 for i686, used by the capture tools.
+# SDL3 for i686, used by the retail backends.
 FROM toolchain-i686 AS sdl-i686
 ARG SDL_VERSION
 ARG SDL_SHA256
@@ -236,7 +236,7 @@ RUN curl -fsSL -o /tmp/sdl.tar.gz \
 
 
 
-# zlib for i686, used by the capture tools.
+# zlib for i686, used by the retail backends.
 FROM toolchain-i686 AS zlib-i686
 ARG ZLIB_VERSION
 ARG ZLIB_SHA256
@@ -253,6 +253,77 @@ RUN curl -fsSL -o /tmp/zlib.tar.gz \
     && rm -rf /tmp/zlib.tar.gz /tmp/zlib-${ZLIB_VERSION}
 
 
+# libjpeg for i686, used by the retail backends' core/image.
+FROM toolchain-i686 AS jpeg-i686
+ARG JPEG_VERSION
+ARG JPEG_SHA256
+RUN curl -fsSL -o /tmp/jpeg.tar.gz \
+        https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${JPEG_VERSION}/libjpeg-turbo-${JPEG_VERSION}.tar.gz \
+    && echo "${JPEG_SHA256}  /tmp/jpeg.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/jpeg.tar.gz -C /tmp \
+    && cmake -S /tmp/libjpeg-turbo-${JPEG_VERSION} -B /tmp/jpeg-build \
+        -DCMAKE_SYSTEM_NAME=Windows \
+        -DCMAKE_SYSTEM_PROCESSOR=x86 \
+        -DCMAKE_C_COMPILER=i686-w64-mingw32-gcc-posix \
+        -DCMAKE_RC_COMPILER=i686-w64-mingw32-windres \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/ext/i686 \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DENABLE_SHARED=OFF \
+        -DENABLE_STATIC=ON \
+        -DWITH_SIMD=OFF \
+        -DWITH_TURBOJPEG=OFF \
+        -DWITH_TOOLS=OFF \
+        -DWITH_TESTS=OFF \
+    && cmake --build /tmp/jpeg-build -j"$(nproc)" \
+    && DESTDIR=/stage cmake --install /tmp/jpeg-build \
+    && rm -rf /tmp/jpeg.tar.gz /tmp/libjpeg-turbo-${JPEG_VERSION} /tmp/jpeg-build
+
+
+
+# FFmpeg for i686 with the image codecs of core/image only, used by the
+# retail backends for screenshots.
+FROM zlib-i686 AS ffmpeg-i686
+ARG FFMPEG_VERSION
+ARG FFMPEG_SHA256
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL -o /tmp/ffmpeg.tar.xz \
+        https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz \
+    && echo "${FFMPEG_SHA256}  /tmp/ffmpeg.tar.xz" | sha256sum -c - \
+    && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp \
+    && cd /tmp/ffmpeg-${FFMPEG_VERSION} \
+    && ./configure \
+        --prefix=/ext/i686 \
+        --arch=x86 \
+        --target-os=mingw32 \
+        --cross-prefix=i686-w64-mingw32- \
+        --cc=i686-w64-mingw32-gcc-posix \
+        --enable-cross-compile \
+        --disable-everything \
+        --disable-programs \
+        --disable-doc \
+        --disable-network \
+        --disable-autodetect \
+        --disable-x86asm \
+        --disable-inline-asm \
+        --disable-shared \
+        --enable-static \
+        --disable-avformat \
+        --disable-avdevice \
+        --disable-avfilter \
+        --disable-swresample \
+        --enable-zlib \
+        --extra-cflags=-I/stage/ext/i686/include \
+        --extra-ldflags=-L/stage/ext/i686/lib \
+        --enable-decoder=png,mjpeg,bmp \
+        --enable-encoder=png,mjpeg \
+    && make -j"$(nproc)" \
+    && make install DESTDIR=/stage \
+    && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-${FFMPEG_VERSION}
+
+
 
 # opentouhou games
 FROM toolchain-i686
@@ -261,5 +332,7 @@ COPY --from=jpeg /stage/ext/ /ext/
 COPY --from=ffmpeg /stage/ext/ /ext/
 COPY --from=sdl-i686 /stage/ext/i686/ /ext/i686/
 COPY --from=zlib-i686 /stage/ext/i686/ /ext/i686/
+COPY --from=jpeg-i686 /stage/ext/i686/ /ext/i686/
+COPY --from=ffmpeg-i686 /stage/ext/i686/ /ext/i686/
 LABEL org.opencontainers.image.source="https://github.com/Cirno-Labs/opentouhou"
 ENTRYPOINT ["python3", "/app/tools/docker/entrypoint.py", "--platform", "win", "--programs", "games"]

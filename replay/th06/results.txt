@@ -1,0 +1,17 @@
+# Opens the result screen from the title, pages through its difficulties
+# and shows the next page.
+frames 1041
+input 350 shoot
+input 351 none
+input 385 down
+input 386 none
+input 387 down
+input 388 none
+input 389 down
+input 390 none
+input 400 shoot
+input 401 none
+input 800 shoot
+input 801 none
+input 900 right
+input 901 none
