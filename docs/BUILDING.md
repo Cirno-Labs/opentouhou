@@ -82,6 +82,11 @@ core/base, core/json, core/io and the tools run in both images, except
 in `just test`: it runs the two images at the same time and runs these
 tests in the media image only.
 
+The text tests run once against IPAGothic and once against MS
+Gothic. The second run needs `OPENTOUHOU_MSGOTHIC` to name a
+msgothic.ttc, which `just test` passes into the image, and is skipped
+without it.
+
 The Windows images build the unit tests too, but cannot run them.
 `just test-win` builds them and runs them under wine, or only prints a
 message when wine is not installed. CI runs them on Windows.
