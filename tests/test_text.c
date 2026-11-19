@@ -1,4 +1,5 @@
 #include "core/text.h"
+#include "core/text/private.h"
 
 #include "test.h"
 #include "test_dir.h"
@@ -764,6 +765,42 @@ TEST(gdi_combining_accents_keep_shaped_advances)
     style.gdi_raster = false;
     CHECK(IS_OK(Text_Measure(font, "é", &style, &shaped, &height)));
     CHECK_EQ_INT(gdi, shaped);
+    Font_Free(font);
+    Text_Shutdown();
+}
+
+// Checks that the fallback of font has its em size and measures "十　あ" as
+// the bundled font at that em does.
+static void M_CheckFallbackEm(FONT *const font)
+{
+    const float em = TTF_GetFontSize(font->font);
+    CHECK(TTF_GetFontSize(font->fallback->font) == em);
+    FONT *expected = nullptr;
+    CHECK(IS_OK(Font_LoadDefault(em, &expected)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    int32_t width, height, expected_width, expected_height;
+    CHECK(
+        IS_OK(Text_Measure(font->fallback, "十　あ", &style, &width, &height)));
+    CHECK(IS_OK(Text_Measure(
+        expected, "十　あ", &style, &expected_width, &expected_height)));
+    CHECK_EQ_INT(width, expected_width);
+    CHECK_EQ_INT(height, expected_height);
+    Font_Free(expected);
+}
+
+TEST(fallback_glyphs_take_the_base_em)
+{
+    CHECK(IS_OK(Text_Init()));
+    FONT *const font = M_LoadWithCell(900, 600, 28);
+    CHECK(IS_OK(Font_LoadDefault(28, &font->fallback)));
+    int32_t offset;
+    CHECK(IS_OK(Font_SetSizeRounded(font, 28, &offset)));
+    CHECK(TTF_GetFontSize(font->font) != 28.0f);
+    M_CheckFallbackEm(font);
+    CHECK(IS_OK(Font_SetSize(font, 35)));
+    M_CheckFallbackEm(font);
     Font_Free(font);
     Text_Shutdown();
 }

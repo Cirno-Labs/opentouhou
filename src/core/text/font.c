@@ -86,6 +86,23 @@ static RESULT M_UpdateBoldAdvance(FONT *const font)
     return OK;
 }
 
+// Sets the em size of font and its fallbacks, as GDI's font linking draws
+// the linked faces at the base font's em.
+static RESULT M_SetEm(FONT *const font, const float em)
+{
+    if (TTF_GetFontSize(font->font) != em) {
+        FAIL_IF(
+            !TTF_SetFontSize(font->font, em), "Cannot resize font: %s",
+            SDL_GetError());
+        MUST(TextRaster_SetSize(font->raster_face, em));
+        MUST(M_UpdateBoldAdvance(font));
+    }
+    if (font->fallback != nullptr) {
+        MUST(M_SetEm(font->fallback, em));
+    }
+    return OK;
+}
+
 RESULT Text_Init(void)
 {
     if (!m_Initialized) {
@@ -197,7 +214,10 @@ RESULT Font_LoadFamily(
             Font_Free(font);
             continue;
         }
-        const RESULT fallback = Font_LoadDefault(pixel_height, &font->fallback);
+        RESULT fallback = Font_LoadDefault(pixel_height, &font->fallback);
+        if (IS_OK(fallback)) {
+            fallback = M_SetEm(font->fallback, TTF_GetFontSize(font->font));
+        }
         if (!IS_OK(fallback)) {
             Font_Free(font);
             return fallback;
@@ -228,17 +248,7 @@ static RESULT M_SetSize(
             size = 1.0f;
         }
     }
-    if (TTF_GetFontSize(font->font) != size) {
-        FAIL_IF(
-            !TTF_SetFontSize(font->font, size), "Cannot resize font: %s",
-            SDL_GetError());
-        MUST(TextRaster_SetSize(font->raster_face, size));
-        MUST(M_UpdateBoldAdvance(font));
-    }
-    if (font->fallback != nullptr) {
-        MUST(M_SetSize(font->fallback, pixel_height, rounded));
-    }
-    return OK;
+    return M_SetEm(font, size);
 }
 
 RESULT Font_SetSize(FONT *const font, const float pixel_height)
