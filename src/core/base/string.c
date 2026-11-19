@@ -70,3 +70,20 @@ bool Str_EqualIgnoreCase(const char *a, const char *b)
     }
     return M_ToLowerAscii(*a) == M_ToLowerAscii(*b);
 }
+
+bool Str_ParseU32(const char *const text, uint32_t *const out)
+{
+    uint32_t value = 0;
+    if (text[0] == '\0') {
+        return false;
+    }
+    for (const char *c = text; *c != '\0'; c++) {
+        const uint32_t digit = (uint32_t)(*c - '0');
+        if (*c < '0' || *c > '9' || value > (UINT32_MAX - digit) / 10) {
+            return false;
+        }
+        value = value * 10 + digit;
+    }
+    *out = value;
+    return true;
+}
