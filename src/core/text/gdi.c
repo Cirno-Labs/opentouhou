@@ -187,6 +187,8 @@ bool TextRaster_IsSimple(
         const uint32_t c = SDL_StepUTF8(&cursor, &remaining);
         if (!((c >= 32 && c <= 126) || (c >= 0xa0 && c <= 0x24f)
               || (c >= 0x2000 && c <= 0x200a) || (c >= 0x2010 && c <= 0x2027)
+              || (c >= 0x3000 && c <= 0x3029) || (c >= 0x3030 && c <= 0x3098)
+              || (c >= 0x309b && c <= 0x30ff)
               || (c >= 0x3400 && c <= 0x9fff))) {
             return false;
         }

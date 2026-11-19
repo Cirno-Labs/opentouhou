@@ -761,10 +761,14 @@ TEST(gdi_combining_accents_keep_shaped_advances)
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
     int32_t gdi, shaped, height;
-    CHECK(IS_OK(Text_Measure(font, "é", &style, &gdi, &height)));
-    style.gdi_raster = false;
-    CHECK(IS_OK(Text_Measure(font, "é", &style, &shaped, &height)));
-    CHECK_EQ_INT(gdi, shaped);
+    const char *const texts[] = { "é", "が", "ガ" };
+    for (size_t i = 0; i < sizeof(texts) / sizeof(texts[0]); i++) {
+        style.gdi_raster = true;
+        CHECK(IS_OK(Text_Measure(font, texts[i], &style, &gdi, &height)));
+        style.gdi_raster = false;
+        CHECK(IS_OK(Text_Measure(font, texts[i], &style, &shaped, &height)));
+        CHECK_EQ_INT(gdi, shaped);
+    }
     Font_Free(font);
     Text_Shutdown();
 }
