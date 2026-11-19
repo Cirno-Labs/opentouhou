@@ -78,19 +78,27 @@ stg_translation_lib = static_library(
   dependencies: [core_dep],
 )
 
+stg_game_font_lib = static_library(
+  'stg_game_font',
+  'game_font.c',
+  c_args: stg_include,
+  implicit_include_directories: false,
+  dependencies: [core_dep],
+)
+
 stg_note_lib = static_library(
   'stg_note',
   'note.c',
   c_args: stg_include,
   implicit_include_directories: false,
   dependencies: [core_dep],
-  link_with: [stg_translation_lib],
+  link_with: [stg_game_font_lib, stg_translation_lib],
 )
 
 stg_dep = declare_dependency(
   compile_args: [layer_include['stg']],
   link_with: [
-    stg_angle_lib, stg_chain_lib, stg_end_diff_lib, stg_lzss_lib,
+    stg_angle_lib, stg_chain_lib, stg_end_diff_lib, stg_game_font_lib, stg_lzss_lib,
     stg_msg_diff_lib, stg_note_lib, stg_pbg3_lib, stg_pbg4_lib, stg_rng_lib,
     stg_timer_lib, stg_translation_lib,
   ],

@@ -6,7 +6,6 @@
 
 struct FONT {
     TTF_Font *font;
-    uint8_t *data;
     // The em size for each pixel of cell height.
     float cell_scale;
     float ascent_scale;
@@ -17,8 +16,9 @@ struct FONT {
     FONT *fallback;
 };
 
-// Opens face face_index of the font in data, a copy of it, at the cell
-// height pixel_height. Leaves out empty on failure.
+// Opens face face_index of the font in data at the cell height
+// pixel_height. The font reads data, which must outlive it. Leaves out
+// empty on failure.
 RESULT Font_Open(
     const void *data, size_t size, int32_t face_index, float pixel_height,
     FONT **out);

@@ -1,18 +1,98 @@
+#include "core/patch.h"
 #include "core/text.h"
 #include "core/text/private.h"
 
 #include "test.h"
-#include "test_dir.h"
+#include "test_fonts.h"
+#ifdef TEST_MS_GOTHIC
+    #include "patch_builder.h"
+#endif
 
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <string.h>
 
+#ifdef TEST_MS_GOTHIC
+    #define M_FAMILY "ＭＳ ゴシック"
+#else
+    #define M_FAMILY "IPAGothic"
+#endif
+
+// Returns the file of the font under test. Mem_Free releases it.
+static uint8_t *M_ReadFont(size_t *const size)
+{
+#ifdef TEST_MS_GOTHIC
+    return TestFonts_ReadFile(TestFonts_RequireMsGothic(), size);
+#else
+    return TestFonts_Read(TEST_FONT_GOTHIC, size);
+#endif
+}
+
+// Adds data to the registry, where it wins M_FAMILY, and opens its face of
+// M_FAMILY. The fonts that the registry had stay open, as their data stays
+// until M_Shutdown.
+static FONT *M_OpenData(
+    const uint8_t *const data, const size_t size, const float pixel_height)
+{
+    CHECK(IS_OK(FontRegistry_Add("font under test", data, size)));
+    FONT *font = nullptr;
+    CHECK(IS_OK(FontRegistry_Open(M_FAMILY, pixel_height, &font)));
+    return font;
+}
+
+// Adds the font under test to the registry, as M_OpenData does, and opens
+// it.
+static RESULT M_Open(const float pixel_height, FONT **const out)
+{
+    size_t size;
+    uint8_t *const data = M_ReadFont(&size);
+    const RESULT added = FontRegistry_Add("font under test", data, size);
+    Mem_Free(data);
+    MUST(added);
+    return FontRegistry_Open(M_FAMILY, pixel_height, out);
+}
+
+// Forgets the fonts of the registry and shuts text down, after the test
+// has freed its fonts.
+static void M_Shutdown(void)
+{
+    FontRegistry_Reset(false);
+    Text_Shutdown();
+}
+
+// Returns the table of the first face of the font in data with tag, or
+// nullptr.
+static uint8_t *M_Table(uint8_t *const data, const char *const tag)
+{
+    const uint8_t *const directory = memcmp(data, "ttcf", 4) == 0
+        ? data + M_TestFontsReadBe(data + 12)
+        : data;
+    const int32_t count = directory[4] << 8 | directory[5];
+    for (int32_t i = 0; i < count; i++) {
+        const uint8_t *const record = directory + 12 + i * 16;
+        if (memcmp(record, tag, 4) == 0) {
+            return data + M_TestFontsReadBe(record + 8);
+        }
+    }
+    return nullptr;
+}
+
+// Returns the units per em of the font under test.
+static int32_t M_Units(void)
+{
+    size_t size;
+    uint8_t *const data = M_ReadFont(&size);
+    const uint8_t *const head = M_Table(data, "head");
+    const int32_t units = head[18] << 8 | head[19];
+    Mem_Free(data);
+    return units;
+}
+
 TEST(default_font_renders_japanese)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(16, &font)));
+    CHECK(IS_OK(M_Open(16, &font)));
     TEXT_STYLE style = TextStyle_Default();
     style.color = (GFX_COLOR) { 31, 127, 211, 192 };
     int32_t width, height;
@@ -37,14 +117,14 @@ TEST(default_font_renders_japanese)
     CHECK(visible > 100);
     Image_Free(&image);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(shadow_offsets_and_width_scale)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(16, &font)));
+    CHECK(IS_OK(M_Open(16, &font)));
     TEXT_STYLE style = TextStyle_Default();
     IMAGE original;
     CHECK(
@@ -72,14 +152,14 @@ TEST(shadow_offsets_and_width_scale)
     Image_Free(&styled);
     Image_Free(&original);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(empty_and_invalid_text)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(15, &font)));
+    CHECK(IS_OK(M_Open(15, &font)));
     TEXT_STYLE style = TextStyle_Default();
     int32_t width = -1, height = -1;
     CHECK(IS_OK(Text_Measure(font, "", &style, &width, &height)));
@@ -93,32 +173,25 @@ TEST(empty_and_invalid_text)
         Text_Render(font, "a", &style, &g_HeapAllocator, &image)));
     CHECK(image.pixels == nullptr);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(invalid_font_and_size)
 {
     FONT *font = nullptr;
-    CHECK(!Result_Ignore(Font_LoadDefault(15, &font)));
+    CHECK(!Result_Ignore(M_Open(15, &font)));
     CHECK(font == nullptr);
     CHECK(IS_OK(Text_Init()));
-    CHECK(!Result_Ignore(Font_LoadDefault(0, &font)));
+    CHECK(!Result_Ignore(M_Open(0, &font)));
     CHECK(font == nullptr);
-    READER reader;
-    const uint8_t invalid[] = { 1, 2, 3, 4 };
-    Reader_OpenBuffer(&reader, invalid, sizeof(invalid), nullptr);
-    CHECK(!Result_Ignore(Font_Load(&reader, 15, &font)));
-    CHECK(font == nullptr);
-    Reader_Close(&reader);
-    Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(measure_matches_glyph_bounds)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(15, &font)));
+    CHECK(IS_OK(M_Open(15, &font)));
     TEXT_STYLE style = TextStyle_Default();
     style.width_scale = 0.75f;
     style.shadow = (GFX_COLOR) { 0, 0, 0, 255 };
@@ -136,14 +209,14 @@ TEST(measure_matches_glyph_bounds)
         Image_Free(&image);
     }
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(resize_uses_loaded_font_data)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(15, &font)));
+    CHECK(IS_OK(M_Open(15, &font)));
     const TEXT_STYLE style = TextStyle_Default();
     int32_t width, height;
     CHECK(IS_OK(Text_Measure(font, "東方", &style, &width, &height)));
@@ -155,76 +228,38 @@ TEST(resize_uses_loaded_font_data)
     CHECK(resized_height > height);
     CHECK(!Result_Ignore(Font_SetSize(font, NAN)));
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
-TEST(a_family_opens_the_file_that_has_it)
-{
-    CHECK(IS_OK(Text_Init()));
-    char *const dir = TestDir_Prepare("family");
-    char *const broken = TestDir_Join(dir, "broken.ttf");
-    CHECK(SDL_SaveFile(broken, "not a font", 10));
-    char *const missing = TestDir_Join(dir, "missing.ttf");
-    const char *const paths[] = { missing, broken, SDL_getenv("TEST_FONT") };
-    FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadFamily(paths, 3, "biz udgothic", 15, &font)));
-    CHECK(font != nullptr);
-    CHECK(IS_OK(Font_SetSize(font, 30)));
-    FONT *bundled = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(30, &bundled)));
-    const TEXT_STYLE style = TextStyle_Default();
-    int32_t width, height, bundled_width, bundled_height;
-    CHECK(IS_OK(Text_Measure(font, "Reimu 霊夢", &style, &width, &height)));
-    CHECK(IS_OK(Text_Measure(
-        bundled, "Reimu 霊夢", &style, &bundled_width, &bundled_height)));
-    CHECK_EQ_INT(width, bundled_width);
-    CHECK_EQ_INT(height, bundled_height);
-    Font_Free(bundled);
-    Font_Free(font);
-    Mem_Free(missing);
-    Mem_Free(broken);
-    Mem_Free(dir);
-    Text_Shutdown();
-}
-
-// Loads the bundled font file with its Windows ascent and descent set, and
-// opens it at pixel_height.
+// Opens the font under test with the Windows ascent and descent of its
+// first face set, at pixel_height.
 static FONT *M_LoadWithCell(
-    const uint16_t ascent, const uint16_t descent, const float pixel_height)
+    const int32_t ascent, const int32_t descent, const float pixel_height)
 {
     size_t size;
-    uint8_t *const data = SDL_LoadFile(SDL_getenv("TEST_FONT"), &size);
-    CHECK(data != nullptr);
-    const int32_t count = data[4] << 8 | data[5];
-    bool found = false;
-    for (int32_t i = 0; i < count; i++) {
-        const uint8_t *const record = data + 12 + i * 16;
-        if (memcmp(record, "OS/2", 4) == 0) {
-            uint8_t *const table = data
-                + ((size_t)record[8] << 24 | (size_t)record[9] << 16
-                   | (size_t)record[10] << 8 | record[11]);
-            table[74] = (uint8_t)(ascent >> 8);
-            table[75] = (uint8_t)ascent;
-            table[76] = (uint8_t)(descent >> 8);
-            table[77] = (uint8_t)descent;
-            found = true;
-        }
-    }
-    CHECK(found);
-    READER reader;
-    Reader_OpenBuffer(&reader, data, size, nullptr);
-    FONT *font = nullptr;
-    CHECK(IS_OK(Font_Load(&reader, pixel_height, &font)));
-    Reader_Close(&reader);
-    SDL_free(data);
+    uint8_t *const data = M_ReadFont(&size);
+    uint8_t *const table = M_Table(data, "OS/2");
+    CHECK(table != nullptr);
+    table[74] = (uint8_t)(ascent >> 8);
+    table[75] = (uint8_t)ascent;
+    table[76] = (uint8_t)(descent >> 8);
+    table[77] = (uint8_t)descent;
+    FONT *const font = M_OpenData(data, size, pixel_height);
+    Mem_Free(data);
     return font;
 }
 
-TEST(the_bundled_font_cell_is_its_em)
+// Opens the font under test with a cell of its em, at pixel_height.
+static FONT *M_LoadWithEmCell(const float pixel_height)
+{
+    const int32_t units = M_Units();
+    return M_LoadWithCell(units - units / 8, units / 8, pixel_height);
+}
+
+TEST(the_font_cell_is_its_em)
 {
     CHECK(IS_OK(Text_Init()));
-    FONT *bundled = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(30, &bundled)));
+    FONT *const bundled = M_LoadWithEmCell(30);
     FONT *const em = M_LoadWithCell(0, 0, 30);
     const TEXT_STYLE style = TextStyle_Default();
     IMAGE expected, image;
@@ -243,15 +278,17 @@ TEST(the_bundled_font_cell_is_its_em)
     Image_Free(&expected);
     Font_Free(em);
     Font_Free(bundled);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(rounded_cells_use_whole_em_pixels_and_windows_baselines)
 {
     CHECK(IS_OK(Text_Init()));
-    FONT *const font = M_LoadWithCell(1760, 640, 30);
-    FONT *const em = M_LoadWithCell(0, 0, 26);
-    FONT *const low_ascent = M_LoadWithCell(800, 1600, 30);
+    // Cells of 1.5 em give a 20-pixel em at 30 pixels.
+    const int32_t units = M_Units();
+    FONT *const font = M_LoadWithCell(units * 11 / 10, units * 4 / 10, 30);
+    FONT *const em = M_LoadWithCell(0, 0, 20);
+    FONT *const low_ascent = M_LoadWithCell(units / 2, units, 30);
     int32_t offset, low_offset;
     CHECK(IS_OK(Font_SetSizeRounded(font, 30, &offset)));
     CHECK(IS_OK(Font_SetSizeRounded(low_ascent, 30, &low_offset)));
@@ -277,14 +314,14 @@ TEST(rounded_cells_use_whole_em_pixels_and_windows_baselines)
     Font_Free(low_ascent);
     Font_Free(em);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(gdi_raster_uses_quantized_glyph_coverage)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(30, &font)));
+    CHECK(IS_OK(M_Open(30, &font)));
     int32_t offset;
     CHECK(IS_OK(Font_SetSizeRounded(font, 30, &offset)));
     TEXT_STYLE style = TextStyle_Default();
@@ -304,7 +341,7 @@ TEST(gdi_raster_uses_quantized_glyph_coverage)
     CHECK(visible > opaque && opaque > 0);
     Image_Free(&image);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(gdi_paint_uses_the_intensity_curve_and_five_bit_colors)
@@ -333,9 +370,9 @@ TEST(gdi_paint_uses_the_intensity_curve_and_five_bit_colors)
 TEST(a_tall_cell_shrinks_the_em)
 {
     CHECK(IS_OK(Text_Init()));
-    FONT *const tall = M_LoadWithCell(1802, 4096 - 1802, 30);
-    FONT *half = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(15, &half)));
+    const int32_t units = M_Units();
+    FONT *const tall = M_LoadWithCell(units, units, 30);
+    FONT *const half = M_LoadWithEmCell(15);
     const TEXT_STYLE style = TextStyle_Default();
     int32_t width, height, half_width, half_height;
     CHECK(IS_OK(Text_Measure(tall, "Night Sign", &style, &width, &height)));
@@ -350,18 +387,7 @@ TEST(a_tall_cell_shrinks_the_em)
     CHECK_EQ_INT(width, half_width);
     Font_Free(half);
     Font_Free(tall);
-    Text_Shutdown();
-}
-
-TEST(a_missing_family_fails)
-{
-    CHECK(IS_OK(Text_Init()));
-    const char *const paths[] = { SDL_getenv("TEST_FONT") };
-    FONT *font = nullptr;
-    CHECK(!Result_Ignore(Font_LoadFamily(paths, 1, "Aroania", 15, &font)));
-    CHECK(font == nullptr);
-    CHECK(!Result_Ignore(Font_LoadFamily(nullptr, 0, "Aroania", 15, &font)));
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 // Returns the number of pixels of text that are not transparent.
@@ -383,11 +409,11 @@ TEST(faces_change_the_glyphs)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(30, &font)));
+    CHECK(IS_OK(M_Open(30, &font)));
     TEXT_STYLE style = TextStyle_Default();
     const int32_t plain = M_CountInk(font, "Reimu", &style);
     style.face = TEXT_FACE_BOLD;
-    CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
+    CHECK(M_CountInk(font, "Reimu", &style) > plain);
     style.face = TEXT_FACE_UNDERLINE;
     CHECK(M_CountInk(font, "Reimu", &style) > plain);
     style.face = TEXT_FACE_ITALIC;
@@ -398,35 +424,42 @@ TEST(faces_change_the_glyphs)
     CHECK(italic_width >= width);
     CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
+}
+
+// Opens the font under test with its first face marked bold, or regular
+// when bold is false.
+static FONT *M_LoadWeight(const bool bold)
+{
+    size_t size;
+    uint8_t *const data = M_ReadFont(&size);
+    uint8_t *const os2 = M_Table(data, "OS/2");
+    uint8_t *const head = M_Table(data, "head");
+    os2[4] = bold ? 2 : 1;
+    os2[5] = bold ? 0xbc : 0x90;
+    os2[63] =
+        bold ? (uint8_t)((os2[63] | 0x20) & ~0x40) : (uint8_t)(os2[63] & ~0x20);
+    head[45] = bold ? (uint8_t)(head[45] | 1) : (uint8_t)(head[45] & ~1);
+    FONT *const font = M_OpenData(data, size, 30.0f);
+    Mem_Free(data);
+    return font;
 }
 
 static FONT *M_LoadRegularFont(void)
 {
-    size_t size;
-    uint8_t *const data = SDL_LoadFile(SDL_getenv("TEST_FONT"), &size);
-    CHECK(data != nullptr);
-    const int32_t count = data[4] << 8 | data[5];
-    for (int32_t i = 0; i < count; i++) {
-        const uint8_t *const record = data + 12 + i * 16;
-        uint8_t *const table = data
-            + ((size_t)record[8] << 24 | (size_t)record[9] << 16
-               | (size_t)record[10] << 8 | record[11]);
-        if (memcmp(record, "OS/2", 4) == 0) {
-            table[4] = 1;
-            table[5] = 0x90;
-            table[63] &= (uint8_t)~0x20;
-        } else if (memcmp(record, "head", 4) == 0) {
-            table[45] &= (uint8_t)~1;
-        }
-    }
-    READER reader;
-    Reader_OpenBuffer(&reader, data, size, nullptr);
-    FONT *font = nullptr;
-    CHECK(IS_OK(Font_Load(&reader, 30.0f, &font)));
-    Reader_Close(&reader);
-    SDL_free(data);
-    return font;
+    return M_LoadWeight(false);
+}
+
+TEST(bold_on_a_bold_font_changes_nothing)
+{
+    CHECK(IS_OK(Text_Init()));
+    FONT *const font = M_LoadWeight(true);
+    TEXT_STYLE style = TextStyle_Default();
+    const int32_t plain = M_CountInk(font, "Reimu", &style);
+    style.face = TEXT_FACE_BOLD;
+    CHECK_EQ_INT(M_CountInk(font, "Reimu", &style), plain);
+    Font_Free(font);
+    M_Shutdown();
 }
 
 TEST(synthetic_bold_advances_one_pixel_per_glyph_at_every_size)
@@ -450,7 +483,7 @@ TEST(synthetic_bold_advances_one_pixel_per_glyph_at_every_size)
         Image_Free(&image);
     }
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(synthetic_bold_moves_glyphs_without_scaling_their_pixels)
@@ -490,7 +523,7 @@ TEST(synthetic_bold_moves_glyphs_without_scaling_their_pixels)
     Image_Free(&repeated);
     Image_Free(&single);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(synthetic_bold_keeps_shaped_text_and_decorations_within_its_bounds)
@@ -515,7 +548,7 @@ TEST(synthetic_bold_keeps_shaped_text_and_decorations_within_its_bounds)
         Image_Free(&image);
     }
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 static int32_t M_Width(const FONT *const font, const char *const text)
@@ -545,7 +578,7 @@ static FONT *M_OpenMarkupFont(void)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(30, &font)));
+    CHECK(IS_OK(M_Open(30, &font)));
     return font;
 }
 
@@ -577,7 +610,7 @@ TEST(a_line_without_markup_renders_as_plain_text)
     Image_Free(&markup);
     Image_Free(&plain);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(center_aligns_the_text_in_its_column)
@@ -600,7 +633,7 @@ TEST(center_aligns_the_text_in_its_column)
     Image_Free(&alone);
     Image_Free(&image);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(right_aligns_the_text_at_the_column_end)
@@ -618,7 +651,7 @@ TEST(right_aligns_the_text_at_the_column_end)
     Image_Free(&alone);
     Image_Free(&image);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(left_and_faces_keep_the_text_width)
@@ -627,12 +660,14 @@ TEST(left_and_faces_keep_the_text_width)
     const int32_t a = M_Width(font, "Reimu");
     const int32_t b = M_Width(font, " Hakurei");
     CHECK_EQ_INT(M_Width(font, "<l$Reimu> Hakurei"), a + b);
-    CHECK_EQ_INT(M_Width(font, "<ub$Reimu> Hakurei"), a + b);
+    const int32_t bold = M_Width(font, "<ub$Reimu>");
+    CHECK(bold >= a + 5);
+    CHECK_EQ_INT(M_Width(font, "<ub$Reimu> Hakurei"), bold + b);
     CHECK_EQ_INT(
         M_Width(font, "<l$Reimu$Reimu Hakurei>!"),
         M_Width(font, "Reimu Hakurei") + M_Width(font, "!"));
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(a_spacer_draws_nothing)
@@ -647,7 +682,7 @@ TEST(a_spacer_draws_nothing)
         font, "<s$hidden>", &style, &g_HeapAllocator, &image)));
     CHECK(image.pixels == nullptr);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(a_translator_note_is_left_out)
@@ -656,7 +691,7 @@ TEST(a_translator_note_is_left_out)
     CHECK_EQ_INT(M_Width(font, "Hello\x14note"), M_Width(font, "Hello"));
     CHECK_EQ_INT(M_Width(font, "\x14note"), 0);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(incomplete_markup_is_text)
@@ -671,14 +706,14 @@ TEST(incomplete_markup_is_text)
     CHECK_EQ_INT(
         M_Width(font, "x<c$a>"), M_Width(font, "x") + M_Width(font, "a"));
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(gdi_latin_text_keeps_individual_letters_and_advances)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(30, &font)));
+    CHECK(IS_OK(M_Open(30, &font)));
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
@@ -706,7 +741,7 @@ TEST(gdi_latin_text_keeps_individual_letters_and_advances)
     CHECK_EQ_INT(pen, line.width);
     Image_Free(&line);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(gdi_white_text_uses_eight_bit_intensity)
@@ -722,7 +757,7 @@ TEST(gdi_mixed_latin_and_han_keep_individual_glyphs)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(32, &font)));
+    CHECK(IS_OK(M_Open(32, &font)));
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
@@ -749,14 +784,14 @@ TEST(gdi_mixed_latin_and_han_keep_individual_glyphs)
     CHECK_EQ_INT(pen, line.width);
     Image_Free(&line);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 TEST(gdi_combining_accents_keep_shaped_advances)
 {
     CHECK(IS_OK(Text_Init()));
     FONT *font = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(32, &font)));
+    CHECK(IS_OK(M_Open(32, &font)));
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
@@ -770,17 +805,16 @@ TEST(gdi_combining_accents_keep_shaped_advances)
         CHECK_EQ_INT(gdi, shaped);
     }
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
 
 // Checks that the fallback of font has its em size and measures "十　あ" as
-// the bundled font at that em does.
+// the font under test with a cell of that em does.
 static void M_CheckFallbackEm(FONT *const font)
 {
     const float em = TTF_GetFontSize(font->font);
     CHECK(TTF_GetFontSize(font->fallback->font) == em);
-    FONT *expected = nullptr;
-    CHECK(IS_OK(Font_LoadDefault(em, &expected)));
+    FONT *const expected = M_LoadWithEmCell(em);
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
     style.gdi_raster = true;
@@ -797,8 +831,11 @@ static void M_CheckFallbackEm(FONT *const font)
 TEST(fallback_glyphs_take_the_base_em)
 {
     CHECK(IS_OK(Text_Init()));
-    FONT *const font = M_LoadWithCell(900, 600, 28);
-    CHECK(IS_OK(Font_LoadDefault(28, &font->fallback)));
+    const int32_t units = M_Units();
+    FONT *const font = M_LoadWithCell(units, units / 2, 28);
+    FONT *fallback = nullptr;
+    CHECK(IS_OK(M_Open(28, &fallback)));
+    Font_SetFallback(font, fallback);
     int32_t offset;
     CHECK(IS_OK(Font_SetSizeRounded(font, 28, &offset)));
     CHECK(TTF_GetFontSize(font->font) != 28.0f);
@@ -806,5 +843,146 @@ TEST(fallback_glyphs_take_the_base_em)
     CHECK(IS_OK(Font_SetSize(font, 35)));
     M_CheckFallbackEm(font);
     Font_Free(font);
-    Text_Shutdown();
+    M_Shutdown();
 }
+
+// Holds the GDI advances of bold "あ", "A" and "　" at 22 pixels in a face.
+typedef struct {
+    const char *family;
+    int32_t kana;
+    int32_t latin;
+    int32_t space;
+} M_ADVANCES;
+
+#ifdef TEST_MS_GOTHIC
+// Retail's advances, from GDI.
+static const M_ADVANCES m_Advances[] = {
+    { "MS Gothic", 23, 12, 23 },
+    { "ＭＳ Ｐゴシック", 22, 15, 16 },
+    { "MS UI Gothic", 19, 15, 16 },
+};
+#else
+static const M_ADVANCES m_Advances[] = {
+    { "IPAGothic", 21, 11, 21 },
+    { "IPAPGothic", 19, 14, 21 },
+};
+#endif
+
+TEST(each_face_has_its_gdi_advances)
+{
+    CHECK(IS_OK(Text_Init()));
+    FontRegistry_Reset(false);
+    size_t size;
+    uint8_t *const data = M_ReadFont(&size);
+    CHECK(IS_OK(FontRegistry_Add("font under test", data, size)));
+    Mem_Free(data);
+#ifndef TEST_MS_GOTHIC
+    TestFonts_Add(TEST_FONT_UI_GOTHIC);
+#endif
+    for (size_t i = 0; i < sizeof(m_Advances) / sizeof(m_Advances[0]); i++) {
+        FONT *font = nullptr;
+        CHECK(IS_OK(FontRegistry_Open(m_Advances[i].family, 22, &font)));
+        TEXT_STYLE style = TextStyle_Default();
+        style.face = TEXT_FACE_BOLD;
+        style.gdi_raster = true;
+        int32_t width, height;
+        CHECK(IS_OK(Text_Measure(font, "あ", &style, &width, &height)));
+        CHECK_EQ_INT(width, m_Advances[i].kana);
+        CHECK(IS_OK(Text_Measure(font, "A", &style, &width, &height)));
+        CHECK_EQ_INT(width, m_Advances[i].latin);
+        CHECK(IS_OK(Text_Measure(font, "　", &style, &width, &height)));
+        CHECK_EQ_INT(width, m_Advances[i].space);
+        Font_Free(font);
+    }
+    M_Shutdown();
+}
+
+// A line of 16 kanji, as th06 draws its comments in two halves, takes MS
+// Gothic's width at the cell height 30, 31 pixels a bold kanji or 248 at the
+// row's half size: in MS Gothic, and in IPAGothic sized em to cell.
+TEST(a_kanji_line_takes_ms_gothics_width_in_the_text_font)
+{
+    CHECK(IS_OK(Text_Init()));
+#ifdef TEST_MS_GOTHIC
+    size_t size;
+    uint8_t *const data = M_ReadFont(&size);
+    FontRegistry_Reset(false);
+    CHECK(IS_OK(FontRegistry_Add("font under test", data, size)));
+    Mem_Free(data);
+#else
+    TestFonts_UseBuiltin();
+#endif
+    FONT *font = nullptr;
+#ifdef TEST_MS_GOTHIC
+    CHECK(IS_OK(FontRegistry_Open("ＭＳ ゴシック", 30, &font)));
+#else
+    CHECK(IS_OK(FontRegistry_Open("IPAGothic", 30, &font)));
+    CHECK(IS_OK(Font_SetEmToCell(font)));
+#endif
+    int32_t offset_y;
+    CHECK(IS_OK(Font_SetSizeRounded(font, 30, &offset_y)));
+    TEXT_STYLE style = TextStyle_Default();
+    style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
+    int32_t width, height;
+    CHECK(IS_OK(Text_Measure(
+        font, "東方紅魔郷東方紅魔郷東方紅魔郷東", &style, &width, &height)));
+    CHECK_EQ_INT(width, 2 * 248);
+    Font_Free(font);
+    M_Shutdown();
+}
+
+#ifdef TEST_MS_GOTHIC
+// Returns whether family draws "Reimu 霊夢" as other does.
+static bool M_DrawsAs(const char *const family, const char *const other)
+{
+    FONT *font = nullptr;
+    FONT *other_font = nullptr;
+    CHECK(IS_OK(FontRegistry_Open(family, 30, &font)));
+    CHECK(IS_OK(FontRegistry_Open(other, 30, &other_font)));
+    const TEXT_STYLE style = TextStyle_Default();
+    IMAGE image = {};
+    IMAGE other_image = {};
+    CHECK(IS_OK(
+        Text_Render(font, "Reimu 霊夢", &style, &g_HeapAllocator, &image)));
+    CHECK(IS_OK(Text_Render(
+        other_font, "Reimu 霊夢", &style, &g_HeapAllocator, &other_image)));
+    const bool same = image.width == other_image.width
+        && image.height == other_image.height
+        && memcmp(
+               image.pixels, other_image.pixels,
+               (size_t)image.width * (size_t)image.height * 4)
+            == 0;
+    Image_Free(&other_image);
+    Image_Free(&image);
+    Font_Free(other_font);
+    Font_Free(font);
+    return same;
+}
+
+TEST(a_patch_font_changes_the_face_that_draws)
+{
+    CHECK(IS_OK(Text_Init()));
+    TestFonts_UseBuiltin();
+    FONT *font = nullptr;
+    CHECK(!Result_Ignore(FontRegistry_Open("ＭＳ ゴシック", 30, &font)));
+    char *const dir = TestDir_Prepare("patch_font");
+    PatchBuilder_AddPatch(dir, "a/fonts", "{fonts: {'msgothic.ttc': true}}");
+    size_t size;
+    uint8_t *const data = M_ReadFont(&size);
+    char *const path = Str_Format("%s/a/fonts/msgothic.ttc", dir);
+    TestDir_Write(path, data, size);
+    const PATCH_GAME game = { .build = "v1.02h", .layout = PATCH_LAYOUT_FLAT };
+    const PATCH_CHOICE choice = { .enabled = true };
+    PATCH_STACK *stack = nullptr;
+    CHECK(IS_OK(Patch_OpenStack(dir, "th06", &game, &choice, &stack)));
+    CHECK(!M_DrawsAs("ＭＳ ゴシック", "IPAGothic"));
+    CHECK(M_DrawsAs("ＭＳ ゴシック", "MS Gothic"));
+    CHECK(!M_DrawsAs("MS UI Gothic", "MS Gothic"));
+    Patch_CloseStack(stack);
+    Mem_Free(path);
+    Mem_Free(data);
+    Mem_Free(dir);
+    M_Shutdown();
+}
+#endif

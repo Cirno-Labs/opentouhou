@@ -3,6 +3,7 @@
 #include "gfx_recorder.h"
 #include "patch_builder.h"
 #include "test.h"
+#include "test_fonts.h"
 
 #include "stg/translation.h"
 
@@ -59,6 +60,7 @@ static void M_Begin(
         LOG_LEVEL_ERROR));
     Translation_Init(m_Stack, &m_Game);
     CHECK(Result_Log(Text_Init(), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
     GfxRecorder_Start();
     Note_Init(m_Stack);
 }

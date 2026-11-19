@@ -4,10 +4,15 @@
 
 - Added an optional frame rate display at the bottom of the screen,
   outside ending scenes, enabled by default.
+- Added fonts from the `opentouhou/fonts/` folder of the game folder,
+  which replace the fonts of the same name.
 - Changed package documents to `oth06_readme.txt` and
   `oth06_licenses.txt` so they do not replace the original game's readme.
 - Changed the conversion of music and sound effects to the output rate,
   which keeps their high frequencies.
+- Changed the text font to MS Gothic, as in the original, when the
+  system has it, and to the bundled IPAGothic otherwise, instead
+  of BIZ UDGothic.
 - Changed the text of `--help` and of command-line errors to a new
   format.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it

@@ -1,5 +1,6 @@
 #include "stg/note.h"
 
+#include "stg/game_font.h"
 #include "stg/translation.h"
 
 #include "core/base/arena.h"
@@ -240,17 +241,9 @@ static RESULT M_LoadFont(const char *const rule)
     m_Style = TextStyle_Default();
     m_Style.face = weight >= M_BOLD_WEIGHT ? TEXT_FACE_BOLD : 0;
     m_Style.gdi_raster = true;
-    bool opened = false;
-    if (family != nullptr) {
-        int32_t count;
-        const char *const *const paths = Translation_GetFontFiles(&count);
-        opened = Result_Log(
-            Font_LoadFamily(paths, count, family, (float)height, &m_Font),
-            LOG_LEVEL_WARNING);
-    }
-    if (!opened) {
-        MUST(Font_LoadDefault((float)height, &m_Font));
-    }
+    MUST(
+        GameFont_Open(family, (float)height, &m_Font),
+        "Translator notes are not drawn");
     return Font_SetSizeRounded(m_Font, (float)height, &m_FontOffsetY);
 }
 
@@ -521,8 +514,9 @@ void Note_Init(const PATCH_STACK *const patches)
         LOG_WARNING("tlnotes: font must be a font rule");
     }
     if (m_Settings.width > 0.0f && m_Settings.reference_width > 0.0f) {
+        // Anm_InitText has warned of a missing font.
         m_Enabled = Result_Log(
-            M_LoadFont(Json_GetString(font, nullptr)), LOG_LEVEL_WARNING);
+            M_LoadFont(Json_GetString(font, nullptr)), LOG_LEVEL_INFO);
     }
     Arena_Free(&arena);
     Array_Init(&m_Notes, &g_HeapAllocator);

@@ -366,6 +366,7 @@ test(
   ),
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_result_screen',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
   },
   suite: 'unit',
 )
@@ -439,6 +440,7 @@ test(
   ),
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_music_screen',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
   },
   suite: 'unit',
 )
@@ -464,7 +466,7 @@ test(
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_anm',
     'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_anm',
-    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
   },
   suite: 'unit',
 )
@@ -784,6 +786,7 @@ test(
   ),
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_gui',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
     'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_gui',
   },
   suite: 'unit',
@@ -803,7 +806,10 @@ test(
     ],
     dependencies: [sdl3],
   ),
-  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_note'},
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_note',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+  },
   suite: 'unit',
 )
 
@@ -1435,22 +1441,30 @@ executable(
 )
 
 
-test(
-  'core/text',
-  executable(
-    'test_text',
-    'test_text.c',
-    c_args: core_include,
-    implicit_include_directories: false,
-    link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
-    dependencies: [sdl3_ttf, sdl3, cc_libm],
-  ),
-  suite: 'unit',
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'text',
-    'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
-  },
-)
+# The text tests run against IPAGothic, and again against MS Gothic
+# where $OPENTOUHOU_MSGOTHIC names a msgothic.ttc; without it, the second
+# test is skipped.
+foreach variant : [['core/text', 'test_text', []], ['core/text/ms_gothic', 'test_text_ms', ['-DTEST_MS_GOTHIC']]]
+  test(
+    variant[0],
+    executable(
+      variant[1],
+      'test_text.c',
+      c_args: core_include + variant[2],
+      implicit_include_directories: false,
+      link_with: [
+        core_patch_lib, core_json_lib, core_vfs_lib, core_text_lib,
+        core_image_lib, core_io_lib, core_base_lib,
+      ],
+      dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],
+    ),
+    suite: 'unit',
+    env: {
+      'TEST_DIR': meson.current_build_dir() / 'tmp' / variant[1],
+      'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+    },
+  )
+endforeach
 
 # The test stands in for the system's fonts, so it links no backend of
 # them.

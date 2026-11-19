@@ -97,29 +97,6 @@ static void M_FreeFiles(PATCH_FILES *const files)
     HashMap_Free(files);
 }
 
-static void M_ListFonts(
-    PATCH_STACK *const stack, const PATCH_ENTRY *const entry,
-    PATCH_INFO *const info)
-{
-    const JSON_VALUE *const fonts = Json_Get(entry->patch_js, "fonts");
-    if (fonts == nullptr || fonts->type != JSON_OBJECT) {
-        return;
-    }
-    const char **const paths = Arena_AllocArr(
-        &stack->arena,
-        (size_t)(fonts->object.count > 0 ? fonts->object.count : 1),
-        sizeof(char *));
-    const ALLOCATOR *const allocator = Arena_Allocator(&stack->arena);
-    for (int32_t i = 0; i < fonts->object.count; i++) {
-        const JSON_MEMBER *const member = &fonts->object.members[i];
-        if (member->value->type == JSON_BOOL && member->value->boolean) {
-            paths[info->font_count++] =
-                Path_Join(allocator, info->dir, member->key);
-        }
-    }
-    info->fonts = paths;
-}
-
 static RESULT M_AddFont(const PATCH *const patch, const char *const name)
 {
     char *const key = Str_Dup(name);
@@ -167,7 +144,6 @@ static void M_AddPatch(PATCH_STACK *const stack, const PATCH_ENTRY *const entry)
             .dir = entry->dir,
         },
     };
-    M_ListFonts(stack, entry, &patch->info);
     HashMap_Init(&patch->root, &g_HeapAllocator);
     HashMap_Init(&patch->game, &g_HeapAllocator);
     M_IndexDir(&patch->root, patch->info.dir, "", stack->game.build, false, 0);

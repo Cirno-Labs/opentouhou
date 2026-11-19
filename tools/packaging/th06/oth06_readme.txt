@@ -47,6 +47,11 @@ To see all arguments and the folders that the program uses, type:
 
     oth06 --help
 
+The program draws text in MS Gothic, as the original does, when the
+system has it, and in the bundled IPAGothic otherwise. To use
+another font file, put it in the opentouhou/fonts/ folder of the game
+folder: a font there replaces the font of the same name.
+
 The package also includes oth06_readme.txt and oth06_licenses.txt.
 Their names keep them separate from the original game's documents.
 
@@ -206,7 +211,7 @@ Credits
 - thpatch.net community: translations in the patch format of thcrap.
 - SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo and zlib:
   shared libraries.
-- BIZ UDGothic: the bundled font.
+- IPAGothic and IPAPGothic: the bundled fonts, IPA fonts by the IPA.
 
 Source and documentation:
 https://github.com/Cirno-Labs/opentouhou

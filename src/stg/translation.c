@@ -24,8 +24,6 @@ static char *m_Comments[TRANSLATION_TUNE_COUNT][TRANSLATION_COMMENT_ROWS];
 static bool m_HasComment[TRANSLATION_TUNE_COUNT];
 static char *m_Font;
 static bool m_HasBaseTsa;
-static const char **m_FontFiles;
-static int32_t m_FontFileCount;
 static char **m_Strings; // m_Game->string_count entries
 // Holds the format of a numbered title when patches give none.
 static const char m_DefaultNumberedTitle[] = "%d %s";
@@ -117,17 +115,6 @@ static void M_LoadFont(
     const char *const font = Json_GetString(
         Json_Get(Patch_LoadSettings(patches, allocator), "font"), nullptr);
     m_Font = font != nullptr ? Str_Dup(font) : nullptr;
-    int32_t count = 0;
-    for (int32_t i = 0; i < Patch_GetCount(patches); i++) {
-        count += Patch_Get(patches, i)->font_count;
-    }
-    m_FontFiles = Mem_AllocArr((size_t)(count > 0 ? count : 1), sizeof(char *));
-    for (int32_t i = Patch_GetCount(patches) - 1; i >= 0; i--) {
-        const PATCH_INFO *const info = Patch_Get(patches, i);
-        for (int32_t j = 0; j < info->font_count; j++) {
-            m_FontFiles[m_FontFileCount++] = info->fonts[j];
-        }
-    }
 }
 
 void Translation_Init(
@@ -182,9 +169,6 @@ void Translation_Shutdown(void)
     Mem_Free(m_Font);
     m_Font = nullptr;
     m_HasBaseTsa = false;
-    Mem_Free(m_FontFiles);
-    m_FontFiles = nullptr;
-    m_FontFileCount = 0;
     if (m_Game == nullptr) {
         return;
     }
@@ -278,12 +262,6 @@ int32_t Translation_GetFontWeight(const int32_t requested)
     return m_HasBaseTsa && m_Game != nullptr && m_Game->font_cache_weight > 0
         ? m_Game->font_cache_weight
         : requested;
-}
-
-const char *const *Translation_GetFontFiles(int32_t *const count)
-{
-    *count = m_FontFileCount;
-    return m_FontFiles;
 }
 
 bool Translation_HasBaseTsa(void)

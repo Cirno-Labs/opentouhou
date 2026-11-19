@@ -186,26 +186,17 @@ TEST(a_numbered_title_without_its_format_is_the_title_alone)
     M_End();
 }
 
-TEST(the_font_comes_from_the_settings_and_the_patches)
+TEST(the_font_comes_from_the_settings)
 {
     const char *const files[] = {
-        "nmlgc/base_tsa/patch.js",
-        "{fonts: {'Base.ttf': true}}",
-        "thpatch/lang/patch.js",
-        "{dependencies: ['nmlgc/base_tsa'], fonts: {'Lang.otf': true}}",
-        "nmlgc/base_tsa/global.js",
-        "{font: 'Global'}",
-        "thpatch/lang/game.js",
-        "{font: 'Aroania'}",
+        "nmlgc/base_tsa/patch.js",  "{}",
+        "thpatch/lang/patch.js",    "{dependencies: ['nmlgc/base_tsa']}",
+        "nmlgc/base_tsa/global.js", "{font: 'Global'}",
+        "thpatch/lang/game.js",     "{font: 'Aroania'}",
     };
     M_Begin("font", files, 8);
     CHECK(Translation_HasBaseTsa());
     CHECK_EQ_STR(Translation_GetFont(), "Aroania");
-    int32_t count;
-    const char *const *const fonts = Translation_GetFontFiles(&count);
-    CHECK_EQ_INT(count, 2);
-    CHECK(Str_EndsWith(fonts[0], "/thpatch/lang/Lang.otf"));
-    CHECK(Str_EndsWith(fonts[1], "/nmlgc/base_tsa/Base.ttf"));
     M_End();
 }
 
@@ -228,9 +219,6 @@ TEST(no_patches_translate_nothing)
     Translation_Init(nullptr, &m_Game);
     CHECK(!Translation_HasBaseTsa());
     CHECK(Translation_GetFont() == nullptr);
-    int32_t count;
-    Translation_GetFontFiles(&count);
-    CHECK_EQ_INT(count, 0);
     CHECK_EQ_STR(Translation_GetSpellName(0, "original"), "original");
     CHECK_EQ_STR(g_Strings[STRING_SONG_NAME_FORMAT], "@%s");
     CHECK(Translation_GetMusicComment(0, 0) == nullptr);

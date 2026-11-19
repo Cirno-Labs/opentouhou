@@ -27,7 +27,9 @@
 
 // Reads the settings and opens the font, when nmlgc/base_tsa is in the
 // patch stack. Call after Translation_Init and Anm_InitText. A setting
-// that is not valid keeps its default, with a log line.
+// that is not valid keeps its default, with a log line. The font opens as
+// GameFont_Open (stg/game_font.h) opens the face of the
+// font rule or of the translation. Without a font, notes do not show.
 void Note_Init(const PATCH_STACK *patches);
 
 // Releases the notes and the font. Call before Anm_ShutdownText.
