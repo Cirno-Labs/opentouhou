@@ -1,5 +1,17 @@
 core_include = [layer_include['core']]
 
+# Reads sources.txt into core_sources, a list of sources by library.
+core_sources = {}
+core_library = ''
+foreach line : import('fs').read('sources.txt').split('\n')
+  if line.startswith('[')
+    core_library = line.strip('[]')
+    core_sources += {core_library: []}
+  elif line != '' and not line.startswith('#')
+    core_sources += {core_library: core_sources[core_library] + [line]}
+  endif
+endforeach
+
 # core/math uses sqrtf, floorf, trunc and friends from the C library (never
 # its trig or atan2, which core/math/libm vendors instead). GCC's libm is a
 # separate archive on Linux; MinGW folds it into the C library, so there is
@@ -10,15 +22,7 @@ cc_libm = meson.get_compiler('c').find_library('m', required: false)
 # the tests link it alone.
 core_base_lib = static_library(
   'core_base',
-  'base/arena.c',
-  'base/array.c',
-  'base/cp932.c',
-  'base/cp932_table.c',
-  'base/hash_map.c',
-  'base/log.c',
-  'base/memory.c',
-  'base/result.c',
-  'base/string.c',
+  core_sources['base'],
   c_args: core_include,
   implicit_include_directories: false,
 )
@@ -27,7 +31,7 @@ core_base_lib = static_library(
 # without SDL.
 core_args_lib = static_library(
   'core_args',
-  'args.c',
+  core_sources['args'],
   c_args: core_include,
   implicit_include_directories: false,
 )
@@ -35,9 +39,7 @@ core_args_lib = static_library(
 # core/hash needs only core/base, so the tests link it without SDL.
 core_hash_lib = static_library(
   'core_hash',
-  'hash/crc32.c',
-  'hash/sha1.c',
-  'hash/sha256.c',
+  core_sources['hash'],
   c_args: core_include,
   implicit_include_directories: false,
 )
@@ -55,12 +57,7 @@ core_json_lib = static_library(
 
 core_io_lib = static_library(
   'core_io',
-  'io/file.c',
-  'io/locale.c',
-  'io/path.c',
-  'io/process.c',
-  'io/reader.c',
-  'io/writer.c',
+  core_sources['io'],
   host_machine.system() == 'windows' ? 'io/backend_windows.c' : 'io/backend_posix.c',
   c_args: core_include,
   implicit_include_directories: false,
@@ -70,10 +67,7 @@ core_io_lib = static_library(
 # core/ini needs core/base and core/io, which needs SDL for its files.
 core_ini_lib = static_library(
   'core_ini',
-  'ini/edit.c',
-  'ini/ini.c',
-  'ini/parse.c',
-  'ini/write.c',
+  core_sources['ini'],
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
@@ -99,8 +93,7 @@ core_patch_select_lib = static_library(
 # types, so that othpatch can link it without core/vfs.
 core_archive_lib = static_library(
   'core_archive',
-  'archive/archive.c',
-  'archive/zip.c',
+  core_sources['archive'],
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [zlib],
@@ -163,9 +156,7 @@ core_input_lib = static_library(
 
 core_vfs_lib = static_library(
   'core_vfs',
-  'vfs/vfs.c',
-  'vfs/dir_source.c',
-  'vfs/normalize.c',
+  core_sources['vfs'],
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
@@ -187,11 +178,7 @@ core_patch_lib = static_library(
 # the tests link it without SDL beyond what core/io needs.
 core_image_lib = static_library(
   'core_image',
-  'image/decode.c',
-  'image/jpeg.c',
-  'image/encode.c',
-  'image/pixels.c',
-  'image/resize.c',
+  core_sources['image'],
   c_args: core_include,
   implicit_include_directories: false,
   dependencies: [avcodec, avutil, swscale, jpeg, cc_libm],
