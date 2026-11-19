@@ -7,6 +7,9 @@
 #include <limits.h>
 #include <math.h>
 
+// GDI's antialiased text draws outlines, never a font's embedded bitmaps.
+#define M_LOAD_FLAGS (FT_LOAD_NO_BITMAP | FT_LOAD_TARGET_NORMAL)
+
 static FT_Library m_Library;
 
 // GDI's 17 grayscale levels of glyph coverage.
@@ -109,9 +112,7 @@ RESULT TextRaster_Glyph(
     *out = nullptr;
     FT_Face const face = font->raster_face;
     FAIL_IF(
-        FT_Load_Glyph(face, index, FT_LOAD_DEFAULT | FT_LOAD_TARGET_NORMAL)
-            != 0,
-        "Cannot load GDI glyph");
+        FT_Load_Glyph(face, index, M_LOAD_FLAGS) != 0, "Cannot load GDI glyph");
     const int32_t left =
         (int32_t)floorf((float)face->glyph->metrics.horiBearingX / 64.0f);
     const int32_t top =
@@ -209,8 +210,7 @@ static RESULT M_Advance(
 {
     FT_Face const face = font->raster_face;
     FAIL_IF(
-        FT_Load_Glyph(face, index, FT_LOAD_DEFAULT | FT_LOAD_TARGET_NORMAL)
-            != 0,
+        FT_Load_Glyph(face, index, M_LOAD_FLAGS) != 0,
         "Cannot measure GDI glyph");
     const bool bold = (TTF_GetFontStyle(font->font) & TTF_STYLE_BOLD) != 0
         && (face->style_flags & FT_STYLE_FLAG_BOLD) == 0;
