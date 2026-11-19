@@ -1,14 +1,17 @@
 #include "th07/screens/main.h"
 
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "shell_fake.h"
 #include "test.h"
+#include "test_fonts.h"
 #include "test_dir.h"
 #include "th07_anm_builder.h"
 #include "th07_data.h"
 #include "th07_scene_stubs.h"
 
 #include "th07/anm.h"
+#include "th07/anm/private.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/replay.h"
@@ -16,6 +19,7 @@
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
 #include "th07/game_manager.h"
 
 #include "core/base/memory.h"
@@ -845,4 +849,36 @@ TEST(quit_leaves_sixty_calcs_after_the_choice)
     CHECK(!M_TitleAdded());
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_QUIT);
     M_Teardown();
+}
+
+TEST(options_render_the_translated_help)
+{
+    M_Setup("translated_option_help");
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    PatchBuilder_AddPatch(
+        patches, "thpatch/lang", "{dependencies: ['nmlgc/base_tsa']}");
+    PatchBuilder_Write(
+        patches, "nmlgc/base_tsa/th07/stringlocs.js",
+        "{Rx9581c: 'option quit'}");
+    PatchBuilder_Write(
+        patches, "thpatch/lang/stringdefs.js", "{'option quit': ''}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    Translation_Init(stack, &g_TranslationGame);
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
+    M_OpenOptions();
+    const IMAGE *const image = AnmTexture_GetImage(0x20);
+    CHECK(image != nullptr);
+    for (int32_t i = 0; i < image->width * image->height; i++) {
+        CHECK_EQ_INT(image->pixels[(size_t)i * 4 + 3], 0);
+    }
+    M_Teardown();
+    Anm_ShutdownText();
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
 }

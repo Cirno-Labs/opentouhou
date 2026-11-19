@@ -1,6 +1,7 @@
 #include "th07/screens/music.h"
 
 #include "gfx_recorder.h"
+#include "patch_builder.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th07_anm_builder.h"
@@ -13,6 +14,8 @@
 #include "th07/game.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
+#include "stg/translation.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -343,4 +346,49 @@ TEST(the_screen_draws_every_quad_once)
     M_Tick((TH07_INPUT) {});
     CHECK(GfxRecorder_QuadCount() >= 2);
     M_Teardown();
+}
+
+static void M_CheckTranslatedCommentRow(const bool base_tsa)
+{
+    M_Setup(base_tsa ? "comment_base_tsa" : "comment_plain", 3);
+    char *const patches = TestDir_Join(m_Directory, "patches");
+    if (base_tsa) {
+        PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
+    }
+    PatchBuilder_AddPatch(patches, "thpatch/lang", "{}");
+    PatchBuilder_Write(
+        patches, "thpatch/lang/th07/musiccmt.js",
+        "{'1': ['Translated comment']}");
+    PATCH_STACK *stack = nullptr;
+    CHECK(Result_Log(
+        Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack),
+        LOG_LEVEL_ERROR));
+    Translation_Init(stack, &g_TranslationGame);
+    CHECK(Translation_HasBaseTsa() == base_tsa);
+    M_Run(9);
+    M_Press(m_Shoot);
+    int32_t comments = 0;
+    for (int32_t i = 0; i < GfxRecorder_QuadCount(); i++) {
+        const uint64_t id = GfxRecorder_QuadId(i);
+        const uint32_t part = (uint32_t)id;
+        if (id != 0 && part >= 0x200 && part < 0x208) {
+            CHECK_EQ_INT(part, base_tsa ? 0x201 : 0x200);
+            comments++;
+        }
+    }
+    CHECK_EQ_INT(comments, 1);
+    M_Teardown();
+    Translation_Shutdown();
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+}
+
+TEST(base_tsa_starts_translated_comments_after_the_empty_source_row)
+{
+    M_CheckTranslatedCommentRow(true);
+}
+
+TEST(translated_comments_without_base_tsa_start_on_the_first_row)
+{
+    M_CheckTranslatedCommentRow(false);
 }

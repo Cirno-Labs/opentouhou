@@ -77,8 +77,10 @@ static void M_ShowComment(M_SCREEN *const screen)
     const MUSIC_TUNE *const tune = &screen->tunes[screen->playing];
     for (int32_t i = 0; i < MUSIC_COMMENT_ROWS; i++) {
         ANM_VM *const vm = &screen->comment[i];
+        // base_tsa numbers translations after the empty first source row.
+        const int32_t translated_index = i - (Translation_HasBaseTsa() ? 1 : 0);
         const char *const translated =
-            Translation_GetMusicComment(screen->playing, i);
+            Translation_GetMusicComment(screen->playing, translated_index);
         const char *const row =
             translated != nullptr ? translated : tune->comment[i];
         if (row[0] != '\0') {

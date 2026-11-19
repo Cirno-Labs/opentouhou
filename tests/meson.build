@@ -1354,6 +1354,7 @@ test(
   ),
   env: {
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_title',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
   },
   suite: 'unit',
 )
