@@ -546,3 +546,31 @@ TEST(a_long_name_is_cut_at_the_start)
     Result_Ignore(result);
     Reader_Close(&reader);
 }
+
+TEST(a_c_string_holds_the_rest_and_a_nul)
+{
+    const char data[] = "skip text";
+    READER reader;
+    Reader_OpenBuffer(&reader, data, strlen(data), nullptr);
+    Reader_Skip(&reader, 5);
+    size_t size;
+    char *const text = Reader_ReadCString(&reader, &g_HeapAllocator, &size);
+    CHECK_EQ_INT(size, 4);
+    CHECK_EQ_STR(text, "text");
+    CHECK_EQ_INT(Reader_Remaining(&reader), 0);
+    Allocator_Free(&g_HeapAllocator, text, size + 1);
+    CHECK(Result_Log(Reader_Result(&reader), LOG_LEVEL_ERROR));
+    Reader_Close(&reader);
+}
+
+TEST(a_failed_reader_gives_no_c_string)
+{
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Counting, 2, nullptr);
+    Reader_ReadU32(&reader);
+    size_t size = 7;
+    CHECK(Reader_ReadCString(&reader, &g_HeapAllocator, &size) == nullptr);
+    CHECK_EQ_INT(size, 7);
+    Result_Ignore(Reader_Result(&reader));
+    Reader_Close(&reader);
+}

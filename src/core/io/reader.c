@@ -407,6 +407,21 @@ void *Reader_ReadAlloc(
     return block;
 }
 
+char *Reader_ReadCString(
+    READER *const reader, const ALLOCATOR *const allocator, size_t *const size)
+{
+    const size_t length = Reader_Remaining(reader);
+    char *const text = Allocator_Alloc(allocator, length + 1);
+    Reader_ReadBytes(reader, text, length);
+    if (Reader_Failed(reader)) {
+        Allocator_Free(allocator, text, length + 1);
+        return nullptr;
+    }
+    text[length] = '\0';
+    *size = length;
+    return text;
+}
+
 const void *Reader_Borrow(READER *const reader, const size_t size)
 {
     ASSERT(reader->file == nullptr);

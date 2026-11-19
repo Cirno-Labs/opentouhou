@@ -174,6 +174,12 @@ void Reader_ReadBytes(READER *reader, void *buffer, size_t size);
 // nullptr and allocates nothing.
 void *Reader_ReadAlloc(READER *reader, size_t size, const ALLOCATOR *allocator);
 
+// Reads the rest of reader into a new block from allocator, with a NUL after
+// it, and sets *size to the length without the NUL. Allocator_Free(allocator,
+// text, *size + 1) releases the block. On failure, returns nullptr.
+char *Reader_ReadCString(
+    READER *reader, const ALLOCATOR *allocator, size_t *size);
+
 // Returns a pointer to the next size bytes of the buffer, without copying
 // them, and moves past them. The pointer points into the memory given to
 // Reader_OpenBuffer, so it stays valid for as long as that memory does,
