@@ -5,6 +5,7 @@
 #include "core/io/reader.h"
 #include "core/json.h"
 #include "core/patch/private.h"
+#include "core/vfs/normalize.h"
 
 #include <string.h>
 
@@ -91,8 +92,8 @@ static RESULT M_Open(
 }
 
 static void M_List(
-    const VFS_SOURCE *const base,
-    void (*const visit)(void *user, const char *path), void *const user)
+    const VFS_SOURCE *const base, const char *const dir,
+    void (*const visit)(void *user, const char *name), void *const user)
 {
     const M_SOURCE *const source = (const M_SOURCE *)base;
     const PATCH_STACK *const stack = source->stack;
@@ -104,8 +105,10 @@ static void M_List(
             const char *const key = files->keys[j];
             bool found;
             HashMap_GetOrPut(&visited, key, &found);
-            if (!found && PatchStack_IsOverlaid(stack, key)) {
-                visit(user, key);
+            const char *const name = VfsNormalize_NameBelow(key, dir);
+            if (!found && name != nullptr
+                && PatchStack_IsOverlaid(stack, key)) {
+                visit(user, name);
             }
         }
     }

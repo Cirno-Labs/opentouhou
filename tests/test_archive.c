@@ -346,7 +346,7 @@ static VFS *M_Mount(
     CHECK(Result_Log(
         M_Open(built, name, format, allocator, &archive), LOG_LEVEL_ERROR));
     VFS *const vfs = Vfs_Create(allocator);
-    Vfs_MountSource(vfs, Archive_ToSource(archive), 0);
+    Vfs_MountSource(vfs, "", Archive_ToSource(archive), 0);
     return vfs;
 }
 
@@ -429,7 +429,7 @@ static void M_Visit(void *const user, const char *const path)
     visited->count++;
 }
 
-TEST(a_source_lists_files_folded_in_table_order)
+TEST(a_source_lists_the_files_of_a_directory_folded_in_table_order)
 {
     const M_ENTRY entries[] = {
         { "B.txt", "b", 0 },
@@ -443,10 +443,11 @@ TEST(a_source_lists_files_folded_in_table_order)
         LOG_LEVEL_ERROR));
     VFS_SOURCE *const source = Archive_ToSource(archive);
     M_VISITED visited = { .count = 0 };
-    source->funcs->list(source, M_Visit, &visited);
+    source->funcs->list(source, "", M_Visit, &visited);
+    source->funcs->list(source, "dir", M_Visit, &visited);
     CHECK_EQ_INT(visited.count, 2);
     CHECK_EQ_STR(visited.paths[0], "b.txt");
-    CHECK_EQ_STR(visited.paths[1], "dir/a.txt");
+    CHECK_EQ_STR(visited.paths[1], "a.txt");
     for (int32_t i = 0; i < visited.count && i < M_MAX_ENTRIES; i++) {
         Mem_Free(visited.paths[i]);
     }

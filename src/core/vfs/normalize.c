@@ -14,11 +14,14 @@ static bool M_IsAsciiLower(const char c)
 
 static bool M_IsAbsolute(const char *const buffer, const size_t length)
 {
-    return length >= 2 && M_IsAsciiLower(buffer[0]) && buffer[1] == ':';
+    return length >= 2
+        && (M_IsAsciiLower(buffer[0]) || M_IsAsciiUpper(buffer[0]))
+        && buffer[1] == ':';
 }
 
-RESULT VfsNormalize_Path(
-    const char *const path, const ALLOCATOR *const allocator, char **const out)
+static RESULT M_Normalize(
+    const char *const path, const bool keep_case,
+    const ALLOCATOR *const allocator, char **const out)
 {
     *out = nullptr;
     const size_t length = strlen(path);
@@ -27,7 +30,7 @@ RESULT VfsNormalize_Path(
         const char c = path[i];
         if (c == '\\') {
             buffer[i] = '/';
-        } else if (M_IsAsciiUpper(c)) {
+        } else if (!keep_case && M_IsAsciiUpper(c)) {
             buffer[i] = (char)(c - 'A' + 'a');
         } else {
             buffer[i] = c;
@@ -70,4 +73,16 @@ RESULT VfsNormalize_Path(
     *write = '\0';
     *out = buffer;
     return OK;
+}
+
+RESULT VfsNormalize_Path(
+    const char *const path, const ALLOCATOR *const allocator, char **const out)
+{
+    return M_Normalize(path, false, allocator, out);
+}
+
+RESULT VfsNormalize_PathKeepCase(
+    const char *const path, const ALLOCATOR *const allocator, char **const out)
+{
+    return M_Normalize(path, true, allocator, out);
 }

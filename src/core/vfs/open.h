@@ -18,6 +18,17 @@ bool Vfs_Exists(const VFS *vfs, const char *path);
 // a mounted directory.
 RESULT Vfs_Open(VFS *vfs, const char *path, VFS_MODE mode, READER *out);
 
+// Writes size bytes of data as the file at path in the highest-priority
+// writable source that covers it. Reports failure when no source does.
+RESULT Vfs_Write(VFS *vfs, const char *path, const void *data, size_t size);
+
+// Visits the name of each file directly below dir that a lookup would
+// find, once, spelt as the highest-priority source that has it spells it,
+// in byte order of those names. "" lists the root.
+void Vfs_List(
+    const VFS *vfs, const char *dir,
+    void (*visit)(void *user, const char *name), void *user);
+
 // Runs on every file a VFS_IN_MEMORY open returns, before the caller sees
 // it, and may replace what the READER holds (core/patch uses this to apply
 // thcrap jdiffs). A file opened as VFS_STREAM never goes through the hook,

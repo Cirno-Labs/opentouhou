@@ -2,12 +2,11 @@
 
 #include "core/base/memory.h"
 #include "core/base/result.h"
-#include "core/vfs.h"
+#include "core/vfs/types.h"
 
-// Builds a VFS_SOURCE over a directory on disk: at creation, the directory
-// tree is walked once and every path in it is recorded, normalised, so a
-// later lookup costs no further access to the disk. path becomes the
-// source's name. A directory that does not exist, or that cannot be walked,
-// is a FAIL, and *out is left at nullptr.
-RESULT DirSource_Create(
-    const char *path, const ALLOCATOR *allocator, VFS_SOURCE **out);
+// Builds the source that Vfs_MountDir mounts over the directory at path,
+// which becomes its name, into *out. Reports failure when path is not a
+// directory. Only core/vfs uses it.
+RESULT VfsDirSource_Create(
+    const char *path, bool writable, const ALLOCATOR *allocator,
+    VFS_SOURCE **out);

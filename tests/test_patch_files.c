@@ -64,8 +64,8 @@ static VFS *M_Mount(
     const ALLOCATOR *const allocator)
 {
     VFS *const vfs = Vfs_Create(allocator);
-    CHECK(Result_Log(Vfs_MountDir(vfs, data, 0), LOG_LEVEL_ERROR));
-    Vfs_MountSource(vfs, Patch_CreateSource(stack, allocator), 100);
+    CHECK(Result_Log(Vfs_MountDir(vfs, "", data, 0, false), LOG_LEVEL_ERROR));
+    Vfs_MountSource(vfs, "", Patch_CreateSource(stack, allocator), 100);
     return vfs;
 }
 
@@ -111,7 +111,7 @@ TEST(a_build_specific_name_beats_the_plain_one_in_the_same_patch)
     PatchBuilder_Write(dir, "a/base/th06/end.v1.02h", "build");
     PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
-    Vfs_MountSource(vfs, Patch_CreateSource(stack, &g_HeapAllocator), 0);
+    Vfs_MountSource(vfs, "", Patch_CreateSource(stack, &g_HeapAllocator), 0);
     M_CheckRead(vfs, "msg1.dat", "base build");
     M_CheckRead(vfs, "msg2.dat", "top plain");
     M_CheckRead(vfs, "end", "build");
@@ -143,7 +143,7 @@ TEST(the_paths_layout_finds_a_file_by_its_path)
     PatchBuilder_Write(dir, "a/p/th06/front.anm", "top");
     PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_PATHS);
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
-    Vfs_MountSource(vfs, Patch_CreateSource(stack, &g_HeapAllocator), 0);
+    Vfs_MountSource(vfs, "", Patch_CreateSource(stack, &g_HeapAllocator), 0);
     M_CheckRead(vfs, "data/front/front.anm", "deep");
     M_CheckRead(vfs, "front.anm", "top");
     CHECK(!Vfs_Exists(vfs, "data/front.anm"));
@@ -160,7 +160,7 @@ TEST(ignored_and_jdiff_files_are_not_overlaid)
     PatchBuilder_Write(dir, "a/p/th06/msg1.dat.jdiff", "{}");
     PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
-    Vfs_MountSource(vfs, Patch_CreateSource(stack, &g_HeapAllocator), 0);
+    Vfs_MountSource(vfs, "", Patch_CreateSource(stack, &g_HeapAllocator), 0);
     CHECK(!Vfs_Exists(vfs, "front.png"));
     CHECK(!Vfs_Exists(vfs, "msg1.dat.jdiff"));
     CHECK(!Patch_Touches(stack, "front.png"));
@@ -190,7 +190,7 @@ TEST(the_source_lists_each_overlaid_file_once)
     PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
     VFS_SOURCE *const source = Patch_CreateSource(stack, &g_HeapAllocator);
     char *joined = Str_Dup("");
-    source->funcs->list(source, M_CollectPath, &joined);
+    source->funcs->list(source, "", M_CollectPath, &joined);
     CHECK_EQ_STR(joined, "[msg1.dat]");
     Mem_Free(joined);
     source->funcs->close(source);

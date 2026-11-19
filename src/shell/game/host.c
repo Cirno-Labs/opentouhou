@@ -158,7 +158,7 @@ static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
         return OK;
     }
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
-    RESULT result = Vfs_MountDir(vfs, ctx->folders.data_dir, 0);
+    RESULT result = Vfs_MountDir(vfs, "", ctx->folders.data_dir, 0, false);
     for (int32_t i = 0; IS_OK(result) && i < ctx->desc->data_file_count; i++) {
         const char *const name = ctx->desc->data_files[i];
         READER file;

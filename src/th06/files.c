@@ -64,7 +64,7 @@ static RESULT M_MountArchive(const char *const name, const int32_t priority)
         Archive_Close(archive);
         return FAIL("%s has no ver0102.dat", name);
     }
-    Vfs_MountSource(m_Vfs, Archive_ToSource(archive), priority);
+    Vfs_MountSource(m_Vfs, "", Archive_ToSource(archive), priority);
     return OK;
 }
 
@@ -77,7 +77,7 @@ const PATCH_GAME g_PatchGame = {
 RESULT Files_Init(const char *const data_dir)
 {
     m_Vfs = Vfs_Create(&g_HeapAllocator);
-    RESULT result = Vfs_MountDir(m_Vfs, data_dir, 0);
+    RESULT result = Vfs_MountDir(m_Vfs, "", data_dir, 0, false);
     // All six archives mount at once: only ver0102.dat appears in more
     // than one of them, so a game file never needs a specific archive.
     for (size_t i = 0; IS_OK(result) && i < ARRAY_SIZE(g_FilesArchives); i++) {
@@ -95,7 +95,7 @@ void Files_SetPatches(const PATCH_STACK *const patches)
     m_Patches = patches;
     if (patches != nullptr) {
         Vfs_MountSource(
-            m_Vfs, Patch_CreateSource(patches, &g_HeapAllocator),
+            m_Vfs, "", Patch_CreateSource(patches, &g_HeapAllocator),
             M_PATCH_PRIORITY);
     }
 }

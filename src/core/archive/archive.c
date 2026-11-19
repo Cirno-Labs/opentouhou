@@ -5,6 +5,7 @@
 #include "core/base/hash_map.h"
 #include "core/base/string.h"
 #include "core/io/path.h"
+#include "core/vfs/normalize.h"
 
 #include <string.h>
 
@@ -107,8 +108,8 @@ static RESULT M_Open(
 }
 
 static void M_List(
-    const VFS_SOURCE *const source,
-    void (*const visit)(void *user, const char *path), void *const user)
+    const VFS_SOURCE *const source, const char *const dir,
+    void (*const visit)(void *user, const char *name), void *const user)
 {
     const ARCHIVE *const archive = (const ARCHIVE *)source;
     for (int32_t i = 0; i < archive->table.entries.count; i++) {
@@ -118,7 +119,10 @@ static void M_List(
         }
         char *const path = Str_Dup(entry->name);
         M_FoldAscii(path);
-        visit(user, path);
+        const char *const name = VfsNormalize_NameBelow(path, dir);
+        if (name != nullptr) {
+            visit(user, name);
+        }
         Mem_Free(path);
     }
 }

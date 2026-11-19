@@ -1,7 +1,7 @@
 #include "core/vfs.h"
 
 #include "core/base/string.h"
-#include "core/vfs/dir_source.h"
+#include "core/base/utils.h"
 #include "test.h"
 #include "test_allocator.h"
 #include "test_dir.h"
@@ -39,7 +39,8 @@ TEST(nested_mixed_case_files_open_in_both_modes_named_by_path)
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     VFS *const vfs = Vfs_Create(&test.allocator);
-    CHECK(Result_Log(Vfs_MountDir(vfs, directory, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_MountDir(vfs, "", directory, 0, false), LOG_LEVEL_ERROR));
 
     CHECK(Vfs_Exists(vfs, "title00.jpg"));
     CHECK(Vfs_Exists(vfs, "bgm/th06_01.wav"));
@@ -77,7 +78,7 @@ static void M_Visit(void *const user, const char *const path)
     visited->paths[visited->count++] = Str_Dup(path);
 }
 
-TEST(listing_visits_the_recorded_paths_in_order)
+TEST(listing_visits_the_paths_as_the_disk_spells_them)
 {
     char *const directory = TestDir_Prepare("listed");
     char *const first_file = TestDir_Join(directory, "Bgm.wav");
@@ -85,40 +86,202 @@ TEST(listing_visits_the_recorded_paths_in_order)
     M_Create(first_file, "a song");
     M_Create(second_file, "a title");
 
-    VFS_SOURCE *source;
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     CHECK(Result_Log(
-        DirSource_Create(directory, &g_HeapAllocator, &source),
-        LOG_LEVEL_ERROR));
+        Vfs_MountDir(vfs, "", directory, 0, false), LOG_LEVEL_ERROR));
 
     VISITED_PATHS visited = { .count = 0 };
-    source->funcs->list(source, M_Visit, &visited);
+    Vfs_List(vfs, "", M_Visit, &visited);
     CHECK_EQ_INT(visited.count, 2);
-    CHECK(strcmp(visited.paths[0], "bgm.wav") == 0);
-    CHECK(strcmp(visited.paths[1], "title00.jpg") == 0);
+    CHECK_EQ_STR(visited.paths[0], "Bgm.wav");
+    CHECK_EQ_STR(visited.paths[1], "Title00.jpg");
     Mem_Free(visited.paths[0]);
     Mem_Free(visited.paths[1]);
 
-    source->funcs->close(source);
+    Vfs_Destroy(vfs);
     Mem_Free(second_file);
     Mem_Free(first_file);
     Mem_Free(directory);
 }
 
-TEST(a_missing_directory_fails_the_mount)
+TEST(mounting_a_missing_directory_fails)
 {
     char *const directory = TestDir_Prepare("missing");
     char *const missing = TestDir_Join(directory, "does_not_exist");
+    char *const file = TestDir_Join(directory, "file");
+    M_Create(file, "x");
 
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);
     VFS *const vfs = Vfs_Create(&test.allocator);
-    const RESULT result = Vfs_MountDir(vfs, missing, 0);
-    CHECK(!IS_OK(result));
-    Result_Ignore(result);
+    CHECK(!Result_Ignore(Vfs_MountDir(vfs, "", missing, 0, false)));
+    CHECK(!Result_Ignore(Vfs_MountDir(vfs, "", missing, 0, true)));
+    CHECK(!Result_Ignore(Vfs_MountDir(vfs, "", file, 0, true)));
     CHECK(!Vfs_Exists(vfs, "anything"));
+    CHECK(!Result_Ignore(Vfs_Write(vfs, "anything", "x", 1)));
 
     Vfs_Destroy(vfs);
     CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(file);
     Mem_Free(missing);
+    Mem_Free(directory);
+}
+
+static void M_Join(void *const user, const char *const name)
+{
+    char **const joined = user;
+    char *const next = Str_Format("%s%s;", *joined, name);
+    Mem_Free(*joined);
+    *joined = next;
+}
+
+static char *M_List(const VFS *const vfs, const char *const dir)
+{
+    char *joined = Str_Dup("");
+    Vfs_List(vfs, dir, M_Join, &joined);
+    return joined;
+}
+
+TEST(a_writable_directory_takes_writes_that_later_lookups_find)
+{
+    char *const directory = TestDir_Prepare("writable");
+    char *const user = TestDir_Join(directory, "user");
+    char *const replay = TestDir_Join(user, "Replay");
+    SDL_CreateDirectory(user);
+    SDL_CreateDirectory(replay);
+    char *const old = TestDir_Join(replay, "TH6_01.rpy");
+    M_Create(old, "old");
+
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS *const vfs = Vfs_Create(&test.allocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", user, 0, true)));
+    CHECK(Result_Ignore(Vfs_Write(vfs, "replay/th6_01.rpy", "new", 3)));
+    CHECK(Result_Ignore(Vfs_Write(vfs, "replay/th6_udAb.rpy", "ud", 2)));
+    CHECK(Result_Ignore(Vfs_Write(vfs, "score.dat", "s", 1)));
+    char *const listed = M_List(vfs, "REPLAY");
+    CHECK_EQ_STR(listed, "TH6_01.rpy;th6_udAb.rpy;");
+    READER reader;
+    CHECK(Result_Ignore(
+        Vfs_Open(vfs, "replay/th6_01.rpy", VFS_IN_MEMORY, &reader)));
+    CHECK(M_ReadsAs(&reader, "new"));
+    Reader_Close(&reader);
+    char *const root = M_List(vfs, "");
+    CHECK_EQ_STR(root, "score.dat;");
+
+    Vfs_Destroy(vfs);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(root);
+    Mem_Free(listed);
+    Mem_Free(old);
+    Mem_Free(replay);
+    Mem_Free(user);
+    Mem_Free(directory);
+}
+
+TEST(a_mount_point_limits_a_source_to_its_subtree)
+{
+    char *const directory = TestDir_Prepare("mount_at");
+    char *const low = TestDir_Join(directory, "low");
+    char *const high = TestDir_Join(directory, "high");
+    SDL_CreateDirectory(low);
+    SDL_CreateDirectory(high);
+    char *const low_file = TestDir_Join(low, "a.txt");
+    char *const high_file = TestDir_Join(high, "A.txt");
+    char *const outside = TestDir_Join(high, "b.txt");
+    M_Create(low_file, "low");
+    M_Create(high_file, "high");
+    M_Create(outside, "outside");
+
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS *const vfs = Vfs_Create(&test.allocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", low, 0, true)));
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "replay", high, 1, false)));
+    CHECK(Vfs_Exists(vfs, "replay/b.txt"));
+    CHECK(!Vfs_Exists(vfs, "b.txt"));
+    char *const listed = M_List(vfs, "replay");
+    CHECK_EQ_STR(listed, "A.txt;b.txt;");
+    CHECK(Result_Ignore(Vfs_Write(vfs, "replay/c.txt", "c", 1)));
+    char *const written = TestDir_Join(low, "replay/c.txt");
+    CHECK(SDL_GetPathInfo(written, nullptr));
+
+    Vfs_Destroy(vfs);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(written);
+    Mem_Free(listed);
+    Mem_Free(outside);
+    Mem_Free(high_file);
+    Mem_Free(low_file);
+    Mem_Free(high);
+    Mem_Free(low);
+    Mem_Free(directory);
+}
+
+TEST(a_listing_takes_each_name_from_the_highest_source_that_has_it)
+{
+    char *const directory = TestDir_Prepare("list_priority");
+    char *const low = TestDir_Join(directory, "low");
+    char *const low_replay = TestDir_Join(low, "replay");
+    char *const high = TestDir_Join(directory, "high");
+    SDL_CreateDirectory(low);
+    SDL_CreateDirectory(low_replay);
+    SDL_CreateDirectory(high);
+    char *const files[] = {
+        TestDir_Join(low_replay, "a.txt"),
+        TestDir_Join(low_replay, "c.txt"),
+        TestDir_Join(high, "A.txt"),
+        TestDir_Join(high, "b.txt"),
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(files); i++) {
+        M_Create(files[i], "x");
+    }
+
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS *const vfs = Vfs_Create(&test.allocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", low, 0, false)));
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "replay", high, 1, false)));
+    char *const listed = M_List(vfs, "replay");
+    CHECK_EQ_STR(listed, "A.txt;b.txt;c.txt;");
+
+    Vfs_Destroy(vfs);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(listed);
+    for (size_t i = 0; i < ARRAY_SIZE(files); i++) {
+        Mem_Free(files[i]);
+    }
+    Mem_Free(high);
+    Mem_Free(low_replay);
+    Mem_Free(low);
+    Mem_Free(directory);
+}
+
+TEST(a_write_below_a_mount_point_lands_in_its_directory)
+{
+    char *const directory = TestDir_Prepare("write_at");
+    char *const root = TestDir_Join(directory, "root");
+    char *const user = TestDir_Join(directory, "user");
+    SDL_CreateDirectory(root);
+    SDL_CreateDirectory(user);
+
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS *const vfs = Vfs_Create(&test.allocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", root, 0, true)));
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "save", user, 1, true)));
+    CHECK(Result_Ignore(Vfs_Write(vfs, "save/slot/a.txt", "a", 1)));
+    char *const written = TestDir_Join(user, "slot/a.txt");
+    char *const wrong = TestDir_Join(root, "save");
+    CHECK(SDL_GetPathInfo(written, nullptr));
+    CHECK(!SDL_GetPathInfo(wrong, nullptr));
+    CHECK(Vfs_Exists(vfs, "save/slot/a.txt"));
+
+    Vfs_Destroy(vfs);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(wrong);
+    Mem_Free(written);
+    Mem_Free(user);
+    Mem_Free(root);
     Mem_Free(directory);
 }
