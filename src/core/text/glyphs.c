@@ -16,7 +16,7 @@ typedef struct {
 } M_CLUSTER;
 
 typedef struct {
-    const TEXT_FONT *font;
+    const FONT *font;
     TTF_Text *text;
     M_CLUSTER *clusters;
     int32_t count;
@@ -25,9 +25,9 @@ typedef struct {
 
 static TTF_TextEngine m_Engine = { .version = sizeof(TTF_TextEngine) };
 
-static int32_t M_Adjust(const TEXT_FONT *const font, const TTF_Font *const face)
+static int32_t M_Adjust(const FONT *const font, const TTF_Font *const face)
 {
-    for (const TEXT_FONT *f = font; f != nullptr; f = f->fallback) {
+    for (const FONT *f = font; f != nullptr; f = f->fallback) {
         if (f->font == face && (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0) {
             return f->bold_advance_adjust;
         }
@@ -35,9 +35,9 @@ static int32_t M_Adjust(const TEXT_FONT *const font, const TTF_Font *const face)
     return 0;
 }
 
-static bool M_NeedsAdjustment(const TEXT_FONT *const font)
+static bool M_NeedsAdjustment(const FONT *const font)
 {
-    for (const TEXT_FONT *f = font; f != nullptr; f = f->fallback) {
+    for (const FONT *f = font; f != nullptr; f = f->fallback) {
         if (M_Adjust(font, f->font) != 0) {
             return true;
         }
@@ -75,7 +75,7 @@ static void M_Close(M_RUN *const run)
 }
 
 static RESULT M_Open(
-    const TEXT_FONT *const font, const char *const text, const size_t size,
+    const FONT *const font, const char *const text, const size_t size,
     M_RUN *const run)
 {
     *run = (M_RUN) { .font = font };
@@ -120,7 +120,7 @@ static RESULT M_Open(
         const char *cursor = text + cluster->offset;
         size_t remaining = size - (size_t)cluster->offset;
         const Uint32 codepoint = SDL_StepUTF8(&cursor, &remaining);
-        for (const TEXT_FONT *f = font; f != nullptr; f = f->fallback) {
+        for (const FONT *f = font; f != nullptr; f = f->fallback) {
             if (TTF_FontHasGlyph(f->font, codepoint)) {
                 cluster->adjust = M_Adjust(font, f->font);
                 break;
@@ -183,7 +183,7 @@ static RESULT M_Render(
             int32_t offset_x = 0;
             int32_t offset_y = 0;
             if (gdi) {
-                const TEXT_FONT *font = run->font;
+                const FONT *font = run->font;
                 while (font != nullptr && font->font != op->copy.glyph_font) {
                     font = font->fallback;
                 }
@@ -227,7 +227,7 @@ static RESULT M_Render(
 }
 
 RESULT TextGlyphs_Measure(
-    const TEXT_FONT *const font, const char *const text, const size_t size,
+    const FONT *const font, const char *const text, const size_t size,
     const bool gdi, int32_t *const width, int32_t *const height)
 {
     if (gdi && TextRaster_IsSimple(font, text, size)) {
@@ -250,7 +250,7 @@ RESULT TextGlyphs_Measure(
 }
 
 RESULT TextGlyphs_Render(
-    const TEXT_FONT *const font, const char *const text, const size_t size,
+    const FONT *const font, const char *const text, const size_t size,
     const bool gdi, SDL_Surface **const out)
 {
     *out = nullptr;

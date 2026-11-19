@@ -13,7 +13,7 @@
 // Starts a translator note, which runs to the end of the text.
 #define M_NOTE_START '\x14'
 
-static void M_SetFace(const TEXT_FONT *const font, const uint32_t face)
+static void M_SetFace(const FONT *const font, const uint32_t face)
 {
     TTF_FontStyleFlags flags = TTF_STYLE_NORMAL;
     if ((face & TEXT_FACE_BOLD) != 0) {
@@ -25,7 +25,7 @@ static void M_SetFace(const TEXT_FONT *const font, const uint32_t face)
     if ((face & TEXT_FACE_UNDERLINE) != 0) {
         flags |= TTF_STYLE_UNDERLINE;
     }
-    for (const TEXT_FONT *f = font; f != nullptr; f = f->fallback) {
+    for (const FONT *f = font; f != nullptr; f = f->fallback) {
         if (TTF_GetFontStyle(f->font) != flags) {
             TTF_SetFontStyle(f->font, flags);
         }
@@ -33,7 +33,7 @@ static void M_SetFace(const TEXT_FONT *const font, const uint32_t face)
 }
 
 static RESULT M_Measure(
-    const TEXT_FONT *const font, const char *const text, const size_t size,
+    const FONT *const font, const char *const text, const size_t size,
     const TEXT_STYLE *const style, int32_t *const width, int32_t *const height)
 {
     *width = 0;
@@ -177,7 +177,7 @@ static uint32_t M_ParseFace(const M_PARAM *const command, uint32_t face)
 }
 
 static RESULT M_MeasurePiece(
-    const TEXT_FONT *const font, const TEXT_STYLE *const style,
+    const FONT *const font, const TEXT_STYLE *const style,
     M_LAYOUT *const layout, M_PIECE *const piece)
 {
     TEXT_STYLE face = *style;
@@ -195,7 +195,7 @@ static RESULT M_MeasurePiece(
 // the width of the third parameter, or of the text without one, and l, c
 // and r align the text in it. s draws nothing and gives no width.
 static RESULT M_PlaceCommand(
-    const TEXT_FONT *const font, const TEXT_STYLE *const style,
+    const FONT *const font, const TEXT_STYLE *const style,
     M_LAYOUT *const layout, const M_PARAM *const params, const int32_t count,
     int32_t *const pen)
 {
@@ -247,7 +247,7 @@ static RESULT M_PlaceCommand(
 }
 
 static RESULT M_Layout(
-    const TEXT_FONT *const font, const char *const text,
+    const FONT *const font, const char *const text,
     const TEXT_STYLE *const style, M_LAYOUT *const layout)
 {
     *layout = (M_LAYOUT) {};
@@ -311,7 +311,7 @@ static RESULT M_Layout(
 }
 
 static RESULT M_DrawPieces(
-    const TEXT_FONT *const font, const M_LAYOUT *const layout,
+    const FONT *const font, const M_LAYOUT *const layout,
     const TEXT_STYLE *const style, IMAGE *const image, const int32_t x,
     const int32_t y, const GFX_COLOR color)
 {
@@ -360,7 +360,7 @@ TEXT_STYLE TextStyle_Default(void)
 }
 
 RESULT Text_Measure(
-    const TEXT_FONT *const font, const char *const text,
+    const FONT *const font, const char *const text,
     const TEXT_STYLE *const style, int32_t *const width, int32_t *const height)
 {
     FAIL_IF(text == nullptr, "Invalid text or style");
@@ -378,7 +378,7 @@ RESULT Text_Measure(
 }
 
 RESULT Text_Render(
-    const TEXT_FONT *const font, const char *const text,
+    const FONT *const font, const char *const text,
     const TEXT_STYLE *const style, const ALLOCATOR *const allocator,
     IMAGE *const out)
 {
@@ -426,7 +426,7 @@ RESULT Text_Render(
 }
 
 RESULT Text_MeasureMarkup(
-    const TEXT_FONT *const font, const char *const text,
+    const FONT *const font, const char *const text,
     const TEXT_STYLE *const style, int32_t *const width, int32_t *const height)
 {
     *width = 0;
@@ -442,7 +442,7 @@ RESULT Text_MeasureMarkup(
 }
 
 RESULT Text_RenderMarkup(
-    const TEXT_FONT *const font, const char *const text,
+    const FONT *const font, const char *const text,
     const TEXT_STYLE *const style, const ALLOCATOR *const allocator,
     IMAGE *const out)
 {

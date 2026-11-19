@@ -103,7 +103,7 @@ void TextRaster_Close(void *const face)
 }
 
 RESULT TextRaster_Glyph(
-    const TEXT_FONT *const font, const uint32_t index, SDL_Surface **const out,
+    const FONT *const font, const uint32_t index, SDL_Surface **const out,
     int32_t *const offset_x, int32_t *const offset_y)
 {
     *out = nullptr;
@@ -173,7 +173,7 @@ RESULT TextRaster_Glyph(
 }
 
 bool TextRaster_IsSimple(
-    const TEXT_FONT *const font, const char *const text, const size_t size)
+    const FONT *const font, const char *const text, const size_t size)
 {
     if ((TTF_GetFontStyle(font->font)
          & (TTF_STYLE_ITALIC | TTF_STYLE_UNDERLINE))
@@ -193,10 +193,10 @@ bool TextRaster_IsSimple(
     return true;
 }
 
-static const TEXT_FONT *M_CharacterFont(
-    const TEXT_FONT *const font, const uint32_t character)
+static const FONT *M_CharacterFont(
+    const FONT *const font, const uint32_t character)
 {
-    for (const TEXT_FONT *f = font; f != nullptr; f = f->fallback) {
+    for (const FONT *f = font; f != nullptr; f = f->fallback) {
         if (FT_Get_Char_Index(f->raster_face, character) != 0) {
             return f;
         }
@@ -205,7 +205,7 @@ static const TEXT_FONT *M_CharacterFont(
 }
 
 static RESULT M_Advance(
-    const TEXT_FONT *const font, const uint32_t index, int32_t *const advance)
+    const FONT *const font, const uint32_t index, int32_t *const advance)
 {
     FT_Face const face = font->raster_face;
     FAIL_IF(
@@ -219,7 +219,7 @@ static RESULT M_Advance(
 }
 
 RESULT TextRaster_MeasureSimple(
-    const TEXT_FONT *const font, const char *const text, const size_t size,
+    const FONT *const font, const char *const text, const size_t size,
     int32_t *const width, int32_t *const height)
 {
     int64_t pen = 0;
@@ -227,7 +227,7 @@ RESULT TextRaster_MeasureSimple(
     size_t remaining = size;
     while (remaining != 0) {
         const uint32_t character = SDL_StepUTF8(&cursor, &remaining);
-        const TEXT_FONT *const f = M_CharacterFont(font, character);
+        const FONT *const f = M_CharacterFont(font, character);
         int32_t advance = 0;
         MUST(M_Advance(
             f, FT_Get_Char_Index(f->raster_face, character), &advance));
@@ -240,7 +240,7 @@ RESULT TextRaster_MeasureSimple(
 }
 
 RESULT TextRaster_RenderSimple(
-    const TEXT_FONT *const font, const char *const text, const size_t size,
+    const FONT *const font, const char *const text, const size_t size,
     SDL_Surface **const out)
 {
     *out = nullptr;
@@ -257,7 +257,7 @@ RESULT TextRaster_RenderSimple(
     size_t remaining = size;
     while (remaining != 0) {
         const uint32_t character = SDL_StepUTF8(&cursor, &remaining);
-        const TEXT_FONT *const f = M_CharacterFont(font, character);
+        const FONT *const f = M_CharacterFont(font, character);
         const uint32_t index = FT_Get_Char_Index(f->raster_face, character);
         int32_t advance = 0;
         result = M_Advance(f, index, &advance);

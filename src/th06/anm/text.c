@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static TEXT_FONT *m_Font;
+static FONT *m_Font;
 
 static GFX_COLOR M_Color(const uint32_t color)
 {
@@ -69,7 +69,7 @@ static RESULT M_MeasureRow(
     }
     FAIL_IF(font_height < 2 || font_height > 255, "Invalid ANM font height");
     int32_t offset_y;
-    MUST(TextFont_SetSizeRounded(m_Font, (float)font_height * 2.0f, &offset_y));
+    MUST(Font_SetSizeRounded(m_Font, (float)font_height * 2.0f, &offset_y));
     const TEXT_STYLE style = M_Style();
     int32_t height;
     MUST(Text_MeasureMarkup(m_Font, text, &style, width, &height));
@@ -142,11 +142,11 @@ RESULT Anm_InitText(
         MUST(Text_Init());
         if (family != nullptr
             && Result_Log(
-                TextFont_LoadFamily(paths, count, family, 30.0f, &m_Font),
+                Font_LoadFamily(paths, count, family, 30.0f, &m_Font),
                 LOG_LEVEL_WARNING)) {
             return OK;
         }
-        const RESULT result = TextFont_LoadDefault(30.0f, &m_Font);
+        const RESULT result = Font_LoadDefault(30.0f, &m_Font);
         if (!IS_OK(result)) {
             Text_Shutdown();
             return result;
@@ -157,7 +157,7 @@ RESULT Anm_InitText(
 
 void Anm_ShutdownText(void)
 {
-    TextFont_Free(m_Font);
+    Font_Free(m_Font);
     m_Font = nullptr;
     Text_Shutdown();
 }
@@ -191,7 +191,7 @@ RESULT Anm_RenderTextToTextureIndex(
         source_width > surface_width || source_height > 64,
         "Text row exceeds the GDI surface");
     int32_t offset_y;
-    MUST(TextFont_SetSizeRounded(m_Font, (float)height * 2.0f, &offset_y));
+    MUST(Font_SetSizeRounded(m_Font, (float)height * 2.0f, &offset_y));
     const TEXT_STYLE style = M_Style();
     IMAGE glyphs;
     MUST(Text_RenderMarkup(m_Font, text, &style, &g_HeapAllocator, &glyphs));
