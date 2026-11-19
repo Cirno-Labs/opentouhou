@@ -3,6 +3,7 @@
 #include "th07/screens/ending/script.h"
 
 #include "th07/anm.h"
+#include "th07/ascii.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
@@ -508,6 +509,7 @@ static RESULT M_Added(void *const arg)
     M_ENDING *const ending = arg;
     GAME_MANAGER *const gm = &g_GameManager;
     gm->mode.game_cleared = true;
+    g_AsciiText.hide_frame_rate = true;
     MUST(Anm_Load(0x31, "data/staff01.anm", M_FIRST_STAFF));
     CLEAR_RECORD *const clear = &gm->records.clears[gm->run.shot_index];
     const int32_t difficulty = gm->run.difficulty;
@@ -531,6 +533,7 @@ static RESULT M_Added(void *const arg)
 
 static void M_Deleted(void *const arg)
 {
+    g_AsciiText.hide_frame_rate = false;
     M_ENDING *const ending = arg;
     Anm_Release(0x31);
     Scene_Request(SCENE_GAME_RESULT);

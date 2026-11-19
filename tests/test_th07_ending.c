@@ -9,6 +9,7 @@
 #include "th07_data.h"
 
 #include "th07/anm.h"
+#include "th07/ascii.h"
 #include "th07/buttons.h"
 #include "th07/files.h"
 #include "th07/game.h"
@@ -27,6 +28,8 @@ CHAIN g_Chain;
 RNG g_Rng;
 BUTTONS g_Buttons;
 float g_GameSpeed = 1.0f;
+
+ASCII_TEXT g_AsciiText;
 
 static char *m_Directory;
 static SCENE m_Requested;
@@ -233,9 +236,11 @@ TEST(the_clear_records_c_with_and_without_continues)
     g_GameManager.run.shot_index = 3;
     g_GameManager.run.difficulty = 2;
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
+    CHECK(g_AsciiText.hide_frame_rate);
     CHECK_EQ_INT(g_GameManager.records.clears[3].no_continues[2], 'c');
     CHECK_EQ_INT(g_GameManager.records.clears[3].with_continues[2], 'c');
     Chain_Release(&g_Chain);
+    CHECK(!g_AsciiText.hide_frame_rate);
     Chain_Init(&g_Chain);
     g_GameManager.stats.continues_used = 1;
     g_GameManager.run.difficulty = 3;
