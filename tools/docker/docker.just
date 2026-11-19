@@ -15,6 +15,8 @@ _docker_run platform image *args:
         -e RELEASE_INDEX_URL \
         -e OPENTOUHOU_RELEASE \
         -e OPENTOUHOU_WERROR \
+        -e OPENTOUHOU_MSGOTHIC \
+        ${OPENTOUHOU_MSGOTHIC:+-v "$OPENTOUHOU_MSGOTHIC:$OPENTOUHOU_MSGOTHIC:ro"} \
         -v "{{CWD}}:/app" \
         "$(tools/docker/image tag {{platform}} {{image}})" \
         {{args}}
