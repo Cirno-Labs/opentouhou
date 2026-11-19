@@ -29,6 +29,9 @@ bool Str_EndsWith(const char *text, const char *suffix);
 // Other bytes compare exactly.
 bool Str_EqualIgnoreCase(const char *a, const char *b);
 
+// Turns the ASCII capitals of text into lowercase, in place.
+void Str_ToLower(char *text);
+
 // Reads text, a whole decimal number, into *out. Fails on an empty text,
 // a byte that is not a digit, or a number past UINT32_MAX, and then leaves
 // *out unchanged.

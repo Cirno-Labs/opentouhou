@@ -17,22 +17,13 @@
 // cannot walk forever.
 #define M_MAX_DEPTH 32
 
-static void M_ToLower(char *const text)
-{
-    for (char *c = text; *c != '\0'; c++) {
-        if (*c >= 'A' && *c <= 'Z') {
-            *c = (char)(*c - 'A' + 'a');
-        }
-    }
-}
-
 // Returns the key of a file name: the name in lowercase, without the
 // build after its first part. *is_build tells whether the name had it.
 static char *M_KeyOfName(
     const char *const name, const char *const build, bool *const is_build)
 {
     char *const key = Str_Dup(name);
-    M_ToLower(key);
+    Str_ToLower(key);
     *is_build = false;
     char *const dot = strchr(key, '.');
     const size_t build_length = strlen(build);
@@ -77,7 +68,7 @@ static void M_IndexDir(
         if (type == FILE_TYPE_DIR) {
             if (recursive) {
                 char *const sub_prefix = Str_Format("%s%s/", prefix, name);
-                M_ToLower(sub_prefix);
+                Str_ToLower(sub_prefix);
                 M_IndexDir(
                     files, disk_path, sub_prefix, build, true, depth + 1);
                 Mem_Free(sub_prefix);
@@ -229,7 +220,7 @@ RESULT Patch_OpenStack(
     stack->game_id = Str_Dup(game_id);
     stack->game = *game;
     stack->game.build = Str_Dup(game->build != nullptr ? game->build : "");
-    M_ToLower((char *)stack->game.build);
+    Str_ToLower((char *)stack->game.build);
     const int32_t count = Patch_GetLoadCount(selection);
     stack->patches = Mem_AllocArrZ((size_t)MAX(count, 1), sizeof(PATCH));
     for (int32_t i = 0; i < count; i++) {

@@ -68,6 +68,13 @@ TEST(equal_ignore_case_folds_ascii_only)
     CHECK(!Str_EqualIgnoreCase("[", "{"));
 }
 
+TEST(to_lower_folds_ascii_only)
+{
+    char text[] = "MS Gothic Ä[Z]";
+    Str_ToLower(text);
+    CHECK(strcmp(text, "ms gothic Ä[z]") == 0);
+}
+
 TEST(parse_u32_reads_whole_decimal_numbers)
 {
     uint32_t value = 7;
