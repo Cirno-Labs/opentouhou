@@ -130,7 +130,7 @@ TEST(a_live_capture_records_the_held_buttons)
 {
     char *const root = TestDir_Prepare("driver_live");
     char *const out_dir = TestDir_Join(root, "out");
-    char *const case_path = TestDir_Join(root, "live.otrc");
+    char *const case_path = TestDir_Join(root, "live.othtc");
     M_GAME game = {};
     const PORT port = {
         .game = &m_TestGame,
@@ -164,7 +164,7 @@ TEST(a_capture_replays_to_a_match)
     char *const slot = TestDir_Join(stage_dir, "slot.bin");
     char *const score_file = TestDir_Join(stage_dir, "score.dat");
     char *const capture_dir = TestDir_Join(root, "capture");
-    char *const case_path = TestDir_Join(root, "test.otrc");
+    char *const case_path = TestDir_Join(root, "test.othtc");
     char *const replay_dir = TestDir_Join(root, "replay");
     M_WriteText(script_dir, "inputs.txt", "input 2 shoot\ninput 5 none\n");
     M_WriteText(stage_dir, "score.dat", "score");
@@ -287,7 +287,7 @@ TEST(a_failed_run_writes_no_case_or_report)
 {
     char *const root = TestDir_Prepare("driver_failed");
     char *const out_dir = TestDir_Join(root, "out");
-    char *const case_path = TestDir_Join(root, "failed.otrc");
+    char *const case_path = TestDir_Join(root, "failed.othtc");
     char *const script = TestDir_Join(root, "inputs.txt");
     M_WriteText(root, "inputs.txt", "frames 3\n");
     M_GAME game = {};
@@ -433,7 +433,7 @@ static bool M_Parse(char **const args, ARENA *const arena, RUN *const run)
 TEST(a_command_line_gives_every_option)
 {
     char *args[] = {
-        "test",       "capture", "/c.otrc",  "--data",     "/g",
+        "test",       "capture", "/c.othtc", "--data",     "/g",
         "--out",      "/o",      "--script", "/s.txt",     "--file",
         "/x/a=b.rpy", "--file",  "/y=c/d",   "--headless", nullptr,
     };
@@ -444,13 +444,13 @@ TEST(a_command_line_gives_every_option)
     CHECK_EQ_INT(run.role, RUN_CAPTURE);
     CHECK(run.headless);
     CHECK_EQ_STR(run.game_dir, "/g");
-    CHECK_EQ_STR(run.case_path, "/c.otrc");
+    CHECK_EQ_STR(run.case_path, "/c.othtc");
     CHECK_EQ_INT(run.file_count, 2);
     CHECK_EQ_STR(run.files[0].file, "/x/a");
     CHECK_EQ_STR(run.files[0].path, "b.rpy");
     CHECK_EQ_STR(run.files[1].path, "c/d");
     char *replay[] = {
-        "test", "replay",  "/c.otrc",           "--data", "/g", "--out",
+        "test", "replay",  "/c.othtc",          "--data", "/g", "--out",
         "/o",   "--shots", "100,200,every:600", nullptr,
     };
     CHECK(M_Parse(replay, &arena, &run));
@@ -465,7 +465,7 @@ TEST(a_replay_against_another_run_differs_by_its_shots)
 {
     char *const root = TestDir_Prepare("driver_against");
     char *const script = TestDir_Join(root, "inputs.txt");
-    char *const case_path = TestDir_Join(root, "against.otrc");
+    char *const case_path = TestDir_Join(root, "against.othtc");
     char *const capture_dir = TestDir_Join(root, "capture");
     char *const first = TestDir_Join(root, "first");
     char *const second = TestDir_Join(root, "second");
@@ -566,7 +566,7 @@ TEST(a_case_of_another_version_fails)
     char *const script_dir = TestDir_Join(root, "script");
     char *const script = TestDir_Join(script_dir, "inputs.txt");
     char *const capture_dir = TestDir_Join(root, "capture");
-    char *const case_path = TestDir_Join(root, "test.otrc");
+    char *const case_path = TestDir_Join(root, "test.othtc");
     char *const replay_dir = TestDir_Join(root, "replay");
     M_WriteText(script_dir, "inputs.txt", "frames 2\n");
     HARNESS_GAME other = m_TestGame;
@@ -653,7 +653,7 @@ TEST(a_replay_draws_only_before_its_shots)
 {
     char *const root = TestDir_Prepare("driver_draws");
     char *const script = TestDir_Join(root, "inputs.txt");
-    char *const case_path = TestDir_Join(root, "draws.otrc");
+    char *const case_path = TestDir_Join(root, "draws.othtc");
     char *const out_dir = TestDir_Join(root, "out");
     M_WriteText(root, "inputs.txt", "input 2 shoot\ninput 5 none\n");
     M_GAME game = {};
@@ -695,8 +695,8 @@ TEST(a_shot_list_can_come_from_a_file)
     char *const path = TestDir_Join(root, "shots.txt");
     char *const spec = Str_Format("@%s", path);
     char *args[] = {
-        "test",  "replay", "/c.otrc", "--data", "/g",
-        "--out", "/o",     "--shots", spec,     nullptr,
+        "test",  "replay", "/c.othtc", "--data", "/g",
+        "--out", "/o",     "--shots",  spec,     nullptr,
     };
     ARENA arena;
     Arena_Init(&arena, "test", M_ARENA_SIZE);

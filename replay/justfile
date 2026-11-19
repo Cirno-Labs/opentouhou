@@ -47,11 +47,11 @@ native game data:
     trap 'rm -rf "$dir"' EXIT
     harness=("$root/tools/harness")
     data=(--data {{quote(data)}} --program "$program")
-    "${harness[@]}" capture {{game}} "$dir/case.otrc" "${data[@]}" --script "$root/replay/{{game}}/native.txt"
+    "${harness[@]}" capture {{game}} "$dir/case.othtc" "${data[@]}" --script "$root/replay/{{game}}/native.txt"
     shots=(--shots 0,100,every:300)
-    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --out "$dir/headless" --headless
-    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --out "$dir/first" "${shots[@]}"
-    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --out "$dir/second" "${shots[@]}" --against "$dir/first"
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --out "$dir/headless" --headless
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --out "$dir/first" "${shots[@]}"
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --out "$dir/second" "${shots[@]}" --against "$dir/first"
     echo "{{game}} native: $(grep -x 'rows = .*' "$dir/headless/report.ini"), $(grep -x 'shots = .*' "$dir/second/report.ini") match"
 
 # Check a game's native port against its original: capture the original
@@ -72,19 +72,19 @@ retail game data script shots="" out="":
     trap 'rm -rf "$dir"' EXIT
     harness=("$root/tools/harness")
     data=(--data {{quote(data)}})
-    "${harness[@]}" capture {{game}} "$dir/case.otrc" "${data[@]}" --backend retail --script {{quote(script)}}
+    "${harness[@]}" capture {{game}} "$dir/case.othtc" "${data[@]}" --backend retail --script {{quote(script)}}
     native=(--headless)
     if [ -n {{quote(shots)}} ]; then
-        "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --backend retail --out "$dir/retail" --shots {{quote(shots)}}
+        "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --backend retail --out "$dir/retail" --shots {{quote(shots)}}
         native=(--shots {{quote(shots)}} --against "$dir/retail")
     fi
     status=0
-    "${harness[@]}" replay "$dir/case.otrc" "${data[@]}" --program "$program" --out "$dir/native" "${native[@]}" || status=$?
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --program "$program" --out "$dir/native" "${native[@]}" || status=$?
     cat "$dir/native/report.ini"
     if [ -n {{quote(shots)}} ]; then cat "$dir/native/shots.tsv"; fi
     if [ -n {{quote(out)}} ]; then
         mkdir -p {{quote(out)}}
-        cp -r "$dir/case.otrc" "$dir/native" {{quote(out)}}
+        cp -r "$dir/case.othtc" "$dir/native" {{quote(out)}}
         if [ -d "$dir/retail" ]; then cp -r "$dir/retail" {{quote(out)}}; fi
     fi
     [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$dir/native/report.ini"
@@ -102,7 +102,7 @@ rpy-cases game data replays out:
     shopt -s nullglob
     for rpy in {{quote(replays)}}/*.rpy; do
         name=$(basename "$rpy" .rpy)
-        "$root/tools/stage_rpy" {{game}} "$rpy" {{quote(out)}}/"$name.otrc" \
+        "$root/tools/stage_rpy" {{game}} "$rpy" {{quote(out)}}/"$name.othtc" \
             --backend retail --data {{quote(data)}} --headless > /dev/null
         echo "captured $name"
     done
@@ -118,15 +118,15 @@ check game data cases jobs=num_cpus():
     root={{quote(justfile_directory())}}
     program=$(just -f "$root/justfile" replay::_native {{game}} release)
     shopt -s nullglob
-    list=({{quote(cases)}}/*.otrc)
+    list=({{quote(cases)}}/*.othtc)
     out=$(mktemp -d)
     trap 'rm -rf "$out"' EXIT
     printf '%s\0' "${list[@]}" | xargs -0 -P {{jobs}} -I{} sh -c \
-        'name=$(basename "$1" .otrc); "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || touch "$4/$name.fail"' \
+        'name=$(basename "$1" .othtc); "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || touch "$4/$name.fail"' \
         _ {} "$root" {{quote(data)}} "$out" "$program"
     failed=0
     for case in "${list[@]}"; do
-        name=$(basename "$case" .otrc)
+        name=$(basename "$case" .othtc)
         if [ -e "$out/$name.fail" ]; then
             failed=$((failed + 1))
             echo "FAIL $name"

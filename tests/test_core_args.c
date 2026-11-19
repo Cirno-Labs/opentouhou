@@ -30,7 +30,7 @@ static const ARG_OPTION m_Options[] = {
     ARG_STRING_OF(M_ARGS, "--replay", replay, "<file>", "a replay"),
     ARG_STRING_OF(
         M_ARGS, "case", case_path, "<case>", "the case file",
-        ARG_FALLBACK("default.otrc")),
+        ARG_FALLBACK("default.othtc")),
 };
 
 static const ARG_SCHEMA m_Schema =
@@ -109,14 +109,14 @@ TEST(options_fill_their_fields)
     bool help;
     CHECK(Result_Ignore(M_Parse(
         &m_Schema, &args, &help, "--game", "dir", "--verbose", "--times", "-12",
-        "a.otrc", nullptr)));
+        "a.othtc", nullptr)));
     CHECK(!help);
     CHECK_EQ_STR(args.game, "dir");
     CHECK(args.verbose);
     CHECK_EQ_INT(args.times, -12);
     CHECK(!args.fast);
     CHECK_EQ_INT(args.seeds.count, 0);
-    CHECK_EQ_STR(args.case_path, "a.otrc");
+    CHECK_EQ_STR(args.case_path, "a.othtc");
 }
 
 TEST(options_not_given_hold_their_fallbacks)
@@ -128,7 +128,7 @@ TEST(options_not_given_hold_their_fallbacks)
     CHECK_EQ_INT(args.times, 3);
     CHECK_EQ_INT(args.seeds.count, 0);
     CHECK(args.replay == nullptr);
-    CHECK_EQ_STR(args.case_path, "default.otrc");
+    CHECK_EQ_STR(args.case_path, "default.othtc");
 }
 
 TEST(short_names_match)
@@ -321,8 +321,8 @@ TEST(exclusive_allows_none_or_one)
         "tool: --fast cannot go with --times (see --help)");
     M_CheckFail(
         M_Parse(
-            &m_ExclusiveCaseSchema, &args, &help, "-g", "d", "a.otrc", "--live",
-            nullptr),
+            &m_ExclusiveCaseSchema, &args, &help, "-g", "d", "a.othtc",
+            "--live", nullptr),
         "tool: <case> cannot go with --live (see --help)");
 }
 

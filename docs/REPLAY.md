@@ -82,8 +82,8 @@ files, never the player's own saves, and writes into `work/`.
 
 ## Cases
 
-A case is one ZIP file, `NAME.otrc`, with every entry deflated, so
-`unzip -l` lists it and `unzip -p NAME.otrc case.ini` prints an entry:
+A case is one ZIP file, `NAME.othtc`, with every entry deflated, so
+`unzip -l` lists it and `unzip -p NAME.othtc case.ini` prints an entry:
 
 ```
 case.ini     manifest
