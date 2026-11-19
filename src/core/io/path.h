@@ -12,6 +12,10 @@
 // added when a is empty or already ends with '/' or '\'.
 char *Path_Join(const ALLOCATOR *allocator, const char *a, const char *b);
 
+// Returns the part of path after its last '/' or '\', or all of path when
+// it has neither.
+const char *Path_GetName(const char *path);
+
 // Returns the directory that holds the executable, or nullptr when the
 // platform cannot tell. The string stays valid for the life of the program.
 const char *Path_GetExeDir(void);

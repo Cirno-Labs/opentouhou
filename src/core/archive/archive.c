@@ -4,6 +4,7 @@
 #include "core/base/array.h"
 #include "core/base/hash_map.h"
 #include "core/base/string.h"
+#include "core/io/path.h"
 
 #include <string.h>
 
@@ -48,12 +49,6 @@ static void M_FoldAscii(char *const text)
     }
 }
 
-static const char *M_LastComponent(const char *const path)
-{
-    const char *const slash = strrchr(path, '/');
-    return slash == nullptr ? path : slash + 1;
-}
-
 // Returns the key that the format looks path up by, as a new string that
 // Mem_Free releases.
 static char *M_Key(const ARCHIVE_LOOKUP lookup, const char *const path)
@@ -61,7 +56,7 @@ static char *M_Key(const ARCHIVE_LOOKUP lookup, const char *const path)
     if (lookup == ARCHIVE_LOOKUP_PATH) {
         return Str_Dup(path);
     }
-    char *const key = Str_Dup(M_LastComponent(path));
+    char *const key = Str_Dup(Path_GetName(path));
     M_FoldAscii(key);
     return key;
 }
