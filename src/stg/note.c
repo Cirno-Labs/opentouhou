@@ -61,7 +61,7 @@ typedef ARRAY(M_LINE) M_LINE_ARRAY;
 
 static bool m_Enabled;
 static M_SETTINGS m_Settings;
-static TEXT_FONT *m_Font;
+static FONT *m_Font;
 static int32_t m_LineHeight;
 static int32_t m_FontOffsetY;
 static TEXT_STYLE m_Style;
@@ -245,13 +245,13 @@ static RESULT M_LoadFont(const char *const rule)
         int32_t count;
         const char *const *const paths = Translation_GetFontFiles(&count);
         opened = Result_Log(
-            TextFont_LoadFamily(paths, count, family, (float)height, &m_Font),
+            Font_LoadFamily(paths, count, family, (float)height, &m_Font),
             LOG_LEVEL_WARNING);
     }
     if (!opened) {
-        MUST(TextFont_LoadDefault((float)height, &m_Font));
+        MUST(Font_LoadDefault((float)height, &m_Font));
     }
-    return TextFont_SetSizeRounded(m_Font, (float)height, &m_FontOffsetY);
+    return Font_SetSizeRounded(m_Font, (float)height, &m_FontOffsetY);
 }
 
 static RESULT M_Measure(
@@ -540,7 +540,7 @@ void Note_Shutdown(void)
         Array_Free(&m_Notes);
     }
     memset(&m_Notes, 0, sizeof(m_Notes));
-    TextFont_Free(m_Font);
+    Font_Free(m_Font);
     m_Font = nullptr;
     m_FontOffsetY = 0;
     m_Enabled = false;

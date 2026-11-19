@@ -32,21 +32,21 @@ TEXT_STYLE TextStyle_Default(void);
 
 // Measures one UTF-8 line, including the shadow. An empty line has no pixels.
 RESULT Text_Measure(
-    const TEXT_FONT *font, const char *text, const TEXT_STYLE *style,
-    int32_t *width, int32_t *height);
+    const FONT *font, const char *text, const TEXT_STYLE *style, int32_t *width,
+    int32_t *height);
 
 // Renders one UTF-8 line to straight-alpha RGBA8. Owns the returned image
 // through allocator. Leaves out empty on failure or for an empty line.
 RESULT Text_Render(
-    const TEXT_FONT *font, const char *text, const TEXT_STYLE *style,
+    const FONT *font, const char *text, const TEXT_STYLE *style,
     const ALLOCATOR *allocator, IMAGE *out);
 
 // Measures one UTF-8 line of thcrap's layout markup, including the shadow,
 // as Text_RenderMarkup draws it. A line without markup measures as
 // Text_Measure measures it.
 RESULT Text_MeasureMarkup(
-    const TEXT_FONT *font, const char *text, const TEXT_STYLE *style,
-    int32_t *width, int32_t *height);
+    const FONT *font, const char *text, const TEXT_STYLE *style, int32_t *width,
+    int32_t *height);
 
 // Renders one UTF-8 line of thcrap's layout markup to straight-alpha RGBA8,
 // as thcrap's layout_process lays it out. A command is
@@ -63,7 +63,7 @@ RESULT Text_MeasureMarkup(
 // renders as Text_Render renders it. Owns the returned image through
 // allocator. Leaves out empty on failure or for an empty line.
 RESULT Text_RenderMarkup(
-    const TEXT_FONT *font, const char *text, const TEXT_STYLE *style,
+    const FONT *font, const char *text, const TEXT_STYLE *style,
     const ALLOCATOR *allocator, IMAGE *out);
 
 // Converts normalized glyph coverage to GDI's white-on-black intensity

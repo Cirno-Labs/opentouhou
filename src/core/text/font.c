@@ -64,7 +64,7 @@ static float M_CellScale(
 
 // Keeps GDI's one-pixel advance for synthetic bold instead of SDL_ttf's
 // size-dependent overhang.
-static RESULT M_UpdateBoldAdvance(TEXT_FONT *const font)
+static RESULT M_UpdateBoldAdvance(FONT *const font)
 {
     font->bold_advance_adjust = 0;
     if (font->native_bold) {
@@ -109,8 +109,8 @@ void Text_Shutdown(void)
     }
 }
 
-RESULT TextFont_Load(
-    READER *const reader, const float pixel_height, TEXT_FONT **const out)
+RESULT Font_Load(
+    READER *const reader, const float pixel_height, FONT **const out)
 {
     *out = nullptr;
     FAIL_IF(!m_Initialized, "Fonts are not initialized");
@@ -139,8 +139,8 @@ RESULT TextFont_Load(
         Mem_Free(data);
         return FAIL("Cannot open font: %s", SDL_GetError());
     }
-    TEXT_FONT *const font = Mem_Alloc(sizeof(*font));
-    *font = (TEXT_FONT) {
+    FONT *const font = Mem_Alloc(sizeof(*font));
+    *font = (FONT) {
         .font = face,
         .data = data,
         .cell_scale = cell_scale,
@@ -150,12 +150,12 @@ RESULT TextFont_Load(
     const RESULT raster =
         TextRaster_Open(data, size, TTF_GetFontSize(face), &font->raster_face);
     if (!IS_OK(raster)) {
-        TextFont_Free(font);
+        Font_Free(font);
         return raster;
     }
     const RESULT metrics = M_UpdateBoldAdvance(font);
     if (!IS_OK(metrics)) {
-        TextFont_Free(font);
+        Font_Free(font);
         return metrics;
     }
     *out = font;
@@ -163,50 +163,49 @@ RESULT TextFont_Load(
 }
 
 static RESULT M_LoadFile(
-    const char *const path, const float pixel_height, TEXT_FONT **const out)
+    const char *const path, const float pixel_height, FONT **const out)
 {
     READER reader;
     MUST(Reader_OpenFile(&reader, path));
-    const RESULT result = TextFont_Load(&reader, pixel_height, out);
+    const RESULT result = Font_Load(&reader, pixel_height, out);
     Reader_Close(&reader);
     MUST(result, "%s", path);
     return OK;
 }
 
-RESULT TextFont_LoadDefault(const float pixel_height, TEXT_FONT **const out)
+RESULT Font_LoadDefault(const float pixel_height, FONT **const out)
 {
     READER reader;
     Reader_OpenBuffer(&reader, m_DefaultFont, sizeof(m_DefaultFont), nullptr);
-    return TextFont_Load(&reader, pixel_height, out);
+    return Font_Load(&reader, pixel_height, out);
 }
 
-RESULT TextFont_LoadFamily(
+RESULT Font_LoadFamily(
     const char *const *const paths, const int32_t count,
-    const char *const family, const float pixel_height, TEXT_FONT **const out)
+    const char *const family, const float pixel_height, FONT **const out)
 {
     *out = nullptr;
     FAIL_IF(family == nullptr || count < 0, "Invalid font family");
     for (int32_t i = 0; i < count; i++) {
-        TEXT_FONT *font;
+        FONT *font;
         if (!Result_Log(
                 M_LoadFile(paths[i], pixel_height, &font), LOG_LEVEL_WARNING)) {
             continue;
         }
         const char *const name = TTF_GetFontFamilyName(font->font);
         if (name == nullptr || !Str_EqualIgnoreCase(name, family)) {
-            TextFont_Free(font);
+            Font_Free(font);
             continue;
         }
-        const RESULT fallback =
-            TextFont_LoadDefault(pixel_height, &font->fallback);
+        const RESULT fallback = Font_LoadDefault(pixel_height, &font->fallback);
         if (!IS_OK(fallback)) {
-            TextFont_Free(font);
+            Font_Free(font);
             return fallback;
         }
         if (!TTF_AddFallbackFont(font->font, font->fallback->font)) {
             const RESULT result =
                 FAIL("Cannot add a fallback font: %s", SDL_GetError());
-            TextFont_Free(font);
+            Font_Free(font);
             return result;
         }
         *out = font;
@@ -216,7 +215,7 @@ RESULT TextFont_LoadFamily(
 }
 
 static RESULT M_SetSize(
-    TEXT_FONT *const font, const float pixel_height, const bool rounded)
+    FONT *const font, const float pixel_height, const bool rounded)
 {
     FAIL_IF(
         font == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
@@ -242,13 +241,13 @@ static RESULT M_SetSize(
     return OK;
 }
 
-RESULT TextFont_SetSize(TEXT_FONT *const font, const float pixel_height)
+RESULT Font_SetSize(FONT *const font, const float pixel_height)
 {
     return M_SetSize(font, pixel_height, false);
 }
 
-RESULT TextFont_SetSizeRounded(
-    TEXT_FONT *const font, const float pixel_height, int32_t *const offset_y)
+RESULT Font_SetSizeRounded(
+    FONT *const font, const float pixel_height, int32_t *const offset_y)
 {
     FAIL_IF(offset_y == nullptr, "Missing font baseline offset");
     *offset_y = 0;
@@ -261,12 +260,12 @@ RESULT TextFont_SetSizeRounded(
     return OK;
 }
 
-void TextFont_Free(TEXT_FONT *const font)
+void Font_Free(FONT *const font)
 {
     if (font != nullptr) {
         TextRaster_Close(font->raster_face);
         TTF_CloseFont(font->font);
-        TextFont_Free(font->fallback);
+        Font_Free(font->fallback);
         Mem_Free(font->data);
         Mem_Free(font);
     }
