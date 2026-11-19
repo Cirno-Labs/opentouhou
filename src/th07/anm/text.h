@@ -21,8 +21,9 @@ RESULT Anm_RenderTextToTextureIndex(
     float scale_x, float scale_y);
 
 // Formats text into the rows of the VM's sprite and sets shown. Right and
-// centered text align by the measured width times h / (h - 1), for font
-// height h.
+// centered text use the CP932 byte count and font width for original text.
+// Translated text uses half the measured width, rounded down, and the
+// translation patch's padding.
 PRINTF_FORMAT(4, 5)
 RESULT Anm_RenderText(
     ANM_VM *vm, uint32_t color, uint32_t shadow, const char *format, ...);

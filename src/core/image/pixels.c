@@ -168,3 +168,48 @@ void Image_Quantize(IMAGE *const image, const IMAGE_DEPTH depth)
         }
     }
 }
+
+void Image_QuantizeDithered(IMAGE *const image, const IMAGE_DEPTH depth)
+{
+    static const uint8_t ranks[4][4] = {
+        { 0, 8, 2, 10 },
+        { 12, 4, 14, 6 },
+        { 3, 11, 1, 9 },
+        { 15, 7, 13, 5 },
+    };
+    for (int32_t y = 0; y < image->height; y++) {
+        for (int32_t x = 0; x < image->width; x++) {
+            uint8_t *const pixel =
+                image->pixels + ((size_t)y * image->width + x) * 4;
+            const uint32_t bias = (31u - 2u * ranks[y % 4][x % 4]) * 255u;
+            for (int32_t channel = 0; channel < 4; channel++) {
+                int32_t bits = 8;
+                switch (depth) {
+                case IMAGE_DEPTH_A1R5G5B5:
+                    bits = channel == 3 ? 1 : 5;
+                    break;
+                case IMAGE_DEPTH_A4R4G4B4:
+                    bits = 4;
+                    break;
+                case IMAGE_DEPTH_R5G6B5:
+                    bits = channel == 3 ? 0 : channel == 1 ? 6 : 5;
+                    break;
+                case IMAGE_DEPTH_RGB8:
+                    bits = channel == 3 ? 0 : 8;
+                    break;
+                case IMAGE_DEPTH_RGBA8:
+                    break;
+                }
+                if (bits == 0) {
+                    pixel[channel] = 255;
+                } else if (bits < 8) {
+                    const uint32_t maximum = (1u << bits) - 1u;
+                    const uint32_t packed =
+                        ((uint32_t)pixel[channel] * maximum * 32u + bias)
+                        / (255u * 32u);
+                    pixel[channel] = M_Replicate(packed, bits);
+                }
+            }
+        }
+    }
+}

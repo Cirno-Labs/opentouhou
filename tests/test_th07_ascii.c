@@ -173,9 +173,14 @@ TEST(strings_advance_by_glyph_width_and_scale)
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 5);
     CHECK_EQ_INT(M_Sprite(0), 'A' - 1);
     CHECK(M_X(0) == 100.0f && M_Y(0) == 50.0f);
-    CHECK(M_X(1) == 122.0f);
-    CHECK(M_X(2) == 166.0f);
-    CHECK(M_X(3) == 100.0f && M_Y(3) == 58.0f);
+    CHECK(M_X(1) == 106.0f);
+    CHECK(M_X(2) == 116.0f);
+    CHECK(M_X(3) == 100.0f && M_Y(3) == 82.0f);
+    const GFX_RECORDED_QUAD *const glyph = GfxRecorder_Quad(0);
+    CHECK(
+        glyph->vertices[1].position.x - glyph->vertices[0].position.x == 4.0f);
+    CHECK(
+        glyph->vertices[2].position.y - glyph->vertices[0].position.y == 16.0f);
     CHECK_EQ_INT(M_Color(0), COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
     CHECK_EQ_INT(M_Sprite(4), 'A' + 0x7c);
     CHECK_EQ_INT(M_Color(4), COLOR_WHITE);
@@ -339,7 +344,7 @@ TEST(summary_shows_cherry_and_its_maximum)
     CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0xff, 0xff, 0xff));
     CHECK_EQ_INT(M_Sprite(6), 0x85);
     CHECK(M_X(6) == 193.0f);
-    CHECK_EQ_INT(M_Color(6), COLOR_ARGB(0xc0, 0xe0, 0xd0, 0xf0));
+    CHECK_EQ_INT(M_Color(6), COLOR_ARGB(0xc0, 0xf0, 0xd0, 0xe0));
     CHECK_EQ_INT(M_Sprite(13), 0x84);
     CHECK(M_X(13) == 177.0f && M_Y(13) == 198.0f);
     CHECK_EQ_INT(M_Color(13), COLOR_ARGB(0xc0, 0xc0, 0x80, 0xb0));
@@ -353,14 +358,14 @@ TEST(summary_colours_full_and_high_cherry)
     g_GameManager.cherry.value = 777 + 50000;
     g_GameManager.cherry.max = 777 + 60000;
     M_Draw();
-    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0x80, 0xff, 0xff));
+    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0xff, 0xff, 0x80));
     M_Teardown();
     M_Setup("summary_max");
     M_ShowSummary();
     g_GameManager.cherry.value = 777 + 60000;
     g_GameManager.cherry.max = 777 + 60000;
     M_Draw();
-    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0x80, 0xd0, 0xff));
+    CHECK_EQ_INT(M_Color(1), COLOR_ARGB(0xc0, 0xff, 0xd0, 0x80));
     M_Teardown();
 }
 
@@ -405,5 +410,37 @@ TEST(demo_icon_runs_only_in_a_demo)
     g_GameManager.mode.in_demo = false;
     Chain_RunCalc(&g_Chain);
     CHECK_EQ_INT(g_AsciiText.demo_icon.script_index, 0);
+    M_Teardown();
+}
+
+TEST(frame_rate_keeps_its_style_and_shows_replay_speed)
+{
+    M_Setup("frame_rate");
+    g_GameManager.mode.in_replay = true;
+    g_GameManager.mode.playing = true;
+    g_GameManager.mode.replay_fps = 42;
+    AsciiText_SetFrameRate(59.5f);
+    AsciiText_Initialize();
+    g_AsciiText.color = COLOR_ARGB(0xff, 0x10, 0x20, 0x30);
+    g_AsciiText.scale_x = 2.0f;
+    g_AsciiText.highlight = true;
+    g_AsciiText.in_arena = true;
+    M_Draw();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 10);
+    CHECK_EQ_INT(M_Color(0), COLOR_WHITE);
+    CHECK(M_X(0) == 512.0f && M_Y(0) == 464.0f);
+    CHECK_EQ_INT(M_Color(8), COLOR_ARGB(0xff, 0xff, 0xff, 0xd0));
+    CHECK(M_X(8) == 384.0f && M_Y(8) == 448.0f);
+    CHECK_EQ_INT(g_AsciiText.color, COLOR_ARGB(0xff, 0x10, 0x20, 0x30));
+    CHECK(g_AsciiText.scale_x == 2.0f);
+    CHECK(g_AsciiText.highlight && g_AsciiText.in_arena);
+    Gfx_BeginTick((GFX_COLOR) {});
+    g_GameManager.mode.replay_fps_warning = true;
+    M_Draw();
+    CHECK_EQ_INT(M_Color(8), COLOR_ARGB(0xff, 0xff, 0x40, 0x40));
+    g_AsciiText.frame_rate[0] = '\0';
+    g_AsciiText.replay_rate[0] = '\0';
+    g_GameManager.mode.in_replay = false;
+    g_GameManager.mode.replay_fps_warning = false;
     M_Teardown();
 }

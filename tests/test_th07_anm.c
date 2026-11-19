@@ -454,7 +454,7 @@ static void M_WritePatchedPng(
     M_WritePng(patches, path, width, height, rgba);
 }
 
-TEST(a_patch_replaces_a_stored_image_by_its_name)
+TEST(a_patch_blends_over_an_opaque_stored_image_by_its_name)
 {
     const uint8_t stored[] = { 0, 0, 0, 0xff, 0, 0, 0, 0xff };
     ANM_BUILDER builder;
@@ -477,9 +477,66 @@ TEST(a_patch_replaces_a_stored_image_by_its_name)
     M_Setup(directory);
     Files_SetPatches(stack);
     CHECK(Result_Log(Anm_Load(0, "test.anm", 0), LOG_LEVEL_ERROR));
-    CHECK_EQ_INT(M_Pixel(0, 0), 0xff0000ff);
+    CHECK_EQ_INT(M_Pixel(0, 0), 0xfe0000ff);
 
     Patch_CloseStack(stack);
+    M_Teardown(directory);
+}
+
+TEST(empty_patch_sprites_keep_the_image_from_earlier_layers)
+{
+    const uint8_t stored[] = {
+        0xff, 0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff, 0, 0, 0xff,
+    };
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 4, 1, "data/img.png");
+    AnmBuilder_SetImage(anm, 1, 4, 1, stored, sizeof(stored));
+    for (int32_t i = 0; i < 4; i++) {
+        AnmBuilder_AddSprite(anm, i, (float)i, 0, 1, 1);
+    }
+    char *const directory = M_SetupFiles("patch_layers", "test.anm", &builder);
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/base", "{}");
+    PatchBuilder_AddPatch(patches, "a/lang", "{dependencies: ['base']}");
+    M_WritePatchedPng(patches, "a/base/th07/data/img.png", 2, 1, 0xff0000ff);
+    M_WritePatchedPng(patches, "a/lang/th07/data/img.png", 4, 1, 0);
+    PATCH_STACK *stack = nullptr;
+    CHECK(
+        IS_OK(Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack)));
+    M_Setup(directory);
+    Files_SetPatches(stack);
+    CHECK(IS_OK(Anm_Load(0, "test.anm", 0)));
+    CHECK_EQ_INT(M_Pixel(0, 0), 0xfe0000ff);
+    CHECK_EQ_INT(M_Pixel(0, 1), 0xfe0000ff);
+    CHECK_EQ_INT(M_Pixel(0, 2), 0x0000ffff);
+    CHECK_EQ_INT(M_Pixel(0, 3), 0x0000ffff);
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
+    M_Teardown(directory);
+}
+
+TEST(a_patch_overwrites_a_sprite_with_partial_original_alpha)
+{
+    const uint8_t stored[] = { 0xff, 0, 0, 0x80, 0xff, 0, 0, 0x80 };
+    ANM_BUILDER builder;
+    AnmBuilder_Init(&builder);
+    ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 2, 1, "data/img.png");
+    AnmBuilder_SetImage(anm, 1, 2, 1, stored, sizeof(stored));
+    AnmBuilder_AddSprite(anm, 0, 0, 0, 2, 1);
+    char *const directory = M_SetupFiles("patch_alpha", "test.anm", &builder);
+    char *const patches = TestDir_Join(directory, "patches");
+    PatchBuilder_AddPatch(patches, "a/lang", "{}");
+    M_WritePatchedPng(patches, "a/lang/th07/data/img.png", 2, 1, 0xff000040);
+    PATCH_STACK *stack = nullptr;
+    CHECK(
+        IS_OK(Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack)));
+    M_Setup(directory);
+    Files_SetPatches(stack);
+    CHECK(IS_OK(Anm_Load(0, "test.anm", 0)));
+    CHECK_EQ_INT(M_Pixel(0, 0), 0xff000040);
+    Patch_CloseStack(stack);
+    Mem_Free(patches);
     M_Teardown(directory);
 }
 
@@ -987,4 +1044,38 @@ TEST(the_game_makes_the_pending_copy_after_the_draw_and_update_chains)
     Chain_Release(&g_Chain);
     Anm_ReleaseTexture(200);
     GfxRecorder_Stop();
+}
+
+TEST(packed_patch_channels_drop_their_low_bits)
+{
+    const ANM_TEXTURE_FORMAT formats[] = { ANM_TEXTURE_A4R4G4B4,
+                                           ANM_TEXTURE_R5G6B5 };
+    const uint32_t expected[] = { 0x11223344, 0x182c39ff };
+    const uint8_t stored[] = { 0, 0x80, 0, 0x80 };
+    for (int32_t i = 0; i < 2; i++) {
+        ANM_BUILDER builder;
+        AnmBuilder_Init(&builder);
+        ANM_BUILDER_ANM *const anm =
+            AnmBuilder_Add(&builder, 2, 1, "data/img.png");
+        anm->format = formats[i];
+        AnmBuilder_SetImage(anm, formats[i], 2, 1, stored, sizeof(stored));
+        AnmBuilder_AddSprite(anm, 0, 0, 0, 2, 1);
+        char name[40];
+        snprintf(name, sizeof(name), "packed_patch_%d", i);
+        char *const directory = M_SetupFiles(name, "test.anm", &builder);
+        char *const patches = TestDir_Join(directory, "patches");
+        PatchBuilder_AddPatch(patches, "a/lang", "{}");
+        M_WritePatchedPng(
+            patches, "a/lang/th07/data/img.png", 2, 1, 0x1f2f3f4f);
+        PATCH_STACK *stack = nullptr;
+        CHECK(IS_OK(
+            Patch_OpenStack(patches, "th07", &g_PatchGame, nullptr, &stack)));
+        M_Setup(directory);
+        Files_SetPatches(stack);
+        CHECK(IS_OK(Anm_Load(0, "test.anm", 0)));
+        CHECK_EQ_INT(M_Pixel(0, 0), expected[i]);
+        Patch_CloseStack(stack);
+        Mem_Free(patches);
+        M_Teardown(directory);
+    }
 }

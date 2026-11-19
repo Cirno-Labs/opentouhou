@@ -2,6 +2,7 @@
 
 #include "core/base/memory.h"
 #include "core/base/result.h"
+#include "core/io/reader.h"
 #include "core/json/types.h"
 #include "core/patch/stack.h"
 
@@ -49,3 +50,10 @@ JSON_VALUE *Files_LoadDiff(const char *path, const ALLOCATOR *allocator);
 
 // Returns whether a patch replaces path or has a jdiff for it.
 bool Files_IsPatched(const char *path);
+
+// Visits the image replacements of path in patch order, as
+// Patch_VisitFiles does for the patches of Files_SetPatches. The reader
+// stays open only during the visit. Reports the first read or visit
+// failure.
+RESULT Files_VisitPatches(
+    const char *path, RESULT (*visit)(void *user, READER *reader), void *user);

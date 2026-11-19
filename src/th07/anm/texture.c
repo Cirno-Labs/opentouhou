@@ -6,7 +6,9 @@
 #include "shell/game.h"
 #include "core/vfs.h"
 #include "core/base/assert.h"
+#include "core/base/utils.h"
 
+#include <math.h>
 #include <string.h>
 
 typedef struct {
@@ -21,29 +23,56 @@ typedef struct {
     GFX_RECT dest;
 } M_PENDING_COPY;
 
+typedef struct {
+    READER *anm;
+    M_TEXTURE *texture;
+} M_IMAGE_PATCH;
+
 static M_TEXTURE m_Textures[ANM_TEXTURE_COUNT];
 static GFX_TEXTURE *m_Surfaces[ANM_SURFACE_COUNT];
 static M_PENDING_COPY m_PendingCopy = { .slot = -1 };
 
-static void M_Quantize(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
+static IMAGE_DEPTH M_Depth(const ANM_TEXTURE_FORMAT format)
 {
     switch (format) {
     case ANM_TEXTURE_A1R5G5B5:
-        Image_Quantize(image, IMAGE_DEPTH_A1R5G5B5);
-        break;
-    case ANM_TEXTURE_R5G6B5:
-        Image_Quantize(image, IMAGE_DEPTH_R5G6B5);
-        break;
+        return IMAGE_DEPTH_A1R5G5B5;
     case ANM_TEXTURE_A4R4G4B4:
-        Image_Quantize(image, IMAGE_DEPTH_A4R4G4B4);
-        break;
+        return IMAGE_DEPTH_A4R4G4B4;
+    case ANM_TEXTURE_R5G6B5:
+        return IMAGE_DEPTH_R5G6B5;
     case ANM_TEXTURE_RGB8:
-        for (int64_t i = 0; i < (int64_t)image->width * image->height; i++) {
-            image->pixels[i * 4 + 3] = 255;
-        }
-        break;
+        return IMAGE_DEPTH_RGB8;
     default:
-        break;
+        return IMAGE_DEPTH_RGBA8;
+    }
+}
+
+static void M_Quantize(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
+{
+    Image_Quantize(image, M_Depth(format));
+}
+
+static void M_QuantizePatch(IMAGE *const image, const ANM_TEXTURE_FORMAT format)
+{
+    if (format == ANM_TEXTURE_A4R4G4B4) {
+        for (int64_t i = 0; i < (int64_t)image->width * image->height * 4;
+             i++) {
+            image->pixels[i] = (uint8_t)((image->pixels[i] >> 4) * 17);
+        }
+    } else if (format == ANM_TEXTURE_R5G6B5) {
+        for (int64_t i = 0; i < (int64_t)image->width * image->height; i++) {
+            uint8_t *const pixel = image->pixels + i * 4;
+            const uint8_t r = pixel[0] >> 3;
+            const uint8_t g = pixel[1] >> 2;
+            const uint8_t b = pixel[2] >> 3;
+            pixel[0] = (uint8_t)((r << 3) | (r >> 2));
+            pixel[1] = (uint8_t)((g << 2) | (g >> 4));
+            pixel[2] = (uint8_t)((b << 3) | (b >> 2));
+            pixel[3] = 255;
+        }
+    } else {
+        M_Quantize(image, format);
     }
 }
 
@@ -143,6 +172,100 @@ static RESULT M_ReadName(
     return OK;
 }
 
+static void M_PatchRegion(
+    M_TEXTURE *const texture, const IMAGE *const patch, const int32_t x,
+    const int32_t y, const int32_t width, const int32_t height)
+{
+    bool empty = true;
+    bool opaque = true;
+    IMAGE *const image = &texture->image;
+    for (int32_t row = y; row < y + height; row++) {
+        for (int32_t col = x; col < x + width; col++) {
+            const size_t dst = ((size_t)row * image->width + col) * 4;
+            const size_t src = ((size_t)row * patch->width + col) * 4;
+            empty &= patch->pixels[src + 3] == 0;
+            opaque &= image->pixels[dst + 3] == 255;
+        }
+    }
+    if (empty) {
+        return;
+    }
+    const bool blend = opaque
+        && (texture->format == ANM_TEXTURE_RGBA8
+            || texture->format == ANM_TEXTURE_A4R4G4B4);
+    const int32_t shift = texture->format == ANM_TEXTURE_A4R4G4B4 ? 4 : 8;
+    const int32_t quantum = shift == 4 ? 17 : 1;
+    const int32_t maximum = shift == 4 ? 15 : 255;
+    for (int32_t row = y; row < y + height; row++) {
+        for (int32_t col = x; col < x + width; col++) {
+            uint8_t *const dst =
+                image->pixels + ((size_t)row * image->width + col) * 4;
+            const uint8_t *const src =
+                patch->pixels + ((size_t)row * patch->width + col) * 4;
+            if (!blend) {
+                memcpy(dst, src, 4);
+                continue;
+            }
+            const int32_t alpha = src[3] / quantum;
+            for (int32_t channel = 0; channel < 3; channel++) {
+                dst[channel] =
+                    (uint8_t)(((dst[channel] / quantum * (maximum - alpha)
+                                + src[channel] / quantum * alpha)
+                               >> shift)
+                              * quantum);
+            }
+            dst[3] = (uint8_t)MIN((int32_t)dst[3] + src[3], 255);
+        }
+    }
+}
+
+static RESULT M_PatchSprites(
+    const M_IMAGE_PATCH *const context, const IMAGE *const patch)
+{
+    READER *const reader = context->anm;
+    M_TEXTURE *const texture = context->texture;
+    const int32_t width = MIN(texture->image.width, patch->width);
+    const int32_t height = MIN(texture->image.height, patch->height);
+    Reader_Seek(reader, 0);
+    const int32_t count = Reader_ReadI32(reader);
+    if (count == 0) {
+        M_PatchRegion(texture, patch, 0, 0, width, height);
+    }
+    for (int32_t i = 0; i < count; i++) {
+        Reader_Seek(reader, 0x40 + (size_t)i * 4);
+        const uint32_t offset = Reader_ReadU32(reader);
+        Reader_Seek(reader, (size_t)offset + 4);
+        const float x = Reader_ReadF32(reader);
+        const float y = Reader_ReadF32(reader);
+        const float w = Reader_ReadF32(reader);
+        const float h = Reader_ReadF32(reader);
+        MUST(Reader_Result(reader));
+        FAIL_IF(
+            !isfinite(x) || !isfinite(y) || !isfinite(w) || !isfinite(h),
+            "Invalid patch sprite rectangle");
+        const int32_t left = (int32_t)MIN(MAX(x, 0.0f), (float)width);
+        const int32_t top = (int32_t)MIN(MAX(y, 0.0f), (float)height);
+        const int32_t right = (int32_t)MIN(MAX(x + w, 0.0f), (float)width);
+        const int32_t bottom = (int32_t)MIN(MAX(y + h, 0.0f), (float)height);
+        if (right > left && bottom > top) {
+            M_PatchRegion(
+                texture, patch, left, top, right - left, bottom - top);
+        }
+    }
+    return OK;
+}
+
+static RESULT M_PatchImage(void *const user, READER *const reader)
+{
+    M_IMAGE_PATCH *const context = user;
+    IMAGE patch;
+    MUST(Image_Decode(reader, &g_HeapAllocator, &patch));
+    M_QuantizePatch(&patch, context->texture->format);
+    const RESULT result = M_PatchSprites(context, &patch);
+    Image_Free(&patch);
+    return result;
+}
+
 RESULT Anm_LoadTexture(
     const int32_t slot, const char *const path, const ANM_TEXTURE_FORMAT format,
     const uint32_t color_key)
@@ -217,7 +340,8 @@ RESULT Anm_CreateTextureFromImage(
     }
     M_Quantize(&image, source);
     M_Quantize(&image, format);
-    return M_Store(slot, &image, format);
+    return M_Store(
+        slot, &image, format == ANM_TEXTURE_DEFAULT ? source : format);
 }
 
 void Anm_ReleaseTexture(const int32_t slot)
@@ -235,6 +359,12 @@ GFX_TEXTURE *Anm_GetTexture(const int32_t slot)
 {
     ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
     return m_Textures[slot].texture;
+}
+
+IMAGE_DEPTH Anm_GetTextureDepth(const int32_t slot)
+{
+    ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
+    return M_Depth(m_Textures[slot].format);
 }
 
 RESULT Anm_UpdateTexture(
@@ -318,6 +448,7 @@ RESULT Anm_DoPendingCopy(void)
         || copy.source.height != copy.dest.height) {
         Image_Resize(&pixels, copy.dest.width, copy.dest.height);
     }
+    Image_QuantizeDithered(&pixels, Anm_GetTextureDepth(copy.slot));
     const RESULT result = Anm_UpdateTexture(copy.slot, copy.dest, &pixels);
     Image_Free(&pixels);
     return result;
@@ -351,14 +482,21 @@ RESULT AnmTexture_LoadSlot(READER *const reader, const int32_t slot)
     if (name_offset != 0) {
         MUST(M_ReadName(reader, name_offset, &name));
     }
-    // As thcrap, a patch replaces an embedded image by its name; only an
-    // entry with no patch for that name falls back to the embedded image.
-    if (has_image && (name == nullptr || !Files_IsPatched(name))) {
+    if (has_image) {
         FAIL_IF(
             image_offset >= Reader_Size(reader),
             "ANM image is outside the file");
         Reader_Seek(reader, image_offset);
-        return Anm_CreateTextureFromImage(slot, reader, format);
+        MUST(Anm_CreateTextureFromImage(slot, reader, format));
+        if (name != nullptr) {
+            M_IMAGE_PATCH context = { reader, &m_Textures[slot] };
+            MUST(Files_VisitPatches(name, M_PatchImage, &context));
+            const IMAGE *const image = &m_Textures[slot].image;
+            GfxTexture_Upload(
+                m_Textures[slot].texture,
+                (GFX_RECT) { 0, 0, image->width, image->height }, image);
+        }
+        return OK;
     }
     FAIL_IF(name == nullptr, "ANM names no image");
     if (name[0] == '@') {

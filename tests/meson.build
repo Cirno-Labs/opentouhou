@@ -919,32 +919,37 @@ test(
   suite: 'unit',
 )
 
-test(
-  'th07/gui/text_image',
-  executable(
-    'test_th07_text_image',
-    'test_th07_text_image.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_text_image',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_text_image',
-  },
-  suite: 'unit',
-)
+# The translated text test runs against IPAGothic, and again against MS
+# Gothic where $OPENTOUHOU_MSGOTHIC names a msgothic.ttc.
+foreach variant : [['th07/gui/text_image', 'test_th07_text_image', []], ['th07/gui/text_image/ms_gothic', 'test_th07_text_image_ms', ['-DTEST_MS_GOTHIC']]]
+  test(
+    variant[0],
+    executable(
+      variant[1],
+      'test_th07_text_image.c',
+      'th07_anm_builder.c',
+      'th07_data.c',
+      'th07_scene_stubs.c',
+      shell_fake,
+      'gfx_recorder.c',
+      c_args: [layer_include['th07']] + core_include + stg_include + shell_include + variant[2],
+      implicit_include_directories: false,
+      link_with: [
+        th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
+        stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
+        core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
+        core_gfx_lib, core_image_lib, core_math_lib,
+      ],
+      dependencies: [sdl3],
+    ),
+    env: {
+      'TEST_DIR': meson.current_build_dir() / 'tmp' / variant[1],
+      'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / variant[1],
+      'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+    },
+    suite: 'unit',
+  )
+endforeach
 
 test(
   'th07/gui_msg',

@@ -373,3 +373,121 @@ TEST(triangle_filter_keeps_both_axes_when_one_size_changes)
     }
     Image_Free(&image);
 }
+
+TEST(dithered_surface_copies_keep_the_ordered_packed_colors)
+{
+    static const struct {
+        IMAGE_DEPTH depth;
+        uint16_t pixels[16];
+    } cases[] = {
+        { IMAGE_DEPTH_R5G6B5,
+          {
+              0x8410,
+              0x8410,
+              0x8410,
+              0x7bef,
+              0x7bef,
+              0x8410,
+              0x7bef,
+              0x8410,
+              0x8410,
+              0x7bef,
+              0x8410,
+              0x7c0f,
+              0x7bef,
+              0x8410,
+              0x7bef,
+              0x8410,
+          } },
+        { IMAGE_DEPTH_A1R5G5B5,
+          {
+              0xc210,
+              0x4210,
+              0xc210,
+              0x3def,
+              0x3def,
+              0xc210,
+              0x3def,
+              0xc210,
+              0xc210,
+              0x3def,
+              0xc210,
+              0x3def,
+              0x3def,
+              0xc210,
+              0x3def,
+              0xc210,
+          } },
+        { IMAGE_DEPTH_A4R4G4B4,
+          {
+              0x8888,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x8888,
+              0x8888,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x7777,
+              0x8888,
+              0x7777,
+              0x8888,
+          } },
+    };
+    for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+        IMAGE image = Image_Create(8, 8, &g_HeapAllocator);
+        memset(image.pixels, 128, 8 * 8 * 4);
+        Image_QuantizeDithered(&image, cases[c].depth);
+        for (int32_t y = 0; y < 8; y++) {
+            for (int32_t x = 0; x < 8; x++) {
+                const uint8_t *const pixel = image.pixels + (y * 8 + x) * 4;
+                uint16_t packed;
+                if (cases[c].depth == IMAGE_DEPTH_R5G6B5) {
+                    packed = (pixel[0] >> 3) << 11 | (pixel[1] >> 2) << 5
+                        | pixel[2] >> 3;
+                    CHECK_EQ_INT(pixel[3], 255);
+                } else if (cases[c].depth == IMAGE_DEPTH_A1R5G5B5) {
+                    packed = (pixel[3] >> 7) << 15 | (pixel[0] >> 3) << 10
+                        | (pixel[1] >> 3) << 5 | pixel[2] >> 3;
+                } else {
+                    packed = (pixel[3] >> 4) << 12 | (pixel[0] >> 4) << 8
+                        | (pixel[1] >> 4) << 4 | pixel[2] >> 4;
+                }
+                CHECK_EQ_INT(packed, cases[c].pixels[y % 4 * 4 + x % 4]);
+            }
+        }
+        Image_Free(&image);
+    }
+}
+
+TEST(dithering_preserves_full_precision_and_extreme_channels)
+{
+    static const IMAGE_DEPTH depths[] = {
+        IMAGE_DEPTH_R5G6B5, IMAGE_DEPTH_A1R5G5B5, IMAGE_DEPTH_A4R4G4B4,
+        IMAGE_DEPTH_RGBA8,  IMAGE_DEPTH_RGB8,
+    };
+    const uint8_t black[4] = { 0, 0, 0, 0 };
+    const uint8_t white[4] = { 255, 255, 255, 255 };
+    for (size_t i = 0; i < sizeof(depths) / sizeof(depths[0]); i++) {
+        IMAGE image = M_Make2x2(black, white, white, black);
+        Image_QuantizeDithered(&image, depths[i]);
+        for (int32_t channel = 0; channel < 3; channel++) {
+            CHECK_EQ_INT(image.pixels[channel], 0);
+            CHECK_EQ_INT(image.pixels[4 + channel], 255);
+        }
+        Image_Free(&image);
+    }
+    const uint8_t color[4] = { 13, 47, 139, 221 };
+    IMAGE image = M_Make2x2(color, color, color, color);
+    Image_QuantizeDithered(&image, IMAGE_DEPTH_RGBA8);
+    for (int32_t i = 0; i < 4; i++) {
+        CHECK(memcmp(image.pixels + i * 4, color, 4) == 0);
+    }
+    Image_QuantizeDithered(&image, IMAGE_DEPTH_RGB8);
+    CHECK_EQ_INT(image.pixels[3], 255);
+    Image_Free(&image);
+}

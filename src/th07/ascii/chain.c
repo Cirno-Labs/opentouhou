@@ -135,9 +135,9 @@ static void M_DrawStrings(ASCII_TEXT *const text)
     for (int32_t i = 0; i < text->string_count; i++) {
         const ASCII_STRING *const string = &text->strings[i];
         text->glyph.pos = string->pos;
-        text->glyph.scale_x = string->scale_x;
-        text->glyph.scale_y = string->scale_y;
-        const float advance = (float)text->glyph_width * string->scale_x;
+        text->glyph.scale_x = string->scale_y;
+        text->glyph.scale_y = string->scale_x;
+        const float advance = (float)text->glyph_width * string->scale_y;
         if (clipped != string->in_arena) {
             clipped = string->in_arena;
             M_SetViewport(clipped);
@@ -146,7 +146,7 @@ static void M_DrawStrings(ASCII_TEXT *const text)
             M_ScreenDraw(clipped ? ANM_VIEW_PLAY_AREA : ANM_VIEW_HUD);
         for (const uint8_t *c = (const uint8_t *)string->text; *c != 0; c++) {
             if (*c == '\n') {
-                text->glyph.pos.y += 16.0f * string->scale_y;
+                text->glyph.pos.y += 16.0f * string->scale_x;
                 text->glyph.pos.x = string->pos.x;
             } else if (*c == ' ') {
                 text->glyph.pos.x += advance;
@@ -171,6 +171,31 @@ static void M_DrawStrings(ASCII_TEXT *const text)
 static CHAIN_STATUS M_Draw(void *const arg)
 {
     ASCII_TEXT *const text = arg;
+    if (text->frame_rate[0] != '\0') {
+        const uint32_t color = text->color;
+        const float scale_x = text->scale_x;
+        const float scale_y = text->scale_y;
+        const bool highlight = text->highlight;
+        const bool in_arena = text->in_arena;
+        text->color = COLOR_WHITE;
+        text->scale_x = 1.0f;
+        text->scale_y = 1.0f;
+        text->highlight = false;
+        text->in_arena = false;
+        AsciiText_AddString((VEC3) { 512.0f, 464.0f, 0.0f }, text->frame_rate);
+        if (g_GameManager.mode.in_replay && g_GameManager.mode.playing) {
+            text->color = g_GameManager.mode.replay_fps_warning
+                ? COLOR_ARGB(0xff, 0xff, 0x40, 0x40)
+                : COLOR_ARGB(0xff, 0xff, 0xff, 0xd0);
+            AsciiText_AddString(
+                (VEC3) { 384.0f, 448.0f, 0.0f }, text->replay_rate);
+        }
+        text->color = color;
+        text->scale_x = scale_x;
+        text->scale_y = scale_y;
+        text->highlight = highlight;
+        text->in_arena = in_arena;
+    }
     M_DrawStrings(text);
     for (int32_t i = 0; i < text->string_count; i++) {
         Mem_Free(text->strings[i].text);
@@ -261,16 +286,16 @@ static void M_DrawSummary(ASCII_TEXT *const text, ANM_DRAW *const draw)
     M_SetAlpha(digit, (uint8_t)(text->summary.color >> 24));
     const int32_t cherry = g_GameManager.cherry.value - offset;
     if (g_GameManager.cherry.value >= g_GameManager.cherry.max) {
-        M_SetRgb(digit, 0x80, 0xd0, 0xff);
+        M_SetRgb(digit, 0xff, 0xd0, 0x80);
     } else if (cherry >= 50000) {
-        M_SetRgb(digit, 0x80, 0xff, 0xff);
+        M_SetRgb(digit, 0xff, 0xff, 0x80);
     } else {
         M_SetRgb(digit, 0xff, 0xff, 0xff);
     }
     M_DrawSummaryNumber(text, cherry, 100000, 6, 7.0f, draw);
 
     const int32_t max = g_GameManager.cherry.max - offset;
-    M_SetRgb(digit, 0xe0, 0xd0, 0xf0);
+    M_SetRgb(digit, 0xf0, 0xd0, 0xe0);
     digit->pos.x += 9.0f;
     if (max < 1000000) {
         M_DrawSummaryNumber(text, max, 100000, 6, 7.0f, draw);

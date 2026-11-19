@@ -10,6 +10,7 @@
 #include "th07/player.h"
 #include "th07/screen_effect.h"
 #include "th07/sound.h"
+#include "th07/strings.h"
 
 #include "core/base/color.h"
 #include "core/math/common.h"
@@ -62,23 +63,23 @@
 
 typedef struct {
     int32_t sprite; // of the portrait
-    const char *name;
+    STRING name;
 } M_NAME;
 
 // Holds the names of the bombs by shot_index * 2 + focused.
 static const M_NAME m_Names[] = {
-    { 0x4a1, "霊符「夢想封印　散」" },
-    { 0x4a1, "霊符「夢想封印　集」" },
-    { 0x4a1, "夢符「封魔陣」" },
-    { 0x4a1, "夢符「二重結界」" },
-    { 0x4a3, "魔符「スターダストレヴァリエ」" },
-    { 0x4a2, "魔符「ミルキーウェイ」" },
-    { 0x4a1, "恋符「ノンディレクショナルレーザー」" },
-    { 0x4a2, "恋符「マスタースパーク」" },
-    { 0x4a1, "幻符「インディスクリミネイト」" },
-    { 0x4a1, "幻符「殺人ドール」" },
-    { 0x4a3, "時符「パーフェクトスクウェア」" },
-    { 0x4a3, "時符「プライベートスクウェア」" },
+    { 0x4a1, STRING_BOMB_REIMU_A_UNFOCUSED },
+    { 0x4a1, STRING_BOMB_REIMU_A_FOCUSED },
+    { 0x4a1, STRING_BOMB_REIMU_B_UNFOCUSED },
+    { 0x4a1, STRING_BOMB_REIMU_B_FOCUSED },
+    { 0x4a3, STRING_BOMB_MARISA_A_UNFOCUSED },
+    { 0x4a2, STRING_BOMB_MARISA_A_FOCUSED },
+    { 0x4a1, STRING_BOMB_MARISA_B_UNFOCUSED },
+    { 0x4a2, STRING_BOMB_MARISA_B_FOCUSED },
+    { 0x4a1, STRING_BOMB_SAKUYA_A_UNFOCUSED },
+    { 0x4a1, STRING_BOMB_SAKUYA_A_FOCUSED },
+    { 0x4a3, STRING_BOMB_SAKUYA_B_UNFOCUSED },
+    { 0x4a3, STRING_BOMB_SAKUYA_B_FOCUSED },
 };
 
 // Holds the widths and heights of the barriers of Reimu B.
@@ -128,7 +129,7 @@ static bool M_Ends(void)
 static void M_ShowName(void)
 {
     const M_NAME *const name = &m_Names[M_Index()];
-    Gui_ShowBombName(name->sprite, name->name);
+    Gui_ShowBombName(name->sprite, g_Strings[name->name]);
 }
 
 static void M_Slow(const float scale)

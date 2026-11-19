@@ -4,8 +4,10 @@
 
 #include "stg/game_font.h"
 #include "stg/note.h"
+#include "stg/translation.h"
 
 #include "core/base/log.h"
+#include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
 #include "core/text.h"
@@ -30,40 +32,8 @@ static TEXT_STYLE M_Style(void)
 {
     TEXT_STYLE style = TextStyle_Default();
     style.face = TEXT_FACE_BOLD;
+    style.gdi_raster = true;
     return style;
-}
-
-// Blends glyph coverage as GDI does and marks the touched pixels opaque.
-static void M_Stamp(
-    IMAGE *const surface, const IMAGE *const glyphs, const int32_t x,
-    const int32_t y, const GFX_COLOR color)
-{
-    const uint8_t rgb[3] = { color.red, color.green, color.blue };
-    for (int32_t row = 0; row < glyphs->height; row++) {
-        const int32_t target_y = row + y;
-        if (target_y < 0 || target_y >= surface->height) {
-            continue;
-        }
-        for (int32_t column = 0; column < glyphs->width; column++) {
-            const int32_t target_x = column + x;
-            const uint8_t coverage =
-                glyphs->pixels
-                    [((size_t)row * (size_t)glyphs->width + (size_t)column) * 4
-                     + 3];
-            if (coverage == 0 || target_x < 0 || target_x >= surface->width) {
-                continue;
-            }
-            uint8_t *const pixel = surface->pixels
-                + ((size_t)target_y * (size_t)surface->width + (size_t)target_x)
-                    * 4;
-            for (int32_t i = 0; i < 3; i++) {
-                pixel[i] = (uint8_t)((rgb[i] * coverage
-                                      + pixel[i] * (255 - coverage) + 127)
-                                     / 255);
-            }
-            pixel[3] = 255;
-        }
-    }
 }
 
 static uint8_t M_Expand5(const int32_t value)
@@ -109,11 +79,27 @@ static RESULT M_Measure(
     FAIL_IF(
         font_height < 2 || font_height * 2 > M_SURFACE_HEIGHT,
         "Invalid ANM font height");
-    MUST(Font_SetSize(m_Font, (float)(font_height * 2 - 2)));
+    int32_t offset_y;
+    MUST(Font_SetSizeRounded(m_Font, (float)(font_height * 2 - 2), &offset_y));
     const TEXT_STYLE style = M_Style();
     int32_t height;
     MUST(Text_MeasureMarkup(m_Font, text, &style, width, &height));
     return OK;
+}
+
+static int32_t M_ByteLength(const char *const text)
+{
+    if (Translation_HasBaseTsa() || strchr(text, '<') != nullptr
+        || strchr(text, '\x14') != nullptr) {
+        return -1;
+    }
+    char *bytes;
+    if (!IS_OK(Cp932_Encode(text, strlen(text), &bytes))) {
+        return -1;
+    }
+    const int32_t count = (int32_t)strlen(bytes);
+    Mem_Free(bytes);
+    return count;
 }
 
 static RESULT M_Format(
@@ -135,14 +121,30 @@ static RESULT M_Format(
     int32_t x = X87_Ftol(sprite->x0);
     if (alignment != 0) {
         font_width = font_width > 0 ? font_width : 15;
-        const int32_t font = X87_Ftol((float)font_width * sprite->scale_x);
-        int32_t measured;
-        const RESULT measuring = M_Measure(text, font, &measured);
-        if (!IS_OK(measuring)) {
-            Mem_Free(text);
-            return measuring;
+        const int32_t count = M_ByteLength(text);
+        float advance;
+        if (count >= 0) {
+            advance = (float)count * (float)font_width * sprite->scale_x;
+        } else {
+            const bool translated = Translation_HasBaseTsa();
+            const int32_t font = translated
+                ? font_width
+                : X87_Ftol((float)font_width * sprite->scale_x);
+            int32_t measured;
+            const RESULT measuring = M_Measure(text, font, &measured);
+            if (!IS_OK(measuring)) {
+                Mem_Free(text);
+                return measuring;
+            }
+            if (translated) {
+                const int32_t half = measured / 2;
+                advance = alignment == 1
+                    ? (float)(half + 4) * 2.0f
+                    : (float)(half * 2 + 16) * sprite->scale_x;
+            } else {
+                advance = (float)measured * (float)font / (float)(font - 1);
+            }
         }
-        const float advance = (float)measured * (float)font / (float)(font - 1);
         x = alignment == 1
             ? X87_Ftol(
                   sprite->x0 + sprite->width * sprite->scale_x - advance / 2.0f)
@@ -205,7 +207,8 @@ RESULT Anm_RenderTextToTextureIndex(
             || x > 16384 || y < 0
             || (int64_t)y + dest > GfxTexture_GetHeight(destination),
         "Text row exceeds the texture");
-    MUST(Font_SetSize(m_Font, (float)(font * 2 - 2)));
+    int32_t offset_y;
+    MUST(Font_SetSizeRounded(m_Font, (float)(font * 2 - 2), &offset_y));
     const TEXT_STYLE style = M_Style();
     IMAGE glyphs;
     MUST(Text_RenderMarkup(m_Font, text, &style, &g_HeapAllocator, &glyphs));
@@ -215,20 +218,20 @@ RESULT Anm_RenderTextToTextureIndex(
         const GFX_COLOR black = { 0, 0, 0, 255 };
         const int32_t left = x * 2;
         if (shadow != UINT32_MAX) {
-            M_Stamp(&surface, &glyphs, left + 4, 2, black);
-            M_Stamp(&surface, &glyphs, left, 2, black);
-            M_Stamp(&surface, &glyphs, left + 2, 0, black);
-            M_Stamp(&surface, &glyphs, left + 2, 4, black);
+            Text_StampGdi(&surface, &glyphs, left + 4, offset_y + 2, black);
+            Text_StampGdi(&surface, &glyphs, left, offset_y + 2, black);
+            Text_StampGdi(&surface, &glyphs, left + 2, offset_y, black);
+            Text_StampGdi(&surface, &glyphs, left + 2, offset_y + 4, black);
         } else {
-            M_Stamp(&surface, &glyphs, left + 3, 2, black);
-            M_Stamp(&surface, &glyphs, left + 1, 2, black);
-            M_Stamp(&surface, &glyphs, left + 2, 1, black);
-            M_Stamp(&surface, &glyphs, left + 2, 3, black);
+            Text_StampGdi(&surface, &glyphs, left + 3, offset_y + 2, black);
+            Text_StampGdi(&surface, &glyphs, left + 1, offset_y + 2, black);
+            Text_StampGdi(&surface, &glyphs, left + 2, offset_y + 1, black);
+            Text_StampGdi(&surface, &glyphs, left + 2, offset_y + 3, black);
         }
-        M_Stamp(&surface, &glyphs, left + 2, 2, M_Color(color));
+        Text_StampGdi(
+            &surface, &glyphs, left + 2, offset_y + 2, M_Color(color));
     }
     Image_Free(&glyphs);
-    Image_Quantize(&surface, IMAGE_DEPTH_A1R5G5B5);
     // Retail shades a span of the surface's memory, not a rectangle.
     const int64_t span = (int64_t)width * 2 * (font * 2 + 6);
     M_Shade(
@@ -243,7 +246,13 @@ RESULT Anm_RenderTextToTextureIndex(
     MUST(Image_Crop(
         &surface, 0, 0, source_width, font * 2, &g_HeapAllocator, &source));
     Image_Free(&surface);
-    Image_Resize(&source, width, dest);
+    if (width <= source.width && dest <= source.height) {
+        Image_DownsampleTriangle(
+            &source, width, dest, IMAGE_DEPTH_A1R5G5B5,
+            Anm_GetTextureDepth(texture));
+    } else {
+        Image_Resize(&source, width, dest);
+    }
     const RESULT result =
         Anm_UpdateTexture(texture, (GFX_RECT) { 0, y, width, dest }, &source);
     Image_Free(&source);

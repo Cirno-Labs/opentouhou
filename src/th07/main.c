@@ -89,10 +89,6 @@ static RESULT M_Init(void)
 
 static bool M_Tick(const void *const input)
 {
-    float tick_rate;
-    if (Shell_GetTickRate(&tick_rate)) {
-        ResultScreen_CountFrames(tick_rate);
-    }
     M_SetDate();
     const bool running = Game_Tick(input);
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
