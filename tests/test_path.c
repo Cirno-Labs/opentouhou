@@ -40,6 +40,14 @@ TEST(join_adds_one_separator)
     CHECK_EQ_INT(test.size_errors, 0);
 }
 
+TEST(the_name_follows_the_last_separator)
+{
+    CHECK_EQ_STR(Path_GetName("dir/sub\\file.txt"), "file.txt");
+    CHECK_EQ_STR(Path_GetName("file.txt"), "file.txt");
+    CHECK_EQ_STR(Path_GetName("dir/"), "");
+    CHECK_EQ_STR(Path_GetName(""), "");
+}
+
 TEST(the_executable_directory_holds_the_executable)
 {
     const char *const directory = Path_GetExeDir();

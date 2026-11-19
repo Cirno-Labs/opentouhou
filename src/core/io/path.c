@@ -33,6 +33,17 @@ char *Path_Join(
     return path;
 }
 
+const char *Path_GetName(const char *const path)
+{
+    const char *name = path;
+    for (const char *c = path; *c != '\0'; c++) {
+        if (*c == '/' || *c == '\\') {
+            name = c + 1;
+        }
+    }
+    return name;
+}
+
 const char *Path_GetExeDir(void)
 {
     return SDL_GetBasePath();
