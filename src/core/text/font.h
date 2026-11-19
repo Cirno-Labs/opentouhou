@@ -1,8 +1,9 @@
 #pragma once
 
 #include "core/base/result.h"
-#include "core/io/reader.h"
+#include "core/base/types.h"
 
+// A font opens through FontRegistry_Open. Use fonts from the main thread.
 typedef struct FONT FONT;
 
 // Initializes font rasterization. Free every font before shutdown.
@@ -12,22 +13,6 @@ void Text_Shutdown(void);
 // Font sizes are cell heights, as GDI takes a positive font height: the
 // Windows ascent and descent of the OS/2 table together fill pixel_height.
 // A font without these metrics takes pixel_height as its em size.
-
-// Reads the remaining font data and opens it at the given pixel height.
-// Owns a copy of the data, so the reader can close after this call.
-// Leaves out empty on failure. Use fonts from the main thread.
-RESULT Font_Load(READER *reader, float pixel_height, FONT **out);
-
-// Opens the bundled BIZ UDGothic Bold font under the SIL Open Font License.
-RESULT Font_LoadDefault(float pixel_height, FONT **out);
-
-// Opens the first file of paths whose family name is family, ignoring ASCII
-// case, at the given pixel height. The bundled font draws the characters
-// that the file lacks, at the file's em size. A file that does not open is
-// left out, with a log line. Reports failure when no file has the family.
-RESULT Font_LoadFamily(
-    const char *const *paths, int32_t count, const char *family,
-    float pixel_height, FONT **out);
 
 // Changes the size from loaded font data without reading files.
 RESULT Font_SetSize(FONT *font, float pixel_height);

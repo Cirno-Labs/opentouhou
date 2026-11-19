@@ -2,12 +2,9 @@
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
-#include "core/base/string.h"
 
 #include <math.h>
 #include <string.h>
-
-#include "text_font.h"
 
 static bool m_Initialized;
 
@@ -143,15 +140,12 @@ RESULT Font_Open(
             || pixel_height <= 0.0f || pixel_height > 4096.0f,
         "Invalid font data or size");
     FAIL_IF(size == 0, "Empty font data");
-    uint8_t *const copy = Mem_Alloc(size);
-    memcpy(copy, data, size);
-    SDL_IOStream *const stream = SDL_IOFromConstMem(copy, size);
+    SDL_IOStream *const stream = SDL_IOFromConstMem(data, size);
     if (stream == nullptr) {
-        Mem_Free(copy);
         return FAIL("Cannot open font data: %s", SDL_GetError());
     }
     float ascent_scale;
-    const float cell_scale = M_CellScale(copy, size, face_index, &ascent_scale);
+    const float cell_scale = M_CellScale(data, size, face_index, &ascent_scale);
     const SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetPointerProperty(
         props, TTF_PROP_FONT_CREATE_IOSTREAM_POINTER, stream);
@@ -163,17 +157,15 @@ RESULT Font_Open(
     TTF_Font *const face = TTF_OpenFontWithProperties(props);
     SDL_DestroyProperties(props);
     if (face == nullptr) {
-        Mem_Free(copy);
         return FAIL("Cannot open font: %s", SDL_GetError());
     }
     FONT *const font = Mem_AllocZ(sizeof(*font));
     font->font = face;
-    font->data = copy;
     font->cell_scale = cell_scale;
     font->ascent_scale = ascent_scale;
     font->native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0;
     const RESULT raster = TextRaster_Open(
-        copy, size, face_index, TTF_GetFontSize(face), &font->raster_face);
+        data, size, face_index, TTF_GetFontSize(face), &font->raster_face);
     if (!IS_OK(raster)) {
         Font_Free(font);
         return raster;
@@ -185,77 +177,6 @@ RESULT Font_Open(
     }
     *out = font;
     return OK;
-}
-
-RESULT Font_Load(
-    READER *const reader, const float pixel_height, FONT **const out)
-{
-    *out = nullptr;
-    FAIL_IF(reader == nullptr, "Invalid font data or size");
-    const size_t size = Reader_Remaining(reader);
-    FAIL_IF(size == 0, "Empty font data");
-    uint8_t *const data = Reader_ReadAlloc(reader, size, &g_HeapAllocator);
-    RESULT result = Reader_Result(reader);
-    if (IS_OK(result)) {
-        result = Font_Open(data, size, 0, pixel_height, out);
-    }
-    Mem_Free(data);
-    return result;
-}
-
-static RESULT M_LoadFile(
-    const char *const path, const float pixel_height, FONT **const out)
-{
-    READER reader;
-    MUST(Reader_OpenFile(&reader, path));
-    const RESULT result = Font_Load(&reader, pixel_height, out);
-    Reader_Close(&reader);
-    MUST(result, "%s", path);
-    return OK;
-}
-
-RESULT Font_LoadDefault(const float pixel_height, FONT **const out)
-{
-    READER reader;
-    Reader_OpenBuffer(&reader, m_DefaultFont, sizeof(m_DefaultFont), nullptr);
-    return Font_Load(&reader, pixel_height, out);
-}
-
-RESULT Font_LoadFamily(
-    const char *const *const paths, const int32_t count,
-    const char *const family, const float pixel_height, FONT **const out)
-{
-    *out = nullptr;
-    FAIL_IF(family == nullptr || count < 0, "Invalid font family");
-    for (int32_t i = 0; i < count; i++) {
-        FONT *font;
-        if (!Result_Log(
-                M_LoadFile(paths[i], pixel_height, &font), LOG_LEVEL_WARNING)) {
-            continue;
-        }
-        const char *const name = TTF_GetFontFamilyName(font->font);
-        if (name == nullptr || !Str_EqualIgnoreCase(name, family)) {
-            Font_Free(font);
-            continue;
-        }
-        RESULT fallback = Font_LoadDefault(pixel_height, &font->fallback);
-        if (IS_OK(fallback)) {
-            fallback = M_SetEm(font->fallback, TTF_GetFontSize(font->font));
-        }
-        if (!IS_OK(fallback)) {
-            Font_Free(font);
-            return fallback;
-        }
-        if (!TTF_AddFallbackFont(font->font, font->fallback->font)) {
-            const RESULT result =
-                FAIL("Cannot add a fallback font: %s", SDL_GetError());
-            Font_Free(font);
-            return result;
-        }
-        *out = font;
-        return OK;
-    }
-    return FAIL("No font file has the family %s", family);
 }
 
 static RESULT M_SetSize(
@@ -325,7 +246,6 @@ void Font_Free(FONT *const font)
         TextRaster_Close(font->raster_face);
         TTF_CloseFont(font->font);
         Font_Free(font->fallback);
-        Mem_Free(font->data);
         Mem_Free(font);
     }
 }

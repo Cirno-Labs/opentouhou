@@ -26,8 +26,9 @@ RESULT FontRegistry_Add(const char *source, const void *data, size_t size);
 // backend_fontconfig.c implement it.
 RESULT FontRegistry_AddSystemFont(const char *family);
 
-// Forgets every added font. With use_system, a family that no added font
-// has is looked up among the system's installed fonts; without, it is not.
+// Forgets every added font. Free the opened fonts first, as they read the
+// registry's data. With use_system, a family that no added font has is
+// looked up among the system's installed fonts; without, it is not.
 void FontRegistry_Reset(bool use_system);
 
 // Opens the font of family at pixel_height, choosing the matching face of a

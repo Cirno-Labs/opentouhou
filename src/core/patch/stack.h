@@ -69,15 +69,14 @@ typedef struct {
     const char *title;
     // The directory of the patch, ending with '/'.
     const char *dir;
-    // The paths on disk of the font files of the patch: the members of the
-    // patch.js object "fonts" whose value is true, each joined to dir.
-    const char *const *fonts;
-    int32_t font_count;
 } PATCH_INFO;
 
 // Opens the patches in dir that Patch_Select selects for game_id and
 // choice, and logs the description of the selection, with a warning when
-// the language is missing. game_id is the thcrap game id and the GAME_DESC
+// the language is missing. Adds the font files that each patch's patch.js
+// names in its object "fonts" to the font registry, in the order in which
+// the patches apply, as thcrap does; a file that does not add is left out,
+// with a warning. game_id is the thcrap game id and the GAME_DESC
 // id, such as "th06". A missing dir gives an empty stack. Reports failure
 // only when dir exists and cannot be listed. The stack keeps a copy of
 // game.

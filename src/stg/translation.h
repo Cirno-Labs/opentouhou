@@ -53,11 +53,6 @@ const char *Translation_GetFont(void);
 // the patch or its font cache is absent.
 int32_t Translation_GetFontWeight(int32_t requested);
 
-// Returns the font files of the patches, the patch that applies last
-// first, and sets *count to their number. The paths belong to the stack of
-// Translation_Init.
-const char *const *Translation_GetFontFiles(int32_t *count);
-
 // Returns whether nmlgc/base_tsa is in the patch stack. A game then draws
 // its nameplates and its bomb and spell card names as that patch's
 // executable patches do.

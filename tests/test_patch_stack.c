@@ -202,32 +202,12 @@ TEST(the_info_holds_the_title_and_directory)
     Mem_Free(dir);
 }
 
-TEST(the_info_lists_the_true_fonts)
-{
-    char *const dir = TestDir_Prepare("fonts");
-    PatchBuilder_AddPatch(
-        dir, "a/fonts",
-        "{fonts: {'One.ttf': true, 'Off.ttf': false, 'Two.otf': true, "
-        "'Odd.ttf': 1}}");
-    PATCH_STACK *const stack = M_Open(dir, nullptr);
-    const PATCH_INFO *const info = Patch_Get(stack, 0);
-    CHECK_EQ_INT(info->font_count, 2);
-    char *const one = Str_Format("%s/a/fonts/One.ttf", dir);
-    char *const two = Str_Format("%s/a/fonts/Two.otf", dir);
-    CHECK_EQ_STR(info->fonts[0], one);
-    CHECK_EQ_STR(info->fonts[1], two);
-    Mem_Free(two);
-    Mem_Free(one);
-    Patch_CloseStack(stack);
-    Mem_Free(dir);
-}
-
 TEST(the_fonts_of_a_patch_join_the_registry)
 {
     CHECK(IS_OK(Text_Init()));
     char *const dir = TestDir_Prepare("registry_fonts");
     PatchBuilder_AddPatch(
-        dir, "a/fonts", "{fonts: {'ui.ttf': true, 'gone.ttf': true}}");
+        dir, "a/fonts", "{fonts: {'ui.ttf': false, 'gone.ttf': true}}");
     size_t size;
     uint8_t *const data = TestFonts_Read(TEST_FONT_UI_GOTHIC, &size);
     char *const path = Str_Format("%s/a/fonts/UI.TTF", dir);
@@ -244,16 +224,6 @@ TEST(the_fonts_of_a_patch_join_the_registry)
     Mem_Free(data);
     Mem_Free(dir);
     Text_Shutdown();
-}
-
-TEST(a_patch_without_fonts_lists_none)
-{
-    char *const dir = TestDir_Prepare("no_fonts");
-    PatchBuilder_AddPatch(dir, "a/plain", "{fonts: ['One.ttf']}");
-    PATCH_STACK *const stack = M_Open(dir, nullptr);
-    CHECK_EQ_INT(Patch_Get(stack, 0)->font_count, 0);
-    Patch_CloseStack(stack);
-    Mem_Free(dir);
 }
 
 TEST(a_gameplay_file_marks_the_stack)

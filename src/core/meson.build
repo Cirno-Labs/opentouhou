@@ -177,13 +177,6 @@ else
   text_system = dependency('', required: false)
 endif
 
-text_font = custom_target(
-  'text_font',
-  input: 'text/fonts/BIZUDGothic-Bold.ttf',
-  output: 'text_font.h',
-  command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', 'm_DefaultFont', '@INPUT@'],
-)
-
 core_text_lib = static_library(
   'core_text',
   'text/font.c',
@@ -192,8 +185,7 @@ core_text_lib = static_library(
   'text/glyphs.c',
   'text/render.c',
   text_backend,
-  text_font,
-  c_args: core_include + ['-I' + meson.current_build_dir()],
+  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3_ttf, sdl3, freetype, text_system, cc_libm],
 )

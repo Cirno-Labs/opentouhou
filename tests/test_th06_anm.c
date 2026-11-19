@@ -10,6 +10,7 @@
 #include "gfx_recorder.h"
 #include "patch_builder.h"
 #include "test.h"
+#include "test_fonts.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
@@ -862,7 +863,8 @@ static int32_t M_FirstTextPixel(const IMAGE *const image, const int32_t row)
 
 TEST(text_rows_align_by_measured_width_and_preserve_other_rows)
 {
-    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    TestFonts_UseBuiltin();
+    CHECK(IS_OK(Anm_InitText(nullptr)));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
         .slot = 100,
@@ -902,7 +904,8 @@ TEST(text_rows_align_by_measured_width_and_preserve_other_rows)
 
 TEST(text_rows_lay_out_markup)
 {
-    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    TestFonts_UseBuiltin();
+    CHECK(IS_OK(Anm_InitText(nullptr)));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
         .slot = 100,
@@ -927,7 +930,8 @@ TEST(text_rows_lay_out_markup)
 
 TEST(text_aligns_by_the_drawn_width_and_fills_the_sprite_row)
 {
-    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    TestFonts_UseBuiltin();
+    CHECK(IS_OK(Anm_InitText(nullptr)));
     CHECK(IS_OK(Anm_CreateTexture(100, 256, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
         .slot = 100,
@@ -966,7 +970,7 @@ TEST(text_aligns_by_the_drawn_width_and_fills_the_sprite_row)
     CHECK(IS_OK(Anm_MeasureText("Ab", 15, &width)));
     CHECK(width == 15.0f);
     CHECK(IS_OK(Anm_MeasureText("<c$東$東東>", 15, &width)));
-    CHECK(width == 30.0f);
+    CHECK_EQ_INT(width, 31);
     Anm_ReleaseTexture(100);
     Anm_ShutdownText();
     CHECK(IS_OK(Anm_MeasureText("Ab", 15, &width)));
@@ -1047,7 +1051,8 @@ TEST(base_tsa_world_sprites_take_their_size_in_pixels)
 
 static void M_CheckTextSurfaceGradient(void)
 {
-    CHECK(IS_OK(Anm_InitText(nullptr, nullptr, 0)));
+    TestFonts_UseBuiltin();
+    CHECK(IS_OK(Anm_InitText(nullptr)));
     CHECK(IS_OK(Anm_CreateTexture(100, 256, 64, ANM_TEXTURE_RGBA8)));
     CHECK(IS_OK(Anm_RenderTextToTextureIndex(
         100, 0, 16, 256, 15, 0xffffff, UINT32_MAX, " ")));
@@ -1107,12 +1112,12 @@ TEST(base_tsa_keeps_the_gdi_text_gradient)
     Mem_Free(directory);
 }
 
-TEST(text_takes_the_patch_font_of_the_family)
+TEST(text_takes_the_font_of_the_family)
 {
-    const char *const paths[] = { SDL_getenv("TEST_FONT") };
-    CHECK(IS_OK(Anm_InitText("BIZ UDGothic", paths, 1)));
+    TestFonts_UseBuiltin();
+    CHECK(IS_OK(Anm_InitText("IPAPGothic")));
     Anm_ShutdownText();
-    CHECK(IS_OK(Anm_InitText("Aroania", paths, 1)));
+    CHECK(IS_OK(Anm_InitText("Aroania")));
     CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
     const ANM_SPRITE sprite = {
         .slot = 100,
@@ -1319,4 +1324,25 @@ TEST(title_initialization_runs_commands_without_advancing_animation)
     CHECK_EQ_INT(stopped.script_time.current, 0);
     GameTime_Resume();
     M_Teardown(directory);
+}
+
+TEST(text_without_a_font_draws_nothing)
+{
+    FontRegistry_Reset(false);
+    CHECK(IS_OK(Anm_InitText(nullptr)));
+    CHECK(IS_OK(Anm_CreateTexture(100, 128, 64, ANM_TEXTURE_RGBA8)));
+    const ANM_SPRITE sprite = {
+        .slot = 100,
+        .texture_width = 128,
+        .texture_height = 64,
+        .y0 = 16,
+        .x1 = 128,
+        .width = 128,
+    };
+    ANM_VM vm = { .sprite_data = &sprite, .font_width = 15 };
+    CHECK(IS_OK(Anm_RenderText(&vm, 0xffffff, UINT32_MAX, "%s", "東")));
+    CHECK(vm.shown);
+    CHECK(M_FirstTextPixel(AnmTexture_GetImage(100), 16) < 0);
+    Anm_ReleaseTexture(100);
+    Anm_ShutdownText();
 }

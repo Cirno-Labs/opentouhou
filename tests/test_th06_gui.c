@@ -4,6 +4,7 @@
 #include "gfx_recorder.h"
 #include "patch_builder.h"
 #include "test.h"
+#include "test_fonts.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
@@ -1061,11 +1062,12 @@ TEST(the_names_show_their_portraits)
 TEST(the_name_bars_take_the_drawn_width_of_the_names)
 {
     M_Setup("names_width");
-    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
     Gui_ShowBombName(0x4a1, "霊符「夢想封印」");
     CHECK(g_Gui.banners.bomb_width == 16.0f * 15.0f / 2.0f + 16.0f);
     Gui_ShowSpellCardName(1, "<b$Moon$Sign> Ray");
-    CHECK(g_Gui.banners.spell_width == 8.0f * 15.0f / 2.0f + 16.0f);
+    CHECK(g_Gui.banners.spell_width == 8.0f * 16.0f / 2.0f + 16.0f);
     Anm_ShutdownText();
     M_Teardown();
 }
@@ -1232,11 +1234,12 @@ TEST(base_tsa_name_bars_take_whole_pixels)
 {
     M_Setup("names_width_base_tsa");
     M_UseBaseTsa();
-    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
     Gui_ShowSpellCardName(1, "abc");
-    CHECK(g_Gui.banners.spell_width == 22.0f + 4.0f + 16.0f);
+    CHECK(g_Gui.banners.spell_width == 24.0f + 4.0f + 16.0f);
     Gui_ShowBombName(0x4a1, "abcd");
-    CHECK(g_Gui.banners.bomb_width == 30.0f + 4.0f + 16.0f);
+    CHECK(g_Gui.banners.bomb_width == 32.0f + 4.0f + 16.0f);
     Anm_ShutdownText();
     Translation_Shutdown();
     M_Teardown();
@@ -1344,7 +1347,8 @@ static void M_SetupTextImages(
     Files_SetPatches(m_Patches);
     Translation_Init(m_Patches, &g_TranslationGame);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
     CHECK(Result_Log(
         Anm_CreateTexture(0, 64, 128, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
@@ -1881,7 +1885,8 @@ static void M_SetupNotes(const char *const case_name, const char *const diff)
     Translation_Init(m_Patches, &g_TranslationGame);
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
     CHECK(Result_Log(
         Anm_CreateTexture(0, 64, 128, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));

@@ -1,6 +1,7 @@
 #include "th06/anm/text.h"
 
 #include "th06/anm/texture.h"
+#include "stg/game_font.h"
 #include "stg/note.h"
 #include "stg/translation.h"
 
@@ -11,6 +12,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+
+// The cell height that text opens at, before each row sets its own.
+#define M_FONT_HEIGHT 30.0f
 
 static FONT *m_Font;
 
@@ -134,23 +138,16 @@ static RESULT M_Format(
     return result;
 }
 
-RESULT Anm_InitText(
-    const char *const family, const char *const *const paths,
-    const int32_t count)
+RESULT Anm_InitText(const char *const family)
 {
-    if (m_Font == nullptr) {
-        MUST(Text_Init());
-        if (family != nullptr
-            && Result_Log(
-                Font_LoadFamily(paths, count, family, 30.0f, &m_Font),
-                LOG_LEVEL_WARNING)) {
-            return OK;
-        }
-        const RESULT result = Font_LoadDefault(30.0f, &m_Font);
-        if (!IS_OK(result)) {
-            Text_Shutdown();
-            return result;
-        }
+    if (m_Font != nullptr) {
+        return OK;
+    }
+    MUST(Text_Init());
+    if (!Result_Ignore(GameFont_Open(family, M_FONT_HEIGHT, &m_Font))) {
+        LOG_WARNING(
+            "No font opens, so text is not drawn. Install MS Gothic, or put "
+            "a font in opentouhou/fonts/ of the data folder.");
     }
     return OK;
 }

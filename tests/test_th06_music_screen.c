@@ -4,6 +4,7 @@
 #include "gfx_recorder.h"
 #include "patch_builder.h"
 #include "test.h"
+#include "test_fonts.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
@@ -359,7 +360,8 @@ TEST(base_tsa_overlaps_both_halves_of_a_translated_comment)
         LOG_LEVEL_ERROR));
     Translation_Init(stack, &g_TranslationGame);
     CHECK(Translation_HasBaseTsa());
-    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
     M_Run(9);
     M_Press(m_Shoot);
     const IMAGE *const image = AnmTexture_GetImage(0x2b);

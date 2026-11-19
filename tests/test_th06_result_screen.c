@@ -5,6 +5,7 @@
 #include "patch_builder.h"
 #include "shell_fake.h"
 #include "test.h"
+#include "test_fonts.h"
 #include "test_dir.h"
 #include "th06_data.h"
 
@@ -622,7 +623,8 @@ static void M_SetupText(const char *const case_name, const bool base_tsa)
     CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
     CHECK(Result_Log(
         Anm_CreateTexture(0, 256, 256, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
-    CHECK(Result_Log(Anm_InitText(nullptr, nullptr, 0), LOG_LEVEL_ERROR));
+    TestFonts_UseBuiltin();
+    CHECK(Result_Log(Anm_InitText(nullptr), LOG_LEVEL_ERROR));
     if (base_tsa) {
         char *const patches = TestDir_Join(m_Directory, "patches");
         PatchBuilder_AddPatch(patches, "nmlgc/base_tsa", "{}");
