@@ -2,11 +2,12 @@
 
 #include <stdint.h>
 
-// Counts calls into the th07/stubs.h functions and GameManager_Register
-// and GameManager_Remove, which this test links instead of src/th07/stubs.c
-// and th07/game_manager's chain, so a test can check which targets the
-// scene switch called. A test of the title defines TH07_TITLE_TEST, which
-// leaves out the stand-in for TitleScene_SetUp.
+// Counts calls into th07/play_time.h's PlayTime_Add and PlayTime_Restart,
+// and GameManager_Register and GameManager_Remove, which this test links
+// instead of src/th07/play_time.c and th07/game_manager's chain, so a
+// test can check which targets the scene switch called. A test of the
+// title defines TH07_TITLE_TEST, which leaves out the stand-in for
+// TitleScene_SetUp.
 typedef struct {
     int title_set_up;
     int game_manager_register;

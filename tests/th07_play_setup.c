@@ -14,7 +14,6 @@
 #include "th07/scene.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
-#include "th07/stubs.h"
 
 #include "test_dir.h"
 #include "th07_anm_builder.h"

@@ -20,7 +20,6 @@
 #include "th07/sound.h"
 #include "th07/stage.h"
 #include "th07/screens/result/records.h"
-#include "th07/stubs.h"
 
 #include "core/base/assert.h"
 #include "core/base/memory.h"

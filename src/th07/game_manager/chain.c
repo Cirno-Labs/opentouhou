@@ -7,6 +7,7 @@
 #include "th07/enemy.h"
 #include "th07/game.h"
 #include "th07/gui.h"
+#include "th07/play_time.h"
 #include "th07/player.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
@@ -16,7 +17,6 @@
 #include "th07/stage.h"
 #include "th07/screens/result/records.h"
 #include "th07/screens/result/saves.h"
-#include "th07/stubs.h"
 
 #include "core/base/log.h"
 #include "core/base/utils.h"

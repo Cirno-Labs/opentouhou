@@ -8,7 +8,6 @@
 #include "th07/player.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
-#include "th07/stubs.h"
 
 #include "gfx_recorder.h"
 #include "test.h"
