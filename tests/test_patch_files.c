@@ -327,3 +327,57 @@ TEST(a_diff_merges_the_jdiff_of_the_game_file)
     Patch_CloseStack(stack);
     Mem_Free(dir);
 }
+
+static RESULT M_AppendText(void *const user, READER *const reader)
+{
+    char *const text = user;
+    const size_t size = Reader_Size(reader);
+    char part[32] = {};
+    CHECK(size < sizeof(part));
+    Reader_ReadBytes(reader, part, size);
+    strcat(text, part);
+    strcat(text, ";");
+    return OK;
+}
+
+static RESULT M_Refuse(void *const user, READER *const reader)
+{
+    (void)reader;
+    int32_t *const visits = user;
+    (*visits)++;
+    return FAIL("refused");
+}
+
+TEST(visiting_a_file_reads_every_copy_in_patch_order)
+{
+    char *const dir = TestDir_Prepare("visit");
+    PatchBuilder_AddPatch(dir, "a/base", "{}");
+    PatchBuilder_AddPatch(dir, "a/top", "{dependencies: ['base']}");
+    PatchBuilder_Write(dir, "a/base/th06/face.bmp", "base");
+    PatchBuilder_Write(dir, "a/top/th06/face.bmp", "top plain");
+    PatchBuilder_Write(dir, "a/top/th06/face.v1.02h.bmp", "top build");
+    PatchBuilder_Write(dir, "a/base/th06/face.png", "ignored");
+    PatchBuilder_Write(dir, "a/base/th06/msg1.dat", "msg");
+    PATCH_STACK *const stack = M_Open(dir, PATCH_LAYOUT_FLAT);
+    char text[128] = {};
+    CHECK(
+        Result_Ignore(Patch_VisitFiles(stack, "face.bmp", M_AppendText, text)));
+    CHECK_EQ_STR(text, "base;top plain;top build;");
+    text[0] = 0;
+    CHECK(
+        Result_Ignore(Patch_VisitFiles(stack, "face.png", M_AppendText, text)));
+    CHECK_EQ_STR(text, "");
+    text[0] = 0;
+    CHECK(
+        Result_Ignore(Patch_VisitFiles(stack, "none.dat", M_AppendText, text)));
+    CHECK_EQ_STR(text, "");
+    int32_t visits = 0;
+    CHECK(
+        !Result_Ignore(Patch_VisitFiles(stack, "msg1.dat", M_Refuse, &visits)));
+    CHECK_EQ_INT(visits, 1);
+    CHECK(Result_Ignore(
+        Patch_VisitFiles(nullptr, "msg1.dat", M_Refuse, &visits)));
+    CHECK_EQ_INT(visits, 1);
+    Patch_CloseStack(stack);
+    Mem_Free(dir);
+}
