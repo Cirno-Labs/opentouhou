@@ -1465,3 +1465,25 @@ test(
     'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
   },
 )
+
+test(
+  'shell/game/fonts',
+  executable(
+    'test_shell_fonts',
+    'test_shell_fonts.c',
+    c_args: shell_include + [
+      '-DTEST_BUILTIN_FONTS=' + (get_option('font') == 'none' ? 'false' : 'true'),
+    ],
+    implicit_include_directories: false,
+    link_with: [
+      shell_fonts_lib, core_archive_lib, core_vfs_lib, core_text_lib,
+      core_image_lib, core_hash_lib, core_io_lib, core_base_lib,
+    ],
+    dependencies: [sdl3_ttf, sdl3, zlib, text_system, cc_libm],
+  ),
+  suite: 'unit',
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'shell_fonts',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+  },
+)

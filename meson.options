@@ -22,3 +22,12 @@ option(
   value: 'all',
   description: 'Programs to build: the games and their native backends, othpatch, or both',
 )
+# Selects the fonts that each game executable carries (see
+# src/shell/game/fonts.h).
+option(
+  'font',
+  type: 'combo',
+  choices: ['ipa', 'none'],
+  value: 'ipa',
+  description: 'Built-in fonts: IPAGothic and IPAPGothic, or none',
+)

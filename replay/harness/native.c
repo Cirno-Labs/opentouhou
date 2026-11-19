@@ -4,7 +4,9 @@
 #include "core/base/memory.h"
 #include "core/config.h"
 #include "core/gfx.h"
+#include "core/text/font_registry.h"
 #include "shell/game.h"
+#include "shell/game/fonts.h"
 #include "shell/null.h"
 
 #include <SDL3/SDL.h>
@@ -158,6 +160,7 @@ static RESULT M_Start(M_NATIVE *const native)
     MUST(M_MapButtons(native));
     MUST(Driver_Open(&port->port, run, "native", &native->driver));
     MUST(NullShell_OpenFiles(run->game_dir, nullptr));
+    MUST(ShellFonts_Reset(false));
     Driver_MountStaged(native->driver, Shell_GetFiles());
     Driver_MountStaged(native->driver, Shell_GetUserFiles());
     MUST(Driver_MountWork(native->driver, Shell_GetUserFiles()));
@@ -207,6 +210,7 @@ static void M_Stop(M_NATIVE *const native)
         native->port->game->shutdown();
     }
     NullShell_CloseFiles();
+    FontRegistry_Reset(false);
     Gfx_Shutdown();
     if (native->gl != nullptr) {
         SDL_GL_DestroyContext(native->gl);

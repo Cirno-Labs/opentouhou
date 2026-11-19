@@ -168,7 +168,8 @@ core/text     fonts by family name, layout, text to texture
 core/audio    device, mixer, sources, DSP
 core/input    devices, bindings, per-player input for each tick
 core/config   our settings
-shell         folder rules, the log file, fatal error boxes
+shell         folder rules, the log file, fatal error boxes, the
+              built-in fonts
 shell/game    main loop, window, frame pacing, the GAME_DESC driver
 ```
 
