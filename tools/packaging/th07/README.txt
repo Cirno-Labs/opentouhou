@@ -177,8 +177,9 @@ Credits
 The original game is by ZUN (Team Shanghai Alice). The translations are
 by the thpatch.net community, in the patch format of thcrap.
 
-The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, zlib and the
-IPAGothic and IPAPGothic fonts.
+The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo,
+zlib and the IPAGothic and IPAPGothic fonts. This software is based in
+part on the work of the Independent JPEG Group.
 
 Source code, documentation and licences:
 https://github.com/Cirno-Labs/opentouhou
