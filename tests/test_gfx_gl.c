@@ -467,6 +467,72 @@ TEST(a_sharp_output_keeps_a_linear_sprite_inside_its_texels)
     GfxTexture_Free(texture);
 }
 
+static IMAGE M_SmoothOutput(void)
+{
+    const GFX_OUTPUT output = {
+        .width = 16,
+        .height = 16,
+        .border = BLUE,
+        .filter = GFX_FILTER_LINEAR,
+    };
+    CHECK_OK(Gfx_Present(true, 1.0f, &output));
+    IMAGE image = {};
+    CHECK_OK(Gfx_ReadOutput(&g_HeapAllocator, &image));
+    if (image.pixels == nullptr) {
+        abort();
+    }
+    return image;
+}
+
+TEST(a_smooth_output_keeps_a_linear_sprite_inside_its_texels)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[2] = { RED, GREEN };
+    GFX_TEXTURE *const texture = M_Texture(1, 2, texels);
+    const GFX_STATE sprite = {
+        .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
+    };
+    Gfx_BeginTick(BLACK);
+    const GFX_VERTEX vertices[4] = {
+        { { 0, 0, 0.5f }, WHITE, { 0, 0 } },
+        { { SIZE, 0, 0.5f }, WHITE, { 1, 0 } },
+        { { SIZE, SIZE, 0.5f }, WHITE, { 1, 0.5f } },
+        { { 0, SIZE, 0.5f }, WHITE, { 0, 0.5f } },
+    };
+    Gfx_DrawQuad(&sprite, texture, vertices, 0);
+    IMAGE screen = M_Screen();
+    // The logical screen still blends the edge with the wrapped texel.
+    M_CheckPixel(&screen, 4, 0, (GFX_COLOR) { 143, 112, 0, 255 }, 1);
+    M_CheckPixel(&screen, 4, 7, (GFX_COLOR) { 143, 112, 0, 255 }, 1);
+    Image_Free(&screen);
+    IMAGE image = M_SmoothOutput();
+    M_CheckPixel(&image, 8, 0, RED, 0);
+    M_CheckPixel(&image, 8, 15, RED, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
+TEST(a_smooth_output_still_tiles_a_repeating_quad)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[2] = { RED, GREEN };
+    GFX_TEXTURE *const texture = M_Texture(2, 1, texels);
+    const GFX_STATE tiles = {
+        .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
+    };
+    Gfx_BeginTick(BLACK);
+    M_Rect(&tiles, texture, 0, 0, SIZE, SIZE, 0.5f, WHITE, 2.0f);
+    Gfx_EndTick();
+    IMAGE image = M_SmoothOutput();
+    M_CheckPixel(&image, 10, 4, (GFX_COLOR) { 223, 32, 0, 255 }, 2);
+    M_CheckPixel(&image, 14, 4, (GFX_COLOR) { 32, 223, 0, 255 }, 2);
+    M_CheckPixel(&image, 0, 4, (GFX_COLOR) { 159, 96, 0, 255 }, 2);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
 TEST(present_draws_finer_than_a_logical_pixel)
 {
     REQUIRE_GL();

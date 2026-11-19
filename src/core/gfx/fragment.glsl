@@ -6,6 +6,7 @@ precision highp sampler2D;
 
 in vec4 v_color;
 in vec2 v_uv;
+flat in vec4 v_rect;
 in float v_fog;
 
 uniform sampler2D u_texture;
@@ -21,7 +22,7 @@ void main()
 {
     vec4 color = v_color;
     if (u_textured != 0) {
-        vec4 texel = texture(u_texture, v_uv);
+        vec4 texel = texture(u_texture, clamp(v_uv, v_rect.xy, v_rect.zw));
         color.rgb = u_color_add != 0
             ? min(texel.rgb + v_color.rgb, vec3(1.0))
             : texel.rgb * v_color.rgb;

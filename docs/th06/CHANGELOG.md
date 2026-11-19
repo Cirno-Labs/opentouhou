@@ -56,6 +56,8 @@
   results menu.
 - Fixed the selected rows of the replay menu, which showed in pink
   instead of the original's white selection font.
+- Fixed dark lines along the edges of sprites, such as through the
+  player select portraits, with smooth scaling and interpolation.
 
 ## 1.0.1 (2026-11-15)
 

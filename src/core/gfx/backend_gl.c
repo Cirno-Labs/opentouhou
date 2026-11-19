@@ -153,8 +153,8 @@ typedef struct {
 typedef struct {
     M_GL gl;
     bool es;
-    GLuint program, vertex_array, vertex_buffer, index_buffer;
-    int32_t index_quads;
+    GLuint program, vertex_array, vertex_buffer, index_buffer, rect_buffer;
+    int32_t index_quads, rect_quads;
     GLuint samplers[M_SAMPLER_COUNT];
     M_LOCATIONS locations;
     M_TARGET screen, output, history;
@@ -162,6 +162,8 @@ typedef struct {
     GFX_PASS pass;
     GFX_PASS_OUTPUT pass_output;
     uint32_t *indices;
+    // Holds each vertex's texel rect: min u, min v, max u, max v.
+    float (*rects)[4];
 } M_BACKEND;
 
 static M_BACKEND m_Backend;
@@ -384,6 +386,59 @@ static void M_EnsureIndices(const int32_t quads)
     m_Backend.index_quads = capacity;
 }
 
+// Sets out to the span of four texture coordinates on one axis of a
+// texture size texels long, half a texel in from its edges, and returns
+// false when the span tiles.
+static bool M_SpanTexels(
+    const float coordinates[4], const int32_t size, float *const out_low,
+    float *const out_high)
+{
+    float low = coordinates[0];
+    float high = low;
+    for (int32_t i = 1; i < 4; i++) {
+        low = MIN(low, coordinates[i]);
+        high = MAX(high, coordinates[i]);
+    }
+    // A quad tiles when its UVs cross from one copy of the texture into the
+    // next.
+    if (floorf(low) < ceilf(high) - 1.0f) {
+        return false;
+    }
+    const float inset = 0.5f / (float)size;
+    const float middle = (low + high) * 0.5f;
+    *out_low = MIN(low + inset, middle);
+    *out_high = MAX(high - inset, middle);
+    return true;
+}
+
+// Sets each vertex's texel rect for a batch. The window pass magnifies, so
+// it keeps each quad that does not tile inside its texels; elsewhere the
+// rect is unbounded.
+static void M_SetRects(
+    const GFX_BATCH *const batch, const GFX_VERTEX *const vertices,
+    float (*const rects)[4])
+{
+    const GFX_TEXTURE *const texture = batch->texture;
+    const bool clamp = m_Backend.pass == GFX_PASS_WINDOW && texture != nullptr
+        && texture->width > 0 && texture->height > 0;
+    for (int32_t i = 0; i < batch->count; i += 4) {
+        const GFX_VERTEX *const quad = &vertices[i];
+        const float u[4] = { quad[0].uv.x, quad[1].uv.x, quad[2].uv.x,
+                             quad[3].uv.x };
+        const float v[4] = { quad[0].uv.y, quad[1].uv.y, quad[2].uv.y,
+                             quad[3].uv.y };
+        float rect[4];
+        if (!clamp || !M_SpanTexels(u, texture->width, &rect[0], &rect[2])
+            || !M_SpanTexels(v, texture->height, &rect[1], &rect[3])) {
+            rect[0] = rect[1] = -FLT_MAX;
+            rect[2] = rect[3] = FLT_MAX;
+        }
+        for (int32_t j = 0; j < 4; j++) {
+            memcpy(rects[i + j], rect, sizeof(rect));
+        }
+    }
+}
+
 // Scissors to view's rect, mapped from logical-screen pixels to the
 // output target.
 static void M_SetScissor(const GFX_PASS_VIEW *const view)
@@ -499,6 +554,11 @@ static RESULT M_Init(
     gl->vertex_attrib_pointer(
         2, 2, GL_FLOAT, GL_FALSE, sizeof(GFX_VERTEX),
         (const void *)offsetof(GFX_VERTEX, uv));
+    gl->gen_buffers(1, &m_Backend.rect_buffer);
+    gl->bind_buffer(GL_ARRAY_BUFFER, m_Backend.rect_buffer);
+    gl->enable_vertex_attrib_array(3);
+    gl->vertex_attrib_pointer(
+        3, 4, GL_FLOAT, GL_FALSE, sizeof(*m_Backend.rects), nullptr);
     gl->bind_buffer(GL_ELEMENT_ARRAY_BUFFER, m_Backend.index_buffer);
     M_EnsureIndices(1024);
     gl->gen_samplers(M_SAMPLER_COUNT, m_Backend.samplers);
@@ -529,9 +589,11 @@ static void M_Shutdown(void)
     gl->delete_samplers(2, m_Backend.samplers);
     gl->delete_buffers(1, &m_Backend.vertex_buffer);
     gl->delete_buffers(1, &m_Backend.index_buffer);
+    gl->delete_buffers(1, &m_Backend.rect_buffer);
     gl->delete_vertex_arrays(1, &m_Backend.vertex_array);
     gl->delete_program(m_Backend.program);
     Mem_Free(m_Backend.indices);
+    Mem_Free(m_Backend.rects);
     memset(&m_Backend, 0, sizeof(m_Backend));
 }
 
@@ -657,6 +719,22 @@ static void M_Draw(
     gl->buffer_data(
         GL_ARRAY_BUFFER, (GLsizeiptr)count * (GLsizeiptr)sizeof(GFX_VERTEX),
         vertices + first, GL_STREAM_DRAW);
+    if (count > m_Backend.rect_quads * 4) {
+        m_Backend.rect_quads = MAX(m_Backend.rect_quads * 2, count / 4);
+        m_Backend.rects = Mem_ReallocArr(
+            m_Backend.rects, (size_t)m_Backend.rect_quads * 4,
+            sizeof(*m_Backend.rects));
+    }
+    for (int32_t i = 0; i < batch_count; i++) {
+        M_SetRects(
+            &batches[i], vertices + batches[i].first,
+            m_Backend.rects + (batches[i].first - first));
+    }
+    gl->bind_buffer(GL_ARRAY_BUFFER, m_Backend.rect_buffer);
+    gl->buffer_data(
+        GL_ARRAY_BUFFER,
+        (GLsizeiptr)count * (GLsizeiptr)sizeof(*m_Backend.rects),
+        m_Backend.rects, GL_STREAM_DRAW);
     gl->bind_buffer(GL_ELEMENT_ARRAY_BUFFER, m_Backend.index_buffer);
     int32_t view = -1;
     for (int32_t i = 0; i < batch_count; i++) {
