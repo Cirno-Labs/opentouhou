@@ -66,9 +66,7 @@ static const char *M_Format(ARENA *const arena, const char *const fmt, ...)
     va_start(args, fmt);
     char *const heap = Str_FormatV(fmt, args);
     va_end(args);
-    const size_t size = strlen(heap) + 1;
-    char *const copy = Arena_Alloc(arena, size);
-    memcpy(copy, heap, size);
+    char *const copy = Str_DupWith(Arena_Allocator(arena), heap);
     Mem_Free(heap);
     return copy;
 }

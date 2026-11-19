@@ -16,6 +16,14 @@ char *Str_Dup(const char *const text)
     return Mem_Dup(text, strlen(text) + 1);
 }
 
+char *Str_DupWith(const ALLOCATOR *const allocator, const char *const text)
+{
+    const size_t size = strlen(text) + 1;
+    char *const copy = Allocator_Alloc(allocator, size);
+    memcpy(copy, text, size);
+    return copy;
+}
+
 char *Str_Format(const char *const fmt, ...)
 {
     va_list args;

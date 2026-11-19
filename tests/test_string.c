@@ -2,6 +2,7 @@
 #include "core/base/string.h"
 
 #include "test.h"
+#include "test_allocator.h"
 
 TEST(dup_copies_the_text)
 {
@@ -10,6 +11,20 @@ TEST(dup_copies_the_text)
     CHECK(copy != text);
     CHECK_EQ_STR(copy, text);
     Mem_Free(copy);
+}
+
+TEST(dup_with_copies_the_text_from_the_allocator)
+{
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    const char *const text = "東方";
+    char *const copy = Str_DupWith(&test.allocator, text);
+    CHECK(copy != text);
+    CHECK_EQ_STR(copy, text);
+    CHECK_EQ_INT(test.live_blocks, 1);
+    Allocator_Free(&test.allocator, copy, strlen(copy) + 1);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    CHECK_EQ_INT(test.size_errors, 0);
 }
 
 TEST(format_returns_the_whole_text)

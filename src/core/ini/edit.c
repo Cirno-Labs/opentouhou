@@ -10,7 +10,7 @@ static char *M_Format(const INI *const ini, const char *const fmt, ...)
     va_start(args, fmt);
     char *const temp = Str_FormatV(fmt, args);
     va_end(args);
-    char *const owned = IniStruct_Dup(ini, temp);
+    char *const owned = Str_DupWith(ini->allocator, temp);
     Mem_Free(temp);
     return owned;
 }
@@ -31,9 +31,9 @@ static LINE M_MakeKeyLine(
         .kind = LINE_KEY,
         .newline = ini->default_newline,
         .raw = M_FormatKey(ini, key, value),
-        .name = IniStruct_Dup(ini, section),
-        .key = IniStruct_Dup(ini, key),
-        .value = IniStruct_Dup(ini, value),
+        .name = Str_DupWith(ini->allocator, section),
+        .key = Str_DupWith(ini->allocator, key),
+        .value = Str_DupWith(ini->allocator, value),
     };
 }
 
@@ -43,7 +43,7 @@ static LINE M_MakeSectionLine(const INI *const ini, const char *const section)
         .kind = LINE_SECTION,
         .newline = ini->default_newline,
         .raw = M_Format(ini, "[%s]", section),
-        .name = IniStruct_Dup(ini, section),
+        .name = Str_DupWith(ini->allocator, section),
     };
 }
 
@@ -52,7 +52,7 @@ static LINE M_MakeBlankLine(const INI *const ini)
     return (LINE) {
         .kind = LINE_OTHER,
         .newline = ini->default_newline,
-        .raw = IniStruct_Dup(ini, ""),
+        .raw = Str_DupWith(ini->allocator, ""),
     };
 }
 
@@ -74,8 +74,8 @@ void Ini_Set(
         IniStruct_FreeStr(ini, line->key);
         IniStruct_FreeStr(ini, line->value);
         line->raw = M_FormatKey(ini, key, value);
-        line->key = IniStruct_Dup(ini, key);
-        line->value = IniStruct_Dup(ini, value);
+        line->key = Str_DupWith(ini->allocator, key);
+        line->value = Str_DupWith(ini->allocator, value);
         return;
     }
 

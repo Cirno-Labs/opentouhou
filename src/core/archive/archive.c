@@ -37,14 +37,6 @@ struct ARCHIVE {
     const ALLOCATOR *allocator;
 };
 
-static char *M_Dup(const ALLOCATOR *const allocator, const char *const text)
-{
-    const size_t size = strlen(text) + 1;
-    char *const copy = Allocator_Alloc(allocator, size);
-    memcpy(copy, text, size);
-    return copy;
-}
-
 // Folds the ASCII letters of text to lower case in place, matching how the
 // VFS normalises the paths that a source receives.
 static void M_FoldAscii(char *const text)
@@ -159,7 +151,7 @@ void ArchiveTable_Add(
     Array_Append(
         &table->entries,
         ((ARCHIVE_ENTRY) {
-            .name = M_Dup(table->allocator, name),
+            .name = Str_DupWith(table->allocator, name),
             .size = size,
             .mode = mode,
             .data = record,

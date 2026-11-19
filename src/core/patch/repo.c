@@ -28,14 +28,6 @@ struct PATCH_NETWORK {
     M_PATCH_LIST patches;
 };
 
-static char *M_Dup(ARENA *const arena, const char *const text)
-{
-    const size_t size = strlen(text) + 1;
-    char *const copy = Arena_Alloc(arena, size);
-    memcpy(copy, text, size);
-    return copy;
-}
-
 PRINTF_FORMAT(2, 3)
 static char *M_Format(ARENA *const arena, const char *const fmt, ...)
 {
@@ -43,7 +35,7 @@ static char *M_Format(ARENA *const arena, const char *const fmt, ...)
     va_start(args, fmt);
     char *const heap = Str_FormatV(fmt, args);
     va_end(args);
-    char *const copy = M_Dup(arena, heap);
+    char *const copy = Str_DupWith(Arena_Allocator(arena), heap);
     Mem_Free(heap);
     return copy;
 }
@@ -51,7 +43,7 @@ static char *M_Format(ARENA *const arena, const char *const fmt, ...)
 // Returns url with a '/' at its end.
 static const char *M_FolderUrl(ARENA *const arena, const char *const url)
 {
-    return Str_EndsWith(url, "/") ? M_Dup(arena, url)
+    return Str_EndsWith(url, "/") ? Str_DupWith(Arena_Allocator(arena), url)
                                   : M_Format(arena, "%s/", url);
 }
 
@@ -193,7 +185,7 @@ RESULT PatchRepo_Open(
 
     const char *folder = M_FolderUrl(arena, url);
     if (Str_EndsWith(url, "repo.js")) {
-        char *const trimmed = M_Dup(arena, url);
+        char *const trimmed = Str_DupWith(Arena_Allocator(arena), url);
         trimmed[strlen(url) - strlen("repo.js")] = '\0';
         folder = trimmed;
     }
@@ -315,7 +307,7 @@ static RESULT M_GetPatch(
 
     PATCH_REMOTE *const patch = Arena_AllocZ(arena, sizeof(*patch));
     patch->repo = repo;
-    patch->name = M_Dup(arena, name);
+    patch->name = Str_DupWith(Arena_Allocator(arena), name);
     patch->id = M_Format(arena, "%s/%s", repo->id, name);
     uint8_t *const text = Arena_Alloc(arena, fetch.size);
     if (fetch.size > 0) {
@@ -376,7 +368,7 @@ static RESULT M_Resolve(
     *out = nullptr;
     const char *const slash = strchr(id, '/');
     if (slash != nullptr) {
-        char *const repo_id = M_Dup(network->arena, id);
+        char *const repo_id = Str_DupWith(Arena_Allocator(network->arena), id);
         repo_id[slash - id] = '\0';
         const PATCH_REPO *const repo = PatchRepo_FindRepo(network, repo_id);
         FAIL_IF(

@@ -13,10 +13,7 @@ static SDL_EnumerationResult SDLCALL M_AddName(
 {
     FILE_LIST *const list = userdata;
     if (strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
-        const size_t size = strlen(name) + 1;
-        char *const copy = Allocator_Alloc(list->allocator, size);
-        memcpy(copy, name, size);
-        Array_Append(list, copy);
+        Array_Append(list, Str_DupWith(list->allocator, name));
     }
     return SDL_ENUM_CONTINUE;
 }
