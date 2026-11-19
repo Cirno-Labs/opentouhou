@@ -12,7 +12,8 @@
 // for shell/game with shell/null.h: each tick's input holds the bindings of
 // Driver_Buttons, the tick rate is what Driver_Fps returns, and the wall clock
 // counts the frames' milliseconds, rounded up. A tick draws only when
-// Driver_WantsDraw, and a headless run opens no video.
+// Driver_WantsDraw, and a headless run opens no video. Text uses the
+// built-in fonts alone, never the system's, so that runs draw alike.
 
 typedef struct {
     PORT port;

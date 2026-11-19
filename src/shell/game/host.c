@@ -14,12 +14,14 @@
 #include "core/io/locale.h"
 #include "core/io/path.h"
 #include "core/patch.h"
+#include "core/text/font_registry.h"
 #include "core/vfs.h"
 #include "shell/fatal.h"
 #include "shell/folders.h"
 #include "shell/log_file.h"
 
 #include "clock.h"
+#include "fonts.h"
 #include "hotkeys.h"
 #include "request_queue.h"
 #include "settings.h"
@@ -345,6 +347,8 @@ static RESULT M_Init(
     if (ctx->desc->settings_schema != nullptr) {
         Config_Load(ctx->desc->settings_schema, ctx->ini, ctx->desc->settings);
     }
+    MUST(ShellFonts_Reset(true));
+    ShellFonts_AddDir(ctx->files, "opentouhou/fonts");
     M_OpenPatches(ctx);
     if (ctx->settings.fullscreen
         && !Result_Log(M_SetFullscreen(ctx, true), LOG_LEVEL_WARNING)) {
@@ -603,6 +607,7 @@ void Shell_Quit(void)
         Vfs_Destroy(ctx->user_files);
     }
     Patch_CloseStack(ctx->patches);
+    FontRegistry_Reset(false);
     Audio_Shutdown();
     if (ctx->loaded_settings != nullptr && ctx->ini_path != nullptr) {
         M_SaveSettings(ctx);

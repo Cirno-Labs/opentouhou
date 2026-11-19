@@ -27,6 +27,7 @@ harness_native_lib = static_library(
   shell_null_devices,
   c_args: core_include + shell_include,
   implicit_include_directories: false,
+  link_with: shell_fonts_lib,
   dependencies: [sdl3, cc_libm],
 )
 

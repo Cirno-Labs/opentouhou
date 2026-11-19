@@ -53,6 +53,8 @@ describes the folders, the keys and the settings for players.
   native backends and their replay recorders, `othpatch`, or `all`, the
   default. Each comes with its tests. A build of `othpatch` needs only
   SDL3, zlib and curl, and a build of `games` does not need curl.
+- `font` selects the built-in fonts that each game executable carries:
+  `ipa`, the default, for IPAGothic and IPAPGothic, or `none`.
 - `werror` makes every compiler warning fail the build. CI sets it. The
   environment variable `OPENTOUHOU_WERROR=1` sets it for the Docker and
   macOS builds.

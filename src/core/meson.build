@@ -242,7 +242,7 @@ text_font = custom_target(
   'text_font',
   input: 'text/fonts/BIZUDGothic-Bold.ttf',
   output: 'text_font.h',
-  command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', '@INPUT@'],
+  command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', 'm_DefaultFont', '@INPUT@'],
 )
 
 core_text_lib = static_library(
@@ -268,7 +268,7 @@ core_dep = declare_dependency(
     core_patch_select_lib, core_archive_lib, core_vfs_lib,
     core_config_lib, core_ini_lib, core_audio_lib, core_text_lib,
     core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_args_lib,
-    core_base_lib,
+    core_hash_lib, core_base_lib,
   ],
   dependencies: [
     sdl3.partial_dependency(links: true),
