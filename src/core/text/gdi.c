@@ -80,14 +80,15 @@ RESULT TextRaster_SetSize(void *const handle, const float em)
 }
 
 RESULT TextRaster_Open(
-    const uint8_t *const data, const size_t size, const float em,
-    void **const out)
+    const uint8_t *const data, const size_t size, const int32_t face_index,
+    const float em, void **const out)
 {
     *out = nullptr;
     FAIL_IF(size > LONG_MAX, "Font data exceeds the rasterizer limit");
     FT_Face face;
     FAIL_IF(
-        FT_New_Memory_Face(m_Library, data, (FT_Long)size, 0, &face) != 0,
+        FT_New_Memory_Face(m_Library, data, (FT_Long)size, face_index, &face)
+            != 0,
         "Cannot open glyph rasterizer font");
     const RESULT result = TextRaster_SetSize(face, em);
     if (!IS_OK(result)) {

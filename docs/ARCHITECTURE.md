@@ -164,7 +164,7 @@ core/patch    thcrap patch repositories, the patches folder, stacks
 core/math     vectors, matrices, replay-exact primitives
 core/image    image decoding, encoding and conversion
 core/gfx      rendering
-core/text     fonts, layout, text to texture
+core/text     fonts by family name, layout, text to texture
 core/audio    device, mixer, sources, DSP
 core/input    devices, bindings, per-player input for each tick
 core/config   our settings

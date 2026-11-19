@@ -17,6 +17,24 @@ struct FONT {
     FONT *fallback;
 };
 
+// Opens face face_index of the font in data, a copy of it, at the cell
+// height pixel_height. Leaves out empty on failure.
+RESULT Font_Open(
+    const void *data, size_t size, int32_t face_index, float pixel_height,
+    FONT **out);
+
+// Reads a big-endian number of bytes bytes.
+uint32_t Text_ReadBe(const uint8_t *data, int32_t bytes);
+
+// Adds data, the system's font for family, as FontRegistry_AddSystemFont
+// does, and takes data, which Mem_Free releases. Reports failure, and adds
+// nothing, when no name of a face is family.
+RESULT FontRegistry_AddSystemData(
+    const char *source, uint8_t *data, size_t size, const char *family);
+
+// Reads the file at path and adds it as FontRegistry_AddSystemData does.
+RESULT FontRegistry_AddSystemFile(const char *path, const char *family);
+
 RESULT TextGlyphs_Measure(
     const FONT *font, const char *text, size_t size, bool gdi, int32_t *width,
     int32_t *height);
@@ -26,7 +44,8 @@ RESULT TextGlyphs_Render(
 
 RESULT TextRaster_Init(void);
 void TextRaster_Shutdown(void);
-RESULT TextRaster_Open(const uint8_t *data, size_t size, float em, void **out);
+RESULT TextRaster_Open(
+    const uint8_t *data, size_t size, int32_t face_index, float em, void **out);
 void TextRaster_Close(void *face);
 RESULT TextRaster_SetSize(void *face, float em);
 RESULT TextRaster_Glyph(

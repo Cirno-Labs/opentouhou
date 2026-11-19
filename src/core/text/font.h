@@ -38,4 +38,14 @@ RESULT Font_SetSize(FONT *font, float pixel_height);
 // Font_SetSize.
 RESULT Font_SetSizeRounded(FONT *font, float pixel_height, int32_t *offset_y);
 
+// Draws the characters that font lacks with fallback, which font then owns,
+// at font's em size, as GDI's font linking does. Replaces and frees the
+// fallback that font had.
+void Font_SetFallback(FONT *font, FONT *fallback);
+
+// Sizes the em of font to its cell height from now on, keeping its size,
+// as fonts whose Windows ascent and descent add up to their em are sized.
+RESULT Font_SetEmToCell(FONT *font);
+
+// Frees font and its fallback.
 void Font_Free(FONT *font);

@@ -225,6 +225,19 @@ core_gfx_gl_lib = static_library(
   dependencies: [sdl3, cc_libm],
 )
 
+# core/text's font registry asks the system for installed fonts through
+# GDI on Windows, CoreText on macOS and fontconfig elsewhere.
+if host_machine.system() == 'windows'
+  text_backend = 'text/backend_windows.c'
+  text_system = meson.get_compiler('c').find_library('gdi32')
+elif host_machine.system() == 'darwin'
+  text_backend = 'text/backend_macos.c'
+  text_system = dependency('appleframeworks', modules: ['CoreFoundation', 'CoreText'])
+else
+  text_backend = 'text/backend_fontconfig.c'
+  text_system = dependency('', required: false)
+endif
+
 text_font = custom_target(
   'text_font',
   input: 'text/fonts/BIZUDGothic-Bold.ttf',
@@ -235,13 +248,15 @@ text_font = custom_target(
 core_text_lib = static_library(
   'core_text',
   'text/font.c',
+  'text/font_registry.c',
   'text/gdi.c',
   'text/glyphs.c',
   'text/render.c',
+  text_backend,
   text_font,
   c_args: core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
-  dependencies: [sdl3_ttf, sdl3, freetype, cc_libm],
+  dependencies: [sdl3_ttf, sdl3, freetype, text_system, cc_libm],
 )
 
 # SDL is a dependency of the library, not of its users: layers above core
@@ -264,6 +279,7 @@ core_dep = declare_dependency(
     swscale.partial_dependency(links: true),
     avformat.partial_dependency(links: true),
     swresample.partial_dependency(links: true),
+    text_system,
     cc_libm,
   ],
 )

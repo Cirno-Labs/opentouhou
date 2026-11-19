@@ -11,7 +11,7 @@
 
 static bool m_Initialized;
 
-static uint32_t M_ReadBe(const uint8_t *const data, const int32_t bytes)
+uint32_t Text_ReadBe(const uint8_t *const data, const int32_t bytes)
 {
     uint32_t value = 0;
     for (int32_t i = 0; i < bytes; i++) {
@@ -23,19 +23,25 @@ static uint32_t M_ReadBe(const uint8_t *const data, const int32_t bytes)
 // Returns the em size for each pixel of cell height: units per em of the
 // head table over usWinAscent + usWinDescent of the OS/2 table. Returns 1
 // when the data lacks either table. A collection uses its first font, as
-// the font opens it.
+// the font of face_index.
 static float M_CellScale(
-    const uint8_t *const data, const size_t size, float *const ascent_scale)
+    const uint8_t *const data, const size_t size, const int32_t face_index,
+    float *const ascent_scale)
 {
     *ascent_scale = 0.0f;
     size_t base = 0;
     if (size >= 16 && memcmp(data, "ttcf", 4) == 0) {
-        base = M_ReadBe(data + 12, 4);
+        const size_t entry = 12 + (size_t)face_index * 4;
+        if (face_index >= (int32_t)Text_ReadBe(data + 8, 4)
+            || entry + 4 > size) {
+            return 1.0f;
+        }
+        base = Text_ReadBe(data + entry, 4);
     }
     if (base > size || size - base < 12) {
         return 1.0f;
     }
-    const uint32_t count = M_ReadBe(data + base + 4, 2);
+    const uint32_t count = Text_ReadBe(data + base + 4, 2);
     uint32_t units = 0;
     uint32_t cell = 0;
     uint32_t ascent = 0;
@@ -44,16 +50,16 @@ static float M_CellScale(
         if (record + 16 > size) {
             break;
         }
-        const size_t offset = M_ReadBe(data + record + 8, 4);
-        const size_t length = M_ReadBe(data + record + 12, 4);
+        const size_t offset = Text_ReadBe(data + record + 8, 4);
+        const size_t length = Text_ReadBe(data + record + 12, 4);
         if (offset > size || length > size - offset) {
             continue;
         }
         if (memcmp(data + record, "head", 4) == 0 && length >= 20) {
-            units = M_ReadBe(data + offset + 18, 2);
+            units = Text_ReadBe(data + offset + 18, 2);
         } else if (memcmp(data + record, "OS/2", 4) == 0 && length >= 78) {
-            ascent = M_ReadBe(data + offset + 74, 2);
-            cell = ascent + M_ReadBe(data + offset + 76, 2);
+            ascent = Text_ReadBe(data + offset + 74, 2);
+            cell = ascent + Text_ReadBe(data + offset + 76, 2);
         }
     }
     if (units != 0 && cell != 0) {
@@ -126,46 +132,48 @@ void Text_Shutdown(void)
     }
 }
 
-RESULT Font_Load(
-    READER *const reader, const float pixel_height, FONT **const out)
+RESULT Font_Open(
+    const void *const data, const size_t size, const int32_t face_index,
+    const float pixel_height, FONT **const out)
 {
     *out = nullptr;
     FAIL_IF(!m_Initialized, "Fonts are not initialized");
     FAIL_IF(
-        reader == nullptr || !isfinite(pixel_height) || pixel_height <= 0.0f
-            || pixel_height > 4096.0f,
+        data == nullptr || face_index < 0 || !isfinite(pixel_height)
+            || pixel_height <= 0.0f || pixel_height > 4096.0f,
         "Invalid font data or size");
-    const size_t size = Reader_Remaining(reader);
     FAIL_IF(size == 0, "Empty font data");
-    uint8_t *const data = Reader_ReadAlloc(reader, size, &g_HeapAllocator);
-    const RESULT read = Reader_Result(reader);
-    if (!IS_OK(read)) {
-        Mem_Free(data);
-        return read;
-    }
-    SDL_IOStream *const stream = SDL_IOFromConstMem(data, size);
+    uint8_t *const copy = Mem_Alloc(size);
+    memcpy(copy, data, size);
+    SDL_IOStream *const stream = SDL_IOFromConstMem(copy, size);
     if (stream == nullptr) {
-        Mem_Free(data);
+        Mem_Free(copy);
         return FAIL("Cannot open font data: %s", SDL_GetError());
     }
     float ascent_scale;
-    const float cell_scale = M_CellScale(data, size, &ascent_scale);
-    TTF_Font *const face =
-        TTF_OpenFontIO(stream, true, pixel_height * cell_scale);
+    const float cell_scale = M_CellScale(copy, size, face_index, &ascent_scale);
+    const SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetPointerProperty(
+        props, TTF_PROP_FONT_CREATE_IOSTREAM_POINTER, stream);
+    SDL_SetBooleanProperty(
+        props, TTF_PROP_FONT_CREATE_IOSTREAM_AUTOCLOSE_BOOLEAN, true);
+    SDL_SetFloatProperty(
+        props, TTF_PROP_FONT_CREATE_SIZE_FLOAT, pixel_height * cell_scale);
+    SDL_SetNumberProperty(props, TTF_PROP_FONT_CREATE_FACE_NUMBER, face_index);
+    TTF_Font *const face = TTF_OpenFontWithProperties(props);
+    SDL_DestroyProperties(props);
     if (face == nullptr) {
-        Mem_Free(data);
+        Mem_Free(copy);
         return FAIL("Cannot open font: %s", SDL_GetError());
     }
-    FONT *const font = Mem_Alloc(sizeof(*font));
-    *font = (FONT) {
-        .font = face,
-        .data = data,
-        .cell_scale = cell_scale,
-        .ascent_scale = ascent_scale,
-        .native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0,
-    };
-    const RESULT raster =
-        TextRaster_Open(data, size, TTF_GetFontSize(face), &font->raster_face);
+    FONT *const font = Mem_AllocZ(sizeof(*font));
+    font->font = face;
+    font->data = copy;
+    font->cell_scale = cell_scale;
+    font->ascent_scale = ascent_scale;
+    font->native_bold = (TTF_GetFontStyle(face) & TTF_STYLE_BOLD) != 0;
+    const RESULT raster = TextRaster_Open(
+        copy, size, face_index, TTF_GetFontSize(face), &font->raster_face);
     if (!IS_OK(raster)) {
         Font_Free(font);
         return raster;
@@ -177,6 +185,22 @@ RESULT Font_Load(
     }
     *out = font;
     return OK;
+}
+
+RESULT Font_Load(
+    READER *const reader, const float pixel_height, FONT **const out)
+{
+    *out = nullptr;
+    FAIL_IF(reader == nullptr, "Invalid font data or size");
+    const size_t size = Reader_Remaining(reader);
+    FAIL_IF(size == 0, "Empty font data");
+    uint8_t *const data = Reader_ReadAlloc(reader, size, &g_HeapAllocator);
+    RESULT result = Reader_Result(reader);
+    if (IS_OK(result)) {
+        result = Font_Open(data, size, 0, pixel_height, out);
+    }
+    Mem_Free(data);
+    return result;
 }
 
 static RESULT M_LoadFile(
@@ -251,6 +275,14 @@ static RESULT M_SetSize(
     return M_SetEm(font, size);
 }
 
+RESULT Font_SetEmToCell(FONT *const font)
+{
+    FAIL_IF(font == nullptr, "Missing font");
+    const float pixel_height = TTF_GetFontSize(font->font) / font->cell_scale;
+    font->cell_scale = 1.0f;
+    return M_SetEm(font, pixel_height);
+}
+
 RESULT Font_SetSize(FONT *const font, const float pixel_height)
 {
     return M_SetSize(font, pixel_height, false);
@@ -268,6 +300,23 @@ RESULT Font_SetSizeRounded(
             - TTF_GetFontAscent(font->font);
     }
     return OK;
+}
+
+void Font_SetFallback(FONT *const font, FONT *const fallback)
+{
+    if (font->fallback != nullptr) {
+        TTF_RemoveFallbackFont(font->font, font->fallback->font);
+        Font_Free(font->fallback);
+    }
+    font->fallback = fallback;
+    if (fallback == nullptr) {
+        return;
+    }
+    Result_Log(
+        M_SetEm(fallback, TTF_GetFontSize(font->font)), LOG_LEVEL_WARNING);
+    if (!TTF_AddFallbackFont(font->font, fallback->font)) {
+        LOG_WARNING("Cannot add a fallback font: %s", SDL_GetError());
+    }
 }
 
 void Font_Free(FONT *const font)

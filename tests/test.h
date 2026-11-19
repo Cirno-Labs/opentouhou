@@ -57,6 +57,13 @@ static void Test_Register(const char *const name, void (*const func)(void))
         m_TestFailures++;                                                      \
     } while (0)
 
+// Prints why the test cannot run and exits with meson's skip status, 77.
+#define TEST_SKIP(fmt_, ...)                                                   \
+    do {                                                                       \
+        printf("SKIP: " fmt_ "\n" __VA_OPT__(, ) __VA_ARGS__);                 \
+        exit(77);                                                              \
+    } while (0)
+
 #define CHECK(cond_)                                                           \
     do {                                                                       \
         if (!(cond_)) {                                                        \
