@@ -368,7 +368,7 @@ TEST(lookup_is_by_last_component_and_ignores_ascii_case)
     VFS_SOURCE *source;
     CHECK(Result_Log(
         M_Open(archive, size, &test.allocator, &source), LOG_LEVEL_ERROR));
-    Vfs_MountSource(vfs, source, 0);
+    Vfs_MountSource(vfs, "", source, 0);
 
     CHECK(Vfs_Exists(vfs, "data/title00.jpg"));
     CHECK(Vfs_Exists(vfs, "DATA\\TITLE00.JPG"));
@@ -472,7 +472,7 @@ TEST(listing_visits_entry_names_folded_in_table_order)
         M_Open(archive, size, &test.allocator, &source), LOG_LEVEL_ERROR));
 
     VISITED_NAMES visited = { .count = 0 };
-    source->funcs->list(source, M_Visit, &visited);
+    source->funcs->list(source, "", M_Visit, &visited);
     CHECK_EQ_INT(visited.count, 2);
     CHECK(strcmp(visited.names[0], "title00.jpg") == 0);
     CHECK(strcmp(visited.names[1], "\xe3\x81\x82.txt") == 0);
@@ -508,7 +508,8 @@ static RESULT M_RawOpen(
 
 static void M_RawList(
     [[maybe_unused]] const VFS_SOURCE *const source,
-    [[maybe_unused]] void (*const visit)(void *user, const char *path),
+    [[maybe_unused]] const char *const dir,
+    [[maybe_unused]] void (*const visit)(void *user, const char *name),
     [[maybe_unused]] void *const user)
 {
 }
@@ -554,7 +555,7 @@ TEST(an_archive_opened_through_a_vfs_names_its_entries_by_it)
     raw->base.name = "archive.dat";
     raw->data = Mem_Dup(archive, size);
     raw->size = size;
-    Vfs_MountSource(vfs, &raw->base, 0);
+    Vfs_MountSource(vfs, "", &raw->base, 0);
 
     READER file;
     CHECK(Result_Log(
@@ -563,7 +564,7 @@ TEST(an_archive_opened_through_a_vfs_names_its_entries_by_it)
     CHECK(Result_Log(
         Archive_Open(&g_Pbg3Format, &file, &test.allocator, &mounted),
         LOG_LEVEL_ERROR));
-    Vfs_MountSource(vfs, Archive_ToSource(mounted), 100);
+    Vfs_MountSource(vfs, "", Archive_ToSource(mounted), 100);
 
     READER reader;
     CHECK(Result_Log(

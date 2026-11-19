@@ -11,8 +11,8 @@
 //
 // Example:
 // VFS *const vfs = Vfs_Create(&g_HeapAllocator);
-// MUST(Vfs_MountDir(vfs, "/path/to/game", 0));
-// Vfs_MountSource(vfs, my_source, 100);
+// MUST(Vfs_MountDir(vfs, "", "/path/to/game", 0, false));
+// Vfs_MountSource(vfs, "", my_source, 100);
 // READER reader;
 // MUST(Vfs_Open(vfs, "data/title00.jpg", VFS_IN_MEMORY, &reader));
 // // use reader
@@ -36,16 +36,21 @@ typedef struct VFS_SOURCE VFS_SOURCE;
 // The functions a mounted source implements. contains and open receive a
 // path the VFS has already normalised (core/vfs/vfs.c normalises every path
 // before it reaches a source), so a source only ever compares normalised
-// paths, never a path as a game gave it. list calls visit with each path
-// the source has, in that normalised form and in the source's order. close
+// paths, never a path as a game gave it. list calls visit with the name of
+// each file directly below dir, a normalised path relative to the source or
+// "" for its root, as the source spells it, in the source's order. write,
+// nullptr in a read-only source, creates or replaces the file at path,
+// which keeps the case that the game gave, with size bytes of data. close
 // releases the source itself, along with anything it holds.
 typedef struct {
     bool (*contains)(const VFS_SOURCE *source, const char *path);
     RESULT (*open)(
         VFS_SOURCE *source, const char *path, VFS_MODE mode, READER *out);
     void (*list)(
-        const VFS_SOURCE *source, void (*visit)(void *user, const char *path),
-        void *user);
+        const VFS_SOURCE *source, const char *dir,
+        void (*visit)(void *user, const char *name), void *user);
+    RESULT (*write)(
+        VFS_SOURCE *source, const char *path, const void *data, size_t size);
     void (*close)(VFS_SOURCE *source);
 } VFS_SOURCE_FUNCS;
 
