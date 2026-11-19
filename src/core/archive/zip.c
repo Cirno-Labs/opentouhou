@@ -4,6 +4,7 @@
 #include "core/base/memory.h"
 #include "core/hash/crc32.h"
 #include "core/io/reader.h"
+#include "core/io/writer.h"
 
 #include <string.h>
 #include <zlib.h>
@@ -17,6 +18,9 @@
 #define M_METHOD_DEFLATE 8
 #define M_FLAG_ENCRYPTED 0x0001
 #define M_MADE_ON_UNIX 3
+#define M_VERSION 20
+#define M_FLAG_UTF8 0x0800
+#define M_DATE_1980 0x0021
 
 typedef struct {
     uint16_t method;
@@ -205,3 +209,101 @@ const ARCHIVE_FORMAT g_ZipFormat = {
     .read_table = M_ReadTable,
     .read_entry = M_ReadData,
 };
+
+typedef struct {
+    uint32_t crc;
+    uint32_t packed_size;
+    uint32_t offset;
+} M_WRITTEN;
+
+static void M_WriteHeader(
+    WRITER *const out, const ZIP_ENTRY *const entry,
+    const M_WRITTEN *const written)
+{
+    Writer_WriteU16(out, M_VERSION);
+    Writer_WriteU16(out, M_FLAG_UTF8);
+    Writer_WriteU16(out, M_METHOD_DEFLATE);
+    Writer_WriteU16(out, 0);
+    Writer_WriteU16(out, M_DATE_1980);
+    Writer_WriteU32(out, written->crc);
+    Writer_WriteU32(out, written->packed_size);
+    Writer_WriteU32(out, (uint32_t)entry->size);
+    Writer_WriteU16(out, (uint16_t)strlen(entry->name));
+    Writer_WriteU16(out, 0);
+}
+
+static RESULT M_WriteEntry(
+    WRITER *const out, const ZIP_ENTRY *const entry, M_WRITTEN *const written)
+{
+    FAIL_IF(
+        entry->size > UINT32_MAX / 2 || strlen(entry->name) > UINT16_MAX,
+        "%s is too large for a zip", entry->name);
+    z_stream stream = {};
+    FAIL_IF(
+        deflateInit2(
+            &stream, Z_BEST_COMPRESSION, Z_DEFLATED, -MAX_WBITS, 9,
+            Z_DEFAULT_STRATEGY)
+            != Z_OK,
+        "cannot start deflate");
+    const uLong bound = deflateBound(&stream, (uLong)entry->size);
+    uint8_t *const packed = Mem_Alloc(bound);
+    stream.next_in = (Bytef *)entry->data;
+    stream.avail_in = (uInt)entry->size;
+    stream.next_out = packed;
+    stream.avail_out = (uInt)bound;
+    const int status = deflate(&stream, Z_FINISH);
+    deflateEnd(&stream);
+    if (status != Z_STREAM_END) {
+        Mem_Free(packed);
+        return FAIL("cannot deflate %s", entry->name);
+    }
+    *written = (M_WRITTEN) {
+        .crc = Crc32_Compute(entry->data, entry->size),
+        .packed_size = (uint32_t)stream.total_out,
+        .offset = (uint32_t)Writer_Tell(out),
+    };
+    Writer_WriteU32(out, M_HEADER_SIGNATURE);
+    M_WriteHeader(out, entry, written);
+    Writer_WriteBytes(out, entry->name, strlen(entry->name));
+    Writer_WriteBytes(out, packed, written->packed_size);
+    Mem_Free(packed);
+    return OK;
+}
+
+RESULT Zip_Write(
+    WRITER *const out, const ZIP_ENTRY *const entries, const size_t count)
+{
+    FAIL_IF(count > UINT16_MAX, "too many entries for a zip");
+    M_WRITTEN *const written = Mem_AllocArrZ(count, sizeof(*written));
+    RESULT result = OK;
+    for (size_t i = 0; i < count && IS_OK(result); i++) {
+        result = M_WriteEntry(out, &entries[i], &written[i]);
+    }
+    if (!IS_OK(result)) {
+        Mem_Free(written);
+        return result;
+    }
+    const size_t directory = Writer_Tell(out);
+    for (size_t i = 0; i < count; i++) {
+        Writer_WriteU32(out, M_ENTRY_SIGNATURE);
+        Writer_WriteU16(out, M_VERSION);
+        M_WriteHeader(out, &entries[i], &written[i]);
+        Writer_WriteU16(out, 0);
+        Writer_WriteU16(out, 0);
+        Writer_WriteU16(out, 0);
+        Writer_WriteU32(out, 0);
+        Writer_WriteU32(out, written[i].offset);
+        Writer_WriteBytes(out, entries[i].name, strlen(entries[i].name));
+    }
+    const size_t end = Writer_Tell(out);
+    Writer_WriteU32(out, M_END_SIGNATURE);
+    Writer_WriteU16(out, 0);
+    Writer_WriteU16(out, 0);
+    Writer_WriteU16(out, (uint16_t)count);
+    Writer_WriteU16(out, (uint16_t)count);
+    Writer_WriteU32(out, (uint32_t)(end - directory));
+    Writer_WriteU32(out, (uint32_t)directory);
+    Writer_WriteU16(out, 0);
+    Mem_Free(written);
+    return Writer_Result(out);
+}

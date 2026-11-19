@@ -206,3 +206,43 @@ TEST(an_end_record_far_from_the_start_is_found)
     M_Close(&test);
     Mem_Free(text);
 }
+
+static uint8_t *M_Write(
+    const ZIP_ENTRY *const entries, const size_t count, size_t *const size)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    CHECK(Result_Log(Zip_Write(&writer, entries, count), LOG_LEVEL_ERROR));
+    uint8_t *const data = Writer_TakeBuffer(&writer, size);
+    Result_Ignore(Writer_Close(&writer));
+    return data;
+}
+
+TEST(written_entries_read_back_and_equal_entries_give_equal_files)
+{
+    char text[4096] = "";
+    for (int i = 0; i < 64; i++) {
+        strcat(text, M_TEXT);
+    }
+    const ZIP_ENTRY entries[] = {
+        { "dir/紅魔郷.txt", text, strlen(text) },
+        { "empty", "", 0 },
+    };
+    size_t size;
+    uint8_t *const data = M_Write(entries, 2, &size);
+    size_t again_size;
+    uint8_t *const again = M_Write(entries, 2, &again_size);
+    CHECK(size < strlen(text));
+    CHECK(size == again_size && memcmp(data, again, size) == 0);
+    M_CASE test = {};
+    READER reader;
+    Reader_OpenBuffer(&reader, data, size, nullptr);
+    CHECK(Result_Log(
+        Archive_Open(&g_ZipFormat, &reader, &g_HeapAllocator, &test.archive),
+        LOG_LEVEL_ERROR));
+    M_CheckRead(&test, "dir/紅魔郷.txt", text, strlen(text));
+    M_CheckRead(&test, "empty", "", 0);
+    Archive_Close(test.archive);
+    Allocator_Free(&g_HeapAllocator, data, size);
+    Allocator_Free(&g_HeapAllocator, again, again_size);
+}
