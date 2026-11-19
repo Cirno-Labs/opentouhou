@@ -1,6 +1,7 @@
 #include "core/base/hash_map.h"
 
 #include "core/base/assert.h"
+#include "core/base/string.h"
 
 #include <string.h>
 
@@ -196,9 +197,7 @@ void *HashMapImpl_GetOrPut(
     map->hashes[index] = hash;
     if (layout.string_keys) {
         const char *const string = M_KeyString(key);
-        const size_t size = strlen(string) + 1;
-        char *const copy = Allocator_Alloc(map->allocator, size);
-        memcpy(copy, string, size);
+        char *const copy = Str_DupWith(map->allocator, string);
         memcpy(M_Key(map, layout, index), &copy, sizeof(copy));
     } else {
         memcpy(M_Key(map, layout, index), key, layout.key_size);

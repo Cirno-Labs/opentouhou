@@ -2,6 +2,7 @@
 
 #include "core/base/assert.h"
 #include "core/base/hash_map.h"
+#include "core/base/string.h"
 
 #include <string.h>
 
@@ -17,12 +18,6 @@ static void *M_CopyBytes(
     void *const copy = Allocator_Alloc(allocator, size);
     memcpy(copy, data, size);
     return copy;
-}
-
-static const char *M_CopyKey(
-    const ALLOCATOR *const allocator, const char *const key)
-{
-    return M_CopyBytes(allocator, key, strlen(key) + 1);
 }
 
 static JSON_VALUE M_Copy(
@@ -49,7 +44,7 @@ static JSON_VALUE M_Copy(
             const JSON_MEMBER *const member = &source->object.members[i];
             values[i] = M_Copy(member->value, allocator);
             copy.object.members[i] = (JSON_MEMBER) {
-                .key = M_CopyKey(allocator, member->key),
+                .key = Str_DupWith(allocator, member->key),
                 .value = &values[i],
             };
         }
@@ -123,7 +118,7 @@ static void M_Merge(
         JSON_VALUE *const value = Allocator_Alloc(allocator, sizeof(*value));
         *value = M_Copy(member->value, allocator);
         members[count] = (JSON_MEMBER) {
-            .key = M_CopyKey(allocator, member->key),
+            .key = Str_DupWith(allocator, member->key),
             .value = value,
         };
         if (indexed) {

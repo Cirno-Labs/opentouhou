@@ -1,6 +1,7 @@
 #include "core/ini/struct.h"
 
 #include "core/base/log.h"
+#include "core/base/string.h"
 #include "core/io/file.h"
 #include "core/io/reader.h"
 
@@ -103,7 +104,7 @@ static void M_ClassifyLine(
             line->name =
                 M_DupRange(ini, text + inner.start, inner.end - inner.start);
             IniStruct_FreeStr(ini, *section);
-            *section = IniStruct_Dup(ini, line->name);
+            *section = Str_DupWith(ini->allocator, line->name);
             return;
         }
         LOG_WARNING("line %d: unterminated section header", line_number);
@@ -127,7 +128,7 @@ static void M_ClassifyLine(
     }
     const M_TRIMMED value_range = M_TrimRange(text, eq + 1, trimmed.end);
     line->kind = LINE_KEY;
-    line->name = IniStruct_Dup(ini, *section);
+    line->name = Str_DupWith(ini->allocator, *section);
     line->key = M_DupRange(
         ini, text + key_range.start, key_range.end - key_range.start);
     line->value = M_DupRange(
@@ -149,7 +150,7 @@ RESULT Ini_Parse(
     INI *const ini = Allocator_Alloc(allocator, sizeof(*ini));
     *ini = (INI) { .allocator = allocator, .default_newline = NEWLINE_LF };
     Array_Init(&ini->lines, allocator);
-    char *section = IniStruct_Dup(ini, "");
+    char *section = Str_DupWith(ini->allocator, "");
     bool found_default_newline = false;
     int line_number = 1;
     size_t i = start;

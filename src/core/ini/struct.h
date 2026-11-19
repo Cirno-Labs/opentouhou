@@ -43,12 +43,7 @@ struct INI {
     NEWLINE_KIND default_newline;
 };
 
-// Returns a copy of text from ini's allocator. Mem_Free does not release
-// it; IniStruct_FreeStr does.
-char *IniStruct_Dup(const INI *ini, const char *text);
-
-// Releases a string that IniStruct_Dup returned, or does nothing for
-// nullptr.
+// Releases a string from ini's allocator, or does nothing for nullptr.
 void IniStruct_FreeStr(const INI *ini, char *text);
 
 // Releases the strings owned by a line, but not the line itself.

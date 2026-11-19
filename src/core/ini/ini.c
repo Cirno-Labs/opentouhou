@@ -4,14 +4,6 @@
 
 #include <string.h>
 
-char *IniStruct_Dup(const INI *const ini, const char *const text)
-{
-    const size_t size = strlen(text) + 1;
-    char *const copy = Allocator_Alloc(ini->allocator, size);
-    memcpy(copy, text, size);
-    return copy;
-}
-
 void IniStruct_FreeStr(const INI *const ini, char *const text)
 {
     if (text != nullptr) {

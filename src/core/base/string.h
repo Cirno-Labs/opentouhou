@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/base/memory.h"
 #include "core/base/utils.h"
 
 #include <stdarg.h>
@@ -9,6 +10,10 @@
 
 // Returns a copy of text.
 char *Str_Dup(const char *text);
+
+// Returns a copy of text from allocator; Allocator_Free(allocator, copy,
+// strlen(copy) + 1) releases it.
+char *Str_DupWith(const ALLOCATOR *allocator, const char *text);
 
 // Returns a new string formatted as printf formats it.
 PRINTF_FORMAT(1, 2)
