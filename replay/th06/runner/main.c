@@ -6,6 +6,7 @@
 #include "core/base/string.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
+#include "shell/null.h"
 #include "th06/files.h"
 
 #include <inttypes.h>
@@ -181,10 +182,12 @@ int RunnerMain_Run(const int argc, char **const argv)
         M_Usage();
         return 0;
     }
-    if (!Result_Log(Files_Init(args.data), LOG_LEVEL_ERROR)) {
+    if (!Result_Log(NullShell_OpenFiles(args.data, nullptr), LOG_LEVEL_ERROR)
+        || !Result_Log(Files_Mount(), LOG_LEVEL_ERROR)) {
+        NullShell_CloseFiles();
         return 1;
     }
     const bool passed = Result_Log(M_RunCases(&args), LOG_LEVEL_ERROR);
-    Files_Shutdown();
+    NullShell_CloseFiles();
     return passed ? 0 : 1;
 }

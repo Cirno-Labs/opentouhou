@@ -48,7 +48,7 @@ static void M_Setup(const char *const case_name, const int32_t stage)
     Mem_Free(data);
     M_WriteAnm("data/eff02.anm", 1, 1000);
     M_WriteAnm("effects.anm", 17, 2);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     CHECK(Result_Log(Anm_Load(0, "effects.anm", 669), LOG_LEVEL_ERROR));
@@ -62,7 +62,7 @@ static void M_Teardown(void)
 {
     Chain_Release(&g_Chain);
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 

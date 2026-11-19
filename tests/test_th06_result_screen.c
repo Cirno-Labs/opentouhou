@@ -3,6 +3,7 @@
 #include "anm_builder.h"
 #include "gfx_recorder.h"
 #include "patch_builder.h"
+#include "shell_fake.h"
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
@@ -115,12 +116,12 @@ static void M_WriteData(const char *const case_name)
 
 static void M_Start(void)
 {
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
-    ResultScreen_OpenSaves(nullptr);
+    ResultScreen_OpenSaves();
     Rng_SetSeed(&g_Rng, 0x1357);
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     memset(&m_Input, 0, sizeof(m_Input));
@@ -145,7 +146,7 @@ static void M_Teardown(void)
     ResultScreen_CloseSaves();
     Anm_Shutdown();
     GfxRecorder_Stop();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 
@@ -272,7 +273,7 @@ TEST(the_browser_loads_the_records_and_a_game_keeps_its_own)
     CHECK_EQ_INT(g_GameManager.records.clears[2].with_continues[3], 7);
     Chain_Release(&g_Chain);
     Chain_Init(&g_Chain);
-    ResultScreen_OpenSaves(nullptr);
+    ResultScreen_OpenSaves();
     CHECK(Result_Log(ResultScreen_Register(0), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(g_GameManager.records.clears[2].with_continues[3], 1);
     M_Teardown();

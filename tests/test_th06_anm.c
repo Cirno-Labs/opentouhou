@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-// Prepares a directory with the six archives Files_Init needs and a loose
+// Prepares a directory with the six archives Files_Mount needs and a loose
 // ANM file built from builder.
 static char *M_SetupFiles(
     const char *const case_name, const char *const anm_name,
@@ -43,7 +43,7 @@ static RNG m_Rng;
 
 static void M_Setup(const char *const directory)
 {
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&m_Rng, 4);
     Anm_Init(&g_HeapAllocator, &m_Rng);
 }
@@ -51,7 +51,7 @@ static void M_Setup(const char *const directory)
 static void M_Teardown(char *const directory)
 {
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 

@@ -122,7 +122,7 @@ if build_games
     'th06replay',
     'replay/th06/runner/main.c',
     runner_entry,
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     dependencies: [sdl3, zlib, cc_libm],
     link_with: [th06_runner_lib],

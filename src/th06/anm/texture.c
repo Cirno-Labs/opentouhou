@@ -3,7 +3,9 @@
 #include "th06/anm/private.h"
 #include "th06/files.h"
 
+#include "shell/game.h"
 #include "core/base/assert.h"
+#include "core/vfs.h"
 
 #include <string.h>
 
@@ -43,7 +45,7 @@ static RESULT M_Decode(
     const char *const path, const uint32_t color_key, IMAGE *const out)
 {
     READER reader;
-    MUST(Files_Load(path, &reader));
+    MUST(Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader));
     const RESULT result = Image_Decode(&reader, &g_HeapAllocator, out);
     Reader_Close(&reader);
     MUST(result);

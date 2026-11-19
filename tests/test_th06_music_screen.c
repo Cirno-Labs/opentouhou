@@ -212,7 +212,7 @@ static void M_WriteData(const char *const case_name, const int32_t tunes)
 static void M_Setup(const char *const case_name, const int32_t tunes)
 {
     M_WriteData(case_name, tunes);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
@@ -232,7 +232,7 @@ static void M_Teardown(void)
     AsciiText_Initialize();
     Anm_Shutdown();
     GfxRecorder_Stop();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Sound_Reset();
     Mem_Free(m_Directory);
 }

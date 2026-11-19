@@ -153,7 +153,7 @@ static char *M_Prepare(const char *const name, const int32_t skip)
 // Starts the files of directory, the audio and the player.
 static RESULT M_Start(const char *const directory)
 {
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Audio_Init(), LOG_LEVEL_ERROR));
     Sound_Reset();
     return SoundPlayer_Init();
@@ -163,7 +163,7 @@ static void M_Stop(char *const directory)
 {
     SoundPlayer_Shutdown();
     Audio_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Sound_Reset();
     Mem_Free(directory);
 }

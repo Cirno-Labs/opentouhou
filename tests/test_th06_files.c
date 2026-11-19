@@ -1,8 +1,10 @@
 #include "th06/files.h"
 
+#include "shell/game.h"
 #include "core/base/arena.h"
 #include "core/json.h"
 #include "core/patch.h"
+#include "core/vfs.h"
 
 #include "patch_builder.h"
 #include "test.h"
@@ -33,18 +35,22 @@ TEST(all_six_present_loads_an_archive_file_and_a_loose_file)
     Th06Data_WriteArchive(directory, g_Th06Archives[4], files, 2);
     Th06Data_WriteFile(directory, "extra.txt", "from-loose", 10);
 
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
 
     READER reader;
-    CHECK(Result_Log(Files_Load("card.txt", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "card.txt", VFS_IN_MEMORY, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "from-archive"));
     Reader_Close(&reader);
 
-    CHECK(Result_Log(Files_Load("extra.txt", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "extra.txt", VFS_IN_MEMORY, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "from-loose"));
     Reader_Close(&reader);
 
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 
@@ -59,14 +65,16 @@ TEST(an_archive_file_wins_over_a_loose_file_of_the_same_name)
     Th06Data_WriteArchive(directory, g_Th06Archives[0], files, 2);
     Th06Data_WriteFile(directory, "same.txt", "loose-version", 13);
 
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
 
     READER reader;
-    CHECK(Result_Log(Files_Load("same.txt", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "same.txt", VFS_IN_MEMORY, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "archive-version"));
     Reader_Close(&reader);
 
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 
@@ -81,19 +89,22 @@ TEST(stream_opens_an_archive_file_and_a_loose_file)
     Th06Data_WriteArchive(directory, g_Th06Archives[2], files, 2);
     Th06Data_WriteFile(directory, "th06_01.wav", "from-loose", 10);
 
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
 
     READER reader;
-    CHECK(
-        Result_Log(Files_Stream("bgm/th06_01.pos", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "bgm/th06_01.pos", VFS_STREAM, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "from-archive"));
     Reader_Close(&reader);
 
-    CHECK(Result_Log(Files_Stream("th06_01.wav", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "th06_01.wav", VFS_STREAM, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "from-loose"));
     Reader_Close(&reader);
 
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 
@@ -102,11 +113,11 @@ TEST(a_missing_archive_fails_naming_it)
     char *const directory = TestDir_Prepare("missing_archive");
     Th06Data_WriteArchives(directory, 1);
 
-    const RESULT result = Files_Init(directory);
+    const RESULT result = Th06Data_Mount(directory);
     CHECK(!IS_OK(result));
     CHECK(strstr(result.message, g_Th06Archives[1]) != nullptr);
     Result_Ignore(result);
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 
@@ -117,17 +128,17 @@ TEST(an_archive_without_ver0102_fails_naming_it)
     const TH06_DATA_FILE file = { "other.txt", "no version here" };
     Th06Data_WriteArchive(directory, g_Th06Archives[3], &file, 1);
 
-    const RESULT result = Files_Init(directory);
+    const RESULT result = Th06Data_Mount(directory);
     CHECK(!IS_OK(result));
     CHECK(strstr(result.message, g_Th06Archives[3]) != nullptr);
     Result_Ignore(result);
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 
-TEST(shutdown_without_init_is_safe)
+TEST(unmount_without_mount_is_safe)
 {
-    Files_Shutdown();
+    Th06Data_Unmount();
 }
 
 // Writes the archives of directory with name holding "archive", and a
@@ -168,11 +179,13 @@ TEST(a_patch_file_replaces_the_archived_file)
     };
     PATCH_STACK *const stack =
         M_PreparePatched(directory, "end00.end", patch_files, 4);
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
     Files_SetPatches(stack);
 
     READER reader;
-    CHECK(Result_Log(Files_Load("data/end00.end", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "data/end00.end", VFS_IN_MEMORY, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "patched"));
     Reader_Close(&reader);
     CHECK(Files_IsPatched("data/end00.end"));
@@ -180,7 +193,7 @@ TEST(a_patch_file_replaces_the_archived_file)
     CHECK(Files_IsPatched("data/front.anm"));
     CHECK(!Files_IsPatched("data/eff01.anm"));
 
-    Files_Shutdown();
+    Th06Data_Unmount();
     Patch_CloseStack(stack);
     Mem_Free(directory);
 }
@@ -191,15 +204,17 @@ TEST(a_gameplay_anm_of_a_patch_is_not_used)
     const TH06_DATA_FILE patch_files[] = { { "eff01.anm", "patched" } };
     PATCH_STACK *const stack =
         M_PreparePatched(directory, "eff01.anm", patch_files, 1);
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
     Files_SetPatches(stack);
 
     READER reader;
-    CHECK(Result_Log(Files_Load("data/eff01.anm", &reader), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Vfs_Open(Shell_GetFiles(), "data/eff01.anm", VFS_IN_MEMORY, &reader),
+        LOG_LEVEL_ERROR));
     CHECK(M_ReadsAs(&reader, "archive"));
     Reader_Close(&reader);
 
-    Files_Shutdown();
+    Th06Data_Unmount();
     Patch_CloseStack(stack);
     Mem_Free(directory);
 }
@@ -212,7 +227,7 @@ TEST(a_diff_comes_from_the_patches)
     };
     PATCH_STACK *const stack =
         M_PreparePatched(directory, "msg1.dat", patch_files, 1);
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
     Files_SetPatches(stack);
 
     ARENA arena;
@@ -224,7 +239,7 @@ TEST(a_diff_comes_from_the_patches)
     CHECK(Files_IsPatched("data/msg1.dat"));
     Arena_Free(&arena);
 
-    Files_Shutdown();
+    Th06Data_Unmount();
     Patch_CloseStack(stack);
     Mem_Free(directory);
 }
@@ -233,11 +248,11 @@ TEST(without_patches_nothing_is_patched)
 {
     char *const directory = TestDir_Prepare("unpatched");
     Th06Data_WriteArchives(directory, -1);
-    CHECK(Result_Log(Files_Init(directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(directory), LOG_LEVEL_ERROR));
     Files_SetPatches(nullptr);
     CHECK(!Files_IsPatched("data/msg1.dat"));
     CHECK(Files_LoadDiff("data/msg1.dat", &g_HeapAllocator) == nullptr);
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(directory);
 }
 

@@ -1,7 +1,11 @@
 #include "th06_data.h"
 
 #include "pbg3_builder.h"
+#include "shell_fake.h"
+#include "shell/null.h"
+#include "th06/files.h"
 
+#include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -64,4 +68,16 @@ void Th06Data_WriteFile(
         LOG_FATAL("cannot create %s: %s", path, SDL_GetError());
     }
     Mem_Free(path);
+}
+
+RESULT Th06Data_Mount(const char *const directory)
+{
+    ASSERT(Result_Ignore(NullShell_OpenFiles(directory, directory)));
+    return Files_Mount();
+}
+
+void Th06Data_Unmount(void)
+{
+    Files_SetPatches(nullptr);
+    NullShell_CloseFiles();
 }

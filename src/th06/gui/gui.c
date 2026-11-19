@@ -10,12 +10,14 @@
 #include "th06/stage.h"
 #include "th06/strings.h"
 
+#include "shell/game.h"
 #include "core/base/arena.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 #include "core/json.h"
+#include "core/vfs.h"
 
 #include "stg/chain.h"
 #include "stg/msg_diff.h"
@@ -299,7 +301,7 @@ static RESULT M_LoadMsg(const char *const path)
 {
     M_FreeMsg();
     READER reader;
-    MUST(Files_Load(path, &reader), "%s", path);
+    MUST(Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader), "%s", path);
     const RESULT result = M_ParseMsg(&reader);
     Reader_Close(&reader);
     if (!IS_OK(result)) {

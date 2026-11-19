@@ -5,7 +5,6 @@
 #include "th06/bullet.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"
-#include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
@@ -16,6 +15,7 @@
 #include "th06/screens/result.h"
 #include "stg/translation.h"
 
+#include "shell/game.h"
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/cp932.h"
@@ -24,6 +24,7 @@
 #include "core/io/reader.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
+#include "core/vfs.h"
 
 #include "stg/rng.h"
 
@@ -2327,7 +2328,7 @@ RESULT Ecl_Load(void)
     ASSERT(stage >= 0 && stage < (int32_t)ARRAY_SIZE(m_Paths));
     const char *const path = m_Paths[stage];
     READER reader;
-    MUST(Files_Load(path, &reader), "%s", path);
+    MUST(Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader), "%s", path);
     const RESULT result = M_Parse(&reader);
     Reader_Close(&reader);
     if (!IS_OK(result)) {

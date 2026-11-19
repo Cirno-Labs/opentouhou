@@ -1,7 +1,9 @@
 #include "th06/main.h"
 
+#include "shell/game.h"
 #include "core/base/log.h"
 #include "core/patch.h"
+#include "core/vfs.h"
 
 #include "stg/note.h"
 #include "stg/translation.h"
@@ -41,7 +43,7 @@ static void M_SetDate(void)
 static RESULT M_KeepDemo(void)
 {
     READER reader;
-    MUST(Files_Load(TITLE_DEMO_PATH, &reader));
+    MUST(Vfs_Open(Shell_GetFiles(), TITLE_DEMO_PATH, VFS_IN_MEMORY, &reader));
     const size_t size = Reader_Remaining(&reader);
     uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
     const RESULT result = Reader_Result(&reader);
@@ -56,7 +58,7 @@ static RESULT M_KeepDemo(void)
 
 static RESULT M_Init(void)
 {
-    MUST(Files_Init(Shell_GetDataDir()));
+    MUST(Files_Mount());
     Files_SetPatches(Shell_GetPatches());
     Translation_Init(Shell_GetPatches(), &g_TranslationGame);
     if (Patch_ChangesGameplay(Shell_GetPatches())) {
@@ -68,7 +70,7 @@ static RESULT M_Init(void)
     MUST(Anm_InitText(Translation_GetFont(), fonts, font_count));
     Note_Init(Shell_GetPatches());
     Result_Log(SoundPlayer_Init(), LOG_LEVEL_WARNING);
-    ResultScreen_OpenSaves(Shell_GetUserDir());
+    ResultScreen_OpenSaves();
     Result_Log(M_KeepDemo(), LOG_LEVEL_WARNING);
     m_GameInitialized = true;
     MUST(Game_Init());
@@ -111,7 +113,6 @@ static void M_Shutdown(void)
     Note_Shutdown();
     Anm_ShutdownText();
     Translation_Shutdown();
-    Files_Shutdown();
 }
 
 const GAME_DESC g_GameDesc = {

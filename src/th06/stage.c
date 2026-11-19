@@ -1,15 +1,16 @@
 #include "th06/stage.h"
 
-#include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
 
+#include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
+#include "core/vfs.h"
 
 #include "stg/chain.h"
 
@@ -201,7 +202,9 @@ static RESULT M_Load(const char *const anm_path, const char *const data_path)
 {
     MUST(Anm_Load(M_ANM_SLOT, anm_path, M_FIRST_SPRITE));
     READER reader;
-    MUST(Files_Load(data_path, &reader), "%s", data_path);
+    MUST(
+        Vfs_Open(Shell_GetFiles(), data_path, VFS_IN_MEMORY, &reader), "%s",
+        data_path);
     const RESULT result = M_Parse(&reader);
     Reader_Close(&reader);
     MUST(result, "%s", data_path);

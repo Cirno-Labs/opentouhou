@@ -107,12 +107,12 @@ static void M_Setup(const char *const case_name)
 {
     GameTime_Resume();
     M_WriteData(case_name);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
-    ResultScreen_OpenSaves(nullptr);
+    ResultScreen_OpenSaves();
     Config_SetDefaults(&g_SettingsSchema, &g_Settings);
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     memset(&m_Input, 0, sizeof(m_Input));
@@ -132,7 +132,7 @@ static void M_Teardown(void)
     ResultScreen_CloseSaves();
     Anm_Shutdown();
     GfxRecorder_Stop();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Sound_Reset();
     Mem_Free(m_Directory);
 }
@@ -743,7 +743,7 @@ TEST(the_replay_menu_after_a_replay_takes_the_scanned_list)
     CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
     Mem_Free(replays);
     M_WriteReplay("replay/th6_01.rpy", 2);
-    ResultScreen_OpenSaves(m_Directory);
+    ResultScreen_OpenSaves();
     M_WriteReplay("replay/th6_02.rpy", 1);
     CHECK(Result_Log(TitleScene_SetUp(1), LOG_LEVEL_ERROR));
     M_Tick();
@@ -770,7 +770,7 @@ TEST(the_title_menu_asks_for_a_scan_when_the_replay_menu_opens)
     char *const replays = TestDir_Join(m_Directory, "replay");
     CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
     Mem_Free(replays);
-    ResultScreen_OpenSaves(m_Directory);
+    ResultScreen_OpenSaves();
     M_WriteReplay("replay/th6_ud0001.rpy", 1);
     M_OpenTitleMenu();
     M_Press(m_Down);
@@ -919,7 +919,7 @@ TEST(replay_selections_use_the_second_glyph_set)
     CHECK(Result_Log(File_MakeDir(replays), LOG_LEVEL_ERROR));
     Mem_Free(replays);
     M_WriteReplay("replay/th6_01.rpy", 2);
-    ResultScreen_OpenSaves(m_Directory);
+    ResultScreen_OpenSaves();
     CHECK(Result_Log(TitleScene_SetUp(1), LOG_LEVEL_ERROR));
     M_Tick();
     ResultScreen_ScanReplays();

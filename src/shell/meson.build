@@ -31,6 +31,9 @@ shell_game_lib = static_library(
   dependencies: [sdl3],
 )
 
+# The stand-ins for shell/game where a game runs without it (see null.h).
+shell_null_files = files('null/files.c')
+
 # shell/game runs the game, so only a game executable links it. The replay
 # runner and the tests replace its game-facing functions with stand-ins.
 shell_game_dep = declare_dependency(

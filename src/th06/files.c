@@ -1,13 +1,14 @@
 #include "th06/files.h"
 
+#include "stg/pbg3.h"
+
+#include "shell/game.h"
 #include "core/archive.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/patch.h"
 #include "core/vfs.h"
-
-#include "stg/pbg3.h"
 
 #include <string.h>
 
@@ -19,7 +20,6 @@ const char *const g_FilesArchives[FILES_ARCHIVE_COUNT] = {
     "紅魔郷TL.DAT", "紅魔郷CM.DAT", "紅魔郷ED.DAT",
 };
 
-static VFS *m_Vfs = nullptr;
 static const PATCH_STACK *m_Patches = nullptr;
 
 // Returns whether name is the ANM file of a menu, a screen or the text
@@ -57,14 +57,14 @@ static PATCH_FILE_KIND M_Classify(const char *const name)
 static RESULT M_MountArchive(const char *const name, const int32_t priority)
 {
     READER file;
-    MUST(Vfs_Open(m_Vfs, name, VFS_STREAM, &file));
+    MUST(Vfs_Open(Shell_GetFiles(), name, VFS_STREAM, &file));
     ARCHIVE *archive;
     MUST(Archive_Open(&g_Pbg3Format, &file, &g_HeapAllocator, &archive));
     if (Archive_Find(archive, "ver0102.dat") == nullptr) {
         Archive_Close(archive);
         return FAIL("%s has no ver0102.dat", name);
     }
-    Vfs_MountSource(m_Vfs, "", Archive_ToSource(archive), priority);
+    Vfs_MountSource(Shell_GetFiles(), "", Archive_ToSource(archive), priority);
     return OK;
 }
 
@@ -74,20 +74,14 @@ const PATCH_GAME g_PatchGame = {
     .classify = M_Classify,
 };
 
-RESULT Files_Init(const char *const data_dir)
+RESULT Files_Mount(void)
 {
-    m_Vfs = Vfs_Create(&g_HeapAllocator);
-    RESULT result = Vfs_MountDir(m_Vfs, "", data_dir, 0, false);
     // All six archives mount at once: only ver0102.dat appears in more
     // than one of them, so a game file never needs a specific archive.
-    for (size_t i = 0; IS_OK(result) && i < ARRAY_SIZE(g_FilesArchives); i++) {
-        result = M_MountArchive(g_FilesArchives[i], (int32_t)(16 - i));
+    for (size_t i = 0; i < ARRAY_SIZE(g_FilesArchives); i++) {
+        MUST(M_MountArchive(g_FilesArchives[i], (int32_t)(16 - i)));
     }
-    if (!IS_OK(result)) {
-        Vfs_Destroy(m_Vfs);
-        m_Vfs = nullptr;
-    }
-    return result;
+    return OK;
 }
 
 void Files_SetPatches(const PATCH_STACK *const patches)
@@ -95,28 +89,9 @@ void Files_SetPatches(const PATCH_STACK *const patches)
     m_Patches = patches;
     if (patches != nullptr) {
         Vfs_MountSource(
-            m_Vfs, "", Patch_CreateSource(patches, &g_HeapAllocator),
+            Shell_GetFiles(), "", Patch_CreateSource(patches, &g_HeapAllocator),
             M_PATCH_PRIORITY);
     }
-}
-
-void Files_Shutdown(void)
-{
-    if (m_Vfs != nullptr) {
-        Vfs_Destroy(m_Vfs);
-        m_Vfs = nullptr;
-    }
-    m_Patches = nullptr;
-}
-
-RESULT Files_Load(const char *const path, READER *const out)
-{
-    return Vfs_Open(m_Vfs, path, VFS_IN_MEMORY, out);
-}
-
-RESULT Files_Stream(const char *const path, READER *const out)
-{
-    return Vfs_Open(m_Vfs, path, VFS_STREAM, out);
 }
 
 JSON_VALUE *Files_LoadDiff(

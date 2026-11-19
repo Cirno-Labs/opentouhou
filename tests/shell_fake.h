@@ -6,10 +6,10 @@
 #include <stdint.h>
 
 // Stands in for shell/game in the game tests: the functions that a game calls
-// read g_FakeShell and record their requests in it. FakeShell_Reset gives the
-// state of the replay runner's shell/game before its first measurement: no
-// pad press, no tick rate, no device input, no bindings, no requests and the
-// windowed mode.
+// read g_FakeShell and record their requests in it, and null/files.c of
+// shell/null.h gives the files. FakeShell_Reset gives the state of
+// shell/game before its first measurement: no pad press, no tick rate, no
+// device input, no bindings, no requests and the windowed mode.
 
 #define FAKE_SHELL_REQUEST_COUNT 32
 #define FAKE_SHELL_BINDING_COUNT 4

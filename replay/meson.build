@@ -12,6 +12,7 @@ runner_backend = host_machine.system() == 'windows' ? 'th06/runner/backend_windo
 th06_runner_lib = static_library(
   'th06_runner',
   'th06/runner/shell_null.c',
+  shell_null_files,
   'th06/runner/compare.c',
   'th06/runner/run.c',
   'th06/runner/state.c',

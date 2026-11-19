@@ -195,7 +195,7 @@ static void M_Prepare(const char *const case_name, const int32_t flying_sprite)
     Mem_Free(data);
     M_WriteEtama3();
     M_WriteEtama4(flying_sprite);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     AsciiText_Initialize();
@@ -225,7 +225,7 @@ static void M_Teardown(void)
 {
     Chain_Release(&g_Chain);
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 

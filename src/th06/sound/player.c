@@ -1,12 +1,13 @@
 #include "th06/sound/player.h"
 
-#include "th06/files.h"
 #include "th06/settings.h"
 #include "th06/sound/events.h"
 
+#include "shell/game.h"
 #include "core/audio.h"
 #include "core/base/utils.h"
 #include "core/math.h"
+#include "core/vfs.h"
 
 #include <math.h>
 #include <string.h>
@@ -129,7 +130,7 @@ static RESULT M_ReadWave(
 static RESULT M_LoadEffect(const int32_t file)
 {
     READER reader;
-    MUST(Files_Load(m_Files[file], &reader));
+    MUST(Vfs_Open(Shell_GetFiles(), m_Files[file], VFS_IN_MEMORY, &reader));
     M_WAVE wave;
     RESULT result = M_ReadWave(&reader, m_Files[file], &wave);
     if (IS_OK(result)) {
@@ -174,7 +175,8 @@ static AUDIO_LOOP M_ReadLoop(const char *const path, const M_WAVE *const wave)
     const uint64_t frames = wave->data_size / wave->block_align;
     AUDIO_LOOP loop = { .enabled = true, .begin = 0, .end = frames };
     READER reader;
-    if (!Result_Ignore(Files_Load(path, &reader))) {
+    if (!Result_Ignore(
+            Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader))) {
         return loop;
     }
     const int64_t begin = (int64_t)Reader_ReadI32(&reader) * M_POS_BYTES;
@@ -200,7 +202,7 @@ static RESULT M_OpenMusic(const char *const path)
     MUST(M_SetExtension(path, "wav", wave_path));
     MUST(M_SetExtension(path, "pos", pos_path));
     READER reader;
-    MUST(Files_Stream(wave_path, &reader));
+    MUST(Vfs_Open(Shell_GetFiles(), wave_path, VFS_STREAM, &reader));
     M_WAVE wave;
     RESULT result = M_ReadWave(&reader, wave_path, &wave);
     if (IS_OK(result) && (wave.data_size == 0 || wave.block_align == 0)) {
