@@ -1,29 +1,56 @@
-replay_include = ['-I' + meson.current_source_dir() / 'core']
+harness_include = ['-I' + meson.current_source_dir() / 'harness']
 
-replay_case_lib = static_library(
-  'replay_case',
-  'core/case.c',
-  c_args: core_include + replay_include,
+# The shared parts of the harness, which every backend links.
+harness_sources = []
+foreach line : import('fs').read('harness/sources.txt').split('\n')
+  if line != '' and not line.startswith('#')
+    harness_sources += 'harness' / line
+  endif
+endforeach
+harness_lib = static_library(
+  'harness',
+  harness_sources,
+  c_args: core_include,
   implicit_include_directories: false,
-  dependencies: [zlib],
-)
-
-runner_backend = host_machine.system() == 'windows' ? 'th06/runner/backend_windows.c' : 'th06/runner/backend_posix.c'
-th06_runner_lib = static_library(
-  'th06_runner',
-  'th06/runner/shell_null.c',
-  shell_null_files,
-  'th06/runner/compare.c',
-  'th06/runner/run.c',
-  'th06/runner/state.c',
-  runner_backend,
-  c_args: [layer_include['th06']] + stg_include + shell_include,
-  implicit_include_directories: false,
-  dependencies: [sdl3, zlib, cc_libm],
   link_with: [
-    th06_lib, replay_case_lib, stg_pbg3_lib, stg_rng_lib, stg_translation_lib,
-    stg_note_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_math_lib,
-    core_base_lib, core_gfx_lib, core_image_lib,
+    core_archive_lib, core_image_lib, core_ini_lib, core_hash_lib, core_vfs_lib,
+    core_io_lib, core_args_lib, core_base_lib,
   ],
+  dependencies: [zlib, cc_libm],
+)
+# The native backend stands in for shell/game, so a native backend program
+# links it instead of shell/game.
+harness_native_lib = static_library(
+  'harness_native',
+  'harness/native.c',
+  shell_null_files,
+  shell_null_devices,
+  c_args: core_include + shell_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, cc_libm],
 )
 
+th06_harness_lib = static_library(
+  'th06_harness',
+  'th06/harness.c',
+  'th06/native_state.c',
+  c_args: [layer_include['th06']] + stg_include + harness_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
+bot_include = ['-I' + meson.current_source_dir() / 'bot']
+
+# The recorder of new replay files: the bot, its program and the shell/game
+# functions that it stands in for.
+bot_lib = static_library(
+  'bot',
+  'bot/bot.c',
+  'bot/main.c',
+  'bot/shell.c',
+  shell_null_files,
+  shell_null_devices,
+  c_args: core_include + stg_include + shell_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3, cc_libm],
+)

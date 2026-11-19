@@ -7,8 +7,8 @@
 // player.
 //
 // Only shell/game calls Fatal_Install, and only the game programs link
-// shell/game, so the tests, the replay runner and othpatch never show a
-// box. A game program shows none either in a headless run: when
+// shell/game, so the tests, the native backends and othpatch never show
+// a box. A game program shows none either in a headless run: when
 // $SDL_VIDEODRIVER is "offscreen" or "dummy", or when $CI is set and not
 // empty. A box comes after the log line of its error and names the log
 // file when one is open (LogFile_GetPath). It holds the thread

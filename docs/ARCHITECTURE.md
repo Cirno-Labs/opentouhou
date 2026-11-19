@@ -218,9 +218,9 @@ Replay tests check that a game does what its original did, tick for
 tick. They run locally against the developer's own game data, so
 neither the cases nor the data are in this repository or in CI.
 
-A case is one binary file: a header naming the game and an initial
-checkpoint, then one row of named values per calc, written and read
-through `replay/core/case.h`. A capture tool per game, in
-`replay/thXX/`, produces cases from the original executable. Each
-game's headless runner drives its input and reports the first calc
-where a value differs.
+A case is one file: a manifest naming the game and its staged files, the
+frame-indexed input, and one row of the game's state values per calc,
+with a running hash of every row. The replay
+harness ([REPLAY.md](REPLAY.md)) captures a case on one backend, such as
+the original executable, and replays it on another, such as the port,
+and reports the first calc where a value differs.

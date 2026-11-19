@@ -2,7 +2,7 @@
 
 tools/docker/entrypoint.py and tools/mac/build build through these
 functions. A build directory builds one set of programs: games, the
-games and the replay runner, or othpatch.
+games and their native backends, or othpatch.
 """
 
 import json

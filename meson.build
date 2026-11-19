@@ -117,16 +117,27 @@ if build_games
   endforeach
 
   subdir('replay')
-  runner_entry = host_machine.system() == 'windows' ? 'replay/th06/runner/main_windows.c' : 'replay/th06/runner/main_posix.c'
+  # Each game's native backend program runs the game under the harness.
   executable(
-    'th06replay',
-    'replay/th06/runner/main.c',
-    runner_entry,
-    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
+    'th06native',
+    'replay/th06/native_port.c',
+    c_args: [layer_include['th06']] + stg_include + shell_include + harness_include,
     implicit_include_directories: false,
-    dependencies: [sdl3, zlib, cc_libm],
-    link_with: [th06_runner_lib],
-    link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
+    link_with: [
+      th06_main_lib, th06_harness_lib, th06_lib, harness_native_lib, harness_lib,
+    ],
+    dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    win_subsystem: 'console',
+  )
+  # Each game's recorder plays a practice stage with the bot to make a
+  # new replay file.
+  executable(
+    'th06record',
+    'replay/th06/recorder.c',
+    c_args: [layer_include['th06']] + stg_include + shell_include + bot_include,
+    implicit_include_directories: false,
+    link_with: [bot_lib, th06_lib],
+    dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
     win_subsystem: 'console',
   )
 endif

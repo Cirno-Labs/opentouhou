@@ -1,0 +1,219 @@
+#!/usr/bin/env python3
+"""Capture and replay games under the replay harness (docs/REPLAY.md).
+
+capture runs a game with an input script, or with a person's play, and
+writes a new case file. replay runs a case, compares every state row with
+the case's, writes the screenshots that --shots selects as PNG files and,
+with --against, compares them with an earlier run's. --headless draws
+nothing, and --fast draws only the frames just before each screenshot.
+The exit status is 0 when the run matches, 1 when a state row or a
+compared screenshot differs and 2 on an error.
+"""
+
+import argparse
+import configparser
+import os
+import platform
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parents[1]
+BACKENDS = ("native", "retail")
+# Wine runs a game without audio drivers, since a run plays no sound and a
+# driver without a device can stall DirectSound, and in a Japanese locale,
+# which the file names of the games need.
+WINE_ENV = {
+    "WINEDLLOVERRIDES": "winealsa.drv,winepulse.drv,wineoss.drv,winecoreaudio.drv=",
+    "LANG": "ja_JP.UTF-8",
+    "LC_ALL": "ja_JP.UTF-8",
+}
+
+
+def under_wine(args: argparse.Namespace) -> bool:
+    return args.backend == "retail" and sys.platform != "win32"
+
+
+def native_program(game: str) -> tuple[Path, str]:
+    """Returns the game's native backend in the debug build of this machine
+    and the command that builds it."""
+    if sys.platform == "win32":
+        program = REPO_DIR / "build" / "win" / "debug" / f"{game}native.exe"
+        return program, "just build-win"
+    if sys.platform == "darwin":
+        program = REPO_DIR / "build" / f"mac-{platform.machine()}" / "debug"
+        return program / f"{game}native", "tools/mac/build build --target debug"
+    return REPO_DIR / "build" / "linux" / "debug" / f"{game}native", "just build-linux"
+
+
+def program(args: argparse.Namespace, game: str) -> tuple[Path, str | None]:
+    """Returns the backend program and the command that builds it, which a
+    --program of its own has none of."""
+    if args.program is not None:
+        return args.program, None
+    if args.backend == "native":
+        return native_program(game)
+    return (
+        REPO_DIR / "build" / "retail" / game / f"{game}retail.exe",
+        f"just replay::build {game}",
+    )
+
+
+def program_path(args: argparse.Namespace, path: Path) -> str:
+    """Returns path as the backend program sees it, such as Z:\\abs."""
+    path = path.resolve()
+    if not under_wine(args):
+        return str(path)
+    return subprocess.run(
+        ["winepath", "-w", str(path)], check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def start(args: argparse.Namespace, game: str, argv: list[str]) -> int:
+    path, build = program(args, game)
+    if not path.is_file():
+        message = f"harness: {path} is missing"
+        if build is not None:
+            message += f"; build the {args.backend} backend with `{build}`"
+        print(message, file=sys.stderr)
+        return 2
+    command = [str(path)] + argv
+    env = None
+    if under_wine(args):
+        command = ["wine"] + command
+        env = os.environ | WINE_ENV
+        # The original skips frames while its window is inactive, so it
+        # runs on a private X server unless it shows a window.
+        if not args.window and shutil.which("xvfb-run") is not None:
+            command = ["xvfb-run", "-a", "-s", "-screen 0 1024x768x24"] + command
+    return subprocess.run(command, env=env).returncode
+
+
+def common_argv(args: argparse.Namespace, role: str, out: Path) -> list[str]:
+    argv = [
+        role,
+        program_path(args, args.case),
+        "--data",
+        program_path(args, args.data),
+        "--out",
+        program_path(args, out),
+    ]
+    if args.headless:
+        argv.append("--headless")
+    return argv
+
+
+def file_argv(args: argparse.Namespace, spec: str) -> list[str]:
+    """Returns --file FILE=PATH with FILE as the backend program sees it."""
+    file, _, path = spec.rpartition("=")
+    if file:
+        spec = f"{program_path(args, Path(file))}={path}"
+    return ["--file", spec]
+
+
+def capture(args: argparse.Namespace) -> int:
+    args.case.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="harness-capture-") as out:
+        argv = common_argv(args, "capture", Path(out))
+        if args.live:
+            argv.append("--live")
+        if args.script is not None:
+            argv += ["--script", program_path(args, args.script)]
+        for spec in args.file:
+            argv += file_argv(args, spec)
+        if args.note is not None:
+            argv += ["--note", args.note]
+        return start(args, args.game, argv)
+
+
+def read_manifest(case: Path) -> configparser.ConfigParser:
+    manifest = configparser.ConfigParser(inline_comment_prefixes=(";", "#"))
+    with zipfile.ZipFile(case) as archive:
+        manifest.read_string(archive.read("case.ini").decode())
+    return manifest
+
+
+def replay(args: argparse.Namespace) -> int:
+    game = read_manifest(args.case)["case"]["game"]
+    argv = common_argv(args, "replay", args.out)
+    if args.fast:
+        argv.append("--fast")
+    if args.shots is not None:
+        shots = args.shots
+        if shots.startswith("@"):
+            shots = "@" + program_path(args, Path(shots[1:]))
+        argv += ["--shots", shots]
+    if args.against is not None:
+        argv += ["--against", program_path(args, args.against)]
+    return start(args, game, argv)
+
+
+def add_backend(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--backend", choices=BACKENDS, default="native")
+    parser.add_argument(
+        "--program", type=Path, help="the backend program, if not the build's"
+    )
+    parser.add_argument("--data", type=Path, required=True, help="the game's directory")
+    parser.add_argument(
+        "--headless", action="store_true", help="draw nothing, take no screenshots"
+    )
+    parser.add_argument(
+        "--window",
+        action="store_true",
+        help="show a retail run on the current display",
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    verbs = parser.add_subparsers(dest="verb", required=True)
+
+    capture_parser = verbs.add_parser("capture", help="write a new case")
+    capture_parser.add_argument("game", help="the game id, such as th06")
+    capture_parser.add_argument("case", type=Path, help="the case file to write")
+    add_backend(capture_parser)
+    capture_parser.add_argument("--script", type=Path, help="the input script")
+    capture_parser.add_argument(
+        "--live", action="store_true", help="record a person's play"
+    )
+    capture_parser.add_argument(
+        "--file",
+        action="append",
+        default=[],
+        metavar="FILE=PATH",
+        help="stage FILE at PATH among the game's files from frame 0 on",
+    )
+    capture_parser.add_argument("--note")
+    capture_parser.set_defaults(run=capture)
+
+    replay_parser = verbs.add_parser("replay", help="run a case and compare")
+    replay_parser.add_argument("case", type=Path, help="the case file")
+    add_backend(replay_parser)
+    replay_parser.add_argument(
+        "--out", type=Path, required=True, help="the output directory"
+    )
+    replay_parser.add_argument(
+        "--shots",
+        help="the frames to screenshot, such as 21345, 0,100,every:300 or @FILE",
+    )
+    replay_parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="draw only the frames just before each screenshot",
+    )
+    replay_parser.add_argument(
+        "--against", type=Path, help="an earlier run's output directory"
+    )
+    replay_parser.set_defaults(run=replay)
+
+    args = parser.parse_args(argv)
+    if args.window and args.backend != "retail":
+        parser.error("--window shows a retail run only")
+    return args.run(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

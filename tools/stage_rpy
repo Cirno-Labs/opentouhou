@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Capture a case that plays one of a game's own .rpy replay files.
+
+Captures the game with RPY staged into the game's replay slot, which
+replay/GAME/rpy.ini names, playing the input script that it names, which
+selects the slot and lets the replay play. Every further argument goes
+to `tools/harness capture`.
+"""
+
+import argparse
+import configparser
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_DIR = Path(__file__).resolve().parents[1]
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("game", help="the game id, such as th06")
+    parser.add_argument("rpy", type=Path, help="the replay file to stage")
+    parser.add_argument("case", type=Path, help="the case file to write")
+    args, rest = parser.parse_known_args(argv)
+    game_dir = REPO_DIR / "replay" / args.game
+    config = configparser.ConfigParser(inline_comment_prefixes=(";", "#"))
+    if not config.read(game_dir / "rpy.ini"):
+        sys.exit(f"{args.game} has no replay/{args.game}/rpy.ini")
+    rpy = config["rpy"]
+    command = [
+        str(REPO_DIR / "tools" / "harness"),
+        "capture",
+        args.game,
+        str(args.case),
+        "--script",
+        str(game_dir / rpy["script"]),
+        "--file",
+        f"{args.rpy}={rpy['slot']}",
+        "--note",
+        args.rpy.name,
+    ] + rest
+    return subprocess.run(command).returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,7 +1,7 @@
 # check=skip=InvalidDefaultArgInFrom
 # opentouhou media build image for Linux: the base image with SDL3_ttf,
-# libjpeg-turbo, FFmpeg and appimagetool, for the games, replay runner and
-# tests.
+# libjpeg-turbo, FFmpeg and appimagetool, for the games, native backends
+# and tests.
 #
 # Multi-stage: each dependency is built in its own stage on the base image
 # and installed into /stage/ext, so that the final stage adds only the new

@@ -1,0 +1,27 @@
+#pragma once
+
+#include "backend.h"
+
+#include "shell/game/game.h"
+
+// Runs a native game under the driver. The backend program calls
+// Native_Main, which starts the game with the staged files
+// (Driver_MountStaged) over its data files and its user files, work/
+// (Driver_MountWork) over its user files only, no sound and no patches, then
+// runs one tick per frame without interpolation until Driver_Done. It stands in
+// for shell/game with shell/null.h: each tick's input holds the bindings of
+// Driver_Buttons, the tick rate is what Driver_Fps returns, and the wall clock
+// counts the frames' milliseconds, rounded up. A tick draws only when
+// Driver_WantsDraw, and a headless run opens no video.
+
+typedef struct {
+    PORT port;
+    const GAME_DESC *game;
+    // Gives the port the driver before each tick, for the port to call
+    // Driver_EndCalc after each calc of that tick.
+    void (*hook)(void *context, DRIVER *driver);
+} NATIVE_PORT;
+
+// Runs the command line of Run_Parse and returns the exit status: 0 when
+// the run matches, 1 when it differs, 2 on an error.
+int Native_Main(const NATIVE_PORT *port, int argc, char **argv);
