@@ -442,6 +442,31 @@ TEST(a_smooth_output_blends_the_pixels_that_it_scales)
     GfxTexture_Free(texture);
 }
 
+TEST(a_sharp_output_keeps_a_linear_sprite_inside_its_texels)
+{
+    REQUIRE_GL();
+    const GFX_COLOR texels[2] = { RED, GREEN };
+    GFX_TEXTURE *const texture = M_Texture(1, 2, texels);
+    const GFX_STATE sprite = {
+        .repeat = true,
+        .filter = GFX_FILTER_LINEAR,
+    };
+    Gfx_BeginTick(BLACK);
+    const GFX_VERTEX vertices[4] = {
+        { { 0, 0, 0.5f }, WHITE, { 0, 0 } },
+        { { SIZE, 0, 0.5f }, WHITE, { 1, 0 } },
+        { { SIZE, SIZE, 0.5f }, WHITE, { 1, 0.5f } },
+        { { 0, SIZE, 0.5f }, WHITE, { 0, 0.5f } },
+    };
+    Gfx_DrawQuad(&sprite, texture, vertices, 0);
+    Gfx_EndTick();
+    IMAGE image = M_Output(true, 16);
+    M_CheckPixel(&image, 8, 0, RED, 0);
+    M_CheckPixel(&image, 8, 15, RED, 0);
+    Image_Free(&image);
+    GfxTexture_Free(texture);
+}
+
 TEST(present_draws_finer_than_a_logical_pixel)
 {
     REQUIRE_GL();

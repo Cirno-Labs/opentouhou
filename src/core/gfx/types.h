@@ -42,7 +42,9 @@ typedef enum {
 
 // Picks the texel that a pixel shows: the nearest, as the original's
 // sprites need, or the blend of the four nearest, which keeps thin lines of
-// a texture drawn smaller than its size.
+// a texture drawn smaller than its size. A window that draws a tick again
+// at its own resolution samples textures that it draws larger with the
+// output's filter instead.
 typedef enum {
     GFX_FILTER_NEAREST,
     GFX_FILTER_LINEAR,
