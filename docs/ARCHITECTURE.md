@@ -174,8 +174,9 @@ shell/game    main loop, window, frame pacing, the GAME_DESC driver
 ```
 
 Dependencies inside `core` go down this list, except that `gfx` and
-`text` use `image`. `shell` uses `core/base` and `core/io`, and
-`shell/game` uses everything.
+`text` use `image`, and `patch` uses `text` to add the fonts of
+patches. `shell` uses `core/base` and `core/io`, and `shell/game` uses
+everything.
 
 Two rules hold across modules:
 

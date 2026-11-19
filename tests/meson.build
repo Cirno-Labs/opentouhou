@@ -1249,11 +1249,15 @@ test(
     c_args: core_include,
     implicit_include_directories: false,
     link_with: [
-      core_patch_lib, core_json_lib, core_vfs_lib, core_io_lib, core_base_lib,
+      core_patch_lib, core_json_lib, core_vfs_lib, core_image_lib, core_io_lib,
+      core_base_lib,
     ],
     dependencies: [sdl3],
   ),
-  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'patch_stack'},
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'patch_stack',
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+  },
   suite: 'unit',
 )
 
