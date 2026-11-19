@@ -7,7 +7,9 @@
 #include "core/base/utils.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
+#include "core/io/reader.h"
 #include "core/json.h"
+#include "core/text/font_registry.h"
 #include "core/vfs/normalize.h"
 
 #include <string.h>
@@ -118,6 +120,43 @@ static void M_ListFonts(
     info->fonts = paths;
 }
 
+static RESULT M_AddFont(const PATCH *const patch, const char *const name)
+{
+    char *const key = Str_Dup(name);
+    Str_ToLower(key);
+    const PATCH_FILE *const file = HashMap_Get(&patch->root, key);
+    Mem_Free(key);
+    FAIL_IF(
+        file == nullptr, "The patch %s has no font file %s", patch->info.id,
+        name);
+    const char *const path = file->build != nullptr ? file->build : file->plain;
+    READER reader;
+    MUST(Reader_OpenFile(&reader, path));
+    const size_t size = Reader_Remaining(&reader);
+    void *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
+    RESULT result = Reader_Result(&reader);
+    Reader_Close(&reader);
+    if (IS_OK(result)) {
+        result = FontRegistry_Add(path, data, size);
+    }
+    Mem_Free(data);
+    return result;
+}
+
+// Adds the font files of the patch.js object "fonts" to the font registry,
+// as thcrap's patch_fonts_load does. Only the keys matter.
+static void M_AddFonts(const PATCH *const patch, const PATCH_ENTRY *const entry)
+{
+    const JSON_VALUE *const fonts = Json_Get(entry->patch_js, "fonts");
+    if (fonts == nullptr || fonts->type != JSON_OBJECT) {
+        return;
+    }
+    for (int32_t i = 0; i < fonts->object.count; i++) {
+        Result_Log(
+            M_AddFont(patch, fonts->object.members[i].key), LOG_LEVEL_WARNING);
+    }
+}
+
 static void M_AddPatch(PATCH_STACK *const stack, const PATCH_ENTRY *const entry)
 {
     PATCH *const patch = &stack->patches[stack->count++];
@@ -132,6 +171,7 @@ static void M_AddPatch(PATCH_STACK *const stack, const PATCH_ENTRY *const entry)
     HashMap_Init(&patch->root, &g_HeapAllocator);
     HashMap_Init(&patch->game, &g_HeapAllocator);
     M_IndexDir(&patch->root, patch->info.dir, "", stack->game.build, false, 0);
+    M_AddFonts(patch, entry);
     char *const game_dir =
         Path_Join(&g_HeapAllocator, patch->info.dir, stack->game_id);
     M_IndexDir(

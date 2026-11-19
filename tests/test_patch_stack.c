@@ -3,8 +3,11 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 
+#include "core/text.h"
+
 #include "patch_builder.h"
 #include "test.h"
+#include "test_fonts.h"
 
 #include <string.h>
 
@@ -217,6 +220,30 @@ TEST(the_info_lists_the_true_fonts)
     Mem_Free(one);
     Patch_CloseStack(stack);
     Mem_Free(dir);
+}
+
+TEST(the_fonts_of_a_patch_join_the_registry)
+{
+    CHECK(IS_OK(Text_Init()));
+    char *const dir = TestDir_Prepare("registry_fonts");
+    PatchBuilder_AddPatch(
+        dir, "a/fonts", "{fonts: {'ui.ttf': true, 'gone.ttf': true}}");
+    size_t size;
+    uint8_t *const data = TestFonts_Read(TEST_FONT_UI_GOTHIC, &size);
+    char *const path = Str_Format("%s/a/fonts/UI.TTF", dir);
+    TestDir_Write(path, data, size);
+    FontRegistry_Reset(false);
+    FONT *font = nullptr;
+    CHECK(!Result_Ignore(FontRegistry_Open("IPAPGothic", 30, &font)));
+    PATCH_STACK *const stack = M_Open(dir, nullptr);
+    CHECK(Result_Ignore(FontRegistry_Open("IPAPGothic", 30, &font)));
+    Font_Free(font);
+    Patch_CloseStack(stack);
+    FontRegistry_Reset(false);
+    Mem_Free(path);
+    Mem_Free(data);
+    Mem_Free(dir);
+    Text_Shutdown();
 }
 
 TEST(a_patch_without_fonts_lists_none)

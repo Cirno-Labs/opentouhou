@@ -164,7 +164,41 @@ core_vfs_lib = static_library(
   dependencies: [sdl3],
 )
 
-# core/patch needs core/base, core/io, core/vfs and core/json.
+# core/text's font registry asks the system for installed fonts through
+# GDI on Windows, CoreText on macOS and fontconfig elsewhere.
+if host_machine.system() == 'windows'
+  text_backend = 'text/backend_windows.c'
+  text_system = meson.get_compiler('c').find_library('gdi32')
+elif host_machine.system() == 'darwin'
+  text_backend = 'text/backend_macos.c'
+  text_system = dependency('appleframeworks', modules: ['CoreFoundation', 'CoreText'])
+else
+  text_backend = 'text/backend_fontconfig.c'
+  text_system = dependency('', required: false)
+endif
+
+text_font = custom_target(
+  'text_font',
+  input: 'text/fonts/BIZUDGothic-Bold.ttf',
+  output: 'text_font.h',
+  command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', 'm_DefaultFont', '@INPUT@'],
+)
+
+core_text_lib = static_library(
+  'core_text',
+  'text/font.c',
+  'text/font_registry.c',
+  'text/gdi.c',
+  'text/glyphs.c',
+  'text/render.c',
+  text_backend,
+  text_font,
+  c_args: core_include + ['-I' + meson.current_build_dir()],
+  implicit_include_directories: false,
+  dependencies: [sdl3_ttf, sdl3, freetype, text_system, cc_libm],
+)
+
+# core/patch needs core/base, core/io, core/vfs, core/json and core/text.
 core_patch_lib = static_library(
   'core_patch',
   'patch/files.c',
@@ -172,7 +206,7 @@ core_patch_lib = static_library(
   'patch/strings.c',
   c_args: core_include,
   implicit_include_directories: false,
-  link_with: core_patch_select_lib,
+  link_with: [core_patch_select_lib, core_text_lib],
   dependencies: [sdl3],
 )
 
@@ -223,40 +257,6 @@ core_gfx_gl_lib = static_library(
   c_args: core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [sdl3, cc_libm],
-)
-
-# core/text's font registry asks the system for installed fonts through
-# GDI on Windows, CoreText on macOS and fontconfig elsewhere.
-if host_machine.system() == 'windows'
-  text_backend = 'text/backend_windows.c'
-  text_system = meson.get_compiler('c').find_library('gdi32')
-elif host_machine.system() == 'darwin'
-  text_backend = 'text/backend_macos.c'
-  text_system = dependency('appleframeworks', modules: ['CoreFoundation', 'CoreText'])
-else
-  text_backend = 'text/backend_fontconfig.c'
-  text_system = dependency('', required: false)
-endif
-
-text_font = custom_target(
-  'text_font',
-  input: 'text/fonts/BIZUDGothic-Bold.ttf',
-  output: 'text_font.h',
-  command: [python3, files('../../tools/meson/embed_binary'), '@OUTPUT@', 'm_DefaultFont', '@INPUT@'],
-)
-
-core_text_lib = static_library(
-  'core_text',
-  'text/font.c',
-  'text/font_registry.c',
-  'text/gdi.c',
-  'text/glyphs.c',
-  'text/render.c',
-  text_backend,
-  text_font,
-  c_args: core_include + ['-I' + meson.current_build_dir()],
-  implicit_include_directories: false,
-  dependencies: [sdl3_ttf, sdl3, freetype, text_system, cc_libm],
 )
 
 # SDL is a dependency of the library, not of its users: layers above core
