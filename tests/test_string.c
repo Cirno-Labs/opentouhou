@@ -67,3 +67,21 @@ TEST(equal_ignore_case_folds_ascii_only)
     CHECK(!Str_EqualIgnoreCase("Ä", "ä"));
     CHECK(!Str_EqualIgnoreCase("[", "{"));
 }
+
+TEST(parse_u32_reads_whole_decimal_numbers)
+{
+    uint32_t value = 7;
+    CHECK(Str_ParseU32("0", &value) && value == 0);
+    CHECK(Str_ParseU32("00042", &value) && value == 42);
+    CHECK(Str_ParseU32("4294967295", &value) && value == UINT32_MAX);
+    value = 7;
+    CHECK(!Str_ParseU32("", &value));
+    CHECK(!Str_ParseU32("4294967296", &value));
+    CHECK(!Str_ParseU32("99999999999999999999", &value));
+    CHECK(!Str_ParseU32("12x", &value));
+    CHECK(!Str_ParseU32("-1", &value));
+    CHECK(!Str_ParseU32("+1", &value));
+    CHECK(!Str_ParseU32(" 1", &value));
+    CHECK(!Str_ParseU32("1 ", &value));
+    CHECK_EQ_INT(value, 7);
+}

@@ -4,6 +4,7 @@
 #include "core/base/utils.h"
 
 #include <stdarg.h>
+#include <stdint.h>
 
 // Helpers for NUL-terminated UTF-8 strings. The functions that return a new
 // string allocate it with core/base/memory; Mem_Free releases it.
@@ -27,3 +28,8 @@ bool Str_EndsWith(const char *text, const char *suffix);
 // Compares two strings, treating ASCII letters of either case as equal.
 // Other bytes compare exactly.
 bool Str_EqualIgnoreCase(const char *a, const char *b);
+
+// Reads text, a whole decimal number, into *out. Fails on an empty text,
+// a byte that is not a digit, or a number past UINT32_MAX, and then leaves
+// *out unchanged.
+bool Str_ParseU32(const char *text, uint32_t *out);
