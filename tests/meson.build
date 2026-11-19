@@ -1447,3 +1447,21 @@ test(
     'TEST_FONT': meson.project_source_root() / 'src' / 'core' / 'text' / 'fonts' / 'BIZUDGothic-Bold.ttf',
   },
 )
+
+# The test stands in for the system's fonts, so it links no backend of
+# them.
+test(
+  'core/text/font_registry',
+  executable(
+    'test_font_registry',
+    'test_font_registry.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3_ttf, sdl3, cc_libm],
+  ),
+  suite: 'unit',
+  env: {
+    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
+  },
+)
