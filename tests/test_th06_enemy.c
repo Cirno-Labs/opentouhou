@@ -285,7 +285,7 @@ static void M_LoadStage(const int32_t stage)
     static uint8_t bytes[ECL_BUILDER_MAX_SIZE];
     const size_t size = EclBuilder_Build(&m_Builder, bytes, nullptr);
     Th06Data_WriteFile(m_Directory, "data/ecldata1.ecl", bytes, size);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
@@ -315,7 +315,7 @@ static void M_End(void)
     Chain_Release(&g_Chain);
     Ecl_Release();
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 

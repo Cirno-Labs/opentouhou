@@ -4,7 +4,7 @@
 
 #include "core/base/result.h"
 
-// Runs the original replay input against an OTRC case. Requires Files_Init
+// Runs the original replay input against an OTRC case. Requires Files_Mount
 // before the call. Initializes and shuts down game state for each case.
 // Uses no physical input. Version-1 START is a post-first-calc checkpoint;
 // a case alone cannot initialize playback, so replay_path is required.

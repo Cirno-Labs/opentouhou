@@ -3,12 +3,12 @@
 #include "th06/game_manager.h"
 #include "th06/replay.h"
 
+#include "shell/game.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
-#include "core/io/file.h"
-#include "core/io/path.h"
+#include "core/vfs.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -18,13 +18,12 @@
 #define M_PENDING_COUNT 2
 
 typedef struct {
-    char *path; // relative to the user directory
+    char *path; // in Shell_GetUserFiles
     uint8_t *data;
     size_t size;
 } M_PENDING;
 
 typedef struct {
-    char *user_dir;
     SCORE_FILE score;
     SAVED_REPLAY slots[SAVED_REPLAY_SLOT_COUNT];
     SAVED_REPLAY user[SAVED_REPLAY_USER_COUNT];
@@ -51,11 +50,6 @@ static void M_FreePending(M_PENDING *const pending)
 
 static void M_Queue(char *const path, uint8_t *const data, const size_t size)
 {
-    if (m_Saves.user_dir == nullptr) {
-        Mem_Free(path);
-        Allocator_Free(&g_HeapAllocator, data, size);
-        return;
-    }
     M_PENDING *target = nullptr;
     for (int32_t i = 0; i < M_PENDING_COUNT; i++) {
         M_PENDING *const pending = &m_Saves.pending[i];
@@ -82,15 +76,6 @@ static char *M_ReplayPath(const int32_t slot)
     return Str_Format(M_REPLAY_DIR "/th6_%.2d.rpy", slot + 1);
 }
 
-// Returns the path of name, relative to the user directory, as the
-// replay module opens it.
-static char *M_FullPath(const char *const name)
-{
-    return m_Saves.user_dir != nullptr
-        ? Path_Join(&g_HeapAllocator, m_Saves.user_dir, name)
-        : Str_Dup(name);
-}
-
 // Reads the replay of size bytes of data into out, and keeps the bytes for
 // playback when the replay is valid.
 static void M_ReadReplay(
@@ -105,19 +90,17 @@ static void M_ReadReplay(
         return;
     }
     char *bytes;
-    char *const path = M_FullPath(name);
-    if (strlen(path) < sizeof(out->path)
+    if (strlen(name) < sizeof(out->path)
         && Result_Ignore(
             Cp932_Encode(file->name, strlen(file->name), &bytes))) {
         out->valid = true;
-        memcpy(out->path, path, strlen(path) + 1);
+        memcpy(out->path, name, strlen(name) + 1);
         memcpy(out->label, label, strlen(label) + 1);
         memcpy(out->name, bytes, strlen(bytes) + 1);
         Replay_Summarize(file, &out->summary);
-        Replay_AddFile(path, data, size);
+        Replay_AddFile(name, data, size);
         Mem_Free(bytes);
     }
-    Mem_Free(path);
     Replay_Free(file);
 }
 
@@ -130,10 +113,11 @@ static void M_ReadFile(
     const char *const name, const char *const label, SAVED_REPLAY *const out)
 {
     *out = (SAVED_REPLAY) {};
-    char *const path = M_FullPath(name);
+    VFS *const files = Shell_GetUserFiles();
     READER reader;
-    if (File_Exists(path)
-        && Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_WARNING)) {
+    if (Vfs_Exists(files, name)
+        && Result_Log(
+            Vfs_Open(files, name, VFS_IN_MEMORY, &reader), LOG_LEVEL_WARNING)) {
         const size_t size = Reader_Remaining(&reader);
         uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
         if (Result_Log(Reader_Result(&reader), LOG_LEVEL_WARNING)) {
@@ -144,7 +128,6 @@ static void M_ReadFile(
         }
         Reader_Close(&reader);
     }
-    Mem_Free(path);
 }
 
 // Returns whether name matches th6_ud????.rpy, ignoring the case of ASCII
@@ -166,28 +149,22 @@ static bool M_IsUserReplay(const char *const name)
     return true;
 }
 
+static void M_ReadUserReplay(void *const user, const char *const name)
+{
+    int32_t *const found = user;
+    if (*found >= SAVED_REPLAY_USER_COUNT || !M_IsUserReplay(name)) {
+        return;
+    }
+    char *const path = Str_Format(M_REPLAY_DIR "/%s", name);
+    M_ReadFile(path, "User ", &m_Saves.user[*found]);
+    Mem_Free(path);
+    (*found)++;
+}
+
 static void M_ReadUserReplays(void)
 {
-    char *const directory = M_FullPath(M_REPLAY_DIR);
-    FILE_LIST list;
-    if (File_Exists(directory)
-        && Result_Log(
-            File_ListDir(directory, &g_HeapAllocator, &list),
-            LOG_LEVEL_WARNING)) {
-        int32_t found = 0;
-        for (int32_t i = 0; i < list.count && found < SAVED_REPLAY_USER_COUNT;
-             i++) {
-            if (!M_IsUserReplay(list.items[i])) {
-                continue;
-            }
-            char *const name = Str_Format(M_REPLAY_DIR "/%s", list.items[i]);
-            M_ReadFile(name, "User ", &m_Saves.user[found]);
-            Mem_Free(name);
-            found++;
-        }
-        File_FreeList(&list);
-    }
-    Mem_Free(directory);
+    int32_t found = 0;
+    Vfs_List(Shell_GetUserFiles(), M_REPLAY_DIR, M_ReadUserReplay, &found);
 }
 
 // Forgets the replays read before, then reads the numbered slots and the
@@ -224,48 +201,25 @@ static void M_LoadScore(READER *const reader)
     Result_Log(ScoreFile_Read(reader, &m_Saves.score), LOG_LEVEL_INFO);
 }
 
-void ResultScreen_OpenSaves(const char *const user_dir)
+void ResultScreen_OpenSaves(void)
 {
     ResultScreen_CloseSaves();
-    if (user_dir == nullptr) {
-        return;
-    }
-    m_Saves.user_dir = Str_Dup(user_dir);
-    char *const score_path =
-        Path_Join(&g_HeapAllocator, user_dir, M_SCORE_PATH);
+    VFS *const files = Shell_GetUserFiles();
     READER reader;
-    if (File_Exists(score_path)
+    if (Vfs_Exists(files, M_SCORE_PATH)
         && Result_Log(
-            Reader_OpenFile(&reader, score_path), LOG_LEVEL_WARNING)) {
+            Vfs_Open(files, M_SCORE_PATH, VFS_IN_MEMORY, &reader),
+            LOG_LEVEL_WARNING)) {
         M_LoadScore(&reader);
         Reader_Close(&reader);
     }
-    Mem_Free(score_path);
     M_ScanReplays();
 }
 
 static RESULT M_Write(const M_PENDING *const pending)
 {
-    char *const path =
-        Path_Join(&g_HeapAllocator, m_Saves.user_dir, pending->path);
-    RESULT result = OK;
-    if (strncmp(pending->path, M_REPLAY_DIR "/", strlen(M_REPLAY_DIR) + 1)
-        == 0) {
-        char *const directory =
-            Path_Join(&g_HeapAllocator, m_Saves.user_dir, M_REPLAY_DIR);
-        result = File_MakeDir(directory);
-        Mem_Free(directory);
-    }
-    WRITER writer;
-    if (IS_OK(result)) {
-        result = Writer_OpenFile(&writer, path);
-    }
-    if (IS_OK(result)) {
-        Writer_WriteBytes(&writer, pending->data, pending->size);
-        result = Writer_Close(&writer);
-    }
-    Mem_Free(path);
-    return result;
+    return Vfs_Write(
+        Shell_GetUserFiles(), pending->path, pending->data, pending->size);
 }
 
 RESULT ResultScreen_WriteSaves(void)
@@ -293,8 +247,6 @@ void ResultScreen_CloseSaves(void)
         M_FreePending(&m_Saves.pending[i]);
     }
     ScoreFile_Free(&m_Saves.score);
-    Mem_Free(m_Saves.user_dir);
-    m_Saves.user_dir = nullptr;
     for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
         if (m_Saves.slots[i].valid) {
             Replay_RemoveFile(m_Saves.slots[i].path);
@@ -350,9 +302,7 @@ void ResultScreen_ScanReplays(void)
 {
     if (m_Saves.scan_requested) {
         m_Saves.scan_requested = false;
-        if (m_Saves.user_dir != nullptr) {
-            M_ScanReplays();
-        }
+        M_ScanReplays();
     }
 }
 

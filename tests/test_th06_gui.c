@@ -221,7 +221,7 @@ static void M_WriteData(const char *const case_name)
 static RESULT M_SetupStage(const char *const case_name, const int32_t stage)
 {
     M_WriteData(case_name);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
     AsciiText_Initialize();
     Chain_Init(&g_Chain);
@@ -251,7 +251,7 @@ static void M_SetupPatched(const char *const case_name, const char *const diff)
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &m_Patches),
         LOG_LEVEL_ERROR));
     Mem_Free(patches);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Files_SetPatches(m_Patches);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     AsciiText_Initialize();
@@ -270,7 +270,7 @@ static void M_Teardown(void)
     Chain_Release(&g_Chain);
     AsciiText_Initialize();
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Patch_CloseStack(m_Patches);
     m_Patches = nullptr;
     Mem_Free(m_Directory);
@@ -1340,7 +1340,7 @@ static void M_SetupTextImages(
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &m_Patches),
         LOG_LEVEL_ERROR));
     Mem_Free(patches);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Files_SetPatches(m_Patches);
     Translation_Init(m_Patches, &g_TranslationGame);
     Anm_Init(&g_HeapAllocator, &g_Rng);
@@ -1876,7 +1876,7 @@ static void M_SetupNotes(const char *const case_name, const char *const diff)
         Patch_OpenStack(patches, "th06", &g_PatchGame, nullptr, &m_Patches),
         LOG_LEVEL_ERROR));
     Mem_Free(patches);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Files_SetPatches(m_Patches);
     Translation_Init(m_Patches, &g_TranslationGame);
     GfxRecorder_Start();

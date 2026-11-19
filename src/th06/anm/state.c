@@ -2,15 +2,16 @@
 #include "th06/anm/private.h"
 
 #include "stg/angle.h"
-#include "th06/files.h"
 #include "stg/note.h"
 #include "th06/time.h"
 
+#include "shell/game.h"
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
+#include "core/vfs.h"
 
 #include "stg/timer.h"
 
@@ -238,7 +239,7 @@ RESULT Anm_Load(
     Note_Remove();
     Anm_Release(slot);
     READER reader;
-    MUST(Files_Load(path, &reader), "%s", path);
+    MUST(Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader), "%s", path);
     RESULT result = M_Parse(&reader, slot, first_sprite);
     if (IS_OK(result)) {
         result = AnmTexture_LoadSlot(&reader, slot);

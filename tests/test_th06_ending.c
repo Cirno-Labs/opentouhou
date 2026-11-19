@@ -161,7 +161,7 @@ static void M_WriteData(const char *const case_name)
 static void M_Setup(const char *const case_name)
 {
     M_WriteData(case_name);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
@@ -189,7 +189,7 @@ static void M_Teardown(void)
     Chain_Release(&g_Chain);
     Anm_Shutdown();
     GfxRecorder_Stop();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Sound_Reset();
     Mem_Free(m_Directory);
 }
@@ -339,8 +339,8 @@ TEST(a_loaded_script_skips_its_first_line)
     M_Setup("load");
     M_RUN("@Fdata/next.end\0\r\n");
     M_SCRIPT("data/next.end", "@z\r\n@msecond.mid\0\r\n@z\r\n");
-    Files_Shutdown();
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Th06Data_Unmount();
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(M_TicksToEnd(5), 1);
     CHECK_EQ_STR(m_Music, "second.mid");

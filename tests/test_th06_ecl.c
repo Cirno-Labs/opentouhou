@@ -318,7 +318,7 @@ static void M_Begin(const char *const case_name)
     SDL_CreateDirectory(data);
     Mem_Free(data);
     M_WriteSprites();
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     CHECK(Result_Log(Anm_Load(0, "sprites.anm", 0), LOG_LEVEL_ERROR));
@@ -348,7 +348,7 @@ static void M_End(void)
 {
     Ecl_Release();
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 
@@ -357,8 +357,8 @@ static void M_End(void)
 static void M_WriteFile(const uint8_t *const bytes, const size_t size)
 {
     Th06Data_WriteFile(m_Directory, "data/ecldata1.ecl", bytes, size);
-    Files_Shutdown();
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Th06Data_Unmount();
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
 }
 
 // Sets enemy up as Enemy_Spawn would leave it, at frame 0 of sub.
@@ -522,8 +522,8 @@ TEST(loading_reads_the_file_of_the_stage)
     uint8_t bytes[ECL_BUILDER_MAX_SIZE];
     const size_t size = EclBuilder_Build(&m_Builder, bytes, nullptr);
     Th06Data_WriteFile(m_Directory, "data/ecldata3.ecl", bytes, size);
-    Files_Shutdown();
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    Th06Data_Unmount();
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     g_GameManager.run.stage = 3;
     CHECK(Result_Log(Ecl_Load(), LOG_LEVEL_ERROR));
     g_GameManager.run.stage = 2;

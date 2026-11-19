@@ -1,5 +1,7 @@
 #include "th06/screens/result.h"
 
+#include "shell_fake.h"
+#include "shell/null.h"
 #include "test.h"
 #include "test_dir.h"
 
@@ -111,7 +113,8 @@ TEST(open_reads_the_score_file_and_the_replay_slots)
     CHECK(Result_Log(File_MakeDir(replay_dir), LOG_LEVEL_ERROR));
     uint8_t *const replay = M_ReplayBytes(&size);
     M_Save(replay_path, replay, size);
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     CHECK_EQ_INT(
         ScoreFile_GetHighScore(ResultSaves_GetScoreFile(), 2, 1), 4000000);
     CHECK(!ResultSaves_GetSlot(0)->valid);
@@ -141,7 +144,8 @@ TEST(open_treats_an_invalid_score_file_as_empty)
     uint8_t *const junk = Mem_AllocZ(40);
     junk[5] = 1;
     M_Save(score_path, junk, 40);
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     CHECK(ResultSaves_GetScoreFile()->data == nullptr);
     ResultScreen_CloseSaves();
     Mem_Free(score_path);
@@ -152,7 +156,8 @@ TEST(put_score_reads_back_at_once_and_writes_after_the_tick)
 {
     char *const directory = TestDir_Prepare("put_score");
     char *const score_path = TestDir_Join(directory, "score.dat");
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     size_t size;
     uint8_t *const data = M_ScoreBytes(5000000, &size);
     uint8_t *const copy = Mem_Dup(data, size);
@@ -175,7 +180,8 @@ TEST(put_replay_creates_the_replay_directory)
 {
     char *const directory = TestDir_Prepare("put_replay");
     char *const replay_path = TestDir_Join(directory, "replay/th6_15.rpy");
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     size_t size;
     uint8_t *const data = M_ReplayBytes(&size);
     uint8_t *const copy = Mem_Dup(data, size);
@@ -190,15 +196,18 @@ TEST(put_replay_creates_the_replay_directory)
     Mem_Free(directory);
 }
 
-TEST(saves_without_a_user_directory_stay_in_memory)
+TEST(saves_without_a_user_folder_stay_in_memory_and_fail_to_write)
 {
-    ResultScreen_OpenSaves(nullptr);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, nullptr)));
+    ResultScreen_OpenSaves();
     size_t size;
     uint8_t *const score = M_ScoreBytes(6000000, &size);
     ResultSaves_PutScoreFile(score, size);
     CHECK_EQ_INT(
         ScoreFile_GetHighScore(ResultSaves_GetScoreFile(), 2, 1), 6000000);
-    CHECK(Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_ERROR));
+    const RESULT result = ResultScreen_WriteSaves();
+    CHECK(!IS_OK(result));
+    Result_Ignore(result);
     ResultScreen_CloseSaves();
 }
 
@@ -208,7 +217,8 @@ TEST(a_failed_write_is_dropped)
     char *const blocker = TestDir_Join(directory, "replay");
     uint8_t *const byte = Mem_AllocZ(1);
     M_Save(blocker, byte, 1);
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     size_t size;
     uint8_t *const replay = M_ReplayBytes(&size);
     ResultSaves_PutReplay(0, replay, size);
@@ -341,7 +351,8 @@ TEST(capture_puts_the_shot_first_in_the_history)
 
 TEST(load_game_records_reads_the_saved_score_file)
 {
-    ResultScreen_OpenSaves(nullptr);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, nullptr)));
+    ResultScreen_OpenSaves();
     size_t size;
     uint8_t *const score = M_ScoreBytes(3000000, &size);
     ResultSaves_PutScoreFile(score, size);
@@ -381,7 +392,8 @@ TEST(list_gives_the_slots_then_the_user_replays)
     char *const junk_path = TestDir_Join(replay_dir, "th6_ud0002.rpy");
     M_Save(junk_path, Mem_AllocZ(8), 8);
     Mem_Free(junk_path);
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 4);
     CHECK_EQ_STR(list[0].label, "No.01");
@@ -395,11 +407,7 @@ TEST(list_gives_the_slots_then_the_user_replays)
         "replay/th6_udB000.rpy",
     };
     for (int32_t i = 0; i < 4; i++) {
-        const size_t length = strlen(list[i].path);
-        const size_t end = strlen(ends[i]);
-        CHECK(
-            length > end && strcmp(list[i].path + length - end, ends[i]) == 0);
-        CHECK(strncmp(list[i].path, directory, strlen(directory)) == 0);
+        CHECK_EQ_STR(list[i].path, ends[i]);
         CHECK_EQ_INT(list[i].summary.lives, 2);
         CHECK(list[i].summary.stages[1]);
         CHECK_EQ_INT(list[i].summary.difficulty, 1);
@@ -411,7 +419,8 @@ TEST(list_gives_the_slots_then_the_user_replays)
 
 TEST(list_follows_a_saved_slot)
 {
-    ResultScreen_OpenSaves(nullptr);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, nullptr)));
+    ResultScreen_OpenSaves();
     static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 0);
     size_t size;
@@ -433,7 +442,8 @@ TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
     size_t size;
     uint8_t *const first_replay = M_ReplayBytes(&size);
     M_Save(first, first_replay, size);
-    ResultScreen_OpenSaves(directory);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, directory)));
+    ResultScreen_OpenSaves();
     static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
     CHECK(Replay_FindFile(list[0].path, &size) != nullptr);
@@ -464,7 +474,8 @@ TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
 
 TEST(a_saved_slot_is_kept_for_playback)
 {
-    ResultScreen_OpenSaves(nullptr);
+    CHECK(Result_Ignore(NullShell_OpenFiles(nullptr, nullptr)));
+    ResultScreen_OpenSaves();
     size_t size;
     uint8_t *const data = M_ReplayBytes(&size);
     uint8_t *const copy = Mem_Dup(data, size);

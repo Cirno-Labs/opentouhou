@@ -2,16 +2,17 @@
 
 #include "th06/anm.h"
 #include "th06/ascii.h"
-#include "th06/files.h"
 #include "th06/game.h"
 #include "th06/scene.h"
 #include "th06/screens/music/comments.h"
 #include "th06/sound.h"
 #include "stg/translation.h"
 
+#include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/vfs.h"
 
 #define M_CALC_PRIORITY 2
 #define M_DRAW_PRIORITY 0
@@ -226,7 +227,8 @@ static RESULT M_Added(void *const arg)
     Anm_StartScript(&screen->background, 0x100);
     screen->state_frames = 0;
     READER reader;
-    MUST(Files_Load("data/musiccmt.txt", &reader));
+    MUST(Vfs_Open(
+        Shell_GetFiles(), "data/musiccmt.txt", VFS_IN_MEMORY, &reader));
     screen->tunes = Mem_AllocArrZ(MUSIC_TUNE_COUNT, sizeof(MUSIC_TUNE));
     const RESULT result =
         MusicScreen_ReadComments(&reader, screen->tunes, &screen->tune_count);

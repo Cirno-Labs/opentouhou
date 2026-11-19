@@ -228,6 +228,9 @@ if not build_games
   subdir_done()
 endif
 
+# The game tests' stand-in for shell/game (see shell_fake.h).
+shell_fake = files('shell_fake.c') + shell_null_files
+
 test(
   'core/audio/device',
   executable(
@@ -277,13 +280,9 @@ test(
   executable(
     'test_th06_runner_state',
     'test_th06_runner_state.c',
-    '../replay/th06/runner/state.c',
     c_args: [layer_include['th06']] + core_include + stg_include,
     implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_math_lib, core_io_lib, core_base_lib,
-      replay_case_lib, core_gfx_lib, core_image_lib,
-    ],
+    link_with: [th06_runner_lib],
     dependencies: [sdl3, zlib],
   ),
   suite: 'unit',
@@ -308,7 +307,7 @@ foreach ascii_test : ['ascii', 'ascii_menu']
     executable(
       'test_th06_' + ascii_test,
       'test_th06_' + ascii_test + '.c',
-      'shell_fake.c',
+      shell_fake,
       'gfx_recorder.c',
       c_args: [layer_include['th06']] + stg_include + shell_include,
       implicit_include_directories: false,
@@ -326,7 +325,7 @@ foreach replay_test : ['replay', 'replay_format']
     executable(
       'test_th06_' + replay_test,
       'test_th06_' + replay_test + '.c',
-      'shell_fake.c',
+      shell_fake,
       c_args: [layer_include['th06']] + stg_include + shell_include,
       implicit_include_directories: false,
       link_with: [
@@ -343,7 +342,7 @@ test(
   executable(
     'test_th06_game_manager_chain',
     'test_th06_game_manager_chain.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -359,7 +358,8 @@ test(
   executable(
     'test_th06_score',
     'test_th06_score.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    shell_fake,
+    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th06_lib, stg_translation_lib, stg_note_lib, core_io_lib, core_base_lib],
   ),
@@ -371,7 +371,8 @@ test(
   executable(
     'test_th06_result_saves',
     'test_th06_result_saves.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    shell_fake,
+    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
@@ -390,7 +391,7 @@ test(
   executable(
     'test_th06_result_screen',
     'test_th06_result_screen.c',
-    'shell_fake.c',
+    shell_fake,
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
@@ -414,7 +415,7 @@ test(
   executable(
     'test_th06_main_menu',
     'test_th06_main_menu.c',
-    'shell_fake.c',
+    shell_fake,
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
@@ -439,7 +440,7 @@ test(
   executable(
     'test_th06_ending',
     'test_th06_ending.c',
-    'shell_fake.c',
+    shell_fake,
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
@@ -463,7 +464,7 @@ test(
   executable(
     'test_th06_music_screen',
     'test_th06_music_screen.c',
-    'shell_fake.c',
+    shell_fake,
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
@@ -487,11 +488,12 @@ test(
   executable(
     'test_th06_anm',
     'test_th06_anm.c',
+    shell_fake,
     'gfx_recorder.c',
     'anm_builder.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + stg_include,
+    c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
@@ -512,7 +514,7 @@ test(
   executable(
     'test_th06_buttons',
     'test_th06_buttons.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -527,7 +529,8 @@ test(
   executable(
     'test_th06_game_manager',
     'test_th06_game_manager.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    shell_fake,
+    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, core_gfx_lib, core_image_lib, core_math_lib,
@@ -546,7 +549,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -572,7 +575,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -598,7 +601,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -624,7 +627,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -646,7 +649,7 @@ test(
     'test_th06_scene',
     'test_th06_scene.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -663,7 +666,7 @@ test(
     'test_th06_screen_effect.c',
     'gfx_recorder.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -679,10 +682,11 @@ test(
   executable(
     'test_th06_sound',
     'test_th06_sound.c',
+    shell_fake,
     'audio_backend_fake.c',
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, stg_pbg3_lib, core_vfs_lib, core_audio_lib, core_io_lib,
@@ -704,7 +708,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -730,7 +734,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -757,7 +761,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -783,7 +787,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -809,7 +813,7 @@ test(
     'pbg3_builder.c',
     'th06_data.c',
     'th06_scene_stubs.c',
-    'shell_fake.c',
+    shell_fake,
     c_args: [layer_include['th06']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
@@ -890,9 +894,10 @@ test(
   executable(
     'test_th06_files',
     'test_th06_files.c',
+    shell_fake,
     'pbg3_builder.c',
     'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include,
+    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, stg_pbg3_lib, core_patch_lib, core_json_lib, core_vfs_lib,
@@ -1026,6 +1031,24 @@ test(
     dependencies: [sdl3],
   ),
   env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'log_file'},
+  suite: 'unit',
+)
+
+# Runs the shell's start up to the data check, which fails before SDL
+# opens a window.
+test(
+  'shell/game/host',
+  executable(
+    'test_shell_host',
+    'test_shell_host.c',
+    c_args: shell_include,
+    implicit_include_directories: false,
+    dependencies: [shell_game_dep, sdl3],
+  ),
+  env: {
+    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'shell_host',
+    'SDL_VIDEODRIVER': 'dummy',
+  },
   suite: 'unit',
 )
 

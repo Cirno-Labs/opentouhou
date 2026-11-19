@@ -190,6 +190,8 @@ and its script engines, such as ANM and ECL.
 
 ## Data, saves and config
 
+- A game reads and writes every file through the two VFS of
+  `shell/game`: its data files, read-only, and its user files.
 - Original data is read from the data directory and never written.
 - Scores and replays are saved in the original format, in the user
   directory.

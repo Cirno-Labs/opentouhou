@@ -116,7 +116,7 @@ static RESULT M_Setup(
     M_STD std;
     M_BuildStd(&std, script, count, instance_object);
     Th06Data_WriteFile(m_Directory, "data/stage1.std", std.bytes, std.size);
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Chain_Init(&g_Chain);
     GameManager_Create(&g_GameManager);
@@ -128,7 +128,7 @@ static void M_Teardown(void)
 {
     Chain_Release(&g_Chain);
     Anm_Shutdown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 

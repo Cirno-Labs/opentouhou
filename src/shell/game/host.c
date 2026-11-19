@@ -68,6 +68,8 @@ struct SHELL_CONTEXT {
     // it.
     void *device_input[INPUT_DEVICE_COUNT];
     FOLDERS folders;
+    VFS *files;
+    VFS *user_files;
     // Points at the entry of desc->data_files that the data folder
     // lacks, or is nullptr.
     const char *missing_data_file;
@@ -154,26 +156,24 @@ static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
 
 static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
 {
-    if (ctx->desc->data_file_count == 0) {
-        return OK;
+    ctx->files = Vfs_Create(&g_HeapAllocator);
+    RESULT result =
+        Vfs_MountDir(ctx->files, "", ctx->folders.data_dir, 0, false);
+    // A data folder that cannot be read lacks every file.
+    if (!IS_OK(result) && ctx->desc->data_file_count > 0) {
+        ctx->missing_data_file = ctx->desc->data_files[0];
+        return Result_Prefix(result, "%s", ctx->missing_data_file);
     }
-    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
-    RESULT result = Vfs_MountDir(vfs, "", ctx->folders.data_dir, 0, false);
     for (int32_t i = 0; IS_OK(result) && i < ctx->desc->data_file_count; i++) {
         const char *const name = ctx->desc->data_files[i];
         READER file;
-        result = Vfs_Open(vfs, name, VFS_STREAM, &file);
+        result = Vfs_Open(ctx->files, name, VFS_STREAM, &file);
         if (IS_OK(result)) {
             Reader_Close(&file);
         } else {
             ctx->missing_data_file = name;
             result = Result_Prefix(result, "%s", name);
         }
-    }
-    Vfs_Destroy(vfs);
-    // A data folder that cannot be read lacks every file.
-    if (!IS_OK(result) && ctx->missing_data_file == nullptr) {
-        ctx->missing_data_file = ctx->desc->data_files[0];
     }
     return result;
 }
@@ -318,6 +318,10 @@ static RESULT M_Init(
     LOG_INFO("%s %s", ctx->desc->id, ctx->desc->version);
     LOG_INFO("Folder mode: %s", Folders_GetModeName(ctx->folders.mode));
     MUST(M_CheckData(ctx), "%s failed to start", ctx->desc->id);
+    ctx->user_files = Vfs_Create(&g_HeapAllocator);
+    if (ctx->folders.user_dir != nullptr) {
+        MUST(Vfs_MountDir(ctx->user_files, "", ctx->folders.user_dir, 0, true));
+    }
     FAIL_IF(
         !SDL_Init(SDL_INIT_VIDEO), "Cannot initialize SDL: %s", SDL_GetError());
     MUST(M_CreateWindow(ctx));
@@ -371,14 +375,14 @@ static RESULT M_Init(
     return OK;
 }
 
-const char *Shell_GetDataDir(void)
+VFS *Shell_GetFiles(void)
 {
-    return m_Context.folders.data_dir;
+    return m_Context.files;
 }
 
-const char *Shell_GetUserDir(void)
+VFS *Shell_GetUserFiles(void)
 {
-    return m_Context.folders.user_dir;
+    return m_Context.user_files;
 }
 
 const PATCH_STACK *Shell_GetPatches(void)
@@ -591,6 +595,12 @@ void Shell_Quit(void)
     SHELL_CONTEXT *const ctx = &m_Context;
     if (ctx->game_init_called) {
         ctx->desc->shutdown();
+    }
+    if (ctx->files != nullptr) {
+        Vfs_Destroy(ctx->files);
+    }
+    if (ctx->user_files != nullptr) {
+        Vfs_Destroy(ctx->user_files);
     }
     Patch_CloseStack(ctx->patches);
     Audio_Shutdown();

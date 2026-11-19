@@ -679,7 +679,7 @@ TEST(an_item_steps_its_script_until_it_is_collected)
     m_Directory = TestDir_Prepare("script");
     Th06Data_WriteArchives(m_Directory, -1);
     M_WriteAnm();
-    CHECK(Result_Log(Files_Init(m_Directory), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Anm_Load(0, "item.anm", M_FIRST_SCRIPT), LOG_LEVEL_ERROR));
     Item_Spawn((VEC3) { M_TOUCH_X, 300.0f, 0.0f }, ITEM_POWER, ITEM_FALLING);
     CHECK_EQ_INT(g_Rng.generated, 1);
@@ -691,7 +691,7 @@ TEST(an_item_steps_its_script_until_it_is_collected)
     M_Frame();
     CHECK_EQ_INT(g_Rng.generated, 3);
     M_Teardown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }
 
@@ -724,7 +724,7 @@ TEST(item_draws_identify_each_spawn)
     m_Directory = TestDir_Prepare("item_presentation");
     Th06Data_WriteArchives(m_Directory, -1);
     M_WriteAnm();
-    CHECK(IS_OK(Files_Init(m_Directory)));
+    CHECK(IS_OK(Th06Data_Mount(m_Directory)));
     CHECK(IS_OK(Anm_Load(0, "item.anm", M_FIRST_SCRIPT)));
     CHECK(IS_OK(Anm_CreateTexture(0, 64, 64, ANM_TEXTURE_RGBA8)));
     Item_Spawn((VEC3) { 50, 100, 0 }, ITEM_POWER, ITEM_FALLING);
@@ -740,6 +740,6 @@ TEST(item_draws_identify_each_spawn)
     CHECK_EQ_INT(g_Rng.generated, generated);
     GfxRecorder_Stop();
     M_Teardown();
-    Files_Shutdown();
+    Th06Data_Unmount();
     Mem_Free(m_Directory);
 }

@@ -2,11 +2,13 @@
 
 #include "th06/files.h"
 
+#include "shell/game.h"
 #include "core/base/arena.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/json.h"
+#include "core/vfs.h"
 
 #include "stg/end_diff.h"
 
@@ -95,7 +97,9 @@ RESULT EndingScript_Load(const char *const path, ENDING_SCRIPT *const out)
 {
     *out = (ENDING_SCRIPT) {};
     READER reader;
-    MUST(Files_Load(path, &reader), "the ending cannot be read");
+    MUST(
+        Vfs_Open(Shell_GetFiles(), path, VFS_IN_MEMORY, &reader),
+        "the ending cannot be read");
     const size_t size = Reader_Remaining(&reader);
     uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
     const RESULT result = Reader_Result(&reader);

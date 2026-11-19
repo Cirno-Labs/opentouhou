@@ -9,9 +9,9 @@
 // Keeps score.dat and the replays of the replay directory in memory, so
 // that the simulation reads and saves them without the file system: a
 // tick never opens a file. The whole replay files go to th06/replay's
-// store, which playback reads. The files go to the user directory in the
-// original format, after the tick that saved them. Without a user
-// directory, saves stay in memory.
+// store, which playback reads. Every file is read and written through
+// Shell_GetUserFiles, in the original format, after the tick that saved
+// it.
 //
 // The replay menu asks for a scan of the replay directory when it opens,
 // as the original reads the directory then. th06/main.c runs the scan
@@ -36,20 +36,20 @@ typedef struct {
 // Holds a replay of the replay directory as the menus show it.
 typedef struct {
     bool valid;
-    // Holds the path of the file, as g_GameManager.mode.replay_path takes
-    // it.
+    // Holds the path of the file in Shell_GetUserFiles, as
+    // g_GameManager.mode.replay_path takes it.
     char path[SAVED_REPLAY_PATH_SIZE];
     char label[8]; // "No.01" to "No.15", or "User "
     uint8_t name[9]; // CP932, as the ASCII font draws it
     REPLAY_SUMMARY summary;
 } SAVED_REPLAY;
 
-// Reads score.dat and replay/th6_01.rpy to replay/th6_15.rpy from
-// user_dir. A missing or invalid file counts as empty. A nullptr user_dir
-// reads nothing. Also reads the first 45 files of replay/ whose names
-// match th6_ud????.rpy, in byte order, as the original reads the first 45
-// that Windows lists.
-void ResultScreen_OpenSaves(const char *user_dir);
+// Reads score.dat and replay/th6_01.rpy to replay/th6_15.rpy. A missing or
+// invalid file counts as empty. Also reads the first 45 files of replay/
+// whose names match th6_ud????.rpy, in byte order, as the original reads
+// the first 45 that Windows lists. A replay's path is its path in
+// Shell_GetUserFiles, spelt as listed.
+void ResultScreen_OpenSaves(void);
 
 // Writes the files that the simulation saved since the last call. Reports
 // the first failure. A file that fails to write is dropped, so a later
