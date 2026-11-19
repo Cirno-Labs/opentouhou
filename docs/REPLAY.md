@@ -41,7 +41,9 @@ checks:
 - `replay::check` replays every case of a directory on the native
   backend, in parallel.
 - `replay::retail` checks the port against the original, and with
-  screenshots compares the two backends' frames.
+  screenshots compares the two backends' frames. It needs msgothic.ttc
+  in the Fonts folder of the Wine prefix as a real file, not a link
+  into WSL's /mnt/c, which the original's 32-bit FreeType cannot open.
 - `replay::rpy-cases` captures the original playing each `.rpy` file of
   a directory.
 - `replay::live` captures a person's play of the original.
