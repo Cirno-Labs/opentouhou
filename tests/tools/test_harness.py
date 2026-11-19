@@ -40,20 +40,20 @@ class HarnessTest(unittest.TestCase):
         rpy = self.dir / "x.rpy"
         program = self.dir / "th06native"
         program.touch()
-        argv = ["capture", "th06", str(self.dir / "c.otrc"), "--data"]
+        argv = ["capture", "th06", str(self.dir / "c.othtc"), "--data"]
         argv += [str(self.dir), "--script", str(script), "--headless"]
         argv += ["--file", f"{rpy}=replay/a.rpy", "--program", str(program)]
         with mock.patch.object(harness.subprocess, "run", run):
             self.assertEqual(harness.main(argv), 0)
         command = commands[0]
         self.assertEqual(command[0], str(program))
-        self.assertEqual(command[1:3], ["capture", str(self.dir / "c.otrc")])
+        self.assertEqual(command[1:3], ["capture", str(self.dir / "c.othtc")])
         self.assertIn("--headless", command)
         self.assertEqual(command[command.index("--script") + 1], str(script))
         self.assertEqual(command[command.index("--file") + 1], f"{rpy}=replay/a.rpy")
 
     def test_window_needs_the_retail_backend(self) -> None:
-        argv = ["capture", "th06", str(self.dir / "c.otrc"), "--data"]
+        argv = ["capture", "th06", str(self.dir / "c.othtc"), "--data"]
         argv += [str(self.dir), "--live", "--window"]
         with self.assertRaises(SystemExit):
             harness.main(argv)
@@ -61,9 +61,9 @@ class HarnessTest(unittest.TestCase):
     def test_stage_rpy_stages_into_the_games_slot(self) -> None:
         with mock.patch.object(stage_rpy.subprocess, "run") as run:
             run.return_value.returncode = 0
-            stage_rpy.main(["th06", "x.rpy", "c.otrc", "--headless"])
+            stage_rpy.main(["th06", "x.rpy", "c.othtc", "--headless"])
         command = run.call_args.args[0]
-        self.assertEqual(command[1:4], ["capture", "th06", "c.otrc"])
+        self.assertEqual(command[1:4], ["capture", "th06", "c.othtc"])
         self.assertIn("x.rpy=replay/th6_01.rpy", command)
         self.assertEqual(command[-1], "--headless")
 
