@@ -687,7 +687,8 @@ void Effect_DrawPetals(void)
     if (g_Settings.effects_quality <= 1) {
         return;
     }
-    const ANM_DRAW draw = M_DrawContext();
+    ANM_DRAW draw = M_DrawContext();
+    draw.depth_test = GFX_DEPTH_LESS_EQUAL;
     const M_DRAW_LIST *const list = &m_Lists[M_LIST_PETALS];
     for (int32_t i = 0; i < list->count; i++) {
         EFFECT *const effect = list->effects[i];

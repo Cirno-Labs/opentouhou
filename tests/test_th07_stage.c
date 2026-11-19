@@ -521,6 +521,8 @@ TEST(stage_layers_draw_through_the_stage_camera_in_fog)
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2); // the layer, then the petal
     const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);
     CHECK(quad->view.view.m[3][2] == 200.0f);
+    CHECK_EQ_INT(quad->state.depth_test, GFX_DEPTH_LESS_EQUAL);
+    CHECK_EQ_INT(GfxRecorder_Quad(1)->state.depth_test, GFX_DEPTH_LESS_EQUAL);
     CHECK(quad->view.fog.enabled);
     CHECK(quad->view.fog.begin == 200.0f);
     CHECK(quad->view.fog.end == 500.0f);
@@ -583,6 +585,7 @@ TEST(projected_sprites_fade_into_the_fog_by_hand)
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);
     CHECK(!quad->view.fog.enabled);
+    CHECK_EQ_INT(quad->state.depth_test, GFX_DEPTH_LESS_EQUAL);
     CHECK_EQ_INT(quad->vertices[0].color.red, 0x80);
     CHECK_EQ_INT(quad->vertices[0].color.alpha, 0x7f);
     CHECK_EQ_INT(vm->color, COLOR_WHITE);

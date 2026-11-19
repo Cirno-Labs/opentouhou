@@ -772,6 +772,7 @@ static void M_DrawProjected(
     vm->pos = center;
     if (vm->pos.z >= 0.0f && vm->pos.z <= 1.0f) {
         ANM_DRAW draw = M_PlayAreaDraw();
+        draw.depth_test = GFX_DEPTH_LESS_EQUAL;
         draw.part = part;
         Anm_DrawNoRound(vm, &draw);
     }
@@ -789,6 +790,7 @@ static void M_DrawLayer(const int32_t layer)
     Anm_SetLastCamera(ANM_CAMERA_STAGE);
     ANM_DRAW draw = Anm_ScreenDraw();
     draw.view = stage;
+    draw.depth_test = GFX_DEPTH_LESS_EQUAL;
     draw.interpolate = true;
     const VEC3 camera = g_Stage.camera.pos;
     for (int32_t i = 0; i < g_Stage.data.instance_count; i++) {
