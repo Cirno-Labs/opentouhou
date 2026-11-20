@@ -186,8 +186,8 @@ Credits
 
 - ZUN (Team Shanghai Alice): the original game, characters, art and music.
 - thpatch.net community: translations in the patch format of thcrap.
-- SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo and zlib:
-  shared libraries.
+- SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo, zlib, curl
+  and Mbed TLS: libraries.
 - IPAGothic and IPAPGothic: the bundled fonts, IPA fonts by the IPA.
 
 Source and documentation:
