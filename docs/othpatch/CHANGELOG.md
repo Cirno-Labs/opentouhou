@@ -1,6 +1,6 @@
 # othpatch changelog
 
-## Unreleased
+## 1.0.1 (2026-11-20)
 
 - Changed the text of `--help` and of command-line errors to a new
   format.
