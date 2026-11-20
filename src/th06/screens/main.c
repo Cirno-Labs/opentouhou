@@ -359,8 +359,8 @@ static void M_CommitMapping(const M_MENU *const menu)
                         &buttons[TH06_ACTION_focus]);
 }
 
-// The highlights take the original's path for its default colour add
-// emulation: precoloured sprites in white instead of tints.
+// The highlights take the original's path for its default color add
+// emulation: precolored sprites in white instead of tints.
 static void M_HighlightEntry(
     ANM_VM *const vm, const int32_t index, const int32_t cursor,
     const uint32_t selected_color, const uint32_t color,

@@ -86,8 +86,8 @@ static void M_SpinBullets(const int32_t arg)
 {
     ScreenEffect_Shake(30, 12, 0);
     ScreenEffect_Flash(4, 3, COLOR_ARGB(0x80, 0xff, 0xcf, 0xcf));
-    // The other colours keep the angle of the bullet before; the original
-    // reads it uninitialised when no bullet came before.
+    // The other colors keep the angle of the bullet before; the original
+    // reads it uninitialized when no bullet came before.
     float angle = 0.0f;
     bool has_angle = false;
     for (int32_t i = 0; i < BULLET_COUNT; i++) {
@@ -153,7 +153,7 @@ static void M_FansFromNearBullets(const ENEMY *const enemy, const int32_t arg)
         range = 999.0f;
         break;
     default:
-        // The original compares with an uninitialised range.
+        // The original compares with an uninitialized range.
         ASSERT(false);
         range = 0.0f;
         break;
@@ -451,7 +451,7 @@ static void M_EndSlowDown(const int32_t arg)
 }
 
 // Fires count bullets around bullet, each of one of three small types at
-// random in its colour from colors, speeding up from 0.1.
+// random in its color from colors, speeding up from 0.1.
 static void M_Burst(
     BULLET_SHOOTER *const shooter, const BULLET *const bullet,
     const int32_t count, const int16_t colors[3], const bool alternate_spawn,

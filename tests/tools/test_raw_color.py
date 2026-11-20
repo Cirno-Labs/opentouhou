@@ -20,7 +20,7 @@ def errors(text: str) -> list[int]:
 
 
 class RawColorTest(unittest.TestCase):
-    def test_raw_colour_fails(self) -> None:
+    def test_raw_color_fails(self) -> None:
         text = (
             "    vm->color = 0x80ffffffu;\n"
             "    CHECK(effect->vm.color == 0xff804020u);\n"

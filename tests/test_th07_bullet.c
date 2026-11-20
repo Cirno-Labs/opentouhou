@@ -1135,7 +1135,7 @@ TEST(a_turn_aims_at_the_player_or_to_its_angle)
     M_Teardown();
 }
 
-TEST(the_behaviours_run_together_in_one_frame)
+TEST(the_behaviors_run_together_in_one_frame)
 {
     M_Setup("together");
     const BULLET_COMMAND commands[] = {
@@ -2006,7 +2006,7 @@ TEST(clear_circle_turns_the_bullets_within_it_into_stars)
     M_Teardown();
 }
 
-TEST(stop_all_stops_every_bullet_in_color_0_and_keeps_its_behaviours)
+TEST(stop_all_stops_every_bullet_in_color_0_and_keeps_its_behaviors)
 {
     M_Setup("stop_all");
     BULLET_SHOOTER shooter = M_Shooter(1, 0.5f, 2.0f);

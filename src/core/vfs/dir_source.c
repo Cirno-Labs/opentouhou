@@ -18,7 +18,7 @@
 // Holds a file of a read-only directory: its path below the directory as
 // the disk spells it, and its disk path.
 typedef struct {
-    char *spelt;
+    char *spelled;
     char *disk;
 } M_ENTRY;
 
@@ -240,7 +240,7 @@ static void M_List(
             if (name != nullptr) {
                 // Normal form keeps the length and the separators.
                 const M_ENTRY *const entry = HashMap_Get(&dir->entries, normal);
-                visit(user, entry->spelt + (name - normal));
+                visit(user, entry->spelled + (name - normal));
             }
         }
         return;
@@ -287,7 +287,7 @@ static void M_Close(VFS_SOURCE *const source)
 {
     DIR_SOURCE *const dir = (DIR_SOURCE *)source;
     for (int32_t i = 0; HashMap_Next(&dir->entries, &i); i++) {
-        M_FreeText(dir->allocator, dir->entries.values[i].spelt);
+        M_FreeText(dir->allocator, dir->entries.values[i].spelled);
         M_FreeText(dir->allocator, dir->entries.values[i].disk);
     }
     HashMap_Free(&dir->entries);
@@ -341,13 +341,13 @@ static RESULT M_Record(
             M_ENTRY *const slot =
                 HashMap_GetOrPut(&dir->entries, normal, &found);
             if (found) {
-                M_FreeText(allocator, slot->spelt);
+                M_FreeText(allocator, slot->spelled);
                 M_FreeText(allocator, slot->disk);
                 M_FreeText(allocator, normal);
             } else {
                 Array_Append(&dir->order, normal);
             }
-            *slot = (M_ENTRY) { .spelt = given, .disk = disk };
+            *slot = (M_ENTRY) { .spelled = given, .disk = disk };
             continue;
         }
         M_FreeText(allocator, disk);

@@ -152,7 +152,7 @@ generator.
 
 ```
 core/base     types, asserts, logging, allocators, containers,
-              strings, packed colours
+              strings, packed colors
 core/args     command-line options
 core/hash     CRC-32, SHA-1 and SHA-256
 core/io       readers and writers, files, paths, the locale, processes
@@ -202,7 +202,7 @@ and its script engines, such as ANM and ECL.
 
 ## Features
 
-Every change to an original game's behaviour is a named feature with a
+Every change to an original game's behavior is a named feature with a
 default:
 
 - **fix:** does not change gameplay. On by default.

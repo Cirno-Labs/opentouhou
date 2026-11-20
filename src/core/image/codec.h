@@ -7,7 +7,7 @@
 #define IMAGE_MAX_SIZE 16384
 
 // Sets how libswscale converts and scales: bilinear, with chroma read and
-// written at full resolution and accurate rounding, so that JPEG colour
+// written at full resolution and accurate rounding, so that JPEG color
 // edges stay smooth.
 #define IMAGE_SWS_FLAGS                                                        \
     (SWS_BILINEAR | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP | SWS_ACCURATE_RND)

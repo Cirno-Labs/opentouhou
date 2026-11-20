@@ -49,7 +49,7 @@ float X87_Rint(float x);
 // Truncates x toward zero and returns it as a 32-bit integer, reproducing
 // _ftol (fistp after setting the rounding mode to truncate). NaN and a
 // value outside [INT32_MIN, INT32_MAX] return INT32_MIN, the x87 "integer
-// indefinite", instead of invoking C's undefined behaviour for an
+// indefinite", instead of invoking C's undefined behavior for an
 // out-of-range conversion.
 int32_t X87_Ftol(float x);
 

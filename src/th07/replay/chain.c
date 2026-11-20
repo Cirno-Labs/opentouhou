@@ -207,7 +207,7 @@ static void M_BuildConfig(
     Writer_WriteI16(&writer, 600); // pad threshold y
     Writer_WriteU8(&writer, lives);
     Writer_WriteU8(&writer, (uint8_t)g_Settings.bombs);
-    Writer_WriteU8(&writer, 0); // 32-bit colour
+    Writer_WriteU8(&writer, 0); // 32-bit color
     Writer_WriteU8(&writer, (uint8_t)g_Settings.music);
     Writer_WriteU8(&writer, g_Settings.sound ? 1 : 0);
     Writer_WriteU8(&writer, (uint8_t)g_Settings.difficulty);
@@ -219,7 +219,7 @@ static void M_BuildConfig(
     for (int i = 0; i < 13; i++) {
         Writer_WriteU8(&writer, 0);
     }
-    Writer_WriteU32(&writer, 1); // flags: colour-add emulation
+    Writer_WriteU32(&writer, 1); // flags: color-add emulation
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);
     ASSERT(size == M_CONFIG_SIZE);

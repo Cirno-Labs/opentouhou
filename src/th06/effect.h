@@ -38,7 +38,7 @@ typedef struct {
     VEC3 pos;
     VEC3 velocity;
     VEC3 acceleration;
-    VEC3 origin; // the orbit's centre; where a converging effect ends
+    VEC3 origin; // the orbit's center; where a converging effect ends
     VEC3 axis; // the orbit's axis; a converging effect's direction
     VEC4 rotation; // the orbit's quaternion
     float radius; // the orbit's radius and angle, which the owner moves

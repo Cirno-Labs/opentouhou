@@ -5,7 +5,7 @@
 // Lives, bombs and power are floats in th07. The cherry columns are the
 // values the game shows, without the offset kept against tampering.
 // Outside the gameplay scene, the columns from score to cherry_plus are 0,
-// as the original's title holds an uninitialised copy of them.
+// as the original's title holds an uninitialized copy of them.
 
 #define TH07_CALC_FIELDS(X)                                                    \
     X(buttons, U32)                                                            \

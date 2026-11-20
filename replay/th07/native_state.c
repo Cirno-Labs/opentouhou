@@ -135,7 +135,7 @@ void Th07Native_Sample(void *const context, uint32_t *const row)
     row[TH07_COLUMN_stage] = (uint32_t)game->run.stage;
     row[TH07_COLUMN_stage_frames] = (uint32_t)game->run.stage_frames;
     row[TH07_COLUMN_game_speed] = State_F32(g_GameSpeed);
-    // The original's title holds an uninitialised GameStats.
+    // The original's title holds an uninitialized GameStats.
     for (int32_t i = TH07_COLUMN_score; i <= TH07_COLUMN_cherry_plus; i++) {
         row[i] = 0;
     }

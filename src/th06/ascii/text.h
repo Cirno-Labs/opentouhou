@@ -29,7 +29,7 @@ void AsciiText_SetFrameRate(float rate);
 void AsciiText_SetColor(uint32_t color);
 
 // Draws the strings queued next with the second glyph set in white, as the
-// original does with its default colour add emulation.
+// original does with its default color add emulation.
 void AsciiText_SetHighlight(bool highlight);
 
 // Copies UTF-8 text with the current style into the queue. Drops strings

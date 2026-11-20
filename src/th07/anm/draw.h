@@ -51,7 +51,7 @@ void Anm_SetCamera(ANM_CAMERA camera);
 // 3D sprite sets up its camera only when it differs from this one.
 void Anm_SetLastCamera(int32_t camera);
 
-// Scales each channel of the colours sprites are drawn in by the channel
+// Scales each channel of the colors sprites are drawn in by the channel
 // of color, 0x80 for 1, up to 0xff.
 void Anm_SetColorModulation(uint32_t color);
 

@@ -2010,7 +2010,7 @@ TEST(star_pattern_fires_five_points_every_sixth_frame)
         CHECK_EQ_INT(m_FiredCount, fired + 5);
         float progress = (float)frame / 12.0f;
         const float t = progress * 0.1f;
-        const VEC3 centre = {
+        const VEC3 center = {
             (200.0f - 100.0f) * t + 100.0f,
             (300.0f - 100.0f) * t + 100.0f,
             0.0f,
@@ -2024,8 +2024,8 @@ TEST(star_pattern_fires_five_points_every_sixth_frame)
             X87_SinCosScale(angles[i], 50.0f, &from.x, &from.y);
             X87_SinCosScale(angles[i + 1], 50.0f, &to.x, &to.y);
             const BULLET_SHOOTER *const shooter = &m_Fired[fired + i];
-            CHECK(shooter->pos.x == centre.x + ((to.x - from.x) * s + from.x));
-            CHECK(shooter->pos.y == centre.y + ((to.y - from.y) * s + from.y));
+            CHECK(shooter->pos.x == center.x + ((to.x - from.x) * s + from.x));
+            CHECK(shooter->pos.y == center.y + ((to.y - from.y) * s + from.y));
             CHECK(shooter->pos.z == 0.0f);
             CHECK(shooter->speed1 == 1.0f + Rng_F32InRange(&expected, 0.5f));
             CHECK(shooter->angle1 == angle);

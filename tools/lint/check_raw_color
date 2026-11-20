@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Fail when a colour is written as a raw 0xAARRGGBB literal.
+"""Fail when a color is written as a raw 0xAARRGGBB literal.
 
 Takes the paths of C files. Flags an 8-digit hex literal that is
 assigned or compared to a name with "color" in it, passed first to a
 function with "Color" in its name, or defined as a macro with "COLOR"
 in its name, unless an operator follows it, as a mask does. Such a
-colour is written with COLOR_ARGB or COLOR_WHITE from core/base/color.h
+color is written with COLOR_ARGB or COLOR_WHITE from core/base/color.h
 instead.
 """
 
@@ -20,11 +20,11 @@ RAW_COLOR_RE = re.compile(
     rf"|^#define\s+\w*COLOU?R\w*\s+{LITERAL}",
     re.IGNORECASE,
 )
-MESSAGE = "write a colour with COLOR_ARGB or COLOR_WHITE"
+MESSAGE = "write a color with COLOR_ARGB or COLOR_WHITE"
 
 
 def errors(lines: list[str]) -> list[int]:
-    """Return the indices of the lines that write a raw colour literal."""
+    """Return the indices of the lines that write a raw color literal."""
     return [index for index, line in enumerate(lines) if RAW_COLOR_RE.search(line)]
 
 

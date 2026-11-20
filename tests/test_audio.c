@@ -389,7 +389,7 @@ TEST(sample_load_transfers_reader_and_decodes_off_main_thread)
     CHECK(released_by != SDL_GetCurrentThreadID());
 }
 
-TEST(cancelled_loads_release_owned_readers_before_free_returns)
+TEST(canceled_loads_release_owned_readers_before_free_returns)
 {
     M_CheckResult(Audio_Init());
     for (int i = 0; i < 8; i++) {

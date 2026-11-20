@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-// Normalises a VFS path into *out, a new string from allocator that
+// Normalizes a VFS path into *out, a new string from allocator that
 // Allocator_Free(allocator, *out, strlen(*out) + 1) releases. '\\' becomes
 // '/', ASCII letters are lowercased, and repeated or leading '/' are
 // dropped. A path with a ".." component, or an absolute path such as
@@ -13,7 +13,7 @@
 RESULT VfsNormalize_Path(
     const char *path, const ALLOCATOR *allocator, char **out);
 
-// Normalises path as VfsNormalize_Path does, but keeps the case of letters.
+// Normalizes path as VfsNormalize_Path does, but keeps the case of letters.
 RESULT VfsNormalize_PathKeepCase(
     const char *path, const ALLOCATOR *allocator, char **out);
 

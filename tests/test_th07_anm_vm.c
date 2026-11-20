@@ -273,7 +273,7 @@ TEST(rand_draws_from_the_rng_in_order)
     Anm_Shutdown();
 }
 
-TEST(trigonometry_and_angle_normalisation)
+TEST(trigonometry_and_angle_normalization)
 {
     M_Setup();
     ANM_VM vm;

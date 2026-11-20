@@ -48,7 +48,7 @@ typedef struct {
 // invalid file counts as empty. Also reads the first 45 files of replay/
 // whose names match th6_ud????.rpy, in byte order, as the original reads
 // the first 45 that Windows lists. A replay's path is its path in
-// Shell_GetUserFiles, spelt as listed.
+// Shell_GetUserFiles, spelled as listed.
 void ResultScreen_OpenSaves(void);
 
 // Writes the files that the simulation saved since the last call. Reports

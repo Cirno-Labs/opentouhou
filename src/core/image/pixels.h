@@ -44,7 +44,7 @@ RESULT Image_Crop(
 // does not fit inside image is a failure, and image is left unchanged.
 RESULT Image_Paste(IMAGE *image, int32_t x, int32_t y, const IMAGE *source);
 
-// Sets alpha to 0 on every pixel whose colour is rgb (0xRRGGBB).
+// Sets alpha to 0 on every pixel whose color is rgb (0xRRGGBB).
 void Image_ColorKey(IMAGE *image, uint32_t rgb);
 
 // Sets each pixel's alpha to the blue channel of the same pixel in alpha.

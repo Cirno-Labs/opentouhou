@@ -92,7 +92,7 @@ ownership or cleanup is one to delete. A comment describes the code as
 it stands, never the change that produced it.
 
 Write comments the way a reference manual is written. Open with a verb
-saying what the thing does. Describe states and behaviour, never an
+saying what the thing does. Describe states and behavior, never an
 invented actor such as "a reader that ..." or "a caller that ...". Use
 the standard technical word whenever one exists: fatal, return, report
 failure, error flag, position.
@@ -163,7 +163,7 @@ For commit messages, documentation and pull requests:
   one idea each, no flourishes.
 - The first sentence says what changed or what the thing is.
 - Stay high level: what changed and why it matters, not how it works.
-- Give old behaviour only where the reader needs it, in one "Before
+- Give old behavior only where the reader needs it, in one "Before
   this, ..." sentence.
 - To shorten, cut clauses and sentences. Do not compress.
 

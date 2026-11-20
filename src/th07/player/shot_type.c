@@ -54,11 +54,11 @@ static RESULT M_ReadShot(READER *const reader, SHOT *const shot)
     const uint32_t draw = Reader_ReadU32(reader);
     const uint32_t hit = Reader_ReadU32(reader);
     FAIL_IF(kind >= M_KIND_COUNT, "shot kind %u is unknown", kind);
-    FAIL_IF(fire >= M_FIRE_COUNT, "fire behaviour %u is unknown", fire);
-    FAIL_IF(move >= M_MOVE_COUNT, "move behaviour %u is unknown", move);
-    FAIL_IF(draw >= M_DRAW_COUNT, "draw behaviour %u is unknown", draw);
+    FAIL_IF(fire >= M_FIRE_COUNT, "fire behavior %u is unknown", fire);
+    FAIL_IF(move >= M_MOVE_COUNT, "move behavior %u is unknown", move);
+    FAIL_IF(draw >= M_DRAW_COUNT, "draw behavior %u is unknown", draw);
     // The original's hit entry 3 is the address 1, which crashes.
-    FAIL_IF(hit >= M_HIT_COUNT, "hit behaviour %u is unknown", hit);
+    FAIL_IF(hit >= M_HIT_COUNT, "hit behavior %u is unknown", hit);
     FAIL_IF(
         shot->option > M_OPTION_COUNT, "shot option %u is unknown",
         shot->option);

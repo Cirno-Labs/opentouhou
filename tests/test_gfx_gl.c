@@ -256,7 +256,7 @@ TEST(nearby_depths_compare_at_sixteen_bit_precision)
     Image_Free(&image);
 }
 
-TEST(fog_mixes_toward_its_colour_by_view_depth)
+TEST(fog_mixes_toward_its_color_by_view_depth)
 {
     REQUIRE_GL();
     Gfx_BeginTick(BLACK);
@@ -298,7 +298,7 @@ TEST(fog_is_clamped_after_interpolation)
     Image_Free(&image);
 }
 
-TEST(persistent_screens_keep_colour_and_clear_depth_in_both_presentations)
+TEST(persistent_screens_keep_color_and_clear_depth_in_both_presentations)
 {
     REQUIRE_GL();
     Gfx_BeginTick(BLACK);

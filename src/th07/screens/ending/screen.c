@@ -415,8 +415,8 @@ static CHAIN_STATUS M_Update(void *const arg)
     }
 }
 
-// Steps the fade and returns its colour. Fades in clear themselves when
-// they end; fades out keep their last colour.
+// Steps the fade and returns its color. Fades in clear themselves when
+// they end; fades out keep their last color.
 static uint32_t M_StepFade(M_ENDING *const ending)
 {
     const bool done = ending->fade_timer >= ending->fade_duration;

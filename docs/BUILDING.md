@@ -200,7 +200,7 @@ dependencies are static libraries, and the Windows executables link the
 MinGW runtime statically, so they need no DLLs beyond those of Windows.
 
 FFmpeg supports PNG, MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and
-MP3 audio. No GPL component is enabled, so its licence stays LGPL. curl
+MP3 audio. No GPL component is enabled, so its license stays LGPL. curl
 supports HTTP and HTTPS only. Its TLS is mbedTLS on Linux and macOS and
 Schannel on Windows. curl has no CA bundle of its own; othpatch uses the
 system's certificates.

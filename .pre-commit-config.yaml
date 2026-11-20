@@ -25,7 +25,7 @@ repos:
     files: ^(src|tests)/.*\.[ch]$
 
   - id: raw-color
-    name: A colour is written with COLOR_ARGB, not a raw literal
+    name: A color is written with COLOR_ARGB, not a raw literal
     entry: tools/lint/check_raw_color
     language: python
     files: ^(src/th0[67]/|tests/(test_)?th0[67]).*\.[ch]$

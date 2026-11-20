@@ -255,7 +255,7 @@ static int32_t m_SubCount;
 static ECL_TIMELINE_ENTRY *m_Timeline;
 
 // Holds the star of ECL_FUNC_STAR_PATTERN: its corners, and where its
-// centre moves from and to. It lasts across loads.
+// center moves from and to. It lasts across loads.
 static struct {
     float angles[6];
     VEC3 from, to;
@@ -892,7 +892,7 @@ static void M_ShootFromRandomPoint(
 }
 
 // Every sixth frame until int_vars[2] reaches int_vars[3], fires five
-// patterns from points on a star of radius float_vars[3], whose centre
+// patterns from points on a star of radius float_vars[3], whose center
 // moves from the enemy towards where the player was.
 static void M_StarPattern(ENEMY *const enemy)
 {
@@ -918,9 +918,9 @@ static void M_StarPattern(ENEMY *const enemy)
     if (state->int_vars[2] % 6 == 0) {
         float progress = (float)state->int_vars[2] / (float)state->int_vars[3];
         const float t = progress * 0.1f;
-        VEC3 centre = Vec3_Add(
+        VEC3 center = Vec3_Add(
             Vec3_Scale(Vec3_Sub(m_Star.to, m_Star.from), t), m_Star.from);
-        centre.z = 0.0f;
+        center.z = 0.0f;
         progress += 0.5f;
         shooter->angle1 = 1.0471976f * progress;
         for (int32_t i = 0; i < 5; i++) {
@@ -931,7 +931,7 @@ static void M_StarPattern(ENEMY *const enemy)
             M_SinCosScale(&to, m_Star.angles[i + 1], state->float_vars[3]);
             from = Vec3_Add(Vec3_Scale(Vec3_Sub(to, from), s), from);
             from.z = 0.0f;
-            shooter->pos = Vec3_Add(centre, from);
+            shooter->pos = Vec3_Add(center, from);
             const float speed = shooter->speed1;
             shooter->speed1 += Rng_F32InRange(&g_Rng, shooter->speed2);
             Bullet_FirePattern(shooter);
@@ -1272,7 +1272,7 @@ static void M_ShootFromLasers(ENEMY *const enemy)
 }
 
 // Every sixth frame of int_vars[3], fires a copy of the shooter from
-// points on a circle of radius float_vars[3] around the centre of the
+// points on a circle of radius float_vars[3] around the center of the
 // play area, from angle float_vars[2], each aimed outwards and turned by
 // float_vars[1].
 static void M_ArenaCircleShots(ENEMY *const enemy, const M_INSTR *const instr)

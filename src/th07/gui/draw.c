@@ -39,7 +39,7 @@ static ANM_DRAW M_ScreenDraw(const ANM_VIEW view)
     return draw;
 }
 
-// Fills a rectangle of screen pixels with colours at its corners.
+// Fills a rectangle of screen pixels with colors at its corners.
 static void M_Gradient(
     const float x0, const float y0, const float x1, const float y1,
     const float depth, const uint32_t left_top, const uint32_t right_top,

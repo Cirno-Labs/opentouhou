@@ -357,7 +357,7 @@ static RESULT M_RenderLine(
     return OK;
 }
 
-// Turns coverage into the note's pixels, as thcrap does: the colour is
+// Turns coverage into the note's pixels, as thcrap does: the color is
 // the coverage of white text on black, and the alpha is the largest
 // coverage within the outline radius.
 static void M_Outline(const uint8_t *const coverage, IMAGE *const image)

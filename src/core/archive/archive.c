@@ -40,7 +40,7 @@ struct ARCHIVE {
 };
 
 // Folds the ASCII letters of text to lower case in place, matching how the
-// VFS normalises the paths that a source receives.
+// VFS normalizes the paths that a source receives.
 static void M_FoldAscii(char *const text)
 {
     for (char *c = text; *c != '\0'; c++) {

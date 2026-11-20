@@ -76,7 +76,7 @@ RESULT Archive_Read(
 // when the archive has no name. The source takes ownership of the archive and
 // closes it when the VFS closes the source. It has every entry that is not a
 // directory, at its name with ASCII letters folded to lower case, as the VFS
-// normalises paths; a format that looks names up by their last component
+// normalizes paths; a format that looks names up by their last component
 // finds them by it also through the source. An entry opens in memory, in a
 // reader named "<archive>/<entry>", the archive named by its reader, or
 // "<entry>" when the archive has no name.

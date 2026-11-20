@@ -103,7 +103,7 @@ extern GAME_MANAGER g_GameManager;
 // 384 x 448.
 void GameManager_Create(GAME_MANAGER *gm);
 
-// Returns whether a box centred at x, y lies at least partly inside the
+// Returns whether a box centered at x, y lies at least partly inside the
 // play area.
 bool GameManager_IsInPlayArea(float x, float y, float width, float height);
 

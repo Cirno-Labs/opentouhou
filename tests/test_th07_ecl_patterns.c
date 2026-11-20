@@ -660,7 +660,7 @@ TEST(slow_down_and_end_slow_down_scale_the_bullets)
 }
 
 // Checks that bursts fired count bullets from source in RNG order, each
-// with the colours of the three small types and the turn, as pattern
+// with the colors of the three small types and the turn, as pattern
 // functions 12 and 21 do.
 static void M_CheckBurst(
     RNG *const expected, const int32_t first, const VEC3 source,

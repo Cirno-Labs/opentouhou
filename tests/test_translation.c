@@ -158,14 +158,14 @@ TEST(music_comments_fill_every_row_and_keep_markup)
         "nmlgc/base_tsa/stringdefs.js",
         "{'Music Room Numbered Title': 'No. <r$%2d$99>  %s'}",
         "thpatch/lang/game/musiccmt.js",
-        "{'1': ['@', 'The title theme.', '<c$centred$x>']}",
+        "{'1': ['@', 'The title theme.', '<c$centered$x>']}",
     };
     M_Begin("music", files, 6);
     CHECK_EQ_STR(
         Translation_GetMusicComment(0, 0),
         "No. <r$ 1$99>  A Dream More Scarlet than Red");
     CHECK_EQ_STR(Translation_GetMusicComment(0, 1), "The title theme.");
-    CHECK_EQ_STR(Translation_GetMusicComment(0, 2), "<c$centred$x>");
+    CHECK_EQ_STR(Translation_GetMusicComment(0, 2), "<c$centered$x>");
     CHECK_EQ_STR(Translation_GetMusicComment(0, 7), "");
     CHECK(Translation_GetMusicComment(1, 0) == nullptr);
     CHECK(Translation_GetMusicComment(0, 8) == nullptr);

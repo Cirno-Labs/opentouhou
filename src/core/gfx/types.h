@@ -27,8 +27,8 @@ typedef enum {
 
 typedef enum { GFX_CLEAR_COLOR = 1 << 0, GFX_CLEAR_DEPTH = 1 << 1 } GFX_CLEAR;
 
-// Combines the texture colour with the vertex colour; alpha always
-// multiplies. Without a texture, the vertex colour is drawn as it is.
+// Combines the texture color with the vertex color; alpha always
+// multiplies. Without a texture, the vertex color is drawn as it is.
 typedef enum {
     GFX_COLOR_MODULATE,
     GFX_COLOR_ADD,

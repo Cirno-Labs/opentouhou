@@ -9,7 +9,7 @@ bool Vfs_Exists(const VFS *vfs, const char *path);
 
 // Opens path from the highest-priority mounted source that has it, in mode.
 // A path that no mounted source has is a FAIL naming the path, both as
-// given and normalised, and every source that was searched.
+// given and normalized, and every source that was searched.
 //
 // '\\' is read as '/', ASCII letters are read without regard to case, and
 // repeated or leading '/' are ignored, so "Data\\Title00.jpg" and
@@ -23,7 +23,7 @@ RESULT Vfs_Open(VFS *vfs, const char *path, VFS_MODE mode, READER *out);
 RESULT Vfs_Write(VFS *vfs, const char *path, const void *data, size_t size);
 
 // Visits the name of each file directly below dir that a lookup would
-// find, once, spelt as the highest-priority source that has it spells it,
+// find, once, spelled as the highest-priority source that has it spells it,
 // in byte order of those names. "" lists the root.
 void Vfs_List(
     const VFS *vfs, const char *dir,

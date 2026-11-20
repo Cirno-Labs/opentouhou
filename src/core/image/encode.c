@@ -86,9 +86,9 @@ void Image_EncodeJpeg(
     const IMAGE *const image, const int32_t quality, WRITER *const writer)
 {
     ASSERT(quality >= 1 && quality <= 100);
-    // FFmpeg's quantiser scale runs from 1 (best) to 31 (worst), the
+    // FFmpeg's quantizer scale runs from 1 (best) to 31 (worst), the
     // opposite way around from the quality argument, and FF_QP2LAMBDA
-    // converts a quantiser step into the lambda unit global_quality uses.
+    // converts a quantizer step into the lambda unit global_quality uses.
     const int qscale = 1 + (100 - quality) * 30 / 99;
     M_Encode(
         image, AV_CODEC_ID_MJPEG, AV_PIX_FMT_YUVJ420P, qscale * FF_QP2LAMBDA,

@@ -34,10 +34,10 @@ typedef enum {
 typedef struct VFS_SOURCE VFS_SOURCE;
 
 // The functions a mounted source implements. contains and open receive a
-// path the VFS has already normalised (core/vfs/vfs.c normalises every path
-// before it reaches a source), so a source only ever compares normalised
+// path the VFS has already normalized (core/vfs/vfs.c normalizes every path
+// before it reaches a source), so a source only ever compares normalized
 // paths, never a path as a game gave it. list calls visit with the name of
-// each file directly below dir, a normalised path relative to the source or
+// each file directly below dir, a normalized path relative to the source or
 // "" for its root, as the source spells it, in the source's order. write,
 // nullptr in a read-only source, creates or replaces the file at path,
 // which keeps the case that the game gave, with size bytes of data. close

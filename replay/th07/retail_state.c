@@ -129,7 +129,7 @@ void Th07Retail_Sample(void *const context, uint32_t *const row)
     row[TH07_COLUMN_stage] = (uint32_t)game->stage;
     row[TH07_COLUMN_stage_frames] = (uint32_t)game->stage_frames;
     row[TH07_COLUMN_game_speed] = State_F32(RETAIL_APP_AT->game_speed);
-    // The title holds an uninitialised GameStats.
+    // The title holds an uninitialized GameStats.
     for (int32_t i = TH07_COLUMN_score; i <= TH07_COLUMN_cherry_plus; i++) {
         row[i] = 0;
     }

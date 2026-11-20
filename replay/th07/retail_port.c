@@ -127,9 +127,9 @@ static RESULT M_Hook(void *const context)
         RETAIL_ADD_FPS_CALL, RETAIL_ADD_STRING, (uintptr_t)M_AddFps);
 }
 
-// Holds th07.cfg: the shipped pad mapping, windowed, 32-bit colour, no
+// Holds th07.cfg: the shipped pad mapping, windowed, 32-bit color, no
 // music or sound, no frame skip, full effects, shoot focusing and
-// colour-add emulation.
+// color-add emulation.
 // The literal's terminating NUL is not part of the file.
 static const char m_Config[] =
     // Pad buttons of shoot, bomb, focus, menu, up, down, left, right, skip.
@@ -139,7 +139,7 @@ static const char m_Config[] =
     "\x02\x00\x07\x00"
     // Pad thresholds x and y.
     "\x58\x02\x58\x02"
-    // Lives, bombs, colour, music, sound, difficulty, windowed, frame skip,
+    // Lives, bombs, color, music, sound, difficulty, windowed, frame skip,
     // effects quality, the options cursor and shoot focusing.
     "\x02\x03\x00\x00\x00\x01\x01\x00\x02\x00\x01"
     "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"

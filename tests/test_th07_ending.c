@@ -383,7 +383,7 @@ TEST(staff_sprites_keep_their_animation_rotation)
     M_Teardown();
 }
 
-TEST(a_fade_out_holds_its_last_colour)
+TEST(a_fade_out_holds_its_last_color)
 {
     M_Setup("fade");
     M_RUN(

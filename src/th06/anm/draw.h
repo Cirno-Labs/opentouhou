@@ -37,7 +37,7 @@ GFX_VIEW Anm_ScreenView(VIEWPORT viewport, uint32_t id);
 // depth.
 void Anm_DrawRect(GFX_RECT rect, uint32_t color);
 
-// Draws a sprite with pixel rounding or rotation around its rounded centre.
+// Draws a sprite with pixel rounding or rotation around its rounded center.
 // Skips hidden sprites without changing the VM.
 void Anm_Draw(const ANM_VM *vm, const ANM_DRAW *draw);
 

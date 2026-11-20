@@ -10,7 +10,7 @@
 // its configuration.
 //
 // These settings of the original are not ported:
-// - the colour depth, the frame skip, MIDI music (MIDI plays the wave
+// - the color depth, the frame skip, MIDI music (MIDI plays the wave
 //   files), and the option flags of the original's configuration tool;
 // - the pad axis thresholds, which core's [input] settings own.
 //

@@ -826,7 +826,7 @@ TEST(a_clear_area_wins_over_the_hitbox_and_gives_its_item)
     M_TearDown();
 }
 
-TEST(a_clear_circle_tests_only_the_centre_of_the_box)
+TEST(a_clear_circle_tests_only_the_center_of_the_box)
 {
     M_SetUpAlive("clear_circle", 0);
     Player_AddClearCircle(
