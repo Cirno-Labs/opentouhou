@@ -54,7 +54,7 @@ typedef struct {
     VEC3 step; // added to pos, or to true_pos for petals, each frame
     VEC3 acceleration; // added to step each frame
     VEC3 true_pos; // a petal's position in the stage
-    VEC3 origin; // the orbit's centre; where a converging effect ends
+    VEC3 origin; // the orbit's center; where a converging effect ends
     VEC3 axis; // the orbit's axis; a converging effect's direction
     VEC4 rotation; // the orbit's quaternion
     float radius; // the orbit's radius and angle, which the owner moves
@@ -98,7 +98,7 @@ void Effect_OffsetPetals(VEC3 offset);
 // Makes the petals of EFFECT_PETAL_DRIFT start falling.
 void Effect_StartPetalsFalling(void);
 
-// Sets the scale of each channel of the effect colours (opcode 140).
+// Sets the scale of each channel of the effect colors (opcode 140).
 void Effect_SetColorScale(float red, float green, float blue, float alpha);
 
 // Draws the petals, as the stage's draw does after the stage. Effects

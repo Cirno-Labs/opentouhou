@@ -128,13 +128,13 @@ static CHAIN_STATUS M_InputUpdate(void *const arg)
 }
 
 // Writes a script for id that shows sprite 0, white at interrupt 1 and
-// grey at interrupt 2.
+// gray at interrupt 2.
 static void M_AddTitleScript(ANM_BUILDER_ANM *const anm, const int32_t id)
 {
     const int32_t s = AnmBuilder_BeginScript(anm, id);
     const uint32_t sprite = 0;
     const uint32_t white = COLOR_WHITE;
-    const uint32_t grey = COLOR_ARGB(0xe0, 0x80, 0x80, 0x80);
+    const uint32_t gray = COLOR_ARGB(0xe0, 0x80, 0x80, 0x80);
     const uint32_t selected = 1;
     const uint32_t unselected = 2;
     AnmBuilder_Instr(anm, s, M_SPRITE_OP, 0, 0, &sprite, 1);
@@ -143,7 +143,7 @@ static void M_AddTitleScript(ANM_BUILDER_ANM *const anm, const int32_t id)
     AnmBuilder_Instr(anm, s, M_COLOR_OP, 0, 0, &white, 1);
     AnmBuilder_Instr(anm, s, M_STOP_OP, 0, 0, nullptr, 0);
     AnmBuilder_Instr(anm, s, M_LABEL_OP, 0, 0, &unselected, 1);
-    AnmBuilder_Instr(anm, s, M_COLOR_OP, 0, 0, &grey, 1);
+    AnmBuilder_Instr(anm, s, M_COLOR_OP, 0, 0, &gray, 1);
     AnmBuilder_Instr(anm, s, M_STOP_OP, 0, 0, nullptr, 0);
     AnmBuilder_End(anm, s);
 }

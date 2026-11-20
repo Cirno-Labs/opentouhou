@@ -135,7 +135,7 @@ extern GAME_MANAGER g_GameManager;
 // frame rate at 60.
 void GameManager_Create(GAME_MANAGER *gm);
 
-// Returns whether a box centred at x, y lies at least partly inside a
+// Returns whether a box centered at x, y lies at least partly inside a
 // 384 x 448 play area. The original ignores the size of play_area.
 bool GameManager_IsInPlayArea(float x, float y, float width, float height);
 

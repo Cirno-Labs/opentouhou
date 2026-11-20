@@ -128,7 +128,7 @@ typedef struct {
     int32_t damage_dealt;
 } PLAYER_DAMAGE_BOX;
 
-// Holds an area, centred on x and y, that clears the enemy bullets that
+// Holds an area, centered on x and y, that clears the enemy bullets that
 // touch it: a box while width is set, else a circle while radius is set.
 // The area is freed at the start of the update after frames_left runs out.
 typedef struct {
@@ -252,7 +252,7 @@ void Player_Remove(void);
 // Returns the angle from pos to the player, or pi / 2 when they coincide.
 float Player_AngleFrom(VEC3 pos);
 
-// Tests the box of size centred on pos, an enemy bullet or an enemy.
+// Tests the box of size centered on pos, an enemy bullet or an enemy.
 // Returns PLAYER_CONTACT_CLEARED when the box touches a clear area, and
 // sets clear_item to its item, else PLAYER_CONTACT_BOX when it touches the
 // hitbox, else PLAYER_CONTACT_NONE. A touch of the hitbox marks
@@ -266,7 +266,7 @@ PLAYER_CONTACT Player_CheckHit(VEC3 pos, VEC3 size);
 // dying or respawning.
 PLAYER_CONTACT Player_CheckGraze(VEC3 pos, VEC3 size);
 
-// Tests a laser: the box of size centred on pos, turned by angle around
+// Tests a laser: the box of size centered on pos, turned by angle around
 // origin. A touch of the hitbox marks REPLAY_EVENT_HIT, breaks a running
 // Border, and kills the player when it is PLAYER_ALIVE. Otherwise, with
 // can_graze, a box within 48 pixels of the hitbox grazes it, except while
@@ -274,15 +274,15 @@ PLAYER_CONTACT Player_CheckGraze(VEC3 pos, VEC3 size);
 void Player_CheckLaserHit(
     VEC3 pos, VEC3 size, VEC3 origin, float angle, bool can_graze);
 
-// Returns whether the box of size centred on pos touches the collect box
+// Returns whether the box of size centered on pos touches the collect box
 // while the player is alive, invulnerable or in the Border.
 bool Player_TouchesCollectBox(VEC3 pos, VEC3 size);
 
 // Returns the damage that the shots and the damage boxes deal this frame
-// to the box of size centred on pos, an enemy, and nothing before the state
+// to the box of size centered on pos, an enemy, and nothing before the state
 // timer has ticked, which leaves *hit_by_bomb unchanged. Each shot that
 // touches the box deals its damage, or a third of it (at least 1) during a
-// bomb; a hit behaviour may skip the hit. Lasers deal it on even frames and
+// bomb; a hit behavior may skip the hit. Lasers deal it on even frames and
 // never stop; piercing shots keep hitting at full speed; other shots stop,
 // slowed to an eighth. Every 4th hit of a damage box bursts a spark. Sets
 // *hit_by_bomb to whether a damage box touched it while a bomb runs.

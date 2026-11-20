@@ -166,7 +166,7 @@ static void M_BreakBorder(void)
 }
 
 // Sets clear_item and returns true when the box touches a clear area. A
-// circle tests only the centre of the box.
+// circle tests only the center of the box.
 static bool M_TouchesClearArea(const VEC3 pos, const VEC3 size)
 {
     VEC3 min;

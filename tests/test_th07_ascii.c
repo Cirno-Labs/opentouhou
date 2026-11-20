@@ -352,7 +352,7 @@ TEST(summary_shows_cherry_and_its_maximum)
     M_Teardown();
 }
 
-TEST(summary_colours_full_and_high_cherry)
+TEST(summary_colors_full_and_high_cherry)
 {
     M_Setup("summary_full");
     M_ShowSummary();

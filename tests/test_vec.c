@@ -129,7 +129,7 @@ TEST(perspective_matches_the_documented_formula)
     CHECK(m.m[0][1] == 0.0f && m.m[1][0] == 0.0f);
 }
 
-TEST(project_maps_the_origin_to_the_viewport_centre)
+TEST(project_maps_the_origin_to_the_viewport_center)
 {
     const VIEWPORT viewport = { 0.0f, 0.0f, 640.0f, 480.0f, 0.0f, 1.0f };
     const MAT4 world = Mat4_Identity();

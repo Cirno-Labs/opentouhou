@@ -78,7 +78,7 @@ static float M_NearestThreat(const VEC2 *const threats, const int32_t count)
 
 // Sums the repulsion of every threat and edge within M_THREAT_RADIUS and
 // the pull toward the home spot: the left and right edges sum to twice the
-// offset to the centre, and the bottom edge points straight down.
+// offset to the center, and the bottom edge points straight down.
 static VEC2 M_Field(const VEC2 *const threats, const int32_t count)
 {
     VEC2 field = { 0.0f, 0.0f };

@@ -168,8 +168,8 @@ TEST(floats_keep_their_bits)
 {
     const uint32_t singles[] = {
         0x7FC00001, // quiet NaN with a payload
-        0x7F800001, // signalling NaN
-        0xFFBADBAD, // negative signalling NaN with a payload
+        0x7F800001, // signaling NaN
+        0xFFBADBAD, // negative signaling NaN with a payload
         0x80000000, // negative zero
         0x00000001, // smallest subnormal
         0x807FFFFF, // largest negative subnormal

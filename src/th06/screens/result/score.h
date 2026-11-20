@@ -93,7 +93,7 @@ void ScoreFile_LoadClears(
 // Sets every practice score to 0, then copies the practice records of file
 // over them. The original indexes its array by shot * 24 + stage * 4 +
 // difficulty and admits difficulty 4 and stage 6, so such a record lands
-// in a neighbouring entry. A record whose index is past the array is
+// in a neighboring entry. A record whose index is past the array is
 // skipped.
 void ScoreFile_LoadPractice(
     const SCORE_FILE *file,

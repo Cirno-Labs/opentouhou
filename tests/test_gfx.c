@@ -320,7 +320,7 @@ TEST(a_clear_draws_in_order_with_the_quads_around_it)
     M_Stop();
 }
 
-TEST(clear_flags_and_colour_reach_the_backend)
+TEST(clear_flags_and_color_reach_the_backend)
 {
     M_Start();
     Gfx_BeginTick((GFX_COLOR) {});

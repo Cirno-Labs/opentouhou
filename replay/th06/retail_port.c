@@ -114,8 +114,8 @@ static RESULT M_Hook(void *const context)
         (uintptr_t)M_AddFps, 1);
 }
 
-// Holds 東方紅魔郷.cfg: the shipped pad mapping, windowed, 32-bit colour,
-// no music or sound, no frame skip and colour-add emulation.
+// Holds 東方紅魔郷.cfg: the shipped pad mapping, windowed, 32-bit color,
+// no music or sound, no frame skip and color-add emulation.
 // The literal's terminating NUL is not part of the file.
 static const char m_Config[] =
     // Pad buttons of shoot, bomb, focus, menu, up, down, left, right, skip.
@@ -123,7 +123,7 @@ static const char m_Config[] =
     "\xff\xff\xff\xff\xff\xff\x03\x00\x00\x00"
     // Version 0x102.
     "\x02\x01\x00\x00"
-    // Lives, bombs, colour, music, sound, difficulty, windowed, frame skip.
+    // Lives, bombs, color, music, sound, difficulty, windowed, frame skip.
     "\x02\x03\x00\x00\x00\x01\x01\x00"
     // Pad thresholds x and y.
     "\x58\x02\x58\x02"

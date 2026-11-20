@@ -486,7 +486,7 @@ static bool M_UpdateBullet(BULLET *const bullet)
     }
 }
 
-// Tests laser against the player: the box of size centred on pos, in the
+// Tests laser against the player: the box of size centered on pos, in the
 // frame of the laser.
 static void M_HitLaser(
     const LASER *const laser, const VEC3 pos, const VEC3 size)

@@ -39,7 +39,7 @@ typedef enum {
     BULLET_AIM_RANDOM = 8, // a random angle and speed, as in 6 and 7
 } BULLET_AIM;
 
-// Selects the extra behaviours of a bullet or laser, one bit each. A
+// Selects the extra behaviors of a bullet or laser, one bit each. A
 // bullet runs at most one of START_FAST, ACCELERATE and CURVE, tested in
 // that order. It runs at most one of the turns and bounces, tested in the
 // order TURN, TURN_TO, TURN_AT_PLAYER, BOUNCE, BOUNCE_NO_BOTTOM. The

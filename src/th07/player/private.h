@@ -30,7 +30,7 @@ void Player_StartFiring(void);
 void Player_UpdateFiring(void);
 
 // Drops the lasers whose options are gone, or all of them while dying, runs
-// down the laser timers, and moves the bullets through their behaviours.
+// down the laser timers, and moves the bullets through their behaviors.
 void Player_UpdateShots(void);
 
 // Draws the bullets in state, in the play area. Flying bullets also draw

@@ -10,7 +10,7 @@
 
 typedef struct {
     VFS_SOURCE *source;
-    // Holds the normalised directory that the source covers, "" for all.
+    // Holds the normalized directory that the source covers, "" for all.
     char *mount_at;
     int32_t priority;
 } VFS_MOUNT;
@@ -45,7 +45,7 @@ static void M_FreeText(const VFS *const vfs, char *const text)
 }
 
 // Returns the highest-priority mount that covers path and, unless writing,
-// has it, breaking a tie between equal priorities in favour of the one
+// has it, breaking a tie between equal priorities in favor of the one
 // mounted later, or nullptr when none does.
 static const VFS_MOUNT *M_Find(
     const VFS *const vfs, const char *const path, const bool writing)
@@ -87,7 +87,7 @@ static RESULT M_NotFound(
     const RESULT result = strcmp(path, normalized) == 0
         ? FAIL("%s: not found, searched: %s", path, names)
         : FAIL(
-              "%s (normalised %s): not found, searched: %s", path, normalized,
+              "%s (normalized %s): not found, searched: %s", path, normalized,
               names);
     Mem_Free(names);
     return result;
@@ -196,11 +196,11 @@ RESULT Vfs_Write(
     FAIL_IF(mount == nullptr, "%s: no writable source covers it", path);
     // The source makes missing parts in path's case. Both forms have one
     // length.
-    char *spelt;
-    MUST(VfsNormalize_PathKeepCase(path, vfs->allocator, &spelt), "%s", path);
+    char *spelled;
+    MUST(VfsNormalize_PathKeepCase(path, vfs->allocator, &spelled), "%s", path);
     const RESULT result =
-        mount->source->funcs->write(mount->source, spelt + below, data, size);
-    M_FreeText(vfs, spelt);
+        mount->source->funcs->write(mount->source, spelled + below, data, size);
+    M_FreeText(vfs, spelled);
     return Result_Prefix(result, "%s", path);
 }
 

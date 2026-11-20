@@ -19,7 +19,7 @@
 // The d-pad, the sticks and the hats only move the cursor. Leaving the
 // screen asks shell/game for the changed bindings. The window row of the
 // options shows and changes shell/game's window mode, which changes when
-// the options close. The colour depth row shows no choice and ignores
+// the options close. The color depth row shows no choice and ignores
 // changes (see th07/settings.h).
 //
 // The original shows a loading screen when it comes back to the title.

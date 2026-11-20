@@ -13,8 +13,8 @@ typedef union {
 
 // Holds one parsed instruction. Normally bit n of param_mask marks word n
 // as a variable. For opcodes 64 to 72, bits 0 and 1 are the two halves of
-// word 0 (sprite, colour), then bits 2 to 7 are words 1 to 6. For 82 and
-// 83, bit 1 is the high half of word 0 (colour), then bit n + 1 is word n.
+// word 0 (sprite, color), then bits 2 to 7 are words 1 to 6. For 82 and
+// 83, bit 1 is the high half of word 0 (color), then bit n + 1 is word n.
 // Instructions stay writable: an operand that names no variable is
 // written into the instruction itself, which every enemy on that
 // subroutine shares.

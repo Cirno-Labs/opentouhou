@@ -381,7 +381,7 @@ TEST(a_full_second_half_takes_another_step_for_its_line_break)
     M_Teardown();
 }
 
-TEST(a_fade_out_holds_its_last_colour)
+TEST(a_fade_out_holds_its_last_color)
 {
     M_Setup("fade");
     M_RUN(

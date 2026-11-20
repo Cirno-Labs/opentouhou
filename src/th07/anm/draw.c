@@ -121,7 +121,7 @@ static void M_DrawQuad(
         || viewport->y + viewport->height < min_y) {
         return;
     }
-    // The screen view puts pixel centres at half integers; Direct3D 8 put
+    // The screen view puts pixel centers at half integers; Direct3D 8 put
     // them at integers.
     for (int32_t i = 0; i < 4; i++) {
         positions[i].x += 0.5f;

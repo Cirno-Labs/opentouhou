@@ -1225,7 +1225,7 @@ static int32_t M_DrawStripOf4(ENEMY *const enemy, const uint8_t flags)
     return M_DrawFrame();
 }
 
-TEST(narrow_strips_drop_the_boxes_whose_angles_match_their_neighbours)
+TEST(narrow_strips_drop_the_boxes_whose_angles_match_their_neighbors)
 {
     M_SetUp("trail_strip_narrow");
     ENEMY *const enemy = M_SpawnAt(100.0f, 100.0f);

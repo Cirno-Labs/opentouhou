@@ -10,11 +10,11 @@
 // its configuration.
 //
 // These settings of the original are not ported:
-// - the colour depth, the frame skip, MIDI music (MIDI plays the wave
+// - the color depth, the frame skip, MIDI music (MIDI plays the wave
 //   files), and the option flags of the original's configuration tool:
-//   colour add emulation, vertex buffers, 16-bit textures, back buffer
+//   color add emulation, vertex buffers, 16-bit textures, back buffer
 //   clears, frame items, Gouraud shading, depth tests, the 60-frame mode,
-//   colour blending, the reference rasterizer, fog and DirectInput;
+//   color blending, the reference rasterizer, fog and DirectInput;
 // - the pad axis thresholds, which core's [input] settings own.
 //
 // The window mode and the pad button mapping are the shell's [video]

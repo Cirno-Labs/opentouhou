@@ -102,7 +102,7 @@ typedef struct {
     int32_t damage_dealt;
 } PLAYER_BOMB_HIT;
 
-// Holds a box of the bomb, centred on x and y, that clears the enemy
+// Holds a box of the bomb, centered on x and y, that clears the enemy
 // bullets that touch it. The box is unused while width is 0.
 typedef struct {
     float x, y, width, height;
@@ -201,7 +201,7 @@ float Player_AngleFrom(VEC3 pos);
 // Returns the angle from the player to pos, or pi / 2 when they coincide.
 float Player_AngleTo(VEC3 pos);
 
-// Tests the box of size centred on pos, an enemy bullet or an enemy.
+// Tests the box of size centered on pos, an enemy bullet or an enemy.
 // Returns PLAYER_CONTACT_CLEARED when the box touches a clear area, else
 // PLAYER_CONTACT_BOX when it touches the hitbox, else
 // PLAYER_CONTACT_NONE. A touch of the hitbox kills the player when it is
@@ -213,19 +213,19 @@ PLAYER_CONTACT Player_CheckHit(VEC3 pos, VEC3 size);
 // PLAYER_CONTACT_NONE while the player is dying or respawning.
 PLAYER_CONTACT Player_CheckGraze(VEC3 pos, VEC3 size);
 
-// Tests a laser: the box of size centred on pos, turned by angle around
+// Tests a laser: the box of size centered on pos, turned by angle around
 // origin. A touch of the hitbox kills the player when it is
 // PLAYER_ALIVE. Otherwise, with can_graze, a box within 48 pixels of the
 // hitbox grazes it, except while the player is dying or respawning.
 void Player_CheckLaserHit(
     VEC3 pos, VEC3 size, VEC3 origin, float angle, bool can_graze);
 
-// Returns whether the box of size centred on pos touches the graze box
+// Returns whether the box of size centered on pos touches the graze box
 // while the player is alive or invulnerable.
 bool Player_TouchesGrazeBox(VEC3 pos, VEC3 size);
 
 // Returns the damage that the shots and the bomb deal this frame to the
-// box of size centred on pos, an enemy. Each shot that touches the box
+// box of size centered on pos, an enemy. Each shot that touches the box
 // deals its damage, or a third of it (at least 1) during a bomb. A
 // straight or homing shot then stops; a rising shot keeps going, weaker.
 // Sets *hit_by_bomb to whether a box of a running bomb touched it.

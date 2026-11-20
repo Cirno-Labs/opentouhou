@@ -9,7 +9,7 @@
 
 // Plays a stage deterministically: holds shoot, dodges along a potential
 // field of the threats near the player, with a weak pull toward a spot low
-// in the centre of the play area, and focuses and bombs by the nearest
+// in the center of the play area, and focuses and bombs by the nearest
 // threat's distance. Uses an RNG of its own, so that one seed always gives
 // the same inputs and the gameplay RNG is never touched. Writes the input
 // struct of a game whose schema has the buttons shoot, bomb, focus, up,

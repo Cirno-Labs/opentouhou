@@ -652,7 +652,7 @@ static void M_MarisaAFocused(void)
 }
 
 // Turns three lasers around the player, one way when the bomb started left
-// of the centre and the other way otherwise, faster as the bomb runs, and
+// of the center and the other way otherwise, faster as the bomb runs, and
 // slows the player. Each laser carries six boxes along its sprite.
 static void M_MarisaB(void)
 {
@@ -960,7 +960,7 @@ static void M_SakuyaAFocused(void)
 }
 
 // Stops every enemy bullet at frames 0, 60 and 120, puts four sprites in
-// the corners around the centre, hits the whole play area every 4 frames,
+// the corners around the center, hits the whole play area every 4 frames,
 // and speeds the player up. Clears the play area as it ends.
 static void M_SakuyaB(void)
 {

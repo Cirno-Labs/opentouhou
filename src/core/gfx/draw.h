@@ -3,7 +3,7 @@
 #include "core/gfx/types.h"
 
 // Returns the view of the logical screen in its own pixels: x right,
-// y down, z from 0 to 1, pixel centres at half integers. Without
+// y down, z from 0 to 1, pixel centers at half integers. Without
 // Gfx_Init, returns identity matrices and an empty viewport.
 GFX_VIEW GfxView_Screen(void);
 
@@ -15,7 +15,7 @@ GFX_VIEW GfxView_OffsetPixels(const GFX_VIEW *view, float x, float y);
 // calls Gfx_BeginTick and Gfx_EndTick around each tick of the game.
 void Gfx_BeginTick(GFX_COLOR clear);
 
-// Keeps the previous screen's colour behind each new tick, including its
+// Keeps the previous screen's color behind each new tick, including its
 // interpolated presentations. Depth still starts at 1. Off by default;
 // set before Gfx_BeginTick.
 void Gfx_SetPersistentScreen(bool enabled);
@@ -46,5 +46,5 @@ void Gfx_DrawSprite(
 void Gfx_EndTick(void);
 
 // Clears the viewport of the current view mid-tick, in draw order: the
-// colour to color with GFX_CLEAR_COLOR, the depth to 1 with GFX_CLEAR_DEPTH.
+// color to color with GFX_CLEAR_COLOR, the depth to 1 with GFX_CLEAR_DEPTH.
 void Gfx_Clear(uint32_t flags, GFX_COLOR color);

@@ -44,9 +44,9 @@ typedef enum {
     BULLET_AIM_RANDOM = 8, // a random angle and speed, as in 6 and 7
 } BULLET_AIM;
 
-// Selects the extra behaviours of a bullet, one bit each. A bullet runs
+// Selects the extra behaviors of a bullet, one bit each. A bullet runs
 // only the commands whose flag it has; they start in order (see
-// BULLET_COMMAND). The running behaviours all run each frame, in the
+// BULLET_COMMAND). The running behaviors all run each frame, in the
 // order START_FAST, ACCELERATE, CURVE, TURN, TURN_TO, TURN_AT_PLAYER, and
 // then the bounces. The fields of the command hold their values.
 typedef enum {
@@ -90,7 +90,7 @@ typedef enum {
     BULLET_FLAG_STAY_OUTSIDE = 0x2000,
 } BULLET_FLAG;
 
-// Selects the extra behaviours of a laser, from the shooter's flags.
+// Selects the extra behaviors of a laser, from the shooter's flags.
 typedef enum {
     // Fades in over its start and again over its end, instead of
     // widening and narrowing.
@@ -100,9 +100,9 @@ typedef enum {
     LASER_FLAG_RESIST_CLEAR = 0x4,
 } LASER_FLAG;
 
-// Holds one step of a bullet's behaviour, started when the steps before
+// Holds one step of a bullet's behavior, started when the steps before
 // it have started. A step that is not concurrent waits until no
-// behaviour runs. A flag of 0 ends the steps.
+// behavior runs. A flag of 0 ends the steps.
 typedef struct {
     float args[2];
     int32_t frames;
@@ -142,7 +142,7 @@ typedef struct BULLET {
     // Grazes once it reaches 16; a spawning bullet holds it back.
     TIMER graze_timer;
     int32_t keep_outside_frames;
-    uint16_t running; // the BULLET_FLAG of the behaviours that run
+    uint16_t running; // the BULLET_FLAG of the behaviors that run
     uint16_t flags; // BULLET_FLAG; the low 16 bits of the shooter's flags
     int16_t color;
     BULLET_STATE state;
@@ -152,7 +152,7 @@ typedef struct BULLET {
     bool grazed; // once set, the bullet is tested only for hits
     struct BULLET *next_drawn; // only drawing reads it
     int32_t pattern_state; // 0 when fired; the ECL patterns use it as they like
-    int32_t sound; // played as a behaviour starts or turns; -1 for none
+    int32_t sound; // played as a behavior starts or turns; -1 for none
     int32_t next_command;
     BULLET_COMMAND commands[BULLET_COMMAND_COUNT];
 
@@ -316,7 +316,7 @@ int32_t Bullet_ClearAllWithBonus(int32_t max_bonus, bool to_items);
 // ITEM_STAR that flies to the player.
 void Bullet_ClearCircleToItems(VEC3 pos, float radius);
 
-// Stops every bullet where it is and turns it to color 0. Its behaviours
+// Stops every bullet where it is and turns it to color 0. Its behaviors
 // keep running.
 void Bullet_StopAll(void);
 

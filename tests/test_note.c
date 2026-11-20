@@ -385,7 +385,7 @@ TEST(outline_radius_0_draws_no_outline)
     M_End();
 }
 
-// Checks that the alpha of each pixel is the largest colour within the
+// Checks that the alpha of each pixel is the largest color within the
 // outline radius 2 around it: the outline is a disc.
 TEST(the_outline_is_a_disc_of_its_radius)
 {

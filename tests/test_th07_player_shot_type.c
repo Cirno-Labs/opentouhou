@@ -137,7 +137,7 @@ TEST(reads_the_header_and_every_shot_field)
     CHECK_EQ_INT(out.table_count, 0);
 }
 
-TEST(behaviour_indices_map_onto_their_enums)
+TEST(behavior_indices_map_onto_their_enums)
 {
     static const uint32_t fires[] = { 0, 1, 2, 3, 4, 5 };
     static const SHOT_FIRE fired[] = {

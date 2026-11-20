@@ -65,7 +65,7 @@ typedef struct {
     void (*free_texture)(void *handle);
     // Starts drawing into the target of pass. Clears the border to
     // output->border and output->rect to clear, with depth 1. With preserve,
-    // keeps the previous screen's colour as the background instead.
+    // keeps the previous screen's color as the background instead.
     void (*begin_pass)(
         GFX_PASS pass, GFX_COLOR clear, const GFX_PASS_OUTPUT *output,
         bool preserve);
@@ -74,7 +74,7 @@ typedef struct {
     void (*draw)(
         const GFX_PASS_VIEW *views, const GFX_BATCH *batches,
         int32_t batch_count, const GFX_VERTEX *vertices);
-    // Clears the view's viewport, its scissor rect: the colour with
+    // Clears the view's viewport, its scissor rect: the color with
     // GFX_CLEAR_COLOR, the depth to 1 with GFX_CLEAR_DEPTH.
     void (*clear)(uint32_t flags, GFX_COLOR color, const GFX_PASS_VIEW *view);
     // Finishes the pass. A window pass is then shown in the window.

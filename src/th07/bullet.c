@@ -214,7 +214,7 @@ static void M_PlaySound(const BULLET *const bullet)
 }
 
 // Starts the commands of bullet from next_command on, up to the first
-// that starts a behaviour or has to wait.
+// that starts a behavior or has to wait.
 static void M_RunCommands(BULLET *const bullet)
 {
     for (; bullet->next_command < BULLET_COMMAND_COUNT;
@@ -600,7 +600,7 @@ static bool M_UpdateBullet(BULLET *const bullet)
     }
 }
 
-// Tests laser against the player: the box of size centred on pos, in the
+// Tests laser against the player: the box of size centered on pos, in the
 // frame of the laser.
 static void M_HitLaser(
     const LASER *const laser, const VEC3 pos, const VEC3 size)

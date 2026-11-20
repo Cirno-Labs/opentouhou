@@ -276,7 +276,7 @@ TEST(a_failing_hook_fails_the_open_and_closes_the_reader)
     CHECK_EQ_INT(test.live_blocks, 0);
 }
 
-TEST(paths_normalise_case_and_separators)
+TEST(paths_normalize_case_and_separators)
 {
     TEST_ALLOCATOR test;
     TestAllocator_Init(&test);

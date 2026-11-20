@@ -850,7 +850,7 @@ TEST(the_draw_runs_from_the_stage_clear_to_the_popups)
     CHECK(score > clear);
     CHECK(bonus > score);
     // The dialogue box comes before the frame of the interface, whose
-    // first sprite is centred on the top left.
+    // first sprite is centered on the top left.
     const int32_t box = M_FindFill(32.0f + 16.0f, 384.0f);
     CHECK(box >= 0);
     const GFX_TEXTURE *const front = Anm_GetTexture(M_FRONT_SLOT);
