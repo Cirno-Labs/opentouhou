@@ -170,6 +170,9 @@ static RESULT M_Start(M_NATIVE *const native)
     if (port->game->settings_schema != nullptr) {
         Config_SetDefaults(port->game->settings_schema, port->game->settings);
     }
+    if (port->configure != nullptr) {
+        port->configure(port->port.context);
+    }
     native->game_started = true;
     MUST(port->game->init(), "%s failed to start", port->game->id);
     port->port.seed(port->port.context);

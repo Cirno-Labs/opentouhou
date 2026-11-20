@@ -18,6 +18,9 @@
 typedef struct {
     PORT port;
     const GAME_DESC *game;
+    // Changes the game's settings after Native_Main sets their defaults and
+    // before the game starts, or nullptr.
+    void (*configure)(void *context);
     // Gives the port the driver before each tick, for the port to call
     // Driver_EndCalc after each calc of that tick.
     void (*hook)(void *context, DRIVER *driver);
