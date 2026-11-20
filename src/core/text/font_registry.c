@@ -37,6 +37,7 @@ typedef ARRAY(M_FILE) M_FILE_ARRAY;
 typedef ARRAY(M_NAME) M_NAME_ARRAY;
 typedef HASH_MAP(char *, M_FACE) M_FACE_MAP;
 typedef HASH_MAP(char *, bool) M_FAMILY_SET;
+typedef HASH_MAP(char *, M_FILE) M_FILE_MAP;
 
 static struct {
     bool initialized;
@@ -45,6 +46,8 @@ static struct {
     M_FACE_MAP faces;
     // The families that the system was asked for.
     M_FAMILY_SET asked;
+    // The font files that FONT cannot open, by lowercase name.
+    M_FILE_MAP named;
 } m_Registry;
 
 static void M_Init(void)
@@ -53,6 +56,7 @@ static void M_Init(void)
         Array_Init(&m_Registry.files, &g_HeapAllocator);
         HashMap_Init(&m_Registry.faces, &g_HeapAllocator);
         HashMap_Init(&m_Registry.asked, &g_HeapAllocator);
+        HashMap_Init(&m_Registry.named, &g_HeapAllocator);
         m_Registry.initialized = true;
     }
 }
@@ -62,6 +66,12 @@ static char *M_Key(const char *const name)
     char *const key = Str_Dup(name);
     Str_ToLower(key);
     return key;
+}
+
+static void M_FreeFile(M_FILE *const file)
+{
+    Mem_Free(file->source);
+    Mem_Free(file->data);
 }
 
 static void M_PutUtf8(char **const out, const uint32_t code)
@@ -295,6 +305,36 @@ RESULT FontRegistry_Add(
     return OK;
 }
 
+void FontRegistry_AddFile(
+    const char *const name, const char *const source, const void *const data,
+    const size_t size)
+{
+    M_Init();
+    char *const key = M_Key(name);
+    bool found;
+    M_FILE *const file = HashMap_GetOrPut(&m_Registry.named, key, &found);
+    Mem_Free(key);
+    if (found) {
+        M_FreeFile(file);
+    }
+    *file = (M_FILE) { Str_Dup(source), Mem_Dup(data, size), size };
+}
+
+bool FontRegistry_FindFile(
+    const char *const name, const void **const data, size_t *const size)
+{
+    M_Init();
+    char *const key = M_Key(name);
+    const M_FILE *const file = HashMap_Get(&m_Registry.named, key);
+    Mem_Free(key);
+    if (file == nullptr) {
+        return false;
+    }
+    *data = file->data;
+    *size = file->size;
+    return true;
+}
+
 RESULT FontRegistry_AddSystemData(
     const char *const source, uint8_t *const data, const size_t size,
     const char *const family)
@@ -340,10 +380,13 @@ void FontRegistry_Reset(const bool use_system)
 {
     if (m_Registry.initialized) {
         for (int32_t i = 0; i < m_Registry.files.count; i++) {
-            Mem_Free(m_Registry.files.items[i].source);
-            Mem_Free(m_Registry.files.items[i].data);
+            M_FreeFile(&m_Registry.files.items[i]);
         }
         Array_Free(&m_Registry.files);
+        for (int32_t i = 0; HashMap_Next(&m_Registry.named, &i); i++) {
+            M_FreeFile(&m_Registry.named.values[i]);
+        }
+        HashMap_Free(&m_Registry.named);
         HashMap_Free(&m_Registry.faces);
         HashMap_Free(&m_Registry.asked);
     }
