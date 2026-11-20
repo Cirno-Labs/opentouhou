@@ -130,6 +130,18 @@ if build_games
     dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
     win_subsystem: 'console',
   )
+  executable(
+    'th07native',
+    'replay/th07/native_port.c',
+    'src/th07/play_time.c',
+    c_args: [layer_include['th07']] + stg_include + shell_include + harness_include,
+    implicit_include_directories: false,
+    link_with: [
+      th07_main_lib, th07_harness_lib, th07_lib, harness_native_lib, harness_lib,
+    ],
+    dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    win_subsystem: 'console',
+  )
   # Each game's recorder plays a practice stage with the bot to make a
   # new replay file.
   executable(

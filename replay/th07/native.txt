@@ -1,0 +1,21 @@
+# Starts a game from the title through every menu with shoot, then moves,
+# shoots and focuses through the start of the first stage.
+frames 1500
+input 120 shoot
+input 121 none
+input 200 shoot
+input 201 none
+input 280 shoot
+input 281 none
+input 360 shoot
+input 361 none
+input 440 shoot
+input 441 none
+input 600 shoot+left
+input 700 shoot+focus+right
+input 800 shoot+up
+input 900 shoot+down+left
+input 1000 shoot+focus
+input 1100 bomb
+input 1101 shoot+right
+input 1300 none

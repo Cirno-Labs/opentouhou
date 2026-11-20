@@ -40,6 +40,15 @@ th06_harness_lib = static_library(
   dependencies: [sdl3],
 )
 
+th07_harness_lib = static_library(
+  'th07_harness',
+  'th07/harness.c',
+  'th07/native_state.c',
+  c_args: [layer_include['th07']] + stg_include + harness_include,
+  implicit_include_directories: false,
+  dependencies: [sdl3],
+)
+
 bot_include = ['-I' + meson.current_source_dir() / 'bot']
 
 # The recorder of new replay files: the bot, its program and the shell/game
