@@ -50,6 +50,10 @@ RESULT TitleScene_SetUpReplay(
     const REPLAY_SUMMARY *summary, const char *path, int32_t stage,
     int32_t playback);
 
+// Returns whether the title rests at the title menu, ready for input, or
+// at the replay menu.
+bool TitleScene_IsIdle(void);
+
 // Removes the title, as leaving it for a scene does. Does nothing while the
 // title is not added.
 void TitleScene_Remove(void);

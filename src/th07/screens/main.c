@@ -1888,6 +1888,13 @@ RESULT TitleScene_SetUpReplay(
     return OK;
 }
 
+bool TitleScene_IsIdle(void)
+{
+    return m_Menu.added
+        && ((m_Menu.state == M_STATE_TITLE && m_Menu.sub_state == M_SUB_MENU)
+            || m_Menu.state == M_STATE_REPLAYS);
+}
+
 void TitleScene_Remove(void)
 {
     if (m_Menu.added) {
