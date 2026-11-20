@@ -14,6 +14,7 @@
 RESULT ShellFonts_Reset(bool use_system);
 
 // Adds each .ttf, .ttc, .otf and .otc file directly below dir in files, in
-// byte order of their names. Logs a file that does not add as a warning and
-// leaves it out. A missing dir adds nothing.
+// byte order of their names, as a font, and each .bdf, .bmp and .rom file
+// as a font file under its name. Logs a file that does not add as a warning
+// and leaves it out. A missing dir adds nothing.
 void ShellFonts_AddDir(VFS *files, const char *dir);
