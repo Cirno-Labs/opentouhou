@@ -1,0 +1,14 @@
+# Opens the replay of the first slot from the title, starts it at its
+# first stage at normal speed and lets it play to its end.
+input 200 down
+input 201 none
+input 203 down
+input 204 none
+input 220 shoot
+input 221 none
+input 300 shoot
+input 301 none
+input 360 shoot
+input 361 none
+input 420 shoot
+input 421 none
