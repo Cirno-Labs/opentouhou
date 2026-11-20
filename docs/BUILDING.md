@@ -54,7 +54,8 @@ describes the folders, the keys and the settings for players.
   default. Each comes with its tests. A build of `othpatch` needs only
   SDL3, zlib and curl, and a build of `games` does not need curl.
 - `font` selects the built-in fonts that each game executable carries:
-  `ipa`, the default, for IPAGothic and IPAPGothic, or `none`.
+  `free`, the default, for the free fonts that the game lists in its
+  `meson.build`, or `none`.
 - `werror` makes every compiler warning fail the build. CI sets it. The
   environment variable `OPENTOUHOU_WERROR=1` sets it for the Docker and
   macOS builds.

@@ -27,7 +27,7 @@ option(
 option(
   'font',
   type: 'combo',
-  choices: ['ipa', 'none'],
-  value: 'ipa',
-  description: 'Built-in fonts: IPAGothic and IPAPGothic, or none',
+  choices: ['free', 'none'],
+  value: 'free',
+  description: 'Built-in fonts: each game\'s free fonts, or none',
 )

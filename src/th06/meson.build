@@ -90,6 +90,7 @@ games += {
   'th06': {
     'sources': th06_sources,
     'c_args': [layer_include['th06']],
+    'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
     'link_with': [th06_main_lib, th06_lib],
   },
 }

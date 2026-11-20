@@ -91,6 +91,7 @@ games += {
   'th07': {
     'sources': th07_sources,
     'c_args': [layer_include['th07']],
+    'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
     'link_with': [th07_main_lib, th07_lib],
   },
 }

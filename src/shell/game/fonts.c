@@ -9,11 +9,13 @@
 #include "core/text/font_registry.h"
 #include "core/vfs.h"
 
-#include "builtin_files.h"
-
 #include <string.h>
 
 typedef ARRAY(char *) M_NAMES;
+
+// The zip of the game's built-in files, which the build makes for each game.
+extern const uint8_t g_ShellBuiltinFiles[];
+extern const size_t g_ShellBuiltinFilesSize;
 
 static const char *const m_FontExtensions[] = {
     ".ttf", ".ttc", ".otf", ".otc", nullptr,
@@ -70,7 +72,8 @@ RESULT ShellFonts_Reset(const bool use_system)
     FontRegistry_Reset(use_system);
     READER reader;
     Reader_OpenBuffer(
-        &reader, m_BuiltinFiles, sizeof(m_BuiltinFiles), "built-in files");
+        &reader, g_ShellBuiltinFiles, g_ShellBuiltinFilesSize,
+        "built-in files");
     ARCHIVE *archive;
     MUST(Archive_Open(&g_ZipFormat, &reader, &g_HeapAllocator, &archive));
     VFS *const files = Vfs_Create(&g_HeapAllocator);
