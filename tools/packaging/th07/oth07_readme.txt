@@ -1,5 +1,5 @@
-opentouhou
-==========
+opentouhou th07
+===============
 
 This program is an unofficial port of a Touhou Project game to Linux,
 macOS and Windows. oth07 is 東方妖々夢 ~ Perfect Cherry Blossom
@@ -184,15 +184,14 @@ To see all arguments, type:
 Credits
 -------
 
-The original game is by ZUN (Team Shanghai Alice). The translations are
-by the thpatch.net community, in the patch format of thcrap.
+- ZUN (Team Shanghai Alice): the original game, characters, art and music.
+- thpatch.net community: translations in the patch format of thcrap.
+- SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo and zlib:
+  shared libraries.
+- IPAGothic and IPAPGothic: the bundled fonts, IPA fonts by the IPA.
 
-The program uses SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo,
-zlib and the IPAGothic and IPAPGothic fonts. This software is based in
-part on the work of the Independent JPEG Group.
-
-Source code, documentation and licences:
+Source and documentation:
 https://github.com/Cirno-Labs/opentouhou
+Full licensing details available in oth07_licenses.txt.
 
-This program is free software under the GNU General Public License,
-version 3 only.
+This is an unofficial port, not endorsed by ZUN.
