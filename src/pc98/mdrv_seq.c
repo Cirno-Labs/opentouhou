@@ -285,7 +285,7 @@ static RESULT M_Command(
     MDRV_CHANNEL_STATE *const state = &sequence->tracks[track];
     MDRV_EVENT_KIND kind;
     uint8_t count = M_ParameterCount(opcode, state->channel);
-    uint32_t target;
+    uint32_t target = 0;
     switch (opcode) {
     case 0xe0:
         FAIL_IF(state->repeat_one, "Nested MDRV E0 repeat");
