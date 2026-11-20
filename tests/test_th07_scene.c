@@ -157,6 +157,7 @@ TEST(boot_goes_to_title)
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up, 1);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up_mode, 0);
+    Game_Shutdown();
 }
 
 TEST(title_stays_without_a_request)
@@ -167,6 +168,7 @@ TEST(title_stays_without_a_request)
     }
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up, 1);
+    Game_Shutdown();
 }
 
 TEST(title_goes_to_gameplay)
@@ -174,6 +176,7 @@ TEST(title_goes_to_gameplay)
     M_StartGameplay(1);
     CHECK_EQ_INT(Scene_Get(), SCENE_GAMEPLAY);
     CHECK_EQ_INT(g_SceneStubCalls.game_manager_register, 1);
+    Game_Shutdown();
 }
 
 TEST(quit_from_title_ends_the_tick_with_false)
@@ -182,6 +185,7 @@ TEST(quit_from_title_ends_the_tick_with_false)
     Game_Tick(&m_NoInput);
     Scene_Request(SCENE_QUIT);
     CHECK(!Game_Tick(&m_NoInput));
+    Game_Shutdown();
 }
 
 TEST(reset_starts_again_from_boot)
@@ -194,6 +198,7 @@ TEST(reset_starts_again_from_boot)
     CHECK(Game_Tick(&m_NoInput));
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up, 2);
+    Game_Shutdown();
 }
 
 TEST(title_goes_to_scores_and_music_room_and_back)
@@ -214,6 +219,7 @@ TEST(title_goes_to_scores_and_music_room_and_back)
     Game_Tick(&m_NoInput);
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up, 3);
+    Game_Shutdown();
 }
 
 TEST(the_title_sees_the_scene_it_came_from)
@@ -227,6 +233,7 @@ TEST(the_title_sees_the_scene_it_came_from)
     Game_Tick(&m_NoInput);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up_previous, SCENE_SCORES);
     CHECK_EQ_INT(Scene_GetPrevious(), SCENE_SCORES);
+    Game_Shutdown();
 }
 
 TEST(next_stage_reregisters_the_game)
@@ -238,6 +245,7 @@ TEST(next_stage_reregisters_the_game)
     CHECK_EQ_INT(g_SceneStubCalls.game_manager_remove, 1);
     CHECK_EQ_INT(g_SceneStubCalls.game_manager_register, 2);
     CHECK_EQ_INT(g_GameManager.run.stage, 2);
+    Game_Shutdown();
 }
 
 TEST(retry_starts_a_game_from_the_first_stage)
@@ -251,6 +259,7 @@ TEST(retry_starts_a_game_from_the_first_stage)
     CHECK_EQ_INT(g_SceneStubCalls.replay_discard, 1);
     CHECK_EQ_INT(g_SceneStubCalls.replay_discard_scene, SCENE_RETRY);
     CHECK_EQ_INT(g_SceneStubCalls.game_manager_register, 2);
+    Game_Shutdown();
 }
 
 TEST(retry_replays_the_stage_in_a_practice_and_in_extra)
@@ -260,12 +269,14 @@ TEST(retry_replays_the_stage_in_a_practice_and_in_extra)
     Scene_Request(SCENE_RETRY);
     Game_Tick(&m_NoInput);
     CHECK_EQ_INT(g_GameManager.run.stage, 3);
+    Game_Shutdown();
 
     M_StartGameplay(7);
     g_GameManager.run.difficulty = 4;
     Scene_Request(SCENE_RETRY);
     Game_Tick(&m_NoInput);
     CHECK_EQ_INT(g_GameManager.run.stage, 6);
+    Game_Shutdown();
 }
 
 TEST(restart_stage_replays_the_stage_as_a_next_stage)
@@ -277,6 +288,7 @@ TEST(restart_stage_replays_the_stage_as_a_next_stage)
     CHECK_EQ_INT(g_GameManager.run.stage, 2);
     CHECK_EQ_INT(
         g_SceneStubCalls.game_manager_register_scene, SCENE_NEXT_STAGE);
+    Game_Shutdown();
 }
 
 TEST(next_stage_again_registers_as_a_next_stage)
@@ -288,6 +300,7 @@ TEST(next_stage_again_registers_as_a_next_stage)
     CHECK_EQ_INT(g_GameManager.run.stage, 3);
     CHECK_EQ_INT(
         g_SceneStubCalls.game_manager_register_scene, SCENE_NEXT_STAGE);
+    Game_Shutdown();
 }
 
 TEST(gameplay_to_title_discards_the_replay_through_boot)
@@ -299,6 +312,7 @@ TEST(gameplay_to_title_discards_the_replay_through_boot)
     CHECK_EQ_INT(g_SceneStubCalls.replay_discard, 1);
     CHECK_EQ_INT(g_SceneStubCalls.replay_discard_scene, SCENE_BOOT);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up_mode, 0);
+    Game_Shutdown();
 }
 
 TEST(replay_end_goes_to_the_title_in_mode_1)
@@ -309,6 +323,7 @@ TEST(replay_end_goes_to_the_title_in_mode_1)
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SceneStubCalls.replay_discard, 1);
     CHECK_EQ_INT(g_SceneStubCalls.title_set_up_mode, 1);
+    Game_Shutdown();
 }
 
 TEST(ending_counts_a_clear_of_the_difficulty)
@@ -324,6 +339,7 @@ TEST(ending_counts_a_clear_of_the_difficulty)
     Game_Tick(&m_NoInput);
     CHECK_EQ_INT(Scene_Get(), SCENE_GAME_RESULT);
     CHECK_EQ_INT(g_SceneStubCalls.result_screen_register_mode, 1);
+    Game_Shutdown();
 }
 
 TEST(game_result_discards_the_replay_on_quit)
@@ -334,6 +350,7 @@ TEST(game_result_discards_the_replay_on_quit)
     Scene_Request(SCENE_QUIT);
     CHECK(!Game_Tick(&m_NoInput));
     CHECK_EQ_INT(g_SceneStubCalls.replay_discard, 1);
+    Game_Shutdown();
 }
 
 TEST(a_switch_clears_the_buttons)
@@ -349,6 +366,7 @@ TEST(a_switch_clears_the_buttons)
     Game_Tick(&input);
     CHECK(!g_Buttons.held.shoot);
     CHECK_EQ_INT(g_Buttons.word, 0);
+    Game_Shutdown();
 }
 
 TEST(a_dropped_calc_merges_the_next_buttons)
@@ -362,6 +380,7 @@ TEST(a_dropped_calc_merges_the_next_buttons)
     Game_Tick(&bomb);
     CHECK_EQ_INT(g_Buttons.word, 0x3);
     CHECK_EQ_INT(g_Buttons.previous_word, 0);
+    Game_Shutdown();
 }
 
 TEST(the_shoot_focuses_setting_reaches_the_buttons)
@@ -372,6 +391,7 @@ TEST(the_shoot_focuses_setting_reaches_the_buttons)
         Game_Tick(&m_Shoot);
     }
     CHECK(g_Buttons.held.focus);
+    Game_Shutdown();
 
     M_Setup();
     g_Settings.shoot_focuses = false;
@@ -381,4 +401,5 @@ TEST(the_shoot_focuses_setting_reaches_the_buttons)
     }
     CHECK(!g_Buttons.held.focus);
     CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
+    Game_Shutdown();
 }
