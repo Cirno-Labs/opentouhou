@@ -311,28 +311,39 @@ TEST(the_replay_fix_defaults_on_and_can_be_disabled)
     Ini_Free(ini);
 }
 
-TEST(the_replay_fix_suppresses_only_the_resume_shoot_edge_in_dialogue)
+// Plays a bomb pressed on frame 2 and started on frame early ? 2 : 3, then
+// a pause marker on frame 5 with shoot newly held. Returns the previous
+// play word of the marker's calc.
+static uint16_t M_PreviousOnResume(const bool fix, const bool early)
 {
-    for (int32_t dialogue = 0; dialogue <= 1; dialogue++) {
-        M_SetUp(1);
-        g_Settings.fix_replay_desync = true;
-        M_SPEC spec = {};
-        M_Frames(&spec.slots[1], 0, 5);
-        spec.slots[1].buttons[1] = 3;
-        spec.slots[1].events[1] = REPLAY_EVENT_PAUSE;
-        spec.slots[1].buttons[2] = 0;
-        spec.slots[1].buttons[3] = 1;
-        M_Play(&spec);
-        m_Dialogue = dialogue != 0;
-        M_Calcs(2);
-        CHECK_EQ_INT(g_Buttons.play_word, 3);
-        CHECK_EQ_INT(g_Buttons.previous_play_word, dialogue != 0 ? 1 : 0);
-        CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
-        M_Calcs(2);
-        CHECK_EQ_INT(g_Buttons.play_word, 1);
-        CHECK_EQ_INT(g_Buttons.previous_play_word, 0);
-        M_TearDown();
-    }
+    M_SetUp(1);
+    g_Settings.fix_replay_desync = fix;
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[1], 0, 9);
+    memset(spec.slots[1].buttons, 0, sizeof(spec.slots[1].buttons));
+    spec.slots[1].buttons[2] = 2;
+    spec.slots[1].buttons[3] = 2;
+    spec.slots[1].events[early ? 2 : 3] = REPLAY_EVENT_BOMB;
+    spec.slots[1].buttons[5] = 1;
+    spec.slots[1].events[5] = REPLAY_EVENT_PAUSE;
+    M_Play(&spec);
+    M_Calcs(6);
+    CHECK_EQ_INT(g_Buttons.play_word, 1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
+    const uint16_t previous = g_Buttons.previous_play_word;
+    M_TearDown();
+    return previous;
+}
+
+TEST(the_replay_fix_keeps_the_resume_shoot_edge_of_bombs_a_frame_late)
+{
+    CHECK_EQ_INT(M_PreviousOnResume(true, false), 0);
+}
+
+TEST(the_replay_fix_holds_the_resume_buttons_of_bombs_on_their_press)
+{
+    CHECK_EQ_INT(M_PreviousOnResume(true, true), 1);
+    CHECK_EQ_INT(M_PreviousOnResume(false, true), 0);
 }
 
 TEST(playback_steps_key_repeat_on_the_play_word)
