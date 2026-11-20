@@ -110,7 +110,8 @@ Keys
 
 On a gamepad, the directional pad or left stick moves, south shoots,
 east bombs, west focuses, start opens the menu and north skips. Change
-bindings in config.ini.
+bindings in the [input.keyboard], [input.gamepad] and [input.joystick]
+sections of config.ini.
 
 
 Settings
@@ -121,6 +122,8 @@ and key settings, and the options of the game.
 
 - [game] show_fps: shows the frame rate outside ending scenes. It is
   enabled by default. Set it to false to hide the counter.
+- [video] fullscreen: starts the program in full screen. It is false by
+  default. F11 and Alt+Enter change it.
 - [video] interpolation: smooths motion between the 60 Hz steps of the
   game on faster displays. It is on by default. Set it to false to show
   each step as the game drew it.
@@ -128,8 +131,8 @@ and key settings, and the options of the game.
   square pixels as large as the window allows, smooth scales with soft
   edges, and integer shows square pixels at a whole multiple of 640x480,
   with a black border around them.
-- [screenshot] resolution: native or window. format: png or jpg.
-  jpeg_quality: 1 to 100.
+- [screenshot] resolution: native (the default) or window. format: png
+  (the default) or jpg. jpeg_quality: 1 to 100, 90 by default.
 - [patches] enabled: set it to false to turn off all patches.
   disabled: patch ids to leave out, separated by commas, for example
   thpatch/lang_de. language: the code of the language pack to use, for
