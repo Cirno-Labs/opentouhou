@@ -122,6 +122,14 @@ and key settings, and the options of the game.
 
 - [game] show_fps: shows the frame rate outside ending scenes. It is
   enabled by default. Set it to false to hide the counter.
+- [game] shoot_focuses: shoot held on a gamepad or joystick for 10
+  frames also focuses. It is on by default. Set it to false to focus
+  only with the focus button.
+- [game] slowdown: slows the game down where many bullets show. A game
+  in this mode saves no score and no replay. It is off by default. The
+  options menu also changes it.
+- [game] effects_quality: 0 to 2, 2 by default. Below 2, the falling
+  cherry petals do not draw.
 - [video] fullscreen: starts the program in full screen. It is false by
   default. F11 and Alt+Enter change it.
 - [video] interpolation: smooths motion between the 60 Hz steps of the
