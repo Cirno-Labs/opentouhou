@@ -17,8 +17,10 @@
 // In a recording whose bombs start on the frame of their press, a frame
 // before the original records them, as the original with VsyncPatch rev4
 // records them, it also takes the buttons on a pause marker as held the
-// calc before, since that game reads the buttons while paused. Recording
-// is unchanged. With the fix disabled, playback is retail's.
+// calc before, since that game reads the buttons while paused. A recording
+// without bombs is taken as such from the end of a stage that ends a calc
+// late, as that game's do. Recording is unchanged. With the fix disabled,
+// playback is retail's.
 
 // Starts recording or playback, or sets up the next stage of the active
 // session. Playback loads path and takes the replay_desync setting on the
@@ -26,7 +28,8 @@
 RESULT Replay_Register(REPLAY_MODE mode, const char *path);
 
 // Appends the empty frame that ends a recorded stage. During playback,
-// does nothing with replay_desync enabled. With it disabled, clears the
+// with replay_desync enabled, only tells from the stage's end whether the
+// recording is VsyncPatch's. With it disabled, clears the
 // next input in the loaded file too; a stage that runs a calc late can
 // clear the low word of the next stage's saved score.
 void Replay_EndStage(void);
