@@ -207,19 +207,27 @@ TEST(the_fonts_of_a_patch_join_the_registry)
     CHECK(IS_OK(Text_Init()));
     char *const dir = TestDir_Prepare("registry_fonts");
     PatchBuilder_AddPatch(
-        dir, "a/fonts", "{fonts: {'ui.ttf': false, 'gone.ttf': true}}");
+        dir, "a/fonts",
+        "{fonts: {'ui.ttf': false, 'gone.ttf': true, 'font.rom': true}}");
     size_t size;
     uint8_t *const data = TestFonts_Read(TEST_FONT_UI_GOTHIC, &size);
     char *const path = Str_Format("%s/a/fonts/UI.TTF", dir);
     TestDir_Write(path, data, size);
+    char *const rom_path = Str_Format("%s/a/fonts/FONT.ROM", dir);
+    TestDir_Write(rom_path, "rom", 3);
     FontRegistry_Reset(false);
     FONT *font = nullptr;
     CHECK(!Result_Ignore(FontRegistry_Open("IPAPGothic", 30, &font)));
     PATCH_STACK *const stack = M_Open(dir, nullptr);
     CHECK(Result_Ignore(FontRegistry_Open("IPAPGothic", 30, &font)));
     Font_Free(font);
+    const void *rom = nullptr;
+    size_t rom_size = 0;
+    CHECK(FontRegistry_FindFile("FONT.ROM", &rom, &rom_size));
+    CHECK(rom_size == 3 && memcmp(rom, "rom", 3) == 0);
     Patch_CloseStack(stack);
     FontRegistry_Reset(false);
+    Mem_Free(rom_path);
     Mem_Free(path);
     Mem_Free(data);
     Mem_Free(dir);
