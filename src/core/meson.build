@@ -181,6 +181,7 @@ core_text_lib = static_library(
   'core_text',
   'text/font.c',
   'text/font_registry.c',
+  'text/font_rom.c',
   'text/gdi.c',
   'text/glyphs.c',
   'text/render.c',

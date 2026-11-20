@@ -2044,6 +2044,19 @@ test(
 )
 
 test(
+  'core/text/font_rom',
+  executable(
+    'test_font_rom',
+    'test_font_rom.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],
+  ),
+  suite: 'unit',
+)
+
+test(
   'shell/game/fonts',
   executable(
     'test_shell_fonts',
