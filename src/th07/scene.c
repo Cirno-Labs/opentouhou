@@ -161,6 +161,7 @@ static CHAIN_STATUS M_Calc(void *const arg)
 {
     if (!g_GameManager.mode.calc_dropped) {
         Buttons_Update(&g_Buttons, &g_Input, g_Settings.shoot_focuses);
+        Replay_TakeLiveButtons();
     } else {
         Buttons_Merge(&g_Buttons, &g_Input, g_Settings.shoot_focuses);
     }

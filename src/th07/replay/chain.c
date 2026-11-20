@@ -48,6 +48,7 @@ typedef struct {
     bool fix_desync;
     bool early_events; // with fix_desync, see M_HasEarlyEvents
     bool past_end_logged;
+    bool skip_record; // with input_lag, the stage's first calc is unrecorded
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
     CHAIN_ELEM restart;
@@ -287,6 +288,7 @@ static RESULT M_RecordAdded(void *const arg)
         stage->frames, &replay->capacities[slot], 1, sizeof(REPLAY_FRAME));
     stage->frames[0] = (REPLAY_FRAME) {};
     stage->frame_count = 1;
+    replay->skip_record = g_Settings.fix_input_lag;
     return OK;
 }
 
@@ -305,11 +307,17 @@ static CHAIN_STATUS M_Mark(void *const arg)
 static CHAIN_STATUS M_Record(void *const arg)
 {
     M_REPLAY *const replay = arg;
+    if (replay->skip_record) {
+        replay->skip_record = false;
+        return CHAIN_CONTINUE;
+    }
     if (!g_GameManager.mode.playing || !M_IsReady(replay)) {
         return CHAIN_CONTINUE;
     }
-    g_Buttons.previous_play_word = g_Buttons.play_word;
-    g_Buttons.play_word = g_Buttons.word;
+    if (!g_Settings.fix_input_lag) {
+        g_Buttons.previous_play_word = g_Buttons.play_word;
+        g_Buttons.play_word = g_Buttons.word;
+    }
     if (g_GameManager.run.score_disabled) {
         return CHAIN_CONTINUE;
     }
@@ -394,6 +402,14 @@ static CHAIN_STATUS M_Restart(void *const arg)
         return CHAIN_RESTART;
     }
     return CHAIN_CONTINUE;
+}
+
+void Replay_TakeLiveButtons(void)
+{
+    if (g_Settings.fix_input_lag && !g_GameManager.mode.in_replay) {
+        g_Buttons.previous_play_word = g_Buttons.play_word;
+        g_Buttons.play_word = g_Buttons.word;
+    }
 }
 
 static CHAIN_STATUS M_Draw(void *const arg)

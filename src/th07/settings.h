@@ -43,6 +43,9 @@ typedef struct {
     int32_t effects_quality;
     // Prevents replay score corruption and false shoot presses on resume.
     bool fix_replay_desync;
+    // Has gameplay act on the buttons of the calc that reads them, a calc
+    // sooner, as VsyncPatch makes the original do.
+    bool fix_input_lag;
 } TH07_SETTINGS;
 
 extern TH07_SETTINGS g_Settings;

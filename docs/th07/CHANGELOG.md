@@ -6,6 +6,8 @@
 - Added the optional replay_desync fix, on by default: replays keep
   their saved stage scores, and replays recorded with VsyncPatch no
   longer skip a line of dialogue after a pause.
+- Added the optional input_lag fix, off by default: the game acts on a
+  button press a frame sooner, as with VsyncPatch.
 - Added native packages for Windows, Linux and macOS.
 - Added English and other languages through othpatch.
 - Added smooth motion between ticks on fast displays.
