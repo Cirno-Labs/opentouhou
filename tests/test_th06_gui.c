@@ -2032,6 +2032,7 @@ TEST(base_tsa_centers_the_translated_stage_label)
     }
     CHECK(found);
     GfxRecorder_Stop();
+    Translation_Shutdown();
     M_Teardown();
 }
 
@@ -2065,6 +2066,7 @@ TEST(base_tsa_centers_the_translated_bonus_notice)
     CHECK(found);
     CHECK(g_Gui.popups.bonus.pos.x == 104.0f);
     GfxRecorder_Stop();
+    Translation_Shutdown();
     M_Teardown();
 }
 
@@ -2098,5 +2100,6 @@ TEST(base_tsa_centers_the_translated_spell_bonus_label)
     CHECK(found);
     CHECK(g_Gui.popups.spell_bonus.pos.x == 112.0f);
     GfxRecorder_Stop();
+    Translation_Shutdown();
     M_Teardown();
 }
