@@ -35,7 +35,8 @@ static bool M_Idle(void *const context)
 {
     const int32_t state = RETAIL_MAIN_MENU_AT->state;
     return RETAIL_APP_AT->cur_scene == RETAIL_SCENE_TITLE
-        && (state == RETAIL_MAIN_MENU_TITLE_MENU
+        && (state == RETAIL_MAIN_MENU_WAIT_FOR_KEY
+            || state == RETAIL_MAIN_MENU_TITLE_MENU
             || state == RETAIL_MAIN_MENU_REPLAYS);
 }
 
