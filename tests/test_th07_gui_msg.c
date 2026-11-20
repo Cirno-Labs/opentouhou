@@ -37,7 +37,7 @@ static RESULT M_Read(const MSG_BUILDER *const msg, GUI_MSG_FILE *const file)
 static void M_CheckRejected(const MSG_BUILDER *const msg)
 {
     GUI_MSG_FILE file = { .count = 7 };
-    CHECK(!IS_OK(M_Read(msg, &file)));
+    CHECK(!Result_Ignore(M_Read(msg, &file)));
     CHECK_EQ_INT(file.count, 0);
     CHECK(file.scripts == nullptr);
 }
@@ -103,12 +103,12 @@ TEST(a_short_header_fails_the_read)
     static const uint8_t bytes[2] = { 1, 0 };
     READER reader;
     Reader_OpenBuffer(&reader, bytes, sizeof(bytes), nullptr);
-    CHECK(!IS_OK(GuiMsg_Read(&reader, &file)));
+    CHECK(!Result_Ignore(GuiMsg_Read(&reader, &file)));
     CHECK_EQ_INT(file.count, 0);
     // A count of offsets that the file cannot hold fails too.
     static const uint8_t many[8] = { 9, 0, 0, 0, 8, 0, 0, 0 };
     Reader_OpenBuffer(&reader, many, sizeof(many), nullptr);
-    CHECK(!IS_OK(GuiMsg_Read(&reader, &file)));
+    CHECK(!Result_Ignore(GuiMsg_Read(&reader, &file)));
     CHECK(file.scripts == nullptr);
 }
 
@@ -276,7 +276,7 @@ TEST(a_rejected_file_fails_the_add)
     MsgBuilder_Init(&msg);
     MsgBuilder_Op(
         &msg, MsgBuilder_BeginScript(&msg), 0, GUI_MSG_OP_RELEASE_TIMELINE);
-    CHECK(!IS_OK(GuiSetup_SetUpStage("rejected", 1, &msg)));
+    CHECK(!Result_Ignore(GuiSetup_SetUpStage("rejected", 1, &msg)));
     CHECK(Anm_GetScript(0x700) == nullptr);
     CHECK(Anm_GetScript(0x4a0) == nullptr);
     GuiSetup_TearDown();

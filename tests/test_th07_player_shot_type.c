@@ -76,9 +76,11 @@ static RESULT M_Read(const TH07_SHT *const sht, SHOT_TYPE *const out)
 static bool M_Rejects(const TH07_SHT *const sht)
 {
     SHOT_TYPE shot_type;
-    const bool rejected = !Result_Ignore(M_Read(sht, &shot_type));
-    return rejected && shot_type.tables == nullptr
-        && shot_type.table_count == 0;
+    if (Result_Ignore(M_Read(sht, &shot_type))) {
+        ShotType_Release(&shot_type);
+        return false;
+    }
+    return shot_type.tables == nullptr && shot_type.table_count == 0;
 }
 
 // Reads the shot type with one shot of the second table changed.
