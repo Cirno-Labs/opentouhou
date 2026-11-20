@@ -4,8 +4,8 @@
 
 - Added th07, compatible with original-format replays.
 - Added the optional replay_desync fix, on by default: replays keep
-  their saved stage scores, and some no longer skip a line of dialogue
-  after a pause.
+  their saved stage scores, and replays recorded with VsyncPatch no
+  longer skip a line of dialogue after a pause.
 - Added native packages for Windows, Linux and macOS.
 - Added English and other languages through othpatch.
 - Added smooth motion between ticks on fast displays.

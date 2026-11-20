@@ -12,9 +12,10 @@
 // Recording marks pause events at 6 and keeps the buttons at 16.
 // With [fixes] replay_desync enabled, playback keeps stage headers intact.
 // In a recording whose bombs start on the frame of their press, a frame
-// before the original records them, it also takes the buttons on a pause
-// marker as held the calc before. Recording is unchanged. With the fix
-// disabled, playback is retail's.
+// before the original records them, as the original with VsyncPatch rev4
+// records them, it also takes the buttons on a pause marker as held the
+// calc before, since that game reads the buttons while paused. Recording
+// is unchanged. With the fix disabled, playback is retail's.
 
 // Starts recording or playback, or sets up the next stage of the active
 // session. Playback loads path and takes the replay_desync setting on the
