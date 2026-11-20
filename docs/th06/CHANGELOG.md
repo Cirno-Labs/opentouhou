@@ -1,6 +1,6 @@
 # th06 changelog
 
-## Unreleased
+## 1.0.2 (2026-11-20)
 
 - Added loading of font files that you put in `opentouhou/fonts/` of
   the game folder, in place of fonts of the same name.
@@ -15,6 +15,7 @@
   of BIZ UDGothic.
 - Changed the text of `--help` and of command-line errors to a new
   format.
+- Changed the packages to ship othpatch 1.0.1.
 - Fixed the missing frame rate display at the bottom of the screen, as
   in the original, outside ending scenes; `[game] show_fps` hides it.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
