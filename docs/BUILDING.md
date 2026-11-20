@@ -402,3 +402,9 @@ The workflows need these repository settings:
   `repository_dispatch` event. After each successful snapshot, release
   or deletion, "Tell the site about new releases" asks the site to
   rebuild. Without them the site rebuilds on its own schedule.
+- Variable `SAKUYA_URL` and secret `SAKUYA_KEY`: the Discord bot's
+  message endpoint and its key. After a release, "Publish the releases"
+  posts each released program with its changes and icon to `#releases`
+  through `tools/announce_release`. Without the key nothing is posted.
+  `tools/announce_release --dry-run --unreleased th06=1.2.0` prints the
+  message for a release before it is cut.
