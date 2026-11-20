@@ -109,11 +109,12 @@ and key settings, and the options of the game.
   with a black border around them.
 - [fixes] replay_desync: plays original replays as they were recorded.
   The original's playback can lower the score carried into a stage by
-  up to 655,350 points, and in some replays a shot held through a pause
-  can skip a line of dialogue and change the rest of the run. It is on by default. Set it
-  to false to play replays as the original game does. It does not
-  change live play or recorded input, and playback does not rewrite the
-  source replay while this fix is on.
+  up to 655,350 points, and in replays recorded with VsyncPatch a shot
+  held through a pause can skip a line of dialogue and change the rest
+  of the run. It is on by default. Set it to false to play replays as
+  the original game does. It does not change live play or recorded
+  input, and playback does not rewrite the source replay while this fix
+  is on.
 - [screenshot] resolution: native or window. format: png or jpg.
   jpeg_quality: 1 to 100.
 - [patches] enabled: set it to false to turn off all patches.

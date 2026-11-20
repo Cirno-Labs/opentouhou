@@ -101,7 +101,9 @@ static bool M_BombPressed(const REPLAY_FRAME *const frames, const int32_t i)
 
 // Returns whether more bombs of file start on the frame of their press
 // than on the frame after, where the original records them. Such a file
-// comes from a game that marks each calc's events a frame early.
+// comes from the original with VsyncPatch rev4, which has gameplay act on
+// the buttons in the calc that reads them and skips each stage's first
+// recorded calc.
 static bool M_HasEarlyEvents(const REPLAY_FILE *const file)
 {
     int32_t early = 0;
@@ -349,8 +351,8 @@ static CHAIN_STATUS M_Play(void *const arg)
     if (replay->cursor < stage->frame_count) {
         const REPLAY_FRAME *const frame = &stage->frames[replay->cursor];
         Buttons_Play(&g_Buttons, frame->buttons);
-        // The game that marks events early read the buttons while paused
-        // too: take the buttons held on resume as held the calc before.
+        // VsyncPatch's original also reads the buttons while paused: take
+        // the buttons held on resume as held the calc before.
         if (replay->early_events && (frame->events & REPLAY_EVENT_PAUSE) != 0) {
             g_Buttons.previous_play_word = g_Buttons.play_word;
         }
