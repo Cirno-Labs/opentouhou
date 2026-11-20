@@ -97,17 +97,41 @@ if build_games
   # are declared here, so that they land in the root of the build directory.
   # An executable is named after the game id with an o before it, as
   # oth06, so that it does not clash with the original game's executable
-  # in the same folder.
+  # in the same folder. A game's 'fonts' lists its built-in fonts, as
+  # paths below src/shell/builtin, which its programs carry in a zip.
   games = {}
   subdir('src/th06')
   subdir('src/th07')
 
+  builtin_libs = {}
   foreach name, game : games
+    builtin_names = get_option('font') == 'free' ? game['fonts'] : []
+    builtin_inputs = []
+    foreach builtin_name : builtin_names
+      builtin_inputs += files('src/shell/builtin' / builtin_name)
+    endforeach
+    builtin_zip = custom_target(
+      name + '_builtin_zip',
+      input: builtin_inputs,
+      output: name + '_builtin.zip',
+      command: [python3, shell_pack_zip, '@OUTPUT@', shell_builtin_dir] + builtin_names,
+    )
+    builtin_libs += {
+      name: static_library(
+        name + '_builtin',
+        custom_target(
+          name + '_builtin_files',
+          input: builtin_zip,
+          output: name + '_builtin_files.c',
+          command: [python3, shell_embed_binary, '@OUTPUT@', 'g_ShellBuiltinFiles', '@INPUT@'],
+        ),
+      ),
+    }
     executable(
       'o' + name,
       game['sources'],
       c_args: game['c_args'],
-      link_with: game.get('link_with', []),
+      link_with: game.get('link_with', []) + [builtin_libs[name]],
       implicit_include_directories: false,
       dependencies: [
         shell_game_dep, stg_dep,
@@ -126,6 +150,7 @@ if build_games
     implicit_include_directories: false,
     link_with: [
       th06_main_lib, th06_harness_lib, th06_lib, harness_native_lib, harness_lib,
+      builtin_libs['th06'],
     ],
     dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
     win_subsystem: 'console',
@@ -138,6 +163,7 @@ if build_games
     implicit_include_directories: false,
     link_with: [
       th07_main_lib, th07_harness_lib, th07_lib, harness_native_lib, harness_lib,
+      builtin_libs['th07'],
     ],
     dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
     win_subsystem: 'console',

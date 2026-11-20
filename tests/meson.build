@@ -1584,6 +1584,7 @@ test(
     'test_shell_host.c',
     c_args: shell_include,
     implicit_include_directories: false,
+    link_with: builtin_libs['th06'],
     dependencies: [shell_game_dep, sdl3],
   ),
   env: {
@@ -2052,7 +2053,7 @@ test(
     ],
     implicit_include_directories: false,
     link_with: [
-      shell_fonts_lib, core_archive_lib, core_vfs_lib, core_text_lib,
+      shell_fonts_lib, builtin_libs['th06'], core_archive_lib, core_vfs_lib, core_text_lib,
       core_image_lib, core_hash_lib, core_io_lib, core_base_lib,
     ],
     dependencies: [sdl3_ttf, sdl3, zlib, text_system, cc_libm],
