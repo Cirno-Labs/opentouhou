@@ -31,7 +31,9 @@
 
 #define RETAIL_SCENE_TITLE 1
 
-// MainMenu states at its title menu and its replay list.
+// MainMenu states waiting for its key, at its title menu and at its replay
+// list.
+#define RETAIL_MAIN_MENU_WAIT_FOR_KEY 1
 #define RETAIL_MAIN_MENU_TITLE_MENU 2
 #define RETAIL_MAIN_MENU_REPLAYS 13
 

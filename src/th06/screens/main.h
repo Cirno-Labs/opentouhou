@@ -50,8 +50,9 @@ RESULT TitleScene_SetUp(int32_t mode);
 RESULT TitleScene_SetUpReplay(
     const REPLAY_SUMMARY *summary, const char *path, int32_t stage);
 
-// Returns whether the title waits for a choice at its title menu or its
-// replay list, as it does after a replay.
+// Returns whether the title waits for its key, for a choice at its title
+// menu or for a choice at its replay list. A replay ends at the replay
+// list, or at the key when the replay has no stage after its last.
 bool TitleScene_IsIdle(void);
 
 // Removes the title, as leaving it for a scene does. Does nothing while the

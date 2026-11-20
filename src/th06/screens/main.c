@@ -1546,7 +1546,8 @@ RESULT TitleScene_SetUpReplay(
 bool TitleScene_IsIdle(void)
 {
     return m_Menu.added
-        && (m_Menu.state == M_STATE_TITLE_MENU
+        && (m_Menu.state == M_STATE_WAIT_FOR_KEY
+            || m_Menu.state == M_STATE_TITLE_MENU
             || m_Menu.state == M_STATE_REPLAYS);
 }
 
