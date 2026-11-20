@@ -263,3 +263,29 @@ jobs:
             git tag ${REPLACE:+--force} "$tag" "$GITHUB_SHA"
             git push ${REPLACE:+--force} origin "refs/tags/$tag"
           done
+
+  # Posts the new releases to the Discord server's #releases through
+  # Sakuya. The repository variable SAKUYA_URL is her message endpoint
+  # and the secret SAKUYA_KEY its key; without the key, nothing is
+  # posted. A replacing run announces nothing.
+  announce:
+    name: Announce the releases
+    needs:
+      - plan
+      - othpatch
+      - games
+    if: ${{ !cancelled() && !inputs.replace && (needs.othpatch.result == 'success' || needs.games.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Post to #releases
+        env:
+          SAKUYA_URL: ${{ vars.SAKUYA_URL }}
+          SAKUYA_KEY: ${{ secrets.SAKUYA_KEY }}
+          OTHPATCH: ${{ needs.othpatch.result == 'success' && 'othpatch' || '' }}
+          GAMES: ${{ needs.games.result == 'success' && needs.plan.outputs.games || '' }}
+        run: |
+          # shellcheck disable=SC2086
+          tools/announce_release $OTHPATCH $GAMES

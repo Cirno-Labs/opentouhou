@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Post the release of programs to the Discord server, through Sakuya.
+
+Each PROGRAM, such as th06, is announced at the version in its
+src/<program>/version.txt, or at VERSION when given as PROGRAM=VERSION,
+with the changes of that version's changelog section. --unreleased takes
+the Unreleased section instead, to preview a release before it is cut.
+
+SAKUYA_URL is the URL of the bot's message endpoint and SAKUYA_KEY its
+key. Without the key, nothing is posted. --dry-run prints the request
+instead of posting it.
+"""
+
+import argparse
+import json
+import os
+import sys
+import urllib.request
+
+from shared.announcement import message
+from shared.changelog import REPO_DIR, changelog_path, section
+
+
+def release(spec: str, unreleased: bool) -> tuple[str, str, str]:
+    program, _, version = spec.partition("=")
+    if not version:
+        version = (REPO_DIR / "src" / program / "version.txt").read_text().strip()
+    changelog = changelog_path(program)
+    title = "Unreleased" if unreleased else version
+    changes = section(changelog.read_text(), title)
+    if changes is None:
+        sys.exit(f"{changelog.relative_to(REPO_DIR)} has no section {title}")
+    return program, version, changes
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("programs", nargs="+", metavar="PROGRAM[=VERSION]")
+    parser.add_argument("--channel", default="releases")
+    parser.add_argument("--unreleased", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    request = {
+        "channel": args.channel,
+        "payload": message([release(spec, args.unreleased) for spec in args.programs]),
+    }
+    if args.dry_run:
+        print(json.dumps(request, ensure_ascii=False, indent=2))
+        return
+    key = os.environ.get("SAKUYA_KEY", "")
+    url = os.environ.get("SAKUYA_URL", "")
+    if not key or not url:
+        print("SAKUYA_URL or SAKUYA_KEY is not set; the release is not announced.")
+        return
+    post = urllib.request.Request(
+        url,
+        data=json.dumps(request).encode(),
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(post, timeout=30) as response:
+        print(f"Announced in #{args.channel}: HTTP {response.status}")
+
+
+if __name__ == "__main__":
+    main()
