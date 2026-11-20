@@ -1962,6 +1962,10 @@ libfuse 3.15.0 (AppImage runtime)
 ---------------------------------
 https://raw.githubusercontent.com/libfuse/libfuse/fuse-3.15.0/LGPL2.txt
 
+Source: https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz
+with the patch and build scripts of
+https://github.com/AppImage/type2-runtime/tree/dd6cebedcbddde9c82f89b011e8e1d40b6e43868
+
                   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
 
