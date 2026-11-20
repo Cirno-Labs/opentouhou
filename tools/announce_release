@@ -57,7 +57,12 @@ def main() -> None:
     post = urllib.request.Request(
         url,
         data=json.dumps(request).encode(),
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        # Cloudflare in front of the bot refuses urllib's default agent.
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "User-Agent": "opentouhou-release",
+        },
     )
     with urllib.request.urlopen(post, timeout=30) as response:
         print(f"Announced in #{args.channel}: HTTP {response.status}")
