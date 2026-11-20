@@ -12,8 +12,9 @@ runs this script.
 A test with the name of a test in an earlier build directory is left
 out, so the suites that every build has run once. --no-suite leaves out
 the tests of a Meson suite, as in Meson. --wrapper runs each executable
-through a program, such as wine. Exit status 77 means that the test is
-skipped, as in Meson.
+through a program, such as wine or valgrind: a Windows .exe, or a file
+of the build directory that can run. Exit status 77 means that the test
+is skipped, as in Meson.
 """
 
 import argparse
@@ -56,6 +57,17 @@ def local_path(value: str, prefixes: list[tuple[str, Path]]) -> str:
     return value
 
 
+def is_executable(arg: str, build_dir: Path) -> bool:
+    path = Path(arg)
+    if arg.endswith(".exe"):
+        return True
+    return (
+        path.is_file()
+        and os.access(path, os.X_OK)
+        and path.resolve().is_relative_to(build_dir.resolve())
+    )
+
+
 def load_tests(build_dir: Path, source_dir: Path, wrapper: list[str]) -> list[Test]:
     info = json.loads((build_dir / "meson-info/meson-info.json").read_text())
     directories = info["directories"]
@@ -70,7 +82,7 @@ def load_tests(build_dir: Path, source_dir: Path, wrapper: list[str]) -> list[Te
             arg = local_path(arg, prefixes)
             if index == 0 and Path(arg).name.startswith("python"):
                 arg = sys.executable
-            if arg.endswith(".exe"):
+            if is_executable(arg, build_dir):
                 cmd += wrapper
             cmd.append(arg)
         env = {
