@@ -556,6 +556,39 @@ TEST(the_replay_fix_preserves_saved_scores_when_a_stage_ends_late)
     CHECK_EQ_INT(M_ScoreAfterEnding(3, true), 0x12345678);
 }
 
+// Plays stage 1 of four frames without bombs for calcs and ends it, then
+// stage 2 with a pause marker on frame 2 with shoot newly held. Returns
+// the previous play word of the marker's calc.
+static uint16_t M_PreviousOnResumeAfterEnding(const int32_t calcs)
+{
+    M_SetUp(1);
+    g_Settings.fix_replay_desync = true;
+    M_SPEC spec = {};
+    M_Frames(&spec.slots[1], 0, 4);
+    M_Frames(&spec.slots[2], 0, 4);
+    memset(spec.slots[1].buttons, 0, sizeof(spec.slots[1].buttons));
+    memset(spec.slots[2].buttons, 0, sizeof(spec.slots[2].buttons));
+    spec.slots[2].buttons[2] = 1;
+    spec.slots[2].events[2] = REPLAY_EVENT_PAUSE;
+    M_Play(&spec);
+    M_Calcs(calcs);
+    Replay_EndStage();
+    g_GameManager.run.stage = 2;
+    CHECK(Result_Log(Replay_Register(REPLAY_PLAY, M_PATH), LOG_LEVEL_ERROR));
+    M_Calcs(3);
+    CHECK_EQ_INT(g_Buttons.play_word, 1);
+    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
+    const uint16_t previous = g_Buttons.previous_play_word;
+    M_TearDown();
+    return previous;
+}
+
+TEST(the_replay_fix_holds_the_resume_buttons_after_a_stage_ends_late)
+{
+    CHECK_EQ_INT(M_PreviousOnResumeAfterEnding(2), 0);
+    CHECK_EQ_INT(M_PreviousOnResumeAfterEnding(3), 1);
+}
+
 TEST(phantasm_plays_slot_7)
 {
     M_SetUp(8);

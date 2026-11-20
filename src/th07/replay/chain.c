@@ -543,6 +543,12 @@ void Replay_EndStage(void)
     const int32_t slot = M_Slot();
     if (replay->mode == REPLAY_PLAY) {
         if (replay->fix_desync) {
+            // A stage of the original with VsyncPatch rev4 ends on the calc
+            // before its last frame, the original's a calc earlier.
+            const REPLAY_STAGE *const stage = replay->file->stages[slot];
+            if (stage->frame_count - replay->cursor == 1) {
+                replay->early_events = true;
+            }
             return;
         }
         // The original closes a played stage too, in the loaded file: one
