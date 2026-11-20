@@ -20,8 +20,12 @@ beside its .dat files:
   executable.
 - macOS: oth07.app and othpatch
 
-Then start the program. The program never changes the files in that
-folder.
+Then start the program. The program never changes the original game
+files. Keep othpatch beside the program, under its supplied name, so
+that it can find and update the game.
+
+In the commands below, use oth07.exe and othpatch.exe on Windows,
+./oth07.AppImage and ./othpatch on Linux, or ./othpatch on macOS.
 
 On macOS, the program has no developer signature, and macOS runs a
 downloaded program from a temporary copy that cannot see the files
@@ -42,6 +46,14 @@ On macOS, the program inside oth07.app takes the arguments:
 To see all arguments and the folders that the program uses, type:
 
     oth07 --help
+
+The program draws text in MS Gothic, as the original does, when the
+system has it, and in the bundled IPAGothic otherwise. To use
+another font file, put it in the opentouhou/fonts/ folder of the game
+folder: a font there replaces the font of the same name.
+
+The package also includes oth07_readme.txt and oth07_licenses.txt.
+Their names keep them separate from the original game's documents.
 
 
 Your files
@@ -87,8 +99,19 @@ the game and your files together, for example on a USB drive.
 Keys
 ----
 
-F11 or Alt+Enter changes between window and full screen. F12 or Print
-Screen saves a screenshot.
+- Arrow keys or keypad 2, 4, 6 and 8: move or select a menu item.
+- Z: shoot or confirm. Return also confirms a menu choice.
+- X: use a bomb or go back in a menu.
+- Shift: move slowly while held.
+- Escape: pause or open the menu.
+- Ctrl: skip dialogue while held.
+- F11 or Alt+Enter: switch between window and full screen.
+- F12 or Print Screen: save a screenshot.
+
+On a gamepad, the directional pad or left stick moves, south shoots,
+east bombs, west focuses, start opens the menu and north skips. Change
+bindings in the [input.keyboard], [input.gamepad] and [input.joystick]
+sections of config.ini.
 
 
 Settings
@@ -99,7 +122,8 @@ and key settings, and the options of the game.
 
 - [game] show_fps: shows the frame rate outside ending scenes. It is
   enabled by default. Set it to false to hide the counter.
-
+- [video] fullscreen: starts the program in full screen. It is false by
+  default. F11 and Alt+Enter change it.
 - [video] interpolation: smooths motion between the 60 Hz steps of the
   game on faster displays. It is on by default. Set it to false to show
   each step as the game drew it.
@@ -119,8 +143,8 @@ and key settings, and the options of the game.
   sooner, as VsyncPatch does for the original game. It is off by
   default. Replays recorded with it are like those recorded with
   VsyncPatch, and play back in the original game as those do.
-- [screenshot] resolution: native or window. format: png or jpg.
-  jpeg_quality: 1 to 100.
+- [screenshot] resolution: native (the default) or window. format: png
+  (the default) or jpg. jpeg_quality: 1 to 100, 90 by default.
 - [patches] enabled: set it to false to turn off all patches.
   disabled: patch ids to leave out, separated by commas, for example
   thpatch/lang_de. language: the code of the language pack to use, for
@@ -145,40 +169,54 @@ language is [patches] language. Without it, the program uses the only
 language pack, or of several, the one for the language of your system.
 oth07.log tells which patches apply and why.
 
-Keep othpatch in the same folder as the program. othpatch downloads
-the translations of thpatch.net into the patches folder. The first
-time, it gets the translation into the language of your system. Start
-othpatch, or type:
+Keep othpatch beside the game, under its supplied name. It downloads
+thpatch.net translations and updates your installed patches. Restart
+the game to use changed patches.
+
+On the first run it selects your system language. Later runs keep your
+selection and update your patches:
 
     othpatch
 
-To get a different language, give its code, for example English:
+Choose another language, or return to the original Japanese:
 
     othpatch en
-
-othpatch then sets [patches] language in the config.ini of the
-program. Your other languages stay in the patches folder. To play the
-original game without a translation, type:
-
     othpatch ja
 
-To see every language and the mods that you have, type:
+This sets [patches] language in config.ini; other language packs stay
+installed. With a custom --user-dir, set language = <code> under
+[patches] in that config.ini yourself.
+
+List available languages and installed mods:
 
     othpatch --list
 
-If you start the program with --user-dir, othpatch cannot find that
-config.ini: add the line language = <code> under [patches] there.
+Install a mod by repository and patch id, or remove it:
 
-Each time, othpatch also updates the translations and the mods that
-you have. Then it looks for a newer release of othpatch and of the
-program, and asks before it installs it. To install the updates
-without a question, type:
+    othpatch nmlgc/aero
+    othpatch --remove nmlgc/aero
+
+A bare patch id works if only one repository has it. Installation gets
+the required dependencies; removal also removes dependencies that only
+that mod needs. If another patch needs the mod, remove that patch first.
+
+Each normal run also checks for newer releases of the games beside it
+and of othpatch, and asks before installing them. To accept available
+updates without a question:
 
     othpatch --update
 
-To see all arguments, type:
+Development builds are never replaced by release updates. Updates keep
+your settings, scores and replays. A game's bundled othpatch replaces
+the installed release only when it is newer.
 
+For folder and patch details, or all arguments:
+
+    othpatch --verbose
     othpatch --help
+
+othpatch --dir <folder> selects a custom patches folder. It does not
+change the game's patches folder; both must use the same location.
 
 
 Credits
