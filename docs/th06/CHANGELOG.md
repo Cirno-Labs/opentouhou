@@ -6,6 +6,8 @@
   outside ending scenes, enabled by default.
 - Added fonts from the `opentouhou/fonts/` folder of the game folder,
   which replace the fonts of the same name.
+- Changed the program icon to a redrawn Remilia with an outline that
+  stays visible on dark backgrounds.
 - Changed package documents to `oth06_readme.txt` and
   `oth06_licenses.txt` so they do not replace the original game's readme.
 - Changed the conversion of music and sound effects to the output rate,
