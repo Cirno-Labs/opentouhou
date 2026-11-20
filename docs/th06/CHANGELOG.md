@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Added fonts from the `opentouhou/fonts/` folder of the game folder,
-  which replace the fonts of the same name.
+- Added loading of font files that you put in `opentouhou/fonts/` of
+  the game folder, in place of fonts of the same name.
 - Changed the program icon to a redrawn Remilia with an outline that
   stays visible on dark backgrounds.
 - Changed package documents to `oth06_readme.txt` and
@@ -19,7 +19,7 @@
   in the original, outside ending scenes; `[game] show_fps` hides it.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
-- Fixed texture colors.
+- Fixed some textures looking darker than in the original.
 - Fixed transparency in translated textures.
 - Fixed JPEG background colors and shading.
 - Fixed a black screen showing instead of the startup logo.
@@ -27,7 +27,7 @@
 - Fixed how stage backgrounds fade into fog with distance.
 - Fixed faint, almost transparent sprite edges that the original does
   not draw.
-- Fixed texture distortion and colour seams across sprites and
+- Fixed texture distortion and color seams across sprites and
   backgrounds, which split along the wrong diagonal.
 - Fixed overlapping sprites drawing in the wrong order, and items, the
   player, bombs and spell card backgrounds showing outside the
@@ -38,7 +38,7 @@
   sitting half a pixel off.
 - Fixed enemies flashing white when player shots hit them, and sprites
   sampled without the original's smoothing.
-- Fixed orbiting boss effects in dark, saturated colours instead of the
+- Fixed orbiting boss effects in dark, saturated colors instead of the
   original's pale tints.
 - Fixed the spacing of bold translated text.
 - Fixed the shading of text in spell names, dialogue and stage titles.
