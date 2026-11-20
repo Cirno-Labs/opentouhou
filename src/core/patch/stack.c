@@ -97,6 +97,16 @@ static void M_FreeFiles(PATCH_FILES *const files)
     HashMap_Free(files);
 }
 
+// Returns whether name is a bitmap font or a ROM dump, which the font
+// registry keeps by file name.
+static bool M_IsFontFile(const char *const name)
+{
+    const char *const dot = strrchr(name, '.');
+    return dot != nullptr
+        && (Str_EqualIgnoreCase(dot, ".bdf") || Str_EqualIgnoreCase(dot, ".bmp")
+            || Str_EqualIgnoreCase(dot, ".rom"));
+}
+
 static RESULT M_AddFont(const PATCH *const patch, const char *const name)
 {
     char *const key = Str_Dup(name);
@@ -113,7 +123,11 @@ static RESULT M_AddFont(const PATCH *const patch, const char *const name)
     void *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
     RESULT result = Reader_Result(&reader);
     Reader_Close(&reader);
-    if (IS_OK(result)) {
+    const char *const slash = strrchr(name, '/');
+    if (IS_OK(result) && M_IsFontFile(name)) {
+        FontRegistry_AddFile(
+            slash != nullptr ? slash + 1 : name, path, data, size);
+    } else if (IS_OK(result)) {
         result = FontRegistry_Add(path, data, size);
     }
     Mem_Free(data);
