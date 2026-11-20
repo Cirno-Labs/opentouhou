@@ -87,10 +87,10 @@ void Image_Resize(IMAGE *const image, const int32_t width, const int32_t height)
     }
 
     IMAGE result = Image_Create(width, height, image->allocator);
-    const uint8_t *const src_planes[1] = { image->pixels };
-    const int src_strides[1] = { image->width * 4 };
-    uint8_t *const dst_planes[1] = { result.pixels };
-    const int dst_strides[1] = { width * 4 };
+    const uint8_t *const src_planes[4] = { image->pixels };
+    const int src_strides[4] = { image->width * 4 };
+    uint8_t *const dst_planes[4] = { result.pixels };
+    const int dst_strides[4] = { width * 4 };
     sws_scale(
         sws, src_planes, src_strides, 0, image->height, dst_planes,
         dst_strides);
