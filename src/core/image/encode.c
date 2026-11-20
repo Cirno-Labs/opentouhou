@@ -48,8 +48,8 @@ static void M_Encode(
     if (av_frame_get_buffer(frame, 0) < 0) {
         LOG_FATAL("failed to allocate the encoder's frame");
     }
-    const uint8_t *const src_planes[1] = { image->pixels };
-    const int src_strides[1] = { image->width * 4 };
+    const uint8_t *const src_planes[4] = { image->pixels };
+    const int src_strides[4] = { image->width * 4 };
     sws_scale(
         sws, src_planes, src_strides, 0, image->height, frame->data,
         frame->linesize);

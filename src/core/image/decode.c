@@ -98,8 +98,8 @@ RESULT Image_Decode(
     }
 
     *out = Image_Create(frame->width, frame->height, allocator);
-    uint8_t *dst_planes[1] = { out->pixels };
-    int dst_strides[1] = { frame->width * 4 };
+    uint8_t *dst_planes[4] = { out->pixels };
+    int dst_strides[4] = { frame->width * 4 };
     sws_scale(
         sws, (const uint8_t *const *)frame->data, frame->linesize, 0,
         frame->height, dst_planes, dst_strides);
