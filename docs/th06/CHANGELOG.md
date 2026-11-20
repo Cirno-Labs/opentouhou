@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-- Added an optional frame rate display at the bottom of the screen,
-  outside ending scenes, enabled by default.
 - Added fonts from the `opentouhou/fonts/` folder of the game folder,
   which replace the fonts of the same name.
 - Changed the program icon to a redrawn Remilia with an outline that
@@ -17,6 +15,8 @@
   of BIZ UDGothic.
 - Changed the text of `--help` and of command-line errors to a new
   format.
+- Fixed the missing frame rate display at the bottom of the screen, as
+  in the original, outside ending scenes; `[game] show_fps` hides it.
 - Fixed a gamepad or joystick button bound to both shoot and focus: it
   now focuses only after it is held for 8 frames, as in the original.
 - Fixed texture colors.
