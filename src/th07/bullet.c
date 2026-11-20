@@ -467,7 +467,7 @@ static void M_Bounce(BULLET *const bullet)
     }
 }
 
-static void M_RunBehaviours(BULLET *const bullet)
+static void M_RunBehaviors(BULLET *const bullet)
 {
     if ((bullet->running & BULLET_FLAG_START_FAST) != 0) {
         M_StartFast(bullet);
@@ -551,7 +551,7 @@ static bool M_Fly(BULLET *const bullet)
 {
     M_RunCommands(bullet);
     if (bullet->running != 0) {
-        M_RunBehaviours(bullet);
+        M_RunBehaviors(bullet);
     }
     if (bullet->keep_outside_frames != 0) {
         bullet->keep_outside_frames--;
