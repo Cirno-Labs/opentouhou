@@ -1,6 +1,6 @@
 # th07 changelog
 
-## Unreleased
+## 1.0.0 (2026-11-20)
 
 - Added th07, compatible with original-format replays.
 - Added the optional replay_desync fix, on by default: replays keep
