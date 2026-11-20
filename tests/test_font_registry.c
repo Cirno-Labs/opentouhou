@@ -288,6 +288,44 @@ TEST(data_that_is_not_a_font_is_refused)
     CHECK(!Result_Ignore(FontRegistry_Add("nothing", nullptr, 0)));
 }
 
+TEST(a_file_is_found_by_its_name_ignoring_ascii_case)
+{
+    FontRegistry_Reset(false);
+    char data[] = "font rom";
+    FontRegistry_AddFile("FONT.ROM", "first", data, sizeof(data));
+    data[0] = 'F';
+    const void *found = nullptr;
+    size_t size = 0;
+    CHECK(FontRegistry_FindFile("font.rom", &found, &size));
+    CHECK(size == sizeof(data));
+    CHECK(memcmp(found, "font rom", size) == 0);
+    CHECK(!FontRegistry_FindFile("NEC.BMP", &found, &size));
+    FontRegistry_Reset(false);
+}
+
+TEST(the_later_file_wins_a_name)
+{
+    FontRegistry_Reset(false);
+    FontRegistry_AddFile("nec.bmp", "first", "first", 5);
+    FontRegistry_AddFile("NEC.BMP", "second", "second!", 7);
+    const void *found = nullptr;
+    size_t size = 0;
+    CHECK(FontRegistry_FindFile("Nec.Bmp", &found, &size));
+    CHECK(size == 7);
+    CHECK(memcmp(found, "second!", size) == 0);
+    FontRegistry_Reset(false);
+}
+
+TEST(reset_forgets_the_files)
+{
+    FontRegistry_Reset(false);
+    FontRegistry_AddFile("shnmk16.bdf", "test", "STARTFONT", 9);
+    FontRegistry_Reset(false);
+    const void *found = nullptr;
+    size_t size = 0;
+    CHECK(!FontRegistry_FindFile("shnmk16.bdf", &found, &size));
+}
+
 TEST(fonts_do_not_open_before_init)
 {
     TestFonts_UseBuiltin();
