@@ -818,8 +818,6 @@ RESULT Overlay_Install(
           (uintptr_t *)&m_RealSetFilePointer },
         { "GetFileType", (uintptr_t)M_GetFileType,
           (uintptr_t *)&m_RealGetFileType },
-        { "GetFileTime", (uintptr_t)M_GetFileTime,
-          (uintptr_t *)&m_RealGetFileTime },
         { "CloseHandle", (uintptr_t)M_CloseHandle,
           (uintptr_t *)&m_RealCloseHandle },
     };
@@ -831,5 +829,9 @@ RESULT Overlay_Install(
             return FAIL("overlay: %s is not imported", table[i].name);
         }
     }
+    // th07 does not import GetFileTime, so it never calls it.
+    Iat_Patch(
+        module, "KERNEL32.dll", "GetFileTime", (uintptr_t)M_GetFileTime,
+        (uintptr_t *)&m_RealGetFileTime);
     return OK;
 }
