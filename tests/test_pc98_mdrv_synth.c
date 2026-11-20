@@ -307,6 +307,33 @@ TEST(raw_register_bypasses_effect_owned_music)
     Arena_Free(&fixture.arena);
 }
 
+TEST(effects_with_rhythm_and_pcm_descriptors_use_ssg_slots)
+{
+    const uint8_t code[] = { 0xeb, 0, 0xec, 110, 0x40, 8, 0xff };
+    FIXTURE fixture;
+    M_Init(&fixture, code, sizeof(code), 0x80);
+    fixture.effects[0].base_channel = 0x10;
+    fixture.effects[1].base_channel = 0x21;
+    M_Start(&fixture);
+    CHECK(Result_Ignore(MdrvSynth_EffectPlay(fixture.synth, 1)));
+    M_Pulses(&fixture, 2);
+    CHECK_EQ_INT(MdrvSynth_Status(fixture.synth).effect_mask, 4);
+    CHECK_EQ_INT(M_Last(&fixture, 10)->pulse, 2);
+    M_Pulses(&fixture, 8);
+    CHECK(!MdrvSynth_Status(fixture.synth).effects_playing);
+    fixture.write_count = 0;
+    CHECK(Result_Ignore(MdrvSynth_EffectPlay(fixture.synth, 2)));
+    M_Pulses(&fixture, 2);
+    CHECK_EQ_INT(MdrvSynth_Status(fixture.synth).effect_mask, 7);
+    for (uint16_t reg = 8; reg <= 10; reg++) {
+        CHECK_EQ_INT(M_Last(&fixture, reg)->pulse, 12);
+    }
+    M_Pulses(&fixture, 8);
+    CHECK(!MdrvSynth_Status(fixture.synth).effects_playing);
+    CHECK(!MdrvSynth_Status(fixture.synth).failed);
+    Arena_Free(&fixture.arena);
+}
+
 TEST(chunk_reset_replay_and_allocations_are_deterministic)
 {
     const uint8_t code[] = {

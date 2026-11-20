@@ -101,10 +101,16 @@ static uint8_t M_Channel(const MDRV_EVENT *const event)
                                         : event->channel & 3;
 }
 
+static uint8_t M_EffectSlot(const MDRV_EVENT *const event)
+{
+    // Effect tracks always carry the SSG tags 0x40 to 0x42.
+    return (event->channel & 3) % 3;
+}
+
 static M_VOICE *M_Voice(MDRV_SYNTH *const synth, const MDRV_EVENT *const event)
 {
     if (event->effect_number != 0) {
-        return &synth->effect[M_Channel(event)];
+        return &synth->effect[M_EffectSlot(event)];
     }
     return &synth->music
                 [(event->channel & 0x80) != 0       ? event->channel & 7
@@ -116,7 +122,8 @@ static M_SSG_PROGRAM *M_Pattern(
     MDRV_SYNTH *const synth, const MDRV_EVENT *const event)
 {
     return &synth->patterns
-                [M_Channel(event) + (event->effect_number != 0 ? 3 : 0)];
+                [event->effect_number != 0 ? 3 + M_EffectSlot(event)
+                                           : M_Channel(event)];
 }
 
 static void M_Silence(MDRV_SYNTH *const synth)
