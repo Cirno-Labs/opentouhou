@@ -24,6 +24,7 @@ static const CONFIG_OPTION m_Options[] = {
         M_EFFECTS_QUALITY, 0, 2),
     CONFIG_BOOL(
         TH07_SETTINGS, "fixes", "replay_desync", fix_replay_desync, true),
+    CONFIG_BOOL(TH07_SETTINGS, "fixes", "input_lag", fix_input_lag, false),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =

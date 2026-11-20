@@ -14,6 +14,7 @@
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/base/utils.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -223,6 +224,7 @@ static void M_SetUp(const int32_t stage)
     m_SeenPlayWord = 0;
     m_Resaves = 0;
     g_Settings.fix_replay_desync = false;
+    g_Settings.fix_input_lag = false;
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
@@ -922,6 +924,93 @@ TEST(save_writes_the_recording_with_its_name_and_three_new_keys)
     CHECK_EQ_INT(stage->frames[1].buttons, 0x3);
     CHECK_EQ_INT(stage->frames[stage->frame_count - 1].buttons, 0);
     Replay_Free(file);
+    M_TearDown();
+}
+
+TEST(the_input_lag_fix_defaults_off_and_can_be_enabled)
+{
+    TH07_SETTINGS settings;
+    Config_SetDefaults(&g_SettingsSchema, &settings);
+    CHECK(!settings.fix_input_lag);
+    INI *ini;
+    const char *const text = "[fixes]\ninput_lag = true\n";
+    CHECK(IS_OK(Ini_Parse(text, strlen(text), &g_HeapAllocator, &ini)));
+    Config_Load(&g_SettingsSchema, ini, &settings);
+    CHECK(settings.fix_input_lag);
+    Ini_Free(ini);
+}
+
+TEST(the_input_lag_fix_takes_the_live_buttons_outside_playback)
+{
+    M_SetUp(1);
+    g_Buttons.word = 0x11;
+    Replay_TakeLiveButtons();
+    CHECK_EQ_INT(g_Buttons.play_word, 0);
+    g_Settings.fix_input_lag = true;
+    Replay_TakeLiveButtons();
+    CHECK_EQ_INT(g_Buttons.play_word, 0);
+    g_GameManager.mode.in_replay = false;
+    Replay_TakeLiveButtons();
+    g_Buttons.word = 0x13;
+    Replay_TakeLiveButtons();
+    CHECK_EQ_INT(g_Buttons.play_word, 0x13);
+    CHECK_EQ_INT(g_Buttons.previous_play_word, 0x11);
+    M_TearDown();
+}
+
+// Marks a bomb in the calc whose play word newly holds bomb, as the player
+// starts one at priority 8.
+static CHAIN_STATUS M_BombOnPress(void *const arg)
+{
+    if (Buttons_FromWord(g_Buttons.play_word).bomb
+        && !Buttons_FromWord(g_Buttons.previous_play_word).bomb) {
+        Replay_MarkEvent(REPLAY_EVENT_BOMB);
+    }
+    return M_Observe(arg);
+}
+
+TEST(the_input_lag_fix_records_a_bomb_on_its_press_for_stock_playback)
+{
+    static const uint16_t words[] = { 0, 0x1, 0x3, 0x3, 0x1, 0 };
+    uint16_t live[ARRAY_SIZE(words)] = {};
+    M_SetUp(2);
+    g_GameManager.mode.in_replay = false;
+    g_GameManager.run.start_lives = (uint8_t)g_Settings.lives;
+    g_Settings.fix_input_lag = true;
+    Chain_InitElem(&m_ObserverElem, M_BombOnPress, nullptr);
+    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_ObserverElem, 8)));
+    // The stage registers within a calc, after the buttons are read.
+    CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
+    M_Calcs(1);
+    for (size_t i = 1; i < ARRAY_SIZE(words); i++) {
+        g_Buttons.word = words[i];
+        Replay_TakeLiveButtons();
+        M_Calcs(1);
+        live[i] = m_SeenPlayWord;
+    }
+    CHECK_EQ_INT(live[2], 0x3);
+    Replay_Save(M_PATH, &m_SaveInfo);
+    CHECK_EQ_INT(m_Resaves, 1);
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Resaved, m_ResavedSize, nullptr);
+    REPLAY_FILE *file = nullptr;
+    CHECK(Result_Log(Replay_Read(&reader, &file), LOG_LEVEL_ERROR));
+    Reader_Close(&reader);
+    const REPLAY_STAGE *const stage = file->stages[2];
+    CHECK_EQ_INT(stage->frame_count, (int32_t)ARRAY_SIZE(words) + 1);
+    CHECK_EQ_INT(stage->frames[2].buttons, 0x3);
+    CHECK_EQ_INT(stage->frames[2].events, REPLAY_EVENT_BOMB);
+    Replay_Free(file);
+    Replay_AddFile(M_PATH, m_Resaved, m_ResavedSize);
+    g_GameManager.mode.in_replay = true;
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    CHECK(Result_Log(Replay_Register(REPLAY_PLAY, M_PATH), LOG_LEVEL_ERROR));
+    M_Calcs(1);
+    CHECK_EQ_INT(m_SeenPlayWord, 0);
+    for (size_t i = 1; i < ARRAY_SIZE(words); i++) {
+        M_Calcs(1);
+        CHECK_EQ_INT(m_SeenPlayWord, live[i]);
+    }
     M_TearDown();
 }
 

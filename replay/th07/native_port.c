@@ -21,10 +21,11 @@ static void M_Seed(void *const context)
     Rng_SetSeed(&g_Rng, 0);
 }
 
-// Turns off the replay desync fix, which retail 1.00b lacks.
+// Turns off the fixes, which retail 1.00b lacks.
 static void M_Configure(void *const context)
 {
     g_Settings.fix_replay_desync = false;
+    g_Settings.fix_input_lag = false;
 }
 
 static bool M_CalcEnd(void *const arg)

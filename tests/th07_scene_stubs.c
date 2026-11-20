@@ -82,6 +82,10 @@ void Replay_Discard(void)
     g_SceneStubCalls.replay_discard_scene = Scene_GetRequested();
 }
 
+void Replay_TakeLiveButtons(void)
+{
+}
+
 void PlayTime_Add(void)
 {
     g_SceneStubCalls.play_time_add++;

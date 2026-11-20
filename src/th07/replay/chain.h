@@ -10,6 +10,9 @@
 // on them. It restarts the calc chain at priority 17 on 2 calcs of 3 during
 // skippable dialogue and 4 of 5 during fast playback without a boss.
 // Recording marks pause events at 6 and keeps the buttons at 16.
+// With [fixes] input_lag enabled, gameplay outside playback acts on the
+// buttons in the calc that reads them, also while paused, and recording
+// skips each stage's first calc, as VsyncPatch rev4 makes the original do.
 // With [fixes] replay_desync enabled, playback keeps stage headers intact.
 // In a recording whose bombs start on the frame of their press, a frame
 // before the original records them, as the original with VsyncPatch rev4
@@ -49,6 +52,11 @@ void Replay_MarkEvent(REPLAY_EVENT event);
 // another config than the current one, outside practice, Extra and
 // Phantasm, or when replay_desync is enabled. Then ends playback either way.
 void Replay_ResaveIfScoreChanged(void);
+
+// With [fixes] input_lag enabled, sets the play words from the live word
+// outside replay playback. Called after each calc reads the buttons, also
+// while the game is paused.
+void Replay_TakeLiveButtons(void);
 
 // Returns whether the replay being played holds stage (1 to 7); false
 // without playback.

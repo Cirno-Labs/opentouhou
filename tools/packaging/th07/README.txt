@@ -115,6 +115,10 @@ and key settings, and the options of the game.
   the original game does. It does not change live play or recorded
   input, and playback does not rewrite the source replay while this fix
   is on.
+- [fixes] input_lag: has the game act on a button press a frame
+  sooner, as VsyncPatch does for the original game. It is off by
+  default. Replays recorded with it are like those recorded with
+  VsyncPatch, and play back in the original game as those do.
 - [screenshot] resolution: native or window. format: png or jpg.
   jpeg_quality: 1 to 100.
 - [patches] enabled: set it to false to turn off all patches.
