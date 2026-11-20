@@ -107,9 +107,11 @@ and key settings, and the options of the game.
   square pixels as large as the window allows, smooth scales with soft
   edges, and integer shows square pixels at a whole multiple of 640x480,
   with a black border around them.
-- [fixes] replay_desync: prevents score corruption and false dialogue
-  skips when playing original replays. It is on by default. Set it to
-  false to reproduce the original game's playback bugs. It does not
+- [fixes] replay_desync: plays original replays as they were recorded.
+  The original's playback can lower the score carried into a stage by
+  up to 655,350 points, and in some replays a shot held through a pause
+  can skip a line of dialogue and change the rest of the run. It is on by default. Set it
+  to false to play replays as the original game does. It does not
   change live play or recorded input, and playback does not rewrite the
   source replay while this fix is on.
 - [screenshot] resolution: native or window. format: png or jpg.

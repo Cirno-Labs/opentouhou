@@ -46,6 +46,7 @@ typedef struct {
     int32_t fps_capacities[8];
     uint16_t events;
     bool fix_desync;
+    bool early_events; // with fix_desync, see M_HasEarlyEvents
     bool past_end_logged;
     CHAIN_ELEM calc;
     CHAIN_ELEM draw;
@@ -92,6 +93,39 @@ static RESULT M_Load(M_REPLAY *const replay)
     return OK;
 }
 
+static bool M_BombPressed(const REPLAY_FRAME *const frames, const int32_t i)
+{
+    return Buttons_FromWord(frames[i].buttons).bomb
+        && !Buttons_FromWord(frames[i - 1].buttons).bomb;
+}
+
+// Returns whether more bombs of file start on the frame of their press
+// than on the frame after, where the original records them. Such a file
+// comes from a game that marks each calc's events a frame early.
+static bool M_HasEarlyEvents(const REPLAY_FILE *const file)
+{
+    int32_t early = 0;
+    int32_t late = 0;
+    for (size_t slot = 0; slot < ARRAY_SIZE(file->stages); slot++) {
+        const REPLAY_STAGE *const stage = file->stages[slot];
+        if (stage == nullptr) {
+            continue;
+        }
+        // The first and the last two frames hold uninitialized events.
+        for (int32_t i = 2; i < stage->frame_count - 2; i++) {
+            if ((stage->frames[i].events & REPLAY_EVENT_BOMB) == 0) {
+                continue;
+            }
+            if (M_BombPressed(stage->frames, i)) {
+                early++;
+            } else if (M_BombPressed(stage->frames, i - 1)) {
+                late++;
+            }
+        }
+    }
+    return early > late;
+}
+
 static RESULT M_PlayAdded(void *const arg)
 {
     M_REPLAY *const replay = arg;
@@ -99,6 +133,8 @@ static RESULT M_PlayAdded(void *const arg)
     replay->past_end_logged = false;
     if (replay->file == nullptr) {
         MUST(M_Load(replay));
+        replay->early_events =
+            replay->fix_desync && M_HasEarlyEvents(replay->file);
     }
     const int32_t stage_number = g_GameManager.run.stage;
     FAIL_IF(
@@ -313,11 +349,10 @@ static CHAIN_STATUS M_Play(void *const arg)
     if (replay->cursor < stage->frame_count) {
         const REPLAY_FRAME *const frame = &stage->frames[replay->cursor];
         Buttons_Play(&g_Buttons, frame->buttons);
-        // Paused input is absent from the recording. Treat shoot on resume
-        // as held so it cannot advance dialogue as a new press.
-        if (replay->fix_desync && (frame->events & REPLAY_EVENT_PAUSE) != 0
-            && Gui_IsMsgRunning()) {
-            g_Buttons.previous_play_word |= frame->buttons & 1;
+        // The game that marks events early read the buttons while paused
+        // too: take the buttons held on resume as held the calc before.
+        if (replay->early_events && (frame->events & REPLAY_EVENT_PAUSE) != 0) {
+            g_Buttons.previous_play_word = g_Buttons.play_word;
         }
         replay->cursor++;
     } else {

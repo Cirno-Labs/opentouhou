@@ -10,11 +10,11 @@
 // on them. It restarts the calc chain at priority 17 on 2 calcs of 3 during
 // skippable dialogue and 4 of 5 during fast playback without a boss.
 // Recording marks pause events at 6 and keeps the buttons at 16.
-// With [fixes] replay_desync enabled, playback keeps stage headers intact
-// and treats shoot on a pause marker during dialogue as held. This avoids
-// score corruption and a new shoot press from the missing paused input.
-// Recording is unchanged. With the fix disabled, playback reproduces
-// retail's stage-end writes and pause input edges.
+// With [fixes] replay_desync enabled, playback keeps stage headers intact.
+// In a recording whose bombs start on the frame of their press, a frame
+// before the original records them, it also takes the buttons on a pause
+// marker as held the calc before. Recording is unchanged. With the fix
+// disabled, playback is retail's.
 
 // Starts recording or playback, or sets up the next stage of the active
 // session. Playback loads path and takes the replay_desync setting on the
