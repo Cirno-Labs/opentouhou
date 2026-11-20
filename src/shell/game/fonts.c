@@ -15,19 +15,39 @@
 
 typedef ARRAY(char *) M_NAMES;
 
+static const char *const m_FontExtensions[] = {
+    ".ttf", ".ttc", ".otf", ".otc", nullptr,
+};
+static const char *const m_FileExtensions[] = {
+    ".bdf",
+    ".bmp",
+    ".rom",
+    nullptr,
+};
+
+static bool M_HasExtension(
+    const char *const name, const char *const *const list)
+{
+    const char *const dot = strrchr(name, '.');
+    for (int32_t i = 0; dot != nullptr && list[i] != nullptr; i++) {
+        if (Str_EqualIgnoreCase(dot, list[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void M_Collect(void *const user, const char *const name)
 {
     M_NAMES *const names = user;
-    const char *const dot = strrchr(name, '.');
-    if (dot != nullptr
-        && (Str_EqualIgnoreCase(dot, ".ttf") || Str_EqualIgnoreCase(dot, ".ttc")
-            || Str_EqualIgnoreCase(dot, ".otf")
-            || Str_EqualIgnoreCase(dot, ".otc"))) {
+    if (M_HasExtension(name, m_FontExtensions)
+        || M_HasExtension(name, m_FileExtensions)) {
         Array_Append(names, Str_Dup(name));
     }
 }
 
-static RESULT M_Add(VFS *const files, const char *const path)
+static RESULT M_Add(
+    VFS *const files, const char *const path, const char *const name)
 {
     READER reader;
     MUST(Vfs_Open(files, path, VFS_IN_MEMORY, &reader));
@@ -35,7 +55,11 @@ static RESULT M_Add(VFS *const files, const char *const path)
     const void *const data = Reader_Borrow(&reader, size);
     RESULT result = Reader_Result(&reader);
     if (IS_OK(result)) {
-        result = FontRegistry_Add(path, data, size);
+        if (M_HasExtension(name, m_FontExtensions)) {
+            result = FontRegistry_Add(path, data, size);
+        } else {
+            FontRegistry_AddFile(name, path, data, size);
+        }
     }
     Reader_Close(&reader);
     return result;
@@ -63,7 +87,7 @@ void ShellFonts_AddDir(VFS *const files, const char *const dir)
     Vfs_List(files, dir, M_Collect, &names);
     for (int32_t i = 0; i < names.count; i++) {
         char *const path = Str_Format("%s/%s", dir, names.items[i]);
-        Result_Log(M_Add(files, path), LOG_LEVEL_WARNING);
+        Result_Log(M_Add(files, path, names.items[i]), LOG_LEVEL_WARNING);
         Mem_Free(path);
         Mem_Free(names.items[i]);
     }
