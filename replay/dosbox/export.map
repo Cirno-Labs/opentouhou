@@ -1,0 +1,6 @@
+# Exports only Dosbox_Attach from a GAMEdosbox.so, so that its statically
+# linked SDL3 binds to itself and not to the emulator's SDL2.
+{
+  global: Dosbox_Attach;
+  local: *;
+};

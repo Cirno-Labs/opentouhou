@@ -170,6 +170,39 @@ if build_games
     dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
     win_subsystem: 'console',
   )
+  # Each game's dosbox backend is a program and a library, which run inside
+  # the opentouhou-dosbox-x image (replay/dosbox/dosbox.h) with the
+  # dosbox-x.conf beside them. dostest is the backend's own test game.
+  if host_machine.system() == 'linux'
+    configure_file(
+      input: 'replay/dosbox/dosbox-x.conf',
+      output: 'dosbox-x.conf',
+      copy: true,
+    )
+    dosbox_deps = [sdl3, zlib, avcodec, avutil, swscale, jpeg, cc_libm]
+    dosbox_export = files('replay/dosbox/export.map')
+    executable(
+      'dostestdosbox',
+      'replay/dosbox/launch.c',
+      'replay/dosbox/test/main.c',
+      c_args: core_include + harness_include + harness_dosbox_include,
+      implicit_include_directories: false,
+      link_with: [harness_lib],
+      dependencies: dosbox_deps,
+    )
+    shared_library(
+      'dostestdosbox',
+      'replay/dosbox/test/attach.c',
+      'replay/dosbox/test/port.c',
+      name_prefix: '',
+      c_args: core_include + harness_include + harness_dosbox_include,
+      implicit_include_directories: false,
+      link_with: [harness_dosbox_lib, harness_lib],
+      link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
+      link_depends: dosbox_export,
+      dependencies: dosbox_deps,
+    )
+  endif
   # Each game's recorder plays a practice stage with the bot to make a
   # new replay file.
   executable(

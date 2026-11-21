@@ -1,0 +1,7 @@
+# Presses shot twice, holding it for four frames the first time, so that
+# FRAMES.COM polls, and runs through several delays and GDC waits.
+frames 120
+input 10 shot
+input 14 none
+input 30 shot
+input 31 none
