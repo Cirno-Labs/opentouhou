@@ -1,0 +1,29 @@
+name: Check the links
+
+# Asks every link of the readmes whether its page is still there, when a
+# pull request changes a readme. tools/lint/check_links fails on 404 and
+# 410 only, so that a slow third-party server does not fail the check.
+on:
+  pull_request:
+    paths:
+      - README.md
+      - tools/packaging/*/o*_readme.txt
+      - tools/lint/check_links
+      - .github/workflows/check_links.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    name: Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Check the links of the readmes
+        run: tools/lint/check_links README.md tools/packaging/*/o*_readme.txt
