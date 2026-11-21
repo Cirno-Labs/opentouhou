@@ -11,13 +11,19 @@ opentouhou-dosbox-x image, which `just replay::dosbox-x` builds; outside
 that image, the run starts a container of it.
 The exit status is 0 when the run matches, 1 when a state row or a
 compared screenshot differs and 2 on an error.
+rows prints a case's state rows, the changed ones by default, and with a
+run's output directory prints the rows where the run differs from the
+case.
 """
 
 import argparse
 import configparser
+import io
 import os
 import platform
+import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -218,6 +224,146 @@ def replay(args: argparse.Namespace) -> int:
     return start(args, game, argv, args.out)
 
 
+# The chunks and checks of state.bin (replay/harness/state.h).
+STATE_CHUNK_ROWS = 3600
+STATE_CHECK_ROWS = 60
+
+
+def game_columns(game: str) -> list[tuple[str, str]]:
+    """Returns the names and kinds of a game's columns from the CALC_FIELDS
+    macro of its replay/GAME/fields.h."""
+    text = (REPO_DIR / "replay" / game / "fields.h").read_text()
+    start = text.index(f"{game.upper()}_CALC_FIELDS(X)")
+    end = text.index("\n\n", start)
+    return re.findall(r"X\((\w+), (\w+)\)", text[start:end])
+
+
+def read_state(data: bytes, columns: list[tuple[str, str]], rows: int) -> list[list]:
+    """Returns the rows of state.bin: the frame, then one value per column,
+    None for a HASH column on a row without a check."""
+    stream = io.BytesIO(data)
+
+    def varint() -> int:
+        value = shift = 0
+        while True:
+            byte = stream.read(1)[0]
+            value |= (byte & 0x7F) << shift
+            shift += 7
+            if not byte & 0x80:
+                return value
+
+    stored = [0] + [i + 1 for i, (_, kind) in enumerate(columns) if kind != "HASH"]
+    hashes = [i + 1 for i, (_, kind) in enumerate(columns) if kind == "HASH"]
+    out: list[list] = []
+    while len(out) < rows:
+        count = min(rows - len(out), STATE_CHUNK_ROWS)
+        chunk: list[list] = [[None] * (1 + len(columns)) for _ in range(count)]
+        for column in stored:
+            mode = stream.read(1)[0]
+            a = b = row = 0
+            while row < count:
+                end = row + varint()
+                value = None if end == count else varint()
+                while row < end or (row == end and value is not None):
+                    encoded = 0
+                    if row == end:
+                        encoded = (value >> 1) ^ (-(value & 1) & 0xFFFFFFFF)
+                    if mode == 0:
+                        current = encoded ^ a
+                    elif mode == 1:
+                        current = (encoded + a) & 0xFFFFFFFF
+                    else:
+                        current = (encoded + 2 * a - b) & 0xFFFFFFFF
+                    chunk[row][column] = current
+                    a, b = current, a
+                    row += 1
+        stream.read((count + 1) // 2)
+        for row in range(count):
+            if (row + 1) % STATE_CHECK_ROWS == 0 or row + 1 == count:
+                stream.read(4)
+                for column in hashes:
+                    chunk[row][column] = struct.unpack("<I", stream.read(4))[0]
+        out += chunk
+    return out
+
+
+def format_value(kind: str, value: int | None) -> str:
+    if value is None:
+        return "-"
+    if kind == "HASH":
+        return f"{value:08x}"
+    if kind == "I32" and value >> 31:
+        return str(value - (1 << 32))
+    return str(value)
+
+
+def rows(args: argparse.Namespace) -> int:
+    manifest = read_manifest(args.case)
+    game = manifest["case"]["game"]
+    columns = game_columns(game)
+    with zipfile.ZipFile(args.case) as archive:
+        expected = read_state(
+            archive.read("state.bin"), columns, int(manifest["case"]["rows"])
+        )
+    shown = args.columns.split(",") if args.columns else [name for name, _ in columns]
+    unknown = set(shown) - {name for name, _ in columns}
+    if unknown:
+        print(
+            f"harness: {game} has no column {', '.join(sorted(unknown))}",
+            file=sys.stderr,
+        )
+        return 2
+    picked = [i + 1 for i, (name, _) in enumerate(columns) if name in shown]
+
+    def line(row: list) -> list[str]:
+        return [format_value(columns[i - 1][1], row[i]) for i in picked]
+
+    def in_range(frame: int) -> bool:
+        return args.start <= frame and (args.end is None or frame <= args.end)
+
+    names = [columns[i - 1][0] for i in picked]
+    if args.run_dir is None:
+        print("frame " + " ".join(names))
+        previous = None
+        for row in expected:
+            current = line(row)
+            if in_range(row[0]) and (args.all or current != previous):
+                print(row[0], " ".join(current))
+            previous = current
+        return 0
+    report = configparser.ConfigParser(inline_comment_prefixes=(";", "#"))
+    report.read(args.run_dir / "report.ini")
+    actual = read_state(
+        (args.run_dir / "state.bin").read_bytes(),
+        columns,
+        int(report["report"]["rows"]),
+    )
+    print("frame column case run")
+    shown_rows = 0
+    for index in range(max(len(expected), len(actual))):
+        if index >= len(expected) or index >= len(actual):
+            side = "run" if index < len(actual) else "case"
+            print(f"row {index}: only the {side} has it")
+            return 1
+        want, got = expected[index], actual[index]
+        if want[0] != got[0]:
+            print(f"row {index}: frame {want[0]} in the case, {got[0]} in the run")
+            return 1
+        if not in_range(want[0]):
+            continue
+        cells = [
+            f"{names[j]} {a} {b}"
+            for j, (a, b) in enumerate(zip(line(want), line(got), strict=True))
+            if a != b and "-" not in (a, b)
+        ]
+        if cells:
+            print(want[0], "  ".join(cells))
+            shown_rows += 1
+            if shown_rows == args.limit:
+                break
+    return 1 if shown_rows else 0
+
+
 def add_backend(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--backend", choices=BACKENDS, default="native")
     parser.add_argument(
@@ -276,10 +422,35 @@ def main(argv: list[str] | None = None) -> int:
     )
     replay_parser.set_defaults(run=replay)
 
+    rows_parser = verbs.add_parser("rows", help="print or compare state rows")
+    rows_parser.add_argument("case", type=Path, help="the case file")
+    rows_parser.add_argument(
+        "run_dir",
+        metavar="run",
+        type=Path,
+        nargs="?",
+        help="a replay's output directory to compare",
+    )
+    rows_parser.add_argument(
+        "--columns", help="the columns to print, such as score,lives"
+    )
+    rows_parser.add_argument(
+        "--from", dest="start", type=int, default=0, help="the first frame"
+    )
+    rows_parser.add_argument("--to", dest="end", type=int, help="the last frame")
+    rows_parser.add_argument(
+        "--all", action="store_true", help="print every row, not the changed ones"
+    )
+    rows_parser.add_argument(
+        "--limit", type=int, default=20, help="the differing rows to print at most"
+    )
+    rows_parser.set_defaults(run=rows)
+
     args = parser.parse_args(argv)
-    if args.window and args.backend != "retail":
+    backend = getattr(args, "backend", None)
+    if getattr(args, "window", False) and backend != "retail":
         parser.error("--window shows a retail run only")
-    if args.backend == "dosbox" and getattr(args, "live", False):
+    if backend == "dosbox" and getattr(args, "live", False):
         parser.error("the dosbox backend takes no --live")
     return args.run(args)
 
