@@ -73,7 +73,6 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     CHECK_EQ_INT(b.diamond_edges_frame, 91);
     CHECK_EQ_INT(b.two_snakes.left[1][3], 172);
     CHECK_EQ_INT(b.ray_previous_x, 44);
-    CHECK_EQ_INT(b.head.sprites.width_bytes, 10);
     Arena_Free(&arena);
 }
 
@@ -223,6 +222,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     Video_SelectDrawingPage(&f.video, 1);
     const size_t used = arena.used;
     B20J_BeginEntrance(&f.boss, &f.context);
+    CHECK_EQ_INT(f.boss.head.sprites.width_bytes, 10);
     CHECK_EQ_INT(f.boss.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(f.rng, 91);
     CHECK(f.objects.entrance_done && f.objects.portal_active);
@@ -251,8 +251,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(f.boss.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(arena.used, used);
     CHECK(memcmp(f.video.pages[0], f.video.pages[1], VIDEO_PAGE_SIZE) == 0);
-    B20J_Setup(&f.boss, &f.context);
-    CHECK_EQ_INT(f.boss.boss_palette.colors[10][0], 13);
+    CHECK_EQ_INT(f.boss.hp, 18);
     Arena_Free(&arena);
 }
 

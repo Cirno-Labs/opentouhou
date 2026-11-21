@@ -87,20 +87,21 @@ RESULT B20J_ValidateAssets(const B20J_ASSETS *assets);
 // setup calls. The caller's groups own all resources; no individual frees.
 void B20J_Init(B20J *boss);
 
-// Binds all three actors and resets HP, phase and face state. Captures the
-// current palette for hits. Does not run the separate load/entrance sequence.
+// Resets HP, phase and face state and captures the current palette for hits.
+// Runs at stage load, before the entrance.
 void B20J_Setup(B20J *boss, const B20J_CONTEXT *context);
 
 RESULT B20J_ValidateContext(const B20J_CONTEXT *context);
 
-// Starts the cached load sequence on the current drawing page, snapshots
-// its scroll palette and invokes the real empty boss-stage initializer.
+// Starts the cached load sequence on the current drawing page, binds all
+// three actors, snapshots its scroll palette and invokes the real empty
+// boss-stage initializer.
 // Required audio consumers are synchronous, nonblocking and allocate nothing.
 void B20J_BeginEntrance(B20J *boss, const B20J_CONTEXT *context);
 
 // Suspends the world until all scroll, shake, pan and palette waits finish.
 // Advance reference VSync counters while polling. Pending polls repeat no
-// effects or drawing. Call Setup after completion. Allocates nothing; no IO.
+// effects or drawing. Allocates nothing; no IO.
 bool B20J_ResumeEntrance(
     B20J *boss, const B20J_CONTEXT *context, FRAME_VSYNC *vsync);
 

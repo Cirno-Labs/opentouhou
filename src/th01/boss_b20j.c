@@ -137,12 +137,6 @@ void B20J_Setup(B20J *const b, const B20J_CONTEXT *const c)
 {
     ASSERT(!b->entrance_active && !b->defeating && b->wait_kind == 0);
     ASSERT(Result_Ignore(B20J_ValidateAssets(c->assets)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&b->head, c->sprites, 0, &c->assets->head)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&b->face, c->sprites, 1, &c->assets->face)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&b->aim, c->sprites, 2, &c->assets->aim)));
     b->boss_palette = c->hit->palette->saved;
     b->hp = 18;
     b->phase = 0;
@@ -348,6 +342,12 @@ void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
     Video_SelectDrawingPage(M_Video(c), 0);
     M_Audio(c, B20J_AUDIO_LOAD_MUSIC);
     M_Audio(c, B20J_AUDIO_LOAD_EFFECTS);
+    ASSERT(Result_Ignore(
+        BossEntity_Bind(&b->head, c->sprites, 0, &c->assets->head)));
+    ASSERT(Result_Ignore(
+        BossEntity_Bind(&b->face, c->sprites, 1, &c->assets->face)));
+    ASSERT(Result_Ignore(
+        BossEntity_Bind(&b->aim, c->sprites, 2, &c->assets->aim)));
     M_Audio(c, B20J_AUDIO_PLAY);
     Palette_SetGray(c->hit->palette, M_Video(c), 0);
     Tram_Clear(c->tram);

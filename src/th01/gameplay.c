@@ -114,9 +114,7 @@ static void M_StageBegin(GAMEPLAY *const g)
     g->world.player.invincible = false;
     g->world.player.invincibility_time = 0;
     g->bindings.hit.frame_rand = g->storage.session->frame_rand;
-    if (g->world.boss != 7) {
-        Gameplay_BossSetup(g);
-    }
+    Gameplay_BossSetup(g);
     if (g->world.boss_stage) {
         g->world.first_stage = true;
         Items_Reset(&g->world.items);
@@ -486,12 +484,9 @@ static GAMEPLAY_REQUEST M_Run(
                           &g->world.b20j, &g->bindings.c20j, &g->world.vsync)) {
                 return g->world.request;
             }
-            if (g->world.boss == 7) {
-                Gameplay_BossSetup(g);
-                g->world.stage_palette = g->world.b20j.stage_palette;
-            } else {
-                g->world.stage_palette = g->world.b20m.stage_palette;
-            }
+            g->world.stage_palette = g->world.boss == 7
+                ? g->world.b20j.stage_palette
+                : g->world.b20m.stage_palette;
             M_StageReady(g);
             break;
         case GP_OBJECT_ENTRANCE:
