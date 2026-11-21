@@ -9,8 +9,9 @@ build or source directory of the build are changed to the given build
 directory and to --source. A Python script runs with the Python that
 runs this script.
 
-A test with the name of a test in an earlier build directory is left
-out, so the suites that every build has run once. --no-suite leaves out
+The tests run, and their results print, in the order of their names. A
+test with the name of a test in an earlier build directory is left out,
+so the suites that every build has run once. --no-suite leaves out
 the tests of a Meson suite, as in Meson. --wrapper runs each executable
 through a program, such as wine or valgrind: a Windows .exe, or a file
 of the build directory that can run. Exit status 77 means that the test
@@ -162,6 +163,7 @@ def main() -> int:
             if test.name not in names and not set(test.suites) & set(args.skipped):
                 names.add(test.name)
                 tests.append(test)
+    tests.sort(key=lambda test: test.name)
 
     failed = []
     skipped = 0

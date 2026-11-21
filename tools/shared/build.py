@@ -99,15 +99,13 @@ def compile_programs(
 def run_tests(
     root: Path, skipped: list[str], env: dict[str, str] | None = None
 ) -> None:
-    """Run the tests of the build directory root, except those of the
-    Meson suites in skipped."""
+    """Run the tests of the build directory root with tools/run_tests,
+    except those of the Meson suites in skipped."""
     subprocess.check_call(
         [
-            "meson",
-            "test",
-            "-C",
+            sys.executable,
+            str(REPO_DIR / "tools/run_tests"),
             str(root),
-            "--print-errorlogs",
             *(f"--no-suite={suite}" for suite in skipped),
         ],
         env=env,
