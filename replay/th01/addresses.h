@@ -40,13 +40,18 @@ typedef enum {
 // X(name, type, offset) for each ZUNSOFT global that a column reads.
 #define RETAIL_ZUNSOFT_DATA(X) X(frame, int16_t, 0x2850)
 
-// X(name, type, offset) for each OP global that a column reads.
+// X(name, type, offset) for each OP global that a column reads. opts holds
+// the options that cfg_load reads before OP's first VSync.
 #define RETAIL_OP_DATA(X)                                                      \
     X(z_vsync_Count1, int16_t, 0x12cc)                                         \
     X(frame_rand, uint32_t, 0x1188)                                            \
     X(random_seed, uint32_t, 0x086c)                                           \
     X(menu_id, uint8_t, 0x009a)                                                \
-    X(menu_sel, uint8_t, 0x0095)
+    X(menu_sel, uint8_t, 0x0095)                                               \
+    X(opts_rank, int8_t, 0x0090)                                               \
+    X(opts_bgm_mode, int8_t, 0x0091)                                           \
+    X(opts_credit_bombs, int8_t, 0x0092)                                       \
+    X(opts_credit_lives_extra, int8_t, 0x0093)
 
 // X(name, type, offset) for each REIIDEN global that a column reads.
 // SinGyoku keeps its HP, phase and phase frame in statics of b05.cpp, which

@@ -142,6 +142,9 @@ uint16_t Dosbox_LoadSegment(void);
 // ended a frame, or -1.
 int32_t Dosbox_LastWait(void);
 
+// Returns the buttons that the current frame holds.
+uint32_t Dosbox_Buttons(void);
+
 // Copies guest memory at segment:offset into out.
 void Dosbox_Read(uint16_t segment, uint16_t offset, void *out, size_t size);
 

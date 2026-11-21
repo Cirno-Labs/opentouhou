@@ -818,6 +818,11 @@ int32_t Dosbox_LastWait(void)
     return m_Dosbox.last_wait;
 }
 
+uint32_t Dosbox_Buttons(void)
+{
+    return m_Dosbox.held;
+}
+
 void Dosbox_Read(
     const uint16_t segment, const uint16_t offset, void *const out,
     const size_t size)

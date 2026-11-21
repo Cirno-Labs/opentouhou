@@ -214,6 +214,29 @@ if build_games
       link_depends: dosbox_export,
       dependencies: dosbox_deps,
     )
+    executable(
+      'th01dosbox',
+      'replay/dosbox/launch.c',
+      'replay/th01/dosbox_main.c',
+      c_args: core_include + harness_include + harness_dosbox_include,
+      implicit_include_directories: false,
+      link_with: [harness_lib],
+      dependencies: dosbox_deps,
+    )
+    shared_library(
+      'th01dosbox',
+      'replay/th01/dosbox_port.c',
+      'replay/th01/dosbox_state.c',
+      'replay/th01/harness.c',
+      'src/th01/frame.c',
+      name_prefix: '',
+      c_args: [layer_include['th01']] + core_include + harness_include + harness_dosbox_include,
+      implicit_include_directories: false,
+      link_with: [harness_dosbox_lib, harness_lib],
+      link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
+      link_depends: dosbox_export,
+      dependencies: dosbox_deps,
+    )
   endif
   # Each game's recorder plays a practice stage with the bot to make a
   # new replay file.
