@@ -160,4 +160,5 @@ void Gameplay_ResetInput(GAMEPLAY *gameplay);
 void Gameplay_DefaultActors(GAMEPLAY *gameplay);
 bool Gameplay_BossTick(GAMEPLAY *gameplay, const TH01_INPUT *raw);
 void Gameplay_BossSetup(GAMEPLAY *gameplay);
+void Gameplay_HookBossHp(GAMEPLAY *gameplay);
 void Gameplay_SyncSession(GAMEPLAY *gameplay);

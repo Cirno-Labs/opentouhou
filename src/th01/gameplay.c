@@ -472,6 +472,7 @@ static GAMEPLAY_REQUEST M_Run(
                     &g->world.b10j, &g->bindings.c10j, &g->world.vsync)) {
                 return g->world.request;
             }
+            Gameplay_HookBossHp(g);
             M_StageBackground(g);
             break;
         case GP_FINAL_ENTRANCE:

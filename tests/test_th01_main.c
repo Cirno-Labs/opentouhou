@@ -448,3 +448,48 @@ TEST(final_quit_tick_queues_a_save_for_the_host_and_shutdown)
     M_Shutdown();
     CHECK_EQ_INT(m_Fixture.written, 1);
 }
+
+typedef struct {
+    int calls;
+    TH01_VIEW view;
+} VSYNC_LOG;
+
+static void M_OnVSync(void *const arg)
+{
+    VSYNC_LOG *const log = arg;
+    log->calls++;
+    Th01_View(&log->view);
+}
+
+TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
+{
+    M_Reset();
+    CHECK(Result_Ignore(g_GameDesc.init()));
+    VSYNC_LOG log = {};
+    g_Th01Hooks = (TH01_HOOKS) { .on_vsync = M_OnVSync, .arg = &log };
+    FRAME_CLOCK clock = {};
+    int edges = 0;
+    for (int i = 0; i < 30; i++) {
+        edges += Frame_Advance(&clock) ? 1 : 0;
+        CHECK(M_Tick((TH01_INPUT) {}));
+        CHECK_EQ_INT(log.calls, edges);
+    }
+    CHECK(edges > 0);
+    CHECK_EQ_INT(log.view.scene, TH01_SCENE_LOGO);
+    M_Opening();
+    TH01_VIEW view;
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_OPENING);
+    M_Play();
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
+    CHECK(view.gameplay == m_Fixture.game);
+    CHECK(view.session != nullptr && view.opening != nullptr);
+    m_Fixture.request = GAMEPLAY_REQUEST_SCORE;
+    CHECK(M_Tick((TH01_INPUT) {}));
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT(view.score->context, SCORE_GAMEOVER);
+    g_Th01Hooks = (TH01_HOOKS) {};
+    M_Shutdown();
+}

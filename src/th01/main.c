@@ -212,8 +212,14 @@ static bool M_OpeningEvents(
             events.action == OPENING_ACTION_START ? SESSION_START
                                                   : SESSION_CONTINUE,
             &g_Settings, m_Opening.frame_rand);
+        if (events.action == OPENING_ACTION_START
+            && g_Th01Hooks.on_start != nullptr) {
+            g_Th01Hooks.on_start(g_Th01Hooks.arg, &m_Session);
+        }
         m_Session.table_high_score =
-            (uint32_t)m_Scores.tables[g_Settings.difficulty].entries[0].score;
+            (uint32_t)m_Scores.tables[m_Session.settings.difficulty]
+                .entries[0]
+                .score;
         Gameplay_Begin(m_Gameplay, raw, m_HostTick);
         m_InGameplay = true;
         m_InOpening = false;
@@ -242,6 +248,9 @@ static bool M_Tick(const void *const input)
     GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
     m_HostTick++;
     const bool reference_edge = Frame_Advance(&m_Frame);
+    if (reference_edge && g_Th01Hooks.on_vsync != nullptr) {
+        g_Th01Hooks.on_vsync(g_Th01Hooks.arg);
+    }
     if (m_InScore) {
         Gameplay_AdvanceAudio(m_Gameplay);
         if (Score_Tick(&m_Score, raw, reference_edge)) {
@@ -423,6 +432,22 @@ void Th01_FlushSaves(void)
     if (m_Initialized) {
         Result_Log(ScoreData_WriteSaves(&m_Scores), LOG_LEVEL_WARNING);
     }
+}
+
+void Th01_View(TH01_VIEW *const out)
+{
+    *out = (TH01_VIEW) {
+        .scene = m_InScore ? TH01_SCENE_SCORE
+            : m_InEnding   ? TH01_SCENE_ENDING
+            : m_InGameplay ? TH01_SCENE_GAMEPLAY
+            : m_InOpening  ? TH01_SCENE_OPENING
+                           : TH01_SCENE_LOGO,
+        .opening = &m_Opening,
+        .gameplay = m_Gameplay,
+        .score = &m_Score,
+        .ending = m_Ending,
+        .session = &m_Session,
+    };
 }
 
 const GAME_DESC g_GameDesc = {

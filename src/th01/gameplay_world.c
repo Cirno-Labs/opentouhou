@@ -1,8 +1,12 @@
 #include "th01/gameplay_internal.h"
 
+#include "th01/hooks.h"
+
 #include "core/base/assert.h"
 
 #include <string.h>
+
+TH01_HOOKS g_Th01Hooks;
 
 RESULT Gameplay_Prepare(
     const ALLOCATOR *const allocator, const GAMEPLAY_ASSETS *const assets,
@@ -125,6 +129,22 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
     default:
         break;
     }
+    if (g->world.boss != 0 && g->world.boss != 3) {
+        Gameplay_HookBossHp(g);
+    }
+}
+
+void Gameplay_HookBossHp(GAMEPLAY *const g)
+{
+    if (g_Th01Hooks.on_boss == nullptr) {
+        return;
+    }
+    int16_t *const hp[] = {
+        nullptr,           &g->world.b05.hp,  &g->world.b10m.hp,
+        &g->world.b10j.hp, &g->world.b15j.hp, &g->world.b15m.hp,
+        &g->world.b20m.hp, &g->world.b20j.hp,
+    };
+    g_Th01Hooks.on_boss(g_Th01Hooks.arg, hp[g->world.boss]);
 }
 
 bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
