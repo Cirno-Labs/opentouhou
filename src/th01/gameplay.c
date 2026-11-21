@@ -386,7 +386,11 @@ static void M_ContinueMenu(GAMEPLAY *const g)
         48, 16);
 }
 
-void Gameplay_ResumeAfterScore(GAMEPLAY *const g)
+static GAMEPLAY_REQUEST M_Run(
+    GAMEPLAY *g, const TH01_INPUT *raw, uint64_t host_tick);
+
+void Gameplay_ResumeAfterScore(
+    GAMEPLAY *const g, const TH01_INPUT *const raw, const uint64_t host_tick)
 {
     ASSERT(g->world.request == GAMEPLAY_REQUEST_SCORE);
     g->world.request = GAMEPLAY_REQUEST_NONE;
@@ -417,6 +421,8 @@ void Gameplay_ResumeAfterScore(GAMEPLAY *const g)
     Pellets_SpeedLower(&g->world.pellet_shared, -2, -5);
     g->world.continue_frame = 0;
     g->world.phase = GP_CONTINUE;
+    g->storage.host_tick = host_tick;
+    M_Run(g, raw, host_tick);
 }
 
 static GAMEPLAY_REQUEST M_Run(

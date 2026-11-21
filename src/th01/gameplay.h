@@ -39,9 +39,12 @@ GAMEPLAY_REQUEST Gameplay_Tick(
     GAMEPLAY *gameplay, const TH01_INPUT *input, bool reference_edge,
     uint64_t host_tick);
 
-// Continues from a real score-owner handoff into the original Continue menu.
-// Call only after the score request has been handled; does no registration.
-void Gameplay_ResumeAfterScore(GAMEPLAY *gameplay);
+// Continues from a real score-owner handoff into the original Continue menu
+// and runs it to its first wait in the score's last host tick, as REIIDEN
+// goes from regist_menu into continue_menu with no VSync between. Call only
+// after the score request has been handled; does no registration.
+void Gameplay_ResumeAfterScore(
+    GAMEPLAY *gameplay, const TH01_INPUT *input, uint64_t host_tick);
 const TRAM *Gameplay_TextLayer(const GAMEPLAY *gameplay);
 
 // Applies opening controls to the same prepared audio producer. Call the

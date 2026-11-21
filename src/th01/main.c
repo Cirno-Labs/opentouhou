@@ -252,7 +252,7 @@ static bool M_Tick(const void *const input)
                 Ending_Clear(&m_Session);
                 M_BeginOpening(true, raw);
             } else {
-                Gameplay_ResumeAfterScore(m_Gameplay);
+                Gameplay_ResumeAfterScore(m_Gameplay, raw, m_HostTick);
             }
         }
     } else if (m_InEnding) {

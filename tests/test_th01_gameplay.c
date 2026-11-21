@@ -268,10 +268,12 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
             Gameplay_Tick(g, &raw, true, ++tick), GAMEPLAY_REQUEST_SCORE);
     }
     CHECK_EQ_INT(memcmp(before, f.video.pages[0], sizeof(before)), 0);
-    Gameplay_ResumeAfterScore(g);
-    CHECK_EQ_INT(g->world.phase, GP_CONTINUE);
+    Gameplay_ResumeAfterScore(g, &raw, tick);
+    CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     CHECK_EQ_INT(f.session.continues_total, 1);
     CHECK_EQ_INT(f.session.lives, 4);
+    Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
+    CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
     CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g->world.phase, GP_TITLE);
@@ -386,11 +388,13 @@ TEST(real_gameover_score_registration_precedes_continue)
         CHECK_EQ_STR(
             saves.tables[1].entries[0].route, route == 0 ? "魔" : "地");
         f.session.table_high_score = (uint32_t)saves.tables[1].entries[0].score;
-        Gameplay_ResumeAfterScore(g);
-        CHECK_EQ_INT(g->world.phase, GP_CONTINUE);
+        Gameplay_ResumeAfterScore(g, &(TH01_INPUT) {}, tick);
+        CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
         CHECK_EQ_INT(f.session.continues_total, 1);
         CHECK_EQ_INT(f.session.highest_score, 5000);
         CHECK_EQ_INT(context.vsync->edge, edge + 33);
+        Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
+        CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
         CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
         CHECK_EQ_INT(g->world.phase, GP_STAGE_LABEL);

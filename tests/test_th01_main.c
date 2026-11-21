@@ -189,7 +189,8 @@ GAMEPLAY_REQUEST Gameplay_Tick(
     return request;
 }
 
-void Gameplay_ResumeAfterScore(GAMEPLAY *game)
+void Gameplay_ResumeAfterScore(
+    GAMEPLAY *game, const TH01_INPUT *input, uint64_t host_tick)
 {
     m_Fixture.resumes++;
 }
