@@ -47,6 +47,10 @@ checks:
 - `replay::rpy-cases` captures the original playing each `.rpy` file of
   a directory.
 - `replay::live` captures a person's play of the original.
+- `replay::dosbox-x` builds the patched DOSBox-X of the dosbox backend
+  into the local image `opentouhou-dosbox-x`, `replay::dosbox-x-test`
+  checks its hooks, and `replay::dosbox-test` checks the backend end to
+  end with its test game.
 
 ## Output
 
@@ -78,9 +82,10 @@ files, never the player's own saves, and writes into `work/`.
 - [native.h](../replay/harness/native.h): the native backend, `GAMEnative`.
 - [retail.h](../replay/retail/retail.h): the retail backend,
   `GAMEretail.exe` and `GAMEretail.dll`, for an original Windows game.
-- An emulator fits as another backend: it calls the driver of
-  backend.h where the emulated program presents a frame, runs a calc
-  and reads its input.
+- [dosbox.h](../replay/dosbox/dosbox.h): the dosbox backend, `GAMEdosbox`
+  and `GAMEdosbox.so`, for an original PC-98 DOS game in a patched
+  DOSBox-X ([hook.h](../replay/dosbox/hook.h)). `tools/harness --backend
+  dosbox` runs it in a container of `opentouhou-dosbox-x`.
 
 ## Cases
 

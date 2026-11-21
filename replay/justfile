@@ -170,3 +170,40 @@ dosbox-x-test shot="": dosbox-x
             grep "^hooktest:" /work/log.txt || cat /work/log.txt
             exit "$status"'
     if [ -n {{quote(shot)}} ]; then cp "$dir/shot.ppm" {{quote(shot)}}; fi
+
+# Check the dosbox backend end to end with its test game: build the Linux
+# programs, assemble FRAMES.COM, capture replay/dosbox/test/frames.txt,
+# replay the case headless and twice with screenshots, and check the run's
+# sums in case.ini, its work/ and the watchdog of a run that hangs.
+[group('replay')]
+[no-cd]
+dosbox-test: dosbox-x
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    just -f "$root/justfile" _build linux media debug >&2
+    dir=$(mktemp -d)
+    trap 'rm -rf "$dir"' EXIT
+    mkdir "$dir/data"
+    docker run --rm --user "$(id -u):$(id -g)" \
+        -v "$root/replay/dosbox/test:/src:ro" -v "$dir/data:/data" \
+        opentouhou-dosbox-x nasm -f bin -o /data/FRAMES.COM /src/frames.asm
+    echo save > "$dir/data/SAVE.DAT"
+    harness=("$root/tools/harness")
+    data=(--backend dosbox --data "$dir/data")
+    "${harness[@]}" capture dostest "$dir/case.othtc" "${data[@]}" --script "$root/replay/dosbox/test/frames.txt"
+    unzip -p "$dir/case.othtc" case.ini > "$dir/case.ini"
+    for sum in 'staged = 83' 'presses = 2' 'polls = [1-9][0-9]*' 'gdc_waits = [1-9][0-9]*' 'delays = [1-9][0-9]*' 'calls = [1-9][0-9]*'; do
+        grep -qx "$sum" "$dir/case.ini" || { echo "case.ini lacks $sum"; cat "$dir/case.ini"; exit 1; }
+    done
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --out "$dir/headless" --headless
+    shots=(--shots 0,50,every:40)
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --out "$dir/first" "${shots[@]}"
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --out "$dir/second" "${shots[@]}" --against "$dir/first"
+    [ "$(ls "$dir/headless/work")" = OUT.TXT ] || { echo "work/ holds $(ls -A "$dir/headless/work")"; exit 1; }
+    echo H > "$dir/hang.txt"
+    status=0
+    "${harness[@]}" capture dostest "$dir/hang.othtc" "${data[@]}" --script "$root/replay/dosbox/test/frames.txt" \
+        --file "$dir/hang.txt=stage.txt" 2> "$dir/hang.log" || status=$?
+    [ "$status" -eq 2 ] && grep -q 'no site ran' "$dir/hang.log" || { echo "the hang ended with $status"; cat "$dir/hang.log"; exit 1; }
+    echo "dostest dosbox: $(grep -x 'rows = .*' "$dir/headless/report.ini"), $(grep -x 'shots = .*' "$dir/second/report.ini") match, the watchdog fires"

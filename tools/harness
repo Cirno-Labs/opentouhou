@@ -6,6 +6,9 @@ writes a new case file. replay runs a case, compares every state row with
 the case's, writes the screenshots that --shots selects as PNG files and,
 with --against, compares them with an earlier run's. --headless draws
 nothing, and --fast draws only the frames just before each screenshot.
+--backend dosbox runs a PC-98 original in the patched DOSBox-X of the
+opentouhou-dosbox-x image, which `just replay::dosbox-x` builds; outside
+that image, the run starts a container of it.
 The exit status is 0 when the run matches, 1 when a state row or a
 compared screenshot differs and 2 on an error.
 """
@@ -22,7 +25,8 @@ import zipfile
 from pathlib import Path
 
 REPO_DIR = Path(__file__).resolve().parents[1]
-BACKENDS = ("native", "retail")
+BACKENDS = ("native", "retail", "dosbox")
+DOSBOX_IMAGE = "opentouhou-dosbox-x"
 # Wine runs a game without audio drivers, since a run plays no sound and a
 # driver without a device can stall DirectSound, and in a Japanese locale,
 # which the file names of the games need.
@@ -56,6 +60,9 @@ def program(args: argparse.Namespace, game: str) -> tuple[Path, str | None]:
         return args.program, None
     if args.backend == "native":
         return native_program(game)
+    if args.backend == "dosbox":
+        program = REPO_DIR / "build" / "linux" / "debug" / f"{game}dosbox"
+        return program, "just build-linux"
     return (
         REPO_DIR / "build" / "retail" / game / f"{game}retail.exe",
         f"just replay::build {game}",
@@ -72,7 +79,50 @@ def program_path(args: argparse.Namespace, path: Path) -> str:
     ).stdout.strip()
 
 
-def start(args: argparse.Namespace, game: str, argv: list[str]) -> int:
+def in_container(args: argparse.Namespace) -> bool:
+    """Returns whether a dosbox run starts a container of its image, which it
+    does unless dosbox-x is on PATH."""
+    return args.backend == "dosbox" and shutil.which("dosbox-x") is None
+
+
+def mounts(args: argparse.Namespace, out: Path) -> list[str]:
+    """Returns the docker run options of a dosbox run: the directories of
+    every path of its command line, each at its own path, read-only but for
+    the ones that the run writes."""
+    paths = {}
+
+    def add(path: Path | None, writable: bool = False) -> None:
+        if path is None:
+            return
+        path = path.resolve()
+        if writable and path == out.resolve():
+            path.mkdir(parents=True, exist_ok=True)
+        directory = path if path.is_dir() else path.parent
+        paths[directory] = paths.get(directory, False) or writable
+
+    add(args.data)
+    add(out, True)
+    if args.verb == "capture":
+        add(args.case, True)
+        add(args.script)
+        for spec in args.file:
+            file = spec.rpartition("=")[0]
+            add(Path(file) if file else None)
+    else:
+        add(args.case)
+        add(args.against)
+        if args.shots is not None and args.shots.startswith("@"):
+            add(Path(args.shots[1:]))
+    options = []
+    for directory, writable in sorted(paths.items()):
+        mode = "" if writable else ":ro"
+        options += ["-v", f"{directory}:{directory}{mode}"]
+    return options
+
+
+def start(
+    args: argparse.Namespace, game: str, argv: list[str], out: Path | None = None
+) -> int:
     path, build = program(args, game)
     if not path.is_file():
         message = f"harness: {path} is missing"
@@ -80,8 +130,25 @@ def start(args: argparse.Namespace, game: str, argv: list[str]) -> int:
             message += f"; build the {args.backend} backend with `{build}`"
         print(message, file=sys.stderr)
         return 2
-    command = [str(path)] + argv
+    command = [str(path.resolve())] + argv
     env = None
+    if in_container(args):
+        image = os.environ.get("OPENTOUHOU_DOSBOX_IMAGE", DOSBOX_IMAGE)
+        program_dir = path.resolve().parent
+        command = [
+            "docker",
+            "run",
+            "--rm",
+            "--init",
+            "--user",
+            f"{os.getuid()}:{os.getgid()}",
+            "-e",
+            "HOME=/tmp",
+            "-v",
+            f"{program_dir}:{program_dir}:ro",
+            *mounts(args, out),
+            image,
+        ] + command
     if under_wine(args):
         command = ["wine"] + command
         env = os.environ | WINE_ENV
@@ -126,7 +193,7 @@ def capture(args: argparse.Namespace) -> int:
             argv += file_argv(args, spec)
         if args.note is not None:
             argv += ["--note", args.note]
-        return start(args, args.game, argv)
+        return start(args, args.game, argv, Path(out))
 
 
 def read_manifest(case: Path) -> configparser.ConfigParser:
@@ -148,7 +215,7 @@ def replay(args: argparse.Namespace) -> int:
         argv += ["--shots", shots]
     if args.against is not None:
         argv += ["--against", program_path(args, args.against)]
-    return start(args, game, argv)
+    return start(args, game, argv, args.out)
 
 
 def add_backend(parser: argparse.ArgumentParser) -> None:
@@ -212,6 +279,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.window and args.backend != "retail":
         parser.error("--window shows a retail run only")
+    if args.backend == "dosbox" and getattr(args, "live", False):
+        parser.error("the dosbox backend takes no --live")
     return args.run(args)
 
 
