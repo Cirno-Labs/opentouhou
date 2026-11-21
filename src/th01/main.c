@@ -242,7 +242,7 @@ static bool M_Tick(const void *const input)
     const bool reference_edge = Frame_Advance(&m_Frame);
     if (m_InScore) {
         Gameplay_AdvanceAudio(m_Gameplay);
-        if (Score_Tick(&m_Score, raw, reference_edge, m_HostTick)) {
+        if (Score_Tick(&m_Score, raw, reference_edge)) {
             m_Session.table_high_score =
                 (uint32_t)m_Scores.tables[m_Session.settings.difficulty]
                     .entries[0]

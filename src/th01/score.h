@@ -19,7 +19,6 @@ typedef struct {
 
 typedef enum {
     SCORE_FADE_WAIT,
-    SCORE_FADE_DELAY,
     SCORE_ENTRY_INPUT,
     SCORE_ENTRY_DELAY,
     SCORE_RELEASE,
@@ -35,7 +34,6 @@ typedef struct {
     PALETTE_STATE palette;
     PALETTE_FADE fade;
     FRAME_WAIT wait;
-    uint64_t delay_until;
     SCORE_CONTEXT context;
     SCORE_PHASE phase;
     int32_t rank, place, row, column, cursor, inputs;
@@ -64,8 +62,7 @@ void Score_Begin(
 // Advances supplied VSync exactly once. The application advances audio
 // separately once per host tick. Returns true after registration completes.
 bool Score_Tick(
-    SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge,
-    uint64_t host_tick);
+    SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge);
 
 // Applies one already-sensed source input, in direction/shot/strike order.
 // Returns true for Enter. Exposed for exhaustive grid and input checks.

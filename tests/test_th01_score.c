@@ -13,7 +13,6 @@ typedef struct {
     VIDEO video;
     GAME_INPUT input;
     FRAME_VSYNC vsync;
-    uint64_t tick;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f)
@@ -43,7 +42,7 @@ static void M_Begin(
 
 static bool M_Tick(FIXTURE *const f, const TH01_INPUT raw)
 {
-    return Score_Tick(&f->scene, &raw, true, ++f->tick);
+    return Score_Tick(&f->scene, &raw, true);
 }
 
 TEST(gameover_fades_before_input_and_preserves_shared_counters)
@@ -57,13 +56,13 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     CHECK_EQ_INT(f.vsync.count1, 100);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK_EQ_INT(f.video.palette[0].red, 17);
-    for (int32_t i = 0; i < 31; i++) {
+    for (int32_t i = 0; i < 15; i++) {
         M_Tick(&f, (TH01_INPUT) {});
     }
     CHECK_EQ_INT(f.scene.phase, SCORE_ENTRY_INPUT);
-    CHECK_EQ_INT(f.vsync.count1, 132);
-    CHECK_EQ_INT(f.vsync.count2, 12);
-    CHECK_EQ_INT(f.vsync.edge, 32);
+    CHECK_EQ_INT(f.vsync.count1, 116);
+    CHECK_EQ_INT(f.vsync.count2, -4);
+    CHECK_EQ_INT(f.vsync.edge, 16);
     CHECK_EQ_INT(f.scene.place, 0);
     CHECK_EQ_STR(f.saves.tables[1].entries[0].route, "魔");
     CHECK_EQ_INT(f.saves.tables[1].entries[0].stage, 13);
@@ -73,7 +72,7 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     CHECK(M_Tick(&f, (TH01_INPUT) { .ok = true }));
     CHECK(f.saves.pending[1]);
     CHECK_EQ_STR(f.saves.tables[1].entries[0].name, "                ");
-    CHECK_EQ_INT(f.vsync.count1, 133);
+    CHECK_EQ_INT(f.vsync.count1, 117);
     CHECK(!f.input.ok);
     Arena_Free(&f.arena);
 }

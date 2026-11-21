@@ -206,8 +206,7 @@ void Score_Begin(
 }
 
 bool Score_Tick(
-    SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge,
-    uint64_t host_tick)
+    SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge)
 {
     m_Fixture.score_ticks++;
     if (m_Fixture.finish_score) {

@@ -387,15 +387,17 @@ TEST(real_gameover_score_registration_precedes_continue)
         Score_Begin(
             &score, &assets, &f.video, &saves, context.vsync, context.input,
             SCORE_GAMEOVER, 1, &routed);
-        for (int32_t i = 0; i < 32; i++) {
+        for (int32_t i = 0; i < 16; i++) {
             Gameplay_AdvanceAudio(g);
-            CHECK(!Score_Tick(&score, &(TH01_INPUT) {}, true, ++tick));
+            tick++;
+            CHECK(!Score_Tick(&score, &(TH01_INPUT) {}, true));
         }
-        CHECK_EQ_INT(context.vsync->edge, edge + 32);
-        CHECK_EQ_INT(context.vsync->count1, count + 32);
+        CHECK_EQ_INT(context.vsync->edge, edge + 16);
+        CHECK_EQ_INT(context.vsync->count1, count + 16);
         CHECK_EQ_INT(g->world.phase, GP_TERMINAL);
         CHECK_EQ_INT(f.session.continues_total, 0);
-        CHECK(Score_Tick(&score, &(TH01_INPUT) { .ok = true }, true, ++tick));
+        tick++;
+        CHECK(Score_Tick(&score, &(TH01_INPUT) { .ok = true }, true));
         CHECK(saves.pending[1]);
         CHECK_EQ_INT(saves.tables[1].entries[0].score, 2345);
         CHECK_EQ_INT(saves.tables[1].entries[0].stage, 8);
@@ -406,7 +408,7 @@ TEST(real_gameover_score_registration_precedes_continue)
         CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
         CHECK_EQ_INT(f.session.continues_total, 1);
         CHECK_EQ_INT(f.session.highest_score, 5000);
-        CHECK_EQ_INT(context.vsync->edge, edge + 33);
+        CHECK_EQ_INT(context.vsync->edge, edge + 17);
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
         CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);

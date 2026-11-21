@@ -317,7 +317,7 @@ void Score_Begin(
 
 bool Score_Tick(
     SCORE_SCENE *const s, const TH01_INPUT *const raw,
-    const bool reference_edge, const uint64_t host_tick)
+    const bool reference_edge)
 {
     if (reference_edge) {
         Frame_VSync(s->vsync);
@@ -329,16 +329,8 @@ bool Score_Tick(
                 return false;
             }
             Palette_FadeStep(&s->fade, &s->palette, s->video);
-            s->delay_until = host_tick + 1;
-            s->phase = SCORE_FADE_DELAY;
-            return false;
-        case SCORE_FADE_DELAY:
-            if (host_tick < s->delay_until) {
-                return false;
-            }
             if (s->fade.remaining != 0) {
                 Frame_BeginWait(&s->wait, s->vsync);
-                s->phase = SCORE_FADE_WAIT;
                 return false;
             }
             M_Initial(s);
