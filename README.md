@@ -1,62 +1,60 @@
 # opentouhou
 
-Unofficial cross-platform ports of the Touhou Project games, starting
-with 東方紅魔郷 ~ the Embodiment of Scarlet Devil (Touhou 6).
+Unofficial cross-platform ports of the Touhou Project games.
 
 Downloads, release notes and help: <https://opentouhou.org/>
 
-Each port is written from a matching decompilation of the original game:
+## Games
 
-- [th06](https://github.com/Cirno-Labs/th06)
-- [th07](https://github.com/Cirno-Labs/th07)
+- [東方紅魔郷 ~ the Embodiment of Scarlet Devil](https://opentouhou.org/oth06-manual.html)
+  (th06) can be played from start to finish, and its 17 world-record
+  replays play back exactly as in the original.
+- [東方妖々夢 ~ Perfect Cherry Blossom](https://opentouhou.org/oth07-manual.html)
+  (th07) can be played from start to finish, Extra and Phantasm
+  included. Its 36 world-record replays play back exactly as in the
+  original, and so do replays recorded with VsyncPatch.
 
-The decompilations reproduce the original executables byte for byte.
-This repository turns their source into a native game for Linux, macOS
-and Windows, free of the matching constraints.
-
-This repository contains no game code or data. You need your own copy of
+Each port is written from a matching decompilation, which reproduces the
+original executable byte for byte. This repository turns that source
+into a native game for Linux, macOS and Windows, free of the matching
+constraints. It contains no game code or data: you need your own copy of
 each game.
-
-## Status
-
-th06 is playable from the title screen to the ending: every stage with
-its dialogue, sound and music, the menus, the result screen with scores
-and replays, the music room and the endings. Replays recorded with the
-original game play back in the port; the 17 world-record replays match
-the original frame by frame.
 
 othpatch, which comes with each game, downloads the English and other
 translations of thpatch.net. It also updates the games and itself.
 
-Next: th07, then the fixes and optional changes known from the
+Next: more games, and the fixes and optional changes known from the
 community's patches.
 
 ## Playing
 
-Download the zip for your system from <https://opentouhou.org/>:
-`oth06-<version>-Windows.zip`, `oth06-<version>-Linux.zip` or
-`oth06-<version>-macOS.zip`. Each zip holds the game (`oth06.exe`,
-`oth06.AppImage` or `oth06.app`) and othpatch. Put both into the folder
-of your copy of th06.
+Download the zip of your game for your system from
+<https://opentouhou.org/>, `oth<NN>-<version>-<system>.zip`. It holds the
+game, `oth<NN>.exe`, `oth<NN>.AppImage` or `oth<NN>.app`, and othpatch.
+Put both into the folder of your copy of the game. The name starts with
+an "o" so that it never replaces the original's `th<NN>.exe`, and the
+data folder is only read.
 
-The executables start with an "o" so that they never replace the
-original's `th06.exe`. The data folder is only read.
-
-The zip also holds
-[`oth06_readme.txt`](tools/packaging/th06/oth06_readme.txt), which is inside
-`oth06.app` on macOS. It tells where your files go, and
-describes portable mode, the keys, the settings and othpatch.
+Each game's manual, linked above and also in the zip as
+`oth<NN>_readme.txt`, tells where your files go and describes portable
+mode, the keys, the settings and othpatch.
 
 ## Features
 
-- Native builds for Linux, macOS and Windows, 64-bit, through SDL3
-  instead of Direct3D 8, DirectInput, DirectSound and the Win32 API
-- Game logic at a fixed 60 Hz, as in the original, with motion
-  interpolated between ticks on faster displays (can be turned off)
-- Replays recorded with the original game play back on every platform:
-  the game logic reproduces the original floating-point math
-- Fullscreen and window modes, rebindable keyboard and gamepad controls,
-  screenshots
+- Native builds for Linux, macOS and Windows
+- SDL3 in place of Direct3D 8, DirectInput, DirectSound and Win32
+- Game logic at a fixed 60 Hz, as in the original
+- Smooth motion on fast displays, which can be turned off
+- Sharp, smooth or integer scaling
+- Window or fullscreen, switched with F11 or Alt+Enter
+- Rebindable keyboard, gamepad and joystick controls
+- Screenshots in PNG or JPEG
+- Replays and scores in the original's formats
+- Original replays play back exactly on every platform
+- Translations from thpatch.net through othpatch
+- Updates of the games and othpatch through othpatch
+- Portable mode
+- An optional input lag fix in th07, as with VsyncPatch
 
 ## Layout
 
@@ -66,14 +64,14 @@ src/core/      shared by every game: rendering, input, audio, text,
 src/shell/     the program around core: folders, log file, window,
                main loop, frame pacing
 src/stg/       shared by the shooting games: archives, random numbers
-src/th06/      one directory per game
+src/th<NN>/    one directory per game
 src/othpatch/  the patch downloader and updater
 tests/         unit tests
 replay/        tools that capture cases from the original game and
                compare the port against them
 tools/         build, packaging and release tools
-docs/          documentation: ARCHITECTURE.md, BUILDING.md, TH06.md, TH07.md,
-               and a changelog per program
+docs/          documentation: ARCHITECTURE.md, BUILDING.md, a TH<NN>.md
+               per game and a changelog per program
 ```
 
 ## Building
