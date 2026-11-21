@@ -65,7 +65,7 @@ typedef struct {
     // Counts the tracks that the music test has started.
     uint32_t track_starts;
     bool drawn_rows[VIDEO_HEIGHT];
-    bool entering, left_locked[2], right_locked[2];
+    bool entering, left_locked[2], right_locked[2], confirm_locked;
 } OPENING;
 
 // Opens the canonical UTF-8 archive name, with a literal CP932 fallback

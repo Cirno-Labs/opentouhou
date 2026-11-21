@@ -143,6 +143,10 @@ game changes the [game] settings.
   square pixels as large as the window allows, smooth scales with soft
   edges, and integer shows square pixels at a whole multiple of 640x400,
   with a black border around them.
+- [fixes] music_restart: starts a music room track once each time the
+  confirm key is pressed. The original restarts the track on every
+  frame that the key is held. It is on by default. Set it to false to
+  play the music room as the original game does.
 - [screenshot] resolution: native (the default) or window. format: png
   (the default) or jpg. jpeg_quality: 1 to 100, 90 by default.
 

@@ -21,6 +21,8 @@ static const CONFIG_OPTION m_Options[] = {
     CONFIG_INT(TH01_SETTINGS, "game", "bombs", bombs, M_BOMBS, 0, 5),
     CONFIG_INT(
         TH01_SETTINGS, "game", "lives_extra", lives_extra, M_LIVES_EXTRA, 0, 4),
+    CONFIG_BOOL(
+        TH01_SETTINGS, "fixes", "music_restart", fix_music_restart, true),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =
@@ -31,13 +33,14 @@ TH01_SETTINGS g_Settings = {
     .music = M_MUSIC,
     .bombs = M_BOMBS,
     .lives_extra = M_LIVES_EXTRA,
+    .fix_music_restart = true,
 };
 
 RESULT Settings_ReadOriginal(READER *const reader, TH01_SETTINGS *const out)
 {
     char magic[7];
     Reader_ReadBytes(reader, magic, sizeof(magic));
-    TH01_SETTINGS settings;
+    TH01_SETTINGS settings = *out;
     settings.difficulty = Reader_ReadI8(reader);
     settings.music = Reader_ReadI8(reader);
     settings.bombs = Reader_ReadI8(reader);

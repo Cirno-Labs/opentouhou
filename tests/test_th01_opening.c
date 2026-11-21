@@ -229,6 +229,40 @@ TEST(music_entry_suppresses_one_confirmation_and_shares_options_history)
     Arena_Free(&arena);
 }
 
+static uint32_t M_HeldStarts(const bool fix)
+{
+    ARENA arena;
+    VIDEO video;
+    OPENING_ASSETS assets;
+    TH01_SETTINGS settings;
+    OPENING opening;
+    M_Init(&arena, &video, &assets, &settings, &opening);
+    settings.fix_music_restart = fix;
+    M_Options(&opening);
+    for (int32_t i = 0; i < 3; i++) {
+        M_Tick(&opening, (TH01_INPUT) { .down = true });
+        M_Tick(&opening, (TH01_INPUT) {});
+    }
+    M_Tick(&opening, (TH01_INPUT) { .ok = true });
+    CHECK_EQ_INT(opening.phase, OPENING_MUSIC);
+    for (int32_t i = 0; i < 5; i++) {
+        M_Tick(&opening, (TH01_INPUT) { .shot = true });
+    }
+    M_Tick(&opening, (TH01_INPUT) {});
+    const OPENING_EVENTS events = M_Tick(&opening, (TH01_INPUT) { .ok = true });
+    CHECK_EQ_INT(events.audio, OPENING_AUDIO_PLAY);
+    M_Tick(&opening, (TH01_INPUT) { .ok = true });
+    const uint32_t starts = opening.track_starts;
+    Arena_Free(&arena);
+    return starts;
+}
+
+TEST(music_restart_fix_plays_once_per_confirm_press)
+{
+    CHECK_EQ_INT(M_HeldStarts(true), 2);
+    CHECK_EQ_INT(M_HeldStarts(false), 6);
+}
+
 TEST(option_exit_applies_changed_music_then_waits_fifteen_plus_tail)
 {
     ARENA arena;

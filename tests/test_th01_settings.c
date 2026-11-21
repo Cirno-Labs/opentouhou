@@ -24,6 +24,7 @@ static void M_CheckSettings(
     CHECK_EQ_INT(actual.music, expected.music);
     CHECK_EQ_INT(actual.bombs, expected.bombs);
     CHECK_EQ_INT(actual.lives_extra, expected.lives_extra);
+    CHECK_EQ_INT(actual.fix_music_restart, expected.fix_music_restart);
 }
 
 static TH01_SETTINGS M_Defaults(void)
@@ -70,6 +71,7 @@ TEST(defaults_match_the_original_options)
             .music = SETTINGS_MUSIC_FM,
             .bombs = 1,
             .lives_extra = 2,
+            .fix_music_restart = true,
         });
     M_CheckSettings(g_Settings, settings);
     CHECK_EQ_INT(settings.lives_extra + 3, 5);
@@ -84,6 +86,7 @@ TEST(native_ini_round_trip_keeps_all_options_and_other_sections)
     CHECK_EQ_STR(Ini_Get(ini, "game", "music"), "fm");
     CHECK_EQ_STR(Ini_Get(ini, "game", "bombs"), "2");
     CHECK_EQ_STR(Ini_Get(ini, "game", "lives_extra"), "1");
+    CHECK_EQ_STR(Ini_Get(ini, "fixes", "music_restart"), "false");
     CHECK_EQ_STR(Ini_Get(ini, "video", "fullscreen"), "true");
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
@@ -128,8 +131,8 @@ TEST(native_ini_accepts_the_original_option_boundaries)
         "4\n",
     };
     static const TH01_SETTINGS expected[] = {
-        { SETTINGS_DIFFICULTY_EASY, SETTINGS_MUSIC_OFF, 0, 0 },
-        { SETTINGS_DIFFICULTY_LUNATIC, SETTINGS_MUSIC_FM, 5, 4 },
+        { SETTINGS_DIFFICULTY_EASY, SETTINGS_MUSIC_OFF, 0, 0, true },
+        { SETTINGS_DIFFICULTY_LUNATIC, SETTINGS_MUSIC_FM, 5, 4, true },
     };
     for (size_t i = 0; i < ARRAY_SIZE(texts); i++) {
         INI *const ini = M_Parse(texts[i]);
@@ -147,8 +150,8 @@ TEST(original_record_maps_its_bytes_in_order)
         M_Read(m_Original, sizeof(m_Original), &settings), LOG_LEVEL_ERROR));
     M_CheckSettings(
         settings,
-        (TH01_SETTINGS) { SETTINGS_DIFFICULTY_LUNATIC, SETTINGS_MUSIC_OFF, 5,
-                          4 });
+        (TH01_SETTINGS) { SETTINGS_DIFFICULTY_LUNATIC, SETTINGS_MUSIC_OFF, 5, 4,
+                          false });
 }
 
 TEST(original_record_accepts_every_valid_option_combination)
@@ -163,12 +166,12 @@ TEST(original_record_accepts_every_valid_option_combination)
                     bytes[8] = music;
                     bytes[9] = bombs;
                     bytes[10] = extra;
-                    TH01_SETTINGS settings;
+                    TH01_SETTINGS settings = {};
                     CHECK(
                         Result_Ignore(M_Read(bytes, sizeof(bytes), &settings)));
                     M_CheckSettings(
                         settings,
-                        (TH01_SETTINGS) { rank, music, bombs, extra });
+                        (TH01_SETTINGS) { rank, music, bombs, extra, false });
                 }
             }
         }
@@ -251,7 +254,7 @@ TEST(first_launch_import_reads_original_without_writing_it)
     TH01_SETTINGS settings = M_Defaults();
     CHECK(Result_Log(
         Settings_ImportOriginal(vfs, user_files, &settings), LOG_LEVEL_ERROR));
-    M_CheckSettings(settings, (TH01_SETTINGS) { 3, 0, 5, 4 });
+    M_CheckSettings(settings, (TH01_SETTINGS) { 3, 0, 5, 4, true });
     READER reader;
     CHECK(Result_Ignore(Reader_OpenFile(&reader, path)));
     CHECK_EQ_INT(Reader_Size(&reader), sizeof(m_Original));

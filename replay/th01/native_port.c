@@ -5,6 +5,7 @@
 #include "native_state.h"
 
 #include "th01/main.h"
+#include "th01/settings.h"
 
 #include "core/base/utils.h"
 
@@ -22,6 +23,12 @@ static bool M_Idle(void *const context)
 // from it.
 static void M_Seed(void *const context)
 {
+}
+
+// Turns off the fixes, which the original lacks.
+static void M_Configure(void *const context)
+{
+    g_Settings.fix_music_restart = false;
 }
 
 static void M_VSync(void *const arg)
@@ -113,6 +120,7 @@ int main(int argc, char **argv)
             .file_count = ARRAY_SIZE(g_Th01Files),
         },
         .game = &g_GameDesc,
+        .configure = M_Configure,
         .hook = M_Hook,
     };
     return Native_Main(&port, argc, argv);

@@ -233,11 +233,14 @@ static void M_Menu(
             opening->entering = true;
             opening->selection = 3;
         }
-        if (confirm && opening->selection == 0) {
+        const bool held =
+            opening->settings->fix_music_restart && opening->confirm_locked;
+        if (confirm && opening->selection == 0 && !held) {
             events->audio = OPENING_AUDIO_PLAY;
             events->track = opening->track;
             opening->track_starts++;
         }
+        opening->confirm_locked = confirm;
     }
     events->clear_key_buffer = true;
     opening->frame_rand++;

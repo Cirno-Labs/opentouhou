@@ -4,6 +4,9 @@
 
 - Added th01, a native port that plays the original game from its own
   files.
+- Added the optional music_restart fix, on by default: the music room
+  starts a track once per confirm press instead of restarting it while
+  the key is held.
 - Added native packages for Windows, Linux and macOS.
 - Added `[video] scaling` in config.ini: sharp, smooth or integer
   scaling of the screen to the window.
