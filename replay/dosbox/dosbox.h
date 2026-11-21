@@ -125,6 +125,9 @@ typedef struct {
     uint64_t (*delay_time)(void *context, uint8_t id);
     // Runs at a site of DOSBOX_SITE_CALL, or nullptr.
     void (*on_site)(void *context, uint8_t id);
+    // Runs when the port's program has loaded and runs its first
+    // instruction next, after the sites follow it, or nullptr.
+    void (*on_exec)(void *context, uint8_t program);
 } DOSBOX_PORT;
 
 // Sets the run up for port and returns the guest for the emulator. Called
@@ -149,6 +152,13 @@ uint32_t Dosbox_Buttons(void);
 
 // Copies guest memory at segment:offset into out.
 void Dosbox_Read(uint16_t segment, uint16_t offset, void *out, size_t size);
+
+// Copies size bytes of data into guest memory at segment:offset.
+void Dosbox_Write(
+    uint16_t segment, uint16_t offset, const void *data, size_t size);
+
+// Returns the start values of the run, as Driver_Starts does.
+const START_VALUE *Dosbox_Starts(size_t *count);
 
 // Returns the current registers.
 DOSBOX_REGS Dosbox_Regs(void);

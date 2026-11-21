@@ -619,6 +619,9 @@ static void M_OnExec(
     if (!m_Dosbox.started) {
         M_Start();
     }
+    if (port->on_exec != nullptr) {
+        port->on_exec(port->port.context, (uint8_t)program);
+    }
 }
 
 static void M_OnExit(
@@ -920,6 +923,18 @@ void Dosbox_Read(
     const size_t size)
 {
     m_Dosbox.host->read(M_Linear(segment, offset), out, size);
+}
+
+void Dosbox_Write(
+    const uint16_t segment, const uint16_t offset, const void *const data,
+    const size_t size)
+{
+    m_Dosbox.host->write(M_Linear(segment, offset), data, size);
+}
+
+const START_VALUE *Dosbox_Starts(size_t *const count)
+{
+    return Driver_Starts(m_Dosbox.driver, count);
 }
 
 DOSBOX_REGS Dosbox_Regs(void)

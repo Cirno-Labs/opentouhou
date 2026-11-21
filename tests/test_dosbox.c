@@ -43,6 +43,9 @@ static struct {
     uint32_t rows;
     uint32_t vsync_frames;
     uint32_t calls;
+    // Counts the execs of FAKE.COM and holds the start value at the last.
+    uint32_t execs;
+    uint32_t start;
     uint8_t keys_seen;
     uint8_t keys_last;
 } m_Fake;
@@ -156,6 +159,7 @@ static const DOSBOX_HOST m_Host = {
 
 static const BINDING m_Bindings[] = { { "shot", 0x1 } };
 static const COLUMN m_Columns[] = { { "count1", COLUMN_U32 } };
+static const COLUMN m_Starts[] = { { "level", COLUMN_U32 } };
 
 static const HARNESS_GAME m_Game = {
     .id = "fake",
@@ -169,6 +173,8 @@ static const HARNESS_GAME m_Game = {
     .columns = m_Columns,
     .column_count = ARRAY_SIZE(m_Columns),
     .columns_version = 1,
+    .starts = m_Starts,
+    .start_count = ARRAY_SIZE(m_Starts),
 };
 
 static void M_Sample(void *const context, uint32_t *const row)
@@ -213,6 +219,14 @@ static void M_OnSite(void *const context, const uint8_t id)
     m_Fake.calls++;
 }
 
+static void M_OnExec(void *const context, const uint8_t program)
+{
+    size_t count;
+    const START_VALUE *const starts = Dosbox_Starts(&count);
+    m_Fake.execs++;
+    m_Fake.start = count == 1 ? starts[0].value : 0;
+}
+
 static const char *const m_Programs[] = { "FAKE.COM" };
 
 static const DOSBOX_SITE m_Sites[] = {
@@ -241,6 +255,7 @@ static const DOSBOX_PORT m_Port = {
     .advance = M_Advance,
     .delay_time = M_DelayTime,
     .on_site = M_OnSite,
+    .on_exec = M_OnExec,
 };
 
 static void M_Write16(const uint32_t address, const uint16_t value)
@@ -476,14 +491,19 @@ TEST(a_vblank_end_wait_clears_the_vblank)
 
 TEST(sites_follow_the_running_program)
 {
-    const DOSBOX_GUEST *const guest = M_Start("dosbox_exec", "frames 100\n");
+    const DOSBOX_GUEST *const guest =
+        M_Start("dosbox_exec", "frames 100\nstart level 7\n");
+    CHECK_EQ_INT(m_Fake.execs, 1);
+    CHECK_EQ_INT(m_Fake.start, 7);
     CHECK_EQ_INT(m_Fake.sites, (int32_t)ARRAY_SIZE(m_Sites));
     CHECK_EQ_INT(m_Fake.timer, DOSBOX_WATCHDOG_TICK);
     CHECK_EQ_INT(Dosbox_Program(), 0);
     CHECK_EQ_INT(Dosbox_LoadSegment(), M_PSP + 0x10);
     guest->on_exec(guest->context, "OTHER.EXE", 0x2000);
     CHECK_EQ_INT(Dosbox_Program(), 0);
+    CHECK_EQ_INT(m_Fake.execs, 1);
     guest->on_exec(guest->context, "FAKE.COM", M_PSP);
+    CHECK_EQ_INT(m_Fake.execs, 2);
     CHECK_EQ_INT(Dosbox_Program(), 0);
     CHECK_EQ_INT(m_Fake.sites, (int32_t)ARRAY_SIZE(m_Sites));
     guest->on_exit(guest->context, M_PSP, 0);
