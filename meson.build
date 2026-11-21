@@ -146,6 +146,18 @@ if build_games
   subdir('replay')
   # Each game's native backend program runs the game under the harness.
   executable(
+    'th01native',
+    'replay/th01/native_port.c',
+    c_args: [layer_include['th01']] + stg_include + shell_include + harness_include,
+    implicit_include_directories: false,
+    link_with: [
+      th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_native_lib,
+      harness_lib, builtin_libs['th01'],
+    ],
+    dependencies: [core_dep, stg_dep, pc98_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    win_subsystem: 'console',
+  )
+  executable(
     'th06native',
     'replay/th06/native_port.c',
     c_args: [layer_include['th06']] + stg_include + shell_include + harness_include,
