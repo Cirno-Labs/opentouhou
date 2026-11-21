@@ -2462,6 +2462,18 @@ if build_games
       env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th01' / part},
     )
   endforeach
+  test(
+    'replay/th01',
+    executable(
+      'test_th01_harness',
+      'test_th01_harness.c',
+      c_args: [layer_include['th01']] + core_include + stg_include + harness_include + ['-I' + meson.project_source_root() / 'replay/th01'],
+      implicit_include_directories: false,
+      link_with: [th01_harness_lib, th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+  )
 endif
 
 foreach part : ['mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna']

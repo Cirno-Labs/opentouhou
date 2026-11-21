@@ -31,6 +31,13 @@ harness_native_lib = static_library(
   dependencies: [sdl3, cc_libm],
 )
 
+th01_harness_lib = static_library(
+  'th01_harness',
+  'th01/harness.c',
+  c_args: core_include + harness_include,
+  implicit_include_directories: false,
+)
+
 th06_harness_lib = static_library(
   'th06_harness',
   'th06/harness.c',
