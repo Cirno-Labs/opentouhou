@@ -137,3 +137,9 @@ check game data cases jobs=num_cpus():
     done
     echo "${#list[@]} cases, $failed failed"
     [ "${#list[@]}" -gt 0 ] && [ "$failed" -eq 0 ]
+
+# Build the patched DOSBox-X of the dosbox backend into the local image
+# opentouhou-dosbox-x (dev only, see replay/dosbox/Dockerfile).
+[group('replay')]
+dosbox-x:
+    docker build -q -t opentouhou-dosbox-x {{quote(justfile_directory() / "replay/dosbox")}}

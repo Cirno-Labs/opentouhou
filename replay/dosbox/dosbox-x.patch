@@ -1,0 +1,256 @@
+diff --git a/src/cpu/core_normal.cpp b/src/cpu/core_normal.cpp
+index e582cc0..b2f87c8 100644
+--- a/src/cpu/core_normal.cpp
++++ b/src/cpu/core_normal.cpp
+@@ -56,6 +56,7 @@ extern bool ignore_opcode_63;
+ #define SaveMq(off,val) {mem_writed_inline(off,((uint32_t)(val))&0xffffffff);mem_writed_inline(off+4,(((uint64_t)(val))>>((uint64_t)32))&0xffffffff);}
+ 
+ #include "lock.h"
++#include "host.h"
+ static INLINE uint8_t LockPrefixRead(PhysPt address) {
+ 	return mem_readb_inline(address);
+ }
+@@ -177,6 +178,7 @@ Bits CPU_Core_Normal_Run(void) {
+ 		BaseDS=SegBase(ds);
+ 		BaseSS=SegBase(ss);
+ 		core.base_val_ds=ds;
++		if (GCC_UNLIKELY(g_HarnessSites) && Harness_Site((uint32_t)core.cseip)) return CBRET_NONE;
+ #if C_DEBUG
+ #if C_HEAVY_DEBUG
+ 		if (DEBUG_HeavyIsBreakpoint()) {
+diff --git a/src/dos/dos_execute.cpp b/src/dos/dos_execute.cpp
+index ef7d196..0b8fe23 100644
+--- a/src/dos/dos_execute.cpp
++++ b/src/dos/dos_execute.cpp
+@@ -24,6 +24,7 @@
+ #include <string>
+ 
+ #include "dosbox.h"
++#include "host.h"
+ #include "logging.h"
+ #include "mem.h"
+ #include "dos_inc.h"
+@@ -115,6 +116,7 @@ void DOS_Terminate(uint16_t pspseg,bool tsr,uint8_t exitcode) {
+ 	
+ 	DOS_PSP curpsp(pspseg);
+ 	if (pspseg==curpsp.GetParent()) return;
++	Harness_Exit(pspseg,exitcode);
+ 	/* Free Files owned by process */
+ 	if (!tsr) curpsp.CloseFiles();
+ 	
+@@ -966,6 +968,7 @@ bool DOS_Execute(const char* name, PhysPt block_pt, uint16_t flags) {
+ 		/* Started from debug.com, then set breakpoint at start */
+ 		DEBUG_CheckExecuteBreakpoint(RealSeg(csip),RealOff(csip));
+ #endif
++		Harness_Exec(name,pspseg);
+ 		return true;
+ 	}
+ 	return false;
+diff --git a/src/dos/drives.h b/src/dos/drives.h
+index 8128a92..9e8fc8a 100644
+--- a/src/dos/drives.h
++++ b/src/dos/drives.h
+@@ -1303,6 +1303,7 @@ public:
+ 	bool Rename(const char * oldname,const char * newname) override;
+ 	bool FileStat(const char* name, FileStat_Block * const stat_block) override;
+ 	void EmptyCache(void) override;
++	void Hide(const char* name) { add_deleted_file(name, true); }
+ 
+ 	FILE* create_file_in_overlay(const char* dos_filename, char const* mode);
+ 	Bits UnMount(void) override;
+diff --git a/src/gui/sdlmain.cpp b/src/gui/sdlmain.cpp
+index 719e5ed..ce6e67c 100644
+--- a/src/gui/sdlmain.cpp
++++ b/src/gui/sdlmain.cpp
+@@ -135,6 +135,7 @@ char* revert_escape_newlines(const char* aMessage);
+ #include "control.h"
+ #include "dos_inc.h"
+ #include "dosbox.h"
++#include "host.h"
+ #include "menudef.h"
+ #include "pic.h"
+ #include "timer.h"
+@@ -8442,6 +8443,7 @@ void DISP2_Init(uint8_t color), DISP2_Shut();
+ //extern void UI_Init(void);
+ void grGlideShutdown(void);
+ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
++    Harness_Load(&argc, argv);
+ #if (defined __i386__ || defined __x86_64__) && (!defined IS_OLDMACOS && (defined BSD || defined LINUX))
+     dropPrivilegesTemp();
+ #endif
+@@ -10769,7 +10771,7 @@ fresh_boot:
+          * freed resources. */
+         control = NULL; /* any deref past this point and you deserve to segfault */
+     }
+-    return saved_opt_test&&testerr?1:0;
++    return Harness_Shutdown(saved_opt_test&&testerr?1:0);
+ }
+ 
+ void GFX_GetSizeAndPos(int &x,int &y,int &width, int &height, bool &fullscreen) {
+diff --git a/src/hardware/pic.cpp b/src/hardware/pic.cpp
+index e2edd24..332b03b 100644
+--- a/src/hardware/pic.cpp
++++ b/src/hardware/pic.cpp
+@@ -425,6 +425,10 @@ void PIC_ActivateIRQ(Bitu irq) {
+     pic->raise_irq(t);
+ }
+ 
++bool PIC_IRQRequested(Bitu irq) {
++    return (pics[irq>7 ? 1 : 0].irr >> (irq & 7u)) & 1u;
++}
++
+ void PIC_DeActivateIRQ(Bitu irq) {
+     /* Remember what was once IRQ 2 on PC/XT is IRQ 9 on PC/AT */
+     if (IS_PC98_ARCH) {
+diff --git a/src/hardware/vga_draw.cpp b/src/hardware/vga_draw.cpp
+index dd7ed8b..dc22fff 100644
+--- a/src/hardware/vga_draw.cpp
++++ b/src/hardware/vga_draw.cpp
+@@ -69,6 +69,7 @@ void OUTPUT_Metal_CheckSourceResolution();
+ 
+ /* do not issue CPU-side I/O here -- this code emulates functions that the GDC itself carries out, not on the CPU */
+ #include "cpu_io_is_forbidden.h"
++#include "host.h"
+ 
+ static constexpr unsigned int MCH_RAW_SNAPSHOT = 0xFFFF;
+ 
+@@ -4280,7 +4281,7 @@ static void OnDemandCompleteFrame(void) {
+ 
+ static void VGA_VertInterrupt(Bitu /*val*/) {
+     if (IS_PC98_ARCH) {
+-        if (GDC_vsync_interrupt) {
++        if (GDC_vsync_interrupt && !g_HarnessOwnsVsync) {
+             GDC_vsync_interrupt = false;
+             PIC_ActivateIRQ(2);
+         }
+@@ -8826,3 +8827,46 @@ void POD_Load_VGA_Draw( std::istream& stream )
+ 		case 19: VGA_DrawLine = VGA_Draw_3270_2BPP_Line; break;
+ 	}
+ }
++
++static uint32_t Harness_FromRgb(uint32_t r, uint32_t g, uint32_t b) {
++    if (GFX_bpp >= 24) return (r << GFX_Rshift) | (g << GFX_Gshift) | (b << GFX_Bshift) | GFX_Amask;
++    if (GFX_Bshift == 0) return (r << 16u) | (g << 8u) | b;
++    return (b << 16u) | (g << 8u) | r;
++}
++
++static uint32_t Harness_ToXrgb(uint32_t p) {
++    uint32_t r, g, b;
++    if (GFX_bpp >= 24) { r = p >> GFX_Rshift; g = p >> GFX_Gshift; b = p >> GFX_Bshift; }
++    else if (GFX_Bshift == 0) { r = p >> 16u; g = p >> 8u; b = p; }
++    else { r = p; g = p >> 8u; b = p >> 16u; }
++    return ((r & 0xFFu) << 16u) | ((g & 0xFFu) << 8u) | (b & 0xFFu);
++}
++
++/* Draws a whole frame from the current state, as the raster would, and puts every state that drawing changes back. */
++void Harness_Render(uint32_t *pixels) {
++    const PC98_GDC_state gdc[2] = { pc98_gdc[0], pc98_gdc[1] };
++    const Text_Draw_State text = pc98_text_draw;
++    const Bitu lines_done = vga.draw.lines_done, blocks = vga.draw.blocks;
++    uint32_t xlat[16];
++    memcpy(xlat, vga.dac.xlat32, sizeof(xlat));
++    if (gdc_analog) {
++        for (unsigned int i = 0; i < 16; i++)
++            vga.dac.xlat32[i] = Harness_FromRgb((pc98_pal_analog[3*i+1] & 0xFu) * 17u, (pc98_pal_analog[3*i+0] & 0xFu) * 17u, (pc98_pal_analog[3*i+2] & 0xFu) * 17u);
++    }
++    vga.draw.blocks = 80;
++    for (unsigned int i = 0; i < 2; i++) pc98_gdc[i].begin_frame();
++    pc98_text_draw.begin_frame();
++    for (unsigned int line = 0; line < 400; line++) {
++        vga.draw.lines_done = line;
++        const uint32_t *src = (const uint32_t*)VGA_PC98_Xlat32_Draw_Line(0, line);
++        for (unsigned int x = 0; x < 640; x++) pixels[line * 640 + x] = Harness_ToXrgb(src[x]);
++        for (unsigned int i = 0; i < 2; i++) pc98_gdc[i].next_line();
++        pc98_text_draw.next_line();
++    }
++    memcpy(vga.dac.xlat32, xlat, sizeof(xlat));
++    vga.draw.lines_done = lines_done;
++    vga.draw.blocks = blocks;
++    pc98_text_draw = text;
++    pc98_gdc[0] = gdc[0];
++    pc98_gdc[1] = gdc[1];
++}
+diff --git a/src/hardware/vga_pc98_gdc.cpp b/src/hardware/vga_pc98_gdc.cpp
+index 1d23279..e4cc56c 100644
+--- a/src/hardware/vga_pc98_gdc.cpp
++++ b/src/hardware/vga_pc98_gdc.cpp
+@@ -17,6 +17,7 @@
+  */
+ 
+ #include "dosbox.h"
++#include "host.h"
+ #include "logging.h"
+ #include "setup.h"
+ #include "video.h"
+@@ -639,8 +640,9 @@ uint8_t PC98_GDC_state::read_status(void) {
+         timeInLine <= vga.draw.delay.hblkend)
+         ret |= 0x40; // horizontal blanking
+ 
+-    if (timeInFrame >= vga.draw.delay.vrstart &&
+-        timeInFrame <= vga.draw.delay.vrend)
++    if (g_HarnessOwnsVsync ? g_HarnessVblank :
++        (timeInFrame >= vga.draw.delay.vrstart &&
++        timeInFrame <= vga.draw.delay.vrend))
+         ret |= 0x20; // vertical retrace
+ 
+     // TODO: 0x10 bit 4 DMA execute
+diff --git a/src/ints/bios.cpp b/src/ints/bios.cpp
+index ad2d532..5bce1f1 100644
+--- a/src/ints/bios.cpp
++++ b/src/ints/bios.cpp
+@@ -19,6 +19,7 @@
+ #include <assert.h>
+ #include "control.h"
+ #include "dosbox.h"
++#include "host.h"
+ #include "mem.h"
+ #include "cpu.h"
+ #include "bios.h"
+@@ -4419,7 +4420,7 @@ static Bitu INT18_PC98_Handler(void) {
+                 unsigned char ret = 0x05; // according to NP2
+ 
+                 // assume the same as AH=42h
+-                while (!(IO_ReadB(0x60) & 0x20/*vertical retrace*/)) {
++                while (!g_HarnessOwnsVsync && !(IO_ReadB(0x60) & 0x20/*vertical retrace*/)) {
+                     void CALLBACK_Idle(void);
+                     CALLBACK_Idle();
+                 }
+@@ -4673,7 +4674,7 @@ static Bitu INT18_PC98_Handler(void) {
+             // The interrupt does NOT cancel the vertical retrace interrupt. Some games
+             // (Rusty) will not work properly if this call cancels the vertical retrace
+             // interrupt.
+-            while (!(IO_ReadB(0x60) & 0x20/*vertical retrace*/)) {
++            while (!g_HarnessOwnsVsync && !(IO_ReadB(0x60) & 0x20/*vertical retrace*/)) {
+                 void CALLBACK_Idle(void);
+                 CALLBACK_Idle();
+             }
+diff --git a/src/misc/Makefile.am b/src/misc/Makefile.am
+index fd907a6..aa24255 100644
+--- a/src/misc/Makefile.am
++++ b/src/misc/Makefile.am
+@@ -3,4 +3,4 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src "-DRESDIR=\"$(resdir)\
+ resdir = $(datarootdir)/dosbox-x
+ 
+ noinst_LIBRARIES = libmisc.a
+-libmisc_a_SOURCES = clipboard.cpp cross.cpp ethernet.cpp ethernet_pcap.cpp ethernet_slirp.cpp ethernet_ethnet.cpp ethernet_nothing.cpp localpipe.cpp messages.cpp programs.cpp setup.cpp support.cpp regionalloctracking.cpp savestates.cpp shiftjis.cpp iconvpp.cpp mkdir_p.cpp
++libmisc_a_SOURCES = clipboard.cpp cross.cpp ethernet.cpp ethernet_pcap.cpp ethernet_slirp.cpp ethernet_ethnet.cpp ethernet_nothing.cpp localpipe.cpp messages.cpp programs.cpp setup.cpp support.cpp regionalloctracking.cpp savestates.cpp shiftjis.cpp iconvpp.cpp mkdir_p.cpp host.cpp
+diff --git a/src/shell/shell.cpp b/src/shell/shell.cpp
+index 9355454..f7a04ce 100644
+--- a/src/shell/shell.cpp
++++ b/src/shell/shell.cpp
+@@ -24,6 +24,7 @@
+ #include <gtest/gtest.h>
+ 
+ #include "dosbox.h"
++#include "host.h"
+ #include "logging.h"
+ #include "regs.h"
+ #include "control.h"
+@@ -2283,6 +2284,7 @@ void SHELL_Run() {
+ 		return;
+ 	}
+ 	try {
++		Harness_Start();
+ 		first_shell->Run();
+ 		delete first_shell;
+ 		first_shell = nullptr;//Make clear that it shouldn't be used anymore
