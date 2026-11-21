@@ -271,7 +271,8 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     Gameplay_ResumeAfterScore(g, &raw, tick);
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     CHECK_EQ_INT(f.session.continues_total, 1);
-    CHECK_EQ_INT(f.session.lives, 4);
+    CHECK_EQ_INT(f.session.lives, 0);
+    CHECK_EQ_INT(g->world.retained_lives, 4);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);

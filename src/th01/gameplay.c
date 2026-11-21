@@ -416,8 +416,9 @@ void Gameplay_ResumeAfterScore(
         g->storage.session->highest_score = g->world.metrics.score;
     }
     g->storage.session->score = 0;
-    g->storage.session->lives =
-        (int16_t)(g->storage.session->settings.lives_extra + 2);
+    // Restores the resident's lives; the live count stays until the re-exec.
+    g->world.retained_lives =
+        (int8_t)(g->storage.session->settings.lives_extra + 2);
     Pellets_SpeedLower(&g->world.pellet_shared, -2, -5);
     g->world.continue_frame = 0;
     g->world.phase = GP_CONTINUE;
@@ -837,6 +838,7 @@ static GAMEPLAY_REQUEST M_Run(
                     g->storage.session->point_value = 0;
                     g->storage.session->pellet_speed =
                         g->world.pellet_shared.speed;
+                    g->storage.session->lives = g->world.retained_lives;
                     Gameplay_ResetWorld(g);
                     g->world.bgm_started = true;
                 } else {
