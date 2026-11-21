@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Fail when a document links to a page that is gone.
+
+Takes the paths of documents. Asks each distinct http(s) link with a
+HEAD request through curl, and a GET when the server refuses HEAD, and
+fails when a link answers 404 or 410. Other errors, such as a timeout,
+are printed and pass, so that a slow server does not fail the check.
+"""
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+LINK_RE = re.compile(r"https?://[^\s<>()\[\]`'\"]+")
+GONE = {404, 410}
+REFUSED = {403, 405, 501}
+
+
+def links(text: str) -> list[str]:
+    """Return the distinct links of text, in order, without trailing
+    punctuation."""
+    found = []
+    for match in LINK_RE.finditer(text):
+        # A link that runs into a <placeholder> is a template, not a page.
+        if text[match.end() : match.end() + 1] == "<":
+            continue
+        link = match.group(0).rstrip(".,;:!?")
+        if link not in found:
+            found.append(link)
+    return found
+
+
+def status(link: str, method: str) -> int:
+    """Return the HTTP status of link, or 0 when curl gets none."""
+    head = ["--head"] if method == "HEAD" else []
+    result = subprocess.run(
+        [
+            "curl",
+            "-sS",
+            "-L",
+            "-o",
+            "/dev/null",
+            "-w",
+            "%{http_code}",
+            "--max-time",
+            "20",
+            "--retry",
+            "2",
+            *head,
+            link,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return int(result.stdout or 0)
+
+
+def main() -> None:
+    failed = False
+    for path in sys.argv[1:]:
+        for link in links(Path(path).read_text()):
+            code = status(link, "HEAD")
+            if code in REFUSED:
+                code = status(link, "GET")
+            if code in GONE:
+                print(f"{path}: {link} answers {code}")
+                failed = True
+            elif not 200 <= code < 400:
+                print(f"{path}: {link} answers {code or 'nothing'}, passed")
+    sys.exit(1 if failed else 0)
+
+
+if __name__ == "__main__":
+    main()
