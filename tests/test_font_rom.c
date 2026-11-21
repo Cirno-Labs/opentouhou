@@ -195,6 +195,7 @@ static RESULT M_ReadT98(const uint8_t *const data, const size_t size)
     Reader_OpenBuffer(&reader, data, size, "FONT.ROM");
     FONT_ROM *rom = nullptr;
     const RESULT result = FontRom_ReadT98(&reader, &rom);
+    Reader_Close(&reader);
     CHECK(IS_OK(result) == (rom != nullptr));
     FontRom_Free(rom);
     return result;
@@ -206,6 +207,7 @@ static RESULT M_ReadAnex86(const uint8_t *const data, const size_t size)
     Reader_OpenBuffer(&reader, data, size, "NEC.BMP");
     FONT_ROM *rom = nullptr;
     const RESULT result = FontRom_ReadAnex86(&reader, &rom);
+    Reader_Close(&reader);
     CHECK(IS_OK(result) == (rom != nullptr));
     FontRom_Free(rom);
     return result;
@@ -221,6 +223,8 @@ static FONT_ROM *M_ReadBdf(const char *const full, const char *const half)
     FONT_ROM *rom = nullptr;
     const RESULT result = FontRom_ReadBdf(
         &full_reader, half != nullptr ? &half_reader : nullptr, &rom);
+    Reader_Close(&full_reader);
+    Reader_Close(&half_reader);
     CHECK(IS_OK(result) == (rom != nullptr));
     Result_Ignore(result);
     return rom;
@@ -270,6 +274,7 @@ TEST(t98_reads_both_cell_sizes)
     Reader_OpenBuffer(&reader, data, M_T98_SIZE, "FONT.ROM");
     FONT_ROM *rom = nullptr;
     CHECK(IS_OK(FontRom_ReadT98(&reader, &rom)));
+    Reader_Close(&reader);
     M_CheckMarkedCells(rom);
     FontRom_Free(rom);
     Mem_Free(data);
@@ -293,6 +298,7 @@ TEST(anex86_reads_both_cell_sizes_with_clear_bits_as_ink)
     Reader_OpenBuffer(&reader, data, M_BMP_SIZE, "NEC.BMP");
     FONT_ROM *rom = nullptr;
     CHECK(IS_OK(FontRom_ReadAnex86(&reader, &rom)));
+    Reader_Close(&reader);
     M_CheckMarkedCells(rom);
     FontRom_Free(rom);
     Mem_Free(data);
@@ -403,6 +409,7 @@ TEST(characters_without_a_cell)
     Reader_OpenBuffer(&reader, data, M_T98_SIZE, "FONT.ROM");
     FONT_ROM *rom = nullptr;
     CHECK(IS_OK(FontRom_ReadT98(&reader, &rom)));
+    Reader_Close(&reader);
     Mem_Free(data);
     const uint32_t none[] = {
         0x00, 0x1F, 0x7F, U'é', U'¥', U'ⅰ', U'纊', 0xE000, 0xD800, 0x1F600,
