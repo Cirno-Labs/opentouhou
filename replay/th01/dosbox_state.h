@@ -8,7 +8,8 @@
 #include <stdint.h>
 
 // Holds the dosbox port's context: the virtual clock's VSync phase, the
-// frames it began, the frame of the last OP menu call, the segment of the
+// frames it began, the frame of the last OP menu call, the music test's
+// track starts since OP began, the segment of the
 // resident block once found, the run's choices as OP's options held
 // them last, whether REIIDEN has run, whether the running REIIDEN has
 // set its cards up, and the last cards' count and hash.
@@ -16,6 +17,7 @@ typedef struct {
     FRAME_CLOCK clock;
     uint32_t frames;
     uint32_t menu_frame;
+    uint32_t track_starts;
     uint16_t resident;
     uint32_t choices[4];
     bool reiiden_ran;

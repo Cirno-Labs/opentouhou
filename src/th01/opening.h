@@ -62,6 +62,8 @@ typedef struct {
     uint32_t random, frame_rand;
     int32_t count1, line_count, line_y[2], prompt_frame;
     int32_t selection, track, option_item_count, music_mode, wait;
+    // Counts the tracks that the music test has started.
+    uint32_t track_starts;
     bool drawn_rows[VIDEO_HEIGHT];
     bool entering, left_locked[2], right_locked[2];
 } OPENING;

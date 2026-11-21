@@ -221,6 +221,8 @@ static void M_Op(
     row[TH01_COLUMN_vsync_count1] = M_I32(op.z_vsync_Count1);
     row[TH01_COLUMN_frame_rand] = op.frame_rand;
     row[TH01_COLUMN_rng] = op.random_seed;
+    row[TH01_COLUMN_track] = (uint32_t)op.song_index;
+    row[TH01_COLUMN_track_starts] = th01->track_starts;
     th01->choices[0] = (uint32_t)op.opts_rank;
     th01->choices[1] = (uint32_t)op.opts_credit_lives_extra;
     th01->choices[2] = (uint32_t)op.opts_credit_bombs;

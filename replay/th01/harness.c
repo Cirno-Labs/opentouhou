@@ -55,7 +55,7 @@ const HARNESS_GAME g_Th01Harness = {
     .column_count = ARRAY_SIZE(m_Columns),
     .choices = m_Choices,
     .choice_count = ARRAY_SIZE(m_Choices),
-    .columns_version = 1,
+    .columns_version = 2,
     .starts = m_Starts,
     .start_count = ARRAY_SIZE(m_Starts),
 };

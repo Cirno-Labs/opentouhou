@@ -46,6 +46,7 @@ typedef enum {
     X(z_vsync_Count1, int16_t, 0x12cc)                                         \
     X(frame_rand, uint32_t, 0x1188)                                            \
     X(random_seed, uint32_t, 0x086c)                                           \
+    X(song_index, int8_t, 0x028d)                                              \
     X(menu_id, uint8_t, 0x009a)                                                \
     X(menu_sel, uint8_t, 0x0095)                                               \
     X(opts_rank, int8_t, 0x0090)                                               \
@@ -153,6 +154,7 @@ typedef enum {
     RETAIL_SITE_SCROLLUP,
     RETAIL_SITE_DELAY,
     RETAIL_SITE_OP_MENU,
+    RETAIL_SITE_SONG_START,
     RETAIL_SITE_DEBUG_HEAP,
     RETAIL_SITE_STAGEBONUS_RELEASE,
     RETAIL_SITE_TOTLE_RELEASE,
@@ -166,7 +168,8 @@ typedef enum {
 // X(program, site, kind, segment, offset) for each site, where kind names a
 // DOSBOX_SITE_ member. A VSYNC or VBLANK_END site is the jump that repeats
 // its poll; DELAY is the entry of Borland's far delay(ms); OP_MENU calls
-// frame_delay(1) at the end of OP's menu loop. A POLL site is the jump of a
+// frame_delay(1) at the end of OP's menu loop, SONG_START is the entry of
+// the music test's song start. A POLL site is the jump of a
 // loop that reads input and has no wait. BOSS_HP follows the store of each
 // boss setup's HP to boss_hp, and SINGYOKU_HP the one to singyoku_hp.
 #define RETAIL_SITES(X)                                                        \
@@ -179,6 +182,7 @@ typedef enum {
     X(RETAIL_PROGRAM_OP, RETAIL_SITE_VSYNC_WAIT, VSYNC, 0x0b27, 0x00d5)        \
     X(RETAIL_PROGRAM_OP, RETAIL_SITE_DELAY, DELAY, 0x0000, 0x9bf8)             \
     X(RETAIL_PROGRAM_OP, RETAIL_SITE_OP_MENU, CALL, 0x0a1c, 0x1054)            \
+    X(RETAIL_PROGRAM_OP, RETAIL_SITE_SONG_START, CALL, 0x0a1c, 0x0cad)         \
     X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_FRAME_DELAY, VSYNC, 0x0e36, 0x000d)  \
     X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_VSYNC_WAIT_END, VBLANK_END, 0x0e37,  \
       0x00c8)                                                                  \

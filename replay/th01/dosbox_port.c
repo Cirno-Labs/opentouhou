@@ -110,6 +110,9 @@ static void M_OnSite(void *const context, const uint8_t id)
     case RETAIL_SITE_OP_MENU:
         th01->menu_frame = th01->frames;
         break;
+    case RETAIL_SITE_SONG_START:
+        th01->track_starts++;
+        break;
     case RETAIL_SITE_BOSS_HP:
         M_BossHp(M_DATA_boss_hp);
         break;
@@ -126,6 +129,9 @@ static void M_OnExec(void *const context, const uint8_t program)
 {
     TH01_DOSBOX *const th01 = context;
     th01->cards_set = false;
+    if (program == RETAIL_PROGRAM_OP) {
+        th01->track_starts = 0;
+    }
     RETAIL_RESIDENT resident;
     if (program != RETAIL_PROGRAM_REIIDEN || th01->reiiden_ran
         || !Th01Dosbox_Resident(th01, &resident)) {

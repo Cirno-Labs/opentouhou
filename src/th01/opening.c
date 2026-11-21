@@ -236,6 +236,7 @@ static void M_Menu(
         if (confirm && opening->selection == 0) {
             events->audio = OPENING_AUDIO_PLAY;
             events->track = opening->track;
+            opening->track_starts++;
         }
     }
     events->clear_key_buffer = true;

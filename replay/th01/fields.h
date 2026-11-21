@@ -14,6 +14,8 @@
     X(vsync_count1, I32)                                                       \
     X(frame_rand, U32)                                                         \
     X(rng, U32)                                                                \
+    X(track, U32)                                                              \
+    X(track_starts, U32)                                                       \
     X(game_frames, U32)                                                        \
     X(stage, U32)                                                              \
     X(route, U32)                                                              \
@@ -74,7 +76,9 @@
     X(pellet_speed, I32)                                                       \
     X(boss_hp, I32)
 
-// The opening fills vsync_count1, frame_rand and rng; the ending fills
+// The opening fills vsync_count1, frame_rand, rng, track (the music
+// test's track) and track_starts (the tracks that the music test has
+// started since the opening began); the ending fills
 // vsync_count1, rng, route (its end flag) and score.
 //
 // player_flags: is_hit, invincible << 1, deflecting << 2, sliding << 3.
