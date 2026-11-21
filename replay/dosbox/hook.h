@@ -77,7 +77,8 @@ typedef struct {
     // Runs once before the first autoexec command.
     void (*on_start)(void *context);
     // Tells that program name, upper-case 8.3, has loaded at psp and runs its
-    // first instruction next.
+    // first instruction next. An overlay load gives its load segment minus
+    // 10h as psp, and the caller jumps to the program.
     void (*on_exec)(void *context, const char *name, uint16_t psp);
     // Tells that the program at psp ended with status, or stayed resident.
     void (*on_exit)(void *context, uint16_t psp, uint8_t status);

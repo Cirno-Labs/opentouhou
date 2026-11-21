@@ -577,6 +577,15 @@ static void M_OnExec(
     if (m_Dosbox.driver == nullptr) {
         return;
     }
+    // An overlay load, such as Borland's exec, replaces the program at psp.
+    if (m_Dosbox.running_count > 0
+        && m_Dosbox.running[m_Dosbox.running_count - 1].psp == psp) {
+        M_SetSites(false);
+        m_Dosbox.running_count--;
+        M_SetSites(true);
+        m_Dosbox.delay_site = M_NO_SITE;
+        m_Dosbox.delay_chained = false;
+    }
     int32_t program = -1;
     for (size_t i = 0; i < port->program_count; i++) {
         if (strcmp(port->programs[i], name) == 0) {

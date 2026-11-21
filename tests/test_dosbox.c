@@ -483,6 +483,9 @@ TEST(sites_follow_the_running_program)
     CHECK_EQ_INT(Dosbox_LoadSegment(), M_PSP + 0x10);
     guest->on_exec(guest->context, "OTHER.EXE", 0x2000);
     CHECK_EQ_INT(Dosbox_Program(), 0);
+    guest->on_exec(guest->context, "FAKE.COM", M_PSP);
+    CHECK_EQ_INT(Dosbox_Program(), 0);
+    CHECK_EQ_INT(m_Fake.sites, (int32_t)ARRAY_SIZE(m_Sites));
     guest->on_exit(guest->context, M_PSP, 0);
     CHECK_EQ_INT(m_Fake.sites, 0);
     CHECK_EQ_INT(Dosbox_Program(), -1);

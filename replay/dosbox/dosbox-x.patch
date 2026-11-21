@@ -38,7 +38,15 @@ index ef7d196..0b8fe23 100644
  	/* Free Files owned by process */
  	if (!tsr) curpsp.CloseFiles();
  	
-@@ -966,6 +968,7 @@ bool DOS_Execute(const char* name, PhysPt block_pt, uint16_t flags) {
+@@ -832,6 +834,7 @@ bool DOS_Execute(const char* name, PhysPt block_pt, uint16_t flags) {
+ 	if(flags == OVERLAY) {
+ 		reg_ax = 0;             // Testing with MS-DOS (6.22) shows that if INT 21 AX=4B is called with the overlay flag (AL==3), then AX and DX are 0 on return.
+ 		reg_dx = 0;
++		Harness_Exec(name,(uint16_t)(loadseg-16));
+ 		return true;			/* Everything done for overlays */
+ 	}
+ 	RealPt csip,sssp;
+@@ -966,6 +969,7 @@ bool DOS_Execute(const char* name, PhysPt block_pt, uint16_t flags) {
  		/* Started from debug.com, then set breakpoint at start */
  		DEBUG_CheckExecuteBreakpoint(RealSeg(csip),RealOff(csip));
  #endif
