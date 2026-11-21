@@ -8,7 +8,7 @@
 // guest addresses, segment * 16 + offset. Emulated time is in microseconds
 // since the emulator started. The header is C and C++.
 
-#define DOSBOX_HOOK_ABI 1
+#define DOSBOX_HOOK_ABI 2
 
 // Names the library's one export, a DOSBOX_ATTACH_FN.
 #define DOSBOX_ATTACH_SYMBOL "Dosbox_Attach"
@@ -19,8 +19,8 @@ typedef struct {
 } DOSBOX_REGS;
 
 // Holds what the emulator gives the library. Calls other than mount are
-// valid only within on_exec, on_exit and on_site; mount is valid only within
-// on_start.
+// valid only within on_exec, on_exit, on_site and on_timer; mount is valid
+// only within on_start.
 typedef struct {
     uint32_t abi;
     // Copies guest memory at address into out, or data into it.
@@ -66,6 +66,9 @@ typedef struct {
     // Ends emulation once the current callback returns, and makes the
     // emulator exit with status.
     void (*quit)(int status);
+    // Makes the emulator call on_timer each period of emulated time from now
+    // on, between two instructions, or no longer when period is 0.
+    void (*set_timer)(uint64_t period);
 } DOSBOX_HOST;
 
 // Holds what the library gives the emulator.
@@ -80,6 +83,9 @@ typedef struct {
     void (*on_exit)(void *context, uint16_t psp, uint8_t status);
     // Tells that execution reached a site, before its instruction.
     void (*on_site)(void *context, uint32_t address);
+    // Runs on each tick of set_timer; get_regs gives the registers of the
+    // code that runs then.
+    void (*on_timer)(void *context);
     // Runs once after emulation ends, when no host call is valid. Returns the
     // emulator's exit status, given the one that it would return.
     int (*on_shutdown)(void *context, int status);

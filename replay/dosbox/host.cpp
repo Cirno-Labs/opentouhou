@@ -47,6 +47,7 @@ static pic_tickindex_t m_HaltUntil = 0;
 static bool m_Quit = false;
 static int m_Status = 0;
 static bool m_InStart = false;
+static pic_tickindex_t m_TimerPeriod = 0;
 
 static void M_Read(uint32_t address, void *out, size_t size)
 {
@@ -204,6 +205,29 @@ static void M_RenderPixels(uint32_t *pixels)
     Harness_Render(pixels);
 }
 
+static void M_CheckQuit(void);
+
+static void M_TimerEvent(Bitu val)
+{
+    if (m_Guest == nullptr || m_TimerPeriod <= 0) {
+        return;
+    }
+    PIC_AddEvent(M_TimerEvent, m_TimerPeriod);
+    if (m_Guest->on_timer != nullptr) {
+        m_Guest->on_timer(m_Guest->context);
+        M_CheckQuit();
+    }
+}
+
+static void M_SetTimer(uint64_t period)
+{
+    PIC_RemoveEvents(M_TimerEvent);
+    m_TimerPeriod = (pic_tickindex_t)period / 1000.0;
+    if (period != 0) {
+        PIC_AddEvent(M_TimerEvent, m_TimerPeriod);
+    }
+}
+
 static const DOSBOX_HOST m_Host = {
     DOSBOX_HOOK_ABI,
     M_Read,
@@ -221,6 +245,7 @@ static const DOSBOX_HOST m_Host = {
     M_RenderPixels,
     M_Mount,
     M_Quit,
+    M_SetTimer,
 };
 
 // Ends emulation through DOSBox-X's kill switch once quit was called.
