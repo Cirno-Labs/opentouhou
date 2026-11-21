@@ -207,3 +207,66 @@ dosbox-test: dosbox-x
         --file "$dir/hang.txt=stage.txt" 2> "$dir/hang.log" || status=$?
     [ "$status" -eq 2 ] && grep -q 'no site ran' "$dir/hang.log" || { echo "the hang ended with $status"; cat "$dir/hang.log"; exit 1; }
     echo "dostest dosbox: $(grep -x 'rows = .*' "$dir/headless/report.ini"), $(grep -x 'shots = .*' "$dir/second/report.ini") match, the watchdog fires"
+
+# Check a PC-98 game's native port against its original: capture the
+# original on the dosbox backend with an input script and replay the case
+# on the native backend headless, then print the first rows that differ.
+# With shots, also replay the case on the original with those screenshots
+# and compare the native ones with them. Keeps the case and every run in
+# out when it is given. Fails unless every state row matches.
+[group('replay')]
+[no-cd]
+dosbox game data script shots="" out="": dosbox-x
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    program=$(just -f "$root/justfile" replay::_native {{game}} debug)
+    dir=$(mktemp -d)
+    trap 'rm -rf "$dir"' EXIT
+    harness=("$root/tools/harness")
+    data=(--data {{quote(data)}})
+    "${harness[@]}" capture {{game}} "$dir/case.othtc" "${data[@]}" --backend dosbox --script {{quote(script)}}
+    native=(--headless)
+    if [ -n {{quote(shots)}} ]; then
+        "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --backend dosbox --out "$dir/dosbox" --shots {{quote(shots)}}
+        native=(--shots {{quote(shots)}} --against "$dir/dosbox")
+    fi
+    status=0
+    "${harness[@]}" replay "$dir/case.othtc" "${data[@]}" --program "$program" --out "$dir/native" "${native[@]}" || status=$?
+    cat "$dir/native/report.ini"
+    if [ -n {{quote(shots)}} ]; then cat "$dir/native/shots.tsv"; fi
+    "${harness[@]}" rows "$dir/case.othtc" "$dir/native" --limit 10 || true
+    if [ -n {{quote(out)}} ]; then
+        mkdir -p {{quote(out)}}
+        cp -r "$dir/case.othtc" "$dir/native" {{quote(out)}}
+        if [ -d "$dir/dosbox" ]; then cp -r "$dir/dosbox" {{quote(out)}}; fi
+    fi
+    [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$dir/native/report.ini"
+
+# Check a person's play of a PC-98 game against its original: capture the
+# play on the native backend in a window, then capture the original on the
+# dosbox backend with the play's inputs and replay that case on the native
+# backend headless. Keeps live.othtc, case.othtc and the native run in
+# out. After the first row that differs, the inputs no longer fit the
+# original, so that row is the finding.
+[group('replay')]
+[no-cd]
+live-dosbox game data out: dosbox-x
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    program=$(just -f "$root/justfile" replay::_native {{game}} debug)
+    out={{quote(out)}}
+    mkdir -p "$out"
+    harness=("$root/tools/harness")
+    data=(--data {{quote(data)}})
+    "${harness[@]}" capture {{game}} "$out/live.othtc" "${data[@]}" --program "$program" --live
+    frames=$(unzip -p "$out/live.othtc" case.ini | sed -n 's/^frames = //p')
+    { echo "frames $frames"; unzip -p "$out/live.othtc" inputs.txt; } > "$out/inputs.txt"
+    "${harness[@]}" capture {{game}} "$out/case.othtc" "${data[@]}" --backend dosbox --script "$out/inputs.txt"
+    rm -rf "$out/native"
+    status=0
+    "${harness[@]}" replay "$out/case.othtc" "${data[@]}" --program "$program" --out "$out/native" --headless || status=$?
+    cat "$out/native/report.ini"
+    "${harness[@]}" rows "$out/case.othtc" "$out/native" --limit 10 || true
+    [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$out/native/report.ini"
