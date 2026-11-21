@@ -469,8 +469,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_B10J_SETUP:
             if (!B10J_ResumeSetup(
-                    &g->world.b10j, &g->bindings.c10j, &g->world.vsync,
-                    host_tick)) {
+                    &g->world.b10j, &g->bindings.c10j, &g->world.vsync)) {
                 return g->world.request;
             }
             M_StageBackground(g);

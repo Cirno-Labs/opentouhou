@@ -35,7 +35,6 @@ typedef struct {
     PALETTE boss_palette, post_defeat;
     PALETTE_FADE setup_fade;
     FRAME_WAIT setup_wait;
-    uint64_t setup_tick;
     BOSS_DEFEAT defeat;
     uint8_t *background;
     B10J_SQUARE squares[6];
@@ -46,7 +45,7 @@ typedef struct {
     uint8_t hop, direction, missile_angle, pellet_angle;
     uint8_t spread_interval, spread_speed;
     bool meteor_active, hp_bar_filled;
-    bool setup_active, setup_waiting, entrance_active, entrance_waiting;
+    bool setup_active, entrance_active, entrance_waiting;
     bool defeating, finished;
 } B10J;
 
@@ -81,18 +80,15 @@ RESULT B10J_ValidateAssets(const B10J_ASSETS *assets);
 void B10J_Init(B10J *boss, const ALLOCATOR *allocator);
 
 // Binds the two banks and starts the setup's white-in. ResumeSetup applies
-// sixteen raw VSync waits, palette steps and ten-millisecond delays.
-// Advances position, HP and particle setup only after the final delay.
-// Keep resources stable and advance independent audio and VSyncs while
-// suspended. Supply a monotonic 60 Hz host serial for the ten-ms waits;
-// visibility is quantized to host ticks without modeling CPU drawing cost.
-// Begin with black pages; the owning stage draws the background afterward.
-// Neither operation allocates or reads files or devices.
+// sixteen raw VSync waits and palette steps; each ten-millisecond delay ends
+// before the next VSync. Advances position, HP and particle setup in the call
+// of the final step. Keep resources stable and advance independent audio and
+// VSyncs while suspended. Begin with black pages; the owning stage draws the
+// background afterward. Neither operation allocates or reads files or devices.
 void B10J_BeginSetup(
     B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync);
 bool B10J_ResumeSetup(
-    B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync,
-    uint64_t host_tick);
+    B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync);
 
 RESULT B10J_ValidateContext(const B10J_CONTEXT *context);
 

@@ -130,34 +130,20 @@ void B10J_BeginSetup(
     Palette_BeginFade(&b->setup_fade, c->hit->palette, PALETTE_FADE_WHITE_IN);
     Frame_BeginWait(&b->setup_wait, vsync);
     b->setup_active = true;
-    b->setup_waiting = false;
     b->finished = false;
 }
 
 bool B10J_ResumeSetup(
-    B10J *const b, const B10J_CONTEXT *const c, const FRAME_VSYNC *const vsync,
-    const uint64_t host_tick)
+    B10J *const b, const B10J_CONTEXT *const c, const FRAME_VSYNC *const vsync)
 {
     if (!b->setup_active) {
         return true;
     }
-    if (b->setup_waiting) {
-        ASSERT(host_tick >= b->setup_tick);
-        if (host_tick == b->setup_tick) {
-            return false;
-        }
-        if (b->setup_fade.remaining != 0) {
-            b->setup_waiting = false;
-        }
+    if (!Frame_WaitReady(&b->setup_wait, vsync)) {
+        return false;
     }
+    Palette_FadeStep(&b->setup_fade, c->hit->palette, c->hit->display->video);
     if (b->setup_fade.remaining != 0) {
-        if (!Frame_WaitReady(&b->setup_wait, vsync)) {
-            return false;
-        }
-        Palette_FadeStep(
-            &b->setup_fade, c->hit->palette, c->hit->display->video);
-        b->setup_waiting = true;
-        b->setup_tick = host_tick;
         Frame_BeginWait(&b->setup_wait, vsync);
         return false;
     }

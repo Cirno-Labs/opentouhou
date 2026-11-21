@@ -163,16 +163,20 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     FRAME_VSYNC vsync = { .count1 = 12, .count2 = 19 };
     B10J_BeginSetup(&b, &f.context, &vsync);
     const size_t used = arena.used;
-    CHECK(!B10J_ResumeSetup(&b, &f.context, &vsync, 0));
+    CHECK(!B10J_ResumeSetup(&b, &f.context, &vsync));
     CHECK_EQ_INT(b.frame, 91);
     CHECK_EQ_INT(b.hp, 3);
     for (int32_t step = 0; step < 16; step++) {
         Frame_VSync(&vsync);
-        CHECK(!B10J_ResumeSetup(&b, &f.context, &vsync, step + 1));
-        const B10J frozen = b;
-        CHECK(!B10J_ResumeSetup(&b, &f.context, &vsync, step + 1));
-        CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
-        CHECK_EQ_INT(b.hp, 3);
+        if (step == 15) {
+            CHECK(B10J_ResumeSetup(&b, &f.context, &vsync));
+        } else {
+            CHECK(!B10J_ResumeSetup(&b, &f.context, &vsync));
+            const B10J frozen = b;
+            CHECK(!B10J_ResumeSetup(&b, &f.context, &vsync));
+            CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
+            CHECK_EQ_INT(b.hp, 3);
+        }
         CHECK(
             memcmp(&f.palette.saved, &f.assets.palette, sizeof(PALETTE)) == 0);
         for (int32_t i = 0; i < 16; i++) {
@@ -182,7 +186,6 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
                 f.video.palette[i].red, (faded > target ? faded : target) * 17);
         }
     }
-    CHECK(B10J_ResumeSetup(&b, &f.context, &vsync, 17));
     CHECK_EQ_INT(b.still.left, 256);
     CHECK_EQ_INT(b.still.top, 64);
     CHECK_EQ_INT(b.still.previous_top, 27);
@@ -223,8 +226,7 @@ static void M_Setup(
 {
     B10J_Init(b, Arena_Allocator(arena));
     B10J_BeginSetup(b, &f->context, vsync);
-    uint64_t tick = 0;
-    while (!B10J_ResumeSetup(b, &f->context, vsync, tick++)) {
+    while (!B10J_ResumeSetup(b, &f->context, vsync)) {
         Frame_VSync(vsync);
     }
 }
