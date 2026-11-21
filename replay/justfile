@@ -143,3 +143,30 @@ check game data cases jobs=num_cpus():
 [group('replay')]
 dosbox-x:
     docker build -q -t opentouhou-dosbox-x {{quote(justfile_directory() / "replay/dosbox")}}
+
+# Check every hook of the patched DOSBox-X: the test library of
+# replay/dosbox/test drives a small DOS program headless, and keeps its
+# screenshot in shot when it is given.
+[group('replay')]
+[no-cd]
+dosbox-x-test shot="": dosbox-x
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir=$(mktemp -d)
+    trap 'rm -rf "$dir"' EXIT
+    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/work \
+        -v {{quote(justfile_directory() / "replay/dosbox")}}:/src:ro -v "$dir:/work" \
+        opentouhou-dosbox-x bash -c '
+            set -euo pipefail
+            mkdir -p /work/base /work/overlay
+            nasm -f bin -o /work/base/HOOKTEST.COM /src/test/hooktest.asm
+            echo secret > /work/base/SECRET.TXT
+            gcc -std=c2x -O2 -Wall -Wextra -Wno-unused-parameter -shared -fPIC \
+                -I/src -o /work/hooktest.so /src/test/hooktest.c
+            { cat /src/dosbox-x.conf; printf "[autoexec]\nC:\nHOOKTEST.COM\nexit\n"; } > /work/test.conf
+            status=0
+            timeout 60 dosbox-x -conf /work/test.conf -harness /work/hooktest.so \
+                -- /work/base /work/overlay /work/shot.ppm > /work/log.txt 2>&1 || status=$?
+            grep "^hooktest:" /work/log.txt || cat /work/log.txt
+            exit "$status"'
+    if [ -n {{quote(shot)}} ]; then cp "$dir/shot.ppm" {{quote(shot)}}; fi
