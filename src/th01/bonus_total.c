@@ -85,8 +85,10 @@ static void M_Prepare(
     }
     b->place = 0;
     b->spin = 0;
-    b->credit = 0;
-    b->last_tick = host_tick;
+    if (b->metric == 0) {
+        b->credit = 49;
+        b->last_tick = host_tick;
+    }
     b->phase = BONUS_TOTAL_DIGIT;
 }
 
@@ -199,7 +201,6 @@ bool Bonus_ResumeTotal(
                 b->spin = 0;
                 b->place++;
                 if (b->place == b->digit_count) {
-                    b->credit = 0;
                     b->phase = BONUS_TOTAL_METRIC_WAIT;
                 }
             } else {

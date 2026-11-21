@@ -451,7 +451,7 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     CHECK_EQ_INT(f.effects, 20);
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_CONFIRM);
     CHECK_EQ_INT(vsync.count1, 0);
-    CHECK_EQ_INT(f.bonus.credit, 0);
+    CHECK_EQ_INT(f.bonus.credit, 10);
     Arena_Free(&arena);
 }
 
@@ -468,6 +468,8 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
     CHECK_EQ_INT(f.common.score_bonus, 40);
     CHECK_EQ_INT(f.bonus.digits[3], 4);
+    CHECK_EQ_INT(f.effects, 4);
+    CHECK_EQ_INT(f.bonus.credit, 1);
     f.common.timer.time = UINT16_MAX;
     f.bonus = (BONUS_TOTAL) { .phase = BONUS_TOTAL_PREPARE_METRIC };
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));

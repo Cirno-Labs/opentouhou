@@ -157,11 +157,13 @@ bool Bonus_BeginTotal(
 
 // Resumes source frame delays with count1 carry and four-millisecond digit
 // delays with fractional credit from a monotonic 60 Hz host serial. Several
-// digit steps can execute in one host tick. Discards unused millisecond
-// credit when the next source frame delay begins; time spent waiting for
-// frames does not prepay later digit delays. Visibility is host-quantized;
-// CPU drawing cost and DOS delay calibration are not modeled. Numeral spins
-// retain the source's scrambled second loop, including its two blank quarters.
+// digit steps can execute in one host tick. The digit delays start at the
+// VSync that ends the stage number's frame delay, with the rest of that
+// tick as credit, and keep their credit through the metrics' frame delays,
+// which pass at once because each metric's delays take longer. Visibility
+// is host-quantized; CPU drawing cost and DOS delay calibration are not
+// modeled. Numeral spins retain the source's scrambled second loop,
+// including its two blank quarters.
 // Final digits outside the numeral table draw blank, preserving arithmetic
 // without reproducing undefined source table reads.
 // Uses the same release confirmation and bounded caller storage as stage
