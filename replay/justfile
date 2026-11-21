@@ -243,6 +243,31 @@ dosbox game data script shots="" out="": dosbox-x
     fi
     [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$dir/native/report.ini"
 
+# Capture one case per input script of the directory scripts into out: the
+# dosbox backend plays each on the original, one process per script. Each
+# script must set its frames, at most 20000, and each capture stops after
+# 10 minutes.
+[group('replay')]
+[no-cd]
+dosbox-cases game data scripts out jobs="2": dosbox-x
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    shopt -s nullglob
+    list=({{quote(scripts)}}/*.txt)
+    for script in "${list[@]}"; do
+        frames=$(sed -n 's/^frames[[:space:]]\+\([0-9]\+\).*/\1/p' "$script")
+        if [ -z "$frames" ] || [ "$frames" -gt 20000 ]; then
+            echo "$script: needs a frames line of at most 20000" >&2
+            exit 1
+        fi
+    done
+    just -f "$root/justfile" _build linux media debug >&2
+    mkdir -p {{quote(out)}}
+    printf '%s\0' "${list[@]}" | xargs -0 -P {{jobs}} -I{} sh -c \
+        'name=$(basename "$1" .txt); timeout 600 "$2/tools/harness" capture {{game}} "$4/$name.othtc" --backend dosbox --data "$3" --script "$1" > "$4/$name.log" 2>&1 && rm "$4/$name.log" && echo "captured $name" || echo "FAIL $name: see $4/$name.log"' \
+        _ {} "$root" {{quote(data)}} {{quote(out)}}
+
 # Check a person's play of a PC-98 game against its original: capture the
 # play on the native backend in a window, then capture the original on the
 # dosbox backend with the play's inputs and replay that case on the native

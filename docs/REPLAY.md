@@ -21,6 +21,18 @@ fast replay draws only the frames just before each screenshot, and has
 the game repaint its whole screen as they start, so its screenshots are
 close to a full run's, not exact.
 
+A case can start the game's first run at a chosen state instead of
+playing up to it, such as a boss stage with spare lives: the script's
+`start NAME VALUE` lines set the game's start fields, which the case
+keeps in `[start]`. Each backend's port writes the same values in memory
+at the same point, as the run begins, and never changes a file. th01's
+fields are in [fields.h](../replay/th01/fields.h); its port sets them
+in the resident block before REIIDEN's first instruction, and in the
+session as native gameplay begins. Its boss_hp field differs: the port
+writes it over the HP that each boss's setup sets, right after the setup
+sets it, on both backends. Cases that set every field to what the run
+would have anyway match the cases that set none, row for row.
+
 `tools/stage_rpy` captures a case that plays one of the game's own
 replay files: it stages the file at the slot that `replay/GAME/rpy.ini`
 names and plays the input script that it names, which selects the slot
@@ -47,6 +59,16 @@ checks:
 - `replay::rpy-cases` captures the original playing each `.rpy` file of
   a directory.
 - `replay::live` captures a person's play of the original.
+- `replay::dosbox` checks a PC-98 port against its original on the
+  dosbox backend, and `replay::live-dosbox` does it for a person's play.
+- `replay::dosbox-cases` captures one case per script of a directory on
+  the original, such as `replay/th01/cases/`; `replay::check` then
+  replays them all on the native backend:
+
+  ```
+  just replay::dosbox-cases th01 DATA replay/th01/cases CASES
+  just replay::check th01 DATA CASES
+  ```
 - `replay::dosbox-x` builds the patched DOSBox-X of the dosbox backend
   into the local image `opentouhou-dosbox-x`, `replay::dosbox-x-test`
   checks its hooks, and `replay::dosbox-test` checks the backend end to
@@ -102,8 +124,9 @@ files/NAME   each file that a staging step serves
 `case.ini` holds the case format, the game and its version, the
 capturing backend, the columns version, the frame and row counts and a
 note. Its `[choices]` section holds the run's choices, such as th06's
-difficulty and character, once rather than in every row, and its
-`[preconditions]` the staging steps in order.
+difficulty and character, once rather than in every row, its
+`[preconditions]` the staging steps in order, and `[start]` the start
+values.
 
 `state.bin` packs the rows into chunks that each decode on their own,
 with a running hash that a replay checks on every row.
@@ -111,5 +134,7 @@ with a running hash that a replay checks on every row.
 [case.h](../replay/harness/case.h) gives `case.ini` and the case
 format, [script.h](../replay/harness/script.h) the script format of
 `inputs.txt` and [state.h](../replay/harness/state.h) the layout of
-`state.bin`, with its chunk size and the rows between checks. A case
+`state.bin`, with its chunk size and the rows between checks. A HASH column holds a
+value only on those check rows, every 60th; `tools/harness rows` shows
+`-` on the others. A case
 never holds screenshots or original game data.
