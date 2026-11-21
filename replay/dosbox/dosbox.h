@@ -24,9 +24,11 @@
 // also goes into the BIOS key buffer. The clock starts at the first exec of
 // a program of the port, which is frame 0.
 //
-// The run mounts game_dir read-only as drive C with work/ of out_dir over
-// it, and the staged files in work/. At the end, work/ keeps only the files
-// that the game wrote.
+// The run mounts base/ of out_dir read-only as drive C with work/ of
+// out_dir over it, and the staged files in work/. base/ links to each file
+// of game_dir, under its UTF-8 name when its name is CP932, since DOSBox-X
+// looks a DOS name up by its UTF-8 form. At the end, base/ is gone and
+// work/ keeps only the files that the game wrote.
 //
 // The watchdog fails the run with exit status 2 and a histogram of the
 // CS:IPs that ran, sampled every DOSBOX_WATCHDOG_TICK, when DOSBOX_WATCHDOG

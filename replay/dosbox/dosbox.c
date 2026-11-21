@@ -1,5 +1,9 @@
+// Uses symlink of POSIX 2008.
+#define _XOPEN_SOURCE 700
+
 #include "dosbox.h"
 
+#include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -12,6 +16,9 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+    #include <unistd.h>
+#endif
 
 #define M_ARENA_SIZE (1024 * 1024)
 #define M_NO_SITE UINT32_MAX
@@ -66,6 +73,11 @@ static struct {
     // Holds a copy of the staged files, which work/ holds too.
     STAGED_FILE *staged;
     size_t staged_count;
+    // Gives base/ of out_dir, which links to each file of game_dir, and the
+    // links.
+    const char *base;
+    char **links;
+    size_t link_count;
     int status;
     // Tells whether the clock runs, from the first exec of a port program.
     bool started;
@@ -662,7 +674,7 @@ static void M_OnStart(void *const context)
         }
     }
     if (!m_Dosbox.host->mount(
-            'C', m_Dosbox.run.game_dir, m_Dosbox.work, hidden, count)) {
+            'C', m_Dosbox.base, m_Dosbox.work, hidden, count)) {
         M_Check(FAIL("cannot mount %s", m_Dosbox.run.game_dir));
     }
 }
@@ -709,6 +721,48 @@ static RESULT M_WriteStaged(void)
     return OK;
 }
 
+// Links each entry of game_dir into base/, under its UTF-8 name when its
+// name is CP932: DOSBox-X looks a DOS name up by its UTF-8 form, and its
+// overlay drive does not find a name past ASCII in the overlay. The backend
+// runs on Linux only; a Windows build, for the tests, mounts game_dir.
+static RESULT M_LinkBase(void)
+{
+#ifdef _WIN32
+    m_Dosbox.base = m_Dosbox.run.game_dir;
+    return OK;
+#else
+    ARENA *const arena = &m_Dosbox.arena;
+    char *const base =
+        Path_Join(Arena_Allocator(arena), m_Dosbox.run.out_dir, "base");
+    m_Dosbox.base = base;
+    MUST(File_MakeDir(base));
+    FILE_LIST list;
+    MUST(File_ListDir(m_Dosbox.run.game_dir, &g_HeapAllocator, &list));
+    m_Dosbox.links =
+        Arena_AllocArrZ(arena, (size_t)list.count + 1, sizeof(char *));
+    RESULT result = OK;
+    for (int32_t i = 0; IS_OK(result) && i < list.count; i++) {
+        const char *const name = list.items[i];
+        char *utf8;
+        result = Cp932_DecodeText(name, strlen(name), &utf8);
+        if (!IS_OK(result)) {
+            break;
+        }
+        char *const target =
+            Path_Join(Arena_Allocator(arena), m_Dosbox.run.game_dir, name);
+        char *const link = Path_Join(Arena_Allocator(arena), base, utf8);
+        Mem_Free(utf8);
+        if (symlink(target, link) != 0) {
+            result = FAIL("cannot link %s", link);
+        } else {
+            m_Dosbox.links[m_Dosbox.link_count++] = link;
+        }
+    }
+    File_FreeList(&list);
+    return result;
+#endif
+}
+
 static bool M_FileHolds(
     const char *const path, const uint8_t *const data, const size_t size)
 {
@@ -749,10 +803,16 @@ static RESULT M_RemoveMarkers(const char *const dir)
     return result;
 }
 
-// Leaves in work/ only the files that the game wrote: no deletion markers
-// and no staged file that the game left unchanged.
+// Removes base/ and leaves in work/ only the files that the game wrote: no
+// deletion markers and no staged file that the game left unchanged.
 static RESULT M_CleanWork(void)
 {
+    for (size_t i = 0; i < m_Dosbox.link_count; i++) {
+        MUST(File_Remove(m_Dosbox.links[i]));
+    }
+    if (m_Dosbox.links != nullptr) {
+        MUST(File_Remove(m_Dosbox.base));
+    }
     const STAGED_FILE *const staged = m_Dosbox.staged;
     for (size_t i = 0; i < m_Dosbox.staged_count; i++) {
         char *const path = M_WorkPath(staged[i].path);
@@ -798,6 +858,7 @@ static RESULT M_Open(const int argc, char **const argv)
         Arena_Allocator(&m_Dosbox.arena), m_Dosbox.run.out_dir, "work");
     MUST(Driver_Open(&port->port, &m_Dosbox.run, "dosbox", &m_Dosbox.driver));
     MUST(File_MakeDir(m_Dosbox.work));
+    MUST(M_LinkBase());
     return M_WriteStaged();
 }
 
