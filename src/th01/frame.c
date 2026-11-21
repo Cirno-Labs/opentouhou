@@ -29,6 +29,11 @@ void Frame_VSync(FRAME_VSYNC *const vsync)
     vsync->edge++;
 }
 
+void Frame_PollVSync(FRAME_VSYNC *const vsync)
+{
+    vsync->edge++;
+}
+
 void Frame_SwitchProgram(FRAME_VSYNC *const vsync)
 {
     vsync->count1 = 1;

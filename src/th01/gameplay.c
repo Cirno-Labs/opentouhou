@@ -261,10 +261,46 @@ static void M_ContinueUse(GAMEPLAY *const g)
     g->storage.session->continues_per_scene[scene]++;
 }
 
+// Starts game_switch_binary: its vsync_exit stops the counters, and its
+// z_palette_black_out steps the palette to black after each of sixteen
+// VSyncs. The switch to then follows the last step at once.
+static void M_BeginSwitch(GAMEPLAY *const g, const GAMEPLAY_SWITCH to)
+{
+    g->world.switch_to = to;
+    Palette_BeginFade(
+        &g->world.switch_fade, &g->world.palette, PALETTE_FADE_BLACK_OUT);
+    Frame_BeginWait(&g->world.wait, &g->world.vsync);
+    g->world.phase = GP_SWITCH;
+}
+
+static void M_Switch(GAMEPLAY *const g)
+{
+    switch (g->world.switch_to) {
+    case GAMEPLAY_SWITCH_STAGE:
+        Gameplay_ResetWorld(g);
+        Gameplay_Play(g, 11);
+        return;
+    case GAMEPLAY_SWITCH_CONTINUE:
+        g->storage.session->point_value = 0;
+        g->storage.session->pellet_speed = g->world.pellet_shared.speed;
+        g->storage.session->lives = g->world.retained_lives;
+        Gameplay_ResetWorld(g);
+        g->world.bgm_started = true;
+        return;
+    case GAMEPLAY_SWITCH_OPENING:
+        g->world.request = GAMEPLAY_REQUEST_OPENING;
+        g->world.phase = GP_TERMINAL;
+        return;
+    case GAMEPLAY_SWITCH_ENDING:
+        g->world.request = GAMEPLAY_REQUEST_ENDING;
+        g->world.phase = GP_TERMINAL;
+        return;
+    }
+}
+
 static void M_RequestOpening(GAMEPLAY *const g)
 {
-    g->world.request = GAMEPLAY_REQUEST_OPENING;
-    g->world.phase = GP_TERMINAL;
+    M_BeginSwitch(g, GAMEPLAY_SWITCH_OPENING);
 }
 
 static void M_OpenMenu(GAMEPLAY *const g)
@@ -365,8 +401,7 @@ static void M_AfterBonus(GAMEPLAY *const g)
     Gameplay_SyncSession(g);
     if (g->storage.session->stage_id % 5 == 4 || g->world.boss != 0) {
         Gameplay_Fade(g);
-        Gameplay_ResetWorld(g);
-        Gameplay_Play(g, 11);
+        M_BeginSwitch(g, GAMEPLAY_SWITCH_STAGE);
     } else {
         g->world.orb.in_portal = false;
         Video_SelectDrawingPage(g->storage.video, 1);
@@ -687,8 +722,7 @@ static GAMEPLAY_REQUEST M_Run(
             if (!Frame_DelayReady(&g->world.vsync, 120)) {
                 return g->world.request;
             }
-            g->world.request = GAMEPLAY_REQUEST_ENDING;
-            g->world.phase = GP_TERMINAL;
+            M_BeginSwitch(g, GAMEPLAY_SWITCH_ENDING);
             break;
         case GP_LIFE_EXIT:
             if (!Frame_WaitReady(&g->world.wait, &g->world.vsync)) {
@@ -835,12 +869,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             if (g->world.input.ok || g->world.input.shot) {
                 if (g->world.menu_selection == 0) {
-                    g->storage.session->point_value = 0;
-                    g->storage.session->pellet_speed =
-                        g->world.pellet_shared.speed;
-                    g->storage.session->lives = g->world.retained_lives;
-                    Gameplay_ResetWorld(g);
-                    g->world.bgm_started = true;
+                    M_BeginSwitch(g, GAMEPLAY_SWITCH_CONTINUE);
                 } else {
                     g->world.player.is_hit = false;
                     g->world.input.paused = false;
@@ -867,6 +896,18 @@ static GAMEPLAY_REQUEST M_Run(
                 g->world.phase = GP_CONTINUE;
             }
             break;
+        case GP_SWITCH:
+            if (!Frame_WaitReady(&g->world.wait, &g->world.vsync)) {
+                return g->world.request;
+            }
+            Palette_FadeStep(
+                &g->world.switch_fade, &g->world.palette, g->storage.video);
+            if (g->world.switch_fade.remaining > 0) {
+                Frame_BeginWait(&g->world.wait, &g->world.vsync);
+            } else {
+                M_Switch(g);
+            }
+            break;
         case GP_TERMINAL:
             return g->world.request;
         }
@@ -888,7 +929,9 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 {
     g->storage.host_tick = host_tick;
     Gameplay_AdvanceAudio(g);
-    if (reference_edge) {
+    if (reference_edge && g->world.phase == GP_SWITCH) {
+        Frame_PollVSync(&g->world.vsync);
+    } else if (reference_edge) {
         Frame_VSync(&g->world.vsync);
     }
     return M_Run(g, raw, host_tick);

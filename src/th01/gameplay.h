@@ -34,7 +34,10 @@ void Gameplay_Begin(
 // Advances one host tick with supplied raw input and reference VSync edge.
 // Advance the application's fractional frame clock across internal states.
 // Nested waits suspend their owning prefix, preserving source call order.
-// Terminal requests retain the current actual game frame.
+// Terminal requests retain the current actual game frame. A program switch
+// (into or out of a boss stage, Continue, the title, the ending) first
+// blacks the palette out after each of sixteen VSyncs with the counters
+// stopped, as game_switch_binary does, then requests or resets at once.
 GAMEPLAY_REQUEST Gameplay_Tick(
     GAMEPLAY *gameplay, const TH01_INPUT *input, bool reference_edge,
     uint64_t host_tick);

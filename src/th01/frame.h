@@ -28,6 +28,10 @@ typedef struct {
 
 void Frame_VSync(FRAME_VSYNC *vsync);
 
+// Advances only the edge serial, for a VSync while the program has masked
+// IRQ 2 (vsync_exit): the counters stop, and polls of the GDC still see it.
+void Frame_PollVSync(FRAME_VSYNC *vsync);
+
 // Starts a new program's counters at one, keeping the edge serial. The old
 // program's vsync_exit masks IRQ 2 while its armed CRT interrupt is still due;
 // the 8259 latches it, and the new program's vsync_init delivers it at once.

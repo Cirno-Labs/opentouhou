@@ -39,8 +39,18 @@ typedef enum {
     GP_CONTINUE,
     GP_CONTINUE_DELAY,
     GP_VICTORY_DELAY,
+    GP_SWITCH,
     GP_TERMINAL,
 } GAMEPLAY_PHASE;
+
+// Names the program that game_switch_binary's black-out leads to: REIIDEN
+// again for a boss stage or a Continue, OP or FUUIN.
+typedef enum {
+    GAMEPLAY_SWITCH_STAGE,
+    GAMEPLAY_SWITCH_CONTINUE,
+    GAMEPLAY_SWITCH_OPENING,
+    GAMEPLAY_SWITCH_ENDING,
+} GAMEPLAY_SWITCH;
 
 typedef struct {
     GAMEPLAY_REQUEST request;
@@ -56,6 +66,8 @@ typedef struct {
     int16_t gameover_left[5], gameover_top[5];
     bool gameover_clipped[5];
     uint16_t continue_frame;
+    GAMEPLAY_SWITCH switch_to;
+    PALETTE_FADE switch_fade;
     STAGE_GAMEPLAY metrics;
     STAGE_OBJECTS objects;
     STAGE_ORB_COMPOSITE composite;

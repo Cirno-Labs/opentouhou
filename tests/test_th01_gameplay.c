@@ -178,7 +178,16 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     for (uint64_t tick = 2; tick < 121; tick++) {
         CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, tick), GAMEPLAY_REQUEST_NONE);
     }
-    CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, 121), GAMEPLAY_REQUEST_ENDING);
+    CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, 121), GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(g->world.phase, GP_SWITCH);
+    const int16_t count1 = g->world.vsync.count1;
+    for (uint64_t tick = 122; tick < 137; tick++) {
+        CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, tick), GAMEPLAY_REQUEST_NONE);
+    }
+    CHECK_EQ_INT(g->world.vsync.count1, count1);
+    CHECK_EQ_INT(g->world.switch_fade.remaining, 1);
+    CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, 137), GAMEPLAY_REQUEST_ENDING);
+    CHECK_EQ_INT(g->world.switch_fade.remaining, 0);
     CHECK_EQ_INT(g->world.pellet_shared.destroy_score_delta, 70);
     CHECK_EQ_INT(g->world.metrics.score, 1000);
     Arena_Free(&f.arena);
@@ -276,6 +285,10 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
+    CHECK_EQ_INT(g->world.phase, GP_SWITCH);
+    for (int32_t i = 0; i < 16; i++) {
+        Gameplay_Tick(g, &raw, true, ++tick);
+    }
     CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g->world.phase, GP_TITLE);
     CHECK_EQ_INT(f.session.stage_id, 0);
@@ -397,6 +410,10 @@ TEST(real_gameover_score_registration_precedes_continue)
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
         CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
+        CHECK_EQ_INT(g->world.phase, GP_SWITCH);
+        for (int32_t i = 0; i < 16; i++) {
+            Gameplay_Tick(g, &(TH01_INPUT) {}, true, ++tick);
+        }
         CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
         CHECK_EQ_INT(g->world.phase, GP_STAGE_LABEL);
         CHECK_EQ_INT(f.session.high_score, 2345);
