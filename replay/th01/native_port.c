@@ -30,12 +30,73 @@ static void M_VSync(void *const arg)
     Driver_EndCalc(native->driver);
 }
 
+// Applies the case's start values to the session of the first Start, as
+// the dosbox port does to the resident block that REIIDEN reads.
+static void M_Start(void *const arg, SESSION *const session)
+{
+    TH01_NATIVE *const native = arg;
+    if (native->started) {
+        return;
+    }
+    native->started = true;
+    size_t count;
+    const START_VALUE *const starts = Driver_Starts(native->driver, &count);
+    for (size_t i = 0; i < count; i++) {
+        const uint32_t value = starts[i].value;
+        switch (starts[i].field) {
+        case TH01_START_stage:
+            session->stage_id = (int16_t)value;
+            break;
+        case TH01_START_route:
+            session->route = (uint8_t)value;
+            break;
+        case TH01_START_difficulty:
+            session->settings.difficulty = (int32_t)value;
+            break;
+        case TH01_START_lives:
+            session->lives = (int16_t)value;
+            break;
+        case TH01_START_bombs:
+            session->bombs = (int16_t)value;
+            break;
+        case TH01_START_score:
+            session->score = value;
+            break;
+        case TH01_START_continues:
+            session->continues_total = (int32_t)value;
+            break;
+        case TH01_START_pellet_speed:
+            session->pellet_speed = (int16_t)value;
+            break;
+        case TH01_START_boss_hp:
+            break;
+        }
+    }
+}
+
+// Applies the case's boss_hp, as the dosbox port does after each boss
+// setup's HP store.
+static void M_Boss(void *const arg, int16_t *const hp)
+{
+    TH01_NATIVE *const native = arg;
+    size_t count;
+    const START_VALUE *const starts = Driver_Starts(native->driver, &count);
+    for (size_t i = 0; i < count; i++) {
+        if (starts[i].field == TH01_START_boss_hp) {
+            *hp = (int16_t)starts[i].value;
+        }
+    }
+}
+
 static void M_Hook(void *const context, DRIVER *const driver)
 {
     TH01_NATIVE *const native = context;
     native->driver = driver;
     native->buttons = Driver_Buttons(driver, 0);
-    g_Th01Hooks = (TH01_HOOKS) { .on_vsync = M_VSync, .arg = native };
+    g_Th01Hooks = (TH01_HOOKS) { .on_vsync = M_VSync,
+                                 .on_start = M_Start,
+                                 .on_boss = M_Boss,
+                                 .arg = native };
 }
 
 int main(int argc, char **argv)

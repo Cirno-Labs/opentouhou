@@ -158,6 +158,8 @@ typedef enum {
     RETAIL_SITE_TOTLE_RELEASE,
     RETAIL_SITE_REGIST_IDLE,
     RETAIL_SITE_REGIST_RELEASE,
+    RETAIL_SITE_BOSS_HP,
+    RETAIL_SITE_SINGYOKU_HP,
     RETAIL_SITE_COUNT,
 } RETAIL_SITE;
 
@@ -165,7 +167,8 @@ typedef enum {
 // DOSBOX_SITE_ member. A VSYNC or VBLANK_END site is the jump that repeats
 // its poll; DELAY is the entry of Borland's far delay(ms); OP_MENU calls
 // frame_delay(1) at the end of OP's menu loop. A POLL site is the jump of a
-// loop that reads input and has no wait.
+// loop that reads input and has no wait. BOSS_HP follows the store of each
+// boss setup's HP to boss_hp, and SINGYOKU_HP the one to singyoku_hp.
 #define RETAIL_SITES(X)                                                        \
     X(RETAIL_PROGRAM_ZUNSOFT, RETAIL_SITE_LOGO_VBLANK_END, VBLANK_END, 0x0000, \
       0x058c)                                                                  \
@@ -191,6 +194,13 @@ typedef enum {
     X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_REGIST_IDLE, POLL, 0x1395, 0x0f29)   \
     X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_REGIST_RELEASE, POLL, 0x1395,        \
       0x1273)                                                                  \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_BOSS_HP, CALL, 0x1b03, 0x04ef)       \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_BOSS_HP, CALL, 0x1e33, 0x04d1)       \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_SINGYOKU_HP, CALL, 0x2269, 0x00fa)   \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_BOSS_HP, CALL, 0x232a, 0x02d5)       \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_BOSS_HP, CALL, 0x24e3, 0x0256)       \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_BOSS_HP, CALL, 0x2865, 0x01cb)       \
+    X(RETAIL_PROGRAM_REIIDEN, RETAIL_SITE_BOSS_HP, CALL, 0x2cdd, 0x0446)       \
     X(RETAIL_PROGRAM_FUUIN, RETAIL_SITE_FRAME_DELAY, VSYNC, 0x0c73, 0x010e)    \
     X(RETAIL_PROGRAM_FUUIN, RETAIL_SITE_VSYNC_WAIT_END, VBLANK_END, 0x0ca4,    \
       0x00c1)                                                                  \

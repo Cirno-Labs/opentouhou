@@ -36,6 +36,7 @@ static const BINDING m_Bindings[] = {
 #define M_COLUMN(name, kind) { #name, COLUMN_##kind },
 static const COLUMN m_Columns[] = { TH01_CALC_FIELDS(M_COLUMN) };
 static const COLUMN m_Choices[] = { TH01_CHOICE_FIELDS(M_COLUMN) };
+static const COLUMN m_Starts[] = { TH01_START_FIELDS(M_COLUMN) };
 #undef M_COLUMN
 
 static_assert(
@@ -55,6 +56,8 @@ const HARNESS_GAME g_Th01Harness = {
     .choices = m_Choices,
     .choice_count = ARRAY_SIZE(m_Choices),
     .columns_version = 1,
+    .starts = m_Starts,
+    .start_count = ARRAY_SIZE(m_Starts),
 };
 
 #define M_FILE(path, data) { path, (const uint8_t *)data, sizeof(data) - 1 }

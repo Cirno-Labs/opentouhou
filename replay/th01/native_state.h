@@ -6,11 +6,12 @@
 
 typedef struct DRIVER DRIVER;
 
-// Holds the native port's context: the driver of the current frame and the
-// buttons that the frame applies.
+// Holds the native port's context: the driver of the current frame, the
+// buttons that the frame applies and whether a Start has entered gameplay.
 typedef struct {
     DRIVER *driver;
     uint32_t buttons;
+    bool started;
 } TH01_NATIVE;
 
 // Samples the native game's state at a VSync, one value per column of

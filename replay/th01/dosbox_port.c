@@ -83,12 +83,89 @@ static uint64_t M_DelayTime(void *const context, const uint8_t id)
     return (uint64_t)ms * 1000;
 }
 
+#define M_DATA(name, type, offset) M_DATA_##name = offset,
+enum { RETAIL_REIIDEN_DATA(M_DATA) };
+#undef M_DATA
+
+// Writes the case's boss_hp over the HP that a boss's setup has just
+// stored.
+static void M_BossHp(const uint16_t offset)
+{
+    size_t count;
+    const START_VALUE *const starts = Dosbox_Starts(&count);
+    for (size_t i = 0; i < count; i++) {
+        if (starts[i].field == TH01_START_boss_hp) {
+            const int16_t hp = (int16_t)starts[i].value;
+            Dosbox_Write(
+                (uint16_t)(Dosbox_LoadSegment() + RETAIL_REIIDEN_DGROUP),
+                offset, &hp, sizeof(hp));
+        }
+    }
+}
+
 static void M_OnSite(void *const context, const uint8_t id)
 {
     TH01_DOSBOX *const th01 = context;
-    if (id == RETAIL_SITE_OP_MENU) {
+    switch (id) {
+    case RETAIL_SITE_OP_MENU:
         th01->menu_frame = th01->frames;
+        break;
+    case RETAIL_SITE_BOSS_HP:
+        M_BossHp(M_DATA_boss_hp);
+        break;
+    case RETAIL_SITE_SINGYOKU_HP:
+        M_BossHp(M_DATA_singyoku_hp);
+        break;
     }
+}
+
+// Applies the case's start values to the resident block before REIIDEN's
+// first instruction, once: REIIDEN reads its stage, route, rank, lives,
+// bombs, score and continues there on entry.
+static void M_OnExec(void *const context, const uint8_t program)
+{
+    TH01_DOSBOX *const th01 = context;
+    th01->cards_set = false;
+    RETAIL_RESIDENT resident;
+    if (program != RETAIL_PROGRAM_REIIDEN || th01->reiiden_ran
+        || !Th01Dosbox_Resident(th01, &resident)) {
+        return;
+    }
+    th01->reiiden_ran = true;
+    size_t count;
+    const START_VALUE *const starts = Dosbox_Starts(&count);
+    for (size_t i = 0; i < count; i++) {
+        const uint32_t value = starts[i].value;
+        switch (starts[i].field) {
+        case TH01_START_stage:
+            resident.stage_id = (uint16_t)value;
+            break;
+        case TH01_START_route:
+            resident.route = (int8_t)value;
+            break;
+        case TH01_START_difficulty:
+            resident.rank = (int8_t)value;
+            break;
+        case TH01_START_lives:
+            resident.rem_lives = (int8_t)value;
+            break;
+        case TH01_START_bombs:
+            resident.rem_bombs = (int8_t)value;
+            break;
+        case TH01_START_score:
+            resident.score = (int32_t)value;
+            break;
+        case TH01_START_continues:
+            resident.continues_total = (int32_t)value;
+            break;
+        case TH01_START_pellet_speed:
+            resident.pellet_speed = (int16_t)value;
+            break;
+        case TH01_START_boss_hp:
+            break;
+        }
+    }
+    Dosbox_Write(th01->resident, 0, &resident, sizeof(resident));
 }
 
 static const DOSBOX_PORT m_Port = {
@@ -112,6 +189,7 @@ static const DOSBOX_PORT m_Port = {
     .advance = M_Advance,
     .delay_time = M_DelayTime,
     .on_site = M_OnSite,
+    .on_exec = M_OnExec,
 };
 
 [[gnu::visibility("default")]] const DOSBOX_GUEST *Dosbox_Attach(

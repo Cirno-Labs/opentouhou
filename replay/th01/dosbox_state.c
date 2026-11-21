@@ -100,9 +100,8 @@ static bool M_IsResident(const uint16_t segment, const RETAIL_RESIDENT *out)
         && M_Word(mcb, 3) == M_RESIDENT_PARAGRAPHS;
 }
 
-// Reads the resident block into out and returns whether it exists. Finds
-// it once by its id at the start of an MCB's data.
-static bool M_Resident(TH01_DOSBOX *const th01, RETAIL_RESIDENT *const out)
+// Finds the resident block once by its id at the start of an MCB's data.
+bool Th01Dosbox_Resident(TH01_DOSBOX *const th01, RETAIL_RESIDENT *const out)
 {
     if (th01->resident != 0 && M_IsResident(th01->resident, out)) {
         return true;
@@ -308,13 +307,10 @@ void Th01Dosbox_Sample(void *const context, uint32_t *const row)
     row[TH01_COLUMN_buttons] = Dosbox_Buttons();
     const int32_t program = Dosbox_Program();
     row[TH01_COLUMN_program] = (uint32_t)(program + 1);
-    if (program != RETAIL_PROGRAM_REIIDEN) {
-        th01->cards_set = false;
-    }
     const uint16_t load = Dosbox_LoadSegment();
     RETAIL_RESIDENT resident;
-    const bool has_resident =
-        program > RETAIL_PROGRAM_ZUNSOFT && M_Resident(th01, &resident);
+    const bool has_resident = program > RETAIL_PROGRAM_ZUNSOFT
+        && Th01Dosbox_Resident(th01, &resident);
     if (program == RETAIL_PROGRAM_OP) {
         M_Op(th01, (uint16_t)(load + RETAIL_OP_DGROUP), row);
     } else if (program == RETAIL_PROGRAM_REIIDEN && has_resident) {

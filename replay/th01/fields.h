@@ -56,6 +56,24 @@
 
 #define TH01_COLUMNS(X) TH01_CALC_FIELDS(X) TH01_CHOICE_FIELDS(X)
 
+// The state that a case's [start] sets as the first Start enters gameplay:
+// in the resident block before REIIDEN's first instruction, and in the
+// session before native gameplay begins. stage is the stage id from 0 (4
+// is SinGyoku's), route 0 for Makai and 1 for Jigoku, difficulty 0 for
+// Easy to 3 for Lunatic, continues the run's total. boss_hp replaces the
+// HP that each boss's setup sets, right after the setup sets it; Sariel's
+// second form and Kikuri's timeout keep their own.
+#define TH01_START_FIELDS(X)                                                   \
+    X(stage, U32)                                                              \
+    X(route, U32)                                                              \
+    X(difficulty, U32)                                                         \
+    X(lives, I32)                                                              \
+    X(bombs, I32)                                                              \
+    X(score, U32)                                                              \
+    X(continues, U32)                                                          \
+    X(pellet_speed, I32)                                                       \
+    X(boss_hp, I32)
+
 // The opening fills vsync_count1, frame_rand and rng; the ending fills
 // vsync_count1, rng, route (its end flag) and score.
 //

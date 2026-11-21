@@ -4,11 +4,15 @@
 #include "game.h"
 
 // Describes th01 to the harness: its button word and the state columns
-// of fields.h.
+// and start fields of fields.h.
 
 #define TH01_COLUMN_ENUM(name, kind) TH01_COLUMN_##name,
 enum { TH01_COLUMNS(TH01_COLUMN_ENUM) TH01_COLUMN_COUNT };
 #undef TH01_COLUMN_ENUM
+
+#define TH01_START_ENUM(name, kind) TH01_START_##name,
+enum { TH01_START_FIELDS(TH01_START_ENUM) TH01_START_COUNT };
+#undef TH01_START_ENUM
 
 // Lists one bit per action of th01's input schema, named as the action.
 #define TH01_BUTTONS(X)                                                        \
