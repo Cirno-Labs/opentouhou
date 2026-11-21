@@ -40,8 +40,9 @@ typedef struct {
 // Loads and validates every gameplay scene and boss before simulation. The
 // VFS must contain the mounted original archive and REIIDEN.EXE. Retain the
 // allocator group with the assets; failures leave intermediate allocations
-// in that group. No original data is written. Font glyphs use the bundled
-// substitute. Loads all music for a prepared deterministic audio producer;
+// in that group. No original data is written. Font glyphs come from
+// rom. Loads all music for a prepared deterministic audio producer;
 // audio device delivery belongs to the application.
 RESULT GameplayAssets_Load(
-    VFS *vfs, const ALLOCATOR *allocator, GAMEPLAY_ASSETS *out);
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    GAMEPLAY_ASSETS *out);

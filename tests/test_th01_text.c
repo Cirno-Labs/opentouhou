@@ -1,14 +1,125 @@
 #include "th01/text.h"
 
-#include "stg/game_font.h"
+#include "th01/bonus.h"
+#include "th01/hud.h"
+#include "th01/items.h"
+#include "th01/route_select.h"
 
 #include "core/base/arena.h"
-#include "core/text.h"
 
 #include "test.h"
 #include "test_fonts.h"
 
+#include "th01/opening_strings.h"
+
 #include <limits.h>
+
+// あ, 0x2422, and Ａ, 0x2341.
+static const char m_BdfFull[] =
+    "STARTFONT 2.1\n"
+    "STARTPROPERTIES 4\n"
+    "PIXEL_SIZE 16\n"
+    "FONT_ASCENT 14\n"
+    "FONT_DESCENT 2\n"
+    "CHARSET_REGISTRY \"JISX0208.1990\"\n"
+    "ENDPROPERTIES\n"
+    "CHARS 2\n"
+    "STARTCHAR 2422\n"
+    "ENCODING 9250\n"
+    "BBX 16 16 0 -2\n"
+    "BITMAP\n"
+    "8001\n0550\n0000\n0000\n0000\n0000\n0000\n0000\n"
+    "0000\n0000\n0000\n0000\n0000\n0000\n0000\nFFFF\n"
+    "ENDCHAR\n"
+    "STARTCHAR 2341\n"
+    "ENCODING 9025\n"
+    "BBX 16 1 0 12\n"
+    "BITMAP\n"
+    "4002\n"
+    "ENDCHAR\n"
+    "ENDFONT\n";
+
+// A, 0x41, and ｱ, 0xB1.
+static const char m_BdfHalf[] =
+    "STARTFONT 2.1\n"
+    "STARTPROPERTIES 4\n"
+    "PIXEL_SIZE 16\n"
+    "FONT_ASCENT 14\n"
+    "FONT_DESCENT 2\n"
+    "CHARSET_REGISTRY \"JISX0201.1976\"\n"
+    "ENDPROPERTIES\n"
+    "CHARS 2\n"
+    "STARTCHAR A\n"
+    "ENCODING 65\n"
+    "BBX 8 1 0 12\n"
+    "BITMAP\n"
+    "45\n"
+    "ENDCHAR\n"
+    "STARTCHAR a\n"
+    "ENCODING 177\n"
+    "BBX 8 1 0 -2\n"
+    "BITMAP\n"
+    "81\n"
+    "ENDCHAR\n"
+    "ENDFONT\n";
+
+// Characters that th01 draws besides those of the opening strings and the
+// HUD, item, bonus and route loaders: the pause and continue menus, the
+// ending and the score table.
+static const char *const m_Drawn[] = {
+    "0123456789０１２３４５６７８９ "
+    "STAGEHARRYUP東方★靈異伝ＰＡＵＳＥ再開終了本当にしちゃうの？　うそ"
+    "ですぅはいっ●ｃｏｎｔｉｎｕｅＹｅｓＮｏ",
+    " !\"#$%&'()*+,-./"
+    "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
+    "abcdefghijklmnopqrstuvwxyz{|}~"
+    "★　あおかたちっなのみるをんアィイエキクゲコサザスタッテトドナニハ"
+    "パピホマミムモュラリルンヴー世丹九人今伝似号合回地堕墟子実帝度廃得"
+    "数断方易最東林様樹檎殿炎点猿獄界異社神祠禁称終経総腐葉超越難靈静非"
+    "面類高魔黄鼎（）０１２５６～",
+    "東方靈異伝　強者の記録イージーノーマルハードルナティック"
+    "霊位名前得点ステージ・ルート靈神太元帥明王天仙地人女陰陽師媒修業者"
+    "＿＿＿＿＿＿＿＿魔界地獄－社無完 "
+    "ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ"
+    "ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ"
+    "０１２３４５６７８９！？＃＆＊§☆◆∞∴♂♀…“”／．・SP←→終",
+};
+
+static FONT_ROM *M_Rom(
+    const char *const full, const size_t full_size, const char *const half,
+    const size_t half_size)
+{
+    READER full_reader, half_reader;
+    Reader_OpenBuffer(&full_reader, full, full_size, "full");
+    Reader_OpenBuffer(&half_reader, half, half_size, "half");
+    FONT_ROM *rom = nullptr;
+    CHECK(IS_OK(FontRom_ReadBdf(&full_reader, &half_reader, &rom)));
+    Reader_Close(&full_reader);
+    Reader_Close(&half_reader);
+    return rom;
+}
+
+static FONT_ROM *M_TestRom(void)
+{
+    return M_Rom(
+        m_BdfFull, sizeof(m_BdfFull) - 1, m_BdfHalf, sizeof(m_BdfHalf) - 1);
+}
+
+static void M_CheckInked(const GAME_TEXT_FONT *const font)
+{
+    for (int32_t i = 0; i < font->count; i++) {
+        const GAME_TEXT_GLYPH *const glyph = &font->glyphs[i];
+        uint16_t ink = 0;
+        for (int32_t y = 0; y < 16; y++) {
+            ink |= glyph->rows[y];
+        }
+        if (glyph->codepoint != 0x20 && glyph->codepoint != 0x3000
+            && ink == 0) {
+            fprintf(stderr, "U+%04X has no ink\n", glyph->codepoint);
+            CHECK(ink != 0);
+        }
+    }
+}
 
 static void M_Init(ARENA *const arena, VIDEO *const video)
 {
@@ -362,40 +473,35 @@ TEST(empty_text_is_a_noop_with_every_background_effect)
     Arena_Free(&arena);
 }
 
-TEST(core_font_cache_is_unique_and_survives_font_and_temporary_storage)
+TEST(rom_cache_is_unique_and_survives_the_rom)
 {
-    CHECK(IS_OK(Text_Init()));
-    FONT *source = nullptr;
-    TestFonts_UseBuiltin();
-    CHECK(IS_OK(GameFont_Open(nullptr, 16, &source)));
+    FONT_ROM *const rom = M_TestRom();
     ARENA arena;
     VIDEO video;
     M_Init(&arena, &video);
     GAME_TEXT_FONT font;
     CHECK(IS_OK(
-        GameText_Load(source, "AあＡｱ　 A\n", Arena_Allocator(&arena), &font)));
+        GameText_Load(rom, "AあＡｱ　 A\n", Arena_Allocator(&arena), &font)));
+    FontRom_Free(rom);
     CHECK_EQ_INT(font.count, 6);
-    const uint32_t points[] = { 'A', 0x3042, 0xff21, 0xff71 };
-    for (size_t i = 0; i < ARRAY_SIZE(points); i++) {
-        const GAME_TEXT_GLYPH *const glyph = GameText_Find(&font, points[i]);
-        CHECK(glyph != nullptr);
-        bool visible = false;
-        for (int32_t y = 0; y < 16; y++) {
-            visible |= glyph->rows[y] != 0;
-            if (glyph->width == 8) {
-                CHECK_EQ_INT(glyph->rows[y] & 0xff, 0);
-            }
-        }
-        CHECK(visible);
-    }
-    CHECK_EQ_INT(GameText_Find(&font, 'A')->width, 8);
-    CHECK_EQ_INT(GameText_Find(&font, 0xff21)->width, 16);
+    const GAME_TEXT_GLYPH *const a = GameText_Find(&font, 'A');
+    const GAME_TEXT_GLYPH *const hiragana = GameText_Find(&font, 0x3042);
+    const GAME_TEXT_GLYPH *const latin = GameText_Find(&font, 0xff21);
+    const GAME_TEXT_GLYPH *const katakana = GameText_Find(&font, 0xff71);
+    CHECK_EQ_INT(a->width, 8);
+    CHECK_EQ_INT(a->rows[1], 0x4500);
+    CHECK_EQ_INT(hiragana->width, 16);
+    CHECK_EQ_INT(hiragana->rows[0], 0x8001);
+    CHECK_EQ_INT(hiragana->rows[1], 0x0550);
+    CHECK_EQ_INT(hiragana->rows[15], 0xffff);
+    CHECK_EQ_INT(latin->width, 16);
+    CHECK_EQ_INT(latin->rows[1], 0x4002);
+    CHECK_EQ_INT(katakana->width, 8);
+    CHECK_EQ_INT(katakana->rows[15], 0x8100);
     for (int32_t y = 0; y < 16; y++) {
         CHECK_EQ_INT(GameText_Find(&font, ' ')->rows[y], 0);
         CHECK_EQ_INT(GameText_Find(&font, 0x3000)->rows[y], 0);
     }
-    Font_Free(source);
-    Text_Shutdown();
     const size_t used = arena.used;
     const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_BOLD };
     CHECK(IS_OK(GameText_Draw(&font, &video, "AあＡｱ", 10, 10, 10, &style)));
@@ -408,7 +514,25 @@ TEST(core_font_cache_is_unique_and_survives_font_and_temporary_storage)
     Arena_Free(&arena);
 }
 
-TEST(core_font_load_validation_does_not_allocate_from_the_caller)
+TEST(characters_without_a_cell_are_cached_blank)
+{
+    FONT_ROM *const rom = M_TestRom();
+    ARENA arena;
+    Arena_Init(&arena, "blank glyphs", 4096);
+    GAME_TEXT_FONT font;
+    CHECK(IS_OK(GameText_Load(rom, "ⅰé亜", Arena_Allocator(&arena), &font)));
+    CHECK_EQ_INT(font.count, 3);
+    for (int32_t i = 0; i < font.count; i++) {
+        CHECK_EQ_INT(font.glyphs[i].width, 16);
+        for (int32_t y = 0; y < 16; y++) {
+            CHECK_EQ_INT(font.glyphs[i].rows[y], 0);
+        }
+    }
+    FontRom_Free(rom);
+    Arena_Free(&arena);
+}
+
+TEST(rom_load_validation_does_not_allocate_from_the_caller)
 {
     ARENA arena;
     Arena_Init(&arena, "failed font", 4096);
@@ -417,19 +541,15 @@ TEST(core_font_load_validation_does_not_allocate_from_the_caller)
         GameText_Load(nullptr, "A", Arena_Allocator(&arena), &font)));
     CHECK(font.glyphs == nullptr && font.count == 0);
     CHECK_EQ_INT(arena.used, 0);
-    CHECK(IS_OK(Text_Init()));
-    FONT *source = nullptr;
-    TestFonts_UseBuiltin();
-    CHECK(IS_OK(GameFont_Open(nullptr, 16, &source)));
+    FONT_ROM *const rom = M_TestRom();
     CHECK(!Result_Ignore(
-        GameText_Load(source, "A\xe3\x81", Arena_Allocator(&arena), &font)));
+        GameText_Load(rom, "A\xe3\x81", Arena_Allocator(&arena), &font)));
     CHECK(font.glyphs == nullptr && font.count == 0);
     CHECK_EQ_INT(arena.used, 0);
-    CHECK(IS_OK(GameText_Load(source, "", Arena_Allocator(&arena), &font)));
+    CHECK(IS_OK(GameText_Load(rom, "", Arena_Allocator(&arena), &font)));
     CHECK(font.glyphs == nullptr && font.count == 0);
     CHECK_EQ_INT(arena.used, 0);
-    Font_Free(source);
-    Text_Shutdown();
+    FontRom_Free(rom);
     Arena_Free(&arena);
 }
 
@@ -458,41 +578,50 @@ TEST(utf8_scalars_include_two_and_four_byte_characters)
     Arena_Free(&arena);
 }
 
-TEST(core_font_rasterization_obeys_the_fixed_cell_sampling_contract)
+TEST(built_in_shinonome_inks_every_character_that_th01_draws)
 {
-    CHECK(IS_OK(Text_Init()));
-    FONT *source = nullptr;
-    TestFonts_UseBuiltin();
-    CHECK(IS_OK(GameFont_Open(nullptr, 23, &source)));
+    size_t full_size, half_size;
+    uint8_t *const full = TestFonts_Read("shnmk16.bdf", &full_size);
+    uint8_t *const half = TestFonts_Read("shnm8x16r.bdf", &half_size);
+    FONT_ROM *const rom =
+        M_Rom((const char *)full, full_size, (const char *)half, half_size);
+    Mem_Free(full);
+    Mem_Free(half);
     ARENA arena;
-    Arena_Init(&arena, "sampled glyphs", 4096);
+    Arena_Init(&arena, "drawn glyphs", 1024 * 1024);
+    const ALLOCATOR *const allocator = Arena_Allocator(&arena);
     GAME_TEXT_FONT font;
-    CHECK(IS_OK(GameText_Load(source, "Aあ", Arena_Allocator(&arena), &font)));
-    const char *const strings[] = { "A", "あ" };
-    const uint32_t points[] = { 'A', 0x3042 };
-    const TEXT_STYLE style = TextStyle_Default();
-    for (size_t i = 0; i < ARRAY_SIZE(strings); i++) {
-        IMAGE image;
-        CHECK(IS_OK(
-            Text_Render(source, strings[i], &style, &g_HeapAllocator, &image)));
-        const GAME_TEXT_GLYPH *const glyph = GameText_Find(&font, points[i]);
-        CHECK(image.height != 16);
-        CHECK(glyph != nullptr);
-        for (int32_t y = 0; y < 16; y++) {
-            for (int32_t x = 0; x < glyph->width; x++) {
-                const int32_t sx = x * image.width / glyph->width;
-                const int32_t sy = y * image.height / 16;
-                const bool covered =
-                    image.pixels
-                        [((size_t)sy * (size_t)image.width + (size_t)sx) * 4
-                         + 3]
-                    >= 128;
-                CHECK(((glyph->rows[y] & (0x8000u >> x)) != 0) == covered);
-            }
+    CHECK(IS_OK(Hud_LoadFont(rom, allocator, &font)));
+    M_CheckInked(&font);
+    CHECK(IS_OK(Items_LoadFont(rom, allocator, &font)));
+    M_CheckInked(&font);
+    CHECK(IS_OK(Bonus_LoadFont(rom, allocator, &font)));
+    M_CheckInked(&font);
+    CHECK(IS_OK(RouteSelect_LoadFont(rom, allocator, &font)));
+    M_CheckInked(&font);
+    const char *const *const groups[] = {
+        m_MainMenuItems, m_OptionMenuItems, m_MusicMenuItems, m_Ranks,
+        m_MusicModes,    m_Lives,           m_TrackTitles,
+    };
+    const size_t counts[] = {
+        ARRAY_SIZE(m_MainMenuItems),  ARRAY_SIZE(m_OptionMenuItems),
+        ARRAY_SIZE(m_MusicMenuItems), ARRAY_SIZE(m_Ranks),
+        ARRAY_SIZE(m_MusicModes),     ARRAY_SIZE(m_Lives),
+        ARRAY_SIZE(m_TrackTitles),
+    };
+    CHECK(IS_OK(GameText_Load(rom, m_Prompt, allocator, &font)));
+    M_CheckInked(&font);
+    for (size_t group = 0; group < ARRAY_SIZE(groups); group++) {
+        for (size_t i = 0; i < counts[group]; i++) {
+            CHECK(
+                IS_OK(GameText_Load(rom, groups[group][i], allocator, &font)));
+            M_CheckInked(&font);
         }
-        Image_Free(&image);
     }
-    Font_Free(source);
-    Text_Shutdown();
+    for (size_t i = 0; i < ARRAY_SIZE(m_Drawn); i++) {
+        CHECK(IS_OK(GameText_Load(rom, m_Drawn[i], allocator, &font)));
+        M_CheckInked(&font);
+    }
+    FontRom_Free(rom);
     Arena_Free(&arena);
 }

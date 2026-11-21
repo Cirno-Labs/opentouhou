@@ -41,11 +41,12 @@ void Ending_CalculateTitle(END_RESULT *result);
 // live resources, route, random checkpoints and cached table leader.
 void Ending_Clear(SESSION *session);
 
-// Loads all ending sheets, cleared score background and text glyphs before
-// ticks. Discard the allocator group on failure. No original data is retained
-// outside the caller's assets. Uses the bundled font as a ROM substitute.
+// Loads all ending sheets, cleared score background and text glyphs from rom
+// before ticks. Discard the allocator group on failure. No original data is
+// retained outside the caller's assets.
 RESULT Ending_LoadAssets(
-    VFS *vfs, const ALLOCATOR *allocator, ENDING_ASSETS *out);
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    ENDING_ASSETS *out);
 
 // Reserves the owner and its complete authored operation workspace. Audio
 // consumption is mandatory and must use prepared simulation controls.

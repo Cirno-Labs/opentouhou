@@ -8,6 +8,7 @@
 #include "core/audio.h"
 #include "core/base/arena.h"
 #include "core/gfx.h"
+#include "core/text/font_registry.h"
 #include "core/vfs.h"
 
 #include "test.h"
@@ -96,13 +97,15 @@ RESULT Opening_MountArchive(VFS *vfs)
 }
 
 RESULT Opening_LoadAssets(
-    VFS *vfs, const ALLOCATOR *allocator, OPENING_ASSETS *out)
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    OPENING_ASSETS *out)
 {
     return M_Asset();
 }
 
 RESULT GameplayAssets_Load(
-    VFS *vfs, const ALLOCATOR *allocator, GAMEPLAY_ASSETS *out)
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    GAMEPLAY_ASSETS *out)
 {
     MUST(M_Asset());
     *out = *Th01TestAssets_Create(allocator);
@@ -132,14 +135,15 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
 }
 
 RESULT Score_LoadAssets(
-    VFS *vfs, const SCORE_SAVES *saves, const ALLOCATOR *allocator,
-    SCORE_ASSETS *out)
+    VFS *vfs, const FONT_ROM *rom, const SCORE_SAVES *saves,
+    const ALLOCATOR *allocator, SCORE_ASSETS *out)
 {
     return M_Asset();
 }
 
 RESULT Ending_LoadAssets(
-    VFS *vfs, const ALLOCATOR *allocator, ENDING_ASSETS *out)
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    ENDING_ASSETS *out)
 {
     return M_Asset();
 }
@@ -287,6 +291,10 @@ void Gfx_DrawQuad(
 static void M_Reset(void)
 {
     memset(&m_Fixture, 0, sizeof(m_Fixture));
+    FontRegistry_Reset(false);
+    void *const rom = Mem_AllocZ(288768);
+    FontRegistry_AddFile("FONT.ROM", "test", rom, 288768);
+    Mem_Free(rom);
     Th01_FlushSaves();
     CHECK_EQ_INT(m_Fixture.flush_calls, 0);
 }
@@ -367,6 +375,15 @@ TEST(real_main_partial_init_cleanup_never_writes_scores)
         M_Shutdown();
         CHECK_EQ_INT(m_Fixture.flush_calls, 0);
     }
+}
+
+TEST(real_main_fails_at_startup_without_a_font)
+{
+    M_Reset();
+    FontRegistry_Reset(false);
+    CHECK(!Result_Ignore(g_GameDesc.init()));
+    CHECK_EQ_INT(m_Fixture.asset_step, 2);
+    M_Shutdown();
 }
 
 TEST(real_main_hands_score_and_ending_ownership_back_to_gameplay_and_opening)

@@ -113,7 +113,7 @@ games += {
   'th01': {
     'sources': th01_sources,
     'c_args': [layer_include['th01']],
-    'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
+    'fonts': ['fonts/shnmk16.bdf', 'fonts/shnm8x16r.bdf'],
     'link_with': [th01_main_lib, th01_lib, core_hash_lib],
   },
 }

@@ -1,11 +1,9 @@
 #include "th01/score.h"
 
-#include "stg/game_font.h"
-
 #include <string.h>
 
 RESULT Score_LoadAssets(
-    VFS *const vfs, const SCORE_SAVES *const saves,
+    VFS *const vfs, const FONT_ROM *const rom, const SCORE_SAVES *const saves,
     const ALLOCATOR *const allocator, SCORE_ASSETS *const out)
 {
     *out = (SCORE_ASSETS) {};
@@ -31,13 +29,5 @@ RESULT Score_LoadAssets(
             strcat(characters, saves->tables[rank].entries[i].route);
         }
     }
-    MUST(Text_Init());
-    FONT *font = nullptr;
-    RESULT result = GameFont_Open(nullptr, 16, &font);
-    if (IS_OK(result)) {
-        result = GameText_Load(font, characters, allocator, &out->font);
-    }
-    Font_Free(font);
-    Text_Shutdown();
-    return result;
+    return GameText_Load(rom, characters, allocator, &out->font);
 }

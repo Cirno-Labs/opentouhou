@@ -12,25 +12,19 @@ included. You must have your own copy of the game.
 Installing
 ----------
 
-The program reads the files of the original game from a folder. A disk
-image is not such a folder: the program does not mount disk images, so
-copy the game's files out of the image first. Keep all of them together
-in one flat folder: TOUHOU.DAT alone is not enough. The folder needs
-REIIDEN.EXE, which supplies graphics masks; the program checks that it
-is the supported version. It also needs the .DAT, .GRP, .GRC, .GRF,
-.GRZ, .BOS, .PTN and .MDT files and the other files of the game. The
-game runs natively, without a DOS emulator.
-
-Put the files of the package into that folder, beside TOUHOU.DAT:
+Copy the files of the original game out of its PC-98 disk image into
+one folder, then put the files of the package beside them, next to
+TOUHOU.DAT:
 
 - Windows: oth01.exe and othpatch.exe
 - Linux: oth01.AppImage and othpatch. If they do not start, make them
   executable.
 - macOS: oth01.app and othpatch
 
-Then start the program. The program never changes the original game
-files. Keep othpatch beside the program, under its supplied name, so
-that it can find and update the game.
+Then start the program. It checks that REIIDEN.EXE is the supported
+version. The program never changes the original game files. Keep
+othpatch beside the program, under its supplied name, so that it can
+find and update the game.
 
 In the commands below, use oth01.exe and othpatch.exe on Windows,
 ./oth01.AppImage and ./othpatch on Linux, or ./othpatch on macOS.
@@ -56,10 +50,11 @@ To see all arguments and the folders that the program uses, type:
     oth01 --help
 
 The original game draws its text from the font ROM of the PC-98. The
-program draws that text in MS Gothic when the system has it, and in
-the bundled IPAGothic otherwise. To use another font file, put it in
-the opentouhou/fonts/ folder of the game folder: a font there replaces
-the font of the same name.
+program draws that text in the bundled Shinonome 16 font. To use a dump
+of the ROM instead, put it in the opentouhou/fonts/ folder of the game
+folder: FONT.ROM as T98Tools makes it, or NEC.BMP, ANEX86.BMP or
+FREECG98.BMP in Anex86's format. The program takes the first that it
+finds, in that order.
 
 The package also includes oth01_readme.txt and oth01_licenses.txt.
 Their names keep them separate from the original game's documents.
@@ -181,7 +176,8 @@ Credits
 - ZUN: the original game, characters, art and music.
 - SDL, SDL_ttf, FreeType, HarfBuzz, FFmpeg, libjpeg-turbo, zlib, curl
   and Mbed TLS: libraries.
-- IPAGothic and IPAPGothic: the bundled fonts, IPA fonts by the IPA.
+- Shinonome 16 (東雲フォント): the bundled text font, by Yasuyuki
+  Furukawa and the /efont/ project.
 - Regulus: MDRV2 and its documentation; HertzDevil: the MDT decoder.
 - libvgm contributors, including Jarek Burczynski, Tatsuyuki Satoh,
   Couriersud and Hiromitsu Shioya: the OPNA sound cores.

@@ -37,10 +37,10 @@ typedef struct {
     void *user;
 } ITEM_CONTEXT;
 
-// Caches all popup characters in caller-owned asset storage before ticks.
-// Uses the portable font substitute described by GameText_Load.
+// Caches all popup characters from rom in caller-owned asset storage before
+// ticks.
 RESULT Items_LoadFont(
-    FONT *font, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
+    const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 
 // Validates immutable sprites and every required glyph before updates.
 RESULT Items_ValidateAssets(const PTN *sprites, const GAME_TEXT_FONT *font);

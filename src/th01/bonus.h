@@ -69,10 +69,9 @@ RESULT Bonus_LoadStageAssets(
     READER *reader, uint8_t *scratch, size_t scratch_size,
     const ALLOCATOR *allocator, BONUS_STAGE_ASSETS **out);
 
-// Caches stage labels and fullwidth numerals with the portable font substitute.
-// Does not claim the PC-98 ROM's glyph shapes.
+// Caches stage labels and fullwidth numerals from rom.
 RESULT Bonus_LoadFont(
-    FONT *font, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
+    const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT Bonus_ValidateStageAssets(
     const BONUS_STAGE_ASSETS *assets, const GAME_TEXT_FONT *font);
 

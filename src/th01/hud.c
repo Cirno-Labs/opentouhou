@@ -141,10 +141,10 @@ static void M_Resource(
 }
 
 RESULT Hud_LoadFont(
-    FONT *const font, const ALLOCATOR *const allocator,
+    const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {
-    return GameText_Load(font, m_Characters, allocator, out);
+    return GameText_Load(rom, m_Characters, allocator, out);
 }
 
 RESULT Hud_ValidateAssets(

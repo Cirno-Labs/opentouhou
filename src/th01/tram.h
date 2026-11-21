@@ -60,7 +60,7 @@ void Tram_PutLine16(
 
 // Fills the layer with opaque black and reveals graphics through a centered
 // fullwidth glyph at (192,80). Visibility stays unchanged. Glyph shapes come
-// from the cache provider; this operation does not reproduce font ROM data.
+// from the cache.
 void Tram_PutKanji16Reverse(TRAM *tram, const GAME_TEXT_GLYPH *glyph);
 
 // No drawing operation allocates, or reads a renderer, font, clock, file or

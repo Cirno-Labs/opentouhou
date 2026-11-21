@@ -26,10 +26,10 @@ typedef struct {
     SETTINGS_DIFFICULTY rank;
 } HUD_CONTEXT;
 
-// Caches fullwidth numerals and separate ASCII stage, rank and timer glyphs.
-// Uses the portable font substitute; no ROM pixel equivalence is claimed.
+// Caches fullwidth numerals and separate ASCII stage, rank and timer glyphs
+// from rom.
 RESULT Hud_LoadFont(
-    FONT *font, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
+    const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT Hud_ValidateAssets(
     const GRF *mask, const PTN *sprites, const GAME_TEXT_FONT *font);
 

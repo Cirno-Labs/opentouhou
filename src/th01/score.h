@@ -42,12 +42,11 @@ typedef struct {
     char slots[8][9];
 } SCORE_SCENE;
 
-// Loads GAME_O.GRP and all static, imported and saved table glyphs before
-// ticks. Uses a temporary bundled font in place of the PC-98 ROM. Storage
-// belongs to allocator and must outlive the score scene.
+// Loads GAME_O.GRP and all static, imported and saved table glyphs from rom
+// before ticks. Storage belongs to allocator and must outlive the score scene.
 RESULT Score_LoadAssets(
-    VFS *vfs, const SCORE_SAVES *saves, const ALLOCATOR *allocator,
-    SCORE_ASSETS *out);
+    VFS *vfs, const FONT_ROM *rom, const SCORE_SAVES *saves,
+    const ALLOCATOR *allocator, SCORE_ASSETS *out);
 
 // Borrows the world interrupt counters and input flags across registration.
 // Game Over loads and fades its prepared background; the results screen retains

@@ -1,7 +1,6 @@
 #include "th01/text.h"
 
 #include "core/base/array.h"
-#include "core/text/render.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -59,21 +58,6 @@ static size_t M_Decode(
     return length;
 }
 
-static void M_Encode(uint32_t value, char text[5])
-{
-    const size_t length = value < 0x80 ? 1
-        : value < 0x800                ? 2
-        : value < 0x10000              ? 3
-                                       : 4;
-    text[length] = '\0';
-    for (size_t i = length - 1; i > 0; i--) {
-        text[i] = (char)(0x80 | (value & 0x3f));
-        value >>= 6;
-    }
-    const uint8_t prefix[] = { 0, 0, 0xc0, 0xe0, 0xf0 };
-    text[0] = (char)(prefix[length] | value);
-}
-
 static int M_Compare(const void *const first, const void *const second)
 {
     const uint32_t a = ((const GAME_TEXT_GLYPH *)first)->codepoint;
@@ -111,29 +95,12 @@ static RESULT M_Characters(const char *const text, GLYPH_ARRAY *const glyphs)
     return OK;
 }
 
-static RESULT M_Render(FONT *const font, GAME_TEXT_GLYPH *const glyph)
+static void M_Copy(const FONT_ROM *const rom, GAME_TEXT_GLYPH *const glyph)
 {
-    char text[5];
-    M_Encode(glyph->codepoint, text);
-    const TEXT_STYLE style = TextStyle_Default();
-    IMAGE image;
-    MUST(Text_Render(font, text, &style, &g_HeapAllocator, &image));
-    if (image.width > 0 && image.height > 0) {
-        for (int32_t y = 0; y < 16; y++) {
-            const int32_t sy = (int32_t)((int64_t)y * image.height / 16);
-            for (int32_t x = 0; x < glyph->width; x++) {
-                const int32_t sx =
-                    (int32_t)((int64_t)x * image.width / glyph->width);
-                const size_t pixel =
-                    (size_t)sy * (size_t)image.width + (size_t)sx;
-                if (image.pixels[pixel * 4 + 3] >= 128) {
-                    glyph->rows[y] |= (uint16_t)(0x8000u >> x);
-                }
-            }
-        }
+    uint8_t width;
+    if (!FontRom_Glyph(rom, glyph->codepoint, glyph->rows, &width)) {
+        LOG_WARNING("The font ROM has no cell for U+%04X", glyph->codepoint);
     }
-    Image_Free(&image);
-    return OK;
 }
 
 static RESULT M_Style(const GAME_TEXT_STYLE *const style)
@@ -217,18 +184,18 @@ RESULT GameText_LoadGlyphs(
 }
 
 RESULT GameText_Load(
-    FONT *const font, const char *const characters,
+    const FONT_ROM *const rom, const char *const characters,
     const ALLOCATOR *const allocator, GAME_TEXT_FONT *const out)
 {
     *out = (GAME_TEXT_FONT) {};
     FAIL_IF(
-        font == nullptr || characters == nullptr,
-        "Missing graphics font or characters");
+        rom == nullptr || characters == nullptr,
+        "Missing font ROM or characters");
     GLYPH_ARRAY glyphs;
     Array_Init(&glyphs, &g_HeapAllocator);
     RESULT result = M_Characters(characters, &glyphs);
     for (int32_t i = 0; IS_OK(result) && i < glyphs.count; i++) {
-        result = M_Render(font, &glyphs.items[i]);
+        M_Copy(rom, &glyphs.items[i]);
     }
     if (IS_OK(result) && glyphs.count != 0) {
         const size_t size =

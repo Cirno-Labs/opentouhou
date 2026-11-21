@@ -70,14 +70,13 @@ typedef struct {
 // for POSIX data folders. Mounts its PF source above loose files.
 RESULT Opening_MountArchive(VFS *vfs);
 
-// Decodes all images and caches every menu glyph before ticks. Initializes
-// and shuts down the font subsystem while loading a temporary bundled font.
-// The substitute font does not reproduce PC-98 ROM glyph shapes. Storage
-// belongs to allocator. Discard the complete asset allocation group on
+// Decodes all images and caches every menu glyph from rom before ticks.
+// Storage belongs to allocator. Discard the complete asset allocation group on
 // failure; partially decoded images can remain in out. Close the VFS after
 // loading; no reader is retained.
 RESULT Opening_LoadAssets(
-    VFS *vfs, const ALLOCATOR *allocator, OPENING_ASSETS *out);
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    OPENING_ASSETS *out);
 
 // Returns a static MDT filename for a track from 0 through 14.
 const char *Opening_TrackFile(int32_t track);

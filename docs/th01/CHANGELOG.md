@@ -16,5 +16,7 @@
   start.
 - Added score files in the user folder, read from the game folder
   until the first new score.
+- Added the built-in Shinonome 16 font for the text of the PC-98
+  font ROM, or a dump of the ROM in `opentouhou/fonts/`.
 - Added a message box when the game cannot start or stops on an error.
 - Added a log of the last start in `oth01.log` in the user folder.

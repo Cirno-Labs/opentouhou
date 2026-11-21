@@ -2,7 +2,7 @@
 
 #include "th01/video.h"
 
-#include "core/text/font.h"
+#include "core/text/font_rom.h"
 
 typedef struct {
     uint32_t codepoint;
@@ -39,19 +39,14 @@ RESULT GameText_LoadGlyphs(
     const GAME_TEXT_GLYPH *glyphs, int32_t count, const ALLOCATOR *allocator,
     GAME_TEXT_FONT *out);
 
-// Caches the distinct characters in a valid UTF-8 string through a borrowed
-// core font. Initializes no font subsystem and retains no font handle.
-// Rasterizes with the font's normal face, scales the complete RGBA cell to
-// 8x16 or 16x16 by nearest sampling, and keeps alpha values of at least 128.
-// Samples source coordinates floor(x*image_width/cell_width) and
-// floor(y*image_height/16), including the image's cell margins.
-// ASCII and halfwidth katakana use 8 pixels; other characters use 16.
-// Controls use the halfwidth space glyph. The bundled font is a portable
-// substitute, not the original PC-98 ROM shapes. Releases temporary images
-// before returning; final glyph storage uses allocator. Leaves out empty
-// on failure, without allocating from allocator.
+// Caches the distinct characters in a valid UTF-8 string with their cells
+// from rom, as the original draws them. ASCII and halfwidth katakana use 8
+// pixels; other characters use 16. Controls use the halfwidth space glyph.
+// A character without a cell is cached blank and logged as a warning.
+// Final glyph storage uses allocator. Leaves out empty on failure, without
+// allocating from allocator.
 RESULT GameText_Load(
-    FONT *font, const char *characters, const ALLOCATOR *allocator,
+    const FONT_ROM *rom, const char *characters, const ALLOCATOR *allocator,
     GAME_TEXT_FONT *out);
 
 // Finds a cached Unicode scalar, or returns nullptr. C0/C1 controls map to

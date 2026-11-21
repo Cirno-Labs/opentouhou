@@ -1,7 +1,6 @@
 #include "th01/opening.h"
 
 #include "th01/pf.h"
-#include "stg/game_font.h"
 
 #include <string.h>
 
@@ -38,7 +37,8 @@ RESULT Opening_MountArchive(VFS *const vfs)
 }
 
 RESULT Opening_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const allocator, OPENING_ASSETS *const out)
+    VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,
+    OPENING_ASSETS *const out)
 {
     *out = (OPENING_ASSETS) {};
     MUST(M_Image(vfs, "REIIDEN2.grp", allocator, &out->title));
@@ -56,13 +56,5 @@ RESULT Opening_LoadAssets(
             strcat(characters, groups[group][i]);
         }
     }
-    MUST(Text_Init());
-    FONT *font = nullptr;
-    RESULT result = GameFont_Open(nullptr, 16, &font);
-    if (IS_OK(result)) {
-        result = GameText_Load(font, characters, allocator, &out->font);
-    }
-    Font_Free(font);
-    Text_Shutdown();
-    return result;
+    return GameText_Load(rom, characters, allocator, &out->font);
 }

@@ -1,9 +1,8 @@
 #include "th01/ending.h"
 
-#include "stg/game_font.h"
-
 RESULT Ending_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const allocator, ENDING_ASSETS *const out)
+    VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,
+    ENDING_ASSETS *const out)
 {
     *out = (ENDING_ASSETS) {};
     static const char *const names[ENDING_SHEET_COUNT] = {
@@ -21,21 +20,13 @@ RESULT Ending_LoadAssets(
             out->sheets[i].width != 640 || out->sheets[i].height != 400,
             "Ending sheet must be a 640 by 400 image");
     }
-    MUST(Text_Init());
-    FONT *font = nullptr;
-    RESULT result = GameFont_Open(nullptr, 16, &font);
-    if (IS_OK(result)) {
-        static const char characters[] =
-            " !\"#$%&'()*+,-./"
-            "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
-            "abcdefghijklmnopqrstuvwxyz{|}~"
-            "★　あおかたちっなのみるをんアィイエキクゲコサザスタッテトドナニハ"
-            "パピホマミムモュラリルンヴー世丹九人今伝似号合回地堕墟子実帝度廃得"
-            "数断方易最東林様樹檎殿炎点猿獄界異社神祠禁称終経総腐葉超越難靈静非"
-            "面類高魔黄鼎（）０１２５６～";
-        result = GameText_Load(font, characters, allocator, &out->font);
-    }
-    Font_Free(font);
-    Text_Shutdown();
-    return result;
+    static const char characters[] =
+        " !\"#$%&'()*+,-./"
+        "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
+        "abcdefghijklmnopqrstuvwxyz{|}~"
+        "★　あおかたちっなのみるをんアィイエキクゲコサザスタッテトドナニハ"
+        "パピホマミムモュラリルンヴー世丹九人今伝似号合回地堕墟子実帝度廃得"
+        "数断方易最東林様樹檎殿炎点猿獄界異社神祠禁称終経総腐葉超越難靈静非"
+        "面類高魔黄鼎（）０１２５６～";
+    return GameText_Load(rom, characters, allocator, &out->font);
 }

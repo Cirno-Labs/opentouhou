@@ -61,7 +61,7 @@ static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
 }
 
 RESULT RouteSelect_LoadFont(
-    FONT *const font, const ALLOCATOR *const allocator,
+    const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAME_TEXT_FONT *const out)
 {
     char characters[256] = "";
@@ -72,7 +72,7 @@ RESULT RouteSelect_LoadFont(
         memcpy(characters + used, m_Lines[line].text, size + 1);
         used += size;
     }
-    return GameText_Load(font, characters, allocator, out);
+    return GameText_Load(rom, characters, allocator, out);
 }
 
 RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *const assets)

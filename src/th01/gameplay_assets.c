@@ -2,7 +2,6 @@
 
 #include "th01/items.h"
 #include "th01/miss.h"
-#include "stg/game_font.h"
 
 #define M_LOAD(name, loader, out)                                              \
     do {                                                                       \
@@ -14,38 +13,23 @@
     } while (false)
 
 static RESULT M_Fonts(
-    const ALLOCATOR *const allocator, GAMEPLAY_ASSETS *const out)
+    const FONT_ROM *const rom, const ALLOCATOR *const allocator,
+    GAMEPLAY_ASSETS *const out)
 {
-    MUST(Text_Init());
-    FONT *font = nullptr;
-    RESULT result = GameFont_Open(nullptr, 16, &font);
-    if (IS_OK(result)) {
-        result = Hud_LoadFont(font, allocator, &out->hud_font);
-    }
-    if (IS_OK(result)) {
-        result = Items_LoadFont(font, allocator, &out->item_font);
-    }
-    if (IS_OK(result)) {
-        result = Bonus_LoadFont(font, allocator, &out->bonus_font);
-    }
-    if (IS_OK(result)) {
-        result = RouteSelect_LoadFont(font, allocator, &out->route_font);
-    }
-    if (IS_OK(result)) {
-        result = GameText_Load(
-            font,
-            "0123456789０１２３４５６７８９ "
-            "STAGEHARRYUP東方★靈異伝ＰＡＵＳＥ再開終了本当にしちゃうの？　うそ"
-            "ですぅはいっ●ｃｏｎｔｉｎｕｅＹｅｓＮｏ",
-            allocator, &out->menu_font);
-    }
-    Font_Free(font);
-    Text_Shutdown();
-    return result;
+    MUST(Hud_LoadFont(rom, allocator, &out->hud_font));
+    MUST(Items_LoadFont(rom, allocator, &out->item_font));
+    MUST(Bonus_LoadFont(rom, allocator, &out->bonus_font));
+    MUST(RouteSelect_LoadFont(rom, allocator, &out->route_font));
+    return GameText_Load(
+        rom,
+        "0123456789０１２３４５６７８９ "
+        "STAGEHARRYUP東方★靈異伝ＰＡＵＳＥ再開終了本当にしちゃうの？　うそ"
+        "ですぅはいっ●ｃｏｎｔｉｎｕｅＹｅｓＮｏ",
+        allocator, &out->menu_font);
 }
 
 RESULT GameplayAssets_Load(
-    VFS *const vfs, const ALLOCATOR *const allocator,
+    VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,
     GAMEPLAY_ASSETS *const out)
 {
     *out = (GAMEPLAY_ASSETS) {};
@@ -94,7 +78,7 @@ RESULT GameplayAssets_Load(
         &reader, scratch, REIIDEN_IMAGE_SIZE, &out->invincibility);
     Reader_Close(&reader);
     MUST(result);
-    MUST(M_Fonts(allocator, out));
+    MUST(M_Fonts(rom, allocator, out));
     const char *const songs[GAMEPLAY_SONG_COUNT] = {
         "ST0.MDT",   "ST1.MDT",     "ST2.MDT",      "ST3.MDT",    "ST4.MDT",
         "ST5.MDT",   "ST6.MDT",     "POSITIVE.MDT", "LEGEND.MDT", "KAMI.MDT",

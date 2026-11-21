@@ -38,11 +38,11 @@ typedef struct {
     void *user;
 } ROUTE_SELECT_CONTEXT;
 
-// Caches the five route labels through an already initialized borrowed font.
-// Glyphs belong to allocator; the font handle is not retained. Load both real
-// scene descriptors before ticks, then validate every borrowed asset.
+// Caches the five route labels from rom. Glyphs belong to allocator. Load
+// both real scene descriptors before ticks, then validate every borrowed
+// asset.
 RESULT RouteSelect_LoadFont(
-    FONT *font, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
+    const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *assets);
 
 // Begins immediately after SinGyoku's defeat recovery, in the same tick.

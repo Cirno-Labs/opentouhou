@@ -1,7 +1,7 @@
 #pragma once
 
 // Gives the tests their fonts. TEST_FONT_DIR names the folder of the
-// built-in IPA fonts, and $OPENTOUHOU_MSGOTHIC, where it is set, the
+// built-in fonts, and $OPENTOUHOU_MSGOTHIC, where it is set, the
 // msgothic.ttc that the MS Gothic tests use.
 
 #include "core/base/memory.h"

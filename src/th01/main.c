@@ -13,6 +13,8 @@
 #include "core/base/arena.h"
 #include "core/audio.h"
 #include "core/gfx.h"
+#include "core/text/font_registry.h"
+#include "core/text/font_rom.h"
 #include "core/vfs.h"
 
 #include "version.h"
@@ -24,6 +26,14 @@
 static_assert(SHELL_TICK_RATE == 60);
 
 static const char *const m_DataFiles[] = { "TOUHOU.DAT" };
+// DOSBox-X's order, then the built-in Shinonome 16.
+static const char *const m_Fonts[][2] = {
+    { "FONT.ROM", nullptr },
+    { "NEC.BMP", nullptr },
+    { "ANEX86.BMP", nullptr },
+    { "FREECG98.BMP", nullptr },
+    { "shnmk16.bdf", "shnm8x16r.bdf" },
+};
 static ARENA m_Assets;
 static BFNT m_Sprites;
 static LOGO m_Logo;
@@ -52,6 +62,24 @@ static GFX_COLOR m_UploadedPalette[16];
 static bool m_IntroPressed;
 static bool m_Initialized;
 
+static RESULT M_OpenFont(FONT_ROM **const out)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(m_Fonts); i++) {
+        const void *data;
+        size_t size;
+        if (FontRegistry_FindFile(m_Fonts[i][0], &data, &size)
+            && Result_Log(
+                FontRom_Open(m_Fonts[i][0], m_Fonts[i][1], out),
+                LOG_LEVEL_WARNING)) {
+            LOG_INFO("Drawing text from %s", m_Fonts[i][0]);
+            return OK;
+        }
+    }
+    return FAIL(
+        "No PC-98 font: put FONT.ROM, NEC.BMP, ANEX86.BMP or FREECG98.BMP, or "
+        "shnmk16.bdf with shnm8x16r.bdf, in opentouhou/fonts/");
+}
+
 static RESULT M_LoadAssets(void)
 {
     VFS *const vfs = Shell_GetFiles();
@@ -70,25 +98,30 @@ static RESULT M_LoadAssets(void)
     if (IS_OK(result)) {
         result = Opening_MountArchive(vfs);
     }
+    FONT_ROM *rom = nullptr;
+    if (IS_OK(result)) {
+        result = M_OpenFont(&rom);
+    }
     if (IS_OK(result)) {
         result = Opening_LoadAssets(
-            vfs, Arena_Allocator(&m_Assets), &m_OpeningAssets);
+            vfs, rom, Arena_Allocator(&m_Assets), &m_OpeningAssets);
     }
     if (IS_OK(result)) {
         result = GameplayAssets_Load(
-            vfs, Arena_Allocator(&m_Assets), &m_GameplayAssets);
+            vfs, rom, Arena_Allocator(&m_Assets), &m_GameplayAssets);
     }
     if (IS_OK(result)) {
         Result_Log(
             ScoreData_Load(vfs, Shell_GetUserFiles(), &m_Scores),
             LOG_LEVEL_WARNING);
         result = Score_LoadAssets(
-            vfs, &m_Scores, Arena_Allocator(&m_Assets), &m_ScoreAssets);
+            vfs, rom, &m_Scores, Arena_Allocator(&m_Assets), &m_ScoreAssets);
     }
     if (IS_OK(result)) {
-        result =
-            Ending_LoadAssets(vfs, Arena_Allocator(&m_Assets), &m_EndingAssets);
+        result = Ending_LoadAssets(
+            vfs, rom, Arena_Allocator(&m_Assets), &m_EndingAssets);
     }
+    FontRom_Free(rom);
     return result;
 }
 
