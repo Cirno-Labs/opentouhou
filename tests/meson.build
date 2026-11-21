@@ -1514,6 +1514,20 @@ foreach part : ['script', 'case', 'state', 'compare', 'driver']
   )
 endforeach
 
+test(
+  'replay/dosbox',
+  executable(
+    'test_dosbox',
+    'test_dosbox.c',
+    c_args: core_include + harness_include + harness_dosbox_include,
+    implicit_include_directories: false,
+    link_with: [harness_dosbox_lib, harness_lib],
+    dependencies: [sdl3, zlib, avcodec, avutil, swscale, jpeg, cc_libm],
+  ),
+  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'dosbox' },
+  suite: 'unit',
+)
+
 # The tests include shell's private headers, so they compile against the
 # sources directly instead of the library.
 test(

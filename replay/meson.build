@@ -64,3 +64,15 @@ bot_lib = static_library(
   implicit_include_directories: false,
   dependencies: [sdl3, cc_libm],
 )
+
+# The dosbox backend's library part, which each game's GAMEdosbox.so links
+# with its port. It builds everywhere, for the tests; the backend programs
+# build on Linux only.
+harness_dosbox_include = ['-I' + meson.current_source_dir() / 'dosbox']
+harness_dosbox_lib = static_library(
+  'harness_dosbox',
+  'dosbox/dosbox.c',
+  c_args: core_include + harness_include + harness_dosbox_include,
+  implicit_include_directories: false,
+  link_with: harness_lib,
+)
