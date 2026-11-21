@@ -430,6 +430,39 @@ TEST(polls_end_one_frame_each_and_other_sites_none)
     CHECK_EQ_INT(guest->on_shutdown(guest->context, 0), 2);
 }
 
+TEST(a_wait_lets_a_pending_vsync_in_before_it_halts)
+{
+    const DOSBOX_GUEST *const guest = M_Start("dosbox_pending", "frames 100\n");
+    M_FrameDelay(guest);
+    m_Fake.pending = true;
+    m_Fake.regs.flags = M_FLAG_CARRY;
+    m_Fake.halted = false;
+    guest->on_site(guest->context, M_LOAD + M_SITE_VSYNC);
+    CHECK(!m_Fake.halted);
+    CHECK_EQ_INT(m_Fake.now, 0);
+    for (int32_t i = 0; i < 1000 && !m_Fake.halted; i++) {
+        guest->on_site(guest->context, M_LOAD + M_SITE_VSYNC);
+    }
+    CHECK(m_Fake.halted);
+    CHECK_EQ_INT(guest->on_shutdown(guest->context, 0), 2);
+}
+
+TEST(a_wait_lets_its_jump_run_once_after_the_vsync)
+{
+    const DOSBOX_GUEST *const guest = M_Start("dosbox_stale", "frames 100\n");
+    M_FrameDelay(guest);
+    CHECK_EQ_INT(m_Fake.count1, 1);
+    const uint64_t now = m_Fake.now;
+    m_Fake.regs.flags = M_FLAG_CARRY;
+    m_Fake.halted = false;
+    guest->on_site(guest->context, M_LOAD + M_SITE_VSYNC);
+    CHECK(!m_Fake.halted);
+    guest->on_site(guest->context, M_LOAD + M_SITE_VSYNC);
+    CHECK(m_Fake.halted);
+    CHECK_EQ_INT(m_Fake.now, now);
+    CHECK_EQ_INT(guest->on_shutdown(guest->context, 0), 2);
+}
+
 TEST(a_vblank_end_wait_clears_the_vblank)
 {
     const DOSBOX_GUEST *const guest = M_Start("dosbox_vblank", "frames 100\n");

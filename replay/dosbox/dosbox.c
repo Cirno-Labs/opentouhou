@@ -18,6 +18,7 @@
 #define M_RUNNING_MAX 8
 #define M_SAMPLES_MAX 64
 #define M_SAMPLES_SHOWN 8
+#define M_PENDING_SPINS 1000
 #define M_SCREEN_WIDTH 640
 #define M_SCREEN_HEIGHT 400
 
@@ -74,6 +75,11 @@ static struct {
     uint32_t frame;
     uint32_t held;
     bool vblank;
+    // Counts the arrivals at a wait that let a pending VSync in.
+    uint32_t pending_spins;
+    // Tells whether no VSync wait has let its jump run since the guest took
+    // the last VSync.
+    bool vsync_unseen;
     // Gives the delay in progress and the emulated time when it returns.
     uint32_t delay_site;
     uint64_t delay_end;
@@ -268,6 +274,7 @@ static bool M_BeginFrame(void)
     Driver_EndCalc(m_Dosbox.driver);
     m_Dosbox.host->raise_vsync();
     m_Dosbox.vblank = true;
+    m_Dosbox.vsync_unseen = true;
     return true;
 }
 
@@ -323,10 +330,25 @@ static bool M_EndFrame(void)
 }
 
 // Waits at a site: halts until the end of the frame, then ends it and,
-// with until_vsync, the frames after it that have no VSync.
+// with until_vsync, the frames after it that have no VSync. Lets the jump
+// run while the guest has not taken the VSync yet, since a halt would wake
+// on it and leave the jump with the flags from before its handler, unless
+// the guest has masked it for M_PENDING_SPINS arrivals. With until_vsync,
+// lets the jump run once more after the guest takes the VSync, since the
+// handler can run between the loop's test and its jump, and the jump then
+// has the flags from before the handler.
 static void M_Wait(const bool until_vsync, const int32_t index)
 {
     m_Dosbox.delay_chained = false;
+    const bool pending = m_Dosbox.host->vsync_pending();
+    if (pending && m_Dosbox.pending_spins++ < M_PENDING_SPINS) {
+        return;
+    }
+    if (!pending && until_vsync && m_Dosbox.vsync_unseen) {
+        m_Dosbox.vsync_unseen = false;
+        return;
+    }
+    m_Dosbox.pending_spins = 0;
     for (;;) {
         const uint64_t deadline = M_Deadline();
         if (m_Dosbox.host->now() < deadline) {
