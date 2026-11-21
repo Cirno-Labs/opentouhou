@@ -40,15 +40,20 @@ typedef struct {
     // Lists the staging steps in the order that a run takes them.
     const STAGE_STEP *steps;
     size_t step_count;
+    // Lists the start values of [start], in the order of the game's start
+    // fields.
+    const START_VALUE *starts;
+    size_t start_count;
 } CASE_MANIFEST;
 
 // Checks step: source is files/ and one name, and path is in the normal
 // form of core/vfs.
 RESULT Case_CheckStep(const STAGE_STEP *step);
 
-// Reads case.ini, with the choices of game. Everything comes from arena.
-// Reports failure for any format but CASE_FORMAT, for a missing choice
-// and for a bad staging step. On failure, leaves out unchanged.
+// Reads case.ini, with the choices and start fields of game. Everything
+// comes from arena. Reports failure for any format but CASE_FORMAT, for a
+// missing choice, a bad start value and a bad staging step. On failure, leaves
+// out unchanged.
 RESULT Case_ReadManifest(
     READER *in, const HARNESS_GAME *game, ARENA *arena, CASE_MANIFEST *out);
 

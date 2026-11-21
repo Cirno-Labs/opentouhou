@@ -48,6 +48,22 @@ TEST(a_script_holds_keys_and_rates_from_their_frames)
     Script_Free(&script);
 }
 
+TEST(a_script_holds_start_values_and_writes_none)
+{
+    SCRIPT script;
+    CHECK(Result_Ignore(
+        M_Read("start lives -3\ninput 3 shoot\nstart stage 9\n", &script)));
+    CHECK_EQ_INT(script.starts.count, 2);
+    CHECK_EQ_INT(script.starts.items[0].field, 1);
+    CHECK_EQ_INT((int32_t)script.starts.items[0].value, -3);
+    CHECK_EQ_INT(script.starts.items[1].field, 0);
+    CHECK_EQ_INT(script.starts.items[1].value, 9);
+    char *const text = M_Write(&script);
+    CHECK_EQ_STR(text, "input 3 shoot\n");
+    Mem_Free(text);
+    Script_Free(&script);
+}
+
 TEST(a_script_rejects_bad_lines)
 {
     const char *const texts[] = {
@@ -58,6 +74,11 @@ TEST(a_script_rejects_bad_lines)
         "frames\n",
         "wait 3 shoot\n",
         "input 3 shoot bomb\n",
+        "start level 3\n",
+        "start stage -1\n",
+        "start lives x\n",
+        "start stage 1\nstart stage 2\n",
+        "start stage\n",
     };
     for (size_t i = 0; i < ARRAY_SIZE(texts); i++) {
         SCRIPT script = { .frames = 7 };

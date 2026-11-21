@@ -234,8 +234,10 @@ RESULT Driver_Open(
     Arena_Init(&driver->arena, "harness driver", M_ARENA_SIZE);
     Array_Init(&driver->script.inputs, &g_HeapAllocator);
     Array_Init(&driver->script.fps, &g_HeapAllocator);
+    Array_Init(&driver->script.starts, &g_HeapAllocator);
     Array_Init(&driver->recorded.inputs, &g_HeapAllocator);
     Array_Init(&driver->recorded.fps, &g_HeapAllocator);
+    Array_Init(&driver->recorded.starts, &g_HeapAllocator);
     Array_Init(&driver->steps, Arena_Allocator(&driver->arena));
     Array_Init(&driver->entries, Arena_Allocator(&driver->arena));
     Array_Init(&driver->staged, Arena_Allocator(&driver->arena));
@@ -273,6 +275,17 @@ RESULT Driver_MountWork(DRIVER *const driver, VFS *const vfs)
     char *const work = M_Join(&driver->arena, driver->run->out_dir, "work");
     MUST(File_MakeDir(work));
     return Vfs_MountDir(vfs, "", work, INT32_MAX, true);
+}
+
+const START_VALUE *Driver_Starts(
+    const DRIVER *const driver, size_t *const count)
+{
+    if (driver->run->role == RUN_REPLAY) {
+        *count = driver->manifest.start_count;
+        return driver->manifest.starts;
+    }
+    *count = (size_t)driver->script.starts.count;
+    return driver->script.starts.items;
 }
 
 uint32_t Driver_Buttons(DRIVER *const driver, const uint32_t held)
@@ -448,6 +461,8 @@ static void M_WriteManifest(DRIVER *const driver, WRITER *const out)
         .note = run->note,
         .steps = driver->steps.items,
         .step_count = (size_t)driver->steps.count,
+        .starts = driver->script.starts.items,
+        .start_count = (size_t)driver->script.starts.count,
     };
     Case_WriteManifest(out, driver->game, &manifest);
 }

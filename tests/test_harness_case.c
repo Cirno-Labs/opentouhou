@@ -37,6 +37,8 @@ TEST(a_manifest_round_trips)
         .note = "a world record",
         .steps = steps,
         .step_count = 2,
+        .starts = (START_VALUE[]) { { 1, (uint32_t)-2 } },
+        .start_count = 1,
     };
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
@@ -63,6 +65,10 @@ TEST(a_manifest_round_trips)
     CHECK_EQ_STR(read.steps[0].source, "files/x.rpy");
     CHECK_EQ_STR(read.steps[0].path, "replay/slot.rpy");
     CHECK_EQ_STR(read.steps[1].path, "x.cfg");
+    CHECK(strstr(text, "[start]\nlives = -2\n") != nullptr);
+    CHECK_EQ_INT(read.start_count, 1);
+    CHECK_EQ_INT(read.starts[0].field, 1);
+    CHECK_EQ_INT((int32_t)read.starts[0].value, -2);
     Mem_Free(text);
     Arena_Free(&arena);
 }

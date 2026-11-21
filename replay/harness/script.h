@@ -12,10 +12,14 @@
 //     frames N            the run ends after frame N - 1; optional
 //     input FRAME KEYS    holds KEYS from FRAME on; "none" releases all
 //     fps FRAME RATE      shows RATE from FRAME on; "none" shows nothing
+//     start NAME VALUE    sets the game's start field NAME to VALUE as the
+//                         game starts its first run; a capture keeps it in
+//                         case.ini's [start], not in inputs.txt
 //
 // KEYS is a '+'-separated list of binding names. Frame 0 is the first
-// presented frame. Frames of each line kind increase strictly. Blank
-// lines and '#' comments are allowed.
+// presented frame. Frames of each line kind increase strictly, and each
+// start field is set at most once. Blank lines and '#' comments are
+// allowed.
 
 typedef struct {
     uint32_t frame;
@@ -39,6 +43,7 @@ typedef struct {
     uint32_t frames;
     ARRAY(SCRIPT_INPUT) inputs;
     ARRAY(SCRIPT_FPS) fps;
+    ARRAY(START_VALUE) starts;
 } SCRIPT;
 
 // Reads a script with game's bindings. On failure, leaves out unchanged.
@@ -49,7 +54,8 @@ RESULT Script_Read(READER *in, const HARNESS_GAME *game, SCRIPT *out);
 // lists share the format.
 char *Script_NextLine(char **text);
 
-// Writes script with game's bindings, in the line order of the format.
+// Writes script with game's bindings, in the line order of the format,
+// without its start lines.
 void Script_Write(WRITER *out, const HARNESS_GAME *game, const SCRIPT *script);
 
 // Releases the script's arrays and leaves it empty.

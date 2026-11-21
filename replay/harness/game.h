@@ -28,6 +28,13 @@ typedef struct {
     COLUMN_KIND kind;
 } COLUMN;
 
+// Gives one value of a case's [start]: the index of the game's start field
+// and its value, held as a row holds a column of the field's kind.
+typedef struct {
+    uint32_t field;
+    uint32_t value;
+} START_VALUE;
+
 typedef struct {
     // Names the game in cases and programs: "th06".
     const char *id;
@@ -52,6 +59,11 @@ typedef struct {
     // Changes whenever a column or choice is added, removed or changes
     // meaning.
     uint32_t columns_version;
+    // Lists the fields of the state that a case can set as the game starts
+    // its first run, such as the stage, each of kind U32 or I32. Every
+    // backend's port applies them at the same point, in memory only.
+    const COLUMN *starts;
+    size_t start_count;
     // Tells whether the game shows a frame rate, which its ports then
     // route through Driver_Fps.
     bool shows_fps;
@@ -59,3 +71,10 @@ typedef struct {
 
 // Returns the binding named name, or nullptr.
 const BINDING *Game_FindBinding(const HARNESS_GAME *game, const char *name);
+
+// Returns the index of the start field named name, or -1.
+int32_t Game_FindStart(const HARNESS_GAME *game, const char *name);
+
+// Reads text as a value of kind, U32 or I32, into *out. Returns false when
+// it is not one.
+bool Game_ParseValue(COLUMN_KIND kind, const char *text, uint32_t *out);

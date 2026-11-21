@@ -79,6 +79,22 @@ static RESULT M_ReadLine(
         script->frames = frame;
         return OK;
     }
+    if (strcmp(fields[0], "start") == 0) {
+        FAIL_IF(count != 3, "expected start NAME VALUE");
+        const int32_t field = Game_FindStart(game, fields[1]);
+        FAIL_IF(field < 0, "unknown start field %s", fields[1]);
+        for (int32_t i = 0; i < script->starts.count; i++) {
+            FAIL_IF(
+                script->starts.items[i].field == (uint32_t)field,
+                "start %s is set twice", fields[1]);
+        }
+        START_VALUE start = { .field = (uint32_t)field };
+        FAIL_IF(
+            !Game_ParseValue(game->starts[field].kind, fields[2], &start.value),
+            "bad start value %s", fields[2]);
+        Array_Append(&script->starts, start);
+        return OK;
+    }
     FAIL_IF(count != 3, "expected KIND FRAME VALUE");
     FAIL_IF(!Str_ParseU32(fields[1], &frame), "bad frame %s", fields[1]);
     if (strcmp(fields[0], "input") == 0) {
@@ -131,6 +147,7 @@ RESULT Script_Read(
     SCRIPT script = {};
     Array_Init(&script.inputs, &g_HeapAllocator);
     Array_Init(&script.fps, &g_HeapAllocator);
+    Array_Init(&script.starts, &g_HeapAllocator);
     RESULT result = OK;
     char *rest = text;
     char *line;
@@ -205,6 +222,7 @@ void Script_Free(SCRIPT *const script)
 {
     Array_Free(&script->inputs);
     Array_Free(&script->fps);
+    Array_Free(&script->starts);
     script->frames = 0;
 }
 

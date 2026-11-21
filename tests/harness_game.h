@@ -1,7 +1,7 @@
 #pragma once
 
 // Gives the harness tests a small game with three bindings, one column of
-// each kind and one choice.
+// each kind, one choice and two start fields.
 
 #include "game.h"
 
@@ -24,6 +24,11 @@ static const COLUMN m_TestChoices[] = {
     { "difficulty", COLUMN_U32 },
 };
 
+static const COLUMN m_TestStarts[] = {
+    { "stage", COLUMN_U32 },
+    { "lives", COLUMN_I32 },
+};
+
 static const HARNESS_GAME m_TestGame = {
     .id = "test",
     .version = "1.0",
@@ -38,4 +43,6 @@ static const HARNESS_GAME m_TestGame = {
     .choices = m_TestChoices,
     .choice_count = ARRAY_SIZE(m_TestChoices),
     .columns_version = 3,
+    .starts = m_TestStarts,
+    .start_count = ARRAY_SIZE(m_TestStarts),
 };

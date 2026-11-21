@@ -13,6 +13,7 @@
 #define M_FILES "files/"
 #define M_PRECONDITIONS "preconditions"
 #define M_CHOICES "choices"
+#define M_START "start"
 #define M_STAGE "stage "
 #define M_ARROW " -> "
 
@@ -132,6 +133,31 @@ static RESULT M_ReadChoices(
     return OK;
 }
 
+static RESULT M_ReadStarts(
+    const INI *const ini, const HARNESS_GAME *const game, ARENA *const arena,
+    CASE_MANIFEST *const out)
+{
+    START_VALUE *const starts = Arena_AllocArrZ(
+        arena, game->start_count > 0 ? game->start_count : 1,
+        sizeof(START_VALUE));
+    size_t count = 0;
+    for (size_t i = 0; i < game->start_count; i++) {
+        const COLUMN *const field = &game->starts[i];
+        const char *const text = Ini_Get(ini, M_START, field->name);
+        if (text == nullptr) {
+            continue;
+        }
+        starts[count] = (START_VALUE) { .field = (uint32_t)i };
+        FAIL_IF(
+            !Game_ParseValue(field->kind, text, &starts[count].value),
+            "bad " M_START ".%s: %s", field->name, text);
+        count++;
+    }
+    out->starts = starts;
+    out->start_count = count;
+    return OK;
+}
+
 static RESULT M_ReadManifest(
     const INI *const ini, const HARNESS_GAME *const game, ARENA *const arena,
     CASE_MANIFEST *const out)
@@ -151,6 +177,7 @@ static RESULT M_ReadManifest(
     MUST(M_GetU32(ini, "case", "rows", &manifest.rows));
     MUST(M_ReadChoices(ini, game, arena, &manifest));
     MUST(M_ReadSteps(ini, arena, &manifest));
+    MUST(M_ReadStarts(ini, game, arena, &manifest));
     *out = manifest;
     return OK;
 }
@@ -202,6 +229,17 @@ void Case_WriteManifest(
             Str_Format(M_STAGE "%s" M_ARROW "%s", step->source, step->path);
         Ini_Set(ini, M_PRECONDITIONS, key, value);
         Mem_Free(value);
+    }
+    for (size_t i = 0; i < manifest->start_count; i++) {
+        const START_VALUE *const start = &manifest->starts[i];
+        const COLUMN *const field = &game->starts[start->field];
+        char text[M_FIELD_SIZE];
+        if (field->kind == COLUMN_I32) {
+            snprintf(text, sizeof(text), "%" PRId32, (int32_t)start->value);
+        } else {
+            snprintf(text, sizeof(text), "%" PRIu32, start->value);
+        }
+        Ini_Set(ini, M_START, field->name, text);
     }
     Ini_Write(ini, out);
     Ini_Free(ini);

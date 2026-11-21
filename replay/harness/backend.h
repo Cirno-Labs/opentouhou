@@ -136,6 +136,10 @@ void Driver_MountStaged(const DRIVER *driver, VFS *vfs);
 // staged files, so that it takes every write.
 RESULT Driver_MountWork(DRIVER *driver, VFS *vfs);
 
+// Returns the start values of the case, or of a capture's script, and sets
+// *count. The port applies them as the game starts its first run.
+const START_VALUE *Driver_Starts(const DRIVER *driver, size_t *count);
+
 // Returns the buttons of the current frame: the script's, or in a live
 // capture held, the buttons that a person holds.
 uint32_t Driver_Buttons(DRIVER *driver, uint32_t held);
