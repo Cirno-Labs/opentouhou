@@ -66,3 +66,12 @@ void Ending_Begin(ENDING *ending, SESSION *session);
 // resets count1 at entry, including zero durations, and retains it on exit.
 bool Ending_Tick(ENDING *ending, const TH01_INPUT *input, bool reference_edge);
 const END_RESULT *Ending_Result(const ENDING *ending);
+
+// Starts game_switch_binary after the results screen's registration: its
+// vsync_exit stops the counters, and its z_palette_black_out steps the
+// ending's palette to black after each of sixteen VSyncs.
+void Ending_BeginSwitch(ENDING *ending);
+
+// Advances the switch by one host tick. Returns true after the last step,
+// when the switch to OP follows at once.
+bool Ending_SwitchTick(ENDING *ending, bool reference_edge);

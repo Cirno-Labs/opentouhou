@@ -47,6 +47,7 @@ static SCORE_SCENE m_Score;
 static ENDING_ASSETS m_EndingAssets;
 static ENDING *m_Ending;
 static bool m_InEnding;
+static bool m_InSwitch;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
 static GAME_AUDIO *m_Audio;
@@ -152,6 +153,7 @@ static RESULT M_Init(void)
     m_InGameplay = false;
     m_InScore = false;
     m_InEnding = false;
+    m_InSwitch = false;
     m_HostTick = 0;
     memset(&m_Session, 0, sizeof(m_Session));
     MUST(Gameplay_Prepare(
@@ -249,11 +251,20 @@ static bool M_Tick(const void *const input)
                     .score;
             m_InScore = false;
             if (m_Score.context == SCORE_ENDING) {
-                Ending_Clear(&m_Session);
-                M_BeginOpening(true, raw);
+                Ending_BeginSwitch(m_Ending);
+                m_InEnding = true;
+                m_InSwitch = true;
             } else {
                 Gameplay_ResumeAfterScore(m_Gameplay, raw, m_HostTick);
             }
+        }
+    } else if (m_InSwitch) {
+        Gameplay_AdvanceAudio(m_Gameplay);
+        if (Ending_SwitchTick(m_Ending, reference_edge)) {
+            m_InEnding = false;
+            m_InSwitch = false;
+            Ending_Clear(&m_Session);
+            M_BeginOpening(true, raw);
         }
     } else if (m_InEnding) {
         Gameplay_AdvanceAudio(m_Gameplay);
@@ -396,6 +407,7 @@ static void M_Shutdown(void)
     m_Ending = nullptr;
     memset(&m_EndingAssets, 0, sizeof(m_EndingAssets));
     m_InEnding = false;
+    m_InSwitch = false;
     m_Gameplay = nullptr;
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);

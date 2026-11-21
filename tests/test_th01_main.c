@@ -28,7 +28,8 @@ typedef struct {
     int asset_step, fail_asset, texture_step, fail_texture;
     int textures_live, flush_calls, written;
     int opening_begins, opening_ticks, gameplay_ticks, resumes;
-    int score_begins, score_ticks, ending_begins, ending_ticks, ending_clears;
+    int score_begins, score_ticks, ending_begins, ending_ticks, ending_clears,
+        switch_begins;
     OPENING_ACTION action;
     GAMEPLAY_REQUEST request;
     SCORE_CONTEXT score_context;
@@ -246,6 +247,16 @@ void Ending_Clear(SESSION *session)
     m_Fixture.ending_clears++;
 }
 
+void Ending_BeginSwitch(ENDING *ending)
+{
+    m_Fixture.switch_begins++;
+}
+
+bool Ending_SwitchTick(ENDING *ending, bool reference_edge)
+{
+    return true;
+}
+
 RESULT GfxTexture_CreateIndexed(
     int32_t width, int32_t height, GFX_TEXTURE **out)
 {
@@ -407,6 +418,9 @@ TEST(real_main_hands_score_and_ending_ownership_back_to_gameplay_and_opening)
     m_Fixture.finish_ending = true;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT(m_Fixture.score_context, SCORE_ENDING);
+    CHECK(M_Tick((TH01_INPUT) {}));
+    CHECK_EQ_INT(m_Fixture.switch_begins, 1);
+    CHECK_EQ_INT(m_Fixture.ending_clears, 0);
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT(m_Fixture.ending_clears, 1);
     CHECK_EQ_INT(m_Fixture.opening_begins, 2);

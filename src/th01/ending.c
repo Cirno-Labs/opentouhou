@@ -463,3 +463,25 @@ const END_RESULT *Ending_Result(const ENDING *const e)
 {
     return &e->result;
 }
+
+void Ending_BeginSwitch(ENDING *const e)
+{
+    Palette_BeginFade(&e->switch_fade, &e->palette, PALETTE_FADE_BLACK_OUT);
+    Frame_BeginWait(&e->switch_wait, e->vsync);
+}
+
+bool Ending_SwitchTick(ENDING *const e, const bool reference_edge)
+{
+    if (reference_edge) {
+        Frame_PollVSync(e->vsync);
+    }
+    if (!Frame_WaitReady(&e->switch_wait, e->vsync)) {
+        return false;
+    }
+    Palette_FadeStep(&e->switch_fade, &e->palette, e->video);
+    if (e->switch_fade.remaining > 0) {
+        Frame_BeginWait(&e->switch_wait, e->vsync);
+        return false;
+    }
+    return true;
+}

@@ -34,6 +34,8 @@ struct ENDING {
     void *audio_context;
     END_RESULT result;
     PALETTE_STATE palette;
+    PALETTE_FADE switch_fade;
+    FRAME_WAIT switch_wait;
     ENDING_OPERATION operations[ENDING_OPERATION_CAPACITY];
     int32_t count, next, timeout;
     bool waiting, sensing;
