@@ -173,6 +173,7 @@ RUN curl -fsSL -o /tmp/ffmpeg.tar.xz \
         --disable-everything \
         --disable-programs \
         --disable-doc \
+        --disable-debug \
         --disable-network \
         --disable-autodetect \
         --disable-x86asm \
@@ -304,6 +305,7 @@ RUN curl -fsSL -o /tmp/ffmpeg.tar.xz \
         --disable-everything \
         --disable-programs \
         --disable-doc \
+        --disable-debug \
         --disable-network \
         --disable-autodetect \
         --disable-x86asm \
