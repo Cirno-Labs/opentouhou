@@ -1,12 +1,9 @@
 opentouhou th06
 ===============
 
-This program is an unofficial port of a Touhou Project game to Linux,
-macOS and Windows. oth06 is 東方紅魔郷 ~ the Embodiment of Scarlet Devil
-(Touhou 6). You can play the full game, and save scores and replays.
-
-The program needs the data of the original game. The data is not
-included. You must have your own copy of the game.
+oth06 is an unofficial native port of 東方紅魔郷 ~ the Embodiment of
+Scarlet Devil (Touhou 6) for Windows, Linux and macOS, faithful down to
+its replays. It needs your own copy of the game data to run.
 
 
 Installing
