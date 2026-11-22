@@ -1,12 +1,9 @@
 opentouhou th07
 ===============
 
-This program is an unofficial port of a Touhou Project game to Linux,
-macOS and Windows. oth07 is 東方妖々夢 ~ Perfect Cherry Blossom
-(Touhou 7). You can play the full game, and save scores and replays.
-
-The program needs the data of the original game. The data is not
-included. You must have your own copy of the game.
+oth07 is an unofficial native port of 東方妖々夢 ~ Perfect Cherry
+Blossom (Touhou 7) for Windows, Linux and macOS, faithful down to its
+replays. It needs your own copy of the game data to run.
 
 
 Installing

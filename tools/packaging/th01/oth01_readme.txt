@@ -1,12 +1,9 @@
 opentouhou th01
 ===============
 
-This program is an unofficial port of a Touhou Project game to Linux,
-macOS and Windows. oth01 is 東方靈異伝 ~ Highly Responsive to Prayers
-(Touhou 1), a PC-98 game. You can play the full game and save scores.
-
-The program needs the data of the original game. The data is not
-included. You must have your own copy of the game.
+oth01 is an unofficial native port of the PC-98 game 東方靈異伝 ~ Highly
+Responsive to Prayers (Touhou 1) for Windows, Linux and macOS, faithful
+frame for frame. It needs your own copy of the game data to run.
 
 
 Installing

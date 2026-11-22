@@ -133,6 +133,10 @@ inside that job changes:
 - `README.md`: what the project is, its status, and where to get it.
 - `tools/packaging/<game>/o<game>_readme.txt`: what a player of the package
   needs: installing, the folders, the keys, the settings and othpatch.
+  opentouhou.org shows it as the manual of the game: as of the newest
+  release, except its opening paragraphs before the first heading, which
+  it reads from `main`. A change there shows on the site at once, so
+  they say only what the game is, never what a release can do.
 - `CONTRIBUTING.md`: how to send a change, and the rules for every
   change.
 - `AGENTS.md`: the rules that only agents follow.
