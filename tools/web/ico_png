@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Copy the largest PNG image out of a Windows .ico file, unchanged."""
+
+import argparse
+import struct
+from pathlib import Path
+
+
+def largest_png(data: bytes) -> bytes:
+    count = struct.unpack_from("<H", data, 4)[0]
+    best = None
+    for i in range(count):
+        width, _, _, _, _, _, size, offset = struct.unpack_from(
+            "<BBBBHHII", data, 6 + 16 * i
+        )
+        image = data[offset : offset + size]
+        width = width or 256
+        if image.startswith(b"\x89PNG") and (best is None or width > best[0]):
+            best = (width, image)
+    if best is None:
+        raise SystemExit("the icon has no PNG image")
+    return best[1]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("icon", type=Path)
+    parser.add_argument("output", type=Path)
+    args = parser.parse_args()
+    args.output.write_bytes(largest_png(args.icon.read_bytes()))
+
+
+if __name__ == "__main__":
+    main()

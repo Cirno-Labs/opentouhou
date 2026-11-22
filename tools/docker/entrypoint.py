@@ -181,7 +181,7 @@ def package_web(game: str, target: str, output: Path) -> None:
     stem = build_dir("web", "games", target) / product_name(game)
     files = [
         (stem.with_suffix(suffix), f"{product_name(game)}{suffix}")
-        for suffix in (".html", ".js", ".wasm")
+        for suffix in (".html", ".js", ".wasm", ".png")
     ]
     write_zip(output, files, package_documents(game, REPO_DIR))
 

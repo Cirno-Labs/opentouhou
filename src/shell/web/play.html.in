@@ -3,55 +3,162 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>@PROGRAM@</title>
+<title>@TITLE@</title>
+<link rel="icon" href="@PROGRAM@.png">
 <style>
-  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font: 16px sans-serif; }
-  #setup { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100%; padding: 16px; box-sizing: border-box; text-align: center; }
-  #drop { border: 2px dashed #666; border-radius: 8px; padding: 48px 32px; max-width: 480px; }
-  #drop.over { border-color: #ddd; background: #222; }
-  #language label { margin: 0 8px; }
-  #progress { width: 320px; max-width: 100%; }
-  button { font: inherit; padding: 8px 24px; }
-  a { color: #8af; }
-  #stage { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: #000; }
+  :root {
+    --ink: #4b2530; --soft: #9a6b76; --red: #d6202c; --red-deep: #a3121e;
+    --pink: #ffd6de; --blush: #fff1f4; --card: #ffffff;
+    --font: ui-rounded, "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Nunito", system-ui, sans-serif;
+  }
+  html, body { margin: 0; height: 100%; }
+  body {
+    color: var(--ink); font: 16px/1.5 var(--font);
+    background:
+      radial-gradient(circle at 12% 18%, #ffffff 0 2px, transparent 3px) 0 0 / 46px 46px,
+      radial-gradient(circle at 70% 60%, #ffe3ea 0 3px, transparent 4px) 0 0 / 62px 62px,
+      linear-gradient(160deg, #fff6f8 0%, #ffe2ea 55%, #f6dcf2 100%) fixed;
+  }
+  #setup {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    min-height: 100%; padding: 16px 16px 64px; box-sizing: border-box;
+  }
+  footer {
+    position: absolute; left: 16px; right: 16px; bottom: 16px; text-align: center;
+    font-size: 0.8em; color: var(--soft);
+  }
+  footer a { font-weight: 700; }
+  .card {
+    width: 100%; max-width: 440px; box-sizing: border-box; padding: 28px 28px 22px;
+    background: var(--card); border-radius: 28px; text-align: center;
+    box-shadow: 0 18px 40px -18px rgba(214, 32, 44, 0.45), 0 0 0 6px rgba(255, 255, 255, 0.6);
+  }
+  /* One line of fixed height in either language, so switching does not
+     move the card. */
+  h1 {
+    display: grid; place-items: center; height: 1.6em; margin: 4px 0 0;
+    font-size: 2.1em; line-height: 1; letter-spacing: 0.08em; color: var(--red); white-space: nowrap;
+  }
+  .tagline { margin: 0 0 18px; color: var(--soft); font-size: 0.95em; }
+  .sprite {
+    width: 68px; height: 84px; image-rendering: pixelated;
+    background: url(@RUNNER@) 0 0 / 272px 84px;
+    animation: run 0.48s steps(4) infinite;
+  }
+  @keyframes run { to { background-position: -272px 0; } }
+  .art { display: block; width: 112px; height: 112px; margin: -4px auto 0; filter: drop-shadow(0 8px 12px rgba(214, 32, 44, 0.25)); }
+  /* Views share one grid cell, so the card keeps the height of the tallest
+     and switching only fades. */
+  .stack { display: grid; }
+  .stack > * { grid-area: 1 / 1; transition: opacity 0.3s ease, visibility 0.3s; }
+  .stack > .off, .fade.off { opacity: 0; visibility: hidden; pointer-events: none; }
+  .stack > .center { align-self: center; }
+  .fade { transition: opacity 0.35s ease, visibility 0.35s; }
+  .segmented {
+    display: inline-flex; padding: 4px; gap: 4px; border-radius: 999px; background: var(--blush);
+  }
+  .segmented label {
+    position: relative; padding: 6px 18px; border-radius: 999px; cursor: pointer;
+    color: var(--soft); font-weight: 600; transition: background 0.15s, color 0.15s;
+  }
+  .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+  .segmented label:has(input:checked) { background: var(--red); color: #fff; box-shadow: 0 4px 10px -4px var(--red); }
+  .segmented label:has(input:focus-visible) { outline: 2px solid var(--red-deep); outline-offset: 2px; }
+  .credit { margin: 6px 0 18px; font-size: 0.8em; color: var(--soft); }
+  #drop {
+    border: 2.5px dashed #ffb3c1; border-radius: 22px; padding: 22px 18px;
+    background: var(--blush);
+    transition: opacity 0.3s ease, visibility 0.3s, background 0.15s, border-color 0.15s, transform 0.15s;
+  }
+  #drop.over { border-color: var(--red); background: var(--pink); transform: scale(1.02); }
+  #drop p { margin: 6px 0; }
+  /* Two lines in every language, so switching it does not move the card. */
+  #drop p[data-text="drop"] { min-height: 3em; display: grid; place-items: center; text-wrap: balance; }
+  .tagline { min-height: 1.5em; text-wrap: balance; }
+  #drop small, .hint { color: var(--soft); }
+  #file { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .button, button {
+    display: inline-block; font: 700 1em var(--font); border: 0; cursor: pointer;
+    padding: 10px 26px; border-radius: 999px; color: #fff; background: var(--red);
+    box-shadow: 0 6px 0 var(--red-deep); transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .button:hover, button:hover { filter: brightness(1.06); }
+  .button:active, button:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--red-deep); }
+  #play { font-size: 1.25em; padding: 12px 44px; }
+  #remembered p { margin: 8px 0; }
+  a { color: var(--red); }
+  #loading p { margin: 0 0 6px; font-weight: 600; }
+  #track { position: relative; height: 14px; margin: 88px 6px 10px; border-radius: 999px; background: var(--pink); }
+  #fill {
+    position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit;
+    background: repeating-linear-gradient(-45deg, #ff6f86 0 10px, var(--red) 10px 20px);
+    background-size: 28px 28px; animation: stripes 0.8s linear infinite; transition: width 0.25s linear;
+  }
+  @keyframes stripes { to { background-position: 28px 0; } }
+  #runner { position: absolute; bottom: 10px; left: 0; transform: translateX(-50%); transition: left 0.25s linear; }
+  #stage { display: flex; position: fixed; inset: 0; align-items: center; justify-content: center; background: #000; }
   #canvas { display: block; aspect-ratio: 4 / 3; width: min(100vw, calc(100vh * 4 / 3)) !important; height: auto !important; outline: none; }
-  #fullscreen { position: fixed; right: 8px; bottom: 8px; opacity: 0.4; }
+  #fullscreen { position: fixed; right: 12px; bottom: 12px; padding: 6px 16px; font-size: 0.85em; opacity: 0.35; }
   #fullscreen:hover { opacity: 1; }
-  #log { display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 50%; overflow: auto; padding: 8px; background: #300; color: #fcc; font: 13px monospace; }
+  #log {
+    position: fixed; left: 12px; right: 12px; bottom: 12px; max-height: 50%; overflow: auto;
+    padding: 14px; border-radius: 18px; background: #fff; color: var(--ink);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4); font: 13px/1.4 ui-monospace, monospace;
+  }
   #log pre { margin: 0; font: inherit; white-space: pre-wrap; }
+  #log button { font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) {
+    .sprite, #fill { animation: none !important; }
+    #fill, #runner { transition: none !important; }
+    .stack > *, .fade { transition: none; }
+  }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<div id="setup">
-  <div id="language">
-    <p>
-      <label><input type="radio" name="language" value="en"> English</label>
-      <label><input type="radio" name="language" value="ja"> <span lang="ja">日本語</span></label>
-    </p>
-    <p><small>English: <a href="https://www.thpatch.net">Touhou Patch Center</a></small></p>
-  </div>
-  <div id="drop">
-    <p>Drop a zip of your @TITLE@ folder here.</p>
-    <p><input id="file" type="file" accept=".zip,application/zip"></p>
-    <p><small>The zip stays in this browser.</small></p>
-  </div>
-  <div id="remembered" hidden>
-    <p><button id="play">Play</button></p>
-    <p><a href="#" id="forget">Forget the game data</a></p>
-  </div>
-  <div id="loading" hidden>
-    <p id="status"></p>
-    <progress id="progress"></progress>
-  </div>
+<div id="setup" class="fade">
+  <main class="card">
+    <img class="art" src="@PROGRAM@.png" alt="">
+    <h1 data-text="heading"></h1>
+    <p class="tagline" data-text="tagline"></p>
+    <div class="stack">
+      <div id="choose">
+        <div class="segmented" role="radiogroup" aria-label="Language">
+          <label><input type="radio" name="language" value="en"> English</label>
+          <label><input type="radio" name="language" value="ja"> <span lang="ja">日本語</span></label>
+        </div>
+        <p class="credit"><span data-text="credit"></span><a href="https://www.thpatch.net">Touhou Patch Center</a></p>
+        <div class="stack">
+          <div id="remembered" class="center off">
+            <p><button id="play" data-text="play"></button></p>
+            <p><a href="#" id="forget" data-text="forget"></a></p>
+          </div>
+          <div id="drop" class="off">
+            <p data-text="drop"></p>
+            <p><label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,application/zip"></p>
+            <p><small data-text="private"></small></p>
+          </div>
+        </div>
+      </div>
+      <div id="loading" class="center off">
+        <div id="track">
+          <div id="fill"></div>
+          <div id="runner"><div class="sprite"></div></div>
+        </div>
+        <p id="status"></p>
+      </div>
+    </div>
+  </main>
+  <footer><a href="https://opentouhou.org">opentouhou</a> · <span data-text="footer"></span></footer>
 </div>
-<div id="stage">
+<div id="stage" class="fade off">
   <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <button id="fullscreen">Fullscreen</button>
+  <button id="fullscreen" data-text="fullscreen"></button>
 </div>
-<div id="log">
+<div id="log" class="fade off">
+  <p><strong data-text="error"></strong></p>
   <pre id="log-text"></pre>
-  <p id="fallback" hidden><button id="japanese">Play in Japanese</button></p>
+  <p id="fallback" hidden><button id="japanese" data-text="japanese"></button></p>
 </div>
 <script>
 // Keeps its names local, because the game's script declares globals.
@@ -70,38 +177,112 @@
   const SYNC_MS = 2000;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const FETCH_JOBS = 6;
+  // Matches the .fade transition.
+  const FADE_MS = 350;
   // SDL's audio runs on the main thread here, so its default buffer of
   // about 20 ms breaks up at every slow frame. ?audio_frames=N overrides it.
   const AUDIO_FRAMES =
     new URLSearchParams(location.search).get('audio_frames') || '2048';
 
+  const TITLE = '@TITLE@';
+  const TITLE_EN = '@TITLE_EN@';
+  const SUBTITLE_EN = '@SUBTITLE_EN@';
+  const TEXTS = {
+    en: {
+      page: TITLE_EN + ': ' + SUBTITLE_EN + ', in your browser',
+      heading: TITLE_EN,
+      tagline: SUBTITLE_EN,
+      credit: 'English by the ',
+      play: 'Play',
+      forget: 'Forget the game data',
+      drop: 'Drop a zip of your copy of ' + TITLE_EN + ' here:',
+      choose: 'Choose a zip',
+      private: 'The zip stays in this browser.',
+      read: 'Reading the game data',
+      download: 'Downloading the game',
+      check: 'Checking the English patch',
+      patch: 'Downloading the English patch',
+      start: 'Starting the game',
+      fullscreen: 'Fullscreen',
+      error: 'Something went wrong.',
+      japanese: 'Play in Japanese',
+      footer: 'an unofficial port, not endorsed by ZUN · Touhou Project by ZUN (Team Shanghai Alice)',
+    },
+    ja: {
+      page: TITLE + '：ブラウザで遊ぶ',
+      heading: TITLE,
+      tagline: 'ブラウザで遊ぶ',
+      credit: '英語版：',
+      play: 'プレイ',
+      forget: 'ゲームデータを消す',
+      drop: TITLE + 'のフォルダをzipにして、ここにドロップ：',
+      choose: 'zipを選ぶ',
+      private: 'zipはこのブラウザの外に出ません。',
+      read: 'ゲームデータを読み込み中',
+      download: 'ゲームをダウンロード中',
+      check: '英語パッチを確認中',
+      patch: '英語パッチをダウンロード中',
+      start: 'ゲームを起動中',
+      fullscreen: '全画面',
+      error: 'エラーが発生しました。',
+      japanese: '日本語で遊ぶ',
+      footer: 'ZUNの公認を受けていない非公式の移植 · 東方Project：ZUN（上海アリス幻樂団）',
+    },
+  };
+  let texts = TEXTS.en;
+  let statusKey = null;
+  // Each step of a start takes a share of the one progress bar: English
+  // adds the patch's steps. The bar only moves forward.
+  const STEPS = {
+    en: { read: [0, 0.1], download: [0.1, 0.7], check: [0.7, 0.75], patch: [0.75, 0.95], start: [0.95, 1] },
+    ja: { read: [0, 0.1], download: [0.1, 0.95], start: [0.95, 1] },
+  };
+  let steps = STEPS.ja;
+  let progress = 0;
+
   const $ = (id) => document.getElementById(id);
   const logLines = [];
+
+  // Fades an element in or out.
+  function show(element, visible) {
+    element.classList.toggle('off', !visible);
+  }
+
+  // Switches every text of the page, its title included.
+  function applyLanguage(language) {
+    texts = TEXTS[language];
+    document.documentElement.lang = language;
+    document.title = texts.page;
+    for (const element of document.querySelectorAll('[data-text]')) {
+      element.textContent = texts[element.dataset.text];
+    }
+    if (statusKey) {
+      $('status').textContent = texts[statusKey];
+    }
+  }
 
   // Shows text and the log. With retry, also offers to play in Japanese.
   function showError(text, retry) {
     $('log-text').textContent = text + '\n\n' + logLines.join('\n');
     $('fallback').hidden = !retry;
     $('japanese').onclick = () => {
-      $('log').style.display = 'none';
+      show($('log'), false);
       retry();
     };
-    $('log').style.display = 'block';
+    show($('log'), true);
   }
 
-  function setStatus(text, done, total) {
-    $('drop').hidden = true;
-    $('remembered').hidden = true;
-    $('language').hidden = true;
-    $('loading').hidden = false;
-    $('status').textContent = text;
-    if (total) {
-      $('progress').max = total;
-      $('progress').value = done;
-    } else {
-      $('progress').removeAttribute('value');
-    }
+  function setStatus(key, done, total) {
+    show($('choose'), false);
+    show($('loading'), true);
+    statusKey = key;
+    $('status').textContent = texts[key];
+    // Reimu runs along the bar; a step of unknown size starts at its share.
+    const [from, to] = steps[key];
+    progress = Math.max(progress, from + (to - from) * (total ? Math.min(done / total, 1) : 0));
+    $('fill').style.width = $('runner').style.left = progress * 100 + '%';
   }
+
 
   // Store data holds the game's zip, store patches the patch cache.
   let database = null;
@@ -140,7 +321,7 @@
       .catch((error) => console.error('Cannot cache', key, error));
   }
 
-  async function readWithProgress(stream, total, text) {
+  async function readWithProgress(stream, total, key) {
     const bytes = new Uint8Array(total);
     const reader = stream.getReader();
     let done = 0;
@@ -151,7 +332,7 @@
       }
       bytes.set(chunk.value, done);
       done += chunk.value.length;
-      setStatus(text, done, total);
+      setStatus(key, done, total);
     }
   }
 
@@ -162,10 +343,10 @@
     }
     const total = Number(response.headers.get('Content-Length'));
     if (!total) {
-      setStatus('Downloading the game');
+      setStatus('download');
       return new Uint8Array(await response.arrayBuffer());
     }
-    return readWithProgress(response.body, total, 'Downloading the game');
+    return readWithProgress(response.body, total, 'download');
   }
 
   function readLanguage() {
@@ -388,7 +569,7 @@
   // game needs, as paths below the patches folder in the layout of
   // core/patch/stack.h, with their data.
   async function fetchEnglish() {
-    setStatus('Checking the English patch');
+    setStatus('check');
     const list = [];
     await addPatch(openNetwork(ENGLISH.repo), ENGLISH.patch, null, list, new Set());
     const files = [];
@@ -426,7 +607,7 @@
         files.push({ path: job.path, data: file.data });
         fetched += file.fetched;
         done++;
-        setStatus('Downloading the English patch', done, jobs.length);
+        setStatus('patch', done, jobs.length);
       }
     };
     await Promise.all(Array.from({ length: FETCH_JOBS }, worker));
@@ -488,8 +669,10 @@
   }
 
   async function start(blob, language = chosenLanguage()) {
+    steps = STEPS[language];
+    progress = 0;
     try {
-      const zip = await readWithProgress(blob.stream(), blob.size, 'Reading the game data');
+      const zip = await readWithProgress(blob.stream(), blob.size, 'read');
       const wasm = await fetchWasm();
       let patches = [];
       if (language === 'en') {
@@ -501,7 +684,7 @@
           return;
         }
       }
-      setStatus('Starting the game');
+      setStatus('start');
       window.alert = showError;
       window.Module = {
         canvas: $('canvas'),
@@ -539,9 +722,11 @@
     }
     writeLanguage(FS, language);
     startSync(FS);
-    $('setup').hidden = true;
-    $('stage').style.display = 'flex';
+    show($('setup'), false);
+    show($('stage'), true);
     $('canvas').focus();
+    // The game's start holds the main thread, so it waits for the fade.
+    await new Promise((resolve) => setTimeout(resolve, FADE_MS));
     Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
     Module.callMain(['--data', '/game.zip']);
   }
@@ -554,12 +739,23 @@
     }
   }
 
+  // The zip that Play starts: the remembered one, or the one just dropped.
+  let stored = null;
+
+  function lockIn(file) {
+    stored = file;
+    show($('drop'), false);
+    show($('remembered'), true);
+  }
+
+  // A dropped zip is remembered and waits for Play.
   function choose(file) {
     if (file) {
-      remember(file).then(() => start(file));
+      remember(file).then(() => lockIn(file));
     }
   }
 
+  $('play').addEventListener('click', () => start(stored));
   $('file').addEventListener('change', () => choose($('file').files[0]));
   const drop = $('drop');
   drop.addEventListener('dragover', (event) => {
@@ -580,13 +776,18 @@
   $('forget').addEventListener('click', async (event) => {
     event.preventDefault();
     await storeRequest('readwrite', (store) => store.delete(GAME_ID));
-    $('remembered').hidden = true;
+    stored = null;
+    $('file').value = '';
+    show($('remembered'), false);
+    show($('drop'), true);
   });
 
   const language = readLanguage();
+  applyLanguage(language);
   for (const input of document.querySelectorAll('input[name="language"]')) {
     input.checked = input.value === language;
     input.addEventListener('change', () => {
+      applyLanguage(input.value);
       try {
         localStorage.setItem(LANGUAGE_KEY, input.value);
       } catch {
@@ -595,12 +796,17 @@
     });
   }
 
+  // The drop zone shows only when no zip is remembered.
   storeRequest('readonly', (store) => store.get(GAME_ID)).then((file) => {
     if (file) {
-      $('remembered').hidden = false;
-      $('play').addEventListener('click', () => start(file));
+      lockIn(file);
+    } else {
+      show($('drop'), true);
     }
-  }).catch((error) => console.error('Cannot open the stored game data:', error));
+  }).catch((error) => {
+    console.error('Cannot open the stored game data:', error);
+    show($('drop'), true);
+  });
 })();
 </script>
 </body>

@@ -90,6 +90,8 @@ games += {
   'th06': {
     'sources': th06_sources,
     'title': '東方紅魔郷',
+    'title_en': 'Touhou 06',
+    'subtitle_en': 'the Embodiment of Scarlet Devil',
     'c_args': [layer_include['th06']],
     'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
     'link_with': [th06_main_lib, th06_lib],

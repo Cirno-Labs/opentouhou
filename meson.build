@@ -147,6 +147,13 @@ if build_games
   subdir('src/th07')
 
   builtin_libs = {}
+  if host_machine.system() == 'emscripten'
+    # The web pages inline the sprite sheet of their progress bar's runner.
+    web_runner = run_command(
+      python3, files('tools/web/data_url'), files('src/shell/web/reimu_run.png'),
+      check: true,
+    ).stdout().strip()
+  endif
   foreach name, game : games
     builtin_names = get_option('font') == 'free' ? game['fonts'] : []
     builtin_inputs = []
@@ -183,7 +190,22 @@ if build_games
       configure_file(
         input: 'src/shell/web/play.html.in',
         output: 'o' + name + '.html',
-        configuration: {'PROGRAM': 'o' + name, 'GAME_ID': name, 'TITLE': game['title']},
+        configuration: {
+          'RUNNER': web_runner,
+          'PROGRAM': 'o' + name,
+          'GAME_ID': name,
+          'TITLE': game['title'],
+          'TITLE_EN': game['title_en'],
+          'SUBTITLE_EN': game['subtitle_en'],
+        },
+      )
+      # The page shows the game's icon, the largest image of its .ico.
+      custom_target(
+        'o' + name + '_png',
+        input: 'tools/packaging' / name / 'icon.ico',
+        output: 'o' + name + '.png',
+        command: [python3, files('tools/web/ico_png'), '@INPUT@', '@OUTPUT@'],
+        build_by_default: true,
       )
     endif
   endforeach
