@@ -24,7 +24,7 @@ class AnnouncementTest(unittest.TestCase):
     def test_each_program_gets_its_name_page_and_icon(self) -> None:
         embed = message([("th06", "1.0.2", "- Fixed it.")])["embeds"][0]
         self.assertEqual(embed["title"], "oth06 1.0.2")
-        self.assertEqual(embed["url"], "https://opentouhou.org/oth06.html")
+        self.assertEqual(embed["url"], "https://opentouhou.org/oth06-releases#v1.0.2")
         self.assertEqual(
             embed["thumbnail"]["url"], "https://opentouhou.org/icons/oth06.webp"
         )

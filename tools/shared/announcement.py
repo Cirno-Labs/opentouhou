@@ -54,7 +54,7 @@ def embed(program: str, version: str, changes: str, limit: int) -> dict:
     name = product_name(program)
     return {
         "title": f"{name} {version}",
-        "url": f"{SITE_URL}/{name}.html",
+        "url": f"{SITE_URL}/{name}-releases#v{version}",
         "description": fit(entries(changes), min(limit, DESCRIPTION_LIMIT)),
         "thumbnail": {"url": f"{SITE_URL}/icons/{name}.webp"},
     }

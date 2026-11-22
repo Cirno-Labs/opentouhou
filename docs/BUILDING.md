@@ -403,11 +403,10 @@ The workflows need these repository settings:
   which you create in the repository settings, so that its protection
   rules, such as required reviewers, apply to every job that writes the
   bucket.
-- Variable `SITE_REPOSITORY` and secret `SITE_DISPATCH_TOKEN`: the
-  download site's repository and a token that may send it a
-  `repository_dispatch` event. After each successful snapshot, release
-  or deletion, "Tell the site about new releases" asks the site to
-  rebuild. Without them the site rebuilds on its own schedule.
+- Secret `SITE_REFRESH_TOKEN`: the token of the download site's
+  `REFRESH_TOKEN`. After each successful snapshot, release or deletion,
+  "Tell the site about new releases" has the site read the release
+  index again. Without it the site reads the index once a day.
 - Variable `SAKUYA_URL` and secret `SAKUYA_KEY`: the Discord bot's
   message endpoint and its key. After a release, "Publish the releases"
   posts each released program with its changes and icon to `#releases`
