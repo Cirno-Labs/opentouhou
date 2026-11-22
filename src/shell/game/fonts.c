@@ -77,7 +77,7 @@ RESULT ShellFonts_Reset(const bool use_system)
     ARCHIVE *archive;
     MUST(Archive_Open(&g_ZipFormat, &reader, &g_HeapAllocator, &archive));
     VFS *const files = Vfs_Create(&g_HeapAllocator);
-    Vfs_MountSource(files, "", Archive_ToSource(archive), 0);
+    Vfs_MountSource(files, "", Archive_ToSource(archive, ""), 0);
     ShellFonts_AddDir(files, "fonts");
     Vfs_Destroy(files);
     return OK;

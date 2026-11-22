@@ -346,7 +346,7 @@ static VFS *M_Mount(
     CHECK(Result_Log(
         M_Open(built, name, format, allocator, &archive), LOG_LEVEL_ERROR));
     VFS *const vfs = Vfs_Create(allocator);
-    Vfs_MountSource(vfs, "", Archive_ToSource(archive), 0);
+    Vfs_MountSource(vfs, "", Archive_ToSource(archive, ""), 0);
     return vfs;
 }
 
@@ -386,7 +386,7 @@ TEST(a_source_of_an_unnamed_archive_names_readers_by_the_entry)
     CHECK(Result_Log(
         M_Open(&built, nullptr, &M_PathFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
-    VFS_SOURCE *const source = Archive_ToSource(archive);
+    VFS_SOURCE *const source = Archive_ToSource(archive, "");
     CHECK_EQ_STR(source->name, "archive");
     READER reader;
     CHECK(Result_Log(
@@ -441,7 +441,7 @@ TEST(a_source_lists_the_files_of_a_directory_folded_in_table_order)
     CHECK(Result_Log(
         M_Open(&built, "test.arc", &M_PathFormat, &g_HeapAllocator, &archive),
         LOG_LEVEL_ERROR));
-    VFS_SOURCE *const source = Archive_ToSource(archive);
+    VFS_SOURCE *const source = Archive_ToSource(archive, "");
     M_VISITED visited = { .count = 0 };
     source->funcs->list(source, "", M_Visit, &visited);
     source->funcs->list(source, "dir", M_Visit, &visited);
@@ -452,6 +452,38 @@ TEST(a_source_lists_the_files_of_a_directory_folded_in_table_order)
         Mem_Free(visited.paths[i]);
     }
     source->funcs->close(source);
+}
+
+TEST(a_source_over_a_root_holds_only_the_entries_below_it)
+{
+    const M_ENTRY entries[] = {
+        { "東方紅魔郷/", "", 040755 },
+        { "東方紅魔郷/Th06.dat", "a", 0 },
+        { "readme.txt", "b", 0 },
+    };
+    const M_ARCHIVE built = M_Build(entries, 3);
+    const ARCHIVE_FORMAT *const formats[] = {
+        &M_PathFormat,
+        &M_LastNocaseFormat,
+    };
+    for (int32_t i = 0; i < 2; i++) {
+        ARCHIVE *archive;
+        CHECK(Result_Log(
+            M_Open(&built, "test.arc", formats[i], &g_HeapAllocator, &archive),
+            LOG_LEVEL_ERROR));
+        VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+        Vfs_MountSource(vfs, "", Archive_ToSource(archive, "東方紅魔郷/"), 0);
+        CHECK(Vfs_Exists(vfs, "th06.dat"));
+        CHECK(!Vfs_Exists(vfs, "readme.txt"));
+        M_VISITED visited = { .count = 0 };
+        Vfs_List(vfs, "", M_Visit, &visited);
+        CHECK_EQ_INT(visited.count, 1);
+        CHECK_EQ_STR(visited.paths[0], "th06.dat");
+        for (int32_t k = 0; k < visited.count && k < M_MAX_ENTRIES; k++) {
+            Mem_Free(visited.paths[k]);
+        }
+        Vfs_Destroy(vfs);
+    }
 }
 
 TEST(a_source_fails_a_missing_entry_and_a_failed_read)
@@ -467,7 +499,7 @@ TEST(a_source_fails_a_missing_entry_and_a_failed_read)
     CHECK(Result_Log(
         M_Open(&built, "test.arc", &M_PathFormat, &test.allocator, &archive),
         LOG_LEVEL_ERROR));
-    VFS_SOURCE *const source = Archive_ToSource(archive);
+    VFS_SOURCE *const source = Archive_ToSource(archive, "");
     READER reader;
     RESULT result = source->funcs->open(source, "b.txt", VFS_STREAM, &reader);
     CHECK_EQ_STR(result.message, "test.arc: b.txt: not found");

@@ -72,12 +72,14 @@ uint32_t ArchiveEntry_GetMode(const ARCHIVE_ENTRY *entry);
 RESULT Archive_Read(
     ARCHIVE *archive, const ARCHIVE_ENTRY *entry, uint8_t **out);
 
-// Returns a VFS source over the archive, named as the archive, or "archive"
-// when the archive has no name. The source takes ownership of the archive and
-// closes it when the VFS closes the source. It has every entry that is not a
-// directory, at its name with ASCII letters folded to lower case, as the VFS
-// normalizes paths; a format that looks names up by their last component
-// finds them by it also through the source. An entry opens in memory, in a
-// reader named "<archive>/<entry>", the archive named by its reader, or
-// "<entry>" when the archive has no name.
-VFS_SOURCE *Archive_ToSource(ARCHIVE *archive);
+// Returns a VFS source over the entries below root, a directory name ending
+// with '/', or "" for every entry, at their names without root. The source
+// is named as the archive, or "archive" when the archive has no name. The
+// source takes ownership of the archive and closes it when the VFS closes
+// the source. It has every such entry that is not a directory, with ASCII
+// letters folded to lower case, as the VFS normalizes paths; a format that
+// looks names up by their last component finds them by it also through the
+// source. An entry opens in memory, in a reader named "<archive>/<entry>",
+// the archive named by its reader, or "<entry>" when the archive has no
+// name.
+VFS_SOURCE *Archive_ToSource(ARCHIVE *archive, const char *root);

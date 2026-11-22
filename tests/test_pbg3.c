@@ -20,7 +20,7 @@ static RESULT M_Open(
     Reader_OpenBuffer(&reader, bytes, size, "test.dat");
     ARCHIVE *archive;
     MUST(Archive_Open(&g_Pbg3Format, &reader, allocator, &archive));
-    *out = Archive_ToSource(archive);
+    *out = Archive_ToSource(archive, "");
     return OK;
 }
 
@@ -564,7 +564,7 @@ TEST(an_archive_opened_through_a_vfs_names_its_entries_by_it)
     CHECK(Result_Log(
         Archive_Open(&g_Pbg3Format, &file, &test.allocator, &mounted),
         LOG_LEVEL_ERROR));
-    Vfs_MountSource(vfs, "", Archive_ToSource(mounted), 100);
+    Vfs_MountSource(vfs, "", Archive_ToSource(mounted, ""), 100);
 
     READER reader;
     CHECK(Result_Log(

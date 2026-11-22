@@ -15,6 +15,6 @@
 // MUST(Vfs_Open(vfs, "紅魔郷CM.DAT", VFS_STREAM, &file));
 // ARCHIVE *archive;
 // MUST(Archive_Open(&g_Pbg3Format, &file, &g_HeapAllocator, &archive));
-// Vfs_MountSource(vfs, "", Archive_ToSource(archive), 100);
+// Vfs_MountSource(vfs, "", Archive_ToSource(archive, ""), 100);
 
 extern const ARCHIVE_FORMAT g_Pbg3Format;

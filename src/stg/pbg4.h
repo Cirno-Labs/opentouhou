@@ -19,6 +19,6 @@
 // MUST(Vfs_Open(vfs, "game.dat", VFS_STREAM, &file));
 // ARCHIVE *archive;
 // MUST(Archive_Open(&g_Pbg4Format, &file, &g_HeapAllocator, &archive));
-// Vfs_MountSource(vfs, "", Archive_ToSource(archive), 100);
+// Vfs_MountSource(vfs, "", Archive_ToSource(archive, ""), 100);
 
 extern const ARCHIVE_FORMAT g_Pbg4Format;
