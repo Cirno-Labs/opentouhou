@@ -42,6 +42,10 @@ package-linux target="debug": (_build "linux" "othpatch" target) (_build "linux"
 [group('build')]
 package-win target="debug": (_build "win" "othpatch" target) (_build "win" "media" target) (_docker_run "win" "media" "package" "--target" target)
 
+# Package every game with a web page into build/packages/ (debug or release).
+[group('build')]
+package-web target="debug": (_build "web" "media" target) (_docker_run "web" "media" "package" "--target" target)
+
 # Write othpatch for Linux into build/packages/ (debug or release).
 [group('build')]
 package-othpatch-linux target="debug": (_build "linux" "othpatch" target) (_docker_run "linux" "othpatch" "package-othpatch" "--target" target)

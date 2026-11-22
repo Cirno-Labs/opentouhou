@@ -208,7 +208,9 @@ MinGW runtime statically, so they need no DLLs beyond those of Windows.
 The web has a base and a media image and no othpatch image. They are
 based on the official `emscripten/emsdk` image and use the Meson cross
 file `tools/docker/web/meson_cross.txt`. `just build-web` writes each
-game as `build/web/<target>/o<game>.js` and `.wasm`. Every library is
+game as `build/web/<target>/o<game>.js` and `.wasm`, and none of the
+replay programs. A release build is optimized at link too, which
+minifies the `.js`. Every library is
 built with `-pthread`, because the audio decoder is a thread, so the
 page that loads a game must be served with the
 `Cross-Origin-Opener-Policy: same-origin` and
@@ -219,7 +221,9 @@ game's folder, keeps it in the browser's IndexedDB, writes it into the
 file system and calls main with `--data`. The user folder and the
 patches folder are below `/libsdl`, which the page keeps in IndexedDB
 too. `just serve-web` builds the games and serves them on
-`http://localhost:8006/` with these headers.
+`http://localhost:8006/` with these headers. `just package-web` writes
+`o<game>-<version>-Web.zip` to `build/packages/` for each game with a
+page, holding `o<game>.html`, `.js` and `.wasm` and the two documents.
 
 FFmpeg supports PNG, MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and
 MP3 audio. No GPL component is enabled, so its license stays LGPL. curl

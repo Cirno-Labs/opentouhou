@@ -8,13 +8,14 @@ without the index, the packages carry the othpatch in
 build/<platform>/othpatch/<target>/, which the othpatch image built
 from the same commit before. A release build leaves out the games with a
 development version. package-othpatch writes the executable of
-othpatch there, as its release names it.
+othpatch there, as its release names it. On the web, package writes the
+page, script and wasm of each game with a page, and no othpatch.
 
 Each image runs this script with its platform and the programs that it
 builds: the media image the games, the othpatch image othpatch. The web
-platform has only a media image, which builds the games. The
-games build in build/<platform>/<target>/, othpatch in
-build/<platform>/othpatch/<target>/. The repository is mounted at /app.
+platform has only a media image. The games build in
+build/<platform>/<target>/, othpatch in build/<platform>/othpatch/<target>/.
+The repository is mounted at /app.
 
 The environment variable RELEASES_URL, when set, gives the build option
 releases_url, and the default in meson.options applies otherwise.
@@ -176,6 +177,15 @@ def package_win(game: str, exe: Path, othpatch: Path, output: Path) -> None:
     write_zip(output, files, documents)
 
 
+def package_web(game: str, target: str, output: Path) -> None:
+    stem = build_dir("web", "games", target) / product_name(game)
+    files = [
+        (stem.with_suffix(suffix), f"{product_name(game)}{suffix}")
+        for suffix in (".html", ".js", ".wasm")
+    ]
+    write_zip(output, files, package_documents(game, REPO_DIR))
+
+
 def built_othpatch(platform: str, target: str) -> Path:
     path = build_dir(platform, "othpatch", target) / f"othpatch{EXE_SUFFIXES[platform]}"
     if not path.exists():
@@ -193,17 +203,23 @@ def run_package(platform: str, target: str) -> None:
         print(f"Left out {game}: a release build has no development versions.")
     for game in packaged:
         version = generate_version(game, REPO_DIR)
-        othpatch = pinned_othpatch(
-            game, platform, lambda: built_othpatch(platform, target), REPO_DIR
-        )
-        name = f"{product_name(game)}{EXE_SUFFIXES[platform]}"
-        exe = build_dir(platform, "games", target) / name
-        stem = generate_package_name(game, version, platform)
-        output = PACKAGES_DIR / f"{stem}.zip"
-        if platform == "linux":
-            package_linux(game, exe, othpatch, output, version)
+        output = PACKAGES_DIR / f"{generate_package_name(game, version, platform)}.zip"
+        if platform == "web":
+            page = build_dir(platform, "games", target) / f"{product_name(game)}.html"
+            if not page.exists():
+                print(f"Left out {game}: it has no web page.")
+                continue
+            package_web(game, target, output)
         else:
-            package_win(game, exe, othpatch, output)
+            othpatch = pinned_othpatch(
+                game, platform, lambda: built_othpatch(platform, target), REPO_DIR
+            )
+            name = f"{product_name(game)}{EXE_SUFFIXES[platform]}"
+            exe = build_dir(platform, "games", target) / name
+            if platform == "linux":
+                package_linux(game, exe, othpatch, output, version)
+            else:
+                package_win(game, exe, othpatch, output)
         print(f"Created {output.relative_to(REPO_DIR)}")
 
 
@@ -240,8 +256,8 @@ def main() -> None:
     needed = COMMAND_PROGRAMS.get(args.command, args.programs)
     if needed != args.programs:
         parser.error(f"{args.command} runs in the image of {needed}")
-    if args.platform == "web" and args.command != "build":
-        parser.error("the web image only builds")
+    if args.platform == "web" and args.command not in ("build", "package"):
+        parser.error("the web image only builds and packages the games")
 
     if args.command == "build":
         run_build(args.platform, args.programs, args.target)
