@@ -12,7 +12,6 @@
 static SCENE m_Current;
 static SCENE m_Requested;
 static SCENE m_Previous;
-static int32_t m_Frames;
 static CHAIN_ELEM m_Elem;
 
 static CHAIN_STATUS M_Status(const RESULT result)
@@ -174,7 +173,6 @@ static CHAIN_STATUS M_Calc(void *const arg)
         Buttons_Clear(&g_Buttons);
     }
     m_Current = m_Requested;
-    m_Frames++;
     return CHAIN_CONTINUE;
 }
 
@@ -182,7 +180,6 @@ RESULT Scene_Register(void)
 {
     m_Current = SCENE_BOOT;
     m_Requested = SCENE_QUIT;
-    m_Frames = 0;
     Chain_InitElem(&m_Elem, M_Calc, nullptr);
     return Chain_AddCalc(&g_Chain, &m_Elem, 0);
 }
