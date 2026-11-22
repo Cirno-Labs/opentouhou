@@ -550,7 +550,7 @@ SHELL_STATUS Shell_Iterate(void)
     if (ctx->hotkeys_edges.screenshot) {
         ctx->screenshot_pending = true;
     }
-    ShellRequests_PollPresses(&ctx->presses, ctx->input);
+    ShellRequests_PollPresses(&ctx->presses, ctx->input, &g_HotkeysSchema);
     for (int i = 0; i < ticks; i++) {
         Gfx_BeginTick((GFX_COLOR) { 0, 0, 0, 255 });
         const bool running = ctx->desc->tick(ctx->input_buffer);
