@@ -9,6 +9,7 @@
   #setup { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100%; padding: 16px; box-sizing: border-box; text-align: center; }
   #drop { border: 2px dashed #666; border-radius: 8px; padding: 48px 32px; max-width: 480px; }
   #drop.over { border-color: #ddd; background: #222; }
+  #language label { margin: 0 8px; }
   #progress { width: 320px; max-width: 100%; }
   button { font: inherit; padding: 8px 24px; }
   a { color: #8af; }
@@ -16,12 +17,20 @@
   #canvas { display: block; aspect-ratio: 4 / 3; width: min(100vw, calc(100vh * 4 / 3)) !important; height: auto !important; outline: none; }
   #fullscreen { position: fixed; right: 8px; bottom: 8px; opacity: 0.4; }
   #fullscreen:hover { opacity: 1; }
-  #log { display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 50%; overflow: auto; margin: 0; padding: 8px; background: #300; color: #fcc; font: 13px monospace; white-space: pre-wrap; }
+  #log { display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 50%; overflow: auto; padding: 8px; background: #300; color: #fcc; font: 13px monospace; }
+  #log pre { margin: 0; font: inherit; white-space: pre-wrap; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <div id="setup">
+  <div id="language">
+    <p>
+      <label><input type="radio" name="language" value="en"> English</label>
+      <label><input type="radio" name="language" value="ja"> <span lang="ja">日本語</span></label>
+    </p>
+    <p><small>English: <a href="https://www.thpatch.net">Touhou Patch Center</a></small></p>
+  </div>
   <div id="drop">
     <p>Drop a zip of your @TITLE@ folder here.</p>
     <p><input id="file" type="file" accept=".zip,application/zip"></p>
@@ -40,16 +49,27 @@
   <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
   <button id="fullscreen">Fullscreen</button>
 </div>
-<pre id="log"></pre>
+<div id="log">
+  <pre id="log-text"></pre>
+  <p id="fallback" hidden><button id="japanese">Play in Japanese</button></p>
+</div>
 <script>
 // Keeps its names local, because the game's script declares globals.
 (() => {
   'use strict';
   const PROGRAM = '@PROGRAM@';
   const GAME_ID = '@GAME_ID@';
-  // SDL keeps the user folder and the patches folder below this folder.
-  const PREF_ROOT = '/libsdl';
+  // The English patch: the first repository of its network, and the patch.
+  const ENGLISH = { repo: 'https://srv.thpatch.net/repo.js', patch: 'thpatch/lang_en' };
+  // SDL keeps the user folder and the patches folder here. Only the user
+  // folder is kept in IndexedDB through IDBFS: the patches are written at
+  // each start, from their own cache.
+  const USER_DIR = '/libsdl/opentouhou/' + GAME_ID;
+  const PATCHES_DIR = '/libsdl/opentouhou/patches';
+  const LANGUAGE_KEY = 'opentouhou-language';
   const SYNC_MS = 2000;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const FETCH_JOBS = 6;
   // SDL's audio runs on the main thread here, so its default buffer of
   // about 20 ms breaks up at every slow frame. ?audio_frames=N overrides it.
   const AUDIO_FRAMES =
@@ -58,15 +78,21 @@
   const $ = (id) => document.getElementById(id);
   const logLines = [];
 
-  function showError(text) {
-    const log = $('log');
-    log.textContent = text + '\n\n' + logLines.join('\n');
-    log.style.display = 'block';
+  // Shows text and the log. With retry, also offers to play in Japanese.
+  function showError(text, retry) {
+    $('log-text').textContent = text + '\n\n' + logLines.join('\n');
+    $('fallback').hidden = !retry;
+    $('japanese').onclick = () => {
+      $('log').style.display = 'none';
+      retry();
+    };
+    $('log').style.display = 'block';
   }
 
   function setStatus(text, done, total) {
     $('drop').hidden = true;
     $('remembered').hidden = true;
+    $('language').hidden = true;
     $('loading').hidden = false;
     $('status').textContent = text;
     if (total) {
@@ -77,22 +103,41 @@
     }
   }
 
+  // Store data holds the game's zip, store patches the patch cache.
+  let database = null;
   function openStore() {
+    database ??= new Promise((resolve, reject) => {
+      const request = indexedDB.open('opentouhou-web', 2);
+      request.onupgradeneeded = () => {
+        for (const name of ['data', 'patches']) {
+          if (!request.result.objectStoreNames.contains(name)) {
+            request.result.createObjectStore(name);
+          }
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    return database;
+  }
+
+  async function storeRequest(mode, action, name = 'data') {
+    const db = await openStore();
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('opentouhou-web', 1);
-      request.onupgradeneeded = () => request.result.createObjectStore('data');
+      const request = action(db.transaction(name, mode).objectStore(name));
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
   }
 
-  async function storeRequest(mode, action) {
-    const db = await openStore();
-    return new Promise((resolve, reject) => {
-      const request = action(db.transaction('data', mode).objectStore('data'));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+  function cacheGet(key) {
+    return storeRequest('readonly', (store) => store.get(key), 'patches')
+      .catch(() => undefined);
+  }
+
+  function cachePut(key, value) {
+    return storeRequest('readwrite', (store) => store.put(value, key), 'patches')
+      .catch((error) => console.error('Cannot cache', key, error));
   }
 
   async function readWithProgress(stream, total, text) {
@@ -123,6 +168,302 @@
     return readWithProgress(response.body, total, 'Downloading the game');
   }
 
+  function readLanguage() {
+    try {
+      const stored = localStorage.getItem(LANGUAGE_KEY);
+      if (stored === 'en' || stored === 'ja') {
+        return stored;
+      }
+    } catch {
+      // The browser keeps no storage for this page.
+    }
+    return navigator.language.startsWith('ja') ? 'ja' : 'en';
+  }
+
+  function chosenLanguage() {
+    const checked = document.querySelector('input[name="language"]:checked');
+    return checked ? checked.value : 'ja';
+  }
+
+  const CRC_TABLE = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) {
+        c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      }
+      table[n] = c;
+    }
+    return table;
+  })();
+
+  function crc32(bytes) {
+    let c = 0xffffffff;
+    for (const byte of bytes) {
+      c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+    }
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  // Returns the text at url from the cache when it was checked less than a
+  // day ago, else from the network, else from the cache at any age.
+  async function fetchText(url) {
+    const key = 'text:' + url;
+    const cached = await cacheGet(key);
+    if (cached && Date.now() - cached.time < DAY_MS) {
+      return cached.text;
+    }
+    try {
+      const response = await fetch(url, { cache: 'no-cache' });
+      if (!response.ok) {
+        throw new Error(url + ': ' + response.status);
+      }
+      const text = await response.text();
+      JSON.parse(text);
+      await cachePut(key, { time: Date.now(), text });
+      return text;
+    } catch (error) {
+      if (cached) {
+        return cached.text;
+      }
+      throw error;
+    }
+  }
+
+  // Returns the text of file from the first of servers that gives it.
+  async function fetchFrom(servers, file) {
+    let failure = null;
+    for (const server of servers) {
+      try {
+        return await fetchText(server + file);
+      } catch (error) {
+        failure = error;
+      }
+    }
+    throw failure ?? new Error('No server for ' + file);
+  }
+
+  // Tells whether a repository id or a patch name is a safe folder name.
+  function isSafeName(name) {
+    return typeof name === 'string' && name !== '' && name !== '.' && name !== '..'
+      && !/[\x00-\x1f/\\:*?"<>|]/.test(name);
+  }
+
+  function withSlash(url) {
+    return url.endsWith('/') ? url : url + '/';
+  }
+
+  // Walks a network of thcrap repositories breadth-first from url, as far as
+  // a lookup needs, as core/patch/manager.h describes.
+  function openNetwork(url) {
+    const repos = [];
+    const queue = [url];
+    const seen = new Set();
+    async function walk() {
+      while (queue.length) {
+        const at = queue.shift();
+        const base = at.endsWith('repo.js') ? at.slice(0, -'repo.js'.length) : withSlash(at);
+        if (seen.has(base)) {
+          continue;
+        }
+        seen.add(base);
+        let text;
+        let json;
+        try {
+          text = await fetchText(base + 'repo.js');
+          json = JSON.parse(text);
+        } catch (error) {
+          console.warn('Skipping the repository', base, error);
+          continue;
+        }
+        const patches = json?.patches && typeof json.patches === 'object' ? json.patches : {};
+        if (!isSafeName(json?.id) || repos.some((repo) => repo.id === json.id)
+          || !Object.keys(patches).every(isSafeName)) {
+          continue;
+        }
+        const servers = [base];
+        for (const server of Array.isArray(json.servers) ? json.servers : []) {
+          if (typeof server === 'string' && !servers.includes(withSlash(server))) {
+            servers.push(withSlash(server));
+          }
+        }
+        for (const neighbor of Array.isArray(json.neighbors) ? json.neighbors : []) {
+          if (typeof neighbor === 'string') {
+            queue.push(neighbor);
+          }
+        }
+        repos.push({ id: json.id, text, servers, patches });
+        return true;
+      }
+      return false;
+    }
+    return async (test) => {
+      for (let i = 0; ; i++) {
+        if (i === repos.length && !(await walk())) {
+          if (!repos.length) {
+            throw new Error('Cannot download ' + url);
+          }
+          return null;
+        }
+        if (test(repos[i])) {
+          return repos[i];
+        }
+      }
+    };
+  }
+
+  // Adds the patch id to list after its dependencies, as PatchRepo_AddPatch
+  // of core/patch/repo.h does. A bare name prefers the repository preferred.
+  async function addPatch(find, id, preferred, list, adding) {
+    const slash = id.indexOf('/');
+    const name = id.slice(slash + 1);
+    const has = (repo) => Object.hasOwn(repo.patches, name);
+    let repo;
+    if (slash >= 0) {
+      repo = await find((candidate) => candidate.id === id.slice(0, slash));
+    } else {
+      repo = preferred && has(preferred) ? preferred : await find(has);
+    }
+    if (!repo || !isSafeName(name)) {
+      throw new Error('No repository has the patch ' + id);
+    }
+    const full = repo.id + '/' + name;
+    if (adding.has(full) || list.some((patch) => patch.id === full)) {
+      return;
+    }
+    adding.add(full);
+    const text = await fetchFrom(repo.servers.map((server) => server + name + '/'), 'patch.js');
+    const json = JSON.parse(text);
+    for (const dependency of Array.isArray(json.dependencies) ? json.dependencies : []) {
+      if (typeof dependency === 'string') {
+        await addPatch(find, dependency, repo, list, adding);
+      }
+    }
+    adding.delete(full);
+    const servers = [];
+    for (const server of [
+      ...(Array.isArray(json.servers) ? json.servers : []),
+      ...repo.servers.map((server) => server + name + '/')]) {
+      if (typeof server === 'string' && !servers.includes(withSlash(server))) {
+        servers.push(withSlash(server));
+      }
+    }
+    list.push({ id: full, repo, name, text, servers });
+  }
+
+  // Returns a file of a patch with its CRC-32 from the cache, or else from
+  // the first server that gives it, and caches it under its URL and CRC-32.
+  async function fetchFile(patch, path, crc) {
+    const hex = crc.toString(16).padStart(8, '0');
+    const url = patch.servers[0] + path;
+    const key = 'file:' + url + '#' + hex;
+    const cached = await cacheGet(key);
+    if (cached) {
+      return { data: cached, fetched: 0 };
+    }
+    const encoded = path.split('/').map(encodeURIComponent).join('/');
+    for (const server of patch.servers) {
+      try {
+        const response = await fetch(server + encoded + '?crc32=' + hex);
+        if (!response.ok) {
+          continue;
+        }
+        const data = new Uint8Array(await response.arrayBuffer());
+        if (crc32(data) !== crc) {
+          continue;
+        }
+        await storeRequest('readwrite', (store) => {
+          store.delete(IDBKeyRange.bound('file:' + url + '#', 'file:' + url + '#￿'));
+          return store.put(data, key);
+        }, 'patches').catch((error) => console.error('Cannot cache', key, error));
+        return { data, fetched: data.length };
+      } catch (error) {
+        console.warn('Cannot download', server + path, error);
+      }
+    }
+    throw new Error('Cannot download ' + patch.id + '/' + path);
+  }
+
+  // Returns the files of the English patch and its dependencies that this
+  // game needs, as paths below the patches folder in the layout of
+  // core/patch/stack.h, with their data.
+  async function fetchEnglish() {
+    setStatus('Checking the English patch');
+    const list = [];
+    await addPatch(openNetwork(ENGLISH.repo), ENGLISH.patch, null, list, new Set());
+    const files = [];
+    const jobs = [];
+    const encoder = new TextEncoder();
+    const repos = new Set();
+    for (const patch of list) {
+      const dir = patch.repo.id + '/' + patch.name + '/';
+      const text = await fetchFrom(patch.servers, 'files.js');
+      for (const [path, crc] of Object.entries(JSON.parse(text))) {
+        if (typeof crc !== 'number' || path === 'patch.js' || path === 'files.js'
+          || (path.includes('/') && !path.startsWith(GAME_ID + '/'))) {
+          continue;
+        }
+        if (path.startsWith('/') || path.split('/').some((part) => part === '' || part === '..')) {
+          console.warn('Skipping the file', dir + path);
+          continue;
+        }
+        jobs.push({ patch, path: dir + path, name: path, crc: crc >>> 0 });
+      }
+      if (!repos.has(patch.repo)) {
+        repos.add(patch.repo);
+        files.push({ path: patch.repo.id + '/repo.js', data: encoder.encode(patch.repo.text) });
+      }
+      files.push({ path: dir + 'patch.js', data: encoder.encode(patch.text) });
+      files.push({ path: dir + 'files.js', data: encoder.encode(text) });
+    }
+    let next = 0;
+    let done = 0;
+    let fetched = 0;
+    const worker = async () => {
+      while (next < jobs.length) {
+        const job = jobs[next++];
+        const file = await fetchFile(job.patch, job.name, job.crc);
+        files.push({ path: job.path, data: file.data });
+        fetched += file.fetched;
+        done++;
+        setStatus('Downloading the English patch', done, jobs.length);
+      }
+    };
+    await Promise.all(Array.from({ length: FETCH_JOBS }, worker));
+    console.log('English patch:', list.map((patch) => patch.id).join(', '), '-',
+      jobs.length, 'files,', fetched, 'bytes downloaded');
+    return files;
+  }
+
+  // Sets [patches] language in config.ini and keeps the other lines.
+  function writeLanguage(FS, code) {
+    const path = USER_DIR + '/config.ini';
+    let text = '';
+    try {
+      text = FS.readFile(path, { encoding: 'utf8' });
+    } catch {
+      // The game has not written config.ini yet.
+    }
+    const lines = text ? text.split('\n') : [];
+    const entry = 'language = ' + code;
+    const header = lines.findIndex((line) => line.trim() === '[patches]');
+    if (header < 0) {
+      lines.unshift('[patches]', entry, '');
+    } else {
+      let i = header + 1;
+      while (i < lines.length && !lines[i].trim().startsWith('[')
+        && !/^\s*language\s*=/.test(lines[i])) {
+        i++;
+      }
+      if (i < lines.length && !lines[i].trim().startsWith('[')) {
+        lines[i] = entry;
+      } else {
+        lines.splice(header + 1, 0, entry);
+      }
+    }
+    FS.writeFile(path, lines.join('\n'));
+  }
+
   function startSync(FS) {
     let busy = false;
     const sync = () => {
@@ -146,10 +487,20 @@
     });
   }
 
-  async function start(blob) {
+  async function start(blob, language = chosenLanguage()) {
     try {
       const zip = await readWithProgress(blob.stream(), blob.size, 'Reading the game data');
       const wasm = await fetchWasm();
+      let patches = [];
+      if (language === 'en') {
+        try {
+          patches = await fetchEnglish();
+        } catch (error) {
+          showError('Cannot download the English patch: ' + error.message,
+            () => start(blob, 'ja'));
+          return;
+        }
+      }
       setStatus('Starting the game');
       window.alert = showError;
       window.Module = {
@@ -158,7 +509,8 @@
         print: (text) => { logLines.push(text); console.log(text); },
         printErr: (text) => { logLines.push(text); console.error(text); },
         onAbort: (reason) => showError('The game stopped: ' + reason),
-        onRuntimeInitialized: () => runGame(zip),
+        onRuntimeInitialized: () => runGame(zip, language, patches).catch(
+          (error) => showError(String(error))),
       };
       const script = document.createElement('script');
       script.src = PROGRAM + '.js';
@@ -169,17 +521,23 @@
     }
   }
 
-  async function runGame(zip) {
+  async function runGame(zip, language, patches) {
     const { FS, IDBFS } = Module;
     FS.writeFile('/game.zip', zip);
-    FS.mkdirTree(PREF_ROOT);
-    FS.mount(IDBFS, {}, PREF_ROOT);
+    FS.mkdirTree(USER_DIR);
+    FS.mount(IDBFS, {}, USER_DIR);
     await new Promise((resolve) => FS.syncfs(true, (error) => {
       if (error) {
         console.error('Cannot load the user folder:', error);
       }
       resolve();
     }));
+    for (const { path, data } of patches) {
+      const full = PATCHES_DIR + '/' + path;
+      FS.mkdirTree(full.slice(0, full.lastIndexOf('/')));
+      FS.writeFile(full, data);
+    }
+    writeLanguage(FS, language);
     startSync(FS);
     $('setup').hidden = true;
     $('stage').style.display = 'flex';
@@ -224,6 +582,18 @@
     await storeRequest('readwrite', (store) => store.delete(GAME_ID));
     $('remembered').hidden = true;
   });
+
+  const language = readLanguage();
+  for (const input of document.querySelectorAll('input[name="language"]')) {
+    input.checked = input.value === language;
+    input.addEventListener('change', () => {
+      try {
+        localStorage.setItem(LANGUAGE_KEY, input.value);
+      } catch {
+        // The choice holds for this visit only.
+      }
+    });
+  }
 
   storeRequest('readonly', (store) => store.get(GAME_ID)).then((file) => {
     if (file) {
