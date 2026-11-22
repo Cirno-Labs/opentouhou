@@ -6,14 +6,14 @@ Downloads, release notes and help: <https://opentouhou.org/>
 
 ## Games
 
-- [東方紅魔郷 ~ the Embodiment of Scarlet Devil](https://opentouhou.org/oth06-manual.html)
+- [東方紅魔郷 ~ the Embodiment of Scarlet Devil](https://opentouhou.org/oth06)
   (th06) can be played from start to finish, and its 17 world-record
   replays play back exactly as in the original.
-- [東方妖々夢 ~ Perfect Cherry Blossom](https://opentouhou.org/oth07-manual.html)
+- [東方妖々夢 ~ Perfect Cherry Blossom](https://opentouhou.org/oth07)
   (th07) can be played from start to finish, Extra and Phantasm
   included. Its 36 world-record replays play back exactly as in the
   original, and so do replays recorded with VsyncPatch.
-- [東方靈異伝 ~ Highly Responsive to Prayers](https://opentouhou.org/oth01-manual.html)
+- [東方靈異伝 ~ Highly Responsive to Prayers](https://opentouhou.org/oth01)
   (th01) can be played from start to finish, both routes and the
   endings included. Its test runs match the original PC-98 game frame by
   frame in DOSBox-X.

@@ -1,9 +1,9 @@
 name: Tell the site about new releases
 
-# Asks the download site to rebuild after a run that may have changed
-# the release index. The repository variable SITE_REPOSITORY names the
-# site's repository, and the secret SITE_DISPATCH_TOKEN may send it a
-# repository_dispatch event. Without either, nothing happens.
+# Has the download site read the release index again after a run that
+# may have changed it, through its /refresh, which takes the secret
+# SITE_REFRESH_TOKEN. Without it, nothing happens, and the site reads the
+# index once a day.
 on:
   workflow_run:
     workflows:
@@ -18,16 +18,17 @@ permissions: {}
 jobs:
   notify:
     name: Notify the site
-    if: ${{ github.event.workflow_run.conclusion == 'success' && vars.SITE_REPOSITORY != '' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Send releases-changed
+      - name: Refresh the site
         env:
-          GH_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
-          SITE_REPOSITORY: ${{ vars.SITE_REPOSITORY }}
+          SITE_REFRESH_TOKEN: ${{ secrets.SITE_REFRESH_TOKEN }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "SITE_DISPATCH_TOKEN is not set; the site rebuilds on its own schedule."
+          if [ -z "$SITE_REFRESH_TOKEN" ]; then
+            echo "SITE_REFRESH_TOKEN is not set; the site reads the index once a day."
             exit 0
           fi
-          gh api "repos/$SITE_REPOSITORY/dispatches" -f event_type=releases-changed
+          curl --fail --silent --show-error --max-time 30 -X POST \
+            -H "Authorization: Bearer $SITE_REFRESH_TOKEN" \
+            https://opentouhou.org/refresh
