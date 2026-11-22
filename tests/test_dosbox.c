@@ -435,6 +435,7 @@ TEST(polls_end_one_frame_each_and_other_sites_none)
     m_Fake.regs.flags = 0;
     M_Arrive(guest, M_SITE_POLL);
     M_Arrive(guest, M_SITE_POLL);
+    M_Arrive(guest, M_SITE_POLL);
     CHECK_EQ_INT(m_Fake.now, M_FrameEnd(1));
     m_Fake.regs.flags = M_FLAG_ZERO;
     M_Arrive(guest, M_SITE_POLL);
@@ -442,6 +443,30 @@ TEST(polls_end_one_frame_each_and_other_sites_none)
     M_Arrive(guest, M_SITE_CALL);
     CHECK_EQ_INT(m_Fake.now, M_FrameEnd(1));
     CHECK_EQ_INT(m_Fake.calls, 1);
+    CHECK_EQ_INT(guest->on_shutdown(guest->context, 0), 2);
+}
+
+TEST(a_poll_lets_its_jump_run_once_after_a_vsync_wait)
+{
+    const DOSBOX_GUEST *const guest =
+        M_Start("dosbox_poll_start", "frames 100\n");
+    M_FrameDelay(guest);
+    m_Fake.regs.flags = 0;
+    m_Fake.halted = false;
+    guest->on_site(guest->context, M_LOAD + M_SITE_POLL);
+    CHECK(!m_Fake.halted);
+    guest->on_site(guest->context, M_LOAD + M_SITE_POLL);
+    CHECK(m_Fake.halted);
+    M_Arrive(guest, M_SITE_POLL);
+    CHECK_EQ_INT(m_Fake.now, M_FrameEnd(0));
+    M_FrameDelay(guest);
+    M_FrameDelay(guest);
+    const uint64_t now = m_Fake.now;
+    m_Fake.regs.flags = 0;
+    m_Fake.halted = false;
+    guest->on_site(guest->context, M_LOAD + M_SITE_POLL);
+    CHECK(!m_Fake.halted);
+    CHECK_EQ_INT(m_Fake.now, now);
     CHECK_EQ_INT(guest->on_shutdown(guest->context, 0), 2);
 }
 

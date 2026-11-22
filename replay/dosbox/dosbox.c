@@ -92,6 +92,9 @@ static struct {
     // Tells whether no VSync wait has let its jump run since the guest took
     // the last VSync.
     bool vsync_unseen;
+    // Gives the poll site whose jump has run since the guest last reached
+    // a VSync wait or a delay, or -1.
+    int32_t polling;
     // Gives the delay in progress and the emulated time when it returns.
     uint32_t delay_site;
     uint64_t delay_end;
@@ -348,12 +351,20 @@ static bool M_EndFrame(void)
 // the guest has masked it for M_PENDING_SPINS arrivals. With until_vsync,
 // lets the jump run once more after the guest takes the VSync, since the
 // handler can run between the loop's test and its jump, and the jump then
-// has the flags from before the handler.
+// has the flags from before the handler. Without until_vsync, lets the
+// jump run once when the loop starts, so that the loop reads the input of
+// the frame that it starts in.
 static void M_Wait(const bool until_vsync, const int32_t index)
 {
     m_Dosbox.delay_chained = false;
     const bool pending = m_Dosbox.host->vsync_pending();
     if (pending && m_Dosbox.pending_spins++ < M_PENDING_SPINS) {
+        return;
+    }
+    if (until_vsync) {
+        m_Dosbox.polling = -1;
+    } else if (m_Dosbox.polling != index) {
+        m_Dosbox.polling = index;
         return;
     }
     if (!pending && until_vsync && m_Dosbox.vsync_unseen) {
@@ -397,6 +408,7 @@ static void M_Return(const bool far)
 static void M_Delay(const DOSBOX_SITE *const site, const uint32_t address)
 {
     const DOSBOX_PORT *const port = m_Dosbox.port;
+    m_Dosbox.polling = -1;
     if (m_Dosbox.delay_site != address) {
         m_Dosbox.delay_site = address;
         m_Dosbox.delay_end =
@@ -875,6 +887,7 @@ const DOSBOX_GUEST *Dosbox_Start(
     m_Dosbox.status = 2;
     m_Dosbox.delay_site = M_NO_SITE;
     m_Dosbox.last_wait = -1;
+    m_Dosbox.polling = -1;
     Arena_Init(&m_Dosbox.arena, "dosbox run", M_ARENA_SIZE);
     if (host->abi != DOSBOX_HOOK_ABI) {
         LOG_ERROR(

@@ -69,7 +69,9 @@ typedef enum {
     // vblank ends. When it is taken, clears the vblank bit.
     DOSBOX_SITE_VBLANK_END,
     // The conditional jump of a loop that polls the input with no wait.
-    // When it is taken, ends one frame.
+    // When it is taken, ends one frame, except the first time after a VSync
+    // wait or a delay, so that the loop reads the input of the frame that
+    // it starts in.
     DOSBOX_SITE_POLL,
     // The entry of a timed delay. Halts for the port's delay_time of
     // emulated time, ending each frame whose end it passes, then returns
