@@ -116,6 +116,7 @@ games += {
     'title_en': 'Touhou 01',
     'subtitle_en': 'Highly Responsive to Prayers',
     'aspect': '16 / 10',
+    'controls': 'th01',
     'c_args': [layer_include['th01']],
     'fonts': ['fonts/shnmk16.bdf', 'fonts/shnm8x16r.bdf'],
     'link_with': [th01_main_lib, th01_lib, core_hash_lib],
