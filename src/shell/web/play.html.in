@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>@PROGRAM@</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font: 16px sans-serif; }
+  #setup { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; height: 100%; padding: 16px; box-sizing: border-box; text-align: center; }
+  #drop { border: 2px dashed #666; border-radius: 8px; padding: 48px 32px; max-width: 480px; }
+  #drop.over { border-color: #ddd; background: #222; }
+  #progress { width: 320px; max-width: 100%; }
+  button { font: inherit; padding: 8px 24px; }
+  a { color: #8af; }
+  #stage { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: #000; }
+  #canvas { display: block; aspect-ratio: 4 / 3; width: min(100vw, calc(100vh * 4 / 3)) !important; height: auto !important; outline: none; }
+  #fullscreen { position: fixed; right: 8px; bottom: 8px; opacity: 0.4; }
+  #fullscreen:hover { opacity: 1; }
+  #log { display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 50%; overflow: auto; margin: 0; padding: 8px; background: #300; color: #fcc; font: 13px monospace; white-space: pre-wrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="setup">
+  <div id="drop">
+    <p>Drop a zip of your @TITLE@ folder here.</p>
+    <p><input id="file" type="file" accept=".zip,application/zip"></p>
+    <p><small>The zip stays in this browser.</small></p>
+  </div>
+  <div id="remembered" hidden>
+    <p><button id="play">Play</button></p>
+    <p><a href="#" id="forget">Forget the game data</a></p>
+  </div>
+  <div id="loading" hidden>
+    <p id="status"></p>
+    <progress id="progress"></progress>
+  </div>
+</div>
+<div id="stage">
+  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+  <button id="fullscreen">Fullscreen</button>
+</div>
+<pre id="log"></pre>
+<script>
+// Keeps its names local, because the game's script declares globals.
+(() => {
+  'use strict';
+  const PROGRAM = '@PROGRAM@';
+  const GAME_ID = '@GAME_ID@';
+  // SDL keeps the user folder and the patches folder below this folder.
+  const PREF_ROOT = '/libsdl';
+  const SYNC_MS = 2000;
+  // SDL's audio runs on the main thread here, so its default buffer of
+  // about 20 ms breaks up at every slow frame. ?audio_frames=N overrides it.
+  const AUDIO_FRAMES =
+    new URLSearchParams(location.search).get('audio_frames') || '2048';
+
+  const $ = (id) => document.getElementById(id);
+  const logLines = [];
+
+  function showError(text) {
+    const log = $('log');
+    log.textContent = text + '\n\n' + logLines.join('\n');
+    log.style.display = 'block';
+  }
+
+  function setStatus(text, done, total) {
+    $('drop').hidden = true;
+    $('remembered').hidden = true;
+    $('loading').hidden = false;
+    $('status').textContent = text;
+    if (total) {
+      $('progress').max = total;
+      $('progress').value = done;
+    } else {
+      $('progress').removeAttribute('value');
+    }
+  }
+
+  function openStore() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('opentouhou-web', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('data');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function storeRequest(mode, action) {
+    const db = await openStore();
+    return new Promise((resolve, reject) => {
+      const request = action(db.transaction('data', mode).objectStore('data'));
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function readWithProgress(stream, total, text) {
+    const bytes = new Uint8Array(total);
+    const reader = stream.getReader();
+    let done = 0;
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) {
+        return bytes.subarray(0, done);
+      }
+      bytes.set(chunk.value, done);
+      done += chunk.value.length;
+      setStatus(text, done, total);
+    }
+  }
+
+  async function fetchWasm() {
+    const response = await fetch(PROGRAM + '.wasm');
+    if (!response.ok) {
+      throw new Error('Cannot download ' + PROGRAM + '.wasm: ' + response.status);
+    }
+    const total = Number(response.headers.get('Content-Length'));
+    if (!total) {
+      setStatus('Downloading the game');
+      return new Uint8Array(await response.arrayBuffer());
+    }
+    return readWithProgress(response.body, total, 'Downloading the game');
+  }
+
+  function startSync(FS) {
+    let busy = false;
+    const sync = () => {
+      if (busy) {
+        return;
+      }
+      busy = true;
+      FS.syncfs(false, (error) => {
+        busy = false;
+        if (error) {
+          console.error('Cannot save the user folder:', error);
+        }
+      });
+    };
+    setInterval(sync, SYNC_MS);
+    addEventListener('pagehide', sync);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        sync();
+      }
+    });
+  }
+
+  async function start(blob) {
+    try {
+      const zip = await readWithProgress(blob.stream(), blob.size, 'Reading the game data');
+      const wasm = await fetchWasm();
+      setStatus('Starting the game');
+      window.alert = showError;
+      window.Module = {
+        canvas: $('canvas'),
+        wasmBinary: wasm,
+        print: (text) => { logLines.push(text); console.log(text); },
+        printErr: (text) => { logLines.push(text); console.error(text); },
+        onAbort: (reason) => showError('The game stopped: ' + reason),
+        onRuntimeInitialized: () => runGame(zip),
+      };
+      const script = document.createElement('script');
+      script.src = PROGRAM + '.js';
+      script.onerror = () => showError('Cannot load ' + PROGRAM + '.js');
+      document.body.appendChild(script);
+    } catch (error) {
+      showError(String(error));
+    }
+  }
+
+  async function runGame(zip) {
+    const { FS, IDBFS } = Module;
+    FS.writeFile('/game.zip', zip);
+    FS.mkdirTree(PREF_ROOT);
+    FS.mount(IDBFS, {}, PREF_ROOT);
+    await new Promise((resolve) => FS.syncfs(true, (error) => {
+      if (error) {
+        console.error('Cannot load the user folder:', error);
+      }
+      resolve();
+    }));
+    startSync(FS);
+    $('setup').hidden = true;
+    $('stage').style.display = 'flex';
+    $('canvas').focus();
+    Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
+    Module.callMain(['--data', '/game.zip']);
+  }
+
+  async function remember(file) {
+    try {
+      await storeRequest('readwrite', (store) => store.put(file, GAME_ID));
+    } catch (error) {
+      console.error('Cannot remember the game data:', error);
+    }
+  }
+
+  function choose(file) {
+    if (file) {
+      remember(file).then(() => start(file));
+    }
+  }
+
+  $('file').addEventListener('change', () => choose($('file').files[0]));
+  const drop = $('drop');
+  drop.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    drop.classList.add('over');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', (event) => {
+    event.preventDefault();
+    drop.classList.remove('over');
+    choose(event.dataTransfer.files[0]);
+  });
+  $('canvas').addEventListener('click', () => $('canvas').focus());
+  $('fullscreen').addEventListener('click', () => {
+    $('stage').requestFullscreen();
+    $('canvas').focus();
+  });
+  $('forget').addEventListener('click', async (event) => {
+    event.preventDefault();
+    await storeRequest('readwrite', (store) => store.delete(GAME_ID));
+    $('remembered').hidden = true;
+  });
+
+  storeRequest('readonly', (store) => store.get(GAME_ID)).then((file) => {
+    if (file) {
+      $('remembered').hidden = false;
+      $('play').addEventListener('click', () => start(file));
+    }
+  }).catch((error) => console.error('Cannot open the stored game data:', error));
+})();
+</script>
+</body>
+</html>

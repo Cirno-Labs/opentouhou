@@ -48,9 +48,9 @@ if host_machine.system() == 'windows'
 endif
 
 if host_machine.system() == 'emscripten'
-  # The page writes the game's zip into the file system before it calls
-  # main. The audio decoder is a thread, so the page needs cross-origin
-  # isolation for shared memory.
+  # The page downloads the wasm, writes the game's zip into the file
+  # system and then calls main. The audio decoder is a thread, so the
+  # page needs cross-origin isolation for shared memory.
   add_project_arguments('-pthread', language: 'c')
   add_project_link_arguments(
     '-pthread',
@@ -63,7 +63,8 @@ if host_machine.system() == 'emscripten'
     '-sMAX_WEBGL_VERSION=2',
     '-sGL_ENABLE_GET_PROC_ADDRESS',
     '-sINVOKE_RUN=0',
-    '-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,callMain',
+    '-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,callMain',
+    '-sINCOMING_MODULE_JS_API=canvas,print,printErr,onAbort,onRuntimeInitialized,wasmBinary',
     '-lidbfs.js',
     language: 'c',
   )
@@ -138,7 +139,8 @@ if build_games
   # An executable is named after the game id with an o before it, as
   # oth06, so that it does not clash with the original game's executable
   # in the same folder. A game's 'fonts' lists its built-in fonts, as
-  # paths below src/shell/builtin, which its programs carry in a zip.
+  # paths below src/shell/builtin, which its programs carry in a zip. A
+  # game with a 'title', the original's, gets a web page o<game>.html.
   games = {}
   subdir('src/th01')
   subdir('src/th06')
@@ -177,6 +179,13 @@ if build_games
       dependencies: [shell_game_dep, stg_dep, sdl3] + external_deps,
       win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
     )
+    if host_machine.system() == 'emscripten' and 'title' in game
+      configure_file(
+        input: 'src/shell/web/play.html.in',
+        output: 'o' + name + '.html',
+        configuration: {'PROGRAM': 'o' + name, 'GAME_ID': name, 'TITLE': game['title']},
+      )
+    endif
   endforeach
 
   # The web builds the games alone.

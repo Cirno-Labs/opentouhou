@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Serve a web build directory on localhost.
+
+Sends the cross-origin isolation headers that the games' shared memory
+needs and serves .wasm as application/wasm. The browser checks each file
+for changes before it uses its cached copy, so a reload picks up a new
+build and takes an unchanged one from the cache.
+"""
+
+import argparse
+import http.server
+import shutil
+import time
+from functools import partial
+from pathlib import Path
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    extensions_map = {
+        **http.server.SimpleHTTPRequestHandler.extensions_map,
+        ".wasm": "application/wasm",
+        ".js": "text/javascript",
+        ".html": "text/html; charset=utf-8",
+    }
+
+    def end_headers(self) -> None:
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
+    # Bytes per second for each response, or 0 for no limit.
+    rate = 0
+
+    def copyfile(self, source, outputfile) -> None:
+        if not self.rate:
+            shutil.copyfileobj(source, outputfile)
+            return
+        chunk = max(self.rate // 20, 1)
+        while data := source.read(chunk):
+            outputfile.write(data)
+            time.sleep(len(data) / self.rate)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("directory", type=Path)
+    parser.add_argument("--port", type=int, default=8006)
+    parser.add_argument("--page", default="oth06.html")
+    parser.add_argument(
+        "--rate",
+        type=float,
+        default=0,
+        metavar="MBIT",
+        help="send each response at most this many megabits per second",
+    )
+    args = parser.parse_args()
+    if not args.directory.is_dir():
+        parser.error(f"{args.directory} is not a directory")
+    Handler.rate = int(args.rate * 1_000_000 / 8)
+    handler = partial(Handler, directory=str(args.directory))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler)
+    print(f"Serving http://localhost:{args.port}/{args.page}", flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == "__main__":
+    main()

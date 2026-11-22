@@ -27,6 +27,11 @@ build-win target="debug": (_build "win" "media" target) (_build "win" "othpatch"
 [group('build')]
 build-web target="debug": (_build "web" "media" target)
 
+# Build the games for the web, then serve them on localhost (rate: Mbit/s, 0 for no limit).
+[group('build')]
+serve-web target="debug" port="8006" rate="0": (build-web target)
+    tools/web/serve build/web/{{target}} --port {{port}} --rate {{rate}}
+
 # The othpatch of the commit is built too, for the packages to carry when
 # its version has no release.
 [doc("Package every game for Linux into build/packages/ (debug or release).")]
