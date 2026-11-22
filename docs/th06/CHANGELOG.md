@@ -1,5 +1,9 @@
 # th06 changelog
 
+## Unreleased
+
+- Added `--data` with a zip of the game folder, read without unpacking.
+
 ## 1.0.2 (2026-11-20)
 
 - Added loading of font files that you put in `opentouhou/fonts/` of

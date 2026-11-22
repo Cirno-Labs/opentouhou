@@ -1,5 +1,9 @@
 # th01 changelog
 
+## Unreleased
+
+- Added `--data` with a zip of the game folder, read without unpacking.
+
 ## 1.0.0 (2026-11-22)
 
 - Added th01, a native port that plays the original game from its own

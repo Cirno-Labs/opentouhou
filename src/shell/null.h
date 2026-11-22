@@ -10,9 +10,9 @@
 // A program that links both adds Shell_GetTickRate and Shell_GetWallClock;
 // the game tests' fake links only null/files.c.
 
-// Makes Shell_GetFiles hold data_dir, read-only, and Shell_GetUserFiles
-// hold user_dir, writable. Each holds nothing for a nullptr directory, as
-// it does before the first call.
+// Makes Shell_GetFiles hold data_dir, read-only, as ShellData_Mount mounts
+// it, and Shell_GetUserFiles hold user_dir, writable. Each holds nothing for a
+// nullptr directory, as it does before the first call.
 RESULT NullShell_OpenFiles(const char *data_dir, const char *user_dir);
 
 // Destroys what NullShell_OpenFiles made.

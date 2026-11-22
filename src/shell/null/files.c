@@ -1,6 +1,7 @@
 #include "shell/null.h"
 
 #include "core/vfs.h"
+#include "shell/data.h"
 #include "shell/game.h"
 
 static VFS *m_Files;
@@ -19,7 +20,7 @@ RESULT NullShell_OpenFiles(
 {
     NullShell_CloseFiles();
     if (data_dir != nullptr) {
-        MUST(Vfs_MountDir(M_Get(&m_Files), "", data_dir, 0, false));
+        MUST(ShellData_Mount(M_Get(&m_Files), data_dir));
     }
     if (user_dir != nullptr) {
         MUST(Vfs_MountDir(M_Get(&m_UserFiles), "", user_dir, 0, true));

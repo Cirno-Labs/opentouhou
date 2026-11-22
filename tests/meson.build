@@ -1615,6 +1615,23 @@ test(
 )
 
 test(
+  'shell/data',
+  executable(
+    'test_shell_data',
+    'test_shell_data.c',
+    '../src/shell/data.c',
+    c_args: shell_include,
+    implicit_include_directories: false,
+    link_with: [
+      core_vfs_lib, core_archive_lib, core_hash_lib, core_io_lib,
+      core_base_lib,
+    ],
+    dependencies: [zlib, sdl3],
+  ),
+  suite: 'unit',
+)
+
+test(
   'shell/fatal',
   executable(
     'test_fatal',
