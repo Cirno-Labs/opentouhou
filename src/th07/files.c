@@ -77,7 +77,8 @@ static RESULT M_MountArchive(const char *const name, const int32_t priority)
         Archive_Close(archive);
         return FAIL("%s has no %s", name, M_VERSION_FILE);
     }
-    Vfs_MountSource(Shell_GetFiles(), "", Archive_ToSource(archive), priority);
+    Vfs_MountSource(
+        Shell_GetFiles(), "", Archive_ToSource(archive, ""), priority);
     return OK;
 }
 

@@ -7,7 +7,9 @@
 // Reads zip archives as an ARCHIVE_FORMAT, and writes them. Entries that are
 // stored or compressed with deflate can be read, and each is checked against
 // its CRC-32. ZIP64, encryption and archives of several parts are not
-// supported. Names are looked up by the whole path, exactly. The Unix mode
+// supported. An entry name without the UTF-8 flag is read as CP932, as
+// Japanese Windows writes it, and kept as its raw bytes when it is not valid
+// CP932. Names are looked up by the whole path, exactly. The Unix mode
 // of an entry is the one the archive records when it was made on Unix, and
 // 0 otherwise.
 

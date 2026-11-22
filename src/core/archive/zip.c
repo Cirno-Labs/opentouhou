@@ -1,6 +1,7 @@
 #include "core/archive/zip.h"
 
 #include "core/archive/format.h"
+#include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/hash/crc32.h"
 #include "core/io/reader.h"
@@ -103,11 +104,18 @@ static RESULT M_ReadEntry(READER *const directory, ARCHIVE_TABLE *const table)
     if (IS_OK(result)) {
         result = M_CheckEntry(name, name_size, flags, &record, size);
     }
+    char *decoded = nullptr;
+    if (IS_OK(result) && (flags & M_FLAG_UTF8) == 0) {
+        Result_Ignore(Cp932_Decode(name, name_size, &decoded));
+    }
     if (IS_OK(result)) {
         const uint32_t mode =
             made_by >> 8 == M_MADE_ON_UNIX ? attributes >> 16 : 0;
-        ArchiveTable_Add(table, name, size, mode, &record, sizeof(record));
+        ArchiveTable_Add(
+            table, decoded == nullptr ? name : decoded, size, mode, &record,
+            sizeof(record));
     }
+    Mem_Free(decoded);
     Mem_Free(name);
     return result;
 }

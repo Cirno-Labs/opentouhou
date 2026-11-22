@@ -36,6 +36,9 @@ struct ARCHIVE {
     // Maps each entry that is not a directory to its index, by the path the
     // VFS source finds it at.
     ARCHIVE_INDEX by_source_path;
+    // Holds the directory that the VFS source covers, or nullptr before
+    // Archive_ToSource.
+    char *root;
     const ALLOCATOR *allocator;
 };
 
@@ -73,12 +76,25 @@ static const char *M_Name(const ARCHIVE *const archive)
     return Reader_GetName(&archive->reader);
 }
 
+// Returns the entry's name below the source's root, or nullptr when the entry
+// is a directory or lies outside the root.
+static const char *M_SourceName(
+    const ARCHIVE *const archive, const ARCHIVE_ENTRY *const entry)
+{
+    if (M_IsDirectory(entry) || !Str_StartsWith(entry->name, archive->root)) {
+        return nullptr;
+    }
+    return entry->name + strlen(archive->root);
+}
+
 static const ARCHIVE_ENTRY *M_FindSourcePath(
     const ARCHIVE *const archive, const char *const path)
 {
     if (archive->format->lookup == ARCHIVE_LOOKUP_LAST_NOCASE) {
         const ARCHIVE_ENTRY *const entry = Archive_Find(archive, path);
-        return entry == nullptr || M_IsDirectory(entry) ? nullptr : entry;
+        return entry == nullptr || M_SourceName(archive, entry) == nullptr
+            ? nullptr
+            : entry;
     }
     const int32_t *const index = HashMap_Get(&archive->by_source_path, path);
     return index == nullptr ? nullptr : &archive->table.entries.items[*index];
@@ -114,10 +130,11 @@ static void M_List(
     const ARCHIVE *const archive = (const ARCHIVE *)source;
     for (int32_t i = 0; i < archive->table.entries.count; i++) {
         const ARCHIVE_ENTRY *const entry = &archive->table.entries.items[i];
-        if (M_IsDirectory(entry)) {
+        const char *const source_name = M_SourceName(archive, entry);
+        if (source_name == nullptr) {
             continue;
         }
-        char *const path = Str_Dup(entry->name);
+        char *const path = Str_Dup(source_name);
         M_FoldAscii(path);
         const char *const name = VfsNormalize_NameBelow(path, dir);
         if (name != nullptr) {
@@ -207,6 +224,7 @@ void Archive_Close(ARCHIVE *const archive)
     Array_Free(&archive->table.entries);
     HashMap_Free(&archive->by_key);
     HashMap_Free(&archive->by_source_path);
+    Mem_Free(archive->root);
     Reader_Close(&archive->reader);
     Allocator_Free(archive->allocator, archive, sizeof(*archive));
 }
@@ -268,18 +286,20 @@ RESULT Archive_Read(
     return OK;
 }
 
-VFS_SOURCE *Archive_ToSource(ARCHIVE *const archive)
+VFS_SOURCE *Archive_ToSource(ARCHIVE *const archive, const char *const root)
 {
+    archive->root = Str_Dup(root);
     archive->base.funcs = &M_SourceFuncs;
     const char *const name = M_Name(archive);
     archive->base.name = name == nullptr ? "archive" : name;
     if (archive->format->lookup == ARCHIVE_LOOKUP_PATH) {
         for (int32_t i = 0; i < archive->table.entries.count; i++) {
             const ARCHIVE_ENTRY *const entry = &archive->table.entries.items[i];
-            if (M_IsDirectory(entry)) {
+            const char *const source_name = M_SourceName(archive, entry);
+            if (source_name == nullptr) {
                 continue;
             }
-            char *const path = Str_Dup(entry->name);
+            char *const path = Str_Dup(source_name);
             M_FoldAscii(path);
             HashMap_Put(&archive->by_source_path, path, i);
             Mem_Free(path);

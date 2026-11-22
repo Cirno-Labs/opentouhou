@@ -246,3 +246,20 @@ TEST(written_entries_read_back_and_equal_entries_give_equal_files)
     Allocator_Free(&g_HeapAllocator, data, size);
     Allocator_Free(&g_HeapAllocator, again, again_size);
 }
+
+TEST(a_name_without_the_utf8_flag_reads_as_cp932_or_raw)
+{
+    const ZIP_BUILDER_ENTRY entries[] = {
+        { "\x93\x8c\x95\xfb/th06.dat", "a", 1, 0, false },
+        { "\x81.txt", "b", 1, 0, false },
+    };
+    M_CASE test;
+    M_Open(&test, entries, 2);
+    CHECK_EQ_STR(
+        ArchiveEntry_GetName(Archive_GetEntry(test.archive, 0)),
+        "東方/th06.dat");
+    CHECK_EQ_STR(
+        ArchiveEntry_GetName(Archive_GetEntry(test.archive, 1)), "\x81.txt");
+    M_CheckRead(&test, "東方/th06.dat", "a", 1);
+    M_Close(&test);
+}

@@ -64,7 +64,8 @@ static RESULT M_MountArchive(const char *const name, const int32_t priority)
         Archive_Close(archive);
         return FAIL("%s has no ver0102.dat", name);
     }
-    Vfs_MountSource(Shell_GetFiles(), "", Archive_ToSource(archive), priority);
+    Vfs_MountSource(
+        Shell_GetFiles(), "", Archive_ToSource(archive, ""), priority);
     return OK;
 }
 
