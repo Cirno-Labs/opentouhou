@@ -454,6 +454,7 @@ void Gameplay_ResumeAfterScore(
         (int8_t)(g->storage.session->settings.lives_extra + 2);
     Pellets_SpeedLower(&g->world.pellet_shared, -2, -5);
     g->world.continue_frame = 0;
+    g->world.continue_locked = g->storage.session->settings.fix_debouncing;
     g->world.phase = GP_CONTINUE;
     g->storage.host_tick = host_tick;
     M_Run(g, raw, host_tick);
@@ -862,7 +863,9 @@ static GAMEPLAY_REQUEST M_Run(
             if (!Frame_DelayReady(&g->world.vsync, 1)) {
                 return g->world.request;
             }
-            if (g->world.input.ok || g->world.input.shot) {
+            const bool confirm = g->world.input.ok || g->world.input.shot;
+            g->world.continue_locked &= confirm;
+            if (confirm && !g->world.continue_locked) {
                 if (g->world.menu_selection == 0) {
                     M_BeginSwitch(g, GAMEPLAY_SWITCH_CONTINUE);
                 } else {

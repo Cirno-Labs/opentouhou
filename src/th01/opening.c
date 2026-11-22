@@ -234,7 +234,7 @@ static void M_Menu(
             opening->selection = 3;
         }
         const bool held =
-            opening->settings->fix_music_restart && opening->confirm_locked;
+            opening->settings->fix_debouncing && opening->confirm_locked;
         if (confirm && opening->selection == 0 && !held) {
             events->audio = OPENING_AUDIO_PLAY;
             events->track = opening->track;

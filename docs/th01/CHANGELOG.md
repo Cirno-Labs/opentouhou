@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Added `--data` with a zip of the game folder, read without unpacking.
+- Changed the music_restart fix into the debouncing fix, which also
+  stops the press that confirms a high-score name from choosing Yes at
+  the Continue prompt.
 
 ## 1.0.0 (2026-11-22)
 

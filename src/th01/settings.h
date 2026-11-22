@@ -23,9 +23,10 @@ typedef struct {
     // Stores credit_lives_extra: the menu shows this + 3, while the
     // game's remaining-lives counter starts at this + 2.
     int32_t lives_extra;
-    // Starts a music room track once per confirm press, not on every frame
-    // that confirm is held.
-    bool fix_music_restart;
+    // Acts once per confirm press where the original acts on a held key:
+    // the music room starts a track once, not on every frame, and the
+    // Continue prompt ignores the press still held from the name entry.
+    bool fix_debouncing;
 } TH01_SETTINGS;
 
 // Holds the original game options and optional fixes. shell/game loads and

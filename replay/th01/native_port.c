@@ -28,7 +28,7 @@ static void M_Seed(void *const context)
 // Turns off the fixes, which the original lacks.
 static void M_Configure(void *const context)
 {
-    g_Settings.fix_music_restart = false;
+    g_Settings.fix_debouncing = false;
 }
 
 static void M_VSync(void *const arg)

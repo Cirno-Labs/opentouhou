@@ -143,10 +143,13 @@ game changes the [game] settings.
   square pixels as large as the window allows, smooth scales with soft
   edges, and integer shows square pixels at a whole multiple of 640x400,
   with a black border around them.
-- [fixes] music_restart: starts a music room track once each time the
-  confirm key is pressed. The original restarts the track on every
-  frame that the key is held. It is on by default. Set it to false to
-  play the music room as the original game does.
+- [fixes] debouncing: acts once each time a key is pressed where the
+  original acts on a key that is held. The music room starts a track
+  once per confirm press; the original restarts it on every frame that
+  the key is held. The Continue prompt waits for a new press; in the
+  original, the press that confirms a high-score name also chooses Yes.
+  It is on by default. Set it to false to play as the original game
+  does.
 - [screenshot] resolution: native (the default) or window. format: png
   (the default) or jpg. jpeg_quality: 1 to 100, 90 by default.
 

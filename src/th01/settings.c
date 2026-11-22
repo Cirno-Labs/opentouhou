@@ -21,8 +21,7 @@ static const CONFIG_OPTION m_Options[] = {
     CONFIG_INT(TH01_SETTINGS, "game", "bombs", bombs, M_BOMBS, 0, 5),
     CONFIG_INT(
         TH01_SETTINGS, "game", "lives_extra", lives_extra, M_LIVES_EXTRA, 0, 4),
-    CONFIG_BOOL(
-        TH01_SETTINGS, "fixes", "music_restart", fix_music_restart, true),
+    CONFIG_BOOL(TH01_SETTINGS, "fixes", "debouncing", fix_debouncing, true),
 };
 
 const CONFIG_SCHEMA g_SettingsSchema =
@@ -33,7 +32,7 @@ TH01_SETTINGS g_Settings = {
     .music = M_MUSIC,
     .bombs = M_BOMBS,
     .lives_extra = M_LIVES_EXTRA,
-    .fix_music_restart = true,
+    .fix_debouncing = true,
 };
 
 RESULT Settings_ReadOriginal(READER *const reader, TH01_SETTINGS *const out)
