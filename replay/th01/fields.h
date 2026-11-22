@@ -62,7 +62,8 @@
 // in the resident block before REIIDEN's first instruction, and in the
 // session before native gameplay begins. stage is the stage id from 0 (4
 // is SinGyoku's), route 0 for Makai and 1 for Jigoku, difficulty 0 for
-// Easy to 3 for Lunatic, continues the run's total. boss_hp replaces the
+// Easy to 3 for Lunatic, continues the run's total, scene_continues those
+// of the start stage's scene, which the ending reads. boss_hp replaces the
 // HP that each boss's setup sets, right after the setup sets it; Sariel's
 // second form and Kikuri's timeout keep their own.
 #define TH01_START_FIELDS(X)                                                   \
@@ -74,7 +75,8 @@
     X(score, U32)                                                              \
     X(continues, U32)                                                          \
     X(pellet_speed, I32)                                                       \
-    X(boss_hp, I32)
+    X(boss_hp, I32)                                                            \
+    X(scene_continues, U32)
 
 // The opening fills vsync_count1, frame_rand, rng, track (the music
 // test's track) and track_starts (the tracks that the music test has
