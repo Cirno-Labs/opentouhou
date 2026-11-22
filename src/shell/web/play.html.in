@@ -97,7 +97,7 @@
   @keyframes stripes { to { background-position: 28px 0; } }
   #runner { position: absolute; bottom: 10px; left: 0; transform: translateX(-50%); transition: left 0.25s linear; }
   #stage { display: flex; position: fixed; inset: 0; align-items: center; justify-content: center; background: #000; }
-  #canvas { display: block; aspect-ratio: 4 / 3; width: min(100vw, calc(100vh * 4 / 3)) !important; height: auto !important; outline: none; }
+  #canvas { display: block; aspect-ratio: @ASPECT@; width: min(100vw, calc(100vh * @ASPECT@)) !important; height: auto !important; outline: none; }
   #controls { position: fixed; right: 12px; bottom: 12px; display: flex; gap: 8px; opacity: 0.35; transition: opacity 0.2s; }
   #controls:hover, #controls:focus-within { opacity: 1; }
   #controls button { padding: 6px 16px; font-size: 0.85em; }
@@ -128,7 +128,7 @@
           <label><input type="radio" name="language" value="en"> English</label>
           <label><input type="radio" name="language" value="ja"> <span lang="ja">日本語</span></label>
         </div>
-        <p class="credit"><span data-text="credit"></span><a href="https://www.thpatch.net">Touhou Patch Center</a></p>
+        <p class="credit" id="credit"><span data-text="credit"></span><a href="https://www.thpatch.net">Touhou Patch Center</a></p>
         <div class="stack">
           <div id="remembered" class="center off">
             <p><button id="play" data-text="play"></button></p>
@@ -172,6 +172,9 @@
   const GAME_ID = '@GAME_ID@';
   // The English patch: the first repository of its network, and the patch.
   const ENGLISH = { repo: 'https://srv.thpatch.net/repo.js', patch: 'thpatch/lang_en' };
+  // Whether the English patch covers this game; else English is the page's
+  // language only.
+  const ENGLISH_PATCH = @ENGLISH_PATCH@;
   // SDL keeps the user folder and the patches folder here. Only the user
   // folder is kept in IndexedDB through IDBFS: the patches are written at
   // each start, from their own cache.
@@ -695,8 +698,7 @@
   }
 
   async function playLoaderDemo() {
-    const language = chosenLanguage();
-    steps = STEPS[language];
+    steps = STEPS[ENGLISH_PATCH && chosenLanguage() === 'en' ? 'en' : 'ja'];
     progress = 0;
     const tick = () => new Promise((resolve) => setTimeout(resolve, 50));
     for (const [key, total] of [['read', 10], ['download', 50], ['check', 0], ['patch', 20], ['start', 0]]) {
@@ -715,13 +717,14 @@
   }
 
   async function start(blob, language = chosenLanguage()) {
-    steps = STEPS[language];
+    const patched = ENGLISH_PATCH && language === 'en';
+    steps = STEPS[patched ? 'en' : 'ja'];
     progress = 0;
     try {
       const zip = await readWithProgress(blob.stream(), blob.size, 'read');
       const wasm = await fetchWasm();
       let patches = [];
-      if (language === 'en') {
+      if (patched) {
         try {
           patches = await fetchEnglish();
         } catch (error) {
@@ -772,7 +775,9 @@
       FS.mkdirTree(full.slice(0, full.lastIndexOf('/')));
       FS.writeFile(full, data);
     }
-    writeLanguage(FS, language);
+    if (ENGLISH_PATCH) {
+      writeLanguage(FS, language);
+    }
     startSync(FS);
     show($('setup'), false);
     show($('stage'), true);
@@ -868,6 +873,8 @@
     console.error('Cannot open the stored game data:', error);
     show($('drop'), true);
   });
+  // Keeps its line without the English patch, so every game's card has one shape.
+  $('credit').style.visibility = ENGLISH_PATCH ? '' : 'hidden';
   requestAnimationFrame(() => show($('setup'), true));
   if (LOADER_DEMO) {
     setTimeout(playLoaderDemo, 600);

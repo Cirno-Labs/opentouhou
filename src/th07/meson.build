@@ -90,6 +90,10 @@ endif
 games += {
   'th07': {
     'sources': th07_sources,
+    'title': '東方妖々夢',
+    'title_en': 'Touhou 07',
+    'subtitle_en': 'Perfect Cherry Blossom',
+    'english_patch': true,
     'c_args': [layer_include['th07']],
     'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
     'link_with': [th07_main_lib, th07_lib],
