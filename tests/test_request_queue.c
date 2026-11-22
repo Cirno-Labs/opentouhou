@@ -18,6 +18,23 @@ static const INPUT_ACTION m_Actions[] = {
 };
 static const INPUT_SCHEMA m_Schema = INPUT_SCHEMA_OF(GAME_INPUT, m_Actions, 1);
 
+typedef struct {
+    bool screenshot;
+} HOTKEYS;
+
+static const INPUT_ACTION m_HotkeyActions[] = {
+    INPUT_BUTTON(HOTKEYS, screenshot, "f12", nullptr, nullptr),
+};
+static const INPUT_SCHEMA m_Hotkeys =
+    INPUT_SCHEMA_OF(HOTKEYS, m_HotkeyActions, 1);
+
+static INPUT_STATE *M_CreateInput(void)
+{
+    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    Input_AddSchema(input, &m_Hotkeys);
+    return input;
+}
+
 static INPUT_BINDING M_Binding(const char *const name)
 {
     INPUT_BINDING binding = {};
@@ -54,7 +71,7 @@ static void M_CheckBindings(
 
 TEST(a_pad_press_gives_its_one_control)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     FakeInput_Connect(1, INPUT_DEVICE_GAMEPAD, "pad", "aabb");
     INPUT_BINDING press;
     CHECK(!ShellRequests_ReadPadPress(input, &press));
@@ -71,51 +88,67 @@ TEST(a_pad_press_gives_its_one_control)
 
 TEST(press_snapshots_keep_unbound_keys_until_a_tick)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     SHELL_INPUT_PRESSES presses = {};
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(!presses.key_pending && !presses.pad_pending);
     FakeInput_SetKey(4, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(presses.key_pending);
     M_CheckName(presses.key, "a");
     FakeInput_SetKey(4, false);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(presses.key_pending);
     FakeInput_SetKey(5, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     M_CheckName(presses.key, "a");
     ShellRequests_ClearPresses(&presses);
     CHECK(!presses.key_pending && !presses.pad_pending);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(!presses.key_pending);
     FakeInput_SetKey(5, false);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     FakeInput_SetKey(5, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(presses.key_pending);
     M_CheckName(presses.key, "b");
     Input_Destroy(input);
 }
 
+TEST(a_hotkey_press_is_left_out)
+{
+    INPUT_STATE *const input = M_CreateInput();
+    SHELL_INPUT_PRESSES presses = {};
+    FakeInput_SetKey(69, true);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
+    CHECK(!presses.key_pending);
+    FakeInput_SetKey(4, true);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
+    CHECK(presses.key_pending);
+    M_CheckName(presses.key, "a");
+    FakeInput_SetKey(4, false);
+    FakeInput_SetKey(69, false);
+    Input_Destroy(input);
+}
+
 TEST(keyboard_and_pad_snapshots_are_independent)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     SHELL_INPUT_PRESSES presses = {};
     FakeInput_Connect(1, INPUT_DEVICE_GAMEPAD, "pad", "aabb");
     FakeInput_SetKey(0xe0, true);
     FakeInput_SetKey(4, true);
     FakeInput_SetButton(1, 0, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(presses.key_pending && presses.pad_pending);
     M_CheckName(presses.key, "ctrl+a");
     M_CheckName(presses.pad, "south");
     ShellRequests_ClearPresses(&presses);
     CHECK(!presses.key_pending && !presses.pad_pending);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(!presses.key_pending && !presses.pad_pending);
     FakeInput_SetKey(0xe1, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(presses.key_pending && !presses.pad_pending);
     M_CheckName(presses.key, "ctrl+left_shift");
     Input_Destroy(input);
@@ -125,17 +158,17 @@ TEST(an_ordinary_key_replaces_a_pending_modifier_or_lock)
 {
     static const int prefixes[] = { 0xe1, 0x39, 0x47, 0x53 };
     for (size_t i = 0; i < sizeof(prefixes) / sizeof(*prefixes); i++) {
-        INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+        INPUT_STATE *const input = M_CreateInput();
         SHELL_INPUT_PRESSES presses = {};
         FakeInput_SetKey(prefixes[i], true);
-        ShellRequests_PollPresses(&presses, input);
+        ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
         CHECK(presses.key_pending);
         CHECK_EQ_INT(presses.key.codes[presses.key.count - 1], prefixes[i]);
         FakeInput_SetKey(4, true);
-        ShellRequests_PollPresses(&presses, input);
+        ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
         CHECK_EQ_INT(presses.key.codes[presses.key.count - 1], 4);
         FakeInput_SetKey(4, false);
-        ShellRequests_PollPresses(&presses, input);
+        ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
         CHECK_EQ_INT(presses.key.codes[presses.key.count - 1], 4);
         ShellRequests_ClearPresses(&presses);
         CHECK(!presses.key_pending);
@@ -145,23 +178,23 @@ TEST(an_ordinary_key_replaces_a_pending_modifier_or_lock)
 
 TEST(a_pending_ordinary_key_is_kept_when_a_modifier_follows)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     SHELL_INPUT_PRESSES presses = {};
     FakeInput_SetKey(4, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     FakeInput_SetKey(4, false);
     FakeInput_SetKey(0xe1, true);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     M_CheckName(presses.key, "a");
     ShellRequests_ClearPresses(&presses);
-    ShellRequests_PollPresses(&presses, input);
+    ShellRequests_PollPresses(&presses, input, &m_Hotkeys);
     CHECK(!presses.key_pending);
     Input_Destroy(input);
 }
 
 TEST(a_joystick_press_counts_and_a_key_does_not)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     FakeInput_Connect(2, INPUT_DEVICE_JOYSTICK, "stick", "ccdd");
     INPUT_BINDING press;
     FakeInput_SetKey(4, true);
@@ -176,7 +209,7 @@ TEST(a_joystick_press_counts_and_a_key_does_not)
 
 TEST(requests_apply_in_order_after_the_queue)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     SHELL_REQUESTS requests = { .fullscreen = -1 };
     ShellRequests_Add(
         &requests,
@@ -200,7 +233,7 @@ TEST(requests_apply_in_order_after_the_queue)
 
 TEST(the_pad_reset_keeps_the_keyboard)
 {
-    INPUT_STATE *const input = Input_Create(&m_Schema, &g_HeapAllocator);
+    INPUT_STATE *const input = M_CreateInput();
     Input_Unbind(input, &m_Schema, 0, 0, M_Binding("z"));
     Input_Bind(input, &m_Schema, 0, 0, M_Binding("c"));
     Input_Unbind(input, &m_Schema, 0, 0, M_Binding("south"));

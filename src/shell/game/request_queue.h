@@ -38,8 +38,11 @@ typedef struct {
 // Polls unbound keyboard and pad presses before ticks. Keeps the first
 // pending press of each kind until a tick consumes the snapshot, preferring
 // an ordinary keyboard trigger over a modifier-only or lock-only trigger.
+// Leaves out a keyboard chord bound to an action of skipped, such as a
+// hotkey.
 void ShellRequests_PollPresses(
-    SHELL_INPUT_PRESSES *presses, INPUT_STATE *input);
+    SHELL_INPUT_PRESSES *presses, INPUT_STATE *input,
+    const INPUT_SCHEMA *skipped);
 
 // Clears presses after one tick, also when a display frame runs more ticks.
 void ShellRequests_ClearPresses(SHELL_INPUT_PRESSES *presses);

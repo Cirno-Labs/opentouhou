@@ -3,6 +3,8 @@
 #include "core/base/log.h"
 #include "core/input/codes.h"
 
+#include <string.h>
+
 #define M_MAX_BINDINGS 32
 
 static bool M_IsModifierOrLock(const INPUT_BINDING binding)
@@ -65,11 +67,35 @@ bool ShellRequests_ReadPadPress(
     return true;
 }
 
+static bool M_IsBound(
+    const INPUT_STATE *const input, const INPUT_SCHEMA *const schema,
+    const INPUT_BINDING binding)
+{
+    for (size_t action = 0; action < schema->count; action++) {
+        INPUT_BINDING bindings[M_MAX_BINDINGS];
+        const size_t count = Input_GetBindings(
+            input, schema, 0, action, bindings, M_MAX_BINDINGS);
+        for (size_t i = 0; i < count && i < M_MAX_BINDINGS; i++) {
+            if (bindings[i].device == binding.device
+                && bindings[i].count == binding.count
+                && memcmp(
+                       bindings[i].codes, binding.codes,
+                       binding.count * sizeof(binding.codes[0]))
+                    == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void ShellRequests_PollPresses(
-    SHELL_INPUT_PRESSES *const presses, INPUT_STATE *const input)
+    SHELL_INPUT_PRESSES *const presses, INPUT_STATE *const input,
+    const INPUT_SCHEMA *const skipped)
 {
     INPUT_BINDING key;
     if (Input_LastPressed(input, INPUT_DEVICE_KEYBOARD, &key)
+        && !M_IsBound(input, skipped, key)
         && (!presses->key_pending
             || (M_IsModifierOrLock(presses->key)
                 && !M_IsModifierOrLock(key)))) {
