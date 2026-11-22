@@ -161,7 +161,7 @@ def file_version(version: str) -> str:
     return version.replace("+", "-")
 
 
-PLATFORM_NAMES = {"linux": "Linux", "win": "Windows", "mac": "macOS"}
+PLATFORM_NAMES = {"linux": "Linux", "win": "Windows", "mac": "macOS", "web": "Web"}
 
 
 def generate_package_name(game: str, version: str, platform: str) -> str:
