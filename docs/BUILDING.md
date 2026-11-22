@@ -205,6 +205,17 @@ backends of the replay harness. The
 dependencies are static libraries, and the Windows executables link the
 MinGW runtime statically, so they need no DLLs beyond those of Windows.
 
+The web has a base and a media image and no othpatch image. They are
+based on the official `emscripten/emsdk` image and use the Meson cross
+file `tools/docker/web/meson_cross.txt`. `just build-web` writes each
+game as `build/web/<target>/o<game>.js` and `.wasm`. Every library is
+built with `-pthread`, because the audio decoder is a thread, so the
+page that loads a game must be served with the
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` headers. The page writes
+the game's zip into the file system and calls main with
+`--data` and `--user-dir`.
+
 FFmpeg supports PNG, MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and
 MP3 audio. No GPL component is enabled, so its license stays LGPL. curl
 supports HTTP and HTTPS only. Its TLS is mbedTLS on Linux and macOS and
@@ -230,6 +241,7 @@ each image in the Actions cache under its tag.
 ```sh
 just image-linux     # build the three Linux images locally
 just image-win
+just image-web       # the two web images
 ```
 
 Change a Dockerfile or a pin, then rebuild and push the new images

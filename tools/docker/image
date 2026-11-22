@@ -2,7 +2,7 @@
 """Name, build and push the build images.
 
 Each platform has three images: base, and media and othpatch, which are
-built on base. The Dockerfile of an image is
+built on base. The web platform has no othpatch image. The Dockerfile of an image is
 tools/docker/<platform>/<image>/Dockerfile, and its ARGs take their values
 from tools/docker/pins.
 
@@ -25,7 +25,7 @@ REPO_DIR = Path(__file__).resolve().parents[2]
 DOCKER_DIR = REPO_DIR / "tools/docker"
 PINS = DOCKER_DIR / "pins"
 DEFAULT_OWNER = "cirno-labs"
-PLATFORMS = ["linux", "win"]
+PLATFORMS = ["linux", "win", "web"]
 PARENTS = {"base": None, "media": "base", "othpatch": "base"}
 # Matches a path component of an image name, as Docker accepts it.
 NAMESPACE = re.compile(r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*")

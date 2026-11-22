@@ -1,0 +1,15 @@
+# Meson cross file for builds in the web build image.
+[binaries]
+c = ['ccache', 'emcc']
+ar = 'emar'
+strip = 'emstrip'
+pkg-config = 'pkg-config'
+
+[properties]
+pkg_config_libdir = '/ext/lib/pkgconfig'
+
+[host_machine]
+system = 'emscripten'
+cpu_family = 'wasm32'
+cpu = 'wasm32'
+endian = 'little'
