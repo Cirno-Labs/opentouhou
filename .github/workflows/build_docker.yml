@@ -16,6 +16,7 @@ jobs:
         platform:
           - linux
           - win
+          - web
     steps:
       - name: Install just
         uses: taiki-e/install-action@6d97d0d47ea06f0bb4e81bc7911476e7cc61b312 # just

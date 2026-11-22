@@ -42,3 +42,8 @@ push-image-win: (image-win "0")
 # Build the web images locally: base and media.
 [group('docker')]
 image-web force="1": (_docker_build "web" "media" force)
+
+# Push the web images to the registry.
+[group('docker')]
+push-image-web: (image-web "0")
+    for image in base media; do tools/docker/image push web $image; done

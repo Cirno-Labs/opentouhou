@@ -58,6 +58,21 @@ jobs:
       platform: win
       target: ${{ matrix.target }}
 
+  # The web build only catches what the other platforms miss, so it builds
+  # the release target only.
+  build_web:
+    name: Web
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - release
+    uses: ./.github/workflows/job_build.yml
+    with:
+      platform: web
+      target: ${{ matrix.target }}
+      packages: games
+
   # Named as the build, so that the dashboard shows the Windows build and
   # its tests side by side.
   test_win:
