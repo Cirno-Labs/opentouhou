@@ -197,6 +197,8 @@ if build_games
           'TITLE': game['title'],
           'TITLE_EN': game['title_en'],
           'SUBTITLE_EN': game['subtitle_en'],
+          'ENGLISH_PATCH': game.get('english_patch', false).to_string(),
+          'ASPECT': game.get('aspect', '4 / 3'),
         },
       )
       # The page shows the game's icon, the largest image of its .ico.
