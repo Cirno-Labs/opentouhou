@@ -1,0 +1,25 @@
+# Starts at SinGyoku, stage 5, with 1 HP and no lives, so that a bomb
+# damages it. A bomb kills it; at the route select, down moves to Jigoku
+# and a shot takes it, and the run goes into stage 6 of the Jigoku route.
+frames 3500
+start stage 4
+start route 0
+start lives 0
+start bombs 5
+start boss_hp 1
+input 760 shot
+input 761 none
+input 1000 shot
+input 1002 none
+input 1200 shot+left+right
+input 1210 none
+input 1866 down
+input 1872 none
+input 1900 shot
+input 1904 none
+input 2200 shot
+input 2204 none
+input 2500 shot
+input 2504 none
+input 2800 shot
+input 2804 none
