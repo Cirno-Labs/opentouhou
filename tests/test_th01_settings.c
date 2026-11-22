@@ -24,7 +24,7 @@ static void M_CheckSettings(
     CHECK_EQ_INT(actual.music, expected.music);
     CHECK_EQ_INT(actual.bombs, expected.bombs);
     CHECK_EQ_INT(actual.lives_extra, expected.lives_extra);
-    CHECK_EQ_INT(actual.fix_music_restart, expected.fix_music_restart);
+    CHECK_EQ_INT(actual.fix_debouncing, expected.fix_debouncing);
 }
 
 static TH01_SETTINGS M_Defaults(void)
@@ -71,7 +71,7 @@ TEST(defaults_match_the_original_options)
             .music = SETTINGS_MUSIC_FM,
             .bombs = 1,
             .lives_extra = 2,
-            .fix_music_restart = true,
+            .fix_debouncing = true,
         });
     M_CheckSettings(g_Settings, settings);
     CHECK_EQ_INT(settings.lives_extra + 3, 5);
@@ -86,7 +86,7 @@ TEST(native_ini_round_trip_keeps_all_options_and_other_sections)
     CHECK_EQ_STR(Ini_Get(ini, "game", "music"), "fm");
     CHECK_EQ_STR(Ini_Get(ini, "game", "bombs"), "2");
     CHECK_EQ_STR(Ini_Get(ini, "game", "lives_extra"), "1");
-    CHECK_EQ_STR(Ini_Get(ini, "fixes", "music_restart"), "false");
+    CHECK_EQ_STR(Ini_Get(ini, "fixes", "debouncing"), "false");
     CHECK_EQ_STR(Ini_Get(ini, "video", "fullscreen"), "true");
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);

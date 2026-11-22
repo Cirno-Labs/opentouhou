@@ -237,7 +237,7 @@ static uint32_t M_HeldStarts(const bool fix)
     TH01_SETTINGS settings;
     OPENING opening;
     M_Init(&arena, &video, &assets, &settings, &opening);
-    settings.fix_music_restart = fix;
+    settings.fix_debouncing = fix;
     M_Options(&opening);
     for (int32_t i = 0; i < 3; i++) {
         M_Tick(&opening, (TH01_INPUT) { .down = true });
@@ -257,7 +257,7 @@ static uint32_t M_HeldStarts(const bool fix)
     return starts;
 }
 
-TEST(music_restart_fix_plays_once_per_confirm_press)
+TEST(debouncing_fix_plays_once_per_confirm_press)
 {
     CHECK_EQ_INT(M_HeldStarts(true), 2);
     CHECK_EQ_INT(M_HeldStarts(false), 6);

@@ -44,8 +44,10 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 
 // Continues from a real score-owner handoff into the original Continue menu
 // and runs it to its first wait in the score's last host tick, as REIIDEN
-// goes from regist_menu into continue_menu with no VSync between. Call only
-// after the score request has been handled; does no registration.
+// goes from regist_menu into continue_menu with no VSync between. In the
+// original the press that confirms the name is still down there and
+// confirms Yes; fix_debouncing makes the menu wait for a fresh press. Call
+// only after the score request has been handled; does no registration.
 void Gameplay_ResumeAfterScore(
     GAMEPLAY *gameplay, const TH01_INPUT *input, uint64_t host_tick);
 const TRAM *Gameplay_TextLayer(const GAMEPLAY *gameplay);

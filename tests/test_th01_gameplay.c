@@ -296,6 +296,37 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     Arena_Free(&f.arena);
 }
 
+// Returns the tick on which the Continue prompt confirms Yes, with shot
+// still held from the name entry for 8 ticks, released for 2, then
+// pressed again.
+static int32_t M_ContinueConfirmTick(const bool fix)
+{
+    FIXTURE f;
+    M_Init(&f);
+    GAMEPLAY *const g = f.game;
+    f.session.settings.fix_debouncing = fix;
+    g->world.request = GAMEPLAY_REQUEST_SCORE;
+    uint64_t tick = 0;
+    Gameplay_ResumeAfterScore(g, &(TH01_INPUT) { .shot = true }, tick);
+    int32_t confirmed = 0;
+    for (int32_t i = 1; i <= 20 && confirmed == 0; i++) {
+        const TH01_INPUT raw = { .shot = i <= 8 || i > 10 };
+        Gameplay_Tick(g, &raw, true, ++tick);
+        if (g->world.phase == GP_SWITCH) {
+            confirmed = i;
+        }
+    }
+    CHECK_EQ_INT(g->world.menu_selection, 0);
+    Arena_Free(&f.arena);
+    return confirmed;
+}
+
+TEST(debouncing_fix_makes_continue_wait_for_a_fresh_press)
+{
+    CHECK_EQ_INT(M_ContinueConfirmTick(false), 1);
+    CHECK_EQ_INT(M_ContinueConfirmTick(true), 12);
+}
+
 TEST(gameover_restores_defined_adjacent_array_values)
 {
     const int16_t lefts[] = { 0, 80, 88 };
