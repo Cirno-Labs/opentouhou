@@ -46,8 +46,8 @@ jobs:
             // Each package is one artifact named
             // <program>-<version>-<platform>-<target>[.zip|.exe]. A name that
             // does not match is left out, so no other text reaches the comment.
-            const pattern = /^([a-z0-9]+)-[A-Za-z0-9.+-]+-(Windows|Linux|macOS)-(release|debug)(\.zip|\.exe)?$/;
-            const platforms = ['Windows', 'Linux', 'macOS'];
+            const pattern = /^([a-z0-9]+)-[A-Za-z0-9.+-]+-(Windows|Linux|macOS|Web)-(release|debug)(\.zip|\.exe)?$/;
+            const platforms = ['Windows', 'Linux', 'macOS', 'Web'];
             const targets = ['release', 'debug'];
             const table = new Map();
             for (const item of artifacts) {

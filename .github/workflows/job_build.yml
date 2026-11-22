@@ -5,7 +5,7 @@ on:
     inputs:
       platform:
         type: string
-        description: "Platform to build for: linux or win"
+        description: "Platform to build for: linux, win or web"
         required: true
       target:
         type: string
@@ -26,7 +26,7 @@ on:
 
 jobs:
   build:
-    name: ${{ inputs.platform == 'win' && 'Build' || 'Build and test' }} (${{ inputs.platform }}, ${{ inputs.target }})
+    name: ${{ inputs.platform == 'linux' && 'Build and test' || 'Build' }} (${{ inputs.platform }}, ${{ inputs.target }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,14 +53,16 @@ jobs:
       # without a registry (see tools/docker/image) keeps each local image
       # in the Actions cache, keyed by its tag, so that only a change to
       # an image builds it again. The base image is restored only to build
-      # a child.
+      # a child. The web has no othpatch image.
       - name: Find the images
         id: image
         env:
           PACKAGES: ${{ inputs.packages }}
           PLATFORM: ${{ inputs.platform }}
         run: |
-          for image in base media othpatch; do
+          images="base media othpatch"
+          if [ "$PLATFORM" = web ]; then images="base media"; fi
+          for image in $images; do
             echo "$image=$(tools/docker/image tag "$PLATFORM" "$image")" >> "$GITHUB_OUTPUT"
           done
           case "$(tools/docker/image tag "$PLATFORM" base)" in
@@ -70,7 +72,9 @@ jobs:
           case "$PACKAGES" in
             games|all) echo "media_needed=true" >> "$GITHUB_OUTPUT" ;;
           esac
-          echo "othpatch_needed=true" >> "$GITHUB_OUTPUT"
+          if [ "$PLATFORM" != web ]; then
+            echo "othpatch_needed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Restore the media image
         id: media-cache
@@ -113,9 +117,9 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .cache/ccache
-          key: ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-${{ github.sha }}
+          key: ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt', 'tools/docker/web/meson_cross.txt') }}-${{ github.sha }}
           restore-keys: |
-            ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt') }}-
+            ccache-v2-${{ inputs.platform }}-${{ inputs.packages }}-${{ inputs.target }}-${{ hashFiles('justfile', 'tools/docker/pins', 'tools/docker/*/*/Dockerfile', 'tools/docker/win/meson_cross_x86_64.txt', 'tools/docker/web/meson_cross.txt') }}-
 
       - name: Build and package
         env:
