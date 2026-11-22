@@ -252,8 +252,7 @@ core_gfx_gl_lib = static_library(
   dependencies: [sdl3, cc_libm],
 )
 
-# SDL is a dependency of the library, not of its users: layers above core
-# link it, but never see its headers.
+# Layers above core never see the headers of its external libraries.
 core_dep = declare_dependency(
   compile_args: core_include,
   link_with: [
@@ -263,16 +262,5 @@ core_dep = declare_dependency(
     core_image_lib, core_io_lib, core_json_lib, core_math_lib, core_args_lib,
     core_hash_lib, core_base_lib,
   ],
-  dependencies: [
-    sdl3.partial_dependency(links: true),
-    sdl3_ttf.partial_dependency(links: true),
-    jpeg.partial_dependency(links: true),
-    avcodec.partial_dependency(links: true),
-    avutil.partial_dependency(links: true),
-    swscale.partial_dependency(links: true),
-    avformat.partial_dependency(links: true),
-    swresample.partial_dependency(links: true),
-    text_system,
-    cc_libm,
-  ],
+  dependencies: [text_system, cc_libm],
 )

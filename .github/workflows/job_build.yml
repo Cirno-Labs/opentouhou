@@ -143,11 +143,10 @@ jobs:
         run: just test "$PACKAGES"
 
       # The Windows unit tests build here and run on Windows, in
-      # job_test_win.yml. The upload holds the test list and the executables of each
-      # build directory, at their paths in the repository. The executables
-      # lose their symbols and go into one zstd archive with a long window:
-      # each one holds the same libraries, so the archive is about a seventh
-      # of a zip of them.
+      # job_test_win.yml. The upload holds the test list, the executables
+      # and the DLL of each build directory, at their paths in the
+      # repository. The files lose their symbols and go into one zstd
+      # archive.
       - name: Build the Windows unit tests
         if: ${{ inputs.platform == 'win' }}
         env:
@@ -160,8 +159,8 @@ jobs:
             if [ -e "$dir/meson-info/intro-tests.json" ]; then
               mkdir -p "$stage/$dir/meson-info" "$stage/$dir/tests"
               cp "$dir/meson-info/meson-info.json" "$dir/meson-info/intro-tests.json" "$stage/$dir/meson-info/"
-              for exe in "$dir"/tests/*.exe; do
-                strip --strip-all -o "$stage/$exe" "$exe"
+              for file in "$dir"/tests/*.exe "$dir"/tests/*.dll; do
+                strip --strip-all -o "$stage/$file" "$file"
               done
             fi
           done
