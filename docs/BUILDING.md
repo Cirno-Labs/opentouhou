@@ -218,12 +218,23 @@ page that loads a game must be served with the
 web page also gets `o<game>.html`, made from
 `src/shell/web/play.html.in`. The page takes a zip of the original
 game's folder, keeps it in the browser's IndexedDB, writes it into the
-file system and calls main with `--data`. The user folder and the
-patches folder are below `/libsdl`, which the page keeps in IndexedDB
-too. `just serve-web` builds the games and serves them on
-`http://localhost:8006/` with these headers. `just package-web` writes
-`o<game>-<version>-Web.zip` to `build/packages/` for each game with a
-page, holding `o<game>.html`, `.js` and `.wasm` and the two documents.
+file system and calls main with `--data`. The page keeps the user
+folder in IndexedDB too. `just serve-web` builds the games and serves
+them on `http://localhost:8006/` with these headers. `just package-web`
+writes `o<game>-<version>-Web.zip` to `build/packages/` for each game
+with a page, holding `o<game>.html`, `.js` and `.wasm` and the two
+documents.
+
+The page offers English or Japanese before each start and remembers
+the choice. For English, it downloads the English patch and its
+dependencies from the Touhou Patch Center (the constant `ENGLISH` of
+the page names the first repository and the patch), only the files of
+the game and the files every game shares, checks their CRC-32 and keeps
+them in IndexedDB, apart from the user folder. A later start checks
+for updates at most once a day and downloads only the files that
+changed; without network, it uses the cached files. At each start the
+page writes the patches into the patches folder, outside IndexedDB, and
+the language into `config.ini`.
 
 FFmpeg supports PNG, MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and
 MP3 audio. No GPL component is enabled, so its license stays LGPL. curl
