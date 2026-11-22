@@ -83,6 +83,11 @@ core/base, core/json, core/io and the tools run in both images, except
 in `just test`: it runs the two images at the same time and runs these
 tests in the media image only.
 
+The tests link the external libraries from one shared library,
+`libtest_deps`, which the build puts beside them in `tests/`, so that
+each test does not carry its own copy. The programs link them
+statically.
+
 The text tests run once against IPAGothic and once against MS
 Gothic. The second run needs `OPENTOUHOU_MSGOTHIC` to name a
 msgothic.ttc, which `just test` passes into the image, and is skipped

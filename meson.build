@@ -68,25 +68,38 @@ programs = get_option('programs')
 build_games = programs != 'othpatch'
 build_othpatch = programs != 'games'
 
-sdl3 = dependency('sdl3', version: '>=3.2.0', static: true)
-
-# The case tools compress calc rows with zlib, and othpatch unpacks game
-# packages with it. No game layer depends on it.
-zlib = dependency('zlib', static: true)
-
+# The external libraries by variable name, each with its dependency and
+# the name of its archive. A library or test sees only the headers of an
+# external library. A program links the archives through external_deps,
+# and the tests link them from one shared library (see tests/meson.build).
+external_libs = {
+  'sdl3': [dependency('sdl3', version: '>=3.2.0', static: true), 'SDL3'],
+  # The case tools compress calc rows with zlib, and othpatch unpacks game
+  # packages with it. No game layer depends on it.
+  'zlib': [dependency('zlib', static: true), 'z'],
+}
 if build_games
-  sdl3_ttf = dependency('sdl3-ttf', version: '>=3.2.2', static: true)
-  freetype = dependency('freetype2', static: true)
-  jpeg = dependency('libjpeg', static: true)
-
-  # FFmpeg supplies image codecs and audio decoding and conversion.
-  # The Dockerfiles enable only the formats these modules support.
-  avcodec = dependency('libavcodec', static: true)
-  avutil = dependency('libavutil', static: true)
-  swscale = dependency('libswscale', static: true)
-  avformat = dependency('libavformat', static: true)
-  swresample = dependency('libswresample', static: true)
+  external_libs += {
+    'sdl3_ttf': [dependency('sdl3-ttf', version: '>=3.2.2', static: true), 'SDL3_ttf'],
+    'freetype': [dependency('freetype2', static: true), 'freetype'],
+    'jpeg': [dependency('libjpeg', static: true), 'jpeg'],
+    # FFmpeg supplies image codecs and audio decoding and conversion.
+    # The Dockerfiles enable only the formats these modules support.
+    'avcodec': [dependency('libavcodec', static: true), 'avcodec'],
+    'avutil': [dependency('libavutil', static: true), 'avutil'],
+    'swscale': [dependency('libswscale', static: true), 'swscale'],
+    'avformat': [dependency('libavformat', static: true), 'avformat'],
+    'swresample': [dependency('libswresample', static: true), 'swresample'],
+  }
 endif
+if build_othpatch
+  external_libs += {'curl': [dependency('libcurl', static: true), 'curl']}
+endif
+external_deps = []
+foreach name, lib : external_libs
+  external_deps += lib[0]
+  set_variable(name, lib[0].partial_dependency(compile_args: true, includes: true))
+endforeach
 
 subdir('src/core')
 subdir('src/shell')
@@ -135,10 +148,7 @@ if build_games
       c_args: game['c_args'],
       link_with: game.get('link_with', []) + [builtin_libs[name]],
       implicit_include_directories: false,
-      dependencies: [
-        shell_game_dep, stg_dep,
-        sdl3.partial_dependency(compile_args: true, includes: true),
-      ],
+      dependencies: [shell_game_dep, stg_dep, sdl3] + external_deps,
       win_subsystem: get_option('buildtype') == 'release' ? 'windows' : 'console',
     )
   endforeach
@@ -154,7 +164,7 @@ if build_games
       th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_native_lib,
       harness_lib, builtin_libs['th01'],
     ],
-    dependencies: [core_dep, stg_dep, pc98_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    dependencies: [core_dep, stg_dep, pc98_dep, sdl3] + external_deps,
     win_subsystem: 'console',
   )
   executable(
@@ -166,7 +176,7 @@ if build_games
       th06_main_lib, th06_harness_lib, th06_lib, harness_native_lib, harness_lib,
       builtin_libs['th06'],
     ],
-    dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    dependencies: [core_dep, stg_dep, sdl3] + external_deps,
     win_subsystem: 'console',
   )
   executable(
@@ -179,7 +189,7 @@ if build_games
       th07_main_lib, th07_harness_lib, th07_lib, harness_native_lib, harness_lib,
       builtin_libs['th07'],
     ],
-    dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    dependencies: [core_dep, stg_dep, sdl3] + external_deps,
     win_subsystem: 'console',
   )
   # Each game's dosbox backend is a program and a library, which run inside
@@ -191,7 +201,7 @@ if build_games
       output: 'dosbox-x.conf',
       copy: true,
     )
-    dosbox_deps = [sdl3, zlib, avcodec, avutil, swscale, jpeg, cc_libm]
+    dosbox_deps = external_deps + [cc_libm]
     dosbox_export = files('replay/dosbox/export.map')
     executable(
       'dostestdosbox',
@@ -246,7 +256,7 @@ if build_games
     c_args: [layer_include['th06']] + stg_include + shell_include + bot_include,
     implicit_include_directories: false,
     link_with: [bot_lib, th06_lib],
-    dependencies: [core_dep, stg_dep, sdl3.partial_dependency(compile_args: true, includes: true)],
+    dependencies: [core_dep, stg_dep, sdl3] + external_deps,
     win_subsystem: 'console',
   )
 endif
@@ -261,7 +271,7 @@ if build_othpatch
     c_args: [layer_include['othpatch'], othpatch_version_include] + shell_include,
     implicit_include_directories: false,
     link_with: othpatch_libs,
-    dependencies: othpatch_deps,
+    dependencies: othpatch_deps + external_deps,
     link_args: host_machine.system() == 'windows' ? ['-municode'] : [],
     win_subsystem: 'console',
   )

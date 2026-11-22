@@ -2,6 +2,45 @@
 # core/archive/zip and the tools are in the suite core or tools. Every build
 # runs them, whatever programs it has.
 
+# The tests link the external libraries from one shared library instead of
+# each carrying its own copy. Each external library's variable here links
+# that library as well, and a test that reaches an external library only
+# through the libraries that it links names test_deps. FreeType's archive
+# hides its symbols, so the tests link FreeType statically. The libraries
+# need libm, which the external libraries' flags otherwise bring.
+test_deps_archives = []
+test_deps_static = [cc_libm]
+foreach name, lib : external_libs
+  if name == 'freetype'
+    test_deps_static += lib[0]
+  else
+    test_deps_archives += '@0@/lib@1@.a'.format(lib[0].get_variable(pkgconfig: 'libdir'), lib[1])
+  endif
+endforeach
+if host_machine.system() == 'darwin'
+  test_deps_args = []
+  foreach archive : test_deps_archives
+    test_deps_args += '-Wl,-force_load,' + archive
+  endforeach
+else
+  test_deps_args = ['-Wl,--whole-archive'] + test_deps_archives + ['-Wl,--no-whole-archive']
+endif
+if host_machine.system() == 'windows'
+  # MinGW otherwise exports only the marked symbols when an object marks any.
+  test_deps_args += '-Wl,--export-all-symbols'
+elif host_machine.system() == 'linux'
+  # swscale's x86 inline assembly addresses its tables directly, which a
+  # shared library allows only when it binds its own symbols.
+  test_deps_args += '-Wl,-Bsymbolic'
+endif
+test_deps = declare_dependency(
+  link_with: shared_library('test_deps', link_args: test_deps_args, dependencies: external_deps),
+  dependencies: test_deps_static,
+)
+foreach name, lib : external_libs
+  set_variable(name, declare_dependency(dependencies: [get_variable(name), test_deps]))
+endforeach
+
 # Each part of core/base has a test named after it.
 foreach part : [
   'arena',
@@ -152,6 +191,7 @@ foreach name, expected : {
         c_args: core_include,
         implicit_include_directories: false,
         link_with: [core_io_lib, core_base_lib],
+        dependencies: [test_deps],
       ),
     ],
     suite: ['unit', 'core'],
@@ -209,7 +249,7 @@ if build_othpatch
         c_args: [layer_include['othpatch']] + core_include,
         implicit_include_directories: false,
         link_with: othpatch_libs,
-        dependencies: othpatch_deps,
+        dependencies: othpatch_deps + [test_deps],
       ),
       env: {
         'TEST_DIR': meson.current_build_dir() / 'tmp' / 'othpatch_' + part,
@@ -274,6 +314,7 @@ foreach ascii_test : ['ascii', 'ascii_menu']
       link_with: [
         th06_lib, stg_translation_lib, stg_note_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
       ],
+      dependencies: [test_deps],
     ),
     suite: 'unit',
   )
@@ -292,6 +333,7 @@ foreach replay_test : ['replay', 'replay_format']
         th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
         core_image_lib, core_math_lib,
       ],
+      dependencies: [test_deps],
     ),
     suite: 'unit',
   )
@@ -309,6 +351,7 @@ test(
       th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_io_lib, core_math_lib, core_base_lib,
       core_gfx_lib, core_image_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -322,6 +365,7 @@ test(
     c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th06_lib, stg_translation_lib, stg_note_lib, core_io_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -482,6 +526,7 @@ test(
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -497,6 +542,7 @@ test(
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, core_gfx_lib, core_image_lib, core_math_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -617,6 +663,7 @@ test(
     link_with: [
       th06_lib, stg_translation_lib, stg_note_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -635,6 +682,7 @@ test(
       th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_math_lib, core_base_lib, core_gfx_lib,
       core_image_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -887,6 +935,7 @@ test(
     c_args: [layer_include['th07']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th07_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1002,6 +1051,7 @@ test(
     c_args: [layer_include['th07']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th07_lib, stg_lzss_lib, core_io_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1016,6 +1066,7 @@ test(
     c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th07_lib, stg_lzss_lib, core_vfs_lib, core_io_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1131,6 +1182,7 @@ test(
       th07_lib, stg_chain_lib, stg_rng_lib, stg_lzss_lib, core_io_lib,
       core_base_lib, core_math_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1144,6 +1196,7 @@ test(
     c_args: [layer_include['th07']] + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th07_lib, stg_rng_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1159,6 +1212,7 @@ test(
     link_with: [
       th07_lib, stg_chain_lib, stg_rng_lib, core_base_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1173,6 +1227,7 @@ test(
     c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
     implicit_include_directories: false,
     link_with: [th07_lib, stg_rng_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1848,6 +1903,7 @@ test(
     c_args: core_include,
     implicit_include_directories: false,
     link_with: [core_vfs_lib, core_io_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1860,6 +1916,7 @@ test(
     c_args: core_include,
     implicit_include_directories: false,
     link_with: [core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1873,6 +1930,7 @@ test(
     c_args: stg_include,
     implicit_include_directories: false,
     link_with: [stg_lzss_lib, core_hash_lib, core_io_lib, core_base_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1888,6 +1946,7 @@ test(
     link_with: [
       stg_pbg3_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -1902,6 +1961,7 @@ test(
     link_with: [
       stg_pbg4_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
     ],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )
@@ -2483,7 +2543,7 @@ foreach part : ['mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna']
       'test_pc98_' + part,
       'test_pc98_' + part + '.c',
       implicit_include_directories: false,
-      dependencies: [pc98_dep] + (part == 'mdrv_data' ? [sdl3] : []),
+      dependencies: [pc98_dep, test_deps] + (part == 'mdrv_data' ? [sdl3] : []),
     ),
     suite: 'unit',
     env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'pc98' / part},

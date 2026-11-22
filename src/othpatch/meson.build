@@ -1,5 +1,3 @@
-curl = dependency('libcurl', static: true)
-
 othpatch_fetch_backends = {
   'linux': 'fetch/backend_linux.c',
   'darwin': 'fetch/backend_mac.c',
