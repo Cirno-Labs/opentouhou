@@ -34,6 +34,9 @@
 #ifdef _WIN32
     #include <windows.h>
 #endif
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -517,6 +520,16 @@ SHELL_STATUS Shell_Init(const GAME_DESC *const desc, int argc, char *argv[])
     return SHELL_FAILURE;
 }
 
+#ifdef __EMSCRIPTEN__
+// Quits the game as closing its window does; the web page's Exit button
+// calls it.
+EMSCRIPTEN_KEEPALIVE void Shell_RequestQuit(void)
+{
+    SDL_Event event = { .type = SDL_EVENT_QUIT };
+    SDL_PushEvent(&event);
+}
+#endif
+
 SHELL_STATUS Shell_Event(const SDL_Event *const event)
 {
     if (event->type == SDL_EVENT_QUIT) {
@@ -652,4 +665,8 @@ void Shell_Quit(void)
         SDL_DestroyWindow(ctx->window);
     }
     LogFile_Close();
+#ifdef __EMSCRIPTEN__
+    // Lets the web page take over once the game is over.
+    emscripten_run_script("globalThis.opentouhouQuit?.()");
+#endif
 }

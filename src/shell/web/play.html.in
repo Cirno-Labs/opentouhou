@@ -98,8 +98,9 @@
   #runner { position: absolute; bottom: 10px; left: 0; transform: translateX(-50%); transition: left 0.25s linear; }
   #stage { display: flex; position: fixed; inset: 0; align-items: center; justify-content: center; background: #000; }
   #canvas { display: block; aspect-ratio: 4 / 3; width: min(100vw, calc(100vh * 4 / 3)) !important; height: auto !important; outline: none; }
-  #fullscreen { position: fixed; right: 12px; bottom: 12px; padding: 6px 16px; font-size: 0.85em; opacity: 0.35; }
-  #fullscreen:hover { opacity: 1; }
+  #controls { position: fixed; right: 12px; bottom: 12px; display: flex; gap: 8px; opacity: 0.35; transition: opacity 0.2s; }
+  #controls:hover, #controls:focus-within { opacity: 1; }
+  #controls button { padding: 6px 16px; font-size: 0.85em; }
   #log {
     position: fixed; left: 12px; right: 12px; bottom: 12px; max-height: 50%; overflow: auto;
     padding: 14px; border-radius: 18px; background: #fff; color: var(--ink);
@@ -116,7 +117,7 @@
 </style>
 </head>
 <body>
-<div id="setup" class="fade">
+<div id="setup" class="fade off">
   <main class="card">
     <img class="art" src="@PROGRAM@.png" alt="">
     <h1 data-text="heading"></h1>
@@ -153,12 +154,15 @@
 </div>
 <div id="stage" class="fade off">
   <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <button id="fullscreen" data-text="fullscreen"></button>
+  <div id="controls">
+    <button id="exit" data-text="exit"></button>
+    <button id="fullscreen" data-text="fullscreen"></button>
+  </div>
 </div>
 <div id="log" class="fade off">
   <p><strong data-text="error"></strong></p>
   <pre id="log-text"></pre>
-  <p id="fallback" hidden><button id="japanese" data-text="japanese"></button></p>
+  <p><span id="fallback" hidden><button id="japanese" data-text="japanese"></button> </span><button id="back" data-text="back"></button></p>
 </div>
 <script>
 // Keeps its names local, because the game's script declares globals.
@@ -183,6 +187,9 @@
   // about 20 ms breaks up at every slow frame. ?audio_frames=N overrides it.
   const AUDIO_FRAMES =
     new URLSearchParams(location.search).get('audio_frames') || '2048';
+  // ?loader=demo plays the progress bar's steps with made-up sizes, for
+  // working on the page without a game.
+  const LOADER_DEMO = new URLSearchParams(location.search).get('loader') === 'demo';
 
   const TITLE = '@TITLE@';
   const TITLE_EN = '@TITLE_EN@';
@@ -204,8 +211,10 @@
       patch: 'Downloading the English patch',
       start: 'Starting the game',
       fullscreen: 'Fullscreen',
+      exit: 'Exit',
       error: 'Something went wrong.',
       japanese: 'Play in Japanese',
+      back: 'Back',
       footer: 'an unofficial port, not endorsed by ZUN · Touhou Project by ZUN (Team Shanghai Alice)',
     },
     ja: {
@@ -224,8 +233,10 @@
       patch: '英語パッチをダウンロード中',
       start: 'ゲームを起動中',
       fullscreen: '全画面',
+      exit: '終了',
       error: 'エラーが発生しました。',
       japanese: '日本語で遊ぶ',
+      back: '戻る',
       footer: 'ZUNの公認を受けていない非公式の移植 · 東方Project：ZUN（上海アリス幻樂団）',
     },
   };
@@ -645,6 +656,21 @@
     FS.writeFile(path, lines.join('\n'));
   }
 
+  // Saves the user folder a last time, fades the game out and reloads the
+  // page, which starts over at Play: a finished game cannot run again.
+  function leaveGame() {
+    Module.FS.syncfs(false, (error) => {
+      if (error) {
+        console.error('Cannot save the user folder:', error);
+      }
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      show($('stage'), false);
+      setTimeout(() => location.reload(), FADE_MS);
+    });
+  }
+
   function startSync(FS) {
     let busy = false;
     const sync = () => {
@@ -668,6 +694,26 @@
     });
   }
 
+  async function playLoaderDemo() {
+    const language = chosenLanguage();
+    steps = STEPS[language];
+    progress = 0;
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 50));
+    for (const [key, total] of [['read', 10], ['download', 50], ['check', 0], ['patch', 20], ['start', 0]]) {
+      if (!steps[key]) {
+        continue;
+      }
+      setStatus(key, 0, total);
+      for (let done = 1; done <= (total || 10); done++) {
+        await tick();
+        setStatus(key, done, total);
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    show($('loading'), false);
+    show($('choose'), true);
+  }
+
   async function start(blob, language = chosenLanguage()) {
     steps = STEPS[language];
     progress = 0;
@@ -686,6 +732,12 @@
       }
       setStatus('start');
       window.alert = showError;
+      // The game calls this once it has quit and saved.
+      globalThis.opentouhouQuit = () => {
+        if ($('log').classList.contains('off')) {
+          leaveGame();
+        }
+      };
       window.Module = {
         canvas: $('canvas'),
         wasmBinary: wasm,
@@ -768,7 +820,16 @@
     drop.classList.remove('over');
     choose(event.dataTransfer.files[0]);
   });
+  // A failed start may leave the game half run, so back starts the page over.
+  $('back').addEventListener('click', () => {
+    show($('log'), false);
+    show($('stage'), false);
+    show($('setup'), false);
+    setTimeout(() => location.reload(), FADE_MS);
+  });
   $('canvas').addEventListener('click', () => $('canvas').focus());
+  // The game quits as from its menu, saves, and the page takes over.
+  $('exit').addEventListener('click', () => Module._Shell_RequestQuit());
   $('fullscreen').addEventListener('click', () => {
     $('stage').requestFullscreen();
     $('canvas').focus();
@@ -807,6 +868,10 @@
     console.error('Cannot open the stored game data:', error);
     show($('drop'), true);
   });
+  requestAnimationFrame(() => show($('setup'), true));
+  if (LOADER_DEMO) {
+    setTimeout(playLoaderDemo, 600);
+  }
 })();
 </script>
 </body>
