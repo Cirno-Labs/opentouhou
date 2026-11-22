@@ -19,6 +19,7 @@ endif
 
 shell_game_lib = static_library(
   'shell_game',
+  'data.c',
   'game/clock.c',
   'game/host.c',
   'game/hotkeys.c',
@@ -32,7 +33,7 @@ shell_game_lib = static_library(
 )
 
 # The stand-ins for shell/game where a game runs without it (see null.h).
-shell_null_files = files('null/files.c')
+shell_null_files = files('data.c', 'null/files.c')
 shell_null_devices = files('null/devices.c')
 
 # The built-in files of the games below builtin. Each game lists the ones

@@ -16,6 +16,7 @@
 #include "core/patch.h"
 #include "core/text/font_registry.h"
 #include "core/vfs.h"
+#include "shell/data.h"
 #include "shell/fatal.h"
 #include "shell/folders.h"
 #include "shell/log_file.h"
@@ -96,7 +97,7 @@ static SHELL_CONTEXT m_Context;
 static const ARG_OPTION m_Options[] = {
     ARG_STRING_OF(
         M_ARGS, "--data", folders.data_dir, "<dir>",
-        "read the original game's data from <dir>"),
+        "read the original game's data from <dir>, or from a zip of it"),
     ARG_STRING_OF(
         M_ARGS, "--user-dir", folders.user_dir, "<dir>",
         "keep settings, scores and replays in <dir>"),
@@ -158,8 +159,7 @@ static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
 static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
 {
     ctx->files = Vfs_Create(&g_HeapAllocator);
-    RESULT result =
-        Vfs_MountDir(ctx->files, "", ctx->folders.data_dir, 0, false);
+    RESULT result = ShellData_Mount(ctx->files, ctx->folders.data_dir);
     // A data folder that cannot be read lacks every file.
     if (!IS_OK(result) && ctx->desc->data_file_count > 0) {
         ctx->missing_data_file = ctx->desc->data_files[0];

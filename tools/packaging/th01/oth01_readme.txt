@@ -42,6 +42,9 @@ On macOS, the program inside oth01.app takes the arguments:
 
     oth01.app/Contents/MacOS/oth01 --data <folder of the game>
 
+--data also takes a zip of the folder of the game, which the program
+reads without unpacking it.
+
 To see all arguments and the folders that the program uses, type:
 
     oth01 --help

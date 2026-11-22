@@ -1,5 +1,9 @@
 # th07 changelog
 
+## Unreleased
+
+- Added `--data` with a zip of the game folder, read without unpacking.
+
 ## 1.0.0 (2026-11-20)
 
 - Added th07, compatible with original-format replays.

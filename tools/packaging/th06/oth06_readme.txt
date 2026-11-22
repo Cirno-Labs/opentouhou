@@ -40,6 +40,9 @@ On macOS, the program inside oth06.app takes the arguments:
 
     oth06.app/Contents/MacOS/oth06 --data <folder of the game>
 
+--data also takes a zip of the folder of the game, which the program
+reads without unpacking it.
+
 To see all arguments and the folders that the program uses, type:
 
     oth06 --help

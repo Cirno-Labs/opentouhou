@@ -15,8 +15,9 @@
 // - elsewhere, the folder of the executable.
 //
 // The data folder is the --data argument, or the program folder without
-// one. A file portable.txt in the program folder turns on portable mode.
-// The user folder and the patches folder then follow this rule:
+// one. --data may also name a zip of the data folder. A file portable.txt
+// in the program folder turns on portable mode. The user folder and the
+// patches folder then follow this rule:
 //
 // | Mode                       | User folder               | Patches folder |
 // | -------------------------- | ------------------------- | -------------- |

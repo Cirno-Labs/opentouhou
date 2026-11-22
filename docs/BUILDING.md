@@ -42,8 +42,8 @@ is the game id with an `o` before it, so that it does not clash with the
 original game's executable in the same folder. othpatch lands in
 `build/<platform>/othpatch/<target>/`.
 
-A game needs the original game's data: pass its folder with `--data`,
-or put the executable into that folder. The game's
+A game needs the original game's data: pass its folder, or a zip of
+it, with `--data`, or put the executable into that folder. The game's
 `tools/packaging/<game>/o<game>_readme.txt`, which the packages ship,
 describes the folders, the keys and the settings for players.
 
