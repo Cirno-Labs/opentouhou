@@ -212,9 +212,14 @@ game as `build/web/<target>/o<game>.js` and `.wasm`. Every library is
 built with `-pthread`, because the audio decoder is a thread, so the
 page that loads a game must be served with the
 `Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: require-corp` headers. The page writes
-the game's zip into the file system and calls main with
-`--data` and `--user-dir`.
+`Cross-Origin-Embedder-Policy: require-corp` headers. Each game with a
+web page also gets `o<game>.html`, made from
+`src/shell/web/play.html.in`. The page takes a zip of the original
+game's folder, keeps it in the browser's IndexedDB, writes it into the
+file system and calls main with `--data`. The user folder and the
+patches folder are below `/libsdl`, which the page keeps in IndexedDB
+too. `just serve-web` builds the games and serves them on
+`http://localhost:8006/` with these headers.
 
 FFmpeg supports PNG, MJPEG and BMP images, and WAV, Ogg Vorbis, FLAC and
 MP3 audio. No GPL component is enabled, so its license stays LGPL. curl
