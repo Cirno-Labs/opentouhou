@@ -48,6 +48,8 @@ static void M_Start(void *const arg, SESSION *const session)
     native->started = true;
     size_t count;
     const START_VALUE *const starts = Driver_Starts(native->driver, &count);
+    bool scene_set = false;
+    uint16_t scene_continues = 0;
     for (size_t i = 0; i < count; i++) {
         const uint32_t value = starts[i].value;
         switch (starts[i].field) {
@@ -77,7 +79,15 @@ static void M_Start(void *const arg, SESSION *const session)
             break;
         case TH01_START_boss_hp:
             break;
+        case TH01_START_scene_continues:
+            scene_set = true;
+            scene_continues = (uint16_t)value;
+            break;
         }
+    }
+    const size_t scene = (size_t)session->stage_id / 5;
+    if (scene_set && scene < ARRAY_SIZE(session->continues_per_scene)) {
+        session->continues_per_scene[scene] = scene_continues;
     }
 }
 
