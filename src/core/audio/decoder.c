@@ -65,7 +65,7 @@ static int64_t M_Seek(void *const opaque, const int64_t offset, int whence)
 {
     READER *const reader = opaque;
     whence &= ~AVSEEK_FORCE;
-    if (Reader_Size(reader) > INT64_MAX) {
+    if ((uint64_t)Reader_Size(reader) > INT64_MAX) {
         return AVERROR(EINVAL);
     }
     const int64_t size = (int64_t)Reader_Size(reader);
@@ -227,7 +227,8 @@ RESULT AudioDecoder_Open(READER *const reader, AUDIO_DECODER **const out)
 {
     *out = nullptr;
     FAIL_IF(Reader_Failed(reader), "audio reader has failed");
-    FAIL_IF(Reader_Size(reader) > INT64_MAX, "audio input is too large");
+    FAIL_IF(
+        (uint64_t)Reader_Size(reader) > INT64_MAX, "audio input is too large");
     Reader_Seek(reader, 0);
     AUDIO_DECODER *const decoder = Mem_AllocZ(sizeof(*decoder));
     decoder->reader = reader;
