@@ -181,10 +181,17 @@ static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
 
 static RESULT M_CreateWindow(SHELL_CONTEXT *const ctx)
 {
+#ifdef __EMSCRIPTEN__
+    // The browser offers WebGL 2, which is OpenGL ES 3.0.
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(
         SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 #ifdef __APPLE__
     // macOS offers a 3.3 core context only when it is forward-compatible.
@@ -591,9 +598,12 @@ SHELL_STATUS Shell_Iterate(void)
     }
     SDL_GL_SwapWindow(ctx->window);
 
+#ifndef __EMSCRIPTEN__
+    // The browser calls SDL_AppIterate once per animation frame itself.
     if (!ctx->vsync) {
         SDL_DelayNS(Clock_NsUntilNextTick(&ctx->clock));
     }
+#endif
     return SHELL_CONTINUE;
 }
 

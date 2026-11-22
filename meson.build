@@ -34,7 +34,7 @@ add_project_arguments(
   language: 'c',
 )
 
-if get_option('buildtype') == 'release'
+if get_option('buildtype') == 'release' and host_machine.system() != 'emscripten'
   add_project_link_arguments('-s', language: 'c')
 endif
 
@@ -45,6 +45,32 @@ if host_machine.system() == 'windows'
   # Selects MinGW's own printf family, which follows C99 (%zu, %lld) on
   # every Windows version, instead of the one in msvcrt.dll.
   add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: 'c')
+endif
+
+if host_machine.system() == 'emscripten'
+  # The page writes the game's zip into the file system before it calls
+  # main. The audio decoder is a thread, so the page needs cross-origin
+  # isolation for shared memory.
+  add_project_arguments('-pthread', language: 'c')
+  add_project_link_arguments(
+    '-pthread',
+    '-sPTHREAD_POOL_SIZE=4',
+    '-sINITIAL_MEMORY=64MB',
+    '-sALLOW_MEMORY_GROWTH',
+    '-sSTACK_SIZE=4MB',
+    '-sDEFAULT_PTHREAD_STACK_SIZE=1MB',
+    '-sMIN_WEBGL_VERSION=2',
+    '-sMAX_WEBGL_VERSION=2',
+    '-sGL_ENABLE_GET_PROC_ADDRESS',
+    '-sINVOKE_RUN=0',
+    '-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,callMain',
+    '-lidbfs.js',
+    language: 'c',
+  )
+  # emcc runs wasm-opt and minifies the JS only with -O at link.
+  if get_option('buildtype') == 'release'
+    add_project_link_arguments('-O' + get_option('optimization'), language: 'c')
+  endif
 endif
 
 # Each layer has its own include root in the build directory. The root
@@ -153,112 +179,115 @@ if build_games
     )
   endforeach
 
-  subdir('replay')
-  # Each game's native backend program runs the game under the harness.
-  executable(
-    'th01native',
-    'replay/th01/native_port.c',
-    c_args: [layer_include['th01']] + stg_include + shell_include + harness_include,
-    implicit_include_directories: false,
-    link_with: [
-      th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_native_lib,
-      harness_lib, builtin_libs['th01'],
-    ],
-    dependencies: [core_dep, stg_dep, pc98_dep, sdl3] + external_deps,
-    win_subsystem: 'console',
-  )
-  executable(
-    'th06native',
-    'replay/th06/native_port.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include + harness_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_main_lib, th06_harness_lib, th06_lib, harness_native_lib, harness_lib,
-      builtin_libs['th06'],
-    ],
-    dependencies: [core_dep, stg_dep, sdl3] + external_deps,
-    win_subsystem: 'console',
-  )
-  executable(
-    'th07native',
-    'replay/th07/native_port.c',
-    'src/th07/play_time.c',
-    c_args: [layer_include['th07']] + stg_include + shell_include + harness_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_main_lib, th07_harness_lib, th07_lib, harness_native_lib, harness_lib,
-      builtin_libs['th07'],
-    ],
-    dependencies: [core_dep, stg_dep, sdl3] + external_deps,
-    win_subsystem: 'console',
-  )
-  # Each game's dosbox backend is a program and a library, which run inside
-  # the opentouhou-dosbox-x image (replay/dosbox/dosbox.h) with the
-  # dosbox-x.conf beside them. dostest is the backend's own test game.
-  if host_machine.system() == 'linux'
-    configure_file(
-      input: 'replay/dosbox/dosbox-x.conf',
-      output: 'dosbox-x.conf',
-      copy: true,
-    )
-    dosbox_deps = external_deps + [cc_libm]
-    dosbox_export = files('replay/dosbox/export.map')
+  # The web builds the games alone.
+  if host_machine.system() != 'emscripten'
+    subdir('replay')
+    # Each game's native backend program runs the game under the harness.
     executable(
-      'dostestdosbox',
-      'replay/dosbox/launch.c',
-      'replay/dosbox/test/main.c',
-      c_args: core_include + harness_include + harness_dosbox_include,
+      'th01native',
+      'replay/th01/native_port.c',
+      c_args: [layer_include['th01']] + stg_include + shell_include + harness_include,
       implicit_include_directories: false,
-      link_with: [harness_lib],
-      dependencies: dosbox_deps,
-    )
-    shared_library(
-      'dostestdosbox',
-      'replay/dosbox/test/attach.c',
-      'replay/dosbox/test/port.c',
-      name_prefix: '',
-      c_args: core_include + harness_include + harness_dosbox_include,
-      implicit_include_directories: false,
-      link_with: [harness_dosbox_lib, harness_lib],
-      link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
-      link_depends: dosbox_export,
-      dependencies: dosbox_deps,
+      link_with: [
+        th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_native_lib,
+        harness_lib, builtin_libs['th01'],
+      ],
+      dependencies: [core_dep, stg_dep, pc98_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
     )
     executable(
-      'th01dosbox',
-      'replay/dosbox/launch.c',
-      'replay/th01/dosbox_main.c',
-      c_args: core_include + harness_include + harness_dosbox_include,
+      'th06native',
+      'replay/th06/native_port.c',
+      c_args: [layer_include['th06']] + stg_include + shell_include + harness_include,
       implicit_include_directories: false,
-      link_with: [harness_lib],
-      dependencies: dosbox_deps,
+      link_with: [
+        th06_main_lib, th06_harness_lib, th06_lib, harness_native_lib, harness_lib,
+        builtin_libs['th06'],
+      ],
+      dependencies: [core_dep, stg_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
     )
-    shared_library(
-      'th01dosbox',
-      'replay/th01/dosbox_port.c',
-      'replay/th01/dosbox_state.c',
-      'replay/th01/harness.c',
-      'src/th01/frame.c',
-      name_prefix: '',
-      c_args: [layer_include['th01']] + core_include + harness_include + harness_dosbox_include,
+    executable(
+      'th07native',
+      'replay/th07/native_port.c',
+      'src/th07/play_time.c',
+      c_args: [layer_include['th07']] + stg_include + shell_include + harness_include,
       implicit_include_directories: false,
-      link_with: [harness_dosbox_lib, harness_lib],
-      link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
-      link_depends: dosbox_export,
-      dependencies: dosbox_deps,
+      link_with: [
+        th07_main_lib, th07_harness_lib, th07_lib, harness_native_lib, harness_lib,
+        builtin_libs['th07'],
+      ],
+      dependencies: [core_dep, stg_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
+    )
+    # Each game's dosbox backend is a program and a library, which run inside
+    # the opentouhou-dosbox-x image (replay/dosbox/dosbox.h) with the
+    # dosbox-x.conf beside them. dostest is the backend's own test game.
+    if host_machine.system() == 'linux'
+      configure_file(
+        input: 'replay/dosbox/dosbox-x.conf',
+        output: 'dosbox-x.conf',
+        copy: true,
+      )
+      dosbox_deps = external_deps + [cc_libm]
+      dosbox_export = files('replay/dosbox/export.map')
+      executable(
+        'dostestdosbox',
+        'replay/dosbox/launch.c',
+        'replay/dosbox/test/main.c',
+        c_args: core_include + harness_include + harness_dosbox_include,
+        implicit_include_directories: false,
+        link_with: [harness_lib],
+        dependencies: dosbox_deps,
+      )
+      shared_library(
+        'dostestdosbox',
+        'replay/dosbox/test/attach.c',
+        'replay/dosbox/test/port.c',
+        name_prefix: '',
+        c_args: core_include + harness_include + harness_dosbox_include,
+        implicit_include_directories: false,
+        link_with: [harness_dosbox_lib, harness_lib],
+        link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
+        link_depends: dosbox_export,
+        dependencies: dosbox_deps,
+      )
+      executable(
+        'th01dosbox',
+        'replay/dosbox/launch.c',
+        'replay/th01/dosbox_main.c',
+        c_args: core_include + harness_include + harness_dosbox_include,
+        implicit_include_directories: false,
+        link_with: [harness_lib],
+        dependencies: dosbox_deps,
+      )
+      shared_library(
+        'th01dosbox',
+        'replay/th01/dosbox_port.c',
+        'replay/th01/dosbox_state.c',
+        'replay/th01/harness.c',
+        'src/th01/frame.c',
+        name_prefix: '',
+        c_args: [layer_include['th01']] + core_include + harness_include + harness_dosbox_include,
+        implicit_include_directories: false,
+        link_with: [harness_dosbox_lib, harness_lib],
+        link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
+        link_depends: dosbox_export,
+        dependencies: dosbox_deps,
+      )
+    endif
+    # Each game's recorder plays a practice stage with the bot to make a
+    # new replay file.
+    executable(
+      'th06record',
+      'replay/th06/recorder.c',
+      c_args: [layer_include['th06']] + stg_include + shell_include + bot_include,
+      implicit_include_directories: false,
+      link_with: [bot_lib, th06_lib],
+      dependencies: [core_dep, stg_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
     )
   endif
-  # Each game's recorder plays a practice stage with the bot to make a
-  # new replay file.
-  executable(
-    'th06record',
-    'replay/th06/recorder.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include + bot_include,
-    implicit_include_directories: false,
-    link_with: [bot_lib, th06_lib],
-    dependencies: [core_dep, stg_dep, sdl3] + external_deps,
-    win_subsystem: 'console',
-  )
 endif
 
 if build_othpatch

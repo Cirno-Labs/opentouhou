@@ -23,6 +23,10 @@ build-linux target="debug": (_build "linux" "media" target) (_build "linux" "oth
 [group('build')]
 build-win target="debug": (_build "win" "media" target) (_build "win" "othpatch" target)
 
+# Build every game for the web (debug or release), as <game>.js and .wasm.
+[group('build')]
+build-web target="debug": (_build "web" "media" target)
+
 # The othpatch of the commit is built too, for the packages to carry when
 # its version has no release.
 [doc("Package every game for Linux into build/packages/ (debug or release).")]

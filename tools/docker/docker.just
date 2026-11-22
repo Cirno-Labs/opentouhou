@@ -38,3 +38,7 @@ push-image-linux: (image-linux "0")
 [group('docker')]
 push-image-win: (image-win "0")
     for image in base media othpatch; do tools/docker/image push win $image; done
+
+# Build the web images locally: base and media.
+[group('docker')]
+image-web force="1": (_docker_build "web" "media" force)

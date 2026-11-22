@@ -11,7 +11,8 @@ development version. package-othpatch writes the executable of
 othpatch there, as its release names it.
 
 Each image runs this script with its platform and the programs that it
-builds: the media image the games, the othpatch image othpatch. The
+builds: the media image the games, the othpatch image othpatch. The web
+platform has only a media image, which builds the games. The
 games build in build/<platform>/<target>/, othpatch in
 build/<platform>/othpatch/<target>/. The repository is mounted at /app.
 
@@ -46,7 +47,10 @@ from shared.versioning import (
 REPO_DIR = Path("/app")
 PACKAGING_DIR = REPO_DIR / "tools/packaging"
 PACKAGES_DIR = REPO_DIR / "build/packages"
-CROSS_FILES = {"win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt"}
+CROSS_FILES = {
+    "win": REPO_DIR / "tools/docker/win/meson_cross_x86_64.txt",
+    "web": REPO_DIR / "tools/docker/web/meson_cross.txt",
+}
 EXE_SUFFIXES = {"linux": "", "win": ".exe"}
 CAPTURE_CROSS_FILE = REPO_DIR / "tools/docker/win/meson_cross_i686.txt"
 COMMAND_PROGRAMS = {
@@ -215,7 +219,7 @@ def run_package_othpatch(platform: str, target: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--platform", choices=["linux", "win"], required=True)
+    parser.add_argument("--platform", choices=["linux", "win", "web"], required=True)
     parser.add_argument("--programs", choices=["games", "othpatch"], required=True)
     subparsers = parser.add_subparsers(dest="command", required=True)
     for name in ["build", "test", "package", "package-othpatch"]:
@@ -236,6 +240,8 @@ def main() -> None:
     needed = COMMAND_PROGRAMS.get(args.command, args.programs)
     if needed != args.programs:
         parser.error(f"{args.command} runs in the image of {needed}")
+    if args.platform == "web" and args.command != "build":
+        parser.error("the web image only builds")
 
     if args.command == "build":
         run_build(args.platform, args.programs, args.target)
