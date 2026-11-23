@@ -1,4 +1,5 @@
 #include "th01/boss_b05.h"
+#include "th01/session.h"
 
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
@@ -179,7 +180,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->context.miko = &f->miko;
     f->context.route = &f->route_context;
     f->context.fade_music = M_Fade;
-    CHECK(Result_Ignore(B05_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 static void M_Enter(B05 *const b, FIXTURE *const f)
@@ -321,6 +322,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         B05 b = {};
         B05_Setup(&b, &f.context);
         Frame_Reset();
@@ -438,27 +440,5 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
         CHECK(f.pellets.slots[i * 2].moving);
         CHECK(f.pellets.slots[i * 2 + 1].moving);
     }
-    Arena_Free(&arena);
-}
-
-TEST(context_validation_requires_reached_consumers)
-{
-    ARENA arena;
-    Arena_Init(&arena, "b05", 2 * 1024 * 1024);
-    FIXTURE f;
-    M_Battle(&f, &arena);
-    f.display.remaining_lives = nullptr;
-    CHECK(!Result_Ignore(B05_ValidateContext(&f.context)));
-    f.display.remaining_lives = &f.lives;
-    f.hit_context.shots_output.action = nullptr;
-    CHECK(!Result_Ignore(B05_ValidateContext(&f.context)));
-    f.hit_context.shots_output.action = M_Shot;
-    f.hit_context.hud->numbers = nullptr;
-    CHECK(!Result_Ignore(B05_ValidateContext(&f.context)));
-    Arena_Free(&arena);
-    Arena_Init(&arena, "b05", 2 * 1024 * 1024);
-    M_Battle(&f, &arena);
-    f.context.fade_music = nullptr;
-    CHECK(!Result_Ignore(B05_ValidateContext(&f.context)));
     Arena_Free(&arena);
 }

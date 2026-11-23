@@ -88,8 +88,6 @@ void B10J_Init(B10J *boss, const ALLOCATOR *allocator);
 void B10J_BeginSetup(B10J *boss, const B10J_CONTEXT *context);
 bool B10J_ResumeSetup(B10J *boss, const B10J_CONTEXT *context);
 
-RESULT B10J_ValidateContext(const B10J_CONTEXT *context);
-
 // Runs one ordinary call, including missile and particle prefixes. False
 // suspends the owning world during the entrance or regular defeat; advance
 // only independent audio and reference VSyncs before polling again. Pending

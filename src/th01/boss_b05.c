@@ -1,5 +1,6 @@
 #include "th01/boss_b05.h"
 
+#include "th01/boss.h"
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
@@ -11,22 +12,6 @@ typedef enum {
     B05_FIRE_DOWN,
     B05_FIRE_SLING,
 } B05_FIRE;
-
-static int16_t M_Rank(
-    const B05_CONTEXT *const c, const int16_t easy, const int16_t normal,
-    const int16_t hard, const int16_t lunatic)
-{
-    switch (c->hit->display->rank) {
-    case SETTINGS_DIFFICULTY_EASY:
-        return easy;
-    case SETTINGS_DIFFICULTY_HARD:
-        return hard;
-    case SETTINGS_DIFFICULTY_LUNATIC:
-        return lunatic;
-    default:
-        return normal;
-    }
-}
 
 static void M_Put(
     const B05 *const b, const B05_CONTEXT *const c,
@@ -124,7 +109,7 @@ static void M_Half(B05 *const b, const B05_CONTEXT *const c)
         return;
     }
     if (b->frame == 100) {
-        b->pattern_state = M_Rank(c, 10, 15, 20, 30);
+        b->pattern_state = Boss_Rank(10, 15, 20, 30);
         b->angle = b->direction == -1 ? 0 : 128;
     }
     if (b->frame < 160) {
@@ -150,7 +135,7 @@ static void M_Slam(B05 *const b, const B05_CONTEXT *const c)
     }
     const PLAYER *const player = c->hit->display->player;
     if (b->frame == 100) {
-        b->pattern_state = M_Rank(c, 4, 4, 5, 6);
+        b->pattern_state = Boss_Rank(4, 4, 5, 6);
         const uint8_t angle = Math16_Angle(
             Math16_Wrap(368 - Math16_Wrap(b->sphere.top + 32)),
             Math16_Wrap(player->left - Math16_Wrap(b->sphere.left + 32)));
@@ -184,8 +169,8 @@ static void M_FireMan(
     if (fire == B05_FIRE_NONE) {
         return;
     }
-    b->pattern_state = fire == B05_FIRE_DOWN ? M_Rank(c, 48, 54, 60, 66)
-                                             : M_Rank(c, 48, 64, 80, 96);
+    b->pattern_state = fire == B05_FIRE_DOWN ? Boss_Rank(48, 54, 60, 66)
+                                             : Boss_Rank(48, 64, 80, 96);
     for (int32_t i = 0; i < 10; i++) {
         if (fire == B05_FIRE_DOWN) {
             const uint8_t angle = (uint8_t)(MasterRng_Next(c->rng) % 128);
@@ -245,7 +230,7 @@ static void M_Chase(B05 *const b, const B05_CONTEXT *const c)
 {
     M_Transform(b, c, 0, B05_FIRE_NONE);
     if (b->frame > 140 && b->frame <= 220 && b->frame % 8 == 0) {
-        const int16_t speed = M_Rank(c, 55, 58, 62, 65);
+        const int16_t speed = Boss_Rank(55, 58, 62, 65);
         M_Add(
             c, Math16_Wrap(b->sphere.left + 44),
             Math16_Wrap(b->sphere.top + 44), 0xf0, 16, PELLET_CHASE, speed);
@@ -259,7 +244,7 @@ static void M_Cross(B05 *const b, const B05_CONTEXT *const c)
 {
     M_Transform(b, c, 0, B05_FIRE_NONE);
     if (b->frame > 140 && b->frame % 8 == 0) {
-        const int16_t speed = M_Rank(c, 60, 70, 75, 80);
+        const int16_t speed = Boss_Rank(60, 70, 75, 80);
         M_Add(
             c, Math16_Wrap(b->sphere.left + 12),
             Math16_Wrap(b->sphere.top + 44), 0x30, speed, PELLET_REGULAR, 0);
@@ -287,7 +272,7 @@ static bool M_Entrance(B05 *const b, const B05_CONTEXT *const c)
                 b->boss_palette = c->hit->palette->saved;
                 b->sphere.orb_inactive = false;
                 b->hit.frame = 0;
-                b->pattern_state = M_Rank(c, 70, 50, 30, 10);
+                b->pattern_state = Boss_Rank(70, 50, 30, 10);
                 b->pending = B05_IDLE;
                 return true;
             }
@@ -346,27 +331,6 @@ static bool M_Death(
     return true;
 }
 
-static RESULT M_LoadBos(
-    VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
-    BOS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
-    RESULT result = Bos_Load(&reader, allocator, out);
-    Reader_Close(&reader);
-    return result;
-}
-
-static RESULT M_LoadBackground(
-    VFS *const vfs, const ALLOCATOR *const allocator, PI_IMAGE *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS1.GRP", VFS_IN_MEMORY, &reader));
-    RESULT result = Pi_Load(&reader, allocator, out);
-    Reader_Close(&reader);
-    return result;
-}
-
 RESULT B05_ValidateAssets(const B05_ASSETS *const assets)
 {
     const BOS *const banks[] = { &assets->sphere, &assets->flash,
@@ -393,10 +357,10 @@ RESULT B05_LoadAssets(
 {
     *out = (B05_ASSETS) {};
     B05_ASSETS loaded = {};
-    MUST(M_LoadBos(vfs, "BOSS1.BOS", allocator, &loaded.sphere));
-    MUST(M_LoadBos(vfs, "BOSS1_2.BOS", allocator, &loaded.flash));
-    MUST(M_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
-    MUST(M_LoadBackground(vfs, allocator, &loaded.background));
+    MUST(Boss_LoadBos(vfs, "BOSS1.BOS", allocator, &loaded.sphere));
+    MUST(Boss_LoadBos(vfs, "BOSS1_2.BOS", allocator, &loaded.flash));
+    MUST(Boss_LoadBos(vfs, "BOSS1_3.BOS", allocator, &loaded.person));
+    MUST(Boss_LoadBackground(vfs, "BOSS1.GRP", allocator, &loaded.background));
     MUST(B05_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
@@ -429,50 +393,6 @@ void B05_Setup(B05 *const boss, const B05_CONTEXT *const c)
     boss->phase = 0;
     boss->pending = B05_IDLE;
     Particles_Init(c->particles);
-}
-
-RESULT B05_ValidateContext(const B05_CONTEXT *const c)
-{
-    FAIL_IF(
-        c == nullptr || c->assets == nullptr || c->sprites == nullptr
-            || c->hit == nullptr || c->hit->display == nullptr
-            || c->hit->palette == nullptr || c->hit->health == nullptr
-            || c->hit->hud == nullptr || c->hit->shots_output.action == nullptr
-            || c->hit->display->remaining_lives == nullptr
-            || c->hit->display->high_score == nullptr
-            || c->hit->display->font == nullptr
-            || c->hit->display->sprites == nullptr
-            || c->hit->display->player == nullptr
-            || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
-            || c->hit->orb == nullptr || c->hit->test_damage == nullptr
-            || c->hit->effect == nullptr || c->stage_palette == nullptr
-            || c->particles == nullptr || c->pellets == nullptr
-            || c->pellet_shared == nullptr || c->rng == nullptr
-            || c->miko == nullptr || c->route == nullptr,
-        "Missing SinGyoku context");
-    MUST(B05_ValidateAssets(c->assets));
-    FAIL_IF(
-        c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr,
-        "Missing SinGyoku HUD storage");
-    MUST(Shots_ValidateSprites(c->hit->display->sprites));
-    for (uint32_t digit = 0xff10; digit <= 0xff19; digit++) {
-        FAIL_IF(
-            GameText_Find(c->hit->display->font, digit) == nullptr,
-            "Missing SinGyoku score glyph");
-    }
-    MUST(BossDefeat_ValidateSprites(c->miko));
-    FAIL_IF(
-        c->route->assets == nullptr || c->route->scene == nullptr
-            || c->route->route == nullptr || c->route->stage_cleared == nullptr
-            || c->route->effect == nullptr || c->fade_music == nullptr,
-        "Missing SinGyoku route or music consumer");
-    MUST(RouteSelect_ValidateAssets(c->route->assets));
-    FAIL_IF(
-        c->route->palette != c->hit->palette
-            || c->route->player != c->hit->display->player,
-        "Inconsistent SinGyoku context");
-    return OK;
 }
 
 bool B05_UpdateAndRender(
@@ -537,13 +457,10 @@ bool B05_UpdateAndRender(
                     b->pattern == 4 ? (int16_t)(MasterRng_Next(c->rng) % 4) : 4;
             }
         }
-        BOSS_HIT_CONTEXT hit = *c->hit;
-        hit.hp = &b->hp;
-        hit.boss_palette = &b->boss_palette;
         const uint8_t flash[] = { 13 };
         BossHit_UpdateAndRender(
-            &b->hit, &hit, flash, 1, 3000,
-            BossEntity_HitTestOrb(&b->sphere, hit.orb),
+            &b->hit, c->hit, &b->hp, &b->boss_palette, flash, 1, 3000,
+            BossEntity_HitTestOrb(&b->sphere, c->hit->orb),
             (BOSS_SHOT_HITBOX) {
                 Math16_Wrap(b->sphere.left + 16),
                 Math16_Wrap(b->sphere.top + 32),

@@ -122,7 +122,6 @@ void B20M_Init(B20M *boss, const ALLOCATOR *allocator);
 // Binds actor images, resets the first form and retains pattern history.
 // Run before the separate cached entrance. Performs no allocation or IO.
 void B20M_Setup(B20M *boss, const B20M_CONTEXT *context);
-RESULT B20M_ValidateContext(const B20M_CONTEXT *context);
 
 // Starts the cached load/scroll/diagonal entrance. Advance reference VSyncs
 // and a monotonic 60 Hz host serial while polling; pending polls stay inert.

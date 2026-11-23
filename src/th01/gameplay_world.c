@@ -36,13 +36,6 @@ RESULT Gameplay_Prepare(
     memcpy(initial, &g->world, sizeof(*initial));
     g->storage.initial = initial;
     Gameplay_Bind(g);
-    MUST(B05_ValidateContext(&g->bindings.c05));
-    MUST(B10J_ValidateContext(&g->bindings.c10j));
-    MUST(B10M_ValidateContext(&g->bindings.c10m));
-    MUST(B15J_ValidateContext(&g->bindings.c15j));
-    MUST(B15M_ValidateContext(&g->bindings.c15m));
-    MUST(B20J_ValidateContext(&g->bindings.c20j));
-    MUST(B20M_ValidateContext(&g->bindings.c20m));
     *out = g;
     return OK;
 }

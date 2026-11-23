@@ -67,11 +67,6 @@ RESULT B10M_ValidateAssets(const B10M_ASSETS *assets);
 // files, allocates nothing, and leaves the background drawing to its owner.
 void B10M_Setup(B10M *boss, const B10M_CONTEXT *context);
 
-// Validates the required borrowed resources before simulation. Update binds
-// its own HP and boss palette over the hit context's optional fields. The
-// fade_music consumer posts a nonblocking audio request through hit->user.
-RESULT B10M_ValidateContext(const B10M_CONTEXT *context);
-
 // Runs one ordinary call including the missile prefix. The 331-frame entrance
 // and eye transitions leave the owning world running. False suspends it during
 // regular defeat: advance only reference VSyncs and independent audio before
