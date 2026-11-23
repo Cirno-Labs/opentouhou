@@ -1,5 +1,6 @@
 #pragma once
 
+#include "th07/anm/draw.h"
 #include "th07/screens/result/types.h"
 
 #include "core/math/vec.h"
@@ -138,6 +139,10 @@ void GameManager_Create(GAME_MANAGER *gm);
 // Returns whether a box centered at x, y lies at least partly inside a
 // 384 x 448 play area. The original ignores the size of play_area.
 bool GameManager_IsInPlayArea(float x, float y, float width, float height);
+
+// Returns a draw on the play area view clipped to the camera viewport,
+// blended between ticks.
+ANM_DRAW GameManager_PlayAreaDraw(void);
 
 // Returns whether shot (character * 2 + shot type) opens the Extra stage:
 // a clear of Easy, Normal, Hard or Lunatic without continues.

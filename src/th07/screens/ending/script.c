@@ -16,11 +16,6 @@
 
 #define M_DIFF_ARENA_CAPACITY (16 * 1024 * 1024)
 
-static bool M_IsBreak(const uint8_t c)
-{
-    return c == '\n' || c == '\r';
-}
-
 // Returns the number of bytes before the first NUL, at most size.
 static size_t M_Length(const uint8_t *const bytes, const size_t size)
 {
@@ -40,6 +35,11 @@ static char *M_Decode(const uint8_t *const bytes, const size_t size)
     }
     LOG_WARNING("Dropped an ending text that does not convert");
     return Mem_AllocZ(1);
+}
+
+static bool M_IsBreak(const uint8_t c)
+{
+    return c == '\n' || c == '\r';
 }
 
 static bool M_StartsLine(const ENDING_SCRIPT *const script, const size_t at)

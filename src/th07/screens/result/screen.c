@@ -157,11 +157,6 @@ static void M_Interrupt(M_SCREEN *const screen, const int16_t interrupt)
     }
 }
 
-static void M_SetAlpha(ANM_VM *const vm, const int32_t alpha)
-{
-    vm->color = (vm->color & 0xffffff) | ((uint32_t)alpha << 24);
-}
-
 static bool M_RecordsNoScore(void)
 {
     return g_GameManager.run.score_disabled || g_GameManager.mode.in_replay;
@@ -334,7 +329,7 @@ static void M_RenderShotName(M_SCREEN *const screen)
         Anm_RenderTextCentered(
             vm, 0xffffff, 0, "%s", g_Strings[m_ShotNames[screen->shot]]),
         LOG_LEVEL_WARNING);
-    M_SetAlpha(vm, 0xff);
+    Anm_SetAlpha(vm, 0xff);
 }
 
 static void M_EndNameEntry(M_SCREEN *const screen)
@@ -842,7 +837,7 @@ static void M_RenderSpellCards(M_SCREEN *const screen)
                 Mem_Free(name);
             }
         }
-        M_SetAlpha(vm, 0xff);
+        Anm_SetAlpha(vm, 0xff);
     }
     ANM_VM *const title = &screen->text_sprites[M_SPELL_PAGE_SIZE];
     Result_Log(
@@ -851,7 +846,7 @@ static void M_RenderSpellCards(M_SCREEN *const screen)
             g_Strings[m_ShotNames[screen->shown_spell_shot]], SPELL_CARD_COUNT,
             screen->captured_counts[screen->spell_shot]),
         LOG_LEVEL_WARNING);
-    M_SetAlpha(title, 0xff);
+    Anm_SetAlpha(title, 0xff);
 }
 
 static void M_UpdateSpellCards(M_SCREEN *const screen)
@@ -1016,7 +1011,8 @@ static bool M_UpdatePlayStats(M_SCREEN *const screen)
         }
         if (screen->frame < 40) {
             for (int32_t i = 0; i < M_STATS_TEXT_COUNT; i++) {
-                M_SetAlpha(&screen->text_sprites[i], screen->frame * 0xff / 40);
+                Anm_SetAlpha(
+                    &screen->text_sprites[i], screen->frame * 0xff / 40);
             }
         } else {
             screen->state = M_STATE_PLAY_STATS;
@@ -1040,7 +1036,7 @@ static bool M_UpdatePlayStats(M_SCREEN *const screen)
     default:
         if (screen->frame < 20) {
             for (int32_t i = 0; i < M_STATS_TEXT_COUNT; i++) {
-                M_SetAlpha(
+                Anm_SetAlpha(
                     &screen->text_sprites[i], 0xff - screen->frame * 0xff / 20);
             }
         } else {

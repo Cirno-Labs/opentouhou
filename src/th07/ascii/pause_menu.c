@@ -384,11 +384,8 @@ void PauseMenu_DrawPauseMenu(PAUSE_MENU *const menu)
         return;
     }
     M_SetViewport();
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.interpolate = true;
+    ANM_DRAW draw = GameManager_PlayAreaDraw();
     draw.part = ASCII_PAUSE_SPRITE_COUNT;
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
     if (g_AsciiText.capture_background && menu->state != M_PAUSE_OPEN) {
         ANM_VM background = menu->background;
         background.z_write_off = true;
@@ -581,11 +578,8 @@ void PauseMenu_DrawContinueMenu(CONTINUE_MENU *const menu)
         return;
     }
     M_SetViewport();
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.interpolate = true;
+    ANM_DRAW draw = GameManager_PlayAreaDraw();
     draw.part = ASCII_CONTINUE_SPRITE_COUNT;
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
     if (g_AsciiText.capture_background
         && (menu->state != M_CONTINUE_OPEN || menu->state_frames > 2)) {
         Anm_DrawUnrotated(&menu->background, &draw);

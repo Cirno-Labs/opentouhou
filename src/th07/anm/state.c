@@ -545,6 +545,11 @@ void Anm_SetSprite(ANM_VM *const vm, const int32_t sprite)
     vm->draw_matrix = vm->matrix;
 }
 
+void Anm_SetAlpha(ANM_VM *const vm, const uint8_t alpha)
+{
+    vm->color = (vm->color & 0x00ffffffu) | (uint32_t)alpha << 24;
+}
+
 static void M_SetScript(ANM_VM *const vm, const ANM_SCRIPT *const script)
 {
     // Retail clears the whole VM, pos and script number included.

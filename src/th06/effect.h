@@ -15,6 +15,8 @@
 // are part of the simulation. Draw records smooth each effect lifetime.
 
 #define EFFECT_COUNT 0x200
+#define EFFECT_ANM_SLOT 11
+#define EFFECT_FIRST_SPRITE 0x2b3
 
 // Selects what an effect shows and how it moves. Enemy scripts pick types
 // by number too, so the numbers are fixed.

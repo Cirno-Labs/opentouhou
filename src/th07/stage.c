@@ -697,15 +697,6 @@ static GFX_COLOR M_Rgba(const uint32_t color)
                          (uint8_t)color, (uint8_t)(color >> 24) };
 }
 
-static ANM_DRAW M_PlayAreaDraw(void)
-{
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
-    draw.interpolate = true;
-    return draw;
-}
-
 // Returns whether the box of object at instance lies in front of the
 // camera and near enough.
 static bool M_ObjectVisible(
@@ -771,7 +762,7 @@ static void M_DrawProjected(
     }
     vm->pos = center;
     if (vm->pos.z >= 0.0f && vm->pos.z <= 1.0f) {
-        ANM_DRAW draw = M_PlayAreaDraw();
+        ANM_DRAW draw = GameManager_PlayAreaDraw();
         draw.depth_test = GFX_DEPTH_LESS_EQUAL;
         draw.part = part;
         Anm_DrawNoRound(vm, &draw);
@@ -868,7 +859,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
     }
     g_Stage.tint.color = COLOR_ARGB(0x00, 0x80, 0x80, 0x80);
     if (M_LayersShown()) {
-        const ANM_DRAW draw = M_PlayAreaDraw();
+        const ANM_DRAW draw = GameManager_PlayAreaDraw();
         for (int32_t i = 0; i < 2; i++) {
             if (g_Stage.layers[i].sprite > 0) {
                 Anm_Draw(&g_Stage.layers[i], &draw);
@@ -909,7 +900,7 @@ static CHAIN_STATUS M_Draw2(void *const arg)
         }
     }
     if (g_Stage.spell_card.state >= 1) {
-        ANM_DRAW draw = M_PlayAreaDraw();
+        ANM_DRAW draw = GameManager_PlayAreaDraw();
         for (int32_t i = 0; i < g_Stage.spell_background.count; i++) {
             draw.part = (uint32_t)i;
             Anm_Draw(&g_Stage.spell_background.sprites[i], &draw);

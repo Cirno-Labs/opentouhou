@@ -2,6 +2,7 @@
 #include "th06/gui/private.h"
 
 #include "th06/ascii.h"
+#include "th06/effect.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -26,6 +27,45 @@
 
 #include <string.h>
 
+#define M_CALC_PRIORITY 12
+#define M_DRAW_PRIORITY 11
+#define M_FRONT_SLOT 0xd
+#define M_LOADING_SLOT 0xe
+#define M_FACE_SLOT 0xf
+#define M_FACE_COUNT 3
+#define M_STAGE_FACE_SLOT 0x12
+#define M_STAGE_FACE_COUNT 3
+#define M_FRONT_SCRIPT 0x600
+#define M_BOSS_BAR_APPEAR_SCRIPT 0x613
+#define M_BOSS_BAR_LEAVE_SCRIPT 0x614
+#define M_BOMB_BAR_SCRIPT 0x617
+#define M_SPELL_BAR_SCRIPT 0x618
+#define M_LOADING_SCRIPT 0x619
+#define M_PLAYER_PORTRAIT 0x4a0
+#define M_BOSS_PORTRAIT_SCRIPT 0x4a2
+#define M_BOSS_PORTRAIT_SPRITE 0x4a8
+#define M_BOMB_PORTRAIT_SCRIPT 0x4a1
+#define M_SPELL_PORTRAIT_SCRIPT 0x4a3
+#define M_SPELL_PORTRAIT_SPRITE 0x4a8
+#define M_STAGE_NAME_SCRIPT 0x700
+#define M_SONG_NAME_SCRIPT 0x701
+#define M_NAMEPLATE_SCRIPT 0x704
+#define M_BOMB_NAME_SCRIPT 0x706
+#define M_SPELL_NAME_SCRIPT 0x707
+#define M_NAME_FONT_SIZE 15
+#define M_BANNER_FONT_SIZE 15
+#define M_SONG_FONT_SIZE 16
+#define M_LINE_FONT_SIZE 15
+#define M_SHOOT_WAIT_FRAMES 8
+#define M_BOX_OPEN_FRAMES 60
+#define M_BOSS_BAR_ALPHA_STEP 4
+#define M_BOSS_BAR_ALPHA_RISE_END 0xfc
+#define M_BOSS_BAR_ALPHA_MAX 0xff
+#define M_BOSS_HEALTH_RISE 0.01f
+#define M_BOSS_HEALTH_FALL 0.02f
+#define M_BONUS_POPUP_FRAMES 250
+#define M_FULL_POWER_POPUP_FRAMES 180
+#define M_SPELL_BONUS_POPUP_FRAMES 280
 #define M_DIFF_ARENA_CAPACITY (16 * 1024 * 1024)
 
 // Selects what a dialogue instruction does. The script stops on opcodes
@@ -330,7 +370,7 @@ static const M_STAGE_FILES *M_GetStageFiles(void)
 
 static void M_UpdateBossBar(void)
 {
-    ANM_VM *const bar = &g_Gui.hud.sprites[M_BOSS_BAR];
+    ANM_VM *const bar = &g_Gui.hud.sprites[GUI_HUD_BOSS_BAR];
     if (g_Gui.boss.present) {
         if (g_Gui.hud.boss_bar == GUI_BOSS_BAR_HIDDEN) {
             Anm_StartScript(bar, M_BOSS_BAR_APPEAR_SCRIPT);
@@ -454,7 +494,7 @@ static void M_AddStageClearBonus(void)
 static void M_UpdateInterface(void)
 {
     for (int32_t i = 0; i < GUI_SPRITE_COUNT; i++) {
-        if (i == M_BOSS_BAR && g_Gui.msg.script < 0) {
+        if (i == GUI_HUD_BOSS_BAR && g_Gui.msg.script < 0) {
             M_UpdateBossBar();
         } else {
             Anm_Step(&g_Gui.hud.sprites[i]);
@@ -511,7 +551,7 @@ static void M_ShowLine(const MSG_INSTR *const instr)
             LOG_LEVEL_WARNING);
     }
     ANM_VM *const line = &g_Gui.msg.lines[instr->index];
-    Anm_StartScript(line, instr->index + M_LINE_SCRIPT);
+    Anm_StartScript(line, instr->index + GUI_LINE_SCRIPT);
     line->font_height = M_LINE_FONT_SIZE;
     line->font_width = line->font_height;
     g_Gui.msg.line_texts[instr->index] = instr->text;
@@ -885,11 +925,11 @@ void Gui_StartMsg(const int32_t index)
     }
     if (g_GameManager.run.stage == 6) {
         Result_Log(
-            Anm_Load(M_EFFECT_SLOT, "data/eff06.anm", M_EFFECT_FIRST_SPRITE),
+            Anm_Load(EFFECT_ANM_SLOT, "data/eff06.anm", EFFECT_FIRST_SPRITE),
             LOG_LEVEL_ERROR);
     } else if (g_GameManager.run.stage == 7) {
         Result_Log(
-            Anm_Load(M_EFFECT_SLOT, "data/eff07.anm", M_EFFECT_FIRST_SPRITE),
+            Anm_Load(EFFECT_ANM_SLOT, "data/eff07.anm", EFFECT_FIRST_SPRITE),
             LOG_LEVEL_ERROR);
         Result_Log(
             Anm_Load(

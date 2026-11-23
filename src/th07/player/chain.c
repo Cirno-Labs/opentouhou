@@ -867,19 +867,10 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
-static ANM_DRAW M_DrawContext(void)
-{
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
-    draw.interpolate = true;
-    return draw;
-}
-
 static CHAIN_STATUS M_Draw(void *const arg)
 {
     PLAYER *const player = &g_Player;
-    const ANM_DRAW draw = M_DrawContext();
+    const ANM_DRAW draw = GameManager_PlayAreaDraw();
     Player_DrawShots(PLAYER_BULLET_FLYING, &draw);
     if (player->bomb.running) {
         Bomb_Draw(&draw);
@@ -917,7 +908,7 @@ static CHAIN_STATUS M_Draw(void *const arg)
 
 static CHAIN_STATUS M_Draw2(void *const arg)
 {
-    const ANM_DRAW draw = M_DrawContext();
+    const ANM_DRAW draw = GameManager_PlayAreaDraw();
     Player_DrawShots(PLAYER_BULLET_HIT, &draw);
     return CHAIN_CONTINUE;
 }
