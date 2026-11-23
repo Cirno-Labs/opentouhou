@@ -8,6 +8,12 @@
 
 #include <string.h>
 
+typedef enum {
+    B20J_WAIT_NONE,
+    B20J_WAIT_SCROLL,
+    B20J_WAIT_DELAY,
+} B20J_WAIT;
+
 static RESULT M_LoadBody(
     VFS *const vfs, const ALLOCATOR *const a, GRZ *const out)
 {
@@ -118,11 +124,12 @@ void B20J_Init(B20J *const b)
 }
 void B20J_Setup(B20J *const b, const B20J_CONTEXT *const c)
 {
-    ASSERT(!b->entrance_active && !b->defeating && b->wait_kind == 0);
+    ASSERT(
+        !b->entrance_active && !b->defeating && b->wait_kind == B20J_WAIT_NONE);
     ASSERT(Result_Ignore(B20J_ValidateAssets(c->assets)));
     b->boss_palette = c->hit->palette->saved;
     b->hp = 18;
-    b->phase = 0;
+    b->phase = B20J_PHASE_START;
     b->frame = 0;
     b->direction_can_change = true;
     b->face_expression = 0;
@@ -261,7 +268,7 @@ static void M_BlackOut(const B20J_CONTEXT *const c)
 static bool M_Scroll(B20J *const b, const int16_t top)
 {
     b->raw_scroll = top;
-    b->wait_kind = 1;
+    b->wait_kind = B20J_WAIT_SCROLL;
     Frame_BeginWait(&b->wait);
     return false;
 }
@@ -271,25 +278,27 @@ static bool M_Delay(B20J *const b, const uint16_t frames)
     if (Frame_DelayReady(frames)) {
         return true;
     }
-    b->wait_kind = 2;
+    b->wait_kind = B20J_WAIT_DELAY;
     return false;
 }
 static bool M_Ready(B20J *const b, const B20J_CONTEXT *const c)
 {
-    if (b->wait_kind == 1) {
+    if (b->wait_kind == B20J_WAIT_SCROLL) {
         if (!Frame_WaitReady(&b->wait)) {
             return false;
         }
         Video_SetScroll(b->raw_scroll);
-    } else if (b->wait_kind == 2 && !Frame_DelayReady(b->delay_frames)) {
+    } else if (
+        b->wait_kind == B20J_WAIT_DELAY && !Frame_DelayReady(b->delay_frames)) {
         return false;
     }
-    b->wait_kind = 0;
+    b->wait_kind = B20J_WAIT_NONE;
     return true;
 }
 void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
 {
-    ASSERT(!b->entrance_active && !b->defeating && b->wait_kind == 0);
+    ASSERT(
+        !b->entrance_active && !b->defeating && b->wait_kind == B20J_WAIT_NONE);
     c->pellets->interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->scroll, false);
@@ -313,7 +322,7 @@ void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
     b->scroll_speed = 32;
     b->scroll_quarter = 0;
     b->scroll_frame = 0;
-    b->entrance_stage = 1;
+    b->entrance_stage = B20J_ENTRANCE_SCROLL;
     b->entrance_active = true;
 }
 bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
@@ -326,10 +335,10 @@ bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
     }
     for (;;) {
         switch (b->entrance_stage) {
-        case 1:
-            b->entrance_stage = 2;
+        case B20J_ENTRANCE_SCROLL:
+            b->entrance_stage = B20J_ENTRANCE_SCROLL_STEP;
             return M_Scroll(b, b->scroll_line);
-        case 2:
+        case B20J_ENTRANCE_SCROLL_STEP:
             b->scroll_line += b->scroll_speed;
             for (int32_t quarter = 0; quarter < 4; quarter++) {
                 if (b->scroll_quarter == quarter
@@ -343,7 +352,7 @@ bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
                 }
             }
             if (b->scroll_speed <= 0) {
-                b->entrance_stage = 3;
+                b->entrance_stage = B20J_ENTRANCE_SCROLL_END;
                 continue;
             }
             if (b->scroll_frame % 8 == 0) {
@@ -351,48 +360,48 @@ bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
                     c->hit->palette, &c->hit->palette->resource, true);
             }
             b->scroll_frame++;
-            b->entrance_stage = 1;
+            b->entrance_stage = B20J_ENTRANCE_SCROLL;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 3:
-            b->entrance_stage = 4;
+        case B20J_ENTRANCE_SCROLL_END:
+            b->entrance_stage = B20J_ENTRANCE_SHAKE_DELAY;
             return M_Scroll(b, 0);
-        case 4:
+        case B20J_ENTRANCE_SHAKE_DELAY:
             b->animation_frame = 0;
-            b->entrance_stage = 5;
+            b->entrance_stage = B20J_ENTRANCE_SHAKE;
             if (!M_Delay(b, 40)) {
                 return false;
             }
             continue;
-        case 5:
+        case B20J_ENTRANCE_SHAKE:
             if (b->animation_frame >= 32) {
                 b->scroll_line = 400;
-                b->entrance_stage = 7;
+                b->entrance_stage = B20J_ENTRANCE_PAN;
                 continue;
             }
-            b->entrance_stage = 6;
+            b->entrance_stage = B20J_ENTRANCE_SHAKE_STEP;
             return M_Scroll(b, 416 - b->animation_frame % 2 * 32);
-        case 6:
+        case B20J_ENTRANCE_SHAKE_STEP:
             if (b->animation_frame % 8 == 0) {
                 Boss_Effect(c->hit, 9);
             }
             b->animation_frame++;
-            b->entrance_stage = 5;
+            b->entrance_stage = B20J_ENTRANCE_SHAKE;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 7:
+        case B20J_ENTRANCE_PAN:
             if (b->scroll_line < 0) {
                 b->animation_frame = 0;
-                b->entrance_stage = 9;
+                b->entrance_stage = B20J_ENTRANCE_TREMBLE;
                 continue;
             }
-            b->entrance_stage = 8;
+            b->entrance_stage = B20J_ENTRANCE_PAN_STEP;
             return M_Scroll(b, b->scroll_line);
-        case 8:
+        case B20J_ENTRANCE_PAN_STEP:
             for (int32_t i = 0; i < 32 * 80; i++) {
                 const uint16_t offset =
                     (uint16_t)(b->scroll_line * 80 + i) & 0x7fff;
@@ -404,40 +413,40 @@ bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
             }
             Video_SelectDrawingPage(0);
             b->scroll_line -= 32;
-            b->entrance_stage = 7;
+            b->entrance_stage = B20J_ENTRANCE_PAN;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 9:
+        case B20J_ENTRANCE_TREMBLE:
             if (b->animation_frame >= 32) {
-                b->entrance_stage = 11;
+                b->entrance_stage = B20J_ENTRANCE_FLASH_DELAY;
                 continue;
             }
-            b->entrance_stage = 10;
+            b->entrance_stage = B20J_ENTRANCE_TREMBLE_STEP;
             return M_Scroll(b, 416 - b->animation_frame % 2 * 16);
-        case 10:
+        case B20J_ENTRANCE_TREMBLE_STEP:
             b->animation_frame++;
-            b->entrance_stage = 9;
+            b->entrance_stage = B20J_ENTRANCE_TREMBLE;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 11:
-            b->entrance_stage = 12;
+        case B20J_ENTRANCE_FLASH_DELAY:
+            b->entrance_stage = B20J_ENTRANCE_FLASH;
             if (!M_Delay(b, 30)) {
                 return false;
             }
             continue;
-        case 12:
+        case B20J_ENTRANCE_FLASH:
             M_White(c);
             for (int32_t i = 0; i < 4; i++) {
                 M_Pi(c, &c->assets->layers[i], true);
             }
             b->animation_frame = 0;
-            b->entrance_stage = 13;
+            b->entrance_stage = B20J_ENTRANCE_FADE_IN;
             continue;
-        case 13:
+        case B20J_ENTRANCE_FADE_IN:
             if (b->animation_frame >= 16) {
                 Video_Copy(
                     g_Video.drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
@@ -1063,7 +1072,7 @@ static void M_BeginDeath(B20J *const b, const B20J_CONTEXT *const c)
     Video_Clear(0);
     M_Audio(c, B20J_AUDIO_STOP);
     b->defeating = true;
-    b->defeat_stage = 1;
+    b->defeat_stage = B20J_DEFEAT_KUJI;
     b->animation_frame = 7;
 }
 static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
@@ -1073,10 +1082,10 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
     }
     for (;;) {
         switch (b->defeat_stage) {
-        case 1:
+        case B20J_DEFEAT_KUJI:
             if (b->animation_frame > 15) {
                 b->frame = 0;
-                b->defeat_stage = 2;
+                b->defeat_stage = B20J_DEFEAT_SHAKE;
                 continue;
             }
             if (b->animation_frame != 7) {
@@ -1090,15 +1099,15 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
                 return false;
             }
             continue;
-        case 2:
+        case B20J_DEFEAT_SHAKE:
             b->frame = M_W(b->frame + 1);
             if (b->frame % 4 == 0) {
                 M_BlackOut(c);
                 Boss_Effect(c->hit, 7);
             }
-            b->defeat_stage = 3;
+            b->defeat_stage = B20J_DEFEAT_SHAKE_STEP;
             return M_Scroll(b, 408 + b->frame % 2 * 16);
-        case 3:
+        case B20J_DEFEAT_SHAKE_STEP:
             if (b->frame > 64) {
                 Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
                 M_Pi(c, &c->assets->scroll, false);
@@ -1106,18 +1115,18 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
                 Tram_Clear();
                 b->scroll_line = 0;
                 b->scroll_frame = 0;
-                b->defeat_stage = 4;
+                b->defeat_stage = B20J_DEFEAT_SCROLL;
                 continue;
             }
-            b->defeat_stage = 2;
+            b->defeat_stage = B20J_DEFEAT_SHAKE;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 4:
-            b->defeat_stage = 5;
+        case B20J_DEFEAT_SCROLL:
+            b->defeat_stage = B20J_DEFEAT_SCROLL_STEP;
             return M_Scroll(b, b->scroll_line);
-        case 5:
+        case B20J_DEFEAT_SCROLL_STEP:
             b->scroll_line += 32;
             if (b->scroll_line > 400) {
                 b->scroll_line -= 400;
@@ -1134,7 +1143,7 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
                 }
                 M_BlackOut(c);
                 if (c->hit->palette->saved.colors[7][0] == 0) {
-                    b->defeat_stage = 6;
+                    b->defeat_stage = B20J_DEFEAT_CLEAR;
                     return M_Scroll(b, 0);
                 }
                 if (b->scroll_frame < 220) {
@@ -1142,12 +1151,12 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
                 }
             }
             b->scroll_frame++;
-            b->defeat_stage = 4;
+            b->defeat_stage = B20J_DEFEAT_SCROLL;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 6:
+        case B20J_DEFEAT_CLEAR:
             for (int32_t i = 0; i < 5; i++) {
                 c->hit->display->gameplay->score += 10000;
             }
@@ -1238,8 +1247,8 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
     if (b->defeating) {
         return M_Death(b, c);
     }
-    if (b->phase == 0) {
-        b->phase = 1;
+    if (b->phase == B20J_PHASE_START) {
+        b->phase = B20J_PHASE_PATTERNS_1;
         b->pattern_previous = 99;
         b->pattern = 99;
         b->patterns_done = 0;
@@ -1251,10 +1260,10 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
         *c->rng = c->hit->frame_rand;
         return true;
     }
-    if (b->phase < 1 || b->phase > 7) {
+    if (b->phase < B20J_PHASE_PATTERNS_1 || b->phase > B20J_PHASE_FINAL) {
         return true;
     }
-    if (b->phase == 1 && !b->hp_bar_filled) {
+    if (b->phase == B20J_PHASE_PATTERNS_1 && !b->hp_bar_filled) {
         b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
     }
     b->frame = M_W(b->frame + 1);
@@ -1277,13 +1286,13 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
         return true;
     }
     if (b->pattern == 99) {
-        if (b->frame > (b->phase == 7 ? 5 : 120)) {
+        if (b->frame > (b->phase == B20J_PHASE_FINAL ? 5 : 120)) {
             b->frame = 1;
-            const int16_t count = b->phase == 1 ? 3
-                : b->phase == 3                 ? 4
-                : b->phase == 5                 ? 3
-                                                : 12;
-            const int16_t retry = b->phase >= 5 ? 2 : count;
+            const int16_t count = b->phase == B20J_PHASE_PATTERNS_1 ? 3
+                : b->phase == B20J_PHASE_PATTERNS_2                 ? 4
+                : b->phase == B20J_PHASE_PATTERNS_3                 ? 3
+                                                                    : 12;
+            const int16_t retry = b->phase >= B20J_PHASE_PATTERNS_3 ? 2 : count;
             b->pattern = M_Random(c) % count;
             if (b->pattern == b->pattern_previous) {
                 b->pattern = M_Random(c) % retry;
@@ -1292,9 +1301,10 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
             b->patterns_done = M_W(b->patterns_done + 1);
         }
     } else {
-        const int16_t pattern = b->phase == 3 ? b->pattern + 3
-            : b->phase == 5                   ? b->pattern + 7
-                                              : b->pattern;
+        const int16_t pattern = b->phase == B20J_PHASE_PATTERNS_2
+            ? b->pattern + 3
+            : b->phase == B20J_PHASE_PATTERNS_3 ? b->pattern + 7
+                                                : b->pattern;
         M_Pattern(b, c, pattern);
     }
     if (b->frame == 0) {
@@ -1302,14 +1312,18 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
         b->pattern = 99;
     }
     M_Hit(b, c);
-    if (b->phase == 7) {
+    if (b->phase == B20J_PHASE_FINAL) {
         if (b->hp <= 0) {
             M_BeginDeath(b, c);
             return M_Death(b, c);
         }
     } else if (!b->hit.invincible && b->pattern == 99) {
-        const int16_t patterns = b->phase == 1 ? 7 : b->phase == 3 ? 9 : 6;
-        const int16_t threshold = b->phase == 1 ? 16 : b->phase == 3 ? 13 : 10;
+        const int16_t patterns = b->phase == B20J_PHASE_PATTERNS_1 ? 7
+            : b->phase == B20J_PHASE_PATTERNS_2                    ? 9
+                                                                   : 6;
+        const int16_t threshold = b->phase == B20J_PHASE_PATTERNS_1 ? 16
+            : b->phase == B20J_PHASE_PATTERNS_2                     ? 13
+                                                                    : 10;
         if (b->patterns_done >= patterns || b->hp < threshold) {
             M_Next(b, c, b->phase + 1);
         }

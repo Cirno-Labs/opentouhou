@@ -275,12 +275,12 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, tick));
     CHECK(memcmp(&pending, &f.boss, sizeof(pending)) == 0);
     CHECK_EQ_INT(f.rng, rng);
-    for (int32_t i = 0; f.boss.sequence != 0 && i < 200; i++) {
+    for (int32_t i = 0; f.boss.sequence != B20M_SEQUENCE_NONE && i < 200; i++) {
         tick++;
         Frame_VSync();
         B20M_UpdateAndRender(&f.boss, &f.context, tick);
     }
-    CHECK_EQ_INT(f.boss.phase, 1);
+    CHECK_EQ_INT(f.boss.phase, B20M_PHASE_BIRDS);
     CHECK_EQ_INT(f.boss.frame, 0);
     CHECK_EQ_INT(f.boss.entrance_radius, 352);
     CHECK_EQ_INT(f.boss.shield.left, 304);
@@ -290,7 +290,12 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
 }
 TEST(all_first_form_patterns_finish_with_real_projectile_pools)
 {
-    const int8_t phases[] = { 1, 3, 5, 7 };
+    const int8_t phases[] = {
+        B20M_PHASE_BIRDS,
+        B20M_PHASE_VERTICAL,
+        B20M_PHASE_WAVY,
+        B20M_PHASE_VERTICAL_BIRDS,
+    };
     const int16_t counts[] = { 3, 2, 6, 3 };
     for (int32_t rank = 0; rank < 4; rank++) {
         for (int32_t phase = 0; phase < 4; phase++) {
@@ -332,7 +337,7 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             f.display.rank = rank;
             g_Session.settings.difficulty = rank;
             f.rng = 0xabcdef01u + (uint32_t)rank;
-            f.boss.phase = 100;
+            f.boss.phase = B20M_PHASE_SECOND_FORM;
             f.boss.hp = 6;
             f.boss.pattern = pattern;
             f.boss.pattern_state = 24;
@@ -345,7 +350,7 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             }
             CHECK(calls < 1000);
             CHECK_EQ_INT(f.boss.hp, 6);
-            CHECK_EQ_INT(f.boss.phase, 100);
+            CHECK_EQ_INT(f.boss.phase, B20M_PHASE_SECOND_FORM);
             CHECK_EQ_INT(arena.used, used);
             Arena_Free(&arena);
         }
@@ -357,7 +362,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     Arena_Init(&arena, "Sariel transform", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    f.boss.phase = 99;
+    f.boss.phase = B20M_PHASE_TRANSFORM;
     f.boss.hp = 0;
     f.orb.previous_left = 123;
     f.orb.previous_top = 234;
@@ -379,12 +384,13 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK(!f.player.deflecting);
     CHECK(!f.player.bomb_damaging);
     CHECK(!g_GameInput.bomb);
-    for (int32_t i = 0; f.boss.sequence != 0 && i < 1000; i++) {
+    for (int32_t i = 0; f.boss.sequence != B20M_SEQUENCE_NONE && i < 1000;
+         i++) {
         tick++;
         Frame_VSync();
         B20M_UpdateAndRender(&f.boss, &f.context, tick);
     }
-    CHECK_EQ_INT(f.boss.phase, 100);
+    CHECK_EQ_INT(f.boss.phase, B20M_PHASE_SECOND_FORM);
     CHECK_EQ_INT(f.boss.hp, 6);
     CHECK_EQ_INT(f.boss.frame, 0);
     CHECK_EQ_INT(f.player.invincibility_time, 0);
@@ -406,7 +412,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     Arena_Init(&arena, "Sariel victory", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    f.boss.phase = 100;
+    f.boss.phase = B20M_PHASE_SECOND_FORM;
     f.boss.hp = 1;
     f.orb.left = 320;
     f.orb.top = 120;
@@ -414,7 +420,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(B20M_UpdateAndRender(&f.boss, &f.context, tick));
-    CHECK_EQ_INT(f.boss.phase, 101);
+    CHECK_EQ_INT(f.boss.phase, B20M_PHASE_DEFEAT);
     CHECK_EQ_INT(f.boss.hp, 0);
     CHECK_EQ_INT(f.gameplay.score, 10000);
     CHECK_EQ_INT(f.audio[0], B20M_AUDIO_STOP);
@@ -441,7 +447,7 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     Arena_Init(&arena, "Sariel bird safety", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    f.boss.phase = 1;
+    f.boss.phase = B20M_PHASE_BIRDS;
     f.boss.frame = 49;
     f.boss.pattern = 0;
     f.boss.patterns_until_next = 10;
@@ -462,7 +468,7 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     CHECK(B20M_UpdateAndRender(&f.boss, &f.context, tick + 6));
     CHECK(f.rng != rng);
     CHECK_EQ_INT(f.boss.frame, 50);
-    CHECK_EQ_INT(f.boss.resume_stage, 0);
+    CHECK_EQ_INT(f.boss.resume_stage, B20M_RESUME_NONE);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }

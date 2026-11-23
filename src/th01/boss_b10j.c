@@ -132,7 +132,7 @@ bool B10J_ResumeSetup(B10J *const b, const B10J_CONTEXT *const c)
     BossEntity_SetOrbHitbox(&b->still, (BOSS_BOUNDS) { 16, 112, 16, 144 });
     b->still.orb_inactive = false;
     b->frame = 0;
-    b->phase = 0;
+    b->phase = B10J_PHASE_START;
     b->hp = 12;
     c->hit->health->first_white = 6;
     c->hit->health->first_redwhite = 2;
@@ -772,7 +772,7 @@ static bool M_Entrance(B10J *const b, const B10J_CONTEXT *const c)
         b->frame = Math16_Wrap(b->frame + 1);
         M_Spread(b, c, 256, 120);
         if (b->frame == 0) {
-            b->phase = 1;
+            b->phase = B10J_PHASE_FIRST;
             b->pattern = 0;
             b->hp_bar_filled = false;
             *c->stage_palette = c->hit->palette->saved;
@@ -818,7 +818,7 @@ bool B10J_UpdateAndRender(B10J *const b, const B10J_CONTEXT *const c)
         c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     Particles_UpdateAndRender(c->particles, c->rng, PARTICLES_TOP_RIGHT, 7);
-    if (b->phase == 0) {
+    if (b->phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
         b->frame = 0;
         b->still.orb_inactive = false;
@@ -828,7 +828,7 @@ bool B10J_UpdateAndRender(B10J *const b, const B10J_CONTEXT *const c)
         b->entrance_active = true;
         return M_Entrance(b, c);
     }
-    if (b->phase == 1) {
+    if (b->phase == B10J_PHASE_FIRST) {
         if (!b->hp_bar_filled) {
             b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
         }
@@ -865,22 +865,22 @@ bool B10J_UpdateAndRender(B10J *const b, const B10J_CONTEXT *const c)
             b->still.left = 256;
             b->still.top = 120;
             M_Snap(b, c);
-            b->phase = 2;
+            b->phase = B10J_PHASE_SPREAD;
             b->frame = 0;
             b->hit.frame = 0;
             b->pattern = 0;
         }
-    } else if (b->phase == 2) {
+    } else if (b->phase == B10J_PHASE_SPREAD) {
         b->frame = Math16_Wrap(b->frame + 1);
         b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Spread(b, c, 256, 120);
         if (b->frame == 0) {
-            b->phase = 3;
+            b->phase = B10J_PHASE_SECOND;
             b->frame = 0;
             b->hit.frame = 0;
             b->pattern = 0;
         }
-    } else if (b->phase == 3) {
+    } else if (b->phase == B10J_PHASE_SECOND) {
         b->frame = Math16_Wrap(b->frame + 1);
         b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Meteor(b, c);

@@ -10,6 +10,11 @@
 
 #include <string.h>
 
+typedef enum {
+    B15M_TRANSFORM_RIFTS = 1,
+    B15M_TRANSFORM_SWAPPED = 2,
+} B15M_TRANSFORM;
+
 static RESULT M_LoadGrc(
     VFS *const vfs, const ALLOCATOR *const a, GRC *const out)
 {
@@ -104,7 +109,9 @@ void B15M_Init(B15M *const b, const ALLOCATOR *const a)
 
 void B15M_Setup(B15M *const b, const B15M_CONTEXT *const c)
 {
-    ASSERT(!b->entrance_active && !b->defeating && b->pending == 0);
+    ASSERT(
+        !b->entrance_active && !b->defeating
+        && b->pending == B15M_PENDING_NONE);
     ASSERT(b->background != nullptr);
     ASSERT(Result_Ignore(B15M_ValidateAssets(c->assets)));
     ASSERT(Result_Ignore(
@@ -121,7 +128,7 @@ void B15M_Setup(B15M *const b, const B15M_CONTEXT *const c)
     BossEntity_SetOrbHitbox(&b->bat, (BOSS_BOUNDS) { -8, 56, -8, 40 });
     b->boss_palette = c->hit->palette->saved;
     b->post_defeat = (PALETTE) {};
-    b->phase = 0;
+    b->phase = B15M_PHASE_ENTRANCE;
     b->frame = 0;
     b->hp = 14;
     b->finished = false;
@@ -287,11 +294,14 @@ static void M_EraseCircle(
 static void M_BigCircle(
     B15M *const b, const B15M_CONTEXT *const c, const uint8_t color)
 {
-    M_Circle(c, M_CenterX(b, 0), M_CenterY(b, 0), 128, color, 1, 0, 255);
+    M_Circle(
+        c, M_CenterX(b, B15M_FORM_GIRL), M_CenterY(b, B15M_FORM_GIRL), 128,
+        color, 1, 0, 255);
 }
 static void M_EraseBigCircle(B15M *const b, const B15M_CONTEXT *const c)
 {
-    M_EraseCircle(c, M_CenterX(b, 0), M_CenterY(b, 0), 128, 1);
+    M_EraseCircle(
+        c, M_CenterX(b, B15M_FORM_GIRL), M_CenterY(b, B15M_FORM_GIRL), 128, 1);
 }
 static void M_SummonDots(
     const B15M_CONTEXT *const c, B15M_CIRCLE *const circle, const int16_t x,
@@ -312,7 +322,9 @@ static bool M_SummonFlash(
         if (b->frame == start) {
             Boss_Effect(c->hit, 8);
         }
-        M_SummonDots(c, circle, M_CenterX(b, 0), M_CenterY(b, 0), end);
+        M_SummonDots(
+            c, circle, M_CenterX(b, B15M_FORM_GIRL),
+            M_CenterY(b, B15M_FORM_GIRL), end);
         if (circle->angle >= 64) {
             M_EraseBigCircle(b, c);
             M_BigCircle(b, c, 7);
@@ -378,9 +390,9 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 static void M_Hit(
     B15M *const b, const B15M_CONTEXT *const c, const int16_t form)
 {
-    const BOSS_ENTITY *const e = b->form == 0 ? &b->girl : &b->bat;
+    const BOSS_ENTITY *const e = b->form == B15M_FORM_GIRL ? &b->girl : &b->bat;
     const uint8_t colors[] = { 3, 6, 8, 2 };
-    const BOSS_SHOT_HITBOX box = form == 0
+    const BOSS_SHOT_HITBOX box = form == B15M_FORM_GIRL
         ? (BOSS_SHOT_HITBOX) { M_W(b->girl.left + 32), M_W(b->girl.top + 32),
                                64, 48 }
         : (BOSS_SHOT_HITBOX) { b->bat.left, b->bat.left, 32, 32 };
@@ -400,7 +412,7 @@ static void M_Common(B15M *const b)
 {
     b->frame = M_W(b->frame + 1);
     b->hit.frame = M_W(b->hit.frame + 1);
-    if (b->phase != 1) {
+    if (b->phase != B15M_PHASE_PATTERNS_1) {
         M_Sync(b);
     }
 }
@@ -622,7 +634,7 @@ static bool M_Entrance(B15M *const b, const B15M_CONTEXT *const c)
             } else if (f > 140) {
                 b->frame = 0;
                 b->hit.frame = 0;
-                b->phase = 1;
+                b->phase = B15M_PHASE_PATTERNS_1;
                 b->girl.orb_inactive = false;
                 M_PutBoth(&b->girl, c, b->girl.image);
                 b->teleport_done = false;
@@ -642,7 +654,7 @@ static bool M_Entrance(B15M *const b, const B15M_CONTEXT *const c)
 
 static int16_t M_LasersAcross(B15M *const b, const B15M_CONTEXT *const c)
 {
-    const int16_t x = M_CenterX(b, 0), y = M_W(b->girl.top + 32);
+    const int16_t x = M_CenterX(b, B15M_FORM_GIRL), y = M_W(b->girl.top + 32);
     if (b->frame == 50) {
         b->direction = M_Random(c) % 2;
         M_Both(b, c, &b->girl, 1, false);
@@ -720,8 +732,8 @@ static int16_t M_CirclePellets(B15M *const b, const B15M_CONTEXT *const c)
         for (int32_t i = 0; i < 32; i++) {
             const int16_t x =
                 Math16_PolarX(M_W(b->girl.left + 60), 128, b->circle.angle);
-            const int16_t y =
-                Math16_PolarY(M_CenterY(b, 0), 128, b->circle.angle);
+            const int16_t y = Math16_PolarY(
+                M_CenterY(b, B15M_FORM_GIRL), 128, b->circle.angle);
             M_Group(c, x, y, (PELLET_GROUP)b->pattern_state, 4);
             b->circle.angle = (uint8_t)(b->circle.angle + 8);
         }
@@ -754,10 +766,14 @@ static void M_StarLines(
     const uint8_t pairs[6][2] = { { 192, 22 }, { 192, 106 }, { 22, 106 },
                                   { 64, 150 }, { 64, 234 },  { 150, 234 } };
     for (int32_t i = 0; i < 6; i++) {
-        const int16_t x0 = Math16_PolarX(M_CenterX(b, 0), 128, pairs[i][0]);
-        const int16_t y0 = Math16_PolarY(M_CenterY(b, 0), 128, pairs[i][0]);
-        const int16_t x1 = Math16_PolarX(M_CenterX(b, 0), 128, pairs[i][1]);
-        const int16_t y1 = Math16_PolarY(M_CenterY(b, 0), 128, pairs[i][1]);
+        const int16_t x0 =
+            Math16_PolarX(M_CenterX(b, B15M_FORM_GIRL), 128, pairs[i][0]);
+        const int16_t y0 =
+            Math16_PolarY(M_CenterY(b, B15M_FORM_GIRL), 128, pairs[i][0]);
+        const int16_t x1 =
+            Math16_PolarX(M_CenterX(b, B15M_FORM_GIRL), 128, pairs[i][1]);
+        const int16_t y1 =
+            Math16_PolarY(M_CenterY(b, B15M_FORM_GIRL), 128, pairs[i][1]);
         if (erase) {
             Video_LineErase(x0, y0, x1, y1);
         } else {
@@ -784,7 +800,9 @@ static int16_t M_Star(B15M *const b, const B15M_CONTEXT *const c)
         if (b->frame == 10) {
             Boss_Effect(c->hit, 8);
         }
-        M_SummonDots(c, circle, M_CenterX(b, 0), M_CenterY(b, 0), 2);
+        M_SummonDots(
+            c, circle, M_CenterX(b, B15M_FORM_GIRL),
+            M_CenterY(b, B15M_FORM_GIRL), 2);
         if (circle->angle >= 64) {
             circle->frame = 1;
             M_EraseBigCircle(b, c);
@@ -842,7 +860,8 @@ static int16_t M_CurvedRings(B15M *const b, const B15M_CONTEXT *const c)
     if (offset >= 0) {
         for (int32_t i = 0; i < b->pattern_state; i++) {
             M_Single(
-                c, M_W(M_CenterX(b, 0) - 4), M_W(M_CenterY(b, 0) - 4),
+                c, M_W(M_CenterX(b, B15M_FORM_GIRL) - 4),
+                M_W(M_CenterY(b, B15M_FORM_GIRL) - 4),
                 (uint8_t)((256 / b->pattern_state) * i + offset), speed,
                 PELLET_REGULAR, 0);
         }
@@ -856,9 +875,10 @@ static int16_t M_SphereClusters(B15M *const b, const B15M_CONTEXT *const c)
         const int32_t n = b->frame / 10;
         const int16_t column =
             M_W((b->girl.left < 256 ? 608 : 0) - b->girl.left) / 10;
-        b->sphere_x[n - 1] = M_W(n * column + M_CenterX(b, 0) - 16);
+        b->sphere_x[n - 1] =
+            M_W(n * column + M_CenterX(b, B15M_FORM_GIRL) - 16);
         const int16_t row = M_W(M_Random(c) % 200 + 200 - b->girl.top) / 10;
-        b->sphere_y[n - 1] = M_W(n * row + M_CenterY(b, 0) - 16);
+        b->sphere_y[n - 1] = M_W(n * row + M_CenterY(b, B15M_FORM_GIRL) - 16);
         for (int32_t i = 0; i < n; i++) {
             M_Grc(c, b->sphere_x[i], b->sphere_y[i], 3, 4);
         }
@@ -943,26 +963,26 @@ static int16_t M_Phase3(
 
 static bool M_ScrollWait(B15M *const b, const int16_t top)
 {
-    b->pending = 1;
+    b->pending = B15M_PENDING_SCROLL;
     b->pending_scroll = top;
     Frame_BeginWait(&b->wait);
     return false;
 }
 static void M_TransformResult(B15M *const b)
 {
-    if (b->call_phase == 4) {
+    if (b->call_phase == B15M_PHASE_TRANSFORM) {
         b->pattern = b->transform_bat ? 1 : 0;
     } else {
-        b->form = b->transform_bat ? 1 : 0;
+        b->form = b->transform_bat ? B15M_FORM_BAT : B15M_FORM_GIRL;
     }
 }
 static bool M_TransformFinish(B15M *const b, const B15M_CONTEXT *const c)
 {
     if (b->frame <= 100) {
-        if (b->call_phase == 4) {
+        if (b->call_phase == B15M_PHASE_TRANSFORM) {
             b->pattern = b->transform_bat ? 0 : 1;
         } else {
-            b->form = b->transform_bat ? 0 : 1;
+            b->form = b->transform_bat ? B15M_FORM_GIRL : B15M_FORM_BAT;
         }
         return true;
     }
@@ -990,14 +1010,14 @@ static bool M_TransformFinish(B15M *const b, const B15M_CONTEXT *const c)
         M_Snap(b, c);
         M_Both(b, c, &b->attack, 1, true);
     }
-    b->transform_stage = 2;
+    b->transform_stage = B15M_TRANSFORM_SWAPPED;
     return M_ScrollWait(b, 400);
 }
 static bool M_Transform(
     B15M *const b, const B15M_CONTEXT *const c, const bool bat)
 {
     b->transform_bat = bat;
-    b->transform_stage = 1;
+    b->transform_stage = B15M_TRANSFORM_RIFTS;
     if (bat && b->frame == 20) {
         M_Both(b, c, &b->attack, 0, true);
     }
@@ -1047,7 +1067,7 @@ static void M_BatPattern(B15M *const b, const B15M_CONTEXT *const c)
     case 1:
         if (b->frame % 16 == 0) {
             M_FormGroup(
-                b, c, 1,
+                b, c, B15M_FORM_BAT,
                 (PELLET_GROUP)Boss_Rank(
                     PELLET_GROUP_THREE_WIDE_AIMED, PELLET_GROUP_FIVE_WIDE_AIMED,
                     PELLET_GROUP_FIVE_NARROW_AIMED, PELLET_GROUP_FIVE_NARROW),
@@ -1059,15 +1079,16 @@ static void M_BatPattern(B15M *const b, const B15M_CONTEXT *const c)
             const PELLET_GROUP group = (M_Random(c) & 1)
                 ? PELLET_GROUP_TWO_NARROW_AIMED
                 : PELLET_GROUP_TWO_WIDE_AIMED;
-            M_FormGroup(b, c, 1, group, 88);
+            M_FormGroup(b, c, B15M_FORM_BAT, group, 88);
         }
         break;
     case 3:
         if (b->frame % 4 == 0) {
             const uint8_t angle = (uint8_t)M_Random(c);
             M_Single(
-                c, M_W(M_CenterX(b, 1) - 4), M_W(M_CenterY(b, 1) - 4), angle, 2,
-                PELLET_GRAVITY, 1);
+                c, M_W(M_CenterX(b, B15M_FORM_BAT) - 4),
+                M_W(M_CenterY(b, B15M_FORM_BAT) - 4), angle, 2, PELLET_GRAVITY,
+                1);
         }
         break;
     case 4:
@@ -1086,11 +1107,12 @@ static void M_SymmetricFire(
     B15M *const b, const B15M_CONTEXT *const c, const uint8_t angle,
     const int16_t speed)
 {
-    const int16_t y = M_W(M_CenterY(b, 0) - 8);
+    const int16_t y = M_W(M_CenterY(b, B15M_FORM_GIRL) - 8);
     M_Single(
-        c, M_W(M_CenterX(b, 0) - 8), y, (uint8_t)(128 - angle), speed,
-        PELLET_REGULAR, 0);
-    M_Single(c, M_CenterX(b, 0), y, angle, speed, PELLET_REGULAR, 0);
+        c, M_W(M_CenterX(b, B15M_FORM_GIRL) - 8), y, (uint8_t)(128 - angle),
+        speed, PELLET_REGULAR, 0);
+    M_Single(
+        c, M_CenterX(b, B15M_FORM_GIRL), y, angle, speed, PELLET_REGULAR, 0);
 }
 static int16_t M_SymmetricArc(B15M *const b, const B15M_CONTEXT *const c)
 {
@@ -1171,7 +1193,7 @@ static int16_t M_Safety(
         if (!Boss_Player(c->hit)->invincible
             && (M_W(b->safety_left + 104) <= Boss_Player(c->hit)->left
                 || M_W(b->safety_left - 128) >= Boss_Player(c->hit)->left)) {
-            b->pending = 2;
+            b->pending = B15M_PENDING_SAFETY;
             b->pending_tick = host_tick;
             return -1;
         }
@@ -1212,8 +1234,8 @@ static int16_t M_AimedRing(B15M *const b, const B15M_CONTEXT *const c)
         M_EraseBigCircle(b, c);
         b->aimed_circle.angle = 0;
         for (int32_t i = 0; i < 32; i++) {
-            const int16_t x =
-                Math16_PolarX(M_CenterX(b, 0), 128, b->aimed_circle.angle);
+            const int16_t x = Math16_PolarX(
+                M_CenterX(b, B15M_FORM_GIRL), 128, b->aimed_circle.angle);
             const int16_t y = Math16_PolarY(
                 M_W(b->girl.top + 28), 128, b->aimed_circle.angle);
             M_Group(c, x, y, PELLET_GROUP_SINGLE, 64);
@@ -1225,16 +1247,18 @@ static int16_t M_AimedRing(B15M *const b, const B15M_CONTEXT *const c)
     }
     if (b->frame % b->pattern_state == 0) {
         M_Group(
-            c, M_W(M_CenterX(b, 0) - 42), M_W(M_CenterY(b, 0) - 8),
-            PELLET_GROUP_FIVE_WIDE_AIMED, 64);
+            c, M_W(M_CenterX(b, B15M_FORM_GIRL) - 42),
+            M_W(M_CenterY(b, B15M_FORM_GIRL) - 8), PELLET_GROUP_FIVE_WIDE_AIMED,
+            64);
         M_Group(
-            c, M_W(M_CenterX(b, 0) + 36), M_W(M_CenterY(b, 0) - 8),
-            PELLET_GROUP_FIVE_WIDE_AIMED, 64);
+            c, M_W(M_CenterX(b, B15M_FORM_GIRL) + 36),
+            M_W(M_CenterY(b, B15M_FORM_GIRL) - 8), PELLET_GROUP_FIVE_WIDE_AIMED,
+            64);
     }
     if (b->frame % (b->pattern_state * 2) == 0) {
         M_Laser(
-            c, b->frame / 10, M_W(M_CenterX(b, 0) - 4), M_W(b->girl.top + 28),
-            Boss_Player(c->hit)->left, 400, 50, 20, 8);
+            c, b->frame / 10, M_W(M_CenterX(b, B15M_FORM_GIRL) - 4),
+            M_W(b->girl.top + 28), Boss_Player(c->hit)->left, 400, 50, 20, 8);
         Boss_Effect(c->hit, 6);
     }
     return 1;
@@ -1283,18 +1307,18 @@ static void M_ResetPhase5(B15M *const b)
 }
 static void M_AfterTransform(B15M *const b)
 {
-    if (b->call_phase == 4) {
+    if (b->call_phase == B15M_PHASE_TRANSFORM) {
         if (b->pattern == 1) {
-            M_Next(b, 5, 0);
-            b->form = 1;
+            M_Next(b, B15M_PHASE_FORMS, 0);
+            b->form = B15M_FORM_BAT;
             M_ResetPhase5(b);
         }
     } else if (b->phase5_subphase == 1) {
         if (b->transform_bat) {
-            if (b->form == 1) {
+            if (b->form == B15M_FORM_BAT) {
                 b->phase5_subphase = 0;
             }
-        } else if (b->form == 0) {
+        } else if (b->form == B15M_FORM_GIRL) {
             b->bat_pattern = 0;
             b->phase5_subphase = 0;
         }
@@ -1303,7 +1327,7 @@ static void M_AfterTransform(B15M *const b)
 static bool M_Phase5(
     B15M *const b, const B15M_CONTEXT *const c, const uint64_t host_tick)
 {
-    if (b->form == 1) {
+    if (b->form == B15M_FORM_BAT) {
         if (b->phase5_subphase == 0) {
             b->phase5_subphase = M_BatFly(b, c);
             if (b->bat_pattern == 0) {
@@ -1350,7 +1374,7 @@ static bool M_Death(B15M *const b, const B15M_CONTEXT *const c)
 }
 static bool M_Tail(B15M *const b, const B15M_CONTEXT *const c)
 {
-    if (b->call_phase == 5) {
+    if (b->call_phase == B15M_PHASE_FORMS) {
         M_Hit(b, c, b->form);
         if (b->hp <= 0) {
             c->fade_music(c->hit->user);
@@ -1374,13 +1398,13 @@ bool B15M_UpdateAndRender(
     if (b->defeating) {
         return M_Death(b, c);
     }
-    if (b->pending == 1) {
+    if (b->pending == B15M_PENDING_SCROLL) {
         if (!Frame_WaitReady(&b->wait)) {
             return false;
         }
-        b->pending = 0;
+        b->pending = B15M_PENDING_NONE;
         Video_SetScroll(b->pending_scroll);
-        if (b->transform_stage == 1) {
+        if (b->transform_stage == B15M_TRANSFORM_RIFTS) {
             if (!M_TransformFinish(b, c)) {
                 return false;
             }
@@ -1391,12 +1415,12 @@ bool B15M_UpdateAndRender(
         M_AfterTransform(b);
         return M_Tail(b, c);
     }
-    if (b->pending == 2) {
+    if (b->pending == B15M_PENDING_SAFETY) {
         ASSERT(host_tick >= b->pending_tick);
         if (host_tick - b->pending_tick < 6) {
             return false;
         }
-        b->pending = 0;
+        b->pending = B15M_PENDING_NONE;
         Boss_Player(c->hit)->is_hit = true;
         M_SafetyAfterHit(b, c);
         b->girl_subphase = 1;
@@ -1410,43 +1434,47 @@ bool B15M_UpdateAndRender(
     Missiles_UpdateAndRender(
         c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
-    if (b->phase == 0) {
+    if (b->phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(b, c);
     }
-    if (b->phase == 1 || b->phase == 3) {
-        if (b->phase == 1 && !b->hp_bar_filled) {
+    if (b->phase == B15M_PHASE_PATTERNS_1
+        || b->phase == B15M_PHASE_PATTERNS_2) {
+        if (b->phase == B15M_PHASE_PATTERNS_1 && !b->hp_bar_filled) {
             b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
         }
         M_Common(b);
         if (b->pattern != 0) {
-            b->pattern = b->phase == 1 ? M_Phase1(b, c, b->pattern)
-                                       : M_Phase3(b, c, b->pattern);
+            b->pattern = b->phase == B15M_PHASE_PATTERNS_1
+                ? M_Phase1(b, c, b->pattern)
+                : M_Phase3(b, c, b->pattern);
         } else if (!b->teleport_done) {
             const int16_t top = M_RandomTop(c);
             const int16_t left = M_RandomLeft(c);
             b->teleport_done = M_Teleport(b, c, left, top);
         } else {
-            b->pattern = b->phase == 1 ? M_Phase1(b, c, 0) : M_Phase3(b, c, 0);
+            b->pattern = b->phase == B15M_PHASE_PATTERNS_1 ? M_Phase1(b, c, 0)
+                                                           : M_Phase3(b, c, 0);
             b->teleport_done = false;
         }
-        M_Hit(b, c, 0);
-        if (!b->hit.invincible && b->hp <= (b->phase == 1 ? 10 : 6)
+        M_Hit(b, c, B15M_FORM_GIRL);
+        if (!b->hit.invincible
+            && b->hp <= (b->phase == B15M_PHASE_PATTERNS_1 ? 10 : 6)
             && b->teleport_done) {
-            if (b->phase == 1) {
-                M_Next(b, 2, 0);
+            if (b->phase == B15M_PHASE_PATTERNS_1) {
+                M_Next(b, B15M_PHASE_CENTER, 0);
             } else {
-                M_Next(b, 4, 0);
-                b->form = 0;
+                M_Next(b, B15M_PHASE_TRANSFORM, 0);
+                b->form = B15M_FORM_GIRL;
             }
         }
-    } else if (b->phase == 2) {
+    } else if (b->phase == B15M_PHASE_CENTER) {
         b->frame = M_W(b->frame + 1);
         b->teleport_done = M_Teleport(b, c, 256, 96);
         if (b->teleport_done) {
             b->phase3_pattern = 0;
-            M_Next(b, 3, 1);
+            M_Next(b, B15M_PHASE_PATTERNS_2, 1);
         }
-    } else if (b->phase == 4) {
+    } else if (b->phase == B15M_PHASE_TRANSFORM) {
         b->frame = M_W(b->frame + 1);
         if (!b->teleport_done) {
             b->teleport_done = M_Teleport(b, c, 256, 96);
@@ -1456,9 +1484,9 @@ bool B15M_UpdateAndRender(
             }
         }
         M_AfterTransform(b);
-    } else if (b->phase == 5) {
+    } else if (b->phase == B15M_PHASE_FORMS) {
         M_Common(b);
-        if (b->form != 0) {
+        if (b->form != B15M_FORM_GIRL) {
             BossEntity_LockedMovePut(
                 &b->bat, c->sprites, b->bat_velocity_x, b->bat_velocity_y, 2,
                 true);

@@ -54,6 +54,36 @@ typedef struct {
     int16_t x, y, speed, subpattern;
     uint8_t angle;
 } B20M_SPRAY;
+typedef enum {
+    B20M_PHASE_START = 0,
+    B20M_PHASE_BIRDS = 1,
+    B20M_PHASE_GUST_1 = 2,
+    B20M_PHASE_VERTICAL = 3,
+    B20M_PHASE_GUST_2 = 4,
+    B20M_PHASE_WAVY = 5,
+    B20M_PHASE_GUST_3 = 6,
+    B20M_PHASE_VERTICAL_BIRDS = 7,
+    B20M_PHASE_GUST_4 = 8,
+    B20M_PHASE_TRANSFORM = 99,
+    B20M_PHASE_SECOND_FORM = 100,
+    B20M_PHASE_DEFEAT = 101,
+} B20M_PHASE;
+
+typedef enum {
+    B20M_SEQUENCE_NONE,
+    B20M_SEQUENCE_RINGS,
+    B20M_SEQUENCE_TRANSFORM,
+    B20M_SEQUENCE_DEFEAT,
+} B20M_SEQUENCE;
+
+typedef enum {
+    B20M_RESUME_NONE,
+    B20M_RESUME_SHAKE,
+    B20M_RESUME_SHAKE_END,
+    B20M_RESUME_BIRD_HIT,
+    B20M_RESUME_GUST_END,
+} B20M_RESUME;
+
 typedef struct {
     BOSS_ENTITY shield;
     BOSS_ANIMATION dress, wand;
