@@ -681,7 +681,7 @@ static void M_Fire(ENEMY *const enemy, const ECL_INSTR *const instr)
     }
     BULLET_SHOOTER *const shooter = &enemy->shots.shooter;
     shooter->type = (int16_t)M_IntOp(enemy, instr, M_ArgShort(instr, 0), 1);
-    shooter->aim = (BULLET_AIM)(instr->opcode - 64);
+    shooter->aim = (BULLET_AIM)(instr->opcode - ECL_OP_FIRE_FAN_AT_PLAYER);
     shooter->columns = (int16_t)M_IntOp(enemy, instr, instr->args[1].i, 4);
     shooter->rows = (int16_t)M_IntOp(enemy, instr, instr->args[2].i, 8);
     shooter->pos = Vec3_Add(enemy->move.pos, enemy->shots.offset);
@@ -745,7 +745,9 @@ static void M_SpawnLaser(ENEMY *const enemy, const ECL_INSTR *const instr)
     shooter->laser.hit_start_frame = instr->args[10].i;
     shooter->laser.end_hit_frames = instr->args[11].i;
     shooter->flags = instr->args[12].i;
-    shooter->aim = instr->opcode == 83 ? (BULLET_AIM)0 : (BULLET_AIM)1;
+    shooter->aim = instr->opcode == ECL_OP_LASER_AT_PLAYER
+        ? BULLET_AIM_FAN_AT_PLAYER
+        : BULLET_AIM_FAN;
     *M_Laser(enemy, enemy->shots.laser_index) = Bullet_SpawnLaser(shooter);
 }
 
@@ -1061,15 +1063,15 @@ static bool M_CompareInts(
     const int16_t opcode, const int32_t a, const int32_t b)
 {
     switch (opcode) {
-    case 28:
+    case ECL_OP_JUMP_EQUAL_INT:
         return a == b;
-    case 30:
+    case ECL_OP_JUMP_NOT_EQUAL_INT:
         return a != b;
-    case 32:
+    case ECL_OP_JUMP_LESS_INT:
         return a < b;
-    case 34:
+    case ECL_OP_JUMP_LESS_EQUAL_INT:
         return a <= b;
-    case 36:
+    case ECL_OP_JUMP_GREATER_INT:
         return a > b;
     default:
         return a >= b;
@@ -1079,15 +1081,15 @@ static bool M_CompareInts(
 static bool M_CompareFloats(const int16_t opcode, const float a, const float b)
 {
     switch (opcode) {
-    case 29:
+    case ECL_OP_JUMP_EQUAL_FLOAT:
         return a == b;
-    case 31:
+    case ECL_OP_JUMP_NOT_EQUAL_FLOAT:
         return a != b;
-    case 33:
+    case ECL_OP_JUMP_LESS_FLOAT:
         return a < b;
-    case 35:
+    case ECL_OP_JUMP_LESS_EQUAL_FLOAT:
         return a <= b;
-    case 37:
+    case ECL_OP_JUMP_GREATER_FLOAT:
         return a > b;
     default:
         return a >= b;
@@ -1101,30 +1103,29 @@ static int32_t M_Divide(const int32_t a, const int32_t b, const bool modulo)
     return modulo ? a % b : a / b;
 }
 
-// Runs the variable opcodes 4 to 26, 40, 43, 44, 51, 52, 151, 155 and
-// 159. Returns false for any other opcode.
-static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
+// Runs an opcode that sets a variable.
+static void M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
 {
     // Where two operands can both draw from the RNG, they evaluate in the
     // order of the decompilation.
     switch (instr->opcode) {
-    case 4:
+    case ECL_OP_SET_INT:
         M_SetInt(enemy, instr, 0, M_IntArg(enemy, instr, 1));
         break;
-    case 5:
+    case ECL_OP_SET_FLOAT:
         M_SetFloat(enemy, instr, 0, M_FloatArg(enemy, instr, 1));
         break;
-    case 40:
+    case ECL_OP_NORMALIZE_ANGLE:
         M_SetFloat(
             enemy, instr, 0,
             Angle_AddNormalize(M_FloatArg(enemy, instr, 0), 0.0f));
         break;
-    case 6: {
+    case ECL_OP_RANDOM_INT: {
         const uint32_t range = (uint32_t)M_IntArg(enemy, instr, 1);
         M_SetInt(enemy, instr, 0, (int32_t)Rng_U32InRange(&g_Rng, range));
         break;
     }
-    case 7: {
+    case ECL_OP_RANDOM_INT_FROM: {
         const uint32_t range = (uint32_t)M_IntArg(enemy, instr, 1);
         const int32_t value = (int32_t)Rng_U32InRange(&g_Rng, range);
         M_SetInt(
@@ -1132,36 +1133,37 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
             M_Wrap((int64_t)value + M_IntArg(enemy, instr, 2)));
         break;
     }
-    case 8:
+    case ECL_OP_RANDOM_FLOAT:
         M_SetFloat(
             enemy, instr, 0,
             Rng_F32InRange(&g_Rng, M_FloatArg(enemy, instr, 1)));
         break;
-    case 9: {
+    case ECL_OP_RANDOM_FLOAT_FROM: {
         const float value = Rng_F32InRange(&g_Rng, M_FloatArg(enemy, instr, 1));
         M_SetFloat(enemy, instr, 0, value + M_FloatArg(enemy, instr, 2));
         break;
     }
-    case 10: {
+    case ECL_OP_RANDOM_SIGN_INT: {
         const int32_t sign = (Rng_U16(&g_Rng) & 1) != 0 ? 1 : -1;
         M_SetInt(
             enemy, instr, 0, M_Wrap((int64_t)sign * M_IntArg(enemy, instr, 1)));
         break;
     }
-    case 11: {
+    case ECL_OP_RANDOM_SIGN_FLOAT: {
         const float sign = (Rng_U16(&g_Rng) & 1) != 0 ? 1.0f : -1.0f;
         M_SetFloat(enemy, instr, 0, sign * M_FloatArg(enemy, instr, 1));
         break;
     }
-    case 17:
-    case 18: {
+    case ECL_OP_INCREMENT:
+    case ECL_OP_DECREMENT: {
         const int32_t value = *M_IntVar(enemy, instr, 0);
         M_SetInt(
             enemy, instr, 0,
-            M_Wrap((int64_t)value + (instr->opcode == 17 ? 1 : -1)));
+            M_Wrap(
+                (int64_t)value + (instr->opcode == ECL_OP_INCREMENT ? 1 : -1)));
         break;
     }
-    case 43: {
+    case ECL_OP_GET_BOSS_INT: {
         int32_t value = instr->args[1].i;
         if (M_IsVar(instr, 2)) {
             ENEMY *const boss = M_Boss(M_IntArg(enemy, instr, 2));
@@ -1171,7 +1173,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetInt(enemy, instr, 0, value);
         break;
     }
-    case 44: {
+    case ECL_OP_GET_BOSS_FLOAT: {
         float value = instr->args[1].f;
         if (M_IsVar(instr, 2)) {
             ENEMY *const boss = M_Boss(M_IntArg(enemy, instr, 2));
@@ -1181,50 +1183,50 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetFloat(enemy, instr, 0, value);
         break;
     }
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-    case 16: {
+    case ECL_OP_ADD_INT:
+    case ECL_OP_SUB_INT:
+    case ECL_OP_MUL_INT:
+    case ECL_OP_DIV_INT:
+    case ECL_OP_MOD_INT: {
         const int32_t a = M_IntArg(enemy, instr, 1);
         const int32_t b = M_IntArg(enemy, instr, 2);
         int32_t value;
         switch (instr->opcode) {
-        case 12:
+        case ECL_OP_ADD_INT:
             value = M_Wrap((int64_t)a + b);
             break;
-        case 13:
+        case ECL_OP_SUB_INT:
             value = M_Wrap((int64_t)a - b);
             break;
-        case 14:
+        case ECL_OP_MUL_INT:
             value = M_Wrap((int64_t)a * b);
             break;
         default:
-            value = M_Divide(a, b, instr->opcode == 16);
+            value = M_Divide(a, b, instr->opcode == ECL_OP_MOD_INT);
             break;
         }
         M_SetInt(enemy, instr, 0, value);
         break;
     }
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23: {
+    case ECL_OP_ADD_FLOAT:
+    case ECL_OP_SUB_FLOAT:
+    case ECL_OP_MUL_FLOAT:
+    case ECL_OP_DIV_FLOAT:
+    case ECL_OP_MOD_FLOAT: {
         const float a = M_FloatArg(enemy, instr, 1);
         const float b = M_FloatArg(enemy, instr, 2);
         float value;
         switch (instr->opcode) {
-        case 19:
+        case ECL_OP_ADD_FLOAT:
             value = a + b;
             break;
-        case 20:
+        case ECL_OP_SUB_FLOAT:
             value = a - b;
             break;
-        case 21:
+        case ECL_OP_MUL_FLOAT:
             value = a * b;
             break;
-        case 22:
+        case ECL_OP_DIV_FLOAT:
             value = a / b;
             break;
         default:
@@ -1234,13 +1236,13 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetFloat(enemy, instr, 0, value);
         break;
     }
-    case 24:
+    case ECL_OP_SIN:
         M_SetFloat(enemy, instr, 0, X87_Sin(M_FloatArg(enemy, instr, 1)));
         break;
-    case 25:
+    case ECL_OP_COS:
         M_SetFloat(enemy, instr, 0, X87_Cos(M_FloatArg(enemy, instr, 1)));
         break;
-    case 26: {
+    case ECL_OP_ANGLE: {
         const float y =
             M_FloatArg(enemy, instr, 4) - M_FloatArg(enemy, instr, 2);
         const float x =
@@ -1248,7 +1250,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetFloat(enemy, instr, 0, X87_Atan2(y, x));
         break;
     }
-    case 159: {
+    case ECL_OP_LERP: {
         const float scale =
             M_FloatArg(enemy, instr, 1) - M_FloatArg(enemy, instr, 2);
         const float value =
@@ -1256,7 +1258,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetFloat(enemy, instr, 0, value);
         break;
     }
-    case 51: {
+    case ECL_OP_RANDOM_FLOAT_BETWEEN: {
         const float high = M_FloatArg(enemy, instr, 2);
         const float range = high - M_FloatArg(enemy, instr, 1);
         const float value =
@@ -1264,13 +1266,13 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetFloat(enemy, instr, 0, value);
         break;
     }
-    case 52:
+    case ECL_OP_RANDOM_ANGLE_IN_BOUNDS:
         M_SetFloat(enemy, instr, 0, M_RandomAngleInBounds(enemy));
         break;
-    case 27:
+    case ECL_OP_INTERPOLATE:
         M_SetInterp(enemy, instr);
         break;
-    case 151: {
+    case ECL_OP_POLAR: {
         // The second pair of operands is read after the first store.
         float x;
         float y;
@@ -1282,7 +1284,7 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         M_SetFloat(enemy, instr, 0, x);
         break;
     }
-    case 155: {
+    case ECL_OP_RANDOM_SIDE_ANGLE: {
         float angle;
         if ((g_Player.pos.x < enemy->move.pos.x && enemy->move.pos.x > 96.0f)
             || enemy->move.pos.x > 288.0f) {
@@ -1295,23 +1297,21 @@ static bool M_StepVars(ENEMY *const enemy, ECL_INSTR *const instr)
         break;
     }
     default:
-        return false;
+        break;
     }
-    return true;
 }
 
-// Runs the movement opcodes 46 to 50, 53 to 63. Returns false for any
-// other opcode.
-static bool M_StepMove(ENEMY *const enemy, const ECL_INSTR *const instr)
+// Runs an opcode that moves the enemy.
+static void M_StepMove(ENEMY *const enemy, const ECL_INSTR *const instr)
 {
     switch (instr->opcode) {
-    case 46:
+    case ECL_OP_SET_POS:
         enemy->move.pos.x = M_FloatArg(enemy, instr, 0);
         enemy->move.pos.y = M_FloatArg(enemy, instr, 1);
         enemy->move.pos.z = M_FloatArg(enemy, instr, 2);
         Enemy_ClampPos(enemy);
         break;
-    case 47:
+    case ECL_OP_SET_VELOCITY:
         enemy->move.velocity.x = M_FloatArg(enemy, instr, 0);
         enemy->move.velocity.y = M_FloatArg(enemy, instr, 1);
         enemy->move.velocity.z = M_FloatArg(enemy, instr, 2);
@@ -1319,34 +1319,34 @@ static bool M_StepMove(ENEMY *const enemy, const ECL_INSTR *const instr)
             X87_Atan2(enemy->move.velocity.y, enemy->move.velocity.x);
         enemy->flags.move = ENEMY_MOVE_VELOCITY;
         break;
-    case 48:
+    case ECL_OP_SET_ANGULAR_VELOCITY:
         enemy->move.angular_velocity = M_FloatArg(enemy, instr, 0);
         enemy->flags.move = ENEMY_MOVE_ANGLE;
         break;
-    case 53:
+    case ECL_OP_AIM_AT_PLAYER:
         enemy->move.angle =
             Player_AngleFrom(enemy->move.pos) + M_FloatArg(enemy, instr, 0);
         enemy->move.speed = M_FloatArg(enemy, instr, 1);
         enemy->flags.move = ENEMY_MOVE_ANGLE;
         break;
-    case 49:
+    case ECL_OP_SET_SPEED:
         enemy->move.speed = M_FloatArg(enemy, instr, 0);
         enemy->flags.move = ENEMY_MOVE_ANGLE;
         break;
-    case 50:
+    case ECL_OP_SET_ACCELERATION:
         enemy->move.acceleration = M_FloatArg(enemy, instr, 0);
         enemy->flags.move = ENEMY_MOVE_ANGLE;
         break;
-    case 59:
+    case ECL_OP_TIME_ANGLE_MOVE:
         M_SetMoveTimer(enemy, instr, ENEMY_MOVE_ANGLE);
         break;
-    case 60:
+    case ECL_OP_TIME_CIRCLE_MOVE:
         M_SetMoveTimer(enemy, instr, ENEMY_MOVE_CIRCLE);
         break;
-    case 61:
+    case ECL_OP_TIME_MOVE_TO:
         M_SetMoveTimer(enemy, instr, ENEMY_MOVE_TO);
         break;
-    case 54:
+    case ECL_OP_MOVE_ANGLE:
         if (M_IntArg(enemy, instr, 0) <= 0) {
             enemy->move.angle =
                 Angle_AddNormalize(M_FloatArg(enemy, instr, 2), 0.0f);
@@ -1356,10 +1356,10 @@ static bool M_StepMove(ENEMY *const enemy, const ECL_INSTR *const instr)
             M_MoveAngle(enemy, instr);
         }
         break;
-    case 55:
+    case ECL_OP_MOVE_TO:
         M_MoveTo(enemy, instr);
         break;
-    case 56:
+    case ECL_OP_MOVE_CIRCLE:
         enemy->move.duration = M_IntArg(enemy, instr, 0);
         Timer_Set(&enemy->move.timer, enemy->move.duration);
         enemy->move.start.x = M_FloatArg(enemy, instr, 1);
@@ -1371,48 +1371,46 @@ static bool M_StepMove(ENEMY *const enemy, const ECL_INSTR *const instr)
         enemy->move.circle.radius_velocity = M_FloatArg(enemy, instr, 7);
         enemy->flags.move = ENEMY_MOVE_CIRCLE;
         break;
-    case 57:
+    case ECL_OP_SET_CIRCLE_RADIUS:
         enemy->move.circle.radius = M_FloatArg(enemy, instr, 0);
         enemy->move.circle.radius_velocity = M_FloatArg(enemy, instr, 1);
         break;
-    case 58:
+    case ECL_OP_SET_CIRCLE_ANGLE:
         enemy->move.circle.angle = M_FloatArg(enemy, instr, 0);
         enemy->move.circle.angular_velocity = M_FloatArg(enemy, instr, 1);
         break;
-    case 62:
+    case ECL_OP_SET_BOUNDS:
         enemy->move.bounds_min.x = M_FloatArg(enemy, instr, 0);
         enemy->move.bounds_min.y = M_FloatArg(enemy, instr, 1);
         enemy->move.bounds_max.x = M_FloatArg(enemy, instr, 2);
         enemy->move.bounds_max.y = M_FloatArg(enemy, instr, 3);
         enemy->flags.clamp_pos = true;
         break;
-    case 63:
+    case ECL_OP_CLEAR_BOUNDS:
         enemy->flags.clamp_pos = false;
         break;
     default:
-        return false;
+        break;
     }
-    return true;
 }
 
-// Runs the shot and laser opcodes 64 to 89, 131, 134, 143, 146, 152 and
-// 156 to 158. Returns false for any other opcode.
-static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
+// Runs an opcode of the shots and the lasers.
+static void M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
 {
     LASER *laser;
     switch (instr->opcode) {
-    case 64:
-    case 65:
-    case 66:
-    case 67:
-    case 68:
-    case 69:
-    case 70:
-    case 71:
-    case 72:
+    case ECL_OP_FIRE_FAN_AT_PLAYER:
+    case ECL_OP_FIRE_FAN:
+    case ECL_OP_FIRE_RING_AT_PLAYER:
+    case ECL_OP_FIRE_RING:
+    case ECL_OP_FIRE_RING_OFFSET_AT_PLAYER:
+    case ECL_OP_FIRE_RING_OFFSET:
+    case ECL_OP_FIRE_RANDOM_ANGLE:
+    case ECL_OP_FIRE_RING_RANDOM_SPEED:
+    case ECL_OP_FIRE_RANDOM:
         M_Fire(enemy, instr);
         break;
-    case 79: {
+    case ECL_OP_SET_SHOT_COMMAND: {
         const int32_t index = M_IntArg(enemy, instr, 0);
         ASSERT(index >= 0 && index < BULLET_COMMAND_COUNT);
         BULLET_COMMAND *const command = &enemy->shots.shooter.commands[index];
@@ -1424,8 +1422,8 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
         command->args[1] = M_FloatArg(enemy, instr, 6);
         break;
     }
-    case 73:
-    case 74: {
+    case ECL_OP_SET_INTERVAL:
+    case ECL_OP_SET_INTERVAL_RANDOM: {
         const int32_t interval = M_IntArg(enemy, instr, 0);
         enemy->shots.interval = interval;
         if (interval == 0) {
@@ -1434,37 +1432,38 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
         enemy->shots.interval += M_RankLerp(interval / 5, -interval / 5);
         Timer_Set(
             &enemy->shots.timer,
-            instr->opcode == 73 ? 0
-                                : (int32_t)Rng_U32InRange(
-                                      &g_Rng, (uint32_t)enemy->shots.interval));
+            instr->opcode == ECL_OP_SET_INTERVAL
+                ? 0
+                : (int32_t)Rng_U32InRange(
+                      &g_Rng, (uint32_t)enemy->shots.interval));
         break;
     }
-    case 75:
+    case ECL_OP_HOLD_FIRE:
         enemy->flags.hold_fire = true;
         break;
-    case 76:
+    case ECL_OP_RELEASE_FIRE:
         enemy->flags.hold_fire = false;
         break;
-    case 77:
+    case ECL_OP_FIRE_AGAIN:
         enemy->shots.shooter.pos =
             Vec3_Add(enemy->move.pos, enemy->shots.offset);
         Bullet_FirePattern(&enemy->shots.shooter);
         break;
-    case 78:
+    case ECL_OP_SET_SHOT_OFFSET:
         enemy->shots.offset.x = M_FloatArg(enemy, instr, 0);
         enemy->shots.offset.y = M_FloatArg(enemy, instr, 1);
         enemy->shots.offset.z = M_FloatArg(enemy, instr, 2);
         break;
-    case 80:
+    case ECL_OP_CLEAR_BULLETS:
         Bullet_ClearAllToItems();
         break;
-    case 146:
+    case ECL_OP_DELETE_BULLETS:
         Bullet_ClearAll();
         break;
-    case 143:
+    case ECL_OP_CLEAR_BULLETS_IN_CIRCLE:
         Bullet_ClearCircleToItems(enemy->move.pos, M_FloatArg(enemy, instr, 0));
         break;
-    case 81:
+    case ECL_OP_SET_SHOT_SOUND:
         if (M_IntArg(enemy, instr, 0) >= 0) {
             enemy->shots.shooter.sound = M_IntArg(enemy, instr, 0);
             enemy->shots.shooter.flags |= BULLET_FLAG_SOUND;
@@ -1473,7 +1472,7 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
         }
         enemy->shots.shooter.bullet_sound = M_IntArg(enemy, instr, 1);
         break;
-    case 131:
+    case ECL_OP_SET_RANK_GROWTH:
         enemy->shots.rank_speed_low = M_FloatArg(enemy, instr, 0);
         enemy->shots.rank_speed_high = M_FloatArg(enemy, instr, 1);
         enemy->shots.rank_columns_low = (int16_t)M_IntArg(enemy, instr, 2);
@@ -1481,37 +1480,37 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
         enemy->shots.rank_rows_low = (int16_t)M_IntArg(enemy, instr, 4);
         enemy->shots.rank_rows_high = (int16_t)M_IntArg(enemy, instr, 5);
         break;
-    case 82:
-    case 83:
+    case ECL_OP_LASER:
+    case ECL_OP_LASER_AT_PLAYER:
         M_SpawnLaser(enemy, instr);
         break;
-    case 84:
+    case ECL_OP_SET_LASER_INDEX:
         enemy->shots.laser_index = M_IntArg(enemy, instr, 0);
         break;
-    case 134:
+    case ECL_OP_FORGET_LASERS:
         memset(enemy->shots.lasers, 0, sizeof(enemy->shots.lasers));
         break;
-    case 85:
+    case ECL_OP_TURN_LASER:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->angle =
                 Angle_AddNormalize(laser->angle, M_FloatArg(enemy, instr, 1));
         }
         break;
-    case 152:
+    case ECL_OP_SET_LASER_ANGLE:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->angle = M_FloatArg(enemy, instr, 1);
         }
         break;
-    case 86:
+    case ECL_OP_AIM_LASER:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->angle =
                 Player_AngleFrom(laser->pos) + M_FloatArg(enemy, instr, 1);
         }
         break;
-    case 87:
+    case ECL_OP_MOVE_LASER:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->pos.x = M_FloatArg(enemy, instr, 1) + enemy->move.pos.x;
@@ -1519,17 +1518,17 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
             laser->pos.z = M_FloatArg(enemy, instr, 3) + enemy->move.pos.z;
         }
         break;
-    case 156:
+    case ECL_OP_HIDE_LASER_ORIGIN:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->hide_origin_while_starting = M_IntArg(enemy, instr, 1) != 0;
         }
         break;
-    case 88:
+    case ECL_OP_TEST_LASER:
         // Nothing reads the result of the test.
         M_Laser(enemy, M_IntArg(enemy, instr, 0));
         break;
-    case 89:
+    case ECL_OP_END_LASER:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr && laser->active && laser->state < LASER_ENDING) {
             laser->state = LASER_ENDING;
@@ -1537,13 +1536,13 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
             laser->width = laser->shown_width;
         }
         break;
-    case 157:
+    case ECL_OP_SET_LASER_LENGTH:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->max_length = M_FloatArg(enemy, instr, 1);
         }
         break;
-    case 158:
+    case ECL_OP_SET_LASER_OFFSETS:
         laser = *M_Laser(enemy, M_IntArg(enemy, instr, 0));
         if (laser != nullptr) {
             laser->start_offset = M_FloatArg(enemy, instr, 1);
@@ -1551,26 +1550,24 @@ static bool M_StepShots(ENEMY *const enemy, const ECL_INSTR *const instr)
         }
         break;
     default:
-        return false;
+        break;
     }
-    return true;
 }
 
-// Runs the opcodes of bosses, spell cards and enemy attributes. Returns
-// false for any other opcode.
-static bool M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
+// Runs an opcode of bosses, spell cards and enemy attributes.
+static void M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
 {
     switch (instr->opcode) {
-    case 90:
+    case ECL_OP_START_SPELL_CARD:
         M_StartSpellCard(enemy, instr);
         break;
-    case 91:
+    case ECL_OP_END_SPELL_CARD:
         M_EndSpellCard();
         break;
-    case 99:
+    case ECL_OP_SET_BOSS:
         M_SetBoss(enemy, instr);
         break;
-    case 110:
+    case ECL_OP_SET_LIFE:
         enemy->max_life = M_IntArg(enemy, instr, 0);
         enemy->life = enemy->max_life;
         if (enemy->boss_index == 0 && enemy->flags.boss) {
@@ -1580,7 +1577,7 @@ static bool M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
             }
         }
         break;
-    case 139: {
+    case ECL_OP_SET_BOSS_SECTION: {
         const int32_t index = M_IntArg(enemy, instr, 0);
         ASSERT(index >= 0 && index < GUI_BOSS_SECTION_COUNT);
         // The two fractions evaluate in the order of the decompilation.
@@ -1593,18 +1590,18 @@ static bool M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
         g_Gui.boss.sections[index].color = M_IntArg(enemy, instr, 3);
         break;
     }
-    case 126:
+    case ECL_OP_SET_BOSS_LIVES:
         g_Gui.boss.lives = M_IntArg(enemy, instr, 0);
         g_GameManager.run.progress_frames += 1800;
         break;
-    case 135:
+    case ECL_OP_SET_KEEP_SPELL_CARD:
         enemy->flags.keep_spell_card = (instr->args[0].i & 1) != 0;
         break;
-    case 147:
+    case ECL_OP_READ_UNUSED:
         // The original keeps it where nothing reads it.
         M_IntArg(enemy, instr, 0);
         break;
-    case 149:
+    case ECL_OP_SET_SPELL_CIRCLE:
         enemy->flags.spell_circle_detached =
             (M_IntArg(enemy, instr, 0) & 1) != 0;
         if (!enemy->flags.spell_circle_detached) {
@@ -1615,65 +1612,65 @@ static bool M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
             circle->pos.z = M_FloatArg(enemy, instr, 3);
         }
         break;
-    case 98:
+    case ECL_OP_SET_DEATH_EFFECTS:
         enemy->death.effect = (int8_t)M_ArgByte(instr, 0);
         enemy->death.particle_color = M_ArgByte(instr, 1);
         break;
-    case 101:
+    case ECL_OP_SET_HITBOX:
         enemy->hitbox_size.x = M_FloatArg(enemy, instr, 0);
         enemy->hitbox_size.y = M_FloatArg(enemy, instr, 1);
         enemy->hitbox_size.z = M_FloatArg(enemy, instr, 2);
         break;
-    case 153:
+    case ECL_OP_SET_EXTRA_HITBOX:
         enemy->extra_hitbox_size.x = M_FloatArg(enemy, instr, 0);
         enemy->extra_hitbox_size.y = M_FloatArg(enemy, instr, 1);
         enemy->extra_hitbox_size.z = M_FloatArg(enemy, instr, 2);
         break;
-    case 102:
+    case ECL_OP_SET_CONTACT_DAMAGE:
         enemy->flags.contact_damage = (instr->args[0].i & 1) != 0;
         break;
-    case 103:
+    case ECL_OP_SET_TAKES_DAMAGE:
         enemy->flags.takes_damage = (instr->args[0].i & 1) != 0;
         break;
-    case 104:
+    case ECL_OP_SET_HIT_BY_SHOTS:
         enemy->flags.hit_by_shots = (instr->args[0].i & 1) != 0;
         break;
-    case 106:
+    case ECL_OP_SET_DEATH:
         enemy->flags.death = (ENEMY_DEATH)(instr->args[0].i & 7);
         break;
-    case 116:
+    case ECL_OP_SET_SHOOTABLE:
         enemy->flags.shootable = (instr->args[0].i & 1) != 0;
         break;
-    case 120:
+    case ECL_OP_SET_ROTATE_SPRITE:
         enemy->flags.rotate_sprite = (instr->args[0].i & 1) != 0;
         break;
-    case 130:
+    case ECL_OP_SET_NO_CALL_STACK:
         enemy->flags.no_call_stack = (instr->args[0].i & 1) != 0;
         break;
-    case 132:
+    case ECL_OP_SET_HIDDEN:
         enemy->flags.hidden = (instr->args[0].i & 1) != 0;
         break;
-    case 136:
+    case ECL_OP_SET_GRAZEABLE:
         enemy->flags.grazeable = (instr->args[0].i & 1) != 0;
         enemy->draw_list = ENEMY_DRAW_HIGH;
         break;
-    case 137:
+    case ECL_OP_SET_STAYS_OFF_SCREEN:
         enemy->flags.stays_off_screen = (instr->args[0].i & 1) != 0;
         break;
-    case 161:
+    case ECL_OP_SET_HALTED_BY_BOMB:
         enemy->flags.halted_by_bomb = (M_IntArg(enemy, instr, 0) & 1) != 0;
         break;
-    case 107:
+    case ECL_OP_SET_DEATH_SUB:
         enemy->script.death_sub = M_ArgByte(instr, 0);
         ASSERT(Ecl_IsSub(enemy->script.death_sub));
         break;
-    case 108: {
+    case ECL_OP_SET_INTERRUPT: {
         const int32_t index = M_IntArg(enemy, instr, 1);
         ASSERT(index >= 0 && index < ENEMY_INTERRUPT_COUNT);
         enemy->script.interrupts[index] = M_IntArg(enemy, instr, 0);
         break;
     }
-    case 145: {
+    case ECL_OP_INTERRUPT_BOSS: {
         ENEMY *const boss = M_Boss(M_IntArg(enemy, instr, 0));
         if (boss != nullptr) {
             M_Boss(M_IntArg(enemy, instr, 0))->script.pending_interrupt =
@@ -1681,16 +1678,16 @@ static bool M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
         }
         break;
     }
-    case 111:
+    case ECL_OP_SET_CALLBACK_TIMER:
         Timer_Set(&enemy->callbacks.timer, M_IntArg(enemy, instr, 0));
         break;
-    case 112:
+    case ECL_OP_SET_LIFE_CALLBACK:
         enemy->callbacks.life[0] = M_IntArg(enemy, instr, 0);
         break;
-    case 113:
+    case ECL_OP_SET_LIFE_CALLBACK_SUB:
         enemy->callbacks.life_sub[0] = M_IntArg(enemy, instr, 0);
         break;
-    case 148: {
+    case ECL_OP_SET_LIFE_CALLBACK_AT: {
         const int32_t index = M_IntArg(enemy, instr, 0);
         ASSERT(index >= 0 && index < ENEMY_LIFE_CALLBACK_COUNT);
         enemy->callbacks.life[index] = M_IntArg(enemy, instr, 1);
@@ -1698,41 +1695,39 @@ static bool M_StepEnemy(ENEMY *const enemy, const ECL_INSTR *const instr)
             M_IntArg(enemy, instr, 2);
         break;
     }
-    case 114:
+    case ECL_OP_SET_TIME_CALLBACK:
         enemy->callbacks.time = M_IntArg(enemy, instr, 0);
         Timer_Set(&enemy->callbacks.timer, 0);
         break;
-    case 115:
+    case ECL_OP_SET_TIME_CALLBACK_SUB:
         enemy->callbacks.time_sub = M_IntArg(enemy, instr, 0);
         break;
-    case 133:
+    case ECL_OP_DEATH_SUB_ON_TIMER:
         enemy->callbacks.time_sub = enemy->script.death_sub;
         Timer_Set(&enemy->callbacks.timer, 0);
         break;
-    case 142:
+    case ECL_OP_SET_INVULNERABLE:
         Timer_Set(&enemy->invulnerable_timer, M_IntArg(enemy, instr, 0));
         break;
-    case 144:
+    case ECL_OP_SET_PERIODIC_CALL:
         Timer_Set(&enemy->script.periodic.interval, M_IntArg(enemy, instr, 0));
         enemy->script.periodic.sub = M_IntArg(enemy, instr, 1);
         Timer_Set(&enemy->script.periodic.timer, 0);
         enemy->script.periodic.vars = enemy->script.state.vars;
         break;
     default:
-        return false;
+        break;
     }
-    return true;
 }
 
-// Runs the sprite, effect, item, spawn, sound and stage opcodes. Returns
-// false for any other opcode.
-static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
+// Runs a sprite, effect, item, spawn, sound or stage opcode.
+static void M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
 {
     switch (instr->opcode) {
-    case 95:
+    case ECL_OP_START_SCRIPT:
         Anm_StartScript(&enemy->vm, M_IntArg(enemy, instr, 0) + M_FIRST_SCRIPT);
         break;
-    case 97: {
+    case ECL_OP_START_SPRITE_SCRIPT: {
         // The original writes past its two sprites for a larger index.
         ASSERT(M_IntArg(enemy, instr, 0) < ENEMY_SPRITE_COUNT);
         const int32_t script = M_IntArg(enemy, instr, 1);
@@ -1748,7 +1743,7 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         }
         break;
     }
-    case 96:
+    case ECL_OP_SET_TURNS:
         enemy->turns.still = M_ArgShort(instr, 0);
         enemy->turns.still_from_left = M_ArgShort(instr, 1);
         enemy->turns.still_from_right = M_ArgShort(instr, 2);
@@ -1756,19 +1751,19 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         enemy->turns.right = M_ArgShort(instr, 4);
         enemy->flags.facing = ENEMY_FACING_UNSET;
         break;
-    case 128:
+    case ECL_OP_INTERRUPT_SCRIPT:
         enemy->vm.pending_interrupt = (int16_t)M_IntArg(enemy, instr, 0);
         break;
-    case 129: {
+    case ECL_OP_INTERRUPT_SPRITE_SCRIPT: {
         const int32_t index = instr->args[0].i;
         ASSERT(index >= 0 && index < ENEMY_SPRITE_COUNT);
         enemy->vms[index].pending_interrupt = (int16_t)instr->args[1].i;
         break;
     }
-    case 150:
+    case ECL_OP_SET_SPRITE_ROTATION:
         enemy->vm.rotation.z = M_FloatArg(enemy, instr, 0);
         break;
-    case 138:
+    case ECL_OP_SET_TRAIL:
         // The original also fills the strip vertices for ENEMY_TRAIL_STRIP,
         // which the draw fills again before it reads them.
         enemy->trail.flags = (uint8_t)instr->args[0].i;
@@ -1776,10 +1771,10 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         enemy->trail.contact_count = (int16_t)M_IntArg(enemy, instr, 2);
         enemy->trail.step = (int16_t)M_IntArg(enemy, instr, 3);
         break;
-    case 100:
+    case ECL_OP_ADD_ORBIT:
         M_AddOrbit(enemy, instr);
         break;
-    case 117: {
+    case ECL_OP_SPAWN_EFFECT: {
         // The arguments evaluate in the order of the decompilation.
         const int32_t type = M_IntArg(enemy, instr, 0);
         const int32_t count = M_IntArg(enemy, instr, 1);
@@ -1788,7 +1783,7 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
             (EFFECT_TYPE)type, enemy->move.pos, count, (uint32_t)color);
         break;
     }
-    case 118: {
+    case ECL_OP_SPAWN_MOVING_EFFECT: {
         const VEC3 velocity = {
             M_FloatArg(enemy, instr, 3),
             M_FloatArg(enemy, instr, 4),
@@ -1802,7 +1797,7 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
             (uint32_t)color);
         break;
     }
-    case 140: {
+    case ECL_OP_SET_EFFECT_COLOR: {
         const float red = M_FloatArg(enemy, instr, 0);
         const float green = M_FloatArg(enemy, instr, 1);
         const float blue = M_FloatArg(enemy, instr, 2);
@@ -1810,40 +1805,40 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         Effect_SetColorScale(red, green, blue, alpha);
         break;
     }
-    case 119:
+    case ECL_OP_DROP_ITEMS:
         M_DropItems(enemy, instr, true);
         break;
-    case 154:
+    case ECL_OP_DROP_POINT_ITEMS:
         M_DropItems(enemy, instr, false);
         break;
-    case 124:
+    case ECL_OP_DROP_ITEM:
         Item_Spawn(
             enemy->move.pos, (ITEM_TYPE)M_IntArg(enemy, instr, 0),
             ITEM_FALLING);
         break;
-    case 92:
-    case 93:
-        M_SpawnChild(enemy, instr, instr->opcode == 93);
+    case ECL_OP_SPAWN:
+    case ECL_OP_SPAWN_RELATIVE:
+        M_SpawnChild(enemy, instr, instr->opcode == ECL_OP_SPAWN_RELATIVE);
         break;
-    case 94:
+    case ECL_OP_CLEAR_ENEMIES:
         Enemy_ClearForBonus(M_CLEAR_BONUS, 0);
         break;
-    case 105:
+    case ECL_OP_PLAY_SOUND:
         Sound_Queue(M_IntArg(enemy, instr, 0));
         break;
-    case 125:
+    case ECL_OP_SET_STAGE_LABEL:
         g_Stage.script.label = M_IntArg(enemy, instr, 0);
         break;
-    case 160:
+    case ECL_OP_ADD_CHERRY:
         GameManager_AddCherry(M_IntArg(enemy, instr, 0));
         break;
-    case 121: {
+    case ECL_OP_CALL_FUNC: {
         const int32_t func = M_IntArg(enemy, instr, 0);
         ASSERT(func >= 0 && func < ECL_FUNC_COUNT);
         Ecl_RunPattern(enemy, (ECL_FUNC)func, instr->args[1].i);
         break;
     }
-    case 122:
+    case ECL_OP_SET_FRAME_FUNC:
         if (M_IntArg(enemy, instr, 0) >= 0) {
             const int32_t func = M_IntArg(enemy, instr, 0);
             ASSERT(func < ECL_FUNC_COUNT);
@@ -1854,9 +1849,8 @@ static bool M_StepWorld(ENEMY *const enemy, ECL_INSTR *const instr)
         }
         break;
     default:
-        return false;
+        break;
     }
-    return true;
 }
 
 // Runs instr, the instruction at *pc of enemy. Sets *pc to the target of
@@ -1866,12 +1860,12 @@ static M_STEP M_Step(
 {
     ECL_STATE *const state = &enemy->script.state;
     switch (instr->opcode) {
-    case 1:
+    case ECL_OP_DELETE:
         return M_STEP_DELETE;
-    case 45:
+    case ECL_OP_WAIT:
         Timer_Set(&state->wait, M_IntArg(enemy, instr, 0));
         return M_STEP_NEXT;
-    case 3: {
+    case ECL_OP_LOOP: {
         // The count of a constant operand lives in the instruction.
         const int32_t count = *M_IntVar(enemy, instr, 2);
         M_SetInt(enemy, instr, 2, M_Wrap((int64_t)count - 1));
@@ -1882,16 +1876,16 @@ static M_STEP M_Step(
         *pc = instr->target;
         return M_STEP_JUMP;
     }
-    case 2:
+    case ECL_OP_JUMP:
         state->timer.current = instr->args[0].i;
         *pc = instr->target;
         return M_STEP_JUMP;
-    case 28:
-    case 30:
-    case 32:
-    case 34:
-    case 36:
-    case 38: {
+    case ECL_OP_JUMP_EQUAL_INT:
+    case ECL_OP_JUMP_NOT_EQUAL_INT:
+    case ECL_OP_JUMP_LESS_INT:
+    case ECL_OP_JUMP_LESS_EQUAL_INT:
+    case ECL_OP_JUMP_GREATER_INT:
+    case ECL_OP_JUMP_GREATER_EQUAL_INT: {
         const int32_t a = M_IntArg(enemy, instr, 0);
         const int32_t b = M_IntArg(enemy, instr, 1);
         if (!M_CompareInts(instr->opcode, a, b)) {
@@ -1901,12 +1895,12 @@ static M_STEP M_Step(
         *pc = instr->target;
         return M_STEP_JUMP;
     }
-    case 29:
-    case 31:
-    case 33:
-    case 35:
-    case 37:
-    case 39: {
+    case ECL_OP_JUMP_EQUAL_FLOAT:
+    case ECL_OP_JUMP_NOT_EQUAL_FLOAT:
+    case ECL_OP_JUMP_LESS_FLOAT:
+    case ECL_OP_JUMP_LESS_EQUAL_FLOAT:
+    case ECL_OP_JUMP_GREATER_FLOAT:
+    case ECL_OP_JUMP_GREATER_EQUAL_FLOAT: {
         const float a = M_FloatArg(enemy, instr, 0);
         const float b = M_FloatArg(enemy, instr, 1);
         if (!M_CompareFloats(instr->opcode, a, b)) {
@@ -1916,27 +1910,171 @@ static M_STEP M_Step(
         *pc = instr->target;
         return M_STEP_JUMP;
     }
-    case 41:
+    case ECL_OP_CALL:
         M_Call(enemy, *pc + 1, (int16_t)instr->args[0].i);
         return M_STEP_RESTART;
-    case 42:
+    case ECL_OP_RETURN:
         M_Return(enemy);
         return M_STEP_RESTART;
-    case 109:
+    case ECL_OP_INTERRUPT:
         enemy->script.pending_interrupt = M_IntArg(enemy, instr, 0);
         M_Interrupt(enemy, *pc + 1);
         return M_STEP_RESTART;
-    case 123:
+    case ECL_OP_ADD_TIME:
         Timer_AddAt(&state->timer, M_IntArg(enemy, instr, 0), g_GameSpeed);
         return M_STEP_NEXT;
-    default:
-        break;
-    }
-    if (!M_StepVars(enemy, instr) && !M_StepMove(enemy, instr)
-        && !M_StepShots(enemy, instr) && !M_StepEnemy(enemy, instr)) {
+    case ECL_OP_SET_INT:
+    case ECL_OP_SET_FLOAT:
+    case ECL_OP_RANDOM_INT:
+    case ECL_OP_RANDOM_INT_FROM:
+    case ECL_OP_RANDOM_FLOAT:
+    case ECL_OP_RANDOM_FLOAT_FROM:
+    case ECL_OP_RANDOM_SIGN_INT:
+    case ECL_OP_RANDOM_SIGN_FLOAT:
+    case ECL_OP_ADD_INT:
+    case ECL_OP_SUB_INT:
+    case ECL_OP_MUL_INT:
+    case ECL_OP_DIV_INT:
+    case ECL_OP_MOD_INT:
+    case ECL_OP_INCREMENT:
+    case ECL_OP_DECREMENT:
+    case ECL_OP_ADD_FLOAT:
+    case ECL_OP_SUB_FLOAT:
+    case ECL_OP_MUL_FLOAT:
+    case ECL_OP_DIV_FLOAT:
+    case ECL_OP_MOD_FLOAT:
+    case ECL_OP_SIN:
+    case ECL_OP_COS:
+    case ECL_OP_ANGLE:
+    case ECL_OP_INTERPOLATE:
+    case ECL_OP_NORMALIZE_ANGLE:
+    case ECL_OP_GET_BOSS_INT:
+    case ECL_OP_GET_BOSS_FLOAT:
+    case ECL_OP_RANDOM_FLOAT_BETWEEN:
+    case ECL_OP_RANDOM_ANGLE_IN_BOUNDS:
+    case ECL_OP_POLAR:
+    case ECL_OP_RANDOM_SIDE_ANGLE:
+    case ECL_OP_LERP:
+        M_StepVars(enemy, instr);
+        return M_STEP_NEXT;
+    case ECL_OP_SET_POS:
+    case ECL_OP_SET_VELOCITY:
+    case ECL_OP_SET_ANGULAR_VELOCITY:
+    case ECL_OP_SET_SPEED:
+    case ECL_OP_SET_ACCELERATION:
+    case ECL_OP_AIM_AT_PLAYER:
+    case ECL_OP_MOVE_ANGLE:
+    case ECL_OP_MOVE_TO:
+    case ECL_OP_MOVE_CIRCLE:
+    case ECL_OP_SET_CIRCLE_RADIUS:
+    case ECL_OP_SET_CIRCLE_ANGLE:
+    case ECL_OP_TIME_ANGLE_MOVE:
+    case ECL_OP_TIME_CIRCLE_MOVE:
+    case ECL_OP_TIME_MOVE_TO:
+    case ECL_OP_SET_BOUNDS:
+    case ECL_OP_CLEAR_BOUNDS:
+        M_StepMove(enemy, instr);
+        return M_STEP_NEXT;
+    case ECL_OP_FIRE_FAN_AT_PLAYER:
+    case ECL_OP_FIRE_FAN:
+    case ECL_OP_FIRE_RING_AT_PLAYER:
+    case ECL_OP_FIRE_RING:
+    case ECL_OP_FIRE_RING_OFFSET_AT_PLAYER:
+    case ECL_OP_FIRE_RING_OFFSET:
+    case ECL_OP_FIRE_RANDOM_ANGLE:
+    case ECL_OP_FIRE_RING_RANDOM_SPEED:
+    case ECL_OP_FIRE_RANDOM:
+    case ECL_OP_SET_INTERVAL:
+    case ECL_OP_SET_INTERVAL_RANDOM:
+    case ECL_OP_HOLD_FIRE:
+    case ECL_OP_RELEASE_FIRE:
+    case ECL_OP_FIRE_AGAIN:
+    case ECL_OP_SET_SHOT_OFFSET:
+    case ECL_OP_SET_SHOT_COMMAND:
+    case ECL_OP_CLEAR_BULLETS:
+    case ECL_OP_SET_SHOT_SOUND:
+    case ECL_OP_LASER:
+    case ECL_OP_LASER_AT_PLAYER:
+    case ECL_OP_SET_LASER_INDEX:
+    case ECL_OP_TURN_LASER:
+    case ECL_OP_AIM_LASER:
+    case ECL_OP_MOVE_LASER:
+    case ECL_OP_TEST_LASER:
+    case ECL_OP_END_LASER:
+    case ECL_OP_SET_RANK_GROWTH:
+    case ECL_OP_FORGET_LASERS:
+    case ECL_OP_CLEAR_BULLETS_IN_CIRCLE:
+    case ECL_OP_DELETE_BULLETS:
+    case ECL_OP_SET_LASER_ANGLE:
+    case ECL_OP_HIDE_LASER_ORIGIN:
+    case ECL_OP_SET_LASER_LENGTH:
+    case ECL_OP_SET_LASER_OFFSETS:
+        M_StepShots(enemy, instr);
+        return M_STEP_NEXT;
+    case ECL_OP_START_SPELL_CARD:
+    case ECL_OP_END_SPELL_CARD:
+    case ECL_OP_SET_DEATH_EFFECTS:
+    case ECL_OP_SET_BOSS:
+    case ECL_OP_SET_HITBOX:
+    case ECL_OP_SET_CONTACT_DAMAGE:
+    case ECL_OP_SET_TAKES_DAMAGE:
+    case ECL_OP_SET_HIT_BY_SHOTS:
+    case ECL_OP_SET_DEATH:
+    case ECL_OP_SET_DEATH_SUB:
+    case ECL_OP_SET_INTERRUPT:
+    case ECL_OP_SET_LIFE:
+    case ECL_OP_SET_CALLBACK_TIMER:
+    case ECL_OP_SET_LIFE_CALLBACK:
+    case ECL_OP_SET_LIFE_CALLBACK_SUB:
+    case ECL_OP_SET_TIME_CALLBACK:
+    case ECL_OP_SET_TIME_CALLBACK_SUB:
+    case ECL_OP_SET_SHOOTABLE:
+    case ECL_OP_SET_ROTATE_SPRITE:
+    case ECL_OP_SET_BOSS_LIVES:
+    case ECL_OP_SET_NO_CALL_STACK:
+    case ECL_OP_SET_HIDDEN:
+    case ECL_OP_DEATH_SUB_ON_TIMER:
+    case ECL_OP_SET_KEEP_SPELL_CARD:
+    case ECL_OP_SET_GRAZEABLE:
+    case ECL_OP_SET_STAYS_OFF_SCREEN:
+    case ECL_OP_SET_BOSS_SECTION:
+    case ECL_OP_SET_INVULNERABLE:
+    case ECL_OP_SET_PERIODIC_CALL:
+    case ECL_OP_INTERRUPT_BOSS:
+    case ECL_OP_READ_UNUSED:
+    case ECL_OP_SET_LIFE_CALLBACK_AT:
+    case ECL_OP_SET_SPELL_CIRCLE:
+    case ECL_OP_SET_EXTRA_HITBOX:
+    case ECL_OP_SET_HALTED_BY_BOMB:
+        M_StepEnemy(enemy, instr);
+        return M_STEP_NEXT;
+    case ECL_OP_SPAWN:
+    case ECL_OP_SPAWN_RELATIVE:
+    case ECL_OP_CLEAR_ENEMIES:
+    case ECL_OP_START_SCRIPT:
+    case ECL_OP_SET_TURNS:
+    case ECL_OP_START_SPRITE_SCRIPT:
+    case ECL_OP_ADD_ORBIT:
+    case ECL_OP_PLAY_SOUND:
+    case ECL_OP_SPAWN_EFFECT:
+    case ECL_OP_SPAWN_MOVING_EFFECT:
+    case ECL_OP_DROP_ITEMS:
+    case ECL_OP_CALL_FUNC:
+    case ECL_OP_SET_FRAME_FUNC:
+    case ECL_OP_DROP_ITEM:
+    case ECL_OP_SET_STAGE_LABEL:
+    case ECL_OP_INTERRUPT_SCRIPT:
+    case ECL_OP_INTERRUPT_SPRITE_SCRIPT:
+    case ECL_OP_SET_TRAIL:
+    case ECL_OP_SET_EFFECT_COLOR:
+    case ECL_OP_SET_SPRITE_ROTATION:
+    case ECL_OP_DROP_POINT_ITEMS:
+    case ECL_OP_ADD_CHERRY:
         M_StepWorld(enemy, instr);
+        return M_STEP_NEXT;
+    default:
+        return M_STEP_NEXT;
     }
-    return M_STEP_NEXT;
 }
 
 static void M_Move(ENEMY *const enemy)
