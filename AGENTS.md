@@ -15,6 +15,9 @@ agents.
 - The original game data is the user's, never in git, and has no backup.
   Read it; never write, move, delete or copy it, and never commit any of
   it or anything derived from it (images, sounds, scripts, traces).
+- Constants compiled into an original executable (tables, masks, sprites
+  in its data segment) are code: port them as static arrays. Data files
+  stay out.
 - No destructive git commands (`reset --hard`, `checkout --`, `clean`,
   `push --force`, ...) unless a person asks for them in the
   conversation.
