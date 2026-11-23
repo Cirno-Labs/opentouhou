@@ -307,7 +307,6 @@ static bool M_Death(const B05_CONTEXT *const c, const TH01_INPUT *const raw)
             .post_defeat = &g_B05.post_defeat,
             .miko = c->miko,
             .origin_top = &g_B05.sphere.top,
-            .stage_cleared = c->route->stage_cleared,
         };
         if (!BossDefeat_Resume(&g_B05.defeat, &defeat)) {
             return false;

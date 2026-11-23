@@ -86,11 +86,8 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                 .stage = stage,
                                 .makai = &a->scenes[1],
                                 .jigoku = &a->scenes[2] };
-    g->bindings.route = (ROUTE_SELECT_CONTEXT) {
-        .assets = &g->bindings.route_assets,
-        .route = &g_Session.route,
-        .stage_cleared = &g_Stage.cleared,
-    };
+    g->bindings.route =
+        (ROUTE_SELECT_CONTEXT) { .assets = &g->bindings.route_assets };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
                                       .shots_output = g->bindings.shots_output,
                                       .miko = &a->miko,
@@ -99,25 +96,21 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .assets = &a->b10j,
         .shots_output = g->bindings.shots_output,
         .miko = &a->miko,
-        .stage_cleared = &g_Stage.cleared,
     };
     g->bindings.c10m = (B10M_CONTEXT) {
         .assets = &a->b10m,
         .shots_output = g->bindings.shots_output,
         .miko = &a->miko,
-        .stage_cleared = &g_Stage.cleared,
     };
     g->bindings.c15j = (B15J_CONTEXT) {
         .assets = &a->b15j,
         .shots_output = g->bindings.shots_output,
         .miko = &a->miko,
-        .stage_cleared = &g_Stage.cleared,
     };
     g->bindings.c15m = (B15M_CONTEXT) {
         .assets = &a->b15m,
         .shots_output = g->bindings.shots_output,
         .miko = &a->miko,
-        .stage_cleared = &g_Stage.cleared,
     };
     g->bindings.c20j = (B20J_CONTEXT) {
         .assets = &a->b20j,

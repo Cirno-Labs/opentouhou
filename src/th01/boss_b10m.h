@@ -74,7 +74,6 @@ typedef struct {
     const B10M_ASSETS *assets;
     SHOTS_OUTPUT shots_output;
     const PTN *miko;
-    bool *stage_cleared;
 } B10M_CONTEXT;
 
 // Loads immutable BOSS2.BOS, BOSS2.GRP, BOSS3_M.PTN and scene 3 through VFS

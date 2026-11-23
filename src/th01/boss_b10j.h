@@ -61,7 +61,6 @@ typedef struct {
     const B10J_ASSETS *assets;
     SHOTS_OUTPUT shots_output;
     const PTN *miko;
-    bool *stage_cleared;
 } B10J_CONTEXT;
 
 // Loads BOSS3_1.BOS, BOSS3_2.BOS, BOSS3.GRP, BOSS3_M.PTN, scene 4 and

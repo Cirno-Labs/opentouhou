@@ -21,8 +21,6 @@ typedef struct {
     SCENE_DATA cache[3];
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route_context;
-    uint8_t route;
-    bool cleared;
 
 } FIXTURE;
 
@@ -105,7 +103,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         Reader_Close(&reader);
     }
     Scene_Activate(&f->cache[0]);
-    f->route = 1;
+    g_Session.route = 1;
     g_Session.lives = 3;
     g_Rng = 0xb0500000;
     g_Player.invincible = true;
@@ -119,11 +117,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[1],
         &f->cache[2],
     };
-    f->route_context = (ROUTE_SELECT_CONTEXT) {
-        &f->route_assets,
-        &f->route,
-        &f->cleared,
-    };
+    f->route_context = (ROUTE_SELECT_CONTEXT) { &f->route_assets };
     f->context.miko = &f->miko;
     f->context.route = &f->route_context;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -306,7 +300,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!g_Pellets.slots[1].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(g_Scene.active->id, 0);
-        CHECK(!f.cleared && !g_Player.is_hit);
+        CHECK(!g_Stage.cleared && !g_Player.is_hit);
         const B05 frozen = g_B05;
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
@@ -319,9 +313,9 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             B05_UpdateAndRender(&f.context, &held);
         }
         CHECK_EQ_INT(g_B05.pending, B05_FINISHED);
-        CHECK_EQ_INT(f.route, rank % 2);
+        CHECK_EQ_INT(g_Session.route, rank % 2);
         CHECK(g_Scene.active == &f.cache[1 + rank % 2]);
-        CHECK(f.cleared && g_Player.is_hit);
+        CHECK(g_Stage.cleared && g_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);

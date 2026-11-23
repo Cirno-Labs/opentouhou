@@ -1363,8 +1363,7 @@ static bool M_Death(const B15M_CONTEXT *const c)
 {
     const BOSS_DEFEAT_CONTEXT context = { .post_defeat = &g_B15M.post_defeat,
                                           .miko = c->miko,
-                                          .origin_top = &g_Orb.top,
-                                          .stage_cleared = c->stage_cleared };
+                                          .origin_top = &g_Orb.top };
     if (!BossDefeat_Resume(&g_B15M.defeat, &context)) {
         return false;
     }

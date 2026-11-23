@@ -80,7 +80,6 @@ typedef struct {
     const B15M_ASSETS *assets;
     SHOTS_OUTPUT shots_output;
     const PTN *miko;
-    bool *stage_cleared;
 } B15M_CONTEXT;
 
 // Loads the three Elis BOS banks, sphere GRC, missiles, background, scene 5

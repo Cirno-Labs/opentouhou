@@ -1,5 +1,7 @@
 #include "th01/route_select.h"
+#include "th01/session.h"
 #include "th01/sound.h"
+#include "th01/stage.h"
 
 #include "core/base/assert.h"
 #include "th01/scale2x.h"
@@ -152,8 +154,8 @@ bool RouteSelect_Resume(
                 Scene_Activate(
                     selection->selection == 0 ? c->assets->makai
                                               : c->assets->jigoku);
-                *c->route = selection->selection;
-                *c->stage_cleared = true;
+                g_Session.route = selection->selection;
+                g_Stage.cleared = true;
                 g_Player.is_hit = true;
                 selection->phase = ROUTE_SELECT_DONE;
                 return true;
