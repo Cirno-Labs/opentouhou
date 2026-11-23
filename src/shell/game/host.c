@@ -162,7 +162,9 @@ static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
 static RESULT M_CheckData(SHELL_CONTEXT *const ctx)
 {
     ctx->files = Vfs_Create(&g_HeapAllocator);
-    RESULT result = ShellData_Mount(ctx->files, ctx->folders.data_dir);
+    RESULT result = ShellData_Mount(
+        ctx->files, ctx->folders.data_dir,
+        ctx->desc->data_file_count > 0 ? ctx->desc->data_files[0] : nullptr);
     // A data folder that cannot be read lacks every file.
     if (!IS_OK(result) && ctx->desc->data_file_count > 0) {
         ctx->missing_data_file = ctx->desc->data_files[0];

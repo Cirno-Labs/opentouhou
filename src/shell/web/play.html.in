@@ -160,7 +160,7 @@
           </div>
           <div id="drop" class="off">
             <p data-text="drop"></p>
-            <p><label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,application/zip"></p>
+            <p><label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,.hdi,application/zip"></p>
             <p><small data-text="private"></small></p>
           </div>
         </div>
