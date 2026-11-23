@@ -88,10 +88,10 @@ void B10M_Setup(const B10M_CONTEXT *const c)
     g_B10M.phase = B10M_PHASE_ENTRANCE;
     g_B10M.hp = 16;
     g_B10M.finished = false;
-    c->hit->health->first_white = 12;
-    c->hit->health->first_redwhite = 8;
-    Particles_Init(c->particles);
-    Missiles_Reset(c->missiles);
+    g_HudHp.first_white = 12;
+    g_HudHp.first_redwhite = 8;
+    Particles_Init();
+    Missiles_Reset();
 }
 
 static int8_t M_Byte(const int32_t value)
@@ -253,8 +253,7 @@ static void M_DownLaser(
 static void M_Entrance(const B10M_CONTEXT *const c)
 {
     if (!g_B10M.hp_bar_filled) {
-        g_B10M.hp_bar_filled =
-            HudHp_Increment(c->hit->health, g_B10M.hp, g_B10M.frame);
+        g_B10M.hp_bar_filled = HudHp_Increment(g_B10M.hp, g_B10M.frame);
     }
     g_B10M.frame = Math16_Wrap(g_B10M.frame + 1);
     M_Lock(c, 31);
@@ -374,7 +373,7 @@ static void M_FireMissiles(const B10M_CONTEXT *const c)
     for (int32_t i = 0; i < 2; i++) {
         const MATH16_VECTOR v = Math16_Vector(8, angles[i]);
         Missiles_Add(
-            c->missiles, Math16_Wrap(g_B10M.eyes[i + 2].left + 28),
+            Math16_Wrap(g_B10M.eyes[i + 2].left + 28),
             Math16_Wrap(g_B10M.eyes[i + 2].top + 28), v.x, v.y, 0);
     }
 }
@@ -812,7 +811,7 @@ static bool M_Death(const B10M_CONTEXT *const c)
     if (!BossDefeat_Resume(&g_B10M.defeat, &defeat)) {
         return false;
     }
-    Scene_Activate(c->scene, &c->assets->next_scene);
+    Scene_Activate(&c->assets->next_scene);
     if (g_B10M.phase == B10M_PHASE_STAR_SPAWN && !g_B10M.hit.invincible) {
         M_EnterStarRise(c);
     }
@@ -830,7 +829,7 @@ bool B10M_UpdateAndRender(const B10M_CONTEXT *const c)
         return M_Death(c);
     }
     Missiles_UpdateAndRender(
-        c->missiles, (uint16_t)c->hit->frame_rand,
+        (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (g_B10M.phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(c);
@@ -928,9 +927,9 @@ bool B10M_UpdateAndRender(const B10M_CONTEXT *const c)
             c->fade_music(c->hit->user);
             Pellets_EraseAndResetMoving();
             if (attack) {
-                Missiles_Reset(c->missiles);
+                Missiles_Reset();
             }
-            ShootoutLasers_EraseAndReset(c->lasers, 5);
+            ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&g_B10M.defeat, BOSS_DEFEAT_REGULAR);
             g_B10M.defeating = true;
             return M_Death(c);

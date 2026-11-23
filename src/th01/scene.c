@@ -4,6 +4,8 @@
 
 #include <string.h>
 
+SCENE_STATE g_Scene;
+
 RESULT Scene_LoadReader(
     READER *const reader, const uint8_t id, const ALLOCATOR *const allocator,
     SCENE_DATA *const out)
@@ -34,9 +36,9 @@ RESULT Scene_Load(
     return result;
 }
 
-void Scene_Activate(SCENE_STATE *const state, const SCENE_DATA *const scene)
+void Scene_Activate(const SCENE_DATA *const scene)
 {
     ASSERT(scene != nullptr && scene->id < SCENE_COUNT);
     ASSERT(scene->layouts.stages != nullptr);
-    state->active = scene;
+    g_Scene.active = scene;
 }

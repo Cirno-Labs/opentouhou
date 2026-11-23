@@ -4,6 +4,10 @@
 
 #include "core/base/assert.h"
 
+#include <string.h>
+
+HUD g_Hud;
+
 static const char m_Characters[] =
     " !\"#$%&'()*+,-./"
     "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`"
@@ -49,18 +53,17 @@ static int64_t M_Signed32(const uint32_t value)
 }
 
 static void M_Number(
-    HUD *const hud, const HUD_CONTEXT *const c, const int32_t bank,
-    const int32_t count, const uint32_t value, const uint32_t previous,
-    const bool signed_current)
+    const HUD_CONTEXT *const c, const int32_t bank, const int32_t count,
+    const uint32_t value, const uint32_t previous, const bool signed_current)
 {
     const int32_t left = bank < 2 ? 256 : 400;
     const int32_t top = bank % 2 == 0 ? 0 : 16;
-    uint8_t *const bg = hud->numbers + bank * 7 * 256;
+    uint8_t *const bg = g_Hud.numbers + bank * 7 * 256;
     uint32_t divisor = count == 7 ? 1000000 : 10;
     {
         for (int32_t i = 0; i < count; i++, divisor /= 10) {
             const int64_t current = signed_current ? M_Signed32(value) : value;
-            if (hud->force_numbers
+            if (g_Hud.force_numbers
                 || current / divisor % 10
                     != M_Signed32(previous) / divisor % 10) {
                 for (int32_t page = 1; page >= 0; page--) {
@@ -73,7 +76,7 @@ static void M_Number(
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         divisor = count == 7 ? 1000000 : 10;
-        const uint32_t text_previous = hud->force_numbers ? 0 : previous;
+        const uint32_t text_previous = g_Hud.force_numbers ? 0 : previous;
         for (int32_t i = 0; i < count; i++, divisor /= 10) {
             const uint32_t digit = value / divisor % 10;
             if (text_previous == 0 || digit != text_previous / divisor % 10) {
@@ -97,13 +100,13 @@ static void M_Format(char *const text, uint16_t value, const int32_t width)
 }
 
 static void M_Resource(
-    HUD *const hud, const HUD_CONTEXT *const c, const bool bomb,
-    const int16_t previous, const bool initial)
+    const HUD_CONTEXT *const c, const bool bomb, const int16_t previous,
+    const bool initial)
 {
     const int16_t count = bomb ? g_Player.remaining_bombs : *c->remaining_lives;
     ASSERT(count >= 0 && count <= HUD_RESOURCE_CAPACITY);
     ASSERT(previous >= 0 && previous <= HUD_RESOURCE_CAPACITY);
-    uint8_t *const bg = bomb ? hud->bombs : hud->lives;
+    uint8_t *const bg = bomb ? g_Hud.bombs : g_Hud.lives;
     const int32_t row = bomb ? 16 : 0;
     for (int32_t i = initial    ? 0
              : count < previous ? count
@@ -161,16 +164,27 @@ RESULT Hud_ValidateAssets(
     return OK;
 }
 
-void Hud_Init(HUD *const hud, const ALLOCATOR *const allocator)
+void Hud_Init(const ALLOCATOR *const allocator)
 {
-    *hud = (HUD) {};
+    memset(&g_Hud, 0, sizeof(g_Hud));
     uint8_t *const storage =
         Allocator_AllocZ(allocator, (HUD_RESOURCE_CAPACITY * 2 + 28 + 3) * 256);
-    hud->lives = storage;
-    hud->bombs = storage + HUD_RESOURCE_CAPACITY * 256;
-    hud->numbers = hud->bombs + HUD_RESOURCE_CAPACITY * 256;
-    hud->stage = hud->numbers + 28 * 256;
-    hud->timer = hud->stage + 256;
+    g_Hud.lives = storage;
+    g_Hud.bombs = storage + HUD_RESOURCE_CAPACITY * 256;
+    g_Hud.numbers = g_Hud.bombs + HUD_RESOURCE_CAPACITY * 256;
+    g_Hud.stage = g_Hud.numbers + 28 * 256;
+    g_Hud.timer = g_Hud.stage + 256;
+}
+
+void Hud_Reset(void)
+{
+    const HUD storage = g_Hud;
+    memset(&g_Hud, 0, sizeof(g_Hud));
+    g_Hud.lives = storage.lives;
+    g_Hud.bombs = storage.bombs;
+    g_Hud.numbers = storage.numbers;
+    g_Hud.stage = storage.stage;
+    g_Hud.timer = storage.timer;
 }
 
 void Hud_PutMask(const HUD_CONTEXT *const c)
@@ -182,46 +196,45 @@ void Hud_PutMask(const HUD_CONTEXT *const c)
     }
 }
 
-void Hud_SnapResources(HUD *const hud, const HUD_CONTEXT *const c)
+void Hud_SnapResources(const HUD_CONTEXT *const c)
 {
-    M_Resource(hud, c, false, 0, true);
-    M_Resource(hud, c, true, 0, true);
+    M_Resource(c, false, 0, true);
+    M_Resource(c, true, 0, true);
 }
-void Hud_LivesPut(
-    HUD *const hud, const HUD_CONTEXT *const c, const int16_t previous)
+void Hud_LivesPut(const HUD_CONTEXT *const c, const int16_t previous)
 {
-    M_Resource(hud, c, false, previous, false);
+    M_Resource(c, false, previous, false);
 }
-void Hud_BombsPut(
-    HUD *const hud, const HUD_CONTEXT *const c, const int16_t previous)
+void Hud_BombsPut(const HUD_CONTEXT *const c, const int16_t previous)
 {
-    M_Resource(hud, c, true, previous, false);
+    M_Resource(c, true, previous, false);
 }
-void Hud_ScoreAndCombo(HUD *const hud, const HUD_CONTEXT *const c)
+void Hud_ScoreAndCombo(const HUD_CONTEXT *const c)
 {
-    const uint32_t score = c->gameplay->score;
-    const int16_t combo = c->gameplay->combo;
+    const uint32_t score = g_Stage.score;
+    const int16_t combo = g_Stage.combo;
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         for (int32_t bank = 1; bank <= 3; bank += 2) {
             const int32_t count = bank == 1 ? 7 : 2;
             const uint32_t value = bank == 1 ? score : (uint32_t)(int32_t)combo;
             const uint32_t previous = bank == 1
-                ? hud->score_previous
-                : (uint32_t)(int32_t)hud->combo_previous;
+                ? g_Hud.score_previous
+                : (uint32_t)(int32_t)g_Hud.combo_previous;
             const int32_t left = bank == 1 ? 256 : 400;
             uint32_t divisor = bank == 1 ? 1000000 : 10;
             for (int32_t i = 0; i < count; i++, divisor /= 10) {
                 const int64_t current = bank == 1 ? (int64_t)value : combo;
-                if (hud->force_numbers
+                if (g_Hud.force_numbers
                     || current / divisor % 10
                         != M_Signed32(previous) / divisor % 10) {
                     M_Put(
-                        hud->numbers + (bank * 7 + i) * 256, left + i * 16, 16);
+                        g_Hud.numbers + (bank * 7 + i) * 256, left + i * 16,
+                        16);
                 }
             }
             divisor = bank == 1 ? 1000000 : 10;
-            const uint32_t text_previous = hud->force_numbers ? 0 : previous;
+            const uint32_t text_previous = g_Hud.force_numbers ? 0 : previous;
             for (int32_t i = 0; i < count; i++, divisor /= 10) {
                 const uint32_t digit = value / divisor % 10;
                 if (text_previous == 0
@@ -231,32 +244,32 @@ void Hud_ScoreAndCombo(HUD *const hud, const HUD_CONTEXT *const c)
             }
         }
     }
-    hud->score_previous = score;
-    hud->combo_previous = combo;
+    g_Hud.score_previous = score;
+    g_Hud.combo_previous = combo;
     if (*c->high_score < score) {
-        M_Number(hud, c, 0, 7, score, hud->high_previous, false);
-        hud->high_previous = score;
+        M_Number(c, 0, 7, score, g_Hud.high_previous, false);
+        g_Hud.high_previous = score;
         *c->high_score = score;
     }
-    if (hud->maximum_combo < combo) {
-        hud->maximum_combo = (uint8_t)combo;
+    if (g_Hud.maximum_combo < combo) {
+        g_Hud.maximum_combo = (uint8_t)combo;
         M_Number(
-            hud, c, 2, 2, (uint32_t)(int32_t)combo,
-            (uint32_t)(int32_t)hud->max_previous, true);
-        hud->max_previous = combo;
+            c, 2, 2, (uint32_t)(int32_t)combo,
+            (uint32_t)(int32_t)g_Hud.max_previous, true);
+        g_Hud.max_previous = combo;
     }
 }
 
-void Hud_SnapStage(HUD *const hud, const HUD_CONTEXT *const c)
+void Hud_SnapStage(const HUD_CONTEXT *const c)
 {
     ASSERT(c->stage_number <= 99);
-    M_Snap(hud->stage, 608, 32);
+    M_Snap(g_Hud.stage, 608, 32);
     char text[3];
     M_Format(text, c->stage_number, 2);
     M_Text(c, text, 608, 32, 7, true);
     M_Copy(608, 32, 16);
 }
-void Hud_PutStage(HUD *const hud, const HUD_CONTEXT *const c)
+void Hud_PutStage(const HUD_CONTEXT *const c)
 {
     ASSERT(c->rank >= 0 && c->rank <= 3 && c->stage_number <= 99);
     char text[3];
@@ -269,24 +282,22 @@ void Hud_PutStage(HUD *const hud, const HUD_CONTEXT *const c)
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         M_Text(c, rank, 600 - length * 4, 48, 7, true);
-        M_Put(hud->stage, 608, 32);
+        M_Put(g_Hud.stage, 608, 32);
         M_Text(c, text, 608, 32, 7, true);
     }
 }
-void Hud_SnapNumbers(
-    HUD *const hud, const HUD_CONTEXT *const c, const bool first_stage)
+void Hud_SnapNumbers(const HUD_CONTEXT *const c, const bool first_stage)
 {
     for (int32_t bank = 1; bank >= 0; bank--) {
         if (first_stage) {
             Video_SelectDrawingPage(1);
             for (int32_t i = 0; i < 7; i++) {
                 M_Snap(
-                    hud->numbers + (bank * 7 + i) * 256, 256 + i * 16,
+                    g_Hud.numbers + (bank * 7 + i) * 256, 256 + i * 16,
                     bank * 16);
             }
             Video_SelectDrawingPage(0);
-            const uint32_t value =
-                bank == 1 ? c->gameplay->score : *c->high_score;
+            const uint32_t value = bank == 1 ? g_Stage.score : *c->high_score;
             uint32_t divisor = 1000000;
             for (int32_t i = 0; i < 7; i++, divisor /= 10) {
                 M_Text(
@@ -296,7 +307,7 @@ void Hud_SnapNumbers(
             Video_SelectDrawingPage(1);
         }
         for (int32_t i = 0; i < 2; i++) {
-            uint8_t *const bg = hud->numbers + ((bank + 2) * 7 + i) * 256;
+            uint8_t *const bg = g_Hud.numbers + ((bank + 2) * 7 + i) * 256;
             if (first_stage) {
                 M_Snap(bg, 400 + i * 16, bank * 16);
             } else {
@@ -312,13 +323,12 @@ void Hud_SnapNumbers(
     }
     M_Copy(256, 0, 176);
     M_Copy(256, 16, 176);
-    hud->maximum_combo = 0;
+    g_Hud.maximum_combo = 0;
 }
-void Hud_SnapTimer(
-    HUD *const hud, const HUD_CONTEXT *const c, const uint16_t time)
+void Hud_SnapTimer(const HUD_CONTEXT *const c, const uint16_t time)
 {
-    M_Snap(hud->timer, 512, 0);
-    M_Snap(hud->timer + 256, 512, 0);
+    M_Snap(g_Hud.timer, 512, 0);
+    M_Snap(g_Hud.timer + 256, 512, 0);
     char text[5];
     M_Format(text, time, 4);
     for (int32_t page = 1; page >= 0; page--) {
@@ -326,15 +336,14 @@ void Hud_SnapTimer(
         M_Text(c, text, 512, 0, 7, true);
     }
 }
-void Hud_PutTimer(
-    HUD *const hud, const HUD_CONTEXT *const c, const uint16_t time)
+void Hud_PutTimer(const HUD_CONTEXT *const c, const uint16_t time)
 {
     char text[5];
     M_Format(text, time, 4);
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
-        M_Put(hud->timer, 512, 0);
-        M_Put(hud->timer + 256, 528, 0);
+        M_Put(g_Hud.timer, 512, 0);
+        M_Put(g_Hud.timer + 256, 528, 0);
         M_Text(c, text, 512, 0, time < 200 ? 10 : 7, true);
     }
 }

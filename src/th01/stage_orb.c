@@ -2,37 +2,36 @@
 
 #include "core/base/assert.h"
 
-bool Stage_BeginOrbComposite(
-    STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context)
+STAGE_ORB_COMPOSITE g_OrbComposite;
+
+bool Stage_BeginOrbComposite(const STAGE_CONTEXT *const context)
 {
-    ASSERT(!composite->active);
-    composite->orb =
-        Orb_BeginComposite(context->stage_id, &context->gameplay->combo);
-    composite->active = true;
-    composite->waiting = false;
-    return Stage_ResumeOrbComposite(composite, context);
+    ASSERT(!g_OrbComposite.active);
+    g_OrbComposite.orb = Orb_BeginComposite(context->stage_id, &g_Stage.combo);
+    g_OrbComposite.active = true;
+    g_OrbComposite.waiting = false;
+    return Stage_ResumeOrbComposite(context);
 }
 
-bool Stage_ResumeOrbComposite(
-    STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context)
+bool Stage_ResumeOrbComposite(const STAGE_CONTEXT *const context)
 {
-    if (!composite->active) {
+    if (!g_OrbComposite.active) {
         return true;
     }
-    if (composite->waiting && !Frame_DelayReady(1)) {
+    if (g_OrbComposite.waiting && !Frame_DelayReady(1)) {
         return false;
     }
-    composite->waiting = false;
+    g_OrbComposite.waiting = false;
     for (;;) {
         const ORB_ACTION action =
-            Orb_NextAction(&composite->orb, g_Player.is_hit);
+            Orb_NextAction(&g_OrbComposite.orb, g_Player.is_hit);
         switch (action.kind) {
         case ORB_ACTION_DONE:
-            composite->active = false;
+            g_OrbComposite.active = false;
             return true;
         case ORB_ACTION_DELAY_ONE:
             if (!Frame_DelayReady(1)) {
-                composite->waiting = true;
+                g_OrbComposite.waiting = true;
                 return false;
             }
             break;

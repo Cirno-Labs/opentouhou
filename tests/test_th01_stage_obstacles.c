@@ -12,13 +12,12 @@
 #include "core/base/arena.h"
 
 #include "th01_video.h"
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
     ARENA arena;
     STAGE_CONTEXT context;
-    STAGE_OBJECTS objects;
-    STAGE_GAMEPLAY game;
     PTN sprites;
     int32_t pellets, updates;
     STAGE_PELLET_SPAWN last;
@@ -42,11 +41,7 @@ static void M_Update(void *const user)
 static void M_Init(CASE *const state)
 {
     *state = (CASE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     memset(&g_Orb, 0, sizeof(g_Orb));
     g_Orb.left = 500;
     g_Orb.top = 350;
@@ -65,11 +60,9 @@ static void M_Init(CASE *const state)
     for (int32_t i = 0; i < 34; i++) {
         state->sprites.pixels[i * 1024] = i % 15;
     }
-    state->objects.obstacles =
+    g_StageObjects.obstacles =
         Arena_AllocZ(&state->arena, 200 * sizeof(STAGE_OBSTACLE));
     state->context = (STAGE_CONTEXT) {
-        .objects = &state->objects,
-        .gameplay = &state->game,
         .sprites = &state->sprites,
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
         .pellet_group = M_Pellet,
@@ -85,8 +78,8 @@ TEST(bumpers_teleport_and_only_reverse_speed_four_even_on_reset)
             for (int32_t dy = -1; dy <= 1; dy++) {
                 CASE state;
                 M_Init(&state);
-                state.objects.obstacle_count = 1;
-                state.objects.obstacles[0] = (STAGE_OBSTACLE) {
+                g_StageObjects.obstacle_count = 1;
+                g_StageObjects.obstacles[0] = (STAGE_OBSTACLE) {
                     .left = 96, .top = 128, .type = STAGE_DATA_BUMPER
                 };
                 g_Orb.left = (int16_t)(96 + dx);
@@ -94,7 +87,7 @@ TEST(bumpers_teleport_and_only_reverse_speed_four_even_on_reset)
                 g_Orb.velocity_x = speed;
                 Stage_UpdateObstacles(&state.context, true);
                 CHECK_EQ_INT(g_Orb.top, 128 + (dy <= 0 ? -24 : 24));
-                CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
+                CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
                 CHECK_EQ_INT(
                     g_Orb.velocity_x,
                     speed == ORB_X_RIGHT_4 && dx < 0      ? ORB_X_LEFT_4
@@ -119,8 +112,8 @@ TEST(bar_boundaries_shared_block_and_ordered_release)
             for (int32_t dy = -33; dy <= 33; dy++) {
                 CASE state;
                 M_Init(&state);
-                state.objects.obstacle_count = 1;
-                state.objects.obstacles[0] = (STAGE_OBSTACLE) {
+                g_StageObjects.obstacle_count = 1;
+                g_StageObjects.obstacles[0] = (STAGE_OBSTACLE) {
                     .left = 96, .top = 128, .type = types[type]
                 };
                 g_Orb.left = (int16_t)(96 + dx);
@@ -133,9 +126,9 @@ TEST(bar_boundaries_shared_block_and_ordered_release)
                                 : dy > -32 && dy < 32 && dx >= 0 && dx <= 32;
                 Stage_UpdateObstacles(&state.context, false);
                 CHECK_EQ_INT(
-                    state.objects.obstacles[0].frame, collision ? 2 : 0);
+                    g_StageObjects.obstacles[0].frame, collision ? 2 : 0);
                 CHECK_EQ_INT(
-                    state.objects.vertical_bar_active, collision && type >= 2);
+                    g_StageObjects.vertical_bar_active, collision && type >= 2);
                 CHECK_EQ_INT(
                     g_Orb.velocity_x,
                     collision && type >= 2 ? ORB_X_RIGHT_4 : ORB_X_LEFT_4);
@@ -145,28 +138,28 @@ TEST(bar_boundaries_shared_block_and_ordered_release)
     }
     CASE state;
     M_Init(&state);
-    state.objects.obstacle_count = 2;
-    state.objects.obstacles[0] = (STAGE_OBSTACLE) {
+    g_StageObjects.obstacle_count = 2;
+    g_StageObjects.obstacles[0] = (STAGE_OBSTACLE) {
         .left = 96, .top = 128, .type = STAGE_DATA_BAR_RIGHT
     };
-    state.objects.obstacles[1] = state.objects.obstacles[0];
+    g_StageObjects.obstacles[1] = g_StageObjects.obstacles[0];
     g_Orb.left = 100;
     g_Orb.top = 128;
     g_Orb.velocity_x = ORB_X_LEFT_4;
     Stage_UpdateObstacles(&state.context, false);
     CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
-    CHECK_EQ_INT(state.objects.obstacles[0].frame, 2);
-    CHECK_EQ_INT(state.objects.obstacles[1].frame, 0);
+    CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 2);
+    CHECK_EQ_INT(g_StageObjects.obstacles[1].frame, 0);
     for (int32_t frame = 0; frame < 6; frame++) {
         Stage_UpdateObstacles(&state.context, false);
     }
-    CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
-    CHECK_EQ_INT(state.objects.obstacles[1].frame, 2);
+    CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
+    CHECK_EQ_INT(g_StageObjects.obstacles[1].frame, 2);
     CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_LEFT_4);
     Stage_UpdateObstacles(&state.context, true);
-    CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
-    CHECK_EQ_INT(state.objects.obstacles[1].frame, 0);
-    CHECK(state.objects.vertical_bar_active);
+    CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
+    CHECK_EQ_INT(g_StageObjects.obstacles[1].frame, 0);
+    CHECK(g_StageObjects.vertical_bar_active);
     Arena_Free(&state.arena);
 }
 
@@ -178,8 +171,8 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
             CASE state;
             M_Init(&state);
             state.context.difficulty = rank;
-            state.objects.obstacle_count = 1;
-            state.objects.obstacles[0] =
+            g_StageObjects.obstacle_count = 1;
+            g_StageObjects.obstacles[0] =
                 (STAGE_OBSTACLE) { .left = 96, .top = 128, .type = type };
             const size_t used = state.arena.used;
             const int32_t interval = type < 8 ? 200 : 100;
@@ -189,13 +182,13 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
                 CHECK_EQ_INT(
                     state.pellets, rank != 0 && frame >= interval + 10);
                 if (rank != 0 && frame == interval) {
-                    CHECK_EQ_INT(state.objects.obstacles[0].turret_flag, 1);
+                    CHECK_EQ_INT(g_StageObjects.obstacles[0].turret_flag, 1);
                     CHECK_EQ_INT(Th01Test_Pixel(0, 96, 128), 9);
                     CHECK_EQ_INT(Th01Test_Pixel(1, 96, 128), 9);
                 }
             }
-            CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
-            CHECK_EQ_INT(state.objects.obstacles[0].turret_flag, 0);
+            CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
+            CHECK_EQ_INT(g_StageObjects.obstacles[0].turret_flag, 0);
             CHECK_EQ_INT(state.arena.used, used);
             uint32_t expected = initial_rng;
             if (rank != 0) {
@@ -206,12 +199,12 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
                 CHECK_EQ_INT(state.last.speed, 56);
             }
             CHECK_EQ_INT(g_Rng, expected);
-            state.objects.obstacles[0].frame = (int16_t)(interval + 9);
-            state.objects.obstacles[0].turret_flag = 2;
+            g_StageObjects.obstacles[0].frame = (int16_t)(interval + 9);
+            g_StageObjects.obstacles[0].turret_flag = 2;
             Stage_UpdateObstacles(&state.context, true);
             CHECK_EQ_INT(state.pellets, rank == 0 ? 1 : 2);
-            CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
-            CHECK_EQ_INT(state.objects.obstacles[0].turret_flag, 0);
+            CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
+            CHECK_EQ_INT(g_StageObjects.obstacles[0].turret_flag, 0);
             Arena_Free(&state.arena);
         }
     }
@@ -223,7 +216,7 @@ static int32_t M_Destination(
     int32_t slot = 0;
     int32_t loops = 0;
     for (;;) {
-        if (state->objects.obstacles[slot].type == STAGE_DATA_PORTAL
+        if (g_StageObjects.obstacles[slot].type == STAGE_DATA_PORTAL
             && MasterRng_Next(rng) % 4 == 0 && slot != entered) {
             return slot;
         }
@@ -231,7 +224,7 @@ static int32_t M_Destination(
         if (loops > 15) {
             return entered;
         }
-        if (slot >= state->objects.obstacle_count) {
+        if (slot >= g_StageObjects.obstacle_count) {
             slot = 0;
             loops++;
         }
@@ -245,9 +238,9 @@ TEST(portal_counts_destinations_rng_and_exact_keyframes)
             CASE state;
             M_Init(&state);
             g_Rng = seed;
-            state.objects.obstacle_count = count * 2;
+            g_StageObjects.obstacle_count = count * 2;
             for (int32_t i = 0; i < count * 2; i++) {
-                state.objects.obstacles[i] = (STAGE_OBSTACLE) {
+                g_StageObjects.obstacles[i] = (STAGE_OBSTACLE) {
                     .left = (int16_t)(i * 64),
                     .top = 128,
                     .type = i % 2 == 0 ? STAGE_DATA_PORTAL : STAGE_DATA_BUMPER,
@@ -268,9 +261,9 @@ TEST(portal_counts_destinations_rng_and_exact_keyframes)
                 }
                 Stage_UpdateObstacles(&state.context, false);
                 CHECK_EQ_INT(
-                    state.objects.obstacles[0].frame, frame == 60 ? 0 : frame);
+                    g_StageObjects.obstacles[0].frame, frame == 60 ? 0 : frame);
                 CHECK_EQ_INT(g_Orb.in_portal, frame < 40);
-                CHECK_EQ_INT(state.objects.portal_active, frame < 60);
+                CHECK_EQ_INT(g_StageObjects.portal_active, frame < 60);
                 CHECK_EQ_INT(
                     g_Rng,
                     frame < 20       ? seed
@@ -278,7 +271,7 @@ TEST(portal_counts_destinations_rng_and_exact_keyframes)
                                      : expected);
                 if (frame >= 20) {
                     CHECK_EQ_INT(
-                        state.objects.destination_left, destination * 64);
+                        g_StageObjects.destination_left, destination * 64);
                 }
                 if (frame == 40) {
                     CHECK_EQ_INT(g_Orb.left, destination * 64);
@@ -297,21 +290,21 @@ TEST(portal_reset_keeps_overlay_artifact_and_can_enter_later_portal)
 {
     CASE state;
     M_Init(&state);
-    state.objects.obstacle_count = 2;
-    state.objects.obstacles[0] =
+    g_StageObjects.obstacle_count = 2;
+    g_StageObjects.obstacles[0] =
         (STAGE_OBSTACLE) { .left = 96, .top = 128, .type = STAGE_DATA_PORTAL };
-    state.objects.obstacles[1] =
+    g_StageObjects.obstacles[1] =
         (STAGE_OBSTACLE) { .left = 96, .top = 128, .type = STAGE_DATA_PORTAL };
-    state.objects.destination_left = 96;
-    state.objects.destination_top = 128;
+    g_StageObjects.destination_left = 96;
+    g_StageObjects.destination_top = 128;
     g_Orb.left = 96;
     g_Orb.top = 128;
     state.sprites.pixels[30 * 1024 + 1] = 5;
     Stage_UpdateObstacles(&state.context, true);
     CHECK(!g_Orb.in_portal);
-    CHECK(!state.objects.portal_active);
-    CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
-    CHECK_EQ_INT(state.objects.obstacles[1].frame, 0);
+    CHECK(!g_StageObjects.portal_active);
+    CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
+    CHECK_EQ_INT(g_StageObjects.obstacles[1].frame, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 97, 128), 5);
     CHECK_EQ_INT(Th01Test_Pixel(0, 96, 128), 14);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
@@ -327,21 +320,20 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         state.context.stage_id = 4;
         g_Orb.previous_left = 499;
         g_Orb.previous_top = 349;
-        STAGE_ORB_COMPOSITE composite = {};
+        memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
         Frame_Reset();
         g_VSync.count1 = counts[variant];
         g_VSync.count2 = 44;
-        CHECK_EQ_INT(
-            Stage_BeginOrbComposite(&composite, &state.context), variant != 0);
+        CHECK_EQ_INT(Stage_BeginOrbComposite(&state.context), variant != 0);
         CHECK_EQ_INT(state.updates, variant != 0);
         CHECK_EQ_INT(g_Orb.frames_outside_portal, 1);
         if (variant == 0) {
             const ORB orb = g_Orb;
-            CHECK(!Stage_ResumeOrbComposite(&composite, &state.context));
+            CHECK(!Stage_ResumeOrbComposite(&state.context));
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(state.updates, 0);
             Frame_VSync();
-            CHECK(Stage_ResumeOrbComposite(&composite, &state.context));
+            CHECK(Stage_ResumeOrbComposite(&state.context));
         }
         CHECK_EQ_INT(state.updates, 1);
         CHECK_EQ_INT(g_VSync.count1, 0);
@@ -357,22 +349,22 @@ TEST(turret_callbacks_consume_rng_before_the_following_portal)
 {
     CASE state;
     M_Init(&state);
-    state.objects.obstacle_count = 2;
-    state.objects.obstacles[0] = (STAGE_OBSTACLE) {
+    g_StageObjects.obstacle_count = 2;
+    g_StageObjects.obstacles[0] = (STAGE_OBSTACLE) {
         .left = 0,
         .top = 128,
         .type = STAGE_DATA_TURRET_SLOW_1_AIMED,
         .frame = 209,
         .turret_flag = 2,
     };
-    state.objects.obstacles[1] = (STAGE_OBSTACLE) {
+    g_StageObjects.obstacles[1] = (STAGE_OBSTACLE) {
         .left = 128,
         .top = 128,
         .type = STAGE_DATA_PORTAL,
         .frame = 19,
     };
-    state.objects.portal_active = true;
-    state.objects.entered_portal = 1;
+    g_StageObjects.portal_active = true;
+    g_StageObjects.entered_portal = 1;
     g_Orb.in_portal = true;
     uint32_t expected = g_Rng;
     MasterRng_Next(&expected);
@@ -380,7 +372,7 @@ TEST(turret_callbacks_consume_rng_before_the_following_portal)
     Stage_UpdateObstacles(&state.context, false);
     CHECK_EQ_INT(state.pellets, 1);
     CHECK_EQ_INT(g_Rng, expected);
-    CHECK_EQ_INT(state.objects.destination_left, 128);
+    CHECK_EQ_INT(g_StageObjects.destination_left, 128);
     Arena_Free(&state.arena);
 }
 
@@ -388,27 +380,27 @@ TEST(portal_unblock_allows_later_destination_reentry_in_the_same_call)
 {
     CASE state;
     M_Init(&state);
-    state.objects.obstacle_count = 2;
-    state.objects.obstacles[0] = (STAGE_OBSTACLE) {
+    g_StageObjects.obstacle_count = 2;
+    g_StageObjects.obstacles[0] = (STAGE_OBSTACLE) {
         .left = 0,
         .top = 128,
         .type = STAGE_DATA_PORTAL,
         .frame = 59,
     };
-    state.objects.obstacles[1] = (STAGE_OBSTACLE) {
+    g_StageObjects.obstacles[1] = (STAGE_OBSTACLE) {
         .left = 128,
         .top = 128,
         .type = STAGE_DATA_PORTAL,
     };
-    state.objects.portal_active = true;
+    g_StageObjects.portal_active = true;
     g_Orb.left = 128;
     g_Orb.top = 128;
     Stage_UpdateObstacles(&state.context, false);
-    CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
-    CHECK_EQ_INT(state.objects.obstacles[1].frame, 1);
-    CHECK_EQ_INT(state.objects.entered_portal, 1);
+    CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
+    CHECK_EQ_INT(g_StageObjects.obstacles[1].frame, 1);
+    CHECK_EQ_INT(g_StageObjects.entered_portal, 1);
     CHECK(g_Orb.in_portal);
-    CHECK(state.objects.portal_active);
+    CHECK(g_StageObjects.portal_active);
     Arena_Free(&state.arena);
 }
 
@@ -416,9 +408,9 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
 {
     CASE state;
     M_Init(&state);
-    state.objects.card_count = 1;
-    state.objects.cards = Arena_AllocZ(&state.arena, sizeof(STAGE_CARD));
-    state.objects.cards[0] = (STAGE_CARD) {
+    g_StageObjects.card_count = 1;
+    g_StageObjects.cards = Arena_AllocZ(&state.arena, sizeof(STAGE_CARD));
+    g_StageObjects.cards[0] = (STAGE_CARD) {
         .left = 0,
         .top = 64,
         .flag = STAGE_CARD_FLIPPING,
@@ -431,11 +423,11 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     g_Orb.previous_top = 350;
     Frame_Reset();
     g_VSync.count1 = -1;
-    STAGE_ORB_COMPOSITE composite = {};
-    CHECK(Stage_BeginOrbComposite(&composite, &state.context));
+    memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
+    CHECK(Stage_BeginOrbComposite(&state.context));
     CHECK(g_Player.is_hit);
-    CHECK(state.game.cleared);
-    CHECK_EQ_INT(state.objects.cards[0].flag, STAGE_CARD_REMOVED);
+    CHECK(g_Stage.cleared);
+    CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_REMOVED);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 342), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 350), 2);
     CHECK_EQ_INT(state.updates, 1);

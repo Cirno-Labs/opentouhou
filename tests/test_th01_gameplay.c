@@ -11,6 +11,7 @@
 #include "core/audio.h"
 #include "core/audio/backend.h"
 
+#include "th01_world.h"
 #include "test.h"
 
 #include <SDL3/SDL.h>
@@ -37,11 +38,7 @@ static bool M_EffectSounds(GAMEPLAY *const g)
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     Arena_Init(&f->arena, "gameplay", 8 * 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
     Video_Init(a);
@@ -59,8 +56,7 @@ static void M_Init(FIXTURE *const f)
     Gameplay_ResetWorld(g);
     Frame_Reset();
     StageObjects_InitPrepared(
-        &g->world.objects, &f->assets->scenes[0].layouts, 0, true,
-        &g->storage.objects, &f->assets->stage);
+        &f->assets->scenes[0].layouts, 0, true, &f->assets->stage);
     Orb_ResetFlight();
     g_StageTimer.time = 1000;
     g->world.phase = GP_FRAME_BEGIN;
@@ -83,7 +79,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(g_Player.left, 308);
     CHECK_EQ_INT(g_Orb.left, 596);
     CHECK_EQ_INT(g->world.phase, GP_ORB);
-    CHECK(g->world.composite.waiting);
+    CHECK(g_OrbComposite.waiting);
     const PLAYER player = g_Player;
     const ORB orb = g_Orb;
     const uint32_t rng = g_Rng;
@@ -164,7 +160,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     g->bindings.bonus_context.stage = &stage;
     g->world.phase = GP_FRAME_BEGIN;
     g_Player.is_hit = true;
-    g->world.metrics.cleared = true;
+    g_Stage.cleared = true;
     g_Session.lives = 0;
     g_StageTimer.time = 500;
     TH01_INPUT raw = {};
@@ -175,7 +171,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     CHECK_EQ_INT(g_Session.stage_id, 1);
     CHECK_EQ_INT(g_Session.lives, 0);
     CHECK(!g_Player.is_hit);
-    CHECK_EQ_INT(g->world.miss.phase, MISS_DONE);
+    CHECK_EQ_INT(g_Miss.phase, MISS_DONE);
     Arena_Free(&f.arena);
 }
 
@@ -186,7 +182,7 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     GAMEPLAY *const g = f.game;
     g->world.phase = GP_AFTER_ORB;
     g->world.game_cleared = true;
-    g->world.metrics.score = 1000;
+    g_Stage.score = 1000;
     g_PelletShared.destroy_score_delta = 70;
     g_Session.route = SESSION_ROUTE_JIGOKU;
     TH01_INPUT raw = {};
@@ -209,7 +205,7 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, 137), GAMEPLAY_REQUEST_ENDING);
     CHECK_EQ_INT(g->world.switch_fade.remaining, 0);
     CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 70);
-    CHECK_EQ_INT(g->world.metrics.score, 1000);
+    CHECK_EQ_INT(g_Stage.score, 1000);
     Arena_Free(&f.arena);
 }
 
@@ -222,21 +218,21 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
     f.assets->bonus = &bonus;
     Gameplay_Bind(g);
     f.arena.capacity = f.arena.used;
-    const STAGE_CARD *const cards = g->storage.objects.cards;
-    const STAGE_OBSTACLE *const obstacles = g->storage.objects.obstacles;
+    const STAGE_CARD *const cards = g_StageObjectStorage.cards;
+    const STAGE_OBSTACLE *const obstacles = g_StageObjectStorage.obstacles;
     TH01_INPUT raw = {};
     uint64_t tick = 0;
     for (int16_t stage = 0; stage < 3; stage++) {
         CHECK_EQ_INT(g_Session.stage_id, stage);
-        g_Orb.left = g->world.objects.cards[0].left;
-        g_Orb.top = g->world.objects.cards[0].top;
+        g_Orb.left = g_StageObjects.cards[0].left;
+        g_Orb.top = g_StageObjects.cards[0].top;
         Stage_HitTestCards(&g->bindings.stage);
-        CHECK_EQ_INT(g->world.objects.cards[0].flag, STAGE_CARD_FLIPPING);
-        CHECK(g->world.metrics.score > 0);
+        CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
+        CHECK(g_Stage.score > 0);
         for (int32_t i = 0; i < 30; i++) {
             Stage_UpdateCards(&g->bindings.stage);
         }
-        CHECK(g->world.metrics.cleared);
+        CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
         bool entered_bonus = false;
         for (int32_t i = 0; i < 1000; i++) {
@@ -250,11 +246,11 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK(entered_bonus);
         CHECK_EQ_INT(g_Session.stage_id, stage + 1);
         CHECK_EQ_INT(g->world.phase, GP_ORB);
-        CHECK(g->storage.objects.cards == cards);
-        CHECK(g->storage.objects.obstacles == obstacles);
-        CHECK_EQ_INT(g->world.objects.card_count, 1);
-        CHECK(!g->world.metrics.cleared);
-        CHECK_EQ_INT(g->world.miss.phase, MISS_DONE);
+        CHECK(g_StageObjectStorage.cards == cards);
+        CHECK(g_StageObjectStorage.obstacles == obstacles);
+        CHECK_EQ_INT(g_StageObjects.card_count, 1);
+        CHECK(!g_Stage.cleared);
+        CHECK_EQ_INT(g_Miss.phase, MISS_DONE);
     }
     Arena_Free(&f.arena);
 }
@@ -312,7 +308,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g->world.phase, GP_TITLE);
     CHECK_EQ_INT(g_Session.stage_id, 0);
-    CHECK(g->storage.objects.cards == f.game->world.objects.cards);
+    CHECK(g_StageObjectStorage.cards == g_StageObjects.cards);
     Arena_Free(&f.arena);
 }
 
@@ -407,7 +403,7 @@ TEST(real_gameover_score_registration_precedes_continue)
         g_Session.table_high_score = 3000;
         g_Session.high_score = 4000;
         g_Session.highest_score = 5000;
-        g->world.metrics.score = 2345;
+        g_Stage.score = 2345;
         g_Player.is_hit = true;
         uint64_t tick = 0;
         while (tick < 1000 && g->world.request != GAMEPLAY_REQUEST_SCORE) {
@@ -486,8 +482,8 @@ TEST(live_hud_high_score_is_distinct_from_run_history)
     Gameplay_ResetWorld(f.game);
     CHECK_EQ_INT(g_Session.high_score, 1000);
     CHECK_EQ_INT(g_Session.highest_score, 42);
-    f.game->world.metrics.score = 0x80000000;
-    Hud_ScoreAndCombo(&f.game->world.hud, &f.game->bindings.display);
+    g_Stage.score = 0x80000000;
+    Hud_ScoreAndCombo(&f.game->bindings.display);
     CHECK_EQ_INT(g_Session.high_score, 0x80000000);
     CHECK_EQ_INT(g_Session.highest_score, 42);
     Gameplay_ResetWorld(f.game);
@@ -651,9 +647,9 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g->world.frame, 0);
     CHECK_EQ_INT(g_VSync.edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);
-    CHECK_EQ_INT(g->world.hud.score_previous, 0);
-    CHECK(g->world.hud.numbers == prepared.initial->hud.numbers);
-    CHECK(g->world.health.backgrounds == prepared.initial->health.backgrounds);
+    CHECK_EQ_INT(g_Hud.score_previous, 0);
+    CHECK(g_Hud.numbers == g_Hud.numbers);
+    CHECK(g_HudHp.backgrounds == g_HudHp.backgrounds);
     CHECK(g_Tram.visible);
     CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
     CHECK(g_B10J.meteor_active);

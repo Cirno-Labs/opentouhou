@@ -390,11 +390,11 @@ void B05_Setup(const B05_CONTEXT *const c)
     g_B05.sphere.orb_inactive = false;
     g_B05.sphere.image = 0;
     g_B05.hp = 8;
-    c->hit->health->first_white = 6;
-    c->hit->health->first_redwhite = 2;
+    g_HudHp.first_white = 6;
+    g_HudHp.first_redwhite = 2;
     g_B05.phase = B05_PHASE_START;
     g_B05.pending = B05_IDLE;
-    Particles_Init(c->particles);
+    Particles_Init();
 }
 
 bool B05_UpdateAndRender(
@@ -423,8 +423,7 @@ bool B05_UpdateAndRender(
     if (g_B05.phase == B05_PHASE_SPHERE
         || g_B05.phase == B05_PHASE_TRANSFORMS) {
         if (g_B05.phase == B05_PHASE_SPHERE && !g_B05.hp_bar_filled) {
-            g_B05.hp_bar_filled =
-                HudHp_Increment(c->hit->health, g_B05.hp, g_B05.hit.frame);
+            g_B05.hp_bar_filled = HudHp_Increment(g_B05.hp, g_B05.hit.frame);
         }
         g_B05.frame = Math16_Wrap(g_B05.frame + 1);
         g_B05.hit.frame = Math16_Wrap(g_B05.hit.frame + 1);

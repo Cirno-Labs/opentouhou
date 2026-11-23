@@ -3,6 +3,7 @@
 #include "core/base/arena.h"
 
 #include "th01_video.h"
+#include "th01_world.h"
 #include "test.h"
 
 #include <string.h>
@@ -11,12 +12,9 @@ typedef struct {
     ARENA arena;
     PALETTE_STATE palette;
     PALETTE baseline;
-    HUD hud;
-    HUD_HP health;
     HUD_CONTEXT display;
     BOSS_HIT_CONTEXT context;
     BOSS_HIT hit;
-    STAGE_GAMEPLAY gameplay;
     PTN sprites;
     GAME_TEXT_FONT font;
     uint32_t high_score;
@@ -47,7 +45,7 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK_EQ_INT(f->hp, 7);
     CHECK(f->hit.invincible);
     CHECK_EQ_INT(f->hit.frame, 0);
-    CHECK_EQ_INT(f->hud.score_previous, f->gameplay.score);
+    CHECK_EQ_INT(g_Hud.score_previous, g_Stage.score);
     CHECK_EQ_INT(f->palette.saved.colors[2][0], 15);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 7);
     f->events[f->count++] = number;
@@ -59,9 +57,9 @@ static void M_Init(FIXTURE *const f)
     Arena_Init(&f->arena, "boss hit", 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
     Video_Init(a);
-    Hud_Init(&f->hud, a);
-    HudHp_Init(&f->health, a);
-    HudHp_Rerender(&f->health, 8);
+    Hud_Init(a);
+    HudHp_Init(a);
+    HudHp_Rerender(8);
     GAME_TEXT_GLYPH glyphs[10] = {};
     for (int32_t i = 0; i < 10; i++) {
         glyphs[i].codepoint = 0xff10 + i;
@@ -77,13 +75,10 @@ static void M_Init(FIXTURE *const f)
     Palette_Set(&f->palette, &f->baseline);
     f->display = (HUD_CONTEXT) { .sprites = &f->sprites,
                                  .font = &f->font,
-                                 .gameplay = &f->gameplay,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->context = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                      .hud = &f->hud,
                                       .display = &f->display,
-                                      .health = &f->health,
                                       .shots_output = { M_Shot, f },
                                       .test_damage = &f->test_damage,
                                       .effect = M_Effect,
@@ -92,15 +87,16 @@ static void M_Init(FIXTURE *const f)
 
 TEST(real_hud_health_and_flash_follow_hit_order)
 {
+    Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
     const uint8_t colors[] = { 2 };
-    f.gameplay.score = UINT32_MAX - 5;
+    g_Stage.score = UINT32_MAX - 5;
     g_Orb.left = 303;
     BossHit_UpdateAndRender(
         &f.hit, &f.context, &f.hp, &f.baseline, colors, 1, 10, true,
         (BOSS_SHOT_HITBOX) {});
-    CHECK_EQ_INT(f.gameplay.score, 4);
+    CHECK_EQ_INT(g_Stage.score, 4);
     CHECK_EQ_INT(f.high_score, 4);
     CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
@@ -114,6 +110,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
 
 TEST(debug_damage_precedes_shot_collision_while_invincible)
 {
+    Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
     f.test_damage = true;
@@ -125,7 +122,7 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
     CHECK(!f.test_damage);
     CHECK_EQ_INT(f.hp, 7);
-    CHECK_EQ_INT(f.gameplay.score, 0);
+    CHECK_EQ_INT(g_Stage.score, 0);
     CHECK_EQ_INT(f.count, 2);
     CHECK_EQ_INT(f.events[0], 1);
     CHECK_EQ_INT(f.events[1], 16);
@@ -135,6 +132,7 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
 
 TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
 {
+    Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
     const uint8_t colors[] = { 2 };
@@ -151,12 +149,13 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
         &f.hit, &f.context, &f.hp, &f.baseline, colors, 1, -1, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(f.hp, 7);
-    CHECK_EQ_INT(f.gameplay.score, UINT32_MAX);
+    CHECK_EQ_INT(g_Stage.score, UINT32_MAX);
     Arena_Free(&f.arena);
 }
 
 TEST(palette_reset_is_strictly_after_forty_even_without_invincibility)
 {
+    Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
     const uint8_t colors[] = { 2 };

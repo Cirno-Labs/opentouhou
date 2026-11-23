@@ -79,11 +79,7 @@ extern B15M g_B15M;
 typedef struct {
     const B15M_ASSETS *assets;
     const BOSS_HIT_CONTEXT *hit;
-    PARTICLES *particles;
-    MISSILES *missiles;
-    SHOOTOUT_LASERS *lasers;
     const PTN *miko;
-    SCENE_STATE *scene;
     bool *stage_cleared;
     void (*fade_music)(void *user);
 } B15M_CONTEXT;

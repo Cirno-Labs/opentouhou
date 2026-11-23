@@ -36,19 +36,19 @@ void Gameplay_Stop(GAMEPLAY *const g)
 static void M_HudScore(void *const user)
 {
     GAMEPLAY *const g = user;
-    Hud_ScoreAndCombo(&g->world.hud, &g->bindings.display);
+    Hud_ScoreAndCombo(&g->bindings.display);
 }
 
 static void M_HudBombs(void *const user, const int16_t previous)
 {
     GAMEPLAY *const g = user;
-    Hud_BombsPut(&g->world.hud, &g->bindings.display, previous);
+    Hud_BombsPut(&g->bindings.display, previous);
 }
 
 static void M_HudLives(void *const user, const int16_t previous)
 {
     GAMEPLAY *const g = user;
-    Hud_LivesPut(&g->world.hud, &g->bindings.display, previous);
+    Hud_LivesPut(&g->bindings.display, previous);
 }
 
 static void M_Decay(void *const user)
@@ -103,10 +103,8 @@ static void M_Player(void *const user, const PLAYER_ACTION action)
 
 static void M_ItemAdd(void *const user, const int32_t slot, const bool bomb)
 {
-    GAMEPLAY *const g = user;
     Items_Add(
-        &g->world.items, g->world.objects.cards[slot].left,
-        g->world.objects.cards[slot].top, bomb);
+        g_StageObjects.cards[slot].left, g_StageObjects.cards[slot].top, bomb);
 }
 
 static void M_PelletAdd(void *const user, const STAGE_PELLET_SPAWN spawn)
@@ -177,14 +175,12 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .mask = &a->hud,
         .sprites = stage,
         .font = &a->hud_font,
-        .gameplay = &g->world.metrics,
         .high_score = &g_Session.high_score,
         .remaining_lives = &g_Session.lives,
         .stage_number = (uint16_t)(g_Session.stage_id + 1),
         .rank = (SETTINGS_DIFFICULTY)g_Session.settings.difficulty,
     };
     g->bindings.extend = (EXTEND_CONTEXT) {
-        .hud = &g->world.hud,
         .display = &g->bindings.display,
         .resident_lives = &g->world.retained_lives,
         .next = &g->world.next_extend,
@@ -192,8 +188,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .user = g,
     };
     g->bindings.stage = (STAGE_CONTEXT) {
-        .objects = &g->world.objects,
-        .gameplay = &g->world.metrics,
         .sprites = stage,
         .font = &a->hud_font,
         .stage_id = g_Session.stage_id,
@@ -207,7 +201,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .user = g,
     };
     g->bindings.item = (ITEM_CONTEXT) {
-        .gameplay = &g->world.metrics,
         .point_value = &g_Session.point_value,
         .sprites = stage,
         .font = &a->item_font,
@@ -243,7 +236,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .user = g,
     };
     g->bindings.timing = (TIMER_CONTEXT) {
-        .hud = &g->world.hud,
         .display = &g->bindings.display,
         .effect = Gameplay_Effect,
         .user = g,
@@ -256,17 +248,14 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.route = (ROUTE_SELECT_CONTEXT) {
         .palette = &g->world.palette,
         .assets = &g->bindings.route_assets,
-        .scene = &g->world.scene,
         .route = &g_Session.route,
-        .stage_cleared = &g->world.metrics.cleared,
+        .stage_cleared = &g_Stage.cleared,
         .effect = Gameplay_Effect,
         .user = g,
     };
     g->bindings.hit = (BOSS_HIT_CONTEXT) {
         .palette = &g->world.palette,
-        .hud = &g->world.hud,
         .display = &g->bindings.display,
-        .health = &g->world.health,
         .shots_output = g->bindings.shots_output,
         .test_damage = &g->world.test_damage,
         .frame_rand = g_Session.frame_rand,
@@ -276,7 +265,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
                                       .hit = &g->bindings.hit,
                                       .stage_palette = &g->world.stage_palette,
-                                      .particles = &g->world.particles,
                                       .miko = &a->miko,
                                       .route = &g->bindings.route,
                                       .fade_music = Gameplay_Fade };
@@ -284,55 +272,35 @@ void Gameplay_Bind(GAMEPLAY *const g)
         (B10J_CONTEXT) { .assets = &a->b10j,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
-                         .particles = &g->world.particles,
-                         .missiles = &g->world.missiles,
-                         .lasers = &g->world.lasers,
                          .miko = &a->miko,
-                         .scene = &g->world.scene,
-                         .stage_cleared = &g->world.metrics.cleared,
+                         .stage_cleared = &g_Stage.cleared,
                          .fade_music = Gameplay_Fade };
     g->bindings.c10m =
         (B10M_CONTEXT) { .assets = &a->b10m,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
-                         .particles = &g->world.particles,
-                         .missiles = &g->world.missiles,
-                         .lasers = &g->world.lasers,
                          .miko = &a->miko,
-                         .scene = &g->world.scene,
-                         .stage_cleared = &g->world.metrics.cleared,
+                         .stage_cleared = &g_Stage.cleared,
                          .fade_music = Gameplay_Fade };
     g->bindings.c15j =
         (B15J_CONTEXT) { .assets = &a->b15j,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
-                         .particles = &g->world.particles,
-                         .lasers = &g->world.lasers,
                          .miko = &a->miko,
-                         .scene = &g->world.scene,
-                         .stage_cleared = &g->world.metrics.cleared,
+                         .stage_cleared = &g_Stage.cleared,
                          .fade_music = Gameplay_Fade };
-    g->bindings.c15m =
-        (B15M_CONTEXT) { .assets = &a->b15m,
-                         .hit = &g->bindings.hit,
-                         .particles = &g->world.particles,
-                         .missiles = &g->world.missiles,
-                         .lasers = &g->world.lasers,
-                         .miko = &a->miko,
-                         .scene = &g->world.scene,
-                         .stage_cleared = &g->world.metrics.cleared,
-                         .fade_music = Gameplay_Fade };
+    g->bindings.c15m = (B15M_CONTEXT) { .assets = &a->b15m,
+                                        .hit = &g->bindings.hit,
+                                        .miko = &a->miko,
+                                        .stage_cleared = &g_Stage.cleared,
+                                        .fade_music = Gameplay_Fade };
     g->bindings.c20j = (B20J_CONTEXT) { .assets = &a->b20j,
                                         .hit = &g->bindings.hit,
-                                        .lasers = &g->world.lasers,
-                                        .objects = &g->world.objects,
                                         .game_cleared = &g->world.game_cleared,
                                         .audio = M_AudioJ };
     g->bindings.c20m =
         (B20M_CONTEXT) { .assets = &a->b20m,
                          .hit = &g->bindings.hit,
-                         .lasers = &g->world.lasers,
-                         .objects = &g->world.objects,
                          .first_stage = &g->world.first_stage,
                          .timer_initialized = &g->world.timer_initialized,
                          .game_cleared = &g->world.game_cleared,
@@ -342,7 +310,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .font = &a->bonus_font,
         .stage_palette = &g->world.stage_palette,
         .palette = &g->world.palette,
-        .hud = &g->world.hud,
         .display = &g->bindings.display,
         .extend = &g->bindings.extend,
         .score_bonus = &g->world.score_bonus,

@@ -17,9 +17,9 @@ RESULT Gameplay_Prepare(
     *out = nullptr;
     GAMEPLAY *const g = Allocator_AllocZ(allocator, sizeof(*g));
     g->storage.assets = assets;
-    StageObjects_Prepare(&g->storage.objects, allocator);
-    Hud_Init(&g->world.hud, allocator);
-    HudHp_Init(&g->world.health, allocator);
+    StageObjects_Prepare(allocator);
+    Hud_Init(allocator);
+    HudHp_Init(allocator);
     Tram_Init(allocator);
     MUST(Mdrv_Init(
         assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, 8, 8, allocator,
@@ -44,6 +44,20 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     Orb_Init();
     Shots_Init();
     Pellets_Init();
+    memset(&g_StageObjects, 0, sizeof(g_StageObjects));
+    memset(&g_Stage, 0, sizeof(g_Stage));
+    memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
+    memset(&g_Items, 0, sizeof(g_Items));
+    memset(&g_Missiles, 0, sizeof(g_Missiles));
+    memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));
+    memset(&g_Particles, 0, sizeof(g_Particles));
+    memset(&g_Bomb, 0, sizeof(g_Bomb));
+    memset(&g_Miss, 0, sizeof(g_Miss));
+    memset(&g_Scene, 0, sizeof(g_Scene));
+    memset(&g_Bonus, 0, sizeof(g_Bonus));
+    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Hud_Reset();
+    HudHp_Reset();
     Frame_Reset();
     GameInput_Init();
     StageTimer_Init();
@@ -59,17 +73,16 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     B20J_Init();
     B20M_Init();
     g_Session.high_score = g_Session.table_high_score;
-    g->world.metrics.score = g_Session.score;
+    g_Stage.score = g_Session.score;
     g_Player.remaining_bombs = g_Session.bombs;
     g_Player.left = 304;
     g_PelletShared.speed = g_Session.pellet_speed;
     g->world.retained_lives = (int8_t)g_Session.lives;
     g->world.next_extend = Extend_NextForScore(g_Session.score);
     g_Rng = g_Session.frame_rand;
-    g->world.metrics.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
+    g_Stage.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
     g->world.boss_stage = g_Session.stage_id % 5 == 4;
-    Scene_Activate(
-        &g->world.scene, &g->storage.assets->scenes[Session_Scene()]);
+    Scene_Activate(&g->storage.assets->scenes[Session_Scene()]);
     Video_SelectDrawingPage(0);
     Video_SelectVisiblePage(0);
     Video_SetScroll(0);
@@ -97,7 +110,7 @@ void Gameplay_DefaultActors(GAMEPLAY *const g)
 
 void Gameplay_SyncSession(GAMEPLAY *const g)
 {
-    g_Session.score = g->world.metrics.score;
+    g_Session.score = g_Stage.score;
     g_Session.bombs = g_Player.remaining_bombs;
     g_Session.pellet_speed = g_PelletShared.speed;
 }

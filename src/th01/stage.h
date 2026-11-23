@@ -26,9 +26,9 @@ typedef struct {
     bool cleared;
 } STAGE_GAMEPLAY;
 
+extern STAGE_GAMEPLAY g_Stage;
+
 typedef struct {
-    STAGE_OBJECTS *objects;
-    STAGE_GAMEPLAY *gameplay;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
     int16_t stage_id, stage_num;
@@ -81,6 +81,8 @@ typedef struct {
     bool active, waiting;
 } STAGE_ORB_COMPOSITE;
 
+extern STAGE_ORB_COMPOSITE g_OrbComposite;
+
 // Runs the real Orb composite through its frame_delay(1). Begin advances
 // motion before the delay; Resume continues only when count1 is ready.
 // Zero-initialize composite once and keep context/state/assets stable while
@@ -95,7 +97,5 @@ typedef struct {
 // coordinates follow in source order, reading hit/portal flags afresh.
 // Does not advance force age, player update, bomb frame or world counters.
 // Supply real pellet, item and HUD consumers through the context.
-bool Stage_BeginOrbComposite(
-    STAGE_ORB_COMPOSITE *composite, const STAGE_CONTEXT *context);
-bool Stage_ResumeOrbComposite(
-    STAGE_ORB_COMPOSITE *composite, const STAGE_CONTEXT *context);
+bool Stage_BeginOrbComposite(const STAGE_CONTEXT *context);
+bool Stage_ResumeOrbComposite(const STAGE_CONTEXT *context);

@@ -121,11 +121,11 @@ void B15M_Setup(const B15M_CONTEXT *const c)
     g_B15M.frame = 0;
     g_B15M.hp = 14;
     g_B15M.finished = false;
-    c->hit->health->first_white = 10;
-    c->hit->health->first_redwhite = 6;
+    g_HudHp.first_white = 10;
+    g_HudHp.first_redwhite = 6;
     g_Rng = c->hit->frame_rand;
     g_Pellets.interlace = true;
-    Particles_Init(c->particles);
+    Particles_Init();
 }
 
 static uint16_t M_Random(const B15M_CONTEXT *const c)
@@ -357,7 +357,7 @@ static void M_Laser(
     const int16_t age, const int16_t width)
 {
     ShootoutLasers_Spawn(
-        &c->lasers->slots[slot % 10], x, y, tx, ty, speed, 7, age, width);
+        &g_ShootoutLasers.slots[slot % 10], x, y, tx, ty, speed, 7, age, width);
 }
 static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 {
@@ -691,8 +691,7 @@ static int16_t M_RandomMissiles(const B15M_CONTEXT *const c)
                                         - (g_B15M.pattern_state - 1) / 2 + 64);
         const MATH16_VECTOR v = Math16_Vector(7, angle);
         Missiles_Add(
-            c->missiles, g_B15M.missile_rifts.x[i], g_B15M.missile_rifts.y[i],
-            v.x, v.y, 0);
+            g_B15M.missile_rifts.x[i], g_B15M.missile_rifts.y[i], v.x, v.y, 0);
     }
     M_Rifts(c, &g_B15M.missile_rifts, false, 60, 160, false);
     if (g_B15M.frame > 170) {
@@ -1369,7 +1368,7 @@ static bool M_Death(const B15M_CONTEXT *const c)
     if (!BossDefeat_Resume(&g_B15M.defeat, &context)) {
         return false;
     }
-    Scene_Activate(c->scene, &c->assets->next_scene);
+    Scene_Activate(&c->assets->next_scene);
     g_B15M.defeating = false;
     g_B15M.finished = true;
     return true;
@@ -1382,8 +1381,8 @@ static bool M_Tail(const B15M_CONTEXT *const c)
             c->fade_music(c->hit->user);
             Pellets_EraseAndResetMoving();
             M_Background(c);
-            Missiles_Reset(c->missiles);
-            ShootoutLasers_EraseAndReset(c->lasers, 10);
+            Missiles_Reset();
+            ShootoutLasers_EraseAndReset(10);
             BossDefeat_Begin(&g_B15M.defeat, BOSS_DEFEAT_REGULAR);
             g_B15M.defeating = true;
             return M_Death(c);
@@ -1433,7 +1432,7 @@ bool B15M_UpdateAndRender(const B15M_CONTEXT *const c, const uint64_t host_tick)
     }
     g_B15M.call_phase = g_B15M.phase;
     Missiles_UpdateAndRender(
-        c->missiles, (uint16_t)c->hit->frame_rand,
+        (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (g_B15M.phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(c);
@@ -1441,8 +1440,7 @@ bool B15M_UpdateAndRender(const B15M_CONTEXT *const c, const uint64_t host_tick)
     if (g_B15M.phase == B15M_PHASE_PATTERNS_1
         || g_B15M.phase == B15M_PHASE_PATTERNS_2) {
         if (g_B15M.phase == B15M_PHASE_PATTERNS_1 && !g_B15M.hp_bar_filled) {
-            g_B15M.hp_bar_filled =
-                HudHp_Increment(c->hit->health, g_B15M.hp, g_B15M.frame);
+            g_B15M.hp_bar_filled = HudHp_Increment(g_B15M.hp, g_B15M.frame);
         }
         M_Common();
         if (g_B15M.pattern != 0) {

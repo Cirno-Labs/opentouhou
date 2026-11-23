@@ -3,6 +3,8 @@
 #include "pc98/zun/math16.h"
 #include "th01/shape.h"
 
+ITEMS g_Items;
+
 #define ITEM_BOMB_IMAGE 32
 #define ITEM_POINT_IMAGE 33
 
@@ -46,7 +48,7 @@ static void M_Collect(
         item->flag = ITEM_COLLECTED;
     } else {
         if (bomb) {
-            context->gameplay->score += 10000;
+            g_Stage.score += 10000;
         } else {
             uint16_t *const value = context->point_value;
             if (*value < 59999) {
@@ -55,7 +57,7 @@ static void M_Collect(
             if (*value >= 60000) {
                 *value = 65530;
             }
-            context->gameplay->score += *value;
+            g_Stage.score += *value;
         }
         context->hud_score_and_combo(context->user);
         item->flag = ITEM_COLLECTED_OVER_CAP;
@@ -176,10 +178,9 @@ RESULT Items_ValidateAssets(
     return OK;
 }
 
-void Items_Add(
-    ITEMS *const items, const int16_t left, const int16_t top, const bool bomb)
+void Items_Add(const int16_t left, const int16_t top, const bool bomb)
 {
-    ITEM *const slots = bomb ? items->bombs : items->points;
+    ITEM *const slots = bomb ? g_Items.bombs : g_Items.points;
     const int32_t count = bomb ? ITEMS_BOMB_COUNT : ITEMS_POINT_COUNT;
     for (int32_t i = 0; i < count; i++) {
         if (slots[i].flag == ITEM_FREE) {
@@ -193,22 +194,22 @@ void Items_Add(
     }
 }
 
-void Items_Reset(ITEMS *const items)
+void Items_Reset(void)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT; i++) {
-        items->bombs[i].flag = ITEM_FREE;
+        g_Items.bombs[i].flag = ITEM_FREE;
     }
     for (int32_t i = 0; i < ITEMS_POINT_COUNT; i++) {
-        items->points[i].flag = ITEM_FREE;
+        g_Items.points[i].flag = ITEM_FREE;
     }
 }
 
-void Items_Render(const ITEMS *const items, const PTN *const sprites)
+void Items_Render(const PTN *const sprites)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT + ITEMS_POINT_COUNT; i++) {
         const bool bomb = i < ITEMS_BOMB_COUNT;
         const ITEM *const item =
-            bomb ? &items->bombs[i] : &items->points[i - ITEMS_BOMB_COUNT];
+            bomb ? &g_Items.bombs[i] : &g_Items.points[i - ITEMS_BOMB_COUNT];
         if (M_Visible(item)) {
             Sprite_PtnPut(
                 sprites, bomb ? ITEM_BOMB_IMAGE : ITEM_POINT_IMAGE, -1,
@@ -217,13 +218,12 @@ void Items_Render(const ITEMS *const items, const PTN *const sprites)
     }
 }
 
-void Items_UpdateAndRender(
-    ITEMS *const items, const ITEM_CONTEXT *const context)
+void Items_UpdateAndRender(const ITEM_CONTEXT *const context)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT; i++) {
-        M_Update(&items->bombs[i], context, true);
+        M_Update(&g_Items.bombs[i], context, true);
     }
     for (int32_t i = 0; i < ITEMS_POINT_COUNT; i++) {
-        M_Update(&items->points[i], context, false);
+        M_Update(&g_Items.points[i], context, false);
     }
 }

@@ -28,7 +28,6 @@ typedef struct {
 typedef struct {
     PALETTE_STATE *palette;
     const ROUTE_SELECT_ASSETS *assets;
-    SCENE_STATE *scene;
     uint8_t *route;
     bool *stage_cleared;
     void (*effect)(void *user, int16_t number);

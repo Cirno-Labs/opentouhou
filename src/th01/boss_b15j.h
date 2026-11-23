@@ -47,10 +47,7 @@ typedef struct {
     const B15J_ASSETS *assets;
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
-    PARTICLES *particles;
-    SHOOTOUT_LASERS *lasers;
     const PTN *miko;
-    SCENE_STATE *scene;
     bool *stage_cleared;
     void (*fade_music)(void *user);
 } B15J_CONTEXT;

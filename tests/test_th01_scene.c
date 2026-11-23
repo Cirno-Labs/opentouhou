@@ -2,12 +2,16 @@
 
 #include "core/base/arena.h"
 
+#include "th01_world.h"
 #include "test.h"
+
+#include <string.h>
 
 #define M_SIZE (22 + 5 * 250)
 
 TEST(scene_names_come_from_requested_id_not_header)
 {
+    Th01Test_ResetWorld();
     ARENA arena;
     Arena_Init(&arena, "scene", 65536);
     uint8_t bytes[M_SIZE] = {};
@@ -29,6 +33,7 @@ TEST(scene_names_come_from_requested_id_not_header)
 
 TEST(cached_activation_borrows_independent_layouts)
 {
+    Th01Test_ResetWorld();
     ARENA arena;
     Arena_Init(&arena, "scenes", 128 * 1024);
     SCENE_DATA cache[SCENE_COUNT];
@@ -42,16 +47,16 @@ TEST(cached_activation_borrows_independent_layouts)
         Reader_Close(&reader);
     }
     const size_t used = arena.used;
-    SCENE_STATE state = {};
+    memset(&g_Scene, 0, sizeof(g_Scene));
     const uint8_t ids[] = { 1, 2, 1, 6, 0 };
     for (size_t i = 0; i < sizeof(ids); i++) {
         const uint8_t id = ids[i];
-        Scene_Activate(&state, &cache[id]);
-        CHECK(state.active == &cache[id]);
-        CHECK_EQ_INT(state.active->background[2], '0' + id);
+        Scene_Activate(&cache[id]);
+        CHECK(g_Scene.active == &cache[id]);
+        CHECK_EQ_INT(g_Scene.active->background[2], '0' + id);
         for (int32_t column = 0; column < 20; column++) {
             CHECK(
-                state.active->layouts.stages[0].cells[0][column].card
+                g_Scene.active->layouts.stages[0].cells[0][column].card
                 == (column == id));
         }
     }
@@ -61,6 +66,7 @@ TEST(cached_activation_borrows_independent_layouts)
 
 TEST(invalid_or_truncated_scenes_allocate_nothing)
 {
+    Th01Test_ResetWorld();
     ARENA arena;
     Arena_Init(&arena, "scene", 65536);
     uint8_t bytes[M_SIZE] = {};

@@ -83,8 +83,9 @@ TEST(orb_collision_has_strict_bounds_and_extra_motion)
 TEST(update_tests_orb_before_top_clip_and_skips_portals)
 {
     g_Rng = 1;
-    g_Shots =
-        (SHOTS) { .slots = { { 300, 70, true, 0 }, { 400, 76, true, 0 } } };
+    memset(&g_Shots, 0, sizeof(g_Shots));
+    g_Shots.slots[0] = (SHOT) { 300, 70, true, 0 };
+    g_Shots.slots[1] = (SHOT) { 400, 76, true, 0 };
     memset(&g_Orb, 0, sizeof(g_Orb));
     g_Orb.left = 300;
     g_Orb.top = 64;

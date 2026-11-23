@@ -23,15 +23,16 @@ typedef struct {
     uint8_t cycle;
 } PARTICLES;
 
+extern PARTICLES g_Particles;
+
 // Zero-initialize once per main scene. Resets alive flags and spawn settings
 // while retaining cycle, velocities, positions and velocity_base history.
 // Stores flags as raw bytes because the slot-40 spill can write 255.
-void Particles_Init(PARTICLES *particles);
+void Particles_Init(void);
 
 // Spawns, restores old pixels, advances Q12.4 motion and draws surviving dots.
 // Preserves the first cycle's slot-40 aliases through explicit field writes.
 // Uses shared RNG and caller-owned state; allocates nothing and performs no IO.
 // Requires initialization and an origin in 0..7. Keeps the drawing selector
 // when no active particle reaches restoration; otherwise finishes on page 0.
-void Particles_UpdateAndRender(
-    PARTICLES *particles, PARTICLES_ORIGIN origin, uint8_t color);
+void Particles_UpdateAndRender(PARTICLES_ORIGIN origin, uint8_t color);

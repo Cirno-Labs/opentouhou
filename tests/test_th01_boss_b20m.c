@@ -6,6 +6,7 @@
 #include "th01/rng.h"
 #include "th01/session.h"
 #include "core/base/arena.h"
+#include "th01_world.h"
 #include "test.h"
 static void M_Assets(B20M_ASSETS *const a, ARENA *const arena)
 {
@@ -49,9 +50,9 @@ TEST(setup_preserves_patterns)
     g_B20M.hit.frame = 17;
     g_B20M.hit.invincible = true;
     PALETTE_STATE palette = {};
-    HUD_HP health = {};
+    memset(&g_HudHp, 0, sizeof(g_HudHp));
     palette.saved.colors[6][0] = 9;
-    BOSS_HIT_CONTEXT hit = { .palette = &palette, .health = &health };
+    BOSS_HIT_CONTEXT hit = { .palette = &palette };
     B20M_CONTEXT c = { .assets = &a, .hit = &hit };
     const size_t used = arena.used;
     B20M_Setup(&c);
@@ -71,8 +72,8 @@ TEST(setup_preserves_patterns)
     CHECK_EQ_INT(g_B20M.dress.sprites.slot, 1);
     CHECK_EQ_INT(g_B20M.wand.left, 296);
     CHECK_EQ_INT(g_B20M.dress.top, 192);
-    CHECK_EQ_INT(health.first_white, 8);
-    CHECK_EQ_INT(health.first_redwhite, 2);
+    CHECK_EQ_INT(g_HudHp.first_white, 8);
+    CHECK_EQ_INT(g_HudHp.first_redwhite, 2);
     CHECK_EQ_INT(g_B20M.boss_palette.colors[6][0], 9);
     Arena_Free(&arena);
 }
@@ -98,14 +99,9 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
 typedef struct {
     B20M_ASSETS assets;
     PALETTE_STATE palette;
-    HUD_HP health;
-    HUD hud;
     HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B20M_CONTEXT context;
-    SHOOTOUT_LASERS lasers;
-    STAGE_OBJECTS objects;
-    STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage;
     uint32_t high_score;
@@ -140,11 +136,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     GameInput_Init();
     StageTimer_Init();
     M_Assets(&f->assets, arena);
@@ -152,8 +144,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     Video_Init(a);
     Tram_Init(a);
     Palette_Init(&f->palette);
-    Hud_Init(&f->hud, a);
-    HudHp_Init(&f->health, a);
+    Hud_Init(a);
+    HudHp_Init(a);
     GAME_TEXT_GLYPH glyphs[105] = {};
     for (uint32_t i = 0; i < 10; i++) {
         glyphs[i].codepoint = 0xff10 + i;
@@ -182,13 +174,10 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                  .stage_number = 20,
                                  .sprites = &f->stage,
                                  .font = &f->font,
-                                 .gameplay = &f->gameplay,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                  .hud = &f->hud,
                                   .display = &f->display,
-                                  .health = &f->health,
                                   .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678,
@@ -196,8 +185,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .user = f };
     f->context = (B20M_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit,
-                                  .lasers = &f->lasers,
-                                  .objects = &f->objects,
                                   .game_cleared = &f->cleared,
                                   .audio = M_Audio,
                                   .first_stage = &f->first_stage,
@@ -382,8 +369,8 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(g_Player.invincibility_time, 0);
     CHECK(!g_Player.invincible);
     CHECK_EQ_INT(g_B20M.leaves.flag[7], 0);
-    CHECK_EQ_INT(f.health.first_white, 10);
-    CHECK_EQ_INT(f.health.first_redwhite, 3);
+    CHECK_EQ_INT(g_HudHp.first_white, 10);
+    CHECK_EQ_INT(g_HudHp.first_redwhite, 3);
     CHECK(f.first_stage);
     CHECK_EQ_INT(f.audio_count, 3);
     CHECK_EQ_INT(f.audio[0], B20M_AUDIO_FADE);
@@ -408,14 +395,14 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK(B20M_UpdateAndRender(&f.context, tick));
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_DEFEAT);
     CHECK_EQ_INT(g_B20M.hp, 0);
-    CHECK_EQ_INT(f.gameplay.score, 10000);
+    CHECK_EQ_INT(g_Stage.score, 10000);
     CHECK_EQ_INT(f.audio[0], B20M_AUDIO_STOP);
     for (int32_t i = 0; !f.cleared && i < 1500; i++) {
         M_Tick(&f, &tick);
     }
     CHECK(f.cleared);
     CHECK(g_B20M.finished);
-    CHECK_EQ_INT(f.gameplay.score, 60000);
+    CHECK_EQ_INT(g_Stage.score, 60000);
     CHECK_EQ_INT(g_B20M.frame, 231);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(f.audio_count, 2);
@@ -424,7 +411,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     const B20M done = g_B20M;
     CHECK(B20M_UpdateAndRender(&f.context, tick));
     CHECK(memcmp(&g_B20M, &done, sizeof(g_B20M)) == 0);
-    CHECK_EQ_INT(f.gameplay.score, 60000);
+    CHECK_EQ_INT(g_Stage.score, 60000);
     Arena_Free(&arena);
 }
 TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)

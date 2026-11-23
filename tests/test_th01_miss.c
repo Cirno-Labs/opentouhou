@@ -12,6 +12,7 @@
 #include "core/base/arena.h"
 
 #include "th01_video.h"
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
@@ -66,11 +67,7 @@ static void M_Lower(void *const user, const float minimum, const float delta)
 static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
 {
     *state = (CASE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     memset(&g_Player, 0, sizeof(g_Player));
     g_Player.left = left;
     g_Player.remaining_bombs = bombs;
@@ -124,32 +121,32 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
 {
     CASE state;
     M_Init(&state, 304, 1);
-    MISS miss = {};
+    memset(&g_Miss, 0, sizeof(g_Miss));
     Frame_Reset();
     const MISS_CONTEXT context = M_Context(&state, 1);
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
     uint32_t rng = g_Rng;
     const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
-    Miss_Begin(&miss, &context);
+    Miss_Begin(&context);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 352), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 368), expected_image % 14 + 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
-    CHECK(!Miss_Resume(&miss, &context));
+    CHECK(!Miss_Resume(&context));
     CHECK_EQ_INT(state.event_count, 0);
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
     Frame_VSync();
-    CHECK(!Miss_Resume(&miss, &context));
-    CHECK_EQ_INT(miss.phase, MISS_SHAKE_DELAY);
+    CHECK(!Miss_Resume(&context));
+    CHECK_EQ_INT(g_Miss.phase, MISS_SHAKE_DELAY);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(g_VSync.count1, 1);
     Frame_VSync();
-    CHECK(!Miss_Resume(&miss, &context));
-    CHECK_EQ_INT(miss.phase, MISS_SHAKE_WAIT);
-    CHECK_EQ_INT(miss.frame, 1);
+    CHECK(!Miss_Resume(&context));
+    CHECK_EQ_INT(g_Miss.phase, MISS_SHAKE_WAIT);
+    CHECK_EQ_INT(g_Miss.frame, 1);
     CHECK_EQ_INT(g_VSync.count1, 0);
     Frame_VSync();
-    CHECK(!Miss_Resume(&miss, &context));
+    CHECK(!Miss_Resume(&context));
     CHECK_EQ_INT(g_Video.scroll_top, 392);
     Arena_Free(&state.arena);
 }
@@ -176,15 +173,15 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 Frame_Reset();
                 g_VSync.count1 = counts[variant];
                 g_VSync.count2 = 32760;
-                MISS miss = {};
-                Miss_Begin(&miss, &context);
+                memset(&g_Miss, 0, sizeof(g_Miss));
+                Miss_Begin(&context);
                 const uint32_t rng = g_Rng;
                 int32_t edges = 0;
-                while (!Miss_Resume(&miss, &context) && edges < 100) {
-                    const MISS snapshot = miss;
+                while (!Miss_Resume(&context) && edges < 100) {
+                    const MISS snapshot = g_Miss;
                     const FRAME_VSYNC timing = g_VSync;
-                    CHECK(!Miss_Resume(&miss, &context));
-                    CHECK(memcmp(&miss, &snapshot, sizeof(MISS)) == 0);
+                    CHECK(!Miss_Resume(&context));
+                    CHECK(memcmp(&g_Miss, &snapshot, sizeof(MISS)) == 0);
                     CHECK(memcmp(&g_VSync, &timing, sizeof(FRAME_VSYNC)) == 0);
                     Frame_VSync();
                     edges++;
@@ -197,7 +194,8 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                     starts[x] + 160 >= 608 ? 608 : starts[x] + 160;
                 const int16_t left = starts[x] < 160 ? 0 : starts[x] - 160;
                 CHECK_EQ_INT(g_Player.left, right + 20 * ((304 - right) / 20));
-                CHECK_EQ_INT(miss.effect_left, left + 20 * ((304 - left) / 20));
+                CHECK_EQ_INT(
+                    g_Miss.effect_left, left + 20 * ((304 - left) / 20));
                 CHECK(g_Player.is_hit);
                 CHECK(g_Player.invincible);
                 CHECK_EQ_INT(g_Player.invincibility_time, 71);
@@ -220,7 +218,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK_EQ_INT(state.events[state.event_count - 2], 3);
                 CHECK_EQ_INT(state.events[state.event_count - 1], 4);
                 CHECK_EQ_INT(g_VSync.count1, 0);
-                CHECK(Miss_Resume(&miss, &context));
+                CHECK(Miss_Resume(&context));
                 Arena_Free(&state.arena);
             }
         }

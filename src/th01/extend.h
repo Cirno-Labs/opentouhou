@@ -4,7 +4,6 @@
 #include "th01/pellets.h"
 
 typedef struct {
-    HUD *hud;
     const HUD_CONTEXT *display;
     int8_t *resident_lives;
     int16_t *next;

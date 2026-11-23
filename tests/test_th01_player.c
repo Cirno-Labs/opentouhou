@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
@@ -45,11 +46,7 @@ static bool M_Bomb(void *const user, const int16_t frame)
 static CASE M_Case(void)
 {
     CASE state = {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     memset(&g_Player, 0, sizeof(g_Player));
     g_Player.left = 304;
     g_Player.remaining_bombs = 3;

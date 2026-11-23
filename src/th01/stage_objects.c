@@ -6,6 +6,9 @@
 
 #include <string.h>
 
+STAGE_OBJECTS g_StageObjects;
+STAGE_OBJECT_STORAGE g_StageObjectStorage;
+
 static const uint8_t m_CardAnimation[5][5] = {
     { 17, 18, 19, 20, 21 }, { 14, 15, 16, 18, 17 }, { 11, 12, 13, 15, 14 },
     { 8, 9, 10, 12, 11 },   { 8, 9, 10, 9, 8 },
@@ -37,8 +40,7 @@ static int32_t M_ObstacleImage(const STAGE_DATA_OBSTACLE type)
 }
 
 static void M_Snapshot(
-    STAGE_OBJECTS *const objects, const int16_t left, const int16_t top,
-    const int32_t slot)
+    const int16_t left, const int16_t top, const int32_t slot)
 {
     Video_SelectDrawingPage(1);
     const int32_t offset = M_Offset(left, top);
@@ -46,7 +48,7 @@ static void M_Snapshot(
         for (int32_t x = 0; x < 32; x++) {
             const int32_t at = offset + y * VIDEO_WIDTH + x;
             if (at >= 0 && at < VIDEO_PAGE_SIZE) {
-                objects->backgrounds[slot * 1024 + y * 32 + x] =
+                g_StageObjects.backgrounds[slot * 1024 + y * 32 + x] =
                     g_Video.pages[1][at];
             }
         }
@@ -78,57 +80,60 @@ RESULT StageObjects_ValidateSprites(
 }
 
 static void M_Init(
-    STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
-    const int16_t stage_id, const bool first_in_scene,
-    const ALLOCATOR *const allocator, STAGE_OBJECT_STORAGE *const storage,
+    const STAGE_DATA *const data, const int16_t stage_id,
+    const bool first_in_scene, const ALLOCATOR *const allocator,
     const PTN *const sprites)
 {
-    *objects = (STAGE_OBJECTS) {
-        .entrance_done = true,
-        .vertical_bar_active = objects->vertical_bar_active,
-        .portal_active = objects->portal_active,
-        .entered_portal = objects->entered_portal,
-        .destination_left = objects->destination_left,
-        .destination_top = objects->destination_top,
-    };
+    const STAGE_OBJECTS previous = g_StageObjects;
+    memset(&g_StageObjects, 0, sizeof(g_StageObjects));
+    g_StageObjects.entrance_done = true;
+    g_StageObjects.vertical_bar_active = previous.vertical_bar_active;
+    g_StageObjects.portal_active = previous.portal_active;
+    g_StageObjects.entered_portal = previous.entered_portal;
+    g_StageObjects.destination_left = previous.destination_left;
+    g_StageObjects.destination_top = previous.destination_top;
     if (stage_id % 5 == 4) {
         return;
     }
     const STAGE_DATA_STAGE *const layout = &data->stages[stage_id % 5];
     for (int32_t y = 0; y < 10; y++) {
         for (int32_t x = 0; x < 20; x++) {
-            objects->card_count += layout->cells[y][x].card;
-            objects->obstacle_count +=
+            g_StageObjects.card_count += layout->cells[y][x].card;
+            g_StageObjects.obstacle_count +=
                 layout->cells[y][x].obstacle != STAGE_DATA_OBSTACLE_NONE;
         }
     }
-    if (storage != nullptr) {
-        objects->cards = storage->cards;
-        objects->obstacles = storage->obstacles;
-        objects->backgrounds = storage->backgrounds;
+    if (allocator == nullptr) {
+        g_StageObjects.cards = g_StageObjectStorage.cards;
+        g_StageObjects.obstacles = g_StageObjectStorage.obstacles;
+        g_StageObjects.backgrounds = g_StageObjectStorage.backgrounds;
         memset(
-            objects->cards, 0,
-            (size_t)objects->card_count * sizeof(STAGE_CARD));
+            g_StageObjects.cards, 0,
+            (size_t)g_StageObjects.card_count * sizeof(STAGE_CARD));
         memset(
-            objects->obstacles, 0,
-            (size_t)objects->obstacle_count * sizeof(STAGE_OBSTACLE));
+            g_StageObjects.obstacles, 0,
+            (size_t)g_StageObjects.obstacle_count * sizeof(STAGE_OBSTACLE));
         memset(
-            objects->backgrounds, 0,
-            (size_t)(objects->card_count + objects->obstacle_count) * 1024);
+            g_StageObjects.backgrounds, 0,
+            (size_t)(g_StageObjects.card_count + g_StageObjects.obstacle_count)
+                * 1024);
     } else {
-        if (objects->card_count + objects->obstacle_count != 0) {
-            objects->backgrounds = Allocator_AllocZ(
+        if (g_StageObjects.card_count + g_StageObjects.obstacle_count != 0) {
+            g_StageObjects.backgrounds = Allocator_AllocZ(
                 allocator,
-                (size_t)(objects->card_count + objects->obstacle_count) * 1024);
+                (size_t)(g_StageObjects.card_count
+                         + g_StageObjects.obstacle_count)
+                    * 1024);
         }
-        if (objects->card_count != 0) {
-            objects->cards = Allocator_AllocZ(
-                allocator, (size_t)objects->card_count * sizeof(STAGE_CARD));
-        }
-        if (objects->obstacle_count != 0) {
-            objects->obstacles = Allocator_AllocZ(
+        if (g_StageObjects.card_count != 0) {
+            g_StageObjects.cards = Allocator_AllocZ(
                 allocator,
-                (size_t)objects->obstacle_count * sizeof(STAGE_OBSTACLE));
+                (size_t)g_StageObjects.card_count * sizeof(STAGE_CARD));
+        }
+        if (g_StageObjects.obstacle_count != 0) {
+            g_StageObjects.obstacles = Allocator_AllocZ(
+                allocator,
+                (size_t)g_StageObjects.obstacle_count * sizeof(STAGE_OBSTACLE));
         }
     }
     MasterRng_Next(&g_Rng);
@@ -136,14 +141,14 @@ static void M_Init(
     for (int32_t y = 0; y < 10; y++) {
         for (int32_t x = 0; x < 20; x++) {
             if (layout->cells[y][x].card) {
-                objects->cards[card] = (STAGE_CARD) {
+                g_StageObjects.cards[card] = (STAGE_CARD) {
                     .left = (int16_t)(x * 32),
                     .top = (int16_t)(y * 32 + 64),
                     .hp = layout->cells[y][x].card_extra_hp,
                 };
                 M_Snapshot(
-                    objects, objects->cards[card].left,
-                    objects->cards[card].top, card);
+                    g_StageObjects.cards[card].left,
+                    g_StageObjects.cards[card].top, card);
                 card++;
             }
         }
@@ -155,65 +160,62 @@ static void M_Init(
             if (type != STAGE_DATA_OBSTACLE_NONE) {
                 const int16_t left = (int16_t)(x * 32);
                 const int16_t top = (int16_t)(y * 32 + 64);
-                objects->obstacles[obstacle] =
+                g_StageObjects.obstacles[obstacle] =
                     (STAGE_OBSTACLE) { .left = left, .top = top, .type = type };
-                M_Snapshot(objects, left, top, obstacle + objects->card_count);
+                M_Snapshot(left, top, obstacle + g_StageObjects.card_count);
                 Sprite_PtnPut(sprites, M_ObstacleImage(type), -1, left, top);
                 obstacle++;
             }
         }
     }
-    objects->entrance_done = first_in_scene;
+    g_StageObjects.entrance_done = first_in_scene;
     if (first_in_scene) {
-        for (int32_t i = 0; i < objects->card_count; i++) {
-            const STAGE_CARD *const c = &objects->cards[i];
+        for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
+            const STAGE_CARD *const c = &g_StageObjects.cards[i];
             Sprite_PtnPut(
                 sprites, StageObjects_CardImage(c->hp, 0), -1, c->left, c->top);
         }
     }
 }
 
-void StageObjects_Prepare(
-    STAGE_OBJECT_STORAGE *const storage, const ALLOCATOR *const allocator)
+void StageObjects_Prepare(const ALLOCATOR *const allocator)
 {
     const size_t cells = STAGE_DATA_ROWS * STAGE_DATA_COLUMNS;
-    *storage = (STAGE_OBJECT_STORAGE) {
-        .cards = Allocator_Alloc(allocator, cells * sizeof(STAGE_CARD)),
-        .obstacles = Allocator_Alloc(allocator, cells * sizeof(STAGE_OBSTACLE)),
-        .backgrounds = Allocator_Alloc(allocator, cells * 2 * 1024),
-    };
+    g_StageObjectStorage.cards =
+        Allocator_Alloc(allocator, cells * sizeof(STAGE_CARD));
+    g_StageObjectStorage.obstacles =
+        Allocator_Alloc(allocator, cells * sizeof(STAGE_OBSTACLE));
+    g_StageObjectStorage.backgrounds =
+        Allocator_Alloc(allocator, cells * 2 * 1024);
 }
 
 void StageObjects_Init(
-    STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
-    const int16_t stage_id, const bool first_in_scene,
-    const ALLOCATOR *const allocator, const PTN *const sprites)
+    const STAGE_DATA *const data, const int16_t stage_id,
+    const bool first_in_scene, const ALLOCATOR *const allocator,
+    const PTN *const sprites)
 {
-    M_Init(
-        objects, data, stage_id, first_in_scene, allocator, nullptr, sprites);
+    M_Init(data, stage_id, first_in_scene, allocator, sprites);
 }
 
 void StageObjects_InitPrepared(
-    STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
-    const int16_t stage_id, const bool first_in_scene,
-    STAGE_OBJECT_STORAGE *const storage, const PTN *const sprites)
+    const STAGE_DATA *const data, const int16_t stage_id,
+    const bool first_in_scene, const PTN *const sprites)
 {
-    M_Init(objects, data, stage_id, first_in_scene, nullptr, storage, sprites);
+    M_Init(data, stage_id, first_in_scene, nullptr, sprites);
 }
 
-bool StageObjects_ResumeEntrance(
-    STAGE_OBJECTS *const objects, const PTN *const sprites)
+bool StageObjects_ResumeEntrance(const PTN *const sprites)
 {
-    if (objects->entrance_done) {
+    if (g_StageObjects.entrance_done) {
         return true;
     }
-    if (objects->entrance_waiting && !Frame_DelayReady(1)) {
+    if (g_StageObjects.entrance_waiting && !Frame_DelayReady(1)) {
         return false;
     }
     for (;;) {
         int32_t done = 0;
-        for (int32_t i = 0; i < objects->card_count; i++) {
-            STAGE_CARD *const card = &objects->cards[i];
+        for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
+            STAGE_CARD *const card = &g_StageObjects.cards[i];
             if (card->entrance_frame == -1) {
                 done++;
             }
@@ -231,15 +233,16 @@ bool StageObjects_ResumeEntrance(
                 card->entrance_frame = -1;
             }
         }
-        if (done >= objects->card_count) {
-            objects->entrance_done = true;
+        if (done >= g_StageObjects.card_count) {
+            g_StageObjects.entrance_done = true;
             return true;
         }
-        if (objects->entrance_total < objects->card_count) {
-            objects->cards[objects->entrance_total].entrance_frame = 12;
+        if (g_StageObjects.entrance_total < g_StageObjects.card_count) {
+            g_StageObjects.cards[g_StageObjects.entrance_total].entrance_frame =
+                12;
         }
-        objects->entrance_total++;
-        objects->entrance_waiting = true;
+        g_StageObjects.entrance_total++;
+        g_StageObjects.entrance_waiting = true;
         if (!Frame_DelayReady(1)) {
             return false;
         }
@@ -247,9 +250,8 @@ bool StageObjects_ResumeEntrance(
 }
 
 void StageObjects_PutBackgroundAndObject(
-    const STAGE_OBJECTS *const objects, const PTN *const sprites,
-    const int16_t left, const int16_t top, const int32_t image,
-    const int32_t slot)
+    const PTN *const sprites, const int16_t left, const int16_t top,
+    const int32_t image, const int32_t slot)
 {
     const int32_t offset = M_Offset(left, top);
     for (int32_t y = 0; y < 32; y++) {
@@ -261,36 +263,37 @@ void StageObjects_PutBackgroundAndObject(
                     ? PTN_TRANSPARENT
                     : sprites->pixels[image * 1024 + pixel];
                 g_Video.pages[g_Video.drawing_page][at] = fg == PTN_TRANSPARENT
-                    ? objects->backgrounds[slot * 1024 + pixel]
+                    ? g_StageObjects.backgrounds[slot * 1024 + pixel]
                     : fg;
             }
         }
     }
 }
 
-void StageObjects_PutAllBackgrounds(const STAGE_OBJECTS *const objects)
+void StageObjects_PutAllBackgrounds(void)
 {
-    for (int32_t i = 0; i < objects->card_count; i++) {
+    for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
         StageObjects_PutBackgroundAndObject(
-            objects, nullptr, objects->cards[i].left, objects->cards[i].top,
+            nullptr, g_StageObjects.cards[i].left, g_StageObjects.cards[i].top,
             STAGE_OBJECT_NONE, i);
     }
-    for (int32_t i = 0; i < objects->obstacle_count; i++) {
+    for (int32_t i = 0; i < g_StageObjects.obstacle_count; i++) {
         StageObjects_PutBackgroundAndObject(
-            objects, nullptr, objects->obstacles[i].left,
-            objects->obstacles[i].top, STAGE_OBJECT_NONE,
-            i + objects->card_count);
+            nullptr, g_StageObjects.obstacles[i].left,
+            g_StageObjects.obstacles[i].top, STAGE_OBJECT_NONE,
+            i + g_StageObjects.card_count);
     }
 }
 
-void StageObjects_CopyToBackground(const STAGE_OBJECTS *const objects)
+void StageObjects_CopyToBackground(void)
 {
-    for (int32_t i = 0; i < objects->obstacle_count; i++) {
-        M_Copy(objects->obstacles[i].left, objects->obstacles[i].top);
+    for (int32_t i = 0; i < g_StageObjects.obstacle_count; i++) {
+        M_Copy(
+            g_StageObjects.obstacles[i].left, g_StageObjects.obstacles[i].top);
         Video_SelectDrawingPage(0);
     }
-    for (int32_t i = 0; i < objects->card_count; i++) {
-        M_Copy(objects->cards[i].left, objects->cards[i].top);
+    for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
+        M_Copy(g_StageObjects.cards[i].left, g_StageObjects.cards[i].top);
         Video_SelectDrawingPage(0);
     }
 }

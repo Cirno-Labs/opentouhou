@@ -16,6 +16,8 @@ typedef struct {
     const SCENE_DATA *active;
 } SCENE_STATE;
 
+extern SCENE_STATE g_Scene;
+
 // Loads the five immutable layouts for scene 0..6 into the caller's grouped
 // allocator. Derives ST{id}.GRP and ST{id}.MDT from id, ignoring header names.
 // LoadReader keeps its reader open; Load opens STAGE{id}.DAT through VFS and
@@ -29,4 +31,4 @@ RESULT Scene_Load(
 // Selects real cached layouts and their derived graphics/music names without
 // reading files, rendering, resetting actors or allocating. The descriptor
 // must have loaded successfully and remains borrowed. Re-selection is valid.
-void Scene_Activate(SCENE_STATE *state, const SCENE_DATA *scene);
+void Scene_Activate(const SCENE_DATA *scene);

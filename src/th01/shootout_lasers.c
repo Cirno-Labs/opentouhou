@@ -5,6 +5,8 @@
 
 #include "core/base/assert.h"
 
+SHOOTOUT_LASERS g_ShootoutLasers;
+
 static int32_t M_Floor(const int32_t value, const int32_t divisor)
 {
     return value / divisor - (value % divisor < 0);
@@ -143,20 +145,18 @@ void ShootoutLasers_Update(
     M_Ray(laser, assets, true);
 }
 
-void ShootoutLasers_UpdateAll(
-    SHOOTOUT_LASERS *const lasers, const SHOOTOUT_LASERS_ASSETS *const assets)
+void ShootoutLasers_UpdateAll(const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     for (int32_t i = 0; i < SHOOTOUT_LASERS_COUNT; i++) {
-        ShootoutLasers_Update(&lasers->slots[i], assets);
+        ShootoutLasers_Update(&g_ShootoutLasers.slots[i], assets);
     }
 }
 
-void ShootoutLasers_EraseAndReset(
-    SHOOTOUT_LASERS *const lasers, const int32_t count)
+void ShootoutLasers_EraseAndReset(const int32_t count)
 {
     ASSERT(count >= 0 && count <= SHOOTOUT_LASERS_COUNT);
     for (int32_t i = 0; i < count; i++) {
-        SHOOTOUT_LASER *const laser = &lasers->slots[i];
+        SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[i];
         if (laser->alive) {
             Video_LineErase(
                 Math16_Wrap(laser->start_left), Math16_Wrap(laser->start_y),

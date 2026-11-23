@@ -4,9 +4,11 @@
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
 
+STAGE_GAMEPLAY g_Stage;
+
 static void M_ScorePopups(const STAGE_CONTEXT *const context)
 {
-    STAGE_OBJECTS *const objects = context->objects;
+    STAGE_OBJECTS *const objects = &g_StageObjects;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
         if (card->score == 0 || card->flip_frame < 15) {
@@ -59,8 +61,8 @@ RESULT Stage_ValidateScoreFont(const GAME_TEXT_FONT *const font)
 
 void Stage_HitTestCards(const STAGE_CONTEXT *const context)
 {
-    STAGE_OBJECTS *const objects = context->objects;
-    STAGE_GAMEPLAY *const game = context->gameplay;
+    STAGE_OBJECTS *const objects = &g_StageObjects;
+    STAGE_GAMEPLAY *const game = &g_Stage;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
         const int32_t dx = card->left - g_Orb.left;
@@ -105,7 +107,7 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
 
 void Stage_UpdateCards(const STAGE_CONTEXT *const context)
 {
-    STAGE_OBJECTS *const objects = context->objects;
+    STAGE_OBJECTS *const objects = &g_StageObjects;
     M_ScorePopups(context);
     int32_t removed = 0;
     for (int32_t i = 0; i < objects->card_count; i++) {
@@ -114,11 +116,11 @@ void Stage_UpdateCards(const STAGE_CONTEXT *const context)
             if (card->flip_frame < 25 && card->flip_frame % 6 == 0) {
                 Video_SelectDrawingPage(1);
                 StageObjects_PutBackgroundAndObject(
-                    objects, context->sprites, card->left, card->top,
+                    context->sprites, card->left, card->top,
                     StageObjects_CardImage(card->hp, card->flip_frame), i);
                 Video_SelectDrawingPage(0);
                 StageObjects_PutBackgroundAndObject(
-                    objects, context->sprites, card->left, card->top,
+                    context->sprites, card->left, card->top,
                     StageObjects_CardImage(card->hp, card->flip_frame), i);
             }
             card->flip_frame++;
@@ -149,7 +151,7 @@ void Stage_UpdateCards(const STAGE_CONTEXT *const context)
         removed += card->flag == STAGE_CARD_REMOVED;
     }
     if (removed == objects->card_count) {
-        context->gameplay->cleared = true;
+        g_Stage.cleared = true;
         g_Player.is_hit = true;
     }
 }

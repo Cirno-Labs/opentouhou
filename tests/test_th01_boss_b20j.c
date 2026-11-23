@@ -8,7 +8,10 @@
 
 #include "core/base/arena.h"
 
+#include "th01_world.h"
 #include "test.h"
+
+#include <string.h>
 
 static void M_Assets(B20J_ASSETS *const a, ARENA *const arena)
 {
@@ -45,8 +48,8 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     M_Assets(&assets, &arena);
     PALETTE_STATE palette = {};
     palette.saved.colors[10][1] = 7;
-    HUD_HP health = {};
-    const BOSS_HIT_CONTEXT hit = { .palette = &palette, .health = &health };
+    memset(&g_HudHp, 0, sizeof(g_HudHp));
+    const BOSS_HIT_CONTEXT hit = { .palette = &palette };
     const B20J_CONTEXT c = { .assets = &assets, .hit = &hit };
     B20J_Init();
     g_B20J.hit = (BOSS_HIT) { 27, true };
@@ -64,8 +67,8 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     CHECK_EQ_INT(g_B20J.face_expression, 0);
     CHECK(g_B20J.direction_can_change);
     CHECK(!g_B20J.finished);
-    CHECK_EQ_INT(health.first_white, 16);
-    CHECK_EQ_INT(health.first_redwhite, 10);
+    CHECK_EQ_INT(g_HudHp.first_white, 16);
+    CHECK_EQ_INT(g_HudHp.first_redwhite, 10);
     CHECK_EQ_INT(g_B20J.boss_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_B20J.hit.frame, 27);
     CHECK(g_B20J.hit.invincible);
@@ -97,14 +100,9 @@ TEST(validation_requires_all_sixteen_images_and_masks)
 typedef struct {
     B20J_ASSETS assets;
     PALETTE_STATE palette;
-    HUD_HP health;
-    HUD hud;
     HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B20J_CONTEXT context;
-    SHOOTOUT_LASERS lasers;
-    STAGE_OBJECTS objects;
-    STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage;
     uint32_t high_score;
@@ -138,18 +136,14 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     M_Assets(&f->assets, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
     Tram_Init(a);
     Palette_Init(&f->palette);
-    Hud_Init(&f->hud, a);
-    HudHp_Init(&f->health, a);
+    Hud_Init(a);
+    HudHp_Init(a);
     GAME_TEXT_GLYPH glyphs[10] = {};
     for (uint32_t i = 0; i < 10; i++) {
         glyphs[i].codepoint = 0xff10 + i;
@@ -168,13 +162,10 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
-                                 .gameplay = &f->gameplay,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                  .hud = &f->hud,
                                   .display = &f->display,
-                                  .health = &f->health,
                                   .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678,
@@ -182,8 +173,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .user = f };
     f->context = (B20J_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit,
-                                  .lasers = &f->lasers,
-                                  .objects = &f->objects,
                                   .game_cleared = &f->cleared,
                                   .audio = M_Audio };
     B20J_Init();
@@ -200,8 +189,8 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     f.assets.scroll.palette[10] = (GFX_COLOR) { 0, 119, 0, 255 };
     f.assets.upper.palette[10] = (GFX_COLOR) { 221, 0, 0, 255 };
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 34, 51, 68, 255 };
-    f.objects.portal_active = true;
-    f.objects.destination_left = 77;
+    g_StageObjects.portal_active = true;
+    g_StageObjects.destination_left = 77;
     g_Rng = 91;
     Video_SelectDrawingPage(1);
     const size_t used = arena.used;
@@ -209,8 +198,8 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(g_B20J.head.sprites.width_bytes, 10);
     CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_Rng, 91);
-    CHECK(f.objects.entrance_done && f.objects.portal_active);
-    CHECK_EQ_INT(f.objects.destination_left, 77);
+    CHECK(g_StageObjects.entrance_done && g_StageObjects.portal_active);
+    CHECK_EQ_INT(g_StageObjects.destination_left, 77);
     CHECK_EQ_INT(f.audio_count, 2);
     CHECK_EQ_INT(f.audio[0], B20J_AUDIO_LOAD_MUSIC);
     CHECK_EQ_INT(f.audio[1], B20J_AUDIO_PLAY);
@@ -263,7 +252,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
                     g_Pellets.slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
-                    f.lasers.slots[i].alive = false;
+                    g_ShootoutLasers.slots[i].alive = false;
                 }
                 Frame_VSync();
                 CHECK(++frames < 1500);
@@ -287,7 +276,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     g_B20J.pattern = 99;
     g_B20J.frame = 0;
     g_B20J.hp = 0;
-    f.gameplay.score = UINT32_MAX - 100;
+    g_Stage.score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
     f.palette.saved.colors[7][0] = 15;
     Frame_Reset();
@@ -307,7 +296,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
         CHECK(++polls < 1200);
     }
     CHECK(f.cleared && g_B20J.finished && !g_B20J.defeating);
-    CHECK_EQ_INT(f.gameplay.score, 49899);
+    CHECK_EQ_INT(g_Stage.score, 49899);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(f.audio_count, 2);
     CHECK_EQ_INT(f.audio[0], B20J_AUDIO_STOP);
@@ -363,7 +352,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         Frame_Reset();
         CHECK(B20J_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B20J.hp, i < 2 ? 17 : 18);
-        CHECK_EQ_INT(f.gameplay.score, i < 2 ? 10000 : 0);
+        CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
         CHECK_EQ_INT(f.effects[3], i < 2 ? 1 : 0);
     }
     Arena_Free(&arena);
@@ -404,7 +393,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     }
     CHECK_EQ_INT(images, 9);
     CHECK_EQ_INT(g_B20J.hp, 0);
-    CHECK_EQ_INT(f.gameplay.score, 60000);
+    CHECK_EQ_INT(g_Stage.score, 60000);
     CHECK_EQ_INT(f.effects[3], 1);
     CHECK(f.cleared && g_B20J.finished);
     CHECK_EQ_INT(arena.used, used);

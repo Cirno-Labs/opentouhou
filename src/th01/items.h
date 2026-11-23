@@ -24,8 +24,9 @@ typedef struct {
     ITEM bombs[ITEMS_BOMB_COUNT], points[ITEMS_POINT_COUNT];
 } ITEMS;
 
+extern ITEMS g_Items;
+
 typedef struct {
-    STAGE_GAMEPLAY *gameplay;
     uint16_t *point_value;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
@@ -46,13 +47,13 @@ RESULT Items_ValidateAssets(const PTN *sprites, const GAME_TEXT_FONT *font);
 // Adds at the first free slot using current card coordinates, without RNG.
 // A full pool ignores the request. Coordinates can be borrowed from the
 // Stage item_add callback; no stage pointer is retained.
-void Items_Add(ITEMS *items, int16_t left, int16_t top, bool bomb);
+void Items_Add(int16_t left, int16_t top, bool bomb);
 
 // Clears flags only. Does not erase or reset the shared point value.
-void Items_Reset(ITEMS *items);
+void Items_Reset(void);
 
 // Draws visible falling/bouncing sprites, bombs before points.
-void Items_Render(const ITEMS *items, const PTN *sprites);
+void Items_Render(const PTN *sprites);
 
 // Runs after the player update: all bomb slots, then all point slots.
 // Requires validated assets and all synchronous callbacks. HUD observes
@@ -63,4 +64,4 @@ void Items_Render(const ITEMS *items, const PTN *sprites);
 // popup immediately. Updates allocate nothing and read no files, font handles
 // or devices. The gameplay scene must supply real HUD/effect consumers and call
 // order.
-void Items_UpdateAndRender(ITEMS *items, const ITEM_CONTEXT *context);
+void Items_UpdateAndRender(const ITEM_CONTEXT *context);

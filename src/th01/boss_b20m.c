@@ -174,8 +174,8 @@ void B20M_Setup(const B20M_CONTEXT *const c)
     g_B20M.frame = 0;
     g_B20M.finished = false;
     g_B20M.boss_palette = c->hit->palette->saved;
-    c->hit->health->first_white = 8;
-    c->hit->health->first_redwhite = 2;
+    g_HudHp.first_white = 8;
+    g_HudHp.first_redwhite = 2;
 }
 
 static uint16_t M_Random(const B20M_CONTEXT *const c)
@@ -345,8 +345,8 @@ static void M_Laser(
     const uint8_t color, const int16_t age, const int16_t width)
 {
     ShootoutLasers_Spawn(
-        &c->lasers->slots[((index % 10) + 10) % 10], x, y, tx, ty, speed, color,
-        age, width);
+        &g_ShootoutLasers.slots[((index % 10) + 10) % 10], x, y, tx, ty, speed,
+        color, age, width);
 }
 static void M_Erase(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y)
@@ -741,7 +741,7 @@ static void M_GustFinish(const B20M_CONTEXT *const c, const int16_t image)
     g_B20M.stage_palette = c->hit->palette->saved;
     Video_SelectDrawingPage(0);
     M_Hud(c);
-    HudHp_Rerender(c->hit->health, g_B20M.hp);
+    HudHp_Rerender(g_B20M.hp);
     g_B20M.frame = 0;
 }
 static bool M_Gust(const B20M_CONTEXT *const c)
@@ -1744,13 +1744,12 @@ static void M_Leaves(const B20M_CONTEXT *const c, const int16_t interval)
 }
 static void M_Hud(const B20M_CONTEXT *const c)
 {
-    const TIMER_CONTEXT timer = { .hud = c->hit->hud,
-                                  .display = c->hit->display,
+    const TIMER_CONTEXT timer = { .display = c->hit->display,
                                   .effect = c->hit->effect,
                                   .user = c->hit->user };
     *c->first_stage = true;
     StageTimer_Redraw(&timer, true, *c->timer_initialized, 0);
-    Hud_ScoreAndCombo(c->hit->hud, c->hit->display);
+    Hud_ScoreAndCombo(c->hit->display);
 }
 void B20M_BeginEntrance(const B20M_CONTEXT *const c)
 {
@@ -1763,7 +1762,7 @@ void B20M_BeginEntrance(const B20M_CONTEXT *const c)
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, true);
     Video_SelectDrawingPage(0);
-    StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr);
+    StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
     M_Audio(c, B20M_AUDIO_LOAD_MUSIC);
     M_Audio(c, B20M_AUDIO_PLAY);
     Tram_Clear();
@@ -1879,7 +1878,7 @@ static void M_BeginTransform(const B20M_CONTEXT *const c)
     g_B20M.hit.frame = 399;
     Shots_EraseAndReset(c->hit->shots_output);
     Pellets_EraseAndResetMoving();
-    ShootoutLasers_EraseAndReset(c->lasers, 10);
+    ShootoutLasers_EraseAndReset(10);
     ORB *const orb = &g_Orb;
     orb->left = 600;
     orb->top = 280;
@@ -1964,8 +1963,8 @@ static bool M_Transform(const B20M_CONTEXT *const c, const uint64_t tick)
             g_B20M.boss_palette = c->hit->palette->saved;
             g_B20M.stage_palette = g_B20M.boss_palette;
             g_B20M.hp = 6;
-            c->hit->health->first_white = 10;
-            c->hit->health->first_redwhite = 3;
+            g_HudHp.first_white = 10;
+            g_HudHp.first_redwhite = 3;
             g_B20M.hp_bar_filled = false;
             M_Leaves(c, 999);
             g_B20M.sequence = B20M_SEQUENCE_NONE;
@@ -2030,7 +2029,7 @@ static bool M_Defeat(const B20M_CONTEXT *const c, const uint64_t tick)
             continue;
         case B20M_DEFEAT_BONUS:
             for (int32_t i = 0; i < 5; i++) {
-                c->hit->display->gameplay->score += 10000;
+                g_Stage.score += 10000;
             }
             *c->game_cleared = true;
             g_B20M.finished = true;
@@ -2327,8 +2326,7 @@ bool B20M_UpdateAndRender(const B20M_CONTEXT *const c, const uint64_t tick)
     if ((g_B20M.phase == B20M_PHASE_BIRDS
          || g_B20M.phase == B20M_PHASE_SECOND_FORM)
         && !g_B20M.hp_bar_filled) {
-        g_B20M.hp_bar_filled =
-            HudHp_Increment(c->hit->health, g_B20M.hp, g_B20M.frame);
+        g_B20M.hp_bar_filled = HudHp_Increment(g_B20M.hp, g_B20M.frame);
     }
     g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
     g_B20M.hit.frame = Math16_Wrap(g_B20M.hit.frame + 1);

@@ -12,14 +12,14 @@ int16_t Extend_NextForScore(const uint32_t resident_score)
 void Extend_UpdateAndRender(const EXTEND_CONTEXT *const c)
 {
     const uint32_t threshold = (uint32_t)(int32_t)*c->next * UINT32_C(400000);
-    if (c->display->gameplay->score < threshold) {
+    if (g_Stage.score < threshold) {
         return;
     }
     int16_t *const lives = c->display->remaining_lives;
     if (*lives < 6) {
         (*lives)++;
         *c->resident_lives = (int8_t)*lives;
-        Hud_LivesPut(c->hud, c->display, (int16_t)(*lives - 1));
+        Hud_LivesPut(c->display, (int16_t)(*lives - 1));
         c->effect(c->user, 15);
         Pellets_SpeedRaise(1);
     }

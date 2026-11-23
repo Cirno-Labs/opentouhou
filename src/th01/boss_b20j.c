@@ -114,8 +114,8 @@ void B20J_Setup(const B20J_CONTEXT *const c)
     g_B20J.face_expression = 0;
     g_B20J.face_direction = 2;
     g_B20J.finished = false;
-    c->hit->health->first_white = 16;
-    c->hit->health->first_redwhite = 10;
+    g_HudHp.first_white = 16;
+    g_HudHp.first_redwhite = 10;
 }
 
 static uint16_t M_Random(const B20J_CONTEXT *const c)
@@ -277,7 +277,7 @@ void B20J_BeginEntrance(const B20J_CONTEXT *const c)
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->scroll, false);
     g_B20J.stage_palette = c->hit->palette->saved;
-    StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr);
+    StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, false);
     Video_SelectDrawingPage(0);
@@ -995,8 +995,8 @@ static void M_Lasers(const B20J_CONTEXT *const c)
         const int16_t target =
             Math16_Wrap(g_B20J.laser_right_to_left ? 640 - distance : distance);
         ShootoutLasers_Spawn(
-            &c->lasers->slots[(g_B20J.frame / 10) % 10], 410, 70, target, 400,
-            68, 7, 30, 5);
+            &g_ShootoutLasers.slots[(g_B20J.frame / 10) % 10], 410, 70, target,
+            400, 68, 7, 30, 5);
         Boss_Effect(c->hit, 6);
         if ((!g_B20J.laser_right_to_left && target >= 640)
             || (g_B20J.laser_right_to_left && target <= 0)) {
@@ -1123,7 +1123,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
             continue;
         case B20J_DEFEAT_CLEAR:
             for (int32_t i = 0; i < 5; i++) {
-                c->hit->display->gameplay->score += 10000;
+                g_Stage.score += 10000;
             }
             *c->game_cleared = true;
             g_B20J.finished = true;
@@ -1228,8 +1228,7 @@ bool B20J_UpdateAndRender(const B20J_CONTEXT *const c)
         return true;
     }
     if (g_B20J.phase == B20J_PHASE_PATTERNS_1 && !g_B20J.hp_bar_filled) {
-        g_B20J.hp_bar_filled =
-            HudHp_Increment(c->hit->health, g_B20J.hp, g_B20J.frame);
+        g_B20J.hp_bar_filled = HudHp_Increment(g_B20J.hp, g_B20J.frame);
     }
     g_B20J.frame = Math16_Wrap(g_B20J.frame + 1);
     g_B20J.hit.frame = Math16_Wrap(g_B20J.hit.frame + 1);

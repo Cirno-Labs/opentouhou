@@ -97,8 +97,6 @@ extern B20J g_B20J;
 typedef struct {
     const B20J_ASSETS *assets;
     const BOSS_HIT_CONTEXT *hit;
-    SHOOTOUT_LASERS *lasers;
-    STAGE_OBJECTS *objects;
     bool *game_cleared;
     void (*audio)(void *user, B20J_AUDIO_ACTION action);
 } B20J_CONTEXT;
