@@ -1,5 +1,5 @@
 # The tests of core/base, core/args, core/hash, core/json, core/io,
-# core/archive/zip and the tools are in the suite core or tools. Every build
+# core/archive and the tools are in the suite core or tools. Every build
 # runs them, whatever programs it has.
 
 # The tests link the external libraries from one shared library instead of
@@ -93,6 +93,19 @@ test(
     c_args: core_include,
     implicit_include_directories: false,
     link_with: [core_args_lib, core_base_lib],
+  ),
+  suite: ['unit', 'core'],
+)
+
+test(
+  'core/archive/hdi',
+  executable(
+    'test_archive_hdi',
+    'test_archive_hdi.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_archive_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3],
   ),
   suite: ['unit', 'core'],
 )
