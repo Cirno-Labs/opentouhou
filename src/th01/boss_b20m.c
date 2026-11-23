@@ -7,6 +7,7 @@
 #include "th01/finite.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
+#include "th01/sprite_sheet.h"
 
 #include <string.h>
 
@@ -49,37 +50,31 @@ static RESULT M_LoadGrc(
     Reader_Close(&reader);
     return result;
 }
-static RESULT M_LoadMasks(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, B20M_ASSETS *const out)
+static RESULT M_LoadLeaf(
+    VFS *const vfs, const char *const name, const ALLOCATOR *const a,
+    const uint8_t **const out)
 {
-    READER reader;
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
+    uint8_t *leaf;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, name, 8, 8, a, &leaf, &size));
+    FAIL_IF(size != 8, "Invalid %s size", name);
+    *out = leaf;
+    return OK;
+}
+static RESULT M_LoadMasks(
+    VFS *const vfs, const ALLOCATOR *const a, B20M_ASSETS *const out)
+{
     INTERLEAVE_ASSETS *interleave;
-    RESULT result =
-        Interleave_LoadAssets(&reader, scratch, scratch_size, a, &interleave);
-    READER image;
-    if (IS_OK(result)) {
-        Reader_Seek(&reader, 0);
-        result = ReiidenImage_Open(&reader, scratch, scratch_size, &image);
-    }
-    uint8_t masks[40];
-    if (IS_OK(result)) {
-        Reader_Seek(&image, 0x39252);
-        Reader_ReadBytes(&image, masks, 16);
-        Reader_Seek(&image, 0x3967d);
-        Reader_ReadBytes(&image, masks + 16, 24);
-        result = Reader_Result(&image);
-    }
-    Reader_Close(&reader);
-    MUST(result);
-    uint8_t *const storage = Allocator_Alloc(a, sizeof(masks));
-    memcpy(storage, masks, sizeof(masks));
-    out->star = storage;
-    out->flake = storage + 8;
-    out->spark = storage + 16;
-    out->leaf_left = storage + 24;
-    out->leaf_right = storage + 32;
+    MUST(Interleave_LoadAssets(vfs, a, &interleave));
+    uint8_t *shapes;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, "shape8x8.bmp", 8, 8, a, &shapes, &size));
+    FAIL_IF(size != 7 * 8, "Invalid shape8x8.bmp size");
+    MUST(M_LoadLeaf(vfs, "leaf_s.bmp", a, &out->spark));
+    MUST(M_LoadLeaf(vfs, "leaf_l.bmp", a, &out->leaf_left));
+    MUST(M_LoadLeaf(vfs, "leaf_r.bmp", a, &out->leaf_right));
+    out->star = shapes + 8;
+    out->flake = shapes + 2 * 8;
     out->interleave = interleave;
     return OK;
 }
@@ -122,8 +117,7 @@ RESULT B20M_ValidateAssets(const B20M_ASSETS *const a)
     return OK;
 }
 RESULT B20M_LoadAssets(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, B20M_ASSETS *const out)
+    VFS *const vfs, const ALLOCATOR *const a, B20M_ASSETS *const out)
 {
     *out = (B20M_ASSETS) {};
     B20M_ASSETS loaded = {};
@@ -142,7 +136,7 @@ RESULT B20M_LoadAssets(
     for (int32_t i = 0; i < 6; i++) {
         MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.backgrounds[i]));
     }
-    MUST(M_LoadMasks(vfs, scratch, scratch_size, a, &loaded));
+    MUST(M_LoadMasks(vfs, a, &loaded));
     MUST(B20M_ValidateAssets(&loaded));
     *out = loaded;
     return OK;

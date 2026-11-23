@@ -18,10 +18,9 @@ TOUHOU.DAT:
   executable.
 - macOS: oth01.app and othpatch
 
-Then start the program. It checks that REIIDEN.EXE is the supported
-version. The program never changes the original game files. Keep
-othpatch beside the program, under its supplied name, so that it can
-find and update the game.
+Then start the program. The program never changes the original game
+files. Keep othpatch beside the program, under its supplied name, so
+that it can find and update the game.
 
 In the commands below, use oth01.exe and othpatch.exe on Windows,
 ./oth01.AppImage and ./othpatch on Linux, or ./othpatch on macOS.

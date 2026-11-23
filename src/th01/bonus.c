@@ -1,6 +1,7 @@
 #include "th01/bonus.h"
 
 #include "pc98/zun/math16.h"
+#include "th01/sprite_sheet.h"
 
 #include "core/base/assert.h"
 
@@ -119,18 +120,15 @@ static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
 }
 
 RESULT Bonus_LoadStageAssets(
-    READER *const reader, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const allocator, BONUS_STAGE_ASSETS **const out)
+    VFS *const vfs, const ALLOCATOR *const allocator,
+    BONUS_STAGE_ASSETS **const out)
 {
     *out = nullptr;
-    READER image;
-    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &image));
-    BONUS_STAGE_ASSETS loaded;
-    Reader_Seek(&image, 0x38f3a);
-    Reader_ReadBytes(&image, loaded.box, sizeof(loaded.box));
-    MUST(Reader_Result(&image));
-    *out = Allocator_Alloc(allocator, sizeof(loaded));
-    **out = loaded;
+    uint8_t *box;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, "bonusbox.bmp", 8, 4, allocator, &box, &size));
+    FAIL_IF(size != sizeof(BONUS_STAGE_ASSETS), "Invalid bonusbox.bmp size");
+    *out = (BONUS_STAGE_ASSETS *)box;
     return OK;
 }
 

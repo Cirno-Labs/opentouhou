@@ -1,7 +1,8 @@
 #pragma once
 
 #include "th01/player.h"
-#include "th01/reiiden_image.h"
+
+#include "core/vfs.h"
 
 #define SHOOTOUT_LASERS_COUNT 10
 
@@ -21,13 +22,10 @@ typedef struct {
     SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
 } SHOOTOUT_LASERS;
 
-// Loads all eight widths and pre-shifts from the supported REIIDEN.EXE,
-// after full image validation. scratch requires REIIDEN_IMAGE_SIZE bytes
-// and may be released after loading. Keeps reader open. Allocates only the
-// result from the caller's grouped asset allocator; leaves out null on error.
+// Loads all eight widths and pre-shifts from laser_s.bmp into the caller's
+// grouped asset allocator; leaves out null on error.
 RESULT ShootoutLasers_LoadAssets(
-    READER *reader, uint8_t *scratch, size_t scratch_size,
-    const ALLOCATOR *allocator, SHOOTOUT_LASERS_ASSETS **out);
+    VFS *vfs, const ALLOCATOR *allocator, SHOOTOUT_LASERS_ASSETS **out);
 
 // Zero-initialize the pool once. Positions, cursors and steps use Q24.8.
 // Does nothing for an alive slot, including retaining all history. Requires

@@ -1,32 +1,35 @@
 #include "th01/pellet_assets.h"
 
+#include "th01_sprites.h"
 #include "test.h"
 
-TEST(rejects_unknown_executable_without_allocation)
+#include <string.h>
+
+TEST(missing_sheets_leave_assets_empty)
 {
-    READER reader;
-    Reader_OpenBuffer(&reader, nullptr, 0, nullptr);
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     PELLET_ASSETS *assets = nullptr;
-    CHECK(!Result_Ignore(
-        PelletAssets_Load(&reader, nullptr, 0, nullptr, &assets)));
+    CHECK(!Result_Ignore(PelletAssets_Load(vfs, nullptr, &assets)));
     CHECK(assets == nullptr);
+    Vfs_Destroy(vfs);
 }
 
-TEST(rejects_unknown_version_and_missing_scratch_without_allocation)
+TEST(pellets_load_pre_shifted_big_endian_rows)
 {
-    uint8_t *const synthetic = Mem_AllocZ(PELLET_EXECUTABLE_SIZE);
-    uint8_t *const scratch = Mem_Alloc(PELLET_EXECUTABLE_SIZE);
-    READER reader;
-    Reader_OpenBuffer(&reader, synthetic, PELLET_EXECUTABLE_SIZE, nullptr);
+    VFS *const vfs = Th01Test_Sprites();
     PELLET_ASSETS *assets = nullptr;
-    CHECK(!Result_Ignore(
-        PelletAssets_Load(&reader, nullptr, 0, nullptr, &assets)));
-    CHECK_EQ_INT(Reader_Tell(&reader), 0);
-    CHECK(!Result_Ignore(PelletAssets_Load(
-        &reader, scratch, PELLET_EXECUTABLE_SIZE, nullptr, &assets)));
-    CHECK(assets == nullptr);
-    Mem_Free(scratch);
-    Mem_Free(synthetic);
+    CHECK(IS_OK(PelletAssets_Load(vfs, &g_HeapAllocator, &assets)));
+    CHECK(
+        memcmp(assets->pellets[0][0][0], (uint8_t[2]) { 0x3c, 0x00 }, 2) == 0);
+    CHECK(
+        memcmp(assets->pellets[0][7][2], (uint8_t[2]) { 0x01, 0xfe }, 2) == 0);
+    CHECK(
+        memcmp(assets->pellets[2][3][1], (uint8_t[2]) { 0x04, 0x80 }, 2) == 0);
+    CHECK(memcmp(assets->pellets[2][0][0], (uint8_t[2]) {}, 2) == 0);
+    CHECK(memcmp(assets->clouds[0][0], (uint8_t[2]) { 0x07, 0xe0 }, 2) == 0);
+    CHECK(memcmp(assets->clouds[1][0], (uint8_t[2]) { 0x01, 0x80 }, 2) == 0);
+    Mem_Free(assets);
+    Vfs_Destroy(vfs);
 }
 
 TEST(shifted_masks_preserve_byte_order_and_row_overflow)

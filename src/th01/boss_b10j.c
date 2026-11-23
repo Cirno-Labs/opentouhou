@@ -6,6 +6,7 @@
 #include "core/base/assert.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
+#include "th01/sprite_sheet.h"
 
 #include <string.h>
 
@@ -21,26 +22,19 @@ static RESULT M_LoadMissiles(
     return result;
 }
 
-static RESULT M_ReadPillars(
-    READER *const reader, uint8_t *const scratch, const size_t scratch_size,
-    B10J_PILLARS *const out)
+static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
 {
-    READER image;
-    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &image));
-    Reader_Seek(&image, 0x3937d);
-    Reader_ReadBytes(&image, out->masks, sizeof(out->masks));
-    return Reader_Result(&image);
-}
-
-static RESULT M_LoadPillars(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    B10J_PILLARS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    const RESULT result = M_ReadPillars(&reader, scratch, scratch_size, out);
-    Reader_Close(&reader);
-    return result;
+    uint8_t *masks;
+    size_t size;
+    MUST(SpriteSheet_Load(
+        vfs, "pillar.bmp", 32, 8, &g_HeapAllocator, &masks, &size));
+    if (size != sizeof(out->masks)) {
+        Mem_Free(masks);
+        return FAIL("Invalid pillar.bmp size");
+    }
+    memcpy(out->masks, masks, sizeof(out->masks));
+    Mem_Free(masks);
+    return OK;
 }
 
 RESULT B10J_ValidateAssets(const B10J_ASSETS *const a)
@@ -67,8 +61,7 @@ RESULT B10J_ValidateAssets(const B10J_ASSETS *const a)
 }
 
 RESULT B10J_LoadAssets(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, B10J_ASSETS *const out)
+    VFS *const vfs, const ALLOCATOR *const a, B10J_ASSETS *const out)
 {
     *out = (B10J_ASSETS) {};
     B10J_ASSETS loaded = {};
@@ -77,7 +70,7 @@ RESULT B10J_LoadAssets(
     MUST(Boss_LoadBackground(vfs, "BOSS3.GRP", a, &loaded.background));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 4, a, &loaded.next_scene));
-    MUST(M_LoadPillars(vfs, scratch, scratch_size, &loaded.pillars));
+    MUST(M_LoadPillars(vfs, &loaded.pillars));
     MUST(B10J_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;

@@ -1,27 +1,31 @@
 #include "th01/shootout_lasers.h"
 
+#include "th01_sprites.h"
 #include "th01_video.h"
 #include "test.h"
 
-TEST(asset_errors_do_not_allocate_or_publish)
+#include <string.h>
+
+TEST(asset_errors_do_not_publish)
 {
-    READER reader;
-    Reader_OpenBuffer(&reader, nullptr, 0, nullptr);
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     SHOOTOUT_LASERS_ASSETS *assets = nullptr;
-    CHECK(!Result_Ignore(
-        ShootoutLasers_LoadAssets(&reader, nullptr, 0, nullptr, &assets)));
+    CHECK(!Result_Ignore(ShootoutLasers_LoadAssets(vfs, nullptr, &assets)));
     CHECK(assets == nullptr);
-    uint8_t *const data = Mem_AllocZ(REIIDEN_IMAGE_SIZE);
-    uint8_t *const scratch = Mem_Alloc(REIIDEN_IMAGE_SIZE);
-    Reader_OpenBuffer(&reader, data, REIIDEN_IMAGE_SIZE, nullptr);
-    CHECK(!Result_Ignore(
-        ShootoutLasers_LoadAssets(&reader, nullptr, 0, nullptr, &assets)));
-    CHECK_EQ_INT(Reader_Tell(&reader), 0);
-    CHECK(!Result_Ignore(ShootoutLasers_LoadAssets(
-        &reader, scratch, REIIDEN_IMAGE_SIZE, nullptr, &assets)));
-    CHECK(assets == nullptr);
-    Mem_Free(scratch);
-    Mem_Free(data);
+    Vfs_Destroy(vfs);
+}
+
+TEST(loads_each_width_as_a_cel_of_eight_shifts)
+{
+    VFS *const vfs = Th01Test_Sprites();
+    SHOOTOUT_LASERS_ASSETS *assets = nullptr;
+    CHECK(IS_OK(ShootoutLasers_LoadAssets(vfs, &g_HeapAllocator, &assets)));
+    CHECK(memcmp(assets->masks[0][0], (uint8_t[2]) { 0x80, 0x00 }, 2) == 0);
+    CHECK(memcmp(assets->masks[0][7], (uint8_t[2]) { 0x01, 0x00 }, 2) == 0);
+    CHECK(memcmp(assets->masks[7][0], (uint8_t[2]) { 0xff, 0x00 }, 2) == 0);
+    CHECK(memcmp(assets->masks[7][7], (uint8_t[2]) { 0x01, 0xfe }, 2) == 0);
+    Mem_Free(assets);
+    Vfs_Destroy(vfs);
 }
 
 TEST(spawn_retains_cursor_and_live_spawn_is_noop)

@@ -1,6 +1,9 @@
 #include "th01/pellet_assets.h"
 
 #include "pc98/zun/math16.h"
+#include "th01/sprite_sheet.h"
+
+#include <string.h>
 
 static void M_Row(
     const uint8_t *const mask, const uint16_t offset, const bool restore,
@@ -26,19 +29,46 @@ static void M_Row(
     }
 }
 
+static RESULT M_Fill(
+    PELLET_ASSETS *const out, const uint8_t *const pellets,
+    const size_t pellets_size, const uint8_t *const clouds,
+    const size_t clouds_size)
+{
+    FAIL_IF(pellets_size != 3 * 8, "Invalid pellet.bmp size");
+    FAIL_IF(clouds_size != sizeof(out->clouds), "Invalid pellet_c.bmp size");
+    for (int32_t image = 0; image < 3; image++) {
+        for (int32_t shift = 0; shift < 8; shift++) {
+            for (int32_t row = 0; row < 8; row++) {
+                const uint16_t value =
+                    (uint16_t)((pellets[image * 8 + row] << 8) >> shift);
+                out->pellets[image][shift][row][0] = (uint8_t)(value >> 8);
+                out->pellets[image][shift][row][1] = (uint8_t)value;
+            }
+        }
+    }
+    memcpy(out->clouds, clouds, sizeof(out->clouds));
+    return OK;
+}
+
 RESULT PelletAssets_Load(
-    READER *const reader, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const allocator, PELLET_ASSETS **const out)
+    VFS *const vfs, const ALLOCATOR *const allocator, PELLET_ASSETS **const out)
 {
     *out = nullptr;
-    READER source;
-    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &source));
+    uint8_t *pellets;
+    size_t pellets_size;
+    MUST(SpriteSheet_Load(
+        vfs, "pellet.bmp", 8, 8, &g_HeapAllocator, &pellets, &pellets_size));
+    uint8_t *clouds = nullptr;
+    size_t clouds_size = 0;
     PELLET_ASSETS masks;
-    Reader_Seek(&source, 0x398cf);
-    Reader_ReadBytes(&source, masks.pellets, sizeof(masks.pellets));
-    Reader_Seek(&source, 0x38d9e);
-    Reader_ReadBytes(&source, masks.clouds, sizeof(masks.clouds));
-    MUST(Reader_Result(&source));
+    RESULT result = SpriteSheet_Load(
+        vfs, "pellet_c.bmp", 16, 16, &g_HeapAllocator, &clouds, &clouds_size);
+    if (IS_OK(result)) {
+        result = M_Fill(&masks, pellets, pellets_size, clouds, clouds_size);
+    }
+    Mem_Free(clouds);
+    Mem_Free(pellets);
+    MUST(result);
     *out = Allocator_Alloc(allocator, sizeof(masks));
     **out = masks;
     return OK;

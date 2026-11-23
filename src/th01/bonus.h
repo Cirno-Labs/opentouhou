@@ -5,7 +5,6 @@
 #include "th01/input.h"
 #include "th01/palette.h"
 #include "pc98/zun/pi.h"
-#include "th01/reiiden_image.h"
 #include "th01/timer.h"
 
 #include "core/vfs.h"
@@ -60,12 +59,10 @@ typedef struct {
     int32_t *bonus_per_stage;
 } BONUS_CONTEXT;
 
-// Loads the stage box mask from the supported REIIDEN.EXE into caller asset
-// storage. Requires REIIDEN_IMAGE_SIZE scratch bytes; keeps reader open and
-// leaves out null on error. Scratch is not retained.
+// Loads the stage box mask from bonusbox.bmp into caller asset storage;
+// leaves out null on error.
 RESULT Bonus_LoadStageAssets(
-    READER *reader, uint8_t *scratch, size_t scratch_size,
-    const ALLOCATOR *allocator, BONUS_STAGE_ASSETS **out);
+    VFS *vfs, const ALLOCATOR *allocator, BONUS_STAGE_ASSETS **out);
 
 // Caches stage labels and fullwidth numerals from rom.
 RESULT Bonus_LoadFont(

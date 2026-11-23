@@ -3,8 +3,11 @@
 
 #include "core/base/arena.h"
 
+#include "th01_sprites.h"
 #include "th01_video.h"
 #include "test.h"
+
+#include <string.h>
 
 TEST(rowshift_preserves_pixel_order_and_source)
 {
@@ -482,14 +485,24 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
 
 TEST(resource_validation_rejects_missing_inputs)
 {
-    READER reader;
-    Reader_OpenBuffer(&reader, nullptr, 0, nullptr);
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     BONUS_STAGE_ASSETS *stage = nullptr;
-    CHECK(!Result_Ignore(
-        Bonus_LoadStageAssets(&reader, nullptr, 0, nullptr, &stage)));
+    CHECK(!Result_Ignore(Bonus_LoadStageAssets(vfs, nullptr, &stage)));
     CHECK(stage == nullptr);
+    Vfs_Destroy(vfs);
     CHECK(!Result_Ignore(Bonus_ValidateStageAssets(nullptr, nullptr)));
     CHECK(!Result_Ignore(Bonus_ValidateTotalAssets(nullptr)));
     BONUS_TOTAL_ASSETS total = {};
     CHECK(!Result_Ignore(Bonus_ValidateTotalAssets(&total)));
+}
+
+TEST(loads_the_stage_box_from_the_built_in_sheet)
+{
+    VFS *const vfs = Th01Test_Sprites();
+    BONUS_STAGE_ASSETS *stage = nullptr;
+    CHECK(IS_OK(Bonus_LoadStageAssets(vfs, &g_HeapAllocator, &stage)));
+    const uint8_t box[4] = { 0xee, 0xff, 0xbb, 0xff };
+    CHECK(memcmp(stage->box, box, sizeof(box)) == 0);
+    Mem_Free(stage);
+    Vfs_Destroy(vfs);
 }

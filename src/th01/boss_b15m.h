@@ -7,7 +7,6 @@
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "pc98/zun/pi.h"
-#include "th01/reiiden_image.h"
 #include "th01/scene.h"
 #include "th01/shootout_lasers.h"
 
@@ -93,12 +92,9 @@ typedef struct {
 } B15M_CONTEXT;
 
 // Loads the three Elis BOS banks, sphere GRC, missiles, background, scene 5
-// and verified executable star mask into the caller's asset group. Scratch
-// requires REIIDEN_IMAGE_SIZE bytes and may be released after loading.
-// Failed loads leave out empty; intermediate storage belongs to the group.
-RESULT B15M_LoadAssets(
-    VFS *vfs, uint8_t *scratch, size_t scratch_size, const ALLOCATOR *allocator,
-    B15M_ASSETS *out);
+// and the star mask of shape8x8.bmp into the caller's asset group. Failed
+// loads leave out empty; intermediate storage belongs to the group.
+RESULT B15M_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B15M_ASSETS *out);
 RESULT B15M_ValidateAssets(const B15M_ASSETS *assets);
 
 // Resets the boss state, before the first fight of a game.

@@ -33,7 +33,6 @@ RESULT GameplayAssets_Load(
     GAMEPLAY_ASSETS *const out)
 {
     *out = (GAMEPLAY_ASSETS) {};
-    uint8_t *const scratch = Allocator_Alloc(allocator, REIIDEN_IMAGE_SIZE);
     for (uint8_t i = 0; i < SCENE_COUNT; i++) {
         MUST(Scene_Load(vfs, i, allocator, &out->scenes[i]));
         M_LOAD(out->scenes[i].background, Pi_Load, &out->backgrounds[i]);
@@ -46,38 +45,17 @@ RESULT GameplayAssets_Load(
     M_LOAD("MASK.GRF", Grf_Load, &out->hud);
     MUST(Bomb_LoadAssets(vfs, allocator, &out->bomb));
     MUST(B05_LoadAssets(vfs, allocator, &out->b05));
-    MUST(B10J_LoadAssets(
-        vfs, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->b10j));
+    MUST(B10J_LoadAssets(vfs, allocator, &out->b10j));
     MUST(B10M_LoadAssets(vfs, allocator, &out->b10m));
     MUST(B15J_LoadAssets(vfs, allocator, &out->b15j));
-    MUST(B15M_LoadAssets(
-        vfs, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->b15m));
-    MUST(B20J_LoadAssets(
-        vfs, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->b20j));
-    MUST(B20M_LoadAssets(
-        vfs, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->b20m));
+    MUST(B15M_LoadAssets(vfs, allocator, &out->b15m));
+    MUST(B20J_LoadAssets(vfs, allocator, &out->b20j));
+    MUST(B20M_LoadAssets(vfs, allocator, &out->b20m));
     MUST(Bonus_LoadTotalAssets(vfs, allocator, &out->total));
-    READER reader;
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    RESULT result = PelletAssets_Load(
-        &reader, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->pellets);
-    Reader_Close(&reader);
-    MUST(result);
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    result = ShootoutLasers_LoadAssets(
-        &reader, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->lasers);
-    Reader_Close(&reader);
-    MUST(result);
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    result = Bonus_LoadStageAssets(
-        &reader, scratch, REIIDEN_IMAGE_SIZE, allocator, &out->bonus);
-    Reader_Close(&reader);
-    MUST(result);
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    result = Invincibility_LoadAssets(
-        &reader, scratch, REIIDEN_IMAGE_SIZE, &out->invincibility);
-    Reader_Close(&reader);
-    MUST(result);
+    MUST(PelletAssets_Load(vfs, allocator, &out->pellets));
+    MUST(ShootoutLasers_LoadAssets(vfs, allocator, &out->lasers));
+    MUST(Bonus_LoadStageAssets(vfs, allocator, &out->bonus));
+    MUST(Invincibility_LoadAssets(vfs, &out->invincibility));
     MUST(M_Fonts(rom, allocator, out));
     const char *const songs[GAMEPLAY_SONG_COUNT] = {
         "ST0.MDT",   "ST1.MDT",     "ST2.MDT",      "ST3.MDT",    "ST4.MDT",

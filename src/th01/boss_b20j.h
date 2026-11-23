@@ -6,7 +6,6 @@
 #include "th01/grz.h"
 #include "pc98/zun/pi.h"
 #include "th01/pellets.h"
-#include "th01/reiiden_image.h"
 #include "th01/shootout_lasers.h"
 #include "th01/stage_objects.h"
 #include "th01/tram.h"
@@ -107,12 +106,9 @@ typedef struct {
     void (*audio)(void *user, B20J_AUDIO_ACTION action);
 } B20J_CONTEXT;
 
-// Loads all Konngara images and verified executable shape masks into the
-// caller's asset group. Scratch requires REIIDEN_IMAGE_SIZE bytes and can be
-// released afterward. Failed loads leave out empty.
-RESULT B20J_LoadAssets(
-    VFS *vfs, uint8_t *scratch, size_t scratch_size, const ALLOCATOR *allocator,
-    B20J_ASSETS *out);
+// Loads all Konngara images and the shape masks of shape8x8.bmp into the
+// caller's asset group. Failed loads leave out empty.
+RESULT B20J_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B20J_ASSETS *out);
 RESULT B20J_ValidateAssets(const B20J_ASSETS *assets);
 
 // Resets the boss state, before the first fight of a game. Setup keeps the

@@ -5,6 +5,7 @@
 #include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 #include "th01/sprite.h"
+#include "th01/sprite_sheet.h"
 
 #include <string.h>
 
@@ -26,26 +27,14 @@ static RESULT M_LoadBody(
     return result;
 }
 static RESULT M_LoadMasks(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, B20J_ASSETS *const out)
+    VFS *const vfs, const ALLOCATOR *const a, B20J_ASSETS *const out)
 {
-    READER reader;
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    READER image;
-    RESULT result = ReiidenImage_Open(&reader, scratch, scratch_size, &image);
-    uint8_t masks[24];
-    if (IS_OK(result)) {
-        Reader_Seek(&image, 0x3924a);
-        Reader_ReadBytes(&image, masks, sizeof(masks));
-        result = Reader_Result(&image);
-    }
-    Reader_Close(&reader);
-    MUST(result);
-    uint8_t *const allocated = Allocator_Alloc(a, 16);
-    memcpy(allocated, masks, 8);
-    memcpy(allocated + 8, masks + 16, 8);
-    out->diamond = allocated;
-    out->flake = allocated + 8;
+    uint8_t *shapes;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, "shape8x8.bmp", 8, 8, a, &shapes, &size));
+    FAIL_IF(size != 7 * 8, "Invalid shape8x8.bmp size");
+    out->diamond = shapes;
+    out->flake = shapes + 2 * 8;
     return OK;
 }
 RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
@@ -84,8 +73,7 @@ RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
     return OK;
 }
 RESULT B20J_LoadAssets(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, B20J_ASSETS *const out)
+    VFS *const vfs, const ALLOCATOR *const a, B20J_ASSETS *const out)
 {
     *out = (B20J_ASSETS) {};
     B20J_ASSETS loaded = {};
@@ -100,7 +88,7 @@ RESULT B20J_LoadAssets(
     for (int32_t i = 0; i < 4; i++) {
         MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
-    MUST(M_LoadMasks(vfs, scratch, scratch_size, a, &loaded));
+    MUST(M_LoadMasks(vfs, a, &loaded));
     MUST(B20J_ValidateAssets(&loaded));
     *out = loaded;
     return OK;

@@ -1,6 +1,7 @@
 #include "th01/shootout_lasers.h"
 
 #include "pc98/zun/math16.h"
+#include "th01/sprite_sheet.h"
 
 #include "core/base/assert.h"
 
@@ -74,18 +75,15 @@ static void M_Ray(
 }
 
 RESULT ShootoutLasers_LoadAssets(
-    READER *const reader, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const allocator, SHOOTOUT_LASERS_ASSETS **const out)
+    VFS *const vfs, const ALLOCATOR *const allocator,
+    SHOOTOUT_LASERS_ASSETS **const out)
 {
     *out = nullptr;
-    READER source;
-    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &source));
-    SHOOTOUT_LASERS_ASSETS masks;
-    Reader_Seek(&source, 0x38e3e);
-    Reader_ReadBytes(&source, masks.masks, sizeof(masks.masks));
-    MUST(Reader_Result(&source));
-    *out = Allocator_Alloc(allocator, sizeof(masks));
-    **out = masks;
+    uint8_t *masks;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, "laser_s.bmp", 16, 8, allocator, &masks, &size));
+    FAIL_IF(size != sizeof(SHOOTOUT_LASERS_ASSETS), "Invalid laser_s.bmp size");
+    *out = (SHOOTOUT_LASERS_ASSETS *)masks;
     return OK;
 }
 
