@@ -6,14 +6,13 @@
 #include "th01/rng.h"
 #include "pc98/zun/master_rng.h"
 #include "core/base/arena.h"
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
     ARENA arena;
-    HUD hud;
     HUD_CONTEXT display;
     TIMER_CONTEXT context;
-    STAGE_GAMEPLAY gameplay;
     GRF mask;
     PTN sprites;
     GAME_TEXT_FONT font;
@@ -36,18 +35,14 @@ static void M_Effect(void *const user, const int16_t number)
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     g_Rng = 1;
     Frame_Reset();
     StageTimer_Init();
     Arena_Init(&f->arena, "timer", 2 * 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
     Video_Init(a);
-    Hud_Init(&f->hud, a);
+    Hud_Init(a);
     Tram_Init(a);
     GAME_TEXT_GLYPH glyphs[105] = {};
     for (int32_t i = 0; i < 105; i++) {
@@ -63,15 +58,14 @@ static void M_Init(FIXTURE *const f)
     f->display = (HUD_CONTEXT) { .mask = &f->mask,
                                  .sprites = &f->sprites,
                                  .font = &f->font,
-                                 .gameplay = &f->gameplay,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives,
                                  .stage_number = 1,
                                  .rank = SETTINGS_DIFFICULTY_NORMAL };
-    f->context = (TIMER_CONTEXT) {
-        .hud = &f->hud, .display = &f->display, .effect = M_Effect, .user = f
-    };
-    Hud_SnapTimer(&f->hud, &f->display, 1000);
+    f->context = (TIMER_CONTEXT) { .display = &f->display,
+                                   .effect = M_Effect,
+                                   .user = f };
+    Hud_SnapTimer(&f->display, 1000);
 }
 
 TEST(route_table_and_reinitialization_keep_cycle)
@@ -197,7 +191,7 @@ TEST(redraw_does_not_claim_world_timer_initialization)
     g_StageTimer.time = 750;
     StageTimer_Redraw(&f.context, false, true, 0);
     CHECK_EQ_INT(g_StageTimer.time, 750);
-    CHECK(!f.hud.force_numbers);
+    CHECK(!g_Hud.force_numbers);
     StageTimer_Redraw(&f.context, false, false, 0);
     CHECK_EQ_INT(g_StageTimer.time, 6000);
     Arena_Free(&f.arena);

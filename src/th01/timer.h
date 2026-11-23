@@ -22,7 +22,6 @@ typedef struct {
 extern STAGE_TIMER g_StageTimer;
 
 typedef struct {
-    HUD *hud;
     const HUD_CONTEXT *display;
     void (*effect)(void *user, int16_t number);
     void *user;

@@ -13,13 +13,12 @@
 #include "core/base/arena.h"
 
 #include "th01_video.h"
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
     ARENA arena;
     STAGE_CONTEXT context;
-    STAGE_OBJECTS objects;
-    STAGE_GAMEPLAY game;
     PTN sprites;
     GAME_TEXT_FONT font;
     int32_t events[1024], count;
@@ -30,7 +29,7 @@ typedef struct {
 static void M_Hud(void *const user)
 {
     CASE *const state = user;
-    CHECK(state->game.score >= state->objects.cards[0].score);
+    CHECK(g_Stage.score >= g_StageObjects.cards[0].score);
     state->events[state->count++] = 1;
 }
 
@@ -56,19 +55,15 @@ static void M_Pellet(void *const user, const STAGE_PELLET_SPAWN spawn)
     CASE *const state = user;
     state->pellets++;
     state->last_pellet = spawn;
-    CHECK_EQ_INT(state->objects.cards[0].flip_frame, 25);
-    CHECK_EQ_INT(state->objects.cards[0].flag, STAGE_CARD_FLIPPING);
+    CHECK_EQ_INT(g_StageObjects.cards[0].flip_frame, 25);
+    CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
     MasterRng_Next(&g_Rng);
 }
 
 static void M_Init(CASE *const state, const uint8_t hp)
 {
     *state = (CASE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     memset(&g_Orb, 0, sizeof(g_Orb));
     g_Orb.left = 96;
     g_Orb.top = 128;
@@ -86,8 +81,7 @@ static void M_Init(CASE *const state, const uint8_t hp)
         (STAGE_DATA_CELL) { .card = true, .card_extra_hp = hp };
     STAGE_DATA data = { .stages = layouts };
     StageObjects_Init(
-        &state->objects, &data, 0, true, Arena_Allocator(&state->arena),
-        &state->sprites);
+        &data, 0, true, Arena_Allocator(&state->arena), &state->sprites);
     GAME_TEXT_GLYPH digits[10] = {};
     for (int32_t i = 0; i < 10; i++) {
         digits[i].codepoint = (uint32_t)('0' + i);
@@ -97,8 +91,6 @@ static void M_Init(CASE *const state, const uint8_t hp)
     CHECK(IS_OK(GameText_LoadGlyphs(
         digits, 10, Arena_Allocator(&state->arena), &state->font)));
     state->context = (STAGE_CONTEXT) {
-        .objects = &state->objects,
-        .gameplay = &state->game,
         .sprites = &state->sprites,
         .font = &state->font,
         .stage_num = 1,
@@ -118,7 +110,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
         for (int32_t variant = 0; variant < 9; variant++) {
             CASE state;
             M_Init(&state, 0);
-            state.game.combo = combos[variant];
+            g_Stage.combo = combos[variant];
             state.context.stage_id = 19;
             state.context.difficulty = rank;
             const ORB orb = g_Orb;
@@ -130,12 +122,12 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             if (expected > 25600) {
                 expected = 25600;
             }
-            CHECK_EQ_INT(state.game.score, expected);
-            CHECK_EQ_INT(state.game.combo, Math16_Wrap(combos[variant] + 1));
+            CHECK_EQ_INT(g_Stage.score, expected);
+            CHECK_EQ_INT(g_Stage.combo, Math16_Wrap(combos[variant] + 1));
             CHECK_EQ_INT(
-                state.game.maximum_combo,
+                g_Stage.maximum_combo,
                 combos[variant] == 32767 ? 0 : combos[variant] + 1);
-            CHECK_EQ_INT(state.objects.cards[0].flag, STAGE_CARD_FLIPPING);
+            CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
             CHECK_EQ_INT(state.count, 3);
@@ -154,13 +146,13 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             CASE state;
             M_Init(&state, 0);
             g_Player.bomb_damaging = damaging;
-            state.game.flip_cycle = (uint8_t)cycle;
+            g_Stage.flip_cycle = (uint8_t)cycle;
             const uint32_t rng = g_Rng;
             Stage_HitTestCards(&state.context);
             const uint8_t next = (uint8_t)(cycle + 1);
             const bool drop = cycle % 10 == 0;
             const bool reset = drop && next >= 140;
-            CHECK_EQ_INT(state.game.flip_cycle, reset ? 1 : next);
+            CHECK_EQ_INT(g_Stage.flip_cycle, reset ? 1 : next);
             CHECK_EQ_INT(state.bombs, reset && !damaging);
             CHECK_EQ_INT(state.points, drop && (!reset || damaging));
             CHECK_EQ_INT(g_Rng, rng);
@@ -171,7 +163,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
         for (uint32_t seed = 1; seed < 12; seed++) {
             CASE state;
             M_Init(&state, 0);
-            state.objects.cards[0].flag = flag;
+            g_StageObjects.cards[0].flag = flag;
             g_Player.bomb_damaging = true;
             g_Orb.left = 500;
             g_Rng = seed;
@@ -179,7 +171,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             const bool selected = MasterRng_Next(&expected) % 4 != 0;
             Stage_HitTestCards(&state.context);
             CHECK_EQ_INT(g_Rng, expected);
-            CHECK_EQ_INT(state.game.combo, selected && flag == 0);
+            CHECK_EQ_INT(g_Stage.combo, selected && flag == 0);
             Arena_Free(&state.arena);
         }
     }
@@ -205,13 +197,13 @@ TEST(card_hp_frames_revenge_and_stage_exit)
                     CHECK_EQ_INT(g_Rng, rng);
                     CHECK_EQ_INT(state.pellets, flip + (frame >= 24));
                     CHECK_EQ_INT(
-                        state.objects.cards[0].flip_frame,
+                        g_StageObjects.cards[0].flip_frame,
                         frame == 29 ? 0 : frame + 1);
                     CHECK_EQ_INT(
-                        state.objects.cards[0].hp,
+                        g_StageObjects.cards[0].hp,
                         hp - flip - (frame == 29 && hp > flip));
-                    CHECK_EQ_INT(state.game.cleared, flip == hp && frame == 29);
-                    CHECK_EQ_INT(g_Player.is_hit, state.game.cleared);
+                    CHECK_EQ_INT(g_Stage.cleared, flip == hp && frame == 29);
+                    CHECK_EQ_INT(g_Player.is_hit, g_Stage.cleared);
                     CHECK_EQ_INT(state.arena.used, used);
                 }
                 CHECK_EQ_INT(state.last_pellet.left, 108);
@@ -231,7 +223,7 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
     CHECK(IS_OK(Stage_ValidateScoreFont(&state.font)));
     const uint32_t scores[] = { 100, 1000, 1001, 10000, 10001, 25600 };
     for (int32_t i = 0; i < 6; i++) {
-        STAGE_CARD *const card = &state.objects.cards[0];
+        STAGE_CARD *const card = &g_StageObjects.cards[0];
         card->flag = STAGE_CARD_ALIVE;
         card->score = scores[i];
         card->flip_frame = 15;
@@ -262,7 +254,7 @@ TEST(card_contact_bounds_and_portal_do_not_change_orb)
             g_Orb.in_portal = true;
             const ORB orb = g_Orb;
             Stage_HitTestCards(&state.context);
-            CHECK_EQ_INT(state.game.combo, x > 0 && x < 4 && y > 0 && y < 4);
+            CHECK_EQ_INT(g_Stage.combo, x > 0 && x < 4 && y > 0 && y < 4);
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             Arena_Free(&state.arena);
         }
@@ -273,7 +265,7 @@ TEST(card_animation_overwrites_the_preceding_popup)
 {
     CASE state;
     M_Init(&state, 0);
-    STAGE_CARD *const card = &state.objects.cards[0];
+    STAGE_CARD *const card = &g_StageObjects.cards[0];
     card->flag = STAGE_CARD_FLIPPING;
     card->flip_frame = 18;
     card->score = 1000;

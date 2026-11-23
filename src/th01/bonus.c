@@ -7,6 +7,8 @@
 
 #include <string.h>
 
+BONUS g_Bonus;
+
 #define M_STAGE_WIDTH 288
 #define M_PADDED_HEIGHT 280
 
@@ -68,19 +70,19 @@ static void M_StageMetric(
     M_Text(c, text, 208, row, 7);
 }
 
-static void M_Confirm(BONUS *const b, const BONUS_CONTEXT *const c)
+static void M_Confirm(const BONUS_CONTEXT *const c)
 {
     GameInput_ResetGame();
     g_GameInput.shot = true;
     g_GameInput.ok = true;
-    b->phase = BONUS_CONFIRM;
+    g_Bonus.phase = BONUS_CONFIRM;
 }
 
-static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
+static void M_StageCommit(const BONUS_CONTEXT *const c)
 {
     char title[80] = "ＳＴＡＧＥ　";
-    const int16_t stage_digits[] = { (int16_t)(b->stage_number / 10),
-                                     (int16_t)(b->stage_number % 10) };
+    const int16_t stage_digits[] = { (int16_t)(g_Bonus.stage_number / 10),
+                                     (int16_t)(g_Bonus.stage_number % 10) };
     char number[7];
     M_Digits(number, stage_digits, 2);
     strcat(title, number);
@@ -91,16 +93,16 @@ static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
         M_Text(c, m_Labels[i], i == 6 ? 112 : 0, rows[i], i == 6 ? 10 : 7);
     }
     M_StageMetric(c, 3, Math16_Wrap(g_StageTimer.time * 3));
-    M_StageMetric(c, 5, Math16_Wrap(c->display->gameplay->maximum_combo * 100));
+    M_StageMetric(c, 5, Math16_Wrap(g_Stage.maximum_combo * 100));
     M_StageMetric(
         c, 7,
         Math16_Wrap(
             *c->display->remaining_lives * 200
             + g_Player.remaining_bombs * 100));
-    M_StageMetric(c, 9, Math16_Wrap((b->stage_number - 1) * 200));
-    c->display->gameplay->score += *c->score_bonus;
+    M_StageMetric(c, 9, Math16_Wrap((g_Bonus.stage_number - 1) * 200));
+    g_Stage.score += *c->score_bonus;
     const uint32_t bits = *c->score_bonus;
-    c->bonus_per_stage[(b->stage_number - 1) % 5] = bits <= INT32_MAX
+    c->bonus_per_stage[(g_Bonus.stage_number - 1) % 5] = bits <= INT32_MAX
         ? (int32_t)bits
         : (int32_t)((int64_t)bits - INT64_C(4294967296));
     const int16_t div = Math16_Wrap((int32_t)(bits / 10000));
@@ -114,9 +116,9 @@ static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
     char text[19];
     M_Digits(text, digits, 6);
     M_Text(c, text, 192, 11, 7);
-    Hud_ScoreAndCombo(c->hud, c->display);
+    Hud_ScoreAndCombo(c->display);
     Extend_UpdateAndRender(c->extend);
-    M_Confirm(b, c);
+    M_Confirm(c);
 }
 
 RESULT Bonus_LoadStageAssets(
@@ -161,43 +163,45 @@ RESULT Bonus_ValidateStageAssets(
 }
 
 bool Bonus_BeginStage(
-    BONUS *const b, const BONUS_CONTEXT *const c, const int16_t stage_number,
+    const BONUS_CONTEXT *const c, const int16_t stage_number,
     const TH01_INPUT *const raw)
 {
     ASSERT(
-        b->phase == BONUS_DONE && stage_number >= 1 && stage_number <= 20
+        g_Bonus.phase == BONUS_DONE && stage_number >= 1 && stage_number <= 20
         && stage_number % 5 != 0);
-    *b = (BONUS) { .phase = BONUS_STAGE_BOX, .stage_number = stage_number };
+    memset(&g_Bonus, 0, sizeof(g_Bonus));
+    g_Bonus.phase = BONUS_STAGE_BOX;
+    g_Bonus.stage_number = stage_number;
     Palette_Set(c->palette, c->stage_palette);
-    return Bonus_Resume(b, c, raw);
+    return Bonus_Resume(c, raw);
 }
 
-bool Bonus_Resume(
-    BONUS *const b, const BONUS_CONTEXT *const c, const TH01_INPUT *const raw)
+bool Bonus_Resume(const BONUS_CONTEXT *const c, const TH01_INPUT *const raw)
 {
     for (;;) {
-        switch (b->phase) {
+        switch (g_Bonus.phase) {
         case BONUS_DONE:
             return true;
         case BONUS_STAGE_BOX:
-            if (b->waiting) {
+            if (g_Bonus.waiting) {
                 if (!Frame_DelayReady(1)) {
                     return false;
                 }
-                b->waiting = false;
+                g_Bonus.waiting = false;
             }
-            if (b->row == M_PADDED_HEIGHT / 2) {
-                M_StageCommit(b, c);
+            if (g_Bonus.row == M_PADDED_HEIGHT / 2) {
+                M_StageCommit(c);
                 break;
             }
             for (int32_t x = 32; x < 32 + M_STAGE_WIDTH + 32; x++) {
-                if ((c->stage->box[b->row % 4] & (0x80u >> (x % 8))) != 0) {
-                    Video_Pixel(x, 180 - b->row, 0);
-                    Video_Pixel(x, 180 + b->row, 0);
+                if ((c->stage->box[g_Bonus.row % 4] & (0x80u >> (x % 8)))
+                    != 0) {
+                    Video_Pixel(x, 180 - g_Bonus.row, 0);
+                    Video_Pixel(x, 180 + g_Bonus.row, 0);
                 }
             }
-            b->waiting = b->row % 6 == 0;
-            b->row++;
+            g_Bonus.waiting = g_Bonus.row % 6 == 0;
+            g_Bonus.row++;
             break;
         case BONUS_CONFIRM:
             if (GameInput_SenseGame(raw, false)) {
@@ -207,7 +211,7 @@ bool Bonus_Resume(
                 return false;
             }
             *c->score_bonus = 0;
-            b->phase = BONUS_DONE;
+            g_Bonus.phase = BONUS_DONE;
             return true;
         }
     }

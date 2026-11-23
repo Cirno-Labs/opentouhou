@@ -83,24 +83,10 @@ typedef struct {
     bool continue_locked;
     GAMEPLAY_SWITCH switch_to;
     PALETTE_FADE switch_fade;
-    STAGE_GAMEPLAY metrics;
-    STAGE_OBJECTS objects;
-    STAGE_ORB_COMPOSITE composite;
     PLAYER_BOMB_CONTINUATION player_bomb;
-    ITEMS items;
-    MISSILES missiles;
-    SHOOTOUT_LASERS lasers;
-    PARTICLES particles;
     INVINCIBILITY invincibility;
-    BOMB bomb;
-    MISS miss;
-    HUD hud;
-    HUD_HP health;
     PALETTE_STATE palette;
     PALETTE stage_palette;
-    SCENE_STATE scene;
-    BONUS bonus;
-    BONUS_TOTAL total;
 
 } GAMEPLAY_WORLD;
 
@@ -110,7 +96,6 @@ typedef struct {
     GAME_AUDIO *audio_output;
     size_t song;
     uint64_t host_tick;
-    STAGE_OBJECT_STORAGE objects;
     const GAMEPLAY_WORLD *initial;
 } GAMEPLAY_STORAGE;
 

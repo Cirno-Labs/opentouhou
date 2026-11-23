@@ -9,23 +9,19 @@
 #include "core/base/arena.h"
 #include "pc98/zun/master_rng.h"
 
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
     PALETTE_STATE palette;
     PALETTE stage_palette;
     B05_ASSETS assets;
-    HUD_HP health;
-    PARTICLES particles;
     HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit_context;
     B05_CONTEXT context;
-    HUD hud;
-    STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage, miko;
     SCENE_DATA cache[3];
-    SCENE_STATE scene;
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route_context;
     uint32_t high_score;
@@ -44,7 +40,7 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK(number >= 1 && number <= 16);
     f->effects[number]++;
     if (number == 4) {
-        f->scene_at_route_effect = f->scene.active->id;
+        f->scene_at_route_effect = g_Scene.active->id;
         f->cleared_at_route_effect = f->cleared;
     }
 }
@@ -67,11 +63,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     GameInput_Init();
     const ALLOCATOR *const allocator = Arena_Allocator(arena);
     Video_Init(allocator);
@@ -96,13 +88,11 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     f->hit_context = (BOSS_HIT_CONTEXT) {
         .palette = &f->palette,
         .display = &f->display,
-        .health = &f->health,
     };
     f->context = (B05_CONTEXT) {
         .assets = &f->assets,
         .hit = &f->hit_context,
         .stage_palette = &f->stage_palette,
-        .particles = &f->particles,
     };
 }
 
@@ -110,8 +100,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
 {
     M_Init(f, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
-    Hud_Init(&f->hud, a);
-    HudHp_Init(&f->health, a);
+    Hud_Init(a);
+    HudHp_Init(a);
     GAME_TEXT_GLYPH glyphs[96] = {};
     for (uint32_t i = 0; i < 90; i++) {
         glyphs[i].codepoint = 0xff01 + i;
@@ -145,7 +135,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         CHECK(Result_Ignore(Scene_LoadReader(&reader, id, a, &f->cache[id])));
         Reader_Close(&reader);
     }
-    Scene_Activate(&f->scene, &f->cache[0]);
+    Scene_Activate(&f->cache[0]);
     f->route = 1;
     f->lives = 3;
     g_Rng = 0xb0500000;
@@ -155,11 +145,9 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->display = (HUD_CONTEXT) {
         .sprites = &f->stage,
         .font = &f->font,
-        .gameplay = &f->gameplay,
         .high_score = &f->high_score,
         .remaining_lives = &f->lives,
     };
-    f->hit_context.hud = &f->hud;
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit_context.test_damage = &f->test_damage;
     f->hit_context.effect = M_Effect;
@@ -171,8 +159,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
     f->route_context = (ROUTE_SELECT_CONTEXT) {
-        &f->palette, &f->route_assets, &f->scene, &f->route,
-        &f->cleared, M_Effect,         f,
+        &f->palette, &f->route_assets, &f->route, &f->cleared, M_Effect, f,
     };
     f->context.miko = &f->miko;
     f->context.route = &f->route_context;
@@ -213,9 +200,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     g_B05.sphere.previous_left = 17;
     g_B05.sphere.lock_frame = 2;
     g_B05.person.image = 5;
-    f.particles.cycle = 73;
-    f.particles.velocity_base[0] = 9;
-    f.particles.alive[0] = 255;
+    g_Particles.cycle = 73;
+    g_Particles.velocity_base[0] = 9;
+    g_Particles.alive[0] = 255;
     B05_Setup(&f.context);
     CHECK_EQ_INT(arena.used, used);
     CHECK(g_BossSprites.entities[0] == &f.assets.sphere);
@@ -238,11 +225,11 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(g_B05.pattern, 3);
     CHECK_EQ_INT(g_B05.velocity_x, 999);
     CHECK_EQ_INT(g_B05.direction, -1);
-    CHECK_EQ_INT(f.health.first_white, 6);
-    CHECK_EQ_INT(f.health.first_redwhite, 2);
-    CHECK_EQ_INT(f.particles.alive[0], 0);
-    CHECK_EQ_INT(f.particles.cycle, 73);
-    CHECK_EQ_INT(f.particles.velocity_base[0], 9);
+    CHECK_EQ_INT(g_HudHp.first_white, 6);
+    CHECK_EQ_INT(g_HudHp.first_redwhite, 2);
+    CHECK_EQ_INT(g_Particles.alive[0], 0);
+    CHECK_EQ_INT(g_Particles.cycle, 73);
+    CHECK_EQ_INT(g_Particles.velocity_base[0], 9);
     CHECK(memcmp(&g_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
     CHECK(memcmp(&f.stage_palette, &g_B05.post_defeat, sizeof(PALETTE)) == 0);
     CHECK_EQ_INT(g_Video.pages[0][0], 3);
@@ -342,7 +329,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(phase_two);
         CHECK_EQ_INT(g_B05.phase, B05_PHASE_DEFEATED);
         CHECK_EQ_INT(g_B05.hp, 0);
-        CHECK_EQ_INT(f.gameplay.score, 24000);
+        CHECK_EQ_INT(g_Stage.score, 24000);
         CHECK_EQ_INT(f.effects[3], 8);
         CHECK_EQ_INT(f.effects[5], 1);
         CHECK_EQ_INT(f.fades, 0);
@@ -360,7 +347,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!g_Pellets.slots[0].moving);
         CHECK(!g_Pellets.slots[1].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
-        CHECK_EQ_INT(f.scene.active->id, 0);
+        CHECK_EQ_INT(g_Scene.active->id, 0);
         CHECK(!f.cleared && !g_Player.is_hit);
         const B05 frozen = g_B05;
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
@@ -379,7 +366,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(f.scene_at_route_effect, 0);
         CHECK(!f.cleared_at_route_effect);
         CHECK_EQ_INT(f.route, rank % 2);
-        CHECK(f.scene.active == &f.cache[1 + rank % 2]);
+        CHECK(g_Scene.active == &f.cache[1 + rank % 2]);
         CHECK(f.cleared && g_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(f.hit_context.frame_rand, frame_rand);

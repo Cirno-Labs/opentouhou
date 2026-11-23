@@ -17,6 +17,8 @@ typedef struct {
     int16_t frame, effect_left, target_right, target_left;
 } MISS;
 
+extern MISS g_Miss;
+
 typedef struct {
     const PTN *miko, *stage;
     int32_t difficulty;
@@ -41,7 +43,7 @@ RESULT Miss_ValidateSprites(const PTN *miko, const PTN *stage);
 // Resume returns true. Only logical VSync counters advance while waiting.
 // The source's variable delays reuse count1, including nested raw waits.
 // Successful updates allocate nothing and poll no device or host clock.
-void Miss_Begin(MISS *miss, const MISS_CONTEXT *context);
+void Miss_Begin(const MISS_CONTEXT *context);
 
 // Resumes every ready phase in source order. Returns true at completion;
 // repeated calls after completion do nothing. Preserves integer return
@@ -50,4 +52,4 @@ void Miss_Begin(MISS *miss, const MISS_CONTEXT *context);
 // invincibility_time to 150. These steps, invincibility sprites, life
 // decrement and gameplay scene dispatch remain external. Player_Reset alone
 // does not implement this sequence.
-bool Miss_Resume(MISS *miss, const MISS_CONTEXT *context);
+bool Miss_Resume(const MISS_CONTEXT *context);

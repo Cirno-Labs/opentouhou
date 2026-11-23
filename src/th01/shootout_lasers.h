@@ -22,6 +22,8 @@ typedef struct {
     SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
 } SHOOTOUT_LASERS;
 
+extern SHOOTOUT_LASERS g_ShootoutLasers;
+
 // Loads all eight widths and pre-shifts from laser_s.bmp into the caller's
 // grouped asset allocator; leaves out null on error.
 RESULT ShootoutLasers_LoadAssets(
@@ -50,10 +52,9 @@ void ShootoutLasers_Spawn(
 // Boss scheduling and gameplay scene integration remain external.
 void ShootoutLasers_Update(
     SHOOTOUT_LASER *laser, const SHOOTOUT_LASERS_ASSETS *assets);
-void ShootoutLasers_UpdateAll(
-    SHOOTOUT_LASERS *lasers, const SHOOTOUT_LASERS_ASSETS *assets);
+void ShootoutLasers_UpdateAll(const SHOOTOUT_LASERS_ASSETS *assets);
 
 // Restores with the broken low-16 raw Q24.8 start/origin coordinates, then
 // clears alive only. count is 0..10; preserves slots after that prefix.
 // Uses Video_LineErase's physical-copy extension for protection faults.
-void ShootoutLasers_EraseAndReset(SHOOTOUT_LASERS *lasers, int32_t count);
+void ShootoutLasers_EraseAndReset(int32_t count);

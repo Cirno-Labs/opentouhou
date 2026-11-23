@@ -4,6 +4,8 @@
 
 #include "core/base/assert.h"
 
+BOMB g_Bomb;
+
 static RESULT M_Load(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,
     GRC *const out)
@@ -45,9 +47,9 @@ static void M_KujiPut(
     }
 }
 
-static BOMB_UPDATE M_Finish(BOMB *const bomb, const BOMB_CONTEXT *const context)
+static BOMB_UPDATE M_Finish(const BOMB_CONTEXT *const context)
 {
-    const int16_t frame = bomb->frame;
+    const int16_t frame = g_Bomb.frame;
     if (frame == 140) {
         Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
         Video_SelectDrawingPage(0);
@@ -59,16 +61,16 @@ static BOMB_UPDATE M_Finish(BOMB *const bomb, const BOMB_CONTEXT *const context)
     for (int32_t angle = 0; angle < 256; angle += 16) {
         for (int16_t factor = 6; factor <= 8; factor++) {
             const int16_t radius = Math16_Wrap((frame - 50) * factor);
-            bomb->left[0] = Math16_PolarX(304, radius, angle);
-            bomb->top[0] = Math16_PolarY(184, radius, angle);
-            Video_Invert32(bomb->left[0], bomb->top[0], 1);
+            g_Bomb.left[0] = Math16_PolarX(304, radius, angle);
+            g_Bomb.top[0] = Math16_PolarY(184, radius, angle);
+            Video_Invert32(g_Bomb.left[0], g_Bomb.top[0], 1);
         }
     }
     if (frame % 20 == 0) {
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
-                if (bomb->bright.colors[color][component] < 15) {
-                    bomb->bright.colors[color][component]++;
+                if (g_Bomb.bright.colors[color][component] < 15) {
+                    g_Bomb.bright.colors[color][component]++;
                 }
             }
         }
@@ -101,48 +103,48 @@ RESULT Bomb_LoadAssets(
 }
 
 BOMB_UPDATE Bomb_BeginUpdate(
-    BOMB *const bomb, const BOMB_CONTEXT *const context, const int16_t frame)
+    const BOMB_CONTEXT *const context, const int16_t frame)
 {
-    ASSERT(!bomb->waiting);
-    bomb->frame = frame;
+    ASSERT(!g_Bomb.waiting);
+    g_Bomb.frame = frame;
     g_Player.invincible = true;
     if (frame == 0) {
         context->pellets_decay(context->user);
         Sprite_PtnPut(context->miko, 3, -1, g_Player.left, PLAYER_TOP);
-        bomb->white = context->palette->saved;
+        g_Bomb.white = context->palette->saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
-                const int8_t value = bomb->white.colors[color][component];
-                bomb->bright.colors[color][component] =
+                const int8_t value = g_Bomb.white.colors[color][component];
+                g_Bomb.bright.colors[color][component] =
                     (int8_t)(value > 10 ? (component == 2 ? 15 : 13)
                                         : value + component);
             }
         }
-        bomb->tint_offset = -1;
+        g_Bomb.tint_offset = -1;
     } else if (frame < 50) {
         if (frame % 2 == 0) {
             Palette_SetColor(
                 context->palette, 7,
-                bomb->white.colors[7][0] + bomb->tint_offset,
-                bomb->white.colors[7][1] + bomb->tint_offset,
-                bomb->white.colors[7][2]);
+                g_Bomb.white.colors[7][0] + g_Bomb.tint_offset,
+                g_Bomb.white.colors[7][1] + g_Bomb.tint_offset,
+                g_Bomb.white.colors[7][2]);
         }
         if (frame % 4 == 0) {
-            bomb->tint_offset += frame % 80 / 40 == 0 ? -1 : 1;
+            g_Bomb.tint_offset += frame % 80 / 40 == 0 ? -1 : 1;
         }
         if (frame % 2 == 0) {
             uint8_t angle = (uint8_t)frame;
             for (int16_t ring = 0; ring <= 9; ring += 9) {
                 for (int16_t i = ring; i < ring + 9; i++) {
-                    Sprite_Restore16(bomb->left[i], bomb->top[i], 48, 32);
+                    Sprite_Restore16(g_Bomb.left[i], g_Bomb.top[i], 48, 32);
                     const int16_t radius =
                         Math16_Wrap(500 - ring * 10 - (frame + 60) * 4);
-                    bomb->left[i] = Math16_PolarX(304, radius, angle);
-                    bomb->top[i] = Math16_PolarY(184, radius, angle);
+                    g_Bomb.left[i] = Math16_PolarX(304, radius, angle);
+                    g_Bomb.top[i] = Math16_PolarY(184, radius, angle);
                     M_KujiPut(
                         &context->assets->kuji[i - ring == 8 ? 1 : 0],
-                        i - ring == 8 ? 0 : i - ring, bomb->left[i],
-                        bomb->top[i]);
+                        i - ring == 8 ? 0 : i - ring, g_Bomb.left[i],
+                        g_Bomb.top[i]);
                     angle = (uint8_t)(angle + 28);
                 }
                 angle = (uint8_t)-frame;
@@ -156,7 +158,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
         }
     } else if (frame == 50) {
         for (int32_t i = 0; i < 18; i++) {
-            Sprite_Restore16(bomb->left[i], bomb->top[i], 48, 32);
+            Sprite_Restore16(g_Bomb.left[i], g_Bomb.top[i], 48, 32);
         }
         g_Player.bomb_damaging = true;
     } else if (frame < 140) {
@@ -174,35 +176,34 @@ BOMB_UPDATE Bomb_BeginUpdate(
             }
             Palette_Set(context->palette, &peak);
         } else if (frame % 4 == 2) {
-            Palette_Set(context->palette, &bomb->bright);
+            Palette_Set(context->palette, &g_Bomb.bright);
         }
         if (frame % 4 != 0) {
-            return M_Finish(bomb, context);
+            return M_Finish(context);
         }
         const int16_t offsets[4] = { 392, 400, 384, 400 };
-        bomb->scroll = offsets[frame % 16 / 4];
-        bomb->waiting = true;
-        Frame_BeginWait(&bomb->wait);
+        g_Bomb.scroll = offsets[frame % 16 / 4];
+        g_Bomb.waiting = true;
+        Frame_BeginWait(&g_Bomb.wait);
         return BOMB_UPDATE_WAIT;
     } else if (frame == 140) {
-        bomb->scroll = 0;
-        bomb->waiting = true;
-        Frame_BeginWait(&bomb->wait);
+        g_Bomb.scroll = 0;
+        g_Bomb.waiting = true;
+        Frame_BeginWait(&g_Bomb.wait);
         return BOMB_UPDATE_WAIT;
     }
     return BOMB_UPDATE_RUNNING;
 }
 
-BOMB_UPDATE Bomb_ResumeUpdate(
-    BOMB *const bomb, const BOMB_CONTEXT *const context)
+BOMB_UPDATE Bomb_ResumeUpdate(const BOMB_CONTEXT *const context)
 {
-    ASSERT(bomb->waiting);
-    if (!Frame_WaitReady(&bomb->wait)) {
+    ASSERT(g_Bomb.waiting);
+    if (!Frame_WaitReady(&g_Bomb.wait)) {
         return BOMB_UPDATE_WAIT;
     }
-    bomb->waiting = false;
-    Video_SetScroll(bomb->scroll);
-    return M_Finish(bomb, context);
+    g_Bomb.waiting = false;
+    Video_SetScroll(g_Bomb.scroll);
+    return M_Finish(context);
 }
 
 bool Bomb_DealsDamage(const int16_t remaining_lives, const uint32_t frame)

@@ -7,6 +7,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
@@ -21,11 +22,7 @@ typedef struct {
 static void M_Init(FIXTURE *const f, ARENA *const arena, const int8_t target)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 2, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);

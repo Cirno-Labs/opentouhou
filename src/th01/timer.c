@@ -86,17 +86,17 @@ void StageTimer_Redraw(
         M_InitFor(Math16_Wrap(c->display->stage_number - 1), route);
     }
     if (first_stage) {
-        Hud_SnapResources(c->hud, c->display);
-        Hud_SnapStage(c->hud, c->display);
-        Hud_SnapTimer(c->hud, c->display, g_StageTimer.time);
+        Hud_SnapResources(c->display);
+        Hud_SnapStage(c->display);
+        Hud_SnapTimer(c->display, g_StageTimer.time);
     }
-    Hud_PutStage(c->hud, c->display);
-    c->hud->maximum_combo = 0;
-    Hud_SnapNumbers(c->hud, c->display, first_stage);
-    Hud_PutTimer(c->hud, c->display, g_StageTimer.time);
-    c->hud->force_numbers = true;
-    Hud_ScoreAndCombo(c->hud, c->display);
-    c->hud->force_numbers = false;
+    Hud_PutStage(c->display);
+    g_Hud.maximum_combo = 0;
+    Hud_SnapNumbers(c->display, first_stage);
+    Hud_PutTimer(c->display, g_StageTimer.time);
+    g_Hud.force_numbers = true;
+    Hud_ScoreAndCombo(c->display);
+    g_Hud.force_numbers = false;
 }
 
 bool StageTimer_TickAndPut(const TIMER_CONTEXT *const c)
@@ -109,7 +109,7 @@ bool StageTimer_TickAndPut(const TIMER_CONTEXT *const c)
         return true;
     }
     g_StageTimer.time = (uint16_t)(g_StageTimer.time - 2);
-    Hud_PutTimer(c->hud, c->display, g_StageTimer.time);
+    Hud_PutTimer(c->display, g_StageTimer.time);
     if (g_StageTimer.time == 0) {
         Pellets_SpeedRaise(2);
         c->effect(c->user, 17);
@@ -125,6 +125,6 @@ void StageTimer_ExtendAndPut(const TIMER_CONTEXT *const c)
     ASSERT(g_StageTimer.phase == TIMER_IDLE);
     g_StageTimer.time =
         (uint16_t)(g_StageTimer.time + (g_StageTimer.time != 0 ? 200 : 1000));
-    Hud_PutTimer(c->hud, c->display, g_StageTimer.time);
+    Hud_PutTimer(c->display, g_StageTimer.time);
     g_StageTimer.frames_since_hurry = 0;
 }

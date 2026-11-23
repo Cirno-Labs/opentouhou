@@ -15,9 +15,7 @@ typedef struct {
 
 typedef struct {
     PALETTE_STATE *palette;
-    HUD *hud;
     const HUD_CONTEXT *display;
-    HUD_HP *health;
     SHOTS_OUTPUT shots_output;
     bool *test_damage;
     uint32_t frame_rand;

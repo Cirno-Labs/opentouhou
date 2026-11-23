@@ -68,15 +68,15 @@ static void M_Turret(
     }
     if (reset) {
         obstacle->frame = 0;
-        for (int32_t i = 0; i < context->objects->obstacle_count; i++) {
-            context->objects->obstacles[i].turret_flag = 0;
+        for (int32_t i = 0; i < g_StageObjects.obstacle_count; i++) {
+            g_StageObjects.obstacles[i].turret_flag = 0;
         }
     }
 }
 
 static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
 {
-    STAGE_OBJECTS *const objects = context->objects;
+    STAGE_OBJECTS *const objects = &g_StageObjects;
     STAGE_OBSTACLE *const obstacle = &objects->obstacles[slot];
     ORB *const orb = &g_Orb;
     if (objects->portal_active && objects->entered_portal != slot) {
@@ -143,7 +143,7 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
 
 static void M_ResetPortals(const STAGE_CONTEXT *const context)
 {
-    STAGE_OBJECTS *const objects = context->objects;
+    STAGE_OBJECTS *const objects = &g_StageObjects;
     objects->entered_portal = 0;
     objects->portal_active = false;
     if (g_Orb.in_portal) {
@@ -156,7 +156,7 @@ static void M_ResetPortals(const STAGE_CONTEXT *const context)
 
 void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
 {
-    STAGE_OBJECTS *const objects = context->objects;
+    STAGE_OBJECTS *const objects = &g_StageObjects;
     ORB *const orb = &g_Orb;
     if (reset) {
         objects->vertical_bar_active = false;

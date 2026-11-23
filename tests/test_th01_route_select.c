@@ -7,6 +7,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_world.h"
 #include "test.h"
 
 typedef struct {
@@ -14,7 +15,6 @@ typedef struct {
     GAME_TEXT_FONT font;
     PTN stage;
     SCENE_DATA cache[3];
-    SCENE_STATE scene;
     uint8_t route;
     bool cleared;
     int32_t effects;
@@ -30,7 +30,7 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK_EQ_INT(number, 4);
     f->effects++;
     f->route_at_effect = f->route;
-    f->scene_at_effect = f->scene.active->id;
+    f->scene_at_effect = g_Scene.active->id;
     f->cleared_at_effect = f->cleared;
     f->hit_at_effect = g_Player.is_hit;
 }
@@ -38,11 +38,7 @@ static void M_Effect(void *const user, const int16_t number)
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     GameInput_Init();
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
@@ -84,14 +80,13 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
             &reader, id, Arena_Allocator(arena), &f->cache[id])));
         Reader_Close(&reader);
     }
-    Scene_Activate(&f->scene, &f->cache[0]);
+    Scene_Activate(&f->cache[0]);
     f->route = 1;
     f->assets = (ROUTE_SELECT_ASSETS) { &f->font, &f->stage, &f->cache[1],
                                         &f->cache[2] };
     CHECK(Result_Ignore(RouteSelect_ValidateAssets(&f->assets)));
-    f->context =
-        (ROUTE_SELECT_CONTEXT) { &f->palette, &f->assets, &f->scene, &f->route,
-                                 &f->cleared, M_Effect,   f };
+    f->context = (ROUTE_SELECT_CONTEXT) { &f->palette, &f->assets, &f->route,
+                                          &f->cleared, M_Effect,   f };
 }
 
 static bool M_Poll(
@@ -123,7 +118,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(f.palette.saved.colors[3][0], 9);
     CHECK_EQ_INT(f.palette.saved.colors[4][0], 0);
     CHECK_EQ_INT(f.route, 1);
-    CHECK(f.scene.active == &f.cache[0]);
+    CHECK(g_Scene.active == &f.cache[0]);
     const ROUTE_SELECT frozen = selection;
     CHECK(!RouteSelect_Resume(&selection, &f.context, &raw));
     CHECK(memcmp(&frozen, &selection, sizeof(frozen)) == 0);
@@ -139,8 +134,8 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(f.scene_at_effect, 0);
     CHECK(!f.cleared_at_effect && !f.hit_at_effect);
     CHECK_EQ_INT(f.route, 0);
-    CHECK(f.scene.active == &f.cache[1]);
-    CHECK(f.scene.active->layouts.stages[0].cells[0][1].card);
+    CHECK(g_Scene.active == &f.cache[1]);
+    CHECK(g_Scene.active->layouts.stages[0].cells[0][1].card);
     CHECK(f.cleared && g_Player.is_hit);
     CHECK(RouteSelect_Resume(&selection, &f.context, &raw));
     CHECK_EQ_INT(f.effects, 1);

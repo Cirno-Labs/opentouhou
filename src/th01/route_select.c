@@ -149,7 +149,6 @@ bool RouteSelect_Resume(
             if (g_GameInput.shot || g_GameInput.ok) {
                 c->effect(c->user, 4);
                 Scene_Activate(
-                    c->scene,
                     selection->selection == 0 ? c->assets->makai
                                               : c->assets->jigoku);
                 *c->route = selection->selection;

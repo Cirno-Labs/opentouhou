@@ -6,6 +6,7 @@
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 
+#include "th01_world.h"
 #include "test.h"
 
 #include <string.h>
@@ -27,11 +28,7 @@ static void M_Action(void *const user, const SHOTS_ACTION action)
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     Video_Init(&g_HeapAllocator);
     memset(&g_Orb, 0, sizeof(g_Orb));
     g_Orb.left = 500;

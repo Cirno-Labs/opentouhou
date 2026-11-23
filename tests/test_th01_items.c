@@ -8,15 +8,14 @@
 #include "core/base/arena.h"
 
 #include "th01_video.h"
+#include "th01_world.h"
 #include "test.h"
 
 #include <string.h>
 
 typedef struct {
     ARENA arena;
-    ITEMS items;
     ITEM_CONTEXT context;
-    STAGE_GAMEPLAY game;
     PTN sprites;
     GAME_TEXT_FONT font;
     uint16_t value;
@@ -26,9 +25,9 @@ typedef struct {
 
 static void M_Record(CASE *const c, const int32_t event)
 {
-    c->callback_flags[c->count][0] = c->items.bombs[2].flag;
-    c->callback_flags[c->count][1] = c->items.bombs[3].flag;
-    c->callback_flags[c->count][2] = c->items.points[0].flag;
+    c->callback_flags[c->count][0] = g_Items.bombs[2].flag;
+    c->callback_flags[c->count][1] = g_Items.bombs[3].flag;
+    c->callback_flags[c->count][2] = g_Items.points[0].flag;
     c->events[c->count++] = event;
 }
 
@@ -55,11 +54,7 @@ static void M_Effect(void *const user, const int16_t number)
 static void M_Init(CASE *const c)
 {
     *c = (CASE) {};
-    Player_Init();
-    Orb_Init();
-    Shots_Init();
-    Pellets_Init();
-    g_Rng = 0;
+    Th01Test_ResetWorld();
     Arena_Init(&c->arena, "items", 1024 * 1024);
     Video_Init(Arena_Allocator(&c->arena));
     c->sprites =
@@ -78,7 +73,6 @@ static void M_Init(CASE *const c)
         GameText_LoadGlyphs(glyphs, 97, Arena_Allocator(&c->arena), &c->font)));
     CHECK(Result_Ignore(Items_ValidateAssets(&c->sprites, &c->font)));
     c->context = (ITEM_CONTEXT) {
-        .gameplay = &c->game,
         .point_value = &c->value,
         .sprites = &c->sprites,
         .font = &c->font,
@@ -94,25 +88,25 @@ TEST(pool_splash_fall_bounce_and_reset_boundaries)
     CASE c;
     M_Init(&c);
     for (int32_t i = 0; i < 5; i++) {
-        Items_Add(&c.items, (int16_t)(100 + i), 366, true);
+        Items_Add((int16_t)(100 + i), 366, true);
     }
-    CHECK_EQ_INT(c.items.bombs[3].left, 103);
+    CHECK_EQ_INT(g_Items.bombs[3].left, 103);
     for (int32_t i = 0; i < 11; i++) {
-        Items_UpdateAndRender(&c.items, &c.context);
+        Items_UpdateAndRender(&c.context);
     }
-    CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_FALL);
-    CHECK_EQ_INT(c.items.bombs[0].top, 366);
+    CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_FALL);
+    CHECK_EQ_INT(g_Items.bombs[0].top, 366);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 366), 0);
-    Items_UpdateAndRender(&c.items, &c.context);
-    CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_BOUNCE);
-    CHECK_EQ_INT(c.items.bombs[0].top, 360);
-    CHECK_EQ_INT(c.items.bombs[0].velocity_y, -7);
-    Items_Reset(&c.items);
-    CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_FREE);
-    CHECK_EQ_INT(c.items.bombs[0].top, 360);
-    CHECK_EQ_INT(c.items.bombs[0].velocity_y, -7);
-    Items_Add(&c.items, 200, 123, true);
-    CHECK_EQ_INT(c.items.bombs[0].left, 200);
+    Items_UpdateAndRender(&c.context);
+    CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_BOUNCE);
+    CHECK_EQ_INT(g_Items.bombs[0].top, 360);
+    CHECK_EQ_INT(g_Items.bombs[0].velocity_y, -7);
+    Items_Reset();
+    CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_FREE);
+    CHECK_EQ_INT(g_Items.bombs[0].top, 360);
+    CHECK_EQ_INT(g_Items.bombs[0].velocity_y, -7);
+    Items_Add(200, 123, true);
+    CHECK_EQ_INT(g_Items.bombs[0].left, 200);
     Arena_Free(&c.arena);
 }
 
@@ -122,19 +116,19 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     M_Init(&c);
     g_Player.left = 100;
     g_Player.remaining_bombs = 4;
-    c.items.bombs[0] = (ITEM) { .left = 76, .top = 345, .flag = ITEM_FALL };
-    c.items.bombs[1] = (ITEM) { .left = 100, .top = 344, .flag = ITEM_FALL };
-    c.items.bombs[2] = (ITEM) { .left = 123, .top = 1000, .flag = ITEM_FALL };
-    c.items.bombs[3] = (ITEM) { .left = 100, .top = 345, .flag = ITEM_BOUNCE };
-    Items_UpdateAndRender(&c.items, &c.context);
-    CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_FALL);
-    CHECK_EQ_INT(c.items.bombs[1].flag, ITEM_FALL);
-    CHECK_EQ_INT(c.items.bombs[2].flag, ITEM_COLLECTED);
-    CHECK_EQ_INT(c.items.bombs[2].top, 366);
-    CHECK_EQ_INT(c.items.bombs[2].radius_or_time, 15);
-    CHECK_EQ_INT(c.items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
+    g_Items.bombs[0] = (ITEM) { .left = 76, .top = 345, .flag = ITEM_FALL };
+    g_Items.bombs[1] = (ITEM) { .left = 100, .top = 344, .flag = ITEM_FALL };
+    g_Items.bombs[2] = (ITEM) { .left = 123, .top = 1000, .flag = ITEM_FALL };
+    g_Items.bombs[3] = (ITEM) { .left = 100, .top = 345, .flag = ITEM_BOUNCE };
+    Items_UpdateAndRender(&c.context);
+    CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_FALL);
+    CHECK_EQ_INT(g_Items.bombs[1].flag, ITEM_FALL);
+    CHECK_EQ_INT(g_Items.bombs[2].flag, ITEM_COLLECTED);
+    CHECK_EQ_INT(g_Items.bombs[2].top, 366);
+    CHECK_EQ_INT(g_Items.bombs[2].radius_or_time, 15);
+    CHECK_EQ_INT(g_Items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
     CHECK_EQ_INT(g_Player.remaining_bombs, 5);
-    CHECK_EQ_INT(c.game.score, 10000);
+    CHECK_EQ_INT(g_Stage.score, 10000);
     CHECK_EQ_INT(c.count, 4);
     CHECK_EQ_INT(c.events[0], 1);
     CHECK_EQ_INT(c.events[1], 3);
@@ -145,9 +139,9 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(c.callback_flags[2][1], ITEM_BOUNCE);
     CHECK_EQ_INT(c.callback_flags[3][1], ITEM_COLLECTED_OVER_CAP);
     for (int32_t i = 0; i < 15; i++) {
-        Items_UpdateAndRender(&c.items, &c.context);
+        Items_UpdateAndRender(&c.context);
     }
-    CHECK_EQ_INT(c.items.bombs[2].flag, ITEM_FREE);
+    CHECK_EQ_INT(g_Items.bombs[2].flag, ITEM_FREE);
     Arena_Free(&c.arena);
 }
 
@@ -160,30 +154,30 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
     CASE c;
     M_Init(&c);
     for (size_t i = 0; i < sizeof(before) / sizeof(*before); i++) {
-        Items_Reset(&c.items);
+        Items_Reset();
         c.value = before[i];
-        c.items.points[0] = (ITEM) { .left = 0, .top = 345, .flag = ITEM_FALL };
-        const uint32_t score = c.game.score;
-        Items_UpdateAndRender(&c.items, &c.context);
+        g_Items.points[0] = (ITEM) { .left = 0, .top = 345, .flag = ITEM_FALL };
+        const uint32_t score = g_Stage.score;
+        Items_UpdateAndRender(&c.context);
         CHECK_EQ_INT(c.value, after[i]);
-        CHECK_EQ_INT(c.game.score, score + after[i]);
+        CHECK_EQ_INT(g_Stage.score, score + after[i]);
         CHECK_EQ_INT(c.callback_flags[c.count - 2][2], ITEM_FALL);
         CHECK_EQ_INT(c.callback_flags[c.count - 1][2], ITEM_COLLECTED_OVER_CAP);
     }
-    Items_Reset(&c.items);
+    Items_Reset();
     c.value = 10000;
-    c.items.points[0] = (ITEM) {
+    g_Items.points[0] = (ITEM) {
         .left = 100, .top = 398, .velocity_y = 2, .flag = ITEM_BOUNCE
     };
-    c.items.points[1] = (ITEM) { .left = 200,
+    g_Items.points[1] = (ITEM) { .left = 200,
                                  .top = 200,
                                  .velocity_y = -2,
                                  .flag = ITEM_COLLECTED_OVER_CAP,
                                  .radius_or_time = 3 };
-    Items_UpdateAndRender(&c.items, &c.context);
+    Items_UpdateAndRender(&c.context);
     CHECK_EQ_INT(c.value, 0);
-    CHECK_EQ_INT(c.items.points[0].flag, ITEM_FREE);
-    CHECK_EQ_INT(c.items.points[1].radius_or_time, 2);
+    CHECK_EQ_INT(g_Items.points[0].flag, ITEM_FREE);
+    CHECK_EQ_INT(g_Items.points[1].radius_or_time, 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 200 + 4 * 8 + 2, 198), 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 200 + 4 * 8 + 3, 198), 0);
     Arena_Free(&c.arena);

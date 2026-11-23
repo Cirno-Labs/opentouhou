@@ -126,10 +126,10 @@ bool B10J_ResumeSetup(const B10J_CONTEXT *const c)
     g_B10J.frame = 0;
     g_B10J.phase = B10J_PHASE_START;
     g_B10J.hp = 12;
-    c->hit->health->first_white = 6;
-    c->hit->health->first_redwhite = 2;
-    Particles_Init(c->particles);
-    Missiles_Reset(c->missiles);
+    g_HudHp.first_white = 6;
+    g_HudHp.first_redwhite = 2;
+    Particles_Init();
+    Missiles_Reset();
     *c->stage_palette = c->hit->palette->saved;
     g_B10J.setup_active = false;
     return true;
@@ -376,7 +376,7 @@ static void M_AimedMissiles(const B10J_CONTEXT *const c)
                 g_B10J.pattern_state, 0);
             for (int32_t i = 0; i < 4; i++) {
                 Missiles_Add(
-                    c->missiles, x[i], y[i], Math16_ToPixel(velocity.x),
+                    x[i], y[i], Math16_ToPixel(velocity.x),
                     Math16_ToPixel(velocity.y), 0);
             }
             Boss_Effect(c->hit, 6);
@@ -643,8 +643,7 @@ static void M_Halfcircle(const B10J_CONTEXT *const c)
             const MATH16_VECTOR velocity = Math16_Vector(
                 (int16_t)(g_B10J.pattern_state / 10), g_B10J.missile_angle);
             for (int32_t i = 0; i < 4; i++) {
-                Missiles_Add(
-                    c->missiles, x[i], y[i], velocity.x, velocity.y, 0);
+                Missiles_Add(x[i], y[i], velocity.x, velocity.y, 0);
             }
             Boss_Effect(c->hit, 6);
             g_B10J.missile_angle += 13;
@@ -725,7 +724,7 @@ static void M_Lasers(const B10J_CONTEXT *const c)
     if (g_B10J.frame > 180 && g_B10J.frame < 300) {
         const int32_t i = g_B10J.frame % 4;
         ShootoutLasers_Spawn(
-            &c->lasers->slots[i], g_B10J.laser_x[i], g_B10J.laser_y[i],
+            &g_ShootoutLasers.slots[i], g_B10J.laser_x[i], g_B10J.laser_y[i],
             Math16_Wrap(Boss_Player(c->hit)->left + 14), 400,
             g_B10J.pattern_state, 7, 20, 4);
     }
@@ -791,7 +790,7 @@ static bool M_Death(const B10J_CONTEXT *const c)
     if (!BossDefeat_Resume(&g_B10J.defeat, &defeat)) {
         return false;
     }
-    Scene_Activate(c->scene, &c->assets->next_scene);
+    Scene_Activate(&c->assets->next_scene);
     g_B10J.defeating = false;
     g_B10J.finished = true;
     return true;
@@ -810,9 +809,9 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
         return M_Death(c);
     }
     Missiles_UpdateAndRender(
-        c->missiles, (uint16_t)c->hit->frame_rand,
+        (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
-    Particles_UpdateAndRender(c->particles, PARTICLES_TOP_RIGHT, 7);
+    Particles_UpdateAndRender(PARTICLES_TOP_RIGHT, 7);
     if (g_B10J.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
         g_B10J.frame = 0;
@@ -825,8 +824,7 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
     }
     if (g_B10J.phase == B10J_PHASE_FIRST) {
         if (!g_B10J.hp_bar_filled) {
-            g_B10J.hp_bar_filled =
-                HudHp_Increment(c->hit->health, g_B10J.hp, g_B10J.frame);
+            g_B10J.hp_bar_filled = HudHp_Increment(g_B10J.hp, g_B10J.frame);
         }
         g_B10J.frame = Math16_Wrap(g_B10J.frame + 1);
         g_B10J.hit.frame = Math16_Wrap(g_B10J.hit.frame + 1);
@@ -908,8 +906,8 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
             Video_SelectDrawingPage(0);
             c->fade_music(c->hit->user);
             Pellets_EraseAndResetMoving();
-            Missiles_Reset(c->missiles);
-            ShootoutLasers_EraseAndReset(c->lasers, 5);
+            Missiles_Reset();
+            ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&g_B10J.defeat, BOSS_DEFEAT_REGULAR);
             g_B10J.defeating = true;
             return M_Death(c);

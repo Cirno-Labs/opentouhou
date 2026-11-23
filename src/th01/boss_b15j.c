@@ -83,14 +83,14 @@ void B15J_Setup(const B15J_CONTEXT *const c)
     g_B15J.frame = 0;
     g_B15J.hp = 14;
     g_B15J.finished = false;
-    c->hit->health->first_white = 10;
-    c->hit->health->first_redwhite = 6;
+    g_HudHp.first_white = 10;
+    g_HudHp.first_redwhite = 6;
     for (int32_t i = 0; i < 2; i++) {
         BossEntity_SetPosition(
             &g_B15J.souls[i], 0, 0, (BOSS_BOUNDS) { 32, 576, 64, 400 });
     }
     g_B15J.post_defeat = (PALETTE) {};
-    Particles_Init(c->particles);
+    Particles_Init();
 }
 
 static int8_t M_Byte(const int32_t value)
@@ -449,7 +449,7 @@ static void M_Laser(
     const int16_t target, const int16_t speed, const int16_t width)
 {
     ShootoutLasers_Spawn(
-        &c->lasers->slots[i], x, 147, target, 400, speed, 10, 20, width);
+        &g_ShootoutLasers.slots[i], x, 147, target, 400, speed, 10, 20, width);
 }
 
 static void M_CrossLasers(const B15J_CONTEXT *const c)
@@ -565,8 +565,8 @@ static void M_VerticalLasers(const B15J_CONTEXT *const c)
                       - g_B15J.random_range);
         const int16_t x = Math16_Wrap(i * 64 + offset);
         ShootoutLasers_Spawn(
-            &c->lasers->slots[i], x, 64, x, 400, g_B15J.pattern_state, 10, 20,
-            8);
+            &g_ShootoutLasers.slots[i], x, 64, x, 400, g_B15J.pattern_state, 10,
+            20, 8);
         Boss_Effect(c->hit, 6);
     }
     if (g_B15J.frame >= 190) {
@@ -587,7 +587,7 @@ static bool M_Death(const B15J_CONTEXT *const c)
     if (!BossDefeat_Resume(&g_B15J.defeat, &defeat)) {
         return false;
     }
-    Scene_Activate(c->scene, &c->assets->next_scene);
+    Scene_Activate(&c->assets->next_scene);
     g_B15J.defeating = false;
     g_B15J.finished = true;
     return true;
@@ -606,8 +606,7 @@ bool B15J_UpdateAndRender(const B15J_CONTEXT *const c)
     }
     if (g_B15J.phase == B15J_PHASE_SPIRAL) {
         if (!g_B15J.hp_bar_filled) {
-            g_B15J.hp_bar_filled =
-                HudHp_Increment(c->hit->health, g_B15J.hp, g_B15J.frame);
+            g_B15J.hp_bar_filled = HudHp_Increment(g_B15J.hp, g_B15J.frame);
         }
         M_Common();
         M_SymmetricSpiral(c);
@@ -700,7 +699,7 @@ bool B15J_UpdateAndRender(const B15J_CONTEXT *const c)
         if (g_B15J.hp <= 0) {
             c->fade_music(c->hit->user);
             Pellets_EraseAndResetMoving();
-            ShootoutLasers_EraseAndReset(c->lasers, 4);
+            ShootoutLasers_EraseAndReset(4);
             BossDefeat_Begin(&g_B15J.defeat, BOSS_DEFEAT_REGULAR);
             g_B15J.defeating = true;
             return M_Death(c);

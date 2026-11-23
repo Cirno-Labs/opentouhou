@@ -24,6 +24,8 @@ typedef struct {
     MISSILE slots[MISSILES_COUNT];
 } MISSILES;
 
+extern MISSILES g_Missiles;
+
 typedef enum {
     MISSILES_ACTION_RESTORE,
     MISSILES_ACTION_PUT,
@@ -49,11 +51,11 @@ RESULT Missiles_ValidateSprites(const PTN *sprites);
 // Requires finite velocities with scaled magnitude below 2^63. Retains
 // previous_top and unused history; only previous_left becomes -1.
 bool Missiles_Add(
-    MISSILES *missiles, int16_t left, int16_t top, double velocity_x,
-    double velocity_y, int8_t reserved);
+    int16_t left, int16_t top, double velocity_x, double velocity_y,
+    int8_t reserved);
 
 // Clears flags only, without restoring pixels or clearing history.
-void Missiles_Reset(MISSILES *missiles);
+void Missiles_Reset(void);
 
 // Runs restore/motion/explosion, rendering, then lethal tests in pool order.
 // Moves and tests all slots; frame_rand bit 0 selects only restore/render
@@ -63,8 +65,7 @@ void Missiles_Reset(MISSILES *missiles);
 // Calls output synchronously; callbacks must not modify missiles or player.
 // Allocates nothing and reads no devices. Gameplay scene and audio event
 // consumption remain external. The required effect callback emits effect 7.
-void Missiles_UpdateAndRender(
-    MISSILES *missiles, uint16_t frame_rand, MISSILES_OUTPUT output);
+void Missiles_UpdateAndRender(uint16_t frame_rand, MISSILES_OUTPUT output);
 
 // Renders actions with validated local sprites; effects belong to audio.
 // Keeps unaligned quarter positions and 32-pixel-wide word-rounded restores.

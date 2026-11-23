@@ -116,7 +116,7 @@ static void M_Gameplay(const GAMEPLAY_WORLD *const world, uint32_t *const row)
     row[TH01_COLUMN_game_frames] = world->frame;
     row[TH01_COLUMN_stage] = (uint32_t)g_Session.stage_id;
     row[TH01_COLUMN_route] = g_Session.route;
-    row[TH01_COLUMN_score] = world->metrics.score;
+    row[TH01_COLUMN_score] = g_Stage.score;
     row[TH01_COLUMN_lives] = M_I32(g_Session.lives);
     row[TH01_COLUMN_bombs] = M_I32(g_Player.remaining_bombs);
     row[TH01_COLUMN_pellet_speed] = M_I32(g_PelletShared.speed);
@@ -142,10 +142,10 @@ static void M_Gameplay(const GAMEPLAY_WORLD *const world, uint32_t *const row)
         &row[TH01_COLUMN_orb_force_hi]);
     row[TH01_COLUMN_orb_force_frame] = M_I32(orb->force_frame);
 
-    row[TH01_COLUMN_card_combo] = M_I32(world->metrics.combo);
-    row[TH01_COLUMN_card_flip_cycle] = world->metrics.flip_cycle;
-    row[TH01_COLUMN_card_count] = (uint32_t)world->objects.card_count;
-    row[TH01_COLUMN_card_hash] = M_HashCards(&world->objects);
+    row[TH01_COLUMN_card_combo] = M_I32(g_Stage.combo);
+    row[TH01_COLUMN_card_flip_cycle] = g_Stage.flip_cycle;
+    row[TH01_COLUMN_card_count] = (uint32_t)g_StageObjects.card_count;
+    row[TH01_COLUMN_card_hash] = M_HashCards(&g_StageObjects);
 
     row[TH01_COLUMN_boss] = world->boss;
     M_Boss(world, row);

@@ -20,6 +20,8 @@ typedef struct {
     bool waiting;
 } BOMB;
 
+extern BOMB g_Bomb;
+
 typedef struct {
     PALETTE_STATE *palette;
     const PTN *miko;
@@ -49,10 +51,9 @@ RESULT Bomb_ValidateAssets(const BOMB_ASSETS *assets);
 // All images and palettes must be loaded before ticks; updates allocate
 // nothing. Keep context state stable while suspended. Stage palette is
 // read at completion. No new Begin is allowed while waiting.
-BOMB_UPDATE Bomb_BeginUpdate(
-    BOMB *bomb, const BOMB_CONTEXT *context, int16_t frame);
+BOMB_UPDATE Bomb_BeginUpdate(const BOMB_CONTEXT *context, int16_t frame);
 
 // Resume only after WAIT. Repeated polling before the next edge has no
 // side effects. Scroll changes the display origin, not page pixels.
-BOMB_UPDATE Bomb_ResumeUpdate(BOMB *bomb, const BOMB_CONTEXT *context);
+BOMB_UPDATE Bomb_ResumeUpdate(const BOMB_CONTEXT *context);
 bool Bomb_DealsDamage(int16_t remaining_lives, uint32_t frame);

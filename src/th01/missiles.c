@@ -3,6 +3,8 @@
 
 #include "th01/finite.h"
 
+MISSILES g_Missiles;
+
 static void M_Action(
     const MISSILES_OUTPUT output, const MISSILE *const missile,
     const MISSILES_ACTION_KIND kind, const int16_t image, const int16_t quarter)
@@ -28,11 +30,11 @@ RESULT Missiles_ValidateSprites(const PTN *const sprites)
 }
 
 bool Missiles_Add(
-    MISSILES *const missiles, const int16_t left, const int16_t top,
-    const double velocity_x, const double velocity_y, const int8_t reserved)
+    const int16_t left, const int16_t top, const double velocity_x,
+    const double velocity_y, const int8_t reserved)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        MISSILE *const m = &missiles->slots[i];
+        MISSILE *const m = &g_Missiles.slots[i];
         if (m->flag != MISSILE_FREE) {
             continue;
         }
@@ -52,19 +54,18 @@ bool Missiles_Add(
     return false;
 }
 
-void Missiles_Reset(MISSILES *const missiles)
+void Missiles_Reset(void)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        missiles->slots[i].flag = MISSILE_FREE;
+        g_Missiles.slots[i].flag = MISSILE_FREE;
     }
 }
 
 void Missiles_UpdateAndRender(
-    MISSILES *const missiles, const uint16_t frame_rand,
-    const MISSILES_OUTPUT output)
+    const uint16_t frame_rand, const MISSILES_OUTPUT output)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        MISSILE *const m = &missiles->slots[i];
+        MISSILE *const m = &g_Missiles.slots[i];
         if (m->flag == MISSILE_FREE) {
             continue;
         }
@@ -97,7 +98,7 @@ void Missiles_UpdateAndRender(
         }
     }
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        MISSILE *const m = &missiles->slots[i];
+        MISSILE *const m = &g_Missiles.slots[i];
         if (m->flag == MISSILE_FREE || (i & 1) != (frame_rand & 1)) {
             continue;
         }
@@ -124,7 +125,7 @@ void Missiles_UpdateAndRender(
         return;
     }
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        const MISSILE *const m = &missiles->slots[i];
+        const MISSILE *const m = &g_Missiles.slots[i];
         if (m->flag != MISSILE_FREE
             && Math16_ToPixel(m->left) > g_Player.left - 8
             && Math16_ToPixel(m->left) < g_Player.left + 24

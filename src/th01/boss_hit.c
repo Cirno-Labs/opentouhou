@@ -22,7 +22,7 @@ void BossHit_UpdateAndRender(
     if (*c->test_damage) {
         *hp = Math16_Wrap(*hp - 1);
         *c->test_damage = false;
-        HudHp_Decrement(c->health, *hp);
+        HudHp_Decrement(*hp);
     }
     Shots_HitTestBoss(
         box.left, box.top, box.width_minus_shot, box.height_minus_shot,
@@ -44,10 +44,10 @@ void BossHit_UpdateAndRender(
         } else if (orb->velocity_x == ORB_X_STILL) {
             orb->velocity_x = orb->left < 304 ? ORB_X_RIGHT_4 : ORB_X_LEFT_4;
         }
-        c->display->gameplay->score += (uint32_t)(int32_t)hit_score;
-        Hud_ScoreAndCombo(c->hud, c->display);
+        g_Stage.score += (uint32_t)(int32_t)hit_score;
+        Hud_ScoreAndCombo(c->display);
         c->effect(c->user, 3);
-        HudHp_Decrement(c->health, *hp);
+        HudHp_Decrement(*hp);
     }
     if (hit->invincible && hit->frame < 40) {
         if (hit->frame % 4 == 2) {

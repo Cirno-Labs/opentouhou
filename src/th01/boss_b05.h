@@ -50,7 +50,6 @@ typedef struct {
     const B05_ASSETS *assets;
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
-    PARTICLES *particles;
     const PTN *miko;
     const ROUTE_SELECT_CONTEXT *route;
     void (*fade_music)(void *user);
