@@ -21,6 +21,7 @@
 #include "shell/folders.h"
 #include "shell/log_file.h"
 
+#include "builtin.h"
 #include "clock.h"
 #include "fonts.h"
 #include "hotkeys.h"
@@ -331,6 +332,7 @@ static RESULT M_Init(
     LOG_INFO("%s %s", ctx->desc->id, ctx->desc->version);
     LOG_INFO("Folder mode: %s", Folders_GetModeName(ctx->folders.mode));
     MUST(M_CheckData(ctx), "%s failed to start", ctx->desc->id);
+    MUST(ShellBuiltin_Mount(ctx->files));
     ctx->user_files = Vfs_Create(&g_HeapAllocator);
     if (ctx->folders.user_dir != nullptr) {
         MUST(Vfs_MountDir(ctx->user_files, "", ctx->folders.user_dir, 0, true));
