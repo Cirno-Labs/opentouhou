@@ -39,47 +39,44 @@ typedef struct {
     bool left, right, ok, shot, cancel;
 } MENU_INPUT;
 
-// Updates gameplay flags only when their physical sources change. Arrow
-// and keypad sources stay separate so a change can reassert a consumed
-// flag even while the combined direction stays held. Bomb stays set until
+// Updates the gameplay flags only when their physical sources change. Arrow
+// and keypad sources stay separate, so a change can reassert a consumed
+// flag while the combined direction stays held. bomb stays set until
 // consumed or reset. Returns whether Return was pressed while paused and
 // shooting, which sets player_is_hit in the original.
 //
-// Debug mode updates memory-screen flags as events without entering the
-// original recursive debug screens. A zero-initialized state is ready.
+// In debug mode, sets the memory-screen flags as events instead of entering
+// the original's recursive debug screens.
 bool GameInput_SenseGame(GAME_INPUT *state, const TH01_INPUT *raw, bool debug);
 
-// Senses ending arrows, Z/X, Return and Escape without keypad, debug
-// keys or bomb double taps. Preserves unrelated gameplay fields.
+// Senses the ending's arrows, Z/X, Return and Escape, without keypad, debug
+// keys or bomb double taps.
 void GameInput_SenseEnding(GAME_INPUT *state, const TH01_INPUT *raw);
 
-// Clears repeat history and double-tap counts, keeping debug-key history,
-// held flags, pause and bomb_frame. Clears the pending bomb flag.
+// Clears the repeat history, the double-tap counts and the pending bomb,
+// keeping debug-key history, held flags, pause and bomb_frame.
 void GameInput_ResetRepeat(GAME_INPUT *state);
 
-// Clears held flags and pause, then resets repeat history. Keeps bomb_frame
-// and the debug-key history, as input_reset_sense does.
+// Clears held flags and pause, then resets the repeat history. Keeps
+// bomb_frame and the debug-key history, as input_reset_sense does.
 void GameInput_ResetGame(GAME_INPUT *state);
 
-// Clears only horizontal, shot and OK, keeping all repeat history.
+// Clears only horizontal, shot and ok, keeping the repeat history.
 void GameInput_ResetMenu(GAME_INPUT *state);
 
-// Advances the signed 16-bit bomb window after a gameplay frame. Sensing
-// input, menu waits and host ticks do not advance it automatically.
+// Advances the signed 16-bit bomb window after a gameplay frame.
 void GameInput_AdvanceBombFrame(GAME_INPUT *state);
 
-// Updates menu selection on up/down presses, in source order. Main and
-// options keep independent history; the music room shares options history.
-// Options also update held left/right. Both update held OK, shot and cancel.
-// Requires a positive choice_count and a selection inside its range.
+// Moves selection on up/down presses, in the original's order. Main and
+// options keep separate history; the music room shares the options history.
+// Options also update held left/right. Requires a positive choice_count and
+// a selection inside it.
 int32_t GameInput_SenseMenu(
     MENU_INPUT *state, const TH01_INPUT *raw, MENU_INPUT_KIND kind,
     int32_t choice_count, int32_t selection);
 
-// Latches a sampled keyboard press or a bound confirmation control until
-// pending is cleared. Ignores modifier-only and lock-only keyboard presses.
-// key_press may be nullptr. Clear pending where the original clears its
-// BIOS buffer. Device polling does not reproduce BIOS key repeat or taps
-// that begin and end between polls.
+// Sets pending on a keyboard press or a bound confirmation control, ignoring
+// modifier-only and lock-only presses. key_press may be nullptr. Misses the
+// BIOS key repeat and taps that begin and end between polls.
 void GameInput_LatchIntro(
     bool *pending, const TH01_INPUT *raw, const INPUT_BINDING *key_press);

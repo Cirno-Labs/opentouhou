@@ -20,20 +20,14 @@ typedef struct {
     GRX images[GRZ_MAX_IMAGES];
 } GRZ;
 
-// Loads HGRX data as 640 by 400 row-major color indices and shared coverage.
-// pixels holds stream_count consecutive images. Coverage is zero or one and
-// applies to every stream; an opaque color-zero pixel remains covered.
-// Uncovered pixels are zero. Expands the four-bit RGB palette to opaque
-// eight-bit colors without applying it to drawing state. Supports one
-// through 16 streams. Clips runs at the visible image boundary.
-// Keeps reader open after the record. Results come from allocator, which is
-// meant to be an arena and owns their lifetime. Leaves out empty and
-// allocates nothing from allocator on failure.
+// Loads HGRX data as stream_count consecutive 640 by 400 row-major images
+// of color indices, with coverage of zero or one shared by every stream.
+// A covered pixel may hold color zero; uncovered pixels are zero. Expands
+// the four-bit RGB palette to opaque eight-bit colors. Supports one through
+// 16 streams. Clips runs at the image boundary.
 RESULT Grx_Load(READER *reader, const ALLOCATOR *allocator, GRX *out);
 
-// Loads all HGRX images of an HGRZ container, with the same storage and pixel
-// rules as Grx_Load. Supports one through 16 images, including repeated or
-// unordered offsets. Offsets are relative to the container's start and must
-// lie within its recorded size. Keeps reader open after that size.
-// Leaves out empty and allocates nothing from allocator on failure.
+// Loads all HGRX images of an HGRZ container as Grx_Load does. Supports one
+// through 16 images, including repeated or unordered offsets. Offsets are
+// relative to the container's start and must lie within its recorded size.
 RESULT Grz_Load(READER *reader, const ALLOCATOR *allocator, GRZ *out);
