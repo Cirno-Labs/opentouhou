@@ -28,8 +28,6 @@ static void M_Assets(B20J_ASSETS *const a, ARENA *const arena)
             .width = 640, .height = 400, .has_palette = true, .pixels = pixels
         };
     }
-    a->music.bytes = pixels;
-    a->effects.bytes = pixels;
     a->diamond = pixels;
     a->flake = pixels;
 }
@@ -77,7 +75,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     Arena_Free(&arena);
 }
 
-TEST(validation_requires_all_sixteen_images_and_audio)
+TEST(validation_requires_all_sixteen_images_and_masks)
 {
     ARENA arena;
     Arena_Init(&arena, "Konngara validation", 1024 * 1024);
@@ -90,7 +88,7 @@ TEST(validation_requires_all_sixteen_images_and_audio)
     a.body.images[15].coverage = nullptr;
     CHECK(!Result_Ignore(B20J_ValidateAssets(&a)));
     a.body.images[15].coverage = a.body.images[0].coverage;
-    a.effects.bytes = nullptr;
+    a.flake = nullptr;
     CHECK(!Result_Ignore(B20J_ValidateAssets(&a)));
     Arena_Free(&arena);
 }
@@ -128,12 +126,9 @@ static void M_Effect(void *const user, const int16_t effect)
     CHECK(effect > 0 && effect <= 16);
     f->effects[effect]++;
 }
-static void M_Audio(
-    void *const user, const B20J_AUDIO_ACTION action,
-    const B20J_ASSETS *const assets)
+static void M_Audio(void *const user, const B20J_AUDIO_ACTION action)
 {
     FIXTURE *const f = user;
-    CHECK(assets == &f->assets);
     CHECK(f->audio_count < 8);
     f->audio[f->audio_count++] = action;
 }
@@ -224,10 +219,9 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(f.rng, 91);
     CHECK(f.objects.entrance_done && f.objects.portal_active);
     CHECK_EQ_INT(f.objects.destination_left, 77);
-    CHECK_EQ_INT(f.audio_count, 3);
+    CHECK_EQ_INT(f.audio_count, 2);
     CHECK_EQ_INT(f.audio[0], B20J_AUDIO_LOAD_MUSIC);
-    CHECK_EQ_INT(f.audio[1], B20J_AUDIO_LOAD_EFFECTS);
-    CHECK_EQ_INT(f.audio[2], B20J_AUDIO_PLAY);
+    CHECK_EQ_INT(f.audio[1], B20J_AUDIO_PLAY);
     Frame_Reset();
     int32_t polls = 0;
     while (!B20J_ResumeEntrance(&f.boss, &f.context)) {
@@ -237,7 +231,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
             CHECK(!B20J_ResumeEntrance(&f.boss, &f.context));
             CHECK(memcmp(&f.boss, &snapshot, sizeof(snapshot)) == 0);
             CHECK_EQ_INT(f.effects[9], effects);
-            CHECK_EQ_INT(f.audio_count, 3);
+            CHECK_EQ_INT(f.audio_count, 2);
         }
         Frame_VSync();
         CHECK(++polls < 2000);

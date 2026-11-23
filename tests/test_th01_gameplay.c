@@ -545,8 +545,8 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     Gameplay_Play(g, 3);
     Gameplay_Stop(g);
     Gameplay_Fade(g);
-    g->bindings.c20j.audio(g, B20J_AUDIO_STOP, nullptr);
-    g->bindings.c20m.audio(g, B20M_AUDIO_STOP, nullptr);
+    g->bindings.c20j.audio(g, B20J_AUDIO_STOP);
+    g->bindings.c20m.audio(g, B20M_AUDIO_STOP);
     CHECK_EQ_INT(g->storage.song, 3);
     static MDRV_FRAME expected[4800], actual[4800];
     Mdrv_Render(twin, expected, 4800);
@@ -571,11 +571,11 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
     CHECK_EQ_INT(g->storage.song, 4);
     CHECK(!M_EffectSounds(g));
     Gameplay_Effect(g, 5);
-    g->bindings.c20j.audio(g, B20J_AUDIO_STOP, nullptr);
+    g->bindings.c20j.audio(g, B20J_AUDIO_STOP);
     CHECK(!M_EffectSounds(g));
     Gameplay_Play(g, 5);
     Gameplay_Effect(g, 5);
-    g->bindings.c20m.audio(g, B20M_AUDIO_STOP, nullptr);
+    g->bindings.c20m.audio(g, B20M_AUDIO_STOP);
     CHECK(!M_EffectSounds(g));
     Arena_Free(&f.arena);
 }

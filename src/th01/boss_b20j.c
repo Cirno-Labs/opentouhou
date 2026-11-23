@@ -23,19 +23,6 @@ static RESULT M_LoadBody(
     Reader_Close(&reader);
     return result;
 }
-static RESULT M_LoadAudio(
-    VFS *const vfs, const ALLOCATOR *const a, B20J_ASSETS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "ALICE.MDT", VFS_IN_MEMORY, &reader));
-    RESULT result = MdrvData_LoadMusic(&reader, a, &out->music);
-    Reader_Close(&reader);
-    MUST(result);
-    MUST(Vfs_Open(vfs, "ZIGOKU.MDE", VFS_IN_MEMORY, &reader));
-    result = MdrvData_LoadEffects(&reader, a, &out->effects);
-    Reader_Close(&reader);
-    return result;
-}
 static RESULT M_LoadMasks(
     VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
     const ALLOCATOR *const a, B20J_ASSETS *const out)
@@ -90,9 +77,8 @@ RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
             "Invalid Konngara background");
     }
     FAIL_IF(
-        a->music.bytes == nullptr || a->effects.bytes == nullptr
-            || a->diamond == nullptr || a->flake == nullptr,
-        "Missing Konngara audio or shape masks");
+        a->diamond == nullptr || a->flake == nullptr,
+        "Missing Konngara shape masks");
     return OK;
 }
 RESULT B20J_LoadAssets(
@@ -112,7 +98,6 @@ RESULT B20J_LoadAssets(
     for (int32_t i = 0; i < 4; i++) {
         MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
-    MUST(M_LoadAudio(vfs, a, &loaded));
     MUST(M_LoadMasks(vfs, scratch, scratch_size, a, &loaded));
     MUST(B20J_ValidateAssets(&loaded));
     *out = loaded;
@@ -149,7 +134,7 @@ static uint16_t M_Random(const B20J_CONTEXT *const c)
 }
 static void M_Audio(const B20J_CONTEXT *const c, const B20J_AUDIO_ACTION action)
 {
-    c->audio(c->hit->user, action, c->assets);
+    c->audio(c->hit->user, action);
 }
 static void M_Pi(
     const B20J_CONTEXT *const c, const PI_IMAGE *const image,
@@ -308,7 +293,6 @@ void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
     M_Pi(c, &c->assets->upper, false);
     Video_SelectDrawingPage(0);
     M_Audio(c, B20J_AUDIO_LOAD_MUSIC);
-    M_Audio(c, B20J_AUDIO_LOAD_EFFECTS);
     ASSERT(Result_Ignore(
         BossEntity_Bind(&b->head, c->sprites, 0, &c->assets->head)));
     ASSERT(Result_Ignore(

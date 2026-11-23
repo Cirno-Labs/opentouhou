@@ -23,9 +23,6 @@ static void M_Assets(B20M_ASSETS *const a, ARENA *const arena)
             .width = 640, .height = 400, .has_palette = true, .pixels = pixels
         };
     }
-    a->music.bytes = pixels;
-    a->second_music.bytes = pixels;
-    a->effects.bytes = pixels;
     a->star = pixels;
     a->flake = pixels;
     a->spark = pixels;
@@ -88,9 +85,9 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
     a.backgrounds[5].pixels = nullptr;
     CHECK(!Result_Ignore(B20M_ValidateAssets(&a)));
     a.backgrounds[5].pixels = a.lower.pixels;
-    a.second_music.bytes = nullptr;
+    a.spark = nullptr;
     CHECK(!Result_Ignore(B20M_ValidateAssets(&a)));
-    a.second_music.bytes = a.music.bytes;
+    a.spark = a.star;
     a.bird.count = 7;
     CHECK(!Result_Ignore(B20M_ValidateAssets(&a)));
     Arena_Free(&arena);
@@ -131,12 +128,9 @@ static void M_Effect(void *const user, const int16_t effect)
     CHECK(effect > 0 && effect <= 16);
     f->effects[effect]++;
 }
-static void M_Audio(
-    void *const user, const B20M_AUDIO_ACTION action,
-    const B20M_ASSETS *const assets)
+static void M_Audio(void *const user, const B20M_AUDIO_ACTION action)
 {
     FIXTURE *const f = user;
-    CHECK(assets == &f->assets);
     CHECK(f->audio_count < 8);
     f->audio[f->audio_count++] = action;
 }
@@ -241,7 +235,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     const size_t used = arena.used;
     B20M_BeginEntrance(&f.boss, &f.context);
     CHECK(f.pellets.interlace);
-    CHECK_EQ_INT(f.audio_count, 3);
+    CHECK_EQ_INT(f.audio_count, 2);
     CHECK(!B20M_ResumeEntrance(&f.boss, &f.context, tick));
     const B20M pending = f.boss;
     CHECK(!B20M_ResumeEntrance(&f.boss, &f.context, tick));
@@ -257,7 +251,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(f.audio_count, 3);
+    CHECK_EQ_INT(f.audio_count, 2);
     Arena_Free(&arena);
 }
 TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
