@@ -776,8 +776,6 @@ TEST(the_three_keep_scenes_keep_the_interface)
 {
     static const SCENE scenes[] = {
         SCENE_NEXT_STAGE,
-        SCENE_RESTART_STAGE,
-        SCENE_NEXT_STAGE_AGAIN,
     };
     for (size_t i = 0; i < sizeof(scenes) / sizeof(scenes[0]); i++) {
         M_SetUp("keep_scenes", 1);

@@ -145,12 +145,11 @@ extern GUI g_Gui;
 
 // Adds the update element (priority 13) and the draw element (priority
 // 12). Adding loads the portraits, the titles and the dialogue file of
-// g_GameManager.run.stage, 1 to 8. Outside SCENE_NEXT_STAGE,
-// SCENE_RESTART_STAGE and SCENE_NEXT_STAGE_AGAIN, it also resets g_Gui and
-// loads the interface, the portraits of the character and the loading
-// screen. In those scenes, it keeps them, copies the play area into the
-// snapshot and lays the tiles out. Another stage, a missing file or a
-// dialogue file that GuiMsg_Read rejects fails the add.
+// g_GameManager.run.stage, 1 to 8. Outside SCENE_NEXT_STAGE, it also
+// resets g_Gui and loads the interface, the portraits of the character and
+// the loading screen. In SCENE_NEXT_STAGE, it keeps them, copies the play
+// area into the snapshot and lays the tiles out. Another stage, a missing file
+// or a dialogue file that GuiMsg_Read rejects fails the add.
 RESULT Gui_Register(void);
 
 // Removes both elements and releases the stage's files. Outside the three

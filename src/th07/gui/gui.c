@@ -74,9 +74,7 @@ static int32_t M_Wrap(const int64_t value)
 
 static bool M_KeepsInterface(void)
 {
-    const SCENE scene = Scene_GetRequested();
-    return scene == SCENE_NEXT_STAGE || scene == SCENE_RESTART_STAGE
-        || scene == SCENE_NEXT_STAGE_AGAIN;
+    return Scene_GetRequested() == SCENE_NEXT_STAGE;
 }
 
 static GFX_RECT M_SpriteRect(const int32_t sprite)

@@ -271,9 +271,8 @@ extern BULLET_MANAGER g_Bullets;
 
 // Adds the update element (priority 12) and the draw element (priority
 // 10), and resets g_Bullets. Adding loads the bullet sprites, except in
-// SCENE_NEXT_STAGE, SCENE_RESTART_STAGE and SCENE_NEXT_STAGE_AGAIN, which
-// keep them. It then sets the bullet types up from the sprites and
-// removes every item.
+// SCENE_NEXT_STAGE, which keeps them. It then sets the bullet types up from the
+// sprites and removes every item.
 RESULT Bullet_Register(void);
 
 // Removes both elements and zeroes g_Bullets. Releases the bullet

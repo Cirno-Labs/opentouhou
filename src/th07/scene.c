@@ -64,15 +64,6 @@ static CHAIN_STATUS M_FromGameplay(void)
         }
         Replay_Discard();
         return M_ReregisterGameplay();
-    case SCENE_RESTART_STAGE:
-        m_Requested = SCENE_NEXT_STAGE;
-        GameManager_Remove();
-        g_GameManager.run.stage--;
-        return M_ReregisterGameplay();
-    case SCENE_NEXT_STAGE_AGAIN:
-        m_Requested = SCENE_NEXT_STAGE;
-        GameManager_Remove();
-        return M_ReregisterGameplay();
     case SCENE_NEXT_STAGE:
         GameManager_Remove();
         return M_ReregisterGameplay();

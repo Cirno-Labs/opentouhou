@@ -287,7 +287,10 @@ void Anm_CopySurfaceToBackBuffer(
     }
 }
 
-RESULT Anm_CopyBackBufferToTexture(const int32_t slot, const GFX_RECT rectangle)
+// Replaces the texture of slot with a copy of rectangle of the screen as
+// drawn so far. Sprites that cover the whole texture show the whole
+// rectangle, as the original's stretching copy does.
+static RESULT M_CopyBackBuffer(const int32_t slot, const GFX_RECT rectangle)
 {
     ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
     if (m_Textures[slot].texture == nullptr) {
@@ -315,5 +318,5 @@ RESULT Anm_DoPendingCopy(void)
     }
     const int32_t slot = m_PendingTexture;
     m_PendingTexture = -1;
-    return Anm_CopyBackBufferToTexture(slot, m_PendingRectangle);
+    return M_CopyBackBuffer(slot, m_PendingRectangle);
 }

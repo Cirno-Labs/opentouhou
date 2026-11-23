@@ -46,11 +46,6 @@ void Anm_CopySurfaceToBackBuffer(
 void Anm_CopySurfaceRectToBackBuffer(
     int32_t surface, int32_t x, int32_t y, GFX_RECT rectangle);
 
-// Replaces the texture of slot with a copy of rectangle of the screen as
-// drawn so far. Sprites that cover the whole texture show the whole
-// rectangle, as the original's stretching copy does.
-RESULT Anm_CopyBackBufferToTexture(int32_t slot, GFX_RECT rectangle);
-
 // Requests one copy after the current draw and update chains finish.
 void Anm_SetPendingCopy(int32_t slot, GFX_RECT rectangle);
 

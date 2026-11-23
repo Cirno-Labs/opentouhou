@@ -279,30 +279,6 @@ TEST(retry_replays_the_stage_in_a_practice_and_in_extra)
     Game_Shutdown();
 }
 
-TEST(restart_stage_replays_the_stage_as_a_next_stage)
-{
-    M_StartGameplay(3);
-    Scene_Request(SCENE_RESTART_STAGE);
-    Game_Tick(&m_NoInput);
-    CHECK_EQ_INT(Scene_Get(), SCENE_GAMEPLAY);
-    CHECK_EQ_INT(g_GameManager.run.stage, 2);
-    CHECK_EQ_INT(
-        g_SceneStubCalls.game_manager_register_scene, SCENE_NEXT_STAGE);
-    Game_Shutdown();
-}
-
-TEST(next_stage_again_registers_as_a_next_stage)
-{
-    M_StartGameplay(3);
-    Scene_Request(SCENE_NEXT_STAGE_AGAIN);
-    Game_Tick(&m_NoInput);
-    CHECK_EQ_INT(Scene_Get(), SCENE_GAMEPLAY);
-    CHECK_EQ_INT(g_GameManager.run.stage, 3);
-    CHECK_EQ_INT(
-        g_SceneStubCalls.game_manager_register_scene, SCENE_NEXT_STAGE);
-    Game_Shutdown();
-}
-
 TEST(gameplay_to_title_discards_the_replay_through_boot)
 {
     M_StartGameplay(1);
