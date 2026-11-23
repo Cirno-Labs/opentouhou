@@ -301,542 +301,240 @@ foreach part : ['audio', 'audio_decoder', 'audio_resampler', 'audio_live']
   )
 endforeach
 
-foreach ascii_test : ['ascii', 'ascii_menu']
-  test(
-    'th06/' + ascii_test,
-    executable(
-      'test_th06_' + ascii_test,
-      'test_th06_' + ascii_test + '.c',
-      shell_fake,
-      'gfx_recorder.c',
-      c_args: [layer_include['th06']] + stg_include + shell_include,
-      implicit_include_directories: false,
-      link_with: [
-        th06_lib, stg_translation_lib, stg_note_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-      ],
-      dependencies: [test_deps],
-    ),
-    suite: 'unit',
-  )
+# The tests of th06 and th07. Each runs test_<part>.c, part being its
+# name with underscores for slashes unless it gives its own, with the
+# extra sources that it lists. The variables in env point TEST_DIR and
+# XDG_DATA_HOME to its directory under tmp, named after dir or part, and
+# TEST_FONT_DIR to the built-in fonts.
+th06_data = ['gfx_recorder.c', 'anm_builder.c', 'pbg3_builder.c', 'th06_data.c']
+th07_data = ['th07_anm_builder.c', 'th07_data.c', 'gfx_recorder.c']
+game_test_libs = {
+  'th06': [
+    th06_lib, stg_translation_lib, stg_note_lib, stg_end_diff_lib, stg_rng_lib, stg_pbg3_lib,
+    core_patch_lib, core_json_lib, core_vfs_lib, core_audio_lib, core_config_lib, core_ini_lib,
+    core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
+  ],
+  'th07': [
+    th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib, stg_pbg4_lib, stg_lzss_lib,
+    stg_end_diff_lib, core_patch_lib, core_json_lib, core_vfs_lib, core_archive_lib, core_audio_lib,
+    core_config_lib, core_ini_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib,
+    core_image_lib,
+  ],
+}
+test_fonts = meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts'
+foreach game, game_tests : {
+  'th06': {
+    'th06/ascii': {'sources': ['gfx_recorder.c'], 'deps': [test_deps]},
+    'th06/ascii_menu': {'sources': ['gfx_recorder.c'], 'deps': [test_deps]},
+    'th06/replay': {'deps': [test_deps]},
+    'th06/replay_format': {'deps': [test_deps]},
+    'th06/game_manager/chain': {'deps': [test_deps]},
+    'th06/score': {'deps': [test_deps]},
+    'th06/result_saves': {'env': ['TEST_DIR']},
+    'th06/screens/result': {
+      'part': 'th06_result_screen',
+      'sources': th06_data,
+      'env': ['TEST_DIR', 'TEST_FONT_DIR'],
+    },
+    'th06/screens/main': {'part': 'th06_main_menu', 'sources': th06_data, 'env': ['TEST_DIR']},
+    'th06/screens/ending': {'part': 'th06_ending', 'sources': th06_data, 'env': ['TEST_DIR']},
+    'th06/screens/music': {
+      'part': 'th06_music_screen',
+      'sources': th06_data,
+      'env': ['TEST_DIR', 'TEST_FONT_DIR'],
+    },
+    'th06/anm': {'sources': th06_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR']},
+    'th06/buttons': {'deps': [test_deps]},
+    'th06/game_manager': {'deps': [test_deps]},
+    'th06/bomb': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/bullet': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/item': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/player': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/scene': {'sources': ['th06_scene_stubs.c'], 'deps': [test_deps]},
+    'th06/screen_effect': {
+      'sources': ['gfx_recorder.c', 'th06_scene_stubs.c'],
+      'deps': [test_deps],
+    },
+    'th06/sound': {
+      'sources': ['audio_backend_fake.c', 'pbg3_builder.c', 'th06_data.c'],
+      'deps': [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+      'env': ['TEST_DIR'],
+    },
+    'th06/stage': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/ecl': {
+      'sources': ['anm_builder.c', 'ecl_builder.c', 'pbg3_builder.c', 'th06_data.c', 'th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/enemy': {
+      'sources': th06_data + ['ecl_builder.c', 'th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/effect': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th06/gui': {
+      'sources': th06_data + ['th06_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR'],
+    },
+    'th06/files': {
+      'sources': ['pbg3_builder.c', 'th06_data.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+  },
+  'th07': {
+    'th07/buttons': {'deps': [test_deps]},
+    'th07/gui': {
+      'sources': th07_data + ['th07_gui_setup.c', 'th07_msg_builder.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    # The _ms tests run again against MS Gothic where $OPENTOUHOU_MSGOTHIC
+    # names a msgothic.ttc.
+    'th07/gui/text_image': {
+      'part': 'th07_text_image',
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR'],
+      'dir': 'test_th07_text_image',
+    },
+    'th07/gui/text_image/ms_gothic': {
+      'part': 'th07_text_image_ms',
+      'main': 'test_th07_text_image.c',
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'c_args': ['-DTEST_MS_GOTHIC'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR'],
+      'dir': 'test_th07_text_image_ms',
+    },
+    'th07/gui_msg': {
+      'sources': th07_data + ['th07_gui_setup.c', 'th07_msg_builder.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/replay': {'sources': ['replay_lzss_literals.c'], 'deps': [test_deps]},
+    'th07/score': {'sources': ['replay_lzss_literals.c'], 'deps': [test_deps]},
+    'th07/result_saves': {'env': ['TEST_DIR']},
+    'th07/screens/result': {
+      'part': 'th07_result_screen',
+      'sources': th07_data,
+      'env': ['TEST_DIR'],
+    },
+    'th07/screens/ending': {'part': 'th07_ending', 'sources': th07_data, 'env': ['TEST_DIR']},
+    'th07/screens/music': {'part': 'th07_music_screen', 'sources': th07_data, 'env': ['TEST_DIR']},
+    'th07/replay/chain': {'sources': ['replay_lzss_literals.c'], 'deps': [test_deps]},
+    'th07/game_manager': {'deps': [test_deps]},
+    'th07/game_manager/chain': {'deps': [test_deps]},
+    'th07/play_time': {'sources': ['../src/th07/play_time.c'], 'deps': [test_deps]},
+    'th07/scene': {'sources': th07_data + ['th07_scene_stubs.c'], 'env': ['TEST_DIR']},
+    'th07/anm': {
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/stage': {
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/anm/vm': {'sources': ['th07_scene_stubs.c']},
+    'th07/anm/draw': {
+      'sources': ['th07_scene_stubs.c', 'gfx_recorder.c'],
+      'env': ['TEST_FONT_DIR'],
+    },
+    'th07/anm/text': {
+      'sources': ['th07_scene_stubs.c', 'gfx_recorder.c'],
+      'env': ['TEST_FONT_DIR'],
+    },
+    'th07/anm/text/ms_gothic': {
+      'part': 'th07_anm_text_ms',
+      'main': 'test_th07_anm_text.c',
+      'sources': ['th07_scene_stubs.c', 'gfx_recorder.c'],
+      'c_args': ['-DTEST_MS_GOTHIC'],
+      'env': ['TEST_FONT_DIR'],
+    },
+    'th07/screen_effect': {'sources': ['th07_scene_stubs.c', 'gfx_recorder.c']},
+    'th07/screens/main': {
+      'part': 'th07_title',
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'c_args': ['-DTH07_TITLE_TEST'],
+      'env': ['TEST_DIR', 'TEST_FONT_DIR'],
+    },
+    'th07/ascii': {
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/ascii_menu': {
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/sound': {
+      'sources': ['audio_backend_fake.c', 'th07_data.c', 'th07_scene_stubs.c'],
+      'deps': [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/files': {'sources': ['th07_data.c'], 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
+    'th07/effect': {
+      'sources': th07_data + ['th07_scene_stubs.c'],
+      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
+    },
+    'th07/player_shot_type': {'sources': ['th07_data.c'], 'env': ['TEST_DIR']},
+    'th07/bomb': {'sources': th07_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
+    'th07/item': {'sources': th07_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
+    'th07/enemy': {'sources': th07_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
+    'th07/ecl': {
+      'sources': th07_data + ['th07_ecl_builder.c', 'th07_play_setup.c'],
+      'env': ['TEST_DIR'],
+    },
+    'th07/ecl_patterns': {'sources': th07_data + ['th07_play_setup.c'], 'env': ['TEST_DIR']},
+    'th07/player': {'sources': th07_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
+    'th07/bullet': {'sources': th07_data, 'env': ['TEST_DIR']},
+    'th07/player_shots': {'sources': ['gfx_recorder.c']},
+  },
+}
+  foreach name, t : game_tests
+    part = t.get('part', name.replace('/', '_'))
+    env = {}
+    foreach var : t.get('env', [])
+      env += {var: var == 'TEST_FONT_DIR' ? test_fonts : meson.current_build_dir() / 'tmp' / t.get('dir', part)}
+    endforeach
+    test(
+      name,
+      executable(
+        'test_' + part,
+        t.get('main', 'test_' + part + '.c'),
+        t.get('sources', []),
+        shell_fake,
+        c_args: [layer_include[game]] + t.get('c_args', []) + core_include + stg_include + shell_include,
+        implicit_include_directories: false,
+        link_with: game_test_libs[game],
+        dependencies: t.get('deps', [sdl3]),
+      ),
+      env: env,
+      suite: 'unit',
+    )
+  endforeach
 endforeach
 
-foreach replay_test : ['replay', 'replay_format']
-  test(
-    'th06/' + replay_test,
-    executable(
-      'test_th06_' + replay_test,
-      'test_th06_' + replay_test + '.c',
-      shell_fake,
-      c_args: [layer_include['th06']] + stg_include + shell_include,
-      implicit_include_directories: false,
-      link_with: [
-        th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
-        core_image_lib, core_math_lib,
-      ],
-      dependencies: [test_deps],
-    ),
-    suite: 'unit',
-  )
-endforeach
-
 test(
-  'th06/game_manager/chain',
+  'th07/msg_builder',
   executable(
-    'test_th06_game_manager_chain',
-    'test_th06_game_manager_chain.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
+    'test_th07_msg_builder',
+    'test_th07_msg_builder.c',
+    'th07_msg_builder.c',
+    c_args: core_include,
     implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_io_lib, core_math_lib, core_base_lib,
-      core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [test_deps],
+    link_with: core_base_lib,
   ),
-  suite: 'unit',
-)
-
-test(
-  'th06/score',
-  executable(
-    'test_th06_score',
-    'test_th06_score.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th06_lib, stg_translation_lib, stg_note_lib, core_io_lib, core_base_lib],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th06/result_saves',
-  executable(
-    'test_th06_result_saves',
-    'test_th06_result_saves.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_io_lib, core_base_lib, core_gfx_lib,
-      core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_result_saves',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/screens/result',
-  executable(
-    'test_th06_result_screen',
-    'test_th06_result_screen.c',
-    shell_fake,
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_result_screen',
-    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/screens/main',
-  executable(
-    'test_th06_main_menu',
-    'test_th06_main_menu.c',
-    shell_fake,
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_config_lib, core_ini_lib, core_math_lib, core_base_lib,
-      core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_main_menu',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/screens/ending',
-  executable(
-    'test_th06_ending',
-    'test_th06_ending.c',
-    shell_fake,
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_ending',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/screens/music',
-  executable(
-    'test_th06_music_screen',
-    'test_th06_music_screen.c',
-    shell_fake,
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_music_screen',
-    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/anm',
-  executable(
-    'test_th06_anm',
-    'test_th06_anm.c',
-    shell_fake,
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_anm',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_anm',
-    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/buttons',
-  executable(
-    'test_th06_buttons',
-    'test_th06_buttons.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th06/game_manager',
-  executable(
-    'test_th06_game_manager',
-    'test_th06_game_manager.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th06/bomb',
-  executable(
-    'test_th06_bomb',
-    'test_th06_bomb.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_bomb',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_bomb',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/bullet',
-  executable(
-    'test_th06_bullet',
-    'test_th06_bullet.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_bullet',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_bullet',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/item',
-  executable(
-    'test_th06_item',
-    'test_th06_item.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_item',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_item',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/player',
-  executable(
-    'test_th06_player',
-    'test_th06_player.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_player',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_player',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/scene',
-  executable(
-    'test_th06_scene',
-    'test_th06_scene.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th06/screen_effect',
-  executable(
-    'test_th06_screen_effect',
-    'test_th06_screen_effect.c',
-    'gfx_recorder.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, core_math_lib, core_base_lib, core_gfx_lib,
-      core_image_lib,
-    ],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th06/sound',
-  executable(
-    'test_th06_sound',
-    'test_th06_sound.c',
-    shell_fake,
-    'audio_backend_fake.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_pbg3_lib, core_vfs_lib, core_audio_lib, core_io_lib,
-      core_config_lib, core_ini_lib, core_math_lib, core_base_lib,
-    ],
-    dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
-  ),
-  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_sound' },
-  suite: 'unit',
-)
-
-test(
-  'th06/stage',
-  executable(
-    'test_th06_stage',
-    'test_th06_stage.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_stage',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_stage',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/ecl',
-  executable(
-    'test_th06_ecl',
-    'test_th06_ecl.c',
-    'anm_builder.c',
-    'ecl_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_end_diff_lib, stg_rng_lib, stg_pbg3_lib,
-      core_vfs_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_ecl',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_ecl',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/enemy',
-  executable(
-    'test_th06_enemy',
-    'test_th06_enemy.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'ecl_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_enemy',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_enemy',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/effect',
-  executable(
-    'test_th06_effect',
-    'test_th06_effect.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_effect',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_effect',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th06/gui',
-  executable(
-    'test_th06_gui',
-    'test_th06_gui.c',
-    'gfx_recorder.c',
-    'anm_builder.c',
-    'pbg3_builder.c',
-    'th06_data.c',
-    'th06_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th06']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_rng_lib, stg_pbg3_lib, core_vfs_lib, core_io_lib,
-      core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_gui',
-    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_gui',
-  },
   suite: 'unit',
 )
 
@@ -900,594 +598,6 @@ test(
     dependencies: [sdl3],
   ),
   env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'stg_translation'},
-  suite: 'unit',
-)
-
-test(
-  'th06/files',
-  executable(
-    'test_th06_files',
-    'test_th06_files.c',
-    shell_fake,
-    'pbg3_builder.c',
-    'th06_data.c',
-    c_args: [layer_include['th06']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th06_lib, stg_translation_lib, stg_note_lib, stg_pbg3_lib, core_patch_lib, core_json_lib, core_vfs_lib,
-      core_io_lib, core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th06_files',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th06_files',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/buttons',
-  executable(
-    'test_th07_buttons',
-    'test_th07_buttons.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th07_lib, core_base_lib],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/gui',
-  executable(
-    'test_th07_gui',
-    'test_th07_gui.c',
-    'th07_gui_setup.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'th07_msg_builder.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_gui',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_gui',
-  },
-  suite: 'unit',
-)
-
-# The translated text test runs against IPAGothic, and again against MS
-# Gothic where $OPENTOUHOU_MSGOTHIC names a msgothic.ttc.
-foreach variant : [['th07/gui/text_image', 'test_th07_text_image', []], ['th07/gui/text_image/ms_gothic', 'test_th07_text_image_ms', ['-DTEST_MS_GOTHIC']]]
-  test(
-    variant[0],
-    executable(
-      variant[1],
-      'test_th07_text_image.c',
-      'th07_anm_builder.c',
-      'th07_data.c',
-      'th07_scene_stubs.c',
-      shell_fake,
-      'gfx_recorder.c',
-      c_args: [layer_include['th07']] + core_include + stg_include + shell_include + variant[2],
-      implicit_include_directories: false,
-      link_with: [
-        th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-        stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-        core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-        core_gfx_lib, core_image_lib, core_math_lib,
-      ],
-      dependencies: [sdl3],
-    ),
-    env: {
-      'TEST_DIR': meson.current_build_dir() / 'tmp' / variant[1],
-      'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / variant[1],
-      'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-    },
-    suite: 'unit',
-  )
-endforeach
-
-test(
-  'th07/gui_msg',
-  executable(
-    'test_th07_gui_msg',
-    'test_th07_gui_msg.c',
-    'th07_gui_setup.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'th07_msg_builder.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_gui_msg',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_gui_msg',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/msg_builder',
-  executable(
-    'test_th07_msg_builder',
-    'test_th07_msg_builder.c',
-    'th07_msg_builder.c',
-    c_args: core_include,
-    implicit_include_directories: false,
-    link_with: core_base_lib,
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/replay',
-  executable(
-    'test_th07_replay',
-    'test_th07_replay.c',
-    'replay_lzss_literals.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th07_lib, stg_lzss_lib, core_io_lib, core_base_lib],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/score',
-  executable(
-    'test_th07_score',
-    'test_th07_score.c',
-    shell_fake,
-    'replay_lzss_literals.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th07_lib, stg_lzss_lib, core_vfs_lib, core_io_lib, core_base_lib],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/result_saves',
-  executable(
-    'test_th07_result_saves',
-    'test_th07_result_saves.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_rng_lib, stg_lzss_lib, core_vfs_lib, core_io_lib, core_base_lib,
-      core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_result_saves',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/screens/result',
-  executable(
-    'test_th07_result_screen',
-    'test_th07_result_screen.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
-      core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
-      core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_result_screen',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/screens/ending',
-  executable(
-    'test_th07_ending',
-    'test_th07_ending.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, stg_end_diff_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
-      core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
-      core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_ending',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/screens/music',
-  executable(
-    'test_th07_music_screen',
-    'test_th07_music_screen.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
-      core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
-      core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_music_screen',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/replay/chain',
-  executable(
-    'test_th07_replay_chain',
-    'test_th07_replay_chain.c',
-    'replay_lzss_literals.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_rng_lib, stg_lzss_lib, core_io_lib,
-      core_base_lib, core_math_lib,
-    ],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/game_manager',
-  executable(
-    'test_th07_game_manager',
-    'test_th07_game_manager.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th07_lib, stg_rng_lib, core_base_lib],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/game_manager/chain',
-  executable(
-    'test_th07_game_manager_chain',
-    'test_th07_game_manager_chain.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_rng_lib, core_base_lib,
-    ],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/play_time',
-  executable(
-    'test_th07_play_time',
-    'test_th07_play_time.c',
-    '../src/th07/play_time.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [th07_lib, stg_rng_lib, core_base_lib],
-    dependencies: [test_deps],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/scene',
-  executable(
-    'test_th07_scene',
-    'test_th07_scene.c',
-    'th07_scene_stubs.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_scene',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/anm',
-  executable(
-    'test_th07_anm',
-    'test_th07_anm.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib,
-      core_json_lib, core_vfs_lib, core_archive_lib, core_io_lib,
-      core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_anm',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_anm',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/stage',
-  executable(
-    'test_th07_stage',
-    'test_th07_stage.c',
-    'gfx_recorder.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib,
-      core_json_lib, core_vfs_lib, core_archive_lib, core_io_lib,
-      core_base_lib, core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_stage',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_stage',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/anm/vm',
-  executable(
-    'test_th07_anm_vm',
-    'test_th07_anm_vm.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  suite: 'unit',
-)
-
-# The text test runs against IPAGothic, and again against MS Gothic where
-# $OPENTOUHOU_MSGOTHIC names a msgothic.ttc.
-foreach anm_test : [
-  ['th07/anm/draw', 'test_th07_anm_draw', 'test_th07_anm_draw.c', []],
-  ['th07/anm/text', 'test_th07_anm_text', 'test_th07_anm_text.c', []],
-  ['th07/anm/text/ms_gothic', 'test_th07_anm_text_ms', 'test_th07_anm_text.c', ['-DTEST_MS_GOTHIC']],
-]
-  test(
-    anm_test[0],
-    executable(
-      anm_test[1],
-      anm_test[2],
-      'th07_scene_stubs.c',
-      shell_fake,
-      'gfx_recorder.c',
-      c_args: [layer_include['th07']] + core_include + stg_include + shell_include + anm_test[3],
-      implicit_include_directories: false,
-      link_with: [
-        th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-        stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-        core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-        core_gfx_lib, core_image_lib, core_math_lib,
-      ],
-      dependencies: [sdl3],
-    ),
-    suite: 'unit',
-    env: {
-      'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-    },
-  )
-endforeach
-
-test(
-  'th07/screen_effect',
-  executable(
-    'test_th07_screen_effect',
-    'test_th07_screen_effect.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
-      core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
-      core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  suite: 'unit',
-)
-
-test(
-  'th07/screens/main',
-  executable(
-    'test_th07_title',
-    'test_th07_title.c',
-    'th07_scene_stubs.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07'], '-DTH07_TITLE_TEST'] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_config_lib,
-      core_ini_lib, core_base_lib, core_gfx_lib, core_image_lib,
-      core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_title',
-    'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
-  },
-  suite: 'unit',
-)
-
-foreach ascii_test : ['ascii', 'ascii_menu']
-  test(
-    'th07/' + ascii_test,
-    executable(
-      'test_th07_' + ascii_test,
-      'test_th07_' + ascii_test + '.c',
-      'th07_anm_builder.c',
-      'th07_data.c',
-      'th07_scene_stubs.c',
-      shell_fake,
-      'gfx_recorder.c',
-      c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-      implicit_include_directories: false,
-      link_with: [
-        th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-        stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-        core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-        core_gfx_lib, core_image_lib, core_math_lib,
-      ],
-      dependencies: [sdl3],
-    ),
-    env: {
-      'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_' + ascii_test,
-      'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_' + ascii_test,
-    },
-    suite: 'unit',
-  )
-endforeach
-
-test(
-  'th07/sound',
-  executable(
-    'test_th07_sound',
-    'test_th07_sound.c',
-    'audio_backend_fake.c',
-    'th07_data.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_pbg4_lib, stg_lzss_lib, core_patch_lib,
-      core_json_lib, core_vfs_lib, core_archive_lib, core_audio_lib,
-      core_io_lib, core_config_lib, core_ini_lib, core_math_lib,
-      core_base_lib,
-    ],
-    dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_sound',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_sound',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/files',
-  executable(
-    'test_th07_files',
-    'test_th07_files.c',
-    shell_fake,
-    'th07_data.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_files',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_files',
-  },
   suite: 'unit',
 )
 
@@ -2116,7 +1226,6 @@ executable(
   dependencies: [sdl3, avcodec, avutil, swscale, cc_libm],
 )
 
-
 # The text tests run against IPAGothic, and again against MS Gothic
 # where $OPENTOUHOU_MSGOTHIC names a msgothic.ttc; without it, the second
 # test is skipped.
@@ -2193,256 +1302,6 @@ test(
     'TEST_DIR': meson.current_build_dir() / 'tmp' / 'shell_fonts',
     'TEST_FONT_DIR': meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts',
   },
-)
-
-test(
-  'th07/effect',
-  executable(
-    'test_th07_effect',
-    'test_th07_effect.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'th07_scene_stubs.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_effect',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_effect',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/player_shot_type',
-  executable(
-    'test_th07_player_shot_type',
-    'test_th07_player_shot_type.c',
-    shell_fake,
-    'th07_data.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_player_shot_type',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/bomb',
-  executable(
-    'test_th07_bomb',
-    'test_th07_bomb.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_bomb',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_bomb',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/item',
-  executable(
-    'test_th07_item',
-    'test_th07_item.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_item',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_item',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/enemy',
-  executable(
-    'test_th07_enemy',
-    'test_th07_enemy.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_enemy',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_enemy',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/ecl',
-  executable(
-    'test_th07_ecl',
-    'test_th07_ecl.c',
-    shell_fake,
-    'th07_ecl_builder.c',
-    'th07_play_setup.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_ecl',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/ecl_patterns',
-  executable(
-    'test_th07_ecl_patterns',
-    'test_th07_ecl_patterns.c',
-    shell_fake,
-    'th07_play_setup.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_ecl_patterns',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/player',
-  executable(
-    'test_th07_player',
-    'test_th07_player.c',
-    'th07_anm_builder.c',
-    'th07_data.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_player',
-    'XDG_DATA_HOME': meson.current_build_dir() / 'tmp' / 'th07_player',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/bullet',
-  executable(
-    'test_th07_bullet',
-    'test_th07_bullet.c',
-    shell_fake,
-    'th07_anm_builder.c',
-    'th07_data.c',
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  env: {
-    'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th07_bullet',
-  },
-  suite: 'unit',
-)
-
-test(
-  'th07/player_shots',
-  executable(
-    'test_th07_player_shots',
-    'test_th07_player_shots.c',
-    shell_fake,
-    'gfx_recorder.c',
-    c_args: [layer_include['th07']] + core_include + stg_include + shell_include,
-    implicit_include_directories: false,
-    link_with: [
-      th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib,
-      stg_pbg4_lib, stg_lzss_lib, core_patch_lib, core_json_lib,
-      core_vfs_lib, core_archive_lib, core_io_lib, core_base_lib,
-      core_gfx_lib, core_image_lib, core_math_lib,
-    ],
-    dependencies: [sdl3],
-  ),
-  suite: 'unit',
 )
 
 if build_games
