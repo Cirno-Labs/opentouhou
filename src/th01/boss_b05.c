@@ -7,6 +7,10 @@
 
 #include "core/base/assert.h"
 
+#include <string.h>
+
+B05 g_B05;
+
 typedef enum {
     B05_FIRE_NONE,
     B05_FIRE_DOWN,
@@ -14,57 +18,53 @@ typedef enum {
 } B05_FIRE;
 
 static void M_Put(
-    const B05 *const b, const B05_CONTEXT *const c,
-    const BOSS_ENTITY *const entity, const int16_t image)
+    const B05_CONTEXT *const c, const BOSS_ENTITY *const entity,
+    const int16_t image)
 {
-    BossEntity_RestorePut(
-        entity, c->sprites, b->sphere.left, b->sphere.top, image);
+    BossEntity_RestorePut(entity, g_B05.sphere.left, g_B05.sphere.top, image);
 }
 
 static void M_Rotate(
-    B05 *const b, const B05_CONTEXT *const c, const int16_t interval,
-    const int16_t delta)
+    const B05_CONTEXT *const c, const int16_t interval, const int16_t delta)
 {
-    if (b->frame % interval != 0) {
+    if (g_B05.frame % interval != 0) {
         return;
     }
-    const uint8_t bits = (uint8_t)(b->sphere.image + delta);
+    const uint8_t bits = (uint8_t)(g_B05.sphere.image + delta);
     int16_t image = bits < 128 ? bits : (int16_t)bits - 256;
     if (image > 7) {
         image = 0;
     } else if (image < 0) {
         image = 7;
     }
-    b->sphere.image = image;
-    M_Put(b, c, &b->sphere, image);
+    g_B05.sphere.image = image;
+    M_Put(c, &g_B05.sphere, image);
 }
 
-static void M_Accelerate(
-    B05 *const b, const B05_CONTEXT *const c, const int16_t delta)
+static void M_Accelerate(const B05_CONTEXT *const c, const int16_t delta)
 {
-    if (b->frame < 50) {
-        b->sphere.image = 0;
-        if (b->frame % 4 == 0) {
-            M_Put(b, c, &b->sphere, 0);
+    if (g_B05.frame < 50) {
+        g_B05.sphere.image = 0;
+        if (g_B05.frame % 4 == 0) {
+            M_Put(c, &g_B05.sphere, 0);
         }
         return;
     }
-    if (b->frame == 50) {
+    if (g_B05.frame == 50) {
         c->hit->effect(c->hit->user, 8);
     }
-    if (b->frame < 100 && b->frame % 4 == 0) {
-        M_Put(b, c, &b->sphere, b->sphere.image);
-        if (b->frame == 60 || b->frame == 68 || b->frame > 82) {
-            M_Rotate(b, c, 1, delta);
+    if (g_B05.frame < 100 && g_B05.frame % 4 == 0) {
+        M_Put(c, &g_B05.sphere, g_B05.sphere.image);
+        if (g_B05.frame == 60 || g_B05.frame == 68 || g_B05.frame > 82) {
+            M_Rotate(c, 1, delta);
         }
     }
 }
 
 static void M_Move(
-    B05 *const b, const B05_CONTEXT *const c, const int16_t dx,
-    const int16_t dy)
+    const B05_CONTEXT *const c, const int16_t dx, const int16_t dy)
 {
-    BOSS_ENTITY *const e = &b->sphere;
+    BOSS_ENTITY *const e = &g_B05.sphere;
     if (dy < 0) {
         Sprite_Restore16(
             e->left, Math16_Wrap(e->top + dy + 96), 96, Math16_Wrap(-dy));
@@ -84,8 +84,8 @@ static void M_Move(
     if (e->left > 544) {
         e->left = 544;
     }
-    if (b->frame % 2 == 0) {
-        M_Rotate(b, c, 1, 1);
+    if (g_B05.frame % 2 == 0) {
+        M_Rotate(c, 1, 1);
     }
 }
 
@@ -99,195 +99,194 @@ static void M_Add(
         angle, speed, motion, motion_speed, 0, 0);
 }
 
-static void M_Half(B05 *const b, const B05_CONTEXT *const c)
+static void M_Half(const B05_CONTEXT *const c)
 {
-    if (b->frame == 10) {
-        b->direction = MasterRng_Next(c->rng) % 2 == 1 ? 1 : -1;
+    if (g_B05.frame == 10) {
+        g_B05.direction = MasterRng_Next(c->rng) % 2 == 1 ? 1 : -1;
     }
-    if (b->frame < 100) {
-        M_Accelerate(b, c, b->direction);
+    if (g_B05.frame < 100) {
+        M_Accelerate(c, g_B05.direction);
         return;
     }
-    if (b->frame == 100) {
-        b->pattern_state = Boss_Rank(10, 15, 20, 30);
-        b->angle = b->direction == -1 ? 0 : 128;
+    if (g_B05.frame == 100) {
+        g_B05.pattern_state = Boss_Rank(10, 15, 20, 30);
+        g_B05.angle = g_B05.direction == -1 ? 0 : 128;
     }
-    if (b->frame < 160) {
-        M_Rotate(b, c, b->direction, 1);
-        if (b->frame % (60 / b->pattern_state) == 0) {
+    if (g_B05.frame < 160) {
+        M_Rotate(c, g_B05.direction, 1);
+        if (g_B05.frame % (60 / g_B05.pattern_state) == 0) {
             M_Add(
-                c, Math16_Wrap(b->sphere.left + 44),
-                Math16_Wrap(b->sphere.top + 44), b->angle, 50, PELLET_REGULAR,
-                0);
-            b->angle =
-                (uint8_t)(b->angle - b->direction * 128 / b->pattern_state);
+                c, Math16_Wrap(g_B05.sphere.left + 44),
+                Math16_Wrap(g_B05.sphere.top + 44), g_B05.angle, 50,
+                PELLET_REGULAR, 0);
+            g_B05.angle =
+                (uint8_t)(g_B05.angle
+                          - g_B05.direction * 128 / g_B05.pattern_state);
         }
     } else {
-        b->frame = 0;
+        g_B05.frame = 0;
     }
 }
 
-static void M_Slam(B05 *const b, const B05_CONTEXT *const c)
+static void M_Slam(const B05_CONTEXT *const c)
 {
-    if (b->frame < 100) {
-        M_Accelerate(b, c, 1);
+    if (g_B05.frame < 100) {
+        M_Accelerate(c, 1);
         return;
     }
     const PLAYER *const player = c->hit->display->player;
-    if (b->frame == 100) {
-        b->pattern_state = Boss_Rank(4, 4, 5, 6);
+    if (g_B05.frame == 100) {
+        g_B05.pattern_state = Boss_Rank(4, 4, 5, 6);
         const uint8_t angle = Math16_Angle(
-            Math16_Wrap(368 - Math16_Wrap(b->sphere.top + 32)),
-            Math16_Wrap(player->left - Math16_Wrap(b->sphere.left + 32)));
-        b->velocity_x = Math16_PolarX(0, b->pattern_state, angle);
-        b->velocity_y = Math16_PolarY(0, b->pattern_state, angle);
+            Math16_Wrap(368 - Math16_Wrap(g_B05.sphere.top + 32)),
+            Math16_Wrap(player->left - Math16_Wrap(g_B05.sphere.left + 32)));
+        g_B05.velocity_x = Math16_PolarX(0, g_B05.pattern_state, angle);
+        g_B05.velocity_y = Math16_PolarY(0, g_B05.pattern_state, angle);
     }
-    if (b->velocity_x != 999) {
-        M_Move(b, c, b->velocity_x, b->velocity_y);
-        if (b->sphere.top > 304) {
-            b->velocity_x = 999;
-            b->velocity_y = -4;
+    if (g_B05.velocity_x != 999) {
+        M_Move(c, g_B05.velocity_x, g_B05.velocity_y);
+        if (g_B05.sphere.top > 304) {
+            g_B05.velocity_x = 999;
+            g_B05.velocity_y = -4;
         }
-    } else if (b->velocity_y == -4) {
-        M_Move(b, c, 0, b->velocity_y);
-        if (b->sphere.top < 96) {
-            b->velocity_y = 0;
+    } else if (g_B05.velocity_y == -4) {
+        M_Move(c, 0, g_B05.velocity_y);
+        if (g_B05.sphere.top < 96) {
+            g_B05.velocity_y = 0;
         }
     } else {
-        b->frame = 0;
+        g_B05.frame = 0;
     }
-    if (!player->invincible && b->sphere.left <= player->left
-        && Math16_Wrap(b->sphere.left + 64) >= player->left
-        && b->sphere.top >= 272) {
+    if (!player->invincible && g_B05.sphere.left <= player->left
+        && Math16_Wrap(g_B05.sphere.left + 64) >= player->left
+        && g_B05.sphere.top >= 272) {
         c->hit->display->player->is_hit = true;
     }
 }
 
-static void M_FireMan(
-    B05 *const b, const B05_CONTEXT *const c, const B05_FIRE fire)
+static void M_FireMan(const B05_CONTEXT *const c, const B05_FIRE fire)
 {
     if (fire == B05_FIRE_NONE) {
         return;
     }
-    b->pattern_state = fire == B05_FIRE_DOWN ? Boss_Rank(48, 54, 60, 66)
-                                             : Boss_Rank(48, 64, 80, 96);
+    g_B05.pattern_state = fire == B05_FIRE_DOWN ? Boss_Rank(48, 54, 60, 66)
+                                                : Boss_Rank(48, 64, 80, 96);
     for (int32_t i = 0; i < 10; i++) {
         if (fire == B05_FIRE_DOWN) {
             const uint8_t angle = (uint8_t)(MasterRng_Next(c->rng) % 128);
             M_Add(
-                c, Math16_Wrap(b->sphere.left + 44),
-                Math16_Wrap(b->sphere.top + 44), angle, b->pattern_state,
+                c, Math16_Wrap(g_B05.sphere.left + 44),
+                Math16_Wrap(g_B05.sphere.top + 44), angle, g_B05.pattern_state,
                 PELLET_REGULAR, 0);
         } else {
             const int16_t dx = (int16_t)(MasterRng_Next(c->rng) % 96);
             const int16_t dy = (int16_t)(MasterRng_Next(c->rng) % 96);
             M_Add(
-                c, Math16_Wrap(b->sphere.left + dx),
-                Math16_Wrap(b->sphere.top + dy), 0, 0, PELLET_SLING_AIMED,
-                b->pattern_state);
+                c, Math16_Wrap(g_B05.sphere.left + dx),
+                Math16_Wrap(g_B05.sphere.top + dy), 0, 0, PELLET_SLING_AIMED,
+                g_B05.pattern_state);
         }
     }
 }
 
 static void M_Transform(
-    B05 *const b, const B05_CONTEXT *const c, const int16_t form,
-    const B05_FIRE fire)
+    const B05_CONTEXT *const c, const int16_t form, const B05_FIRE fire)
 {
-    if (b->frame < 100) {
-        M_Accelerate(b, c, 1);
+    if (g_B05.frame < 100) {
+        M_Accelerate(c, 1);
         return;
     }
-    if (b->frame == 100 || b->frame == 250) {
-        M_Put(b, c, &b->flash, 0);
+    if (g_B05.frame == 100 || g_B05.frame == 250) {
+        M_Put(c, &g_B05.flash, 0);
     } else if (
-        b->frame == 105 || b->frame == 110 || b->frame == 240
-        || b->frame == 245) {
-        M_Put(b, c, &b->flash, (int16_t)(1 + form));
-    } else if (b->frame == 115) {
-        M_Put(b, c, &b->person, (int16_t)(3 * form));
-    } else if (b->frame == 135) {
-        b->person.image = (int16_t)(1 + 3 * form);
-        M_Put(b, c, &b->person, b->person.image);
-        M_FireMan(b, c, fire);
-    } else if (b->frame == 160) {
-        b->person.image = (int16_t)(2 + 3 * form);
-        M_Put(b, c, &b->person, form == 0 ? 2 : 4);
-        M_FireMan(b, c, fire);
-    } else if (b->frame == 185) {
-        b->person.image = (int16_t)(3 * form);
-        M_Put(b, c, &b->person, b->person.image);
-        M_FireMan(b, c, fire);
-    } else if (b->frame == 260) {
-        M_Put(b, c, &b->sphere, 0);
-        b->frame = 0;
+        g_B05.frame == 105 || g_B05.frame == 110 || g_B05.frame == 240
+        || g_B05.frame == 245) {
+        M_Put(c, &g_B05.flash, (int16_t)(1 + form));
+    } else if (g_B05.frame == 115) {
+        M_Put(c, &g_B05.person, (int16_t)(3 * form));
+    } else if (g_B05.frame == 135) {
+        g_B05.person.image = (int16_t)(1 + 3 * form);
+        M_Put(c, &g_B05.person, g_B05.person.image);
+        M_FireMan(c, fire);
+    } else if (g_B05.frame == 160) {
+        g_B05.person.image = (int16_t)(2 + 3 * form);
+        M_Put(c, &g_B05.person, form == 0 ? 2 : 4);
+        M_FireMan(c, fire);
+    } else if (g_B05.frame == 185) {
+        g_B05.person.image = (int16_t)(3 * form);
+        M_Put(c, &g_B05.person, g_B05.person.image);
+        M_FireMan(c, fire);
+    } else if (g_B05.frame == 260) {
+        M_Put(c, &g_B05.sphere, 0);
+        g_B05.frame = 0;
     }
-    if (b->frame > 135 && b->frame < 240 && b->frame % 4 == 0) {
-        M_Put(b, c, &b->person, b->person.image);
+    if (g_B05.frame > 135 && g_B05.frame < 240 && g_B05.frame % 4 == 0) {
+        M_Put(c, &g_B05.person, g_B05.person.image);
     }
 }
 
-static void M_Chase(B05 *const b, const B05_CONTEXT *const c)
+static void M_Chase(const B05_CONTEXT *const c)
 {
-    M_Transform(b, c, 0, B05_FIRE_NONE);
-    if (b->frame > 140 && b->frame <= 220 && b->frame % 8 == 0) {
+    M_Transform(c, 0, B05_FIRE_NONE);
+    if (g_B05.frame > 140 && g_B05.frame <= 220 && g_B05.frame % 8 == 0) {
         const int16_t speed = Boss_Rank(55, 58, 62, 65);
         M_Add(
-            c, Math16_Wrap(b->sphere.left + 44),
-            Math16_Wrap(b->sphere.top + 44), 0xf0, 16, PELLET_CHASE, speed);
+            c, Math16_Wrap(g_B05.sphere.left + 44),
+            Math16_Wrap(g_B05.sphere.top + 44), 0xf0, 16, PELLET_CHASE, speed);
         M_Add(
-            c, Math16_Wrap(b->sphere.left + 44),
-            Math16_Wrap(b->sphere.top + 44), 0x90, 16, PELLET_CHASE, speed);
+            c, Math16_Wrap(g_B05.sphere.left + 44),
+            Math16_Wrap(g_B05.sphere.top + 44), 0x90, 16, PELLET_CHASE, speed);
     }
 }
 
-static void M_Cross(B05 *const b, const B05_CONTEXT *const c)
+static void M_Cross(const B05_CONTEXT *const c)
 {
-    M_Transform(b, c, 0, B05_FIRE_NONE);
-    if (b->frame > 140 && b->frame % 8 == 0) {
+    M_Transform(c, 0, B05_FIRE_NONE);
+    if (g_B05.frame > 140 && g_B05.frame % 8 == 0) {
         const int16_t speed = Boss_Rank(60, 70, 75, 80);
         M_Add(
-            c, Math16_Wrap(b->sphere.left + 12),
-            Math16_Wrap(b->sphere.top + 44), 0x30, speed, PELLET_REGULAR, 0);
+            c, Math16_Wrap(g_B05.sphere.left + 12),
+            Math16_Wrap(g_B05.sphere.top + 44), 0x30, speed, PELLET_REGULAR, 0);
         M_Add(
-            c, Math16_Wrap(b->sphere.left + 84),
-            Math16_Wrap(b->sphere.top + 44), 0x50, speed, PELLET_REGULAR, 0);
+            c, Math16_Wrap(g_B05.sphere.left + 84),
+            Math16_Wrap(g_B05.sphere.top + 44), 0x50, speed, PELLET_REGULAR, 0);
     }
 }
 
-static bool M_Entrance(B05 *const b, const B05_CONTEXT *const c)
+static bool M_Entrance(const B05_CONTEXT *const c)
 {
     for (;;) {
-        if (b->pending == B05_ENTRANCE_DELAY) {
+        if (g_B05.pending == B05_ENTRANCE_DELAY) {
             if (!Frame_DelayReady(1)) {
                 return false;
             }
-            if (b->frame == 200) {
-                b->phase = B05_PHASE_SPHERE;
-                b->pattern = 0;
-                b->hit.invincible = false;
-                b->frame = 0;
-                b->hp_bar_filled = false;
-                Palette_Set(c->hit->palette, &b->boss_palette);
+            if (g_B05.frame == 200) {
+                g_B05.phase = B05_PHASE_SPHERE;
+                g_B05.pattern = 0;
+                g_B05.hit.invincible = false;
+                g_B05.frame = 0;
+                g_B05.hp_bar_filled = false;
+                Palette_Set(c->hit->palette, &g_B05.boss_palette);
                 *c->stage_palette = c->hit->palette->saved;
-                b->boss_palette = c->hit->palette->saved;
-                b->sphere.orb_inactive = false;
-                b->hit.frame = 0;
-                b->pattern_state = Boss_Rank(70, 50, 30, 10);
-                b->pending = B05_IDLE;
+                g_B05.boss_palette = c->hit->palette->saved;
+                g_B05.sphere.orb_inactive = false;
+                g_B05.hit.frame = 0;
+                g_B05.pattern_state = Boss_Rank(70, 50, 30, 10);
+                g_B05.pending = B05_IDLE;
                 return true;
             }
-            b->pending = B05_ENTRANCE;
+            g_B05.pending = B05_ENTRANCE;
         }
-        BossEntity_LockedMovePut(&b->sphere, c->sprites, 0, 0, 3, true);
-        b->frame++;
-        if (b->frame % b->rotation_interval == 0) {
-            M_Rotate(b, c, 1, 1);
-            b->rotation_interval -= 2;
-            if (b->rotation_interval <= 0) {
-                b->rotation_interval = 1;
+        BossEntity_LockedMovePut(&g_B05.sphere, 0, 0, 3, true);
+        g_B05.frame++;
+        if (g_B05.frame % g_B05.rotation_interval == 0) {
+            M_Rotate(c, 1, 1);
+            g_B05.rotation_interval -= 2;
+            if (g_B05.rotation_interval <= 0) {
+                g_B05.rotation_interval = 1;
             }
         }
-        if (b->frame % 20 == 0) {
+        if (g_B05.frame % 20 == 0) {
             const int32_t colors[] = { 5, 9, 15 };
             for (int32_t component = 0; component < 3; component++) {
                 for (int32_t i = 0; i < 3; i++) {
@@ -301,33 +300,32 @@ static bool M_Entrance(B05 *const b, const B05_CONTEXT *const c)
             }
             Palette_Set(c->hit->palette, &c->hit->palette->saved);
         }
-        b->pending = B05_ENTRANCE_DELAY;
+        g_B05.pending = B05_ENTRANCE_DELAY;
     }
 }
 
-static bool M_Death(
-    B05 *const b, const B05_CONTEXT *const c, const TH01_INPUT *const raw)
+static bool M_Death(const B05_CONTEXT *const c, const TH01_INPUT *const raw)
 {
-    if (b->pending == B05_DEFEAT) {
+    if (g_B05.pending == B05_DEFEAT) {
         const BOSS_DEFEAT_CONTEXT defeat = {
             .palette = c->hit->palette,
-            .post_defeat = &b->post_defeat,
+            .post_defeat = &g_B05.post_defeat,
             .miko = c->miko,
             .player = c->hit->display->player,
-            .origin_top = &b->sphere.top,
+            .origin_top = &g_B05.sphere.top,
             .stage_cleared = c->route->stage_cleared,
         };
-        if (!BossDefeat_Resume(&b->defeat, &defeat)) {
+        if (!BossDefeat_Resume(&g_B05.defeat, &defeat)) {
             return false;
         }
-        b->pending = B05_ROUTE;
-        if (!RouteSelect_Begin(&b->route_selection, c->route, raw)) {
+        g_B05.pending = B05_ROUTE;
+        if (!RouteSelect_Begin(&g_B05.route_selection, c->route, raw)) {
             return false;
         }
-    } else if (!RouteSelect_Resume(&b->route_selection, c->route, raw)) {
+    } else if (!RouteSelect_Resume(&g_B05.route_selection, c->route, raw)) {
         return false;
     }
-    b->pending = B05_FINISHED;
+    g_B05.pending = B05_FINISHED;
     return true;
 }
 
@@ -367,126 +365,133 @@ RESULT B05_LoadAssets(
     return OK;
 }
 
-void B05_Setup(B05 *const boss, const B05_CONTEXT *const c)
+void B05_Init(void)
 {
-    ASSERT(boss->pending == B05_IDLE || boss->pending == B05_FINISHED);
+    memset(&g_B05, 0, sizeof(g_B05));
+}
+
+void B05_Setup(const B05_CONTEXT *const c)
+{
+    ASSERT(g_B05.pending == B05_IDLE || g_B05.pending == B05_FINISHED);
     ASSERT(Result_Ignore(B05_ValidateAssets(c->assets)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&boss->sphere, c->sprites, 0, &c->assets->sphere)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&boss->flash, c->sprites, 1, &c->assets->flash)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&boss->person, c->sprites, 2, &c->assets->person)));
-    boss->post_defeat = c->assets->palette;
-    *c->stage_palette = boss->post_defeat;
-    Palette_Set(c->hit->palette, &boss->post_defeat);
-    boss->boss_palette = c->hit->palette->saved;
+    ASSERT(
+        Result_Ignore(BossEntity_Bind(&g_B05.sphere, 0, &c->assets->sphere)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&g_B05.flash, 1, &c->assets->flash)));
+    ASSERT(
+        Result_Ignore(BossEntity_Bind(&g_B05.person, 2, &c->assets->person)));
+    g_B05.post_defeat = c->assets->palette;
+    *c->stage_palette = g_B05.post_defeat;
+    Palette_Set(c->hit->palette, &g_B05.post_defeat);
+    g_B05.boss_palette = c->hit->palette->saved;
     Palette_Set(c->hit->palette, &c->hit->palette->saved);
     BossEntity_SetPosition(
-        &boss->sphere, 640, 64, (BOSS_BOUNDS) { 0, 736, 64, 304 });
-    BossEntity_SetOrbHitbox(&boss->sphere, (BOSS_BOUNDS) { 8, 88, 8, 88 });
-    boss->sphere.orb_inactive = false;
-    boss->sphere.image = 0;
-    boss->hp = 8;
+        &g_B05.sphere, 640, 64, (BOSS_BOUNDS) { 0, 736, 64, 304 });
+    BossEntity_SetOrbHitbox(&g_B05.sphere, (BOSS_BOUNDS) { 8, 88, 8, 88 });
+    g_B05.sphere.orb_inactive = false;
+    g_B05.sphere.image = 0;
+    g_B05.hp = 8;
     c->hit->health->first_white = 6;
     c->hit->health->first_redwhite = 2;
-    boss->phase = B05_PHASE_START;
-    boss->pending = B05_IDLE;
+    g_B05.phase = B05_PHASE_START;
+    g_B05.pending = B05_IDLE;
     Particles_Init(c->particles);
 }
 
 bool B05_UpdateAndRender(
-    B05 *const b, const B05_CONTEXT *const c, const TH01_INPUT *const raw)
+    const B05_CONTEXT *const c, const TH01_INPUT *const raw)
 {
-    if (b->pending == B05_FINISHED) {
+    if (g_B05.pending == B05_FINISHED) {
         return true;
     }
-    if (b->pending == B05_ENTRANCE || b->pending == B05_ENTRANCE_DELAY) {
-        return M_Entrance(b, c);
+    if (g_B05.pending == B05_ENTRANCE || g_B05.pending == B05_ENTRANCE_DELAY) {
+        return M_Entrance(c);
     }
-    if (b->pending == B05_DEFEAT || b->pending == B05_ROUTE) {
-        return M_Death(b, c, raw);
+    if (g_B05.pending == B05_DEFEAT || g_B05.pending == B05_ROUTE) {
+        return M_Death(c, raw);
     }
-    if (b->phase == B05_PHASE_START) {
-        b->sphere.left = 272;
-        b->sphere.top = 96;
+    if (g_B05.phase == B05_PHASE_START) {
+        g_B05.sphere.left = 272;
+        g_B05.sphere.top = 96;
         Palette_SetColor(c->hit->palette, 5, 0, 0, 0);
         Palette_SetColor(c->hit->palette, 9, 0, 0, 0);
         Palette_SetColor(c->hit->palette, 15, 0, 0, 0);
-        b->rotation_interval = 18;
-        b->frame = 0;
-        b->pending = B05_ENTRANCE;
-        return M_Entrance(b, c);
+        g_B05.rotation_interval = 18;
+        g_B05.frame = 0;
+        g_B05.pending = B05_ENTRANCE;
+        return M_Entrance(c);
     }
-    if (b->phase == B05_PHASE_SPHERE || b->phase == B05_PHASE_TRANSFORMS) {
-        if (b->phase == B05_PHASE_SPHERE && !b->hp_bar_filled) {
-            b->hp_bar_filled =
-                HudHp_Increment(c->hit->health, b->hp, b->hit.frame);
+    if (g_B05.phase == B05_PHASE_SPHERE
+        || g_B05.phase == B05_PHASE_TRANSFORMS) {
+        if (g_B05.phase == B05_PHASE_SPHERE && !g_B05.hp_bar_filled) {
+            g_B05.hp_bar_filled =
+                HudHp_Increment(c->hit->health, g_B05.hp, g_B05.hit.frame);
         }
-        b->frame = Math16_Wrap(b->frame + 1);
-        b->hit.frame = Math16_Wrap(b->hit.frame + 1);
-        if (b->phase == B05_PHASE_SPHERE) {
-            if (b->pattern == 0) {
-                M_Half(b, c);
-            } else if (b->pattern == 1) {
-                M_Slam(b, c);
+        g_B05.frame = Math16_Wrap(g_B05.frame + 1);
+        g_B05.hit.frame = Math16_Wrap(g_B05.hit.frame + 1);
+        if (g_B05.phase == B05_PHASE_SPHERE) {
+            if (g_B05.pattern == 0) {
+                M_Half(c);
+            } else if (g_B05.pattern == 1) {
+                M_Slam(c);
             }
-            if (b->frame == 0) {
-                b->pattern = b->pattern == 1 ? 0 : Math16_Wrap(b->pattern + 1);
+            if (g_B05.frame == 0) {
+                g_B05.pattern =
+                    g_B05.pattern == 1 ? 0 : Math16_Wrap(g_B05.pattern + 1);
             }
         } else {
-            switch (b->pattern) {
+            switch (g_B05.pattern) {
             case 0:
-                M_Chase(b, c);
+                M_Chase(c);
                 break;
             case 1:
-                M_Transform(b, c, 1, B05_FIRE_DOWN);
+                M_Transform(c, 1, B05_FIRE_DOWN);
                 break;
             case 2:
-                M_Cross(b, c);
+                M_Cross(c);
                 break;
             case 3:
-                M_Transform(b, c, 1, B05_FIRE_SLING);
+                M_Transform(c, 1, B05_FIRE_SLING);
                 break;
             case 4:
-                M_Slam(b, c);
+                M_Slam(c);
                 break;
             }
-            if (b->frame == 0) {
-                b->pattern =
-                    b->pattern == 4 ? (int16_t)(MasterRng_Next(c->rng) % 4) : 4;
+            if (g_B05.frame == 0) {
+                g_B05.pattern = g_B05.pattern == 4
+                    ? (int16_t)(MasterRng_Next(c->rng) % 4)
+                    : 4;
             }
         }
         const uint8_t flash[] = { 13 };
         BossHit_UpdateAndRender(
-            &b->hit, c->hit, &b->hp, &b->boss_palette, flash, 1, 3000,
-            BossEntity_HitTestOrb(&b->sphere, c->hit->orb),
+            &g_B05.hit, c->hit, &g_B05.hp, &g_B05.boss_palette, flash, 1, 3000,
+            BossEntity_HitTestOrb(&g_B05.sphere, c->hit->orb),
             (BOSS_SHOT_HITBOX) {
-                Math16_Wrap(b->sphere.left + 16),
-                Math16_Wrap(b->sphere.top + 32),
+                Math16_Wrap(g_B05.sphere.left + 16),
+                Math16_Wrap(g_B05.sphere.top + 32),
                 96,
                 48,
             });
-        if (b->phase == B05_PHASE_SPHERE && b->hp <= 6 && !b->hit.invincible
-            && b->pattern != 1) {
-            b->phase = B05_PHASE_TRANSFORMS;
-            b->pattern = 0;
-            b->frame = 0;
-            b->hit.frame = 0;
-        } else if (b->phase == B05_PHASE_TRANSFORMS && b->hp <= 0) {
-            b->phase = B05_PHASE_DEFEATED;
+        if (g_B05.phase == B05_PHASE_SPHERE && g_B05.hp <= 6
+            && !g_B05.hit.invincible && g_B05.pattern != 1) {
+            g_B05.phase = B05_PHASE_TRANSFORMS;
+            g_B05.pattern = 0;
+            g_B05.frame = 0;
+            g_B05.hit.frame = 0;
+        } else if (g_B05.phase == B05_PHASE_TRANSFORMS && g_B05.hp <= 0) {
+            g_B05.phase = B05_PHASE_DEFEATED;
             c->hit->effect(c->hit->user, 5);
-            b->frame = 0;
+            g_B05.frame = 0;
         }
-    } else if (b->phase == B05_PHASE_DEFEATED) {
+    } else if (g_B05.phase == B05_PHASE_DEFEATED) {
         BossEntity_Put(
-            &b->sphere, c->sprites, b->sphere.left, b->sphere.top,
-            b->sphere.image);
+            &g_B05.sphere, g_B05.sphere.left, g_B05.sphere.top,
+            g_B05.sphere.image);
         c->fade_music(c->hit->user);
         Pellets_EraseAndResetMoving(c->pellets);
-        BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_SINGYOKU);
-        b->pending = B05_DEFEAT;
-        return M_Death(b, c, raw);
+        BossDefeat_Begin(&g_B05.defeat, BOSS_DEFEAT_SINGYOKU);
+        g_B05.pending = B05_DEFEAT;
+        return M_Death(c, raw);
     }
     return true;
 }

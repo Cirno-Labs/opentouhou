@@ -68,9 +68,10 @@ typedef struct {
     bool hp_bar_filled, defeating, finished;
 } B10M;
 
+extern B10M g_B10M;
+
 typedef struct {
     const B10M_ASSETS *assets;
-    BOSS_SPRITES *sprites;
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
     PARTICLES *particles;
@@ -91,11 +92,14 @@ typedef struct {
 RESULT B10M_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B10M_ASSETS *out);
 RESULT B10M_ValidateAssets(const B10M_ASSETS *assets);
 
-// Zero-initialize once per main program. Shares slot 0 among all five eyes,
-// initializes the source setup fields and resets missile flags. Retains eye
-// lock/previous-position history, hit timing and pattern history. Reads no
-// files, allocates nothing, and leaves the background drawing to its owner.
-void B10M_Setup(B10M *boss, const B10M_CONTEXT *context);
+// Resets the boss state, before the first fight of a game.
+void B10M_Init(void);
+
+// Shares slot 0 among all five eyes, initializes the source setup fields and
+// resets missile flags. Retains eye lock/previous-position history, hit
+// timing and pattern history. Reads no files, allocates nothing, and leaves
+// the background drawing to its owner.
+void B10M_Setup(const B10M_CONTEXT *context);
 
 // Runs one ordinary call including the missile prefix. The 331-frame entrance
 // and eye transitions leave the owning world running. False suspends it during
@@ -106,4 +110,4 @@ void B10M_Setup(B10M *boss, const B10M_CONTEXT *context);
 // pentagram overshoot and phase fallthrough. Keep context bindings stable.
 // Successful calls allocate nothing and perform no IO. Finished calls are inert
 // until setup or the main program's state reset.
-bool B10M_UpdateAndRender(B10M *boss, const B10M_CONTEXT *context);
+bool B10M_UpdateAndRender(const B10M_CONTEXT *context);

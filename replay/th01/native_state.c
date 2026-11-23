@@ -81,25 +81,25 @@ static void M_Boss(const GAMEPLAY_WORLD *const world, uint32_t *const row)
     row[TH01_COLUMN_boss_phase_frame] = M_I32((boss).frame);
     switch (world->boss) {
     case 1:
-        M_BOSS(world->b05);
+        M_BOSS(g_B05);
         break;
     case 2:
-        M_BOSS(world->b10m);
+        M_BOSS(g_B10M);
         break;
     case 3:
-        M_BOSS(world->b10j);
+        M_BOSS(g_B10J);
         break;
     case 4:
-        M_BOSS(world->b15j);
+        M_BOSS(g_B15J);
         break;
     case 5:
-        M_BOSS(world->b15m);
+        M_BOSS(g_B15M);
         break;
     case 6:
-        M_BOSS(world->b20m);
+        M_BOSS(g_B20M);
         break;
     case 7:
-        M_BOSS(world->b20j);
+        M_BOSS(g_B20J);
         break;
     default:
         break;

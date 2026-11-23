@@ -11,6 +11,10 @@ typedef struct {
     const BOS *animations[BOSS_ANIMATION_SLOTS];
 } BOSS_SPRITES;
 
+// Holds the BOS banks that the boss entities and animations draw from, by
+// slot.
+extern BOSS_SPRITES g_BossSprites;
+
 typedef struct {
     int16_t width_bytes, height, count;
     uint8_t slot;
@@ -34,16 +38,14 @@ typedef struct {
     uint8_t image;
 } BOSS_ANIMATION;
 
-// Borrows immutable, word-aligned BOS assets from a caller-owned group.
+// Borrows immutable, word-aligned BOS assets into a slot of g_BossSprites.
 // Accepts one through eight images, heights 1..255 and widths 16..2032.
-// Rebinding a shared slot changes its images for every entity that selects
-// it, while existing entity metadata stays unchanged. Leaves all state
+// Rebinding a slot changes its images for every entity that selects it,
+// while existing entity metadata stays unchanged. Leaves all state
 // unchanged on validation failure. Allocates nothing and performs no IO.
-RESULT BossEntity_Bind(
-    BOSS_ENTITY *entity, BOSS_SPRITES *bank, uint8_t slot, const BOS *sprites);
+RESULT BossEntity_Bind(BOSS_ENTITY *entity, uint8_t slot, const BOS *sprites);
 RESULT BossAnimation_Bind(
-    BOSS_ANIMATION *animation, BOSS_SPRITES *bank, uint8_t slot,
-    const BOS *sprites);
+    BOSS_ANIMATION *animation, uint8_t slot, const BOS *sprites);
 
 // Copies only dimensions, image count and slot; retains positions and image.
 void BossEntity_CopyMetadata(BOSS_ENTITY *entity, const BOSS_ENTITY *source);

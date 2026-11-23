@@ -41,9 +41,10 @@ typedef struct {
     bool defeating, finished;
 } B15J;
 
+extern B15J g_B15J;
+
 typedef struct {
     const B15J_ASSETS *assets;
-    BOSS_SPRITES *sprites;
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
     PARTICLES *particles;
@@ -63,11 +64,14 @@ typedef struct {
 RESULT B15J_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B15J_ASSETS *out);
 RESULT B15J_ValidateAssets(const B15J_ASSETS *assets);
 
-// Zero-initialize once per main program. Composes sprite binding, tear-frame
-// reset and pellet interlace from loading with the setup's HP, soul positions
-// and black defeat palette. Keeps actor and pattern history. The background
-// owner applies its palette before entering the battle. No allocation or IO.
-void B15J_Setup(B15J *boss, const B15J_CONTEXT *context);
+// Resets the boss state, before the first fight of a game.
+void B15J_Init(void);
+
+// Composes sprite binding, tear-frame reset and pellet interlace from loading
+// with the setup's HP, soul positions and black defeat palette. Keeps actor and
+// pattern history. The background owner applies its palette before entering the
+// battle. No allocation or IO.
+void B15J_Setup(const B15J_CONTEXT *context);
 
 // Runs one ordinary call. False suspends the world during the barn-door
 // and ring entrance or regular defeat. Advance only independent audio and
@@ -77,4 +81,4 @@ void B15J_Setup(B15J *boss, const B15J_CONTEXT *context);
 // intervals, four-laser cleanup and silent HP timeout. Activates cached
 // scene 6 after defeat. Finished calls are inert until setup or state reset.
 // Keep borrowed resources stable. Allocates nothing and performs no IO.
-bool B15J_UpdateAndRender(B15J *boss, const B15J_CONTEXT *context);
+bool B15J_UpdateAndRender(const B15J_CONTEXT *context);
