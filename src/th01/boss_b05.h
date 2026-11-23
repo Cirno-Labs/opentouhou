@@ -44,9 +44,10 @@ typedef struct {
     B05_PENDING pending;
 } B05;
 
+extern B05 g_B05;
+
 typedef struct {
     const B05_ASSETS *assets;
-    BOSS_SPRITES *sprites;
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
     PARTICLES *particles;
@@ -65,13 +66,16 @@ typedef struct {
 RESULT B05_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B05_ASSETS *out);
 RESULT B05_ValidateAssets(const B05_ASSETS *assets);
 
-// Zero-initialize once per main program. Bind validated sphere, flash and
-// person assets to shared slots 0..2, show their palette, and initialize the
-// source's setup fields. Retains pattern history, hit timing, image locks and
-// particle history until their specified entrance or pattern boundaries.
-// Requires no pending operation. All contexts share palette and player.
-// Setup allocates nothing, reads no file, and does not draw the background.
-void B05_Setup(B05 *boss, const B05_CONTEXT *context);
+// Resets the boss state, before the first fight of a game.
+void B05_Init(void);
+
+// Binds validated sphere, flash and person assets to slots 0..2, shows their
+// palette, and initializes the source's setup fields. Retains pattern history,
+// hit timing, image locks and particle history until their specified entrance
+// or pattern boundaries. Requires no pending operation. All contexts share
+// palette and player. Setup allocates nothing, reads no file, and does not draw
+// the background.
+void B05_Setup(const B05_CONTEXT *context);
 
 // Runs one ordinary boss call, or resumes its pending entrance/defeat/route
 // operation. False suspends the owning world: advance only reference VSyncs
@@ -87,6 +91,5 @@ void B05_Setup(B05 *boss, const B05_CONTEXT *context);
 // spawn attempts even when the pool is full. Keep contexts and assets bound
 // identically until completion. frame_rand changes only between completed
 // ordinary calls. Successful operations allocate nothing and perform no IO.
-// After route completion, calls are inert until Setup or program reset.
-bool B05_UpdateAndRender(
-    B05 *boss, const B05_CONTEXT *context, const TH01_INPUT *raw);
+// After route completion, calls are inert until Setup or Init.
+bool B05_UpdateAndRender(const B05_CONTEXT *context, const TH01_INPUT *raw);

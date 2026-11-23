@@ -5,6 +5,10 @@
 #include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 
+#include <string.h>
+
+B15J g_B15J;
+
 static RESULT M_LoadRipples(
     VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
 {
@@ -52,34 +56,39 @@ RESULT B15J_LoadAssets(
     return OK;
 }
 
-void B15J_Setup(B15J *const b, const B15J_CONTEXT *const c)
+void B15J_Init(void)
 {
-    ASSERT(!b->entrance_active && !b->defeating);
+    memset(&g_B15J, 0, sizeof(g_B15J));
+}
+
+void B15J_Setup(const B15J_CONTEXT *const c)
+{
+    ASSERT(!g_B15J.entrance_active && !g_B15J.defeating);
     ASSERT(Result_Ignore(B15J_ValidateAssets(c->assets)));
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&b->souls[0], c->sprites, 0, &c->assets->souls)));
-    BossEntity_CopyMetadata(&b->souls[1], &b->souls[0]);
-    ASSERT(Result_Ignore(
-        BossEntity_Bind(&b->tears[0], c->sprites, 1, &c->assets->tears)));
+    ASSERT(
+        Result_Ignore(BossEntity_Bind(&g_B15J.souls[0], 0, &c->assets->souls)));
+    BossEntity_CopyMetadata(&g_B15J.souls[1], &g_B15J.souls[0]);
+    ASSERT(
+        Result_Ignore(BossEntity_Bind(&g_B15J.tears[0], 1, &c->assets->tears)));
     for (int32_t i = 1; i < 10; i++) {
-        BossEntity_CopyMetadata(&b->tears[i], &b->tears[0]);
+        BossEntity_CopyMetadata(&g_B15J.tears[i], &g_B15J.tears[0]);
     }
-    b->boss_palette = c->hit->palette->saved;
+    g_B15J.boss_palette = c->hit->palette->saved;
     for (int32_t i = 0; i < 10; i++) {
-        b->tear_frame[i] = 0;
+        g_B15J.tear_frame[i] = 0;
     }
     c->pellets->interlace = true;
-    b->phase = B15J_PHASE_ENTRANCE;
-    b->frame = 0;
-    b->hp = 14;
-    b->finished = false;
+    g_B15J.phase = B15J_PHASE_ENTRANCE;
+    g_B15J.frame = 0;
+    g_B15J.hp = 14;
+    g_B15J.finished = false;
     c->hit->health->first_white = 10;
     c->hit->health->first_redwhite = 6;
     for (int32_t i = 0; i < 2; i++) {
         BossEntity_SetPosition(
-            &b->souls[i], 0, 0, (BOSS_BOUNDS) { 32, 576, 64, 400 });
+            &g_B15J.souls[i], 0, 0, (BOSS_BOUNDS) { 32, 576, 64, 400 });
     }
-    b->post_defeat = (PALETTE) {};
+    g_B15J.post_defeat = (PALETTE) {};
     Particles_Init(c->particles);
 }
 
@@ -89,21 +98,21 @@ static int8_t M_Byte(const int32_t value)
     return bits < 128 ? (int8_t)bits : (int8_t)((int16_t)bits - 256);
 }
 
-static void M_Common(B15J *const b)
+static void M_Common(void)
 {
-    b->frame = Math16_Wrap(b->frame + 1);
-    b->hit.frame = Math16_Wrap(b->hit.frame + 1);
+    g_B15J.frame = Math16_Wrap(g_B15J.frame + 1);
+    g_B15J.hit.frame = Math16_Wrap(g_B15J.hit.frame + 1);
 }
 
-static void M_Hit(B15J *const b, const B15J_CONTEXT *const c)
+static void M_Hit(const B15J_CONTEXT *const c)
 {
     const ORB *const orb = c->hit->orb;
     const bool colliding =
         orb->left > 256 && orb->left < 368 && orb->top < 132 && orb->top < 196;
     const uint8_t flash[] = { 6, 11, 8, 2 };
     BossHit_UpdateAndRender(
-        &b->hit, c->hit, &b->hp, &b->boss_palette, flash, 4, 7000, colliding,
-        (BOSS_SHOT_HITBOX) {});
+        &g_B15J.hit, c->hit, &g_B15J.hp, &g_B15J.boss_palette, flash, 4, 7000,
+        colliding, (BOSS_SHOT_HITBOX) {});
 }
 
 static void M_CopyLine(const int16_t y, const uint16_t mask)
@@ -147,81 +156,81 @@ static int16_t M_InvertRings(const B15J_CONTEXT *const c, const int16_t base)
     return outside;
 }
 
-static bool M_Entrance(B15J *const b, const B15J_CONTEXT *const c)
+static bool M_Entrance(const B15J_CONTEXT *const c)
 {
-    if (!b->entrance_active) {
-        b->entrance_active = true;
-        b->entrance_stage = 0;
-        b->entrance_waiting = false;
-        b->frame = 0;
-        b->hit.frame = 0;
-        b->hit.invincible = false;
-        b->boss_palette = c->hit->palette->saved;
+    if (!g_B15J.entrance_active) {
+        g_B15J.entrance_active = true;
+        g_B15J.entrance_stage = 0;
+        g_B15J.entrance_waiting = false;
+        g_B15J.frame = 0;
+        g_B15J.hit.frame = 0;
+        g_B15J.hit.invincible = false;
+        g_B15J.boss_palette = c->hit->palette->saved;
         const int32_t colors[] = { 2, 6, 8, 11 };
         for (int32_t i = 0; i < 4; i++) {
             Palette_SetColor(c->hit->palette, colors[i], 15, 15, 15);
         }
     }
     while (true) {
-        if (b->entrance_waiting) {
+        if (g_B15J.entrance_waiting) {
             if (!Frame_DelayReady(1)) {
                 return false;
             }
-            b->entrance_waiting = false;
+            g_B15J.entrance_waiting = false;
         }
-        b->frame = Math16_Wrap(b->frame + 1);
-        if (b->entrance_stage == 0) {
-            if (b->frame % 3 == 0) {
-                const int16_t y = b->hit.frame;
+        g_B15J.frame = Math16_Wrap(g_B15J.frame + 1);
+        if (g_B15J.entrance_stage == 0) {
+            if (g_B15J.frame % 3 == 0) {
+                const int16_t y = g_B15J.hit.frame;
                 if (y < 200) {
                     M_SymmetricLine(y, 0, 0x2222);
                 }
-                if (b->frame * 2 > 8 && y < 208) {
+                if (g_B15J.frame * 2 > 8 && y < 208) {
                     M_SymmetricLine(y, 8, 0xaaaa);
                 }
-                if (b->frame * 2 > 16 && y < 216) {
+                if (g_B15J.frame * 2 > 16 && y < 216) {
                     M_SymmetricLine(y, 16, 0xeeee);
                 }
-                if (b->frame * 2 > 24 && y <= 224) {
+                if (g_B15J.frame * 2 > 24 && y <= 224) {
                     M_SymmetricLine(y, 24, 0xffff);
                 }
-                b->hit.frame = Math16_Wrap(y + 1);
-                if (b->hit.frame > 224) {
-                    b->hit.frame = 0;
-                    b->frame = 0;
-                    b->entrance_stage = 1;
+                g_B15J.hit.frame = Math16_Wrap(y + 1);
+                if (g_B15J.hit.frame > 224) {
+                    g_B15J.hit.frame = 0;
+                    g_B15J.frame = 0;
+                    g_B15J.entrance_stage = 1;
                     continue;
                 }
             }
             M_Defaults(c);
-            b->entrance_waiting = true;
+            g_B15J.entrance_waiting = true;
         } else {
             bool finish = false;
-            if (b->frame == 70) {
-                b->ring_radius = 0;
-            } else if (b->frame == 71) {
-                M_InvertRings(c, b->ring_radius);
-            } else if (b->frame > 71 && b->frame % 4 == 0) {
-                M_InvertRings(c, b->ring_radius);
-                b->ring_radius = Math16_Wrap(b->ring_radius + 16);
-                finish = M_InvertRings(c, b->ring_radius) >= 128;
+            if (g_B15J.frame == 70) {
+                g_B15J.ring_radius = 0;
+            } else if (g_B15J.frame == 71) {
+                M_InvertRings(c, g_B15J.ring_radius);
+            } else if (g_B15J.frame > 71 && g_B15J.frame % 4 == 0) {
+                M_InvertRings(c, g_B15J.ring_radius);
+                g_B15J.ring_radius = Math16_Wrap(g_B15J.ring_radius + 16);
+                finish = M_InvertRings(c, g_B15J.ring_radius) >= 128;
             }
             if (finish) {
-                b->phase = B15J_PHASE_SPIRAL;
-                b->patterns_done = 0;
-                b->frame = 0;
-                Palette_Set(c->hit->palette, &b->boss_palette);
-                b->hp_bar_filled = false;
+                g_B15J.phase = B15J_PHASE_SPIRAL;
+                g_B15J.patterns_done = 0;
+                g_B15J.frame = 0;
+                Palette_Set(c->hit->palette, &g_B15J.boss_palette);
+                g_B15J.hp_bar_filled = false;
                 *c->stage_palette = c->hit->palette->saved;
-                b->entrance_active = false;
+                g_B15J.entrance_active = false;
                 return true;
             }
-            if (b->frame > 71 && b->frame % 30 != 0) {
+            if (g_B15J.frame > 71 && g_B15J.frame % 30 != 0) {
                 const int32_t colors[] = { 2, 6, 8, 11 };
                 for (int32_t component = 0; component < 3; component++) {
                     for (int32_t i = 0; i < 4; i++) {
                         const int32_t color = colors[i];
-                        if (b->boss_palette.colors[color][component]
+                        if (g_B15J.boss_palette.colors[color][component]
                             < c->hit->palette->saved.colors[color][component]) {
                             c->hit->palette->saved.colors[color][component]--;
                         }
@@ -229,30 +238,30 @@ static bool M_Entrance(B15J *const b, const B15J_CONTEXT *const c)
                 }
                 Palette_Set(c->hit->palette, &c->hit->palette->saved);
             }
-            b->entrance_waiting = b->frame % 2 != 0;
+            g_B15J.entrance_waiting = g_B15J.frame % 2 != 0;
         }
     }
 }
 
 static void M_SoulMove(
-    B15J *const b, const B15J_CONTEXT *const c, const int32_t i,
-    const int16_t dx, const int16_t dy)
+    const B15J_CONTEXT *const c, const int32_t i, const int16_t dx,
+    const int16_t dy)
 {
-    BOSS_ENTITY *const soul = &b->souls[i];
-    BossEntity_LockedMovePut(soul, c->sprites, dx, dy, 1, true);
-    if (b->frame % 12 == 0) {
+    BOSS_ENTITY *const soul = &g_B15J.souls[i];
+    BossEntity_LockedMovePut(soul, dx, dy, 1, true);
+    if (g_B15J.frame % 12 == 0) {
         soul->image = soul->image >= 2 ? 0 : Math16_Wrap(soul->image + 1);
     }
 }
 
-static void M_AddTear(B15J *const b, const int16_t x, const int16_t y)
+static void M_AddTear(const int16_t x, const int16_t y)
 {
     for (int32_t i = 0; i < 10; i++) {
-        if (b->tear_frame[i] == 0) {
+        if (g_B15J.tear_frame[i] == 0) {
             BossEntity_SetPosition(
-                &b->tears[i], x, y, (BOSS_BOUNDS) { 32, 576, 64, 400 });
-            b->tears[i].image = 0;
-            b->tear_frame[i] = 1;
+                &g_B15J.tears[i], x, y, (BOSS_BOUNDS) { 32, 576, 64, 400 });
+            g_B15J.tears[i].image = 0;
+            g_B15J.tear_frame[i] = 1;
             return;
         }
     }
@@ -321,39 +330,37 @@ static void M_Ripple(
     }
 }
 
-static void M_Tears(B15J *const b, const B15J_CONTEXT *const c)
+static void M_Tears(const B15J_CONTEXT *const c)
 {
     for (int32_t i = 0; i < 10; i++) {
-        if (b->tear_frame[i] != 0) {
-            if (b->tears[i].top <= 384) {
-                BossEntity_LockedMovePut(
-                    &b->tears[i], c->sprites, 0, 8, 1, true);
+        if (g_B15J.tear_frame[i] != 0) {
+            if (g_B15J.tears[i].top <= 384) {
+                BossEntity_LockedMovePut(&g_B15J.tears[i], 0, 8, 1, true);
             } else {
-                M_Ripple(c, b->tears[i].left, 384, &b->tear_frame[i]);
+                M_Ripple(c, g_B15J.tears[i].left, 384, &g_B15J.tear_frame[i]);
             }
         }
     }
 }
 
 static void M_MoveSouls(
-    B15J *const b, const B15J_CONTEXT *const c, const int16_t vx,
-    const int16_t vy)
+    const B15J_CONTEXT *const c, const int16_t vx, const int16_t vy)
 {
-    const int16_t x = Math16_PolarX(0, vx, b->frame);
-    const int16_t y = Math16_PolarX(0, vy, b->frame);
-    M_Tears(b, c);
-    M_SoulMove(b, c, 0, x, y);
-    M_SoulMove(b, c, 1, Math16_Wrap(-x), y);
+    const int16_t x = Math16_PolarX(0, vx, g_B15J.frame);
+    const int16_t y = Math16_PolarX(0, vy, g_B15J.frame);
+    M_Tears(c);
+    M_SoulMove(c, 0, x, y);
+    M_SoulMove(c, 1, Math16_Wrap(-x), y);
 }
 
 static void M_GroupSoul(
-    const B15J *const b, const B15J_CONTEXT *const c, const int32_t i,
-    const PELLET_GROUP group, const int16_t speed, const int16_t dy)
+    const B15J_CONTEXT *const c, const int32_t i, const PELLET_GROUP group,
+    const int16_t speed, const int16_t dy)
 {
     Pellets_AddGroup(
         c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
-        c->hit->display->rank, Math16_Wrap(b->souls[i].left + 12),
-        Math16_Wrap(b->souls[i].top + dy), group, speed);
+        c->hit->display->rank, Math16_Wrap(g_B15J.souls[i].left + 12),
+        Math16_Wrap(g_B15J.souls[i].top + dy), group, speed);
 }
 
 static void M_Single(
@@ -366,37 +373,37 @@ static void M_Single(
         motion, motion_speed, cx, cy);
 }
 
-static void M_SymmetricSpiral(B15J *const b, const B15J_CONTEXT *const c)
+static void M_SymmetricSpiral(const B15J_CONTEXT *const c)
 {
-    if (b->frame < 100) {
+    if (g_B15J.frame < 100) {
         return;
     }
-    if (b->frame == 100) {
-        b->spiral_angle = 0;
-        b->spiral_drift = 0;
-        b->pattern_state = Boss_Rank(4, 3, 2, 1);
-        b->spiral_distance = Boss_Rank(90, 90, 90, 50);
+    if (g_B15J.frame == 100) {
+        g_B15J.spiral_angle = 0;
+        g_B15J.spiral_drift = 0;
+        g_B15J.pattern_state = Boss_Rank(4, 3, 2, 1);
+        g_B15J.spiral_distance = Boss_Rank(90, 90, 90, 50);
     }
-    if (b->frame % b->pattern_state == 0) {
+    if (g_B15J.frame % g_B15J.pattern_state == 0) {
         for (int32_t i = 0; i < 2; i++) {
-            const uint8_t angle = (uint8_t)(b->spiral_angle + i * 128);
+            const uint8_t angle = (uint8_t)(g_B15J.spiral_angle + i * 128);
             M_Single(
-                c, Math16_PolarX(320, b->spiral_distance, angle),
-                Math16_PolarY(180, b->spiral_distance, angle),
-                (uint8_t)(angle + b->spiral_drift), 50, PELLET_REGULAR, 0, 0,
-                0);
+                c, Math16_PolarX(320, g_B15J.spiral_distance, angle),
+                Math16_PolarY(180, g_B15J.spiral_distance, angle),
+                (uint8_t)(angle + g_B15J.spiral_drift), 50, PELLET_REGULAR, 0,
+                0, 0);
         }
-        if (b->frame >= 900) {
-            b->frame = 0;
+        if (g_B15J.frame >= 900) {
+            g_B15J.frame = 0;
         }
-        b->spiral_angle = (uint8_t)(b->spiral_angle - 8);
-        b->spiral_drift++;
+        g_B15J.spiral_angle = (uint8_t)(g_B15J.spiral_angle - 8);
+        g_B15J.spiral_drift++;
     }
 }
 
-static void M_SpinRings(const B15J *const b, const B15J_CONTEXT *const c)
+static void M_SpinRings(const B15J_CONTEXT *const c)
 {
-    if (b->frame % Boss_Rank(80, 60, 55, 50) != 0) {
+    if (g_B15J.frame % Boss_Rank(80, 60, 55, 50) != 0) {
         return;
     }
     for (int32_t i = 0; i < 8; i++) {
@@ -408,34 +415,34 @@ static void M_SpinRings(const B15J *const b, const B15J_CONTEXT *const c)
     }
 }
 
-static void M_ActivateSouls(B15J *const b, const B15J_CONTEXT *const c)
+static void M_ActivateSouls(const B15J_CONTEXT *const c)
 {
-    if (b->frame == 200) {
+    if (g_B15J.frame == 200) {
         for (int32_t i = 0; i < 2; i++) {
             BossEntity_SetPosition(
-                &b->souls[i], 304, 208, (BOSS_BOUNDS) { 32, 576, 64, 400 });
+                &g_B15J.souls[i], 304, 208, (BOSS_BOUNDS) { 32, 576, 64, 400 });
         }
-    } else if (b->frame > 200 && b->frame % 2 == 0) {
-        M_SoulMove(b, c, 0, -4, -3);
-        M_SoulMove(b, c, 1, 4, -3);
-        if (b->souls[0].top < 96) {
-            b->subphase = 1;
+    } else if (g_B15J.frame > 200 && g_B15J.frame % 2 == 0) {
+        M_SoulMove(c, 0, -4, -3);
+        M_SoulMove(c, 1, 4, -3);
+        if (g_B15J.souls[0].top < 96) {
+            g_B15J.subphase = 1;
         }
     }
 }
 
-static void M_SoulSpreads(B15J *const b, const B15J_CONTEXT *const c)
+static void M_SoulSpreads(const B15J_CONTEXT *const c)
 {
-    M_SoulMove(b, c, 0, 0, 0);
-    M_SoulMove(b, c, 1, 0, 0);
-    if (b->frame % 80 == 0) {
+    M_SoulMove(c, 0, 0, 0);
+    M_SoulMove(c, 1, 0, 0);
+    if (g_B15J.frame % 80 == 0) {
         const PELLET_GROUP group = (PELLET_GROUP)Boss_Rank(
             PELLET_GROUP_TWO_WIDE_AIMED, PELLET_GROUP_THREE_WIDE_AIMED,
             PELLET_GROUP_FIVE_WIDE_AIMED, PELLET_GROUP_FIVE_WIDE);
-        M_GroupSoul(b, c, 0, group, 55, 8);
-        M_GroupSoul(b, c, 1, group, 55, 8);
+        M_GroupSoul(c, 0, group, 55, 8);
+        M_GroupSoul(c, 1, group, 55, 8);
     }
-    b->subphase = b->frame > 600 ? 2 : 1;
+    g_B15J.subphase = g_B15J.frame > 600 ? 2 : 1;
 }
 
 static void M_Laser(
@@ -446,86 +453,89 @@ static void M_Laser(
         &c->lasers->slots[i], x, 147, target, 400, speed, 10, 20, width);
 }
 
-static void M_CrossLasers(const B15J *const b, const B15J_CONTEXT *const c)
+static void M_CrossLasers(const B15J_CONTEXT *const c)
 {
-    if (b->frame > 200 && b->frame % 200 == 0) {
+    if (g_B15J.frame > 200 && g_B15J.frame % 200 == 0) {
         M_Laser(c, 0, 307, Math16_Wrap(Boss_Player(c->hit)->left + 60), 50, 8);
         M_Laser(c, 1, 336, Math16_Wrap(Boss_Player(c->hit)->left - 60), 50, 8);
         Boss_Effect(c->hit, 6);
     }
 }
 
-static void M_DropTears(B15J *const b, const B15J_CONTEXT *const c)
+static void M_DropTears(const B15J_CONTEXT *const c)
 {
-    if (b->frame < 10) {
-        b->pattern_state = Boss_Rank(200, 160, 140, 120);
+    if (g_B15J.frame < 10) {
+        g_B15J.pattern_state = Boss_Rank(200, 160, 140, 120);
     }
-    if (b->frame % b->pattern_state == 0) {
+    if (g_B15J.frame % g_B15J.pattern_state == 0) {
         for (int32_t i = 0; i < 2; i++) {
             M_AddTear(
-                b, Math16_Wrap(b->souls[i].left + 12),
-                Math16_Wrap(b->souls[i].top + 8));
+                Math16_Wrap(g_B15J.souls[i].left + 12),
+                Math16_Wrap(g_B15J.souls[i].top + 8));
         }
     }
-    M_MoveSouls(b, c, 6, 2);
+    M_MoveSouls(c, 6, 2);
 }
 
-static void M_FourSpiral(B15J *const b, const B15J_CONTEXT *const c)
+static void M_FourSpiral(const B15J_CONTEXT *const c)
 {
-    if (b->frame < 100) {
+    if (g_B15J.frame < 100) {
         return;
     }
-    if (b->frame == 100) {
-        b->four_angle = 32;
-        b->pattern_state = Boss_Rank(14, 8, 6, 4);
+    if (g_B15J.frame == 100) {
+        g_B15J.four_angle = 32;
+        g_B15J.pattern_state = Boss_Rank(14, 8, 6, 4);
     }
-    if (b->frame % b->pattern_state == 0) {
+    if (g_B15J.frame % g_B15J.pattern_state == 0) {
         for (int32_t i = 0; i < 4; i += 2) {
-            const int16_t x = Math16_PolarX(320, 90, b->frame * 4 + 128 * i);
-            const int16_t y = Math16_PolarY(180, 90, b->frame * 4 + 128 * i);
+            const int16_t x =
+                Math16_PolarX(320, 90, g_B15J.frame * 4 + 128 * i);
+            const int16_t y =
+                Math16_PolarY(180, 90, g_B15J.frame * 4 + 128 * i);
             for (int32_t j = 0; j < 4; j++) {
                 M_Single(
-                    c, x, y, (uint8_t)(b->four_angle + j * 64), 36,
+                    c, x, y, (uint8_t)(g_B15J.four_angle + j * 64), 36,
                     PELLET_REGULAR, 0, 0, 0);
             }
         }
-        if (b->frame <= 600) {
-            b->four_angle = (uint8_t)(b->four_angle - 5);
+        if (g_B15J.frame <= 600) {
+            g_B15J.four_angle = (uint8_t)(g_B15J.four_angle - 5);
         } else {
-            b->frame = 0;
-            b->subphase = 1;
+            g_B15J.frame = 0;
+            g_B15J.subphase = 1;
         }
     }
 }
 
-static void M_LeftLasers(B15J *const b, const B15J_CONTEXT *const c)
+static void M_LeftLasers(const B15J_CONTEXT *const c)
 {
-    if (b->frame <= 200) {
+    if (g_B15J.frame <= 200) {
         return;
     }
-    if (b->frame == 250) {
-        b->pattern_state = Boss_Rank(52, 56, 60, 64);
+    if (g_B15J.frame == 250) {
+        g_B15J.pattern_state = Boss_Rank(52, 56, 60, 64);
     }
-    if (b->frame >= 250 && b->frame <= 400 && (b->frame - 250) % 30 == 0) {
+    if (g_B15J.frame >= 250 && g_B15J.frame <= 400
+        && (g_B15J.frame - 250) % 30 == 0) {
         Boss_Effect(c->hit, 6);
         const int16_t offset = (int16_t)(MasterRng_Next(c->rng) % 120 - 60);
         M_Laser(
-            c, (b->frame - 250) / 30, 307,
-            Math16_Wrap(Boss_Player(c->hit)->left + offset), b->pattern_state,
-            4);
+            c, (g_B15J.frame - 250) / 30, 307,
+            Math16_Wrap(Boss_Player(c->hit)->left + offset),
+            g_B15J.pattern_state, 4);
     }
-    if (b->frame > 500) {
-        b->frame = 0;
-        b->subphase = 2;
+    if (g_B15J.frame > 500) {
+        g_B15J.frame = 0;
+        g_B15J.subphase = 2;
     }
 }
 
-static void M_Rain(B15J *const b, const B15J_CONTEXT *const c)
+static void M_Rain(const B15J_CONTEXT *const c)
 {
-    if (b->frame > 100 && b->frame % b->pattern_state == 0) {
+    if (g_B15J.frame > 100 && g_B15J.frame % g_B15J.pattern_state == 0) {
         for (int32_t i = 0; i < 2; i++) {
-            const int16_t x = Math16_Wrap(b->souls[i].left + 12);
-            const int16_t y = Math16_Wrap(b->souls[i].top + 12);
+            const int16_t x = Math16_Wrap(g_B15J.souls[i].left + 12);
+            const int16_t y = Math16_Wrap(g_B15J.souls[i].top + 12);
             for (int32_t j = 0; j < 6; j++) {
                 const int16_t speed = (int16_t)((j < 3 ? 3 - j : j - 2) * 16);
                 M_Single(
@@ -534,86 +544,89 @@ static void M_Rain(B15J *const b, const B15J_CONTEXT *const c)
             Boss_Effect(c->hit, 7);
         }
     }
-    if (b->frame > 250) {
-        b->frame = 0;
-        b->subphase = 3;
+    if (g_B15J.frame > 250) {
+        g_B15J.frame = 0;
+        g_B15J.subphase = 3;
     }
 }
 
-static void M_VerticalLasers(B15J *const b, const B15J_CONTEXT *const c)
+static void M_VerticalLasers(const B15J_CONTEXT *const c)
 {
-    if (b->frame < 100) {
+    if (g_B15J.frame < 100) {
         return;
     }
-    if (b->frame == 100) {
-        b->pattern_state = Boss_Rank(60, 64, 68, 72);
-        b->random_range = Boss_Rank(0, 10, 16, 20);
+    if (g_B15J.frame == 100) {
+        g_B15J.pattern_state = Boss_Rank(60, 64, 68, 72);
+        g_B15J.random_range = Boss_Rank(0, 10, 16, 20);
     }
-    if (b->frame % 10 == 0) {
-        const int32_t i = (b->frame - 100) / 10;
+    if (g_B15J.frame % 10 == 0) {
+        const int32_t i = (g_B15J.frame - 100) / 10;
         const int16_t offset =
-            (int16_t)(MasterRng_Next(c->rng) % (b->random_range * 2 + 1)
-                      - b->random_range);
+            (int16_t)(MasterRng_Next(c->rng) % (g_B15J.random_range * 2 + 1)
+                      - g_B15J.random_range);
         const int16_t x = Math16_Wrap(i * 64 + offset);
         ShootoutLasers_Spawn(
-            &c->lasers->slots[i], x, 64, x, 400, b->pattern_state, 10, 20, 8);
+            &c->lasers->slots[i], x, 64, x, 400, g_B15J.pattern_state, 10, 20,
+            8);
         Boss_Effect(c->hit, 6);
     }
-    if (b->frame >= 190) {
-        b->frame = 0;
-        b->subphase = 0;
+    if (g_B15J.frame >= 190) {
+        g_B15J.frame = 0;
+        g_B15J.subphase = 0;
     }
 }
 
-static bool M_Death(B15J *const b, const B15J_CONTEXT *const c)
+static bool M_Death(const B15J_CONTEXT *const c)
 {
     const BOSS_DEFEAT_CONTEXT defeat = {
         .palette = c->hit->palette,
-        .post_defeat = &b->post_defeat,
+        .post_defeat = &g_B15J.post_defeat,
         .miko = c->miko,
         .player = Boss_Player(c->hit),
         .origin_top = &c->hit->orb->top,
         .stage_cleared = c->stage_cleared,
     };
-    if (!BossDefeat_Resume(&b->defeat, &defeat)) {
+    if (!BossDefeat_Resume(&g_B15J.defeat, &defeat)) {
         return false;
     }
     Scene_Activate(c->scene, &c->assets->next_scene);
-    b->defeating = false;
-    b->finished = true;
+    g_B15J.defeating = false;
+    g_B15J.finished = true;
     return true;
 }
 
-bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
+bool B15J_UpdateAndRender(const B15J_CONTEXT *const c)
 {
-    if (b->finished) {
+    if (g_B15J.finished) {
         return true;
     }
-    if (b->defeating) {
-        return M_Death(b, c);
+    if (g_B15J.defeating) {
+        return M_Death(c);
     }
-    if (b->phase == B15J_PHASE_ENTRANCE) {
-        return M_Entrance(b, c);
+    if (g_B15J.phase == B15J_PHASE_ENTRANCE) {
+        return M_Entrance(c);
     }
-    if (b->phase == B15J_PHASE_SPIRAL) {
-        if (!b->hp_bar_filled) {
-            b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
+    if (g_B15J.phase == B15J_PHASE_SPIRAL) {
+        if (!g_B15J.hp_bar_filled) {
+            g_B15J.hp_bar_filled =
+                HudHp_Increment(c->hit->health, g_B15J.hp, g_B15J.frame);
         }
-        M_Common(b);
-        M_SymmetricSpiral(b, c);
-        M_Hit(b, c);
-        if (b->frame == 0) {
-            b->patterns_done = Math16_Wrap(b->patterns_done + 1);
+        M_Common();
+        M_SymmetricSpiral(c);
+        M_Hit(c);
+        if (g_B15J.frame == 0) {
+            g_B15J.patterns_done = Math16_Wrap(g_B15J.patterns_done + 1);
         }
-        if (!b->hit.invincible && (b->hp <= 10 || b->patterns_done >= 6)) {
-            b->phase = B15J_PHASE_RECOLOR;
-            b->frame = 0;
-            b->hit.frame = 0;
-            b->patterns_done = 0;
+        if (!g_B15J.hit.invincible
+            && (g_B15J.hp <= 10 || g_B15J.patterns_done >= 6)) {
+            g_B15J.phase = B15J_PHASE_RECOLOR;
+            g_B15J.frame = 0;
+            g_B15J.hit.frame = 0;
+            g_B15J.patterns_done = 0;
         }
-    } else if (b->phase == B15J_PHASE_RECOLOR) {
-        b->frame = Math16_Wrap(b->frame + 1);
-        if (b->frame % 20 == 19) {
+    } else if (g_B15J.phase == B15J_PHASE_RECOLOR) {
+        g_B15J.frame = Math16_Wrap(g_B15J.frame + 1);
+        if (g_B15J.frame % 20 == 19) {
             c->hit->palette->saved.colors[5][0] =
                 M_Byte(c->hit->palette->saved.colors[5][0] + 1);
             c->hit->palette->saved.colors[5][2] =
@@ -624,75 +637,75 @@ bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
                 M_Byte(c->stage_palette->colors[5][2] - 1);
             Palette_Set(c->hit->palette, c->stage_palette);
         }
-        if (b->frame >= 100) {
-            b->phase = B15J_PHASE_SOULS;
-            b->frame = 0;
-            b->subphase = 0;
+        if (g_B15J.frame >= 100) {
+            g_B15J.phase = B15J_PHASE_SOULS;
+            g_B15J.frame = 0;
+            g_B15J.subphase = 0;
             Palette_Set(c->hit->palette, c->stage_palette);
-            b->boss_palette = c->hit->palette->saved;
+            g_B15J.boss_palette = c->hit->palette->saved;
         }
-    } else if (b->phase == B15J_PHASE_SOULS) {
-        M_Common(b);
-        M_SpinRings(b, c);
-        if (b->subphase == 0) {
-            M_ActivateSouls(b, c);
+    } else if (g_B15J.phase == B15J_PHASE_SOULS) {
+        M_Common();
+        M_SpinRings(c);
+        if (g_B15J.subphase == 0) {
+            M_ActivateSouls(c);
         } else {
-            M_SoulSpreads(b, c);
+            M_SoulSpreads(c);
         }
-        M_Hit(b, c);
-        if (!b->hit.invincible && b->subphase == 2) {
-            b->phase = B15J_PHASE_TEARS;
-            b->subphase = 0;
-            b->frame = 0;
+        M_Hit(c);
+        if (!g_B15J.hit.invincible && g_B15J.subphase == 2) {
+            g_B15J.phase = B15J_PHASE_TEARS;
+            g_B15J.subphase = 0;
+            g_B15J.frame = 0;
         }
-    } else if (b->phase == B15J_PHASE_TEARS) {
-        M_Common(b);
-        M_DropTears(b, c);
-        M_CrossLasers(b, c);
-        M_Hit(b, c);
-        if (!b->hit.invincible && (b->hp <= 6 || b->frame > 1600)) {
-            b->phase = B15J_PHASE_PATTERNS;
-            b->frame = 0;
-            b->hit.frame = 0;
-            b->patterns_done = 0;
+    } else if (g_B15J.phase == B15J_PHASE_TEARS) {
+        M_Common();
+        M_DropTears(c);
+        M_CrossLasers(c);
+        M_Hit(c);
+        if (!g_B15J.hit.invincible && (g_B15J.hp <= 6 || g_B15J.frame > 1600)) {
+            g_B15J.phase = B15J_PHASE_PATTERNS;
+            g_B15J.frame = 0;
+            g_B15J.hit.frame = 0;
+            g_B15J.patterns_done = 0;
         }
-    } else if (b->phase == B15J_PHASE_PATTERNS) {
-        M_Common(b);
-        if (b->frame % 200 == 0) {
-            M_GroupSoul(b, c, 0, PELLET_GROUP_SINGLE_AIMED, 40, 12);
-            M_GroupSoul(b, c, 1, PELLET_GROUP_SINGLE_AIMED, 40, 12);
+    } else if (g_B15J.phase == B15J_PHASE_PATTERNS) {
+        M_Common();
+        if (g_B15J.frame % 200 == 0) {
+            M_GroupSoul(c, 0, PELLET_GROUP_SINGLE_AIMED, 40, 12);
+            M_GroupSoul(c, 1, PELLET_GROUP_SINGLE_AIMED, 40, 12);
         }
-        M_MoveSouls(b, c, 4, 2);
-        switch (b->subphase) {
+        M_MoveSouls(c, 4, 2);
+        switch (g_B15J.subphase) {
         case 0:
-            M_FourSpiral(b, c);
+            M_FourSpiral(c);
             break;
         case 1:
-            M_LeftLasers(b, c);
+            M_LeftLasers(c);
             break;
         case 2:
-            M_Rain(b, c);
+            M_Rain(c);
             break;
         case 3:
-            M_VerticalLasers(b, c);
+            M_VerticalLasers(c);
             break;
         default:
             break;
         }
-        if (b->frame == 0) {
-            b->patterns_done = Math16_Wrap(b->patterns_done + 1);
+        if (g_B15J.frame == 0) {
+            g_B15J.patterns_done = Math16_Wrap(g_B15J.patterns_done + 1);
         }
-        if (b->patterns_done > 29) {
-            b->hp = 1;
+        if (g_B15J.patterns_done > 29) {
+            g_B15J.hp = 1;
         }
-        M_Hit(b, c);
-        if (b->hp <= 0) {
+        M_Hit(c);
+        if (g_B15J.hp <= 0) {
             c->fade_music(c->hit->user);
             Pellets_EraseAndResetMoving(c->pellets);
             ShootoutLasers_EraseAndReset(c->lasers, 4);
-            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR);
-            b->defeating = true;
-            return M_Death(b, c);
+            BossDefeat_Begin(&g_B15J.defeat, BOSS_DEFEAT_REGULAR);
+            g_B15J.defeating = true;
+            return M_Death(c);
         }
     }
     return true;

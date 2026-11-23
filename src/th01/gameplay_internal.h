@@ -104,14 +104,6 @@ typedef struct {
     PALETTE_STATE palette;
     PALETTE stage_palette;
     SCENE_STATE scene;
-    BOSS_SPRITES sprites;
-    B05 b05;
-    B10J b10j;
-    B10M b10m;
-    B15J b15j;
-    B15M b15m;
-    B20J b20j;
-    B20M b20m;
     BONUS bonus;
     BONUS_TOTAL total;
 

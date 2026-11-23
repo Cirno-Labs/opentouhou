@@ -632,6 +632,9 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     const size_t used = f.arena.used;
     memset(&g->world, 0xa5, sizeof(g->world));
     memset(&g->bindings, 0xa5, sizeof(g->bindings));
+    memset(&g_B10J, 0xa5, sizeof(g_B10J));
+    memset(&g_B20J, 0xa5, sizeof(g_B20J));
+    memset(&g_B20M, 0xa5, sizeof(g_B20M));
     Gameplay_ResetWorld(g);
     CHECK_EQ_INT(f.arena.used, used);
     CHECK(memcmp(&g->storage, &prepared, sizeof(prepared)) == 0);
@@ -645,19 +648,13 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK(g->world.health.backgrounds == prepared.initial->health.backgrounds);
     CHECK(g_Tram.visible);
     CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
-    CHECK(g->world.b10j.background == prepared.initial->b10j.background);
-    CHECK(g->world.b10j.meteor_active);
-    CHECK_EQ_INT(g->world.b10j.spread_interval, 4);
-    CHECK_EQ_INT(g->world.b10j.spread_speed, 8);
-    CHECK(g->world.b15m.background == prepared.initial->b15m.background);
-    CHECK(
-        g->world.b20m.wand_background
-        == prepared.initial->b20m.wand_background);
-    CHECK_EQ_INT(g->world.b20m.ray_previous_x, 999);
-    CHECK_EQ_INT(g->world.b20m.ray_previous_y, 999);
-    CHECK_EQ_INT(g->world.b20m.flake_state, -1);
-    CHECK_EQ_INT(
-        g->world.b20j.ray_previous_x, prepared.initial->b20j.ray_previous_x);
+    CHECK(g_B10J.meteor_active);
+    CHECK_EQ_INT(g_B10J.spread_interval, 4);
+    CHECK_EQ_INT(g_B10J.spread_speed, 8);
+    CHECK_EQ_INT(g_B20M.ray_previous_x, 999);
+    CHECK_EQ_INT(g_B20M.ray_previous_y, 999);
+    CHECK_EQ_INT(g_B20M.flake.state, -1);
+    CHECK_EQ_INT(g_B20J.ray_previous_x, 999);
     CHECK(g->bindings.display.player == &g->world.player);
     CHECK(g->bindings.c05.hit == &g->bindings.hit);
     CHECK(g->bindings.c10j.rng == &g->world.rng);

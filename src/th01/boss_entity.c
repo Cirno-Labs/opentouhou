@@ -2,6 +2,8 @@
 
 #include "pc98/zun/math16.h"
 
+BOSS_SPRITES g_BossSprites;
+
 static RESULT M_Validate(const BOS *const sprites)
 {
     FAIL_IF(sprites == nullptr, "Missing boss sprites");
@@ -27,23 +29,22 @@ static BOSS_METADATA M_Metadata(const BOS *const sprites, const uint8_t slot)
 }
 
 RESULT BossEntity_Bind(
-    BOSS_ENTITY *const entity, BOSS_SPRITES *const bank, const uint8_t slot,
-    const BOS *const sprites)
+    BOSS_ENTITY *const entity, const uint8_t slot, const BOS *const sprites)
 {
     FAIL_IF(slot >= BOSS_ENTITY_SLOTS, "Invalid boss entity slot");
     MUST(M_Validate(sprites));
-    bank->entities[slot] = sprites;
+    g_BossSprites.entities[slot] = sprites;
     entity->sprites = M_Metadata(sprites, slot);
     return OK;
 }
 
 RESULT BossAnimation_Bind(
-    BOSS_ANIMATION *const animation, BOSS_SPRITES *const bank,
-    const uint8_t slot, const BOS *const sprites)
+    BOSS_ANIMATION *const animation, const uint8_t slot,
+    const BOS *const sprites)
 {
     FAIL_IF(slot >= BOSS_ANIMATION_SLOTS, "Invalid boss animation slot");
     MUST(M_Validate(sprites));
-    bank->animations[slot] = sprites;
+    g_BossSprites.animations[slot] = sprites;
     animation->sprites = M_Metadata(sprites, slot);
     return OK;
 }
