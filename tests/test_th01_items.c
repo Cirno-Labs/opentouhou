@@ -1,4 +1,9 @@
 #include "th01/items.h"
+#include "th01/shots.h"
+#include "th01/rng.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
 
 #include "core/base/arena.h"
 
@@ -11,7 +16,6 @@ typedef struct {
     ARENA arena;
     ITEMS items;
     ITEM_CONTEXT context;
-    PLAYER player;
     STAGE_GAMEPLAY game;
     PTN sprites;
     GAME_TEXT_FONT font;
@@ -31,7 +35,7 @@ static void M_Record(CASE *const c, const int32_t event)
 static void M_HudBomb(void *const user, const int16_t slot)
 {
     CASE *const c = user;
-    CHECK_EQ_INT(slot, c->player.remaining_bombs - 1);
+    CHECK_EQ_INT(slot, g_Player.remaining_bombs - 1);
     M_Record(c, 1);
 }
 
@@ -51,6 +55,11 @@ static void M_Effect(void *const user, const int16_t number)
 static void M_Init(CASE *const c)
 {
     *c = (CASE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     Arena_Init(&c->arena, "items", 1024 * 1024);
     Video_Init(Arena_Allocator(&c->arena));
     c->sprites =
@@ -69,7 +78,6 @@ static void M_Init(CASE *const c)
         GameText_LoadGlyphs(glyphs, 97, Arena_Allocator(&c->arena), &c->font)));
     CHECK(Result_Ignore(Items_ValidateAssets(&c->sprites, &c->font)));
     c->context = (ITEM_CONTEXT) {
-        .player = &c->player,
         .gameplay = &c->game,
         .point_value = &c->value,
         .sprites = &c->sprites,
@@ -112,8 +120,8 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
 {
     CASE c;
     M_Init(&c);
-    c.player.left = 100;
-    c.player.remaining_bombs = 4;
+    g_Player.left = 100;
+    g_Player.remaining_bombs = 4;
     c.items.bombs[0] = (ITEM) { .left = 76, .top = 345, .flag = ITEM_FALL };
     c.items.bombs[1] = (ITEM) { .left = 100, .top = 344, .flag = ITEM_FALL };
     c.items.bombs[2] = (ITEM) { .left = 123, .top = 1000, .flag = ITEM_FALL };
@@ -125,7 +133,7 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(c.items.bombs[2].top, 366);
     CHECK_EQ_INT(c.items.bombs[2].radius_or_time, 15);
     CHECK_EQ_INT(c.items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
-    CHECK_EQ_INT(c.player.remaining_bombs, 5);
+    CHECK_EQ_INT(g_Player.remaining_bombs, 5);
     CHECK_EQ_INT(c.game.score, 10000);
     CHECK_EQ_INT(c.count, 4);
     CHECK_EQ_INT(c.events[0], 1);

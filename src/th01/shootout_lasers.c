@@ -36,8 +36,8 @@ static void M_Put(
 }
 
 static void M_Ray(
-    SHOOTOUT_LASER *const laser, PLAYER *const player,
-    const SHOOTOUT_LASERS_ASSETS *const assets, const bool put)
+    SHOOTOUT_LASER *const laser, const SHOOTOUT_LASERS_ASSETS *const assets,
+    const bool put)
 {
     int16_t left = Math16_Wrap(M_Floor(laser->cursor_left, 256));
     int16_t y = Math16_Wrap(M_Floor(laser->cursor_y, 256));
@@ -49,9 +49,9 @@ static void M_Ray(
             if (put) {
                 M_Put(left, y, dots, laser->color);
                 dots = 0;
-                if (!player->invincible && laser->damaging && y > 376
-                    && left >= player->left + 4 && left < player->left + 24) {
-                    player->is_hit = true;
+                if (!g_Player.invincible && laser->damaging && y > 376
+                    && left >= g_Player.left + 4 && left < g_Player.left + 24) {
+                    g_Player.is_hit = true;
                 }
             }
             left = Math16_Wrap(M_Floor(laser->cursor_left, 256));
@@ -118,8 +118,7 @@ void ShootoutLasers_Spawn(
 }
 
 void ShootoutLasers_Update(
-    SHOOTOUT_LASER *const laser, PLAYER *const player,
-    const SHOOTOUT_LASERS_ASSETS *const assets)
+    SHOOTOUT_LASER *const laser, const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     if (!laser->alive) {
         return;
@@ -127,7 +126,7 @@ void ShootoutLasers_Update(
     if (laser->age >= laser->detach_age) {
         laser->cursor_left = laser->start_left;
         laser->cursor_y = laser->start_y;
-        M_Ray(laser, player, assets, false);
+        M_Ray(laser, assets, false);
         laser->start_left = laser->cursor_left;
         laser->start_y = laser->cursor_y;
         if (laser->start_left >= 640 * 256 || laser->start_left < 0
@@ -141,15 +140,14 @@ void ShootoutLasers_Update(
     laser->age = Math16_Wrap(laser->age + 1);
     laser->cursor_left = laser->start_left;
     laser->cursor_y = laser->start_y;
-    M_Ray(laser, player, assets, true);
+    M_Ray(laser, assets, true);
 }
 
 void ShootoutLasers_UpdateAll(
-    SHOOTOUT_LASERS *const lasers, PLAYER *const player,
-    const SHOOTOUT_LASERS_ASSETS *const assets)
+    SHOOTOUT_LASERS *const lasers, const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     for (int32_t i = 0; i < SHOOTOUT_LASERS_COUNT; i++) {
-        ShootoutLasers_Update(&lasers->slots[i], player, assets);
+        ShootoutLasers_Update(&lasers->slots[i], assets);
     }
 }
 

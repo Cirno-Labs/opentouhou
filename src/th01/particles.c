@@ -1,4 +1,5 @@
 #include "th01/particles.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
@@ -47,8 +48,7 @@ static void M_SetVelocityY(
 }
 
 static void M_Spawn(
-    PARTICLES *const p, uint32_t *const rng, const PARTICLES_ORIGIN origin,
-    const uint32_t i)
+    PARTICLES *const p, const PARTICLES_ORIGIN origin, const uint32_t i)
 {
     uint8_t *const alive =
         i == PARTICLES_COUNT ? &p->velocity_base[0] : &p->alive[i];
@@ -56,7 +56,8 @@ static void M_Spawn(
         return;
     }
     *alive = 1;
-    const uint8_t speed = (uint8_t)(MasterRng_Next(rng) % p->velocity_max + 1);
+    const uint8_t speed =
+        (uint8_t)(MasterRng_Next(&g_Rng) % p->velocity_max + 1);
     if (i == PARTICLES_COUNT) {
         p->cycle = speed;
     } else {
@@ -65,9 +66,9 @@ static void M_Spawn(
     if (i % 2 == 0) {
         if (origin == PARTICLES_RIGHT || origin == PARTICLES_LEFT) {
             M_SetX(p, i, origin == PARTICLES_RIGHT ? 639 * 16 : 0);
-            M_SetY(p, i, (int16_t)(MasterRng_Next(rng) % 400 * 16));
+            M_SetY(p, i, (int16_t)(MasterRng_Next(&g_Rng) % 400 * 16));
         } else {
-            M_SetX(p, i, (int16_t)(MasterRng_Next(rng) % 640 * 16));
+            M_SetX(p, i, (int16_t)(MasterRng_Next(&g_Rng) % 640 * 16));
             M_SetY(
                 p, i,
                 origin >= PARTICLES_BOTTOM_RIGHT
@@ -76,7 +77,7 @@ static void M_Spawn(
                     : 0);
         }
     } else if (origin == PARTICLES_TOP || origin == PARTICLES_BOTTOM) {
-        M_SetX(p, i, (int16_t)(MasterRng_Next(rng) % 640 * 16));
+        M_SetX(p, i, (int16_t)(MasterRng_Next(&g_Rng) % 640 * 16));
         M_SetY(p, i, origin == PARTICLES_TOP ? 0 : 399 * 16);
     } else {
         M_SetX(
@@ -84,7 +85,7 @@ static void M_Spawn(
             origin >= PARTICLES_TOP_RIGHT && origin <= PARTICLES_BOTTOM_RIGHT
                 ? 639 * 16
                 : 0);
-        M_SetY(p, i, (int16_t)(MasterRng_Next(rng) % 400 * 16));
+        M_SetY(p, i, (int16_t)(MasterRng_Next(&g_Rng) % 400 * 16));
     }
     switch (origin) {
     case PARTICLES_TOP:
@@ -130,8 +131,7 @@ void Particles_Init(PARTICLES *const p)
 }
 
 void Particles_UpdateAndRender(
-    PARTICLES *const p, uint32_t *const rng, const PARTICLES_ORIGIN origin,
-    const uint8_t color)
+    PARTICLES *const p, const PARTICLES_ORIGIN origin, const uint8_t color)
 {
     ASSERT(p->spawn_interval == 2 && p->velocity_max == 10);
     ASSERT(origin >= PARTICLES_TOP && origin <= PARTICLES_TOP_LEFT);
@@ -140,7 +140,7 @@ void Particles_UpdateAndRender(
         p->cycle = 0;
     }
     if (p->cycle % p->spawn_interval == 0) {
-        M_Spawn(p, rng, origin, p->cycle / p->spawn_interval);
+        M_Spawn(p, origin, p->cycle / p->spawn_interval);
     }
     for (uint32_t i = 0; i < PARTICLES_COUNT; i++) {
         if (p->alive[i] == 0) {

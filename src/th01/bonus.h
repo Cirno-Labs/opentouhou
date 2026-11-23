@@ -120,9 +120,7 @@ typedef struct {
 typedef struct {
     const BONUS_CONTEXT *common;
     const BONUS_TOTAL_ASSETS *assets;
-    SHOTS *shots;
     SHOTS_OUTPUT shots_output;
-    PELLETS *pellets;
     uint16_t *continues_per_scene;
     const int32_t *continues_total;
     void (*effect)(void *user, int16_t number);

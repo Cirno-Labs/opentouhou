@@ -64,8 +64,7 @@ void Missiles_Reset(MISSILES *missiles);
 // Allocates nothing and reads no devices. Gameplay scene and audio event
 // consumption remain external. The required effect callback emits effect 7.
 void Missiles_UpdateAndRender(
-    MISSILES *missiles, PLAYER *player, uint16_t frame_rand,
-    MISSILES_OUTPUT output);
+    MISSILES *missiles, uint16_t frame_rand, MISSILES_OUTPUT output);
 
 // Renders actions with validated local sprites; effects belong to audio.
 // Keeps unaligned quarter positions and 32-pixel-wide word-rounded restores.

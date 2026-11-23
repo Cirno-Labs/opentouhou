@@ -1,4 +1,9 @@
 #include "th01/boss_b20j.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 
 #include "core/base/arena.h"
@@ -97,17 +102,12 @@ typedef struct {
     HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B20J_CONTEXT context;
-    PELLETS pellets;
-    PELLET_SHARED shared;
     SHOOTOUT_LASERS lasers;
     STAGE_OBJECTS objects;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
     STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage;
-    uint32_t high_score, rng;
+    uint32_t high_score;
     int16_t lives;
     bool damage, cleared;
     int32_t effects[17], audio_count;
@@ -138,6 +138,11 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     M_Assets(&f->assets, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
@@ -156,35 +161,29 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(GameText_LoadGlyphs(glyphs, 10, a, &f->font)));
     f->stage = (PTN) { .count = 4, .pixels = Allocator_Alloc(a, 4096) };
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
-    f->player.left = 300;
-    f->player.invincible = true;
+    g_Player.left = 300;
+    g_Player.invincible = true;
     f->lives = 3;
-    f->orb.top = 64;
-    f->orb.previous_top = 64;
+    g_Orb.top = 64;
+    g_Orb.previous_top = 64;
     f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
                                   .hud = &f->hud,
                                   .display = &f->display,
                                   .health = &f->health,
-                                  .shots = &f->shots,
                                   .shots_output = { M_Shot, f },
-                                  .orb = &f->orb,
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678,
                                   .effect = M_Effect,
                                   .user = f };
     f->context = (B20J_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit,
-                                  .pellets = &f->pellets,
-                                  .pellet_shared = &f->shared,
                                   .lasers = &f->lasers,
                                   .objects = &f->objects,
-                                  .rng = &f->rng,
                                   .game_cleared = &f->cleared,
                                   .audio = M_Audio };
     B20J_Init();
@@ -203,13 +202,13 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 34, 51, 68, 255 };
     f.objects.portal_active = true;
     f.objects.destination_left = 77;
-    f.rng = 91;
+    g_Rng = 91;
     Video_SelectDrawingPage(1);
     const size_t used = arena.used;
     B20J_BeginEntrance(&f.context);
     CHECK_EQ_INT(g_B20J.head.sprites.width_bytes, 10);
     CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
-    CHECK_EQ_INT(f.rng, 91);
+    CHECK_EQ_INT(g_Rng, 91);
     CHECK(f.objects.entrance_done && f.objects.portal_active);
     CHECK_EQ_INT(f.objects.destination_left, 77);
     CHECK_EQ_INT(f.audio_count, 2);
@@ -261,7 +260,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             do {
                 CHECK(B20J_UpdateAndRender(&f.context));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-                    f.pellets.slots[i].moving = false;
+                    g_Pellets.slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
                     f.lasers.slots[i].alive = false;
@@ -357,10 +356,10 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         M_Fixture(&f, &arena);
         g_B20J.phase = B20J_PHASE_FINAL;
         g_B20J.pattern = 99;
-        f.orb.left = points[i][0];
-        f.orb.top = points[i][1];
-        f.orb.previous_left = 300;
-        f.orb.previous_top = 140;
+        g_Orb.left = points[i][0];
+        g_Orb.top = points[i][1];
+        g_Orb.previous_left = 300;
+        g_Orb.previous_top = 140;
         Frame_Reset();
         CHECK(B20J_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B20J.hp, i < 2 ? 17 : 18);
@@ -386,8 +385,8 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     g_B20J.phase = B20J_PHASE_FINAL;
     g_B20J.pattern = 99;
     g_B20J.hp = 1;
-    f.orb.left = 320;
-    f.orb.top = 140;
+    g_Orb.left = 320;
+    g_Orb.top = 140;
     g_Video.pages[0][0] = 9;
     Frame_Reset();
     const size_t used = arena.used;

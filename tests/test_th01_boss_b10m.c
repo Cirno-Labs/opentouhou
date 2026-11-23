@@ -1,4 +1,9 @@
 #include "th01/boss_b10m.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
@@ -19,17 +24,12 @@ typedef struct {
     B10M_CONTEXT context;
     MISSILES missiles;
     SHOOTOUT_LASERS lasers;
-    PELLETS pellets;
-    PELLET_SHARED shared;
     HUD hud;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
     STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage, miko;
     SCENE_STATE scene;
-    uint32_t rng, high_score;
+    uint32_t high_score;
     int16_t lives;
     bool test_damage, cleared;
     int32_t effects[17], fades;
@@ -38,6 +38,11 @@ typedef struct {
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
     Palette_Init(&f->palette);
@@ -114,28 +119,22 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     f->lives = 3;
-    f->rng = 0xb10a0000;
-    f->player.invincible = true;
-    f->player.left = 300;
-    f->orb.top = 64;
-    f->orb.previous_top = 64;
+    g_Rng = 0xb10a0000;
+    g_Player.invincible = true;
+    g_Player.left = 300;
+    g_Orb.top = 64;
+    g_Orb.previous_top = 64;
     f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->hit_context.hud = &f->hud;
-    f->hit_context.shots = &f->shots;
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->hit_context.orb = &f->orb;
     f->hit_context.test_damage = &f->test_damage;
     f->hit_context.effect = M_Effect;
     f->hit_context.user = f;
-    f->context.pellets = &f->pellets;
-    f->context.pellet_shared = &f->shared;
     f->context.lasers = &f->lasers;
-    f->context.rng = &f->rng;
     f->context.miko = &f->miko;
     f->context.scene = &f->scene;
     f->context.stage_cleared = &f->cleared;
@@ -243,11 +242,11 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         B10M_Setup(&f.context);
         const size_t used = arena.used;
         Frame_Reset();
-        const ORB orb = f.orb;
+        const ORB orb = g_Orb;
         M_Enter(&f);
         CHECK_EQ_INT(g_VSync.count1, 0);
-        CHECK(memcmp(&orb, &f.orb, sizeof(orb)) == 0);
-        CHECK(!f.player.is_hit);
+        CHECK(memcmp(&orb, &g_Orb, sizeof(orb)) == 0);
+        CHECK(!g_Player.is_hit);
         CHECK_EQ_INT(f.gameplay.score, 0);
         CHECK_EQ_INT(arena.used, used);
         CHECK_EQ_INT(
@@ -258,7 +257,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
                             : 130);
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            count += f.pellets.slots[i].moving;
+            count += g_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(count, rank == 2 ? 15 : rank == 3 ? 25 : 0);
         CHECK_EQ_INT(g_B10M.eyes[0].image, 4);
@@ -286,7 +285,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         int32_t loops = 0;
         int16_t previous_star_phase = -1;
         for (int32_t frame = 0; frame < 18000 && loops < 2; frame++) {
-            f.player.left = (int16_t)(40 + (frame * 7) % 550);
+            g_Player.left = (int16_t)(40 + (frame * 7) % 550);
             f.hit_context.frame_rand++;
             phases |= (uint16_t)(1u << g_B10M.phase);
             if (g_B10M.phase == B10M_PHASE_STAR_ATTACK) {
@@ -311,7 +310,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         CHECK_EQ_INT(loops, 2);
         CHECK_EQ_INT(g_B10M.hp, 16);
         CHECK_EQ_INT(arena.used, used);
-        CHECK(f.rng != 0xb10a0000);
+        CHECK(g_Rng != 0xb10a0000);
         CHECK_EQ_INT(f.fades, 0);
         CHECK(!g_B10M.finished);
         CHECK(f.scene.active == nullptr);
@@ -335,19 +334,19 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
                                           .previous_left = -1,
                                           .flag = MISSILE_MOVING };
     }
-    uint32_t expected = f.rng;
+    uint32_t expected = g_Rng;
     const int16_t variation = (int16_t)(MasterRng_Next(&expected) % 3);
     Frame_Reset();
     CHECK(B10M_UpdateAndRender(&f.context));
     CHECK_EQ_INT(g_B10M.subphase, variation * 4 + 1);
-    CHECK_EQ_INT(f.rng, expected);
+    CHECK_EQ_INT(g_Rng, expected);
     g_B10M.frame = 103;
     CHECK(B10M_UpdateAndRender(&f.context));
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         CHECK_EQ_INT(f.missiles.slots[i].left, 200 * 16);
         CHECK_EQ_INT(f.missiles.slots[i].top, 200 * 16);
     }
-    CHECK_EQ_INT(f.rng, expected);
+    CHECK_EQ_INT(g_Rng, expected);
     Arena_Free(&arena);
 }
 
@@ -376,9 +375,9 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
                                           .top = 200 * 16,
                                           .previous_left = -1,
                                           .velocity = { 16, 0 } };
-        f.pellets.slots[0] =
+        g_Pellets.slots[0] =
             (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
-        f.pellets.slots[1].cloud_frame = 10;
+        g_Pellets.slots[1].cloud_frame = 10;
         f.lasers.slots[6].alive = true;
         Frame_Reset();
         CHECK(!B10M_UpdateAndRender(&f.context));
@@ -390,8 +389,8 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(
             f.missiles.slots[0].flag,
             phase == B10M_PHASE_STAR_ATTACK ? MISSILE_FREE : MISSILE_MOVING);
-        CHECK(!f.pellets.slots[0].moving);
-        CHECK_EQ_INT(f.pellets.slots[1].cloud_frame, 10);
+        CHECK(!g_Pellets.slots[0].moving);
+        CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
         CHECK(f.lasers.slots[6].alive);
         const B10M frozen = g_B10M;
         CHECK(!B10M_UpdateAndRender(&f.context));
@@ -403,7 +402,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         }
         CHECK(g_B10M.finished);
         CHECK(f.cleared);
-        CHECK(f.player.is_hit);
+        CHECK(g_Player.is_hit);
         CHECK(f.scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(f.scene.active->id, 3);
         CHECK_EQ_INT(f.missiles.slots[0].left, 201 * 16);
@@ -435,15 +434,15 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         g_B10M.pattern_interval = 24;
         g_B10M.eyes[0].image = 3;
         g_B10M.eyes[0].orb_inactive = false;
-        f.orb.previous_left = 88;
-        f.orb.previous_top = 148;
-        f.orb.velocity_x = ORB_X_LEFT_4;
+        g_Orb.previous_left = 88;
+        g_Orb.previous_top = 148;
+        g_Orb.velocity_x = ORB_X_LEFT_4;
         Frame_Reset();
         CHECK(B10M_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B10M.hp, hp[i] - 1);
         CHECK_EQ_INT(g_B10M.phase, phases[i] + 1);
         CHECK_EQ_INT(f.gameplay.score, 5000);
-        CHECK_EQ_INT(f.orb.velocity_x, ORB_X_RIGHT_4);
+        CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
         CHECK_EQ_INT(f.effects[3], 1);
         CHECK(g_B10M.hit.invincible);
         CHECK_EQ_INT(g_B10M.frame, 0);
@@ -468,17 +467,17 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         B10M_Setup(&f.context);
         g_B10M.frame = 160;
         g_B10M.hp_bar_filled = true;
-        f.player.invincible = false;
-        f.player.left = positions[i];
+        g_Player.invincible = false;
+        g_Player.left = positions[i];
         Frame_Reset();
         CHECK(B10M_UpdateAndRender(&f.context));
-        CHECK_EQ_INT(f.player.is_hit, i == 0 || i == 2);
+        CHECK_EQ_INT(g_Player.is_hit, i == 0 || i == 2);
         CHECK_EQ_INT(Th01Test_Pixel(0, 92, 156), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 398), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 399), 0);
-        f.player.invincible = true;
+        g_Player.invincible = true;
         CHECK(B10M_UpdateAndRender(&f.context));
-        CHECK(!f.player.is_hit);
+        CHECK(!g_Player.is_hit);
         Arena_Free(&arena);
     }
 }

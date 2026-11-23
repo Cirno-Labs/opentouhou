@@ -18,7 +18,6 @@ typedef struct {
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
     STAGE_GAMEPLAY *gameplay;
-    PLAYER *player;
     uint32_t *high_score;
     int16_t *remaining_lives;
     uint16_t stage_number;

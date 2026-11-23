@@ -1,4 +1,9 @@
 #include "th01/bonus.h"
+#include "th01/shots.h"
+#include "th01/rng.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
 #include "pc98/vsync.h"
 
 #include "core/base/arena.h"
@@ -82,8 +87,6 @@ typedef struct {
     BONUS_STAGE_ASSETS assets;
     BONUS bonus;
     STAGE_GAMEPLAY gameplay;
-    PLAYER player;
-    PELLET_SHARED shared;
     PALETTE_STATE palette;
     PALETTE stage_palette;
     PTN sprites;
@@ -126,14 +129,12 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     f->display = (HUD_CONTEXT) { .sprites = &f->sprites,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .remaining_lives = &f->lives,
                                  .high_score = &f->high };
     f->extend = (EXTEND_CONTEXT) { .hud = &f->hud,
                                    .display = &f->display,
                                    .resident_lives = &f->resident_lives,
                                    .next = &f->next,
-                                   .shared = &f->shared,
                                    .effect = M_Effect,
                                    .user = f };
     f->context = (BONUS_CONTEXT) { .stage = &f->assets,
@@ -155,12 +156,17 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     ARENA arena;
     Arena_Init(&arena, "bonus stage", 2 * 1024 * 1024);
     FIXTURE f = {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     M_Init(&f, Arena_Allocator(&arena));
     f.gameplay.score = 393000;
     f.gameplay.maximum_combo = 3;
     g_StageTimer.time = 100;
     f.lives = 1;
-    f.player.remaining_bombs = 3;
+    g_Player.remaining_bombs = 3;
     g_GameInput.bomb_frame = 97;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
@@ -188,7 +194,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(f.high, 410000);
     CHECK_EQ_INT(f.effects, 1);
     CHECK_EQ_INT(f.next, 2);
-    CHECK_EQ_INT(f.shared.speed, 1);
+    CHECK_EQ_INT(g_PelletShared.speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 40), 6);
@@ -213,6 +219,11 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     ARENA arena;
     Arena_Init(&arena, "bonus wraps", 2 * 1024 * 1024);
     FIXTURE f = {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     M_Init(&f, Arena_Allocator(&arena));
     f.lives = 6;
     f.score_bonus = UINT32_MAX - 100;
@@ -245,8 +256,6 @@ typedef struct {
     BONUS_TOTAL bonus;
     BONUS_TOTAL_ASSETS assets;
     BONUS_TOTAL_CONTEXT context;
-    SHOTS shots;
-    PELLETS pellets;
     int32_t effects, restores, continues;
     uint16_t history[4];
 } TOTAL_FIXTURE;
@@ -291,9 +300,7 @@ static void M_InitTotal(TOTAL_FIXTURE *const f, const ALLOCATOR *const a)
     }
     f->context = (BONUS_TOTAL_CONTEXT) { .common = &f->common.context,
                                          .assets = &f->assets,
-                                         .shots = &f->shots,
                                          .shots_output = { M_Shots, f },
-                                         .pellets = &f->pellets,
                                          .continues_per_scene = f->history,
                                          .continues_total = &f->continues,
                                          .effect = M_TotalEffect,
@@ -311,23 +318,23 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     f.common.gameplay.maximum_combo = 7;
     f.common.gameplay.score = 390000;
     f.common.lives = 2;
-    f.common.player.remaining_bombs = 3;
+    g_Player.remaining_bombs = 3;
     g_GameInput.bomb_frame = 123;
     f.continues = 65539;
-    f.shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
-    f.shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
-    f.pellets.slots[0] = (PELLET) { .moving = true, .not_rendered = true };
-    f.pellets.slots[1] = (PELLET) { .cloud_frame = 5 };
+    g_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
+    g_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
+    g_Pellets.slots[0] = (PELLET) { .moving = true, .not_rendered = true };
+    g_Pellets.slots[1] = (PELLET) { .cloud_frame = 5 };
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     Frame_Reset();
     TH01_INPUT raw = {};
     CHECK(!Bonus_BeginTotal(&f.bonus, &f.context, 5, &raw, 0));
     CHECK_EQ_INT(f.restores, 2);
-    CHECK(!f.shots.slots[0].moving);
-    CHECK_EQ_INT(f.shots.slots[1].decay_frame, 0);
-    CHECK(!f.pellets.slots[0].moving);
-    CHECK_EQ_INT(f.pellets.slots[1].cloud_frame, 5);
+    CHECK(!g_Shots.slots[0].moving);
+    CHECK_EQ_INT(g_Shots.slots[1].decay_frame, 0);
+    CHECK(!g_Pellets.slots[0].moving);
+    CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 5);
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_INITIAL_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 6);
     g_VSync.count1 = 50;

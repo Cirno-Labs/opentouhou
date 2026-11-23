@@ -68,7 +68,7 @@ typedef struct {
     GAMEPLAY_REQUEST request;
     GAMEPLAY_PHASE phase, after_player;
     FRAME_WAIT wait;
-    uint32_t rng, frame, score_bonus;
+    uint32_t frame, score_bonus;
     int16_t next_extend;
     int8_t retained_lives;
     bool first_stage, wait_for_shot, timer_initialized, game_cleared;
@@ -86,12 +86,7 @@ typedef struct {
     STAGE_GAMEPLAY metrics;
     STAGE_OBJECTS objects;
     STAGE_ORB_COMPOSITE composite;
-    PLAYER player;
     PLAYER_BOMB_CONTINUATION player_bomb;
-    ORB orb;
-    SHOTS shots;
-    PELLETS pellets;
-    PELLET_SHARED pellet_shared;
     ITEMS items;
     MISSILES missiles;
     SHOOTOUT_LASERS lasers;

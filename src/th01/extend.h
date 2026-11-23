@@ -8,7 +8,6 @@ typedef struct {
     const HUD_CONTEXT *display;
     int8_t *resident_lives;
     int16_t *next;
-    PELLET_SHARED *shared;
     void (*effect)(void *user, int16_t number);
     void *user;
 } EXTEND_CONTEXT;

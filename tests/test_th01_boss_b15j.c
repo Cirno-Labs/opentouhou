@@ -1,4 +1,9 @@
 #include "th01/boss_b15j.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
@@ -17,17 +22,12 @@ typedef struct {
     BOSS_HIT_CONTEXT hit_context;
     B15J_CONTEXT context;
     SHOOTOUT_LASERS lasers;
-    PELLETS pellets;
-    PELLET_SHARED shared;
     HUD hud;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
     STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage, miko;
     SCENE_STATE scene;
-    uint32_t rng, high_score;
+    uint32_t high_score;
     int16_t lives;
     bool test_damage, cleared;
     int32_t effects[17], fades;
@@ -36,6 +36,11 @@ typedef struct {
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
     Palette_Init(&f->palette);
@@ -62,8 +67,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     f->context = (B15J_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit_context,
                                   .stage_palette = &f->stage_palette,
-                                  .particles = &f->particles,
-                                  .pellets = &f->pellets };
+                                  .particles = &f->particles };
 }
 
 static void M_Effect(void *const user, const int16_t number)
@@ -108,28 +112,22 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     f->lives = 3;
-    f->rng = 0xb15a0000;
-    f->player.invincible = true;
-    f->player.left = 300;
-    f->orb.top = 64;
-    f->orb.previous_top = 64;
+    g_Rng = 0xb15a0000;
+    g_Player.invincible = true;
+    g_Player.left = 300;
+    g_Orb.top = 64;
+    g_Orb.previous_top = 64;
     f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->hit_context.hud = &f->hud;
-    f->hit_context.shots = &f->shots;
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->hit_context.orb = &f->orb;
     f->hit_context.test_damage = &f->test_damage;
     f->hit_context.effect = M_Effect;
     f->hit_context.user = f;
-    f->context.pellets = &f->pellets;
-    f->context.pellet_shared = &f->shared;
     f->context.lasers = &f->lasers;
-    f->context.rng = &f->rng;
     f->context.miko = &f->miko;
     f->context.scene = &f->scene;
     f->context.stage_cleared = &f->cleared;
@@ -196,7 +194,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     CHECK_EQ_INT(g_B15J.pattern_state, 51);
     CHECK_EQ_INT(g_B15J.patterns_done, 9);
     CHECK_EQ_INT(g_B15J.spiral_angle, 255);
-    CHECK(f.pellets.interlace);
+    CHECK(g_Pellets.interlace);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -313,8 +311,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
                 saw_tear |= g_B15J.tear_frame[i] != 0;
                 saw_ripple |= g_B15J.tear_frame[i] > 1;
             }
-            ShootoutLasers_UpdateAll(
-                &f.lasers, &f.player, &(SHOOTOUT_LASERS_ASSETS) {});
+            ShootoutLasers_UpdateAll(&f.lasers, &(SHOOTOUT_LASERS_ASSETS) {});
             Frame_VSync();
         }
         CHECK_EQ_INT(
@@ -326,9 +323,9 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         CHECK(saw_tear);
         CHECK(saw_ripple);
         CHECK_EQ_INT(g_B15J.hp, 14);
-        CHECK(f.rng != 0xb15a0000);
+        CHECK(g_Rng != 0xb15a0000);
         CHECK_EQ_INT(arena.used, used);
-        CHECK(!f.player.is_hit);
+        CHECK(!g_Player.is_hit);
         CHECK_EQ_INT(f.fades, 0);
         Arena_Free(&arena);
     }
@@ -345,23 +342,23 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     Frame_Reset();
     M_Enter(&f);
     const size_t used = arena.used;
-    f.orb.left = 0;
-    f.orb.top = 64;
-    f.orb.previous_left = 300;
-    f.orb.previous_top = 100;
+    g_Orb.left = 0;
+    g_Orb.top = 64;
+    g_Orb.previous_left = 300;
+    g_Orb.previous_top = 100;
     CHECK(B15J_UpdateAndRender(&f.context));
     CHECK_EQ_INT(g_B15J.hp, 14);
-    f.orb.left = 300;
-    f.orb.top = 132;
+    g_Orb.left = 300;
+    g_Orb.top = 132;
     CHECK(B15J_UpdateAndRender(&f.context));
     CHECK_EQ_INT(g_B15J.hp, 14);
-    f.orb.top = -100;
-    f.orb.previous_left = 0;
+    g_Orb.top = -100;
+    g_Orb.previous_left = 0;
     CHECK(B15J_UpdateAndRender(&f.context));
     CHECK_EQ_INT(g_B15J.hp, 13);
     CHECK_EQ_INT(f.gameplay.score, 7000);
-    f.orb.top = 64;
-    f.pellets.slots[0].cloud_frame = 12;
+    g_Orb.top = 64;
+    g_Pellets.slots[0].cloud_frame = 12;
     f.lasers.slots[4].alive = true;
     f.lasers.slots[4].origin_left = 100 * 256;
     for (int32_t frame = 0; frame < 5000 && !g_B15J.finished; frame++) {
@@ -369,7 +366,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
             (g_B15J.phase == B15J_PHASE_SPIRAL && g_B15J.hp > 10)
             || (g_B15J.phase == B15J_PHASE_TEARS && g_B15J.hp > 6)
             || (g_B15J.phase == B15J_PHASE_PATTERNS && g_B15J.hp > 0);
-        f.orb.left = attack ? 300 : 0;
+        g_Orb.left = attack ? 300 : 0;
         const bool completed = B15J_UpdateAndRender(&f.context);
         if (!completed) {
             const B15J frozen = g_B15J;
@@ -382,11 +379,11 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(g_B15J.hp, 0);
     CHECK_EQ_INT(f.gameplay.score, 98000);
     CHECK(f.cleared);
-    CHECK(f.player.is_hit);
+    CHECK(g_Player.is_hit);
     CHECK(f.scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(f.scene.active->id, 6);
     CHECK_EQ_INT(f.fades, 1);
-    CHECK_EQ_INT(f.pellets.slots[0].cloud_frame, 12);
+    CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
     CHECK(f.lasers.slots[4].alive);
     const B15J finished = g_B15J;
     CHECK(B15J_UpdateAndRender(&f.context));
@@ -411,12 +408,12 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         g_B15J.frame = 249;
         f.lasers.slots[0] =
             (SHOOTOUT_LASER) { .alive = true, .age = 77, .origin_left = 3210 };
-        uint32_t expected = f.rng;
+        uint32_t expected = g_Rng;
         MasterRng_Next(&expected);
         Frame_Reset();
         CHECK(B15J_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B15J.pattern_state, 52 + rank * 4);
-        CHECK_EQ_INT(f.rng, expected);
+        CHECK_EQ_INT(g_Rng, expected);
         CHECK_EQ_INT(f.lasers.slots[0].age, 77);
         CHECK_EQ_INT(f.lasers.slots[0].origin_left, 3210);
         CHECK_EQ_INT(f.effects[6], 1);
@@ -425,7 +422,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK(B15J_UpdateAndRender(&f.context));
         int32_t alive = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            alive += f.pellets.slots[i].moving;
+            alive += g_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(alive, 12);
         CHECK_EQ_INT(f.effects[7], 2);
@@ -434,7 +431,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         g_B15J.frame = 99;
         MasterRng_Next(&expected);
         CHECK(B15J_UpdateAndRender(&f.context));
-        CHECK_EQ_INT(f.rng, expected);
+        CHECK_EQ_INT(g_Rng, expected);
         CHECK_EQ_INT(g_B15J.pattern_state, 60 + rank * 4);
         CHECK_EQ_INT(
             g_B15J.random_range,
@@ -489,12 +486,12 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         g_B15J.tear_frame[0] = 1;
         g_B15J.tears[0].left = 37;
         g_B15J.tears[0].top = 392;
-        f.player.invincible = false;
-        f.player.left = positions[i];
+        g_Player.invincible = false;
+        g_Player.left = positions[i];
         Frame_Reset();
         CHECK(B15J_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B15J.tear_frame[0], 2);
-        CHECK_EQ_INT(f.player.is_hit, i == 1 || i == 2);
+        CHECK_EQ_INT(g_Player.is_hit, i == 1 || i == 2);
         CHECK_EQ_INT(f.effects[7], 1);
         Arena_Free(&arena);
     }
@@ -515,18 +512,18 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         g_B15J.souls[0].left = 100;
         g_B15J.souls[1].left = 500;
         g_B15J.souls[0].top = g_B15J.souls[1].top = 100;
-        f.pellets.spawn_with_cloud = cloud != 0;
+        g_Pellets.spawn_with_cloud = cloud != 0;
         const size_t used = arena.used;
         Frame_Reset();
         CHECK(B15J_UpdateAndRender(&f.context));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            count += cloud != 0 ? f.pellets.slots[i].cloud_frame == 1
-                                : f.pellets.slots[i].moving;
+            count += cloud != 0 ? g_Pellets.slots[i].cloud_frame == 1
+                                : g_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(count, 12);
-        CHECK_EQ_INT(f.pellets.spawn_with_cloud, cloud != 0);
-        CHECK(f.pellets.interlace);
+        CHECK_EQ_INT(g_Pellets.spawn_with_cloud, cloud != 0);
+        CHECK(g_Pellets.interlace);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }

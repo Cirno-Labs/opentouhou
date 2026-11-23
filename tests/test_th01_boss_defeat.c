@@ -1,4 +1,9 @@
 #include "th01/boss_defeat.h"
+#include "th01/shots.h"
+#include "th01/rng.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
 
 #include "core/base/arena.h"
 
@@ -8,7 +13,6 @@ typedef struct {
     PALETTE_STATE palette;
     PALETTE target;
     PTN miko;
-    PLAYER player;
     int16_t origin;
     bool cleared;
     BOSS_DEFEAT_CONTEXT context;
@@ -17,6 +21,11 @@ typedef struct {
 static void M_Init(FIXTURE *const f, ARENA *const arena, const int8_t target)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 2, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
@@ -26,12 +35,12 @@ static void M_Init(FIXTURE *const f, ARENA *const arena, const int8_t target)
     f->miko = (PTN) { .count = 1, .pixels = Arena_Alloc(arena, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     f->miko.pixels[0] = 2;
-    f->player.left = 17;
-    f->player.mode_frame = 9;
-    f->player.bomb_frame = 123;
+    g_Player.left = 17;
+    g_Player.mode_frame = 9;
+    g_Player.bomb_frame = 123;
     f->origin = 64;
     f->context = (BOSS_DEFEAT_CONTEXT) { &f->palette, &f->target, &f->miko,
-                                         &f->player,  &f->origin, &f->cleared };
+                                         &f->origin, &f->cleared };
 }
 
 static void M_ReachWhitein(BOSS_DEFEAT *const defeat, FIXTURE *const f)
@@ -80,7 +89,7 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     const BOSS_DEFEAT waiting = defeat;
     CHECK(!BossDefeat_Resume(&defeat, &f.context));
     CHECK(memcmp(&waiting, &defeat, sizeof(waiting)) == 0);
-    CHECK(!f.cleared && !f.player.is_hit);
+    CHECK(!f.cleared && !g_Player.is_hit);
     Arena_Free(&arena);
 }
 
@@ -100,19 +109,19 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
     CHECK_EQ_INT(g_Video.pages[0][368 * VIDEO_WIDTH + 16], 2);
     CHECK_EQ_INT(g_Video.pages[0][368 * VIDEO_WIDTH + 17], 5);
     CHECK_EQ_INT(g_Video.pages[1][368 * VIDEO_WIDTH + 16], 5);
-    CHECK_EQ_INT(f.player.mode_frame, 9);
-    CHECK_EQ_INT(f.player.bomb_frame, 123);
+    CHECK_EQ_INT(g_Player.mode_frame, 9);
+    CHECK_EQ_INT(g_Player.bomb_frame, 123);
     for (int32_t frame = 2; frame < 10; frame++) {
         Frame_VSync();
         CHECK(!BossDefeat_Resume(&defeat, &f.context));
         CHECK_EQ_INT(defeat.frame, frame);
         CHECK_EQ_INT(f.palette.saved.colors[0][0], frame >= 5 ? 14 : 15);
-        CHECK(!f.cleared && !f.player.is_hit);
+        CHECK(!f.cleared && !g_Player.is_hit);
     }
     Frame_VSync();
     CHECK(BossDefeat_Resume(&defeat, &f.context));
     CHECK_EQ_INT(defeat.frame, 10);
-    CHECK(f.cleared && f.player.is_hit);
+    CHECK(f.cleared && g_Player.is_hit);
     const FRAME_VSYNC finished = g_VSync;
     CHECK(BossDefeat_Resume(&defeat, &f.context));
     CHECK(memcmp(&finished, &g_VSync, sizeof(g_VSync)) == 0);
@@ -138,7 +147,7 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
     for (int32_t frame = 2; frame <= 15; frame++) {
         Frame_VSync();
         CHECK_EQ_INT(BossDefeat_Resume(&defeat, &f.context), frame == 15);
-        CHECK(!f.cleared && !f.player.is_hit);
+        CHECK(!f.cleared && !g_Player.is_hit);
     }
     CHECK_EQ_INT(defeat.phase, BOSS_DEFEAT_DONE);
     Arena_Free(&arena);

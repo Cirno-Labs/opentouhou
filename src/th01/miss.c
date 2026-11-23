@@ -1,4 +1,5 @@
 #include "th01/miss.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
@@ -14,8 +15,8 @@ static void M_Orb(const MISS_CONTEXT *const context)
     Orb_RenderAction(
         context->stage,
         (ORB_ACTION) { .kind = ORB_ACTION_PUT,
-                       .left = context->orb->left,
-                       .top = context->orb->top,
+                       .left = g_Orb.left,
+                       .top = g_Orb.top,
                        .image = 0 });
 }
 
@@ -28,7 +29,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 
 static void M_Effect(MISS *const miss, const MISS_CONTEXT *const context)
 {
-    PLAYER *const player = context->player;
+    PLAYER *const player = &g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(miss->effect_left, PLAYER_TOP, 32, 32);
     player->left = Math16_Wrap(
@@ -53,13 +54,12 @@ static void M_Effect(MISS *const miss, const MISS_CONTEXT *const context)
 
 static void M_Reset(MISS *const miss, const MISS_CONTEXT *const context)
 {
-    PLAYER *const player = context->player;
+    PLAYER *const player = &g_Player;
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
     MISS_SHOTS shot_context = { context->stage };
-    Shots_EraseAndReset(
-        context->shots, (SHOTS_OUTPUT) { M_Shot, &shot_context });
+    Shots_EraseAndReset((SHOTS_OUTPUT) { M_Shot, &shot_context });
     context->pellets_decay(context->user);
-    Player_Reset(player, context->difficulty);
+    Player_Reset(context->difficulty);
     miss->target_right = Math16_Wrap(player->left + 160);
     if (miss->target_right >= 608) {
         miss->target_right = 608;
@@ -75,7 +75,7 @@ static void M_Reset(MISS *const miss, const MISS_CONTEXT *const context)
 
 static void M_Finish(MISS *const miss, const MISS_CONTEXT *const context)
 {
-    PLAYER *const player = context->player;
+    PLAYER *const player = &g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(miss->effect_left, PLAYER_TOP, 32, 32);
     context->hud_lives(
@@ -108,10 +108,10 @@ RESULT Miss_ValidateSprites(const PTN *const miko, const PTN *const stage)
 void Miss_Begin(MISS *const miss, const MISS_CONTEXT *const context)
 {
     ASSERT(miss->phase == MISS_DONE);
-    Sprite_Restore16(context->player->left, PLAYER_TOP, 32, 32);
+    Sprite_Restore16(g_Player.left, PLAYER_TOP, 32, 32);
     M_Orb(context);
-    const int16_t image = MasterRng_Next(context->rng) % 8 == 0 ? 23 : 22;
-    Sprite_PtnPut(context->miko, image, -1, context->player->left, PLAYER_TOP);
+    const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
+    Sprite_PtnPut(context->miko, image, -1, g_Player.left, PLAYER_TOP);
     miss->frame = 0;
     miss->phase = MISS_SHAKE_WAIT;
     Frame_BeginWait(&miss->wait);

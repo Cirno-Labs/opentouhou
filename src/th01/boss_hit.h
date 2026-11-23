@@ -18,9 +18,7 @@ typedef struct {
     HUD *hud;
     const HUD_CONTEXT *display;
     HUD_HP *health;
-    SHOTS *shots;
     SHOTS_OUTPUT shots_output;
-    ORB *orb;
     bool *test_damage;
     uint32_t frame_rand;
     void (*effect)(void *user, int16_t number);

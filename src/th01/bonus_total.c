@@ -59,7 +59,7 @@ static void M_Prepare(
             break;
         case 2:
             value = Math16_Wrap(*c->display->remaining_lives * 500);
-            value += Math16_Wrap(c->display->player->remaining_bombs * 200);
+            value += Math16_Wrap(g_Player.remaining_bombs * 200);
             break;
         default:
             value = Math16_Wrap(b->stage_number * 1000);
@@ -135,8 +135,8 @@ bool Bonus_BeginTotal(
     *b = (BONUS_TOTAL) { .phase = BONUS_TOTAL_INITIAL_WAIT,
                          .stage_number = stage_number,
                          .last_tick = host_tick };
-    Shots_EraseAndReset(c->shots, c->shots_output);
-    Pellets_EraseAndResetMoving(c->pellets);
+    Shots_EraseAndReset(c->shots_output);
+    Pellets_EraseAndResetMoving();
     return Bonus_ResumeTotal(b, c, raw, host_tick);
 }
 
@@ -239,7 +239,7 @@ bool Bonus_ResumeTotal(
             break;
         case BONUS_TOTAL_CONFIRM:
             if (GameInput_SenseGame(raw, false)) {
-                c->common->display->player->is_hit = true;
+                g_Player.is_hit = true;
             }
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;

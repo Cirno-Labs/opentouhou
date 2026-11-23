@@ -52,8 +52,8 @@ static BOMB_UPDATE M_Finish(BOMB *const bomb, const BOMB_CONTEXT *const context)
         Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
         Video_SelectDrawingPage(0);
         Palette_Set(context->palette, context->stage_palette);
-        context->player->invincibility_time = 100;
-        context->player->bomb_damaging = false;
+        g_Player.invincibility_time = 100;
+        g_Player.bomb_damaging = false;
         return BOMB_UPDATE_DONE;
     }
     for (int32_t angle = 0; angle < 256; angle += 16) {
@@ -105,10 +105,10 @@ BOMB_UPDATE Bomb_BeginUpdate(
 {
     ASSERT(!bomb->waiting);
     bomb->frame = frame;
-    context->player->invincible = true;
+    g_Player.invincible = true;
     if (frame == 0) {
         context->pellets_decay(context->user);
-        Sprite_PtnPut(context->miko, 3, -1, context->player->left, PLAYER_TOP);
+        Sprite_PtnPut(context->miko, 3, -1, g_Player.left, PLAYER_TOP);
         bomb->white = context->palette->saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
@@ -158,7 +158,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
         for (int32_t i = 0; i < 18; i++) {
             Sprite_Restore16(bomb->left[i], bomb->top[i], 48, 32);
         }
-        context->player->bomb_damaging = true;
+        g_Player.bomb_damaging = true;
     } else if (frame < 140) {
         if (frame % 10 == 0) {
             context->effect(context->user, 9);
@@ -205,9 +205,7 @@ BOMB_UPDATE Bomb_ResumeUpdate(
     return M_Finish(bomb, context);
 }
 
-bool Bomb_DealsDamage(
-    const PLAYER *const player, const int16_t remaining_lives,
-    const uint32_t frame)
+bool Bomb_DealsDamage(const int16_t remaining_lives, const uint32_t frame)
 {
-    return remaining_lives == 0 && player->bomb_damaging && frame % 50 == 0;
+    return remaining_lives == 0 && g_Player.bomb_damaging && frame % 50 == 0;
 }

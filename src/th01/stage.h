@@ -29,9 +29,6 @@ typedef struct {
 typedef struct {
     STAGE_OBJECTS *objects;
     STAGE_GAMEPLAY *gameplay;
-    ORB *orb;
-    PLAYER *player;
-    uint32_t *rng;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
     int16_t stage_id, stage_num;

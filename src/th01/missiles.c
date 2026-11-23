@@ -60,7 +60,7 @@ void Missiles_Reset(MISSILES *const missiles)
 }
 
 void Missiles_UpdateAndRender(
-    MISSILES *const missiles, PLAYER *const player, const uint16_t frame_rand,
+    MISSILES *const missiles, const uint16_t frame_rand,
     const MISSILES_OUTPUT output)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
@@ -120,16 +120,16 @@ void Missiles_UpdateAndRender(
                 (int16_t)(m->flag - MISSILE_HIT));
         }
     }
-    if (player->invincible) {
+    if (g_Player.invincible) {
         return;
     }
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         const MISSILE *const m = &missiles->slots[i];
         if (m->flag != MISSILE_FREE
-            && Math16_ToPixel(m->left) > player->left - 8
-            && Math16_ToPixel(m->left) < player->left + 24
+            && Math16_ToPixel(m->left) > g_Player.left - 8
+            && Math16_ToPixel(m->left) < g_Player.left + 24
             && Math16_ToPixel(m->top) > 360 && Math16_ToPixel(m->top) < 400) {
-            player->is_hit = true;
+            g_Player.is_hit = true;
             return;
         }
     }

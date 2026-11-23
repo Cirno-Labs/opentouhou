@@ -1,4 +1,5 @@
 #include "th01/stage_objects.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
@@ -80,7 +81,7 @@ static void M_Init(
     STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
     const int16_t stage_id, const bool first_in_scene,
     const ALLOCATOR *const allocator, STAGE_OBJECT_STORAGE *const storage,
-    const PTN *const sprites, uint32_t *const rng)
+    const PTN *const sprites)
 {
     *objects = (STAGE_OBJECTS) {
         .entrance_done = true,
@@ -130,7 +131,7 @@ static void M_Init(
                 (size_t)objects->obstacle_count * sizeof(STAGE_OBSTACLE));
         }
     }
-    MasterRng_Next(rng);
+    MasterRng_Next(&g_Rng);
     int32_t card = 0;
     for (int32_t y = 0; y < 10; y++) {
         for (int32_t x = 0; x < 20; x++) {
@@ -186,23 +187,18 @@ void StageObjects_Prepare(
 void StageObjects_Init(
     STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
     const int16_t stage_id, const bool first_in_scene,
-    const ALLOCATOR *const allocator, const PTN *const sprites,
-    uint32_t *const rng)
+    const ALLOCATOR *const allocator, const PTN *const sprites)
 {
     M_Init(
-        objects, data, stage_id, first_in_scene, allocator, nullptr, sprites,
-        rng);
+        objects, data, stage_id, first_in_scene, allocator, nullptr, sprites);
 }
 
 void StageObjects_InitPrepared(
     STAGE_OBJECTS *const objects, const STAGE_DATA *const data,
     const int16_t stage_id, const bool first_in_scene,
-    STAGE_OBJECT_STORAGE *const storage, const PTN *const sprites,
-    uint32_t *const rng)
+    STAGE_OBJECT_STORAGE *const storage, const PTN *const sprites)
 {
-    M_Init(
-        objects, data, stage_id, first_in_scene, nullptr, storage, sprites,
-        rng);
+    M_Init(objects, data, stage_id, first_in_scene, nullptr, storage, sprites);
 }
 
 bool StageObjects_ResumeEntrance(

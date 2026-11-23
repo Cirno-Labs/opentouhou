@@ -53,8 +53,7 @@ static void M_HudLives(void *const user, const int16_t previous)
 
 static void M_Decay(void *const user)
 {
-    GAMEPLAY *const g = user;
-    Pellets_Decay(&g->world.pellets, &g->world.pellet_shared);
+    Pellets_Decay();
 }
 
 static void M_TimerExtend(void *const user)
@@ -66,10 +65,7 @@ static void M_TimerExtend(void *const user)
 static void M_SpeedLower(
     void *const user, const float minimum, const float delta)
 {
-    GAMEPLAY *const g = user;
-    Pellets_SpeedLower(
-        &g->world.pellet_shared, (int16_t)(minimum * 40),
-        (int16_t)(delta * 40));
+    Pellets_SpeedLower((int16_t)(minimum * 40), (int16_t)(delta * 40));
 }
 
 static void M_Shots(void *const user, const SHOTS_ACTION action)
@@ -96,8 +92,7 @@ static void M_Player(void *const user, const PLAYER_ACTION action)
         M_HudBombs(g, action.previous_bombs);
         break;
     case PLAYER_ACTION_PELLET_SPEED_RAISE:
-        Pellets_SpeedRaise(
-            &g->world.pellet_shared, (int16_t)(action.pellet_speed_delta * 40));
+        Pellets_SpeedRaise((int16_t)(action.pellet_speed_delta * 40));
         break;
     default:
         Player_RenderAction(
@@ -116,17 +111,15 @@ static void M_ItemAdd(void *const user, const int32_t slot, const bool bomb)
 
 static void M_PelletAdd(void *const user, const STAGE_PELLET_SPAWN spawn)
 {
-    GAMEPLAY *const g = user;
     Pellets_AddGroup(
-        &g->world.pellets, &g->world.pellet_shared, &g->world.player,
-        &g->world.rng, g_Session.settings.difficulty, spawn.left, spawn.top,
+        g_Session.settings.difficulty, spawn.left, spawn.top,
         (PELLET_GROUP)spawn.group, spawn.speed);
 }
 
 static void M_Pellets(void *const user)
 {
     GAMEPLAY *const g = user;
-    Pellets_UpdateAndRender(&g->world.pellets, &g->bindings.pellet);
+    Pellets_UpdateAndRender(&g->bindings.pellet);
 }
 
 static void M_AudioJ(void *const user, const B20J_AUDIO_ACTION action)
@@ -185,7 +178,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .sprites = stage,
         .font = &a->hud_font,
         .gameplay = &g->world.metrics,
-        .player = &g->world.player,
         .high_score = &g_Session.high_score,
         .remaining_lives = &g_Session.lives,
         .stage_number = (uint16_t)(g_Session.stage_id + 1),
@@ -196,16 +188,12 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .display = &g->bindings.display,
         .resident_lives = &g->world.retained_lives,
         .next = &g->world.next_extend,
-        .shared = &g->world.pellet_shared,
         .effect = Gameplay_Effect,
         .user = g,
     };
     g->bindings.stage = (STAGE_CONTEXT) {
         .objects = &g->world.objects,
         .gameplay = &g->world.metrics,
-        .orb = &g->world.orb,
-        .player = &g->world.player,
-        .rng = &g->world.rng,
         .sprites = stage,
         .font = &a->hud_font,
         .stage_id = g_Session.stage_id,
@@ -219,7 +207,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .user = g,
     };
     g->bindings.item = (ITEM_CONTEXT) {
-        .player = &g->world.player,
         .gameplay = &g->world.metrics,
         .point_value = &g_Session.point_value,
         .sprites = stage,
@@ -231,16 +218,10 @@ void Gameplay_Bind(GAMEPLAY *const g)
     };
     g->bindings.pellet = (PELLET_CONTEXT) {
         .assets = a->pellets,
-        .player = &g->world.player,
-        .orb = &g->world.orb,
-        .shots = &g->world.shots,
-        .rng = &g->world.rng,
-        .shared = &g->world.pellet_shared,
         .shots_output = g->bindings.shots_output,
     };
     g->bindings.bombing = (BOMB_CONTEXT) {
         .palette = &g->world.palette,
-        .player = &g->world.player,
         .miko = &a->miko,
         .assets = &a->bomb,
         .stage_palette = &g->world.stage_palette,
@@ -249,10 +230,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .user = g,
     };
     g->bindings.missing = (MISS_CONTEXT) {
-        .player = &g->world.player,
-        .orb = &g->world.orb,
-        .shots = &g->world.shots,
-        .rng = &g->world.rng,
         .miko = &a->miko,
         .stage = stage,
         .difficulty = g_Session.settings.difficulty,
@@ -268,9 +245,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.timing = (TIMER_CONTEXT) {
         .hud = &g->world.hud,
         .display = &g->bindings.display,
-        .pellets = &g->world.pellets,
-        .shared = &g->world.pellet_shared,
-        .rng = &g->world.rng,
         .effect = Gameplay_Effect,
         .user = g,
     };
@@ -282,7 +256,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.route = (ROUTE_SELECT_CONTEXT) {
         .palette = &g->world.palette,
         .assets = &g->bindings.route_assets,
-        .player = &g->world.player,
         .scene = &g->world.scene,
         .route = &g_Session.route,
         .stage_cleared = &g->world.metrics.cleared,
@@ -294,9 +267,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .hud = &g->world.hud,
         .display = &g->bindings.display,
         .health = &g->world.health,
-        .shots = &g->world.shots,
         .shots_output = g->bindings.shots_output,
-        .orb = &g->world.orb,
         .test_damage = &g->world.test_damage,
         .frame_rand = g_Session.frame_rand,
         .effect = Gameplay_Effect,
@@ -306,9 +277,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                       .hit = &g->bindings.hit,
                                       .stage_palette = &g->world.stage_palette,
                                       .particles = &g->world.particles,
-                                      .pellets = &g->world.pellets,
-                                      .pellet_shared = &g->world.pellet_shared,
-                                      .rng = &g->world.rng,
                                       .miko = &a->miko,
                                       .route = &g->bindings.route,
                                       .fade_music = Gameplay_Fade };
@@ -317,11 +285,8 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .particles = &g->world.particles,
-                         .pellets = &g->world.pellets,
-                         .pellet_shared = &g->world.pellet_shared,
                          .missiles = &g->world.missiles,
                          .lasers = &g->world.lasers,
-                         .rng = &g->world.rng,
                          .miko = &a->miko,
                          .scene = &g->world.scene,
                          .stage_cleared = &g->world.metrics.cleared,
@@ -331,11 +296,8 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .particles = &g->world.particles,
-                         .pellets = &g->world.pellets,
-                         .pellet_shared = &g->world.pellet_shared,
                          .missiles = &g->world.missiles,
                          .lasers = &g->world.lasers,
-                         .rng = &g->world.rng,
                          .miko = &a->miko,
                          .scene = &g->world.scene,
                          .stage_cleared = &g->world.metrics.cleared,
@@ -345,10 +307,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .particles = &g->world.particles,
-                         .pellets = &g->world.pellets,
-                         .pellet_shared = &g->world.pellet_shared,
                          .lasers = &g->world.lasers,
-                         .rng = &g->world.rng,
                          .miko = &a->miko,
                          .scene = &g->world.scene,
                          .stage_cleared = &g->world.metrics.cleared,
@@ -357,35 +316,25 @@ void Gameplay_Bind(GAMEPLAY *const g)
         (B15M_CONTEXT) { .assets = &a->b15m,
                          .hit = &g->bindings.hit,
                          .particles = &g->world.particles,
-                         .pellets = &g->world.pellets,
-                         .pellet_shared = &g->world.pellet_shared,
                          .missiles = &g->world.missiles,
                          .lasers = &g->world.lasers,
-                         .rng = &g->world.rng,
                          .miko = &a->miko,
                          .scene = &g->world.scene,
                          .stage_cleared = &g->world.metrics.cleared,
                          .fade_music = Gameplay_Fade };
-    g->bindings.c20j =
-        (B20J_CONTEXT) { .assets = &a->b20j,
-                         .hit = &g->bindings.hit,
-                         .pellets = &g->world.pellets,
-                         .pellet_shared = &g->world.pellet_shared,
-                         .lasers = &g->world.lasers,
-                         .objects = &g->world.objects,
-                         .rng = &g->world.rng,
-                         .game_cleared = &g->world.game_cleared,
-                         .audio = M_AudioJ };
+    g->bindings.c20j = (B20J_CONTEXT) { .assets = &a->b20j,
+                                        .hit = &g->bindings.hit,
+                                        .lasers = &g->world.lasers,
+                                        .objects = &g->world.objects,
+                                        .game_cleared = &g->world.game_cleared,
+                                        .audio = M_AudioJ };
     g->bindings.c20m =
         (B20M_CONTEXT) { .assets = &a->b20m,
                          .hit = &g->bindings.hit,
-                         .pellets = &g->world.pellets,
-                         .pellet_shared = &g->world.pellet_shared,
                          .lasers = &g->world.lasers,
                          .objects = &g->world.objects,
                          .first_stage = &g->world.first_stage,
                          .timer_initialized = &g->world.timer_initialized,
-                         .rng = &g->world.rng,
                          .game_cleared = &g->world.game_cleared,
                          .audio = M_AudioM };
     g->bindings.bonus_context = (BONUS_CONTEXT) {
@@ -402,9 +351,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.total_context = (BONUS_TOTAL_CONTEXT) {
         .common = &g->bindings.bonus_context,
         .assets = &a->total,
-        .shots = &g->world.shots,
         .shots_output = g->bindings.shots_output,
-        .pellets = &g->world.pellets,
         .continues_per_scene = g_Session.continues_per_scene,
         .continues_total = &g_Session.continues_total,
         .effect = Gameplay_Effect,

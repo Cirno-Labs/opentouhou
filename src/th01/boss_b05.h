@@ -51,9 +51,6 @@ typedef struct {
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
     PARTICLES *particles;
-    PELLETS *pellets;
-    const PELLET_SHARED *pellet_shared;
-    uint32_t *rng;
     const PTN *miko;
     const ROUTE_SELECT_CONTEXT *route;
     void (*fade_music)(void *user);

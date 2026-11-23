@@ -17,9 +17,6 @@ typedef struct {
     BOSS_HIT_CONTEXT context;
     BOSS_HIT hit;
     STAGE_GAMEPLAY gameplay;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
     PTN sprites;
     GAME_TEXT_FONT font;
     uint32_t high_score;
@@ -34,8 +31,8 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     CHECK_EQ_INT(f->hp, f->expected_shot_hp);
     if (action.kind == SHOTS_ACTION_EFFECT) {
         CHECK_EQ_INT(action.effect, 16);
-        CHECK(!f->shots.slots[0].moving);
-        CHECK_EQ_INT(f->shots.slots[0].decay_frame, 1);
+        CHECK(!g_Shots.slots[0].moving);
+        CHECK_EQ_INT(g_Shots.slots[0].decay_frame, 1);
         f->events[f->count++] = 16;
     } else {
         Shots_RenderAction(&f->sprites, action);
@@ -81,16 +78,13 @@ static void M_Init(FIXTURE *const f)
     f->display = (HUD_CONTEXT) { .sprites = &f->sprites,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->context = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
                                       .hud = &f->hud,
                                       .display = &f->display,
                                       .health = &f->health,
-                                      .shots = &f->shots,
                                       .shots_output = { M_Shot, f },
-                                      .orb = &f->orb,
                                       .test_damage = &f->test_damage,
                                       .effect = M_Effect,
                                       .user = f };
@@ -102,13 +96,13 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     f.gameplay.score = UINT32_MAX - 5;
-    f.orb.left = 303;
+    g_Orb.left = 303;
     BossHit_UpdateAndRender(
         &f.hit, &f.context, &f.hp, &f.baseline, colors, 1, 10, true,
         (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(f.gameplay.score, 4);
     CHECK_EQ_INT(f.high_score, 4);
-    CHECK_EQ_INT(f.orb.velocity_x, ORB_X_RIGHT_4);
+    CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(f.count, 1);
     CHECK_EQ_INT(f.events[0], 3);
@@ -125,7 +119,7 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
     f.test_damage = true;
     f.expected_shot_hp = 7;
     f.hit = (BOSS_HIT) { .frame = 1, .invincible = true };
-    f.shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
+    g_Shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
     BossHit_UpdateAndRender(
         &f.hit, &f.context, &f.hp, &f.baseline, nullptr, 0, 3000, true,
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
@@ -145,7 +139,7 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     f.lives = 0;
-    f.player.bomb_damaging = true;
+    g_Player.bomb_damaging = true;
     f.hit.invincible = true;
     f.context.frame_rand = 49;
     BossHit_UpdateAndRender(

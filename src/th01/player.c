@@ -1,8 +1,18 @@
 #include "th01/player.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
+
+#include <string.h>
+
+PLAYER g_Player;
+
+void Player_Init(void)
+{
+    memset(&g_Player, 0, sizeof(g_Player));
+}
 
 enum {
     M_LEFT_STILL = 0,
@@ -16,10 +26,6 @@ enum {
 };
 
 typedef struct {
-    PLAYER *player;
-    ORB *orb;
-    SHOTS *shots;
-    uint32_t *rng;
     PLAYER_OUTPUT output;
 } PLAYER_UPDATE;
 
@@ -37,7 +43,7 @@ static void M_Draw(
         update->output.user,
         (PLAYER_ACTION) {
             .kind = kind,
-            .left = update->player->left,
+            .left = g_Player.left,
             .image = image,
         });
 }
@@ -52,7 +58,7 @@ static void M_Overlap(
         (PLAYER_ACTION) {
             .kind = tall ? PLAYER_ACTION_BOS_48_OVERLAP
                          : PLAYER_ACTION_BOS_32_OVERLAP,
-            .left = update->player->left,
+            .left = g_Player.left,
             .previous_left = previous_left,
             .image = image,
             .previous_image = previous_image,
@@ -71,15 +77,14 @@ static void M_Effect(const PLAYER_UPDATE *const update)
 
 static void M_Repel(const PLAYER_UPDATE *const update, const int16_t friction)
 {
-    PLAYER *const player = update->player;
     const ORB_PLAYER contact = {
-        player->left,
+        g_Player.left,
         PLAYER_TOP,
-        player->invincible,
-        player->invincible_against_orb,
+        g_Player.invincible,
+        g_Player.invincible_against_orb,
     };
-    if (Orb_PlayerHitTest(update->orb, &contact, friction, update->rng)) {
-        player->is_hit = true;
+    if (Orb_PlayerHitTest(&contact, friction)) {
+        g_Player.is_hit = true;
     }
 }
 
@@ -97,13 +102,13 @@ static void M_ShotAction(void *const user, const SHOTS_ACTION action)
 static void M_Shoot(PLAYER_UPDATE *const update, const int16_t offset)
 {
     Shots_Add(
-        update->shots, Math16_Wrap(update->player->left + 8 + offset),
-        PLAYER_TOP, (SHOTS_OUTPUT) { M_ShotAction, update });
+        Math16_Wrap(g_Player.left + 8 + offset), PLAYER_TOP,
+        (SHOTS_OUTPUT) { M_ShotAction, update });
 }
 
-static int16_t M_DashImage(const PLAYER *const player, const int16_t base)
+static int16_t M_DashImage(const int16_t base)
 {
-    return base + (player->dash_cycle % 8 < 4 ? 0 : 1);
+    return base + (g_Player.dash_cycle % 8 < 4 ? 0 : 1);
 }
 
 static int16_t M_SwingImage(const int16_t frame)
@@ -120,10 +125,10 @@ static void M_SpecialStart(
     const PLAYER_UPDATE *const update, const bool deflect)
 {
     if (deflect) {
-        update->player->deflecting = true;
+        g_Player.deflecting = true;
     }
     M_Effect(update);
-    update->player->combo_enabled = false;
+    g_Player.combo_enabled = false;
 }
 
 static void M_SelectStrike(
@@ -133,7 +138,7 @@ static void M_SelectStrike(
         direction == PLAYER_FACING_RIGHT ? GAME_INPUT_RIGHT : GAME_INPUT_LEFT;
     const int8_t other =
         direction == PLAYER_FACING_RIGHT ? GAME_INPUT_LEFT : GAME_INPUT_RIGHT;
-    update->player->submode =
+    g_Player.submode =
         (g_GameInput.horizontal == other ? PLAYER_SPECIAL_FLIPKICK_STATIONARY
              : g_GameInput.horizontal == same ? PLAYER_SPECIAL_SLIDEKICK
                                               : PLAYER_SPECIAL_FLIPKICK_MOVING)
@@ -142,201 +147,197 @@ static void M_SelectStrike(
 
 static void M_Regular(PLAYER_UPDATE *const update)
 {
-    PLAYER *const player = update->player;
     int16_t image;
     if (g_GameInput.horizontal == GAME_INPUT_RIGHT
         || g_GameInput.horizontal == GAME_INPUT_LEFT) {
         const bool right = g_GameInput.horizontal == GAME_INPUT_RIGHT;
-        player->dash_direction =
+        g_Player.dash_direction =
             right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT;
-        M_Draw(update, PLAYER_ACTION_PTN_ERASE, player->previous_ptn);
-        Player_MoveAndClamp(player, right ? 4 : -4);
-        image = M_DashImage(player, right ? M_RIGHT_DASH : M_LEFT_DASH);
+        M_Draw(update, PLAYER_ACTION_PTN_ERASE, g_Player.previous_ptn);
+        Player_MoveAndClamp(right ? 4 : -4);
+        image = M_DashImage(right ? M_RIGHT_DASH : M_LEFT_DASH);
         M_Draw(update, PLAYER_ACTION_PTN_PUT, image);
-        player->previous_ptn = image;
-        player->submode = g_GameInput.horizontal;
+        g_Player.previous_ptn = image;
+        g_Player.submode = g_GameInput.horizontal;
     } else {
-        if (player->submode == GAME_INPUT_NONE) {
-            image = player->dash_direction != PLAYER_FACING_RIGHT
+        if (g_Player.submode == GAME_INPUT_NONE) {
+            image = g_Player.dash_direction != PLAYER_FACING_RIGHT
                 ? M_LEFT_STILL
                 : M_RIGHT_STILL;
-            if (player->previous_ptn != image) {
-                M_Draw(update, PLAYER_ACTION_PTN_ERASE, player->previous_ptn);
+            if (g_Player.previous_ptn != image) {
+                M_Draw(update, PLAYER_ACTION_PTN_ERASE, g_Player.previous_ptn);
             }
             M_Draw(update, PLAYER_ACTION_PTN_PUT, image);
-            player->previous_ptn = image;
+            g_Player.previous_ptn = image;
         }
-        player->submode = GAME_INPUT_NONE;
+        g_Player.submode = GAME_INPUT_NONE;
     }
     if (g_GameInput.shot) {
-        M_Draw(update, PLAYER_ACTION_PTN_ERASE, player->previous_ptn);
-        player->mode = PLAYER_MODE_SHOOT;
-        player->mode_frame = 0;
-        player->submode = g_GameInput.horizontal == GAME_INPUT_BOTH
+        M_Draw(update, PLAYER_ACTION_PTN_ERASE, g_Player.previous_ptn);
+        g_Player.mode = PLAYER_MODE_SHOOT;
+        g_Player.mode_frame = 0;
+        g_Player.submode = g_GameInput.horizontal == GAME_INPUT_BOTH
             ? GAME_INPUT_NONE
             : g_GameInput.horizontal;
-        if (player->submode == GAME_INPUT_NONE) {
-            image = player->dash_direction != PLAYER_FACING_RIGHT
+        if (g_Player.submode == GAME_INPUT_NONE) {
+            image = g_Player.dash_direction != PLAYER_FACING_RIGHT
                 ? M_LEFT_CAST
                 : M_RIGHT_CAST;
         } else {
-            image = player->submode == GAME_INPUT_RIGHT ? M_RIGHT_SHOOT
-                                                        : M_LEFT_SHOOT;
+            image = g_Player.submode == GAME_INPUT_RIGHT ? M_RIGHT_SHOOT
+                                                         : M_LEFT_SHOOT;
         }
         M_Draw(update, PLAYER_ACTION_PTN_PUT, image);
-        player->previous_ptn = image;
+        g_Player.previous_ptn = image;
     }
     if (g_GameInput.strike) {
-        M_Draw(update, PLAYER_ACTION_PTN_ERASE, player->previous_ptn);
+        M_Draw(update, PLAYER_ACTION_PTN_ERASE, g_Player.previous_ptn);
         if (g_GameInput.horizontal == GAME_INPUT_NONE
             || g_GameInput.horizontal == GAME_INPUT_BOTH) {
-            player->mode_frame = 0;
-            player->mode = PLAYER_MODE_SWING_OR_SLIDE;
-            player->submode = GAME_INPUT_NONE;
-            player->deflecting = true;
+            g_Player.mode_frame = 0;
+            g_Player.mode = PLAYER_MODE_SWING_OR_SLIDE;
+            g_Player.submode = GAME_INPUT_NONE;
+            g_Player.deflecting = true;
         } else {
             M_Effect(update);
-            player->mode_frame = 0;
-            player->mode = PLAYER_MODE_SWING_OR_SLIDE;
-            player->submode = g_GameInput.horizontal % GAME_INPUT_BOTH;
-            player->sliding = true;
-            player->combo_enabled = false;
+            g_Player.mode_frame = 0;
+            g_Player.mode = PLAYER_MODE_SWING_OR_SLIDE;
+            g_Player.submode = g_GameInput.horizontal % GAME_INPUT_BOTH;
+            g_Player.sliding = true;
+            g_Player.combo_enabled = false;
             M_Draw(
                 update, PLAYER_ACTION_BOS_32_PUT,
-                player->submode == GAME_INPUT_RIGHT ? 3 : 1);
+                g_Player.submode == GAME_INPUT_RIGHT ? 3 : 1);
         }
-        player->invincible_against_orb = true;
+        g_Player.invincible_against_orb = true;
     }
 }
 
 static void M_ShootMode(PLAYER_UPDATE *const update)
 {
-    PLAYER *const player = update->player;
-    if (player->submode == GAME_INPUT_NONE) {
-        if (player->mode_frame == 0) {
+    if (g_Player.submode == GAME_INPUT_NONE) {
+        if (g_Player.mode_frame == 0) {
             M_Shoot(update, 0);
-        } else if (player->mode_frame >= 2) {
-            player->bomb_frame = 0;
-            player->mode = PLAYER_MODE_REGULAR;
+        } else if (g_Player.mode_frame >= 2) {
+            g_Player.bomb_frame = 0;
+            g_Player.mode = PLAYER_MODE_REGULAR;
             g_GameInput.shot = false;
-            player->submode = GAME_INPUT_BOTH;
+            g_Player.submode = GAME_INPUT_BOTH;
         }
     } else if (
-        player->submode == GAME_INPUT_RIGHT
-        || player->submode == GAME_INPUT_LEFT) {
-        const bool right = player->submode == GAME_INPUT_RIGHT;
-        player->dash_direction =
+        g_Player.submode == GAME_INPUT_RIGHT
+        || g_Player.submode == GAME_INPUT_LEFT) {
+        const bool right = g_Player.submode == GAME_INPUT_RIGHT;
+        g_Player.dash_direction =
             right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT;
-        M_Draw(update, PLAYER_ACTION_PTN_ERASE, player->previous_ptn);
-        Player_MoveAndClamp(player, right ? 4 : -4);
+        M_Draw(update, PLAYER_ACTION_PTN_ERASE, g_Player.previous_ptn);
+        Player_MoveAndClamp(right ? 4 : -4);
         const int16_t base = right ? M_RIGHT_SHOOT : M_LEFT_SHOOT;
-        M_Draw(update, PLAYER_ACTION_PTN_PUT, base + (player->mode_frame & 3));
-        player->previous_ptn =
-            base + (right ? player->mode_frame % 3 : player->mode_frame & 3);
-        if (player->mode_frame >= 1) {
+        M_Draw(update, PLAYER_ACTION_PTN_PUT, base + (g_Player.mode_frame & 3));
+        g_Player.previous_ptn =
+            base + (right ? g_Player.mode_frame % 3 : g_Player.mode_frame & 3);
+        if (g_Player.mode_frame >= 1) {
             M_Shoot(update, 0);
-            player->bomb_frame = 0;
+            g_Player.bomb_frame = 0;
             g_GameInput.shot = false;
-            player->mode = PLAYER_MODE_REGULAR;
+            g_Player.mode = PLAYER_MODE_REGULAR;
         }
     }
-    player->mode_frame = M_Wrap8(player->mode_frame + 1);
+    g_Player.mode_frame = M_Wrap8(g_Player.mode_frame + 1);
 }
 
 static void M_SwingOrSlide(PLAYER_UPDATE *const update)
 {
-    PLAYER *const player = update->player;
-    if (player->submode == GAME_INPUT_NONE) {
-        if (player->mode_frame < 1) {
-            player->submode = g_GameInput.horizontal % GAME_INPUT_BOTH;
-            if (player->submode != GAME_INPUT_NONE) {
-                player->mode_frame = 0;
-                player->deflecting = false;
+    if (g_Player.submode == GAME_INPUT_NONE) {
+        if (g_Player.mode_frame < 1) {
+            g_Player.submode = g_GameInput.horizontal % GAME_INPUT_BOTH;
+            if (g_Player.submode != GAME_INPUT_NONE) {
+                g_Player.mode_frame = 0;
+                g_Player.deflecting = false;
                 M_Effect(update);
-                player->sliding = true;
+                g_Player.sliding = true;
             }
         } else {
-            if (player->mode_frame % 3 == 0) {
-                const int16_t image = M_SwingImage(player->mode_frame + 1);
-                M_Overlap(update, true, player->left, image - 1, image);
+            if (g_Player.mode_frame % 3 == 0) {
+                const int16_t image = M_SwingImage(g_Player.mode_frame + 1);
+                M_Overlap(update, true, g_Player.left, image - 1, image);
             }
-            if (player->mode_frame == player->deflect_duration) {
-                player->deflecting = false;
+            if (g_Player.mode_frame == g_Player.deflect_duration) {
+                g_Player.deflecting = false;
             }
-            if (player->mode_frame >= 23) {
-                player->mode = PLAYER_MODE_REGULAR;
+            if (g_Player.mode_frame >= 23) {
+                g_Player.mode = PLAYER_MODE_REGULAR;
                 M_Draw(
                     update, PLAYER_ACTION_BOS_48_ERASE,
-                    M_SwingImage(player->mode_frame));
-                player->submode = GAME_INPUT_BOTH;
-                player->mode_frame = 0;
+                    M_SwingImage(g_Player.mode_frame));
+                g_Player.submode = GAME_INPUT_BOTH;
+                g_Player.mode_frame = 0;
                 g_GameInput.strike = false;
-                player->bomb_frame = 0;
-                player->invincible_against_orb = false;
+                g_Player.bomb_frame = 0;
+                g_Player.invincible_against_orb = false;
             }
         }
     } else if (
-        player->submode == GAME_INPUT_RIGHT
-        || player->submode == GAME_INPUT_LEFT) {
-        const bool right = player->submode == GAME_INPUT_RIGHT;
+        g_Player.submode == GAME_INPUT_RIGHT
+        || g_Player.submode == GAME_INPUT_LEFT) {
+        const bool right = g_Player.submode == GAME_INPUT_RIGHT;
         const int16_t base = right ? 2 : 0;
-        const int16_t previous_left = player->left;
-        Player_MoveAndClamp(player, right ? 6 : -6);
+        const int16_t previous_left = g_Player.left;
+        Player_MoveAndClamp(right ? 6 : -6);
         M_Overlap(
-            update, false, previous_left, base + 1 - player->mode_frame % 2,
-            base + player->mode_frame % 2);
-        if (player->mode_frame >= 5 && !g_GameInput.strike
+            update, false, previous_left, base + 1 - g_Player.mode_frame % 2,
+            base + g_Player.mode_frame % 2);
+        if (g_Player.mode_frame >= 5 && !g_GameInput.strike
             && !g_GameInput.shot) {
-            player->combo_enabled = true;
+            g_Player.combo_enabled = true;
         }
-        if (player->mode_frame >= 12) {
-            player->mode = PLAYER_MODE_REGULAR;
+        if (g_Player.mode_frame >= 12) {
+            g_Player.mode = PLAYER_MODE_REGULAR;
             M_Draw(
                 update, PLAYER_ACTION_BOS_32_ERASE,
-                base + player->mode_frame % 2);
-            player->submode = GAME_INPUT_BOTH;
-            player->mode_frame = 0;
-            player->sliding = false;
+                base + g_Player.mode_frame % 2);
+            g_Player.submode = GAME_INPUT_BOTH;
+            g_Player.mode_frame = 0;
+            g_Player.sliding = false;
             const int8_t direction =
                 right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT;
-            if (player->combo_enabled && g_GameInput.strike) {
+            if (g_Player.combo_enabled && g_GameInput.strike) {
                 M_SelectStrike(update, direction);
-                player->mode = PLAYER_MODE_SPECIAL_FIRST;
+                g_Player.mode = PLAYER_MODE_SPECIAL_FIRST;
                 M_SpecialStart(
-                    update, player->submode < PLAYER_SPECIAL_SLIDEKICK);
+                    update, g_Player.submode < PLAYER_SPECIAL_SLIDEKICK);
                 return;
-            } else if (player->combo_enabled && g_GameInput.shot) {
-                player->submode = PLAYER_SPECIAL_SHOTCOMBO | direction;
-                player->mode = PLAYER_MODE_SPECIAL_FIRST;
+            } else if (g_Player.combo_enabled && g_GameInput.shot) {
+                g_Player.submode = PLAYER_SPECIAL_SHOTCOMBO | direction;
+                g_Player.mode = PLAYER_MODE_SPECIAL_FIRST;
                 M_SpecialStart(update, true);
                 return;
             }
             g_GameInput.strike = false;
-            player->bomb_frame = 0;
+            g_Player.bomb_frame = 0;
             if (right) {
-                player->combo_enabled = false;
+                g_Player.combo_enabled = false;
             }
-            player->invincible_against_orb = false;
+            g_Player.invincible_against_orb = false;
         }
     }
-    player->mode_frame = M_Wrap8(player->mode_frame + 1);
-    if (player->submode == GAME_INPUT_NONE) {
-        if (player->mode_frame < 21) {
-            M_Repel(update, player->mode_frame);
+    g_Player.mode_frame = M_Wrap8(g_Player.mode_frame + 1);
+    if (g_Player.submode == GAME_INPUT_NONE) {
+        if (g_Player.mode_frame < 21) {
+            M_Repel(update, g_Player.mode_frame);
         }
-    } else if (player->submode == GAME_INPUT_RIGHT) {
+    } else if (g_Player.submode == GAME_INPUT_RIGHT) {
         M_Repel(update, ORB_REPEL_3_X_RIGHT_4);
-    } else if (player->submode == GAME_INPUT_LEFT) {
+    } else if (g_Player.submode == GAME_INPUT_LEFT) {
         M_Repel(update, ORB_REPEL_3_X_LEFT_4);
     }
 }
 
 static void M_Special(PLAYER_UPDATE *const update)
 {
-    PLAYER *const player = update->player;
-    const bool right = (player->submode & 1) == PLAYER_FACING_RIGHT;
-    const int16_t special = player->submode & ~1;
-    const int16_t frame = player->mode_frame;
+    const bool right = (g_Player.submode & 1) == PLAYER_FACING_RIGHT;
+    const int16_t special = g_Player.submode & ~1;
+    const int16_t frame = g_Player.mode_frame;
     int16_t image;
     int16_t duration;
     if (special == PLAYER_SPECIAL_FLIPKICK_MOVING
@@ -345,31 +346,31 @@ static void M_Special(PLAYER_UPDATE *const update)
         const int16_t previous = M_FlipImage(frame - 1, base);
         image = M_FlipImage(frame, base);
         if (special == PLAYER_SPECIAL_FLIPKICK_MOVING) {
-            const int16_t previous_left = player->left;
-            Player_MoveAndClamp(player, right ? 2 : -2);
+            const int16_t previous_left = g_Player.left;
+            Player_MoveAndClamp(right ? 2 : -2);
             M_Overlap(update, true, previous_left, previous, image);
         } else if (previous != image) {
-            M_Overlap(update, true, player->left, previous, image);
+            M_Overlap(update, true, g_Player.left, previous, image);
         } else {
             M_Draw(update, PLAYER_ACTION_BOS_48_PUT, image);
         }
         if (frame == 20) {
-            player->deflecting = false;
+            g_Player.deflecting = false;
         }
         if (frame >= 20 && !g_GameInput.strike && !g_GameInput.shot) {
-            player->combo_enabled = true;
+            g_Player.combo_enabled = true;
         }
         duration = 28;
     } else if (special == PLAYER_SPECIAL_SLIDEKICK) {
         image = right ? 5 : 4;
-        const int16_t previous_left = player->left;
-        Player_MoveAndClamp(player, right ? 6 : -6);
+        const int16_t previous_left = g_Player.left;
+        Player_MoveAndClamp(right ? 6 : -6);
         M_Overlap(update, false, previous_left, image, image);
         duration = 13;
     } else {
         const int16_t base = right ? 24 : 20;
         image = frame / 6 + base;
-        M_Overlap(update, true, player->left, (frame - 1) / 6 + base, image);
+        M_Overlap(update, true, g_Player.left, (frame - 1) / 6 + base, image);
         switch (frame) {
         case 1:
             M_Shoot(update, -8);
@@ -396,54 +397,54 @@ static void M_Special(PLAYER_UPDATE *const update)
             break;
         }
         if (frame == 4) {
-            player->deflecting = false;
+            g_Player.deflecting = false;
         }
         duration = 19;
     }
-    player->mode_frame = M_Wrap8(player->mode_frame + 1);
-    if (player->mode_frame > duration) {
+    g_Player.mode_frame = M_Wrap8(g_Player.mode_frame + 1);
+    if (g_Player.mode_frame > duration) {
         M_Draw(
             update,
             special == PLAYER_SPECIAL_SLIDEKICK ? PLAYER_ACTION_BOS_32_ERASE
                                                 : PLAYER_ACTION_BOS_48_ERASE,
             image);
-        player->bomb_frame = 0;
-        player->mode_frame = 0;
-        player->sliding = false;
-        player->deflecting = false;
-        if (player->mode < PLAYER_MODE_SPECIAL_THIRD) {
-            if (player->combo_enabled && g_GameInput.strike) {
+        g_Player.bomb_frame = 0;
+        g_Player.mode_frame = 0;
+        g_Player.sliding = false;
+        g_Player.deflecting = false;
+        if (g_Player.mode < PLAYER_MODE_SPECIAL_THIRD) {
+            if (g_Player.combo_enabled && g_GameInput.strike) {
                 if (special == PLAYER_SPECIAL_FLIPKICK_MOVING
                     || special == PLAYER_SPECIAL_FLIPKICK_STATIONARY) {
                     M_SelectStrike(
                         update,
                         right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT);
                 }
-                player->mode++;
+                g_Player.mode++;
                 M_SpecialStart(
-                    update, player->submode < PLAYER_SPECIAL_SLIDEKICK);
+                    update, g_Player.submode < PLAYER_SPECIAL_SLIDEKICK);
                 return;
-            } else if (player->combo_enabled && g_GameInput.shot) {
+            } else if (g_Player.combo_enabled && g_GameInput.shot) {
                 if (special == PLAYER_SPECIAL_FLIPKICK_MOVING
                     || special == PLAYER_SPECIAL_FLIPKICK_STATIONARY) {
-                    player->submode = PLAYER_SPECIAL_SHOTCOMBO
+                    g_Player.submode = PLAYER_SPECIAL_SHOTCOMBO
                         | (right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT);
                 }
-                player->mode++;
+                g_Player.mode++;
                 M_SpecialStart(update, true);
                 return;
             }
         }
-        player->invincible_against_orb = false;
-        player->mode = PLAYER_MODE_REGULAR;
+        g_Player.invincible_against_orb = false;
+        g_Player.mode = PLAYER_MODE_REGULAR;
     } else if (
         special == PLAYER_SPECIAL_FLIPKICK_MOVING
         || special == PLAYER_SPECIAL_FLIPKICK_STATIONARY) {
-        M_Repel(update, player->mode_frame / 2);
+        M_Repel(update, g_Player.mode_frame / 2);
     } else if (special == PLAYER_SPECIAL_SLIDEKICK) {
         M_Repel(update, right ? ORB_REPEL_3_X_RIGHT_8 : ORB_REPEL_3_X_LEFT_8);
-    } else if (player->mode_frame < 16) {
-        M_Repel(update, player->mode_frame);
+    } else if (g_Player.mode_frame < 16) {
+        M_Repel(update, g_Player.mode_frame);
     }
 }
 
@@ -467,72 +468,70 @@ RESULT Player_ValidateSprites(const PLAYER_SPRITES *const sprites)
     return OK;
 }
 
-void Player_Reset(PLAYER *const player, const int32_t difficulty)
+void Player_Reset(const int32_t difficulty)
 {
-    player->dash_cycle = 0;
-    player->mode_frame = 0;
-    player->mode = PLAYER_MODE_REGULAR;
-    player->submode = -1;
-    player->dash_direction = PLAYER_FACING_LEFT;
-    player->bomb_flag = PLAYER_BOMB_NONE;
-    player->bomb_damaging = false;
-    player->sliding = false;
-    player->deflecting = false;
-    player->previous_ptn = M_LEFT_STILL;
-    player->deflect_duration = difficulty == SETTINGS_DIFFICULTY_EASY ? 15
-        : difficulty == SETTINGS_DIFFICULTY_HARD                      ? 10
-        : difficulty == SETTINGS_DIFFICULTY_LUNATIC                   ? 8
-                                                                      : 12;
-    player->bombing = false;
-    player->combo_enabled = false;
+    g_Player.dash_cycle = 0;
+    g_Player.mode_frame = 0;
+    g_Player.mode = PLAYER_MODE_REGULAR;
+    g_Player.submode = -1;
+    g_Player.dash_direction = PLAYER_FACING_LEFT;
+    g_Player.bomb_flag = PLAYER_BOMB_NONE;
+    g_Player.bomb_damaging = false;
+    g_Player.sliding = false;
+    g_Player.deflecting = false;
+    g_Player.previous_ptn = M_LEFT_STILL;
+    g_Player.deflect_duration = difficulty == SETTINGS_DIFFICULTY_EASY ? 15
+        : difficulty == SETTINGS_DIFFICULTY_HARD                       ? 10
+        : difficulty == SETTINGS_DIFFICULTY_LUNATIC                    ? 8
+                                                                       : 12;
+    g_Player.bombing = false;
+    g_Player.combo_enabled = false;
     g_GameInput.bomb = false;
-    player->invincible_against_orb = false;
+    g_Player.invincible_against_orb = false;
 }
 
-void Player_MoveAndClamp(PLAYER *const player, const int16_t delta)
+void Player_MoveAndClamp(const int16_t delta)
 {
-    player->left = Math16_Wrap(player->left + delta);
-    if (player->left < 0) {
-        player->left = 0;
-    } else if (player->left >= 608) {
-        player->left = 608;
+    g_Player.left = Math16_Wrap(g_Player.left + delta);
+    if (g_Player.left < 0) {
+        g_Player.left = 0;
+    } else if (g_Player.left >= 608) {
+        g_Player.left = 608;
     }
 }
 
 bool Player_BeginUpdate(
-    PLAYER_BOMB_CONTINUATION *const continuation, PLAYER *const player,
-    ORB *const orb, SHOTS *const shots, uint32_t *const rng,
-    const PLAYER_OUTPUT output)
+    PLAYER_BOMB_CONTINUATION *const continuation, const PLAYER_OUTPUT output)
 {
     ASSERT(!continuation->pending);
-    PLAYER_UPDATE update = { player, orb, shots, rng, output };
-    player->dash_cycle = M_Wrap8(player->dash_cycle + 1) & 7;
-    if ((player->remaining_bombs != 0 || player->bombing)
-        && player->bomb_flag >= PLAYER_BOMB_START) {
-        if (player->bomb_flag == PLAYER_BOMB_START) {
-            player->bomb_frame = 0;
-            player->bomb_flag = PLAYER_BOMB_ACTIVE;
-            player->deflecting = true;
-            player->bombing = true;
-            player->remaining_bombs = Math16_Wrap(player->remaining_bombs - 1);
+    PLAYER_UPDATE update = { .output = output };
+    g_Player.dash_cycle = M_Wrap8(g_Player.dash_cycle + 1) & 7;
+    if ((g_Player.remaining_bombs != 0 || g_Player.bombing)
+        && g_Player.bomb_flag >= PLAYER_BOMB_START) {
+        if (g_Player.bomb_flag == PLAYER_BOMB_START) {
+            g_Player.bomb_frame = 0;
+            g_Player.bomb_flag = PLAYER_BOMB_ACTIVE;
+            g_Player.deflecting = true;
+            g_Player.bombing = true;
+            g_Player.remaining_bombs =
+                Math16_Wrap(g_Player.remaining_bombs - 1);
             output.action(
                 output.user,
                 (PLAYER_ACTION) {
                     .kind = PLAYER_ACTION_HUD_BOMBS,
-                    .previous_bombs = Math16_Wrap(player->remaining_bombs + 1),
+                    .previous_bombs = Math16_Wrap(g_Player.remaining_bombs + 1),
                 });
         }
         M_Repel(&update, 1);
         *continuation = (PLAYER_BOMB_CONTINUATION) {
-            .player = player,
             .output = output,
             .pending = true,
         };
         return true;
     } else if (
-        g_GameInput.bomb && player->mode != PLAYER_MODE_SPECIAL_FIRST
-        && player->remaining_bombs != 0) {
-        player->bomb_flag = PLAYER_BOMB_START;
+        g_GameInput.bomb && g_Player.mode != PLAYER_MODE_SPECIAL_FIRST
+        && g_Player.remaining_bombs != 0) {
+        g_Player.bomb_flag = PLAYER_BOMB_START;
         g_GameInput.bomb = false;
         output.action(
             output.user,
@@ -540,15 +539,15 @@ bool Player_BeginUpdate(
                 .kind = PLAYER_ACTION_PELLET_SPEED_RAISE,
                 .pellet_speed_delta = 0.025f,
             });
-    } else if (player->mode == PLAYER_MODE_REGULAR) {
+    } else if (g_Player.mode == PLAYER_MODE_REGULAR) {
         M_Regular(&update);
-    } else if (player->mode == PLAYER_MODE_SHOOT) {
+    } else if (g_Player.mode == PLAYER_MODE_SHOOT) {
         M_ShootMode(&update);
-    } else if (player->mode == PLAYER_MODE_SWING_OR_SLIDE) {
+    } else if (g_Player.mode == PLAYER_MODE_SWING_OR_SLIDE) {
         M_SwingOrSlide(&update);
     } else if (
-        player->mode >= PLAYER_MODE_SPECIAL_FIRST
-        && player->mode <= PLAYER_MODE_SPECIAL_THIRD) {
+        g_Player.mode >= PLAYER_MODE_SPECIAL_FIRST
+        && g_Player.mode <= PLAYER_MODE_SPECIAL_THIRD) {
         M_Special(&update);
     }
     return false;
@@ -559,33 +558,31 @@ void Player_FinishBombUpdate(
 {
     ASSERT(continuation->pending);
     continuation->pending = false;
-    PLAYER *const player = continuation->player;
-    PLAYER_UPDATE update = { .player = player, .output = continuation->output };
-    player->bomb_flag = done ? PLAYER_BOMB_NONE : PLAYER_BOMB_ACTIVE;
+
+    PLAYER_UPDATE update = { .output = continuation->output };
+    g_Player.bomb_flag = done ? PLAYER_BOMB_NONE : PLAYER_BOMB_ACTIVE;
     if (done) {
-        player->bombing = false;
+        g_Player.bombing = false;
         g_GameInput.bomb = false;
         M_Draw(&update, PLAYER_ACTION_PTN_PUT, M_LEFT_STILL);
-        player->previous_ptn = M_LEFT_STILL;
-    } else if (player->bomb_frame > 60) {
+        g_Player.previous_ptn = M_LEFT_STILL;
+    } else if (g_Player.bomb_frame > 60) {
         M_Draw(&update, PLAYER_ACTION_PTN_PUT, M_LEFT_CAST);
     }
     g_GameInput.shot = false;
     g_GameInput.strike = false;
-    player->mode = PLAYER_MODE_REGULAR;
-    if (player->bomb_flag == PLAYER_BOMB_NONE) {
-        player->deflecting = false;
+    g_Player.mode = PLAYER_MODE_REGULAR;
+    if (g_Player.bomb_flag == PLAYER_BOMB_NONE) {
+        g_Player.deflecting = false;
     }
 }
 
-void Player_UpdateAndRender(
-    PLAYER *const player, ORB *const orb, SHOTS *const shots,
-    uint32_t *const rng, const PLAYER_OUTPUT output)
+void Player_UpdateAndRender(const PLAYER_OUTPUT output)
 {
     PLAYER_BOMB_CONTINUATION continuation = {};
-    if (Player_BeginUpdate(&continuation, player, orb, shots, rng, output)) {
+    if (Player_BeginUpdate(&continuation, output)) {
         const bool done = output.bomb_update(
-            output.user, player, Math16_Wrap(player->bomb_frame & 0xffff));
+            output.user, Math16_Wrap(g_Player.bomb_frame & 0xffff));
         Player_FinishBombUpdate(&continuation, done);
     }
 }

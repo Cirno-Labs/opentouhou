@@ -1,5 +1,7 @@
 #include "th01/missiles.h"
 
+#include <string.h>
+
 #include "th01_video.h"
 #include "test.h"
 
@@ -41,12 +43,13 @@ TEST(pool_and_spawn_history)
 TEST(interlace_motion_and_explosion_lifetime)
 {
     MISSILES m = {};
-    PLAYER player = { .left = 300 };
+    memset(&g_Player, 0, sizeof(g_Player));
+    g_Player.left = 300;
     EVENTS events = {};
     const MISSILES_OUTPUT output = { M_Action, &events };
     CHECK(Missiles_Add(&m, 623, 100, 2, 0, 0));
     m.slots[0].previous_top = 80 * 16;
-    Missiles_UpdateAndRender(&m, &player, 1, output);
+    Missiles_UpdateAndRender(&m, 1, output);
     CHECK_EQ_INT(m.slots[0].left, 625 * 16);
     CHECK_EQ_INT(m.slots[0].previous_left, 624 * 16);
     CHECK_EQ_INT(m.slots[0].previous_top, 80 * 16);
@@ -55,15 +58,15 @@ TEST(interlace_motion_and_explosion_lifetime)
     CHECK_EQ_INT(events.actions[0].left, -1);
     CHECK_EQ_INT(events.actions[0].top, 80);
     events.count = 0;
-    Missiles_UpdateAndRender(&m, &player, 0, output);
+    Missiles_UpdateAndRender(&m, 0, output);
     CHECK_EQ_INT(m.slots[0].flag, MISSILE_HIT_LAST);
     CHECK_EQ_INT(events.count, 2);
     CHECK_EQ_INT(events.actions[1].image, 4);
     CHECK_EQ_INT(events.actions[1].quarter, 1);
     events.count = 0;
-    Missiles_UpdateAndRender(&m, &player, 1, output);
+    Missiles_UpdateAndRender(&m, 1, output);
     CHECK_EQ_INT(events.count, 0);
-    Missiles_UpdateAndRender(&m, &player, 0, output);
+    Missiles_UpdateAndRender(&m, 0, output);
     CHECK_EQ_INT(m.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(events.count, 3);
     CHECK_EQ_INT(events.actions[2].kind, MISSILES_ACTION_EFFECT);
@@ -84,16 +87,18 @@ TEST(lethal_current_coordinates_ignore_field_and_sliding)
                 .previous_top = 100 * 16,
                 .flag = MISSILE_HIT,
             };
-            PLAYER player = { .left = 300, .sliding = true };
+            memset(&g_Player, 0, sizeof(g_Player));
+            g_Player.left = 300;
+            g_Player.sliding = true;
             EVENTS events = {};
             Missiles_UpdateAndRender(
-                &m, &player, 1, (MISSILES_OUTPUT) { M_Action, &events });
-            CHECK(player.is_hit == (x > 0 && x < 3 && y > 0 && y < 3));
-            player.is_hit = false;
-            player.invincible = true;
+                &m, 1, (MISSILES_OUTPUT) { M_Action, &events });
+            CHECK(g_Player.is_hit == (x > 0 && x < 3 && y > 0 && y < 3));
+            g_Player.is_hit = false;
+            g_Player.invincible = true;
             Missiles_UpdateAndRender(
-                &m, &player, 1, (MISSILES_OUTPUT) { M_Action, &events });
-            CHECK(!player.is_hit);
+                &m, 1, (MISSILES_OUTPUT) { M_Action, &events });
+            CHECK(!g_Player.is_hit);
         }
     }
 }

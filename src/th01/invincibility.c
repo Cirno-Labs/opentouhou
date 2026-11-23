@@ -1,4 +1,5 @@
 #include "th01/invincibility.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
@@ -53,10 +54,9 @@ void Invincibility_Put(
 }
 
 void Invincibility_UpdateAndRender(
-    INVINCIBILITY *const state, const INVINCIBILITY_ASSETS *const assets,
-    const PLAYER *const player, uint32_t *const rng)
+    INVINCIBILITY *const state, const INVINCIBILITY_ASSETS *const assets)
 {
-    if (!player->invincible) {
+    if (!g_Player.invincible) {
         if (state->frame[0] == 255) {
             return;
         }
@@ -77,10 +77,10 @@ void Invincibility_UpdateAndRender(
                 Sprite_Restore16(state->left[i], state->top[i], 16, 8);
             }
             state->left[i] =
-                (int16_t)(MasterRng_Next(rng) % 48 + player->left - 8);
+                (int16_t)(MasterRng_Next(&g_Rng) % 48 + g_Player.left - 8);
             state->top[i] =
-                (int16_t)(MasterRng_Next(rng) % 48 + PLAYER_TOP - 16);
-            state->frame[i] = (int16_t)(MasterRng_Next(rng) % 7 + 1);
+                (int16_t)(MasterRng_Next(&g_Rng) % 48 + PLAYER_TOP - 16);
+            state->frame[i] = (int16_t)(MasterRng_Next(&g_Rng) % 7 + 1);
         }
         if (state->top[i] >= 0 && state->top[i] < 632) {
             Invincibility_Put(

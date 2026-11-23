@@ -1,11 +1,22 @@
 #include "th01/pellets.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "th01/sprite.h"
 
-static int16_t M_Speed(
-    const PELLET_SHARED *const shared, const int32_t rank, int16_t speed)
+#include <string.h>
+
+PELLETS g_Pellets;
+PELLET_SHARED g_PelletShared;
+
+void Pellets_Init(void)
+{
+    memset(&g_Pellets, 0, sizeof(g_Pellets));
+    memset(&g_PelletShared, 0, sizeof(g_PelletShared));
+}
+
+static int16_t M_Speed(const int32_t rank, int16_t speed)
 {
     speed = Math16_Wrap(
         speed
@@ -13,20 +24,19 @@ static int16_t M_Speed(
                : rank == 1 ? 6
                : rank == 2 ? 12
                            : 18));
-    speed = Math16_Wrap(speed + Math16_Wrap(shared->speed * speed) / 40);
+    speed = Math16_Wrap(speed + Math16_Wrap(g_PelletShared.speed * speed) / 40);
     return speed < 16 ? 16 : speed;
 }
 
 static void M_Init(
-    PELLET *const p, PELLETS *const pellets, const int16_t left,
-    const int16_t top, const int16_t group)
+    PELLET *const p, const int16_t left, const int16_t top, const int16_t group)
 {
     p->decay_frame = 0;
     p->left = Math16_FromPixel(left);
     p->top = Math16_FromPixel(top);
     p->cloud_left = left;
     p->cloud_top = top;
-    if (pellets->spawn_with_cloud) {
+    if (g_Pellets.spawn_with_cloud) {
         p->cloud_frame = 1;
     } else {
         p->moving = true;
@@ -34,16 +44,15 @@ static void M_Init(
     p->from_group = group;
     p->previous_left = -1;
     p->age = 0;
-    pellets->alive_count_excluding_clouds_after_reset =
-        Math16_Wrap(pellets->alive_count_excluding_clouds_after_reset + 1);
+    g_Pellets.alive_count_excluding_clouds_after_reset =
+        Math16_Wrap(g_Pellets.alive_count_excluding_clouds_after_reset + 1);
 }
 
-static MATH16_VECTOR M_Aim(
-    const PELLET *const p, const PLAYER *const player, const int16_t speed)
+static MATH16_VECTOR M_Aim(const PELLET *const p, const int16_t speed)
 {
     return Math16_Aim(
         (MATH16_VECTOR) { Math16_ToPixel(p->left), Math16_ToPixel(p->top) },
-        (MATH16_VECTOR) { Math16_Wrap(player->left + 8), 384 }, speed, 0);
+        (MATH16_VECTOR) { Math16_Wrap(g_Player.left + 8), 384 }, speed, 0);
 }
 
 static void M_Restore(const PELLET *const p, const bool current)
@@ -53,8 +62,7 @@ static void M_Restore(const PELLET *const p, const bool current)
         Math16_ToPixel(current ? p->top : p->previous_top), 16, 8);
 }
 
-static void M_Motion(
-    PELLET *const p, const PLAYER *const player, uint32_t *const rng)
+static void M_Motion(PELLET *const p)
 {
     switch (p->motion_type) {
     case PELLET_GRAVITY:
@@ -62,7 +70,7 @@ static void M_Motion(
         break;
     case PELLET_SLING_AIMED:
         if (p->sling_direction == 0) {
-            p->sling_direction = (int16_t)((MasterRng_Next(rng) & 1) + 1);
+            p->sling_direction = (int16_t)((MasterRng_Next(&g_Rng) & 1) + 1);
         }
         p->velocity = Math16_Vector(p->speed, p->angle);
         if (p->sling_direction != 1) {
@@ -72,7 +80,7 @@ static void M_Motion(
         }
         p->angle = Math16_Wrap(p->angle + 8);
         if (p->angle > 256) {
-            p->velocity = M_Aim(p, player, p->speed);
+            p->velocity = M_Aim(p, p->speed);
             p->from_group = PELLET_GROUP_SINGLE_AIMED;
             p->angle = 0;
         }
@@ -113,7 +121,7 @@ static void M_Motion(
         p->angle = Math16_Wrap(p->angle + 4);
         break;
     case PELLET_CHASE: {
-        const MATH16_VECTOR target = M_Aim(p, player, p->speed);
+        const MATH16_VECTOR target = M_Aim(p, p->speed);
         if (p->top < 320 * 16) {
             p->velocity.x = Math16_Wrap(
                 p->velocity.x + (p->velocity.x < target.x)
@@ -143,7 +151,7 @@ static bool M_Visible(PELLET *const p, const PELLET_CONTEXT *const context)
     const int16_t left = Math16_ToPixel(p->left);
     const int16_t top = Math16_ToPixel(p->top);
     for (int32_t i = 0; i < 3; i++) {
-        const SHOT *const shot = &context->shots->slots[i];
+        const SHOT *const shot = &g_Shots.slots[i];
         if ((shot->moving
              && M_Overlap(left, top, shot->left, shot->top, 16, 16))
             || M_Overlap(
@@ -154,22 +162,19 @@ static bool M_Visible(PELLET *const p, const PELLET_CONTEXT *const context)
     if (p->decay_frame != 0) {
         return true;
     }
-    if (M_Overlap(left, top, context->orb->left, context->orb->top, 32, 32)
+    if (M_Overlap(left, top, g_Orb.left, g_Orb.top, 32, 32)
         || M_Overlap(
-            Math16_Wrap(left + 8), top, context->orb->left, context->orb->top,
-            32, 32)) {
+            Math16_Wrap(left + 8), top, g_Orb.left, g_Orb.top, 32, 32)) {
         p->velocity.x = (int16_t)(p->velocity.x / 2 - (p->velocity.x % 2 < 0));
         p->velocity.y = (int16_t)(p->velocity.y / 2 - (p->velocity.y % 2 < 0));
         p->decay_frame = 1;
-        context->shared->destroy_score_delta =
-            (uint16_t)(context->shared->destroy_score_delta + 10);
+        g_PelletShared.destroy_score_delta =
+            (uint16_t)(g_PelletShared.destroy_score_delta + 10);
         return true;
     }
-    if (context->player->deflecting
-        && M_Overlap(
-            left, top, Math16_Wrap(context->player->left - 8), 352, 48, 48)) {
-        p->velocity =
-            Math16_Vector(128, left <= context->player->left + 12 ? 128 : 0);
+    if (g_Player.deflecting
+        && M_Overlap(left, top, Math16_Wrap(g_Player.left - 8), 352, 48, 48)) {
+        p->velocity = Math16_Vector(128, left <= g_Player.left + 12 ? 128 : 0);
         if (p->from_group == 0) {
             p->motion_type = PELLET_REGULAR;
         }
@@ -178,11 +183,10 @@ static bool M_Visible(PELLET *const p, const PELLET_CONTEXT *const context)
     return true;
 }
 
-static void M_Clouds(
-    PELLETS *const pellets, const PELLET_CONTEXT *const context)
+static void M_Clouds(const PELLET_CONTEXT *const context)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (p->cloud_frame == 0) {
             continue;
         }
@@ -200,45 +204,43 @@ static void M_Clouds(
     }
 }
 
-static void M_Remove(PELLETS *const pellets, PELLET *const p)
+static void M_Remove(PELLET *const p)
 {
     p->moving = false;
     p->decay_frame = 0;
-    pellets->alive_count_excluding_clouds_after_reset =
-        Math16_Wrap(pellets->alive_count_excluding_clouds_after_reset - 1);
+    g_Pellets.alive_count_excluding_clouds_after_reset =
+        Math16_Wrap(g_Pellets.alive_count_excluding_clouds_after_reset - 1);
 }
 
 void Pellets_AddGroup(
-    PELLETS *const pellets, PELLET_SHARED *const shared,
-    const PLAYER *const player, uint32_t *const rng, const int32_t rank,
-    const int16_t left, const int16_t top, const PELLET_GROUP group,
-    int16_t speed)
+    const int32_t rank, const int16_t left, const int16_t top,
+    const PELLET_GROUP group, int16_t speed)
 {
-    if (pellets->alive_count_excluding_clouds_after_reset > PELLETS_COUNT
+    if (g_Pellets.alive_count_excluding_clouds_after_reset > PELLETS_COUNT
         || left >= 640 || left < -8 || top < 56 || top > 400
         || (group != 1 && (group < 12 || group > 30))) {
         return;
     }
-    speed = M_Speed(shared, rank, speed);
+    speed = M_Speed(rank, speed);
     int32_t group_i = 0;
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (p->moving || p->cloud_frame != 0) {
             continue;
         }
-        M_Init(p, pellets, left, top, (int16_t)group);
+        M_Init(p, left, top, (int16_t)group);
         int32_t count = 1;
         if (group == PELLET_GROUP_SINGLE) {
             p->velocity = (MATH16_VECTOR) { 0, speed };
         } else if (group == PELLET_GROUP_SINGLE_AIMED) {
-            p->velocity = M_Aim(p, player, speed);
+            p->velocity = M_Aim(p, speed);
         } else {
             int32_t angle;
             bool aimed = group >= PELLET_GROUP_TWO_WIDE_AIMED;
             if (group == PELLET_GROUP_RANDOM_NARROW_AIMED) {
-                angle = (MasterRng_Next(rng) & 15) - 7;
+                angle = (MasterRng_Next(&g_Rng) & 15) - 7;
             } else if (group == PELLET_GROUP_RANDOM_WIDE) {
-                angle = (MasterRng_Next(rng) & 63) + 32;
+                angle = (MasterRng_Next(&g_Rng) & 63) + 32;
                 aimed = false;
             } else {
                 const int32_t spread = ((int32_t)group - 13) % 8;
@@ -265,7 +267,7 @@ void Pellets_AddGroup(
             if (aimed) {
                 angle += Math16_Angle(
                     Math16_Wrap(384 - top),
-                    Math16_Wrap(player->left + 12 - left));
+                    Math16_Wrap(g_Player.left + 12 - left));
             }
             p->velocity = Math16_Vector(speed, (uint8_t)angle);
         }
@@ -276,22 +278,21 @@ void Pellets_AddGroup(
 }
 
 void Pellets_AddSingle(
-    PELLETS *const pellets, const PELLET_SHARED *const shared,
     const int32_t rank, const int16_t left, const int16_t top,
     const uint8_t angle, const int16_t speed_base, const PELLET_MOTION motion,
     const int16_t speed_for_motion, const int16_t spin_center_x,
     const int16_t spin_center_y)
 {
-    if (pellets->alive_count_excluding_clouds_after_reset > PELLETS_COUNT) {
+    if (g_Pellets.alive_count_excluding_clouds_after_reset > PELLETS_COUNT) {
         return;
     }
-    const int16_t speed = M_Speed(shared, rank, speed_base);
+    const int16_t speed = M_Speed(rank, speed_base);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (p->moving || p->cloud_frame != 0) {
             continue;
         }
-        M_Init(p, pellets, left, top, 0);
+        M_Init(p, left, top, 0);
         p->motion_type = (uint8_t)motion;
         p->spin_center = (MATH16_VECTOR) { Math16_FromPixel(spin_center_x),
                                            Math16_FromPixel(spin_center_y) };
@@ -307,22 +308,22 @@ void Pellets_AddSingle(
     }
 }
 
-void Pellets_UpdateAndRender(
-    PELLETS *const pellets, const PELLET_CONTEXT *const context)
+void Pellets_UpdateAndRender(const PELLET_CONTEXT *const context)
 {
-    pellets->interlace_field = !pellets->interlace_field;
-    M_Clouds(pellets, context);
+    g_Pellets.interlace_field = !g_Pellets.interlace_field;
+    M_Clouds(context);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (!p->moving) {
             continue;
         }
-        if ((!pellets->interlace || pellets->interlace_field == ((i & 1) != 0))
+        if ((!g_Pellets.interlace
+             || g_Pellets.interlace_field == ((i & 1) != 0))
             && !p->not_rendered && p->previous_left != -1) {
             M_Restore(p, false);
         }
         if (p->from_group == 0 && p->motion_type != 0) {
-            M_Motion(p, context->player, context->rng);
+            M_Motion(p);
         }
         if (p->velocity.y > 128) {
             p->velocity.y = 128;
@@ -334,25 +335,25 @@ void Pellets_UpdateAndRender(
         p->left = Math16_Wrap(p->left + p->velocity.x);
         if (p->decay_frame == 0
             && Shots_HitTestPellet(
-                context->shots, Math16_ToPixel(p->left), Math16_ToPixel(p->top),
+                Math16_ToPixel(p->left), Math16_ToPixel(p->top),
                 context->shots_output)) {
-            M_Remove(pellets, p);
+            M_Remove(p);
             M_Restore(p, false);
         }
         if (p->top >= 400 * 16 || p->top < 64 * 16 || p->left >= 632 * 16
             || p->left <= 0) {
-            M_Remove(pellets, p);
+            M_Remove(p);
             M_Restore(p, false);
         }
     }
-    Shots_UpdateAndRender(
-        context->shots, context->orb, context->rng, context->shots_output);
+    Shots_UpdateAndRender(context->shots_output);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (!p->moving) {
             continue;
         }
-        if (!pellets->interlace || pellets->interlace_field == ((i & 1) != 0)) {
+        if (!g_Pellets.interlace
+            || g_Pellets.interlace_field == ((i & 1) != 0)) {
             if (M_Visible(p, context)) {
                 p->not_rendered = false;
                 if (p->decay_frame < 20) {
@@ -373,54 +374,53 @@ void Pellets_UpdateAndRender(
         if (p->decay_frame != 0) {
             p->decay_frame = Math16_Wrap(p->decay_frame + 1);
             if (p->decay_frame > 21) {
-                M_Remove(pellets, p);
+                M_Remove(p);
             }
         } else if (
-            !context->player->invincible
-            && Math16_ToPixel(p->left) >= context->player->left + 4
-            && Math16_ToPixel(p->left) <= context->player->left + 20
-            && Math16_ToPixel(p->top) >= 368 + context->player->sliding * 8
+            !g_Player.invincible && Math16_ToPixel(p->left) >= g_Player.left + 4
+            && Math16_ToPixel(p->left) <= g_Player.left + 20
+            && Math16_ToPixel(p->top) >= 368 + g_Player.sliding * 8
             && Math16_ToPixel(p->top) < 392) {
-            context->player->is_hit = true;
+            g_Player.is_hit = true;
             if (!p->not_rendered) {
                 M_Restore(p, false);
             }
-            M_Remove(pellets, p);
+            M_Remove(p);
         }
     }
 }
 
-void Pellets_Decay(PELLETS *const pellets, PELLET_SHARED *const shared)
+void Pellets_Decay(void)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (p->moving && p->decay_frame == 0) {
             p->velocity.x = (int16_t)(p->velocity.x * 2 / 3);
             p->velocity.y = (int16_t)(p->velocity.y * 2 / 3);
             p->decay_frame = 1;
-            shared->destroy_score_delta =
-                (uint16_t)(shared->destroy_score_delta + 10);
+            g_PelletShared.destroy_score_delta =
+                (uint16_t)(g_PelletShared.destroy_score_delta + 10);
         }
     }
 }
 
-void Pellets_ResetMoving(PELLETS *const pellets)
+void Pellets_ResetMoving(void)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (p->moving) {
             p->moving = false;
             p->decay_frame = 0;
             p->cloud_frame = 0;
         }
     }
-    pellets->alive_count_excluding_clouds_after_reset = 0;
+    g_Pellets.alive_count_excluding_clouds_after_reset = 0;
 }
 
-void Pellets_EraseAndResetMoving(PELLETS *const pellets)
+void Pellets_EraseAndResetMoving(void)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &pellets->slots[i];
+        PELLET *const p = &g_Pellets.slots[i];
         if (p->moving) {
             if (!p->not_rendered) {
                 M_Restore(p, true);
@@ -430,23 +430,23 @@ void Pellets_EraseAndResetMoving(PELLETS *const pellets)
             p->cloud_frame = 0;
         }
     }
-    pellets->alive_count_excluding_clouds_after_reset = 0;
+    g_Pellets.alive_count_excluding_clouds_after_reset = 0;
 }
 
-void Pellets_SpeedLower(
-    PELLET_SHARED *const shared, const int16_t max, const int16_t delta)
+void Pellets_SpeedLower(const int16_t max, const int16_t delta)
 {
-    shared->speed =
-        shared->speed > max ? max : Math16_Wrap(shared->speed + delta);
-    if (shared->speed < -15) {
-        shared->speed = -15;
+    g_PelletShared.speed = g_PelletShared.speed > max
+        ? max
+        : Math16_Wrap(g_PelletShared.speed + delta);
+    if (g_PelletShared.speed < -15) {
+        g_PelletShared.speed = -15;
     }
 }
 
-void Pellets_SpeedRaise(PELLET_SHARED *const shared, const int16_t delta)
+void Pellets_SpeedRaise(const int16_t delta)
 {
-    shared->speed = Math16_Wrap(shared->speed + delta);
-    if (shared->speed > 20) {
-        shared->speed = 20;
+    g_PelletShared.speed = Math16_Wrap(g_PelletShared.speed + delta);
+    if (g_PelletShared.speed > 20) {
+        g_PelletShared.speed = 20;
     }
 }

@@ -62,13 +62,14 @@ typedef struct {
     bool interlace_field, interlace, spawn_with_cloud;
 } PELLETS;
 
+extern PELLETS g_Pellets;
+extern PELLET_SHARED g_PelletShared;
+
+// Zeroes the pellets and their shared speed for a new world.
+void Pellets_Init(void);
+
 typedef struct {
     const PELLET_ASSETS *assets;
-    PLAYER *player;
-    ORB *orb;
-    SHOTS *shots;
-    uint32_t *rng;
-    PELLET_SHARED *shared;
     SHOTS_OUTPUT shots_output;
 } PELLET_CONTEXT;
 
@@ -76,8 +77,8 @@ typedef struct {
 // resets: sling direction, angle and unused motion fields survive reuse.
 // Reset leaves pending delay clouds alive and sets the count to zero.
 // This count can be negative and does not report pool occupancy.
-void Pellets_ResetMoving(PELLETS *pellets);
-void Pellets_EraseAndResetMoving(PELLETS *pellets);
+void Pellets_ResetMoving(void);
+void Pellets_EraseAndResetMoving(void);
 
 // Spawns only into actually free slots. No RNG draw occurs for a full pool.
 // Group coordinates must be in [-8,639] by [56,400]. Invalid groups are
@@ -86,19 +87,17 @@ void Pellets_EraseAndResetMoving(PELLETS *pellets);
 // arguments left/top and spin_center are integer pixels. Rank tuning uses
 // 0,6,12,18 subpixels for Easy, Normal, Hard, Lunatic (also invalid ranks).
 void Pellets_AddGroup(
-    PELLETS *pellets, PELLET_SHARED *shared, const PLAYER *player,
-    uint32_t *rng, int32_t rank, int16_t left, int16_t top, PELLET_GROUP group,
-    int16_t speed);
+    int32_t rank, int16_t left, int16_t top, PELLET_GROUP group, int16_t speed);
 void Pellets_AddSingle(
-    PELLETS *pellets, const PELLET_SHARED *shared, int32_t rank, int16_t left,
-    int16_t top, uint8_t angle, int16_t speed_base, PELLET_MOTION motion,
-    int16_t speed_for_motion, int16_t spin_center_x, int16_t spin_center_y);
+    int32_t rank, int16_t left, int16_t top, uint8_t angle, int16_t speed_base,
+    PELLET_MOTION motion, int16_t speed_for_motion, int16_t spin_center_x,
+    int16_t spin_center_y);
 
 // Slows each moving, non-decaying pellet, starts decay and awards 10.
 // Pending clouds are excluded. Overflow of the shared score wraps.
-void Pellets_Decay(PELLETS *pellets, PELLET_SHARED *shared);
-void Pellets_SpeedLower(PELLET_SHARED *shared, int16_t max, int16_t delta);
-void Pellets_SpeedRaise(PELLET_SHARED *shared, int16_t delta);
+void Pellets_Decay(void);
+void Pellets_SpeedLower(int16_t max, int16_t delta);
+void Pellets_SpeedRaise(int16_t delta);
 
 // Runs clouds, all pellet motion and shot collision/clipping, then calls
 // real Shots_UpdateAndRender exactly once, then draws pellets and tests
@@ -110,4 +109,4 @@ void Pellets_SpeedRaise(PELLET_SHARED *shared, int16_t delta);
 // update shots separately. Every reached shot callback is required and
 // synchronous, and must not modify pellet, player, Orb or shot state.
 // Requires immutable loaded masks. Gameplay scene wiring remains external.
-void Pellets_UpdateAndRender(PELLETS *pellets, const PELLET_CONTEXT *context);
+void Pellets_UpdateAndRender(const PELLET_CONTEXT *context);

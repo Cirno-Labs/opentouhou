@@ -43,7 +43,7 @@ static void M_Restore(
     Video_SelectDrawingPage(1);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     Video_SelectDrawingPage(0);
-    Sprite_PtnPut(c->miko, 0, -1, c->player->left, PLAYER_TOP);
+    Sprite_PtnPut(c->miko, 0, -1, g_Player.left, PLAYER_TOP);
     defeat->phase = BOSS_DEFEAT_WHITEIN;
 }
 
@@ -118,7 +118,7 @@ bool BossDefeat_Resume(
                 && M_Whitein(c)) {
                 if (defeat->kind == BOSS_DEFEAT_REGULAR) {
                     *c->stage_cleared = true;
-                    c->player->is_hit = true;
+                    g_Player.is_hit = true;
                 }
                 defeat->phase = BOSS_DEFEAT_DONE;
                 return true;

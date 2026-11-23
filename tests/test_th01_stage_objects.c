@@ -1,4 +1,9 @@
 #include "th01/stage_objects.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 
@@ -12,7 +17,6 @@ typedef struct {
     PTN sprites;
     STAGE_DATA_STAGE layouts[5];
     STAGE_OBJECTS objects;
-    uint32_t rng;
     VIDEO saved_video;
     FRAME_VSYNC saved_vsync;
 } CASE;
@@ -21,7 +25,13 @@ static CASE *m_Active;
 
 static void M_Init(CASE *const state)
 {
-    *state = (CASE) { .rng = 1 };
+    *state = (CASE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
+    g_Rng = 1;
     Arena_Init(&state->arena, "stage objects", 2 * 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
     state->sprites =
@@ -54,13 +64,13 @@ static void M_Begin(CASE *const state, const bool first)
     const STAGE_DATA data = { .stages = state->layouts };
     StageObjects_Init(
         &state->objects, &data, 0, first, Arena_Allocator(&state->arena),
-        &state->sprites, &state->rng);
+        &state->sprites);
 }
 
 TEST(boss_returns_before_allocation_rng_or_access)
 {
     STAGE_OBJECTS objects = { .card_count = 20, .obstacle_count = 9 };
-    StageObjects_Init(&objects, nullptr, 4, false, nullptr, nullptr, nullptr);
+    StageObjects_Init(&objects, nullptr, 4, false, nullptr, nullptr);
     CHECK_EQ_INT(objects.card_count, 0);
     CHECK_EQ_INT(objects.obstacle_count, 0);
     CHECK(objects.entrance_done);
@@ -81,10 +91,10 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
     state.layouts[0].cells[1][0].card = true;
     state.layouts[0].cells[0][1].obstacle = STAGE_DATA_PORTAL;
     Video_SelectDrawingPage(1);
-    uint32_t rng = state.rng;
+    uint32_t rng = g_Rng;
     MasterRng_Next(&rng);
     M_Begin(&state, true);
-    CHECK_EQ_INT(state.rng, rng);
+    CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(state.objects.card_count, 2);
     CHECK_EQ_INT(state.objects.obstacle_count, 2);
     CHECK_EQ_INT(state.objects.cards[0].left, 96);
@@ -184,8 +194,7 @@ TEST(stage_reloads_keep_static_obstacle_history)
     CHECK_EQ_INT(state.objects.entered_portal, 4);
     CHECK(state.objects.portal_active);
     CHECK(state.objects.vertical_bar_active);
-    StageObjects_Init(
-        &state.objects, nullptr, 4, false, nullptr, nullptr, nullptr);
+    StageObjects_Init(&state.objects, nullptr, 4, false, nullptr, nullptr);
     CHECK_EQ_INT(state.objects.card_count, 0);
     CHECK_EQ_INT(state.objects.destination_left, 256);
     CHECK_EQ_INT(state.objects.destination_top, 192);
@@ -225,16 +234,18 @@ TEST(prepared_storage_matches_allocated_stages_without_growth)
         allocated.objects.destination_left = 256;
         prepared.objects.destination_left = 256;
         M_Use(&allocated);
+        const uint32_t rng = g_Rng;
         StageObjects_Init(
             &allocated.objects, &a, (int16_t)stage, stage % 2 == 0,
-            Arena_Allocator(&allocated.arena), &allocated.sprites,
-            &allocated.rng);
+            Arena_Allocator(&allocated.arena), &allocated.sprites);
+        const uint32_t allocated_rng = g_Rng;
+        g_Rng = rng;
         M_Use(&prepared);
         StageObjects_InitPrepared(
             &prepared.objects, &p, (int16_t)stage, stage % 2 == 0, &storage,
-            &prepared.sprites, &prepared.rng);
+            &prepared.sprites);
         CHECK_EQ_INT(prepared.arena.used, used);
-        CHECK_EQ_INT(prepared.rng, allocated.rng);
+        CHECK_EQ_INT(g_Rng, allocated_rng);
         CHECK_EQ_INT(prepared.objects.destination_left, 256);
         CHECK_EQ_INT(prepared.objects.card_count, allocated.objects.card_count);
         CHECK_EQ_INT(

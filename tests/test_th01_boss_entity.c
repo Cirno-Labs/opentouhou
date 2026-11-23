@@ -41,18 +41,20 @@ TEST(orb_hit_uses_previous_position_and_inclusive_edges)
 {
     BOSS_ENTITY entity = { .left = 100, .top = 120 };
     BossEntity_SetOrbHitbox(&entity, (BOSS_BOUNDS) { 0, 96, 0, 96 });
-    ORB orb = {
-        .left = 600, .top = 368, .previous_left = 92, .previous_top = 112
-    };
-    CHECK(BossEntity_HitTestOrb(&entity, &orb));
-    orb.previous_left = 172;
-    orb.previous_top = 192;
-    CHECK(BossEntity_HitTestOrb(&entity, &orb));
-    orb.previous_left++;
-    CHECK(!BossEntity_HitTestOrb(&entity, &orb));
-    orb.previous_left = 92;
+    memset(&g_Orb, 0, sizeof(g_Orb));
+    g_Orb.left = 600;
+    g_Orb.top = 368;
+    g_Orb.previous_left = 92;
+    g_Orb.previous_top = 112;
+    CHECK(BossEntity_HitTestOrb(&entity));
+    g_Orb.previous_left = 172;
+    g_Orb.previous_top = 192;
+    CHECK(BossEntity_HitTestOrb(&entity));
+    g_Orb.previous_left++;
+    CHECK(!BossEntity_HitTestOrb(&entity));
+    g_Orb.previous_left = 92;
     entity.orb_inactive = true;
-    CHECK(!BossEntity_HitTestOrb(&entity, &orb));
+    CHECK(!BossEntity_HitTestOrb(&entity));
 }
 
 TEST(movement_wraps_then_applies_both_clamp_edges)

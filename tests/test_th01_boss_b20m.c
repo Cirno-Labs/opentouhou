@@ -1,4 +1,9 @@
 #include "th01/boss_b20m.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 #include "core/base/arena.h"
 #include "test.h"
@@ -98,17 +103,12 @@ typedef struct {
     HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B20M_CONTEXT context;
-    PELLETS pellets;
-    PELLET_SHARED shared;
     SHOOTOUT_LASERS lasers;
     STAGE_OBJECTS objects;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
     STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage;
-    uint32_t high_score, rng;
+    uint32_t high_score;
     int16_t lives;
     bool damage, cleared, first_stage, timer_initialized;
     GRF mask;
@@ -140,6 +140,11 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     GameInput_Init();
     StageTimer_Init();
     M_Assets(&f->assets, arena);
@@ -168,37 +173,31 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->stage = (PTN) { .count = 4, .pixels = Allocator_Alloc(a, 4096) };
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
-    f->player.left = 300;
-    f->player.invincible = true;
+    g_Player.left = 300;
+    g_Player.invincible = true;
     f->lives = 3;
-    f->orb.top = 64;
-    f->orb.previous_top = 64;
+    g_Orb.top = 64;
+    g_Orb.previous_top = 64;
     f->display = (HUD_CONTEXT) { .mask = &f->mask,
                                  .stage_number = 20,
                                  .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives };
     f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
                                   .hud = &f->hud,
                                   .display = &f->display,
                                   .health = &f->health,
-                                  .shots = &f->shots,
                                   .shots_output = { M_Shot, f },
-                                  .orb = &f->orb,
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678,
                                   .effect = M_Effect,
                                   .user = f };
     f->context = (B20M_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit,
-                                  .pellets = &f->pellets,
-                                  .pellet_shared = &f->shared,
                                   .lasers = &f->lasers,
                                   .objects = &f->objects,
-                                  .rng = &f->rng,
                                   .game_cleared = &f->cleared,
                                   .audio = M_Audio,
                                   .first_stage = &f->first_stage,
@@ -222,12 +221,12 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     FIXTURE f;
     M_Fixture(&f, &arena);
     memset(f.assets.lower.pixels, 12, VIDEO_PAGE_SIZE);
-    f.rng = 5;
+    g_Rng = 5;
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     B20M_BeginEntrance(&f.context);
-    CHECK(f.pellets.interlace);
+    CHECK(g_Pellets.interlace);
     CHECK_EQ_INT(f.audio_count, 2);
     CHECK(!B20M_ResumeEntrance(&f.context, tick));
     const B20M pending = g_B20M;
@@ -240,7 +239,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
         B20M_ResumeEntrance(&f.context, tick);
     }
     CHECK(!g_B20M.entrance_active);
-    CHECK_EQ_INT(f.rng, f.hit.frame_rand);
+    CHECK_EQ_INT(g_Rng, f.hit.frame_rand);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
@@ -258,10 +257,10 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     const size_t used = arena.used;
     CHECK(!B20M_UpdateAndRender(&f.context, tick));
     const B20M pending = g_B20M;
-    const uint32_t rng = f.rng;
+    const uint32_t rng = g_Rng;
     CHECK(!B20M_UpdateAndRender(&f.context, tick));
     CHECK(memcmp(&g_B20M, &pending, sizeof(g_B20M)) == 0);
-    CHECK_EQ_INT(f.rng, rng);
+    CHECK_EQ_INT(g_Rng, rng);
     for (int32_t i = 0; g_B20M.sequence != B20M_SEQUENCE_NONE && i < 200; i++) {
         tick++;
         Frame_VSync();
@@ -293,7 +292,7 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 M_Fixture(&f, &arena);
                 f.display.rank = rank;
                 g_Session.settings.difficulty = rank;
-                f.rng = 0x12345678u + (uint32_t)rank;
+                g_Rng = 0x12345678u + (uint32_t)rank;
                 g_B20M.phase = phases[phase];
                 g_B20M.pattern = pattern;
                 g_B20M.patterns_until_next = 30000;
@@ -323,7 +322,7 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             M_Fixture(&f, &arena);
             f.display.rank = rank;
             g_Session.settings.difficulty = rank;
-            f.rng = 0xabcdef01u + (uint32_t)rank;
+            g_Rng = 0xabcdef01u + (uint32_t)rank;
             g_B20M.phase = B20M_PHASE_SECOND_FORM;
             g_B20M.hp = 6;
             g_B20M.pattern = pattern;
@@ -351,25 +350,25 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     M_Fixture(&f, &arena);
     g_B20M.phase = B20M_PHASE_TRANSFORM;
     g_B20M.hp = 0;
-    f.orb.previous_left = 123;
-    f.orb.previous_top = 234;
-    f.player.invincible = true;
-    f.player.invincibility_time = 91;
-    f.player.deflecting = true;
-    f.player.bomb_damaging = true;
+    g_Orb.previous_left = 123;
+    g_Orb.previous_top = 234;
+    g_Player.invincible = true;
+    g_Player.invincibility_time = 91;
+    g_Player.deflecting = true;
+    g_Player.bomb_damaging = true;
     g_B20M.leaves.flag[7] = 6;
     g_GameInput.bomb = true;
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(!B20M_UpdateAndRender(&f.context, tick));
-    CHECK_EQ_INT(f.player.left, 304);
-    CHECK_EQ_INT(f.orb.left, 600);
-    CHECK_EQ_INT(f.orb.top, 280);
-    CHECK_EQ_INT(f.orb.previous_left, 123);
-    CHECK_EQ_INT(f.orb.previous_top, 234);
-    CHECK(!f.player.deflecting);
-    CHECK(!f.player.bomb_damaging);
+    CHECK_EQ_INT(g_Player.left, 304);
+    CHECK_EQ_INT(g_Orb.left, 600);
+    CHECK_EQ_INT(g_Orb.top, 280);
+    CHECK_EQ_INT(g_Orb.previous_left, 123);
+    CHECK_EQ_INT(g_Orb.previous_top, 234);
+    CHECK(!g_Player.deflecting);
+    CHECK(!g_Player.bomb_damaging);
     CHECK(!g_GameInput.bomb);
     for (int32_t i = 0; g_B20M.sequence != B20M_SEQUENCE_NONE && i < 1000;
          i++) {
@@ -380,8 +379,8 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_SECOND_FORM);
     CHECK_EQ_INT(g_B20M.hp, 6);
     CHECK_EQ_INT(g_B20M.frame, 0);
-    CHECK_EQ_INT(f.player.invincibility_time, 0);
-    CHECK(!f.player.invincible);
+    CHECK_EQ_INT(g_Player.invincibility_time, 0);
+    CHECK(!g_Player.invincible);
     CHECK_EQ_INT(g_B20M.leaves.flag[7], 0);
     CHECK_EQ_INT(f.health.first_white, 10);
     CHECK_EQ_INT(f.health.first_redwhite, 3);
@@ -401,8 +400,8 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     M_Fixture(&f, &arena);
     g_B20M.phase = B20M_PHASE_SECOND_FORM;
     g_B20M.hp = 1;
-    f.orb.left = 320;
-    f.orb.top = 120;
+    g_Orb.left = 320;
+    g_Orb.top = 120;
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
@@ -438,22 +437,22 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     g_B20M.frame = 49;
     g_B20M.pattern = 0;
     g_B20M.patterns_until_next = 10;
-    f.player.invincible = false;
+    g_Player.invincible = false;
     g_B20M.birds.alive[0] = true;
     g_B20M.birds.left[0] = 300;
     g_B20M.birds.top[0] = 368;
     Frame_Reset();
     uint64_t tick = 100;
-    const uint32_t rng = f.rng;
+    const uint32_t rng = g_Rng;
     const size_t used = arena.used;
     CHECK(!B20M_UpdateAndRender(&f.context, tick));
-    CHECK(f.player.is_hit);
-    CHECK_EQ_INT(f.rng, rng);
+    CHECK(g_Player.is_hit);
+    CHECK_EQ_INT(g_Rng, rng);
     const B20M pending = g_B20M;
     CHECK(!B20M_UpdateAndRender(&f.context, tick + 5));
     CHECK(memcmp(&g_B20M, &pending, sizeof(g_B20M)) == 0);
     CHECK(B20M_UpdateAndRender(&f.context, tick + 6));
-    CHECK(f.rng != rng);
+    CHECK(g_Rng != rng);
     CHECK_EQ_INT(g_B20M.frame, 50);
     CHECK_EQ_INT(g_B20M.resume_stage, B20M_RESUME_NONE);
     CHECK_EQ_INT(arena.used, used);

@@ -47,6 +47,11 @@ typedef struct {
     bool bombing, combo_enabled;
 } PLAYER;
 
+extern PLAYER g_Player;
+
+// Zeroes the player for a new world.
+void Player_Init(void);
+
 typedef enum {
     PLAYER_ACTION_PTN_PUT,
     PLAYER_ACTION_PTN_ERASE,
@@ -72,14 +77,13 @@ typedef struct {
 
 typedef struct {
     void (*action)(void *user, PLAYER_ACTION action);
-    bool (*bomb_update)(void *user, PLAYER *player, int16_t frame);
+    bool (*bomb_update)(void *user, int16_t frame);
     void *user;
 } PLAYER_OUTPUT;
 
 // Keeps the suspended bomb branch. Zero-initialize before its first use.
 // The fields belong to the Player_ functions; never copy a pending token.
 typedef struct {
-    PLAYER *player;
     PLAYER_OUTPUT output;
     bool pending;
 } PLAYER_BOMB_CONTINUATION;
@@ -96,8 +100,8 @@ RESULT Player_ValidateSprites(const PLAYER_SPRITES *sprites);
 // Resets action state and consumes input.bomb without moving, drawing or
 // clearing hit, invincibility, remaining bombs or bomb_frame. Rank values
 // outside the four settings ranks use Normal's deflection duration.
-void Player_Reset(PLAYER *player, int32_t difficulty);
-void Player_MoveAndClamp(PLAYER *player, int16_t delta);
+void Player_Reset(int32_t difficulty);
+void Player_MoveAndClamp(int16_t delta);
 
 // Runs real movement, shots, swings, slides and all three combo stages.
 // Reads only supplied state/input/RNG and allocates nothing. Mutates held
@@ -119,9 +123,7 @@ void Player_MoveAndClamp(PLAYER *player, int16_t delta);
 // is_hit is set by real Orb repulsion tests if their friction reaches zero.
 // A miss requires its complete cooperative sequence before updates resume;
 // resetting alone does not implement a miss or change lives and bombs.
-void Player_UpdateAndRender(
-    PLAYER *player, ORB *orb, SHOTS *shots, uint32_t *rng,
-    PLAYER_OUTPUT output);
+void Player_UpdateAndRender(PLAYER_OUTPUT output);
 
 // Runs the same update until completion or the bomb callback boundary.
 // Returns true only when HUD decrement and Orb repulsion have completed and
@@ -131,8 +133,7 @@ void Player_UpdateAndRender(
 // that operation completes, including its nested waits. Never begin another
 // player update while continuation.pending. No action prefix is replayed.
 bool Player_BeginUpdate(
-    PLAYER_BOMB_CONTINUATION *continuation, PLAYER *player, ORB *orb,
-    SHOTS *shots, uint32_t *rng, PLAYER_OUTPUT output);
+    PLAYER_BOMB_CONTINUATION *continuation, PLAYER_OUTPUT output);
 void Player_FinishBombUpdate(PLAYER_BOMB_CONTINUATION *continuation, bool done);
 
 // Runs only drawing actions. Coordinates are regular player left values;

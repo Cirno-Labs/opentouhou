@@ -100,8 +100,7 @@ static void M_Resource(
     HUD *const hud, const HUD_CONTEXT *const c, const bool bomb,
     const int16_t previous, const bool initial)
 {
-    const int16_t count =
-        bomb ? c->player->remaining_bombs : *c->remaining_lives;
+    const int16_t count = bomb ? g_Player.remaining_bombs : *c->remaining_lives;
     ASSERT(count >= 0 && count <= HUD_RESOURCE_CAPACITY);
     ASSERT(previous >= 0 && previous <= HUD_RESOURCE_CAPACITY);
     uint8_t *const bg = bomb ? hud->bombs : hud->lives;

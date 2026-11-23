@@ -1,4 +1,11 @@
 #include "th01/miss.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
+
+#include <string.h>
 
 #include "pc98/zun/master_rng.h"
 
@@ -9,10 +16,6 @@
 
 typedef struct {
     ARENA arena;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
-    uint32_t rng;
     PTN miko, stage;
     int32_t events[8], event_count;
     int16_t previous_lives, previous_bombs;
@@ -27,10 +30,10 @@ static void M_Decay(void *const user)
 {
     CASE *const state = user;
     M_Event(state, 0);
-    CHECK_EQ_INT(state->player.mode, PLAYER_MODE_SPECIAL_FIRST);
-    CHECK_EQ_INT(state->shots.slots[0].moving, 0);
+    CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
+    CHECK_EQ_INT(g_Shots.slots[0].moving, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 120, 200), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(0, state->player.left, 352), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, g_Player.left, 352), 2);
 }
 
 static void M_Lives(void *const user, const int16_t previous)
@@ -38,7 +41,7 @@ static void M_Lives(void *const user, const int16_t previous)
     CASE *const state = user;
     M_Event(state, 1);
     state->previous_lives = previous;
-    CHECK_EQ_INT(state->player.mode, PLAYER_MODE_REGULAR);
+    CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_REGULAR);
 }
 
 static void M_Bombs(void *const user, const int16_t previous)
@@ -62,15 +65,25 @@ static void M_Lower(void *const user, const float minimum, const float delta)
 
 static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
 {
-    *state = (CASE) { .player = { .left = left,
-                                  .remaining_bombs = bombs,
-                                  .mode = PLAYER_MODE_SPECIAL_FIRST,
-                                  .is_hit = true,
-                                  .invincible = true,
-                                  .invincibility_time = 71,
-                                  .bomb_frame = 941 },
-                      .orb = { .left = 100, .top = 100, .rotation_frame = 8 },
-                      .rng = 1 };
+    *state = (CASE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
+    memset(&g_Player, 0, sizeof(g_Player));
+    g_Player.left = left;
+    g_Player.remaining_bombs = bombs;
+    g_Player.mode = PLAYER_MODE_SPECIAL_FIRST;
+    g_Player.is_hit = true;
+    g_Player.invincible = true;
+    g_Player.invincibility_time = 71;
+    g_Player.bomb_frame = 941;
+    memset(&g_Orb, 0, sizeof(g_Orb));
+    g_Orb.left = 100;
+    g_Orb.top = 100;
+    g_Orb.rotation_frame = 8;
+    g_Rng = 1;
     GameInput_Init();
     g_GameInput.bomb = true;
     g_GameInput.shot = true;
@@ -87,16 +100,12 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
         memset(state->miko.pixels + i * 1024, i % 14 + 1, 1024);
     }
     memset(state->stage.pixels, 4, 7 * 1024);
-    state->shots.slots[0] = (SHOT) { .left = 120, .top = 200, .moving = true };
+    g_Shots.slots[0] = (SHOT) { .left = 120, .top = 200, .moving = true };
 }
 
 static MISS_CONTEXT M_Context(CASE *const state, const int16_t extra)
 {
     return (MISS_CONTEXT) {
-        .player = &state->player,
-        .orb = &state->orb,
-        .shots = &state->shots,
-        .rng = &state->rng,
         .miko = &state->miko,
         .stage = &state->stage,
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
@@ -119,16 +128,16 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     Frame_Reset();
     const MISS_CONTEXT context = M_Context(&state, 1);
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
-    uint32_t rng = state.rng;
+    uint32_t rng = g_Rng;
     const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
     Miss_Begin(&miss, &context);
-    CHECK_EQ_INT(state.rng, rng);
+    CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 352), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 368), expected_image % 14 + 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
     CHECK(!Miss_Resume(&miss, &context));
     CHECK_EQ_INT(state.event_count, 0);
-    CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SPECIAL_FIRST);
+    CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
     Frame_VSync();
     CHECK(!Miss_Resume(&miss, &context));
     CHECK_EQ_INT(miss.phase, MISS_SHAKE_DELAY);
@@ -161,15 +170,15 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                                        : 2);
                 context.difficulty = rank;
                 context.remaining_lives = (int16_t)variant;
-                const int16_t previous_bombs = state.player.remaining_bombs;
-                const ORB orb = state.orb;
+                const int16_t previous_bombs = g_Player.remaining_bombs;
+                const ORB orb = g_Orb;
                 const size_t used = state.arena.used;
                 Frame_Reset();
                 g_VSync.count1 = counts[variant];
                 g_VSync.count2 = 32760;
                 MISS miss = {};
                 Miss_Begin(&miss, &context);
-                const uint32_t rng = state.rng;
+                const uint32_t rng = g_Rng;
                 int32_t edges = 0;
                 while (!Miss_Resume(&miss, &context) && edges < 100) {
                     const MISS snapshot = miss;
@@ -181,28 +190,26 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                     edges++;
                 }
                 CHECK_EQ_INT(edges, variant == 0 ? 82 : variant == 1 ? 81 : 83);
-                CHECK_EQ_INT(state.rng, rng);
+                CHECK_EQ_INT(g_Rng, rng);
                 CHECK_EQ_INT(state.arena.used, used);
-                CHECK(memcmp(&state.orb, &orb, sizeof(ORB)) == 0);
+                CHECK(memcmp(&g_Orb, &orb, sizeof(ORB)) == 0);
                 const int16_t right =
                     starts[x] + 160 >= 608 ? 608 : starts[x] + 160;
                 const int16_t left = starts[x] < 160 ? 0 : starts[x] - 160;
-                CHECK_EQ_INT(
-                    state.player.left, right + 20 * ((304 - right) / 20));
+                CHECK_EQ_INT(g_Player.left, right + 20 * ((304 - right) / 20));
                 CHECK_EQ_INT(miss.effect_left, left + 20 * ((304 - left) / 20));
-                CHECK(state.player.is_hit);
-                CHECK(state.player.invincible);
-                CHECK_EQ_INT(state.player.invincibility_time, 71);
-                CHECK_EQ_INT(state.player.bomb_frame, 941);
+                CHECK(g_Player.is_hit);
+                CHECK(g_Player.invincible);
+                CHECK_EQ_INT(g_Player.invincibility_time, 71);
+                CHECK_EQ_INT(g_Player.bomb_frame, 941);
                 CHECK(!g_GameInput.bomb);
                 CHECK(g_GameInput.shot);
                 CHECK(g_GameInput.strike);
                 const int8_t deflection[] = { 15, 12, 10, 8 };
-                CHECK_EQ_INT(state.player.deflect_duration, deflection[rank]);
+                CHECK_EQ_INT(g_Player.deflect_duration, deflection[rank]);
                 CHECK_EQ_INT(g_Video.scroll_top, 0);
                 CHECK_EQ_INT(state.previous_lives, variant + 1);
-                CHECK_EQ_INT(
-                    state.player.remaining_bombs, variant == 0 ? 2 : 5);
+                CHECK_EQ_INT(g_Player.remaining_bombs, variant == 0 ? 2 : 5);
                 CHECK_EQ_INT(state.event_count, variant == 2 ? 4 : 5);
                 CHECK_EQ_INT(state.events[0], 0);
                 CHECK_EQ_INT(state.events[1], 1);
