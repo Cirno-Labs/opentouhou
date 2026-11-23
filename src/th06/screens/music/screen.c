@@ -23,11 +23,6 @@
 #define M_TITLE_PARTS 0x100
 #define M_COMMENT_PARTS 0x200
 
-#define M_UP 0x10
-#define M_DOWN 0x20
-#define M_CONFIRM 0x1001
-#define M_CANCEL 0xa
-
 typedef enum {
     M_STATE_INTRO = 0,
     M_STATE_LIST = 1,
@@ -49,11 +44,6 @@ typedef struct {
 } M_SCREEN;
 
 static M_SCREEN m_Screen;
-
-static bool M_Pressed(const uint16_t mask)
-{
-    return Buttons_WasPressed(&g_Buttons, mask);
-}
 
 // Shows the comment of the tune that plays, two sprites to a row, the
 // second only when its half of the row has text.
@@ -103,7 +93,7 @@ static void M_ShowComment(M_SCREEN *const screen)
 // Returns whether the screen leaves.
 static bool M_UpdateList(M_SCREEN *const screen)
 {
-    if (M_Pressed(M_UP)) {
+    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)) {
         screen->cursor--;
         if (screen->cursor < 0) {
             screen->cursor = screen->tune_count - 1;
@@ -112,7 +102,7 @@ static bool M_UpdateList(M_SCREEN *const screen)
             screen->list_top = screen->cursor;
         }
     }
-    if (M_Pressed(M_DOWN)) {
+    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
         screen->cursor++;
         if (screen->cursor >= screen->tune_count) {
             screen->cursor = 0;
@@ -121,12 +111,13 @@ static bool M_UpdateList(M_SCREEN *const screen)
             screen->list_top = screen->cursor - (M_LIST_ROWS - 1);
         }
     }
-    if (M_Pressed(M_CONFIRM) && screen->tune_count != 0) {
+    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)
+        && screen->tune_count != 0) {
         screen->playing = screen->cursor;
         Sound_PlayMusic(screen->tunes[screen->playing].path);
         M_ShowComment(screen);
     }
-    if (M_Pressed(M_CANCEL)) {
+    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)) {
         Scene_Request(SCENE_TITLE);
         return true;
     }

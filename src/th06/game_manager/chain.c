@@ -206,7 +206,7 @@ static CHAIN_STATUS M_Calc(void *const arg)
 {
     GAME_MANAGER *const gm = arg;
     if (gm->mode.in_demo) {
-        if (Buttons_WasPressed(&g_Buttons, 0xffff)) {
+        if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_any)) {
             Scene_Request(SCENE_TITLE);
         }
         gm->mode.demo_frames++;

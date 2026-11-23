@@ -45,16 +45,25 @@ typedef enum {
 #undef TH07_ACTION_INDEX
 } TH07_ACTION;
 
+// Holds each button's bit in the button word, and the masks that menus
+// share: ok confirms a choice, cancel backs out and any is every button.
+typedef enum {
+#define TH07_BUTTON_MASK(field_, mask_, ...) TH07_BUTTON_##field_ = mask_,
+#define TH07_STICK_MASK(...)
+    TH07_ACTIONS(TH07_BUTTON_MASK, TH07_STICK_MASK)
+#undef TH07_BUTTON_MASK
+#undef TH07_STICK_MASK
+        TH07_BUTTON_ok = TH07_BUTTON_shoot | TH07_BUTTON_confirm,
+    TH07_BUTTON_cancel = TH07_BUTTON_bomb | TH07_BUTTON_menu,
+    TH07_BUTTON_any = 0xffff,
+} TH07_BUTTON;
+
 extern const INPUT_SCHEMA g_InputSchema;
 
 // Holds a frame's buttons, as the original derives them from the raw
-// input: what is down, what is new this calc and what counts as held
-// for a menu repeat. Gameplay acts on play_word, which the replay sets
-// from the live word or from the recording.
+// input. Gameplay acts on play_word, which the replay sets from the live
+// word or from the recording.
 typedef struct {
-    TH07_INPUT held; // down this calc
-    TH07_INPUT pressed; // down this calc, up the calc before
-    TH07_INPUT repeated; // pressed, or held on a calc that repeats
     uint16_t word;
     uint16_t previous_word;
     uint16_t play_word;
@@ -65,7 +74,7 @@ typedef struct {
     int32_t shot_held_frames;
 } BUTTONS;
 
-// Reads input into the word, then updates what is pressed and repeated.
+// Reads input into the word, then steps the repeat.
 // With shoot_focuses, a pad's held shoot also focuses, from the gamepad
 // and joystick input of Shell_GetDeviceInput.
 void Buttons_Update(
@@ -88,8 +97,8 @@ bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);
 // down on a calc that repeats.
 bool Buttons_WasPressedOrRepeated(const BUTTONS *buttons, uint16_t mask);
 
-// Clears the words, the repeat and what derives from them, as a scene
-// switch does. held_frames and shot_held_frames stay.
+// Clears the words and the repeat, as a scene switch does. held_frames
+// and shot_held_frames stay.
 void Buttons_Clear(BUTTONS *buttons);
 
 // Converts to and from the button word that replays store.

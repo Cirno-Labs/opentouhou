@@ -307,7 +307,7 @@ static bool M_DropsSlowPlayback(GAME_MANAGER *const gm)
 // Returns whether the demo ended.
 static bool M_RunDemo(GAME_MANAGER *const gm)
 {
-    if (Buttons_WasPressed(&g_Buttons, 0xffff)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_any)) {
         Scene_Request(SCENE_TITLE);
     }
     gm->mode.demo_frames++;
@@ -383,7 +383,8 @@ static CHAIN_STATUS M_Calc(void *const arg)
 {
     GAME_MANAGER *const gm = arg;
     if (!gm->mode.in_continue_menu && gm->mode.paused == 0 && !gm->mode.in_demo
-        && !gm->mode.calc_dropped && Buttons_WasPressed(&g_Buttons, 0x8)) {
+        && !gm->mode.calc_dropped
+        && Buttons_WasPressed(&g_Buttons, TH07_BUTTON_menu)) {
         gm->mode.paused = 1;
         M_ResetPlayArea(gm);
         gm->mode.pause_requested = true;

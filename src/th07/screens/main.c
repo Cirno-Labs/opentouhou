@@ -35,13 +35,7 @@
 #define M_TITLE_MUSIC "bgm/th07_01.mid"
 #define M_KEY_ROW_COUNT 9
 
-#define M_UP 0x10
-#define M_DOWN 0x20
-#define M_LEFT 0x40
-#define M_RIGHT 0x80
-#define M_CONFIRM 0x1001
-#define M_CANCEL 0xa
-#define M_SKIP_SPLASH 0x1003
+#define M_SKIP_SPLASH (TH07_BUTTON_ok | TH07_BUTTON_bomb)
 
 typedef enum {
     M_STATE_TITLE = 0,
@@ -194,16 +188,6 @@ static const STRING m_PracticeStageNames[6] = {
 
 static M_MENU m_Menu;
 
-static bool M_Pressed(const uint16_t mask)
-{
-    return Buttons_WasPressed(&g_Buttons, mask);
-}
-
-static bool M_PressedOrRepeated(const uint16_t mask)
-{
-    return Buttons_WasPressedOrRepeated(&g_Buttons, mask);
-}
-
 static const char *M_Name(
     const char *const *const names, const size_t count, const int32_t index)
 {
@@ -291,10 +275,10 @@ static int32_t M_MoveCursor(M_MENU *const menu, const int32_t count)
         return 0;
     }
     int32_t moved;
-    if (M_PressedOrRepeated(M_UP)) {
+    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_up)) {
         menu->cursor--;
         moved = -1;
-    } else if (M_PressedOrRepeated(M_DOWN)) {
+    } else if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_down)) {
         menu->cursor++;
         moved = 1;
     } else {
@@ -315,7 +299,7 @@ static int32_t M_MoveCursorSideways(M_MENU *const menu, const int32_t count)
     if (count == 0) {
         return 0;
     }
-    if (M_PressedOrRepeated(M_LEFT)) {
+    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_left)) {
         menu->cursor--;
         if (menu->cursor < 0) {
             menu->cursor += count;
@@ -323,7 +307,7 @@ static int32_t M_MoveCursorSideways(M_MENU *const menu, const int32_t count)
         Sound_Queue(SOUND_SELECT);
         return -1;
     }
-    if (M_PressedOrRepeated(M_RIGHT)) {
+    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_right)) {
         menu->cursor++;
         if (menu->cursor >= count) {
             menu->cursor -= count;
@@ -528,7 +512,7 @@ static CHAIN_STATUS M_UpdateTitleMenu(M_MENU *const menu)
     if (menu->input_lockout < 10) {
         return M_Count(menu);
     }
-    if (M_Pressed(M_CONFIRM)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
         Sound_Queue(SOUND_OK);
         bool stay;
         const CHAIN_STATUS status = M_ConfirmTitleEntry(menu, &stay);
@@ -536,7 +520,7 @@ static CHAIN_STATUS M_UpdateTitleMenu(M_MENU *const menu)
             return status;
         }
     }
-    if (M_Pressed(M_CANCEL)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
         M_SetSprite(&menu->sprites[menu->cursor + 1], 1);
         menu->cursor = 7;
         M_SetSprite(&menu->sprites[menu->cursor + 1], 0);
@@ -664,10 +648,12 @@ static CHAIN_STATUS M_UpdateOptions(M_MENU *const menu)
         if (menu->input_lockout < 4) {
             break;
         }
-        if (M_PressedOrRepeated(M_LEFT) && M_ChangeOption(menu, -1)) {
+        if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_left)
+            && M_ChangeOption(menu, -1)) {
             Sound_Queue(SOUND_SELECT);
         }
-        if (M_PressedOrRepeated(M_RIGHT) && M_ChangeOption(menu, 1)) {
+        if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_right)
+            && M_ChangeOption(menu, 1)) {
             Sound_Queue(SOUND_SELECT);
         }
         if (g_Buttons.word != 0) {
@@ -676,7 +662,7 @@ static CHAIN_STATUS M_UpdateOptions(M_MENU *const menu)
         if (menu->menu_idle_frames >= M_MENU_IDLE_FRAMES) {
             return M_LeaveOptions(menu);
         }
-        if (M_Pressed(M_CONFIRM)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
             switch (menu->cursor) {
             case 6:
                 g_Settings.lives = 2;
@@ -697,7 +683,7 @@ static CHAIN_STATUS M_UpdateOptions(M_MENU *const menu)
                 break;
             }
         }
-        if (M_Pressed(M_CANCEL)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
             if (menu->cursor == 8) {
                 return M_LeaveOptions(menu);
             }
@@ -914,10 +900,12 @@ static CHAIN_STATUS M_UpdateKeyConfig(M_MENU *const menu)
             Sound_Queue(SOUND_OK);
         }
         // Left and right in one calc toggle twice.
-        if (M_Pressed(M_LEFT) && menu->cursor == 9) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_left)
+            && menu->cursor == 9) {
             M_ToggleSetting(&g_Settings.shoot_focuses);
         }
-        if (M_Pressed(M_RIGHT) && menu->cursor == 9) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_right)
+            && menu->cursor == 9) {
             M_ToggleSetting(&g_Settings.shoot_focuses);
         }
         if (g_Buttons.word != 0) {
@@ -926,7 +914,7 @@ static CHAIN_STATUS M_UpdateKeyConfig(M_MENU *const menu)
         if (menu->menu_idle_frames >= M_MENU_IDLE_FRAMES) {
             return M_LeaveKeyConfig(menu);
         }
-        if (M_Pressed(M_CONFIRM)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
             if (menu->cursor == 10) {
                 Sound_Queue(SOUND_OK);
                 menu->mapping = M_DefaultMapping();
@@ -1114,7 +1102,7 @@ static CHAIN_STATUS M_UpdateDifficulty(M_MENU *const menu)
         if (M_MoveCursor(menu, count) != 0 && (!extra || count == 2)) {
             M_HighlightDifficulty(menu);
         }
-        if (M_Pressed(M_CONFIRM)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
             g_Settings.difficulty = extra ? menu->cursor + 4 : menu->cursor;
             Sound_Queue(SOUND_OK);
             M_SetState(
@@ -1125,7 +1113,7 @@ static CHAIN_STATUS M_UpdateDifficulty(M_MENU *const menu)
             menu->cursor = 0;
             return CHAIN_CONTINUE;
         }
-        if (M_Pressed(M_CANCEL)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
             g_Settings.difficulty = extra ? menu->cursor + 4 : menu->cursor;
             Sound_Queue(SOUND_CANCEL);
             menu->sub_state = M_SUB_LEAVE;
@@ -1181,7 +1169,7 @@ static CHAIN_STATUS M_UpdateCharacter(M_MENU *const menu)
             M_ShowCharacters(menu, true);
             M_ChooseCharacter(menu, false);
         }
-        if (M_Pressed(M_CONFIRM)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
             g_GameManager.run.character = (uint8_t)menu->cursor;
             Sound_Queue(SOUND_OK);
             M_SetState(
@@ -1192,7 +1180,7 @@ static CHAIN_STATUS M_UpdateCharacter(M_MENU *const menu)
             menu->cursor = 0;
             return CHAIN_CONTINUE;
         }
-        if (M_Pressed(M_CANCEL)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
             Sound_Queue(SOUND_CANCEL);
             g_GameManager.run.character = (uint8_t)menu->cursor;
             M_SetState(
@@ -1263,7 +1251,7 @@ static CHAIN_STATUS M_UpdateShot(M_MENU *const menu)
                 M_HighlightShot(menu);
             }
         }
-        if (M_Pressed(M_CONFIRM)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
             gm->run.shot_type = (uint8_t)menu->cursor;
             Sound_Queue(SOUND_OK);
             if (!gm->mode.in_practice) {
@@ -1277,7 +1265,7 @@ static CHAIN_STATUS M_UpdateShot(M_MENU *const menu)
             M_SetState(menu, M_STATE_PRACTICE_STAGE);
             return CHAIN_AGAIN;
         }
-        if (M_Pressed(M_CANCEL)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
             Sound_Queue(SOUND_CANCEL);
             gm->run.shot_type = (uint8_t)menu->cursor;
             M_SetState(
@@ -1330,14 +1318,14 @@ static CHAIN_STATUS M_UpdatePracticeStage(M_MENU *const menu)
             menu->cursor = 0;
         }
         M_MoveCursor(menu, count);
-        if (M_Pressed(M_CONFIRM)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
             Sound_Queue(SOUND_OK);
             gm->run.difficulty = g_Settings.difficulty;
             gm->run.stage = menu->cursor;
             M_StartPlay();
             return CHAIN_REMOVE;
         }
-        if (M_Pressed(M_CANCEL)) {
+        if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
             Sound_Queue(SOUND_CANCEL);
             menu->cursor = gm->run.shot_type;
             // The original goes back to the shot select of a normal start,
@@ -1383,14 +1371,14 @@ static void M_UpdateReplayList(M_MENU *const menu)
 {
     M_MoveCursor(menu, menu->replay_count);
     if (menu->replay_count > M_PAGE) {
-        if (M_PressedOrRepeated(M_LEFT)) {
+        if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_left)) {
             menu->cursor -= M_PAGE;
             if (menu->cursor < 0) {
                 menu->cursor += menu->replay_count;
             }
             Sound_Queue(SOUND_SELECT);
         }
-        if (M_PressedOrRepeated(M_RIGHT)) {
+        if (Buttons_WasPressedOrRepeated(&g_Buttons, TH07_BUTTON_right)) {
             menu->cursor += M_PAGE;
             if (menu->cursor >= menu->replay_count) {
                 menu->cursor -= menu->replay_count;
@@ -1402,7 +1390,7 @@ static void M_UpdateReplayList(M_MENU *const menu)
     if (menu->state_frames < 10) {
         return;
     }
-    if (M_Pressed(M_CONFIRM)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
         if (menu->replay_count == 0) {
             return;
         }
@@ -1415,7 +1403,7 @@ static void M_UpdateReplayList(M_MENU *const menu)
         }
         return;
     }
-    if (M_Pressed(M_CANCEL)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
         Sound_Queue(SOUND_CANCEL);
         menu->sub_state = M_SUB_REPLAY_LEAVE;
         menu->state_frames = 0;
@@ -1442,14 +1430,14 @@ static void M_UpdateReplayStage(M_MENU *const menu)
         }
     }
     menu->replay_stage = menu->cursor;
-    if (M_Pressed(M_CONFIRM)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
         M_MarkReplay(menu, 19);
         menu->sub_state = M_SUB_REPLAY_PLAYBACK;
         menu->cursor = 0;
         M_ChoosePlayback(menu);
         return;
     }
-    if (M_Pressed(M_CANCEL)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
         menu->sub_state = M_SUB_MENU;
         menu->input_lockout = 0;
         M_Interrupt(menu, 14);
@@ -1462,7 +1450,7 @@ static CHAIN_STATUS M_UpdateReplayPlayback(M_MENU *const menu)
     if (M_MoveCursor(menu, 3) != 0) {
         M_ChoosePlayback(menu);
     }
-    if (M_Pressed(M_CONFIRM)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)) {
         const SAVED_REPLAY *const replay = &menu->replays[menu->replay_cursor];
         if (Result_Log(
                 TitleScene_SetUpReplay(
@@ -1472,7 +1460,7 @@ static CHAIN_STATUS M_UpdateReplayPlayback(M_MENU *const menu)
             return CHAIN_REMOVE;
         }
     }
-    if (M_Pressed(M_CANCEL)) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
         menu->sub_state = M_SUB_REPLAY_STAGE;
         menu->input_lockout = 0;
         menu->cursor = menu->replay_stage;

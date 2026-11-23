@@ -14,7 +14,6 @@
 #include <string.h>
 
 #define M_END_FRAME 9999999
-#define M_INPUT_MASK 0x1f7
 
 typedef struct {
     REPLAY_FILE *file;
@@ -147,7 +146,7 @@ static CHAIN_STATUS M_Record(void *const arg)
         return CHAIN_CONTINUE;
     }
     REPLAY_STAGE *const stage = M_Stage(replay);
-    const uint16_t buttons = g_Buttons.word & M_INPUT_MASK;
+    const uint16_t buttons = g_Buttons.word & TH06_BUTTON_recorded;
     if (buttons != stage->frames[replay->cursor].buttons) {
         replay->cursor++;
         M_EnsureFrames(replay, replay->cursor + 1);
