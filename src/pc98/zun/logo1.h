@@ -6,7 +6,7 @@ typedef struct {
     int32_t x, y;
 } ZUN_LOGO1_POINT;
 
-// ZUN's logo, which th01 and th02 open with.
+// ZUN's launcher logo, as the PC-98 games open with it.
 typedef struct {
     ZUN_LOGO1_POINT circles[4];
     ZUN_LOGO1_POINT velocity[4];
