@@ -93,7 +93,7 @@ static void M_Press(const uint16_t mask)
 static PAUSE_MENU *M_Pause(const int32_t state, const int32_t frames)
 {
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     menu->state = state;
     menu->state_frames = frames;
     return menu;
@@ -102,7 +102,7 @@ static PAUSE_MENU *M_Pause(const int32_t state, const int32_t frames)
 static void M_PauseFrames(PAUSE_MENU *const menu, const int32_t count)
 {
     for (int32_t i = 0; i < count; i++) {
-        PauseMenu_UpdatePauseMenu(menu);
+        PauseMenu_Update(menu);
     }
 }
 
@@ -111,7 +111,7 @@ TEST(pause_opens_ten_lines_and_runs_resume_at_once)
     M_Setup();
     g_GameManager.run.difficulty = 2;
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
     CHECK_EQ_INT(menu->state_frames, 1);
     for (int32_t i = 0; i < ASCII_PAUSE_SPRITE_COUNT; i++) {
@@ -135,7 +135,7 @@ TEST(pause_keeps_the_practice_and_score_lines_when_they_apply)
     M_Setup();
     g_GameManager.mode.in_practice = true;
     g_GameManager.run.score_disabled = true;
-    PauseMenu_UpdatePauseMenu(&g_AsciiText.pause_menu);
+    PauseMenu_Update(&g_AsciiText.pause_menu);
     CHECK(g_AsciiText.pause_menu.sprites[8].shown);
     CHECK(g_AsciiText.pause_menu.sprites[9].shown);
     M_Teardown();
@@ -146,23 +146,23 @@ TEST(pause_navigation_waits_four_frames_and_wraps_through_retry)
     M_Setup();
     PAUSE_MENU *const menu = M_Pause(1, 3);
     M_Press(M_UP);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 3);
     CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_PLAYER_SHOT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 2);
     M_Press(M_DOWN);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 3);
     CHECK_EQ_INT(menu->sprites[2].color, COLOR_WHITE);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
     CHECK_EQ_INT(menu->sprites[3].color, COLOR_WHITE);
     CHECK(menu->sprites[3].pos_offset.y == -4.0f);
     M_Press(M_UP | M_DOWN);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 2);
     M_Teardown();
 }
@@ -172,18 +172,18 @@ TEST(pause_in_a_replay_skips_and_freezes_retry)
     M_Setup();
     g_GameManager.mode.in_replay = true;
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->sprites[3].pc, -1);
     CHECK_EQ_INT(menu->sprites[3].pending_interrupt, 1);
     menu->state_frames = 4;
     M_Press(M_UP);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 2);
     M_Press(M_DOWN);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
     M_Press(M_RETRY);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
     M_Teardown();
 }
@@ -193,7 +193,7 @@ TEST(pause_resume_closes_after_twenty_frames)
     M_Setup();
     PAUSE_MENU *const menu = M_Pause(1, 4);
     M_Press(M_SHOOT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 4);
     CHECK_EQ_INT(menu->state_frames, 1);
     CHECK_EQ_INT(menu->background.pending_interrupt, 1);
@@ -204,7 +204,7 @@ TEST(pause_resume_closes_after_twenty_frames)
     M_Press(0);
     M_PauseFrames(menu, 19);
     CHECK_EQ_INT(g_GameManager.mode.paused, 2);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 0);
     CHECK_EQ_INT(g_GameManager.mode.paused, 0);
     for (int32_t i = 0; i < ASCII_PAUSE_SPRITE_COUNT; i++) {
@@ -222,12 +222,12 @@ TEST(pause_resume_keeps_stage_6_music_off_for_300_frames)
     g_GameManager.run.stage = 6;
     g_Gui.frames = 299;
     PAUSE_MENU *const menu = M_Pause(4, 20);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK(g_SoundEvents.pause != SOUND_RESUME_MUSIC);
     g_Gui.frames = 300;
     menu->state = 4;
     menu->state_frames = 20;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
     M_Teardown();
 }
@@ -237,19 +237,19 @@ TEST(pause_quit_confirms_and_requests_the_title)
     M_Setup();
     PAUSE_MENU *const menu = M_Pause(2, 4);
     M_Press(M_SHOOT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 6);
     for (int32_t i = 4; i < 7; i++) {
         CHECK_EQ_INT(menu->sprites[i].int_vars[0], 1);
     }
     menu->state_frames = 4;
     M_Press(M_UP);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 5);
     CHECK_EQ_INT(menu->sprites[5].color, COLOR_ARGB(0x80, 0x80, 0x80, 0x80));
     CHECK_EQ_INT(menu->sprites[6].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     M_Press(M_SHOOT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 9);
     CHECK_EQ_INT(menu->sprites[5].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     CHECK(menu->sprites[5].pos_offset.x == -4.0f);
@@ -266,18 +266,18 @@ TEST(pause_retry_confirms_and_requests_a_retry)
     M_Setup();
     PAUSE_MENU *const menu = M_Pause(3, 4);
     M_Press(M_SHOOT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 8);
     menu->state_frames = 4;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 3);
     menu->state = 8;
     menu->state_frames = 4;
     M_Press(M_DOWN);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 7);
     M_Press(M_SHOOT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 10);
     M_Press(0);
     M_PauseFrames(menu, 20);
@@ -290,19 +290,19 @@ TEST(pause_menu_quit_and_retry_buttons_act_at_once)
     M_Setup();
     PAUSE_MENU *const menu = M_Pause(2, 0);
     M_Press(M_MENU);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 4);
     CHECK_EQ_INT(menu->sprites[0].int_vars[0], 2);
     CHECK_EQ_INT(menu->sprites[8].int_vars[0], 0);
     M_Press(M_QUIT);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 9);
     M_Press(M_RETRY);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 9);
     menu->state = 10;
     menu->state_frames = 10;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 10);
     CHECK_EQ_INT(menu->state_frames, 1);
     M_Teardown();
@@ -342,7 +342,7 @@ TEST(pause_capture_copies_the_play_area_scaled_to_the_sprite)
     sprite.height = 500.0f;
     Anm_SetSpriteEntry(0, &sprite);
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK(IS_OK(Anm_DoPendingCopy()));
     CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
     CHECK_EQ_INT(M_TexturePixel(3, 5), 0xff0000ff);
@@ -366,7 +366,7 @@ TEST(pause_retries_opening_while_a_copy_is_pending)
     g_AsciiText.capture_background = true;
     CHECK(Anm_SetPendingCopy(4, (GFX_RECT) {}, (GFX_RECT) {}));
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 0);
     CHECK_EQ_INT(menu->state_frames, 0);
     CHECK_EQ_INT(menu->sprites[0].int_vars[0], 0);
@@ -379,7 +379,7 @@ TEST(pause_without_a_renderer_opens_with_no_copy)
     M_Setup();
     g_AsciiText.capture_background = true;
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK(Anm_SetPendingCopy(4, (GFX_RECT) {}, (GFX_RECT) {}));
     CHECK_EQ_INT(menu->background.script_index, 0x724);
     M_Teardown();
