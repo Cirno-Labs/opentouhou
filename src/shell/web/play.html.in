@@ -840,8 +840,13 @@
     await new Promise((resolve) => setTimeout(resolve, FADE_MS));
     Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
     Module.callMain(['--data', '/game.zip']);
-    // Exit and Fullscreen only for a game that started.
-    show($('controls'), $('log').classList.contains('off'));
+    // Exit and Fullscreen only for a game that started, which the site
+    // counts; the page's base is the package's folder, so the path is whole.
+    const started = $('log').classList.contains('off');
+    show($('controls'), started);
+    if (started) {
+      navigator.sendBeacon?.('/play/' + PROGRAM + '/started');
+    }
   }
 
   async function remember(file) {
