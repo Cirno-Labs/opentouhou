@@ -416,9 +416,10 @@ The R2 bucket holds the downloads:
 
 Every push to `main` replaces the development snapshot, when the
 repository variable `PRERELEASE_ENABLE` is `true`. It holds the game
-packages with the othpatch that they ship, the othpatch of the commit,
-and each program's unreleased changes. It includes the games with a
-development version.
+packages with the othpatch that they ship, each game's web package
+(listed in the index under the platform `Web`), the othpatch of the
+commit, and each program's unreleased changes. It includes the games
+with a development version. A release has no web packages.
 
 The manual "Delete the releases" workflow deletes every release from
 the bucket and the index and keeps the snapshot. It asks for the word

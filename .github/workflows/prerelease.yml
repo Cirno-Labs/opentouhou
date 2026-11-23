@@ -1,8 +1,8 @@
 name: Publish a development snapshot
 
-# Uploads the game packages and othpatch of each push to main to
-# snapshot/ in the R2 bucket and replaces the snapshot of the release
-# index.
+# Uploads the game packages, the web packages and othpatch of each push
+# to main to snapshot/ in the R2 bucket and replaces the snapshot of the
+# release index.
 on:
   push:
     branches:
@@ -54,6 +54,16 @@ jobs:
       target: release
       release_index_url: ${{ vars.R2_PUBLIC_URL && format('{0}/releases.json?run={1}-{2}', vars.R2_PUBLIC_URL, github.run_id, github.run_attempt) || '' }}
 
+  # The web packages ship no othpatch, so they need no release index.
+  build_web:
+    name: Web
+    if: vars.PRERELEASE_ENABLE == 'true'
+    uses: ./.github/workflows/job_build.yml
+    with:
+      platform: web
+      target: release
+      packages: games
+
   publish:
     name: Publish
     needs:
@@ -61,6 +71,7 @@ jobs:
       - build_win
       - test_win
       - build_mac
+      - build_web
     runs-on: ubuntu-latest
     environment: release
     # Every job that writes the index is in this group, so that two
