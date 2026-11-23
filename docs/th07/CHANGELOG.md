@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Added `--data` with a zip of the game folder, read without unpacking.
+- Added support for zip files to `--data`: a zip of the game folder,
+  read without unpacking.
 
 ## 1.0.0 (2026-11-20)
 

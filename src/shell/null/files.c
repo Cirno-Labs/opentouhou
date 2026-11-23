@@ -20,7 +20,7 @@ RESULT NullShell_OpenFiles(
 {
     NullShell_CloseFiles();
     if (data_dir != nullptr) {
-        MUST(ShellData_Mount(M_Get(&m_Files), data_dir));
+        MUST(ShellData_Mount(M_Get(&m_Files), data_dir, nullptr));
     }
     if (user_dir != nullptr) {
         MUST(Vfs_MountDir(M_Get(&m_UserFiles), "", user_dir, 0, true));

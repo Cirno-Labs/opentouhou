@@ -43,7 +43,8 @@ original game's executable in the same folder. othpatch lands in
 `build/<platform>/othpatch/<target>/`.
 
 A game needs the original game's data: pass its folder, or a zip of
-it, with `--data`, or put the executable into that folder. The game's
+it, with `--data`, or put the executable into that folder. A PC-98
+game also takes an .hdi hard disk image, bare or in a zip. The game's
 `tools/packaging/<game>/o<game>_readme.txt`, which the packages ship,
 describes the folders, the keys and the settings for players.
 
@@ -217,8 +218,9 @@ page that loads a game must be served with the
 `Cross-Origin-Embedder-Policy: require-corp` headers. Each game with a
 web page also gets `o<game>.html`, made from
 `src/shell/web/play.html.in`. The page takes a zip of the original
-game's folder, keeps it in the browser's IndexedDB, writes it into the
-file system and calls main with `--data`. The page keeps the user
+game's folder, or an .hdi bare or in a zip, keeps it in the browser's
+IndexedDB, writes it into the file system and calls main with
+`--data`. The page keeps the user
 folder in IndexedDB too. `just serve-web` builds the games and serves
 them on `http://localhost:8006/` with these headers. `just package-web`
 writes `o<game>-<version>-Web.zip` to `build/packages/` for each game

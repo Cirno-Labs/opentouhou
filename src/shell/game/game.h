@@ -32,7 +32,8 @@ typedef struct {
     // Names the files that the data folder must hold, and their number.
     // shell/game looks for them before it opens the window, as Vfs_Open
     // finds files. A missing file stops the start with a message that
-    // names it and the data folder.
+    // names it and the data folder. The first one marks the game's folder
+    // inside a zip or an .hdi.
     const char *const *data_files;
     int32_t data_file_count;
     // Prepares the game. Called once, after the window exists.

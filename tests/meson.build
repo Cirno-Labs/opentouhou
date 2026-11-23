@@ -777,6 +777,7 @@ test(
     ],
     dependencies: [zlib, sdl3],
   ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'shell_data'},
   suite: 'unit',
 )
 
