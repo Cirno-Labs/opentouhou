@@ -1,4 +1,8 @@
 #include "th01/stage.h"
+#include "th01/session.h"
+#include "th01/items.h"
+#include "th01/pellets.h"
+#include "th01/hud.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -91,15 +95,15 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
             if (game->maximum_combo < game->combo) {
                 game->maximum_combo = game->combo;
             }
-            context->hud_score_and_combo(context->user);
+            Hud_ScoreAndCombo();
             const uint8_t previous_cycle = game->flip_cycle++;
             if (previous_cycle % 10 == 0) {
                 const bool bomb = game->flip_cycle >= 140;
                 if (bomb) {
                     game->flip_cycle = 1;
                 }
-                context->item_add(
-                    context->user, i, bomb && !g_Player.bomb_damaging);
+                Items_Add(
+                    card->left, card->top, bomb && !g_Player.bomb_damaging);
             }
             Sound_Effect(2);
         }
@@ -128,16 +132,13 @@ void Stage_UpdateCards(const STAGE_CONTEXT *const context)
             if (card->flip_frame >= 24) {
                 if (context->difficulty == SETTINGS_DIFFICULTY_LUNATIC
                     && card->flip_frame == 25) {
-                    context->pellet_group(
-                        context->user,
-                        (STAGE_PELLET_SPAWN) {
-                            .left = card->left + 12,
-                            .top = card->top + 12,
-                            .group = context->stage_num < 10
-                                ? STAGE_PELLET_1_AIMED
-                                : STAGE_PELLET_1_RANDOM_NARROW_AIMED,
-                            .speed = 56,
-                        });
+                    Pellets_AddGroup(
+                        g_Session.settings.difficulty, card->left + 12,
+                        card->top + 12,
+                        (PELLET_GROUP)(context->stage_num < 10
+                                           ? STAGE_PELLET_1_AIMED
+                                           : STAGE_PELLET_1_RANDOM_NARROW_AIMED),
+                        56);
                 }
                 if (card->flip_frame >= 30) {
                     card->flag =

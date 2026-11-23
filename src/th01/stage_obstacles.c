@@ -1,4 +1,6 @@
 #include "th01/stage.h"
+#include "th01/session.h"
+#include "th01/pellets.h"
 #include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
@@ -47,14 +49,10 @@ static void M_Turret(
                 STAGE_PELLET_4_SPREAD_WIDE_AIMED,
                 STAGE_PELLET_5_SPREAD_WIDE_AIMED,
             };
-            context->pellet_group(
-                context->user,
-                (STAGE_PELLET_SPAWN) {
-                    .left = obstacle->left + 12,
-                    .top = obstacle->top + 12,
-                    .group = groups[(obstacle->type - 2) % 6],
-                    .speed = 56,
-                });
+            Pellets_AddGroup(
+                g_Session.settings.difficulty, obstacle->left + 12,
+                obstacle->top + 12,
+                (PELLET_GROUP)(groups[(obstacle->type - 2) % 6]), 56);
             M_Put(context, obstacle, 24);
             obstacle->turret_flag = 3;
         } else {

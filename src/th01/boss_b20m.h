@@ -159,7 +159,6 @@ bool B20M_ResumeEntrance(const B20M_CONTEXT *context, uint64_t host_tick);
 
 // Runs one battle call or resumes its nested waits. False suspends the world.
 // Implements both forms and the final 50,000-point bonus and game clear.
-// Quantizes the bird safety delay to six 60 Hz host ticks. Audio/effect
-// consumers may post events but must not mutate borrowed simulation state.
+// Quantizes the bird safety delay to six 60 Hz host ticks.
 // Borrows stable context bindings and allocates nothing and performs no IO.
 bool B20M_UpdateAndRender(const B20M_CONTEXT *context, uint64_t host_tick);

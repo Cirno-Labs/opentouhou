@@ -30,9 +30,6 @@ typedef struct {
     uint16_t *point_value;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
-    void (*hud_bomb)(void *user, int16_t previous_slot);
-    void (*hud_score_and_combo)(void *user);
-    void *user;
 } ITEM_CONTEXT;
 
 // Caches all popup characters from rom in caller-owned asset storage before
@@ -44,8 +41,7 @@ RESULT Items_LoadFont(
 RESULT Items_ValidateAssets(const PTN *sprites, const GAME_TEXT_FONT *font);
 
 // Adds at the first free slot using current card coordinates, without RNG.
-// A full pool ignores the request. Coordinates can be borrowed from the
-// Stage item_add callback; no stage pointer is retained.
+// A full pool ignores the request.
 void Items_Add(int16_t left, int16_t top, bool bomb);
 
 // Clears flags only. Does not erase or reset the shared point value.
@@ -55,12 +51,10 @@ void Items_Reset(void);
 void Items_Render(const PTN *sprites);
 
 // Runs after the player update: all bomb slots, then all point slots.
-// Requires validated assets and all synchronous callbacks. HUD observes
-// updated shared fields; callbacks must not mutate items or shared state.
+// Requires validated assets.
 // Keeps the point value live for existing popups, including resets on a
 // later drop. Zero formats as five spaces. Collision precedes motion, accepts
 // only falling/bouncing items, and has no upper Y bound. Collection moves the
 // popup immediately. Updates allocate nothing and read no files, font handles
-// or devices. The gameplay scene must supply real HUD/effect consumers and call
-// order.
+// or devices.
 void Items_UpdateAndRender(const ITEM_CONTEXT *context);

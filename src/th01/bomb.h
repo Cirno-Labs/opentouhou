@@ -27,8 +27,6 @@ typedef struct {
     const PTN *miko;
     const BOMB_ASSETS *assets;
     const PALETTE *stage_palette;
-    void (*pellets_decay)(void *user);
-    void *user;
 } BOMB_CONTEXT;
 
 typedef enum {

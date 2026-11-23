@@ -2,37 +2,6 @@
 
 #include "core/base/assert.h"
 
-static void M_HudScore(void *const user)
-{
-    Hud_ScoreAndCombo();
-}
-
-static void M_HudBombs(void *const user, const int16_t previous)
-{
-    Hud_BombsPut(previous);
-}
-
-static void M_HudLives(void *const user, const int16_t previous)
-{
-    Hud_LivesPut(previous);
-}
-
-static void M_Decay(void *const user)
-{
-    Pellets_Decay();
-}
-
-static void M_TimerExtend(void *const user)
-{
-    StageTimer_ExtendAndPut();
-}
-
-static void M_SpeedLower(
-    void *const user, const float minimum, const float delta)
-{
-    Pellets_SpeedLower((int16_t)(minimum * 40), (int16_t)(delta * 40));
-}
-
 static void M_Shots(void *const user, const SHOTS_ACTION action)
 {
     GAMEPLAY *const g = user;
@@ -54,7 +23,7 @@ static void M_Player(void *const user, const PLAYER_ACTION action)
         M_Shots(g, action.shot);
         break;
     case PLAYER_ACTION_HUD_BOMBS:
-        M_HudBombs(g, action.previous_bombs);
+        Hud_BombsPut(action.previous_bombs);
         break;
     case PLAYER_ACTION_PELLET_SPEED_RAISE:
         Pellets_SpeedRaise((int16_t)(action.pellet_speed_delta * 40));
@@ -64,19 +33,6 @@ static void M_Player(void *const user, const PLAYER_ACTION action)
             &g->bindings.player_sprites, g->bindings.stage.sprites, action);
         break;
     }
-}
-
-static void M_ItemAdd(void *const user, const int32_t slot, const bool bomb)
-{
-    Items_Add(
-        g_StageObjects.cards[slot].left, g_StageObjects.cards[slot].top, bomb);
-}
-
-static void M_PelletAdd(void *const user, const STAGE_PELLET_SPAWN spawn)
-{
-    Pellets_AddGroup(
-        g_Session.settings.difficulty, spawn.left, spawn.top,
-        (PELLET_GROUP)spawn.group, spawn.speed);
 }
 
 static void M_Pellets(void *const user)
@@ -102,9 +58,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .stage_id = g_Session.stage_id,
         .stage_num = (int16_t)(g_Session.stage_id + 1),
         .difficulty = (SETTINGS_DIFFICULTY)g_Session.settings.difficulty,
-        .hud_score_and_combo = M_HudScore,
-        .item_add = M_ItemAdd,
-        .pellet_group = M_PelletAdd,
         .pellets_update = M_Pellets,
         .user = g,
     };
@@ -112,9 +65,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .point_value = &g_Session.point_value,
         .sprites = stage,
         .font = &a->item_font,
-        .hud_bomb = M_HudBombs,
-        .hud_score_and_combo = M_HudScore,
-        .user = g,
     };
     g->bindings.pellet = (PELLET_CONTEXT) {
         .assets = a->pellets,
@@ -125,8 +75,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .miko = &a->miko,
         .assets = &a->bomb,
         .stage_palette = &g->world.stage_palette,
-        .pellets_decay = M_Decay,
-        .user = g,
     };
     g->bindings.missing = (MISS_CONTEXT) {
         .miko = &a->miko,
@@ -134,12 +82,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .difficulty = g_Session.settings.difficulty,
         .remaining_lives = g_Session.lives,
         .extra_bombs = 1,
-        .pellets_decay = M_Decay,
-        .hud_lives = M_HudLives,
-        .hud_bombs = M_HudBombs,
-        .timer_extend = M_TimerExtend,
-        .pellet_speed_lower = M_SpeedLower,
-        .user = g,
     };
     g->bindings.route_assets =
         (ROUTE_SELECT_ASSETS) { .font = &a->route_font,

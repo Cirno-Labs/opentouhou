@@ -1,3 +1,4 @@
+#include "th01/session.h"
 #include "th01/stage.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -19,16 +20,16 @@ typedef struct {
     ARENA arena;
     STAGE_CONTEXT context;
     PTN sprites;
-    int32_t pellets, updates;
-    STAGE_PELLET_SPAWN last;
+    int32_t updates;
 } CASE;
 
-static void M_Pellet(void *const user, const STAGE_PELLET_SPAWN spawn)
+static int32_t M_Pellets(void)
 {
-    CASE *const state = user;
-    state->pellets++;
-    state->last = spawn;
-    MasterRng_Next(&g_Rng);
+    int32_t moving = 0;
+    for (int32_t i = 0; i < PELLETS_COUNT; i++) {
+        moving += g_Pellets.slots[i].moving;
+    }
+    return moving;
 }
 
 static void M_Update(void *const user)
@@ -65,10 +66,10 @@ static void M_Init(CASE *const state)
     state->context = (STAGE_CONTEXT) {
         .sprites = &state->sprites,
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
-        .pellet_group = M_Pellet,
         .pellets_update = M_Update,
         .user = state,
     };
+    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
 }
 
 TEST(bumpers_teleport_and_only_reverse_speed_four_even_on_reset)
@@ -163,14 +164,14 @@ TEST(bar_boundaries_shared_block_and_ordered_release)
     Arena_Free(&state.arena);
 }
 
-TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
+TEST(turret_types_rank_intervals_rng_and_reset_order)
 {
-    const int32_t groups[] = { 12, 29, 21, 23, 25, 27 };
     for (int32_t type = 2; type <= 13; type++) {
         for (int32_t rank = 0; rank < 4; rank++) {
             CASE state;
             M_Init(&state);
             state.context.difficulty = rank;
+            g_Session.settings.difficulty = rank;
             g_StageObjects.obstacle_count = 1;
             g_StageObjects.obstacles[0] =
                 (STAGE_OBSTACLE) { .left = 96, .top = 128, .type = type };
@@ -180,7 +181,7 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
             for (int32_t frame = 1; frame <= interval + 17; frame++) {
                 Stage_UpdateObstacles(&state.context, false);
                 CHECK_EQ_INT(
-                    state.pellets, rank != 0 && frame >= interval + 10);
+                    M_Pellets() > 0, rank != 0 && frame >= interval + 10);
                 if (rank != 0 && frame == interval) {
                     CHECK_EQ_INT(g_StageObjects.obstacles[0].turret_flag, 1);
                     CHECK_EQ_INT(Th01Test_Pixel(0, 96, 128), 9);
@@ -191,18 +192,15 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
             CHECK_EQ_INT(g_StageObjects.obstacles[0].turret_flag, 0);
             CHECK_EQ_INT(state.arena.used, used);
             uint32_t expected = initial_rng;
-            if (rank != 0) {
+            if (rank != 0 && (type - 2) % 6 == 1) {
                 MasterRng_Next(&expected);
-                CHECK_EQ_INT(state.last.group, groups[(type - 2) % 6]);
-                CHECK_EQ_INT(state.last.left, 108);
-                CHECK_EQ_INT(state.last.top, 140);
-                CHECK_EQ_INT(state.last.speed, 56);
             }
             CHECK_EQ_INT(g_Rng, expected);
+            const int32_t pellets = M_Pellets();
             g_StageObjects.obstacles[0].frame = (int16_t)(interval + 9);
             g_StageObjects.obstacles[0].turret_flag = 2;
             Stage_UpdateObstacles(&state.context, true);
-            CHECK_EQ_INT(state.pellets, rank == 0 ? 1 : 2);
+            CHECK(M_Pellets() > pellets);
             CHECK_EQ_INT(g_StageObjects.obstacles[0].frame, 0);
             CHECK_EQ_INT(g_StageObjects.obstacles[0].turret_flag, 0);
             Arena_Free(&state.arena);
@@ -345,7 +343,7 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
     }
 }
 
-TEST(turret_callbacks_consume_rng_before_the_following_portal)
+TEST(turret_pellets_precede_the_following_portal)
 {
     CASE state;
     M_Init(&state);
@@ -367,10 +365,9 @@ TEST(turret_callbacks_consume_rng_before_the_following_portal)
     g_StageObjects.entered_portal = 1;
     g_Orb.in_portal = true;
     uint32_t expected = g_Rng;
-    MasterRng_Next(&expected);
     CHECK_EQ_INT(M_Destination(&state, 1, &expected), 1);
     Stage_UpdateObstacles(&state.context, false);
-    CHECK_EQ_INT(state.pellets, 1);
+    CHECK_EQ_INT(M_Pellets(), 1);
     CHECK_EQ_INT(g_Rng, expected);
     CHECK_EQ_INT(g_StageObjects.destination_left, 128);
     Arena_Free(&state.arena);

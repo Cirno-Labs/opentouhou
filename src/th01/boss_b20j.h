@@ -109,7 +109,6 @@ void B20J_Setup(const B20J_CONTEXT *context);
 // Starts the cached load sequence on the current drawing page, binds all
 // three actors, snapshots its scroll palette and invokes the real empty
 // boss-stage initializer.
-// Required audio consumers are synchronous, nonblocking and allocate nothing.
 void B20J_BeginEntrance(const B20J_CONTEXT *context);
 
 // Suspends the world until all scroll, shake, pan and palette waits finish.
@@ -121,6 +120,5 @@ bool B20J_ResumeEntrance(const B20J_CONTEXT *context);
 // False suspends the world until subsequent reference VSyncs satisfy waits.
 // Victory draws all nine kuji images, finishes the final scroll, adds 50,000
 // points and sets game_cleared. Finished calls stay inert. No Scene activation,
-// allocations, IO or device reads occur. Audio/effect consumers must not
-// mutate borrowed boss, palette, score, player or projectile state.
+// allocations, IO or device reads occur.
 bool B20J_UpdateAndRender(const B20J_CONTEXT *context);

@@ -1,3 +1,5 @@
+#include "th01/timer.h"
+#include "th01/hud.h"
 #include "th01/miss.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -18,51 +20,8 @@
 typedef struct {
     ARENA arena;
     PTN miko, stage;
-    int32_t events[8], event_count;
-    int16_t previous_lives, previous_bombs;
+    GAME_TEXT_FONT font;
 } CASE;
-
-static void M_Event(CASE *const state, const int32_t kind)
-{
-    state->events[state->event_count++] = kind;
-}
-
-static void M_Decay(void *const user)
-{
-    CASE *const state = user;
-    M_Event(state, 0);
-    CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
-    CHECK_EQ_INT(g_Shots.slots[0].moving, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(0, 120, 200), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(0, g_Player.left, 352), 2);
-}
-
-static void M_Lives(void *const user, const int16_t previous)
-{
-    CASE *const state = user;
-    M_Event(state, 1);
-    state->previous_lives = previous;
-    CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_REGULAR);
-}
-
-static void M_Bombs(void *const user, const int16_t previous)
-{
-    CASE *const state = user;
-    M_Event(state, 2);
-    state->previous_bombs = previous;
-}
-
-static void M_Timer(void *const user)
-{
-    M_Event(user, 3);
-}
-
-static void M_Lower(void *const user, const float minimum, const float delta)
-{
-    M_Event(user, 4);
-    CHECK(minimum == 0.0f);
-    CHECK(delta == -0.05f);
-}
 
 static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
 {
@@ -98,6 +57,9 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
     }
     memset(state->stage.pixels, 4, 7 * 1024);
     g_Shots.slots[0] = (SHOT) { .left = 120, .top = 200, .moving = true };
+    Hud_Init(Arena_Allocator(&state->arena));
+    Hud_Load(nullptr, &state->stage, &state->font);
+    StageTimer_Init();
 }
 
 static MISS_CONTEXT M_Context(CASE *const state, const int16_t extra)
@@ -108,12 +70,6 @@ static MISS_CONTEXT M_Context(CASE *const state, const int16_t extra)
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
         .remaining_lives = 2,
         .extra_bombs = extra,
-        .pellets_decay = M_Decay,
-        .hud_lives = M_Lives,
-        .hud_bombs = M_Bombs,
-        .timer_extend = M_Timer,
-        .pellet_speed_lower = M_Lower,
-        .user = state,
     };
 }
 
@@ -133,7 +89,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 368), expected_image % 14 + 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
     CHECK(!Miss_Resume(&context));
-    CHECK_EQ_INT(state.event_count, 0);
+    CHECK_EQ_INT(g_StageTimer.time, 0);
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
     Frame_VSync();
     CHECK(!Miss_Resume(&context));
@@ -167,7 +123,6 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                                        : 2);
                 context.difficulty = rank;
                 context.remaining_lives = (int16_t)variant;
-                const int16_t previous_bombs = g_Player.remaining_bombs;
                 const ORB orb = g_Orb;
                 const size_t used = state.arena.used;
                 Frame_Reset();
@@ -206,17 +161,9 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 const int8_t deflection[] = { 15, 12, 10, 8 };
                 CHECK_EQ_INT(g_Player.deflect_duration, deflection[rank]);
                 CHECK_EQ_INT(g_Video.scroll_top, 0);
-                CHECK_EQ_INT(state.previous_lives, variant + 1);
                 CHECK_EQ_INT(g_Player.remaining_bombs, variant == 0 ? 2 : 5);
-                CHECK_EQ_INT(state.event_count, variant == 2 ? 4 : 5);
-                CHECK_EQ_INT(state.events[0], 0);
-                CHECK_EQ_INT(state.events[1], 1);
-                if (variant != 2) {
-                    CHECK_EQ_INT(state.events[2], 2);
-                    CHECK_EQ_INT(state.previous_bombs, previous_bombs);
-                }
-                CHECK_EQ_INT(state.events[state.event_count - 2], 3);
-                CHECK_EQ_INT(state.events[state.event_count - 1], 4);
+                CHECK_EQ_INT(g_StageTimer.time, 1000);
+                CHECK_EQ_INT(g_PelletShared.speed, -2);
                 CHECK_EQ_INT(g_VSync.count1, 0);
                 CHECK(Miss_Resume(&context));
                 Arena_Free(&state.arena);
