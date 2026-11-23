@@ -7,6 +7,7 @@ pc98_lib = static_library(
   'mdrv_data.c',
   'opna/opna.c',
   'vsync.c',
+  'zun/bfnt.c',
   'zun/logo1.c',
   'zun/master_rng.c',
   'zun/math16.c',

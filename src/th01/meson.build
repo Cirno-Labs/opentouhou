@@ -1,7 +1,6 @@
 th01_lib = static_library(
   'th01_lib',
   'audio.c',
-  'bfnt.c',
   'bos.c',
   'boss_entity.c',
   'boss_render.c',
