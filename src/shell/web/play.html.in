@@ -179,7 +179,7 @@
 </div>
 <div id="stage" class="fade off">
   <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <div id="controls">
+  <div id="controls" class="fade off">
     <button id="exit" data-text="exit"></button>
     <button id="fullscreen" data-text="fullscreen"></button>
   </div>
@@ -276,6 +276,8 @@
       ['Z Z X X', 'bomb', 'ボム'], ['Esc', 'pause', 'ポーズ']],
   }['@CONTROLS@'];
   let texts = TEXTS.en;
+  // Whether the user folder is mounted, so that leaving saves it.
+  let userMounted = false;
   let statusKey = null;
   // Each step of a start takes a share of the one progress bar: English
   // adds the patch's steps. The bar only moves forward.
@@ -374,8 +376,9 @@
       .catch((error) => console.error('Cannot cache', key, error));
   }
 
+  // total only drives the bar: the buffer grows when the body is larger.
   async function readWithProgress(stream, total, key) {
-    const bytes = new Uint8Array(total);
+    let bytes = new Uint8Array(total || 1 << 20);
     const reader = stream.getReader();
     let done = 0;
     for (;;) {
@@ -383,9 +386,14 @@
       if (chunk.done) {
         return bytes.subarray(0, done);
       }
+      if (done + chunk.value.length > bytes.length) {
+        const grown = new Uint8Array(Math.max(bytes.length * 2, done + chunk.value.length));
+        grown.set(bytes.subarray(0, done));
+        bytes = grown;
+      }
       bytes.set(chunk.value, done);
       done += chunk.value.length;
-      setStatus(key, done, total);
+      setStatus(key, Math.min(done, total), total);
     }
   }
 
@@ -394,11 +402,12 @@
     if (!response.ok) {
       throw new Error('Cannot download ' + PROGRAM + '.wasm: ' + response.status);
     }
-    const total = Number(response.headers.get('Content-Length'));
-    if (!total) {
-      setStatus('download');
-      return new Uint8Array(await response.arrayBuffer());
-    }
+    // A compressed response's Content-Length is not the size of the body
+    // that fetch() gives; the server can name that size in a meta tag.
+    const meta = document.querySelector('meta[name="opentouhou-wasm-size"]');
+    const total = response.headers.get('Content-Encoding')
+      ? Number(meta?.content) || 0
+      : Number(response.headers.get('Content-Length')) || 0;
     return readWithProgress(response.body, total, 'download');
   }
 
@@ -680,13 +689,18 @@
     }
     const lines = text ? text.split('\n') : [];
     const entry = 'language = ' + code;
-    const header = lines.findIndex((line) => line.trim() === '[patches]');
+    // Names compare without case, as core/ini does.
+    const header = lines.findIndex((line) => /^\s*\[\s*patches\s*\]\s*$/i.test(line));
     if (header < 0) {
-      lines.unshift('[patches]', entry, '');
+      // At the end, so that keys before the first section stay outside it.
+      while (lines.length && !lines[lines.length - 1].trim()) {
+        lines.pop();
+      }
+      lines.push(...(lines.length ? [''] : []), '[patches]', entry, '');
     } else {
       let i = header + 1;
       while (i < lines.length && !lines[i].trim().startsWith('[')
-        && !/^\s*language\s*=/.test(lines[i])) {
+        && !/^\s*language\s*=/i.test(lines[i])) {
         i++;
       }
       if (i < lines.length && !lines[i].trim().startsWith('[')) {
@@ -803,6 +817,7 @@
     FS.writeFile('/game.zip', zip);
     FS.mkdirTree(USER_DIR);
     FS.mount(IDBFS, {}, USER_DIR);
+    userMounted = true;
     await new Promise((resolve) => FS.syncfs(true, (error) => {
       if (error) {
         console.error('Cannot load the user folder:', error);
@@ -825,6 +840,8 @@
     await new Promise((resolve) => setTimeout(resolve, FADE_MS));
     Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
     Module.callMain(['--data', '/game.zip']);
+    // Exit and Fullscreen only for a game that started.
+    show($('controls'), $('log').classList.contains('off'));
   }
 
   async function remember(file) {
@@ -869,11 +886,16 @@
     show($('log'), false);
     show($('stage'), false);
     show($('setup'), false);
-    setTimeout(() => location.reload(), FADE_MS);
+    const reload = () => setTimeout(() => location.reload(), FADE_MS);
+    if (userMounted) {
+      Module.FS.syncfs(false, reload);
+    } else {
+      reload();
+    }
   });
   $('canvas').addEventListener('click', () => $('canvas').focus());
   // The game quits as from its menu, saves, and the page takes over.
-  $('exit').addEventListener('click', () => Module._Shell_RequestQuit());
+  $('exit').addEventListener('click', () => Module._Shell_RequestQuit?.());
   $('fullscreen').addEventListener('click', () => {
     $('stage').requestFullscreen();
     $('canvas').focus();
