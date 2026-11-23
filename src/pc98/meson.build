@@ -11,6 +11,7 @@ pc98_lib = static_library(
   'zun/logo1.c',
   'zun/master_rng.c',
   'zun/math16.c',
+  'zun/pf.c',
   'zun/pi.c',
   c_args: pc98_include,
   implicit_include_directories: false,

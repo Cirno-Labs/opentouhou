@@ -62,7 +62,6 @@ th01_lib = static_library(
   'palette.c',
   'text.c',
   'tram.c',
-  'pf.c',
   'ptn.c',
   'grc.c',
   'grf.c',

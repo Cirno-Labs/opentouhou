@@ -1,6 +1,6 @@
 #include "th01/opening.h"
 
-#include "th01/pf.h"
+#include "pc98/zun/pf.h"
 
 #include <string.h>
 
@@ -31,7 +31,7 @@ RESULT Opening_MountArchive(VFS *const vfs)
     READER file;
     MUST(Vfs_Open(vfs, name, VFS_STREAM, &file));
     VFS_SOURCE *source;
-    MUST(Pf_Open(&file, name, &g_HeapAllocator, &source));
+    MUST(Pf_Open(&file, PF_TH01, name, &g_HeapAllocator, &source));
     Vfs_MountSource(vfs, "", source, 1);
     return OK;
 }
