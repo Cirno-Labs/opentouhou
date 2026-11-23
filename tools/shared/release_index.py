@@ -51,7 +51,8 @@ the date of the version's changelog heading. "published" is the UTC
 time of the version's first upload; a release published before the
 field existed has none. "changes" is the body of
 that changelog section, as Markdown. "files" maps a platform (Linux,
-Windows, macOS) to its file; a platform without a file is left out.
+Windows, macOS, or Web for a game's web package, which only the
+snapshot has) to its file; a platform without a file is left out.
 "size" (in bytes), "sha256" and "sha1" are computed from the uploaded
 file. "checksums" gives the URLs of the SHA256SUMS and SHA1SUMS files
 beside the files, in the format of sha256sum and sha1sum, so that
@@ -79,7 +80,7 @@ from pathlib import Path
 from shared.versioning import file_version, product_name
 
 FORMAT = 1
-PLATFORMS = ["Linux", "Windows", "macOS"]
+PLATFORMS = ["Linux", "Windows", "macOS", "Web"]
 CHECKSUMS = {"SHA256SUMS": "sha256", "SHA1SUMS": "sha1"}
 REPLACE_WINDOW = datetime.timedelta(hours=24)
 
@@ -138,7 +139,7 @@ def file_prefix(program: str) -> str:
 
 def file_suffix(program: str, platform: str) -> str:
     """Return the end of the name of a program's file for a platform, such
-    as -Linux.zip or -Windows.exe."""
+    as -Linux.zip, -Web.zip or -Windows.exe."""
     if program != "othpatch":
         return f"-{platform}.zip"
     return f"-{platform}.exe" if platform == "Windows" else f"-{platform}"

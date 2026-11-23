@@ -518,6 +518,49 @@ class ReleaseIndexTest(unittest.TestCase):
             snapshot["checksums"]["SHA1SUMS"], f"{PUBLIC_URL}/snapshot/SHA1SUMS"
         )
 
+    def snapshot(self, commit: str) -> subprocess.CompletedProcess:
+        return self.run_tool(
+            "snapshot",
+            "--packages",
+            str(self.root / "packages"),
+            "--commit",
+            commit,
+        )
+
+    def test_snapshot_lists_the_web_packages(self) -> None:
+        self.package("oth06-0.1.2-dev-abcdef0-Linux.zip", b"linux")
+        self.package("oth06-0.1.2-dev-abcdef0-Web.zip", b"web")
+        result = self.snapshot("abcdef0123")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        path = self.root / "releases.json"
+        path.write_bytes(self.r2.objects["releases.json"])
+        index = release_index.load(path)
+        game = index["snapshot"]["programs"]["oth06"]
+        self.assertEqual(sorted(game["files"]), ["Linux", "Web"])
+        self.assertEqual(
+            game["files"]["Web"],
+            {
+                "name": "oth06-0.1.2-dev-abcdef0-Web.zip",
+                "url": f"{PUBLIC_URL}/snapshot/oth06-0.1.2-dev-abcdef0-Web.zip",
+                "size": 3,
+                "sha256": hashlib.sha256(b"web").hexdigest(),
+                "sha1": hashlib.sha1(b"web").hexdigest(),
+            },
+        )
+        self.assertIn(
+            f"{hashlib.sha256(b'web').hexdigest()}  oth06-0.1.2-dev-abcdef0-Web.zip\n",
+            self.r2.objects["snapshot/SHA256SUMS"].decode(),
+        )
+
+        for platform in ["Linux", "Web"]:
+            (
+                self.root / "packages" / f"oth06-0.1.2-dev-abcdef0-{platform}.zip"
+            ).unlink()
+            self.package(f"oth06-0.1.2-dev-1234567-{platform}.zip")
+        self.assertEqual(self.snapshot("1234567890").returncode, 0)
+        self.assertNotIn("snapshot/oth06-0.1.2-dev-abcdef0-Web.zip", self.r2.objects)
+        self.assertIn("snapshot/oth06-0.1.2-dev-1234567-Web.zip", self.r2.objects)
+
 
 class CommandLineTest(unittest.TestCase):
     """Runs the tools as programs, with the fake bucket as the aws command."""
