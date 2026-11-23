@@ -64,7 +64,7 @@ void Tram_Fill(
     }
 }
 
-void Tram_PutGlyph16(
+static void M_PutGlyph16(
     TRAM *const tram, const GAME_TEXT_GLYPH *const glyph, const int32_t left,
     const int32_t top, const TRAM_COLOR foreground, const TRAM_COLOR background)
 {
@@ -116,7 +116,7 @@ void Tram_PutLine16(
     Tram_Fill(tram, (GFX_RECT) { 0, 0, VIDEO_WIDTH, 336 }, background);
     int32_t left = (VIDEO_WIDTH - width * 16) / 2;
     for (int32_t i = 0; i < count; i++) {
-        Tram_PutGlyph16(tram, glyphs[i], left, 80, foreground, background);
+        M_PutGlyph16(tram, glyphs[i], left, 80, foreground, background);
         left += glyphs[i]->width * 16;
     }
 }
@@ -127,5 +127,5 @@ void Tram_PutKanji16Reverse(
     M_Glyph(glyph);
     ASSERT(glyph->width == 16);
     Tram_Fill(tram, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, TRAM_BLACK);
-    Tram_PutGlyph16(tram, glyph, 192, 80, TRAM_TRANSPARENT, TRAM_BLACK);
+    M_PutGlyph16(tram, glyph, 192, 80, TRAM_TRANSPARENT, TRAM_BLACK);
 }

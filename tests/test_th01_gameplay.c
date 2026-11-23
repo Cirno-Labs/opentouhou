@@ -409,10 +409,14 @@ TEST(real_gameover_score_registration_precedes_continue)
             Gameplay_Tick(g, &(TH01_INPUT) {}, true, ++tick);
         }
         CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_SCORE);
-        SCORE_SAVES saves = {};
-        for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
-            ScoreData_Defaults(&saves.tables[rank]);
-        }
+        VFS *const user_files = Vfs_Create(&g_HeapAllocator);
+        SCORE_SAVES loaded;
+        CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &loaded)));
+        Vfs_Destroy(user_files);
+        SCORE_SAVES saves = {
+            .tables = { loaded.tables[0], loaded.tables[1], loaded.tables[2],
+                        loaded.tables[3] },
+        };
         SCORE_ASSETS assets = {
             .gameover = { .pixels = f.assets->backgrounds[0].pixels },
             .font = f.assets->menu_font

@@ -1,5 +1,6 @@
 #include "th01/missiles.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -111,17 +112,17 @@ TEST(unaligned_quarters_and_word_rounded_restore)
         &video, &sprites,
         (MISSILES_ACTION) {
             .kind = MISSILES_ACTION_PUT, .left = 19, .top = 100 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 19, 100), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 34, 100), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 100), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 19, 100), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 34, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 100), 0);
     memset(video.pages[1], 7, VIDEO_PAGE_SIZE);
     Missiles_RenderAction(
         &video, &sprites,
         (MISSILES_ACTION) {
             .kind = MISSILES_ACTION_RESTORE, .left = 19, .top = 100 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 100), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 63, 115), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 64, 115), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 100), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 63, 115), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 64, 115), 0);
     Mem_Free(video.pages[0]);
 }
 
@@ -140,7 +141,7 @@ TEST(new_bottom_explosion_keeps_machine_shift_behavior)
                             .top = 392,
                             .image = 4,
                             .quarter = 0 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 392), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 8, 392), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 392), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8, 392), 0);
     Mem_Free(video.pages[0]);
 }

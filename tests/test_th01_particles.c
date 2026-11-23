@@ -3,6 +3,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
@@ -48,7 +49,7 @@ TEST(first_spawn_skips_zero_and_uses_shared_randomness)
     CHECK_EQ_INT(p.alive[1], 1);
     CHECK_EQ_INT(p.x[1], left * 16);
     CHECK_EQ_INT(p.y[1], speed * 16);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, left, speed), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, left, speed), 7);
     CHECK_EQ_INT(video.drawing_page, 0);
     Arena_Free(&arena);
 }
@@ -77,7 +78,7 @@ TEST(first_overflow_preserves_negative_velocity_aliases)
     CHECK_EQ_INT(p.y[0], left * 16);
     CHECK_EQ_INT(p.x[0], 1000 + 399 * 16);
     CHECK_EQ_INT(p.alive[1], 255);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 200, 100), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 200, 100), 10);
     p.cycle = 79;
     Particles_UpdateAndRender(&p, &video, &rng, PARTICLES_TOP, 7);
     CHECK_EQ_INT(rng, expected_rng);
@@ -103,12 +104,12 @@ TEST(leaving_particle_restores_old_word_before_dying)
     Particles_UpdateAndRender(&p, &video, &rng, PARTICLES_TOP, 10);
     CHECK_EQ_INT(p.alive[0], 0);
     CHECK_EQ_INT(p.x[0], 640 * 16);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 623, 100), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 624, 100), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 100), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 101), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 15, 101), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 101), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 623, 100), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 624, 100), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 100), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 101), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 15, 101), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 101), 7);
     Arena_Free(&arena);
 }
 

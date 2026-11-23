@@ -171,7 +171,7 @@ void GameInput_SenseEnding(GAME_INPUT *const state, const TH01_INPUT *const raw)
     previous->ok = raw->ok;
 }
 
-void GameInput_ResetRepeat(GAME_INPUT *const state)
+static void M_ResetRepeat(GAME_INPUT *const state)
 {
     state->previous = (TH01_INPUT) {
         .memory_enter = state->previous.memory_enter,
@@ -187,7 +187,7 @@ void GameInput_ResetGame(GAME_INPUT *const state)
     const TH01_INPUT previous = state->previous;
     const int16_t bomb_frame = state->bomb_frame;
     *state = (GAME_INPUT) { .previous = previous, .bomb_frame = bomb_frame };
-    GameInput_ResetRepeat(state);
+    M_ResetRepeat(state);
 }
 
 void GameInput_ResetMenu(GAME_INPUT *const state)

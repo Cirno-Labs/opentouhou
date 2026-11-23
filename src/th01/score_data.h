@@ -25,25 +25,18 @@ typedef struct {
     VFS *user_files;
 } SCORE_SAVES;
 
-// Fills table with the original's ten default entries.
-void ScoreData_Defaults(SCORE_TABLE *table);
-
-// Reads one original record. Checks only the first four signature bytes, as
-// the original does, and accepts trailing bytes. Rejects invalid CP932.
-// Names keep all sixteen original bytes, including ASCII spaces.
-RESULT ScoreData_Read(READER *reader, SCORE_TABLE *out);
-RESULT ScoreData_Write(WRITER *writer, const SCORE_TABLE *table);
-
 // Inserts entry before equal scores and returns its place, or SCORE_PLACES
 // when the score does not qualify. The name must already encode to sixteen
 // CP932 bytes.
 int32_t ScoreData_Insert(SCORE_TABLE *table, const SCORE_ENTRY *entry);
-const char *ScoreData_File(int32_t rank);
 
 // Loads each rank from user_files, else from original, else the defaults,
 // queueing ranks missing in user_files for creation. Never writes original
-// files. Disables writes for a rank whose file in user_files is invalid, to
-// keep it. Reports invalid files while leaving all four tables usable.
+// files. Checks only the first four signature bytes, as the original does,
+// and accepts trailing bytes. Names keep all sixteen original bytes,
+// including ASCII spaces. Disables writes for a rank whose file in user_files
+// is invalid, to keep it. Reports invalid files while leaving all four tables
+// usable.
 RESULT ScoreData_Load(VFS *original, VFS *user_files, SCORE_SAVES *out);
 
 // Queues a rank for ScoreData_WriteSaves.

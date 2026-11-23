@@ -49,20 +49,13 @@ RESULT GameText_Load(
 const GAME_TEXT_GLYPH *GameText_Find(
     const GAME_TEXT_FONT *font, uint32_t codepoint);
 
-// Measures one line with 0 through 7 pixels between cells, excluding the
-// final gap. Uncached characters keep their default cell width. Fails on
-// malformed UTF-8, an invalid style or a width beyond INT32_MAX.
-RESULT GameText_Measure(
-    const GAME_TEXT_FONT *font, const char *text, const GAME_TEXT_STYLE *style,
-    int32_t *width);
-
-// Draws text in color masked to four bits on the drawing page. Applies the
-// 16-bit weights before reverse, discarding overflow to the left; uncached
-// characters draw blank. clear_background fills the text extent with index
-// 0, through row 17 when underlined, and underline draws index 7 at top+17.
-// Stops before a cell that extends beyond the right edge, as the original
-// does. Clips left and vertical writes without the VRAM's aliasing. Fails
-// without drawing on malformed input.
+// Draws text in color masked to four bits on the drawing page, with
+// spacing pixels between cells. Applies the 16-bit weights before reverse,
+// discarding overflow to the left; uncached characters draw blank.
+// clear_background fills the text extent with index 0, through row 17 when
+// underlined, and underline draws index 7 at top+17. Stops before a cell that
+// extends beyond the right edge, as the original does. Clips left and vertical
+// writes without the VRAM's aliasing. Fails without drawing on malformed input.
 RESULT GameText_Draw(
     const GAME_TEXT_FONT *font, VIDEO *video, const char *text, int32_t left,
     int32_t top, uint8_t color, const GAME_TEXT_STYLE *style);

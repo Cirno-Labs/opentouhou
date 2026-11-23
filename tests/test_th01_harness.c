@@ -7,7 +7,9 @@
 
 #include "core/base/string.h"
 #include "core/base/utils.h"
+#include "core/vfs.h"
 #include "test.h"
+#include "test_dir.h"
 
 #include <string.h>
 
@@ -22,15 +24,32 @@ static const STAGED_FILE *M_File(const char *const path)
     return nullptr;
 }
 
+// Returns a VFS over a directory that holds the staged file at each path.
+static VFS *M_Stage(const char *const *const paths, const size_t count)
+{
+    char *const directory = TestDir_Prepare("staged");
+    for (size_t i = 0; i < count; i++) {
+        const STAGED_FILE *const file = M_File(paths[i]);
+        char *const path = TestDir_Join(directory, file->path);
+        TestDir_Write(path, file->data, file->size);
+        Mem_Free(path);
+    }
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+    CHECK(Result_Log(
+        Vfs_MountDir(vfs, "", directory, 0, false), LOG_LEVEL_ERROR));
+    Mem_Free(directory);
+    return vfs;
+}
+
 TEST(staged_config_reads_as_the_default_settings)
 {
-    const STAGED_FILE *const file = M_File("reiiden.cfg");
-    READER reader;
-    Reader_OpenBuffer(&reader, file->data, file->size, file->path);
+    VFS *const vfs = M_Stage((const char *const[]) { "reiiden.cfg" }, 1);
+    VFS *const user_files = Vfs_Create(&g_HeapAllocator);
     TH01_SETTINGS settings = {};
-    CHECK(
-        Result_Log(Settings_ReadOriginal(&reader, &settings), LOG_LEVEL_ERROR));
-    Reader_Close(&reader);
+    CHECK(Result_Log(
+        Settings_ImportOriginal(vfs, user_files, &settings), LOG_LEVEL_ERROR));
+    Vfs_Destroy(user_files);
+    Vfs_Destroy(vfs);
     CHECK_EQ_INT(settings.difficulty, SETTINGS_DIFFICULTY_NORMAL);
     CHECK_EQ_INT(settings.music, SETTINGS_MUSIC_FM);
     CHECK_EQ_INT(settings.bombs, 1);
@@ -39,19 +58,29 @@ TEST(staged_config_reads_as_the_default_settings)
 
 TEST(staged_score_files_hold_the_default_tables)
 {
-    SCORE_TABLE defaults;
-    ScoreData_Defaults(&defaults);
+    static const char *const files[SCORE_RANKS] = {
+        "REYHIES.DAT",
+        "REYHINO.DAT",
+        "REYHIHA.DAT",
+        "REYHILU.DAT",
+    };
     for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
-        const STAGED_FILE *const file = M_File(ScoreData_File(rank));
-        CHECK_EQ_INT(file->size, SCORE_FILE_SIZE);
-        READER reader;
-        Reader_OpenBuffer(&reader, file->data, file->size, file->path);
-        SCORE_TABLE table;
-        CHECK(Result_Log(ScoreData_Read(&reader, &table), LOG_LEVEL_ERROR));
-        Reader_Close(&reader);
+        CHECK_EQ_INT(M_File(files[rank])->size, SCORE_FILE_SIZE);
+    }
+    VFS *const user_files = Vfs_Create(&g_HeapAllocator);
+    SCORE_SAVES defaults;
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &defaults)));
+    VFS *const vfs = M_Stage(files, SCORE_RANKS);
+    SCORE_SAVES staged;
+    CHECK(
+        Result_Log(ScoreData_Load(vfs, user_files, &staged), LOG_LEVEL_ERROR));
+    Vfs_Destroy(vfs);
+    Vfs_Destroy(user_files);
+    for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
         for (int32_t i = 0; i < SCORE_PLACES; i++) {
-            const SCORE_ENTRY *const expected = &defaults.entries[i];
-            const SCORE_ENTRY *const actual = &table.entries[i];
+            const SCORE_ENTRY *const expected =
+                &defaults.tables[rank].entries[i];
+            const SCORE_ENTRY *const actual = &staged.tables[rank].entries[i];
             CHECK(strcmp(actual->name, expected->name) == 0);
             CHECK(strcmp(actual->route, expected->route) == 0);
             CHECK_EQ_INT(actual->score, expected->score);

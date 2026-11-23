@@ -2,6 +2,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
@@ -33,21 +34,21 @@ TEST(pages_and_contexts_share_only_the_caller_lifetime)
     CHECK_EQ_INT(arena.used, 4 * VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(video.drawing_page, 0);
     CHECK_EQ_INT(video.visible_page, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 639, 399), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 639, 399), 0);
     Video_Clear(&video, 0x23);
     Video_SelectVisiblePage(&video, 1);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 399), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 639, 399), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 399), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 639, 399), 0);
     Video_SelectDrawingPage(&video, 1);
     Video_Clear(&video, 15);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 0), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 0, 0), 15);
-    CHECK_EQ_INT(Video_ReadPixel(&other, 1, 0, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 0, 0), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&other, 1, 0, 0), 0);
     CHECK_EQ_INT(other.visible_page, 0);
     Arena_Reset(&arena);
     Video_Init(&video, Arena_Allocator(&arena));
     CHECK_EQ_INT(arena.used, 2 * VIDEO_PAGE_SIZE);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 0), 0);
     Arena_Free(&arena);
 }
 
@@ -67,14 +68,10 @@ TEST(primitives_clip_and_include_reversed_endpoints)
     CHECK_EQ_INT(M_Count(&video, 2), 3);
     Video_FillBox(&video, 2, 2, -2, -2, 0x23);
     CHECK_EQ_INT(M_Count(&video, 3), 9);
-    Video_Box(&video, 5, 5, 3, 3, 4);
-    CHECK_EQ_INT(M_Count(&video, 4), 8);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 4, 4), 0);
     Video_HorizontalLine(&video, INT32_MIN, INT32_MAX, 400, 7);
     Video_VerticalLine(&video, -1, INT32_MIN, INT32_MAX, 7);
     Video_FillBox(&video, 700, 0, 800, 399, 7);
     CHECK_EQ_INT(M_Count(&video, 7), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, INT32_MAX, INT32_MIN), 0);
     Arena_Free(&arena);
 }
 
@@ -116,7 +113,7 @@ TEST(oblique_lines_preserve_rounding_and_unflushed_final_groups)
         CHECK_EQ_INT(M_Count(&video, 7), count);
         for (int32_t i = 0; i < count; i++) {
             CHECK_EQ_INT(
-                Video_ReadPixel(
+                Th01Test_Pixel(
                     &video, 0, points[index][i][0], points[index][i][1]),
                 7);
         }
@@ -137,31 +134,31 @@ TEST(line_clipping_truncates_the_slope_before_scaling)
     VIDEO video;
     M_Init(&arena, &video);
     Video_Line(&video, -4, 10, 4, 12, 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 10), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 1, 10), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 2, 11), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 3, 11), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 10), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 1, 10), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 2, 11), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 3, 11), 3);
     CHECK_EQ_INT(M_Count(&video, 3), 4);
     Video_Clear(&video, 0);
     Video_Line(&video, 635, 10, 643, 12, 4);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 635, 10), 4);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 636, 10), 4);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 637, 11), 4);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 638, 11), 4);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 635, 10), 4);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 636, 10), 4);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 637, 11), 4);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 638, 11), 4);
     CHECK_EQ_INT(M_Count(&video, 4), 4);
     Video_Clear(&video, 0);
     Video_Line(&video, 10, -4, 12, 4, 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 0), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 1), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 11, 2), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 11, 3), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 0), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 1), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 11, 2), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 11, 3), 5);
     CHECK_EQ_INT(M_Count(&video, 5), 4);
     Video_Clear(&video, 0);
     Video_Line(&video, 10, 395, 12, 403, 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 395), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 396), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 11, 397), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 11, 398), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 395), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 396), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 11, 397), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 11, 398), 6);
     CHECK_EQ_INT(M_Count(&video, 6), 4);
     Video_Clear(&video, 0);
     Video_Line(&video, -5, -5, -1, 405, 7);
@@ -186,15 +183,15 @@ TEST(lines_preserve_the_existing_six_directional_clip_cases)
         Video_Clear(&video, 0);
         const int32_t *const line = cases[i];
         Video_Line(&video, line[0], line[1], line[2], line[3], 3);
-        CHECK_EQ_INT(Video_ReadPixel(&video, 0, line[4], line[5]), 3);
+        CHECK_EQ_INT(Th01Test_Pixel(&video, 0, line[4], line[5]), 3);
     }
     Video_Clear(&video, 0);
     Video_Line(&video, 0, 0, 16, 16, 3);
     CHECK_EQ_INT(M_Count(&video, 3), 16);
     for (int32_t i = 0; i < 16; i++) {
-        CHECK_EQ_INT(Video_ReadPixel(&video, 0, i, i), 3);
+        CHECK_EQ_INT(Th01Test_Pixel(&video, 0, i, i), 3);
     }
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 16), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 16), 0);
     Arena_Free(&arena);
 }
 
@@ -216,27 +213,27 @@ TEST(indexed_blits_separate_coverage_key_and_opaque_zero)
         .key = -1,
     };
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 3, 2 }, 0, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 0), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 1, 0), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 2, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 1, 0), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 2, 0), 3);
     image.coverage = nullptr;
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 3, 2 }, 3, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 4, 0), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 4, 0), 15);
     image.key = 15;
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 3, 2 }, 6, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 6, 0), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 7, 0), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 6, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 7, 0), 9);
     image.key = 0;
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 3, 2 }, 9, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 9, 0), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 0), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 9, 0), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 0), 15);
     image.coverage = coverage;
     image.key = 3;
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 3, 2 }, 12, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 12, 0), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 13, 0), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 14, 0), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 2, 1), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 12, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 13, 0), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 14, 0), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 2, 1), 6);
     Arena_Free(&arena);
 }
 
@@ -257,26 +254,26 @@ TEST(blits_and_masks_clip_source_and_destination_without_shifting)
         .key = -1,
     };
     Video_Blit(&video, &image, (GFX_RECT) { 2, 2, 2, 2 }, 10, 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 10), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 11, 11), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 10), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 11, 11), 15);
     Video_Blit(&video, &image, (GFX_RECT) { -1, -1, 4, 4 }, 20, 20);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 20, 20), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 22, 22), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 20, 20), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 22, 22), 5);
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 4, 4 }, -2, -2);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 0), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 1, 1), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 0), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 1, 1), 15);
     Video_Blit(&video, &image, (GFX_RECT) { 2, 2, 4, 4 }, 638, 398);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 399), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 399), 15);
     const VIDEO_MASK mask = { pixels, 4, 4, 5 };
     Video_Mask(&video, &mask, (GFX_RECT) { 0, 0, 4, 4 }, -1, -1, 0x23);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 0), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 2, 2), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 2, 2), 3);
     Video_Mask(&video, &mask, (GFX_RECT) { 0, 0, 2, 1 }, 30, 30, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 31, 30), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 31, 30), 0);
     Video_Clear(&video, 5);
     Video_Mask(&video, &mask, (GFX_RECT) { 0, 0, 2, 1 }, 30, 30, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 30, 30), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 31, 30), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 30, 30), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 31, 30), 0);
     Video_Blit(&video, &image, (GFX_RECT) { INT32_MIN, 0, INT32_MAX, 1 }, 0, 0);
     Video_Blit(&video, &image, (GFX_RECT) { 0, 0, 4, 4 }, INT32_MAX, INT32_MIN);
     CHECK_EQ_INT(M_Count(&video, 5), VIDEO_PAGE_SIZE - 1);
@@ -292,10 +289,10 @@ TEST(rectangle_copies_preserve_clipping_and_page_selection)
     Video_Clear(&video, 7);
     Video_SelectVisiblePage(&video, 1);
     Video_Copy(&video, 1, (GFX_RECT) { -1, -1, 4, 4 }, 0, 10, 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 10, 10), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 11, 11), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 13, 13), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 14, 13), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 10), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 11, 11), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 13, 13), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 14, 13), 0);
     CHECK_EQ_INT(video.drawing_page, 1);
     CHECK_EQ_INT(video.visible_page, 1);
     Video_Copy(
@@ -331,7 +328,7 @@ TEST(overlapping_copies_read_the_original_rectangle)
         for (int32_t row = 0; row < 3; row++) {
             for (int32_t col = 0; col < 4; col++) {
                 CHECK_EQ_INT(
-                    Video_ReadPixel(&video, 0, x + col, y + row),
+                    Th01Test_Pixel(&video, 0, x + col, y + row),
                     pixels[row * 4 + col]);
             }
         }
@@ -349,12 +346,12 @@ TEST(word_aligned_restore_rounds_the_original_right_edge)
     Video_Restore16(&video, (GFX_RECT) { 15, 10, 2, 1 });
     CHECK_EQ_INT(video.drawing_page, 0);
     CHECK_EQ_INT(M_Count(&video, 6), 32);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 10), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 31, 10), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 32, 10), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 10), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 31, 10), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 32, 10), 0);
     Video_Restore16(&video, (GFX_RECT) { 639, 399, 2, 10 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 624, 399), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 623, 399), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 624, 399), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 623, 399), 0);
     CHECK_EQ_INT(M_Count(&video, 6), 48);
     Video_SelectDrawingPage(&video, 1);
     Video_Restore16(&video, (GFX_RECT) { 0, 0, 0, 10 });

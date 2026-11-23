@@ -2,6 +2,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 static void M_Init(
@@ -111,7 +112,7 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
             CHECK_EQ_INT(opening.random, model_random);
             int32_t whites = 0;
             for (int32_t y = 0; y < VIDEO_HEIGHT; y++) {
-                whites += Video_ReadPixel(&video, 0, 639, y) == 15;
+                whites += Th01Test_Pixel(&video, 0, 639, y) == 15;
             }
             CHECK_EQ_INT(whites, 2);
         }
@@ -142,7 +143,7 @@ TEST(prompt_blinks_after_wait_and_window_keeps_saved_palette)
     }
     for (int32_t i = 0; i < 70; i++) {
         M_Tick(&opening, (TH01_INPUT) {});
-        CHECK_EQ_INT(Video_ReadPixel(&video, 0, 256, 306), i < 50 ? 15 : 2);
+        CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 256, 306), i < 50 ? 15 : 2);
     }
     CHECK_EQ_INT(opening.prompt_frame, 0);
     Opening_Tick(&opening, &(TH01_INPUT) {}, true);
@@ -153,7 +154,7 @@ TEST(prompt_blinks_after_wait_and_window_keeps_saved_palette)
     CHECK_EQ_INT(video.pages[1][0], 7);
     CHECK_EQ_INT(opening.palette.resource.colors[1][1], 2);
     CHECK_EQ_INT(video.palette[1].green, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 269, 276), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 269, 276), 15);
     Arena_Free(&arena);
 }
 

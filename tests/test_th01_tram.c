@@ -120,19 +120,20 @@ TEST(halfwidth_dots_expand_into_exact_sixteen_pixel_blocks)
         .width = 8,
     };
     const GAME_TEXT_GLYPH before = glyph;
-    Tram_PutGlyph16(&tram, &glyph, 9, 13, TRAM_RED, TRAM_TRANSPARENT);
+    const GAME_TEXT_GLYPH *const line[] = { &glyph };
+    Tram_PutLine16(&tram, line, 1, TRAM_RED, TRAM_TRANSPARENT);
     CHECK_EQ_INT(M_Count(&tram, 3), 4 * 16 * 16);
-    for (int32_t y = 13; y < 29; y++) {
-        CHECK_EQ_INT(M_Pixel(&tram, 9, y), 3);
-        CHECK_EQ_INT(M_Pixel(&tram, 24, y), 3);
-        CHECK_EQ_INT(M_Pixel(&tram, 25, y), 0);
-        CHECK_EQ_INT(M_Pixel(&tram, 121, y), 3);
-        CHECK_EQ_INT(M_Pixel(&tram, 136, y), 3);
-        CHECK_EQ_INT(M_Pixel(&tram, 137, y), 0);
+    for (int32_t y = 80; y < 96; y++) {
+        CHECK_EQ_INT(M_Pixel(&tram, 256, y), 3);
+        CHECK_EQ_INT(M_Pixel(&tram, 271, y), 3);
+        CHECK_EQ_INT(M_Pixel(&tram, 272, y), 0);
+        CHECK_EQ_INT(M_Pixel(&tram, 368, y), 3);
+        CHECK_EQ_INT(M_Pixel(&tram, 383, y), 3);
+        CHECK_EQ_INT(M_Pixel(&tram, 384, y), 0);
     }
-    CHECK_EQ_INT(M_Pixel(&tram, 25, 29), 3);
-    CHECK_EQ_INT(M_Pixel(&tram, 105, 44), 3);
-    CHECK_EQ_INT(M_Pixel(&tram, 9, 45), 0);
+    CHECK_EQ_INT(M_Pixel(&tram, 272, 96), 3);
+    CHECK_EQ_INT(M_Pixel(&tram, 352, 111), 3);
+    CHECK_EQ_INT(M_Pixel(&tram, 256, 112), 0);
     CHECK(memcmp(&glyph, &before, sizeof(glyph)) == 0);
     Arena_Free(&arena);
 }
@@ -148,16 +149,18 @@ TEST(fullwidth_composition_replaces_foreground_and_background)
         .rows = { 0x8001 },
         .width = 16,
     };
-    Tram_PutGlyph16(&tram, &glyph, 32, 48, TRAM_TRANSPARENT, TRAM_BLACK);
-    CHECK_EQ_INT(M_Pixel(&tram, 32, 48), 0);
-    CHECK_EQ_INT(M_Pixel(&tram, 47, 63), 0);
-    CHECK_EQ_INT(M_Pixel(&tram, 48, 48), 1);
-    CHECK_EQ_INT(M_Pixel(&tram, 271, 48), 1);
-    CHECK_EQ_INT(M_Pixel(&tram, 272, 48), 0);
-    CHECK_EQ_INT(M_Pixel(&tram, 287, 63), 0);
-    CHECK_EQ_INT(M_Pixel(&tram, 32, 64), 1);
-    CHECK_EQ_INT(M_Pixel(&tram, 31, 48), 2);
-    CHECK_EQ_INT(M_Pixel(&tram, 288, 48), 2);
+    const GAME_TEXT_GLYPH *const line[] = { &glyph };
+    Tram_PutLine16(&tram, line, 1, TRAM_TRANSPARENT, TRAM_BLACK);
+    CHECK_EQ_INT(M_Pixel(&tram, 192, 80), 0);
+    CHECK_EQ_INT(M_Pixel(&tram, 207, 95), 0);
+    CHECK_EQ_INT(M_Pixel(&tram, 208, 80), 1);
+    CHECK_EQ_INT(M_Pixel(&tram, 431, 80), 1);
+    CHECK_EQ_INT(M_Pixel(&tram, 432, 80), 0);
+    CHECK_EQ_INT(M_Pixel(&tram, 447, 95), 0);
+    CHECK_EQ_INT(M_Pixel(&tram, 192, 96), 1);
+    CHECK_EQ_INT(M_Pixel(&tram, 191, 80), 1);
+    CHECK_EQ_INT(M_Pixel(&tram, 448, 80), 1);
+    CHECK_EQ_INT(M_Pixel(&tram, 0, 336), 2);
     Arena_Free(&arena);
 }
 
@@ -233,7 +236,7 @@ TEST(reverse_kanji_covers_screen_except_centered_glyph_holes)
     Arena_Free(&arena);
 }
 
-TEST(clipped_glyphs_and_extreme_rectangles_stay_inside_storage)
+TEST(extreme_rectangles_stay_inside_storage)
 {
     ARENA arena;
     Arena_Init(&arena, "tram guards", 1024 * 1024);
@@ -243,22 +246,8 @@ TEST(clipped_glyphs_and_extreme_rectangles_stay_inside_storage)
     Tram_Init(&tram, Arena_Allocator(&arena));
     uint8_t *const last = Arena_Alloc(&arena, 16);
     memset(last, 0x5a, 16);
-    GAME_TEXT_GLYPH glyph = { .codepoint = 0x6771, .width = 16 };
-    for (int32_t i = 0; i < 16; i++) {
-        glyph.rows[i] = 0xffff;
-    }
-    Tram_PutGlyph16(&tram, &glyph, -255, -255, TRAM_RED, TRAM_BLACK);
-    CHECK_EQ_INT(M_Count(&tram, 3), 1);
-    Tram_PutGlyph16(&tram, &glyph, 639, 399, TRAM_GREEN, TRAM_BLACK);
-    CHECK_EQ_INT(M_Count(&tram, 5), 1);
-    Tram_PutGlyph16(
-        &tram, &glyph, INT32_MIN, INT32_MIN, TRAM_WHITE, TRAM_BLACK);
-    Tram_PutGlyph16(
-        &tram, &glyph, INT32_MAX, INT32_MAX, TRAM_WHITE, TRAM_BLACK);
     Tram_Fill(&tram, (GFX_RECT) { INT32_MIN, 0, INT32_MAX, 400 }, TRAM_WHITE);
     Tram_Fill(&tram, (GFX_RECT) { INT32_MAX, 0, INT32_MAX, 400 }, TRAM_WHITE);
-    CHECK_EQ_INT(M_Count(&tram, 3), 1);
-    CHECK_EQ_INT(M_Count(&tram, 5), 1);
     for (int32_t i = 0; i < 16; i++) {
         CHECK_EQ_INT(first[i], 0xa5);
         CHECK_EQ_INT(last[i], 0x5a);

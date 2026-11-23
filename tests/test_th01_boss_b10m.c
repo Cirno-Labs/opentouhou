@@ -4,6 +4,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -465,9 +466,9 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         FRAME_VSYNC vsync = {};
         CHECK(B10M_UpdateAndRender(&b, &f.context, &vsync));
         CHECK_EQ_INT(f.player.is_hit, i == 0 || i == 2);
-        CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 92, 156), 7);
-        CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 540, 398), 7);
-        CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 540, 399), 0);
+        CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 92, 156), 7);
+        CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 540, 398), 7);
+        CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 540, 399), 0);
         f.player.invincible = true;
         CHECK(B10M_UpdateAndRender(&b, &f.context, &vsync));
         CHECK(!f.player.is_hit);

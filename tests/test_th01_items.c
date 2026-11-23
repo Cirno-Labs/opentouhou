@@ -2,6 +2,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
@@ -95,7 +96,7 @@ TEST(pool_splash_fall_bounce_and_reset_boundaries)
     }
     CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_FALL);
     CHECK_EQ_INT(c.items.bombs[0].top, 366);
-    CHECK_EQ_INT(Video_ReadPixel(&c.video, 0, 100, 366), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&c.video, 0, 100, 366), 0);
     Items_UpdateAndRender(&c.items, &c.context);
     CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_BOUNCE);
     CHECK_EQ_INT(c.items.bombs[0].top, 360);
@@ -177,7 +178,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
     CHECK_EQ_INT(c.value, 0);
     CHECK_EQ_INT(c.items.points[0].flag, ITEM_FREE);
     CHECK_EQ_INT(c.items.points[1].radius_or_time, 2);
-    CHECK_EQ_INT(Video_ReadPixel(&c.video, 0, 200 + 4 * 8 + 2, 198), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&c.video, 0, 200 + 4 * 8 + 3, 198), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&c.video, 0, 200 + 4 * 8 + 2, 198), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&c.video, 0, 200 + 4 * 8 + 3, 198), 0);
     Arena_Free(&c.arena);
 }

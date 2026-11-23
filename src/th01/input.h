@@ -53,12 +53,9 @@ bool GameInput_SenseGame(GAME_INPUT *state, const TH01_INPUT *raw, bool debug);
 // keys or bomb double taps.
 void GameInput_SenseEnding(GAME_INPUT *state, const TH01_INPUT *raw);
 
-// Clears the repeat history, the double-tap counts and the pending bomb,
-// keeping debug-key history, held flags, pause and bomb_frame.
-void GameInput_ResetRepeat(GAME_INPUT *state);
-
-// Clears held flags and pause, then resets the repeat history. Keeps
-// bomb_frame and the debug-key history, as input_reset_sense does.
+// Clears held flags, pause, the repeat history, the double-tap counts and
+// the pending bomb. Keeps bomb_frame and the debug-key history, as
+// input_reset_sense does.
 void GameInput_ResetGame(GAME_INPUT *state);
 
 // Clears only horizontal, shot and ok, keeping the repeat history.

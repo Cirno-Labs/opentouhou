@@ -1,5 +1,6 @@
 #include "th01/extend.h"
 #include "core/base/arena.h"
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -23,8 +24,8 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK_EQ_INT(f->resident_lives, 2);
     CHECK_EQ_INT(f->next, 1);
     CHECK_EQ_INT(f->shared.speed, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&f->video, 0, 144, 0), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&f->video, 1, 144, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&f->video, 0, 144, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&f->video, 1, 144, 0), 3);
     f->effects++;
 }
 

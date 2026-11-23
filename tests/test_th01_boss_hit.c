@@ -2,6 +2,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
@@ -52,7 +53,7 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK_EQ_INT(f->hit.frame, 0);
     CHECK_EQ_INT(f->hud.score_previous, f->gameplay.score);
     CHECK_EQ_INT(f->palette.saved.colors[2][0], 15);
-    CHECK_EQ_INT(Video_ReadPixel(&f->video, 0, 184, 48), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f->video, 0, 184, 48), 7);
     f->events[f->count++] = number;
 }
 
@@ -114,7 +115,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(f.count, 1);
     CHECK_EQ_INT(f.events[0], 3);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 184, 48), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 184, 48), 0);
     CHECK_EQ_INT(f.palette.saved.colors[2][0], 1);
     CHECK_EQ_INT(f.video.palette[2].red, 17);
     Arena_Free(&f.arena);

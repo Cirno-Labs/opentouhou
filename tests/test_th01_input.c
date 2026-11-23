@@ -115,7 +115,7 @@ TEST(bomb_needs_two_presses_of_both_buttons)
     CHECK_EQ_INT(state.bomb_frame, 0);
     GameInput_SenseGame(&state, &(TH01_INPUT) {}, false);
     CHECK(state.bomb);
-    GameInput_ResetRepeat(&state);
+    GameInput_ResetGame(&state);
     CHECK(!state.bomb);
 }
 
@@ -206,7 +206,7 @@ TEST(pause_precedes_return_and_uses_the_consumed_shot_flag)
     CHECK(!state.paused);
 }
 
-TEST(repeat_and_full_resets_keep_the_selected_source_state)
+TEST(game_reset_keeps_bomb_frame_and_debug_key_history)
 {
     GAME_INPUT state = {
         .previous = { .shot = true,
@@ -222,15 +222,11 @@ TEST(repeat_and_full_resets_keep_the_selected_source_state)
         .memory_enter = true,
         .memory_leave = true,
     };
-    GameInput_ResetRepeat(&state);
+    GameInput_ResetGame(&state);
     CHECK(!state.previous.shot);
-    CHECK(state.previous.memory_enter && state.previous.memory_leave);
-    CHECK(state.shot && state.strike && state.paused);
     CHECK(!state.bomb);
-    CHECK_EQ_INT(state.bomb_frame, 17);
     CHECK_EQ_INT(state.shot_presses, 0);
     CHECK_EQ_INT(state.strike_presses, 0);
-    GameInput_ResetGame(&state);
     CHECK(!state.shot && !state.strike && !state.paused);
     CHECK(!state.memory_enter && !state.memory_leave);
     CHECK(state.previous.memory_enter && state.previous.memory_leave);

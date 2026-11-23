@@ -4,6 +4,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -155,18 +156,18 @@ TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
     CHECK(!Video_Invert32(&state.video, 608, 0, 1));
     CHECK(!Video_Invert32(&state.video, 0, 368, 1));
     CHECK(Video_Invert32(&state.video, 607, 367, 1));
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 600, 367), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 631, 398), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 632, 398), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 600, 367), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 631, 398), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 632, 398), 6);
     CHECK(Video_Invert32(&state.video, 607, 367, 2));
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 600, 367), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 600, 367), 5);
     CHECK_EQ_INT(
-        Video_ReadPixel(&state.video, 1, 600, 367), (367 * 640 + 600) % 16);
+        Th01Test_Pixel(&state.video, 1, 600, 367), (367 * 640 + 600) % 16);
     Video_SetScroll(&state.video, 400);
     CHECK_EQ_INT(state.video.scroll_top, 0);
     Video_SetScroll(&state.video, -8);
     CHECK_EQ_INT(state.video.scroll_top, 392);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 600, 367), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 600, 367), 5);
     Arena_Free(&state.arena);
 }
 

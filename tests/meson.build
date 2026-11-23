@@ -2528,6 +2528,7 @@ if build_games
       dependencies: [pc98_dep, sdl3],
     ),
     suite: 'unit',
+    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th01' / 'harness'},
   )
 endif
 

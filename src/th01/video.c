@@ -270,17 +270,6 @@ void Video_Pixel(
     }
 }
 
-uint8_t Video_ReadPixel(
-    const VIDEO *const video, const int32_t page, const int32_t x,
-    const int32_t y)
-{
-    ASSERT(page >= 0 && page < 2);
-    if (x < 0 || x >= VIDEO_WIDTH || y < 0 || y >= VIDEO_HEIGHT) {
-        return 0;
-    }
-    return video->pages[page][y * VIDEO_WIDTH + x];
-}
-
 void Video_HorizontalLine(
     VIDEO *const video, int32_t left, int32_t right, const int32_t y,
     const uint8_t color)
@@ -320,16 +309,6 @@ void Video_FillBox(
     for (int32_t y = top; y <= bottom; y++) {
         Video_HorizontalLine(video, left, right, y, color);
     }
-}
-
-void Video_Box(
-    VIDEO *const video, const int32_t left, const int32_t top,
-    const int32_t right, const int32_t bottom, const uint8_t color)
-{
-    Video_HorizontalLine(video, left, right, top, color);
-    Video_VerticalLine(video, left, top, bottom, color);
-    Video_VerticalLine(video, right, top, bottom, color);
-    Video_HorizontalLine(video, left, right, bottom, color);
 }
 
 void Video_Line(

@@ -4,6 +4,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -77,8 +78,8 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
     CHECK_EQ_INT(state.objects.obstacles[0].left, 32);
     CHECK_EQ_INT(state.objects.obstacles[1].left, 96);
     CHECK_EQ_INT(state.video.drawing_page, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 96, 64), 11);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 97, 64), 14);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 96, 64), 11);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 97, 64), 14);
     for (int32_t slot = 0; slot < 4; slot++) {
         const int32_t left[] = { 96, 0, 32, 96 };
         const int32_t top[] = { 64, 96, 64, 64 };
@@ -94,15 +95,13 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
     Video_SelectDrawingPage(&state.video, 1);
     StageObjects_PutBackgroundAndObject(
         &state.objects, &state.video, &state.sprites, 96, 64, 17, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 1, 96, 64), 2);
-    CHECK_EQ_INT(
-        Video_ReadPixel(&state.video, 1, 97, 64), (64 * 640 + 97) % 13);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 96, 64), 11);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 96, 64), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 97, 64), (64 * 640 + 97) % 13);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 96, 64), 11);
     StageObjects_PutAllBackgrounds(&state.objects, &state.video);
-    CHECK_EQ_INT(
-        Video_ReadPixel(&state.video, 1, 96, 64), (64 * 640 + 96) % 13);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 96, 64), (64 * 640 + 96) % 13);
     StageObjects_CopyToBackground(&state.objects, &state.video);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 1, 96, 64), 11);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 96, 64), 11);
     CHECK_EQ_INT(state.video.drawing_page, 0);
     CHECK_EQ_INT(state.arena.used, used);
     Arena_Free(&state.arena);
@@ -145,7 +144,7 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
                 const STAGE_CARD *const card = &state.objects.cards[i];
                 CHECK_EQ_INT(card->entrance_frame, -1);
                 CHECK_EQ_INT(
-                    Video_ReadPixel(&state.video, 0, card->left, card->top),
+                    Th01Test_Pixel(&state.video, 0, card->left, card->top),
                     StageObjects_CardImage(card->hp, 0) % 15);
             }
             Arena_Free(&state.arena);

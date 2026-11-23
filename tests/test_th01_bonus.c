@@ -3,6 +3,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 TEST(rowshift_preserves_pixel_order_and_source)
@@ -28,8 +29,8 @@ TEST(rowshift_preserves_pixel_order_and_source)
                 const uint8_t expected = old_x >= 0 && old_x < VIDEO_WIDTH
                     ? (uint8_t)(old_x % 15)
                     : (uint8_t)(new_x / 32 % 16);
-                CHECK_EQ_INT(Video_ReadPixel(&video, 0, x, y), expected);
-                CHECK_EQ_INT(Video_ReadPixel(&video, 1, x, y), x / 32 % 16);
+                CHECK_EQ_INT(Th01Test_Pixel(&video, 0, x, y), expected);
+                CHECK_EQ_INT(Th01Test_Pixel(&video, 1, x, y), x / 32 % 16);
             }
         }
     }
@@ -54,7 +55,7 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
     Bonus_BeginRowTransition(&t);
     CHECK(!Bonus_ResumeRowTransition(&t, &video, &palette, &target, &vsync));
     CHECK_EQ_INT(t.activated, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 0), 3);
     for (int32_t step = 0; step < 70; step++) {
         const BONUS_ROW_TRANSITION frozen = t;
         CHECK(
@@ -173,9 +174,9 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     FRAME_VSYNC vsync = {};
     TH01_INPUT raw = {};
     CHECK(!Bonus_BeginStage(&f.bonus, &f.context, 4, &raw, &vsync));
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 32, 180), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 32, 180), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 32, 179), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 32, 180), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 32, 180), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 32, 179), 6);
     CHECK_EQ_INT(f.video.drawing_page, 1);
     CHECK_EQ_INT(f.palette.saved.colors[0][0], 11);
     for (int32_t delay = 0; delay < 24; delay++) {
@@ -193,13 +194,13 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(f.effects, 1);
     CHECK_EQ_INT(f.next, 2);
     CHECK_EQ_INT(f.shared.speed, 1);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 32, 41), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 32, 319), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 32, 40), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 32, 320), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 64, 80), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 256, 128), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 64, 80), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 32, 41), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 32, 319), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 32, 40), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 32, 320), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 64, 80), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 256, 128), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 64, 80), 5);
     CHECK(!Bonus_Resume(&f.bonus, &f.context, &raw, &vsync));
     raw.shot = true;
     CHECK(!Bonus_Resume(&f.bonus, &f.context, &raw, &vsync));
@@ -332,19 +333,19 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(!f.pellets.slots[0].moving);
     CHECK_EQ_INT(f.pellets.slots[1].cloud_frame, 5);
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_INITIAL_WAIT);
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 1, 0, 0), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 1, 0, 0), 6);
     vsync.count1 = 50;
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_TRANSITION);
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 1, 0, 0), 14);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 1, 0, 0), 14);
     CHECK_EQ_INT(f.common.palette.resource.colors[0][0], 13);
     for (int32_t i = 0; i < 70; i++) {
         vsync.count1 = 2;
         CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
     }
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_STAGE_WAIT);
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 0, 224, 14), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 0, 256, 14), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 0, 224, 14), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 0, 256, 14), 5);
     CHECK_EQ_INT(f.common.palette.saved.colors[0][0], 13);
     vsync.count1 = 30;
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
@@ -380,10 +381,9 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     const int16_t sum_digits[] = { 0, 9, 6, 0, 5, 0 };
     for (int32_t i = 0; i < 6; i++) {
         CHECK_EQ_INT(
-            Video_ReadPixel(&f.common.video, 0, 208 + i * 16, 196),
+            Th01Test_Pixel(&f.common.video, 0, 208 + i * 16, 196),
             sum_digits[i]);
-        CHECK_EQ_INT(
-            Video_ReadPixel(&f.common.video, 1, 208 + i * 16, 196), 14);
+        CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 1, 208 + i * 16, 196), 14);
     }
     raw.ok = true;
     CHECK(!Bonus_ResumeTotal(
@@ -412,17 +412,17 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
                               .digits = { 9 },
                               .spin = 10 };
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 0, 224, 86), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 0, 224, 86), 2);
     f.bonus.credit = 12;
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 0, 224, 86), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 0, 224, 86), 3);
     f.bonus.spin = 17;
     f.bonus.credit = 12;
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 0, 224, 86), 14);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 0, 224, 86), 14);
     f.bonus.credit = 12;
     CHECK(!Bonus_ResumeTotal(&f.bonus, &f.context, &raw, &vsync, 0));
-    CHECK_EQ_INT(Video_ReadPixel(&f.common.video, 0, 224, 86), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.common.video, 0, 224, 86), 9);
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_METRIC_WAIT);
     CHECK_EQ_INT(f.effects, 3);
     Arena_Free(&arena);

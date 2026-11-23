@@ -43,22 +43,28 @@ static INI *M_Parse(const char *const text)
     return ini;
 }
 
-static RESULT M_Read(
-    const uint8_t *const bytes, const size_t size, TH01_SETTINGS *const out)
-{
-    READER reader;
-    Reader_OpenBuffer(&reader, bytes, size, nullptr);
-    const RESULT result = Settings_ReadOriginal(&reader, out);
-    Reader_Close(&reader);
-    return result;
-}
-
 static VFS *M_Mount(const char *const directory)
 {
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     CHECK(Result_Log(
         Vfs_MountDir(vfs, "", directory, 0, false), LOG_LEVEL_ERROR));
     return vfs;
+}
+
+static RESULT M_Read(
+    const uint8_t *const bytes, const size_t size, TH01_SETTINGS *const out)
+{
+    char *const directory = TestDir_Prepare("record");
+    char *const path = TestDir_Join(directory, "REIIDEN.CFG");
+    TestDir_Write(path, bytes, size);
+    VFS *const vfs = M_Mount(directory);
+    VFS *const user_files = Vfs_Create(&g_HeapAllocator);
+    const RESULT result = Settings_ImportOriginal(vfs, user_files, out);
+    Vfs_Destroy(user_files);
+    Vfs_Destroy(vfs);
+    Mem_Free(path);
+    Mem_Free(directory);
+    return result;
 }
 
 TEST(defaults_match_the_original_options)
@@ -215,22 +221,16 @@ TEST(original_record_rejects_signed_and_upper_range_errors)
     }
 }
 
-TEST(original_reader_consumes_one_record_and_preserves_existing_error)
+TEST(original_record_accepts_trailing_bytes)
 {
     uint8_t bytes[sizeof(m_Original) + 3] = {};
     memcpy(bytes, m_Original, sizeof(m_Original));
-    READER reader;
-    Reader_OpenBuffer(&reader, bytes, sizeof(bytes), nullptr);
     TH01_SETTINGS settings = m_Selected;
-    CHECK(Result_Ignore(Settings_ReadOriginal(&reader, &settings)));
-    CHECK_EQ_INT(Reader_Tell(&reader), sizeof(m_Original));
-    CHECK_EQ_INT(Reader_Remaining(&reader), 3);
-    Reader_Skip(&reader, sizeof(bytes));
-    CHECK(Reader_Failed(&reader));
-    settings = m_Selected;
-    CHECK(!Result_Ignore(Settings_ReadOriginal(&reader, &settings)));
-    M_CheckSettings(settings, m_Selected);
-    Reader_Close(&reader);
+    CHECK(Result_Log(M_Read(bytes, sizeof(bytes), &settings), LOG_LEVEL_ERROR));
+    M_CheckSettings(
+        settings,
+        (TH01_SETTINGS) { SETTINGS_DIFFICULTY_LUNATIC, SETTINGS_MUSIC_OFF, 5, 4,
+                          false });
 }
 
 TEST(import_of_a_missing_original_keeps_native_defaults)
