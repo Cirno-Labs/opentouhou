@@ -1,4 +1,4 @@
-#include "th01/sprite_sheet.h"
+#include "pc98/zun/sprite_sheet.h"
 
 #include "test.h"
 #include "test_dir.h"

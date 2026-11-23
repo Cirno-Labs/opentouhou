@@ -8,7 +8,7 @@
 #include "th01/finite.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
-#include "th01/sprite_sheet.h"
+#include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
 

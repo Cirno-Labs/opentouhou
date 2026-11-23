@@ -32,7 +32,6 @@ th01_lib = static_library(
   'extend.c',
   'shots.c',
   'rng.c',
-  'sprite_sheet.c',
   'pellet_assets.c',
   'shootout_lasers.c',
   'pellets.c',

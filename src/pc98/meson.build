@@ -13,6 +13,7 @@ pc98_lib = static_library(
   'zun/math16.c',
   'zun/pf.c',
   'zun/pi.c',
+  'zun/sprite_sheet.c',
   c_args: pc98_include,
   implicit_include_directories: false,
   dependencies: [core_dep, opna_dep],
