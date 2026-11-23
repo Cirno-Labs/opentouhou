@@ -51,7 +51,7 @@ static RESULT M_Encode(
     return OK;
 }
 
-void ScoreData_Defaults(SCORE_TABLE *const table)
+static void M_Defaults(SCORE_TABLE *const table)
 {
     *table = (SCORE_TABLE) {};
     for (int32_t i = 0; i < SCORE_PLACES; i++) {
@@ -62,7 +62,7 @@ void ScoreData_Defaults(SCORE_TABLE *const table)
     }
 }
 
-RESULT ScoreData_Read(READER *const reader, SCORE_TABLE *const out)
+static RESULT M_Read(READER *const reader, SCORE_TABLE *const out)
 {
     SCORE_TABLE table = {};
     char magic[7], names[SCORE_PLACES][16], routes[SCORE_PLACES][2];
@@ -88,7 +88,7 @@ RESULT ScoreData_Read(READER *const reader, SCORE_TABLE *const out)
     return OK;
 }
 
-RESULT ScoreData_Write(WRITER *const writer, const SCORE_TABLE *const table)
+static RESULT M_Write(WRITER *const writer, const SCORE_TABLE *const table)
 {
     char names[SCORE_PLACES][16], routes[SCORE_PLACES][2];
     for (int32_t i = 0; i < SCORE_PLACES; i++) {
@@ -126,18 +126,13 @@ int32_t ScoreData_Insert(
     return place;
 }
 
-const char *ScoreData_File(const int32_t rank)
-{
-    return m_Files[rank];
-}
-
 RESULT ScoreData_Load(
     VFS *const original, VFS *const user_files, SCORE_SAVES *const out)
 {
     *out = (SCORE_SAVES) { .user_files = user_files };
     RESULT first_error = OK;
     for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
-        ScoreData_Defaults(&out->tables[rank]);
+        M_Defaults(&out->tables[rank]);
         const bool native = Vfs_Exists(user_files, m_Files[rank]);
         READER reader;
         RESULT result = OK;
@@ -151,7 +146,7 @@ RESULT ScoreData_Load(
             continue;
         }
         if (IS_OK(result)) {
-            result = ScoreData_Read(&reader, &out->tables[rank]);
+            result = M_Read(&reader, &out->tables[rank]);
             Reader_Close(&reader);
         }
         if (!IS_OK(result)) {
@@ -186,7 +181,7 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *const saves)
         }
         WRITER buffer;
         Writer_OpenBuffer(&buffer, &g_HeapAllocator, nullptr);
-        RESULT result = ScoreData_Write(&buffer, &saves->tables[rank]);
+        RESULT result = M_Write(&buffer, &saves->tables[rank]);
         if (IS_OK(result)) {
             size_t size;
             uint8_t *const bytes = Writer_TakeBuffer(&buffer, &size);

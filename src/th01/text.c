@@ -228,7 +228,7 @@ const GAME_TEXT_GLYPH *GameText_Find(
     return nullptr;
 }
 
-RESULT GameText_Measure(
+static RESULT M_Measure(
     const GAME_TEXT_FONT *const font, const char *const text,
     const GAME_TEXT_STYLE *const style, int32_t *const width)
 {
@@ -260,7 +260,7 @@ RESULT GameText_Draw(
     const uint8_t color, const GAME_TEXT_STYLE *const style)
 {
     int32_t width;
-    MUST(GameText_Measure(font, text, style, &width));
+    MUST(M_Measure(font, text, style, &width));
     if (width == 0) {
         return OK;
     }

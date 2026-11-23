@@ -2,6 +2,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
@@ -24,14 +25,14 @@ TEST(entity_word_guard_and_animation_raw_rgb_differ)
     CHECK(IS_OK(BossEntity_Bind(&entity, &bank, 0, &sprites)));
     CHECK(IS_OK(BossAnimation_Bind(&animation, &bank, 0, &sprites)));
     BossEntity_Put(&entity, &bank, &video, 0, 0, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 7, 0), 1);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 7, 0), 1);
     BossAnimation_Put(&animation, &bank, &video);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 7, 0), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 7, 0), 5);
     coverage[0] = 1;
     pixels[0] = 10;
     BossEntity_Put(&entity, &bank, &video, 0, 0, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 0, 0), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 7, 0), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 0, 0), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 7, 0), 5);
     CHECK_EQ_INT(video.drawing_page, 1);
     Arena_Free(&arena);
 }
@@ -50,16 +51,16 @@ TEST(full_put_and_restore_have_different_right_edge_guards)
     BOSS_ENTITY entity = {};
     CHECK(IS_OK(BossEntity_Bind(&entity, &bank, 0, &sprites)));
     BossEntity_Put(&entity, &bank, &video, 639, 0, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 632, 0), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 1), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 8, 1), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 0), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 1), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8, 1), 0);
     Video_SelectDrawingPage(&video, 1);
     BossEntity_RestorePut(&entity, &bank, &video, 639, 0, 0);
     CHECK_EQ_INT(video.drawing_page, 1);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 639, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 639, 0), 0);
     BossEntity_Erase(&entity, &bank, &video, 639, 0, 0);
     CHECK_EQ_INT(video.drawing_page, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 0), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 0), 10);
     Arena_Free(&arena);
 }
 
@@ -79,10 +80,10 @@ TEST(restored_line_keeps_signed_foreground_shift)
     BOSS_ENTITY entity = {};
     CHECK(IS_OK(BossEntity_Bind(&entity, &bank, 0, &sprites)));
     BossEntity_RestorePutLine(&entity, &bank, &video, 1, 0, 0, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 8, 0), 1);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 9, 0), 1);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 7, 0), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 0), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8, 0), 1);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 9, 0), 1);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 7, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 0), 2);
     Arena_Free(&arena);
 }
 

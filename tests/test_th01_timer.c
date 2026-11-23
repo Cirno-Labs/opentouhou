@@ -78,7 +78,9 @@ static void M_Init(FIXTURE *const f)
 
 TEST(route_table_and_reinitialization_keep_cycle)
 {
-    STAGE_TIMER t = { .hurry_cycle = 255 };
+    FIXTURE f;
+    M_Init(&f);
+    f.timer.hurry_cycle = 255;
     const uint16_t expected[2][20] = {
         { 1000, 1000, 1000, 1000, 2000, 1200, 1200, 1200, 1200, 3000,
           1400, 1400, 1400, 1400, 4000, 1600, 1600, 1600, 600,  6000 },
@@ -87,13 +89,15 @@ TEST(route_table_and_reinitialization_keep_cycle)
     };
     for (int16_t route = 0; route < 2; route++) {
         for (int16_t stage = 0; stage < 20; stage++) {
-            t.frames_since_hurry = 555;
-            Timer_InitFor(&t, stage, route);
-            CHECK_EQ_INT(t.time, expected[route][stage]);
-            CHECK_EQ_INT(t.hurry_cycle, 255);
-            CHECK_EQ_INT(t.frames_since_hurry, 0);
+            f.timer.frames_since_hurry = 555;
+            f.display.stage_number = (uint16_t)(stage + 1);
+            Timer_Redraw(&f.timer, &f.context, false, false, route);
+            CHECK_EQ_INT(f.timer.time, expected[route][stage]);
+            CHECK_EQ_INT(f.timer.hurry_cycle, 255);
+            CHECK_EQ_INT(f.timer.frames_since_hurry, 0);
         }
     }
+    Arena_Free(&f.arena);
 }
 
 TEST(transition_waits_suspend_without_replaying_side_effects)

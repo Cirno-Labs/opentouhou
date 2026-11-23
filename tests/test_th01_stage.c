@@ -5,6 +5,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -232,7 +233,7 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
             + (scores[i] > 10000      ? -8
                    : scores[i] > 1000 ? 0
                                       : 8);
-        CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, x, card->top + 8), 7);
+        CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, x, card->top + 8), 7);
         card->flip_frame = 28;
         Stage_UpdateCards(&state.context);
         CHECK_EQ_INT(card->score, 0);
@@ -270,8 +271,8 @@ TEST(card_animation_overwrites_the_preceding_popup)
     card->score = 1000;
     memset(state.sprites.pixels + 20 * 1024, 3, 1024);
     Stage_UpdateCards(&state.context);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 104, 136), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 1, 104, 136), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 104, 136), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 104, 136), 3);
     CHECK_EQ_INT(state.video.drawing_page, 0);
     Arena_Free(&state.arena);
 }

@@ -2,6 +2,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
@@ -50,22 +51,22 @@ TEST(mixed_rows_choose_whole_indices_and_preserve_other_state)
     Interleave_Put8(&video, &assets, 15, 100, 3);
     for (int32_t bit = 0; bit < 8; bit++) {
         CHECK_EQ_INT(
-            Video_ReadPixel(&video, 0, 8 + bit, 100), bit % 2 == 0 ? 9 : 6);
+            Th01Test_Pixel(&video, 0, 8 + bit, 100), bit % 2 == 0 ? 9 : 6);
         CHECK_EQ_INT(
-            Video_ReadPixel(&video, 0, 8 + bit, 101), bit % 2 == 0 ? 6 : 9);
-        CHECK_EQ_INT(Video_ReadPixel(&video, 0, 8 + bit, 102), 9);
-        CHECK_EQ_INT(Video_ReadPixel(&video, 0, 8 + bit, 103), 6);
-        CHECK_EQ_INT(Video_ReadPixel(&video, 1, 8 + bit, 100), 6);
+            Th01Test_Pixel(&video, 0, 8 + bit, 101), bit % 2 == 0 ? 6 : 9);
+        CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8 + bit, 102), 9);
+        CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8 + bit, 103), 6);
+        CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 8 + bit, 100), 6);
     }
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 7, 100), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 100), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 8, 108), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 7, 100), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 100), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8, 108), 9);
     CHECK_EQ_INT(video.drawing_page, 0);
     CHECK_EQ_INT(video.visible_page, 1);
     CHECK_EQ_INT(video.scroll_top, 37);
     CHECK(memcmp(&video.palette[2], &color, sizeof(color)) == 0);
     Interleave_Put8(&video, &assets, 639, 392, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 399), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 631, 399), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 399), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 631, 399), 9);
     Arena_Free(&arena);
 }

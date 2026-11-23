@@ -55,7 +55,7 @@ static void M_Rain(STAGE_TIMER *const timer, const TIMER_CONTEXT *const c)
     }
 }
 
-void Timer_InitFor(
+static void M_InitFor(
     STAGE_TIMER *const timer, const int16_t stage_id, const int16_t route)
 {
     static const uint16_t times[35] = {
@@ -75,7 +75,7 @@ void Timer_Redraw(
 {
     Hud_PutMask(c->display);
     if (!timer_initialized) {
-        Timer_InitFor(timer, Math16_Wrap(c->display->stage_number - 1), route);
+        M_InitFor(timer, Math16_Wrap(c->display->stage_number - 1), route);
     }
     if (first_stage) {
         Hud_SnapResources(c->hud, c->display);

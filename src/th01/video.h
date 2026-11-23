@@ -43,15 +43,11 @@ void Video_SelectVisiblePage(VIDEO *video, int32_t page);
 // screen. Line and box endpoints are inclusive and may be reversed.
 void Video_Clear(VIDEO *video, uint8_t color);
 void Video_Pixel(VIDEO *video, int32_t x, int32_t y, uint8_t color);
-uint8_t Video_ReadPixel(const VIDEO *video, int32_t page, int32_t x, int32_t y);
 void Video_HorizontalLine(
     VIDEO *video, int32_t left, int32_t right, int32_t y, uint8_t color);
 void Video_VerticalLine(
     VIDEO *video, int32_t x, int32_t top, int32_t bottom, uint8_t color);
 void Video_FillBox(
-    VIDEO *video, int32_t left, int32_t top, int32_t right, int32_t bottom,
-    uint8_t color);
-void Video_Box(
     VIDEO *video, int32_t left, int32_t top, int32_t right, int32_t bottom,
     uint8_t color);
 

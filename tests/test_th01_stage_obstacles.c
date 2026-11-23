@@ -4,6 +4,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -181,8 +182,8 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
                     state.pellets, rank != 0 && frame >= interval + 10);
                 if (rank != 0 && frame == interval) {
                     CHECK_EQ_INT(state.objects.obstacles[0].turret_flag, 1);
-                    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 96, 128), 9);
-                    CHECK_EQ_INT(Video_ReadPixel(&state.video, 1, 96, 128), 9);
+                    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 96, 128), 9);
+                    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 96, 128), 9);
                 }
             }
             CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
@@ -303,8 +304,8 @@ TEST(portal_reset_keeps_overlay_artifact_and_can_enter_later_portal)
     CHECK(!state.objects.portal_active);
     CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
     CHECK_EQ_INT(state.objects.obstacles[1].frame, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 97, 128), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 96, 128), 14);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 97, 128), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 96, 128), 14);
     CHECK_EQ_INT(state.video.drawing_page, 0);
     Arena_Free(&state.arena);
 }
@@ -426,8 +427,8 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     CHECK(state.player.is_hit);
     CHECK(state.game.cleared);
     CHECK_EQ_INT(state.objects.cards[0].flag, STAGE_CARD_REMOVED);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 500, 342), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 500, 350), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 500, 342), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 500, 350), 2);
     CHECK_EQ_INT(state.updates, 1);
     Arena_Free(&state.arena);
 }

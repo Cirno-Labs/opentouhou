@@ -1,5 +1,6 @@
 #include "th01/hud.h"
 #include "core/base/arena.h"
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -59,10 +60,10 @@ TEST(mask_covers_playfield_overlap_and_preserves_clear_dots)
     memset(f.video.pages[1], 5, VIDEO_PAGE_SIZE);
     f.mask.coverage[65 * 640 + 639] = 1;
     Hud_PutMask(&f.context);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 639, 65), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 639, 65), 10);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 638, 65), 2);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 639, 66), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 639, 65), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 639, 65), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 638, 65), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 639, 66), 5);
     CHECK_EQ_INT(f.video.drawing_page, 0);
     Arena_Free(&f.arena);
 }
@@ -76,12 +77,12 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     f.lives = 2;
     f.player.remaining_bombs = 1;
     Hud_SnapResources(&f.hud, &f.context);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 128, 0), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 129, 0), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 128, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 129, 0), 15);
     f.lives = 1;
     Hud_LivesPut(&f.hud, &f.context, 2);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 144, 0), 15);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 144, 0), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 144, 0), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 144, 0), 15);
     Video_SelectDrawingPage(&f.video, 1);
     f.lives = 2;
     Hud_LivesPut(&f.hud, &f.context, 1);
@@ -89,7 +90,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     CHECK_EQ_INT(f.video.drawing_page, 0);
     f.player.remaining_bombs = 0;
     Hud_BombsPut(&f.hud, &f.context, 1);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 128, 16), 15);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 128, 16), 15);
     Arena_Free(&f.arena);
 }
 
@@ -105,13 +106,13 @@ TEST(timer_preserves_duplicate_snapshot_zero_spaces_and_red_threshold)
     Hud_SnapTimer(&f.hud, &f.context, 1000);
     Hud_PutTimer(&f.hud, &f.context, 0);
     for (int32_t page = 0; page < 2; page++) {
-        CHECK_EQ_INT(Video_ReadPixel(&f.video, page, 528, 1), 2);
-        CHECK_EQ_INT(Video_ReadPixel(&f.video, page, 512, 0), 2);
+        CHECK_EQ_INT(Th01Test_Pixel(&f.video, page, 528, 1), 2);
+        CHECK_EQ_INT(Th01Test_Pixel(&f.video, page, 512, 0), 2);
     }
     Hud_PutTimer(&f.hud, &f.context, 198);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 520, 0), 10);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 520, 0), 10);
     Hud_PutTimer(&f.hud, &f.context, 200);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 520, 0), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 520, 0), 7);
     Arena_Free(&f.arena);
 }
 
@@ -125,8 +126,8 @@ TEST(force_draws_leading_zeroes_and_preserves_resident_high_score)
     f.hud.force_numbers = true;
     Hud_ScoreAndCombo(&f.hud, &f.context);
     CHECK_EQ_INT(f.high_score, 100);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 256, 16), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 256, 16), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 256, 16), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 256, 16), 7);
     f.hud.force_numbers = false;
     f.gameplay.score = 101;
     f.gameplay.combo = 257;
@@ -152,7 +153,7 @@ TEST(negative_unchanged_combo_keeps_glyphs_and_background)
     f.gameplay.combo = -1;
     f.hud.combo_previous = -1;
     Hud_ScoreAndCombo(&f.hud, &f.context);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 0, 400, 17), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&f.video, 1, 400, 17), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 400, 17), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 1, 400, 17), 7);
     Arena_Free(&f.arena);
 }

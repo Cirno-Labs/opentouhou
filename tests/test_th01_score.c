@@ -25,9 +25,13 @@ static void M_Init(FIXTURE *const f)
     for (int32_t i = 0; i < 16; i++) {
         f->assets.gameover.palette[i] = (GFX_COLOR) { 255, 255, 255, 255 };
     }
-    for (int32_t i = 0; i < SCORE_RANKS; i++) {
-        ScoreData_Defaults(&f->saves.tables[i]);
-    }
+    VFS *const user_files = Vfs_Create(&g_HeapAllocator);
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &f->saves)));
+    Vfs_Destroy(user_files);
+    f->saves = (SCORE_SAVES) {
+        .tables = { f->saves.tables[0], f->saves.tables[1], f->saves.tables[2],
+                    f->saves.tables[3] },
+    };
     f->arena.capacity = f->arena.used;
 }
 

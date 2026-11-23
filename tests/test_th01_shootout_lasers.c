@@ -1,5 +1,6 @@
 #include "th01/shootout_lasers.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 TEST(asset_errors_do_not_allocate_or_publish)
@@ -60,12 +61,12 @@ TEST(final_cached_group_omits_drawing_and_hit)
     CHECK_EQ_INT(laser.length, 8);
     CHECK_EQ_INT(laser.cursor_left, 312 * 256);
     CHECK(!player.is_hit);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 304, 377), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 304, 377), 0);
     ShootoutLasers_Update(&laser, &video, &player, &assets);
     CHECK(player.is_hit);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 304, 377), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 319, 377), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 320, 377), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 304, 377), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 319, 377), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 320, 377), 0);
     Mem_Free(video.pages[0]);
 }
 
@@ -104,10 +105,10 @@ TEST(mask_bytes_and_shifts_use_loaded_order_and_current_page)
     PLAYER player = {};
     ShootoutLasers_Spawn(&laser, 99, 100, 99, 200, 16, 5, 10, 8);
     ShootoutLasers_Update(&laser, &video, &player, &assets);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 99, 100), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 105, 100), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 99, 101), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 99, 100), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 99, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 105, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 99, 101), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 99, 100), 0);
     CHECK_EQ_INT(video.drawing_page, 1);
     Mem_Free(video.pages[0]);
 }
@@ -129,9 +130,9 @@ TEST(detach_adopts_stopped_cursor_and_dies_before_age_or_put)
     CHECK_EQ_INT(laser.age, 0);
     CHECK_EQ_INT(laser.length, 100);
     CHECK_EQ_INT(video.drawing_page, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 624, 100), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 0, 101), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 101), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 624, 100), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 101), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 101), 0);
     Mem_Free(video.pages[0]);
 }
 
@@ -150,8 +151,8 @@ TEST(pool_order_preserves_page_change_and_signed_history)
     CHECK_EQ_INT(lasers.slots[0].start_y, 101 * 256);
     CHECK_EQ_INT(lasers.slots[0].length, 0);
     CHECK_EQ_INT(lasers.slots[9].length, 2);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 200, 100), 5);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 200, 100), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 200, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 200, 100), 0);
     lasers.slots[9].age = INT16_MAX;
     lasers.slots[9].detach_age = INT16_MAX;
     ShootoutLasers_Update(&lasers.slots[9], &video, &player, &assets);
@@ -183,8 +184,8 @@ TEST(reset_passes_raw_low_words_and_preserves_prefix_history)
     lasers.slots[0].alive = true;
     CHECK(memcmp(&lasers.slots[0], &history, sizeof(history)) == 0);
     CHECK(memcmp(actual.pages[0], expected.pages[0], VIDEO_PAGE_SIZE) == 0);
-    CHECK_EQ_INT(Video_ReadPixel(&actual, 0, 248, 255), 7);
-    CHECK_EQ_INT(Video_ReadPixel(&actual, 0, 0, 0), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&actual, 0, 248, 255), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(&actual, 0, 0, 0), 0);
     Mem_Free(actual.pages[0]);
     Mem_Free(expected.pages[0]);
 }

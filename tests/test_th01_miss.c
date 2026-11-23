@@ -4,6 +4,7 @@
 
 #include "core/base/arena.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 typedef struct {
@@ -30,8 +31,8 @@ static void M_Decay(void *const user)
     M_Event(state, 0);
     CHECK_EQ_INT(state->player.mode, PLAYER_MODE_SPECIAL_FIRST);
     CHECK_EQ_INT(state->shots.slots[0].moving, 0);
-    CHECK_EQ_INT(Video_ReadPixel(&state->video, 0, 120, 200), 2);
-    CHECK_EQ_INT(Video_ReadPixel(&state->video, 0, state->player.left, 352), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&state->video, 0, 120, 200), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&state->video, 0, state->player.left, 352), 2);
 }
 
 static void M_Lives(void *const user, const int16_t previous)
@@ -123,10 +124,10 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
     Miss_Begin(&miss, &context, &vsync);
     CHECK_EQ_INT(state.rng, rng);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 304, 352), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 304, 352), 6);
     CHECK_EQ_INT(
-        Video_ReadPixel(&state.video, 0, 304, 368), expected_image % 14 + 1);
-    CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 100, 100), 4);
+        Th01Test_Pixel(&state.video, 0, 304, 368), expected_image % 14 + 1);
+    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 100, 100), 4);
     CHECK(!Miss_Resume(&miss, &context, &vsync));
     CHECK_EQ_INT(state.event_count, 0);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SPECIAL_FIRST);

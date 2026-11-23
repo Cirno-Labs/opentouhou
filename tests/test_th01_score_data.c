@@ -15,20 +15,69 @@ static VFS *M_UserFiles(const char *const directory)
     return vfs;
 }
 
+static uint8_t *M_ReadFile(const char *const path, size_t *const size)
+{
+    READER reader;
+    CHECK(Result_Ignore(Reader_OpenFile(&reader, path)));
+    *size = Reader_Size(&reader);
+    uint8_t *const bytes = Mem_Alloc(*size);
+    Reader_ReadBytes(&reader, bytes, *size);
+    CHECK(Result_Ignore(Reader_Result(&reader)));
+    Reader_Close(&reader);
+    return bytes;
+}
+
+static SCORE_TABLE M_Defaults(void)
+{
+    VFS *const user_files = Vfs_Create(&g_HeapAllocator);
+    SCORE_SAVES saves;
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    Vfs_Destroy(user_files);
+    return saves.tables[0];
+}
+
+// Returns the bytes that ScoreData_WriteSaves writes for table.
 static uint8_t *M_Encode(const SCORE_TABLE *const table, size_t *const size)
 {
-    WRITER writer;
-    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    CHECK(Result_Log(ScoreData_Write(&writer, table), LOG_LEVEL_ERROR));
-    uint8_t *const bytes = Writer_TakeBuffer(&writer, size);
-    CHECK(Result_Ignore(Writer_Close(&writer)));
+    char *const directory = TestDir_Prepare("encode");
+    VFS *const user_files = M_UserFiles(directory);
+    SCORE_SAVES saves;
+    CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
+    saves.tables[0] = *table;
+    CHECK(Result_Log(ScoreData_WriteSaves(&saves), LOG_LEVEL_ERROR));
+    char *const path = TestDir_Join(directory, "REYHIES.DAT");
+    uint8_t *const bytes = M_ReadFile(path, size);
+    Mem_Free(path);
+    Vfs_Destroy(user_files);
+    Mem_Free(directory);
     return bytes;
+}
+
+// Loads bytes as the original REYHINO.DAT into out.
+static RESULT M_Decode(
+    const uint8_t *const bytes, const size_t size, SCORE_TABLE *const out)
+{
+    char *const original_dir = TestDir_Prepare("decode-original");
+    char *const user_dir = TestDir_Prepare("decode-user");
+    char *const path = TestDir_Join(original_dir, "REYHINO.DAT");
+    TestDir_Write(path, bytes, size);
+    VFS *const original = Vfs_Create(&g_HeapAllocator);
+    CHECK(Result_Ignore(Vfs_MountDir(original, "", original_dir, 0, false)));
+    VFS *const user_files = M_UserFiles(user_dir);
+    SCORE_SAVES saves;
+    const RESULT result = ScoreData_Load(original, user_files, &saves);
+    *out = saves.tables[1];
+    Vfs_Destroy(user_files);
+    Vfs_Destroy(original);
+    Mem_Free(path);
+    Mem_Free(user_dir);
+    Mem_Free(original_dir);
+    return result;
 }
 
 TEST(defaults_and_original_round_trip)
 {
-    SCORE_TABLE table;
-    ScoreData_Defaults(&table);
+    const SCORE_TABLE table = M_Defaults();
     size_t size;
     uint8_t *const bytes = M_Encode(&table, &size);
     CHECK_EQ_INT(size, SCORE_FILE_SIZE);
@@ -44,63 +93,56 @@ TEST(defaults_and_original_round_trip)
         CHECK_EQ_STR(table.entries[i].name, "東方★靈異伝　　");
         CHECK_EQ_STR(table.entries[i].route, "無");
     }
-    READER reader;
-    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     SCORE_TABLE decoded;
-    CHECK(Result_Ignore(ScoreData_Read(&reader, &decoded)));
+    CHECK(Result_Ignore(M_Decode(bytes, size, &decoded)));
     CHECK(memcmp(&table, &decoded, sizeof(table)) == 0);
-    Reader_Close(&reader);
-    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Mem_Free(bytes);
 }
 
-TEST(all_truncations_and_invalid_names_leave_output_intact)
+TEST(all_truncations_and_invalid_names_fall_back_to_defaults)
 {
-    SCORE_TABLE table;
-    ScoreData_Defaults(&table);
+    const SCORE_TABLE table = M_Defaults();
+    SCORE_TABLE changed = table;
+    changed.entries[0].score = 12345;
     size_t size;
-    uint8_t *const bytes = M_Encode(&table, &size);
+    uint8_t *const bytes = M_Encode(&changed, &size);
     for (size_t length = 0; length < size; length++) {
-        SCORE_TABLE out = table;
-        READER reader;
-        Reader_OpenBuffer(&reader, bytes, length, nullptr);
-        CHECK(!Result_Ignore(ScoreData_Read(&reader, &out)));
+        SCORE_TABLE out;
+        CHECK(!Result_Ignore(M_Decode(bytes, length, &out)));
         CHECK(memcmp(&table, &out, sizeof(table)) == 0);
     }
     bytes[7] = 0x9c;
-    SCORE_TABLE out = table;
-    READER reader;
-    Reader_OpenBuffer(&reader, bytes, size, nullptr);
-    CHECK(!Result_Ignore(ScoreData_Read(&reader, &out)));
+    SCORE_TABLE out;
+    CHECK(!Result_Ignore(M_Decode(bytes, size, &out)));
     CHECK(memcmp(&table, &out, sizeof(table)) == 0);
-    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Mem_Free(bytes);
 }
 
 TEST(signature_checks_only_first_four_bytes_and_ignores_trailing_data)
 {
-    SCORE_TABLE table;
-    ScoreData_Defaults(&table);
+    const SCORE_TABLE table = M_Defaults();
     size_t size;
-    uint8_t *const bytes = M_Encode(&table, &size);
+    uint8_t *const encoded = M_Encode(&table, &size);
+    uint8_t *const bytes = Mem_Alloc(size + 3);
+    memcpy(bytes, encoded, size);
+    memset(bytes + size, 0xff, 3);
     bytes[4] = 0;
     bytes[5] = 0xff;
     bytes[6] = 1;
-    READER reader;
-    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     SCORE_TABLE out;
-    CHECK(Result_Ignore(ScoreData_Read(&reader, &out)));
+    CHECK(Result_Ignore(M_Decode(bytes, size + 3, &out)));
     for (int32_t i = 0; i < 4; i++) {
         bytes[i] ^= 1;
-        Reader_OpenBuffer(&reader, bytes, size, nullptr);
-        CHECK(!Result_Ignore(ScoreData_Read(&reader, &out)));
+        CHECK(!Result_Ignore(M_Decode(bytes, size, &out)));
         bytes[i] ^= 1;
     }
-    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Mem_Free(bytes);
+    Mem_Free(encoded);
 }
 
 TEST(signed_insertion_ties_precede_existing_entries)
 {
-    SCORE_TABLE table;
-    ScoreData_Defaults(&table);
+    SCORE_TABLE table = M_Defaults();
     SCORE_ENTRY entry = table.entries[4];
     strcpy(entry.name, "                ");
     strcpy(entry.route, "地");
@@ -115,13 +157,11 @@ TEST(signed_insertion_ties_precede_existing_entries)
     CHECK_EQ_INT(ScoreData_Insert(&table, &entry), 0);
     size_t size;
     uint8_t *const bytes = M_Encode(&table, &size);
-    READER reader;
-    Reader_OpenBuffer(&reader, bytes, size, nullptr);
     SCORE_TABLE out;
-    CHECK(Result_Ignore(ScoreData_Read(&reader, &out)));
+    CHECK(Result_Ignore(M_Decode(bytes, size, &out)));
     CHECK_EQ_STR(out.entries[0].name, "                ");
     CHECK_EQ_INT(out.entries[0].score, INT32_MAX);
-    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Mem_Free(bytes);
 }
 
 TEST(user_directory_takes_priority_and_originals_stay_unchanged)
@@ -129,12 +169,11 @@ TEST(user_directory_takes_priority_and_originals_stay_unchanged)
     char *const original_dir = TestDir_Prepare("original");
     char *const user_dir = TestDir_Prepare("user");
     VFS *const user_files = M_UserFiles(user_dir);
-    SCORE_TABLE table;
-    ScoreData_Defaults(&table);
+    SCORE_TABLE table = M_Defaults();
     table.entries[0].score = 12345;
     size_t size;
     uint8_t *const bytes = M_Encode(&table, &size);
-    char *const original = TestDir_Join(original_dir, ScoreData_File(1));
+    char *const original = TestDir_Join(original_dir, "REYHINO.DAT");
     TestDir_Write(original, bytes, size);
     VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     CHECK(Result_Ignore(Vfs_MountDir(vfs, "", original_dir, 0, false)));
@@ -147,23 +186,23 @@ TEST(user_directory_takes_priority_and_originals_stay_unchanged)
     CHECK(!saves.pending[1]);
     CHECK(Result_Ignore(ScoreData_Load(vfs, user_files, &saves)));
     CHECK_EQ_INT(saves.tables[1].entries[0].score, 54321);
-    READER reader;
-    CHECK(Result_Ignore(Reader_OpenFile(&reader, original)));
-    SCORE_TABLE restored;
-    CHECK(Result_Ignore(ScoreData_Read(&reader, &restored)));
-    CHECK_EQ_INT(restored.entries[0].score, 12345);
-    Reader_Close(&reader);
-    char *const native = TestDir_Join(user_dir, ScoreData_File(1));
+    size_t original_size;
+    uint8_t *const restored = M_ReadFile(original, &original_size);
+    CHECK_EQ_INT(original_size, size);
+    CHECK(memcmp(restored, bytes, size) == 0);
+    Mem_Free(restored);
+    char *const native = TestDir_Join(user_dir, "REYHINO.DAT");
     TestDir_Write(native, "broken", 6);
     CHECK(!Result_Ignore(ScoreData_Load(vfs, user_files, &saves)));
     CHECK(!saves.writable[1]);
     ScoreData_Queue(&saves, 1);
     CHECK(Result_Ignore(ScoreData_WriteSaves(&saves)));
+    READER reader;
     CHECK(Result_Ignore(Reader_OpenFile(&reader, native)));
     CHECK_EQ_INT(Reader_Size(&reader), 6);
     Reader_Close(&reader);
     Vfs_Destroy(vfs);
-    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Mem_Free(bytes);
     Mem_Free(native);
     Mem_Free(original);
     Vfs_Destroy(user_files);
@@ -198,19 +237,23 @@ TEST(missing_native_tables_queue_default_creation)
         CHECK(saves.pending[rank]);
     }
     CHECK(Result_Ignore(ScoreData_WriteSaves(&saves)));
+    static const char *const files[SCORE_RANKS] = {
+        "REYHIES.DAT",
+        "REYHINO.DAT",
+        "REYHIHA.DAT",
+        "REYHILU.DAT",
+    };
     for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
-        char *const path = TestDir_Join(directory, ScoreData_File(rank));
-        READER reader;
-        CHECK(Result_Ignore(Reader_OpenFile(&reader, path)));
-        SCORE_TABLE table;
-        CHECK(Result_Ignore(ScoreData_Read(&reader, &table)));
-        CHECK_EQ_INT(table.entries[0].score, 1000);
-        Reader_Close(&reader);
+        char *const path = TestDir_Join(directory, files[rank]);
+        size_t size;
+        Mem_Free(M_ReadFile(path, &size));
+        CHECK_EQ_INT(size, SCORE_FILE_SIZE);
         Mem_Free(path);
     }
     CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
     for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
         CHECK(!saves.pending[rank]);
+        CHECK_EQ_INT(saves.tables[rank].entries[0].score, 1000);
     }
     Vfs_Destroy(user_files);
     Mem_Free(directory);
@@ -237,12 +280,11 @@ TEST(existing_lowercase_native_file_keeps_its_spelling)
     char *const directory = TestDir_Prepare("lowercase");
     VFS *const user_files = M_UserFiles(directory);
     char *const path = TestDir_Join(directory, "reyhies.dat");
-    SCORE_TABLE table;
-    ScoreData_Defaults(&table);
+    const SCORE_TABLE table = M_Defaults();
     size_t size;
     uint8_t *const bytes = M_Encode(&table, &size);
     TestDir_Write(path, bytes, size);
-    Allocator_Free(&g_HeapAllocator, bytes, size);
+    Mem_Free(bytes);
     SCORE_SAVES saves;
     CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &saves)));
     saves.tables[0].entries[0].score = 45678;

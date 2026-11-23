@@ -1,5 +1,6 @@
 #include "th01/orb.h"
 
+#include "th01_video.h"
 #include "test.h"
 
 static ORB M_Orb(void)
@@ -360,17 +361,17 @@ TEST(render_restores_current_sprite_mask_at_quantized_previous_position)
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT + 31] = 0;
     const ORB_ACTION action = { ORB_ACTION_ERASE, 19, 70, 1 };
     Orb_RenderAction(&video, &sprites, action);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 70), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 47, 70), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 17, 70), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 70), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 47, 70), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 17, 70), 6);
     CHECK_EQ_INT(video.drawing_page, 0);
     CHECK_EQ_INT(video.visible_page, 1);
     Orb_RenderAction(
         &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, 19, 70, 1 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 16, 70), 2);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 47, 70), 0);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 17, 70), 6);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 1, 16, 70), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 70), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 47, 70), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 17, 70), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 16, 70), 9);
 }
 
 TEST(render_wall_overshoot_wraps_rows_within_visible_page)
@@ -388,22 +389,22 @@ TEST(render_wall_overshoot_wraps_rows_within_visible_page)
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT + 31] = 3;
     Orb_RenderAction(
         &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, -4, 64, 0 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 632, 63), 2);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 23, 64), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 63), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 23, 64), 3);
     Orb_RenderAction(
         &video, &sprites, (ORB_ACTION) { ORB_ACTION_ERASE, -4, 64, 0 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 632, 63), 9);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 23, 64), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 63), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 23, 64), 9);
     Orb_RenderAction(
         &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, 612, 64, 0 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 608, 64), 2);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 639, 64), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 608, 64), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 64), 3);
     Orb_RenderAction(
         &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, 616, 64, 0 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 616, 64), 2);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 7, 65), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 616, 64), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 7, 65), 3);
     Orb_RenderAction(
         &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, -8, 0, 0 });
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 23, 0), 3);
-    CHECK_EQ_INT(Video_ReadPixel(&video, 0, 632, 399), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 23, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 399), 6);
 }

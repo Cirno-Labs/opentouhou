@@ -35,7 +35,7 @@ TH01_SETTINGS g_Settings = {
     .fix_debouncing = true,
 };
 
-RESULT Settings_ReadOriginal(READER *const reader, TH01_SETTINGS *const out)
+static RESULT M_ReadOriginal(READER *const reader, TH01_SETTINGS *const out)
 {
     char magic[7];
     Reader_ReadBytes(reader, magic, sizeof(magic));
@@ -75,7 +75,7 @@ RESULT Settings_ImportOriginal(
     }
     READER reader;
     MUST(Vfs_Open(vfs, "REIIDEN.CFG", VFS_STREAM, &reader));
-    const RESULT result = Settings_ReadOriginal(&reader, settings);
+    const RESULT result = M_ReadOriginal(&reader, settings);
     Reader_Close(&reader);
     return result;
 }

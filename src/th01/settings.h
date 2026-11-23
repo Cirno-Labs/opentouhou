@@ -35,11 +35,6 @@ typedef struct {
 extern TH01_SETTINGS g_Settings;
 extern const CONFIG_SCHEMA g_SettingsSchema;
 
-// Reads the eleven-byte REIIDEN.CFG record into the game options of out.
-// Accepts trailing bytes, as the original does, but rejects invalid option
-// ranges, which the original uses as unchecked indices.
-RESULT Settings_ReadOriginal(READER *reader, TH01_SETTINGS *out);
-
 // Imports REIIDEN.CFG from vfs when user_files has no config.ini, compared
 // without ASCII case; an existing config.ini wins even when empty. Leaves
 // settings unchanged if REIIDEN.CFG is absent or invalid.

@@ -19,16 +19,13 @@ typedef enum {
     PALETTE_FADE_BLACK_OUT,
     PALETTE_FADE_WHITE_IN,
     PALETTE_FADE_WHITE_OUT,
-    PALETTE_FADE_FROM,
 } PALETTE_FADE_KIND;
 
 // Holds one cooperative fade.
 typedef struct {
     PALETTE colors;
     PALETTE_FADE_KIND kind;
-    int32_t tone;
     uint8_t remaining;
-    bool tone_fade;
 } PALETTE_FADE;
 
 // Sets the stock saved palette, an empty resource palette and tone 100,
@@ -46,9 +43,8 @@ void Palette_SetColor(
 void Palette_Set(PALETTE_STATE *state, VIDEO *video, const PALETTE *colors);
 void Palette_SetGray(PALETTE_STATE *state, VIDEO *video, int32_t value);
 
-// Shows the saved colors, or a raw solid color, without changing saved or
-// resource colors. Masks components to four bits instead of clamping.
-void Palette_Show(const PALETTE_STATE *state, VIDEO *video);
+// Shows a raw solid color without changing saved or resource colors. Masks
+// components to four bits instead of clamping.
 void Palette_ShowSolid(VIDEO *video, int32_t red, int32_t green, int32_t blue);
 
 // Moves saved components one unit toward target, then clamps and shows them.
@@ -72,16 +68,6 @@ void Palette_ShowResource(PALETTE_STATE *state, VIDEO *video, bool use_tone);
 void Palette_BeginFade(
     PALETTE_FADE *fade, const PALETTE_STATE *state, PALETTE_FADE_KIND kind);
 
-// Starts a sixteen-step fade from a solid color toward the live saved
-// colors. A set bit in keep starts that color from saved instead.
-void Palette_BeginFrom(
-    PALETTE_FADE *fade, const PALETTE_STATE *state, int8_t red, int8_t green,
-    int8_t blue, uint16_t keep);
-
-// Starts an ending fade of twenty steps of five tone units from the kind's
-// fixed endpoint, whatever the current tone.
-void Palette_BeginToneFade(PALETTE_FADE *fade, PALETTE_FADE_KIND kind);
-
 // Applies and shows one step of fade, and returns false once all steps are
-// done. Tone fades update saved and tone through Palette_SetTone.
+// done.
 bool Palette_FadeStep(PALETTE_FADE *fade, PALETTE_STATE *state, VIDEO *video);

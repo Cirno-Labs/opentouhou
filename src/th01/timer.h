@@ -31,10 +31,6 @@ typedef struct {
     void *user;
 } TIMER_CONTEXT;
 
-// Sets the time for stage_id 0..19 and route 0 (Makai) or 1 (Jigoku), and
-// resets frames_since_hurry.
-void Timer_InitFor(STAGE_TIMER *timer, int16_t stage_id, int16_t route);
-
 // Redraws the HUD in the original's order. While timer_initialized is
 // false, first sets the time for the current stage.
 void Timer_Redraw(

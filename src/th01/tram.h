@@ -36,13 +36,6 @@ void Tram_Clear(TRAM *tram);
 // Fills a half-open rectangle, clipped to the screen.
 void Tram_Fill(TRAM *tram, GFX_RECT rectangle, TRAM_COLOR color);
 
-// Draws an 8x16 or 16x16 glyph with 16x16 pixels per dot: set dots take
-// foreground and unset dots take background, which may be transparent.
-// Clips to the screen without the text VRAM's wrapping.
-void Tram_PutGlyph16(
-    TRAM *tram, const GAME_TEXT_GLYPH *glyph, int32_t left, int32_t top,
-    TRAM_COLOR foreground, TRAM_COLOR background);
-
 // Centers up to five glyphs of at most 40 source pixels in total at y=80,
 // filling the rest of rows 0 through 335 with background. An empty line
 // only clears. Leaves rows 336 through 399 unchanged. Five halfwidth glyphs

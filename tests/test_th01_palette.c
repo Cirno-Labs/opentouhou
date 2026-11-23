@@ -77,7 +77,7 @@ TEST(initial_state_has_independent_saved_resource_and_displayed_colors)
     CHECK(memcmp(&state.resource, &empty, sizeof(empty)) == 0);
     CHECK_EQ_INT(state.tone, 100);
     M_CheckShown(&video, &empty);
-    Palette_Show(&state, &video);
+    Palette_Set(&state, &video, &state.saved);
     M_CheckShown(&video, &stock);
     Arena_Free(&arena);
 }
@@ -251,51 +251,6 @@ TEST(shared_in_fades_use_live_directional_targets_but_out_starts_are_frozen)
     Arena_Free(&arena);
 }
 
-TEST(fade_from_keeps_initial_colors_then_tracks_live_saved_components)
-{
-    ARENA arena;
-    VIDEO video;
-    PALETTE_STATE state;
-    M_Init(&arena, &video, &state);
-    Palette_SetGray(&state, &video, 7);
-    PALETTE_FADE fade;
-    Palette_BeginFrom(&fade, &state, 0, 15, 7, 0x8001);
-    CHECK(Palette_FadeStep(&fade, &state, &video));
-    M_CheckDac(&video, 0, 7, 7, 7);
-    M_CheckDac(&video, 15, 7, 7, 7);
-    M_CheckDac(&video, 1, 1, 14, 7);
-    Palette_SetGray(&state, &video, 9);
-    CHECK(Palette_FadeStep(&fade, &state, &video));
-    M_CheckDac(&video, 0, 8, 8, 8);
-    M_CheckDac(&video, 1, 2, 13, 8);
-    for (int32_t i = 2; i < 16; i++) {
-        CHECK(Palette_FadeStep(&fade, &state, &video));
-    }
-    M_CheckShown(&video, &state.saved);
-    CHECK(!Palette_FadeStep(&fade, &state, &video));
-    Arena_Free(&arena);
-}
-
-TEST(fade_from_preserves_signed_start_values_and_hardware_masking)
-{
-    ARENA arena;
-    VIDEO video;
-    PALETTE_STATE state;
-    M_Init(&arena, &video, &state);
-    Palette_SetGray(&state, &video, 7);
-    PALETTE_FADE fade;
-    Palette_BeginFrom(&fade, &state, INT8_MIN, INT8_MAX, -1, 0);
-    for (int32_t step = 1; step <= 16; step++) {
-        CHECK(Palette_FadeStep(&fade, &state, &video));
-        M_CheckDac(
-            &video, 0, INT8_MIN + step, INT8_MAX - step,
-            step <= 8 ? -1 + step : 7);
-        CHECK_EQ_INT(state.saved.colors[0][0], 7);
-    }
-    CHECK(!Palette_FadeStep(&fade, &state, &video));
-    Arena_Free(&arena);
-}
-
 TEST(saved_steps_preserve_direction_and_alias_contracts)
 {
     ARENA arena;
@@ -399,64 +354,5 @@ TEST(resource_display_uses_the_persistent_tone_only_when_requested)
     CHECK_EQ_INT(state.tone, 47);
     CHECK(memcmp(&state.saved, &state.resource, sizeof(state.saved)) == 0);
     M_CheckShown(&video, &state.resource);
-    Arena_Free(&arena);
-}
-
-TEST(ending_fades_take_twenty_steps_from_fixed_endpoints)
-{
-    ARENA arena;
-    VIDEO video;
-    PALETTE_STATE state;
-    M_Init(&arena, &video, &state);
-    state.resource = M_Colors();
-    for (PALETTE_FADE_KIND kind = PALETTE_FADE_BLACK_IN;
-         kind <= PALETTE_FADE_WHITE_OUT; kind++) {
-        state.tone = 27;
-        Palette_SetColor(&state, &video, 0, 2, 9, 13);
-        PALETTE_FADE fade;
-        const VIDEO before = video;
-        Palette_BeginToneFade(&fade, kind);
-        CHECK_EQ_INT(state.tone, 27);
-        CHECK(
-            memcmp(video.palette, before.palette, sizeof(video.palette)) == 0);
-        for (int32_t step = 1; step <= 20; step++) {
-            CHECK(Palette_FadeStep(&fade, &state, &video));
-            const int32_t expected = kind == PALETTE_FADE_BLACK_IN ? step * 5
-                : kind == PALETTE_FADE_BLACK_OUT ? 100 - step * 5
-                : kind == PALETTE_FADE_WHITE_IN  ? 200 - step * 5
-                                                 : 100 + step * 5;
-            CHECK_EQ_INT(state.tone, expected);
-            M_CheckDac(&video, 0, 2, 9, 13);
-            for (int32_t i = 1; i < 16; i++) {
-                for (int32_t c = 0; c < 3; c++) {
-                    CHECK_EQ_INT(
-                        state.saved.colors[i][c],
-                        M_Toned(state.resource.colors[i][c], expected));
-                }
-            }
-        }
-        const PALETTE_STATE finished = state;
-        CHECK(!Palette_FadeStep(&fade, &state, &video));
-        CHECK(memcmp(&state, &finished, sizeof(state)) == 0);
-    }
-    Arena_Free(&arena);
-}
-
-TEST(ending_fades_read_resource_changes_at_each_step)
-{
-    ARENA arena;
-    VIDEO video;
-    PALETTE_STATE state;
-    M_Init(&arena, &video, &state);
-    state.resource = M_Colors();
-    PALETTE_FADE fade;
-    Palette_BeginToneFade(&fade, PALETTE_FADE_BLACK_IN);
-    CHECK(Palette_FadeStep(&fade, &state, &video));
-    CHECK_EQ_INT(state.tone, 5);
-    state.resource.colors[1][0] = 15;
-    Palette_SetTone(&state, &video, 180);
-    CHECK(Palette_FadeStep(&fade, &state, &video));
-    CHECK_EQ_INT(state.tone, 10);
-    CHECK_EQ_INT(state.saved.colors[1][0], 2);
     Arena_Free(&arena);
 }
