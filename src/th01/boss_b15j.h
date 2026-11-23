@@ -70,5 +70,4 @@ RESULT B15J_ValidateContext(const B15J_CONTEXT *context);
 // intervals, four-laser cleanup and silent HP timeout. Activates cached
 // scene 6 after defeat. Finished calls are inert until setup or state reset.
 // Keep borrowed resources stable. Allocates nothing and performs no IO.
-bool B15J_UpdateAndRender(
-    B15J *boss, const B15J_CONTEXT *context, FRAME_VSYNC *vsync);
+bool B15J_UpdateAndRender(B15J *boss, const B15J_CONTEXT *context);

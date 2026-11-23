@@ -55,7 +55,6 @@ typedef enum {
 typedef struct {
     GAMEPLAY_REQUEST request;
     GAMEPLAY_PHASE phase, after_player;
-    FRAME_VSYNC vsync;
     FRAME_WAIT wait;
     uint32_t rng, frame, score_bonus;
     int16_t next_extend;
@@ -75,7 +74,6 @@ typedef struct {
     STAGE_OBJECTS objects;
     STAGE_ORB_COMPOSITE composite;
     PLAYER player;
-    GAME_INPUT input;
     PLAYER_BOMB_CONTINUATION player_bomb;
     ORB orb;
     SHOTS shots;
@@ -90,8 +88,6 @@ typedef struct {
     MISS miss;
     HUD hud;
     HUD_HP health;
-    TRAM tram;
-    STAGE_TIMER timer;
     PALETTE_STATE palette;
     PALETTE stage_palette;
     SCENE_STATE scene;
@@ -110,8 +106,6 @@ typedef struct {
 
 typedef struct {
     const GAMEPLAY_ASSETS *assets;
-    VIDEO *video;
-    SESSION *session;
     MDRV *audio;
     GAME_AUDIO *audio_output;
     size_t song;

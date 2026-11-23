@@ -151,8 +151,7 @@ static uint8_t M_ShiftByte(
 }
 
 static void M_RawOr(
-    VIDEO *const video, const uint32_t offset, const int32_t plane,
-    const uint8_t dots)
+    const uint32_t offset, const int32_t plane, const uint8_t dots)
 {
     static const uint32_t bases[4] = { 0xa8000, 0xb0000, 0xb8000, 0xe0000 };
     const uint32_t address = bases[plane] + offset;
@@ -161,7 +160,7 @@ static void M_RawOr(
             const uint32_t pixel = (address - bases[target]) * 8;
             for (int32_t bit = 0; bit < 8; bit++) {
                 if ((dots & (0x80u >> bit)) != 0) {
-                    video->pages[video->drawing_page][pixel + bit] |=
+                    g_Video.pages[g_Video.drawing_page][pixel + bit] |=
                         (uint8_t)(1u << target);
                 }
             }
@@ -171,10 +170,10 @@ static void M_RawOr(
 }
 
 void Missiles_RenderAction(
-    VIDEO *const video, const PTN *const sprites, const MISSILES_ACTION action)
+    const PTN *const sprites, const MISSILES_ACTION action)
 {
     if (action.kind == MISSILES_ACTION_RESTORE) {
-        Sprite_Restore16(video, action.left, action.top, 32, 16);
+        Sprite_Restore16(action.left, action.top, 32, 16);
     } else if (action.kind == MISSILES_ACTION_PUT) {
         const int32_t sx = (action.quarter & 1) * 16;
         const int32_t sy = (action.quarter & 2) * 8;
@@ -209,8 +208,8 @@ void Missiles_RenderAction(
                     if (clear_offset < 32000) {
                         for (int32_t bit = 0; bit < 8; bit++) {
                             if ((shifted_mask & (0x80u >> bit)) != 0) {
-                                video->pages[video->drawing_page]
-                                            [clear_offset * 8 + bit] = 0;
+                                g_Video.pages[g_Video.drawing_page]
+                                             [clear_offset * 8 + bit] = 0;
                             }
                         }
                     }
@@ -219,7 +218,7 @@ void Missiles_RenderAction(
                             ? (uint8_t)(planes[plane] >> (byte * 8))
                             : M_ShiftByte(planes[plane], first_bit, byte);
                         M_RawOr(
-                            video, (uint32_t)offset + byte, plane,
+                            (uint32_t)offset + byte, plane,
                             dots & shifted_mask);
                     }
                 }

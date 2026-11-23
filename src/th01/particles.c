@@ -130,8 +130,8 @@ void Particles_Init(PARTICLES *const p)
 }
 
 void Particles_UpdateAndRender(
-    PARTICLES *const p, VIDEO *const video, uint32_t *const rng,
-    const PARTICLES_ORIGIN origin, const uint8_t color)
+    PARTICLES *const p, uint32_t *const rng, const PARTICLES_ORIGIN origin,
+    const uint8_t color)
 {
     ASSERT(p->spawn_interval == 2 && p->velocity_max == 10);
     ASSERT(origin >= PARTICLES_TOP && origin <= PARTICLES_TOP_LEFT);
@@ -147,7 +147,7 @@ void Particles_UpdateAndRender(
             continue;
         }
         Sprite_Restore16(
-            video, Math16_ToPixel(p->x[i]), Math16_ToPixel(p->y[i]), 8, 1);
+            Math16_ToPixel(p->x[i]), Math16_ToPixel(p->y[i]), 8, 1);
         p->x[i] = Math16_Wrap(p->x[i] + p->velocity_x[i]);
         p->y[i] = Math16_Wrap(p->y[i] + p->velocity_y[i]);
         if (p->x[i] < 0 || p->x[i] > 639 * 16 || p->y[i] < 0
@@ -158,7 +158,7 @@ void Particles_UpdateAndRender(
     for (uint32_t i = 0; i < PARTICLES_COUNT; i++) {
         if (p->alive[i] != 0) {
             Video_Pixel(
-                video, Math16_ToPixel(p->x[i]), Math16_ToPixel(p->y[i]), color);
+                Math16_ToPixel(p->x[i]), Math16_ToPixel(p->y[i]), color);
         }
     }
 }

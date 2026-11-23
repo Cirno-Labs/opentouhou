@@ -5,15 +5,15 @@
 #include "th01/sprite.h"
 
 void Wave_Restore(
-    VIDEO *const video, const int16_t left, const int16_t top,
-    const int16_t wavelength, const int16_t amplitude, const int16_t phase,
-    const int16_t width, const int16_t height)
+    const int16_t left, const int16_t top, const int16_t wavelength,
+    const int16_t amplitude, const int16_t phase, const int16_t width,
+    const int16_t height)
 {
     ASSERT(wavelength != 0 && width > 0);
     int16_t angle = phase;
     for (int32_t y = 0; y < height; y++) {
         const int16_t x = Math16_Wrap(left + Math16_Wave(amplitude, angle));
         angle = Math16_Wrap(angle + 256 / wavelength);
-        Sprite_Restore16(video, x, Math16_Wrap(top + y), width, 1);
+        Sprite_Restore16(x, Math16_Wrap(top + y), width, 1);
     }
 }

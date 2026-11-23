@@ -78,7 +78,7 @@ void B10M_Setup(B10M *const b, const B10M_CONTEXT *const c)
     for (int32_t i = 1; i < 5; i++) {
         BossEntity_CopyMetadata(&b->eyes[i], &b->eyes[0]);
     }
-    Palette_Set(c->hit->palette, c->hit->display->video, &c->assets->palette);
+    Palette_Set(c->hit->palette, &c->assets->palette);
     b->boss_palette = c->hit->palette->saved;
     b->post_defeat = c->hit->palette->saved;
     *c->stage_palette = b->post_defeat;
@@ -99,11 +99,6 @@ void B10M_Setup(B10M *const b, const B10M_CONTEXT *const c)
     c->hit->health->first_redwhite = 8;
     Particles_Init(c->particles);
     Missiles_Reset(c->missiles);
-}
-
-static VIDEO *M_Video(const B10M_CONTEXT *const c)
-{
-    return c->hit->display->video;
 }
 
 static PLAYER *M_Player(const B10M_CONTEXT *const c)
@@ -138,8 +133,7 @@ static void M_Lock(
 {
     for (int32_t i = 0; i < 5; i++) {
         if ((flags & (1 << i)) != 0) {
-            BossEntity_LockedMovePut(
-                &b->eyes[i], c->sprites, M_Video(c), 0, 0, 3, true);
+            BossEntity_LockedMovePut(&b->eyes[i], c->sprites, 0, 0, 3, true);
         }
     }
 }
@@ -191,7 +185,7 @@ static void M_Common(B10M *const b)
 
 static void M_Snap(B10M *const b, const B10M_CONTEXT *const c)
 {
-    Palette_Set(c->hit->palette, M_Video(c), c->stage_palette);
+    Palette_Set(c->hit->palette, c->stage_palette);
     b->boss_palette = c->hit->palette->saved;
 }
 
@@ -239,7 +233,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
     if (action.kind == MISSILES_ACTION_EFFECT) {
         c->hit->effect(c->hit->user, action.effect);
     } else {
-        Missiles_RenderAction(M_Video(c), &c->assets->missiles, action);
+        Missiles_RenderAction(&c->assets->missiles, action);
     }
 }
 
@@ -262,7 +256,7 @@ static void M_Toggle(
             c->stage_palette->colors[15][inc] =
                 M_Byte(c->stage_palette->colors[15][inc] + 1);
         }
-        Palette_Set(c->hit->palette, M_Video(c), c->stage_palette);
+        Palette_Set(c->hit->palette, c->stage_palette);
     }
     if (*frame == 20) {
         M_Image(b, close, 2);
@@ -285,17 +279,16 @@ static void M_DownLaser(
     const int16_t x = Math16_Wrap(b->eyes[i].left + 28);
     const int16_t y = Math16_Wrap(b->eyes[i].top + 28);
     if (put) {
-        Video_VerticalLine(M_Video(c), x, y, 398, 7);
+        Video_VerticalLine(x, y, 398, 7);
     } else {
-        Video_LineErase(M_Video(c), x, y, x, 400);
+        Video_LineErase(x, y, x, 400);
     }
 }
 
 static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
 {
     if (!b->hp_bar_filled) {
-        b->hp_bar_filled =
-            HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
+        b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
     }
     b->frame = Math16_Wrap(b->frame + 1);
     M_Lock(b, c, 31);
@@ -320,7 +313,7 @@ static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
             M_Byte(c->stage_palette->colors[15][0] + 1);
         c->stage_palette->colors[15][1] =
             M_Byte(c->stage_palette->colors[15][1] + 1);
-        Palette_Set(c->hit->palette, M_Video(c), c->stage_palette);
+        Palette_Set(c->hit->palette, c->stage_palette);
     }
     const int16_t open_at[] = { 100, 120, 140, 160, 180, 200 };
     bool opening = false;
@@ -544,12 +537,11 @@ static void M_Laser(
     const int16_t end =
         left ? Math16_Wrap(640 - b->pattern_state) : b->pattern_state;
     if (restore_only) {
-        LineBullets_Erase(M_Video(c), x, y, end, 400);
+        LineBullets_Erase(x, y, end, 400);
     } else {
-        LineBullets_Erase(
-            M_Video(c), x, y, Math16_Wrap(end - (left ? -16 : 16)), 400);
+        LineBullets_Erase(x, y, Math16_Wrap(end - (left ? -16 : 16)), 400);
         LineBullets_PutPatternedAndHitTest(
-            M_Video(c), M_Player(c), x, y, end, 400, 7, 0xe0);
+            M_Player(c), x, y, end, 400, 7, 0xe0);
     }
 }
 
@@ -636,10 +628,9 @@ static void M_Shrink(
         const MATH16_VECTOR a = M_ShrinkPoint(b, order[i], distance);
         const MATH16_VECTOR z = M_ShrinkPoint(b, order[i + 1], distance);
         if (restore) {
-            LineBullets_Erase(M_Video(c), a.x, a.y, z.x, z.y);
+            LineBullets_Erase(a.x, a.y, z.x, z.y);
         } else {
-            LineBullets_PutAndHitTest(
-                M_Video(c), M_Player(c), a.x, a.y, z.x, z.y, 7);
+            LineBullets_PutAndHitTest(M_Player(c), a.x, a.y, z.x, z.y, 7);
         }
     }
 }
@@ -652,10 +643,10 @@ static void M_Star(
     for (int32_t i = 0; i < 5; i++) {
         const int32_t a = order[i], z = order[i + 1];
         if (restore) {
-            LineBullets_Erase(M_Video(c), p->x[a], p->y[a], p->x[z], p->y[z]);
+            LineBullets_Erase(p->x[a], p->y[a], p->x[z], p->y[z]);
         } else {
             LineBullets_PutAndHitTest(
-                M_Video(c), M_Player(c), p->x[a], p->y[a], p->x[z], p->y[z], 7);
+                M_Player(c), p->x[a], p->y[a], p->x[z], p->y[z], 7);
         }
     }
 }
@@ -843,11 +834,9 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
     }
 }
 
-static bool M_Death(
-    B10M *const b, const B10M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Death(B10M *const b, const B10M_CONTEXT *const c)
 {
     const BOSS_DEFEAT_CONTEXT defeat = {
-        .video = M_Video(c),
         .palette = c->hit->palette,
         .post_defeat = &b->post_defeat,
         .miko = c->miko,
@@ -855,7 +844,7 @@ static bool M_Death(
         .origin_top = &c->hit->orb->top,
         .stage_cleared = c->stage_cleared,
     };
-    if (!BossDefeat_Resume(&b->defeat, &defeat, vsync)) {
+    if (!BossDefeat_Resume(&b->defeat, &defeat)) {
         return false;
     }
     Scene_Activate(c->scene, &c->assets->next_scene);
@@ -878,7 +867,6 @@ RESULT B10M_ValidateContext(const B10M_CONTEXT *const c)
             || c->hit->display->high_score == nullptr
             || c->hit->display->font == nullptr
             || c->hit->display->sprites == nullptr
-            || c->hit->display->video == nullptr
             || c->hit->display->player == nullptr
             || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
             || c->hit->orb == nullptr || c->hit->test_damage == nullptr
@@ -904,14 +892,13 @@ RESULT B10M_ValidateContext(const B10M_CONTEXT *const c)
     return OK;
 }
 
-bool B10M_UpdateAndRender(
-    B10M *const b, const B10M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
 {
     if (b->finished) {
         return true;
     }
     if (b->defeating) {
-        return M_Death(b, c, vsync);
+        return M_Death(b, c);
     }
     Missiles_UpdateAndRender(
         c->missiles, M_Player(c), (uint16_t)c->hit->frame_rand,
@@ -1001,14 +988,14 @@ bool B10M_UpdateAndRender(
         M_Hit(b, c);
         if (b->hp <= 0) {
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets, M_Video(c));
+            Pellets_EraseAndResetMoving(c->pellets);
             if (attack) {
                 Missiles_Reset(c->missiles);
             }
-            ShootoutLasers_EraseAndReset(c->lasers, M_Video(c), 5);
-            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR, vsync);
+            ShootoutLasers_EraseAndReset(c->lasers, 5);
+            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR);
             b->defeating = true;
-            return M_Death(b, c, vsync);
+            return M_Death(b, c);
         }
         if (b->phase == 11 && b->subphase == 3 && !b->hit.invincible) {
             M_Enter12(b, c);

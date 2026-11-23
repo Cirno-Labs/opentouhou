@@ -3,8 +3,7 @@
 #include "core/base/assert.h"
 
 bool Stage_BeginOrbComposite(
-    STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context,
-    FRAME_VSYNC *const vsync)
+    STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context)
 {
     ASSERT(!composite->active);
     composite->orb = Orb_BeginComposite(
@@ -12,17 +11,16 @@ bool Stage_BeginOrbComposite(
         &context->gameplay->combo);
     composite->active = true;
     composite->waiting = false;
-    return Stage_ResumeOrbComposite(composite, context, vsync);
+    return Stage_ResumeOrbComposite(composite, context);
 }
 
 bool Stage_ResumeOrbComposite(
-    STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context,
-    FRAME_VSYNC *const vsync)
+    STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context)
 {
     if (!composite->active) {
         return true;
     }
-    if (composite->waiting && !Frame_DelayReady(vsync, 1)) {
+    if (composite->waiting && !Frame_DelayReady(1)) {
         return false;
     }
     composite->waiting = false;
@@ -34,7 +32,7 @@ bool Stage_ResumeOrbComposite(
             composite->active = false;
             return true;
         case ORB_ACTION_DELAY_ONE:
-            if (!Frame_DelayReady(vsync, 1)) {
+            if (!Frame_DelayReady(1)) {
                 composite->waiting = true;
                 return false;
             }
@@ -67,7 +65,7 @@ bool Stage_ResumeOrbComposite(
             break;
         case ORB_ACTION_ERASE:
         case ORB_ACTION_PUT:
-            Orb_RenderAction(context->video, context->sprites, action);
+            Orb_RenderAction(context->sprites, action);
             break;
         }
     }

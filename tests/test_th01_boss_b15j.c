@@ -7,7 +7,6 @@
 #include "test.h"
 
 typedef struct {
-    VIDEO video;
     PALETTE_STATE palette;
     PALETTE stage_palette;
     B15J_ASSETS assets;
@@ -38,7 +37,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
     const ALLOCATOR *const a = Arena_Allocator(arena);
-    Video_Init(&f->video, a);
+    Video_Init(a);
     Palette_Init(&f->palette);
     f->assets.souls = (BOS) { 32, 32, 3, Arena_AllocZ(arena, 32 * 32 * 3),
                               Arena_AllocZ(arena, 32 * 32 * 3) };
@@ -57,7 +56,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 6, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->display.video = &f->video;
     f->hit_context = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
                                           .display = &f->display,
                                           .health = &f->health };
@@ -87,7 +85,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     if (action.kind == SHOTS_ACTION_EFFECT) {
         M_Effect(f, action.effect);
     } else {
-        Shots_RenderAction(&f->video, &f->stage, action);
+        Shots_RenderAction(&f->stage, action);
     }
 }
 
@@ -116,8 +114,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->player.left = 300;
     f->orb.top = 64;
     f->orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .video = &f->video,
-                                 .sprites = &f->stage,
+    f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
                                  .player = &f->player,
@@ -233,16 +230,16 @@ TEST(loader_failure_clears_output)
     Arena_Free(&arena);
 }
 
-static void M_Enter(B15J *const b, FIXTURE *const f, FRAME_VSYNC *const vsync)
+static void M_Enter(B15J *const b, FIXTURE *const f)
 {
     for (int32_t i = 0; i < 1000; i++) {
-        if (B15J_UpdateAndRender(b, &f->context, vsync)) {
+        if (B15J_UpdateAndRender(b, &f->context)) {
             return;
         }
         const B15J frozen = *b;
-        CHECK(!B15J_UpdateAndRender(b, &f->context, vsync));
+        CHECK(!B15J_UpdateAndRender(b, &f->context));
         CHECK(memcmp(b, &frozen, sizeof(*b)) == 0);
-        Frame_VSync(vsync);
+        Frame_VSync();
     }
     CHECK(false);
 }
@@ -257,25 +254,27 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             M_Battle(&f, &arena);
             B15J b = {};
             B15J_Setup(&b, &f.context);
-            Palette_Set(&f.palette, &f.video, &f.assets.palette);
-            Video_SelectDrawingPage(&f.video, page);
+            Palette_Set(&f.palette, &f.assets.palette);
+            Video_SelectDrawingPage(page);
             for (int32_t x = 0; x < 640; x++) {
                 for (int32_t y = 0; y < 400; y++) {
-                    f.video.pages[1][y * 640 + x] = (uint8_t)((x + y) % 16);
+                    g_Video.pages[1][y * 640 + x] = (uint8_t)((x + y) % 16);
                 }
             }
             const PALETTE saved = f.palette.saved;
             const size_t used = arena.used;
-            FRAME_VSYNC vsync = { .count1 = count == 0 ? 0 : 17, .count2 = 21 };
-            M_Enter(&b, &f, &vsync);
+            Frame_Reset();
+            g_VSync.count1 = count == 0 ? 0 : 17;
+            g_VSync.count2 = 21;
+            M_Enter(&b, &f);
             CHECK_EQ_INT(b.phase, 2);
             CHECK_EQ_INT(b.frame, 0);
             CHECK_EQ_INT(b.hp, 14);
             CHECK_EQ_INT(b.hit.frame, 0);
             CHECK(!b.hit.invincible);
-            CHECK_EQ_INT(vsync.edge, count == 0 ? 752 : 751);
-            CHECK_EQ_INT(vsync.count2, 21 + (int32_t)vsync.edge);
-            CHECK_EQ_INT(f.video.drawing_page, 0);
+            CHECK_EQ_INT(g_VSync.edge, count == 0 ? 752 : 751);
+            CHECK_EQ_INT(g_VSync.count2, 21 + (int32_t)g_VSync.edge);
+            CHECK_EQ_INT(g_Video.drawing_page, 0);
             CHECK(memcmp(&f.palette.saved, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(&f.stage_palette, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(&b.boss_palette, &saved, sizeof(saved)) == 0);
@@ -297,8 +296,8 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         f.display.rank = rank;
         B15J b = {};
         B15J_Setup(&b, &f.context);
-        FRAME_VSYNC vsync = {};
-        M_Enter(&b, &f, &vsync);
+        Frame_Reset();
+        M_Enter(&b, &f);
         const size_t used = arena.used;
         uint32_t phases = 0, patterns = 0;
         bool saw_tear = false, saw_ripple = false;
@@ -308,14 +307,14 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
                 patterns |= 1u << b.subphase;
             }
             f.hit_context.frame_rand++;
-            CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+            CHECK(B15J_UpdateAndRender(&b, &f.context));
             for (int32_t i = 0; i < 10; i++) {
                 saw_tear |= b.tear_frame[i] != 0;
                 saw_ripple |= b.tear_frame[i] > 1;
             }
             ShootoutLasers_UpdateAll(
-                &f.lasers, &f.video, &f.player, &(SHOOTOUT_LASERS_ASSETS) {});
-            Frame_VSync(&vsync);
+                &f.lasers, &f.player, &(SHOOTOUT_LASERS_ASSETS) {});
+            Frame_VSync();
         }
         CHECK_EQ_INT(
             phases, (1u << 2) | (1u << 3) | (1u << 4) | (1u << 5) | (1u << 6));
@@ -339,22 +338,22 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     M_Battle(&f, &arena);
     B15J b = {};
     B15J_Setup(&b, &f.context);
-    FRAME_VSYNC vsync = {};
-    M_Enter(&b, &f, &vsync);
+    Frame_Reset();
+    M_Enter(&b, &f);
     const size_t used = arena.used;
     f.orb.left = 0;
     f.orb.top = 64;
     f.orb.previous_left = 300;
     f.orb.previous_top = 100;
-    CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+    CHECK(B15J_UpdateAndRender(&b, &f.context));
     CHECK_EQ_INT(b.hp, 14);
     f.orb.left = 300;
     f.orb.top = 132;
-    CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+    CHECK(B15J_UpdateAndRender(&b, &f.context));
     CHECK_EQ_INT(b.hp, 14);
     f.orb.top = -100;
     f.orb.previous_left = 0;
-    CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+    CHECK(B15J_UpdateAndRender(&b, &f.context));
     CHECK_EQ_INT(b.hp, 13);
     CHECK_EQ_INT(f.gameplay.score, 7000);
     f.orb.top = 64;
@@ -365,13 +364,13 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
         const bool attack = (b.phase == 2 && b.hp > 10)
             || (b.phase == 5 && b.hp > 6) || (b.phase == 6 && b.hp > 0);
         f.orb.left = attack ? 300 : 0;
-        const bool completed = B15J_UpdateAndRender(&b, &f.context, &vsync);
+        const bool completed = B15J_UpdateAndRender(&b, &f.context);
         if (!completed) {
             const B15J frozen = b;
-            CHECK(!B15J_UpdateAndRender(&b, &f.context, &vsync));
+            CHECK(!B15J_UpdateAndRender(&b, &f.context));
             CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
         }
-        Frame_VSync(&vsync);
+        Frame_VSync();
     }
     CHECK(b.finished);
     CHECK_EQ_INT(b.hp, 0);
@@ -384,7 +383,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(f.pellets.slots[0].cloud_frame, 12);
     CHECK(f.lasers.slots[4].alive);
     const B15J finished = b;
-    CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+    CHECK(B15J_UpdateAndRender(&b, &f.context));
     CHECK(memcmp(&b, &finished, sizeof(b)) == 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -407,8 +406,8 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
             (SHOOTOUT_LASER) { .alive = true, .age = 77, .origin_left = 3210 };
         uint32_t expected = f.rng;
         MasterRng_Next(&expected);
-        FRAME_VSYNC vsync = {};
-        CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+        Frame_Reset();
+        CHECK(B15J_UpdateAndRender(&b, &f.context));
         CHECK_EQ_INT(b.pattern_state, 52 + rank * 4);
         CHECK_EQ_INT(f.rng, expected);
         CHECK_EQ_INT(f.lasers.slots[0].age, 77);
@@ -416,7 +415,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK_EQ_INT(f.effects[6], 1);
         b.subphase = 2;
         b.frame = Math16_Wrap(b.pattern_state * 2 - 1);
-        CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+        CHECK(B15J_UpdateAndRender(&b, &f.context));
         int32_t alive = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
             alive += f.pellets.slots[i].moving;
@@ -427,7 +426,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         b.subphase = 3;
         b.frame = 99;
         MasterRng_Next(&expected);
-        CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+        CHECK(B15J_UpdateAndRender(&b, &f.context));
         CHECK_EQ_INT(f.rng, expected);
         CHECK_EQ_INT(b.pattern_state, 60 + rank * 4);
         CHECK_EQ_INT(
@@ -453,13 +452,13 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     b.subphase = 1;
     b.patterns_done = 30;
     const HUD_HP health = f.health;
-    FRAME_VSYNC vsync = {};
-    CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+    Frame_Reset();
+    CHECK(B15J_UpdateAndRender(&b, &f.context));
     CHECK_EQ_INT(b.hp, 1);
     CHECK(memcmp(&f.health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(f.gameplay.score, 0);
     f.test_damage = true;
-    CHECK(!B15J_UpdateAndRender(&b, &f.context, &vsync));
+    CHECK(!B15J_UpdateAndRender(&b, &f.context));
     CHECK_EQ_INT(b.hp, 0);
     CHECK(!f.test_damage);
     CHECK(b.defeating);
@@ -485,8 +484,8 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         b.tears[0].top = 392;
         f.player.invincible = false;
         f.player.left = positions[i];
-        FRAME_VSYNC vsync = {};
-        CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+        Frame_Reset();
+        CHECK(B15J_UpdateAndRender(&b, &f.context));
         CHECK_EQ_INT(b.tear_frame[0], 2);
         CHECK_EQ_INT(f.player.is_hit, i == 1 || i == 2);
         CHECK_EQ_INT(f.effects[7], 1);
@@ -532,8 +531,8 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         b.souls[0].top = b.souls[1].top = 100;
         f.pellets.spawn_with_cloud = cloud != 0;
         const size_t used = arena.used;
-        FRAME_VSYNC vsync = {};
-        CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
+        Frame_Reset();
+        CHECK(B15J_UpdateAndRender(&b, &f.context));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
             count += cloud != 0 ? f.pellets.slots[i].cloud_frame == 1

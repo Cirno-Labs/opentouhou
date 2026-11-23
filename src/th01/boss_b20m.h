@@ -100,9 +100,6 @@ typedef struct {
     PELLET_SHARED *pellet_shared;
     SHOOTOUT_LASERS *lasers;
     STAGE_OBJECTS *objects;
-    TRAM *tram;
-    GAME_INPUT *input;
-    STAGE_TIMER *timer;
     bool *first_stage;
     const bool *timer_initialized;
     uint32_t *rng;
@@ -131,8 +128,7 @@ RESULT B20M_ValidateContext(const B20M_CONTEXT *context);
 // and a monotonic 60 Hz host serial while polling; pending polls stay inert.
 void B20M_BeginEntrance(B20M *boss, const B20M_CONTEXT *context);
 bool B20M_ResumeEntrance(
-    B20M *boss, const B20M_CONTEXT *context, FRAME_VSYNC *vsync,
-    uint64_t host_tick);
+    B20M *boss, const B20M_CONTEXT *context, uint64_t host_tick);
 
 // Runs one battle call or resumes its nested waits. False suspends the world.
 // Implements both forms and the final 50,000-point bonus and game clear.
@@ -140,5 +136,4 @@ bool B20M_ResumeEntrance(
 // consumers may post events but must not mutate borrowed simulation state.
 // Borrows stable context bindings and allocates nothing and performs no IO.
 bool B20M_UpdateAndRender(
-    B20M *boss, const B20M_CONTEXT *context, FRAME_VSYNC *vsync,
-    uint64_t host_tick);
+    B20M *boss, const B20M_CONTEXT *context, uint64_t host_tick);

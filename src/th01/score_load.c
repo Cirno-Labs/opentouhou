@@ -3,8 +3,8 @@
 #include <string.h>
 
 RESULT Score_LoadAssets(
-    VFS *const vfs, const FONT_ROM *const rom, const SCORE_SAVES *const saves,
-    const ALLOCATOR *const allocator, SCORE_ASSETS *const out)
+    VFS *const vfs, const FONT_ROM *const rom, const ALLOCATOR *const allocator,
+    SCORE_ASSETS *const out)
 {
     *out = (SCORE_ASSETS) {};
     READER reader;
@@ -25,8 +25,8 @@ RESULT Score_LoadAssets(
         "０１２３４５６７８９！？＃＆＊§☆◆∞∴♂♀…“”／．・SP←→終";
     for (int32_t rank = 0; rank < SCORE_RANKS; rank++) {
         for (int32_t i = 0; i < SCORE_PLACES; i++) {
-            strcat(characters, saves->tables[rank].entries[i].name);
-            strcat(characters, saves->tables[rank].entries[i].route);
+            strcat(characters, g_ScoreSaves.tables[rank].entries[i].name);
+            strcat(characters, g_ScoreSaves.tables[rank].entries[i].route);
         }
     }
     return GameText_Load(rom, characters, allocator, &out->font);

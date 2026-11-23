@@ -7,7 +7,6 @@ typedef struct {
     HUD_CONTEXT display;
     EXTEND_CONTEXT context;
     HUD hud;
-    VIDEO video;
     PTN sprites;
     STAGE_GAMEPLAY gameplay;
     PELLET_SHARED shared;
@@ -24,8 +23,8 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK_EQ_INT(f->resident_lives, 2);
     CHECK_EQ_INT(f->next, 1);
     CHECK_EQ_INT(f->shared.speed, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&f->video, 0, 144, 0), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&f->video, 1, 144, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 144, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 144, 0), 3);
     f->effects++;
 }
 
@@ -35,12 +34,11 @@ TEST(threshold_uses_unsigned_score_and_one_award_per_call)
     Arena_Init(&arena, "extend", 1024 * 1024);
     FIXTURE f = { .lives = 1, .next = 1 };
     const ALLOCATOR *const a = Arena_Allocator(&arena);
-    Video_Init(&f.video, a);
+    Video_Init(a);
     Hud_Init(&f.hud, a);
     f.sprites = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f.sprites.pixels, 3, 1024);
-    f.display = (HUD_CONTEXT) { .video = &f.video,
-                                .sprites = &f.sprites,
+    f.display = (HUD_CONTEXT) { .sprites = &f.sprites,
                                 .gameplay = &f.gameplay,
                                 .remaining_lives = &f.lives };
     f.context = (EXTEND_CONTEXT) { .hud = &f.hud,

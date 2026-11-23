@@ -1,45 +1,53 @@
 #include "th01/frame.h"
 
+#include <string.h>
+
+FRAME_VSYNC g_VSync;
+
 static int16_t M_Increment(const int16_t value)
 {
     const uint16_t bits = (uint16_t)((uint16_t)value + 1u);
     return (int16_t)(bits < 0x8000 ? bits : (int32_t)bits - 0x10000);
 }
 
-void Frame_VSync(FRAME_VSYNC *const vsync)
+void Frame_Reset(void)
 {
-    vsync->count1 = M_Increment(vsync->count1);
-    vsync->count2 = M_Increment(vsync->count2);
-    vsync->edge++;
+    memset(&g_VSync, 0, sizeof(g_VSync));
 }
 
-void Frame_PollVSync(FRAME_VSYNC *const vsync)
+void Frame_VSync(void)
 {
-    vsync->edge++;
+    g_VSync.count1 = M_Increment(g_VSync.count1);
+    g_VSync.count2 = M_Increment(g_VSync.count2);
+    g_VSync.edge++;
 }
 
-void Frame_SwitchProgram(FRAME_VSYNC *const vsync)
+void Frame_PollVSync(void)
 {
-    vsync->count1 = 1;
-    vsync->count2 = 1;
+    g_VSync.edge++;
 }
 
-void Frame_BeginWait(FRAME_WAIT *const wait, const FRAME_VSYNC *const vsync)
+void Frame_SwitchProgram(void)
 {
-    wait->edge = vsync->edge;
+    g_VSync.count1 = 1;
+    g_VSync.count2 = 1;
 }
 
-bool Frame_WaitReady(
-    const FRAME_WAIT *const wait, const FRAME_VSYNC *const vsync)
+void Frame_BeginWait(FRAME_WAIT *const wait)
 {
-    return wait->edge != vsync->edge;
+    wait->edge = g_VSync.edge;
 }
 
-bool Frame_DelayReady(FRAME_VSYNC *const vsync, const uint16_t frames)
+bool Frame_WaitReady(const FRAME_WAIT *const wait)
 {
-    if ((uint16_t)vsync->count1 < frames) {
+    return wait->edge != g_VSync.edge;
+}
+
+bool Frame_DelayReady(const uint16_t frames)
+{
+    if ((uint16_t)g_VSync.count1 < frames) {
         return false;
     }
-    vsync->count1 = 0;
+    g_VSync.count1 = 0;
     return true;
 }

@@ -151,10 +151,6 @@ void B20J_Setup(B20J *const b, const B20J_CONTEXT *const c)
     c->hit->health->first_redwhite = 10;
 }
 
-static VIDEO *M_Video(const B20J_CONTEXT *const c)
-{
-    return c->hit->display->video;
-}
 static PLAYER *M_Player(const B20J_CONTEXT *const c)
 {
     return c->hit->display->player;
@@ -191,12 +187,10 @@ static void M_Pi(
                                .height = image->height,
                                .stride = image->width,
                                .key = colorkey ? 15 : -1 };
-    Video_Blit(
-        M_Video(c), &view, (GFX_RECT) { 0, 0, image->width, image->height }, 0,
-        0);
+    Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
     Palette_Import(&c->hit->palette->resource, image->palette);
     if (!colorkey) {
-        Palette_Set(c->hit->palette, M_Video(c), &c->hit->palette->resource);
+        Palette_Set(c->hit->palette, &c->hit->palette->resource);
     }
 }
 static void M_Grx(const B20J_CONTEXT *const c, const int16_t image)
@@ -209,23 +203,22 @@ static void M_Grx(const B20J_CONTEXT *const c, const int16_t image)
                                .stride = 640,
                                .coverage_stride = 640,
                                .key = -1 };
-    Video_Blit(M_Video(c), &view, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0);
+    Video_Blit(&view, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0);
 }
 static void M_Head(
     const B20J *const b, const B20J_CONTEXT *const c, const int16_t direction)
 {
-    BossEntity_Put(&b->head, c->sprites, M_Video(c), 280, 80, direction);
+    BossEntity_Put(&b->head, c->sprites, 280, 80, direction);
 }
 static void M_Face(
     const B20J *const b, const B20J_CONTEXT *const c, const int16_t expression,
     const int16_t direction)
 {
     if (expression == 3) {
-        BossEntity_Put(&b->aim, c->sprites, M_Video(c), 280, 128, direction);
+        BossEntity_Put(&b->aim, c->sprites, 280, 128, direction);
     } else if (expression != 0) {
         BossEntity_Put(
-            &b->face, c->sprites, M_Video(c), 280, 128,
-            (expression - 1) * 3 + direction);
+            &b->face, c->sprites, 280, 128, (expression - 1) * 3 + direction);
     }
 }
 static void M_Direction(
@@ -235,12 +228,12 @@ static void M_Direction(
         return;
     }
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(M_Video(c), page);
+        Video_SelectDrawingPage(page);
         M_Head(b, c, direction);
     }
     if (b->face_expression != 0) {
         for (int32_t page = 1; page >= 0; page--) {
-            Video_SelectDrawingPage(M_Video(c), page);
+            Video_SelectDrawingPage(page);
             M_Face(b, c, b->face_expression, direction);
         }
     }
@@ -253,7 +246,7 @@ static void M_Expression(
         return;
     }
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(M_Video(c), page);
+        Video_SelectDrawingPage(page);
         if (expression == 0) {
             M_Head(b, c, b->face_direction);
         } else {
@@ -264,14 +257,14 @@ static void M_Expression(
 }
 static void M_SlashPut(const B20J_CONTEXT *const c, const int16_t image)
 {
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Grx(c, image);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     M_Grx(c, image);
 }
 static void M_White(const B20J_CONTEXT *const c)
 {
-    Palette_SetColor(c->hit->palette, M_Video(c), 9, 15, 15, 15);
+    Palette_SetColor(c->hit->palette, 9, 15, 15, 15);
 }
 static void M_WhiteIn(const B20J_CONTEXT *const c)
 {
@@ -285,7 +278,7 @@ static void M_WhiteIn(const B20J_CONTEXT *const c)
     if (col[2] > 10) {
         col[2]--;
     }
-    Palette_Set(c->hit->palette, M_Video(c), &c->hit->palette->saved);
+    Palette_Set(c->hit->palette, &c->hit->palette->saved);
 }
 static void M_BlackOut(const B20J_CONTEXT *const c)
 {
@@ -297,34 +290,32 @@ static void M_BlackOut(const B20J_CONTEXT *const c)
             }
         }
     }
-    Palette_Set(c->hit->palette, M_Video(c), colors);
+    Palette_Set(c->hit->palette, colors);
 }
-static bool M_Scroll(B20J *const b, FRAME_VSYNC *const vsync, const int16_t top)
+static bool M_Scroll(B20J *const b, const int16_t top)
 {
     b->raw_scroll = top;
     b->wait_kind = 1;
-    Frame_BeginWait(&b->wait, vsync);
+    Frame_BeginWait(&b->wait);
     return false;
 }
-static bool M_Delay(
-    B20J *const b, FRAME_VSYNC *const vsync, const uint16_t frames)
+static bool M_Delay(B20J *const b, const uint16_t frames)
 {
     b->delay_frames = frames;
-    if (Frame_DelayReady(vsync, frames)) {
+    if (Frame_DelayReady(frames)) {
         return true;
     }
     b->wait_kind = 2;
     return false;
 }
-static bool M_Ready(
-    B20J *const b, const B20J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Ready(B20J *const b, const B20J_CONTEXT *const c)
 {
     if (b->wait_kind == 1) {
-        if (!Frame_WaitReady(&b->wait, vsync)) {
+        if (!Frame_WaitReady(&b->wait)) {
             return false;
         }
-        Video_SetScroll(M_Video(c), b->raw_scroll);
-    } else if (b->wait_kind == 2 && !Frame_DelayReady(vsync, b->delay_frames)) {
+        Video_SetScroll(b->raw_scroll);
+    } else if (b->wait_kind == 2 && !Frame_DelayReady(b->delay_frames)) {
         return false;
     }
     b->wait_kind = 0;
@@ -334,14 +325,13 @@ void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
 {
     ASSERT(!b->entrance_active && !b->defeating && b->wait_kind == 0);
     c->pellets->interlace = true;
-    Tram_Fill(c->tram, (GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
+    Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->scroll, false);
     b->stage_palette = c->hit->palette->saved;
-    StageObjects_Init(
-        c->objects, nullptr, 19, false, nullptr, M_Video(c), nullptr, c->rng);
-    Video_SelectDrawingPage(M_Video(c), 1);
+    StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr, c->rng);
+    Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, false);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     M_Audio(c, B20J_AUDIO_LOAD_MUSIC);
     M_Audio(c, B20J_AUDIO_LOAD_EFFECTS);
     ASSERT(Result_Ignore(
@@ -351,8 +341,8 @@ void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
     ASSERT(Result_Ignore(
         BossEntity_Bind(&b->aim, c->sprites, 2, &c->assets->aim)));
     M_Audio(c, B20J_AUDIO_PLAY);
-    Palette_SetGray(c->hit->palette, M_Video(c), 0);
-    Tram_Clear(c->tram);
+    Palette_SetGray(c->hit->palette, 0);
+    Tram_Clear();
     b->scroll_line = 0;
     b->scroll_speed = 32;
     b->scroll_quarter = 0;
@@ -360,20 +350,19 @@ void B20J_BeginEntrance(B20J *const b, const B20J_CONTEXT *const c)
     b->entrance_stage = 1;
     b->entrance_active = true;
 }
-bool B20J_ResumeEntrance(
-    B20J *const b, const B20J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
 {
     if (!b->entrance_active) {
         return true;
     }
-    if (!M_Ready(b, c, vsync)) {
+    if (!M_Ready(b, c)) {
         return false;
     }
     for (;;) {
         switch (b->entrance_stage) {
         case 1:
             b->entrance_stage = 2;
-            return M_Scroll(b, vsync, b->scroll_line);
+            return M_Scroll(b, b->scroll_line);
         case 2:
             b->scroll_line += b->scroll_speed;
             for (int32_t quarter = 0; quarter < 4; quarter++) {
@@ -393,22 +382,21 @@ bool B20J_ResumeEntrance(
             }
             if (b->scroll_frame % 8 == 0) {
                 Palette_StepTo(
-                    c->hit->palette, M_Video(c), &c->hit->palette->resource,
-                    true);
+                    c->hit->palette, &c->hit->palette->resource, true);
             }
             b->scroll_frame++;
             b->entrance_stage = 1;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
         case 3:
             b->entrance_stage = 4;
-            return M_Scroll(b, vsync, 0);
+            return M_Scroll(b, 0);
         case 4:
             b->animation_frame = 0;
             b->entrance_stage = 5;
-            if (!M_Delay(b, vsync, 40)) {
+            if (!M_Delay(b, 40)) {
                 return false;
             }
             continue;
@@ -419,14 +407,14 @@ bool B20J_ResumeEntrance(
                 continue;
             }
             b->entrance_stage = 6;
-            return M_Scroll(b, vsync, 416 - b->animation_frame % 2 * 32);
+            return M_Scroll(b, 416 - b->animation_frame % 2 * 32);
         case 6:
             if (b->animation_frame % 8 == 0) {
                 M_Effect(c, 9);
             }
             b->animation_frame++;
             b->entrance_stage = 5;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
@@ -437,21 +425,21 @@ bool B20J_ResumeEntrance(
                 continue;
             }
             b->entrance_stage = 8;
-            return M_Scroll(b, vsync, b->scroll_line);
+            return M_Scroll(b, b->scroll_line);
         case 8:
             for (int32_t i = 0; i < 32 * 80; i++) {
                 const uint16_t offset =
                     (uint16_t)(b->scroll_line * 80 + i) & 0x7fff;
                 if (offset < 32000) {
                     memcpy(
-                        M_Video(c)->pages[0] + offset * 8,
-                        M_Video(c)->pages[1] + offset * 8, 8);
+                        g_Video.pages[0] + offset * 8,
+                        g_Video.pages[1] + offset * 8, 8);
                 }
             }
-            Video_SelectDrawingPage(M_Video(c), 0);
+            Video_SelectDrawingPage(0);
             b->scroll_line -= 32;
             b->entrance_stage = 7;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
@@ -461,17 +449,17 @@ bool B20J_ResumeEntrance(
                 continue;
             }
             b->entrance_stage = 10;
-            return M_Scroll(b, vsync, 416 - b->animation_frame % 2 * 16);
+            return M_Scroll(b, 416 - b->animation_frame % 2 * 16);
         case 10:
             b->animation_frame++;
             b->entrance_stage = 9;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
         case 11:
             b->entrance_stage = 12;
-            if (!M_Delay(b, vsync, 30)) {
+            if (!M_Delay(b, 30)) {
                 return false;
             }
             continue;
@@ -485,16 +473,15 @@ bool B20J_ResumeEntrance(
             continue;
         case 13:
             if (b->animation_frame >= 16) {
-                VIDEO *const video = M_Video(c);
                 Video_Copy(
-                    video, video->drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
-                    1 - video->drawing_page, 0, 0);
+                    g_Video.drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
+                    1 - g_Video.drawing_page, 0, 0);
                 b->entrance_active = false;
                 return true;
             }
             M_WhiteIn(c);
             b->animation_frame++;
-            if (!M_Delay(b, vsync, 10)) {
+            if (!M_Delay(b, 10)) {
                 return false;
             }
             continue;
@@ -545,7 +532,7 @@ static void M_Diamond(
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE
                 && (c->assets->diamond[y] & (0x80u >> x)) != 0) {
-                M_Video(c)->pages[M_Video(c)->drawing_page][offset] = color;
+                g_Video.pages[g_Video.drawing_page][offset] = color;
             }
         }
     }
@@ -553,7 +540,7 @@ static void M_Diamond(
 static void M_Erase(
     const B20J_CONTEXT *const c, const int16_t left, const int16_t top)
 {
-    Sprite_Restore16(M_Video(c), left, top, 16, 8);
+    Sprite_Restore16(left, top, 16, 8);
 }
 static void M_Cross(B20J *const b, const B20J_CONTEXT *const c)
 {
@@ -890,11 +877,10 @@ static void M_Ray(
 {
     if (b->ray_previous_x >= 0 && b->ray_previous_x < 640
         && b->ray_previous_y >= 0 && b->ray_previous_y < 400) {
-        Video_LineErase(
-            M_Video(c), 410, 70, b->ray_previous_x, b->ray_previous_y);
+        Video_LineErase(410, 70, b->ray_previous_x, b->ray_previous_y);
     }
     if (b->ray_x >= 0 && b->ray_x < 640 && b->ray_y >= 0 && b->ray_y < 400) {
-        Video_Line(M_Video(c), 410, 70, b->ray_x, b->ray_y, 6);
+        Video_Line(410, 70, b->ray_x, b->ray_y, 6);
     }
     b->ray_previous_x = b->ray_x;
     b->ray_previous_y = b->ray_y;
@@ -948,7 +934,7 @@ static void M_Edges(B20J *const b, const B20J_CONTEXT *const c)
         M_Ray(b, c, 0, 8);
     } else if (b->frame == 360) {
         b->ray_y = M_W(b->ray_y - 8);
-        Video_LineErase(M_Video(c), 410, 70, b->ray_x, b->ray_y);
+        Video_LineErase(410, 70, b->ray_x, b->ray_y);
         b->frame = 0;
     }
     if (b->frame % 10 == 0) {
@@ -1107,17 +1093,16 @@ static void M_Sleeve(B20J *const b, const B20J_CONTEXT *const c)
 
 static void M_BeginDeath(B20J *const b, const B20J_CONTEXT *const c)
 {
-    Tram_Clear(c->tram);
-    Video_Clear(M_Video(c), 0);
+    Tram_Clear();
+    Video_Clear(0);
     M_Audio(c, B20J_AUDIO_STOP);
     b->defeating = true;
     b->defeat_stage = 1;
     b->animation_frame = 7;
 }
-static bool M_Death(
-    B20J *const b, const B20J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
 {
-    if (!M_Ready(b, c, vsync)) {
+    if (!M_Ready(b, c)) {
         return false;
     }
     for (;;) {
@@ -1129,14 +1114,13 @@ static bool M_Death(
                 continue;
             }
             if (b->animation_frame != 7) {
-                Video_Clear(M_Video(c), 0);
+                Video_Clear(0);
             }
             const int16_t flash = b->animation_frame % 2 == 0 ? 15 : 0;
-            Palette_SetColor(
-                c->hit->palette, M_Video(c), 0, flash, flash, flash);
+            Palette_SetColor(c->hit->palette, 0, flash, flash, flash);
             M_Grx(c, b->animation_frame);
             b->animation_frame++;
-            if (!M_Delay(b, vsync, 10)) {
+            if (!M_Delay(b, 10)) {
                 return false;
             }
             continue;
@@ -1147,26 +1131,26 @@ static bool M_Death(
                 M_Effect(c, 7);
             }
             b->defeat_stage = 3;
-            return M_Scroll(b, vsync, 408 + b->frame % 2 * 16);
+            return M_Scroll(b, 408 + b->frame % 2 * 16);
         case 3:
             if (b->frame > 64) {
-                Tram_Fill(c->tram, (GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
+                Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
                 M_Pi(c, &c->assets->scroll, false);
-                Palette_SetGray(c->hit->palette, M_Video(c), 0);
-                Tram_Clear(c->tram);
+                Palette_SetGray(c->hit->palette, 0);
+                Tram_Clear();
                 b->scroll_line = 0;
                 b->scroll_frame = 0;
                 b->defeat_stage = 4;
                 continue;
             }
             b->defeat_stage = 2;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
         case 4:
             b->defeat_stage = 5;
-            return M_Scroll(b, vsync, b->scroll_line);
+            return M_Scroll(b, b->scroll_line);
         case 5:
             b->scroll_line += 32;
             if (b->scroll_line > 400) {
@@ -1175,8 +1159,7 @@ static bool M_Death(
             if (b->scroll_frame < 150) {
                 if (b->scroll_frame % 8 == 0) {
                     Palette_StepTo(
-                        c->hit->palette, M_Video(c), &c->hit->palette->resource,
-                        true);
+                        c->hit->palette, &c->hit->palette->resource, true);
                     M_Effect(c, 7);
                 }
             } else if (b->scroll_frame % 8 == 0) {
@@ -1186,7 +1169,7 @@ static bool M_Death(
                 M_BlackOut(c);
                 if (c->hit->palette->saved.colors[7][0] == 0) {
                     b->defeat_stage = 6;
-                    return M_Scroll(b, vsync, 0);
+                    return M_Scroll(b, 0);
                 }
                 if (b->scroll_frame < 220) {
                     M_Effect(c, 7);
@@ -1194,7 +1177,7 @@ static bool M_Death(
             }
             b->scroll_frame++;
             b->defeat_stage = 4;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
@@ -1281,17 +1264,16 @@ static void M_Pattern(
         break;
     }
 }
-bool B20J_UpdateAndRender(
-    B20J *const b, const B20J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
 {
     if (b->finished) {
         return true;
     }
     if (b->entrance_active) {
-        return B20J_ResumeEntrance(b, c, vsync);
+        return B20J_ResumeEntrance(b, c);
     }
     if (b->defeating) {
-        return M_Death(b, c, vsync);
+        return M_Death(b, c);
     }
     if (b->phase == 0) {
         b->phase = 1;
@@ -1310,8 +1292,7 @@ bool B20J_UpdateAndRender(
         return true;
     }
     if (b->phase == 1 && !b->hp_bar_filled) {
-        b->hp_bar_filled =
-            HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
+        b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
     }
     b->frame = M_W(b->frame + 1);
     b->hit.frame = M_W(b->hit.frame + 1);
@@ -1361,7 +1342,7 @@ bool B20J_UpdateAndRender(
     if (b->phase == 7) {
         if (b->hp <= 0) {
             M_BeginDeath(b, c);
-            return M_Death(b, c, vsync);
+            return M_Death(b, c);
         }
     } else if (!b->hit.invincible && b->pattern == 99) {
         const int16_t patterns = b->phase == 1 ? 7 : b->phase == 3 ? 9 : 6;
@@ -1384,19 +1365,18 @@ RESULT B20J_ValidateContext(const B20J_CONTEXT *const c)
             || c->hit->display->high_score == nullptr
             || c->hit->display->font == nullptr
             || c->hit->display->sprites == nullptr
-            || c->hit->display->video == nullptr
             || c->hit->display->player == nullptr
             || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
             || c->hit->orb == nullptr || c->hit->test_damage == nullptr
             || c->hit->effect == nullptr || c->pellets == nullptr
             || c->pellet_shared == nullptr || c->lasers == nullptr
-            || c->rng == nullptr || c->objects == nullptr || c->tram == nullptr
+            || c->rng == nullptr || c->objects == nullptr
             || c->game_cleared == nullptr || c->audio == nullptr,
         "Missing Konngara context");
     MUST(B20J_ValidateAssets(c->assets));
     FAIL_IF(
         c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr || c->tram->pixels == nullptr,
+            || c->hit->hud->numbers == nullptr || g_Tram.pixels == nullptr,
         "Missing Konngara display storage");
     MUST(Shots_ValidateSprites(c->hit->display->sprites));
     for (uint32_t digit = 0xff10; digit <= 0xff19; digit++) {

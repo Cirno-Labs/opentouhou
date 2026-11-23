@@ -62,12 +62,12 @@ RESULT B05_ValidateAssets(const B05_ASSETS *assets);
 // person assets to shared slots 0..2, show their palette, and initialize the
 // source's setup fields. Retains pattern history, hit timing, image locks and
 // particle history until their specified entrance or pattern boundaries.
-// Requires no pending operation. All contexts share video, palette and player.
+// Requires no pending operation. All contexts share palette and player.
 // Setup allocates nothing, reads no file, and does not draw the background.
 void B05_Setup(B05 *boss, const B05_CONTEXT *context);
 
 // Validates all borrowed battle resources before simulation. Hit and route
-// contexts share video, palette and player. Update borrows the hit context's
+// contexts share palette and player. Update borrows the hit context's
 // effects consumer and frame_rand, but binds its own HP and boss palette.
 // fade_music posts the original nonblocking fade request to the audio owner
 // through hit->user; it must not mutate battle state or read an audio device.
@@ -89,5 +89,4 @@ RESULT B05_ValidateContext(const B05_CONTEXT *context);
 // ordinary calls. Successful operations allocate nothing and perform no IO.
 // After route completion, calls are inert until Setup or program reset.
 bool B05_UpdateAndRender(
-    B05 *boss, const B05_CONTEXT *context, const TH01_INPUT *raw,
-    FRAME_VSYNC *vsync);
+    B05 *boss, const B05_CONTEXT *context, const TH01_INPUT *raw);

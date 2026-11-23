@@ -14,8 +14,6 @@ typedef struct {
     ARENA arena;
     GAMEPLAY *game;
     GAMEPLAY_ASSETS *assets;
-    SESSION session;
-    VIDEO video;
 } FIXTURE;
 
 // Renders a while and reports whether an effect sounded.
@@ -36,26 +34,25 @@ static void M_Init(FIXTURE *const f)
     *f = (FIXTURE) {};
     Arena_Init(&f->arena, "gameplay", 8 * 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
-    Video_Init(&f->video, a);
-    f->session = (SESSION) { .lives = 4,
-                             .bombs = 1,
-                             .settings = { .difficulty = 1,
-                                           .bombs = 1,
-                                           .lives_extra = 2,
-                                           .music = SETTINGS_MUSIC_FM } };
+    Video_Init(a);
+    Session_Init();
+    g_Session.lives = 4;
+    g_Session.bombs = 1;
+    g_Session.settings.difficulty = 1;
+    g_Session.settings.bombs = 1;
+    g_Session.settings.lives_extra = 2;
+    g_Session.settings.music = SETTINGS_MUSIC_FM;
     f->assets = Th01TestAssets_Create(a);
-    CHECK(Result_Log(
-        Gameplay_Prepare(a, f->assets, &f->video, &f->session, &f->game),
-        LOG_LEVEL_ERROR));
+    CHECK(
+        Result_Log(Gameplay_Prepare(a, f->assets, &f->game), LOG_LEVEL_ERROR));
     GAMEPLAY *const g = f->game;
     Gameplay_ResetWorld(g);
-    memset(&g->world.vsync, 0, sizeof(g->world.vsync));
+    Frame_Reset();
     StageObjects_InitPrepared(
         &g->world.objects, &f->assets->scenes[0].layouts, 0, true,
-        &g->storage.objects, g->storage.video, &f->assets->stage,
-        &g->world.rng);
+        &g->storage.objects, &f->assets->stage, &g->world.rng);
     Orb_ResetFlight(&g->world.orb);
-    g->world.timer.time = 1000;
+    g_StageTimer.time = 1000;
     g->world.phase = GP_FRAME_BEGIN;
     g->world.timer_initialized = true;
     g->world.first_stage = false;
@@ -70,7 +67,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     const size_t used = f.arena.used;
     TH01_INPUT raw = { .right = true, .shot = true };
     CHECK_EQ_INT(Gameplay_Tick(g, &raw, false, 1), GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(f.session.frame_rand, 1);
+    CHECK_EQ_INT(g_Session.frame_rand, 1);
     CHECK_EQ_INT(g->world.frame, 1);
     CHECK_EQ_INT(g->world.orb.force_frame, 1);
     CHECK_EQ_INT(g->world.player.left, 308);
@@ -85,7 +82,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(memcmp(&orb, &g->world.orb, sizeof(orb)), 0);
     CHECK_EQ_INT(g->world.rng, rng);
     Gameplay_Tick(g, &raw, true, 3);
-    CHECK_EQ_INT(f.session.frame_rand, 2);
+    CHECK_EQ_INT(g_Session.frame_rand, 2);
     CHECK_EQ_INT(g->world.frame, 2);
     CHECK_EQ_INT(g->world.orb.force_frame, 2);
     Gameplay_Tick(g, &raw, true, 4);
@@ -100,13 +97,13 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
     FIXTURE f;
     M_Init(&f);
     GAMEPLAY *const g = f.game;
-    f.session.frame_rand = 3;
-    g->world.timer.time = 2;
+    g_Session.frame_rand = 3;
+    g_StageTimer.time = 2;
     g->world.player.invincibility_time = 2;
     TH01_INPUT raw = {};
     Gameplay_Tick(g, &raw, false, 1);
     CHECK_EQ_INT(g->world.phase, GP_TIMER);
-    CHECK_EQ_INT(g->world.timer.phase, TIMER_WAIT_HURRY);
+    CHECK_EQ_INT(g_StageTimer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g->world.frame, 1);
     CHECK_EQ_INT(g->world.player.invincibility_time, 1);
     CHECK_EQ_INT(g->world.orb.left, 600);
@@ -115,7 +112,7 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
     for (uint64_t i = 2; i < 12; i++) {
         Gameplay_Tick(g, &raw, false, i);
         CHECK_EQ_INT(g->world.frame, 1);
-        CHECK_EQ_INT(f.session.frame_rand, 4);
+        CHECK_EQ_INT(g_Session.frame_rand, 4);
         CHECK_EQ_INT(g->world.rng, rng);
         CHECK_EQ_INT(memcmp(&player, &g->world.player, sizeof(player)), 0);
     }
@@ -130,19 +127,19 @@ TEST(real_shot_boundary_advances_player_before_timer_and_rng_seed)
     g->world.phase = GP_WAIT_SHOT;
     g->world.wait_for_shot = true;
     g->world.timer_initialized = false;
-    g->world.input = (GAME_INPUT) {};
-    f.session.frame_rand = 42;
+    GameInput_Init();
+    g_Session.frame_rand = 42;
     TH01_INPUT raw = { .shot = true, .left = true };
     Gameplay_Tick(g, &raw, false, 1);
     CHECK_EQ_INT(g->world.phase, GP_WAIT_SHOT_DELAY);
     CHECK_EQ_INT(g->world.player.left, 300);
     CHECK(!g->world.timer_initialized);
-    CHECK_EQ_INT(f.session.frame_rand, 42);
+    CHECK_EQ_INT(g_Session.frame_rand, 42);
     Gameplay_Tick(g, &raw, true, 2);
     CHECK(g->world.timer_initialized);
     CHECK(!g->world.wait_for_shot);
     CHECK_EQ_INT(g->world.frame, 1);
-    CHECK_EQ_INT(f.session.frame_rand, 43);
+    CHECK_EQ_INT(g_Session.frame_rand, 43);
     CHECK_EQ_INT(g->world.player.bomb_frame, 2);
     Arena_Free(&f.arena);
 }
@@ -158,15 +155,15 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     g->world.phase = GP_FRAME_BEGIN;
     g->world.player.is_hit = true;
     g->world.metrics.cleared = true;
-    f.session.lives = 0;
-    g->world.timer.time = 500;
+    g_Session.lives = 0;
+    g_StageTimer.time = 500;
     TH01_INPUT raw = {};
     Gameplay_Tick(g, &raw, false, 1);
     CHECK_EQ_INT(g->world.phase, GP_LIFE_EXIT);
     Gameplay_Tick(g, &raw, true, 2);
     CHECK_EQ_INT(g->world.phase, GP_STAGE_BONUS);
-    CHECK_EQ_INT(f.session.stage_id, 1);
-    CHECK_EQ_INT(f.session.lives, 0);
+    CHECK_EQ_INT(g_Session.stage_id, 1);
+    CHECK_EQ_INT(g_Session.lives, 0);
     CHECK(!g->world.player.is_hit);
     CHECK_EQ_INT(g->world.miss.phase, MISS_DONE);
     Arena_Free(&f.arena);
@@ -181,23 +178,23 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     g->world.game_cleared = true;
     g->world.metrics.score = 1000;
     g->world.pellet_shared.destroy_score_delta = 70;
-    f.session.route = SESSION_ROUTE_JIGOKU;
+    g_Session.route = SESSION_ROUTE_JIGOKU;
     TH01_INPUT raw = {};
     Gameplay_Tick(g, &raw, false, 1);
     CHECK_EQ_INT(g->world.phase, GP_VICTORY_DELAY);
-    CHECK_EQ_INT(f.session.score, 1000);
-    CHECK_EQ_INT(f.session.highest_score, 1000);
-    CHECK_EQ_INT(f.session.ending, SESSION_END_JIGOKU);
+    CHECK_EQ_INT(g_Session.score, 1000);
+    CHECK_EQ_INT(g_Session.highest_score, 1000);
+    CHECK_EQ_INT(g_Session.ending, SESSION_END_JIGOKU);
     for (uint64_t tick = 2; tick < 121; tick++) {
         CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, tick), GAMEPLAY_REQUEST_NONE);
     }
     CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, 121), GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g->world.phase, GP_SWITCH);
-    const int16_t count1 = g->world.vsync.count1;
+    const int16_t count1 = g_VSync.count1;
     for (uint64_t tick = 122; tick < 137; tick++) {
         CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, tick), GAMEPLAY_REQUEST_NONE);
     }
-    CHECK_EQ_INT(g->world.vsync.count1, count1);
+    CHECK_EQ_INT(g_VSync.count1, count1);
     CHECK_EQ_INT(g->world.switch_fade.remaining, 1);
     CHECK_EQ_INT(Gameplay_Tick(g, &raw, true, 137), GAMEPLAY_REQUEST_ENDING);
     CHECK_EQ_INT(g->world.switch_fade.remaining, 0);
@@ -220,7 +217,7 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
     TH01_INPUT raw = {};
     uint64_t tick = 0;
     for (int16_t stage = 0; stage < 3; stage++) {
-        CHECK_EQ_INT(f.session.stage_id, stage);
+        CHECK_EQ_INT(g_Session.stage_id, stage);
         g->world.orb.left = g->world.objects.cards[0].left;
         g->world.orb.top = g->world.objects.cards[0].top;
         Stage_HitTestCards(&g->bindings.stage);
@@ -236,12 +233,12 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
             raw.shot = i % 20 < 10;
             Gameplay_Tick(g, &raw, true, ++tick);
             entered_bonus |= g->world.phase == GP_STAGE_BONUS;
-            if (f.session.stage_id == stage + 1 && g->world.phase == GP_ORB) {
+            if (g_Session.stage_id == stage + 1 && g->world.phase == GP_ORB) {
                 break;
             }
         }
         CHECK(entered_bonus);
-        CHECK_EQ_INT(f.session.stage_id, stage + 1);
+        CHECK_EQ_INT(g_Session.stage_id, stage + 1);
         CHECK_EQ_INT(g->world.phase, GP_ORB);
         CHECK(g->storage.objects.cards == cards);
         CHECK(g->storage.objects.obstacles == obstacles);
@@ -270,10 +267,10 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
         }
     }
     CHECK(entered_miss);
-    CHECK_EQ_INT(f.session.lives, 3);
+    CHECK_EQ_INT(g_Session.lives, 3);
     CHECK(g->world.player.invincible);
     CHECK(!g->world.player.is_hit);
-    f.session.lives = 0;
+    g_Session.lives = 0;
     g->world.player.is_hit = true;
     g->world.phase = GP_FRAME_BEGIN;
     for (int32_t i = 0; i < 200; i++) {
@@ -284,16 +281,16 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_SCORE);
     CHECK_EQ_INT(g->world.phase, GP_TERMINAL);
     uint8_t before[VIDEO_PAGE_SIZE];
-    memcpy(before, f.video.pages[0], sizeof(before));
+    memcpy(before, g_Video.pages[0], sizeof(before));
     for (int32_t i = 0; i < 5; i++) {
         CHECK_EQ_INT(
             Gameplay_Tick(g, &raw, true, ++tick), GAMEPLAY_REQUEST_SCORE);
     }
-    CHECK_EQ_INT(memcmp(before, f.video.pages[0], sizeof(before)), 0);
+    CHECK_EQ_INT(memcmp(before, g_Video.pages[0], sizeof(before)), 0);
     Gameplay_ResumeAfterScore(g, &raw, tick);
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
-    CHECK_EQ_INT(f.session.continues_total, 1);
-    CHECK_EQ_INT(f.session.lives, 0);
+    CHECK_EQ_INT(g_Session.continues_total, 1);
+    CHECK_EQ_INT(g_Session.lives, 0);
     CHECK_EQ_INT(g->world.retained_lives, 4);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
@@ -304,7 +301,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     }
     CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g->world.phase, GP_TITLE);
-    CHECK_EQ_INT(f.session.stage_id, 0);
+    CHECK_EQ_INT(g_Session.stage_id, 0);
     CHECK(g->storage.objects.cards == f.game->world.objects.cards);
     Arena_Free(&f.arena);
 }
@@ -317,7 +314,7 @@ static int32_t M_ContinueConfirmTick(const bool fix)
     FIXTURE f;
     M_Init(&f);
     GAMEPLAY *const g = f.game;
-    f.session.settings.fix_debouncing = fix;
+    g_Session.settings.fix_debouncing = fix;
     g->world.request = GAMEPLAY_REQUEST_SCORE;
     uint64_t tick = 0;
     Gameplay_ResumeAfterScore(g, &(TH01_INPUT) { .shot = true }, tick);
@@ -349,8 +346,8 @@ TEST(gameover_restores_defined_adjacent_array_values)
         M_Init(&f);
         GAMEPLAY *const g = f.game;
         f.arena.capacity = f.arena.used;
-        memset(f.video.pages[0], 9, VIDEO_PAGE_SIZE);
-        memset(f.video.pages[1], 3, VIDEO_PAGE_SIZE);
+        memset(g_Video.pages[0], 9, VIDEO_PAGE_SIZE);
+        memset(g_Video.pages[1], 3, VIDEO_PAGE_SIZE);
         const int16_t frame = frames[test];
         const int16_t left = lefts[test];
         g->world.gameover_left[0] = g->world.gameover_left[1] =
@@ -364,10 +361,10 @@ TEST(gameover_restores_defined_adjacent_array_values)
         }
         g->world.animation_frame = frame;
         g->world.phase = GP_GAMEOVER;
-        Frame_BeginWait(&g->world.wait, &g->world.vsync);
+        Frame_BeginWait(&g->world.wait);
         Gameplay_Tick(g, &(TH01_INPUT) {}, true, 1);
         CHECK_EQ_INT(
-            f.video.pages[0][PLAYER_TOP * VIDEO_WIDTH + left + frame * 8], 3);
+            g_Video.pages[0][PLAYER_TOP * VIDEO_WIDTH + left + frame * 8], 3);
         Arena_Free(&f.arena);
     }
 }
@@ -380,12 +377,12 @@ TEST(gameover_redraws_orb_before_copying_the_miss_frame)
     f.arena.capacity = f.arena.used;
     memset(f.assets->stage.pixels + ORB_FIRST_IMAGE * 1024, 6, 1024);
     g->world.player.is_hit = true;
-    f.session.lives = 0;
+    g_Session.lives = 0;
     Gameplay_Tick(g, &(TH01_INPUT) {}, false, 1);
     Gameplay_Tick(g, &(TH01_INPUT) {}, true, 2);
     CHECK_EQ_INT(g->world.phase, GP_GAMEOVER);
     CHECK_EQ_INT(
-        f.video.pages[1][g->world.orb.top * VIDEO_WIDTH + g->world.orb.left],
+        g_Video.pages[1][g->world.orb.top * VIDEO_WIDTH + g->world.orb.left],
         6);
     Arena_Free(&f.arena);
 }
@@ -396,12 +393,12 @@ TEST(real_gameover_score_registration_precedes_continue)
         FIXTURE f;
         M_Init(&f);
         GAMEPLAY *const g = f.game;
-        f.session.route = route;
-        f.session.stage_id = 7;
-        f.session.lives = 0;
-        f.session.table_high_score = 3000;
-        f.session.high_score = 4000;
-        f.session.highest_score = 5000;
+        g_Session.route = route;
+        g_Session.stage_id = 7;
+        g_Session.lives = 0;
+        g_Session.table_high_score = 3000;
+        g_Session.high_score = 4000;
+        g_Session.highest_score = 5000;
         g->world.metrics.score = 2345;
         g->world.player.is_hit = true;
         uint64_t tick = 0;
@@ -413,50 +410,46 @@ TEST(real_gameover_score_registration_precedes_continue)
         SCORE_SAVES loaded;
         CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &loaded)));
         Vfs_Destroy(user_files);
-        SCORE_SAVES saves = {
-            .tables = { loaded.tables[0], loaded.tables[1], loaded.tables[2],
-                        loaded.tables[3] },
-        };
+        memset(&g_ScoreSaves, 0, sizeof(g_ScoreSaves));
+        memcpy(g_ScoreSaves.tables, loaded.tables, sizeof(loaded.tables));
         SCORE_ASSETS assets = {
             .gameover = { .pixels = f.assets->backgrounds[0].pixels },
             .font = f.assets->menu_font
         };
-        const GAMEPLAY_SCORE_CONTEXT context = Gameplay_ScoreContext(g);
-        const uint64_t edge = context.vsync->edge;
-        const int16_t count = context.vsync->count1;
-        const SCORE_ENTRY entry = { .score = (int32_t)f.session.score,
-                                    .stage = (int16_t)(f.session.stage_id + 1),
+        const uint64_t edge = g_VSync.edge;
+        const int16_t count = g_VSync.count1;
+        const SCORE_ENTRY entry = { .score = (int32_t)g_Session.score,
+                                    .stage = (int16_t)(g_Session.stage_id + 1),
                                     .route = "魔" };
         SCORE_ENTRY routed = entry;
         strcpy(routed.route, route == 0 ? "魔" : "地");
         SCORE_SCENE score;
         const size_t used = f.arena.used;
         f.arena.capacity = used;
-        Score_Begin(
-            &score, &assets, &f.video, &saves, context.vsync, context.input,
-            SCORE_GAMEOVER, 1, &routed);
+        Score_Begin(&score, &assets, SCORE_GAMEOVER, 1, &routed);
         for (int32_t i = 0; i < 16; i++) {
             Gameplay_AdvanceAudio(g);
             tick++;
             CHECK(!Score_Tick(&score, &(TH01_INPUT) {}, true));
         }
-        CHECK_EQ_INT(context.vsync->edge, edge + 16);
-        CHECK_EQ_INT(context.vsync->count1, count + 16);
+        CHECK_EQ_INT(g_VSync.edge, edge + 16);
+        CHECK_EQ_INT(g_VSync.count1, count + 16);
         CHECK_EQ_INT(g->world.phase, GP_TERMINAL);
-        CHECK_EQ_INT(f.session.continues_total, 0);
+        CHECK_EQ_INT(g_Session.continues_total, 0);
         tick++;
         CHECK(Score_Tick(&score, &(TH01_INPUT) { .ok = true }, true));
-        CHECK(saves.pending[1]);
-        CHECK_EQ_INT(saves.tables[1].entries[0].score, 2345);
-        CHECK_EQ_INT(saves.tables[1].entries[0].stage, 8);
+        CHECK(g_ScoreSaves.pending[1]);
+        CHECK_EQ_INT(g_ScoreSaves.tables[1].entries[0].score, 2345);
+        CHECK_EQ_INT(g_ScoreSaves.tables[1].entries[0].stage, 8);
         CHECK_EQ_STR(
-            saves.tables[1].entries[0].route, route == 0 ? "魔" : "地");
-        f.session.table_high_score = (uint32_t)saves.tables[1].entries[0].score;
+            g_ScoreSaves.tables[1].entries[0].route, route == 0 ? "魔" : "地");
+        g_Session.table_high_score =
+            (uint32_t)g_ScoreSaves.tables[1].entries[0].score;
         Gameplay_ResumeAfterScore(g, &(TH01_INPUT) {}, tick);
         CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
-        CHECK_EQ_INT(f.session.continues_total, 1);
-        CHECK_EQ_INT(f.session.highest_score, 5000);
-        CHECK_EQ_INT(context.vsync->edge, edge + 17);
+        CHECK_EQ_INT(g_Session.continues_total, 1);
+        CHECK_EQ_INT(g_Session.highest_score, 5000);
+        CHECK_EQ_INT(g_VSync.edge, edge + 17);
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
         CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
         Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
@@ -466,10 +459,10 @@ TEST(real_gameover_score_registration_precedes_continue)
         }
         CHECK_EQ_INT(g->world.request, GAMEPLAY_REQUEST_NONE);
         CHECK_EQ_INT(g->world.phase, GP_STAGE_LABEL);
-        CHECK_EQ_INT(f.session.high_score, 2345);
-        CHECK_EQ_INT(f.session.highest_score, 5000);
-        CHECK_EQ_INT(f.session.stage_id, 7);
-        CHECK_EQ_INT(f.session.route, route);
+        CHECK_EQ_INT(g_Session.high_score, 2345);
+        CHECK_EQ_INT(g_Session.highest_score, 5000);
+        CHECK_EQ_INT(g_Session.stage_id, 7);
+        CHECK_EQ_INT(g_Session.route, route);
         CHECK_EQ_INT(f.arena.used, used);
         Arena_Free(&f.arena);
     }
@@ -479,19 +472,19 @@ TEST(live_hud_high_score_is_distinct_from_run_history)
 {
     FIXTURE f;
     M_Init(&f);
-    f.session.table_high_score = 1000;
-    f.session.high_score = 0xffffffff;
-    f.session.highest_score = 42;
+    g_Session.table_high_score = 1000;
+    g_Session.high_score = 0xffffffff;
+    g_Session.highest_score = 42;
     Gameplay_ResetWorld(f.game);
-    CHECK_EQ_INT(f.session.high_score, 1000);
-    CHECK_EQ_INT(f.session.highest_score, 42);
+    CHECK_EQ_INT(g_Session.high_score, 1000);
+    CHECK_EQ_INT(g_Session.highest_score, 42);
     f.game->world.metrics.score = 0x80000000;
     Hud_ScoreAndCombo(&f.game->world.hud, &f.game->bindings.display);
-    CHECK_EQ_INT(f.session.high_score, 0x80000000);
-    CHECK_EQ_INT(f.session.highest_score, 42);
+    CHECK_EQ_INT(g_Session.high_score, 0x80000000);
+    CHECK_EQ_INT(g_Session.highest_score, 42);
     Gameplay_ResetWorld(f.game);
-    CHECK_EQ_INT(f.session.high_score, 1000);
-    CHECK_EQ_INT(f.session.highest_score, 42);
+    CHECK_EQ_INT(g_Session.high_score, 1000);
+    CHECK_EQ_INT(g_Session.highest_score, 42);
     Arena_Free(&f.arena);
 }
 
@@ -501,17 +494,17 @@ TEST(ending_seed_is_saved_after_the_life_exit_scroll_wait)
     M_Init(&f);
     GAMEPLAY *const g = f.game;
     g->world.phase = GP_LIFE_EXIT;
-    f.session.lives = 0;
-    f.session.frame_rand = 1234567;
-    f.session.exit_rand = 99;
-    Frame_BeginWait(&g->world.wait, &g->world.vsync);
+    g_Session.lives = 0;
+    g_Session.frame_rand = 1234567;
+    g_Session.exit_rand = 99;
+    Frame_BeginWait(&g->world.wait);
     Gameplay_Tick(g, &(TH01_INPUT) {}, false, 1);
-    CHECK_EQ_INT(f.session.exit_rand, 99);
+    CHECK_EQ_INT(g_Session.exit_rand, 99);
     CHECK_EQ_INT(g->world.phase, GP_LIFE_EXIT);
     Gameplay_Tick(g, &(TH01_INPUT) {}, true, 2);
-    CHECK_EQ_INT(f.session.exit_rand, 1234567);
+    CHECK_EQ_INT(g_Session.exit_rand, 1234567);
     CHECK_EQ_INT(g->world.phase, GP_GAMEOVER);
-    CHECK_EQ_INT(f.video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
     Arena_Free(&f.arena);
 }
 
@@ -519,11 +512,11 @@ TEST(disabled_gameplay_cannot_start_effects)
 {
     FIXTURE f;
     M_Init(&f);
-    f.session.settings.music = SETTINGS_MUSIC_OFF;
+    g_Session.settings.music = SETTINGS_MUSIC_OFF;
     Gameplay_Effect(f.game, 5);
     Gameplay_AdvanceAudio(f.game);
     CHECK(!M_EffectSounds(f.game));
-    f.session.settings.music = SETTINGS_MUSIC_FM;
+    g_Session.settings.music = SETTINGS_MUSIC_FM;
     Gameplay_Effect(f.game, 5);
     CHECK(M_EffectSounds(f.game));
     Arena_Free(&f.arena);
@@ -534,7 +527,7 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     FIXTURE f;
     M_Init(&f);
     GAMEPLAY *const g = f.game;
-    f.session.settings.music = SETTINGS_MUSIC_OFF;
+    g_Session.settings.music = SETTINGS_MUSIC_OFF;
     MDRV *twin;
     CHECK(Result_Ignore(Mdrv_Init(
         f.assets->songs, GAMEPLAY_SONG_COUNT, &f.assets->effects, 8, 8,
@@ -645,14 +638,13 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g->world.phase, GP_STAGE_BEGIN);
     CHECK(g->world.first_stage && g->world.wait_for_shot);
     CHECK_EQ_INT(g->world.frame, 0);
-    CHECK_EQ_INT(g->world.vsync.edge, 0);
+    CHECK_EQ_INT(g_VSync.edge, 0);
     CHECK_EQ_INT(g->world.player.left, 304);
     CHECK_EQ_INT(g->world.hud.score_previous, 0);
     CHECK(g->world.hud.numbers == prepared.initial->hud.numbers);
     CHECK(g->world.health.backgrounds == prepared.initial->health.backgrounds);
-    CHECK(g->world.tram.pixels == prepared.initial->tram.pixels);
-    CHECK(g->world.tram.visible);
-    CHECK_EQ_INT(g->world.tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
+    CHECK(g_Tram.visible);
+    CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
     CHECK(g->world.b10j.background == prepared.initial->b10j.background);
     CHECK(g->world.b10j.meteor_active);
     CHECK_EQ_INT(g->world.b10j.spread_interval, 4);
@@ -669,7 +661,6 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK(g->bindings.display.player == &g->world.player);
     CHECK(g->bindings.c05.hit == &g->bindings.hit);
     CHECK(g->bindings.c10j.rng == &g->world.rng);
-    CHECK(g->bindings.c20m.input == &g->world.input);
     CHECK(g->bindings.c20m.assets == &f.assets->b20m);
     Gameplay_BindAudio(g, nullptr);
     GameAudio_Free(output);
@@ -683,13 +674,11 @@ TEST(public_prepare_rejects_invalid_borrowed_assets_with_empty_output)
     Arena_Init(&arena, "invalid gameplay group", 8 * 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&arena);
     GAMEPLAY_ASSETS *const assets = Th01TestAssets_Create(allocator);
-    VIDEO video;
-    Video_Init(&video, allocator);
-    SESSION session = {};
+    Video_Init(allocator);
+    Session_Init();
     assets->b05.sphere.count = 0;
     GAMEPLAY *game;
-    CHECK(!Result_Ignore(
-        Gameplay_Prepare(allocator, assets, &video, &session, &game)));
+    CHECK(!Result_Ignore(Gameplay_Prepare(allocator, assets, &game)));
     CHECK(game == nullptr);
     Arena_Free(&arena);
 }

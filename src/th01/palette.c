@@ -26,11 +26,11 @@ static int32_t M_Clamp(const int32_t value, const int32_t maximum)
     return value < 0 ? 0 : value > maximum ? maximum : value;
 }
 
-static void M_Show(const PALETTE *const colors, VIDEO *const video)
+static void M_Show(const PALETTE *const colors)
 {
     for (int32_t i = 0; i < 16; i++) {
         Video_SetDac(
-            video, i, colors->colors[i][0], colors->colors[i][1],
+            i, colors->colors[i][0], colors->colors[i][1],
             colors->colors[i][2]);
     }
 }
@@ -50,47 +50,44 @@ void Palette_Import(PALETTE *const out, const GFX_COLOR colors[16])
 }
 
 void Palette_SetColor(
-    PALETTE_STATE *const state, VIDEO *const video, const int32_t index,
-    const int32_t red, const int32_t green, const int32_t blue)
+    PALETTE_STATE *const state, const int32_t index, const int32_t red,
+    const int32_t green, const int32_t blue)
 {
     ASSERT(index >= 0 && index < 16);
     state->saved.colors[index][0] = (int8_t)M_Clamp(red, 15);
     state->saved.colors[index][1] = (int8_t)M_Clamp(green, 15);
     state->saved.colors[index][2] = (int8_t)M_Clamp(blue, 15);
     Video_SetDac(
-        video, index, state->saved.colors[index][0],
-        state->saved.colors[index][1], state->saved.colors[index][2]);
+        index, state->saved.colors[index][0], state->saved.colors[index][1],
+        state->saved.colors[index][2]);
 }
 
-void Palette_Set(
-    PALETTE_STATE *const state, VIDEO *const video, const PALETTE *const colors)
+void Palette_Set(PALETTE_STATE *const state, const PALETTE *const colors)
 {
     for (int32_t i = 0; i < 16; i++) {
         Palette_SetColor(
-            state, video, i, colors->colors[i][0], colors->colors[i][1],
+            state, i, colors->colors[i][0], colors->colors[i][1],
             colors->colors[i][2]);
     }
 }
 
-void Palette_SetGray(
-    PALETTE_STATE *const state, VIDEO *const video, const int32_t value)
+void Palette_SetGray(PALETTE_STATE *const state, const int32_t value)
 {
     for (int32_t i = 0; i < 16; i++) {
-        Palette_SetColor(state, video, i, value, value, value);
+        Palette_SetColor(state, i, value, value, value);
     }
 }
 
 void Palette_ShowSolid(
-    VIDEO *const video, const int32_t red, const int32_t green,
-    const int32_t blue)
+    const int32_t red, const int32_t green, const int32_t blue)
 {
     for (int32_t i = 0; i < 16; i++) {
-        Video_SetDac(video, i, red, green, blue);
+        Video_SetDac(i, red, green, blue);
     }
 }
 
 void Palette_StepTo(
-    PALETTE_STATE *const state, VIDEO *const video, const PALETTE *const target,
+    PALETTE_STATE *const state, const PALETTE *const target,
     const bool only_brighten)
 {
     for (int32_t i = 0; i < 16; i++) {
@@ -104,11 +101,10 @@ void Palette_StepTo(
             state->saved.colors[i][c] = (int8_t)value;
         }
     }
-    Palette_Set(state, video, &state->saved);
+    Palette_Set(state, &state->saved);
 }
 
-void Palette_SetTone(
-    PALETTE_STATE *const state, VIDEO *const video, int32_t tone)
+void Palette_SetTone(PALETTE_STATE *const state, int32_t tone)
 {
     tone = M_Clamp(tone, 200);
     for (int32_t i = 1; i < 16; i++) {
@@ -121,16 +117,15 @@ void Palette_SetTone(
         }
     }
     state->tone = tone;
-    Palette_Set(state, video, &state->saved);
+    Palette_Set(state, &state->saved);
 }
 
-void Palette_ShowResource(
-    PALETTE_STATE *const state, VIDEO *const video, const bool use_tone)
+void Palette_ShowResource(PALETTE_STATE *const state, const bool use_tone)
 {
     if (use_tone) {
-        Palette_SetTone(state, video, state->tone);
+        Palette_SetTone(state, state->tone);
     } else {
-        Palette_Set(state, video, &state->resource);
+        Palette_Set(state, &state->resource);
     }
 }
 
@@ -151,8 +146,7 @@ void Palette_BeginFade(
     }
 }
 
-bool Palette_FadeStep(
-    PALETTE_FADE *const fade, PALETTE_STATE *const state, VIDEO *const video)
+bool Palette_FadeStep(PALETTE_FADE *const fade, PALETTE_STATE *const state)
 {
     if (fade->remaining == 0) {
         return false;
@@ -173,6 +167,6 @@ bool Palette_FadeStep(
             fade->colors.colors[i][c] = (int8_t)value;
         }
     }
-    M_Show(&fade->colors, video);
+    M_Show(&fade->colors);
     return true;
 }

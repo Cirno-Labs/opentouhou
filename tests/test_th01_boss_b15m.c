@@ -6,7 +6,6 @@
 #include "test.h"
 
 typedef struct {
-    VIDEO video;
     PALETTE_STATE palette;
     B15M_ASSETS assets;
     BOSS_SPRITES bank;
@@ -38,7 +37,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
     const ALLOCATOR *const a = Arena_Allocator(arena);
-    Video_Init(&f->video, a);
+    Video_Init(a);
     Palette_Init(&f->palette);
     f->assets.girl = (BOS) { 128, 96, 6, Arena_AllocZ(arena, 128 * 96 * 6),
                              Arena_AllocZ(arena, 128 * 96 * 6) };
@@ -61,7 +60,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 5, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->display.video = &f->video;
     f->hit = (BOSS_HIT_CONTEXT) { .display = &f->display,
                                   .palette = &f->palette,
                                   .health = &f->health,
@@ -178,7 +176,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     if (action.kind == SHOTS_ACTION_EFFECT) {
         M_Effect(f, action.effect);
     } else {
-        Shots_RenderAction(&f->video, &f->stage, action);
+        Shots_RenderAction(&f->stage, action);
     }
 }
 
@@ -207,8 +205,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->player.left = 300;
     f->orb.top = 64;
     f->orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .video = &f->video,
-                                 .sprites = &f->stage,
+    f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
                                  .player = &f->player,
@@ -233,18 +230,16 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(B15M_ValidateContext(&f->context)));
 }
 
-static void M_Run(
-    B15M *const b, FIXTURE *const f, FRAME_VSYNC *const vsync,
-    uint64_t *const tick)
+static void M_Run(B15M *const b, FIXTURE *const f, uint64_t *const tick)
 {
     int32_t polls = 0;
-    while (!B15M_UpdateAndRender(b, &f->context, vsync, *tick)) {
+    while (!B15M_UpdateAndRender(b, &f->context, *tick)) {
         CHECK(polls++ < 2000);
         if (polls >= 2000) {
             break;
         }
         (*tick)++;
-        Frame_VSync(vsync);
+        Frame_VSync();
     }
 }
 
@@ -266,21 +261,23 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
                                           .previous_left = -1,
                                           .velocity = { 16, 0 },
                                           .flag = MISSILE_MOVING };
-        FRAME_VSYNC v = { .count1 = initial[i], .count2 = 9 };
+        Frame_Reset();
+        g_VSync.count1 = initial[i];
+        g_VSync.count2 = 9;
         uint64_t tick = 0;
-        CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, tick));
+        CHECK(!B15M_UpdateAndRender(&b, &f.context, tick));
         CHECK(b.entrance_active);
         CHECK_EQ_INT(f.missiles.slots[0].left, 201 * 16);
         const B15M frozen = b;
         const uint32_t rng = f.rng;
-        CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, tick));
+        CHECK(!B15M_UpdateAndRender(&b, &f.context, tick));
         CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
         CHECK_EQ_INT(f.rng, rng);
         const size_t used = arena.used;
-        M_Run(&b, &f, &v, &tick);
+        M_Run(&b, &f, &tick);
         CHECK_EQ_INT(tick, expected[i]);
-        CHECK_EQ_INT(v.count2, 9 + expected[i]);
-        CHECK_EQ_INT(v.count1, 0);
+        CHECK_EQ_INT(g_VSync.count2, 9 + expected[i]);
+        CHECK_EQ_INT(g_VSync.count1, 0);
         CHECK_EQ_INT(b.phase, 1);
         CHECK_EQ_INT(b.frame, 0);
         CHECK_EQ_INT(b.hit.frame, 0);
@@ -307,24 +304,26 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     b.frame = 19;
     b.teleport_done = true;
     b.hit.frame = 17;
-    FRAME_VSYNC v = { .count1 = 12, .count2 = 25 };
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 0));
+    Frame_Reset();
+    g_VSync.count1 = 12;
+    g_VSync.count2 = 25;
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 0));
     CHECK_EQ_INT(b.pending, 1);
     CHECK_EQ_INT(b.frame, 20);
     const B15M frozen = b;
     const uint32_t rng = f.rng;
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 0));
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 0));
     CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
     CHECK_EQ_INT(f.rng, rng);
-    Frame_VSync(&v);
-    CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 1));
+    Frame_VSync();
+    CHECK(B15M_UpdateAndRender(&b, &f.context, 1));
     CHECK_EQ_INT(b.phase, 4);
     CHECK_EQ_INT(b.pattern, 0);
     CHECK_EQ_INT(b.frame, 20);
     CHECK_EQ_INT(b.hit.frame, 17);
-    CHECK_EQ_INT(v.count1, 13);
-    CHECK_EQ_INT(v.count2, 26);
-    CHECK_EQ_INT(f.video.scroll_top, 0);
+    CHECK_EQ_INT(g_VSync.count1, 13);
+    CHECK_EQ_INT(g_VSync.count2, 26);
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
     Arena_Free(&arena);
 }
 
@@ -348,18 +347,18 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     b.safety_left = 200;
     f.player.left = 400;
     f.player.invincible = false;
-    FRAME_VSYNC v = {};
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 100));
+    Frame_Reset();
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 100));
     CHECK_EQ_INT(b.pending, 2);
     CHECK_EQ_INT(b.safety_circle.frame, 2);
     CHECK(!f.player.is_hit);
     const B15M frozen = b;
     const uint32_t rng = f.rng;
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 105));
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 105));
     CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
     CHECK_EQ_INT(f.rng, rng);
     CHECK(!f.player.is_hit);
-    CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 106));
+    CHECK(B15M_UpdateAndRender(&b, &f.context, 106));
     CHECK(f.player.is_hit);
     CHECK_EQ_INT(b.safety_circle.frame, 200);
     CHECK_EQ_INT(b.frame, 141);
@@ -382,9 +381,9 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         B15M_Init(&b, Arena_Allocator(&arena));
         memset(b.background, 0, 128 * 96);
         B15M_Setup(&b, &f.context);
-        FRAME_VSYNC v = {};
+        Frame_Reset();
         uint64_t tick = 0;
-        M_Run(&b, &f, &v, &tick);
+        M_Run(&b, &f, &tick);
         const size_t used = arena.used;
         uint32_t phase1 = 0, phase3 = 0, girl = 0, bat = 0;
         int32_t p1ticks = 0, p3ticks = 0;
@@ -422,8 +421,8 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
             const bool hit = b.hp > target && step % 50 == 20;
             f.orb.previous_left = hit ? e->left + (b.form ? 16 : 48) : 0;
             f.orb.previous_top = hit ? e->top + 24 : 399;
-            M_Run(&b, &f, &v, &tick);
-            Frame_VSync(&v);
+            M_Run(&b, &f, &tick);
+            Frame_VSync();
             tick++;
         }
         CHECK_EQ_INT(phase1, 14);
@@ -440,7 +439,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK_EQ_INT(f.scene.active->id, 5);
         CHECK_EQ_INT(arena.used, used);
         const B15M done = b;
-        CHECK(B15M_UpdateAndRender(&b, &f.context, &v, tick));
+        CHECK(B15M_UpdateAndRender(&b, &f.context, tick));
         CHECK(memcmp(&b, &done, sizeof(b)) == 0);
         Arena_Free(&arena);
     }
@@ -478,19 +477,19 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     for (int32_t i = 0; i < 10; i++) {
         f.lasers.slots[i].alive = true;
     }
-    FRAME_VSYNC v = {};
+    Frame_Reset();
     const uint32_t rng = f.rng;
     const size_t used = arena.used;
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 100));
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 100));
     CHECK_EQ_INT(b.pending, 2);
     CHECK(!f.player.is_hit);
     CHECK(!f.cleared);
     CHECK_EQ_INT(f.fades, 0);
     CHECK_EQ_INT(f.missiles.slots[0].left, 201 * 16);
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 105));
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 105));
     CHECK(!f.player.is_hit);
     CHECK_EQ_INT(f.fades, 0);
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 106));
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 106));
     CHECK(b.defeating);
     CHECK_EQ_INT(b.hp, 0);
     CHECK(f.player.is_hit);
@@ -507,10 +506,10 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
         CHECK(!f.lasers.slots[i].alive);
     }
     const B15M frozen = b;
-    CHECK(!B15M_UpdateAndRender(&b, &f.context, &v, 106));
+    CHECK(!B15M_UpdateAndRender(&b, &f.context, 106));
     CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
     uint64_t tick = 106;
-    M_Run(&b, &f, &v, &tick);
+    M_Run(&b, &f, &tick);
     CHECK(b.finished);
     CHECK(f.cleared);
     CHECK(f.scene.active == &f.assets.next_scene);
@@ -541,15 +540,15 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     for (int32_t i = 0; i < 12; i++) {
         MasterRng_Next(&expected);
     }
-    FRAME_VSYNC v = {};
-    CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 0));
+    Frame_Reset();
+    CHECK(B15M_UpdateAndRender(&b, &f.context, 0));
     CHECK_EQ_INT(b.phase, 1);
     CHECK_EQ_INT(b.frame, 80);
     CHECK(!b.teleport_done);
     CHECK_EQ_INT(f.rng, expected);
     MasterRng_Next(&expected);
     MasterRng_Next(&expected);
-    CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 1));
+    CHECK(B15M_UpdateAndRender(&b, &f.context, 1));
     CHECK_EQ_INT(b.phase, 2);
     CHECK_EQ_INT(b.frame, 0);
     CHECK_EQ_INT(f.rng, expected);
@@ -575,9 +574,9 @@ TEST(circle_groups_keep_the_callers_cloud_policy)
         b.pattern_state = PELLET_GROUP_SINGLE_AIMED;
         b.hp_bar_filled = true;
         f.pellets.spawn_with_cloud = cloud != 0;
-        FRAME_VSYNC v = {};
+        Frame_Reset();
         const size_t used = arena.used;
-        CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 0));
+        CHECK(B15M_UpdateAndRender(&b, &f.context, 0));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
             count += cloud ? f.pellets.slots[i].cloud_frame != 0
@@ -612,13 +611,13 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
                                           .previous_left = -1,
                                           .flag = MISSILE_MOVING };
     }
-    FRAME_VSYNC v = {};
-    CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 0));
+    Frame_Reset();
+    CHECK(B15M_UpdateAndRender(&b, &f.context, 0));
     b.frame = 62;
     uint32_t expected = f.rng;
     MasterRng_Next(&expected);
     MasterRng_Next(&expected);
-    CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 1));
+    CHECK(B15M_UpdateAndRender(&b, &f.context, 1));
     CHECK_EQ_INT(f.rng, expected);
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         CHECK_EQ_INT(f.missiles.slots[i].flag, MISSILE_MOVING);

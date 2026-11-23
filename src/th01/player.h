@@ -80,7 +80,6 @@ typedef struct {
 // The fields belong to the Player_ functions; never copy a pending token.
 typedef struct {
     PLAYER *player;
-    GAME_INPUT *input;
     PLAYER_OUTPUT output;
     bool pending;
 } PLAYER_BOMB_CONTINUATION;
@@ -97,7 +96,7 @@ RESULT Player_ValidateSprites(const PLAYER_SPRITES *sprites);
 // Resets action state and consumes input.bomb without moving, drawing or
 // clearing hit, invincibility, remaining bombs or bomb_frame. Rank values
 // outside the four settings ranks use Normal's deflection duration.
-void Player_Reset(PLAYER *player, GAME_INPUT *input, int32_t difficulty);
+void Player_Reset(PLAYER *player, int32_t difficulty);
 void Player_MoveAndClamp(PLAYER *player, int16_t delta);
 
 // Runs real movement, shots, swings, slides and all three combo stages.
@@ -121,7 +120,7 @@ void Player_MoveAndClamp(PLAYER *player, int16_t delta);
 // A miss requires its complete cooperative sequence before updates resume;
 // resetting alone does not implement a miss or change lives and bombs.
 void Player_UpdateAndRender(
-    PLAYER *player, GAME_INPUT *input, ORB *orb, SHOTS *shots, uint32_t *rng,
+    PLAYER *player, ORB *orb, SHOTS *shots, uint32_t *rng,
     PLAYER_OUTPUT output);
 
 // Runs the same update until completion or the bomb callback boundary.
@@ -132,8 +131,8 @@ void Player_UpdateAndRender(
 // that operation completes, including its nested waits. Never begin another
 // player update while continuation.pending. No action prefix is replayed.
 bool Player_BeginUpdate(
-    PLAYER_BOMB_CONTINUATION *continuation, PLAYER *player, GAME_INPUT *input,
-    ORB *orb, SHOTS *shots, uint32_t *rng, PLAYER_OUTPUT output);
+    PLAYER_BOMB_CONTINUATION *continuation, PLAYER *player, ORB *orb,
+    SHOTS *shots, uint32_t *rng, PLAYER_OUTPUT output);
 void Player_FinishBombUpdate(PLAYER_BOMB_CONTINUATION *continuation, bool done);
 
 // Runs only drawing actions. Coordinates are regular player left values;
@@ -141,5 +140,4 @@ void Player_FinishBombUpdate(PLAYER_BOMB_CONTINUATION *continuation, bool done);
 // belong to their real external modules. SHOT forwards to Shots_RenderAction
 // with supplied stage images. Requires validated player and stage assets.
 void Player_RenderAction(
-    VIDEO *video, const PLAYER_SPRITES *sprites, const PTN *stage,
-    PLAYER_ACTION action);
+    const PLAYER_SPRITES *sprites, const PTN *stage, PLAYER_ACTION action);

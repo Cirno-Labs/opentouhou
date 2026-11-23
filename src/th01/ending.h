@@ -32,14 +32,14 @@ typedef struct ENDING ENDING;
 // Snapshots signed score bits, zero-extended scene histories and the last
 // life-exit random checkpoint. Clears shared run history before the story.
 // Requires a completed route. The result owns its copied values.
-void Ending_Snapshot(END_RESULT *result, SESSION *session);
+void Ending_Snapshot(END_RESULT *result);
 
 // Calculates the signed source thresholds and advances its 32-bit LCG once.
 void Ending_CalculateTitle(END_RESULT *result);
 
 // Clears ending history and stage after registration, retaining settings,
 // live resources, route, random checkpoints and cached table leader.
-void Ending_Clear(SESSION *session);
+void Ending_Clear(void);
 
 // Loads all ending sheets, cleared score background and text glyphs from rom
 // before ticks. Discard the allocator group on failure. No original data is
@@ -51,13 +51,12 @@ RESULT Ending_LoadAssets(
 // Reserves the owner and its complete authored operation workspace. Audio
 // consumption is mandatory and must use prepared simulation controls.
 void Ending_Prepare(
-    const ALLOCATOR *allocator, const ENDING_ASSETS *assets, VIDEO *video,
-    FRAME_VSYNC *vsync, GAME_INPUT *input, ENDING_AUDIO_CONSUMER audio,
-    void *audio_context, ENDING **out);
+    const ALLOCATOR *allocator, const ENDING_ASSETS *assets,
+    ENDING_AUDIO_CONSUMER audio, void *audio_context, ENDING **out);
 
-// Snapshots and clears shared history, then starts the real story. Borrowed
-// counters and input remain live through results and score registration.
-void Ending_Begin(ENDING *ending, SESSION *session);
+// Snapshots and clears shared history, then starts the real story. g_VSync
+// and g_GameInput stay shared through results and score registration.
+void Ending_Begin(ENDING *ending);
 
 // Advances VSync once and executes source requests until a wait suspends.
 // Returns true when the results screen hands its retained background to score.

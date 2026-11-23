@@ -12,7 +12,6 @@ typedef struct {
 } PAGE_TRANSITION;
 
 typedef struct {
-    VIDEO *video;
     PALETTE_STATE *palette;
     PALETTE *current;
     const PALETTE *target;

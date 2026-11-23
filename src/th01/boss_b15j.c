@@ -103,11 +103,6 @@ void B15J_Setup(B15J *const b, const B15J_CONTEXT *const c)
     Particles_Init(c->particles);
 }
 
-static VIDEO *M_Video(const B15J_CONTEXT *const c)
-{
-    return c->hit->display->video;
-}
-
 static PLAYER *M_Player(const B15J_CONTEXT *const c)
 {
     return c->hit->display->player;
@@ -159,32 +154,31 @@ static void M_Hit(B15J *const b, const B15J_CONTEXT *const c)
         &b->hit, &hit, flash, 4, 7000, colliding, (BOSS_SHOT_HITBOX) {});
 }
 
-static void M_CopyLine(VIDEO *const video, const int16_t y, const uint16_t mask)
+static void M_CopyLine(const int16_t y, const uint16_t mask)
 {
     if (y < 0 || y >= 400) {
         return;
     }
     for (int32_t x = 0; x < 640; x++) {
         const int32_t shift = (x & 8) + 7 - (x & 7);
-        video->pages[0][y * 640 + x] =
-            (mask & (1u << shift)) != 0 ? video->pages[1][y * 640 + x] : 0;
+        g_Video.pages[0][y * 640 + x] =
+            (mask & (1u << shift)) != 0 ? g_Video.pages[1][y * 640 + x] : 0;
     }
-    Video_SelectDrawingPage(video, 0);
+    Video_SelectDrawingPage(0);
 }
 
 static void M_SymmetricLine(
-    VIDEO *const video, const int16_t y, const int16_t offset,
-    const uint16_t mask)
+    const int16_t y, const int16_t offset, const uint16_t mask)
 {
-    M_CopyLine(video, Math16_Wrap(y - offset), mask);
-    M_CopyLine(video, Math16_Wrap(399 - y + offset), mask);
+    M_CopyLine(Math16_Wrap(y - offset), mask);
+    M_CopyLine(Math16_Wrap(399 - y + offset), mask);
 }
 
 static void M_Defaults(const B15J_CONTEXT *const c)
 {
-    Sprite_PtnPut(M_Video(c), c->miko, 0, -1, M_Player(c)->left, 368);
+    Sprite_PtnPut(c->miko, 0, -1, M_Player(c)->left, 368);
     Orb_RenderAction(
-        M_Video(c), c->hit->display->sprites,
+        c->hit->display->sprites,
         (ORB_ACTION) { ORB_ACTION_PUT, c->hit->orb->left, c->hit->orb->top,
                        0 });
 }
@@ -196,13 +190,12 @@ static int16_t M_InvertRings(const B15J_CONTEXT *const c, const int16_t base)
         const int16_t radius = Math16_Wrap(base * (i / 32));
         const int16_t left = Math16_PolarY(304, radius, i * 8);
         const int16_t top = Math16_PolarX(180, radius, i * 8);
-        outside += !Video_Invert32(M_Video(c), left, top, 2);
+        outside += !Video_Invert32(left, top, 2);
     }
     return outside;
 }
 
-static bool M_Entrance(
-    B15J *const b, const B15J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Entrance(B15J *const b, const B15J_CONTEXT *const c)
 {
     if (!b->entrance_active) {
         b->entrance_active = true;
@@ -214,13 +207,12 @@ static bool M_Entrance(
         b->boss_palette = c->hit->palette->saved;
         const int32_t colors[] = { 2, 6, 8, 11 };
         for (int32_t i = 0; i < 4; i++) {
-            Palette_SetColor(
-                c->hit->palette, M_Video(c), colors[i], 15, 15, 15);
+            Palette_SetColor(c->hit->palette, colors[i], 15, 15, 15);
         }
     }
     while (true) {
         if (b->entrance_waiting) {
-            if (!Frame_DelayReady(vsync, 1)) {
+            if (!Frame_DelayReady(1)) {
                 return false;
             }
             b->entrance_waiting = false;
@@ -230,16 +222,16 @@ static bool M_Entrance(
             if (b->frame % 3 == 0) {
                 const int16_t y = b->hit.frame;
                 if (y < 200) {
-                    M_SymmetricLine(M_Video(c), y, 0, 0x2222);
+                    M_SymmetricLine(y, 0, 0x2222);
                 }
                 if (b->frame * 2 > 8 && y < 208) {
-                    M_SymmetricLine(M_Video(c), y, 8, 0xaaaa);
+                    M_SymmetricLine(y, 8, 0xaaaa);
                 }
                 if (b->frame * 2 > 16 && y < 216) {
-                    M_SymmetricLine(M_Video(c), y, 16, 0xeeee);
+                    M_SymmetricLine(y, 16, 0xeeee);
                 }
                 if (b->frame * 2 > 24 && y <= 224) {
-                    M_SymmetricLine(M_Video(c), y, 24, 0xffff);
+                    M_SymmetricLine(y, 24, 0xffff);
                 }
                 b->hit.frame = Math16_Wrap(y + 1);
                 if (b->hit.frame > 224) {
@@ -266,7 +258,7 @@ static bool M_Entrance(
                 b->phase = 2;
                 b->patterns_done = 0;
                 b->frame = 0;
-                Palette_Set(c->hit->palette, M_Video(c), &b->boss_palette);
+                Palette_Set(c->hit->palette, &b->boss_palette);
                 b->hp_bar_filled = false;
                 *c->stage_palette = c->hit->palette->saved;
                 b->entrance_active = false;
@@ -283,8 +275,7 @@ static bool M_Entrance(
                         }
                     }
                 }
-                Palette_Set(
-                    c->hit->palette, M_Video(c), &c->hit->palette->saved);
+                Palette_Set(c->hit->palette, &c->hit->palette->saved);
             }
             b->entrance_waiting = b->frame % 2 != 0;
         }
@@ -296,7 +287,7 @@ static void M_SoulMove(
     const int16_t dx, const int16_t dy)
 {
     BOSS_ENTITY *const soul = &b->souls[i];
-    BossEntity_LockedMovePut(soul, c->sprites, M_Video(c), dx, dy, 1, true);
+    BossEntity_LockedMovePut(soul, c->sprites, dx, dy, 1, true);
     if (b->frame % 12 == 0) {
         soul->image = soul->image >= 2 ? 0 : Math16_Wrap(soul->image + 1);
     }
@@ -338,8 +329,8 @@ static void M_RipplePart(
         : frame <= 9                   ? 0
                                        : 3;
     const int16_t y = Math16_Wrap(top - dy);
-    Sprite_Restore16(M_Video(c), left, y, 16, 16);
-    Sprite_PtnPut(M_Video(c), &c->assets->ripples, 0, quarter, left, y);
+    Sprite_Restore16(left, y, 16, 16);
+    Sprite_PtnPut(&c->assets->ripples, 0, quarter, left, y);
 }
 
 static void M_Ripple(
@@ -384,7 +375,7 @@ static void M_Tears(B15J *const b, const B15J_CONTEXT *const c)
         if (b->tear_frame[i] != 0) {
             if (b->tears[i].top <= 384) {
                 BossEntity_LockedMovePut(
-                    &b->tears[i], c->sprites, M_Video(c), 0, 8, 1, true);
+                    &b->tears[i], c->sprites, 0, 8, 1, true);
             } else {
                 M_Ripple(c, b->tears[i].left, 384, &b->tear_frame[i]);
             }
@@ -621,11 +612,9 @@ static void M_VerticalLasers(B15J *const b, const B15J_CONTEXT *const c)
     }
 }
 
-static bool M_Death(
-    B15J *const b, const B15J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Death(B15J *const b, const B15J_CONTEXT *const c)
 {
     const BOSS_DEFEAT_CONTEXT defeat = {
-        .video = M_Video(c),
         .palette = c->hit->palette,
         .post_defeat = &b->post_defeat,
         .miko = c->miko,
@@ -633,7 +622,7 @@ static bool M_Death(
         .origin_top = &c->hit->orb->top,
         .stage_cleared = c->stage_cleared,
     };
-    if (!BossDefeat_Resume(&b->defeat, &defeat, vsync)) {
+    if (!BossDefeat_Resume(&b->defeat, &defeat)) {
         return false;
     }
     Scene_Activate(c->scene, &c->assets->next_scene);
@@ -653,7 +642,6 @@ RESULT B15J_ValidateContext(const B15J_CONTEXT *const c)
             || c->hit->display->high_score == nullptr
             || c->hit->display->font == nullptr
             || c->hit->display->sprites == nullptr
-            || c->hit->display->video == nullptr
             || c->hit->display->player == nullptr
             || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
             || c->hit->orb == nullptr || c->hit->test_damage == nullptr
@@ -678,22 +666,20 @@ RESULT B15J_ValidateContext(const B15J_CONTEXT *const c)
     return OK;
 }
 
-bool B15J_UpdateAndRender(
-    B15J *const b, const B15J_CONTEXT *const c, FRAME_VSYNC *const vsync)
+bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
 {
     if (b->finished) {
         return true;
     }
     if (b->defeating) {
-        return M_Death(b, c, vsync);
+        return M_Death(b, c);
     }
     if (b->phase == 0) {
-        return M_Entrance(b, c, vsync);
+        return M_Entrance(b, c);
     }
     if (b->phase == 2) {
         if (!b->hp_bar_filled) {
-            b->hp_bar_filled =
-                HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
+            b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
         }
         M_Common(b);
         M_SymmetricSpiral(b, c);
@@ -718,13 +704,13 @@ bool B15J_UpdateAndRender(
                 M_Byte(c->stage_palette->colors[5][0] + 1);
             c->stage_palette->colors[5][2] =
                 M_Byte(c->stage_palette->colors[5][2] - 1);
-            Palette_Set(c->hit->palette, M_Video(c), c->stage_palette);
+            Palette_Set(c->hit->palette, c->stage_palette);
         }
         if (b->frame >= 100) {
             b->phase = 4;
             b->frame = 0;
             b->subphase = 0;
-            Palette_Set(c->hit->palette, M_Video(c), c->stage_palette);
+            Palette_Set(c->hit->palette, c->stage_palette);
             b->boss_palette = c->hit->palette->saved;
         }
     } else if (b->phase == 4) {
@@ -784,11 +770,11 @@ bool B15J_UpdateAndRender(
         M_Hit(b, c);
         if (b->hp <= 0) {
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets, M_Video(c));
-            ShootoutLasers_EraseAndReset(c->lasers, M_Video(c), 4);
-            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR, vsync);
+            Pellets_EraseAndResetMoving(c->pellets);
+            ShootoutLasers_EraseAndReset(c->lasers, 4);
+            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR);
             b->defeating = true;
-            return M_Death(b, c, vsync);
+            return M_Death(b, c);
         }
     }
     return true;

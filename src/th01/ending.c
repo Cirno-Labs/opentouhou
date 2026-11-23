@@ -314,41 +314,37 @@ static void M_Results(ENDING *const e)
 static void M_Load(ENDING *const e, const int32_t index)
 {
     const PI_IMAGE *const sheet = &e->assets->sheets[index];
-    memcpy(e->video->pages[1], sheet->pixels, VIDEO_PAGE_SIZE);
-    Video_SelectDrawingPage(e->video, 1);
+    memcpy(g_Video.pages[1], sheet->pixels, VIDEO_PAGE_SIZE);
+    Video_SelectDrawingPage(1);
     Palette_Import(&e->palette.resource, sheet->palette);
-    Palette_ShowResource(&e->palette, e->video, true);
+    Palette_ShowResource(&e->palette, true);
 }
 
 void Ending_Prepare(
     const ALLOCATOR *const allocator, const ENDING_ASSETS *const assets,
-    VIDEO *const video, FRAME_VSYNC *const vsync, GAME_INPUT *const input,
     const ENDING_AUDIO_CONSUMER audio, void *const audio_context,
     ENDING **const out)
 {
     ASSERT(audio != nullptr);
     ENDING *const e = Allocator_AllocZ(allocator, sizeof(*e));
     e->assets = assets;
-    e->video = video;
-    e->vsync = vsync;
-    e->input = input;
     e->audio = audio;
     e->audio_context = audio_context;
     *out = e;
 }
 
-void Ending_Begin(ENDING *const e, SESSION *const session)
+void Ending_Begin(ENDING *const e)
 {
-    Ending_Snapshot(&e->result, session);
-    Frame_SwitchProgram(e->vsync);
+    Ending_Snapshot(&e->result);
+    Frame_SwitchProgram();
     e->next = 0;
     e->count = 0;
     e->waiting = false;
     e->sensing = false;
     e->timeout = 0;
     Palette_Init(&e->palette);
-    Video_SelectVisiblePage(e->video, 0);
-    Video_SetScroll(e->video, 0);
+    Video_SelectVisiblePage(0);
+    Video_SetScroll(0);
     M_Story(e);
     M_Results(e);
 }
@@ -357,7 +353,7 @@ bool Ending_Tick(
     ENDING *const e, const TH01_INPUT *const raw, const bool reference_edge)
 {
     if (reference_edge) {
-        Frame_VSync(e->vsync);
+        Frame_VSync();
     }
     while (e->next < e->count) {
         const ENDING_OPERATION *const op = &e->operations[e->next];
@@ -367,36 +363,36 @@ bool Ending_Tick(
             break;
         case END_RESULT_LINES:
             M_Load(e, op->value);
-            Video_Copy(e->video, 1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
-            Video_SelectDrawingPage(e->video, 0);
+            Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
+            Video_SelectDrawingPage(0);
             break;
         case END_PICTURE:
             Video_Copy(
-                e->video, 1,
+                1,
                 (GFX_RECT) { (op->value % 2) * 320, (op->value / 2) * 200, 320,
                              200 },
                 0, 160, 100);
-            Video_SelectDrawingPage(e->video, 0);
+            Video_SelectDrawingPage(0);
             break;
         case END_TONE:
-            Palette_SetTone(&e->palette, e->video, op->value);
+            Palette_SetTone(&e->palette, op->value);
             break;
         case END_WAIT:
             if (!e->waiting) {
-                e->vsync->count1 = 0;
+                g_VSync.count1 = 0;
                 e->waiting = true;
             }
-            if ((uint16_t)e->vsync->count1 < op->value) {
+            if ((uint16_t)g_VSync.count1 < op->value) {
                 return false;
             }
             e->waiting = false;
             break;
         case END_CLEAR:
-            Video_SelectDrawingPage(e->video, 0);
-            Video_Clear(e->video, 0);
+            Video_SelectDrawingPage(0);
+            Video_Clear(0);
             break;
         case END_SCROLL:
-            Video_SetScroll(e->video, (int16_t)op->value);
+            Video_SetScroll((int16_t)op->value);
             break;
         case END_AUDIO:
             e->audio(e->audio_context, (ENDING_AUDIO)op->value);
@@ -413,7 +409,7 @@ bool Ending_Tick(
                                                 ? GAME_TEXT_HEAVY
                                                 : GAME_TEXT_NORMAL };
             GameText_Draw(
-                &e->assets->font, e->video, text, op->left, op->top,
+                &e->assets->font, text, op->left, op->top,
                 (uint8_t)(op->style & 15), &style);
             break;
         }
@@ -421,35 +417,35 @@ bool Ending_Tick(
             Ending_CalculateTitle(&e->result);
             const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_HEAVY };
             GameText_Draw(
-                &e->assets->font, e->video,
+                &e->assets->font,
                 m_PlayerTitles[e->result.group][e->result.level], 488, 384, 2,
                 &style);
             break;
         }
         case END_INPUT:
             if (!e->sensing) {
-                GameInput_ResetGame(e->input);
+                GameInput_ResetGame();
                 e->sensing = true;
             }
             if (e->waiting) {
-                if ((uint16_t)e->vsync->count1 < 1) {
+                if ((uint16_t)g_VSync.count1 < 1) {
                     return false;
                 }
                 e->waiting = false;
             }
-            if (e->timeout++ >= 2000 || e->input->ok || e->input->shot) {
+            if (e->timeout++ >= 2000 || g_GameInput.ok || g_GameInput.shot) {
                 break;
             }
-            GameInput_SenseEnding(e->input, raw);
-            e->vsync->count1 = 0;
+            GameInput_SenseEnding(raw);
+            g_VSync.count1 = 0;
             e->waiting = true;
             return false;
         case END_REGISTER:
-            Video_Copy(e->video, 1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
-            Video_SelectDrawingPage(e->video, 0);
-            Palette_SetTone(&e->palette, e->video, 50);
-            Palette_SetColor(&e->palette, e->video, 3, 7, 15, 7);
-            Palette_SetColor(&e->palette, e->video, 7, 15, 15, 15);
+            Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
+            Video_SelectDrawingPage(0);
+            Palette_SetTone(&e->palette, 50);
+            Palette_SetColor(&e->palette, 3, 7, 15, 7);
+            Palette_SetColor(&e->palette, 7, 15, 15, 15);
             break;
         }
         e->next++;
@@ -465,20 +461,20 @@ const END_RESULT *Ending_Result(const ENDING *const e)
 void Ending_BeginSwitch(ENDING *const e)
 {
     Palette_BeginFade(&e->switch_fade, &e->palette, PALETTE_FADE_BLACK_OUT);
-    Frame_BeginWait(&e->switch_wait, e->vsync);
+    Frame_BeginWait(&e->switch_wait);
 }
 
 bool Ending_SwitchTick(ENDING *const e, const bool reference_edge)
 {
     if (reference_edge) {
-        Frame_PollVSync(e->vsync);
+        Frame_PollVSync();
     }
-    if (!Frame_WaitReady(&e->switch_wait, e->vsync)) {
+    if (!Frame_WaitReady(&e->switch_wait)) {
         return false;
     }
-    Palette_FadeStep(&e->switch_fade, &e->palette, e->video);
+    Palette_FadeStep(&e->switch_fade, &e->palette);
     if (e->switch_fade.remaining > 0) {
-        Frame_BeginWait(&e->switch_wait, e->vsync);
+        Frame_BeginWait(&e->switch_wait);
         return false;
     }
     return true;

@@ -58,5 +58,5 @@ const GAME_TEXT_GLYPH *GameText_Find(
 // vertical writes without the VRAM's aliasing. text must be valid UTF-8,
 // and spacing 0 through 7.
 void GameText_Draw(
-    const GAME_TEXT_FONT *font, VIDEO *video, const char *text, int32_t left,
-    int32_t top, uint8_t color, const GAME_TEXT_STYLE *style);
+    const GAME_TEXT_FONT *font, const char *text, int32_t left, int32_t top,
+    uint8_t color, const GAME_TEXT_STYLE *style);

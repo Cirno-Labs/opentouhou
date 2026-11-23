@@ -13,7 +13,6 @@ typedef struct {
     ITEM_CONTEXT context;
     PLAYER player;
     STAGE_GAMEPLAY game;
-    VIDEO video;
     PTN sprites;
     GAME_TEXT_FONT font;
     uint16_t value;
@@ -53,7 +52,7 @@ static void M_Init(CASE *const c)
 {
     *c = (CASE) {};
     Arena_Init(&c->arena, "items", 1024 * 1024);
-    Video_Init(&c->video, Arena_Allocator(&c->arena));
+    Video_Init(Arena_Allocator(&c->arena));
     c->sprites =
         (PTN) { .count = 34, .pixels = Arena_Alloc(&c->arena, 34 * 1024) };
     memset(c->sprites.pixels, 5, 34 * 1024);
@@ -73,7 +72,6 @@ static void M_Init(CASE *const c)
         .player = &c->player,
         .gameplay = &c->game,
         .point_value = &c->value,
-        .video = &c->video,
         .sprites = &c->sprites,
         .font = &c->font,
         .hud_bomb = M_HudBomb,
@@ -96,7 +94,7 @@ TEST(pool_splash_fall_bounce_and_reset_boundaries)
     }
     CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_FALL);
     CHECK_EQ_INT(c.items.bombs[0].top, 366);
-    CHECK_EQ_INT(Th01Test_Pixel(&c.video, 0, 100, 366), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 100, 366), 0);
     Items_UpdateAndRender(&c.items, &c.context);
     CHECK_EQ_INT(c.items.bombs[0].flag, ITEM_BOUNCE);
     CHECK_EQ_INT(c.items.bombs[0].top, 360);
@@ -178,7 +176,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
     CHECK_EQ_INT(c.value, 0);
     CHECK_EQ_INT(c.items.points[0].flag, ITEM_FREE);
     CHECK_EQ_INT(c.items.points[1].radius_or_time, 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&c.video, 0, 200 + 4 * 8 + 2, 198), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&c.video, 0, 200 + 4 * 8 + 3, 198), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 200 + 4 * 8 + 2, 198), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 200 + 4 * 8 + 3, 198), 0);
     Arena_Free(&c.arena);
 }

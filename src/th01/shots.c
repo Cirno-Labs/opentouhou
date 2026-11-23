@@ -165,20 +165,19 @@ bool Shots_HitTestBoss(
     return false;
 }
 
-void Shots_RenderAction(
-    VIDEO *const video, const PTN *const sprites, const SHOTS_ACTION action)
+void Shots_RenderAction(const PTN *const sprites, const SHOTS_ACTION action)
 {
     switch (action.kind) {
     case SHOTS_ACTION_RESTORE:
-        Sprite_Restore16(video, action.left, action.top, 16, 16);
+        Sprite_Restore16(action.left, action.top, 16, 16);
         break;
     case SHOTS_ACTION_PUT:
         Sprite_PtnPut(
-            video, sprites, SHOTS_PTN, action.quarter, action.left, action.top);
+            sprites, SHOTS_PTN, action.quarter, action.left, action.top);
         break;
     case SHOTS_ACTION_ERASE:
         Sprite_PtnErase(
-            video, sprites, SHOTS_PTN, action.quarter, action.left, action.top);
+            sprites, SHOTS_PTN, action.quarter, action.left, action.top);
         break;
     case SHOTS_ACTION_EFFECT:
         break;

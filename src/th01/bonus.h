@@ -20,7 +20,7 @@ typedef struct {
 // Shifts page 0 by 32 pixels, left on even rows and right on odd rows.
 // Injects page 1 chunks in forward or reverse order. Requires y 0..399 and
 // transferred 0..76 in bytes, divisible by four. Selects drawing page 0.
-void Bonus_RowShift32(VIDEO *video, uint16_t y, uint16_t transferred);
+void Bonus_RowShift32(uint16_t y, uint16_t transferred);
 
 // Starts with the source's empty scan and two-frame delay. Stores all row
 // histories in caller-owned bounded state. Keep page 1 and target live until
@@ -29,8 +29,8 @@ void Bonus_RowShift32(VIDEO *video, uint16_t y, uint16_t transferred);
 // Does not advance VSync, allocate, perform IO or read external state.
 void Bonus_BeginRowTransition(BONUS_ROW_TRANSITION *transition);
 bool Bonus_ResumeRowTransition(
-    BONUS_ROW_TRANSITION *transition, VIDEO *video, PALETTE_STATE *palette,
-    const PALETTE *target, FRAME_VSYNC *vsync);
+    BONUS_ROW_TRANSITION *transition, PALETTE_STATE *palette,
+    const PALETTE *target);
 
 typedef struct {
     uint8_t box[4];
@@ -56,8 +56,6 @@ typedef struct {
     HUD *hud;
     const HUD_CONTEXT *display;
     const EXTEND_CONTEXT *extend;
-    const STAGE_TIMER *timer;
-    GAME_INPUT *input;
     uint32_t *score_bonus;
     int32_t *bonus_per_stage;
 } BONUS_CONTEXT;
@@ -85,7 +83,7 @@ RESULT Bonus_ValidateStageAssets(
 // original numeral table; score arithmetic still retains the source widths.
 bool Bonus_BeginStage(
     BONUS *bonus, const BONUS_CONTEXT *context, int16_t stage_number,
-    const TH01_INPUT *raw, FRAME_VSYNC *vsync);
+    const TH01_INPUT *raw);
 
 // Resumes source-order waits without advancing VSync or gameplay. Confirmation
 // resets real GameInput history, forces shot and OK true and senses until
@@ -94,8 +92,7 @@ bool Bonus_BeginStage(
 // score_bonus only on confirmation. Updates and pending polls allocate nothing,
 // perform no IO and read no clock, font handle or external device.
 bool Bonus_Resume(
-    BONUS *bonus, const BONUS_CONTEXT *context, const TH01_INPUT *raw,
-    FRAME_VSYNC *vsync);
+    BONUS *bonus, const BONUS_CONTEXT *context, const TH01_INPUT *raw);
 
 typedef struct {
     PI_IMAGE background;
@@ -152,8 +149,7 @@ RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
 // callback must not change borrowed bonus or gameplay state.
 bool Bonus_BeginTotal(
     BONUS_TOTAL *bonus, const BONUS_TOTAL_CONTEXT *context,
-    int16_t stage_number, const TH01_INPUT *raw, FRAME_VSYNC *vsync,
-    uint64_t host_tick);
+    int16_t stage_number, const TH01_INPUT *raw, uint64_t host_tick);
 
 // Resumes source frame delays with count1 carry and four-millisecond digit
 // delays with fractional credit from a monotonic 60 Hz host serial. Several
@@ -171,4 +167,4 @@ bool Bonus_BeginTotal(
 // Successful updates and pending polls allocate nothing and perform no IO.
 bool Bonus_ResumeTotal(
     BONUS_TOTAL *bonus, const BONUS_TOTAL_CONTEXT *context,
-    const TH01_INPUT *raw, FRAME_VSYNC *vsync, uint64_t host_tick);
+    const TH01_INPUT *raw, uint64_t host_tick);

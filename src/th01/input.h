@@ -29,6 +29,8 @@ typedef struct {
     bool memory_enter, memory_leave;
 } GAME_INPUT;
 
+extern GAME_INPUT g_GameInput;
+
 typedef enum {
     MENU_INPUT_MAIN,
     MENU_INPUT_OPTIONS,
@@ -47,22 +49,25 @@ typedef struct {
 //
 // In debug mode, sets the memory-screen flags as events instead of entering
 // the original's recursive debug screens.
-bool GameInput_SenseGame(GAME_INPUT *state, const TH01_INPUT *raw, bool debug);
+bool GameInput_SenseGame(const TH01_INPUT *raw, bool debug);
 
 // Senses the ending's arrows, Z/X, Return and Escape, without keypad, debug
 // keys or bomb double taps.
-void GameInput_SenseEnding(GAME_INPUT *state, const TH01_INPUT *raw);
+void GameInput_SenseEnding(const TH01_INPUT *raw);
+
+// Clears every flag, count and history.
+void GameInput_Init(void);
 
 // Clears held flags, pause, the repeat history, the double-tap counts and
 // the pending bomb. Keeps bomb_frame and the debug-key history, as
 // input_reset_sense does.
-void GameInput_ResetGame(GAME_INPUT *state);
+void GameInput_ResetGame(void);
 
 // Clears only horizontal, shot and ok, keeping the repeat history.
-void GameInput_ResetMenu(GAME_INPUT *state);
+void GameInput_ResetMenu(void);
 
 // Advances the signed 16-bit bomb window after a gameplay frame.
-void GameInput_AdvanceBombFrame(GAME_INPUT *state);
+void GameInput_AdvanceBombFrame(void);
 
 // Moves selection on up/down presses, in the original's order. Main and
 // options keep separate history; the music room shares the options history.

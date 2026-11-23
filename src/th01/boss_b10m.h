@@ -81,5 +81,4 @@ RESULT B10M_ValidateContext(const B10M_CONTEXT *context);
 // pentagram overshoot and phase fallthrough. Keep context bindings stable.
 // Successful calls allocate nothing and perform no IO. Finished calls are inert
 // until setup or the main program's state reset.
-bool B10M_UpdateAndRender(
-    B10M *boss, const B10M_CONTEXT *context, FRAME_VSYNC *vsync);
+bool B10M_UpdateAndRender(B10M *boss, const B10M_CONTEXT *context);

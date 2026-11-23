@@ -21,7 +21,7 @@ RESULT Invincibility_LoadAssets(
 // 15-bit planar wrapping. Missing hidden planar bytes are discarded. Left
 // below zero or image outside 0..3 draws nothing. Selects drawing page zero.
 void Invincibility_Put(
-    VIDEO *video, const INVINCIBILITY_ASSETS *assets, int16_t left, int16_t top,
+    const INVINCIBILITY_ASSETS *assets, int16_t left, int16_t top,
     int16_t image);
 
 // Zero-initialize once per gameplay reset. Retains sprite positions across
@@ -29,5 +29,5 @@ void Invincibility_Put(
 // all eight old rectangles once when invincibility ends. Calls allocate
 // nothing, advance no clocks and read only supplied actor and RNG state.
 void Invincibility_UpdateAndRender(
-    INVINCIBILITY *state, VIDEO *video, const INVINCIBILITY_ASSETS *assets,
+    INVINCIBILITY *state, const INVINCIBILITY_ASSETS *assets,
     const PLAYER *player, uint32_t *rng);

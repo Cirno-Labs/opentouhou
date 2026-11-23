@@ -4,37 +4,38 @@
 
 #include <string.h>
 
-static void M_ClearHistory(SESSION *const session)
+static void M_ClearHistory(void)
 {
-    session->score = 0;
-    session->highest_score = 0;
-    session->continues_total = 0;
+    g_Session.score = 0;
+    g_Session.highest_score = 0;
+    g_Session.continues_total = 0;
     memset(
-        session->continues_per_scene, 0, sizeof(session->continues_per_scene));
+        g_Session.continues_per_scene, 0,
+        sizeof(g_Session.continues_per_scene));
 }
 
-void Ending_Snapshot(END_RESULT *const result, SESSION *const session)
+void Ending_Snapshot(END_RESULT *const result)
 {
-    ASSERT(session->ending != SESSION_END_NONE);
+    ASSERT(g_Session.ending != SESSION_END_NONE);
     *result =
-        (END_RESULT) { .score = session->score,
-                       .highest_score = session->highest_score,
-                       .random = session->exit_rand,
-                       .extra_lives = (int8_t)session->settings.lives_extra,
-                       .rank = (uint8_t)session->settings.difficulty,
-                       .route = session->ending };
+        (END_RESULT) { .score = g_Session.score,
+                       .highest_score = g_Session.highest_score,
+                       .random = g_Session.exit_rand,
+                       .extra_lives = (int8_t)g_Session.settings.lives_extra,
+                       .rank = (uint8_t)g_Session.settings.difficulty,
+                       .route = g_Session.ending };
     for (int32_t i = 0; i < 4; i++) {
-        result->continues[i] = session->continues_per_scene[i];
+        result->continues[i] = g_Session.continues_per_scene[i];
         result->total += result->continues[i];
     }
-    M_ClearHistory(session);
+    M_ClearHistory();
 }
 
-void Ending_Clear(SESSION *const session)
+void Ending_Clear(void)
 {
-    M_ClearHistory(session);
-    session->ending = SESSION_END_NONE;
-    session->stage_id = 0;
+    M_ClearHistory();
+    g_Session.ending = SESSION_END_NONE;
+    g_Session.stage_id = 0;
 }
 
 void Ending_CalculateTitle(END_RESULT *const r)

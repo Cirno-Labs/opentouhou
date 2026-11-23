@@ -5,6 +5,8 @@
 #include "core/base/assert.h"
 #include "core/input/codes.h"
 
+#include <string.h>
+
 static const INPUT_ACTION m_Actions[] = {
     INPUT_BUTTON(
         TH01_INPUT, up, "up", "dpad_up, left_stick_up",
@@ -33,6 +35,8 @@ static const INPUT_ACTION m_Actions[] = {
 
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH01_INPUT, m_Actions, 1);
 
+GAME_INPUT g_GameInput;
+
 static bool M_ChangedPair(
     const bool first, const bool second, bool *const previous_first,
     bool *const previous_second)
@@ -44,122 +48,120 @@ static bool M_ChangedPair(
 }
 
 static void M_Horizontal(
-    GAME_INPUT *const state, const bool first, const bool second,
-    bool *const previous_first, bool *const previous_second, const uint8_t flag)
+    const bool first, const bool second, bool *const previous_first,
+    bool *const previous_second, const uint8_t flag)
 {
     if (M_ChangedPair(first, second, previous_first, previous_second)) {
         if (first || second) {
-            state->horizontal |= flag;
+            g_GameInput.horizontal |= flag;
         } else {
-            state->horizontal &= (uint8_t)~flag;
+            g_GameInput.horizontal &= (uint8_t)~flag;
         }
     }
 }
 
-static void M_DoubleTap(
-    GAME_INPUT *const state, uint8_t *const pressed, uint8_t *const other)
+static void M_DoubleTap(uint8_t *const pressed, uint8_t *const other)
 {
-    if (state->bomb_frame < GAME_INPUT_BOMB_WINDOW) {
+    if (g_GameInput.bomb_frame < GAME_INPUT_BOMB_WINDOW) {
         *pressed = (uint8_t)(*pressed + 1);
     } else {
-        state->bomb_frame = 0;
+        g_GameInput.bomb_frame = 0;
         *pressed = 1;
         *other = 0;
     }
 }
 
-bool GameInput_SenseGame(
-    GAME_INPUT *const state, const TH01_INPUT *const raw, const bool debug)
+bool GameInput_SenseGame(const TH01_INPUT *const raw, const bool debug)
 {
-    TH01_INPUT *const previous = &state->previous;
+    TH01_INPUT *const previous = &g_GameInput.previous;
     if (M_ChangedPair(
             raw->up, raw->keypad_up, &previous->up, &previous->keypad_up)) {
-        state->up = raw->up || raw->keypad_up;
+        g_GameInput.up = raw->up || raw->keypad_up;
     }
     if (M_ChangedPair(
             raw->down, raw->keypad_down, &previous->down,
             &previous->keypad_down)) {
-        state->down = raw->down || raw->keypad_down;
+        g_GameInput.down = raw->down || raw->keypad_down;
     }
     M_Horizontal(
-        state, raw->left, raw->keypad_left, &previous->left,
-        &previous->keypad_left, GAME_INPUT_LEFT);
+        raw->left, raw->keypad_left, &previous->left, &previous->keypad_left,
+        GAME_INPUT_LEFT);
     M_Horizontal(
-        state, raw->right, raw->keypad_right, &previous->right,
+        raw->right, raw->keypad_right, &previous->right,
         &previous->keypad_right, GAME_INPUT_RIGHT);
     if (raw->shot != previous->shot) {
-        state->shot = raw->shot;
+        g_GameInput.shot = raw->shot;
         if (raw->shot) {
-            M_DoubleTap(state, &state->shot_presses, &state->strike_presses);
+            M_DoubleTap(&g_GameInput.shot_presses, &g_GameInput.strike_presses);
         }
     }
     previous->shot = raw->shot;
     if (raw->strike != previous->strike) {
-        state->strike = raw->strike;
+        g_GameInput.strike = raw->strike;
         if (raw->strike) {
-            M_DoubleTap(state, &state->strike_presses, &state->shot_presses);
+            M_DoubleTap(&g_GameInput.strike_presses, &g_GameInput.shot_presses);
         }
     }
     previous->strike = raw->strike;
     if (raw->cancel && !previous->cancel) {
-        state->paused = !state->paused;
+        g_GameInput.paused = !g_GameInput.paused;
     }
     previous->cancel = raw->cancel;
     bool player_hit = false;
     if (raw->ok != previous->ok) {
-        state->ok = raw->ok;
-        player_hit = raw->ok && state->paused && state->shot;
+        g_GameInput.ok = raw->ok;
+        player_hit = raw->ok && g_GameInput.paused && g_GameInput.shot;
     }
     previous->ok = raw->ok;
-    if ((state->shot_presses >= 2 && state->strike_presses >= 2)
-        || (state->horizontal == GAME_INPUT_BOTH && state->shot)) {
-        state->bomb = true;
-        state->shot_presses = 0;
-        state->strike_presses = 0;
+    if ((g_GameInput.shot_presses >= 2 && g_GameInput.strike_presses >= 2)
+        || (g_GameInput.horizontal == GAME_INPUT_BOTH && g_GameInput.shot)) {
+        g_GameInput.bomb = true;
+        g_GameInput.shot_presses = 0;
+        g_GameInput.strike_presses = 0;
     }
     if (debug) {
         if (raw->memory_enter != previous->memory_enter) {
-            state->memory_enter = raw->memory_enter;
+            g_GameInput.memory_enter = raw->memory_enter;
         }
         previous->memory_enter = raw->memory_enter;
         if (raw->memory_leave != previous->memory_leave) {
-            state->memory_leave = raw->memory_leave;
+            g_GameInput.memory_leave = raw->memory_leave;
         }
         previous->memory_leave = raw->memory_leave;
     }
     return player_hit;
 }
 
-void GameInput_SenseEnding(GAME_INPUT *const state, const TH01_INPUT *const raw)
+void GameInput_SenseEnding(const TH01_INPUT *const raw)
 {
-    TH01_INPUT *const previous = &state->previous;
+    TH01_INPUT *const previous = &g_GameInput.previous;
     if (raw->up != previous->up) {
-        state->up = raw->up;
+        g_GameInput.up = raw->up;
     }
     if (raw->down != previous->down) {
-        state->down = raw->down;
+        g_GameInput.down = raw->down;
     }
     if (raw->left != previous->left) {
-        state->horizontal = raw->left
-            ? state->horizontal | GAME_INPUT_LEFT
-            : state->horizontal & (uint8_t)~GAME_INPUT_LEFT;
+        g_GameInput.horizontal = raw->left
+            ? g_GameInput.horizontal | GAME_INPUT_LEFT
+            : g_GameInput.horizontal & (uint8_t)~GAME_INPUT_LEFT;
     }
     if (raw->right != previous->right) {
-        state->horizontal = raw->right
-            ? state->horizontal | GAME_INPUT_RIGHT
-            : state->horizontal & (uint8_t)~GAME_INPUT_RIGHT;
+        g_GameInput.horizontal = raw->right
+            ? g_GameInput.horizontal | GAME_INPUT_RIGHT
+            : g_GameInput.horizontal & (uint8_t)~GAME_INPUT_RIGHT;
     }
     if (raw->shot != previous->shot) {
-        state->shot = raw->shot;
+        g_GameInput.shot = raw->shot;
     }
     if (raw->strike != previous->strike) {
-        state->strike = raw->strike;
+        g_GameInput.strike = raw->strike;
     }
     if (raw->cancel && !previous->cancel) {
-        state->paused = !state->paused;
+        g_GameInput.paused = !g_GameInput.paused;
     }
     if (raw->ok != previous->ok) {
-        state->ok = raw->ok;
+        g_GameInput.ok = raw->ok;
     }
     previous->up = raw->up;
     previous->down = raw->down;
@@ -171,35 +173,42 @@ void GameInput_SenseEnding(GAME_INPUT *const state, const TH01_INPUT *const raw)
     previous->ok = raw->ok;
 }
 
-static void M_ResetRepeat(GAME_INPUT *const state)
+static void M_ResetRepeat(void)
 {
-    state->previous = (TH01_INPUT) {
-        .memory_enter = state->previous.memory_enter,
-        .memory_leave = state->previous.memory_leave,
+    g_GameInput.previous = (TH01_INPUT) {
+        .memory_enter = g_GameInput.previous.memory_enter,
+        .memory_leave = g_GameInput.previous.memory_leave,
     };
-    state->shot_presses = 0;
-    state->strike_presses = 0;
-    state->bomb = false;
+    g_GameInput.shot_presses = 0;
+    g_GameInput.strike_presses = 0;
+    g_GameInput.bomb = false;
 }
 
-void GameInput_ResetGame(GAME_INPUT *const state)
+void GameInput_Init(void)
 {
-    const TH01_INPUT previous = state->previous;
-    const int16_t bomb_frame = state->bomb_frame;
-    *state = (GAME_INPUT) { .previous = previous, .bomb_frame = bomb_frame };
-    M_ResetRepeat(state);
+    memset(&g_GameInput, 0, sizeof(g_GameInput));
 }
 
-void GameInput_ResetMenu(GAME_INPUT *const state)
+void GameInput_ResetGame(void)
 {
-    state->horizontal = GAME_INPUT_NONE;
-    state->shot = false;
-    state->ok = false;
+    const TH01_INPUT previous = g_GameInput.previous;
+    const int16_t bomb_frame = g_GameInput.bomb_frame;
+    memset(&g_GameInput, 0, sizeof(g_GameInput));
+    g_GameInput.previous = previous;
+    g_GameInput.bomb_frame = bomb_frame;
+    M_ResetRepeat();
 }
 
-void GameInput_AdvanceBombFrame(GAME_INPUT *const state)
+void GameInput_ResetMenu(void)
 {
-    state->bomb_frame = Math16_Wrap(state->bomb_frame + 1);
+    g_GameInput.horizontal = GAME_INPUT_NONE;
+    g_GameInput.shot = false;
+    g_GameInput.ok = false;
+}
+
+void GameInput_AdvanceBombFrame(void)
+{
+    g_GameInput.bomb_frame = Math16_Wrap(g_GameInput.bomb_frame + 1);
 }
 
 int32_t GameInput_SenseMenu(

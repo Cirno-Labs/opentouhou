@@ -9,9 +9,7 @@
 
 typedef struct {
     ARENA arena;
-    VIDEO video;
     PLAYER player;
-    GAME_INPUT input;
     ORB orb;
     SHOTS shots;
     uint32_t rng;
@@ -31,8 +29,8 @@ static void M_Decay(void *const user)
     M_Event(state, 0);
     CHECK_EQ_INT(state->player.mode, PLAYER_MODE_SPECIAL_FIRST);
     CHECK_EQ_INT(state->shots.slots[0].moving, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&state->video, 0, 120, 200), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&state->video, 0, state->player.left, 352), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 120, 200), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, state->player.left, 352), 2);
 }
 
 static void M_Lives(void *const user, const int16_t previous)
@@ -71,13 +69,16 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
                                   .invincible = true,
                                   .invincibility_time = 71,
                                   .bomb_frame = 941 },
-                      .input = { .bomb = true, .shot = true, .strike = true },
                       .orb = { .left = 100, .top = 100, .rotation_frame = 8 },
                       .rng = 1 };
+    GameInput_Init();
+    g_GameInput.bomb = true;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
     Arena_Init(&state->arena, "miss", 1024 * 1024);
-    Video_Init(&state->video, Arena_Allocator(&state->arena));
-    memset(state->video.pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(state->video.pages[1], 2, VIDEO_PAGE_SIZE);
+    Video_Init(Arena_Allocator(&state->arena));
+    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[1], 2, VIDEO_PAGE_SIZE);
     state->miko =
         (PTN) { .count = 24, .pixels = Arena_Alloc(&state->arena, 24 * 1024) };
     state->stage =
@@ -92,9 +93,7 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
 static MISS_CONTEXT M_Context(CASE *const state, const int16_t extra)
 {
     return (MISS_CONTEXT) {
-        .video = &state->video,
         .player = &state->player,
-        .input = &state->input,
         .orb = &state->orb,
         .shots = &state->shots,
         .rng = &state->rng,
@@ -117,33 +116,32 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CASE state;
     M_Init(&state, 304, 1);
     MISS miss = {};
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     const MISS_CONTEXT context = M_Context(&state, 1);
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
     uint32_t rng = state.rng;
     const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
-    Miss_Begin(&miss, &context, &vsync);
+    Miss_Begin(&miss, &context);
     CHECK_EQ_INT(state.rng, rng);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 304, 352), 6);
-    CHECK_EQ_INT(
-        Th01Test_Pixel(&state.video, 0, 304, 368), expected_image % 14 + 1);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 100, 100), 4);
-    CHECK(!Miss_Resume(&miss, &context, &vsync));
+    CHECK_EQ_INT(Th01Test_Pixel(0, 304, 352), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 304, 368), expected_image % 14 + 1);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
+    CHECK(!Miss_Resume(&miss, &context));
     CHECK_EQ_INT(state.event_count, 0);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SPECIAL_FIRST);
-    Frame_VSync(&vsync);
-    CHECK(!Miss_Resume(&miss, &context, &vsync));
+    Frame_VSync();
+    CHECK(!Miss_Resume(&miss, &context));
     CHECK_EQ_INT(miss.phase, MISS_SHAKE_DELAY);
-    CHECK_EQ_INT(state.video.scroll_top, 0);
-    CHECK_EQ_INT(vsync.count1, 1);
-    Frame_VSync(&vsync);
-    CHECK(!Miss_Resume(&miss, &context, &vsync));
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    CHECK_EQ_INT(g_VSync.count1, 1);
+    Frame_VSync();
+    CHECK(!Miss_Resume(&miss, &context));
     CHECK_EQ_INT(miss.phase, MISS_SHAKE_WAIT);
     CHECK_EQ_INT(miss.frame, 1);
-    CHECK_EQ_INT(vsync.count1, 0);
-    Frame_VSync(&vsync);
-    CHECK(!Miss_Resume(&miss, &context, &vsync));
-    CHECK_EQ_INT(state.video.scroll_top, 392);
+    CHECK_EQ_INT(g_VSync.count1, 0);
+    Frame_VSync();
+    CHECK(!Miss_Resume(&miss, &context));
+    CHECK_EQ_INT(g_Video.scroll_top, 392);
     Arena_Free(&state.arena);
 }
 
@@ -166,19 +164,20 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 const int16_t previous_bombs = state.player.remaining_bombs;
                 const ORB orb = state.orb;
                 const size_t used = state.arena.used;
-                FRAME_VSYNC vsync = { .count1 = counts[variant],
-                                      .count2 = 32760 };
+                Frame_Reset();
+                g_VSync.count1 = counts[variant];
+                g_VSync.count2 = 32760;
                 MISS miss = {};
-                Miss_Begin(&miss, &context, &vsync);
+                Miss_Begin(&miss, &context);
                 const uint32_t rng = state.rng;
                 int32_t edges = 0;
-                while (!Miss_Resume(&miss, &context, &vsync) && edges < 100) {
+                while (!Miss_Resume(&miss, &context) && edges < 100) {
                     const MISS snapshot = miss;
-                    const FRAME_VSYNC timing = vsync;
-                    CHECK(!Miss_Resume(&miss, &context, &vsync));
+                    const FRAME_VSYNC timing = g_VSync;
+                    CHECK(!Miss_Resume(&miss, &context));
                     CHECK(memcmp(&miss, &snapshot, sizeof(MISS)) == 0);
-                    CHECK(memcmp(&vsync, &timing, sizeof(FRAME_VSYNC)) == 0);
-                    Frame_VSync(&vsync);
+                    CHECK(memcmp(&g_VSync, &timing, sizeof(FRAME_VSYNC)) == 0);
+                    Frame_VSync();
                     edges++;
                 }
                 CHECK_EQ_INT(edges, variant == 0 ? 82 : variant == 1 ? 81 : 83);
@@ -195,12 +194,12 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK(state.player.invincible);
                 CHECK_EQ_INT(state.player.invincibility_time, 71);
                 CHECK_EQ_INT(state.player.bomb_frame, 941);
-                CHECK(!state.input.bomb);
-                CHECK(state.input.shot);
-                CHECK(state.input.strike);
+                CHECK(!g_GameInput.bomb);
+                CHECK(g_GameInput.shot);
+                CHECK(g_GameInput.strike);
                 const int8_t deflection[] = { 15, 12, 10, 8 };
                 CHECK_EQ_INT(state.player.deflect_duration, deflection[rank]);
-                CHECK_EQ_INT(state.video.scroll_top, 0);
+                CHECK_EQ_INT(g_Video.scroll_top, 0);
                 CHECK_EQ_INT(state.previous_lives, variant + 1);
                 CHECK_EQ_INT(
                     state.player.remaining_bombs, variant == 0 ? 2 : 5);
@@ -213,8 +212,8 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 }
                 CHECK_EQ_INT(state.events[state.event_count - 2], 3);
                 CHECK_EQ_INT(state.events[state.event_count - 1], 4);
-                CHECK_EQ_INT(vsync.count1, 0);
-                CHECK(Miss_Resume(&miss, &context, &vsync));
+                CHECK_EQ_INT(g_VSync.count1, 0);
+                CHECK(Miss_Resume(&miss, &context));
                 Arena_Free(&state.arena);
             }
         }

@@ -24,7 +24,7 @@ static void M_Text(
     const ITEM_CONTEXT *const context, const char *const text,
     const int16_t left, const int16_t top)
 {
-    GameText_Draw(context->font, context->video, text, left, top, 7, &m_Style);
+    GameText_Draw(context->font, text, left, top, 7, &m_Style);
 }
 
 static void M_Collect(
@@ -34,7 +34,7 @@ static void M_Collect(
     if (!M_Visible(item) || delta <= -24 || delta >= 24 || item->top <= 344) {
         return;
     }
-    Sprite_Restore16(context->video, item->left, item->top, 32, 32);
+    Sprite_Restore16(item->left, item->top, 32, 32);
     item->velocity_y = -2;
     item->radius_or_time = 16;
     if (item->top >= 368) {
@@ -70,11 +70,10 @@ static void M_Popup(
         : item->left > 600    ? 600
                               : item->left;
     // The point wrapper expands its nominal 40-pixel width to 48 pixels.
-    Sprite_Restore16(context->video, left, item->top, bomb ? 32 : 48, 16);
+    Sprite_Restore16(left, item->top, bomb ? 32 : 48, 16);
     if (bomb && item->flag == ITEM_COLLECTED) {
         Sprite_Restore16(
-            context->video, M_SecondLeft(item), Math16_Wrap(item->top + 16), 64,
-            16);
+            M_SecondLeft(item), Math16_Wrap(item->top + 16), 64, 16);
     }
     item->top = Math16_Wrap(item->top + item->velocity_y);
     item->radius_or_time--;
@@ -115,19 +114,16 @@ static void M_Update(
         const int16_t x = Math16_Wrap(item->left + 16);
         const int16_t y = Math16_Wrap(item->top + 16);
         Shape_EllipseArcErase(
-            context->video, x, y, item->radius_or_time, item->radius_or_time, 8,
-            0, 255);
+            x, y, item->radius_or_time, item->radius_or_time, 8, 0, 255);
         item->radius_or_time += 4;
         if (item->radius_or_time >= 48) {
             item->flag = ITEM_FALL;
             return;
         }
         Shape_EllipseArcPut(
-            context->video, x, y, item->radius_or_time, item->radius_or_time, 7,
-            8, 0, 255);
+            x, y, item->radius_or_time, item->radius_or_time, 7, 8, 0, 255);
     } else if (item->flag == ITEM_FALL || item->flag == ITEM_BOUNCE) {
-        Sprite_PtnErase(
-            context->video, context->sprites, image, -1, item->left, item->top);
+        Sprite_PtnErase(context->sprites, image, -1, item->left, item->top);
         if (item->flag == ITEM_FALL) {
             item->top = Math16_Wrap(item->top + item->velocity_y);
             if (item->top >= 368) {
@@ -146,8 +142,7 @@ static void M_Update(
                 return;
             }
         }
-        Sprite_PtnPut(
-            context->video, context->sprites, image, -1, item->left, item->top);
+        Sprite_PtnPut(context->sprites, image, -1, item->left, item->top);
     } else if (item->flag >= ITEM_COLLECTED) {
         M_Popup(item, context, bomb);
     }
@@ -208,8 +203,7 @@ void Items_Reset(ITEMS *const items)
     }
 }
 
-void Items_Render(
-    const ITEMS *const items, VIDEO *const video, const PTN *const sprites)
+void Items_Render(const ITEMS *const items, const PTN *const sprites)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT + ITEMS_POINT_COUNT; i++) {
         const bool bomb = i < ITEMS_BOMB_COUNT;
@@ -217,7 +211,7 @@ void Items_Render(
             bomb ? &items->bombs[i] : &items->points[i - ITEMS_BOMB_COUNT];
         if (M_Visible(item)) {
             Sprite_PtnPut(
-                video, sprites, bomb ? ITEM_BOMB_IMAGE : ITEM_POINT_IMAGE, -1,
+                sprites, bomb ? ITEM_BOMB_IMAGE : ITEM_POINT_IMAGE, -1,
                 item->left, item->top);
         }
     }

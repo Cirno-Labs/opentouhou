@@ -127,8 +127,8 @@ static uint16_t M_Weight(uint16_t row, const GAME_TEXT_WEIGHT weight)
 }
 
 static void M_Fill(
-    VIDEO *const video, int64_t left, int64_t top, int64_t right,
-    int64_t bottom, const uint8_t color)
+    int64_t left, int64_t top, int64_t right, int64_t bottom,
+    const uint8_t color)
 {
     left = left < 0 ? 0 : left;
     top = top < 0 ? 0 : top;
@@ -136,7 +136,7 @@ static void M_Fill(
     bottom = bottom >= VIDEO_HEIGHT ? VIDEO_HEIGHT - 1 : bottom;
     if (left <= right && top <= bottom) {
         Video_FillBox(
-            video, (int32_t)left, (int32_t)top, (int32_t)right, (int32_t)bottom,
+            (int32_t)left, (int32_t)top, (int32_t)right, (int32_t)bottom,
             color);
     }
 }
@@ -250,9 +250,9 @@ static int32_t M_Measure(
 }
 
 void GameText_Draw(
-    const GAME_TEXT_FONT *const font, VIDEO *const video,
-    const char *const text, const int32_t left, const int32_t top,
-    const uint8_t color, const GAME_TEXT_STYLE *const style)
+    const GAME_TEXT_FONT *const font, const char *const text,
+    const int32_t left, const int32_t top, const uint8_t color,
+    const GAME_TEXT_STYLE *const style)
 {
     const int32_t width = M_Measure(font, text, style);
     if (width == 0) {
@@ -260,12 +260,12 @@ void GameText_Draw(
     }
     if (style->clear_background) {
         M_Fill(
-            video, left, top, (int64_t)left + width - 1,
+            left, top, (int64_t)left + width - 1,
             (int64_t)top + (style->underline ? 17 : 15), 0);
     }
     if (style->underline) {
         M_Fill(
-            video, left, (int64_t)top + 17, (int64_t)left + width - 1,
+            left, (int64_t)top + 17, (int64_t)left + width - 1,
             (int64_t)top + 17, 7);
     }
     const size_t size = strlen(text);
@@ -292,7 +292,7 @@ void GameText_Draw(
                     const int64_t px = pen + x;
                     if ((row & (0x8000u >> x)) != 0 && px >= 0
                         && px < VIDEO_WIDTH) {
-                        Video_Pixel(video, (int32_t)px, (int32_t)py, color);
+                        Video_Pixel((int32_t)px, (int32_t)py, color);
                     }
                 }
             }

@@ -69,7 +69,6 @@ typedef struct {
     PELLET_SHARED *pellet_shared;
     SHOOTOUT_LASERS *lasers;
     STAGE_OBJECTS *objects;
-    TRAM *tram;
     uint32_t *rng;
     bool *game_cleared;
     void (*audio)(
@@ -103,8 +102,7 @@ void B20J_BeginEntrance(B20J *boss, const B20J_CONTEXT *context);
 // Suspends the world until all scroll, shake, pan and palette waits finish.
 // Advance reference VSync counters while polling. Pending polls repeat no
 // effects or drawing. Allocates nothing; no IO.
-bool B20J_ResumeEntrance(
-    B20J *boss, const B20J_CONTEXT *context, FRAME_VSYNC *vsync);
+bool B20J_ResumeEntrance(B20J *boss, const B20J_CONTEXT *context);
 
 // Runs one ordinary battle call, or resumes the custom final defeat.
 // False suspends the world until subsequent reference VSyncs satisfy waits.
@@ -112,5 +110,4 @@ bool B20J_ResumeEntrance(
 // points and sets game_cleared. Finished calls stay inert. No Scene activation,
 // allocations, IO or device reads occur. Audio/effect consumers must not
 // mutate borrowed boss, palette, score, player or projectile state.
-bool B20J_UpdateAndRender(
-    B20J *boss, const B20J_CONTEXT *context, FRAME_VSYNC *vsync);
+bool B20J_UpdateAndRender(B20J *boss, const B20J_CONTEXT *context);

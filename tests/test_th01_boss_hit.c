@@ -9,7 +9,6 @@
 
 typedef struct {
     ARENA arena;
-    VIDEO video;
     PALETTE_STATE palette;
     PALETTE baseline;
     HUD hud;
@@ -39,7 +38,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
         CHECK_EQ_INT(f->shots.slots[0].decay_frame, 1);
         f->events[f->count++] = 16;
     } else {
-        Shots_RenderAction(&f->video, &f->sprites, action);
+        Shots_RenderAction(&f->sprites, action);
         f->events[f->count++] = 1;
     }
 }
@@ -53,7 +52,7 @@ static void M_Effect(void *const user, const int16_t number)
     CHECK_EQ_INT(f->hit.frame, 0);
     CHECK_EQ_INT(f->hud.score_previous, f->gameplay.score);
     CHECK_EQ_INT(f->palette.saved.colors[2][0], 15);
-    CHECK_EQ_INT(Th01Test_Pixel(&f->video, 0, 184, 48), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 7);
     f->events[f->count++] = number;
 }
 
@@ -62,10 +61,10 @@ static void M_Init(FIXTURE *const f)
     *f = (FIXTURE) { .lives = 3, .hp = 8, .expected_shot_hp = 8 };
     Arena_Init(&f->arena, "boss hit", 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
-    Video_Init(&f->video, a);
+    Video_Init(a);
     Hud_Init(&f->hud, a);
     HudHp_Init(&f->health, a);
-    HudHp_Rerender(&f->health, &f->video, 8);
+    HudHp_Rerender(&f->health, 8);
     GAME_TEXT_GLYPH glyphs[10] = {};
     for (int32_t i = 0; i < 10; i++) {
         glyphs[i].codepoint = 0xff10 + i;
@@ -78,9 +77,8 @@ static void M_Init(FIXTURE *const f)
     f->baseline.colors[2][0] = 1;
     f->baseline.colors[2][1] = 2;
     f->baseline.colors[2][2] = 3;
-    Palette_Set(&f->palette, &f->video, &f->baseline);
-    f->display = (HUD_CONTEXT) { .video = &f->video,
-                                 .sprites = &f->sprites,
+    Palette_Set(&f->palette, &f->baseline);
+    f->display = (HUD_CONTEXT) { .sprites = &f->sprites,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
                                  .player = &f->player,
@@ -115,9 +113,9 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(f.count, 1);
     CHECK_EQ_INT(f.events[0], 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&f.video, 0, 184, 48), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);
     CHECK_EQ_INT(f.palette.saved.colors[2][0], 1);
-    CHECK_EQ_INT(f.video.palette[2].red, 17);
+    CHECK_EQ_INT(g_Video.palette[2].red, 17);
     Arena_Free(&f.arena);
 }
 
@@ -168,7 +166,7 @@ TEST(palette_reset_is_strictly_after_forty_even_without_invincibility)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     f.hit = (BOSS_HIT) { .frame = 40, .invincible = true };
-    Palette_SetColor(&f.palette, &f.video, 2, 15, 15, 15);
+    Palette_SetColor(&f.palette, 2, 15, 15, 15);
     BossHit_UpdateAndRender(
         &f.hit, &f.context, colors, 1, 3000, false, (BOSS_SHOT_HITBOX) {});
     CHECK(f.hit.invincible);

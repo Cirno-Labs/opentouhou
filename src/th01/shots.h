@@ -66,4 +66,4 @@ bool Shots_HitTestBoss(
 
 // Executes drawing actions with stage PTN image 1; requires at least two
 // images. Effect actions belong to the audio event consumer and do no drawing.
-void Shots_RenderAction(VIDEO *video, const PTN *sprites, SHOTS_ACTION action);
+void Shots_RenderAction(const PTN *sprites, SHOTS_ACTION action);

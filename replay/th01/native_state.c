@@ -107,21 +107,19 @@ static void M_Boss(const GAMEPLAY_WORLD *const world, uint32_t *const row)
 #undef M_BOSS
 }
 
-static void M_Gameplay(
-    const GAMEPLAY_WORLD *const world, const SESSION *const session,
-    uint32_t *const row)
+static void M_Gameplay(const GAMEPLAY_WORLD *const world, uint32_t *const row)
 {
-    row[TH01_COLUMN_vsync_count1] = M_I32(world->vsync.count1);
-    row[TH01_COLUMN_frame_rand] = session->frame_rand;
+    row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
+    row[TH01_COLUMN_frame_rand] = g_Session.frame_rand;
     row[TH01_COLUMN_rng] = world->rng;
     row[TH01_COLUMN_game_frames] = world->frame;
-    row[TH01_COLUMN_stage] = (uint32_t)session->stage_id;
-    row[TH01_COLUMN_route] = session->route;
+    row[TH01_COLUMN_stage] = (uint32_t)g_Session.stage_id;
+    row[TH01_COLUMN_route] = g_Session.route;
     row[TH01_COLUMN_score] = world->metrics.score;
-    row[TH01_COLUMN_lives] = M_I32(session->lives);
+    row[TH01_COLUMN_lives] = M_I32(g_Session.lives);
     row[TH01_COLUMN_bombs] = M_I32(world->player.remaining_bombs);
     row[TH01_COLUMN_pellet_speed] = M_I32(world->pellet_shared.speed);
-    row[TH01_COLUMN_stage_time] = world->timer.time;
+    row[TH01_COLUMN_stage_time] = g_StageTimer.time;
 
     const PLAYER *const player = &world->player;
     row[TH01_COLUMN_player_left] = M_I32(player->left);
@@ -181,14 +179,13 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
     } else if (view.scene == TH01_SCENE_ENDING || ending_scores) {
         const END_RESULT *const result = Ending_Result(view.ending);
         row[TH01_COLUMN_program] = 4;
-        row[TH01_COLUMN_vsync_count1] =
-            M_I32(view.gameplay->world.vsync.count1);
+        row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
         row[TH01_COLUMN_rng] = result->random;
         row[TH01_COLUMN_route] = (uint32_t)result->route;
         row[TH01_COLUMN_score] = result->score;
     } else {
         row[TH01_COLUMN_program] = 3;
-        M_Gameplay(&view.gameplay->world, view.session, row);
+        M_Gameplay(&view.gameplay->world, row);
     }
     row[TH01_COLUMN_difficulty] = (uint32_t)g_Settings.difficulty;
     row[TH01_COLUMN_lives_extra] = (uint32_t)g_Settings.lives_extra;

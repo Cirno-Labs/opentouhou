@@ -11,28 +11,27 @@
 // Discards accesses outside the visible page, excluding cross-plane aliasing.
 // Allocates nothing. Does not apply the optional restore-before-put flag.
 void Sprite_PtnPut(
-    VIDEO *video, const PTN *sprites, int32_t image, int32_t quarter,
-    int16_t left, int16_t top);
+    const PTN *sprites, int32_t image, int32_t quarter, int16_t left,
+    int16_t top);
 void Sprite_PtnErase(
-    VIDEO *video, const PTN *sprites, int32_t image, int32_t quarter,
-    int16_t left, int16_t top);
+    const PTN *sprites, int32_t image, int32_t quarter, int16_t left,
+    int16_t top);
 
 // Restores full word groups from page 1 to page 0. Rounds left down and
 // left+width up to 16 pixels. Wraps EGC addresses at the 32768-byte planar
 // boundary; hidden offsets 32000..32767 have no visible storage. This can
 // restore top rows when an ellipse reaches below row 409. Keeps raw PTN
 // and BOS address semantics separate. Requires positive width and height.
-void Sprite_Restore16(
-    VIDEO *video, int16_t left, int16_t top, int16_t width, int16_t height);
+void Sprite_Restore16(int16_t left, int16_t top, int16_t width, int16_t height);
 
 // Draws player BOS coverage, masking away colors outside coverage. Uses
 // the source's (left+640)/8-80 byte address and intended-row clipping.
 // Requires valid image indices and dimensions; selects drawing page 0.
 // Discards outside-page accesses. Allocates nothing.
 void Sprite_PlayerPut(
-    VIDEO *video, const BOS *sprites, int32_t image, int16_t left, int16_t top);
+    const BOS *sprites, int32_t image, int16_t left, int16_t top);
 void Sprite_PlayerErase(
-    VIDEO *video, const BOS *sprites, int32_t image, int16_t left, int16_t top);
+    const BOS *sprites, int32_t image, int16_t left, int16_t top);
 
 // Restores only old coverage not overlapped by the new coverage, then puts
 // the new image, row by row. Preserves the original optimizer's mask and
@@ -40,5 +39,5 @@ void Sprite_PlayerErase(
 // at most 64 and a byte-column displacement of -1, 0 or 1. The intended-row
 // put clipping differs from the erase's linear addressing at screen edges.
 void Sprite_PlayerOverlap(
-    VIDEO *video, const BOS *sprites, int32_t put_image, int32_t erase_image,
+    const BOS *sprites, int32_t put_image, int32_t erase_image,
     int16_t put_left, int16_t put_top, int16_t erase_left, int16_t erase_top);

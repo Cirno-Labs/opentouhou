@@ -152,10 +152,6 @@ void B15M_Setup(B15M *const b, const B15M_CONTEXT *const c)
     Particles_Init(c->particles);
 }
 
-static VIDEO *M_Video(const B15M_CONTEXT *const c)
-{
-    return c->hit->display->video;
-}
 static PLAYER *M_Player(const B15M_CONTEXT *const c)
 {
     return c->hit->display->player;
@@ -204,10 +200,9 @@ static void M_Snap(B15M *const b, const B15M_CONTEXT *const c)
 {
     M_Sync(b);
     Video_Read(
-        M_Video(c), 1,
-        (GFX_RECT) { b->girl.left / 8 * 8, b->girl.top, 128, 96 },
+        1, (GFX_RECT) { b->girl.left / 8 * 8, b->girl.top, 128, 96 },
         b->background, 128);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
 }
 static void M_Background(B15M *const b, const B15M_CONTEXT *const c)
 {
@@ -218,7 +213,7 @@ static void M_Background(B15M *const b, const B15M_CONTEXT *const c)
                                 .stride = 128,
                                 .key = -1 };
     Video_Blit(
-        M_Video(c), &image, (GFX_RECT) { 0, 0, 128, 96 }, b->girl.left / 8 * 8,
+        &image, (GFX_RECT) { 0, 0, 128, 96 }, b->girl.left / 8 * 8,
         b->girl.top);
 }
 static void M_Unlock(
@@ -227,16 +222,16 @@ static void M_Unlock(
 {
     e->lock_frame = 0;
     e->image = image;
-    BossEntity_LockedMovePut(e, c->sprites, M_Video(c), 0, 0, 3, restore);
+    BossEntity_LockedMovePut(e, c->sprites, 0, 0, 3, restore);
 }
 static void M_Both(
     B15M *const b, const B15M_CONTEXT *const c, BOSS_ENTITY *const e,
     const int16_t image, const bool erase_page0)
 {
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Background(b, c);
     M_Unlock(e, c, image, false);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     if (erase_page0) {
         M_Background(b, c);
     }
@@ -245,9 +240,9 @@ static void M_Both(
 static void M_PutBoth(
     BOSS_ENTITY *const e, const B15M_CONTEXT *const c, const int16_t image)
 {
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Unlock(e, c, image, false);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     M_Unlock(e, c, image, false);
 }
 static void M_Attack(B15M *const b, const B15M_CONTEXT *const c)
@@ -277,8 +272,8 @@ static void M_Grc(
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if (address >= 0 && address < 32000
                             && pixels[y * 32 + byte * 8 + bit] != 0) {
-                            M_Video(c)->pages[M_Video(c)->drawing_page]
-                                             [address * 8 + bit] = color & 15;
+                            g_Video.pages[g_Video.drawing_page]
+                                         [address * 8 + bit] = color & 15;
                         }
                     }
                 }
@@ -301,7 +296,7 @@ static void M_Star8(
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE
                 && (c->assets->star[y] & (0x80u >> x)) != 0) {
-                M_Video(c)->pages[M_Video(c)->drawing_page][offset] = 2;
+                g_Video.pages[g_Video.drawing_page][offset] = 2;
             }
         }
     }
@@ -309,21 +304,20 @@ static void M_Star8(
 static void M_GrcErase(
     const B15M_CONTEXT *const c, const int16_t x, const int16_t y)
 {
-    Sprite_Restore16(M_Video(c), x, y, 48, 32);
+    Sprite_Restore16(x, y, 48, 32);
 }
 static void M_Circle(
     const B15M_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t radius, const uint8_t color, const uint8_t step,
     const uint8_t start, const uint8_t end)
 {
-    Shape_EllipseArcPut(
-        M_Video(c), x, y, radius, radius, color, step, start, end);
+    Shape_EllipseArcPut(x, y, radius, radius, color, step, start, end);
 }
 static void M_EraseCircle(
     const B15M_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t radius, const uint8_t step)
 {
-    Shape_EllipseArcErase(M_Video(c), x, y, radius, radius, step, 0, 255);
+    Shape_EllipseArcErase(x, y, radius, radius, step, 0, 255);
 }
 static void M_BigCircle(
     B15M *const b, const B15M_CONTEXT *const c, const uint8_t color)
@@ -413,7 +407,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
     if (action.kind == MISSILES_ACTION_EFFECT) {
         M_Effect(c, action.effect);
     } else {
-        Missiles_RenderAction(M_Video(c), &c->assets->missiles, action);
+        Missiles_RenderAction(&c->assets->missiles, action);
     }
 }
 static void M_Hit(
@@ -491,9 +485,9 @@ static bool M_Teleport(
     M_Sync(b);
     switch (b->frame) {
     case 20:
-        Video_SelectDrawingPage(M_Video(c), 1);
+        Video_SelectDrawingPage(1);
         M_Background(b, c);
-        Video_SelectDrawingPage(M_Video(c), 0);
+        Video_SelectDrawingPage(0);
         M_Unlock(&b->girl, c, 2, false);
         b->girl.orb_inactive = true;
         break;
@@ -509,7 +503,7 @@ static bool M_Teleport(
         break;
     case 44:
         b->girl.orb_inactive = true;
-        Sprite_Restore16(M_Video(c), b->girl.left, b->girl.top, 128, 96);
+        Sprite_Restore16(b->girl.left, b->girl.top, 128, 96);
         break;
     case 52:
         b->girl.orb_inactive = true;
@@ -545,7 +539,7 @@ static bool M_Teleport(
     }
     for (int32_t i = 0; i < 5; i++) {
         if (b->frame > 4) {
-            Sprite_Restore16(M_Video(c), b->stars.x[i], b->stars.y[i], 16, 8);
+            Sprite_Restore16(b->stars.x[i], b->stars.y[i], 16, 8);
         }
         const int16_t tx = M_SurroundX(c, &b->girl, false),
                       ty = M_SurroundY(c, &b->girl, false);
@@ -593,8 +587,7 @@ static void M_Trail(
         M_Grc(c, b->trail_x[i][1], b->trail_y[i][1], 1, 8);
     }
 }
-static bool M_Entrance(
-    B15M *const b, const B15M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Entrance(B15M *const b, const B15M_CONTEXT *const c)
 {
     if (!b->entrance_active) {
         b->entrance_active = true;
@@ -605,7 +598,7 @@ static bool M_Entrance(
         M_Snap(b, c);
     }
     if (b->entrance_waiting) {
-        if (!Frame_DelayReady(vsync, (uint16_t)b->pending_scroll)) {
+        if (!Frame_DelayReady((uint16_t)b->pending_scroll)) {
             return false;
         }
         b->entrance_waiting = false;
@@ -646,26 +639,23 @@ static bool M_Entrance(
                 if (f % 4 == 0) {
                     if (f != 24) {
                         Wave_Restore(
-                            M_Video(c), b->girl.left, b->girl.top, f - 2,
-                            104 - f, (f - 4) * 6, 144, 96);
+                            b->girl.left, b->girl.top, f - 2, 104 - f,
+                            (f - 4) * 6, 144, 96);
                     }
                     BossEntity_WavePut(
-                        &b->girl, c->sprites, M_Video(c), b->girl.left,
-                        b->girl.top, 0, f + 2, 100 - f, f * 6);
+                        &b->girl, c->sprites, b->girl.left, b->girl.top, 0,
+                        f + 2, 100 - f, f * 6);
                 }
             } else if (f == 100) {
-                Wave_Restore(
-                    M_Video(c), b->girl.left, b->girl.top, 102, 0, 100, 144,
-                    96);
+                Wave_Restore(b->girl.left, b->girl.top, 102, 0, 100, 144, 96);
                 M_Unlock(&b->girl, c, 0, true);
             } else if (f == 128) {
                 M_Background(b, c);
                 BossEntity_WavePut(
-                    &b->girl, c->sprites, M_Video(c), b->girl.left, b->girl.top,
-                    0, 3, 8, 64);
+                    &b->girl, c->sprites, b->girl.left, b->girl.top, 0, 3, 8,
+                    64);
             } else if (f == 130) {
-                Wave_Restore(
-                    M_Video(c), b->girl.left, b->girl.top, 3, 8, 64, 144, 96);
+                Wave_Restore(b->girl.left, b->girl.top, 3, 8, 64, 144, 96);
                 M_Unlock(&b->girl, c, 0, true);
             } else if (f > 140) {
                 b->frame = 0;
@@ -681,7 +671,7 @@ static bool M_Entrance(
             }
             b->pending_scroll = 1;
         }
-        if (!Frame_DelayReady(vsync, (uint16_t)b->pending_scroll)) {
+        if (!Frame_DelayReady((uint16_t)b->pending_scroll)) {
             b->entrance_waiting = true;
             return false;
         }
@@ -807,9 +797,9 @@ static void M_StarLines(
         const int16_t x1 = Math16_PolarX(M_CenterX(b, 0), 128, pairs[i][1]);
         const int16_t y1 = Math16_PolarY(M_CenterY(b, 0), 128, pairs[i][1]);
         if (erase) {
-            Video_LineErase(M_Video(c), x0, y0, x1, y1);
+            Video_LineErase(x0, y0, x1, y1);
         } else {
-            Video_Line(M_Video(c), x0, y0, x1, y1, color);
+            Video_Line(x0, y0, x1, y1, color);
         }
     }
 }
@@ -883,7 +873,7 @@ static int16_t M_CurvedRings(B15M *const b, const B15M_CONTEXT *const c)
         speed = 80;
     } else if (b->frame > 60) {
         b->frame = 0;
-        Video_SelectDrawingPage(M_Video(c), 1);
+        Video_SelectDrawingPage(1);
         M_Background(b, c);
         return 0;
     }
@@ -989,12 +979,11 @@ static int16_t M_Phase3(
     return b->phase3_pattern;
 }
 
-static bool M_ScrollWait(
-    B15M *const b, const FRAME_VSYNC *const vsync, const int16_t top)
+static bool M_ScrollWait(B15M *const b, const int16_t top)
 {
     b->pending = 1;
     b->pending_scroll = top;
-    Frame_BeginWait(&b->wait, vsync);
+    Frame_BeginWait(&b->wait);
     return false;
 }
 static void M_TransformResult(B15M *const b)
@@ -1005,8 +994,7 @@ static void M_TransformResult(B15M *const b)
         b->form = b->transform_bat ? 1 : 0;
     }
 }
-static bool M_TransformFinish(
-    B15M *const b, const B15M_CONTEXT *const c, const FRAME_VSYNC *const vsync)
+static bool M_TransformFinish(B15M *const b, const B15M_CONTEXT *const c)
 {
     if (b->frame <= 100) {
         if (b->call_phase == 4) {
@@ -1020,12 +1008,12 @@ static bool M_TransformFinish(
         b->bat.left = M_W(b->girl.left + 40);
         b->bat.top = M_W(b->girl.top + 32);
         b->bat.image = 0;
-        Video_SelectDrawingPage(M_Video(c), 1);
+        Video_SelectDrawingPage(1);
         M_Background(b, c);
-        Video_SelectDrawingPage(M_Video(c), 0);
+        Video_SelectDrawingPage(0);
         M_Background(b, c);
     } else {
-        Sprite_Restore16(M_Video(c), b->bat.left, b->bat.top, 48, 32);
+        Sprite_Restore16(b->bat.left, b->bat.top, 48, 32);
         int16_t x = M_W(b->bat.left - 40), y = M_W(b->bat.top - 32);
         if (x < 0) {
             x = 0;
@@ -1041,11 +1029,10 @@ static bool M_TransformFinish(
         M_Both(b, c, &b->attack, 1, true);
     }
     b->transform_stage = 2;
-    return M_ScrollWait(b, vsync, 400);
+    return M_ScrollWait(b, 400);
 }
 static bool M_Transform(
-    B15M *const b, const B15M_CONTEXT *const c, const FRAME_VSYNC *const vsync,
-    const bool bat)
+    B15M *const b, const B15M_CONTEXT *const c, const bool bat)
 {
     b->transform_bat = bat;
     b->transform_stage = 1;
@@ -1054,9 +1041,9 @@ static bool M_Transform(
     }
     M_Rifts(b, c, bat ? &b->girl_rifts : &b->bat_rifts, !bat, 20, 100, true);
     if (b->frame >= 20 && b->frame % 2 == 0) {
-        return M_ScrollWait(b, vsync, M_W(400 - b->frame % 4 * 2));
+        return M_ScrollWait(b, M_W(400 - b->frame % 4 * 2));
     }
-    return M_TransformFinish(b, c, vsync);
+    return M_TransformFinish(b, c);
 }
 static int16_t M_Abs(const int16_t value)
 {
@@ -1353,8 +1340,7 @@ static void M_AfterTransform(B15M *const b)
     }
 }
 static bool M_Phase5(
-    B15M *const b, const B15M_CONTEXT *const c, const FRAME_VSYNC *const vsync,
-    const uint64_t host_tick)
+    B15M *const b, const B15M_CONTEXT *const c, const uint64_t host_tick)
 {
     if (b->form == 1) {
         if (b->phase5_subphase == 0) {
@@ -1364,7 +1350,7 @@ static bool M_Phase5(
             }
             M_BatPattern(b, c);
         } else if (b->phase5_subphase == 1) {
-            if (!M_Transform(b, c, vsync, false)) {
+            if (!M_Transform(b, c, false)) {
                 return false;
             }
             M_AfterTransform(b);
@@ -1377,7 +1363,7 @@ static bool M_Phase5(
             }
             b->phase5_subphase = result;
         } else {
-            if (!M_Transform(b, c, vsync, true)) {
+            if (!M_Transform(b, c, true)) {
                 return false;
             }
             M_AfterTransform(b);
@@ -1385,17 +1371,15 @@ static bool M_Phase5(
     }
     return true;
 }
-static bool M_Death(
-    B15M *const b, const B15M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Death(B15M *const b, const B15M_CONTEXT *const c)
 {
-    const BOSS_DEFEAT_CONTEXT context = { .video = M_Video(c),
-                                          .palette = c->hit->palette,
+    const BOSS_DEFEAT_CONTEXT context = { .palette = c->hit->palette,
                                           .post_defeat = &b->post_defeat,
                                           .miko = c->miko,
                                           .player = M_Player(c),
                                           .origin_top = &c->hit->orb->top,
                                           .stage_cleared = c->stage_cleared };
-    if (!BossDefeat_Resume(&b->defeat, &context, vsync)) {
+    if (!BossDefeat_Resume(&b->defeat, &context)) {
         return false;
     }
     Scene_Activate(c->scene, &c->assets->next_scene);
@@ -1403,20 +1387,19 @@ static bool M_Death(
     b->finished = true;
     return true;
 }
-static bool M_Tail(
-    B15M *const b, const B15M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Tail(B15M *const b, const B15M_CONTEXT *const c)
 {
     if (b->call_phase == 5) {
         M_Hit(b, c, b->form);
         if (b->hp <= 0) {
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets, M_Video(c));
+            Pellets_EraseAndResetMoving(c->pellets);
             M_Background(b, c);
             Missiles_Reset(c->missiles);
-            ShootoutLasers_EraseAndReset(c->lasers, M_Video(c), 10);
-            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR, vsync);
+            ShootoutLasers_EraseAndReset(c->lasers, 10);
+            BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_REGULAR);
             b->defeating = true;
-            return M_Death(b, c, vsync);
+            return M_Death(b, c);
         }
     }
     return true;
@@ -1432,7 +1415,6 @@ RESULT B15M_ValidateContext(const B15M_CONTEXT *const c)
             || c->hit->display->high_score == nullptr
             || c->hit->display->font == nullptr
             || c->hit->display->sprites == nullptr
-            || c->hit->display->video == nullptr
             || c->hit->display->player == nullptr
             || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
             || c->hit->orb == nullptr || c->hit->test_damage == nullptr
@@ -1457,23 +1439,22 @@ RESULT B15M_ValidateContext(const B15M_CONTEXT *const c)
     return OK;
 }
 bool B15M_UpdateAndRender(
-    B15M *const b, const B15M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t host_tick)
+    B15M *const b, const B15M_CONTEXT *const c, const uint64_t host_tick)
 {
     if (b->finished) {
         return true;
     }
     if (b->defeating) {
-        return M_Death(b, c, vsync);
+        return M_Death(b, c);
     }
     if (b->pending == 1) {
-        if (!Frame_WaitReady(&b->wait, vsync)) {
+        if (!Frame_WaitReady(&b->wait)) {
             return false;
         }
         b->pending = 0;
-        Video_SetScroll(M_Video(c), b->pending_scroll);
+        Video_SetScroll(b->pending_scroll);
         if (b->transform_stage == 1) {
-            if (!M_TransformFinish(b, c, vsync)) {
+            if (!M_TransformFinish(b, c)) {
                 return false;
             }
         } else {
@@ -1481,7 +1462,7 @@ bool B15M_UpdateAndRender(
             M_TransformResult(b);
         }
         M_AfterTransform(b);
-        return M_Tail(b, c, vsync);
+        return M_Tail(b, c);
     }
     if (b->pending == 2) {
         ASSERT(host_tick >= b->pending_tick);
@@ -1493,22 +1474,21 @@ bool B15M_UpdateAndRender(
         M_SafetyAfterHit(b, c);
         b->girl_subphase = 1;
         b->phase5_subphase = 0;
-        return M_Tail(b, c, vsync);
+        return M_Tail(b, c);
     }
     if (b->entrance_active) {
-        return M_Entrance(b, c, vsync);
+        return M_Entrance(b, c);
     }
     b->call_phase = b->phase;
     Missiles_UpdateAndRender(
         c->missiles, M_Player(c), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (b->phase == 0) {
-        return M_Entrance(b, c, vsync);
+        return M_Entrance(b, c);
     }
     if (b->phase == 1 || b->phase == 3) {
         if (b->phase == 1 && !b->hp_bar_filled) {
-            b->hp_bar_filled =
-                HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
+            b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
         }
         M_Common(b);
         if (b->pattern != 0) {
@@ -1544,7 +1524,7 @@ bool B15M_UpdateAndRender(
         if (!b->teleport_done) {
             b->teleport_done = M_Teleport(b, c, 256, 96);
         } else {
-            if (!M_Transform(b, c, vsync, true)) {
+            if (!M_Transform(b, c, true)) {
                 return false;
             }
         }
@@ -1553,8 +1533,8 @@ bool B15M_UpdateAndRender(
         M_Common(b);
         if (b->form != 0) {
             BossEntity_LockedMovePut(
-                &b->bat, c->sprites, M_Video(c), b->bat_velocity_x,
-                b->bat_velocity_y, 2, true);
+                &b->bat, c->sprites, b->bat_velocity_x, b->bat_velocity_y, 2,
+                true);
             if (b->frame % 9 == 0) {
                 b->bat.image = 0;
             } else if (b->frame % 9 == 3) {
@@ -1563,9 +1543,9 @@ bool B15M_UpdateAndRender(
                 b->bat.image = 2;
             }
         }
-        if (!M_Phase5(b, c, vsync, host_tick)) {
+        if (!M_Phase5(b, c, host_tick)) {
             return false;
         }
     }
-    return M_Tail(b, c, vsync);
+    return M_Tail(b, c);
 }

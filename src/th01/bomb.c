@@ -16,8 +16,8 @@ static RESULT M_Load(
 }
 
 static void M_KujiPut(
-    VIDEO *const video, const GRC *const sprites, const int32_t image,
-    const int16_t left, const int16_t top)
+    const GRC *const sprites, const int32_t image, const int16_t left,
+    const int16_t top)
 {
     if (left < -sprites->width || left >= 640 || top < -sprites->height
         || top >= 400) {
@@ -39,7 +39,7 @@ static void M_KujiPut(
             const bool same_row = offset / 80 == row / 80;
             if (((left >= 0 && same_row) || (left < 0 && !same_row))
                 && offset < 32000 && coverage[y * sprites->width + x] != 0) {
-                video->pages[video->drawing_page][offset * 8 + x % 8] = 7;
+                g_Video.pages[g_Video.drawing_page][offset * 8 + x % 8] = 7;
             }
         }
     }
@@ -47,12 +47,11 @@ static void M_KujiPut(
 
 static BOMB_UPDATE M_Finish(BOMB *const bomb, const BOMB_CONTEXT *const context)
 {
-    VIDEO *const video = context->video;
     const int16_t frame = bomb->frame;
     if (frame == 140) {
-        Video_Copy(video, 1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
-        Video_SelectDrawingPage(video, 0);
-        Palette_Set(context->palette, video, context->stage_palette);
+        Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
+        Video_SelectDrawingPage(0);
+        Palette_Set(context->palette, context->stage_palette);
         context->player->invincibility_time = 100;
         context->player->bomb_damaging = false;
         return BOMB_UPDATE_DONE;
@@ -62,7 +61,7 @@ static BOMB_UPDATE M_Finish(BOMB *const bomb, const BOMB_CONTEXT *const context)
             const int16_t radius = Math16_Wrap((frame - 50) * factor);
             bomb->left[0] = Math16_PolarX(304, radius, angle);
             bomb->top[0] = Math16_PolarY(184, radius, angle);
-            Video_Invert32(video, bomb->left[0], bomb->top[0], 1);
+            Video_Invert32(bomb->left[0], bomb->top[0], 1);
         }
     }
     if (frame % 20 == 0) {
@@ -102,17 +101,14 @@ RESULT Bomb_LoadAssets(
 }
 
 BOMB_UPDATE Bomb_BeginUpdate(
-    BOMB *const bomb, const BOMB_CONTEXT *const context, const int16_t frame,
-    const FRAME_VSYNC *const vsync)
+    BOMB *const bomb, const BOMB_CONTEXT *const context, const int16_t frame)
 {
     ASSERT(!bomb->waiting);
     bomb->frame = frame;
     context->player->invincible = true;
-    VIDEO *const video = context->video;
     if (frame == 0) {
         context->pellets_decay(context->user);
-        Sprite_PtnPut(
-            video, context->miko, 3, -1, context->player->left, PLAYER_TOP);
+        Sprite_PtnPut(context->miko, 3, -1, context->player->left, PLAYER_TOP);
         bomb->white = context->palette->saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
@@ -126,7 +122,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     } else if (frame < 50) {
         if (frame % 2 == 0) {
             Palette_SetColor(
-                context->palette, video, 7,
+                context->palette, 7,
                 bomb->white.colors[7][0] + bomb->tint_offset,
                 bomb->white.colors[7][1] + bomb->tint_offset,
                 bomb->white.colors[7][2]);
@@ -138,14 +134,13 @@ BOMB_UPDATE Bomb_BeginUpdate(
             uint8_t angle = (uint8_t)frame;
             for (int16_t ring = 0; ring <= 9; ring += 9) {
                 for (int16_t i = ring; i < ring + 9; i++) {
-                    Sprite_Restore16(
-                        video, bomb->left[i], bomb->top[i], 48, 32);
+                    Sprite_Restore16(bomb->left[i], bomb->top[i], 48, 32);
                     const int16_t radius =
                         Math16_Wrap(500 - ring * 10 - (frame + 60) * 4);
                     bomb->left[i] = Math16_PolarX(304, radius, angle);
                     bomb->top[i] = Math16_PolarY(184, radius, angle);
                     M_KujiPut(
-                        video, &context->assets->kuji[i - ring == 8 ? 1 : 0],
+                        &context->assets->kuji[i - ring == 8 ? 1 : 0],
                         i - ring == 8 ? 0 : i - ring, bomb->left[i],
                         bomb->top[i]);
                     angle = (uint8_t)(angle + 28);
@@ -161,7 +156,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
         }
     } else if (frame == 50) {
         for (int32_t i = 0; i < 18; i++) {
-            Sprite_Restore16(video, bomb->left[i], bomb->top[i], 48, 32);
+            Sprite_Restore16(bomb->left[i], bomb->top[i], 48, 32);
         }
         context->player->bomb_damaging = true;
     } else if (frame < 140) {
@@ -177,9 +172,9 @@ BOMB_UPDATE Bomb_BeginUpdate(
                                                       : 13);
                 peak.colors[color][2] = 15;
             }
-            Palette_Set(context->palette, video, &peak);
+            Palette_Set(context->palette, &peak);
         } else if (frame % 4 == 2) {
-            Palette_Set(context->palette, video, &bomb->bright);
+            Palette_Set(context->palette, &bomb->bright);
         }
         if (frame % 4 != 0) {
             return M_Finish(bomb, context);
@@ -187,27 +182,26 @@ BOMB_UPDATE Bomb_BeginUpdate(
         const int16_t offsets[4] = { 392, 400, 384, 400 };
         bomb->scroll = offsets[frame % 16 / 4];
         bomb->waiting = true;
-        Frame_BeginWait(&bomb->wait, vsync);
+        Frame_BeginWait(&bomb->wait);
         return BOMB_UPDATE_WAIT;
     } else if (frame == 140) {
         bomb->scroll = 0;
         bomb->waiting = true;
-        Frame_BeginWait(&bomb->wait, vsync);
+        Frame_BeginWait(&bomb->wait);
         return BOMB_UPDATE_WAIT;
     }
     return BOMB_UPDATE_RUNNING;
 }
 
 BOMB_UPDATE Bomb_ResumeUpdate(
-    BOMB *const bomb, const BOMB_CONTEXT *const context,
-    const FRAME_VSYNC *const vsync)
+    BOMB *const bomb, const BOMB_CONTEXT *const context)
 {
     ASSERT(bomb->waiting);
-    if (!Frame_WaitReady(&bomb->wait, vsync)) {
+    if (!Frame_WaitReady(&bomb->wait)) {
         return BOMB_UPDATE_WAIT;
     }
     bomb->waiting = false;
-    Video_SetScroll(context->video, bomb->scroll);
+    Video_SetScroll(bomb->scroll);
     return M_Finish(bomb, context);
 }
 

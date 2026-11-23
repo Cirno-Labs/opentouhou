@@ -35,14 +35,18 @@ typedef struct {
     SESSION_END ending;
 } SESSION;
 
+extern SESSION g_Session;
+
+// Zeroes the session.
+void Session_Init(void);
+
 // Starts a credit with the current settings and menu random frame. Start
 // clears run history. Continue preserves stage, route, highest score, ending
 // and the four history slots, but clears score and restores credit resources.
-// Zero-initialize once for deterministic Continue before the first Start.
+// Call Session_Init once before the first Start for a deterministic Continue.
 void Session_Begin(
-    SESSION *session, SESSION_BEGIN begin, const TH01_SETTINGS *settings,
-    uint32_t frame_rand);
+    SESSION_BEGIN begin, const TH01_SETTINGS *settings, uint32_t frame_rand);
 
 // Maps the current stage and route to one of seven cached graphics scenes.
 // Requires a normal stage ID in 0..19 and route in 0..1.
-uint8_t Session_Scene(const SESSION *session);
+uint8_t Session_Scene(void);

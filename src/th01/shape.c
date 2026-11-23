@@ -9,9 +9,9 @@ static int32_t M_Byte(const int16_t x)
 }
 
 void Shape_EllipseArcPut(
-    VIDEO *const video, const int16_t center_x, const int16_t center_y,
-    const int16_t radius_x, const int16_t radius_y, const uint8_t color,
-    const uint8_t step, const uint8_t start, const uint8_t end)
+    const int16_t center_x, const int16_t center_y, const int16_t radius_x,
+    const int16_t radius_y, const uint8_t color, const uint8_t step,
+    const uint8_t start, const uint8_t end)
 {
     int32_t cached = -1;
     uint8_t dots = 0;
@@ -26,7 +26,7 @@ void Shape_EllipseArcPut(
         if (offset != cached) {
             if (x >= 0 && x < VIDEO_WIDTH && cached >= 0 && cached < 32000) {
                 uint8_t *const row =
-                    video->pages[video->drawing_page] + cached * 8;
+                    g_Video.pages[g_Video.drawing_page] + cached * 8;
                 for (int32_t i = 0; i < 8; i++) {
                     if ((dots & (0x80u >> i)) != 0) {
                         row[i] = color & 15;
@@ -42,9 +42,9 @@ void Shape_EllipseArcPut(
 }
 
 void Shape_EllipseArcErase(
-    VIDEO *const video, const int16_t center_x, const int16_t center_y,
-    const int16_t radius_x, const int16_t radius_y, const uint8_t step,
-    const uint8_t start, const uint8_t end)
+    const int16_t center_x, const int16_t center_y, const int16_t radius_x,
+    const int16_t radius_y, const uint8_t step, const uint8_t start,
+    const uint8_t end)
 {
     int32_t previous_byte = 0;
     int16_t previous_y = 0;
@@ -56,7 +56,7 @@ void Shape_EllipseArcErase(
         const int16_t x = Math16_PolarX(center_x, radius_x, angle);
         const int16_t y = Math16_PolarY(center_y, radius_y, angle);
         if (first || y != previous_y || M_Byte(x) != previous_byte) {
-            Sprite_Restore16(video, x, y, 8, 1);
+            Sprite_Restore16(x, y, 8, 1);
             previous_byte = M_Byte(x);
             previous_y = y;
             first = false;

@@ -3,8 +3,8 @@
 #include "pc98/zun/math16.h"
 
 static void M_Row(
-    VIDEO *const video, const uint8_t *const mask, const uint16_t offset,
-    const bool restore, const uint8_t color)
+    const uint8_t *const mask, const uint16_t offset, const bool restore,
+    const uint8_t color)
 {
     for (int32_t byte = 0; byte < 2; byte++) {
         const uint32_t address = ((uint32_t)offset + byte) & 0x7fffu;
@@ -14,9 +14,9 @@ static void M_Row(
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask[byte] & (0x80u >> bit)) != 0) {
                 const uint32_t pixel = address * 8 + bit;
-                video->pages[video->drawing_page][pixel] = restore
-                    ? (video->pages[video->drawing_page][pixel]
-                       | (video->pages[1][pixel]
+                g_Video.pages[g_Video.drawing_page][pixel] = restore
+                    ? (g_Video.pages[g_Video.drawing_page][pixel]
+                       | (g_Video.pages[1][pixel]
                           & (offset + byte >= 0x10000      ? 4
                                  : offset + byte >= 0x8000 ? 6
                                                            : 15)))
@@ -45,14 +45,13 @@ RESULT PelletAssets_Load(
 }
 
 void PelletAssets_Put(
-    VIDEO *const video, const PELLET_ASSETS *const assets, const int16_t left,
-    const int16_t top, const int16_t image)
+    const PELLET_ASSETS *const assets, const int16_t left, const int16_t top,
+    const int16_t image)
 {
     uint16_t offset = (uint16_t)(((uint16_t)left >> 3) + top * 80);
     for (int32_t row = 0; row < 8; row++) {
         M_Row(
-            video, assets->pellets[image][(uint16_t)left & 7][row], offset,
-            false, 7);
+            assets->pellets[image][(uint16_t)left & 7][row], offset, false, 7);
         offset = (uint16_t)(offset + 80);
         if (Math16_Wrap(offset) >= 32000) {
             return;
@@ -61,14 +60,13 @@ void PelletAssets_Put(
 }
 
 void PelletAssets_Cloud(
-    VIDEO *const video, const PELLET_ASSETS *const assets, const int16_t left,
-    const int16_t top, const int16_t image, const bool restore)
+    const PELLET_ASSETS *const assets, const int16_t left, const int16_t top,
+    const int16_t image, const bool restore)
 {
     const uint16_t origin = (uint16_t)(left / 8 - (left % 8 < 0) + top * 80);
     uint16_t offset = origin;
     for (int32_t row = 0; row < 16; row++) {
-        M_Row(
-            video, assets->clouds[image][row], offset, false, restore ? 0 : 7);
+        M_Row(assets->clouds[image][row], offset, false, restore ? 0 : 7);
         offset = (uint16_t)(offset + 80);
     }
     if (restore) {
@@ -76,8 +74,8 @@ void PelletAssets_Cloud(
         for (int32_t row = 0; row < 16; row++) {
             const uint8_t *const mask = assets->clouds[image][row];
             if (mask[0] != 0 || mask[1] != 0) {
-                Video_SelectDrawingPage(video, 0);
-                M_Row(video, mask, offset, true, 0);
+                Video_SelectDrawingPage(0);
+                M_Row(mask, offset, true, 0);
             }
             offset = (uint16_t)(offset + 80);
         }

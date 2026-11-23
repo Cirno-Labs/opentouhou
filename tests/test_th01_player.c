@@ -4,7 +4,6 @@
 
 typedef struct {
     PLAYER player;
-    GAME_INPUT input;
     ORB orb;
     SHOTS shots;
     uint32_t rng;
@@ -33,8 +32,8 @@ static bool M_Bomb(void *const user, PLAYER *const player, const int16_t frame)
     state->bomb_argument = frame;
     CHECK_EQ_INT(state->orb.force_frame, 0);
     CHECK(state->orb.force == -13);
-    CHECK(state->input.shot);
-    CHECK(state->input.strike);
+    CHECK(g_GameInput.shot);
+    CHECK(g_GameInput.strike);
     player->invincible = true;
     player->invincibility_time = state->bomb_done ? 100 : 0;
     player->bomb_damaging = !state->bomb_done;
@@ -48,7 +47,8 @@ static CASE M_Case(void)
         .orb = { .left = 304, .top = 368 },
         .rng = 1,
     };
-    Player_Reset(&state.player, &state.input, SETTINGS_DIFFICULTY_NORMAL);
+    GameInput_Init();
+    Player_Reset(&state.player, SETTINGS_DIFFICULTY_NORMAL);
     return state;
 }
 
@@ -56,7 +56,7 @@ static void M_Tick(CASE *const state)
 {
     state->action_count = 0;
     Player_UpdateAndRender(
-        &state->player, &state->input, &state->orb, &state->shots, &state->rng,
+        &state->player, &state->orb, &state->shots, &state->rng,
         (PLAYER_OUTPUT) { M_Action, M_Bomb, state });
 }
 
@@ -69,12 +69,12 @@ TEST(reset_preserves_position_hits_and_shared_counters)
     state.player.invincibility_time = 91;
     state.player.bomb_frame = UINT32_MAX;
     state.player.bomb_damaging = true;
-    state.input.bomb = true;
-    state.input.shot = true;
-    state.input.strike = true;
+    g_GameInput.bomb = true;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
     const int8_t expected[] = { 15, 12, 10, 8, 12 };
     for (int32_t rank = 0; rank < 5; rank++) {
-        Player_Reset(&state.player, &state.input, rank);
+        Player_Reset(&state.player, rank);
         CHECK_EQ_INT(state.player.deflect_duration, expected[rank]);
         CHECK_EQ_INT(state.player.left, 607);
         CHECK(state.player.is_hit);
@@ -85,9 +85,9 @@ TEST(reset_preserves_position_hits_and_shared_counters)
         CHECK_EQ_INT(state.player.submode, -1);
         CHECK_EQ_INT(state.player.dash_direction, 1);
         CHECK(!state.player.bomb_damaging);
-        CHECK(!state.input.bomb);
-        CHECK(state.input.shot);
-        CHECK(state.input.strike);
+        CHECK(!g_GameInput.bomb);
+        CHECK(g_GameInput.shot);
+        CHECK(g_GameInput.strike);
         CHECK_EQ_INT(state.action_count, 0);
     }
 }
@@ -100,8 +100,8 @@ TEST(stationary_draw_gap_and_simultaneous_actions)
     M_Tick(&state);
     CHECK_EQ_INT(state.action_count, 1);
     CHECK_EQ_INT(state.actions[0].image, 0);
-    state.input.shot = true;
-    state.input.strike = true;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.action_count, 4);
     CHECK_EQ_INT(state.actions[0].kind, PLAYER_ACTION_PTN_PUT);
@@ -118,7 +118,7 @@ TEST(stationary_draw_gap_and_simultaneous_actions)
 TEST(normal_shots_spawn_on_following_updates)
 {
     CASE state = M_Case();
-    state.input.shot = true;
+    g_GameInput.shot = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SHOOT);
     CHECK_EQ_INT(state.player.mode_frame, 0);
@@ -127,18 +127,18 @@ TEST(normal_shots_spawn_on_following_updates)
     CHECK(state.shots.slots[0].moving);
     CHECK_EQ_INT(state.shots.slots[0].left, 312);
     CHECK_EQ_INT(state.shots.slots[0].top, 368);
-    CHECK(state.input.shot);
+    CHECK(g_GameInput.shot);
     M_Tick(&state);
     CHECK_EQ_INT(state.action_count, 0);
     M_Tick(&state);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_REGULAR);
-    CHECK(!state.input.shot);
+    CHECK(!g_GameInput.shot);
     CHECK_EQ_INT(state.player.submode, GAME_INPUT_BOTH);
     M_Tick(&state);
     CHECK_EQ_INT(state.action_count, 0);
     state = M_Case();
-    state.input.horizontal = GAME_INPUT_RIGHT;
-    state.input.shot = true;
+    g_GameInput.horizontal = GAME_INPUT_RIGHT;
+    g_GameInput.shot = true;
     M_Tick(&state);
     M_Tick(&state);
     CHECK(!state.shots.slots[0].moving);
@@ -154,7 +154,7 @@ TEST(normal_shots_spawn_on_following_updates)
 TEST(swing_retains_invisible_frames_and_deflection_window)
 {
     CASE state = M_Case();
-    state.input.strike = true;
+    g_GameInput.strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.mode_frame, 0);
     for (int32_t frame = 0; frame < 3; frame++) {
@@ -175,7 +175,7 @@ TEST(swing_retains_invisible_frames_and_deflection_window)
     CHECK_EQ_INT(state.actions[0].kind, PLAYER_ACTION_BOS_48_ERASE);
     CHECK_EQ_INT(state.actions[0].image, 7);
     CHECK(!state.player.invincible_against_orb);
-    CHECK(!state.input.strike);
+    CHECK(!g_GameInput.strike);
     M_Tick(&state);
     CHECK_EQ_INT(state.action_count, 0);
     M_Tick(&state);
@@ -185,8 +185,8 @@ TEST(swing_retains_invisible_frames_and_deflection_window)
 TEST(slide_requires_release_and_strike_has_combo_priority)
 {
     CASE state = M_Case();
-    state.input.horizontal = GAME_INPUT_RIGHT;
-    state.input.strike = true;
+    g_GameInput.horizontal = GAME_INPUT_RIGHT;
+    g_GameInput.strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.left, 308);
     CHECK_EQ_INT(state.actions[state.action_count - 1].image, 3);
@@ -194,15 +194,15 @@ TEST(slide_requires_release_and_strike_has_combo_priority)
         M_Tick(&state);
     }
     CHECK(!state.player.combo_enabled);
-    state.input.strike = false;
+    g_GameInput.strike = false;
     M_Tick(&state);
     CHECK(state.player.combo_enabled);
     while (state.player.mode_frame < 12) {
         M_Tick(&state);
     }
-    state.input.horizontal = GAME_INPUT_LEFT;
-    state.input.strike = true;
-    state.input.shot = true;
+    g_GameInput.horizontal = GAME_INPUT_LEFT;
+    g_GameInput.strike = true;
+    g_GameInput.shot = true;
     state.orb.force_frame = 73;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SPECIAL_FIRST);
@@ -288,16 +288,16 @@ TEST(combo_continuation_stops_after_third_attack)
     state.player.submode = 0;
     state.player.mode_frame = 28;
     state.player.combo_enabled = true;
-    state.input.strike = true;
-    state.input.horizontal = GAME_INPUT_LEFT;
+    g_GameInput.strike = true;
+    g_GameInput.horizontal = GAME_INPUT_LEFT;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SPECIAL_SECOND);
     CHECK_EQ_INT(state.player.submode, 2);
     CHECK_EQ_INT(state.player.mode_frame, 0);
     state.player.mode_frame = 28;
     state.player.combo_enabled = true;
-    state.input.strike = false;
-    state.input.shot = true;
+    g_GameInput.strike = false;
+    g_GameInput.shot = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.mode, PLAYER_MODE_SPECIAL_THIRD);
     CHECK_EQ_INT(state.player.submode, 6);
@@ -311,9 +311,9 @@ TEST(combo_continuation_stops_after_third_attack)
 TEST(bomb_boundary_preserves_deferred_start_and_operation_order)
 {
     CASE state = M_Case();
-    state.input.bomb = true;
-    state.input.shot = true;
-    state.input.strike = true;
+    g_GameInput.bomb = true;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.player.bomb_flag, 2);
     CHECK_EQ_INT(state.action_count, 1);
@@ -329,19 +329,19 @@ TEST(bomb_boundary_preserves_deferred_start_and_operation_order)
     CHECK_EQ_INT(state.bomb_calls, 1);
     CHECK_EQ_INT(state.bomb_argument, 0);
     CHECK_EQ_INT(state.player.bomb_frame, 0);
-    CHECK(!state.input.shot);
-    CHECK(!state.input.strike);
+    CHECK(!g_GameInput.shot);
+    CHECK(!g_GameInput.strike);
     CHECK(state.player.invincible);
     CHECK(state.player.bomb_damaging);
     state.player.bomb_frame = 0x8000;
-    state.input.shot = true;
-    state.input.strike = true;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.bomb_argument, INT16_MIN);
     CHECK_EQ_INT(state.actions[0].image, 3);
     state.player.bomb_frame = 140;
-    state.input.shot = true;
-    state.input.strike = true;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
     state.bomb_done = true;
     M_Tick(&state);
     CHECK_EQ_INT(state.actions[0].image, 0);
@@ -358,11 +358,11 @@ TEST(bomb_exclusion_checks_only_first_special_mode)
         CASE state = M_Case();
         state.player.mode = mode;
         state.player.submode = 2;
-        state.input.bomb = true;
+        g_GameInput.bomb = true;
         M_Tick(&state);
         CHECK_EQ_INT(
             state.player.bomb_flag, mode == PLAYER_MODE_SPECIAL_FIRST ? 0 : 2);
-        CHECK(state.input.bomb == (mode == PLAYER_MODE_SPECIAL_FIRST));
+        CHECK(g_GameInput.bomb == (mode == PLAYER_MODE_SPECIAL_FIRST));
         CHECK_EQ_INT(state.player.dash_cycle, 1);
     }
 }
@@ -405,20 +405,22 @@ TEST(split_bomb_matches_sync_without_replaying_prefix)
         sync.player.bomb_flag = i == 0 ? PLAYER_BOMB_START : PLAYER_BOMB_ACTIVE;
         sync.player.bomb_frame = frames[i];
         sync.player.bombing = true;
-        sync.input.shot = sync.input.strike = sync.input.bomb = true;
+        g_GameInput.shot = g_GameInput.strike = g_GameInput.bomb = true;
         sync.orb.force_frame = 22;
         sync.bomb_done = i == 3;
         CASE split = sync;
+        const GAME_INPUT input = g_GameInput;
         M_Tick(&sync);
+        const GAME_INPUT synced = g_GameInput;
+        g_GameInput = input;
         PLAYER_BOMB_CONTINUATION continuation = {};
         CHECK(Player_BeginUpdate(
-            &continuation, &split.player, &split.input, &split.orb,
-            &split.shots, &split.rng,
+            &continuation, &split.player, &split.orb, &split.shots, &split.rng,
             (PLAYER_OUTPUT) { M_Action, M_Bomb, &split }));
         CHECK(continuation.pending);
         CHECK_EQ_INT(split.bomb_calls, 0);
-        CHECK(split.input.shot);
-        CHECK(split.input.strike);
+        CHECK(g_GameInput.shot);
+        CHECK(g_GameInput.strike);
         const int32_t prefix_actions = split.action_count;
         const int8_t dash = split.player.dash_cycle;
         const uint32_t rng = split.rng;
@@ -430,7 +432,7 @@ TEST(split_bomb_matches_sync_without_replaying_prefix)
         CHECK_EQ_INT(split.rng, rng);
         CHECK_EQ_INT(prefix_actions, i == 0 ? 1 : 0);
         CHECK(memcmp(&split.player, &sync.player, sizeof(PLAYER)) == 0);
-        CHECK(memcmp(&split.input, &sync.input, sizeof(GAME_INPUT)) == 0);
+        CHECK(memcmp(&g_GameInput, &synced, sizeof(GAME_INPUT)) == 0);
         CHECK(memcmp(&split.orb, &sync.orb, sizeof(ORB)) == 0);
         CHECK(memcmp(&split.shots, &sync.shots, sizeof(SHOTS)) == 0);
         CHECK_EQ_INT(split.rng, sync.rng);

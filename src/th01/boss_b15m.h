@@ -103,5 +103,4 @@ RESULT B15M_ValidateContext(const B15M_CONTEXT *context);
 // or CPU drawing cost. Keeps borrowed bindings stable; allocates nothing and
 // performs no IO. Finished calls remain inert until setup or program reset.
 bool B15M_UpdateAndRender(
-    B15M *boss, const B15M_CONTEXT *context, FRAME_VSYNC *vsync,
-    uint64_t host_tick);
+    B15M *boss, const B15M_CONTEXT *context, uint64_t host_tick);
