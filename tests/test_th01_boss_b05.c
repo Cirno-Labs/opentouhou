@@ -17,7 +17,6 @@ typedef struct {
     PALETTE_STATE palette;
     PALETTE stage_palette;
     B05_ASSETS assets;
-    HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit_context;
     B05_CONTEXT context;
     GAME_TEXT_FONT font;
@@ -25,8 +24,6 @@ typedef struct {
     SCENE_DATA cache[3];
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route_context;
-    uint32_t high_score;
-    int16_t lives;
     uint8_t route;
     bool test_damage, cleared;
 
@@ -69,7 +66,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     }
     f->hit_context = (BOSS_HIT_CONTEXT) {
         .palette = &f->palette,
-        .display = &f->display,
     };
     f->context = (B05_CONTEXT) {
         .assets = &f->assets,
@@ -119,17 +115,12 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     }
     Scene_Activate(&f->cache[0]);
     f->route = 1;
-    f->lives = 3;
+    g_Session.lives = 3;
     g_Rng = 0xb0500000;
     g_Player.invincible = true;
     g_Player.left = 300;
     g_Orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) {
-        .sprites = &f->stage,
-        .font = &f->font,
-        .high_score = &f->high_score,
-        .remaining_lives = &f->lives,
-    };
+    Hud_Load(nullptr, &f->stage, &f->font);
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit_context.test_damage = &f->test_damage;
     f->route_assets = (ROUTE_SELECT_ASSETS) {
@@ -146,7 +137,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     };
     f->context.miko = &f->miko;
     f->context.route = &f->route_context;
-    g_Session.settings.difficulty = f->display.rank;
+    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Enter(FIXTURE *const f)
@@ -289,7 +280,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         Arena_Init(&arena, "b05", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
         B05_Init();
         B05_Setup(&f.context);

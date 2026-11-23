@@ -1,5 +1,6 @@
 #include "th01/hud.h"
 
+#include "th01/session.h"
 #include "th01/sprite.h"
 
 #include "core/base/assert.h"
@@ -18,12 +19,12 @@ static const char *const m_Numerals[] = { "０", "１", "２", "３", "４",
                                           "５", "６", "７", "８", "９" };
 
 static void M_Text(
-    const HUD_CONTEXT *const c, const char *const text, const int32_t left,
-    const int32_t top, const uint8_t color, const bool maximum)
+    const char *const text, const int32_t left, const int32_t top,
+    const uint8_t color, const bool maximum)
 {
     const GAME_TEXT_STYLE style = { .weight = maximum ? GAME_TEXT_BOLD
                                                       : GAME_TEXT_BLACK };
-    GameText_Draw(c->font, text, left, top, color, &style);
+    GameText_Draw(g_Hud.font, text, left, top, color, &style);
 }
 
 static void M_Snap(uint8_t *const pixels, const int32_t left, const int32_t top)
@@ -53,8 +54,8 @@ static int64_t M_Signed32(const uint32_t value)
 }
 
 static void M_Number(
-    const HUD_CONTEXT *const c, const int32_t bank, const int32_t count,
-    const uint32_t value, const uint32_t previous, const bool signed_current)
+    const int32_t bank, const int32_t count, const uint32_t value,
+    const uint32_t previous, const bool signed_current)
 {
     const int32_t left = bank < 2 ? 256 : 400;
     const int32_t top = bank % 2 == 0 ? 0 : 16;
@@ -80,8 +81,7 @@ static void M_Number(
         for (int32_t i = 0; i < count; i++, divisor /= 10) {
             const uint32_t digit = value / divisor % 10;
             if (text_previous == 0 || digit != text_previous / divisor % 10) {
-                M_Text(
-                    c, m_Numerals[digit], left + i * 16, top, 7, bank % 2 == 0);
+                M_Text(m_Numerals[digit], left + i * 16, top, 7, bank % 2 == 0);
             }
         }
     }
@@ -100,10 +100,9 @@ static void M_Format(char *const text, uint16_t value, const int32_t width)
 }
 
 static void M_Resource(
-    const HUD_CONTEXT *const c, const bool bomb, const int16_t previous,
-    const bool initial)
+    const bool bomb, const int16_t previous, const bool initial)
 {
-    const int16_t count = bomb ? g_Player.remaining_bombs : *c->remaining_lives;
+    const int16_t count = bomb ? g_Player.remaining_bombs : g_Session.lives;
     ASSERT(count >= 0 && count <= HUD_RESOURCE_CAPACITY);
     ASSERT(previous >= 0 && previous <= HUD_RESOURCE_CAPACITY);
     uint8_t *const bg = bomb ? g_Hud.bombs : g_Hud.lives;
@@ -125,7 +124,7 @@ static void M_Resource(
                 Video_SelectDrawingPage(0);
             }
             Sprite_PtnPut(
-                c->sprites, 0, bomb ? 1 : 0, (int16_t)left, (int16_t)top);
+                g_Hud.sprites, 0, bomb ? 1 : 0, (int16_t)left, (int16_t)top);
         }
     }
     if (initial || count > previous) {
@@ -176,6 +175,15 @@ void Hud_Init(const ALLOCATOR *const allocator)
     g_Hud.timer = g_Hud.stage + 256;
 }
 
+void Hud_Load(
+    const GRF *const mask, const PTN *const sprites,
+    const GAME_TEXT_FONT *const font)
+{
+    g_Hud.mask = mask;
+    g_Hud.sprites = sprites;
+    g_Hud.font = font;
+}
+
 void Hud_Reset(void)
 {
     const HUD storage = g_Hud;
@@ -185,31 +193,34 @@ void Hud_Reset(void)
     g_Hud.numbers = storage.numbers;
     g_Hud.stage = storage.stage;
     g_Hud.timer = storage.timer;
+    g_Hud.mask = storage.mask;
+    g_Hud.sprites = storage.sprites;
+    g_Hud.font = storage.font;
 }
 
-void Hud_PutMask(const HUD_CONTEXT *const c)
+void Hud_PutMask(void)
 {
-    const VIDEO_MASK mask = { c->mask->coverage, 640, 66, 640 };
+    const VIDEO_MASK mask = { g_Hud.mask->coverage, 640, 66, 640 };
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         Video_Mask(&mask, (GFX_RECT) { 0, 0, 640, 66 }, 0, 0, 10);
     }
 }
 
-void Hud_SnapResources(const HUD_CONTEXT *const c)
+void Hud_SnapResources(void)
 {
-    M_Resource(c, false, 0, true);
-    M_Resource(c, true, 0, true);
+    M_Resource(false, 0, true);
+    M_Resource(true, 0, true);
 }
-void Hud_LivesPut(const HUD_CONTEXT *const c, const int16_t previous)
+void Hud_LivesPut(const int16_t previous)
 {
-    M_Resource(c, false, previous, false);
+    M_Resource(false, previous, false);
 }
-void Hud_BombsPut(const HUD_CONTEXT *const c, const int16_t previous)
+void Hud_BombsPut(const int16_t previous)
 {
-    M_Resource(c, true, previous, false);
+    M_Resource(true, previous, false);
 }
-void Hud_ScoreAndCombo(const HUD_CONTEXT *const c)
+void Hud_ScoreAndCombo(void)
 {
     const uint32_t score = g_Stage.score;
     const int16_t combo = g_Stage.combo;
@@ -239,54 +250,56 @@ void Hud_ScoreAndCombo(const HUD_CONTEXT *const c)
                 const uint32_t digit = value / divisor % 10;
                 if (text_previous == 0
                     || digit != text_previous / divisor % 10) {
-                    M_Text(c, m_Numerals[digit], left + i * 16, 16, 7, false);
+                    M_Text(m_Numerals[digit], left + i * 16, 16, 7, false);
                 }
             }
         }
     }
     g_Hud.score_previous = score;
     g_Hud.combo_previous = combo;
-    if (*c->high_score < score) {
-        M_Number(c, 0, 7, score, g_Hud.high_previous, false);
+    if (g_Session.high_score < score) {
+        M_Number(0, 7, score, g_Hud.high_previous, false);
         g_Hud.high_previous = score;
-        *c->high_score = score;
+        g_Session.high_score = score;
     }
     if (g_Hud.maximum_combo < combo) {
         g_Hud.maximum_combo = (uint8_t)combo;
         M_Number(
-            c, 2, 2, (uint32_t)(int32_t)combo,
+            2, 2, (uint32_t)(int32_t)combo,
             (uint32_t)(int32_t)g_Hud.max_previous, true);
         g_Hud.max_previous = combo;
     }
 }
 
-void Hud_SnapStage(const HUD_CONTEXT *const c)
+void Hud_SnapStage(void)
 {
-    ASSERT(c->stage_number <= 99);
+    ASSERT((g_Session.stage_id + 1) <= 99);
     M_Snap(g_Hud.stage, 608, 32);
     char text[3];
-    M_Format(text, c->stage_number, 2);
-    M_Text(c, text, 608, 32, 7, true);
+    M_Format(text, (g_Session.stage_id + 1), 2);
+    M_Text(text, 608, 32, 7, true);
     M_Copy(608, 32, 16);
 }
-void Hud_PutStage(const HUD_CONTEXT *const c)
+void Hud_PutStage(void)
 {
-    ASSERT(c->rank >= 0 && c->rank <= 3 && c->stage_number <= 99);
+    ASSERT(
+        g_Session.settings.difficulty >= 0 && g_Session.settings.difficulty <= 3
+        && (g_Session.stage_id + 1) <= 99);
     char text[3];
-    M_Format(text, c->stage_number, 2);
-    const char *const rank = m_Ranks[c->rank];
+    M_Format(text, (g_Session.stage_id + 1), 2);
+    const char *const rank = m_Ranks[g_Session.settings.difficulty];
     int32_t length = 0;
     while (rank[length] != '\0') {
         length++;
     }
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
-        M_Text(c, rank, 600 - length * 4, 48, 7, true);
+        M_Text(rank, 600 - length * 4, 48, 7, true);
         M_Put(g_Hud.stage, 608, 32);
-        M_Text(c, text, 608, 32, 7, true);
+        M_Text(text, 608, 32, 7, true);
     }
 }
-void Hud_SnapNumbers(const HUD_CONTEXT *const c, const bool first_stage)
+void Hud_SnapNumbers(const bool first_stage)
 {
     for (int32_t bank = 1; bank >= 0; bank--) {
         if (first_stage) {
@@ -297,12 +310,13 @@ void Hud_SnapNumbers(const HUD_CONTEXT *const c, const bool first_stage)
                     bank * 16);
             }
             Video_SelectDrawingPage(0);
-            const uint32_t value = bank == 1 ? g_Stage.score : *c->high_score;
+            const uint32_t value =
+                bank == 1 ? g_Stage.score : g_Session.high_score;
             uint32_t divisor = 1000000;
             for (int32_t i = 0; i < 7; i++, divisor /= 10) {
                 M_Text(
-                    c, m_Numerals[value / divisor % 10], 256 + i * 16,
-                    bank * 16, 7, bank == 0);
+                    m_Numerals[value / divisor % 10], 256 + i * 16, bank * 16,
+                    7, bank == 0);
             }
             Video_SelectDrawingPage(1);
         }
@@ -318,14 +332,14 @@ void Hud_SnapNumbers(const HUD_CONTEXT *const c, const bool first_stage)
             Video_SelectDrawingPage(0);
         }
         for (int32_t i = 0; i < 2; i++) {
-            M_Text(c, m_Numerals[0], 400 + i * 16, bank * 16, 7, bank == 0);
+            M_Text(m_Numerals[0], 400 + i * 16, bank * 16, 7, bank == 0);
         }
     }
     M_Copy(256, 0, 176);
     M_Copy(256, 16, 176);
     g_Hud.maximum_combo = 0;
 }
-void Hud_SnapTimer(const HUD_CONTEXT *const c, const uint16_t time)
+void Hud_SnapTimer(const uint16_t time)
 {
     M_Snap(g_Hud.timer, 512, 0);
     M_Snap(g_Hud.timer + 256, 512, 0);
@@ -333,10 +347,10 @@ void Hud_SnapTimer(const HUD_CONTEXT *const c, const uint16_t time)
     M_Format(text, time, 4);
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
-        M_Text(c, text, 512, 0, 7, true);
+        M_Text(text, 512, 0, 7, true);
     }
 }
-void Hud_PutTimer(const HUD_CONTEXT *const c, const uint16_t time)
+void Hud_PutTimer(const uint16_t time)
 {
     char text[5];
     M_Format(text, time, 4);
@@ -344,6 +358,6 @@ void Hud_PutTimer(const HUD_CONTEXT *const c, const uint16_t time)
         Video_SelectDrawingPage(page);
         M_Put(g_Hud.timer, 512, 0);
         M_Put(g_Hud.timer + 256, 528, 0);
-        M_Text(c, text, 512, 0, time < 200 ? 10 : 7, true);
+        M_Text(text, 512, 0, time < 200 ? 10 : 7, true);
     }
 }

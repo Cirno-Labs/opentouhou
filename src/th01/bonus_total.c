@@ -1,4 +1,5 @@
 #include "th01/bonus.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
@@ -62,7 +63,7 @@ static void M_Prepare(
             value = Math16_Wrap(g_Stage.maximum_combo * 200);
             break;
         case 2:
-            value = Math16_Wrap(*c->display->remaining_lives * 500);
+            value = Math16_Wrap(g_Session.lives * 500);
             value += Math16_Wrap(g_Player.remaining_bombs * 200);
             break;
         default:

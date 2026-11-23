@@ -1,4 +1,5 @@
 #include "th01/extend.h"
+#include "th01/session.h"
 #include "core/base/arena.h"
 #include "th01_video.h"
 #include "th01_world.h"
@@ -6,38 +7,28 @@
 
 #include <string.h>
 
-typedef struct {
-    HUD_CONTEXT display;
-    EXTEND_CONTEXT context;
-    PTN sprites;
-    int16_t lives, next;
-    int8_t resident_lives;
-} FIXTURE;
-
 TEST(threshold_uses_unsigned_score_and_one_award_per_call)
 {
     Th01Test_ResetWorld();
     ARENA arena;
     Arena_Init(&arena, "extend", 1024 * 1024);
-    FIXTURE f = { .lives = 1, .next = 1 };
     const ALLOCATOR *const a = Arena_Allocator(&arena);
     Video_Init(a);
     Hud_Init(a);
-    f.sprites = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
-    memset(f.sprites.pixels, 3, 1024);
-    f.display =
-        (HUD_CONTEXT) { .sprites = &f.sprites, .remaining_lives = &f.lives };
-    f.context = (EXTEND_CONTEXT) { .display = &f.display,
-                                   .resident_lives = &f.resident_lives,
-                                   .next = &f.next };
+    PTN sprites = { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
+    memset(sprites.pixels, 3, 1024);
+    Hud_Load(nullptr, &sprites, nullptr);
+    g_Session.lives = 1;
+    g_Extend.next = 1;
     g_Stage.score = 399999;
-    Extend_UpdateAndRender(&f.context);
-    CHECK_EQ_INT(f.lives, 1);
-    CHECK_EQ_INT(f.next, 1);
+    Extend_UpdateAndRender();
+    CHECK_EQ_INT(g_Session.lives, 1);
+    CHECK_EQ_INT(g_Extend.next, 1);
     g_Stage.score = UINT32_C(0x80000000);
-    Extend_UpdateAndRender(&f.context);
-    CHECK_EQ_INT(f.lives, 2);
-    CHECK_EQ_INT(f.next, 2);
+    Extend_UpdateAndRender();
+    CHECK_EQ_INT(g_Session.lives, 2);
+    CHECK_EQ_INT(g_Extend.resident_lives, 2);
+    CHECK_EQ_INT(g_Extend.next, 2);
     CHECK_EQ_INT(g_PelletShared.speed, 1);
     Arena_Free(&arena);
 }
@@ -45,24 +36,22 @@ TEST(threshold_uses_unsigned_score_and_one_award_per_call)
 TEST(cap_still_advances_next_and_threshold_product_wraps)
 {
     Th01Test_ResetWorld();
-    int16_t lives = 6, next = -1;
-    memset(&g_Stage, 0, sizeof(g_Stage));
+    g_Session.lives = 6;
+    g_Extend.next = -1;
     g_Stage.score = UINT32_MAX;
-    const HUD_CONTEXT display = { .remaining_lives = &lives };
-    const EXTEND_CONTEXT context = { .display = &display, .next = &next };
-    Extend_UpdateAndRender(&context);
-    CHECK_EQ_INT(next, 0);
-    CHECK_EQ_INT(lives, 6);
-    Extend_UpdateAndRender(&context);
-    CHECK_EQ_INT(next, 1);
-    next = -1;
+    Extend_UpdateAndRender();
+    CHECK_EQ_INT(g_Extend.next, 0);
+    CHECK_EQ_INT(g_Session.lives, 6);
+    Extend_UpdateAndRender();
+    CHECK_EQ_INT(g_Extend.next, 1);
+    g_Extend.next = -1;
     g_Stage.score = 400000;
-    Extend_UpdateAndRender(&context);
-    CHECK_EQ_INT(next, -1);
-    next = 32767;
+    Extend_UpdateAndRender();
+    CHECK_EQ_INT(g_Extend.next, -1);
+    g_Extend.next = 32767;
     g_Stage.score = UINT32_MAX;
-    Extend_UpdateAndRender(&context);
-    CHECK_EQ_INT(next, -32768);
+    Extend_UpdateAndRender();
+    CHECK_EQ_INT(g_Extend.next, -32768);
 }
 
 TEST(restart_uses_signed_resident_score_division)

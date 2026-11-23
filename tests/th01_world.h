@@ -2,6 +2,8 @@
 
 #include "th01/bomb.h"
 #include "th01/bonus.h"
+#include "th01/extend.h"
+#include "th01/session.h"
 #include "th01/hud.h"
 #include "th01/hud_hp.h"
 #include "th01/items.h"
@@ -40,6 +42,9 @@ static inline void Th01Test_ResetWorld(void)
     memset(&g_Scene, 0, sizeof(g_Scene));
     memset(&g_Bonus, 0, sizeof(g_Bonus));
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    memset(&g_Extend, 0, sizeof(g_Extend));
+    g_Session.lives = 0;
+    g_Session.high_score = 0;
     Hud_Reset();
     HudHp_Reset();
 }

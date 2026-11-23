@@ -1,4 +1,5 @@
 #include "th01/gameplay_internal.h"
+#include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -297,7 +298,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     CHECK_EQ_INT(g_Session.continues_total, 1);
     CHECK_EQ_INT(g_Session.lives, 0);
-    CHECK_EQ_INT(g->world.retained_lives, 4);
+    CHECK_EQ_INT(g_Extend.resident_lives, 4);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
     CHECK_EQ_INT(g->world.phase, GP_CONTINUE_DELAY);
     Gameplay_Tick(g, &(TH01_INPUT) { .shot = true }, true, ++tick);
@@ -483,7 +484,7 @@ TEST(live_hud_high_score_is_distinct_from_run_history)
     CHECK_EQ_INT(g_Session.high_score, 1000);
     CHECK_EQ_INT(g_Session.highest_score, 42);
     g_Stage.score = 0x80000000;
-    Hud_ScoreAndCombo(&f.game->bindings.display);
+    Hud_ScoreAndCombo();
     CHECK_EQ_INT(g_Session.high_score, 0x80000000);
     CHECK_EQ_INT(g_Session.highest_score, 42);
     Gameplay_ResetWorld(f.game);

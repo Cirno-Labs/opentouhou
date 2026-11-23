@@ -1,4 +1,5 @@
 #include "th01/timer.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -10,26 +11,26 @@
 
 STAGE_TIMER g_StageTimer;
 
-static void M_Line(const TIMER_CONTEXT *const c, const char *const text)
+static void M_Line(const char *const text)
 {
     const GAME_TEXT_GLYPH *glyphs[5];
     int32_t count = 0;
     for (; text[count] != '\0'; count++) {
         ASSERT(count < 5);
         glyphs[count] =
-            GameText_Find(c->display->font, (uint32_t)(uint8_t)text[count]);
+            GameText_Find(g_Hud.font, (uint32_t)(uint8_t)text[count]);
         ASSERT(glyphs[count] != nullptr);
     }
     Tram_PutLine16(glyphs, count, TRAM_RED, TRAM_BLACK);
 }
 
-static bool M_Continue(const TIMER_CONTEXT *const c)
+static bool M_Continue(void)
 {
     if (g_StageTimer.phase == TIMER_WAIT_HURRY) {
         if (!Frame_DelayReady(27)) {
             return false;
         }
-        M_Line(c, "UP");
+        M_Line("UP");
         g_StageTimer.phase = TIMER_WAIT_UP;
     }
     if (!Frame_DelayReady(27)) {
@@ -40,7 +41,7 @@ static bool M_Continue(const TIMER_CONTEXT *const c)
     return true;
 }
 
-static void M_Rain(const TIMER_CONTEXT *const c)
+static void M_Rain(void)
 {
     g_StageTimer.frames_since_hurry++;
     g_StageTimer.hurry_cycle++;
@@ -53,10 +54,11 @@ static void M_Rain(const TIMER_CONTEXT *const c)
     if (g_StageTimer.hurry_cycle % frequency != 0) {
         return;
     }
-    for (uint32_t i = 0; i <= (uint32_t)c->display->rank; i++) {
+    for (uint32_t i = 0; i <= (uint32_t)g_Session.settings.difficulty; i++) {
         const int16_t left = (int16_t)(MasterRng_Next(&g_Rng) % 640);
         Pellets_AddGroup(
-            c->display->rank, left, 64, PELLET_GROUP_RANDOM_WIDE, 48);
+            g_Session.settings.difficulty, left, 64, PELLET_GROUP_RANDOM_WIDE,
+            48);
     }
 }
 
@@ -79,53 +81,52 @@ void StageTimer_Init(void)
 }
 
 void StageTimer_Redraw(
-    const TIMER_CONTEXT *const c, const bool first_stage,
-    const bool timer_initialized, const int16_t route)
+    const bool first_stage, const bool timer_initialized, const int16_t route)
 {
-    Hud_PutMask(c->display);
+    Hud_PutMask();
     if (!timer_initialized) {
-        M_InitFor(Math16_Wrap(c->display->stage_number - 1), route);
+        M_InitFor(g_Session.stage_id, route);
     }
     if (first_stage) {
-        Hud_SnapResources(c->display);
-        Hud_SnapStage(c->display);
-        Hud_SnapTimer(c->display, g_StageTimer.time);
+        Hud_SnapResources();
+        Hud_SnapStage();
+        Hud_SnapTimer(g_StageTimer.time);
     }
-    Hud_PutStage(c->display);
+    Hud_PutStage();
     g_Hud.maximum_combo = 0;
-    Hud_SnapNumbers(c->display, first_stage);
-    Hud_PutTimer(c->display, g_StageTimer.time);
+    Hud_SnapNumbers(first_stage);
+    Hud_PutTimer(g_StageTimer.time);
     g_Hud.force_numbers = true;
-    Hud_ScoreAndCombo(c->display);
+    Hud_ScoreAndCombo();
     g_Hud.force_numbers = false;
 }
 
-bool StageTimer_TickAndPut(const TIMER_CONTEXT *const c)
+bool StageTimer_TickAndPut(void)
 {
     if (g_StageTimer.phase != TIMER_IDLE) {
-        return M_Continue(c);
+        return M_Continue();
     }
     if (g_StageTimer.time == 0) {
-        M_Rain(c);
+        M_Rain();
         return true;
     }
     g_StageTimer.time = (uint16_t)(g_StageTimer.time - 2);
-    Hud_PutTimer(c->display, g_StageTimer.time);
+    Hud_PutTimer(g_StageTimer.time);
     if (g_StageTimer.time == 0) {
         Pellets_SpeedRaise(2);
         Sound_Effect(17);
-        M_Line(c, "HARRY");
+        M_Line("HARRY");
         g_StageTimer.phase = TIMER_WAIT_HURRY;
-        return M_Continue(c);
+        return M_Continue();
     }
     return true;
 }
 
-void StageTimer_ExtendAndPut(const TIMER_CONTEXT *const c)
+void StageTimer_ExtendAndPut(void)
 {
     ASSERT(g_StageTimer.phase == TIMER_IDLE);
     g_StageTimer.time =
         (uint16_t)(g_StageTimer.time + (g_StageTimer.time != 0 ? 200 : 1000));
-    Hud_PutTimer(c->display, g_StageTimer.time);
+    Hud_PutTimer(g_StageTimer.time);
     g_StageTimer.frames_since_hurry = 0;
 }

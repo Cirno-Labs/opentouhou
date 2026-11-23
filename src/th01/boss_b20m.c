@@ -1,4 +1,5 @@
 #include "th01/boss_b20m.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -320,21 +321,23 @@ static void M_Group(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(c->hit->display->rank, x, y, group, speed);
+    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
 }
 static void M_Single(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed, PELLET_REGULAR, 0, 0, 0);
+        g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
+        0);
 }
 static void M_Rain(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed, PELLET_GRAVITY, 1, 0, 0);
+        g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
+        0);
 }
 static void M_Laser(
     const B20M_CONTEXT *const c, const int32_t index, const int16_t x,
@@ -1196,7 +1199,7 @@ static void M_Sling(const B20M_CONTEXT *const c)
     if (g_B20M.frame % 200 >= 150 && g_B20M.frame % g_B20M.pattern_state == 0) {
         const uint8_t angle = (uint8_t)M_Random(c);
         Pellets_AddSingle(
-            c->hit->display->rank, Math16_PolarY(320, 40, angle),
+            g_Session.settings.difficulty, Math16_PolarY(320, 40, angle),
             Math16_PolarX(180, 40, angle), 0, 0, PELLET_SLING_AIMED, 72, 0, 0);
     }
     if (g_B20M.frame >= 299) {
@@ -1276,8 +1279,8 @@ static void M_TopRain(const B20M_CONTEXT *const c)
     if (g_B20M.frame % 8 == 0) {
         M_Group(
             c, M_Random(c) % 640, 64,
-            c->hit->display->rank == 3 ? PELLET_GROUP_RANDOM_WIDE
-                                       : PELLET_GROUP_SINGLE,
+            g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
+                                               : PELLET_GROUP_SINGLE,
             44);
     }
 }
@@ -1320,10 +1323,10 @@ static void M_Radial(const B20M_CONTEXT *const c)
         }
         M_Single(c, 320, 160, (uint8_t)(g_B20M.radial_angle - 4), 96);
         M_Single(c, 320, 160, (uint8_t)(g_B20M.radial_angle + 4), 96);
-        if (c->hit->display->rank >= 2) {
+        if (g_Session.settings.difficulty >= 2) {
             M_Single(c, 320, 160, (uint8_t)(g_B20M.radial_angle - 4), 64);
             M_Single(c, 320, 160, (uint8_t)(g_B20M.radial_angle + 4), 64);
-            if (c->hit->display->rank == 3) {
+            if (g_Session.settings.difficulty == 3) {
                 M_Single(c, 320, 160, g_B20M.radial_angle, 64);
                 M_Single(c, 320, 160, g_B20M.radial_angle, 48);
             }
@@ -1741,10 +1744,9 @@ static void M_Leaves(const B20M_CONTEXT *const c, const int16_t interval)
 }
 static void M_Hud(const B20M_CONTEXT *const c)
 {
-    const TIMER_CONTEXT timer = { .display = c->hit->display };
     *c->first_stage = true;
-    StageTimer_Redraw(&timer, true, *c->timer_initialized, 0);
-    Hud_ScoreAndCombo(c->hit->display);
+    StageTimer_Redraw(true, *c->timer_initialized, 0);
+    Hud_ScoreAndCombo();
 }
 void B20M_BeginEntrance(const B20M_CONTEXT *const c)
 {
@@ -1883,7 +1885,7 @@ static void M_BeginTransform(const B20M_CONTEXT *const c)
     Boss_Player(c->hit)->left = 304;
     Boss_Player(c->hit)->deflecting = false;
     Boss_Player(c->hit)->bomb_damaging = false;
-    Player_Reset(c->hit->display->rank);
+    Player_Reset(g_Session.settings.difficulty);
     g_B20M.hit.invincible = false;
     g_Rng = c->hit->frame_rand;
     Sound_Fade();

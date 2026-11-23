@@ -1,4 +1,5 @@
 #include "th01/boss_hit.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 
 #include "core/base/assert.h"
@@ -29,7 +30,7 @@ void BossHit_UpdateAndRender(
         box.left, box.top, box.width_minus_shot, box.height_minus_shot,
         c->shots_output);
     if ((orb_hit && !hit->invincible)
-        || Bomb_DealsDamage(*c->display->remaining_lives, c->frame_rand)) {
+        || Bomb_DealsDamage(g_Session.lives, c->frame_rand)) {
         hit->frame = 0;
         M_Flash(c, flash_colors, flash_count);
         *hp = Math16_Wrap(*hp - 1);
@@ -46,7 +47,7 @@ void BossHit_UpdateAndRender(
             orb->velocity_x = orb->left < 304 ? ORB_X_RIGHT_4 : ORB_X_LEFT_4;
         }
         g_Stage.score += (uint32_t)(int32_t)hit_score;
-        Hud_ScoreAndCombo(c->display);
+        Hud_ScoreAndCombo();
         Sound_Effect(3);
         HudHp_Decrement(*hp);
     }

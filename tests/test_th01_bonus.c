@@ -1,4 +1,5 @@
 #include "th01/bonus.h"
+#include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
 #include "th01/player.h"
@@ -81,18 +82,14 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
 }
 
 typedef struct {
-    HUD_CONTEXT display;
-    EXTEND_CONTEXT extend;
     BONUS_CONTEXT context;
     BONUS_STAGE_ASSETS assets;
     PALETTE_STATE palette;
     PALETTE stage_palette;
     PTN sprites;
     GAME_TEXT_FONT font;
-    uint32_t high, score_bonus;
+    uint32_t score_bonus;
     int32_t history[4];
-    int16_t lives, next;
-    int8_t resident_lives;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
@@ -114,24 +111,16 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     CHECK(Result_Ignore(GameText_LoadGlyphs(glyphs, 96, a, &f->font)));
     f->sprites = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->sprites.pixels, 3, 1024);
-    f->display = (HUD_CONTEXT) { .sprites = &f->sprites,
-                                 .font = &f->font,
-                                 .remaining_lives = &f->lives,
-                                 .high_score = &f->high };
-    f->extend = (EXTEND_CONTEXT) { .display = &f->display,
-                                   .resident_lives = &f->resident_lives,
-                                   .next = &f->next };
+    Hud_Load(nullptr, &f->sprites, &f->font);
     f->context = (BONUS_CONTEXT) { .stage = &f->assets,
                                    .font = &f->font,
                                    .stage_palette = &f->stage_palette,
                                    .palette = &f->palette,
-                                   .display = &f->display,
-                                   .extend = &f->extend,
                                    .score_bonus = &f->score_bonus,
                                    .bonus_per_stage = f->history };
     CHECK(Result_Ignore(Bonus_ValidateStageAssets(&f->assets, &f->font)));
     memset(f->assets.box, 0xff, sizeof(f->assets.box));
-    f->next = 1;
+    g_Extend.next = 1;
 }
 
 TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
@@ -144,7 +133,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     g_Stage.score = 393000;
     g_Stage.maximum_combo = 3;
     g_StageTimer.time = 100;
-    f.lives = 1;
+    g_Session.lives = 1;
     g_Player.remaining_bombs = 3;
     g_GameInput.bomb_frame = 97;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
@@ -170,8 +159,8 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(g_Stage.score, 410000);
     CHECK_EQ_INT(f.score_bonus, 17000);
     CHECK_EQ_INT(f.history[3], 17000);
-    CHECK_EQ_INT(f.high, 410000);
-    CHECK_EQ_INT(f.next, 2);
+    CHECK_EQ_INT(g_Session.high_score, 410000);
+    CHECK_EQ_INT(g_Extend.next, 2);
     CHECK_EQ_INT(g_PelletShared.speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
@@ -199,7 +188,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     FIXTURE f = {};
     Th01Test_ResetWorld();
     M_Init(&f, Arena_Allocator(&arena));
-    f.lives = 6;
+    g_Session.lives = 6;
     f.score_bonus = UINT32_MAX - 100;
     g_Stage.score = UINT32_MAX - 1000;
     g_StageTimer.time = 20000;
@@ -280,7 +269,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     g_StageTimer.time = 321;
     g_Stage.maximum_combo = 7;
     g_Stage.score = 390000;
-    f.common.lives = 2;
+    g_Session.lives = 2;
     g_Player.remaining_bombs = 3;
     g_GameInput.bomb_frame = 123;
     f.continues = 65539;
@@ -333,8 +322,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(ticks < 1000);
     CHECK_EQ_INT(f.common.score_bonus, 96050);
     CHECK_EQ_INT(g_Stage.score, 486050);
-    CHECK_EQ_INT(f.common.next, 1);
-    CHECK_EQ_INT(f.common.lives, 2);
+    CHECK_EQ_INT(g_Extend.next, 1);
+    CHECK_EQ_INT(g_Session.lives, 2);
     CHECK_EQ_INT(g_Hud.score_previous, 0);
     CHECK_EQ_INT(f.common.history[0], 0);
     CHECK_EQ_INT(f.history[0], 3);

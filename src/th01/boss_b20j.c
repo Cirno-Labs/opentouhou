@@ -1,4 +1,5 @@
 #include "th01/boss_b20j.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -439,20 +440,22 @@ static void M_Single(
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed, PELLET_REGULAR, 0, 0, 0);
+        g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
+        0);
 }
 static void M_Rain(
     const B20J_CONTEXT *const c, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed, PELLET_GRAVITY, 1, 0, 0);
+        g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
+        0);
 }
 static void M_Group(
     const B20J_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(c->hit->display->rank, x, y, group, speed);
+    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
 {
@@ -685,7 +688,7 @@ static void M_Snakes(const B20J_CONTEXT *const c, const bool four)
             M_SnakeSpawn(s, c, g_B20J.frame == 200 ? 2 : 3, 290, 200);
             Sound_Effect(12);
         }
-        if (!four && g_B20J.frame > 240 - (int32_t)c->hit->display->rank * 40
+        if (!four && g_B20J.frame > 240 - g_Session.settings.difficulty * 40
             && g_B20J.frame % 40 == 0) {
             uint8_t angle = M_Random(c) % 12;
             const int16_t x = g_B20J.frame % 120 == 0 ? 410
@@ -1017,7 +1020,7 @@ static void M_Sleeve(const B20J_CONTEXT *const c)
                 M_Rain(c, 290, 200, angle, 32);
             } else {
                 Pellets_AddSingle(
-                    c->hit->display->rank, 290, 200, angle, 32,
+                    g_Session.settings.difficulty, 290, 200, angle, 32,
                     PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR, 48, 0, 0);
             }
         }

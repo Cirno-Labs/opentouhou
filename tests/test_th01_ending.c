@@ -1,4 +1,5 @@
 #include "th01/ending_internal.h"
+#include "th01/session.h"
 #include "core/base/arena.h"
 #include "test.h"
 

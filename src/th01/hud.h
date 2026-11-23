@@ -11,19 +11,12 @@ typedef struct {
     int16_t combo_previous, max_previous;
     uint8_t maximum_combo;
     bool force_numbers;
-} HUD;
-
-extern HUD g_Hud;
-
-typedef struct {
     const GRF *mask;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
-    uint32_t *high_score;
-    int16_t *remaining_lives;
-    uint16_t stage_number;
-    SETTINGS_DIFFICULTY rank;
-} HUD_CONTEXT;
+} HUD;
+
+extern HUD g_Hud;
 
 // Caches fullwidth numerals and separate ASCII stage, rank and timer glyphs
 // from rom.
@@ -40,24 +33,28 @@ RESULT Hud_ValidateAssets(
 // no external devices.
 void Hud_Init(const ALLOCATOR *allocator);
 
+// Selects the HUD mask, the stage sprites for the life and bomb icons and
+// the font. The selection persists across Hud_Reset.
+void Hud_Load(const GRF *mask, const PTN *sprites, const GAME_TEXT_FONT *font);
+
 // Forgets the previously drawn values and keeps the snapshot storage.
 void Hud_Reset(void);
-void Hud_PutMask(const HUD_CONTEXT *context);
-void Hud_SnapResources(const HUD_CONTEXT *context);
-void Hud_LivesPut(const HUD_CONTEXT *context, int16_t previous);
-void Hud_BombsPut(const HUD_CONTEXT *context, int16_t previous);
+void Hud_PutMask(void);
+void Hud_SnapResources(void);
+void Hud_LivesPut(int16_t previous);
+void Hud_BombsPut(int16_t previous);
 
 // Draws both pages in source order, with persistent dirty-digit caches.
 // Borrows the real gameplay score/combo, resident high score and life fields.
 // maximum_combo is the separate source uint8 HUD maximum, not gameplay max.
-void Hud_ScoreAndCombo(const HUD_CONTEXT *context);
+void Hud_ScoreAndCombo(void);
 
 // Snapshots the stage label from the current page, draws it, then copies
 // the 16-pixel row from page 0 to page 1 and finishes on drawing page 0.
-void Hud_SnapStage(const HUD_CONTEXT *context);
+void Hud_SnapStage(void);
 
 // Draws rank and restores/redraws the stage label on page 1 then page 0.
-void Hud_PutStage(const HUD_CONTEXT *context);
+void Hud_PutStage(void);
 
 // Snapshots score/combo backgrounds from page 1 on first_stage. Otherwise
 // restores combo backgrounds on the currently selected page. Draws score
@@ -66,8 +63,8 @@ void Hud_PutStage(const HUD_CONTEXT *context);
 // digit caches persist. Timer initialization/snapshots and forced numeric
 // rendering are separate operations; StageTimer_Redraw supplies their full
 // order.
-void Hud_SnapNumbers(const HUD_CONTEXT *context, bool first_stage);
+void Hud_SnapNumbers(bool first_stage);
 
 // Preserves the duplicate first-quarter snapshot at x=512 for both halves.
-void Hud_SnapTimer(const HUD_CONTEXT *context, uint16_t time);
-void Hud_PutTimer(const HUD_CONTEXT *context, uint16_t time);
+void Hud_SnapTimer(uint16_t time);
+void Hud_PutTimer(uint16_t time);

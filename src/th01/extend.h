@@ -3,23 +3,22 @@
 #include "th01/hud.h"
 #include "th01/pellets.h"
 
+// Holds the extend threshold index and the life count that survives a
+// Continue or a program switch.
 typedef struct {
-    const HUD_CONTEXT *display;
-    int8_t *resident_lives;
-    int16_t *next;
-} EXTEND_CONTEXT;
+    int16_t next;
+    int8_t resident_lives;
+} EXTEND;
+
+extern EXTEND g_Extend;
 
 // Reconstructs the next threshold from the signed resident score bits at
 // main-scene restart: signed division by 400000 plus one, wrapped to 16 bits.
 // Fresh games start with next=1; the gameplay owner retains that field.
 int16_t Extend_NextForScore(uint32_t resident_score);
 
-// Handles one threshold per call, using the unsigned live gameplay score
-// and the wrapped 32-bit product of signed next and 400000. Advances next
-// even at the six-life cap. Otherwise updates the real live/resident lives,
-// draws the HUD with the previous count, posts effect 15, raises shared pellet
-// speed by one raw unit, then advances next. Requires a synchronous audio
-// event consumer; it must not change borrowed state. HUD and pellet consumers
-// are real module operations. Gameplay cadence and scene integration remain
-// external. Allocates nothing and reads no files, fonts, clocks or devices.
-void Extend_UpdateAndRender(const EXTEND_CONTEXT *context);
+// Handles one threshold per call, using the unsigned live score and the
+// wrapped 32-bit product of signed next and 400000. Below the six-life cap,
+// adds a life, draws it, plays effect 15 and raises the pellet speed by one
+// raw unit. Advances next even at the cap.
+void Extend_UpdateAndRender(void);
