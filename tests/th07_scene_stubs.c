@@ -5,7 +5,7 @@
 #include "th07/play_time.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
-#include "th07/screens/main.h"
+#include "th07/screens/title.h"
 #include "th07/stage.h"
 #include "th07/player.h"
 #include "th07/screens/result/records.h"

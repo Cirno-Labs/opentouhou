@@ -2,7 +2,7 @@
 
 #include "th06/game.h"
 #include "th06/game_manager.h"
-#include "th06/screens/main.h"
+#include "th06/screens/title.h"
 #include "th06/screens/music.h"
 #include "th06/replay.h"
 #include "th06/screens/ending.h"

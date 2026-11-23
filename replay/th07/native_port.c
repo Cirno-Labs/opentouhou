@@ -6,7 +6,7 @@
 #include "th07/game.h"
 #include "th07/main.h"
 #include "th07/scene.h"
-#include "th07/screens/main.h"
+#include "th07/screens/title.h"
 #include "th07/settings.h"
 
 // Runs th07 on the native backend as th07native.

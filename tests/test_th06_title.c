@@ -1,4 +1,4 @@
-#include "th06/screens/main.h"
+#include "th06/screens/title.h"
 
 #include "anm_builder.h"
 #include "shell_fake.h"

@@ -34,7 +34,7 @@ th06_lib = static_library(
   'screen_effect.c',
   'screens/ending/screen.c',
   'screens/ending/script.c',
-  'screens/main.c',
+  'screens/title.c',
   'screens/music/comments.c',
   'screens/music/screen.c',
   'screens/result/records.c',
