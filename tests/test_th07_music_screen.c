@@ -37,9 +37,7 @@ static SCENE m_Requested;
 static TH07_INPUT m_Input;
 static CHAIN_ELEM m_InputElem;
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 float g_GameSpeed = 1.0f;
 
 void Scene_Request(const SCENE scene)
@@ -123,7 +121,7 @@ TEST(the_list_holds_32_tunes_and_cuts_long_fields)
 
 static CHAIN_STATUS M_InputUpdate(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input, false);
+    Buttons_Update(&m_Input, false);
     return CHAIN_CONTINUE;
 }
 
@@ -220,21 +218,20 @@ static void M_Setup(const char *const case_name, const int32_t tunes)
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     CHECK(Result_Log(Anm_Load(0, "data/text.anm", 0x700), LOG_LEVEL_ERROR));
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     memset(&m_Input, 0, sizeof(m_Input));
     m_Requested = SCENE_MUSIC_ROOM;
     Sound_Reset();
     Chain_InitElem(&m_InputElem, M_InputUpdate, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
     CHECK(Result_Log(MusicScreen_Register(), LOG_LEVEL_ERROR));
 }
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     AsciiText_Initialize();
     Anm_Shutdown();
     GfxRecorder_Stop();
@@ -249,10 +246,10 @@ static void M_Tick(const TH07_INPUT input)
     Sound_Reset();
     m_Input = input;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     AsciiText_Initialize();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static void M_Run(const int32_t ticks)

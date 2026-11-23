@@ -193,7 +193,7 @@ static void M_Setup(const char *const case_name)
     Sound_Reset();
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Anm_SetScriptEntry(0x706, &m_HelpScript);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     CHECK(Result_Log(Scene_Register(), LOG_LEVEL_ERROR));
 }
 
@@ -204,7 +204,7 @@ static void M_OpenSaves(void)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     ResultScreen_CloseSaves();
     ReplayFiles_Clear();
@@ -218,9 +218,9 @@ static void M_Tick(const TH07_INPUT input)
     Sound_Reset();
     g_Input = input;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     ResultScreen_ScanReplays();
 }
 

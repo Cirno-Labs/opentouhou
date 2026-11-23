@@ -52,7 +52,7 @@ static void M_Setup(const char *const case_name, const int32_t stage)
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     CHECK(Result_Log(Anm_Load(0, "effects.anm", 669), LOG_LEVEL_ERROR));
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
     CHECK(Result_Log(Effect_Register(), LOG_LEVEL_ERROR));
@@ -60,7 +60,7 @@ static void M_Setup(const char *const case_name, const int32_t stage)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th06Data_Unmount();
     Mem_Free(m_Directory);
@@ -98,7 +98,7 @@ TEST(a_full_pool_returns_a_spare_that_never_runs)
     EFFECT *const spare = Effect_Spawn(EFFECT_PARTICLE, m_Origin, 1, 0);
     CHECK(!spare->active);
     spare->velocity.x = 5.0f;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!spare->active);
     CHECK(spare->pos.x == 0.0f);
     M_Teardown();
@@ -108,9 +108,9 @@ TEST(an_effect_ends_with_its_script)
 {
     M_Setup("ends", 2);
     EFFECT *const effect = Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, 0);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->active);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -123,7 +123,7 @@ TEST(a_drift_picks_its_velocity_on_the_first_frame_only)
         effects[i] = Effect_Spawn(EFFECT_PARTICLE, m_Origin, 1, 0);
     }
     RNG expected = g_Rng;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     // D3DX divides a vector by multiplying with the reciprocal, which
     // rounds differently from a division for some of these values.
     const float step = 1.0f / 19.0f;
@@ -136,7 +136,7 @@ TEST(a_drift_picks_its_velocity_on_the_first_frame_only)
         CHECK(effects[i]->acceleration.y == -y * step);
         CHECK(effects[i]->velocity.x == x + -x * step);
     }
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Rng.seed == expected.seed);
     M_Teardown();
 }
@@ -145,7 +145,7 @@ TEST(drawing_places_the_sprite_at_the_effect)
 {
     M_Setup("draw", 2);
     EFFECT *const effect = Effect_Spawn(EFFECT_PARTICLE, m_Origin, 1, 0);
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(effect->vm.pos.x == 100.0f && effect->vm.pos.y == 200.0f);
     M_Teardown();
 }
@@ -157,15 +157,15 @@ TEST(an_orbit_fades_out_over_sixteen_frames)
     effect->origin = m_Origin;
     effect->axis = (VEC3) { 0.0f, 0.0f, 1.0f };
     effect->radius = 10.0f;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->active);
     effect->fade_out = true;
     for (int i = 0; i < 15; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(effect->active);
     }
     CHECK(effect->vm.color >> 24 == (uint32_t)(1.0f / 16.0f * 255.0f));
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -188,7 +188,7 @@ TEST(effect_draws_identify_each_spawn_without_consuming_random_values)
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
     const uint32_t generated = g_Rng.generated;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
     CHECK(GfxRecorder_QuadId(0) != 0);

@@ -62,7 +62,7 @@ static RESULT M_Start(const char *const case_name, const bool capture)
     }
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &m_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
     g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
     g_Player.pos = (VEC3) { 1000.0f, 1000.0f, 0.0f };
@@ -102,7 +102,7 @@ static void M_Setup(const char *const case_name)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     GfxRecorder_Stop();
@@ -111,7 +111,7 @@ static void M_Teardown(void)
 
 static void M_Draw(void)
 {
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
 }
 
@@ -198,11 +198,11 @@ TEST(popups_start_in_the_play_area_and_end_after_sixty_frames)
     CHECK(popup->pos.x == 42.0f && popup->pos.y == 36.0f);
     CHECK_EQ_INT(popup->digit_count, 3);
     for (int32_t i = 0; i < 60; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK(popup->active);
     CHECK(popup->pos.y == 6.0f);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!popup->active);
     M_Teardown();
 }
@@ -214,13 +214,13 @@ TEST(popups_move_and_count_at_the_game_speed)
     const ASCII_POPUP *const popup = &g_AsciiText.popups[0x2d0];
     CHECK_EQ_INT(popup->digits[0], 10);
     g_GameSpeed = 0.5f;
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
+    Chain_RunCalc();
     CHECK_EQ_INT(popup->timer.current, 1);
     CHECK(popup->pos.y == 15.25f);
     g_GameManager.mode.paused = 2;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(popup->pos.y == 15.25f);
     M_Teardown();
 }
@@ -403,13 +403,13 @@ TEST(demo_icon_runs_only_in_a_demo)
 {
     M_Setup("demo_icon");
     g_GameManager.mode.in_demo = true;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_AsciiText.demo_icon.script_index, 7);
     M_Draw();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     CHECK_EQ_INT(M_Sprite(0), 0x107);
     g_GameManager.mode.in_demo = false;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_AsciiText.demo_icon.script_index, 0);
     M_Teardown();
 }

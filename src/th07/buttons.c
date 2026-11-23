@@ -13,6 +13,7 @@ static const INPUT_ACTION m_Actions[] = {
 #undef M_STICK
 };
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH07_INPUT, m_Actions, 1);
+BUTTONS g_Buttons;
 
 uint16_t Buttons_ToWord(const TH07_INPUT *const input)
 {
@@ -39,9 +40,7 @@ TH07_INPUT Buttons_FromWord(const uint16_t word)
     return input;
 }
 
-static uint16_t M_Read(
-    BUTTONS *const buttons, const TH07_INPUT *const input,
-    const bool shoot_focuses)
+static uint16_t M_Read(const TH07_INPUT *const input, const bool shoot_focuses)
 {
     TH07_INPUT read = *input;
     if (shoot_focuses) {
@@ -50,7 +49,7 @@ static uint16_t M_Read(
         Shell_GetDeviceInput(INPUT_DEVICE_GAMEPAD, &gamepad);
         Shell_GetDeviceInput(INPUT_DEVICE_JOYSTICK, &joystick);
         const bool shoot = gamepad.shoot || joystick.shoot;
-        int32_t *const frames = &buttons->shot_held_frames;
+        int32_t *const frames = &g_Buttons.shot_held_frames;
         bool focus = false;
         if (shoot) {
             *frames = MIN(*frames + 1, 20);
@@ -66,63 +65,58 @@ static uint16_t M_Read(
     return Buttons_ToWord(&read);
 }
 
-static void M_StepRepeat(BUTTONS *const buttons, const bool same)
+static void M_StepRepeat(const bool same)
 {
-    buttons->repeat = false;
+    g_Buttons.repeat = false;
     if (same) {
-        if (buttons->held_frames >= 30) {
-            if (buttons->held_frames % 8 == 0) {
-                buttons->repeat = true;
+        if (g_Buttons.held_frames >= 30) {
+            if (g_Buttons.held_frames % 8 == 0) {
+                g_Buttons.repeat = true;
             }
-            if (buttons->held_frames >= 38) {
-                buttons->held_frames = 30;
+            if (g_Buttons.held_frames >= 38) {
+                g_Buttons.held_frames = 30;
             }
         }
-        buttons->held_frames++;
+        g_Buttons.held_frames++;
     } else {
-        buttons->held_frames = 0;
+        g_Buttons.held_frames = 0;
     }
 }
 
-void Buttons_Update(
-    BUTTONS *const buttons, const TH07_INPUT *const input,
-    const bool shoot_focuses)
+void Buttons_Update(const TH07_INPUT *const input, const bool shoot_focuses)
 {
-    buttons->previous_word = buttons->word;
-    buttons->word = M_Read(buttons, input, shoot_focuses);
-    M_StepRepeat(buttons, buttons->previous_word == buttons->word);
+    g_Buttons.previous_word = g_Buttons.word;
+    g_Buttons.word = M_Read(input, shoot_focuses);
+    M_StepRepeat(g_Buttons.previous_word == g_Buttons.word);
 }
 
-void Buttons_Merge(
-    BUTTONS *const buttons, const TH07_INPUT *const input,
-    const bool shoot_focuses)
+void Buttons_Merge(const TH07_INPUT *const input, const bool shoot_focuses)
 {
-    buttons->word |= M_Read(buttons, input, shoot_focuses);
+    g_Buttons.word |= M_Read(input, shoot_focuses);
 }
 
-void Buttons_Play(BUTTONS *const buttons, const uint16_t word)
+void Buttons_Play(const uint16_t word)
 {
-    buttons->previous_play_word = buttons->play_word;
-    buttons->play_word = word;
-    M_StepRepeat(buttons, buttons->previous_play_word == buttons->play_word);
+    g_Buttons.previous_play_word = g_Buttons.play_word;
+    g_Buttons.play_word = word;
+    M_StepRepeat(g_Buttons.previous_play_word == g_Buttons.play_word);
 }
 
-bool Buttons_WasPressed(const BUTTONS *const buttons, const uint16_t mask)
+bool Buttons_WasPressed(const uint16_t mask)
 {
-    return (buttons->word & mask) != 0
-        && (buttons->word & mask) != (buttons->previous_word & mask);
+    return (g_Buttons.word & mask) != 0
+        && (g_Buttons.word & mask) != (g_Buttons.previous_word & mask);
 }
 
-bool Buttons_WasPressedOrRepeated(
-    const BUTTONS *const buttons, const uint16_t mask)
+bool Buttons_WasPressedOrRepeated(const uint16_t mask)
 {
-    return Buttons_WasPressed(buttons, mask)
-        || ((buttons->word & mask) != 0 && buttons->repeat);
+    return Buttons_WasPressed(mask)
+        || ((g_Buttons.word & mask) != 0 && g_Buttons.repeat);
 }
 
-void Buttons_Clear(BUTTONS *const buttons)
+void Buttons_Clear(void)
 {
-    buttons->word = 0;
-    buttons->previous_word = 0;
-    buttons->repeat = false;
+    g_Buttons.word = 0;
+    g_Buttons.previous_word = 0;
+    g_Buttons.repeat = false;
 }

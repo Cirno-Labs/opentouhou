@@ -74,32 +74,33 @@ typedef struct {
     int32_t shot_held_frames;
 } BUTTONS;
 
+// Holds the buttons of the current calc.
+extern BUTTONS g_Buttons;
+
 // Reads input into the word, then steps the repeat.
 // With shoot_focuses, a pad's held shoot also focuses, from the gamepad
 // and joystick input of Shell_GetDeviceInput.
-void Buttons_Update(
-    BUTTONS *buttons, const TH07_INPUT *input, bool shoot_focuses);
+void Buttons_Update(const TH07_INPUT *input, bool shoot_focuses);
 
 // Adds the buttons of input to the word, without a new previous word or
 // repeat, as the original does on the calc after one that slow mode drops.
 // The shoot count steps as in Buttons_Update.
-void Buttons_Merge(
-    BUTTONS *buttons, const TH07_INPUT *input, bool shoot_focuses);
+void Buttons_Merge(const TH07_INPUT *input, bool shoot_focuses);
 
 // Sets the play word to word, and steps held_frames and repeat on it as
 // Buttons_Update does on the live word, as replay playback does.
-void Buttons_Play(BUTTONS *buttons, uint16_t word);
+void Buttons_Play(uint16_t word);
 
 // Returns whether the masked word is nonzero and changed this calc.
-bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);
+bool Buttons_WasPressed(uint16_t mask);
 
 // Returns whether Buttons_WasPressed holds for mask, or a bit of mask is
 // down on a calc that repeats.
-bool Buttons_WasPressedOrRepeated(const BUTTONS *buttons, uint16_t mask);
+bool Buttons_WasPressedOrRepeated(uint16_t mask);
 
 // Clears the words and the repeat, as a scene switch does. held_frames
 // and shot_held_frames stay.
-void Buttons_Clear(BUTTONS *buttons);
+void Buttons_Clear(void);
 
 // Converts to and from the button word that replays store.
 uint16_t Buttons_ToWord(const TH07_INPUT *input);

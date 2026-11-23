@@ -1139,11 +1139,11 @@ RESULT Enemy_Register(void)
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &m_CalcElem, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&m_CalcElem, M_CALC_PRIORITY));
     Chain_InitElem(&m_DrawLowElem, M_DrawLow, nullptr);
-    MUST(Chain_AddDraw(&g_Chain, &m_DrawLowElem, M_DRAW_PRIORITY_LOW));
+    MUST(Chain_AddDraw(&m_DrawLowElem, M_DRAW_PRIORITY_LOW));
     Chain_InitElem(&m_DrawHighElem, M_DrawHigh, nullptr);
-    return Chain_AddDraw(&g_Chain, &m_DrawHighElem, M_DRAW_PRIORITY_HIGH);
+    return Chain_AddDraw(&m_DrawHighElem, M_DRAW_PRIORITY_HIGH);
 }
 
 void Enemy_Remove(void)

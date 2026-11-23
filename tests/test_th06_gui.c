@@ -225,7 +225,7 @@ static RESULT M_SetupStage(const char *const case_name, const int32_t stage)
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
     AsciiText_Initialize();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
     g_GameManager.run.difficulty = 1;
@@ -256,7 +256,7 @@ static void M_SetupPatched(const char *const case_name, const char *const diff)
     Files_SetPatches(m_Patches);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     AsciiText_Initialize();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     g_GameManager.run.difficulty = 1;
@@ -268,7 +268,7 @@ static void M_SetupPatched(const char *const case_name, const char *const diff)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     AsciiText_Initialize();
     Anm_Shutdown();
     Th06Data_Unmount();
@@ -280,7 +280,7 @@ static void M_Teardown(void)
 static void M_Run(const int32_t frames)
 {
     for (int32_t i = 0; i < frames; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
 }
 
@@ -963,11 +963,11 @@ TEST(a_dialogue_stops_the_boss_bar)
 TEST(drawing_places_the_boss_health_bar)
 {
     M_Setup("draw_bar");
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_Gui.hud.sprites[0x15].scale_x == 1.0f);
     g_Gui.boss.present = true;
     g_Gui.hud.boss_health_shown = 0.3f;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_Gui.hud.sprites[0x15].scale_x == 0.3f * 288.0f / 14.0f);
     CHECK(g_Gui.hud.sprites[0x15].pos.x == 96.0f);
     CHECK(g_Gui.hud.sprites[0x15].pos.y == 24.0f);
@@ -981,16 +981,16 @@ TEST(the_boss_timer_queues_its_sound_when_it_changes_below_10)
     g_Gui.boss.present = true;
     g_Gui.boss.seconds = 9;
     Sound_Reset();
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_TIMEOUT);
     Sound_Reset();
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
     g_Gui.boss.seconds = 10;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
     g_Gui.boss.seconds = 8;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_TIMEOUT);
     M_Teardown();
 }
@@ -999,7 +999,7 @@ TEST(drawing_leaves_the_frame_sprites_where_they_were_drawn_last)
 {
     M_Setup("draw_frame");
     g_GameManager.player.power = 127;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_Gui.hud.sprites[6].pos.x == 608.0f);
     CHECK(g_Gui.hud.sprites[6].pos.y == 448.0f);
     CHECK(g_Gui.hud.sprites[6].pos.z == 0.49f);
@@ -1009,7 +1009,7 @@ TEST(drawing_leaves_the_frame_sprites_where_they_were_drawn_last)
     CHECK(g_Gui.hud.sprites[0x16].pos.y == 464.0f);
     CHECK(g_Gui.hud.sprites[0x12].pos.x == 0.0f);
     g_GameManager.player.power = 128;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_Gui.hud.sprites[0x12].pos.x == 496.0f);
     CHECK(g_Gui.hud.sprites[0x12].pos.y == 186.0f);
     M_Teardown();
@@ -1112,7 +1112,7 @@ static void M_DrawTick(void)
 {
     g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0, 0.5f };
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
 }
 
@@ -1353,7 +1353,7 @@ static void M_SetupTextImages(
     CHECK(Result_Log(
         Anm_CreateTexture(0, 64, 128, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
     AsciiText_Initialize();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = stage;
     g_GameManager.run.difficulty = 1;
@@ -1370,7 +1370,7 @@ static void M_TeardownTextImages(void)
     g_Stage.data.name = nullptr;
     g_Stage.data.song_names[0] = nullptr;
     g_Stage.data.song_names[1] = nullptr;
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_ShutdownText();
     Translation_Shutdown();
     M_Teardown();
@@ -1504,7 +1504,7 @@ TEST(base_tsa_stage_logo_takes_precedence_over_the_stage_title)
     CHECK(title->height == 48.0f && title->y0 == 48.0f);
     CHECK(g_Gui.banners.stage_name.shown);
     GfxRecorder_Start();
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     const int32_t with_logo = g_AsciiText.string_count;
     GfxRecorder_Stop();
     M_TeardownTextImages();
@@ -1512,7 +1512,7 @@ TEST(base_tsa_stage_logo_takes_precedence_over_the_stage_title)
     M_SetupTextImages("text_images_title", 2, true, M_IMAGE_STAGE_TITLE);
     CHECK(Anm_GetSpriteEntry(0x700)->height == 16.0f);
     GfxRecorder_Start();
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_AsciiText.string_count, with_logo + 1);
     GfxRecorder_Stop();
     M_TeardownTextImages();
@@ -1641,7 +1641,7 @@ TEST(gui_drawing_records_the_hud_and_dialogue_gradient)
     g_GameManager.player.power = 16;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK(GfxRecorder_QuadCount() > 100);
     bool found_dialogue = false;
@@ -1892,7 +1892,7 @@ static void M_SetupNotes(const char *const case_name, const char *const diff)
         Anm_CreateTexture(0, 64, 128, ANM_TEXTURE_RGBA8), LOG_LEVEL_ERROR));
     Note_Init(m_Patches);
     AsciiText_Initialize();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     g_GameManager.run.difficulty = 1;
@@ -1904,7 +1904,7 @@ static void M_SetupNotes(const char *const case_name, const char *const diff)
 
 static void M_TeardownNotes(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Note_Shutdown();
     Anm_ShutdownText();
     Translation_Shutdown();
@@ -2019,7 +2019,7 @@ TEST(base_tsa_centers_the_translated_stage_label)
     g_Gui.banners.stage_name.shown = true;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     bool found = false;
     for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
@@ -2053,7 +2053,7 @@ TEST(base_tsa_centers_the_translated_bonus_notice)
     g_Gui.popups.bonus.pos.x = 104.0f;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     bool found = false;
     for (int32_t i = 0; i < g_AsciiText.string_count; i++) {
@@ -2086,7 +2086,7 @@ TEST(base_tsa_centers_the_translated_spell_bonus_label)
     Gui_ShowSpellCardBonus(500000);
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     bool found = false;
     for (int32_t i = 0; i < g_AsciiText.string_count; i++) {

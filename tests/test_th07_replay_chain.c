@@ -30,9 +30,7 @@
 #define M_CHERRY_OFFSET 54321
 #define M_PATH "replay/th7_01.rpy"
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 
 // Holds what M_Encode writes for a slot; a slot without frames is left out.
 typedef struct {
@@ -215,8 +213,8 @@ static CHAIN_STATUS M_MarkEvent(void *const arg)
 static void M_SetUp(const int32_t stage)
 {
     Replay_Discard();
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     ReplayFiles_Clear();
     m_BorderStarts = 0;
     m_Dialogue = false;
@@ -239,7 +237,7 @@ static void M_SetUp(const int32_t stage)
 static void M_Observer(const int16_t priority)
 {
     Chain_InitElem(&m_ObserverElem, M_Observe, nullptr);
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_ObserverElem, priority)));
+    CHECK(Result_Ignore(Chain_AddCalc(&m_ObserverElem, priority)));
 }
 
 // Marks event at priority 7, between the mark element's reset (6) and the
@@ -248,7 +246,7 @@ static void M_MarksEvent(const REPLAY_EVENT event)
 {
     m_EventToMark = event;
     Chain_InitElem(&m_MarkerElem, M_MarkEvent, nullptr);
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_MarkerElem, 7)));
+    CHECK(Result_Ignore(Chain_AddCalc(&m_MarkerElem, 7)));
 }
 
 static void M_Play(const M_SPEC *const spec)
@@ -260,14 +258,14 @@ static void M_Play(const M_SPEC *const spec)
 static void M_Calcs(const int32_t count)
 {
     for (int32_t i = 0; i < count; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
 }
 
 static void M_TearDown(void)
 {
     Replay_Discard();
-    Chain_Release(&g_Chain);
+    Chain_Release();
     ReplayFiles_Clear();
 }
 
@@ -688,7 +686,7 @@ TEST(playback_of_a_missing_slot_or_path_fails)
     CHECK(!Result_Ignore(Replay_Register(REPLAY_PLAY, M_PATH)));
     m_Dialogue = true;
     m_Skippable = true;
-    CHECK_EQ_INT(Chain_RunCalc(&g_Chain), CHAIN_RUN_CONTINUE);
+    CHECK_EQ_INT(Chain_RunCalc(), CHAIN_RUN_CONTINUE);
     Replay_Discard();
     CHECK(g_Chain.calc.next == nullptr);
     CHECK(!Result_Ignore(Replay_Register(REPLAY_PLAY, "elsewhere.rpy")));
@@ -1013,7 +1011,7 @@ TEST(the_input_lag_fix_records_a_bomb_on_its_press_for_stock_playback)
     g_GameManager.run.start_lives = (uint8_t)g_Settings.lives;
     g_Settings.fix_input_lag = true;
     Chain_InitElem(&m_ObserverElem, M_BombOnPress, nullptr);
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_ObserverElem, 8)));
+    CHECK(Result_Ignore(Chain_AddCalc(&m_ObserverElem, 8)));
     // The stage registers within a calc, after the buttons are read.
     CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
     M_Calcs(1);

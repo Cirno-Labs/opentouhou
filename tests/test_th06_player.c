@@ -173,7 +173,7 @@ static void M_Setup(
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.player_area = (PLAY_RECT) { 8.0f, 16.0f, 368.0f, 416.0f };
     g_GameManager.run.character = character;
@@ -194,7 +194,7 @@ static void M_Setup(
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th06Data_Unmount();
     Mem_Free(m_Directory);
@@ -202,7 +202,7 @@ static void M_Teardown(void)
 
 static void M_Frame(void)
 {
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static void M_Frames(const int32_t count)
@@ -1304,7 +1304,7 @@ TEST(player_options_and_shots_record_distinct_motion)
     M_Shoot();
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK(GfxRecorder_QuadCount() >= 4);
     bool player = false;

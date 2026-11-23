@@ -149,9 +149,9 @@ static void M_Start(
     effect->calc.added = M_Added;
     effect->calc.deleted = M_Deleted;
     Chain_InitElem(&effect->draw, M_Draw, effect);
-    ASSERT(IS_OK(Chain_AddCalc(&g_Chain, &effect->calc, M_CALC_PRIORITY)));
+    ASSERT(IS_OK(Chain_AddCalc(&effect->calc, M_CALC_PRIORITY)));
     if (draws) {
-        ASSERT(IS_OK(Chain_AddDraw(&g_Chain, &effect->draw, M_DRAW_PRIORITY)));
+        ASSERT(IS_OK(Chain_AddDraw(&effect->draw, M_DRAW_PRIORITY)));
     }
 }
 

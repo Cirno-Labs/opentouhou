@@ -360,7 +360,7 @@ static CHAIN_STATUS M_Play(void *const arg)
     const REPLAY_STAGE *const stage = file->stages[slot];
     if (replay->cursor < stage->frame_count) {
         const REPLAY_FRAME *const frame = &stage->frames[replay->cursor];
-        Buttons_Play(&g_Buttons, frame->buttons);
+        Buttons_Play(frame->buttons);
         // VsyncPatch's original also reads the buttons while paused: take
         // the buttons held on resume as held the calc before.
         if (replay->early_events && (frame->events & REPLAY_EVENT_PAUSE) != 0) {
@@ -373,7 +373,7 @@ static CHAIN_STATUS M_Play(void *const arg)
             LOG_WARNING("replay slot %d has no more frames", slot);
             replay->past_end_logged = true;
         }
-        Buttons_Play(&g_Buttons, 0);
+        Buttons_Play(0);
     }
     // Each sample restores the byte after the current one, the rate 30
     // calcs later. Past the last byte the rate stays.
@@ -455,19 +455,19 @@ RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
         Chain_InitElem(&replay->calc, M_Record, replay);
         replay->calc.added = M_RecordAdded;
         replay->calc.deleted = M_Deleted;
-        MUST(Chain_AddCalc(&g_Chain, &replay->calc, M_RECORD_PRIORITY));
+        MUST(Chain_AddCalc(&replay->calc, M_RECORD_PRIORITY));
         Chain_InitElem(&replay->mark, M_Mark, replay);
-        MUST(Chain_AddCalc(&g_Chain, &replay->mark, M_MARK_PRIORITY));
+        MUST(Chain_AddCalc(&replay->mark, M_MARK_PRIORITY));
     } else {
         Chain_InitElem(&replay->calc, M_Play, replay);
         replay->calc.added = M_PlayAdded;
         replay->calc.deleted = M_Deleted;
-        MUST(Chain_AddCalc(&g_Chain, &replay->calc, M_PLAY_PRIORITY));
+        MUST(Chain_AddCalc(&replay->calc, M_PLAY_PRIORITY));
         Chain_InitElem(&replay->restart, M_Restart, replay);
-        MUST(Chain_AddCalc(&g_Chain, &replay->restart, M_RESTART_PRIORITY));
+        MUST(Chain_AddCalc(&replay->restart, M_RESTART_PRIORITY));
     }
     Chain_InitElem(&replay->draw, M_Draw, replay);
-    return Chain_AddDraw(&g_Chain, &replay->draw, M_DRAW_PRIORITY);
+    return Chain_AddDraw(&replay->draw, M_DRAW_PRIORITY);
 }
 
 static int32_t M_ClearLowWord(const int32_t value)

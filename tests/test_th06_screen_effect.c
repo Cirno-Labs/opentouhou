@@ -14,8 +14,8 @@
 
 static void M_Setup(void)
 {
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     Rng_SetSeed(&g_Rng, 1234);
 }
@@ -33,10 +33,10 @@ TEST(a_fade_ends_after_its_duration_and_removes_its_draw_element)
     ScreenEffect_FadeIn(4, 0xffffff);
     CHECK(g_Chain.draw.next != nullptr);
     for (int i = 0; i < 4; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(g_Chain.calc.next != nullptr);
     }
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     CHECK(g_Chain.draw.next == nullptr);
 }
@@ -55,7 +55,7 @@ TEST(a_shake_moves_the_edges_as_the_rng_picks)
     RNG expected = g_Rng;
     ScreenEffect_Shake(3, 8, 0);
     for (int frame = 1; frame < 3; frame++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         const float shake = (float)frame * (float)(0 - 8) / (float)3 + (float)8;
         const uint32_t horizontal = Rng_U32InRange(&expected, 3);
         const uint32_t vertical = Rng_U32InRange(&expected, 3);
@@ -72,9 +72,9 @@ TEST(a_shake_ends_with_the_play_area_at_rest)
 {
     M_Setup();
     ScreenEffect_Shake(3, 8, 0);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     CHECK(M_PlayAreaIsAtRest());
 }
@@ -86,7 +86,7 @@ TEST(a_shake_holds_still_while_the_game_is_frozen)
     const RNG before = g_Rng;
     ScreenEffect_Shake(2, 8, 0);
     for (int i = 0; i < 5; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK(g_Chain.calc.next != nullptr);
     CHECK(M_PlayAreaIsAtRest());
@@ -100,8 +100,8 @@ TEST(releasing_the_chain_frees_every_effect)
         for (int i = 0; i < 16; i++) {
             ScreenEffect_FadeOut(60, 0);
         }
-        Chain_Release(&g_Chain);
-        Chain_Init(&g_Chain);
+        Chain_Release();
+        Chain_Init();
     }
     CHECK(g_Chain.calc.next == nullptr);
 }
@@ -112,11 +112,11 @@ TEST(fades_record_the_original_rectangles_and_preceding_calc_alpha)
     GfxRecorder_Start();
     ScreenEffect_FadeIn(4, 0x123456);
     ScreenEffect_FadeOut(4, 0xabcdef);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     Gfx_BeginTick((GFX_COLOR) {});
     const RNG before = g_Rng;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
     const GFX_VERTEX *const screen = GfxRecorder_Quad(0)->vertices;
@@ -140,7 +140,7 @@ TEST(fades_record_the_original_rectangles_and_preceding_calc_alpha)
     CHECK(GfxRecorder_Quad(0)->texture == nullptr);
     CHECK_EQ_INT(g_Rng.seed, before.seed);
     GfxRecorder_Stop();
-    Chain_Release(&g_Chain);
+    Chain_Release();
 }
 
 TEST(title_initialization_holds_the_first_fade_step)
@@ -150,9 +150,9 @@ TEST(title_initialization_holds_the_first_fade_step)
     GameTime_Hold();
     ScreenEffect_FadeIn(4, 0xffffff);
     for (int frame = 0; frame < 3; frame++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         Gfx_BeginTick((GFX_COLOR) {});
-        Chain_RunDraw(&g_Chain);
+        Chain_RunDraw();
         Gfx_EndTick();
         CHECK_EQ_INT(
             GfxRecorder_Quad(0)->vertices[0].color.alpha,
@@ -160,5 +160,5 @@ TEST(title_initialization_holds_the_first_fade_step)
         GameTime_Resume();
     }
     GfxRecorder_Stop();
-    Chain_Release(&g_Chain);
+    Chain_Release();
 }

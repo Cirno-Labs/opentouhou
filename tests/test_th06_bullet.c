@@ -199,7 +199,7 @@ static void M_Prepare(const char *const case_name, const int32_t flying_sprite)
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
     AsciiText_Initialize();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     Scene_Request(SCENE_GAMEPLAY);
     memset(&g_Player, 0, sizeof(g_Player));
@@ -223,7 +223,7 @@ static void M_Setup(const char *const case_name)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th06Data_Unmount();
     Mem_Free(m_Directory);
@@ -231,7 +231,7 @@ static void M_Teardown(void)
 
 static void M_Frame(void)
 {
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static int32_t M_CountItems(void)
@@ -1496,7 +1496,7 @@ TEST(bullet_draws_keep_distinct_lifetimes_when_pool_slots_are_reused)
     BULLET *const second = M_Fire(&shooter);
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
     const float x = GfxRecorder_Quad(1)->vertices[0].position.x;
@@ -1506,7 +1506,7 @@ TEST(bullet_draws_keep_distinct_lifetimes_when_pool_slots_are_reused)
     first->pos.x += 10.0f;
     second->pos.x += 10.0f;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.x == x + 10.0f);
     CHECK(GfxRecorder_Blend(0.0f, 1)[0].position.x == x);

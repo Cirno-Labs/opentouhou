@@ -31,9 +31,7 @@
 
 #include <string.h>
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 float g_GameSpeed = 1.0f;
 
 static const TH07_DATA_FILE m_Version = { "th07_0100b.ver", "0100b" };
@@ -85,7 +83,7 @@ bool Enemy_IsBossActive(void)
 
 static CHAIN_STATUS M_Input(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input, false);
+    Buttons_Update(&m_Input, false);
     return CHAIN_CONTINUE;
 }
 
@@ -141,7 +139,7 @@ static void M_Setup(const char *const case_name)
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     ResultScreen_OpenSaves();
     ResultScreen_LoadPlayStats();
@@ -154,13 +152,12 @@ static void M_Setup(const char *const case_name)
     m_Requested = SCENE_GAME_RESULT;
     m_RunTimeAdds = 0;
     Chain_InitElem(&m_InputElem, M_Input, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
 }
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Replay_Discard();
     AsciiText_Initialize();
     ResultScreen_CloseSaves();
@@ -175,10 +172,10 @@ static void M_Tick(void)
 {
     Sound_Reset();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     AsciiText_Initialize();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     for (int32_t i = 0; i < SOUND_QUEUE_SIZE; i++) {
         const int32_t sound = g_SoundEvents.queue[i];
         if (sound >= 0 && sound < SOUND_COUNT) {

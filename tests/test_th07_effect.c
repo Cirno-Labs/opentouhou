@@ -119,7 +119,7 @@ static void M_Setup(const char *const case_name, const int32_t stage)
     for (int32_t i = 0x2ab; i <= 0x304; i++) {
         Anm_SetScriptEntry(i, &m_Long);
     }
-    Chain_Init(&g_Chain);
+    Chain_Init();
     g_GameManager.run.stage = stage;
     g_GameManager.camera.viewport = (VIEWPORT) { 0, 0, 640, 480, 0, 1 };
     g_GameManager.cherry.max = 100;
@@ -128,7 +128,7 @@ static void M_Setup(const char *const case_name, const int32_t stage)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     GfxRecorder_Stop();
@@ -159,7 +159,7 @@ static void M_SetCamera(void)
 static void M_Tick(void)
 {
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Effect_DrawPetals();
     Gfx_EndTick();
 }
@@ -215,7 +215,7 @@ TEST(a_full_pool_returns_a_spare_that_never_runs)
     EFFECT *const spare = Effect_Spawn(EFFECT_SHOCKWAVE, m_Origin, 1, 0);
     CHECK(!spare->active);
     CHECK(spare != reserved);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!spare->active);
     CHECK(reserved->active);
     M_Teardown();
@@ -226,7 +226,7 @@ TEST(a_reserved_spawn_restarts_its_slot)
     M_Setup("reserved", 9);
     EFFECT *const first =
         Effect_SpawnReserved(EFFECT_SPELL_CIRCLE, m_Origin, 2, 1);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     EFFECT *const second = Effect_SpawnReserved(EFFECT_BORDER, m_Origin, 2, 2);
     CHECK(first == second);
     CHECK_EQ_INT(second->type, EFFECT_BORDER);
@@ -240,9 +240,9 @@ TEST(an_effect_ends_with_its_script)
     M_Setup("ends", 9);
     Anm_SetScriptEntry(0x2ab, &m_Short);
     EFFECT *const effect = Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, 0);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->active);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -252,10 +252,10 @@ TEST(timers_run_at_the_game_speed)
     M_Setup("speed", 9);
     EFFECT *const effect = Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, 0);
     g_GameSpeed = 0.5f;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(effect->timer.current, 0);
     CHECK(effect->timer.sub_frame == 0.5f);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(effect->timer.current, 1);
     M_Teardown();
 }
@@ -284,7 +284,7 @@ TEST(a_drift_picks_its_step_at_spawn_scaled_by_the_game_speed)
     CHECK(g_Rng.seed == expected.seed);
     const float x = effects[0]->step.x;
     const float ax = effects[0]->acceleration.x;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effects[0]->pos.x == 100.0f + x);
     CHECK(effects[0]->step.x == x + ax);
     CHECK(g_Rng.seed == expected.seed);
@@ -310,15 +310,15 @@ TEST(an_orbit_draws_projected_and_fades_out_over_sixteen_frames)
     effect->origin = m_Origin;
     effect->axis = (VEC3) { 0.0f, 0.0f, 1.0f };
     effect->radius = 10.0f;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->active);
     effect->fade_out = true;
     for (int i = 0; i < 15; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(effect->active);
     }
     CHECK(effect->vm.color >> 24 == (uint32_t)(1.0f / 16.0f * 255.0f));
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -332,8 +332,8 @@ TEST(a_charge_comes_in_at_z_zero)
     const float angle = Rng_F32(&expected) * MATH_TWO_PI - MATH_PI;
     CHECK(effect->origin.z == 0.0f);
     CHECK(effect->axis.x == X87_Cos(angle));
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     const float distance = 256.0f - 1.0f * 256.0f / 60.0f;
     CHECK(effect->pos.x == effect->axis.x * distance + 100.0f);
     CHECK(effect->pos.z == 0.0f);
@@ -351,7 +351,7 @@ TEST(a_burst_goes_out_at_the_angle_of_its_velocity)
     CHECK(effect->axis.x == X87_Cos(1.0f) * length);
     CHECK(effect->axis.y == X87_Sin(1.0f) * length);
     for (int i = 0; i < 46; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     float f = 45.0f / 90.0f;
     f = 1.0f - (1.0f - f) * (1.0f - f);
@@ -377,7 +377,7 @@ TEST(a_diverge_goes_out_256_every_30_frames)
     EFFECT *const effect = Effect_Spawn(EFFECT_DIVERGE, m_Origin, 1, 0);
     effect->axis = (VEC3) { 1.0f, 0.0f, 0.0f };
     for (int i = 0; i < 31; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK(effect->pos.x == 100.0f + 256.0f);
     M_Teardown();
@@ -390,9 +390,9 @@ TEST(a_player_aura_follows_the_player_until_its_script_ends)
     EFFECT *const effect =
         Effect_SpawnReserved(EFFECT_PLAYER_AURA, m_Origin, 2, 0);
     g_Player.pos = (VEC3) { 5.0f, 6.0f, 0.0f };
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->pos.x == 5.0f && effect->pos.y == 6.0f);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -406,7 +406,7 @@ TEST(play_area_lists_draw_offset_with_additive_ones_last)
         Effect_Spawn(EFFECT_EXPLOSION, m_Origin, 1, COLOR_WHITE);
     EFFECT *const normal = Effect_Spawn(
         EFFECT_SHOCKWAVE, (VEC3) { 300.0f, 200.0f, 0.0f }, 1, COLOR_WHITE);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     M_Tick();
     CHECK(add->vm.pos.x == 132.0f && add->vm.pos.y == 216.0f);
     CHECK(normal->vm.pos.x == 332.0f);
@@ -445,7 +445,7 @@ TEST(a_petal_starts_around_the_camera_and_falls_through_its_view)
     CHECK(g_Rng.seed == expected.seed);
 
     const float true_z = effect->true_pos.z;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->active);
     CHECK(effect->pos.z == true_z + (step_z * 0.5f + -0.015f));
     const float turned = Angle_AddNormalize(spin, effect->vm.rotation.x);
@@ -453,7 +453,7 @@ TEST(a_petal_starts_around_the_camera_and_falls_through_its_view)
     effect->true_pos.z = -1.0f;
     effect->step = (VEC3) {};
     effect->acceleration = (VEC3) { 0.0f, 0.0f, 1.0f };
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -464,7 +464,7 @@ TEST(a_petal_out_of_the_camera_view_ends)
     M_SetCamera();
     EFFECT *const effect = Effect_Spawn(EFFECT_PETAL_DRIFT, m_Origin, 1, 0);
     effect->true_pos = (VEC3) { 3000.0f, 0.0f, -9000.0f };
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!effect->active);
     M_Teardown();
 }
@@ -584,7 +584,7 @@ TEST(petals_draw_by_the_effects_quality)
     M_Setup("petal_quality", 9);
     M_SetCamera();
     Effect_Spawn(EFFECT_PETAL_DRIFT, m_Origin, 1, COLOR_WHITE);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     g_Settings.effects_quality = 1;
@@ -605,7 +605,7 @@ TEST(the_first_petal_type_draws_transparent_and_keeps_its_color)
     effect->true_pos = (VEC3) { 0.0f, 0.0f, -8000.0f };
     effect->step = (VEC3) {};
     effect->acceleration = (VEC3) {};
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(effect->active);
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
@@ -624,7 +624,7 @@ TEST(the_first_petal_type_draws_in_the_color_scale)
     effect->true_pos = (VEC3) { 0.0f, 0.0f, -8000.0f };
     effect->step = (VEC3) {};
     effect->acceleration = (VEC3) {};
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     effect->vm.color = COLOR_ARGB(0xff, 0x80, 0x40, 0x20);
     M_Tick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
@@ -643,12 +643,12 @@ TEST(an_effect_at_the_camera_draws_in_3d_with_the_petals)
     M_SetCamera();
     EFFECT *const effect =
         Effect_Spawn(EFFECT_AT_CAMERA, m_Origin, 1, COLOR_WHITE);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(effect->draw_list, 3);
     CHECK(effect->true_pos.z == -6000.0f);
     CHECK(effect->pos.z == 0.0f);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
     M_Tick();

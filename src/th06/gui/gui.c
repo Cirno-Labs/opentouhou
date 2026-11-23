@@ -857,9 +857,9 @@ RESULT Gui_Register(void)
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &m_CalcElem, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&m_CalcElem, M_CALC_PRIORITY));
     Chain_InitElem(&m_DrawElem, M_Draw, nullptr);
-    return Chain_AddDraw(&g_Chain, &m_DrawElem, M_DRAW_PRIORITY);
+    return Chain_AddDraw(&m_DrawElem, M_DRAW_PRIORITY);
 }
 
 void Gui_Remove(void)

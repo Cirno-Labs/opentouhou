@@ -288,7 +288,7 @@ static void M_LoadStage(const int32_t stage)
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     g_GameManager.run.difficulty = 1;
@@ -312,7 +312,7 @@ static void M_Load(void)
 static void M_End(void)
 {
     Enemy_Remove();
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Ecl_Release();
     Anm_Shutdown();
     Th06Data_Unmount();
@@ -321,7 +321,7 @@ static void M_End(void)
 
 static void M_Frame(void)
 {
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static void M_Frames(const int32_t count)
@@ -1511,7 +1511,7 @@ TEST(drawing_places_and_turns_the_sprites)
     enemy->move.angle = 0.5f;
     enemy->vm.pos_offset = (VEC3) { 1.0f, 2.0f, 3.0f };
     enemy->vms[6].auto_rotate = 1;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(enemy->vm.rotation.z == 0.5f);
     CHECK(enemy->vm.pos.x == 101.0f && enemy->vm.pos.y == 102.0f);
     CHECK(enemy->vm.pos.z == 0.494f);
@@ -1527,7 +1527,7 @@ TEST(drawing_skips_a_hidden_enemy)
     M_INSTR(0, M_OP_SET_HIDDEN, 1);
     M_Load();
     ENEMY *const enemy = M_Spawn();
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(enemy->vm.pos.x == 0.0f);
     M_End();
 }
@@ -1554,7 +1554,7 @@ TEST(enemy_draws_do_not_share_copied_template_identities)
     g_GameManager.camera.projection = Mat4_Identity();
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
     CHECK(GfxRecorder_QuadId(0) != 0);

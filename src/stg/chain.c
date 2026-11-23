@@ -1,5 +1,7 @@
 #include "stg/chain.h"
 
+CHAIN g_Chain;
+
 #include "core/base/assert.h"
 
 static RESULT M_Add(
@@ -57,18 +59,18 @@ static CHAIN_STATUS M_Run(
     return CHAIN_CONTINUE;
 }
 
-static bool M_CalcEnd(const CHAIN *const chain)
+static bool M_CalcEnd(void)
 {
-    return chain->on_calc_end == nullptr
-        || chain->on_calc_end(chain->on_calc_end_arg);
+    return g_Chain.on_calc_end == nullptr
+        || g_Chain.on_calc_end(g_Chain.on_calc_end_arg);
 }
 
-void Chain_Init(CHAIN *const chain)
+void Chain_Init(void)
 {
-    Chain_InitElem(&chain->calc, nullptr, nullptr);
-    Chain_InitElem(&chain->draw, nullptr, nullptr);
-    chain->on_calc_end = nullptr;
-    chain->on_calc_end_arg = nullptr;
+    Chain_InitElem(&g_Chain.calc, nullptr, nullptr);
+    Chain_InitElem(&g_Chain.draw, nullptr, nullptr);
+    g_Chain.on_calc_end = nullptr;
+    g_Chain.on_calc_end_arg = nullptr;
 }
 
 void Chain_InitElem(
@@ -78,16 +80,14 @@ void Chain_InitElem(
     *elem = (CHAIN_ELEM) { .callback = callback, .arg = arg };
 }
 
-RESULT Chain_AddCalc(
-    CHAIN *const chain, CHAIN_ELEM *const elem, const int16_t priority)
+RESULT Chain_AddCalc(CHAIN_ELEM *const elem, const int16_t priority)
 {
-    return M_Add(&chain->calc, elem, priority);
+    return M_Add(&g_Chain.calc, elem, priority);
 }
 
-RESULT Chain_AddDraw(
-    CHAIN *const chain, CHAIN_ELEM *const elem, const int16_t priority)
+RESULT Chain_AddDraw(CHAIN_ELEM *const elem, const int16_t priority)
 {
-    return M_Add(&chain->draw, elem, priority);
+    return M_Add(&g_Chain.draw, elem, priority);
 }
 
 void Chain_Remove(CHAIN_ELEM *const elem)
@@ -110,16 +110,16 @@ void Chain_Remove(CHAIN_ELEM *const elem)
     }
 }
 
-CHAIN_RUN Chain_RunCalc(CHAIN *const chain)
+CHAIN_RUN Chain_RunCalc(void)
 {
     int count;
     CHAIN_STATUS status;
-    while ((status = M_Run(&chain->calc, true, &count)) == CHAIN_RESTART) {
-        if (!M_CalcEnd(chain)) {
+    while ((status = M_Run(&g_Chain.calc, true, &count)) == CHAIN_RESTART) {
+        if (!M_CalcEnd()) {
             return CHAIN_RUN_CONTINUE;
         }
     }
-    if (!M_CalcEnd(chain)) {
+    if (!M_CalcEnd()) {
         return CHAIN_RUN_CONTINUE;
     }
     if (status == CHAIN_QUIT || (status == CHAIN_CONTINUE && count == 0)) {
@@ -128,18 +128,18 @@ CHAIN_RUN Chain_RunCalc(CHAIN *const chain)
     return status == CHAIN_RESET ? CHAIN_RUN_RESET : CHAIN_RUN_CONTINUE;
 }
 
-void Chain_RunDraw(CHAIN *const chain)
+void Chain_RunDraw(void)
 {
     int count;
-    M_Run(&chain->draw, false, &count);
+    M_Run(&g_Chain.draw, false, &count);
 }
 
-void Chain_Release(CHAIN *const chain)
+void Chain_Release(void)
 {
-    while (chain->calc.next != nullptr) {
-        Chain_Remove(chain->calc.next);
+    while (g_Chain.calc.next != nullptr) {
+        Chain_Remove(g_Chain.calc.next);
     }
-    while (chain->draw.next != nullptr) {
-        Chain_Remove(chain->draw.next);
+    while (g_Chain.draw.next != nullptr) {
+        Chain_Remove(g_Chain.draw.next);
     }
 }

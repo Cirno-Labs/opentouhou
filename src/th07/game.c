@@ -12,9 +12,7 @@
 #include "core/base/memory.h"
 #include "core/gfx.h"
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 float g_GameSpeed = 1.0f;
 TH07_INPUT g_Input;
 
@@ -22,7 +20,7 @@ RESULT Game_Init(void)
 {
     Gfx_SetPersistentScreen(true);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     g_GameSpeed = 1.0f;
     MUST(Scene_Register());
     MUST(Anm_Load(0, "data/text.anm", 0x700));
@@ -36,7 +34,7 @@ CHAIN_RUN Game_Warmup(const TH07_INPUT *const input)
     }
     g_Input = *input;
     for (int32_t frame = 0; frame < 30; frame++) {
-        const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
+        const CHAIN_RUN run = Chain_RunCalc();
         if (run != CHAIN_RUN_CONTINUE) {
             return run;
         }
@@ -52,9 +50,9 @@ bool Game_Tick(const TH07_INPUT *const input)
         ResultScreen_CountFrames(tick_rate);
         AsciiText_SetFrameRate(tick_rate);
     }
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Note_Draw();
-    const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
+    const CHAIN_RUN run = Chain_RunCalc();
     if (Gfx_IsStarted()) {
         Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
     }
@@ -67,6 +65,6 @@ bool Game_Tick(const TH07_INPUT *const input)
 
 void Game_Shutdown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
 }

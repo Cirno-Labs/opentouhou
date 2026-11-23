@@ -307,7 +307,7 @@ static bool M_DropsSlowPlayback(GAME_MANAGER *const gm)
 // Returns whether the demo ended.
 static bool M_RunDemo(GAME_MANAGER *const gm)
 {
-    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_any)) {
+    if (Buttons_WasPressed(TH07_BUTTON_any)) {
         Scene_Request(SCENE_TITLE);
     }
     gm->mode.demo_frames++;
@@ -383,8 +383,7 @@ static CHAIN_STATUS M_Calc(void *const arg)
 {
     GAME_MANAGER *const gm = arg;
     if (!gm->mode.in_continue_menu && gm->mode.paused == 0 && !gm->mode.in_demo
-        && !gm->mode.calc_dropped
-        && Buttons_WasPressed(&g_Buttons, TH07_BUTTON_menu)) {
+        && !gm->mode.calc_dropped && Buttons_WasPressed(TH07_BUTTON_menu)) {
         gm->mode.paused = 1;
         M_ResetPlayArea(gm);
         gm->mode.pause_requested = true;
@@ -436,9 +435,9 @@ RESULT GameManager_Register(void)
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;
     g_GameManager.run.stage_frames = 0;
-    MUST(Chain_AddCalc(&g_Chain, &m_CalcElem, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&m_CalcElem, M_CALC_PRIORITY));
     Chain_InitElem(&m_DrawElem, M_Draw, &g_GameManager);
-    return Chain_AddDraw(&g_Chain, &m_DrawElem, M_DRAW_PRIORITY);
+    return Chain_AddDraw(&m_DrawElem, M_DRAW_PRIORITY);
 }
 
 void GameManager_Remove(void)

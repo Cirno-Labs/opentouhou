@@ -70,9 +70,7 @@ typedef struct {
     int32_t to;
 } M_SHAKE_CALL;
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 float g_GameSpeed;
 ENEMY_MANAGER g_Enemies;
 ASCII_TEXT g_AsciiText;
@@ -344,7 +342,7 @@ static void M_SetUp(const char *const case_name, const uint8_t shot)
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.player_area = (PLAY_RECT) { 8.0f, 16.0f, 368.0f, 416.0f };
     g_GameManager.run.character = shot / 2;
@@ -360,7 +358,7 @@ static void M_SetUp(const char *const case_name, const uint8_t shot)
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     g_GameSpeed = 1.0f;
     CHECK(Result_Log(Player_Register(), LOG_LEVEL_ERROR));
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     g_Player.state.value = PLAYER_ALIVE;
     g_Player.state.respawn_clear_frames = 0;
     M_Reset();
@@ -368,7 +366,7 @@ static void M_SetUp(const char *const case_name, const uint8_t shot)
 
 static void M_TearDown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     GfxRecorder_Stop();
@@ -377,7 +375,7 @@ static void M_TearDown(void)
 
 static void M_Frame(void)
 {
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 // Starts the bomb, focused or not, at pos.

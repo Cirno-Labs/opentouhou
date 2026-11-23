@@ -24,9 +24,7 @@
 
 #define M_KOUMA "\x8d\x67\x96\x82" // 紅魔 in CP932
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 
 ASCII_TEXT g_AsciiText;
 
@@ -98,7 +96,7 @@ TEST(a_command_line_has_no_half)
 
 static CHAIN_STATUS M_InputUpdate(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input);
+    Buttons_Update(&m_Input);
     return CHAIN_CONTINUE;
 }
 
@@ -164,7 +162,7 @@ static void M_Setup(const char *const case_name)
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     for (int32_t i = 0; i < 4; i++) {
         for (int32_t j = 0; j < 5; j++) {
@@ -180,13 +178,12 @@ static void M_Setup(const char *const case_name)
     m_Fade = 0.0f;
     Sound_Reset();
     Chain_InitElem(&m_InputElem, M_InputUpdate, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
 }
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     GfxRecorder_Stop();
     Th06Data_Unmount();
@@ -198,9 +195,9 @@ static void M_Tick(void)
 {
     Sound_Reset();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     if (g_SoundEvents.music == SOUND_MUSIC_PLAY) {
         memcpy(m_Music, g_SoundEvents.music_path, sizeof(m_Music) - 1);
     }
@@ -257,9 +254,9 @@ TEST(the_clear_records_99_with_and_without_continues)
     CHECK(g_AsciiText.hide_frame_rate);
     CHECK_EQ_INT(g_GameManager.records.clears[3].without_continues[2], 99);
     CHECK_EQ_INT(g_GameManager.records.clears[3].with_continues[2], 99);
-    Chain_Release(&g_Chain);
+    Chain_Release();
     CHECK(!g_AsciiText.hide_frame_rate);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     g_GameManager.stats.continues_used = 1;
     g_GameManager.run.difficulty = 3;
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
@@ -283,12 +280,11 @@ TEST(a_line_wait_ends_early_with_skip_after_a_clear)
         "0\0\r\n@z\r\n");
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(M_TicksToEnd(20), 12);
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     m_Requested = SCENE_ENDING;
     Chain_InitElem(&m_InputElem, M_InputUpdate, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
     CHECK(Result_Log(Ending_Register(), LOG_LEVEL_ERROR));
     memset(&m_Input, 0, sizeof(m_Input));
     m_Input.skip = true;

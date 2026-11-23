@@ -69,7 +69,6 @@ typedef struct {
     bool can_graze;
 } M_LASER_HIT;
 
-CHAIN g_Chain;
 RNG g_Rng;
 float g_GameSpeed;
 PLAYER g_Player;
@@ -241,7 +240,7 @@ static void M_Prepare(const char *const case_name, const int32_t large_sprite)
     g_GameSpeed = 1.0f;
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     m_Scene = SCENE_GAMEPLAY;
     memset(&g_Player, 0, sizeof(g_Player));
     g_Player.clear_item = ITEM_STAR;
@@ -272,7 +271,7 @@ static void M_Setup(const char *const case_name)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     Mem_Free(m_Directory);
@@ -280,7 +279,7 @@ static void M_Teardown(void)
 
 static void M_Frame(void)
 {
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static void M_Frames(const int32_t count)
@@ -1682,7 +1681,7 @@ static void M_StartDraw(void)
 static void M_DrawFrame(void)
 {
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
 }
 

@@ -13,9 +13,7 @@
 #include "core/base/memory.h"
 #include "core/gfx.h"
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 TH06_INPUT g_Input;
 
 RESULT Game_Init(void)
@@ -23,8 +21,8 @@ RESULT Game_Init(void)
     GameTime_Resume();
     Gfx_SetPersistentScreen(true);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
-    Buttons_ReadSharedFocus(&g_Buttons);
+    Chain_Init();
+    Buttons_ReadSharedFocus();
     GameManager_Create(&g_GameManager);
     MUST(Scene_Register());
     MUST(Anm_Load(0, "data/text.anm", 0x700));
@@ -39,9 +37,9 @@ bool Game_Tick(const TH06_INPUT *const input)
         ResultScreen_CountFrames(tick_rate);
         AsciiText_SetFrameRate(tick_rate);
     }
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Note_Draw();
-    const CHAIN_RUN run = Chain_RunCalc(&g_Chain);
+    const CHAIN_RUN run = Chain_RunCalc();
     GameTime_Resume();
     Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
     if (run == CHAIN_RUN_RESET) {
@@ -53,6 +51,6 @@ bool Game_Tick(const TH06_INPUT *const input)
 
 void Game_Shutdown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
 }

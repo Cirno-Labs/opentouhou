@@ -6,10 +6,8 @@
 #include "stg/chain.h"
 #include "stg/rng.h"
 
-extern CHAIN g_Chain;
 // Draws all of the gameplay randomness.
 extern RNG g_Rng;
-extern BUTTONS g_Buttons;
 // 1 for full speed, less while ECL slows the game.
 extern float g_GameSpeed;
 // The input used by the update chain.

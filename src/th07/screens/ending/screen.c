@@ -148,7 +148,7 @@ static void M_SkipLine(M_ENDING *const ending)
 
 static bool M_SkipPressed(const M_ENDING *const ending)
 {
-    return Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)
+    return Buttons_WasPressed(TH07_BUTTON_ok)
         || (ending->can_skip && (g_Buttons.word & TH07_BUTTON_skip) != 0);
 }
 
@@ -549,7 +549,7 @@ RESULT Ending_Register(void)
     Chain_InitElem(&ending->calc, M_Update, ending);
     ending->calc.added = M_Added;
     ending->calc.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &ending->calc, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&ending->calc, M_CALC_PRIORITY));
     Chain_InitElem(&ending->draw, M_Draw, ending);
-    return Chain_AddDraw(&g_Chain, &ending->draw, M_DRAW_PRIORITY);
+    return Chain_AddDraw(&ending->draw, M_DRAW_PRIORITY);
 }

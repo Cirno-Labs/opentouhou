@@ -13,7 +13,6 @@
 
 ASCII_TEXT g_AsciiText;
 GAME_MANAGER g_GameManager;
-BUTTONS g_Buttons;
 
 static SCENE m_Requested;
 static uint32_t m_ShownAtRequest;

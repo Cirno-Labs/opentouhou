@@ -17,7 +17,7 @@ static const TH06_INPUT m_NoInput;
 static void M_Setup(void)
 {
     SceneStubCalls_Reset();
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Result_Ignore(Game_Init());
 }
 

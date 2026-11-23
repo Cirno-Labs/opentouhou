@@ -1029,19 +1029,19 @@ TEST(the_game_makes_the_pending_copy_after_the_draw_and_update_chains)
     GfxRecorder_Start();
     M_SetScreen(m_CopySource);
     CHECK(IS_OK(Anm_CreateTexture(200, 12, 8, ANM_TEXTURE_RGBA8)));
-    Chain_Init(&g_Chain);
+    Chain_Init();
     CHAIN_ELEM draw;
     CHAIN_ELEM calc;
     Chain_InitElem(&draw, M_RequestCopy, nullptr);
     Chain_InitElem(&calc, M_CountReads, nullptr);
-    CHECK(IS_OK(Chain_AddDraw(&g_Chain, &draw, 1)));
-    CHECK(IS_OK(Chain_AddCalc(&g_Chain, &calc, 1)));
+    CHECK(IS_OK(Chain_AddDraw(&draw, 1)));
+    CHECK(IS_OK(Chain_AddCalc(&calc, 1)));
     m_ReadsInCalc = -1;
     CHECK(Game_Tick(&(TH07_INPUT) {}));
     CHECK_EQ_INT(m_ReadsInCalc, 0);
     CHECK_EQ_INT(GfxRecorder_ReadCount(), 1);
     M_CheckCopied(200);
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_ReleaseTexture(200);
     GfxRecorder_Stop();
 }

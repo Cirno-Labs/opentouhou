@@ -33,7 +33,6 @@
 #define M_DELETE_OP 1
 
 RNG g_Rng;
-CHAIN g_Chain;
 float g_GameSpeed;
 PLAYER g_Player;
 GUI g_Gui;
@@ -190,7 +189,7 @@ const char *PlaySetup_SetUp(const char *const case_name, const uint16_t seed)
     ASSERT(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, seed);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     g_GameManager.run.difficulty = 1;
@@ -211,7 +210,7 @@ const char *PlaySetup_SetUp(const char *const case_name, const uint16_t seed)
 
 void PlaySetup_TearDown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     Mem_Free(m_Directory);
