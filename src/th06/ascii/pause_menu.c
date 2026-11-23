@@ -93,8 +93,7 @@ static void M_Highlight(
 
 static bool M_Moved(void)
 {
-    return Buttons_WasPressed(TH06_BUTTON_up)
-        || Buttons_WasPressed(TH06_BUTTON_down);
+    return Buttons_Pressed(TH06_BUTTON_up) || Buttons_Pressed(TH06_BUTTON_down);
 }
 
 static void M_StartBackground(ANM_VM *const background)
@@ -126,7 +125,7 @@ static void M_OnResume(PAUSE_MENU *const menu)
     if (M_Moved()) {
         menu->state = M_PAUSE_ON_QUIT;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_shoot)) {
+    if (Buttons_Pressed(TH06_BUTTON_shoot)) {
         M_Interrupt(menu->sprites, 0, M_PAUSE_MAIN_COUNT, 2);
         menu->state = M_PAUSE_RESUMING;
         menu->state_frames = 0;
@@ -143,7 +142,7 @@ static void M_OnQuit(PAUSE_MENU *const menu)
     if (M_Moved()) {
         menu->state = M_PAUSE_ON_RESUME;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_shoot)) {
+    if (Buttons_Pressed(TH06_BUTTON_shoot)) {
         M_Interrupt(menu->sprites, 0, M_PAUSE_MAIN_COUNT, 2);
         M_Interrupt(menu->sprites, M_PAUSE_MAIN_COUNT, M_PAUSE_SPRITE_COUNT, 1);
         menu->state = M_PAUSE_ON_NO;
@@ -160,7 +159,7 @@ static void M_OnYes(PAUSE_MENU *const menu)
     if (M_Moved()) {
         menu->state = M_PAUSE_ON_NO;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_shoot)) {
+    if (Buttons_Pressed(TH06_BUTTON_shoot)) {
         M_Interrupt(menu->sprites, M_PAUSE_MAIN_COUNT, M_PAUSE_SPRITE_COUNT, 2);
         menu->state = M_PAUSE_QUITTING;
         menu->state_frames = 0;
@@ -176,7 +175,7 @@ static void M_OnNo(PAUSE_MENU *const menu)
     if (M_Moved()) {
         menu->state = M_PAUSE_ON_YES;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_shoot)) {
+    if (Buttons_Pressed(TH06_BUTTON_shoot)) {
         M_Interrupt(menu->sprites, 0, M_PAUSE_MAIN_COUNT, 1);
         M_Interrupt(menu->sprites, M_PAUSE_MAIN_COUNT, M_PAUSE_SPRITE_COUNT, 2);
         menu->state = M_PAUSE_ON_QUIT;
@@ -199,13 +198,13 @@ static void M_ClosePause(PAUSE_MENU *const menu, const bool quit)
 
 void PauseMenu_Update(PAUSE_MENU *const menu)
 {
-    if (Buttons_WasPressed(TH06_BUTTON_menu)) {
+    if (Buttons_Pressed(TH06_BUTTON_menu)) {
         menu->state = M_PAUSE_RESUMING;
         M_InterruptShown(menu->sprites, M_PAUSE_SPRITE_COUNT);
         menu->state_frames = 0;
         menu->background.pending_interrupt = 1;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_quit)) {
+    if (Buttons_Pressed(TH06_BUTTON_quit)) {
         menu->state = M_PAUSE_QUITTING;
         M_InterruptShown(menu->sprites, M_PAUSE_SPRITE_COUNT);
         menu->state_frames = 0;
@@ -297,7 +296,7 @@ static void M_OnContinue(PAUSE_MENU *const menu)
     if (M_Moved()) {
         menu->state = M_CONTINUE_ON_NO;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_shoot)) {
+    if (Buttons_Pressed(TH06_BUTTON_shoot)) {
         M_Interrupt(menu->sprites, 0, M_CONTINUE_SPRITE_COUNT, 2);
         menu->state = M_CONTINUE_CONTINUING;
         menu->background.pending_interrupt = 1;
@@ -314,7 +313,7 @@ static void M_OnGiveUp(PAUSE_MENU *const menu)
     if (M_Moved()) {
         menu->state = M_CONTINUE_ON_YES;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_shoot)) {
+    if (Buttons_Pressed(TH06_BUTTON_shoot)) {
         M_Interrupt(menu->sprites, 0, M_CONTINUE_SPRITE_COUNT, 2);
         menu->state = M_CONTINUE_GIVING_UP;
         menu->state_frames = 0;

@@ -190,10 +190,10 @@ static int32_t M_PracticeStages(void)
 static int32_t M_MoveCursor(M_MENU *const menu, const int32_t count)
 {
     int32_t moved = 0;
-    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_up)) {
+    if (Buttons_Repeated(TH06_BUTTON_up)) {
         menu->cursor--;
         moved = -1;
-    } else if (Buttons_WasPressedOrRepeated(TH06_BUTTON_down)) {
+    } else if (Buttons_Repeated(TH06_BUTTON_down)) {
         menu->cursor++;
         moved = 1;
     } else {
@@ -480,7 +480,7 @@ static CHAIN_STATUS M_StartTitle(M_MENU *const menu)
 // Returns whether the title still waits for its key.
 static bool M_WaitForKey(M_MENU *const menu)
 {
-    if (menu->state_frames < 30 || !Buttons_WasPressedOrRepeated(M_OPENING)) {
+    if (menu->state_frames < 30 || !Buttons_Repeated(M_OPENING)) {
         return true;
     }
     menu->state_frames = 0;
@@ -534,7 +534,7 @@ static void M_UpdateTitleMenu(M_MENU *const menu)
     if (menu->state_frames < 20) {
         return;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (Buttons_Pressed(TH06_BUTTON_ok)) {
         switch (menu->cursor) {
         case 0:
             M_StartSelect(menu, false);
@@ -583,13 +583,13 @@ static void M_UpdateTitleMenu(M_MENU *const menu)
             break;
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_quit)) {
+    if (Buttons_Pressed(TH06_BUTTON_quit)) {
         menu->state = M_STATE_QUIT;
         menu->state_frames = 0;
         M_Interrupt(menu, 4);
         Sound_Queue(SOUND_CANCEL);
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->cursor = 7;
         Sound_Queue(SOUND_CANCEL);
     }
@@ -684,17 +684,17 @@ static void M_UpdateOptions(M_MENU *const menu)
     if (menu->state_frames < 0x20) {
         return;
     }
-    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_left)) {
+    if (Buttons_Repeated(TH06_BUTTON_left)) {
         M_ChangeOption(menu, -1);
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->cursor = 8;
         Sound_Queue(SOUND_CANCEL);
     }
-    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_right)) {
+    if (Buttons_Repeated(TH06_BUTTON_right)) {
         M_ChangeOption(menu, 1);
     }
-    if (!Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH06_BUTTON_ok)) {
         return;
     }
     switch (menu->cursor) {
@@ -783,7 +783,7 @@ static void M_UpdatePadConfig(M_MENU *const menu)
                 || menu->cursor == TH06_ACTION_focus);
         *row = button;
     }
-    if (!Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH06_BUTTON_ok)) {
         return;
     }
     if (menu->cursor == 9) {
@@ -846,7 +846,7 @@ static void M_UpdateDifficulty(M_MENU *const menu)
         entries[4].color = COLOR_WHITE;
         entries[4].pos_offset = (VEC3) { -6.0f, -6.0f, 0.0f };
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->state = M_STATE_CLOSE_SELECT;
         menu->state_frames = 0;
         M_Interrupt(menu, 4);
@@ -859,7 +859,7 @@ static void M_UpdateDifficulty(M_MENU *const menu)
         }
         return;
     }
-    if (!Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH06_BUTTON_ok)) {
         return;
     }
     menu->state = M_STATE_CHARACTER;
@@ -908,7 +908,7 @@ static void M_UpdateCharacter(M_MENU *const menu)
     // Left moves the cursor forward and right moves it back. A locked
     // character on the left skips the check of right in that calc.
     bool skip_right = false;
-    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_left)) {
+    if (Buttons_Repeated(TH06_BUTTON_left)) {
         menu->cursor = (menu->cursor + 1) % 2;
         if (M_CharacterLocked(menu->cursor)) {
             menu->cursor = (menu->cursor + 1) % 2;
@@ -918,7 +918,7 @@ static void M_UpdateCharacter(M_MENU *const menu)
             M_ShowCharacters(menu, 9, 0xc);
         }
     }
-    if (!skip_right && Buttons_WasPressedOrRepeated(TH06_BUTTON_right)) {
+    if (!skip_right && Buttons_Repeated(TH06_BUTTON_right)) {
         menu->cursor = (menu->cursor + 1) % 2;
         if (M_CharacterLocked(menu->cursor)) {
             menu->cursor = (menu->cursor + 1) % 2;
@@ -927,14 +927,14 @@ static void M_UpdateCharacter(M_MENU *const menu)
             M_ShowCharacters(menu, 10, 0xb);
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->state = M_STATE_DIFFICULTY;
         menu->state_frames = 0;
         M_OpenDifficulty(menu);
         Sound_Queue(SOUND_CANCEL);
         return;
     }
-    if (!Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH06_BUTTON_ok)) {
         return;
     }
     menu->state = M_STATE_SHOT;
@@ -1004,7 +1004,7 @@ static CHAIN_STATUS M_UpdateShot(M_MENU *const menu)
     if (menu->state_frames < 30) {
         return CHAIN_CONTINUE;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->state = M_STATE_CHARACTER;
         menu->state_frames = 0;
         M_Interrupt(menu, 7);
@@ -1016,7 +1016,7 @@ static CHAIN_STATUS M_UpdateShot(M_MENU *const menu)
         M_ClearOtherPair(menu, 0x56, menu->cursor);
         return CHAIN_CONTINUE;
     }
-    if (!Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH06_BUTTON_ok)) {
         return CHAIN_CONTINUE;
     }
     gm->run.shot_type = (uint8_t)menu->cursor;
@@ -1042,7 +1042,7 @@ static CHAIN_STATUS M_UpdatePracticeStage(M_MENU *const menu)
     if (menu->state_frames < 30) {
         return CHAIN_CONTINUE;
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->state = M_STATE_SHOT;
         menu->state_frames = 0;
         M_BackToSelects(menu, 0xd);
@@ -1050,7 +1050,7 @@ static CHAIN_STATUS M_UpdatePracticeStage(M_MENU *const menu)
         Sound_Queue(SOUND_OK);
         return CHAIN_CONTINUE;
     }
-    if (!Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH06_BUTTON_ok)) {
         return CHAIN_CONTINUE;
     }
     gm->run.stage = menu->cursor;
@@ -1098,7 +1098,7 @@ static void M_UpdateReplays(M_MENU *const menu)
     if (menu->replay_count != 0) {
         M_MoveCursor(menu, menu->replay_count);
         menu->replay_cursor = menu->cursor;
-        if (Buttons_WasPressed(TH06_BUTTON_ok)) {
+        if (Buttons_Pressed(TH06_BUTTON_ok)) {
             menu->state = M_STATE_REPLAY_STAGE;
             for (int32_t i = 0x61; i < 0x61 + 0x19; i++) {
                 menu->sprites[i].pending_interrupt = 0x11;
@@ -1120,7 +1120,7 @@ static void M_UpdateReplays(M_MENU *const menu)
             }
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->state = M_STATE_CLOSE_REPLAYS;
         menu->state_frames = 0;
         M_Interrupt(menu, 4);
@@ -1150,7 +1150,7 @@ static CHAIN_STATUS M_UpdateReplayStage(M_MENU *const menu)
             }
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_ok)) {
+    if (Buttons_Pressed(TH06_BUTTON_ok)) {
         const SAVED_REPLAY *const replay = &menu->replays[menu->replay_cursor];
         if (Result_Log(
                 TitleScene_SetUpReplay(
@@ -1159,7 +1159,7 @@ static CHAIN_STATUS M_UpdateReplayStage(M_MENU *const menu)
             return CHAIN_REMOVE;
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         menu->state = M_STATE_REPLAYS;
         menu->state_frames = 0;
         M_Interrupt(menu, 4);

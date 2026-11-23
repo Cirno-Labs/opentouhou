@@ -96,11 +96,11 @@ void Buttons_Update(const TH06_INPUT *input);
 void Buttons_ApplyReplay(uint16_t replay_word);
 
 // Returns whether the masked word is nonzero and changed this calc.
-bool Buttons_WasPressed(uint16_t mask);
+bool Buttons_Pressed(uint16_t mask);
 
-// Returns whether Buttons_WasPressed holds for mask, or a bit of mask is
+// Returns whether Buttons_Pressed holds for mask, or a bit of mask is
 // down on a calc that repeats.
-bool Buttons_WasPressedOrRepeated(uint16_t mask);
+bool Buttons_Repeated(uint16_t mask);
 
 // Clears the buttons but not held_frames and the focus delay, as a scene
 // switch does.

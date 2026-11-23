@@ -140,7 +140,7 @@ static void M_HighlightConfirm(
 
 static bool M_Confirmed(void)
 {
-    return Buttons_WasPressed(TH07_BUTTON_ok);
+    return Buttons_Pressed(TH07_BUTTON_ok);
 }
 
 static void M_PlayMove(void)
@@ -190,11 +190,11 @@ static void M_MoveLine(
     PAUSE_MENU *const menu, const M_PAUSE_STATE up_state,
     const M_PAUSE_STATE down_state)
 {
-    if (Buttons_WasPressed(TH07_BUTTON_up)) {
+    if (Buttons_Pressed(TH07_BUTTON_up)) {
         menu->state = up_state;
         M_PlayMove();
     }
-    if (Buttons_WasPressed(TH07_BUTTON_down)) {
+    if (Buttons_Pressed(TH07_BUTTON_down)) {
         menu->state = down_state;
         M_PlayMove();
     }
@@ -262,8 +262,7 @@ static void M_OnYes(PAUSE_MENU *const menu, const bool retry)
     if (menu->state_frames < 4) {
         return;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_up)
-        || Buttons_WasPressed(TH07_BUTTON_down)) {
+    if (Buttons_Pressed(TH07_BUTTON_up) || Buttons_Pressed(TH07_BUTTON_down)) {
         menu->state = retry ? M_PAUSE_RETRY_NO : M_PAUSE_QUIT_NO;
         M_PlayMove();
     }
@@ -282,8 +281,7 @@ static void M_OnNo(PAUSE_MENU *const menu, const bool retry)
     if (menu->state_frames < 4) {
         return;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_up)
-        || Buttons_WasPressed(TH07_BUTTON_down)) {
+    if (Buttons_Pressed(TH07_BUTTON_up) || Buttons_Pressed(TH07_BUTTON_down)) {
         menu->state = retry ? M_PAUSE_RETRY_YES : M_PAUSE_QUIT_YES;
         M_PlayMove();
     }
@@ -320,18 +318,16 @@ static void M_Leave(PAUSE_MENU *const menu, const SCENE scene)
 
 void PauseMenu_Update(PAUSE_MENU *const menu)
 {
-    if (Buttons_WasPressed(TH07_BUTTON_menu)
-        && menu->state != M_PAUSE_RESUMING) {
+    if (Buttons_Pressed(TH07_BUTTON_menu) && menu->state != M_PAUSE_RESUMING) {
         M_StartClose(menu, M_PAUSE_RESUMING);
         menu->background.pending_interrupt = 1;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_quit)
-        && menu->state != M_PAUSE_QUITTING) {
+    if (Buttons_Pressed(TH07_BUTTON_quit) && menu->state != M_PAUSE_QUITTING) {
         M_StartClose(menu, M_PAUSE_QUITTING);
     }
     // Retail tests for quitting here, so a new press restarts the wait of
     // retrying.
-    if (!g_GameManager.mode.in_replay && Buttons_WasPressed(TH07_BUTTON_retry)
+    if (!g_GameManager.mode.in_replay && Buttons_Pressed(TH07_BUTTON_retry)
         && menu->state != M_PAUSE_QUITTING) {
         M_StartClose(menu, M_PAUSE_RETRYING);
     }
@@ -489,8 +485,7 @@ static void M_OnContinueChoice(CONTINUE_MENU *const menu, const bool on_yes)
     if (menu->state_frames < (on_yes ? 4 : 30)) {
         return;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_up)
-        || Buttons_WasPressed(TH07_BUTTON_down)) {
+    if (Buttons_Pressed(TH07_BUTTON_up) || Buttons_Pressed(TH07_BUTTON_down)) {
         menu->state = on_yes ? M_CONTINUE_ON_NO : M_CONTINUE_ON_YES;
         M_PlayMove();
     }

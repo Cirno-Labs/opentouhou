@@ -130,15 +130,15 @@ void Buttons_ApplyReplay(const uint16_t replay_word)
     M_Update();
 }
 
-bool Buttons_WasPressed(const uint16_t mask)
+bool Buttons_Pressed(const uint16_t mask)
 {
     return (g_Buttons.word & mask) != 0
         && (g_Buttons.word & mask) != (g_Buttons.previous_word & mask);
 }
 
-bool Buttons_WasPressedOrRepeated(const uint16_t mask)
+bool Buttons_Repeated(const uint16_t mask)
 {
-    return Buttons_WasPressed(mask)
+    return Buttons_Pressed(mask)
         || (Buttons_ToWord(&g_Buttons.repeated) & mask) != 0;
 }
 

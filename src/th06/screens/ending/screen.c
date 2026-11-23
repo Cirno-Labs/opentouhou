@@ -149,7 +149,7 @@ static void M_SkipLine(M_ENDING *const ending)
 
 static bool M_SkipPressed(const M_ENDING *const ending)
 {
-    return Buttons_WasPressed(TH06_BUTTON_ok)
+    return Buttons_Pressed(TH06_BUTTON_ok)
         || (ending->can_skip && (g_Buttons.word & TH06_BUTTON_skip) != 0);
 }
 

@@ -81,13 +81,13 @@ TEST(update_reports_pressed_on_the_first_calc_down)
     const TH07_INPUT input = { .shoot = true };
     Buttons_Update(&input, false);
     CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
-    CHECK(Buttons_WasPressed(TH07_BUTTON_shoot));
-    CHECK(Buttons_WasPressedOrRepeated(TH07_BUTTON_shoot));
+    CHECK(Buttons_Pressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_Repeated(TH07_BUTTON_shoot));
     CHECK_EQ_INT(g_Buttons.held_frames, 0);
 
     Buttons_Update(&input, false);
     CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
-    CHECK(!Buttons_WasPressed(TH07_BUTTON_shoot));
+    CHECK(!Buttons_Pressed(TH07_BUTTON_shoot));
     CHECK_EQ_INT(g_Buttons.held_frames, 1);
 }
 
@@ -99,8 +99,7 @@ TEST(update_repeats_every_8_calcs_once_held_30)
         Buttons_Update(&input, false);
         const bool should_repeat = calc == 0 || calc == 33 || calc == 41
             || calc == 49 || calc == 57 || calc == 65 || calc == 73;
-        CHECK_EQ_INT(
-            Buttons_WasPressedOrRepeated(TH07_BUTTON_shoot), should_repeat);
+        CHECK_EQ_INT(Buttons_Repeated(TH07_BUTTON_shoot), should_repeat);
     }
     CHECK_EQ_INT(g_Buttons.held_frames, 33);
 }
@@ -119,7 +118,7 @@ TEST(clear_keeps_held_frames_and_counts_as_pressed_next)
     CHECK_EQ_INT(g_Buttons.word, 0);
 
     Buttons_Update(&input, false);
-    CHECK(Buttons_WasPressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_Pressed(TH07_BUTTON_shoot));
 }
 
 TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
@@ -129,10 +128,10 @@ TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
     int32_t count = 0;
     for (int calc = 0; calc <= 33; calc++) {
         Buttons_Update(&input, false);
-        if (Buttons_WasPressedOrRepeated(0x10)) {
+        if (Buttons_Repeated(0x10)) {
             count++;
         }
-        CHECK(!Buttons_WasPressedOrRepeated(0x20));
+        CHECK(!Buttons_Repeated(0x20));
     }
     CHECK_EQ_INT(count, 2);
 }
@@ -182,9 +181,9 @@ TEST(merge_adds_bits_and_keeps_the_previous_word_and_repeat)
     CHECK_EQ_INT(g_Buttons.held_frames, held_frames);
     CHECK(g_Buttons.repeat);
     CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
-    CHECK(Buttons_WasPressed(TH07_BUTTON_bomb));
-    CHECK(!Buttons_WasPressed(TH07_BUTTON_shoot));
-    CHECK(Buttons_WasPressedOrRepeated(TH07_BUTTON_shoot));
+    CHECK(Buttons_Pressed(TH07_BUTTON_bomb));
+    CHECK(!Buttons_Pressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_Repeated(TH07_BUTTON_shoot));
 }
 
 TEST(merge_keeps_what_was_pressed_on_the_dropped_calc)
@@ -194,8 +193,8 @@ TEST(merge_keeps_what_was_pressed_on_the_dropped_calc)
     Buttons_Update(&shoot, false);
     Buttons_Merge(&shoot, false);
     CHECK_EQ_INT(g_Buttons.previous_word, 0);
-    CHECK(Buttons_WasPressed(TH07_BUTTON_shoot));
-    CHECK(Buttons_WasPressed(0x1));
+    CHECK(Buttons_Pressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_Pressed(0x1));
 }
 
 static const TH07_INPUT m_Shoot = { .shoot = true };
