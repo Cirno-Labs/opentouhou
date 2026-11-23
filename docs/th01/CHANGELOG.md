@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added support for more editions of the game, such as fan translations.
 - Added support for zip and PC-98 hard disk image (.hdi) files to
   `--data`: a zip of the game folder, or an .hdi of the game, bare or
   in a zip, read without unpacking.

@@ -31,7 +31,7 @@ th01_lib = static_library(
   'hud_hp.c',
   'extend.c',
   'shots.c',
-  'reiiden_image.c',
+  'sprite_sheet.c',
   'pellet_assets.c',
   'shootout_lasers.c',
   'pellets.c',
@@ -94,6 +94,13 @@ th01_main_lib = static_library(
   dependencies: [core_dep, stg_dep, pc98_dep],
 )
 
+# The sprite sheets of upstream's src/reiiden/sprites, which the programs
+# carry as built-in files.
+th01_sprites = [
+  'bonusbox.bmp', 'ileave_m.bmp', 'laser_s.bmp', 'leaf_l.bmp', 'leaf_r.bmp',
+  'leaf_s.bmp', 'pellet.bmp', 'pellet_c.bmp', 'pillar.bmp', 'shape8x8.bmp',
+]
+
 th01_sources = [files('entry.c')]
 if host_machine.system() == 'windows'
   th01_sources += import('windows').compile_resources(
@@ -115,6 +122,8 @@ games += {
     'controls': 'th01',
     'c_args': [layer_include['th01'], layer_include['pc98']],
     'fonts': ['fonts/shnmk16.bdf', 'fonts/shnm8x16r.bdf'],
-    'link_with': [th01_main_lib, th01_lib, core_hash_lib],
+    'builtin_dir': meson.current_source_dir() / 'sprites',
+    'builtins': th01_sprites,
+    'link_with': [th01_main_lib, th01_lib],
   },
 }

@@ -7,7 +7,6 @@
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "pc98/zun/pi.h"
-#include "th01/reiiden_image.h"
 #include "th01/scene.h"
 #include "th01/shootout_lasers.h"
 
@@ -75,12 +74,9 @@ typedef struct {
 } B10J_CONTEXT;
 
 // Loads BOSS3_1.BOS, BOSS3_2.BOS, BOSS3.GRP, BOSS3_M.PTN, scene 4 and
-// the verified REIIDEN.EXE pillar masks into the caller's asset group.
-// Scratch requires REIIDEN_IMAGE_SIZE bytes and may be released afterward.
-// Failed loads leave out empty; intermediate storage belongs to the group.
-RESULT B10J_LoadAssets(
-    VFS *vfs, uint8_t *scratch, size_t scratch_size, const ALLOCATOR *allocator,
-    B10J_ASSETS *out);
+// the pillar masks of pillar.bmp into the caller's asset group. Failed
+// loads leave out empty; intermediate storage belongs to the group.
+RESULT B10J_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B10J_ASSETS *out);
 RESULT B10J_ValidateAssets(const B10J_ASSETS *assets);
 
 // Resets the boss state, before the first fight of a game.

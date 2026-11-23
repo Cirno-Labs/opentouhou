@@ -1,23 +1,20 @@
 #pragma once
 
-#include "th01/reiiden_image.h"
 #include "th01/video.h"
 
-#define PELLET_EXECUTABLE_SIZE REIIDEN_IMAGE_SIZE
+#include "core/vfs.h"
 
 typedef struct {
     uint8_t pellets[3][8][8][2];
     uint8_t clouds[2][16][2];
 } PELLET_ASSETS;
 
-// Loads the embedded masks from the supported REIIDEN.EXE. Checks the full
-// executable SHA-256 and MZ header before reading the two tables. scratch
-// must hold PELLET_EXECUTABLE_SIZE bytes and may be released after loading.
-// Keeps reader open. Allocates only the result from the caller's grouped
-// asset allocator, after validation; leaves out null on failure.
+// Loads the pellets from pellet.bmp, shifted right by 0 to 7 pixels into
+// big-endian 16-bit rows, and the clouds from pellet_c.bmp. Allocates the
+// result from the caller's grouped asset allocator; leaves out null on
+// failure.
 RESULT PelletAssets_Load(
-    READER *reader, uint8_t *scratch, size_t scratch_size,
-    const ALLOCATOR *allocator, PELLET_ASSETS **out);
+    VFS *vfs, const ALLOCATOR *allocator, PELLET_ASSETS **out);
 
 // Draws color 7 masked pellets with the source's eight pre-shifted images.
 // Uses the drawing page. Native gameplay renders only at 0 < left < 632

@@ -6,6 +6,7 @@
 #include "core/base/assert.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
+#include "th01/sprite_sheet.h"
 #include "th01/wave.h"
 
 #include <string.h>
@@ -38,24 +39,13 @@ static RESULT M_LoadMissiles(
 }
 
 static RESULT M_LoadStar(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, const uint8_t **const out)
+    VFS *const vfs, const ALLOCATOR *const a, const uint8_t **const out)
 {
-    READER reader;
-    MUST(Vfs_Open(vfs, "REIIDEN.EXE", VFS_IN_MEMORY, &reader));
-    READER image;
-    RESULT result = ReiidenImage_Open(&reader, scratch, scratch_size, &image);
-    uint8_t mask[8];
-    if (IS_OK(result)) {
-        Reader_Seek(&image, 0x39252);
-        Reader_ReadBytes(&image, mask, sizeof(mask));
-        result = Reader_Result(&image);
-    }
-    Reader_Close(&reader);
-    MUST(result);
-    uint8_t *const allocated = Allocator_Alloc(a, sizeof(mask));
-    memcpy(allocated, mask, sizeof(mask));
-    *out = allocated;
+    uint8_t *shapes;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, "shape8x8.bmp", 8, 8, a, &shapes, &size));
+    FAIL_IF(size != 7 * 8, "Invalid shape8x8.bmp size");
+    *out = shapes + 8;
     return OK;
 }
 
@@ -85,8 +75,7 @@ RESULT B15M_ValidateAssets(const B15M_ASSETS *const a)
 }
 
 RESULT B15M_LoadAssets(
-    VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const a, B15M_ASSETS *const out)
+    VFS *const vfs, const ALLOCATOR *const a, B15M_ASSETS *const out)
 {
     *out = (B15M_ASSETS) {};
     B15M_ASSETS loaded = {};
@@ -97,7 +86,7 @@ RESULT B15M_LoadAssets(
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Boss_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 5, a, &loaded.next_scene));
-    MUST(M_LoadStar(vfs, scratch, scratch_size, a, &loaded.star));
+    MUST(M_LoadStar(vfs, a, &loaded.star));
     MUST(B15M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;

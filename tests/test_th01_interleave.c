@@ -2,32 +2,39 @@
 
 #include "core/base/arena.h"
 
+#include "th01_sprites.h"
 #include "th01_video.h"
 #include "test.h"
 
 #include <string.h>
 
-TEST(rejects_unknown_executable_before_allocating)
+TEST(missing_sheet_leaves_assets_empty)
 {
-    READER reader;
-    Reader_OpenBuffer(&reader, nullptr, 0, nullptr);
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
     INTERLEAVE_ASSETS *assets = nullptr;
-    CHECK(!Result_Ignore(
-        Interleave_LoadAssets(&reader, nullptr, 0, nullptr, &assets)));
+    CHECK(!Result_Ignore(Interleave_LoadAssets(vfs, nullptr, &assets)));
     CHECK(assets == nullptr);
+    Vfs_Destroy(vfs);
+}
+
+TEST(loads_the_masks_from_the_built_in_sheet)
+{
     ARENA arena;
     Arena_Init(&arena, "interleave", 1024 * 1024);
-    uint8_t *const file =
-        Allocator_AllocZ(Arena_Allocator(&arena), REIIDEN_IMAGE_SIZE);
-    uint8_t *const scratch =
-        Allocator_Alloc(Arena_Allocator(&arena), REIIDEN_IMAGE_SIZE);
-    Reader_OpenBuffer(&reader, file, REIIDEN_IMAGE_SIZE, nullptr);
-    CHECK(!Result_Ignore(
-        Interleave_LoadAssets(&reader, nullptr, 0, nullptr, &assets)));
-    CHECK_EQ_INT(Reader_Tell(&reader), 0);
-    CHECK(!Result_Ignore(Interleave_LoadAssets(
-        &reader, scratch, REIIDEN_IMAGE_SIZE, nullptr, &assets)));
-    CHECK(assets == nullptr);
+    VFS *const vfs = Th01Test_Sprites();
+    INTERLEAVE_ASSETS *assets = nullptr;
+    CHECK(IS_OK(Interleave_LoadAssets(vfs, Arena_Allocator(&arena), &assets)));
+    const uint8_t second[8] = {
+        0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa
+    };
+    const uint8_t fourth[8] = {
+        0x00, 0xdd, 0x00, 0x77, 0x00, 0xdd, 0x00, 0x77
+    };
+    CHECK(memcmp(assets->masks[0], (uint8_t[8]) {}, 8) == 0);
+    CHECK(memcmp(assets->masks[1], second, 8) == 0);
+    CHECK(memcmp(assets->masks[3], fourth, 8) == 0);
+    CHECK(memcmp(assets->masks[9], (uint8_t[8]) {}, 8) == 0);
+    Vfs_Destroy(vfs);
     Arena_Free(&arena);
 }
 

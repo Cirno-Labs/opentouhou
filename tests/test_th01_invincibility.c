@@ -4,7 +4,25 @@
 
 #include "core/base/arena.h"
 
+#include "th01_sprites.h"
 #include "test.h"
+
+#include <string.h>
+
+TEST(loads_the_last_four_cels_of_the_shape_sheet)
+{
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+    INVINCIBILITY_ASSETS assets;
+    CHECK(!Result_Ignore(Invincibility_LoadAssets(vfs, &assets)));
+    Vfs_Destroy(vfs);
+    VFS *const sprites = Th01Test_Sprites();
+    CHECK(IS_OK(Invincibility_LoadAssets(sprites, &assets)));
+    const uint8_t first[8] = { 0x00, 0x00, 0x18, 0x2c, 0x2c, 0x18, 0x00, 0x00 };
+    const uint8_t last[8] = { 0x18, 0x2c, 0x5a, 0xff, 0xff, 0x5a, 0x2c, 0x18 };
+    CHECK(memcmp(assets.masks[0], first, 8) == 0);
+    CHECK(memcmp(assets.masks[3], last, 8) == 0);
+    Vfs_Destroy(sprites);
+}
 
 TEST(mask_spills_across_rows_and_keeps_rejected_selector)
 {

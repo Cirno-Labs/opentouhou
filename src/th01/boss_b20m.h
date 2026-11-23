@@ -153,11 +153,10 @@ typedef struct {
     void (*audio)(void *user, B20M_AUDIO_ACTION action);
 } B20M_CONTEXT;
 
-// Loads both forms, backgrounds and executable masks into the caller's
-// immutable asset group. Scratch is needed only while loading.
-RESULT B20M_LoadAssets(
-    VFS *vfs, uint8_t *scratch, size_t scratch_size, const ALLOCATOR *allocator,
-    B20M_ASSETS *out);
+// Loads both forms, backgrounds and the masks of ileave_m.bmp,
+// shape8x8.bmp, leaf_s.bmp, leaf_l.bmp and leaf_r.bmp into the caller's
+// immutable asset group.
+RESULT B20M_LoadAssets(VFS *vfs, const ALLOCATOR *allocator, B20M_ASSETS *out);
 RESULT B20M_ValidateAssets(const B20M_ASSETS *assets);
 
 // Resets the boss state, before the first fight of a game.

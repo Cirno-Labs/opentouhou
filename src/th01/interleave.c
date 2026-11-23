@@ -1,20 +1,19 @@
 #include "th01/interleave.h"
 
+#include "th01/sprite_sheet.h"
+
 #include "core/base/assert.h"
 
 RESULT Interleave_LoadAssets(
-    READER *const reader, uint8_t *const scratch, const size_t scratch_size,
-    const ALLOCATOR *const allocator, INTERLEAVE_ASSETS **const out)
+    VFS *const vfs, const ALLOCATOR *const allocator,
+    INTERLEAVE_ASSETS **const out)
 {
     *out = nullptr;
-    READER source;
-    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &source));
-    INTERLEAVE_ASSETS masks;
-    Reader_Seek(&source, 0x38dec);
-    Reader_ReadBytes(&source, masks.masks, sizeof(masks.masks));
-    MUST(Reader_Result(&source));
-    *out = Allocator_Alloc(allocator, sizeof(masks));
-    **out = masks;
+    uint8_t *masks;
+    size_t size;
+    MUST(SpriteSheet_Load(vfs, "ileave_m.bmp", 8, 8, allocator, &masks, &size));
+    FAIL_IF(size != sizeof(INTERLEAVE_ASSETS), "Invalid ileave_m.bmp size");
+    *out = (INTERLEAVE_ASSETS *)masks;
     return OK;
 }
 

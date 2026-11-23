@@ -2,19 +2,23 @@
 
 #include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
+#include "th01/sprite_sheet.h"
 
-RESULT Invincibility_LoadAssets(
-    READER *const reader, uint8_t *const scratch, const size_t scratch_size,
-    INVINCIBILITY_ASSETS *const out)
+#include <string.h>
+
+RESULT Invincibility_LoadAssets(VFS *const vfs, INVINCIBILITY_ASSETS *const out)
 {
-    *out = (INVINCIBILITY_ASSETS) {};
-    READER image;
-    MUST(ReiidenImage_Open(reader, scratch, scratch_size, &image));
-    Reader_Seek(&image, 0x39262);
-    INVINCIBILITY_ASSETS assets;
-    Reader_ReadBytes(&image, assets.masks, sizeof(assets.masks));
-    MUST(Reader_Result(&image));
-    *out = assets;
+    memset(out, 0, sizeof(*out));
+    uint8_t *shapes;
+    size_t size;
+    MUST(SpriteSheet_Load(
+        vfs, "shape8x8.bmp", 8, 8, &g_HeapAllocator, &shapes, &size));
+    if (size != 7 * 8) {
+        Mem_Free(shapes);
+        return FAIL("Invalid shape8x8.bmp size");
+    }
+    memcpy(out->masks, shapes + 3 * 8, sizeof(out->masks));
+    Mem_Free(shapes);
     return OK;
 }
 

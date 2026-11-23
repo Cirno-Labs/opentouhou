@@ -1,7 +1,8 @@
 #pragma once
 
 #include "th01/player.h"
-#include "th01/reiiden_image.h"
+
+#include "core/vfs.h"
 
 typedef struct {
     uint8_t masks[4][8];
@@ -11,11 +12,9 @@ typedef struct {
     int16_t frame[8], left[8], top[8];
 } INVINCIBILITY;
 
-// Loads four masks from the verified executable before simulation. Uses
-// caller scratch only during loading and leaves out empty on failure.
-RESULT Invincibility_LoadAssets(
-    READER *reader, uint8_t *scratch, size_t scratch_size,
-    INVINCIBILITY_ASSETS *out);
+// Loads the four masks from the last cels of shape8x8.bmp before simulation;
+// leaves out empty on failure.
+RESULT Invincibility_LoadAssets(VFS *vfs, INVINCIBILITY_ASSETS *out);
 
 // Draws the source's red mask, including byte spill at the right edge and
 // 15-bit planar wrapping. Missing hidden planar bytes are discarded. Left
