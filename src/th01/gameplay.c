@@ -105,7 +105,6 @@ static void M_StageBegin(GAMEPLAY *const g)
     Gameplay_Bind(g);
     g_Player.invincible = false;
     g_Player.invincibility_time = 0;
-    g->bindings.hit.frame_rand = g_Session.frame_rand;
     Gameplay_BossSetup(g);
     if (g->world.boss_stage) {
         g->world.first_stage = true;
@@ -603,7 +602,6 @@ static GAMEPLAY_REQUEST M_Run(
             if (!g->world.waiting) {
                 Invincibility_UpdateAndRender(
                     &g->world.invincibility, &g->storage.assets->invincibility);
-                g->bindings.hit.frame_rand = g_Session.frame_rand;
                 g->world.waiting = true;
             }
             if (!Gameplay_BossTick(g, raw)) {

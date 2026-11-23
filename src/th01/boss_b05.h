@@ -48,7 +48,7 @@ extern B05 g_B05;
 
 typedef struct {
     const B05_ASSETS *assets;
-    const BOSS_HIT_CONTEXT *hit;
+    SHOTS_OUTPUT shots_output;
     const PTN *miko;
     const ROUTE_SELECT_CONTEXT *route;
 } B05_CONTEXT;

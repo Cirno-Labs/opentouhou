@@ -4,6 +4,7 @@
 #include "th01/boss.h"
 #include "th01/hud.h"
 #include "th01/hud_hp.h"
+#include "th01/shots.h"
 
 typedef struct {
     int16_t frame;
@@ -13,11 +14,6 @@ typedef struct {
 typedef struct {
     int16_t left, top, width_minus_shot, height_minus_shot;
 } BOSS_SHOT_HITBOX;
-
-typedef struct {
-    SHOTS_OUTPUT shots_output;
-    uint32_t frame_rand;
-} BOSS_HIT_CONTEXT;
 
 // Applies debug damage, then tests shots even during invincibility. Orb or
 // bomb hits flash colors, decrement HP, reflect the Orb, add signed hit_score
@@ -32,7 +28,7 @@ typedef struct {
 // before battle; flashing changes saved and the DAC. Colors must be 0..15.
 // Allocates nothing, performs no IO and uses loaded caller-owned resources.
 void BossHit_UpdateAndRender(
-    BOSS_HIT *hit, const BOSS_HIT_CONTEXT *context, int16_t *hp,
+    BOSS_HIT *hit, SHOTS_OUTPUT shots_output, int16_t *hp,
     const PALETTE *boss_palette, const uint8_t *flash_colors,
     uint8_t flash_count, int16_t hit_score, bool orb_hit,
     BOSS_SHOT_HITBOX shot_hitbox);

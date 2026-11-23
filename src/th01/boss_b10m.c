@@ -192,8 +192,8 @@ static void M_Hit(const B10M_CONTEXT *const c)
     }
     const uint8_t flash[] = { 1, 11 };
     BossHit_UpdateAndRender(
-        &g_B10M.hit, c->hit, &g_B10M.hp, &g_B10M.boss_palette, flash, 2, 5000,
-        colliding, (BOSS_SHOT_HITBOX) {});
+        &g_B10M.hit, c->shots_output, &g_B10M.hp, &g_B10M.boss_palette, flash,
+        2, 5000, colliding, (BOSS_SHOT_HITBOX) {});
 }
 
 static void M_MissileAction(void *const user, const MISSILES_ACTION action)
@@ -829,7 +829,7 @@ bool B10M_UpdateAndRender(const B10M_CONTEXT *const c)
         return M_Death(c);
     }
     Missiles_UpdateAndRender(
-        (uint16_t)c->hit->frame_rand,
+        (uint16_t)g_Session.frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (g_B10M.phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(c);

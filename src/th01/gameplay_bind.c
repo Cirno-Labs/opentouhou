@@ -91,40 +91,46 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .route = &g_Session.route,
         .stage_cleared = &g_Stage.cleared,
     };
-    g->bindings.hit = (BOSS_HIT_CONTEXT) {
-        .shots_output = g->bindings.shots_output,
-        .frame_rand = g_Session.frame_rand,
-    };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
-                                      .hit = &g->bindings.hit,
+                                      .shots_output = g->bindings.shots_output,
                                       .miko = &a->miko,
                                       .route = &g->bindings.route };
-    g->bindings.c10j = (B10J_CONTEXT) { .assets = &a->b10j,
-                                        .hit = &g->bindings.hit,
-                                        .miko = &a->miko,
-                                        .stage_cleared = &g_Stage.cleared };
-    g->bindings.c10m = (B10M_CONTEXT) { .assets = &a->b10m,
-                                        .hit = &g->bindings.hit,
-                                        .miko = &a->miko,
-                                        .stage_cleared = &g_Stage.cleared };
-    g->bindings.c15j = (B15J_CONTEXT) { .assets = &a->b15j,
-                                        .hit = &g->bindings.hit,
-                                        .miko = &a->miko,
-                                        .stage_cleared = &g_Stage.cleared };
-    g->bindings.c15m = (B15M_CONTEXT) { .assets = &a->b15m,
-                                        .hit = &g->bindings.hit,
-                                        .miko = &a->miko,
-                                        .stage_cleared = &g_Stage.cleared };
-    g->bindings.c20j =
-        (B20J_CONTEXT) { .assets = &a->b20j,
-                         .hit = &g->bindings.hit,
-                         .game_cleared = &g->world.game_cleared };
-    g->bindings.c20m =
-        (B20M_CONTEXT) { .assets = &a->b20m,
-                         .hit = &g->bindings.hit,
-                         .first_stage = &g->world.first_stage,
-                         .timer_initialized = &g->world.timer_initialized,
-                         .game_cleared = &g->world.game_cleared };
+    g->bindings.c10j = (B10J_CONTEXT) {
+        .assets = &a->b10j,
+        .shots_output = g->bindings.shots_output,
+        .miko = &a->miko,
+        .stage_cleared = &g_Stage.cleared,
+    };
+    g->bindings.c10m = (B10M_CONTEXT) {
+        .assets = &a->b10m,
+        .shots_output = g->bindings.shots_output,
+        .miko = &a->miko,
+        .stage_cleared = &g_Stage.cleared,
+    };
+    g->bindings.c15j = (B15J_CONTEXT) {
+        .assets = &a->b15j,
+        .shots_output = g->bindings.shots_output,
+        .miko = &a->miko,
+        .stage_cleared = &g_Stage.cleared,
+    };
+    g->bindings.c15m = (B15M_CONTEXT) {
+        .assets = &a->b15m,
+        .shots_output = g->bindings.shots_output,
+        .miko = &a->miko,
+        .stage_cleared = &g_Stage.cleared,
+    };
+    g->bindings.c20j = (B20J_CONTEXT) {
+        .assets = &a->b20j,
+        .shots_output = g->bindings.shots_output,
+        .game_cleared = &g->world.game_cleared,
+    };
+    g->bindings.c20m = (B20M_CONTEXT) {
+        .assets = &a->b20m,
+        .shots_output = g->bindings.shots_output,
+        .first_stage = &g->world.first_stage,
+        .timer_initialized = &g->world.timer_initialized,
+        .game_cleared = &g->world.game_cleared,
+    };
     g->bindings.bonus_context = (BONUS_CONTEXT) {
         .stage = a->bonus,
         .font = &a->bonus_font,

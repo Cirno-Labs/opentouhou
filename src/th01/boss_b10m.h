@@ -72,7 +72,7 @@ extern B10M g_B10M;
 
 typedef struct {
     const B10M_ASSETS *assets;
-    const BOSS_HIT_CONTEXT *hit;
+    SHOTS_OUTPUT shots_output;
     const PTN *miko;
     bool *stage_cleared;
 } B10M_CONTEXT;

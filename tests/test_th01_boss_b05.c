@@ -15,7 +15,6 @@
 
 typedef struct {
     B05_ASSETS assets;
-    BOSS_HIT_CONTEXT hit_context;
     B05_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
@@ -61,10 +60,8 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->hit_context = (BOSS_HIT_CONTEXT) {};
     f->context = (B05_CONTEXT) {
         .assets = &f->assets,
-        .hit = &f->hit_context,
     };
 }
 
@@ -115,7 +112,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Player.left = 300;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
+    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->route_assets = (ROUTE_SELECT_ASSETS) {
         &f->font,
         &f->stage,
@@ -287,7 +284,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
                 step == 20 || step == 70 || (step >= 1620 && step % 50 == 20);
             g_Orb.previous_left = hit ? (int16_t)(g_B05.sphere.left + 32) : 0;
             g_Orb.previous_top = hit ? (int16_t)(g_B05.sphere.top + 32) : 64;
-            f.hit_context.frame_rand = (uint32_t)step;
+            g_Session.frame_rand = (uint32_t)step;
             CHECK(B05_UpdateAndRender(&f.context, &raw));
             phase_two |= g_B05.phase == B05_PHASE_TRANSFORMS;
         }
@@ -314,7 +311,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
         const uint32_t rng = g_Rng;
-        const uint32_t frame_rand = f.hit_context.frame_rand;
+        const uint32_t frame_rand = g_Session.frame_rand;
         for (int32_t edge = 0; edge < 1000 && g_B05.pending != B05_FINISHED;
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
@@ -326,7 +323,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(g_Scene.active == &f.cache[1 + rank % 2]);
         CHECK(f.cleared && g_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
-        CHECK_EQ_INT(f.hit_context.frame_rand, frame_rand);
+        CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = g_B05;
         CHECK(B05_UpdateAndRender(&f.context, &raw));

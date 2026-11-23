@@ -17,7 +17,6 @@
 
 typedef struct {
     B10M_ASSETS assets;
-    BOSS_HIT_CONTEXT hit_context;
     B10M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
@@ -51,9 +50,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->hit_context = (BOSS_HIT_CONTEXT) {};
-    f->context =
-        (B10M_CONTEXT) { .assets = &f->assets, .hit = &f->hit_context };
+    f->context = (B10M_CONTEXT) { .assets = &f->assets };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -92,7 +89,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
+    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -101,7 +98,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
 static void M_Enter(FIXTURE *const f)
 {
     for (int32_t frame = 0; frame < 331; frame++) {
-        f->hit_context.frame_rand++;
+        g_Session.frame_rand++;
         CHECK(B10M_UpdateAndRender(&f->context));
     }
     CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_LATERAL);
@@ -242,7 +239,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         int16_t previous_star_phase = -1;
         for (int32_t frame = 0; frame < 18000 && loops < 2; frame++) {
             g_Player.left = (int16_t)(40 + (frame * 7) % 550);
-            f.hit_context.frame_rand++;
+            g_Session.frame_rand++;
             phases |= (uint16_t)(1u << g_B10M.phase);
             if (g_B10M.phase == B10M_PHASE_STAR_ATTACK) {
                 star_phases |= (uint16_t)(1u << g_B10M.pentagram.phase);

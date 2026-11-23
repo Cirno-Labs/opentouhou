@@ -50,8 +50,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     memset(&g_Palette, 0, sizeof(g_Palette));
     g_Palette.saved.colors[10][1] = 7;
     memset(&g_HudHp, 0, sizeof(g_HudHp));
-    const BOSS_HIT_CONTEXT hit = {};
-    const B20J_CONTEXT c = { .assets = &assets, .hit = &hit };
+    const B20J_CONTEXT c = { .assets = &assets };
     B20J_Init();
     g_B20J.hit = (BOSS_HIT) { 27, true };
     g_B20J.pattern_state = 32;
@@ -100,7 +99,6 @@ TEST(validation_requires_all_sixteen_images_and_masks)
 
 typedef struct {
     B20J_ASSETS assets;
-    BOSS_HIT_CONTEXT hit;
     B20J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage;
@@ -143,11 +141,10 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
-                                  .frame_rand = 0x12345678 };
+    g_Session.frame_rand = 0x12345678;
     f->context = (B20J_CONTEXT) {
         .assets = &f->assets,
-        .hit = &f->hit,
+        .shots_output = { M_Shot, f },
         .game_cleared = &f->cleared,
     };
     B20J_Init();
