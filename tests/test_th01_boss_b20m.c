@@ -103,7 +103,7 @@ typedef struct {
     B20M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage;
-    bool damage, cleared, first_stage, timer_initialized;
+    bool cleared, first_stage, timer_initialized;
     GRF mask;
 } FIXTURE;
 
@@ -155,7 +155,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     Hud_Load(&f->mask, &f->stage, &f->font);
     g_Session.stage_id = 19;
     f->hit = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
-                                  .test_damage = &f->damage,
                                   .frame_rand = 0x12345678 };
     f->context = (B20M_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit,

@@ -3,6 +3,8 @@
 #include "core/vfs/open.h"
 #include "th01/session.h"
 
+bool g_TestDamage;
+
 int16_t Boss_Rank(
     const int16_t easy, const int16_t normal, const int16_t hard,
     const int16_t lunatic)

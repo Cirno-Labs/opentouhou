@@ -20,7 +20,7 @@ typedef struct {
     B15J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    bool test_damage, cleared;
+    bool cleared;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -88,7 +88,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->hit_context.test_damage = &f->test_damage;
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -416,10 +415,10 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     CHECK_EQ_INT(g_B15J.hp, 1);
     CHECK(memcmp(&g_HudHp, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage.score, 0);
-    f.test_damage = true;
+    g_TestDamage = true;
     CHECK(!B15J_UpdateAndRender(&f.context));
     CHECK_EQ_INT(g_B15J.hp, 0);
-    CHECK(!f.test_damage);
+    CHECK(!g_TestDamage);
     CHECK(g_B15J.defeating);
     CHECK_EQ_INT(g_Stage.score, 0);
     Arena_Free(&arena);

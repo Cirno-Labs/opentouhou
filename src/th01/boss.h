@@ -18,3 +18,7 @@ RESULT Boss_LoadBackground(
 
 // Returns the player.
 PLAYER *Boss_Player(void);
+
+// A debug request for the current boss to take one point of damage on its
+// next hit test.
+extern bool g_TestDamage;

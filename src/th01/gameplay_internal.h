@@ -71,7 +71,7 @@ typedef struct {
     FRAME_WAIT wait;
     uint32_t frame, score_bonus;
     bool first_stage, wait_for_shot, timer_initialized, game_cleared;
-    bool test_damage, boss_stage, waiting, bgm_started;
+    bool boss_stage, waiting, bgm_started;
     BOSS boss;
     uint8_t menu_selection, animation_frame;
     int16_t gameover_left[5], gameover_top[5];

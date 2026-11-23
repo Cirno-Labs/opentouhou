@@ -21,9 +21,9 @@ void BossHit_UpdateAndRender(
     const uint8_t flash_count, const int16_t hit_score, const bool orb_hit,
     const BOSS_SHOT_HITBOX box)
 {
-    if (*c->test_damage) {
+    if (g_TestDamage) {
         *hp = Math16_Wrap(*hp - 1);
-        *c->test_damage = false;
+        g_TestDamage = false;
         HudHp_Decrement(*hp);
     }
     Shots_HitTestBoss(
