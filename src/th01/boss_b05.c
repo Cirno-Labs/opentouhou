@@ -20,15 +20,12 @@ typedef enum {
     B05_FIRE_SLING,
 } B05_FIRE;
 
-static void M_Put(
-    const B05_CONTEXT *const c, const BOSS_ENTITY *const entity,
-    const int16_t image)
+static void M_Put(const BOSS_ENTITY *const entity, const int16_t image)
 {
     BossEntity_RestorePut(entity, g_B05.sphere.left, g_B05.sphere.top, image);
 }
 
-static void M_Rotate(
-    const B05_CONTEXT *const c, const int16_t interval, const int16_t delta)
+static void M_Rotate(const int16_t interval, const int16_t delta)
 {
     if (g_B05.frame % interval != 0) {
         return;
@@ -41,15 +38,15 @@ static void M_Rotate(
         image = 7;
     }
     g_B05.sphere.image = image;
-    M_Put(c, &g_B05.sphere, image);
+    M_Put(&g_B05.sphere, image);
 }
 
-static void M_Accelerate(const B05_CONTEXT *const c, const int16_t delta)
+static void M_Accelerate(const int16_t delta)
 {
     if (g_B05.frame < 50) {
         g_B05.sphere.image = 0;
         if (g_B05.frame % 4 == 0) {
-            M_Put(c, &g_B05.sphere, 0);
+            M_Put(&g_B05.sphere, 0);
         }
         return;
     }
@@ -57,15 +54,14 @@ static void M_Accelerate(const B05_CONTEXT *const c, const int16_t delta)
         Sound_Effect(8);
     }
     if (g_B05.frame < 100 && g_B05.frame % 4 == 0) {
-        M_Put(c, &g_B05.sphere, g_B05.sphere.image);
+        M_Put(&g_B05.sphere, g_B05.sphere.image);
         if (g_B05.frame == 60 || g_B05.frame == 68 || g_B05.frame > 82) {
-            M_Rotate(c, 1, delta);
+            M_Rotate(1, delta);
         }
     }
 }
 
-static void M_Move(
-    const B05_CONTEXT *const c, const int16_t dx, const int16_t dy)
+static void M_Move(const int16_t dx, const int16_t dy)
 {
     BOSS_ENTITY *const e = &g_B05.sphere;
     if (dy < 0) {
@@ -88,27 +84,26 @@ static void M_Move(
         e->left = 544;
     }
     if (g_B05.frame % 2 == 0) {
-        M_Rotate(c, 1, 1);
+        M_Rotate(1, 1);
     }
 }
 
 static void M_Add(
-    const B05_CONTEXT *const c, const int16_t left, const int16_t top,
-    const uint8_t angle, const int16_t speed, const PELLET_MOTION motion,
-    const int16_t motion_speed)
+    const int16_t left, const int16_t top, const uint8_t angle,
+    const int16_t speed, const PELLET_MOTION motion, const int16_t motion_speed)
 {
     Pellets_AddSingle(
         g_Session.settings.difficulty, left, top, angle, speed, motion,
         motion_speed, 0, 0);
 }
 
-static void M_Half(const B05_CONTEXT *const c)
+static void M_Half(void)
 {
     if (g_B05.frame == 10) {
         g_B05.direction = MasterRng_Next(&g_Rng) % 2 == 1 ? 1 : -1;
     }
     if (g_B05.frame < 100) {
-        M_Accelerate(c, g_B05.direction);
+        M_Accelerate(g_B05.direction);
         return;
     }
     if (g_B05.frame == 100) {
@@ -116,10 +111,10 @@ static void M_Half(const B05_CONTEXT *const c)
         g_B05.angle = g_B05.direction == -1 ? 0 : 128;
     }
     if (g_B05.frame < 160) {
-        M_Rotate(c, g_B05.direction, 1);
+        M_Rotate(g_B05.direction, 1);
         if (g_B05.frame % (60 / g_B05.pattern_state) == 0) {
             M_Add(
-                c, Math16_Wrap(g_B05.sphere.left + 44),
+                Math16_Wrap(g_B05.sphere.left + 44),
                 Math16_Wrap(g_B05.sphere.top + 44), g_B05.angle, 50,
                 PELLET_REGULAR, 0);
             g_B05.angle =
@@ -131,10 +126,10 @@ static void M_Half(const B05_CONTEXT *const c)
     }
 }
 
-static void M_Slam(const B05_CONTEXT *const c)
+static void M_Slam(void)
 {
     if (g_B05.frame < 100) {
-        M_Accelerate(c, 1);
+        M_Accelerate(1);
         return;
     }
     const PLAYER *const player = &g_Player;
@@ -147,13 +142,13 @@ static void M_Slam(const B05_CONTEXT *const c)
         g_B05.velocity_y = Math16_PolarY(0, g_B05.pattern_state, angle);
     }
     if (g_B05.velocity_x != 999) {
-        M_Move(c, g_B05.velocity_x, g_B05.velocity_y);
+        M_Move(g_B05.velocity_x, g_B05.velocity_y);
         if (g_B05.sphere.top > 304) {
             g_B05.velocity_x = 999;
             g_B05.velocity_y = -4;
         }
     } else if (g_B05.velocity_y == -4) {
-        M_Move(c, 0, g_B05.velocity_y);
+        M_Move(0, g_B05.velocity_y);
         if (g_B05.sphere.top < 96) {
             g_B05.velocity_y = 0;
         }
@@ -167,7 +162,7 @@ static void M_Slam(const B05_CONTEXT *const c)
     }
 }
 
-static void M_FireMan(const B05_CONTEXT *const c, const B05_FIRE fire)
+static void M_FireMan(const B05_FIRE fire)
 {
     if (fire == B05_FIRE_NONE) {
         return;
@@ -178,80 +173,79 @@ static void M_FireMan(const B05_CONTEXT *const c, const B05_FIRE fire)
         if (fire == B05_FIRE_DOWN) {
             const uint8_t angle = (uint8_t)(MasterRng_Next(&g_Rng) % 128);
             M_Add(
-                c, Math16_Wrap(g_B05.sphere.left + 44),
+                Math16_Wrap(g_B05.sphere.left + 44),
                 Math16_Wrap(g_B05.sphere.top + 44), angle, g_B05.pattern_state,
                 PELLET_REGULAR, 0);
         } else {
             const int16_t dx = (int16_t)(MasterRng_Next(&g_Rng) % 96);
             const int16_t dy = (int16_t)(MasterRng_Next(&g_Rng) % 96);
             M_Add(
-                c, Math16_Wrap(g_B05.sphere.left + dx),
+                Math16_Wrap(g_B05.sphere.left + dx),
                 Math16_Wrap(g_B05.sphere.top + dy), 0, 0, PELLET_SLING_AIMED,
                 g_B05.pattern_state);
         }
     }
 }
 
-static void M_Transform(
-    const B05_CONTEXT *const c, const int16_t form, const B05_FIRE fire)
+static void M_Transform(const int16_t form, const B05_FIRE fire)
 {
     if (g_B05.frame < 100) {
-        M_Accelerate(c, 1);
+        M_Accelerate(1);
         return;
     }
     if (g_B05.frame == 100 || g_B05.frame == 250) {
-        M_Put(c, &g_B05.flash, 0);
+        M_Put(&g_B05.flash, 0);
     } else if (
         g_B05.frame == 105 || g_B05.frame == 110 || g_B05.frame == 240
         || g_B05.frame == 245) {
-        M_Put(c, &g_B05.flash, (int16_t)(1 + form));
+        M_Put(&g_B05.flash, (int16_t)(1 + form));
     } else if (g_B05.frame == 115) {
-        M_Put(c, &g_B05.person, (int16_t)(3 * form));
+        M_Put(&g_B05.person, (int16_t)(3 * form));
     } else if (g_B05.frame == 135) {
         g_B05.person.image = (int16_t)(1 + 3 * form);
-        M_Put(c, &g_B05.person, g_B05.person.image);
-        M_FireMan(c, fire);
+        M_Put(&g_B05.person, g_B05.person.image);
+        M_FireMan(fire);
     } else if (g_B05.frame == 160) {
         g_B05.person.image = (int16_t)(2 + 3 * form);
-        M_Put(c, &g_B05.person, form == 0 ? 2 : 4);
-        M_FireMan(c, fire);
+        M_Put(&g_B05.person, form == 0 ? 2 : 4);
+        M_FireMan(fire);
     } else if (g_B05.frame == 185) {
         g_B05.person.image = (int16_t)(3 * form);
-        M_Put(c, &g_B05.person, g_B05.person.image);
-        M_FireMan(c, fire);
+        M_Put(&g_B05.person, g_B05.person.image);
+        M_FireMan(fire);
     } else if (g_B05.frame == 260) {
-        M_Put(c, &g_B05.sphere, 0);
+        M_Put(&g_B05.sphere, 0);
         g_B05.frame = 0;
     }
     if (g_B05.frame > 135 && g_B05.frame < 240 && g_B05.frame % 4 == 0) {
-        M_Put(c, &g_B05.person, g_B05.person.image);
+        M_Put(&g_B05.person, g_B05.person.image);
     }
 }
 
-static void M_Chase(const B05_CONTEXT *const c)
+static void M_Chase(void)
 {
-    M_Transform(c, 0, B05_FIRE_NONE);
+    M_Transform(0, B05_FIRE_NONE);
     if (g_B05.frame > 140 && g_B05.frame <= 220 && g_B05.frame % 8 == 0) {
         const int16_t speed = Boss_Rank(55, 58, 62, 65);
         M_Add(
-            c, Math16_Wrap(g_B05.sphere.left + 44),
+            Math16_Wrap(g_B05.sphere.left + 44),
             Math16_Wrap(g_B05.sphere.top + 44), 0xf0, 16, PELLET_CHASE, speed);
         M_Add(
-            c, Math16_Wrap(g_B05.sphere.left + 44),
+            Math16_Wrap(g_B05.sphere.left + 44),
             Math16_Wrap(g_B05.sphere.top + 44), 0x90, 16, PELLET_CHASE, speed);
     }
 }
 
-static void M_Cross(const B05_CONTEXT *const c)
+static void M_Cross(void)
 {
-    M_Transform(c, 0, B05_FIRE_NONE);
+    M_Transform(0, B05_FIRE_NONE);
     if (g_B05.frame > 140 && g_B05.frame % 8 == 0) {
         const int16_t speed = Boss_Rank(60, 70, 75, 80);
         M_Add(
-            c, Math16_Wrap(g_B05.sphere.left + 12),
+            Math16_Wrap(g_B05.sphere.left + 12),
             Math16_Wrap(g_B05.sphere.top + 44), 0x30, speed, PELLET_REGULAR, 0);
         M_Add(
-            c, Math16_Wrap(g_B05.sphere.left + 84),
+            Math16_Wrap(g_B05.sphere.left + 84),
             Math16_Wrap(g_B05.sphere.top + 44), 0x50, speed, PELLET_REGULAR, 0);
     }
 }
@@ -283,7 +277,7 @@ static bool M_Entrance(const B05_CONTEXT *const c)
         BossEntity_LockedMovePut(&g_B05.sphere, 0, 0, 3, true);
         g_B05.frame++;
         if (g_B05.frame % g_B05.rotation_interval == 0) {
-            M_Rotate(c, 1, 1);
+            M_Rotate(1, 1);
             g_B05.rotation_interval -= 2;
             if (g_B05.rotation_interval <= 0) {
                 g_B05.rotation_interval = 1;
@@ -431,9 +425,9 @@ bool B05_UpdateAndRender(
         g_B05.hit.frame = Math16_Wrap(g_B05.hit.frame + 1);
         if (g_B05.phase == B05_PHASE_SPHERE) {
             if (g_B05.pattern == 0) {
-                M_Half(c);
+                M_Half();
             } else if (g_B05.pattern == 1) {
-                M_Slam(c);
+                M_Slam();
             }
             if (g_B05.frame == 0) {
                 g_B05.pattern =
@@ -442,19 +436,19 @@ bool B05_UpdateAndRender(
         } else {
             switch (g_B05.pattern) {
             case 0:
-                M_Chase(c);
+                M_Chase();
                 break;
             case 1:
-                M_Transform(c, 1, B05_FIRE_DOWN);
+                M_Transform(1, B05_FIRE_DOWN);
                 break;
             case 2:
-                M_Cross(c);
+                M_Cross();
                 break;
             case 3:
-                M_Transform(c, 1, B05_FIRE_SLING);
+                M_Transform(1, B05_FIRE_SLING);
                 break;
             case 4:
-                M_Slam(c);
+                M_Slam();
                 break;
             }
             if (g_B05.frame == 0) {
