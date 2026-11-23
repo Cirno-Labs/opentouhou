@@ -2,7 +2,6 @@
 
 #include "core/json/types.h"
 
-#include <stdbool.h>
 #include <stdint.h>
 
 // Holds one parsed dialogue instruction of a MSG script (data/msg*.dat).
