@@ -14,6 +14,7 @@
 #include "th07/strings.h"
 
 #include "stg/note.h"
+#include "stg/replay_files.h"
 #include "stg/translation.h"
 
 #include "shell/game.h"
@@ -54,12 +55,11 @@ static void M_KeepDemos(void)
         const size_t size = Reader_Remaining(&reader);
         uint8_t *const data = Reader_ReadAlloc(&reader, size, &g_HeapAllocator);
         if (Result_Log(Reader_Result(&reader), LOG_LEVEL_WARNING)) {
-            Replay_AddFile(path, data, size);
-        }
-        Reader_Close(&reader);
-        if (data != nullptr) {
+            ReplayFiles_Add(path, data, size);
+        } else if (data != nullptr) {
             Allocator_Free(&g_HeapAllocator, data, size);
         }
+        Reader_Close(&reader);
     }
 }
 
@@ -114,7 +114,7 @@ static void M_Shutdown(void)
     }
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_CloseSaves();
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     SoundPlayer_Shutdown();
     Note_Shutdown();
     Anm_ShutdownText();

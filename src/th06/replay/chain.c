@@ -5,6 +5,8 @@
 #include "th06/gui.h"
 #include "th06/replay/format.h"
 
+#include "stg/replay_files.h"
+
 #include "core/base/assert.h"
 #include "core/base/memory.h"
 
@@ -57,7 +59,7 @@ static void M_EnsureFrames(M_REPLAY *const replay, const int32_t count)
 static RESULT M_Load(M_REPLAY *const replay)
 {
     size_t size;
-    const uint8_t *const data = Replay_FindFile(replay->path, &size);
+    const uint8_t *const data = ReplayFiles_Find(replay->path, &size);
     FAIL_IF(data == nullptr, "no replay is kept for %s", replay->path);
     READER reader;
     Reader_OpenBuffer(&reader, data, size, nullptr);

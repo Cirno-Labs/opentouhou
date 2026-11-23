@@ -3,13 +3,14 @@
 #include "th06/settings.h"
 #include "th06/sound/events.h"
 
+#include "stg/wave.h"
+
 #include "shell/game.h"
 #include "core/audio.h"
 #include "core/base/utils.h"
 #include "core/math.h"
 #include "core/vfs.h"
 
-#include <math.h>
 #include <string.h>
 
 #define M_FILE_COUNT 26
@@ -66,11 +67,6 @@ static const M_SOUND m_Sounds[SOUND_COUNT] = {
 };
 
 static M_PLAYER m_Player;
-
-static float M_Gain(const int32_t hundredths_of_db)
-{
-    return powf(10.0f, (float)hundredths_of_db / 2000.0f);
-}
 
 // Finds chunk id among the chunks at start. The search stops when the
 // sizes of the chunks passed add up to limit exactly. Otherwise limit wraps
@@ -283,7 +279,7 @@ static void M_StepFade(void)
         m_Player.fade_frames * M_FADE_DEPTH / m_Player.fade_total
         - M_FADE_DEPTH;
     Result_Log(
-        AudioStream_SetVolume(m_Player.music, M_Gain(volume)),
+        AudioStream_SetVolume(m_Player.music, Wave_Gain(volume)),
         LOG_LEVEL_WARNING);
 }
 
@@ -304,7 +300,7 @@ static void M_PlayQueued(void)
         }
         const AUDIO_PLAY_OPTIONS options = {
             .group = AUDIO_GROUP_EFFECTS,
-            .volume = M_Gain(m_Sounds[sound].volume),
+            .volume = Wave_Gain(m_Sounds[sound].volume),
             .pan = 0.0f,
             .pitch = 1.0f,
         };

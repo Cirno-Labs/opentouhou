@@ -31,7 +31,6 @@ th07_lib = static_library(
   'player/shots.c',
   'replay/chain.c',
   'replay/format.c',
-  'replay/store.c',
   'scene.c',
   'screen_effect.c',
   'screens/ending/screen.c',

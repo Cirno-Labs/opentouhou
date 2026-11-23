@@ -1,5 +1,7 @@
 #include "th07/replay.h"
 
+#include "stg/replay_files.h"
+
 #include "test.h"
 
 #include "replay_lzss_literals.h"
@@ -180,7 +182,7 @@ static void M_Keep(const M_SPEC *const spec)
         m_File[i] = (uint8_t)(m_File[i] + key);
         key = (uint8_t)(key + 7);
     }
-    Replay_AddFile(M_PATH, m_File, size);
+    ReplayFiles_Add(M_PATH, Mem_Dup(m_File, size), size);
 }
 
 // Fills a slot with count frames whose buttons are first, first + 1, ...
@@ -215,7 +217,7 @@ static void M_SetUp(const int32_t stage)
     Replay_Discard();
     Chain_Release(&g_Chain);
     Chain_Init(&g_Chain);
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     m_BorderStarts = 0;
     m_Dialogue = false;
     m_Skippable = false;
@@ -266,7 +268,7 @@ static void M_TearDown(void)
 {
     Replay_Discard();
     Chain_Release(&g_Chain);
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
 }
 
 TEST(playback_starts_on_the_leading_empty_frame)
@@ -1034,7 +1036,7 @@ TEST(the_input_lag_fix_records_a_bomb_on_its_press_for_stock_playback)
     CHECK_EQ_INT(stage->frames[2].buttons, 0x3);
     CHECK_EQ_INT(stage->frames[2].events, REPLAY_EVENT_BOMB);
     Replay_Free(file);
-    Replay_AddFile(M_PATH, m_Resaved, m_ResavedSize);
+    ReplayFiles_Add(M_PATH, Mem_Dup(m_Resaved, m_ResavedSize), m_ResavedSize);
     g_GameManager.mode.in_replay = true;
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     CHECK(Result_Log(Replay_Register(REPLAY_PLAY, M_PATH), LOG_LEVEL_ERROR));

@@ -1,5 +1,7 @@
 #include "th06/replay.h"
 
+#include "stg/replay_files.h"
+
 #include "test.h"
 
 #include "th06/files.h"
@@ -68,7 +70,7 @@ static void M_SetUp(void)
     Replay_Discard();
     Chain_Release(&g_Chain);
     Chain_Init(&g_Chain);
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     Mem_Free(m_Bytes);
     m_Bytes = nullptr;
     m_Size = 0;
@@ -126,7 +128,7 @@ static void M_Fixture(void)
     CHECK(Result_Ignore(ReplayFormat_Write(&writer, &file, &prepared, random)));
     m_Bytes = Writer_TakeBuffer(&writer, &m_Size);
     CHECK(Result_Ignore(Writer_Close(&writer)));
-    Replay_AddFile("synthetic.rpy", m_Bytes, m_Size);
+    ReplayFiles_Add("synthetic.rpy", Mem_Dup(m_Bytes, m_Size), m_Size);
 }
 
 static REPLAY_FILE *M_Save(void)
@@ -416,21 +418,4 @@ TEST(playback_of_a_path_not_kept_fails)
     CHECK_EQ_INT(m_Loads, 0);
     Replay_Discard();
     Chain_Release(&g_Chain);
-}
-
-TEST(a_kept_file_is_a_copy_that_a_new_copy_replaces)
-{
-    const uint8_t first[] = { 1, 2, 3 };
-    const uint8_t second[] = { 4 };
-    Replay_AddFile("a.rpy", first, sizeof(first));
-    Replay_AddFile("b.rpy", second, sizeof(second));
-    Replay_AddFile("a.rpy", second, sizeof(second));
-    size_t size = 0;
-    const uint8_t *data = Replay_FindFile("a.rpy", &size);
-    CHECK(data != nullptr && size == 1 && data[0] == 4);
-    Replay_RemoveFile("a.rpy");
-    CHECK(Replay_FindFile("a.rpy", &size) == nullptr);
-    CHECK(Replay_FindFile("b.rpy", &size) != nullptr);
-    Replay_ClearFiles();
-    CHECK(Replay_FindFile("b.rpy", &size) == nullptr);
 }

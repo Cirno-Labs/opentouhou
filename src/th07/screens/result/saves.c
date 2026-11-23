@@ -3,6 +3,8 @@
 #include "th07/game_manager.h"
 #include "th07/replay.h"
 
+#include "stg/replay_files.h"
+
 #include "shell/game.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -90,7 +92,7 @@ static void M_ReadReplay(
         memcpy(out->path, path, strlen(path) + 1);
         snprintf(out->label, sizeof(out->label), "%s", label);
         Replay_Summarize(file, &out->summary);
-        Replay_AddFile(path, data, size);
+        ReplayFiles_Add(path, Mem_Dup(data, size), size);
     }
     Replay_Free(file);
 }
@@ -157,7 +159,7 @@ static void M_Forget(SAVED_REPLAY *const replays, const int32_t count)
 {
     for (int32_t i = 0; i < count; i++) {
         if (replays[i].valid) {
-            Replay_RemoveFile(replays[i].path);
+            ReplayFiles_Remove(replays[i].path);
         }
         memset(&replays[i], 0, sizeof(replays[i]));
     }
@@ -338,14 +340,14 @@ void ResultScreen_PutReplayFile(
     if (saved != nullptr) {
         char label[sizeof(saved->label)];
         memcpy(label, saved->label, sizeof(label));
-        Replay_RemoveFile(saved->path);
+        ReplayFiles_Remove(saved->path);
         M_ReadReplay(data, size, path, label, saved);
     } else if (slot >= 0) {
         char label[8];
         M_SlotLabel(slot, label);
         M_ReadReplay(data, size, path, label, &m_Saves.slots[slot]);
     } else {
-        Replay_AddFile(path, data, size);
+        ReplayFiles_Add(path, Mem_Dup(data, size), size);
     }
     if (M_IsInReplayDir(path)) {
         M_Queue(Str_Dup(path), data, size);

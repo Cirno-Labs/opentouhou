@@ -1,4 +1,4 @@
-#include "th07/replay/file.h"
+#include "stg/replay_files.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -24,14 +24,21 @@ static M_FILE *M_Find(const char *const path)
     return nullptr;
 }
 
+static void M_FreeData(M_FILE *const file)
+{
+    if (file->data != nullptr) {
+        Allocator_Free(&g_HeapAllocator, file->data, file->size);
+    }
+}
+
 static void M_Free(M_FILE *const file)
 {
     Mem_Free(file->path);
-    Mem_Free(file->data);
+    M_FreeData(file);
 }
 
-void Replay_AddFile(
-    const char *const path, const void *const data, const size_t size)
+void ReplayFiles_Add(
+    const char *const path, uint8_t *const data, const size_t size)
 {
     M_FILE *file = M_Find(path);
     if (file == nullptr) {
@@ -39,13 +46,13 @@ void Replay_AddFile(
         file = &m_Files[m_Count++];
         file->path = Str_Dup(path);
     } else {
-        Mem_Free(file->data);
+        M_FreeData(file);
     }
-    file->data = Mem_Dup(data, size);
+    file->data = data;
     file->size = size;
 }
 
-void Replay_RemoveFile(const char *const path)
+void ReplayFiles_Remove(const char *const path)
 {
     M_FILE *const file = M_Find(path);
     if (file == nullptr) {
@@ -55,7 +62,7 @@ void Replay_RemoveFile(const char *const path)
     *file = m_Files[--m_Count];
 }
 
-void Replay_ClearFiles(void)
+void ReplayFiles_Clear(void)
 {
     for (int32_t i = 0; i < m_Count; i++) {
         M_Free(&m_Files[i]);
@@ -65,7 +72,7 @@ void Replay_ClearFiles(void)
     m_Count = 0;
 }
 
-const uint8_t *Replay_FindFile(const char *const path, size_t *const size)
+const uint8_t *ReplayFiles_Find(const char *const path, size_t *const size)
 {
     const M_FILE *const file = M_Find(path);
     if (file == nullptr) {

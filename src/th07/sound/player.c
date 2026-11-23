@@ -4,13 +4,14 @@
 #include "th07/sound/bgm.h"
 #include "th07/sound/events.h"
 
+#include "stg/wave.h"
+
 #include "shell/game.h"
 #include "core/vfs.h"
 #include "core/audio.h"
 #include "core/base/memory.h"
 #include "core/math.h"
 
-#include <math.h>
 #include <string.h>
 
 #define M_FILE_COUNT 30
@@ -68,65 +69,11 @@ static const M_SOUND m_Sounds[SOUND_COUNT] = {
 
 static M_PLAYER m_Player;
 
-static float M_Gain(const int32_t hundredths_of_db)
-{
-    return powf(10.0f, (float)hundredths_of_db / 2000.0f);
-}
-
-// Finds chunk id among the chunks at start. The search stops when the
-// sizes of the chunks passed add up to limit exactly. Otherwise limit wraps
-// below zero, and the search runs on to the end of the file.
-static bool M_FindChunk(
-    READER *const reader, const size_t start, uint32_t limit,
-    const char *const id)
-{
-    Reader_Seek(reader, start);
-    while (limit != 0) {
-        char name[4];
-        Reader_ReadBytes(reader, name, sizeof(name));
-        const uint32_t chunk_size = Reader_ReadU32(reader);
-        if (Reader_Failed(reader)) {
-            return false;
-        }
-        if (memcmp(name, id, sizeof(name)) == 0) {
-            return true;
-        }
-        limit -= chunk_size + 8;
-        Reader_Skip(reader, chunk_size);
-    }
-    return false;
-}
-
-// Checks that reader holds a wave file with a format and a data chunk,
-// and leaves it at position 0.
-static RESULT M_CheckWave(READER *const reader, const char *const path)
-{
-    char tag[4];
-    Reader_ReadBytes(reader, tag, sizeof(tag));
-    FAIL_IF(memcmp(tag, "RIFF", 4) != 0, "%s is not a wave file", path);
-    const uint32_t riff_size = Reader_ReadU32(reader);
-    Reader_ReadBytes(reader, tag, sizeof(tag));
-    FAIL_IF(memcmp(tag, "WAVE", 4) != 0, "%s is not a wave file", path);
-    const size_t start = Reader_Tell(reader);
-    // The limit is 8 bytes short of the chunks after the WAVE tag, so an
-    // empty chunk at the end of the file is not found.
-    const uint32_t limit = riff_size - 12;
-    FAIL_IF(
-        !M_FindChunk(reader, start, limit, "fmt "), "%s has no format chunk",
-        path);
-    FAIL_IF(
-        !M_FindChunk(reader, start, limit, "data"), "%s has no data chunk",
-        path);
-    MUST(Reader_Result(reader), "%s", path);
-    Reader_Seek(reader, 0);
-    return OK;
-}
-
 static RESULT M_LoadEffect(const int32_t file)
 {
     READER reader;
     MUST(Vfs_Open(Shell_GetFiles(), m_Files[file], VFS_IN_MEMORY, &reader));
-    RESULT result = M_CheckWave(&reader, m_Files[file]);
+    RESULT result = Wave_Check(&reader, m_Files[file]);
     if (IS_OK(result)) {
         result = AudioSample_Load(&reader, &m_Player.samples[file]);
     }
@@ -229,7 +176,7 @@ static void M_SetVolume(const int32_t hundredths_of_db)
 {
     if (m_Player.music != nullptr) {
         Result_Log(
-            AudioStream_SetVolume(m_Player.music, M_Gain(hundredths_of_db)),
+            AudioStream_SetVolume(m_Player.music, Wave_Gain(hundredths_of_db)),
             LOG_LEVEL_WARNING);
     }
 }
@@ -324,7 +271,7 @@ static void M_PlayQueued(void)
         }
         const AUDIO_PLAY_OPTIONS options = {
             .group = AUDIO_GROUP_EFFECTS,
-            .volume = M_Gain(m_Sounds[sound].volume),
+            .volume = Wave_Gain(m_Sounds[sound].volume),
             .pan = 0.0f,
             .pitch = 1.0f,
         };

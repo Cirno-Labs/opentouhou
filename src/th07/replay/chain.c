@@ -9,6 +9,8 @@
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 
+#include "stg/replay_files.h"
+
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -84,7 +86,7 @@ static void *M_Grow(
 static RESULT M_Load(M_REPLAY *const replay)
 {
     size_t size;
-    const uint8_t *const data = Replay_FindFile(replay->path, &size);
+    const uint8_t *const data = ReplayFiles_Find(replay->path, &size);
     FAIL_IF(data == nullptr, "no replay is kept for %s", replay->path);
     READER reader;
     Reader_OpenBuffer(&reader, data, size, nullptr);
