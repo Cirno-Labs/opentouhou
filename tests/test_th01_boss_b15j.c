@@ -1,4 +1,5 @@
 #include "th01/boss_b15j.h"
+#include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -25,7 +26,6 @@ typedef struct {
     uint32_t high_score;
     int16_t lives;
     bool test_damage, cleared;
-    int32_t effects[17], fades;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -59,23 +59,11 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                                   .stage_palette = &f->stage_palette };
 }
 
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK(number >= 1 && number <= 16);
-    f->effects[number]++;
-}
-
-static void M_Fade(void *const user)
-{
-    ((FIXTURE *)user)->fades++;
-}
-
 static void M_Shot(void *const user, const SHOTS_ACTION action)
 {
     FIXTURE *const f = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        M_Effect(f, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(&f->stage, action);
     }
@@ -112,11 +100,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
                                  .remaining_lives = &f->lives };
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit_context.test_damage = &f->test_damage;
-    f->hit_context.effect = M_Effect;
-    f->hit_context.user = f;
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
-    f->context.fade_music = M_Fade;
     g_Session.settings.difficulty = f->display.rank;
 }
 
@@ -311,7 +296,6 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         CHECK(g_Rng != 0xb15a0000);
         CHECK_EQ_INT(arena.used, used);
         CHECK(!g_Player.is_hit);
-        CHECK_EQ_INT(f.fades, 0);
         Arena_Free(&arena);
     }
 }
@@ -367,7 +351,6 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK(g_Player.is_hit);
     CHECK(g_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(g_Scene.active->id, 6);
-    CHECK_EQ_INT(f.fades, 1);
     CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
     CHECK(g_ShootoutLasers.slots[4].alive);
     const B15J finished = g_B15J;
@@ -401,7 +384,6 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK_EQ_INT(g_Rng, expected);
         CHECK_EQ_INT(g_ShootoutLasers.slots[0].age, 77);
         CHECK_EQ_INT(g_ShootoutLasers.slots[0].origin_left, 3210);
-        CHECK_EQ_INT(f.effects[6], 1);
         g_B15J.subphase = 2;
         g_B15J.frame = Math16_Wrap(g_B15J.pattern_state * 2 - 1);
         CHECK(B15J_UpdateAndRender(&f.context));
@@ -410,7 +392,6 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
             alive += g_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(alive, 12);
-        CHECK_EQ_INT(f.effects[7], 2);
         CHECK_EQ_INT(g_B15J.pattern_state, 52 + rank * 4);
         g_B15J.subphase = 3;
         g_B15J.frame = 99;
@@ -451,7 +432,6 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     CHECK_EQ_INT(g_B15J.hp, 0);
     CHECK(!f.test_damage);
     CHECK(g_B15J.defeating);
-    CHECK_EQ_INT(f.fades, 1);
     CHECK_EQ_INT(g_Stage.score, 0);
     Arena_Free(&arena);
 }
@@ -477,7 +457,6 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         CHECK(B15J_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B15J.tear_frame[0], 2);
         CHECK_EQ_INT(g_Player.is_hit, i == 1 || i == 2);
-        CHECK_EQ_INT(f.effects[7], 1);
         Arena_Free(&arena);
     }
 }

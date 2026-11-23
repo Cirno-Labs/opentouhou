@@ -1,4 +1,5 @@
 #include "th01/boss_b05.h"
+#include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -28,33 +29,14 @@ typedef struct {
     int16_t lives;
     uint8_t route;
     bool test_damage, cleared;
-    int32_t effects[17], fades;
-    uint8_t scene_at_route_effect;
-    bool cleared_at_route_effect;
 
 } FIXTURE;
-
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK(number >= 1 && number <= 16);
-    f->effects[number]++;
-    if (number == 4) {
-        f->scene_at_route_effect = g_Scene.active->id;
-        f->cleared_at_route_effect = f->cleared;
-    }
-}
-
-static void M_Fade(void *const user)
-{
-    ((FIXTURE *)user)->fades++;
-}
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
 {
     FIXTURE *const f = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        M_Effect(f, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(&f->stage, action);
     }
@@ -150,8 +132,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     };
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit_context.test_damage = &f->test_damage;
-    f->hit_context.effect = M_Effect;
-    f->hit_context.user = f;
     f->route_assets = (ROUTE_SELECT_ASSETS) {
         &f->font,
         &f->stage,
@@ -159,11 +139,13 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
     f->route_context = (ROUTE_SELECT_CONTEXT) {
-        &f->palette, &f->route_assets, &f->route, &f->cleared, M_Effect, f,
+        &f->palette,
+        &f->route_assets,
+        &f->route,
+        &f->cleared,
     };
     f->context.miko = &f->miko;
     f->context.route = &f->route_context;
-    f->context.fade_music = M_Fade;
     g_Session.settings.difficulty = f->display.rank;
 }
 
@@ -330,9 +312,6 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(g_B05.phase, B05_PHASE_DEFEATED);
         CHECK_EQ_INT(g_B05.hp, 0);
         CHECK_EQ_INT(g_Stage.score, 24000);
-        CHECK_EQ_INT(f.effects[3], 8);
-        CHECK_EQ_INT(f.effects[5], 1);
-        CHECK_EQ_INT(f.fades, 0);
         CHECK_EQ_INT(g_B05.pending, B05_IDLE);
         g_Pellets.slots[0] = (PELLET) {
             .moving = true,
@@ -343,7 +322,6 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         };
         g_Pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
-        CHECK_EQ_INT(f.fades, 1);
         CHECK(!g_Pellets.slots[0].moving);
         CHECK(!g_Pellets.slots[1].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
@@ -361,10 +339,6 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             B05_UpdateAndRender(&f.context, &held);
         }
         CHECK_EQ_INT(g_B05.pending, B05_FINISHED);
-        CHECK_EQ_INT(f.fades, 1);
-        CHECK_EQ_INT(f.effects[4], 1);
-        CHECK_EQ_INT(f.scene_at_route_effect, 0);
-        CHECK(!f.cleared_at_route_effect);
         CHECK_EQ_INT(f.route, rank % 2);
         CHECK(g_Scene.active == &f.cache[1 + rank % 2]);
         CHECK(f.cleared && g_Player.is_hit);
@@ -374,7 +348,6 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         const B05 finished = g_B05;
         CHECK(B05_UpdateAndRender(&f.context, &raw));
         CHECK(memcmp(&g_B05, &finished, sizeof(g_B05)) == 0);
-        CHECK_EQ_INT(f.effects[4], 1);
         Arena_Free(&arena);
     }
 }

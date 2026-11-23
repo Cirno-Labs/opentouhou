@@ -1,4 +1,5 @@
 #include "th01/boss_b05.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -52,7 +53,7 @@ static void M_Accelerate(const B05_CONTEXT *const c, const int16_t delta)
         return;
     }
     if (g_B05.frame == 50) {
-        c->hit->effect(c->hit->user, 8);
+        Sound_Effect(8);
     }
     if (g_B05.frame < 100 && g_B05.frame % 4 == 0) {
         M_Put(c, &g_B05.sphere, g_B05.sphere.image);
@@ -479,14 +480,14 @@ bool B05_UpdateAndRender(
             g_B05.hit.frame = 0;
         } else if (g_B05.phase == B05_PHASE_TRANSFORMS && g_B05.hp <= 0) {
             g_B05.phase = B05_PHASE_DEFEATED;
-            c->hit->effect(c->hit->user, 5);
+            Sound_Effect(5);
             g_B05.frame = 0;
         }
     } else if (g_B05.phase == B05_PHASE_DEFEATED) {
         BossEntity_Put(
             &g_B05.sphere, g_B05.sphere.left, g_B05.sphere.top,
             g_B05.sphere.image);
-        c->fade_music(c->hit->user);
+        Sound_Fade();
         Pellets_EraseAndResetMoving();
         BossDefeat_Begin(&g_B05.defeat, BOSS_DEFEAT_SINGYOKU);
         g_B05.pending = B05_DEFEAT;

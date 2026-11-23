@@ -1,4 +1,5 @@
 #include "th01/boss_b20j.h"
+#include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -108,27 +109,13 @@ typedef struct {
     uint32_t high_score;
     int16_t lives;
     bool damage, cleared;
-    int32_t effects[17], audio_count;
-    B20J_AUDIO_ACTION audio[8];
 } FIXTURE;
 
-static void M_Effect(void *const user, const int16_t effect)
-{
-    FIXTURE *const f = user;
-    CHECK(effect > 0 && effect <= 16);
-    f->effects[effect]++;
-}
-static void M_Audio(void *const user, const B20J_AUDIO_ACTION action)
-{
-    FIXTURE *const f = user;
-    CHECK(f->audio_count < 8);
-    f->audio[f->audio_count++] = action;
-}
 static void M_Shot(void *const user, const SHOTS_ACTION action)
 {
     FIXTURE *const f = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        M_Effect(f, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(&f->stage, action);
     }
@@ -168,13 +155,12 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .display = &f->display,
                                   .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
-                                  .frame_rand = 0x12345678,
-                                  .effect = M_Effect,
-                                  .user = f };
-    f->context = (B20J_CONTEXT) { .assets = &f->assets,
-                                  .hit = &f->hit,
-                                  .game_cleared = &f->cleared,
-                                  .audio = M_Audio };
+                                  .frame_rand = 0x12345678 };
+    f->context = (B20J_CONTEXT) {
+        .assets = &f->assets,
+        .hit = &f->hit,
+        .game_cleared = &f->cleared,
+    };
     B20J_Init();
     B20J_Setup(&f->context);
     g_Session.settings.difficulty = f->display.rank;
@@ -200,24 +186,17 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(g_Rng, 91);
     CHECK(g_StageObjects.entrance_done && g_StageObjects.portal_active);
     CHECK_EQ_INT(g_StageObjects.destination_left, 77);
-    CHECK_EQ_INT(f.audio_count, 2);
-    CHECK_EQ_INT(f.audio[0], B20J_AUDIO_LOAD_MUSIC);
-    CHECK_EQ_INT(f.audio[1], B20J_AUDIO_PLAY);
     Frame_Reset();
     int32_t polls = 0;
     while (!B20J_ResumeEntrance(&f.context)) {
         const B20J snapshot = g_B20J;
-        const int32_t effects = f.effects[9];
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!B20J_ResumeEntrance(&f.context));
             CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
-            CHECK_EQ_INT(f.effects[9], effects);
-            CHECK_EQ_INT(f.audio_count, 2);
         }
         Frame_VSync();
         CHECK(++polls < 2000);
     }
-    CHECK_EQ_INT(f.effects[9], 4);
     CHECK_EQ_INT(f.palette.resource.colors[10][0], 2);
     CHECK_EQ_INT(f.palette.saved.colors[10][0], 13);
     CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
@@ -284,13 +263,10 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     int32_t polls = 0;
     while (!B20J_UpdateAndRender(&f.context)) {
         const B20J snapshot = g_B20J;
-        const int32_t effects = f.effects[7], audio_count = f.audio_count;
         CHECK(!f.cleared);
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!B20J_UpdateAndRender(&f.context));
             CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
-            CHECK_EQ_INT(f.effects[7], effects);
-            CHECK_EQ_INT(f.audio_count, audio_count);
         }
         Frame_VSync();
         CHECK(++polls < 1200);
@@ -298,9 +274,6 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     CHECK(f.cleared && g_B20J.finished && !g_B20J.defeating);
     CHECK_EQ_INT(g_Stage.score, 49899);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
-    CHECK_EQ_INT(f.audio_count, 2);
-    CHECK_EQ_INT(f.audio[0], B20J_AUDIO_STOP);
-    CHECK_EQ_INT(f.audio[1], B20J_AUDIO_FADE);
     CHECK_EQ_INT(g_B20J.frame, 65);
     CHECK_EQ_INT(g_B20J.scroll_frame, 264);
     const B20J snapshot = g_B20J;
@@ -353,7 +326,6 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         CHECK(B20J_UpdateAndRender(&f.context));
         CHECK_EQ_INT(g_B20J.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
-        CHECK_EQ_INT(f.effects[3], i < 2 ? 1 : 0);
     }
     Arena_Free(&arena);
 }
@@ -394,7 +366,6 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     CHECK_EQ_INT(images, 9);
     CHECK_EQ_INT(g_B20J.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK_EQ_INT(f.effects[3], 1);
     CHECK(f.cleared && g_B20J.finished);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);

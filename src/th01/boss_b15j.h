@@ -49,7 +49,6 @@ typedef struct {
     PALETTE *stage_palette;
     const PTN *miko;
     bool *stage_cleared;
-    void (*fade_music)(void *user);
 } B15J_CONTEXT;
 
 // Loads TAMASII.BOS, TAMASII2.BOS, TAMAYEN.PTN, BOSS4.GRP and scene 6

@@ -1,4 +1,5 @@
 #include "th01/bonus.h"
+#include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
 #include "th01/sprite.h"
@@ -223,7 +224,7 @@ bool Bonus_ResumeTotal(
                 return false;
             }
             g_BonusTotal.credit -= 12;
-            c->effect(c->user, 2);
+            Sound_Effect(2);
             g_BonusTotal.spin++;
             g_BonusTotal.phase = BONUS_TOTAL_DIGIT;
             break;

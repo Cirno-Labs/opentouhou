@@ -1,4 +1,5 @@
 #include "th01/boss_b15m.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -304,7 +305,7 @@ static bool M_SummonFlash(
 {
     if (g_B15M.frame >= start && g_B15M.frame % 2 == 0 && circle->frame == 0) {
         if (g_B15M.frame == start) {
-            Boss_Effect(c->hit, 8);
+            Sound_Effect(8);
         }
         M_SummonDots(
             c, circle, M_CenterX(B15M_FORM_GIRL), M_CenterY(B15M_FORM_GIRL),
@@ -363,7 +364,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 {
     const B15M_CONTEXT *const c = user;
     if (action.kind == MISSILES_ACTION_EFFECT) {
-        Boss_Effect(c->hit, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Missiles_RenderAction(&c->assets->missiles, action);
     }
@@ -430,7 +431,7 @@ static void M_Rifts(
             M_Grc(c, r->x[i], r->y[i], image, color);
         }
     }
-    Boss_Effect(c->hit, 7);
+    Sound_Effect(7);
 }
 static bool M_Teleport(
     const B15M_CONTEXT *const c, const int16_t x, const int16_t y)
@@ -670,7 +671,7 @@ static int16_t M_LasersAcross(const B15M_CONTEXT *const c)
             c, g_B15M.frame / 10, Math16_Wrap(g_B15M.girl.left + 60),
             Math16_Wrap(g_B15M.girl.top + 28), tx, 400, g_B15M.pattern_state,
             25, 4);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
         if ((g_B15M.direction == 0 && tx >= 640)
             || (g_B15M.direction == 1 && tx <= 0)) {
             g_B15M.frame = 0;
@@ -782,7 +783,7 @@ static int16_t M_Star(const B15M_CONTEXT *const c)
     }
     if (g_B15M.frame >= 10 && g_B15M.frame % 2 == 0 && circle->frame == 0) {
         if (g_B15M.frame == 10) {
-            Boss_Effect(c->hit, 8);
+            Sound_Effect(8);
         }
         M_SummonDots(
             c, circle, M_CenterX(B15M_FORM_GIRL), M_CenterY(B15M_FORM_GIRL), 2);
@@ -872,7 +873,7 @@ static int16_t M_SphereClusters(const B15M_CONTEXT *const c)
         g_B15M.frame > 100 && g_B15M.frame <= 230 && g_B15M.frame % 10 == 0) {
         if (g_B15M.frame <= 200) {
             const int32_t n = (g_B15M.frame - 100) / 10;
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
             M_Grc(c, g_B15M.sphere_x[n - 1], g_B15M.sphere_y[n - 1], 4, 4);
             for (int32_t i = n; i < 10; i++) {
                 M_Grc(c, g_B15M.sphere_x[i], g_B15M.sphere_y[i], 3, 4);
@@ -1119,14 +1120,14 @@ static int16_t M_SymmetricArc(const B15M_CONTEXT *const c)
             M_SymmetricFire(
                 c, angle, Math16_Wrap((i + g_B15M.pattern_state) * 16));
         }
-        Boss_Effect(c->hit, 7);
+        Sound_Effect(7);
     } else if (g_B15M.frame == 80) {
         for (int32_t i = 0; i < 10; i++) {
             M_SymmetricFire(
                 c, (uint8_t)(i * 6),
                 Math16_Wrap((2 + g_B15M.pattern_state) * 16));
         }
-        Boss_Effect(c->hit, 7);
+        Sound_Effect(7);
     } else if (g_B15M.frame >= 120) {
         g_B15M.frame = 0;
         return 0;
@@ -1167,7 +1168,7 @@ static int16_t M_Safety(const B15M_CONTEXT *const c, const uint64_t host_tick)
     }
     if (g_B15M.frame >= 60 && g_B15M.frame % 2 == 0 && circle->frame == 0) {
         if (g_B15M.frame == 60) {
-            Boss_Effect(c->hit, 8);
+            Sound_Effect(8);
             g_B15M.safety_left = Boss_Player(c->hit)->left;
         }
         M_SummonDots(c, circle, Math16_Wrap(g_B15M.safety_left + 16), 384, 2);
@@ -1262,7 +1263,7 @@ static int16_t M_AimedRing(const B15M_CONTEXT *const c)
             c, g_B15M.frame / 10, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
             Math16_Wrap(g_B15M.girl.top + 28), Boss_Player(c->hit)->left, 400,
             50, 20, 8);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
     }
     return 1;
 }
@@ -1378,7 +1379,7 @@ static bool M_Tail(const B15M_CONTEXT *const c)
     if (g_B15M.call_phase == B15M_PHASE_FORMS) {
         M_Hit(c, g_B15M.form);
         if (g_B15M.hp <= 0) {
-            c->fade_music(c->hit->user);
+            Sound_Fade();
             Pellets_EraseAndResetMoving();
             M_Background(c);
             Missiles_Reset();

@@ -179,7 +179,8 @@ OPENING_EVENTS Opening_Tick(
 void Gameplay_Begin(GAMEPLAY *game, const TH01_INPUT *input, uint64_t host_tick)
 {
     Gameplay_ResetWorld(game);
-    Gameplay_Play(game, 11);
+    Sound_Load(11);
+    Sound_Play();
 }
 
 GAMEPLAY_REQUEST Gameplay_Tick(

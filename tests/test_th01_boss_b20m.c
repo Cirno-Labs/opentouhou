@@ -1,4 +1,5 @@
 #include "th01/boss_b20m.h"
+#include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -108,27 +109,13 @@ typedef struct {
     int16_t lives;
     bool damage, cleared, first_stage, timer_initialized;
     GRF mask;
-    int32_t effects[17], audio_count;
-    B20M_AUDIO_ACTION audio[8];
 } FIXTURE;
 
-static void M_Effect(void *const user, const int16_t effect)
-{
-    FIXTURE *const f = user;
-    CHECK(effect > 0 && effect <= 16);
-    f->effects[effect]++;
-}
-static void M_Audio(void *const user, const B20M_AUDIO_ACTION action)
-{
-    FIXTURE *const f = user;
-    CHECK(f->audio_count < 8);
-    f->audio[f->audio_count++] = action;
-}
 static void M_Shot(void *const user, const SHOTS_ACTION action)
 {
     FIXTURE *const f = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        M_Effect(f, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(&f->stage, action);
     }
@@ -180,13 +167,10 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .display = &f->display,
                                   .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
-                                  .frame_rand = 0x12345678,
-                                  .effect = M_Effect,
-                                  .user = f };
+                                  .frame_rand = 0x12345678 };
     f->context = (B20M_CONTEXT) { .assets = &f->assets,
                                   .hit = &f->hit,
                                   .game_cleared = &f->cleared,
-                                  .audio = M_Audio,
                                   .first_stage = &f->first_stage,
                                   .timer_initialized = &f->timer_initialized };
     B20M_Init();
@@ -214,7 +198,6 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     const size_t used = arena.used;
     B20M_BeginEntrance(&f.context);
     CHECK(g_Pellets.interlace);
-    CHECK_EQ_INT(f.audio_count, 2);
     CHECK(!B20M_ResumeEntrance(&f.context, tick));
     const B20M pending = g_B20M;
     CHECK(!B20M_ResumeEntrance(&f.context, tick));
@@ -230,7 +213,6 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(f.audio_count, 2);
     Arena_Free(&arena);
 }
 TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
@@ -372,10 +354,6 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(g_HudHp.first_white, 10);
     CHECK_EQ_INT(g_HudHp.first_redwhite, 3);
     CHECK(f.first_stage);
-    CHECK_EQ_INT(f.audio_count, 3);
-    CHECK_EQ_INT(f.audio[0], B20M_AUDIO_FADE);
-    CHECK_EQ_INT(f.audio[1], B20M_AUDIO_LOAD_SECOND_MUSIC);
-    CHECK_EQ_INT(f.audio[2], B20M_AUDIO_PLAY);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -396,7 +374,6 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_DEFEAT);
     CHECK_EQ_INT(g_B20M.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 10000);
-    CHECK_EQ_INT(f.audio[0], B20M_AUDIO_STOP);
     for (int32_t i = 0; !f.cleared && i < 1500; i++) {
         M_Tick(&f, &tick);
     }
@@ -405,8 +382,6 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK_EQ_INT(g_Stage.score, 60000);
     CHECK_EQ_INT(g_B20M.frame, 231);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
-    CHECK_EQ_INT(f.audio_count, 2);
-    CHECK_EQ_INT(f.audio[1], B20M_AUDIO_FADE);
     CHECK_EQ_INT(arena.used, used);
     const B20M done = g_B20M;
     CHECK(B20M_UpdateAndRender(&f.context, tick));

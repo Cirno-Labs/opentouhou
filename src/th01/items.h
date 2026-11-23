@@ -32,7 +32,6 @@ typedef struct {
     const GAME_TEXT_FONT *font;
     void (*hud_bomb)(void *user, int16_t previous_slot);
     void (*hud_score_and_combo)(void *user);
-    void (*effect)(void *user, int16_t number);
     void *user;
 } ITEM_CONTEXT;
 

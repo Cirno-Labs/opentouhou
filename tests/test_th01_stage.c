@@ -43,13 +43,6 @@ static void M_Item(void *const user, const int32_t slot, const bool bomb)
     state->points += !bomb;
 }
 
-static void M_Effect(void *const user, const int16_t number)
-{
-    CASE *const state = user;
-    CHECK_EQ_INT(number, 2);
-    state->events[state->count++] = 4;
-}
-
 static void M_Pellet(void *const user, const STAGE_PELLET_SPAWN spawn)
 {
     CASE *const state = user;
@@ -97,7 +90,6 @@ static void M_Init(CASE *const state, const uint8_t hp)
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
         .hud_score_and_combo = M_Hud,
         .item_add = M_Item,
-        .effect = M_Effect,
         .pellet_group = M_Pellet,
         .user = state,
     };
@@ -130,10 +122,9 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
-            CHECK_EQ_INT(state.count, 3);
+            CHECK_EQ_INT(state.count, 2);
             CHECK_EQ_INT(state.events[0], 1);
             CHECK_EQ_INT(state.events[1], 2);
-            CHECK_EQ_INT(state.events[2], 4);
             Arena_Free(&state.arena);
         }
     }

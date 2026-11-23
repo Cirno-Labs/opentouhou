@@ -26,7 +26,7 @@ typedef struct {
 static bool M_EffectSounds(GAMEPLAY *const g)
 {
     MDRV_FRAME frames[2400];
-    Mdrv_Render(g->storage.audio, frames, 2400);
+    Mdrv_Render(g_Sound.mdrv, frames, 2400);
     for (size_t i = 0; i < 2400; i++) {
         if (frames[i].effects[0] != 0 || frames[i].effects[1] != 0) {
             return true;
@@ -517,11 +517,11 @@ TEST(disabled_gameplay_cannot_start_effects)
     FIXTURE f;
     M_Init(&f);
     g_Session.settings.music = SETTINGS_MUSIC_OFF;
-    Gameplay_Effect(f.game, 5);
+    Sound_Effect(5);
     Gameplay_AdvanceAudio(f.game);
     CHECK(!M_EffectSounds(f.game));
     g_Session.settings.music = SETTINGS_MUSIC_FM;
-    Gameplay_Effect(f.game, 5);
+    Sound_Effect(5);
     CHECK(M_EffectSounds(f.game));
     Arena_Free(&f.arena);
 }
@@ -545,16 +545,17 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
         Gameplay_AdvanceAudio(g);
     }
     Mdrv_Render(twin, nullptr, 8000);
-    Gameplay_Effect(g, 5);
-    Gameplay_Play(g, 3);
-    Gameplay_Stop(g);
-    Gameplay_Fade(g);
-    g->bindings.c20j.audio(g, B20J_AUDIO_STOP);
-    g->bindings.c20m.audio(g, B20M_AUDIO_STOP);
-    CHECK_EQ_INT(g->storage.song, 3);
+    Sound_Effect(5);
+    Sound_Load(3);
+    Sound_Play();
+    Sound_Stop();
+    Sound_Fade();
+    Sound_Stop();
+    Sound_Stop();
+    CHECK_EQ_INT(g_Sound.song, 3);
     static MDRV_FRAME expected[4800], actual[4800];
     Mdrv_Render(twin, expected, 4800);
-    Mdrv_Render(g->storage.audio, actual, 4800);
+    Mdrv_Render(g_Sound.mdrv, actual, 4800);
     CHECK(memcmp(expected, actual, sizeof(actual)) == 0);
     Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_STOP });
     CHECK_EQ_INT(f.arena.used, used);
@@ -566,20 +567,23 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
     FIXTURE f;
     M_Init(&f);
     GAMEPLAY *const g = f.game;
-    Gameplay_Play(g, 3);
-    Gameplay_Effect(g, 5);
+    Sound_Load(3);
+    Sound_Play();
+    Sound_Effect(5);
     CHECK(M_EffectSounds(g));
-    Gameplay_Effect(g, 5);
-    Gameplay_Fade(g);
-    Gameplay_Play(g, 4);
-    CHECK_EQ_INT(g->storage.song, 4);
+    Sound_Effect(5);
+    Sound_Fade();
+    Sound_Load(4);
+    Sound_Play();
+    CHECK_EQ_INT(g_Sound.song, 4);
     CHECK(!M_EffectSounds(g));
-    Gameplay_Effect(g, 5);
-    g->bindings.c20j.audio(g, B20J_AUDIO_STOP);
+    Sound_Effect(5);
+    Sound_Stop();
     CHECK(!M_EffectSounds(g));
-    Gameplay_Play(g, 5);
-    Gameplay_Effect(g, 5);
-    g->bindings.c20m.audio(g, B20M_AUDIO_STOP);
+    Sound_Load(5);
+    Sound_Play();
+    Sound_Effect(5);
+    Sound_Stop();
     CHECK(!M_EffectSounds(g));
     Arena_Free(&f.arena);
 }
@@ -592,7 +596,7 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(Arena_Allocator(&f.arena), &output)));
     Gameplay_BindAudio(f.game, output);
-    Gameplay_Effect(f.game, 5);
+    Sound_Effect(5);
     Gameplay_AdvanceAudio(f.game);
     const size_t used = f.arena.used;
     Gameplay_ResetWorld(f.game);
@@ -629,7 +633,8 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(Arena_Allocator(&f.arena), &output)));
     Gameplay_BindAudio(g, output);
-    Gameplay_Play(g, 4);
+    Sound_Load(4);
+    Sound_Play();
     Gameplay_AdvanceAudio(g);
     g->storage.host_tick = 1234;
     const GAMEPLAY_STORAGE prepared = g->storage;

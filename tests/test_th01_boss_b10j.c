@@ -1,4 +1,5 @@
 #include "th01/boss_b10j.h"
+#include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -22,7 +23,6 @@ typedef struct {
     uint32_t high_score;
     int16_t lives;
     bool test_damage, cleared;
-    int32_t effects[17], fades;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -62,23 +62,11 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                                   .stage_palette = &f->stage_palette };
 }
 
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK(number >= 1 && number <= 16);
-    f->effects[number]++;
-}
-
-static void M_Fade(void *const user)
-{
-    ((FIXTURE *)user)->fades++;
-}
-
 static void M_Shot(void *const user, const SHOTS_ACTION action)
 {
     FIXTURE *const f = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        M_Effect(f, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(&f->stage, action);
     }
@@ -115,11 +103,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
                                  .remaining_lives = &f->lives };
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit_context.test_damage = &f->test_damage;
-    f->hit_context.effect = M_Effect;
-    f->hit_context.user = f;
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
-    f->context.fade_music = M_Fade;
     g_Session.settings.difficulty = f->display.rank;
 }
 
@@ -303,7 +288,6 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         CHECK_EQ_INT(patterns, 255);
         CHECK_EQ_INT(loops, 2);
         CHECK_EQ_INT(g_B10J.hp, 6);
-        CHECK_EQ_INT(f.fades, 0);
         CHECK(!g_B10J.finished);
         CHECK(g_Scene.active == nullptr);
         CHECK_EQ_INT(arena.used, used);
@@ -340,7 +324,6 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     CHECK(g_B10J.defeating);
     CHECK_EQ_INT(g_B10J.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK_EQ_INT(f.fades, 1);
     const B10J frozen = g_B10J;
     const uint32_t rng = g_Rng;
     CHECK(!B10J_UpdateAndRender(&f.context));
@@ -455,7 +438,6 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     }
     CHECK(!B10J_UpdateAndRender(&f.context));
     CHECK(g_B10J.defeating);
-    CHECK_EQ_INT(f.fades, 1);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK(!g_Pellets.slots[0].moving);

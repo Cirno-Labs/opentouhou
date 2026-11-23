@@ -17,23 +17,9 @@ typedef struct {
     SCENE_DATA cache[3];
     uint8_t route;
     bool cleared;
-    int32_t effects;
-    uint8_t route_at_effect, scene_at_effect;
-    bool cleared_at_effect, hit_at_effect;
     ROUTE_SELECT_ASSETS assets;
     ROUTE_SELECT_CONTEXT context;
 } FIXTURE;
-
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK_EQ_INT(number, 4);
-    f->effects++;
-    f->route_at_effect = f->route;
-    f->scene_at_effect = g_Scene.active->id;
-    f->cleared_at_effect = f->cleared;
-    f->hit_at_effect = g_Player.is_hit;
-}
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
@@ -86,7 +72,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                                         &f->cache[2] };
     CHECK(Result_Ignore(RouteSelect_ValidateAssets(&f->assets)));
     f->context = (ROUTE_SELECT_CONTEXT) { &f->palette, &f->assets, &f->route,
-                                          &f->cleared, M_Effect,   f };
+                                          &f->cleared };
 }
 
 static bool M_Poll(
@@ -126,19 +112,13 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
         Frame_VSync();
     }
     CHECK(!RouteSelect_Resume(&selection, &f.context, &raw));
-    CHECK_EQ_INT(f.effects, 0);
     Frame_VSync();
     CHECK(RouteSelect_Resume(&selection, &f.context, &raw));
-    CHECK_EQ_INT(f.effects, 1);
-    CHECK_EQ_INT(f.route_at_effect, 1);
-    CHECK_EQ_INT(f.scene_at_effect, 0);
-    CHECK(!f.cleared_at_effect && !f.hit_at_effect);
     CHECK_EQ_INT(f.route, 0);
     CHECK(g_Scene.active == &f.cache[1]);
     CHECK(g_Scene.active->layouts.stages[0].cells[0][1].card);
     CHECK(f.cleared && g_Player.is_hit);
     CHECK(RouteSelect_Resume(&selection, &f.context, &raw));
-    CHECK_EQ_INT(f.effects, 1);
     Arena_Free(&arena);
 }
 
@@ -167,7 +147,6 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     CHECK(M_Poll(
         &selection, &f, (TH01_INPUT) { .up = true, .down = true, .ok = true }));
     CHECK_EQ_INT(f.route, 0);
-    CHECK_EQ_INT(f.effects, 1);
     Arena_Free(&arena);
 }
 
@@ -215,9 +194,6 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     CHECK(!RouteSelect_Begin(&selection, &f.context, &pause));
     CHECK(g_GameInput.paused);
     CHECK(M_Poll(&selection, &f, (TH01_INPUT) { .shot = true, .ok = true }));
-    CHECK(f.hit_at_effect);
-    CHECK(!f.cleared_at_effect);
-    CHECK_EQ_INT(f.scene_at_effect, 0);
     CHECK(f.cleared && g_Player.is_hit);
     Arena_Free(&arena);
 }

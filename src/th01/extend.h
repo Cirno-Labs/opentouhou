@@ -7,8 +7,6 @@ typedef struct {
     const HUD_CONTEXT *display;
     int8_t *resident_lives;
     int16_t *next;
-    void (*effect)(void *user, int16_t number);
-    void *user;
 } EXTEND_CONTEXT;
 
 // Reconstructs the next threshold from the signed resident score bits at

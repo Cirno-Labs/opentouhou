@@ -1,4 +1,5 @@
 #include "th01/stage.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
@@ -100,7 +101,7 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
                 context->item_add(
                     context->user, i, bomb && !g_Player.bomb_damaging);
             }
-            context->effect(context->user, 2);
+            Sound_Effect(2);
         }
     }
 }

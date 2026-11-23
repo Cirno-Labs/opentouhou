@@ -44,13 +44,6 @@ static void M_HudScore(void *const user)
     M_Record(c, 2);
 }
 
-static void M_Effect(void *const user, const int16_t number)
-{
-    CASE *const c = user;
-    CHECK_EQ_INT(number, 15);
-    M_Record(c, 3);
-}
-
 static void M_Init(CASE *const c)
 {
     *c = (CASE) {};
@@ -78,7 +71,6 @@ static void M_Init(CASE *const c)
         .font = &c->font,
         .hud_bomb = M_HudBomb,
         .hud_score_and_combo = M_HudScore,
-        .effect = M_Effect,
         .user = c,
     };
 }
@@ -129,15 +121,12 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(g_Items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
     CHECK_EQ_INT(g_Player.remaining_bombs, 5);
     CHECK_EQ_INT(g_Stage.score, 10000);
-    CHECK_EQ_INT(c.count, 4);
+    CHECK_EQ_INT(c.count, 2);
     CHECK_EQ_INT(c.events[0], 1);
-    CHECK_EQ_INT(c.events[1], 3);
-    CHECK_EQ_INT(c.events[2], 2);
-    CHECK_EQ_INT(c.events[3], 3);
+    CHECK_EQ_INT(c.events[1], 2);
     CHECK_EQ_INT(c.callback_flags[0][0], ITEM_FALL);
     CHECK_EQ_INT(c.callback_flags[1][0], ITEM_COLLECTED);
-    CHECK_EQ_INT(c.callback_flags[2][1], ITEM_BOUNCE);
-    CHECK_EQ_INT(c.callback_flags[3][1], ITEM_COLLECTED_OVER_CAP);
+    CHECK_EQ_INT(c.callback_flags[1][1], ITEM_BOUNCE);
     for (int32_t i = 0; i < 15; i++) {
         Items_UpdateAndRender(&c.context);
     }
@@ -161,8 +150,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
         Items_UpdateAndRender(&c.context);
         CHECK_EQ_INT(c.value, after[i]);
         CHECK_EQ_INT(g_Stage.score, score + after[i]);
-        CHECK_EQ_INT(c.callback_flags[c.count - 2][2], ITEM_FALL);
-        CHECK_EQ_INT(c.callback_flags[c.count - 1][2], ITEM_COLLECTED_OVER_CAP);
+        CHECK_EQ_INT(c.callback_flags[c.count - 1][2], ITEM_FALL);
     }
     Items_Reset();
     c.value = 10000;

@@ -1,4 +1,5 @@
 #include "th01/boss_b20m.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -199,10 +200,6 @@ static int16_t M_PixelAdd(const double x, const int16_t y)
 {
     return Finite_ToPixel(
         Finite_Add(Finite_FromDouble(x), Finite_FromDouble(y)));
-}
-static void M_Audio(const B20M_CONTEXT *const c, const B20M_AUDIO_ACTION action)
-{
-    c->audio(c->hit->user, action);
 }
 static void M_Pi(
     const B20M_CONTEXT *const c, const PI_IMAGE *const image, const bool show)
@@ -757,7 +754,7 @@ static bool M_Gust(const B20M_CONTEXT *const c)
         g_B20M.gust.y = 0;
         g_B20M.gust.offset = 0;
         g_B20M.gust.color = 2;
-        Boss_Effect(c->hit, 10);
+        Sound_Effect(10);
     }
     for (int32_t row = 0; row < 100; row++) {
         const int16_t right = M_Random(c) % 8;
@@ -956,7 +953,7 @@ static void M_PurpleLasers(const B20M_CONTEXT *const c)
                 M_Ellipse(c, g_B20M.laser.x[i], g_B20M.laser.y[i], r, r, 4, 1);
             }
         } else {
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
             M_Laser(
                 c, i, g_B20M.laser.x[i], g_B20M.laser.y[i], M_Random(c) % 640,
                 400, g_B20M.pattern_state, 4, 25, 5);
@@ -989,7 +986,7 @@ static void M_Eggs(const B20M_CONTEXT *const c)
         g_B20M.spawner.velocity_x = (int16_t)(64 - (M_Random(c) % 2) * 128);
         g_B20M.spawner.velocity_y = (int16_t)(32 - (M_Random(c) % 2) * 64);
         g_B20M.pattern_state = Boss_Rank(20, 15, 10, 8);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     } else if (g_B20M.frame < 200) {
         g_B20M.spawner.velocity_x = Math16_Wrap(
             g_B20M.spawner.velocity_x + (g_B20M.spawner.left < 5120 ? 1 : -1));
@@ -1091,7 +1088,7 @@ static void M_Flake(const B20M_CONTEXT *const c)
         g_B20M.flake.state = M_WandRaise(c, false);
     }
     if (g_B20M.flake.state == 1) {
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
         g_B20M.flake.left = 5440;
         g_B20M.flake.top = 1024;
         const MATH16_VECTOR v = Math16_Aim(
@@ -1129,7 +1126,7 @@ static void M_Flake(const B20M_CONTEXT *const c)
         g_B20M.star.radius_inner = 24;
         g_B20M.star.left = g_B20M.flake.left;
         g_B20M.star.top = 400 - M_Random(c) % 48;
-        Boss_Effect(c->hit, 10);
+        Sound_Effect(10);
     }
     if (g_B20M.flake.state >= 3) {
         g_B20M.flake.state = Math16_Wrap(g_B20M.flake.state + 1);
@@ -1247,7 +1244,7 @@ static void M_FourLasers(const B20M_CONTEXT *const c)
         g_B20M.laser.velocity_x = v.x;
         g_B20M.laser.velocity_y = v.y;
         M_Laser(c, laser, x, y, target, 400, g_B20M.pattern_state, 7, 50, 8);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
     } else if (g_B20M.frame < 250) {
         M_Ray(c, 320, 120, g_B20M.laser.origin_x, g_B20M.laser.origin_y, 7);
         g_B20M.laser.origin_x =
@@ -1266,7 +1263,7 @@ static bool M_Shake(const B20M_CONTEXT *const c)
             return M_Scroll(g_B20M.frame % 8 == 0 ? 396 : 404);
         }
         if (g_B20M.frame % 4 == 0) {
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
         }
     } else if (g_B20M.frame == 50) {
         g_B20M.resume_stage = B20M_RESUME_SHAKE_END;
@@ -1296,7 +1293,7 @@ static void M_Radial(const B20M_CONTEXT *const c)
         g_B20M.radial_angle = 0;
         g_B20M.radial_velocity = 1;
         g_B20M.pattern_state = Boss_Rank(60, 65, 70, 75);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
     } else if (g_B20M.frame < 200) {
         M_Ray(
             c, 320, 160, Math16_PolarX(320, 140, g_B20M.radial_angle),
@@ -1305,13 +1302,13 @@ static void M_Radial(const B20M_CONTEXT *const c)
             (uint8_t)(g_B20M.radial_angle + g_B20M.radial_velocity);
         g_B20M.radial_velocity++;
         if (g_B20M.frame % 10 == 0) {
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
         }
     } else if (g_B20M.frame == 200) {
         M_Ray(c, 320, 160, 999, 999, 7);
         g_B20M.radial_angle = 0;
     } else if (g_B20M.frame <= 400 && g_B20M.frame % 5 == 0) {
-        Boss_Effect(c->hit, 7);
+        Sound_Effect(7);
         if (g_B20M.frame % 15 == 0) {
             M_Laser(
                 c, (g_B20M.frame - 215) / 15, 320, 160,
@@ -1395,7 +1392,7 @@ static void M_SymmetricBirds(const B20M_CONTEXT *const c)
         }
         r->x = Math16_Wrap(r->x + 2);
         if (g_B20M.frame % 10 == 0) {
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
             const int16_t target = Math16_Wrap((g_B20M.frame - 60) * 10 + r->x);
             const MATH16_VECTOR v = Math16_Aim(
                 (MATH16_VECTOR) { r->x, Math16_Wrap(r->y - 32) },
@@ -1487,7 +1484,7 @@ static void M_Stacks(const B20M_CONTEXT *const c)
                 }
             }
             r->x = Math16_Wrap(r->x + 32);
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
         }
     } else if (g_B20M.frame == 350) {
         r->x = 0;
@@ -1595,11 +1592,11 @@ static void M_SealRain(const B20M_CONTEXT *const c)
             r->y = Math16_Wrap(r->y - 8);
         }
         if (g_B20M.frame % 10 == 0) {
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
         }
         return;
     }
-    Boss_Effect(c->hit, 3);
+    Sound_Effect(3);
     Sprite_Restore16(
         M_DebrisX(r, false, 32, 0), Math16_Wrap(r->y - 16), 32, 40);
     Sprite_Restore16(M_DebrisX(r, true, 32, 0), Math16_Wrap(r->y - 16), 32, 50);
@@ -1744,9 +1741,7 @@ static void M_Leaves(const B20M_CONTEXT *const c, const int16_t interval)
 }
 static void M_Hud(const B20M_CONTEXT *const c)
 {
-    const TIMER_CONTEXT timer = { .display = c->hit->display,
-                                  .effect = c->hit->effect,
-                                  .user = c->hit->user };
+    const TIMER_CONTEXT timer = { .display = c->hit->display };
     *c->first_stage = true;
     StageTimer_Redraw(&timer, true, *c->timer_initialized, 0);
     Hud_ScoreAndCombo(c->hit->display);
@@ -1763,8 +1758,8 @@ void B20M_BeginEntrance(const B20M_CONTEXT *const c)
     M_Pi(c, &c->assets->upper, true);
     Video_SelectDrawingPage(0);
     StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
-    M_Audio(c, B20M_AUDIO_LOAD_MUSIC);
-    M_Audio(c, B20M_AUDIO_PLAY);
+    Sound_Load(13);
+    Sound_Play();
     Tram_Clear();
     g_B20M.scroll_line = 399;
     g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
@@ -1891,7 +1886,7 @@ static void M_BeginTransform(const B20M_CONTEXT *const c)
     Player_Reset(c->hit->display->rank);
     g_B20M.hit.invincible = false;
     g_Rng = c->hit->frame_rand;
-    M_Audio(c, B20M_AUDIO_FADE);
+    Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
     M_Color(c, 15, 0, 0, 0);
@@ -1935,8 +1930,8 @@ static bool M_Transform(const B20M_CONTEXT *const c, const uint64_t tick)
                     Transition_BeginDiagonal(&g_B20M.transition, &t, 0, tick));
             }
             Video_SelectDrawingPage(1);
-            M_Audio(c, B20M_AUDIO_LOAD_SECOND_MUSIC);
-            M_Audio(c, B20M_AUDIO_PLAY);
+            Sound_Load(14);
+            Sound_Play();
             M_Pi(c, &c->assets->backgrounds[5], true);
             M_Color(c, 6, 0, 0, 0);
             M_CopyOther(c);
@@ -1945,7 +1940,7 @@ static bool M_Transform(const B20M_CONTEXT *const c, const uint64_t tick)
             return M_Scroll(0);
         case B20M_TRANSFORM_SHAKE_STEP:
             if (g_B20M.frame < 200 && g_B20M.frame % 4 == 0) {
-                Boss_Effect(c->hit, 9);
+                Sound_Effect(9);
             }
             g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
             if (!M_Delay(1)) {
@@ -2003,10 +1998,10 @@ static bool M_Defeat(const B20M_CONTEXT *const c, const uint64_t tick)
             continue;
         case B20M_DEFEAT_SHAKE_STEP:
             if (g_B20M.frame < 200 && g_B20M.frame % 4 == 0) {
-                Boss_Effect(c->hit, 9);
+                Sound_Effect(9);
             }
             if (g_B20M.frame == 170) {
-                M_Audio(c, B20M_AUDIO_FADE);
+                Sound_Fade();
             }
             if (g_B20M.frame > 190) {
                 if (g_B20M.frame % 2 == 0) {
@@ -2211,7 +2206,7 @@ static bool M_Tail(const B20M_CONTEXT *const c)
     if (phase == B20M_PHASE_SECOND_FORM) {
         M_Pulse(c);
         if (g_B20M.hp <= 0) {
-            M_Audio(c, B20M_AUDIO_STOP);
+            Sound_Stop();
             g_B20M.phase = B20M_PHASE_DEFEAT;
             g_B20M.frame = 0;
             g_B20M.hit.frame = 0;
@@ -2268,7 +2263,7 @@ bool B20M_UpdateAndRender(const B20M_CONTEXT *const c, const uint64_t tick)
         const uint8_t resume = g_B20M.resume_stage;
         g_B20M.resume_stage = B20M_RESUME_NONE;
         if (resume == B20M_RESUME_SHAKE) {
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
             return M_Tail(c);
         }
         if (resume == B20M_RESUME_SHAKE_END) {

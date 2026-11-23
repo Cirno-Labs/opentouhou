@@ -36,7 +36,6 @@ typedef struct {
     bool test_damage;
     void (*hud_score_and_combo)(void *user);
     void (*item_add)(void *user, int32_t card_slot, bool bomb);
-    void (*effect)(void *user, int16_t number);
     void (*pellet_group)(void *user, STAGE_PELLET_SPAWN spawn);
     void (*pellets_update)(void *user);
     void *user;

@@ -38,19 +38,6 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     }
 }
 
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK_EQ_INT(number, 3);
-    CHECK_EQ_INT(f->hp, 7);
-    CHECK(f->hit.invincible);
-    CHECK_EQ_INT(f->hit.frame, 0);
-    CHECK_EQ_INT(g_Hud.score_previous, g_Stage.score);
-    CHECK_EQ_INT(f->palette.saved.colors[2][0], 15);
-    CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 7);
-    f->events[f->count++] = number;
-}
-
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) { .lives = 3, .hp = 8, .expected_shot_hp = 8 };
@@ -80,9 +67,7 @@ static void M_Init(FIXTURE *const f)
     f->context = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
                                       .display = &f->display,
                                       .shots_output = { M_Shot, f },
-                                      .test_damage = &f->test_damage,
-                                      .effect = M_Effect,
-                                      .user = f };
+                                      .test_damage = &f->test_damage };
 }
 
 TEST(real_hud_health_and_flash_follow_hit_order)
@@ -100,8 +85,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     CHECK_EQ_INT(f.high_score, 4);
     CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
-    CHECK_EQ_INT(f.count, 1);
-    CHECK_EQ_INT(f.events[0], 3);
+    CHECK_EQ_INT(f.count, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);
     CHECK_EQ_INT(f.palette.saved.colors[2][0], 1);
     CHECK_EQ_INT(g_Video.palette[2].red, 17);

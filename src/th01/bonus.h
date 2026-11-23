@@ -124,8 +124,6 @@ typedef struct {
     SHOTS_OUTPUT shots_output;
     uint16_t *continues_per_scene;
     const int32_t *continues_total;
-    void (*effect)(void *user, int16_t number);
-    void *user;
 } BONUS_TOTAL_CONTEXT;
 
 // Loads CLEAR3.GRP and NUMB.PTN into the caller's grouped allocator before

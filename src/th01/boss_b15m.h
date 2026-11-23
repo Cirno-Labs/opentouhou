@@ -81,7 +81,6 @@ typedef struct {
     const BOSS_HIT_CONTEXT *hit;
     const PTN *miko;
     bool *stage_cleared;
-    void (*fade_music)(void *user);
 } B15M_CONTEXT;
 
 // Loads the three Elis BOS banks, sphere GRC, missiles, background, scene 5

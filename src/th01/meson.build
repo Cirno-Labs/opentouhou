@@ -48,6 +48,7 @@ th01_lib = static_library(
   'input.c',
   'settings.c',
   'session.c',
+  'sound.c',
   'score_data.c',
   'score.c',
   'ending.c',

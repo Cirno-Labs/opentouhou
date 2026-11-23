@@ -1,4 +1,5 @@
 #include "th01/extend.h"
+#include "th01/sound.h"
 #include "pc98/zun/math16.h"
 
 int16_t Extend_NextForScore(const uint32_t resident_score)
@@ -20,7 +21,7 @@ void Extend_UpdateAndRender(const EXTEND_CONTEXT *const c)
         (*lives)++;
         *c->resident_lives = (int8_t)*lives;
         Hud_LivesPut(c->display, (int16_t)(*lives - 1));
-        c->effect(c->user, 15);
+        Sound_Effect(15);
         Pellets_SpeedRaise(1);
     }
     *c->next = Math16_Wrap(*c->next + 1);

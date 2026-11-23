@@ -16,8 +16,5 @@ RESULT Boss_LoadBos(
 RESULT Boss_LoadBackground(
     VFS *vfs, const char *name, const ALLOCATOR *allocator, PI_IMAGE *out);
 
-// Posts a sound effect through the hit context.
-void Boss_Effect(const BOSS_HIT_CONTEXT *hit, int16_t number);
-
 // Returns the player of the hit context.
 PLAYER *Boss_Player(const BOSS_HIT_CONTEXT *hit);

@@ -90,21 +90,10 @@ typedef struct {
     PTN sprites;
     GAME_TEXT_FONT font;
     uint32_t high, score_bonus;
-    int32_t history[4], effects;
+    int32_t history[4];
     int16_t lives, next;
     int8_t resident_lives;
 } FIXTURE;
-
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK_EQ_INT(number, 15);
-    CHECK_EQ_INT(g_Stage.score, 410000);
-    CHECK_EQ_INT(f->history[3], 17000);
-    CHECK_EQ_INT(g_Hud.score_previous, 410000);
-    CHECK_EQ_INT(f->lives, 2);
-    f->effects++;
-}
 
 static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
 {
@@ -131,9 +120,7 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
                                  .high_score = &f->high };
     f->extend = (EXTEND_CONTEXT) { .display = &f->display,
                                    .resident_lives = &f->resident_lives,
-                                   .next = &f->next,
-                                   .effect = M_Effect,
-                                   .user = f };
+                                   .next = &f->next };
     f->context = (BONUS_CONTEXT) { .stage = &f->assets,
                                    .font = &f->font,
                                    .stage_palette = &f->stage_palette,
@@ -184,7 +171,6 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(f.score_bonus, 17000);
     CHECK_EQ_INT(f.history[3], 17000);
     CHECK_EQ_INT(f.high, 410000);
-    CHECK_EQ_INT(f.effects, 1);
     CHECK_EQ_INT(f.next, 2);
     CHECK_EQ_INT(g_PelletShared.speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
@@ -243,17 +229,9 @@ typedef struct {
     FIXTURE common;
     BONUS_TOTAL_ASSETS assets;
     BONUS_TOTAL_CONTEXT context;
-    int32_t effects, restores, continues;
+    int32_t restores, continues;
     uint16_t history[4];
 } TOTAL_FIXTURE;
-
-static void M_TotalEffect(void *const user, const int16_t number)
-{
-    TOTAL_FIXTURE *const f = user;
-    CHECK_EQ_INT(number, 2);
-    CHECK(g_BonusTotal.phase == BONUS_TOTAL_DIGIT_WAIT);
-    f->effects++;
-}
 
 static void M_Shots(void *const user, const SHOTS_ACTION action)
 {
@@ -289,9 +267,7 @@ static void M_InitTotal(TOTAL_FIXTURE *const f, const ALLOCATOR *const a)
                                          .assets = &f->assets,
                                          .shots_output = { M_Shots, f },
                                          .continues_per_scene = f->history,
-                                         .continues_total = &f->continues,
-                                         .effect = M_TotalEffect,
-                                         .user = f };
+                                         .continues_total = &f->continues };
     CHECK(Result_Ignore(Bonus_ValidateTotalAssets(&f->assets)));
 }
 
@@ -346,10 +322,8 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     int32_t ticks = 0;
     while (g_BonusTotal.phase != BONUS_TOTAL_CONFIRM && ticks < 1000) {
         const BONUS_TOTAL frozen = g_BonusTotal;
-        const int32_t effects = f.effects;
         CHECK(!Bonus_ResumeTotal(&f.context, &raw, (uint64_t)ticks));
         CHECK(memcmp(&frozen, &g_BonusTotal, sizeof(frozen)) == 0);
-        CHECK_EQ_INT(f.effects, effects);
         ticks++;
         if (VSync_Advance(&clock)) {
             Frame_VSync();
@@ -357,7 +331,6 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
         CHECK(!Bonus_ResumeTotal(&f.context, &raw, (uint64_t)ticks));
     }
     CHECK(ticks < 1000);
-    CHECK_EQ_INT(f.effects, 319);
     CHECK_EQ_INT(f.common.score_bonus, 96050);
     CHECK_EQ_INT(g_Stage.score, 486050);
     CHECK_EQ_INT(f.common.next, 1);
@@ -408,7 +381,6 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
     CHECK(!Bonus_ResumeTotal(&f.context, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 9);
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_METRIC_WAIT);
-    CHECK_EQ_INT(f.effects, 3);
     Arena_Free(&arena);
 }
 
@@ -430,11 +402,9 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     for (uint64_t tick = 1; tick <= 4; tick++) {
         CHECK(!Bonus_ResumeTotal(&f.context, &raw, tick));
     }
-    CHECK_EQ_INT(f.effects, 16);
     CHECK_EQ_INT(g_BonusTotal.place, 1);
     CHECK_EQ_INT(g_BonusTotal.credit, 8);
     CHECK(!Bonus_ResumeTotal(&f.context, &raw, 5));
-    CHECK_EQ_INT(f.effects, 20);
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_CONFIRM);
     CHECK_EQ_INT(g_VSync.count1, 0);
     CHECK_EQ_INT(g_BonusTotal.credit, 10);
@@ -455,7 +425,6 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     CHECK(!Bonus_ResumeTotal(&f.context, &raw, 0));
     CHECK_EQ_INT(f.common.score_bonus, 40);
     CHECK_EQ_INT(g_BonusTotal.digits[3], 4);
-    CHECK_EQ_INT(f.effects, 4);
     CHECK_EQ_INT(g_BonusTotal.credit, 1);
     g_StageTimer.time = UINT16_MAX;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));

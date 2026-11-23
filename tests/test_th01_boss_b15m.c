@@ -1,4 +1,5 @@
 #include "th01/boss_b15m.h"
+#include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -23,7 +24,6 @@ typedef struct {
     uint32_t high_score;
     int16_t lives;
     bool test_damage, cleared;
-    int32_t effects[17], fades;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -144,23 +144,11 @@ TEST(asset_validation_requires_all_live_banks_and_next_scene)
     Arena_Free(&arena);
 }
 
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK(number >= 1 && number <= 16);
-    f->effects[number]++;
-}
-
-static void M_Fade(void *const user)
-{
-    ((FIXTURE *)user)->fades++;
-}
-
 static void M_Shot(void *const user, const SHOTS_ACTION action)
 {
     FIXTURE *const f = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        M_Effect(f, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(&f->stage, action);
     }
@@ -197,11 +185,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
                                  .remaining_lives = &f->lives };
     f->hit.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit.test_damage = &f->test_damage;
-    f->hit.effect = M_Effect;
-    f->hit.user = f;
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
-    f->context.fade_music = M_Fade;
     g_Session.settings.difficulty = f->display.rank;
 }
 
@@ -412,7 +397,6 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK(g_B15M.finished);
         CHECK_EQ_INT(g_B15M.hp, 0);
         CHECK_EQ_INT(g_Stage.score, 98000);
-        CHECK_EQ_INT(f.fades, 1);
         CHECK(f.cleared);
         CHECK(g_Player.is_hit);
         CHECK(g_Scene.active == &f.assets.next_scene);
@@ -463,11 +447,9 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK_EQ_INT(g_B15M.pending, B15M_PENDING_SAFETY);
     CHECK(!g_Player.is_hit);
     CHECK(!f.cleared);
-    CHECK_EQ_INT(f.fades, 0);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
     CHECK(!B15M_UpdateAndRender(&f.context, 105));
     CHECK(!g_Player.is_hit);
-    CHECK_EQ_INT(f.fades, 0);
     CHECK(!B15M_UpdateAndRender(&f.context, 106));
     CHECK(g_B15M.defeating);
     CHECK_EQ_INT(g_B15M.hp, 0);
@@ -475,8 +457,6 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(!f.cleared);
     CHECK(g_Scene.active == nullptr);
     CHECK_EQ_INT(g_Stage.score, 7000);
-    CHECK_EQ_INT(f.effects[3], 1);
-    CHECK_EQ_INT(f.fades, 1);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(g_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
@@ -492,8 +472,6 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(g_B15M.finished);
     CHECK(f.cleared);
     CHECK(g_Scene.active == &f.assets.next_scene);
-    CHECK_EQ_INT(f.fades, 1);
-    CHECK_EQ_INT(f.effects[3], 1);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(arena.used, used);

@@ -1,4 +1,5 @@
 #include "th01/boss_b10m.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -198,7 +199,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 {
     const B10M_CONTEXT *const c = user;
     if (action.kind == MISSILES_ACTION_EFFECT) {
-        c->hit->effect(c->hit->user, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Missiles_RenderAction(&c->assets->missiles, action);
     }
@@ -924,7 +925,7 @@ bool B10M_UpdateAndRender(const B10M_CONTEXT *const c)
         }
         M_Hit(c);
         if (g_B10M.hp <= 0) {
-            c->fade_music(c->hit->user);
+            Sound_Fade();
             Pellets_EraseAndResetMoving();
             if (attack) {
                 Missiles_Reset();

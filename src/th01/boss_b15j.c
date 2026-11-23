@@ -1,4 +1,5 @@
 #include "th01/boss_b15j.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -308,7 +309,7 @@ static void M_Ripple(
         M_RipplePart(c, left, top, *frame < 5 ? 0 : 1);
         M_RippleHit(c, left, 0);
         if (*frame < 5) {
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
         }
         return;
     }
@@ -457,7 +458,7 @@ static void M_CrossLasers(const B15J_CONTEXT *const c)
     if (g_B15J.frame > 200 && g_B15J.frame % 200 == 0) {
         M_Laser(c, 0, 307, Math16_Wrap(Boss_Player(c->hit)->left + 60), 50, 8);
         M_Laser(c, 1, 336, Math16_Wrap(Boss_Player(c->hit)->left - 60), 50, 8);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
     }
 }
 
@@ -516,7 +517,7 @@ static void M_LeftLasers(const B15J_CONTEXT *const c)
     }
     if (g_B15J.frame >= 250 && g_B15J.frame <= 400
         && (g_B15J.frame - 250) % 30 == 0) {
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
         const int16_t offset = (int16_t)(MasterRng_Next(&g_Rng) % 120 - 60);
         M_Laser(
             c, (g_B15J.frame - 250) / 30, 307,
@@ -540,7 +541,7 @@ static void M_Rain(const B15J_CONTEXT *const c)
                 M_Single(
                     c, x, y, j < 3 ? 0 : 128, speed, PELLET_GRAVITY, 1, 0, 0);
             }
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
         }
     }
     if (g_B15J.frame > 250) {
@@ -567,7 +568,7 @@ static void M_VerticalLasers(const B15J_CONTEXT *const c)
         ShootoutLasers_Spawn(
             &g_ShootoutLasers.slots[i], x, 64, x, 400, g_B15J.pattern_state, 10,
             20, 8);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
     }
     if (g_B15J.frame >= 190) {
         g_B15J.frame = 0;
@@ -697,7 +698,7 @@ bool B15J_UpdateAndRender(const B15J_CONTEXT *const c)
         }
         M_Hit(c);
         if (g_B15J.hp <= 0) {
-            c->fade_music(c->hit->user);
+            Sound_Fade();
             Pellets_EraseAndResetMoving();
             ShootoutLasers_EraseAndReset(4);
             BossDefeat_Begin(&g_B15J.defeat, BOSS_DEFEAT_REGULAR);

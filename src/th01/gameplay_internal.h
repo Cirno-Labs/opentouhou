@@ -5,6 +5,7 @@
 #include "th01/invincibility.h"
 #include "th01/items.h"
 #include "th01/miss.h"
+#include "th01/sound.h"
 
 // Keeps the complete world private to the gameplay implementation files.
 typedef enum {
@@ -92,9 +93,7 @@ typedef struct {
 
 typedef struct {
     const GAMEPLAY_ASSETS *assets;
-    MDRV *audio;
     GAME_AUDIO *audio_output;
-    size_t song;
     uint64_t host_tick;
     const GAMEPLAY_WORLD *initial;
 } GAMEPLAY_STORAGE;
@@ -133,10 +132,6 @@ struct GAMEPLAY {
 
 void Gameplay_Bind(GAMEPLAY *gameplay);
 void Gameplay_ResetWorld(GAMEPLAY *gameplay);
-void Gameplay_Effect(void *user, int16_t number);
-void Gameplay_Play(GAMEPLAY *gameplay, size_t song);
-void Gameplay_Fade(void *user);
-void Gameplay_Stop(GAMEPLAY *gameplay);
 void Gameplay_ResetInput(GAMEPLAY *gameplay);
 void Gameplay_DefaultActors(GAMEPLAY *gameplay);
 bool Gameplay_BossTick(GAMEPLAY *gameplay, const TH01_INPUT *raw);
