@@ -15,8 +15,6 @@
 #include "test.h"
 
 typedef struct {
-    PALETTE_STATE palette;
-    PALETTE stage_palette;
     B15J_ASSETS assets;
     BOSS_HIT_CONTEXT hit_context;
     B15J_CONTEXT context;
@@ -31,7 +29,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Th01Test_ResetWorld();
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
-    Palette_Init(&f->palette);
     f->assets.souls = (BOS) { 32, 32, 3, Arena_AllocZ(arena, 32 * 32 * 3),
                               Arena_AllocZ(arena, 32 * 32 * 3) };
     f->assets.tears = (BOS) { 16, 16, 3, Arena_AllocZ(arena, 16 * 16 * 3),
@@ -49,10 +46,9 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 6, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->hit_context = (BOSS_HIT_CONTEXT) { .palette = &f->palette };
-    f->context = (B15J_CONTEXT) { .assets = &f->assets,
-                                  .hit = &f->hit_context,
-                                  .stage_palette = &f->stage_palette };
+    f->hit_context = (BOSS_HIT_CONTEXT) {};
+    f->context =
+        (B15J_CONTEXT) { .assets = &f->assets, .hit = &f->hit_context };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -120,7 +116,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
         g_B15J.tears[i].image = 2;
         g_B15J.tear_frame[i] = 74;
     }
-    const PALETTE saved = f.palette.saved;
+    const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
     B15J_Setup(&f.context);
     CHECK_EQ_INT(g_B15J.hp, 14);
@@ -149,7 +145,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
         CHECK_EQ_INT(g_B15J.tears[i].sprites.count, 3);
         CHECK_EQ_INT(g_B15J.tear_frame[i], 0);
     }
-    CHECK(memcmp(&f.palette.saved, &saved, sizeof(saved)) == 0);
+    CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
     CHECK(memcmp(&g_B15J.boss_palette, &saved, sizeof(saved)) == 0);
     CHECK_EQ_INT(g_B15J.post_defeat.colors[15][2], 0);
     CHECK_EQ_INT(g_B15J.hit.frame, 31);
@@ -215,14 +211,14 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             M_Battle(&f, &arena);
             B15J_Init();
             B15J_Setup(&f.context);
-            Palette_Set(&f.palette, &f.assets.palette);
+            Palette_Set(&g_Palette, &f.assets.palette);
             Video_SelectDrawingPage(page);
             for (int32_t x = 0; x < 640; x++) {
                 for (int32_t y = 0; y < 400; y++) {
                     g_Video.pages[1][y * 640 + x] = (uint8_t)((x + y) % 16);
                 }
             }
-            const PALETTE saved = f.palette.saved;
+            const PALETTE saved = g_Palette.saved;
             const size_t used = arena.used;
             Frame_Reset();
             g_VSync.count1 = count == 0 ? 0 : 17;
@@ -236,8 +232,8 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             CHECK_EQ_INT(g_VSync.edge, count == 0 ? 752 : 751);
             CHECK_EQ_INT(g_VSync.count2, 21 + (int32_t)g_VSync.edge);
             CHECK_EQ_INT(g_Video.drawing_page, 0);
-            CHECK(memcmp(&f.palette.saved, &saved, sizeof(saved)) == 0);
-            CHECK(memcmp(&f.stage_palette, &saved, sizeof(saved)) == 0);
+            CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
+            CHECK(memcmp(&g_StagePalette, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(&g_B15J.boss_palette, &saved, sizeof(saved)) == 0);
             CHECK_EQ_INT(g_B15J.souls[0].left, 0);
             CHECK_EQ_INT(g_B15J.souls[1].top, 0);

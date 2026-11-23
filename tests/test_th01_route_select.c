@@ -11,7 +11,6 @@
 #include "test.h"
 
 typedef struct {
-    PALETTE_STATE palette;
     GAME_TEXT_FONT font;
     PTN stage;
     SCENE_DATA cache[3];
@@ -29,8 +28,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    Palette_Init(&f->palette);
-    Palette_SetGray(&f->palette, 3);
+    Palette_SetGray(&g_Palette, 3);
     GAME_TEXT_GLYPH glyphs[96] = {};
     for (uint32_t i = 0; i < 90; i++) {
         glyphs[i].codepoint = 0xff01 + i;
@@ -71,8 +69,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     f->assets = (ROUTE_SELECT_ASSETS) { &f->font, &f->stage, &f->cache[1],
                                         &f->cache[2] };
     CHECK(Result_Ignore(RouteSelect_ValidateAssets(&f->assets)));
-    f->context = (ROUTE_SELECT_CONTEXT) { &f->palette, &f->assets, &f->route,
-                                          &f->cleared };
+    f->context = (ROUTE_SELECT_CONTEXT) { &f->assets, &f->route, &f->cleared };
 }
 
 static bool M_Poll(
@@ -100,9 +97,9 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_GameInput.bomb_frame, 72);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 7);
     CHECK_EQ_INT(g_Video.pages[1][250 * VIDEO_WIDTH + 128], 4);
-    CHECK_EQ_INT(f.palette.saved.colors[1][0], 15);
-    CHECK_EQ_INT(f.palette.saved.colors[3][0], 9);
-    CHECK_EQ_INT(f.palette.saved.colors[4][0], 0);
+    CHECK_EQ_INT(g_Palette.saved.colors[1][0], 15);
+    CHECK_EQ_INT(g_Palette.saved.colors[3][0], 9);
+    CHECK_EQ_INT(g_Palette.saved.colors[4][0], 0);
     CHECK_EQ_INT(f.route, 1);
     CHECK(g_Scene.active == &f.cache[0]);
     const ROUTE_SELECT frozen = selection;
@@ -136,8 +133,8 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     CHECK_EQ_INT(selection.selection, 1);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 4);
     CHECK_EQ_INT(g_Video.pages[0][300 * VIDEO_WIDTH + 128], 7);
-    CHECK_EQ_INT(f.palette.saved.colors[1][0], 9);
-    CHECK_EQ_INT(f.palette.saved.colors[3][0], 15);
+    CHECK_EQ_INT(g_Palette.saved.colors[1][0], 9);
+    CHECK_EQ_INT(g_Palette.saved.colors[3][0], 15);
     CHECK(!M_Poll(&selection, &f, both));
     CHECK_EQ_INT(selection.selection, 1);
     CHECK(!M_Poll(&selection, &f, (TH01_INPUT) { .down = true }));

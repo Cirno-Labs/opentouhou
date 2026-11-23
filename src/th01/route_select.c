@@ -22,24 +22,24 @@ static const ROUTE_LINE m_Lines[] = {
 
 static void M_Palette(const ROUTE_SELECT_CONTEXT *const c, const uint8_t route)
 {
-    Palette_SetColor(c->palette, route == 0 ? 1 : 3, 15, 15, 15);
-    Palette_SetColor(c->palette, route == 0 ? 3 : 1, 9, 9, 9);
+    Palette_SetColor(&g_Palette, route == 0 ? 1 : 3, 15, 15, 15);
+    Palette_SetColor(&g_Palette, route == 0 ? 3 : 1, 9, 9, 9);
 }
 
 static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
 {
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
-            int8_t *const value = &c->palette->saved.colors[color][component];
+            int8_t *const value = &g_Palette.saved.colors[color][component];
             if (*value > 0) {
                 *value -= 4;
             }
         }
     }
     for (int32_t component = 0; component < 3; component++) {
-        c->palette->saved.colors[7][component] = 15;
+        g_Palette.saved.colors[7][component] = 15;
     }
-    Palette_Set(c->palette, &c->palette->saved);
+    Palette_Set(&g_Palette, &g_Palette.saved);
     Video_SelectDrawingPage(1);
     Video_Clear(0);
     const GAME_TEXT_STYLE style = { .clear_background = true };

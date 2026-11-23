@@ -11,7 +11,7 @@ static void M_Flash(
 {
     for (uint32_t i = 0; i < count; i++) {
         ASSERT(colors[i] < 16);
-        Palette_SetColor(c->palette, colors[i], 15, 15, 15);
+        Palette_SetColor(&g_Palette, colors[i], 15, 15, 15);
     }
 }
 
@@ -55,10 +55,10 @@ void BossHit_UpdateAndRender(
         if (hit->frame % 4 == 2) {
             M_Flash(c, flash_colors, flash_count);
         } else if (hit->frame % 4 == 0) {
-            Palette_Set(c->palette, boss_palette);
+            Palette_Set(&g_Palette, boss_palette);
         }
     } else if (hit->frame > 40) {
-        Palette_Set(c->palette, boss_palette);
+        Palette_Set(&g_Palette, boss_palette);
         hit->frame = 0;
         hit->invincible = false;
     }

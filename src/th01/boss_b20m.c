@@ -175,7 +175,7 @@ void B20M_Setup(const B20M_CONTEXT *const c)
     g_B20M.phase = B20M_PHASE_START;
     g_B20M.frame = 0;
     g_B20M.finished = false;
-    g_B20M.boss_palette = c->hit->palette->saved;
+    g_B20M.boss_palette = g_Palette.saved;
     g_HudHp.first_white = 8;
     g_HudHp.first_redwhite = 2;
 }
@@ -211,20 +211,20 @@ static void M_Pi(
                                .stride = image->width,
                                .key = -1 };
     Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
-    Palette_Import(&c->hit->palette->resource, image->palette);
+    Palette_Import(&g_Palette.resource, image->palette);
     if (show) {
-        Palette_Set(c->hit->palette, &c->hit->palette->resource);
+        Palette_Set(&g_Palette, &g_Palette.resource);
     }
 }
 static void M_Palette(const B20M_CONTEXT *const c, const PALETTE *const p)
 {
-    Palette_Set(c->hit->palette, p);
+    Palette_Set(&g_Palette, p);
 }
 static void M_Color(
     const B20M_CONTEXT *const c, const uint8_t i, const int16_t r,
     const int16_t g, const int16_t blue)
 {
-    Palette_SetColor(c->hit->palette, i, r, g, blue);
+    Palette_SetColor(&g_Palette, i, r, g, blue);
 }
 static void M_CopyOther(const B20M_CONTEXT *const c)
 {
@@ -472,10 +472,10 @@ static bool M_Ready(const B20M_CONTEXT *const c, const uint64_t tick)
 static TRANSITION_CONTEXT M_TransitionContext(
     const B20M_CONTEXT *const c, const bool fade)
 {
-    return (TRANSITION_CONTEXT) { .palette = c->hit->palette,
-                                  .current = &c->hit->palette->saved,
-                                  .target = fade ? &c->hit->palette->resource
-                                                 : &c->hit->palette->saved,
+    return (TRANSITION_CONTEXT) { .palette = &g_Palette,
+                                  .current = &g_Palette.saved,
+                                  .target = fade ? &g_Palette.resource
+                                                 : &g_Palette.saved,
                                   .assets = c->assets->interleave };
 }
 static void M_BirdsReset(void)
@@ -738,7 +738,7 @@ static void M_GustFinish(const B20M_CONTEXT *const c, const int16_t image)
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[image], true);
     M_CopyOther(c);
-    g_B20M.stage_palette = c->hit->palette->saved;
+    g_B20M.stage_palette = g_Palette.saved;
     Video_SelectDrawingPage(0);
     M_Hud(c);
     HudHp_Rerender(g_B20M.hp);
@@ -1891,7 +1891,7 @@ static void M_BeginTransform(const B20M_CONTEXT *const c)
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
     M_Color(c, 15, 0, 0, 0);
-    g_B20M.boss_palette = c->hit->palette->saved;
+    g_B20M.boss_palette = g_Palette.saved;
     M_CopyOther(c);
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[4], false);
@@ -1923,7 +1923,7 @@ static bool M_Transform(const B20M_CONTEXT *const c, const uint64_t tick)
                 return M_Scroll(0);
             }
             for (int32_t i = 0; i < 3; i++) {
-                c->hit->palette->resource.colors[15][i] = 0;
+                g_Palette.resource.colors[15][i] = 0;
             }
             {
                 const TRANSITION_CONTEXT t = M_TransitionContext(c, true);
@@ -1956,7 +1956,7 @@ static bool M_Transform(const B20M_CONTEXT *const c, const uint64_t tick)
             g_B20M.phase = B20M_PHASE_SECOND_FORM;
             Boss_Player()->invincibility_time = 0;
             Boss_Player()->invincible = false;
-            g_B20M.boss_palette = c->hit->palette->saved;
+            g_B20M.boss_palette = g_Palette.saved;
             g_B20M.stage_palette = g_B20M.boss_palette;
             g_B20M.hp = 6;
             g_HudHp.first_white = 10;
@@ -1976,7 +1976,7 @@ static void M_BeginDefeat(const B20M_CONTEXT *const c)
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[5], true);
     M_Color(c, 6, 0, 0, 0);
-    g_B20M.boss_palette = c->hit->palette->saved;
+    g_B20M.boss_palette = g_Palette.saved;
     M_CopyOther(c);
     Video_SelectDrawingPage(0);
     g_B20M.sequence = B20M_SEQUENCE_DEFEAT;
@@ -2008,10 +2008,10 @@ static bool M_Defeat(const B20M_CONTEXT *const c, const uint64_t tick)
                 if (g_B20M.frame % 2 == 0) {
                     for (int32_t i = 0; i < 16; i++) {
                         for (int32_t j = 0; j < 3; j++) {
-                            c->hit->palette->saved.colors[i][j]--;
+                            g_Palette.saved.colors[i][j]--;
                         }
                     }
-                    M_Palette(c, &c->hit->palette->saved);
+                    M_Palette(c, &g_Palette.saved);
                 }
                 if (g_B20M.frame > 230) {
                     g_B20M.sequence_stage = B20M_DEFEAT_BONUS;
@@ -2067,7 +2067,7 @@ static void M_Pulse(const B20M_CONTEXT *const c)
         return;
     }
     M_Palette(c, &g_B20M.boss_palette);
-    int8_t *const color = c->hit->palette->saved.colors[6];
+    int8_t *const color = g_Palette.saved.colors[6];
     if (g_B20M.patterns_done == 0) {
         if (color[0] < 10) {
             color[0]++;
@@ -2093,8 +2093,8 @@ static void M_Pulse(const B20M_CONTEXT *const c)
             color[2]--;
         }
     }
-    M_Palette(c, &c->hit->palette->saved);
-    g_B20M.boss_palette = c->hit->palette->saved;
+    M_Palette(c, &g_Palette.saved);
+    g_B20M.boss_palette = g_Palette.saved;
 }
 static bool M_Pattern(const B20M_CONTEXT *const c)
 {
@@ -2235,7 +2235,7 @@ static void M_AfterGust(const B20M_CONTEXT *const c)
     }
     M_PhaseNext(c, phase == B20M_PHASE_GUST_4 ? B20M_PHASE_BIRDS : phase + 1);
     if (phase != B20M_PHASE_GUST_1) {
-        g_B20M.boss_palette = c->hit->palette->saved;
+        g_B20M.boss_palette = g_Palette.saved;
     }
     g_B20M.patterns_until_next = phase == B20M_PHASE_GUST_1
         ? 1 + M_Random(c) % 5
@@ -2289,7 +2289,7 @@ bool B20M_UpdateAndRender(const B20M_CONTEXT *const c, const uint64_t tick)
         g_B20M.frame = -1;
         g_B20M.hit.frame = 0;
         g_B20M.hit.invincible = false;
-        g_B20M.boss_palette = c->hit->palette->saved;
+        g_B20M.boss_palette = g_Palette.saved;
         g_B20M.stage_palette = g_B20M.boss_palette;
         g_Rng = c->hit->frame_rand;
         g_B20M.sequence = B20M_SEQUENCE_RINGS;

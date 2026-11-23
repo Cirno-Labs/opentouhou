@@ -71,10 +71,10 @@ void B10M_Setup(const B10M_CONTEXT *const c)
     for (int32_t i = 1; i < 5; i++) {
         BossEntity_CopyMetadata(&g_B10M.eyes[i], &g_B10M.eyes[0]);
     }
-    Palette_Set(c->hit->palette, &c->assets->palette);
-    g_B10M.boss_palette = c->hit->palette->saved;
-    g_B10M.post_defeat = c->hit->palette->saved;
-    *c->stage_palette = g_B10M.post_defeat;
+    Palette_Set(&g_Palette, &c->assets->palette);
+    g_B10M.boss_palette = g_Palette.saved;
+    g_B10M.post_defeat = g_Palette.saved;
+    g_StagePalette = g_B10M.post_defeat;
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
     for (int32_t i = 0; i < 5; i++) {
@@ -157,8 +157,8 @@ static void M_Common(void)
 
 static void M_Snap(const B10M_CONTEXT *const c)
 {
-    Palette_Set(c->hit->palette, c->stage_palette);
-    g_B10M.boss_palette = c->hit->palette->saved;
+    Palette_Set(&g_Palette, &g_StagePalette);
+    g_B10M.boss_palette = g_Palette.saved;
 }
 
 static void M_Group(
@@ -213,18 +213,18 @@ static void M_Toggle(
     M_Lock(c, close | open);
     *frame = Math16_Wrap(*frame + 1);
     if (*frame % 10 != 0) {
-        if (dec < 3 && c->hit->palette->saved.colors[15][dec] > 0) {
-            c->hit->palette->saved.colors[15][dec]--;
-            c->stage_palette->colors[15][dec] =
-                M_Byte(c->stage_palette->colors[15][dec] - 1);
+        if (dec < 3 && g_Palette.saved.colors[15][dec] > 0) {
+            g_Palette.saved.colors[15][dec]--;
+            g_StagePalette.colors[15][dec] =
+                M_Byte(g_StagePalette.colors[15][dec] - 1);
         }
         if (inc < 3) {
-            c->hit->palette->saved.colors[15][inc] =
-                M_Byte(c->hit->palette->saved.colors[15][inc] + 1);
-            c->stage_palette->colors[15][inc] =
-                M_Byte(c->stage_palette->colors[15][inc] + 1);
+            g_Palette.saved.colors[15][inc] =
+                M_Byte(g_Palette.saved.colors[15][inc] + 1);
+            g_StagePalette.colors[15][inc] =
+                M_Byte(g_StagePalette.colors[15][inc] + 1);
         }
-        Palette_Set(c->hit->palette, c->stage_palette);
+        Palette_Set(&g_Palette, &g_StagePalette);
     }
     if (*frame == 20) {
         M_Image(close, 2);
@@ -276,11 +276,9 @@ static void M_Entrance(const B10M_CONTEXT *const c)
         Boss_Player()->is_hit = false;
     }
     if (g_B10M.frame % 40 == 0) {
-        c->stage_palette->colors[15][0] =
-            M_Byte(c->stage_palette->colors[15][0] + 1);
-        c->stage_palette->colors[15][1] =
-            M_Byte(c->stage_palette->colors[15][1] + 1);
-        Palette_Set(c->hit->palette, c->stage_palette);
+        g_StagePalette.colors[15][0] = M_Byte(g_StagePalette.colors[15][0] + 1);
+        g_StagePalette.colors[15][1] = M_Byte(g_StagePalette.colors[15][1] + 1);
+        Palette_Set(&g_Palette, &g_StagePalette);
     }
     const int16_t open_at[] = { 100, 120, 140, 160, 180, 200 };
     bool opening = false;
@@ -805,7 +803,6 @@ static void M_AttackStar(const B10M_CONTEXT *const c)
 static bool M_Death(const B10M_CONTEXT *const c)
 {
     const BOSS_DEFEAT_CONTEXT defeat = {
-        .palette = c->hit->palette,
         .post_defeat = &g_B10M.post_defeat,
         .miko = c->miko,
         .origin_top = &g_Orb.top,

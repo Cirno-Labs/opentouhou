@@ -12,8 +12,6 @@
 #include "th01_world.h"
 #include "test.h"
 typedef struct {
-    PALETTE_STATE palette;
-    PALETTE stage_palette;
     B10J_ASSETS assets;
     BOSS_HIT_CONTEXT hit_context;
     B10J_CONTEXT context;
@@ -28,7 +26,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Th01Test_ResetWorld();
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
-    Palette_Init(&f->palette);
     f->assets.still = (BOS) { 128, 160, 1, Arena_AllocZ(arena, 128 * 160),
                               Arena_AllocZ(arena, 128 * 160) };
     f->assets.animation = (BOS) { 128, 64, 5, Arena_AllocZ(arena, 128 * 64 * 5),
@@ -52,10 +49,9 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->hit_context = (BOSS_HIT_CONTEXT) { .palette = &f->palette };
-    f->context = (B10J_CONTEXT) { .assets = &f->assets,
-                                  .hit = &f->hit_context,
-                                  .stage_palette = &f->stage_palette };
+    f->hit_context = (BOSS_HIT_CONTEXT) {};
+    f->context =
+        (B10J_CONTEXT) { .assets = &f->assets, .hit = &f->hit_context };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -136,7 +132,7 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
             CHECK_EQ_INT(g_B10J.hp, 3);
         }
         CHECK(
-            memcmp(&f.palette.saved, &f.assets.palette, sizeof(PALETTE)) == 0);
+            memcmp(&g_Palette.saved, &f.assets.palette, sizeof(PALETTE)) == 0);
         for (int32_t i = 0; i < 16; i++) {
             const int32_t target = f.assets.palette.colors[i][0];
             const int32_t faded = 14 - step;

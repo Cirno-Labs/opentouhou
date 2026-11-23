@@ -2,6 +2,9 @@
 
 #include "core/base/assert.h"
 
+PALETTE_STATE g_Palette;
+PALETTE g_StagePalette;
+
 static const PALETTE m_Stock = { .colors = {
                                      { 0, 0, 0 },
                                      { 0, 0, 15 },

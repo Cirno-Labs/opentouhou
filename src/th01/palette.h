@@ -28,6 +28,11 @@ typedef struct {
     uint8_t remaining;
 } PALETTE_FADE;
 
+// The one live gameplay palette, and the color it is restored to after a
+// boss hit flash or a fade.
+extern PALETTE_STATE g_Palette;
+extern PALETTE g_StagePalette;
+
 // Sets the stock saved palette, an empty resource palette and tone 100,
 // leaving the DAC unchanged.
 void Palette_Init(PALETTE_STATE *state);

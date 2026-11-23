@@ -117,7 +117,7 @@ void B15M_Setup(const B15M_CONTEXT *const c)
     BossEntity_SetPosition(&g_B15M.bat, 256, 96, bounds);
     BossEntity_SetOrbHitbox(&g_B15M.girl, (BOSS_BOUNDS) { 16, 112, -4, 80 });
     BossEntity_SetOrbHitbox(&g_B15M.bat, (BOSS_BOUNDS) { -8, 56, -8, 40 });
-    g_B15M.boss_palette = c->hit->palette->saved;
+    g_B15M.boss_palette = g_Palette.saved;
     g_B15M.post_defeat = (PALETTE) {};
     g_B15M.phase = B15M_PHASE_ENTRANCE;
     g_B15M.frame = 0;
@@ -550,7 +550,7 @@ static bool M_Entrance(const B15M_CONTEXT *const c)
         g_B15M.entrance_stage = 0;
         g_B15M.entrance_angle = 0;
         g_B15M.hit.frame = 0;
-        g_B15M.boss_palette = c->hit->palette->saved;
+        g_B15M.boss_palette = g_Palette.saved;
         M_Snap(c);
     }
     if (g_B15M.entrance_waiting) {
@@ -1361,8 +1361,7 @@ static bool M_Phase5(const B15M_CONTEXT *const c, const uint64_t host_tick)
 }
 static bool M_Death(const B15M_CONTEXT *const c)
 {
-    const BOSS_DEFEAT_CONTEXT context = { .palette = c->hit->palette,
-                                          .post_defeat = &g_B15M.post_defeat,
+    const BOSS_DEFEAT_CONTEXT context = { .post_defeat = &g_B15M.post_defeat,
                                           .miko = c->miko,
                                           .origin_top = &g_Orb.top,
                                           .stage_cleared = c->stage_cleared };

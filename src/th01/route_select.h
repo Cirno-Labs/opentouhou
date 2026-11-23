@@ -26,7 +26,6 @@ typedef struct {
 } ROUTE_SELECT;
 
 typedef struct {
-    PALETTE_STATE *palette;
     const ROUTE_SELECT_ASSETS *assets;
     uint8_t *route;
     bool *stage_cleared;

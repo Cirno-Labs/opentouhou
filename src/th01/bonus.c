@@ -171,7 +171,7 @@ bool Bonus_BeginStage(
     memset(&g_Bonus, 0, sizeof(g_Bonus));
     g_Bonus.phase = BONUS_STAGE_BOX;
     g_Bonus.stage_number = stage_number;
-    Palette_Set(c->palette, c->stage_palette);
+    Palette_Set(&g_Palette, &g_StagePalette);
     return Bonus_Resume(c, raw);
 }
 

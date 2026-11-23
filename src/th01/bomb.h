@@ -23,10 +23,8 @@ typedef struct {
 extern BOMB g_Bomb;
 
 typedef struct {
-    PALETTE_STATE *palette;
     const PTN *miko;
     const BOMB_ASSETS *assets;
-    const PALETTE *stage_palette;
 } BOMB_CONTEXT;
 
 typedef enum {

@@ -7,13 +7,13 @@ static void M_Whiteout(const BOSS_DEFEAT_CONTEXT *const c)
 {
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
-            int8_t *const value = &c->palette->saved.colors[color][component];
+            int8_t *const value = &g_Palette.saved.colors[color][component];
             if (*value < 15) {
                 (*value)++;
             }
         }
     }
-    Palette_Set(c->palette, &c->palette->saved);
+    Palette_Set(&g_Palette, &g_Palette.saved);
 }
 
 static bool M_Whitein(const BOSS_DEFEAT_CONTEXT *const c)
@@ -21,7 +21,7 @@ static bool M_Whitein(const BOSS_DEFEAT_CONTEXT *const c)
     int32_t done = 0;
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
-            int8_t *const value = &c->palette->saved.colors[color][component];
+            int8_t *const value = &g_Palette.saved.colors[color][component];
             const int8_t target = c->post_defeat->colors[color][component];
             ASSERT(target >= 0 && target <= 15);
             if (*value > target) {
@@ -31,7 +31,7 @@ static bool M_Whitein(const BOSS_DEFEAT_CONTEXT *const c)
             }
         }
     }
-    Palette_Set(c->palette, &c->palette->saved);
+    Palette_Set(&g_Palette, &g_Palette.saved);
     return done == 48;
 }
 
@@ -39,7 +39,7 @@ static void M_Restore(
     BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_CONTEXT *const c)
 {
     defeat->frame = 0;
-    Palette_SetGray(c->palette, 15);
+    Palette_SetGray(&g_Palette, 15);
     Video_SelectDrawingPage(1);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     Video_SelectDrawingPage(0);

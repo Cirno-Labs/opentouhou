@@ -84,8 +84,6 @@ typedef struct {
     PALETTE_FADE switch_fade;
     PLAYER_BOMB_CONTINUATION player_bomb;
     INVINCIBILITY invincibility;
-    PALETTE_STATE palette;
-    PALETTE stage_palette;
 
 } GAMEPLAY_WORLD;
 

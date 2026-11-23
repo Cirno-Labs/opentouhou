@@ -16,8 +16,6 @@
 #include "test.h"
 
 typedef struct {
-    PALETTE_STATE palette;
-    PALETTE stage_palette;
     B10M_ASSETS assets;
     BOSS_HIT_CONTEXT hit_context;
     B10M_CONTEXT context;
@@ -32,7 +30,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Th01Test_ResetWorld();
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
-    Palette_Init(&f->palette);
     f->assets.eyes = (BOS) { 64, 48, 7, Arena_AllocZ(arena, 64 * 48 * 7),
                              Arena_AllocZ(arena, 64 * 48 * 7) };
     f->assets.missiles =
@@ -54,10 +51,9 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->hit_context = (BOSS_HIT_CONTEXT) { .palette = &f->palette };
-    f->context = (B10M_CONTEXT) { .assets = &f->assets,
-                                  .hit = &f->hit_context,
-                                  .stage_palette = &f->stage_palette };
+    f->hit_context = (BOSS_HIT_CONTEXT) {};
+    f->context =
+        (B10M_CONTEXT) { .assets = &f->assets, .hit = &f->hit_context };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -450,17 +446,17 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     g_B10M.phase = B10M_PHASE_STAR_RISE;
     g_B10M.pentagram.center = (MATH16_VECTOR) { 316, 240 };
     g_B10M.pentagram.radius = 64;
-    f.stage_palette.colors[15][0] = 126;
-    f.stage_palette.colors[15][1] = 0;
-    f.stage_palette.colors[15][2] = 5;
-    Palette_Set(&f.palette, &f.stage_palette);
+    g_StagePalette.colors[15][0] = 126;
+    g_StagePalette.colors[15][1] = 0;
+    g_StagePalette.colors[15][2] = 5;
+    Palette_Set(&g_Palette, &g_StagePalette);
     Frame_Reset();
     for (int32_t i = 0; i < 70; i++) {
         CHECK(B10M_UpdateAndRender(&f.context));
     }
-    CHECK_EQ_INT(f.stage_palette.colors[15][0], -67);
-    CHECK_EQ_INT(f.palette.saved.colors[15][0], 0);
-    CHECK_EQ_INT(f.palette.saved.colors[15][2], 5);
+    CHECK_EQ_INT(g_StagePalette.colors[15][0], -67);
+    CHECK_EQ_INT(g_Palette.saved.colors[15][0], 0);
+    CHECK_EQ_INT(g_Palette.saved.colors[15][2], 5);
     CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_STAR_ATTACK);
     CHECK_EQ_INT(g_B10M.pentagram.center.y, 189);
     CHECK_EQ_INT(g_B10M.pentagram.angle, 0);
