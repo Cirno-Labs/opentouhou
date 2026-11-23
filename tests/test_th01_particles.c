@@ -1,4 +1,5 @@
 #include "th01/particles.h"
+#include "th01/rng.h"
 #include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
@@ -35,15 +36,15 @@ TEST(first_spawn_skips_zero_and_uses_shared_randomness)
     Video_SelectDrawingPage(1);
     PARTICLES p = {};
     Particles_Init(&p);
-    uint32_t rng = 1;
-    Particles_UpdateAndRender(&p, &rng, PARTICLES_TOP, 7);
-    CHECK_EQ_INT(rng, 1);
+    g_Rng = 1;
+    Particles_UpdateAndRender(&p, PARTICLES_TOP, 7);
+    CHECK_EQ_INT(g_Rng, 1);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
-    uint32_t expected_rng = rng;
+    uint32_t expected_rng = g_Rng;
     const int16_t speed = (int16_t)(MasterRng_Next(&expected_rng) % 10 + 1);
     const int16_t left = (int16_t)(MasterRng_Next(&expected_rng) % 640);
-    Particles_UpdateAndRender(&p, &rng, PARTICLES_TOP, 7);
-    CHECK_EQ_INT(rng, expected_rng);
+    Particles_UpdateAndRender(&p, PARTICLES_TOP, 7);
+    CHECK_EQ_INT(g_Rng, expected_rng);
     CHECK_EQ_INT(p.alive[0], 0);
     CHECK_EQ_INT(p.alive[1], 1);
     CHECK_EQ_INT(p.x[1], left * 16);
@@ -63,12 +64,12 @@ TEST(first_overflow_preserves_negative_velocity_aliases)
     p.x[0] = 1000;
     p.x[1] = 3200;
     p.y[1] = 1600;
-    uint32_t rng = 1;
-    uint32_t expected_rng = rng;
+    g_Rng = 1;
+    uint32_t expected_rng = g_Rng;
     const int16_t speed = (int16_t)(MasterRng_Next(&expected_rng) % 10 + 1);
     const int16_t left = (int16_t)(MasterRng_Next(&expected_rng) % 640);
-    Particles_UpdateAndRender(&p, &rng, PARTICLES_BOTTOM, 10);
-    CHECK_EQ_INT(rng, expected_rng);
+    Particles_UpdateAndRender(&p, PARTICLES_BOTTOM, 10);
+    CHECK_EQ_INT(g_Rng, expected_rng);
     CHECK_EQ_INT(p.cycle, speed);
     CHECK_EQ_INT(p.velocity_base[0], 1);
     CHECK_EQ_INT(p.velocity_x[0], 399 * 16);
@@ -78,8 +79,8 @@ TEST(first_overflow_preserves_negative_velocity_aliases)
     CHECK_EQ_INT(p.alive[1], 255);
     CHECK_EQ_INT(Th01Test_Pixel(0, 200, 100), 10);
     p.cycle = 79;
-    Particles_UpdateAndRender(&p, &rng, PARTICLES_TOP, 7);
-    CHECK_EQ_INT(rng, expected_rng);
+    Particles_UpdateAndRender(&p, PARTICLES_TOP, 7);
+    CHECK_EQ_INT(g_Rng, expected_rng);
     CHECK_EQ_INT(p.cycle, 80);
     Arena_Free(&arena);
 }
@@ -97,8 +98,8 @@ TEST(leaving_particle_restores_old_word_before_dying)
     p.x[0] = 639 * 16;
     p.y[0] = 100 * 16;
     p.velocity_x[0] = 16;
-    uint32_t rng = 1;
-    Particles_UpdateAndRender(&p, &rng, PARTICLES_TOP, 10);
+    g_Rng = 1;
+    Particles_UpdateAndRender(&p, PARTICLES_TOP, 10);
     CHECK_EQ_INT(p.alive[0], 0);
     CHECK_EQ_INT(p.x[0], 640 * 16);
     CHECK_EQ_INT(Th01Test_Pixel(0, 623, 100), 7);
@@ -120,8 +121,8 @@ TEST(motion_wraps_before_bounds_test)
     p.alive[0] = 1;
     p.x[0] = 32760;
     p.velocity_x[0] = 16;
-    uint32_t rng = 1;
-    Particles_UpdateAndRender(&p, &rng, PARTICLES_TOP, 7);
+    g_Rng = 1;
+    Particles_UpdateAndRender(&p, PARTICLES_TOP, 7);
     CHECK_EQ_INT(p.x[0], -32760);
     CHECK_EQ_INT(p.alive[0], 0);
     Arena_Free(&arena);

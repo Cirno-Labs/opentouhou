@@ -48,10 +48,7 @@ typedef struct {
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
     PARTICLES *particles;
-    PELLETS *pellets;
-    PELLET_SHARED *pellet_shared;
     SHOOTOUT_LASERS *lasers;
-    uint32_t *rng;
     const PTN *miko;
     SCENE_STATE *scene;
     bool *stage_cleared;

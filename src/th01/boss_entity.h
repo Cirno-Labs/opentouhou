@@ -60,7 +60,7 @@ void BossEntity_SetOrbHitbox(BOSS_ENTITY *entity, BOSS_BOUNDS bounds);
 
 // Tests inclusive bounds against PREVIOUS Orb coordinates. Intermediate
 // coordinate arithmetic wraps to signed 16 bits. Reads no external state.
-bool BossEntity_HitTestOrb(const BOSS_ENTITY *entity, const ORB *orb);
+bool BossEntity_HitTestOrb(const BOSS_ENTITY *entity);
 
 // Saves previous position, adds signed deltas with 16-bit wrapping, then
 // applies left/right and top/bottom clamps in that order. Draws nothing.

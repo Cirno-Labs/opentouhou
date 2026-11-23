@@ -1,4 +1,5 @@
 #include "th01/boss_b15j.h"
+#include "th01/rng.h"
 
 #include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
@@ -77,7 +78,7 @@ void B15J_Setup(const B15J_CONTEXT *const c)
     for (int32_t i = 0; i < 10; i++) {
         g_B15J.tear_frame[i] = 0;
     }
-    c->pellets->interlace = true;
+    g_Pellets.interlace = true;
     g_B15J.phase = B15J_PHASE_ENTRANCE;
     g_B15J.frame = 0;
     g_B15J.hp = 14;
@@ -106,7 +107,7 @@ static void M_Common(void)
 
 static void M_Hit(const B15J_CONTEXT *const c)
 {
-    const ORB *const orb = c->hit->orb;
+    const ORB *const orb = &g_Orb;
     const bool colliding =
         orb->left > 256 && orb->left < 368 && orb->top < 132 && orb->top < 196;
     const uint8_t flash[] = { 6, 11, 8, 2 };
@@ -140,8 +141,7 @@ static void M_Defaults(const B15J_CONTEXT *const c)
     Sprite_PtnPut(c->miko, 0, -1, Boss_Player(c->hit)->left, 368);
     Orb_RenderAction(
         c->hit->display->sprites,
-        (ORB_ACTION) { ORB_ACTION_PUT, c->hit->orb->left, c->hit->orb->top,
-                       0 });
+        (ORB_ACTION) { ORB_ACTION_PUT, g_Orb.left, g_Orb.top, 0 });
 }
 
 static int16_t M_InvertRings(const B15J_CONTEXT *const c, const int16_t base)
@@ -358,7 +358,6 @@ static void M_GroupSoul(
     const int16_t speed, const int16_t dy)
 {
     Pellets_AddGroup(
-        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
         c->hit->display->rank, Math16_Wrap(g_B15J.souls[i].left + 12),
         Math16_Wrap(g_B15J.souls[i].top + dy), group, speed);
 }
@@ -369,8 +368,8 @@ static void M_Single(
     const int16_t motion_speed, const int16_t cx, const int16_t cy)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, c->hit->display->rank, x, y, angle, speed,
-        motion, motion_speed, cx, cy);
+        c->hit->display->rank, x, y, angle, speed, motion, motion_speed, cx,
+        cy);
 }
 
 static void M_SymmetricSpiral(const B15J_CONTEXT *const c)
@@ -518,7 +517,7 @@ static void M_LeftLasers(const B15J_CONTEXT *const c)
     if (g_B15J.frame >= 250 && g_B15J.frame <= 400
         && (g_B15J.frame - 250) % 30 == 0) {
         Boss_Effect(c->hit, 6);
-        const int16_t offset = (int16_t)(MasterRng_Next(c->rng) % 120 - 60);
+        const int16_t offset = (int16_t)(MasterRng_Next(&g_Rng) % 120 - 60);
         M_Laser(
             c, (g_B15J.frame - 250) / 30, 307,
             Math16_Wrap(Boss_Player(c->hit)->left + offset),
@@ -562,7 +561,7 @@ static void M_VerticalLasers(const B15J_CONTEXT *const c)
     if (g_B15J.frame % 10 == 0) {
         const int32_t i = (g_B15J.frame - 100) / 10;
         const int16_t offset =
-            (int16_t)(MasterRng_Next(c->rng) % (g_B15J.random_range * 2 + 1)
+            (int16_t)(MasterRng_Next(&g_Rng) % (g_B15J.random_range * 2 + 1)
                       - g_B15J.random_range);
         const int16_t x = Math16_Wrap(i * 64 + offset);
         ShootoutLasers_Spawn(
@@ -582,8 +581,7 @@ static bool M_Death(const B15J_CONTEXT *const c)
         .palette = c->hit->palette,
         .post_defeat = &g_B15J.post_defeat,
         .miko = c->miko,
-        .player = Boss_Player(c->hit),
-        .origin_top = &c->hit->orb->top,
+        .origin_top = &g_Orb.top,
         .stage_cleared = c->stage_cleared,
     };
     if (!BossDefeat_Resume(&g_B15J.defeat, &defeat)) {
@@ -701,7 +699,7 @@ bool B15J_UpdateAndRender(const B15J_CONTEXT *const c)
         M_Hit(c);
         if (g_B15J.hp <= 0) {
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets);
+            Pellets_EraseAndResetMoving();
             ShootoutLasers_EraseAndReset(c->lasers, 4);
             BossDefeat_Begin(&g_B15J.defeat, BOSS_DEFEAT_REGULAR);
             g_B15J.defeating = true;

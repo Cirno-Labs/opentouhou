@@ -1,4 +1,5 @@
 #include "th01/boss_b10j.h"
+#include "th01/rng.h"
 
 #include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
@@ -292,7 +293,7 @@ static void M_Add(
     const uint8_t angle, const int16_t speed, const bool chase)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, c->hit->display->rank, x, y, angle, speed,
+        c->hit->display->rank, x, y, angle, speed,
         chase ? PELLET_CHASE : PELLET_REGULAR, chase ? speed : 0, 0, 0);
 }
 
@@ -411,7 +412,7 @@ static void M_TwoSquares(const B10J_CONTEXT *const c)
         M_Loop(c, x, y, true);
         M_Loop(c, x2, y2, true);
         sq->angle -= 6;
-        c->pellets->spawn_with_cloud = true;
+        g_Pellets.spawn_with_cloud = true;
         if (sq->radius < 112) {
             sq->radius += 8;
         } else {
@@ -435,7 +436,7 @@ static void M_TwoSquares(const B10J_CONTEXT *const c)
         M_Corners(x2, y2, sq->radius, (uint8_t)-sq->angle);
         M_Loop(c, x, y, false);
         M_Loop(c, x2, y2, false);
-        c->pellets->spawn_with_cloud = false;
+        g_Pellets.spawn_with_cloud = false;
     }
     if (g_B10J.frame > 320) {
         M_Corners(x, y, sq->radius, sq->angle);
@@ -451,7 +452,7 @@ static void M_InitHop(const B10J_CONTEXT *const c)
 {
     g_B10J.hop = 255;
     g_B10J.spread_interval = 4;
-    g_B10J.direction = (uint8_t)(MasterRng_Next(c->rng) % 2);
+    g_B10J.direction = (uint8_t)(MasterRng_Next(&g_Rng) % 2);
     g_B10J.spread_speed = 16;
 }
 
@@ -551,14 +552,14 @@ static void M_Pillars(const B10J_CONTEXT *const c)
             g_B10J.pillar_time[i] = 128;
             g_B10J.pillar_bottom[i] = 400;
         }
-        g_B10J.pillar_x[0] = (int16_t)(16 + MasterRng_Next(c->rng) % 48);
-        g_B10J.pillar_x[1] = (int16_t)(624 - MasterRng_Next(c->rng) % 48);
-        g_B10J.pillar_x[2] = (int16_t)(64 + MasterRng_Next(c->rng) % 224);
-        g_B10J.pillar_x[3] = (int16_t)(336 + MasterRng_Next(c->rng) % 224);
-        g_B10J.pillar_x[4] = (int16_t)(128 + MasterRng_Next(c->rng) % 160);
-        g_B10J.pillar_x[5] = (int16_t)(336 + MasterRng_Next(c->rng) % 160);
-        g_B10J.pillar_x[6] = (int16_t)(64 + MasterRng_Next(c->rng) % 224);
-        g_B10J.pillar_x[7] = (int16_t)(336 + MasterRng_Next(c->rng) % 224);
+        g_B10J.pillar_x[0] = (int16_t)(16 + MasterRng_Next(&g_Rng) % 48);
+        g_B10J.pillar_x[1] = (int16_t)(624 - MasterRng_Next(&g_Rng) % 48);
+        g_B10J.pillar_x[2] = (int16_t)(64 + MasterRng_Next(&g_Rng) % 224);
+        g_B10J.pillar_x[3] = (int16_t)(336 + MasterRng_Next(&g_Rng) % 224);
+        g_B10J.pillar_x[4] = (int16_t)(128 + MasterRng_Next(&g_Rng) % 160);
+        g_B10J.pillar_x[5] = (int16_t)(336 + MasterRng_Next(&g_Rng) % 160);
+        g_B10J.pillar_x[6] = (int16_t)(64 + MasterRng_Next(&g_Rng) % 224);
+        g_B10J.pillar_x[7] = (int16_t)(336 + MasterRng_Next(&g_Rng) % 224);
         g_B10J.pattern_state = Boss_Rank(40, 45, 50, 55);
         Boss_Effect(c->hit, 8);
     }
@@ -603,7 +604,6 @@ static void M_Pillars(const B10J_CONTEXT *const c)
             g_B10J.pillar_time[i] -= 8;
         } else if (g_B10J.pillar_time[i] != -999) {
             Pellets_AddGroup(
-                c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
                 c->hit->display->rank, Math16_Wrap(g_B10J.still.left + 64),
                 Math16_Wrap(g_B10J.still.top + 80),
                 PELLET_GROUP_THREE_WIDE_AIMED, 36);
@@ -741,7 +741,7 @@ static void M_Hit(const B10J_CONTEXT *const c)
     const uint8_t flash[] = { 3, 9 };
     BossHit_UpdateAndRender(
         &g_B10J.hit, c->hit, &g_B10J.hp, &g_B10J.boss_palette, flash, 2, 5000,
-        BossEntity_HitTestOrb(&g_B10J.still, c->hit->orb),
+        BossEntity_HitTestOrb(&g_B10J.still),
         (BOSS_SHOT_HITBOX) { Math16_Wrap(g_B10J.still.left + 16),
                              Math16_Wrap(g_B10J.still.top + 48), 96, 48 });
 }
@@ -786,8 +786,7 @@ static bool M_Death(const B10J_CONTEXT *const c)
     const BOSS_DEFEAT_CONTEXT defeat = { .palette = c->hit->palette,
                                          .post_defeat = &g_B10J.post_defeat,
                                          .miko = c->miko,
-                                         .player = Boss_Player(c->hit),
-                                         .origin_top = &c->hit->orb->top,
+                                         .origin_top = &g_Orb.top,
                                          .stage_cleared = c->stage_cleared };
     if (!BossDefeat_Resume(&g_B10J.defeat, &defeat)) {
         return false;
@@ -811,9 +810,9 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
         return M_Death(c);
     }
     Missiles_UpdateAndRender(
-        c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
+        c->missiles, (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
-    Particles_UpdateAndRender(c->particles, c->rng, PARTICLES_TOP_RIGHT, 7);
+    Particles_UpdateAndRender(c->particles, PARTICLES_TOP_RIGHT, 7);
     if (g_B10J.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
         g_B10J.frame = 0;
@@ -908,7 +907,7 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
             M_Erase(c);
             Video_SelectDrawingPage(0);
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets);
+            Pellets_EraseAndResetMoving();
             Missiles_Reset(c->missiles);
             ShootoutLasers_EraseAndReset(c->lasers, 5);
             BossDefeat_Begin(&g_B10J.defeat, BOSS_DEFEAT_REGULAR);

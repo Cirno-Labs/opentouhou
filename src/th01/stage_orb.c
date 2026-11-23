@@ -6,9 +6,8 @@ bool Stage_BeginOrbComposite(
     STAGE_ORB_COMPOSITE *const composite, const STAGE_CONTEXT *const context)
 {
     ASSERT(!composite->active);
-    composite->orb = Orb_BeginComposite(
-        context->orb, context->stage_id, context->rng,
-        &context->gameplay->combo);
+    composite->orb =
+        Orb_BeginComposite(context->stage_id, &context->gameplay->combo);
     composite->active = true;
     composite->waiting = false;
     return Stage_ResumeOrbComposite(composite, context);
@@ -25,8 +24,8 @@ bool Stage_ResumeOrbComposite(
     }
     composite->waiting = false;
     for (;;) {
-        const ORB_ACTION action = Orb_NextAction(
-            context->orb, &composite->orb, context->player->is_hit);
+        const ORB_ACTION action =
+            Orb_NextAction(&composite->orb, g_Player.is_hit);
         switch (action.kind) {
         case ORB_ACTION_DONE:
             composite->active = false;
@@ -48,15 +47,13 @@ bool Stage_ResumeOrbComposite(
             break;
         case ORB_ACTION_PLAYER_HITTEST: {
             const ORB_PLAYER player = {
-                .left = context->player->left,
+                .left = g_Player.left,
                 .top = PLAYER_TOP,
-                .invincible = context->player->invincible,
-                .invincible_against_orb =
-                    context->player->invincible_against_orb,
+                .invincible = g_Player.invincible,
+                .invincible_against_orb = g_Player.invincible_against_orb,
             };
-            if (Orb_PlayerHitTest(
-                    context->orb, &player, ORB_REPEL_NONE, context->rng)) {
-                context->player->is_hit = true;
+            if (Orb_PlayerHitTest(&player, ORB_REPEL_NONE)) {
+                g_Player.is_hit = true;
             }
             break;
         }

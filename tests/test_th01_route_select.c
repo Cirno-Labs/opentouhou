@@ -1,4 +1,9 @@
 #include "th01/route_select.h"
+#include "th01/shots.h"
+#include "th01/rng.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
 
 #include "core/base/arena.h"
 
@@ -10,7 +15,6 @@ typedef struct {
     PTN stage;
     SCENE_DATA cache[3];
     SCENE_STATE scene;
-    PLAYER player;
     uint8_t route;
     bool cleared;
     int32_t effects;
@@ -28,12 +32,17 @@ static void M_Effect(void *const user, const int16_t number)
     f->route_at_effect = f->route;
     f->scene_at_effect = f->scene.active->id;
     f->cleared_at_effect = f->cleared;
-    f->hit_at_effect = f->player.is_hit;
+    f->hit_at_effect = g_Player.is_hit;
 }
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     GameInput_Init();
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
@@ -80,9 +89,9 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     f->assets = (ROUTE_SELECT_ASSETS) { &f->font, &f->stage, &f->cache[1],
                                         &f->cache[2] };
     CHECK(Result_Ignore(RouteSelect_ValidateAssets(&f->assets)));
-    f->context = (ROUTE_SELECT_CONTEXT) { &f->palette, &f->assets, &f->player,
-                                          &f->scene,   &f->route,  &f->cleared,
-                                          M_Effect,    f };
+    f->context =
+        (ROUTE_SELECT_CONTEXT) { &f->palette, &f->assets, &f->scene, &f->route,
+                                 &f->cleared, M_Effect,   f };
 }
 
 static bool M_Poll(
@@ -132,7 +141,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(f.route, 0);
     CHECK(f.scene.active == &f.cache[1]);
     CHECK(f.scene.active->layouts.stages[0].cells[0][1].card);
-    CHECK(f.cleared && f.player.is_hit);
+    CHECK(f.cleared && g_Player.is_hit);
     CHECK(RouteSelect_Resume(&selection, &f.context, &raw));
     CHECK_EQ_INT(f.effects, 1);
     Arena_Free(&arena);
@@ -187,7 +196,7 @@ TEST(transparent_scaled_spaces_preserve_backdrop)
         }
     }
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK(!f.cleared && !f.player.is_hit);
+    CHECK(!f.cleared && !g_Player.is_hit);
     Arena_Free(&arena);
 }
 
@@ -214,6 +223,6 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     CHECK(f.hit_at_effect);
     CHECK(!f.cleared_at_effect);
     CHECK_EQ_INT(f.scene_at_effect, 0);
-    CHECK(f.cleared && f.player.is_hit);
+    CHECK(f.cleared && g_Player.is_hit);
     Arena_Free(&arena);
 }

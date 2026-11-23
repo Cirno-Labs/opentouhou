@@ -18,10 +18,6 @@ typedef struct {
 } MISS;
 
 typedef struct {
-    PLAYER *player;
-    const ORB *orb;
-    SHOTS *shots;
-    uint32_t *rng;
     const PTN *miko, *stage;
     int32_t difficulty;
     int16_t remaining_lives, extra_bombs;

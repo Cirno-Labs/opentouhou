@@ -29,7 +29,6 @@ typedef struct {
     PALETTE_STATE *palette;
     const PALETTE *post_defeat;
     const PTN *miko;
-    PLAYER *player;
     const int16_t *origin_top;
     bool *stage_cleared;
 } BOSS_DEFEAT_CONTEXT;

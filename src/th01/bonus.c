@@ -96,7 +96,7 @@ static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
         c, 7,
         Math16_Wrap(
             *c->display->remaining_lives * 200
-            + c->display->player->remaining_bombs * 100));
+            + g_Player.remaining_bombs * 100));
     M_StageMetric(c, 9, Math16_Wrap((b->stage_number - 1) * 200));
     c->display->gameplay->score += *c->score_bonus;
     const uint32_t bits = *c->score_bonus;
@@ -201,7 +201,7 @@ bool Bonus_Resume(
             break;
         case BONUS_CONFIRM:
             if (GameInput_SenseGame(raw, false)) {
-                c->display->player->is_hit = true;
+                g_Player.is_hit = true;
             }
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;

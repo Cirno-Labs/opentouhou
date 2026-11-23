@@ -1,4 +1,11 @@
 #include "th01/bomb.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
+
+#include <string.h>
 
 #include "pc98/zun/math16.h"
 
@@ -11,7 +18,6 @@ typedef struct {
     ARENA arena;
     PALETTE_STATE palette;
     PALETTE stage;
-    PLAYER player;
     PTN miko;
     BOMB_ASSETS assets;
     BOMB bomb;
@@ -22,7 +28,7 @@ static void M_Decay(void *const user)
 {
     CASE *const state = user;
     state->decays++;
-    CHECK(state->player.invincible);
+    CHECK(g_Player.invincible);
 }
 
 static void M_Effect(void *const user, const int16_t effect)
@@ -34,21 +40,26 @@ static void M_Effect(void *const user, const int16_t effect)
 static BOMB_CONTEXT M_Context(CASE *const state)
 {
     return (BOMB_CONTEXT) {
-        &state->palette, &state->player, &state->miko, &state->assets,
-        &state->stage,   M_Decay,        M_Effect,     state,
+        &state->palette, &state->miko, &state->assets, &state->stage,
+        M_Decay,         M_Effect,     state,
     };
 }
 
 static void M_Init(CASE *const state)
 {
     *state = (CASE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     Frame_Reset();
     Arena_Init(&state->arena, "bomb", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
     Video_Init(allocator);
     Palette_Init(&state->palette);
     state->stage = state->palette.saved;
-    state->player.left = 304;
+    g_Player.left = 304;
     state->miko =
         (PTN) { .count = 4, .pixels = Arena_Alloc(&state->arena, 4 * 1024) };
     memset(state->miko.pixels, 15, 4 * 1024);
@@ -72,12 +83,12 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     int32_t waits = 0;
     const size_t used = state.arena.used;
     for (int16_t frame = 0; frame <= 140; frame++) {
-        state.player.bomb_frame = (uint32_t)frame;
-        state.player.invincible = false;
+        g_Player.bomb_frame = (uint32_t)frame;
+        g_Player.invincible = false;
         const uint64_t edge = g_VSync.edge;
         BOMB_UPDATE result = Bomb_BeginUpdate(&state.bomb, &context, frame);
-        CHECK(state.player.invincible);
-        CHECK_EQ_INT(state.player.bomb_frame, frame);
+        CHECK(g_Player.invincible);
+        CHECK_EQ_INT(g_Player.bomb_frame, frame);
         const bool must_wait = frame == 140 || (frame > 50 && frame % 4 == 0);
         CHECK_EQ_INT(result == BOMB_UPDATE_WAIT, must_wait);
         CHECK_EQ_INT(g_VSync.edge, edge);
@@ -98,7 +109,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
         }
         CHECK_EQ_INT(
             result, frame == 140 ? BOMB_UPDATE_DONE : BOMB_UPDATE_RUNNING);
-        CHECK_EQ_INT(state.player.bomb_damaging, frame >= 50 && frame < 140);
+        CHECK_EQ_INT(g_Player.bomb_damaging, frame >= 50 && frame < 140);
         if (frame == 2) {
             CHECK_EQ_INT(state.palette.saved.colors[7][0], 14);
             CHECK_EQ_INT(state.palette.saved.colors[7][1], 14);
@@ -115,7 +126,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK_EQ_INT(state.decays, 5);
     CHECK_EQ_INT(state.effects[8], 1);
     CHECK_EQ_INT(state.effects[9], 8);
-    CHECK_EQ_INT(state.player.invincibility_time, 100);
+    CHECK_EQ_INT(g_Player.invincibility_time, 100);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&state.palette.saved, &state.stage, sizeof(PALETTE)) == 0);
     const int16_t previous_x = state.bomb.left[0];
@@ -129,14 +140,15 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
 
 TEST(damage_uses_full_unsigned_frame_and_last_life)
 {
-    PLAYER player = { .bomb_damaging = true };
-    CHECK(Bomb_DealsDamage(&player, 0, 0));
-    CHECK(Bomb_DealsDamage(&player, 0, 65550));
-    CHECK(!Bomb_DealsDamage(&player, 0, 65536));
-    CHECK(!Bomb_DealsDamage(&player, 1, 100));
-    CHECK(!Bomb_DealsDamage(&player, -1, 100));
-    player.bomb_damaging = false;
-    CHECK(!Bomb_DealsDamage(&player, 0, 100));
+    memset(&g_Player, 0, sizeof(g_Player));
+    g_Player.bomb_damaging = true;
+    CHECK(Bomb_DealsDamage(0, 0));
+    CHECK(Bomb_DealsDamage(0, 65550));
+    CHECK(!Bomb_DealsDamage(0, 65536));
+    CHECK(!Bomb_DealsDamage(1, 100));
+    CHECK(!Bomb_DealsDamage(-1, 100));
+    g_Player.bomb_damaging = false;
+    CHECK(!Bomb_DealsDamage(0, 100));
 }
 
 TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
@@ -185,31 +197,31 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
 {
     CASE state;
     M_Init(&state);
-    state.player.remaining_bombs = 2;
-    state.player.bomb_flag = PLAYER_BOMB_START;
+    g_Player.remaining_bombs = 2;
+    g_Player.bomb_flag = PLAYER_BOMB_START;
     GameInput_Init();
     g_GameInput.shot = true;
     g_GameInput.strike = true;
     g_GameInput.bomb = true;
-    ORB orb = { .left = 500, .top = 100 };
-    SHOTS shots = {};
-    uint32_t rng = 1;
+    memset(&g_Orb, 0, sizeof(g_Orb));
+    g_Orb.left = 500;
+    g_Orb.top = 100;
+    memset(&g_Shots, 0, sizeof(g_Shots));
+    g_Rng = 1;
     PLAYER_CASE actor = { .state = &state };
     const PLAYER_OUTPUT output = { .action = M_PlayerAction, .user = &actor };
     PLAYER_BOMB_CONTINUATION continuation = {};
     const BOMB_CONTEXT context = M_Context(&state);
-    CHECK(Player_BeginUpdate(
-        &continuation, &state.player, &orb, &shots, &rng, output));
+    CHECK(Player_BeginUpdate(&continuation, output));
     CHECK_EQ_INT(actor.hud, 1);
-    CHECK_EQ_INT(state.player.remaining_bombs, 1);
+    CHECK_EQ_INT(g_Player.remaining_bombs, 1);
     CHECK_EQ_INT(
         Bomb_BeginUpdate(&state.bomb, &context, 0), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, false);
-    state.player.bomb_frame = 64;
+    g_Player.bomb_frame = 64;
     g_GameInput.shot = g_GameInput.strike = true;
-    CHECK(Player_BeginUpdate(
-        &continuation, &state.player, &orb, &shots, &rng, output));
-    const int8_t dash = state.player.dash_cycle;
+    CHECK(Player_BeginUpdate(&continuation, output));
+    const int8_t dash = g_Player.dash_cycle;
     CHECK_EQ_INT(Bomb_BeginUpdate(&state.bomb, &context, 64), BOMB_UPDATE_WAIT);
     CHECK_EQ_INT(Bomb_ResumeUpdate(&state.bomb, &context), BOMB_UPDATE_WAIT);
     CHECK(continuation.pending);
@@ -219,10 +231,10 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     CHECK_EQ_INT(Bomb_ResumeUpdate(&state.bomb, &context), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, false);
     CHECK(!continuation.pending);
-    CHECK_EQ_INT(state.player.dash_cycle, dash);
+    CHECK_EQ_INT(g_Player.dash_cycle, dash);
     CHECK_EQ_INT(actor.hud, 1);
     CHECK_EQ_INT(actor.draws, 1);
-    CHECK_EQ_INT(state.player.bomb_frame, 64);
+    CHECK_EQ_INT(g_Player.bomb_frame, 64);
     CHECK(!g_GameInput.shot && !g_GameInput.strike);
     CHECK(Frame_DelayReady(1));
     Arena_Free(&state.arena);

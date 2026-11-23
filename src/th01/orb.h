@@ -42,39 +42,44 @@ typedef struct {
     double force, velocity_y;
 } ORB;
 
+extern ORB g_Orb;
+
+// Zeroes the Orb for a new world.
+void Orb_Init(void);
+
 // Restarts flight at (600, 280), force -8, frame zero and leftward speed 4.
 // Sets both coordinate pairs. Preserves rotation, portal state, elapsed
 // outside-portal frames and the last stored Y velocity. Zero-initialize
 // the state once before its first use; stage restarts retain these fields.
-void Orb_ResetFlight(ORB *orb);
+void Orb_ResetFlight(void);
 
 // Advances the main-loop force counter, including while in a portal.
 // Call before the composite, rather than as part of its motion phase.
-void Orb_AdvanceForceFrame(ORB *orb);
+void Orb_AdvanceForceFrame(void);
 
 // Stores the binary64 gravity result clamped to +/-16. Returns the
 // separately evaluated, unclamped pixel displacement, truncated directly
 // from 64-significant-bit arithmetic. Finite forces must have magnitude
 // below 2^62 so that the original signed 64-bit conversion is defined.
-int16_t Orb_UpdateVelocityY(ORB *orb);
+int16_t Orb_UpdateVelocityY(void);
 
 // Consumes the shared master.lib RNG only for an early surface bounce
 // from zero horizontal speed. Both draws occur even if the first changes
 // the speed; the second can overwrite it. Resets the force frame.
-void Orb_NewForce(ORB *orb, ORB_FORCE mode, double immediate, uint32_t *rng);
-void Orb_ReflectX(ORB *orb);
-void Orb_ReflectY(ORB *orb, uint32_t *rng);
+void Orb_NewForce(ORB_FORCE mode, double immediate);
+void Orb_ReflectX(void);
+void Orb_ReflectY(void);
 
 // Moves by the requested speed, but reflects the stored speed at walls.
 // Leaves overshoot in place and tests both walls independently.
-void Orb_MoveX(ORB *orb, ORB_VELOCITY_X requested);
-int16_t Orb_Image(const ORB *orb);
+void Orb_MoveX(ORB_VELOCITY_X requested);
+int16_t Orb_Image(void);
 
 // Performs motion, rotation and playfield bounces before the VSync wait.
 // Skips them while in a portal. Resets the shared card combo on a bottom
 // bounce. Rotation uses the speed after wall reversal; image 3 lasts one
 // frame. Allocates nothing and reads only the supplied state and RNG.
-void Orb_AdvanceMotion(ORB *orb, uint32_t *rng, int16_t *card_combo);
+void Orb_AdvanceMotion(int16_t *card_combo);
 
 typedef enum {
     ORB_REPEL_NONE = 0,
@@ -97,8 +102,7 @@ typedef struct {
 // -13 + friction/2; 100 and above gives -10, with X overrides for 101..104.
 // At equal X, ordinary repulsion draws twice; either successful check
 // selects left 4. Coordinates may include normal playfield wall overshoot.
-bool Orb_PlayerHitTest(
-    ORB *orb, const ORB_PLAYER *player, int16_t repel_friction, uint32_t *rng);
+bool Orb_PlayerHitTest(const ORB_PLAYER *player, int16_t repel_friction);
 
 typedef enum {
     ORB_ACTION_DONE,
@@ -128,14 +132,13 @@ typedef struct {
 // itself implements no collision behavior.
 // The delay consumes count1 when ready; yield only while count1 is zero.
 // Simulation timing belongs to the caller; no forced next-edge wait applies.
-ORB_COMPOSITE Orb_BeginComposite(
-    ORB *orb, int16_t stage_id, uint32_t *rng, int16_t *card_combo);
+ORB_COMPOSITE Orb_BeginComposite(int16_t stage_id, int16_t *card_combo);
 
 // Reads portal and player-hit state afresh at each phase, including after
 // obstacle callbacks. Erase uses the current image at the previous position.
 // Updates previous coordinates when yielding DONE, also in a portal.
 // Do not start another composite until DONE has been returned.
-ORB_ACTION Orb_NextAction(ORB *orb, ORB_COMPOSITE *composite, bool player_hit);
+ORB_ACTION Orb_NextAction(ORB_COMPOSITE *composite, bool player_hit);
 
 // Executes only PUT or ERASE actions using immutable stage PTN images.
 // Requires at least ORB_FIRST_IMAGE + ORB_IMAGE_COUNT images. Quantizes X down

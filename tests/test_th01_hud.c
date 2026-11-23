@@ -1,4 +1,9 @@
 #include "th01/hud.h"
+#include "th01/shots.h"
+#include "th01/rng.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
 #include "core/base/arena.h"
 #include "th01_video.h"
 #include "test.h"
@@ -10,7 +15,6 @@ typedef struct {
     PTN sprites;
     GRF mask;
     GAME_TEXT_FONT font;
-    PLAYER player;
     STAGE_GAMEPLAY gameplay;
     uint32_t high_score;
     int16_t lives;
@@ -19,6 +23,11 @@ typedef struct {
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     Arena_Init(&f->arena, "hud", 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
     Video_Init(a);
@@ -42,7 +51,6 @@ static void M_Init(FIXTURE *const f)
                                  .sprites = &f->sprites,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives,
                                  .stage_number = 1,
@@ -73,7 +81,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     f.lives = 2;
-    f.player.remaining_bombs = 1;
+    g_Player.remaining_bombs = 1;
     Hud_SnapResources(&f.hud, &f.context);
     CHECK_EQ_INT(Th01Test_Pixel(1, 128, 0), 3);
     CHECK_EQ_INT(Th01Test_Pixel(1, 129, 0), 15);
@@ -86,7 +94,7 @@ TEST(resources_snap_before_selection_and_restore_opaque_color15)
     Hud_LivesPut(&f.hud, &f.context, 1);
     CHECK_EQ_INT(f.hud.lives[256], 15);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    f.player.remaining_bombs = 0;
+    g_Player.remaining_bombs = 0;
     Hud_BombsPut(&f.hud, &f.context, 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 128, 16), 15);
     Arena_Free(&f.arena);

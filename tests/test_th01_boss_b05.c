@@ -1,4 +1,9 @@
 #include "th01/boss_b05.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 
 #include "core/base/arena.h"
@@ -16,11 +21,6 @@ typedef struct {
     BOSS_HIT_CONTEXT hit_context;
     B05_CONTEXT context;
     HUD hud;
-    PLAYER player;
-    ORB orb;
-    SHOTS shots;
-    PELLETS pellets;
-    PELLET_SHARED shared;
     STAGE_GAMEPLAY gameplay;
     GAME_TEXT_FONT font;
     PTN stage, miko;
@@ -28,7 +28,7 @@ typedef struct {
     SCENE_STATE scene;
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route_context;
-    uint32_t rng, high_score;
+    uint32_t high_score;
     int16_t lives;
     uint8_t route;
     bool test_damage, cleared;
@@ -67,6 +67,11 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
     GameInput_Init();
     const ALLOCATOR *const allocator = Arena_Allocator(arena);
     Video_Init(allocator);
@@ -143,22 +148,19 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     Scene_Activate(&f->scene, &f->cache[0]);
     f->route = 1;
     f->lives = 3;
-    f->rng = 0xb0500000;
-    f->player.invincible = true;
-    f->player.left = 300;
-    f->orb.previous_top = 64;
+    g_Rng = 0xb0500000;
+    g_Player.invincible = true;
+    g_Player.left = 300;
+    g_Orb.previous_top = 64;
     f->display = (HUD_CONTEXT) {
         .sprites = &f->stage,
         .font = &f->font,
         .gameplay = &f->gameplay,
-        .player = &f->player,
         .high_score = &f->high_score,
         .remaining_lives = &f->lives,
     };
     f->hit_context.hud = &f->hud;
-    f->hit_context.shots = &f->shots;
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->hit_context.orb = &f->orb;
     f->hit_context.test_damage = &f->test_damage;
     f->hit_context.effect = M_Effect;
     f->hit_context.user = f;
@@ -169,12 +171,9 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
     f->route_context = (ROUTE_SELECT_CONTEXT) {
-        &f->palette, &f->route_assets, &f->player, &f->scene,
-        &f->route,   &f->cleared,      M_Effect,   f,
+        &f->palette, &f->route_assets, &f->scene, &f->route,
+        &f->cleared, M_Effect,         f,
     };
-    f->context.pellets = &f->pellets;
-    f->context.pellet_shared = &f->shared;
-    f->context.rng = &f->rng;
     f->context.miko = &f->miko;
     f->context.route = &f->route_context;
     f->context.fade_music = M_Fade;
@@ -283,9 +282,9 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         Frame_Reset();
         g_VSync.count1 = (uint16_t)reuse;
         const TH01_INPUT raw = {};
-        const PLAYER player = f.player;
-        const ORB orb = f.orb;
-        const uint32_t rng = f.rng;
+        const PLAYER player = g_Player;
+        const ORB orb = g_Orb;
+        const uint32_t rng = g_Rng;
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK_EQ_INT(g_B05.frame, 1 + reuse);
         CHECK_EQ_INT(g_B05.hit.frame, 0);
@@ -303,9 +302,9 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK_EQ_INT(g_B05.frame, 0);
         CHECK_EQ_INT(g_B05.hit.frame, 0);
         CHECK(!g_B05.hp_bar_filled);
-        CHECK(memcmp(&f.player, &player, sizeof(player)) == 0);
-        CHECK(memcmp(&f.orb, &orb, sizeof(orb)) == 0);
-        CHECK_EQ_INT(f.rng, rng);
+        CHECK(memcmp(&g_Player, &player, sizeof(player)) == 0);
+        CHECK(memcmp(&g_Orb, &orb, sizeof(orb)) == 0);
+        CHECK_EQ_INT(g_Rng, rng);
         CHECK(
             memcmp(&f.palette.saved, &g_B05.boss_palette, sizeof(PALETTE))
             == 0);
@@ -334,8 +333,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
              step <= 2400 && g_B05.phase != B05_PHASE_DEFEATED; step++) {
             const bool hit =
                 step == 20 || step == 70 || (step >= 1620 && step % 50 == 20);
-            f.orb.previous_left = hit ? (int16_t)(g_B05.sphere.left + 32) : 0;
-            f.orb.previous_top = hit ? (int16_t)(g_B05.sphere.top + 32) : 64;
+            g_Orb.previous_left = hit ? (int16_t)(g_B05.sphere.left + 32) : 0;
+            g_Orb.previous_top = hit ? (int16_t)(g_B05.sphere.top + 32) : 64;
             f.hit_context.frame_rand = (uint32_t)step;
             CHECK(B05_UpdateAndRender(&f.context, &raw));
             phase_two |= g_B05.phase == B05_PHASE_TRANSFORMS;
@@ -348,25 +347,25 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(f.effects[5], 1);
         CHECK_EQ_INT(f.fades, 0);
         CHECK_EQ_INT(g_B05.pending, B05_IDLE);
-        f.pellets.slots[0] = (PELLET) {
+        g_Pellets.slots[0] = (PELLET) {
             .moving = true,
             .left = 100 * 16,
             .top = 100 * 16,
             .previous_left = 100 * 16,
             .previous_top = 100 * 16,
         };
-        f.pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
+        g_Pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK_EQ_INT(f.fades, 1);
-        CHECK(!f.pellets.slots[0].moving);
-        CHECK(!f.pellets.slots[1].moving);
-        CHECK_EQ_INT(f.pellets.slots[1].cloud_frame, 7);
+        CHECK(!g_Pellets.slots[0].moving);
+        CHECK(!g_Pellets.slots[1].moving);
+        CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(f.scene.active->id, 0);
-        CHECK(!f.cleared && !f.player.is_hit);
+        CHECK(!f.cleared && !g_Player.is_hit);
         const B05 frozen = g_B05;
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
-        const uint32_t rng = f.rng;
+        const uint32_t rng = g_Rng;
         const uint32_t frame_rand = f.hit_context.frame_rand;
         for (int32_t edge = 0; edge < 1000 && g_B05.pending != B05_FINISHED;
              edge++) {
@@ -381,8 +380,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!f.cleared_at_route_effect);
         CHECK_EQ_INT(f.route, rank % 2);
         CHECK(f.scene.active == &f.cache[1 + rank % 2]);
-        CHECK(f.cleared && f.player.is_hit);
-        CHECK_EQ_INT(f.rng, rng);
+        CHECK(f.cleared && g_Player.is_hit);
+        CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(f.hit_context.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = g_B05;
@@ -407,18 +406,18 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     g_B05.pattern = 1;
     g_B05.frame = 134;
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        f.pellets.slots[i].moving = true;
+        g_Pellets.slots[i].moving = true;
     }
-    const PELLETS full = f.pellets;
-    uint32_t expected = f.rng;
+    const PELLETS full = g_Pellets;
+    uint32_t expected = g_Rng;
     for (int32_t i = 0; i < 10; i++) {
         MasterRng_Next(&expected);
     }
     const TH01_INPUT raw = {};
     Frame_Reset();
     CHECK(B05_UpdateAndRender(&f.context, &raw));
-    CHECK_EQ_INT(f.rng, expected);
-    CHECK(memcmp(&f.pellets, &full, sizeof(full)) == 0);
+    CHECK_EQ_INT(g_Rng, expected);
+    CHECK(memcmp(&g_Pellets, &full, sizeof(full)) == 0);
     g_B05.frame = 159;
     CHECK(B05_UpdateAndRender(&f.context, &raw));
     CHECK_EQ_INT(g_B05.person.image, 5);
@@ -427,19 +426,19 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     CHECK_EQ_INT(g_B05.person.image, 5);
     g_B05.pattern = 3;
     g_B05.frame = 184;
-    expected = f.rng;
+    expected = g_Rng;
     for (int32_t i = 0; i < 20; i++) {
         MasterRng_Next(&expected);
     }
     CHECK(B05_UpdateAndRender(&f.context, &raw));
-    CHECK_EQ_INT(f.rng, expected);
-    memset(&f.pellets, 0, sizeof(f.pellets));
+    CHECK_EQ_INT(g_Rng, expected);
+    memset(&g_Pellets, 0, sizeof(g_Pellets));
     g_B05.pattern = 2;
     for (int32_t i = 0; i < 3; i++) {
         g_B05.frame = (int16_t)(239 + i * 8);
         CHECK(B05_UpdateAndRender(&f.context, &raw));
-        CHECK(f.pellets.slots[i * 2].moving);
-        CHECK(f.pellets.slots[i * 2 + 1].moving);
+        CHECK(g_Pellets.slots[i * 2].moving);
+        CHECK(g_Pellets.slots[i * 2 + 1].moving);
     }
     Arena_Free(&arena);
 }

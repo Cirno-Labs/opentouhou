@@ -1,4 +1,5 @@
 #include "th01/boss_b10m.h"
+#include "th01/rng.h"
 
 #include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
@@ -163,7 +164,6 @@ static void M_Group(
     const int16_t speed, const bool iris)
 {
     Pellets_AddGroup(
-        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
         c->hit->display->rank, Math16_Wrap(g_B10M.eyes[eye].left + 28),
         Math16_Wrap(g_B10M.eyes[eye].top + (iris ? 28 : 32)), group, speed);
 }
@@ -173,8 +173,7 @@ static void M_Single(
     const PELLET_MOTION motion)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, c->hit->display->rank,
-        Math16_Wrap(g_B10M.eyes[eye].left + 28),
+        c->hit->display->rank, Math16_Wrap(g_B10M.eyes[eye].left + 28),
         Math16_Wrap(g_B10M.eyes[eye].top + 32), angle, 64, motion,
         motion == PELLET_REGULAR ? 0 : 64, 0, 0);
 }
@@ -183,7 +182,7 @@ static void M_Hit(const B10M_CONTEXT *const c)
 {
     bool colliding = false;
     for (int32_t i = 0; i < 5; i++) {
-        if (BossEntity_HitTestOrb(&g_B10M.eyes[i], c->hit->orb)
+        if (BossEntity_HitTestOrb(&g_B10M.eyes[i])
             && g_B10M.eyes[i].image != 0) {
             colliding = true;
             break;
@@ -390,7 +389,7 @@ static void M_Missiles(const B10M_CONTEXT *const c, const bool clock)
     if (g_B10M.frame == 100 || g_B10M.subphase % 4 == 1) {
         if (g_B10M.subphase == 0) {
             g_B10M.subphase =
-                (int16_t)((MasterRng_Next(c->rng) % (clock ? 2 : 3)) * 4 + 1);
+                (int16_t)((MasterRng_Next(&g_Rng) % (clock ? 2 : 3)) * 4 + 1);
             g_B10M.target_left = Math16_Wrap(Boss_Player(c->hit)->left - 8);
             g_B10M.angle =
                 (uint8_t)(Math16_Angle(
@@ -510,8 +509,7 @@ static void M_Laser(
         LineBullets_Erase(x, y, end, 400);
     } else {
         LineBullets_Erase(x, y, Math16_Wrap(end - (left ? -16 : 16)), 400);
-        LineBullets_PutPatternedAndHitTest(
-            Boss_Player(c->hit), x, y, end, 400, 7, 0xe0);
+        LineBullets_PutPatternedAndHitTest(x, y, end, 400, 7, 0xe0);
     }
 }
 
@@ -600,8 +598,7 @@ static void M_Shrink(
         if (restore) {
             LineBullets_Erase(a.x, a.y, z.x, z.y);
         } else {
-            LineBullets_PutAndHitTest(
-                Boss_Player(c->hit), a.x, a.y, z.x, z.y, 7);
+            LineBullets_PutAndHitTest(a.x, a.y, z.x, z.y, 7);
         }
     }
 }
@@ -615,8 +612,7 @@ static void M_Star(const B10M_CONTEXT *const c, const bool restore)
         if (restore) {
             LineBullets_Erase(p->x[a], p->y[a], p->x[z], p->y[z]);
         } else {
-            LineBullets_PutAndHitTest(
-                Boss_Player(c->hit), p->x[a], p->y[a], p->x[z], p->y[z], 7);
+            LineBullets_PutAndHitTest(p->x[a], p->y[a], p->x[z], p->y[z], 7);
         }
     }
 }
@@ -753,8 +749,8 @@ static void M_AttackStar(const B10M_CONTEXT *const c)
                 Math16_Wrap(p->y[i] - p->center.y),
                 Math16_Wrap(p->x[i] - p->center.x));
             Pellets_AddSingle(
-                c->pellets, c->pellet_shared, c->hit->display->rank, p->x[i],
-                p->y[i], g_B10M.angle, 48, PELLET_REGULAR, 0, 0, 0);
+                c->hit->display->rank, p->x[i], p->y[i], g_B10M.angle, 48,
+                PELLET_REGULAR, 0, 0, 0);
         }
     }
     if (g_B10M.frame == 100
@@ -810,8 +806,7 @@ static bool M_Death(const B10M_CONTEXT *const c)
         .palette = c->hit->palette,
         .post_defeat = &g_B10M.post_defeat,
         .miko = c->miko,
-        .player = Boss_Player(c->hit),
-        .origin_top = &c->hit->orb->top,
+        .origin_top = &g_Orb.top,
         .stage_cleared = c->stage_cleared,
     };
     if (!BossDefeat_Resume(&g_B10M.defeat, &defeat)) {
@@ -835,7 +830,7 @@ bool B10M_UpdateAndRender(const B10M_CONTEXT *const c)
         return M_Death(c);
     }
     Missiles_UpdateAndRender(
-        c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
+        c->missiles, (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (g_B10M.phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(c);
@@ -931,7 +926,7 @@ bool B10M_UpdateAndRender(const B10M_CONTEXT *const c)
         M_Hit(c);
         if (g_B10M.hp <= 0) {
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets);
+            Pellets_EraseAndResetMoving();
             if (attack) {
                 Missiles_Reset(c->missiles);
             }

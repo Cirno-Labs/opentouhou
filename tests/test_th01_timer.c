@@ -1,4 +1,9 @@
 #include "th01/timer.h"
+#include "th01/shots.h"
+#include "th01/player.h"
+#include "th01/pellets.h"
+#include "th01/orb.h"
+#include "th01/rng.h"
 #include "pc98/zun/master_rng.h"
 #include "core/base/arena.h"
 #include "test.h"
@@ -8,14 +13,11 @@ typedef struct {
     HUD hud;
     HUD_CONTEXT display;
     TIMER_CONTEXT context;
-    PLAYER player;
     STAGE_GAMEPLAY gameplay;
     GRF mask;
     PTN sprites;
     GAME_TEXT_FONT font;
-    PELLETS pellets;
-    PELLET_SHARED shared;
-    uint32_t rng, high_score;
+    uint32_t high_score;
     int16_t lives;
     int32_t effects;
 } FIXTURE;
@@ -24,7 +26,7 @@ static void M_Effect(void *const user, const int16_t number)
 {
     FIXTURE *const f = user;
     CHECK_EQ_INT(number, 17);
-    CHECK_EQ_INT(f->shared.speed, 2);
+    CHECK_EQ_INT(g_PelletShared.speed, 2);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_StageTimer.time, 0);
     CHECK_EQ_INT(g_StageTimer.phase, TIMER_IDLE);
@@ -33,7 +35,13 @@ static void M_Effect(void *const user, const int16_t number)
 
 static void M_Init(FIXTURE *const f)
 {
-    *f = (FIXTURE) { .rng = 1 };
+    *f = (FIXTURE) {};
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
+    g_Rng = 0;
+    g_Rng = 1;
     Frame_Reset();
     StageTimer_Init();
     Arena_Init(&f->arena, "timer", 2 * 1024 * 1024);
@@ -56,18 +64,13 @@ static void M_Init(FIXTURE *const f)
                                  .sprites = &f->sprites,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
-                                 .player = &f->player,
                                  .high_score = &f->high_score,
                                  .remaining_lives = &f->lives,
                                  .stage_number = 1,
                                  .rank = SETTINGS_DIFFICULTY_NORMAL };
-    f->context = (TIMER_CONTEXT) { .hud = &f->hud,
-                                   .display = &f->display,
-                                   .pellets = &f->pellets,
-                                   .shared = &f->shared,
-                                   .rng = &f->rng,
-                                   .effect = M_Effect,
-                                   .user = f };
+    f->context = (TIMER_CONTEXT) {
+        .hud = &f->hud, .display = &f->display, .effect = M_Effect, .user = f
+    };
     Hud_SnapTimer(&f->hud, &f->display, 1000);
 }
 
@@ -119,7 +122,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     }
     CHECK(StageTimer_TickAndPut(&f.context));
     CHECK_EQ_INT(f.effects, 1);
-    CHECK_EQ_INT(f.shared.speed, 2);
+    CHECK_EQ_INT(g_PelletShared.speed, 2);
     CHECK_EQ_INT(g_StageTimer.frames_since_hurry, 0);
     CHECK_EQ_INT(g_StageTimer.hurry_cycle, 0);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640 + 192], 0);
@@ -158,10 +161,10 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     FIXTURE f;
     M_Init(&f);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        f.pellets.slots[i].moving = true;
+        g_Pellets.slots[i].moving = true;
     }
     f.display.rank = SETTINGS_DIFFICULTY_LUNATIC;
-    uint32_t expected = f.rng;
+    uint32_t expected = g_Rng;
     g_StageTimer.hurry_cycle = 255;
     g_StageTimer.frames_since_hurry = 65535;
     for (int32_t i = 0; i < 4; i++) {
@@ -170,15 +173,15 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     CHECK(StageTimer_TickAndPut(&f.context));
     CHECK_EQ_INT(g_StageTimer.frames_since_hurry, 0);
     CHECK_EQ_INT(g_StageTimer.hurry_cycle, 0);
-    CHECK_EQ_INT(f.rng, expected);
+    CHECK_EQ_INT(g_Rng, expected);
     CHECK(StageTimer_TickAndPut(&f.context));
-    CHECK_EQ_INT(f.rng, expected);
+    CHECK_EQ_INT(g_Rng, expected);
     g_StageTimer.frames_since_hurry = 499;
     for (int32_t i = 0; i < 4; i++) {
         MasterRng_Next(&expected);
     }
     CHECK(StageTimer_TickAndPut(&f.context));
-    CHECK_EQ_INT(f.rng, expected);
+    CHECK_EQ_INT(g_Rng, expected);
     Arena_Free(&f.arena);
 }
 

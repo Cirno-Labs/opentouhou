@@ -1,29 +1,27 @@
 #include "th01/line_bullets.h"
 
-static void M_HitTest(
-    PLAYER *const player, const int16_t right, const int16_t bottom)
+static void M_HitTest(const int16_t right, const int16_t bottom)
 {
-    if (right > player->left && right < player->left + 32 && bottom > 384
-        && !player->invincible) {
-        player->is_hit = true;
+    if (right > g_Player.left && right < g_Player.left + 32 && bottom > 384
+        && !g_Player.invincible) {
+        g_Player.is_hit = true;
     }
 }
 
 void LineBullets_PutAndHitTest(
-    PLAYER *const player, const int16_t left, const int16_t top,
-    const int16_t right, const int16_t bottom, const uint8_t color)
+    const int16_t left, const int16_t top, const int16_t right,
+    const int16_t bottom, const uint8_t color)
 {
     Video_Line(left, top, right, bottom, color);
-    M_HitTest(player, right, bottom);
+    M_HitTest(right, bottom);
 }
 
 void LineBullets_PutPatternedAndHitTest(
-    PLAYER *const player, const int16_t left, const int16_t top,
-    const int16_t right, const int16_t bottom, const uint8_t color,
-    const uint16_t pattern)
+    const int16_t left, const int16_t top, const int16_t right,
+    const int16_t bottom, const uint8_t color, const uint16_t pattern)
 {
     Video_LinePatterned(left, top, right, bottom, color, pattern);
-    M_HitTest(player, right, bottom);
+    M_HitTest(right, bottom);
 }
 
 void LineBullets_Erase(

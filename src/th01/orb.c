@@ -1,10 +1,20 @@
 #include "th01/orb.h"
+#include "th01/rng.h"
 
 #include "th01/sprite.h"
 
 #include "th01/finite.h"
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
+
+#include <string.h>
+
+ORB g_Orb;
+
+void Orb_Init(void)
+{
+    memset(&g_Orb, 0, sizeof(g_Orb));
+}
 
 static bool M_Left(const ORB_VELOCITY_X velocity)
 {
@@ -16,160 +26,157 @@ static bool M_Right(const ORB_VELOCITY_X velocity)
     return velocity == ORB_X_RIGHT_4 || velocity == ORB_X_RIGHT_8;
 }
 
-void Orb_ResetFlight(ORB *const orb)
+void Orb_ResetFlight(void)
 {
-    orb->left = orb->previous_left = ORB_BOUNDS_MAX_X - 8;
-    orb->top = orb->previous_top = ORB_BOUNDS_MAX_Y - 88;
-    orb->force = -8.0;
-    orb->force_frame = 0;
-    orb->velocity_x = ORB_X_LEFT_4;
+    g_Orb.left = g_Orb.previous_left = ORB_BOUNDS_MAX_X - 8;
+    g_Orb.top = g_Orb.previous_top = ORB_BOUNDS_MAX_Y - 88;
+    g_Orb.force = -8.0;
+    g_Orb.force_frame = 0;
+    g_Orb.velocity_x = ORB_X_LEFT_4;
 }
 
-void Orb_AdvanceForceFrame(ORB *const orb)
+void Orb_AdvanceForceFrame(void)
 {
-    orb->force_frame = Math16_Wrap(orb->force_frame + 1);
+    g_Orb.force_frame = Math16_Wrap(g_Orb.force_frame + 1);
 }
 
-int16_t Orb_UpdateVelocityY(ORB *const orb)
+int16_t Orb_UpdateVelocityY(void)
 {
     const FINITE gravity = Finite_Add(
-        Finite_FromDouble(orb->force), Finite_FromDouble(orb->force_frame / 5));
-    orb->velocity_y = Finite_ToDouble(gravity);
-    if (orb->velocity_y > 16.0) {
-        orb->velocity_y = 16.0;
-    } else if (orb->velocity_y < -16.0) {
-        orb->velocity_y = -16.0;
+        Finite_FromDouble(g_Orb.force),
+        Finite_FromDouble(g_Orb.force_frame / 5));
+    g_Orb.velocity_y = Finite_ToDouble(gravity);
+    if (g_Orb.velocity_y > 16.0) {
+        g_Orb.velocity_y = 16.0;
+    } else if (g_Orb.velocity_y < -16.0) {
+        g_Orb.velocity_y = -16.0;
     }
     return Finite_ToPixel(gravity);
 }
 
-void Orb_NewForce(
-    ORB *const orb, const ORB_FORCE mode, const double immediate,
-    uint32_t *const rng)
+void Orb_NewForce(const ORB_FORCE mode, const double immediate)
 {
-    const FINITE velocity = Finite_FromDouble(orb->velocity_y);
+    const FINITE velocity = Finite_FromDouble(g_Orb.velocity_y);
     if (mode == ORB_FORCE_SURFACE) {
-        orb->force = Finite_ToDouble(
+        g_Orb.force = Finite_ToDouble(
             Finite_Multiply(Finite_Negate(velocity), Finite_FromDouble(0.78)));
-        if (orb->velocity_x == ORB_X_STILL && orb->force_frame < 17) {
-            if (MasterRng_Next(rng) % 50 == 0) {
-                orb->velocity_x = ORB_X_LEFT_4;
+        if (g_Orb.velocity_x == ORB_X_STILL && g_Orb.force_frame < 17) {
+            if (MasterRng_Next(&g_Rng) % 50 == 0) {
+                g_Orb.velocity_x = ORB_X_LEFT_4;
             }
-            if (MasterRng_Next(rng) % 50 == 1) {
-                orb->velocity_x = ORB_X_RIGHT_4;
+            if (MasterRng_Next(&g_Rng) % 50 == 1) {
+                g_Orb.velocity_x = ORB_X_RIGHT_4;
             }
         }
     }
     if (mode == ORB_FORCE_TOP) {
-        orb->force = Finite_ToDouble(Finite_Add(
+        g_Orb.force = Finite_ToDouble(Finite_Add(
             Finite_Negate(velocity),
-            Finite_Negate(Finite_FromDouble(orb->force_frame / 4))));
+            Finite_Negate(Finite_FromDouble(g_Orb.force_frame / 4))));
     }
     if (mode == ORB_FORCE_SHOT) {
-        orb->force = Finite_ToDouble(
+        g_Orb.force = Finite_ToDouble(
             Finite_Add(Finite_FromDouble(-10.0), Finite_Half(velocity)));
     }
     if (mode == ORB_FORCE_IMMEDIATE) {
-        orb->force = immediate;
+        g_Orb.force = immediate;
     }
-    orb->force_frame = 0;
+    g_Orb.force_frame = 0;
 }
 
-void Orb_ReflectX(ORB *const orb)
+void Orb_ReflectX(void)
 {
-    switch (orb->velocity_x) {
+    switch (g_Orb.velocity_x) {
     case ORB_X_LEFT_4:
-        orb->velocity_x = ORB_X_RIGHT_4;
+        g_Orb.velocity_x = ORB_X_RIGHT_4;
         break;
     case ORB_X_RIGHT_4:
-        orb->velocity_x = ORB_X_LEFT_4;
+        g_Orb.velocity_x = ORB_X_LEFT_4;
         break;
     case ORB_X_LEFT_8:
-        orb->velocity_x = ORB_X_RIGHT_8;
+        g_Orb.velocity_x = ORB_X_RIGHT_8;
         break;
     case ORB_X_RIGHT_8:
-        orb->velocity_x = ORB_X_LEFT_8;
+        g_Orb.velocity_x = ORB_X_LEFT_8;
         break;
     default:
-        orb->velocity_x = ORB_X_STILL;
+        g_Orb.velocity_x = ORB_X_STILL;
         break;
     }
 }
 
-void Orb_ReflectY(ORB *const orb, uint32_t *const rng)
+void Orb_ReflectY(void)
 {
-    Orb_NewForce(orb, ORB_FORCE_IMMEDIATE, -orb->velocity_y, rng);
+    Orb_NewForce(ORB_FORCE_IMMEDIATE, -g_Orb.velocity_y);
 }
 
-void Orb_MoveX(ORB *const orb, const ORB_VELOCITY_X requested)
+void Orb_MoveX(const ORB_VELOCITY_X requested)
 {
     switch (requested) {
     case ORB_X_LEFT_4:
-        orb->left = Math16_Wrap(orb->left - 4);
+        g_Orb.left = Math16_Wrap(g_Orb.left - 4);
         break;
     case ORB_X_RIGHT_4:
-        orb->left = Math16_Wrap(orb->left + 4);
+        g_Orb.left = Math16_Wrap(g_Orb.left + 4);
         break;
     case ORB_X_LEFT_8:
-        orb->left = Math16_Wrap(orb->left - 8);
+        g_Orb.left = Math16_Wrap(g_Orb.left - 8);
         break;
     case ORB_X_RIGHT_8:
-        orb->left = Math16_Wrap(orb->left + 8);
+        g_Orb.left = Math16_Wrap(g_Orb.left + 8);
         break;
     default:
         break;
     }
-    if (orb->left <= ORB_BOUNDS_MIN_X && M_Left(orb->velocity_x)) {
-        Orb_ReflectX(orb);
+    if (g_Orb.left <= ORB_BOUNDS_MIN_X && M_Left(g_Orb.velocity_x)) {
+        Orb_ReflectX();
     }
-    if (orb->left >= ORB_BOUNDS_MAX_X && M_Right(orb->velocity_x)) {
-        Orb_ReflectX(orb);
+    if (g_Orb.left >= ORB_BOUNDS_MAX_X && M_Right(g_Orb.velocity_x)) {
+        Orb_ReflectX();
     }
 }
 
-int16_t Orb_Image(const ORB *const orb)
+int16_t Orb_Image(void)
 {
-    return (int16_t)(orb->rotation_frame / ORB_FRAMES_PER_IMAGE);
+    return (int16_t)(g_Orb.rotation_frame / ORB_FRAMES_PER_IMAGE);
 }
 
-void Orb_AdvanceMotion(
-    ORB *const orb, uint32_t *const rng, int16_t *const card_combo)
+void Orb_AdvanceMotion(int16_t *const card_combo)
 {
-    if (orb->in_portal) {
+    if (g_Orb.in_portal) {
         return;
     }
-    Orb_MoveX(orb, orb->velocity_x);
-    orb->top = Math16_Wrap(orb->top + Orb_UpdateVelocityY(orb));
-    orb->frames_outside_portal = Math16_Wrap(orb->frames_outside_portal + 1);
-    if (M_Left(orb->velocity_x)) {
-        orb->rotation_frame = Math16_Wrap(orb->rotation_frame + 1);
+    Orb_MoveX(g_Orb.velocity_x);
+    g_Orb.top = Math16_Wrap(g_Orb.top + Orb_UpdateVelocityY());
+    g_Orb.frames_outside_portal = Math16_Wrap(g_Orb.frames_outside_portal + 1);
+    if (M_Left(g_Orb.velocity_x)) {
+        g_Orb.rotation_frame = Math16_Wrap(g_Orb.rotation_frame + 1);
     }
-    if (M_Right(orb->velocity_x)) {
-        orb->rotation_frame = Math16_Wrap(orb->rotation_frame - 1);
+    if (M_Right(g_Orb.velocity_x)) {
+        g_Orb.rotation_frame = Math16_Wrap(g_Orb.rotation_frame - 1);
     }
-    if (orb->rotation_frame >= ORB_IMAGE_COUNT * ORB_FRAMES_PER_IMAGE - 2) {
-        orb->rotation_frame = 0;
+    if (g_Orb.rotation_frame >= ORB_IMAGE_COUNT * ORB_FRAMES_PER_IMAGE - 2) {
+        g_Orb.rotation_frame = 0;
     }
-    if (orb->rotation_frame < 0) {
-        orb->rotation_frame = (ORB_IMAGE_COUNT - 1) * ORB_FRAMES_PER_IMAGE;
+    if (g_Orb.rotation_frame < 0) {
+        g_Orb.rotation_frame = (ORB_IMAGE_COUNT - 1) * ORB_FRAMES_PER_IMAGE;
     }
-    if (orb->top > ORB_BOUNDS_MAX_Y) {
-        Orb_NewForce(orb, ORB_FORCE_SURFACE, 0.78, rng);
-        orb->top = ORB_BOUNDS_MAX_Y;
+    if (g_Orb.top > ORB_BOUNDS_MAX_Y) {
+        Orb_NewForce(ORB_FORCE_SURFACE, 0.78);
+        g_Orb.top = ORB_BOUNDS_MAX_Y;
         *card_combo = 0;
     }
-    if (orb->top < ORB_BOUNDS_MIN_Y) {
-        Orb_NewForce(orb, ORB_FORCE_TOP, 0.0, rng);
-        orb->top = ORB_BOUNDS_MIN_Y;
+    if (g_Orb.top < ORB_BOUNDS_MIN_Y) {
+        Orb_NewForce(ORB_FORCE_TOP, 0.0);
+        g_Orb.top = ORB_BOUNDS_MIN_Y;
     }
 }
 
 bool Orb_PlayerHitTest(
-    ORB *const orb, const ORB_PLAYER *const player,
-    const int16_t repel_friction, uint32_t *const rng)
+    const ORB_PLAYER *const player, const int16_t repel_friction)
 {
-    const int32_t delta_x = player->left - orb->left;
-    const int32_t delta_y = player->top - orb->top;
+    const int32_t delta_x = player->left - g_Orb.left;
+    const int32_t delta_y = player->top - g_Orb.top;
     const int32_t abs_x = delta_x < 0 ? -delta_x : delta_x;
     const int32_t abs_y = delta_y < 0 ? -delta_y : delta_y;
     if (repel_friction == ORB_REPEL_NONE) {
@@ -181,51 +188,49 @@ bool Orb_PlayerHitTest(
     }
     if (repel_friction < ORB_REPEL_3_X_UNCHANGED) {
         if (delta_x > 0) {
-            orb->velocity_x = ORB_X_LEFT_4;
+            g_Orb.velocity_x = ORB_X_LEFT_4;
         } else if (delta_x == 0) {
-            orb->velocity_x = ORB_X_STILL;
-            if (MasterRng_Next(rng) % 8 == 0) {
-                orb->velocity_x = ORB_X_LEFT_4;
+            g_Orb.velocity_x = ORB_X_STILL;
+            if (MasterRng_Next(&g_Rng) % 8 == 0) {
+                g_Orb.velocity_x = ORB_X_LEFT_4;
             }
-            if (MasterRng_Next(rng) % 8 == 4) {
-                orb->velocity_x = ORB_X_LEFT_4;
+            if (MasterRng_Next(&g_Rng) % 8 == 4) {
+                g_Orb.velocity_x = ORB_X_LEFT_4;
             }
         } else {
-            orb->velocity_x = ORB_X_RIGHT_4;
+            g_Orb.velocity_x = ORB_X_RIGHT_4;
         }
-        Orb_NewForce(orb, ORB_FORCE_IMMEDIATE, repel_friction / 2 - 13, rng);
+        Orb_NewForce(ORB_FORCE_IMMEDIATE, repel_friction / 2 - 13);
     } else {
         switch (repel_friction) {
         case ORB_REPEL_3_X_LEFT_4:
-            orb->velocity_x = ORB_X_LEFT_4;
+            g_Orb.velocity_x = ORB_X_LEFT_4;
             break;
         case ORB_REPEL_3_X_RIGHT_4:
-            orb->velocity_x = ORB_X_RIGHT_4;
+            g_Orb.velocity_x = ORB_X_RIGHT_4;
             break;
         case ORB_REPEL_3_X_RIGHT_8:
-            orb->velocity_x = ORB_X_RIGHT_8;
+            g_Orb.velocity_x = ORB_X_RIGHT_8;
             break;
         case ORB_REPEL_3_X_LEFT_8:
-            orb->velocity_x = ORB_X_LEFT_8;
+            g_Orb.velocity_x = ORB_X_LEFT_8;
             break;
         default:
             break;
         }
-        Orb_NewForce(orb, ORB_FORCE_IMMEDIATE, -10.0, rng);
+        Orb_NewForce(ORB_FORCE_IMMEDIATE, -10.0);
     }
     return false;
 }
 
 ORB_COMPOSITE Orb_BeginComposite(
-    ORB *const orb, const int16_t stage_id, uint32_t *const rng,
-    int16_t *const card_combo)
+    const int16_t stage_id, int16_t *const card_combo)
 {
-    Orb_AdvanceMotion(orb, rng, card_combo);
+    Orb_AdvanceMotion(card_combo);
     return (ORB_COMPOSITE) { .boss = stage_id % 5 == 4 };
 }
 
-ORB_ACTION Orb_NextAction(
-    ORB *const orb, ORB_COMPOSITE *const composite, const bool player_hit)
+ORB_ACTION Orb_NextAction(ORB_COMPOSITE *const composite, const bool player_hit)
 {
     for (;;) {
         ORB_ACTION_KIND kind;
@@ -243,29 +248,31 @@ ORB_ACTION Orb_NextAction(
             kind = composite->boss ? ORB_ACTION_DONE : ORB_ACTION_OBSTACLES;
             break;
         case 4:
-            kind = orb->in_portal ? ORB_ACTION_DONE : ORB_ACTION_PLAYER_HITTEST;
+            kind =
+                g_Orb.in_portal ? ORB_ACTION_DONE : ORB_ACTION_PLAYER_HITTEST;
             break;
         case 5:
-            kind = orb->in_portal ? ORB_ACTION_DONE : ORB_ACTION_ERASE;
+            kind = g_Orb.in_portal ? ORB_ACTION_DONE : ORB_ACTION_ERASE;
             break;
         case 6:
             kind = composite->boss ? ORB_ACTION_DONE : ORB_ACTION_CARDS_RENDER;
             break;
         case 7:
-            kind =
-                orb->in_portal || player_hit ? ORB_ACTION_DONE : ORB_ACTION_PUT;
+            kind = g_Orb.in_portal || player_hit ? ORB_ACTION_DONE
+                                                 : ORB_ACTION_PUT;
             break;
         default:
-            orb->previous_left = orb->left;
-            orb->previous_top = orb->top;
+            g_Orb.previous_left = g_Orb.left;
+            g_Orb.previous_top = g_Orb.top;
             return (ORB_ACTION) { .kind = ORB_ACTION_DONE };
         }
         composite->phase++;
         if (kind != ORB_ACTION_DONE) {
             return (ORB_ACTION) {
-                kind, kind == ORB_ACTION_ERASE ? orb->previous_left : orb->left,
-                kind == ORB_ACTION_ERASE ? orb->previous_top : orb->top,
-                Orb_Image(orb)
+                kind,
+                kind == ORB_ACTION_ERASE ? g_Orb.previous_left : g_Orb.left,
+                kind == ORB_ACTION_ERASE ? g_Orb.previous_top : g_Orb.top,
+                Orb_Image()
             };
         }
     }

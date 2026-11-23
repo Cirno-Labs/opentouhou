@@ -25,7 +25,6 @@ typedef struct {
 } ITEMS;
 
 typedef struct {
-    PLAYER *player;
     STAGE_GAMEPLAY *gameplay;
     uint16_t *point_value;
     const PTN *sprites;

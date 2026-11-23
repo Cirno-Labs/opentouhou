@@ -52,8 +52,7 @@ void StageObjects_Prepare(
 // storage prepared before simulation; boss stages do not access storage.
 void StageObjects_InitPrepared(
     STAGE_OBJECTS *objects, const STAGE_DATA *data, int16_t stage_id,
-    bool first_in_scene, STAGE_OBJECT_STORAGE *storage, const PTN *sprites,
-    uint32_t *rng);
+    bool first_in_scene, STAGE_OBJECT_STORAGE *storage, const PTN *sprites);
 
 // Validates immutable sprites before initialization. Ordinary layouts need
 // 32 images; boss slot 4 accepts the reduced seven-image stage set.
@@ -75,8 +74,7 @@ RESULT StageObjects_ValidateSprites(const PTN *sprites, int16_t stage_id);
 // entrance and 102-background DOS limits safely for debug layouts.
 void StageObjects_Init(
     STAGE_OBJECTS *objects, const STAGE_DATA *data, int16_t stage_id,
-    bool first_in_scene, const ALLOCATOR *allocator, const PTN *sprites,
-    uint32_t *rng);
+    bool first_in_scene, const ALLOCATOR *allocator, const PTN *sprites);
 
 // Runs until the next frame_delay(1), or returns true when complete.
 // The first call runs before waiting; subsequent calls require count1 >= 1

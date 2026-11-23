@@ -1,4 +1,5 @@
 #include "th01/gameplay_internal.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 #include "th01/hooks.h"
@@ -39,6 +40,10 @@ RESULT Gameplay_Prepare(
 void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
     memcpy(&g->world, g->storage.initial, sizeof(g->world));
+    Player_Init();
+    Orb_Init();
+    Shots_Init();
+    Pellets_Init();
     Frame_Reset();
     GameInput_Init();
     StageTimer_Init();
@@ -55,13 +60,13 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     B20M_Init();
     g_Session.high_score = g_Session.table_high_score;
     g->world.metrics.score = g_Session.score;
-    g->world.player.remaining_bombs = g_Session.bombs;
-    g->world.player.left = 304;
-    g->world.pellet_shared.speed = g_Session.pellet_speed;
+    g_Player.remaining_bombs = g_Session.bombs;
+    g_Player.left = 304;
+    g_PelletShared.speed = g_Session.pellet_speed;
     g->world.retained_lives = (int8_t)g_Session.lives;
     g->world.next_extend = Extend_NextForScore(g_Session.score);
-    g->world.rng = g_Session.frame_rand;
-    g->world.metrics.flip_cycle = (uint8_t)(MasterRng_Next(&g->world.rng) % 60);
+    g_Rng = g_Session.frame_rand;
+    g->world.metrics.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
     g->world.boss_stage = g_Session.stage_id % 5 == 4;
     Scene_Activate(
         &g->world.scene, &g->storage.assets->scenes[Session_Scene()]);
@@ -79,14 +84,13 @@ void Gameplay_ResetInput(GAMEPLAY *const g)
 
 void Gameplay_DefaultActors(GAMEPLAY *const g)
 {
-    Sprite_PtnPut(
-        &g->storage.assets->miko, 0, -1, g->world.player.left, PLAYER_TOP);
+    Sprite_PtnPut(&g->storage.assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
     Orb_RenderAction(
         g->bindings.stage.sprites,
         (ORB_ACTION) {
             .kind = ORB_ACTION_PUT,
-            .left = g->world.orb.left,
-            .top = g->world.orb.top,
+            .left = g_Orb.left,
+            .top = g_Orb.top,
             .image = 0,
         });
 }
@@ -94,8 +98,8 @@ void Gameplay_DefaultActors(GAMEPLAY *const g)
 void Gameplay_SyncSession(GAMEPLAY *const g)
 {
     g_Session.score = g->world.metrics.score;
-    g_Session.bombs = g->world.player.remaining_bombs;
-    g_Session.pellet_speed = g->world.pellet_shared.speed;
+    g_Session.bombs = g_Player.remaining_bombs;
+    g_Session.pellet_speed = g_PelletShared.speed;
 }
 
 void Gameplay_BossSetup(GAMEPLAY *const g)

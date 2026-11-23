@@ -21,7 +21,7 @@ void Extend_UpdateAndRender(const EXTEND_CONTEXT *const c)
         *c->resident_lives = (int8_t)*lives;
         Hud_LivesPut(c->hud, c->display, (int16_t)(*lives - 1));
         c->effect(c->user, 15);
-        Pellets_SpeedRaise(c->shared, 1);
+        Pellets_SpeedRaise(1);
     }
     *c->next = Math16_Wrap(*c->next + 1);
 }

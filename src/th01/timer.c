@@ -1,4 +1,5 @@
 #include "th01/timer.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
@@ -52,10 +53,9 @@ static void M_Rain(const TIMER_CONTEXT *const c)
         return;
     }
     for (uint32_t i = 0; i <= (uint32_t)c->display->rank; i++) {
-        const int16_t left = (int16_t)(MasterRng_Next(c->rng) % 640);
+        const int16_t left = (int16_t)(MasterRng_Next(&g_Rng) % 640);
         Pellets_AddGroup(
-            c->pellets, c->shared, c->display->player, c->rng, c->display->rank,
-            left, 64, PELLET_GROUP_RANDOM_WIDE, 48);
+            c->display->rank, left, 64, PELLET_GROUP_RANDOM_WIDE, 48);
     }
 }
 
@@ -111,7 +111,7 @@ bool StageTimer_TickAndPut(const TIMER_CONTEXT *const c)
     g_StageTimer.time = (uint16_t)(g_StageTimer.time - 2);
     Hud_PutTimer(c->hud, c->display, g_StageTimer.time);
     if (g_StageTimer.time == 0) {
-        Pellets_SpeedRaise(c->shared, 2);
+        Pellets_SpeedRaise(2);
         c->effect(c->user, 17);
         M_Line(c, "HARRY");
         g_StageTimer.phase = TIMER_WAIT_HURRY;

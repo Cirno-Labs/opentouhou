@@ -15,6 +15,11 @@ typedef struct {
     SHOT slots[SHOTS_COUNT];
 } SHOTS;
 
+extern SHOTS g_Shots;
+
+// Zeroes the shots for a new world.
+void Shots_Init(void);
+
 typedef enum {
     SHOTS_ACTION_RESTORE,
     SHOTS_ACTION_PUT,
@@ -40,8 +45,8 @@ RESULT Shots_ValidateSprites(const PTN *sprites);
 
 // Zero-initialize once. Add selects the first idle, non-decaying slot and
 // emits effect 1 only on success. Accepts X from 0 through 639.
-bool Shots_Add(SHOTS *shots, int16_t left, int16_t top, SHOTS_OUTPUT output);
-void Shots_EraseAndReset(SHOTS *shots, SHOTS_OUTPUT output);
+bool Shots_Add(int16_t left, int16_t top, SHOTS_OUTPUT output);
+void Shots_EraseAndReset(SHOTS_OUTPUT output);
 
 // Called by the pellet composite after pellet motion/clipping and
 // before pellet rendering. Player spawning precedes ordinary Orb motion;
@@ -49,19 +54,17 @@ void Shots_EraseAndReset(SHOTS *shots, SHOTS_OUTPUT output);
 // during player update. Orb hits precede top clipping and move the Orb an
 // extra time without advancing force age or rotation. Decay lasts frames
 // 1..7. Uses supplied shared RNG through Orb_NewForce only.
-void Shots_UpdateAndRender(
-    SHOTS *shots, ORB *orb, uint32_t *rng, SHOTS_OUTPUT output);
-bool Shots_HitTestOrb(SHOTS *shots, int32_t slot, ORB *orb, uint32_t *rng);
+void Shots_UpdateAndRender(SHOTS_OUTPUT output);
+bool Shots_HitTestOrb(int32_t slot);
 
 // Tests inclusive overlap with an 8 by 8 pellet, with two-pixel margins.
 // First hit restores the shot, starts decay at 1 and emits effect 16.
-bool Shots_HitTestPellet(
-    SHOTS *shots, int16_t left, int16_t top, SHOTS_OUTPUT output);
+bool Shots_HitTestPellet(int16_t left, int16_t top, SHOTS_OUTPUT output);
 
 // Tests shot top-left against inclusive boss bounds. Width and height are
 // visual hitbox dimensions minus the 16-pixel shot dimensions.
 bool Shots_HitTestBoss(
-    SHOTS *shots, int16_t left, int16_t top, int16_t width_minus_shot,
+    int16_t left, int16_t top, int16_t width_minus_shot,
     int16_t height_minus_shot, SHOTS_OUTPUT output);
 
 // Executes drawing actions with stage PTN image 1; requires at least two

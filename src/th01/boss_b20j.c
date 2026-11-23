@@ -1,4 +1,5 @@
 #include "th01/boss_b20j.h"
+#include "th01/rng.h"
 
 #include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
@@ -119,7 +120,7 @@ void B20J_Setup(const B20J_CONTEXT *const c)
 
 static uint16_t M_Random(const B20J_CONTEXT *const c)
 {
-    return MasterRng_Next(c->rng);
+    return MasterRng_Next(&g_Rng);
 }
 static void M_Audio(const B20J_CONTEXT *const c, const B20J_AUDIO_ACTION action)
 {
@@ -272,11 +273,11 @@ void B20J_BeginEntrance(const B20J_CONTEXT *const c)
     ASSERT(
         !g_B20J.entrance_active && !g_B20J.defeating
         && g_B20J.wait_kind == B20J_WAIT_NONE);
-    c->pellets->interlace = true;
+    g_Pellets.interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->scroll, false);
     g_B20J.stage_palette = c->hit->palette->saved;
-    StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr, c->rng);
+    StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr);
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, false);
     Video_SelectDrawingPage(0);
@@ -441,24 +442,20 @@ static void M_Single(
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, c->hit->display->rank, x, y, angle, speed,
-        PELLET_REGULAR, 0, 0, 0);
+        c->hit->display->rank, x, y, angle, speed, PELLET_REGULAR, 0, 0, 0);
 }
 static void M_Rain(
     const B20J_CONTEXT *const c, const int16_t x, const int16_t y,
     const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, c->hit->display->rank, x, y, angle, speed,
-        PELLET_GRAVITY, 1, 0, 0);
+        c->hit->display->rank, x, y, angle, speed, PELLET_GRAVITY, 1, 0, 0);
 }
 static void M_Group(
     const B20J_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t group, const int16_t speed)
 {
-    Pellets_AddGroup(
-        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
-        c->hit->display->rank, x, y, group, speed);
+    Pellets_AddGroup(c->hit->display->rank, x, y, group, speed);
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
 {
@@ -1023,9 +1020,8 @@ static void M_Sleeve(const B20J_CONTEXT *const c)
                 M_Rain(c, 290, 200, angle, 32);
             } else {
                 Pellets_AddSingle(
-                    c->pellets, c->pellet_shared, c->hit->display->rank, 290,
-                    200, angle, 32, PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR,
-                    48, 0, 0);
+                    c->hit->display->rank, 290, 200, angle, 32,
+                    PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR, 48, 0, 0);
             }
         }
         Boss_Effect(c->hit, 7);
@@ -1142,7 +1138,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
 static void M_Hit(const B20J_CONTEXT *const c)
 {
     const uint8_t colors[] = { 3, 4, 5 };
-    const ORB *const orb = c->hit->orb;
+    const ORB *const orb = &g_Orb;
     const bool collision = orb->left >= 288 && orb->left <= 352
         && orb->top >= 120 && orb->top <= 160;
     BossHit_UpdateAndRender(
@@ -1224,7 +1220,7 @@ bool B20J_UpdateAndRender(const B20J_CONTEXT *const c)
         g_B20J.hit.invincible = false;
         g_B20J.hp_bar_filled = false;
         g_B20J.boss_palette = c->hit->palette->saved;
-        *c->rng = c->hit->frame_rand;
+        g_Rng = c->hit->frame_rand;
         return true;
     }
     if (g_B20J.phase < B20J_PHASE_PATTERNS_1

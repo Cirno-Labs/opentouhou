@@ -1,4 +1,5 @@
 #include "th01/stage.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
@@ -77,7 +78,7 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
 {
     STAGE_OBJECTS *const objects = context->objects;
     STAGE_OBSTACLE *const obstacle = &objects->obstacles[slot];
-    ORB *const orb = context->orb;
+    ORB *const orb = &g_Orb;
     if (objects->portal_active && objects->entered_portal != slot) {
         return;
     }
@@ -101,8 +102,7 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         int32_t completed_loops = 0;
         for (;;) {
             if (objects->obstacles[destination].type == STAGE_DATA_PORTAL
-                && MasterRng_Next(context->rng) % 4 == 0
-                && destination != slot) {
+                && MasterRng_Next(&g_Rng) % 4 == 0 && destination != slot) {
                 break;
             }
             destination++;
@@ -128,10 +128,9 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
             context->sprites, obstacle->frame == 30 ? 30 : 29, -1,
             objects->destination_left, objects->destination_top);
         if (obstacle->frame == 40) {
-            orb->velocity_x = MasterRng_Next(context->rng) % 5;
-            const int16_t force =
-                (int16_t)(MasterRng_Next(context->rng) % 19) - 9;
-            Orb_NewForce(orb, ORB_FORCE_IMMEDIATE, force, context->rng);
+            orb->velocity_x = MasterRng_Next(&g_Rng) % 5;
+            const int16_t force = (int16_t)(MasterRng_Next(&g_Rng) % 19) - 9;
+            Orb_NewForce(ORB_FORCE_IMMEDIATE, force);
             orb->left = objects->destination_left;
             orb->top = objects->destination_top;
             orb->in_portal = false;
@@ -147,18 +146,18 @@ static void M_ResetPortals(const STAGE_CONTEXT *const context)
     STAGE_OBJECTS *const objects = context->objects;
     objects->entered_portal = 0;
     objects->portal_active = false;
-    if (context->orb->in_portal) {
+    if (g_Orb.in_portal) {
         Sprite_PtnPut(
             context->sprites, 29, -1, objects->destination_left,
             objects->destination_top);
-        context->orb->in_portal = false;
+        g_Orb.in_portal = false;
     }
 }
 
 void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
 {
     STAGE_OBJECTS *const objects = context->objects;
-    ORB *const orb = context->orb;
+    ORB *const orb = &g_Orb;
     if (reset) {
         objects->vertical_bar_active = false;
     }
@@ -177,7 +176,7 @@ void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
                 } else if (orb->velocity_x == ORB_X_LEFT_4 && dx > 0) {
                     orb->velocity_x = ORB_X_RIGHT_4;
                 }
-                Orb_NewForce(orb, ORB_FORCE_SURFACE, 1.5, context->rng);
+                Orb_NewForce(ORB_FORCE_SURFACE, 1.5);
             }
             if (obstacle->frame != 0) {
                 obstacle->frame = Math16_Wrap(obstacle->frame + 1);
@@ -231,9 +230,9 @@ void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
                 objects->vertical_bar_active = true;
             }
             if (!vertical || orb->velocity_x == ORB_X_STILL) {
-                Orb_ReflectY(orb, context->rng);
+                Orb_ReflectY();
             } else {
-                Orb_ReflectX(orb);
+                Orb_ReflectX();
             }
         }
         if (obstacle->frame != 0) {

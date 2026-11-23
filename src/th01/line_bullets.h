@@ -7,11 +7,10 @@
 // player's 32-pixel width and bottom > 384, unless the player is invincible.
 // Clipping never changes the hit test.
 void LineBullets_PutAndHitTest(
-    PLAYER *player, int16_t left, int16_t top, int16_t right, int16_t bottom,
-    uint8_t color);
+    int16_t left, int16_t top, int16_t right, int16_t bottom, uint8_t color);
 void LineBullets_PutPatternedAndHitTest(
-    PLAYER *player, int16_t left, int16_t top, int16_t right, int16_t bottom,
-    uint8_t color, uint16_t pattern);
+    int16_t left, int16_t top, int16_t right, int16_t bottom, uint8_t color,
+    uint16_t pattern);
 
 // Restores the line with Video_LineErase, without a hit test.
 void LineBullets_Erase(

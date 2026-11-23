@@ -48,5 +48,5 @@ void Boss_Effect(const BOSS_HIT_CONTEXT *const hit, const int16_t number)
 
 PLAYER *Boss_Player(const BOSS_HIT_CONTEXT *const hit)
 {
-    return hit->display->player;
+    return &g_Player;
 }

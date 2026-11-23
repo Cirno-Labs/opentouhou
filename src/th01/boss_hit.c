@@ -25,16 +25,15 @@ void BossHit_UpdateAndRender(
         HudHp_Decrement(c->health, *hp);
     }
     Shots_HitTestBoss(
-        c->shots, box.left, box.top, box.width_minus_shot,
-        box.height_minus_shot, c->shots_output);
+        box.left, box.top, box.width_minus_shot, box.height_minus_shot,
+        c->shots_output);
     if ((orb_hit && !hit->invincible)
-        || Bomb_DealsDamage(
-            c->display->player, *c->display->remaining_lives, c->frame_rand)) {
+        || Bomb_DealsDamage(*c->display->remaining_lives, c->frame_rand)) {
         hit->frame = 0;
         M_Flash(c, flash_colors, flash_count);
         *hp = Math16_Wrap(*hp - 1);
         hit->invincible = true;
-        ORB *const orb = c->orb;
+        ORB *const orb = &g_Orb;
         if (orb->velocity_x == ORB_X_LEFT_4
             || orb->velocity_x == ORB_X_LEFT_8) {
             orb->velocity_x = ORB_X_RIGHT_4;

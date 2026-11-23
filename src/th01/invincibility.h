@@ -28,5 +28,4 @@ void Invincibility_Put(
 // all eight old rectangles once when invincibility ends. Calls allocate
 // nothing, advance no clocks and read only supplied actor and RNG state.
 void Invincibility_UpdateAndRender(
-    INVINCIBILITY *state, const INVINCIBILITY_ASSETS *assets,
-    const PLAYER *player, uint32_t *rng);
+    INVINCIBILITY *state, const INVINCIBILITY_ASSETS *assets);

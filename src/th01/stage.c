@@ -1,4 +1,5 @@
 #include "th01/stage.h"
+#include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
@@ -62,15 +63,15 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
     STAGE_GAMEPLAY *const game = context->gameplay;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
-        const int32_t dx = card->left - context->orb->left;
-        const int32_t dy = card->top - context->orb->top;
+        const int32_t dx = card->left - g_Orb.left;
+        const int32_t dy = card->top - g_Orb.top;
         if (((dx > -24 && dx < 24 && dy > -24 && dy < 24)
              && card->flag == STAGE_CARD_ALIVE)
             || (context->test_damage && card->flag == STAGE_CARD_ALIVE)
-            || (context->player->bomb_damaging
-                && context->player->bomb_frame % (uint32_t)objects->card_count
+            || (g_Player.bomb_damaging
+                && g_Player.bomb_frame % (uint32_t)objects->card_count
                     == (uint32_t)i
-                && MasterRng_Next(context->rng) % 4 != 0
+                && MasterRng_Next(&g_Rng) % 4 != 0
                 && card->flag == STAGE_CARD_ALIVE)) {
             card->flag = STAGE_CARD_FLIPPING;
             card->score = (uint32_t)(context->stage_id / 5 * 100 + 100)
@@ -95,7 +96,7 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
                     game->flip_cycle = 1;
                 }
                 context->item_add(
-                    context->user, i, bomb && !context->player->bomb_damaging);
+                    context->user, i, bomb && !g_Player.bomb_damaging);
             }
             context->effect(context->user, 2);
         }
@@ -149,6 +150,6 @@ void Stage_UpdateCards(const STAGE_CONTEXT *const context)
     }
     if (removed == objects->card_count) {
         context->gameplay->cleared = true;
-        context->player->is_hit = true;
+        g_Player.is_hit = true;
     }
 }

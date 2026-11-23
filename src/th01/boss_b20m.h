@@ -142,13 +142,10 @@ extern B20M g_B20M;
 typedef struct {
     const B20M_ASSETS *assets;
     const BOSS_HIT_CONTEXT *hit;
-    PELLETS *pellets;
-    PELLET_SHARED *pellet_shared;
     SHOOTOUT_LASERS *lasers;
     STAGE_OBJECTS *objects;
     bool *first_stage;
     const bool *timer_initialized;
-    uint32_t *rng;
     bool *game_cleared;
     void (*audio)(void *user, B20M_AUDIO_ACTION action);
 } B20M_CONTEXT;

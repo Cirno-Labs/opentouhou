@@ -24,9 +24,6 @@ extern STAGE_TIMER g_StageTimer;
 typedef struct {
     HUD *hud;
     const HUD_CONTEXT *display;
-    PELLETS *pellets;
-    PELLET_SHARED *shared;
-    uint32_t *rng;
     void (*effect)(void *user, int16_t number);
     void *user;
 } TIMER_CONTEXT;

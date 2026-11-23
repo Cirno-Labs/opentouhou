@@ -77,21 +77,20 @@ void BossEntity_SetOrbHitbox(
     };
 }
 
-bool BossEntity_HitTestOrb(
-    const BOSS_ENTITY *const entity, const ORB *const orb)
+bool BossEntity_HitTestOrb(const BOSS_ENTITY *const entity)
 {
     return !entity->orb_inactive
         && Math16_Wrap(
                entity->orb_hitbox.left + entity->left - ORB_HITBOX_MAX_X)
-        <= orb->previous_left
+        <= g_Orb.previous_left
         && Math16_Wrap(
                entity->orb_hitbox.right + entity->left - ORB_HITBOX_MIN_X)
-        >= orb->previous_left
+        >= g_Orb.previous_left
         && Math16_Wrap(entity->top + entity->orb_hitbox.top - ORB_HITBOX_MAX_Y)
-        <= orb->previous_top
+        <= g_Orb.previous_top
         && Math16_Wrap(
                entity->top + entity->orb_hitbox.bottom - ORB_HITBOX_MIN_Y)
-        >= orb->previous_top;
+        >= g_Orb.previous_top;
 }
 
 void BossEntity_Move(

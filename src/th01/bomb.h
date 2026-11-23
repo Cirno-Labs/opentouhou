@@ -22,7 +22,6 @@ typedef struct {
 
 typedef struct {
     PALETTE_STATE *palette;
-    PLAYER *player;
     const PTN *miko;
     const BOMB_ASSETS *assets;
     const PALETTE *stage_palette;
@@ -56,5 +55,4 @@ BOMB_UPDATE Bomb_BeginUpdate(
 // Resume only after WAIT. Repeated polling before the next edge has no
 // side effects. Scroll changes the display origin, not page pixels.
 BOMB_UPDATE Bomb_ResumeUpdate(BOMB *bomb, const BOMB_CONTEXT *context);
-bool Bomb_DealsDamage(
-    const PLAYER *player, int16_t remaining_lives, uint32_t frame);
+bool Bomb_DealsDamage(int16_t remaining_lives, uint32_t frame);

@@ -1,4 +1,5 @@
 #include "th01/boss_b05.h"
+#include "th01/rng.h"
 
 #include "th01/boss.h"
 #include "pc98/zun/math16.h"
@@ -95,14 +96,14 @@ static void M_Add(
     const int16_t motion_speed)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, (int32_t)c->hit->display->rank, left, top,
-        angle, speed, motion, motion_speed, 0, 0);
+        (int32_t)c->hit->display->rank, left, top, angle, speed, motion,
+        motion_speed, 0, 0);
 }
 
 static void M_Half(const B05_CONTEXT *const c)
 {
     if (g_B05.frame == 10) {
-        g_B05.direction = MasterRng_Next(c->rng) % 2 == 1 ? 1 : -1;
+        g_B05.direction = MasterRng_Next(&g_Rng) % 2 == 1 ? 1 : -1;
     }
     if (g_B05.frame < 100) {
         M_Accelerate(c, g_B05.direction);
@@ -134,7 +135,7 @@ static void M_Slam(const B05_CONTEXT *const c)
         M_Accelerate(c, 1);
         return;
     }
-    const PLAYER *const player = c->hit->display->player;
+    const PLAYER *const player = &g_Player;
     if (g_B05.frame == 100) {
         g_B05.pattern_state = Boss_Rank(4, 4, 5, 6);
         const uint8_t angle = Math16_Angle(
@@ -160,7 +161,7 @@ static void M_Slam(const B05_CONTEXT *const c)
     if (!player->invincible && g_B05.sphere.left <= player->left
         && Math16_Wrap(g_B05.sphere.left + 64) >= player->left
         && g_B05.sphere.top >= 272) {
-        c->hit->display->player->is_hit = true;
+        g_Player.is_hit = true;
     }
 }
 
@@ -173,14 +174,14 @@ static void M_FireMan(const B05_CONTEXT *const c, const B05_FIRE fire)
                                                 : Boss_Rank(48, 64, 80, 96);
     for (int32_t i = 0; i < 10; i++) {
         if (fire == B05_FIRE_DOWN) {
-            const uint8_t angle = (uint8_t)(MasterRng_Next(c->rng) % 128);
+            const uint8_t angle = (uint8_t)(MasterRng_Next(&g_Rng) % 128);
             M_Add(
                 c, Math16_Wrap(g_B05.sphere.left + 44),
                 Math16_Wrap(g_B05.sphere.top + 44), angle, g_B05.pattern_state,
                 PELLET_REGULAR, 0);
         } else {
-            const int16_t dx = (int16_t)(MasterRng_Next(c->rng) % 96);
-            const int16_t dy = (int16_t)(MasterRng_Next(c->rng) % 96);
+            const int16_t dx = (int16_t)(MasterRng_Next(&g_Rng) % 96);
+            const int16_t dy = (int16_t)(MasterRng_Next(&g_Rng) % 96);
             M_Add(
                 c, Math16_Wrap(g_B05.sphere.left + dx),
                 Math16_Wrap(g_B05.sphere.top + dy), 0, 0, PELLET_SLING_AIMED,
@@ -311,7 +312,6 @@ static bool M_Death(const B05_CONTEXT *const c, const TH01_INPUT *const raw)
             .palette = c->hit->palette,
             .post_defeat = &g_B05.post_defeat,
             .miko = c->miko,
-            .player = c->hit->display->player,
             .origin_top = &g_B05.sphere.top,
             .stage_cleared = c->route->stage_cleared,
         };
@@ -458,14 +458,14 @@ bool B05_UpdateAndRender(
             }
             if (g_B05.frame == 0) {
                 g_B05.pattern = g_B05.pattern == 4
-                    ? (int16_t)(MasterRng_Next(c->rng) % 4)
+                    ? (int16_t)(MasterRng_Next(&g_Rng) % 4)
                     : 4;
             }
         }
         const uint8_t flash[] = { 13 };
         BossHit_UpdateAndRender(
             &g_B05.hit, c->hit, &g_B05.hp, &g_B05.boss_palette, flash, 1, 3000,
-            BossEntity_HitTestOrb(&g_B05.sphere, c->hit->orb),
+            BossEntity_HitTestOrb(&g_B05.sphere),
             (BOSS_SHOT_HITBOX) {
                 Math16_Wrap(g_B05.sphere.left + 16),
                 Math16_Wrap(g_B05.sphere.top + 32),
@@ -488,7 +488,7 @@ bool B05_UpdateAndRender(
             &g_B05.sphere, g_B05.sphere.left, g_B05.sphere.top,
             g_B05.sphere.image);
         c->fade_music(c->hit->user);
-        Pellets_EraseAndResetMoving(c->pellets);
+        Pellets_EraseAndResetMoving();
         BossDefeat_Begin(&g_B05.defeat, BOSS_DEFEAT_SINGYOKU);
         g_B05.pending = B05_DEFEAT;
         return M_Death(c, raw);

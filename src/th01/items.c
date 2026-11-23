@@ -30,7 +30,7 @@ static void M_Text(
 static void M_Collect(
     ITEM *const item, const ITEM_CONTEXT *const context, const bool bomb)
 {
-    const int32_t delta = item->left - context->player->left;
+    const int32_t delta = item->left - g_Player.left;
     if (!M_Visible(item) || delta <= -24 || delta >= 24 || item->top <= 344) {
         return;
     }
@@ -40,9 +40,9 @@ static void M_Collect(
     if (item->top >= 368) {
         item->top = 368;
     }
-    if (bomb && context->player->remaining_bombs < 5) {
-        context->player->remaining_bombs++;
-        context->hud_bomb(context->user, context->player->remaining_bombs - 1);
+    if (bomb && g_Player.remaining_bombs < 5) {
+        g_Player.remaining_bombs++;
+        context->hud_bomb(context->user, g_Player.remaining_bombs - 1);
         item->flag = ITEM_COLLECTED;
     } else {
         if (bomb) {

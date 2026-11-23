@@ -1,4 +1,5 @@
 #include "th01/boss_b15m.h"
+#include "th01/rng.h"
 
 #include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
@@ -122,14 +123,14 @@ void B15M_Setup(const B15M_CONTEXT *const c)
     g_B15M.finished = false;
     c->hit->health->first_white = 10;
     c->hit->health->first_redwhite = 6;
-    *c->rng = c->hit->frame_rand;
-    c->pellets->interlace = true;
+    g_Rng = c->hit->frame_rand;
+    g_Pellets.interlace = true;
     Particles_Init(c->particles);
 }
 
 static uint16_t M_Random(const B15M_CONTEXT *const c)
 {
-    return MasterRng_Next(c->rng);
+    return MasterRng_Next(&g_Rng);
 }
 static int16_t M_CenterX(const int16_t form)
 {
@@ -332,9 +333,7 @@ static void M_Group(
     const B15M_CONTEXT *const c, const int16_t x, const int16_t y,
     const PELLET_GROUP group, const int16_t speed)
 {
-    Pellets_AddGroup(
-        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
-        c->hit->display->rank, x, y, group, speed);
+    Pellets_AddGroup(c->hit->display->rank, x, y, group, speed);
 }
 static void M_FormGroup(
     const B15M_CONTEXT *const c, const int16_t form, const PELLET_GROUP group,
@@ -350,8 +349,7 @@ static void M_Single(
     const int16_t ms)
 {
     Pellets_AddSingle(
-        c->pellets, c->pellet_shared, c->hit->display->rank, x, y, angle, speed,
-        motion, ms, 0, 0);
+        c->hit->display->rank, x, y, angle, speed, motion, ms, 0, 0);
 }
 static void M_Laser(
     const B15M_CONTEXT *const c, const int16_t slot, const int16_t x,
@@ -381,7 +379,7 @@ static void M_Hit(const B15M_CONTEXT *const c, const int16_t form)
         : (BOSS_SHOT_HITBOX) { g_B15M.bat.left, g_B15M.bat.left, 32, 32 };
     BossHit_UpdateAndRender(
         &g_B15M.hit, c->hit, &g_B15M.hp, &g_B15M.boss_palette, colors, 4, 7000,
-        BossEntity_HitTestOrb(e, c->hit->orb), box);
+        BossEntity_HitTestOrb(e), box);
 }
 static void M_Next(const int8_t phase, const int16_t pattern)
 {
@@ -1366,8 +1364,7 @@ static bool M_Death(const B15M_CONTEXT *const c)
     const BOSS_DEFEAT_CONTEXT context = { .palette = c->hit->palette,
                                           .post_defeat = &g_B15M.post_defeat,
                                           .miko = c->miko,
-                                          .player = Boss_Player(c->hit),
-                                          .origin_top = &c->hit->orb->top,
+                                          .origin_top = &g_Orb.top,
                                           .stage_cleared = c->stage_cleared };
     if (!BossDefeat_Resume(&g_B15M.defeat, &context)) {
         return false;
@@ -1383,7 +1380,7 @@ static bool M_Tail(const B15M_CONTEXT *const c)
         M_Hit(c, g_B15M.form);
         if (g_B15M.hp <= 0) {
             c->fade_music(c->hit->user);
-            Pellets_EraseAndResetMoving(c->pellets);
+            Pellets_EraseAndResetMoving();
             M_Background(c);
             Missiles_Reset(c->missiles);
             ShootoutLasers_EraseAndReset(c->lasers, 10);
@@ -1436,7 +1433,7 @@ bool B15M_UpdateAndRender(const B15M_CONTEXT *const c, const uint64_t host_tick)
     }
     g_B15M.call_phase = g_B15M.phase;
     Missiles_UpdateAndRender(
-        c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
+        c->missiles, (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (g_B15M.phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(c);

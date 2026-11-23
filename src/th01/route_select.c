@@ -132,7 +132,7 @@ bool RouteSelect_Resume(
             break;
         case ROUTE_SELECT_CHOOSE: {
             if (GameInput_SenseGame(raw, false)) {
-                c->player->is_hit = true;
+                g_Player.is_hit = true;
             }
             if ((g_GameInput.up && !selection->holding_up)
                 || (g_GameInput.down && !selection->holding_down)) {
@@ -154,7 +154,7 @@ bool RouteSelect_Resume(
                                               : c->assets->jigoku);
                 *c->route = selection->selection;
                 *c->stage_cleared = true;
-                c->player->is_hit = true;
+                g_Player.is_hit = true;
                 selection->phase = ROUTE_SELECT_DONE;
                 return true;
             }
