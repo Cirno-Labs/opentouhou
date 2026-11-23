@@ -78,9 +78,7 @@ static PLAYER_ELEMS m_Elems;
 
 static bool M_KeepsSprites(void)
 {
-    const SCENE scene = Scene_GetRequested();
-    return scene == SCENE_NEXT_STAGE || scene == SCENE_RESTART_STAGE
-        || scene == SCENE_NEXT_STAGE_AGAIN;
+    return Scene_GetRequested() == SCENE_NEXT_STAGE;
 }
 
 static bool M_IsSakuyaB(void)

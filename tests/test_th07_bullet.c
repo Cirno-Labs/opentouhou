@@ -377,8 +377,6 @@ TEST(the_stage_scenes_keep_the_bullet_sprites)
 {
     static const SCENE scenes[] = {
         SCENE_NEXT_STAGE,
-        SCENE_RESTART_STAGE,
-        SCENE_NEXT_STAGE_AGAIN,
     };
     M_Setup("kept_sprites");
     char *const path = TestDir_Join(m_Directory, "data/etama.anm");

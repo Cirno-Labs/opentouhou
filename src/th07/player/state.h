@@ -240,7 +240,7 @@ extern PLAYER g_Player;
 // 6 and 8), and resets g_Player. Adding loads both shot types of
 // g_GameManager.run.shot_index, and fails when one does not load. It loads
 // the sprites of the character, except in SCENE_NEXT_STAGE,
-// SCENE_RESTART_STAGE and SCENE_NEXT_STAGE_AGAIN, which keep them. It then
+// which keeps them. It then
 // places the player at the bottom of the play area, respawning, which
 // starts the Border when the cherry plus is full.
 RESULT Player_Register(void);

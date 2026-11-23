@@ -17,12 +17,6 @@ typedef enum {
     // Starts the game again: from stage 1, or from the stage being played
     // in a practice and in Extra and Phantasm.
     SCENE_RETRY,
-    // Plays the stage being played again. Nothing in the original requests
-    // it.
-    SCENE_RESTART_STAGE,
-    // Goes on to the next stage as SCENE_NEXT_STAGE does. Nothing in the
-    // original requests it.
-    SCENE_NEXT_STAGE_AGAIN,
 } SCENE;
 
 // Adds the element that runs first in every calc: it updates g_Buttons
