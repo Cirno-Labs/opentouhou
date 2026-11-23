@@ -101,31 +101,31 @@ void Gameplay_SyncSession(GAMEPLAY *const g)
 void Gameplay_BossSetup(GAMEPLAY *const g)
 {
     switch (g->world.boss) {
-    case BOSS_B05:
+    case BOSS_SINGYOKU:
         B05_Setup(&g->bindings.c05);
         break;
-    case BOSS_B10M:
+    case BOSS_YUUGENMAGAN:
         B10M_Setup(&g->bindings.c10m);
         break;
-    case BOSS_B10J:
+    case BOSS_MIMA:
         B10J_BeginSetup(&g->bindings.c10j);
         break;
-    case BOSS_B15J:
+    case BOSS_KIKURI:
         B15J_Setup(&g->bindings.c15j);
         break;
-    case BOSS_B15M:
+    case BOSS_ELIS:
         B15M_Setup(&g->bindings.c15m);
         break;
-    case BOSS_B20M:
+    case BOSS_SARIEL:
         B20M_Setup(&g->bindings.c20m);
         break;
-    case BOSS_B20J:
+    case BOSS_KONNGARA:
         B20J_Setup(&g->bindings.c20j);
         break;
     default:
         break;
     }
-    if (g->world.boss != BOSS_NONE && g->world.boss != BOSS_B10J) {
+    if (g->world.boss != BOSS_NONE && g->world.boss != BOSS_MIMA) {
         Gameplay_HookBossHp(g);
     }
 }
@@ -136,10 +136,10 @@ void Gameplay_HookBossHp(GAMEPLAY *const g)
         return;
     }
     int16_t *const hp[] = {
-        [BOSS_NONE] = nullptr,    [BOSS_B05] = &g_B05.hp,
-        [BOSS_B10M] = &g_B10M.hp, [BOSS_B10J] = &g_B10J.hp,
-        [BOSS_B15J] = &g_B15J.hp, [BOSS_B15M] = &g_B15M.hp,
-        [BOSS_B20M] = &g_B20M.hp, [BOSS_B20J] = &g_B20J.hp,
+        [BOSS_NONE] = nullptr,           [BOSS_SINGYOKU] = &g_B05.hp,
+        [BOSS_YUUGENMAGAN] = &g_B10M.hp, [BOSS_MIMA] = &g_B10J.hp,
+        [BOSS_KIKURI] = &g_B15J.hp,      [BOSS_ELIS] = &g_B15M.hp,
+        [BOSS_SARIEL] = &g_B20M.hp,      [BOSS_KONNGARA] = &g_B20J.hp,
     };
     g_Th01Hooks.on_boss(g_Th01Hooks.arg, hp[g->world.boss]);
 }
@@ -147,19 +147,19 @@ void Gameplay_HookBossHp(GAMEPLAY *const g)
 bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
     switch (g->world.boss) {
-    case BOSS_B05:
+    case BOSS_SINGYOKU:
         return B05_UpdateAndRender(&g->bindings.c05, raw);
-    case BOSS_B10M:
+    case BOSS_YUUGENMAGAN:
         return B10M_UpdateAndRender(&g->bindings.c10m);
-    case BOSS_B10J:
+    case BOSS_MIMA:
         return B10J_UpdateAndRender(&g->bindings.c10j);
-    case BOSS_B15J:
+    case BOSS_KIKURI:
         return B15J_UpdateAndRender(&g->bindings.c15j);
-    case BOSS_B15M:
+    case BOSS_ELIS:
         return B15M_UpdateAndRender(&g->bindings.c15m, g->storage.host_tick);
-    case BOSS_B20M:
+    case BOSS_SARIEL:
         return B20M_UpdateAndRender(&g->bindings.c20m, g->storage.host_tick);
-    case BOSS_B20J:
+    case BOSS_KONNGARA:
         return B20J_UpdateAndRender(&g->bindings.c20j);
     default:
         return true;

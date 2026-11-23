@@ -56,19 +56,19 @@ static void M_StageBackground(GAMEPLAY *const g)
     const GAMEPLAY_ASSETS *const a = g->storage.assets;
     const PI_IMAGE *background = &a->backgrounds[Session_Scene()];
     switch (g->world.boss) {
-    case BOSS_B05:
+    case BOSS_SINGYOKU:
         background = &a->b05.background;
         break;
-    case BOSS_B10M:
+    case BOSS_YUUGENMAGAN:
         background = &a->b10m.background;
         break;
-    case BOSS_B10J:
+    case BOSS_MIMA:
         background = &a->b10j.background;
         break;
-    case BOSS_B15J:
+    case BOSS_KIKURI:
         background = &a->b15j.background;
         break;
-    case BOSS_B15M:
+    case BOSS_ELIS:
         background = &a->b15m.background;
         break;
     default:
@@ -97,11 +97,11 @@ static void M_StageBegin(GAMEPLAY *const g)
     Shots_EraseAndReset(&g->world.shots, g->bindings.shots_output);
     const int16_t stage = g_Session.stage_id;
     g->world.boss_stage = stage % 5 == 4;
-    g->world.boss = stage == 4 ? BOSS_B05
-        : stage == 9           ? (g_Session.route == 0 ? BOSS_B10M : BOSS_B10J)
-        : stage == 14          ? (g_Session.route == 0 ? BOSS_B15M : BOSS_B15J)
-        : stage == 19          ? (g_Session.route == 0 ? BOSS_B20M : BOSS_B20J)
-                               : BOSS_NONE;
+    g->world.boss = stage == 4 ? BOSS_SINGYOKU
+        : stage == 9  ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
+        : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
+        : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
+                      : BOSS_NONE;
     Gameplay_Bind(g);
     g->world.player.invincible = false;
     g->world.player.invincibility_time = 0;
@@ -111,12 +111,12 @@ static void M_StageBegin(GAMEPLAY *const g)
         g->world.first_stage = true;
         Items_Reset(&g->world.items);
     }
-    if (g->world.boss == BOSS_B10J) {
+    if (g->world.boss == BOSS_MIMA) {
         g->world.phase = GP_B10J_SETUP;
-    } else if (g->world.boss == BOSS_B20M) {
+    } else if (g->world.boss == BOSS_SARIEL) {
         B20M_BeginEntrance(&g->bindings.c20m);
         g->world.phase = GP_FINAL_ENTRANCE;
-    } else if (g->world.boss == BOSS_B20J) {
+    } else if (g->world.boss == BOSS_KONNGARA) {
         B20J_BeginEntrance(&g->bindings.c20j);
         g->world.phase = GP_FINAL_ENTRANCE;
     } else {
@@ -154,12 +154,13 @@ static void M_LifeBegin(GAMEPLAY *const g, const TH01_INPUT *const raw)
     Hud_ScoreAndCombo(&g->world.hud, &g->bindings.display);
     g_GameInput.bomb_frame = 60;
     Stage_UpdateObstacles(&g->bindings.stage, true);
-    if (!g->world.bgm_started && g->world.boss < BOSS_B20M) {
-        const size_t song = g->world.boss == BOSS_B05                  ? 7
-            : g->world.boss == BOSS_B10M || g->world.boss == BOSS_B10J ? 8
-            : g->world.boss == BOSS_B15J                               ? 9
-            : g->world.boss == BOSS_B15M                               ? 10
-                                         : Session_Scene();
+    if (!g->world.bgm_started && g->world.boss < BOSS_SARIEL) {
+        const size_t song = g->world.boss == BOSS_SINGYOKU ? 7
+            : g->world.boss == BOSS_YUUGENMAGAN || g->world.boss == BOSS_MIMA
+            ? 8
+            : g->world.boss == BOSS_KIKURI ? 9
+            : g->world.boss == BOSS_ELIS   ? 10
+                                           : Session_Scene();
         Gameplay_Play(g, song);
         g->world.bgm_started = true;
     }
@@ -167,10 +168,10 @@ static void M_LifeBegin(GAMEPLAY *const g, const TH01_INPUT *const raw)
     if (g->world.player.invincibility_time > 1) {
         g->world.player.invincible = true;
     }
-    if (g->world.boss == BOSS_B05 || g->world.boss == BOSS_B10J) {
+    if (g->world.boss == BOSS_SINGYOKU || g->world.boss == BOSS_MIMA) {
         g->world.phase = GP_LIFE_BOSS;
     } else {
-        if (g->world.boss == BOSS_B15J) {
+        if (g->world.boss == BOSS_KIKURI) {
             g_GameInput.strike = false;
         }
         g->world.phase = GP_WAIT_SHOT;
@@ -456,12 +457,12 @@ static GAMEPLAY_REQUEST M_Run(
             M_StageBackground(g);
             break;
         case GP_FINAL_ENTRANCE:
-            if (g->world.boss == BOSS_B20M
+            if (g->world.boss == BOSS_SARIEL
                     ? !B20M_ResumeEntrance(&g->bindings.c20m, host_tick)
                     : !B20J_ResumeEntrance(&g->bindings.c20j)) {
                 return g->world.request;
             }
-            g->world.stage_palette = g->world.boss == BOSS_B20J
+            g->world.stage_palette = g->world.boss == BOSS_KONNGARA
                 ? g_B20J.stage_palette
                 : g_B20M.stage_palette;
             M_StageReady(g);
@@ -480,7 +481,7 @@ static GAMEPLAY_REQUEST M_Run(
                     PLAYER_TOP);
                 Items_Render(&g->world.items, g->bindings.stage.sprites);
             }
-            if (g->world.boss == BOSS_B15J) {
+            if (g->world.boss == BOSS_KIKURI) {
                 Video_Clear(0);
             }
             g->world.animation_frame = 0;
