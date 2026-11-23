@@ -60,13 +60,15 @@ static int32_t M_WordsRead(const int16_t opcode)
 
 static bool M_IsJump(const int16_t opcode)
 {
-    return opcode == 2 || opcode == 3 || (opcode >= 28 && opcode <= 39);
+    return opcode == ECL_OP_JUMP || opcode == ECL_OP_LOOP
+        || (opcode >= ECL_OP_JUMP_EQUAL_INT
+            && opcode <= ECL_OP_JUMP_GREATER_EQUAL_FLOAT);
 }
 
 // Returns the word that holds the byte offset of a jump.
 static int32_t M_JumpWord(const int16_t opcode)
 {
-    return opcode <= 3 ? 1 : 3;
+    return opcode <= ECL_OP_LOOP ? 1 : 3;
 }
 
 static void M_FreeSubs(void)
@@ -133,7 +135,7 @@ static RESULT M_ReadInstr(READER *const reader, ECL_INSTR *const instr)
     for (int32_t i = 0; i < MIN(words, (int32_t)ECL_ARG_COUNT); i++) {
         instr->args[i].i = Reader_ReadI32(reader);
     }
-    if (instr->opcode == 90) {
+    if (instr->opcode == ECL_OP_START_SPELL_CARD) {
         MUST(M_ReadName(reader, start, instr));
     }
     Reader_Seek(reader, start + (size_t)size);
@@ -208,36 +210,36 @@ static RESULT M_CheckInstr(const ECL_INSTR *const instr)
 {
     const int32_t arg0 = instr->args[0].i;
     switch (instr->opcode) {
-    case 41:
-    case 92:
-    case 93:
+    case ECL_OP_CALL:
+    case ECL_OP_SPAWN:
+    case ECL_OP_SPAWN_RELATIVE:
         FAIL_IF(!Ecl_IsSub(arg0), "it names subroutine %d", arg0);
         break;
-    case 108:
-    case 113:
-    case 115:
+    case ECL_OP_SET_INTERRUPT:
+    case ECL_OP_SET_LIFE_CALLBACK_SUB:
+    case ECL_OP_SET_TIME_CALLBACK_SUB:
         FAIL_IF(M_NamesNoSub(instr, 0, true), "it names subroutine %d", arg0);
         break;
-    case 144:
+    case ECL_OP_SET_PERIODIC_CALL:
         FAIL_IF(
             M_NamesNoSub(instr, 1, true), "it names subroutine %d",
             instr->args[1].i);
         break;
-    case 148:
+    case ECL_OP_SET_LIFE_CALLBACK_AT:
         FAIL_IF(
             M_NamesNoSub(instr, 2, true), "it names subroutine %d",
             instr->args[2].i);
         break;
-    case 121:
-    case 122:
+    case ECL_OP_CALL_FUNC:
+    case ECL_OP_SET_FRAME_FUNC:
         // A negative function of opcode 122 clears the frame function.
         FAIL_IF(
             M_IsConstant(instr, 0)
                 && (arg0 >= ECL_FUNC_COUNT
-                    || (arg0 < 0 && instr->opcode == 121)),
+                    || (arg0 < 0 && instr->opcode == ECL_OP_CALL_FUNC)),
             "it names pattern function %d", arg0);
         break;
-    case 27:
+    case ECL_OP_INTERPOLATE:
         FAIL_IF(
             M_IsConstant(instr, 2)
                 && (instr->args[2].i < 0 || instr->args[2].i > 7),
