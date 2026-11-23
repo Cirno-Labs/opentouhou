@@ -16,7 +16,6 @@ typedef struct {
     B10J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    bool cleared;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -89,7 +88,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     Hud_Load(nullptr, &f->stage, &f->font);
     f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
-    f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -319,7 +317,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
         B10J_UpdateAndRender(&f.context);
     }
     CHECK(g_B10J.finished);
-    CHECK(f.cleared);
+    CHECK(g_Stage.cleared);
     CHECK(g_Player.is_hit);
     CHECK(g_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(g_Scene.active->id, 4);
@@ -430,7 +428,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     for (int32_t i = 0; i < 10; i++) {
         CHECK(g_ShootoutLasers.slots[i].alive == (i >= 5));
     }
-    CHECK(!f.cleared);
+    CHECK(!g_Stage.cleared);
     CHECK(g_Scene.active == nullptr);
     Arena_Free(&arena);
 }

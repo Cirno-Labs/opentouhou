@@ -27,8 +27,6 @@ typedef struct {
 
 typedef struct {
     const ROUTE_SELECT_ASSETS *assets;
-    uint8_t *route;
-    bool *stage_cleared;
 } ROUTE_SELECT_CONTEXT;
 
 // Caches the five route labels from rom. Glyphs belong to allocator. Load

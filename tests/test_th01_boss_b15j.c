@@ -19,7 +19,6 @@ typedef struct {
     B15J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    bool cleared;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -86,7 +85,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     Hud_Load(nullptr, &f->stage, &f->font);
     f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
-    f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -332,7 +330,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK(g_B15J.finished);
     CHECK_EQ_INT(g_B15J.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 98000);
-    CHECK(f.cleared);
+    CHECK(g_Stage.cleared);
     CHECK(g_Player.is_hit);
     CHECK(g_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(g_Scene.active->id, 6);

@@ -29,7 +29,6 @@ typedef struct {
     const PALETTE *post_defeat;
     const PTN *miko;
     const int16_t *origin_top;
-    bool *stage_cleared;
 } BOSS_DEFEAT_CONTEXT;
 
 RESULT BossDefeat_ValidateSprites(const PTN *miko);

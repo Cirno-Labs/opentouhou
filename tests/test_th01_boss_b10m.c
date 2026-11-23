@@ -20,7 +20,6 @@ typedef struct {
     B10M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    bool cleared;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -91,7 +90,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     Hud_Load(nullptr, &f->stage, &f->font);
     f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
-    f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -334,7 +332,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         Frame_Reset();
         CHECK(!B10M_UpdateAndRender(&f.context));
         CHECK(g_B10M.defeating);
-        CHECK(!f.cleared);
+        CHECK(!g_Stage.cleared);
         CHECK(g_Scene.active == nullptr);
         CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(
@@ -352,7 +350,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
             B10M_UpdateAndRender(&f.context);
         }
         CHECK(g_B10M.finished);
-        CHECK(f.cleared);
+        CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
         CHECK(g_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(g_Scene.active->id, 3);

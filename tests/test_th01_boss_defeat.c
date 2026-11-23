@@ -14,7 +14,6 @@ typedef struct {
     PALETTE target;
     PTN miko;
     int16_t origin;
-    bool cleared;
     BOSS_DEFEAT_CONTEXT context;
 } FIXTURE;
 
@@ -34,8 +33,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena, const int8_t target)
     g_Player.mode_frame = 9;
     g_Player.bomb_frame = 123;
     f->origin = 64;
-    f->context =
-        (BOSS_DEFEAT_CONTEXT) { &f->target, &f->miko, &f->origin, &f->cleared };
+    f->context = (BOSS_DEFEAT_CONTEXT) { &f->target, &f->miko, &f->origin };
 }
 
 static void M_ReachWhitein(BOSS_DEFEAT *const defeat, FIXTURE *const f)
@@ -84,7 +82,7 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     const BOSS_DEFEAT waiting = defeat;
     CHECK(!BossDefeat_Resume(&defeat, &f.context));
     CHECK(memcmp(&waiting, &defeat, sizeof(waiting)) == 0);
-    CHECK(!f.cleared && !g_Player.is_hit);
+    CHECK(!g_Stage.cleared && !g_Player.is_hit);
     Arena_Free(&arena);
 }
 
@@ -111,12 +109,12 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
         CHECK(!BossDefeat_Resume(&defeat, &f.context));
         CHECK_EQ_INT(defeat.frame, frame);
         CHECK_EQ_INT(g_Palette.saved.colors[0][0], frame >= 5 ? 14 : 15);
-        CHECK(!f.cleared && !g_Player.is_hit);
+        CHECK(!g_Stage.cleared && !g_Player.is_hit);
     }
     Frame_VSync();
     CHECK(BossDefeat_Resume(&defeat, &f.context));
     CHECK_EQ_INT(defeat.frame, 10);
-    CHECK(f.cleared && g_Player.is_hit);
+    CHECK(g_Stage.cleared && g_Player.is_hit);
     const FRAME_VSYNC finished = g_VSync;
     CHECK(BossDefeat_Resume(&defeat, &f.context));
     CHECK(memcmp(&finished, &g_VSync, sizeof(g_VSync)) == 0);
@@ -142,7 +140,7 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
     for (int32_t frame = 2; frame <= 15; frame++) {
         Frame_VSync();
         CHECK_EQ_INT(BossDefeat_Resume(&defeat, &f.context), frame == 15);
-        CHECK(!f.cleared && !g_Player.is_hit);
+        CHECK(!g_Stage.cleared && !g_Player.is_hit);
     }
     CHECK_EQ_INT(defeat.phase, BOSS_DEFEAT_DONE);
     Arena_Free(&arena);

@@ -18,7 +18,6 @@ typedef struct {
     B15M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    bool cleared;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -174,7 +173,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     Hud_Load(nullptr, &f->stage, &f->font);
     f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
-    f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -385,7 +383,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK(g_B15M.finished);
         CHECK_EQ_INT(g_B15M.hp, 0);
         CHECK_EQ_INT(g_Stage.score, 98000);
-        CHECK(f.cleared);
+        CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
         CHECK(g_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(g_Scene.active->id, 5);
@@ -434,7 +432,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(!B15M_UpdateAndRender(&f.context, 100));
     CHECK_EQ_INT(g_B15M.pending, B15M_PENDING_SAFETY);
     CHECK(!g_Player.is_hit);
-    CHECK(!f.cleared);
+    CHECK(!g_Stage.cleared);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
     CHECK(!B15M_UpdateAndRender(&f.context, 105));
     CHECK(!g_Player.is_hit);
@@ -442,7 +440,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(g_B15M.defeating);
     CHECK_EQ_INT(g_B15M.hp, 0);
     CHECK(g_Player.is_hit);
-    CHECK(!f.cleared);
+    CHECK(!g_Stage.cleared);
     CHECK(g_Scene.active == nullptr);
     CHECK_EQ_INT(g_Stage.score, 7000);
     CHECK_EQ_INT(g_Rng, rng);
@@ -458,7 +456,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     uint64_t tick = 106;
     M_Run(&f, &tick);
     CHECK(g_B15M.finished);
-    CHECK(f.cleared);
+    CHECK(g_Stage.cleared);
     CHECK(g_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Rng, rng);

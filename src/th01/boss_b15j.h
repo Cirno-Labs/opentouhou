@@ -47,7 +47,6 @@ typedef struct {
     const B15J_ASSETS *assets;
     SHOTS_OUTPUT shots_output;
     const PTN *miko;
-    bool *stage_cleared;
 } B15J_CONTEXT;
 
 // Loads TAMASII.BOS, TAMASII2.BOS, TAMAYEN.PTN, BOSS4.GRP and scene 6

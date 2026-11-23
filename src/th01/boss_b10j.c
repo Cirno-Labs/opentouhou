@@ -786,8 +786,7 @@ static bool M_Death(const B10J_CONTEXT *const c)
 {
     const BOSS_DEFEAT_CONTEXT defeat = { .post_defeat = &g_B10J.post_defeat,
                                          .miko = c->miko,
-                                         .origin_top = &g_Orb.top,
-                                         .stage_cleared = c->stage_cleared };
+                                         .origin_top = &g_Orb.top };
     if (!BossDefeat_Resume(&g_B10J.defeat, &defeat)) {
         return false;
     }
