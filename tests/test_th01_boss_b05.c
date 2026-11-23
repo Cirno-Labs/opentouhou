@@ -191,7 +191,7 @@ static void M_Enter(B05 *const b, FIXTURE *const f)
         Frame_VSync();
         CHECK_EQ_INT(B05_UpdateAndRender(b, &f->context, &raw), frame == 199);
     }
-    CHECK_EQ_INT(b->phase, 1);
+    CHECK_EQ_INT(b->phase, B05_PHASE_SPHERE);
     CHECK_EQ_INT(b->frame, 0);
 }
 
@@ -233,7 +233,7 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(boss.sphere.previous_left, 17);
     CHECK_EQ_INT(boss.sphere.lock_frame, 2);
     CHECK_EQ_INT(boss.person.image, 5);
-    CHECK_EQ_INT(boss.phase, 0);
+    CHECK_EQ_INT(boss.phase, B05_PHASE_START);
     CHECK_EQ_INT(boss.hp, 8);
     CHECK_EQ_INT(boss.frame, 77);
     CHECK_EQ_INT(boss.hit.frame, 23);
@@ -300,7 +300,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
             CHECK_EQ_INT(
                 B05_UpdateAndRender(&b, &f.context, &raw), edge == 199 - reuse);
         }
-        CHECK_EQ_INT(b.phase, 1);
+        CHECK_EQ_INT(b.phase, B05_PHASE_SPHERE);
         CHECK_EQ_INT(b.pattern, 0);
         CHECK_EQ_INT(b.frame, 0);
         CHECK_EQ_INT(b.hit.frame, 0);
@@ -330,17 +330,18 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         const size_t used = arena.used;
         const TH01_INPUT raw = {};
         bool phase_two = false;
-        for (int32_t step = 1; step <= 2400 && b.phase != 8; step++) {
+        for (int32_t step = 1; step <= 2400 && b.phase != B05_PHASE_DEFEATED;
+             step++) {
             const bool hit =
                 step == 20 || step == 70 || (step >= 1620 && step % 50 == 20);
             f.orb.previous_left = hit ? (int16_t)(b.sphere.left + 32) : 0;
             f.orb.previous_top = hit ? (int16_t)(b.sphere.top + 32) : 64;
             f.hit_context.frame_rand = (uint32_t)step;
             CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
-            phase_two |= b.phase == 2;
+            phase_two |= b.phase == B05_PHASE_TRANSFORMS;
         }
         CHECK(phase_two);
-        CHECK_EQ_INT(b.phase, 8);
+        CHECK_EQ_INT(b.phase, B05_PHASE_DEFEATED);
         CHECK_EQ_INT(b.hp, 0);
         CHECK_EQ_INT(f.gameplay.score, 24000);
         CHECK_EQ_INT(f.effects[3], 8);
@@ -400,7 +401,7 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     M_Battle(&f, &arena);
     B05 b = {};
     B05_Setup(&b, &f.context);
-    b.phase = 2;
+    b.phase = B05_PHASE_TRANSFORMS;
     b.sphere.left = 272;
     b.sphere.top = 96;
     b.pattern = 1;

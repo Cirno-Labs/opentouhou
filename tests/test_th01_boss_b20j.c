@@ -60,7 +60,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     B20J_Setup(&b, &c);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(b.hp, 18);
-    CHECK_EQ_INT(b.phase, 0);
+    CHECK_EQ_INT(b.phase, B20J_PHASE_START);
     CHECK_EQ_INT(b.face_direction, 2);
     CHECK_EQ_INT(b.face_expression, 0);
     CHECK(b.direction_can_change);
@@ -263,7 +263,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             M_Fixture(&f, &arena);
             f.display.rank = rank;
             g_Session.settings.difficulty = rank;
-            f.boss.phase = 7;
+            f.boss.phase = B20J_PHASE_FINAL;
             f.boss.pattern = pattern;
             f.boss.frame = 0;
             f.boss.hit.frame = 0;
@@ -297,7 +297,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     Arena_Init(&arena, "Konngara defeat", 2 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    f.boss.phase = 7;
+    f.boss.phase = B20J_PHASE_FINAL;
     f.boss.pattern = 99;
     f.boss.frame = 0;
     f.boss.hp = 0;
@@ -346,7 +346,7 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     M_Fixture(&f, &arena);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     f.boss.entrance_active = true;
-    f.boss.entrance_stage = 8;
+    f.boss.entrance_stage = B20J_ENTRANCE_PAN_STEP;
     f.boss.scroll_line = 400;
     Frame_Reset();
     CHECK(!B20J_ResumeEntrance(&f.boss, &f.context));
@@ -368,7 +368,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         Arena_Reset(&arena);
         FIXTURE f;
         M_Fixture(&f, &arena);
-        f.boss.phase = 7;
+        f.boss.phase = B20J_PHASE_FINAL;
         f.boss.pattern = 99;
         f.orb.left = points[i][0];
         f.orb.top = points[i][1];
@@ -396,7 +396,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
         image->coverage[0] = 1;
         image->pixels[0] = i - 7;
     }
-    f.boss.phase = 7;
+    f.boss.phase = B20J_PHASE_FINAL;
     f.boss.pattern = 99;
     f.boss.hp = 1;
     f.orb.left = 320;
@@ -407,7 +407,8 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
     while (!B20J_UpdateAndRender(&f.boss, &f.context)) {
-        if (f.boss.defeat_stage == 1 && f.boss.animation_frame != last_image) {
+        if (f.boss.defeat_stage == B20J_DEFEAT_KUJI
+            && f.boss.animation_frame != last_image) {
             CHECK_EQ_INT(g_Video.pages[0][0], images);
             last_image = f.boss.animation_frame;
             images++;
@@ -443,7 +444,7 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 51, 68, 85, 255 };
     g_Video.pages[0][0] = 6;
     f.boss.entrance_active = true;
-    f.boss.entrance_stage = 12;
+    f.boss.entrance_stage = B20J_ENTRANCE_FLASH;
     Frame_Reset();
     CHECK(!B20J_ResumeEntrance(&f.boss, &f.context));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);

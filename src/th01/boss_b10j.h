@@ -29,6 +29,13 @@ typedef struct {
     int16_t radius;
 } B10J_SQUARE;
 
+typedef enum {
+    B10J_PHASE_START,
+    B10J_PHASE_FIRST,
+    B10J_PHASE_SPREAD,
+    B10J_PHASE_SECOND,
+} B10J_PHASE;
+
 typedef struct {
     BOSS_ENTITY still, animation;
     BOSS_HIT hit;

@@ -69,7 +69,7 @@ void B15J_Setup(B15J *const b, const B15J_CONTEXT *const c)
         b->tear_frame[i] = 0;
     }
     c->pellets->interlace = true;
-    b->phase = 0;
+    b->phase = B15J_PHASE_ENTRANCE;
     b->frame = 0;
     b->hp = 14;
     b->finished = false;
@@ -207,7 +207,7 @@ static bool M_Entrance(B15J *const b, const B15J_CONTEXT *const c)
                 finish = M_InvertRings(c, b->ring_radius) >= 128;
             }
             if (finish) {
-                b->phase = 2;
+                b->phase = B15J_PHASE_SPIRAL;
                 b->patterns_done = 0;
                 b->frame = 0;
                 Palette_Set(c->hit->palette, &b->boss_palette);
@@ -592,10 +592,10 @@ bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
     if (b->defeating) {
         return M_Death(b, c);
     }
-    if (b->phase == 0) {
+    if (b->phase == B15J_PHASE_ENTRANCE) {
         return M_Entrance(b, c);
     }
-    if (b->phase == 2) {
+    if (b->phase == B15J_PHASE_SPIRAL) {
         if (!b->hp_bar_filled) {
             b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
         }
@@ -606,12 +606,12 @@ bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
             b->patterns_done = Math16_Wrap(b->patterns_done + 1);
         }
         if (!b->hit.invincible && (b->hp <= 10 || b->patterns_done >= 6)) {
-            b->phase = 3;
+            b->phase = B15J_PHASE_RECOLOR;
             b->frame = 0;
             b->hit.frame = 0;
             b->patterns_done = 0;
         }
-    } else if (b->phase == 3) {
+    } else if (b->phase == B15J_PHASE_RECOLOR) {
         b->frame = Math16_Wrap(b->frame + 1);
         if (b->frame % 20 == 19) {
             c->hit->palette->saved.colors[5][0] =
@@ -625,13 +625,13 @@ bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
             Palette_Set(c->hit->palette, c->stage_palette);
         }
         if (b->frame >= 100) {
-            b->phase = 4;
+            b->phase = B15J_PHASE_SOULS;
             b->frame = 0;
             b->subphase = 0;
             Palette_Set(c->hit->palette, c->stage_palette);
             b->boss_palette = c->hit->palette->saved;
         }
-    } else if (b->phase == 4) {
+    } else if (b->phase == B15J_PHASE_SOULS) {
         M_Common(b);
         M_SpinRings(b, c);
         if (b->subphase == 0) {
@@ -641,22 +641,22 @@ bool B15J_UpdateAndRender(B15J *const b, const B15J_CONTEXT *const c)
         }
         M_Hit(b, c);
         if (!b->hit.invincible && b->subphase == 2) {
-            b->phase = 5;
+            b->phase = B15J_PHASE_TEARS;
             b->subphase = 0;
             b->frame = 0;
         }
-    } else if (b->phase == 5) {
+    } else if (b->phase == B15J_PHASE_TEARS) {
         M_Common(b);
         M_DropTears(b, c);
         M_CrossLasers(b, c);
         M_Hit(b, c);
         if (!b->hit.invincible && (b->hp <= 6 || b->frame > 1600)) {
-            b->phase = 6;
+            b->phase = B15J_PHASE_PATTERNS;
             b->frame = 0;
             b->hit.frame = 0;
             b->patterns_done = 0;
         }
-    } else if (b->phase == 6) {
+    } else if (b->phase == B15J_PHASE_PATTERNS) {
         M_Common(b);
         if (b->frame % 200 == 0) {
             M_GroupSoul(b, c, 0, PELLET_GROUP_SINGLE_AIMED, 40, 12);

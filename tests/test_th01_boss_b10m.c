@@ -151,7 +151,7 @@ static void M_Enter(B10M *const b, FIXTURE *const f)
         f->hit_context.frame_rand++;
         CHECK(B10M_UpdateAndRender(b, &f->context));
     }
-    CHECK_EQ_INT(b->phase, 1);
+    CHECK_EQ_INT(b->phase, B10M_PHASE_LATERAL);
     CHECK_EQ_INT(b->frame, 0);
 }
 
@@ -162,12 +162,12 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     FIXTURE f;
     M_Init(&f, &arena);
     B10M b = { .frame = 77,
-               .phase = 13,
+               .phase = B10M_PHASE_STAR_ATTACK,
                .pattern_state = 17,
                .subphase = 8,
                .hit = { 39, true },
                .hp_bar_filled = true,
-               .pentagram = { .angle = 450, .phase = 9 } };
+               .pentagram = { .angle = 450, .phase = B10M_STAR_GROWN_SLAM } };
     for (int32_t i = 0; i < 5; i++) {
         b.eyes[i].lock_frame = (int16_t)(i % 4);
         b.eyes[i].previous_left = (int16_t)(i * 11);
@@ -180,7 +180,7 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     B10M_Setup(&b, &f.context);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(b.hp, 16);
-    CHECK_EQ_INT(b.phase, 0);
+    CHECK_EQ_INT(b.phase, B10M_PHASE_ENTRANCE);
     CHECK_EQ_INT(b.frame, 0);
     CHECK_EQ_INT(b.hit.frame, 39);
     CHECK(b.hit.invincible);
@@ -289,16 +289,19 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
             f.player.left = (int16_t)(40 + (frame * 7) % 550);
             f.hit_context.frame_rand++;
             phases |= (uint16_t)(1u << b.phase);
-            if (b.phase == 13) {
+            if (b.phase == B10M_PHASE_STAR_ATTACK) {
                 star_phases |= (uint16_t)(1u << b.pentagram.phase);
             }
             const int8_t previous = b.phase;
-            if (b.phase == 13) {
+            if (b.phase == B10M_PHASE_STAR_ATTACK) {
                 previous_star_phase = b.pentagram.phase;
             }
             CHECK(B10M_UpdateAndRender(&b, &f.context));
-            if (previous == 13 && b.phase == 10) {
-                CHECK_EQ_INT(b.pentagram.phase, loops == 0 ? 7 : 0);
+            if (previous == B10M_PHASE_STAR_ATTACK
+                && b.phase == B10M_PHASE_TO_STAR) {
+                CHECK_EQ_INT(
+                    b.pentagram.phase,
+                    loops == 0 ? B10M_STAR_RETURN : B10M_STAR_WAIT);
                 CHECK_EQ_INT(previous_star_phase, loops == 0 ? 6 : 9);
                 loops++;
             }
@@ -324,7 +327,7 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     M_Battle(&f, &arena);
     B10M b = {};
     B10M_Setup(&b, &f.context);
-    b.phase = 3;
+    b.phase = B10M_PHASE_MISSILES;
     b.frame = 99;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         f.missiles.slots[i] = (MISSILE) { .left = 200 * 16,
@@ -351,7 +354,8 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
 TEST(defeat_suspends_prefix_and_activates_the_real_scene)
 {
     for (int32_t variant = 0; variant < 3; variant++) {
-        const int32_t phase = variant == 0 ? 11 : 13;
+        const int32_t phase =
+            variant == 0 ? B10M_PHASE_STAR_SPAWN : B10M_PHASE_STAR_ATTACK;
         ARENA arena;
         Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
         FIXTURE f;
@@ -363,7 +367,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         b.pattern_interval = 24;
         b.iterations = 1;
         if (variant == 2) {
-            b.pentagram.phase = 6;
+            b.pentagram.phase = B10M_STAR_SLAM;
             b.pentagram.center.y = 420;
             b.frame = 3;
         }
@@ -385,7 +389,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(f.missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(
             f.missiles.slots[0].flag,
-            phase == 13 ? MISSILE_FREE : MISSILE_MOVING);
+            phase == B10M_PHASE_STAR_ATTACK ? MISSILE_FREE : MISSILE_MOVING);
         CHECK(!f.pellets.slots[0].moving);
         CHECK_EQ_INT(f.pellets.slots[1].cloud_frame, 10);
         CHECK(f.lasers.slots[6].alive);
@@ -414,7 +418,10 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
 
 TEST(real_orb_hits_score_and_cross_every_hp_gate)
 {
-    const int8_t phases[] = { 1, 3, 5, 7, 9 };
+    const int8_t phases[] = {
+        B10M_PHASE_LATERAL,        B10M_PHASE_MISSILES, B10M_PHASE_SPRAY,
+        B10M_PHASE_MISSILES_CLOCK, B10M_PHASE_LASERS,
+    };
     const int16_t hp[] = { 16, 13, 11, 9, 3 };
     for (int32_t i = 0; i < 5; i++) {
         ARENA arena;
@@ -484,7 +491,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     M_Battle(&f, &arena);
     B10M b = {};
     B10M_Setup(&b, &f.context);
-    b.phase = 12;
+    b.phase = B10M_PHASE_STAR_RISE;
     b.pentagram.center = (MATH16_VECTOR) { 316, 240 };
     b.pentagram.radius = 64;
     f.stage_palette.colors[15][0] = 126;
@@ -498,7 +505,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     CHECK_EQ_INT(f.stage_palette.colors[15][0], -67);
     CHECK_EQ_INT(f.palette.saved.colors[15][0], 0);
     CHECK_EQ_INT(f.palette.saved.colors[15][2], 5);
-    CHECK_EQ_INT(b.phase, 13);
+    CHECK_EQ_INT(b.phase, B10M_PHASE_STAR_ATTACK);
     CHECK_EQ_INT(b.pentagram.center.y, 189);
     CHECK_EQ_INT(b.pentagram.angle, 0);
     CHECK_EQ_INT(b.pattern_interval, 0);

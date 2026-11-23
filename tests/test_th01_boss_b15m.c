@@ -99,7 +99,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     B15M_Setup(&b, &f.context);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(b.hp, 14);
-    CHECK_EQ_INT(b.phase, 0);
+    CHECK_EQ_INT(b.phase, B15M_PHASE_ENTRANCE);
     CHECK_EQ_INT(b.frame, 0);
     CHECK_EQ_INT(f.health.first_white, 10);
     CHECK_EQ_INT(f.health.first_redwhite, 6);
@@ -279,7 +279,7 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
         CHECK_EQ_INT(tick, expected[i]);
         CHECK_EQ_INT(g_VSync.count2, 9 + expected[i]);
         CHECK_EQ_INT(g_VSync.count1, 0);
-        CHECK_EQ_INT(b.phase, 1);
+        CHECK_EQ_INT(b.phase, B15M_PHASE_PATTERNS_1);
         CHECK_EQ_INT(b.frame, 0);
         CHECK_EQ_INT(b.hit.frame, 0);
         CHECK_EQ_INT(b.pattern, 1);
@@ -301,7 +301,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     B15M_Init(&b, Arena_Allocator(&arena));
     memset(b.background, 0, 128 * 96);
     B15M_Setup(&b, &f.context);
-    b.phase = 4;
+    b.phase = B15M_PHASE_TRANSFORM;
     b.frame = 19;
     b.teleport_done = true;
     b.hit.frame = 17;
@@ -309,7 +309,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     g_VSync.count1 = 12;
     g_VSync.count2 = 25;
     CHECK(!B15M_UpdateAndRender(&b, &f.context, 0));
-    CHECK_EQ_INT(b.pending, 1);
+    CHECK_EQ_INT(b.pending, B15M_PENDING_SCROLL);
     CHECK_EQ_INT(b.frame, 20);
     const B15M frozen = b;
     const uint32_t rng = f.rng;
@@ -318,7 +318,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     CHECK_EQ_INT(f.rng, rng);
     Frame_VSync();
     CHECK(B15M_UpdateAndRender(&b, &f.context, 1));
-    CHECK_EQ_INT(b.phase, 4);
+    CHECK_EQ_INT(b.phase, B15M_PHASE_TRANSFORM);
     CHECK_EQ_INT(b.pattern, 0);
     CHECK_EQ_INT(b.frame, 20);
     CHECK_EQ_INT(b.hit.frame, 17);
@@ -338,8 +338,8 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     B15M_Init(&b, Arena_Allocator(&arena));
     memset(b.background, 0, 128 * 96);
     B15M_Setup(&b, &f.context);
-    b.phase = 5;
-    b.form = 0;
+    b.phase = B15M_PHASE_FORMS;
+    b.form = B15M_FORM_GIRL;
     b.frame = 140;
     b.girl_pattern = 2;
     b.girl_subphase = 1;
@@ -350,7 +350,7 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     f.player.invincible = false;
     Frame_Reset();
     CHECK(!B15M_UpdateAndRender(&b, &f.context, 100));
-    CHECK_EQ_INT(b.pending, 2);
+    CHECK_EQ_INT(b.pending, B15M_PENDING_SAFETY);
     CHECK_EQ_INT(b.safety_circle.frame, 2);
     CHECK(!f.player.is_hit);
     const B15M frozen = b;
@@ -391,35 +391,41 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         int32_t p1ticks = 0, p3ticks = 0;
         for (int32_t step = 1; step < 40000 && !b.finished; step++) {
             f.hit.frame_rand = (uint32_t)step;
-            if (b.phase == 1) {
+            if (b.phase == B15M_PHASE_PATTERNS_1) {
                 p1ticks++;
                 if (b.pattern > 0 && b.pattern <= 3) {
                     phase1 |= 1u << b.pattern;
                 }
             }
-            if (b.phase == 3) {
+            if (b.phase == B15M_PHASE_PATTERNS_2) {
                 p3ticks++;
                 if (b.pattern > 0 && b.pattern <= 3 && b.phase3_pattern != 0) {
                     phase3 |= 1u << b.pattern;
                 }
             }
-            if (b.phase == 5) {
-                if (b.form == 0 && b.girl_pattern > 0 && b.girl_pattern <= 3) {
+            if (b.phase == B15M_PHASE_FORMS) {
+                if (b.form == B15M_FORM_GIRL && b.girl_pattern > 0
+                    && b.girl_pattern <= 3) {
                     girl |= 1u << b.girl_pattern;
                 }
-                if (b.form == 1 && b.bat_pattern > 0 && b.bat_pattern <= 4) {
+                if (b.form == B15M_FORM_BAT && b.bat_pattern > 0
+                    && b.bat_pattern <= 4) {
                     bat |= 1u << b.bat_pattern;
                 }
             }
             int16_t target = b.hp;
-            if (b.phase == 1 && phase1 == 14 && p1ticks > 2500) {
+            if (b.phase == B15M_PHASE_PATTERNS_1 && phase1 == 14
+                && p1ticks > 2500) {
                 target = 10;
-            } else if (b.phase == 3 && phase3 == 14 && p3ticks > 2000) {
+            } else if (
+                b.phase == B15M_PHASE_PATTERNS_2 && phase3 == 14
+                && p3ticks > 2000) {
                 target = 6;
-            } else if (b.phase == 5 && girl == 14 && bat == 30) {
+            } else if (b.phase == B15M_PHASE_FORMS && girl == 14 && bat == 30) {
                 target = 0;
             }
-            const BOSS_ENTITY *const e = b.form == 0 ? &b.girl : &b.bat;
+            const BOSS_ENTITY *const e =
+                b.form == B15M_FORM_GIRL ? &b.girl : &b.bat;
             const bool hit = b.hp > target && step % 50 == 20;
             f.orb.previous_left = hit ? e->left + (b.form ? 16 : 48) : 0;
             f.orb.previous_top = hit ? e->top + 24 : 399;
@@ -457,10 +463,10 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     B15M_Init(&b, Arena_Allocator(&arena));
     memset(b.background, 0, 128 * 96);
     B15M_Setup(&b, &f.context);
-    b.phase = 5;
+    b.phase = B15M_PHASE_FORMS;
     b.hp = 1;
     b.frame = 140;
-    b.form = 0;
+    b.form = B15M_FORM_GIRL;
     b.girl_pattern = 2;
     b.girl_subphase = 1;
     b.pattern_state = 2;
@@ -483,7 +489,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     const uint32_t rng = f.rng;
     const size_t used = arena.used;
     CHECK(!B15M_UpdateAndRender(&b, &f.context, 100));
-    CHECK_EQ_INT(b.pending, 2);
+    CHECK_EQ_INT(b.pending, B15M_PENDING_SAFETY);
     CHECK(!f.player.is_hit);
     CHECK(!f.cleared);
     CHECK_EQ_INT(f.fades, 0);
@@ -533,7 +539,7 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     B15M_Init(&b, Arena_Allocator(&arena));
     memset(b.background, 0, 128 * 96);
     B15M_Setup(&b, &f.context);
-    b.phase = 1;
+    b.phase = B15M_PHASE_PATTERNS_1;
     b.hp = 10;
     b.pattern = 0;
     b.frame = 79;
@@ -544,14 +550,14 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     }
     Frame_Reset();
     CHECK(B15M_UpdateAndRender(&b, &f.context, 0));
-    CHECK_EQ_INT(b.phase, 1);
+    CHECK_EQ_INT(b.phase, B15M_PHASE_PATTERNS_1);
     CHECK_EQ_INT(b.frame, 80);
     CHECK(!b.teleport_done);
     CHECK_EQ_INT(f.rng, expected);
     MasterRng_Next(&expected);
     MasterRng_Next(&expected);
     CHECK(B15M_UpdateAndRender(&b, &f.context, 1));
-    CHECK_EQ_INT(b.phase, 2);
+    CHECK_EQ_INT(b.phase, B15M_PHASE_CENTER);
     CHECK_EQ_INT(b.frame, 0);
     CHECK_EQ_INT(f.rng, expected);
     Arena_Free(&arena);
@@ -568,7 +574,7 @@ TEST(circle_groups_keep_the_callers_cloud_policy)
         B15M_Init(&b, Arena_Allocator(&arena));
         memset(b.background, 0, 128 * 96);
         B15M_Setup(&b, &f.context);
-        b.phase = 1;
+        b.phase = B15M_PHASE_PATTERNS_1;
         b.pattern = 3;
         b.frame = 200;
         b.circle.frame = 40;
@@ -602,7 +608,7 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
     B15M_Init(&b, Arena_Allocator(&arena));
     memset(b.background, 0, 128 * 96);
     B15M_Setup(&b, &f.context);
-    b.phase = 1;
+    b.phase = B15M_PHASE_PATTERNS_1;
     b.pattern = 2;
     b.frame = 59;
     b.hp_bar_filled = true;

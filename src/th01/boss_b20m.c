@@ -11,6 +11,33 @@
 
 #include <string.h>
 
+typedef enum {
+    B20M_WAIT_NONE,
+    B20M_WAIT_SCROLL,
+    B20M_WAIT_DELAY,
+    B20M_WAIT_TICKS,
+} B20M_WAIT;
+
+typedef enum {
+    B20M_ENTRANCE_DONE,
+    B20M_ENTRANCE_SCROLL,
+    B20M_ENTRANCE_SCROLL_STEP,
+    B20M_ENTRANCE_DIAGONAL = 4,
+    B20M_ENTRANCE_DIAGONAL_STEP,
+} B20M_ENTRANCE;
+
+typedef enum {
+    B20M_TRANSFORM_SHAKE = 1,
+    B20M_TRANSFORM_SHAKE_STEP,
+    B20M_TRANSFORM_SECOND_FORM,
+} B20M_TRANSFORM;
+
+typedef enum {
+    B20M_DEFEAT_SHAKE = 1,
+    B20M_DEFEAT_SHAKE_STEP,
+    B20M_DEFEAT_BONUS,
+} B20M_DEFEAT;
+
 static RESULT M_LoadGrc(
     VFS *const vfs, const char *const name, const ALLOCATOR *const a,
     GRC *const out)
@@ -147,7 +174,9 @@ void B20M_Init(B20M *const b, const ALLOCATOR *const a)
 }
 void B20M_Setup(B20M *const b, const B20M_CONTEXT *const c)
 {
-    ASSERT(b->sequence == 0 && b->wait_kind == 0 && !b->entrance_active);
+    ASSERT(
+        b->sequence == B20M_SEQUENCE_NONE && b->wait_kind == B20M_WAIT_NONE
+        && !b->entrance_active);
     ASSERT(Result_Ignore(B20M_ValidateAssets(c->assets)));
     ASSERT(Result_Ignore(
         BossEntity_Bind(&b->shield, c->sprites, 0, &c->assets->shield)));
@@ -164,7 +193,7 @@ void B20M_Setup(B20M *const b, const B20M_CONTEXT *const c)
     b->wand.left = 296;
     b->wand.top = 48;
     b->hp = 18;
-    b->phase = 0;
+    b->phase = B20M_PHASE_START;
     b->frame = 0;
     b->finished = false;
     b->boss_palette = c->hit->palette->saved;
@@ -442,33 +471,33 @@ static bool M_Delay(B20M *const b, const uint16_t frames)
     if (Frame_DelayReady(frames)) {
         return true;
     }
-    b->wait_kind = 2;
+    b->wait_kind = B20M_WAIT_DELAY;
     b->wait_frames = frames;
     return false;
 }
 static bool M_Scroll(B20M *const b, const int16_t line)
 {
     b->raw_scroll = line;
-    b->wait_kind = 1;
+    b->wait_kind = B20M_WAIT_SCROLL;
     Frame_BeginWait(&b->wait);
     return false;
 }
 static bool M_Ready(
     B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
-    if (b->wait_kind == 1) {
+    if (b->wait_kind == B20M_WAIT_SCROLL) {
         if (!Frame_WaitReady(&b->wait)) {
             return false;
         }
         Video_SetScroll(b->raw_scroll);
-    } else if (b->wait_kind == 2) {
+    } else if (b->wait_kind == B20M_WAIT_DELAY) {
         if (!Frame_DelayReady(b->wait_frames)) {
             return false;
         }
-    } else if (b->wait_kind == 3 && tick - b->wait_tick < 6) {
+    } else if (b->wait_kind == B20M_WAIT_TICKS && tick - b->wait_tick < 6) {
         return false;
     }
-    b->wait_kind = 0;
+    b->wait_kind = B20M_WAIT_NONE;
     return true;
 }
 static TRANSITION_CONTEXT M_TransitionContext(
@@ -567,9 +596,9 @@ static bool M_BirdsUpdate(
             && birds->left[i] < Boss_Player(c->hit)->left + 8
             && birds->top[i] > 344 && birds->top[i] < 384) {
             Boss_Player(c->hit)->is_hit = true;
-            b->wait_kind = 3;
+            b->wait_kind = B20M_WAIT_TICKS;
             b->wait_tick = tick;
-            b->resume_stage = 3;
+            b->resume_stage = B20M_RESUME_BIRD_HIT;
             return false;
         }
     }
@@ -816,7 +845,7 @@ static bool M_Gust(B20M *const b, const B20M_CONTEXT *const c)
         b->gust_id = M_W(b->gust_id + 1);
         b->frame = 49;
         if (b->gust_id >= 3) {
-            b->resume_stage = 4;
+            b->resume_stage = B20M_RESUME_GUST_END;
             return M_Scroll(b, 0);
         }
     }
@@ -1226,14 +1255,14 @@ static bool M_Shake(B20M *const b, const B20M_CONTEXT *const c)
 {
     if (b->frame < 50) {
         if (b->frame % 8 == 0 || b->frame % 8 == 4) {
-            b->resume_stage = 1;
+            b->resume_stage = B20M_RESUME_SHAKE;
             return M_Scroll(b, b->frame % 8 == 0 ? 396 : 404);
         }
         if (b->frame % 4 == 0) {
             Boss_Effect(c->hit, 7);
         }
     } else if (b->frame == 50) {
-        b->resume_stage = 2;
+        b->resume_stage = B20M_RESUME_SHAKE_END;
         return M_Scroll(b, 0);
     }
     return true;
@@ -1709,7 +1738,9 @@ static void M_Hud(const B20M_CONTEXT *const c)
 }
 void B20M_BeginEntrance(B20M *const b, const B20M_CONTEXT *const c)
 {
-    ASSERT(!b->entrance_active && b->sequence == 0 && b->wait_kind == 0);
+    ASSERT(
+        !b->entrance_active && b->sequence == B20M_SEQUENCE_NONE
+        && b->wait_kind == B20M_WAIT_NONE);
     c->pellets->interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->lower, true);
@@ -1722,7 +1753,7 @@ void B20M_BeginEntrance(B20M *const b, const B20M_CONTEXT *const c)
     M_Audio(c, B20M_AUDIO_PLAY);
     Tram_Clear();
     b->scroll_line = 399;
-    b->sequence_stage = 1;
+    b->sequence_stage = B20M_ENTRANCE_SCROLL;
     b->entrance_active = true;
 }
 bool B20M_ResumeEntrance(
@@ -1736,26 +1767,26 @@ bool B20M_ResumeEntrance(
     }
     for (;;) {
         switch (b->sequence_stage) {
-        case 1:
+        case B20M_ENTRANCE_SCROLL:
             if (b->scroll_line < 0) {
-                b->sequence_stage = 4;
+                b->sequence_stage = B20M_ENTRANCE_DIAGONAL;
                 return M_Scroll(b, 0);
             }
-            b->sequence_stage = 2;
+            b->sequence_stage = B20M_ENTRANCE_SCROLL_STEP;
             return M_Scroll(b, b->scroll_line);
-        case 2:
+        case B20M_ENTRANCE_SCROLL_STEP:
             M_CopyRows(c, b->scroll_line, 1);
             b->scroll_line--;
-            b->sequence_stage = 1;
+            b->sequence_stage = B20M_ENTRANCE_SCROLL;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 4:
+        case B20M_ENTRANCE_DIAGONAL:
             Video_SelectDrawingPage(1);
             M_Pi(c, &c->assets->backgrounds[0], true);
             Video_SelectDrawingPage(0);
-            b->sequence_stage = 5;
+            b->sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
             {
                 const TRANSITION_CONTEXT t = M_TransitionContext(b, c, false);
                 if (!Transition_BeginDiagonal(&b->transition, &t, 40, tick)) {
@@ -1763,7 +1794,7 @@ bool B20M_ResumeEntrance(
                 }
             }
             continue;
-        case 5: {
+        case B20M_ENTRANCE_DIAGONAL_STEP: {
             const TRANSITION_CONTEXT t = M_TransitionContext(b, c, false);
             if (!Transition_Advance(&b->transition, &t, tick)) {
                 return false;
@@ -1771,7 +1802,7 @@ bool B20M_ResumeEntrance(
         }
             *c->rng = c->hit->frame_rand;
             b->entrance_active = false;
-            b->sequence_stage = 0;
+            b->sequence_stage = B20M_ENTRANCE_DONE;
             return true;
         default:
             ASSERT(false);
@@ -1808,7 +1839,7 @@ static bool M_RingEntrance(
             finish = M_InvertRings(c, b->entrance_radius) >= 128;
         }
         if (finish) {
-            b->phase = 1;
+            b->phase = B20M_PHASE_BIRDS;
             b->pattern = 0;
             b->patterns_done = 0;
             b->patterns_until_next = 1 + M_Random(c) % 6;
@@ -1820,7 +1851,7 @@ static bool M_RingEntrance(
             M_Snap(b, c);
             M_WandRaise(b, c, true);
             M_BirdsReset(b);
-            b->sequence = 0;
+            b->sequence = B20M_SEQUENCE_NONE;
             return true;
         }
         if (b->frame % 2 != 0 && !M_Delay(b, 1)) {
@@ -1856,8 +1887,8 @@ static void M_BeginTransform(B20M *const b, const B20M_CONTEXT *const c)
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[4], false);
     Video_SelectDrawingPage(0);
-    b->sequence = 2;
-    b->sequence_stage = 1;
+    b->sequence = B20M_SEQUENCE_TRANSFORM;
+    b->sequence_stage = B20M_TRANSFORM_SHAKE;
 }
 static bool M_Transform(
     B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
@@ -1867,7 +1898,7 @@ static bool M_Transform(
     }
     for (;;) {
         switch (b->sequence_stage) {
-        case 1:
+        case B20M_TRANSFORM_SHAKE:
             b->frame = M_W(b->frame + 1);
             if (b->frame < 200) {
                 if (b->frame % 2 == 0) {
@@ -1875,12 +1906,12 @@ static bool M_Transform(
                 } else {
                     M_Palette(c, &b->boss_palette);
                 }
-                b->sequence_stage = 2;
+                b->sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
                 return M_Scroll(b, b->frame % 2 == 0 ? 416 : 386);
             }
             if (b->frame == 200) {
                 M_Palette(c, &b->boss_palette);
-                b->sequence_stage = 2;
+                b->sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
                 return M_Scroll(b, 0);
             }
             for (int32_t i = 0; i < 3; i++) {
@@ -1897,23 +1928,23 @@ static bool M_Transform(
             M_Color(c, 6, 0, 0, 0);
             M_CopyOther(c);
             M_Hud(c);
-            b->sequence_stage = 3;
+            b->sequence_stage = B20M_TRANSFORM_SECOND_FORM;
             return M_Scroll(b, 0);
-        case 2:
+        case B20M_TRANSFORM_SHAKE_STEP:
             if (b->frame < 200 && b->frame % 4 == 0) {
                 Boss_Effect(c->hit, 9);
             }
-            b->sequence_stage = 1;
+            b->sequence_stage = B20M_TRANSFORM_SHAKE;
             if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
-        case 3:
+        case B20M_TRANSFORM_SECOND_FORM:
             b->frame = 0;
             b->hit.frame = 0;
             b->pattern = 0;
             b->patterns_done = 0;
-            b->phase = 100;
+            b->phase = B20M_PHASE_SECOND_FORM;
             Boss_Player(c->hit)->invincibility_time = 0;
             Boss_Player(c->hit)->invincible = false;
             b->boss_palette = c->hit->palette->saved;
@@ -1923,7 +1954,7 @@ static bool M_Transform(
             c->hit->health->first_redwhite = 3;
             b->hp_bar_filled = false;
             M_Leaves(b, c, 999);
-            b->sequence = 0;
+            b->sequence = B20M_SEQUENCE_NONE;
             return true;
         default:
             ASSERT(false);
@@ -1939,8 +1970,8 @@ static void M_BeginDefeat(B20M *const b, const B20M_CONTEXT *const c)
     b->boss_palette = c->hit->palette->saved;
     M_CopyOther(c);
     Video_SelectDrawingPage(0);
-    b->sequence = 3;
-    b->sequence_stage = 1;
+    b->sequence = B20M_SEQUENCE_DEFEAT;
+    b->sequence_stage = B20M_DEFEAT_SHAKE;
 }
 static bool M_Defeat(
     B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
@@ -1950,15 +1981,15 @@ static bool M_Defeat(
     }
     for (;;) {
         switch (b->sequence_stage) {
-        case 1:
+        case B20M_DEFEAT_SHAKE:
             b->frame = M_W(b->frame + 1);
             if (b->frame < 230) {
-                b->sequence_stage = 2;
+                b->sequence_stage = B20M_DEFEAT_SHAKE_STEP;
                 return M_Scroll(b, b->frame % 2 == 0 ? 416 : 386);
             }
-            b->sequence_stage = 2;
+            b->sequence_stage = B20M_DEFEAT_SHAKE_STEP;
             continue;
-        case 2:
+        case B20M_DEFEAT_SHAKE_STEP:
             if (b->frame < 200 && b->frame % 4 == 0) {
                 Boss_Effect(c->hit, 9);
             }
@@ -1975,22 +2006,22 @@ static bool M_Defeat(
                     M_Palette(c, &c->hit->palette->saved);
                 }
                 if (b->frame > 230) {
-                    b->sequence_stage = 3;
+                    b->sequence_stage = B20M_DEFEAT_BONUS;
                     return M_Scroll(b, 0);
                 }
             }
-            b->sequence_stage = 1;
+            b->sequence_stage = B20M_DEFEAT_SHAKE;
             if (!M_Delay(b, 2)) {
                 return false;
             }
             continue;
-        case 3:
+        case B20M_DEFEAT_BONUS:
             for (int32_t i = 0; i < 5; i++) {
                 c->hit->display->gameplay->score += 10000;
             }
             *c->game_cleared = true;
             b->finished = true;
-            b->sequence = 0;
+            b->sequence = B20M_SEQUENCE_NONE;
             return true;
         default:
             ASSERT(false);
@@ -2062,7 +2093,7 @@ static void M_Pulse(B20M *const b, const B20M_CONTEXT *const c)
 static bool M_Pattern(B20M *const b, const B20M_CONTEXT *const c)
 {
     switch (b->call_phase) {
-    case 1:
+    case B20M_PHASE_BIRDS:
         if (b->pattern == 0) {
             M_PurpleLasers(b, c);
         } else if (b->pattern == 1) {
@@ -2071,7 +2102,7 @@ static bool M_Pattern(B20M *const b, const B20M_CONTEXT *const c)
             M_Eggs(b, c);
         }
         break;
-    case 3:
+    case B20M_PHASE_VERTICAL:
         if (b->pattern == 0) {
             M_Flake(b, c);
             M_Rings(b, c);
@@ -2082,7 +2113,7 @@ static bool M_Pattern(B20M *const b, const B20M_CONTEXT *const c)
             b->frame = 0;
         }
         break;
-    case 5:
+    case B20M_PHASE_WAVY:
         if (b->pattern == 0) {
             M_FourLasers(b, c);
         } else if (b->pattern == 1 || b->pattern == 4) {
@@ -2094,7 +2125,7 @@ static bool M_Pattern(B20M *const b, const B20M_CONTEXT *const c)
             M_Radial(b, c);
         }
         break;
-    case 7:
+    case B20M_PHASE_VERTICAL_BIRDS:
         if (b->pattern == 0) {
             M_SymmetricBirds(b, c);
         } else if (b->pattern == 1) {
@@ -2103,7 +2134,7 @@ static bool M_Pattern(B20M *const b, const B20M_CONTEXT *const c)
             M_Stacks(b, c);
         }
         break;
-    case 100:
+    case B20M_PHASE_SECOND_FORM:
         switch (b->pattern) {
         case 0:
             b->pattern_state = Boss_Rank(56, 32, 24, 20);
@@ -2159,26 +2190,26 @@ static bool M_Tail(B20M *const b, const B20M_CONTEXT *const c)
     if (b->frame == 0) {
         M_PatternNext(
             b,
-            phase == 5         ? 10
-                : phase == 100 ? 4
-                               : 0,
-            phase == 1 || phase == 7 ? 2
-                : phase == 3         ? 1
-                : phase == 5         ? 5
-                                     : 8);
+            phase == B20M_PHASE_WAVY              ? 10
+                : phase == B20M_PHASE_SECOND_FORM ? 4
+                                                  : 0,
+            phase == B20M_PHASE_BIRDS || phase == B20M_PHASE_VERTICAL_BIRDS ? 2
+                : phase == B20M_PHASE_VERTICAL                              ? 1
+                : phase == B20M_PHASE_WAVY                                  ? 5
+                                           : 8);
     }
     M_Hit(b, c);
-    if (phase == 100) {
+    if (phase == B20M_PHASE_SECOND_FORM) {
         M_Pulse(b, c);
         if (b->hp <= 0) {
             M_Audio(c, B20M_AUDIO_STOP);
-            b->phase = 101;
+            b->phase = B20M_PHASE_DEFEAT;
             b->frame = 0;
             b->hit.frame = 0;
         }
     } else {
         if (b->hp <= 0) {
-            b->phase = 99;
+            b->phase = B20M_PHASE_TRANSFORM;
         }
         if (b->patterns_done >= b->patterns_until_next && !b->hit.invincible) {
             b->patterns_done = 0;
@@ -2196,14 +2227,15 @@ static void M_AfterGust(B20M *const b, const B20M_CONTEXT *const c)
     if (b->frame != 0) {
         return;
     }
-    M_PhaseNext(b, c, phase == 8 ? 1 : phase + 1);
-    if (phase != 2) {
+    M_PhaseNext(
+        b, c, phase == B20M_PHASE_GUST_4 ? B20M_PHASE_BIRDS : phase + 1);
+    if (phase != B20M_PHASE_GUST_1) {
         b->boss_palette = c->hit->palette->saved;
     }
-    b->patterns_until_next = phase == 2 ? 1 + M_Random(c) % 5
-        : phase == 4                    ? 3 + M_Random(c) % 4
-        : phase == 6                    ? 2 + M_Random(c) % 5
-                                        : 1 + M_Random(c) % 6;
+    b->patterns_until_next = phase == B20M_PHASE_GUST_1 ? 1 + M_Random(c) % 5
+        : phase == B20M_PHASE_GUST_2                    ? 3 + M_Random(c) % 4
+        : phase == B20M_PHASE_GUST_3                    ? 2 + M_Random(c) % 5
+                                                        : 1 + M_Random(c) % 6;
 }
 bool B20M_UpdateAndRender(
     B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
@@ -2211,34 +2243,34 @@ bool B20M_UpdateAndRender(
     if (b->finished) {
         return true;
     }
-    if (b->sequence == 1) {
+    if (b->sequence == B20M_SEQUENCE_RINGS) {
         return M_RingEntrance(b, c, tick);
     }
-    if (b->sequence == 2) {
+    if (b->sequence == B20M_SEQUENCE_TRANSFORM) {
         return M_Transform(b, c, tick);
     }
-    if (b->sequence == 3) {
+    if (b->sequence == B20M_SEQUENCE_DEFEAT) {
         return M_Defeat(b, c, tick);
     }
-    if (b->resume_stage != 0) {
+    if (b->resume_stage != B20M_RESUME_NONE) {
         if (!M_Ready(b, c, tick)) {
             return false;
         }
         const uint8_t resume = b->resume_stage;
-        b->resume_stage = 0;
-        if (resume == 1) {
+        b->resume_stage = B20M_RESUME_NONE;
+        if (resume == B20M_RESUME_SHAKE) {
             Boss_Effect(c->hit, 7);
             return M_Tail(b, c);
         }
-        if (resume == 2) {
+        if (resume == B20M_RESUME_SHAKE_END) {
             b->frame = 0;
             return M_Tail(b, c);
         }
-        if (resume == 4) {
-            const int16_t image = b->call_phase == 2 ? 1
-                : b->call_phase == 4                 ? 2
-                : b->call_phase == 6                 ? 3
-                                                     : 0;
+        if (resume == B20M_RESUME_GUST_END) {
+            const int16_t image = b->call_phase == B20M_PHASE_GUST_1 ? 1
+                : b->call_phase == B20M_PHASE_GUST_2                 ? 2
+                : b->call_phase == B20M_PHASE_GUST_3                 ? 3
+                                                                     : 0;
             M_GustFinish(b, c, image);
             M_AfterGust(b, c);
             return true;
@@ -2248,26 +2280,27 @@ bool B20M_UpdateAndRender(
         }
         return M_Tail(b, c);
     }
-    if (b->phase == 0) {
+    if (b->phase == B20M_PHASE_START) {
         b->frame = -1;
         b->hit.frame = 0;
         b->hit.invincible = false;
         b->boss_palette = c->hit->palette->saved;
         b->stage_palette = b->boss_palette;
         *c->rng = c->hit->frame_rand;
-        b->sequence = 1;
+        b->sequence = B20M_SEQUENCE_RINGS;
         return M_RingEntrance(b, c, tick);
     }
-    if (b->phase == 99) {
+    if (b->phase == B20M_PHASE_TRANSFORM) {
         M_BeginTransform(b, c);
         return M_Transform(b, c, tick);
     }
-    if (b->phase == 101) {
+    if (b->phase == B20M_PHASE_DEFEAT) {
         M_BeginDefeat(b, c);
         return M_Defeat(b, c, tick);
     }
     b->call_phase = b->phase;
-    if (b->phase >= 2 && b->phase <= 8 && b->phase % 2 == 0) {
+    if (b->phase >= B20M_PHASE_GUST_1 && b->phase <= B20M_PHASE_GUST_4
+        && b->phase % 2 == 0) {
         b->frame = M_W(b->frame + 1);
         if (!M_Gust(b, c)) {
             return false;
@@ -2275,27 +2308,31 @@ bool B20M_UpdateAndRender(
         M_AfterGust(b, c);
         return true;
     }
-    if (b->phase != 1 && b->phase != 3 && b->phase != 5 && b->phase != 7
-        && b->phase != 100) {
+    if (b->phase != B20M_PHASE_BIRDS && b->phase != B20M_PHASE_VERTICAL
+        && b->phase != B20M_PHASE_WAVY && b->phase != B20M_PHASE_VERTICAL_BIRDS
+        && b->phase != B20M_PHASE_SECOND_FORM) {
         return true;
     }
-    if ((b->phase == 1 || b->phase == 100) && !b->hp_bar_filled) {
+    if ((b->phase == B20M_PHASE_BIRDS || b->phase == B20M_PHASE_SECOND_FORM)
+        && !b->hp_bar_filled) {
         b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
     }
     b->frame = M_W(b->frame + 1);
     b->hit.frame = M_W(b->hit.frame + 1);
-    if (b->phase != 100) {
+    if (b->phase != B20M_PHASE_SECOND_FORM) {
         M_Shield(b, c);
         M_Dress(b, c);
     }
-    if (b->phase == 3 || b->phase == 7) {
-        M_Vertical(b, c, b->phase == 7);
-    } else if (b->phase == 5) {
+    if (b->phase == B20M_PHASE_VERTICAL
+        || b->phase == B20M_PHASE_VERTICAL_BIRDS) {
+        M_Vertical(b, c, b->phase == B20M_PHASE_VERTICAL_BIRDS);
+    } else if (b->phase == B20M_PHASE_WAVY) {
         M_Wavy(b, c);
-    } else if (b->phase == 100) {
+    } else if (b->phase == B20M_PHASE_SECOND_FORM) {
         M_Horizontal(b, c);
     }
-    if ((b->phase == 1 || b->phase == 7) && !M_BirdsUpdate(b, c, tick)) {
+    if ((b->phase == B20M_PHASE_BIRDS || b->phase == B20M_PHASE_VERTICAL_BIRDS)
+        && !M_BirdsUpdate(b, c, tick)) {
         return false;
     }
     if (!M_Pattern(b, c)) {

@@ -97,31 +97,31 @@ void Gameplay_SyncSession(GAMEPLAY *const g)
 void Gameplay_BossSetup(GAMEPLAY *const g)
 {
     switch (g->world.boss) {
-    case 1:
+    case BOSS_B05:
         B05_Setup(&g->world.b05, &g->bindings.c05);
         break;
-    case 2:
+    case BOSS_B10M:
         B10M_Setup(&g->world.b10m, &g->bindings.c10m);
         break;
-    case 3:
+    case BOSS_B10J:
         B10J_BeginSetup(&g->world.b10j, &g->bindings.c10j);
         break;
-    case 4:
+    case BOSS_B15J:
         B15J_Setup(&g->world.b15j, &g->bindings.c15j);
         break;
-    case 5:
+    case BOSS_B15M:
         B15M_Setup(&g->world.b15m, &g->bindings.c15m);
         break;
-    case 6:
+    case BOSS_B20M:
         B20M_Setup(&g->world.b20m, &g->bindings.c20m);
         break;
-    case 7:
+    case BOSS_B20J:
         B20J_Setup(&g->world.b20j, &g->bindings.c20j);
         break;
     default:
         break;
     }
-    if (g->world.boss != 0 && g->world.boss != 3) {
+    if (g->world.boss != BOSS_NONE && g->world.boss != BOSS_B10J) {
         Gameplay_HookBossHp(g);
     }
 }
@@ -132,9 +132,10 @@ void Gameplay_HookBossHp(GAMEPLAY *const g)
         return;
     }
     int16_t *const hp[] = {
-        nullptr,           &g->world.b05.hp,  &g->world.b10m.hp,
-        &g->world.b10j.hp, &g->world.b15j.hp, &g->world.b15m.hp,
-        &g->world.b20m.hp, &g->world.b20j.hp,
+        [BOSS_NONE] = nullptr,           [BOSS_B05] = &g->world.b05.hp,
+        [BOSS_B10M] = &g->world.b10m.hp, [BOSS_B10J] = &g->world.b10j.hp,
+        [BOSS_B15J] = &g->world.b15j.hp, [BOSS_B15M] = &g->world.b15m.hp,
+        [BOSS_B20M] = &g->world.b20m.hp, [BOSS_B20J] = &g->world.b20j.hp,
     };
     g_Th01Hooks.on_boss(g_Th01Hooks.arg, hp[g->world.boss]);
 }
@@ -142,21 +143,21 @@ void Gameplay_HookBossHp(GAMEPLAY *const g)
 bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
     switch (g->world.boss) {
-    case 1:
+    case BOSS_B05:
         return B05_UpdateAndRender(&g->world.b05, &g->bindings.c05, raw);
-    case 2:
+    case BOSS_B10M:
         return B10M_UpdateAndRender(&g->world.b10m, &g->bindings.c10m);
-    case 3:
+    case BOSS_B10J:
         return B10J_UpdateAndRender(&g->world.b10j, &g->bindings.c10j);
-    case 4:
+    case BOSS_B15J:
         return B15J_UpdateAndRender(&g->world.b15j, &g->bindings.c15j);
-    case 5:
+    case BOSS_B15M:
         return B15M_UpdateAndRender(
             &g->world.b15m, &g->bindings.c15m, g->storage.host_tick);
-    case 6:
+    case BOSS_B20M:
         return B20M_UpdateAndRender(
             &g->world.b20m, &g->bindings.c20m, g->storage.host_tick);
-    case 7:
+    case BOSS_B20J:
         return B20J_UpdateAndRender(&g->world.b20j, &g->bindings.c20j);
     default:
         return true;
