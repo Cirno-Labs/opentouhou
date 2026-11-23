@@ -41,7 +41,7 @@ RESULT Boss_LoadBackground(
     return result;
 }
 
-PLAYER *Boss_Player(const BOSS_HIT_CONTEXT *const hit)
+PLAYER *Boss_Player(void)
 {
     return &g_Player;
 }

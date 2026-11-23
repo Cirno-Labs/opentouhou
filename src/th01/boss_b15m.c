@@ -1137,7 +1137,7 @@ static int16_t M_SymmetricArc(const B15M_CONTEXT *const c)
 }
 static void M_SafetyAfterHit(const B15M_CONTEXT *const c)
 {
-    if (Boss_Player(c->hit)->is_hit) {
+    if (Boss_Player()->is_hit) {
         g_B15M.safety_circle.frame = 200;
     }
     if (g_B15M.frame % g_B15M.pattern_state == 0) {
@@ -1170,7 +1170,7 @@ static int16_t M_Safety(const B15M_CONTEXT *const c, const uint64_t host_tick)
     if (g_B15M.frame >= 60 && g_B15M.frame % 2 == 0 && circle->frame == 0) {
         if (g_B15M.frame == 60) {
             Sound_Effect(8);
-            g_B15M.safety_left = Boss_Player(c->hit)->left;
+            g_B15M.safety_left = Boss_Player()->left;
         }
         M_SummonDots(c, circle, Math16_Wrap(g_B15M.safety_left + 16), 384, 2);
         if (circle->angle >= 64) {
@@ -1189,11 +1189,10 @@ static int16_t M_Safety(const B15M_CONTEXT *const c, const uint64_t host_tick)
                 c, Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 7, 1, 0,
                 255);
         }
-        if (!Boss_Player(c->hit)->invincible
-            && (Math16_Wrap(g_B15M.safety_left + 104)
-                    <= Boss_Player(c->hit)->left
+        if (!Boss_Player()->invincible
+            && (Math16_Wrap(g_B15M.safety_left + 104) <= Boss_Player()->left
                 || Math16_Wrap(g_B15M.safety_left - 128)
-                    >= Boss_Player(c->hit)->left)) {
+                    >= Boss_Player()->left)) {
             g_B15M.pending = B15M_PENDING_SAFETY;
             g_B15M.pending_tick = host_tick;
             return -1;
@@ -1262,8 +1261,8 @@ static int16_t M_AimedRing(const B15M_CONTEXT *const c)
     if (g_B15M.frame % (g_B15M.pattern_state * 2) == 0) {
         M_Laser(
             c, g_B15M.frame / 10, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
-            Math16_Wrap(g_B15M.girl.top + 28), Boss_Player(c->hit)->left, 400,
-            50, 20, 8);
+            Math16_Wrap(g_B15M.girl.top + 28), Boss_Player()->left, 400, 50, 20,
+            8);
         Sound_Effect(6);
     }
     return 1;
@@ -1423,7 +1422,7 @@ bool B15M_UpdateAndRender(const B15M_CONTEXT *const c, const uint64_t host_tick)
             return false;
         }
         g_B15M.pending = B15M_PENDING_NONE;
-        Boss_Player(c->hit)->is_hit = true;
+        Boss_Player()->is_hit = true;
         M_SafetyAfterHit(c);
         g_B15M.girl_subphase = 1;
         g_B15M.phase5_subphase = 0;

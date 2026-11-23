@@ -117,9 +117,9 @@ static void M_Track(const B10M_CONTEXT *const c, const uint8_t flags)
         BOSS_ENTITY *const e = &g_B10M.eyes[i];
         if ((flags & (1 << i)) != 0) {
             const int16_t center = Math16_Wrap(e->left + 32);
-            e->image = Math16_Wrap(center - Boss_Player(c->hit)->left) > 32 ? 4
-                : Math16_Wrap(Boss_Player(c->hit)->left - center) > 32      ? 5
-                                                                            : 3;
+            e->image = Math16_Wrap(center - Boss_Player()->left) > 32 ? 4
+                : Math16_Wrap(Boss_Player()->left - center) > 32      ? 5
+                                                                      : 3;
         }
     }
 }
@@ -266,14 +266,14 @@ static void M_Entrance(const B10M_CONTEXT *const c)
             M_DownLaser(c, i, true);
             const int16_t x = Math16_Wrap(g_B10M.eyes[i].left + 28);
             const int16_t width = i == 1 ? 8 : 32;
-            if (Boss_Player(c->hit)->left > Math16_Wrap(x - 24)
-                && Boss_Player(c->hit)->left < Math16_Wrap(x + 24 - width)) {
-                Boss_Player(c->hit)->is_hit = true;
+            if (Boss_Player()->left > Math16_Wrap(x - 24)
+                && Boss_Player()->left < Math16_Wrap(x + 24 - width)) {
+                Boss_Player()->is_hit = true;
             }
         }
     }
-    if (Boss_Player(c->hit)->invincible) {
-        Boss_Player(c->hit)->is_hit = false;
+    if (Boss_Player()->invincible) {
+        Boss_Player()->is_hit = false;
     }
     if (g_B10M.frame % 40 == 0) {
         c->stage_palette->colors[15][0] =
@@ -392,7 +392,7 @@ static void M_Missiles(const B10M_CONTEXT *const c, const bool clock)
         if (g_B10M.subphase == 0) {
             g_B10M.subphase =
                 (int16_t)((MasterRng_Next(&g_Rng) % (clock ? 2 : 3)) * 4 + 1);
-            g_B10M.target_left = Math16_Wrap(Boss_Player(c->hit)->left - 8);
+            g_B10M.target_left = Math16_Wrap(Boss_Player()->left - 8);
             g_B10M.angle =
                 (uint8_t)(Math16_Angle(
                               Math16_Wrap(400 - g_B10M.eyes[2].top + 28),
@@ -657,7 +657,7 @@ static void M_SpawnStar(const B10M_CONTEXT *const c)
     if (g_B10M.frame == 100 || g_B10M.subphase == 1) {
         if (g_B10M.subphase == 0) {
             g_B10M.subphase = 1;
-            g_B10M.target_left = Boss_Player(c->hit)->left;
+            g_B10M.target_left = Boss_Player()->left;
         }
         M_Shrink(c, 0, false);
         if (g_B10M.frame == 140) {
@@ -692,8 +692,8 @@ static void M_Spin(const bool clockwise)
 static void M_Aim(const B10M_CONTEXT *const c)
 {
     g_B10M.pentagram.velocity = Math16_Aim(
-        g_B10M.pentagram.center,
-        (MATH16_VECTOR) { Boss_Player(c->hit)->left, 400 }, 4, 0);
+        g_B10M.pentagram.center, (MATH16_VECTOR) { Boss_Player()->left, 400 },
+        4, 0);
 }
 
 static void M_Back(const B10M_CONTEXT *const c, const int16_t phase)
