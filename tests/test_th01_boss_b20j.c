@@ -104,7 +104,7 @@ typedef struct {
     B20J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage;
-    bool damage, cleared;
+    bool cleared;
 } FIXTURE;
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -144,7 +144,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     f->hit = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
-                                  .test_damage = &f->damage,
                                   .frame_rand = 0x12345678 };
     f->context = (B20J_CONTEXT) {
         .assets = &f->assets,

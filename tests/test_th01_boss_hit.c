@@ -17,7 +17,6 @@ typedef struct {
     PTN sprites;
     GAME_TEXT_FONT font;
     int16_t hp, expected_shot_hp;
-    bool test_damage;
     int32_t events[8], count;
 } FIXTURE;
 
@@ -60,8 +59,7 @@ static void M_Init(FIXTURE *const f)
     f->baseline.colors[2][2] = 3;
     Palette_Set(&g_Palette, &f->baseline);
     Hud_Load(nullptr, &f->sprites, &f->font);
-    f->context = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
-                                      .test_damage = &f->test_damage };
+    f->context = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f } };
 }
 
 TEST(real_hud_health_and_flash_follow_hit_order)
@@ -91,14 +89,14 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
     Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
-    f.test_damage = true;
+    g_TestDamage = true;
     f.expected_shot_hp = 7;
     f.hit = (BOSS_HIT) { .frame = 1, .invincible = true };
     g_Shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
     BossHit_UpdateAndRender(
         &f.hit, &f.context, &f.hp, &f.baseline, nullptr, 0, 3000, true,
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
-    CHECK(!f.test_damage);
+    CHECK(!g_TestDamage);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(g_Stage.score, 0);
     CHECK_EQ_INT(f.count, 2);

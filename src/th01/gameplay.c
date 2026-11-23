@@ -682,7 +682,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             Video_SetScroll(0);
             g_Session.exit_rand = g_Session.frame_rand;
-            g->world.test_damage = false;
+            g_TestDamage = false;
             g_Player.bomb_frame = 200;
             if (g_Stage.cleared) {
                 g_Stage.cleared = false;

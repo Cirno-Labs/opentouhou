@@ -23,7 +23,7 @@ typedef struct {
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route_context;
     uint8_t route;
-    bool test_damage, cleared;
+    bool cleared;
 
 } FIXTURE;
 
@@ -116,7 +116,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->hit_context.test_damage = &f->test_damage;
     f->route_assets = (ROUTE_SELECT_ASSETS) {
         &f->font,
         &f->stage,

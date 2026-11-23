@@ -19,7 +19,7 @@ typedef struct {
     B15M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    bool test_damage, cleared;
+    bool cleared;
 } FIXTURE;
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
@@ -174,7 +174,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     f->hit.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->hit.test_damage = &f->test_damage;
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;

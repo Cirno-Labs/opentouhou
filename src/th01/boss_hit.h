@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th01/bomb.h"
+#include "th01/boss.h"
 #include "th01/hud.h"
 #include "th01/hud_hp.h"
 
@@ -15,7 +16,6 @@ typedef struct {
 
 typedef struct {
     SHOTS_OUTPUT shots_output;
-    bool *test_damage;
     uint32_t frame_rand;
 } BOSS_HIT_CONTEXT;
 

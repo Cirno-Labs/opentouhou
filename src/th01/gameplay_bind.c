@@ -93,7 +93,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     };
     g->bindings.hit = (BOSS_HIT_CONTEXT) {
         .shots_output = g->bindings.shots_output,
-        .test_damage = &g->world.test_damage,
         .frame_rand = g_Session.frame_rand,
     };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
