@@ -1,5 +1,6 @@
 #include "th01/boss_b15m.h"
 
+#include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "core/base/assert.h"
@@ -8,27 +9,6 @@
 #include "th01/wave.h"
 
 #include <string.h>
-
-static RESULT M_LoadBos(
-    VFS *const vfs, const char *const name, const ALLOCATOR *const a,
-    BOS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
-    const RESULT result = Bos_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
-
-static RESULT M_LoadBackground(
-    VFS *const vfs, const ALLOCATOR *const a, PI_IMAGE *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS5.GRP", VFS_IN_MEMORY, &reader));
-    const RESULT result = Pi_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
 
 static RESULT M_LoadGrc(
     VFS *const vfs, const ALLOCATOR *const a, GRC *const out)
@@ -103,12 +83,12 @@ RESULT B15M_LoadAssets(
 {
     *out = (B15M_ASSETS) {};
     B15M_ASSETS loaded = {};
-    MUST(M_LoadBos(vfs, "BOSS5.BOS", a, &loaded.girl));
-    MUST(M_LoadBos(vfs, "BOSS5_2.BOS", a, &loaded.attack));
-    MUST(M_LoadBos(vfs, "BOSS5_3.BOS", a, &loaded.bat));
+    MUST(Boss_LoadBos(vfs, "BOSS5.BOS", a, &loaded.girl));
+    MUST(Boss_LoadBos(vfs, "BOSS5_2.BOS", a, &loaded.attack));
+    MUST(Boss_LoadBos(vfs, "BOSS5_3.BOS", a, &loaded.bat));
     MUST(M_LoadGrc(vfs, a, &loaded.spheres));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
-    MUST(M_LoadBackground(vfs, a, &loaded.background));
+    MUST(Boss_LoadBackground(vfs, "BOSS5.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 5, a, &loaded.next_scene));
     MUST(M_LoadStar(vfs, scratch, scratch_size, a, &loaded.star));
     MUST(B15M_ValidateAssets(&loaded));
@@ -152,28 +132,13 @@ void B15M_Setup(B15M *const b, const B15M_CONTEXT *const c)
     Particles_Init(c->particles);
 }
 
-static PLAYER *M_Player(const B15M_CONTEXT *const c)
-{
-    return c->hit->display->player;
-}
 static int16_t M_W(const int32_t x)
 {
     return Math16_Wrap(x);
 }
-static int16_t M_Rank(
-    const B15M_CONTEXT *const c, const int16_t e, const int16_t n,
-    const int16_t h, const int16_t l)
-{
-    const int32_t rank = c->hit->display->rank;
-    return rank == 0 ? e : rank == 2 ? h : rank == 3 ? l : n;
-}
 static uint16_t M_Random(const B15M_CONTEXT *const c)
 {
     return MasterRng_Next(c->rng);
-}
-static void M_Effect(const B15M_CONTEXT *const c, const int16_t n)
-{
-    c->hit->effect(c->hit->user, n);
 }
 static int16_t M_CenterX(const B15M *const b, const int16_t form)
 {
@@ -345,7 +310,7 @@ static bool M_SummonFlash(
 {
     if (b->frame >= start && b->frame % 2 == 0 && circle->frame == 0) {
         if (b->frame == start) {
-            M_Effect(c, 8);
+            Boss_Effect(c->hit, 8);
         }
         M_SummonDots(c, circle, M_CenterX(b, 0), M_CenterY(b, 0), end);
         if (circle->angle >= 64) {
@@ -373,7 +338,7 @@ static void M_Group(
     const PELLET_GROUP group, const int16_t speed)
 {
     Pellets_AddGroup(
-        c->pellets, c->pellet_shared, M_Player(c), c->rng,
+        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
         c->hit->display->rank, x, y, group, speed);
 }
 static void M_FormGroup(
@@ -405,7 +370,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 {
     const B15M_CONTEXT *const c = user;
     if (action.kind == MISSILES_ACTION_EFFECT) {
-        M_Effect(c, action.effect);
+        Boss_Effect(c->hit, action.effect);
     } else {
         Missiles_RenderAction(&c->assets->missiles, action);
     }
@@ -414,17 +379,14 @@ static void M_Hit(
     B15M *const b, const B15M_CONTEXT *const c, const int16_t form)
 {
     const BOSS_ENTITY *const e = b->form == 0 ? &b->girl : &b->bat;
-    BOSS_HIT_CONTEXT hit = *c->hit;
-    hit.hp = &b->hp;
-    hit.boss_palette = &b->boss_palette;
     const uint8_t colors[] = { 3, 6, 8, 2 };
     const BOSS_SHOT_HITBOX box = form == 0
         ? (BOSS_SHOT_HITBOX) { M_W(b->girl.left + 32), M_W(b->girl.top + 32),
                                64, 48 }
         : (BOSS_SHOT_HITBOX) { b->bat.left, b->bat.left, 32, 32 };
     BossHit_UpdateAndRender(
-        &b->hit, &hit, colors, 4, 7000, BossEntity_HitTestOrb(e, c->hit->orb),
-        box);
+        &b->hit, c->hit, &b->hp, &b->boss_palette, colors, 4, 7000,
+        BossEntity_HitTestOrb(e, c->hit->orb), box);
 }
 static void M_Next(B15M *const b, const int8_t phase, const int16_t pattern)
 {
@@ -476,7 +438,7 @@ static void M_Rifts(
             M_Grc(c, r->x[i], r->y[i], image, color);
         }
     }
-    M_Effect(c, 7);
+    Boss_Effect(c->hit, 7);
 }
 static bool M_Teleport(
     B15M *const b, const B15M_CONTEXT *const c, const int16_t x,
@@ -684,7 +646,7 @@ static int16_t M_LasersAcross(B15M *const b, const B15M_CONTEXT *const c)
     if (b->frame == 50) {
         b->direction = M_Random(c) % 2;
         M_Both(b, c, &b->girl, 1, false);
-        b->pattern_state = M_Rank(c, 50, 55, 60, 65);
+        b->pattern_state = Boss_Rank(50, 55, 60, 65);
     } else if (b->frame == 60) {
         M_Circle(c, x, y, 32, 4, 2, 0, 255);
         b->circle_radius = 32;
@@ -709,7 +671,7 @@ static int16_t M_LasersAcross(B15M *const b, const B15M_CONTEXT *const c)
         M_Laser(
             c, b->frame / 10, M_W(b->girl.left + 60), M_W(b->girl.top + 28), tx,
             400, b->pattern_state, 25, 4);
-        M_Effect(c, 6);
+        Boss_Effect(c->hit, 6);
         if ((b->direction == 0 && tx >= 640)
             || (b->direction == 1 && tx <= 0)) {
             b->frame = 0;
@@ -722,7 +684,7 @@ static int16_t M_RandomMissiles(B15M *const b, const B15M_CONTEXT *const c)
 {
     if (b->frame == 50) {
         M_Both(b, c, &b->girl, 1, false);
-        b->pattern_state = M_Rank(c, 15, 21, 25, 29);
+        b->pattern_state = Boss_Rank(15, 21, 25, 29);
     }
     if (b->frame > 60 && b->frame % 3 == 0) {
         const int32_t i = M_Random(c) % 5;
@@ -748,8 +710,8 @@ static int16_t M_CirclePellets(B15M *const b, const B15M_CONTEXT *const c)
     if (b->frame == 50) {
         M_Both(b, c, &b->girl, 1, false);
         b->circle.angle = 0;
-        b->pattern_state = M_Rank(
-            c, PELLET_GROUP_SINGLE_AIMED, PELLET_GROUP_RANDOM_NARROW_AIMED,
+        b->pattern_state = Boss_Rank(
+            PELLET_GROUP_SINGLE_AIMED, PELLET_GROUP_RANDOM_NARROW_AIMED,
             PELLET_GROUP_THREE_WIDE_AIMED, PELLET_GROUP_FIVE_NARROW_AIMED);
     }
     if (M_SummonFlash(b, c, &b->circle, 60, 0)) {
@@ -820,7 +782,7 @@ static int16_t M_Star(B15M *const b, const B15M_CONTEXT *const c)
     }
     if (b->frame >= 10 && b->frame % 2 == 0 && circle->frame == 0) {
         if (b->frame == 10) {
-            M_Effect(c, 8);
+            Boss_Effect(c->hit, 8);
         }
         M_SummonDots(c, circle, M_CenterX(b, 0), M_CenterY(b, 0), 2);
         if (circle->angle >= 64) {
@@ -856,7 +818,7 @@ static int16_t M_CurvedRings(B15M *const b, const B15M_CONTEXT *const c)
     M_Attack(b, c);
     int16_t offset = -1, speed = 0;
     if (b->frame == 10) {
-        b->pattern_state = M_Rank(c, 14, 16, 18, 20);
+        b->pattern_state = Boss_Rank(14, 16, 18, 20);
         offset = 0;
         speed = 48;
     } else if (b->frame == 16) {
@@ -903,12 +865,12 @@ static int16_t M_SphereClusters(B15M *const b, const B15M_CONTEXT *const c)
     } else if (b->frame > 100 && b->frame <= 230 && b->frame % 10 == 0) {
         if (b->frame <= 200) {
             const int32_t n = (b->frame - 100) / 10;
-            M_Effect(c, 7);
+            Boss_Effect(c->hit, 7);
             M_Grc(c, b->sphere_x[n - 1], b->sphere_y[n - 1], 4, 4);
             for (int32_t i = n; i < 10; i++) {
                 M_Grc(c, b->sphere_x[i], b->sphere_y[i], 3, 4);
             }
-            b->pattern_state = M_Rank(c, 5, 7, 9, 13);
+            b->pattern_state = Boss_Rank(5, 7, 9, 13);
             for (int32_t i = 0; i < b->pattern_state; i++) {
                 const uint8_t angle = M_Random(c) & 127;
                 const int16_t speed = (M_Random(c) + 24) & 63;
@@ -931,7 +893,7 @@ static int16_t M_RandomRifts(B15M *const b, const B15M_CONTEXT *const c)
 {
     M_Attack(b, c);
     if (b->frame == 30) {
-        b->pattern_state = M_Rank(c, 6, 3, 2, 2);
+        b->pattern_state = Boss_Rank(6, 3, 2, 2);
     }
     if (b->frame > 60 && b->frame < 120 && b->frame % b->pattern_state == 0) {
         const int32_t i = M_Random(c) % 5;
@@ -1086,9 +1048,8 @@ static void M_BatPattern(B15M *const b, const B15M_CONTEXT *const c)
         if (b->frame % 16 == 0) {
             M_FormGroup(
                 b, c, 1,
-                (PELLET_GROUP)M_Rank(
-                    c, PELLET_GROUP_THREE_WIDE_AIMED,
-                    PELLET_GROUP_FIVE_WIDE_AIMED,
+                (PELLET_GROUP)Boss_Rank(
+                    PELLET_GROUP_THREE_WIDE_AIMED, PELLET_GROUP_FIVE_WIDE_AIMED,
                     PELLET_GROUP_FIVE_NARROW_AIMED, PELLET_GROUP_FIVE_NARROW),
                 56);
         }
@@ -1135,7 +1096,7 @@ static int16_t M_SymmetricArc(B15M *const b, const B15M_CONTEXT *const c)
 {
     M_Attack(b, c);
     if (b->frame == 50) {
-        b->pattern_state = M_Rank(c, 2, 3, 3, 4);
+        b->pattern_state = Boss_Rank(2, 3, 3, 4);
         for (int32_t i = 0; i < 4; i++) {
             M_SymmetricFire(b, c, 64, M_W((i + b->pattern_state) * 16));
         }
@@ -1144,13 +1105,13 @@ static int16_t M_SymmetricArc(B15M *const b, const B15M_CONTEXT *const c)
         for (int32_t i = 0; i < 4; i++) {
             M_SymmetricFire(b, c, angle, M_W((i + b->pattern_state) * 16));
         }
-        M_Effect(c, 7);
+        Boss_Effect(c->hit, 7);
     } else if (b->frame == 80) {
         for (int32_t i = 0; i < 10; i++) {
             M_SymmetricFire(
                 b, c, (uint8_t)(i * 6), M_W((2 + b->pattern_state) * 16));
         }
-        M_Effect(c, 7);
+        Boss_Effect(c->hit, 7);
     } else if (b->frame >= 120) {
         b->frame = 0;
         return 0;
@@ -1159,7 +1120,7 @@ static int16_t M_SymmetricArc(B15M *const b, const B15M_CONTEXT *const c)
 }
 static void M_SafetyAfterHit(B15M *const b, const B15M_CONTEXT *const c)
 {
-    if (M_Player(c)->is_hit) {
+    if (Boss_Player(c->hit)->is_hit) {
         b->safety_circle.frame = 200;
     }
     if (b->frame % b->pattern_state == 0) {
@@ -1186,13 +1147,13 @@ static int16_t M_Safety(
         return 1;
     }
     if (b->frame == 60) {
-        b->pattern_state = M_Rank(c, 4, 2, 2, 2);
+        b->pattern_state = Boss_Rank(4, 2, 2, 2);
         circle->angle = 0;
     }
     if (b->frame >= 60 && b->frame % 2 == 0 && circle->frame == 0) {
         if (b->frame == 60) {
-            M_Effect(c, 8);
-            b->safety_left = M_Player(c)->left;
+            Boss_Effect(c->hit, 8);
+            b->safety_left = Boss_Player(c->hit)->left;
         }
         M_SummonDots(c, circle, M_W(b->safety_left + 16), 384, 2);
         if (circle->angle >= 64) {
@@ -1207,9 +1168,9 @@ static int16_t M_Safety(
             M_EraseCircle(c, M_W(b->safety_left + 16), 384, 128, 1);
             M_Circle(c, M_W(b->safety_left + 16), 384, 128, 7, 1, 0, 255);
         }
-        if (!M_Player(c)->invincible
-            && (M_W(b->safety_left + 104) <= M_Player(c)->left
-                || M_W(b->safety_left - 128) >= M_Player(c)->left)) {
+        if (!Boss_Player(c->hit)->invincible
+            && (M_W(b->safety_left + 104) <= Boss_Player(c->hit)->left
+                || M_W(b->safety_left - 128) >= Boss_Player(c->hit)->left)) {
             b->pending = 2;
             b->pending_tick = host_tick;
             return -1;
@@ -1245,7 +1206,7 @@ static int16_t M_AimedRing(B15M *const b, const B15M_CONTEXT *const c)
     if (b->frame == 50) {
         M_Both(b, c, &b->girl, 1, false);
         b->aimed_circle.angle = 0;
-        b->pattern_state = M_Rank(c, 40, 30, 20, 15);
+        b->pattern_state = Boss_Rank(40, 30, 20, 15);
     }
     if (M_SummonFlash(b, c, &b->aimed_circle, 60, 2)) {
         M_EraseBigCircle(b, c);
@@ -1273,8 +1234,8 @@ static int16_t M_AimedRing(B15M *const b, const B15M_CONTEXT *const c)
     if (b->frame % (b->pattern_state * 2) == 0) {
         M_Laser(
             c, b->frame / 10, M_W(M_CenterX(b, 0) - 4), M_W(b->girl.top + 28),
-            M_Player(c)->left, 400, 50, 20, 8);
-        M_Effect(c, 6);
+            Boss_Player(c->hit)->left, 400, 50, 20, 8);
+        Boss_Effect(c->hit, 6);
     }
     return 1;
 }
@@ -1376,7 +1337,7 @@ static bool M_Death(B15M *const b, const B15M_CONTEXT *const c)
     const BOSS_DEFEAT_CONTEXT context = { .palette = c->hit->palette,
                                           .post_defeat = &b->post_defeat,
                                           .miko = c->miko,
-                                          .player = M_Player(c),
+                                          .player = Boss_Player(c->hit),
                                           .origin_top = &c->hit->orb->top,
                                           .stage_cleared = c->stage_cleared };
     if (!BossDefeat_Resume(&b->defeat, &context)) {
@@ -1403,40 +1364,6 @@ static bool M_Tail(B15M *const b, const B15M_CONTEXT *const c)
         }
     }
     return true;
-}
-RESULT B15M_ValidateContext(const B15M_CONTEXT *const c)
-{
-    FAIL_IF(
-        c == nullptr || c->assets == nullptr || c->sprites == nullptr
-            || c->hit == nullptr || c->hit->display == nullptr
-            || c->hit->palette == nullptr || c->hit->health == nullptr
-            || c->hit->hud == nullptr || c->hit->shots_output.action == nullptr
-            || c->hit->display->remaining_lives == nullptr
-            || c->hit->display->high_score == nullptr
-            || c->hit->display->font == nullptr
-            || c->hit->display->sprites == nullptr
-            || c->hit->display->player == nullptr
-            || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
-            || c->hit->orb == nullptr || c->hit->test_damage == nullptr
-            || c->hit->effect == nullptr || c->particles == nullptr
-            || c->pellets == nullptr || c->pellet_shared == nullptr
-            || c->missiles == nullptr || c->lasers == nullptr
-            || c->rng == nullptr || c->miko == nullptr || c->scene == nullptr
-            || c->stage_cleared == nullptr || c->fade_music == nullptr,
-        "Missing Elis context");
-    MUST(B15M_ValidateAssets(c->assets));
-    FAIL_IF(
-        c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr,
-        "Missing Elis HUD storage");
-    MUST(Shots_ValidateSprites(c->hit->display->sprites));
-    for (uint32_t digit = 0xff10; digit <= 0xff19; digit++) {
-        FAIL_IF(
-            GameText_Find(c->hit->display->font, digit) == nullptr,
-            "Missing Elis score glyph");
-    }
-    MUST(BossDefeat_ValidateSprites(c->miko));
-    return OK;
 }
 bool B15M_UpdateAndRender(
     B15M *const b, const B15M_CONTEXT *const c, const uint64_t host_tick)
@@ -1470,7 +1397,7 @@ bool B15M_UpdateAndRender(
             return false;
         }
         b->pending = 0;
-        M_Player(c)->is_hit = true;
+        Boss_Player(c->hit)->is_hit = true;
         M_SafetyAfterHit(b, c);
         b->girl_subphase = 1;
         b->phase5_subphase = 0;
@@ -1481,7 +1408,7 @@ bool B15M_UpdateAndRender(
     }
     b->call_phase = b->phase;
     Missiles_UpdateAndRender(
-        c->missiles, M_Player(c), (uint16_t)c->hit->frame_rand,
+        c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (b->phase == 0) {
         return M_Entrance(b, c);

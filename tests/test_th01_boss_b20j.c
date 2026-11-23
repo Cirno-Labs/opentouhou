@@ -1,4 +1,5 @@
 #include "th01/boss_b20j.h"
+#include "th01/session.h"
 
 #include "core/base/arena.h"
 
@@ -200,7 +201,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .audio = M_Audio };
     B20J_Init(&f->boss);
     B20J_Setup(&f->boss, &f->context);
-    CHECK(Result_Ignore(B20J_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
@@ -261,6 +262,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             FIXTURE f;
             M_Fixture(&f, &arena);
             f.display.rank = rank;
+            g_Session.settings.difficulty = rank;
             f.boss.phase = 7;
             f.boss.pattern = pattern;
             f.boss.frame = 0;
@@ -419,21 +421,6 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     CHECK_EQ_INT(f.effects[3], 1);
     CHECK(f.cleared && f.boss.finished);
     CHECK_EQ_INT(arena.used, used);
-    Arena_Free(&arena);
-}
-
-TEST(context_requires_audio_and_game_clear_owners)
-{
-    ARENA arena;
-    Arena_Init(&arena, "Konngara context", 2 * 1024 * 1024);
-    FIXTURE f;
-    M_Fixture(&f, &arena);
-    B20J_CONTEXT bad = f.context;
-    bad.audio = nullptr;
-    CHECK(!Result_Ignore(B20J_ValidateContext(&bad)));
-    bad = f.context;
-    bad.game_cleared = nullptr;
-    CHECK(!Result_Ignore(B20J_ValidateContext(&bad)));
     Arena_Free(&arena);
 }
 

@@ -14,14 +14,15 @@ static void M_Flash(
 }
 
 void BossHit_UpdateAndRender(
-    BOSS_HIT *const hit, const BOSS_HIT_CONTEXT *const c,
-    const uint8_t *const flash_colors, const uint8_t flash_count,
-    const int16_t hit_score, const bool orb_hit, const BOSS_SHOT_HITBOX box)
+    BOSS_HIT *const hit, const BOSS_HIT_CONTEXT *const c, int16_t *const hp,
+    const PALETTE *const boss_palette, const uint8_t *const flash_colors,
+    const uint8_t flash_count, const int16_t hit_score, const bool orb_hit,
+    const BOSS_SHOT_HITBOX box)
 {
     if (*c->test_damage) {
-        *c->hp = Math16_Wrap(*c->hp - 1);
+        *hp = Math16_Wrap(*hp - 1);
         *c->test_damage = false;
-        HudHp_Decrement(c->health, *c->hp);
+        HudHp_Decrement(c->health, *hp);
     }
     Shots_HitTestBoss(
         c->shots, box.left, box.top, box.width_minus_shot,
@@ -31,7 +32,7 @@ void BossHit_UpdateAndRender(
             c->display->player, *c->display->remaining_lives, c->frame_rand)) {
         hit->frame = 0;
         M_Flash(c, flash_colors, flash_count);
-        *c->hp = Math16_Wrap(*c->hp - 1);
+        *hp = Math16_Wrap(*hp - 1);
         hit->invincible = true;
         ORB *const orb = c->orb;
         if (orb->velocity_x == ORB_X_LEFT_4
@@ -47,16 +48,16 @@ void BossHit_UpdateAndRender(
         c->display->gameplay->score += (uint32_t)(int32_t)hit_score;
         Hud_ScoreAndCombo(c->hud, c->display);
         c->effect(c->user, 3);
-        HudHp_Decrement(c->health, *c->hp);
+        HudHp_Decrement(c->health, *hp);
     }
     if (hit->invincible && hit->frame < 40) {
         if (hit->frame % 4 == 2) {
             M_Flash(c, flash_colors, flash_count);
         } else if (hit->frame % 4 == 0) {
-            Palette_Set(c->palette, c->boss_palette);
+            Palette_Set(c->palette, boss_palette);
         }
     } else if (hit->frame > 40) {
-        Palette_Set(c->palette, c->boss_palette);
+        Palette_Set(c->palette, boss_palette);
         hit->frame = 0;
         hit->invincible = false;
     }

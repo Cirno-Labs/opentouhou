@@ -1,4 +1,5 @@
 #include "th01/boss_b15m.h"
+#include "th01/session.h"
 #include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
@@ -227,7 +228,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->context.stage_cleared = &f->cleared;
     f->context.fade_music = M_Fade;
     f->context.missiles = &f->missiles;
-    CHECK(Result_Ignore(B15M_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 static void M_Run(B15M *const b, FIXTURE *const f, uint64_t *const tick)
@@ -376,6 +377,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         f.hit.frame_rand = 0xb15f0000u + (uint32_t)rank;
         B15M b;
         B15M_Init(&b, Arena_Allocator(&arena));
@@ -623,26 +625,5 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
         CHECK_EQ_INT(f.missiles.slots[i].flag, MISSILE_MOVING);
         CHECK_EQ_INT(f.missiles.slots[i].left, 200 * 16);
     }
-    Arena_Free(&arena);
-}
-
-TEST(context_validation_requires_live_hud_and_audio_consumers)
-{
-    ARENA arena;
-    Arena_Init(&arena, "b15m", 4 * 1024 * 1024);
-    FIXTURE f;
-    M_Battle(&f, &arena);
-    CHECK(Result_Ignore(B15M_ValidateContext(&f.context)));
-    B15M_CONTEXT bad = f.context;
-    bad.fade_music = nullptr;
-    CHECK(!Result_Ignore(B15M_ValidateContext(&bad)));
-    bad = f.context;
-    bad.lasers = nullptr;
-    CHECK(!Result_Ignore(B15M_ValidateContext(&bad)));
-    BOSS_HIT_CONTEXT hit = f.hit;
-    hit.shots_output.action = nullptr;
-    bad = f.context;
-    bad.hit = &hit;
-    CHECK(!Result_Ignore(B15M_ValidateContext(&bad)));
     Arena_Free(&arena);
 }

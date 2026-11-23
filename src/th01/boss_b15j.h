@@ -60,8 +60,6 @@ RESULT B15J_ValidateAssets(const B15J_ASSETS *assets);
 // owner applies its palette before entering the battle. No allocation or IO.
 void B15J_Setup(B15J *boss, const B15J_CONTEXT *context);
 
-RESULT B15J_ValidateContext(const B15J_CONTEXT *context);
-
 // Runs one ordinary call. False suspends the world during the barn-door
 // and ring entrance or regular defeat. Advance only independent audio and
 // reference VSyncs before polling again. Pending polls preserve actor state.

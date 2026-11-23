@@ -1,4 +1,5 @@
 #include "th01/boss_b15j.h"
+#include "th01/session.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 
@@ -135,7 +136,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->context.scene = &f->scene;
     f->context.stage_cleared = &f->cleared;
     f->context.fade_music = M_Fade;
-    CHECK(Result_Ignore(B15J_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 TEST(setup_binds_shared_banks_and_keeps_actor_history)
@@ -294,6 +295,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         B15J b = {};
         B15J_Setup(&b, &f.context);
         Frame_Reset();
@@ -397,6 +399,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         B15J b = {};
         B15J_Setup(&b, &f.context);
         b.phase = 6;
@@ -491,27 +494,6 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         CHECK_EQ_INT(f.effects[7], 1);
         Arena_Free(&arena);
     }
-}
-
-TEST(context_requires_complete_borrowed_resources)
-{
-    ARENA arena;
-    Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
-    FIXTURE f;
-    M_Battle(&f, &arena);
-    CHECK(Result_Ignore(B15J_ValidateContext(&f.context)));
-    f.context.fade_music = nullptr;
-    CHECK(!Result_Ignore(B15J_ValidateContext(&f.context)));
-    f.context.fade_music = M_Fade;
-    f.hit_context.shots_output.action = nullptr;
-    CHECK(!Result_Ignore(B15J_ValidateContext(&f.context)));
-    f.hit_context.shots_output.action = M_Shot;
-    f.display.remaining_lives = nullptr;
-    CHECK(!Result_Ignore(B15J_ValidateContext(&f.context)));
-    f.display.remaining_lives = &f.lives;
-    f.assets.ripples.pixels = nullptr;
-    CHECK(!Result_Ignore(B15J_ValidateContext(&f.context)));
-    Arena_Free(&arena);
 }
 
 TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)

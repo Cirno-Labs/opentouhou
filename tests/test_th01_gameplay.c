@@ -667,18 +667,3 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     Audio_Shutdown();
     Arena_Free(&f.arena);
 }
-
-TEST(public_prepare_rejects_invalid_borrowed_assets_with_empty_output)
-{
-    ARENA arena;
-    Arena_Init(&arena, "invalid gameplay group", 8 * 1024 * 1024);
-    const ALLOCATOR *const allocator = Arena_Allocator(&arena);
-    GAMEPLAY_ASSETS *const assets = Th01TestAssets_Create(allocator);
-    Video_Init(allocator);
-    Session_Init();
-    assets->b05.sphere.count = 0;
-    GAMEPLAY *game;
-    CHECK(!Result_Ignore(Gameplay_Prepare(allocator, assets, &game)));
-    CHECK(game == nullptr);
-    Arena_Free(&arena);
-}

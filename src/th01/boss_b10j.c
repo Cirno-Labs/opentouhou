@@ -1,31 +1,11 @@
 #include "th01/boss_b10j.h"
 
+#include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
-
-static RESULT M_LoadBos(
-    VFS *const vfs, const char *const name, const ALLOCATOR *const a,
-    BOS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
-    const RESULT result = Bos_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
-
-static RESULT M_LoadBackground(
-    VFS *const vfs, const ALLOCATOR *const a, PI_IMAGE *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS3.GRP", VFS_IN_MEMORY, &reader));
-    const RESULT result = Pi_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
 
 static RESULT M_LoadMissiles(
     VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
@@ -94,9 +74,9 @@ RESULT B10J_LoadAssets(
 {
     *out = (B10J_ASSETS) {};
     B10J_ASSETS loaded = {};
-    MUST(M_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
-    MUST(M_LoadBos(vfs, "BOSS3_2.BOS", a, &loaded.animation));
-    MUST(M_LoadBackground(vfs, a, &loaded.background));
+    MUST(Boss_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
+    MUST(Boss_LoadBos(vfs, "BOSS3_2.BOS", a, &loaded.animation));
+    MUST(Boss_LoadBackground(vfs, "BOSS3.GRP", a, &loaded.background));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 4, a, &loaded.next_scene));
     MUST(M_LoadPillars(vfs, scratch, scratch_size, a, &loaded.pillars));
@@ -161,32 +141,6 @@ bool B10J_ResumeSetup(B10J *const b, const B10J_CONTEXT *const c)
     *c->stage_palette = c->hit->palette->saved;
     b->setup_active = false;
     return true;
-}
-
-static PLAYER *M_Player(const B10J_CONTEXT *const c)
-{
-    return c->hit->display->player;
-}
-
-static int16_t M_Rank(
-    const B10J_CONTEXT *const c, const int16_t e, const int16_t n,
-    const int16_t h, const int16_t l)
-{
-    switch (c->hit->display->rank) {
-    case SETTINGS_DIFFICULTY_EASY:
-        return e;
-    case SETTINGS_DIFFICULTY_HARD:
-        return h;
-    case SETTINGS_DIFFICULTY_LUNATIC:
-        return l;
-    default:
-        return n;
-    }
-}
-
-static void M_Effect(const B10J_CONTEXT *const c, const int16_t effect)
-{
-    c->hit->effect(c->hit->user, effect);
 }
 
 static void M_Snap(B10J *const b, const B10J_CONTEXT *const c)
@@ -365,8 +319,8 @@ static void M_AimedStatic(B10J *const b, const B10J_CONTEXT *const c)
     }
     if (b->frame == 100) {
         M_SquareInit(sq);
-        b->pattern_state = M_Rank(c, 64, 72, 80, 88);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(64, 72, 80, 88);
+        Boss_Effect(c->hit, 8);
     }
     int16_t x[4], y[4];
     if (b->frame % 8 == 0) {
@@ -383,13 +337,13 @@ static void M_AimedStatic(B10J *const b, const B10J_CONTEXT *const c)
                           Math16_Wrap(x[i] - b->still.left - 64))
                     : Math16_Angle(
                           Math16_Wrap(384 - y[i]),
-                          Math16_Wrap(M_Player(c)->left + 12 - x[i]));
+                          Math16_Wrap(Boss_Player(c->hit)->left + 12 - x[i]));
                 M_Add(
                     c, x[i], y[i], angle,
                     b->frame > 280 ? b->pattern_state
                                    : (int16_t)(b->pattern_state / 2),
                     false);
-                M_Effect(c, 7);
+                Boss_Effect(c->hit, 7);
             }
         }
         M_Corners(b, x, y, sq->radius, sq->angle);
@@ -410,8 +364,8 @@ static void M_AimedMissiles(B10J *const b, const B10J_CONTEXT *const c)
     }
     if (b->frame == 100) {
         M_SquareInit(sq);
-        b->pattern_state = M_Rank(c, 96, 104, 112, 118);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(96, 104, 112, 118);
+        Boss_Effect(c->hit, 8);
     }
     int16_t x[4], y[4];
     if (b->frame % 8 == 0) {
@@ -421,7 +375,7 @@ static void M_AimedMissiles(B10J *const b, const B10J_CONTEXT *const c)
         if (sq->radius < 80) {
             sq->radius += 8;
         } else if (b->frame == 224) {
-            b->target_left = M_Player(c)->left;
+            b->target_left = Boss_Player(c->hit)->left;
         } else if (b->frame > 240) {
             const MATH16_VECTOR velocity = Math16_Aim(
                 (MATH16_VECTOR) { Math16_Wrap(b->still.left + 64),
@@ -433,7 +387,7 @@ static void M_AimedMissiles(B10J *const b, const B10J_CONTEXT *const c)
                     c->missiles, x[i], y[i], Math16_ToPixel(velocity.x),
                     Math16_ToPixel(velocity.y), 0);
             }
-            M_Effect(c, 6);
+            Boss_Effect(c->hit, 6);
         }
         M_Corners(b, x, y, sq->radius, sq->angle);
         M_Loop(c, x, y, false);
@@ -456,8 +410,8 @@ static void M_TwoSquares(B10J *const b, const B10J_CONTEXT *const c)
     }
     if (b->frame == 100) {
         M_SquareInit(sq);
-        b->pattern_state = M_Rank(c, 64, 72, 80, 88);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(64, 72, 80, 88);
+        Boss_Effect(c->hit, 8);
     }
     int16_t x[4], y[4], x2[4], y2[4];
     if (b->frame % 8 == 0) {
@@ -483,7 +437,7 @@ static void M_TwoSquares(B10J *const b, const B10J_CONTEXT *const c)
                         Math16_Wrap(y2[i] - b->still.top - 80),
                         Math16_Wrap(x2[i] - b->still.left - 64)),
                     b->pattern_state, false);
-                M_Effect(c, 7);
+                Boss_Effect(c->hit, 7);
             }
         }
         M_Corners(b, x, y, sq->radius, sq->angle);
@@ -538,8 +492,8 @@ static void M_Hop(B10J *const b, const B10J_CONTEXT *const c)
         if (b->hop != 4) {
             M_EraseBoth(b, c);
         }
-        b->pattern_state = M_Rank(c, 30, 35, 40, 45);
-        const int16_t count = M_Rank(c, 5, 8, 10, 12);
+        b->pattern_state = Boss_Rank(30, 35, 40, 45);
+        const int16_t count = Boss_Rank(5, 8, 10, 12);
         uint8_t angle = 0;
         for (int16_t i = 0; i < count;
              i++, angle = (uint8_t)(angle + 256 / count)) {
@@ -612,8 +566,8 @@ static void M_Pillars(B10J *const b, const B10J_CONTEXT *const c)
         b->pillar_x[5] = (int16_t)(336 + MasterRng_Next(c->rng) % 160);
         b->pillar_x[6] = (int16_t)(64 + MasterRng_Next(c->rng) % 224);
         b->pillar_x[7] = (int16_t)(336 + MasterRng_Next(c->rng) % 224);
-        b->pattern_state = M_Rank(c, 40, 45, 50, 55);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(40, 45, 50, 55);
+        Boss_Effect(c->hit, 8);
     }
     for (int32_t i = 0; i < 8; i++) {
         if (b->frame % 8 == i && b->frame > 100 + i * 20
@@ -625,7 +579,7 @@ static void M_Pillars(B10J *const b, const B10J_CONTEXT *const c)
         }
     }
     if (b->frame <= 240 && (b->frame - 100) % 20 == 0) {
-        M_Effect(c, 12);
+        Boss_Effect(c->hit, 12);
     }
     if (b->frame == 240) {
         M_Activate(b, c);
@@ -641,21 +595,21 @@ static void M_Pillars(B10J *const b, const B10J_CONTEXT *const c)
             Video_Line(320, 200, x, bottom, 1);
         } else if (b->pillar_time[i] > 16) {
             if (b->pillar_time[i] == 32) {
-                M_Effect(c, 7);
+                Boss_Effect(c->hit, 7);
                 Video_LineErase(320, 200, x, bottom);
             }
             M_Pillar(
                 c, Math16_Wrap(x - 16), bottom,
                 Math16_Wrap(16 * (34 - b->pillar_time[i])));
-            if (!M_Player(c)->invincible
-                && M_Player(c)->left > Math16_Wrap(x - 40)
-                && M_Player(c)->left < Math16_Wrap(x + 8)) {
-                M_Player(c)->is_hit = true;
+            if (!Boss_Player(c->hit)->invincible
+                && Boss_Player(c->hit)->left > Math16_Wrap(x - 40)
+                && Boss_Player(c->hit)->left < Math16_Wrap(x + 8)) {
+                Boss_Player(c->hit)->is_hit = true;
             }
             b->pillar_time[i] -= 8;
         } else if (b->pillar_time[i] != -999) {
             Pellets_AddGroup(
-                c->pellets, c->pellet_shared, M_Player(c), c->rng,
+                c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
                 c->hit->display->rank, Math16_Wrap(b->still.left + 64),
                 Math16_Wrap(b->still.top + 80), PELLET_GROUP_THREE_WIDE_AIMED,
                 36);
@@ -681,8 +635,8 @@ static void M_Halfcircle(B10J *const b, const B10J_CONTEXT *const c)
     if (b->frame == 100) {
         M_SquareInit(sq);
         b->missile_angle = 0;
-        b->pattern_state = M_Rank(c, 40, 45, 50, 55);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(40, 45, 50, 55);
+        Boss_Effect(c->hit, 8);
     }
     int16_t x[4], y[4];
     if (b->frame % 8 == 0) {
@@ -698,7 +652,7 @@ static void M_Halfcircle(B10J *const b, const B10J_CONTEXT *const c)
                 Missiles_Add(
                     c->missiles, x[i], y[i], velocity.x, velocity.y, 0);
             }
-            M_Effect(c, 6);
+            Boss_Effect(c->hit, 6);
             b->missile_angle += 13;
         }
         M_Corners(b, x, y, sq->radius, sq->angle);
@@ -720,8 +674,8 @@ static void M_Spray(B10J *const b, const B10J_CONTEXT *const c)
     if (b->frame == 100) {
         M_SquareInit(sq);
         b->pellet_angle = 128;
-        b->pattern_state = M_Rank(c, 32, 40, 48, 56);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(32, 40, 48, 56);
+        Boss_Effect(c->hit, 8);
     }
     int16_t x[4], y[4];
     if (b->frame % 8 == 0) {
@@ -736,7 +690,7 @@ static void M_Spray(B10J *const b, const B10J_CONTEXT *const c)
             for (int32_t i = 0; i < 4; i++) {
                 M_Add(c, x[i], y[i], b->pellet_angle, b->pattern_state, false);
             }
-            M_Effect(c, 6);
+            Boss_Effect(c->hit, 6);
         }
         M_Corners(b, x, y, sq->radius, sq->angle);
         M_Loop(c, x, y, false);
@@ -759,8 +713,8 @@ static void M_Lasers(B10J *const b, const B10J_CONTEXT *const c)
     }
     if (b->frame == 100) {
         M_SquareInit(sq);
-        b->pattern_state = M_Rank(c, 50, 54, 58, 62);
-        M_Effect(c, 8);
+        b->pattern_state = Boss_Rank(50, 54, 58, 62);
+        Boss_Effect(c->hit, 8);
     }
     if (b->frame % 8 == 0) {
         M_Corners(b, b->laser_x, b->laser_y, sq->radius, sq->angle);
@@ -776,8 +730,8 @@ static void M_Lasers(B10J *const b, const B10J_CONTEXT *const c)
         const int32_t i = b->frame % 4;
         ShootoutLasers_Spawn(
             &c->lasers->slots[i], b->laser_x[i], b->laser_y[i],
-            Math16_Wrap(M_Player(c)->left + 14), 400, b->pattern_state, 7, 20,
-            4);
+            Math16_Wrap(Boss_Player(c->hit)->left + 14), 400, b->pattern_state,
+            7, 20, 4);
     }
     if (b->frame > 300) {
         M_Corners(b, b->laser_x, b->laser_y, sq->radius, sq->angle);
@@ -788,12 +742,9 @@ static void M_Lasers(B10J *const b, const B10J_CONTEXT *const c)
 
 static void M_Hit(B10J *const b, const B10J_CONTEXT *const c)
 {
-    BOSS_HIT_CONTEXT hit = *c->hit;
-    hit.hp = &b->hp;
-    hit.boss_palette = &b->boss_palette;
     const uint8_t flash[] = { 3, 9 };
     BossHit_UpdateAndRender(
-        &b->hit, &hit, flash, 2, 5000,
+        &b->hit, c->hit, &b->hp, &b->boss_palette, flash, 2, 5000,
         BossEntity_HitTestOrb(&b->still, c->hit->orb),
         (BOSS_SHOT_HITBOX) { Math16_Wrap(b->still.left + 16),
                              Math16_Wrap(b->still.top + 48), 96, 48 });
@@ -803,7 +754,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 {
     const B10J_CONTEXT *const c = user;
     if (action.kind == MISSILES_ACTION_EFFECT) {
-        M_Effect(c, action.effect);
+        Boss_Effect(c->hit, action.effect);
     } else {
         Missiles_RenderAction(&c->assets->missiles, action);
     }
@@ -839,7 +790,7 @@ static bool M_Death(B10J *const b, const B10J_CONTEXT *const c)
     const BOSS_DEFEAT_CONTEXT defeat = { .palette = c->hit->palette,
                                          .post_defeat = &b->post_defeat,
                                          .miko = c->miko,
-                                         .player = M_Player(c),
+                                         .player = Boss_Player(c->hit),
                                          .origin_top = &c->hit->orb->top,
                                          .stage_cleared = c->stage_cleared };
     if (!BossDefeat_Resume(&b->defeat, &defeat)) {
@@ -849,42 +800,6 @@ static bool M_Death(B10J *const b, const B10J_CONTEXT *const c)
     b->defeating = false;
     b->finished = true;
     return true;
-}
-
-RESULT B10J_ValidateContext(const B10J_CONTEXT *const c)
-{
-    FAIL_IF(
-        c == nullptr || c->assets == nullptr || c->sprites == nullptr
-            || c->hit == nullptr || c->hit->display == nullptr
-            || c->hit->palette == nullptr || c->hit->health == nullptr
-            || c->hit->hud == nullptr || c->hit->shots == nullptr
-            || c->hit->shots_output.action == nullptr || c->hit->orb == nullptr
-            || c->hit->test_damage == nullptr || c->hit->effect == nullptr
-            || c->hit->display->remaining_lives == nullptr
-            || c->hit->display->high_score == nullptr
-            || c->hit->display->font == nullptr
-            || c->hit->display->sprites == nullptr
-            || c->hit->display->player == nullptr
-            || c->hit->display->gameplay == nullptr
-            || c->stage_palette == nullptr || c->particles == nullptr
-            || c->pellets == nullptr || c->pellet_shared == nullptr
-            || c->missiles == nullptr || c->lasers == nullptr
-            || c->rng == nullptr || c->miko == nullptr || c->scene == nullptr
-            || c->stage_cleared == nullptr || c->fade_music == nullptr,
-        "Missing Mima context");
-    MUST(B10J_ValidateAssets(c->assets));
-    FAIL_IF(
-        c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr,
-        "Missing Mima HUD storage");
-    MUST(Shots_ValidateSprites(c->hit->display->sprites));
-    for (uint32_t digit = 0xff10; digit <= 0xff19; digit++) {
-        FAIL_IF(
-            GameText_Find(c->hit->display->font, digit) == nullptr,
-            "Missing Mima score glyph");
-    }
-    MUST(BossDefeat_ValidateSprites(c->miko));
-    return OK;
 }
 
 bool B10J_UpdateAndRender(B10J *const b, const B10J_CONTEXT *const c)
@@ -900,7 +815,7 @@ bool B10J_UpdateAndRender(B10J *const b, const B10J_CONTEXT *const c)
         return M_Death(b, c);
     }
     Missiles_UpdateAndRender(
-        c->missiles, M_Player(c), (uint16_t)c->hit->frame_rand,
+        c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     Particles_UpdateAndRender(c->particles, c->rng, PARTICLES_TOP_RIGHT, 7);
     if (b->phase == 0) {

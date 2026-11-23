@@ -15,14 +15,12 @@ typedef struct {
 
 typedef struct {
     PALETTE_STATE *palette;
-    const PALETTE *boss_palette;
     HUD *hud;
     const HUD_CONTEXT *display;
     HUD_HP *health;
     SHOTS *shots;
     SHOTS_OUTPUT shots_output;
     ORB *orb;
-    int16_t *hp;
     bool *test_damage;
     uint32_t frame_rand;
     void (*effect)(void *user, int16_t number);
@@ -43,6 +41,7 @@ typedef struct {
 // before battle; flashing changes saved and the DAC. Colors must be 0..15.
 // Allocates nothing, performs no IO and uses loaded caller-owned resources.
 void BossHit_UpdateAndRender(
-    BOSS_HIT *hit, const BOSS_HIT_CONTEXT *context, const uint8_t *flash_colors,
+    BOSS_HIT *hit, const BOSS_HIT_CONTEXT *context, int16_t *hp,
+    const PALETTE *boss_palette, const uint8_t *flash_colors,
     uint8_t flash_count, int16_t hit_score, bool orb_hit,
     BOSS_SHOT_HITBOX shot_hitbox);

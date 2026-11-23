@@ -91,8 +91,6 @@ void B20J_Init(B20J *boss);
 // Runs at stage load, before the entrance.
 void B20J_Setup(B20J *boss, const B20J_CONTEXT *context);
 
-RESULT B20J_ValidateContext(const B20J_CONTEXT *context);
-
 // Starts the cached load sequence on the current drawing page, binds all
 // three actors, snapshots its scroll palette and invokes the real empty
 // boss-stage initializer.

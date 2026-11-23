@@ -1,4 +1,5 @@
 #include "th01/boss_b10j.h"
+#include "th01/session.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "core/base/arena.h"
@@ -140,7 +141,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->context.scene = &f->scene;
     f->context.stage_cleared = &f->cleared;
     f->context.fade_music = M_Fade;
-    CHECK(Result_Ignore(B10J_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
@@ -295,6 +296,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         Frame_Reset();
         B10J b;
         M_Setup(&b, &f, &arena);
@@ -483,23 +485,6 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     }
     CHECK(!f.cleared);
     CHECK(f.scene.active == nullptr);
-    Arena_Free(&arena);
-}
-
-TEST(context_requires_storage_glyphs_and_audio_consumer)
-{
-    ARENA arena;
-    Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
-    FIXTURE f;
-    M_Battle(&f, &arena);
-    f.context.fade_music = nullptr;
-    CHECK(!Result_Ignore(B10J_ValidateContext(&f.context)));
-    f.context.fade_music = M_Fade;
-    f.hit_context.shots_output.action = nullptr;
-    CHECK(!Result_Ignore(B10J_ValidateContext(&f.context)));
-    f.hit_context.shots_output.action = M_Shot;
-    f.health.backgrounds = nullptr;
-    CHECK(!Result_Ignore(B10J_ValidateContext(&f.context)));
     Arena_Free(&arena);
 }
 

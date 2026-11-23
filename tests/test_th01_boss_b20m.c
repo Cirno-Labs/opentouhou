@@ -1,4 +1,5 @@
 #include "th01/boss_b20m.h"
+#include "th01/session.h"
 #include "core/base/arena.h"
 #include "test.h"
 static void M_Assets(B20M_ASSETS *const a, ARENA *const arena)
@@ -217,7 +218,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .timer_initialized = &f->timer_initialized };
     B20M_Init(&f->boss, a);
     B20M_Setup(&f->boss, &f->context);
-    CHECK(Result_Ignore(B20M_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
@@ -299,6 +300,7 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 FIXTURE f;
                 M_Fixture(&f, &arena);
                 f.display.rank = rank;
+                g_Session.settings.difficulty = rank;
                 f.rng = 0x12345678u + (uint32_t)rank;
                 f.boss.phase = phases[phase];
                 f.boss.pattern = pattern;
@@ -328,6 +330,7 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             FIXTURE f;
             M_Fixture(&f, &arena);
             f.display.rank = rank;
+            g_Session.settings.difficulty = rank;
             f.rng = 0xabcdef01u + (uint32_t)rank;
             f.boss.phase = 100;
             f.boss.hp = 6;
@@ -461,15 +464,5 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     CHECK_EQ_INT(f.boss.frame, 50);
     CHECK_EQ_INT(f.boss.resume_stage, 0);
     CHECK_EQ_INT(arena.used, used);
-    Arena_Free(&arena);
-}
-TEST(context_requires_audio_owner)
-{
-    ARENA arena;
-    Arena_Init(&arena, "Sariel context", 4 * 1024 * 1024);
-    FIXTURE f;
-    M_Fixture(&f, &arena);
-    f.context.audio = nullptr;
-    CHECK(!Result_Ignore(B20M_ValidateContext(&f.context)));
     Arena_Free(&arena);
 }
