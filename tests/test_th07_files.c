@@ -28,8 +28,6 @@ static bool M_ReadsAs(READER *const reader, const char *const expected)
 
 TEST(the_data_files_are_th07_dat_and_thbgm_dat)
 {
-    CHECK_EQ_INT(FILES_ARCHIVE_COUNT, 1);
-    CHECK_EQ_STR(g_FilesArchives[0], "th07.dat");
     CHECK_EQ_INT(FILES_DATA_COUNT, 2);
     CHECK_EQ_STR(g_FilesData[0], "th07.dat");
     CHECK_EQ_STR(g_FilesData[1], "thbgm.dat");

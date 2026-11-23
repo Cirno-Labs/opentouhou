@@ -20,8 +20,10 @@
 #define M_PATCH_PRIORITY 100
 #define M_ARCHIVE_PRIORITY 11
 
-const char *const g_FilesArchives[FILES_ARCHIVE_COUNT] = { "th07.dat" };
-const char *const g_FilesData[FILES_DATA_COUNT] = { "th07.dat", M_MUSIC_FILE };
+#define M_ARCHIVE_FILE "th07.dat"
+
+const char *const g_FilesData[FILES_DATA_COUNT] = { M_ARCHIVE_FILE,
+                                                    M_MUSIC_FILE };
 
 static const PATCH_STACK *m_Patches = nullptr;
 
@@ -33,6 +35,14 @@ static const char *M_ArchiveName(const char *const path)
 {
     const char *const slash = strrchr(path, '/');
     return slash != nullptr ? slash + 1 : path;
+}
+
+// Returns the archive name of path, or nullptr when path already is one,
+// so a lookup that misses by path can retry it by name.
+static const char *M_Fallback(const char *const path)
+{
+    const char *const name = M_ArchiveName(path);
+    return name != path ? name : nullptr;
 }
 
 // Returns whether name is the ANM file of a menu, a screen or the text
@@ -116,9 +126,9 @@ static bool M_Contains(const VFS_SOURCE *const base, const char *const path)
     if (source->inner->funcs->contains(source->inner, path)) {
         return true;
     }
-    const char *const archive_name = M_ArchiveName(path);
-    return archive_name != path
-        && source->inner->funcs->contains(source->inner, archive_name);
+    const char *const name = M_Fallback(path);
+    return name != nullptr
+        && source->inner->funcs->contains(source->inner, name);
 }
 
 static RESULT M_Open(
@@ -179,7 +189,7 @@ const PATCH_GAME g_PatchGame = {
 
 RESULT Files_Mount(void)
 {
-    MUST(M_MountArchive(g_FilesArchives[0], M_ARCHIVE_PRIORITY));
+    MUST(M_MountArchive(M_ARCHIVE_FILE, M_ARCHIVE_PRIORITY));
     return M_CheckMusic();
 }
 
@@ -201,10 +211,9 @@ JSON_VALUE *Files_LoadDiff(
     if (diff != nullptr) {
         return diff;
     }
-    const char *const archive_name = M_ArchiveName(path);
-    return archive_name == path
-        ? nullptr
-        : Patch_LoadDiff(m_Patches, archive_name, allocator);
+    const char *const name = M_Fallback(path);
+    return name == nullptr ? nullptr
+                           : Patch_LoadDiff(m_Patches, name, allocator);
 }
 
 bool Files_IsPatched(const char *const path)
@@ -212,6 +221,6 @@ bool Files_IsPatched(const char *const path)
     if (Patch_Touches(m_Patches, path)) {
         return true;
     }
-    const char *const archive_name = M_ArchiveName(path);
-    return archive_name != path && Patch_Touches(m_Patches, archive_name);
+    const char *const name = M_Fallback(path);
+    return name != nullptr && Patch_Touches(m_Patches, name);
 }

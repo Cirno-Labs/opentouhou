@@ -20,11 +20,6 @@
 // other file replaces the game's file.
 extern const PATCH_GAME g_PatchGame;
 
-#define FILES_ARCHIVE_COUNT 1
-
-// Names the archive that Files_Mount mounts.
-extern const char *const g_FilesArchives[FILES_ARCHIVE_COUNT];
-
 #define FILES_DATA_COUNT 2
 
 // Names the files that the data directory must hold, as g_GameDesc's
