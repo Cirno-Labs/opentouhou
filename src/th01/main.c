@@ -9,7 +9,7 @@
 #include "th01/input.h"
 #include "th01/settings.h"
 #include "th01/score.h"
-#include "th01/bfnt.h"
+#include "pc98/zun/bfnt.h"
 #include "th01/ending.h"
 
 #include "core/base/arena.h"
@@ -148,8 +148,8 @@ static RESULT M_Init(void)
     Arena_Init(&m_Assets, "TH01 assets", M_ASSET_CAPACITY);
     MUST(M_LoadAssets());
     FAIL_IF(
-        m_Sprites.width != 64 || m_Sprites.height != 16
-            || m_Sprites.count != 16,
+        m_Sprites.width != 64 || m_Sprites.height != 16 || m_Sprites.count != 16
+            || !m_Sprites.has_palette,
         "TOUHOU.DAT must contain sixteen 64 by 16 logo sprites");
     Video_Init(Arena_Allocator(&m_Assets));
     memset(&m_Frame, 0, sizeof(m_Frame));

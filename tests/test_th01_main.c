@@ -1,5 +1,5 @@
 #include "th01/main.h"
-#include "th01/bfnt.h"
+#include "pc98/zun/bfnt.h"
 #include "th01/gameplay_internal.h"
 #include "th01/score.h"
 #include "th01/ending.h"
@@ -89,6 +89,8 @@ RESULT Bfnt_Load(READER *reader, const ALLOCATOR *allocator, BFNT *out)
     *out = (BFNT) { .width = 64,
                     .height = 16,
                     .count = 16,
+                    .bits_per_pixel = 4,
+                    .has_palette = true,
                     .pixels = Allocator_AllocZ(allocator, 64 * 16 * 16) };
     return OK;
 }
