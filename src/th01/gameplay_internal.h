@@ -70,8 +70,6 @@ typedef struct {
     GAMEPLAY_PHASE phase, after_player;
     FRAME_WAIT wait;
     uint32_t frame, score_bonus;
-    int16_t next_extend;
-    int8_t retained_lives;
     bool first_stage, wait_for_shot, timer_initialized, game_cleared;
     bool test_damage, boss_stage, waiting, bgm_started;
     BOSS boss;
@@ -102,14 +100,11 @@ typedef struct {
     PLAYER_SPRITES player_sprites;
     PLAYER_OUTPUT player_output;
     SHOTS_OUTPUT shots_output;
-    HUD_CONTEXT display;
-    EXTEND_CONTEXT extend;
     STAGE_CONTEXT stage;
     ITEM_CONTEXT item;
     PELLET_CONTEXT pellet;
     BOMB_CONTEXT bombing;
     MISS_CONTEXT missing;
-    TIMER_CONTEXT timing;
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route;
     BOSS_HIT_CONTEXT hit;

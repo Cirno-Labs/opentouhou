@@ -1,4 +1,5 @@
 #include "th01/bonus.h"
+#include "th01/session.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/sprite_sheet.h"
@@ -96,9 +97,7 @@ static void M_StageCommit(const BONUS_CONTEXT *const c)
     M_StageMetric(c, 5, Math16_Wrap(g_Stage.maximum_combo * 100));
     M_StageMetric(
         c, 7,
-        Math16_Wrap(
-            *c->display->remaining_lives * 200
-            + g_Player.remaining_bombs * 100));
+        Math16_Wrap(g_Session.lives * 200 + g_Player.remaining_bombs * 100));
     M_StageMetric(c, 9, Math16_Wrap((g_Bonus.stage_number - 1) * 200));
     g_Stage.score += *c->score_bonus;
     const uint32_t bits = *c->score_bonus;
@@ -116,8 +115,8 @@ static void M_StageCommit(const BONUS_CONTEXT *const c)
     char text[19];
     M_Digits(text, digits, 6);
     M_Text(c, text, 192, 11, 7);
-    Hud_ScoreAndCombo(c->display);
-    Extend_UpdateAndRender(c->extend);
+    Hud_ScoreAndCombo();
+    Extend_UpdateAndRender();
     M_Confirm(c);
 }
 

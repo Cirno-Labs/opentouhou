@@ -16,13 +16,10 @@
 typedef struct {
     PALETTE_STATE palette;
     B15M_ASSETS assets;
-    HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B15M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
-    uint32_t high_score;
-    int16_t lives;
     bool test_damage, cleared;
 } FIXTURE;
 
@@ -54,9 +51,8 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 5, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->hit = (BOSS_HIT_CONTEXT) { .display = &f->display,
-                                  .palette = &f->palette,
-                                  .frame_rand = 0x12345678 };
+    f->hit =
+        (BOSS_HIT_CONTEXT) { .palette = &f->palette, .frame_rand = 0x12345678 };
     f->context = (B15M_CONTEXT) { .assets = &f->assets, .hit = &f->hit };
 }
 
@@ -173,21 +169,18 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->miko = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
-    f->lives = 3;
+    g_Session.lives = 3;
     g_Rng = 0xb15a0000;
     g_Player.invincible = true;
     g_Player.left = 300;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .sprites = &f->stage,
-                                 .font = &f->font,
-                                 .high_score = &f->high_score,
-                                 .remaining_lives = &f->lives };
+    Hud_Load(nullptr, &f->stage, &f->font);
     f->hit.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->hit.test_damage = &f->test_damage;
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
-    g_Session.settings.difficulty = f->display.rank;
+    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Run(FIXTURE *const f, uint64_t *const tick)
@@ -332,7 +325,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         Arena_Init(&arena, "b15m", 4 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
         f.hit.frame_rand = 0xb15f0000u + (uint32_t)rank;
         B15M_Init();

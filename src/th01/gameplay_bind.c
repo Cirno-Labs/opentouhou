@@ -4,20 +4,17 @@
 
 static void M_HudScore(void *const user)
 {
-    GAMEPLAY *const g = user;
-    Hud_ScoreAndCombo(&g->bindings.display);
+    Hud_ScoreAndCombo();
 }
 
 static void M_HudBombs(void *const user, const int16_t previous)
 {
-    GAMEPLAY *const g = user;
-    Hud_BombsPut(&g->bindings.display, previous);
+    Hud_BombsPut(previous);
 }
 
 static void M_HudLives(void *const user, const int16_t previous)
 {
-    GAMEPLAY *const g = user;
-    Hud_LivesPut(&g->bindings.display, previous);
+    Hud_LivesPut(previous);
 }
 
 static void M_Decay(void *const user)
@@ -27,8 +24,7 @@ static void M_Decay(void *const user)
 
 static void M_TimerExtend(void *const user)
 {
-    GAMEPLAY *const g = user;
-    StageTimer_ExtendAndPut(&g->bindings.timing);
+    StageTimer_ExtendAndPut();
 }
 
 static void M_SpeedLower(
@@ -93,26 +89,13 @@ void Gameplay_Bind(GAMEPLAY *const g)
 {
     const GAMEPLAY_ASSETS *const a = g->storage.assets;
     const PTN *const stage = g->world.boss_stage ? &a->boss_stage : &a->stage;
+    Hud_Load(&a->hud, stage, &a->hud_font);
     g->bindings.player_sprites = (PLAYER_SPRITES) { .miko = &a->miko,
                                                     .miko_ac = &a->miko_ac,
                                                     .miko_ac2 = &a->miko_ac2 };
     g->bindings.shots_output = (SHOTS_OUTPUT) { .action = M_Shots, .user = g };
     g->bindings.player_output =
         (PLAYER_OUTPUT) { .action = M_Player, .user = g };
-    g->bindings.display = (HUD_CONTEXT) {
-        .mask = &a->hud,
-        .sprites = stage,
-        .font = &a->hud_font,
-        .high_score = &g_Session.high_score,
-        .remaining_lives = &g_Session.lives,
-        .stage_number = (uint16_t)(g_Session.stage_id + 1),
-        .rank = (SETTINGS_DIFFICULTY)g_Session.settings.difficulty,
-    };
-    g->bindings.extend = (EXTEND_CONTEXT) {
-        .display = &g->bindings.display,
-        .resident_lives = &g->world.retained_lives,
-        .next = &g->world.next_extend,
-    };
     g->bindings.stage = (STAGE_CONTEXT) {
         .sprites = stage,
         .font = &a->hud_font,
@@ -158,9 +141,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .pellet_speed_lower = M_SpeedLower,
         .user = g,
     };
-    g->bindings.timing = (TIMER_CONTEXT) {
-        .display = &g->bindings.display,
-    };
     g->bindings.route_assets =
         (ROUTE_SELECT_ASSETS) { .font = &a->route_font,
                                 .stage = stage,
@@ -174,7 +154,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     };
     g->bindings.hit = (BOSS_HIT_CONTEXT) {
         .palette = &g->world.palette,
-        .display = &g->bindings.display,
         .shots_output = g->bindings.shots_output,
         .test_damage = &g->world.test_damage,
         .frame_rand = g_Session.frame_rand,
@@ -221,8 +200,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .font = &a->bonus_font,
         .stage_palette = &g->world.stage_palette,
         .palette = &g->world.palette,
-        .display = &g->bindings.display,
-        .extend = &g->bindings.extend,
         .score_bonus = &g->world.score_bonus,
         .bonus_per_stage = g_Session.bonus_per_stage,
     };

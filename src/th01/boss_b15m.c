@@ -1,4 +1,5 @@
 #include "th01/boss_b15m.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -334,7 +335,7 @@ static void M_Group(
     const B15M_CONTEXT *const c, const int16_t x, const int16_t y,
     const PELLET_GROUP group, const int16_t speed)
 {
-    Pellets_AddGroup(c->hit->display->rank, x, y, group, speed);
+    Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
 }
 static void M_FormGroup(
     const B15M_CONTEXT *const c, const int16_t form, const PELLET_GROUP group,
@@ -350,7 +351,7 @@ static void M_Single(
     const int16_t ms)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed, motion, ms, 0, 0);
+        g_Session.settings.difficulty, x, y, angle, speed, motion, ms, 0, 0);
 }
 static void M_Laser(
     const B15M_CONTEXT *const c, const int16_t slot, const int16_t x,
@@ -1143,8 +1144,8 @@ static void M_SafetyAfterHit(const B15M_CONTEXT *const c)
         const int16_t x = M_Random(c) % 632;
         M_Group(
             c, x, 64,
-            c->hit->display->rank == 3 ? PELLET_GROUP_RANDOM_WIDE
-                                       : PELLET_GROUP_SINGLE,
+            g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
+                                               : PELLET_GROUP_SINGLE,
             72);
     }
     if (g_B15M.safety_circle.frame > 180

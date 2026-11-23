@@ -1,4 +1,5 @@
 #include "th01/boss_b15j.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -141,7 +142,7 @@ static void M_Defaults(const B15J_CONTEXT *const c)
 {
     Sprite_PtnPut(c->miko, 0, -1, Boss_Player(c->hit)->left, 368);
     Orb_RenderAction(
-        c->hit->display->sprites,
+        g_Hud.sprites,
         (ORB_ACTION) { ORB_ACTION_PUT, g_Orb.left, g_Orb.top, 0 });
 }
 
@@ -359,7 +360,7 @@ static void M_GroupSoul(
     const int16_t speed, const int16_t dy)
 {
     Pellets_AddGroup(
-        c->hit->display->rank, Math16_Wrap(g_B15J.souls[i].left + 12),
+        g_Session.settings.difficulty, Math16_Wrap(g_B15J.souls[i].left + 12),
         Math16_Wrap(g_B15J.souls[i].top + dy), group, speed);
 }
 
@@ -369,8 +370,8 @@ static void M_Single(
     const int16_t motion_speed, const int16_t cx, const int16_t cy)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed, motion, motion_speed, cx,
-        cy);
+        g_Session.settings.difficulty, x, y, angle, speed, motion, motion_speed,
+        cx, cy);
 }
 
 static void M_SymmetricSpiral(const B15J_CONTEXT *const c)

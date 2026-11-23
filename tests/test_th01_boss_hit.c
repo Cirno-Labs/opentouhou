@@ -1,4 +1,5 @@
 #include "th01/boss_hit.h"
+#include "th01/session.h"
 
 #include "core/base/arena.h"
 
@@ -12,13 +13,11 @@ typedef struct {
     ARENA arena;
     PALETTE_STATE palette;
     PALETTE baseline;
-    HUD_CONTEXT display;
     BOSS_HIT_CONTEXT context;
     BOSS_HIT hit;
     PTN sprites;
     GAME_TEXT_FONT font;
-    uint32_t high_score;
-    int16_t lives, hp, expected_shot_hp;
+    int16_t hp, expected_shot_hp;
     bool test_damage;
     int32_t events[8], count;
 } FIXTURE;
@@ -40,7 +39,8 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
 
 static void M_Init(FIXTURE *const f)
 {
-    *f = (FIXTURE) { .lives = 3, .hp = 8, .expected_shot_hp = 8 };
+    *f = (FIXTURE) { .hp = 8, .expected_shot_hp = 8 };
+    g_Session.lives = 3;
     Arena_Init(&f->arena, "boss hit", 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
     Video_Init(a);
@@ -60,12 +60,8 @@ static void M_Init(FIXTURE *const f)
     f->baseline.colors[2][1] = 2;
     f->baseline.colors[2][2] = 3;
     Palette_Set(&f->palette, &f->baseline);
-    f->display = (HUD_CONTEXT) { .sprites = &f->sprites,
-                                 .font = &f->font,
-                                 .high_score = &f->high_score,
-                                 .remaining_lives = &f->lives };
+    Hud_Load(nullptr, &f->sprites, &f->font);
     f->context = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                      .display = &f->display,
                                       .shots_output = { M_Shot, f },
                                       .test_damage = &f->test_damage };
 }
@@ -82,7 +78,7 @@ TEST(real_hud_health_and_flash_follow_hit_order)
         &f.hit, &f.context, &f.hp, &f.baseline, colors, 1, 10, true,
         (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(g_Stage.score, 4);
-    CHECK_EQ_INT(f.high_score, 4);
+    CHECK_EQ_INT(g_Session.high_score, 4);
     CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(f.count, 0);
@@ -120,7 +116,7 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
     FIXTURE f;
     M_Init(&f);
     const uint8_t colors[] = { 2 };
-    f.lives = 0;
+    g_Session.lives = 0;
     g_Player.bomb_damaging = true;
     f.hit.invincible = true;
     f.context.frame_rand = 49;

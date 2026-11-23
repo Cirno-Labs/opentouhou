@@ -100,13 +100,10 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
 typedef struct {
     B20M_ASSETS assets;
     PALETTE_STATE palette;
-    HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B20M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage;
-    uint32_t high_score;
-    int16_t lives;
     bool damage, cleared, first_stage, timer_initialized;
     GRF mask;
 } FIXTURE;
@@ -154,17 +151,12 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
     g_Player.left = 300;
     g_Player.invincible = true;
-    f->lives = 3;
+    g_Session.lives = 3;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .mask = &f->mask,
-                                 .stage_number = 20,
-                                 .sprites = &f->stage,
-                                 .font = &f->font,
-                                 .high_score = &f->high_score,
-                                 .remaining_lives = &f->lives };
+    Hud_Load(&f->mask, &f->stage, &f->font);
+    g_Session.stage_id = 19;
     f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                  .display = &f->display,
                                   .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678 };
@@ -175,7 +167,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .timer_initialized = &f->timer_initialized };
     B20M_Init();
     B20M_Setup(&f->context);
-    g_Session.settings.difficulty = f->display.rank;
+    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
@@ -259,7 +251,7 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 Arena_Init(&arena, "Sariel first form", 4 * 1024 * 1024);
                 FIXTURE f;
                 M_Fixture(&f, &arena);
-                f.display.rank = rank;
+                g_Session.settings.difficulty = rank;
                 g_Session.settings.difficulty = rank;
                 g_Rng = 0x12345678u + (uint32_t)rank;
                 g_B20M.phase = phases[phase];
@@ -289,7 +281,7 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             Arena_Init(&arena, "Sariel second form", 4 * 1024 * 1024);
             FIXTURE f;
             M_Fixture(&f, &arena);
-            f.display.rank = rank;
+            g_Session.settings.difficulty = rank;
             g_Session.settings.difficulty = rank;
             g_Rng = 0xabcdef01u + (uint32_t)rank;
             g_B20M.phase = B20M_PHASE_SECOND_FORM;

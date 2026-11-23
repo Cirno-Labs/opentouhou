@@ -1,4 +1,5 @@
 #include "th01/boss_b05.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -97,7 +98,7 @@ static void M_Add(
     const int16_t motion_speed)
 {
     Pellets_AddSingle(
-        (int32_t)c->hit->display->rank, left, top, angle, speed, motion,
+        g_Session.settings.difficulty, left, top, angle, speed, motion,
         motion_speed, 0, 0);
 }
 

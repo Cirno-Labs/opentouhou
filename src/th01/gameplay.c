@@ -127,8 +127,7 @@ static void M_StageBegin(GAMEPLAY *const g)
 static void M_StageReady(GAMEPLAY *const g)
 {
     StageTimer_Redraw(
-        &g->bindings.timing, g->world.first_stage, g->world.timer_initialized,
-        g_Session.route);
+        g->world.first_stage, g->world.timer_initialized, g_Session.route);
     g_Stage.maximum_combo = 0;
     g_Orb.in_portal = false;
     g_Player.bomb_frame = 0;
@@ -151,7 +150,7 @@ static void M_LifeBegin(GAMEPLAY *const g, const TH01_INPUT *const raw)
     g_GameInput.shot = false;
     g_GameInput.ok = false;
     g_GameInput.paused = false;
-    Hud_ScoreAndCombo(&g->bindings.display);
+    Hud_ScoreAndCombo();
     g_GameInput.bomb_frame = 60;
     Stage_UpdateObstacles(&g->bindings.stage, true);
     if (!g->world.bgm_started && g->world.boss < BOSS_SARIEL) {
@@ -270,7 +269,7 @@ static void M_Switch(GAMEPLAY *const g)
     case GAMEPLAY_SWITCH_CONTINUE:
         g_Session.point_value = 0;
         g_Session.pellet_speed = g_PelletShared.speed;
-        g_Session.lives = g->world.retained_lives;
+        g_Session.lives = g_Extend.resident_lives;
         Gameplay_ResetWorld(g);
         g->world.bgm_started = true;
         return;
@@ -431,7 +430,7 @@ void Gameplay_ResumeAfterScore(
     }
     g_Session.score = 0;
     // Restores the resident's lives; the live count stays until the re-exec.
-    g->world.retained_lives = (int8_t)(g_Session.settings.lives_extra + 2);
+    g_Extend.resident_lives = (int8_t)(g_Session.settings.lives_extra + 2);
     Pellets_SpeedLower(-2, -5);
     g->world.continue_frame = 0;
     g->world.continue_locked = g_Session.settings.fix_debouncing;
@@ -595,7 +594,7 @@ static GAMEPLAY_REQUEST M_Run(
                 (g_Session.frame_rand & 3) == 0 ? GP_TIMER : GP_BOSS;
             break;
         case GP_TIMER:
-            if (!StageTimer_TickAndPut(&g->bindings.timing)) {
+            if (!StageTimer_TickAndPut()) {
                 return g->world.request;
             }
             g->world.phase = GP_BOSS;
@@ -653,7 +652,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_AFTER_ORB:
-            Extend_UpdateAndRender(&g->bindings.extend);
+            Extend_UpdateAndRender();
             if (g->world.game_cleared) {
                 Gameplay_SyncSession(g);
                 g_Session.ending = g_Session.route == 0 ? SESSION_END_MAKAI
@@ -665,7 +664,7 @@ static GAMEPLAY_REQUEST M_Run(
             } else {
                 if (g_PelletShared.destroy_score_delta != 0) {
                     g_Stage.score += g_PelletShared.destroy_score_delta;
-                    Hud_ScoreAndCombo(&g->bindings.display);
+                    Hud_ScoreAndCombo();
                     g_PelletShared.destroy_score_delta = 0;
                 }
                 g->world.phase = GP_FRAME_BEGIN;
@@ -713,7 +712,7 @@ static GAMEPLAY_REQUEST M_Run(
             } else {
                 Sound_Effect(5);
                 g_Session.lives--;
-                g->world.retained_lives = (int8_t)g_Session.lives;
+                g_Extend.resident_lives = (int8_t)g_Session.lives;
                 g->bindings.missing.remaining_lives = g_Session.lives;
                 Miss_Begin(&g->bindings.missing);
                 g->world.phase = GP_MISS;
@@ -796,7 +795,7 @@ static GAMEPLAY_REQUEST M_Run(
             g_Player.remaining_bombs = 1;
             Shots_EraseAndReset(g->bindings.shots_output);
             Pellets_EraseAndResetMoving();
-            g->world.next_extend = 1;
+            g_Extend.next = 1;
             Gameplay_SyncSession(g);
             g->world.request = GAMEPLAY_REQUEST_SCORE;
             g->world.phase = GP_TERMINAL;

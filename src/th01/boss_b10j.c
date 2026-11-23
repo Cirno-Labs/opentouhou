@@ -1,4 +1,5 @@
 #include "th01/boss_b10j.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -294,7 +295,7 @@ static void M_Add(
     const uint8_t angle, const int16_t speed, const bool chase)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, x, y, angle, speed,
+        g_Session.settings.difficulty, x, y, angle, speed,
         chase ? PELLET_CHASE : PELLET_REGULAR, chase ? speed : 0, 0, 0);
 }
 
@@ -605,7 +606,8 @@ static void M_Pillars(const B10J_CONTEXT *const c)
             g_B10J.pillar_time[i] -= 8;
         } else if (g_B10J.pillar_time[i] != -999) {
             Pellets_AddGroup(
-                c->hit->display->rank, Math16_Wrap(g_B10J.still.left + 64),
+                g_Session.settings.difficulty,
+                Math16_Wrap(g_B10J.still.left + 64),
                 Math16_Wrap(g_B10J.still.top + 80),
                 PELLET_GROUP_THREE_WIDE_AIMED, 36);
             Sprite_Restore16(Math16_Wrap(x - 16), 176, 32, 224);

@@ -54,8 +54,6 @@ typedef struct {
     const GAME_TEXT_FONT *font;
     const PALETTE *stage_palette;
     PALETTE_STATE *palette;
-    const HUD_CONTEXT *display;
-    const EXTEND_CONTEXT *extend;
     uint32_t *score_bonus;
     int32_t *bonus_per_stage;
 } BONUS_CONTEXT;

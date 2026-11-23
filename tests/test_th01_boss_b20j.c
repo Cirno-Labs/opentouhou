@@ -101,13 +101,10 @@ TEST(validation_requires_all_sixteen_images_and_masks)
 typedef struct {
     B20J_ASSETS assets;
     PALETTE_STATE palette;
-    HUD_CONTEXT display;
     BOSS_HIT_CONTEXT hit;
     B20J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage;
-    uint32_t high_score;
-    int16_t lives;
     bool damage, cleared;
 } FIXTURE;
 
@@ -144,15 +141,11 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     g_Player.left = 300;
     g_Player.invincible = true;
-    f->lives = 3;
+    g_Session.lives = 3;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .sprites = &f->stage,
-                                 .font = &f->font,
-                                 .high_score = &f->high_score,
-                                 .remaining_lives = &f->lives };
+    Hud_Load(nullptr, &f->stage, &f->font);
     f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                  .display = &f->display,
                                   .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678 };
@@ -163,7 +156,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     };
     B20J_Init();
     B20J_Setup(&f->context);
-    g_Session.settings.difficulty = f->display.rank;
+    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
@@ -215,7 +208,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             Arena_Reset(&arena);
             FIXTURE f;
             M_Fixture(&f, &arena);
-            f.display.rank = rank;
+            g_Session.settings.difficulty = rank;
             g_Session.settings.difficulty = rank;
             g_B20J.phase = B20J_PHASE_FINAL;
             g_B20J.pattern = pattern;

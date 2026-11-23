@@ -1,4 +1,5 @@
 #include "th01/boss_b10m.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
 
@@ -165,7 +166,7 @@ static void M_Group(
     const int16_t speed, const bool iris)
 {
     Pellets_AddGroup(
-        c->hit->display->rank, Math16_Wrap(g_B10M.eyes[eye].left + 28),
+        g_Session.settings.difficulty, Math16_Wrap(g_B10M.eyes[eye].left + 28),
         Math16_Wrap(g_B10M.eyes[eye].top + (iris ? 28 : 32)), group, speed);
 }
 
@@ -174,7 +175,7 @@ static void M_Single(
     const PELLET_MOTION motion)
 {
     Pellets_AddSingle(
-        c->hit->display->rank, Math16_Wrap(g_B10M.eyes[eye].left + 28),
+        g_Session.settings.difficulty, Math16_Wrap(g_B10M.eyes[eye].left + 28),
         Math16_Wrap(g_B10M.eyes[eye].top + 32), angle, 64, motion,
         motion == PELLET_REGULAR ? 0 : 64, 0, 0);
 }
@@ -311,13 +312,14 @@ static void M_Entrance(const B10M_CONTEXT *const c)
             M_Active(31, false);
         }
         if ((g_B10M.frame == 240
-             && c->hit->display->rank == SETTINGS_DIFFICULTY_HARD)
+             && g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD)
             || (g_B10M.frame == 260
-                && c->hit->display->rank == SETTINGS_DIFFICULTY_LUNATIC)) {
+                && g_Session.settings.difficulty
+                    == SETTINGS_DIFFICULTY_LUNATIC)) {
             M_Group(c, 4, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             M_Group(c, 3, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             M_Group(c, 2, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
-            if (c->hit->display->rank == SETTINGS_DIFFICULTY_LUNATIC) {
+            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(c, 0, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
                 M_Group(c, 1, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             }
@@ -545,10 +547,10 @@ static void M_Lasers(const B10M_CONTEXT *const c)
             g_B10M.subphase = 6;
             g_B10M.frame = 0;
             g_B10M.pattern_state = 0;
-            if (c->hit->display->rank == SETTINGS_DIFFICULTY_HARD) {
+            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD) {
                 M_Group(c, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
-            if (c->hit->display->rank == SETTINGS_DIFFICULTY_LUNATIC) {
+            if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(c, 4, PELLET_GROUP_FIVE_NARROW_AIMED, 4, true);
             }
         }
@@ -563,7 +565,7 @@ static void M_Lasers(const B10M_CONTEXT *const c)
             g_B10M.subphase = (int16_t)((iteration + 1) * 2);
             g_B10M.frame = 0;
             g_B10M.pattern_state = 0;
-            if (c->hit->display->rank > SETTINGS_DIFFICULTY_NORMAL) {
+            if (g_Session.settings.difficulty > SETTINGS_DIFFICULTY_NORMAL) {
                 M_Group(c, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
         }
@@ -749,8 +751,8 @@ static void M_AttackStar(const B10M_CONTEXT *const c)
                 Math16_Wrap(p->y[i] - p->center.y),
                 Math16_Wrap(p->x[i] - p->center.x));
             Pellets_AddSingle(
-                c->hit->display->rank, p->x[i], p->y[i], g_B10M.angle, 48,
-                PELLET_REGULAR, 0, 0, 0);
+                g_Session.settings.difficulty, p->x[i], p->y[i], g_B10M.angle,
+                48, PELLET_REGULAR, 0, 0, 0);
         }
     }
     if (g_B10M.frame == 100
