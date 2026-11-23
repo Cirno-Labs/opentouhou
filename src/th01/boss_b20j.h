@@ -4,7 +4,6 @@
 #include "th01/boss_hit.h"
 #include "th01/boss_render.h"
 #include "th01/grz.h"
-#include "pc98/mdrv_data.h"
 #include "pc98/zun/pi.h"
 #include "th01/pellets.h"
 #include "th01/reiiden_image.h"
@@ -16,14 +15,11 @@ typedef struct {
     BOS head, face, aim;
     GRZ body;
     PI_IMAGE scroll, upper, layers[4];
-    MDRV_MUSIC music;
-    MDRV_EFFECTS effects;
     const uint8_t *diamond, *flake;
 } B20J_ASSETS;
 
 typedef enum {
     B20J_AUDIO_LOAD_MUSIC,
-    B20J_AUDIO_LOAD_EFFECTS,
     B20J_AUDIO_PLAY,
     B20J_AUDIO_STOP,
     B20J_AUDIO_FADE,
@@ -107,13 +103,12 @@ typedef struct {
     STAGE_OBJECTS *objects;
     uint32_t *rng;
     bool *game_cleared;
-    void (*audio)(
-        void *user, B20J_AUDIO_ACTION action, const B20J_ASSETS *assets);
+    void (*audio)(void *user, B20J_AUDIO_ACTION action);
 } B20J_CONTEXT;
 
-// Loads all Konngara images, music, effects and verified executable shape
-// masks into the caller's asset group. Scratch requires REIIDEN_IMAGE_SIZE
-// bytes and can be released afterward. Failed loads leave out empty.
+// Loads all Konngara images and verified executable shape masks into the
+// caller's asset group. Scratch requires REIIDEN_IMAGE_SIZE bytes and can be
+// released afterward. Failed loads leave out empty.
 RESULT B20J_LoadAssets(
     VFS *vfs, uint8_t *scratch, size_t scratch_size, const ALLOCATOR *allocator,
     B20J_ASSETS *out);

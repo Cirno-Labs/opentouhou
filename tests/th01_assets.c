@@ -63,8 +63,6 @@ static void M_BossAssets(M_ASSETS *const f, const ALLOCATOR *const a)
     for (int32_t i = 0; i < 4; i++) {
         assets->b20j.layers[i] = image;
     }
-    assets->b20j.music.bytes = pixels;
-    assets->b20j.effects.bytes = pixels;
     assets->b20j.diamond = pixels;
     assets->b20j.flake = pixels;
     assets->b20m.shield = (BOS) { 48, 48, 4, pixels, coverage };
@@ -79,9 +77,6 @@ static void M_BossAssets(M_ASSETS *const f, const ALLOCATOR *const a)
     for (int32_t i = 0; i < 6; i++) {
         assets->b20m.backgrounds[i] = image;
     }
-    assets->b20m.music.bytes = pixels;
-    assets->b20m.second_music.bytes = pixels;
-    assets->b20m.effects.bytes = pixels;
     assets->b20m.star = pixels;
     assets->b20m.flake = pixels;
     assets->b20m.spark = pixels;

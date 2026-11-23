@@ -3,7 +3,6 @@
 #include "th01/boss_hit.h"
 #include "th01/boss_render.h"
 #include "th01/grc.h"
-#include "pc98/mdrv_data.h"
 #include "pc98/zun/pi.h"
 #include "th01/pellets.h"
 #include "th01/shootout_lasers.h"
@@ -16,8 +15,6 @@ typedef struct {
     BOS shield, wand, dress;
     GRC vortex, bird, cross, splash;
     PI_IMAGE lower, upper, backgrounds[6];
-    MDRV_MUSIC music, second_music;
-    MDRV_EFFECTS effects;
     const INTERLEAVE_ASSETS *interleave;
     const uint8_t *star, *flake, *spark, *leaf_left, *leaf_right;
 } B20M_ASSETS;
@@ -25,7 +22,6 @@ typedef struct {
 typedef enum {
     B20M_AUDIO_LOAD_MUSIC,
     B20M_AUDIO_LOAD_SECOND_MUSIC,
-    B20M_AUDIO_LOAD_EFFECTS,
     B20M_AUDIO_PLAY,
     B20M_AUDIO_STOP,
     B20M_AUDIO_FADE,
@@ -134,12 +130,11 @@ typedef struct {
     const bool *timer_initialized;
     uint32_t *rng;
     bool *game_cleared;
-    void (*audio)(
-        void *user, B20M_AUDIO_ACTION action, const B20M_ASSETS *assets);
+    void (*audio)(void *user, B20M_AUDIO_ACTION action);
 } B20M_CONTEXT;
 
-// Loads both forms, backgrounds, music, effects and executable masks into
-// the caller's immutable asset group. Scratch is needed only while loading.
+// Loads both forms, backgrounds and executable masks into the caller's
+// immutable asset group. Scratch is needed only while loading.
 RESULT B20M_LoadAssets(
     VFS *vfs, uint8_t *scratch, size_t scratch_size, const ALLOCATOR *allocator,
     B20M_ASSETS *out);

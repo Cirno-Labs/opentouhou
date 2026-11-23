@@ -129,16 +129,12 @@ static void M_Pellets(void *const user)
     Pellets_UpdateAndRender(&g->world.pellets, &g->bindings.pellet);
 }
 
-static void M_AudioJ(
-    void *const user, const B20J_AUDIO_ACTION action,
-    const B20J_ASSETS *const assets [[maybe_unused]])
+static void M_AudioJ(void *const user, const B20J_AUDIO_ACTION action)
 {
     GAMEPLAY *const g = user;
     switch (action) {
     case B20J_AUDIO_LOAD_MUSIC:
         g->storage.song = 12;
-        break;
-    case B20J_AUDIO_LOAD_EFFECTS:
         break;
     case B20J_AUDIO_PLAY:
         Gameplay_Play(g, g->storage.song);
@@ -152,9 +148,7 @@ static void M_AudioJ(
     }
 }
 
-static void M_AudioM(
-    void *const user, const B20M_AUDIO_ACTION action,
-    const B20M_ASSETS *const assets [[maybe_unused]])
+static void M_AudioM(void *const user, const B20M_AUDIO_ACTION action)
 {
     GAMEPLAY *const g = user;
     switch (action) {
@@ -163,8 +157,6 @@ static void M_AudioM(
         break;
     case B20M_AUDIO_LOAD_SECOND_MUSIC:
         g->storage.song = 14;
-        break;
-    case B20M_AUDIO_LOAD_EFFECTS:
         break;
     case B20M_AUDIO_PLAY:
         Gameplay_Play(g, g->storage.song);

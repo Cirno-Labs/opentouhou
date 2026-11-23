@@ -48,23 +48,6 @@ static RESULT M_LoadGrc(
     Reader_Close(&reader);
     return result;
 }
-static RESULT M_LoadAudio(
-    VFS *const vfs, const ALLOCATOR *const a, B20M_ASSETS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "TENSI.MDT", VFS_IN_MEMORY, &reader));
-    RESULT result = MdrvData_LoadMusic(&reader, a, &out->music);
-    Reader_Close(&reader);
-    MUST(result);
-    MUST(Vfs_Open(vfs, "SYUGEN.MDT", VFS_IN_MEMORY, &reader));
-    result = MdrvData_LoadMusic(&reader, a, &out->second_music);
-    Reader_Close(&reader);
-    MUST(result);
-    MUST(Vfs_Open(vfs, "ZIGOKU.MDE", VFS_IN_MEMORY, &reader));
-    result = MdrvData_LoadEffects(&reader, a, &out->effects);
-    Reader_Close(&reader);
-    return result;
-}
 static RESULT M_LoadMasks(
     VFS *const vfs, uint8_t *const scratch, const size_t scratch_size,
     const ALLOCATOR *const a, B20M_ASSETS *const out)
@@ -131,11 +114,10 @@ RESULT B20M_ValidateAssets(const B20M_ASSETS *const a)
             "Invalid Sariel background");
     }
     FAIL_IF(
-        a->music.bytes == nullptr || a->second_music.bytes == nullptr
-            || a->effects.bytes == nullptr || a->interleave == nullptr
-            || a->star == nullptr || a->flake == nullptr || a->spark == nullptr
-            || a->leaf_left == nullptr || a->leaf_right == nullptr,
-        "Missing Sariel audio or shape masks");
+        a->interleave == nullptr || a->star == nullptr || a->flake == nullptr
+            || a->spark == nullptr || a->leaf_left == nullptr
+            || a->leaf_right == nullptr,
+        "Missing Sariel shape masks");
     return OK;
 }
 RESULT B20M_LoadAssets(
@@ -159,7 +141,6 @@ RESULT B20M_LoadAssets(
     for (int32_t i = 0; i < 6; i++) {
         MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.backgrounds[i]));
     }
-    MUST(M_LoadAudio(vfs, a, &loaded));
     MUST(M_LoadMasks(vfs, scratch, scratch_size, a, &loaded));
     MUST(B20M_ValidateAssets(&loaded));
     *out = loaded;
@@ -229,7 +210,7 @@ static int16_t M_PixelAdd(const double x, const int16_t y)
 }
 static void M_Audio(const B20M_CONTEXT *const c, const B20M_AUDIO_ACTION action)
 {
-    c->audio(c->hit->user, action, c->assets);
+    c->audio(c->hit->user, action);
 }
 static void M_Pi(
     const B20M_CONTEXT *const c, const PI_IMAGE *const image, const bool show)
@@ -1749,7 +1730,6 @@ void B20M_BeginEntrance(B20M *const b, const B20M_CONTEXT *const c)
     Video_SelectDrawingPage(0);
     StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr, c->rng);
     M_Audio(c, B20M_AUDIO_LOAD_MUSIC);
-    M_Audio(c, B20M_AUDIO_LOAD_EFFECTS);
     M_Audio(c, B20M_AUDIO_PLAY);
     Tram_Clear();
     b->scroll_line = 399;
