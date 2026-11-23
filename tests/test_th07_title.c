@@ -1,4 +1,4 @@
-#include "th07/screens/main.h"
+#include "th07/screens/title.h"
 
 #include "gfx_recorder.h"
 #include "patch_builder.h"

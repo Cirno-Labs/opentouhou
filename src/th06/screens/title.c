@@ -1,4 +1,4 @@
-#include "th06/screens/main.h"
+#include "th06/screens/title.h"
 
 #include "th06/anm.h"
 #include "th06/ascii.h"

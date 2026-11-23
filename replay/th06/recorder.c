@@ -6,7 +6,7 @@
 #include "th06/game_manager.h"
 #include "th06/replay/chain.h"
 #include "th06/scene.h"
-#include "th06/screens/main.h"
+#include "th06/screens/title.h"
 
 #include "core/base/string.h"
 #include "core/base/utils.h"

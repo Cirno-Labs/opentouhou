@@ -374,7 +374,7 @@ foreach game, game_tests : {
       'sources': th06_data,
       'env': ['TEST_DIR', 'TEST_FONT_DIR'],
     },
-    'th06/screens/main': {'part': 'th06_main_menu', 'sources': th06_data, 'env': ['TEST_DIR']},
+    'th06/screens/title': {'part': 'th06_title', 'sources': th06_data, 'env': ['TEST_DIR']},
     'th06/screens/ending': {'part': 'th06_ending', 'sources': th06_data, 'env': ['TEST_DIR']},
     'th06/screens/music': {
       'part': 'th06_music_screen',
@@ -501,7 +501,7 @@ foreach game, game_tests : {
       'env': ['TEST_FONT_DIR'],
     },
     'th07/screen_effect': {'sources': ['th07_scene_stubs.c', 'gfx_recorder.c']},
-    'th07/screens/main': {
+    'th07/screens/title': {
       'part': 'th07_title',
       'sources': th07_data + ['th07_scene_stubs.c'],
       'c_args': ['-DTH07_TITLE_TEST'],

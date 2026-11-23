@@ -6,7 +6,7 @@
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/replay.h"
-#include "th07/screens/main.h"
+#include "th07/screens/title.h"
 #include "th07/screens/result/records.h"
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"

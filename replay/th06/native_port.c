@@ -6,7 +6,7 @@
 #include "th06/game.h"
 #include "th06/main.h"
 #include "th06/scene.h"
-#include "th06/screens/main.h"
+#include "th06/screens/title.h"
 
 // Runs th06 on the native backend as th06native.
 
