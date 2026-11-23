@@ -139,8 +139,10 @@ if build_games
   # An executable is named after the game id with an o before it, as
   # oth06, so that it does not clash with the original game's executable
   # in the same folder. A game's 'fonts' lists its built-in fonts, as
-  # paths below src/shell/builtin, which its programs carry in a zip. A
-  # game with a 'title', the original's, gets a web page o<game>.html.
+  # paths below src/shell/builtin, and its 'builtins' the other files that
+  # it carries, as paths below its 'builtin_dir'; its programs carry both
+  # in a zip. A game with a 'title', the original's, gets a web page
+  # o<game>.html.
   games = {}
   subdir('src/th01')
   subdir('src/th06')
@@ -160,11 +162,18 @@ if build_games
     foreach builtin_name : builtin_names
       builtin_inputs += files('src/shell/builtin' / builtin_name)
     endforeach
+    builtin_args = [shell_builtin_dir] + builtin_names
+    if 'builtins' in game
+      foreach builtin_name : game['builtins']
+        builtin_inputs += files(game['builtin_dir'] / builtin_name)
+      endforeach
+      builtin_args += ['--root', game['builtin_dir']] + game['builtins']
+    endif
     builtin_zip = custom_target(
       name + '_builtin_zip',
       input: builtin_inputs,
       output: name + '_builtin.zip',
-      command: [python3, shell_pack_zip, '@OUTPUT@', shell_builtin_dir] + builtin_names,
+      command: [python3, shell_pack_zip, '@OUTPUT@'] + builtin_args,
     )
     builtin_libs += {
       name: static_library(

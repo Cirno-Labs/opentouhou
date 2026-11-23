@@ -43,10 +43,11 @@ shell_builtin_dir = meson.current_source_dir() / 'builtin'
 shell_pack_zip = files('../../tools/meson/pack_zip')
 shell_embed_binary = files('../../tools/meson/embed_binary')
 
-# The fonts of each game: the game executables and the native backends
-# link them, with the game's built-in files.
+# The fonts and built-in files of each game: the game executables and the
+# native backends link them, with the game's built-in files.
 shell_fonts_lib = static_library(
   'shell_fonts',
+  'game/builtin.c',
   'game/fonts.c',
   c_args: shell_include,
   implicit_include_directories: false,

@@ -1,7 +1,7 @@
 #include "fonts.h"
 
-#include "core/archive.h"
-#include "core/archive/zip.h"
+#include "builtin.h"
+
 #include "core/base/array.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -12,10 +12,6 @@
 #include <string.h>
 
 typedef ARRAY(char *) M_NAMES;
-
-// The zip of the game's built-in files, which the build makes for each game.
-extern const uint8_t g_ShellBuiltinFiles[];
-extern const size_t g_ShellBuiltinFilesSize;
 
 static const char *const m_FontExtensions[] = {
     ".ttf", ".ttc", ".otf", ".otc", nullptr,
@@ -70,17 +66,13 @@ static RESULT M_Add(
 RESULT ShellFonts_Reset(const bool use_system)
 {
     FontRegistry_Reset(use_system);
-    READER reader;
-    Reader_OpenBuffer(
-        &reader, g_ShellBuiltinFiles, g_ShellBuiltinFilesSize,
-        "built-in files");
-    ARCHIVE *archive;
-    MUST(Archive_Open(&g_ZipFormat, &reader, &g_HeapAllocator, &archive));
     VFS *const files = Vfs_Create(&g_HeapAllocator);
-    Vfs_MountSource(files, "", Archive_ToSource(archive, ""), 0);
-    ShellFonts_AddDir(files, "fonts");
+    const RESULT result = ShellBuiltin_Mount(files);
+    if (IS_OK(result)) {
+        ShellFonts_AddDir(files, "fonts");
+    }
     Vfs_Destroy(files);
-    return OK;
+    return result;
 }
 
 void ShellFonts_AddDir(VFS *const files, const char *const dir)

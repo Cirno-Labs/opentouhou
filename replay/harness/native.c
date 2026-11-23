@@ -6,6 +6,7 @@
 #include "core/gfx.h"
 #include "core/text/font_registry.h"
 #include "shell/game.h"
+#include "shell/game/builtin.h"
 #include "shell/game/fonts.h"
 #include "shell/null.h"
 
@@ -160,6 +161,7 @@ static RESULT M_Start(M_NATIVE *const native)
     MUST(M_MapButtons(native));
     MUST(Driver_Open(&port->port, run, "native", &native->driver));
     MUST(NullShell_OpenFiles(run->game_dir, nullptr));
+    MUST(ShellBuiltin_Mount(Shell_GetFiles()));
     MUST(ShellFonts_Reset(false));
     Driver_MountStaged(native->driver, Shell_GetFiles());
     Driver_MountStaged(native->driver, Shell_GetUserFiles());

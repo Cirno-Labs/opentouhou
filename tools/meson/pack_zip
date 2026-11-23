@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Pack files into a zip: pack_zip OUTPUT ROOT [NAME...].
+"""Pack files into a zip: pack_zip OUTPUT ROOT [NAME...] [--root ROOT NAME...].
 
-Each NAME is a path below ROOT, and is stored under it. Every entry is
+Each NAME is a path below the ROOT before it, and is stored under it. Every entry is
 stored uncompressed, dated 1980-01-01 and marked as made on Unix, so
 equal files give an equal zip on every host.
 """
@@ -14,13 +14,20 @@ from pathlib import Path
 def main() -> None:
     output = Path(sys.argv[1])
     root = Path(sys.argv[2])
+    files = {}
+    args = iter(sys.argv[3:])
+    for arg in args:
+        if arg == "--root":
+            root = Path(next(args))
+        else:
+            files[arg] = root / arg
     with zipfile.ZipFile(output, "w") as archive:
-        for name in sorted(sys.argv[3:]):
+        for name in sorted(files):
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_STORED
             info.create_system = 3
             info.external_attr = 0o100644 << 16
-            archive.writestr(info, (root / name).read_bytes())
+            archive.writestr(info, files[name].read_bytes())
 
 
 if __name__ == "__main__":
