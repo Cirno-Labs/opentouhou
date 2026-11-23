@@ -3,6 +3,8 @@
 #include "th06/game_manager.h"
 #include "th06/replay.h"
 
+#include "stg/replay_files.h"
+
 #include "shell/game.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
@@ -98,7 +100,7 @@ static void M_ReadReplay(
         memcpy(out->label, label, strlen(label) + 1);
         memcpy(out->name, bytes, strlen(bytes) + 1);
         Replay_Summarize(file, &out->summary);
-        Replay_AddFile(name, data, size);
+        ReplayFiles_Add(name, Mem_Dup(data, size), size);
         Mem_Free(bytes);
     }
     Replay_Free(file);
@@ -179,7 +181,7 @@ static void M_ScanReplays(void)
     for (int32_t list = 0; list < 2; list++) {
         for (int32_t i = 0; i < counts[list]; i++) {
             if (lists[list][i].valid) {
-                Replay_RemoveFile(lists[list][i].path);
+                ReplayFiles_Remove(lists[list][i].path);
             }
             lists[list][i] = (SAVED_REPLAY) {};
         }
@@ -249,12 +251,12 @@ void ResultScreen_CloseSaves(void)
     ScoreFile_Free(&m_Saves.score);
     for (int32_t i = 0; i < SAVED_REPLAY_SLOT_COUNT; i++) {
         if (m_Saves.slots[i].valid) {
-            Replay_RemoveFile(m_Saves.slots[i].path);
+            ReplayFiles_Remove(m_Saves.slots[i].path);
         }
     }
     for (int32_t i = 0; i < SAVED_REPLAY_USER_COUNT; i++) {
         if (m_Saves.user[i].valid) {
-            Replay_RemoveFile(m_Saves.user[i].path);
+            ReplayFiles_Remove(m_Saves.user[i].path);
         }
     }
     m_Saves.scan_requested = false;
@@ -350,7 +352,7 @@ void ResultSaves_PutReplay(
 {
     SAVED_REPLAY *const saved = &m_Saves.slots[slot];
     if (saved->valid) {
-        Replay_RemoveFile(saved->path);
+        ReplayFiles_Remove(saved->path);
     }
     char *const name = M_ReplayPath(slot);
     char label[8];

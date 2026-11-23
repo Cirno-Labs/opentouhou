@@ -196,10 +196,13 @@ Two rules hold across modules:
   read or original-format files are written.
 
 `stg` holds what the shooting games share: the task chain, the frame
-timer, ZUN's LZSS coder, the PBG3 and PBG4 archive formats and the
-random number generator. Each `src/thXX/` holds the rest of its
-game: the `GAME_DESC`, the scenes, the rules and tables, the features,
-and its script engines, such as ANM and ECL.
+timer, ZUN's LZSS coder, the PBG3 and PBG4 archive formats, the random
+number generator, angle arithmetic, the wave file check, the replay
+files kept for playback, the text font, the thcrap translations with
+their translator notes, and the patches of MSG and ending scripts. Each
+`src/thXX/` holds the rest of its game: the `GAME_DESC`, the scenes,
+the rules and tables, the features, and its script engines, such as ANM
+and ECL.
 
 ## Data, saves and config
 

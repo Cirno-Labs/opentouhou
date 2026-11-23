@@ -1,6 +1,8 @@
 #include "th07/screens/result/private.h"
 #include "th07/screens/result/records.h"
 
+#include "stg/replay_files.h"
+
 #include "test.h"
 #include "test_dir.h"
 
@@ -123,7 +125,7 @@ static void M_SetUp(const char *const user_dir)
 static void M_TearDown(void)
 {
     ResultScreen_CloseSaves();
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     NullShell_CloseFiles();
 }
 
@@ -260,7 +262,7 @@ TEST(put_replay_file_replaces_a_listed_replay_and_writes_it)
     CHECK_EQ_INT(listed[0].summary.score, 222);
     CHECK_EQ_STR(listed[0].label, "No.03");
     size_t kept_size;
-    const uint8_t *const kept = Replay_FindFile(path, &kept_size);
+    const uint8_t *const kept = ReplayFiles_Find(path, &kept_size);
     CHECK(kept != nullptr && kept_size == size);
     CHECK(memcmp(kept, copy, size) == 0);
     CHECK(!M_FileEquals(replay_path, copy, size));
@@ -285,7 +287,7 @@ TEST(put_replay_file_keeps_a_path_outside_the_replay_directory_in_memory)
         uint8_t *const data = M_ReplayBytes(5, &size);
         ResultScreen_PutReplayFile(paths[i], data, size);
         size_t kept_size;
-        CHECK(Replay_FindFile(paths[i], &kept_size) != nullptr);
+        CHECK(ReplayFiles_Find(paths[i], &kept_size) != nullptr);
     }
     CHECK(Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_ERROR));
     FILE_LIST list;
@@ -313,7 +315,7 @@ TEST(put_replay_file_fills_an_empty_slot)
     CHECK_EQ_STR(slot->label, "No.05");
     CHECK_EQ_INT(slot->summary.score, 333);
     size_t kept_size;
-    CHECK(Replay_FindFile(path, &kept_size) != nullptr);
+    CHECK(ReplayFiles_Find(path, &kept_size) != nullptr);
     CHECK(Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_ERROR));
     char *const disk_path = TestDir_Join(directory, path);
     CHECK(File_Exists(disk_path));

@@ -1,6 +1,8 @@
 #include "th06/screens/result.h"
 
 #include "shell_fake.h"
+#include "stg/replay_files.h"
+
 #include "shell/null.h"
 #include "test.h"
 #include "test_dir.h"
@@ -446,7 +448,7 @@ TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
     ResultScreen_OpenSaves();
     static SAVED_REPLAY list[SAVED_REPLAY_COUNT];
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
-    CHECK(Replay_FindFile(list[0].path, &size) != nullptr);
+    CHECK(ReplayFiles_Find(list[0].path, &size) != nullptr);
     char kept[SAVED_REPLAY_PATH_SIZE];
     memcpy(kept, list[0].path, sizeof(kept));
 
@@ -462,10 +464,10 @@ TEST(a_scan_finds_a_new_user_replay_and_drops_a_deleted_one)
     CHECK_EQ_INT(ResultScreen_ListReplays(list), 1);
     const size_t length = strlen(list[0].path);
     CHECK(strcmp(list[0].path + length - 14, "th6_ud0002.rpy") == 0);
-    CHECK(Replay_FindFile(list[0].path, &size) != nullptr);
-    CHECK(Replay_FindFile(kept, &size) == nullptr);
+    CHECK(ReplayFiles_Find(list[0].path, &size) != nullptr);
+    CHECK(ReplayFiles_Find(kept, &size) == nullptr);
     ResultScreen_CloseSaves();
-    CHECK(Replay_FindFile(list[0].path, &size) == nullptr);
+    CHECK(ReplayFiles_Find(list[0].path, &size) == nullptr);
     Mem_Free(second);
     Mem_Free(first);
     Mem_Free(replay_dir);
@@ -482,7 +484,7 @@ TEST(a_saved_slot_is_kept_for_playback)
     ResultSaves_PutReplay(2, data, size);
     size_t kept_size = 0;
     const uint8_t *const kept =
-        Replay_FindFile("replay/th6_03.rpy", &kept_size);
+        ReplayFiles_Find("replay/th6_03.rpy", &kept_size);
     CHECK(kept != nullptr && kept_size == size);
     CHECK(kept != nullptr && memcmp(kept, copy, size) == 0);
     ResultScreen_CloseSaves();

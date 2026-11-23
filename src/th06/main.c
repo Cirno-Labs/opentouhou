@@ -6,6 +6,7 @@
 #include "core/vfs.h"
 
 #include "stg/note.h"
+#include "stg/replay_files.h"
 #include "stg/translation.h"
 
 #include "th06/buttons.h"
@@ -49,10 +50,7 @@ static RESULT M_KeepDemo(void)
     const RESULT result = Reader_Result(&reader);
     Reader_Close(&reader);
     MUST(result, TITLE_DEMO_PATH);
-    Replay_AddFile(TITLE_DEMO_PATH, data, size);
-    if (data != nullptr) {
-        Allocator_Free(&g_HeapAllocator, data, size);
-    }
+    ReplayFiles_Add(TITLE_DEMO_PATH, data, size);
     return OK;
 }
 
@@ -106,7 +104,7 @@ static void M_Shutdown(void)
     }
     Result_Log(ResultScreen_WriteSaves(), LOG_LEVEL_WARNING);
     ResultScreen_CloseSaves();
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     SoundPlayer_Shutdown();
     Note_Shutdown();
     Anm_ShutdownText();

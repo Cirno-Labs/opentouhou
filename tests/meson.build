@@ -1516,6 +1516,19 @@ test(
 )
 
 test(
+  'stg/replay_files',
+  executable(
+    'test_stg_replay_files',
+    'test_stg_replay_files.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_replay_files_lib],
+    dependencies: [test_deps],
+  ),
+  suite: 'unit',
+)
+
+test(
   'stg/rng',
   executable(
     'test_rng',
@@ -1523,6 +1536,19 @@ test(
     c_args: stg_include,
     implicit_include_directories: false,
     link_with: [stg_rng_lib],
+  ),
+  suite: 'unit',
+)
+
+test(
+  'stg/wave',
+  executable(
+    'test_stg_wave',
+    'test_stg_wave.c',
+    c_args: stg_include,
+    implicit_include_directories: false,
+    link_with: [stg_wave_lib],
+    dependencies: [test_deps],
   ),
   suite: 'unit',
 )

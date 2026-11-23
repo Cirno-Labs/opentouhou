@@ -3,6 +3,8 @@
 #include "gfx_recorder.h"
 #include "patch_builder.h"
 #include "shell_fake.h"
+#include "stg/replay_files.h"
+
 #include "test.h"
 #include "test_fonts.h"
 #include "test_dir.h"
@@ -140,8 +142,7 @@ static void M_KeepDemo(
 {
     size_t size;
     uint8_t *const bytes = M_Replay(shot, difficulty, slots, &size);
-    Replay_AddFile(g_DemoReplayPaths[index], bytes, size);
-    Mem_Free(bytes);
+    ReplayFiles_Add(g_DemoReplayPaths[index], bytes, size);
 }
 
 static void M_WriteImage(const char *const name)
@@ -206,7 +207,7 @@ static void M_Teardown(void)
     Chain_Release(&g_Chain);
     Anm_Shutdown();
     ResultScreen_CloseSaves();
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     GfxRecorder_Stop();
     Th07Data_Unmount();
     Mem_Free(m_Directory);

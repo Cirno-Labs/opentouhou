@@ -1,6 +1,8 @@
 #include "th07/screens/result/screen.h"
 
 #include "gfx_recorder.h"
+#include "stg/replay_files.h"
+
 #include "test.h"
 #include "test_dir.h"
 #include "th07_anm_builder.h"
@@ -162,7 +164,7 @@ static void M_Teardown(void)
     Replay_Discard();
     AsciiText_Initialize();
     ResultScreen_CloseSaves();
-    Replay_ClearFiles();
+    ReplayFiles_Clear();
     Anm_Shutdown();
     GfxRecorder_Stop();
     Th07Data_Unmount();

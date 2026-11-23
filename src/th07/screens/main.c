@@ -14,6 +14,8 @@
 #include "th07/screens/result/records.h"
 #include "th07/strings.h"
 
+#include "stg/replay_files.h"
+
 #include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
@@ -355,7 +357,7 @@ static bool M_StartDemo(M_MENU *const menu)
     const char *const path = g_DemoReplayPaths[gm->mode.demo_index];
     memcpy(gm->mode.replay_path, path, strlen(path) + 1);
     size_t size;
-    const uint8_t *const data = Replay_FindFile(path, &size);
+    const uint8_t *const data = ReplayFiles_Find(path, &size);
     REPLAY_FILE *file = nullptr;
     READER reader;
     if (data != nullptr) {
