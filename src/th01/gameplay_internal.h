@@ -46,13 +46,13 @@ typedef enum {
 // Names the boss of the stage, or none. Gameplay_HookBossHp indexes by it.
 typedef enum {
     BOSS_NONE,
-    BOSS_B05,
-    BOSS_B10M,
-    BOSS_B10J,
-    BOSS_B15J,
-    BOSS_B15M,
-    BOSS_B20M,
-    BOSS_B20J,
+    BOSS_SINGYOKU,
+    BOSS_YUUGENMAGAN,
+    BOSS_MIMA,
+    BOSS_KIKURI,
+    BOSS_ELIS,
+    BOSS_SARIEL,
+    BOSS_KONNGARA,
 } BOSS;
 
 // Names the program that game_switch_binary's black-out leads to: REIIDEN
