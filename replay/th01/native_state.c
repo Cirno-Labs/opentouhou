@@ -80,25 +80,25 @@ static void M_Boss(const GAMEPLAY_WORLD *const world, uint32_t *const row)
     row[TH01_COLUMN_boss_phase] = M_I32((boss).phase);                         \
     row[TH01_COLUMN_boss_phase_frame] = M_I32((boss).frame);
     switch (world->boss) {
-    case 1:
+    case BOSS_SINGYOKU:
         M_BOSS(g_B05);
         break;
-    case 2:
+    case BOSS_YUUGENMAGAN:
         M_BOSS(g_B10M);
         break;
-    case 3:
+    case BOSS_MIMA:
         M_BOSS(g_B10J);
         break;
-    case 4:
+    case BOSS_KIKURI:
         M_BOSS(g_B15J);
         break;
-    case 5:
+    case BOSS_ELIS:
         M_BOSS(g_B15M);
         break;
-    case 6:
+    case BOSS_SARIEL:
         M_BOSS(g_B20M);
         break;
-    case 7:
+    case BOSS_KONNGARA:
         M_BOSS(g_B20J);
         break;
     default:
