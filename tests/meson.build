@@ -1400,7 +1400,7 @@ if build_games
     ),
     suite: 'unit',
   )
-  foreach part : ['bos', 'boss_b05', 'boss_b10m', 'boss_b10j', 'boss_b15j', 'boss_b15m', 'boss_b20j', 'boss_b20m', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'bonus', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'frame', 'finite', 'orb', 'settings', 'score_data', 'score', 'ending', 'session', 'invincibility', 'gameplay', 'video', 'palette', 'tram', 'pf', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
+  foreach part : ['bos', 'boss_b05', 'boss_b10m', 'boss_b10j', 'boss_b15j', 'boss_b15m', 'boss_b20j', 'boss_b20m', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'bonus', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'frame', 'finite', 'orb', 'settings', 'score_data', 'score', 'ending', 'session', 'invincibility', 'gameplay', 'video', 'palette', 'tram', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
     test(
       'th01/' + part,
       executable(
@@ -1431,7 +1431,7 @@ if build_games
   )
 endif
 
-foreach part : ['mdrv_data', 'mdrv', 'opna', 'vsync', 'master_rng', 'math16', 'bfnt', 'logo1', 'pi']
+foreach part : ['mdrv_data', 'mdrv', 'opna', 'vsync', 'master_rng', 'math16', 'bfnt', 'logo1', 'pf', 'pi']
   test(
     'pc98/' + part,
     executable(
