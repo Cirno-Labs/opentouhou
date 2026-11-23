@@ -30,6 +30,26 @@ typedef struct {
     int16_t frame;
 } B15M_CIRCLE;
 
+typedef enum {
+    B15M_PHASE_ENTRANCE,
+    B15M_PHASE_PATTERNS_1,
+    B15M_PHASE_CENTER,
+    B15M_PHASE_PATTERNS_2,
+    B15M_PHASE_TRANSFORM,
+    B15M_PHASE_FORMS,
+} B15M_PHASE;
+
+typedef enum {
+    B15M_FORM_GIRL,
+    B15M_FORM_BAT,
+} B15M_FORM;
+
+typedef enum {
+    B15M_PENDING_NONE,
+    B15M_PENDING_SCROLL,
+    B15M_PENDING_SAFETY,
+} B15M_PENDING;
+
 typedef struct {
     BOSS_ENTITY girl, attack, bat;
     BOSS_HIT hit;

@@ -196,7 +196,7 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(b.pattern_state, 99);
     CHECK_EQ_INT(b.hp, 12);
     CHECK_EQ_INT(b.frame, 0);
-    CHECK_EQ_INT(b.phase, 0);
+    CHECK_EQ_INT(b.phase, B10J_PHASE_START);
     CHECK_EQ_INT(f.health.first_white, 6);
     CHECK_EQ_INT(f.health.first_redwhite, 2);
     CHECK_EQ_INT(f.missiles.slots[0].flag, MISSILE_FREE);
@@ -235,7 +235,7 @@ static void M_Enter(B10J *const b, FIXTURE *const f)
 {
     for (int32_t edge = 0; edge < 110; edge++) {
         if (B10J_UpdateAndRender(b, &f->context)) {
-            CHECK_EQ_INT(b->phase, 1);
+            CHECK_EQ_INT(b->phase, B10J_PHASE_FIRST);
             CHECK_EQ_INT(b->frame, 0);
             return;
         }
@@ -273,7 +273,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
         const bool done = B10J_UpdateAndRender(&b, &f.context);
         CHECK(done == (edge == 100));
     }
-    CHECK_EQ_INT(b.phase, 1);
+    CHECK_EQ_INT(b.phase, B10J_PHASE_FIRST);
     CHECK_EQ_INT(b.frame, 0);
     CHECK_EQ_INT(b.still.left, 256);
     CHECK_EQ_INT(b.still.top, 120);
@@ -307,15 +307,19 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         for (int32_t step = 0; step < 12000 && loops < 2; step++) {
             const int8_t phase = b.phase;
             const int16_t pattern = b.pattern;
-            if ((phase == 1 || phase == 3) && pattern >= 0 && pattern < 4) {
-                patterns |= (uint16_t)(1u << (pattern + (phase == 3 ? 4 : 0)));
+            if ((phase == B10J_PHASE_FIRST || phase == B10J_PHASE_SECOND)
+                && pattern >= 0 && pattern < 4) {
+                patterns |=
+                    (uint16_t)(1u
+                               << (pattern
+                                   + (phase == B10J_PHASE_SECOND ? 4 : 0)));
             }
             if ((patterns & 15) == 15) {
                 b.hp = 6;
             }
             f.hit_context.frame_rand++;
             CHECK(B10J_UpdateAndRender(&b, &f.context));
-            if (phase == 3 && pattern == 3 && b.pattern == 0) {
+            if (phase == B10J_PHASE_SECOND && pattern == 3 && b.pattern == 0) {
                 loops++;
             }
         }
@@ -344,11 +348,12 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     bool saw_gate = false;
     for (int32_t step = 0; step < 5000 && !b.defeating; step++) {
         f.hit_context.frame_rand++;
-        const bool colliding =
-            step % 50 == 20 && (b.phase == 3 || (b.phase == 1 && b.hp > 6));
+        const bool colliding = step % 50 == 20
+            && (b.phase == B10J_PHASE_SECOND
+                || (b.phase == B10J_PHASE_FIRST && b.hp > 6));
         f.orb.previous_left = colliding ? Math16_Wrap(b.still.left + 48) : 0;
         f.orb.previous_top = colliding ? Math16_Wrap(b.still.top + 48) : 64;
-        if (b.hp <= 6 && b.phase == 1) {
+        if (b.hp <= 6 && b.phase == B10J_PHASE_FIRST) {
             saw_gate = true;
         }
         B10J_UpdateAndRender(&b, &f.context);
@@ -389,7 +394,7 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
     B10J b;
     M_Setup(&b, &f, &arena);
     M_Enter(&b, &f);
-    b.phase = 1;
+    b.phase = B10J_PHASE_FIRST;
     b.pattern = 2;
     b.frame = 191;
     b.squares[2] = (B10J_SQUARE) { .angle = 32, .radius = 112 };
@@ -398,7 +403,7 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
         CHECK(f.pellets.slots[i].cloud_frame != 0);
     }
     CHECK(!f.pellets.spawn_with_cloud);
-    b.phase = 3;
+    b.phase = B10J_PHASE_SECOND;
     b.pattern = 3;
     b.frame = 180;
     b.pattern_state = 50;
@@ -431,15 +436,15 @@ TEST(hp_gate_waits_for_pattern_cleanup_and_invincibility)
     b.hp_bar_filled = true;
     b.hit = (BOSS_HIT) { .frame = 0, .invincible = true };
     CHECK(B10J_UpdateAndRender(&b, &f.context));
-    CHECK_EQ_INT(b.phase, 1);
+    CHECK_EQ_INT(b.phase, B10J_PHASE_FIRST);
     CHECK_EQ_INT(b.pattern, 99);
     CHECK_EQ_INT(b.frame, 0);
     for (int32_t i = 0; i < 39; i++) {
         CHECK(B10J_UpdateAndRender(&b, &f.context));
-        CHECK_EQ_INT(b.phase, 1);
+        CHECK_EQ_INT(b.phase, B10J_PHASE_FIRST);
     }
     CHECK(B10J_UpdateAndRender(&b, &f.context));
-    CHECK_EQ_INT(b.phase, 2);
+    CHECK_EQ_INT(b.phase, B10J_PHASE_SPREAD);
     CHECK_EQ_INT(b.pattern, 0);
     CHECK_EQ_INT(b.hit.frame, 0);
     CHECK_EQ_INT(b.spread_interval, 4);
@@ -457,7 +462,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     B10J b;
     M_Setup(&b, &f, &arena);
     M_Enter(&b, &f);
-    b.phase = 3;
+    b.phase = B10J_PHASE_SECOND;
     b.pattern = 1;
     b.frame = 0;
     b.hp = 0;
@@ -509,7 +514,7 @@ TEST(entrance_reuses_the_live_interrupt_counter)
         CHECK_EQ_INT(edges, run == 0 ? 99 : 98);
         CHECK_EQ_INT(g_VSync.count1, 0);
         CHECK_EQ_INT(g_VSync.count2, 33 + edges);
-        CHECK_EQ_INT(b.phase, 1);
+        CHECK_EQ_INT(b.phase, B10J_PHASE_FIRST);
         CHECK_EQ_INT(b.frame, 0);
         Arena_Free(&arena);
     }

@@ -17,6 +17,15 @@ typedef struct {
     SCENE_DATA next_scene;
 } B15J_ASSETS;
 
+typedef enum {
+    B15J_PHASE_ENTRANCE = 0,
+    B15J_PHASE_SPIRAL = 2,
+    B15J_PHASE_RECOLOR = 3,
+    B15J_PHASE_SOULS = 4,
+    B15J_PHASE_TEARS = 5,
+    B15J_PHASE_PATTERNS = 6,
+} B15J_PHASE;
+
 typedef struct {
     BOSS_ENTITY souls[2], tears[10];
     int8_t tear_frame[10];

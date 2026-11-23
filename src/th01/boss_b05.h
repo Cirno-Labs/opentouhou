@@ -23,6 +23,13 @@ typedef enum {
     B05_FINISHED,
 } B05_PENDING;
 
+typedef enum {
+    B05_PHASE_START = 0,
+    B05_PHASE_SPHERE = 1,
+    B05_PHASE_TRANSFORMS = 2,
+    B05_PHASE_DEFEATED = 8,
+} B05_PHASE;
+
 typedef struct {
     BOSS_ENTITY sphere, flash, person;
     BOSS_HIT hit;

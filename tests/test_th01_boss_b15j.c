@@ -164,7 +164,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     const size_t used = arena.used;
     B15J_Setup(&b, &f.context);
     CHECK_EQ_INT(b.hp, 14);
-    CHECK_EQ_INT(b.phase, 0);
+    CHECK_EQ_INT(b.phase, B15J_PHASE_ENTRANCE);
     CHECK_EQ_INT(b.frame, 0);
     CHECK_EQ_INT(f.health.first_white, 10);
     CHECK_EQ_INT(f.health.first_redwhite, 6);
@@ -268,7 +268,7 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             g_VSync.count1 = count == 0 ? 0 : 17;
             g_VSync.count2 = 21;
             M_Enter(&b, &f);
-            CHECK_EQ_INT(b.phase, 2);
+            CHECK_EQ_INT(b.phase, B15J_PHASE_SPIRAL);
             CHECK_EQ_INT(b.frame, 0);
             CHECK_EQ_INT(b.hp, 14);
             CHECK_EQ_INT(b.hit.frame, 0);
@@ -305,7 +305,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         bool saw_tear = false, saw_ripple = false;
         for (int32_t frame = 0; frame < 12000; frame++) {
             phases |= 1u << b.phase;
-            if (b.phase == 6) {
+            if (b.phase == B15J_PHASE_PATTERNS) {
                 patterns |= 1u << b.subphase;
             }
             f.hit_context.frame_rand++;
@@ -319,7 +319,10 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
             Frame_VSync();
         }
         CHECK_EQ_INT(
-            phases, (1u << 2) | (1u << 3) | (1u << 4) | (1u << 5) | (1u << 6));
+            phases,
+            (1u << B15J_PHASE_SPIRAL) | (1u << B15J_PHASE_RECOLOR)
+                | (1u << B15J_PHASE_SOULS) | (1u << B15J_PHASE_TEARS)
+                | (1u << B15J_PHASE_PATTERNS));
         CHECK_EQ_INT(patterns, 15);
         CHECK(saw_tear);
         CHECK(saw_ripple);
@@ -363,8 +366,9 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     f.lasers.slots[4].alive = true;
     f.lasers.slots[4].origin_left = 100 * 256;
     for (int32_t frame = 0; frame < 5000 && !b.finished; frame++) {
-        const bool attack = (b.phase == 2 && b.hp > 10)
-            || (b.phase == 5 && b.hp > 6) || (b.phase == 6 && b.hp > 0);
+        const bool attack = (b.phase == B15J_PHASE_SPIRAL && b.hp > 10)
+            || (b.phase == B15J_PHASE_TEARS && b.hp > 6)
+            || (b.phase == B15J_PHASE_PATTERNS && b.hp > 0);
         f.orb.left = attack ? 300 : 0;
         const bool completed = B15J_UpdateAndRender(&b, &f.context);
         if (!completed) {
@@ -402,7 +406,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         g_Session.settings.difficulty = rank;
         B15J b = {};
         B15J_Setup(&b, &f.context);
-        b.phase = 6;
+        b.phase = B15J_PHASE_PATTERNS;
         b.subphase = 1;
         b.frame = 249;
         f.lasers.slots[0] =
@@ -451,7 +455,7 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     M_Battle(&f, &arena);
     B15J b = {};
     B15J_Setup(&b, &f.context);
-    b.phase = 6;
+    b.phase = B15J_PHASE_PATTERNS;
     b.subphase = 1;
     b.patterns_done = 30;
     const HUD_HP health = f.health;
@@ -480,7 +484,7 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         M_Battle(&f, &arena);
         B15J b = {};
         B15J_Setup(&b, &f.context);
-        b.phase = 6;
+        b.phase = B15J_PHASE_PATTERNS;
         b.subphase = 1;
         b.tear_frame[0] = 1;
         b.tears[0].left = 37;
@@ -505,7 +509,7 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         M_Battle(&f, &arena);
         B15J b = {};
         B15J_Setup(&b, &f.context);
-        b.phase = 4;
+        b.phase = B15J_PHASE_SOULS;
         b.subphase = 1;
         b.frame = 79;
         b.souls[0].left = 100;

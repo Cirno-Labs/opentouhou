@@ -73,7 +73,7 @@ void B10M_Setup(B10M *const b, const B10M_CONTEXT *const c)
         b->eyes[i].orb_inactive = true;
     }
     b->frame = 0;
-    b->phase = 0;
+    b->phase = B10M_PHASE_ENTRANCE;
     b->hp = 16;
     b->finished = false;
     c->hit->health->first_white = 12;
@@ -323,7 +323,7 @@ static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
         M_DownLaser(b, c, 2, false);
         M_DownLaser(b, c, 3, false);
     } else if (b->frame > 330) {
-        b->phase = 1;
+        b->phase = B10M_PHASE_LATERAL;
         b->hit.invincible = false;
         b->frame = 0;
         M_Snap(b, c);
@@ -628,9 +628,9 @@ static void M_Regular(
     M_Star(b, c, false);
 }
 
-static void M_Enter12(B10M *const b, const B10M_CONTEXT *const c)
+static void M_EnterStarRise(B10M *const b, const B10M_CONTEXT *const c)
 {
-    M_Next(b, 12);
+    M_Next(b, B10M_PHASE_STAR_RISE);
     b->subphase = 0;
     b->iterations = 1;
     b->pattern_state = 0;
@@ -692,7 +692,7 @@ static void M_Back(
     B10M *const b, const B10M_CONTEXT *const c, const int16_t phase)
 {
     b->pentagram.phase = phase;
-    M_Next(b, 10);
+    M_Next(b, B10M_PHASE_TO_STAR);
     b->subphase = 3;
     b->iterations = 3;
     b->pattern_state = 0;
@@ -738,8 +738,8 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
         M_Track(b, c, (uint8_t)b->iterations);
     }
     B10M_PENTAGRAM *const p = &b->pentagram;
-    if (b->subphase == 0 && b->frame % b->pattern_interval == 0 && p->phase != 6
-        && p->phase != 9) {
+    if (b->subphase == 0 && b->frame % b->pattern_interval == 0
+        && p->phase != B10M_STAR_SLAM && p->phase != B10M_STAR_GROWN_SLAM) {
         for (int32_t i = 0; i < 5; i++) {
             b->angle = Math16_Angle(
                 Math16_Wrap(p->y[i] - p->center.y),
@@ -749,11 +749,13 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
                 p->y[i], b->angle, 48, PELLET_REGULAR, 0, 0, 0);
         }
     }
-    if (b->frame == 100 && (p->phase == 0 || p->phase == 7)) {
+    if (b->frame == 100
+        && (p->phase == B10M_STAR_WAIT || p->phase == B10M_STAR_RETURN)) {
         p->phase++;
         b->frame = 0;
     }
-    if (p->phase == 1 || p->phase == 3 || p->phase == 5) {
+    if (p->phase == B10M_STAR_SPIN_1 || p->phase == B10M_STAR_SPIN_2
+        || p->phase == B10M_STAR_SPIN_3) {
         if (b->frame % 4 == 0) {
             M_Spin(b, true);
             M_Regular(b, c, p->angle);
@@ -763,7 +765,7 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
             b->frame = 0;
         }
     }
-    if (p->phase == 2 || p->phase == 4) {
+    if (p->phase == B10M_STAR_REVERSE_1 || p->phase == B10M_STAR_REVERSE_2) {
         if (b->frame % 4 == 0) {
             M_Spin(b, false);
             M_Regular(b, c, p->angle);
@@ -773,24 +775,24 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
             b->frame = 0;
             M_Aim(b, c);
         }
-    } else if (p->phase == 6) {
+    } else if (p->phase == B10M_STAR_SLAM) {
         if (M_SlamStar(b, c, 100)) {
-            M_Back(b, c, 7);
+            M_Back(b, c, B10M_STAR_RETURN);
         }
-    } else if (p->phase == 8) {
+    } else if (p->phase == B10M_STAR_GROW) {
         if (b->frame % 4 == 0) {
             p->radius = Math16_Wrap(p->radius + 1);
             M_Spin(b, true);
             M_Regular(b, c, p->angle);
         }
         if (b->frame >= 200) {
-            p->phase = 9;
+            p->phase = B10M_STAR_GROWN_SLAM;
             b->frame = 0;
             M_Aim(b, c);
         }
     }
-    if (p->phase == 9 && M_SlamStar(b, c, 140)) {
-        M_Back(b, c, 0);
+    if (p->phase == B10M_STAR_GROWN_SLAM && M_SlamStar(b, c, 140)) {
+        M_Back(b, c, B10M_STAR_WAIT);
     }
 }
 
@@ -808,8 +810,8 @@ static bool M_Death(B10M *const b, const B10M_CONTEXT *const c)
         return false;
     }
     Scene_Activate(c->scene, &c->assets->next_scene);
-    if (b->phase == 11 && !b->hit.invincible) {
-        M_Enter12(b, c);
+    if (b->phase == B10M_PHASE_STAR_SPAWN && !b->hit.invincible) {
+        M_EnterStarRise(b, c);
     }
     b->defeating = false;
     b->finished = true;
@@ -827,32 +829,33 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
     Missiles_UpdateAndRender(
         c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
-    if (b->phase == 0) {
+    if (b->phase == B10M_PHASE_ENTRANCE) {
         M_Entrance(b, c);
-    } else if (b->phase == 1) {
+    } else if (b->phase == B10M_PHASE_LATERAL) {
         M_Common(b);
         M_Lateral(b, c);
         M_Hit(b, c);
         if (b->hp <= 15 || b->frame > 1100) {
-            M_Next(b, 2);
+            M_Next(b, B10M_PHASE_TO_MISSILES);
         }
     } else if (
-        b->phase == 2 || b->phase == 4 || b->phase == 6 || b->phase == 8
-        || b->phase == 10) {
+        b->phase == B10M_PHASE_TO_MISSILES || b->phase == B10M_PHASE_TO_SPRAY
+        || b->phase == B10M_PHASE_TO_MISSILES_CLOCK
+        || b->phase == B10M_PHASE_TO_LASERS || b->phase == B10M_PHASE_TO_STAR) {
         switch (b->phase) {
-        case 2:
+        case B10M_PHASE_TO_MISSILES:
             M_Toggle(b, c, 3, 12, 0, 2, &b->frame);
             break;
-        case 4:
+        case B10M_PHASE_TO_SPRAY:
             M_Toggle(b, c, 12, 3, 1, 0, &b->frame);
             break;
-        case 6:
+        case B10M_PHASE_TO_MISSILES_CLOCK:
             M_Toggle(b, c, 3, 12, 0, 3, &b->frame);
             break;
-        case 8:
+        case B10M_PHASE_TO_LASERS:
             M_Toggle(b, c, 12, 16, 2, 1, &b->frame);
             break;
-        case 10:
+        case B10M_PHASE_TO_STAR:
             M_Toggle(b, c, 0, 31, b->subphase, b->iterations, &b->frame);
             break;
         }
@@ -860,16 +863,16 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
             const int8_t previous = b->phase;
             M_Next(b, (int8_t)(previous + 1));
             b->subphase = 0;
-            if (previous != 8) {
-                b->iterations = previous == 10 ? 31 : 0;
+            if (previous != B10M_PHASE_TO_LASERS) {
+                b->iterations = previous == B10M_PHASE_TO_STAR ? 31 : 0;
             }
             b->pattern_state = 0;
-            if (previous == 2) {
+            if (previous == B10M_PHASE_TO_MISSILES) {
                 b->pattern_interval = Boss_Rank(8, 12, 16, 20);
-            } else if (previous == 4) {
+            } else if (previous == B10M_PHASE_TO_SPRAY) {
                 b->pattern_interval = Boss_Rank(12, 8, 4, 2);
                 b->angle = 0;
-            } else if (previous == 6) {
+            } else if (previous == B10M_PHASE_TO_MISSILES_CLOCK) {
                 b->pattern_interval = Boss_Rank(10, 16, 20, 24);
                 b->pentagram.angle = 0;
             } else {
@@ -877,34 +880,39 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
             }
             M_Snap(b, c);
         }
-    } else if (b->phase == 3 || b->phase == 7) {
+    } else if (
+        b->phase == B10M_PHASE_MISSILES
+        || b->phase == B10M_PHASE_MISSILES_CLOCK) {
         M_Common(b);
-        M_Missiles(b, c, b->phase == 7);
+        M_Missiles(b, c, b->phase == B10M_PHASE_MISSILES_CLOCK);
         M_Hit(b, c);
-        if (b->hp <= (b->phase == 3 ? 12 : 8) || b->iterations >= 5) {
+        if (b->hp <= (b->phase == B10M_PHASE_MISSILES ? 12 : 8)
+            || b->iterations >= 5) {
             M_Next(b, (int8_t)(b->phase + 1));
         }
-    } else if (b->phase == 5) {
+    } else if (b->phase == B10M_PHASE_SPRAY) {
         M_Common(b);
         M_Spray(b, c);
         M_Hit(b, c);
         if (b->hp <= 10 || b->iterations > 4) {
-            M_Next(b, 6);
+            M_Next(b, B10M_PHASE_TO_MISSILES_CLOCK);
         }
-    } else if (b->phase == 9) {
+    } else if (b->phase == B10M_PHASE_LASERS) {
         M_Common(b);
         M_Lasers(b, c);
         M_Hit(b, c);
         if (b->hp <= 2 || b->subphase == 6) {
-            M_Next(b, 10);
+            M_Next(b, B10M_PHASE_TO_STAR);
             b->subphase = 1;
             b->iterations = 0;
-            b->pentagram.phase = 0;
+            b->pentagram.phase = B10M_STAR_WAIT;
         }
-    } else if (b->phase == 11 || b->phase == 13) {
-        const bool attack = b->phase == 13;
+    } else if (
+        b->phase == B10M_PHASE_STAR_SPAWN
+        || b->phase == B10M_PHASE_STAR_ATTACK) {
+        const bool attack = b->phase == B10M_PHASE_STAR_ATTACK;
         M_Common(b);
-        if (b->phase == 11) {
+        if (b->phase == B10M_PHASE_STAR_SPAWN) {
             M_SpawnStar(b, c);
         } else {
             M_AttackStar(b, c);
@@ -921,10 +929,11 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
             b->defeating = true;
             return M_Death(b, c);
         }
-        if (b->phase == 11 && b->subphase == 3 && !b->hit.invincible) {
-            M_Enter12(b, c);
+        if (b->phase == B10M_PHASE_STAR_SPAWN && b->subphase == 3
+            && !b->hit.invincible) {
+            M_EnterStarRise(b, c);
         }
-    } else if (b->phase == 12) {
+    } else if (b->phase == B10M_PHASE_STAR_RISE) {
         b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Toggle(b, c, 30, 1, 1, 0, &b->frame);
         if (b->hit.frame % 4 == 0) {
@@ -932,7 +941,7 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
             M_Regular(b, c, 192);
         }
         if (b->frame >= 70) {
-            M_Next(b, 13);
+            M_Next(b, B10M_PHASE_STAR_ATTACK);
             b->subphase = 0;
             b->iterations = 1;
             b->pattern_state = 0;

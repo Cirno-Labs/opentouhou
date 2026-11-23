@@ -43,6 +43,18 @@ typedef enum {
     GP_TERMINAL,
 } GAMEPLAY_PHASE;
 
+// Names the boss of the stage, or none. Gameplay_HookBossHp indexes by it.
+typedef enum {
+    BOSS_NONE,
+    BOSS_B05,
+    BOSS_B10M,
+    BOSS_B10J,
+    BOSS_B15J,
+    BOSS_B15M,
+    BOSS_B20M,
+    BOSS_B20J,
+} BOSS;
+
 // Names the program that game_switch_binary's black-out leads to: REIIDEN
 // again for a boss stage or a Continue, OP or FUUIN.
 typedef enum {
@@ -61,7 +73,8 @@ typedef struct {
     int8_t retained_lives;
     bool first_stage, wait_for_shot, timer_initialized, game_cleared;
     bool test_damage, boss_stage, waiting, bgm_started;
-    uint8_t boss, menu_selection, animation_frame;
+    BOSS boss;
+    uint8_t menu_selection, animation_frame;
     int16_t gameover_left[5], gameover_top[5];
     bool gameover_clipped[5];
     uint16_t continue_frame;

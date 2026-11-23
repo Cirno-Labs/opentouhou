@@ -262,7 +262,7 @@ static bool M_Entrance(B05 *const b, const B05_CONTEXT *const c)
                 return false;
             }
             if (b->frame == 200) {
-                b->phase = 1;
+                b->phase = B05_PHASE_SPHERE;
                 b->pattern = 0;
                 b->hit.invincible = false;
                 b->frame = 0;
@@ -390,7 +390,7 @@ void B05_Setup(B05 *const boss, const B05_CONTEXT *const c)
     boss->hp = 8;
     c->hit->health->first_white = 6;
     c->hit->health->first_redwhite = 2;
-    boss->phase = 0;
+    boss->phase = B05_PHASE_START;
     boss->pending = B05_IDLE;
     Particles_Init(c->particles);
 }
@@ -407,7 +407,7 @@ bool B05_UpdateAndRender(
     if (b->pending == B05_DEFEAT || b->pending == B05_ROUTE) {
         return M_Death(b, c, raw);
     }
-    if (b->phase == 0) {
+    if (b->phase == B05_PHASE_START) {
         b->sphere.left = 272;
         b->sphere.top = 96;
         Palette_SetColor(c->hit->palette, 5, 0, 0, 0);
@@ -418,14 +418,14 @@ bool B05_UpdateAndRender(
         b->pending = B05_ENTRANCE;
         return M_Entrance(b, c);
     }
-    if (b->phase == 1 || b->phase == 2) {
-        if (b->phase == 1 && !b->hp_bar_filled) {
+    if (b->phase == B05_PHASE_SPHERE || b->phase == B05_PHASE_TRANSFORMS) {
+        if (b->phase == B05_PHASE_SPHERE && !b->hp_bar_filled) {
             b->hp_bar_filled =
                 HudHp_Increment(c->hit->health, b->hp, b->hit.frame);
         }
         b->frame = Math16_Wrap(b->frame + 1);
         b->hit.frame = Math16_Wrap(b->hit.frame + 1);
-        if (b->phase == 1) {
+        if (b->phase == B05_PHASE_SPHERE) {
             if (b->pattern == 0) {
                 M_Half(b, c);
             } else if (b->pattern == 1) {
@@ -467,18 +467,18 @@ bool B05_UpdateAndRender(
                 96,
                 48,
             });
-        if (b->phase == 1 && b->hp <= 6 && !b->hit.invincible
+        if (b->phase == B05_PHASE_SPHERE && b->hp <= 6 && !b->hit.invincible
             && b->pattern != 1) {
-            b->phase = 2;
+            b->phase = B05_PHASE_TRANSFORMS;
             b->pattern = 0;
             b->frame = 0;
             b->hit.frame = 0;
-        } else if (b->phase == 2 && b->hp <= 0) {
-            b->phase = 8;
+        } else if (b->phase == B05_PHASE_TRANSFORMS && b->hp <= 0) {
+            b->phase = B05_PHASE_DEFEATED;
             c->hit->effect(c->hit->user, 5);
             b->frame = 0;
         }
-    } else if (b->phase == 8) {
+    } else if (b->phase == B05_PHASE_DEFEATED) {
         BossEntity_Put(
             &b->sphere, c->sprites, b->sphere.left, b->sphere.top,
             b->sphere.image);
