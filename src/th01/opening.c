@@ -34,10 +34,8 @@ static void M_Text(
     const int32_t top, const uint8_t color, const GAME_TEXT_WEIGHT weight)
 {
     const GAME_TEXT_STYLE style = { .weight = weight };
-    const bool drawn = Result_Ignore(GameText_Draw(
-        &opening->assets->font, opening->video, text, left, top, color,
-        &style));
-    ASSERT(drawn);
+    GameText_Draw(
+        &opening->assets->font, opening->video, text, left, top, color, &style);
 }
 
 static int32_t M_Top(const int32_t count)

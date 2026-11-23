@@ -43,9 +43,9 @@ static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
     Video_Clear(c->video, 0);
     const GAME_TEXT_STYLE style = { .clear_background = true };
     for (int32_t line = 0; line < 5; line++) {
-        ASSERT(Result_Ignore(GameText_Draw(
+        GameText_Draw(
             c->assets->font, c->video, m_Lines[line].text, 0, line * 32,
-            m_Lines[line].color, &style)));
+            m_Lines[line].color, &style);
     }
     Video_SelectDrawingPage(c->video, 0);
     M_Palette(c, 0);

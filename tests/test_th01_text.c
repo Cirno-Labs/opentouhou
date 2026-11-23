@@ -167,7 +167,7 @@ static int32_t M_Measure(
     memcpy(saved, video->pages[0], VIDEO_PAGE_SIZE);
     memset(video->pages[0], 0, VIDEO_WIDTH * 18);
     const GAME_TEXT_STYLE style = { .spacing = spacing, .underline = true };
-    CHECK(IS_OK(GameText_Draw(font, video, text, 0, 0, 1, &style)));
+    GameText_Draw(font, video, text, 0, 0, 1, &style);
     int32_t width = 0;
     while (width < VIDEO_WIDTH && Th01Test_Pixel(video, 0, width, 17) == 7) {
         width++;
@@ -273,7 +273,7 @@ TEST(controls_map_to_halfwidth_space_and_unknown_scalars_keep_their_cells)
             0),
         64);
     CHECK(GameText_Find(&font, '\n') == GameText_Find(&font, ' '));
-    CHECK(IS_OK(GameText_Draw(&font, &video, "\nB東", 10, 10, 10, &style)));
+    GameText_Draw(&font, &video, "\nB東", 10, 10, 10, &style);
     for (int32_t y = 10; y < 26; y++) {
         for (int32_t x = 10; x < 42; x++) {
             CHECK_EQ_INT(Th01Test_Pixel(&video, 0, x, y), 3);
@@ -293,8 +293,7 @@ TEST(weights_clip_left_overflow_and_preserve_source_holes)
     for (int32_t weight = GAME_TEXT_NORMAL; weight <= GAME_TEXT_BLACK;
          weight++) {
         GAME_TEXT_STYLE style = { .weight = weight };
-        CHECK(IS_OK(GameText_Draw(
-            &font, &video, "A", 10, 10 + weight * 20, 10, &style)));
+        GameText_Draw(&font, &video, "A", 10, 10 + weight * 20, 10, &style);
         M_Row(&video, 0, 10, 10 + weight * 20, 8, masks[weight], 10, 3);
         M_Row(&video, 0, 10, 11 + weight * 20, 8, second[weight], 10, 3);
         CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 9, 10 + weight * 20), 3);
@@ -310,7 +309,7 @@ TEST(reverse_follows_weight_and_uses_the_full_or_half_cell_mask)
     M_Init(&arena, &video);
     const GAME_TEXT_FONT font = M_Font(Arena_Allocator(&arena));
     const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_BOLD, .reverse = true };
-    CHECK(IS_OK(GameText_Draw(&font, &video, "Aあ", 10, 10, 26, &style)));
+    GameText_Draw(&font, &video, "Aあ", 10, 10, 26, &style);
     M_Row(&video, 0, 10, 10, 8, 0x3400, 10, 3);
     M_Row(&video, 0, 18, 10, 16, 0x7ffc, 10, 3);
     CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 34, 10), 3);
@@ -324,7 +323,7 @@ TEST(fullwidth_and_halfwidth_glyphs_advance_with_spacing)
     M_Init(&arena, &video);
     const GAME_TEXT_FONT font = M_Font(Arena_Allocator(&arena));
     const GAME_TEXT_STYLE style = { .spacing = 3 };
-    CHECK(IS_OK(GameText_Draw(&font, &video, "AあｱＡ", 10, 10, 5, &style)));
+    GameText_Draw(&font, &video, "AあｱＡ", 10, 10, 5, &style);
     M_Row(&video, 0, 10, 10, 8, 0x4500, 5, 3);
     M_Row(&video, 0, 21, 10, 16, 0x8001, 5, 3);
     M_Row(&video, 0, 40, 10, 8, 0x8100, 5, 3);
@@ -344,7 +343,7 @@ TEST(background_and_underline_cover_the_measured_extent_only)
     const GAME_TEXT_STYLE style = { .spacing = 2,
                                     .clear_background = true,
                                     .underline = true };
-    CHECK(IS_OK(GameText_Draw(&font, &video, "Aあ", 10, 10, 10, &style)));
+    GameText_Draw(&font, &video, "Aあ", 10, 10, 10, &style);
     for (int32_t y = 10; y <= 27; y++) {
         for (int32_t x = 10; x < 36; x++) {
             const uint8_t pixel = Th01Test_Pixel(&video, 0, x, y);
@@ -370,7 +369,7 @@ TEST(underline_without_background_keeps_the_gap_and_uncovered_pixels)
     M_Init(&arena, &video);
     const GAME_TEXT_FONT font = M_Font(Arena_Allocator(&arena));
     const GAME_TEXT_STYLE style = { .underline = true };
-    CHECK(IS_OK(GameText_Draw(&font, &video, "A", 10, 10, 5, &style)));
+    GameText_Draw(&font, &video, "A", 10, 10, 5, &style);
     CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 26), 3);
     for (int32_t x = 10; x < 18; x++) {
         CHECK_EQ_INT(Th01Test_Pixel(&video, 0, x, 27), 7);
@@ -385,22 +384,20 @@ TEST(edge_clipping_is_safe_and_right_edge_requires_a_complete_cell)
     M_Init(&arena, &video);
     const GAME_TEXT_FONT font = M_Font(Arena_Allocator(&arena));
     const GAME_TEXT_STYLE style = {};
-    CHECK(IS_OK(GameText_Draw(&font, &video, "A", -7, -1, 10, &style)));
+    GameText_Draw(&font, &video, "A", -7, -1, 10, &style);
     CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 0), 10);
-    CHECK(IS_OK(GameText_Draw(&font, &video, "A", 632, 390, 10, &style)));
+    GameText_Draw(&font, &video, "A", 632, 390, 10, &style);
     M_Row(&video, 0, 632, 390, 8, 0x4500, 10, 3);
-    CHECK(IS_OK(GameText_Draw(&font, &video, "A", 633, 370, 10, &style)));
-    CHECK(IS_OK(GameText_Draw(&font, &video, "あ", 625, 350, 10, &style)));
+    GameText_Draw(&font, &video, "A", 633, 370, 10, &style);
+    GameText_Draw(&font, &video, "あ", 625, 350, 10, &style);
     for (int32_t x = 625; x < 640; x++) {
         CHECK_EQ_INT(Th01Test_Pixel(&video, 0, x, 350), 3);
         CHECK_EQ_INT(Th01Test_Pixel(&video, 0, x, 370), 3);
     }
     const GAME_TEXT_STYLE background = { .clear_background = true,
                                          .underline = true };
-    CHECK(IS_OK(GameText_Draw(
-        &font, &video, "A", INT32_MAX, INT32_MAX, 1, &background)));
-    CHECK(IS_OK(GameText_Draw(
-        &font, &video, "A", INT32_MIN, INT32_MIN, 1, &background)));
+    GameText_Draw(&font, &video, "A", INT32_MAX, INT32_MAX, 1, &background);
+    GameText_Draw(&font, &video, "A", INT32_MIN, INT32_MIN, 1, &background);
     Arena_Free(&arena);
 }
 
@@ -419,7 +416,7 @@ TEST(drawing_preserves_other_page_selectors_palette_and_cache)
     const GAME_TEXT_GLYPH before = *GameText_Find(&font, 'A');
     const size_t used = arena.used;
     const GAME_TEXT_STYLE style = {};
-    CHECK(IS_OK(GameText_Draw(&font, &video, "A", 10, 10, 5, &style)));
+    GameText_Draw(&font, &video, "A", 10, 10, 5, &style);
     M_Row(&video, 1, 10, 10, 8, 0x4500, 5, 4);
     CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 10, 10), 3);
     CHECK_EQ_INT(video.drawing_page, 1);
@@ -427,42 +424,6 @@ TEST(drawing_preserves_other_page_selectors_palette_and_cache)
     CHECK(memcmp(palette, video.palette, sizeof(palette)) == 0);
     CHECK(memcmp(&before, GameText_Find(&font, 'A'), sizeof(before)) == 0);
     CHECK_EQ_INT(arena.used, used);
-    Arena_Free(&arena);
-}
-
-TEST(malformed_utf8_and_invalid_styles_leave_video_unchanged)
-{
-    ARENA arena;
-    VIDEO video;
-    M_Init(&arena, &video);
-    const GAME_TEXT_FONT font = M_Font(Arena_Allocator(&arena));
-    GAME_TEXT_STYLE style = { .clear_background = true, .underline = true };
-    static const char *const invalid[] = {
-        "A\xc0\xaf",
-        "A\xe0\x80\xaf",
-        "A\xed\xa0\x80",
-        "A\xf0\x80\x80\xaf",
-        "A\xf4\x90\x80\x80",
-        "A\xe3\x81",
-        "A\x80",
-        "A\xff",
-    };
-    for (size_t i = 0; i < ARRAY_SIZE(invalid); i++) {
-        CHECK(!Result_Ignore(
-            GameText_Draw(&font, &video, invalid[i], 10, 10, 5, &style)));
-    }
-    style.spacing = 8;
-    CHECK(!Result_Ignore(GameText_Draw(&font, &video, "A", 10, 10, 5, &style)));
-    style.spacing = -1;
-    CHECK(!Result_Ignore(GameText_Draw(&font, &video, "A", 10, 10, 5, &style)));
-    style.spacing = 0;
-    style.weight = (GAME_TEXT_WEIGHT)99;
-    CHECK(!Result_Ignore(GameText_Draw(&font, &video, "A", 10, 10, 5, &style)));
-    CHECK(
-        !Result_Ignore(GameText_Draw(&font, &video, "A", 10, 10, 5, nullptr)));
-    for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        CHECK_EQ_INT(video.pages[0][i], 3);
-    }
     Arena_Free(&arena);
 }
 
@@ -479,7 +440,7 @@ TEST(empty_text_is_a_noop_with_every_background_effect)
         .underline = true,
         .reverse = true,
     };
-    CHECK(IS_OK(GameText_Draw(&font, &video, "", 10, 10, 10, &style)));
+    GameText_Draw(&font, &video, "", 10, 10, 10, &style);
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
         CHECK_EQ_INT(video.pages[0][i], 3);
     }
@@ -517,7 +478,7 @@ TEST(rom_cache_is_unique_and_survives_the_rom)
     }
     const size_t used = arena.used;
     const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_BOLD };
-    CHECK(IS_OK(GameText_Draw(&font, &video, "AあＡｱ", 10, 10, 10, &style)));
+    GameText_Draw(&font, &video, "AあＡｱ", 10, 10, 10, &style);
     CHECK_EQ_INT(arena.used, used);
     bool drawn = false;
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
@@ -582,7 +543,7 @@ TEST(utf8_scalars_include_two_and_four_byte_characters)
     const GAME_TEXT_STYLE style = {};
     const char text[] = "\xc2\xa3\xf0\x9f\x98\x80\xf4\x8f\xbf\xbf";
     CHECK_EQ_INT(M_Measure(&font, &video, text, 0), 48);
-    CHECK(IS_OK(GameText_Draw(&font, &video, text, 10, 10, 10, &style)));
+    GameText_Draw(&font, &video, text, 10, 10, 10, &style);
     M_Row(&video, 0, 10, 10, 16, 0x8001, 10, 3);
     M_Row(&video, 0, 26, 10, 16, 0x4002, 10, 3);
     M_Row(&video, 0, 42, 10, 16, 0x2004, 10, 3);

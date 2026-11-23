@@ -412,20 +412,18 @@ bool Ending_Tick(
             const GAME_TEXT_STYLE style = { .weight = op->style == 18
                                                 ? GAME_TEXT_HEAVY
                                                 : GAME_TEXT_NORMAL };
-            const RESULT drawn = GameText_Draw(
+            GameText_Draw(
                 &e->assets->font, e->video, text, op->left, op->top,
                 (uint8_t)(op->style & 15), &style);
-            ASSERT(IS_OK(drawn));
             break;
         }
         case END_TITLE: {
             Ending_CalculateTitle(&e->result);
             const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_HEAVY };
-            const RESULT drawn = GameText_Draw(
+            GameText_Draw(
                 &e->assets->font, e->video,
                 m_PlayerTitles[e->result.group][e->result.level], 488, 384, 2,
                 &style);
-            ASSERT(IS_OK(drawn));
             break;
         }
         case END_INPUT:

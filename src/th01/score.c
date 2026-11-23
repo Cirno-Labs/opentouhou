@@ -2,8 +2,6 @@
 
 #include "th01/scale2x.h"
 
-#include "core/base/assert.h"
-
 #include <string.h>
 
 static const char *const m_Ranks[] = {
@@ -67,9 +65,7 @@ static void M_Draw(
     const GAME_TEXT_STYLE style = { .weight = weight,
                                     .reverse = reverse,
                                     .clear_background = clear };
-    const RESULT result = GameText_Draw(
-        &s->assets->font, s->video, text, left, top, color, &style);
-    ASSERT(IS_OK(result));
+    GameText_Draw(&s->assets->font, s->video, text, left, top, color, &style);
 }
 
 static void M_Number(

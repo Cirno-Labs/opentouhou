@@ -3,8 +3,6 @@
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
 
-#include "core/base/assert.h"
-
 static void M_ScorePopups(const STAGE_CONTEXT *const context)
 {
     STAGE_OBJECTS *const objects = context->objects;
@@ -40,9 +38,9 @@ static void M_ScorePopups(const STAGE_CONTEXT *const context)
             }
             text[count] = '\0';
             const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_BOLD };
-            ASSERT(Result_Ignore(GameText_Draw(
+            GameText_Draw(
                 context->font, context->video, text, card->left + offset,
-                card->top + 8 - popup_y, 7, &style)));
+                card->top + 8 - popup_y, 7, &style);
         }
     }
 }

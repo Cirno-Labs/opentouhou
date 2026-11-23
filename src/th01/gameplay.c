@@ -28,9 +28,9 @@ static void M_Draw(
 {
     const GAME_TEXT_STYLE style = { .weight = weight,
                                     .clear_background = clear };
-    ASSERT(Result_Ignore(GameText_Draw(
+    GameText_Draw(
         &g->storage.assets->menu_font, g->storage.video, text, left, top, color,
-        &style)));
+        &style);
 }
 
 static void M_Line(GAMEPLAY *const g, const char *const text)
