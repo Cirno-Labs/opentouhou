@@ -5,7 +5,7 @@
 #include "th01/boss_render.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
-#include "th01/pi.h"
+#include "pc98/zun/pi.h"
 #include "th01/route_select.h"
 
 typedef struct {

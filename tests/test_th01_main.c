@@ -1,6 +1,6 @@
 #include "th01/main.h"
+#include "th01/bfnt.h"
 #include "th01/gameplay_internal.h"
-#include "th01/logo.h"
 #include "th01/score.h"
 #include "th01/ending.h"
 #include "th01_assets.h"

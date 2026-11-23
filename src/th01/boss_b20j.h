@@ -5,7 +5,7 @@
 #include "th01/boss_render.h"
 #include "th01/grz.h"
 #include "pc98/mdrv_data.h"
-#include "th01/pi.h"
+#include "pc98/zun/pi.h"
 #include "th01/pellets.h"
 #include "th01/reiiden_image.h"
 #include "th01/shootout_lasers.h"

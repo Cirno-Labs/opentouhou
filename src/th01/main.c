@@ -2,13 +2,14 @@
 
 #include "th01/gameplay.h"
 
-#include "th01/logo.h"
 #include "th01/opening.h"
 #include "pc98/vsync.h"
+#include "pc98/zun/logo1.h"
 #include "th01/frame.h"
 #include "th01/input.h"
 #include "th01/settings.h"
 #include "th01/score.h"
+#include "th01/bfnt.h"
 #include "th01/ending.h"
 
 #include "core/base/arena.h"
@@ -37,7 +38,7 @@ static const char *const m_Fonts[][2] = {
 };
 static ARENA m_Assets;
 static BFNT m_Sprites;
-static LOGO m_Logo;
+static ZUN_LOGO1 m_Logo;
 static OPENING_ASSETS m_OpeningAssets;
 static OPENING m_Opening;
 static bool m_InOpening;
@@ -127,6 +128,12 @@ static RESULT M_LoadAssets(void)
     return result;
 }
 
+static void M_ShowLogoPages(void)
+{
+    Video_SelectDrawingPage(&m_Video, m_Logo.drawing_page);
+    Video_SelectVisiblePage(&m_Video, m_Logo.visible_page);
+}
+
 static void M_EndingAudio(void *const context, const ENDING_AUDIO command)
 {
     static const OPENING_EVENTS events[] = {
@@ -172,11 +179,12 @@ static RESULT M_Init(void)
         Arena_Allocator(&m_Assets), &m_EndingAssets, &m_Video,
         ending_context.vsync, ending_context.input, M_EndingAudio, m_Gameplay,
         &m_Ending);
-    Logo_Init(&m_Logo, &m_Video);
+    ZunLogo1_Init(&m_Logo, m_Video.pages);
+    M_ShowLogoPages();
     for (int32_t i = 0; i < 2; i++) {
-        MUST(GfxTexture_CreateIndexed(LOGO_WIDTH, LOGO_HEIGHT, &m_Pages[i]));
+        MUST(GfxTexture_CreateIndexed(VIDEO_WIDTH, VIDEO_HEIGHT, &m_Pages[i]));
         GfxTexture_UploadIndices(
-            m_Pages[i], (GFX_RECT) { 0, 0, LOGO_WIDTH, LOGO_HEIGHT },
+            m_Pages[i], (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT },
             m_Video.pages[i]);
         GfxTexture_UploadPalette(m_Pages[i], 0, 16, m_Video.palette);
         m_UploadedPages[i] =
@@ -330,12 +338,14 @@ static bool M_Tick(const void *const input)
                     return false;
                 }
             } else {
-                int32_t changed;
-                if (!Logo_Tick(&m_Logo, &m_Sprites, &changed)) {
+                const bool running =
+                    ZunLogo1_Tick(&m_Logo, m_Video.pages, m_Sprites.pixels);
+                M_ShowLogoPages();
+                if (!running) {
                     M_BeginOpening(false, raw);
                 } else {
                     GFX_COLOR palette[16];
-                    Logo_Palette(&m_Logo, &m_Sprites, palette);
+                    ZunLogo1_Palette(&m_Logo, m_Sprites.palette, palette);
                     Video_SetPalette(&m_Video, palette);
                 }
             }
@@ -357,7 +367,7 @@ static bool M_Tick(const void *const input)
             }
             if (memcmp(m_UploadedPages[i], pixels, VIDEO_PAGE_SIZE) != 0) {
                 GfxTexture_UploadIndices(
-                    m_Pages[i], (GFX_RECT) { 0, 0, LOGO_WIDTH, LOGO_HEIGHT },
+                    m_Pages[i], (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT },
                     pixels);
                 memcpy(m_UploadedPages[i], pixels, VIDEO_PAGE_SIZE);
             }
@@ -383,9 +393,9 @@ static bool M_Tick(const void *const input)
     const GFX_COLOR white = { 255, 255, 255, 255 };
     const GFX_VERTEX vertices[4] = {
         { { 0, 0, 0 }, white, { 0, 0 } },
-        { { LOGO_WIDTH, 0, 0 }, white, { 1, 0 } },
-        { { LOGO_WIDTH, LOGO_HEIGHT, 0 }, white, { 1, 1 } },
-        { { 0, LOGO_HEIGHT, 0 }, white, { 0, 1 } },
+        { { VIDEO_WIDTH, 0, 0 }, white, { 1, 0 } },
+        { { VIDEO_WIDTH, VIDEO_HEIGHT, 0 }, white, { 1, 1 } },
+        { { 0, VIDEO_HEIGHT, 0 }, white, { 0, 1 } },
     };
     const GFX_STATE state = {};
     Gfx_DrawQuad(&state, m_Pages[m_Video.visible_page], vertices, 0);
@@ -455,8 +465,8 @@ const GAME_DESC g_GameDesc = {
     .id = "th01",
     .title = "東方靈異伝 ~ Highly Responsive to Prayers",
     .version = GAME_VERSION,
-    .logical_width = LOGO_WIDTH,
-    .logical_height = LOGO_HEIGHT,
+    .logical_width = VIDEO_WIDTH,
+    .logical_height = VIDEO_HEIGHT,
     .input_schema = &g_InputSchema,
     .settings_schema = &g_SettingsSchema,
     .settings = &g_Settings,

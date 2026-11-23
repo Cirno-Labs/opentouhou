@@ -1,10 +1,15 @@
-#include "th01/logo.h"
+#include "pc98/zun/logo1.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
+
+#define M_WIDTH 640
+#define M_HEIGHT 400
 
 static const int16_t m_Sine7[65] = {
     0,   3,   6,   9,   12,  15,  18,  21,  24,  28,  31,  34,  37,
@@ -32,7 +37,7 @@ static void M_Pixel(
     uint8_t *const page, const int32_t x, const int32_t y, const uint8_t color)
 {
     if (x >= 96 && x <= 543 && y >= 100 && y <= 299) {
-        page[y * LOGO_WIDTH + x] = color;
+        page[y * M_WIDTH + x] = color;
     }
 }
 
@@ -45,11 +50,11 @@ static void M_Line(
     }
     const int32_t x0 = left < 96 ? 96 : left;
     const int32_t x1 = right > 543 ? 543 : right;
-    memset(page + y * LOGO_WIDTH + x0, color, (size_t)(x1 - x0 + 1));
+    memset(page + y * M_WIDTH + x0, color, (size_t)(x1 - x0 + 1));
 }
 
 static void M_Circle(
-    uint8_t *const page, const LOGO_POINT center, const uint8_t color)
+    uint8_t *const page, const ZUN_LOGO1_POINT center, const uint8_t color)
 {
     int32_t x = 96;
     int32_t y = 0;
@@ -69,12 +74,12 @@ static void M_Circle(
 }
 
 static void M_Sprite(
-    LOGO *const logo, const BFNT *const sprites, const int32_t x,
-    const int32_t index, const bool wave)
+    const ZUN_LOGO1 *const logo, uint8_t *const page,
+    const uint8_t *const sprites, const int32_t x, const int32_t index,
+    const bool wave)
 {
-    ASSERT(index >= 0 && index < sprites->count);
-    uint8_t *const page = logo->video->pages[logo->video->drawing_page];
-    const uint8_t *const pixels = sprites->pixels + index * 64 * 16;
+    ASSERT(index >= 0 && index < 16);
+    const uint8_t *const pixels = sprites + index * 64 * 16;
     const int32_t period = logo->period < 0 ? -logo->period : logo->period;
     for (int32_t row = 0; row < 16; row++) {
         int32_t offset = 0;
@@ -94,7 +99,8 @@ static void M_Sprite(
     }
 }
 
-static void M_Animate(LOGO *const logo, const BFNT *const sprites)
+static void M_Animate(
+    ZUN_LOGO1 *const logo, uint8_t *const page, const uint8_t *const sprites)
 {
     const int32_t frame = logo->frame;
     if (frame < 50 || frame >= 170) {
@@ -105,8 +111,8 @@ static void M_Animate(LOGO *const logo, const BFNT *const sprites)
         logo->sprite += 2;
     }
     const bool wave = frame >= 90 && frame < 130;
-    M_Sprite(logo, sprites, 256, logo->sprite, wave);
-    M_Sprite(logo, sprites, 320, logo->sprite + 1, wave);
+    M_Sprite(logo, page, sprites, 256, logo->sprite, wave);
+    M_Sprite(logo, page, sprites, 320, logo->sprite + 1, wave);
     if (wave) {
         const int32_t step = frame < 110 ? -1 : 1;
         logo->period += step;
@@ -115,19 +121,16 @@ static void M_Animate(LOGO *const logo, const BFNT *const sprites)
     }
 }
 
-void Logo_Init(LOGO *const logo, VIDEO *const video)
+void ZunLogo1_Init(ZUN_LOGO1 *const logo, uint8_t *pages[2])
 {
-    *logo =
-        (LOGO) { .random = 1, .period = 23, .star_phase = 64, .video = video };
-    Video_SelectDrawingPage(video, 0);
-    Video_Clear(video, 0);
-    Video_SelectDrawingPage(video, 1);
-    Video_Clear(video, 0);
-    Video_SelectDrawingPage(video, 0);
-    Video_SelectVisiblePage(video, 1);
+    *logo = (ZUN_LOGO1) {
+        .random = 1, .period = 23, .star_phase = 64, .visible_page = 1
+    };
+    memset(pages[0], 0, M_WIDTH * M_HEIGHT);
+    memset(pages[1], 0, M_WIDTH * M_HEIGHT);
     for (int32_t i = 0; i < 4; i++) {
-        logo->circles[i] = (LOGO_POINT) { (i + 1) * 128, 320 - i * 80 };
-        logo->velocity[i] = (LOGO_POINT) { -8, 8 };
+        logo->circles[i] = (ZUN_LOGO1_POINT) { (i + 1) * 128, 320 - i * 80 };
+        logo->velocity[i] = (ZUN_LOGO1_POINT) { -8, 8 };
     }
     for (int32_t i = 0; i < 50; i++) {
         logo->stars[i].x = (int32_t)(MasterRng_Next(&logo->random) % 640);
@@ -136,13 +139,12 @@ void Logo_Init(LOGO *const logo, VIDEO *const video)
     }
 }
 
-bool Logo_Tick(
-    LOGO *const logo, const BFNT *const sprites, int32_t *const changed)
+bool ZunLogo1_Tick(
+    ZUN_LOGO1 *const logo, uint8_t *pages[2], const uint8_t *const sprites)
 {
-    *changed = -1;
     if (logo->half_tick) {
-        Video_SelectVisiblePage(logo->video, logo->video->drawing_page);
-        Video_SelectDrawingPage(logo->video, logo->video->drawing_page ^ 1);
+        logo->visible_page = logo->drawing_page;
+        logo->drawing_page ^= 1;
         logo->frame++;
         logo->half_tick = false;
         return logo->frame <= 180 || logo->tone > 0;
@@ -152,22 +154,22 @@ bool Logo_Tick(
     } else if (logo->tone < 100) {
         logo->tone += 2;
     }
-    uint8_t *const page = logo->video->pages[logo->video->drawing_page];
+    uint8_t *const page = pages[logo->drawing_page];
     for (int32_t y = 100; y <= 299; y++) {
-        memset(page + y * LOGO_WIDTH + 96, 0, 448);
+        memset(page + y * M_WIDTH + 96, 0, 448);
     }
     for (int32_t i = 0; i < 50; i++) {
-        LOGO_POINT *const star = &logo->stars[i];
+        ZUN_LOGO1_POINT *const star = &logo->stars[i];
         M_Pixel(page, star->x, star->y, 5);
         star->x += M_Shift(logo->speeds[i] * Math16_Cos(logo->star_phase), 8);
         star->y += M_Shift(logo->speeds[i] * Math16_Sin(logo->star_phase), 8);
-        star->x = (star->x + LOGO_WIDTH) % LOGO_WIDTH;
-        star->y = (star->y + LOGO_HEIGHT) % LOGO_HEIGHT;
+        star->x = (star->x + M_WIDTH) % M_WIDTH;
+        star->y = (star->y + M_HEIGHT) % M_HEIGHT;
     }
     logo->star_phase++;
     for (int32_t i = 3; i >= 0; i--) {
-        LOGO_POINT *const circle = &logo->circles[i];
-        LOGO_POINT *const velocity = &logo->velocity[i];
+        ZUN_LOGO1_POINT *const circle = &logo->circles[i];
+        ZUN_LOGO1_POINT *const velocity = &logo->velocity[i];
         M_Circle(page, *circle, (uint8_t)(4 - i));
         circle->x += velocity->x;
         circle->y += velocity->y;
@@ -178,21 +180,20 @@ bool Logo_Tick(
             velocity->y = -velocity->y;
         }
     }
-    M_Animate(logo, sprites);
-    *changed = logo->video->drawing_page;
+    M_Animate(logo, page, sprites);
     logo->half_tick = true;
     return true;
 }
 
-void Logo_Palette(
-    const LOGO *const logo, const BFNT *const sprites, GFX_COLOR colors[16])
+void ZunLogo1_Palette(
+    const ZUN_LOGO1 *const logo, const GFX_COLOR source[16], GFX_COLOR out[16])
 {
     for (int32_t i = 0; i < 16; i++) {
-        const GFX_COLOR source = sprites->palette[i];
-        colors[i] = (GFX_COLOR) {
-            (uint8_t)(((source.red >> 4) * logo->tone / 100) * 17),
-            (uint8_t)(((source.green >> 4) * logo->tone / 100) * 17),
-            (uint8_t)(((source.blue >> 4) * logo->tone / 100) * 17), 255
+        const GFX_COLOR color = source[i];
+        out[i] = (GFX_COLOR) {
+            (uint8_t)(((color.red >> 4) * logo->tone / 100) * 17),
+            (uint8_t)(((color.green >> 4) * logo->tone / 100) * 17),
+            (uint8_t)(((color.blue >> 4) * logo->tone / 100) * 17), 255
         };
     }
 }
