@@ -79,7 +79,7 @@ TEST(pause_starts_all_lines_and_falls_through_to_resume)
 {
     M_Reset();
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
     CHECK_EQ_INT(menu->state_frames, 1);
     CHECK_EQ_INT(m_StartCount, 6);
@@ -100,7 +100,7 @@ TEST(pause_capture_starts_and_steps_the_background)
     M_Reset();
     g_AsciiText.capture_background = true;
     PAUSE_MENU *const menu = &g_AsciiText.pause_menu;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(m_StartCount, 7);
     CHECK_EQ_INT(m_StartScripts[6], 0x718);
     CHECK(m_StartVms[6] == &menu->background);
@@ -118,10 +118,10 @@ TEST(pause_resume_waits_four_frames_for_selection_and_twenty_to_close)
     menu->state_frames = 3;
     g_GameManager.mode.paused = 2;
     g_Buttons.word = 1;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 1);
     CHECK_EQ_INT(menu->state_frames, 4);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 3);
     CHECK_EQ_INT(menu->state_frames, 1);
     CHECK_EQ_INT(menu->background.pending_interrupt, 1);
@@ -131,10 +131,10 @@ TEST(pause_resume_waits_four_frames_for_selection_and_twenty_to_close)
     g_Buttons.word = 0;
     menu->state_frames = 19;
     M_ShowSprites(menu);
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(g_GameManager.mode.paused, 2);
     M_ClearStepCount();
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 0);
     CHECK_EQ_INT(menu->state_frames, 21);
     CHECK_EQ_INT(g_GameManager.mode.paused, 0);
@@ -152,7 +152,7 @@ TEST(pause_quit_overrides_resume_and_waits_twenty_frames)
     M_ShowSprites(menu);
     menu->sprites[4].shown = false;
     g_Buttons.word = 8 | 0x200;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 6);
     CHECK_EQ_INT(menu->state_frames, 1);
     CHECK_EQ_INT(menu->sprites[0].pending_interrupt, 2);
@@ -160,10 +160,10 @@ TEST(pause_quit_overrides_resume_and_waits_twenty_frames)
     CHECK_EQ_INT(menu->background.pending_interrupt, 1);
     g_Buttons.word = 0;
     menu->state_frames = 19;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(m_Requested, SCENE_NONE);
     M_ClearStepCount();
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(m_Requested, SCENE_TITLE);
     CHECK_EQ_INT(menu->state_frames, 21);
     CHECK_EQ_INT(m_StepCount, 6);
@@ -176,14 +176,14 @@ TEST(pause_quit_confirmation_can_return_to_the_quit_choice)
     menu->state = 2;
     menu->state_frames = 4;
     g_Buttons.word = 1;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 5);
     CHECK_EQ_INT(menu->state_frames, 1);
     for (int32_t i = 0; i < 6; i++) {
         CHECK_EQ_INT(menu->sprites[i].pending_interrupt, i < 3 ? 2 : 1);
     }
     menu->state_frames = 4;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 2);
     CHECK_EQ_INT(menu->state_frames, 1);
     for (int32_t i = 0; i < 6; i++) {
@@ -198,10 +198,10 @@ TEST(pause_quit_confirmation_can_select_yes)
     menu->state = 5;
     menu->state_frames = 4;
     g_Buttons.word = 0x10;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 4);
     g_Buttons.word = 1;
-    PauseMenu_UpdatePauseMenu(menu);
+    PauseMenu_Update(menu);
     CHECK_EQ_INT(menu->state, 6);
     CHECK_EQ_INT(menu->state_frames, 1);
     for (int32_t i = 3; i < 6; i++) {

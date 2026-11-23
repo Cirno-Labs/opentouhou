@@ -40,7 +40,7 @@ static CHAIN_STATUS M_Update(void *const arg)
             }
         }
     } else if (g_GameManager.mode.paused != 0) {
-        PauseMenu_UpdatePauseMenu(&text->pause_menu);
+        PauseMenu_Update(&text->pause_menu);
     }
     if (g_GameManager.mode.in_continue_menu) {
         PauseMenu_UpdateContinueMenu(&text->continue_menu);

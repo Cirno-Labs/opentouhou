@@ -21,6 +21,45 @@
 
 static const VEC3 m_Raised = { -4.0f, -4.0f, 0.0f };
 
+// The pause menu shows a title and the lines resume, quit and retry, then
+// a question with yes and no, then the difficulty and the practice and
+// unscored marks. The continue menu shows two lines, yes and no, and the
+// number of continues left.
+#define M_PAUSE_RESUME_LINE 1
+#define M_PAUSE_QUIT_LINE 2
+#define M_PAUSE_RETRY_LINE 3
+#define M_PAUSE_LINE_END 4
+#define M_PAUSE_YES_SPRITE 5
+#define M_PAUSE_CONFIRM_END 7
+#define M_PAUSE_DIFFICULTY_SPRITE 7
+#define M_PAUSE_PRACTICE_SPRITE 8
+#define M_PAUSE_UNSCORED_SPRITE 9
+#define M_CONTINUE_YES_SPRITE 2
+#define M_CONTINUE_COUNTER_SPRITE 4
+#define M_CONTINUE_SPRITE_COUNT 5
+
+typedef enum {
+    M_PAUSE_OPEN = 0,
+    M_PAUSE_ON_RESUME = 1,
+    M_PAUSE_ON_QUIT = 2,
+    M_PAUSE_ON_RETRY = 3,
+    M_PAUSE_RESUMING = 4,
+    M_PAUSE_QUIT_YES = 5,
+    M_PAUSE_QUIT_NO = 6,
+    M_PAUSE_RETRY_YES = 7,
+    M_PAUSE_RETRY_NO = 8,
+    M_PAUSE_QUITTING = 9,
+    M_PAUSE_RETRYING = 10,
+} M_PAUSE_STATE;
+
+typedef enum {
+    M_CONTINUE_OPEN = 0,
+    M_CONTINUE_ON_YES = 1,
+    M_CONTINUE_ON_NO = 2,
+    M_CONTINUE_CONTINUING = 3,
+    M_CONTINUE_GIVING_UP = 4,
+} M_CONTINUE_STATE;
+
 static void M_SetViewport(void)
 {
     VIEWPORT *const viewport = &g_GameManager.camera.viewport;
@@ -109,185 +148,225 @@ static void M_PlayMove(void)
     Sound_Queue(SOUND_PLAYER_SHOT);
 }
 
-// States: 1 to 3 choose resume, quit or retry; 5 and 6 confirm quitting
-// (yes, no) and 7 and 8 retrying; 4, 9 and 10 close the menu into play,
-// the title or a retry 20 frames later.
-void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
+static void M_StartClose(PAUSE_MENU *const menu, const M_PAUSE_STATE state)
 {
+    Sound_Queue(SOUND_OK);
+    menu->state = state;
+    M_InterruptShown(menu->sprites, ASCII_PAUSE_SPRITE_COUNT);
+    menu->state_frames = 0;
+}
+
+// Returns false when the background copy has to wait for the next calc.
+static bool M_OpenPause(PAUSE_MENU *const menu)
+{
+    for (int32_t i = 0; i < ASCII_PAUSE_SPRITE_COUNT; i++) {
+        Anm_StartScript(&menu->sprites[i], i + 0xfe);
+    }
+    M_Interrupt(menu->sprites, 0, M_PAUSE_LINE_END, 1);
+    Anm_SetSprite(
+        &menu->sprites[M_PAUSE_DIFFICULTY_SPRITE],
+        g_GameManager.run.difficulty + 0x10d);
+    if (!g_GameManager.mode.in_practice) {
+        menu->sprites[M_PAUSE_PRACTICE_SPRITE].shown = false;
+    }
+    if (!g_GameManager.run.score_disabled) {
+        menu->sprites[M_PAUSE_UNSCORED_SPRITE].shown = false;
+    }
+    if (g_GameManager.mode.in_replay) {
+        menu->sprites[M_PAUSE_RETRY_LINE].pc = -1;
+    }
+    menu->state++;
+    menu->state_frames = 0;
+    if (g_AsciiText.capture_background
+        && !M_StartBackground(&menu->background)) {
+        menu->state = M_PAUSE_OPEN;
+        return false;
+    }
+    return true;
+}
+
+// Moves the cursor to up_state on up and to down_state on down.
+static void M_MoveLine(
+    PAUSE_MENU *const menu, const M_PAUSE_STATE up_state,
+    const M_PAUSE_STATE down_state)
+{
+    if (Buttons_WasPressed(TH07_BUTTON_up)) {
+        menu->state = up_state;
+        M_PlayMove();
+    }
+    if (Buttons_WasPressed(TH07_BUTTON_down)) {
+        menu->state = down_state;
+        M_PlayMove();
+    }
+}
+
+static void M_OnResume(PAUSE_MENU *const menu)
+{
+    M_HighlightPauseLine(menu, M_PAUSE_RESUME_LINE);
+    if (menu->state_frames < 4) {
+        return;
+    }
     const bool in_replay = g_GameManager.mode.in_replay;
-    if (Buttons_WasPressed(8) && menu->state != 4) {
+    M_MoveLine(
+        menu, in_replay ? M_PAUSE_ON_QUIT : M_PAUSE_ON_RETRY, M_PAUSE_ON_QUIT);
+    if (M_Confirmed()) {
         Sound_Queue(SOUND_OK);
-        menu->state = 4;
-        M_InterruptShown(menu->sprites, ASCII_PAUSE_SPRITE_COUNT);
+        M_Interrupt(menu->sprites, 0, M_PAUSE_LINE_END, 2);
+        menu->state = M_PAUSE_RESUMING;
         menu->state_frames = 0;
         menu->background.pending_interrupt = 1;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_quit) && menu->state != 9) {
+}
+
+// Opens the question of confirm_state from the line chosen.
+static void M_Ask(PAUSE_MENU *const menu, const M_PAUSE_STATE confirm_state)
+{
+    Sound_Queue(SOUND_OK);
+    M_Interrupt(menu->sprites, 0, M_PAUSE_LINE_END, 2);
+    M_Interrupt(menu->sprites, M_PAUSE_LINE_END, M_PAUSE_CONFIRM_END, 1);
+    menu->state = confirm_state;
+    menu->state_frames = 0;
+}
+
+static void M_OnQuit(PAUSE_MENU *const menu)
+{
+    M_HighlightPauseLine(menu, M_PAUSE_QUIT_LINE);
+    if (menu->state_frames < 4) {
+        return;
+    }
+    const bool in_replay = g_GameManager.mode.in_replay;
+    M_MoveLine(
+        menu, M_PAUSE_ON_RESUME,
+        in_replay ? M_PAUSE_ON_RESUME : M_PAUSE_ON_RETRY);
+    if (M_Confirmed()) {
+        M_Ask(menu, M_PAUSE_QUIT_NO);
+    }
+}
+
+static void M_OnRetry(PAUSE_MENU *const menu)
+{
+    M_HighlightPauseLine(menu, M_PAUSE_RETRY_LINE);
+    if (menu->state_frames < 4) {
+        return;
+    }
+    M_MoveLine(menu, M_PAUSE_ON_QUIT, M_PAUSE_ON_RESUME);
+    if (M_Confirmed()) {
+        M_Ask(menu, M_PAUSE_RETRY_NO);
+    }
+}
+
+// Runs yes of the question to quit, or to retry when retry is set.
+static void M_OnYes(PAUSE_MENU *const menu, const bool retry)
+{
+    M_HighlightConfirm(menu->sprites, M_PAUSE_YES_SPRITE, true);
+    if (menu->state_frames < 4) {
+        return;
+    }
+    if (Buttons_WasPressed(TH07_BUTTON_up)
+        || Buttons_WasPressed(TH07_BUTTON_down)) {
+        menu->state = retry ? M_PAUSE_RETRY_NO : M_PAUSE_QUIT_NO;
+        M_PlayMove();
+    }
+    if (M_Confirmed()) {
         Sound_Queue(SOUND_OK);
-        menu->state = 9;
-        M_InterruptShown(menu->sprites, ASCII_PAUSE_SPRITE_COUNT);
+        M_Interrupt(menu->sprites, M_PAUSE_LINE_END, M_PAUSE_CONFIRM_END, 2);
+        menu->state = retry ? M_PAUSE_RETRYING : M_PAUSE_QUITTING;
         menu->state_frames = 0;
     }
-    // Retail tests for state 9 here, so a new press restarts the wait of
-    // state 10.
-    if (!in_replay && Buttons_WasPressed(TH07_BUTTON_retry)
-        && menu->state != 9) {
+}
+
+// Runs no of the question to quit, or to retry when retry is set.
+static void M_OnNo(PAUSE_MENU *const menu, const bool retry)
+{
+    M_HighlightConfirm(menu->sprites, M_PAUSE_YES_SPRITE, false);
+    if (menu->state_frames < 4) {
+        return;
+    }
+    if (Buttons_WasPressed(TH07_BUTTON_up)
+        || Buttons_WasPressed(TH07_BUTTON_down)) {
+        menu->state = retry ? M_PAUSE_RETRY_YES : M_PAUSE_QUIT_YES;
+        M_PlayMove();
+    }
+    if (M_Confirmed()) {
         Sound_Queue(SOUND_OK);
-        menu->state = 10;
-        M_InterruptShown(menu->sprites, ASCII_PAUSE_SPRITE_COUNT);
+        M_Interrupt(menu->sprites, 0, M_PAUSE_LINE_END, 1);
+        M_Interrupt(menu->sprites, M_PAUSE_LINE_END, M_PAUSE_CONFIRM_END, 2);
+        menu->state = retry ? M_PAUSE_ON_RETRY : M_PAUSE_ON_QUIT;
         menu->state_frames = 0;
+    }
+}
+
+static void M_Resume(PAUSE_MENU *const menu)
+{
+    if (menu->state_frames < 20) {
+        return;
+    }
+    M_ClosePause(menu);
+    if (g_GameManager.run.stage != 6 || g_Gui.frames >= 300) {
+        Sound_ResumeMusic();
+    }
+    PlayTime_Restart();
+}
+
+static void M_Leave(PAUSE_MENU *const menu, const SCENE scene)
+{
+    if (menu->state_frames < 20) {
+        return;
+    }
+    M_ClosePause(menu);
+    Scene_Request(scene);
+    PlayTime_Restart();
+}
+
+void PauseMenu_Update(PAUSE_MENU *const menu)
+{
+    if (Buttons_WasPressed(TH07_BUTTON_menu)
+        && menu->state != M_PAUSE_RESUMING) {
+        M_StartClose(menu, M_PAUSE_RESUMING);
+        menu->background.pending_interrupt = 1;
+    }
+    if (Buttons_WasPressed(TH07_BUTTON_quit)
+        && menu->state != M_PAUSE_QUITTING) {
+        M_StartClose(menu, M_PAUSE_QUITTING);
+    }
+    // Retail tests for quitting here, so a new press restarts the wait of
+    // retrying.
+    if (!g_GameManager.mode.in_replay && Buttons_WasPressed(TH07_BUTTON_retry)
+        && menu->state != M_PAUSE_QUITTING) {
+        M_StartClose(menu, M_PAUSE_RETRYING);
     }
     switch (menu->state) {
-    case 0:
-        for (int32_t i = 0; i < ASCII_PAUSE_SPRITE_COUNT; i++) {
-            Anm_StartScript(&menu->sprites[i], i + 0xfe);
-        }
-        M_Interrupt(menu->sprites, 0, 4, 1);
-        Anm_SetSprite(&menu->sprites[7], g_GameManager.run.difficulty + 0x10d);
-        if (!g_GameManager.mode.in_practice) {
-            menu->sprites[8].shown = false;
-        }
-        if (!g_GameManager.run.score_disabled) {
-            menu->sprites[9].shown = false;
-        }
-        if (in_replay) {
-            menu->sprites[3].pc = -1;
-        }
-        menu->state++;
-        menu->state_frames = 0;
-        if (g_AsciiText.capture_background
-            && !M_StartBackground(&menu->background)) {
-            menu->state = 0;
+    case M_PAUSE_OPEN:
+        if (!M_OpenPause(menu)) {
             return;
         }
-        [[fallthrough]];
-    case 1:
-        M_HighlightPauseLine(menu, 1);
-        if (menu->state_frames >= 4) {
-            if (!in_replay) {
-                if (Buttons_WasPressed(TH07_BUTTON_up)) {
-                    menu->state = 3;
-                    M_PlayMove();
-                }
-            } else if (Buttons_WasPressed(TH07_BUTTON_up)) {
-                menu->state = 2;
-                M_PlayMove();
-            }
-            if (Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = 2;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 0, 4, 2);
-                menu->state = 4;
-                menu->state_frames = 0;
-                menu->background.pending_interrupt = 1;
-            }
-        }
+        M_OnResume(menu);
         break;
-    case 2:
-        M_HighlightPauseLine(menu, 2);
-        if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(TH07_BUTTON_up)) {
-                menu->state = 1;
-                M_PlayMove();
-            }
-            if (in_replay) {
-                if (Buttons_WasPressed(TH07_BUTTON_down)) {
-                    menu->state = 1;
-                    M_PlayMove();
-                }
-            } else if (Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = 3;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 0, 4, 2);
-                M_Interrupt(menu->sprites, 4, 7, 1);
-                menu->state = 6;
-                menu->state_frames = 0;
-            }
-        }
+    case M_PAUSE_ON_RESUME:
+        M_OnResume(menu);
         break;
-    case 3:
-        M_HighlightPauseLine(menu, 3);
-        if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(TH07_BUTTON_up)) {
-                menu->state = 2;
-                M_PlayMove();
-            }
-            if (Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = 1;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 0, 4, 2);
-                M_Interrupt(menu->sprites, 4, 7, 1);
-                menu->state = 8;
-                menu->state_frames = 0;
-            }
-        }
+    case M_PAUSE_ON_QUIT:
+        M_OnQuit(menu);
         break;
-    case 4:
-        if (menu->state_frames >= 20) {
-            M_ClosePause(menu);
-            if (g_GameManager.run.stage != 6 || g_Gui.frames >= 300) {
-                Sound_ResumeMusic();
-            }
-            PlayTime_Restart();
-        }
+    case M_PAUSE_ON_RETRY:
+        M_OnRetry(menu);
         break;
-    case 5:
-    case 7:
-        M_HighlightConfirm(menu->sprites, 5, true);
-        if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(TH07_BUTTON_up)
-                || Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = menu->state == 5 ? 6 : 8;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 4, 7, 2);
-                menu->state = menu->state == 5 ? 9 : 10;
-                menu->state_frames = 0;
-            }
-        }
+    case M_PAUSE_RESUMING:
+        M_Resume(menu);
         break;
-    case 6:
-    case 8:
-        M_HighlightConfirm(menu->sprites, 5, false);
-        if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(TH07_BUTTON_up)
-                || Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = menu->state == 6 ? 5 : 7;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 0, 4, 1);
-                M_Interrupt(menu->sprites, 4, 7, 2);
-                menu->state = menu->state == 6 ? 2 : 3;
-                menu->state_frames = 0;
-            }
-        }
+    case M_PAUSE_QUIT_YES:
+    case M_PAUSE_RETRY_YES:
+        M_OnYes(menu, menu->state == M_PAUSE_RETRY_YES);
         break;
-    case 9:
-        if (menu->state_frames >= 20) {
-            M_ClosePause(menu);
-            Scene_Request(SCENE_TITLE);
-            PlayTime_Restart();
-        }
+    case M_PAUSE_QUIT_NO:
+    case M_PAUSE_RETRY_NO:
+        M_OnNo(menu, menu->state == M_PAUSE_RETRY_NO);
         break;
-    case 10:
-        if (menu->state_frames >= 20) {
-            M_ClosePause(menu);
-            Scene_Request(SCENE_RETRY);
-            PlayTime_Restart();
-        }
+    case M_PAUSE_QUITTING:
+        M_Leave(menu, SCENE_TITLE);
+        break;
+    case M_PAUSE_RETRYING:
+        M_Leave(menu, SCENE_RETRY);
         break;
     }
     for (int32_t i = 0; i < ASCII_PAUSE_SPRITE_COUNT; i++) {
@@ -310,7 +389,7 @@ void PauseMenu_DrawPauseMenu(PAUSE_MENU *const menu)
     draw.part = ASCII_PAUSE_SPRITE_COUNT;
     draw.view =
         Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
-    if (g_AsciiText.capture_background && menu->state != 0) {
+    if (g_AsciiText.capture_background && menu->state != M_PAUSE_OPEN) {
         ANM_VM background = menu->background;
         background.z_write_off = true;
         Anm_DrawUnrotated(&background, &draw);
@@ -366,8 +445,76 @@ static void M_Continue(void)
     PlayTime_Restart();
 }
 
-// States: 1 continues and 2 gives up, after 30 frames; 3 and 4 close the
-// menu into play or the result screen.
+typedef enum {
+    M_OPEN_WAIT,
+    M_OPEN_SHOWN,
+    M_OPEN_CHOOSE,
+} M_OPEN;
+
+// Starts the sprites on the first calc. Returns M_OPEN_WAIT when the
+// background copy has to wait for the next calc, M_OPEN_SHOWN once 8 calcs
+// have passed, and otherwise moves the cursor to no, which retail runs as
+// yes on that calc.
+static M_OPEN M_OpenContinue(CONTINUE_MENU *const menu)
+{
+    if (menu->state_frames == 0) {
+        Sound_PauseMusic();
+        for (int32_t i = 0; i < M_CONTINUE_COUNTER_SPRITE; i++) {
+            Anm_StartScript(&menu->sprites[i], i + 0x108);
+            menu->sprites[i].pending_interrupt = 1;
+        }
+        ANM_VM *const counter = &menu->sprites[M_CONTINUE_COUNTER_SPRITE];
+        Anm_StartScript(counter, 0x10c);
+        Anm_SetSprite(
+            counter,
+            g_GameManager.run.max_continues + 0x106
+                - g_GameManager.stats.continues_used);
+        counter->pending_interrupt = 1;
+        if (g_AsciiText.capture_background
+            && !M_StartBackground(&menu->background)) {
+            menu->state = M_CONTINUE_OPEN;
+            return M_OPEN_WAIT;
+        }
+        PlayTime_Add();
+    }
+    if (menu->state_frames > 8) {
+        return M_OPEN_SHOWN;
+    }
+    menu->state += 2;
+    menu->state_frames = 0;
+    return M_OPEN_CHOOSE;
+}
+
+// Runs yes, which continues, or no when on_yes is false.
+static void M_OnContinueChoice(CONTINUE_MENU *const menu, const bool on_yes)
+{
+    M_HighlightConfirm(menu->sprites, M_CONTINUE_YES_SPRITE, on_yes);
+    if (menu->state_frames < (on_yes ? 4 : 30)) {
+        return;
+    }
+    if (Buttons_WasPressed(TH07_BUTTON_up)
+        || Buttons_WasPressed(TH07_BUTTON_down)) {
+        menu->state = on_yes ? M_CONTINUE_ON_NO : M_CONTINUE_ON_YES;
+        M_PlayMove();
+    }
+    if (M_Confirmed()) {
+        Sound_Queue(SOUND_OK);
+        M_Interrupt(menu->sprites, 0, M_CONTINUE_SPRITE_COUNT, 2);
+        menu->state = on_yes ? M_CONTINUE_CONTINUING : M_CONTINUE_GIVING_UP;
+        if (on_yes) {
+            menu->background.pending_interrupt = 1;
+        }
+        menu->state_frames = 0;
+    }
+}
+
+static void M_CloseContinue(CONTINUE_MENU *const menu)
+{
+    menu->state = M_CONTINUE_OPEN;
+    menu->state_frames = 0;
+    g_GameManager.mode.in_continue_menu = false;
+}
+
 void PauseMenu_UpdateContinueMenu(CONTINUE_MENU *const menu)
 {
     if (g_GameManager.mode.in_practice) {
@@ -384,90 +531,42 @@ void PauseMenu_UpdateContinueMenu(CONTINUE_MENU *const menu)
         return;
     }
     switch (menu->state) {
-    case 0:
-        if (menu->state_frames == 0) {
-            Sound_PauseMusic();
-            for (int32_t i = 0; i < 4; i++) {
-                Anm_StartScript(&menu->sprites[i], i + 0x108);
-                menu->sprites[i].pending_interrupt = 1;
-            }
-            Anm_StartScript(&menu->sprites[4], 0x10c);
-            Anm_SetSprite(
-                &menu->sprites[4],
-                g_GameManager.run.max_continues + 0x106
-                    - g_GameManager.stats.continues_used);
-            menu->sprites[4].pending_interrupt = 1;
-            if (g_AsciiText.capture_background
-                && !M_StartBackground(&menu->background)) {
-                menu->state = 0;
-                return;
-            }
-            PlayTime_Add();
+    case M_CONTINUE_OPEN: {
+        const M_OPEN open = M_OpenContinue(menu);
+        if (open == M_OPEN_WAIT) {
+            return;
         }
-        if (menu->state_frames > 8) {
-            break;
-        }
-        // Retail moves to state 2 but runs state 1's frame first.
-        menu->state += 2;
-        menu->state_frames = 0;
-        [[fallthrough]];
-    case 1:
-        M_HighlightConfirm(menu->sprites, 2, true);
-        if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(TH07_BUTTON_up)
-                || Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = 2;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 0, 5, 2);
-                menu->state = 3;
-                menu->background.pending_interrupt = 1;
-                menu->state_frames = 0;
-            }
+        if (open == M_OPEN_CHOOSE) {
+            M_OnContinueChoice(menu, true);
         }
         break;
-    case 2:
-        M_HighlightConfirm(menu->sprites, 2, false);
-        if (menu->state_frames >= 30) {
-            if (Buttons_WasPressed(TH07_BUTTON_up)
-                || Buttons_WasPressed(TH07_BUTTON_down)) {
-                menu->state = 1;
-                M_PlayMove();
-            }
-            if (M_Confirmed()) {
-                Sound_Queue(SOUND_OK);
-                M_Interrupt(menu->sprites, 0, 5, 2);
-                menu->state = 4;
-                menu->state_frames = 0;
-            }
-        }
+    }
+    case M_CONTINUE_ON_YES:
+        M_OnContinueChoice(menu, true);
         break;
-    case 4:
+    case M_CONTINUE_ON_NO:
+        M_OnContinueChoice(menu, false);
+        break;
+    case M_CONTINUE_GIVING_UP:
         if (menu->state_frames >= 20) {
-            menu->state = 0;
-            menu->state_frames = 0;
-            g_GameManager.mode.in_continue_menu = false;
+            M_CloseContinue(menu);
             Scene_Request(SCENE_GAME_RESULT);
-            M_Hide(menu->sprites, 5);
+            M_Hide(menu->sprites, M_CONTINUE_SPRITE_COUNT);
             g_GameManager.score.shown = g_GameManager.score.value;
             PlayTime_Restart();
             return;
         }
         break;
-    case 3:
+    case M_CONTINUE_CONTINUING:
         if (menu->state_frames >= 30) {
-            menu->state = 0;
-            menu->state_frames = 0;
-            g_GameManager.mode.in_continue_menu = false;
-            M_Hide(menu->sprites, 5);
+            M_CloseContinue(menu);
+            M_Hide(menu->sprites, M_CONTINUE_SPRITE_COUNT);
             M_Continue();
             return;
         }
         break;
     }
-    for (int32_t i = 0; i < 5; i++) {
+    for (int32_t i = 0; i < M_CONTINUE_SPRITE_COUNT; i++) {
         Anm_Step(&menu->sprites[i]);
     }
     if (g_AsciiText.capture_background) {
@@ -488,15 +587,15 @@ void PauseMenu_DrawContinueMenu(CONTINUE_MENU *const menu)
     draw.view =
         Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
     if (g_AsciiText.capture_background
-        && (menu->state != 0 || menu->state_frames > 2)) {
+        && (menu->state != M_CONTINUE_OPEN || menu->state_frames > 2)) {
         Anm_DrawUnrotated(&menu->background, &draw);
     }
     // Retail draws the counter here and again in the loop below.
-    if (menu->state == 1 || menu->state == 2) {
+    if (menu->state == M_CONTINUE_ON_YES || menu->state == M_CONTINUE_ON_NO) {
         draw.part = ASCII_CONTINUE_SPRITE_COUNT + 1;
-        Anm_DrawUnrotated(&menu->sprites[4], &draw);
+        Anm_DrawUnrotated(&menu->sprites[M_CONTINUE_COUNTER_SPRITE], &draw);
     }
-    for (int32_t i = 0; i < 5; i++) {
+    for (int32_t i = 0; i < M_CONTINUE_SPRITE_COUNT; i++) {
         if (menu->sprites[i].shown) {
             draw.part = (uint32_t)i;
             Anm_DrawUnrotated(&menu->sprites[i], &draw);
