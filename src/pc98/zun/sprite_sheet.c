@@ -1,4 +1,4 @@
-#include "th01/sprite_sheet.h"
+#include "pc98/zun/sprite_sheet.h"
 
 #include "core/base/assert.h"
 #include "core/image.h"
