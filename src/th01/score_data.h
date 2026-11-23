@@ -25,30 +25,30 @@ typedef struct {
     VFS *user_files;
 } SCORE_SAVES;
 
-// Creates the source's ten default names, scores, stages and routes.
+// Fills table with the original's ten default entries.
 void ScoreData_Defaults(SCORE_TABLE *table);
 
-// Reads one original record. Accepts the source's four-byte signature check
-// and trailing bytes. Rejects truncation and invalid CP932 without changing
-// out. Names retain all sixteen original bytes, including ASCII spaces.
+// Reads one original record. Checks only the first four signature bytes, as
+// the original does, and accepts trailing bytes. Rejects invalid CP932.
+// Names keep all sixteen original bytes, including ASCII spaces.
 RESULT ScoreData_Read(READER *reader, SCORE_TABLE *out);
 RESULT ScoreData_Write(WRITER *writer, const SCORE_TABLE *table);
 
-// Inserts before equal signed scores. Returns ten when the score does not
-// qualify. The entry name must already be valid original-format text.
+// Inserts entry before equal scores and returns its place, or SCORE_PLACES
+// when the score does not qualify. The name must already encode to sixteen
+// CP932 bytes.
 int32_t ScoreData_Insert(SCORE_TABLE *table, const SCORE_ENTRY *entry);
 const char *ScoreData_File(int32_t rank);
 
-// Loads user files before optional original imports, otherwise uses defaults.
-// Queues missing native tables for creation in user_files.
-// Never writes original files. Invalid existing user files disable writes
-// for that rank to preserve them. user_files is borrowed until saves expire.
-// Reports invalid files while leaving all four tables usable.
+// Loads each rank from user_files, else from original, else the defaults,
+// queueing ranks missing in user_files for creation. Never writes original
+// files. Disables writes for a rank whose file in user_files is invalid, to
+// keep it. Reports invalid files while leaving all four tables usable.
 RESULT ScoreData_Load(VFS *original, VFS *user_files, SCORE_SAVES *out);
 
-// Queues a rank without allocation or IO. Drain after the simulation step.
+// Queues a rank for ScoreData_WriteSaves.
 void ScoreData_Queue(SCORE_SAVES *saves, int32_t rank);
 
-// Writes queued tables atomically in user_files, clearing requests
-// even on failure. IO results never modify the simulated tables.
+// Writes the queued tables to user_files atomically, clearing the queue even
+// on failure.
 RESULT ScoreData_WriteSaves(SCORE_SAVES *saves);

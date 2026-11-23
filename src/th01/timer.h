@@ -11,6 +11,8 @@ typedef enum {
     TIMER_WAIT_UP,
 } TIMER_PHASE;
 
+// Holds the stage timer. Zero it once per main scene: hurry_cycle carries
+// over between stages.
 typedef struct {
     uint16_t time, frames_since_hurry;
     uint8_t hurry_cycle;
@@ -29,27 +31,22 @@ typedef struct {
     void *user;
 } TIMER_CONTEXT;
 
-// Zero-initialize once per main scene. InitFor accepts stage_id 0..19 and
-// route 0 (Makai) or 1 (Jigoku); it resets time and frames_since_hurry only.
-// Preserve hurry_cycle between stages and timer extensions. Never reinitialize
-// or extend while a cooperative operation is pending.
+// Sets the time for stage_id 0..19 and route 0 (Makai) or 1 (Jigoku), and
+// resets frames_since_hurry.
 void Timer_InitFor(STAGE_TIMER *timer, int16_t stage_id, int16_t route);
 
-// Implements the complete HUD redraw order. timer_initialized is borrowed
-// world state: a false value initializes time but remains unchanged. The
-// gameplay owner sets it only after its real wait-for-shot boundary.
+// Redraws the HUD in the original's order. While timer_initialized is
+// false, first sets the time for the current stage.
 void Timer_Redraw(
     STAGE_TIMER *timer, const TIMER_CONTEXT *context, bool first_stage,
     bool timer_initialized, int16_t route);
 
-// Executes one source timer call, subtracting two in unsigned 16 bits.
-// The world calls this once per (frame_rand & 3)==0, then suspends the world
-// until true. A false result requires another call after advancing the real
-// Frame VSync; no prefix side effect is replayed. count1 may satisfy the
-// first 27-frame delay immediately. Uses real Pellets operations and shared
-// RNG, consuming random X even if the pool is full. The required synchronous
-// effect callback must post effect 17 to the scene's audio owner. It must not
-// change borrowed timer/world state. The gameplay scene remains external.
-// All operations use loaded glyphs and caller storage, and allocate nothing.
+// Counts the time down by two, wrapping in unsigned 16 bits. At zero, raises
+// the pellet speed, plays effect 17 through effect and shows HARRY, then UP,
+// each for 27 frames; count1 may end the first delay at once. Once the time
+// is out, rains pellets, drawing a random X even when the pool is full.
+// Returns false while a delay is pending: call again after the next VSync.
 bool Timer_TickAndPut(STAGE_TIMER *timer, const TIMER_CONTEXT *context);
+
+// Adds 200 to the time, or 1000 once it ran out.
 void Timer_ExtendAndPut(STAGE_TIMER *timer, const TIMER_CONTEXT *context);

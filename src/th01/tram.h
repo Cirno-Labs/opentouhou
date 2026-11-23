@@ -14,55 +14,43 @@ typedef enum {
     TRAM_WHITE,
 } TRAM_COLOR;
 
-// Holds an independent 640x400 indexed text layer. Index 0 is transparent;
-// indices 1 through 8 are opaque hardware colors in B, R, G bit order.
-// Storage belongs to the allocator passed to Init. Keep it alive with the
-// context; resetting its arena releases the layer. Only SetVisible changes
-// visibility. Drawing never changes graphics pages or their DAC palette.
+// Holds a 640x400 indexed text layer over graphics. Index 0 is transparent;
+// indices 1 through 8 are the hardware colors in B, R, G bit order. Only
+// Tram_SetVisible changes visible.
 typedef struct {
     uint8_t *pixels;
     bool visible;
 } TRAM;
 
-// Supplies the fixed palette for an indexed overlay texture. Entry 0 has
-// zero alpha; every foreground color, including black, has full alpha.
+// Supplies the overlay palette. Entry 0 has zero alpha; every other color,
+// including black, has full alpha.
 extern const GFX_COLOR g_TramPalette[9];
 
-// Allocates a clear, visible layer. Allocation failure is fatal, as with
-// other allocator operations. GPU resources stay with the presenter.
+// Allocates a clear, visible layer.
 void Tram_Init(TRAM *tram, const ALLOCATOR *allocator);
 void Tram_SetVisible(TRAM *tram, bool visible);
 
-// Clears to transparency without changing visibility.
+// Clears the layer to transparency.
 void Tram_Clear(TRAM *tram);
 
-// Replaces a clipped half-open rectangle. Nonpositive sizes draw nothing.
-// Colors are TRAM_TRANSPARENT or a hardware color from black through white.
+// Fills a half-open rectangle, clipped to the screen.
 void Tram_Fill(TRAM *tram, GFX_RECT rectangle, TRAM_COLOR color);
 
-// Replaces a cached 8x16 or 16x16 glyph with 16x16 pixels per dot. Set dots
-// take foreground and unset dots take background, including transparency.
-// Clips to the screen without text-VRAM wrapping. Coordinates may be any
-// signed 32-bit value. Glyph rows remain borrowed and unchanged.
+// Draws an 8x16 or 16x16 glyph with 16x16 pixels per dot: set dots take
+// foreground and unset dots take background, which may be transparent.
+// Clips to the screen without the text VRAM's wrapping.
 void Tram_PutGlyph16(
     TRAM *tram, const GAME_TEXT_GLYPH *glyph, int32_t left, int32_t top,
     TRAM_COLOR foreground, TRAM_COLOR background);
 
-// Centers a line at y=80, clearing the top five text rows and all margins
-// through y=335 to background. Requires zero to five cached glyphs totaling
-// at most 40 source pixels. An empty line clears that band. Leaves y=336
-// through 399 unchanged: stage callers clear
-// those rows separately, while HARRY/UP leaves them alone. Five halfwidth
-// glyphs fill the screen; two halfwidth glyphs start at x=192.
+// Centers up to five glyphs of at most 40 source pixels in total at y=80,
+// filling the rest of rows 0 through 335 with background. An empty line
+// only clears. Leaves rows 336 through 399 unchanged. Five halfwidth glyphs
+// fill the screen; two halfwidth glyphs start at x=192.
 void Tram_PutLine16(
     TRAM *tram, const GAME_TEXT_GLYPH *const *glyphs, int32_t count,
     TRAM_COLOR foreground, TRAM_COLOR background);
 
-// Fills the layer with opaque black and reveals graphics through a centered
-// fullwidth glyph at (192,80). Visibility stays unchanged. Glyph shapes come
-// from the cache.
+// Fills the layer with black and shows graphics through a fullwidth glyph
+// at (192,80).
 void Tram_PutKanji16Reverse(TRAM *tram, const GAME_TEXT_GLYPH *glyph);
-
-// No drawing operation allocates, or reads a renderer, font, clock, file or
-// input device. Overlay pixels and palette are ready for the existing core
-// indexed-texture API; visibility and uploads belong to the scene presenter.
