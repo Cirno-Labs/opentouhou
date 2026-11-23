@@ -3,7 +3,7 @@
 #include "core/vfs/types.h"
 #include "pc98/zun/pi.h"
 #include "th01/bos.h"
-#include "th01/boss_hit.h"
+#include "th01/player.h"
 
 // Returns the value for the session difficulty, or normal for an unknown one.
 int16_t Boss_Rank(int16_t easy, int16_t normal, int16_t hard, int16_t lunatic);
@@ -16,5 +16,5 @@ RESULT Boss_LoadBos(
 RESULT Boss_LoadBackground(
     VFS *vfs, const char *name, const ALLOCATOR *allocator, PI_IMAGE *out);
 
-// Returns the player of the hit context.
-PLAYER *Boss_Player(const BOSS_HIT_CONTEXT *hit);
+// Returns the player.
+PLAYER *Boss_Player(void);

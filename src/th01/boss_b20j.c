@@ -619,7 +619,7 @@ static void M_SnakeSpawn(
         s->left[i][j] = x;
         s->top[i][j] = y;
     }
-    M_SnakeAim(s, c, i, Boss_Player(c->hit)->left, 6);
+    M_SnakeAim(s, c, i, Boss_Player()->left, 6);
 }
 static void M_SnakesUpdate(
     B20J_SNAKES *const s, const B20J_CONTEXT *const c, const int32_t count)
@@ -634,7 +634,7 @@ static void M_SnakesUpdate(
         }
         M_Diamond(c, s->left[i][0], s->top[i][0], 7);
         if (!s->target_locked[i]) {
-            s->target_left[i] = Boss_Player(c->hit)->left;
+            s->target_left[i] = Boss_Player()->left;
         }
         M_SnakeAim(s, c, i, s->target_left[i], 7);
         if (s->top[i][0] > 300) {
@@ -646,7 +646,7 @@ static void M_SnakesUpdate(
         }
         s->left[i][0] = Math16_Wrap(s->left[i][0] + s->velocity[i].x);
         s->top[i][0] = Math16_Wrap(s->top[i][0] + s->velocity[i].y);
-        PLAYER *const player = Boss_Player(c->hit);
+        PLAYER *const player = Boss_Player();
         if (s->left[i][0] > player->left && s->left[i][0] < player->left + 24
             && s->top[i][0] > 368 + (player->sliding ? 10 : 0)
             && s->top[i][0] < 392 && !player->invincible) {
@@ -797,8 +797,8 @@ static void M_Spray(const B20J_CONTEXT *const c)
         g_B20J.pattern_state = Boss_Rank(5, 4, 3, 2);
     }
     if (g_B20J.frame % g_B20J.pattern_state == 0) {
-        g_B20J.spray_angle = M_Angle(368 - 184, Boss_Player(c->hit)->left - 278)
-            + g_B20J.spray_offset;
+        g_B20J.spray_angle =
+            M_Angle(368 - 184, Boss_Player()->left - 278) + g_B20J.spray_offset;
         g_B20J.spray_offset += g_B20J.spray_delta;
         g_B20J.spray_fired++;
         if (g_B20J.spray_fired > 8) {
@@ -1232,9 +1232,9 @@ bool B20J_UpdateAndRender(const B20J_CONTEXT *const c)
     }
     g_B20J.frame = Math16_Wrap(g_B20J.frame + 1);
     g_B20J.hit.frame = Math16_Wrap(g_B20J.hit.frame + 1);
-    const int16_t direction = Boss_Player(c->hit)->left < 198 ? 1
-        : Boss_Player(c->hit)->left > 396                     ? 0
-                                                              : 2;
+    const int16_t direction = Boss_Player()->left < 198 ? 1
+        : Boss_Player()->left > 396                     ? 0
+                                                        : 2;
     M_Direction(c, direction);
     if ((g_B20J.phase & 1) == 0) {
         if (g_B20J.frame == 50) {

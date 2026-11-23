@@ -140,7 +140,7 @@ static void M_SymmetricLine(
 
 static void M_Defaults(const B15J_CONTEXT *const c)
 {
-    Sprite_PtnPut(c->miko, 0, -1, Boss_Player(c->hit)->left, 368);
+    Sprite_PtnPut(c->miko, 0, -1, Boss_Player()->left, 368);
     Orb_RenderAction(
         g_Hud.sprites,
         (ORB_ACTION) { ORB_ACTION_PUT, g_Orb.left, g_Orb.top, 0 });
@@ -272,7 +272,7 @@ static void M_AddTear(const int16_t x, const int16_t y)
 static void M_RippleHit(
     const B15J_CONTEXT *const c, const int16_t left, const int16_t extra)
 {
-    PLAYER *const p = Boss_Player(c->hit);
+    PLAYER *const p = Boss_Player();
     if (!p->invincible && p->left >= Math16_Wrap(left - 16)
         && p->left <= Math16_Wrap(left + extra)) {
         p->is_hit = true;
@@ -409,7 +409,7 @@ static void M_SpinRings(const B15J_CONTEXT *const c)
     }
     for (int32_t i = 0; i < 8; i++) {
         const uint8_t angle =
-            Math16_Angle(164, Math16_Wrap(Boss_Player(c->hit)->left - 300));
+            Math16_Angle(164, Math16_Wrap(Boss_Player()->left - 300));
         M_Single(
             c, Math16_PolarX(316, 16, i * 32), Math16_PolarY(224, 16, i * 32),
             angle, 48, PELLET_SPIN, 32, 312, 224);
@@ -457,8 +457,8 @@ static void M_Laser(
 static void M_CrossLasers(const B15J_CONTEXT *const c)
 {
     if (g_B15J.frame > 200 && g_B15J.frame % 200 == 0) {
-        M_Laser(c, 0, 307, Math16_Wrap(Boss_Player(c->hit)->left + 60), 50, 8);
-        M_Laser(c, 1, 336, Math16_Wrap(Boss_Player(c->hit)->left - 60), 50, 8);
+        M_Laser(c, 0, 307, Math16_Wrap(Boss_Player()->left + 60), 50, 8);
+        M_Laser(c, 1, 336, Math16_Wrap(Boss_Player()->left - 60), 50, 8);
         Sound_Effect(6);
     }
 }
@@ -522,8 +522,7 @@ static void M_LeftLasers(const B15J_CONTEXT *const c)
         const int16_t offset = (int16_t)(MasterRng_Next(&g_Rng) % 120 - 60);
         M_Laser(
             c, (g_B15J.frame - 250) / 30, 307,
-            Math16_Wrap(Boss_Player(c->hit)->left + offset),
-            g_B15J.pattern_state, 4);
+            Math16_Wrap(Boss_Player()->left + offset), g_B15J.pattern_state, 4);
     }
     if (g_B15J.frame > 500) {
         g_B15J.frame = 0;
