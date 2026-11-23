@@ -14,9 +14,7 @@
 #include <limits.h>
 #include <string.h>
 
-CHAIN g_Chain;
 GAME_MANAGER g_GameManager;
-BUTTONS g_Buttons;
 
 static uint32_t m_PresentationGeneration;
 static int32_t m_LoadCount;
@@ -82,9 +80,9 @@ void Scene_Request(const SCENE scene)
 
 static void M_Setup(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     AsciiText_Initialize();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     memset(&g_GameManager, 0, sizeof(g_GameManager));
     g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
     memset(&g_Buttons, 0, sizeof(g_Buttons));
@@ -195,7 +193,7 @@ TEST(string_queue_is_bounded_and_draw_clears_it)
     }
     CHECK_EQ_INT(g_AsciiText.string_count, ASCII_STRING_COUNT);
     CHECK_EQ_STR(g_AsciiText.strings[255].text, "line 255");
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_AsciiText.string_count, 0);
     CHECK(g_AsciiText.strings[0].text == nullptr);
     AsciiText_AddFormat((VEC3) {}, "%080d", 3);
@@ -253,19 +251,19 @@ TEST(popups_move_for_61_calcs_and_freeze_in_both_menus)
     M_Register();
     AsciiText_AddPopup((VEC3) { 4.0f, 50.0f, 0.0f }, 1, 0);
     for (int32_t i = 0; i < 60; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK(g_AsciiText.popups[0].active);
     CHECK(g_AsciiText.popups[0].pos.y == 20.0f);
     g_GameManager.mode.paused = 2;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_AsciiText.popups[0].timer.current, 60);
     g_GameManager.mode.paused = 0;
     g_GameManager.mode.in_continue_menu = true;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_AsciiText.popups[0].timer.current, 60);
     g_GameManager.mode.in_continue_menu = false;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!g_AsciiText.popups[0].active);
     CHECK(g_AsciiText.popups[0].pos.y == 19.5f);
 }
@@ -279,7 +277,7 @@ TEST(draw_keeps_string_layout_and_popup_position_state)
     g_AsciiText.scale_x = 2.0f;
     g_AsciiText.scale_y = 2.0f;
     AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "A \nB");
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_AsciiText.digit.pos.x == 52.0f);
     CHECK(g_AsciiText.digit.pos.y == 25.0f);
     CHECK(g_AsciiText.glyph.pos.x == 38.0f);
@@ -298,8 +296,8 @@ TEST(replay_death_routes_before_later_gameplay_callbacks)
     g_GameManager.score.value = 12345;
     g_GameManager.score.shown = 9000;
     Chain_InitElem(&m_LaterElem, M_AfterReplayDeath, nullptr);
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_LaterElem, 4)));
-    Chain_RunCalc(&g_Chain);
+    CHECK(Result_Ignore(Chain_AddCalc(&m_LaterElem, 4)));
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Requested, SCENE_REPLAY_END);
     CHECK(!g_GameManager.mode.in_continue_menu);
     CHECK_EQ_INT(g_GameManager.score.shown, 12345);
@@ -319,7 +317,7 @@ TEST(strings_record_the_atlas_glyphs_at_their_screen_positions)
     g_AsciiText.glyph.visible = true;
     AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "AB");
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
     CHECK(GfxRecorder_Quad(0)->vertices[0].position.x == 10.0f);
@@ -327,7 +325,7 @@ TEST(strings_record_the_atlas_glyphs_at_their_screen_positions)
     CHECK(GfxRecorder_Quad(1)->vertices[0].position.x == 24.0f);
     CHECK_EQ_INT(g_AsciiText.string_count, 0);
     Anm_ReleaseTexture(0);
-    Chain_Release(&g_Chain);
+    Chain_Release();
     GfxRecorder_Stop();
 }
 
@@ -349,7 +347,7 @@ TEST(frame_rate_keeps_its_style_across_text_initialization)
     g_AsciiText.highlight = true;
     g_AsciiText.in_arena = true;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 8);
     CHECK(GfxRecorder_Quad(0)->vertices[0].position.x == 512.0f);
@@ -360,7 +358,7 @@ TEST(frame_rate_keeps_its_style_across_text_initialization)
     g_Settings.show_fps = false;
     AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "A");
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     g_Settings.show_fps = true;
@@ -371,18 +369,18 @@ TEST(frame_rate_keeps_its_style_across_text_initialization)
     g_AsciiText.glyph.visible = true;
     AsciiText_AddString((VEC3) { 10.0f, 20.0f, 0.0f }, "A");
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     CHECK(GfxRecorder_Quad(0)->vertices[0].position.x == 10.0f);
     g_AsciiText.hide_frame_rate = false;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 8);
     g_AsciiText.frame_rate[0] = '\0';
     Anm_ReleaseTexture(0);
-    Chain_Release(&g_Chain);
+    Chain_Release();
     GfxRecorder_Stop();
 }
 
@@ -401,7 +399,7 @@ TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
     AsciiText_AddPopup((VEC3) { 20, 30, 0 }, 12, COLOR_WHITE);
     AsciiText_AddPopup((VEC3) { 40, 30, 0 }, 12, COLOR_WHITE);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 4);
     const VEC3 first = GfxRecorder_Quad(0)->vertices[0].position;
@@ -410,7 +408,7 @@ TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
     g_AsciiText.popups[1].pos.y += 10.0f;
     Anm_RenewPresentation(&g_AsciiText.digit);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK(GfxRecorder_Quad(0)->vertices[0].position.y != first.y);
     CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.y == first.y);
@@ -419,11 +417,11 @@ TEST(point_popup_digits_keep_their_lifetime_across_shared_vm_updates)
     g_AsciiText.next_popup = 0;
     AsciiText_AddPopup((VEC3) { 20, 0, 0 }, 12, COLOR_WHITE);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     const float moved = GfxRecorder_Quad(0)->vertices[0].position.y;
     CHECK(GfxRecorder_Blend(0.0f, 0)[0].position.y == moved);
     Anm_ReleaseTexture(0);
-    Chain_Release(&g_Chain);
+    Chain_Release();
     GfxRecorder_Stop();
 }

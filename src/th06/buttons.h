@@ -81,27 +81,30 @@ typedef struct {
     int32_t shot_held_frames;
 } BUTTONS;
 
+// Holds the buttons of the current calc.
+extern BUTTONS g_Buttons;
+
 // Sets shared_focus from the bindings that Shell_GetBindings gives.
-void Buttons_ReadSharedFocus(BUTTONS *buttons);
+void Buttons_ReadSharedFocus(void);
 
 // Reads input into the word of this calc, with the focus of shared_focus
 // from Shell_GetDeviceInput.
-void Buttons_Update(BUTTONS *buttons, const TH06_INPUT *input);
+void Buttons_Update(const TH06_INPUT *input);
 
 // Replaces the gameplay bits with replay_word and repeats the input
 // update against the previous word saved by Buttons_Update.
-void Buttons_ApplyReplay(BUTTONS *buttons, uint16_t replay_word);
+void Buttons_ApplyReplay(uint16_t replay_word);
 
 // Returns whether the masked word is nonzero and changed this calc.
-bool Buttons_WasPressed(const BUTTONS *buttons, uint16_t mask);
+bool Buttons_WasPressed(uint16_t mask);
 
 // Returns whether Buttons_WasPressed holds for mask, or a bit of mask is
 // down on a calc that repeats.
-bool Buttons_WasPressedOrRepeated(const BUTTONS *buttons, uint16_t mask);
+bool Buttons_WasPressedOrRepeated(uint16_t mask);
 
 // Clears the buttons but not held_frames and the focus delay, as a scene
 // switch does.
-void Buttons_Clear(BUTTONS *buttons);
+void Buttons_Clear(void);
 
 // Converts to and from the button word that replays store.
 uint16_t Buttons_ToWord(const TH06_INPUT *input);

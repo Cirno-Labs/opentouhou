@@ -29,9 +29,7 @@
 
 #include <string.h>
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 
 static char *m_Directory;
 static PATCH_STACK *m_Patches;
@@ -67,7 +65,7 @@ bool Gui_IsMsgSkippable(void)
 
 static CHAIN_STATUS M_Input(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input);
+    Buttons_Update(&m_Input);
     return CHAIN_CONTINUE;
 }
 
@@ -120,7 +118,7 @@ static void M_Start(void)
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     ResultScreen_OpenSaves();
     Rng_SetSeed(&g_Rng, 0x1357);
@@ -129,8 +127,7 @@ static void M_Start(void)
     m_Requested = SCENE_GAME_RESULT;
     memset(m_Sounds, 0, sizeof(m_Sounds));
     Chain_InitElem(&m_InputElem, M_Input, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
 }
 
 static void M_Setup(const char *const case_name)
@@ -141,7 +138,7 @@ static void M_Setup(const char *const case_name)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Replay_Discard();
     AsciiText_Initialize();
     ResultScreen_CloseSaves();
@@ -166,10 +163,10 @@ static void M_CountSounds(void)
 static void M_Tick(void)
 {
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     AsciiText_Initialize();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     M_CountSounds();
 }
 
@@ -272,8 +269,8 @@ TEST(the_browser_loads_the_records_and_a_game_keeps_its_own)
     g_GameManager.records.clears[2].with_continues[3] = 7;
     CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(g_GameManager.records.clears[2].with_continues[3], 7);
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     ResultScreen_OpenSaves();
     CHECK(Result_Log(ResultScreen_Register(0), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(g_GameManager.records.clears[2].with_continues[3], 1);
@@ -693,7 +690,7 @@ TEST(base_tsa_fits_ten_score_digits_into_nine_cells)
     M_Press((TH06_INPUT) { .shoot = true });
     M_Run(22);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     int32_t found = 0;
     for (int32_t i = 0; i + 2 < g_AsciiText.string_count; i++) {
@@ -726,7 +723,7 @@ TEST(base_tsa_keeps_the_clear_label_outside_a_ten_digit_score)
     CHECK(Result_Log(ResultScreen_Register(1), LOG_LEVEL_ERROR));
     M_Run(3);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     int32_t found = 0;
     for (int32_t i = 0; i + 1 < g_AsciiText.string_count; i++) {
@@ -760,7 +757,7 @@ static float M_CaptureOffset(void)
     M_Press((TH06_INPUT) { .shoot = true });
     M_Run(25);
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     float number = -1.0f;
     float capture = -1.0f;

@@ -88,7 +88,7 @@ static void M_ShowComment(M_SCREEN *const screen)
 // Returns whether the screen leaves.
 static bool M_UpdateList(M_SCREEN *const screen)
 {
-    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)) {
+    if (Buttons_WasPressed(TH07_BUTTON_up)) {
         screen->cursor--;
         if (screen->cursor < 0) {
             screen->cursor = screen->tune_count - 1;
@@ -101,7 +101,7 @@ static bool M_UpdateList(M_SCREEN *const screen)
         }
         M_HighlightCursor(screen);
     }
-    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
+    if (Buttons_WasPressed(TH07_BUTTON_down)) {
         screen->cursor++;
         if (screen->cursor >= screen->tune_count) {
             screen->cursor = 0;
@@ -111,13 +111,12 @@ static bool M_UpdateList(M_SCREEN *const screen)
         }
         M_HighlightCursor(screen);
     }
-    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok)
-        && screen->tune_count != 0) {
+    if (Buttons_WasPressed(TH07_BUTTON_ok) && screen->tune_count != 0) {
         screen->playing = screen->cursor;
         Sound_PlayMusic(screen->tunes[screen->playing].path);
         M_ShowComment(screen);
     }
-    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_cancel)) {
+    if (Buttons_WasPressed(TH07_BUTTON_cancel)) {
         Scene_Request(SCENE_TITLE);
         return true;
     }
@@ -258,7 +257,7 @@ RESULT MusicScreen_Register(void)
     Chain_InitElem(&screen->calc, M_Update, screen);
     screen->calc.added = M_Added;
     screen->calc.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &screen->calc, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&screen->calc, M_CALC_PRIORITY));
     Chain_InitElem(&screen->draw, M_Draw, screen);
-    return Chain_AddDraw(&g_Chain, &screen->draw, M_DRAW_PRIORITY);
+    return Chain_AddDraw(&screen->draw, M_DRAW_PRIORITY);
 }

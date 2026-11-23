@@ -57,7 +57,7 @@ static void M_Setup(void)
 {
     M_MountFiles();
     SceneStubCalls_Reset();
-    Chain_Release(&g_Chain);
+    Chain_Release();
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     FakeShell_Reset();
     for (int32_t device = 0; device < INPUT_DEVICE_COUNT; device++) {
@@ -105,8 +105,8 @@ TEST(warmup_updates_thirty_times_without_drawing)
     CHAIN_ELEM calc, draw;
     Chain_InitElem(&calc, M_WarmupCalc, &warmup);
     Chain_InitElem(&draw, M_WarmupDraw, &warmup);
-    CHECK(Result_Log(Chain_AddCalc(&g_Chain, &calc, 1), LOG_LEVEL_ERROR));
-    CHECK(Result_Log(Chain_AddDraw(&g_Chain, &draw, 1), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&calc, 1), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddDraw(&draw, 1), LOG_LEVEL_ERROR));
     CHECK_EQ_INT(Game_Warmup(&m_Shoot), CHAIN_RUN_CONTINUE);
     CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(warmup.calcs, 30);
@@ -125,7 +125,7 @@ TEST(warmup_does_not_run_after_an_ordinary_boot_tick)
     M_WARMUP warmup = {};
     CHAIN_ELEM calc;
     Chain_InitElem(&calc, M_WarmupCalc, &warmup);
-    CHECK(Result_Log(Chain_AddCalc(&g_Chain, &calc, 1), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&calc, 1), LOG_LEVEL_ERROR));
     CHECK(Game_Tick(&m_Shoot));
     CHECK_EQ_INT(warmup.calcs, 1);
     CHECK_EQ_INT(Game_Warmup(&m_Shoot), CHAIN_RUN_CONTINUE);
@@ -142,7 +142,7 @@ TEST(warmup_stops_for_quit_and_reset)
         M_WARMUP warmup = { .stop_at = 4, .status = status[i] };
         CHAIN_ELEM calc;
         Chain_InitElem(&calc, M_WarmupCalc, &warmup);
-        CHECK(Result_Log(Chain_AddCalc(&g_Chain, &calc, 1), LOG_LEVEL_ERROR));
+        CHECK(Result_Log(Chain_AddCalc(&calc, 1), LOG_LEVEL_ERROR));
         CHECK_EQ_INT(Game_Warmup(&m_Shoot), expected[i]);
         CHECK_EQ_INT(warmup.calcs, 4);
         Game_Shutdown();

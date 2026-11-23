@@ -136,7 +136,7 @@ static RESULT M_Setup(
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Anm_ResetColorModulation();
-    Chain_Init(&g_Chain);
+    Chain_Init();
     SceneStubCalls_Reset();
     g_GameSpeed = 1.0f;
     g_GameManager.run.stage = 1;
@@ -148,7 +148,7 @@ static RESULT M_Setup(
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     Mem_Free(m_Directory);
@@ -171,7 +171,7 @@ static EFFECT *M_StartPetal(void)
 static void M_Run(const int32_t updates)
 {
     for (int32_t i = 0; i < updates; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
 }
 
@@ -431,7 +431,7 @@ TEST(a_spell_card_runs_its_sprites_and_fades_in_over_sixty_frames)
     g_Stage.spell_background.count = 1;
     g_Stage.spell_card.state = 1;
     for (int i = 0; i < 60; i++) {
-        Chain_RunDraw(&g_Chain);
+        Chain_RunDraw();
         M_Run(1);
         CHECK_EQ_INT(g_Stage.spell_card.state, 1);
     }
@@ -448,7 +448,7 @@ TEST(set_tint_averages_with_a_tint_already_set)
     CHECK_EQ_INT(g_Stage.tint.color, COLOR_ARGB(0x40, 0xff, 0x20, 0x10));
     Stage_SetTint(COLOR_ARGB(0xc0, 0x01, 0x30, 0x40));
     CHECK_EQ_INT(g_Stage.tint.color, COLOR_ARGB(0x80, 0x80, 0x28, 0x28));
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_Stage.tint.color, COLOR_ARGB(0x00, 0x80, 0x80, 0x80));
     M_Teardown();
 }
@@ -516,7 +516,7 @@ TEST(stage_layers_draw_through_the_stage_camera_in_fog)
     M_Run(1);
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2); // the layer, then the petal
     const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);
@@ -542,7 +542,7 @@ TEST(objects_behind_the_camera_are_not_drawn)
     g_Stage.camera.current.dir.z = -1.0f;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
     GfxRecorder_Stop();
@@ -557,7 +557,7 @@ TEST(the_loading_sprite_hides_the_layers)
     g_SceneStubCalls.loading_shown = true;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 0);
     GfxRecorder_Stop();
@@ -580,7 +580,7 @@ TEST(projected_sprites_fade_into_the_fog_by_hand)
     g_Stage.fog.current.far = 400.0f;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     const GFX_RECORDED_QUAD *const quad = GfxRecorder_Quad(0);

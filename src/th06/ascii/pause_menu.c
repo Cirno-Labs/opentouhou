@@ -18,7 +18,7 @@ static void M_SetViewport(void)
 
 void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
 {
-    if (Buttons_WasPressed(&g_Buttons, 8)) {
+    if (Buttons_WasPressed(8)) {
         menu->state = 3;
         for (int32_t i = 0; i < 6; i++) {
             if (menu->sprites[i].shown) {
@@ -28,7 +28,7 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->state_frames = 0;
         menu->background.pending_interrupt = 1;
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_quit)) {
+    if (Buttons_WasPressed(TH06_BUTTON_quit)) {
         menu->state = 6;
         for (int32_t i = 0; i < 6; i++) {
             if (menu->sprites[i].shown) {
@@ -63,11 +63,11 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->sprites[1].pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         menu->sprites[2].pos_offset = (VEC3) {};
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
+            if (Buttons_WasPressed(TH06_BUTTON_up)
+                || Buttons_WasPressed(TH06_BUTTON_down)) {
                 menu->state = 2;
             }
-            if (Buttons_WasPressed(&g_Buttons, 1)) {
+            if (Buttons_WasPressed(1)) {
                 for (int32_t i = 0; i < 3; i++) {
                     menu->sprites[i].pending_interrupt = 2;
                 }
@@ -87,11 +87,11 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->sprites[1].pos_offset = (VEC3) {};
         menu->sprites[2].pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
+            if (Buttons_WasPressed(TH06_BUTTON_up)
+                || Buttons_WasPressed(TH06_BUTTON_down)) {
                 menu->state = 1;
             }
-            if (Buttons_WasPressed(&g_Buttons, 1)) {
+            if (Buttons_WasPressed(1)) {
                 for (int32_t i = 0; i < 3; i++) {
                     menu->sprites[i].pending_interrupt = 2;
                 }
@@ -122,11 +122,11 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->sprites[4].pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         menu->sprites[5].pos_offset = (VEC3) {};
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
+            if (Buttons_WasPressed(TH06_BUTTON_up)
+                || Buttons_WasPressed(TH06_BUTTON_down)) {
                 menu->state = 5;
             }
-            if (Buttons_WasPressed(&g_Buttons, 1)) {
+            if (Buttons_WasPressed(1)) {
                 for (int32_t i = 3; i < 6; i++) {
                     menu->sprites[i].pending_interrupt = 2;
                 }
@@ -145,11 +145,11 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->sprites[4].pos_offset = (VEC3) {};
         menu->sprites[5].pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
+            if (Buttons_WasPressed(TH06_BUTTON_up)
+                || Buttons_WasPressed(TH06_BUTTON_down)) {
                 menu->state = 4;
             }
-            if (Buttons_WasPressed(&g_Buttons, 1)) {
+            if (Buttons_WasPressed(1)) {
                 for (int32_t i = 0; i < 3; i++) {
                     menu->sprites[i].pending_interrupt = 1;
                 }
@@ -258,11 +258,11 @@ void PauseMenu_UpdateContinueMenu(PAUSE_MENU *const menu)
         menu->sprites[2].pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         menu->sprites[3].pos_offset = (VEC3) {};
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
+            if (Buttons_WasPressed(TH06_BUTTON_up)
+                || Buttons_WasPressed(TH06_BUTTON_down)) {
                 menu->state = 2;
             }
-            if (Buttons_WasPressed(&g_Buttons, 1)) {
+            if (Buttons_WasPressed(1)) {
                 for (int32_t i = 0; i < 4; i++) {
                     menu->sprites[i].pending_interrupt = 2;
                 }
@@ -282,11 +282,11 @@ void PauseMenu_UpdateContinueMenu(PAUSE_MENU *const menu)
         menu->sprites[3].pos_offset = (VEC3) { -4.0f, -4.0f, 0.0f };
         menu->sprites[2].pos_offset = (VEC3) {};
         if (menu->state_frames >= 30) {
-            if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_up)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_down)) {
+            if (Buttons_WasPressed(TH06_BUTTON_up)
+                || Buttons_WasPressed(TH06_BUTTON_down)) {
                 menu->state = 1;
             }
-            if (Buttons_WasPressed(&g_Buttons, 1)) {
+            if (Buttons_WasPressed(1)) {
                 for (int32_t i = 0; i < 4; i++) {
                     menu->sprites[i].pending_interrupt = 2;
                 }

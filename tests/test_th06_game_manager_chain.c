@@ -22,9 +22,7 @@
 
 #include <string.h>
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 STAGE g_Stage;
 
 static char m_SongPath[] = "bgm/th06_02.mid";
@@ -185,8 +183,8 @@ static CHAIN_STATUS M_After(void *const arg)
 
 static void M_Setup(void)
 {
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     Rng_SetSeed(&g_Rng, 1234);
     memset(&g_Buttons, 0, sizeof(g_Buttons));
@@ -211,7 +209,7 @@ static void M_Start(void)
 {
     CHECK(Result_Ignore(GameManager_Register()));
     Chain_InitElem(&m_AfterElem, M_After, nullptr);
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_AfterElem, 6)));
+    CHECK(Result_Ignore(Chain_AddCalc(&m_AfterElem, 6)));
 }
 
 TEST(new_game_initializes_records_and_registers_in_original_order)
@@ -367,13 +365,13 @@ TEST(pause_stops_later_calc_and_draw_changes_its_state)
     M_Start();
     g_Buttons.pressed.menu = true;
     g_GameManager.play_area.x = 44.0f;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_GameManager.mode.paused, 1);
     CHECK_EQ_INT(m_AfterCalls, 0);
     CHECK_EQ_INT(g_GameManager.run.stage_frames, 0);
     CHECK(!g_GameManager.mode.playing);
     CHECK(g_GameManager.play_area.x == 32.0f);
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(g_GameManager.mode.paused, 2);
 }
 
@@ -383,7 +381,7 @@ TEST(continue_menu_stops_later_calc_and_score_changes)
     M_Start();
     g_GameManager.mode.in_continue_menu = true;
     g_GameManager.score.value = 100;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_AfterCalls, 0);
     CHECK_EQ_INT(g_GameManager.score.shown, 0);
     CHECK_EQ_INT(g_GameManager.run.stage_frames, 0);
@@ -396,14 +394,14 @@ TEST(score_counts_up_in_tens_and_extends_at_most_once_per_calc)
     g_GameManager.score.value = 20000010;
     g_GameManager.score.shown = 20000000;
     g_GameManager.player.lives = 8;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_GameManager.score.shown, 20000010);
     CHECK_EQ_INT(g_GameManager.score.step, 0);
     CHECK_EQ_INT(g_GameManager.score.next_extend, 1);
     CHECK_EQ_INT(g_GameManager.player.lives, 8);
     CHECK_EQ_INT(g_GameManager.rank.value, 18);
     CHECK_EQ_INT(g_GameManager.score.high, 20000010);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_GameManager.score.next_extend, 1);
     CHECK_EQ_INT(g_GameManager.run.stage_frames, 2);
 }
@@ -415,12 +413,12 @@ TEST(extend_queues_its_sound_only_below_eight_lives)
     g_GameManager.score.value = 20000010;
     g_GameManager.score.shown = 20000000;
     g_GameManager.player.lives = 8;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_SoundEvents.queue[0], -1);
     g_GameManager.score.value = 40000010;
     g_GameManager.score.shown = 40000000;
     g_GameManager.player.lives = 2;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_SoundEvents.queue[0], SOUND_EXTEND);
 }
 
@@ -449,12 +447,12 @@ TEST(score_clamps_and_does_not_fall_below_the_shown_score)
     M_Start();
     g_GameManager.score.next_extend = -1;
     g_GameManager.score.value = 1000000000;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_GameManager.score.value, 999999990);
     CHECK_EQ_INT(g_GameManager.score.shown, 78910);
     g_GameManager.score.value = 50;
     g_GameManager.score.shown = 100;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_GameManager.score.value, 100);
     CHECK_EQ_INT(g_GameManager.score.shown, 100);
 }
@@ -465,16 +463,16 @@ TEST(demo_fades_then_returns_to_title_and_accepts_any_button)
     g_GameManager.mode.in_demo = true;
     M_Start();
     g_GameManager.mode.demo_frames = 3599;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_FadeFrames, 120);
     CHECK_EQ_INT(m_FadeColor, 0);
     CHECK_EQ_INT(m_Scene, SCENE_GAMEPLAY);
     g_GameManager.mode.demo_frames = 3719;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Scene, SCENE_TITLE);
     m_Scene = SCENE_GAMEPLAY;
     g_Buttons.word = 0x1000;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Scene, SCENE_TITLE);
 }
 
@@ -485,7 +483,7 @@ TEST(camera_uses_truncated_viewport_dimensions)
     g_GameManager.play_area.width = 383.75f;
     g_GameManager.play_area.height = 447.75f;
     g_GameManager.camera.zoom = 1.0f;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_GameManager.camera.viewport.width == 383.0f);
     CHECK(g_GameManager.camera.viewport.height == 447.0f);
     CHECK(
@@ -505,6 +503,6 @@ TEST(demo_accepts_partial_release_of_the_whole_button_word)
     M_Start();
     g_Buttons.word = 1;
     g_Buttons.previous_word = 3;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Scene, SCENE_TITLE);
 }

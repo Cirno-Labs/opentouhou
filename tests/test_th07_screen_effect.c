@@ -17,8 +17,8 @@
 
 static void M_Setup(void)
 {
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     SceneStubCalls_Reset();
     g_GameManager.run.stage_frames = 100;
     g_GameSpeed = 1.0f;
@@ -28,8 +28,8 @@ static void M_Setup(void)
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     GfxRecorder_Stop();
 }
 
@@ -37,7 +37,7 @@ static void M_Teardown(void)
 static int M_DrawnAlpha(const int32_t index)
 {
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     if (GfxRecorder_QuadCount() <= index) {
         return -1;
@@ -98,10 +98,10 @@ TEST(a_fade_ends_after_its_duration_and_removes_its_draw_element)
     CHECK_EQ_INT(g_Chain.calc.next->priority, 15);
     CHECK_EQ_INT(g_Chain.draw.next->priority, 17);
     for (int i = 0; i < 4; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(g_Chain.calc.next != nullptr);
     }
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     CHECK(g_Chain.draw.next == nullptr);
     M_Teardown();
@@ -113,11 +113,11 @@ TEST(a_fade_runs_at_the_game_speed)
     g_GameSpeed = 0.5f;
     ScreenEffect_FadeOutScreen(2, 0);
     for (int i = 0; i < 4; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     // 1.5 of 2 frames.
     CHECK_EQ_INT(M_DrawnAlpha(0), 191);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     M_Teardown();
 }
@@ -128,11 +128,11 @@ TEST(fades_record_the_original_rectangles_and_preceding_calc_alpha)
     ScreenEffect_FadeIn(4, 0x123456);
     ScreenEffect_FadeOut(4, 0xabcdef);
     ScreenEffect_FadeOutScreen(4, 0x654321);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     const RNG before = g_Rng;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 3);
     const GFX_VERTEX *const screen = GfxRecorder_Quad(0)->vertices;
@@ -166,7 +166,7 @@ TEST(a_flash_fades_the_play_area_from_its_alpha)
 {
     M_Setup();
     ScreenEffect_Flash(4, 1, COLOR_ARGB(0x80, 0xcf, 0xcf, 0xff));
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(M_DrawnAlpha(0), 0x80);
     const GFX_VERTEX *const quad = GfxRecorder_Quad(0)->vertices;
     CHECK(quad[0].position.x == 32.0f);
@@ -175,12 +175,12 @@ TEST(a_flash_fades_the_play_area_from_its_alpha)
     CHECK(quad[2].position.y == 464.0f);
     CHECK_EQ_INT(quad[0].color.red, 0xcf);
     CHECK_EQ_INT(quad[0].color.blue, 0xff);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(M_DrawnAlpha(0), 96);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     CHECK_EQ_INT(M_DrawnAlpha(0), 32);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     M_Teardown();
 }
@@ -189,8 +189,8 @@ TEST(a_flash_truncates_the_faded_part_before_subtracting)
 {
     M_Setup();
     ScreenEffect_Flash(3, 1, COLOR_ARGB(0x50, 0xff, 0xff, 0xff));
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     // 80 - trunc(26.67), not trunc(80 - 26.67).
     CHECK_EQ_INT(M_DrawnAlpha(0), 54);
     M_Teardown();
@@ -202,10 +202,10 @@ TEST(each_flash_after_the_first_starts_a_frame_in)
     ScreenEffect_Flash(2, 3, COLOR_ARGB(0x80, 0xff, 0xff, 0xff));
     const int expected[6] = { 128, 64, 0, 64, 0, 64 };
     for (int i = 0; i < 6; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK_EQ_INT(M_DrawnAlpha(0), expected[i]);
     }
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     M_Teardown();
 }
@@ -229,7 +229,7 @@ TEST(a_shake_moves_every_sprite_as_the_rng_picks)
         RNG expected = g_Rng;
         ScreenEffect_Shake(3, 0, 5);
         for (int frame = 1; frame < 3; frame++) {
-            Chain_RunCalc(&g_Chain);
+            Chain_RunCalc();
             // At frame 1, 1.6666666 rather than the 1.6666667 of 5 * (1 / 3).
             const float shake = (float)(5 - 0) * (float)frame / (float)3;
             const float x = M_ExpectedAxis(&expected, shake);
@@ -242,7 +242,7 @@ TEST(a_shake_moves_every_sprite_as_the_rng_picks)
             CHECK(corner.y == y + 0.5f);
         }
         CHECK(g_Rng.seed == expected.seed);
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(g_Chain.calc.next == nullptr);
     }
     CHECK(moved > 0);
@@ -258,13 +258,13 @@ TEST(a_shake_ends_and_leaves_its_last_offset)
         Rng_SetSeed(&g_Rng, seed);
         Anm_SetShake(0.0f, 0.0f);
         ScreenEffect_Shake(3, 8, 0);
-        Chain_RunCalc(&g_Chain);
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
+        Chain_RunCalc();
         const RNG drawn = g_Rng;
         const VEC3 last = M_SpriteCorner();
         g_Rng = drawn;
         moved += last.x != 0.5f || last.y != 0.5f;
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(g_Chain.calc.next == nullptr);
         CHECK(g_Rng.seed == drawn.seed);
         const VEC3 after = M_SpriteCorner();
@@ -282,7 +282,7 @@ TEST(a_shake_ends_at_once_early_in_a_stage)
     g_GameManager.run.stage_frames = 1;
     const RNG before = g_Rng;
     ScreenEffect_Shake(30, 8, 0);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(g_Chain.calc.next == nullptr);
     CHECK(g_Rng.seed == before.seed);
     M_Teardown();
@@ -293,7 +293,7 @@ TEST(shakes_started_every_frame_all_run)
     M_Setup();
     for (int i = 0; i < 120; i++) {
         ScreenEffect_Shake(240, 4, 1);
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     int count = 0;
     for (const CHAIN_ELEM *elem = g_Chain.calc.next; elem != nullptr;
@@ -311,8 +311,8 @@ TEST(releasing_the_chain_frees_every_effect)
         for (int i = 0; i < 32; i++) {
             ScreenEffect_Flash(60, 1, 0);
         }
-        Chain_Release(&g_Chain);
-        Chain_Init(&g_Chain);
+        Chain_Release();
+        Chain_Init();
     }
     CHECK(g_Chain.calc.next == nullptr);
     M_Teardown();

@@ -64,9 +64,7 @@ typedef struct {
     ITEM_STATE state;
 } M_ITEM_CALL;
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 float g_GameSpeed;
 ENEMY_MANAGER g_Enemies;
 ASCII_TEXT g_AsciiText;
@@ -296,7 +294,7 @@ static void M_SetUpFiles(
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Rng_SetSeed(&g_Rng, 99);
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.player_area = (PLAY_RECT) { 8.0f, 16.0f, 368.0f, 416.0f };
     g_GameManager.run.character = shot / 2;
@@ -321,7 +319,7 @@ static void M_SetUp(const char *const case_name, const uint8_t shot)
 
 static void M_TearDown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th07Data_Unmount();
     GfxRecorder_Stop();
@@ -330,7 +328,7 @@ static void M_TearDown(void)
 
 static void M_Frame(void)
 {
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static void M_Frames(const int32_t count)
@@ -1363,12 +1361,12 @@ TEST(the_draw_places_the_player_and_runs_the_bomb_draw)
 {
     M_SetUpAlive("draw", 0);
     g_GameManager.play_area = (PLAY_RECT) { 32.0f, 16.0f, 384.0f, 448.0f };
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_Player.vm.pos.x == 32.0f + M_START_X);
     CHECK(g_Player.option_vms[0].pos.y == 16.0f + M_START_Y);
     CHECK_EQ_INT(m_BombDraws, 0);
     g_Player.bomb.running = true;
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK_EQ_INT(m_BombDraws, 1);
     M_TearDown();
 }
@@ -1378,7 +1376,7 @@ TEST(the_draw_blinks_and_tints_through_the_border)
     M_SetUpAlive("draw_border", 0);
     Player_StartBorder();
     Timer_Set(&g_Player.state.timer, 300);
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(m_Tint == COLOR_ARGB(0x80, 0x30, 0x30, 0x30));
     CHECK(g_Player.vm.color == COLOR_ARGB(0xff, 0xff, 0x00, 0x00));
     M_TearDown();

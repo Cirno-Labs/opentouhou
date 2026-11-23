@@ -134,13 +134,13 @@ static CHAIN_STATUS M_Switch(void)
 
 static CHAIN_STATUS M_Calc(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &g_Input);
+    Buttons_Update(&g_Input);
     if (m_Current != m_Requested) {
         const CHAIN_STATUS status = M_Switch();
         if (status == CHAIN_QUIT || status == CHAIN_RESET) {
             return status;
         }
-        Buttons_Clear(&g_Buttons);
+        Buttons_Clear();
         m_Current = m_Requested;
     }
     return CHAIN_CONTINUE;
@@ -151,7 +151,7 @@ RESULT Scene_Register(void)
     m_Current = SCENE_BOOT;
     m_Requested = SCENE_NONE;
     Chain_InitElem(&m_Elem, M_Calc, nullptr);
-    return Chain_AddCalc(&g_Chain, &m_Elem, 0);
+    return Chain_AddCalc(&m_Elem, 0);
 }
 
 void Scene_Request(const SCENE scene)

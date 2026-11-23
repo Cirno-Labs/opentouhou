@@ -141,14 +141,14 @@ static void M_RenderShotNames(M_SCREEN *const screen)
 
 static void M_MoveCursorVertical(M_SCREEN *const screen, const int32_t count)
 {
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_up)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_up)) {
         screen->cursor--;
         if (screen->cursor < 0) {
             screen->cursor += count;
         }
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_down)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_down)) {
         screen->cursor++;
         if (screen->cursor >= count) {
             screen->cursor -= count;
@@ -160,7 +160,7 @@ static void M_MoveCursorVertical(M_SCREEN *const screen, const int32_t count)
 // Returns whether the cursor moved. Left takes precedence over right.
 static bool M_MoveCursorHorizontal(M_SCREEN *const screen, const int32_t count)
 {
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_left)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_left)) {
         screen->cursor--;
         if (screen->cursor < 0) {
             screen->cursor += count;
@@ -168,7 +168,7 @@ static bool M_MoveCursorHorizontal(M_SCREEN *const screen, const int32_t count)
         Sound_Queue(SOUND_SELECT);
         return true;
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_right)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_right)) {
         screen->cursor++;
         if (screen->cursor >= count) {
             screen->cursor -= count;
@@ -182,7 +182,7 @@ static bool M_MoveCursorHorizontal(M_SCREEN *const screen, const int32_t count)
 // Moves the name entry cursor over the grid, skipping the empty cells.
 static void M_MoveCharIndex(M_SCREEN *const screen)
 {
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_up)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_up)) {
         do {
             screen->char_index -= 16;
             if (screen->char_index < 0) {
@@ -191,7 +191,7 @@ static void M_MoveCharIndex(M_SCREEN *const screen)
         } while (m_NameAlphabet[screen->char_index] == ' ');
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_down)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_down)) {
         do {
             screen->char_index += 16;
             if (screen->char_index >= M_ALPHABET_SIZE) {
@@ -200,7 +200,7 @@ static void M_MoveCharIndex(M_SCREEN *const screen)
         } while (m_NameAlphabet[screen->char_index] == ' ');
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_left)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_left)) {
         do {
             screen->char_index--;
             if (screen->char_index % 16 == 15) {
@@ -212,7 +212,7 @@ static void M_MoveCharIndex(M_SCREEN *const screen)
         } while (m_NameAlphabet[screen->char_index] == ' ');
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_right)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_right)) {
         do {
             screen->char_index++;
             if (screen->char_index % 16 == 0) {
@@ -312,7 +312,7 @@ static void M_UpdateNameEntry(M_SCREEN *const screen)
     }
     M_MoveCharIndex(screen);
     uint8_t *const name = screen->named->name;
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_ok)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_ok)) {
         if (screen->char_index == M_ALPHABET_END) {
             Sound_Queue(SOUND_CANCEL);
             M_EndNameEntry(screen);
@@ -323,10 +323,10 @@ static void M_UpdateNameEntry(M_SCREEN *const screen)
             : ' ';
         M_AdvanceNameCursor(screen);
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_cancel)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_cancel)) {
         M_EraseNameCharacter(screen, name);
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_menu)) {
+    if (Buttons_WasPressed(TH06_BUTTON_menu)) {
         Sound_Queue(SOUND_CANCEL);
         M_EndNameEntry(screen);
     }
@@ -369,7 +369,7 @@ static void M_ListSlots(M_SCREEN *const screen)
     }
     M_MoveCursorVertical(screen, SAVED_REPLAY_SLOT_COUNT);
     screen->replay_slot = screen->cursor;
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)) {
+    if (Buttons_WasPressed(TH06_BUTTON_ok)) {
         Sound_Queue(SOUND_OK);
         screen->replay_slot = screen->cursor;
         screen->frame = 0;
@@ -385,7 +385,7 @@ static void M_ListSlots(M_SCREEN *const screen)
         screen->cursor = 0;
         screen->char_index = 0;
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)) {
+    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
         Sound_Queue(SOUND_CANCEL);
         screen->state = M_STATE_REPLAY_PROMPT;
         M_Interrupt(screen, 2);
@@ -461,12 +461,12 @@ static void M_UpdateReplayPrompt(M_SCREEN *const screen)
         return;
     }
     M_MoveCursorHorizontal(screen, 2);
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)
-        || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_menu)) {
+    if (Buttons_WasPressed(TH06_BUTTON_cancel)
+        || Buttons_WasPressed(TH06_BUTTON_menu)) {
         M_Leave(screen);
         return;
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)) {
+    if (Buttons_WasPressed(TH06_BUTTON_ok)) {
         if (screen->cursor == 0) {
             M_ChooseSlot(screen);
         } else {
@@ -481,7 +481,7 @@ static void M_UpdateReplayName(M_SCREEN *const screen)
         return;
     }
     M_MoveCharIndex(screen);
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_ok)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_ok)) {
         const int32_t position = M_NamePosition(screen);
         if (screen->char_index < M_ALPHABET_SPACE) {
             screen->name[position] = m_NameAlphabet[screen->char_index];
@@ -496,10 +496,10 @@ static void M_UpdateReplayName(M_SCREEN *const screen)
         // The original goes on after the save as after any character.
         M_AdvanceNameCursor(screen);
     }
-    if (Buttons_WasPressedOrRepeated(&g_Buttons, TH06_BUTTON_cancel)) {
+    if (Buttons_WasPressedOrRepeated(TH06_BUTTON_cancel)) {
         M_EraseNameCharacter(screen, screen->name);
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_menu)) {
+    if (Buttons_WasPressed(TH06_BUTTON_menu)) {
         M_ChooseSlot(screen);
     }
 }
@@ -511,12 +511,12 @@ static void M_UpdateReplayOverwrite(M_SCREEN *const screen)
         return;
     }
     M_MoveCursorHorizontal(screen, 2);
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)
-        || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_menu)) {
+    if (Buttons_WasPressed(TH06_BUTTON_cancel)
+        || Buttons_WasPressed(TH06_BUTTON_menu)) {
         M_ChooseSlot(screen);
         return;
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)) {
+    if (Buttons_WasPressed(TH06_BUTTON_ok)) {
         screen->frame = 0;
         if (screen->cursor == 0) {
             M_Interrupt(screen, 0xf);
@@ -537,8 +537,8 @@ static void M_UpdateReplaySaving(M_SCREEN *const screen)
         break;
     case M_STATE_REPLAY_REFUSED:
         if (screen->frame >= 20
-            && (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)
-                || Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel))) {
+            && (Buttons_WasPressed(TH06_BUTTON_ok)
+                || Buttons_WasPressed(TH06_BUTTON_cancel))) {
             M_Leave(screen);
         }
         break;
@@ -563,8 +563,7 @@ static void M_UpdateStatistics(M_SCREEN *const screen)
         if (screen->frame <= 30) {
             panel->pending_interrupt = 0x10;
         }
-        if (screen->frame >= 90
-            && Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)) {
+        if (screen->frame >= 90 && Buttons_WasPressed(TH06_BUTTON_ok)) {
             panel->pending_interrupt = 2;
             screen->frame = 0;
             screen->state = M_STATE_STATISTICS_LEAVE;
@@ -604,7 +603,7 @@ static void M_UpdateMenu(M_SCREEN *const screen)
 {
     M_MoveCursorVertical(screen, 7);
     M_HighlightMenu(screen);
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)) {
+    if (Buttons_WasPressed(TH06_BUTTON_ok)) {
         switch (screen->cursor) {
         case 0:
         case 1:
@@ -639,7 +638,7 @@ static void M_UpdateMenu(M_SCREEN *const screen)
             break;
         }
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)) {
+    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
         screen->cursor = 6;
         Sound_Queue(SOUND_CANCEL);
     }
@@ -680,13 +679,12 @@ static void M_UpdateUnlock(M_SCREEN *const screen)
     const uint16_t step = screen->cheat_progress < 5 ? 0x800
         : screen->cheat_progress < 7                 ? 0x200
                                                      : 0x400;
-    if (Buttons_WasPressed(&g_Buttons, step)) {
+    if (Buttons_WasPressed(step)) {
         screen->cheat_progress++;
     } else if (
         Buttons_WasPressed(
-            &g_Buttons,
             TH06_BUTTON_ok | TH06_BUTTON_bomb | TH06_BUTTON_menu
-                | TH06_BUTTON_quit | TH06_BUTTON_unlock_end)) {
+            | TH06_BUTTON_quit | TH06_BUTTON_unlock_end)) {
         screen->cheat_progress = 0;
     }
 }
@@ -704,7 +702,7 @@ static void M_UpdateScores(M_SCREEN *const screen)
         screen->frame = 0;
         M_Interrupt(screen, (int16_t)(screen->difficulty + 3));
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)) {
+    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
         M_ReturnToMenu(screen, &screen->saved_cursor);
     }
 }
@@ -742,7 +740,7 @@ static void M_UpdateSpellCards(M_SCREEN *const screen)
         screen->frame = 0;
         M_Interrupt(screen, (int16_t)(screen->difficulty + 3));
     }
-    if (Buttons_WasPressed(&g_Buttons, TH06_BUTTON_cancel)) {
+    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
         M_ReturnToMenu(screen, &screen->saved_spell_page);
     }
 }
@@ -1239,7 +1237,7 @@ RESULT ResultScreen_Register(const int32_t mode)
         screen->state = g_GameManager.mode.in_practice ? M_STATE_PRACTICE
                                                        : M_STATE_NAME_ENTRY;
     }
-    MUST(Chain_AddCalc(&g_Chain, &screen->calc, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&screen->calc, M_CALC_PRIORITY));
     Chain_InitElem(&screen->draw, M_DrawScreen, screen);
-    return Chain_AddDraw(&g_Chain, &screen->draw, M_DRAW_PRIORITY);
+    return Chain_AddDraw(&screen->draw, M_DRAW_PRIORITY);
 }

@@ -1012,11 +1012,11 @@ RESULT Player_Register(void)
     Chain_InitElem(&m_Elems.calc, M_Update, nullptr);
     m_Elems.calc.added = M_Added;
     m_Elems.calc.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &m_Elems.calc, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&m_Elems.calc, M_CALC_PRIORITY));
     Chain_InitElem(&m_Elems.draw, M_Draw, nullptr);
-    MUST(Chain_AddDraw(&g_Chain, &m_Elems.draw, M_DRAW_PRIORITY));
+    MUST(Chain_AddDraw(&m_Elems.draw, M_DRAW_PRIORITY));
     Chain_InitElem(&m_Elems.draw2, M_Draw2, nullptr);
-    return Chain_AddDraw(&g_Chain, &m_Elems.draw2, M_DRAW2_PRIORITY);
+    return Chain_AddDraw(&m_Elems.draw2, M_DRAW2_PRIORITY);
 }
 
 void Player_Remove(void)

@@ -1282,11 +1282,11 @@ RESULT Player_Register(void)
     Chain_InitElem(&m_CalcElem, M_Update, nullptr);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &m_CalcElem, M_CALC_PRIORITY));
+    MUST(Chain_AddCalc(&m_CalcElem, M_CALC_PRIORITY));
     Chain_InitElem(&m_DrawElem, M_Draw, nullptr);
-    MUST(Chain_AddDraw(&g_Chain, &m_DrawElem, M_DRAW_PRIORITY));
+    MUST(Chain_AddDraw(&m_DrawElem, M_DRAW_PRIORITY));
     Chain_InitElem(&m_Draw2Elem, M_Draw2, nullptr);
-    return Chain_AddDraw(&g_Chain, &m_Draw2Elem, M_DRAW2_PRIORITY);
+    return Chain_AddDraw(&m_Draw2Elem, M_DRAW2_PRIORITY);
 }
 
 void Player_Remove(void)

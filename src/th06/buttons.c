@@ -20,30 +20,31 @@ static const INPUT_ACTION m_Actions[] = {
 #undef M_STICK
 };
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH06_INPUT, m_Actions, 1);
+BUTTONS g_Buttons;
 
-static void M_Update(BUTTONS *const buttons)
+static void M_Update(void)
 {
-    const uint16_t previous = buttons->previous_word;
+    const uint16_t previous = g_Buttons.previous_word;
     bool repeat = false;
-    if (previous == buttons->word) {
-        if (buttons->held_frames >= 30) {
-            if (buttons->held_frames % 8 == 0) {
+    if (previous == g_Buttons.word) {
+        if (g_Buttons.held_frames >= 30) {
+            if (g_Buttons.held_frames % 8 == 0) {
                 repeat = true;
             }
-            if (buttons->held_frames >= 38) {
-                buttons->held_frames = 30;
+            if (g_Buttons.held_frames >= 38) {
+                g_Buttons.held_frames = 30;
             }
         }
-        buttons->held_frames++;
+        g_Buttons.held_frames++;
     } else {
-        buttons->held_frames = 0;
+        g_Buttons.held_frames = 0;
     }
 
-    const uint16_t pressed = buttons->word & (uint16_t)~previous;
-    const uint16_t repeated = pressed | (repeat ? buttons->word : 0);
-    buttons->held = Buttons_FromWord(buttons->word);
-    buttons->pressed = Buttons_FromWord(pressed);
-    buttons->repeated = Buttons_FromWord(repeated);
+    const uint16_t pressed = g_Buttons.word & (uint16_t)~previous;
+    const uint16_t repeated = pressed | (repeat ? g_Buttons.word : 0);
+    g_Buttons.held = Buttons_FromWord(g_Buttons.word);
+    g_Buttons.pressed = Buttons_FromWord(pressed);
+    g_Buttons.repeated = Buttons_FromWord(repeated);
 }
 
 uint16_t Buttons_ToWord(const TH06_INPUT *const input)
@@ -78,7 +79,7 @@ static bool M_SamePadBinding(const INPUT_BINDING a, const INPUT_BINDING b)
         && memcmp(a.codes, b.codes, a.count * sizeof(a.codes[0])) == 0;
 }
 
-void Buttons_ReadSharedFocus(BUTTONS *const buttons)
+void Buttons_ReadSharedFocus(void)
 {
     INPUT_BINDING shoot[M_MAX_BINDINGS];
     INPUT_BINDING focus[M_MAX_BINDINGS];
@@ -88,18 +89,18 @@ void Buttons_ReadSharedFocus(BUTTONS *const buttons)
     const size_t focus_count =
         MIN(Shell_GetBindings(TH06_ACTION_focus, focus, M_MAX_BINDINGS),
             (size_t)M_MAX_BINDINGS);
-    buttons->shared_focus = false;
+    g_Buttons.shared_focus = false;
     for (size_t i = 0; i < focus_count; i++) {
         for (size_t j = 0; j < shoot_count; j++) {
-            buttons->shared_focus |= M_SamePadBinding(focus[i], shoot[j]);
+            g_Buttons.shared_focus |= M_SamePadBinding(focus[i], shoot[j]);
         }
     }
 }
 
-void Buttons_Update(BUTTONS *const buttons, const TH06_INPUT *const input)
+void Buttons_Update(const TH06_INPUT *const input)
 {
     TH06_INPUT read = *input;
-    if (buttons->shared_focus) {
+    if (g_Buttons.shared_focus) {
         TH06_INPUT keyboard;
         TH06_INPUT gamepad;
         TH06_INPUT joystick;
@@ -107,7 +108,7 @@ void Buttons_Update(BUTTONS *const buttons, const TH06_INPUT *const input)
         Shell_GetDeviceInput(INPUT_DEVICE_GAMEPAD, &gamepad);
         Shell_GetDeviceInput(INPUT_DEVICE_JOYSTICK, &joystick);
         const bool shoot = gamepad.shoot || joystick.shoot;
-        int32_t *const frames = &buttons->shot_held_frames;
+        int32_t *const frames = &g_Buttons.shot_held_frames;
         if (shoot) {
             *frames = MIN(*frames + 1, 16);
         } else {
@@ -115,38 +116,37 @@ void Buttons_Update(BUTTONS *const buttons, const TH06_INPUT *const input)
         }
         read.focus = keyboard.focus || (shoot && *frames >= 8);
     }
-    buttons->previous_word = buttons->word;
-    buttons->word = Buttons_ToWord(&read);
-    M_Update(buttons);
-    buttons->held.move_x = input->move_x;
-    buttons->held.move_y = input->move_y;
+    g_Buttons.previous_word = g_Buttons.word;
+    g_Buttons.word = Buttons_ToWord(&read);
+    M_Update();
+    g_Buttons.held.move_x = input->move_x;
+    g_Buttons.held.move_y = input->move_y;
 }
 
-void Buttons_ApplyReplay(BUTTONS *const buttons, const uint16_t replay_word)
+void Buttons_ApplyReplay(const uint16_t replay_word)
 {
-    buttons->word =
-        (buttons->word & (uint16_t)~TH06_BUTTON_recorded) | replay_word;
-    M_Update(buttons);
+    g_Buttons.word =
+        (g_Buttons.word & (uint16_t)~TH06_BUTTON_recorded) | replay_word;
+    M_Update();
 }
 
-bool Buttons_WasPressed(const BUTTONS *const buttons, const uint16_t mask)
+bool Buttons_WasPressed(const uint16_t mask)
 {
-    return (buttons->word & mask) != 0
-        && (buttons->word & mask) != (buttons->previous_word & mask);
+    return (g_Buttons.word & mask) != 0
+        && (g_Buttons.word & mask) != (g_Buttons.previous_word & mask);
 }
 
-bool Buttons_WasPressedOrRepeated(
-    const BUTTONS *const buttons, const uint16_t mask)
+bool Buttons_WasPressedOrRepeated(const uint16_t mask)
 {
-    return Buttons_WasPressed(buttons, mask)
-        || (Buttons_ToWord(&buttons->repeated) & mask) != 0;
+    return Buttons_WasPressed(mask)
+        || (Buttons_ToWord(&g_Buttons.repeated) & mask) != 0;
 }
 
-void Buttons_Clear(BUTTONS *const buttons)
+void Buttons_Clear(void)
 {
-    buttons->held = (TH06_INPUT) {};
-    buttons->pressed = (TH06_INPUT) {};
-    buttons->repeated = (TH06_INPUT) {};
-    buttons->word = 0;
-    buttons->previous_word = 0;
+    g_Buttons.held = (TH06_INPUT) {};
+    g_Buttons.pressed = (TH06_INPUT) {};
+    g_Buttons.repeated = (TH06_INPUT) {};
+    g_Buttons.word = 0;
+    g_Buttons.previous_word = 0;
 }

@@ -391,11 +391,11 @@ RESULT AsciiText_Register(void)
     Chain_InitElem(&m_CalcElem, M_Update, &g_AsciiText);
     m_CalcElem.added = M_Added;
     m_CalcElem.deleted = M_Deleted;
-    MUST(Chain_AddCalc(&g_Chain, &m_CalcElem, 1));
+    MUST(Chain_AddCalc(&m_CalcElem, 1));
     Chain_InitElem(&m_DrawElem, M_Draw, &g_AsciiText);
-    MUST(Chain_AddDraw(&g_Chain, &m_DrawElem, 16));
+    MUST(Chain_AddDraw(&m_DrawElem, 16));
     Chain_InitElem(&m_DrawElem2, M_Draw2, &g_AsciiText);
-    return Chain_AddDraw(&g_Chain, &m_DrawElem2, 11);
+    return Chain_AddDraw(&m_DrawElem2, 11);
 }
 
 void AsciiText_Remove(void)

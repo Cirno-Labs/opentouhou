@@ -118,7 +118,7 @@ static RESULT M_Setup(
     Th06Data_WriteFile(m_Directory, "data/stage1.std", std.bytes, std.size);
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     g_GameManager.run.stage = 1;
     return Stage_Register();
@@ -126,7 +126,7 @@ static RESULT M_Setup(
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Anm_Shutdown();
     Th06Data_Unmount();
     Mem_Free(m_Directory);
@@ -160,12 +160,12 @@ TEST(the_camera_moves_between_keyframes)
 {
     CHECK(Result_Log(M_Setup("camera", m_Keyframes, 4, 0), LOG_LEVEL_ERROR));
     for (int frame = 0; frame <= 5; frame++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK(g_Stage.camera.pos.x == 5.0f);
     CHECK(g_Stage.camera.pos.y == 10.0f);
     for (int frame = 6; frame <= 12; frame++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK(g_Stage.camera.pos.x == 10.0f);
     CHECK(g_Stage.camera.pos.z == 30.0f);
@@ -182,11 +182,11 @@ TEST(a_wait_holds_the_clock_until_resumed)
     };
     CHECK(Result_Log(M_Setup("wait", script, 4, 0), LOG_LEVEL_ERROR));
     for (int i = 0; i < 5; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK_EQ_INT(g_Stage.script.time.current, 1);
     g_Stage.script.resume = true;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!g_Stage.script.resume);
     CHECK_EQ_INT(g_Stage.script.index, 2);
     M_Teardown();
@@ -207,13 +207,13 @@ TEST(the_fog_fades_to_the_new_fog)
     CHECK(Result_Log(M_Setup("fog", script, 5, 0), LOG_LEVEL_ERROR));
     // The first update stops at the keyframe it passes, so the fade
     // starts on the second, a quarter of the way.
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     CHECK(g_Stage.fog.current.near == 175.0f);
     CHECK(g_Stage.fog.current.far == 450.0f);
     CHECK_EQ_INT(g_Stage.fog.current.color, COLOR_ARGB(0xff, 0x20, 0x10, 0x30));
     for (int i = 0; i < 3; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK_EQ_INT(g_Stage.fog.frames, 0);
     CHECK_EQ_INT(g_Stage.fog.current.color, COLOR_ARGB(0xff, 0x80, 0x40, 0xc0));
@@ -226,10 +226,10 @@ TEST(objects_stop_animating_when_their_scripts_end)
     // Starting the script ran its first frame, so it ends on the third
     // update.
     for (int i = 0; i < 2; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
         CHECK(g_Stage.data.objects[0].animating);
     }
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK(!g_Stage.data.objects[0].animating);
     M_Teardown();
 }
@@ -240,12 +240,12 @@ TEST(a_spell_card_background_fades_in_over_sixty_frames)
         Result_Log(M_Setup("spell_card", m_Keyframes, 4, 0), LOG_LEVEL_ERROR));
     g_Stage.spell_card.state = 1;
     for (int i = 0; i < 60; i++) {
-        Chain_RunDraw(&g_Chain);
-        Chain_RunCalc(&g_Chain);
+        Chain_RunDraw();
+        Chain_RunCalc();
         CHECK_EQ_INT(g_Stage.spell_card.state, 1);
     }
-    Chain_RunDraw(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunDraw();
+    Chain_RunCalc();
     CHECK_EQ_INT(g_Stage.spell_card.state, 2);
     M_Teardown();
 }
@@ -254,8 +254,8 @@ TEST(a_frozen_game_only_tints_the_spell_card_background)
 {
     CHECK(Result_Log(M_Setup("frozen", m_Keyframes, 4, 0), LOG_LEVEL_ERROR));
     g_GameManager.mode.frozen = true;
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     CHECK_EQ_INT(g_Stage.script.time.current, 0);
     CHECK_EQ_INT(
         g_Stage.spell_card.background.color,
@@ -304,7 +304,7 @@ TEST(drawing_restores_the_fixed_camera_and_foreground_depth)
     g_GameManager.camera.offset_y = 20.0f;
     g_GameManager.camera.zoom = 2.0f;
     GameManager_SetUpCamera(0.0f);
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     CHECK(g_GameManager.camera.viewport.min_z == 0.0f);
     CHECK(g_GameManager.camera.viewport.max_z == 0.5f);
     CHECK(g_GameManager.camera.view.m[0][0] == 1.0f);
@@ -338,7 +338,7 @@ TEST(stage_layers_record_current_fog_and_instance_geometry)
     g_GameManager.camera.projection = Mat4_Identity();
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
     const GFX_FOG *const fog = &GfxRecorder_Quad(0)->view.fog;
@@ -375,7 +375,7 @@ TEST(repeated_stage_instances_keep_separate_draw_parts)
     g_GameManager.camera.projection = Mat4_Identity();
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     CHECK_EQ_INT(GfxRecorder_QuadCount(), 2);
     const uint64_t first = GfxRecorder_QuadId(0);

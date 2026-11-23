@@ -27,9 +27,7 @@
 
 #include <string.h>
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 
 static const char *const m_AnmFiles[] = {
     "data/title01.anm",  "data/title02.anm",  "data/title03.anm",
@@ -64,7 +62,7 @@ SCENE Scene_GetRequested(void)
 
 static CHAIN_STATUS M_Input(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input);
+    Buttons_Update(&m_Input);
     m_Calcs++;
     return CHAIN_CONTINUE;
 }
@@ -110,7 +108,7 @@ static void M_Setup(const char *const case_name)
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     GameManager_Create(&g_GameManager);
     ResultScreen_OpenSaves();
     Config_SetDefaults(&g_SettingsSchema, &g_Settings);
@@ -121,13 +119,12 @@ static void M_Setup(const char *const case_name)
     m_Calcs = 0;
     Sound_Reset();
     Chain_InitElem(&m_InputElem, M_Input, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
 }
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     AsciiText_Initialize();
     ResultScreen_CloseSaves();
     Anm_Shutdown();
@@ -140,10 +137,10 @@ static void M_Teardown(void)
 static void M_Tick(void)
 {
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     AsciiText_Initialize();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     GameTime_Resume();
     Sound_Reset();
 }
@@ -928,7 +925,7 @@ TEST(replay_selections_use_the_second_glyph_set)
     M_Run(40);
     AsciiText_Initialize();
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     int32_t selected = 0;
     int32_t others = 0;

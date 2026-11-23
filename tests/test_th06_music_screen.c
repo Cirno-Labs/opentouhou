@@ -27,9 +27,7 @@
 
 #define M_KOUMA "\x8d\x67\x96\x82" // 紅魔 in CP932
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 
 static MUSIC_TUNE m_Tunes[MUSIC_TUNE_COUNT];
 static char *m_Directory;
@@ -153,7 +151,7 @@ TEST(the_list_holds_32_tunes_and_cuts_long_fields)
 
 static CHAIN_STATUS M_InputUpdate(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input);
+    Buttons_Update(&m_Input);
     return CHAIN_CONTINUE;
 }
 
@@ -216,20 +214,19 @@ static void M_Setup(const char *const case_name, const int32_t tunes)
     CHECK(Result_Log(Th06Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     memset(&g_Buttons, 0, sizeof(g_Buttons));
     memset(&m_Input, 0, sizeof(m_Input));
     m_Requested = SCENE_MUSIC_ROOM;
     Sound_Reset();
     Chain_InitElem(&m_InputElem, M_InputUpdate, nullptr);
-    CHECK(
-        Result_Log(Chain_AddCalc(&g_Chain, &m_InputElem, 0), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Chain_AddCalc(&m_InputElem, 0), LOG_LEVEL_ERROR));
     CHECK(Result_Log(MusicScreen_Register(), LOG_LEVEL_ERROR));
 }
 
 static void M_Teardown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     AsciiText_Initialize();
     Anm_Shutdown();
     GfxRecorder_Stop();
@@ -244,10 +241,10 @@ static void M_Tick(const TH06_INPUT input)
     Sound_Reset();
     m_Input = input;
     Gfx_BeginTick((GFX_COLOR) {});
-    Chain_RunDraw(&g_Chain);
+    Chain_RunDraw();
     Gfx_EndTick();
     AsciiText_Initialize();
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
 }
 
 static void M_Run(const int32_t ticks)

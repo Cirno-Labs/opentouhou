@@ -169,7 +169,7 @@ static CHAIN_STATUS M_Play(void *const arg)
            && replay->frame >= stage->frames[replay->cursor + 1].frame) {
         replay->cursor++;
     }
-    Buttons_ApplyReplay(&g_Buttons, stage->frames[replay->cursor].buttons);
+    Buttons_ApplyReplay(stage->frames[replay->cursor].buttons);
     replay->frame++;
     return CHAIN_CONTINUE;
 }
@@ -220,14 +220,13 @@ RESULT Replay_Register(const REPLAY_MODE mode, const char *const path)
         &replay->calc, mode == REPLAY_RECORD ? M_Record : M_Play, replay);
     replay->calc.added = mode == REPLAY_RECORD ? M_RecordAdded : M_PlayAdded;
     replay->calc.deleted = M_Deleted;
-    MUST(
-        Chain_AddCalc(&g_Chain, &replay->calc, mode == REPLAY_RECORD ? 15 : 5));
+    MUST(Chain_AddCalc(&replay->calc, mode == REPLAY_RECORD ? 15 : 5));
     if (mode == REPLAY_PLAY) {
         Chain_InitElem(&replay->restart, M_Restart, replay);
-        MUST(Chain_AddCalc(&g_Chain, &replay->restart, 16));
+        MUST(Chain_AddCalc(&replay->restart, 16));
     }
     Chain_InitElem(&replay->draw, M_Draw, replay);
-    return Chain_AddDraw(&g_Chain, &replay->draw, 13);
+    return Chain_AddDraw(&replay->draw, 13);
 }
 
 void Replay_EndStage(void)

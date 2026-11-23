@@ -34,7 +34,7 @@ typedef struct CHAIN_ELEM {
     struct CHAIN_ELEM *next;
 } CHAIN_ELEM;
 
-// Holds a game's update and draw chains. Each lists elements by priority,
+// Holds the update and draw chains. Each lists elements by priority,
 // lower first; an element added at an existing priority runs after the
 // elements already there.
 typedef struct {
@@ -47,24 +47,28 @@ typedef struct {
     void *on_calc_end_arg;
 } CHAIN;
 
-void Chain_Init(CHAIN *chain);
+// Holds the game's one chain. The replay runner sets on_calc_end.
+extern CHAIN g_Chain;
+
+// Empties g_Chain and clears on_calc_end.
+void Chain_Init(void);
 
 // Sets callback and arg and clears everything else.
 void Chain_InitElem(
     CHAIN_ELEM *elem, CHAIN_STATUS (*callback)(void *), void *arg);
 
 // Inserts elem by priority, which must be at least 0, then calls added.
-RESULT Chain_AddCalc(CHAIN *chain, CHAIN_ELEM *elem, int16_t priority);
-RESULT Chain_AddDraw(CHAIN *chain, CHAIN_ELEM *elem, int16_t priority);
+RESULT Chain_AddCalc(CHAIN_ELEM *elem, int16_t priority);
+RESULT Chain_AddDraw(CHAIN_ELEM *elem, int16_t priority);
 
 // Unlinks elem and calls deleted. Does nothing when elem is in no chain.
 void Chain_Remove(CHAIN_ELEM *elem);
 
 // Runs the update chain. A run in which no callback ran also quits.
-CHAIN_RUN Chain_RunCalc(CHAIN *chain);
+CHAIN_RUN Chain_RunCalc(void);
 
 // Runs the draw chain. CHAIN_RESTART counts as CHAIN_CONTINUE there.
-void Chain_RunDraw(CHAIN *chain);
+void Chain_RunDraw(void);
 
 // Removes every element: the update chain's first, in order.
-void Chain_Release(CHAIN *chain);
+void Chain_Release(void);

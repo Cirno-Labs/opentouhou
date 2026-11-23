@@ -77,124 +77,125 @@ TEST(from_word_leaves_the_stick_at_zero)
 
 TEST(update_reports_pressed_on_the_first_calc_down)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     const TH07_INPUT input = { .shoot = true };
-    Buttons_Update(&buttons, &input, false);
-    CHECK((buttons.word & TH07_BUTTON_shoot) != 0);
-    CHECK(Buttons_WasPressed(&buttons, TH07_BUTTON_shoot));
-    CHECK(Buttons_WasPressedOrRepeated(&buttons, TH07_BUTTON_shoot));
-    CHECK_EQ_INT(buttons.held_frames, 0);
+    Buttons_Update(&input, false);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
+    CHECK(Buttons_WasPressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_WasPressedOrRepeated(TH07_BUTTON_shoot));
+    CHECK_EQ_INT(g_Buttons.held_frames, 0);
 
-    Buttons_Update(&buttons, &input, false);
-    CHECK((buttons.word & TH07_BUTTON_shoot) != 0);
-    CHECK(!Buttons_WasPressed(&buttons, TH07_BUTTON_shoot));
-    CHECK_EQ_INT(buttons.held_frames, 1);
+    Buttons_Update(&input, false);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
+    CHECK(!Buttons_WasPressed(TH07_BUTTON_shoot));
+    CHECK_EQ_INT(g_Buttons.held_frames, 1);
 }
 
 TEST(update_repeats_every_8_calcs_once_held_30)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     const TH07_INPUT input = { .shoot = true };
     for (int calc = 0; calc <= 73; calc++) {
-        Buttons_Update(&buttons, &input, false);
+        Buttons_Update(&input, false);
         const bool should_repeat = calc == 0 || calc == 33 || calc == 41
             || calc == 49 || calc == 57 || calc == 65 || calc == 73;
         CHECK_EQ_INT(
-            Buttons_WasPressedOrRepeated(&buttons, TH07_BUTTON_shoot),
-            should_repeat);
+            Buttons_WasPressedOrRepeated(TH07_BUTTON_shoot), should_repeat);
     }
-    CHECK_EQ_INT(buttons.held_frames, 33);
+    CHECK_EQ_INT(g_Buttons.held_frames, 33);
 }
 
 TEST(clear_keeps_held_frames_and_counts_as_pressed_next)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     const TH07_INPUT input = { .shoot = true };
     for (int calc = 0; calc < 5; calc++) {
-        Buttons_Update(&buttons, &input, false);
+        Buttons_Update(&input, false);
     }
-    const int32_t held_frames = buttons.held_frames;
-    Buttons_Clear(&buttons);
-    CHECK_EQ_INT(buttons.held_frames, held_frames);
-    CHECK((buttons.word & TH07_BUTTON_shoot) == 0);
-    CHECK_EQ_INT(buttons.word, 0);
+    const int32_t held_frames = g_Buttons.held_frames;
+    Buttons_Clear();
+    CHECK_EQ_INT(g_Buttons.held_frames, held_frames);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) == 0);
+    CHECK_EQ_INT(g_Buttons.word, 0);
 
-    Buttons_Update(&buttons, &input, false);
-    CHECK(Buttons_WasPressed(&buttons, TH07_BUTTON_shoot));
+    Buttons_Update(&input, false);
+    CHECK(Buttons_WasPressed(TH07_BUTTON_shoot));
 }
 
 TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     const TH07_INPUT input = { .up = true };
     int32_t count = 0;
     for (int calc = 0; calc <= 33; calc++) {
-        Buttons_Update(&buttons, &input, false);
-        if (Buttons_WasPressedOrRepeated(&buttons, 0x10)) {
+        Buttons_Update(&input, false);
+        if (Buttons_WasPressedOrRepeated(0x10)) {
             count++;
         }
-        CHECK(!Buttons_WasPressedOrRepeated(&buttons, 0x20));
+        CHECK(!Buttons_WasPressedOrRepeated(0x20));
     }
     CHECK_EQ_INT(count, 2);
 }
 
 TEST(play_sets_the_play_word_and_leaves_the_live_word)
 {
-    BUTTONS buttons = { .word = 0x1008 };
-    Buttons_Play(&buttons, 0x11);
-    Buttons_Play(&buttons, 0x13);
-    CHECK_EQ_INT(buttons.play_word, 0x13);
-    CHECK_EQ_INT(buttons.previous_play_word, 0x11);
-    CHECK_EQ_INT(buttons.word, 0x1008);
-    CHECK_EQ_INT(buttons.held_frames, 0);
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    g_Buttons.word = 0x1008;
+    Buttons_Play(0x11);
+    Buttons_Play(0x13);
+    CHECK_EQ_INT(g_Buttons.play_word, 0x13);
+    CHECK_EQ_INT(g_Buttons.previous_play_word, 0x11);
+    CHECK_EQ_INT(g_Buttons.word, 0x1008);
+    CHECK_EQ_INT(g_Buttons.held_frames, 0);
 }
 
 TEST(play_repeats_every_8_calcs_once_the_play_word_holds_30)
 {
-    BUTTONS buttons = { .play_word = 0x1 };
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    g_Buttons.play_word = 0x1;
     for (int calc = 0; calc <= 73; calc++) {
-        Buttons_Play(&buttons, 0x1);
+        Buttons_Play(0x1);
         const bool should_repeat = calc == 32 || calc == 40 || calc == 48
             || calc == 56 || calc == 64 || calc == 72;
-        CHECK_EQ_INT(buttons.repeat, should_repeat);
+        CHECK_EQ_INT(g_Buttons.repeat, should_repeat);
     }
-    CHECK_EQ_INT(buttons.held_frames, 34);
-    Buttons_Play(&buttons, 0x2);
-    CHECK(!buttons.repeat);
-    CHECK_EQ_INT(buttons.held_frames, 0);
+    CHECK_EQ_INT(g_Buttons.held_frames, 34);
+    Buttons_Play(0x2);
+    CHECK(!g_Buttons.repeat);
+    CHECK_EQ_INT(g_Buttons.held_frames, 0);
 }
 
 TEST(merge_adds_bits_and_keeps_the_previous_word_and_repeat)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     const TH07_INPUT shoot = { .shoot = true };
     for (int calc = 0; calc <= 33; calc++) {
-        Buttons_Update(&buttons, &shoot, false);
+        Buttons_Update(&shoot, false);
     }
-    CHECK(buttons.repeat);
-    const int32_t held_frames = buttons.held_frames;
+    CHECK(g_Buttons.repeat);
+    const int32_t held_frames = g_Buttons.held_frames;
 
     const TH07_INPUT bomb = { .bomb = true };
-    Buttons_Merge(&buttons, &bomb, false);
-    CHECK_EQ_INT(buttons.word, 0x3);
-    CHECK_EQ_INT(buttons.previous_word, 0x1);
-    CHECK_EQ_INT(buttons.held_frames, held_frames);
-    CHECK(buttons.repeat);
-    CHECK((buttons.word & TH07_BUTTON_shoot) != 0);
-    CHECK(Buttons_WasPressed(&buttons, TH07_BUTTON_bomb));
-    CHECK(!Buttons_WasPressed(&buttons, TH07_BUTTON_shoot));
-    CHECK(Buttons_WasPressedOrRepeated(&buttons, TH07_BUTTON_shoot));
+    Buttons_Merge(&bomb, false);
+    CHECK_EQ_INT(g_Buttons.word, 0x3);
+    CHECK_EQ_INT(g_Buttons.previous_word, 0x1);
+    CHECK_EQ_INT(g_Buttons.held_frames, held_frames);
+    CHECK(g_Buttons.repeat);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
+    CHECK(Buttons_WasPressed(TH07_BUTTON_bomb));
+    CHECK(!Buttons_WasPressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_WasPressedOrRepeated(TH07_BUTTON_shoot));
 }
 
 TEST(merge_keeps_what_was_pressed_on_the_dropped_calc)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     const TH07_INPUT shoot = { .shoot = true };
-    Buttons_Update(&buttons, &shoot, false);
-    Buttons_Merge(&buttons, &shoot, false);
-    CHECK_EQ_INT(buttons.previous_word, 0);
-    CHECK(Buttons_WasPressed(&buttons, TH07_BUTTON_shoot));
-    CHECK(Buttons_WasPressed(&buttons, 0x1));
+    Buttons_Update(&shoot, false);
+    Buttons_Merge(&shoot, false);
+    CHECK_EQ_INT(g_Buttons.previous_word, 0);
+    CHECK(Buttons_WasPressed(TH07_BUTTON_shoot));
+    CHECK(Buttons_WasPressed(0x1));
 }
 
 static const TH07_INPUT m_Shoot = { .shoot = true };
@@ -214,118 +215,118 @@ static const TH07_INPUT *M_PadShoot(const INPUT_DEVICE device, const bool held)
     return input;
 }
 
-static void M_HoldPadShoot(BUTTONS *const buttons, const int32_t calcs)
+static void M_HoldPadShoot(const int32_t calcs)
 {
     for (int32_t i = 0; i < calcs; i++) {
-        Buttons_Update(buttons, M_PadShoot(INPUT_DEVICE_GAMEPAD, true), true);
+        Buttons_Update(M_PadShoot(INPUT_DEVICE_GAMEPAD, true), true);
     }
 }
 
 TEST(pad_shoot_focuses_from_the_10th_held_calc)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     for (int32_t calc = 1; calc <= 12; calc++) {
-        M_HoldPadShoot(&buttons, 1);
-        CHECK_EQ_INT((buttons.word & TH07_BUTTON_focus) != 0, calc >= 10);
-        CHECK((buttons.word & TH07_BUTTON_shoot) != 0);
+        M_HoldPadShoot(1);
+        CHECK_EQ_INT((g_Buttons.word & TH07_BUTTON_focus) != 0, calc >= 10);
+        CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
     }
-    CHECK_EQ_INT(buttons.shot_held_frames, 12);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 12);
 }
 
 TEST(pad_shoot_count_stops_at_20)
 {
-    BUTTONS buttons = {};
-    M_HoldPadShoot(&buttons, 25);
-    CHECK_EQ_INT(buttons.shot_held_frames, 20);
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    M_HoldPadShoot(25);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 20);
 }
 
 TEST(release_above_10_takes_10_off_and_focuses_that_calc)
 {
-    BUTTONS buttons = {};
-    M_HoldPadShoot(&buttons, 20);
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    M_HoldPadShoot(20);
     const TH07_INPUT *const released = M_PadShoot(INPUT_DEVICE_GAMEPAD, false);
-    Buttons_Update(&buttons, released, true);
-    CHECK_EQ_INT(buttons.shot_held_frames, 10);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
-    CHECK((buttons.word & TH07_BUTTON_shoot) == 0);
+    Buttons_Update(released, true);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 10);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) == 0);
 
-    Buttons_Update(&buttons, released, true);
-    CHECK_EQ_INT(buttons.shot_held_frames, 0);
-    CHECK((buttons.word & TH07_BUTTON_focus) == 0);
+    Buttons_Update(released, true);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) == 0);
 }
 
 TEST(release_at_10_or_below_resets_without_focus)
 {
-    BUTTONS buttons = {};
-    M_HoldPadShoot(&buttons, 10);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
-    Buttons_Update(&buttons, M_PadShoot(INPUT_DEVICE_GAMEPAD, false), true);
-    CHECK_EQ_INT(buttons.shot_held_frames, 0);
-    CHECK((buttons.word & TH07_BUTTON_focus) == 0);
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    M_HoldPadShoot(10);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
+    Buttons_Update(M_PadShoot(INPUT_DEVICE_GAMEPAD, false), true);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) == 0);
 }
 
 TEST(joystick_shoot_counts_like_the_gamepad)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     for (int32_t calc = 1; calc <= 15; calc++) {
-        Buttons_Update(&buttons, M_PadShoot(INPUT_DEVICE_JOYSTICK, true), true);
-        CHECK_EQ_INT((buttons.word & TH07_BUTTON_focus) != 0, calc >= 10);
+        Buttons_Update(M_PadShoot(INPUT_DEVICE_JOYSTICK, true), true);
+        CHECK_EQ_INT((g_Buttons.word & TH07_BUTTON_focus) != 0, calc >= 10);
     }
-    Buttons_Update(&buttons, M_PadShoot(INPUT_DEVICE_JOYSTICK, false), true);
-    CHECK_EQ_INT(buttons.shot_held_frames, 5);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
+    Buttons_Update(M_PadShoot(INPUT_DEVICE_JOYSTICK, false), true);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 5);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
 }
 
 TEST(keyboard_shoot_never_focuses)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     for (int32_t calc = 0; calc < 30; calc++) {
-        Buttons_Update(&buttons, M_PadShoot(INPUT_DEVICE_KEYBOARD, true), true);
-        CHECK((buttons.word & TH07_BUTTON_focus) == 0);
+        Buttons_Update(M_PadShoot(INPUT_DEVICE_KEYBOARD, true), true);
+        CHECK((g_Buttons.word & TH07_BUTTON_focus) == 0);
     }
-    CHECK_EQ_INT(buttons.shot_held_frames, 0);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
 }
 
 TEST(focus_button_focuses_at_once_while_pad_shoot_is_held)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     M_PadShoot(INPUT_DEVICE_GAMEPAD, true);
     const TH07_INPUT input = { .shoot = true, .focus = true };
-    Buttons_Update(&buttons, &input, true);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
-    CHECK_EQ_INT(buttons.shot_held_frames, 1);
+    Buttons_Update(&input, true);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 1);
 }
 
 TEST(setting_off_gives_the_input_focus_and_no_count)
 {
-    BUTTONS buttons = {};
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
     for (int32_t calc = 0; calc < 15; calc++) {
-        Buttons_Update(&buttons, M_PadShoot(INPUT_DEVICE_GAMEPAD, true), false);
-        CHECK((buttons.word & TH07_BUTTON_focus) == 0);
+        Buttons_Update(M_PadShoot(INPUT_DEVICE_GAMEPAD, true), false);
+        CHECK((g_Buttons.word & TH07_BUTTON_focus) == 0);
     }
-    CHECK_EQ_INT(buttons.shot_held_frames, 0);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
 
     const TH07_INPUT focus = { .focus = true };
-    Buttons_Update(&buttons, &focus, false);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
+    Buttons_Update(&focus, false);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
 }
 
 TEST(merge_steps_the_shoot_count)
 {
-    BUTTONS buttons = {};
-    M_HoldPadShoot(&buttons, 9);
-    CHECK((buttons.word & TH07_BUTTON_focus) == 0);
-    Buttons_Merge(&buttons, M_PadShoot(INPUT_DEVICE_GAMEPAD, true), true);
-    CHECK_EQ_INT(buttons.shot_held_frames, 10);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    M_HoldPadShoot(9);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) == 0);
+    Buttons_Merge(M_PadShoot(INPUT_DEVICE_GAMEPAD, true), true);
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 10);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
 }
 
 TEST(clear_keeps_the_shoot_count)
 {
-    BUTTONS buttons = {};
-    M_HoldPadShoot(&buttons, 15);
-    Buttons_Clear(&buttons);
-    CHECK_EQ_INT(buttons.shot_held_frames, 15);
-    M_HoldPadShoot(&buttons, 1);
-    CHECK((buttons.word & TH07_BUTTON_focus) != 0);
+    memset(&g_Buttons, 0, sizeof(g_Buttons));
+    M_HoldPadShoot(15);
+    Buttons_Clear();
+    CHECK_EQ_INT(g_Buttons.shot_held_frames, 15);
+    M_HoldPadShoot(1);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
 }

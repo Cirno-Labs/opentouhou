@@ -14,9 +14,7 @@
 
 #include <string.h>
 
-CHAIN g_Chain;
 RNG g_Rng;
-BUTTONS g_Buttons;
 GAME_MANAGER g_GameManager;
 
 static uint8_t *m_Bytes;
@@ -49,7 +47,7 @@ bool Gui_IsMsgSkippable(void)
 
 static CHAIN_STATUS M_Input(void *const arg)
 {
-    Buttons_Update(&g_Buttons, &m_Input);
+    Buttons_Update(&m_Input);
     return CHAIN_CONTINUE;
 }
 
@@ -68,8 +66,8 @@ static bool M_CalcEnd(void *const arg)
 static void M_SetUp(void)
 {
     Replay_Discard();
-    Chain_Release(&g_Chain);
-    Chain_Init(&g_Chain);
+    Chain_Release();
+    Chain_Init();
     ReplayFiles_Clear();
     Mem_Free(m_Bytes);
     m_Bytes = nullptr;
@@ -153,10 +151,10 @@ TEST(recording_keeps_input_changes_and_masks_live_controls)
     M_SetUp();
     CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, nullptr)));
     g_Buttons.word = 0x1009;
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     g_Buttons.word = 0;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     REPLAY_FILE *const file = M_Save();
     if (file == nullptr) {
         return;
@@ -185,10 +183,10 @@ TEST(recording_stops_its_frame_counter_while_not_playing)
     g_GameManager.mode.playing = false;
     g_Buttons.word = 1;
     for (int32_t i = 0; i < 20; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     g_GameManager.mode.playing = true;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     REPLAY_FILE *const file = M_Save();
     if (file == nullptr) {
         return;
@@ -203,7 +201,7 @@ TEST(next_stage_records_previous_score_and_save_keeps_both_scores)
     M_SetUp();
     CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, nullptr)));
     g_Buttons.word = 1;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     Replay_EndStage();
     g_GameManager.score.value = 111;
     g_GameManager.run.stage = 2;
@@ -226,7 +224,7 @@ TEST(saving_repeats_stage_termination_and_advances_rng_four_times)
 {
     M_SetUp();
     CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, nullptr)));
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     Replay_EndStage();
     RNG expected = g_Rng;
     Rng_U16InRange(&expected, 128);
@@ -277,15 +275,15 @@ TEST(playback_preserves_live_controls_and_replaces_gameplay_buttons)
     M_Fixture();
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
     g_Buttons.word = 0x104a;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_Buttons.word, 0x1019);
     CHECK(g_Buttons.held.shoot);
     CHECK(g_Buttons.held.up);
     CHECK(g_Buttons.held.menu);
     CHECK(g_Buttons.held.confirm);
     CHECK(!g_Buttons.held.bomb);
-    Chain_RunCalc(&g_Chain);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
+    Chain_RunCalc();
     CHECK_EQ_INT(g_Buttons.word, 0x1108);
     Replay_Discard();
 }
@@ -297,11 +295,11 @@ TEST(playback_stops_its_frame_counter_while_not_playing)
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
     g_GameManager.mode.playing = false;
     for (int32_t i = 0; i < 20; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
     CHECK_EQ_INT(g_Buttons.word, 0);
     g_GameManager.mode.playing = true;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(g_Buttons.word, 0x11);
     Replay_Discard();
 }
@@ -312,20 +310,20 @@ TEST(skippable_dialogue_restarts_the_calc_chain_without_drawing)
     M_Fixture();
     Chain_InitElem(&m_InputElem, M_Input, nullptr);
     Chain_InitElem(&m_ObserverElem, M_Observe, nullptr);
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_InputElem, 0)));
-    CHECK(Result_Ignore(Chain_AddCalc(&g_Chain, &m_ObserverElem, 6)));
+    CHECK(Result_Ignore(Chain_AddCalc(&m_InputElem, 0)));
+    CHECK(Result_Ignore(Chain_AddCalc(&m_ObserverElem, 6)));
     g_Chain.on_calc_end = M_CalcEnd;
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
     m_Dialogue = true;
     m_Skippable = true;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Calcs, 2);
     CHECK_EQ_INT(m_CalcEnds, 2);
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Calcs, 5);
     CHECK_EQ_INT(m_CalcEnds, 5);
     m_Skippable = false;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     CHECK_EQ_INT(m_Calcs, 6);
     Replay_Discard();
 }
@@ -355,13 +353,13 @@ TEST(missing_stage_failure_can_be_discarded_and_registered_again)
     CHECK(!Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
     m_Dialogue = true;
     m_Skippable = true;
-    CHECK_EQ_INT(Chain_RunCalc(&g_Chain), CHAIN_RUN_CONTINUE);
+    CHECK_EQ_INT(Chain_RunCalc(), CHAIN_RUN_CONTINUE);
     Replay_EndStage();
     Replay_Discard();
     CHECK(g_Chain.calc.next == nullptr);
     g_GameManager.run.stage = 1;
     CHECK(Result_Ignore(Replay_Register(REPLAY_PLAY, "synthetic.rpy")));
-    Chain_Release(&g_Chain);
+    Chain_Release();
     Replay_Discard();
 }
 
@@ -370,7 +368,7 @@ TEST(invalid_save_metadata_keeps_recording_and_rng_unchanged_for_retry)
     M_SetUp();
     CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, nullptr)));
     g_Buttons.word = 1;
-    Chain_RunCalc(&g_Chain);
+    Chain_RunCalc();
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
     const REPLAY_SAVE_INFO info = { "Name too long", "11/10/26", 60.0f, 60.0f };
@@ -405,7 +403,7 @@ TEST(playback_reads_the_kept_file_and_opens_no_file)
     Replay_Free(file);
     CHECK_EQ_INT(m_Loads, 0);
     Replay_Discard();
-    Chain_Release(&g_Chain);
+    Chain_Release();
 }
 
 TEST(playback_of_a_path_not_kept_fails)
@@ -417,5 +415,5 @@ TEST(playback_of_a_path_not_kept_fails)
     Result_Ignore(result);
     CHECK_EQ_INT(m_Loads, 0);
     Replay_Discard();
-    Chain_Release(&g_Chain);
+    Chain_Release();
 }

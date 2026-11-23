@@ -34,10 +34,8 @@
 #define M_STOP_OP 20
 #define M_LABEL_OP 21
 
-CHAIN g_Chain;
 RNG g_Rng;
 float g_GameSpeed;
-BUTTONS g_Buttons;
 PLAYER g_Player;
 STAGE g_Stage;
 BULLET_MANAGER g_Bullets;
@@ -203,7 +201,7 @@ void GuiSetup_Start(const int32_t stage)
     GfxRecorder_Start();
     ASSERT(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     Anm_Init(&g_HeapAllocator, &g_Rng);
-    Chain_Init(&g_Chain);
+    Chain_Init();
     M_ClearCalls();
     memset(&g_GuiFake, 0, sizeof(g_GuiFake));
     g_GuiFake.scene = SCENE_GAMEPLAY;
@@ -239,7 +237,7 @@ void GuiSetup_SetUp(
 
 void GuiSetup_TearDown(void)
 {
-    Chain_Release(&g_Chain);
+    Chain_Release();
     // Drops a copy a test left pending; no texture is loaded in slot 4.
     ASSERT(IS_OK(Anm_DoPendingCopy()));
     Anm_Shutdown();
@@ -252,7 +250,7 @@ void GuiSetup_TearDown(void)
 void GuiSetup_Run(const int32_t frames)
 {
     for (int32_t i = 0; i < frames; i++) {
-        Chain_RunCalc(&g_Chain);
+        Chain_RunCalc();
     }
 }
 
