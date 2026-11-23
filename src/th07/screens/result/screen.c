@@ -192,7 +192,7 @@ static void M_CopyName(
 // Returns -1 for up and 1 for down when the value moved, else 0.
 static int32_t M_MoveVertical(int32_t *const value, const int32_t count)
 {
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_up)) {
+    if (Buttons_Repeated(TH07_BUTTON_up)) {
         (*value)--;
         if (*value < 0) {
             *value += count;
@@ -200,7 +200,7 @@ static int32_t M_MoveVertical(int32_t *const value, const int32_t count)
         Sound_Queue(SOUND_SELECT);
         return -1;
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_down)) {
+    if (Buttons_Repeated(TH07_BUTTON_down)) {
         (*value)++;
         if (*value >= count) {
             *value -= count;
@@ -213,7 +213,7 @@ static int32_t M_MoveVertical(int32_t *const value, const int32_t count)
 
 static bool M_MoveCursorHorizontal(M_SCREEN *const screen, const int32_t count)
 {
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_left)) {
+    if (Buttons_Repeated(TH07_BUTTON_left)) {
         screen->cursor--;
         if (screen->cursor < 0) {
             screen->cursor += count;
@@ -221,7 +221,7 @@ static bool M_MoveCursorHorizontal(M_SCREEN *const screen, const int32_t count)
         Sound_Queue(SOUND_SELECT);
         return true;
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_right)) {
+    if (Buttons_Repeated(TH07_BUTTON_right)) {
         screen->cursor++;
         if (screen->cursor >= count) {
             screen->cursor -= count;
@@ -235,7 +235,7 @@ static bool M_MoveCursorHorizontal(M_SCREEN *const screen, const int32_t count)
 // Moves the name entry cursor over the grid, skipping the empty cells.
 static void M_MoveCharIndex(M_SCREEN *const screen)
 {
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_up)) {
+    if (Buttons_Repeated(TH07_BUTTON_up)) {
         do {
             screen->char_index -= 16;
             if (screen->char_index < 0) {
@@ -244,7 +244,7 @@ static void M_MoveCharIndex(M_SCREEN *const screen)
         } while (m_NameAlphabet[screen->char_index] == ' ');
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_down)) {
+    if (Buttons_Repeated(TH07_BUTTON_down)) {
         do {
             screen->char_index += 16;
             if (screen->char_index >= M_ALPHABET_SIZE) {
@@ -253,7 +253,7 @@ static void M_MoveCharIndex(M_SCREEN *const screen)
         } while (m_NameAlphabet[screen->char_index] == ' ');
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_left)) {
+    if (Buttons_Repeated(TH07_BUTTON_left)) {
         do {
             screen->char_index--;
             if (screen->char_index % 16 == 15) {
@@ -265,7 +265,7 @@ static void M_MoveCharIndex(M_SCREEN *const screen)
         } while (m_NameAlphabet[screen->char_index] == ' ');
         Sound_Queue(SOUND_SELECT);
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_right)) {
+    if (Buttons_Repeated(TH07_BUTTON_right)) {
         do {
             screen->char_index++;
             if (screen->char_index % 16 == 0) {
@@ -403,7 +403,7 @@ static void M_UpdateNameEntry(M_SCREEN *const screen)
     }
     M_MoveCharIndex(screen);
     uint8_t *const name = screen->named->name;
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_ok)) {
+    if (Buttons_Repeated(TH07_BUTTON_ok)) {
         if (!M_TypeCharacter(screen, name)) {
             Sound_Queue(SOUND_CANCEL);
             M_EndNameEntry(screen);
@@ -411,10 +411,10 @@ static void M_UpdateNameEntry(M_SCREEN *const screen)
         }
         M_AdvanceNameCursor(screen);
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_cancel)) {
+    if (Buttons_Repeated(TH07_BUTTON_cancel)) {
         M_EraseNameCharacter(screen, name);
     }
-    if (Buttons_WasPressed(TH07_BUTTON_menu)) {
+    if (Buttons_Pressed(TH07_BUTTON_menu)) {
         Sound_Queue(SOUND_CANCEL);
         M_EndNameEntry(screen);
     }
@@ -452,7 +452,7 @@ static void M_ListSlots(M_SCREEN *const screen)
     }
     M_MoveVertical(&screen->cursor, SAVED_REPLAY_SLOT_COUNT);
     screen->replay_slot = screen->cursor;
-    if (Buttons_WasPressed(TH07_BUTTON_ok)) {
+    if (Buttons_Pressed(TH07_BUTTON_ok)) {
         Sound_Queue(SOUND_OK);
         screen->replay_slot = screen->cursor;
         screen->frame = 0;
@@ -471,7 +471,7 @@ static void M_ListSlots(M_SCREEN *const screen)
             screen->char_index = M_ALPHABET_END;
         }
     }
-    if (Buttons_WasPressed(TH07_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH07_BUTTON_cancel)) {
         Sound_Queue(SOUND_CANCEL);
         screen->state = M_STATE_REPLAY_PROMPT;
         M_Interrupt(screen, 2);
@@ -533,12 +533,12 @@ static void M_UpdateReplayPrompt(M_SCREEN *const screen)
         return;
     }
     M_MoveCursorHorizontal(screen, 2);
-    if (Buttons_WasPressed(TH07_BUTTON_cancel)
-        || Buttons_WasPressed(TH07_BUTTON_menu)) {
+    if (Buttons_Pressed(TH07_BUTTON_cancel)
+        || Buttons_Pressed(TH07_BUTTON_menu)) {
         M_Leave(screen);
         return;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_ok)) {
+    if (Buttons_Pressed(TH07_BUTTON_ok)) {
         if (screen->cursor == 0) {
             M_ChooseSlot(screen);
         } else {
@@ -553,7 +553,7 @@ static void M_UpdateReplayName(M_SCREEN *const screen)
         return;
     }
     M_MoveCharIndex(screen);
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_ok)) {
+    if (Buttons_Repeated(TH07_BUTTON_ok)) {
         if (!M_TypeCharacter(screen, screen->name)) {
             M_SaveReplay(screen);
             screen->frame = 0;
@@ -566,10 +566,10 @@ static void M_UpdateReplayName(M_SCREEN *const screen)
         // The original goes on after the save as after any character.
         M_AdvanceNameCursor(screen);
     }
-    if (Buttons_WasPressedOrRepeated(TH07_BUTTON_cancel)) {
+    if (Buttons_Repeated(TH07_BUTTON_cancel)) {
         M_EraseNameCharacter(screen, screen->name);
     }
-    if (Buttons_WasPressed(TH07_BUTTON_menu)) {
+    if (Buttons_Pressed(TH07_BUTTON_menu)) {
         M_ChooseSlot(screen);
     }
 }
@@ -581,12 +581,12 @@ static void M_UpdateReplayOverwrite(M_SCREEN *const screen)
         return;
     }
     M_MoveCursorHorizontal(screen, 2);
-    if (Buttons_WasPressed(TH07_BUTTON_cancel)
-        || Buttons_WasPressed(TH07_BUTTON_menu)) {
+    if (Buttons_Pressed(TH07_BUTTON_cancel)
+        || Buttons_Pressed(TH07_BUTTON_menu)) {
         M_ChooseSlot(screen);
         return;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_ok)) {
+    if (Buttons_Pressed(TH07_BUTTON_ok)) {
         screen->frame = 0;
         if (screen->cursor == 0) {
             M_Interrupt(screen, 0x11);
@@ -607,8 +607,8 @@ static void M_UpdateReplaySaving(M_SCREEN *const screen)
         break;
     case M_STATE_REPLAY_REFUSED:
         if (screen->frame >= 20
-            && (Buttons_WasPressed(TH07_BUTTON_ok)
-                || Buttons_WasPressed(TH07_BUTTON_cancel))) {
+            && (Buttons_Pressed(TH07_BUTTON_ok)
+                || Buttons_Pressed(TH07_BUTTON_cancel))) {
             M_Leave(screen);
         }
         break;
@@ -633,7 +633,7 @@ static void M_UpdateStatistics(M_SCREEN *const screen)
         if (screen->frame <= 30) {
             panel->pending_interrupt = 0x12;
         }
-        if (screen->frame >= 90 && Buttons_WasPressed(TH07_BUTTON_ok)) {
+        if (screen->frame >= 90 && Buttons_Pressed(TH07_BUTTON_ok)) {
             panel->pending_interrupt = 2;
             screen->frame = 0;
             screen->state = M_STATE_STATISTICS_LEAVE;
@@ -705,7 +705,7 @@ static void M_UpdateMenu(M_SCREEN *const screen)
         screen->cursor += step;
     }
     M_HighlightMenu(screen);
-    if (Buttons_WasPressed(TH07_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH07_BUTTON_cancel)) {
         if (screen->cursor == M_QUIT_ITEM) {
             M_Quit(screen);
             return;
@@ -713,7 +713,7 @@ static void M_UpdateMenu(M_SCREEN *const screen)
         screen->cursor = M_QUIT_ITEM;
         Sound_Queue(SOUND_CANCEL);
     }
-    if (!Buttons_WasPressed(TH07_BUTTON_ok)) {
+    if (!Buttons_Pressed(TH07_BUTTON_ok)) {
         return;
     }
     switch (screen->cursor) {
@@ -776,9 +776,9 @@ static void M_UpdateUnlock(M_SCREEN *const screen)
         : screen->unlock_progress < 5                 ? 0x2000
         : screen->unlock_progress < 7                 ? TH07_BUTTON_down
                                                       : 0x200;
-    if (Buttons_WasPressed(step)) {
+    if (Buttons_Pressed(step)) {
         screen->unlock_progress++;
-    } else if (Buttons_WasPressed(M_UNLOCK_RESET)) {
+    } else if (Buttons_Pressed(M_UNLOCK_RESET)) {
         screen->unlock_progress = 0;
     }
 }
@@ -796,7 +796,7 @@ static void M_UpdateScores(M_SCREEN *const screen)
         screen->frame = 0;
         M_Interrupt(screen, (int16_t)(screen->difficulty + 3));
     }
-    if (Buttons_WasPressed(TH07_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH07_BUTTON_cancel)) {
         M_ReturnToMenu(screen, &screen->saved_cursor);
     }
 }
@@ -868,7 +868,7 @@ static void M_UpdateSpellCards(M_SCREEN *const screen)
         screen->frame = 0;
         screen->spell_rows_sliding = true;
     }
-    if (Buttons_WasPressed(TH07_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH07_BUTTON_cancel)) {
         M_ReturnToMenu(screen, &screen->saved_spell_page);
     }
 }
@@ -1028,7 +1028,7 @@ static bool M_UpdatePlayStats(M_SCREEN *const screen)
                 screen->shown_run_seconds = (uint8_t)seconds;
             }
         }
-        if (Buttons_WasPressed(M_CLOSE_STATS)) {
+        if (Buttons_Pressed(M_CLOSE_STATS)) {
             screen->state = M_STATE_PLAY_STATS_CLOSE;
             screen->frame = 0;
         }

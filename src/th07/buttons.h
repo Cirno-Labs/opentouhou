@@ -92,11 +92,11 @@ void Buttons_Merge(const TH07_INPUT *input, bool shoot_focuses);
 void Buttons_Play(uint16_t word);
 
 // Returns whether the masked word is nonzero and changed this calc.
-bool Buttons_WasPressed(uint16_t mask);
+bool Buttons_Pressed(uint16_t mask);
 
-// Returns whether Buttons_WasPressed holds for mask, or a bit of mask is
+// Returns whether Buttons_Pressed holds for mask, or a bit of mask is
 // down on a calc that repeats.
-bool Buttons_WasPressedOrRepeated(uint16_t mask);
+bool Buttons_Repeated(uint16_t mask);
 
 // Clears the words and the repeat, as a scene switch does. held_frames
 // and shot_held_frames stay.

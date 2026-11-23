@@ -182,9 +182,9 @@ TEST(masked_press_counts_partial_release_while_another_bit_stays_down)
     g_Buttons.word = 3;
     const TH06_INPUT input = { .shoot = true };
     Buttons_Update(&input);
-    CHECK(Buttons_WasPressed(3));
-    CHECK(!Buttons_WasPressed(1));
-    CHECK(!Buttons_WasPressed(2));
+    CHECK(Buttons_Pressed(3));
+    CHECK(!Buttons_Pressed(1));
+    CHECK(!Buttons_Pressed(2));
     CHECK(!g_Buttons.pressed.shoot);
     Buttons_Clear();
     CHECK_EQ_INT(g_Buttons.previous_word, 0);
@@ -196,8 +196,8 @@ TEST(pressed_or_repeated_counts_a_partial_release)
     g_Buttons.word = 0x1001;
     const TH06_INPUT input = { .confirm = true };
     Buttons_Update(&input);
-    CHECK(Buttons_WasPressedOrRepeated(0x1001));
-    CHECK(!Buttons_WasPressedOrRepeated(0x1000));
+    CHECK(Buttons_Repeated(0x1001));
+    CHECK(!Buttons_Repeated(0x1000));
 }
 
 TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
@@ -207,10 +207,10 @@ TEST(pressed_or_repeated_counts_a_held_bit_on_a_repeat)
     int32_t count = 0;
     for (int calc = 0; calc <= 33; calc++) {
         Buttons_Update(&input);
-        if (Buttons_WasPressedOrRepeated(0x10)) {
+        if (Buttons_Repeated(0x10)) {
             count++;
         }
-        CHECK(!Buttons_WasPressedOrRepeated(0x20));
+        CHECK(!Buttons_Repeated(0x20));
     }
     CHECK_EQ_INT(count, 2);
 }

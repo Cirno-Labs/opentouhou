@@ -102,15 +102,15 @@ void Buttons_Play(const uint16_t word)
     M_StepRepeat(g_Buttons.previous_play_word == g_Buttons.play_word);
 }
 
-bool Buttons_WasPressed(const uint16_t mask)
+bool Buttons_Pressed(const uint16_t mask)
 {
     return (g_Buttons.word & mask) != 0
         && (g_Buttons.word & mask) != (g_Buttons.previous_word & mask);
 }
 
-bool Buttons_WasPressedOrRepeated(const uint16_t mask)
+bool Buttons_Repeated(const uint16_t mask)
 {
-    return Buttons_WasPressed(mask)
+    return Buttons_Pressed(mask)
         || ((g_Buttons.word & mask) != 0 && g_Buttons.repeat);
 }
 

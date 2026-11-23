@@ -93,7 +93,7 @@ static void M_ShowComment(M_SCREEN *const screen)
 // Returns whether the screen leaves.
 static bool M_UpdateList(M_SCREEN *const screen)
 {
-    if (Buttons_WasPressed(TH06_BUTTON_up)) {
+    if (Buttons_Pressed(TH06_BUTTON_up)) {
         screen->cursor--;
         if (screen->cursor < 0) {
             screen->cursor = screen->tune_count - 1;
@@ -102,7 +102,7 @@ static bool M_UpdateList(M_SCREEN *const screen)
             screen->list_top = screen->cursor;
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_down)) {
+    if (Buttons_Pressed(TH06_BUTTON_down)) {
         screen->cursor++;
         if (screen->cursor >= screen->tune_count) {
             screen->cursor = 0;
@@ -111,12 +111,12 @@ static bool M_UpdateList(M_SCREEN *const screen)
             screen->list_top = screen->cursor - (M_LIST_ROWS - 1);
         }
     }
-    if (Buttons_WasPressed(TH06_BUTTON_ok) && screen->tune_count != 0) {
+    if (Buttons_Pressed(TH06_BUTTON_ok) && screen->tune_count != 0) {
         screen->playing = screen->cursor;
         Sound_PlayMusic(screen->tunes[screen->playing].path);
         M_ShowComment(screen);
     }
-    if (Buttons_WasPressed(TH06_BUTTON_cancel)) {
+    if (Buttons_Pressed(TH06_BUTTON_cancel)) {
         Scene_Request(SCENE_TITLE);
         return true;
     }
