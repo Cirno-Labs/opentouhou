@@ -16,7 +16,6 @@
 
 typedef struct {
     B15J_ASSETS assets;
-    BOSS_HIT_CONTEXT hit_context;
     B15J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
@@ -46,9 +45,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 6, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->hit_context = (BOSS_HIT_CONTEXT) {};
-    f->context =
-        (B15J_CONTEXT) { .assets = &f->assets, .hit = &f->hit_context };
+    f->context = (B15J_CONTEXT) { .assets = &f->assets };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -87,7 +84,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
+    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -263,7 +260,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
             if (g_B15J.phase == B15J_PHASE_PATTERNS) {
                 patterns |= 1u << g_B15J.subphase;
             }
-            f.hit_context.frame_rand++;
+            g_Session.frame_rand++;
             CHECK(B15J_UpdateAndRender(&f.context));
             for (int32_t i = 0; i < 10; i++) {
                 saw_tear |= g_B15J.tear_frame[i] != 0;

@@ -15,7 +15,6 @@
 
 typedef struct {
     B15M_ASSETS assets;
-    BOSS_HIT_CONTEXT hit;
     B15M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
@@ -49,8 +48,8 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 5, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->hit = (BOSS_HIT_CONTEXT) { .frame_rand = 0x12345678 };
-    f->context = (B15M_CONTEXT) { .assets = &f->assets, .hit = &f->hit };
+    g_Session.frame_rand = 0x12345678;
+    f->context = (B15M_CONTEXT) { .assets = &f->assets };
 }
 
 TEST(setup_reseeds_without_resetting_actor_or_missile_history)
@@ -173,7 +172,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
+    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -323,7 +322,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        f.hit.frame_rand = 0xb15f0000u + (uint32_t)rank;
+        g_Session.frame_rand = 0xb15f0000u + (uint32_t)rank;
         B15M_Init();
         memset(g_B15M.background, 0, 128 * 96);
         B15M_Setup(&f.context);
@@ -334,7 +333,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         uint32_t phase1 = 0, phase3 = 0, girl = 0, bat = 0;
         int32_t p1ticks = 0, p3ticks = 0;
         for (int32_t step = 1; step < 40000 && !g_B15M.finished; step++) {
-            f.hit.frame_rand = (uint32_t)step;
+            g_Session.frame_rand = (uint32_t)step;
             if (g_B15M.phase == B15M_PHASE_PATTERNS_1) {
                 p1ticks++;
                 if (g_B15M.pattern > 0 && g_B15M.pattern <= 3) {

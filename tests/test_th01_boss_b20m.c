@@ -53,8 +53,7 @@ TEST(setup_preserves_patterns)
     memset(&g_Palette, 0, sizeof(g_Palette));
     memset(&g_HudHp, 0, sizeof(g_HudHp));
     g_Palette.saved.colors[6][0] = 9;
-    BOSS_HIT_CONTEXT hit = {};
-    B20M_CONTEXT c = { .assets = &a, .hit = &hit };
+    B20M_CONTEXT c = { .assets = &a };
     const size_t used = arena.used;
     B20M_Setup(&c);
     CHECK_EQ_INT(arena.used, used);
@@ -99,7 +98,6 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
 #include <string.h>
 typedef struct {
     B20M_ASSETS assets;
-    BOSS_HIT_CONTEXT hit;
     B20M_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage;
@@ -154,10 +152,9 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(&f->mask, &f->stage, &f->font);
     g_Session.stage_id = 19;
-    f->hit = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
-                                  .frame_rand = 0x12345678 };
+    g_Session.frame_rand = 0x12345678;
     f->context = (B20M_CONTEXT) { .assets = &f->assets,
-                                  .hit = &f->hit,
+                                  .shots_output = { M_Shot, f },
                                   .game_cleared = &f->cleared,
                                   .first_stage = &f->first_stage,
                                   .timer_initialized = &f->timer_initialized };
@@ -197,7 +194,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
         B20M_ResumeEntrance(&f.context, tick);
     }
     CHECK(!g_B20M.entrance_active);
-    CHECK_EQ_INT(g_Rng, f.hit.frame_rand);
+    CHECK_EQ_INT(g_Rng, g_Session.frame_rand);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);

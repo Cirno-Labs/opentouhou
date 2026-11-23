@@ -13,7 +13,6 @@
 #include "test.h"
 typedef struct {
     B10J_ASSETS assets;
-    BOSS_HIT_CONTEXT hit_context;
     B10J_CONTEXT context;
     GAME_TEXT_FONT font;
     PTN stage, miko;
@@ -49,9 +48,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->hit_context = (BOSS_HIT_CONTEXT) {};
-    f->context =
-        (B10J_CONTEXT) { .assets = &f->assets, .hit = &f->hit_context };
+    f->context = (B10J_CONTEXT) { .assets = &f->assets };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -90,7 +87,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit_context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
+    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->context.miko = &f->miko;
     f->context.stage_cleared = &f->cleared;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -266,7 +263,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
             if ((patterns & 15) == 15) {
                 g_B10J.hp = 6;
             }
-            f.hit_context.frame_rand++;
+            g_Session.frame_rand++;
             CHECK(B10J_UpdateAndRender(&f.context));
             if (phase == B10J_PHASE_SECOND && pattern == 3
                 && g_B10J.pattern == 0) {
@@ -295,7 +292,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     const size_t used = arena.used;
     bool saw_gate = false;
     for (int32_t step = 0; step < 5000 && !g_B10J.defeating; step++) {
-        f.hit_context.frame_rand++;
+        g_Session.frame_rand++;
         const bool colliding = step % 50 == 20
             && (g_B10J.phase == B10J_PHASE_SECOND
                 || (g_B10J.phase == B10J_PHASE_FIRST && g_B10J.hp > 6));

@@ -1810,7 +1810,7 @@ bool B20M_ResumeEntrance(const B20M_CONTEXT *const c, const uint64_t tick)
                 return false;
             }
         }
-            g_Rng = c->hit->frame_rand;
+            g_Rng = g_Session.frame_rand;
             g_B20M.entrance_active = false;
             g_B20M.sequence_stage = B20M_ENTRANCE_DONE;
             return true;
@@ -1872,7 +1872,7 @@ static void M_BeginTransform(const B20M_CONTEXT *const c)
 {
     g_B20M.frame = 0;
     g_B20M.hit.frame = 399;
-    Shots_EraseAndReset(c->hit->shots_output);
+    Shots_EraseAndReset(c->shots_output);
     Pellets_EraseAndResetMoving();
     ShootoutLasers_EraseAndReset(10);
     ORB *const orb = &g_Orb;
@@ -1886,7 +1886,7 @@ static void M_BeginTransform(const B20M_CONTEXT *const c)
     Boss_Player()->bomb_damaging = false;
     Player_Reset(g_Session.settings.difficulty);
     g_B20M.hit.invincible = false;
-    g_Rng = c->hit->frame_rand;
+    g_Rng = g_Session.frame_rand;
     Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
@@ -2045,8 +2045,8 @@ static void M_Hit(const B20M_CONTEXT *const c)
         || BossEntity_HitTestOrb(&g_B20M.shield);
     const uint8_t colors[] = { 3, 4, 5 };
     BossHit_UpdateAndRender(
-        &g_B20M.hit, c->hit, &g_B20M.hp, &g_B20M.boss_palette, colors, 3, 10000,
-        collision, (BOSS_SHOT_HITBOX) { 314, 104, 64, 32 });
+        &g_B20M.hit, c->shots_output, &g_B20M.hp, &g_B20M.boss_palette, colors,
+        3, 10000, collision, (BOSS_SHOT_HITBOX) { 314, 104, 64, 32 });
 }
 static void M_PhaseNext(const B20M_CONTEXT *const c, const int8_t phase)
 {
@@ -2291,7 +2291,7 @@ bool B20M_UpdateAndRender(const B20M_CONTEXT *const c, const uint64_t tick)
         g_B20M.hit.invincible = false;
         g_B20M.boss_palette = g_Palette.saved;
         g_B20M.stage_palette = g_B20M.boss_palette;
-        g_Rng = c->hit->frame_rand;
+        g_Rng = g_Session.frame_rand;
         g_B20M.sequence = B20M_SEQUENCE_RINGS;
         return M_RingEntrance(c, tick);
     }

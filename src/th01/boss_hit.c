@@ -5,9 +5,7 @@
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 
-static void M_Flash(
-    const BOSS_HIT_CONTEXT *const c, const uint8_t *const colors,
-    const uint8_t count)
+static void M_Flash(const uint8_t *const colors, const uint8_t count)
 {
     for (uint32_t i = 0; i < count; i++) {
         ASSERT(colors[i] < 16);
@@ -16,7 +14,7 @@ static void M_Flash(
 }
 
 void BossHit_UpdateAndRender(
-    BOSS_HIT *const hit, const BOSS_HIT_CONTEXT *const c, int16_t *const hp,
+    BOSS_HIT *const hit, const SHOTS_OUTPUT shots_output, int16_t *const hp,
     const PALETTE *const boss_palette, const uint8_t *const flash_colors,
     const uint8_t flash_count, const int16_t hit_score, const bool orb_hit,
     const BOSS_SHOT_HITBOX box)
@@ -28,11 +26,11 @@ void BossHit_UpdateAndRender(
     }
     Shots_HitTestBoss(
         box.left, box.top, box.width_minus_shot, box.height_minus_shot,
-        c->shots_output);
+        shots_output);
     if ((orb_hit && !hit->invincible)
-        || Bomb_DealsDamage(g_Session.lives, c->frame_rand)) {
+        || Bomb_DealsDamage(g_Session.lives, g_Session.frame_rand)) {
         hit->frame = 0;
-        M_Flash(c, flash_colors, flash_count);
+        M_Flash(flash_colors, flash_count);
         *hp = Math16_Wrap(*hp - 1);
         hit->invincible = true;
         ORB *const orb = &g_Orb;
@@ -53,7 +51,7 @@ void BossHit_UpdateAndRender(
     }
     if (hit->invincible && hit->frame < 40) {
         if (hit->frame % 4 == 2) {
-            M_Flash(c, flash_colors, flash_count);
+            M_Flash(flash_colors, flash_count);
         } else if (hit->frame % 4 == 0) {
             Palette_Set(&g_Palette, boss_palette);
         }

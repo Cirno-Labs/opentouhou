@@ -1140,8 +1140,8 @@ static void M_Hit(const B20J_CONTEXT *const c)
     const bool collision = orb->left >= 288 && orb->left <= 352
         && orb->top >= 120 && orb->top <= 160;
     BossHit_UpdateAndRender(
-        &g_B20J.hit, c->hit, &g_B20J.hp, &g_B20J.boss_palette, colors, 3, 10000,
-        collision, (BOSS_SHOT_HITBOX) { 288, 120, 96, 40 });
+        &g_B20J.hit, c->shots_output, &g_B20J.hp, &g_B20J.boss_palette, colors,
+        3, 10000, collision, (BOSS_SHOT_HITBOX) { 288, 120, 96, 40 });
 }
 static void M_Next(const B20J_CONTEXT *const c, const int8_t phase)
 {
@@ -1218,7 +1218,7 @@ bool B20J_UpdateAndRender(const B20J_CONTEXT *const c)
         g_B20J.hit.invincible = false;
         g_B20J.hp_bar_filled = false;
         g_B20J.boss_palette = g_Palette.saved;
-        g_Rng = c->hit->frame_rand;
+        g_Rng = g_Session.frame_rand;
         return true;
     }
     if (g_B20J.phase < B20J_PHASE_PATTERNS_1

@@ -457,8 +457,8 @@ bool B05_UpdateAndRender(
         }
         const uint8_t flash[] = { 13 };
         BossHit_UpdateAndRender(
-            &g_B05.hit, c->hit, &g_B05.hp, &g_B05.boss_palette, flash, 1, 3000,
-            BossEntity_HitTestOrb(&g_B05.sphere),
+            &g_B05.hit, c->shots_output, &g_B05.hp, &g_B05.boss_palette, flash,
+            1, 3000, BossEntity_HitTestOrb(&g_B05.sphere),
             (BOSS_SHOT_HITBOX) {
                 Math16_Wrap(g_B05.sphere.left + 16),
                 Math16_Wrap(g_B05.sphere.top + 32),

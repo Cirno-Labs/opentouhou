@@ -125,7 +125,7 @@ void B15M_Setup(const B15M_CONTEXT *const c)
     g_B15M.finished = false;
     g_HudHp.first_white = 10;
     g_HudHp.first_redwhite = 6;
-    g_Rng = c->hit->frame_rand;
+    g_Rng = g_Session.frame_rand;
     g_Pellets.interlace = true;
     Particles_Init();
 }
@@ -380,8 +380,8 @@ static void M_Hit(const B15M_CONTEXT *const c, const int16_t form)
                                Math16_Wrap(g_B15M.girl.top + 32), 64, 48 }
         : (BOSS_SHOT_HITBOX) { g_B15M.bat.left, g_B15M.bat.left, 32, 32 };
     BossHit_UpdateAndRender(
-        &g_B15M.hit, c->hit, &g_B15M.hp, &g_B15M.boss_palette, colors, 4, 7000,
-        BossEntity_HitTestOrb(e), box);
+        &g_B15M.hit, c->shots_output, &g_B15M.hp, &g_B15M.boss_palette, colors,
+        4, 7000, BossEntity_HitTestOrb(e), box);
 }
 static void M_Next(const int8_t phase, const int16_t pattern)
 {
@@ -1432,7 +1432,7 @@ bool B15M_UpdateAndRender(const B15M_CONTEXT *const c, const uint64_t host_tick)
     }
     g_B15M.call_phase = g_B15M.phase;
     Missiles_UpdateAndRender(
-        (uint16_t)c->hit->frame_rand,
+        (uint16_t)g_Session.frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (g_B15M.phase == B15M_PHASE_ENTRANCE) {
         return M_Entrance(c);

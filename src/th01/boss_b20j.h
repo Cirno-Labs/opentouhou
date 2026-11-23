@@ -89,7 +89,7 @@ extern B20J g_B20J;
 
 typedef struct {
     const B20J_ASSETS *assets;
-    const BOSS_HIT_CONTEXT *hit;
+    SHOTS_OUTPUT shots_output;
     bool *game_cleared;
 } B20J_CONTEXT;
 

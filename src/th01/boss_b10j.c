@@ -741,8 +741,8 @@ static void M_Hit(const B10J_CONTEXT *const c)
 {
     const uint8_t flash[] = { 3, 9 };
     BossHit_UpdateAndRender(
-        &g_B10J.hit, c->hit, &g_B10J.hp, &g_B10J.boss_palette, flash, 2, 5000,
-        BossEntity_HitTestOrb(&g_B10J.still),
+        &g_B10J.hit, c->shots_output, &g_B10J.hp, &g_B10J.boss_palette, flash,
+        2, 5000, BossEntity_HitTestOrb(&g_B10J.still),
         (BOSS_SHOT_HITBOX) { Math16_Wrap(g_B10J.still.left + 16),
                              Math16_Wrap(g_B10J.still.top + 48), 96, 48 });
 }
@@ -810,7 +810,7 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
         return M_Death(c);
     }
     Missiles_UpdateAndRender(
-        (uint16_t)c->hit->frame_rand,
+        (uint16_t)g_Session.frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     Particles_UpdateAndRender(PARTICLES_TOP_RIGHT, 7);
     if (g_B10J.phase == B10J_PHASE_START) {

@@ -114,8 +114,8 @@ static void M_Hit(const B15J_CONTEXT *const c)
         orb->left > 256 && orb->left < 368 && orb->top < 132 && orb->top < 196;
     const uint8_t flash[] = { 6, 11, 8, 2 };
     BossHit_UpdateAndRender(
-        &g_B15J.hit, c->hit, &g_B15J.hp, &g_B15J.boss_palette, flash, 4, 7000,
-        colliding, (BOSS_SHOT_HITBOX) {});
+        &g_B15J.hit, c->shots_output, &g_B15J.hp, &g_B15J.boss_palette, flash,
+        4, 7000, colliding, (BOSS_SHOT_HITBOX) {});
 }
 
 static void M_CopyLine(const int16_t y, const uint16_t mask)
