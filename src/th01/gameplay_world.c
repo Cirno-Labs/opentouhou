@@ -20,13 +20,9 @@ RESULT Gameplay_Prepare(
     Hud_Init(&g->world.hud, allocator);
     HudHp_Init(&g->world.health, allocator);
     Tram_Init(allocator);
-    B10J_Init(&g->world.b10j, allocator);
-    B15M_Init(&g->world.b15m, allocator);
-    B20M_Init(&g->world.b20m, allocator);
     MUST(Mdrv_Init(
         assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, 8, 8, allocator,
         &g->storage.audio));
-    B20J_Init(&g->world.b20j);
     Palette_Init(&g->world.palette);
     g->world.first_stage = true;
     g->world.wait_for_shot = true;
@@ -49,6 +45,14 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     Frame_SwitchProgram();
     Tram_Clear();
     Tram_SetVisible(true);
+    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    B05_Init();
+    B10J_Init();
+    B10M_Init();
+    B15J_Init();
+    B15M_Init();
+    B20J_Init();
+    B20M_Init();
     g_Session.high_score = g_Session.table_high_score;
     g->world.metrics.score = g_Session.score;
     g->world.player.remaining_bombs = g_Session.bombs;
@@ -98,25 +102,25 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
 {
     switch (g->world.boss) {
     case BOSS_B05:
-        B05_Setup(&g->world.b05, &g->bindings.c05);
+        B05_Setup(&g->bindings.c05);
         break;
     case BOSS_B10M:
-        B10M_Setup(&g->world.b10m, &g->bindings.c10m);
+        B10M_Setup(&g->bindings.c10m);
         break;
     case BOSS_B10J:
-        B10J_BeginSetup(&g->world.b10j, &g->bindings.c10j);
+        B10J_BeginSetup(&g->bindings.c10j);
         break;
     case BOSS_B15J:
-        B15J_Setup(&g->world.b15j, &g->bindings.c15j);
+        B15J_Setup(&g->bindings.c15j);
         break;
     case BOSS_B15M:
-        B15M_Setup(&g->world.b15m, &g->bindings.c15m);
+        B15M_Setup(&g->bindings.c15m);
         break;
     case BOSS_B20M:
-        B20M_Setup(&g->world.b20m, &g->bindings.c20m);
+        B20M_Setup(&g->bindings.c20m);
         break;
     case BOSS_B20J:
-        B20J_Setup(&g->world.b20j, &g->bindings.c20j);
+        B20J_Setup(&g->bindings.c20j);
         break;
     default:
         break;
@@ -132,10 +136,10 @@ void Gameplay_HookBossHp(GAMEPLAY *const g)
         return;
     }
     int16_t *const hp[] = {
-        [BOSS_NONE] = nullptr,           [BOSS_B05] = &g->world.b05.hp,
-        [BOSS_B10M] = &g->world.b10m.hp, [BOSS_B10J] = &g->world.b10j.hp,
-        [BOSS_B15J] = &g->world.b15j.hp, [BOSS_B15M] = &g->world.b15m.hp,
-        [BOSS_B20M] = &g->world.b20m.hp, [BOSS_B20J] = &g->world.b20j.hp,
+        [BOSS_NONE] = nullptr,    [BOSS_B05] = &g_B05.hp,
+        [BOSS_B10M] = &g_B10M.hp, [BOSS_B10J] = &g_B10J.hp,
+        [BOSS_B15J] = &g_B15J.hp, [BOSS_B15M] = &g_B15M.hp,
+        [BOSS_B20M] = &g_B20M.hp, [BOSS_B20J] = &g_B20J.hp,
     };
     g_Th01Hooks.on_boss(g_Th01Hooks.arg, hp[g->world.boss]);
 }
@@ -144,21 +148,19 @@ bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
     switch (g->world.boss) {
     case BOSS_B05:
-        return B05_UpdateAndRender(&g->world.b05, &g->bindings.c05, raw);
+        return B05_UpdateAndRender(&g->bindings.c05, raw);
     case BOSS_B10M:
-        return B10M_UpdateAndRender(&g->world.b10m, &g->bindings.c10m);
+        return B10M_UpdateAndRender(&g->bindings.c10m);
     case BOSS_B10J:
-        return B10J_UpdateAndRender(&g->world.b10j, &g->bindings.c10j);
+        return B10J_UpdateAndRender(&g->bindings.c10j);
     case BOSS_B15J:
-        return B15J_UpdateAndRender(&g->world.b15j, &g->bindings.c15j);
+        return B15J_UpdateAndRender(&g->bindings.c15j);
     case BOSS_B15M:
-        return B15M_UpdateAndRender(
-            &g->world.b15m, &g->bindings.c15m, g->storage.host_tick);
+        return B15M_UpdateAndRender(&g->bindings.c15m, g->storage.host_tick);
     case BOSS_B20M:
-        return B20M_UpdateAndRender(
-            &g->world.b20m, &g->bindings.c20m, g->storage.host_tick);
+        return B20M_UpdateAndRender(&g->bindings.c20m, g->storage.host_tick);
     case BOSS_B20J:
-        return B20J_UpdateAndRender(&g->world.b20j, &g->bindings.c20j);
+        return B20J_UpdateAndRender(&g->bindings.c20j);
     default:
         return true;
     }

@@ -55,7 +55,7 @@ typedef struct {
     BOSS_HIT hit;
     PALETTE boss_palette, post_defeat;
     BOSS_DEFEAT defeat;
-    uint8_t *background;
+    uint8_t background[128 * 96];
     B15M_RIFTS stars, missile_rifts, random_rifts, girl_rifts, bat_rifts;
     int16_t sphere_x[10], sphere_y[10];
     B15M_CIRCLE circle, star_circle, safety_circle, aimed_circle;
@@ -75,9 +75,10 @@ typedef struct {
     bool transform_bat, defeating, finished;
 } B15M;
 
+extern B15M g_B15M;
+
 typedef struct {
     const B15M_ASSETS *assets;
-    BOSS_SPRITES *sprites;
     const BOSS_HIT_CONTEXT *hit;
     PARTICLES *particles;
     PELLETS *pellets;
@@ -100,15 +101,14 @@ RESULT B15M_LoadAssets(
     B15M_ASSETS *out);
 RESULT B15M_ValidateAssets(const B15M_ASSETS *assets);
 
-// Initializes one main program and reserves the mutable 128x96 background
-// from its grouped allocator. Retain the group for the program's lifetime.
-void B15M_Init(B15M *boss, const ALLOCATOR *allocator);
+// Resets the boss state, before the first fight of a game.
+void B15M_Init(void);
 
 // Binds banks, positions and hitboxes, resets HP and seeds RNG from the hit
 // context's frame_rand. Composes load's pellet interlace and particle reset;
 // retains missile, actor, hit and pattern history. The background owner
 // applies its palette before entering. Allocates nothing and performs no IO.
-void B15M_Setup(B15M *boss, const B15M_CONTEXT *context);
+void B15M_Setup(const B15M_CONTEXT *context);
 
 // Runs one ordinary call including the missile prefix. False suspends its
 // world during entrance, raw scroll, safety-circle delay or defeat. Advance
@@ -119,6 +119,5 @@ void B15M_Setup(B15M *boss, const B15M_CONTEXT *context);
 // Skips six entrance restores that read uninitialized source trail history.
 // Uses initialized history thereafter. Does not model those undefined pixels
 // or CPU drawing cost. Keeps borrowed bindings stable; allocates nothing and
-// performs no IO. Finished calls remain inert until setup or program reset.
-bool B15M_UpdateAndRender(
-    B15M *boss, const B15M_CONTEXT *context, uint64_t host_tick);
+// performs no IO. Finished calls remain inert until Setup or Init.
+bool B15M_UpdateAndRender(const B15M_CONTEXT *context, uint64_t host_tick);

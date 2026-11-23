@@ -50,6 +50,28 @@ typedef struct {
     int16_t x, y, speed, subpattern;
     uint8_t angle;
 } B20M_SPRAY;
+typedef struct {
+    int16_t left[2], top[2], previous_left[2], previous_top[2];
+} B20M_VORTICES;
+typedef struct {
+    int16_t x[10], y[10];
+    int16_t origin_x, origin_y, velocity_x, velocity_y, target;
+} B20M_LASER;
+typedef struct {
+    int16_t left[30], top[30], alive;
+} B20M_EGGS;
+typedef struct {
+    int16_t left, top, velocity_x, velocity_y;
+} B20M_SPAWNER;
+typedef struct {
+    int16_t state, left, top, velocity_x, velocity_y;
+} B20M_FLAKE;
+typedef struct {
+    int16_t left, top, radius_outer_1, radius_outer_2, radius_inner;
+} B20M_STAR;
+typedef struct {
+    int16_t x, y, offset, color, id;
+} B20M_GUST;
 typedef enum {
     B20M_PHASE_START = 0,
     B20M_PHASE_BIRDS = 1,
@@ -85,27 +107,24 @@ typedef struct {
     BOSS_ANIMATION dress, wand;
     BOSS_HIT hit;
     PALETTE boss_palette, stage_palette;
-    uint8_t *wand_background;
+    uint8_t wand_background[128 * 96];
     B20M_BIRDS birds;
     B20M_PARTICLES vertical, horizontal;
     B20M_WAVES waves;
     B20M_LEAVES leaves;
     B20M_RAYS bird_rays, stack_rays, seal_rays;
     B20M_SPRAY sprays[2];
-    int16_t vortex_left[2], vortex_top[2], vortex_previous_left[2],
-        vortex_previous_top[2];
-    int16_t laser_x[10], laser_y[10], egg_left[30], egg_top[30];
-    int16_t spawner_left, spawner_top, spawner_velocity_x, spawner_velocity_y;
-    int16_t flake_state, flake_left, flake_top, flake_velocity_x,
-        flake_velocity_y;
-    int16_t star_left, star_top, radius_outer_1, radius_outer_2, radius_inner;
+    B20M_VORTICES vortices;
+    B20M_LASER laser;
+    B20M_EGGS eggs;
+    B20M_SPAWNER spawner;
+    B20M_FLAKE flake;
+    B20M_STAR star;
+    B20M_GUST gust;
     int16_t hp, frame, pattern, pattern_state, patterns_done,
         patterns_until_next;
-    int16_t entrance_radius, wand_frame, eggs_alive, bird_pellet_group;
+    int16_t entrance_radius, wand_frame, bird_pellet_group;
     int16_t ray_previous_x, ray_previous_y;
-    int16_t laser_origin_x, laser_origin_y, laser_velocity_x, laser_velocity_y,
-        laser_target;
-    int16_t gust_x, gust_y, gust_offset, gust_color, gust_id;
     int16_t dotted_radius, rings_interval, raw_scroll, scroll_line;
     PAGE_TRANSITION transition;
     FRAME_WAIT wait;
@@ -118,9 +137,10 @@ typedef struct {
     bool hp_bar_filled, dotted_active, entrance_active, finished;
 } B20M;
 
+extern B20M g_B20M;
+
 typedef struct {
     const B20M_ASSETS *assets;
-    BOSS_SPRITES *sprites;
     const BOSS_HIT_CONTEXT *hit;
     PELLETS *pellets;
     PELLET_SHARED *pellet_shared;
@@ -140,24 +160,21 @@ RESULT B20M_LoadAssets(
     B20M_ASSETS *out);
 RESULT B20M_ValidateAssets(const B20M_ASSETS *assets);
 
-// Initializes one program and allocates its 128x96 wand snapshot from the
-// caller's group. Retain the group while this boss is active.
-void B20M_Init(B20M *boss, const ALLOCATOR *allocator);
+// Resets the boss state, before the first fight of a game.
+void B20M_Init(void);
 
 // Binds actor images, resets the first form and retains pattern history.
 // Run before the separate cached entrance. Performs no allocation or IO.
-void B20M_Setup(B20M *boss, const B20M_CONTEXT *context);
+void B20M_Setup(const B20M_CONTEXT *context);
 
 // Starts the cached load/scroll/diagonal entrance. Advance reference VSyncs
 // and a monotonic 60 Hz host serial while polling; pending polls stay inert.
-void B20M_BeginEntrance(B20M *boss, const B20M_CONTEXT *context);
-bool B20M_ResumeEntrance(
-    B20M *boss, const B20M_CONTEXT *context, uint64_t host_tick);
+void B20M_BeginEntrance(const B20M_CONTEXT *context);
+bool B20M_ResumeEntrance(const B20M_CONTEXT *context, uint64_t host_tick);
 
 // Runs one battle call or resumes its nested waits. False suspends the world.
 // Implements both forms and the final 50,000-point bonus and game clear.
 // Quantizes the bird safety delay to six 60 Hz host ticks. Audio/effect
 // consumers may post events but must not mutate borrowed simulation state.
 // Borrows stable context bindings and allocates nothing and performs no IO.
-bool B20M_UpdateAndRender(
-    B20M *boss, const B20M_CONTEXT *context, uint64_t host_tick);
+bool B20M_UpdateAndRender(const B20M_CONTEXT *context, uint64_t host_tick);

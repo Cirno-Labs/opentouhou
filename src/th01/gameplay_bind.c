@@ -303,7 +303,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .user = g,
     };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
-                                      .sprites = &g->world.sprites,
                                       .hit = &g->bindings.hit,
                                       .stage_palette = &g->world.stage_palette,
                                       .particles = &g->world.particles,
@@ -315,7 +314,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                       .fade_music = Gameplay_Fade };
     g->bindings.c10j =
         (B10J_CONTEXT) { .assets = &a->b10j,
-                         .sprites = &g->world.sprites,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .particles = &g->world.particles,
@@ -330,7 +328,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .fade_music = Gameplay_Fade };
     g->bindings.c10m =
         (B10M_CONTEXT) { .assets = &a->b10m,
-                         .sprites = &g->world.sprites,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .particles = &g->world.particles,
@@ -345,7 +342,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .fade_music = Gameplay_Fade };
     g->bindings.c15j =
         (B15J_CONTEXT) { .assets = &a->b15j,
-                         .sprites = &g->world.sprites,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .particles = &g->world.particles,
@@ -359,7 +355,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .fade_music = Gameplay_Fade };
     g->bindings.c15m =
         (B15M_CONTEXT) { .assets = &a->b15m,
-                         .sprites = &g->world.sprites,
                          .hit = &g->bindings.hit,
                          .particles = &g->world.particles,
                          .pellets = &g->world.pellets,
@@ -373,7 +368,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .fade_music = Gameplay_Fade };
     g->bindings.c20j =
         (B20J_CONTEXT) { .assets = &a->b20j,
-                         .sprites = &g->world.sprites,
                          .hit = &g->bindings.hit,
                          .pellets = &g->world.pellets,
                          .pellet_shared = &g->world.pellet_shared,
@@ -384,7 +378,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
                          .audio = M_AudioJ };
     g->bindings.c20m =
         (B20M_CONTEXT) { .assets = &a->b20m,
-                         .sprites = &g->world.sprites,
                          .hit = &g->bindings.hit,
                          .pellets = &g->world.pellets,
                          .pellet_shared = &g->world.pellet_shared,

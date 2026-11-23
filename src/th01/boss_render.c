@@ -209,13 +209,12 @@ static uint16_t M_ShiftSigned(const uint16_t word, const int32_t shift)
 }
 
 static void M_Line(
-    const BOSS_ENTITY *const entity, const BOSS_SPRITES *const bank,
-    const int16_t left, const int16_t top, const int16_t image,
-    const int16_t row, const bool restore)
+    const BOSS_ENTITY *const entity, const int16_t left, const int16_t top,
+    const int16_t image, const int16_t row, const bool restore)
 {
     ASSERT(row >= 0 && row < entity->sprites.height);
     ASSERT(entity->sprites.slot < BOSS_ENTITY_SLOTS);
-    const BOS *const sprites = bank->entities[entity->sprites.slot];
+    const BOS *const sprites = g_BossSprites.entities[entity->sprites.slot];
     if (M_Get(&entity->sprites, sprites, image) == nullptr) {
         return;
     }
@@ -286,67 +285,69 @@ static void M_Line(
 }
 
 void BossEntity_Put(
-    const BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t x,
-    const int16_t y, const int16_t image)
-{
-    ASSERT(e->sprites.slot < BOSS_ENTITY_SLOTS);
-    M_Full(&e->sprites, b->entities[e->sprites.slot], x, y, image, BOSS_PUT);
-}
-
-void BossEntity_Erase(
-    const BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t x,
-    const int16_t y, const int16_t image)
-{
-    ASSERT(e->sprites.slot < BOSS_ENTITY_SLOTS);
-    M_Full(&e->sprites, b->entities[e->sprites.slot], x, y, image, BOSS_ERASE);
-}
-
-void BossEntity_RestorePut(
-    const BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t x,
-    const int16_t y, const int16_t image)
+    const BOSS_ENTITY *const e, const int16_t x, const int16_t y,
+    const int16_t image)
 {
     ASSERT(e->sprites.slot < BOSS_ENTITY_SLOTS);
     M_Full(
-        &e->sprites, b->entities[e->sprites.slot], x, y, image,
+        &e->sprites, g_BossSprites.entities[e->sprites.slot], x, y, image,
+        BOSS_PUT);
+}
+
+void BossEntity_Erase(
+    const BOSS_ENTITY *const e, const int16_t x, const int16_t y,
+    const int16_t image)
+{
+    ASSERT(e->sprites.slot < BOSS_ENTITY_SLOTS);
+    M_Full(
+        &e->sprites, g_BossSprites.entities[e->sprites.slot], x, y, image,
+        BOSS_ERASE);
+}
+
+void BossEntity_RestorePut(
+    const BOSS_ENTITY *const e, const int16_t x, const int16_t y,
+    const int16_t image)
+{
+    ASSERT(e->sprites.slot < BOSS_ENTITY_SLOTS);
+    M_Full(
+        &e->sprites, g_BossSprites.entities[e->sprites.slot], x, y, image,
         BOSS_RESTORE_PUT);
 }
 
 void BossEntity_PutLine(
-    const BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t x,
-    const int16_t y, const int16_t image, const int16_t row)
+    const BOSS_ENTITY *const e, const int16_t x, const int16_t y,
+    const int16_t image, const int16_t row)
 {
-    M_Line(e, b, x, y, image, row, false);
+    M_Line(e, x, y, image, row, false);
 }
 
 void BossEntity_RestorePutLine(
-    const BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t x,
-    const int16_t y, const int16_t image, const int16_t row)
+    const BOSS_ENTITY *const e, const int16_t x, const int16_t y,
+    const int16_t image, const int16_t row)
 {
-    M_Line(e, b, x, y, image, row, true);
+    M_Line(e, x, y, image, row, true);
 }
 
 void BossEntity_WavePut(
-    const BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t x,
-    const int16_t y, const int16_t image, const int16_t wavelength,
-    const int16_t amplitude, const int16_t phase)
+    const BOSS_ENTITY *const e, const int16_t x, const int16_t y,
+    const int16_t image, const int16_t wavelength, const int16_t amplitude,
+    const int16_t phase)
 {
     ASSERT(wavelength != 0);
     int16_t angle = phase;
     for (int32_t row = 0; row < e->sprites.height; row++) {
         const int16_t left = Math16_Wrap(x + Math16_Wave(amplitude, angle));
         angle = Math16_Wrap(angle + 256 / wavelength);
-        BossEntity_PutLine(
-            e, b, left, Math16_Wrap(y + row), image, (int16_t)row);
+        BossEntity_PutLine(e, left, Math16_Wrap(y + row), image, (int16_t)row);
     }
 }
 
-void BossAnimation_Put(
-    const BOSS_ANIMATION *const a, const BOSS_SPRITES *const b)
+void BossAnimation_Put(const BOSS_ANIMATION *const a)
 {
     ASSERT(a->sprites.slot < BOSS_ANIMATION_SLOTS);
     M_Full(
-        &a->sprites, b->animations[a->sprites.slot], a->left, a->top, a->image,
-        BOSS_ANIMATION_PUT);
+        &a->sprites, g_BossSprites.animations[a->sprites.slot], a->left, a->top,
+        a->image, BOSS_ANIMATION_PUT);
 }
 
 void BossEntity_EraseRect(const BOSS_ENTITY *const e)
@@ -357,8 +358,8 @@ void BossEntity_EraseRect(const BOSS_ENTITY *const e)
 }
 
 void BossEntity_LockedMovePut(
-    BOSS_ENTITY *const e, const BOSS_SPRITES *const b, const int16_t dx,
-    const int16_t dy, const int16_t frames, const bool restore)
+    BOSS_ENTITY *const e, const int16_t dx, const int16_t dy,
+    const int16_t frames, const bool restore)
 {
     if (e->lock_frame == 0) {
         BossEntity_Move(e, dx, dy);
@@ -374,9 +375,9 @@ void BossEntity_LockedMovePut(
             Sprite_Restore16(
                 e->previous_left, top, (int16_t)(e->sprites.width_bytes * 8),
                 Math16_Wrap(difference < 0 ? -difference : difference));
-            BossEntity_RestorePut(e, b, e->left, e->top, e->image);
+            BossEntity_RestorePut(e, e->left, e->top, e->image);
         } else {
-            BossEntity_Put(e, b, e->left, e->top, e->image);
+            BossEntity_Put(e, e->left, e->top, e->image);
         }
         e->lock_frame = 1;
     } else if (e->lock_frame >= frames) {

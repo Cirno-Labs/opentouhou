@@ -21,7 +21,7 @@ typedef struct {
     PI_IMAGE background;
     PALETTE palette;
     SCENE_DATA next_scene;
-    const B10J_PILLARS *pillars;
+    B10J_PILLARS pillars;
 } B10J_ASSETS;
 
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
     PALETTE_FADE setup_fade;
     FRAME_WAIT setup_wait;
     BOSS_DEFEAT defeat;
-    uint8_t *background;
+    uint8_t background[128 * 160];
     B10J_SQUARE squares[6];
     int16_t pillar_time[8], pillar_x[8], pillar_bottom[8];
     int16_t laser_x[4], laser_y[4];
@@ -56,9 +56,10 @@ typedef struct {
     bool defeating, finished;
 } B10J;
 
+extern B10J g_B10J;
+
 typedef struct {
     const B10J_ASSETS *assets;
-    BOSS_SPRITES *sprites;
     const BOSS_HIT_CONTEXT *hit;
     PALETTE *stage_palette;
     PARTICLES *particles;
@@ -82,9 +83,8 @@ RESULT B10J_LoadAssets(
     B10J_ASSETS *out);
 RESULT B10J_ValidateAssets(const B10J_ASSETS *assets);
 
-// Initializes one main program and reserves the mutable sprite background
-// from its allocator. Reset the group together with the owning program.
-void B10J_Init(B10J *boss, const ALLOCATOR *allocator);
+// Resets the boss state, before the first fight of a game.
+void B10J_Init(void);
 
 // Binds the two banks and starts the setup's white-in. ResumeSetup applies
 // sixteen raw VSync waits and palette steps; each ten-millisecond delay ends
@@ -92,8 +92,8 @@ void B10J_Init(B10J *boss, const ALLOCATOR *allocator);
 // of the final step. Keep resources stable and advance independent audio and
 // VSyncs while suspended. Begin with black pages; the owning stage draws the
 // background afterward. Neither operation allocates or reads files or devices.
-void B10J_BeginSetup(B10J *boss, const B10J_CONTEXT *context);
-bool B10J_ResumeSetup(B10J *boss, const B10J_CONTEXT *context);
+void B10J_BeginSetup(const B10J_CONTEXT *context);
+bool B10J_ResumeSetup(const B10J_CONTEXT *context);
 
 // Runs one ordinary call, including missile and particle prefixes. False
 // suspends the owning world during the entrance or regular defeat; advance
@@ -103,4 +103,4 @@ bool B10J_ResumeSetup(B10J *boss, const B10J_CONTEXT *context);
 // delayed HP gates, broken sprite strips and five-laser cleanup. Calls after
 // completion are inert. Keep borrowed resources stable through every wait.
 // Requires completed setup. Allocates nothing and performs no IO.
-bool B10J_UpdateAndRender(B10J *boss, const B10J_CONTEXT *context);
+bool B10J_UpdateAndRender(const B10J_CONTEXT *context);

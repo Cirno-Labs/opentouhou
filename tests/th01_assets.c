@@ -32,7 +32,6 @@ static void M_BossAssets(M_ASSETS *const f, const ALLOCATOR *const a)
     assets->b10j.background = image;
     assets->b10j.missiles = assets->stage;
     assets->b10j.next_scene = assets->scenes[4];
-    assets->b10j.pillars = Allocator_AllocZ(a, sizeof(B10J_PILLARS));
     assets->b10m.eyes = (BOS) { 64, 48, 7, pixels, coverage };
     assets->b10m.background = image;
     assets->b10m.missiles = assets->stage;

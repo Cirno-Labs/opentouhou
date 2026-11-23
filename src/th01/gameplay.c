@@ -114,10 +114,10 @@ static void M_StageBegin(GAMEPLAY *const g)
     if (g->world.boss == BOSS_B10J) {
         g->world.phase = GP_B10J_SETUP;
     } else if (g->world.boss == BOSS_B20M) {
-        B20M_BeginEntrance(&g->world.b20m, &g->bindings.c20m);
+        B20M_BeginEntrance(&g->bindings.c20m);
         g->world.phase = GP_FINAL_ENTRANCE;
     } else if (g->world.boss == BOSS_B20J) {
-        B20J_BeginEntrance(&g->world.b20j, &g->bindings.c20j);
+        B20J_BeginEntrance(&g->bindings.c20j);
         g->world.phase = GP_FINAL_ENTRANCE;
     } else {
         M_StageBackground(g);
@@ -449,7 +449,7 @@ static GAMEPLAY_REQUEST M_Run(
             M_StageBegin(g);
             break;
         case GP_B10J_SETUP:
-            if (!B10J_ResumeSetup(&g->world.b10j, &g->bindings.c10j)) {
+            if (!B10J_ResumeSetup(&g->bindings.c10j)) {
                 return g->world.request;
             }
             Gameplay_HookBossHp(g);
@@ -457,14 +457,13 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_FINAL_ENTRANCE:
             if (g->world.boss == BOSS_B20M
-                    ? !B20M_ResumeEntrance(
-                          &g->world.b20m, &g->bindings.c20m, host_tick)
-                    : !B20J_ResumeEntrance(&g->world.b20j, &g->bindings.c20j)) {
+                    ? !B20M_ResumeEntrance(&g->bindings.c20m, host_tick)
+                    : !B20J_ResumeEntrance(&g->bindings.c20j)) {
                 return g->world.request;
             }
             g->world.stage_palette = g->world.boss == BOSS_B20J
-                ? g->world.b20j.stage_palette
-                : g->world.b20m.stage_palette;
+                ? g_B20J.stage_palette
+                : g_B20M.stage_palette;
             M_StageReady(g);
             break;
         case GP_OBJECT_ENTRANCE:
