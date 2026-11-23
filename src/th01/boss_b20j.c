@@ -1,5 +1,7 @@
 #include "th01/boss_b20j.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 #include "th01/sprite.h"
 
@@ -159,7 +161,7 @@ static PLAYER *M_Player(const B20J_CONTEXT *const c)
 }
 static int16_t M_W(const int32_t x)
 {
-    return Math_Wrap16(x);
+    return Math16_Wrap(x);
 }
 static int16_t M_Rank(
     const B20J_CONTEXT *const c, const int16_t e, const int16_t n,
@@ -170,7 +172,7 @@ static int16_t M_Rank(
 }
 static uint16_t M_Random(const B20J_CONTEXT *const c)
 {
-    return Math_Random(c->rng);
+    return MasterRng_Next(c->rng);
 }
 static void M_Effect(const B20J_CONTEXT *const c, const int16_t effect)
 {
@@ -529,7 +531,7 @@ static void M_Group(
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
 {
-    return Math_Angle(M_W(y), M_W(x));
+    return Math16_Angle(M_W(y), M_W(x));
 }
 static void M_Diamond(
     const B20J_CONTEXT *const c, const int16_t left, const int16_t top,
@@ -565,10 +567,10 @@ static void M_Cross(B20J *const b, const B20J_CONTEXT *const c)
         b->pattern_state = M_Rank(
             c, PELLET_GROUP_TWO_NARROW_AIMED, PELLET_GROUP_THREE_NARROW_AIMED,
             PELLET_GROUP_FIVE_WIDE_AIMED, PELLET_GROUP_FIVE_NARROW_AIMED);
-        b->diamond_velocity[0] = Math_VectorBetween(
-            (MATH_VECTOR) { 316, 236 }, (MATH_VECTOR) { 0, 384 }, 7);
-        b->diamond_velocity[1] = Math_VectorBetween(
-            (MATH_VECTOR) { 316, 236 }, (MATH_VECTOR) { 0, 64 }, 7);
+        b->diamond_velocity[0] = Math16_Aim(
+            (MATH16_VECTOR) { 316, 236 }, (MATH16_VECTOR) { 0, 384 }, 7, 0);
+        b->diamond_velocity[1] = Math16_Aim(
+            (MATH16_VECTOR) { 316, 236 }, (MATH16_VECTOR) { 0, 64 }, 7, 0);
         for (int32_t i = 0; i < 4; i++) {
             b->diamond_left[i] = 316;
             b->diamond_top[i] = 236;
@@ -680,7 +682,7 @@ static void M_SnakeAim(
 {
     uint8_t angle = M_Angle(384 - s->top[i][0], target + 12 - s->left[i][0]);
     angle += M_Random(c) % 2 == 0 ? 40 : -40;
-    s->velocity[i] = Math_Vector(speed, angle);
+    s->velocity[i] = Math16_Vector(speed, angle);
 }
 static void M_SnakeSpawn(
     B20J_SNAKES *const s, const B20J_CONTEXT *const c, const int32_t i,
@@ -798,8 +800,8 @@ static void M_Rows(B20J *const b, const B20J_CONTEXT *const c)
         return;
     }
     if (b->frame == 100) {
-        b->row_velocity = Math_VectorBetween(
-            (MATH_VECTOR) { 290, 200 }, (MATH_VECTOR) { 64, 64 }, 16);
+        b->row_velocity = Math16_Aim(
+            (MATH16_VECTOR) { 290, 200 }, (MATH16_VECTOR) { 64, 64 }, 16, 0);
         b->row_left = 290;
         b->row_top = 200;
         b->row_speed = 48;

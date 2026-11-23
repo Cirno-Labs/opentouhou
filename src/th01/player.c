@@ -1,6 +1,6 @@
 #include "th01/player.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
 
@@ -98,7 +98,7 @@ static void M_ShotAction(void *const user, const SHOTS_ACTION action)
 static void M_Shoot(PLAYER_UPDATE *const update, const int16_t offset)
 {
     Shots_Add(
-        update->shots, Math_Wrap16(update->player->left + 8 + offset),
+        update->shots, Math16_Wrap(update->player->left + 8 + offset),
         PLAYER_TOP, (SHOTS_OUTPUT) { M_ShotAction, update });
 }
 
@@ -496,7 +496,7 @@ void Player_Reset(
 
 void Player_MoveAndClamp(PLAYER *const player, const int16_t delta)
 {
-    player->left = Math_Wrap16(player->left + delta);
+    player->left = Math16_Wrap(player->left + delta);
     if (player->left < 0) {
         player->left = 0;
     } else if (player->left >= 608) {
@@ -519,12 +519,12 @@ bool Player_BeginUpdate(
             player->bomb_flag = PLAYER_BOMB_ACTIVE;
             player->deflecting = true;
             player->bombing = true;
-            player->remaining_bombs = Math_Wrap16(player->remaining_bombs - 1);
+            player->remaining_bombs = Math16_Wrap(player->remaining_bombs - 1);
             output.action(
                 output.user,
                 (PLAYER_ACTION) {
                     .kind = PLAYER_ACTION_HUD_BOMBS,
-                    .previous_bombs = Math_Wrap16(player->remaining_bombs + 1),
+                    .previous_bombs = Math16_Wrap(player->remaining_bombs + 1),
                 });
         }
         M_Repel(&update, 1);
@@ -593,7 +593,7 @@ void Player_UpdateAndRender(
     if (Player_BeginUpdate(
             &continuation, player, input, orb, shots, rng, output)) {
         const bool done = output.bomb_update(
-            output.user, player, Math_Wrap16(player->bomb_frame & 0xffff));
+            output.user, player, Math16_Wrap(player->bomb_frame & 0xffff));
         Player_FinishBombUpdate(&continuation, done);
     }
 }
@@ -617,7 +617,7 @@ void Player_RenderAction(
             video,
             action.kind == PLAYER_ACTION_BOS_48_PUT ? sprites->miko_ac
                                                     : sprites->miko_ac2,
-            action.image, Math_Wrap16(action.left - 8),
+            action.image, Math16_Wrap(action.left - 8),
             action.kind == PLAYER_ACTION_BOS_48_PUT ? 352 : PLAYER_TOP);
         break;
     case PLAYER_ACTION_BOS_48_ERASE:
@@ -626,7 +626,7 @@ void Player_RenderAction(
             video,
             action.kind == PLAYER_ACTION_BOS_48_ERASE ? sprites->miko_ac
                                                       : sprites->miko_ac2,
-            action.image, Math_Wrap16(action.left - 8),
+            action.image, Math16_Wrap(action.left - 8),
             action.kind == PLAYER_ACTION_BOS_48_ERASE ? 352 : PLAYER_TOP);
         break;
     case PLAYER_ACTION_BOS_48_OVERLAP:
@@ -634,8 +634,8 @@ void Player_RenderAction(
         const bool tall = action.kind == PLAYER_ACTION_BOS_48_OVERLAP;
         Sprite_PlayerOverlap(
             video, tall ? sprites->miko_ac : sprites->miko_ac2, action.image,
-            action.previous_image, Math_Wrap16(action.left - 8),
-            tall ? 352 : PLAYER_TOP, Math_Wrap16(action.previous_left - 8),
+            action.previous_image, Math16_Wrap(action.left - 8),
+            tall ? 352 : PLAYER_TOP, Math16_Wrap(action.previous_left - 8),
             tall ? 352 : PLAYER_TOP);
         break;
     }

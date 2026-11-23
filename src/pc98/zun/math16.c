@@ -1,4 +1,4 @@
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 static const int16_t m_Sine[65] = {
     0,   6,   13,  19,  25,  31,  38,  44,  50,  56,  62,  68,  74,
@@ -48,13 +48,7 @@ static int16_t M_Root(const uint32_t value)
     return (int16_t)(root + (remainder > root));
 }
 
-uint16_t Math_Random(uint32_t *const state)
-{
-    *state = *state * UINT32_C(0x015a4e35) + 1;
-    return (uint16_t)((*state >> 16) & 0x7fff);
-}
-
-int16_t Math_Sin8(const int32_t angle)
+int16_t Math16_Sin(const int32_t angle)
 {
     const uint32_t phase = (uint32_t)angle & 255;
     const uint32_t offset = phase & 63;
@@ -62,35 +56,35 @@ int16_t Math_Sin8(const int32_t angle)
     return (phase & 128) != 0 ? (int16_t)-value : value;
 }
 
-int16_t Math_Cos8(const int32_t angle)
+int16_t Math16_Cos(const int32_t angle)
 {
-    return Math_Sin8((int32_t)(((uint32_t)angle + 64) & 255));
+    return Math16_Sin((int32_t)(((uint32_t)angle + 64) & 255));
 }
 
-int16_t Math_Wrap16(const int32_t value)
+int16_t Math16_Wrap(const int32_t value)
 {
     const int32_t low = (int32_t)((uint32_t)value & 0xffff);
     return (int16_t)(low >= 0x8000 ? low - 0x10000 : low);
 }
 
-int16_t Math_PolarX(
-    const int16_t center, const int16_t radius, const int32_t angle)
+int16_t Math16_PolarX(
+    const int16_t center, const int16_t length, const int32_t angle)
 {
-    return Math_Wrap16(center + M_DivideFloor(radius * Math_Cos8(angle), 256));
+    return Math16_Wrap(center + M_DivideFloor(length * Math16_Cos(angle), 256));
 }
 
-int16_t Math_PolarY(
-    const int16_t center, const int16_t radius, const int32_t angle)
+int16_t Math16_PolarY(
+    const int16_t center, const int16_t length, const int32_t angle)
 {
-    return Math_Wrap16(center + M_DivideFloor(radius * Math_Sin8(angle), 256));
+    return Math16_Wrap(center + M_DivideFloor(length * Math16_Sin(angle), 256));
 }
 
-int16_t Math_WaveX(const int16_t amplitude, const int32_t angle)
+int16_t Math16_Wave(const int16_t amplitude, const int32_t angle)
 {
-    return Math_Wrap16(amplitude * Math_Sin8(angle) / 256);
+    return Math16_Wrap(amplitude * Math16_Sin(angle) / 256);
 }
 
-uint8_t Math_Angle(const int16_t y, const int16_t x)
+uint8_t Math16_Angle(const int16_t y, const int16_t x)
 {
     if (x == 0 && y == 0) {
         return 0;
@@ -114,36 +108,37 @@ uint8_t Math_Angle(const int16_t y, const int16_t x)
     return (uint8_t)angle;
 }
 
-MATH_VECTOR Math_Vector(const int16_t length, const int32_t angle)
+MATH16_VECTOR Math16_Vector(const int16_t length, const int32_t angle)
 {
-    return (MATH_VECTOR) { Math_PolarX(0, length, angle),
-                           Math_PolarY(0, length, angle) };
+    return (MATH16_VECTOR) { Math16_PolarX(0, length, angle),
+                             Math16_PolarY(0, length, angle) };
 }
 
-MATH_VECTOR Math_VectorBetween(
-    const MATH_VECTOR from, const MATH_VECTOR to, const int16_t length)
+MATH16_VECTOR Math16_Aim(
+    const MATH16_VECTOR from, const MATH16_VECTOR to, const int16_t length,
+    const uint8_t offset)
 {
-    return Math_Vector(
-        length,
-        Math_Angle(Math_Wrap16(to.y - from.y), Math_Wrap16(to.x - from.x)));
+    const uint8_t angle =
+        Math16_Angle(Math16_Wrap(to.y - from.y), Math16_Wrap(to.x - from.x));
+    return Math16_Vector(length, (uint8_t)(angle + offset));
 }
 
-int16_t Math_Sqrt(const int32_t value)
+int16_t Math16_Sqrt(const int32_t value)
 {
     return M_Root((uint32_t)value);
 }
 
-int16_t Math_Hypot(const int16_t x, const int16_t y)
+int16_t Math16_Hypot(const int16_t x, const int16_t y)
 {
     return M_Root((uint32_t)(x * x) + (uint32_t)(y * y));
 }
 
-int16_t Math_SubpixelFromPixel(const int16_t pixel)
+int16_t Math16_FromPixel(const int16_t pixel)
 {
-    return Math_Wrap16(pixel * 16);
+    return Math16_Wrap(pixel * 16);
 }
 
-int16_t Math_SubpixelToPixel(const int16_t subpixel)
+int16_t Math16_ToPixel(const int16_t subpixel)
 {
     return (int16_t)M_DivideFloor(subpixel, 16);
 }

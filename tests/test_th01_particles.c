@@ -1,4 +1,5 @@
 #include "th01/particles.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -39,8 +40,8 @@ TEST(first_spawn_skips_zero_and_uses_shared_randomness)
     CHECK_EQ_INT(rng, 1);
     CHECK_EQ_INT(video.drawing_page, 1);
     uint32_t expected_rng = rng;
-    const int16_t speed = (int16_t)(Math_Random(&expected_rng) % 10 + 1);
-    const int16_t left = (int16_t)(Math_Random(&expected_rng) % 640);
+    const int16_t speed = (int16_t)(MasterRng_Next(&expected_rng) % 10 + 1);
+    const int16_t left = (int16_t)(MasterRng_Next(&expected_rng) % 640);
     Particles_UpdateAndRender(&p, &video, &rng, PARTICLES_TOP, 7);
     CHECK_EQ_INT(rng, expected_rng);
     CHECK_EQ_INT(p.alive[0], 0);
@@ -65,8 +66,8 @@ TEST(first_overflow_preserves_negative_velocity_aliases)
     p.y[1] = 1600;
     uint32_t rng = 1;
     uint32_t expected_rng = rng;
-    const int16_t speed = (int16_t)(Math_Random(&expected_rng) % 10 + 1);
-    const int16_t left = (int16_t)(Math_Random(&expected_rng) % 640);
+    const int16_t speed = (int16_t)(MasterRng_Next(&expected_rng) % 10 + 1);
+    const int16_t left = (int16_t)(MasterRng_Next(&expected_rng) % 640);
     Particles_UpdateAndRender(&p, &video, &rng, PARTICLES_BOTTOM, 10);
     CHECK_EQ_INT(rng, expected_rng);
     CHECK_EQ_INT(p.cycle, speed);

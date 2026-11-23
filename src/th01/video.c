@@ -1,6 +1,6 @@
 #include "th01/video.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
 
@@ -66,8 +66,8 @@ static int32_t M_LineColumn(const int32_t x)
 static int16_t M_LineLerp(
     const int32_t numerator, const int32_t denominator, const int32_t distance)
 {
-    const int32_t slope = Math_Wrap16(numerator) / Math_Wrap16(denominator);
-    return Math_Wrap16(slope * Math_Wrap16(distance));
+    const int32_t slope = Math16_Wrap(numerator) / Math16_Wrap(denominator);
+    return Math16_Wrap(slope * Math16_Wrap(distance));
 }
 
 static uint16_t M_LinePattern(const uint16_t pattern, const int32_t x)
@@ -159,14 +159,14 @@ static void M_Line(
         if (x2 < 0) {
             return;
         }
-        y1 = Math_Wrap16(y1 + M_LineLerp(y2 - y1, x2 - x1, -x1));
+        y1 = Math16_Wrap(y1 + M_LineLerp(y2 - y1, x2 - x1, -x1));
         x1 = 0;
     }
     if (x2 >= VIDEO_WIDTH) {
         if (x1 >= VIDEO_WIDTH) {
             return;
         }
-        y2 = Math_Wrap16(
+        y2 = Math16_Wrap(
             y2 - M_LineLerp(y2 - y1, x2 - x1, x2 - (VIDEO_WIDTH - 1)));
         x2 = VIDEO_WIDTH - 1;
     }
@@ -174,29 +174,29 @@ static void M_Line(
         if (y2 < 0) {
             return;
         }
-        x1 = Math_Wrap16(x1 + M_LineLerp(x2 - x1, y2 - y1, -y1));
+        x1 = Math16_Wrap(x1 + M_LineLerp(x2 - x1, y2 - y1, -y1));
         y1 = 0;
     }
     if (y2 >= VIDEO_HEIGHT) {
         if (y1 >= VIDEO_HEIGHT) {
             return;
         }
-        x2 = Math_Wrap16(
+        x2 = Math16_Wrap(
             x2 - M_LineLerp(x2 - x1, y2 - y1, y2 - (VIDEO_HEIGHT - 1)));
         y2 = VIDEO_HEIGHT - 1;
     }
     if (y2 < 0) {
-        x2 = Math_Wrap16(x2 + M_LineLerp(x2 - x1, y2 - y1, -y2));
+        x2 = Math16_Wrap(x2 + M_LineLerp(x2 - x1, y2 - y1, -y2));
         y2 = 0;
     }
     if (y1 >= VIDEO_HEIGHT) {
-        x1 = Math_Wrap16(
+        x1 = Math16_Wrap(
             x1 - M_LineLerp(x2 - x1, y2 - y1, y1 - (VIDEO_HEIGHT - 1)));
         y1 = VIDEO_HEIGHT - 1;
     }
     const int32_t direction = y1 < y2 ? 1 : -1;
-    const int32_t dx = Math_Wrap16(x2 - x1);
-    const int32_t dy = Math_Wrap16((y2 - y1) * direction);
+    const int32_t dx = Math16_Wrap(x2 - x1);
+    const int32_t dy = Math16_Wrap((y2 - y1) * direction);
     const int32_t length = dx > dy ? dx : dy;
     int32_t error = length / 2;
     int32_t x = x1;
@@ -216,18 +216,18 @@ static void M_Line(
             row = y;
         }
         mask |= M_LinePattern(pattern, x);
-        error = Math_Wrap16(error - (dx > dy ? dy : dx));
+        error = Math16_Wrap(error - (dx > dy ? dy : dx));
         if (dx > dy) {
-            x = Math_Wrap16(x + 1);
+            x = Math16_Wrap(x + 1);
         } else {
-            y = Math_Wrap16(y + direction);
+            y = Math16_Wrap(y + direction);
         }
         if (error < 0) {
-            error = Math_Wrap16(error + length);
+            error = Math16_Wrap(error + length);
             if (dx > dy) {
-                y = Math_Wrap16(y + direction);
+                y = Math16_Wrap(y + direction);
             } else {
-                x = Math_Wrap16(x + 1);
+                x = Math16_Wrap(x + 1);
             }
         }
     }

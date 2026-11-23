@@ -4,6 +4,7 @@
 
 #include "th01/logo.h"
 #include "th01/opening.h"
+#include "pc98/vsync.h"
 #include "th01/frame.h"
 #include "th01/input.h"
 #include "th01/settings.h"
@@ -56,7 +57,7 @@ static uint64_t m_HostTick;
 static GFX_TEXTURE *m_TextTexture;
 static uint8_t *m_UploadedText, *m_ScrolledPage;
 static VIDEO m_Video;
-static FRAME_CLOCK m_Frame;
+static VSYNC_CLOCK m_Frame;
 static GFX_TEXTURE *m_Pages[2];
 static uint8_t *m_UploadedPages[2];
 static GFX_COLOR m_UploadedPalette[16];
@@ -247,7 +248,7 @@ static bool M_Tick(const void *const input)
     const bool key_pressed = Shell_GetKeyPress(&key);
     GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
     m_HostTick++;
-    const bool reference_edge = Frame_Advance(&m_Frame);
+    const bool reference_edge = VSync_Advance(&m_Frame);
     if (reference_edge && g_Th01Hooks.on_vsync != nullptr) {
         g_Th01Hooks.on_vsync(g_Th01Hooks.arg);
     }

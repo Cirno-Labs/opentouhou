@@ -54,7 +54,7 @@ typedef struct {
 // state. The composite pellets_update exception is specified below. Keep
 // immutable sprites and cached ASCII digit glyphs alive across updates.
 // Supply real HUD, item and pellet consumers for these calls. Initialize
-// flip_cycle once per main scene as Math_Random(rng) % 60; StageObjects_Init
+// flip_cycle once per main scene as MasterRng_Next(rng) % 60; StageObjects_Init
 // must not initialize it anew at each stage change. Scores and counters wrap to
 // their source widths; updates allocate nothing.
 

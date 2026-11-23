@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pc98/zun/math16.h"
 #include "th01/boss_hit.h"
 #include "th01/boss_render.h"
 #include "th01/grz.h"
@@ -30,7 +31,7 @@ typedef enum {
 
 typedef struct {
     int16_t left[4][5], top[4][5];
-    MATH_VECTOR velocity[4];
+    MATH16_VECTOR velocity[4];
     int16_t target_left[4];
     bool target_locked[4];
 } B20J_SNAKES;
@@ -40,9 +41,9 @@ typedef struct {
     BOSS_HIT hit;
     PALETTE boss_palette, stage_palette;
     B20J_SNAKES two_snakes, four_snakes;
-    MATH_VECTOR diamond_velocity[2];
+    MATH16_VECTOR diamond_velocity[2];
     int16_t diamond_left[4], diamond_top[4], diamond_edges_frame;
-    MATH_VECTOR row_velocity;
+    MATH16_VECTOR row_velocity;
     int16_t row_left, row_top, row_direction, row_speed;
     int16_t spray_delta, spray_fired;
     int16_t ray_x, ray_y, ray_previous_x, ray_previous_y;

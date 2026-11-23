@@ -1,4 +1,6 @@
 #include "th01/boss_b10m.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/arena.h"
 
@@ -330,7 +332,7 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
                                           .flag = MISSILE_MOVING };
     }
     uint32_t expected = f.rng;
-    const int16_t variation = (int16_t)(Math_Random(&expected) % 3);
+    const int16_t variation = (int16_t)(MasterRng_Next(&expected) % 3);
     FRAME_VSYNC vsync = {};
     CHECK(B10M_UpdateAndRender(&b, &f.context, &vsync));
     CHECK_EQ_INT(b.subphase, variation * 4 + 1);
@@ -482,7 +484,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     B10M b = {};
     B10M_Setup(&b, &f.context);
     b.phase = 12;
-    b.pentagram.center = (MATH_VECTOR) { 316, 240 };
+    b.pentagram.center = (MATH16_VECTOR) { 316, 240 };
     b.pentagram.radius = 64;
     f.stage_palette.colors[15][0] = 126;
     f.stage_palette.colors[15][1] = 0;

@@ -1,6 +1,7 @@
 #include "th01/stage.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -53,7 +54,7 @@ static void M_Pellet(void *const user, const STAGE_PELLET_SPAWN spawn)
     state->last_pellet = spawn;
     CHECK_EQ_INT(state->objects.cards[0].flip_frame, 25);
     CHECK_EQ_INT(state->objects.cards[0].flag, STAGE_CARD_FLIPPING);
-    Math_Random(&state->rng);
+    MasterRng_Next(&state->rng);
 }
 
 static void M_Init(CASE *const state, const uint8_t hp)
@@ -114,14 +115,14 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             const ORB orb = state.orb;
             const uint32_t rng = state.rng;
             Stage_HitTestCards(&state.context);
-            const uint32_t square = (uint32_t)(int32_t)Math_Wrap16(
+            const uint32_t square = (uint32_t)(int32_t)Math16_Wrap(
                 (int32_t)combos[variant] * combos[variant]);
             uint32_t expected = 400 + square * (rank == 3 ? 35u : 20u);
             if (expected > 25600) {
                 expected = 25600;
             }
             CHECK_EQ_INT(state.game.score, expected);
-            CHECK_EQ_INT(state.game.combo, Math_Wrap16(combos[variant] + 1));
+            CHECK_EQ_INT(state.game.combo, Math16_Wrap(combos[variant] + 1));
             CHECK_EQ_INT(
                 state.game.maximum_combo,
                 combos[variant] == 32767 ? 0 : combos[variant] + 1);
@@ -166,7 +167,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             state.orb.left = 500;
             state.rng = seed;
             uint32_t expected = seed;
-            const bool selected = Math_Random(&expected) % 4 != 0;
+            const bool selected = MasterRng_Next(&expected) % 4 != 0;
             Stage_HitTestCards(&state.context);
             CHECK_EQ_INT(state.rng, expected);
             CHECK_EQ_INT(state.game.combo, selected && flag == 0);
@@ -190,7 +191,7 @@ TEST(card_hp_frames_revenge_and_stage_exit)
                 for (int32_t frame = 0; frame < 30; frame++) {
                     Stage_UpdateCards(&state.context);
                     if (frame == 24) {
-                        Math_Random(&rng);
+                        MasterRng_Next(&rng);
                     }
                     CHECK_EQ_INT(state.rng, rng);
                     CHECK_EQ_INT(state.pellets, flip + (frame >= 24));

@@ -1,5 +1,7 @@
 #include "th01/boss_b15j.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 
 static RESULT M_LoadBos(
@@ -140,8 +142,8 @@ static void M_Effect(const B15J_CONTEXT *const c, const int16_t number)
 
 static void M_Common(B15J *const b)
 {
-    b->frame = Math_Wrap16(b->frame + 1);
-    b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+    b->frame = Math16_Wrap(b->frame + 1);
+    b->hit.frame = Math16_Wrap(b->hit.frame + 1);
 }
 
 static void M_Hit(B15J *const b, const B15J_CONTEXT *const c)
@@ -174,8 +176,8 @@ static void M_SymmetricLine(
     VIDEO *const video, const int16_t y, const int16_t offset,
     const uint16_t mask)
 {
-    M_CopyLine(video, Math_Wrap16(y - offset), mask);
-    M_CopyLine(video, Math_Wrap16(399 - y + offset), mask);
+    M_CopyLine(video, Math16_Wrap(y - offset), mask);
+    M_CopyLine(video, Math16_Wrap(399 - y + offset), mask);
 }
 
 static void M_Defaults(const B15J_CONTEXT *const c)
@@ -191,9 +193,9 @@ static int16_t M_InvertRings(const B15J_CONTEXT *const c, const int16_t base)
 {
     int16_t outside = 0;
     for (int32_t i = 32; i < 160; i++) {
-        const int16_t radius = Math_Wrap16(base * (i / 32));
-        const int16_t left = Math_PolarY(304, radius, i * 8);
-        const int16_t top = Math_PolarX(180, radius, i * 8);
+        const int16_t radius = Math16_Wrap(base * (i / 32));
+        const int16_t left = Math16_PolarY(304, radius, i * 8);
+        const int16_t top = Math16_PolarX(180, radius, i * 8);
         outside += !Video_Invert32(M_Video(c), left, top, 2);
     }
     return outside;
@@ -223,7 +225,7 @@ static bool M_Entrance(
             }
             b->entrance_waiting = false;
         }
-        b->frame = Math_Wrap16(b->frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
         if (b->entrance_stage == 0) {
             if (b->frame % 3 == 0) {
                 const int16_t y = b->hit.frame;
@@ -239,7 +241,7 @@ static bool M_Entrance(
                 if (b->frame * 2 > 24 && y <= 224) {
                     M_SymmetricLine(M_Video(c), y, 24, 0xffff);
                 }
-                b->hit.frame = Math_Wrap16(y + 1);
+                b->hit.frame = Math16_Wrap(y + 1);
                 if (b->hit.frame > 224) {
                     b->hit.frame = 0;
                     b->frame = 0;
@@ -257,7 +259,7 @@ static bool M_Entrance(
                 M_InvertRings(c, b->ring_radius);
             } else if (b->frame > 71 && b->frame % 4 == 0) {
                 M_InvertRings(c, b->ring_radius);
-                b->ring_radius = Math_Wrap16(b->ring_radius + 16);
+                b->ring_radius = Math16_Wrap(b->ring_radius + 16);
                 finish = M_InvertRings(c, b->ring_radius) >= 128;
             }
             if (finish) {
@@ -296,7 +298,7 @@ static void M_SoulMove(
     BOSS_ENTITY *const soul = &b->souls[i];
     BossEntity_LockedMovePut(soul, c->sprites, M_Video(c), dx, dy, 1, true);
     if (b->frame % 12 == 0) {
-        soul->image = soul->image >= 2 ? 0 : Math_Wrap16(soul->image + 1);
+        soul->image = soul->image >= 2 ? 0 : Math16_Wrap(soul->image + 1);
     }
 }
 
@@ -317,8 +319,8 @@ static void M_RippleHit(
     const B15J_CONTEXT *const c, const int16_t left, const int16_t extra)
 {
     PLAYER *const p = M_Player(c);
-    if (!p->invincible && p->left >= Math_Wrap16(left - 16)
-        && p->left <= Math_Wrap16(left + extra)) {
+    if (!p->invincible && p->left >= Math16_Wrap(left - 16)
+        && p->left <= Math16_Wrap(left + extra)) {
         p->is_hit = true;
     }
 }
@@ -335,7 +337,7 @@ static void M_RipplePart(
         : frame <= 4                   ? 1
         : frame <= 9                   ? 0
                                        : 3;
-    const int16_t y = Math_Wrap16(top - dy);
+    const int16_t y = Math16_Wrap(top - dy);
     Sprite_Restore16(M_Video(c), left, y, 16, 16);
     Sprite_PtnPut(M_Video(c), &c->assets->ripples, 0, quarter, left, y);
 }
@@ -359,20 +361,20 @@ static void M_Ripple(
         return;
     }
     if (*frame < 20) {
-        M_RippleHit(c, Math_Wrap16(left - 16), 32);
+        M_RippleHit(c, Math16_Wrap(left - 16), 32);
     } else if (*frame < 60) {
-        M_RippleHit(c, Math_Wrap16(left - 32), 64);
+        M_RippleHit(c, Math16_Wrap(left - 32), 64);
     }
     if (*frame < 55) {
         M_RipplePart(c, left, top, stage);
     }
     if (*frame < 65) {
-        M_RipplePart(c, Math_Wrap16(left - 16), top, stage - 2);
-        M_RipplePart(c, Math_Wrap16(left + 16), top, stage - 2);
+        M_RipplePart(c, Math16_Wrap(left - 16), top, stage - 2);
+        M_RipplePart(c, Math16_Wrap(left + 16), top, stage - 2);
     }
     if (*frame >= 20) {
-        M_RipplePart(c, Math_Wrap16(left - 32), top, stage - 4);
-        M_RipplePart(c, Math_Wrap16(left + 32), top, stage - 4);
+        M_RipplePart(c, Math16_Wrap(left - 32), top, stage - 4);
+        M_RipplePart(c, Math16_Wrap(left + 32), top, stage - 4);
     }
 }
 
@@ -394,11 +396,11 @@ static void M_MoveSouls(
     B15J *const b, const B15J_CONTEXT *const c, const int16_t vx,
     const int16_t vy)
 {
-    const int16_t x = Math_PolarX(0, vx, b->frame);
-    const int16_t y = Math_PolarX(0, vy, b->frame);
+    const int16_t x = Math16_PolarX(0, vx, b->frame);
+    const int16_t y = Math16_PolarX(0, vy, b->frame);
     M_Tears(b, c);
     M_SoulMove(b, c, 0, x, y);
-    M_SoulMove(b, c, 1, Math_Wrap16(-x), y);
+    M_SoulMove(b, c, 1, Math16_Wrap(-x), y);
 }
 
 static void M_GroupSoul(
@@ -407,8 +409,8 @@ static void M_GroupSoul(
 {
     Pellets_AddGroup(
         c->pellets, c->pellet_shared, M_Player(c), c->rng,
-        c->hit->display->rank, Math_Wrap16(b->souls[i].left + 12),
-        Math_Wrap16(b->souls[i].top + dy), group, speed);
+        c->hit->display->rank, Math16_Wrap(b->souls[i].left + 12),
+        Math16_Wrap(b->souls[i].top + dy), group, speed);
 }
 
 static void M_Single(
@@ -436,8 +438,8 @@ static void M_SymmetricSpiral(B15J *const b, const B15J_CONTEXT *const c)
         for (int32_t i = 0; i < 2; i++) {
             const uint8_t angle = (uint8_t)(b->spiral_angle + i * 128);
             M_Single(
-                c, Math_PolarX(320, b->spiral_distance, angle),
-                Math_PolarY(180, b->spiral_distance, angle),
+                c, Math16_PolarX(320, b->spiral_distance, angle),
+                Math16_PolarY(180, b->spiral_distance, angle),
                 (uint8_t)(angle + b->spiral_drift), 50, PELLET_REGULAR, 0, 0,
                 0);
         }
@@ -456,9 +458,9 @@ static void M_SpinRings(const B15J *const b, const B15J_CONTEXT *const c)
     }
     for (int32_t i = 0; i < 8; i++) {
         const uint8_t angle =
-            Math_Angle(164, Math_Wrap16(M_Player(c)->left - 300));
+            Math16_Angle(164, Math16_Wrap(M_Player(c)->left - 300));
         M_Single(
-            c, Math_PolarX(316, 16, i * 32), Math_PolarY(224, 16, i * 32),
+            c, Math16_PolarX(316, 16, i * 32), Math16_PolarY(224, 16, i * 32),
             angle, 48, PELLET_SPIN, 32, 312, 224);
     }
 }
@@ -504,8 +506,8 @@ static void M_Laser(
 static void M_CrossLasers(const B15J *const b, const B15J_CONTEXT *const c)
 {
     if (b->frame > 200 && b->frame % 200 == 0) {
-        M_Laser(c, 0, 307, Math_Wrap16(M_Player(c)->left + 60), 50, 8);
-        M_Laser(c, 1, 336, Math_Wrap16(M_Player(c)->left - 60), 50, 8);
+        M_Laser(c, 0, 307, Math16_Wrap(M_Player(c)->left + 60), 50, 8);
+        M_Laser(c, 1, 336, Math16_Wrap(M_Player(c)->left - 60), 50, 8);
         M_Effect(c, 6);
     }
 }
@@ -518,8 +520,8 @@ static void M_DropTears(B15J *const b, const B15J_CONTEXT *const c)
     if (b->frame % b->pattern_state == 0) {
         for (int32_t i = 0; i < 2; i++) {
             M_AddTear(
-                b, Math_Wrap16(b->souls[i].left + 12),
-                Math_Wrap16(b->souls[i].top + 8));
+                b, Math16_Wrap(b->souls[i].left + 12),
+                Math16_Wrap(b->souls[i].top + 8));
         }
     }
     M_MoveSouls(b, c, 6, 2);
@@ -536,8 +538,8 @@ static void M_FourSpiral(B15J *const b, const B15J_CONTEXT *const c)
     }
     if (b->frame % b->pattern_state == 0) {
         for (int32_t i = 0; i < 4; i += 2) {
-            const int16_t x = Math_PolarX(320, 90, b->frame * 4 + 128 * i);
-            const int16_t y = Math_PolarY(180, 90, b->frame * 4 + 128 * i);
+            const int16_t x = Math16_PolarX(320, 90, b->frame * 4 + 128 * i);
+            const int16_t y = Math16_PolarY(180, 90, b->frame * 4 + 128 * i);
             for (int32_t j = 0; j < 4; j++) {
                 M_Single(
                     c, x, y, (uint8_t)(b->four_angle + j * 64), 36,
@@ -563,10 +565,10 @@ static void M_LeftLasers(B15J *const b, const B15J_CONTEXT *const c)
     }
     if (b->frame >= 250 && b->frame <= 400 && (b->frame - 250) % 30 == 0) {
         M_Effect(c, 6);
-        const int16_t offset = (int16_t)(Math_Random(c->rng) % 120 - 60);
+        const int16_t offset = (int16_t)(MasterRng_Next(c->rng) % 120 - 60);
         M_Laser(
             c, (b->frame - 250) / 30, 307,
-            Math_Wrap16(M_Player(c)->left + offset), b->pattern_state, 4);
+            Math16_Wrap(M_Player(c)->left + offset), b->pattern_state, 4);
     }
     if (b->frame > 500) {
         b->frame = 0;
@@ -578,8 +580,8 @@ static void M_Rain(B15J *const b, const B15J_CONTEXT *const c)
 {
     if (b->frame > 100 && b->frame % b->pattern_state == 0) {
         for (int32_t i = 0; i < 2; i++) {
-            const int16_t x = Math_Wrap16(b->souls[i].left + 12);
-            const int16_t y = Math_Wrap16(b->souls[i].top + 12);
+            const int16_t x = Math16_Wrap(b->souls[i].left + 12);
+            const int16_t y = Math16_Wrap(b->souls[i].top + 12);
             for (int32_t j = 0; j < 6; j++) {
                 const int16_t speed = (int16_t)((j < 3 ? 3 - j : j - 2) * 16);
                 M_Single(
@@ -606,9 +608,9 @@ static void M_VerticalLasers(B15J *const b, const B15J_CONTEXT *const c)
     if (b->frame % 10 == 0) {
         const int32_t i = (b->frame - 100) / 10;
         const int16_t offset =
-            (int16_t)(Math_Random(c->rng) % (b->random_range * 2 + 1)
+            (int16_t)(MasterRng_Next(c->rng) % (b->random_range * 2 + 1)
                       - b->random_range);
-        const int16_t x = Math_Wrap16(i * 64 + offset);
+        const int16_t x = Math16_Wrap(i * 64 + offset);
         ShootoutLasers_Spawn(
             &c->lasers->slots[i], x, 64, x, 400, b->pattern_state, 10, 20, 8);
         M_Effect(c, 6);
@@ -697,7 +699,7 @@ bool B15J_UpdateAndRender(
         M_SymmetricSpiral(b, c);
         M_Hit(b, c);
         if (b->frame == 0) {
-            b->patterns_done = Math_Wrap16(b->patterns_done + 1);
+            b->patterns_done = Math16_Wrap(b->patterns_done + 1);
         }
         if (!b->hit.invincible && (b->hp <= 10 || b->patterns_done >= 6)) {
             b->phase = 3;
@@ -706,7 +708,7 @@ bool B15J_UpdateAndRender(
             b->patterns_done = 0;
         }
     } else if (b->phase == 3) {
-        b->frame = Math_Wrap16(b->frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
         if (b->frame % 20 == 19) {
             c->hit->palette->saved.colors[5][0] =
                 M_Byte(c->hit->palette->saved.colors[5][0] + 1);
@@ -774,7 +776,7 @@ bool B15J_UpdateAndRender(
             break;
         }
         if (b->frame == 0) {
-            b->patterns_done = Math_Wrap16(b->patterns_done + 1);
+            b->patterns_done = Math16_Wrap(b->patterns_done + 1);
         }
         if (b->patterns_done > 29) {
             b->hp = 1;

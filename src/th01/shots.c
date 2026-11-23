@@ -1,6 +1,6 @@
 #include "th01/shots.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/sprite.h"
 
 static void M_Action(
@@ -82,8 +82,8 @@ bool Shots_HitTestOrb(
     SHOTS *const shots, const int32_t slot, ORB *const orb, uint32_t *const rng)
 {
     SHOT *const shot = &shots->slots[slot];
-    const int16_t dx = Math_Wrap16(shot->left - orb->left);
-    const int16_t dy = Math_Wrap16(shot->top - orb->top);
+    const int16_t dx = Math16_Wrap(shot->left - orb->left);
+    const int16_t dy = Math16_Wrap(shot->top - orb->top);
     if (!shot->moving || dx >= 32 || dx <= -16 || dy >= 32 || dy <= -16) {
         return false;
     }
@@ -97,7 +97,7 @@ bool Shots_HitTestOrb(
     Orb_NewForce(orb, ORB_FORCE_SHOT, 0, rng);
     shot->moving = false;
     Orb_MoveX(orb, orb->velocity_x);
-    orb->top = Math_Wrap16(orb->top + Orb_UpdateVelocityY(orb));
+    orb->top = Math16_Wrap(orb->top + Orb_UpdateVelocityY(orb));
     return true;
 }
 
@@ -109,7 +109,7 @@ void Shots_UpdateAndRender(
         SHOT *const shot = &shots->slots[i];
         if (shot->moving) {
             M_Action(output, SHOTS_ACTION_RESTORE, shot);
-            shot->top = Math_Wrap16(shot->top - 12);
+            shot->top = Math16_Wrap(shot->top - 12);
             if (!orb->in_portal && Shots_HitTestOrb(shots, i, orb, rng)) {
                 continue;
             }
@@ -137,8 +137,8 @@ bool Shots_HitTestPellet(
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &shots->slots[i];
-        const int16_t dx = Math_Wrap16(shot->left - left);
-        const int16_t dy = Math_Wrap16(shot->top - top);
+        const int16_t dx = Math16_Wrap(shot->left - left);
+        const int16_t dy = Math16_Wrap(shot->top - top);
         if (shot->moving && shot->decay_frame != 1 && dx <= 6 && dx >= -14
             && dy <= 6 && dy >= -14) {
             M_Hit(shot, output);
@@ -156,8 +156,8 @@ bool Shots_HitTestBoss(
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &shots->slots[i];
         if (shot->moving && shot->left >= left && shot->top >= top
-            && shot->left <= Math_Wrap16(left + width_minus_shot)
-            && shot->top <= Math_Wrap16(top + height_minus_shot)) {
+            && shot->left <= Math16_Wrap(left + width_minus_shot)
+            && shot->top <= Math16_Wrap(top + height_minus_shot)) {
             M_Hit(shot, output);
             return true;
         }

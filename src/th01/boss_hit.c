@@ -1,7 +1,7 @@
 #include "th01/boss_hit.h"
 
 #include "core/base/assert.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 static void M_Flash(
     const BOSS_HIT_CONTEXT *const c, const uint8_t *const colors,
@@ -19,7 +19,7 @@ void BossHit_UpdateAndRender(
     const int16_t hit_score, const bool orb_hit, const BOSS_SHOT_HITBOX box)
 {
     if (*c->test_damage) {
-        *c->hp = Math_Wrap16(*c->hp - 1);
+        *c->hp = Math16_Wrap(*c->hp - 1);
         *c->test_damage = false;
         HudHp_Decrement(c->health, c->display->video, *c->hp);
     }
@@ -31,7 +31,7 @@ void BossHit_UpdateAndRender(
             c->display->player, *c->display->remaining_lives, c->frame_rand)) {
         hit->frame = 0;
         M_Flash(c, flash_colors, flash_count);
-        *c->hp = Math_Wrap16(*c->hp - 1);
+        *c->hp = Math16_Wrap(*c->hp - 1);
         hit->invincible = true;
         ORB *const orb = c->orb;
         if (orb->velocity_x == ORB_X_LEFT_4

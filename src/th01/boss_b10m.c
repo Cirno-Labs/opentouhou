@@ -1,5 +1,7 @@
 #include "th01/boss_b10m.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "th01/line_bullets.h"
 
 #include "core/base/assert.h"
@@ -148,9 +150,9 @@ static void M_Track(
     for (int32_t i = 0; i < 5; i++) {
         BOSS_ENTITY *const e = &b->eyes[i];
         if ((flags & (1 << i)) != 0) {
-            const int16_t center = Math_Wrap16(e->left + 32);
-            e->image = Math_Wrap16(center - M_Player(c)->left) > 32 ? 4
-                : Math_Wrap16(M_Player(c)->left - center) > 32      ? 5
+            const int16_t center = Math16_Wrap(e->left + 32);
+            e->image = Math16_Wrap(center - M_Player(c)->left) > 32 ? 4
+                : Math16_Wrap(M_Player(c)->left - center) > 32      ? 5
                                                                     : 3;
         }
     }
@@ -183,8 +185,8 @@ static void M_Next(B10M *const b, const int8_t phase)
 
 static void M_Common(B10M *const b)
 {
-    b->frame = Math_Wrap16(b->frame + 1);
-    b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+    b->frame = Math16_Wrap(b->frame + 1);
+    b->hit.frame = Math16_Wrap(b->hit.frame + 1);
 }
 
 static void M_Snap(B10M *const b, const B10M_CONTEXT *const c)
@@ -199,8 +201,8 @@ static void M_Group(
 {
     Pellets_AddGroup(
         c->pellets, c->pellet_shared, M_Player(c), c->rng,
-        c->hit->display->rank, Math_Wrap16(b->eyes[eye].left + 28),
-        Math_Wrap16(b->eyes[eye].top + (iris ? 28 : 32)), group, speed);
+        c->hit->display->rank, Math16_Wrap(b->eyes[eye].left + 28),
+        Math16_Wrap(b->eyes[eye].top + (iris ? 28 : 32)), group, speed);
 }
 
 static void M_Single(
@@ -209,7 +211,7 @@ static void M_Single(
 {
     Pellets_AddSingle(
         c->pellets, c->pellet_shared, c->hit->display->rank,
-        Math_Wrap16(b->eyes[eye].left + 28), Math_Wrap16(b->eyes[eye].top + 32),
+        Math16_Wrap(b->eyes[eye].left + 28), Math16_Wrap(b->eyes[eye].top + 32),
         angle, 64, motion, motion == PELLET_REGULAR ? 0 : 64, 0, 0);
 }
 
@@ -247,7 +249,7 @@ static void M_Toggle(
     int16_t *const frame)
 {
     M_Lock(b, c, close | open);
-    *frame = Math_Wrap16(*frame + 1);
+    *frame = Math16_Wrap(*frame + 1);
     if (*frame % 10 != 0) {
         if (dec < 3 && c->hit->palette->saved.colors[15][dec] > 0) {
             c->hit->palette->saved.colors[15][dec]--;
@@ -280,8 +282,8 @@ static void M_DownLaser(
     const B10M *const b, const B10M_CONTEXT *const c, const int32_t i,
     const bool put)
 {
-    const int16_t x = Math_Wrap16(b->eyes[i].left + 28);
-    const int16_t y = Math_Wrap16(b->eyes[i].top + 28);
+    const int16_t x = Math16_Wrap(b->eyes[i].left + 28);
+    const int16_t y = Math16_Wrap(b->eyes[i].top + 28);
     if (put) {
         Video_VerticalLine(M_Video(c), x, y, 398, 7);
     } else {
@@ -295,17 +297,17 @@ static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
         b->hp_bar_filled =
             HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
     }
-    b->frame = Math_Wrap16(b->frame + 1);
+    b->frame = Math16_Wrap(b->frame + 1);
     M_Lock(b, c, 31);
     for (int32_t i = 0; i < 5; i++) {
         const int16_t starts[] = { 160, 160, 180, 180, 200 };
         const int16_t ends[] = { 300, 300, 320, 320, 32767 };
         if (b->frame > starts[i] && b->frame < ends[i]) {
             M_DownLaser(b, c, i, true);
-            const int16_t x = Math_Wrap16(b->eyes[i].left + 28);
+            const int16_t x = Math16_Wrap(b->eyes[i].left + 28);
             const int16_t width = i == 1 ? 8 : 32;
-            if (M_Player(c)->left > Math_Wrap16(x - 24)
-                && M_Player(c)->left < Math_Wrap16(x + 24 - width)) {
+            if (M_Player(c)->left > Math16_Wrap(x - 24)
+                && M_Player(c)->left < Math16_Wrap(x + 24 - width)) {
                 M_Player(c)->is_hit = true;
             }
         }
@@ -328,7 +330,7 @@ static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
     if (opening) {
         const int16_t starts[] = { 100, 100, 120, 120, 140 };
         for (int32_t i = 0; i < 5; i++) {
-            const int16_t delta = Math_Wrap16(b->frame - starts[i]);
+            const int16_t delta = Math16_Wrap(b->frame - starts[i]);
             if (delta >= 0 && delta <= 60) {
                 b->eyes[i].image = delta < 20 ? 1
                     : delta < 40              ? 2
@@ -410,10 +412,10 @@ static void M_FireMissiles(B10M *const b, const B10M_CONTEXT *const c)
 {
     const uint8_t angles[] = { b->angle, b->angle_southeast };
     for (int32_t i = 0; i < 2; i++) {
-        const MATH_VECTOR v = Math_Vector(8, angles[i]);
+        const MATH16_VECTOR v = Math16_Vector(8, angles[i]);
         Missiles_Add(
-            c->missiles, Math_Wrap16(b->eyes[i + 2].left + 28),
-            Math_Wrap16(b->eyes[i + 2].top + 28), v.x, v.y, 0);
+            c->missiles, Math16_Wrap(b->eyes[i + 2].left + 28),
+            Math16_Wrap(b->eyes[i + 2].top + 28), v.x, v.y, 0);
     }
 }
 
@@ -428,17 +430,17 @@ static void M_Missiles(
     if (b->frame == 100 || b->subphase % 4 == 1) {
         if (b->subphase == 0) {
             b->subphase =
-                (int16_t)((Math_Random(c->rng) % (clock ? 2 : 3)) * 4 + 1);
-            b->target_left = Math_Wrap16(M_Player(c)->left - 8);
-            b->angle = (uint8_t)(Math_Angle(
-                                     Math_Wrap16(400 - b->eyes[2].top + 28),
-                                     Math_Wrap16(
+                (int16_t)((MasterRng_Next(c->rng) % (clock ? 2 : 3)) * 4 + 1);
+            b->target_left = Math16_Wrap(M_Player(c)->left - 8);
+            b->angle = (uint8_t)(Math16_Angle(
+                                     Math16_Wrap(400 - b->eyes[2].top + 28),
+                                     Math16_Wrap(
                                          b->target_left - b->eyes[2].left + 28))
                                  - 16);
             b->angle_southeast =
-                (uint8_t)(Math_Angle(
-                              Math_Wrap16(400 - b->eyes[3].top + 28),
-                              Math_Wrap16(
+                (uint8_t)(Math16_Angle(
+                              Math16_Wrap(400 - b->eyes[3].top + 28),
+                              Math16_Wrap(
                                   b->target_left - b->eyes[3].left + 28))
                           + 16);
         }
@@ -452,7 +454,7 @@ static void M_Missiles(
     }
     if (b->subphase % 4 == 2) {
         if (b->frame % 8 == 1) {
-            b->pattern_state = Math_Wrap16(b->pattern_state + 1);
+            b->pattern_state = Math16_Wrap(b->pattern_state + 1);
             if (clock) {
                 const int16_t delta = b->subphase == 2 ? -2 : 2;
                 b->angle = (uint8_t)(b->angle + delta);
@@ -468,7 +470,7 @@ static void M_Missiles(
             }
         }
     } else if (b->subphase % 4 == 3 && b->frame % 8 == 1) {
-        b->pattern_state = Math_Wrap16(b->pattern_state + 1);
+        b->pattern_state = Math16_Wrap(b->pattern_state + 1);
         if (clock) {
             const int16_t delta = b->subphase == 3 ? 3 : -3;
             b->angle = (uint8_t)(b->angle + delta);
@@ -493,7 +495,7 @@ static void M_Missiles(
 
 static void M_Spray(B10M *const b, const B10M_CONTEXT *const c)
 {
-    b->pattern_state = Math_Wrap16(b->pattern_state + 1);
+    b->pattern_state = Math16_Wrap(b->pattern_state + 1);
     b->angle--;
     M_Lock(b, c, 3);
     M_Track(b, c, 3);
@@ -537,15 +539,15 @@ static void M_Laser(
     B10M *const b, const B10M_CONTEXT *const c, const bool left,
     const bool restore_only)
 {
-    const int16_t x = Math_Wrap16(b->eyes[4].left + 28);
-    const int16_t y = Math_Wrap16(b->eyes[4].top + 28);
+    const int16_t x = Math16_Wrap(b->eyes[4].left + 28);
+    const int16_t y = Math16_Wrap(b->eyes[4].top + 28);
     const int16_t end =
-        left ? Math_Wrap16(640 - b->pattern_state) : b->pattern_state;
+        left ? Math16_Wrap(640 - b->pattern_state) : b->pattern_state;
     if (restore_only) {
         LineBullets_Erase(M_Video(c), x, y, end, 400);
     } else {
         LineBullets_Erase(
-            M_Video(c), x, y, Math_Wrap16(end - (left ? -16 : 16)), 400);
+            M_Video(c), x, y, Math16_Wrap(end - (left ? -16 : 16)), 400);
         LineBullets_PutPatternedAndHitTest(
             M_Video(c), M_Player(c), x, y, end, 400, 7, 0xe0);
     }
@@ -604,25 +606,25 @@ static void M_Lasers(B10M *const b, const B10M_CONTEXT *const c)
             }
         }
     }
-    b->pattern_state = Math_Wrap16(b->pattern_state + 16);
+    b->pattern_state = Math16_Wrap(b->pattern_state + 16);
 }
 
-static MATH_VECTOR M_ShrinkPoint(
+static MATH16_VECTOR M_ShrinkPoint(
     const B10M *const b, const int32_t i, const int16_t distance)
 {
-    int16_t x = Math_Wrap16(b->eyes[i].left + 28);
-    int16_t y = Math_Wrap16(b->eyes[i].top + 28);
+    int16_t x = Math16_Wrap(b->eyes[i].left + 28);
+    int16_t y = Math16_Wrap(b->eyes[i].top + 28);
     if (i == 0) {
-        x = Math_Wrap16(x + distance);
+        x = Math16_Wrap(x + distance);
     } else if (i == 1) {
-        x = Math_Wrap16(x - distance);
+        x = Math16_Wrap(x - distance);
     } else if (i == 2) {
-        x = Math_Wrap16(x + distance / 3);
+        x = Math16_Wrap(x + distance / 3);
     } else if (i == 3) {
-        x = Math_Wrap16(x - distance / 3);
+        x = Math16_Wrap(x - distance / 3);
     }
-    y = Math_Wrap16(y + distance / (i < 2 ? 3 : 2));
-    return (MATH_VECTOR) { x, y };
+    y = Math16_Wrap(y + distance / (i < 2 ? 3 : 2));
+    return (MATH16_VECTOR) { x, y };
 }
 
 static void M_Shrink(
@@ -631,8 +633,8 @@ static void M_Shrink(
 {
     const int32_t order[] = { 4, 2, 1, 0, 3, 4 };
     for (int32_t i = 0; i < 5; i++) {
-        const MATH_VECTOR a = M_ShrinkPoint(b, order[i], distance);
-        const MATH_VECTOR z = M_ShrinkPoint(b, order[i + 1], distance);
+        const MATH16_VECTOR a = M_ShrinkPoint(b, order[i], distance);
+        const MATH16_VECTOR z = M_ShrinkPoint(b, order[i + 1], distance);
         if (restore) {
             LineBullets_Erase(M_Video(c), a.x, a.y, z.x, z.y);
         } else {
@@ -661,9 +663,9 @@ static void M_Star(
 static void M_Corners(B10M *const b, const int16_t angle)
 {
     for (int32_t i = 0; i < 5; i++) {
-        b->pentagram.x[i] = Math_PolarX(
+        b->pentagram.x[i] = Math16_PolarX(
             b->pentagram.center.x, b->pentagram.radius, angle + i * 51);
-        b->pentagram.y[i] = Math_PolarY(
+        b->pentagram.y[i] = Math16_PolarY(
             b->pentagram.center.y, b->pentagram.radius, angle + i * 51);
     }
 }
@@ -682,7 +684,7 @@ static void M_Enter12(B10M *const b, const B10M_CONTEXT *const c)
     b->subphase = 0;
     b->iterations = 1;
     b->pattern_state = 0;
-    b->pentagram.center.y = Math_Wrap16(b->pentagram.y[0] + 64);
+    b->pentagram.center.y = Math16_Wrap(b->pentagram.y[0] + 64);
     b->pentagram.center.x = b->pentagram.x[0];
     b->pentagram.radius = 64;
     M_Corners(b, 0);
@@ -707,12 +709,12 @@ static void M_SpawnStar(B10M *const b, const B10M_CONTEXT *const c)
     }
     if (b->subphase == 2 && b->frame % 4 == 1) {
         M_Shrink(b, c, b->pattern_state, true);
-        b->pattern_state = Math_Wrap16(b->pattern_state + 8);
+        b->pattern_state = Math16_Wrap(b->pattern_state + 8);
         M_Shrink(b, c, b->pattern_state, false);
         if (b->pattern_state > 160) {
             const int32_t order[] = { 4, 2, 1, 0, 3 };
             for (int32_t i = 0; i < 5; i++) {
-                const MATH_VECTOR point =
+                const MATH16_VECTOR point =
                     M_ShrinkPoint(b, order[i], b->pattern_state);
                 b->pentagram.x[i] = point.x;
                 b->pentagram.y[i] = point.y;
@@ -724,15 +726,15 @@ static void M_SpawnStar(B10M *const b, const B10M_CONTEXT *const c)
 
 static void M_Spin(B10M *const b, const bool clockwise)
 {
-    const int16_t delta = Math_Wrap16(b->frame / 64 + 2);
+    const int16_t delta = Math16_Wrap(b->frame / 64 + 2);
     b->pentagram.angle =
-        Math_Wrap16(b->pentagram.angle + (clockwise ? delta : -delta));
+        Math16_Wrap(b->pentagram.angle + (clockwise ? delta : -delta));
 }
 
 static void M_Aim(B10M *const b, const B10M_CONTEXT *const c)
 {
-    b->pentagram.velocity = Math_VectorBetween(
-        b->pentagram.center, (MATH_VECTOR) { M_Player(c)->left, 400 }, 4);
+    b->pentagram.velocity = Math16_Aim(
+        b->pentagram.center, (MATH16_VECTOR) { M_Player(c)->left, 400 }, 4, 0);
 }
 
 static void M_Back(
@@ -755,9 +757,9 @@ static bool M_SlamStar(
         }
         M_Spin(b, true);
         b->pentagram.center.x =
-            Math_Wrap16(b->pentagram.center.x + b->pentagram.velocity.x);
+            Math16_Wrap(b->pentagram.center.x + b->pentagram.velocity.x);
         b->pentagram.center.y =
-            Math_Wrap16(b->pentagram.center.y + b->pentagram.velocity.y);
+            Math16_Wrap(b->pentagram.center.y + b->pentagram.velocity.y);
         M_Regular(b, c, b->pentagram.angle);
     }
     return b->pentagram.center.y >= 420;
@@ -765,7 +767,7 @@ static bool M_SlamStar(
 
 static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
 {
-    b->pattern_state = Math_Wrap16(b->pattern_state + 1);
+    b->pattern_state = Math16_Wrap(b->pattern_state + 1);
     M_Lock(b, c, (uint8_t)b->iterations);
     if (b->hit.invincible && b->after_hit_frame == 0) {
         b->iterations = M_Byte(b->iterations * 2);
@@ -788,9 +790,9 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
     if (b->subphase == 0 && b->frame % b->pattern_interval == 0 && p->phase != 6
         && p->phase != 9) {
         for (int32_t i = 0; i < 5; i++) {
-            b->angle = Math_Angle(
-                Math_Wrap16(p->y[i] - p->center.y),
-                Math_Wrap16(p->x[i] - p->center.x));
+            b->angle = Math16_Angle(
+                Math16_Wrap(p->y[i] - p->center.y),
+                Math16_Wrap(p->x[i] - p->center.x));
             Pellets_AddSingle(
                 c->pellets, c->pellet_shared, c->hit->display->rank, p->x[i],
                 p->y[i], b->angle, 48, PELLET_REGULAR, 0, 0, 0);
@@ -826,7 +828,7 @@ static void M_AttackStar(B10M *const b, const B10M_CONTEXT *const c)
         }
     } else if (p->phase == 8) {
         if (b->frame % 4 == 0) {
-            p->radius = Math_Wrap16(p->radius + 1);
+            p->radius = Math16_Wrap(p->radius + 1);
             M_Spin(b, true);
             M_Regular(b, c, p->angle);
         }
@@ -1012,10 +1014,10 @@ bool B10M_UpdateAndRender(
             M_Enter12(b, c);
         }
     } else if (b->phase == 12) {
-        b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+        b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Toggle(b, c, 30, 1, 1, 0, &b->frame);
         if (b->hit.frame % 4 == 0) {
-            b->pentagram.center.y = Math_Wrap16(b->pentagram.center.y - 3);
+            b->pentagram.center.y = Math16_Wrap(b->pentagram.center.y - 3);
             M_Regular(b, c, 192);
         }
         if (b->frame >= 70) {

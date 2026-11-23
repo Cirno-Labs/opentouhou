@@ -1,7 +1,7 @@
 #include "th01/boss_defeat.h"
 
 #include "core/base/assert.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 static void M_Whiteout(const BOSS_DEFEAT_CONTEXT *const c)
 {
@@ -79,7 +79,7 @@ bool BossDefeat_Resume(
                 return false;
             }
             Video_SetScroll(c->video, 0);
-            defeat->top = Math_Wrap16(
+            defeat->top = Math16_Wrap(
                 *c->origin_top
                 + (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 48 : 16));
             ASSERT(defeat->top >= 0 && defeat->top < VIDEO_HEIGHT);

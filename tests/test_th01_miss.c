@@ -1,6 +1,6 @@
 #include "th01/miss.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -120,7 +120,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     const MISS_CONTEXT context = M_Context(&state, 1);
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
     uint32_t rng = state.rng;
-    const int32_t expected_image = Math_Random(&rng) % 8 == 0 ? 23 : 22;
+    const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
     Miss_Begin(&miss, &context, &vsync);
     CHECK_EQ_INT(state.rng, rng);
     CHECK_EQ_INT(Video_ReadPixel(&state.video, 0, 304, 352), 6);

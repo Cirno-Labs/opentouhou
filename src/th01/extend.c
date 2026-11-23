@@ -1,11 +1,12 @@
 #include "th01/extend.h"
+#include "pc98/zun/math16.h"
 
 int16_t Extend_NextForScore(const uint32_t resident_score)
 {
     const int64_t score = resident_score <= INT32_MAX
         ? resident_score
         : (int64_t)resident_score - INT64_C(4294967296);
-    return Math_Wrap16((int32_t)(score / 400000 + 1));
+    return Math16_Wrap((int32_t)(score / 400000 + 1));
 }
 
 void Extend_UpdateAndRender(const EXTEND_CONTEXT *const c)
@@ -22,5 +23,5 @@ void Extend_UpdateAndRender(const EXTEND_CONTEXT *const c)
         c->effect(c->user, 15);
         Pellets_SpeedRaise(c->shared, 1);
     }
-    *c->next = Math_Wrap16(*c->next + 1);
+    *c->next = Math16_Wrap(*c->next + 1);
 }

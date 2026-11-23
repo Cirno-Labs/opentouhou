@@ -1,4 +1,6 @@
 #include "th01/pellets.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include "test.h"
 
@@ -69,7 +71,7 @@ TEST(all_groups_have_source_counts_angles_and_rng)
             CHECK_EQ_INT(rng, 1);
         } else {
             uint32_t expected_rng = 1;
-            Math_Random(&expected_rng);
+            MasterRng_Next(&expected_rng);
             CHECK_EQ_INT(rng, expected_rng);
         }
     }
@@ -80,7 +82,7 @@ TEST(all_groups_have_source_counts_angles_and_rng)
         &pellets, &shared, &player, &rng, 0, 300, 100, PELLET_GROUP_FOUR_WIDE,
         64);
     for (int32_t i = 0; i < 4; i++) {
-        const MATH_VECTOR v = Math_Vector(64, angles[i]);
+        const MATH16_VECTOR v = Math16_Vector(64, angles[i]);
         CHECK_EQ_INT(pellets.slots[i].velocity.x, v.x);
         CHECK_EQ_INT(pellets.slots[i].velocity.y, v.y);
     }
@@ -194,7 +196,7 @@ TEST(stale_idle_shot_can_suppress_orb_and_deflection)
     CHECK_EQ_INT(f.pellets.slots[0].decay_frame, 0);
     CHECK_EQ_INT(f.shared.destroy_score_delta, 0);
     f.shots.slots[0].top = 0;
-    f.pellets.slots[0].velocity = (MATH_VECTOR) { -3, -3 };
+    f.pellets.slots[0].velocity = (MATH16_VECTOR) { -3, -3 };
     Pellets_UpdateAndRender(&f.pellets, &f.context);
     CHECK_EQ_INT(f.pellets.slots[0].decay_frame, 2);
     CHECK_EQ_INT(f.pellets.slots[0].velocity.x, -2);
@@ -212,7 +214,7 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     CHECK(f.pellets.slots[0].not_rendered);
     CHECK_EQ_INT(f.pellets.slots[0].velocity.x, -128);
     CHECK_EQ_INT(f.pellets.slots[0].velocity.y, 0);
-    f.pellets.slots[0].velocity = (MATH_VECTOR) { 7, -7 };
+    f.pellets.slots[0].velocity = (MATH16_VECTOR) { 7, -7 };
     f.shared.destroy_score_delta = 65530;
     Pellets_Decay(&f.pellets, &f.shared);
     CHECK_EQ_INT(f.pellets.slots[0].velocity.x, 4);
@@ -240,7 +242,7 @@ TEST(sling_retains_direction_and_retargets_only_after_full_turn)
     p->sling_direction = 2;
     p->angle = 248;
     Pellets_UpdateAndRender(&f.pellets, &f.context);
-    const MATH_VECTOR v = Math_Vector(16, 248);
+    const MATH16_VECTOR v = Math16_Vector(16, 248);
     CHECK_EQ_INT(p->velocity.x, v.y);
     CHECK_EQ_INT(p->velocity.y, v.x);
     CHECK_EQ_INT(p->angle, 256);

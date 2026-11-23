@@ -1,4 +1,5 @@
 #include "th01/bonus.h"
+#include "pc98/vsync.h"
 
 #include "core/base/arena.h"
 
@@ -350,7 +351,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(f.common.score_bonus, 16050);
     CHECK_EQ_INT(f.common.gameplay.score, 390000);
     CHECK_EQ_INT(f.bonus.phase, BONUS_TOTAL_DIGIT_WAIT);
-    FRAME_CLOCK clock = {};
+    VSYNC_CLOCK clock = {};
     int32_t ticks = 0;
     while (f.bonus.phase != BONUS_TOTAL_CONFIRM && ticks < 1000) {
         const BONUS_TOTAL frozen = f.bonus;
@@ -360,7 +361,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
         CHECK(memcmp(&frozen, &f.bonus, sizeof(frozen)) == 0);
         CHECK_EQ_INT(f.effects, effects);
         ticks++;
-        if (Frame_Advance(&clock)) {
+        if (VSync_Advance(&clock)) {
             Frame_VSync(&vsync);
         }
         CHECK(!Bonus_ResumeTotal(

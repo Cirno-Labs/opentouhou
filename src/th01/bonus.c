@@ -1,6 +1,6 @@
 #include "th01/bonus.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
 
@@ -91,21 +91,21 @@ static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
     for (int32_t i = 0; i < 7; i++) {
         M_Text(c, m_Labels[i], i == 6 ? 112 : 0, rows[i], i == 6 ? 10 : 7);
     }
-    M_StageMetric(c, 3, Math_Wrap16(c->timer->time * 3));
-    M_StageMetric(c, 5, Math_Wrap16(c->display->gameplay->maximum_combo * 100));
+    M_StageMetric(c, 3, Math16_Wrap(c->timer->time * 3));
+    M_StageMetric(c, 5, Math16_Wrap(c->display->gameplay->maximum_combo * 100));
     M_StageMetric(
         c, 7,
-        Math_Wrap16(
+        Math16_Wrap(
             *c->display->remaining_lives * 200
             + c->display->player->remaining_bombs * 100));
-    M_StageMetric(c, 9, Math_Wrap16((b->stage_number - 1) * 200));
+    M_StageMetric(c, 9, Math16_Wrap((b->stage_number - 1) * 200));
     c->display->gameplay->score += *c->score_bonus;
     const uint32_t bits = *c->score_bonus;
     c->bonus_per_stage[(b->stage_number - 1) % 5] = bits <= INT32_MAX
         ? (int32_t)bits
         : (int32_t)((int64_t)bits - INT64_C(4294967296));
-    const int16_t div = Math_Wrap16((int32_t)(bits / 10000));
-    const int16_t remainder = Math_Wrap16((int32_t)(bits % 10000));
+    const int16_t div = Math16_Wrap((int32_t)(bits / 10000));
+    const int16_t remainder = Math16_Wrap((int32_t)(bits % 10000));
     const int16_t digits[] = { (int16_t)(div / 10),
                                (int16_t)(div % 10),
                                (int16_t)(remainder / 1000),

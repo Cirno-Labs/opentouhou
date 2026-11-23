@@ -1,6 +1,7 @@
 #include "th01/boss_b05.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
 
 #include "core/base/assert.h"
@@ -86,8 +87,8 @@ static void M_Move(
     BOSS_ENTITY *const e = &b->sphere;
     if (dy < 0) {
         Sprite_Restore16(
-            M_Video(c), e->left, Math_Wrap16(e->top + dy + 96), 96,
-            Math_Wrap16(-dy));
+            M_Video(c), e->left, Math16_Wrap(e->top + dy + 96), 96,
+            Math16_Wrap(-dy));
     } else if (dy > 0) {
         Sprite_Restore16(M_Video(c), e->left, e->top, 96, dy);
     }
@@ -95,10 +96,10 @@ static void M_Move(
         Sprite_Restore16(M_Video(c), e->left, e->top, 8, 96);
     } else if (dx < 0) {
         Sprite_Restore16(
-            M_Video(c), Math_Wrap16(e->left + 96 - dy), e->top, 8, 96);
+            M_Video(c), Math16_Wrap(e->left + 96 - dy), e->top, 8, 96);
     }
-    e->top = Math_Wrap16(e->top + dy);
-    e->left = Math_Wrap16(e->left + dx);
+    e->top = Math16_Wrap(e->top + dy);
+    e->left = Math16_Wrap(e->left + dx);
     if (e->left < 0) {
         e->left = 0;
     }
@@ -123,7 +124,7 @@ static void M_Add(
 static void M_Half(B05 *const b, const B05_CONTEXT *const c)
 {
     if (b->frame == 10) {
-        b->direction = Math_Random(c->rng) % 2 == 1 ? 1 : -1;
+        b->direction = MasterRng_Next(c->rng) % 2 == 1 ? 1 : -1;
     }
     if (b->frame < 100) {
         M_Accelerate(b, c, b->direction);
@@ -137,8 +138,8 @@ static void M_Half(B05 *const b, const B05_CONTEXT *const c)
         M_Rotate(b, c, b->direction, 1);
         if (b->frame % (60 / b->pattern_state) == 0) {
             M_Add(
-                c, Math_Wrap16(b->sphere.left + 44),
-                Math_Wrap16(b->sphere.top + 44), b->angle, 50, PELLET_REGULAR,
+                c, Math16_Wrap(b->sphere.left + 44),
+                Math16_Wrap(b->sphere.top + 44), b->angle, 50, PELLET_REGULAR,
                 0);
             b->angle =
                 (uint8_t)(b->angle - b->direction * 128 / b->pattern_state);
@@ -157,11 +158,11 @@ static void M_Slam(B05 *const b, const B05_CONTEXT *const c)
     const PLAYER *const player = c->hit->display->player;
     if (b->frame == 100) {
         b->pattern_state = M_Rank(c, 4, 4, 5, 6);
-        const uint8_t angle = Math_Angle(
-            Math_Wrap16(368 - Math_Wrap16(b->sphere.top + 32)),
-            Math_Wrap16(player->left - Math_Wrap16(b->sphere.left + 32)));
-        b->velocity_x = Math_PolarX(0, b->pattern_state, angle);
-        b->velocity_y = Math_PolarY(0, b->pattern_state, angle);
+        const uint8_t angle = Math16_Angle(
+            Math16_Wrap(368 - Math16_Wrap(b->sphere.top + 32)),
+            Math16_Wrap(player->left - Math16_Wrap(b->sphere.left + 32)));
+        b->velocity_x = Math16_PolarX(0, b->pattern_state, angle);
+        b->velocity_y = Math16_PolarY(0, b->pattern_state, angle);
     }
     if (b->velocity_x != 999) {
         M_Move(b, c, b->velocity_x, b->velocity_y);
@@ -178,7 +179,7 @@ static void M_Slam(B05 *const b, const B05_CONTEXT *const c)
         b->frame = 0;
     }
     if (!player->invincible && b->sphere.left <= player->left
-        && Math_Wrap16(b->sphere.left + 64) >= player->left
+        && Math16_Wrap(b->sphere.left + 64) >= player->left
         && b->sphere.top >= 272) {
         c->hit->display->player->is_hit = true;
     }
@@ -194,17 +195,17 @@ static void M_FireMan(
                                              : M_Rank(c, 48, 64, 80, 96);
     for (int32_t i = 0; i < 10; i++) {
         if (fire == B05_FIRE_DOWN) {
-            const uint8_t angle = (uint8_t)(Math_Random(c->rng) % 128);
+            const uint8_t angle = (uint8_t)(MasterRng_Next(c->rng) % 128);
             M_Add(
-                c, Math_Wrap16(b->sphere.left + 44),
-                Math_Wrap16(b->sphere.top + 44), angle, b->pattern_state,
+                c, Math16_Wrap(b->sphere.left + 44),
+                Math16_Wrap(b->sphere.top + 44), angle, b->pattern_state,
                 PELLET_REGULAR, 0);
         } else {
-            const int16_t dx = (int16_t)(Math_Random(c->rng) % 96);
-            const int16_t dy = (int16_t)(Math_Random(c->rng) % 96);
+            const int16_t dx = (int16_t)(MasterRng_Next(c->rng) % 96);
+            const int16_t dy = (int16_t)(MasterRng_Next(c->rng) % 96);
             M_Add(
-                c, Math_Wrap16(b->sphere.left + dx),
-                Math_Wrap16(b->sphere.top + dy), 0, 0, PELLET_SLING_AIMED,
+                c, Math16_Wrap(b->sphere.left + dx),
+                Math16_Wrap(b->sphere.top + dy), 0, 0, PELLET_SLING_AIMED,
                 b->pattern_state);
         }
     }
@@ -253,11 +254,11 @@ static void M_Chase(B05 *const b, const B05_CONTEXT *const c)
     if (b->frame > 140 && b->frame <= 220 && b->frame % 8 == 0) {
         const int16_t speed = M_Rank(c, 55, 58, 62, 65);
         M_Add(
-            c, Math_Wrap16(b->sphere.left + 44),
-            Math_Wrap16(b->sphere.top + 44), 0xf0, 16, PELLET_CHASE, speed);
+            c, Math16_Wrap(b->sphere.left + 44),
+            Math16_Wrap(b->sphere.top + 44), 0xf0, 16, PELLET_CHASE, speed);
         M_Add(
-            c, Math_Wrap16(b->sphere.left + 44),
-            Math_Wrap16(b->sphere.top + 44), 0x90, 16, PELLET_CHASE, speed);
+            c, Math16_Wrap(b->sphere.left + 44),
+            Math16_Wrap(b->sphere.top + 44), 0x90, 16, PELLET_CHASE, speed);
     }
 }
 
@@ -267,11 +268,11 @@ static void M_Cross(B05 *const b, const B05_CONTEXT *const c)
     if (b->frame > 140 && b->frame % 8 == 0) {
         const int16_t speed = M_Rank(c, 60, 70, 75, 80);
         M_Add(
-            c, Math_Wrap16(b->sphere.left + 12),
-            Math_Wrap16(b->sphere.top + 44), 0x30, speed, PELLET_REGULAR, 0);
+            c, Math16_Wrap(b->sphere.left + 12),
+            Math16_Wrap(b->sphere.top + 44), 0x30, speed, PELLET_REGULAR, 0);
         M_Add(
-            c, Math_Wrap16(b->sphere.left + 84),
-            Math_Wrap16(b->sphere.top + 44), 0x50, speed, PELLET_REGULAR, 0);
+            c, Math16_Wrap(b->sphere.left + 84),
+            Math16_Wrap(b->sphere.top + 44), 0x50, speed, PELLET_REGULAR, 0);
     }
 }
 
@@ -517,8 +518,8 @@ bool B05_UpdateAndRender(
             b->hp_bar_filled = HudHp_Increment(
                 c->hit->health, M_Video(c), b->hp, b->hit.frame);
         }
-        b->frame = Math_Wrap16(b->frame + 1);
-        b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
+        b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         if (b->phase == 1) {
             if (b->pattern == 0) {
                 M_Half(b, c);
@@ -526,7 +527,7 @@ bool B05_UpdateAndRender(
                 M_Slam(b, c);
             }
             if (b->frame == 0) {
-                b->pattern = b->pattern == 1 ? 0 : Math_Wrap16(b->pattern + 1);
+                b->pattern = b->pattern == 1 ? 0 : Math16_Wrap(b->pattern + 1);
             }
         } else {
             switch (b->pattern) {
@@ -548,7 +549,7 @@ bool B05_UpdateAndRender(
             }
             if (b->frame == 0) {
                 b->pattern =
-                    b->pattern == 4 ? (int16_t)(Math_Random(c->rng) % 4) : 4;
+                    b->pattern == 4 ? (int16_t)(MasterRng_Next(c->rng) % 4) : 4;
             }
         }
         BOSS_HIT_CONTEXT hit = *c->hit;
@@ -559,8 +560,8 @@ bool B05_UpdateAndRender(
             &b->hit, &hit, flash, 1, 3000,
             BossEntity_HitTestOrb(&b->sphere, hit.orb),
             (BOSS_SHOT_HITBOX) {
-                Math_Wrap16(b->sphere.left + 16),
-                Math_Wrap16(b->sphere.top + 32),
+                Math16_Wrap(b->sphere.left + 16),
+                Math16_Wrap(b->sphere.top + 32),
                 96,
                 48,
             });

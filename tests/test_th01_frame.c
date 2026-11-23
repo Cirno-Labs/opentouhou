@@ -1,4 +1,5 @@
 #include "th01/frame.h"
+#include "pc98/vsync.h"
 #include "th01/logo.h"
 
 #include "core/base/arena.h"
@@ -60,57 +61,6 @@ static bool M_AdvanceLogo(
     return running;
 }
 
-TEST(first_vsync_waits_for_a_complete_reference_period)
-{
-    FRAME_CLOCK clock = {};
-    CHECK(!Frame_Advance(&clock));
-    CHECK_EQ_INT(clock.phase, 105263);
-    CHECK(Frame_Advance(&clock));
-    CHECK_EQ_INT(clock.phase, 98590);
-    for (int32_t tick = 3; tick <= 16; tick++) {
-        CHECK(Frame_Advance(&clock));
-    }
-    CHECK(!Frame_Advance(&clock));
-    CHECK(Frame_Advance(&clock));
-}
-
-TEST(each_prefix_matches_the_reference_dot_clock)
-{
-    FRAME_CLOCK clock = {};
-    uint64_t frames = 0;
-    for (uint64_t tick = 1; tick <= 1000000; tick++) {
-        frames += Frame_Advance(&clock);
-        CHECK_EQ_INT(frames, M_ReferenceCount(tick));
-        CHECK(clock.phase < 111936);
-    }
-}
-
-TEST(full_periods_keep_the_exact_rate_without_drift)
-{
-    FRAME_CLOCK clock = {};
-    int32_t frames = 0;
-    for (int32_t period = 1; period <= 3; period++) {
-        for (int32_t tick = 0; tick < 111936; tick++) {
-            frames += Frame_Advance(&clock);
-        }
-        CHECK_EQ_INT(frames, period * 105263);
-        CHECK_EQ_INT(clock.phase, 0);
-    }
-}
-
-TEST(restoring_phase_repeats_the_same_frame_boundaries)
-{
-    FRAME_CLOCK first = {};
-    for (int32_t tick = 0; tick < 137; tick++) {
-        Frame_Advance(&first);
-    }
-    FRAME_CLOCK restored = first;
-    for (int32_t tick = 0; tick < 111936; tick++) {
-        CHECK_EQ_INT(Frame_Advance(&first), Frame_Advance(&restored));
-        CHECK_EQ_INT(first.phase, restored.phase);
-    }
-}
-
 TEST(scheduled_logo_preserves_every_logical_update_and_page)
 {
     ARENA arena;
@@ -131,7 +81,7 @@ TEST(scheduled_logo_preserves_every_logical_update_and_page)
             (GFX_COLOR) { (uint8_t)(i * 17), (uint8_t)(255 - i * 17),
                           (uint8_t)(i * 13), 255 };
     }
-    FRAME_CLOCK clock = {};
+    VSYNC_CLOCK clock = {};
     int32_t logical_ticks = 0;
     int32_t host_ticks = 0;
     int32_t changed_pages = 0;
@@ -145,7 +95,7 @@ TEST(scheduled_logo_preserves_every_logical_update_and_page)
             expected_running =
                 M_AdvanceLogo(&expected, &sprites, &expected_changed);
         }
-        if (Frame_Advance(&clock)) {
+        if (VSync_Advance(&clock)) {
             running = M_AdvanceLogo(&actual, &sprites, &actual_changed);
             logical_ticks += running;
         }

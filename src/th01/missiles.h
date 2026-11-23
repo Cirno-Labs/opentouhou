@@ -1,7 +1,7 @@
 #pragma once
 
 #include "th01/player.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #define MISSILES_COUNT 50
 
@@ -14,7 +14,7 @@ typedef enum {
 
 typedef struct {
     int16_t left, top, previous_left, previous_top;
-    MATH_VECTOR velocity;
+    MATH16_VECTOR velocity;
     int16_t unused;
     int8_t reserved;
     uint8_t flag;

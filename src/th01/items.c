@@ -1,6 +1,6 @@
 #include "th01/items.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/shape.h"
 
 #include "core/base/assert.h"
@@ -76,10 +76,10 @@ static void M_Popup(
     Sprite_Restore16(context->video, left, item->top, bomb ? 32 : 48, 16);
     if (bomb && item->flag == ITEM_COLLECTED) {
         Sprite_Restore16(
-            context->video, M_SecondLeft(item), Math_Wrap16(item->top + 16), 64,
+            context->video, M_SecondLeft(item), Math16_Wrap(item->top + 16), 64,
             16);
     }
-    item->top = Math_Wrap16(item->top + item->velocity_y);
+    item->top = Math16_Wrap(item->top + item->velocity_y);
     item->radius_or_time--;
     if (item->radius_or_time == 0) {
         item->flag = ITEM_FREE;
@@ -92,7 +92,7 @@ static void M_Popup(
         if (item->flag == ITEM_COLLECTED) {
             M_Text(
                 context, "Extend!!", M_SecondLeft(item),
-                Math_Wrap16(item->top + 16));
+                Math16_Wrap(item->top + 16));
         }
     } else {
         char text[6] = "     ";
@@ -115,8 +115,8 @@ static void M_Update(
     M_Collect(item, context, bomb);
     const int32_t image = bomb ? ITEM_BOMB_IMAGE : ITEM_POINT_IMAGE;
     if (item->flag == ITEM_SPLASH) {
-        const int16_t x = Math_Wrap16(item->left + 16);
-        const int16_t y = Math_Wrap16(item->top + 16);
+        const int16_t x = Math16_Wrap(item->left + 16);
+        const int16_t y = Math16_Wrap(item->top + 16);
         Shape_EllipseArcErase(
             context->video, x, y, item->radius_or_time, item->radius_or_time, 8,
             0, 255);
@@ -132,15 +132,15 @@ static void M_Update(
         Sprite_PtnErase(
             context->video, context->sprites, image, -1, item->left, item->top);
         if (item->flag == ITEM_FALL) {
-            item->top = Math_Wrap16(item->top + item->velocity_y);
+            item->top = Math16_Wrap(item->top + item->velocity_y);
             if (item->top >= 368) {
                 item->velocity_y = -8;
                 item->flag = ITEM_BOUNCE;
             }
         }
         if (item->flag == ITEM_BOUNCE) {
-            item->top = Math_Wrap16(item->top + item->velocity_y);
-            item->velocity_y = Math_Wrap16(item->velocity_y + 1);
+            item->top = Math16_Wrap(item->top + item->velocity_y);
+            item->velocity_y = Math16_Wrap(item->velocity_y + 1);
             if (item->top >= 400) {
                 item->flag = ITEM_FREE;
                 if (!bomb) {

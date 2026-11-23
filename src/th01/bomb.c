@@ -1,6 +1,6 @@
 #include "th01/bomb.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
 
@@ -59,9 +59,9 @@ static BOMB_UPDATE M_Finish(BOMB *const bomb, const BOMB_CONTEXT *const context)
     }
     for (int32_t angle = 0; angle < 256; angle += 16) {
         for (int16_t factor = 6; factor <= 8; factor++) {
-            const int16_t radius = Math_Wrap16((frame - 50) * factor);
-            bomb->left[0] = Math_PolarX(304, radius, angle);
-            bomb->top[0] = Math_PolarY(184, radius, angle);
+            const int16_t radius = Math16_Wrap((frame - 50) * factor);
+            bomb->left[0] = Math16_PolarX(304, radius, angle);
+            bomb->top[0] = Math16_PolarY(184, radius, angle);
             Video_Invert32(video, bomb->left[0], bomb->top[0], 1);
         }
     }
@@ -141,9 +141,9 @@ BOMB_UPDATE Bomb_BeginUpdate(
                     Sprite_Restore16(
                         video, bomb->left[i], bomb->top[i], 48, 32);
                     const int16_t radius =
-                        Math_Wrap16(500 - ring * 10 - (frame + 60) * 4);
-                    bomb->left[i] = Math_PolarX(304, radius, angle);
-                    bomb->top[i] = Math_PolarY(184, radius, angle);
+                        Math16_Wrap(500 - ring * 10 - (frame + 60) * 4);
+                    bomb->left[i] = Math16_PolarX(304, radius, angle);
+                    bomb->top[i] = Math16_PolarY(184, radius, angle);
                     M_KujiPut(
                         video, &context->assets->kuji[i - ring == 8 ? 1 : 0],
                         i - ring == 8 ? 0 : i - ring, bomb->left[i],

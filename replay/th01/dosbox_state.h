@@ -3,6 +3,7 @@
 #include "addresses.h"
 #include "harness.h"
 
+#include "pc98/vsync.h"
 #include "th01/frame.h"
 
 #include <stdint.h>
@@ -14,7 +15,7 @@
 // them last, whether REIIDEN has run, whether the running REIIDEN has
 // set its cards up, and the last cards' count and hash.
 typedef struct {
-    FRAME_CLOCK clock;
+    VSYNC_CLOCK clock;
     uint32_t frames;
     uint32_t menu_frame;
     uint32_t track_starts;

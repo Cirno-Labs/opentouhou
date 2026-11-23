@@ -1,6 +1,6 @@
 #include "th01/stage_objects.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
 
 #include <string.h>
@@ -130,7 +130,7 @@ static void M_Init(
                 (size_t)objects->obstacle_count * sizeof(STAGE_OBSTACLE));
         }
     }
-    Math_Random(rng);
+    MasterRng_Next(rng);
     int32_t card = 0;
     for (int32_t y = 0; y < 10; y++) {
         for (int32_t x = 0; x < 20; x++) {

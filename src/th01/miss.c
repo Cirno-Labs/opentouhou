@@ -1,6 +1,7 @@
 #include "th01/miss.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/assert.h"
 
@@ -31,10 +32,10 @@ static void M_Effect(MISS *const miss, const MISS_CONTEXT *const context)
     PLAYER *const player = context->player;
     Sprite_Restore16(context->video, player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(context->video, miss->effect_left, PLAYER_TOP, 32, 32);
-    player->left = Math_Wrap16(
+    player->left = Math16_Wrap(
         player->left
         + (miss->frame < 10 ? 16 : (304 - miss->target_right) / 20));
-    miss->effect_left = Math_Wrap16(
+    miss->effect_left = Math16_Wrap(
         miss->effect_left
         + (miss->frame < 10 ? -16 : (304 - miss->target_left) / 20));
     if (player->left >= 608) {
@@ -57,17 +58,17 @@ static void M_Reset(MISS *const miss, const MISS_CONTEXT *const context)
 {
     PLAYER *const player = context->player;
     Sprite_Restore16(
-        context->video, Math_Wrap16(player->left - 8), 352, 48, 48);
+        context->video, Math16_Wrap(player->left - 8), 352, 48, 48);
     MISS_SHOTS shot_context = { context->video, context->stage };
     Shots_EraseAndReset(
         context->shots, (SHOTS_OUTPUT) { M_Shot, &shot_context });
     context->pellets_decay(context->user);
     Player_Reset(player, context->input, context->difficulty);
-    miss->target_right = Math_Wrap16(player->left + 160);
+    miss->target_right = Math16_Wrap(player->left + 160);
     if (miss->target_right >= 608) {
         miss->target_right = 608;
     }
-    miss->target_left = Math_Wrap16(player->left - 160);
+    miss->target_left = Math16_Wrap(player->left - 160);
     if (miss->target_left < 0) {
         miss->target_left = 0;
     }
@@ -82,10 +83,10 @@ static void M_Finish(MISS *const miss, const MISS_CONTEXT *const context)
     Sprite_Restore16(context->video, player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(context->video, miss->effect_left, PLAYER_TOP, 32, 32);
     context->hud_lives(
-        context->user, Math_Wrap16(context->remaining_lives + 1));
+        context->user, Math16_Wrap(context->remaining_lives + 1));
     const int16_t previous = player->remaining_bombs;
     player->remaining_bombs =
-        Math_Wrap16(player->remaining_bombs + context->extra_bombs);
+        Math16_Wrap(player->remaining_bombs + context->extra_bombs);
     if (player->remaining_bombs > 5) {
         player->remaining_bombs = 5;
     } else {
@@ -115,7 +116,7 @@ void Miss_Begin(
     ASSERT(miss->phase == MISS_DONE);
     Sprite_Restore16(context->video, context->player->left, PLAYER_TOP, 32, 32);
     M_Orb(context);
-    const int16_t image = Math_Random(context->rng) % 8 == 0 ? 23 : 22;
+    const int16_t image = MasterRng_Next(context->rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(
         context->video, context->miko, image, -1, context->player->left,
         PLAYER_TOP);

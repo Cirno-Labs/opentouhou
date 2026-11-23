@@ -1,4 +1,5 @@
 #include "th01/missiles.h"
+#include "pc98/zun/math16.h"
 
 #include "th01/finite.h"
 
@@ -10,8 +11,8 @@ static void M_Action(
         output.user,
         (MISSILES_ACTION) {
             .kind = kind,
-            .left = Math_SubpixelToPixel(missile->previous_left),
-            .top = Math_SubpixelToPixel(missile->previous_top),
+            .left = Math16_ToPixel(missile->previous_left),
+            .top = Math16_ToPixel(missile->previous_top),
             .image = image,
             .quarter = quarter,
             .effect = kind == MISSILES_ACTION_EFFECT ? 7 : 0,
@@ -35,10 +36,10 @@ bool Missiles_Add(
         if (m->flag != MISSILE_FREE) {
             continue;
         }
-        m->left = Math_SubpixelFromPixel(left);
-        m->top = Math_SubpixelFromPixel(top);
+        m->left = Math16_FromPixel(left);
+        m->top = Math16_FromPixel(top);
         m->previous_left = -1;
-        m->velocity = (MATH_VECTOR) {
+        m->velocity = (MATH16_VECTOR) {
             Finite_ToPixel(Finite_Multiply(
                 Finite_FromDouble(velocity_x), Finite_FromDouble(16))),
             Finite_ToPixel(Finite_Multiply(
@@ -72,20 +73,18 @@ void Missiles_UpdateAndRender(
             M_Action(output, m, MISSILES_ACTION_RESTORE, 0, 0);
         }
         if (m->flag == MISSILE_MOVING) {
-            m->left = Math_Wrap16(m->left + m->velocity.x);
-            m->top = Math_Wrap16(m->top + m->velocity.y);
-            const int16_t left = Math_SubpixelToPixel(m->left);
-            const int16_t top = Math_SubpixelToPixel(m->top);
+            m->left = Math16_Wrap(m->left + m->velocity.x);
+            m->top = Math16_Wrap(m->top + m->velocity.y);
+            const int16_t left = Math16_ToPixel(m->left);
+            const int16_t top = Math16_ToPixel(m->top);
             if (left < 0 || left > 624 || top < 64 || top > 399) {
                 m->flag = MISSILE_HIT;
                 M_Action(output, m, MISSILES_ACTION_RESTORE, 0, 0);
                 if (left < 0 || left > 624) {
-                    m->previous_left =
-                        Math_SubpixelFromPixel(left < 0 ? 0 : 624);
+                    m->previous_left = Math16_FromPixel(left < 0 ? 0 : 624);
                 }
                 if (top < 64 || top > 399) {
-                    m->previous_top =
-                        Math_SubpixelFromPixel(top < 64 ? 64 : 392);
+                    m->previous_top = Math16_FromPixel(top < 64 ? 64 : 392);
                 }
             }
         } else {
@@ -103,13 +102,13 @@ void Missiles_UpdateAndRender(
             continue;
         }
         if (m->flag == MISSILE_MOVING) {
-            const uint8_t angle = Math_Angle(m->velocity.y, m->velocity.x);
+            const uint8_t angle = Math16_Angle(m->velocity.y, m->velocity.x);
             output.action(
                 output.user,
                 (MISSILES_ACTION) {
                     .kind = MISSILES_ACTION_PUT,
-                    .left = Math_SubpixelToPixel(m->left),
-                    .top = Math_SubpixelToPixel(m->top),
+                    .left = Math16_ToPixel(m->left),
+                    .top = Math16_ToPixel(m->top),
                     .image = angle / 64,
                     .quarter = (angle % 64) / 16,
                 });
@@ -127,10 +126,9 @@ void Missiles_UpdateAndRender(
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         const MISSILE *const m = &missiles->slots[i];
         if (m->flag != MISSILE_FREE
-            && Math_SubpixelToPixel(m->left) > player->left - 8
-            && Math_SubpixelToPixel(m->left) < player->left + 24
-            && Math_SubpixelToPixel(m->top) > 360
-            && Math_SubpixelToPixel(m->top) < 400) {
+            && Math16_ToPixel(m->left) > player->left - 8
+            && Math16_ToPixel(m->left) < player->left + 24
+            && Math16_ToPixel(m->top) > 360 && Math16_ToPixel(m->top) < 400) {
             player->is_hit = true;
             return;
         }
