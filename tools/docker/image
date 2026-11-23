@@ -143,6 +143,8 @@ def build(platform: str, image: str, force: bool) -> None:
             if docker("pull", name):
                 return
         print(f"Cannot pull {name}, building it")
+        if "/" in name and os.environ.get("GITHUB_ACTIONS"):
+            print(f"::warning::{name} is not in the registry; building it here")
     if PARENTS[image] is not None:
         build(platform, PARENTS[image], force)
     source = "https://github.com/" + os.environ.get(

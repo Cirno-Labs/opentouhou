@@ -264,9 +264,10 @@ just image-win
 just image-web       # the two web images
 ```
 
-Change a Dockerfile or a pin, then rebuild and push the new images
-before the change lands, or CI builds them from scratch on every run.
-The "Build and push the Docker images" workflow pushes all images.
+The "Build and push the Docker images" workflow pushes all images. It
+runs on each push to main that changes a Dockerfile or a pin, and can
+be run by hand. Until an image is pushed, CI builds it from scratch on
+every run and warns about it.
 
 ## macOS
 
