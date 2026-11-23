@@ -1,4 +1,7 @@
 #include "th01/miss.h"
+#include "th01/timer.h"
+#include "th01/pellets.h"
+#include "th01/hud.h"
 #include "th01/rng.h"
 
 #include "pc98/zun/math16.h"
@@ -61,7 +64,7 @@ static void M_Reset(const MISS_CONTEXT *const context)
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
     MISS_SHOTS shot_context = { context->stage };
     Shots_EraseAndReset((SHOTS_OUTPUT) { M_Shot, &shot_context });
-    context->pellets_decay(context->user);
+    Pellets_Decay();
     Player_Reset(context->difficulty);
     g_Miss.target_right = Math16_Wrap(player->left + 160);
     if (g_Miss.target_right >= 608) {
@@ -81,18 +84,17 @@ static void M_Finish(const MISS_CONTEXT *const context)
     PLAYER *const player = &g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(g_Miss.effect_left, PLAYER_TOP, 32, 32);
-    context->hud_lives(
-        context->user, Math16_Wrap(context->remaining_lives + 1));
+    Hud_LivesPut(Math16_Wrap(context->remaining_lives + 1));
     const int16_t previous = player->remaining_bombs;
     player->remaining_bombs =
         Math16_Wrap(player->remaining_bombs + context->extra_bombs);
     if (player->remaining_bombs > 5) {
         player->remaining_bombs = 5;
     } else {
-        context->hud_bombs(context->user, previous);
+        Hud_BombsPut(previous);
     }
-    context->timer_extend(context->user);
-    context->pellet_speed_lower(context->user, 0.0f, -0.05f);
+    StageTimer_ExtendAndPut();
+    Pellets_SpeedLower(0, -2);
     g_Miss.phase = MISS_DONE;
 }
 

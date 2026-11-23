@@ -1,4 +1,5 @@
 #include "th01/items.h"
+#include "th01/hud.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
@@ -45,7 +46,7 @@ static void M_Collect(
     }
     if (bomb && g_Player.remaining_bombs < 5) {
         g_Player.remaining_bombs++;
-        context->hud_bomb(context->user, g_Player.remaining_bombs - 1);
+        Hud_BombsPut(g_Player.remaining_bombs - 1);
         item->flag = ITEM_COLLECTED;
     } else {
         if (bomb) {
@@ -60,7 +61,7 @@ static void M_Collect(
             }
             g_Stage.score += *value;
         }
-        context->hud_score_and_combo(context->user);
+        Hud_ScoreAndCombo();
         item->flag = ITEM_COLLECTED_OVER_CAP;
     }
     Sound_Effect(15);

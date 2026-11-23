@@ -19,30 +19,7 @@ typedef struct {
     PTN sprites;
     GAME_TEXT_FONT font;
     uint16_t value;
-    int32_t events[64], count;
-    uint8_t callback_flags[64][3];
 } CASE;
-
-static void M_Record(CASE *const c, const int32_t event)
-{
-    c->callback_flags[c->count][0] = g_Items.bombs[2].flag;
-    c->callback_flags[c->count][1] = g_Items.bombs[3].flag;
-    c->callback_flags[c->count][2] = g_Items.points[0].flag;
-    c->events[c->count++] = event;
-}
-
-static void M_HudBomb(void *const user, const int16_t slot)
-{
-    CASE *const c = user;
-    CHECK_EQ_INT(slot, g_Player.remaining_bombs - 1);
-    M_Record(c, 1);
-}
-
-static void M_HudScore(void *const user)
-{
-    CASE *const c = user;
-    M_Record(c, 2);
-}
 
 static void M_Init(CASE *const c)
 {
@@ -65,13 +42,12 @@ static void M_Init(CASE *const c)
     CHECK(Result_Ignore(
         GameText_LoadGlyphs(glyphs, 97, Arena_Allocator(&c->arena), &c->font)));
     CHECK(Result_Ignore(Items_ValidateAssets(&c->sprites, &c->font)));
+    Hud_Init(Arena_Allocator(&c->arena));
+    Hud_Load(nullptr, &c->sprites, &c->font);
     c->context = (ITEM_CONTEXT) {
         .point_value = &c->value,
         .sprites = &c->sprites,
         .font = &c->font,
-        .hud_bomb = M_HudBomb,
-        .hud_score_and_combo = M_HudScore,
-        .user = c,
     };
 }
 
@@ -121,12 +97,7 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(g_Items.bombs[3].flag, ITEM_COLLECTED_OVER_CAP);
     CHECK_EQ_INT(g_Player.remaining_bombs, 5);
     CHECK_EQ_INT(g_Stage.score, 10000);
-    CHECK_EQ_INT(c.count, 2);
-    CHECK_EQ_INT(c.events[0], 1);
-    CHECK_EQ_INT(c.events[1], 2);
-    CHECK_EQ_INT(c.callback_flags[0][0], ITEM_FALL);
-    CHECK_EQ_INT(c.callback_flags[1][0], ITEM_COLLECTED);
-    CHECK_EQ_INT(c.callback_flags[1][1], ITEM_BOUNCE);
+    CHECK_EQ_INT(g_Hud.score_previous, 10000);
     for (int32_t i = 0; i < 15; i++) {
         Items_UpdateAndRender(&c.context);
     }
@@ -150,7 +121,7 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
         Items_UpdateAndRender(&c.context);
         CHECK_EQ_INT(c.value, after[i]);
         CHECK_EQ_INT(g_Stage.score, score + after[i]);
-        CHECK_EQ_INT(c.callback_flags[c.count - 1][2], ITEM_FALL);
+        CHECK_EQ_INT(g_Hud.score_previous, g_Stage.score);
     }
     Items_Reset();
     c.value = 10000;

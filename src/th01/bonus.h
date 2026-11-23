@@ -72,8 +72,8 @@ RESULT Bonus_ValidateStageAssets(
 // Starts an ordinary stage 1..20, excluding multiples of five. Preserves the
 // current drawing page while opening the masked box. Reads live metrics after
 // opening, adds to the existing unsigned score_bonus, writes one of four
-// signed resident history slots with the score bits, then calls the real HUD
-// and extend consumers. Keep all bindings and loaded resources stable through
+// signed resident history slots with the score bits, then draws the HUD and
+// checks for an extend. Keep all bindings and loaded resources stable through
 // completion. Zero-initialize BONUS once; begin only when done.
 // Wrapped negative display digits draw blank rather than reading outside the
 // original numeral table; score arithmetic still retains the source widths.
@@ -137,8 +137,6 @@ RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
 // Awards the score after all four metrics, before the six-digit sum. Total
 // does not update the HUD or extend threshold. Saves the low sixteen bits of
 // live continues_total after resetting input, before the confirmation loop.
-// Requires a synchronous effect consumer that composes preloaded audio;
-// callback must not change borrowed bonus or gameplay state.
 bool Bonus_BeginTotal(
     const BONUS_TOTAL_CONTEXT *context, int16_t stage_number,
     const TH01_INPUT *raw, uint64_t host_tick);

@@ -23,12 +23,6 @@ typedef struct {
     const PTN *miko, *stage;
     int32_t difficulty;
     int16_t remaining_lives, extra_bombs;
-    void (*pellets_decay)(void *user);
-    void (*hud_lives)(void *user, int16_t previous);
-    void (*hud_bombs)(void *user, int16_t previous);
-    void (*timer_extend)(void *user);
-    void (*pellet_speed_lower)(void *user, float minimum, float delta);
-    void *user;
 } MISS_CONTEXT;
 
 // Validates all images used by the sequence before ticks. Assets belong to
@@ -37,8 +31,7 @@ RESULT Miss_ValidateSprites(const PTN *miko, const PTN *stage);
 
 // Zero-initialize once. Begin restores only 32 by 32, redraws the default
 // Orb and a randomly selected miss image, then waits for a fresh VSync.
-// Caller must have decremented lives already. Required callbacks provide
-// real pellet, HUD and timer operations; none has a default behavior.
+// Lives must already be decremented.
 // Keep supplied state alive and ordinary actor updates suspended until
 // Resume returns true. Only logical VSync counters advance while waiting.
 // The source's variable delays reuse count1, including nested raw waits.

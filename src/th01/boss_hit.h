@@ -24,8 +24,7 @@ typedef struct {
 // bomb hits flash colors, decrement HP, reflect the Orb, add signed hit_score
 // into unsigned score and render real HUD/health operations in order.
 // Shots decay and emit effect 16 without damaging the boss. A boss hit posts
-// effect 3 through the required synchronous effect consumer. Consumers must
-// not mutate borrowed hit, score, Orb, HP or palette state.
+// effect 3.
 //
 // The owner advances frame externally. At frame 40 nothing resets; a value
 // greater than 40 resets frame/invincibility and restores the boss palette,

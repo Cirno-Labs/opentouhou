@@ -14,12 +14,6 @@ typedef enum {
 } STAGE_PELLET_GROUP;
 
 typedef struct {
-    int16_t left, top;
-    STAGE_PELLET_GROUP group;
-    int16_t speed;
-} STAGE_PELLET_SPAWN;
-
-typedef struct {
     uint32_t score;
     int16_t combo, maximum_combo;
     uint8_t flip_cycle;
@@ -34,24 +28,17 @@ typedef struct {
     int16_t stage_id, stage_num;
     SETTINGS_DIFFICULTY difficulty;
     bool test_damage;
-    void (*hud_score_and_combo)(void *user);
-    void (*item_add)(void *user, int32_t card_slot, bool bomb);
-    void (*pellet_group)(void *user, STAGE_PELLET_SPAWN spawn);
     void (*pellets_update)(void *user);
     void *user;
 } STAGE_CONTEXT;
 
-// Execute reached callbacks synchronously; all are required. HUD observes
-// the updated shared score and combo. Item creation uses the card slot and
-// must not consume RNG. Pellet creation uses Q12.4 speed and may consume
-// shared RNG before control returns. HUD, item and pellet-creation
-// consumers must not mutate stage object storage, score, combo or player
-// state. The composite pellets_update exception is specified below. Keep
-// immutable sprites and cached ASCII digit glyphs alive across updates.
-// Supply real HUD, item and pellet consumers for these calls. Initialize
-// flip_cycle once per main scene as MasterRng_Next(rng) % 60; StageObjects_Init
-// must not initialize it anew at each stage change. Scores and counters wrap to
-// their source widths; updates allocate nothing.
+// The HUD shows the updated score and combo. Pellet groups use Q12.4 speed
+// and may consume shared RNG. The composite pellets_update callback is
+// specified below. Keep immutable sprites and cached ASCII digit glyphs
+// alive across updates. Initialize flip_cycle once per main scene as
+// MasterRng_Next(rng) % 60; StageObjects_Init must not initialize it anew at
+// each stage change. Scores and counters wrap to their source widths;
+// updates allocate nothing.
 
 // Validates all ten cached halfwidth score digits before simulation.
 RESULT Stage_ValidateScoreFont(const GAME_TEXT_FONT *font);
@@ -95,6 +82,5 @@ extern STAGE_ORB_COMPOSITE g_OrbComposite;
 // erase using current image, card drawing, conditional Orb put and previous
 // coordinates follow in source order, reading hit/portal flags afresh.
 // Does not advance force age, player update, bomb frame or world counters.
-// Supply real pellet, item and HUD consumers through the context.
 bool Stage_BeginOrbComposite(const STAGE_CONTEXT *context);
 bool Stage_ResumeOrbComposite(const STAGE_CONTEXT *context);

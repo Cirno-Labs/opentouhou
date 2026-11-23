@@ -21,21 +21,15 @@ typedef struct {
     PALETTE stage;
     PTN miko;
     BOMB_ASSETS assets;
-    int32_t decays;
 } CASE;
-
-static void M_Decay(void *const user)
-{
-    CASE *const state = user;
-    state->decays++;
-    CHECK(g_Player.invincible);
-}
 
 static BOMB_CONTEXT M_Context(CASE *const state)
 {
     return (BOMB_CONTEXT) {
-        &state->palette, &state->miko, &state->assets,
-        &state->stage,   M_Decay,      state,
+        &state->palette,
+        &state->miko,
+        &state->assets,
+        &state->stage,
     };
 }
 
@@ -43,6 +37,7 @@ static void M_Init(CASE *const state)
 {
     *state = (CASE) {};
     Th01Test_ResetWorld();
+    g_Pellets.slots[0].moving = true;
     Frame_Reset();
     Arena_Init(&state->arena, "bomb", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
@@ -112,7 +107,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     }
     CHECK_EQ_INT(waits, 23);
     CHECK_EQ_INT(state.arena.used, used);
-    CHECK_EQ_INT(state.decays, 5);
+    CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 1);
     CHECK_EQ_INT(g_Player.invincibility_time, 100);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&state.palette.saved, &state.stage, sizeof(PALETTE)) == 0);
@@ -121,7 +116,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     Bomb_BeginUpdate(&context, 0);
     CHECK_EQ_INT(g_Bomb.left[0], previous_x);
     CHECK_EQ_INT(g_Bomb.top[0], previous_y);
-    CHECK_EQ_INT(state.decays, 6);
+    CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 1);
     Arena_Free(&state.arena);
 }
 

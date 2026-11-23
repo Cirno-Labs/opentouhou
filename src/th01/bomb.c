@@ -1,4 +1,5 @@
 #include "th01/bomb.h"
+#include "th01/pellets.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
@@ -110,7 +111,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     g_Bomb.frame = frame;
     g_Player.invincible = true;
     if (frame == 0) {
-        context->pellets_decay(context->user);
+        Pellets_Decay();
         Sprite_PtnPut(context->miko, 3, -1, g_Player.left, PLAYER_TOP);
         g_Bomb.white = context->palette->saved;
         for (int32_t color = 0; color < 16; color++) {
@@ -155,7 +156,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
             Sound_Effect(8);
         }
         if (frame % 10 == 0) {
-            context->pellets_decay(context->user);
+            Pellets_Decay();
         }
     } else if (frame == 50) {
         for (int32_t i = 0; i < 18; i++) {

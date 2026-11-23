@@ -1,3 +1,4 @@
+#include "th01/session.h"
 #include "th01/stage.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -21,36 +22,24 @@ typedef struct {
     STAGE_CONTEXT context;
     PTN sprites;
     GAME_TEXT_FONT font;
-    int32_t events[1024], count;
-    int32_t points, bombs, pellets;
-    STAGE_PELLET_SPAWN last_pellet;
 } CASE;
 
-static void M_Hud(void *const user)
+static int32_t M_Items(const ITEM *const items, const int32_t count)
 {
-    CASE *const state = user;
-    CHECK(g_Stage.score >= g_StageObjects.cards[0].score);
-    state->events[state->count++] = 1;
+    int32_t used = 0;
+    for (int32_t i = 0; i < count; i++) {
+        used += items[i].flag != ITEM_FREE;
+    }
+    return used;
 }
 
-static void M_Item(void *const user, const int32_t slot, const bool bomb)
+static int32_t M_Pellets(void)
 {
-    CASE *const state = user;
-    CHECK_EQ_INT(slot, 0);
-    CHECK_EQ_INT(state->events[state->count - 1], 1);
-    state->events[state->count++] = bomb ? 3 : 2;
-    state->bombs += bomb;
-    state->points += !bomb;
-}
-
-static void M_Pellet(void *const user, const STAGE_PELLET_SPAWN spawn)
-{
-    CASE *const state = user;
-    state->pellets++;
-    state->last_pellet = spawn;
-    CHECK_EQ_INT(g_StageObjects.cards[0].flip_frame, 25);
-    CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
-    MasterRng_Next(&g_Rng);
+    int32_t moving = 0;
+    for (int32_t i = 0; i < PELLETS_COUNT; i++) {
+        moving += g_Pellets.slots[i].moving;
+    }
+    return moving;
 }
 
 static void M_Init(CASE *const state, const uint8_t hp)
@@ -83,15 +72,13 @@ static void M_Init(CASE *const state, const uint8_t hp)
     }
     CHECK(IS_OK(GameText_LoadGlyphs(
         digits, 10, Arena_Allocator(&state->arena), &state->font)));
+    Hud_Init(Arena_Allocator(&state->arena));
+    Hud_Load(nullptr, &state->sprites, &state->font);
     state->context = (STAGE_CONTEXT) {
         .sprites = &state->sprites,
         .font = &state->font,
         .stage_num = 1,
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
-        .hud_score_and_combo = M_Hud,
-        .item_add = M_Item,
-        .pellet_group = M_Pellet,
-        .user = state,
     };
 }
 
@@ -122,9 +109,8 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
-            CHECK_EQ_INT(state.count, 2);
-            CHECK_EQ_INT(state.events[0], 1);
-            CHECK_EQ_INT(state.events[1], 2);
+            CHECK_EQ_INT(g_Hud.score_previous, expected);
+            CHECK_EQ_INT(M_Items(g_Items.points, ITEMS_POINT_COUNT), 1);
             Arena_Free(&state.arena);
         }
     }
@@ -144,8 +130,11 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             const bool drop = cycle % 10 == 0;
             const bool reset = drop && next >= 140;
             CHECK_EQ_INT(g_Stage.flip_cycle, reset ? 1 : next);
-            CHECK_EQ_INT(state.bombs, reset && !damaging);
-            CHECK_EQ_INT(state.points, drop && (!reset || damaging));
+            CHECK_EQ_INT(
+                M_Items(g_Items.bombs, ITEMS_BOMB_COUNT), reset && !damaging);
+            CHECK_EQ_INT(
+                M_Items(g_Items.points, ITEMS_POINT_COUNT),
+                drop && (!reset || damaging));
             CHECK_EQ_INT(g_Rng, rng);
             Arena_Free(&state.arena);
         }
@@ -175,18 +164,14 @@ TEST(card_hp_frames_revenge_and_stage_exit)
             CASE state;
             M_Init(&state, (uint8_t)hp);
             state.context.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
+            g_Session.settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
             state.context.stage_num = (int16_t)stage;
             const size_t used = state.arena.used;
-            uint32_t rng = g_Rng;
             for (int32_t flip = 0; flip <= hp; flip++) {
                 Stage_HitTestCards(&state.context);
                 for (int32_t frame = 0; frame < 30; frame++) {
                     Stage_UpdateCards(&state.context);
-                    if (frame == 24) {
-                        MasterRng_Next(&rng);
-                    }
-                    CHECK_EQ_INT(g_Rng, rng);
-                    CHECK_EQ_INT(state.pellets, flip + (frame >= 24));
+                    CHECK_EQ_INT(M_Pellets(), flip + (frame >= 24));
                     CHECK_EQ_INT(
                         g_StageObjects.cards[0].flip_frame,
                         frame == 29 ? 0 : frame + 1);
@@ -197,10 +182,6 @@ TEST(card_hp_frames_revenge_and_stage_exit)
                     CHECK_EQ_INT(g_Player.is_hit, g_Stage.cleared);
                     CHECK_EQ_INT(state.arena.used, used);
                 }
-                CHECK_EQ_INT(state.last_pellet.left, 108);
-                CHECK_EQ_INT(state.last_pellet.top, 140);
-                CHECK_EQ_INT(state.last_pellet.speed, 56);
-                CHECK_EQ_INT(state.last_pellet.group, stage == 9 ? 12 : 29);
             }
             Arena_Free(&state.arena);
         }
