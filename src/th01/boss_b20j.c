@@ -1,4 +1,5 @@
 #include "th01/boss_b20j.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -121,10 +122,6 @@ void B20J_Setup(const B20J_CONTEXT *const c)
 static uint16_t M_Random(const B20J_CONTEXT *const c)
 {
     return MasterRng_Next(&g_Rng);
-}
-static void M_Audio(const B20J_CONTEXT *const c, const B20J_AUDIO_ACTION action)
-{
-    c->audio(c->hit->user, action);
 }
 static void M_Pi(
     const B20J_CONTEXT *const c, const PI_IMAGE *const image,
@@ -281,11 +278,11 @@ void B20J_BeginEntrance(const B20J_CONTEXT *const c)
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, false);
     Video_SelectDrawingPage(0);
-    M_Audio(c, B20J_AUDIO_LOAD_MUSIC);
+    Sound_Load(12);
     ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.head, 0, &c->assets->head)));
     ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.face, 1, &c->assets->face)));
     ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.aim, 2, &c->assets->aim)));
-    M_Audio(c, B20J_AUDIO_PLAY);
+    Sound_Play();
     Palette_SetGray(c->hit->palette, 0);
     Tram_Clear();
     g_B20J.scroll_line = 0;
@@ -355,7 +352,7 @@ bool B20J_ResumeEntrance(const B20J_CONTEXT *const c)
             return M_Scroll(416 - g_B20J.animation_frame % 2 * 32);
         case B20J_ENTRANCE_SHAKE_STEP:
             if (g_B20J.animation_frame % 8 == 0) {
-                Boss_Effect(c->hit, 9);
+                Sound_Effect(9);
             }
             g_B20J.animation_frame++;
             g_B20J.entrance_stage = B20J_ENTRANCE_SHAKE;
@@ -505,7 +502,7 @@ static void M_Cross(const B20J_CONTEXT *const c)
         }
         M_Group(c, 312, 188, g_B20J.pattern_state, 48);
         g_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
-        Boss_Effect(c->hit, 12);
+        Sound_Effect(12);
     } else if (g_B20J.diamond_left[0] > 0) {
         for (int32_t i = 0; i < 4; i++) {
             M_Erase(c, g_B20J.diamond_left[i], g_B20J.diamond_top[i]);
@@ -675,18 +672,18 @@ static void M_Snakes(const B20J_CONTEXT *const c, const bool four)
         if (four) {
             g_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
         }
-        Boss_Effect(c->hit, 12);
+        Sound_Effect(12);
         return;
     }
     if (g_B20J.frame < (four ? 400 : 500)) {
         M_SnakesUpdate(s, c, count);
         if (g_B20J.frame == 150) {
             M_SnakeSpawn(s, c, 1, 312, 188);
-            Boss_Effect(c->hit, 12);
+            Sound_Effect(12);
         }
         if (four && (g_B20J.frame == 200 || g_B20J.frame == 250)) {
             M_SnakeSpawn(s, c, g_B20J.frame == 200 ? 2 : 3, 290, 200);
-            Boss_Effect(c->hit, 12);
+            Sound_Effect(12);
         }
         if (!four && g_B20J.frame > 240 - (int32_t)c->hit->display->rank * 40
             && g_B20J.frame % 40 == 0) {
@@ -706,7 +703,7 @@ static void M_Snakes(const B20J_CONTEXT *const c, const bool four)
                 M_Single(c, x, y, angle, speed);
                 angle += 12;
             }
-            Boss_Effect(c->hit, 7);
+            Sound_Effect(7);
         }
     } else {
         for (int32_t i = 0; i < count; i++) {
@@ -732,7 +729,7 @@ static void M_Rows(const B20J_CONTEXT *const c)
         g_B20J.row_top = 200;
         g_B20J.row_speed = 48;
         g_B20J.row_direction = 99;
-        Boss_Effect(c->hit, 12);
+        Sound_Effect(12);
         g_B20J.pattern_state = Boss_Rank(12, 10, 8, 6);
         return;
     }
@@ -878,7 +875,7 @@ static void M_Edges(const B20J_CONTEXT *const c)
         g_B20J.frame = 0;
     }
     if (g_B20J.frame % 10 == 0) {
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
     }
     if (g_B20J.frame % g_B20J.pattern_state == 0) {
         M_Rain(c, g_B20J.ray_x, g_B20J.ray_y, M_Random(c) & 127, 32);
@@ -895,7 +892,7 @@ static void M_SlashAnimate(const B20J_CONTEXT *const c)
         if (g_B20J.frame == frames[i]) {
             M_SlashPut(c, i);
             if (i == 0) {
-                Boss_Effect(c->hit, 8);
+                Sound_Effect(8);
             }
         }
     }
@@ -997,7 +994,7 @@ static void M_Lasers(const B20J_CONTEXT *const c)
         ShootoutLasers_Spawn(
             &g_ShootoutLasers.slots[(g_B20J.frame / 10) % 10], 410, 70, target,
             400, 68, 7, 30, 5);
-        Boss_Effect(c->hit, 6);
+        Sound_Effect(6);
         if ((!g_B20J.laser_right_to_left && target >= 640)
             || (g_B20J.laser_right_to_left && target <= 0)) {
             g_B20J.frame = 0;
@@ -1024,7 +1021,7 @@ static void M_Sleeve(const B20J_CONTEXT *const c)
                     PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR, 48, 0, 0);
             }
         }
-        Boss_Effect(c->hit, 7);
+        Sound_Effect(7);
     }
     if (g_B20J.frame >= 300) {
         g_B20J.frame = 0;
@@ -1035,7 +1032,7 @@ static void M_BeginDeath(const B20J_CONTEXT *const c)
 {
     Tram_Clear();
     Video_Clear(0);
-    M_Audio(c, B20J_AUDIO_STOP);
+    Sound_Stop();
     g_B20J.defeating = true;
     g_B20J.defeat_stage = B20J_DEFEAT_KUJI;
     g_B20J.animation_frame = 7;
@@ -1068,7 +1065,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
             g_B20J.frame = Math16_Wrap(g_B20J.frame + 1);
             if (g_B20J.frame % 4 == 0) {
                 M_BlackOut(c);
-                Boss_Effect(c->hit, 7);
+                Sound_Effect(7);
             }
             g_B20J.defeat_stage = B20J_DEFEAT_SHAKE_STEP;
             return M_Scroll(408 + g_B20J.frame % 2 * 16);
@@ -1100,11 +1097,11 @@ static bool M_Death(const B20J_CONTEXT *const c)
                 if (g_B20J.scroll_frame % 8 == 0) {
                     Palette_StepTo(
                         c->hit->palette, &c->hit->palette->resource, true);
-                    Boss_Effect(c->hit, 7);
+                    Sound_Effect(7);
                 }
             } else if (g_B20J.scroll_frame % 8 == 0) {
                 if (g_B20J.scroll_frame == 192) {
-                    M_Audio(c, B20J_AUDIO_FADE);
+                    Sound_Fade();
                 }
                 M_BlackOut(c);
                 if (c->hit->palette->saved.colors[7][0] == 0) {
@@ -1112,7 +1109,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
                     return M_Scroll(0);
                 }
                 if (g_B20J.scroll_frame < 220) {
-                    Boss_Effect(c->hit, 7);
+                    Sound_Effect(7);
                 }
             }
             g_B20J.scroll_frame++;

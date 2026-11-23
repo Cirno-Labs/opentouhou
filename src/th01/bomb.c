@@ -1,4 +1,5 @@
 #include "th01/bomb.h"
+#include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
 
@@ -151,7 +152,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
             }
         }
         if (frame % 30 == 0) {
-            context->effect(context->user, 8);
+            Sound_Effect(8);
         }
         if (frame % 10 == 0) {
             context->pellets_decay(context->user);
@@ -163,7 +164,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
         g_Player.bomb_damaging = true;
     } else if (frame < 140) {
         if (frame % 10 == 0) {
-            context->effect(context->user, 9);
+            Sound_Effect(9);
         }
         if (frame % 4 == 0) {
             PALETTE peak;

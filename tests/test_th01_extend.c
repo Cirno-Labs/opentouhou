@@ -12,21 +12,7 @@ typedef struct {
     PTN sprites;
     int16_t lives, next;
     int8_t resident_lives;
-    int32_t effects;
 } FIXTURE;
-
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK_EQ_INT(number, 15);
-    CHECK_EQ_INT(f->lives, 2);
-    CHECK_EQ_INT(f->resident_lives, 2);
-    CHECK_EQ_INT(f->next, 1);
-    CHECK_EQ_INT(g_PelletShared.speed, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(0, 144, 0), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(1, 144, 0), 3);
-    f->effects++;
-}
 
 TEST(threshold_uses_unsigned_score_and_one_award_per_call)
 {
@@ -43,19 +29,15 @@ TEST(threshold_uses_unsigned_score_and_one_award_per_call)
         (HUD_CONTEXT) { .sprites = &f.sprites, .remaining_lives = &f.lives };
     f.context = (EXTEND_CONTEXT) { .display = &f.display,
                                    .resident_lives = &f.resident_lives,
-                                   .next = &f.next,
-                                   .effect = M_Effect,
-                                   .user = &f };
+                                   .next = &f.next };
     g_Stage.score = 399999;
     Extend_UpdateAndRender(&f.context);
     CHECK_EQ_INT(f.lives, 1);
     CHECK_EQ_INT(f.next, 1);
-    CHECK_EQ_INT(f.effects, 0);
     g_Stage.score = UINT32_C(0x80000000);
     Extend_UpdateAndRender(&f.context);
     CHECK_EQ_INT(f.lives, 2);
     CHECK_EQ_INT(f.next, 2);
-    CHECK_EQ_INT(f.effects, 1);
     CHECK_EQ_INT(g_PelletShared.speed, 1);
     Arena_Free(&arena);
 }

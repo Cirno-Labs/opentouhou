@@ -21,7 +21,7 @@ typedef struct {
     PALETTE stage;
     PTN miko;
     BOMB_ASSETS assets;
-    int32_t decays, effects[10];
+    int32_t decays;
 } CASE;
 
 static void M_Decay(void *const user)
@@ -31,17 +31,11 @@ static void M_Decay(void *const user)
     CHECK(g_Player.invincible);
 }
 
-static void M_Effect(void *const user, const int16_t effect)
-{
-    CASE *const state = user;
-    state->effects[effect]++;
-}
-
 static BOMB_CONTEXT M_Context(CASE *const state)
 {
     return (BOMB_CONTEXT) {
-        &state->palette, &state->miko, &state->assets, &state->stage,
-        M_Decay,         M_Effect,     state,
+        &state->palette, &state->miko, &state->assets,
+        &state->stage,   M_Decay,      state,
     };
 }
 
@@ -119,8 +113,6 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK_EQ_INT(waits, 23);
     CHECK_EQ_INT(state.arena.used, used);
     CHECK_EQ_INT(state.decays, 5);
-    CHECK_EQ_INT(state.effects[8], 1);
-    CHECK_EQ_INT(state.effects[9], 8);
     CHECK_EQ_INT(g_Player.invincibility_time, 100);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&state.palette.saved, &state.stage, sizeof(PALETTE)) == 0);

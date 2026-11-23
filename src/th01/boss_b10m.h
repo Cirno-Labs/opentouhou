@@ -76,7 +76,6 @@ typedef struct {
     PALETTE *stage_palette;
     const PTN *miko;
     bool *stage_cleared;
-    void (*fade_music)(void *user);
 } B10M_CONTEXT;
 
 // Loads immutable BOSS2.BOS, BOSS2.GRP, BOSS3_M.PTN and scene 3 through VFS

@@ -1,4 +1,5 @@
 #include "th01/timer.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "pc98/zun/master_rng.h"
@@ -112,7 +113,7 @@ bool StageTimer_TickAndPut(const TIMER_CONTEXT *const c)
     Hud_PutTimer(c->display, g_StageTimer.time);
     if (g_StageTimer.time == 0) {
         Pellets_SpeedRaise(2);
-        c->effect(c->user, 17);
+        Sound_Effect(17);
         M_Line(c, "HARRY");
         g_StageTimer.phase = TIMER_WAIT_HURRY;
         return M_Continue(c);

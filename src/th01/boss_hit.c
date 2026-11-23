@@ -1,4 +1,5 @@
 #include "th01/boss_hit.h"
+#include "th01/sound.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
@@ -46,7 +47,7 @@ void BossHit_UpdateAndRender(
         }
         g_Stage.score += (uint32_t)(int32_t)hit_score;
         Hud_ScoreAndCombo(c->display);
-        c->effect(c->user, 3);
+        Sound_Effect(3);
         HudHp_Decrement(*hp);
     }
     if (hit->invincible && hit->frame < 40) {

@@ -1,4 +1,5 @@
 #include "th01/boss_b10j.h"
+#include "th01/sound.h"
 #include "th01/rng.h"
 
 #include "th01/boss.h"
@@ -312,7 +313,7 @@ static void M_AimedStatic(const B10J_CONTEXT *const c)
     if (g_B10J.frame == 100) {
         M_SquareInit(sq);
         g_B10J.pattern_state = Boss_Rank(64, 72, 80, 88);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
@@ -335,7 +336,7 @@ static void M_AimedStatic(const B10J_CONTEXT *const c)
                     g_B10J.frame > 280 ? g_B10J.pattern_state
                                        : (int16_t)(g_B10J.pattern_state / 2),
                     false);
-                Boss_Effect(c->hit, 7);
+                Sound_Effect(7);
             }
         }
         M_Corners(x, y, sq->radius, sq->angle);
@@ -357,7 +358,7 @@ static void M_AimedMissiles(const B10J_CONTEXT *const c)
     if (g_B10J.frame == 100) {
         M_SquareInit(sq);
         g_B10J.pattern_state = Boss_Rank(96, 104, 112, 118);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
@@ -379,7 +380,7 @@ static void M_AimedMissiles(const B10J_CONTEXT *const c)
                     x[i], y[i], Math16_ToPixel(velocity.x),
                     Math16_ToPixel(velocity.y), 0);
             }
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
         }
         M_Corners(x, y, sq->radius, sq->angle);
         M_Loop(c, x, y, false);
@@ -403,7 +404,7 @@ static void M_TwoSquares(const B10J_CONTEXT *const c)
     if (g_B10J.frame == 100) {
         M_SquareInit(sq);
         g_B10J.pattern_state = Boss_Rank(64, 72, 80, 88);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     int16_t x[4], y[4], x2[4], y2[4];
     if (g_B10J.frame % 8 == 0) {
@@ -429,7 +430,7 @@ static void M_TwoSquares(const B10J_CONTEXT *const c)
                         Math16_Wrap(y2[i] - g_B10J.still.top - 80),
                         Math16_Wrap(x2[i] - g_B10J.still.left - 64)),
                     g_B10J.pattern_state, false);
-                Boss_Effect(c->hit, 7);
+                Sound_Effect(7);
             }
         }
         M_Corners(x, y, sq->radius, sq->angle);
@@ -561,7 +562,7 @@ static void M_Pillars(const B10J_CONTEXT *const c)
         g_B10J.pillar_x[6] = (int16_t)(64 + MasterRng_Next(&g_Rng) % 224);
         g_B10J.pillar_x[7] = (int16_t)(336 + MasterRng_Next(&g_Rng) % 224);
         g_B10J.pattern_state = Boss_Rank(40, 45, 50, 55);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     for (int32_t i = 0; i < 8; i++) {
         if (g_B10J.frame % 8 == i && g_B10J.frame > 100 + i * 20
@@ -573,7 +574,7 @@ static void M_Pillars(const B10J_CONTEXT *const c)
         }
     }
     if (g_B10J.frame <= 240 && (g_B10J.frame - 100) % 20 == 0) {
-        Boss_Effect(c->hit, 12);
+        Sound_Effect(12);
     }
     if (g_B10J.frame == 240) {
         M_Activate(c);
@@ -590,7 +591,7 @@ static void M_Pillars(const B10J_CONTEXT *const c)
             Video_Line(320, 200, x, bottom, 1);
         } else if (g_B10J.pillar_time[i] > 16) {
             if (g_B10J.pillar_time[i] == 32) {
-                Boss_Effect(c->hit, 7);
+                Sound_Effect(7);
                 Video_LineErase(320, 200, x, bottom);
             }
             M_Pillar(
@@ -630,7 +631,7 @@ static void M_Halfcircle(const B10J_CONTEXT *const c)
         M_SquareInit(sq);
         g_B10J.missile_angle = 0;
         g_B10J.pattern_state = Boss_Rank(40, 45, 50, 55);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
@@ -645,7 +646,7 @@ static void M_Halfcircle(const B10J_CONTEXT *const c)
             for (int32_t i = 0; i < 4; i++) {
                 Missiles_Add(x[i], y[i], velocity.x, velocity.y, 0);
             }
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
             g_B10J.missile_angle += 13;
         }
         M_Corners(x, y, sq->radius, sq->angle);
@@ -668,7 +669,7 @@ static void M_Spray(const B10J_CONTEXT *const c)
         M_SquareInit(sq);
         g_B10J.pellet_angle = 128;
         g_B10J.pattern_state = Boss_Rank(32, 40, 48, 56);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
@@ -685,7 +686,7 @@ static void M_Spray(const B10J_CONTEXT *const c)
                     c, x[i], y[i], g_B10J.pellet_angle, g_B10J.pattern_state,
                     false);
             }
-            Boss_Effect(c->hit, 6);
+            Sound_Effect(6);
         }
         M_Corners(x, y, sq->radius, sq->angle);
         M_Loop(c, x, y, false);
@@ -709,7 +710,7 @@ static void M_Lasers(const B10J_CONTEXT *const c)
     if (g_B10J.frame == 100) {
         M_SquareInit(sq);
         g_B10J.pattern_state = Boss_Rank(50, 54, 58, 62);
-        Boss_Effect(c->hit, 8);
+        Sound_Effect(8);
     }
     if (g_B10J.frame % 8 == 0) {
         M_Corners(g_B10J.laser_x, g_B10J.laser_y, sq->radius, sq->angle);
@@ -749,7 +750,7 @@ static void M_MissileAction(void *const user, const MISSILES_ACTION action)
 {
     const B10J_CONTEXT *const c = user;
     if (action.kind == MISSILES_ACTION_EFFECT) {
-        Boss_Effect(c->hit, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Missiles_RenderAction(&c->assets->missiles, action);
     }
@@ -904,7 +905,7 @@ bool B10J_UpdateAndRender(const B10J_CONTEXT *const c)
             Video_SelectDrawingPage(1);
             M_Erase(c);
             Video_SelectDrawingPage(0);
-            c->fade_music(c->hit->user);
+            Sound_Fade();
             Pellets_EraseAndResetMoving();
             Missiles_Reset();
             ShootoutLasers_EraseAndReset(5);

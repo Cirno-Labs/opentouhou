@@ -28,7 +28,6 @@ typedef struct {
     const BOMB_ASSETS *assets;
     const PALETTE *stage_palette;
     void (*pellets_decay)(void *user);
-    void (*effect)(void *user, int16_t number);
     void *user;
 } BOMB_CONTEXT;
 

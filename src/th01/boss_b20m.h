@@ -19,14 +19,6 @@ typedef struct {
     const uint8_t *star, *flake, *spark, *leaf_left, *leaf_right;
 } B20M_ASSETS;
 
-typedef enum {
-    B20M_AUDIO_LOAD_MUSIC,
-    B20M_AUDIO_LOAD_SECOND_MUSIC,
-    B20M_AUDIO_PLAY,
-    B20M_AUDIO_STOP,
-    B20M_AUDIO_FADE,
-} B20M_AUDIO_ACTION;
-
 typedef struct {
     double left[30], top[30], velocity_x[30], velocity_y[30];
     int8_t reserved[30], hatch_time[30], hatch_frames[30];
@@ -145,7 +137,6 @@ typedef struct {
     bool *first_stage;
     const bool *timer_initialized;
     bool *game_cleared;
-    void (*audio)(void *user, B20M_AUDIO_ACTION action);
 } B20M_CONTEXT;
 
 // Loads both forms, backgrounds and the masks of ileave_m.bmp,

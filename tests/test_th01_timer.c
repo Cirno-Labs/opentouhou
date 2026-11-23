@@ -18,19 +18,7 @@ typedef struct {
     GAME_TEXT_FONT font;
     uint32_t high_score;
     int16_t lives;
-    int32_t effects;
 } FIXTURE;
-
-static void M_Effect(void *const user, const int16_t number)
-{
-    FIXTURE *const f = user;
-    CHECK_EQ_INT(number, 17);
-    CHECK_EQ_INT(g_PelletShared.speed, 2);
-    CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_StageTimer.time, 0);
-    CHECK_EQ_INT(g_StageTimer.phase, TIMER_IDLE);
-    f->effects++;
-}
 
 static void M_Init(FIXTURE *const f)
 {
@@ -62,9 +50,7 @@ static void M_Init(FIXTURE *const f)
                                  .remaining_lives = &f->lives,
                                  .stage_number = 1,
                                  .rank = SETTINGS_DIFFICULTY_NORMAL };
-    f->context = (TIMER_CONTEXT) { .display = &f->display,
-                                   .effect = M_Effect,
-                                   .user = f };
+    f->context = (TIMER_CONTEXT) { .display = &f->display };
     Hud_SnapTimer(&f->display, 1000);
 }
 
@@ -98,7 +84,6 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     M_Init(&f);
     g_StageTimer.time = 2;
     CHECK(!StageTimer_TickAndPut(&f.context));
-    CHECK_EQ_INT(f.effects, 1);
     CHECK_EQ_INT(g_StageTimer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640], TRAM_RED + 1);
     for (int32_t i = 0; i < 26; i++) {
@@ -115,7 +100,6 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
         Frame_VSync();
     }
     CHECK(StageTimer_TickAndPut(&f.context));
-    CHECK_EQ_INT(f.effects, 1);
     CHECK_EQ_INT(g_PelletShared.speed, 2);
     CHECK_EQ_INT(g_StageTimer.frames_since_hurry, 0);
     CHECK_EQ_INT(g_StageTimer.hurry_cycle, 0);
@@ -146,7 +130,6 @@ TEST(ready_count_is_consumed_before_first_suspension_and_extension_wraps)
     g_StageTimer.time = 1;
     CHECK(StageTimer_TickAndPut(&f.context));
     CHECK_EQ_INT(g_StageTimer.time, 65535);
-    CHECK_EQ_INT(f.effects, 1);
     Arena_Free(&f.arena);
 }
 

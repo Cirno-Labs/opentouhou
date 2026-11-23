@@ -41,11 +41,6 @@ RESULT Boss_LoadBackground(
     return result;
 }
 
-void Boss_Effect(const BOSS_HIT_CONTEXT *const hit, const int16_t number)
-{
-    hit->effect(hit->user, number);
-}
-
 PLAYER *Boss_Player(const BOSS_HIT_CONTEXT *const hit)
 {
     return &g_Player;

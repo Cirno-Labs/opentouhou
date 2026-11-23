@@ -17,13 +17,6 @@ typedef struct {
     const uint8_t *diamond, *flake;
 } B20J_ASSETS;
 
-typedef enum {
-    B20J_AUDIO_LOAD_MUSIC,
-    B20J_AUDIO_PLAY,
-    B20J_AUDIO_STOP,
-    B20J_AUDIO_FADE,
-} B20J_AUDIO_ACTION;
-
 typedef struct {
     int16_t left[4][5], top[4][5];
     MATH16_VECTOR velocity[4];
@@ -98,7 +91,6 @@ typedef struct {
     const B20J_ASSETS *assets;
     const BOSS_HIT_CONTEXT *hit;
     bool *game_cleared;
-    void (*audio)(void *user, B20J_AUDIO_ACTION action);
 } B20J_CONTEXT;
 
 // Loads all Konngara images and the shape masks of shape8x8.bmp into the

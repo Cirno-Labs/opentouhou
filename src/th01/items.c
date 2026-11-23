@@ -1,4 +1,5 @@
 #include "th01/items.h"
+#include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
 #include "th01/shape.h"
@@ -62,7 +63,7 @@ static void M_Collect(
         context->hud_score_and_combo(context->user);
         item->flag = ITEM_COLLECTED_OVER_CAP;
     }
-    context->effect(context->user, 15);
+    Sound_Effect(15);
 }
 
 static void M_Popup(

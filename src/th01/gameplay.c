@@ -47,7 +47,7 @@ static void M_Line(GAMEPLAY *const g, const char *const text)
 static void M_TitleChar(GAMEPLAY *const g)
 {
     const uint32_t chars[] = { 0x6771, 0x65b9, 0x2605, 0x9748, 0x7570, 0x4f1d };
-    Gameplay_Effect(g, 14);
+    Sound_Effect(14);
     Tram_PutKanji16Reverse(GameText_Find(
         &g->storage.assets->menu_font, chars[g->world.animation_frame]));
 }
@@ -161,7 +161,8 @@ static void M_LifeBegin(GAMEPLAY *const g, const TH01_INPUT *const raw)
             : g->world.boss == BOSS_KIKURI ? 9
             : g->world.boss == BOSS_ELIS   ? 10
                                            : Session_Scene();
-        Gameplay_Play(g, song);
+        Sound_Load(song);
+        Sound_Play();
         g->world.bgm_started = true;
     }
     Gameplay_ResetInput(g);
@@ -263,7 +264,8 @@ static void M_Switch(GAMEPLAY *const g)
     switch (g->world.switch_to) {
     case GAMEPLAY_SWITCH_STAGE:
         Gameplay_ResetWorld(g);
-        Gameplay_Play(g, 11);
+        Sound_Load(11);
+        Sound_Play();
         return;
     case GAMEPLAY_SWITCH_CONTINUE:
         g_Session.point_value = 0;
@@ -381,7 +383,7 @@ static void M_AfterBonus(GAMEPLAY *const g)
     }
     Gameplay_SyncSession(g);
     if (g_Session.stage_id % 5 == 4 || g->world.boss != BOSS_NONE) {
-        Gameplay_Fade(g);
+        Sound_Fade();
         M_BeginSwitch(g, GAMEPLAY_SWITCH_STAGE);
     } else {
         g_Orb.in_portal = false;
@@ -709,7 +711,7 @@ static GAMEPLAY_REQUEST M_Run(
             } else if (g_Session.lives <= 0) {
                 M_BeginGameover(g);
             } else {
-                Gameplay_Effect(g, 5);
+                Sound_Effect(5);
                 g_Session.lives--;
                 g->world.retained_lives = (int8_t)g_Session.lives;
                 g->bindings.missing.remaining_lives = g_Session.lives;
@@ -816,14 +818,14 @@ static GAMEPLAY_REQUEST M_Run(
                 } else {
                     g_Player.is_hit = false;
                     g_GameInput.paused = false;
-                    Gameplay_Stop(g);
+                    Sound_Stop();
                     M_RequestOpening(g);
                 }
             } else if (g->world.continue_frame > 3000 || g_GameInput.paused) {
                 g_Player.is_hit = false;
                 g_GameInput.paused = false;
                 if (g->world.continue_frame > 3000) {
-                    Gameplay_Stop(g);
+                    Sound_Stop();
                 }
                 M_RequestOpening(g);
             } else {
@@ -859,7 +861,8 @@ void Gameplay_Begin(
     GAMEPLAY *const g, const TH01_INPUT *const raw, const uint64_t host_tick)
 {
     Gameplay_ResetWorld(g);
-    Gameplay_Play(g, 11);
+    Sound_Load(11);
+    Sound_Play();
     g->storage.host_tick = host_tick;
     M_Run(g, raw, host_tick);
 }

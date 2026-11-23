@@ -2,37 +2,6 @@
 
 #include "core/base/assert.h"
 
-void Gameplay_Effect(void *const user, const int16_t number)
-{
-    GAMEPLAY *const g = user;
-    if (g_Session.settings.music != SETTINGS_MUSIC_OFF) {
-        Mdrv_Effect(g->storage.audio, (uint16_t)number);
-    }
-}
-
-void Gameplay_Play(GAMEPLAY *const g, const size_t song)
-{
-    g->storage.song = song;
-    if (g_Session.settings.music != SETTINGS_MUSIC_OFF) {
-        Mdrv_Play(g->storage.audio, song);
-    }
-}
-
-void Gameplay_Fade(void *const user)
-{
-    GAMEPLAY *const g = user;
-    if (g_Session.settings.music != SETTINGS_MUSIC_OFF) {
-        Mdrv_Fade(g->storage.audio, 1);
-    }
-}
-
-void Gameplay_Stop(GAMEPLAY *const g)
-{
-    if (g_Session.settings.music != SETTINGS_MUSIC_OFF) {
-        Mdrv_Stop(g->storage.audio);
-    }
-}
-
 static void M_HudScore(void *const user)
 {
     GAMEPLAY *const g = user;
@@ -72,7 +41,7 @@ static void M_Shots(void *const user, const SHOTS_ACTION action)
 {
     GAMEPLAY *const g = user;
     if (action.kind == SHOTS_ACTION_EFFECT) {
-        Gameplay_Effect(g, action.effect);
+        Sound_Effect(action.effect);
     } else {
         Shots_RenderAction(g->bindings.stage.sprites, action);
     }
@@ -83,7 +52,7 @@ static void M_Player(void *const user, const PLAYER_ACTION action)
     GAMEPLAY *const g = user;
     switch (action.kind) {
     case PLAYER_ACTION_EFFECT:
-        Gameplay_Effect(g, action.effect);
+        Sound_Effect(action.effect);
         break;
     case PLAYER_ACTION_SHOT:
         M_Shots(g, action.shot);
@@ -120,47 +89,6 @@ static void M_Pellets(void *const user)
     Pellets_UpdateAndRender(&g->bindings.pellet);
 }
 
-static void M_AudioJ(void *const user, const B20J_AUDIO_ACTION action)
-{
-    GAMEPLAY *const g = user;
-    switch (action) {
-    case B20J_AUDIO_LOAD_MUSIC:
-        g->storage.song = 12;
-        break;
-    case B20J_AUDIO_PLAY:
-        Gameplay_Play(g, g->storage.song);
-        break;
-    case B20J_AUDIO_STOP:
-        Gameplay_Stop(g);
-        break;
-    case B20J_AUDIO_FADE:
-        Gameplay_Fade(g);
-        break;
-    }
-}
-
-static void M_AudioM(void *const user, const B20M_AUDIO_ACTION action)
-{
-    GAMEPLAY *const g = user;
-    switch (action) {
-    case B20M_AUDIO_LOAD_MUSIC:
-        g->storage.song = 13;
-        break;
-    case B20M_AUDIO_LOAD_SECOND_MUSIC:
-        g->storage.song = 14;
-        break;
-    case B20M_AUDIO_PLAY:
-        Gameplay_Play(g, g->storage.song);
-        break;
-    case B20M_AUDIO_STOP:
-        Gameplay_Stop(g);
-        break;
-    case B20M_AUDIO_FADE:
-        Gameplay_Fade(g);
-        break;
-    }
-}
-
 void Gameplay_Bind(GAMEPLAY *const g)
 {
     const GAMEPLAY_ASSETS *const a = g->storage.assets;
@@ -184,8 +112,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .display = &g->bindings.display,
         .resident_lives = &g->world.retained_lives,
         .next = &g->world.next_extend,
-        .effect = Gameplay_Effect,
-        .user = g,
     };
     g->bindings.stage = (STAGE_CONTEXT) {
         .sprites = stage,
@@ -195,7 +121,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .difficulty = (SETTINGS_DIFFICULTY)g_Session.settings.difficulty,
         .hud_score_and_combo = M_HudScore,
         .item_add = M_ItemAdd,
-        .effect = Gameplay_Effect,
         .pellet_group = M_PelletAdd,
         .pellets_update = M_Pellets,
         .user = g,
@@ -206,7 +131,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .font = &a->item_font,
         .hud_bomb = M_HudBombs,
         .hud_score_and_combo = M_HudScore,
-        .effect = Gameplay_Effect,
         .user = g,
     };
     g->bindings.pellet = (PELLET_CONTEXT) {
@@ -219,7 +143,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .assets = &a->bomb,
         .stage_palette = &g->world.stage_palette,
         .pellets_decay = M_Decay,
-        .effect = Gameplay_Effect,
         .user = g,
     };
     g->bindings.missing = (MISS_CONTEXT) {
@@ -237,8 +160,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     };
     g->bindings.timing = (TIMER_CONTEXT) {
         .display = &g->bindings.display,
-        .effect = Gameplay_Effect,
-        .user = g,
     };
     g->bindings.route_assets =
         (ROUTE_SELECT_ASSETS) { .font = &a->route_font,
@@ -250,8 +171,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .assets = &g->bindings.route_assets,
         .route = &g_Session.route,
         .stage_cleared = &g_Stage.cleared,
-        .effect = Gameplay_Effect,
-        .user = g,
     };
     g->bindings.hit = (BOSS_HIT_CONTEXT) {
         .palette = &g->world.palette,
@@ -259,52 +178,44 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .shots_output = g->bindings.shots_output,
         .test_damage = &g->world.test_damage,
         .frame_rand = g_Session.frame_rand,
-        .effect = Gameplay_Effect,
-        .user = g,
     };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
                                       .hit = &g->bindings.hit,
                                       .stage_palette = &g->world.stage_palette,
                                       .miko = &a->miko,
-                                      .route = &g->bindings.route,
-                                      .fade_music = Gameplay_Fade };
+                                      .route = &g->bindings.route };
     g->bindings.c10j =
         (B10J_CONTEXT) { .assets = &a->b10j,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .miko = &a->miko,
-                         .stage_cleared = &g_Stage.cleared,
-                         .fade_music = Gameplay_Fade };
+                         .stage_cleared = &g_Stage.cleared };
     g->bindings.c10m =
         (B10M_CONTEXT) { .assets = &a->b10m,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .miko = &a->miko,
-                         .stage_cleared = &g_Stage.cleared,
-                         .fade_music = Gameplay_Fade };
+                         .stage_cleared = &g_Stage.cleared };
     g->bindings.c15j =
         (B15J_CONTEXT) { .assets = &a->b15j,
                          .hit = &g->bindings.hit,
                          .stage_palette = &g->world.stage_palette,
                          .miko = &a->miko,
-                         .stage_cleared = &g_Stage.cleared,
-                         .fade_music = Gameplay_Fade };
+                         .stage_cleared = &g_Stage.cleared };
     g->bindings.c15m = (B15M_CONTEXT) { .assets = &a->b15m,
                                         .hit = &g->bindings.hit,
                                         .miko = &a->miko,
-                                        .stage_cleared = &g_Stage.cleared,
-                                        .fade_music = Gameplay_Fade };
-    g->bindings.c20j = (B20J_CONTEXT) { .assets = &a->b20j,
-                                        .hit = &g->bindings.hit,
-                                        .game_cleared = &g->world.game_cleared,
-                                        .audio = M_AudioJ };
+                                        .stage_cleared = &g_Stage.cleared };
+    g->bindings.c20j =
+        (B20J_CONTEXT) { .assets = &a->b20j,
+                         .hit = &g->bindings.hit,
+                         .game_cleared = &g->world.game_cleared };
     g->bindings.c20m =
         (B20M_CONTEXT) { .assets = &a->b20m,
                          .hit = &g->bindings.hit,
                          .first_stage = &g->world.first_stage,
                          .timer_initialized = &g->world.timer_initialized,
-                         .game_cleared = &g->world.game_cleared,
-                         .audio = M_AudioM };
+                         .game_cleared = &g->world.game_cleared };
     g->bindings.bonus_context = (BONUS_CONTEXT) {
         .stage = a->bonus,
         .font = &a->bonus_font,
@@ -321,7 +232,5 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .shots_output = g->bindings.shots_output,
         .continues_per_scene = g_Session.continues_per_scene,
         .continues_total = &g_Session.continues_total,
-        .effect = Gameplay_Effect,
-        .user = g,
     };
 }

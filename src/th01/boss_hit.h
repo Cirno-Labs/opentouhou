@@ -19,8 +19,6 @@ typedef struct {
     SHOTS_OUTPUT shots_output;
     bool *test_damage;
     uint32_t frame_rand;
-    void (*effect)(void *user, int16_t number);
-    void *user;
 } BOSS_HIT_CONTEXT;
 
 // Applies debug damage, then tests shots even during invincibility. Orb or

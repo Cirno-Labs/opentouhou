@@ -1,4 +1,5 @@
 #include "th01/route_select.h"
+#include "th01/sound.h"
 
 #include "core/base/assert.h"
 #include "th01/scale2x.h"
@@ -147,7 +148,7 @@ bool RouteSelect_Resume(
             selection->holding_up = g_GameInput.up;
             selection->holding_down = g_GameInput.down;
             if (g_GameInput.shot || g_GameInput.ok) {
-                c->effect(c->user, 4);
+                Sound_Effect(4);
                 Scene_Activate(
                     selection->selection == 0 ? c->assets->makai
                                               : c->assets->jigoku);

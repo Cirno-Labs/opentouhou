@@ -23,8 +23,6 @@ extern STAGE_TIMER g_StageTimer;
 
 typedef struct {
     const HUD_CONTEXT *display;
-    void (*effect)(void *user, int16_t number);
-    void *user;
 } TIMER_CONTEXT;
 
 void StageTimer_Init(void);
