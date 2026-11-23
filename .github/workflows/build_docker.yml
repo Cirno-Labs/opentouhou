@@ -1,6 +1,14 @@
 name: Build and push the Docker images
 
+# A push to main that changes an image pushes it, so that the pull
+# requests after it pull the image instead of building it.
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - tools/docker/pins
+      - tools/docker/*/*/Dockerfile
   workflow_dispatch:
 
 permissions:
