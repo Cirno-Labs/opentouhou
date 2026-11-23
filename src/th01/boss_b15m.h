@@ -90,8 +90,6 @@ void B15M_Init(B15M *boss, const ALLOCATOR *allocator);
 // applies its palette before entering. Allocates nothing and performs no IO.
 void B15M_Setup(B15M *boss, const B15M_CONTEXT *context);
 
-RESULT B15M_ValidateContext(const B15M_CONTEXT *context);
-
 // Runs one ordinary call including the missile prefix. False suspends its
 // world during entrance, raw scroll, safety-circle delay or defeat. Advance
 // independent audio and reference VSyncs and supply a monotonic 60 Hz host

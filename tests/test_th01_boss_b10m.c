@@ -1,4 +1,5 @@
 #include "th01/boss_b10m.h"
+#include "th01/session.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 
@@ -141,7 +142,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->context.scene = &f->scene;
     f->context.stage_cleared = &f->cleared;
     f->context.fade_music = M_Fade;
-    CHECK(Result_Ignore(B10M_ValidateContext(&f->context)));
+    g_Session.settings.difficulty = f->display.rank;
 }
 
 static void M_Enter(B10M *const b, FIXTURE *const f)
@@ -237,6 +238,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         B10M b = {};
         B10M_Setup(&b, &f.context);
         const size_t used = arena.used;
@@ -275,6 +277,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         FIXTURE f;
         M_Battle(&f, &arena);
         f.display.rank = rank;
+        g_Session.settings.difficulty = rank;
         B10M b = {};
         B10M_Setup(&b, &f.context);
         Frame_Reset();
@@ -499,26 +502,5 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     CHECK_EQ_INT(b.pentagram.center.y, 189);
     CHECK_EQ_INT(b.pentagram.angle, 0);
     CHECK_EQ_INT(b.pattern_interval, 0);
-    Arena_Free(&arena);
-}
-
-TEST(context_requires_live_resources_and_audio_consumer)
-{
-    ARENA arena;
-    Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
-    FIXTURE f;
-    M_Battle(&f, &arena);
-    f.context.fade_music = nullptr;
-    CHECK(!Result_Ignore(B10M_ValidateContext(&f.context)));
-    f.context.fade_music = M_Fade;
-    f.context.scene = nullptr;
-    CHECK(!Result_Ignore(B10M_ValidateContext(&f.context)));
-    f.context.scene = &f.scene;
-    f.context.lasers = nullptr;
-    CHECK(!Result_Ignore(B10M_ValidateContext(&f.context)));
-    f.context.lasers = &f.lasers;
-    f.hit_context.hp = nullptr;
-    f.hit_context.boss_palette = nullptr;
-    CHECK(Result_Ignore(B10M_ValidateContext(&f.context)));
     Arena_Free(&arena);
 }

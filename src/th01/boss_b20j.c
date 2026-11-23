@@ -1,5 +1,6 @@
 #include "th01/boss_b20j.h"
 
+#include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "core/base/assert.h"
@@ -7,26 +8,6 @@
 
 #include <string.h>
 
-static RESULT M_LoadBos(
-    VFS *const vfs, const char *const name, const ALLOCATOR *const a,
-    BOS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
-    const RESULT result = Bos_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
-static RESULT M_LoadPi(
-    VFS *const vfs, const char *const name, const ALLOCATOR *const a,
-    PI_IMAGE *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, name, VFS_IN_MEMORY, &reader));
-    const RESULT result = Pi_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
 static RESULT M_LoadBody(
     VFS *const vfs, const ALLOCATOR *const a, GRZ *const out)
 {
@@ -114,16 +95,16 @@ RESULT B20J_LoadAssets(
 {
     *out = (B20J_ASSETS) {};
     B20J_ASSETS loaded = {};
-    MUST(M_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
-    MUST(M_LoadBos(vfs, "BOSS8_E1.BOS", a, &loaded.face));
-    MUST(M_LoadBos(vfs, "BOSS8_E2.BOS", a, &loaded.aim));
+    MUST(Boss_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
+    MUST(Boss_LoadBos(vfs, "BOSS8_E1.BOS", a, &loaded.face));
+    MUST(Boss_LoadBos(vfs, "BOSS8_E2.BOS", a, &loaded.aim));
     MUST(M_LoadBody(vfs, a, &loaded.body));
-    MUST(M_LoadPi(vfs, "BOSS7_D1.GRP", a, &loaded.scroll));
-    MUST(M_LoadPi(vfs, "BOSS8_A1.GRP", a, &loaded.upper));
+    MUST(Boss_LoadBackground(vfs, "BOSS7_D1.GRP", a, &loaded.scroll));
+    MUST(Boss_LoadBackground(vfs, "BOSS8_A1.GRP", a, &loaded.upper));
     const char *const names[] = { "BOSS8_D1.GRP", "BOSS8_D2.GRP",
                                   "BOSS8_D3.GRP", "BOSS8_D4.GRP" };
     for (int32_t i = 0; i < 4; i++) {
-        MUST(M_LoadPi(vfs, names[i], a, &loaded.layers[i]));
+        MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
     MUST(M_LoadAudio(vfs, a, &loaded));
     MUST(M_LoadMasks(vfs, scratch, scratch_size, a, &loaded));
@@ -151,28 +132,13 @@ void B20J_Setup(B20J *const b, const B20J_CONTEXT *const c)
     c->hit->health->first_redwhite = 10;
 }
 
-static PLAYER *M_Player(const B20J_CONTEXT *const c)
-{
-    return c->hit->display->player;
-}
 static int16_t M_W(const int32_t x)
 {
     return Math16_Wrap(x);
 }
-static int16_t M_Rank(
-    const B20J_CONTEXT *const c, const int16_t e, const int16_t n,
-    const int16_t h, const int16_t l)
-{
-    const int32_t rank = c->hit->display->rank;
-    return rank == 0 ? e : rank == 2 ? h : rank == 3 ? l : n;
-}
 static uint16_t M_Random(const B20J_CONTEXT *const c)
 {
     return MasterRng_Next(c->rng);
-}
-static void M_Effect(const B20J_CONTEXT *const c, const int16_t effect)
-{
-    c->hit->effect(c->hit->user, effect);
 }
 static void M_Audio(const B20J_CONTEXT *const c, const B20J_AUDIO_ACTION action)
 {
@@ -410,7 +376,7 @@ bool B20J_ResumeEntrance(B20J *const b, const B20J_CONTEXT *const c)
             return M_Scroll(b, 416 - b->animation_frame % 2 * 32);
         case 6:
             if (b->animation_frame % 8 == 0) {
-                M_Effect(c, 9);
+                Boss_Effect(c->hit, 9);
             }
             b->animation_frame++;
             b->entrance_stage = 5;
@@ -513,7 +479,7 @@ static void M_Group(
     const int16_t group, const int16_t speed)
 {
     Pellets_AddGroup(
-        c->pellets, c->pellet_shared, M_Player(c), c->rng,
+        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
         c->hit->display->rank, x, y, group, speed);
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
@@ -551,8 +517,8 @@ static void M_Cross(B20J *const b, const B20J_CONTEXT *const c)
         return;
     }
     if (b->frame == 100) {
-        b->pattern_state = M_Rank(
-            c, PELLET_GROUP_TWO_NARROW_AIMED, PELLET_GROUP_THREE_NARROW_AIMED,
+        b->pattern_state = Boss_Rank(
+            PELLET_GROUP_TWO_NARROW_AIMED, PELLET_GROUP_THREE_NARROW_AIMED,
             PELLET_GROUP_FIVE_WIDE_AIMED, PELLET_GROUP_FIVE_NARROW_AIMED);
         b->diamond_velocity[0] = Math16_Aim(
             (MATH16_VECTOR) { 316, 236 }, (MATH16_VECTOR) { 0, 384 }, 7, 0);
@@ -563,8 +529,8 @@ static void M_Cross(B20J *const b, const B20J_CONTEXT *const c)
             b->diamond_top[i] = 236;
         }
         M_Group(c, 312, 188, b->pattern_state, 48);
-        b->pattern_state = M_Rank(c, 18, 16, 14, 12);
-        M_Effect(c, 12);
+        b->pattern_state = Boss_Rank(18, 16, 14, 12);
+        Boss_Effect(c->hit, 12);
     } else if (b->diamond_left[0] > 0) {
         for (int32_t i = 0; i < 4; i++) {
             M_Erase(c, b->diamond_left[i], b->diamond_top[i]);
@@ -642,7 +608,7 @@ static void M_Cup(B20J *const b, const B20J_CONTEXT *const c)
     }
     if (b->frame == 100) {
         b->cup_angle = 64;
-        b->pattern_state = M_Rank(c, 80, 80, 96, 112);
+        b->pattern_state = Boss_Rank(80, 80, 96, 112);
     }
     if (b->frame < 140 && b->frame % 8 == 0) {
         M_CupFire(b, c, 64);
@@ -679,7 +645,7 @@ static void M_SnakeSpawn(
         s->left[i][j] = x;
         s->top[i][j] = y;
     }
-    M_SnakeAim(s, c, i, M_Player(c)->left, 6);
+    M_SnakeAim(s, c, i, Boss_Player(c->hit)->left, 6);
 }
 static void M_SnakesUpdate(
     B20J_SNAKES *const s, const B20J_CONTEXT *const c, const int32_t count)
@@ -694,7 +660,7 @@ static void M_SnakesUpdate(
         }
         M_Diamond(c, s->left[i][0], s->top[i][0], 7);
         if (!s->target_locked[i]) {
-            s->target_left[i] = M_Player(c)->left;
+            s->target_left[i] = Boss_Player(c->hit)->left;
         }
         M_SnakeAim(s, c, i, s->target_left[i], 7);
         if (s->top[i][0] > 300) {
@@ -706,7 +672,7 @@ static void M_SnakesUpdate(
         }
         s->left[i][0] = M_W(s->left[i][0] + s->velocity[i].x);
         s->top[i][0] = M_W(s->top[i][0] + s->velocity[i].y);
-        PLAYER *const player = M_Player(c);
+        PLAYER *const player = Boss_Player(c->hit);
         if (s->left[i][0] > player->left && s->left[i][0] < player->left + 24
             && s->top[i][0] > 368 + (player->sliding ? 10 : 0)
             && s->top[i][0] < 392 && !player->invincible) {
@@ -734,20 +700,20 @@ static void M_Snakes(
             s->left[i][0] = 999;
         }
         if (four) {
-            b->pattern_state = M_Rank(c, 18, 16, 14, 12);
+            b->pattern_state = Boss_Rank(18, 16, 14, 12);
         }
-        M_Effect(c, 12);
+        Boss_Effect(c->hit, 12);
         return;
     }
     if (b->frame < (four ? 400 : 500)) {
         M_SnakesUpdate(s, c, count);
         if (b->frame == 150) {
             M_SnakeSpawn(s, c, 1, 312, 188);
-            M_Effect(c, 12);
+            Boss_Effect(c->hit, 12);
         }
         if (four && (b->frame == 200 || b->frame == 250)) {
             M_SnakeSpawn(s, c, b->frame == 200 ? 2 : 3, 290, 200);
-            M_Effect(c, 12);
+            Boss_Effect(c->hit, 12);
         }
         if (!four && b->frame > 240 - (int32_t)c->hit->display->rank * 40
             && b->frame % 40 == 0) {
@@ -767,7 +733,7 @@ static void M_Snakes(
                 M_Single(c, x, y, angle, speed);
                 angle += 12;
             }
-            M_Effect(c, 7);
+            Boss_Effect(c->hit, 7);
         }
     } else {
         for (int32_t i = 0; i < count; i++) {
@@ -793,8 +759,8 @@ static void M_Rows(B20J *const b, const B20J_CONTEXT *const c)
         b->row_top = 200;
         b->row_speed = 48;
         b->row_direction = 99;
-        M_Effect(c, 12);
-        b->pattern_state = M_Rank(c, 12, 10, 8, 6);
+        Boss_Effect(c->hit, 12);
+        b->pattern_state = Boss_Rank(12, 10, 8, 6);
         return;
     }
     if (b->row_direction == 99) {
@@ -854,11 +820,11 @@ static void M_Spray(B20J *const b, const B20J_CONTEXT *const c)
         b->spray_offset = 32;
         b->spray_delta = -8;
         b->spray_fired = 0;
-        b->pattern_state = M_Rank(c, 5, 4, 3, 2);
+        b->pattern_state = Boss_Rank(5, 4, 3, 2);
     }
     if (b->frame % b->pattern_state == 0) {
-        b->spray_angle =
-            M_Angle(368 - 184, M_Player(c)->left - 278) + b->spray_offset;
+        b->spray_angle = M_Angle(368 - 184, Boss_Player(c->hit)->left - 278)
+            + b->spray_offset;
         b->spray_offset += b->spray_delta;
         b->spray_fired++;
         if (b->spray_fired > 8) {
@@ -898,7 +864,7 @@ static void M_Edges(B20J *const b, const B20J_CONTEXT *const c)
     if (b->frame == 100) {
         b->ray_x = 0;
         b->ray_y = 264;
-        b->pattern_state = M_Rank(c, 5, 3, 2, 2);
+        b->pattern_state = Boss_Rank(5, 3, 2, 2);
     }
     if (b->frame < 125) {
         M_Ray(b, c, 0, -8);
@@ -938,7 +904,7 @@ static void M_Edges(B20J *const b, const B20J_CONTEXT *const c)
         b->frame = 0;
     }
     if (b->frame % 10 == 0) {
-        M_Effect(c, 6);
+        Boss_Effect(c->hit, 6);
     }
     if (b->frame % b->pattern_state == 0) {
         M_Rain(c, b->ray_x, b->ray_y, M_Random(c) & 127, 32);
@@ -955,7 +921,7 @@ static void M_SlashAnimate(B20J *const b, const B20J_CONTEXT *const c)
         if (b->frame == frames[i]) {
             M_SlashPut(c, i);
             if (i == 0) {
-                M_Effect(c, 8);
+                Boss_Effect(c->hit, 8);
             }
         }
     }
@@ -987,9 +953,9 @@ static void M_Slash(
         b->direction_can_change = false;
         b->slash_left[pattern] = 410;
         b->slash_top[pattern] = 70;
-        b->pattern_state = pattern == 0 ? M_Rank(c, 5, 3, 2, 1)
-            : pattern == 1              ? M_Rank(c, 32, 48, 64, 72)
-                                        : M_Rank(c, 64, 80, 88, 96);
+        b->pattern_state = pattern == 0 ? Boss_Rank(5, 3, 2, 1)
+            : pattern == 1              ? Boss_Rank(32, 48, 64, 72)
+                                        : Boss_Rank(64, 80, 88, 96);
     }
     M_SlashAnimate(b, c);
     if (b->frame < 100) {
@@ -1007,7 +973,7 @@ static void M_Slash(
         b->slash_left[pattern] = 432;
         b->slash_top[pattern] = 232;
         if (pattern == 0) {
-            b->pattern_state = M_Rank(c, 3, 2, 2, 2);
+            b->pattern_state = Boss_Rank(3, 2, 2, 2);
         }
     }
     if (b->frame < 140) {
@@ -1022,7 +988,7 @@ static void M_Slash(
         b->slash_left[pattern] = 198;
         b->slash_top[pattern] = 198;
         if (pattern == 0) {
-            b->pattern_state = M_Rank(c, 3, 2, 1, 1);
+            b->pattern_state = Boss_Rank(3, 2, 1, 1);
         }
     }
     if (b->frame < 150) {
@@ -1047,7 +1013,7 @@ static void M_Lasers(B20J *const b, const B20J_CONTEXT *const c)
     }
     if (b->frame == 100) {
         b->laser_right_to_left = M_Random(c) % 2 != 0;
-        b->pattern_state = M_Rank(c, 128, 96, 80, 64);
+        b->pattern_state = Boss_Rank(128, 96, 80, 64);
     }
     if (b->frame % 10 == 0) {
         const int16_t distance = M_W((b->frame - 100) / 10 * b->pattern_state);
@@ -1056,7 +1022,7 @@ static void M_Lasers(B20J *const b, const B20J_CONTEXT *const c)
         ShootoutLasers_Spawn(
             &c->lasers->slots[(b->frame / 10) % 10], 410, 70, target, 400, 68,
             7, 30, 5);
-        M_Effect(c, 6);
+        Boss_Effect(c->hit, 6);
         if ((!b->laser_right_to_left && target >= 640)
             || (b->laser_right_to_left && target <= 0)) {
             b->frame = 0;
@@ -1084,7 +1050,7 @@ static void M_Sleeve(B20J *const b, const B20J_CONTEXT *const c)
                     48, 0, 0);
             }
         }
-        M_Effect(c, 7);
+        Boss_Effect(c->hit, 7);
     }
     if (b->frame >= 300) {
         b->frame = 0;
@@ -1128,7 +1094,7 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
             b->frame = M_W(b->frame + 1);
             if (b->frame % 4 == 0) {
                 M_BlackOut(c);
-                M_Effect(c, 7);
+                Boss_Effect(c->hit, 7);
             }
             b->defeat_stage = 3;
             return M_Scroll(b, 408 + b->frame % 2 * 16);
@@ -1160,7 +1126,7 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
                 if (b->scroll_frame % 8 == 0) {
                     Palette_StepTo(
                         c->hit->palette, &c->hit->palette->resource, true);
-                    M_Effect(c, 7);
+                    Boss_Effect(c->hit, 7);
                 }
             } else if (b->scroll_frame % 8 == 0) {
                 if (b->scroll_frame == 192) {
@@ -1172,7 +1138,7 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
                     return M_Scroll(b, 0);
                 }
                 if (b->scroll_frame < 220) {
-                    M_Effect(c, 7);
+                    Boss_Effect(c->hit, 7);
                 }
             }
             b->scroll_frame++;
@@ -1197,15 +1163,12 @@ static bool M_Death(B20J *const b, const B20J_CONTEXT *const c)
 }
 static void M_Hit(B20J *const b, const B20J_CONTEXT *const c)
 {
-    BOSS_HIT_CONTEXT hit = *c->hit;
-    hit.hp = &b->hp;
-    hit.boss_palette = &b->boss_palette;
     const uint8_t colors[] = { 3, 4, 5 };
-    const ORB *const orb = hit.orb;
+    const ORB *const orb = c->hit->orb;
     const bool collision = orb->left >= 288 && orb->left <= 352
         && orb->top >= 120 && orb->top <= 160;
     BossHit_UpdateAndRender(
-        &b->hit, &hit, colors, 3, 10000, collision,
+        &b->hit, c->hit, &b->hp, &b->boss_palette, colors, 3, 10000, collision,
         (BOSS_SHOT_HITBOX) { 288, 120, 96, 40 });
 }
 static void M_Next(
@@ -1296,9 +1259,9 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
     }
     b->frame = M_W(b->frame + 1);
     b->hit.frame = M_W(b->hit.frame + 1);
-    const int16_t direction = M_Player(c)->left < 198 ? 1
-        : M_Player(c)->left > 396                     ? 0
-                                                      : 2;
+    const int16_t direction = Boss_Player(c->hit)->left < 198 ? 1
+        : Boss_Player(c->hit)->left > 396                     ? 0
+                                                              : 2;
     M_Direction(b, c, direction);
     if ((b->phase & 1) == 0) {
         if (b->frame == 50) {
@@ -1352,37 +1315,4 @@ bool B20J_UpdateAndRender(B20J *const b, const B20J_CONTEXT *const c)
         }
     }
     return true;
-}
-
-RESULT B20J_ValidateContext(const B20J_CONTEXT *const c)
-{
-    FAIL_IF(
-        c == nullptr || c->assets == nullptr || c->sprites == nullptr
-            || c->hit == nullptr || c->hit->display == nullptr
-            || c->hit->palette == nullptr || c->hit->health == nullptr
-            || c->hit->hud == nullptr || c->hit->shots_output.action == nullptr
-            || c->hit->display->remaining_lives == nullptr
-            || c->hit->display->high_score == nullptr
-            || c->hit->display->font == nullptr
-            || c->hit->display->sprites == nullptr
-            || c->hit->display->player == nullptr
-            || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
-            || c->hit->orb == nullptr || c->hit->test_damage == nullptr
-            || c->hit->effect == nullptr || c->pellets == nullptr
-            || c->pellet_shared == nullptr || c->lasers == nullptr
-            || c->rng == nullptr || c->objects == nullptr
-            || c->game_cleared == nullptr || c->audio == nullptr,
-        "Missing Konngara context");
-    MUST(B20J_ValidateAssets(c->assets));
-    FAIL_IF(
-        c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr || g_Tram.pixels == nullptr,
-        "Missing Konngara display storage");
-    MUST(Shots_ValidateSprites(c->hit->display->sprites));
-    for (uint32_t digit = 0xff10; digit <= 0xff19; digit++) {
-        FAIL_IF(
-            GameText_Find(c->hit->display->font, digit) == nullptr,
-            "Missing Konngara score glyph");
-    }
-    return OK;
 }

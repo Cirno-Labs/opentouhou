@@ -1,30 +1,11 @@
 #include "th01/boss_b10m.h"
 
+#include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "th01/line_bullets.h"
 
 #include "core/base/assert.h"
-
-static RESULT M_LoadBos(
-    VFS *const vfs, const ALLOCATOR *const a, BOS *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS2.BOS", VFS_IN_MEMORY, &reader));
-    RESULT result = Bos_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
-
-static RESULT M_LoadBackground(
-    VFS *const vfs, const ALLOCATOR *const a, PI_IMAGE *const out)
-{
-    READER reader;
-    MUST(Vfs_Open(vfs, "BOSS2.GRP", VFS_IN_MEMORY, &reader));
-    RESULT result = Pi_Load(&reader, a, out);
-    Reader_Close(&reader);
-    return result;
-}
 
 static RESULT M_LoadMissiles(
     VFS *const vfs, const ALLOCATOR *const a, PTN *const out)
@@ -59,8 +40,8 @@ RESULT B10M_LoadAssets(
 {
     *out = (B10M_ASSETS) {};
     B10M_ASSETS loaded = {};
-    MUST(M_LoadBos(vfs, a, &loaded.eyes));
-    MUST(M_LoadBackground(vfs, a, &loaded.background));
+    MUST(Boss_LoadBos(vfs, "BOSS2.BOS", a, &loaded.eyes));
+    MUST(Boss_LoadBackground(vfs, "BOSS2.GRP", a, &loaded.background));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 3, a, &loaded.next_scene));
     MUST(B10M_ValidateAssets(&loaded));
@@ -101,31 +82,10 @@ void B10M_Setup(B10M *const b, const B10M_CONTEXT *const c)
     Missiles_Reset(c->missiles);
 }
 
-static PLAYER *M_Player(const B10M_CONTEXT *const c)
-{
-    return c->hit->display->player;
-}
-
 static int8_t M_Byte(const int32_t value)
 {
     const uint8_t bits = (uint8_t)value;
     return bits < 128 ? (int8_t)bits : (int8_t)((int16_t)bits - 256);
-}
-
-static int16_t M_Rank(
-    const B10M_CONTEXT *const c, const int16_t e, const int16_t n,
-    const int16_t h, const int16_t l)
-{
-    switch (c->hit->display->rank) {
-    case SETTINGS_DIFFICULTY_EASY:
-        return e;
-    case SETTINGS_DIFFICULTY_HARD:
-        return h;
-    case SETTINGS_DIFFICULTY_LUNATIC:
-        return l;
-    default:
-        return n;
-    }
 }
 
 static void M_Lock(
@@ -145,9 +105,9 @@ static void M_Track(
         BOSS_ENTITY *const e = &b->eyes[i];
         if ((flags & (1 << i)) != 0) {
             const int16_t center = Math16_Wrap(e->left + 32);
-            e->image = Math16_Wrap(center - M_Player(c)->left) > 32 ? 4
-                : Math16_Wrap(M_Player(c)->left - center) > 32      ? 5
-                                                                    : 3;
+            e->image = Math16_Wrap(center - Boss_Player(c->hit)->left) > 32 ? 4
+                : Math16_Wrap(Boss_Player(c->hit)->left - center) > 32      ? 5
+                                                                            : 3;
         }
     }
 }
@@ -194,7 +154,7 @@ static void M_Group(
     const PELLET_GROUP group, const int16_t speed, const bool iris)
 {
     Pellets_AddGroup(
-        c->pellets, c->pellet_shared, M_Player(c), c->rng,
+        c->pellets, c->pellet_shared, Boss_Player(c->hit), c->rng,
         c->hit->display->rank, Math16_Wrap(b->eyes[eye].left + 28),
         Math16_Wrap(b->eyes[eye].top + (iris ? 28 : 32)), group, speed);
 }
@@ -219,12 +179,10 @@ static void M_Hit(B10M *const b, const B10M_CONTEXT *const c)
             break;
         }
     }
-    BOSS_HIT_CONTEXT hit = *c->hit;
-    hit.hp = &b->hp;
-    hit.boss_palette = &b->boss_palette;
     const uint8_t flash[] = { 1, 11 };
     BossHit_UpdateAndRender(
-        &b->hit, &hit, flash, 2, 5000, colliding, (BOSS_SHOT_HITBOX) {});
+        &b->hit, c->hit, &b->hp, &b->boss_palette, flash, 2, 5000, colliding,
+        (BOSS_SHOT_HITBOX) {});
 }
 
 static void M_MissileAction(void *const user, const MISSILES_ACTION action)
@@ -299,14 +257,14 @@ static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
             M_DownLaser(b, c, i, true);
             const int16_t x = Math16_Wrap(b->eyes[i].left + 28);
             const int16_t width = i == 1 ? 8 : 32;
-            if (M_Player(c)->left > Math16_Wrap(x - 24)
-                && M_Player(c)->left < Math16_Wrap(x + 24 - width)) {
-                M_Player(c)->is_hit = true;
+            if (Boss_Player(c->hit)->left > Math16_Wrap(x - 24)
+                && Boss_Player(c->hit)->left < Math16_Wrap(x + 24 - width)) {
+                Boss_Player(c->hit)->is_hit = true;
             }
         }
     }
-    if (M_Player(c)->invincible) {
-        M_Player(c)->is_hit = false;
+    if (Boss_Player(c->hit)->invincible) {
+        Boss_Player(c->hit)->is_hit = false;
     }
     if (b->frame % 40 == 0) {
         c->stage_palette->colors[15][0] =
@@ -372,7 +330,7 @@ static void M_Entrance(B10M *const b, const B10M_CONTEXT *const c)
         b->hp_bar_filled = false;
         b->eyes[0].image = 4;
         b->eyes[1].image = 3;
-        b->pattern_interval = M_Rank(c, 350, 300, 200, 130);
+        b->pattern_interval = Boss_Rank(350, 300, 200, 130);
         M_DownLaser(b, c, 4, false);
     }
 }
@@ -424,7 +382,7 @@ static void M_Missiles(
         if (b->subphase == 0) {
             b->subphase =
                 (int16_t)((MasterRng_Next(c->rng) % (clock ? 2 : 3)) * 4 + 1);
-            b->target_left = Math16_Wrap(M_Player(c)->left - 8);
+            b->target_left = Math16_Wrap(Boss_Player(c->hit)->left - 8);
             b->angle = (uint8_t)(Math16_Angle(
                                      Math16_Wrap(400 - b->eyes[2].top + 28),
                                      Math16_Wrap(
@@ -541,7 +499,7 @@ static void M_Laser(
     } else {
         LineBullets_Erase(x, y, Math16_Wrap(end - (left ? -16 : 16)), 400);
         LineBullets_PutPatternedAndHitTest(
-            M_Player(c), x, y, end, 400, 7, 0xe0);
+            Boss_Player(c->hit), x, y, end, 400, 7, 0xe0);
     }
 }
 
@@ -630,7 +588,8 @@ static void M_Shrink(
         if (restore) {
             LineBullets_Erase(a.x, a.y, z.x, z.y);
         } else {
-            LineBullets_PutAndHitTest(M_Player(c), a.x, a.y, z.x, z.y, 7);
+            LineBullets_PutAndHitTest(
+                Boss_Player(c->hit), a.x, a.y, z.x, z.y, 7);
         }
     }
 }
@@ -646,7 +605,7 @@ static void M_Star(
             LineBullets_Erase(p->x[a], p->y[a], p->x[z], p->y[z]);
         } else {
             LineBullets_PutAndHitTest(
-                M_Player(c), p->x[a], p->y[a], p->x[z], p->y[z], 7);
+                Boss_Player(c->hit), p->x[a], p->y[a], p->x[z], p->y[z], 7);
         }
     }
 }
@@ -680,7 +639,7 @@ static void M_Enter12(B10M *const b, const B10M_CONTEXT *const c)
     b->pentagram.radius = 64;
     M_Corners(b, 0);
     b->pentagram.y[1] = b->pentagram.y[4];
-    b->pattern_interval = M_Rank(c, 24, 14, 10, 8);
+    b->pattern_interval = Boss_Rank(24, 14, 10, 8);
 }
 
 static void M_SpawnStar(B10M *const b, const B10M_CONTEXT *const c)
@@ -690,7 +649,7 @@ static void M_SpawnStar(B10M *const b, const B10M_CONTEXT *const c)
     if (b->frame == 100 || b->subphase == 1) {
         if (b->subphase == 0) {
             b->subphase = 1;
-            b->target_left = M_Player(c)->left;
+            b->target_left = Boss_Player(c->hit)->left;
         }
         M_Shrink(b, c, 0, false);
         if (b->frame == 140) {
@@ -725,7 +684,8 @@ static void M_Spin(B10M *const b, const bool clockwise)
 static void M_Aim(B10M *const b, const B10M_CONTEXT *const c)
 {
     b->pentagram.velocity = Math16_Aim(
-        b->pentagram.center, (MATH16_VECTOR) { M_Player(c)->left, 400 }, 4, 0);
+        b->pentagram.center, (MATH16_VECTOR) { Boss_Player(c->hit)->left, 400 },
+        4, 0);
 }
 
 static void M_Back(
@@ -840,7 +800,7 @@ static bool M_Death(B10M *const b, const B10M_CONTEXT *const c)
         .palette = c->hit->palette,
         .post_defeat = &b->post_defeat,
         .miko = c->miko,
-        .player = M_Player(c),
+        .player = Boss_Player(c->hit),
         .origin_top = &c->hit->orb->top,
         .stage_cleared = c->stage_cleared,
     };
@@ -856,42 +816,6 @@ static bool M_Death(B10M *const b, const B10M_CONTEXT *const c)
     return true;
 }
 
-RESULT B10M_ValidateContext(const B10M_CONTEXT *const c)
-{
-    FAIL_IF(
-        c == nullptr || c->assets == nullptr || c->sprites == nullptr
-            || c->hit == nullptr || c->hit->display == nullptr
-            || c->hit->palette == nullptr || c->hit->health == nullptr
-            || c->hit->hud == nullptr || c->hit->shots_output.action == nullptr
-            || c->hit->display->remaining_lives == nullptr
-            || c->hit->display->high_score == nullptr
-            || c->hit->display->font == nullptr
-            || c->hit->display->sprites == nullptr
-            || c->hit->display->player == nullptr
-            || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
-            || c->hit->orb == nullptr || c->hit->test_damage == nullptr
-            || c->hit->effect == nullptr || c->stage_palette == nullptr
-            || c->particles == nullptr || c->pellets == nullptr
-            || c->pellet_shared == nullptr || c->rng == nullptr
-            || c->missiles == nullptr || c->lasers == nullptr
-            || c->miko == nullptr || c->scene == nullptr
-            || c->stage_cleared == nullptr || c->fade_music == nullptr,
-        "Missing YuugenMagan context");
-    MUST(B10M_ValidateAssets(c->assets));
-    FAIL_IF(
-        c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr,
-        "Missing YuugenMagan HUD storage");
-    MUST(Shots_ValidateSprites(c->hit->display->sprites));
-    for (uint32_t digit = 0xff10; digit <= 0xff19; digit++) {
-        FAIL_IF(
-            GameText_Find(c->hit->display->font, digit) == nullptr,
-            "Missing YuugenMagan score glyph");
-    }
-    MUST(BossDefeat_ValidateSprites(c->miko));
-    return OK;
-}
-
 bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
 {
     if (b->finished) {
@@ -901,7 +825,7 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
         return M_Death(b, c);
     }
     Missiles_UpdateAndRender(
-        c->missiles, M_Player(c), (uint16_t)c->hit->frame_rand,
+        c->missiles, Boss_Player(c->hit), (uint16_t)c->hit->frame_rand,
         (MISSILES_OUTPUT) { M_MissileAction, (void *)c });
     if (b->phase == 0) {
         M_Entrance(b, c);
@@ -941,12 +865,12 @@ bool B10M_UpdateAndRender(B10M *const b, const B10M_CONTEXT *const c)
             }
             b->pattern_state = 0;
             if (previous == 2) {
-                b->pattern_interval = M_Rank(c, 8, 12, 16, 20);
+                b->pattern_interval = Boss_Rank(8, 12, 16, 20);
             } else if (previous == 4) {
-                b->pattern_interval = M_Rank(c, 12, 8, 4, 2);
+                b->pattern_interval = Boss_Rank(12, 8, 4, 2);
                 b->angle = 0;
             } else if (previous == 6) {
-                b->pattern_interval = M_Rank(c, 10, 16, 20, 24);
+                b->pattern_interval = Boss_Rank(10, 16, 20, 24);
                 b->pentagram.angle = 0;
             } else {
                 b->pentagram.angle = 0;

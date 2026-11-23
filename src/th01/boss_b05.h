@@ -66,13 +66,6 @@ RESULT B05_ValidateAssets(const B05_ASSETS *assets);
 // Setup allocates nothing, reads no file, and does not draw the background.
 void B05_Setup(B05 *boss, const B05_CONTEXT *context);
 
-// Validates all borrowed battle resources before simulation. Hit and route
-// contexts share palette and player. Update borrows the hit context's
-// effects consumer and frame_rand, but binds its own HP and boss palette.
-// fade_music posts the original nonblocking fade request to the audio owner
-// through hit->user; it must not mutate battle state or read an audio device.
-RESULT B05_ValidateContext(const B05_CONTEXT *context);
-
 // Runs one ordinary boss call, or resumes its pending entrance/defeat/route
 // operation. False suspends the owning world: advance only reference VSyncs
 // and independent audio, then poll again. No prefix is replayed; the boss
