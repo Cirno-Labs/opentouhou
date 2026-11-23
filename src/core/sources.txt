@@ -37,6 +37,7 @@ ini/write.c
 
 [archive]
 archive/archive.c
+archive/hdi.c
 archive/zip.c
 
 [vfs]
