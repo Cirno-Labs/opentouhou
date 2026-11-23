@@ -37,9 +37,7 @@ static void M_Text(
     const BONUS_CONTEXT *const c, const char *const text, const int16_t left,
     const int16_t row, const uint8_t color)
 {
-    GameText_Draw(
-        c->font, c->display->video, text, 48 + left, 80 + row * 16, color,
-        &m_Style);
+    GameText_Draw(c->font, text, 48 + left, 80 + row * 16, color, &m_Style);
 }
 
 static int32_t M_Add(
@@ -71,9 +69,9 @@ static void M_StageMetric(
 
 static void M_Confirm(BONUS *const b, const BONUS_CONTEXT *const c)
 {
-    GameInput_ResetGame(c->input);
-    c->input->shot = true;
-    c->input->ok = true;
+    GameInput_ResetGame();
+    g_GameInput.shot = true;
+    g_GameInput.ok = true;
     b->phase = BONUS_CONFIRM;
 }
 
@@ -91,7 +89,7 @@ static void M_StageCommit(BONUS *const b, const BONUS_CONTEXT *const c)
     for (int32_t i = 0; i < 7; i++) {
         M_Text(c, m_Labels[i], i == 6 ? 112 : 0, rows[i], i == 6 ? 10 : 7);
     }
-    M_StageMetric(c, 3, Math16_Wrap(c->timer->time * 3));
+    M_StageMetric(c, 3, Math16_Wrap(g_StageTimer.time * 3));
     M_StageMetric(c, 5, Math16_Wrap(c->display->gameplay->maximum_combo * 100));
     M_StageMetric(
         c, 7,
@@ -166,19 +164,18 @@ RESULT Bonus_ValidateStageAssets(
 
 bool Bonus_BeginStage(
     BONUS *const b, const BONUS_CONTEXT *const c, const int16_t stage_number,
-    const TH01_INPUT *const raw, FRAME_VSYNC *const vsync)
+    const TH01_INPUT *const raw)
 {
     ASSERT(
         b->phase == BONUS_DONE && stage_number >= 1 && stage_number <= 20
         && stage_number % 5 != 0);
     *b = (BONUS) { .phase = BONUS_STAGE_BOX, .stage_number = stage_number };
-    Palette_Set(c->palette, c->display->video, c->stage_palette);
-    return Bonus_Resume(b, c, raw, vsync);
+    Palette_Set(c->palette, c->stage_palette);
+    return Bonus_Resume(b, c, raw);
 }
 
 bool Bonus_Resume(
-    BONUS *const b, const BONUS_CONTEXT *const c, const TH01_INPUT *const raw,
-    FRAME_VSYNC *const vsync)
+    BONUS *const b, const BONUS_CONTEXT *const c, const TH01_INPUT *const raw)
 {
     for (;;) {
         switch (b->phase) {
@@ -186,7 +183,7 @@ bool Bonus_Resume(
             return true;
         case BONUS_STAGE_BOX:
             if (b->waiting) {
-                if (!Frame_DelayReady(vsync, 1)) {
+                if (!Frame_DelayReady(1)) {
                     return false;
                 }
                 b->waiting = false;
@@ -197,18 +194,18 @@ bool Bonus_Resume(
             }
             for (int32_t x = 32; x < 32 + M_STAGE_WIDTH + 32; x++) {
                 if ((c->stage->box[b->row % 4] & (0x80u >> (x % 8))) != 0) {
-                    Video_Pixel(c->display->video, x, 180 - b->row, 0);
-                    Video_Pixel(c->display->video, x, 180 + b->row, 0);
+                    Video_Pixel(x, 180 - b->row, 0);
+                    Video_Pixel(x, 180 + b->row, 0);
                 }
             }
             b->waiting = b->row % 6 == 0;
             b->row++;
             break;
         case BONUS_CONFIRM:
-            if (GameInput_SenseGame(c->input, raw, false)) {
+            if (GameInput_SenseGame(raw, false)) {
                 c->display->player->is_hit = true;
             }
-            if (c->input->shot && c->input->ok) {
+            if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
             }
             *c->score_bonus = 0;

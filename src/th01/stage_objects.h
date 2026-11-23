@@ -52,8 +52,8 @@ void StageObjects_Prepare(
 // storage prepared before simulation; boss stages do not access storage.
 void StageObjects_InitPrepared(
     STAGE_OBJECTS *objects, const STAGE_DATA *data, int16_t stage_id,
-    bool first_in_scene, STAGE_OBJECT_STORAGE *storage, VIDEO *video,
-    const PTN *sprites, uint32_t *rng);
+    bool first_in_scene, STAGE_OBJECT_STORAGE *storage, const PTN *sprites,
+    uint32_t *rng);
 
 // Validates immutable sprites before initialization. Ordinary layouts need
 // 32 images; boss slot 4 accepts the reduced seven-image stage set.
@@ -75,27 +75,25 @@ RESULT StageObjects_ValidateSprites(const PTN *sprites, int16_t stage_id);
 // entrance and 102-background DOS limits safely for debug layouts.
 void StageObjects_Init(
     STAGE_OBJECTS *objects, const STAGE_DATA *data, int16_t stage_id,
-    bool first_in_scene, const ALLOCATOR *allocator, VIDEO *video,
-    const PTN *sprites, uint32_t *rng);
+    bool first_in_scene, const ALLOCATOR *allocator, const PTN *sprites,
+    uint32_t *rng);
 
 // Runs until the next frame_delay(1), or returns true when complete.
 // The first call runs before waiting; subsequent calls require count1 >= 1
 // as unsigned 16 bits and reset count1 on success. Repeated polls without
 // readiness do nothing. No update allocates. Preserve objects until done.
-bool StageObjects_ResumeEntrance(
-    STAGE_OBJECTS *objects, VIDEO *video, const PTN *sprites,
-    FRAME_VSYNC *vsync);
+bool StageObjects_ResumeEntrance(STAGE_OBJECTS *objects, const PTN *sprites);
 
 // Replaces the full 32x32 square with the raw snapshot plus opaque sprite
 // pixels. NONE restores only the snapshot. Slot order is cards, obstacles.
 // Uses the drawing page and eight-pixel X alignment, with linear row wrap
 // and outside-page writes discarded, as in the other native PTN helpers.
 void StageObjects_PutBackgroundAndObject(
-    const STAGE_OBJECTS *objects, VIDEO *video, const PTN *sprites,
-    int16_t left, int16_t top, int32_t image, int32_t slot);
-void StageObjects_PutAllBackgrounds(const STAGE_OBJECTS *objects, VIDEO *video);
+    const STAGE_OBJECTS *objects, const PTN *sprites, int16_t left, int16_t top,
+    int32_t image, int32_t slot);
+void StageObjects_PutAllBackgrounds(const STAGE_OBJECTS *objects);
 
 // Copies obstacles, then cards, from page 0 to page 1. Leaves drawing
 // on page 0 after any copy. Zero-object/boss calls preserve selectors.
-void StageObjects_CopyToBackground(const STAGE_OBJECTS *objects, VIDEO *video);
+void StageObjects_CopyToBackground(const STAGE_OBJECTS *objects);
 int32_t StageObjects_CardImage(uint8_t hp, int16_t frame);

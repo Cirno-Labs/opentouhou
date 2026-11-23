@@ -51,14 +51,13 @@ void ShootoutLasers_Spawn(
 // Put preserves the drawing page; reached restores select page 0.
 // Boss scheduling and gameplay scene integration remain external.
 void ShootoutLasers_Update(
-    SHOOTOUT_LASER *laser, VIDEO *video, PLAYER *player,
+    SHOOTOUT_LASER *laser, PLAYER *player,
     const SHOOTOUT_LASERS_ASSETS *assets);
 void ShootoutLasers_UpdateAll(
-    SHOOTOUT_LASERS *lasers, VIDEO *video, PLAYER *player,
+    SHOOTOUT_LASERS *lasers, PLAYER *player,
     const SHOOTOUT_LASERS_ASSETS *assets);
 
 // Restores with the broken low-16 raw Q24.8 start/origin coordinates, then
 // clears alive only. count is 0..10; preserves slots after that prefix.
 // Uses Video_LineErase's physical-copy extension for protection faults.
-void ShootoutLasers_EraseAndReset(
-    SHOOTOUT_LASERS *lasers, VIDEO *video, int32_t count);
+void ShootoutLasers_EraseAndReset(SHOOTOUT_LASERS *lasers, int32_t count);

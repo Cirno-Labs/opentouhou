@@ -271,19 +271,18 @@ ORB_ACTION Orb_NextAction(
     }
 }
 
-void Orb_RenderAction(
-    VIDEO *const video, const PTN *const sprites, const ORB_ACTION action)
+void Orb_RenderAction(const PTN *const sprites, const ORB_ACTION action)
 {
     if (action.kind != ORB_ACTION_ERASE && action.kind != ORB_ACTION_PUT) {
         return;
     }
     if (action.kind == ORB_ACTION_ERASE) {
         Sprite_PtnErase(
-            video, sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
+            sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
             action.top);
     } else {
         Sprite_PtnPut(
-            video, sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
+            sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
             action.top);
     }
 }

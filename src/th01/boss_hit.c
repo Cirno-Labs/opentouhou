@@ -9,7 +9,7 @@ static void M_Flash(
 {
     for (uint32_t i = 0; i < count; i++) {
         ASSERT(colors[i] < 16);
-        Palette_SetColor(c->palette, c->display->video, colors[i], 15, 15, 15);
+        Palette_SetColor(c->palette, colors[i], 15, 15, 15);
     }
 }
 
@@ -21,7 +21,7 @@ void BossHit_UpdateAndRender(
     if (*c->test_damage) {
         *c->hp = Math16_Wrap(*c->hp - 1);
         *c->test_damage = false;
-        HudHp_Decrement(c->health, c->display->video, *c->hp);
+        HudHp_Decrement(c->health, *c->hp);
     }
     Shots_HitTestBoss(
         c->shots, box.left, box.top, box.width_minus_shot,
@@ -47,16 +47,16 @@ void BossHit_UpdateAndRender(
         c->display->gameplay->score += (uint32_t)(int32_t)hit_score;
         Hud_ScoreAndCombo(c->hud, c->display);
         c->effect(c->user, 3);
-        HudHp_Decrement(c->health, c->display->video, *c->hp);
+        HudHp_Decrement(c->health, *c->hp);
     }
     if (hit->invincible && hit->frame < 40) {
         if (hit->frame % 4 == 2) {
             M_Flash(c, flash_colors, flash_count);
         } else if (hit->frame % 4 == 0) {
-            Palette_Set(c->palette, c->display->video, c->boss_palette);
+            Palette_Set(c->palette, c->boss_palette);
         }
     } else if (hit->frame > 40) {
-        Palette_Set(c->palette, c->display->video, c->boss_palette);
+        Palette_Set(c->palette, c->boss_palette);
         hit->frame = 0;
         hit->invincible = false;
     }

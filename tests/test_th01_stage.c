@@ -15,7 +15,6 @@ typedef struct {
     STAGE_GAMEPLAY game;
     ORB orb;
     PLAYER player;
-    VIDEO video;
     PTN sprites;
     GAME_TEXT_FONT font;
     uint32_t rng;
@@ -62,7 +61,7 @@ static void M_Init(CASE *const state, const uint8_t hp)
 {
     *state = (CASE) { .rng = 1, .orb = { .left = 96, .top = 128 } };
     Arena_Init(&state->arena, "stage", 1024 * 1024);
-    Video_Init(&state->video, Arena_Allocator(&state->arena));
+    Video_Init(Arena_Allocator(&state->arena));
     state->sprites =
         (PTN) { .count = 34, .pixels = Arena_Alloc(&state->arena, 34 * 1024) };
     memset(state->sprites.pixels, PTN_TRANSPARENT, 34 * 1024);
@@ -75,7 +74,7 @@ static void M_Init(CASE *const state, const uint8_t hp)
     STAGE_DATA data = { .stages = layouts };
     StageObjects_Init(
         &state->objects, &data, 0, true, Arena_Allocator(&state->arena),
-        &state->video, &state->sprites, &state->rng);
+        &state->sprites, &state->rng);
     GAME_TEXT_GLYPH digits[10] = {};
     for (int32_t i = 0; i < 10; i++) {
         digits[i].codepoint = (uint32_t)('0' + i);
@@ -90,7 +89,6 @@ static void M_Init(CASE *const state, const uint8_t hp)
         .orb = &state->orb,
         .player = &state->player,
         .rng = &state->rng,
-        .video = &state->video,
         .sprites = &state->sprites,
         .font = &state->font,
         .stage_num = 1,
@@ -227,17 +225,17 @@ TEST(score_popups_render_before_card_animation_and_clear_at_28)
         card->flag = STAGE_CARD_ALIVE;
         card->score = scores[i];
         card->flip_frame = 15;
-        memset(state.video.pages[0], 4, VIDEO_PAGE_SIZE);
+        memset(g_Video.pages[0], 4, VIDEO_PAGE_SIZE);
         Stage_UpdateCards(&state.context);
         const int16_t x = card->left
             + (scores[i] > 10000      ? -8
                    : scores[i] > 1000 ? 0
                                       : 8);
-        CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, x, card->top + 8), 7);
+        CHECK_EQ_INT(Th01Test_Pixel(0, x, card->top + 8), 7);
         card->flip_frame = 28;
         Stage_UpdateCards(&state.context);
         CHECK_EQ_INT(card->score, 0);
-        CHECK_EQ_INT(state.video.drawing_page, 0);
+        CHECK_EQ_INT(g_Video.drawing_page, 0);
     }
     Arena_Free(&state.arena);
 }
@@ -271,8 +269,8 @@ TEST(card_animation_overwrites_the_preceding_popup)
     card->score = 1000;
     memset(state.sprites.pixels + 20 * 1024, 3, 1024);
     Stage_UpdateCards(&state.context);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 104, 136), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 104, 136), 3);
-    CHECK_EQ_INT(state.video.drawing_page, 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 104, 136), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 104, 136), 3);
+    CHECK_EQ_INT(g_Video.drawing_page, 0);
     Arena_Free(&state.arena);
 }

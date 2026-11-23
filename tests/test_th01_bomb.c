@@ -9,14 +9,12 @@
 
 typedef struct {
     ARENA arena;
-    VIDEO video;
     PALETTE_STATE palette;
     PALETTE stage;
     PLAYER player;
     PTN miko;
     BOMB_ASSETS assets;
     BOMB bomb;
-    FRAME_VSYNC vsync;
     int32_t decays, effects[10];
 } CASE;
 
@@ -36,18 +34,18 @@ static void M_Effect(void *const user, const int16_t effect)
 static BOMB_CONTEXT M_Context(CASE *const state)
 {
     return (BOMB_CONTEXT) {
-        &state->video, &state->palette, &state->player,
-        &state->miko,  &state->assets,  &state->stage,
-        M_Decay,       M_Effect,        state,
+        &state->palette, &state->player, &state->miko, &state->assets,
+        &state->stage,   M_Decay,        M_Effect,     state,
     };
 }
 
 static void M_Init(CASE *const state)
 {
     *state = (CASE) {};
+    Frame_Reset();
     Arena_Init(&state->arena, "bomb", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
-    Video_Init(&state->video, allocator);
+    Video_Init(allocator);
     Palette_Init(&state->palette);
     state->stage = state->palette.saved;
     state->player.left = 304;
@@ -61,7 +59,7 @@ static void M_Init(CASE *const state)
         memset(state->assets.kuji[i].coverage, 1, count * 1024);
     }
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        state->video.pages[1][i] = (uint8_t)(i % 16);
+        g_Video.pages[1][i] = (uint8_t)(i % 16);
     }
 }
 
@@ -76,30 +74,27 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     for (int16_t frame = 0; frame <= 140; frame++) {
         state.player.bomb_frame = (uint32_t)frame;
         state.player.invincible = false;
-        const uint64_t edge = state.vsync.edge;
-        BOMB_UPDATE result =
-            Bomb_BeginUpdate(&state.bomb, &context, frame, &state.vsync);
+        const uint64_t edge = g_VSync.edge;
+        BOMB_UPDATE result = Bomb_BeginUpdate(&state.bomb, &context, frame);
         CHECK(state.player.invincible);
         CHECK_EQ_INT(state.player.bomb_frame, frame);
         const bool must_wait = frame == 140 || (frame > 50 && frame % 4 == 0);
         CHECK_EQ_INT(result == BOMB_UPDATE_WAIT, must_wait);
-        CHECK_EQ_INT(state.vsync.edge, edge);
+        CHECK_EQ_INT(g_VSync.edge, edge);
         if (must_wait) {
             waits++;
-            const uint8_t before = state.video.pages[0][184 * 640 + 304];
-            const int16_t scroll = state.video.scroll_top;
+            const uint8_t before = g_Video.pages[0][184 * 640 + 304];
+            const int16_t scroll = g_Video.scroll_top;
             CHECK_EQ_INT(
-                Bomb_ResumeUpdate(&state.bomb, &context, &state.vsync),
-                BOMB_UPDATE_WAIT);
-            CHECK_EQ_INT(state.video.pages[0][184 * 640 + 304], before);
-            CHECK_EQ_INT(state.video.scroll_top, scroll);
-            Frame_VSync(&state.vsync);
-            result = Bomb_ResumeUpdate(&state.bomb, &context, &state.vsync);
+                Bomb_ResumeUpdate(&state.bomb, &context), BOMB_UPDATE_WAIT);
+            CHECK_EQ_INT(g_Video.pages[0][184 * 640 + 304], before);
+            CHECK_EQ_INT(g_Video.scroll_top, scroll);
+            Frame_VSync();
+            result = Bomb_ResumeUpdate(&state.bomb, &context);
             const int16_t offsets[] = { 392, 0, 384, 0 };
             CHECK_EQ_INT(
-                state.video.scroll_top,
-                frame == 140 ? 0 : offsets[frame % 16 / 4]);
-            CHECK(Frame_DelayReady(&state.vsync, 1));
+                g_Video.scroll_top, frame == 140 ? 0 : offsets[frame % 16 / 4]);
+            CHECK(Frame_DelayReady(1));
         }
         CHECK_EQ_INT(
             result, frame == 140 ? BOMB_UPDATE_DONE : BOMB_UPDATE_RUNNING);
@@ -121,13 +116,11 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK_EQ_INT(state.effects[8], 1);
     CHECK_EQ_INT(state.effects[9], 8);
     CHECK_EQ_INT(state.player.invincibility_time, 100);
-    CHECK(
-        memcmp(state.video.pages[0], state.video.pages[1], VIDEO_PAGE_SIZE)
-        == 0);
+    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&state.palette.saved, &state.stage, sizeof(PALETTE)) == 0);
     const int16_t previous_x = state.bomb.left[0];
     const int16_t previous_y = state.bomb.top[0];
-    Bomb_BeginUpdate(&state.bomb, &context, 0, &state.vsync);
+    Bomb_BeginUpdate(&state.bomb, &context, 0);
     CHECK_EQ_INT(state.bomb.left[0], previous_x);
     CHECK_EQ_INT(state.bomb.top[0], previous_y);
     CHECK_EQ_INT(state.decays, 6);
@@ -150,24 +143,23 @@ TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
 {
     CASE state;
     M_Init(&state);
-    memset(state.video.pages[0], 6, VIDEO_PAGE_SIZE);
-    CHECK(!Video_Invert32(&state.video, -1, 0, 1));
-    CHECK(!Video_Invert32(&state.video, 0, -1, 1));
-    CHECK(!Video_Invert32(&state.video, 608, 0, 1));
-    CHECK(!Video_Invert32(&state.video, 0, 368, 1));
-    CHECK(Video_Invert32(&state.video, 607, 367, 1));
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 600, 367), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 631, 398), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 632, 398), 6);
-    CHECK(Video_Invert32(&state.video, 607, 367, 2));
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 600, 367), 5);
-    CHECK_EQ_INT(
-        Th01Test_Pixel(&state.video, 1, 600, 367), (367 * 640 + 600) % 16);
-    Video_SetScroll(&state.video, 400);
-    CHECK_EQ_INT(state.video.scroll_top, 0);
-    Video_SetScroll(&state.video, -8);
-    CHECK_EQ_INT(state.video.scroll_top, 392);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 600, 367), 5);
+    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
+    CHECK(!Video_Invert32(-1, 0, 1));
+    CHECK(!Video_Invert32(0, -1, 1));
+    CHECK(!Video_Invert32(608, 0, 1));
+    CHECK(!Video_Invert32(0, 368, 1));
+    CHECK(Video_Invert32(607, 367, 1));
+    CHECK_EQ_INT(Th01Test_Pixel(0, 600, 367), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 631, 398), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 632, 398), 6);
+    CHECK(Video_Invert32(607, 367, 2));
+    CHECK_EQ_INT(Th01Test_Pixel(0, 600, 367), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 600, 367), (367 * 640 + 600) % 16);
+    Video_SetScroll(400);
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
+    Video_SetScroll(-8);
+    CHECK_EQ_INT(g_Video.scroll_top, 392);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 600, 367), 5);
     Arena_Free(&state.arena);
 }
 
@@ -185,7 +177,6 @@ static void M_PlayerAction(void *const user, const PLAYER_ACTION action)
         CHECK_EQ_INT(action.kind, PLAYER_ACTION_PTN_PUT);
         actor->draws++;
         Player_RenderAction(
-            &actor->state->video,
             &(PLAYER_SPRITES) { .miko = &actor->state->miko }, nullptr, action);
     }
 }
@@ -196,7 +187,10 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     M_Init(&state);
     state.player.remaining_bombs = 2;
     state.player.bomb_flag = PLAYER_BOMB_START;
-    GAME_INPUT input = { .shot = true, .strike = true, .bomb = true };
+    GameInput_Init();
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
+    g_GameInput.bomb = true;
     ORB orb = { .left = 500, .top = 100 };
     SHOTS shots = {};
     uint32_t rng = 1;
@@ -205,38 +199,31 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     PLAYER_BOMB_CONTINUATION continuation = {};
     const BOMB_CONTEXT context = M_Context(&state);
     CHECK(Player_BeginUpdate(
-        &continuation, &state.player, &input, &orb, &shots, &rng, output));
+        &continuation, &state.player, &orb, &shots, &rng, output));
     CHECK_EQ_INT(actor.hud, 1);
     CHECK_EQ_INT(state.player.remaining_bombs, 1);
     CHECK_EQ_INT(
-        Bomb_BeginUpdate(&state.bomb, &context, 0, &state.vsync),
-        BOMB_UPDATE_RUNNING);
+        Bomb_BeginUpdate(&state.bomb, &context, 0), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, false);
     state.player.bomb_frame = 64;
-    input.shot = input.strike = true;
+    g_GameInput.shot = g_GameInput.strike = true;
     CHECK(Player_BeginUpdate(
-        &continuation, &state.player, &input, &orb, &shots, &rng, output));
+        &continuation, &state.player, &orb, &shots, &rng, output));
     const int8_t dash = state.player.dash_cycle;
-    CHECK_EQ_INT(
-        Bomb_BeginUpdate(&state.bomb, &context, 64, &state.vsync),
-        BOMB_UPDATE_WAIT);
-    CHECK_EQ_INT(
-        Bomb_ResumeUpdate(&state.bomb, &context, &state.vsync),
-        BOMB_UPDATE_WAIT);
+    CHECK_EQ_INT(Bomb_BeginUpdate(&state.bomb, &context, 64), BOMB_UPDATE_WAIT);
+    CHECK_EQ_INT(Bomb_ResumeUpdate(&state.bomb, &context), BOMB_UPDATE_WAIT);
     CHECK(continuation.pending);
-    CHECK(input.shot && input.strike);
+    CHECK(g_GameInput.shot && g_GameInput.strike);
     CHECK_EQ_INT(actor.draws, 0);
-    Frame_VSync(&state.vsync);
-    CHECK_EQ_INT(
-        Bomb_ResumeUpdate(&state.bomb, &context, &state.vsync),
-        BOMB_UPDATE_RUNNING);
+    Frame_VSync();
+    CHECK_EQ_INT(Bomb_ResumeUpdate(&state.bomb, &context), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, false);
     CHECK(!continuation.pending);
     CHECK_EQ_INT(state.player.dash_cycle, dash);
     CHECK_EQ_INT(actor.hud, 1);
     CHECK_EQ_INT(actor.draws, 1);
     CHECK_EQ_INT(state.player.bomb_frame, 64);
-    CHECK(!input.shot && !input.strike);
-    CHECK(Frame_DelayReady(&state.vsync, 1));
+    CHECK(!g_GameInput.shot && !g_GameInput.strike);
+    CHECK(Frame_DelayReady(1));
     Arena_Free(&state.arena);
 }

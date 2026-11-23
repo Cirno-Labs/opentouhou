@@ -19,35 +19,28 @@ static void M_Text(
 {
     const GAME_TEXT_STYLE style = { .weight = maximum ? GAME_TEXT_BOLD
                                                       : GAME_TEXT_BLACK };
-    GameText_Draw(c->font, c->video, text, left, top, color, &style);
+    GameText_Draw(c->font, text, left, top, color, &style);
 }
 
-static void M_Snap(
-    uint8_t *const pixels, const VIDEO *const video, const int32_t left,
-    const int32_t top)
+static void M_Snap(uint8_t *const pixels, const int32_t left, const int32_t top)
 {
     Video_Read(
-        video, video->drawing_page, (GFX_RECT) { left, top, 16, 16 }, pixels,
-        16);
+        g_Video.drawing_page, (GFX_RECT) { left, top, 16, 16 }, pixels, 16);
 }
 
 static void M_Put(
-    const uint8_t *const pixels, VIDEO *const video, const int32_t left,
-    const int32_t top)
+    const uint8_t *const pixels, const int32_t left, const int32_t top)
 {
     const VIDEO_IMAGE image = {
         .pixels = pixels, .width = 16, .height = 16, .stride = 16, .key = -1
     };
-    Video_Blit(video, &image, (GFX_RECT) { 0, 0, 16, 16 }, left, top);
+    Video_Blit(&image, (GFX_RECT) { 0, 0, 16, 16 }, left, top);
 }
 
-static void M_Copy(
-    VIDEO *const video, const int32_t left, const int32_t top,
-    const int32_t width)
+static void M_Copy(const int32_t left, const int32_t top, const int32_t width)
 {
-    Video_Copy(
-        video, 0, (GFX_RECT) { left, top, width / 16 * 16, 16 }, 1, left, top);
-    Video_SelectDrawingPage(video, 0);
+    Video_Copy(0, (GFX_RECT) { left, top, width / 16 * 16, 16 }, 1, left, top);
+    Video_SelectDrawingPage(0);
 }
 
 static int64_t M_Signed32(const uint32_t value)
@@ -71,14 +64,14 @@ static void M_Number(
                 || current / divisor % 10
                     != M_Signed32(previous) / divisor % 10) {
                 for (int32_t page = 1; page >= 0; page--) {
-                    Video_SelectDrawingPage(c->video, page);
-                    M_Put(bg + i * 256, c->video, left + i * 16, top);
+                    Video_SelectDrawingPage(page);
+                    M_Put(bg + i * 256, left + i * 16, top);
                 }
             }
         }
     }
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(c->video, page);
+        Video_SelectDrawingPage(page);
         divisor = count == 7 ? 1000000 : 10;
         const uint32_t text_previous = hud->force_numbers ? 0 : previous;
         for (int32_t i = 0; i < count; i++, divisor /= 10) {
@@ -121,21 +114,20 @@ static void M_Resource(
         const int32_t top = bomb ? 16 : i / 6 * 16;
         if (!initial && count < previous) {
             for (int32_t page = 1; page >= 0; page--) {
-                Video_SelectDrawingPage(c->video, page);
-                M_Put(bg + i * 256, c->video, left, top);
+                Video_SelectDrawingPage(page);
+                M_Put(bg + i * 256, left, top);
             }
         } else {
-            M_Snap(bg + i * 256, c->video, left, top);
+            M_Snap(bg + i * 256, left, top);
             if (!initial) {
-                Video_SelectDrawingPage(c->video, 0);
+                Video_SelectDrawingPage(0);
             }
             Sprite_PtnPut(
-                c->video, c->sprites, 0, bomb ? 1 : 0, (int16_t)left,
-                (int16_t)top);
+                c->sprites, 0, bomb ? 1 : 0, (int16_t)left, (int16_t)top);
         }
     }
     if (initial || count > previous) {
-        M_Copy(c->video, 128, row, count * 16);
+        M_Copy(128, row, count * 16);
     }
 }
 
@@ -186,8 +178,8 @@ void Hud_PutMask(const HUD_CONTEXT *const c)
 {
     const VIDEO_MASK mask = { c->mask->coverage, 640, 66, 640 };
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(c->video, page);
-        Video_Mask(c->video, &mask, (GFX_RECT) { 0, 0, 640, 66 }, 0, 0, 10);
+        Video_SelectDrawingPage(page);
+        Video_Mask(&mask, (GFX_RECT) { 0, 0, 640, 66 }, 0, 0, 10);
     }
 }
 
@@ -211,7 +203,7 @@ void Hud_ScoreAndCombo(HUD *const hud, const HUD_CONTEXT *const c)
     const uint32_t score = c->gameplay->score;
     const int16_t combo = c->gameplay->combo;
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(c->video, page);
+        Video_SelectDrawingPage(page);
         for (int32_t bank = 1; bank <= 3; bank += 2) {
             const int32_t count = bank == 1 ? 7 : 2;
             const uint32_t value = bank == 1 ? score : (uint32_t)(int32_t)combo;
@@ -226,8 +218,7 @@ void Hud_ScoreAndCombo(HUD *const hud, const HUD_CONTEXT *const c)
                     || current / divisor % 10
                         != M_Signed32(previous) / divisor % 10) {
                     M_Put(
-                        hud->numbers + (bank * 7 + i) * 256, c->video,
-                        left + i * 16, 16);
+                        hud->numbers + (bank * 7 + i) * 256, left + i * 16, 16);
                 }
             }
             divisor = bank == 1 ? 1000000 : 10;
@@ -260,11 +251,11 @@ void Hud_ScoreAndCombo(HUD *const hud, const HUD_CONTEXT *const c)
 void Hud_SnapStage(HUD *const hud, const HUD_CONTEXT *const c)
 {
     ASSERT(c->stage_number <= 99);
-    M_Snap(hud->stage, c->video, 608, 32);
+    M_Snap(hud->stage, 608, 32);
     char text[3];
     M_Format(text, c->stage_number, 2);
     M_Text(c, text, 608, 32, 7, true);
-    M_Copy(c->video, 608, 32, 16);
+    M_Copy(608, 32, 16);
 }
 void Hud_PutStage(HUD *const hud, const HUD_CONTEXT *const c)
 {
@@ -277,9 +268,9 @@ void Hud_PutStage(HUD *const hud, const HUD_CONTEXT *const c)
         length++;
     }
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(c->video, page);
+        Video_SelectDrawingPage(page);
         M_Text(c, rank, 600 - length * 4, 48, 7, true);
-        M_Put(hud->stage, c->video, 608, 32);
+        M_Put(hud->stage, 608, 32);
         M_Text(c, text, 608, 32, 7, true);
     }
 }
@@ -288,13 +279,13 @@ void Hud_SnapNumbers(
 {
     for (int32_t bank = 1; bank >= 0; bank--) {
         if (first_stage) {
-            Video_SelectDrawingPage(c->video, 1);
+            Video_SelectDrawingPage(1);
             for (int32_t i = 0; i < 7; i++) {
                 M_Snap(
-                    hud->numbers + (bank * 7 + i) * 256, c->video, 256 + i * 16,
+                    hud->numbers + (bank * 7 + i) * 256, 256 + i * 16,
                     bank * 16);
             }
-            Video_SelectDrawingPage(c->video, 0);
+            Video_SelectDrawingPage(0);
             const uint32_t value =
                 bank == 1 ? c->gameplay->score : *c->high_score;
             uint32_t divisor = 1000000;
@@ -303,36 +294,36 @@ void Hud_SnapNumbers(
                     c, m_Numerals[value / divisor % 10], 256 + i * 16,
                     bank * 16, 7, bank == 0);
             }
-            Video_SelectDrawingPage(c->video, 1);
+            Video_SelectDrawingPage(1);
         }
         for (int32_t i = 0; i < 2; i++) {
             uint8_t *const bg = hud->numbers + ((bank + 2) * 7 + i) * 256;
             if (first_stage) {
-                M_Snap(bg, c->video, 400 + i * 16, bank * 16);
+                M_Snap(bg, 400 + i * 16, bank * 16);
             } else {
-                M_Put(bg, c->video, 400 + i * 16, bank * 16);
+                M_Put(bg, 400 + i * 16, bank * 16);
             }
         }
         if (first_stage || bank == 1) {
-            Video_SelectDrawingPage(c->video, 0);
+            Video_SelectDrawingPage(0);
         }
         for (int32_t i = 0; i < 2; i++) {
             M_Text(c, m_Numerals[0], 400 + i * 16, bank * 16, 7, bank == 0);
         }
     }
-    M_Copy(c->video, 256, 0, 176);
-    M_Copy(c->video, 256, 16, 176);
+    M_Copy(256, 0, 176);
+    M_Copy(256, 16, 176);
     hud->maximum_combo = 0;
 }
 void Hud_SnapTimer(
     HUD *const hud, const HUD_CONTEXT *const c, const uint16_t time)
 {
-    M_Snap(hud->timer, c->video, 512, 0);
-    M_Snap(hud->timer + 256, c->video, 512, 0);
+    M_Snap(hud->timer, 512, 0);
+    M_Snap(hud->timer + 256, 512, 0);
     char text[5];
     M_Format(text, time, 4);
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(c->video, page);
+        Video_SelectDrawingPage(page);
         M_Text(c, text, 512, 0, 7, true);
     }
 }
@@ -342,9 +333,9 @@ void Hud_PutTimer(
     char text[5];
     M_Format(text, time, 4);
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(c->video, page);
-        M_Put(hud->timer, c->video, 512, 0);
-        M_Put(hud->timer + 256, c->video, 528, 0);
+        Video_SelectDrawingPage(page);
+        M_Put(hud->timer, 512, 0);
+        M_Put(hud->timer + 256, 528, 0);
         M_Text(c, text, 512, 0, time < 200 ? 10 : 7, true);
     }
 }

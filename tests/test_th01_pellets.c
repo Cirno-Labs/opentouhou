@@ -12,7 +12,6 @@ typedef struct {
     PLAYER player;
     ORB orb;
     SHOTS shots;
-    VIDEO video;
     PELLET_ASSETS assets;
     PELLET_CONTEXT context;
     uint32_t rng;
@@ -30,18 +29,18 @@ static void M_Action(void *const user, const SHOTS_ACTION action)
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
-    Video_Init(&f->video, &g_HeapAllocator);
+    Video_Init(&g_HeapAllocator);
     f->orb = (ORB) { .left = 500, .top = 100, .in_portal = true };
     f->player.left = 300;
     f->rng = 1;
     f->context =
-        (PELLET_CONTEXT) { &f->video, &f->assets, &f->player, &f->orb,
-                           &f->shots, &f->rng,    &f->shared, { M_Action, f } };
+        (PELLET_CONTEXT) { &f->assets, &f->player, &f->orb,        &f->shots,
+                           &f->rng,    &f->shared, { M_Action, f } };
 }
 
 static void M_Free(FIXTURE *const f)
 {
-    Mem_Free(f->video.pages[0]);
+    Mem_Free(g_Video.pages[0]);
 }
 
 static void M_Add(FIXTURE *const f, const int16_t left, const int16_t top)

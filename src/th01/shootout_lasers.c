@@ -16,8 +16,8 @@ static int32_t M_Add(const int32_t value, const int32_t step)
 }
 
 static void M_Put(
-    VIDEO *const video, const int16_t left, const int16_t y,
-    const uint16_t dots, const uint8_t color)
+    const int16_t left, const int16_t y, const uint16_t dots,
+    const uint8_t color)
 {
     const uint16_t offset = (uint16_t)(M_Floor(left, 8) + y * 80);
     for (int32_t byte = 0; byte < 2; byte++) {
@@ -27,7 +27,7 @@ static void M_Put(
         }
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((dots & (0x80u << (byte * 8) >> bit)) != 0) {
-                video->pages[video->drawing_page][address * 8 + bit] =
+                g_Video.pages[g_Video.drawing_page][address * 8 + bit] =
                     color & 15;
             }
         }
@@ -35,7 +35,7 @@ static void M_Put(
 }
 
 static void M_Ray(
-    SHOOTOUT_LASER *const laser, VIDEO *const video, PLAYER *const player,
+    SHOOTOUT_LASER *const laser, PLAYER *const player,
     const SHOOTOUT_LASERS_ASSETS *const assets, const bool put)
 {
     int16_t left = Math16_Wrap(M_Floor(laser->cursor_left, 256));
@@ -46,7 +46,7 @@ static void M_Ray(
         if (M_Floor(left, 8) != M_Floor(laser->cursor_left, 2048)
             || y != M_Floor(laser->cursor_y, 256)) {
             if (put) {
-                M_Put(video, left, y, dots, laser->color);
+                M_Put(left, y, dots, laser->color);
                 dots = 0;
                 if (!player->invincible && laser->damaging && y > 376
                     && left >= player->left + 4 && left < player->left + 24) {
@@ -65,7 +65,7 @@ static void M_Ray(
         dots |= (uint16_t)(mask[0] | ((uint16_t)mask[1] << 8));
         if (!put) {
             Sprite_Restore16(
-                video, Math16_Wrap(M_Floor(laser->cursor_left, 256)),
+                Math16_Wrap(M_Floor(laser->cursor_left, 256)),
                 Math16_Wrap(M_Floor(laser->cursor_y, 256)), 16, 1);
         }
         laser->cursor_left = M_Add(laser->cursor_left, laser->step_x);
@@ -120,7 +120,7 @@ void ShootoutLasers_Spawn(
 }
 
 void ShootoutLasers_Update(
-    SHOOTOUT_LASER *const laser, VIDEO *const video, PLAYER *const player,
+    SHOOTOUT_LASER *const laser, PLAYER *const player,
     const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     if (!laser->alive) {
@@ -129,7 +129,7 @@ void ShootoutLasers_Update(
     if (laser->age >= laser->detach_age) {
         laser->cursor_left = laser->start_left;
         laser->cursor_y = laser->start_y;
-        M_Ray(laser, video, player, assets, false);
+        M_Ray(laser, player, assets, false);
         laser->start_left = laser->cursor_left;
         laser->start_y = laser->cursor_y;
         if (laser->start_left >= 640 * 256 || laser->start_left < 0
@@ -143,29 +143,28 @@ void ShootoutLasers_Update(
     laser->age = Math16_Wrap(laser->age + 1);
     laser->cursor_left = laser->start_left;
     laser->cursor_y = laser->start_y;
-    M_Ray(laser, video, player, assets, true);
+    M_Ray(laser, player, assets, true);
 }
 
 void ShootoutLasers_UpdateAll(
-    SHOOTOUT_LASERS *const lasers, VIDEO *const video, PLAYER *const player,
+    SHOOTOUT_LASERS *const lasers, PLAYER *const player,
     const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     for (int32_t i = 0; i < SHOOTOUT_LASERS_COUNT; i++) {
-        ShootoutLasers_Update(&lasers->slots[i], video, player, assets);
+        ShootoutLasers_Update(&lasers->slots[i], player, assets);
     }
 }
 
 void ShootoutLasers_EraseAndReset(
-    SHOOTOUT_LASERS *const lasers, VIDEO *const video, const int32_t count)
+    SHOOTOUT_LASERS *const lasers, const int32_t count)
 {
     ASSERT(count >= 0 && count <= SHOOTOUT_LASERS_COUNT);
     for (int32_t i = 0; i < count; i++) {
         SHOOTOUT_LASER *const laser = &lasers->slots[i];
         if (laser->alive) {
             Video_LineErase(
-                video, Math16_Wrap(laser->start_left),
-                Math16_Wrap(laser->start_y), Math16_Wrap(laser->origin_left),
-                Math16_Wrap(laser->origin_y));
+                Math16_Wrap(laser->start_left), Math16_Wrap(laser->start_y),
+                Math16_Wrap(laser->origin_left), Math16_Wrap(laser->origin_y));
             laser->alive = false;
         }
     }

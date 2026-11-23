@@ -6,12 +6,12 @@
 #include "test.h"
 
 static void M_Init(
-    ARENA *const arena, VIDEO *const video, OPENING_ASSETS *const assets,
+    ARENA *const arena, OPENING_ASSETS *const assets,
     TH01_SETTINGS *const settings, OPENING *const opening)
 {
     Arena_Init(arena, "opening test", 4 * 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(arena);
-    Video_Init(video, allocator);
+    Video_Init(allocator);
     *assets = (OPENING_ASSETS) {};
     PI_IMAGE *const images[] = { &assets->title, &assets->revealed,
                                  &assets->window };
@@ -33,8 +33,7 @@ static void M_Init(
     CHECK(IS_OK(GameText_LoadGlyphs(glyphs, 4, allocator, &assets->font)));
     *settings =
         (TH01_SETTINGS) { .difficulty = 1, .music = 0, .lives_extra = 0 };
-    const OPENING_EVENTS events =
-        Opening_Init(opening, video, settings, assets);
+    const OPENING_EVENTS events = Opening_Init(opening, settings, assets);
     CHECK_EQ_INT(events.audio, OPENING_AUDIO_PLAY);
     CHECK_EQ_INT(events.track, 0);
     CHECK(events.clear_key_buffer);
@@ -70,14 +69,13 @@ static void M_Options(OPENING *const opening)
 TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
-    CHECK_EQ_INT(video.pages[0][0], 1);
-    CHECK_EQ_INT(video.pages[1][0], 2);
-    CHECK_EQ_INT(video.palette[1].red, 0);
+    M_Init(&arena, &assets, &settings, &opening);
+    CHECK_EQ_INT(g_Video.pages[0][0], 1);
+    CHECK_EQ_INT(g_Video.pages[1][0], 2);
+    CHECK_EQ_INT(g_Video.palette[1].red, 0);
     CHECK_EQ_INT(opening.palette.saved.colors[1][1], 0);
     CHECK_EQ_INT(opening.palette.resource.colors[1][1], 1);
     const size_t used = arena.used;
@@ -87,8 +85,8 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
         Opening_Tick(&opening, &(TH01_INPUT) {}, false);
         if (tick == 16) {
             CHECK_EQ_INT(opening.phase, OPENING_HOLD);
-            CHECK_EQ_INT(video.palette[1].red, 255);
-            CHECK_EQ_INT(video.palette[1].green, 0);
+            CHECK_EQ_INT(g_Video.palette[1].red, 255);
+            CHECK_EQ_INT(g_Video.palette[1].green, 0);
         }
         if (tick == 99) {
             CHECK_EQ_INT(opening.line_count, 0);
@@ -112,7 +110,7 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
             CHECK_EQ_INT(opening.random, model_random);
             int32_t whites = 0;
             for (int32_t y = 0; y < VIDEO_HEIGHT; y++) {
-                whites += Th01Test_Pixel(&video, 0, 639, y) == 15;
+                whites += Th01Test_Pixel(0, 639, y) == 15;
             }
             CHECK_EQ_INT(whites, 2);
         }
@@ -124,7 +122,7 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
         rows += opening.drawn_rows[y];
     }
     CHECK_EQ_INT(rows, 200);
-    CHECK(memcmp(video.pages[0], video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(opening.frame_rand, 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -133,39 +131,37 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
 TEST(prompt_blinks_after_wait_and_window_keeps_saved_palette)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     for (int32_t i = 0; i < 200; i++) {
         M_Tick(&opening, (TH01_INPUT) {});
     }
     for (int32_t i = 0; i < 70; i++) {
         M_Tick(&opening, (TH01_INPUT) {});
-        CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 256, 306), i < 50 ? 15 : 2);
+        CHECK_EQ_INT(Th01Test_Pixel(0, 256, 306), i < 50 ? 15 : 2);
     }
     CHECK_EQ_INT(opening.prompt_frame, 0);
     Opening_Tick(&opening, &(TH01_INPUT) {}, true);
     CHECK_EQ_INT(opening.phase, OPENING_MAIN);
     CHECK_EQ_INT(opening.random, 0);
     CHECK_EQ_INT(opening.frame_rand, 1);
-    CHECK_EQ_INT(video.pages[0][0], 7);
-    CHECK_EQ_INT(video.pages[1][0], 7);
+    CHECK_EQ_INT(g_Video.pages[0][0], 7);
+    CHECK_EQ_INT(g_Video.pages[1][0], 7);
     CHECK_EQ_INT(opening.palette.resource.colors[1][1], 2);
-    CHECK_EQ_INT(video.palette[1].green, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 269, 276), 15);
+    CHECK_EQ_INT(g_Video.palette[1].green, 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 269, 276), 15);
     Arena_Free(&arena);
 }
 
 TEST(settings_wrap_and_horizontal_locks_persist_across_selections)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Options(&opening);
     M_Tick(&opening, (TH01_INPUT) { .left = true });
     CHECK_EQ_INT(settings.difficulty, 0);
@@ -191,11 +187,10 @@ TEST(settings_wrap_and_horizontal_locks_persist_across_selections)
 TEST(music_entry_suppresses_one_confirmation_and_shares_options_history)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Options(&opening);
     for (int32_t i = 0; i < 3; i++) {
         M_Tick(&opening, (TH01_INPUT) { .down = true });
@@ -233,11 +228,10 @@ TEST(music_entry_suppresses_one_confirmation_and_shares_options_history)
 static uint32_t M_HeldStarts(const bool fix)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     settings.fix_debouncing = fix;
     M_Options(&opening);
     for (int32_t i = 0; i < 3; i++) {
@@ -267,11 +261,10 @@ TEST(debouncing_fix_plays_once_per_confirm_press)
 TEST(option_exit_applies_changed_music_then_waits_fifteen_plus_tail)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Options(&opening);
     settings.music = 1;
     M_Tick(&opening, (TH01_INPUT) { .cancel = true });
@@ -300,14 +293,13 @@ TEST(option_exit_applies_changed_music_then_waits_fifteen_plus_tail)
 TEST(start_fades_to_black_then_emits_its_boundary)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Main(&opening);
     const uint32_t frame_rand = opening.frame_rand;
-    CHECK_EQ_INT(video.palette[1].red, 255);
+    CHECK_EQ_INT(g_Video.palette[1].red, 255);
     OPENING_EVENTS events =
         M_Tick(&opening, (TH01_INPUT) { .ok = true, .cancel = true });
     CHECK_EQ_INT(events.action, OPENING_ACTION_NONE);
@@ -317,11 +309,11 @@ TEST(start_fades_to_black_then_emits_its_boundary)
     for (int32_t tick = 1; tick <= 15; tick++) {
         events = M_Tick(&opening, (TH01_INPUT) { .ok = true });
         CHECK_EQ_INT(events.action, OPENING_ACTION_NONE);
-        CHECK_EQ_INT(video.palette[1].red, tick < 15 ? (15 - tick) * 17 : 0);
+        CHECK_EQ_INT(g_Video.palette[1].red, tick < 15 ? (15 - tick) * 17 : 0);
     }
     events = M_Tick(&opening, (TH01_INPUT) {});
     CHECK_EQ_INT(events.action, OPENING_ACTION_START);
-    CHECK_EQ_INT(video.palette[1].red, 0);
+    CHECK_EQ_INT(g_Video.palette[1].red, 0);
     CHECK_EQ_INT(events.audio, OPENING_AUDIO_NONE);
     CHECK_EQ_INT(opening.frame_rand, frame_rand);
     CHECK_EQ_INT(opening.count1, 0);
@@ -331,11 +323,10 @@ TEST(start_fades_to_black_then_emits_its_boundary)
 TEST(continue_fades_and_cancel_wins_over_options)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Main(&opening);
     M_Tick(&opening, (TH01_INPUT) { .down = true });
     M_Tick(&opening, (TH01_INPUT) { .shot = true });
@@ -346,7 +337,7 @@ TEST(continue_fades_and_cancel_wins_over_options)
     OPENING_EVENTS events = M_Tick(&opening, (TH01_INPUT) {});
     CHECK_EQ_INT(events.action, OPENING_ACTION_CONTINUE);
     Arena_Free(&arena);
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Main(&opening);
     for (int32_t i = 0; i < 2; i++) {
         M_Tick(&opening, (TH01_INPUT) { .down = true });
@@ -362,11 +353,10 @@ TEST(continue_fades_and_cancel_wins_over_options)
 TEST(horizontal_locks_ignore_releases_in_other_menus_and_waits)
 {
     ARENA arena;
-    VIDEO video;
     OPENING_ASSETS assets;
     TH01_SETTINGS settings;
     OPENING opening;
-    M_Init(&arena, &video, &assets, &settings, &opening);
+    M_Init(&arena, &assets, &settings, &opening);
     M_Options(&opening);
     const size_t used = arena.used;
     M_Tick(&opening, (TH01_INPUT) { .left = true });

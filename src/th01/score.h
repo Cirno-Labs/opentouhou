@@ -7,6 +7,9 @@
 #include "th01/score_data.h"
 #include "th01/text.h"
 
+// Holds the four score tables that the game shows and registers into.
+extern SCORE_SAVES g_ScoreSaves;
+
 typedef enum {
     SCORE_GAMEOVER,
     SCORE_ENDING,
@@ -27,10 +30,6 @@ typedef enum {
 
 typedef struct {
     const SCORE_ASSETS *assets;
-    VIDEO *video;
-    SCORE_SAVES *saves;
-    FRAME_VSYNC *vsync;
-    GAME_INPUT *input;
     PALETTE_STATE palette;
     PALETTE_FADE fade;
     FRAME_WAIT wait;
@@ -40,13 +39,13 @@ typedef struct {
     char slots[8][9];
 } SCORE_SCENE;
 
-// Loads GAME_O.GRP and all static, imported and saved table glyphs from rom
+// Loads GAME_O.GRP and all static, imported and g_ScoreSaves glyphs from rom
 // before ticks. Storage belongs to allocator and must outlive the score scene.
 RESULT Score_LoadAssets(
-    VFS *vfs, const FONT_ROM *rom, const SCORE_SAVES *saves,
-    const ALLOCATOR *allocator, SCORE_ASSETS *out);
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    SCORE_ASSETS *out);
 
-// Borrows the world interrupt counters and input flags across registration.
+// Shares g_VSync and g_GameInput with gameplay across registration.
 // Game Over loads and fades its prepared background; the results screen retains
 // the handed pages and palette. The results screen omits the last-slot jump and
 // timeout. The results screen senses arrows only and resets count1 at
@@ -55,11 +54,10 @@ RESULT Score_LoadAssets(
 // clear 50 or 60. Begin and Tick allocate nothing and perform no IO. Completion
 // queues a save; drain it outside simulation with ScoreData_WriteSaves.
 void Score_Begin(
-    SCORE_SCENE *scene, const SCORE_ASSETS *assets, VIDEO *video,
-    SCORE_SAVES *saves, FRAME_VSYNC *vsync, GAME_INPUT *input,
-    SCORE_CONTEXT context, int32_t rank, const SCORE_ENTRY *entry);
+    SCORE_SCENE *scene, const SCORE_ASSETS *assets, SCORE_CONTEXT context,
+    int32_t rank, const SCORE_ENTRY *entry);
 
-// Advances supplied VSync exactly once. The application advances audio
+// Advances g_VSync exactly once. The application advances audio
 // separately once per host tick. Returns true after registration completes.
 bool Score_Tick(
     SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge);

@@ -16,12 +16,11 @@ typedef enum {
 } GAMEPLAY_REQUEST;
 
 // Prepares mutable world storage, boss snapshots, HUD and audio workspaces.
-// All borrowed assets, video, session and the caller's allocator group must
+// All borrowed assets and the caller's allocator group must
 // remain alive. Begin and Tick perform no allocation or IO on successful
 // paths. One instance owns every ordinary stage and both boss routes.
 RESULT Gameplay_Prepare(
-    const ALLOCATOR *allocator, const GAMEPLAY_ASSETS *assets, VIDEO *video,
-    SESSION *session, GAMEPLAY **out);
+    const ALLOCATOR *allocator, const GAMEPLAY_ASSETS *assets, GAMEPLAY **out);
 
 // Enters gameplay with the shared session's current credit. Reset session
 // fields through Session_Begin first when entering from the opening menu.
@@ -50,7 +49,6 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 // only after the score request has been handled; does no registration.
 void Gameplay_ResumeAfterScore(
     GAMEPLAY *gameplay, const TH01_INPUT *input, uint64_t host_tick);
-const TRAM *Gameplay_TextLayer(const GAMEPLAY *gameplay);
 
 // Applies opening controls to the same prepared audio producer. Call the
 // advance operation once per host tick outside gameplay. Gameplay_Tick
@@ -61,12 +59,3 @@ void Gameplay_AdvanceAudio(GAMEPLAY *gameplay);
 // Borrows prepared output across world resets. Null selects silent output.
 // Unbind before freeing output; does not change the shared producer clock.
 void Gameplay_BindAudio(GAMEPLAY *gameplay, GAME_AUDIO *output);
-
-// Borrows the shared source counters and input flags during score ownership.
-// The score owner advances VSync while gameplay is suspended. Keep gameplay
-// alive and resume through Gameplay_ResumeAfterScore after completion.
-typedef struct {
-    FRAME_VSYNC *vsync;
-    GAME_INPUT *input;
-} GAMEPLAY_SCORE_CONTEXT;
-GAMEPLAY_SCORE_CONTEXT Gameplay_ScoreContext(GAMEPLAY *gameplay);

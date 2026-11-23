@@ -115,6 +115,8 @@ RESULT GameplayAssets_Load(
     return OK;
 }
 
+SCORE_SAVES g_ScoreSaves;
+
 RESULT ScoreData_Load(VFS *original, VFS *user_files, SCORE_SAVES *out)
 {
     CHECK(!m_Fixture.in_tick);
@@ -137,8 +139,8 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
 }
 
 RESULT Score_LoadAssets(
-    VFS *vfs, const FONT_ROM *rom, const SCORE_SAVES *saves,
-    const ALLOCATOR *allocator, SCORE_ASSETS *out)
+    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    SCORE_ASSETS *out)
 {
     return M_Asset();
 }
@@ -151,8 +153,7 @@ RESULT Ending_LoadAssets(
 }
 
 OPENING_EVENTS Opening_Init(
-    OPENING *opening, VIDEO *video, TH01_SETTINGS *settings,
-    const OPENING_ASSETS *assets)
+    OPENING *opening, TH01_SETTINGS *settings, const OPENING_ASSETS *assets)
 {
     opening->frame_rand = 1;
     m_Fixture.opening_begins++;
@@ -198,9 +199,8 @@ void Gameplay_ResumeAfterScore(
 }
 
 void Score_Begin(
-    SCORE_SCENE *scene, const SCORE_ASSETS *assets, VIDEO *video,
-    SCORE_SAVES *saves, FRAME_VSYNC *vsync, GAME_INPUT *input,
-    SCORE_CONTEXT context, int32_t rank, const SCORE_ENTRY *entry)
+    SCORE_SCENE *scene, const SCORE_ASSETS *assets, SCORE_CONTEXT context,
+    int32_t rank, const SCORE_ENTRY *entry)
 {
     scene->context = context;
     m_Fixture.score_context = context;
@@ -218,14 +218,13 @@ bool Score_Tick(
 }
 
 void Ending_Prepare(
-    const ALLOCATOR *allocator, const ENDING_ASSETS *assets, VIDEO *video,
-    FRAME_VSYNC *vsync, GAME_INPUT *input, ENDING_AUDIO_CONSUMER audio,
-    void *context, ENDING **out)
+    const ALLOCATOR *allocator, const ENDING_ASSETS *assets,
+    ENDING_AUDIO_CONSUMER audio, void *context, ENDING **out)
 {
     *out = Allocator_AllocZ(allocator, sizeof(**out));
 }
 
-void Ending_Begin(ENDING *ending, SESSION *session)
+void Ending_Begin(ENDING *ending)
 {
     m_Fixture.ending_begins++;
     ending->result =
@@ -243,7 +242,7 @@ const END_RESULT *Ending_Result(const ENDING *ending)
     return &ending->result;
 }
 
-void Ending_Clear(SESSION *session)
+void Ending_Clear(void)
 {
     m_Fixture.ending_clears++;
 }
@@ -485,7 +484,7 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
     Th01_View(&view);
     CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
     CHECK(view.gameplay == m_Fixture.game);
-    CHECK(view.session != nullptr && view.opening != nullptr);
+    CHECK(view.opening != nullptr);
     m_Fixture.request = GAMEPLAY_REQUEST_SCORE;
     CHECK(M_Tick((TH01_INPUT) {}));
     Th01_View(&view);

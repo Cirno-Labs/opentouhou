@@ -21,7 +21,6 @@ typedef struct {
 } BOMB;
 
 typedef struct {
-    VIDEO *video;
     PALETTE_STATE *palette;
     PLAYER *player;
     const PTN *miko;
@@ -52,12 +51,10 @@ RESULT Bomb_ValidateAssets(const BOMB_ASSETS *assets);
 // nothing. Keep context state stable while suspended. Stage palette is
 // read at completion. No new Begin is allowed while waiting.
 BOMB_UPDATE Bomb_BeginUpdate(
-    BOMB *bomb, const BOMB_CONTEXT *context, int16_t frame,
-    const FRAME_VSYNC *vsync);
+    BOMB *bomb, const BOMB_CONTEXT *context, int16_t frame);
 
 // Resume only after WAIT. Repeated polling before the next edge has no
 // side effects. Scroll changes the display origin, not page pixels.
-BOMB_UPDATE Bomb_ResumeUpdate(
-    BOMB *bomb, const BOMB_CONTEXT *context, const FRAME_VSYNC *vsync);
+BOMB_UPDATE Bomb_ResumeUpdate(BOMB *bomb, const BOMB_CONTEXT *context);
 bool Bomb_DealsDamage(
     const PLAYER *player, int16_t remaining_lives, uint32_t frame);

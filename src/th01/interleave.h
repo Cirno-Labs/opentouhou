@@ -19,5 +19,5 @@ RESULT Interleave_LoadAssets(
 // bits take page 1. Rounds left down to eight pixels. Requires left 0..639,
 // top 0..392 and mask_id 0..9. Selects drawing page 0.
 void Interleave_Put8(
-    VIDEO *video, const INTERLEAVE_ASSETS *assets, int16_t left, int16_t top,
+    const INTERLEAVE_ASSETS *assets, int16_t left, int16_t top,
     uint8_t mask_id);

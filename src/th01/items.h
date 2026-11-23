@@ -28,7 +28,6 @@ typedef struct {
     PLAYER *player;
     STAGE_GAMEPLAY *gameplay;
     uint16_t *point_value;
-    VIDEO *video;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
     void (*hud_bomb)(void *user, int16_t previous_slot);
@@ -54,7 +53,7 @@ void Items_Add(ITEMS *items, int16_t left, int16_t top, bool bomb);
 void Items_Reset(ITEMS *items);
 
 // Draws visible falling/bouncing sprites, bombs before points.
-void Items_Render(const ITEMS *items, VIDEO *video, const PTN *sprites);
+void Items_Render(const ITEMS *items, const PTN *sprites);
 
 // Runs after the player update: all bomb slots, then all point slots.
 // Requires validated assets and all synchronous callbacks. HUD observes

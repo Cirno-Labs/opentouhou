@@ -143,4 +143,4 @@ ORB_ACTION Orb_NextAction(ORB *orb, ORB_COMPOSITE *composite, bool player_hit);
 // PUT uses the selected drawing page. Horizontal overshoot wraps into the
 // adjacent row as in linear planar memory. Discards pixels outside the
 // visible page rather than aliasing another memory region. Allocates nothing.
-void Orb_RenderAction(VIDEO *video, const PTN *sprites, ORB_ACTION action);
+void Orb_RenderAction(const PTN *sprites, ORB_ACTION action);

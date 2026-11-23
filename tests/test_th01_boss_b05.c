@@ -6,7 +6,6 @@
 #include "test.h"
 
 typedef struct {
-    VIDEO video;
     PALETTE_STATE palette;
     PALETTE stage_palette;
     B05_ASSETS assets;
@@ -27,7 +26,6 @@ typedef struct {
     PTN stage, miko;
     SCENE_DATA cache[3];
     SCENE_STATE scene;
-    GAME_INPUT input;
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route_context;
     uint32_t rng, high_score;
@@ -62,15 +60,16 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     if (action.kind == SHOTS_ACTION_EFFECT) {
         M_Effect(f, action.effect);
     } else {
-        Shots_RenderAction(&f->video, &f->stage, action);
+        Shots_RenderAction(&f->stage, action);
     }
 }
 
 static void M_Init(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    GameInput_Init();
     const ALLOCATOR *const allocator = Arena_Allocator(arena);
-    Video_Init(&f->video, allocator);
+    Video_Init(allocator);
     Palette_Init(&f->palette);
     const uint8_t *const pixels = Arena_AllocZ(arena, 96 * 96 * 8);
     const uint8_t *const coverage = Arena_AllocZ(arena, 96 * 96 * 8);
@@ -89,7 +88,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->display.video = &f->video;
     f->hit_context = (BOSS_HIT_CONTEXT) {
         .palette = &f->palette,
         .display = &f->display,
@@ -151,7 +149,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     f->player.left = 300;
     f->orb.previous_top = 64;
     f->display = (HUD_CONTEXT) {
-        .video = &f->video,
         .sprites = &f->stage,
         .font = &f->font,
         .gameplay = &f->gameplay,
@@ -173,8 +170,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
     f->route_context = (ROUTE_SELECT_CONTEXT) {
-        &f->video, &f->palette, &f->route_assets, &f->input, &f->player,
-        &f->scene, &f->route,   &f->cleared,      M_Effect,  f,
+        &f->palette, &f->route_assets, &f->player, &f->scene,
+        &f->route,   &f->cleared,      M_Effect,   f,
     };
     f->context.pellets = &f->pellets;
     f->context.pellet_shared = &f->shared;
@@ -185,14 +182,13 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(B05_ValidateContext(&f->context)));
 }
 
-static void M_Enter(B05 *const b, FIXTURE *const f, FRAME_VSYNC *const vsync)
+static void M_Enter(B05 *const b, FIXTURE *const f)
 {
     const TH01_INPUT raw = {};
-    CHECK(!B05_UpdateAndRender(b, &f->context, &raw, vsync));
+    CHECK(!B05_UpdateAndRender(b, &f->context, &raw));
     for (int32_t frame = 0; frame < 200; frame++) {
-        Frame_VSync(vsync);
-        CHECK_EQ_INT(
-            B05_UpdateAndRender(b, &f->context, &raw, vsync), frame == 199);
+        Frame_VSync();
+        CHECK_EQ_INT(B05_UpdateAndRender(b, &f->context, &raw), frame == 199);
     }
     CHECK_EQ_INT(b->phase, 1);
     CHECK_EQ_INT(b->frame, 0);
@@ -204,8 +200,8 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     Arena_Init(&arena, "b05", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena);
-    memset(f.video.pages[0], 3, VIDEO_PAGE_SIZE);
-    memset(f.video.pages[1], 5, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
     B05 boss = {
         .frame = 77,
@@ -251,9 +247,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(f.particles.velocity_base[0], 9);
     CHECK(memcmp(&boss.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
     CHECK(memcmp(&f.stage_palette, &boss.post_defeat, sizeof(PALETTE)) == 0);
-    CHECK_EQ_INT(f.video.pages[0][0], 3);
-    CHECK_EQ_INT(f.video.pages[1][0], 5);
-    CHECK_EQ_INT(f.video.palette[5].red, 5 * 17);
+    CHECK_EQ_INT(g_Video.pages[0][0], 3);
+    CHECK_EQ_INT(g_Video.pages[1][0], 5);
+    CHECK_EQ_INT(g_Video.palette[5].red, 5 * 17);
     Arena_Free(&arena);
 }
 
@@ -285,23 +281,23 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         B05 b = {};
         B05_Setup(&b, &f.context);
         const size_t used = arena.used;
-        FRAME_VSYNC vsync = { .count1 = (uint16_t)reuse };
+        Frame_Reset();
+        g_VSync.count1 = (uint16_t)reuse;
         const TH01_INPUT raw = {};
         const PLAYER player = f.player;
         const ORB orb = f.orb;
         const uint32_t rng = f.rng;
-        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw));
         CHECK_EQ_INT(b.frame, 1 + reuse);
         CHECK_EQ_INT(b.hit.frame, 0);
         CHECK_EQ_INT(f.palette.saved.colors[5][0], 0);
         const B05 frozen = b;
-        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw));
         CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
         for (int32_t edge = 0; edge < 200 - reuse; edge++) {
-            Frame_VSync(&vsync);
+            Frame_VSync();
             CHECK_EQ_INT(
-                B05_UpdateAndRender(&b, &f.context, &raw, &vsync),
-                edge == 199 - reuse);
+                B05_UpdateAndRender(&b, &f.context, &raw), edge == 199 - reuse);
         }
         CHECK_EQ_INT(b.phase, 1);
         CHECK_EQ_INT(b.pattern, 0);
@@ -327,8 +323,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         f.display.rank = rank;
         B05 b = {};
         B05_Setup(&b, &f.context);
-        FRAME_VSYNC vsync = {};
-        M_Enter(&b, &f, &vsync);
+        Frame_Reset();
+        M_Enter(&b, &f);
         const size_t used = arena.used;
         const TH01_INPUT raw = {};
         bool phase_two = false;
@@ -338,7 +334,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             f.orb.previous_left = hit ? (int16_t)(b.sphere.left + 32) : 0;
             f.orb.previous_top = hit ? (int16_t)(b.sphere.top + 32) : 64;
             f.hit_context.frame_rand = (uint32_t)step;
-            CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+            CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
             phase_two |= b.phase == 2;
         }
         CHECK(phase_two);
@@ -357,7 +353,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             .previous_top = 100 * 16,
         };
         f.pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
-        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw));
         CHECK_EQ_INT(f.fades, 1);
         CHECK(!f.pellets.slots[0].moving);
         CHECK(!f.pellets.slots[1].moving);
@@ -365,15 +361,15 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(f.scene.active->id, 0);
         CHECK(!f.cleared && !f.player.is_hit);
         const B05 frozen = b;
-        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+        CHECK(!B05_UpdateAndRender(&b, &f.context, &raw));
         CHECK(memcmp(&b, &frozen, sizeof(b)) == 0);
         const uint32_t rng = f.rng;
         const uint32_t frame_rand = f.hit_context.frame_rand;
         for (int32_t edge = 0; edge < 1000 && b.pending != B05_FINISHED;
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
-            Frame_VSync(&vsync);
-            B05_UpdateAndRender(&b, &f.context, &held, &vsync);
+            Frame_VSync();
+            B05_UpdateAndRender(&b, &f.context, &held);
         }
         CHECK_EQ_INT(b.pending, B05_FINISHED);
         CHECK_EQ_INT(f.fades, 1);
@@ -387,7 +383,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(f.hit_context.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = b;
-        CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+        CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
         CHECK(memcmp(&b, &finished, sizeof(b)) == 0);
         CHECK_EQ_INT(f.effects[4], 1);
         Arena_Free(&arena);
@@ -416,15 +412,15 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
         MasterRng_Next(&expected);
     }
     const TH01_INPUT raw = {};
-    FRAME_VSYNC vsync = {};
-    CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+    Frame_Reset();
+    CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
     CHECK_EQ_INT(f.rng, expected);
     CHECK(memcmp(&f.pellets, &full, sizeof(full)) == 0);
     b.frame = 159;
-    CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+    CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
     CHECK_EQ_INT(b.person.image, 5);
     b.frame = 163;
-    CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+    CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
     CHECK_EQ_INT(b.person.image, 5);
     b.pattern = 3;
     b.frame = 184;
@@ -432,13 +428,13 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     for (int32_t i = 0; i < 20; i++) {
         MasterRng_Next(&expected);
     }
-    CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+    CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
     CHECK_EQ_INT(f.rng, expected);
     memset(&f.pellets, 0, sizeof(f.pellets));
     b.pattern = 2;
     for (int32_t i = 0; i < 3; i++) {
         b.frame = (int16_t)(239 + i * 8);
-        CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
+        CHECK(B05_UpdateAndRender(&b, &f.context, &raw));
         CHECK(f.pellets.slots[i * 2].moving);
         CHECK(f.pellets.slots[i * 2 + 1].moving);
     }

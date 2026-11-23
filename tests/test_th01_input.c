@@ -10,12 +10,12 @@ static INPUT_BINDING M_Binding(const char *const name)
     return result;
 }
 
-static void M_DoubleTapPair(GAME_INPUT *const state)
+static void M_DoubleTapPair(void)
 {
     const TH01_INPUT pressed = { .shot = true, .strike = true };
-    GameInput_SenseGame(state, &pressed, false);
-    GameInput_SenseGame(state, &(TH01_INPUT) {}, false);
-    GameInput_SenseGame(state, &pressed, false);
+    GameInput_SenseGame(&pressed, false);
+    GameInput_SenseGame(&(TH01_INPUT) {}, false);
+    GameInput_SenseGame(&pressed, false);
 }
 
 TEST(schema_keeps_arrow_and_keypad_sources_separate)
@@ -59,215 +59,219 @@ TEST(schema_reads_pad_and_joystick_actions)
 
 TEST(held_actions_do_not_reassert_consumed_flags)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     TH01_INPUT raw = { .shot = true, .strike = true, .ok = true };
-    CHECK(!GameInput_SenseGame(&state, &raw, false));
-    CHECK(state.shot && state.strike && state.ok);
-    state.shot = false;
-    state.strike = false;
-    state.ok = false;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(!state.shot && !state.strike && !state.ok);
+    CHECK(!GameInput_SenseGame(&raw, false));
+    CHECK(g_GameInput.shot && g_GameInput.strike && g_GameInput.ok);
+    g_GameInput.shot = false;
+    g_GameInput.strike = false;
+    g_GameInput.ok = false;
+    GameInput_SenseGame(&raw, false);
+    CHECK(!g_GameInput.shot && !g_GameInput.strike && !g_GameInput.ok);
     raw = (TH01_INPUT) {};
-    GameInput_SenseGame(&state, &raw, false);
+    GameInput_SenseGame(&raw, false);
     raw.shot = true;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(state.shot);
-    CHECK(!state.strike && !state.ok);
+    GameInput_SenseGame(&raw, false);
+    CHECK(g_GameInput.shot);
+    CHECK(!g_GameInput.strike && !g_GameInput.ok);
 }
 
 TEST(changing_an_alias_reasserts_a_consumed_direction)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     TH01_INPUT raw = { .up = true, .left = true, .down = true, .right = true };
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(state.up && state.down);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_BOTH);
-    state.up = false;
-    state.down = false;
-    state.horizontal = GAME_INPUT_NONE;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(!state.up && !state.down);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_NONE);
+    GameInput_SenseGame(&raw, false);
+    CHECK(g_GameInput.up && g_GameInput.down);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_BOTH);
+    g_GameInput.up = false;
+    g_GameInput.down = false;
+    g_GameInput.horizontal = GAME_INPUT_NONE;
+    GameInput_SenseGame(&raw, false);
+    CHECK(!g_GameInput.up && !g_GameInput.down);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_NONE);
     raw.keypad_up = raw.keypad_down = true;
     raw.keypad_left = raw.keypad_right = true;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(state.up && state.down);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_BOTH);
-    state.up = false;
-    state.horizontal = GAME_INPUT_NONE;
+    GameInput_SenseGame(&raw, false);
+    CHECK(g_GameInput.up && g_GameInput.down);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_BOTH);
+    g_GameInput.up = false;
+    g_GameInput.horizontal = GAME_INPUT_NONE;
     raw.up = raw.left = raw.down = raw.right = false;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(state.up && state.down);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_BOTH);
-    GameInput_SenseGame(&state, &(TH01_INPUT) {}, false);
-    CHECK(!state.up && !state.down);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_NONE);
+    GameInput_SenseGame(&raw, false);
+    CHECK(g_GameInput.up && g_GameInput.down);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_BOTH);
+    GameInput_SenseGame(&(TH01_INPUT) {}, false);
+    CHECK(!g_GameInput.up && !g_GameInput.down);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_NONE);
 }
 
 TEST(bomb_needs_two_presses_of_both_buttons)
 {
-    GAME_INPUT state = { .bomb_frame = GAME_INPUT_BOMB_WINDOW };
-    M_DoubleTapPair(&state);
-    CHECK(state.bomb);
-    CHECK_EQ_INT(state.shot_presses, 0);
-    CHECK_EQ_INT(state.strike_presses, 0);
-    CHECK_EQ_INT(state.bomb_frame, 0);
-    GameInput_SenseGame(&state, &(TH01_INPUT) {}, false);
-    CHECK(state.bomb);
-    GameInput_ResetGame(&state);
-    CHECK(!state.bomb);
+    GameInput_Init();
+    g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;
+    M_DoubleTapPair();
+    CHECK(g_GameInput.bomb);
+    CHECK_EQ_INT(g_GameInput.shot_presses, 0);
+    CHECK_EQ_INT(g_GameInput.strike_presses, 0);
+    CHECK_EQ_INT(g_GameInput.bomb_frame, 0);
+    GameInput_SenseGame(&(TH01_INPUT) {}, false);
+    CHECK(g_GameInput.bomb);
+    GameInput_ResetGame();
+    CHECK(!g_GameInput.bomb);
 }
 
 TEST(only_one_button_double_tapped_does_not_bomb)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     for (int32_t i = 0; i < 3; i++) {
-        GameInput_SenseGame(&state, &(TH01_INPUT) { .shot = true }, false);
-        GameInput_SenseGame(&state, &(TH01_INPUT) {}, false);
+        GameInput_SenseGame(&(TH01_INPUT) { .shot = true }, false);
+        GameInput_SenseGame(&(TH01_INPUT) {}, false);
     }
-    CHECK_EQ_INT(state.shot_presses, 3);
-    CHECK_EQ_INT(state.strike_presses, 0);
-    CHECK(!state.bomb);
+    CHECK_EQ_INT(g_GameInput.shot_presses, 3);
+    CHECK_EQ_INT(g_GameInput.strike_presses, 0);
+    CHECK(!g_GameInput.bomb);
 }
 
 TEST(bomb_window_boundary_and_simultaneous_order_match)
 {
-    GAME_INPUT state = { .shot_presses = 1,
-                         .strike_presses = 1,
-                         .bomb_frame = 19 };
-    GameInput_SenseGame(
-        &state, &(TH01_INPUT) { .shot = true, .strike = true }, false);
-    CHECK(state.bomb);
-    state = (GAME_INPUT) { .shot_presses = 1,
-                           .strike_presses = 1,
-                           .bomb_frame = 20 };
-    GameInput_SenseGame(
-        &state, &(TH01_INPUT) { .shot = true, .strike = true }, false);
-    CHECK(!state.bomb);
-    CHECK_EQ_INT(state.shot_presses, 1);
-    CHECK_EQ_INT(state.strike_presses, 1);
-    CHECK_EQ_INT(state.bomb_frame, 0);
-    state = (GAME_INPUT) { .shot_presses = 5, .bomb_frame = 20 };
-    GameInput_SenseGame(&state, &(TH01_INPUT) { .strike = true }, false);
-    CHECK_EQ_INT(state.shot_presses, 0);
-    CHECK_EQ_INT(state.strike_presses, 1);
+    GameInput_Init();
+    g_GameInput.shot_presses = 1;
+    g_GameInput.strike_presses = 1;
+    g_GameInput.bomb_frame = 19;
+    GameInput_SenseGame(&(TH01_INPUT) { .shot = true, .strike = true }, false);
+    CHECK(g_GameInput.bomb);
+    GameInput_Init();
+    g_GameInput.shot_presses = 1;
+    g_GameInput.strike_presses = 1;
+    g_GameInput.bomb_frame = 20;
+    GameInput_SenseGame(&(TH01_INPUT) { .shot = true, .strike = true }, false);
+    CHECK(!g_GameInput.bomb);
+    CHECK_EQ_INT(g_GameInput.shot_presses, 1);
+    CHECK_EQ_INT(g_GameInput.strike_presses, 1);
+    CHECK_EQ_INT(g_GameInput.bomb_frame, 0);
+    GameInput_Init();
+    g_GameInput.shot_presses = 5;
+    g_GameInput.bomb_frame = 20;
+    GameInput_SenseGame(&(TH01_INPUT) { .strike = true }, false);
+    CHECK_EQ_INT(g_GameInput.shot_presses, 0);
+    CHECK_EQ_INT(g_GameInput.strike_presses, 1);
 }
 
 TEST(sensing_does_not_age_the_window_and_advancement_wraps)
 {
-    GAME_INPUT state = { .bomb_frame = 19 };
+    GameInput_Init();
+    g_GameInput.bomb_frame = 19;
     for (int32_t i = 0; i < 100; i++) {
-        GameInput_SenseGame(&state, &(TH01_INPUT) {}, false);
+        GameInput_SenseGame(&(TH01_INPUT) {}, false);
     }
-    CHECK_EQ_INT(state.bomb_frame, 19);
-    GameInput_AdvanceBombFrame(&state);
-    CHECK_EQ_INT(state.bomb_frame, 20);
-    state.bomb_frame = INT16_MAX;
-    GameInput_AdvanceBombFrame(&state);
-    CHECK_EQ_INT(state.bomb_frame, INT16_MIN);
-    state.shot_presses = UINT8_MAX;
-    GameInput_SenseGame(&state, &(TH01_INPUT) { .shot = true }, false);
-    CHECK_EQ_INT(state.shot_presses, 0);
+    CHECK_EQ_INT(g_GameInput.bomb_frame, 19);
+    GameInput_AdvanceBombFrame();
+    CHECK_EQ_INT(g_GameInput.bomb_frame, 20);
+    g_GameInput.bomb_frame = INT16_MAX;
+    GameInput_AdvanceBombFrame();
+    CHECK_EQ_INT(g_GameInput.bomb_frame, INT16_MIN);
+    g_GameInput.shot_presses = UINT8_MAX;
+    GameInput_SenseGame(&(TH01_INPUT) { .shot = true }, false);
+    CHECK_EQ_INT(g_GameInput.shot_presses, 0);
 }
 
 TEST(opposing_directions_and_held_shot_trigger_a_persistent_bomb)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     const TH01_INPUT raw = { .left = true, .right = true, .shot = true };
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(state.bomb);
-    state.bomb = false;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(state.bomb);
-    state.bomb = false;
-    state.shot = false;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(!state.bomb);
+    GameInput_SenseGame(&raw, false);
+    CHECK(g_GameInput.bomb);
+    g_GameInput.bomb = false;
+    GameInput_SenseGame(&raw, false);
+    CHECK(g_GameInput.bomb);
+    g_GameInput.bomb = false;
+    g_GameInput.shot = false;
+    GameInput_SenseGame(&raw, false);
+    CHECK(!g_GameInput.bomb);
 }
 
 TEST(pause_precedes_return_and_uses_the_consumed_shot_flag)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     TH01_INPUT raw = { .cancel = true, .ok = true, .shot = true };
-    CHECK(GameInput_SenseGame(&state, &raw, false));
-    CHECK(state.paused && state.ok);
-    CHECK(!GameInput_SenseGame(&state, &raw, false));
-    CHECK(state.paused);
+    CHECK(GameInput_SenseGame(&raw, false));
+    CHECK(g_GameInput.paused && g_GameInput.ok);
+    CHECK(!GameInput_SenseGame(&raw, false));
+    CHECK(g_GameInput.paused);
     raw.ok = false;
-    GameInput_SenseGame(&state, &raw, false);
-    state.shot = false;
+    GameInput_SenseGame(&raw, false);
+    g_GameInput.shot = false;
     raw.ok = true;
-    CHECK(!GameInput_SenseGame(&state, &raw, false));
+    CHECK(!GameInput_SenseGame(&raw, false));
     raw.cancel = false;
-    GameInput_SenseGame(&state, &raw, false);
+    GameInput_SenseGame(&raw, false);
     raw.cancel = true;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(!state.paused);
+    GameInput_SenseGame(&raw, false);
+    CHECK(!g_GameInput.paused);
 }
 
 TEST(game_reset_keeps_bomb_frame_and_debug_key_history)
 {
-    GAME_INPUT state = {
-        .previous = { .shot = true,
-                      .memory_enter = true,
-                      .memory_leave = true },
-        .bomb_frame = 17,
-        .shot_presses = 2,
-        .strike_presses = 3,
-        .shot = true,
-        .strike = true,
-        .paused = true,
-        .bomb = true,
-        .memory_enter = true,
-        .memory_leave = true,
-    };
-    GameInput_ResetGame(&state);
-    CHECK(!state.previous.shot);
-    CHECK(!state.bomb);
-    CHECK_EQ_INT(state.shot_presses, 0);
-    CHECK_EQ_INT(state.strike_presses, 0);
-    CHECK(!state.shot && !state.strike && !state.paused);
-    CHECK(!state.memory_enter && !state.memory_leave);
-    CHECK(state.previous.memory_enter && state.previous.memory_leave);
-    CHECK_EQ_INT(state.bomb_frame, 17);
-    GameInput_SenseGame(&state, &(TH01_INPUT) { .shot = true }, false);
-    CHECK(state.shot);
+    GameInput_Init();
+    g_GameInput.previous = (TH01_INPUT) { .shot = true,
+                                          .memory_enter = true,
+                                          .memory_leave = true };
+    g_GameInput.bomb_frame = 17;
+    g_GameInput.shot_presses = 2;
+    g_GameInput.strike_presses = 3;
+    g_GameInput.shot = true;
+    g_GameInput.strike = true;
+    g_GameInput.paused = true;
+    g_GameInput.bomb = true;
+    g_GameInput.memory_enter = true;
+    g_GameInput.memory_leave = true;
+    GameInput_ResetGame();
+    CHECK(!g_GameInput.previous.shot);
+    CHECK(!g_GameInput.bomb);
+    CHECK_EQ_INT(g_GameInput.shot_presses, 0);
+    CHECK_EQ_INT(g_GameInput.strike_presses, 0);
+    CHECK(!g_GameInput.shot && !g_GameInput.strike && !g_GameInput.paused);
+    CHECK(!g_GameInput.memory_enter && !g_GameInput.memory_leave);
+    CHECK(
+        g_GameInput.previous.memory_enter && g_GameInput.previous.memory_leave);
+    CHECK_EQ_INT(g_GameInput.bomb_frame, 17);
+    GameInput_SenseGame(&(TH01_INPUT) { .shot = true }, false);
+    CHECK(g_GameInput.shot);
 }
 
 TEST(menu_reset_keeps_held_history_and_other_flags)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     TH01_INPUT raw = {
         .left = true, .shot = true, .ok = true, .up = true, .strike = true
     };
-    GameInput_SenseGame(&state, &raw, false);
-    GameInput_ResetMenu(&state);
-    CHECK(!state.shot && !state.ok);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_NONE);
-    CHECK(state.up && state.strike);
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(!state.shot && !state.ok);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_NONE);
+    GameInput_SenseGame(&raw, false);
+    GameInput_ResetMenu();
+    CHECK(!g_GameInput.shot && !g_GameInput.ok);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_NONE);
+    CHECK(g_GameInput.up && g_GameInput.strike);
+    GameInput_SenseGame(&raw, false);
+    CHECK(!g_GameInput.shot && !g_GameInput.ok);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_NONE);
     raw.keypad_left = true;
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK_EQ_INT(state.horizontal, GAME_INPUT_LEFT);
+    GameInput_SenseGame(&raw, false);
+    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_LEFT);
 }
 
 TEST(debug_history_survives_reset_and_is_ignored_outside_debug)
 {
-    GAME_INPUT state = {};
+    GameInput_Init();
     TH01_INPUT raw = { .memory_enter = true, .memory_leave = true };
-    GameInput_SenseGame(&state, &raw, false);
-    CHECK(!state.memory_enter && !state.previous.memory_enter);
-    GameInput_SenseGame(&state, &raw, true);
-    CHECK(state.memory_enter && state.memory_leave);
-    GameInput_ResetGame(&state);
-    GameInput_SenseGame(&state, &raw, true);
-    CHECK(!state.memory_enter && !state.memory_leave);
-    GameInput_SenseGame(&state, &(TH01_INPUT) {}, true);
-    GameInput_SenseGame(&state, &raw, true);
-    CHECK(state.memory_enter && state.memory_leave);
+    GameInput_SenseGame(&raw, false);
+    CHECK(!g_GameInput.memory_enter && !g_GameInput.previous.memory_enter);
+    GameInput_SenseGame(&raw, true);
+    CHECK(g_GameInput.memory_enter && g_GameInput.memory_leave);
+    GameInput_ResetGame();
+    GameInput_SenseGame(&raw, true);
+    CHECK(!g_GameInput.memory_enter && !g_GameInput.memory_leave);
+    GameInput_SenseGame(&(TH01_INPUT) {}, true);
+    GameInput_SenseGame(&raw, true);
+    CHECK(g_GameInput.memory_enter && g_GameInput.memory_leave);
 }
 
 TEST(menu_histories_are_independent_and_music_shares_options)

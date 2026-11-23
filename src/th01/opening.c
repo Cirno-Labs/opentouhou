@@ -15,8 +15,7 @@ static const char *const m_TrackFiles[] = {
     "kami.mdt",  "tensi.mdt",   "syugen.mdt", "alice.mdt",    "iris.mdt",
 };
 
-static void M_Image(
-    VIDEO *const video, const PI_IMAGE *const image, const int32_t key)
+static void M_Image(const PI_IMAGE *const image, const int32_t key)
 {
     const VIDEO_IMAGE view = {
         .pixels = image->pixels,
@@ -25,8 +24,7 @@ static void M_Image(
         .stride = image->width,
         .key = key,
     };
-    Video_Blit(
-        video, &view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
+    Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
 }
 
 static void M_Text(
@@ -34,8 +32,7 @@ static void M_Text(
     const int32_t top, const uint8_t color, const GAME_TEXT_WEIGHT weight)
 {
     const GAME_TEXT_STYLE style = { .weight = weight };
-    GameText_Draw(
-        &opening->assets->font, opening->video, text, left, top, color, &style);
+    GameText_Draw(&opening->assets->font, text, left, top, color, &style);
 }
 
 static int32_t M_Top(const int32_t count)
@@ -45,8 +42,7 @@ static int32_t M_Top(const int32_t count)
 
 static void M_Erase(OPENING *const opening, const int32_t count)
 {
-    Video_Restore16(
-        opening->video, (GFX_RECT) { 220, M_Top(count), 176, count * 20 });
+    Video_Restore16((GFX_RECT) { 220, M_Top(count), 176, count * 20 });
 }
 
 static void M_Choice(
@@ -60,12 +56,11 @@ static void M_Choice(
     }
     const bool music = opening->phase == OPENING_MUSIC;
     const int32_t top = music ? M_Top(3) + choice * 40 : M_Top(5) + choice * 20;
-    Video_Restore16(opening->video, (GFX_RECT) { 228, top, 176, 16 });
+    Video_Restore16((GFX_RECT) { 228, top, 176, 16 });
     char text[256];
     if (music) {
         if (choice == 0) {
-            Video_Restore16(
-                opening->video, (GFX_RECT) { 228, top + 20, 192, 16 });
+            Video_Restore16((GFX_RECT) { 228, top + 20, 192, 16 });
             snprintf(
                 text, sizeof(text), "%s%.2d", m_MusicMenuItems[0],
                 opening->track);
@@ -94,9 +89,7 @@ static void M_Choice(
 static void M_Lines(OPENING *const opening)
 {
     for (int32_t i = 0; i < 2; i++) {
-        Video_Restore16(
-            opening->video,
-            (GFX_RECT) { 0, opening->line_y[i], VIDEO_WIDTH, 1 });
+        Video_Restore16((GFX_RECT) { 0, opening->line_y[i], VIDEO_WIDTH, 1 });
     }
     for (int32_t i = 0; i < 2; i++) {
         int32_t y;
@@ -105,20 +98,17 @@ static void M_Lines(OPENING *const opening)
         } while (opening->drawn_rows[y]);
         opening->drawn_rows[y] = true;
         opening->line_y[i] = y;
-        Video_HorizontalLine(opening->video, 0, VIDEO_WIDTH - 1, y, 15);
+        Video_HorizontalLine(0, VIDEO_WIDTH - 1, y, 15);
     }
     opening->line_count++;
 }
 
 static void M_Window(OPENING *const opening)
 {
-    VIDEO *const video = opening->video;
-    Video_Copy(
-        video, 1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
-    M_Image(video, &opening->assets->window, 15);
+    Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
+    M_Image(&opening->assets->window, 15);
     Palette_Import(&opening->palette.resource, opening->assets->window.palette);
-    Video_Copy(
-        video, 0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
+    Video_Copy(0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
     opening->random = opening->frame_rand;
     opening->phase = OPENING_MAIN;
     opening->entering = true;
@@ -251,11 +241,10 @@ const char *Opening_TrackFile(const int32_t track)
 }
 
 OPENING_EVENTS Opening_Init(
-    OPENING *const opening, VIDEO *const video, TH01_SETTINGS *const settings,
+    OPENING *const opening, TH01_SETTINGS *const settings,
     const OPENING_ASSETS *const assets)
 {
     *opening = (OPENING) {
-        .video = video,
         .settings = settings,
         .assets = assets,
         .phase = OPENING_FADE,
@@ -264,17 +253,16 @@ OPENING_EVENTS Opening_Init(
         .music_mode = settings->music,
     };
     Palette_Init(&opening->palette);
-    Video_SelectDrawingPage(video, 1);
-    Video_SelectVisiblePage(video, 0);
-    M_Image(video, &assets->title, -1);
+    Video_SelectDrawingPage(1);
+    Video_SelectVisiblePage(0);
+    M_Image(&assets->title, -1);
     Palette_Import(&opening->palette.resource, assets->title.palette);
-    Palette_Set(&opening->palette, video, &opening->palette.resource);
-    Palette_ShowSolid(video, 0, 0, 0);
-    Video_Copy(
-        video, 1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
-    M_Image(video, &assets->revealed, -1);
+    Palette_Set(&opening->palette, &opening->palette.resource);
+    Palette_ShowSolid(0, 0, 0);
+    Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
+    M_Image(&assets->revealed, -1);
     Palette_Import(&opening->palette.resource, assets->revealed.palette);
-    Video_SelectDrawingPage(video, 0);
+    Video_SelectDrawingPage(0);
     Palette_BeginFade(&opening->fade, &opening->palette, PALETTE_FADE_BLACK_IN);
     return (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY,
                               .track = 0,
@@ -286,7 +274,7 @@ OPENING_EVENTS Opening_Tick(
 {
     OPENING_EVENTS events = {};
     if (opening->phase == OPENING_EXIT_FADE) {
-        Palette_FadeStep(&opening->fade, &opening->palette, opening->video);
+        Palette_FadeStep(&opening->fade, &opening->palette);
         if (opening->fade.remaining == 0) {
             events.action = opening->exit_action;
         }
@@ -295,7 +283,7 @@ OPENING_EVENTS Opening_Tick(
     opening->count1++;
     if (opening->phase == OPENING_FADE) {
         const bool stepped =
-            Palette_FadeStep(&opening->fade, &opening->palette, opening->video);
+            Palette_FadeStep(&opening->fade, &opening->palette);
         ASSERT(stepped);
         if (opening->fade.remaining == 0) {
             opening->phase = OPENING_HOLD;
@@ -317,9 +305,7 @@ OPENING_EVENTS Opening_Tick(
             M_Lines(opening);
             return events;
         }
-        Video_Copy(
-            opening->video, 1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT },
-            0, 0, 0);
+        Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
         opening->phase = OPENING_PROMPT;
     }
     if (opening->phase == OPENING_PROMPT) {
@@ -330,8 +316,7 @@ OPENING_EVENTS Opening_Tick(
                     M_Text(
                         opening, m_Prompt, 244, M_Top(1), 15, GAME_TEXT_BOLD);
                 } else {
-                    Video_Restore16(
-                        opening->video, (GFX_RECT) { 244, M_Top(1), 120, 16 });
+                    Video_Restore16((GFX_RECT) { 244, M_Top(1), 120, 16 });
                 }
                 opening->prompt_frame = (opening->prompt_frame + 1) % 70;
             }

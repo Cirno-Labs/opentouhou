@@ -43,7 +43,6 @@ static OPENING_ASSETS m_OpeningAssets;
 static OPENING m_Opening;
 static bool m_InOpening;
 static bool m_InGameplay, m_InScore;
-static SCORE_SAVES m_Scores;
 static SCORE_ASSETS m_ScoreAssets;
 static SCORE_SCENE m_Score;
 static ENDING_ASSETS m_EndingAssets;
@@ -53,11 +52,9 @@ static bool m_InSwitch;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
 static GAME_AUDIO *m_Audio;
-static SESSION m_Session;
 static uint64_t m_HostTick;
 static GFX_TEXTURE *m_TextTexture;
 static uint8_t *m_UploadedText, *m_ScrolledPage;
-static VIDEO m_Video;
 static VSYNC_CLOCK m_Frame;
 static GFX_TEXTURE *m_Pages[2];
 static uint8_t *m_UploadedPages[2];
@@ -115,10 +112,10 @@ static RESULT M_LoadAssets(void)
     }
     if (IS_OK(result)) {
         Result_Log(
-            ScoreData_Load(vfs, Shell_GetUserFiles(), &m_Scores),
+            ScoreData_Load(vfs, Shell_GetUserFiles(), &g_ScoreSaves),
             LOG_LEVEL_WARNING);
         result = Score_LoadAssets(
-            vfs, rom, &m_Scores, Arena_Allocator(&m_Assets), &m_ScoreAssets);
+            vfs, rom, Arena_Allocator(&m_Assets), &m_ScoreAssets);
     }
     if (IS_OK(result)) {
         result = Ending_LoadAssets(
@@ -130,8 +127,8 @@ static RESULT M_LoadAssets(void)
 
 static void M_ShowLogoPages(void)
 {
-    Video_SelectDrawingPage(&m_Video, m_Logo.drawing_page);
-    Video_SelectVisiblePage(&m_Video, m_Logo.visible_page);
+    Video_SelectDrawingPage(m_Logo.drawing_page);
+    Video_SelectVisiblePage(m_Logo.visible_page);
 }
 
 static void M_EndingAudio(void *const context, const ENDING_AUDIO command)
@@ -154,7 +151,7 @@ static RESULT M_Init(void)
         m_Sprites.width != 64 || m_Sprites.height != 16
             || m_Sprites.count != 16,
         "TOUHOU.DAT must contain sixteen 64 by 16 logo sprites");
-    Video_Init(&m_Video, Arena_Allocator(&m_Assets));
+    Video_Init(Arena_Allocator(&m_Assets));
     memset(&m_Frame, 0, sizeof(m_Frame));
     m_IntroPressed = false;
     m_InOpening = false;
@@ -163,35 +160,31 @@ static RESULT M_Init(void)
     m_InEnding = false;
     m_InSwitch = false;
     m_HostTick = 0;
-    memset(&m_Session, 0, sizeof(m_Session));
+    Session_Init();
     MUST(Gameplay_Prepare(
-        Arena_Allocator(&m_Assets), &m_GameplayAssets, &m_Video, &m_Session,
-        &m_Gameplay));
+        Arena_Allocator(&m_Assets), &m_GameplayAssets, &m_Gameplay));
     if (Audio_IsInitialized()) {
         Result_Log(
             GameAudio_Prepare(Arena_Allocator(&m_Assets), &m_Audio),
             LOG_LEVEL_WARNING);
         Gameplay_BindAudio(m_Gameplay, m_Audio);
     }
-    const GAMEPLAY_SCORE_CONTEXT ending_context =
-        Gameplay_ScoreContext(m_Gameplay);
     Ending_Prepare(
-        Arena_Allocator(&m_Assets), &m_EndingAssets, &m_Video,
-        ending_context.vsync, ending_context.input, M_EndingAudio, m_Gameplay,
+        Arena_Allocator(&m_Assets), &m_EndingAssets, M_EndingAudio, m_Gameplay,
         &m_Ending);
-    ZunLogo1_Init(&m_Logo, m_Video.pages);
+    ZunLogo1_Init(&m_Logo, g_Video.pages);
     M_ShowLogoPages();
     for (int32_t i = 0; i < 2; i++) {
         MUST(GfxTexture_CreateIndexed(VIDEO_WIDTH, VIDEO_HEIGHT, &m_Pages[i]));
         GfxTexture_UploadIndices(
             m_Pages[i], (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT },
-            m_Video.pages[i]);
-        GfxTexture_UploadPalette(m_Pages[i], 0, 16, m_Video.palette);
+            g_Video.pages[i]);
+        GfxTexture_UploadPalette(m_Pages[i], 0, 16, g_Video.palette);
         m_UploadedPages[i] =
             Allocator_Alloc(Arena_Allocator(&m_Assets), VIDEO_PAGE_SIZE);
-        memcpy(m_UploadedPages[i], m_Video.pages[i], VIDEO_PAGE_SIZE);
+        memcpy(m_UploadedPages[i], g_Video.pages[i], VIDEO_PAGE_SIZE);
     }
-    memcpy(m_UploadedPalette, m_Video.palette, sizeof(m_UploadedPalette));
+    memcpy(m_UploadedPalette, g_Video.palette, sizeof(m_UploadedPalette));
     MUST(GfxTexture_CreateIndexed(VIDEO_WIDTH, VIDEO_HEIGHT, &m_TextTexture));
     m_UploadedText =
         Allocator_AllocZ(Arena_Allocator(&m_Assets), VIDEO_PAGE_SIZE);
@@ -217,16 +210,15 @@ static bool M_OpeningEvents(
     if (events.action == OPENING_ACTION_START
         || events.action == OPENING_ACTION_CONTINUE) {
         Session_Begin(
-            &m_Session,
             events.action == OPENING_ACTION_START ? SESSION_START
                                                   : SESSION_CONTINUE,
             &g_Settings, m_Opening.frame_rand);
         if (events.action == OPENING_ACTION_START
             && g_Th01Hooks.on_start != nullptr) {
-            g_Th01Hooks.on_start(g_Th01Hooks.arg, &m_Session);
+            g_Th01Hooks.on_start(g_Th01Hooks.arg);
         }
-        m_Session.table_high_score =
-            (uint32_t)m_Scores.tables[m_Session.settings.difficulty]
+        g_Session.table_high_score =
+            (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
                 .entries[0]
                 .score;
         Gameplay_Begin(m_Gameplay, raw, m_HostTick);
@@ -240,9 +232,9 @@ static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
 {
     m_InOpening = true;
     m_InGameplay = false;
-    Video_SetScroll(&m_Video, 0);
+    Video_SetScroll(0);
     M_OpeningEvents(
-        Opening_Init(&m_Opening, &m_Video, &g_Settings, &m_OpeningAssets), raw);
+        Opening_Init(&m_Opening, &g_Settings, &m_OpeningAssets), raw);
     if (switched) {
         // Counts the VSync latched by the program switch (Frame_SwitchProgram).
         m_Opening.count1 = 1;
@@ -263,8 +255,8 @@ static bool M_Tick(const void *const input)
     if (m_InScore) {
         Gameplay_AdvanceAudio(m_Gameplay);
         if (Score_Tick(&m_Score, raw, reference_edge)) {
-            m_Session.table_high_score =
-                (uint32_t)m_Scores.tables[m_Session.settings.difficulty]
+            g_Session.table_high_score =
+                (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
                     .entries[0]
                     .score;
             m_InScore = false;
@@ -281,23 +273,20 @@ static bool M_Tick(const void *const input)
         if (Ending_SwitchTick(m_Ending, reference_edge)) {
             m_InEnding = false;
             m_InSwitch = false;
-            Ending_Clear(&m_Session);
+            Ending_Clear();
             M_BeginOpening(true, raw);
         }
     } else if (m_InEnding) {
         Gameplay_AdvanceAudio(m_Gameplay);
         if (Ending_Tick(m_Ending, raw, reference_edge)) {
             const END_RESULT *const result = Ending_Result(m_Ending);
-            const GAMEPLAY_SCORE_CONTEXT context =
-                Gameplay_ScoreContext(m_Gameplay);
             SCORE_ENTRY entry = { .stage = result->route == SESSION_END_MAKAI
                                       ? 50
                                       : 60,
                                   .route = "完" };
             memcpy(&entry.score, &result->score, sizeof(entry.score));
             Score_Begin(
-                &m_Score, &m_ScoreAssets, &m_Video, &m_Scores, context.vsync,
-                context.input, SCORE_ENDING, result->rank, &entry);
+                &m_Score, &m_ScoreAssets, SCORE_ENDING, result->rank, &entry);
             m_InScore = true;
             m_InEnding = false;
         }
@@ -307,22 +296,19 @@ static bool M_Tick(const void *const input)
         if (request == GAMEPLAY_REQUEST_OPENING) {
             M_BeginOpening(true, raw);
         } else if (request == GAMEPLAY_REQUEST_SCORE) {
-            const GAMEPLAY_SCORE_CONTEXT context =
-                Gameplay_ScoreContext(m_Gameplay);
-            SCORE_ENTRY entry = { .score = (int32_t)m_Session.score,
-                                  .stage = (int16_t)(m_Session.stage_id + 1) };
+            SCORE_ENTRY entry = { .score = (int32_t)g_Session.score,
+                                  .stage = (int16_t)(g_Session.stage_id + 1) };
             strcpy(
                 entry.route,
-                m_Session.stage_id < 5                       ? "社"
-                    : m_Session.route == SESSION_ROUTE_MAKAI ? "魔"
+                g_Session.stage_id < 5                       ? "社"
+                    : g_Session.route == SESSION_ROUTE_MAKAI ? "魔"
                                                              : "地");
             Score_Begin(
-                &m_Score, &m_ScoreAssets, &m_Video, &m_Scores, context.vsync,
-                context.input, SCORE_GAMEOVER, m_Session.settings.difficulty,
-                &entry);
+                &m_Score, &m_ScoreAssets, SCORE_GAMEOVER,
+                g_Session.settings.difficulty, &entry);
             m_InScore = true;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {
-            Ending_Begin(m_Ending, &m_Session);
+            Ending_Begin(m_Ending);
             Ending_Tick(m_Ending, raw, false);
             m_InGameplay = false;
             m_InEnding = true;
@@ -339,27 +325,27 @@ static bool M_Tick(const void *const input)
                 }
             } else {
                 const bool running =
-                    ZunLogo1_Tick(&m_Logo, m_Video.pages, m_Sprites.pixels);
+                    ZunLogo1_Tick(&m_Logo, g_Video.pages, m_Sprites.pixels);
                 M_ShowLogoPages();
                 if (!running) {
                     M_BeginOpening(false, raw);
                 } else {
                     GFX_COLOR palette[16];
                     ZunLogo1_Palette(&m_Logo, m_Sprites.palette, palette);
-                    Video_SetPalette(&m_Video, palette);
+                    Video_SetPalette(palette);
                 }
             }
         }
     }
     {
         for (int32_t i = 0; i < 2; i++) {
-            const uint8_t *pixels = m_Video.pages[i];
-            if (m_Video.scroll_top != 0) {
+            const uint8_t *pixels = g_Video.pages[i];
+            if (g_Video.scroll_top != 0) {
                 for (int32_t y = 0; y < VIDEO_HEIGHT; y++) {
                     memcpy(
                         m_ScrolledPage + y * VIDEO_WIDTH,
                         pixels
-                            + ((y + m_Video.scroll_top) % VIDEO_HEIGHT)
+                            + ((y + g_Video.scroll_top) % VIDEO_HEIGHT)
                                 * VIDEO_WIDTH,
                         VIDEO_WIDTH);
                 }
@@ -373,17 +359,16 @@ static bool M_Tick(const void *const input)
             }
         }
         if (memcmp(
-                m_UploadedPalette, m_Video.palette, sizeof(m_UploadedPalette))
+                m_UploadedPalette, g_Video.palette, sizeof(m_UploadedPalette))
             != 0) {
             for (int32_t i = 0; i < 2; i++) {
-                GfxTexture_UploadPalette(m_Pages[i], 0, 16, m_Video.palette);
+                GfxTexture_UploadPalette(m_Pages[i], 0, 16, g_Video.palette);
             }
             memcpy(
-                m_UploadedPalette, m_Video.palette, sizeof(m_UploadedPalette));
+                m_UploadedPalette, g_Video.palette, sizeof(m_UploadedPalette));
         }
     }
-    const TRAM *const text =
-        m_InGameplay && !m_InScore ? Gameplay_TextLayer(m_Gameplay) : nullptr;
+    const TRAM *const text = m_InGameplay && !m_InScore ? &g_Tram : nullptr;
     if (text != nullptr
         && memcmp(m_UploadedText, text->pixels, VIDEO_PAGE_SIZE) != 0) {
         GfxTexture_UploadIndices(
@@ -398,7 +383,7 @@ static bool M_Tick(const void *const input)
         { { 0, VIDEO_HEIGHT, 0 }, white, { 0, 1 } },
     };
     const GFX_STATE state = {};
-    Gfx_DrawQuad(&state, m_Pages[m_Video.visible_page], vertices, 0);
+    Gfx_DrawQuad(&state, m_Pages[g_Video.visible_page], vertices, 0);
     if (text != nullptr && text->visible) {
         const GFX_STATE overlay = { .blend = GFX_BLEND_ALPHA };
         Gfx_DrawQuad(&overlay, m_TextTexture, vertices, 0);
@@ -432,7 +417,7 @@ static void M_Shutdown(void)
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);
     memset(&m_Sprites, 0, sizeof(m_Sprites));
-    memset(&m_Video, 0, sizeof(m_Video));
+    memset(&g_Video, 0, sizeof(g_Video));
     memset(&m_Logo, 0, sizeof(m_Logo));
     memset(&m_Opening, 0, sizeof(m_Opening));
     memset(&m_OpeningAssets, 0, sizeof(m_OpeningAssets));
@@ -441,7 +426,7 @@ static void M_Shutdown(void)
 void Th01_FlushSaves(void)
 {
     if (m_Initialized) {
-        Result_Log(ScoreData_WriteSaves(&m_Scores), LOG_LEVEL_WARNING);
+        Result_Log(ScoreData_WriteSaves(&g_ScoreSaves), LOG_LEVEL_WARNING);
     }
 }
 
@@ -457,7 +442,6 @@ void Th01_View(TH01_VIEW *const out)
         .gameplay = m_Gameplay,
         .score = &m_Score,
         .ending = m_Ending,
-        .session = &m_Session,
     };
 }
 

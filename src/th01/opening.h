@@ -51,7 +51,6 @@ typedef struct {
 } OPENING_EVENTS;
 
 typedef struct {
-    VIDEO *video;
     TH01_SETTINGS *settings;
     const OPENING_ASSETS *assets;
     PALETTE_STATE palette;
@@ -87,8 +86,7 @@ const char *Opening_TrackFile(int32_t track);
 // Assets, settings and initialized video must outlive the scene. Emits the
 // unconditional initial reimu play request, even with music set to OFF.
 OPENING_EVENTS Opening_Init(
-    OPENING *opening, VIDEO *video, TH01_SETTINGS *settings,
-    const OPENING_ASSETS *assets);
+    OPENING *opening, TH01_SETTINGS *settings, const OPENING_ASSETS *assets);
 
 // Advances one reference VSync, without allocation, I/O, platform calls or
 // audio feedback. Uses deterministic zero-time asset loading: the sixteen

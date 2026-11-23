@@ -10,7 +10,7 @@ static void M_DrawStep(
     int16_t tip_left = t->first_left;
     int16_t tip_top = t->first_top;
     while (t->first_left >= 0 && t->first_top < VIDEO_HEIGHT) {
-        Interleave_Put8(c->video, c->assets, t->first_left, t->first_top, 1);
+        Interleave_Put8(c->assets, t->first_left, t->first_top, 1);
         t->first_left -= 8;
         t->first_top += 8;
     }
@@ -26,12 +26,12 @@ static void M_DrawStep(
                 }
             }
         }
-        Palette_Set(c->palette, c->video, c->current);
+        Palette_Set(c->palette, c->current);
     }
     tip_left = t->second_left;
     tip_top = t->second_top;
     while (t->second_left >= 0 && t->second_top < VIDEO_HEIGHT) {
-        Interleave_Put8(c->video, c->assets, t->second_left, t->second_top, 2);
+        Interleave_Put8(c->assets, t->second_left, t->second_top, 2);
         t->second_left -= 8;
         t->second_top += 8;
     }

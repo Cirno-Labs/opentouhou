@@ -11,17 +11,15 @@ TH01_HOOKS g_Th01Hooks;
 
 RESULT Gameplay_Prepare(
     const ALLOCATOR *const allocator, const GAMEPLAY_ASSETS *const assets,
-    VIDEO *const video, SESSION *const session, GAMEPLAY **const out)
+    GAMEPLAY **const out)
 {
     *out = nullptr;
     GAMEPLAY *const g = Allocator_AllocZ(allocator, sizeof(*g));
     g->storage.assets = assets;
-    g->storage.video = video;
-    g->storage.session = session;
     StageObjects_Prepare(&g->storage.objects, allocator);
     Hud_Init(&g->world.hud, allocator);
     HudHp_Init(&g->world.health, allocator);
-    Tram_Init(&g->world.tram, allocator);
+    Tram_Init(allocator);
     B10J_Init(&g->world.b10j, allocator);
     B15M_Init(&g->world.b15m, allocator);
     B20M_Init(&g->world.b20m, allocator);
@@ -52,41 +50,42 @@ RESULT Gameplay_Prepare(
 void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
     memcpy(&g->world, g->storage.initial, sizeof(g->world));
-    Frame_SwitchProgram(&g->world.vsync);
-    Tram_Clear(&g->world.tram);
-    Tram_SetVisible(&g->world.tram, true);
-    g->storage.session->high_score = g->storage.session->table_high_score;
-    g->world.metrics.score = g->storage.session->score;
-    g->world.player.remaining_bombs = g->storage.session->bombs;
+    Frame_Reset();
+    GameInput_Init();
+    StageTimer_Init();
+    Frame_SwitchProgram();
+    Tram_Clear();
+    Tram_SetVisible(true);
+    g_Session.high_score = g_Session.table_high_score;
+    g->world.metrics.score = g_Session.score;
+    g->world.player.remaining_bombs = g_Session.bombs;
     g->world.player.left = 304;
-    g->world.pellet_shared.speed = g->storage.session->pellet_speed;
-    g->world.retained_lives = (int8_t)g->storage.session->lives;
-    g->world.next_extend = Extend_NextForScore(g->storage.session->score);
-    g->world.rng = g->storage.session->frame_rand;
+    g->world.pellet_shared.speed = g_Session.pellet_speed;
+    g->world.retained_lives = (int8_t)g_Session.lives;
+    g->world.next_extend = Extend_NextForScore(g_Session.score);
+    g->world.rng = g_Session.frame_rand;
     g->world.metrics.flip_cycle = (uint8_t)(MasterRng_Next(&g->world.rng) % 60);
-    g->world.boss_stage = g->storage.session->stage_id % 5 == 4;
+    g->world.boss_stage = g_Session.stage_id % 5 == 4;
     Scene_Activate(
-        &g->world.scene,
-        &g->storage.assets->scenes[Session_Scene(g->storage.session)]);
-    Video_SelectDrawingPage(g->storage.video, 0);
-    Video_SelectVisiblePage(g->storage.video, 0);
-    Video_SetScroll(g->storage.video, 0);
-    Video_Clear(g->storage.video, 0);
+        &g->world.scene, &g->storage.assets->scenes[Session_Scene()]);
+    Video_SelectDrawingPage(0);
+    Video_SelectVisiblePage(0);
+    Video_SetScroll(0);
+    Video_Clear(0);
     Gameplay_Bind(g);
 }
 
 void Gameplay_ResetInput(GAMEPLAY *const g)
 {
-    GameInput_ResetGame(&g->world.input);
+    GameInput_ResetGame();
 }
 
 void Gameplay_DefaultActors(GAMEPLAY *const g)
 {
     Sprite_PtnPut(
-        g->storage.video, &g->storage.assets->miko, 0, -1, g->world.player.left,
-        PLAYER_TOP);
+        &g->storage.assets->miko, 0, -1, g->world.player.left, PLAYER_TOP);
     Orb_RenderAction(
-        g->storage.video, g->bindings.stage.sprites,
+        g->bindings.stage.sprites,
         (ORB_ACTION) {
             .kind = ORB_ACTION_PUT,
             .left = g->world.orb.left,
@@ -97,9 +96,9 @@ void Gameplay_DefaultActors(GAMEPLAY *const g)
 
 void Gameplay_SyncSession(GAMEPLAY *const g)
 {
-    g->storage.session->score = g->world.metrics.score;
-    g->storage.session->bombs = g->world.player.remaining_bombs;
-    g->storage.session->pellet_speed = g->world.pellet_shared.speed;
+    g_Session.score = g->world.metrics.score;
+    g_Session.bombs = g->world.player.remaining_bombs;
+    g_Session.pellet_speed = g->world.pellet_shared.speed;
 }
 
 void Gameplay_BossSetup(GAMEPLAY *const g)
@@ -112,7 +111,7 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
         B10M_Setup(&g->world.b10m, &g->bindings.c10m);
         break;
     case 3:
-        B10J_BeginSetup(&g->world.b10j, &g->bindings.c10j, &g->world.vsync);
+        B10J_BeginSetup(&g->world.b10j, &g->bindings.c10j);
         break;
     case 4:
         B15J_Setup(&g->world.b15j, &g->bindings.c15j);
@@ -151,36 +150,24 @@ bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
     switch (g->world.boss) {
     case 1:
-        return B05_UpdateAndRender(
-            &g->world.b05, &g->bindings.c05, raw, &g->world.vsync);
+        return B05_UpdateAndRender(&g->world.b05, &g->bindings.c05, raw);
     case 2:
-        return B10M_UpdateAndRender(
-            &g->world.b10m, &g->bindings.c10m, &g->world.vsync);
+        return B10M_UpdateAndRender(&g->world.b10m, &g->bindings.c10m);
     case 3:
-        return B10J_UpdateAndRender(
-            &g->world.b10j, &g->bindings.c10j, &g->world.vsync);
+        return B10J_UpdateAndRender(&g->world.b10j, &g->bindings.c10j);
     case 4:
-        return B15J_UpdateAndRender(
-            &g->world.b15j, &g->bindings.c15j, &g->world.vsync);
+        return B15J_UpdateAndRender(&g->world.b15j, &g->bindings.c15j);
     case 5:
         return B15M_UpdateAndRender(
-            &g->world.b15m, &g->bindings.c15m, &g->world.vsync,
-            g->storage.host_tick);
+            &g->world.b15m, &g->bindings.c15m, g->storage.host_tick);
     case 6:
         return B20M_UpdateAndRender(
-            &g->world.b20m, &g->bindings.c20m, &g->world.vsync,
-            g->storage.host_tick);
+            &g->world.b20m, &g->bindings.c20m, g->storage.host_tick);
     case 7:
-        return B20J_UpdateAndRender(
-            &g->world.b20j, &g->bindings.c20j, &g->world.vsync);
+        return B20J_UpdateAndRender(&g->world.b20j, &g->bindings.c20j);
     default:
         return true;
     }
-}
-
-const TRAM *Gameplay_TextLayer(const GAMEPLAY *const g)
-{
-    return &g->world.tram;
 }
 
 void Gameplay_AdvanceAudio(GAMEPLAY *const g)
@@ -209,12 +196,6 @@ void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
         break;
     }
     }
-}
-
-GAMEPLAY_SCORE_CONTEXT Gameplay_ScoreContext(GAMEPLAY *const g)
-{
-    return (GAMEPLAY_SCORE_CONTEXT) { .vsync = &g->world.vsync,
-                                      .input = &g->world.input };
 }
 
 void Gameplay_BindAudio(GAMEPLAY *const g, GAME_AUDIO *const output)

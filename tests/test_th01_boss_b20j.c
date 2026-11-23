@@ -98,8 +98,6 @@ typedef struct {
     B20J_ASSETS assets;
     B20J boss;
     BOSS_SPRITES sprites;
-    VIDEO video;
-    TRAM tram;
     PALETTE_STATE palette;
     HUD_HP health;
     HUD hud;
@@ -144,7 +142,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     if (action.kind == SHOTS_ACTION_EFFECT) {
         M_Effect(f, action.effect);
     } else {
-        Shots_RenderAction(&f->video, &f->stage, action);
+        Shots_RenderAction(&f->stage, action);
     }
 }
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
@@ -152,8 +150,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     *f = (FIXTURE) {};
     M_Assets(&f->assets, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
-    Video_Init(&f->video, a);
-    Tram_Init(&f->tram, a);
+    Video_Init(a);
+    Tram_Init(a);
     Palette_Init(&f->palette);
     Hud_Init(&f->hud, a);
     HudHp_Init(&f->health, a);
@@ -173,8 +171,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->lives = 3;
     f->orb.top = 64;
     f->orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .video = &f->video,
-                                 .sprites = &f->stage,
+    f->display = (HUD_CONTEXT) { .sprites = &f->stage,
                                  .font = &f->font,
                                  .gameplay = &f->gameplay,
                                  .player = &f->player,
@@ -198,7 +195,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .pellet_shared = &f->shared,
                                   .lasers = &f->lasers,
                                   .objects = &f->objects,
-                                  .tram = &f->tram,
                                   .rng = &f->rng,
                                   .game_cleared = &f->cleared,
                                   .audio = M_Audio };
@@ -219,7 +215,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     f.objects.portal_active = true;
     f.objects.destination_left = 77;
     f.rng = 91;
-    Video_SelectDrawingPage(&f.video, 1);
+    Video_SelectDrawingPage(1);
     const size_t used = arena.used;
     B20J_BeginEntrance(&f.boss, &f.context);
     CHECK_EQ_INT(f.boss.head.sprites.width_bytes, 10);
@@ -231,18 +227,18 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(f.audio[0], B20J_AUDIO_LOAD_MUSIC);
     CHECK_EQ_INT(f.audio[1], B20J_AUDIO_LOAD_EFFECTS);
     CHECK_EQ_INT(f.audio[2], B20J_AUDIO_PLAY);
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     int32_t polls = 0;
-    while (!B20J_ResumeEntrance(&f.boss, &f.context, &vsync)) {
+    while (!B20J_ResumeEntrance(&f.boss, &f.context)) {
         const B20J snapshot = f.boss;
         const int32_t effects = f.effects[9];
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_ResumeEntrance(&f.boss, &f.context, &vsync));
+            CHECK(!B20J_ResumeEntrance(&f.boss, &f.context));
             CHECK(memcmp(&f.boss, &snapshot, sizeof(snapshot)) == 0);
             CHECK_EQ_INT(f.effects[9], effects);
             CHECK_EQ_INT(f.audio_count, 3);
         }
-        Frame_VSync(&vsync);
+        Frame_VSync();
         CHECK(++polls < 2000);
     }
     CHECK_EQ_INT(f.effects[9], 4);
@@ -250,7 +246,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(f.palette.saved.colors[10][0], 13);
     CHECK_EQ_INT(f.boss.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(arena.used, used);
-    CHECK(memcmp(f.video.pages[0], f.video.pages[1], VIDEO_PAGE_SIZE) == 0);
+    CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(f.boss.hp, 18);
     Arena_Free(&arena);
 }
@@ -271,17 +267,17 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             f.boss.hit.frame = 0;
             f.boss.patterns_done = 1;
             const size_t used = arena.used;
-            FRAME_VSYNC vsync = {};
+            Frame_Reset();
             int32_t frames = 0;
             do {
-                CHECK(B20J_UpdateAndRender(&f.boss, &f.context, &vsync));
+                CHECK(B20J_UpdateAndRender(&f.boss, &f.context));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
                     f.pellets.slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
                     f.lasers.slots[i].alive = false;
                 }
-                Frame_VSync(&vsync);
+                Frame_VSync();
                 CHECK(++frames < 1500);
             } while (f.boss.pattern != 99);
             CHECK_EQ_INT(f.boss.frame, 0);
@@ -306,25 +302,25 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     f.gameplay.score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
     f.palette.saved.colors[7][0] = 15;
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.boss, &f.context, &vsync)) {
+    while (!B20J_UpdateAndRender(&f.boss, &f.context)) {
         const B20J snapshot = f.boss;
         const int32_t effects = f.effects[7], audio_count = f.audio_count;
         CHECK(!f.cleared);
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_UpdateAndRender(&f.boss, &f.context, &vsync));
+            CHECK(!B20J_UpdateAndRender(&f.boss, &f.context));
             CHECK(memcmp(&f.boss, &snapshot, sizeof(snapshot)) == 0);
             CHECK_EQ_INT(f.effects[7], effects);
             CHECK_EQ_INT(f.audio_count, audio_count);
         }
-        Frame_VSync(&vsync);
+        Frame_VSync();
         CHECK(++polls < 1200);
     }
     CHECK(f.cleared && f.boss.finished && !f.boss.defeating);
     CHECK_EQ_INT(f.gameplay.score, 49899);
-    CHECK_EQ_INT(f.video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(f.audio_count, 2);
     CHECK_EQ_INT(f.audio[0], B20J_AUDIO_STOP);
     CHECK_EQ_INT(f.audio[1], B20J_AUDIO_FADE);
@@ -332,8 +328,8 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     CHECK_EQ_INT(f.boss.scroll_frame, 264);
     const B20J snapshot = f.boss;
     for (int32_t i = 0; i < 100; i++) {
-        Frame_VSync(&vsync);
-        CHECK(B20J_UpdateAndRender(&f.boss, nullptr, &vsync));
+        Frame_VSync();
+        CHECK(B20J_UpdateAndRender(&f.boss, nullptr));
         CHECK(memcmp(&f.boss, &snapshot, sizeof(snapshot)) == 0);
     }
     CHECK_EQ_INT(arena.used, used);
@@ -346,16 +342,16 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     Arena_Init(&arena, "Konngara pan", 2 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    memset(f.video.pages[1], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     f.boss.entrance_active = true;
     f.boss.entrance_stage = 8;
     f.boss.scroll_line = 400;
-    FRAME_VSYNC vsync = {};
-    CHECK(!B20J_ResumeEntrance(&f.boss, &f.context, &vsync));
-    CHECK_EQ_INT(f.video.pages[0][0], 6);
-    CHECK_EQ_INT(f.video.pages[0][14335], 6);
-    CHECK_EQ_INT(f.video.pages[0][14336], 0);
-    CHECK_EQ_INT(f.video.drawing_page, 0);
+    Frame_Reset();
+    CHECK(!B20J_ResumeEntrance(&f.boss, &f.context));
+    CHECK_EQ_INT(g_Video.pages[0][0], 6);
+    CHECK_EQ_INT(g_Video.pages[0][14335], 6);
+    CHECK_EQ_INT(g_Video.pages[0][14336], 0);
+    CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(f.boss.scroll_line, 368);
     Arena_Free(&arena);
 }
@@ -376,8 +372,8 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         f.orb.top = points[i][1];
         f.orb.previous_left = 300;
         f.orb.previous_top = 140;
-        FRAME_VSYNC vsync = {};
-        CHECK(B20J_UpdateAndRender(&f.boss, &f.context, &vsync));
+        Frame_Reset();
+        CHECK(B20J_UpdateAndRender(&f.boss, &f.context));
         CHECK_EQ_INT(f.boss.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(f.gameplay.score, i < 2 ? 10000 : 0);
         CHECK_EQ_INT(f.effects[3], i < 2 ? 1 : 0);
@@ -403,18 +399,18 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     f.boss.hp = 1;
     f.orb.left = 320;
     f.orb.top = 140;
-    f.video.pages[0][0] = 9;
-    FRAME_VSYNC vsync = {};
+    g_Video.pages[0][0] = 9;
+    Frame_Reset();
     const size_t used = arena.used;
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.boss, &f.context, &vsync)) {
+    while (!B20J_UpdateAndRender(&f.boss, &f.context)) {
         if (f.boss.defeat_stage == 1 && f.boss.animation_frame != last_image) {
-            CHECK_EQ_INT(f.video.pages[0][0], images);
+            CHECK_EQ_INT(g_Video.pages[0][0], images);
             last_image = f.boss.animation_frame;
             images++;
         }
-        Frame_VSync(&vsync);
+        Frame_VSync();
         CHECK(++polls < 1200);
     }
     CHECK_EQ_INT(images, 9);
@@ -458,13 +454,13 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
         f.assets.layers[i].y = 80;
     }
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 51, 68, 85, 255 };
-    f.video.pages[0][0] = 6;
+    g_Video.pages[0][0] = 6;
     f.boss.entrance_active = true;
     f.boss.entrance_stage = 12;
-    FRAME_VSYNC vsync = {};
-    CHECK(!B20J_ResumeEntrance(&f.boss, &f.context, &vsync));
-    CHECK_EQ_INT(f.video.pages[0][0], 6);
-    CHECK_EQ_INT(f.video.pages[0][1], 9);
+    Frame_Reset();
+    CHECK(!B20J_ResumeEntrance(&f.boss, &f.context));
+    CHECK_EQ_INT(g_Video.pages[0][0], 6);
+    CHECK_EQ_INT(g_Video.pages[0][1], 9);
     CHECK_EQ_INT(f.palette.resource.colors[10][0], 3);
     CHECK_EQ_INT(f.palette.saved.colors[9][0], 14);
     CHECK_EQ_INT(f.palette.saved.colors[9][1], 14);

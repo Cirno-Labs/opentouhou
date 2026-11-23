@@ -106,24 +106,23 @@ TEST(unaligned_quarters_and_word_rounded_restore)
     pixels[15] = 5;
     PTN sprites = { .count = 5, .pixels = pixels };
     CHECK(IS_OK(Missiles_ValidateSprites(&sprites)));
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
+    Video_Init(&g_HeapAllocator);
     Missiles_RenderAction(
-        &video, &sprites,
+        &sprites,
         (MISSILES_ACTION) {
             .kind = MISSILES_ACTION_PUT, .left = 19, .top = 100 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 19, 100), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 34, 100), 5);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 100), 0);
-    memset(video.pages[1], 7, VIDEO_PAGE_SIZE);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 19, 100), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 34, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 16, 100), 0);
+    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
     Missiles_RenderAction(
-        &video, &sprites,
+        &sprites,
         (MISSILES_ACTION) {
             .kind = MISSILES_ACTION_RESTORE, .left = 19, .top = 100 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 100), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 63, 115), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 64, 115), 0);
-    Mem_Free(video.pages[0]);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 16, 100), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 63, 115), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 64, 115), 0);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(new_bottom_explosion_keeps_machine_shift_behavior)
@@ -132,16 +131,15 @@ TEST(new_bottom_explosion_keeps_machine_shift_behavior)
     memset(pixels, 15, sizeof(pixels));
     pixels[4 * 1024 + 9] = 5;
     PTN sprites = { .count = 5, .pixels = pixels };
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
+    Video_Init(&g_HeapAllocator);
     Missiles_RenderAction(
-        &video, &sprites,
+        &sprites,
         (MISSILES_ACTION) { .kind = MISSILES_ACTION_PUT,
                             .left = -1,
                             .top = 392,
                             .image = 4,
                             .quarter = 0 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 392), 5);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 8, 392), 0);
-    Mem_Free(video.pages[0]);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 0, 392), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 8, 392), 0);
+    Mem_Free(g_Video.pages[0]);
 }

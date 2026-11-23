@@ -32,7 +32,6 @@ typedef struct {
     ORB *orb;
     PLAYER *player;
     uint32_t *rng;
-    VIDEO *video;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
     int16_t stage_id, stage_num;
@@ -100,8 +99,6 @@ typedef struct {
 // Does not advance force age, player update, bomb frame or world counters.
 // Supply real pellet, item and HUD consumers through the context.
 bool Stage_BeginOrbComposite(
-    STAGE_ORB_COMPOSITE *composite, const STAGE_CONTEXT *context,
-    FRAME_VSYNC *vsync);
+    STAGE_ORB_COMPOSITE *composite, const STAGE_CONTEXT *context);
 bool Stage_ResumeOrbComposite(
-    STAGE_ORB_COMPOSITE *composite, const STAGE_CONTEXT *context,
-    FRAME_VSYNC *vsync);
+    STAGE_ORB_COMPOSITE *composite, const STAGE_CONTEXT *context);

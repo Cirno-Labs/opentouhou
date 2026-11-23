@@ -26,7 +26,6 @@ typedef struct {
 } BOSS_DEFEAT;
 
 typedef struct {
-    VIDEO *video;
     PALETTE_STATE *palette;
     const PALETTE *post_defeat;
     const PTN *miko;
@@ -43,8 +42,7 @@ RESULT BossDefeat_ValidateSprites(const PTN *miko);
 // Orb top for regular bosses or SinGyoku entity top; its center (+16 or +48)
 // must be in 0..399. Assets must be validated and post_defeat components must
 // stay in 0..15.
-void BossDefeat_Begin(
-    BOSS_DEFEAT *defeat, BOSS_DEFEAT_KIND kind, const FRAME_VSYNC *vsync);
+void BossDefeat_Begin(BOSS_DEFEAT *defeat, BOSS_DEFEAT_KIND kind);
 
 // Resumes white-line expansion, whiteout, background/player restoration and
 // fade to the live post-defeat palette. Retains the final extra fade interval
@@ -53,6 +51,4 @@ void BossDefeat_Begin(
 // them unchanged: start the route chooser immediately in the same tick and
 // set them only after its cached scene activation. Does not advance VSyncs,
 // actors or gameplay counters. Allocates nothing and performs no IO.
-bool BossDefeat_Resume(
-    BOSS_DEFEAT *defeat, const BOSS_DEFEAT_CONTEXT *context,
-    FRAME_VSYNC *vsync);
+bool BossDefeat_Resume(BOSS_DEFEAT *defeat, const BOSS_DEFEAT_CONTEXT *context);

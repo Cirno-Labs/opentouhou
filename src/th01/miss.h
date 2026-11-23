@@ -18,9 +18,7 @@ typedef struct {
 } MISS;
 
 typedef struct {
-    VIDEO *video;
     PLAYER *player;
-    GAME_INPUT *input;
     const ORB *orb;
     SHOTS *shots;
     uint32_t *rng;
@@ -47,8 +45,7 @@ RESULT Miss_ValidateSprites(const PTN *miko, const PTN *stage);
 // Resume returns true. Only logical VSync counters advance while waiting.
 // The source's variable delays reuse count1, including nested raw waits.
 // Successful updates allocate nothing and poll no device or host clock.
-void Miss_Begin(
-    MISS *miss, const MISS_CONTEXT *context, const FRAME_VSYNC *vsync);
+void Miss_Begin(MISS *miss, const MISS_CONTEXT *context);
 
 // Resumes every ready phase in source order. Returns true at completion;
 // repeated calls after completion do nothing. Preserves integer return
@@ -57,4 +54,4 @@ void Miss_Begin(
 // invincibility_time to 150. These steps, invincibility sprites, life
 // decrement and gameplay scene dispatch remain external. Player_Reset alone
 // does not implement this sequence.
-bool Miss_Resume(MISS *miss, const MISS_CONTEXT *context, FRAME_VSYNC *vsync);
+bool Miss_Resume(MISS *miss, const MISS_CONTEXT *context);

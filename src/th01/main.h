@@ -33,7 +33,6 @@ typedef struct {
     const GAMEPLAY *gameplay;
     const SCORE_SCENE *score;
     const ENDING *ending;
-    const SESSION *session;
 } TH01_VIEW;
 
 // Fills out with the running scene and its state.

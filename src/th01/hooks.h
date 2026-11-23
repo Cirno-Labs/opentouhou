@@ -10,7 +10,7 @@
 // boss's setup has set the boss's HP, which hp points to.
 typedef struct {
     void (*on_vsync)(void *arg);
-    void (*on_start)(void *arg, SESSION *session);
+    void (*on_start)(void *arg);
     void (*on_boss)(void *arg, int16_t *hp);
     void *arg;
 } TH01_HOOKS;

@@ -27,9 +27,6 @@ typedef struct {
 
 struct ENDING {
     const ENDING_ASSETS *assets;
-    VIDEO *video;
-    FRAME_VSYNC *vsync;
-    GAME_INPUT *input;
     ENDING_AUDIO_CONSUMER audio;
     void *audio_context;
     END_RESULT result;

@@ -20,13 +20,13 @@ void HudHp_Init(HUD_HP *hp, const ALLOCATOR *allocator);
 
 // Snapshots cell i at x=128+i*16, despite drawing point i at x=128+i*8.
 // Snapshots use the currently selected page; drawing finishes on page 0.
-void HudHp_Rerender(HUD_HP *hp, VIDEO *video, int16_t total);
+void HudHp_Rerender(HUD_HP *hp, int16_t total);
 
 // Restores the two-point cell containing new_hp on page 1 then page 0.
 // Odd new_hp redraws new_hp-1 using the section chosen by new_hp, preserving
 // the wrong-section pattern when the thresholds are odd.
-void HudHp_Decrement(HUD_HP *hp, VIDEO *video, int16_t new_hp);
+void HudHp_Decrement(HUD_HP *hp, int16_t new_hp);
 
 // Snapshots and draws exactly current. Completes only at total-1==current,
 // including when a changing total has already fallen below current.
-bool HudHp_Increment(HUD_HP *hp, VIDEO *video, int16_t total, int16_t current);
+bool HudHp_Increment(HUD_HP *hp, int16_t total, int16_t current);

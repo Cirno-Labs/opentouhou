@@ -7,18 +7,16 @@ static void M_Put(
     const STAGE_CONTEXT *const context, const STAGE_OBSTACLE *const obstacle,
     const int32_t image)
 {
-    Sprite_PtnPut(
-        context->video, context->sprites, image, -1, obstacle->left,
-        obstacle->top);
+    Sprite_PtnPut(context->sprites, image, -1, obstacle->left, obstacle->top);
 }
 
 static void M_PutBoth(
     const STAGE_CONTEXT *const context, const STAGE_OBSTACLE *const obstacle,
     const int32_t image)
 {
-    Video_SelectDrawingPage(context->video, 1);
+    Video_SelectDrawingPage(1);
     M_Put(context, obstacle, image);
-    Video_SelectDrawingPage(context->video, 0);
+    Video_SelectDrawingPage(0);
     M_Put(context, obstacle, image);
 }
 
@@ -91,14 +89,13 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         obstacle->frame = 1;
         objects->entered_portal = slot;
         objects->portal_active = true;
-        Sprite_Restore16(
-            context->video, orb->previous_left, orb->previous_top, 32, 32);
+        Sprite_Restore16(orb->previous_left, orb->previous_top, 32, 32);
         M_Put(context, obstacle, 30);
     } else if (obstacle->frame == 10) {
-        Sprite_Restore16(context->video, obstacle->left, obstacle->top, 32, 32);
+        Sprite_Restore16(obstacle->left, obstacle->top, 32, 32);
         M_Put(context, obstacle, 31);
     } else if (obstacle->frame == 20) {
-        Sprite_Restore16(context->video, obstacle->left, obstacle->top, 32, 32);
+        Sprite_Restore16(obstacle->left, obstacle->top, 32, 32);
         M_Put(context, obstacle, 29);
         int32_t destination = 0;
         int32_t completed_loops = 0;
@@ -120,18 +117,16 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         objects->destination_left = objects->obstacles[destination].left;
         objects->destination_top = objects->obstacles[destination].top;
         Sprite_Restore16(
-            context->video, objects->destination_left, objects->destination_top,
-            32, 32);
+            objects->destination_left, objects->destination_top, 32, 32);
         Sprite_PtnPut(
-            context->video, context->sprites, 31, -1, objects->destination_left,
+            context->sprites, 31, -1, objects->destination_left,
             objects->destination_top);
     } else if (obstacle->frame == 30 || obstacle->frame == 40) {
         Sprite_Restore16(
-            context->video, objects->destination_left, objects->destination_top,
-            32, 32);
+            objects->destination_left, objects->destination_top, 32, 32);
         Sprite_PtnPut(
-            context->video, context->sprites, obstacle->frame == 30 ? 30 : 29,
-            -1, objects->destination_left, objects->destination_top);
+            context->sprites, obstacle->frame == 30 ? 30 : 29, -1,
+            objects->destination_left, objects->destination_top);
         if (obstacle->frame == 40) {
             orb->velocity_x = MasterRng_Next(context->rng) % 5;
             const int16_t force =
@@ -154,7 +149,7 @@ static void M_ResetPortals(const STAGE_CONTEXT *const context)
     objects->portal_active = false;
     if (context->orb->in_portal) {
         Sprite_PtnPut(
-            context->video, context->sprites, 29, -1, objects->destination_left,
+            context->sprites, 29, -1, objects->destination_left,
             objects->destination_top);
         context->orb->in_portal = false;
     }

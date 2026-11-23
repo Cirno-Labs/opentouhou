@@ -9,5 +9,5 @@
 // that a nonpositive height or a width below 16 draws nothing and keeps the
 // selected page.
 void Scale2x_Copy(
-    VIDEO *video, int16_t destination_left, int16_t destination_top,
-    int16_t source_left, int16_t source_top, int16_t width, int16_t height);
+    int16_t destination_left, int16_t destination_top, int16_t source_left,
+    int16_t source_top, int16_t width, int16_t height);

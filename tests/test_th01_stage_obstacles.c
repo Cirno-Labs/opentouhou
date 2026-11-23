@@ -14,7 +14,6 @@ typedef struct {
     STAGE_GAMEPLAY game;
     ORB orb;
     PLAYER player;
-    VIDEO video;
     PTN sprites;
     uint32_t rng;
     int32_t pellets, updates;
@@ -44,9 +43,9 @@ static void M_Init(CASE *const state)
         .player = { .left = 0 }
     };
     Arena_Init(&state->arena, "stage obstacles", 2 * 1024 * 1024);
-    Video_Init(&state->video, Arena_Allocator(&state->arena));
-    memset(state->video.pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(state->video.pages[1], 2, VIDEO_PAGE_SIZE);
+    Video_Init(Arena_Allocator(&state->arena));
+    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[1], 2, VIDEO_PAGE_SIZE);
     state->sprites =
         (PTN) { .count = 34, .pixels = Arena_Alloc(&state->arena, 34 * 1024) };
     memset(state->sprites.pixels, PTN_TRANSPARENT, 34 * 1024);
@@ -61,7 +60,6 @@ static void M_Init(CASE *const state)
         .orb = &state->orb,
         .player = &state->player,
         .rng = &state->rng,
-        .video = &state->video,
         .sprites = &state->sprites,
         .difficulty = SETTINGS_DIFFICULTY_NORMAL,
         .pellet_group = M_Pellet,
@@ -182,8 +180,8 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
                     state.pellets, rank != 0 && frame >= interval + 10);
                 if (rank != 0 && frame == interval) {
                     CHECK_EQ_INT(state.objects.obstacles[0].turret_flag, 1);
-                    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 96, 128), 9);
-                    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 1, 96, 128), 9);
+                    CHECK_EQ_INT(Th01Test_Pixel(0, 96, 128), 9);
+                    CHECK_EQ_INT(Th01Test_Pixel(1, 96, 128), 9);
                 }
             }
             CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
@@ -304,9 +302,9 @@ TEST(portal_reset_keeps_overlay_artifact_and_can_enter_later_portal)
     CHECK(!state.objects.portal_active);
     CHECK_EQ_INT(state.objects.obstacles[0].frame, 0);
     CHECK_EQ_INT(state.objects.obstacles[1].frame, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 97, 128), 5);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 96, 128), 14);
-    CHECK_EQ_INT(state.video.drawing_page, 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 97, 128), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 96, 128), 14);
+    CHECK_EQ_INT(g_Video.drawing_page, 0);
     Arena_Free(&state.arena);
 }
 
@@ -320,24 +318,24 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         state.orb.previous_left = 499;
         state.orb.previous_top = 349;
         STAGE_ORB_COMPOSITE composite = {};
-        FRAME_VSYNC vsync = { .count1 = counts[variant], .count2 = 44 };
+        Frame_Reset();
+        g_VSync.count1 = counts[variant];
+        g_VSync.count2 = 44;
         CHECK_EQ_INT(
-            Stage_BeginOrbComposite(&composite, &state.context, &vsync),
-            variant != 0);
+            Stage_BeginOrbComposite(&composite, &state.context), variant != 0);
         CHECK_EQ_INT(state.updates, variant != 0);
         CHECK_EQ_INT(state.orb.frames_outside_portal, 1);
         if (variant == 0) {
             const ORB orb = state.orb;
-            CHECK(
-                !Stage_ResumeOrbComposite(&composite, &state.context, &vsync));
+            CHECK(!Stage_ResumeOrbComposite(&composite, &state.context));
             CHECK(memcmp(&orb, &state.orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(state.updates, 0);
-            Frame_VSync(&vsync);
-            CHECK(Stage_ResumeOrbComposite(&composite, &state.context, &vsync));
+            Frame_VSync();
+            CHECK(Stage_ResumeOrbComposite(&composite, &state.context));
         }
         CHECK_EQ_INT(state.updates, 1);
-        CHECK_EQ_INT(vsync.count1, 0);
-        CHECK_EQ_INT(vsync.count2, variant == 0 ? 45 : 44);
+        CHECK_EQ_INT(g_VSync.count1, 0);
+        CHECK_EQ_INT(g_VSync.count2, variant == 0 ? 45 : 44);
         CHECK_EQ_INT(state.orb.previous_left, state.orb.left);
         CHECK_EQ_INT(state.orb.previous_top, state.orb.top);
         CHECK(!state.player.is_hit);
@@ -421,14 +419,15 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     }
     state.orb.previous_left = 500;
     state.orb.previous_top = 350;
-    FRAME_VSYNC vsync = { .count1 = -1 };
+    Frame_Reset();
+    g_VSync.count1 = -1;
     STAGE_ORB_COMPOSITE composite = {};
-    CHECK(Stage_BeginOrbComposite(&composite, &state.context, &vsync));
+    CHECK(Stage_BeginOrbComposite(&composite, &state.context));
     CHECK(state.player.is_hit);
     CHECK(state.game.cleared);
     CHECK_EQ_INT(state.objects.cards[0].flag, STAGE_CARD_REMOVED);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 500, 342), 6);
-    CHECK_EQ_INT(Th01Test_Pixel(&state.video, 0, 500, 350), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 500, 342), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 500, 350), 2);
     CHECK_EQ_INT(state.updates, 1);
     Arena_Free(&state.arena);
 }

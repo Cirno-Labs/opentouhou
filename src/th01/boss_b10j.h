@@ -85,10 +85,8 @@ void B10J_Init(B10J *boss, const ALLOCATOR *allocator);
 // of the final step. Keep resources stable and advance independent audio and
 // VSyncs while suspended. Begin with black pages; the owning stage draws the
 // background afterward. Neither operation allocates or reads files or devices.
-void B10J_BeginSetup(
-    B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync);
-bool B10J_ResumeSetup(
-    B10J *boss, const B10J_CONTEXT *context, const FRAME_VSYNC *vsync);
+void B10J_BeginSetup(B10J *boss, const B10J_CONTEXT *context);
+bool B10J_ResumeSetup(B10J *boss, const B10J_CONTEXT *context);
 
 RESULT B10J_ValidateContext(const B10J_CONTEXT *context);
 
@@ -100,5 +98,4 @@ RESULT B10J_ValidateContext(const B10J_CONTEXT *context);
 // delayed HP gates, broken sprite strips and five-laser cleanup. Calls after
 // completion are inert. Keep borrowed resources stable through every wait.
 // Requires completed setup. Allocates nothing and performs no IO.
-bool B10J_UpdateAndRender(
-    B10J *boss, const B10J_CONTEXT *context, FRAME_VSYNC *vsync);
+bool B10J_UpdateAndRender(B10J *boss, const B10J_CONTEXT *context);

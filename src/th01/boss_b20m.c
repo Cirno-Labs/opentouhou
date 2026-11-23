@@ -191,10 +191,6 @@ void B20M_Setup(B20M *const b, const B20M_CONTEXT *const c)
     c->hit->health->first_redwhite = 2;
 }
 
-static VIDEO *M_Video(const B20M_CONTEXT *const c)
-{
-    return c->hit->display->video;
-}
 static PLAYER *M_Player(const B20M_CONTEXT *const c)
 {
     return c->hit->display->player;
@@ -248,28 +244,26 @@ static void M_Pi(
                                .height = image->height,
                                .stride = image->width,
                                .key = -1 };
-    Video_Blit(
-        M_Video(c), &view, (GFX_RECT) { 0, 0, image->width, image->height }, 0,
-        0);
+    Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
     Palette_Import(&c->hit->palette->resource, image->palette);
     if (show) {
-        Palette_Set(c->hit->palette, M_Video(c), &c->hit->palette->resource);
+        Palette_Set(c->hit->palette, &c->hit->palette->resource);
     }
 }
 static void M_Palette(const B20M_CONTEXT *const c, const PALETTE *const p)
 {
-    Palette_Set(c->hit->palette, M_Video(c), p);
+    Palette_Set(c->hit->palette, p);
 }
 static void M_Color(
     const B20M_CONTEXT *const c, const uint8_t i, const int16_t r,
     const int16_t g, const int16_t blue)
 {
-    Palette_SetColor(c->hit->palette, M_Video(c), i, r, g, blue);
+    Palette_SetColor(c->hit->palette, i, r, g, blue);
 }
 static void M_CopyOther(const B20M_CONTEXT *const c)
 {
-    const int32_t page = M_Video(c)->drawing_page;
-    Video_Copy(M_Video(c), page, (GFX_RECT) { 0, 0, 640, 400 }, 1 - page, 0, 0);
+    const int32_t page = g_Video.drawing_page;
+    Video_Copy(page, (GFX_RECT) { 0, 0, 640, 400 }, 1 - page, 0, 0);
 }
 static void M_CopyRows(
     const B20M_CONTEXT *const c, const int16_t top, const int16_t height)
@@ -278,11 +272,11 @@ static void M_CopyRows(
         const uint16_t offset = (uint16_t)(top * 80 + i) & 0x7fff;
         if (offset < 32000) {
             memcpy(
-                M_Video(c)->pages[0] + offset * 8,
-                M_Video(c)->pages[1] + offset * 8, 8);
+                g_Video.pages[0] + offset * 8, g_Video.pages[1] + offset * 8,
+                8);
         }
     }
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
 }
 static void M_Snap(B20M *const b, const B20M_CONTEXT *const c)
 {
@@ -290,9 +284,9 @@ static void M_Snap(B20M *const b, const B20M_CONTEXT *const c)
     for (int32_t y = 0; y < 96; y++) {
         memcpy(
             b->wand_background + y * 128,
-            M_Video(c)->pages[1] + (b->wand.top + y) * 640 + left, 128);
+            g_Video.pages[1] + (b->wand.top + y) * 640 + left, 128);
     }
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
 }
 static void M_WandPut(const B20M *const b, const B20M_CONTEXT *const c)
 {
@@ -302,14 +296,13 @@ static void M_WandPut(const B20M *const b, const B20M_CONTEXT *const c)
                             .stride = 128,
                             .key = -1 };
     Video_Blit(
-        M_Video(c), &v, (GFX_RECT) { 0, 0, 128, 96 }, b->wand.left / 8 * 8,
-        b->wand.top);
+        &v, (GFX_RECT) { 0, 0, 128, 96 }, b->wand.left / 8 * 8, b->wand.top);
 }
 static void M_WandLower(const B20M *const b, const B20M_CONTEXT *const c)
 {
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_WandPut(b, c);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     M_WandPut(b, c);
 }
 static bool M_WandRaise(
@@ -323,10 +316,10 @@ static bool M_WandRaise(
         b->wand_frame = M_W(b->wand_frame + 1);
         if (b->wand_frame == 2 || b->wand_frame == 16) {
             b->wand.image = b->wand_frame == 2 ? 0 : 1;
-            Video_SelectDrawingPage(M_Video(c), 1);
-            BossAnimation_Put(&b->wand, c->sprites, M_Video(c));
-            Video_SelectDrawingPage(M_Video(c), 0);
-            BossAnimation_Put(&b->wand, c->sprites, M_Video(c));
+            Video_SelectDrawingPage(1);
+            BossAnimation_Put(&b->wand, c->sprites);
+            Video_SelectDrawingPage(0);
+            BossAnimation_Put(&b->wand, c->sprites);
             if (b->wand_frame == 16) {
                 b->wand_frame = 0;
                 return true;
@@ -342,10 +335,9 @@ static void M_Shield(B20M *const b, const B20M_CONTEXT *const c)
     }
     b->shield.image = (b->frame % 40) / 10;
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(M_Video(c), page);
+        Video_SelectDrawingPage(page);
         b->shield.lock_frame = 0;
-        BossEntity_LockedMovePut(
-            &b->shield, c->sprites, M_Video(c), 0, 0, 1, false);
+        BossEntity_LockedMovePut(&b->shield, c->sprites, 0, 0, 1, false);
     }
 }
 static void M_Dress(B20M *const b, const B20M_CONTEXT *const c)
@@ -355,8 +347,8 @@ static void M_Dress(B20M *const b, const B20M_CONTEXT *const c)
     }
     b->dress.image = (b->frame % 60) / 15;
     for (int32_t page = 1; page >= 0; page--) {
-        Video_SelectDrawingPage(M_Video(c), page);
-        BossAnimation_Put(&b->dress, c->sprites, M_Video(c));
+        Video_SelectDrawingPage(page);
+        BossAnimation_Put(&b->dress, c->sprites);
     }
 }
 static void M_Group(
@@ -395,7 +387,7 @@ static void M_Laser(
 static void M_Erase(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y)
 {
-    Sprite_Restore16(M_Video(c), x, y, 48, 32);
+    Sprite_Restore16(x, y, 48, 32);
 }
 static void M_Grc(
     const B20M_CONTEXT *const c, const int16_t left, const int16_t top,
@@ -420,8 +412,8 @@ static void M_Grc(
                     for (int32_t bit = 0; bit < 8; bit++) {
                         if (address >= 0 && address < 32000
                             && pixels[y * 32 + byte * 8 + bit] != 0) {
-                            M_Video(c)->pages[M_Video(c)->drawing_page]
-                                             [address * 8 + bit] = color & 15;
+                            g_Video.pages[g_Video.drawing_page]
+                                         [address * 8 + bit] = color & 15;
                         }
                     }
                 }
@@ -444,8 +436,7 @@ static void M_Mask(
         for (int32_t x = 0; x < 8; x++) {
             const int32_t offset = (top + y) * 640 + left + x;
             if (offset < VIDEO_PAGE_SIZE && (mask[y] & (0x80u >> x)) != 0) {
-                M_Video(c)->pages[M_Video(c)->drawing_page][offset] =
-                    color & 15;
+                g_Video.pages[g_Video.drawing_page][offset] = color & 15;
             }
         }
     }
@@ -454,13 +445,13 @@ static void M_Ellipse(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t rx, const int16_t ry, const uint8_t color, const uint8_t step)
 {
-    Shape_EllipseArcPut(M_Video(c), x, y, rx, ry, color, step, 0, 255);
+    Shape_EllipseArcPut(x, y, rx, ry, color, step, 0, 255);
 }
 static void M_EraseEllipse(
     const B20M_CONTEXT *const c, const int16_t x, const int16_t y,
     const int16_t rx, const int16_t ry, const uint8_t step)
 {
-    Shape_EllipseArcErase(M_Video(c), x, y, rx, ry, step, 0, 255);
+    Shape_EllipseArcErase(x, y, rx, ry, step, 0, 255);
 }
 static void M_Ray(
     B20M *const b, const B20M_CONTEXT *const c, const int16_t ox,
@@ -472,44 +463,40 @@ static void M_Ray(
     }
     if (b->ray_previous_x >= 0 && b->ray_previous_x < 640
         && b->ray_previous_y >= 0 && b->ray_previous_y < 400) {
-        Video_LineErase(
-            M_Video(c), ox, oy, b->ray_previous_x, b->ray_previous_y);
+        Video_LineErase(ox, oy, b->ray_previous_x, b->ray_previous_y);
     }
     if (x >= 0 && x < 640 && y >= 0 && y < 400) {
-        Video_Line(M_Video(c), ox, oy, x, y, color);
+        Video_Line(ox, oy, x, y, color);
     }
     b->ray_previous_x = x;
     b->ray_previous_y = y;
 }
-static bool M_Delay(
-    B20M *const b, FRAME_VSYNC *const vsync, const uint16_t frames)
+static bool M_Delay(B20M *const b, const uint16_t frames)
 {
-    if (Frame_DelayReady(vsync, frames)) {
+    if (Frame_DelayReady(frames)) {
         return true;
     }
     b->wait_kind = 2;
     b->wait_frames = frames;
     return false;
 }
-static bool M_Scroll(
-    B20M *const b, FRAME_VSYNC *const vsync, const int16_t line)
+static bool M_Scroll(B20M *const b, const int16_t line)
 {
     b->raw_scroll = line;
     b->wait_kind = 1;
-    Frame_BeginWait(&b->wait, vsync);
+    Frame_BeginWait(&b->wait);
     return false;
 }
 static bool M_Ready(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t tick)
+    B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
     if (b->wait_kind == 1) {
-        if (!Frame_WaitReady(&b->wait, vsync)) {
+        if (!Frame_WaitReady(&b->wait)) {
             return false;
         }
-        Video_SetScroll(M_Video(c), b->raw_scroll);
+        Video_SetScroll(b->raw_scroll);
     } else if (b->wait_kind == 2) {
-        if (!Frame_DelayReady(vsync, b->wait_frames)) {
+        if (!Frame_DelayReady(b->wait_frames)) {
             return false;
         }
     } else if (b->wait_kind == 3 && tick - b->wait_tick < 6) {
@@ -521,8 +508,7 @@ static bool M_Ready(
 static TRANSITION_CONTEXT M_TransitionContext(
     B20M *const b, const B20M_CONTEXT *const c, const bool fade)
 {
-    return (TRANSITION_CONTEXT) { .video = M_Video(c),
-                                  .palette = c->hit->palette,
+    return (TRANSITION_CONTEXT) { .palette = c->hit->palette,
                                   .current = &c->hit->palette->saved,
                                   .target = fade ? &c->hit->palette->resource
                                                  : &c->hit->palette->saved,
@@ -635,7 +621,7 @@ static uint8_t M_CompareByte(const B20M_CONTEXT *const c, const int32_t address)
     uint8_t result = 0;
     if (offset < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
-            if (M_Video(c)->pages[1][offset * 8 + bit] == 12) {
+            if (g_Video.pages[1][offset * 8 + bit] == 12) {
                 result |= 0x80u >> bit;
             }
         }
@@ -650,7 +636,7 @@ static void M_MaskedByte(
     if (offset < 32000) {
         for (int32_t bit = 0; bit < 8; bit++) {
             if ((mask & (0x80u >> bit)) != 0) {
-                M_Video(c)->pages[0][offset * 8 + bit] = color & 15;
+                g_Video.pages[0][offset * 8 + bit] = color & 15;
             }
         }
     }
@@ -671,7 +657,7 @@ static void M_Particle(
                 c, M_W(p + 1), M_CompareByte(c, M_W(p + 1)) & 128, color);
         }
     }
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
 }
 static void M_Vertical(
     B20M *const b, const B20M_CONTEXT *const c, const bool bottom)
@@ -784,22 +770,20 @@ static void M_Horizontal(B20M *const b, const B20M_CONTEXT *const c)
             (uint8_t)p->color[i], true);
     }
 }
-static void M_Hud(const B20M_CONTEXT *c, FRAME_VSYNC *vsync);
+static void M_Hud(const B20M_CONTEXT *c);
 static void M_GustFinish(
-    B20M *const b, const B20M_CONTEXT *const c, const int16_t image,
-    FRAME_VSYNC *const vsync)
+    B20M *const b, const B20M_CONTEXT *const c, const int16_t image)
 {
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[image], true);
     M_CopyOther(c);
     b->stage_palette = c->hit->palette->saved;
-    Video_SelectDrawingPage(M_Video(c), 0);
-    M_Hud(c, vsync);
-    HudHp_Rerender(c->hit->health, M_Video(c), b->hp);
+    Video_SelectDrawingPage(0);
+    M_Hud(c);
+    HudHp_Rerender(c->hit->health, b->hp);
     b->frame = 0;
 }
-static bool M_Gust(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Gust(B20M *const b, const B20M_CONTEXT *const c)
 {
     if (b->frame == 20) {
         b->gust_id = 0;
@@ -860,13 +844,13 @@ static bool M_Gust(
             b->gust_offset = b->gust_x / 8;
         }
     }
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     if (b->gust_x > 608) {
         b->gust_id = M_W(b->gust_id + 1);
         b->frame = 49;
         if (b->gust_id >= 3) {
             b->resume_stage = 4;
-            return M_Scroll(b, vsync, 0);
+            return M_Scroll(b, 0);
         }
     }
     return true;
@@ -1134,8 +1118,7 @@ static void M_Flake(B20M *const b, const B20M_CONTEXT *const c)
     }
     if (b->flake_state == 2) {
         Sprite_Restore16(
-            M_Video(c), Math16_ToPixel(b->flake_left),
-            Math16_ToPixel(b->flake_top), 16, 8);
+            Math16_ToPixel(b->flake_left), Math16_ToPixel(b->flake_top), 16, 8);
         b->flake_top = M_W(b->flake_top + b->flake_velocity_y);
         if (b->flake_top >= 6336) {
             b->flake_state = 3;
@@ -1162,7 +1145,7 @@ static void M_Flake(B20M *const b, const B20M_CONTEXT *const c)
         b->flake_state = M_W(b->flake_state + 1);
     }
     if (b->flake_state >= 5 && b->flake_state % 8 == 0) {
-        Sprite_Restore16(M_Video(c), b->star_left, b->star_top, 16, 8);
+        Sprite_Restore16(b->star_left, b->star_top, 16, 8);
         M_FlakeEllipse(b, c, b->radius_outer_1, b->radius_outer_2, 0, 8, true);
         M_FlakeEllipse(b, c, b->radius_outer_2, b->radius_outer_1, 0, 8, true);
         M_FlakeEllipse(b, c, b->radius_inner, b->radius_inner, 0, 6, true);
@@ -1271,20 +1254,19 @@ static void M_FourLasers(B20M *const b, const B20M_CONTEXT *const c)
         b->frame = 0;
     }
 }
-static bool M_Shake(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Shake(B20M *const b, const B20M_CONTEXT *const c)
 {
     if (b->frame < 50) {
         if (b->frame % 8 == 0 || b->frame % 8 == 4) {
             b->resume_stage = 1;
-            return M_Scroll(b, vsync, b->frame % 8 == 0 ? 396 : 404);
+            return M_Scroll(b, b->frame % 8 == 0 ? 396 : 404);
         }
         if (b->frame % 4 == 0) {
             M_Effect(c, 7);
         }
     } else if (b->frame == 50) {
         b->resume_stage = 2;
-        return M_Scroll(b, vsync, 0);
+        return M_Scroll(b, 0);
     }
     return true;
 }
@@ -1374,8 +1356,7 @@ static void M_RaysDraw(
         M_Grc(c, M_DebrisX(r, left, offset, 0), M_W(r->y - 16), 0, r->image, 7);
         M_Ray(b, c, ox, oy, M_RayX(r, left), r->y, 7);
     } else {
-        Sprite_Restore16(
-            M_Video(c), M_DebrisX(r, left, offset, 0), M_W(r->y - 8), 32, 32);
+        Sprite_Restore16(M_DebrisX(r, left, offset, 0), M_W(r->y - 8), 32, 32);
         M_Ray(b, c, ox, oy, M_RayX(r, left), r->y, 7);
         M_Grc(c, M_DebrisX(r, left, offset, 0), M_W(r->y - 16), 0, r->image, 7);
     }
@@ -1418,7 +1399,7 @@ static void M_SymmetricBirds(B20M *const b, const B20M_CONTEXT *const c)
         return;
     }
     if (b->frame == 100) {
-        Video_LineErase(M_Video(c), 320, 120, M_W(M_RayX(r, false) + 2), r->y);
+        Video_LineErase(320, 120, M_W(M_RayX(r, false) + 2), r->y);
         return;
     }
     if (b->frame % 10 == 0) {
@@ -1475,7 +1456,7 @@ static void M_Stacks(B20M *const b, const B20M_CONTEXT *const c)
         }
         r->x = M_W(r->x + 8);
     } else if (b->frame == 130) {
-        Video_LineErase(M_Video(c), 320, 120, M_W(M_RayX(r, false) + 8), r->y);
+        Video_LineErase(320, 120, M_W(M_RayX(r, false) + 8), r->y);
         r->x = 0;
     } else if (b->frame > 150 && b->frame < 350) {
         if (b->frame % 10 == 0) {
@@ -1605,12 +1586,10 @@ static void M_SealRain(B20M *const b, const B20M_CONTEXT *const c)
         return;
     }
     M_Effect(c, 3);
-    Sprite_Restore16(
-        M_Video(c), M_DebrisX(r, false, 32, 0), M_W(r->y - 16), 32, 40);
-    Sprite_Restore16(
-        M_Video(c), M_DebrisX(r, true, 32, 0), M_W(r->y - 16), 32, 50);
-    Video_LineErase(M_Video(c), 320, 185, M_RayX(r, true), M_W(r->y + 4));
-    Video_LineErase(M_Video(c), 320, 185, M_RayX(r, false), M_W(r->y + 4));
+    Sprite_Restore16(M_DebrisX(r, false, 32, 0), M_W(r->y - 16), 32, 40);
+    Sprite_Restore16(M_DebrisX(r, true, 32, 0), M_W(r->y - 16), 32, 50);
+    Video_LineErase(320, 185, M_RayX(r, true), M_W(r->y + 4));
+    Video_LineErase(320, 185, M_RayX(r, false), M_W(r->y + 4));
     for (int32_t i = 0; i < b->pattern_state; i++) {
         M_Rain(
             c, (int16_t)((640 / b->pattern_state) * i), 185,
@@ -1686,8 +1665,7 @@ static void M_Leaves(
         }
         if (p->flag[i] == 1 || p->flag[i] == 6) {
             if (M_LeafVisible(p, i)) {
-                Sprite_Restore16(
-                    M_Video(c), p->left[i] / 10, p->top[i] / 10, 16, 8);
+                Sprite_Restore16(p->left[i] / 10, p->top[i] / 10, 16, 8);
             }
             p->left[i] = M_W(p->left[i] + p->velocity_x[i]);
             p->top[i] = M_W(p->top[i] + p->velocity_y[i]);
@@ -1748,48 +1726,44 @@ static void M_Leaves(
         }
     }
 }
-static void M_Hud(const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static void M_Hud(const B20M_CONTEXT *const c)
 {
     const TIMER_CONTEXT timer = { .hud = c->hit->hud,
                                   .display = c->hit->display,
-                                  .tram = c->tram,
-                                  .vsync = vsync,
                                   .pellets = c->pellets,
                                   .shared = c->pellet_shared,
                                   .rng = c->rng,
                                   .effect = c->hit->effect,
                                   .user = c->hit->user };
     *c->first_stage = true;
-    Timer_Redraw(c->timer, &timer, true, *c->timer_initialized, 0);
+    StageTimer_Redraw(&timer, true, *c->timer_initialized, 0);
     Hud_ScoreAndCombo(c->hit->hud, c->hit->display);
 }
 void B20M_BeginEntrance(B20M *const b, const B20M_CONTEXT *const c)
 {
     ASSERT(!b->entrance_active && b->sequence == 0 && b->wait_kind == 0);
     c->pellets->interlace = true;
-    Tram_Fill(c->tram, (GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
+    Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->lower, true);
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, true);
-    Video_SelectDrawingPage(M_Video(c), 0);
-    StageObjects_Init(
-        c->objects, nullptr, 19, false, nullptr, M_Video(c), nullptr, c->rng);
+    Video_SelectDrawingPage(0);
+    StageObjects_Init(c->objects, nullptr, 19, false, nullptr, nullptr, c->rng);
     M_Audio(c, B20M_AUDIO_LOAD_MUSIC);
     M_Audio(c, B20M_AUDIO_LOAD_EFFECTS);
     M_Audio(c, B20M_AUDIO_PLAY);
-    Tram_Clear(c->tram);
+    Tram_Clear();
     b->scroll_line = 399;
     b->sequence_stage = 1;
     b->entrance_active = true;
 }
 bool B20M_ResumeEntrance(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t tick)
+    B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
     if (!b->entrance_active) {
         return true;
     }
-    if (!M_Ready(b, c, vsync, tick)) {
+    if (!M_Ready(b, c, tick)) {
         return false;
     }
     for (;;) {
@@ -1797,22 +1771,22 @@ bool B20M_ResumeEntrance(
         case 1:
             if (b->scroll_line < 0) {
                 b->sequence_stage = 4;
-                return M_Scroll(b, vsync, 0);
+                return M_Scroll(b, 0);
             }
             b->sequence_stage = 2;
-            return M_Scroll(b, vsync, b->scroll_line);
+            return M_Scroll(b, b->scroll_line);
         case 2:
             M_CopyRows(c, b->scroll_line, 1);
             b->scroll_line--;
             b->sequence_stage = 1;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
         case 4:
-            Video_SelectDrawingPage(M_Video(c), 1);
+            Video_SelectDrawingPage(1);
             M_Pi(c, &c->assets->backgrounds[0], true);
-            Video_SelectDrawingPage(M_Video(c), 0);
+            Video_SelectDrawingPage(0);
             b->sequence_stage = 5;
             {
                 const TRANSITION_CONTEXT t = M_TransitionContext(b, c, false);
@@ -1843,16 +1817,14 @@ static int16_t M_InvertRings(const B20M_CONTEXT *const c, const int16_t base)
     for (int32_t i = 32; i < 160; i++) {
         const int16_t r = M_W(base * (i / 32));
         outside += !Video_Invert32(
-            M_Video(c), Math16_PolarY(304, r, i * 8),
-            Math16_PolarX(180, r, i * 8), 2);
+            Math16_PolarY(304, r, i * 8), Math16_PolarX(180, r, i * 8), 2);
     }
     return outside;
 }
 static bool M_RingEntrance(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t tick)
+    B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
-    if (!M_Ready(b, c, vsync, tick)) {
+    if (!M_Ready(b, c, tick)) {
         return false;
     }
     for (;;) {
@@ -1883,7 +1855,7 @@ static bool M_RingEntrance(
             b->sequence = 0;
             return true;
         }
-        if (b->frame % 2 != 0 && !M_Delay(b, vsync, 1)) {
+        if (b->frame % 2 != 0 && !M_Delay(b, 1)) {
             return false;
         }
     }
@@ -1893,8 +1865,8 @@ static void M_BeginTransform(B20M *const b, const B20M_CONTEXT *const c)
     b->frame = 0;
     b->hit.frame = 399;
     Shots_EraseAndReset(c->hit->shots, c->hit->shots_output);
-    Pellets_EraseAndResetMoving(c->pellets, M_Video(c));
-    ShootoutLasers_EraseAndReset(c->lasers, M_Video(c), 10);
+    Pellets_EraseAndResetMoving(c->pellets);
+    ShootoutLasers_EraseAndReset(c->lasers, 10);
     ORB *const orb = c->hit->orb;
     orb->left = 600;
     orb->top = 280;
@@ -1904,26 +1876,25 @@ static void M_BeginTransform(B20M *const b, const B20M_CONTEXT *const c)
     M_Player(c)->left = 304;
     M_Player(c)->deflecting = false;
     M_Player(c)->bomb_damaging = false;
-    Player_Reset(M_Player(c), c->input, c->hit->display->rank);
+    Player_Reset(M_Player(c), c->hit->display->rank);
     b->hit.invincible = false;
     *c->rng = c->hit->frame_rand;
     M_Audio(c, B20M_AUDIO_FADE);
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
     M_Color(c, 15, 0, 0, 0);
     b->boss_palette = c->hit->palette->saved;
     M_CopyOther(c);
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[4], false);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     b->sequence = 2;
     b->sequence_stage = 1;
 }
 static bool M_Transform(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t tick)
+    B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
-    if (!M_Ready(b, c, vsync, tick)) {
+    if (!M_Ready(b, c, tick)) {
         return false;
     }
     for (;;) {
@@ -1937,12 +1908,12 @@ static bool M_Transform(
                     M_Palette(c, &b->boss_palette);
                 }
                 b->sequence_stage = 2;
-                return M_Scroll(b, vsync, b->frame % 2 == 0 ? 416 : 386);
+                return M_Scroll(b, b->frame % 2 == 0 ? 416 : 386);
             }
             if (b->frame == 200) {
                 M_Palette(c, &b->boss_palette);
                 b->sequence_stage = 2;
-                return M_Scroll(b, vsync, 0);
+                return M_Scroll(b, 0);
             }
             for (int32_t i = 0; i < 3; i++) {
                 c->hit->palette->resource.colors[15][i] = 0;
@@ -1951,21 +1922,21 @@ static bool M_Transform(
                 const TRANSITION_CONTEXT t = M_TransitionContext(b, c, true);
                 ASSERT(Transition_BeginDiagonal(&b->transition, &t, 0, tick));
             }
-            Video_SelectDrawingPage(M_Video(c), 1);
+            Video_SelectDrawingPage(1);
             M_Audio(c, B20M_AUDIO_LOAD_SECOND_MUSIC);
             M_Audio(c, B20M_AUDIO_PLAY);
             M_Pi(c, &c->assets->backgrounds[5], true);
             M_Color(c, 6, 0, 0, 0);
             M_CopyOther(c);
-            M_Hud(c, vsync);
+            M_Hud(c);
             b->sequence_stage = 3;
-            return M_Scroll(b, vsync, 0);
+            return M_Scroll(b, 0);
         case 2:
             if (b->frame < 200 && b->frame % 4 == 0) {
                 M_Effect(c, 9);
             }
             b->sequence_stage = 1;
-            if (!M_Delay(b, vsync, 1)) {
+            if (!M_Delay(b, 1)) {
                 return false;
             }
             continue;
@@ -1994,20 +1965,19 @@ static bool M_Transform(
 }
 static void M_BeginDefeat(B20M *const b, const B20M_CONTEXT *const c)
 {
-    Video_SelectDrawingPage(M_Video(c), 1);
+    Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->backgrounds[5], true);
     M_Color(c, 6, 0, 0, 0);
     b->boss_palette = c->hit->palette->saved;
     M_CopyOther(c);
-    Video_SelectDrawingPage(M_Video(c), 0);
+    Video_SelectDrawingPage(0);
     b->sequence = 3;
     b->sequence_stage = 1;
 }
 static bool M_Defeat(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t tick)
+    B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
-    if (!M_Ready(b, c, vsync, tick)) {
+    if (!M_Ready(b, c, tick)) {
         return false;
     }
     for (;;) {
@@ -2016,7 +1986,7 @@ static bool M_Defeat(
             b->frame = M_W(b->frame + 1);
             if (b->frame < 230) {
                 b->sequence_stage = 2;
-                return M_Scroll(b, vsync, b->frame % 2 == 0 ? 416 : 386);
+                return M_Scroll(b, b->frame % 2 == 0 ? 416 : 386);
             }
             b->sequence_stage = 2;
             continue;
@@ -2038,11 +2008,11 @@ static bool M_Defeat(
                 }
                 if (b->frame > 230) {
                     b->sequence_stage = 3;
-                    return M_Scroll(b, vsync, 0);
+                    return M_Scroll(b, 0);
                 }
             }
             b->sequence_stage = 1;
-            if (!M_Delay(b, vsync, 2)) {
+            if (!M_Delay(b, 2)) {
                 return false;
             }
             continue;
@@ -2124,8 +2094,7 @@ static void M_Pulse(B20M *const b, const B20M_CONTEXT *const c)
     M_Palette(c, &c->hit->palette->saved);
     b->boss_palette = c->hit->palette->saved;
 }
-static bool M_Pattern(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Pattern(B20M *const b, const B20M_CONTEXT *const c)
 {
     switch (b->call_phase) {
     case 1:
@@ -2152,7 +2121,7 @@ static bool M_Pattern(
         if (b->pattern == 0) {
             M_FourLasers(b, c);
         } else if (b->pattern == 1 || b->pattern == 4) {
-            return M_Shake(b, c, vsync);
+            return M_Shake(b, c);
         } else if (b->pattern == 2 || b->pattern == 5) {
             M_FourLasers(b, c);
             M_TopRain(b, c);
@@ -2272,23 +2241,22 @@ static void M_AfterGust(B20M *const b, const B20M_CONTEXT *const c)
                                         : 1 + M_Random(c) % 6;
 }
 bool B20M_UpdateAndRender(
-    B20M *const b, const B20M_CONTEXT *const c, FRAME_VSYNC *const vsync,
-    const uint64_t tick)
+    B20M *const b, const B20M_CONTEXT *const c, const uint64_t tick)
 {
     if (b->finished) {
         return true;
     }
     if (b->sequence == 1) {
-        return M_RingEntrance(b, c, vsync, tick);
+        return M_RingEntrance(b, c, tick);
     }
     if (b->sequence == 2) {
-        return M_Transform(b, c, vsync, tick);
+        return M_Transform(b, c, tick);
     }
     if (b->sequence == 3) {
-        return M_Defeat(b, c, vsync, tick);
+        return M_Defeat(b, c, tick);
     }
     if (b->resume_stage != 0) {
-        if (!M_Ready(b, c, vsync, tick)) {
+        if (!M_Ready(b, c, tick)) {
             return false;
         }
         const uint8_t resume = b->resume_stage;
@@ -2306,11 +2274,11 @@ bool B20M_UpdateAndRender(
                 : b->call_phase == 4                 ? 2
                 : b->call_phase == 6                 ? 3
                                                      : 0;
-            M_GustFinish(b, c, image, vsync);
+            M_GustFinish(b, c, image);
             M_AfterGust(b, c);
             return true;
         }
-        if (!M_Pattern(b, c, vsync)) {
+        if (!M_Pattern(b, c)) {
             return false;
         }
         return M_Tail(b, c);
@@ -2323,20 +2291,20 @@ bool B20M_UpdateAndRender(
         b->stage_palette = b->boss_palette;
         *c->rng = c->hit->frame_rand;
         b->sequence = 1;
-        return M_RingEntrance(b, c, vsync, tick);
+        return M_RingEntrance(b, c, tick);
     }
     if (b->phase == 99) {
         M_BeginTransform(b, c);
-        return M_Transform(b, c, vsync, tick);
+        return M_Transform(b, c, tick);
     }
     if (b->phase == 101) {
         M_BeginDefeat(b, c);
-        return M_Defeat(b, c, vsync, tick);
+        return M_Defeat(b, c, tick);
     }
     b->call_phase = b->phase;
     if (b->phase >= 2 && b->phase <= 8 && b->phase % 2 == 0) {
         b->frame = M_W(b->frame + 1);
-        if (!M_Gust(b, c, vsync)) {
+        if (!M_Gust(b, c)) {
             return false;
         }
         M_AfterGust(b, c);
@@ -2347,8 +2315,7 @@ bool B20M_UpdateAndRender(
         return true;
     }
     if ((b->phase == 1 || b->phase == 100) && !b->hp_bar_filled) {
-        b->hp_bar_filled =
-            HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
+        b->hp_bar_filled = HudHp_Increment(c->hit->health, b->hp, b->frame);
     }
     b->frame = M_W(b->frame + 1);
     b->hit.frame = M_W(b->hit.frame + 1);
@@ -2366,7 +2333,7 @@ bool B20M_UpdateAndRender(
     if ((b->phase == 1 || b->phase == 7) && !M_BirdsUpdate(b, c, tick)) {
         return false;
     }
-    if (!M_Pattern(b, c, vsync)) {
+    if (!M_Pattern(b, c)) {
         return false;
     }
     return M_Tail(b, c);
@@ -2384,17 +2351,14 @@ RESULT B20M_ValidateContext(const B20M_CONTEXT *const c)
             || c->hit->display->font == nullptr
             || c->hit->display->sprites == nullptr
             || c->hit->display->mask == nullptr
-            || c->hit->display->video == nullptr
             || c->hit->display->player == nullptr
             || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
             || c->hit->orb == nullptr || c->hit->test_damage == nullptr
             || c->hit->effect == nullptr || c->pellets == nullptr
             || c->pellet_shared == nullptr || c->lasers == nullptr
-            || c->objects == nullptr || c->tram == nullptr
-            || c->input == nullptr || c->rng == nullptr
+            || c->objects == nullptr || c->rng == nullptr
             || c->game_cleared == nullptr || c->audio == nullptr
-            || c->timer == nullptr || c->first_stage == nullptr
-            || c->timer_initialized == nullptr,
+            || c->first_stage == nullptr || c->timer_initialized == nullptr,
         "Missing Sariel context");
     MUST(B20M_ValidateAssets(c->assets));
     MUST(Shots_ValidateSprites(c->hit->display->sprites));
@@ -2403,7 +2367,7 @@ RESULT B20M_ValidateContext(const B20M_CONTEXT *const c)
         c->hit->display->font));
     FAIL_IF(
         c->hit->health->backgrounds == nullptr
-            || c->hit->hud->numbers == nullptr || c->tram->pixels == nullptr,
+            || c->hit->hud->numbers == nullptr || g_Tram.pixels == nullptr,
         "Missing Sariel display storage");
     return OK;
 }

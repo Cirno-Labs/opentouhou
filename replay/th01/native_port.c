@@ -39,7 +39,7 @@ static void M_VSync(void *const arg)
 
 // Applies the case's start values to the session of the first Start, as
 // the dosbox port does to the resident block that REIIDEN reads.
-static void M_Start(void *const arg, SESSION *const session)
+static void M_Start(void *const arg)
 {
     TH01_NATIVE *const native = arg;
     if (native->started) {
@@ -54,28 +54,28 @@ static void M_Start(void *const arg, SESSION *const session)
         const uint32_t value = starts[i].value;
         switch (starts[i].field) {
         case TH01_START_stage:
-            session->stage_id = (int16_t)value;
+            g_Session.stage_id = (int16_t)value;
             break;
         case TH01_START_route:
-            session->route = (uint8_t)value;
+            g_Session.route = (uint8_t)value;
             break;
         case TH01_START_difficulty:
-            session->settings.difficulty = (int32_t)value;
+            g_Session.settings.difficulty = (int32_t)value;
             break;
         case TH01_START_lives:
-            session->lives = (int16_t)value;
+            g_Session.lives = (int16_t)value;
             break;
         case TH01_START_bombs:
-            session->bombs = (int16_t)value;
+            g_Session.bombs = (int16_t)value;
             break;
         case TH01_START_score:
-            session->score = value;
+            g_Session.score = value;
             break;
         case TH01_START_continues:
-            session->continues_total = (int32_t)value;
+            g_Session.continues_total = (int32_t)value;
             break;
         case TH01_START_pellet_speed:
-            session->pellet_speed = (int16_t)value;
+            g_Session.pellet_speed = (int16_t)value;
             break;
         case TH01_START_boss_hp:
             break;
@@ -85,9 +85,9 @@ static void M_Start(void *const arg, SESSION *const session)
             break;
         }
     }
-    const size_t scene = (size_t)session->stage_id / 5;
-    if (scene_set && scene < ARRAY_SIZE(session->continues_per_scene)) {
-        session->continues_per_scene[scene] = scene_continues;
+    const size_t scene = (size_t)g_Session.stage_id / 5;
+    if (scene_set && scene < ARRAY_SIZE(g_Session.continues_per_scene)) {
+        g_Session.continues_per_scene[scene] = scene_continues;
     }
 }
 

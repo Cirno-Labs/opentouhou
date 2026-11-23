@@ -4,12 +4,11 @@
 
 #include <string.h>
 
-void Bonus_RowShift32(
-    VIDEO *const video, const uint16_t y, const uint16_t transferred)
+void Bonus_RowShift32(const uint16_t y, const uint16_t transferred)
 {
     ASSERT(y < VIDEO_HEIGHT && transferred <= 76 && transferred % 4 == 0);
-    uint8_t *const row = video->pages[0] + (size_t)y * VIDEO_WIDTH;
-    const uint8_t *const source = video->pages[1] + (size_t)y * VIDEO_WIDTH;
+    uint8_t *const row = g_Video.pages[0] + (size_t)y * VIDEO_WIDTH;
+    const uint8_t *const source = g_Video.pages[1] + (size_t)y * VIDEO_WIDTH;
     if ((y & 1) != 0) {
         memmove(row + 32, row, VIDEO_WIDTH - 32);
         memcpy(row, source + VIDEO_WIDTH - 32 - transferred * 8, 32);
@@ -17,7 +16,7 @@ void Bonus_RowShift32(
         memmove(row, row + 32, VIDEO_WIDTH - 32);
         memcpy(row + VIDEO_WIDTH - 32, source + transferred * 8, 32);
     }
-    Video_SelectDrawingPage(video, 0);
+    Video_SelectDrawingPage(0);
 }
 
 void Bonus_BeginRowTransition(BONUS_ROW_TRANSITION *const t)
@@ -27,9 +26,8 @@ void Bonus_BeginRowTransition(BONUS_ROW_TRANSITION *const t)
 }
 
 bool Bonus_ResumeRowTransition(
-    BONUS_ROW_TRANSITION *const t, VIDEO *const video,
-    PALETTE_STATE *const palette, const PALETTE *const target,
-    FRAME_VSYNC *const vsync)
+    BONUS_ROW_TRANSITION *const t, PALETTE_STATE *const palette,
+    const PALETTE *const target)
 {
     while (t->pending) {
         if (!t->waiting) {
@@ -37,7 +35,7 @@ bool Bonus_ResumeRowTransition(
                 if (!t->active[y]) {
                     continue;
                 }
-                Bonus_RowShift32(video, y, t->transferred[y]);
+                Bonus_RowShift32(y, t->transferred[y]);
                 t->transferred[y] += 4;
                 if (t->transferred[y] >= 80) {
                     t->active[y] = false;
@@ -46,7 +44,7 @@ bool Bonus_ResumeRowTransition(
             }
             t->waiting = true;
         }
-        if (!Frame_DelayReady(vsync, 2)) {
+        if (!Frame_DelayReady(2)) {
             return false;
         }
         t->waiting = false;
@@ -61,7 +59,7 @@ bool Bonus_ResumeRowTransition(
         }
         t->activated += 8;
         if (t->done != t->previous_done && (t->activated & 15) == 0) {
-            Palette_StepTo(palette, video, target, false);
+            Palette_StepTo(palette, target, false);
         }
         t->previous_done = t->done;
     }

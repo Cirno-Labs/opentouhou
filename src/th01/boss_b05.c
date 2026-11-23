@@ -12,11 +12,6 @@ typedef enum {
     B05_FIRE_SLING,
 } B05_FIRE;
 
-static VIDEO *M_Video(const B05_CONTEXT *const c)
-{
-    return c->hit->display->video;
-}
-
 static int16_t M_Rank(
     const B05_CONTEXT *const c, const int16_t easy, const int16_t normal,
     const int16_t hard, const int16_t lunatic)
@@ -38,7 +33,7 @@ static void M_Put(
     const BOSS_ENTITY *const entity, const int16_t image)
 {
     BossEntity_RestorePut(
-        entity, c->sprites, M_Video(c), b->sphere.left, b->sphere.top, image);
+        entity, c->sprites, b->sphere.left, b->sphere.top, image);
 }
 
 static void M_Rotate(
@@ -87,16 +82,14 @@ static void M_Move(
     BOSS_ENTITY *const e = &b->sphere;
     if (dy < 0) {
         Sprite_Restore16(
-            M_Video(c), e->left, Math16_Wrap(e->top + dy + 96), 96,
-            Math16_Wrap(-dy));
+            e->left, Math16_Wrap(e->top + dy + 96), 96, Math16_Wrap(-dy));
     } else if (dy > 0) {
-        Sprite_Restore16(M_Video(c), e->left, e->top, 96, dy);
+        Sprite_Restore16(e->left, e->top, 96, dy);
     }
     if (dx > 0) {
-        Sprite_Restore16(M_Video(c), e->left, e->top, 8, 96);
+        Sprite_Restore16(e->left, e->top, 8, 96);
     } else if (dx < 0) {
-        Sprite_Restore16(
-            M_Video(c), Math16_Wrap(e->left + 96 - dy), e->top, 8, 96);
+        Sprite_Restore16(Math16_Wrap(e->left + 96 - dy), e->top, 8, 96);
     }
     e->top = Math16_Wrap(e->top + dy);
     e->left = Math16_Wrap(e->left + dx);
@@ -276,12 +269,11 @@ static void M_Cross(B05 *const b, const B05_CONTEXT *const c)
     }
 }
 
-static bool M_Entrance(
-    B05 *const b, const B05_CONTEXT *const c, FRAME_VSYNC *const vsync)
+static bool M_Entrance(B05 *const b, const B05_CONTEXT *const c)
 {
     for (;;) {
         if (b->pending == B05_ENTRANCE_DELAY) {
-            if (!Frame_DelayReady(vsync, 1)) {
+            if (!Frame_DelayReady(1)) {
                 return false;
             }
             if (b->frame == 200) {
@@ -290,7 +282,7 @@ static bool M_Entrance(
                 b->hit.invincible = false;
                 b->frame = 0;
                 b->hp_bar_filled = false;
-                Palette_Set(c->hit->palette, M_Video(c), &b->boss_palette);
+                Palette_Set(c->hit->palette, &b->boss_palette);
                 *c->stage_palette = c->hit->palette->saved;
                 b->boss_palette = c->hit->palette->saved;
                 b->sphere.orb_inactive = false;
@@ -301,8 +293,7 @@ static bool M_Entrance(
             }
             b->pending = B05_ENTRANCE;
         }
-        BossEntity_LockedMovePut(
-            &b->sphere, c->sprites, M_Video(c), 0, 0, 3, true);
+        BossEntity_LockedMovePut(&b->sphere, c->sprites, 0, 0, 3, true);
         b->frame++;
         if (b->frame % b->rotation_interval == 0) {
             M_Rotate(b, c, 1, 1);
@@ -323,19 +314,17 @@ static bool M_Entrance(
                     }
                 }
             }
-            Palette_Set(c->hit->palette, M_Video(c), &c->hit->palette->saved);
+            Palette_Set(c->hit->palette, &c->hit->palette->saved);
         }
         b->pending = B05_ENTRANCE_DELAY;
     }
 }
 
 static bool M_Death(
-    B05 *const b, const B05_CONTEXT *const c, const TH01_INPUT *const raw,
-    FRAME_VSYNC *const vsync)
+    B05 *const b, const B05_CONTEXT *const c, const TH01_INPUT *const raw)
 {
     if (b->pending == B05_DEFEAT) {
         const BOSS_DEFEAT_CONTEXT defeat = {
-            .video = M_Video(c),
             .palette = c->hit->palette,
             .post_defeat = &b->post_defeat,
             .miko = c->miko,
@@ -343,14 +332,14 @@ static bool M_Death(
             .origin_top = &b->sphere.top,
             .stage_cleared = c->route->stage_cleared,
         };
-        if (!BossDefeat_Resume(&b->defeat, &defeat, vsync)) {
+        if (!BossDefeat_Resume(&b->defeat, &defeat)) {
             return false;
         }
         b->pending = B05_ROUTE;
-        if (!RouteSelect_Begin(&b->route_selection, c->route, raw, vsync)) {
+        if (!RouteSelect_Begin(&b->route_selection, c->route, raw)) {
             return false;
         }
-    } else if (!RouteSelect_Resume(&b->route_selection, c->route, raw, vsync)) {
+    } else if (!RouteSelect_Resume(&b->route_selection, c->route, raw)) {
         return false;
     }
     b->pending = B05_FINISHED;
@@ -426,10 +415,9 @@ void B05_Setup(B05 *const boss, const B05_CONTEXT *const c)
         BossEntity_Bind(&boss->person, c->sprites, 2, &c->assets->person)));
     boss->post_defeat = c->assets->palette;
     *c->stage_palette = boss->post_defeat;
-    Palette_Set(c->hit->palette, c->hit->display->video, &boss->post_defeat);
+    Palette_Set(c->hit->palette, &boss->post_defeat);
     boss->boss_palette = c->hit->palette->saved;
-    Palette_Set(
-        c->hit->palette, c->hit->display->video, &c->hit->palette->saved);
+    Palette_Set(c->hit->palette, &c->hit->palette->saved);
     BossEntity_SetPosition(
         &boss->sphere, 640, 64, (BOSS_BOUNDS) { 0, 736, 64, 304 });
     BossEntity_SetOrbHitbox(&boss->sphere, (BOSS_BOUNDS) { 8, 88, 8, 88 });
@@ -454,7 +442,6 @@ RESULT B05_ValidateContext(const B05_CONTEXT *const c)
             || c->hit->display->high_score == nullptr
             || c->hit->display->font == nullptr
             || c->hit->display->sprites == nullptr
-            || c->hit->display->video == nullptr
             || c->hit->display->player == nullptr
             || c->hit->display->gameplay == nullptr || c->hit->shots == nullptr
             || c->hit->orb == nullptr || c->hit->test_damage == nullptr
@@ -477,46 +464,44 @@ RESULT B05_ValidateContext(const B05_CONTEXT *const c)
     MUST(BossDefeat_ValidateSprites(c->miko));
     FAIL_IF(
         c->route->assets == nullptr || c->route->scene == nullptr
-            || c->route->input == nullptr || c->route->route == nullptr
-            || c->route->stage_cleared == nullptr || c->route->effect == nullptr
-            || c->fade_music == nullptr,
+            || c->route->route == nullptr || c->route->stage_cleared == nullptr
+            || c->route->effect == nullptr || c->fade_music == nullptr,
         "Missing SinGyoku route or music consumer");
     MUST(RouteSelect_ValidateAssets(c->route->assets));
     FAIL_IF(
-        c->route->video != M_Video(c) || c->route->palette != c->hit->palette
+        c->route->palette != c->hit->palette
             || c->route->player != c->hit->display->player,
         "Inconsistent SinGyoku context");
     return OK;
 }
 
 bool B05_UpdateAndRender(
-    B05 *const b, const B05_CONTEXT *const c, const TH01_INPUT *const raw,
-    FRAME_VSYNC *const vsync)
+    B05 *const b, const B05_CONTEXT *const c, const TH01_INPUT *const raw)
 {
     if (b->pending == B05_FINISHED) {
         return true;
     }
     if (b->pending == B05_ENTRANCE || b->pending == B05_ENTRANCE_DELAY) {
-        return M_Entrance(b, c, vsync);
+        return M_Entrance(b, c);
     }
     if (b->pending == B05_DEFEAT || b->pending == B05_ROUTE) {
-        return M_Death(b, c, raw, vsync);
+        return M_Death(b, c, raw);
     }
     if (b->phase == 0) {
         b->sphere.left = 272;
         b->sphere.top = 96;
-        Palette_SetColor(c->hit->palette, M_Video(c), 5, 0, 0, 0);
-        Palette_SetColor(c->hit->palette, M_Video(c), 9, 0, 0, 0);
-        Palette_SetColor(c->hit->palette, M_Video(c), 15, 0, 0, 0);
+        Palette_SetColor(c->hit->palette, 5, 0, 0, 0);
+        Palette_SetColor(c->hit->palette, 9, 0, 0, 0);
+        Palette_SetColor(c->hit->palette, 15, 0, 0, 0);
         b->rotation_interval = 18;
         b->frame = 0;
         b->pending = B05_ENTRANCE;
-        return M_Entrance(b, c, vsync);
+        return M_Entrance(b, c);
     }
     if (b->phase == 1 || b->phase == 2) {
         if (b->phase == 1 && !b->hp_bar_filled) {
-            b->hp_bar_filled = HudHp_Increment(
-                c->hit->health, M_Video(c), b->hp, b->hit.frame);
+            b->hp_bar_filled =
+                HudHp_Increment(c->hit->health, b->hp, b->hit.frame);
         }
         b->frame = Math16_Wrap(b->frame + 1);
         b->hit.frame = Math16_Wrap(b->hit.frame + 1);
@@ -578,13 +563,13 @@ bool B05_UpdateAndRender(
         }
     } else if (b->phase == 8) {
         BossEntity_Put(
-            &b->sphere, c->sprites, M_Video(c), b->sphere.left, b->sphere.top,
+            &b->sphere, c->sprites, b->sphere.left, b->sphere.top,
             b->sphere.image);
         c->fade_music(c->hit->user);
-        Pellets_EraseAndResetMoving(c->pellets, M_Video(c));
-        BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_SINGYOKU, vsync);
+        Pellets_EraseAndResetMoving(c->pellets);
+        BossDefeat_Begin(&b->defeat, BOSS_DEFEAT_SINGYOKU);
         b->pending = B05_DEFEAT;
-        return M_Death(b, c, raw, vsync);
+        return M_Death(b, c, raw);
     }
     return true;
 }

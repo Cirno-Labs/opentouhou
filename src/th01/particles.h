@@ -34,5 +34,5 @@ void Particles_Init(PARTICLES *particles);
 // Requires initialization and an origin in 0..7. Keeps the drawing selector
 // when no active particle reaches restoration; otherwise finishes on page 0.
 void Particles_UpdateAndRender(
-    PARTICLES *particles, VIDEO *video, uint32_t *rng, PARTICLES_ORIGIN origin,
+    PARTICLES *particles, uint32_t *rng, PARTICLES_ORIGIN origin,
     uint8_t color);

@@ -50,30 +50,28 @@ TEST(spawn_retains_cursor_and_live_spawn_is_noop)
 
 TEST(final_cached_group_omits_drawing_and_hit)
 {
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
+    Video_Init(&g_HeapAllocator);
     SHOOTOUT_LASERS_ASSETS assets;
     memset(&assets, 0xff, sizeof(assets));
     PLAYER player = { .left = 300, .sliding = true };
     SHOOTOUT_LASER laser = {};
     ShootoutLasers_Spawn(&laser, 304, 377, 640, 377, 64, 7, 10, 1);
-    ShootoutLasers_Update(&laser, &video, &player, &assets);
+    ShootoutLasers_Update(&laser, &player, &assets);
     CHECK_EQ_INT(laser.length, 8);
     CHECK_EQ_INT(laser.cursor_left, 312 * 256);
     CHECK(!player.is_hit);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 304, 377), 0);
-    ShootoutLasers_Update(&laser, &video, &player, &assets);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 304, 377), 0);
+    ShootoutLasers_Update(&laser, &player, &assets);
     CHECK(player.is_hit);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 304, 377), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 319, 377), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 320, 377), 0);
-    Mem_Free(video.pages[0]);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 304, 377), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 319, 377), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 320, 377), 0);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(hit_uses_cached_left_and_y_even_with_empty_masks)
 {
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
+    Video_Init(&g_HeapAllocator);
     SHOOTOUT_LASERS_ASSETS assets = {};
     const int16_t xs[] = { 303, 304, 323, 324 };
     const int16_t ys[] = { 376, 377, 400 };
@@ -85,128 +83,126 @@ TEST(hit_uses_cached_left_and_y_even_with_empty_masks)
                 ShootoutLasers_Spawn(
                     &laser, xs[x], ys[y], xs[x], ys[y] + 10, 16, 7, 10, 1);
                 laser.damaging = mode != 2;
-                ShootoutLasers_Update(&laser, &video, &player, &assets);
+                ShootoutLasers_Update(&laser, &player, &assets);
                 CHECK(player.is_hit == (x > 0 && x < 3 && y > 0 && mode == 0));
             }
         }
     }
-    Mem_Free(video.pages[0]);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(mask_bytes_and_shifts_use_loaded_order_and_current_page)
 {
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
-    Video_SelectDrawingPage(&video, 1);
+    Video_Init(&g_HeapAllocator);
+    Video_SelectDrawingPage(1);
     SHOOTOUT_LASERS_ASSETS assets = {};
     assets.masks[7][3][0] = 0x10;
     assets.masks[7][3][1] = 0x40;
     SHOOTOUT_LASER laser = {};
     PLAYER player = {};
     ShootoutLasers_Spawn(&laser, 99, 100, 99, 200, 16, 5, 10, 8);
-    ShootoutLasers_Update(&laser, &video, &player, &assets);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 99, 100), 5);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 105, 100), 5);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 99, 101), 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 99, 100), 0);
-    CHECK_EQ_INT(video.drawing_page, 1);
-    Mem_Free(video.pages[0]);
+    ShootoutLasers_Update(&laser, &player, &assets);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 99, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 105, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 99, 101), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 99, 100), 0);
+    CHECK_EQ_INT(g_Video.drawing_page, 1);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(detach_adopts_stopped_cursor_and_dies_before_age_or_put)
 {
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
-    Video_SelectDrawingPage(&video, 1);
-    memset(video.pages[1], 3, VIDEO_PAGE_SIZE);
+    Video_Init(&g_HeapAllocator);
+    Video_SelectDrawingPage(1);
+    memset(g_Video.pages[1], 3, VIDEO_PAGE_SIZE);
     SHOOTOUT_LASERS_ASSETS assets = {};
     PLAYER player = {};
     SHOOTOUT_LASER laser = {};
     ShootoutLasers_Spawn(&laser, 638, 100, 640, 100, 128, 7, 0, 1);
     laser.length = 100;
-    ShootoutLasers_Update(&laser, &video, &player, &assets);
+    ShootoutLasers_Update(&laser, &player, &assets);
     CHECK(!laser.alive);
     CHECK_EQ_INT(laser.start_left, 640 * 256);
     CHECK_EQ_INT(laser.age, 0);
     CHECK_EQ_INT(laser.length, 100);
-    CHECK_EQ_INT(video.drawing_page, 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 624, 100), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 0, 101), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 101), 0);
-    Mem_Free(video.pages[0]);
+    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 624, 100), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 0, 101), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 16, 101), 0);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(pool_order_preserves_page_change_and_signed_history)
 {
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
-    Video_SelectDrawingPage(&video, 1);
+    Video_Init(&g_HeapAllocator);
+    Video_SelectDrawingPage(1);
     SHOOTOUT_LASERS_ASSETS assets;
     memset(&assets, 0xff, sizeof(assets));
     SHOOTOUT_LASERS lasers = {};
     PLAYER player = {};
     ShootoutLasers_Spawn(&lasers.slots[0], 100, 100, 100, 200, 8, 7, 0, 1);
     ShootoutLasers_Spawn(&lasers.slots[9], 200, 100, 200, 200, 16, 5, 10, 1);
-    ShootoutLasers_UpdateAll(&lasers, &video, &player, &assets);
+    ShootoutLasers_UpdateAll(&lasers, &player, &assets);
     CHECK_EQ_INT(lasers.slots[0].start_y, 101 * 256);
     CHECK_EQ_INT(lasers.slots[0].length, 0);
     CHECK_EQ_INT(lasers.slots[9].length, 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 200, 100), 5);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 200, 100), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 200, 100), 5);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 200, 100), 0);
     lasers.slots[9].age = INT16_MAX;
     lasers.slots[9].detach_age = INT16_MAX;
-    ShootoutLasers_Update(&lasers.slots[9], &video, &player, &assets);
+    ShootoutLasers_Update(&lasers.slots[9], &player, &assets);
     CHECK_EQ_INT(lasers.slots[9].age, INT16_MIN);
     const SHOOTOUT_LASER history = lasers.slots[9];
     lasers.slots[9].alive = false;
     const SHOOTOUT_LASER dead = lasers.slots[9];
-    ShootoutLasers_UpdateAll(&lasers, &video, &player, &assets);
+    ShootoutLasers_UpdateAll(&lasers, &player, &assets);
     CHECK(memcmp(&lasers.slots[9], &dead, sizeof(dead)) == 0);
     CHECK_EQ_INT(lasers.slots[9].cursor_y, history.cursor_y);
-    Mem_Free(video.pages[0]);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(reset_passes_raw_low_words_and_preserves_prefix_history)
 {
-    VIDEO actual, expected;
-    Video_Init(&actual, &g_HeapAllocator);
-    Video_Init(&expected, &g_HeapAllocator);
-    memset(actual.pages[1], 7, VIDEO_PAGE_SIZE);
-    memset(expected.pages[1], 7, VIDEO_PAGE_SIZE);
+    uint8_t *const expected = Mem_Alloc(VIDEO_PAGE_SIZE);
+    Video_Init(&g_HeapAllocator);
+    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
+    Video_LineErase(256, 256, 256, 256);
+    memcpy(expected, g_Video.pages[0], VIDEO_PAGE_SIZE);
+    Mem_Free(g_Video.pages[0]);
+    Video_Init(&g_HeapAllocator);
+    memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
     SHOOTOUT_LASERS lasers = {};
     ShootoutLasers_Spawn(&lasers.slots[0], 1, 1, 1, 2, 8, 7, 20, 1);
     ShootoutLasers_Spawn(&lasers.slots[1], 10, 100, 10, 400, 8, 7, 20, 1);
     const SHOOTOUT_LASER history = lasers.slots[0];
-    Video_LineErase(&expected, 256, 256, 256, 256);
-    ShootoutLasers_EraseAndReset(&lasers, &actual, 1);
+    ShootoutLasers_EraseAndReset(&lasers, 1);
     CHECK(!lasers.slots[0].alive);
     CHECK(lasers.slots[1].alive);
     lasers.slots[0].alive = true;
     CHECK(memcmp(&lasers.slots[0], &history, sizeof(history)) == 0);
-    CHECK(memcmp(actual.pages[0], expected.pages[0], VIDEO_PAGE_SIZE) == 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&actual, 0, 248, 255), 7);
-    CHECK_EQ_INT(Th01Test_Pixel(&actual, 0, 0, 0), 0);
-    Mem_Free(actual.pages[0]);
-    Mem_Free(expected.pages[0]);
+    CHECK(memcmp(g_Video.pages[0], expected, VIDEO_PAGE_SIZE) == 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 248, 255), 7);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 0, 0), 0);
+    Mem_Free(g_Video.pages[0]);
+    Mem_Free(expected);
 }
 
 TEST(negative_sample_counts_wrap_and_stop_on_cursor_change)
 {
-    VIDEO video;
-    Video_Init(&video, &g_HeapAllocator);
+    Video_Init(&g_HeapAllocator);
     SHOOTOUT_LASERS_ASSETS assets = {};
     PLAYER player = {};
     SHOOTOUT_LASER laser = {};
     ShootoutLasers_Spawn(&laser, 638, 100, 640, 100, -8, 7, 20, 1);
-    ShootoutLasers_Update(&laser, &video, &player, &assets);
+    ShootoutLasers_Update(&laser, &player, &assets);
     CHECK(laser.alive);
     CHECK_EQ_INT(laser.length, -1);
     CHECK_EQ_INT(laser.age, 1);
     CHECK_EQ_INT(laser.cursor_left, 640 * 256);
     laser.detach_age = 1;
-    ShootoutLasers_Update(&laser, &video, &player, &assets);
+    ShootoutLasers_Update(&laser, &player, &assets);
     CHECK(!laser.alive);
     CHECK_EQ_INT(laser.start_left, 640 * 256);
     CHECK_EQ_INT(laser.age, 1);
-    Mem_Free(video.pages[0]);
+    Mem_Free(g_Video.pages[0]);
 }

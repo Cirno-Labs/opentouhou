@@ -46,11 +46,10 @@ static MATH16_VECTOR M_Aim(
         (MATH16_VECTOR) { Math16_Wrap(player->left + 8), 384 }, speed, 0);
 }
 
-static void M_Restore(
-    VIDEO *const video, const PELLET *const p, const bool current)
+static void M_Restore(const PELLET *const p, const bool current)
 {
     Sprite_Restore16(
-        video, Math16_ToPixel(current ? p->left : p->previous_left),
+        Math16_ToPixel(current ? p->left : p->previous_left),
         Math16_ToPixel(current ? p->top : p->previous_top), 16, 8);
 }
 
@@ -191,7 +190,7 @@ static void M_Clouds(
         const int16_t frame = p->cloud_frame;
         if (frame == 2 || frame == 5 || frame == 6 || frame == 9) {
             PelletAssets_Cloud(
-                context->video, context->assets, p->cloud_left, p->cloud_top,
+                context->assets, p->cloud_left, p->cloud_top,
                 frame >= 6 ? 1 : 0, frame == 5 || frame == 9);
         }
         if (frame == 9) {
@@ -320,7 +319,7 @@ void Pellets_UpdateAndRender(
         }
         if ((!pellets->interlace || pellets->interlace_field == ((i & 1) != 0))
             && !p->not_rendered && p->previous_left != -1) {
-            M_Restore(context->video, p, false);
+            M_Restore(p, false);
         }
         if (p->from_group == 0 && p->motion_type != 0) {
             M_Motion(p, context->player, context->rng);
@@ -338,12 +337,12 @@ void Pellets_UpdateAndRender(
                 context->shots, Math16_ToPixel(p->left), Math16_ToPixel(p->top),
                 context->shots_output)) {
             M_Remove(pellets, p);
-            M_Restore(context->video, p, false);
+            M_Restore(p, false);
         }
         if (p->top >= 400 * 16 || p->top < 64 * 16 || p->left >= 632 * 16
             || p->left <= 0) {
             M_Remove(pellets, p);
-            M_Restore(context->video, p, false);
+            M_Restore(p, false);
         }
     }
     Shots_UpdateAndRender(
@@ -358,8 +357,8 @@ void Pellets_UpdateAndRender(
                 p->not_rendered = false;
                 if (p->decay_frame < 20) {
                     PelletAssets_Put(
-                        context->video, context->assets,
-                        Math16_ToPixel(p->left), Math16_ToPixel(p->top),
+                        context->assets, Math16_ToPixel(p->left),
+                        Math16_ToPixel(p->top),
                         p->decay_frame == 0        ? 0
                             : p->decay_frame <= 10 ? 1
                                                    : 2);
@@ -384,7 +383,7 @@ void Pellets_UpdateAndRender(
             && Math16_ToPixel(p->top) < 392) {
             context->player->is_hit = true;
             if (!p->not_rendered) {
-                M_Restore(context->video, p, false);
+                M_Restore(p, false);
             }
             M_Remove(pellets, p);
         }
@@ -418,13 +417,13 @@ void Pellets_ResetMoving(PELLETS *const pellets)
     pellets->alive_count_excluding_clouds_after_reset = 0;
 }
 
-void Pellets_EraseAndResetMoving(PELLETS *const pellets, VIDEO *const video)
+void Pellets_EraseAndResetMoving(PELLETS *const pellets)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         PELLET *const p = &pellets->slots[i];
         if (p->moving) {
             if (!p->not_rendered) {
-                M_Restore(video, p, true);
+                M_Restore(p, true);
             }
             p->decay_frame = 0;
             p->moving = false;

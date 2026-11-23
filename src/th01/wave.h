@@ -8,5 +8,5 @@
 // phase. Requires a nonzero wavelength and a positive width. Selects drawing
 // page 0, except that a nonpositive height draws nothing.
 void Wave_Restore(
-    VIDEO *video, int16_t left, int16_t top, int16_t wavelength,
-    int16_t amplitude, int16_t phase, int16_t width, int16_t height);
+    int16_t left, int16_t top, int16_t wavelength, int16_t amplitude,
+    int16_t phase, int16_t width, int16_t height);

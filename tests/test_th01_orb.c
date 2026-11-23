@@ -346,65 +346,59 @@ TEST(player_repulsion_keeps_center_rng_bug_and_enum_order)
 
 TEST(render_restores_current_sprite_mask_at_quantized_previous_position)
 {
-    static uint8_t pages[2][VIDEO_PAGE_SIZE];
     static uint8_t
         pixels[(ORB_FIRST_IMAGE + ORB_IMAGE_COUNT) * PTN_WIDTH * PTN_HEIGHT];
-    VIDEO video = { .pages = { pages[0], pages[1] },
-                    .drawing_page = 1,
-                    .visible_page = 1 };
+    Video_Init(&g_HeapAllocator);
+    Video_SelectDrawingPage(1);
+    Video_SelectVisiblePage(1);
     PTN sprites = { .count = ORB_FIRST_IMAGE + ORB_IMAGE_COUNT,
                     .pixels = pixels };
-    memset(pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(pages[1], 9, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
     memset(pixels, PTN_TRANSPARENT, sizeof(pixels));
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT] = 2;
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT + 31] = 0;
     const ORB_ACTION action = { ORB_ACTION_ERASE, 19, 70, 1 };
-    Orb_RenderAction(&video, &sprites, action);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 70), 9);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 47, 70), 9);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 17, 70), 6);
-    CHECK_EQ_INT(video.drawing_page, 0);
-    CHECK_EQ_INT(video.visible_page, 1);
-    Orb_RenderAction(
-        &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, 19, 70, 1 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 16, 70), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 47, 70), 0);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 17, 70), 6);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 1, 16, 70), 9);
+    Orb_RenderAction(&sprites, action);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 16, 70), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 47, 70), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 17, 70), 6);
+    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video.visible_page, 1);
+    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, 19, 70, 1 });
+    CHECK_EQ_INT(Th01Test_Pixel(0, 16, 70), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 47, 70), 0);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 17, 70), 6);
+    CHECK_EQ_INT(Th01Test_Pixel(1, 16, 70), 9);
+    Mem_Free(g_Video.pages[0]);
 }
 
 TEST(render_wall_overshoot_wraps_rows_within_visible_page)
 {
-    static uint8_t pages[2][VIDEO_PAGE_SIZE];
     static uint8_t
         pixels[(ORB_FIRST_IMAGE + ORB_IMAGE_COUNT) * PTN_WIDTH * PTN_HEIGHT];
-    VIDEO video = { .pages = { pages[0], pages[1] } };
+    Video_Init(&g_HeapAllocator);
     PTN sprites = { .count = ORB_FIRST_IMAGE + ORB_IMAGE_COUNT,
                     .pixels = pixels };
-    memset(pages[0], 6, VIDEO_PAGE_SIZE);
-    memset(pages[1], 9, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
+    memset(g_Video.pages[1], 9, VIDEO_PAGE_SIZE);
     memset(pixels, PTN_TRANSPARENT, sizeof(pixels));
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT] = 2;
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT + 31] = 3;
-    Orb_RenderAction(
-        &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, -4, 64, 0 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 63), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 23, 64), 3);
-    Orb_RenderAction(
-        &video, &sprites, (ORB_ACTION) { ORB_ACTION_ERASE, -4, 64, 0 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 63), 9);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 23, 64), 9);
-    Orb_RenderAction(
-        &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, 612, 64, 0 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 608, 64), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 639, 64), 3);
-    Orb_RenderAction(
-        &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, 616, 64, 0 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 616, 64), 2);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 7, 65), 3);
-    Orb_RenderAction(
-        &video, &sprites, (ORB_ACTION) { ORB_ACTION_PUT, -8, 0, 0 });
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 23, 0), 3);
-    CHECK_EQ_INT(Th01Test_Pixel(&video, 0, 632, 399), 6);
+    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, -4, 64, 0 });
+    CHECK_EQ_INT(Th01Test_Pixel(0, 632, 63), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 23, 64), 3);
+    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_ERASE, -4, 64, 0 });
+    CHECK_EQ_INT(Th01Test_Pixel(0, 632, 63), 9);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 23, 64), 9);
+    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, 612, 64, 0 });
+    CHECK_EQ_INT(Th01Test_Pixel(0, 608, 64), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 639, 64), 3);
+    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, 616, 64, 0 });
+    CHECK_EQ_INT(Th01Test_Pixel(0, 616, 64), 2);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 7, 65), 3);
+    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, -8, 0, 0 });
+    CHECK_EQ_INT(Th01Test_Pixel(0, 23, 0), 3);
+    CHECK_EQ_INT(Th01Test_Pixel(0, 632, 399), 6);
+    Mem_Free(g_Video.pages[0]);
 }

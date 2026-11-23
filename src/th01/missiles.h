@@ -75,5 +75,4 @@ void Missiles_UpdateAndRender(
 // Stops after the first row whose next planar offset exceeds 32000. Defines
 // physical linear byte accesses across a segment boundary instead of the
 // original machine's possible protection fault, as a presentation extension.
-void Missiles_RenderAction(
-    VIDEO *video, const PTN *sprites, MISSILES_ACTION action);
+void Missiles_RenderAction(const PTN *sprites, MISSILES_ACTION action);

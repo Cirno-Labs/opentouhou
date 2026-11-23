@@ -14,7 +14,6 @@ typedef struct {
 } HUD;
 
 typedef struct {
-    VIDEO *video;
     const GRF *mask;
     const PTN *sprites;
     const GAME_TEXT_FONT *font;
@@ -62,7 +61,8 @@ void Hud_PutStage(HUD *hud, const HUD_CONTEXT *context);
 // and high score only on first_stage, resets the displayed combo and HUD
 // maximum, then copies both numeric rows from page 0 to page 1. Previous
 // digit caches persist. Timer initialization/snapshots and forced numeric
-// rendering are separate operations; Timer_Redraw supplies their full order.
+// rendering are separate operations; StageTimer_Redraw supplies their full
+// order.
 void Hud_SnapNumbers(HUD *hud, const HUD_CONTEXT *context, bool first_stage);
 
 // Preserves the duplicate first-quarter snapshot at x=512 for both halves.

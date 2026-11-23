@@ -18,8 +18,7 @@ static void M_ScorePopups(const STAGE_CONTEXT *const context)
                                                    : 8;
         if (popup_y != 0) {
             Sprite_Restore16(
-                context->video, card->left + offset,
-                card->top + 8 - (popup_y - 1), 40, 16);
+                card->left + offset, card->top + 8 - (popup_y - 1), 40, 16);
         }
         if (card->flip_frame >= 28) {
             card->score = 0;
@@ -39,7 +38,7 @@ static void M_ScorePopups(const STAGE_CONTEXT *const context)
             text[count] = '\0';
             const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_BOLD };
             GameText_Draw(
-                context->font, context->video, text, card->left + offset,
+                context->font, text, card->left + offset,
                 card->top + 8 - popup_y, 7, &style);
         }
     }
@@ -112,15 +111,13 @@ void Stage_UpdateCards(const STAGE_CONTEXT *const context)
         STAGE_CARD *const card = &objects->cards[i];
         if (card->flag == STAGE_CARD_FLIPPING) {
             if (card->flip_frame < 25 && card->flip_frame % 6 == 0) {
-                Video_SelectDrawingPage(context->video, 1);
+                Video_SelectDrawingPage(1);
                 StageObjects_PutBackgroundAndObject(
-                    objects, context->video, context->sprites, card->left,
-                    card->top,
+                    objects, context->sprites, card->left, card->top,
                     StageObjects_CardImage(card->hp, card->flip_frame), i);
-                Video_SelectDrawingPage(context->video, 0);
+                Video_SelectDrawingPage(0);
                 StageObjects_PutBackgroundAndObject(
-                    objects, context->video, context->sprites, card->left,
-                    card->top,
+                    objects, context->sprites, card->left, card->top,
                     StageObjects_CardImage(card->hp, card->flip_frame), i);
             }
             card->flip_frame++;

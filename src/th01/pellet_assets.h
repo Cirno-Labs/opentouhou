@@ -25,8 +25,7 @@ RESULT PelletAssets_Load(
 // signed row-end test; hidden planar bytes are discarded. Requires image
 // 0 through 2.
 void PelletAssets_Put(
-    VIDEO *video, const PELLET_ASSETS *assets, int16_t left, int16_t top,
-    int16_t image);
+    const PELLET_ASSETS *assets, int16_t left, int16_t top, int16_t image);
 
 // Draws or restores 16 by 16 delay clouds, quantizing X down to eight
 // pixels. Restore first clears the mask on the drawing page, then ORs
@@ -36,5 +35,5 @@ void PelletAssets_Put(
 // byte at 65536 aliases green only. Ignores non-VRAM writes. Requires
 // image 0 or 1.
 void PelletAssets_Cloud(
-    VIDEO *video, const PELLET_ASSETS *assets, int16_t left, int16_t top,
-    int16_t image, bool restore);
+    const PELLET_ASSETS *assets, int16_t left, int16_t top, int16_t image,
+    bool restore);

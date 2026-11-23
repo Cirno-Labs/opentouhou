@@ -63,7 +63,6 @@ typedef struct {
 } PELLETS;
 
 typedef struct {
-    VIDEO *video;
     const PELLET_ASSETS *assets;
     PLAYER *player;
     ORB *orb;
@@ -78,7 +77,7 @@ typedef struct {
 // Reset leaves pending delay clouds alive and sets the count to zero.
 // This count can be negative and does not report pool occupancy.
 void Pellets_ResetMoving(PELLETS *pellets);
-void Pellets_EraseAndResetMoving(PELLETS *pellets, VIDEO *video);
+void Pellets_EraseAndResetMoving(PELLETS *pellets);
 
 // Spawns only into actually free slots. No RNG draw occurs for a full pool.
 // Group coordinates must be in [-8,639] by [56,400]. Invalid groups are

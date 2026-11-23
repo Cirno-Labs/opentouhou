@@ -21,8 +21,8 @@ static const ROUTE_LINE m_Lines[] = {
 
 static void M_Palette(const ROUTE_SELECT_CONTEXT *const c, const uint8_t route)
 {
-    Palette_SetColor(c->palette, c->video, route == 0 ? 1 : 3, 15, 15, 15);
-    Palette_SetColor(c->palette, c->video, route == 0 ? 3 : 1, 9, 9, 9);
+    Palette_SetColor(c->palette, route == 0 ? 1 : 3, 15, 15, 15);
+    Palette_SetColor(c->palette, route == 0 ? 3 : 1, 9, 9, 9);
 }
 
 static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
@@ -38,26 +38,25 @@ static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
     for (int32_t component = 0; component < 3; component++) {
         c->palette->saved.colors[7][component] = 15;
     }
-    Palette_Set(c->palette, c->video, &c->palette->saved);
-    Video_SelectDrawingPage(c->video, 1);
-    Video_Clear(c->video, 0);
+    Palette_Set(c->palette, &c->palette->saved);
+    Video_SelectDrawingPage(1);
+    Video_Clear(0);
     const GAME_TEXT_STYLE style = { .clear_background = true };
     for (int32_t line = 0; line < 5; line++) {
         GameText_Draw(
-            c->assets->font, c->video, m_Lines[line].text, 0, line * 32,
+            c->assets->font, m_Lines[line].text, 0, line * 32,
             m_Lines[line].color, &style);
     }
-    Video_SelectDrawingPage(c->video, 0);
+    Video_SelectDrawingPage(0);
     M_Palette(c, 0);
     for (int32_t line = 0; line < 5; line++) {
         const int16_t width = (int16_t)(strlen(m_Lines[line].text) / 3 * 16);
         Scale2x_Copy(
-            c->video, m_Lines[line].left, m_Lines[line].top, 0,
-            (int16_t)(line * 32), width, 16);
+            m_Lines[line].left, m_Lines[line].top, 0, (int16_t)(line * 32),
+            width, 16);
     }
-    Video_Copy(
-        c->video, 0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
-    Sprite_PtnPut(c->video, c->assets->stage, ORB_FIRST_IMAGE, -1, 128, 250);
+    Video_Copy(0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
+    Sprite_PtnPut(c->assets->stage, ORB_FIRST_IMAGE, -1, 128, 250);
 }
 
 RESULT RouteSelect_LoadFont(
@@ -108,47 +107,46 @@ RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *const assets)
 
 bool RouteSelect_Begin(
     ROUTE_SELECT *const selection, const ROUTE_SELECT_CONTEXT *const c,
-    const TH01_INPUT *const raw, FRAME_VSYNC *const vsync)
+    const TH01_INPUT *const raw)
 {
     ASSERT(selection->phase == ROUTE_SELECT_DONE);
     *selection = (ROUTE_SELECT) { .phase = ROUTE_SELECT_INITIAL_WAIT };
     M_Draw(c);
-    GameInput_ResetGame(c->input);
-    return RouteSelect_Resume(selection, c, raw, vsync);
+    GameInput_ResetGame();
+    return RouteSelect_Resume(selection, c, raw);
 }
 
 bool RouteSelect_Resume(
     ROUTE_SELECT *const selection, const ROUTE_SELECT_CONTEXT *const c,
-    const TH01_INPUT *const raw, FRAME_VSYNC *const vsync)
+    const TH01_INPUT *const raw)
 {
     for (;;) {
         switch (selection->phase) {
         case ROUTE_SELECT_DONE:
             return true;
         case ROUTE_SELECT_INITIAL_WAIT:
-            if (!Frame_DelayReady(vsync, 50)) {
+            if (!Frame_DelayReady(50)) {
                 return false;
             }
             selection->phase = ROUTE_SELECT_CHOOSE;
             break;
         case ROUTE_SELECT_CHOOSE: {
-            if (GameInput_SenseGame(c->input, raw, false)) {
+            if (GameInput_SenseGame(raw, false)) {
                 c->player->is_hit = true;
             }
-            if ((c->input->up && !selection->holding_up)
-                || (c->input->down && !selection->holding_down)) {
+            if ((g_GameInput.up && !selection->holding_up)
+                || (g_GameInput.down && !selection->holding_down)) {
                 Sprite_Restore16(
-                    c->video, 128, selection->selection == 0 ? 250 : 300, 32,
-                    32);
+                    128, selection->selection == 0 ? 250 : 300, 32, 32);
                 selection->selection ^= 1;
                 Sprite_PtnPut(
-                    c->video, c->assets->stage, ORB_FIRST_IMAGE, -1, 128,
+                    c->assets->stage, ORB_FIRST_IMAGE, -1, 128,
                     selection->selection == 0 ? 250 : 300);
                 M_Palette(c, selection->selection);
             }
-            selection->holding_up = c->input->up;
-            selection->holding_down = c->input->down;
-            if (c->input->shot || c->input->ok) {
+            selection->holding_up = g_GameInput.up;
+            selection->holding_down = g_GameInput.down;
+            if (g_GameInput.shot || g_GameInput.ok) {
                 c->effect(c->user, 4);
                 Scene_Activate(
                     c->scene,
@@ -164,7 +162,7 @@ bool RouteSelect_Resume(
             break;
         }
         case ROUTE_SELECT_REPEAT_WAIT:
-            if (!Frame_DelayReady(vsync, 5)) {
+            if (!Frame_DelayReady(5)) {
                 return false;
             }
             selection->phase = ROUTE_SELECT_CHOOSE;

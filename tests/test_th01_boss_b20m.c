@@ -100,8 +100,6 @@ typedef struct {
     B20M_ASSETS assets;
     B20M boss;
     BOSS_SPRITES sprites;
-    VIDEO video;
-    TRAM tram;
     PALETTE_STATE palette;
     HUD_HP health;
     HUD hud;
@@ -121,8 +119,6 @@ typedef struct {
     uint32_t high_score, rng;
     int16_t lives;
     bool damage, cleared, first_stage, timer_initialized;
-    STAGE_TIMER timer;
-    GAME_INPUT input;
     GRF mask;
     int32_t effects[17], audio_count;
     B20M_AUDIO_ACTION audio[8];
@@ -149,16 +145,18 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     if (action.kind == SHOTS_ACTION_EFFECT) {
         M_Effect(f, action.effect);
     } else {
-        Shots_RenderAction(&f->video, &f->stage, action);
+        Shots_RenderAction(&f->stage, action);
     }
 }
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
+    GameInput_Init();
+    StageTimer_Init();
     M_Assets(&f->assets, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
-    Video_Init(&f->video, a);
-    Tram_Init(&f->tram, a);
+    Video_Init(a);
+    Tram_Init(a);
     Palette_Init(&f->palette);
     Hud_Init(&f->hud, a);
     HudHp_Init(&f->health, a);
@@ -186,8 +184,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->lives = 3;
     f->orb.top = 64;
     f->orb.previous_top = 64;
-    f->display = (HUD_CONTEXT) { .video = &f->video,
-                                 .mask = &f->mask,
+    f->display = (HUD_CONTEXT) { .mask = &f->mask,
                                  .stage_number = 20,
                                  .sprites = &f->stage,
                                  .font = &f->font,
@@ -213,12 +210,9 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
                                   .pellet_shared = &f->shared,
                                   .lasers = &f->lasers,
                                   .objects = &f->objects,
-                                  .tram = &f->tram,
                                   .rng = &f->rng,
                                   .game_cleared = &f->cleared,
                                   .audio = M_Audio,
-                                  .input = &f->input,
-                                  .timer = &f->timer,
                                   .first_stage = &f->first_stage,
                                   .timer_initialized = &f->timer_initialized };
     B20M_Init(&f->boss, a);
@@ -226,12 +220,11 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(B20M_ValidateContext(&f->context)));
 }
 
-static bool M_Tick(
-    FIXTURE *const f, FRAME_VSYNC *const vsync, uint64_t *const tick)
+static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
 {
-    const bool done = B20M_UpdateAndRender(&f->boss, &f->context, vsync, *tick);
+    const bool done = B20M_UpdateAndRender(&f->boss, &f->context, *tick);
     (*tick)++;
-    Frame_VSync(vsync);
+    Frame_VSync();
     return done;
 }
 TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
@@ -242,26 +235,26 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     M_Fixture(&f, &arena);
     memset(f.assets.lower.pixels, 12, VIDEO_PAGE_SIZE);
     f.rng = 5;
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     B20M_BeginEntrance(&f.boss, &f.context);
     CHECK(f.pellets.interlace);
     CHECK_EQ_INT(f.audio_count, 3);
-    CHECK(!B20M_ResumeEntrance(&f.boss, &f.context, &vsync, tick));
+    CHECK(!B20M_ResumeEntrance(&f.boss, &f.context, tick));
     const B20M pending = f.boss;
-    CHECK(!B20M_ResumeEntrance(&f.boss, &f.context, &vsync, tick));
+    CHECK(!B20M_ResumeEntrance(&f.boss, &f.context, tick));
     CHECK(memcmp(&pending, &f.boss, sizeof(pending)) == 0);
     int32_t polls = 0;
     while (f.boss.entrance_active && polls++ < 1500) {
         tick++;
-        Frame_VSync(&vsync);
-        B20M_ResumeEntrance(&f.boss, &f.context, &vsync, tick);
+        Frame_VSync();
+        B20M_ResumeEntrance(&f.boss, &f.context, tick);
     }
     CHECK(!f.boss.entrance_active);
     CHECK_EQ_INT(f.rng, f.hit.frame_rand);
-    CHECK_EQ_INT(f.video.drawing_page, 0);
-    CHECK_EQ_INT(f.video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video.drawing_page, 0);
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(f.audio_count, 3);
     Arena_Free(&arena);
@@ -272,19 +265,19 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     Arena_Init(&arena, "Sariel rings", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick));
+    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, tick));
     const B20M pending = f.boss;
     const uint32_t rng = f.rng;
-    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick));
+    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, tick));
     CHECK(memcmp(&pending, &f.boss, sizeof(pending)) == 0);
     CHECK_EQ_INT(f.rng, rng);
     for (int32_t i = 0; f.boss.sequence != 0 && i < 200; i++) {
         tick++;
-        Frame_VSync(&vsync);
-        B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick);
+        Frame_VSync();
+        B20M_UpdateAndRender(&f.boss, &f.context, tick);
     }
     CHECK_EQ_INT(f.boss.phase, 1);
     CHECK_EQ_INT(f.boss.frame, 0);
@@ -310,12 +303,12 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 f.boss.phase = phases[phase];
                 f.boss.pattern = pattern;
                 f.boss.patterns_until_next = 30000;
-                FRAME_VSYNC vsync = {};
+                Frame_Reset();
                 uint64_t tick = 0;
                 const size_t used = arena.used;
                 int32_t calls = 0;
                 while (f.boss.pattern == pattern && calls++ < 2000) {
-                    M_Tick(&f, &vsync, &tick);
+                    M_Tick(&f, &tick);
                 }
                 CHECK(calls < 2000);
                 CHECK_EQ_INT(f.boss.hp, 18);
@@ -340,12 +333,12 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             f.boss.hp = 6;
             f.boss.pattern = pattern;
             f.boss.pattern_state = 24;
-            FRAME_VSYNC vsync = {};
+            Frame_Reset();
             uint64_t tick = 0;
             const size_t used = arena.used;
             int32_t calls = 0;
             while (f.boss.pattern == pattern && calls++ < 1000) {
-                M_Tick(&f, &vsync, &tick);
+                M_Tick(&f, &tick);
             }
             CHECK(calls < 1000);
             CHECK_EQ_INT(f.boss.hp, 6);
@@ -370,11 +363,11 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     f.player.deflecting = true;
     f.player.bomb_damaging = true;
     f.boss.leaves.flag[7] = 6;
-    f.input.bomb = true;
-    FRAME_VSYNC vsync = {};
+    g_GameInput.bomb = true;
+    Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick));
+    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, tick));
     CHECK_EQ_INT(f.player.left, 304);
     CHECK_EQ_INT(f.orb.left, 600);
     CHECK_EQ_INT(f.orb.top, 280);
@@ -382,11 +375,11 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(f.orb.previous_top, 234);
     CHECK(!f.player.deflecting);
     CHECK(!f.player.bomb_damaging);
-    CHECK(!f.input.bomb);
+    CHECK(!g_GameInput.bomb);
     for (int32_t i = 0; f.boss.sequence != 0 && i < 1000; i++) {
         tick++;
-        Frame_VSync(&vsync);
-        B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick);
+        Frame_VSync();
+        B20M_UpdateAndRender(&f.boss, &f.context, tick);
     }
     CHECK_EQ_INT(f.boss.phase, 100);
     CHECK_EQ_INT(f.boss.hp, 6);
@@ -414,27 +407,27 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     f.boss.hp = 1;
     f.orb.left = 320;
     f.orb.top = 120;
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    CHECK(B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick));
+    CHECK(B20M_UpdateAndRender(&f.boss, &f.context, tick));
     CHECK_EQ_INT(f.boss.phase, 101);
     CHECK_EQ_INT(f.boss.hp, 0);
     CHECK_EQ_INT(f.gameplay.score, 10000);
     CHECK_EQ_INT(f.audio[0], B20M_AUDIO_STOP);
     for (int32_t i = 0; !f.cleared && i < 1500; i++) {
-        M_Tick(&f, &vsync, &tick);
+        M_Tick(&f, &tick);
     }
     CHECK(f.cleared);
     CHECK(f.boss.finished);
     CHECK_EQ_INT(f.gameplay.score, 60000);
     CHECK_EQ_INT(f.boss.frame, 231);
-    CHECK_EQ_INT(f.video.scroll_top, 0);
+    CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(f.audio_count, 2);
     CHECK_EQ_INT(f.audio[1], B20M_AUDIO_FADE);
     CHECK_EQ_INT(arena.used, used);
     const B20M done = f.boss;
-    CHECK(B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick));
+    CHECK(B20M_UpdateAndRender(&f.boss, &f.context, tick));
     CHECK(memcmp(&done, &f.boss, sizeof(done)) == 0);
     CHECK_EQ_INT(f.gameplay.score, 60000);
     Arena_Free(&arena);
@@ -453,32 +446,29 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     f.boss.birds.alive[0] = true;
     f.boss.birds.left[0] = 300;
     f.boss.birds.top[0] = 368;
-    FRAME_VSYNC vsync = {};
+    Frame_Reset();
     uint64_t tick = 100;
     const uint32_t rng = f.rng;
     const size_t used = arena.used;
-    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick));
+    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, tick));
     CHECK(f.player.is_hit);
     CHECK_EQ_INT(f.rng, rng);
     const B20M pending = f.boss;
-    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick + 5));
+    CHECK(!B20M_UpdateAndRender(&f.boss, &f.context, tick + 5));
     CHECK(memcmp(&pending, &f.boss, sizeof(pending)) == 0);
-    CHECK(B20M_UpdateAndRender(&f.boss, &f.context, &vsync, tick + 6));
+    CHECK(B20M_UpdateAndRender(&f.boss, &f.context, tick + 6));
     CHECK(f.rng != rng);
     CHECK_EQ_INT(f.boss.frame, 50);
     CHECK_EQ_INT(f.boss.resume_stage, 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
-TEST(context_requires_timer_and_audio_owners)
+TEST(context_requires_audio_owner)
 {
     ARENA arena;
     Arena_Init(&arena, "Sariel context", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    f.context.timer = nullptr;
-    CHECK(!Result_Ignore(B20M_ValidateContext(&f.context)));
-    f.context.timer = &f.timer;
     f.context.audio = nullptr;
     CHECK(!Result_Ignore(B20M_ValidateContext(&f.context)));
     Arena_Free(&arena);

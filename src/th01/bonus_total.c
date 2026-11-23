@@ -11,11 +11,10 @@ static void M_PutDigit(
 {
     const int16_t left =
         (int16_t)(224 + (b->place - (b->digit_count == 6)) * 16);
-    VIDEO *const video = c->common->display->video;
-    Sprite_Restore16(video, left, b->top, 16, 16);
+    Sprite_Restore16(left, b->top, 16, 16);
     if (digit >= 0 && digit <= 19) {
         Sprite_PtnPut(
-            video, &c->assets->numerals, 10 + (digit % 10) / 4, digit % 4, left,
+            &c->assets->numerals, 10 + (digit % 10) / 4, digit % 4, left,
             b->top);
     }
 }
@@ -53,7 +52,7 @@ static void M_Prepare(
     } else {
         switch (b->metric) {
         case 0:
-            value = (uint16_t)(c->timer->time * 5);
+            value = (uint16_t)(g_StageTimer.time * 5);
             break;
         case 1:
             value = Math16_Wrap(c->display->gameplay->maximum_combo * 200);
@@ -128,7 +127,7 @@ RESULT Bonus_LoadTotalAssets(
 bool Bonus_BeginTotal(
     BONUS_TOTAL *const b, const BONUS_TOTAL_CONTEXT *const c,
     const int16_t stage_number, const TH01_INPUT *const raw,
-    FRAME_VSYNC *const vsync, const uint64_t host_tick)
+    const uint64_t host_tick)
 {
     ASSERT(
         b->phase == BONUS_TOTAL_DONE && stage_number >= 5 && stage_number <= 20
@@ -137,22 +136,20 @@ bool Bonus_BeginTotal(
                          .stage_number = stage_number,
                          .last_tick = host_tick };
     Shots_EraseAndReset(c->shots, c->shots_output);
-    Pellets_EraseAndResetMoving(c->pellets, c->common->display->video);
-    return Bonus_ResumeTotal(b, c, raw, vsync, host_tick);
+    Pellets_EraseAndResetMoving(c->pellets);
+    return Bonus_ResumeTotal(b, c, raw, host_tick);
 }
 
 bool Bonus_ResumeTotal(
     BONUS_TOTAL *const b, const BONUS_TOTAL_CONTEXT *const c,
-    const TH01_INPUT *const raw, FRAME_VSYNC *const vsync,
-    const uint64_t host_tick)
+    const TH01_INPUT *const raw, const uint64_t host_tick)
 {
-    VIDEO *const video = c->common->display->video;
     for (;;) {
         switch (b->phase) {
         case BONUS_TOTAL_DONE:
             return true;
         case BONUS_TOTAL_INITIAL_WAIT: {
-            if (!Frame_DelayReady(vsync, 50)) {
+            if (!Frame_DelayReady(50)) {
                 return false;
             }
             const VIDEO_IMAGE image = { .pixels = c->assets->background.pixels,
@@ -160,30 +157,29 @@ bool Bonus_ResumeTotal(
                                         .height = VIDEO_HEIGHT,
                                         .stride = VIDEO_WIDTH,
                                         .key = -1 };
-            Video_SelectDrawingPage(video, 1);
+            Video_SelectDrawingPage(1);
             Video_Blit(
-                video, &image, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT },
-                0, 0);
+                &image, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0);
             c->common->palette->resource = c->assets->palette;
-            Video_SelectDrawingPage(video, 0);
+            Video_SelectDrawingPage(0);
             Bonus_BeginRowTransition(&b->transition);
             b->phase = BONUS_TOTAL_TRANSITION;
             break;
         }
         case BONUS_TOTAL_TRANSITION:
             if (!Bonus_ResumeRowTransition(
-                    &b->transition, video, c->common->palette,
-                    &c->common->palette->resource, vsync)) {
+                    &b->transition, c->common->palette,
+                    &c->common->palette->resource)) {
                 return false;
             }
             Sprite_PtnPut(
-                video, &c->assets->numerals, b->stage_number / 10, -1, 224, 14);
+                &c->assets->numerals, b->stage_number / 10, -1, 224, 14);
             Sprite_PtnPut(
-                video, &c->assets->numerals, b->stage_number % 10, -1, 256, 14);
+                &c->assets->numerals, b->stage_number % 10, -1, 256, 14);
             b->phase = BONUS_TOTAL_STAGE_WAIT;
             break;
         case BONUS_TOTAL_STAGE_WAIT:
-            if (!Frame_DelayReady(vsync, 30)) {
+            if (!Frame_DelayReady(30)) {
                 return false;
             }
             b->phase = BONUS_TOTAL_PREPARE_METRIC;
@@ -226,7 +222,7 @@ bool Bonus_ResumeTotal(
             break;
         }
         case BONUS_TOTAL_METRIC_WAIT:
-            if (!Frame_DelayReady(vsync, 5)) {
+            if (!Frame_DelayReady(5)) {
                 return false;
             }
             b->metric++;
@@ -234,18 +230,18 @@ bool Bonus_ResumeTotal(
                 b->phase = BONUS_TOTAL_PREPARE_METRIC;
                 break;
             }
-            GameInput_ResetGame(c->common->input);
-            c->common->input->shot = true;
-            c->common->input->ok = true;
+            GameInput_ResetGame();
+            g_GameInput.shot = true;
+            g_GameInput.ok = true;
             c->continues_per_scene[b->stage_number / 5 - 1] =
                 (uint16_t)*c->continues_total;
             b->phase = BONUS_TOTAL_CONFIRM;
             break;
         case BONUS_TOTAL_CONFIRM:
-            if (GameInput_SenseGame(c->common->input, raw, false)) {
+            if (GameInput_SenseGame(raw, false)) {
                 c->common->display->player->is_hit = true;
             }
-            if (c->common->input->shot && c->common->input->ok) {
+            if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
             }
             *c->common->score_bonus = 0;

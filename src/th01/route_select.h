@@ -26,10 +26,8 @@ typedef struct {
 } ROUTE_SELECT;
 
 typedef struct {
-    VIDEO *video;
     PALETTE_STATE *palette;
     const ROUTE_SELECT_ASSETS *assets;
-    GAME_INPUT *input;
     PLAYER *player;
     SCENE_STATE *scene;
     uint8_t *route;
@@ -52,7 +50,7 @@ RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *assets);
 // initial delay. Keep context and borrowed assets stable until completion.
 bool RouteSelect_Begin(
     ROUTE_SELECT *selection, const ROUTE_SELECT_CONTEXT *context,
-    const TH01_INPUT *raw, FRAME_VSYNC *vsync);
+    const TH01_INPUT *raw);
 
 // Senses the supplied input only at ready source polling boundaries. New up
 // or down toggles once, even when both become pressed. Held arrows do not
@@ -64,4 +62,4 @@ bool RouteSelect_Begin(
 // reads no clock/device/file and advances no VSync or gameplay counters.
 bool RouteSelect_Resume(
     ROUTE_SELECT *selection, const ROUTE_SELECT_CONTEXT *context,
-    const TH01_INPUT *raw, FRAME_VSYNC *vsync);
+    const TH01_INPUT *raw);
