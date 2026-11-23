@@ -1,6 +1,7 @@
 #include "th01/text.h"
 
 #include "core/base/array.h"
+#include "core/base/assert.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -103,14 +104,12 @@ static void M_Copy(const FONT_ROM *const rom, GAME_TEXT_GLYPH *const glyph)
     }
 }
 
-static RESULT M_Style(const GAME_TEXT_STYLE *const style)
+static void M_Style(const GAME_TEXT_STYLE *const style)
 {
-    FAIL_IF(
-        style == nullptr || style->weight < GAME_TEXT_NORMAL
-            || style->weight > GAME_TEXT_BLACK || style->spacing < 0
-            || style->spacing > 7,
-        "Invalid graphics text style");
-    return OK;
+    ASSERT(
+        style != nullptr && style->weight >= GAME_TEXT_NORMAL
+        && style->weight <= GAME_TEXT_BLACK && style->spacing >= 0
+        && style->spacing <= 7);
 }
 
 static uint16_t M_Weight(uint16_t row, const GAME_TEXT_WEIGHT weight)
@@ -228,41 +227,36 @@ const GAME_TEXT_GLYPH *GameText_Find(
     return nullptr;
 }
 
-static RESULT M_Measure(
+static int32_t M_Measure(
     const GAME_TEXT_FONT *const font, const char *const text,
-    const GAME_TEXT_STYLE *const style, int32_t *const width)
+    const GAME_TEXT_STYLE *const style)
 {
-    *width = 0;
-    FAIL_IF(
-        font == nullptr || text == nullptr, "Missing graphics font or text");
-    MUST(M_Style(style));
+    ASSERT(font != nullptr && text != nullptr);
+    M_Style(style);
     const size_t size = strlen(text);
     int64_t extent = 0;
     for (size_t offset = 0; offset < size;) {
         uint32_t codepoint;
         const size_t length =
             M_Decode(text + offset, size - offset, &codepoint);
-        FAIL_IF(length == 0, "Invalid UTF-8 at text offset %zu", offset);
+        ASSERT(length != 0);
         const GAME_TEXT_GLYPH *const glyph = GameText_Find(font, codepoint);
         extent += (glyph != nullptr ? glyph->width : M_Width(codepoint))
             + style->spacing;
-        FAIL_IF(
-            extent - style->spacing > INT32_MAX, "Graphics text is too wide");
+        ASSERT(extent - style->spacing <= INT32_MAX);
         offset += length;
     }
-    *width = size == 0 ? 0 : (int32_t)(extent - style->spacing);
-    return OK;
+    return size == 0 ? 0 : (int32_t)(extent - style->spacing);
 }
 
-RESULT GameText_Draw(
+void GameText_Draw(
     const GAME_TEXT_FONT *const font, VIDEO *const video,
     const char *const text, const int32_t left, const int32_t top,
     const uint8_t color, const GAME_TEXT_STYLE *const style)
 {
-    int32_t width;
-    MUST(M_Measure(font, text, style, &width));
+    const int32_t width = M_Measure(font, text, style);
     if (width == 0) {
-        return OK;
+        return;
     }
     if (style->clear_background) {
         M_Fill(
@@ -306,5 +300,4 @@ RESULT GameText_Draw(
         pen += cell_width + style->spacing;
         offset += length;
     }
-    return OK;
 }

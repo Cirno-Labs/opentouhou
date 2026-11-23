@@ -37,9 +37,9 @@ static void M_Text(
     const BONUS_CONTEXT *const c, const char *const text, const int16_t left,
     const int16_t row, const uint8_t color)
 {
-    ASSERT(Result_Ignore(GameText_Draw(
+    GameText_Draw(
         c->font, c->display->video, text, 48 + left, 80 + row * 16, color,
-        &m_Style)));
+        &m_Style);
 }
 
 static int32_t M_Add(

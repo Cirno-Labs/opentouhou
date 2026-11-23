@@ -53,9 +53,10 @@ const GAME_TEXT_GLYPH *GameText_Find(
 // spacing pixels between cells. Applies the 16-bit weights before reverse,
 // discarding overflow to the left; uncached characters draw blank.
 // clear_background fills the text extent with index 0, through row 17 when
-// underlined, and underline draws index 7 at top+17. Stops before a cell that
-// extends beyond the right edge, as the original does. Clips left and vertical
-// writes without the VRAM's aliasing. Fails without drawing on malformed input.
-RESULT GameText_Draw(
+// underlined, and underline draws index 7 at top+17. Stops before a cell
+// that extends beyond the right edge, as the original does. Clips left and
+// vertical writes without the VRAM's aliasing. text must be valid UTF-8,
+// and spacing 0 through 7.
+void GameText_Draw(
     const GAME_TEXT_FONT *font, VIDEO *video, const char *text, int32_t left,
     int32_t top, uint8_t color, const GAME_TEXT_STYLE *style);

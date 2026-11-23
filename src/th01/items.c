@@ -3,8 +3,6 @@
 #include "pc98/zun/math16.h"
 #include "th01/shape.h"
 
-#include "core/base/assert.h"
-
 #define ITEM_BOMB_IMAGE 32
 #define ITEM_POINT_IMAGE 33
 
@@ -26,8 +24,7 @@ static void M_Text(
     const ITEM_CONTEXT *const context, const char *const text,
     const int16_t left, const int16_t top)
 {
-    ASSERT(Result_Ignore(GameText_Draw(
-        context->font, context->video, text, left, top, 7, &m_Style)));
+    GameText_Draw(context->font, context->video, text, left, top, 7, &m_Style);
 }
 
 static void M_Collect(

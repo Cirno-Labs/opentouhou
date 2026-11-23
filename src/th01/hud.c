@@ -19,8 +19,7 @@ static void M_Text(
 {
     const GAME_TEXT_STYLE style = { .weight = maximum ? GAME_TEXT_BOLD
                                                       : GAME_TEXT_BLACK };
-    ASSERT(Result_Ignore(
-        GameText_Draw(c->font, c->video, text, left, top, color, &style)));
+    GameText_Draw(c->font, c->video, text, left, top, color, &style);
 }
 
 static void M_Snap(
