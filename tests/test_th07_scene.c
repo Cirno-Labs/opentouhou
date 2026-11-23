@@ -360,11 +360,11 @@ TEST(a_switch_clears_the_buttons)
 
     const TH07_INPUT input = { .shoot = true };
     Game_Tick(&input);
-    CHECK(g_Buttons.held.shoot);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) != 0);
 
     Scene_Request(SCENE_GAMEPLAY);
     Game_Tick(&input);
-    CHECK(!g_Buttons.held.shoot);
+    CHECK((g_Buttons.word & TH07_BUTTON_shoot) == 0);
     CHECK_EQ_INT(g_Buttons.word, 0);
     Game_Shutdown();
 }
@@ -390,7 +390,7 @@ TEST(the_shoot_focuses_setting_reaches_the_buttons)
     for (int32_t calc = 0; calc < 10; calc++) {
         Game_Tick(&m_Shoot);
     }
-    CHECK(g_Buttons.held.focus);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) != 0);
     Game_Shutdown();
 
     M_Setup();
@@ -399,7 +399,7 @@ TEST(the_shoot_focuses_setting_reaches_the_buttons)
     for (int32_t calc = 0; calc < 10; calc++) {
         Game_Tick(&m_Shoot);
     }
-    CHECK(!g_Buttons.held.focus);
+    CHECK((g_Buttons.word & TH07_BUTTON_focus) == 0);
     CHECK_EQ_INT(g_Buttons.shot_held_frames, 0);
     Game_Shutdown();
 }

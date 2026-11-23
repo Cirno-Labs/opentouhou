@@ -27,9 +27,6 @@
 #define M_EXTRA_RUNS 4
 #define M_PATH_SIZE 0x100
 
-#define M_CONFIRM 0x1001
-#define M_SKIP 0x100
-
 typedef enum {
     M_FADE_NONE = 0,
     M_FADE_IN_BLACK = 1,
@@ -152,8 +149,8 @@ static void M_SkipLine(M_ENDING *const ending)
 
 static bool M_SkipPressed(const M_ENDING *const ending)
 {
-    return Buttons_WasPressed(&g_Buttons, M_CONFIRM)
-        || (ending->can_skip && (g_Buttons.word & M_SKIP) != 0);
+    return Buttons_WasPressed(&g_Buttons, TH06_BUTTON_ok)
+        || (ending->can_skip && (g_Buttons.word & TH06_BUTTON_skip) != 0);
 }
 
 // Shows the half of start, whose bytes are text, on the sprite of the line.
@@ -364,7 +361,7 @@ static void M_EndLine(
                || M_Current(ending) == '\r')) {
         ending->cursor++;
     }
-    const int32_t delay = (g_Buttons.word & M_CONFIRM) != 0
+    const int32_t delay = (g_Buttons.word & TH06_BUTTON_ok) != 0
         ? ending->line_delay_fast
         : ending->line_delay;
     Timer_Set(&ending->line_timer, delay);
@@ -468,7 +465,7 @@ static CHAIN_STATUS M_Update(void *const arg)
                 Anm_Step(&ending->sprites[i]);
             }
         }
-        if (!ending->can_skip || (g_Buttons.word & M_SKIP) == 0
+        if (!ending->can_skip || (g_Buttons.word & TH06_BUTTON_skip) == 0
             || run >= M_EXTRA_RUNS) {
             return CHAIN_CONTINUE;
         }

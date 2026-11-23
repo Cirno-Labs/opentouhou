@@ -42,6 +42,23 @@ typedef enum {
 #undef TH06_ACTION_INDEX
 } TH06_ACTION;
 
+// Holds each button's bit in the button word, and the masks that menus
+// share: ok confirms a choice, cancel backs out and any is every button.
+// recorded holds the buttons that a replay stores.
+typedef enum {
+#define TH06_BUTTON_MASK(field_, mask_, ...) TH06_BUTTON_##field_ = mask_,
+#define TH06_STICK_MASK(...)
+    TH06_ACTIONS(TH06_BUTTON_MASK, TH06_STICK_MASK)
+#undef TH06_BUTTON_MASK
+#undef TH06_STICK_MASK
+        TH06_BUTTON_ok = TH06_BUTTON_shoot | TH06_BUTTON_confirm,
+    TH06_BUTTON_cancel = TH06_BUTTON_bomb | TH06_BUTTON_menu,
+    TH06_BUTTON_any = 0xffff,
+    TH06_BUTTON_recorded = TH06_BUTTON_shoot | TH06_BUTTON_bomb
+        | TH06_BUTTON_focus | TH06_BUTTON_up | TH06_BUTTON_down
+        | TH06_BUTTON_left | TH06_BUTTON_right | TH06_BUTTON_skip,
+} TH06_BUTTON;
+
 extern const INPUT_SCHEMA g_InputSchema;
 
 // Holds a frame's buttons, as the original derives them from the raw

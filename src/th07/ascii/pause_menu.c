@@ -101,7 +101,7 @@ static void M_HighlightConfirm(
 
 static bool M_Confirmed(void)
 {
-    return Buttons_WasPressed(&g_Buttons, 0x1001);
+    return Buttons_WasPressed(&g_Buttons, TH07_BUTTON_ok);
 }
 
 static void M_PlayMove(void)
@@ -122,7 +122,7 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         menu->state_frames = 0;
         menu->background.pending_interrupt = 1;
     }
-    if (Buttons_WasPressed(&g_Buttons, 0x200) && menu->state != 9) {
+    if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_quit) && menu->state != 9) {
         Sound_Queue(SOUND_OK);
         menu->state = 9;
         M_InterruptShown(menu->sprites, ASCII_PAUSE_SPRITE_COUNT);
@@ -130,7 +130,7 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
     }
     // Retail tests for state 9 here, so a new press restarts the wait of
     // state 10.
-    if (!in_replay && Buttons_WasPressed(&g_Buttons, 0x4000)
+    if (!in_replay && Buttons_WasPressed(&g_Buttons, TH07_BUTTON_retry)
         && menu->state != 9) {
         Sound_Queue(SOUND_OK);
         menu->state = 10;
@@ -165,15 +165,15 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
         M_HighlightPauseLine(menu, 1);
         if (menu->state_frames >= 4) {
             if (!in_replay) {
-                if (Buttons_WasPressed(&g_Buttons, 0x10)) {
+                if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)) {
                     menu->state = 3;
                     M_PlayMove();
                 }
-            } else if (Buttons_WasPressed(&g_Buttons, 0x10)) {
+            } else if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)) {
                 menu->state = 2;
                 M_PlayMove();
             }
-            if (Buttons_WasPressed(&g_Buttons, 0x20)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = 2;
                 M_PlayMove();
             }
@@ -189,16 +189,16 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
     case 2:
         M_HighlightPauseLine(menu, 2);
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, 0x10)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)) {
                 menu->state = 1;
                 M_PlayMove();
             }
             if (in_replay) {
-                if (Buttons_WasPressed(&g_Buttons, 0x20)) {
+                if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                     menu->state = 1;
                     M_PlayMove();
                 }
-            } else if (Buttons_WasPressed(&g_Buttons, 0x20)) {
+            } else if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = 3;
                 M_PlayMove();
             }
@@ -214,11 +214,11 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
     case 3:
         M_HighlightPauseLine(menu, 3);
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, 0x10)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)) {
                 menu->state = 2;
                 M_PlayMove();
             }
-            if (Buttons_WasPressed(&g_Buttons, 0x20)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = 1;
                 M_PlayMove();
             }
@@ -244,8 +244,8 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
     case 7:
         M_HighlightConfirm(menu->sprites, 5, true);
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, 0x10)
-                || Buttons_WasPressed(&g_Buttons, 0x20)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)
+                || Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = menu->state == 5 ? 6 : 8;
                 M_PlayMove();
             }
@@ -261,8 +261,8 @@ void PauseMenu_UpdatePauseMenu(PAUSE_MENU *const menu)
     case 8:
         M_HighlightConfirm(menu->sprites, 5, false);
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, 0x10)
-                || Buttons_WasPressed(&g_Buttons, 0x20)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)
+                || Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = menu->state == 6 ? 5 : 7;
                 M_PlayMove();
             }
@@ -414,8 +414,8 @@ void PauseMenu_UpdateContinueMenu(CONTINUE_MENU *const menu)
     case 1:
         M_HighlightConfirm(menu->sprites, 2, true);
         if (menu->state_frames >= 4) {
-            if (Buttons_WasPressed(&g_Buttons, 0x10)
-                || Buttons_WasPressed(&g_Buttons, 0x20)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)
+                || Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = 2;
                 M_PlayMove();
             }
@@ -431,8 +431,8 @@ void PauseMenu_UpdateContinueMenu(CONTINUE_MENU *const menu)
     case 2:
         M_HighlightConfirm(menu->sprites, 2, false);
         if (menu->state_frames >= 30) {
-            if (Buttons_WasPressed(&g_Buttons, 0x10)
-                || Buttons_WasPressed(&g_Buttons, 0x20)) {
+            if (Buttons_WasPressed(&g_Buttons, TH07_BUTTON_up)
+                || Buttons_WasPressed(&g_Buttons, TH07_BUTTON_down)) {
                 menu->state = 1;
                 M_PlayMove();
             }

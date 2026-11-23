@@ -21,20 +21,6 @@ static const INPUT_ACTION m_Actions[] = {
 };
 const INPUT_SCHEMA g_InputSchema = INPUT_SCHEMA_OF(TH06_INPUT, m_Actions, 1);
 
-typedef struct {
-    size_t offset;
-    uint16_t bit;
-} BUTTON_BIT;
-
-// Maps each button to its bit in the button word, from TH06_ACTIONS.
-static const BUTTON_BIT m_Bits[] = {
-#define M_BIT(field_, bit_, ...) { offsetof(TH06_INPUT, field_), bit_ },
-#define M_NO_BIT(...)
-    TH06_ACTIONS(M_BIT, M_NO_BIT)
-#undef M_BIT
-#undef M_NO_BIT
-};
-
 static void M_Update(BUTTONS *const buttons)
 {
     const uint16_t previous = buttons->previous_word;
@@ -62,23 +48,26 @@ static void M_Update(BUTTONS *const buttons)
 
 uint16_t Buttons_ToWord(const TH06_INPUT *const input)
 {
-    const uint8_t *const base = (const uint8_t *)input;
     uint16_t word = 0;
-    for (size_t i = 0; i < ARRAY_SIZE(m_Bits); i++) {
-        if (*(const bool *)(base + m_Bits[i].offset)) {
-            word |= m_Bits[i].bit;
-        }
+#define M_BIT(field_, ...)                                                     \
+    if (input->field_) {                                                       \
+        word |= TH06_BUTTON_##field_;                                          \
     }
+#define M_NO_BIT(...)
+    TH06_ACTIONS(M_BIT, M_NO_BIT)
+#undef M_BIT
+#undef M_NO_BIT
     return word;
 }
 
 TH06_INPUT Buttons_FromWord(const uint16_t word)
 {
     TH06_INPUT input = {};
-    uint8_t *const base = (uint8_t *)&input;
-    for (size_t i = 0; i < ARRAY_SIZE(m_Bits); i++) {
-        *(bool *)(base + m_Bits[i].offset) = (word & m_Bits[i].bit) != 0;
-    }
+#define M_BIT(field_, ...) input.field_ = (word & TH06_BUTTON_##field_) != 0;
+#define M_NO_BIT(...)
+    TH06_ACTIONS(M_BIT, M_NO_BIT)
+#undef M_BIT
+#undef M_NO_BIT
     return input;
 }
 
@@ -135,7 +124,8 @@ void Buttons_Update(BUTTONS *const buttons, const TH06_INPUT *const input)
 
 void Buttons_ApplyReplay(BUTTONS *const buttons, const uint16_t replay_word)
 {
-    buttons->word = (buttons->word & (uint16_t)~0x1f7) | replay_word;
+    buttons->word =
+        (buttons->word & (uint16_t)~TH06_BUTTON_recorded) | replay_word;
     M_Update(buttons);
 }
 
