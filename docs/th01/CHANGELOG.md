@@ -8,6 +8,9 @@
 - Changed the music_restart fix into the debouncing fix, which also
   stops the press that confirms a high-score name from choosing Yes at
   the Continue prompt.
+- Fixed the start failing with "Truncated GRF streams" on a MASK.GRF
+  whose header gives the wrong plane sizes, as fan translations write
+  it.
 
 ## 1.0.0 (2026-11-22)
 

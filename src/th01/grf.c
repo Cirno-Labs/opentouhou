@@ -36,17 +36,14 @@ RESULT Grf_Load(
     Reader_ReadU8(reader);
     const uint8_t run_byte = Reader_ReadU8(reader);
     Reader_ReadU16(reader);
-    uint16_t sizes[4];
-    size_t total = 0;
-    for (int32_t plane = 0; plane < 4; plane++) {
-        sizes[plane] = Reader_ReadU16(reader);
-        total += sizes[plane];
-    }
-    Reader_Skip(reader, 48);
+    const uint16_t blue_size = Reader_ReadU16(reader);
+    Reader_Skip(reader, 54);
     MUST(Reader_Result(reader));
     FAIL_IF(memcmp(magic, "HGRF", 4) != 0, "Invalid GRF signature");
-    FAIL_IF(total > Reader_Remaining(reader), "Truncated GRF streams");
-    READER stream = Reader_Slice(reader, sizes[0]);
+    // Fan translations write spaces (0x2020) as the plane sizes.
+    const size_t remaining = Reader_Remaining(reader);
+    READER stream =
+        Reader_Slice(reader, blue_size < remaining ? blue_size : remaining);
     MUST(Reader_Result(reader));
     uint8_t packed[M_PACKED_SIZE];
     MUST(M_DecodeRle(&stream, run_byte, packed));

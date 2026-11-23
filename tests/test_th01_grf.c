@@ -208,20 +208,35 @@ TEST(rejects_short_runs_and_short_decoded_masks_without_using_the_arena)
     Arena_Free(&arena);
 }
 
-TEST(rejects_bad_magic_and_truncated_unused_streams)
+TEST(rejects_bad_magic)
 {
     ARENA arena;
     Arena_Init(&arena, "GRF test", 65536);
-    for (int32_t variant = 0; variant < 2; variant++) {
-        GRF_BUILDER file = M_Header(10);
-        M_FinishZero(&file);
-        file.bytes[variant == 0 ? 0 : 10] = variant == 0 ? 'X' : 1;
-        GRF mask;
-        CHECK(!Result_Ignore(
-            M_Load(&file, file.size, Arena_Allocator(&arena), &mask)));
-        CHECK(mask.coverage == nullptr);
-        CHECK_EQ_INT(arena.used, 0);
-    }
+    GRF_BUILDER file = M_Header(10);
+    M_FinishZero(&file);
+    file.bytes[0] = 'X';
+    GRF mask;
+    CHECK(!Result_Ignore(
+        M_Load(&file, file.size, Arena_Allocator(&arena), &mask)));
+    CHECK(mask.coverage == nullptr);
+    CHECK_EQ_INT(arena.used, 0);
+    Arena_Free(&arena);
+}
+
+TEST(reads_plane_sizes_of_spaces_up_to_the_end_of_the_file)
+{
+    ARENA arena;
+    Arena_Init(&arena, "GRF test", 65536);
+    GRF_BUILDER file = M_Header(10);
+    M_Literal(&file, 0x80);
+    M_FinishZero(&file);
+    memset(file.bytes + 8, ' ', 8);
+    GRF mask;
+    CHECK(Result_Log(
+        M_Load(&file, file.size, Arena_Allocator(&arena), &mask),
+        LOG_LEVEL_ERROR));
+    CHECK_EQ_INT(mask.coverage[0], 1);
+    CHECK_EQ_INT(mask.coverage[1], 0);
     Arena_Free(&arena);
 }
 
