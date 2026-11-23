@@ -53,9 +53,7 @@ bool Game_Tick(const TH07_INPUT *const input)
     Chain_RunDraw();
     Note_Draw();
     const CHAIN_RUN run = Chain_RunCalc();
-    if (Gfx_IsStarted()) {
-        Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
-    }
+    Result_Log(Anm_DoPendingCopy(), LOG_LEVEL_WARNING);
     if (run == CHAIN_RUN_RESET) {
         Game_Shutdown();
         return Result_Log(Game_Init(), LOG_LEVEL_ERROR);
