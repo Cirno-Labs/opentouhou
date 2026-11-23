@@ -40,6 +40,15 @@ bool GameManager_IsInPlayArea(
         && !(y + height / 2.0f < 0.0f) && !(y - height / 2.0f > 448.0f);
 }
 
+ANM_DRAW GameManager_PlayAreaDraw(void)
+{
+    ANM_DRAW draw = Anm_ScreenDraw();
+    draw.view =
+        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
+    draw.interpolate = true;
+    return draw;
+}
+
 bool GameManager_HasExtraOpen(const int32_t shot)
 {
     const uint8_t *const cleared =

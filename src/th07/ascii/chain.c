@@ -43,11 +43,6 @@ static void M_SetRgb(
         | (uint32_t)green << 8 | blue;
 }
 
-static void M_SetAlpha(ANM_VM *const vm, const uint8_t alpha)
-{
-    vm->color = (vm->color & 0x00ffffffu) | (uint32_t)alpha << 24;
-}
-
 static void M_RunScripts(ASCII_TEXT *const text)
 {
     Anm_Step(&text->summary);
@@ -111,13 +106,13 @@ static void M_DrawBossMarkers(ASCII_TEXT *const text, const ANM_DRAW *draw)
         }
         const float distance = fabsf(marker->pos.x - 32.0f - g_Player.pos.x);
         if (distance < 64.0f) {
-            M_SetAlpha(
+            Anm_SetAlpha(
                 marker, (uint8_t)X87_Ftol(distance * 128.0f / 64.0f + 48.0f));
         } else {
-            M_SetAlpha(marker, 0xb0);
+            Anm_SetAlpha(marker, 0xb0);
         }
         if (text->boss_marker_blue[i]) {
-            M_SetAlpha(marker, 0x80);
+            Anm_SetAlpha(marker, 0x80);
             M_SetRgb(marker, 0x40, 0x40, 0xff);
         } else {
             M_SetRgb(marker, 0xff, 0xff, 0xff);
@@ -244,7 +239,7 @@ static void M_DrawPopup(
         } else {
             Anm_SetSprite(&text->digit, digit + 0x15);
         }
-        M_SetAlpha(&text->digit, alpha);
+        Anm_SetAlpha(&text->digit, alpha);
         ANM_VM vm = text->digit;
         vm.presentation_generation = popup->presentation_generation;
         draw->part = (uint32_t)i;
@@ -285,7 +280,7 @@ static void M_DrawSummary(ASCII_TEXT *const text, ANM_DRAW *const draw)
     digit->pos.x = text->summary.pos.x + 40.0f + 6.0f;
     digit->pos.y = text->summary.pos.y + 11.0f;
     digit->pos.z = text->summary.pos.z;
-    M_SetAlpha(digit, (uint8_t)(text->summary.color >> 24));
+    Anm_SetAlpha(digit, (uint8_t)(text->summary.color >> 24));
     const int32_t cherry = g_GameManager.cherry.value - offset;
     if (g_GameManager.cherry.value >= g_GameManager.cherry.max) {
         M_SetRgb(digit, 0xff, 0xd0, 0x80);

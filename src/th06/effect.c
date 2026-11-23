@@ -9,8 +9,6 @@
 #include "stg/chain.h"
 #include "stg/rng.h"
 
-#define M_ANM_SLOT 11
-#define M_FIRST_SPRITE 0x2b3
 #define M_CALC_PRIORITY 10
 #define M_DRAW_PRIORITY 8
 
@@ -209,12 +207,12 @@ static RESULT M_Added(void *const arg)
     if (stage < 0 || stage > 7) {
         return OK;
     }
-    return Anm_Load(M_ANM_SLOT, paths[stage], M_FIRST_SPRITE);
+    return Anm_Load(EFFECT_ANM_SLOT, paths[stage], EFFECT_FIRST_SPRITE);
 }
 
 static void M_Deleted(void *const arg)
 {
-    Anm_Release(M_ANM_SLOT);
+    Anm_Release(EFFECT_ANM_SLOT);
 }
 
 RESULT Effect_Register(void)

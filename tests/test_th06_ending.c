@@ -69,7 +69,7 @@ TEST(a_line_splits_into_halves_of_32_bytes)
     CHECK_EQ_STR(EndingScript_GetHalf(&script, 32), "xy");
     CHECK(EndingScript_GetHalf(&script, 1) == nullptr);
     CHECK_EQ_STR(EndingScript_GetHalf(&script, 36 + 64), "tail");
-    CHECK_EQ_INT(EndingScript_HalfEnd(&script, 32), 34);
+    CHECK(EndingScript_GetHalf(&script, 34) == nullptr);
     EndingScript_Free(&script);
 }
 
@@ -90,7 +90,7 @@ TEST(a_command_line_has_no_half)
     ENDING_SCRIPT script = M_Script(text, sizeof(text) - 1);
     CHECK(EndingScript_GetHalf(&script, 0) == nullptr);
     CHECK_EQ_STR(EndingScript_GetHalf(&script, 8), "AB");
-    CHECK_EQ_INT(EndingScript_HalfEnd(&script, 8), 10);
+    CHECK(EndingScript_GetHalf(&script, 10) == nullptr);
     EndingScript_Free(&script);
 }
 

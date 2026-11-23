@@ -47,6 +47,9 @@ void Anm_InitVm(ANM_VM *vm);
 // Shows sprite on vm. Does nothing when sprite is out of range or unused.
 void Anm_SetSprite(ANM_VM *vm, int32_t sprite);
 
+// Sets the alpha of vm's color, keeping its red, green and blue.
+void Anm_SetAlpha(ANM_VM *vm, uint8_t alpha);
+
 // Resets vm and starts script on it, running its first frame at once.
 // Without a loaded script at that number, clears all of vm.
 void Anm_StartScript(ANM_VM *vm, int32_t script);

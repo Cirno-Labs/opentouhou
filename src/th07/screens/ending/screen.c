@@ -66,11 +66,6 @@ typedef struct {
 
 static M_ENDING m_Ending;
 
-static bool M_IsBreak(const uint8_t c)
-{
-    return c == '\n' || c == '\r';
-}
-
 static uint8_t M_ByteAt(const M_ENDING *const ending, const size_t offset)
 {
     return EndingScript_Byte(&ending->script, offset);
@@ -132,6 +127,11 @@ static void M_ReadPath(
         length++;
     }
     out[length] = '\0';
+}
+
+static bool M_IsBreak(const uint8_t c)
+{
+    return c == '\n' || c == '\r';
 }
 
 static void M_SkipLine(M_ENDING *const ending)

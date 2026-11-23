@@ -14,6 +14,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#define M_BOSS_HEALTH_BAR 0x15
+#define M_MAX_POWER 128
+#define M_FRAME_Z 0.49f
+#define M_FRAME_SIDE 6
+#define M_FRAME_TOP 7
+#define M_FRAME_BOTTOM 8
+#define M_FULL_POWER_SPRITE 0x12
+#define M_VALUE_BACKGROUND 0x16
 #define M_SET_SPRITE_OPCODE 1
 
 static GFX_COLOR M_DrawColor(const uint32_t color)
@@ -53,7 +61,7 @@ static void M_Gradient(
 // script of the first line shows first, which is 256 in the original.
 static float M_LineWidth(void)
 {
-    const ANM_SCRIPT *const script = Anm_GetScript(M_LINE_SCRIPT);
+    const ANM_SCRIPT *const script = Anm_GetScript(GUI_LINE_SCRIPT);
     for (int32_t i = 0; script != nullptr && i < script->count; i++) {
         if (script->instrs[i].opcode == M_SET_SPRITE_OPCODE) {
             ANM_VM vm;
@@ -279,7 +287,7 @@ static void M_DrawHud(void)
     ANM_DRAW draw = M_ScreenDraw(ANM_VIEW_PLAY_AREA);
     if (g_Gui.msg.script < 0
         && (int32_t)g_Gui.boss.present + (int32_t)g_Gui.hud.boss_bar > 0) {
-        Anm_DrawUnrotated(&sprites[M_BOSS_BAR], &draw);
+        Anm_DrawUnrotated(&sprites[GUI_HUD_BOSS_BAR], &draw);
         ANM_VM *const health = &sprites[M_BOSS_HEALTH_BAR];
         health->anchor = 3;
         health->scale_x = g_Gui.hud.boss_health_shown * 288.0f / 14.0f;

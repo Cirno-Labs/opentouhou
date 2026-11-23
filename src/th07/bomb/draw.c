@@ -55,11 +55,6 @@ static void M_Turn(ANM_VM *const vm, const float angle)
     vm->rotation_changed = true;
 }
 
-static void M_SetAlpha(ANM_VM *const vm, const int32_t alpha)
-{
-    vm->color = (vm->color & 0x00ffffffu) | (uint32_t)(uint8_t)alpha << 24;
-}
-
 static void M_DrawOrbs(const ANM_DRAW *const draw)
 {
     for (int32_t i = 0; i < M_ORB_COUNT; i++) {
@@ -263,12 +258,12 @@ static void M_SakuyaBFocused(const ANM_DRAW *const draw)
         trail.part = 0;
         Anm_Draw(vm, &trail);
         for (int32_t k = 3; k < PLAYER_BOMB_PART_TRAIL_COUNT; k += 4) {
-            M_SetAlpha(vm, alpha - alpha * k / 32);
+            Anm_SetAlpha(vm, alpha - alpha * k / 32);
             M_Place(vm, square->trail[k]);
             trail.part = (uint32_t)k;
             Anm_Draw(vm, &trail);
         }
-        M_SetAlpha(vm, alpha);
+        Anm_SetAlpha(vm, alpha);
     }
 }
 

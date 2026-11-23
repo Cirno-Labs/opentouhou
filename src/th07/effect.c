@@ -456,15 +456,6 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
-static ANM_DRAW M_DrawContext(void)
-{
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
-    draw.interpolate = true;
-    return draw;
-}
-
 static void M_DrawInPlayArea(
     const M_DRAW_LIST *const list, const ANM_DRAW *const draw)
 {
@@ -479,7 +470,7 @@ static void M_DrawInPlayArea(
 
 static CHAIN_STATUS M_Draw(void *const arg)
 {
-    const ANM_DRAW draw = M_DrawContext();
+    const ANM_DRAW draw = GameManager_PlayAreaDraw();
     M_DrawInPlayArea(&m_Lists[M_LIST_PLAY_AREA], &draw);
     const M_DRAW_LIST *const projected = &m_Lists[M_LIST_PROJECTED];
     for (int32_t i = 0; i < projected->count; i++) {
@@ -687,7 +678,7 @@ void Effect_DrawPetals(void)
     if (g_Settings.effects_quality <= 1) {
         return;
     }
-    ANM_DRAW draw = M_DrawContext();
+    ANM_DRAW draw = GameManager_PlayAreaDraw();
     draw.depth_test = GFX_DEPTH_LESS_EQUAL;
     const M_DRAW_LIST *const list = &m_Lists[M_LIST_PETALS];
     for (int32_t i = 0; i < list->count; i++) {

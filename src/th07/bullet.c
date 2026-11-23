@@ -752,15 +752,6 @@ static CHAIN_STATUS M_Update(void *const arg)
     return CHAIN_CONTINUE;
 }
 
-static ANM_DRAW M_DrawContext(void)
-{
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
-    draw.interpolate = true;
-    return draw;
-}
-
 // Draws the glow at the start of laser, with sine and cosine of its angle.
 static void M_DrawOrigin(
     LASER *const laser, const float sine, const float cosine,
@@ -828,7 +819,7 @@ static void M_DrawBullet(BULLET *const bullet, const ANM_DRAW *const draw)
 
 static CHAIN_STATUS M_Draw(void *const arg)
 {
-    const ANM_DRAW draw = M_DrawContext();
+    const ANM_DRAW draw = GameManager_PlayAreaDraw();
     for (int32_t i = 0; i < LASER_COUNT; i++) {
         LASER *const laser = &g_Bullets.lasers[i];
         if (laser->active) {

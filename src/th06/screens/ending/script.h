@@ -49,10 +49,6 @@ void EndingScript_Free(ENDING_SCRIPT *script);
 // Returns the byte at offset, or 0 past the end.
 uint8_t EndingScript_Byte(const ENDING_SCRIPT *script, size_t offset);
 
-// Returns the end of the half that starts at start: the byte after up to
-// 32 bytes of pairs, or the command or line break that ends it first.
-size_t EndingScript_HalfEnd(const ENDING_SCRIPT *script, size_t start);
-
 // Returns the UTF-8 text of the half that starts at offset, or nullptr
 // where no half starts. Halves start at the start of the script, after a
 // line break or a NUL, and after a full half. With whole lines, a half

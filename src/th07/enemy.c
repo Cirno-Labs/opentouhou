@@ -1081,10 +1081,7 @@ static void M_DrawEnemy(ENEMY *const enemy, const ANM_DRAW *const draw)
 
 static void M_DrawLists(const int32_t first)
 {
-    ANM_DRAW draw = Anm_ScreenDraw();
-    draw.view =
-        Anm_ScreenView(g_GameManager.camera.viewport, ANM_VIEW_PLAY_AREA);
-    draw.interpolate = true;
+    ANM_DRAW draw = GameManager_PlayAreaDraw();
     for (int32_t i = first; i < first + 2; i++) {
         for (ENEMY *enemy = g_Enemies.draw_lists[i]; enemy != nullptr;
              enemy = enemy->next_drawn) {

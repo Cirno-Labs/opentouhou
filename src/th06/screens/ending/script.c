@@ -16,11 +16,6 @@
 
 #define M_DIFF_ARENA_CAPACITY (16 * 1024 * 1024)
 
-static bool M_IsBreak(const uint8_t c)
-{
-    return c == '\n' || c == '\r';
-}
-
 // Returns the number of bytes before the first NUL, at most size.
 static size_t M_Length(const uint8_t *const bytes, const size_t size)
 {
@@ -42,6 +37,26 @@ static char *M_Decode(const uint8_t *const bytes, const size_t size)
     return Mem_AllocZ(1);
 }
 
+static bool M_IsBreak(const uint8_t c)
+{
+    return c == '\n' || c == '\r';
+}
+
+// Returns the end of the half that starts at start: the byte after up to
+// 32 bytes of pairs, or the command or line break that ends it first.
+static size_t M_HalfEnd(const ENDING_SCRIPT *const script, const size_t start)
+{
+    size_t end = start;
+    while (end < script->size && end - start < ENDING_HALF_BYTES) {
+        const uint8_t c = script->data[end];
+        if (c == '@' || c == '\0' || M_IsBreak(c)) {
+            break;
+        }
+        end += 2;
+    }
+    return end;
+}
+
 static void M_ConvertHalves(ENDING_SCRIPT *const script)
 {
     script->halves = Mem_AllocArrZ(script->size + 1, sizeof(char *));
@@ -52,7 +67,7 @@ static void M_ConvertHalves(ENDING_SCRIPT *const script)
         }
         size_t half = start;
         while (half < script->size && script->halves[half] == nullptr) {
-            const size_t end = EndingScript_HalfEnd(script, half);
+            const size_t end = M_HalfEnd(script, half);
             if (end == half) {
                 break;
             }
@@ -159,20 +174,6 @@ uint8_t EndingScript_Byte(
     const ENDING_SCRIPT *const script, const size_t offset)
 {
     return offset < script->size ? script->data[offset] : 0;
-}
-
-size_t EndingScript_HalfEnd(
-    const ENDING_SCRIPT *const script, const size_t start)
-{
-    size_t end = start;
-    while (end < script->size && end - start < ENDING_HALF_BYTES) {
-        const uint8_t c = script->data[end];
-        if (c == '@' || c == '\0' || M_IsBreak(c)) {
-            break;
-        }
-        end += 2;
-    }
-    return end;
 }
 
 const char *EndingScript_GetHalf(
