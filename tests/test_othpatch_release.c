@@ -158,6 +158,21 @@ TEST(release_without_the_platform_has_no_package)
     Mem_Free(windows_file);
 }
 
+TEST(web_package_is_not_the_platform_package)
+{
+    char *const web_file = M_File("Web", "oth06-0.1.0-Web.zip");
+    char *const release = M_Release("0.1.0", web_file);
+    char *const programs = Str_Format("\"oth06\": [%s]", release);
+    M_CASE test;
+    CHECK(Result_Log(M_Find(&test, programs), LOG_LEVEL_ERROR));
+    M_CheckVersion(test.release.version, 0, 1, 0);
+    CHECK(test.release.package == nullptr);
+    Arena_Free(&test.arena);
+    Mem_Free(programs);
+    Mem_Free(release);
+    Mem_Free(web_file);
+}
+
 TEST(file_without_a_sha256_digest_has_none)
 {
     const char *const programs =
