@@ -3,7 +3,7 @@
 #include "th01/frame.h"
 #include "th01/input.h"
 #include "th01/palette.h"
-#include "th01/pi.h"
+#include "pc98/zun/pi.h"
 #include "th01/score_data.h"
 #include "th01/text.h"
 

@@ -180,7 +180,7 @@ pc98/opna     YM2608 register, timer and sample synthesis
 pc98/mdrv     MDRV data readers, sequencing and synthesis
 pc98/vsync    the 24 kHz-mode VSync cadence on the host clock
 pc98/zun      master.lib and ZUN code the games share: 16-bit math,
-              random numbers
+              random numbers, Pi images, the logo
 ```
 
 Dependencies inside `core` go down this list, except that `gfx` and

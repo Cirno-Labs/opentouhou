@@ -6,7 +6,7 @@
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
-#include "th01/pi.h"
+#include "pc98/zun/pi.h"
 #include "th01/reiiden_image.h"
 #include "th01/scene.h"
 #include "th01/shootout_lasers.h"
