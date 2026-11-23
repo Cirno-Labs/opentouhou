@@ -1,5 +1,6 @@
 #include "th01/gameplay_internal.h"
 
+#include "pc98/zun/master_rng.h"
 #include "th01/scale2x.h"
 
 #include "core/base/assert.h"
@@ -376,7 +377,7 @@ static void M_BeginGameover(GAMEPLAY *const g)
             .top = g->world.orb.top,
             .image = 0,
         });
-    const int16_t image = Math_Random(&g->world.rng) % 8 == 0 ? 23 : 22;
+    const int16_t image = MasterRng_Next(&g->world.rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(
         g->storage.video, &g->storage.assets->miko, image, -1,
         g->world.player.left, PLAYER_TOP);

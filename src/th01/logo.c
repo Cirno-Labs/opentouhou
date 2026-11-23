@@ -1,5 +1,6 @@
 #include "th01/logo.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/assert.h"
 
@@ -129,9 +130,9 @@ void Logo_Init(LOGO *const logo, VIDEO *const video)
         logo->velocity[i] = (LOGO_POINT) { -8, 8 };
     }
     for (int32_t i = 0; i < 50; i++) {
-        logo->stars[i].x = (int32_t)(Math_Random(&logo->random) % 640);
-        logo->stars[i].y = (int32_t)(Math_Random(&logo->random) % 400);
-        logo->speeds[i] = (uint8_t)(Math_Random(&logo->random) % 32 + 6);
+        logo->stars[i].x = (int32_t)(MasterRng_Next(&logo->random) % 640);
+        logo->stars[i].y = (int32_t)(MasterRng_Next(&logo->random) % 400);
+        logo->speeds[i] = (uint8_t)(MasterRng_Next(&logo->random) % 32 + 6);
     }
 }
 
@@ -158,8 +159,8 @@ bool Logo_Tick(
     for (int32_t i = 0; i < 50; i++) {
         LOGO_POINT *const star = &logo->stars[i];
         M_Pixel(page, star->x, star->y, 5);
-        star->x += M_Shift(logo->speeds[i] * Math_Cos8(logo->star_phase), 8);
-        star->y += M_Shift(logo->speeds[i] * Math_Sin8(logo->star_phase), 8);
+        star->x += M_Shift(logo->speeds[i] * Math16_Cos(logo->star_phase), 8);
+        star->y += M_Shift(logo->speeds[i] * Math16_Sin(logo->star_phase), 8);
         star->x = (star->x + LOGO_WIDTH) % LOGO_WIDTH;
         star->y = (star->y + LOGO_HEIGHT) % LOGO_HEIGHT;
     }

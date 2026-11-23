@@ -1,5 +1,7 @@
 #include "th01/boss_b20m.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 #include "th01/finite.h"
 #include "th01/shape.h"
@@ -199,7 +201,7 @@ static PLAYER *M_Player(const B20M_CONTEXT *const c)
 }
 static int16_t M_W(const int32_t x)
 {
-    return Math_Wrap16(x);
+    return Math16_Wrap(x);
 }
 static int16_t M_Rank(
     const B20M_CONTEXT *const c, const int16_t e, const int16_t n,
@@ -210,11 +212,11 @@ static int16_t M_Rank(
 }
 static uint16_t M_Random(const B20M_CONTEXT *const c)
 {
-    return Math_Random(c->rng);
+    return MasterRng_Next(c->rng);
 }
 static uint8_t M_Angle(const int32_t y, const int32_t x)
 {
-    return Math_Angle(M_W(y), M_W(x));
+    return Math16_Angle(M_W(y), M_W(x));
 }
 static double M_Add(const double x, const double y)
 {
@@ -730,13 +732,13 @@ static void M_Wavy(B20M *const b, const B20M_CONTEXT *const c)
         if (p->color[i] == 0) {
             continue;
         }
-        int16_t x = Math_PolarY(p->left[i], 16, p->age[i]);
+        int16_t x = Math16_PolarY(p->left[i], 16, p->age[i]);
         M_Particle(
             c, M_W(p->top[i] * 80 + x / 8 - (x % 8 < 0)), (uint16_t)x & 7, 12,
             false);
         p->top[i] = M_W(p->top[i] + p->velocity[i]);
         p->age[i] = M_W(p->age[i] + 1);
-        x = Math_PolarY(p->left[i], 16, p->age[i]);
+        x = Math16_PolarY(p->left[i], 16, p->age[i]);
         if (p->age[i] >= 100) {
             p->color[i] = 0;
             continue;
@@ -1040,8 +1042,7 @@ static void M_Eggs(B20M *const b, const B20M_CONTEXT *const c)
         b->spawner_velocity_y =
             M_W(b->spawner_velocity_y + (b->spawner_top < 2624 ? 1 : -1));
         M_Erase(
-            c, Math_SubpixelToPixel(b->spawner_left),
-            Math_SubpixelToPixel(b->spawner_top));
+            c, Math16_ToPixel(b->spawner_left), Math16_ToPixel(b->spawner_top));
         for (int32_t i = b->eggs_alive - 1; i >= 0; i--) {
             M_Grc(c, b->egg_left[i], b->egg_top[i], 1, 0, 15);
         }
@@ -1050,20 +1051,17 @@ static void M_Eggs(B20M *const b, const B20M_CONTEXT *const c)
         if (b->frame % b->pattern_state == 0
             && M_In(b->spawner_left, b->spawner_top, 0, 0, 9728, 5888)) {
             if (b->eggs_alive < 30) {
-                b->egg_left[b->eggs_alive] =
-                    Math_SubpixelToPixel(b->spawner_left);
-                b->egg_top[b->eggs_alive] =
-                    Math_SubpixelToPixel(b->spawner_top);
+                b->egg_left[b->eggs_alive] = Math16_ToPixel(b->spawner_left);
+                b->egg_top[b->eggs_alive] = Math16_ToPixel(b->spawner_top);
                 b->eggs_alive++;
             }
             M_Grc(
-                c, Math_SubpixelToPixel(b->spawner_left),
-                Math_SubpixelToPixel(b->spawner_top), 1, 0, 15);
+                c, Math16_ToPixel(b->spawner_left),
+                Math16_ToPixel(b->spawner_top), 1, 0, 15);
         }
         M_Grc(
-            c, Math_SubpixelToPixel(b->spawner_left),
-            Math_SubpixelToPixel(b->spawner_top), 2, b->frame % 2,
-            (uint8_t)(b->frame % 4 + 2));
+            c, Math16_ToPixel(b->spawner_left), Math16_ToPixel(b->spawner_top),
+            2, b->frame % 2, (uint8_t)(b->frame % 4 + 2));
     } else if (b->frame < 400) {
         if (b->frame == 200) {
             if (b->spawner_velocity_y > -4 && b->spawner_velocity_y < 4) {
@@ -1073,7 +1071,8 @@ static void M_Eggs(B20M *const b, const B20M_CONTEXT *const c)
                 b->spawner_velocity_x = b->spawner_velocity_x < 0 ? -4 : 4;
             }
             for (int32_t i = b->eggs_alive - 1; i >= 0; i--) {
-                const MATH_VECTOR v = Math_Vector(3, (M_Random(c) & 127) + 128);
+                const MATH16_VECTOR v =
+                    Math16_Vector(3, (M_Random(c) & 127) + 128);
                 M_BirdSpawn(b, b->egg_left[i], b->egg_top[i], v.x, v.y);
             }
             M_WandLower(b, c);
@@ -1081,8 +1080,8 @@ static void M_Eggs(B20M *const b, const B20M_CONTEXT *const c)
         }
         if (M_In(b->spawner_left, b->spawner_top, -512, -512, 10240, 6400)) {
             M_Erase(
-                c, Math_SubpixelToPixel(b->spawner_left),
-                Math_SubpixelToPixel(b->spawner_top));
+                c, Math16_ToPixel(b->spawner_left),
+                Math16_ToPixel(b->spawner_top));
             b->spawner_left = M_W(b->spawner_left + b->spawner_velocity_x);
             b->spawner_top = M_W(b->spawner_top + b->spawner_velocity_y);
             if (M_In(b->spawner_left, b->spawner_top, 0, 0, 608, 368)) {
@@ -1103,7 +1102,7 @@ static void M_FlakeEllipse(
     const B20M *const b, const B20M_CONTEXT *const c, const int16_t rx,
     const int16_t ry, const uint8_t color, const uint8_t step, const bool erase)
 {
-    const int16_t x = Math_SubpixelToPixel(b->flake_left);
+    const int16_t x = Math16_ToPixel(b->flake_left);
     if (erase) {
         M_EraseEllipse(c, x, 384, rx, ry, step);
     } else {
@@ -1126,17 +1125,17 @@ static void M_Flake(B20M *const b, const B20M_CONTEXT *const c)
         M_Effect(c, 6);
         b->flake_left = 5440;
         b->flake_top = 1024;
-        const MATH_VECTOR v = Math_VectorBetween(
-            (MATH_VECTOR) { 340, 64 },
-            (MATH_VECTOR) { M_W(M_Player(c)->left + 12), 380 }, 112);
+        const MATH16_VECTOR v = Math16_Aim(
+            (MATH16_VECTOR) { 340, 64 },
+            (MATH16_VECTOR) { M_W(M_Player(c)->left + 12), 380 }, 112, 0);
         b->flake_velocity_x = v.x;
         b->flake_velocity_y = v.y;
         b->flake_state = 2;
     }
     if (b->flake_state == 2) {
         Sprite_Restore16(
-            M_Video(c), Math_SubpixelToPixel(b->flake_left),
-            Math_SubpixelToPixel(b->flake_top), 16, 8);
+            M_Video(c), Math16_ToPixel(b->flake_left),
+            Math16_ToPixel(b->flake_top), 16, 8);
         b->flake_top = M_W(b->flake_top + b->flake_velocity_y);
         if (b->flake_top >= 6336) {
             b->flake_state = 3;
@@ -1145,8 +1144,8 @@ static void M_Flake(B20M *const b, const B20M_CONTEXT *const c)
         }
         b->flake_left = M_W(b->flake_left + b->flake_velocity_x);
         M_Mask(
-            c, Math_SubpixelToPixel(b->flake_left),
-            Math_SubpixelToPixel(b->flake_top), c->assets->flake, 7);
+            c, Math16_ToPixel(b->flake_left), Math16_ToPixel(b->flake_top),
+            c->assets->flake, 7);
     }
     if (b->flake_state == 3) {
         M_FlakeEllipse(b, c, 48, 16, 6, 8, false);
@@ -1171,7 +1170,7 @@ static void M_Flake(B20M *const b, const B20M_CONTEXT *const c)
         b->radius_outer_2 = M_W(b->radius_outer_2 + 6);
         b->radius_inner = M_W(b->radius_inner + 4);
         b->star_left =
-            M_W(M_Random(c) % 64 + Math_SubpixelToPixel(b->flake_left) - 28);
+            M_W(M_Random(c) % 64 + Math16_ToPixel(b->flake_left) - 28);
         b->star_top = 400 - M_Random(c) % 48;
         if (b->radius_outer_1 <= 8) {
             b->flake_state = -1;
@@ -1182,7 +1181,7 @@ static void M_Flake(B20M *const b, const B20M_CONTEXT *const c)
         M_FlakeEllipse(b, c, b->radius_inner, b->radius_inner, 7, 6, false);
         M_Mask(c, b->star_left, b->star_top, c->assets->star, 7);
     }
-    const int16_t x = Math_SubpixelToPixel(b->flake_left);
+    const int16_t x = Math16_ToPixel(b->flake_left);
     if (!M_Player(c)->invincible && x + 32 > M_Player(c)->left
         && x - 64 < M_Player(c)->left && b->flake_state >= 3) {
         M_Player(c)->is_hit = true;
@@ -1215,7 +1214,7 @@ static void M_Sling(B20M *const b, const B20M_CONTEXT *const c)
         const uint8_t angle = (uint8_t)M_Random(c);
         Pellets_AddSingle(
             c->pellets, c->pellet_shared, c->hit->display->rank,
-            Math_PolarY(320, 40, angle), Math_PolarX(180, 40, angle), 0, 0,
+            Math16_PolarY(320, 40, angle), Math16_PolarX(180, 40, angle), 0, 0,
             PELLET_SLING_AIMED, 72, 0, 0);
     }
     if (b->frame >= 299) {
@@ -1258,8 +1257,8 @@ static void M_FourLasers(B20M *const b, const B20M_CONTEXT *const c)
     if (laser >= 0) {
         b->laser_origin_x = x;
         b->laser_origin_y = y;
-        const MATH_VECTOR v = Math_VectorBetween(
-            (MATH_VECTOR) { x, y }, (MATH_VECTOR) { target, 400 }, 16);
+        const MATH16_VECTOR v = Math16_Aim(
+            (MATH16_VECTOR) { x, y }, (MATH16_VECTOR) { target, 400 }, 16, 0);
         b->laser_velocity_x = v.x;
         b->laser_velocity_y = v.y;
         M_Laser(c, laser, x, y, target, 400, b->pattern_state, 7, 50, 8);
@@ -1314,8 +1313,8 @@ static void M_Radial(B20M *const b, const B20M_CONTEXT *const c)
         M_Effect(c, 6);
     } else if (b->frame < 200) {
         M_Ray(
-            b, c, 320, 160, Math_PolarX(320, 140, b->radial_angle),
-            Math_PolarY(160, 140, b->radial_angle), 7);
+            b, c, 320, 160, Math16_PolarX(320, 140, b->radial_angle),
+            Math16_PolarY(160, 140, b->radial_angle), 7);
         b->radial_angle = (uint8_t)(b->radial_angle + b->radial_velocity);
         b->radial_velocity++;
         if (b->frame % 10 == 0) {
@@ -1329,9 +1328,9 @@ static void M_Radial(B20M *const b, const B20M_CONTEXT *const c)
         if (b->frame % 15 == 0) {
             M_Laser(
                 c, (b->frame - 215) / 15, 320, 160,
-                Math_PolarX(320, 600, b->radial_angle),
-                Math_PolarY(160, 600, b->radial_angle), b->pattern_state, 7, 20,
-                4);
+                Math16_PolarX(320, 600, b->radial_angle),
+                Math16_PolarY(160, 600, b->radial_angle), b->pattern_state, 7,
+                20, 4);
         } else {
             M_Single(c, 320, 160, b->radial_angle, 100);
         }
@@ -1405,9 +1404,9 @@ static void M_SymmetricBirds(B20M *const b, const B20M_CONTEXT *const c)
         if (b->frame % 10 == 0) {
             M_Effect(c, 6);
             const int16_t target = M_W((b->frame - 60) * 10 + r->x);
-            const MATH_VECTOR v = Math_VectorBetween(
-                (MATH_VECTOR) { r->x, M_W(r->y - 32) },
-                (MATH_VECTOR) { target, 0 }, 4);
+            const MATH16_VECTOR v = Math16_Aim(
+                (MATH16_VECTOR) { r->x, M_W(r->y - 32) },
+                (MATH16_VECTOR) { target, 0 }, 4, 0);
             r->velocity_x = v.x;
             r->velocity_y = v.y;
             M_BirdSpawn(b, r->x, M_W(r->y - 32), v.x, v.y);
@@ -1669,9 +1668,9 @@ static void M_Leaves(
             }
             p->left[i] = M_Random(c) % 6400;
             p->top[i] = 1200 + M_Random(c) % 1000;
-            const MATH_VECTOR v = Math_VectorBetween(
-                (MATH_VECTOR) { p->left[i] / 10, p->top[i] / 10 },
-                (MATH_VECTOR) { M_Random(c) % 640, 64 }, 40);
+            const MATH16_VECTOR v = Math16_Aim(
+                (MATH16_VECTOR) { p->left[i] / 10, p->top[i] / 10 },
+                (MATH16_VECTOR) { M_Random(c) % 640, 64 }, 40, 0);
             p->velocity_x[i] = v.x;
             p->velocity_y[i] = v.y;
             p->flag[i] = 1;
@@ -1844,8 +1843,8 @@ static int16_t M_InvertRings(const B20M_CONTEXT *const c, const int16_t base)
     for (int32_t i = 32; i < 160; i++) {
         const int16_t r = M_W(base * (i / 32));
         outside += !Video_Invert32(
-            M_Video(c), Math_PolarY(304, r, i * 8), Math_PolarX(180, r, i * 8),
-            2);
+            M_Video(c), Math16_PolarY(304, r, i * 8),
+            Math16_PolarX(180, r, i * 8), 2);
     }
     return outside;
 }

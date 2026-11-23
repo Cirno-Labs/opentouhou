@@ -1,7 +1,7 @@
 #include "th01/boss_b05.h"
 
 #include "core/base/arena.h"
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 
 #include "test.h"
 
@@ -413,7 +413,7 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     const PELLETS full = f.pellets;
     uint32_t expected = f.rng;
     for (int32_t i = 0; i < 10; i++) {
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
     }
     const TH01_INPUT raw = {};
     FRAME_VSYNC vsync = {};
@@ -430,7 +430,7 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     b.frame = 184;
     expected = f.rng;
     for (int32_t i = 0; i < 20; i++) {
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
     }
     CHECK(B05_UpdateAndRender(&b, &f.context, &raw, &vsync));
     CHECK_EQ_INT(f.rng, expected);

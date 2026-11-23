@@ -1,4 +1,5 @@
 #include "th01/timer.h"
+#include "pc98/zun/master_rng.h"
 #include "core/base/arena.h"
 #include "test.h"
 
@@ -165,7 +166,7 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     f.timer.hurry_cycle = 255;
     f.timer.frames_since_hurry = 65535;
     for (int32_t i = 0; i < 4; i++) {
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
     }
     CHECK(Timer_TickAndPut(&f.timer, &f.context));
     CHECK_EQ_INT(f.timer.frames_since_hurry, 0);
@@ -175,7 +176,7 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     CHECK_EQ_INT(f.rng, expected);
     f.timer.frames_since_hurry = 499;
     for (int32_t i = 0; i < 4; i++) {
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
     }
     CHECK(Timer_TickAndPut(&f.timer, &f.context));
     CHECK_EQ_INT(f.rng, expected);

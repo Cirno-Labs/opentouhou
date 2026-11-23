@@ -1,6 +1,6 @@
 #include "th01/stage.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -25,14 +25,14 @@ static void M_Pellet(void *const user, const STAGE_PELLET_SPAWN spawn)
     CASE *const state = user;
     state->pellets++;
     state->last = spawn;
-    Math_Random(&state->rng);
+    MasterRng_Next(&state->rng);
 }
 
 static void M_Update(void *const user)
 {
     CASE *const state = user;
     state->updates++;
-    Math_Random(&state->rng);
+    MasterRng_Next(&state->rng);
 }
 
 static void M_Init(CASE *const state)
@@ -190,7 +190,7 @@ TEST(turret_types_rank_intervals_callback_rng_and_reset_order)
             CHECK_EQ_INT(state.arena.used, used);
             uint32_t expected = initial_rng;
             if (rank != 0) {
-                Math_Random(&expected);
+                MasterRng_Next(&expected);
                 CHECK_EQ_INT(state.last.group, groups[(type - 2) % 6]);
                 CHECK_EQ_INT(state.last.left, 108);
                 CHECK_EQ_INT(state.last.top, 140);
@@ -215,7 +215,7 @@ static int32_t M_Destination(
     int32_t loops = 0;
     for (;;) {
         if (state->objects.obstacles[slot].type == STAGE_DATA_PORTAL
-            && Math_Random(rng) % 4 == 0 && slot != entered) {
+            && MasterRng_Next(rng) % 4 == 0 && slot != entered) {
             return slot;
         }
         slot++;
@@ -249,8 +249,8 @@ TEST(portal_counts_destinations_rng_and_exact_keyframes)
             uint32_t expected = seed;
             const int32_t destination = M_Destination(&state, 0, &expected);
             const uint32_t selected_rng = expected;
-            const int32_t velocity = Math_Random(&expected) % 5;
-            const int32_t force = Math_Random(&expected) % 19 - 9;
+            const int32_t velocity = MasterRng_Next(&expected) % 5;
+            const int32_t force = MasterRng_Next(&expected) % 19 - 9;
             const size_t used = state.arena.used;
             for (int32_t frame = 1; frame <= 60; frame++) {
                 if (frame == 41) {
@@ -366,7 +366,7 @@ TEST(turret_callbacks_consume_rng_before_the_following_portal)
     state.objects.entered_portal = 1;
     state.orb.in_portal = true;
     uint32_t expected = state.rng;
-    Math_Random(&expected);
+    MasterRng_Next(&expected);
     CHECK_EQ_INT(M_Destination(&state, 1, &expected), 1);
     Stage_UpdateObstacles(&state.context, false);
     CHECK_EQ_INT(state.pellets, 1);

@@ -1,6 +1,6 @@
 #include "th01/invincibility.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -50,9 +50,10 @@ TEST(sprite_restart_draws_three_random_values_per_new_slot)
     uint32_t expected = rng;
     INVINCIBILITY expected_state = {};
     for (int32_t i = 0; i < 8; i++) {
-        expected_state.left[i] = (int16_t)(Math_Random(&expected) % 48 + 292);
-        expected_state.top[i] = (int16_t)(Math_Random(&expected) % 48 + 352);
-        expected_state.frame[i] = (int16_t)(Math_Random(&expected) % 7 + 2);
+        expected_state.left[i] =
+            (int16_t)(MasterRng_Next(&expected) % 48 + 292);
+        expected_state.top[i] = (int16_t)(MasterRng_Next(&expected) % 48 + 352);
+        expected_state.frame[i] = (int16_t)(MasterRng_Next(&expected) % 7 + 2);
     }
     Invincibility_UpdateAndRender(&state, &video, &assets, &player, &rng);
     CHECK_EQ_INT(rng, expected);

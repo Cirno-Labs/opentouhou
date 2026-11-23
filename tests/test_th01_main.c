@@ -4,6 +4,7 @@
 #include "th01/score.h"
 #include "th01/ending.h"
 #include "th01_assets.h"
+#include "pc98/vsync.h"
 
 #include "core/audio.h"
 #include "core/base/arena.h"
@@ -467,10 +468,10 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
     CHECK(Result_Ignore(g_GameDesc.init()));
     VSYNC_LOG log = {};
     g_Th01Hooks = (TH01_HOOKS) { .on_vsync = M_OnVSync, .arg = &log };
-    FRAME_CLOCK clock = {};
+    VSYNC_CLOCK clock = {};
     int edges = 0;
     for (int i = 0; i < 30; i++) {
-        edges += Frame_Advance(&clock) ? 1 : 0;
+        edges += VSync_Advance(&clock) ? 1 : 0;
         CHECK(M_Tick((TH01_INPUT) {}));
         CHECK_EQ_INT(log.calls, edges);
     }

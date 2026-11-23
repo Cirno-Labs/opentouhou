@@ -3,7 +3,8 @@
 #include "th01/sprite.h"
 
 #include "th01/finite.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 
 static bool M_Left(const ORB_VELOCITY_X velocity)
 {
@@ -26,7 +27,7 @@ void Orb_ResetFlight(ORB *const orb)
 
 void Orb_AdvanceForceFrame(ORB *const orb)
 {
-    orb->force_frame = Math_Wrap16(orb->force_frame + 1);
+    orb->force_frame = Math16_Wrap(orb->force_frame + 1);
 }
 
 int16_t Orb_UpdateVelocityY(ORB *const orb)
@@ -51,10 +52,10 @@ void Orb_NewForce(
         orb->force = Finite_ToDouble(
             Finite_Multiply(Finite_Negate(velocity), Finite_FromDouble(0.78)));
         if (orb->velocity_x == ORB_X_STILL && orb->force_frame < 17) {
-            if (Math_Random(rng) % 50 == 0) {
+            if (MasterRng_Next(rng) % 50 == 0) {
                 orb->velocity_x = ORB_X_LEFT_4;
             }
-            if (Math_Random(rng) % 50 == 1) {
+            if (MasterRng_Next(rng) % 50 == 1) {
                 orb->velocity_x = ORB_X_RIGHT_4;
             }
         }
@@ -104,16 +105,16 @@ void Orb_MoveX(ORB *const orb, const ORB_VELOCITY_X requested)
 {
     switch (requested) {
     case ORB_X_LEFT_4:
-        orb->left = Math_Wrap16(orb->left - 4);
+        orb->left = Math16_Wrap(orb->left - 4);
         break;
     case ORB_X_RIGHT_4:
-        orb->left = Math_Wrap16(orb->left + 4);
+        orb->left = Math16_Wrap(orb->left + 4);
         break;
     case ORB_X_LEFT_8:
-        orb->left = Math_Wrap16(orb->left - 8);
+        orb->left = Math16_Wrap(orb->left - 8);
         break;
     case ORB_X_RIGHT_8:
-        orb->left = Math_Wrap16(orb->left + 8);
+        orb->left = Math16_Wrap(orb->left + 8);
         break;
     default:
         break;
@@ -138,13 +139,13 @@ void Orb_AdvanceMotion(
         return;
     }
     Orb_MoveX(orb, orb->velocity_x);
-    orb->top = Math_Wrap16(orb->top + Orb_UpdateVelocityY(orb));
-    orb->frames_outside_portal = Math_Wrap16(orb->frames_outside_portal + 1);
+    orb->top = Math16_Wrap(orb->top + Orb_UpdateVelocityY(orb));
+    orb->frames_outside_portal = Math16_Wrap(orb->frames_outside_portal + 1);
     if (M_Left(orb->velocity_x)) {
-        orb->rotation_frame = Math_Wrap16(orb->rotation_frame + 1);
+        orb->rotation_frame = Math16_Wrap(orb->rotation_frame + 1);
     }
     if (M_Right(orb->velocity_x)) {
-        orb->rotation_frame = Math_Wrap16(orb->rotation_frame - 1);
+        orb->rotation_frame = Math16_Wrap(orb->rotation_frame - 1);
     }
     if (orb->rotation_frame >= ORB_IMAGE_COUNT * ORB_FRAMES_PER_IMAGE - 2) {
         orb->rotation_frame = 0;
@@ -183,10 +184,10 @@ bool Orb_PlayerHitTest(
             orb->velocity_x = ORB_X_LEFT_4;
         } else if (delta_x == 0) {
             orb->velocity_x = ORB_X_STILL;
-            if (Math_Random(rng) % 8 == 0) {
+            if (MasterRng_Next(rng) % 8 == 0) {
                 orb->velocity_x = ORB_X_LEFT_4;
             }
-            if (Math_Random(rng) % 8 == 4) {
+            if (MasterRng_Next(rng) % 8 == 4) {
                 orb->velocity_x = ORB_X_LEFT_4;
             }
         } else {

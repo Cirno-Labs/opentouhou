@@ -1,6 +1,6 @@
 #include "th01/pellet_assets.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 static void M_Row(
     VIDEO *const video, const uint8_t *const mask, const uint16_t offset,
@@ -54,7 +54,7 @@ void PelletAssets_Put(
             video, assets->pellets[image][(uint16_t)left & 7][row], offset,
             false, 7);
         offset = (uint16_t)(offset + 80);
-        if (Math_Wrap16(offset) >= 32000) {
+        if (Math16_Wrap(offset) >= 32000) {
             return;
         }
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pc98/zun/math16.h"
 #include "th01/boss_defeat.h"
 #include "th01/boss_hit.h"
 #include "th01/boss_render.h"
@@ -20,7 +21,7 @@ typedef struct {
 
 typedef struct {
     int16_t x[5], y[5], radius;
-    MATH_VECTOR center, velocity;
+    MATH16_VECTOR center, velocity;
     int16_t phase, angle;
 } B10M_PENTAGRAM;
 

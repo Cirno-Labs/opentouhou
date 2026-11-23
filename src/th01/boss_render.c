@@ -1,7 +1,7 @@
 #include "th01/boss_render.h"
 
 #include "core/base/assert.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/sprite.h"
 
 typedef enum {
@@ -143,7 +143,7 @@ static void M_Full(
     if (M_Get(metadata, sprites, image) == nullptr) {
         return;
     }
-    int16_t row_offset = Math_Wrap16(left / 8 + top * 80);
+    int16_t row_offset = Math16_Wrap(left / 8 + top * 80);
     int32_t source = 0;
     for (int32_t y = 0; y < metadata->height; y++) {
         int16_t offset = row_offset;
@@ -153,7 +153,7 @@ static void M_Full(
             if (offset / 80 == intended
                 && (plain
                     || (offset >= 0
-                        && Math_Wrap16(offset + 1) / 80 == intended))) {
+                        && Math16_Wrap(offset + 1) / 80 == intended))) {
                 const uint16_t coverage =
                     M_SourceWord(sprites, image, source, -1);
                 const uint16_t address = (uint16_t)offset;
@@ -194,10 +194,10 @@ static void M_Full(
                     }
                 }
             }
-            offset = Math_Wrap16(offset + 2);
+            offset = Math16_Wrap(offset + 2);
             source++;
         }
-        row_offset = Math_Wrap16(row_offset + 80);
+        row_offset = Math16_Wrap(row_offset + 80);
         if (row_offset >= 32000) {
             break;
         }
@@ -209,7 +209,7 @@ static void M_Full(
 
 static uint16_t M_ShiftSigned(const uint16_t word, const int32_t shift)
 {
-    const int32_t value = Math_Wrap16(word);
+    const int32_t value = Math16_Wrap(word);
     const int32_t divisor = 1 << shift;
     const int32_t right = value / divisor - (value % divisor < 0);
     return (uint16_t)((uint32_t)right + ((uint32_t)word << (16 - shift)));
@@ -228,7 +228,7 @@ static void M_Line(
     }
     const int32_t shift = (uint16_t)left & 7;
     const int16_t row_offset =
-        Math_Wrap16(left / 8 - (left % 8 < 0) + top * 80);
+        Math16_Wrap(left / 8 - (left % 8 < 0) + top * 80);
     const int32_t intended = row_offset / 80 + (left < 0 ? 1 : 0);
     int16_t offset = row_offset;
     for (int32_t word = 0; word < entity->sprites.width_bytes / 2; word++) {
@@ -291,7 +291,7 @@ static void M_Line(
                 }
             }
         }
-        offset = Math_Wrap16(offset + 2);
+        offset = Math16_Wrap(offset + 2);
     }
 }
 
@@ -344,10 +344,10 @@ void BossEntity_WavePut(
     ASSERT(wavelength != 0);
     int16_t angle = phase;
     for (int32_t row = 0; row < e->sprites.height; row++) {
-        const int16_t left = Math_Wrap16(x + Math_WaveX(amplitude, angle));
-        angle = Math_Wrap16(angle + 256 / wavelength);
+        const int16_t left = Math16_Wrap(x + Math16_Wave(amplitude, angle));
+        angle = Math16_Wrap(angle + 256 / wavelength);
         BossEntity_PutLine(
-            e, b, v, left, Math_Wrap16(y + row), image, (int16_t)row);
+            e, b, v, left, Math16_Wrap(y + row), image, (int16_t)row);
     }
 }
 
@@ -377,15 +377,15 @@ void BossEntity_LockedMovePut(
         if (restore) {
             const int16_t left = dx > 0
                 ? (int16_t)(e->previous_left / 8 * 8)
-                : Math_Wrap16(e->left / 8 * 8 + e->sprites.width_bytes * 8);
+                : Math16_Wrap(e->left / 8 * 8 + e->sprites.width_bytes * 8);
             Sprite_Restore16(v, left, e->previous_top, 8, e->sprites.height);
             const int16_t top = e->top > e->previous_top
                 ? e->previous_top
-                : Math_Wrap16(e->top + e->sprites.height);
-            const int16_t difference = Math_Wrap16(e->top - e->previous_top);
+                : Math16_Wrap(e->top + e->sprites.height);
+            const int16_t difference = Math16_Wrap(e->top - e->previous_top);
             Sprite_Restore16(
                 v, e->previous_left, top, (int16_t)(e->sprites.width_bytes * 8),
-                Math_Wrap16(difference < 0 ? -difference : difference));
+                Math16_Wrap(difference < 0 ? -difference : difference));
             BossEntity_RestorePut(e, b, v, e->left, e->top, e->image);
         } else {
             BossEntity_Put(e, b, v, e->left, e->top, e->image);
@@ -394,6 +394,6 @@ void BossEntity_LockedMovePut(
     } else if (e->lock_frame >= frames) {
         e->lock_frame = 0;
     } else {
-        e->lock_frame = Math_Wrap16(e->lock_frame + 1);
+        e->lock_frame = Math16_Wrap(e->lock_frame + 1);
     }
 }

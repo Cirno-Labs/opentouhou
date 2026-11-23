@@ -1,6 +1,6 @@
 #include "th01/bomb.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/arena.h"
 
@@ -107,8 +107,8 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
             CHECK_EQ_INT(state.palette.saved.colors[7][0], 14);
             CHECK_EQ_INT(state.palette.saved.colors[7][1], 14);
             CHECK_EQ_INT(state.palette.saved.colors[7][2], 15);
-            CHECK_EQ_INT(state.bomb.left[0], Math_PolarX(304, 252, 2));
-            CHECK_EQ_INT(state.bomb.top[9], Math_PolarY(184, 162, -2));
+            CHECK_EQ_INT(state.bomb.left[0], Math16_PolarX(304, 252, 2));
+            CHECK_EQ_INT(state.bomb.top[9], Math16_PolarY(184, 162, -2));
         }
         if (frame == 40) {
             CHECK_EQ_INT(state.bomb.tint_offset, -9);

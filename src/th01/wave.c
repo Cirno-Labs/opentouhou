@@ -1,7 +1,7 @@
 #include "th01/wave.h"
 
 #include "core/base/assert.h"
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/sprite.h"
 
 void Wave_Restore(
@@ -12,8 +12,8 @@ void Wave_Restore(
     ASSERT(wavelength != 0 && width > 0);
     int16_t angle = phase;
     for (int32_t y = 0; y < height; y++) {
-        const int16_t x = Math_Wrap16(left + Math_WaveX(amplitude, angle));
-        angle = Math_Wrap16(angle + 256 / wavelength);
-        Sprite_Restore16(video, x, Math_Wrap16(top + y), width, 1);
+        const int16_t x = Math16_Wrap(left + Math16_Wave(amplitude, angle));
+        angle = Math16_Wrap(angle + 256 / wavelength);
+        Sprite_Restore16(video, x, Math16_Wrap(top + y), width, 1);
     }
 }

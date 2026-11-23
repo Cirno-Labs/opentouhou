@@ -1,4 +1,6 @@
 #include "th01/boss_b10j.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/arena.h"
 #include "test.h"
 typedef struct {
@@ -279,7 +281,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     CHECK_EQ_INT(b.still.top, 120);
     CHECK_EQ_INT(f.missiles.slots[0].left, 201 * 16);
     uint32_t expected = frozen_rng;
-    Math_Random(&expected);
+    MasterRng_Next(&expected);
     CHECK_EQ_INT(f.rng, expected);
     CHECK_EQ_INT(b.hop, 255);
     CHECK_EQ_INT(b.spread_interval, 4);
@@ -345,8 +347,8 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
         f.hit_context.frame_rand++;
         const bool colliding =
             step % 50 == 20 && (b.phase == 3 || (b.phase == 1 && b.hp > 6));
-        f.orb.previous_left = colliding ? Math_Wrap16(b.still.left + 48) : 0;
-        f.orb.previous_top = colliding ? Math_Wrap16(b.still.top + 48) : 64;
+        f.orb.previous_left = colliding ? Math16_Wrap(b.still.left + 48) : 0;
+        f.orb.previous_top = colliding ? Math16_Wrap(b.still.top + 48) : 64;
         if (b.hp <= 6 && b.phase == 1) {
             saw_gate = true;
         }

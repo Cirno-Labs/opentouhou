@@ -1,6 +1,6 @@
 #include "th01/bonus.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/sprite.h"
 
 #include "core/base/assert.h"
@@ -40,7 +40,7 @@ static void M_Prepare(
     int32_t value;
     if (b->metric == 4) {
         c->display->gameplay->score += *c->score_bonus;
-        const int16_t div = Math_Wrap16((int32_t)(*c->score_bonus / 10000));
+        const int16_t div = Math16_Wrap((int32_t)(*c->score_bonus / 10000));
         const int16_t rem = (int16_t)(*c->score_bonus % 10000);
         b->digits[0] = (int16_t)(div / 10);
         b->digits[1] = (int16_t)(div % 10);
@@ -56,14 +56,14 @@ static void M_Prepare(
             value = (uint16_t)(c->timer->time * 5);
             break;
         case 1:
-            value = Math_Wrap16(c->display->gameplay->maximum_combo * 200);
+            value = Math16_Wrap(c->display->gameplay->maximum_combo * 200);
             break;
         case 2:
-            value = Math_Wrap16(*c->display->remaining_lives * 500);
-            value += Math_Wrap16(c->display->player->remaining_bombs * 200);
+            value = Math16_Wrap(*c->display->remaining_lives * 500);
+            value += Math16_Wrap(c->display->player->remaining_bombs * 200);
             break;
         default:
-            value = Math_Wrap16(b->stage_number * 1000);
+            value = Math16_Wrap(b->stage_number * 1000);
             break;
         }
         value = M_Add(c, value, b->metric == 3 ? 65530 : 6553);

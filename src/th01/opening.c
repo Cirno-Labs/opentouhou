@@ -1,6 +1,6 @@
 #include "th01/opening.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/assert.h"
 
@@ -103,7 +103,7 @@ static void M_Lines(OPENING *const opening)
     for (int32_t i = 0; i < 2; i++) {
         int32_t y;
         do {
-            y = Math_Random(&opening->random) % VIDEO_HEIGHT;
+            y = MasterRng_Next(&opening->random) % VIDEO_HEIGHT;
         } while (opening->drawn_rows[y]);
         opening->drawn_rows[y] = true;
         opening->line_y[i] = y;

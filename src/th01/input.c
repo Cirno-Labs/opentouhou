@@ -1,6 +1,6 @@
 #include "th01/input.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
 #include "core/input/codes.h"
@@ -199,7 +199,7 @@ void GameInput_ResetMenu(GAME_INPUT *const state)
 
 void GameInput_AdvanceBombFrame(GAME_INPUT *const state)
 {
-    state->bomb_frame = Math_Wrap16(state->bomb_frame + 1);
+    state->bomb_frame = Math16_Wrap(state->bomb_frame + 1);
 }
 
 int32_t GameInput_SenseMenu(

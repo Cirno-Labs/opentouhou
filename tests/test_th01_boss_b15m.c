@@ -1,4 +1,5 @@
 #include "th01/boss_b15m.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -538,7 +539,7 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     b.hp_bar_filled = true;
     uint32_t expected = f.rng;
     for (int32_t i = 0; i < 12; i++) {
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
     }
     FRAME_VSYNC v = {};
     CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 0));
@@ -546,8 +547,8 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     CHECK_EQ_INT(b.frame, 80);
     CHECK(!b.teleport_done);
     CHECK_EQ_INT(f.rng, expected);
-    Math_Random(&expected);
-    Math_Random(&expected);
+    MasterRng_Next(&expected);
+    MasterRng_Next(&expected);
     CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 1));
     CHECK_EQ_INT(b.phase, 2);
     CHECK_EQ_INT(b.frame, 0);
@@ -615,8 +616,8 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
     CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 0));
     b.frame = 62;
     uint32_t expected = f.rng;
-    Math_Random(&expected);
-    Math_Random(&expected);
+    MasterRng_Next(&expected);
+    MasterRng_Next(&expected);
     CHECK(B15M_UpdateAndRender(&b, &f.context, &v, 1));
     CHECK_EQ_INT(f.rng, expected);
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {

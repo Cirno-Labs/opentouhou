@@ -1,5 +1,7 @@
 #include "th01/timer.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 
 static void M_Line(const TIMER_CONTEXT *const c, const char *const text)
@@ -46,7 +48,7 @@ static void M_Rain(STAGE_TIMER *const timer, const TIMER_CONTEXT *const c)
         return;
     }
     for (uint32_t i = 0; i <= (uint32_t)c->display->rank; i++) {
-        const int16_t left = (int16_t)(Math_Random(c->rng) % 640);
+        const int16_t left = (int16_t)(MasterRng_Next(c->rng) % 640);
         Pellets_AddGroup(
             c->pellets, c->shared, c->display->player, c->rng, c->display->rank,
             left, 64, PELLET_GROUP_RANDOM_WIDE, 48);
@@ -73,7 +75,7 @@ void Timer_Redraw(
 {
     Hud_PutMask(c->display);
     if (!timer_initialized) {
-        Timer_InitFor(timer, Math_Wrap16(c->display->stage_number - 1), route);
+        Timer_InitFor(timer, Math16_Wrap(c->display->stage_number - 1), route);
     }
     if (first_stage) {
         Hud_SnapResources(c->hud, c->display);

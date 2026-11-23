@@ -1,4 +1,6 @@
 #include "th01/boss_b15j.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/arena.h"
 
@@ -404,7 +406,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         f.lasers.slots[0] =
             (SHOOTOUT_LASER) { .alive = true, .age = 77, .origin_left = 3210 };
         uint32_t expected = f.rng;
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
         FRAME_VSYNC vsync = {};
         CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
         CHECK_EQ_INT(b.pattern_state, 52 + rank * 4);
@@ -413,7 +415,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK_EQ_INT(f.lasers.slots[0].origin_left, 3210);
         CHECK_EQ_INT(f.effects[6], 1);
         b.subphase = 2;
-        b.frame = Math_Wrap16(b.pattern_state * 2 - 1);
+        b.frame = Math16_Wrap(b.pattern_state * 2 - 1);
         CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
         int32_t alive = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
@@ -424,7 +426,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK_EQ_INT(b.pattern_state, 52 + rank * 4);
         b.subphase = 3;
         b.frame = 99;
-        Math_Random(&expected);
+        MasterRng_Next(&expected);
         CHECK(B15J_UpdateAndRender(&b, &f.context, &vsync));
         CHECK_EQ_INT(f.rng, expected);
         CHECK_EQ_INT(b.pattern_state, 60 + rank * 4);

@@ -1,6 +1,6 @@
 #include "th01/boss_entity.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 static RESULT M_Validate(const BOS *const sprites)
 {
@@ -67,12 +67,12 @@ void BossEntity_SetOrbHitbox(
     BOSS_ENTITY *const entity, const BOSS_BOUNDS bounds)
 {
     entity->orb_hitbox = (BOSS_BOUNDS) {
-        .left = Math_Wrap16(bounds.left + ORB_HITBOX_MAX_X - ORB_HITBOX_MIN_X),
+        .left = Math16_Wrap(bounds.left + ORB_HITBOX_MAX_X - ORB_HITBOX_MIN_X),
         .right =
-            Math_Wrap16(bounds.right - ORB_HITBOX_MAX_X + ORB_HITBOX_MIN_X),
-        .top = Math_Wrap16(bounds.top + ORB_HITBOX_MAX_Y - ORB_HITBOX_MIN_Y),
+            Math16_Wrap(bounds.right - ORB_HITBOX_MAX_X + ORB_HITBOX_MIN_X),
+        .top = Math16_Wrap(bounds.top + ORB_HITBOX_MAX_Y - ORB_HITBOX_MIN_Y),
         .bottom =
-            Math_Wrap16(bounds.bottom - ORB_HITBOX_MAX_Y + ORB_HITBOX_MIN_Y),
+            Math16_Wrap(bounds.bottom - ORB_HITBOX_MAX_Y + ORB_HITBOX_MIN_Y),
     };
 }
 
@@ -80,15 +80,15 @@ bool BossEntity_HitTestOrb(
     const BOSS_ENTITY *const entity, const ORB *const orb)
 {
     return !entity->orb_inactive
-        && Math_Wrap16(
+        && Math16_Wrap(
                entity->orb_hitbox.left + entity->left - ORB_HITBOX_MAX_X)
         <= orb->previous_left
-        && Math_Wrap16(
+        && Math16_Wrap(
                entity->orb_hitbox.right + entity->left - ORB_HITBOX_MIN_X)
         >= orb->previous_left
-        && Math_Wrap16(entity->top + entity->orb_hitbox.top - ORB_HITBOX_MAX_Y)
+        && Math16_Wrap(entity->top + entity->orb_hitbox.top - ORB_HITBOX_MAX_Y)
         <= orb->previous_top
-        && Math_Wrap16(
+        && Math16_Wrap(
                entity->top + entity->orb_hitbox.bottom - ORB_HITBOX_MIN_Y)
         >= orb->previous_top;
 }
@@ -98,14 +98,14 @@ void BossEntity_Move(
 {
     entity->previous_left = entity->left;
     entity->previous_top = entity->top;
-    entity->left = Math_Wrap16(entity->left + delta_x);
+    entity->left = Math16_Wrap(entity->left + delta_x);
     if (entity->move_clamp.left > entity->left) {
         entity->left = entity->move_clamp.left;
     }
     if (entity->move_clamp.right < entity->left) {
         entity->left = entity->move_clamp.right;
     }
-    entity->top = Math_Wrap16(entity->top + delta_y);
+    entity->top = Math16_Wrap(entity->top + delta_y);
     if (entity->top < entity->move_clamp.top) {
         entity->top = entity->move_clamp.top;
     }

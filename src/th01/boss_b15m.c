@@ -1,5 +1,7 @@
 #include "th01/boss_b15m.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
@@ -160,7 +162,7 @@ static PLAYER *M_Player(const B15M_CONTEXT *const c)
 }
 static int16_t M_W(const int32_t x)
 {
-    return Math_Wrap16(x);
+    return Math16_Wrap(x);
 }
 static int16_t M_Rank(
     const B15M_CONTEXT *const c, const int16_t e, const int16_t n,
@@ -171,7 +173,7 @@ static int16_t M_Rank(
 }
 static uint16_t M_Random(const B15M_CONTEXT *const c)
 {
-    return Math_Random(c->rng);
+    return MasterRng_Next(c->rng);
 }
 static void M_Effect(const B15M_CONTEXT *const c, const int16_t n)
 {
@@ -613,9 +615,9 @@ static bool M_Entrance(
         if (b->entrance_stage == 0) {
             for (int32_t i = 0; i < 2; i++) {
                 const int16_t x =
-                    Math_PolarX(304, 96, b->entrance_angle + i * 128);
+                    Math16_PolarX(304, 96, b->entrance_angle + i * 128);
                 const int16_t y =
-                    Math_PolarY(114, 96, b->entrance_angle + i * 128);
+                    Math16_PolarY(114, 96, b->entrance_angle + i * 128);
                 M_Trail(b, c, i, x, y, b->hit.frame);
                 M_TrailCopy(b, i, x, y);
             }
@@ -736,7 +738,7 @@ static int16_t M_RandomMissiles(B15M *const b, const B15M_CONTEXT *const c)
         const int32_t i = M_Random(c) % 5;
         const uint8_t angle = (uint8_t)(M_Random(c) % b->pattern_state
                                         - (b->pattern_state - 1) / 2 + 64);
-        const MATH_VECTOR v = Math_Vector(7, angle);
+        const MATH16_VECTOR v = Math16_Vector(7, angle);
         Missiles_Add(
             c->missiles, b->missile_rifts.x[i], b->missile_rifts.y[i], v.x, v.y,
             0);
@@ -765,9 +767,9 @@ static int16_t M_CirclePellets(B15M *const b, const B15M_CONTEXT *const c)
         b->circle.angle = 0;
         for (int32_t i = 0; i < 32; i++) {
             const int16_t x =
-                Math_PolarX(M_W(b->girl.left + 60), 128, b->circle.angle);
+                Math16_PolarX(M_W(b->girl.left + 60), 128, b->circle.angle);
             const int16_t y =
-                Math_PolarY(M_CenterY(b, 0), 128, b->circle.angle);
+                Math16_PolarY(M_CenterY(b, 0), 128, b->circle.angle);
             M_Group(c, x, y, (PELLET_GROUP)b->pattern_state, 4);
             b->circle.angle = (uint8_t)(b->circle.angle + 8);
         }
@@ -800,10 +802,10 @@ static void M_StarLines(
     const uint8_t pairs[6][2] = { { 192, 22 }, { 192, 106 }, { 22, 106 },
                                   { 64, 150 }, { 64, 234 },  { 150, 234 } };
     for (int32_t i = 0; i < 6; i++) {
-        const int16_t x0 = Math_PolarX(M_CenterX(b, 0), 128, pairs[i][0]);
-        const int16_t y0 = Math_PolarY(M_CenterY(b, 0), 128, pairs[i][0]);
-        const int16_t x1 = Math_PolarX(M_CenterX(b, 0), 128, pairs[i][1]);
-        const int16_t y1 = Math_PolarY(M_CenterY(b, 0), 128, pairs[i][1]);
+        const int16_t x0 = Math16_PolarX(M_CenterX(b, 0), 128, pairs[i][0]);
+        const int16_t y0 = Math16_PolarY(M_CenterY(b, 0), 128, pairs[i][0]);
+        const int16_t x1 = Math16_PolarX(M_CenterX(b, 0), 128, pairs[i][1]);
+        const int16_t y1 = Math16_PolarY(M_CenterY(b, 0), 128, pairs[i][1]);
         if (erase) {
             Video_LineErase(M_Video(c), x0, y0, x1, y1);
         } else {
@@ -1073,9 +1075,9 @@ static int16_t M_BatFly(B15M *const b, const B15M_CONTEXT *const c)
             b->bat_target_y = M_W(M_RandomTop(c) + 32);
         } while (M_Abs(M_W(b->bat.left - b->bat_target_x)) < 128
                  && M_Abs(M_W(b->bat.top - b->bat_target_y)) < 64);
-        const MATH_VECTOR v = Math_VectorBetween(
-            (MATH_VECTOR) { b->bat.left, b->bat.top },
-            (MATH_VECTOR) { b->bat_target_x, b->bat_target_y }, 2);
+        const MATH16_VECTOR v = Math16_Aim(
+            (MATH16_VECTOR) { b->bat.left, b->bat.top },
+            (MATH16_VECTOR) { b->bat_target_x, b->bat_target_y }, 2, 0);
         b->bat_velocity_x = v.x;
         b->bat_velocity_y = v.y;
         b->bat_target_frames = M_Abs(M_W(b->bat_target_x - b->bat.left)) / 2;
@@ -1263,9 +1265,9 @@ static int16_t M_AimedRing(B15M *const b, const B15M_CONTEXT *const c)
         b->aimed_circle.angle = 0;
         for (int32_t i = 0; i < 32; i++) {
             const int16_t x =
-                Math_PolarX(M_CenterX(b, 0), 128, b->aimed_circle.angle);
-            const int16_t y =
-                Math_PolarY(M_W(b->girl.top + 28), 128, b->aimed_circle.angle);
+                Math16_PolarX(M_CenterX(b, 0), 128, b->aimed_circle.angle);
+            const int16_t y = Math16_PolarY(
+                M_W(b->girl.top + 28), 128, b->aimed_circle.angle);
             M_Group(c, x, y, PELLET_GROUP_SINGLE, 64);
             b->aimed_circle.angle = (uint8_t)(b->aimed_circle.angle + 8);
         }

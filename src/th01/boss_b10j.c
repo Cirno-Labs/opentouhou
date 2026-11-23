@@ -1,5 +1,7 @@
 #include "th01/boss_b10j.h"
 
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 #include "core/base/assert.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
@@ -236,7 +238,7 @@ static void M_AnimationBoth(
     B10J *const b, const B10J_CONTEXT *const c, const int16_t image)
 {
     b->animation.left = b->still.left;
-    b->animation.top = Math_Wrap16(b->still.top + 48);
+    b->animation.top = Math16_Wrap(b->still.top + 48);
     b->animation.image = image;
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(M_Video(c), page);
@@ -264,7 +266,7 @@ static void M_Meteor(B10J *const b, const B10J_CONTEXT *const c)
 {
     if (b->meteor_active && b->frame % 8 == 0) {
         b->animation.left = b->still.left;
-        b->animation.top = Math_Wrap16(b->still.top + 48);
+        b->animation.top = Math16_Wrap(b->still.top + 48);
         b->animation.image = (int16_t)(1 + (b->frame / 8) % 4);
         BossEntity_RestorePut(
             &b->animation, c->sprites, M_Video(c), b->animation.left,
@@ -289,8 +291,8 @@ static void M_Spread(
         return;
     }
     const int16_t bottom =
-        Math_Wrap16((b->spread_speed / b->spread_interval) * (b->frame - 10));
-    const int16_t start = Math_Wrap16(80 - bottom);
+        Math16_Wrap((b->spread_speed / b->spread_interval) * (b->frame - 10));
+    const int16_t start = Math16_Wrap(80 - bottom);
     if (start < 0) {
         b->frame = 0;
         M_PutStill(b, c);
@@ -299,10 +301,10 @@ static void M_Spread(
     for (int16_t row = 0; row < bottom; row++) {
         BossEntity_RestorePutLine(
             &b->still, c->sprites, M_Video(c), left,
-            Math_Wrap16(top + start + row), b->still.image, row);
+            Math16_Wrap(top + start + row), b->still.image, row);
         BossEntity_RestorePutLine(
             &b->still, c->sprites, M_Video(c), left,
-            Math_Wrap16(top + 160 - start - row), b->still.image,
+            Math16_Wrap(top + 160 - start - row), b->still.image,
             (int16_t)(159 - row));
     }
 }
@@ -312,16 +314,16 @@ static void M_BrokenTransition(B10J *const b, const B10J_CONTEXT *const c)
     if (b->frame < 10 || b->frame % 4 != 0) {
         return;
     }
-    const int16_t half = Math_Wrap16((b->frame - 10) * 2);
+    const int16_t half = Math16_Wrap((b->frame - 10) * 2);
     if (half >= 80) {
         b->frame = 0;
         return;
     }
     Sprite_Restore16(
-        M_Video(c), b->still.left, Math_Wrap16(b->still.top + half),
+        M_Video(c), b->still.left, Math16_Wrap(b->still.top + half),
         b->still.sprites.width_bytes, 8);
     Sprite_Restore16(
-        M_Video(c), b->still.left, Math_Wrap16(b->still.top + 152 - half),
+        M_Video(c), b->still.left, Math16_Wrap(b->still.top + 152 - half),
         b->still.sprites.width_bytes, 8);
 }
 
@@ -330,10 +332,10 @@ static void M_Corners(
     const uint8_t angle)
 {
     for (int32_t i = 0; i < 4; i++) {
-        x[i] = Math_PolarX(
-            Math_Wrap16(b->still.left + 64), radius, angle + i * 64);
-        y[i] =
-            Math_PolarY(Math_Wrap16(b->still.top + 80), radius, angle + i * 64);
+        x[i] = Math16_PolarX(
+            Math16_Wrap(b->still.left + 64), radius, angle + i * 64);
+        y[i] = Math16_PolarY(
+            Math16_Wrap(b->still.top + 80), radius, angle + i * 64);
     }
 }
 
@@ -387,12 +389,12 @@ static void M_AimedStatic(B10J *const b, const B10J_CONTEXT *const c)
         } else {
             for (int32_t i = 0; i < 4; i++) {
                 const uint8_t angle = b->frame > 280
-                    ? Math_Angle(
-                          Math_Wrap16(y[i] - b->still.top - 80),
-                          Math_Wrap16(x[i] - b->still.left - 64))
-                    : Math_Angle(
-                          Math_Wrap16(384 - y[i]),
-                          Math_Wrap16(M_Player(c)->left + 12 - x[i]));
+                    ? Math16_Angle(
+                          Math16_Wrap(y[i] - b->still.top - 80),
+                          Math16_Wrap(x[i] - b->still.left - 64))
+                    : Math16_Angle(
+                          Math16_Wrap(384 - y[i]),
+                          Math16_Wrap(M_Player(c)->left + 12 - x[i]));
                 M_Add(
                     c, x[i], y[i], angle,
                     b->frame > 280 ? b->pattern_state
@@ -432,15 +434,15 @@ static void M_AimedMissiles(B10J *const b, const B10J_CONTEXT *const c)
         } else if (b->frame == 224) {
             b->target_left = M_Player(c)->left;
         } else if (b->frame > 240) {
-            const MATH_VECTOR velocity = Math_VectorBetween(
-                (MATH_VECTOR) { Math_Wrap16(b->still.left + 64),
-                                Math_Wrap16(b->still.top + 80) },
-                (MATH_VECTOR) { Math_Wrap16(b->target_left + 8), 384 },
-                b->pattern_state);
+            const MATH16_VECTOR velocity = Math16_Aim(
+                (MATH16_VECTOR) { Math16_Wrap(b->still.left + 64),
+                                  Math16_Wrap(b->still.top + 80) },
+                (MATH16_VECTOR) { Math16_Wrap(b->target_left + 8), 384 },
+                b->pattern_state, 0);
             for (int32_t i = 0; i < 4; i++) {
                 Missiles_Add(
-                    c->missiles, x[i], y[i], Math_SubpixelToPixel(velocity.x),
-                    Math_SubpixelToPixel(velocity.y), 0);
+                    c->missiles, x[i], y[i], Math16_ToPixel(velocity.x),
+                    Math16_ToPixel(velocity.y), 0);
             }
             M_Effect(c, 6);
         }
@@ -482,15 +484,15 @@ static void M_TwoSquares(B10J *const b, const B10J_CONTEXT *const c)
             for (int32_t i = 0; i < 4; i++) {
                 M_Add(
                     c, x[i], y[i],
-                    Math_Angle(
-                        Math_Wrap16(y[i] - b->still.top - 80),
-                        Math_Wrap16(x[i] - b->still.left - 64)),
+                    Math16_Angle(
+                        Math16_Wrap(y[i] - b->still.top - 80),
+                        Math16_Wrap(x[i] - b->still.left - 64)),
                     b->pattern_state, false);
                 M_Add(
                     c, x2[i], y2[i],
-                    Math_Angle(
-                        Math_Wrap16(y2[i] - b->still.top - 80),
-                        Math_Wrap16(x2[i] - b->still.left - 64)),
+                    Math16_Angle(
+                        Math16_Wrap(y2[i] - b->still.top - 80),
+                        Math16_Wrap(x2[i] - b->still.left - 64)),
                     b->pattern_state, false);
                 M_Effect(c, 7);
             }
@@ -515,7 +517,7 @@ static void M_InitHop(B10J *const b, const B10J_CONTEXT *const c)
 {
     b->hop = 255;
     b->spread_interval = 4;
-    b->direction = (uint8_t)(Math_Random(c->rng) % 2);
+    b->direction = (uint8_t)(MasterRng_Next(c->rng) % 2);
     b->spread_speed = 16;
 }
 
@@ -553,8 +555,8 @@ static void M_Hop(B10J *const b, const B10J_CONTEXT *const c)
         for (int16_t i = 0; i < count;
              i++, angle = (uint8_t)(angle + 256 / count)) {
             M_Add(
-                c, Math_Wrap16(b->still.left + 64),
-                Math_Wrap16(b->still.top + 80), angle, b->pattern_state, true);
+                c, Math16_Wrap(b->still.left + 64),
+                Math16_Wrap(b->still.top + 80), angle, b->pattern_state, true);
         }
     }
     if (b->hop >= 4) {
@@ -616,14 +618,14 @@ static void M_Pillars(B10J *const b, const B10J_CONTEXT *const c)
             b->pillar_time[i] = 128;
             b->pillar_bottom[i] = 400;
         }
-        b->pillar_x[0] = (int16_t)(16 + Math_Random(c->rng) % 48);
-        b->pillar_x[1] = (int16_t)(624 - Math_Random(c->rng) % 48);
-        b->pillar_x[2] = (int16_t)(64 + Math_Random(c->rng) % 224);
-        b->pillar_x[3] = (int16_t)(336 + Math_Random(c->rng) % 224);
-        b->pillar_x[4] = (int16_t)(128 + Math_Random(c->rng) % 160);
-        b->pillar_x[5] = (int16_t)(336 + Math_Random(c->rng) % 160);
-        b->pillar_x[6] = (int16_t)(64 + Math_Random(c->rng) % 224);
-        b->pillar_x[7] = (int16_t)(336 + Math_Random(c->rng) % 224);
+        b->pillar_x[0] = (int16_t)(16 + MasterRng_Next(c->rng) % 48);
+        b->pillar_x[1] = (int16_t)(624 - MasterRng_Next(c->rng) % 48);
+        b->pillar_x[2] = (int16_t)(64 + MasterRng_Next(c->rng) % 224);
+        b->pillar_x[3] = (int16_t)(336 + MasterRng_Next(c->rng) % 224);
+        b->pillar_x[4] = (int16_t)(128 + MasterRng_Next(c->rng) % 160);
+        b->pillar_x[5] = (int16_t)(336 + MasterRng_Next(c->rng) % 160);
+        b->pillar_x[6] = (int16_t)(64 + MasterRng_Next(c->rng) % 224);
+        b->pillar_x[7] = (int16_t)(336 + MasterRng_Next(c->rng) % 224);
         b->pattern_state = M_Rank(c, 40, 45, 50, 55);
         M_Effect(c, 8);
     }
@@ -658,21 +660,21 @@ static void M_Pillars(B10J *const b, const B10J_CONTEXT *const c)
                 Video_LineErase(M_Video(c), 320, 200, x, bottom);
             }
             M_Pillar(
-                c, Math_Wrap16(x - 16), bottom,
-                Math_Wrap16(16 * (34 - b->pillar_time[i])));
+                c, Math16_Wrap(x - 16), bottom,
+                Math16_Wrap(16 * (34 - b->pillar_time[i])));
             if (!M_Player(c)->invincible
-                && M_Player(c)->left > Math_Wrap16(x - 40)
-                && M_Player(c)->left < Math_Wrap16(x + 8)) {
+                && M_Player(c)->left > Math16_Wrap(x - 40)
+                && M_Player(c)->left < Math16_Wrap(x + 8)) {
                 M_Player(c)->is_hit = true;
             }
             b->pillar_time[i] -= 8;
         } else if (b->pillar_time[i] != -999) {
             Pellets_AddGroup(
                 c->pellets, c->pellet_shared, M_Player(c), c->rng,
-                c->hit->display->rank, Math_Wrap16(b->still.left + 64),
-                Math_Wrap16(b->still.top + 80), PELLET_GROUP_THREE_WIDE_AIMED,
+                c->hit->display->rank, Math16_Wrap(b->still.left + 64),
+                Math16_Wrap(b->still.top + 80), PELLET_GROUP_THREE_WIDE_AIMED,
                 36);
-            Sprite_Restore16(M_Video(c), Math_Wrap16(x - 16), 176, 32, 224);
+            Sprite_Restore16(M_Video(c), Math16_Wrap(x - 16), 176, 32, 224);
             b->pillar_time[i] = -999;
         }
     }
@@ -705,8 +707,8 @@ static void M_Halfcircle(B10J *const b, const B10J_CONTEXT *const c)
         if (sq->radius < 80) {
             sq->radius += 8;
         } else if (b->frame > 180 && b->frame % 16 == 8) {
-            const MATH_VECTOR velocity =
-                Math_Vector((int16_t)(b->pattern_state / 10), b->missile_angle);
+            const MATH16_VECTOR velocity = Math16_Vector(
+                (int16_t)(b->pattern_state / 10), b->missile_angle);
             for (int32_t i = 0; i < 4; i++) {
                 Missiles_Add(
                     c->missiles, x[i], y[i], velocity.x, velocity.y, 0);
@@ -789,7 +791,7 @@ static void M_Lasers(B10J *const b, const B10J_CONTEXT *const c)
         const int32_t i = b->frame % 4;
         ShootoutLasers_Spawn(
             &c->lasers->slots[i], b->laser_x[i], b->laser_y[i],
-            Math_Wrap16(M_Player(c)->left + 14), 400, b->pattern_state, 7, 20,
+            Math16_Wrap(M_Player(c)->left + 14), 400, b->pattern_state, 7, 20,
             4);
     }
     if (b->frame > 300) {
@@ -808,8 +810,8 @@ static void M_Hit(B10J *const b, const B10J_CONTEXT *const c)
     BossHit_UpdateAndRender(
         &b->hit, &hit, flash, 2, 5000,
         BossEntity_HitTestOrb(&b->still, c->hit->orb),
-        (BOSS_SHOT_HITBOX) { Math_Wrap16(b->still.left + 16),
-                             Math_Wrap16(b->still.top + 48), 96, 48 });
+        (BOSS_SHOT_HITBOX) { Math16_Wrap(b->still.left + 16),
+                             Math16_Wrap(b->still.top + 48), 96, 48 });
 }
 
 static void M_MissileAction(void *const user, const MISSILES_ACTION action)
@@ -832,7 +834,7 @@ static bool M_Entrance(
             }
             b->entrance_waiting = false;
         }
-        b->frame = Math_Wrap16(b->frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
         M_Spread(b, c, 256, 120);
         if (b->frame == 0) {
             b->phase = 1;
@@ -937,8 +939,8 @@ bool B10J_UpdateAndRender(
             b->hp_bar_filled =
                 HudHp_Increment(c->hit->health, M_Video(c), b->hp, b->frame);
         }
-        b->frame = Math_Wrap16(b->frame + 1);
-        b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
+        b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Meteor(b, c);
         switch (b->pattern) {
         case 0:
@@ -957,7 +959,7 @@ bool B10J_UpdateAndRender(
             break;
         }
         if (b->frame == 0) {
-            b->pattern = b->pattern == 3 ? 0 : Math_Wrap16(b->pattern + 1);
+            b->pattern = b->pattern == 3 ? 0 : Math16_Wrap(b->pattern + 1);
             if (b->hp <= 6) {
                 b->pattern = 99;
             }
@@ -976,8 +978,8 @@ bool B10J_UpdateAndRender(
             b->pattern = 0;
         }
     } else if (b->phase == 2) {
-        b->frame = Math_Wrap16(b->frame + 1);
-        b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
+        b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Spread(b, c, 256, 120);
         if (b->frame == 0) {
             b->phase = 3;
@@ -986,8 +988,8 @@ bool B10J_UpdateAndRender(
             b->pattern = 0;
         }
     } else if (b->phase == 3) {
-        b->frame = Math_Wrap16(b->frame + 1);
-        b->hit.frame = Math_Wrap16(b->hit.frame + 1);
+        b->frame = Math16_Wrap(b->frame + 1);
+        b->hit.frame = Math16_Wrap(b->hit.frame + 1);
         M_Meteor(b, c);
         switch (b->pattern) {
         case 0:
@@ -1006,7 +1008,7 @@ bool B10J_UpdateAndRender(
             break;
         }
         if (b->frame == 0) {
-            b->pattern = b->pattern == 3 ? 0 : Math_Wrap16(b->pattern + 1);
+            b->pattern = b->pattern == 3 ? 0 : Math16_Wrap(b->pattern + 1);
         }
         M_Hit(b, c);
         if (b->hp <= 0) {

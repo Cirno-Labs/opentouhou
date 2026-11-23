@@ -1,7 +1,5 @@
 #include "th01/orb.h"
 
-#include "th01/math.h"
-
 #include "test.h"
 
 static ORB M_Orb(void)

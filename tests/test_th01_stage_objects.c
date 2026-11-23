@@ -1,6 +1,6 @@
 #include "th01/stage_objects.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/arena.h"
 
@@ -66,7 +66,7 @@ TEST(enumeration_snapshots_composition_and_copy_pages)
     state.layouts[0].cells[0][1].obstacle = STAGE_DATA_PORTAL;
     Video_SelectDrawingPage(&state.video, 1);
     uint32_t rng = state.rng;
-    Math_Random(&rng);
+    MasterRng_Next(&rng);
     M_Begin(&state, true);
     CHECK_EQ_INT(state.rng, rng);
     CHECK_EQ_INT(state.objects.card_count, 2);

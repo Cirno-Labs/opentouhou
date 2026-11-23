@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/pellet_assets.h"
 #include "th01/player.h"
 
@@ -43,7 +43,7 @@ typedef struct {
     bool moving, not_rendered;
     uint8_t motion_type;
     int16_t left, top, previous_left, previous_top, from_group;
-    MATH_VECTOR spin_center, velocity, spin_velocity;
+    MATH16_VECTOR spin_center, velocity, spin_velocity;
     int16_t age, speed, decay_frame, cloud_frame, cloud_left, cloud_top;
     int16_t angle, sling_direction;
 } PELLET;

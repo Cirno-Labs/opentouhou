@@ -1,6 +1,5 @@
 #pragma once
 
-#include "th01/math.h"
 #include "th01/video.h"
 
 #define PARTICLES_COUNT 40

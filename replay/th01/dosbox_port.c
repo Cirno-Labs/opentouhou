@@ -7,7 +7,7 @@
 #include "core/base/utils.h"
 
 // Describes th01 to the dosbox backend and runs it as th01dosbox.so. The
-// VSyncs follow the native Frame_Advance, and a delay waits its
+// VSyncs follow the native VSync_Advance, and a delay waits its
 // milliseconds of emulated time, as TC4's delay() on the ARTIC counter does.
 
 static const char *const m_Programs[] = {
@@ -71,7 +71,7 @@ static bool M_Advance(void *const context)
 {
     TH01_DOSBOX *const th01 = context;
     th01->frames++;
-    return Frame_Advance(&th01->clock);
+    return VSync_Advance(&th01->clock);
 }
 
 // Reads the delay's milliseconds above its far return address.

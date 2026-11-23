@@ -1,5 +1,6 @@
 #include "th01/gameplay_internal.h"
 
+#include "pc98/zun/master_rng.h"
 #include "th01/hooks.h"
 
 #include "core/base/assert.h"
@@ -63,7 +64,7 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     g->world.retained_lives = (int8_t)g->storage.session->lives;
     g->world.next_extend = Extend_NextForScore(g->storage.session->score);
     g->world.rng = g->storage.session->frame_rand;
-    g->world.metrics.flip_cycle = (uint8_t)(Math_Random(&g->world.rng) % 60);
+    g->world.metrics.flip_cycle = (uint8_t)(MasterRng_Next(&g->world.rng) % 60);
     g->world.boss_stage = g->storage.session->stage_id % 5 == 4;
     Scene_Activate(
         &g->world.scene,

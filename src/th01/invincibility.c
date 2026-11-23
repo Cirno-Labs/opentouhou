@@ -1,6 +1,6 @@
 #include "th01/invincibility.h"
 
-#include "th01/math.h"
+#include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
 
 RESULT Invincibility_LoadAssets(
@@ -74,9 +74,10 @@ void Invincibility_UpdateAndRender(
                 Sprite_Restore16(video, state->left[i], state->top[i], 16, 8);
             }
             state->left[i] =
-                (int16_t)(Math_Random(rng) % 48 + player->left - 8);
-            state->top[i] = (int16_t)(Math_Random(rng) % 48 + PLAYER_TOP - 16);
-            state->frame[i] = (int16_t)(Math_Random(rng) % 7 + 1);
+                (int16_t)(MasterRng_Next(rng) % 48 + player->left - 8);
+            state->top[i] =
+                (int16_t)(MasterRng_Next(rng) % 48 + PLAYER_TOP - 16);
+            state->frame[i] = (int16_t)(MasterRng_Next(rng) % 7 + 1);
         }
         if (state->top[i] >= 0 && state->top[i] < 632) {
             Invincibility_Put(

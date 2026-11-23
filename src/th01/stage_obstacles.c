@@ -1,6 +1,7 @@
 #include "th01/stage.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 
 static void M_Put(
     const STAGE_CONTEXT *const context, const STAGE_OBSTACLE *const obstacle,
@@ -26,7 +27,7 @@ static void M_Turret(
     const bool reset)
 {
     if (context->difficulty != SETTINGS_DIFFICULTY_EASY) {
-        obstacle->frame = Math_Wrap16(obstacle->frame + 1);
+        obstacle->frame = Math16_Wrap(obstacle->frame + 1);
     }
     const int16_t interval =
         obstacle->type < STAGE_DATA_TURRET_QUICK_1_AIMED ? 200 : 100;
@@ -83,7 +84,7 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         return;
     }
     if (obstacle->frame != 0) {
-        obstacle->frame = Math_Wrap16(obstacle->frame + 1);
+        obstacle->frame = Math16_Wrap(obstacle->frame + 1);
     }
     if (obstacle->frame == 0) {
         orb->in_portal = true;
@@ -103,7 +104,8 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         int32_t completed_loops = 0;
         for (;;) {
             if (objects->obstacles[destination].type == STAGE_DATA_PORTAL
-                && Math_Random(context->rng) % 4 == 0 && destination != slot) {
+                && MasterRng_Next(context->rng) % 4 == 0
+                && destination != slot) {
                 break;
             }
             destination++;
@@ -131,8 +133,9 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
             context->video, context->sprites, obstacle->frame == 30 ? 30 : 29,
             -1, objects->destination_left, objects->destination_top);
         if (obstacle->frame == 40) {
-            orb->velocity_x = Math_Random(context->rng) % 5;
-            const int16_t force = (int16_t)(Math_Random(context->rng) % 19) - 9;
+            orb->velocity_x = MasterRng_Next(context->rng) % 5;
+            const int16_t force =
+                (int16_t)(MasterRng_Next(context->rng) % 19) - 9;
             Orb_NewForce(orb, ORB_FORCE_IMMEDIATE, force, context->rng);
             orb->left = objects->destination_left;
             orb->top = objects->destination_top;
@@ -182,7 +185,7 @@ void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
                 Orb_NewForce(orb, ORB_FORCE_SURFACE, 1.5, context->rng);
             }
             if (obstacle->frame != 0) {
-                obstacle->frame = Math_Wrap16(obstacle->frame + 1);
+                obstacle->frame = Math16_Wrap(obstacle->frame + 1);
                 if (obstacle->frame >= 8) {
                     obstacle->frame = 0;
                 }
@@ -239,7 +242,7 @@ void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
             }
         }
         if (obstacle->frame != 0) {
-            obstacle->frame = Math_Wrap16(obstacle->frame + 1);
+            obstacle->frame = Math16_Wrap(obstacle->frame + 1);
             if (obstacle->frame >= 8) {
                 obstacle->frame = 0;
                 objects->vertical_bar_active = false;

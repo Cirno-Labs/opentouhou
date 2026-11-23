@@ -1,6 +1,6 @@
 #include "th01/shootout_lasers.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
 
@@ -38,8 +38,8 @@ static void M_Ray(
     SHOOTOUT_LASER *const laser, VIDEO *const video, PLAYER *const player,
     const SHOOTOUT_LASERS_ASSETS *const assets, const bool put)
 {
-    int16_t left = Math_Wrap16(M_Floor(laser->cursor_left, 256));
-    int16_t y = Math_Wrap16(M_Floor(laser->cursor_y, 256));
+    int16_t left = Math16_Wrap(M_Floor(laser->cursor_left, 256));
+    int16_t y = Math16_Wrap(M_Floor(laser->cursor_y, 256));
     uint16_t dots = 0;
     const uint16_t count = (uint16_t)(put ? laser->length : laser->tail_speed);
     for (uint32_t i = 0; i < count; i++) {
@@ -53,8 +53,8 @@ static void M_Ray(
                     player->is_hit = true;
                 }
             }
-            left = Math_Wrap16(M_Floor(laser->cursor_left, 256));
-            y = Math_Wrap16(M_Floor(laser->cursor_y, 256));
+            left = Math16_Wrap(M_Floor(laser->cursor_left, 256));
+            y = Math16_Wrap(M_Floor(laser->cursor_y, 256));
             if (left > 638 || left < 0 || y < 64 || y > 399) {
                 break;
             }
@@ -65,8 +65,8 @@ static void M_Ray(
         dots |= (uint16_t)(mask[0] | ((uint16_t)mask[1] << 8));
         if (!put) {
             Sprite_Restore16(
-                video, Math_Wrap16(M_Floor(laser->cursor_left, 256)),
-                Math_Wrap16(M_Floor(laser->cursor_y, 256)), 16, 1);
+                video, Math16_Wrap(M_Floor(laser->cursor_left, 256)),
+                Math16_Wrap(M_Floor(laser->cursor_y, 256)), 16, 1);
         }
         laser->cursor_left = M_Add(laser->cursor_left, laser->step_x);
         laser->cursor_y = M_Add(laser->cursor_y, laser->step_y);
@@ -103,11 +103,11 @@ void ShootoutLasers_Spawn(
     laser->origin_y = (int32_t)origin_y * 256;
     laser->start_left = laser->origin_left;
     laser->start_y = laser->origin_y;
-    const uint8_t angle = Math_Angle(
-        Math_Wrap16(target_y - origin_y),
-        Math_Wrap16(target_left - origin_left));
-    laser->step_x = Math_Cos8(angle);
-    laser->step_y = Math_Sin8(angle);
+    const uint8_t angle = Math16_Angle(
+        Math16_Wrap(target_y - origin_y),
+        Math16_Wrap(target_left - origin_left));
+    laser->step_x = Math16_Cos(angle);
+    laser->step_y = Math16_Sin(angle);
     laser->extend_speed = speed_times_eight / 8;
     laser->width_mask = (uint8_t)(width - 1);
     laser->alive = true;
@@ -138,9 +138,9 @@ void ShootoutLasers_Update(
             return;
         }
     } else {
-        laser->length = Math_Wrap16(laser->length + laser->extend_speed);
+        laser->length = Math16_Wrap(laser->length + laser->extend_speed);
     }
-    laser->age = Math_Wrap16(laser->age + 1);
+    laser->age = Math16_Wrap(laser->age + 1);
     laser->cursor_left = laser->start_left;
     laser->cursor_y = laser->start_y;
     M_Ray(laser, video, player, assets, true);
@@ -163,9 +163,9 @@ void ShootoutLasers_EraseAndReset(
         SHOOTOUT_LASER *const laser = &lasers->slots[i];
         if (laser->alive) {
             Video_LineErase(
-                video, Math_Wrap16(laser->start_left),
-                Math_Wrap16(laser->start_y), Math_Wrap16(laser->origin_left),
-                Math_Wrap16(laser->origin_y));
+                video, Math16_Wrap(laser->start_left),
+                Math16_Wrap(laser->start_y), Math16_Wrap(laser->origin_left),
+                Math16_Wrap(laser->origin_y));
             laser->alive = false;
         }
     }

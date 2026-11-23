@@ -1,6 +1,6 @@
 #include "th01/shape.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
 #include "th01/sprite.h"
 
 static int32_t M_Byte(const int16_t x)
@@ -19,9 +19,9 @@ void Shape_EllipseArcPut(
         return;
     }
     for (int32_t angle = start; angle <= end; angle += step) {
-        const int16_t x = Math_PolarX(center_x, radius_x, angle);
-        const int16_t y = Math_PolarY(center_y, radius_y, angle);
-        const int32_t offset = Math_Wrap16(y * 80 + M_Byte(x));
+        const int16_t x = Math16_PolarX(center_x, radius_x, angle);
+        const int16_t y = Math16_PolarY(center_y, radius_y, angle);
+        const int32_t offset = Math16_Wrap(y * 80 + M_Byte(x));
         const uint8_t bit = (uint8_t)(0x80u >> ((uint16_t)x & 7));
         if (offset != cached) {
             if (x >= 0 && x < VIDEO_WIDTH && cached >= 0 && cached < 32000) {
@@ -53,8 +53,8 @@ void Shape_EllipseArcErase(
         return;
     }
     for (int32_t angle = start; angle <= end; angle += step) {
-        const int16_t x = Math_PolarX(center_x, radius_x, angle);
-        const int16_t y = Math_PolarY(center_y, radius_y, angle);
+        const int16_t x = Math16_PolarX(center_x, radius_x, angle);
+        const int16_t y = Math16_PolarY(center_y, radius_y, angle);
         if (first || y != previous_y || M_Byte(x) != previous_byte) {
             Sprite_Restore16(video, x, y, 8, 1);
             previous_byte = M_Byte(x);

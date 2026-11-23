@@ -1,6 +1,7 @@
 #include "th01/stage.h"
 
-#include "th01/math.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/master_rng.h"
 
 #include "core/base/assert.h"
 
@@ -72,11 +73,11 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
             || (context->player->bomb_damaging
                 && context->player->bomb_frame % (uint32_t)objects->card_count
                     == (uint32_t)i
-                && Math_Random(context->rng) % 4 != 0
+                && MasterRng_Next(context->rng) % 4 != 0
                 && card->flag == STAGE_CARD_ALIVE)) {
             card->flag = STAGE_CARD_FLIPPING;
             card->score = (uint32_t)(context->stage_id / 5 * 100 + 100)
-                + (uint32_t)(int32_t)Math_Wrap16(
+                + (uint32_t)(int32_t)Math16_Wrap(
                       (int32_t)game->combo * game->combo)
                     * (context->difficulty == SETTINGS_DIFFICULTY_LUNATIC
                            ? 35u
@@ -85,7 +86,7 @@ void Stage_HitTestCards(const STAGE_CONTEXT *const context)
                 card->score = 25600;
             }
             game->score += card->score;
-            game->combo = Math_Wrap16(game->combo + 1);
+            game->combo = Math16_Wrap(game->combo + 1);
             if (game->maximum_combo < game->combo) {
                 game->maximum_combo = game->combo;
             }
