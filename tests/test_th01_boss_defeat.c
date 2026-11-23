@@ -11,7 +11,6 @@
 #include "test.h"
 
 typedef struct {
-    PALETTE_STATE palette;
     PALETTE target;
     PTN miko;
     int16_t origin;
@@ -26,8 +25,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena, const int8_t target)
     Video_Init(Arena_Allocator(arena));
     memset(g_Video.pages[0], 2, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
-    Palette_Init(&f->palette);
-    Palette_SetGray(&f->palette, 3);
+    Palette_SetGray(&g_Palette, 3);
     memset(f->target.colors, target, sizeof(f->target.colors));
     f->miko = (PTN) { .count = 1, .pixels = Arena_Alloc(arena, 1024) };
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
@@ -36,8 +34,8 @@ static void M_Init(FIXTURE *const f, ARENA *const arena, const int8_t target)
     g_Player.mode_frame = 9;
     g_Player.bomb_frame = 123;
     f->origin = 64;
-    f->context = (BOSS_DEFEAT_CONTEXT) { &f->palette, &f->target, &f->miko,
-                                         &f->origin, &f->cleared };
+    f->context =
+        (BOSS_DEFEAT_CONTEXT) { &f->target, &f->miko, &f->origin, &f->cleared };
 }
 
 static void M_ReachWhitein(BOSS_DEFEAT *const defeat, FIXTURE *const f)
@@ -101,7 +99,7 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
     BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
     M_ReachWhitein(&defeat, &f);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(f.palette.saved.colors[0][0], 15);
+    CHECK_EQ_INT(g_Palette.saved.colors[0][0], 15);
     CHECK_EQ_INT(g_Video.palette[0].red, 255);
     CHECK_EQ_INT(g_Video.pages[0][368 * VIDEO_WIDTH + 16], 2);
     CHECK_EQ_INT(g_Video.pages[0][368 * VIDEO_WIDTH + 17], 5);
@@ -112,7 +110,7 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
         Frame_VSync();
         CHECK(!BossDefeat_Resume(&defeat, &f.context));
         CHECK_EQ_INT(defeat.frame, frame);
-        CHECK_EQ_INT(f.palette.saved.colors[0][0], frame >= 5 ? 14 : 15);
+        CHECK_EQ_INT(g_Palette.saved.colors[0][0], frame >= 5 ? 14 : 15);
         CHECK(!f.cleared && !g_Player.is_hit);
     }
     Frame_VSync();
@@ -172,6 +170,6 @@ TEST(live_target_can_stop_below_a_raised_palette)
     }
     CHECK(done);
     CHECK_EQ_INT(defeat.frame, 10);
-    CHECK_EQ_INT(f.palette.saved.colors[0][0], 14);
+    CHECK_EQ_INT(g_Palette.saved.colors[0][0], 14);
     Arena_Free(&arena);
 }

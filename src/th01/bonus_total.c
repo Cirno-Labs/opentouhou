@@ -165,7 +165,7 @@ bool Bonus_ResumeTotal(
             Video_SelectDrawingPage(1);
             Video_Blit(
                 &image, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0);
-            c->common->palette->resource = c->assets->palette;
+            g_Palette.resource = c->assets->palette;
             Video_SelectDrawingPage(0);
             Bonus_BeginRowTransition(&g_BonusTotal.transition);
             g_BonusTotal.phase = BONUS_TOTAL_TRANSITION;
@@ -173,8 +173,8 @@ bool Bonus_ResumeTotal(
         }
         case BONUS_TOTAL_TRANSITION:
             if (!Bonus_ResumeRowTransition(
-                    &g_BonusTotal.transition, c->common->palette,
-                    &c->common->palette->resource)) {
+                    &g_BonusTotal.transition, &g_Palette,
+                    &g_Palette.resource)) {
                 return false;
             }
             Sprite_PtnPut(

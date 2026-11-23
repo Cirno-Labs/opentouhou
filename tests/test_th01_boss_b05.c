@@ -14,8 +14,6 @@
 #include "test.h"
 
 typedef struct {
-    PALETTE_STATE palette;
-    PALETTE stage_palette;
     B05_ASSETS assets;
     BOSS_HIT_CONTEXT hit_context;
     B05_CONTEXT context;
@@ -46,7 +44,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     GameInput_Init();
     const ALLOCATOR *const allocator = Arena_Allocator(arena);
     Video_Init(allocator);
-    Palette_Init(&f->palette);
     const uint8_t *const pixels = Arena_AllocZ(arena, 96 * 96 * 8);
     const uint8_t *const coverage = Arena_AllocZ(arena, 96 * 96 * 8);
     f->assets.sphere = (BOS) { 96, 96, 8, pixels, coverage };
@@ -64,13 +61,10 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->hit_context = (BOSS_HIT_CONTEXT) {
-        .palette = &f->palette,
-    };
+    f->hit_context = (BOSS_HIT_CONTEXT) {};
     f->context = (B05_CONTEXT) {
         .assets = &f->assets,
         .hit = &f->hit_context,
-        .stage_palette = &f->stage_palette,
     };
 }
 
@@ -130,7 +124,6 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
     f->route_context = (ROUTE_SELECT_CONTEXT) {
-        &f->palette,
         &f->route_assets,
         &f->route,
         &f->cleared,
@@ -204,7 +197,7 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(g_Particles.cycle, 73);
     CHECK_EQ_INT(g_Particles.velocity_base[0], 9);
     CHECK(memcmp(&g_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
-    CHECK(memcmp(&f.stage_palette, &g_B05.post_defeat, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(&g_StagePalette, &g_B05.post_defeat, sizeof(PALETTE)) == 0);
     CHECK_EQ_INT(g_Video.pages[0][0], 3);
     CHECK_EQ_INT(g_Video.pages[1][0], 5);
     CHECK_EQ_INT(g_Video.palette[5].red, 5 * 17);
@@ -248,7 +241,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK_EQ_INT(g_B05.frame, 1 + reuse);
         CHECK_EQ_INT(g_B05.hit.frame, 0);
-        CHECK_EQ_INT(f.palette.saved.colors[5][0], 0);
+        CHECK_EQ_INT(g_Palette.saved.colors[5][0], 0);
         const B05 frozen = g_B05;
         CHECK(!B05_UpdateAndRender(&f.context, &raw));
         CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
@@ -266,7 +259,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK(memcmp(&g_Orb, &orb, sizeof(orb)) == 0);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK(
-            memcmp(&f.palette.saved, &g_B05.boss_palette, sizeof(PALETTE))
+            memcmp(&g_Palette.saved, &g_B05.boss_palette, sizeof(PALETTE))
             == 0);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);

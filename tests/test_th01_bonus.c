@@ -84,8 +84,6 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
 typedef struct {
     BONUS_CONTEXT context;
     BONUS_STAGE_ASSETS assets;
-    PALETTE_STATE palette;
-    PALETTE stage_palette;
     PTN sprites;
     GAME_TEXT_FONT font;
     uint32_t score_bonus;
@@ -114,8 +112,6 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     Hud_Load(nullptr, &f->sprites, &f->font);
     f->context = (BONUS_CONTEXT) { .stage = &f->assets,
                                    .font = &f->font,
-                                   .stage_palette = &f->stage_palette,
-                                   .palette = &f->palette,
                                    .score_bonus = &f->score_bonus,
                                    .bonus_per_stage = f->history };
     CHECK(Result_Ignore(Bonus_ValidateStageAssets(&f->assets, &f->font)));
@@ -138,7 +134,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     g_GameInput.bomb_frame = 97;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    memset(&f.stage_palette, 11, sizeof(f.stage_palette));
+    memset(&g_StagePalette, 11, sizeof(g_StagePalette));
     Video_SelectDrawingPage(1);
     Frame_Reset();
     TH01_INPUT raw = {};
@@ -147,7 +143,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(Th01Test_Pixel(0, 32, 180), 5);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 179), 6);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
-    CHECK_EQ_INT(f.palette.saved.colors[0][0], 11);
+    CHECK_EQ_INT(g_Palette.saved.colors[0][0], 11);
     for (int32_t delay = 0; delay < 24; delay++) {
         const BONUS frozen = g_Bonus;
         CHECK(!Bonus_Resume(&f.context, &raw));
@@ -293,7 +289,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(!Bonus_ResumeTotal(&f.context, &raw, 0));
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_TRANSITION);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 14);
-    CHECK_EQ_INT(f.common.palette.resource.colors[0][0], 13);
+    CHECK_EQ_INT(g_Palette.resource.colors[0][0], 13);
     for (int32_t i = 0; i < 70; i++) {
         g_VSync.count1 = 2;
         CHECK(!Bonus_ResumeTotal(&f.context, &raw, 0));
@@ -301,7 +297,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_STAGE_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 14), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 14), 5);
-    CHECK_EQ_INT(f.common.palette.saved.colors[0][0], 13);
+    CHECK_EQ_INT(g_Palette.saved.colors[0][0], 13);
     g_VSync.count1 = 30;
     CHECK(!Bonus_ResumeTotal(&f.context, &raw, 0));
     CHECK_EQ_INT(f.common.score_bonus, 16050);

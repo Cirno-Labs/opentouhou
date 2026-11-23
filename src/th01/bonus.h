@@ -52,8 +52,6 @@ extern BONUS g_Bonus;
 typedef struct {
     const BONUS_STAGE_ASSETS *stage;
     const GAME_TEXT_FONT *font;
-    const PALETTE *stage_palette;
-    PALETTE_STATE *palette;
     uint32_t *score_bonus;
     int32_t *bonus_per_stage;
 } BONUS_CONTEXT;

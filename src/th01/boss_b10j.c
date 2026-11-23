@@ -96,13 +96,12 @@ void B10J_BeginSetup(const B10J_CONTEXT *const c)
     ASSERT(Result_Ignore(BossEntity_Bind(&g_B10J.still, 0, &c->assets->still)));
     ASSERT(Result_Ignore(
         BossEntity_Bind(&g_B10J.animation, 1, &c->assets->animation)));
-    Palette_Set(c->hit->palette, &c->assets->palette);
-    g_B10J.post_defeat = c->hit->palette->saved;
-    g_B10J.boss_palette = c->hit->palette->saved;
+    Palette_Set(&g_Palette, &c->assets->palette);
+    g_B10J.post_defeat = g_Palette.saved;
+    g_B10J.boss_palette = g_Palette.saved;
     g_B10J.still.image = 0;
     g_B10J.animation.image = 1;
-    Palette_BeginFade(
-        &g_B10J.setup_fade, c->hit->palette, PALETTE_FADE_WHITE_IN);
+    Palette_BeginFade(&g_B10J.setup_fade, &g_Palette, PALETTE_FADE_WHITE_IN);
     Frame_BeginWait(&g_B10J.setup_wait);
     g_B10J.setup_active = true;
     g_B10J.finished = false;
@@ -116,7 +115,7 @@ bool B10J_ResumeSetup(const B10J_CONTEXT *const c)
     if (!Frame_WaitReady(&g_B10J.setup_wait)) {
         return false;
     }
-    Palette_FadeStep(&g_B10J.setup_fade, c->hit->palette);
+    Palette_FadeStep(&g_B10J.setup_fade, &g_Palette);
     if (g_B10J.setup_fade.remaining != 0) {
         Frame_BeginWait(&g_B10J.setup_wait);
         return false;
@@ -132,7 +131,7 @@ bool B10J_ResumeSetup(const B10J_CONTEXT *const c)
     g_HudHp.first_redwhite = 2;
     Particles_Init();
     Missiles_Reset();
-    *c->stage_palette = c->hit->palette->saved;
+    g_StagePalette = g_Palette.saved;
     g_B10J.setup_active = false;
     return true;
 }
@@ -500,16 +499,16 @@ static void M_Hop(const B10J_CONTEXT *const c)
     }
     if (g_B10J.hop >= 4) {
         M_PutStill(c);
-        Palette_Set(c->hit->palette, c->stage_palette);
+        Palette_Set(&g_Palette, &g_StagePalette);
         g_B10J.hop = 255;
         g_B10J.direction = (uint8_t)(1 - g_B10J.direction);
         g_B10J.meteor_active = true;
         g_B10J.frame = 0;
     } else {
         for (int32_t i = 0; i < 16; i++) {
-            const int8_t *const color = c->hit->palette->saved.colors[i];
+            const int8_t *const color = g_Palette.saved.colors[i];
             Palette_SetColor(
-                c->hit->palette, i, color[0] - 4, color[1] - 4, color[2] - 4);
+                &g_Palette, i, color[0] - 4, color[1] - 4, color[2] - 4);
         }
         g_B10J.hop++;
         g_B10J.frame = 1;
@@ -773,8 +772,8 @@ static bool M_Entrance(const B10J_CONTEXT *const c)
             g_B10J.phase = B10J_PHASE_FIRST;
             g_B10J.pattern = 0;
             g_B10J.hp_bar_filled = false;
-            *c->stage_palette = c->hit->palette->saved;
-            g_B10J.boss_palette = c->hit->palette->saved;
+            g_StagePalette = g_Palette.saved;
+            g_B10J.boss_palette = g_Palette.saved;
             M_InitHop(c);
             g_B10J.entrance_active = false;
             return true;
@@ -785,8 +784,7 @@ static bool M_Entrance(const B10J_CONTEXT *const c)
 
 static bool M_Death(const B10J_CONTEXT *const c)
 {
-    const BOSS_DEFEAT_CONTEXT defeat = { .palette = c->hit->palette,
-                                         .post_defeat = &g_B10J.post_defeat,
+    const BOSS_DEFEAT_CONTEXT defeat = { .post_defeat = &g_B10J.post_defeat,
                                          .miko = c->miko,
                                          .origin_top = &g_Orb.top,
                                          .stage_cleared = c->stage_cleared };

@@ -47,10 +47,10 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     Arena_Init(&arena, "Konngara", 1024 * 1024);
     B20J_ASSETS assets;
     M_Assets(&assets, &arena);
-    PALETTE_STATE palette = {};
-    palette.saved.colors[10][1] = 7;
+    memset(&g_Palette, 0, sizeof(g_Palette));
+    g_Palette.saved.colors[10][1] = 7;
     memset(&g_HudHp, 0, sizeof(g_HudHp));
-    const BOSS_HIT_CONTEXT hit = { .palette = &palette };
+    const BOSS_HIT_CONTEXT hit = {};
     const B20J_CONTEXT c = { .assets = &assets, .hit = &hit };
     B20J_Init();
     g_B20J.hit = (BOSS_HIT) { 27, true };
@@ -100,7 +100,6 @@ TEST(validation_requires_all_sixteen_images_and_masks)
 
 typedef struct {
     B20J_ASSETS assets;
-    PALETTE_STATE palette;
     BOSS_HIT_CONTEXT hit;
     B20J_CONTEXT context;
     GAME_TEXT_FONT font;
@@ -125,7 +124,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
     Tram_Init(a);
-    Palette_Init(&f->palette);
     Hud_Init(a);
     HudHp_Init(a);
     GAME_TEXT_GLYPH glyphs[10] = {};
@@ -145,8 +143,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                  .shots_output = { M_Shot, f },
+    f->hit = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678 };
     f->context = (B20J_CONTEXT) {
@@ -190,8 +187,8 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
         Frame_VSync();
         CHECK(++polls < 2000);
     }
-    CHECK_EQ_INT(f.palette.resource.colors[10][0], 2);
-    CHECK_EQ_INT(f.palette.saved.colors[10][0], 13);
+    CHECK_EQ_INT(g_Palette.resource.colors[10][0], 2);
+    CHECK_EQ_INT(g_Palette.saved.colors[10][0], 13);
     CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(arena.used, used);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
@@ -250,7 +247,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     g_B20J.hp = 0;
     g_Stage.score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
-    f.palette.saved.colors[7][0] = 15;
+    g_Palette.saved.colors[7][0] = 15;
     Frame_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
@@ -388,9 +385,9 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     CHECK(!B20J_ResumeEntrance(&f.context));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][1], 9);
-    CHECK_EQ_INT(f.palette.resource.colors[10][0], 3);
-    CHECK_EQ_INT(f.palette.saved.colors[9][0], 14);
-    CHECK_EQ_INT(f.palette.saved.colors[9][1], 14);
-    CHECK_EQ_INT(f.palette.saved.colors[9][2], 14);
+    CHECK_EQ_INT(g_Palette.resource.colors[10][0], 3);
+    CHECK_EQ_INT(g_Palette.saved.colors[9][0], 14);
+    CHECK_EQ_INT(g_Palette.saved.colors[9][1], 14);
+    CHECK_EQ_INT(g_Palette.saved.colors[9][2], 14);
     Arena_Free(&arena);
 }

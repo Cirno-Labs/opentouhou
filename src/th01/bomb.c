@@ -55,7 +55,7 @@ static BOMB_UPDATE M_Finish(const BOMB_CONTEXT *const context)
     if (frame == 140) {
         Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
         Video_SelectDrawingPage(0);
-        Palette_Set(context->palette, context->stage_palette);
+        Palette_Set(&g_Palette, &g_StagePalette);
         g_Player.invincibility_time = 100;
         g_Player.bomb_damaging = false;
         return BOMB_UPDATE_DONE;
@@ -113,7 +113,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     if (frame == 0) {
         Pellets_Decay();
         Sprite_PtnPut(context->miko, 3, -1, g_Player.left, PLAYER_TOP);
-        g_Bomb.white = context->palette->saved;
+        g_Bomb.white = g_Palette.saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
                 const int8_t value = g_Bomb.white.colors[color][component];
@@ -126,8 +126,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     } else if (frame < 50) {
         if (frame % 2 == 0) {
             Palette_SetColor(
-                context->palette, 7,
-                g_Bomb.white.colors[7][0] + g_Bomb.tint_offset,
+                &g_Palette, 7, g_Bomb.white.colors[7][0] + g_Bomb.tint_offset,
                 g_Bomb.white.colors[7][1] + g_Bomb.tint_offset,
                 g_Bomb.white.colors[7][2]);
         }
@@ -176,9 +175,9 @@ BOMB_UPDATE Bomb_BeginUpdate(
                                                       : 13);
                 peak.colors[color][2] = 15;
             }
-            Palette_Set(context->palette, &peak);
+            Palette_Set(&g_Palette, &peak);
         } else if (frame % 4 == 2) {
-            Palette_Set(context->palette, &g_Bomb.bright);
+            Palette_Set(&g_Palette, &g_Bomb.bright);
         }
         if (frame % 4 != 0) {
             return M_Finish(context);

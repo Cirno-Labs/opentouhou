@@ -71,10 +71,8 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .shots_output = g->bindings.shots_output,
     };
     g->bindings.bombing = (BOMB_CONTEXT) {
-        .palette = &g->world.palette,
         .miko = &a->miko,
         .assets = &a->bomb,
-        .stage_palette = &g->world.stage_palette,
     };
     g->bindings.missing = (MISS_CONTEXT) {
         .miko = &a->miko,
@@ -89,40 +87,31 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                 .makai = &a->scenes[1],
                                 .jigoku = &a->scenes[2] };
     g->bindings.route = (ROUTE_SELECT_CONTEXT) {
-        .palette = &g->world.palette,
         .assets = &g->bindings.route_assets,
         .route = &g_Session.route,
         .stage_cleared = &g_Stage.cleared,
     };
     g->bindings.hit = (BOSS_HIT_CONTEXT) {
-        .palette = &g->world.palette,
         .shots_output = g->bindings.shots_output,
         .test_damage = &g->world.test_damage,
         .frame_rand = g_Session.frame_rand,
     };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
                                       .hit = &g->bindings.hit,
-                                      .stage_palette = &g->world.stage_palette,
                                       .miko = &a->miko,
                                       .route = &g->bindings.route };
-    g->bindings.c10j =
-        (B10J_CONTEXT) { .assets = &a->b10j,
-                         .hit = &g->bindings.hit,
-                         .stage_palette = &g->world.stage_palette,
-                         .miko = &a->miko,
-                         .stage_cleared = &g_Stage.cleared };
-    g->bindings.c10m =
-        (B10M_CONTEXT) { .assets = &a->b10m,
-                         .hit = &g->bindings.hit,
-                         .stage_palette = &g->world.stage_palette,
-                         .miko = &a->miko,
-                         .stage_cleared = &g_Stage.cleared };
-    g->bindings.c15j =
-        (B15J_CONTEXT) { .assets = &a->b15j,
-                         .hit = &g->bindings.hit,
-                         .stage_palette = &g->world.stage_palette,
-                         .miko = &a->miko,
-                         .stage_cleared = &g_Stage.cleared };
+    g->bindings.c10j = (B10J_CONTEXT) { .assets = &a->b10j,
+                                        .hit = &g->bindings.hit,
+                                        .miko = &a->miko,
+                                        .stage_cleared = &g_Stage.cleared };
+    g->bindings.c10m = (B10M_CONTEXT) { .assets = &a->b10m,
+                                        .hit = &g->bindings.hit,
+                                        .miko = &a->miko,
+                                        .stage_cleared = &g_Stage.cleared };
+    g->bindings.c15j = (B15J_CONTEXT) { .assets = &a->b15j,
+                                        .hit = &g->bindings.hit,
+                                        .miko = &a->miko,
+                                        .stage_cleared = &g_Stage.cleared };
     g->bindings.c15m = (B15M_CONTEXT) { .assets = &a->b15m,
                                         .hit = &g->bindings.hit,
                                         .miko = &a->miko,
@@ -140,8 +129,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.bonus_context = (BONUS_CONTEXT) {
         .stage = a->bonus,
         .font = &a->bonus_font,
-        .stage_palette = &g->world.stage_palette,
-        .palette = &g->world.palette,
         .score_bonus = &g->world.score_bonus,
         .bonus_per_stage = g_Session.bonus_per_stage,
     };

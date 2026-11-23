@@ -50,10 +50,10 @@ TEST(setup_preserves_patterns)
     g_B20M.shield.lock_frame = 7;
     g_B20M.hit.frame = 17;
     g_B20M.hit.invincible = true;
-    PALETTE_STATE palette = {};
+    memset(&g_Palette, 0, sizeof(g_Palette));
     memset(&g_HudHp, 0, sizeof(g_HudHp));
-    palette.saved.colors[6][0] = 9;
-    BOSS_HIT_CONTEXT hit = { .palette = &palette };
+    g_Palette.saved.colors[6][0] = 9;
+    BOSS_HIT_CONTEXT hit = {};
     B20M_CONTEXT c = { .assets = &a, .hit = &hit };
     const size_t used = arena.used;
     B20M_Setup(&c);
@@ -99,7 +99,6 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
 #include <string.h>
 typedef struct {
     B20M_ASSETS assets;
-    PALETTE_STATE palette;
     BOSS_HIT_CONTEXT hit;
     B20M_CONTEXT context;
     GAME_TEXT_FONT font;
@@ -127,7 +126,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
     Tram_Init(a);
-    Palette_Init(&f->palette);
     Hud_Init(a);
     HudHp_Init(a);
     GAME_TEXT_GLYPH glyphs[105] = {};
@@ -156,8 +154,7 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(&f->mask, &f->stage, &f->font);
     g_Session.stage_id = 19;
-    f->hit = (BOSS_HIT_CONTEXT) { .palette = &f->palette,
-                                  .shots_output = { M_Shot, f },
+    f->hit = (BOSS_HIT_CONTEXT) { .shots_output = { M_Shot, f },
                                   .test_damage = &f->damage,
                                   .frame_rand = 0x12345678 };
     f->context = (B20M_CONTEXT) { .assets = &f->assets,

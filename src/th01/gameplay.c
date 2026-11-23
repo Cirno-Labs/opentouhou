@@ -78,8 +78,8 @@ static void M_StageBackground(GAMEPLAY *const g)
     Video_SelectDrawingPage(0);
     if (g->world.first_stage) {
         memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
-        Palette_Import(&g->world.stage_palette, background->palette);
-        Palette_Set(&g->world.palette, &g->world.stage_palette);
+        Palette_Import(&g_StagePalette, background->palette);
+        Palette_Set(&g_Palette, &g_StagePalette);
         M_CopyPage(g, 0, 1);
     } else {
         M_CopyPage(g, 1, 0);
@@ -225,7 +225,7 @@ static void M_PauseDraw(GAMEPLAY *const g, const bool quit)
 static void M_PauseBegin(GAMEPLAY *const g)
 {
     M_PauseDraw(g, false);
-    PALETTE dark = g->world.palette.saved;
+    PALETTE dark = g_Palette.saved;
     for (int32_t i = 0; i < 16; i++) {
         if (i == 7) {
             continue;
@@ -234,7 +234,7 @@ static void M_PauseBegin(GAMEPLAY *const g)
             dark.colors[i][c] = (int8_t)(dark.colors[i][c] * 40 / 100);
         }
     }
-    Palette_Set(&g->world.palette, &dark);
+    Palette_Set(&g_Palette, &dark);
     g->world.phase = GP_PAUSE;
 }
 
@@ -253,7 +253,7 @@ static void M_BeginSwitch(GAMEPLAY *const g, const GAMEPLAY_SWITCH to)
 {
     g->world.switch_to = to;
     Palette_BeginFade(
-        &g->world.switch_fade, &g->world.palette, PALETTE_FADE_BLACK_OUT);
+        &g->world.switch_fade, &g_Palette, PALETTE_FADE_BLACK_OUT);
     Frame_BeginWait(&g->world.wait);
     g->world.phase = GP_SWITCH;
 }
@@ -336,7 +336,7 @@ static bool M_PausePoll(
                 M_ContinueUse(g);
                 M_OpenMenu(g);
             } else {
-                Palette_Set(&g->world.palette, &g->world.stage_palette);
+                Palette_Set(&g_Palette, &g_StagePalette);
                 Gameplay_ResetInput(g);
                 Sprite_Restore16(232, 128, 176, 32);
                 g->world.phase = GP_AFTER_ORB;
@@ -460,7 +460,7 @@ static GAMEPLAY_REQUEST M_Run(
                     : !B20J_ResumeEntrance(&g->bindings.c20j)) {
                 return g->world.request;
             }
-            g->world.stage_palette = g->world.boss == BOSS_KONNGARA
+            g_StagePalette = g->world.boss == BOSS_KONNGARA
                 ? g_B20J.stage_palette
                 : g_B20M.stage_palette;
             M_StageReady(g);
@@ -640,7 +640,7 @@ static GAMEPLAY_REQUEST M_Run(
                 M_PauseDraw(g, true);
                 g->world.phase = GP_QUIT_CONFIRM;
             } else {
-                Palette_Set(&g->world.palette, &g->world.stage_palette);
+                Palette_Set(&g_Palette, &g_StagePalette);
                 Gameplay_ResetInput(g);
                 Sprite_Restore16(232, 128, 176, 32);
                 g->world.phase = GP_AFTER_ORB;
@@ -843,7 +843,7 @@ static GAMEPLAY_REQUEST M_Run(
             if (!Frame_WaitReady(&g->world.wait)) {
                 return g->world.request;
             }
-            Palette_FadeStep(&g->world.switch_fade, &g->world.palette);
+            Palette_FadeStep(&g->world.switch_fade, &g_Palette);
             if (g->world.switch_fade.remaining > 0) {
                 Frame_BeginWait(&g->world.wait);
             } else {

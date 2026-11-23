@@ -108,7 +108,7 @@ void B20J_Setup(const B20J_CONTEXT *const c)
         !g_B20J.entrance_active && !g_B20J.defeating
         && g_B20J.wait_kind == B20J_WAIT_NONE);
     ASSERT(Result_Ignore(B20J_ValidateAssets(c->assets)));
-    g_B20J.boss_palette = c->hit->palette->saved;
+    g_B20J.boss_palette = g_Palette.saved;
     g_B20J.hp = 18;
     g_B20J.phase = B20J_PHASE_START;
     g_B20J.frame = 0;
@@ -134,9 +134,9 @@ static void M_Pi(
                                .stride = image->width,
                                .key = colorkey ? 15 : -1 };
     Video_Blit(&view, (GFX_RECT) { 0, 0, image->width, image->height }, 0, 0);
-    Palette_Import(&c->hit->palette->resource, image->palette);
+    Palette_Import(&g_Palette.resource, image->palette);
     if (!colorkey) {
-        Palette_Set(c->hit->palette, &c->hit->palette->resource);
+        Palette_Set(&g_Palette, &g_Palette.resource);
     }
 }
 static void M_Grx(const B20J_CONTEXT *const c, const int16_t image)
@@ -207,11 +207,11 @@ static void M_SlashPut(const B20J_CONTEXT *const c, const int16_t image)
 }
 static void M_White(const B20J_CONTEXT *const c)
 {
-    Palette_SetColor(c->hit->palette, 9, 15, 15, 15);
+    Palette_SetColor(&g_Palette, 9, 15, 15, 15);
 }
 static void M_WhiteIn(const B20J_CONTEXT *const c)
 {
-    int8_t *const col = c->hit->palette->saved.colors[9];
+    int8_t *const col = g_Palette.saved.colors[9];
     if (col[0] > 0) {
         col[0]--;
     }
@@ -221,11 +221,11 @@ static void M_WhiteIn(const B20J_CONTEXT *const c)
     if (col[2] > 10) {
         col[2]--;
     }
-    Palette_Set(c->hit->palette, &c->hit->palette->saved);
+    Palette_Set(&g_Palette, &g_Palette.saved);
 }
 static void M_BlackOut(const B20J_CONTEXT *const c)
 {
-    PALETTE *const colors = &c->hit->palette->saved;
+    PALETTE *const colors = &g_Palette.saved;
     for (int32_t i = 0; i < 16; i++) {
         for (int32_t j = 0; j < 3; j++) {
             if (colors->colors[i][j] > 0) {
@@ -233,7 +233,7 @@ static void M_BlackOut(const B20J_CONTEXT *const c)
             }
         }
     }
-    Palette_Set(c->hit->palette, colors);
+    Palette_Set(&g_Palette, colors);
 }
 static bool M_Scroll(const int16_t top)
 {
@@ -274,7 +274,7 @@ void B20J_BeginEntrance(const B20J_CONTEXT *const c)
     g_Pellets.interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(c, &c->assets->scroll, false);
-    g_B20J.stage_palette = c->hit->palette->saved;
+    g_B20J.stage_palette = g_Palette.saved;
     StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
     Video_SelectDrawingPage(1);
     M_Pi(c, &c->assets->upper, false);
@@ -284,7 +284,7 @@ void B20J_BeginEntrance(const B20J_CONTEXT *const c)
     ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.face, 1, &c->assets->face)));
     ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.aim, 2, &c->assets->aim)));
     Sound_Play();
-    Palette_SetGray(c->hit->palette, 0);
+    Palette_SetGray(&g_Palette, 0);
     Tram_Clear();
     g_B20J.scroll_line = 0;
     g_B20J.scroll_speed = 32;
@@ -324,8 +324,7 @@ bool B20J_ResumeEntrance(const B20J_CONTEXT *const c)
                 continue;
             }
             if (g_B20J.scroll_frame % 8 == 0) {
-                Palette_StepTo(
-                    c->hit->palette, &c->hit->palette->resource, true);
+                Palette_StepTo(&g_Palette, &g_Palette.resource, true);
             }
             g_B20J.scroll_frame++;
             g_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
@@ -1057,7 +1056,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
                 Video_Clear(0);
             }
             const int16_t flash = g_B20J.animation_frame % 2 == 0 ? 15 : 0;
-            Palette_SetColor(c->hit->palette, 0, flash, flash, flash);
+            Palette_SetColor(&g_Palette, 0, flash, flash, flash);
             M_Grx(c, g_B20J.animation_frame);
             g_B20J.animation_frame++;
             if (!M_Delay(10)) {
@@ -1076,7 +1075,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
             if (g_B20J.frame > 64) {
                 Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
                 M_Pi(c, &c->assets->scroll, false);
-                Palette_SetGray(c->hit->palette, 0);
+                Palette_SetGray(&g_Palette, 0);
                 Tram_Clear();
                 g_B20J.scroll_line = 0;
                 g_B20J.scroll_frame = 0;
@@ -1098,8 +1097,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
             }
             if (g_B20J.scroll_frame < 150) {
                 if (g_B20J.scroll_frame % 8 == 0) {
-                    Palette_StepTo(
-                        c->hit->palette, &c->hit->palette->resource, true);
+                    Palette_StepTo(&g_Palette, &g_Palette.resource, true);
                     Sound_Effect(7);
                 }
             } else if (g_B20J.scroll_frame % 8 == 0) {
@@ -1107,7 +1105,7 @@ static bool M_Death(const B20J_CONTEXT *const c)
                     Sound_Fade();
                 }
                 M_BlackOut(c);
-                if (c->hit->palette->saved.colors[7][0] == 0) {
+                if (g_Palette.saved.colors[7][0] == 0) {
                     g_B20J.defeat_stage = B20J_DEFEAT_CLEAR;
                     return M_Scroll(0);
                 }
@@ -1219,7 +1217,7 @@ bool B20J_UpdateAndRender(const B20J_CONTEXT *const c)
         g_B20J.hit.frame = 0;
         g_B20J.hit.invincible = false;
         g_B20J.hp_bar_filled = false;
-        g_B20J.boss_palette = c->hit->palette->saved;
+        g_B20J.boss_palette = g_Palette.saved;
         g_Rng = c->hit->frame_rand;
         return true;
     }

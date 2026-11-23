@@ -24,7 +24,7 @@ RESULT Gameplay_Prepare(
     MUST(Mdrv_Init(
         assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, 8, 8, allocator,
         &g_Sound.mdrv));
-    Palette_Init(&g->world.palette);
+    Palette_Init(&g_Palette);
     g->world.first_stage = true;
     g->world.wait_for_shot = true;
     g->world.phase = GP_STAGE_BEGIN;
@@ -40,6 +40,8 @@ RESULT Gameplay_Prepare(
 void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
     memcpy(&g->world, g->storage.initial, sizeof(g->world));
+    Palette_Init(&g_Palette);
+    memset(&g_StagePalette, 0, sizeof(g_StagePalette));
     Player_Init();
     Orb_Init();
     Shots_Init();

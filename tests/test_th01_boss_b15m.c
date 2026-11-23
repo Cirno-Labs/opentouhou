@@ -14,7 +14,6 @@
 #include "test.h"
 
 typedef struct {
-    PALETTE_STATE palette;
     B15M_ASSETS assets;
     BOSS_HIT_CONTEXT hit;
     B15M_CONTEXT context;
@@ -29,7 +28,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     Th01Test_ResetWorld();
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Video_Init(a);
-    Palette_Init(&f->palette);
     f->assets.girl = (BOS) { 128, 96, 6, Arena_AllocZ(arena, 128 * 96 * 6),
                              Arena_AllocZ(arena, 128 * 96 * 6) };
     f->assets.attack = (BOS) { 128, 96, 3, Arena_AllocZ(arena, 128 * 96 * 3),
@@ -51,8 +49,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(
         Result_Ignore(Scene_LoadReader(&reader, 5, a, &f->assets.next_scene)));
     Reader_Close(&reader);
-    f->hit =
-        (BOSS_HIT_CONTEXT) { .palette = &f->palette, .frame_rand = 0x12345678 };
+    f->hit = (BOSS_HIT_CONTEXT) { .frame_rand = 0x12345678 };
     f->context = (B15M_CONTEXT) { .assets = &f->assets, .hit = &f->hit };
 }
 
@@ -75,7 +72,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     g_Missiles.slots[0].flag = MISSILE_MOVING;
     g_Missiles.slots[0].left = 300;
     const MISSILES missiles = g_Missiles;
-    const PALETTE saved = f.palette.saved;
+    const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
     B15M_Setup(&f.context);
     CHECK_EQ_INT(arena.used, used);
@@ -87,7 +84,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(g_Rng, 0x12345678);
     CHECK(g_Pellets.interlace);
     CHECK(memcmp(&g_Missiles, &missiles, sizeof(missiles)) == 0);
-    CHECK(memcmp(&f.palette.saved, &saved, sizeof(saved)) == 0);
+    CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
     CHECK_EQ_INT(g_B15M.girl.left, 256);
     CHECK_EQ_INT(g_B15M.girl.top, 96);
     CHECK_EQ_INT(g_B15M.attack.left, 256);

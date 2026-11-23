@@ -14,7 +14,6 @@ typedef struct {
 } BOSS_SHOT_HITBOX;
 
 typedef struct {
-    PALETTE_STATE *palette;
     SHOTS_OUTPUT shots_output;
     bool *test_damage;
     uint32_t frame_rand;
