@@ -6,8 +6,7 @@ void Gameplay_Effect(void *const user, const int16_t number)
 {
     GAMEPLAY *const g = user;
     if (g->storage.session->settings.music != SETTINGS_MUSIC_OFF) {
-        Gameplay_RequireAudio(
-            MdrvSynth_EffectPlay(g->storage.audio, (uint16_t)number));
+        Mdrv_Effect(g->storage.audio, (uint16_t)number);
     }
 }
 
@@ -15,7 +14,7 @@ void Gameplay_Play(GAMEPLAY *const g, const size_t song)
 {
     g->storage.song = song;
     if (g->storage.session->settings.music != SETTINGS_MUSIC_OFF) {
-        Gameplay_RequireAudio(MdrvSynth_Play(g->storage.audio, song));
+        Mdrv_Play(g->storage.audio, song);
     }
 }
 
@@ -23,14 +22,14 @@ void Gameplay_Fade(void *const user)
 {
     GAMEPLAY *const g = user;
     if (g->storage.session->settings.music != SETTINGS_MUSIC_OFF) {
-        MdrvSynth_Fade(g->storage.audio, 1);
+        Mdrv_Fade(g->storage.audio, 1);
     }
 }
 
 void Gameplay_Stop(GAMEPLAY *const g)
 {
     if (g->storage.session->settings.music != SETTINGS_MUSIC_OFF) {
-        MdrvSynth_Stop(g->storage.audio);
+        Mdrv_Stop(g->storage.audio);
     }
 }
 

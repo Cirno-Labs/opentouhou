@@ -18,6 +18,19 @@ typedef struct {
     VIDEO video;
 } FIXTURE;
 
+// Renders a while and reports whether an effect sounded.
+static bool M_EffectSounds(GAMEPLAY *const g)
+{
+    MDRV_FRAME frames[2400];
+    Mdrv_Render(g->storage.audio, frames, 2400);
+    for (size_t i = 0; i < 2400; i++) {
+        if (frames[i].effects[0] != 0 || frames[i].effects[1] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
@@ -77,7 +90,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(g->world.orb.force_frame, 2);
     Gameplay_Tick(g, &raw, true, 4);
     CHECK(g->world.shots.slots[0].moving);
-    CHECK(MdrvSynth_Status(g->storage.audio).effects_playing);
+    CHECK(M_EffectSounds(g));
     CHECK_EQ_INT(f.arena.used, used);
     Arena_Free(&f.arena);
 }
@@ -505,10 +518,10 @@ TEST(disabled_gameplay_cannot_start_effects)
     f.session.settings.music = SETTINGS_MUSIC_OFF;
     Gameplay_Effect(f.game, 5);
     Gameplay_AdvanceAudio(f.game);
-    CHECK(!MdrvSynth_Status(f.game->storage.audio).effects_playing);
+    CHECK(!M_EffectSounds(f.game));
     f.session.settings.music = SETTINGS_MUSIC_FM;
     Gameplay_Effect(f.game, 5);
-    CHECK(MdrvSynth_Status(f.game->storage.audio).effects_playing);
+    CHECK(M_EffectSounds(f.game));
     Arena_Free(&f.arena);
 }
 
@@ -518,34 +531,31 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     M_Init(&f);
     GAMEPLAY *const g = f.game;
     f.session.settings.music = SETTINGS_MUSIC_OFF;
+    MDRV *twin;
+    CHECK(Result_Ignore(Mdrv_Init(
+        f.assets->songs, GAMEPLAY_SONG_COUNT, &f.assets->effects, 8, 8,
+        Arena_Allocator(&f.arena), &twin)));
     const size_t used = f.arena.used;
     Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY });
     Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_FADE });
+    Mdrv_Play(twin, 15);
+    Mdrv_Fade(twin, 1);
     for (int32_t i = 0; i < 10; i++) {
         Gameplay_AdvanceAudio(g);
     }
-    const MDRV_SYNTH_STATUS before = MdrvSynth_Status(g->storage.audio);
-    CHECK(before.music_playing && before.fading);
-    CHECK(before.fade_attenuation > 0);
+    Mdrv_Render(twin, nullptr, 8000);
     Gameplay_Effect(g, 5);
     Gameplay_Play(g, 3);
     Gameplay_Stop(g);
     Gameplay_Fade(g);
     g->bindings.c20j.audio(g, B20J_AUDIO_STOP, nullptr);
     g->bindings.c20m.audio(g, B20M_AUDIO_STOP, nullptr);
-    const MDRV_SYNTH_STATUS after = MdrvSynth_Status(g->storage.audio);
-    CHECK(after.music_playing && after.fading);
-    CHECK(!after.effects_playing);
-    CHECK_EQ_INT(after.time, before.time);
-    CHECK_EQ_INT(after.pulses, before.pulses);
-    CHECK_EQ_INT(after.fade_attenuation, before.fade_attenuation);
     CHECK_EQ_INT(g->storage.song, 3);
-    Gameplay_AdvanceAudio(g);
-    CHECK(MdrvSynth_Status(g->storage.audio).time > after.time);
-    CHECK(MdrvSynth_Status(g->storage.audio).fading);
+    static MDRV_FRAME expected[4800], actual[4800];
+    Mdrv_Render(twin, expected, 4800);
+    Mdrv_Render(g->storage.audio, actual, 4800);
+    CHECK(memcmp(expected, actual, sizeof(actual)) == 0);
     Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_STOP });
-    CHECK(!MdrvSynth_Status(g->storage.audio).music_playing);
-    CHECK(!MdrvSynth_Status(g->storage.audio).fading);
     CHECK_EQ_INT(f.arena.used, used);
     Arena_Free(&f.arena);
 }
@@ -557,19 +567,19 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
     GAMEPLAY *const g = f.game;
     Gameplay_Play(g, 3);
     Gameplay_Effect(g, 5);
-    CHECK(MdrvSynth_Status(g->storage.audio).music_playing);
-    CHECK(MdrvSynth_Status(g->storage.audio).effects_playing);
+    CHECK(M_EffectSounds(g));
+    Gameplay_Effect(g, 5);
     Gameplay_Fade(g);
-    CHECK(MdrvSynth_Status(g->storage.audio).fading);
     Gameplay_Play(g, 4);
-    CHECK(MdrvSynth_Status(g->storage.audio).music_playing);
-    CHECK(!MdrvSynth_Status(g->storage.audio).effects_playing);
-    CHECK(!MdrvSynth_Status(g->storage.audio).fading);
+    CHECK_EQ_INT(g->storage.song, 4);
+    CHECK(!M_EffectSounds(g));
+    Gameplay_Effect(g, 5);
     g->bindings.c20j.audio(g, B20J_AUDIO_STOP, nullptr);
-    CHECK(!MdrvSynth_Status(g->storage.audio).music_playing);
+    CHECK(!M_EffectSounds(g));
     Gameplay_Play(g, 5);
+    Gameplay_Effect(g, 5);
     g->bindings.c20m.audio(g, B20M_AUDIO_STOP, nullptr);
-    CHECK(!MdrvSynth_Status(g->storage.audio).music_playing);
+    CHECK(!M_EffectSounds(g));
     Arena_Free(&f.arena);
 }
 
@@ -583,15 +593,12 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     Gameplay_BindAudio(f.game, output);
     Gameplay_Effect(f.game, 5);
     Gameplay_AdvanceAudio(f.game);
-    const MDRV_SYNTH_STATUS before = MdrvSynth_Status(f.game->storage.audio);
     const size_t used = f.arena.used;
     Gameplay_ResetWorld(f.game);
     CHECK(f.game->storage.audio_output == output);
-    CHECK_EQ_INT(MdrvSynth_Status(f.game->storage.audio).time, before.time);
     Gameplay_OpeningAudio(
         f.game, (OPENING_EVENTS) { .audio = OPENING_AUDIO_FADE });
     Gameplay_AdvanceAudio(f.game);
-    CHECK(MdrvSynth_Status(f.game->storage.audio).time > before.time);
     float samples[3200];
     const Uint64 deadline = SDL_GetTicks() + 5000;
     bool mixed = AudioBackend_Mix(samples, 1600);
@@ -625,14 +632,12 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     Gameplay_AdvanceAudio(g);
     g->storage.host_tick = 1234;
     const GAMEPLAY_STORAGE prepared = g->storage;
-    const uint64_t audio_time = MdrvSynth_Status(g->storage.audio).time;
     const size_t used = f.arena.used;
     memset(&g->world, 0xa5, sizeof(g->world));
     memset(&g->bindings, 0xa5, sizeof(g->bindings));
     Gameplay_ResetWorld(g);
     CHECK_EQ_INT(f.arena.used, used);
     CHECK(memcmp(&g->storage, &prepared, sizeof(prepared)) == 0);
-    CHECK_EQ_INT(MdrvSynth_Status(g->storage.audio).time, audio_time);
     CHECK_EQ_INT(g->world.phase, GP_STAGE_BEGIN);
     CHECK(g->world.first_stage && g->world.wait_for_shot);
     CHECK_EQ_INT(g->world.frame, 0);

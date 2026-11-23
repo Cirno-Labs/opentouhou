@@ -17,7 +17,7 @@ typedef struct {
     MDRV_MUSIC songs[2];
     MDRV_EFFECT effects[2];
     MDRV_EFFECTS effect_bank;
-    MDRV_SYNTH *synth;
+    MDRV *mdrv;
 } FIXTURE;
 
 static void *M_Alloc(void *const context, const size_t size)
@@ -93,16 +93,22 @@ static void M_Init(
     };
 }
 
+static MDRV *M_Play(FIXTURE *const fixture)
+{
+    MDRV *mdrv = nullptr;
+    CHECK(Result_Ignore(Mdrv_Init(
+        fixture->songs, 2, &fixture->effect_bank, 8, 8, &fixture->allocator,
+        &mdrv)));
+    Mdrv_Play(mdrv, 0);
+    Mdrv_Effect(mdrv, 2);
+    return mdrv;
+}
+
 static void M_Start(FIXTURE *const fixture)
 {
     const uint8_t code[] = { 0xeb, 0, 0xec, 110, 0xea, 0, 0x40, 255, 0xff };
     M_Init(fixture, code, sizeof(code), 0x80);
-    CHECK(Result_Ignore(MdrvSynth_Init(
-        fixture->songs, 2, &fixture->effect_bank,
-        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 },
-        &fixture->allocator, nullptr, nullptr, &fixture->synth)));
-    CHECK(Result_Ignore(MdrvSynth_Play(fixture->synth, 0)));
-    CHECK(Result_Ignore(MdrvSynth_EffectPlay(fixture->synth, 2)));
+    fixture->mdrv = M_Play(fixture);
 }
 
 static void M_Mix(float *const samples, const uint32_t frames)
@@ -133,9 +139,7 @@ TEST(headless_and_failed_preparation_preserve_producer)
     CHECK(!Result_Ignore(GameAudio_Prepare(&fixture.allocator, &output)));
     CHECK(output == nullptr);
     GameAudio_Free(output);
-    const uint64_t time = MdrvSynth_Status(fixture.synth).time;
-    CHECK(Result_Ignore(GameAudio_Render(nullptr, fixture.synth, 800)));
-    CHECK(MdrvSynth_Status(fixture.synth).time > time);
+    GameAudio_Render(nullptr, fixture.mdrv, 800);
     CHECK_EQ_INT(fixture.allocations, before);
     Arena_Free(&fixture.arena);
 }
@@ -147,26 +151,21 @@ TEST(real_producer_chunks_and_bus_controls_share_one_timeline)
     M_Start(&fixture);
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(&fixture.allocator, &output)));
+    MDRV *const twin = M_Play(&fixture);
     const size_t before = fixture.allocations;
     float whole[3200], split[3200];
-    CHECK(Result_Ignore(GameAudio_Render(output, fixture.synth, 1600)));
+    GameAudio_Render(output, fixture.mdrv, 1600);
     M_Mix(whole, 1600);
-    const MDRV_SYNTH_STATUS status = MdrvSynth_Status(fixture.synth);
     GameAudio_Free(output);
     CHECK(Result_Ignore(GameAudio_Prepare(&fixture.allocator, &output)));
-    MdrvSynth_Reset(fixture.synth);
-    CHECK(Result_Ignore(MdrvSynth_Play(fixture.synth, 0)));
-    CHECK(Result_Ignore(MdrvSynth_EffectPlay(fixture.synth, 2)));
     size_t at = 0;
     while (at < 1600) {
         const size_t count = 1600 - at < 137 ? 1600 - at : 137;
-        CHECK(Result_Ignore(GameAudio_Render(output, fixture.synth, count)));
+        GameAudio_Render(output, twin, count);
         M_Mix(split + at * 2, (uint32_t)count);
         at += count;
     }
     CHECK(memcmp(whole, split, sizeof(whole)) == 0);
-    CHECK_EQ_INT(MdrvSynth_Status(fixture.synth).time, status.time);
-    CHECK_EQ_INT(MdrvSynth_Status(fixture.synth).pulses, status.pulses);
     bool nonzero = false;
     for (size_t i = 0; i < 3200; i++) {
         CHECK(isfinite(whole[i]));
@@ -184,12 +183,9 @@ TEST(mixer_routes_components_with_gain_mute_and_pause)
     M_Start(&fixture);
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(&fixture.allocator, &output)));
-    MDRV_SYNTH_FRAME raw[800];
-    CHECK(Result_Ignore(MdrvSynth_Render(fixture.synth, raw, 800)));
-    MdrvSynth_Reset(fixture.synth);
-    CHECK(Result_Ignore(MdrvSynth_Play(fixture.synth, 0)));
-    CHECK(Result_Ignore(MdrvSynth_EffectPlay(fixture.synth, 2)));
-    CHECK(Result_Ignore(GameAudio_Render(output, fixture.synth, 800)));
+    MDRV_FRAME raw[800];
+    Mdrv_Render(fixture.mdrv, raw, 800);
+    GameAudio_Render(output, M_Play(&fixture), 800);
     CHECK(Result_Ignore(Audio_SetMasterVolume(0.5f)));
     CHECK(Result_Ignore(Audio_SetGroupVolume(AUDIO_GROUP_MUSIC, 0.5f)));
     CHECK(Result_Ignore(Audio_SetGroupVolume(AUDIO_GROUP_EFFECTS, 0.25f)));

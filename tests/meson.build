@@ -2433,28 +2433,6 @@ if build_games
     suite: 'unit',
   )
   test(
-    'th01/audio_failure',
-    python,
-    args: [
-      expect_fatal,
-      'TH01 audio playback failed',
-      executable(
-        'test_th01_audio_failure',
-        'test_th01_audio_failure.c',
-        'th01_assets.c',
-        'audio_backend_fake.c',
-        c_args: [layer_include['th01']] + core_include + stg_include,
-        implicit_include_directories: false,
-        link_with: [th01_lib, core_audio_lib, core_text_lib, core_image_lib,
-          core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib,
-          core_io_lib, core_base_lib],
-        dependencies: [pc98_dep, sdl3_ttf, sdl3, avcodec, avutil, avformat,
-          swresample, cc_libm],
-      ),
-    ],
-    suite: 'unit',
-  )
-  test(
     'th01/main',
     executable(
       'test_th01_main',
@@ -2553,7 +2531,7 @@ if build_games
   )
 endif
 
-foreach part : ['mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'vsync', 'master_rng', 'math16', 'logo1', 'pi']
+foreach part : ['mdrv_data', 'mdrv', 'opna', 'vsync', 'master_rng', 'math16', 'logo1', 'pi']
   test(
     'pc98/' + part,
     executable(
@@ -2566,3 +2544,18 @@ foreach part : ['mdrv_data', 'mdrv_seq', 'mdrv_synth', 'opna', 'vsync', 'master_
     env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'pc98' / part},
   )
 endforeach
+test(
+  'pc98/mdrv_malformed',
+  python,
+  args: [
+    expect_fatal,
+    'Invalid MDRV opcode d0 at 0',
+    executable(
+      'test_pc98_mdrv_malformed',
+      'test_pc98_mdrv_malformed.c',
+      implicit_include_directories: false,
+      dependencies: [pc98_dep, sdl3],
+    ),
+  ],
+  suite: 'unit',
+)

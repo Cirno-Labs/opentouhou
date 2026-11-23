@@ -7,7 +7,7 @@
 
 struct GAME_AUDIO {
     AUDIO_LIVE *input;
-    MDRV_SYNTH_FRAME raw[M_BLOCK_FRAMES];
+    MDRV_FRAME raw[M_BLOCK_FRAMES];
     float buses[2][M_BLOCK_FRAMES * 2];
     float previous_input[2][2], previous_output[2][2];
 };
@@ -25,15 +25,15 @@ RESULT GameAudio_Prepare(
     return OK;
 }
 
-RESULT GameAudio_Render(
-    GAME_AUDIO *const output, MDRV_SYNTH *const synth, size_t frames)
+void GameAudio_Render(GAME_AUDIO *const output, MDRV *const mdrv, size_t frames)
 {
     if (output == nullptr) {
-        return MdrvSynth_Render(synth, nullptr, frames);
+        Mdrv_Render(mdrv, nullptr, frames);
+        return;
     }
     while (frames != 0) {
         const size_t count = frames < M_BLOCK_FRAMES ? frames : M_BLOCK_FRAMES;
-        MUST(MdrvSynth_Render(synth, output->raw, count));
+        Mdrv_Render(mdrv, output->raw, count);
         for (size_t i = 0; i < count; i++) {
             const int32_t *const components[] = {
                 output->raw[i].music,
@@ -53,10 +53,13 @@ RESULT GameAudio_Render(
             }
         }
         const float *const buses[] = { output->buses[0], output->buses[1] };
-        MUST(AudioLive_Submit(output->input, buses, (uint32_t)count));
+        if (!Result_Log(
+                AudioLive_Submit(output->input, buses, (uint32_t)count),
+                LOG_LEVEL_ERROR)) {
+            LOG_FATAL("TH01 audio submission failed");
+        }
         frames -= count;
     }
-    return OK;
 }
 
 void GameAudio_Free(GAME_AUDIO *const output)

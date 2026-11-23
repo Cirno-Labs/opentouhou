@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pc98/mdrv_synth.h"
+#include "pc98/mdrv.h"
 
 typedef struct GAME_AUDIO GAME_AUDIO;
 
@@ -16,7 +16,7 @@ RESULT GameAudio_Prepare(const ALLOCATOR *allocator, GAME_AUDIO **out);
 // Converts with fixed 1/65536 gain and a 20 Hz DC blocker per bus/channel:
 // y[n] = x[n] - x[n-1] + 0.99738543*y[n-1]. Keeps filter history across
 // blocks, music controls and world changes. Does not clip or normalize.
-RESULT GameAudio_Render(GAME_AUDIO *output, MDRV_SYNTH *synth, size_t frames);
+void GameAudio_Render(GAME_AUDIO *output, MDRV *mdrv, size_t frames);
 
 // Releases the live input, retaining allocator-owned conversion storage.
 // Accepts null. Call once before discarding its allocation group.

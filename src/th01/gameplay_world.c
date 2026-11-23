@@ -25,10 +25,9 @@ RESULT Gameplay_Prepare(
     B10J_Init(&g->world.b10j, allocator);
     B15M_Init(&g->world.b15m, allocator);
     B20M_Init(&g->world.b20m, allocator);
-    MUST(MdrvSynth_Init(
-        assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects,
-        (MDRV_SYNTH_CONFIG) { .fm_balance = 8, .rhythm_balance = 8 }, allocator,
-        nullptr, nullptr, &g->storage.audio));
+    MUST(Mdrv_Init(
+        assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, 8, 8, allocator,
+        &g->storage.audio));
     B20J_Init(&g->world.b20j);
     Palette_Init(&g->world.palette);
     g->world.first_stage = true;
@@ -186,8 +185,7 @@ const TRAM *Gameplay_TextLayer(const GAMEPLAY *const g)
 
 void Gameplay_AdvanceAudio(GAMEPLAY *const g)
 {
-    Gameplay_RequireAudio(
-        GameAudio_Render(g->storage.audio_output, g->storage.audio, 800));
+    GameAudio_Render(g->storage.audio_output, g->storage.audio, 800);
 }
 
 void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
@@ -196,10 +194,10 @@ void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
     case OPENING_AUDIO_NONE:
         break;
     case OPENING_AUDIO_STOP:
-        MdrvSynth_Stop(g->storage.audio);
+        Mdrv_Stop(g->storage.audio);
         break;
     case OPENING_AUDIO_FADE:
-        MdrvSynth_Fade(g->storage.audio, 1);
+        Mdrv_Fade(g->storage.audio, 1);
         break;
     case OPENING_AUDIO_PLAY: {
         static const uint8_t songs[OPENING_TRACK_COUNT] = {
@@ -207,8 +205,7 @@ void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
         };
         ASSERT(events.track >= 0 && events.track < OPENING_TRACK_COUNT);
         g->storage.song = songs[events.track];
-        Gameplay_RequireAudio(
-            MdrvSynth_Play(g->storage.audio, g->storage.song));
+        Mdrv_Play(g->storage.audio, g->storage.song);
         break;
     }
     }
@@ -223,12 +220,4 @@ GAMEPLAY_SCORE_CONTEXT Gameplay_ScoreContext(GAMEPLAY *const g)
 void Gameplay_BindAudio(GAMEPLAY *const g, GAME_AUDIO *const output)
 {
     g->storage.audio_output = output;
-}
-
-void Gameplay_RequireAudio(const RESULT result)
-{
-    if (!IS_OK(result)) {
-        Result_Log(Result_Prefix(result, "TH01 audio"), LOG_LEVEL_ERROR);
-        LOG_FATAL("TH01 audio playback failed");
-    }
 }
