@@ -112,7 +112,7 @@ typedef struct {
     const GAMEPLAY_ASSETS *assets;
     VIDEO *video;
     SESSION *session;
-    MDRV_SYNTH *audio;
+    MDRV *audio;
     GAME_AUDIO *audio_output;
     size_t song;
     uint64_t host_tick;
@@ -153,7 +153,6 @@ struct GAMEPLAY {
 };
 
 void Gameplay_Bind(GAMEPLAY *gameplay);
-void Gameplay_RequireAudio(RESULT result);
 void Gameplay_ResetWorld(GAMEPLAY *gameplay);
 void Gameplay_Effect(void *user, int16_t number);
 void Gameplay_Play(GAMEPLAY *gameplay, size_t song);

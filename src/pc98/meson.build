@@ -3,9 +3,8 @@ subdir('opna')
 pc98_include = [layer_include['pc98']]
 pc98_lib = static_library(
   'pc98',
+  'mdrv.c',
   'mdrv_data.c',
-  'mdrv_seq.c',
-  'mdrv_synth.c',
   'opna/opna.c',
   'vsync.c',
   'zun/logo1.c',

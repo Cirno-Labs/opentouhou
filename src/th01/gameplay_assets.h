@@ -8,7 +8,7 @@
 #include "th01/boss_b15m.h"
 #include "th01/boss_b20j.h"
 #include "th01/boss_b20m.h"
-#include "pc98/mdrv_synth.h"
+#include "pc98/mdrv.h"
 #include "th01/invincibility.h"
 
 #define GAMEPLAY_SONG_COUNT 18
