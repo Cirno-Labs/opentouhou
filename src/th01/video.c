@@ -3,22 +3,13 @@
 #include "pc98/zun/math16.h"
 
 #include "core/base/assert.h"
+#include "core/base/utils.h"
 
 #include <string.h>
 
 typedef struct {
     int32_t sx, sy, dx, dy, width, height;
 } VIDEO_REGION;
-
-static int64_t M_Max(const int64_t a, const int64_t b)
-{
-    return a > b ? a : b;
-}
-
-static int64_t M_Min(const int64_t a, const int64_t b)
-{
-    return a < b ? a : b;
-}
 
 static void M_Order(int32_t *const a, int32_t *const b)
 {
@@ -35,14 +26,13 @@ static bool M_Region(
     const int32_t destination_width, const int32_t destination_height,
     VIDEO_REGION *const out)
 {
-    const int64_t left = M_Max(M_Max(-(int64_t)source.x, -(int64_t)x), 0);
-    const int64_t top = M_Max(M_Max(-(int64_t)source.y, -(int64_t)y), 0);
-    const int64_t right = M_Min(
-        M_Min((int64_t)source_width - source.x, (int64_t)destination_width - x),
+    const int64_t left = MAX(MAX(-(int64_t)source.x, -(int64_t)x), 0);
+    const int64_t top = MAX(MAX(-(int64_t)source.y, -(int64_t)y), 0);
+    const int64_t right = MIN(
+        MIN((int64_t)source_width - source.x, (int64_t)destination_width - x),
         source.width);
-    const int64_t bottom = M_Min(
-        M_Min(
-            (int64_t)source_height - source.y, (int64_t)destination_height - y),
+    const int64_t bottom = MIN(
+        MIN((int64_t)source_height - source.y, (int64_t)destination_height - y),
         source.height);
     if (left >= right || top >= bottom) {
         return false;
@@ -130,8 +120,8 @@ static void M_Line(
     ASSERT(y2 >= INT16_MIN && y2 <= INT16_MAX);
     if (!erase && x1 == x2) {
         M_Order(&y1, &y2);
-        y1 = (int32_t)M_Max(y1, 0);
-        y2 = (int32_t)M_Min(y2, VIDEO_HEIGHT - 1);
+        y1 = MAX(y1, 0);
+        y2 = MIN(y2, VIDEO_HEIGHT - 1);
         const uint16_t mask = M_LinePattern(pattern, x1);
         for (int32_t y = y1; y <= y2; y++) {
             M_FlushLine(video, M_LineColumn(x1), y, mask, color);
@@ -140,8 +130,8 @@ static void M_Line(
     }
     if (!erase && y1 == y2) {
         M_Order(&x1, &x2);
-        x1 = (int32_t)M_Max(x1, 0);
-        x2 = (int32_t)M_Min(x2, VIDEO_WIDTH - 1);
+        x1 = MAX(x1, 0);
+        x2 = MIN(x2, VIDEO_WIDTH - 1);
         for (int32_t x = x1; x <= x2; x++) {
             M_FlushLine(
                 video, M_LineColumn(x), y1, (uint16_t)(0x80u >> (x & 7)),
@@ -275,8 +265,8 @@ void Video_HorizontalLine(
     const uint8_t color)
 {
     M_Order(&left, &right);
-    left = (int32_t)M_Max(left, 0);
-    right = (int32_t)M_Min(right, VIDEO_WIDTH - 1);
+    left = MAX(left, 0);
+    right = MIN(right, VIDEO_WIDTH - 1);
     if (left <= right && y >= 0 && y < VIDEO_HEIGHT) {
         memset(
             video->pages[video->drawing_page] + y * VIDEO_WIDTH + left,
@@ -289,8 +279,8 @@ void Video_VerticalLine(
     const uint8_t color)
 {
     M_Order(&top, &bottom);
-    top = (int32_t)M_Max(top, 0);
-    bottom = (int32_t)M_Min(bottom, VIDEO_HEIGHT - 1);
+    top = MAX(top, 0);
+    bottom = MIN(bottom, VIDEO_HEIGHT - 1);
     if (x >= 0 && x < VIDEO_WIDTH) {
         for (int32_t y = top; y <= bottom; y++) {
             Video_Pixel(video, x, y, color);
@@ -304,8 +294,8 @@ void Video_FillBox(
 {
     M_Order(&left, &right);
     M_Order(&top, &bottom);
-    top = (int32_t)M_Max(top, 0);
-    bottom = (int32_t)M_Min(bottom, VIDEO_HEIGHT - 1);
+    top = MAX(top, 0);
+    bottom = MIN(bottom, VIDEO_HEIGHT - 1);
     for (int32_t y = top; y <= bottom; y++) {
         Video_HorizontalLine(video, left, right, y, color);
     }
@@ -423,13 +413,13 @@ void Video_Restore16(VIDEO *const video, const GFX_RECT rectangle)
     if (rectangle.width <= 0 || rectangle.height <= 0) {
         return;
     }
-    const int64_t left = M_Max((int64_t)rectangle.x & ~INT64_C(15), 0);
-    const int64_t right = M_Min(
-        ((int64_t)rectangle.x + rectangle.width + 15) & ~INT64_C(15),
-        VIDEO_WIDTH);
-    const int64_t top = M_Max(rectangle.y, 0);
+    const int64_t left = MAX((int64_t)rectangle.x & ~INT64_C(15), 0);
+    const int64_t right =
+        MIN(((int64_t)rectangle.x + rectangle.width + 15) & ~INT64_C(15),
+            VIDEO_WIDTH);
+    const int64_t top = MAX(rectangle.y, 0);
     const int64_t bottom =
-        M_Min((int64_t)rectangle.y + rectangle.height, VIDEO_HEIGHT);
+        MIN((int64_t)rectangle.y + rectangle.height, VIDEO_HEIGHT);
     if (left < right && top < bottom) {
         const GFX_RECT source = { (int32_t)left, (int32_t)top,
                                   (int32_t)(right - left),
