@@ -5,6 +5,7 @@
 #include "th01/ending.h"
 #include "th01/gameplay_internal.h"
 #include "th01/main.h"
+#include "th01/opening.h"
 #include "th01/rng.h"
 #include "th01/settings.h"
 
@@ -74,13 +75,13 @@ static void M_Double(const double value, uint32_t *const lo, uint32_t *hi)
     *hi = (uint32_t)(bits >> 32);
 }
 
-static void M_Boss(const GAMEPLAY_WORLD *const world, uint32_t *const row)
+static void M_Boss(uint32_t *const row)
 {
 #define M_BOSS(boss)                                                           \
     row[TH01_COLUMN_boss_hp] = M_I32((boss).hp);                               \
     row[TH01_COLUMN_boss_phase] = M_I32((boss).phase);                         \
     row[TH01_COLUMN_boss_phase_frame] = M_I32((boss).frame);
-    switch (world->boss) {
+    switch (g_Gameplay.boss) {
     case BOSS_SINGYOKU:
         M_BOSS(g_B05);
         break;
@@ -108,12 +109,12 @@ static void M_Boss(const GAMEPLAY_WORLD *const world, uint32_t *const row)
 #undef M_BOSS
 }
 
-static void M_Gameplay(const GAMEPLAY_WORLD *const world, uint32_t *const row)
+static void M_Gameplay(uint32_t *const row)
 {
     row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
     row[TH01_COLUMN_frame_rand] = g_Session.frame_rand;
     row[TH01_COLUMN_rng] = g_Rng;
-    row[TH01_COLUMN_game_frames] = world->frame;
+    row[TH01_COLUMN_game_frames] = g_Gameplay.frame;
     row[TH01_COLUMN_stage] = (uint32_t)g_Session.stage_id;
     row[TH01_COLUMN_route] = g_Session.route;
     row[TH01_COLUMN_score] = g_Stage.score;
@@ -147,8 +148,8 @@ static void M_Gameplay(const GAMEPLAY_WORLD *const world, uint32_t *const row)
     row[TH01_COLUMN_card_count] = (uint32_t)g_StageObjects.card_count;
     row[TH01_COLUMN_card_hash] = M_HashCards(&g_StageObjects);
 
-    row[TH01_COLUMN_boss] = world->boss;
-    M_Boss(world, row);
+    row[TH01_COLUMN_boss] = g_Gameplay.boss;
+    M_Boss(row);
 
     uint32_t pellet_count;
     row[TH01_COLUMN_pellet_hash] = M_HashPellets(&g_Pellets, &pellet_count);
@@ -163,20 +164,20 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
     const TH01_NATIVE *const native = context;
     memset(row, 0, TH01_COLUMN_COUNT * sizeof(*row));
     row[TH01_COLUMN_buttons] = native->buttons;
-    TH01_VIEW view;
-    Th01_View(&view);
     const bool ending_scores =
-        view.scene == TH01_SCENE_SCORE && view.score->context == SCORE_ENDING;
-    if (view.scene == TH01_SCENE_LOGO) {
+        g_Th01Scene == TH01_SCENE_SCORE && g_ScoreScene.context == SCORE_ENDING;
+    if (g_Th01Scene == TH01_SCENE_LOGO) {
         row[TH01_COLUMN_program] = 1;
-    } else if (view.scene == TH01_SCENE_OPENING) {
+    } else if (g_Th01Scene == TH01_SCENE_OPENING) {
         row[TH01_COLUMN_program] = 2;
-        row[TH01_COLUMN_vsync_count1] = M_I32((int16_t)view.opening->count1);
-        row[TH01_COLUMN_frame_rand] = view.opening->frame_rand;
-        row[TH01_COLUMN_rng] = view.opening->random;
-        row[TH01_COLUMN_track] = (uint32_t)view.opening->track;
-        row[TH01_COLUMN_track_starts] = view.opening->track_starts;
-    } else if (view.scene == TH01_SCENE_ENDING || ending_scores) {
+        row[TH01_COLUMN_vsync_count1] = M_I32((int16_t)g_Opening.count1);
+        row[TH01_COLUMN_frame_rand] = g_Opening.frame_rand;
+        row[TH01_COLUMN_rng] = g_Opening.random;
+        row[TH01_COLUMN_track] = (uint32_t)g_Opening.track;
+        row[TH01_COLUMN_track_starts] = g_Opening.track_starts;
+    } else if (
+        g_Th01Scene == TH01_SCENE_ENDING || g_Th01Scene == TH01_SCENE_SWITCH
+        || ending_scores) {
         const END_RESULT *const result = &g_EndResult;
         row[TH01_COLUMN_program] = 4;
         row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
@@ -185,7 +186,7 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
         row[TH01_COLUMN_score] = result->score;
     } else {
         row[TH01_COLUMN_program] = 3;
-        M_Gameplay(&view.gameplay->world, row);
+        M_Gameplay(row);
     }
     row[TH01_COLUMN_difficulty] = (uint32_t)g_Settings.difficulty;
     row[TH01_COLUMN_lives_extra] = (uint32_t)g_Settings.lives_extra;

@@ -7,7 +7,7 @@
 #include "th01/miss.h"
 #include "th01/sound.h"
 
-// Keeps the complete world private to the gameplay implementation files.
+// Names gameplay phases for the scene and replay state.
 typedef enum {
     GP_STAGE_BEGIN,
     GP_B10J_SETUP,
@@ -87,24 +87,4 @@ typedef struct {
 
 } GAMEPLAY_WORLD;
 
-typedef struct {
-    const GAMEPLAY_ASSETS *assets;
-    uint64_t host_tick;
-    const GAMEPLAY_WORLD *initial;
-} GAMEPLAY_STORAGE;
-
-struct GAMEPLAY {
-    GAMEPLAY_STORAGE storage;
-    GAMEPLAY_WORLD world;
-};
-
-// The sprites for the current stage, boss or non-boss.
-const PTN *Gameplay_StageSprites(const GAMEPLAY *gameplay);
-PLAYER_SPRITES Gameplay_PlayerSprites(const GAMEPLAY *gameplay);
-void Gameplay_ResetWorld(GAMEPLAY *gameplay);
-void Gameplay_ResetInput(GAMEPLAY *gameplay);
-void Gameplay_DefaultActors(GAMEPLAY *gameplay);
-bool Gameplay_BossTick(GAMEPLAY *gameplay, const TH01_INPUT *raw);
-void Gameplay_BossSetup(GAMEPLAY *gameplay);
-void Gameplay_HookBossHp(GAMEPLAY *gameplay);
-void Gameplay_SyncSession(GAMEPLAY *gameplay);
+extern GAMEPLAY_WORLD g_Gameplay;

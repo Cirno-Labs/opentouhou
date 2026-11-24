@@ -1,4 +1,5 @@
 #include "th01/main.h"
+#include "th01/opening.h"
 #include "pc98/zun/bfnt.h"
 #include "th01/gameplay_internal.h"
 #include "th01/score.h"
@@ -319,19 +320,16 @@ static void M_Opening(void)
     CHECK_EQ_INT(m_Fixture.opening_begins, 1);
 }
 
-static const GAMEPLAY *M_Play(void)
+static void M_Play(void)
 {
     M_Opening();
     m_Fixture.action = OPENING_ACTION_START;
-    TH01_VIEW view = {};
-    for (int i = 0; i < 4 && view.scene != TH01_SCENE_GAMEPLAY; i++) {
+    for (int i = 0; i < 4 && g_Th01Scene != TH01_SCENE_GAMEPLAY; i++) {
         CHECK(M_Tick((TH01_INPUT) {}));
-        Th01_View(&view);
     }
-    CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
-    CHECK(view.gameplay != nullptr);
-    CHECK(view.gameplay->storage.initial != nullptr);
-    return view.gameplay;
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
+    CHECK(g_Hud.numbers != nullptr);
+    CHECK(g_HudHp.backgrounds != nullptr);
 }
 
 static void M_Shutdown(void)
@@ -410,15 +408,13 @@ TEST(gameover_registration_saves_before_returning_to_continue)
 {
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
-    GAMEPLAY *const game = (GAMEPLAY *)M_Play();
-    game->world.phase = GP_TERMINAL;
-    game->world.request = GAMEPLAY_REQUEST_SCORE;
+    M_Play();
+    g_Gameplay.phase = GP_TERMINAL;
+    g_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
     g_Session.score = 12345;
     g_Session.stage_id = 4;
     CHECK(M_Tick((TH01_INPUT) {}));
-    TH01_VIEW view;
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_SCORE);
     CHECK_EQ_INT(m_Fixture.score_begins, 1);
     CHECK_EQ_INT(m_Fixture.score_context, SCORE_GAMEOVER);
     CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
@@ -426,10 +422,9 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     CHECK_EQ_STR(m_Fixture.score_entry.route, "社");
     m_Fixture.finish_score = true;
     CHECK(M_Tick((TH01_INPUT) {}));
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
-    CHECK_EQ_INT(game->world.request, GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(game->world.phase, GP_CONTINUE_DELAY);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
+    CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(g_Gameplay.phase, GP_CONTINUE_DELAY);
     CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
     CHECK_EQ_INT(m_Fixture.switch_begins, 0);
@@ -441,19 +436,16 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
 {
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
-    GAMEPLAY *const game = (GAMEPLAY *)M_Play();
-    game->world.phase = GP_TERMINAL;
-    game->world.request = GAMEPLAY_REQUEST_ENDING;
+    M_Play();
+    g_Gameplay.phase = GP_TERMINAL;
+    g_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
     CHECK(M_Tick((TH01_INPUT) {}));
-    TH01_VIEW view;
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_ENDING);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_ENDING);
     CHECK_EQ_INT(m_Fixture.ending_begins, 1);
     CHECK_EQ_INT(m_Fixture.ending_ticks, 1);
     m_Fixture.finish_ending = true;
     CHECK(M_Tick((TH01_INPUT) {}));
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_SCORE);
     CHECK_EQ_INT(m_Fixture.score_context, SCORE_ENDING);
     CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
     CHECK_EQ_INT(m_Fixture.score_entry.stage, 50);
@@ -464,8 +456,7 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
     CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
     CHECK(M_Tick((TH01_INPUT) {}));
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_OPENING);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_OPENING);
     CHECK_EQ_INT(m_Fixture.ending_clears, 1);
     CHECK_EQ_INT(m_Fixture.opening_begins, 2);
     CHECK_EQ_INT(m_Fixture.written, 1);
@@ -474,17 +465,17 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
 
 typedef struct {
     int calls;
-    TH01_VIEW view;
+    TH01_SCENE scene;
 } VSYNC_LOG;
 
 static void M_OnVSync(void *const arg)
 {
     VSYNC_LOG *const log = arg;
     log->calls++;
-    Th01_View(&log->view);
+    log->scene = g_Th01Scene;
 }
 
-TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
+TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
 {
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
@@ -498,16 +489,13 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
         CHECK_EQ_INT(log.calls, edges);
     }
     CHECK(edges > 0);
-    CHECK_EQ_INT(log.view.scene, TH01_SCENE_LOGO);
+    CHECK_EQ_INT(log.scene, TH01_SCENE_LOGO);
     M_Opening();
-    TH01_VIEW view;
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_OPENING);
-    const GAMEPLAY *const game = M_Play();
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
-    CHECK(view.gameplay == game);
-    CHECK(view.opening != nullptr);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_OPENING);
+    M_Play();
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
+    CHECK(g_Gameplay.frame == 0);
+    CHECK_EQ_INT(g_Opening.frame_rand, 1);
     Th01Hooks_Set((TH01_HOOKS) {});
     M_Shutdown();
 }

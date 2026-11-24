@@ -5,6 +5,7 @@
 #include "native_state.h"
 
 #include "th01/main.h"
+#include "th01/opening.h"
 #include "th01/settings.h"
 
 #include "core/base/utils.h"
@@ -13,10 +14,7 @@
 
 static bool M_Idle(void *const context)
 {
-    TH01_VIEW view;
-    Th01_View(&view);
-    return view.scene == TH01_SCENE_OPENING
-        && view.opening->phase == OPENING_MAIN;
+    return g_Th01Scene == TH01_SCENE_OPENING && g_Opening.phase == OPENING_MAIN;
 }
 
 // Does nothing: OP's frame_rand starts at 0, and gameplay seeds its RNG
