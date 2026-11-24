@@ -13,17 +13,9 @@
 
 typedef struct {
     PELLET_ASSETS assets;
-    SHOTS_OUTPUT shots_output;
-    SHOTS_ACTION actions[64];
-    int32_t count;
+    PTN stage;
+    uint8_t stage_pixels[2048];
 } FIXTURE;
-
-static void M_Action(void *const user, const SHOTS_ACTION action)
-{
-    FIXTURE *const f = user;
-    CHECK(f->count < 64);
-    f->actions[f->count++] = action;
-}
 
 static void M_Init(FIXTURE *const f)
 {
@@ -36,7 +28,7 @@ static void M_Init(FIXTURE *const f)
     g_Orb.in_portal = true;
     g_Player.left = 300;
     g_Rng = 1;
-    f->shots_output = (SHOTS_OUTPUT) { M_Action, f };
+    f->stage = (PTN) { .count = 2, .pixels = f->stage_pixels };
 }
 
 static void M_Free(FIXTURE *const f)
@@ -126,12 +118,12 @@ TEST(cloud_reset_retains_delay_and_activation_moves_same_tick)
     CHECK_EQ_INT(g_Pellets.alive_count_excluding_clouds_after_reset, 0);
     PELLET *const p = &g_Pellets.slots[0];
     for (int32_t i = 2; i <= 8; i++) {
-        Pellets_UpdateAndRender(&f.assets, f.shots_output);
+        Pellets_UpdateAndRender(&f.assets, &f.stage);
         CHECK_EQ_INT(p->cloud_frame, i);
         CHECK(!p->moving);
         CHECK_EQ_INT(p->age, 0);
     }
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(p->moving);
     CHECK_EQ_INT(p->cloud_frame, 0);
     CHECK_EQ_INT(p->top, 101 * 16);
@@ -146,14 +138,12 @@ TEST(shot_hit_then_clip_decrements_twice_and_updates_shots_once)
     M_Add(&f, 100, 399);
     g_Shots.slots[0] = (SHOT) { .left = 100, .top = 399, .moving = true };
     g_Shots.slots[1] = (SHOT) { .left = 200, .top = 200, .moving = true };
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(!g_Pellets.slots[0].moving);
     CHECK_EQ_INT(g_Pellets.alive_count_excluding_clouds_after_reset, -1);
+    CHECK(!g_Shots.slots[0].moving);
     CHECK_EQ_INT(g_Shots.slots[0].decay_frame, 2);
     CHECK_EQ_INT(g_Shots.slots[1].top, 188);
-    CHECK_EQ_INT(f.actions[0].kind, SHOTS_ACTION_RESTORE);
-    CHECK_EQ_INT(f.actions[1].kind, SHOTS_ACTION_EFFECT);
-    CHECK_EQ_INT(f.actions[1].effect, 16);
     M_Free(&f);
 }
 
@@ -165,7 +155,7 @@ TEST(interlace_skips_orb_but_not_movement_age_or_lethal_hits)
     M_Add(&f, 310, 368);
     g_Orb.left = 310;
     g_Orb.top = 369;
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(g_Player.is_hit);
     CHECK(!g_Pellets.slots[0].moving);
     CHECK_EQ_INT(g_Pellets.slots[0].age, 1);
@@ -181,13 +171,13 @@ TEST(stale_idle_shot_can_suppress_orb_and_deflection)
     g_Shots.slots[0] = (SHOT) { .left = 115, .top = 101 };
     g_Orb.left = 100;
     g_Orb.top = 101;
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(g_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 0);
     CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 0);
     g_Shots.slots[0].top = 0;
     g_Pellets.slots[0].velocity = (MATH16_VECTOR) { -3, -3 };
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 2);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.x, -2);
     CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 10);
@@ -200,7 +190,7 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     M_Init(&f);
     M_Add(&f, 299, 350);
     g_Player.deflecting = true;
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(g_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.x, -128);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.y, 0);
@@ -211,11 +201,11 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.y, -4);
     CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 4);
     for (int32_t i = 2; i <= 21; i++) {
-        Pellets_UpdateAndRender(&f.assets, f.shots_output);
+        Pellets_UpdateAndRender(&f.assets, &f.stage);
         CHECK(g_Pellets.slots[0].moving);
         CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, i);
     }
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(!g_Pellets.slots[0].moving);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 0);
     M_Free(&f);
@@ -229,13 +219,13 @@ TEST(sling_retains_direction_and_retargets_only_after_full_turn)
     PELLET *const p = &g_Pellets.slots[0];
     p->sling_direction = 2;
     p->angle = 248;
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     const MATH16_VECTOR v = Math16_Vector(16, 248);
     CHECK_EQ_INT(p->velocity.x, v.y);
     CHECK_EQ_INT(p->velocity.y, v.x);
     CHECK_EQ_INT(p->angle, 256);
     CHECK_EQ_INT(p->from_group, 0);
-    Pellets_UpdateAndRender(&f.assets, f.shots_output);
+    Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK_EQ_INT(p->angle, 0);
     CHECK_EQ_INT(p->from_group, PELLET_GROUP_SINGLE_AIMED);
     CHECK_EQ_INT(g_Rng, 1);

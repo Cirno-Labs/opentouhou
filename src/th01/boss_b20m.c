@@ -152,8 +152,7 @@ void B20M_Init(void)
     g_B20M.ray_previous_y = 999;
     g_B20M.flake.state = -1;
 }
-void B20M_Setup(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+void B20M_Setup(const B20M_ASSETS *const assets)
 {
     ASSERT(
         g_B20M.sequence == B20M_SEQUENCE_NONE
@@ -179,8 +178,7 @@ void B20M_Setup(
     g_HudHp.first_redwhite = 2;
 }
 
-static uint16_t M_Random(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static uint16_t M_Random(const B20M_ASSETS *const assets)
 {
     return MasterRng_Next(&g_Rng);
 }
@@ -203,8 +201,8 @@ static int16_t M_PixelAdd(const double x, const int16_t y)
         Finite_Add(Finite_FromDouble(x), Finite_FromDouble(y)));
 }
 static void M_Pi(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PI_IMAGE *const image, const bool show)
+    const B20M_ASSETS *const assets, const PI_IMAGE *const image,
+    const bool show)
 {
     const VIDEO_IMAGE view = { .pixels = image->pixels,
                                .width = image->width,
@@ -217,27 +215,23 @@ static void M_Pi(
         Palette_Set(&g_Palette, &g_Palette.resource);
     }
 }
-static void M_Palette(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PALETTE *const p)
+static void M_Palette(const B20M_ASSETS *const assets, const PALETTE *const p)
 {
     Palette_Set(&g_Palette, p);
 }
 static void M_Color(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint8_t i, const int16_t r, const int16_t g, const int16_t blue)
+    const B20M_ASSETS *const assets, const uint8_t i, const int16_t r,
+    const int16_t g, const int16_t blue)
 {
     Palette_SetColor(&g_Palette, i, r, g, blue);
 }
-static void M_CopyOther(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_CopyOther(const B20M_ASSETS *const assets)
 {
     const int32_t page = g_Video.drawing_page;
     Video_Copy(page, (GFX_RECT) { 0, 0, 640, 400 }, 1 - page, 0, 0);
 }
 static void M_CopyRows(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t top, const int16_t height)
+    const B20M_ASSETS *const assets, const int16_t top, const int16_t height)
 {
     for (int32_t i = 0; i < height * 80; i++) {
         const uint16_t offset = (uint16_t)(top * 80 + i) & 0x7fff;
@@ -249,8 +243,7 @@ static void M_CopyRows(
     }
     Video_SelectDrawingPage(0);
 }
-static void M_Snap(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Snap(const B20M_ASSETS *const assets)
 {
     const int32_t left = g_B20M.wand.left / 8 * 8;
     for (int32_t y = 0; y < 96; y++) {
@@ -260,8 +253,7 @@ static void M_Snap(
     }
     Video_SelectDrawingPage(0);
 }
-static void M_WandPut(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_WandPut(const B20M_ASSETS *const assets)
 {
     const VIDEO_IMAGE v = { .pixels = g_B20M.wand_background,
                             .width = 128,
@@ -272,17 +264,14 @@ static void M_WandPut(
         &v, (GFX_RECT) { 0, 0, 128, 96 }, g_B20M.wand.left / 8 * 8,
         g_B20M.wand.top);
 }
-static void M_WandLower(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_WandLower(const B20M_ASSETS *const assets)
 {
     Video_SelectDrawingPage(1);
-    M_WandPut(assets, shots_output);
+    M_WandPut(assets);
     Video_SelectDrawingPage(0);
-    M_WandPut(assets, shots_output);
+    M_WandPut(assets);
 }
-static bool M_WandRaise(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const bool restart)
+static bool M_WandRaise(const B20M_ASSETS *const assets, const bool restart)
 {
     if (restart) {
         g_B20M.wand_frame = 0;
@@ -304,8 +293,7 @@ static bool M_WandRaise(
     }
     return false;
 }
-static void M_Shield(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Shield(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame % 10 != 0) {
         return;
@@ -317,8 +305,7 @@ static void M_Shield(
         BossEntity_LockedMovePut(&g_B20M.shield, 0, 0, 1, false);
     }
 }
-static void M_Dress(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Dress(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame % 15 != 0) {
         return;
@@ -330,47 +317,44 @@ static void M_Dress(
     }
 }
 static void M_Group(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t x, const int16_t y, const int16_t group, const int16_t speed)
+    const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
+    const int16_t group, const int16_t speed)
 {
     Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
 }
 static void M_Single(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t x, const int16_t y, const uint8_t angle, const int16_t speed)
+    const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
+    const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
         g_Session.settings.difficulty, x, y, angle, speed, PELLET_REGULAR, 0, 0,
         0);
 }
 static void M_Rain(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t x, const int16_t y, const uint8_t angle, const int16_t speed)
+    const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
+    const uint8_t angle, const int16_t speed)
 {
     Pellets_AddSingle(
         g_Session.settings.difficulty, x, y, angle, speed, PELLET_GRAVITY, 1, 0,
         0);
 }
 static void M_Laser(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int32_t index, const int16_t x, const int16_t y, const int16_t tx,
-    const int16_t ty, const int16_t speed, const uint8_t color,
-    const int16_t age, const int16_t width)
+    const B20M_ASSETS *const assets, const int32_t index, const int16_t x,
+    const int16_t y, const int16_t tx, const int16_t ty, const int16_t speed,
+    const uint8_t color, const int16_t age, const int16_t width)
 {
     ShootoutLasers_Spawn(
         &g_ShootoutLasers.slots[((index % 10) + 10) % 10], x, y, tx, ty, speed,
         color, age, width);
 }
 static void M_Erase(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t x, const int16_t y)
+    const B20M_ASSETS *const assets, const int16_t x, const int16_t y)
 {
     Sprite_Restore16(x, y, 48, 32);
 }
 static void M_Grc(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t left, const int16_t top, const int16_t bank,
-    const int16_t image, const uint8_t color)
+    const B20M_ASSETS *const assets, const int16_t left, const int16_t top,
+    const int16_t bank, const int16_t image, const uint8_t color)
 {
     const GRC *const banks[] = { &assets->vortex, &assets->bird, &assets->cross,
                                  &assets->splash };
@@ -405,9 +389,8 @@ static void M_Grc(
     }
 }
 static void M_Mask(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t left, const int16_t top, const uint8_t *const mask,
-    const uint8_t color)
+    const B20M_ASSETS *const assets, const int16_t left, const int16_t top,
+    const uint8_t *const mask, const uint8_t color)
 {
     if (left < 0 || left >= 640 || top < 0 || top >= 400) {
         return;
@@ -422,23 +405,20 @@ static void M_Mask(
     }
 }
 static void M_Ellipse(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t x, const int16_t y, const int16_t rx, const int16_t ry,
-    const uint8_t color, const uint8_t step)
+    const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
+    const int16_t rx, const int16_t ry, const uint8_t color, const uint8_t step)
 {
     Shape_EllipseArcPut(x, y, rx, ry, color, step, 0, 255);
 }
 static void M_EraseEllipse(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t x, const int16_t y, const int16_t rx, const int16_t ry,
-    const uint8_t step)
+    const B20M_ASSETS *const assets, const int16_t x, const int16_t y,
+    const int16_t rx, const int16_t ry, const uint8_t step)
 {
     Shape_EllipseArcErase(x, y, rx, ry, step, 0, 255);
 }
 static void M_Ray(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t ox, const int16_t oy, const int16_t x, const int16_t y,
-    const uint8_t color)
+    const B20M_ASSETS *const assets, const int16_t ox, const int16_t oy,
+    const int16_t x, const int16_t y, const uint8_t color)
 {
     if (color == 99) {
         g_B20M.ray_previous_x = g_B20M.ray_previous_y = 999;
@@ -470,9 +450,7 @@ static bool M_Scroll(const int16_t line)
     Frame_BeginWait(&g_B20M.wait);
     return false;
 }
-static bool M_Ready(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+static bool M_Ready(const B20M_ASSETS *const assets, const uint64_t tick)
 {
     if (g_B20M.wait_kind == B20M_WAIT_SCROLL) {
         if (!Frame_WaitReady(&g_B20M.wait)) {
@@ -520,9 +498,7 @@ static void M_BirdSpawn(
         }
     }
 }
-static void M_BirdsFire(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t group)
+static void M_BirdsFire(const B20M_ASSETS *const assets, const int16_t group)
 {
     for (int32_t i = 0; i < 30; i++) {
         if (!g_B20M.birds.alive[i] || g_B20M.birds.hatch_time[i] != 0) {
@@ -531,21 +507,17 @@ static void M_BirdsFire(
         const int16_t x = M_PixelAdd(g_B20M.birds.left[i], 12),
                       y = M_PixelAdd(g_B20M.birds.top[i], 12);
         if (group == 0) {
-            M_Group(assets, shots_output, x, y, PELLET_GROUP_SINGLE_AIMED, 48);
+            M_Group(assets, x, y, PELLET_GROUP_SINGLE_AIMED, 48);
         } else if (group == 1) {
             for (int32_t j = 0; j < 6; j++) {
-                M_Single(assets, shots_output, x, y, (uint8_t)(j * 42), 64);
+                M_Single(assets, x, y, (uint8_t)(j * 42), 64);
             }
         } else {
-            M_Rain(
-                assets, shots_output, x, y,
-                (uint8_t)((M_Random(assets, shots_output) & 127) + 128), 64);
+            M_Rain(assets, x, y, (uint8_t)((M_Random(assets) & 127) + 128), 64);
         }
     }
 }
-static bool M_BirdsUpdate(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
 {
     B20M_BIRDS *const birds = &g_B20M.birds;
     for (int32_t i = 0; i < 30; i++) {
@@ -555,14 +527,14 @@ static bool M_BirdsUpdate(
         const int16_t x = M_Pixel(birds->left[i]), y = M_Pixel(birds->top[i]);
         if (birds->hatch_time[i] > 0) {
             M_Grc(
-                assets, shots_output, x, y, 1,
+                assets, x, y, 1,
                 1
                     + (birds->hatch_frames[i] - birds->hatch_time[i])
                         / (birds->hatch_frames[i] / 5),
                 15);
             birds->hatch_time[i]--;
         } else {
-            M_Erase(assets, shots_output, x, y);
+            M_Erase(assets, x, y);
         }
     }
     for (int32_t i = 0; i < 30; i++) {
@@ -574,11 +546,11 @@ static bool M_BirdsUpdate(
         const int16_t x = M_Pixel(birds->left[i]), y = M_Pixel(birds->top[i]);
         if (birds->left[i] < 0 || birds->left[i] > 639 || birds->top[i] < 0
             || birds->top[i] > 399) {
-            M_Erase(assets, shots_output, x, y);
+            M_Erase(assets, x, y);
             birds->alive[i] = false;
             continue;
         }
-        M_Grc(assets, shots_output, x, y, 1, 6 + (g_B20M.frame / 5) % 2, 15);
+        M_Grc(assets, x, y, 1, 6 + (g_B20M.frame / 5) % 2, 15);
         if (!Boss_Player()->invincible
             && birds->left[i] > Boss_Player()->left - 8
             && birds->left[i] < Boss_Player()->left + 8 && birds->top[i] > 344
@@ -600,8 +572,7 @@ static int16_t M_DoubleOffset(const double left, const double top)
         x, Finite_Multiply(Finite_FromDouble(top), Finite_FromDouble(80))));
 }
 static uint8_t M_CompareByte(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int32_t address)
+    const B20M_ASSETS *const assets, const int32_t address)
 {
     const uint16_t offset = (uint16_t)address & 32767;
     uint8_t result = 0;
@@ -615,8 +586,8 @@ static uint8_t M_CompareByte(
     return result;
 }
 static void M_MaskedByte(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int32_t address, const uint8_t mask, const uint8_t color)
+    const B20M_ASSETS *const assets, const int32_t address, const uint8_t mask,
+    const uint8_t color)
 {
     const uint16_t offset = (uint16_t)address & 32767;
     if (offset < 32000) {
@@ -628,39 +599,34 @@ static void M_MaskedByte(
     }
 }
 static void M_Particle(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t vo, const int16_t bit, const uint8_t color, const bool cross)
+    const B20M_ASSETS *const assets, const int16_t vo, const int16_t bit,
+    const uint8_t color, const bool cross)
 {
     if (bit < 0 || bit > 7) {
         return;
     }
     for (int32_t y = 0; y < 2; y++) {
         const int16_t p = Math16_Wrap(vo + y * 80);
-        const uint8_t mask =
-            M_CompareByte(assets, shots_output, p) & (0xc0u >> bit);
-        M_MaskedByte(assets, shots_output, p, mask, color);
+        const uint8_t mask = M_CompareByte(assets, p) & (0xc0u >> bit);
+        M_MaskedByte(assets, p, mask, color);
         if (cross && bit == 7) {
             M_MaskedByte(
-                assets, shots_output, Math16_Wrap(p + 1),
-                M_CompareByte(assets, shots_output, Math16_Wrap(p + 1)) & 128,
-                color);
+                assets, Math16_Wrap(p + 1),
+                M_CompareByte(assets, Math16_Wrap(p + 1)) & 128, color);
         }
     }
     Video_SelectDrawingPage(0);
 }
-static void M_Vertical(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const bool bottom)
+static void M_Vertical(const B20M_ASSETS *const assets, const bool bottom)
 {
     B20M_PARTICLES *const p = &g_B20M.vertical;
     if (g_B20M.frame % 7 == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->color[i] == 0) {
-                p->left[i] = M_Random(assets, shots_output) % 640;
+                p->left[i] = M_Random(assets) % 640;
                 p->top[i] = bottom ? 397 : 0;
-                p->velocity[i] = bottom
-                    ? -(M_Random(assets, shots_output) % 15) - 8
-                    : (M_Random(assets, shots_output) % 15) + 2;
+                p->velocity[i] = bottom ? -(M_Random(assets) % 15) - 8
+                                        : (M_Random(assets) % 15) + 2;
                 p->color[i] = 4;
                 break;
             }
@@ -678,25 +644,23 @@ static void M_Vertical(
             bit = 0;
         }
         M_Particle(
-            assets, shots_output, M_DoubleOffset(p->left[i], p->top[i]), bit,
-            12, false);
+            assets, M_DoubleOffset(p->left[i], p->top[i]), bit, 12, false);
         p->top[i] = M_Add(p->top[i], p->velocity[i]);
         const int16_t vo = M_DoubleOffset(p->left[i], p->top[i]);
         if (vo >= 31920 || vo < 0) {
             p->color[i] = 0;
             continue;
         }
-        M_Particle(assets, shots_output, vo, bit, (uint8_t)p->color[i], false);
+        M_Particle(assets, vo, bit, (uint8_t)p->color[i], false);
     }
 }
-static void M_Wavy(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Wavy(const B20M_ASSETS *const assets)
 {
     B20M_WAVES *const p = &g_B20M.waves;
     if (g_B20M.frame % 7 == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->color[i] == 0) {
-                p->left[i] = M_Random(assets, shots_output) % 640;
+                p->left[i] = M_Random(assets) % 640;
                 p->top[i] = 400;
                 p->velocity[i] = -1;
                 p->age[i] = 0;
@@ -714,9 +678,8 @@ static void M_Wavy(
         }
         int16_t x = Math16_PolarY(p->left[i], 16, p->age[i]);
         M_Particle(
-            assets, shots_output,
-            Math16_Wrap(p->top[i] * 80 + x / 8 - (x % 8 < 0)), (uint16_t)x & 7,
-            12, false);
+            assets, Math16_Wrap(p->top[i] * 80 + x / 8 - (x % 8 < 0)),
+            (uint16_t)x & 7, 12, false);
         p->top[i] = Math16_Wrap(p->top[i] + p->velocity[i]);
         p->age[i] = Math16_Wrap(p->age[i] + 1);
         x = Math16_PolarY(p->left[i], 16, p->age[i]);
@@ -725,22 +688,19 @@ static void M_Wavy(
             continue;
         }
         M_Particle(
-            assets, shots_output,
-            Math16_Wrap(p->top[i] * 80 + x / 8 - (x % 8 < 0)), (uint16_t)x & 7,
-            (uint8_t)p->color[i], false);
+            assets, Math16_Wrap(p->top[i] * 80 + x / 8 - (x % 8 < 0)),
+            (uint16_t)x & 7, (uint8_t)p->color[i], false);
     }
 }
-static void M_Horizontal(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Horizontal(const B20M_ASSETS *const assets)
 {
     B20M_PARTICLES *const p = &g_B20M.horizontal;
     if (g_B20M.frame % 7 == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->color[i] == 0) {
-                p->left[i] = M_Random(assets, shots_output) % 640;
-                p->top[i] = M_Random(assets, shots_output) % 400;
-                p->velocity[i] =
-                    M_Random(assets, shots_output) % 2 == 0 ? -6 : 6;
+                p->left[i] = M_Random(assets) % 640;
+                p->top[i] = M_Random(assets) % 400;
+                p->velocity[i] = M_Random(assets) % 2 == 0 ? -6 : 6;
                 p->color[i] = 4;
                 break;
             }
@@ -754,7 +714,7 @@ static void M_Horizontal(
             continue;
         }
         M_Particle(
-            assets, shots_output, M_DoubleOffset(p->left[i], p->top[i]),
+            assets, M_DoubleOffset(p->left[i], p->top[i]),
             M_Pixel(p->left[i]) % 8, 12, true);
         p->left[i] = M_Add(p->left[i], p->velocity[i]);
         p->velocity[i] = M_Add(p->velocity[i], p->velocity[i] < 0 ? 0.1 : -0.1);
@@ -764,26 +724,23 @@ static void M_Horizontal(
             continue;
         }
         M_Particle(
-            assets, shots_output, M_DoubleOffset(p->left[i], p->top[i]),
+            assets, M_DoubleOffset(p->left[i], p->top[i]),
             M_Pixel(p->left[i]) % 8, (uint8_t)p->color[i], true);
     }
 }
-static void M_Hud(const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output);
-static void M_GustFinish(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t image)
+static void M_Hud(const B20M_ASSETS *assets);
+static void M_GustFinish(const B20M_ASSETS *const assets, const int16_t image)
 {
     Video_SelectDrawingPage(1);
-    M_Pi(assets, shots_output, &assets->backgrounds[image], true);
-    M_CopyOther(assets, shots_output);
+    M_Pi(assets, &assets->backgrounds[image], true);
+    M_CopyOther(assets);
     g_B20M.stage_palette = g_Palette.saved;
     Video_SelectDrawingPage(0);
-    M_Hud(assets, shots_output);
+    M_Hud(assets);
     HudHp_Rerender(g_B20M.hp);
     g_B20M.frame = 0;
 }
-static bool M_Gust(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static bool M_Gust(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame == 20) {
         g_B20M.gust.id = 0;
@@ -799,7 +756,7 @@ static bool M_Gust(
         Sound_Effect(10);
     }
     for (int32_t row = 0; row < 100; row++) {
-        const int16_t right = M_Random(assets, shots_output) % 8;
+        const int16_t right = M_Random(assets) % 8;
         uint16_t masks[10] = {};
         const int16_t first = Math16_Wrap(g_B20M.gust.offset + right);
         for (int32_t stripe = 0; stripe < 10; stripe++) {
@@ -809,10 +766,9 @@ static bool M_Gust(
             }
             if (offset >= 0 && offset / 80 == g_B20M.gust.offset / 80) {
                 masks[stripe] =
-                    (uint16_t)(M_CompareByte(assets, shots_output, offset)
+                    (uint16_t)(M_CompareByte(assets, offset)
                                | (uint16_t)M_CompareByte(
-                                     assets, shots_output,
-                                     Math16_Wrap(offset + 1))
+                                     assets, Math16_Wrap(offset + 1))
                                    << 8);
             }
         }
@@ -823,7 +779,7 @@ static bool M_Gust(
             }
             if (offset >= 0 && offset / 80 == g_B20M.gust.offset / 80) {
                 M_MaskedByte(
-                    assets, shots_output, offset, (uint8_t)masks[stripe],
+                    assets, offset, (uint8_t)masks[stripe],
                     (uint8_t)(g_B20M.gust.color
                               + (stripe > 2 ? 4 - stripe : stripe)));
             }
@@ -834,9 +790,7 @@ static bool M_Gust(
                 break;
             }
             if (offset >= 0 && offset / 80 == g_B20M.gust.offset / 80) {
-                M_MaskedByte(
-                    assets, shots_output, offset, (uint8_t)masks[5 + stripe],
-                    12);
+                M_MaskedByte(assets, offset, (uint8_t)masks[5 + stripe], 12);
             }
         }
         g_B20M.gust.y = Math16_Wrap(g_B20M.gust.y + 4);
@@ -860,36 +814,34 @@ static bool M_Gust(
     return true;
 }
 static void M_VortexDraw(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int32_t i, const bool spread)
+    const B20M_ASSETS *const assets, const int32_t i, const bool spread)
 {
     M_Erase(
-        assets, shots_output, g_B20M.vortices.previous_left[i],
+        assets, g_B20M.vortices.previous_left[i],
         g_B20M.vortices.previous_top[i]);
     M_Grc(
-        assets, shots_output, g_B20M.vortices.left[i], g_B20M.vortices.top[i],
-        0, g_B20M.frame % 3, 7);
+        assets, g_B20M.vortices.left[i], g_B20M.vortices.top[i], 0,
+        g_B20M.frame % 3, 7);
     if (spread && g_B20M.frame % 4 == 0) {
         const uint8_t angle = M_Angle(
             388 - g_B20M.vortices.top[i],
             g_B20M.vortices.left[1 - i] - g_B20M.vortices.left[i]);
         M_Single(
-            assets, shots_output, Math16_Wrap(g_B20M.vortices.left[i] + 12),
+            assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
             Math16_Wrap(g_B20M.vortices.top[i] + 12), 64, 112);
         M_Single(
-            assets, shots_output, Math16_Wrap(g_B20M.vortices.left[i] + 12),
+            assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
             Math16_Wrap(g_B20M.vortices.top[i] + 12), angle, 112);
         M_Single(
-            assets, shots_output, Math16_Wrap(g_B20M.vortices.left[i] + 12),
+            assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
             Math16_Wrap(g_B20M.vortices.top[i] + 12), (uint8_t)(128 - angle),
             112);
     }
 }
-static void M_Vortices(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Vortices(const B20M_ASSETS *const assets)
 {
     if (!g_B20M.vortex_wand_done) {
-        g_B20M.vortex_wand_done = M_WandRaise(assets, shots_output, false);
+        g_B20M.vortex_wand_done = M_WandRaise(assets, false);
     }
     if (g_B20M.frame < 50) {
         return;
@@ -901,11 +853,10 @@ static void M_Vortices(
         for (int32_t i = 0; i < 2; i++) {
             g_B20M.vortices.left[i] = (int16_t)(i * 608);
             g_B20M.vortices.top[i] = 200;
-            M_VortexDraw(assets, shots_output, i, false);
+            M_VortexDraw(assets, i, false);
             if (g_B20M.frame % 4 == 0) {
                 M_Group(
-                    assets, shots_output,
-                    Math16_Wrap(g_B20M.vortices.left[i] + 12),
+                    assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
                     Math16_Wrap(g_B20M.vortices.top[i] + 12),
                     PELLET_GROUP_SINGLE, 112);
             }
@@ -917,16 +868,14 @@ static void M_Vortices(
             g_B20M.vortices.left[i] =
                 Math16_Wrap(g_B20M.vortices.left[i] + (i == 0 ? 5 : -5));
             g_B20M.vortices.top[i] = Math16_Wrap(g_B20M.vortices.top[i] - 2);
-            M_VortexDraw(assets, shots_output, i, false);
+            M_VortexDraw(assets, i, false);
             if (g_B20M.frame % 4 == 0) {
                 M_Group(
-                    assets, shots_output,
-                    Math16_Wrap(g_B20M.vortices.left[i] + 12),
+                    assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
                     Math16_Wrap(g_B20M.vortices.top[i] + 12),
                     PELLET_GROUP_SINGLE, 112);
                 M_Single(
-                    assets, shots_output,
-                    Math16_Wrap(g_B20M.vortices.left[i] + 12),
+                    assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
                     Math16_Wrap(g_B20M.vortices.top[i] + 12),
                     M_Angle(412 - g_B20M.vortices.top[i], i * 160 - 68), 112);
             }
@@ -935,27 +884,27 @@ static void M_Vortices(
         }
     } else if (g_B20M.frame < 200) {
         for (int32_t i = 0; i < 2; i++) {
-            M_VortexDraw(assets, shots_output, i, true);
+            M_VortexDraw(assets, i, true);
         }
     } else if (g_B20M.frame < 240) {
         if (g_B20M.frame == 200) {
-            g_B20M.direction_first = M_Random(assets, shots_output) % 2 != 0;
+            g_B20M.direction_first = M_Random(assets) % 2 != 0;
             if (g_B20M.direction_first) {
-                M_WandLower(assets, shots_output);
+                M_WandLower(assets);
             }
         }
         for (int32_t i = 0; i < 2; i++) {
             g_B20M.vortices.left[i] = Math16_Wrap(
                 g_B20M.vortices.left[i] + 2 - g_B20M.direction_first * 4);
-            M_VortexDraw(assets, shots_output, i, true);
+            M_VortexDraw(assets, i, true);
             g_B20M.vortices.previous_left[i] = g_B20M.vortices.left[i];
         }
     } else if (g_B20M.frame < 320) {
         if (g_B20M.frame == 240) {
-            g_B20M.direction_second = M_Random(assets, shots_output) % 2 != 0;
+            g_B20M.direction_second = M_Random(assets) % 2 != 0;
             if (!g_B20M.direction_second
                 && g_B20M.direction_second == g_B20M.direction_first) {
-                M_WandLower(assets, shots_output);
+                M_WandLower(assets);
             } else if (
                 g_B20M.direction_second
                 && g_B20M.direction_second == g_B20M.direction_first) {
@@ -968,22 +917,19 @@ static void M_Vortices(
                 - (g_B20M.direction_second != g_B20M.direction_first
                        ? 2 - g_B20M.direction_second * 4
                        : 4 - g_B20M.direction_second * 8));
-            M_VortexDraw(assets, shots_output, i, true);
+            M_VortexDraw(assets, i, true);
             g_B20M.vortices.previous_left[i] = g_B20M.vortices.left[i];
         }
     } else {
         for (int32_t i = 0; i < 2; i++) {
-            M_Erase(
-                assets, shots_output, g_B20M.vortices.left[i],
-                g_B20M.vortices.top[i]);
+            M_Erase(assets, g_B20M.vortices.left[i], g_B20M.vortices.top[i]);
         }
-        M_WandLower(assets, shots_output);
+        M_WandLower(assets);
         g_B20M.frame = 0;
         g_B20M.vortex_wand_done = false;
     }
 }
-static void M_PurpleLasers(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_PurpleLasers(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 50) {
         return;
@@ -991,8 +937,8 @@ static void M_PurpleLasers(
     if (g_B20M.frame == 50) {
         g_B20M.pattern_state = Boss_Rank(68, 72, 76, 80);
         for (int32_t i = 0; i < 10; i++) {
-            g_B20M.laser.x[i] = 120 + M_Random(assets, shots_output) % 400;
-            g_B20M.laser.y[i] = 100 + M_Random(assets, shots_output) % 100;
+            g_B20M.laser.x[i] = 120 + M_Random(assets) % 400;
+            g_B20M.laser.y[i] = 100 + M_Random(assets) % 100;
         }
     }
     if (g_B20M.frame < 150) {
@@ -1001,21 +947,18 @@ static void M_PurpleLasers(
             if (g_B20M.frame % 10 != 0) {
                 const int16_t r = (int16_t)(64 - ((g_B20M.frame - 1) % 10) * 8);
                 M_EraseEllipse(
-                    assets, shots_output, g_B20M.laser.x[i], g_B20M.laser.y[i],
-                    r, r, 1);
+                    assets, g_B20M.laser.x[i], g_B20M.laser.y[i], r, r, 1);
             }
             if (g_B20M.frame % 10 != 8) {
                 const int16_t r = (int16_t)(64 - (g_B20M.frame % 10) * 8);
                 M_Ellipse(
-                    assets, shots_output, g_B20M.laser.x[i], g_B20M.laser.y[i],
-                    r, r, 4, 1);
+                    assets, g_B20M.laser.x[i], g_B20M.laser.y[i], r, r, 4, 1);
             }
         } else {
             Sound_Effect(6);
             M_Laser(
-                assets, shots_output, i, g_B20M.laser.x[i], g_B20M.laser.y[i],
-                M_Random(assets, shots_output) % 640, 400, g_B20M.pattern_state,
-                4, 25, 5);
+                assets, i, g_B20M.laser.x[i], g_B20M.laser.y[i],
+                M_Random(assets) % 640, 400, g_B20M.pattern_state, 4, 25, 5);
         }
     } else if (g_B20M.frame > 200) {
         g_B20M.frame = 0;
@@ -1027,14 +970,13 @@ static bool M_In(
 {
     return x >= l && x <= r && y >= t && y <= bottom;
 }
-static void M_Eggs(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Eggs(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 40) {
         return;
     }
     if (!g_B20M.bird_wand_done) {
-        g_B20M.bird_wand_done = M_WandRaise(assets, shots_output, false);
+        g_B20M.bird_wand_done = M_WandRaise(assets, false);
     }
     if (g_B20M.frame < 50) {
         return;
@@ -1044,9 +986,8 @@ static void M_Eggs(
         g_B20M.spawner.left = 5440;
         g_B20M.spawner.top = 1024;
         g_B20M.spawner.velocity_x =
-            (int16_t)(64 - (M_Random(assets, shots_output) % 2) * 128);
-        g_B20M.spawner.velocity_y =
-            (int16_t)(32 - (M_Random(assets, shots_output) % 2) * 64);
+            (int16_t)(64 - (M_Random(assets) % 2) * 128);
+        g_B20M.spawner.velocity_y = (int16_t)(32 - (M_Random(assets) % 2) * 64);
         g_B20M.pattern_state = Boss_Rank(20, 15, 10, 8);
         Sound_Effect(8);
     } else if (g_B20M.frame < 200) {
@@ -1055,12 +996,10 @@ static void M_Eggs(
         g_B20M.spawner.velocity_y = Math16_Wrap(
             g_B20M.spawner.velocity_y + (g_B20M.spawner.top < 2624 ? 1 : -1));
         M_Erase(
-            assets, shots_output, Math16_ToPixel(g_B20M.spawner.left),
+            assets, Math16_ToPixel(g_B20M.spawner.left),
             Math16_ToPixel(g_B20M.spawner.top));
         for (int32_t i = g_B20M.eggs.alive - 1; i >= 0; i--) {
-            M_Grc(
-                assets, shots_output, g_B20M.eggs.left[i], g_B20M.eggs.top[i],
-                1, 0, 15);
+            M_Grc(assets, g_B20M.eggs.left[i], g_B20M.eggs.top[i], 1, 0, 15);
         }
         g_B20M.spawner.left =
             Math16_Wrap(g_B20M.spawner.left + g_B20M.spawner.velocity_x);
@@ -1077,11 +1016,11 @@ static void M_Eggs(
                 g_B20M.eggs.alive++;
             }
             M_Grc(
-                assets, shots_output, Math16_ToPixel(g_B20M.spawner.left),
+                assets, Math16_ToPixel(g_B20M.spawner.left),
                 Math16_ToPixel(g_B20M.spawner.top), 1, 0, 15);
         }
         M_Grc(
-            assets, shots_output, Math16_ToPixel(g_B20M.spawner.left),
+            assets, Math16_ToPixel(g_B20M.spawner.left),
             Math16_ToPixel(g_B20M.spawner.top), 2, g_B20M.frame % 2,
             (uint8_t)(g_B20M.frame % 4 + 2));
     } else if (g_B20M.frame < 400) {
@@ -1097,18 +1036,18 @@ static void M_Eggs(
                     g_B20M.spawner.velocity_x < 0 ? -4 : 4;
             }
             for (int32_t i = g_B20M.eggs.alive - 1; i >= 0; i--) {
-                const MATH16_VECTOR v = Math16_Vector(
-                    3, (M_Random(assets, shots_output) & 127) + 128);
+                const MATH16_VECTOR v =
+                    Math16_Vector(3, (M_Random(assets) & 127) + 128);
                 M_BirdSpawn(g_B20M.eggs.left[i], g_B20M.eggs.top[i], v.x, v.y);
             }
-            M_WandLower(assets, shots_output);
-            g_B20M.bird_pellet_group = M_Random(assets, shots_output) % 2;
+            M_WandLower(assets);
+            g_B20M.bird_pellet_group = M_Random(assets) % 2;
         }
         if (M_In(
                 g_B20M.spawner.left, g_B20M.spawner.top, -512, -512, 10240,
                 6400)) {
             M_Erase(
-                assets, shots_output, Math16_ToPixel(g_B20M.spawner.left),
+                assets, Math16_ToPixel(g_B20M.spawner.left),
                 Math16_ToPixel(g_B20M.spawner.top));
             g_B20M.spawner.left =
                 Math16_Wrap(g_B20M.spawner.left + g_B20M.spawner.velocity_x);
@@ -1116,13 +1055,12 @@ static void M_Eggs(
                 Math16_Wrap(g_B20M.spawner.top + g_B20M.spawner.velocity_y);
             if (M_In(g_B20M.spawner.left, g_B20M.spawner.top, 0, 0, 608, 368)) {
                 M_Grc(
-                    assets, shots_output, g_B20M.spawner.left,
-                    g_B20M.spawner.top, 2, g_B20M.frame % 2,
-                    (uint8_t)(g_B20M.frame % 4 + 2));
+                    assets, g_B20M.spawner.left, g_B20M.spawner.top, 2,
+                    g_B20M.frame % 2, (uint8_t)(g_B20M.frame % 4 + 2));
             }
         }
         if (g_B20M.frame % 16 == 0 || g_B20M.frame % 16 == 2) {
-            M_BirdsFire(assets, shots_output, g_B20M.bird_pellet_group);
+            M_BirdsFire(assets, g_B20M.bird_pellet_group);
         }
     } else if (g_B20M.frame == 400) {
         g_B20M.frame = 0;
@@ -1130,19 +1068,17 @@ static void M_Eggs(
     }
 }
 static void M_FlakeEllipse(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t rx, const int16_t ry, const uint8_t color, const uint8_t step,
-    const bool erase)
+    const B20M_ASSETS *const assets, const int16_t rx, const int16_t ry,
+    const uint8_t color, const uint8_t step, const bool erase)
 {
     const int16_t x = Math16_ToPixel(g_B20M.flake.left);
     if (erase) {
-        M_EraseEllipse(assets, shots_output, x, 384, rx, ry, step);
+        M_EraseEllipse(assets, x, 384, rx, ry, step);
     } else {
-        M_Ellipse(assets, shots_output, x, 384, rx, ry, color, step);
+        M_Ellipse(assets, x, 384, rx, ry, color, step);
     }
 }
-static void M_Flake(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Flake(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 10) {
         g_B20M.flake.state = -1;
@@ -1152,7 +1088,7 @@ static void M_Flake(
         g_B20M.flake.state = 0;
     }
     if (g_B20M.flake.state == 0) {
-        g_B20M.flake.state = M_WandRaise(assets, shots_output, false);
+        g_B20M.flake.state = M_WandRaise(assets, false);
     }
     if (g_B20M.flake.state == 1) {
         Sound_Effect(6);
@@ -1174,24 +1110,24 @@ static void M_Flake(
             Math16_Wrap(g_B20M.flake.top + g_B20M.flake.velocity_y);
         if (g_B20M.flake.top >= 6336) {
             g_B20M.flake.state = 3;
-            M_WandLower(assets, shots_output);
+            M_WandLower(assets);
             return;
         }
         g_B20M.flake.left =
             Math16_Wrap(g_B20M.flake.left + g_B20M.flake.velocity_x);
         M_Mask(
-            assets, shots_output, Math16_ToPixel(g_B20M.flake.left),
+            assets, Math16_ToPixel(g_B20M.flake.left),
             Math16_ToPixel(g_B20M.flake.top), assets->flake, 7);
     }
     if (g_B20M.flake.state == 3) {
-        M_FlakeEllipse(assets, shots_output, 48, 16, 6, 8, false);
-        M_FlakeEllipse(assets, shots_output, 16, 48, 6, 8, false);
-        M_FlakeEllipse(assets, shots_output, 24, 24, 7, 6, false);
+        M_FlakeEllipse(assets, 48, 16, 6, 8, false);
+        M_FlakeEllipse(assets, 16, 48, 6, 8, false);
+        M_FlakeEllipse(assets, 24, 24, 7, 6, false);
         g_B20M.star.radius_outer_1 = 48;
         g_B20M.star.radius_outer_2 = 16;
         g_B20M.star.radius_inner = 24;
         g_B20M.star.left = g_B20M.flake.left;
-        g_B20M.star.top = 400 - M_Random(assets, shots_output) % 48;
+        g_B20M.star.top = 400 - M_Random(assets) % 48;
         Sound_Effect(10);
     }
     if (g_B20M.flake.state >= 3) {
@@ -1200,39 +1136,36 @@ static void M_Flake(
     if (g_B20M.flake.state >= 5 && g_B20M.flake.state % 8 == 0) {
         Sprite_Restore16(g_B20M.star.left, g_B20M.star.top, 16, 8);
         M_FlakeEllipse(
-            assets, shots_output, g_B20M.star.radius_outer_1,
-            g_B20M.star.radius_outer_2, 0, 8, true);
+            assets, g_B20M.star.radius_outer_1, g_B20M.star.radius_outer_2, 0,
+            8, true);
         M_FlakeEllipse(
-            assets, shots_output, g_B20M.star.radius_outer_2,
-            g_B20M.star.radius_outer_1, 0, 8, true);
+            assets, g_B20M.star.radius_outer_2, g_B20M.star.radius_outer_1, 0,
+            8, true);
         M_FlakeEllipse(
-            assets, shots_output, g_B20M.star.radius_inner,
-            g_B20M.star.radius_inner, 0, 6, true);
+            assets, g_B20M.star.radius_inner, g_B20M.star.radius_inner, 0, 6,
+            true);
         g_B20M.star.radius_outer_1 =
             Math16_Wrap(g_B20M.star.radius_outer_1 - 6);
         g_B20M.star.radius_outer_2 =
             Math16_Wrap(g_B20M.star.radius_outer_2 + 6);
         g_B20M.star.radius_inner = Math16_Wrap(g_B20M.star.radius_inner + 4);
         g_B20M.star.left = Math16_Wrap(
-            M_Random(assets, shots_output) % 64
-            + Math16_ToPixel(g_B20M.flake.left) - 28);
-        g_B20M.star.top = 400 - M_Random(assets, shots_output) % 48;
+            M_Random(assets) % 64 + Math16_ToPixel(g_B20M.flake.left) - 28);
+        g_B20M.star.top = 400 - M_Random(assets) % 48;
         if (g_B20M.star.radius_outer_1 <= 8) {
             g_B20M.flake.state = -1;
             return;
         }
         M_FlakeEllipse(
-            assets, shots_output, g_B20M.star.radius_outer_1,
-            g_B20M.star.radius_outer_2, 5, 8, false);
+            assets, g_B20M.star.radius_outer_1, g_B20M.star.radius_outer_2, 5,
+            8, false);
         M_FlakeEllipse(
-            assets, shots_output, g_B20M.star.radius_outer_2,
-            g_B20M.star.radius_outer_1, 5, 8, false);
+            assets, g_B20M.star.radius_outer_2, g_B20M.star.radius_outer_1, 5,
+            8, false);
         M_FlakeEllipse(
-            assets, shots_output, g_B20M.star.radius_inner,
-            g_B20M.star.radius_inner, 7, 6, false);
-        M_Mask(
-            assets, shots_output, g_B20M.star.left, g_B20M.star.top,
-            assets->star, 7);
+            assets, g_B20M.star.radius_inner, g_B20M.star.radius_inner, 7, 6,
+            false);
+        M_Mask(assets, g_B20M.star.left, g_B20M.star.top, assets->star, 7);
     }
     const int16_t x = Math16_ToPixel(g_B20M.flake.left);
     if (!Boss_Player()->invincible && x + 32 > Boss_Player()->left
@@ -1240,8 +1173,7 @@ static void M_Flake(
         Boss_Player()->is_hit = true;
     }
 }
-static void M_Rings(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Rings(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 5) {
         g_B20M.rings_angle = 0;
@@ -1249,16 +1181,10 @@ static void M_Rings(
     }
     if (g_B20M.frame % g_B20M.rings_interval == 0) {
         g_Pellets.spawn_with_cloud = true;
-        M_Single(
-            assets, shots_output, 568, 160, (uint8_t)(0 - g_B20M.rings_angle),
-            56);
-        M_Single(
-            assets, shots_output, 568, 160, (uint8_t)(128 - g_B20M.rings_angle),
-            56);
-        M_Single(assets, shots_output, 64, 160, g_B20M.rings_angle, 56);
-        M_Single(
-            assets, shots_output, 64, 160, (uint8_t)(128 + g_B20M.rings_angle),
-            56);
+        M_Single(assets, 568, 160, (uint8_t)(0 - g_B20M.rings_angle), 56);
+        M_Single(assets, 568, 160, (uint8_t)(128 - g_B20M.rings_angle), 56);
+        M_Single(assets, 64, 160, g_B20M.rings_angle, 56);
+        M_Single(assets, 64, 160, (uint8_t)(128 + g_B20M.rings_angle), 56);
         g_B20M.rings_angle =
             (uint8_t)(g_B20M.rings_angle + g_B20M.rings_interval);
     }
@@ -1266,14 +1192,13 @@ static void M_Rings(
         g_B20M.frame = 0;
     }
 }
-static void M_Sling(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Sling(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame == 10) {
         g_B20M.pattern_state = Boss_Rank(4, 3, 2, 2);
     }
     if (g_B20M.frame % 200 >= 150 && g_B20M.frame % g_B20M.pattern_state == 0) {
-        const uint8_t angle = (uint8_t)M_Random(assets, shots_output);
+        const uint8_t angle = (uint8_t)M_Random(assets);
         Pellets_AddSingle(
             g_Session.settings.difficulty, Math16_PolarY(320, 40, angle),
             Math16_PolarX(180, 40, angle), 0, 0, PELLET_SLING_AIMED, 72, 0, 0);
@@ -1282,11 +1207,10 @@ static void M_Sling(
         g_B20M.frame = 0;
     }
 }
-static void M_FourLasers(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_FourLasers(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 5) {
-        M_Ray(assets, shots_output, 0, 0, 0, 0, 99);
+        M_Ray(assets, 0, 0, 0, 0, 99);
     }
     if (g_B20M.frame < 50) {
         return;
@@ -1324,13 +1248,11 @@ static void M_FourLasers(
         g_B20M.laser.velocity_x = v.x;
         g_B20M.laser.velocity_y = v.y;
         M_Laser(
-            assets, shots_output, laser, x, y, target, 400,
-            g_B20M.pattern_state, 7, 50, 8);
+            assets, laser, x, y, target, 400, g_B20M.pattern_state, 7, 50, 8);
         Sound_Effect(6);
     } else if (g_B20M.frame < 250) {
         M_Ray(
-            assets, shots_output, 320, 120, g_B20M.laser.origin_x,
-            g_B20M.laser.origin_y, 7);
+            assets, 320, 120, g_B20M.laser.origin_x, g_B20M.laser.origin_y, 7);
         g_B20M.laser.origin_x =
             Math16_Wrap(g_B20M.laser.origin_x + g_B20M.laser.velocity_x);
         g_B20M.laser.origin_y =
@@ -1339,8 +1261,7 @@ static void M_FourLasers(
         g_B20M.frame = 0;
     }
 }
-static bool M_Shake(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static bool M_Shake(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 50) {
         if (g_B20M.frame % 8 == 0 || g_B20M.frame % 8 == 4) {
@@ -1356,22 +1277,20 @@ static bool M_Shake(
     }
     return true;
 }
-static void M_TopRain(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_TopRain(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame % 8 == 0) {
         M_Group(
-            assets, shots_output, M_Random(assets, shots_output) % 640, 64,
+            assets, M_Random(assets) % 640, 64,
             g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
                                                : PELLET_GROUP_SINGLE,
             44);
     }
 }
-static void M_Radial(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Radial(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame < 5) {
-        M_Ray(assets, shots_output, 0, 0, 0, 0, 99);
+        M_Ray(assets, 0, 0, 0, 0, 99);
     }
     if (g_B20M.frame < 150) {
         return;
@@ -1383,8 +1302,7 @@ static void M_Radial(
         Sound_Effect(6);
     } else if (g_B20M.frame < 200) {
         M_Ray(
-            assets, shots_output, 320, 160,
-            Math16_PolarX(320, 140, g_B20M.radial_angle),
+            assets, 320, 160, Math16_PolarX(320, 140, g_B20M.radial_angle),
             Math16_PolarY(160, 140, g_B20M.radial_angle), 7);
         g_B20M.radial_angle =
             (uint8_t)(g_B20M.radial_angle + g_B20M.radial_velocity);
@@ -1393,37 +1311,27 @@ static void M_Radial(
             Sound_Effect(6);
         }
     } else if (g_B20M.frame == 200) {
-        M_Ray(assets, shots_output, 320, 160, 999, 999, 7);
+        M_Ray(assets, 320, 160, 999, 999, 7);
         g_B20M.radial_angle = 0;
     } else if (g_B20M.frame <= 400 && g_B20M.frame % 5 == 0) {
         Sound_Effect(7);
         if (g_B20M.frame % 15 == 0) {
             M_Laser(
-                assets, shots_output, (g_B20M.frame - 215) / 15, 320, 160,
+                assets, (g_B20M.frame - 215) / 15, 320, 160,
                 Math16_PolarX(320, 600, g_B20M.radial_angle),
                 Math16_PolarY(160, 600, g_B20M.radial_angle),
                 g_B20M.pattern_state, 7, 20, 4);
         } else {
-            M_Single(assets, shots_output, 320, 160, g_B20M.radial_angle, 100);
+            M_Single(assets, 320, 160, g_B20M.radial_angle, 100);
         }
-        M_Single(
-            assets, shots_output, 320, 160, (uint8_t)(g_B20M.radial_angle - 4),
-            96);
-        M_Single(
-            assets, shots_output, 320, 160, (uint8_t)(g_B20M.radial_angle + 4),
-            96);
+        M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle - 4), 96);
+        M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle + 4), 96);
         if (g_Session.settings.difficulty >= 2) {
-            M_Single(
-                assets, shots_output, 320, 160,
-                (uint8_t)(g_B20M.radial_angle - 4), 64);
-            M_Single(
-                assets, shots_output, 320, 160,
-                (uint8_t)(g_B20M.radial_angle + 4), 64);
+            M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle - 4), 64);
+            M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle + 4), 64);
             if (g_Session.settings.difficulty == 3) {
-                M_Single(
-                    assets, shots_output, 320, 160, g_B20M.radial_angle, 64);
-                M_Single(
-                    assets, shots_output, 320, 160, g_B20M.radial_angle, 48);
+                M_Single(assets, 320, 160, g_B20M.radial_angle, 64);
+                M_Single(assets, 320, 160, g_B20M.radial_angle, 48);
             }
         }
         g_B20M.radial_angle = (uint8_t)(g_B20M.radial_angle + 12);
@@ -1447,31 +1355,28 @@ static int16_t M_DebrisX(
                 : Math16_Wrap(640 - offset - r->x + movement);
 }
 static void M_RaysDraw(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const B20M_RAYS *const r, const bool left, const int16_t ox,
-    const int16_t oy, const int16_t offset, const int16_t speed,
-    const bool broken)
+    const B20M_ASSETS *const assets, const B20M_RAYS *const r, const bool left,
+    const int16_t ox, const int16_t oy, const int16_t offset,
+    const int16_t speed, const bool broken)
 {
     if (broken) {
         M_Erase(
-            assets, shots_output,
-            M_DebrisX(r, left, offset, Math16_Wrap(speed * 2)),
+            assets, M_DebrisX(r, left, offset, Math16_Wrap(speed * 2)),
             Math16_Wrap(r->y - 32));
         M_Grc(
-            assets, shots_output, M_DebrisX(r, left, offset, 0),
-            Math16_Wrap(r->y - 16), 0, r->image, 7);
-        M_Ray(assets, shots_output, ox, oy, M_RayX(r, left), r->y, 7);
+            assets, M_DebrisX(r, left, offset, 0), Math16_Wrap(r->y - 16), 0,
+            r->image, 7);
+        M_Ray(assets, ox, oy, M_RayX(r, left), r->y, 7);
     } else {
         Sprite_Restore16(
             M_DebrisX(r, left, offset, 0), Math16_Wrap(r->y - 8), 32, 32);
-        M_Ray(assets, shots_output, ox, oy, M_RayX(r, left), r->y, 7);
+        M_Ray(assets, ox, oy, M_RayX(r, left), r->y, 7);
         M_Grc(
-            assets, shots_output, M_DebrisX(r, left, offset, 0),
-            Math16_Wrap(r->y - 16), 0, r->image, 7);
+            assets, M_DebrisX(r, left, offset, 0), Math16_Wrap(r->y - 16), 0,
+            r->image, 7);
     }
 }
-static void M_SymmetricBirds(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_SymmetricBirds(const B20M_ASSETS *const assets)
 {
     B20M_RAYS *const r = &g_B20M.bird_rays;
     if (g_B20M.frame < 50) {
@@ -1487,9 +1392,7 @@ static void M_SymmetricBirds(
         return;
     }
     if (g_B20M.frame < 100) {
-        M_RaysDraw(
-            assets, shots_output, r, g_B20M.frame % 2 == 0, 320, 120, 8, 2,
-            true);
+        M_RaysDraw(assets, r, g_B20M.frame % 2 == 0, 320, 120, 8, 2, true);
         if (g_B20M.frame % 2 != 0) {
             r->image = M_DebrisNext(r->image);
         }
@@ -1506,7 +1409,7 @@ static void M_SymmetricBirds(
             M_BirdSpawn(M_RayX(r, false), Math16_Wrap(r->y - 32), -v.x, v.y);
         }
         if (g_B20M.frame % 6 == 0) {
-            M_BirdsFire(assets, shots_output, 2);
+            M_BirdsFire(assets, 2);
         }
         return;
     }
@@ -1515,14 +1418,13 @@ static void M_SymmetricBirds(
         return;
     }
     if (g_B20M.frame % 10 == 0) {
-        M_BirdsFire(assets, shots_output, 2);
+        M_BirdsFire(assets, 2);
     }
     if (g_B20M.frame >= 300) {
         g_B20M.frame = 0;
     }
 }
-static void M_Semicircles(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Semicircles(const B20M_ASSETS *const assets)
 {
     int32_t count = 0, angle = 0, step = 0, speed = 0;
     if (g_B20M.frame == 50) {
@@ -1548,13 +1450,11 @@ static void M_Semicircles(
         g_B20M.frame = 0;
     }
     for (int32_t i = 0; i < count; i++) {
-        M_Single(
-            assets, shots_output, 320, 160, (uint8_t)angle, (int16_t)speed);
+        M_Single(assets, 320, 160, (uint8_t)angle, (int16_t)speed);
         angle += step;
     }
 }
-static void M_Stacks(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Stacks(const B20M_ASSETS *const assets)
 {
     B20M_RAYS *const r = &g_B20M.stack_rays;
     if (g_B20M.frame < 50) {
@@ -1565,9 +1465,7 @@ static void M_Stacks(
         r->x = 2;
         r->y = 399;
     } else if (g_B20M.frame < 130) {
-        M_RaysDraw(
-            assets, shots_output, r, g_B20M.frame % 2 == 0, 320, 120, 8, 8,
-            true);
+        M_RaysDraw(assets, r, g_B20M.frame % 2 == 0, 320, 120, 8, 8, true);
         if (g_B20M.frame % 2 != 0) {
             r->image = M_DebrisNext(r->image);
         }
@@ -1581,14 +1479,14 @@ static void M_Stacks(
                 if (Boss_Player()->left + 16 - r->x > 32
                     || Boss_Player()->left + 16 - r->x < -32) {
                     M_Single(
-                        assets, shots_output, r->x, Math16_Wrap(r->y - 8), 192,
+                        assets, r->x, Math16_Wrap(r->y - 8), 192,
                         Math16_Wrap(i + 48));
                 }
                 const int16_t rx = M_RayX(r, false);
                 if (Boss_Player()->left + 16 - rx > 32
                     || Boss_Player()->left + 16 - rx < -32) {
                     M_Single(
-                        assets, shots_output, rx, Math16_Wrap(r->y - 8), 192,
+                        assets, rx, Math16_Wrap(r->y - 8), 192,
                         Math16_Wrap(i + 48));
                 }
             }
@@ -1601,13 +1499,11 @@ static void M_Stacks(
     } else if (g_B20M.frame < 550) {
         if (g_B20M.frame % g_B20M.pattern_state == 0) {
             for (int32_t i = 0; i < 2; i++) {
-                uint8_t angle = M_Angle(
-                    400 - r->y, (M_Random(assets, shots_output) % 640) - r->x);
-                M_Single(assets, shots_output, r->x, r->y, angle, 48);
-                angle = M_Angle(
-                    400 - r->y, (M_Random(assets, shots_output) % 640) - r->x);
-                M_Single(
-                    assets, shots_output, M_RayX(r, false), r->y, angle, 48);
+                uint8_t angle =
+                    M_Angle(400 - r->y, (M_Random(assets) % 640) - r->x);
+                M_Single(assets, r->x, r->y, angle, 48);
+                angle = M_Angle(400 - r->y, (M_Random(assets) % 640) - r->x);
+                M_Single(assets, M_RayX(r, false), r->y, angle, 48);
             }
             r->x = Math16_Wrap(r->x + 32);
         }
@@ -1616,9 +1512,9 @@ static void M_Stacks(
     }
 }
 static void M_Dotted(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t frame, const int16_t interval, const int16_t step,
-    const int16_t initial, const int16_t frames)
+    const B20M_ASSETS *const assets, const int16_t frame,
+    const int16_t interval, const int16_t step, const int16_t initial,
+    const int16_t frames)
 {
     const int16_t radius = Math16_Wrap((frame / interval) * step + initial);
     if (frame == 1) {
@@ -1628,19 +1524,16 @@ static void M_Dotted(
             return;
         }
         M_EraseEllipse(
-            assets, shots_output, 320, 185, g_B20M.dotted_radius,
-            g_B20M.dotted_radius, 1);
+            assets, 320, 185, g_B20M.dotted_radius, g_B20M.dotted_radius, 1);
         if (frame >= frames) {
             g_B20M.dotted_active = false;
             return;
         }
-        M_Ellipse(assets, shots_output, 320, 185, radius, radius, 7, 1);
+        M_Ellipse(assets, 320, 185, radius, radius, 7, 1);
     }
     g_B20M.dotted_radius = radius;
 }
-static void M_SprayInit(
-    B20M_SPRAY *const s, const B20M_ASSETS *const assets,
-    const SHOTS_OUTPUT shots_output)
+static void M_SprayInit(B20M_SPRAY *const s, const B20M_ASSETS *const assets)
 {
     s->x = 0;
     s->y = 400;
@@ -1649,49 +1542,45 @@ static void M_SprayInit(
     g_B20M.pattern_state = Boss_Rank(32, 24, 18, 16);
 }
 static void M_SprayFire(
-    B20M_SPRAY *const s, const B20M_ASSETS *const assets,
-    const SHOTS_OUTPUT shots_output, const bool right)
+    B20M_SPRAY *const s, const B20M_ASSETS *const assets, const bool right)
 {
     s->angle = M_Angle(s->y - 185, s->x - 320);
-    M_Single(assets, shots_output, 320, 185, s->angle, s->speed);
+    M_Single(assets, 320, 185, s->angle, s->speed);
     s->speed = Math16_Wrap(s->speed - 4);
     s->x = Math16_Wrap(
         s->x + (right ? g_B20M.pattern_state : -g_B20M.pattern_state));
 }
-static void M_SprayOnce(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_SprayOnce(const B20M_ASSETS *const assets)
 {
     B20M_SPRAY *const s = &g_B20M.sprays[0];
     if (g_B20M.frame < 50) {
         return;
     }
     if (g_B20M.frame == 50) {
-        M_Dotted(assets, shots_output, 1, 4, 16, 32, 160);
+        M_Dotted(assets, 1, 4, 16, 32, 160);
     }
-    M_Dotted(
-        assets, shots_output, Math16_Wrap(g_B20M.frame - 49), 4, 16, 32, 90);
+    M_Dotted(assets, Math16_Wrap(g_B20M.frame - 49), 4, 16, 32, 90);
     if (g_B20M.frame < 100) {
         return;
     }
     if (g_B20M.frame == 100) {
-        M_SprayInit(s, assets, shots_output);
+        M_SprayInit(s, assets);
     }
     if (s->subpattern == 0) {
-        M_SprayFire(s, assets, shots_output, true);
+        M_SprayFire(s, assets, true);
         if (s->x >= 640) {
             s->subpattern = 1;
             s->speed = 112;
             s->x = 640;
         }
     } else {
-        M_SprayFire(s, assets, shots_output, false);
+        M_SprayFire(s, assets, false);
         if (s->x < 0) {
             g_B20M.frame = 0;
         }
     }
 }
-static void M_SealRain(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_SealRain(const B20M_ASSETS *const assets)
 {
     B20M_RAYS *const r = &g_B20M.seal_rays;
     if (g_B20M.frame < 50) {
@@ -1705,9 +1594,7 @@ static void M_SealRain(
         g_B20M.pattern_state = Boss_Rank(30, 35, 40, 45);
     }
     if (r->y > 185) {
-        M_RaysDraw(
-            assets, shots_output, r, g_B20M.frame % 2 == 0, 320, 185, 32, 0,
-            false);
+        M_RaysDraw(assets, r, g_B20M.frame % 2 == 0, 320, 185, 32, 0, false);
         if (g_B20M.frame % 2 != 0) {
             r->previous_image = r->image;
             r->image = M_DebrisNext(r->image);
@@ -1726,30 +1613,29 @@ static void M_SealRain(
     Video_LineErase(320, 185, M_RayX(r, false), Math16_Wrap(r->y + 4));
     for (int32_t i = 0; i < g_B20M.pattern_state; i++) {
         M_Rain(
-            assets, shots_output, (int16_t)((640 / g_B20M.pattern_state) * i),
-            185, (uint8_t)M_Random(assets, shots_output), 16);
+            assets, (int16_t)((640 / g_B20M.pattern_state) * i), 185,
+            (uint8_t)M_Random(assets), 16);
     }
     g_B20M.frame = 0;
 }
-static void M_SprayTwice(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_SprayTwice(const B20M_ASSETS *const assets)
 {
     B20M_SPRAY *const s = &g_B20M.sprays[1];
     if (g_B20M.frame < 80) {
         return;
     }
     if (g_B20M.frame == 80) {
-        M_SprayInit(s, assets, shots_output);
+        M_SprayInit(s, assets);
     }
     if (s->subpattern % 2 == 0) {
-        M_SprayFire(s, assets, shots_output, true);
+        M_SprayFire(s, assets, true);
         if (s->x >= 640) {
             s->subpattern = Math16_Wrap(s->subpattern + 1);
             s->speed = 112;
             s->x = 640;
         }
     } else {
-        M_SprayFire(s, assets, shots_output, false);
+        M_SprayFire(s, assets, false);
         if (s->x < 0) {
             s->subpattern = Math16_Wrap(s->subpattern + 1);
             s->speed = 112;
@@ -1765,9 +1651,7 @@ static bool M_LeafVisible(const B20M_LEAVES *const p, const int32_t i)
     return p->left[i] >= 0 && p->left[i] < 6320 && p->top[i] >= 0
         && p->top[i] < 3920;
 }
-static void M_Leaves(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t interval)
+static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
 {
     B20M_LEAVES *const p = &g_B20M.leaves;
     if (interval == 999) {
@@ -1781,12 +1665,11 @@ static void M_Leaves(
             if (p->flag[i] != 0) {
                 continue;
             }
-            p->left[i] = M_Random(assets, shots_output) % 6400;
-            p->top[i] = 1200 + M_Random(assets, shots_output) % 1000;
+            p->left[i] = M_Random(assets) % 6400;
+            p->top[i] = 1200 + M_Random(assets) % 1000;
             const MATH16_VECTOR v = Math16_Aim(
                 (MATH16_VECTOR) { p->left[i] / 10, p->top[i] / 10 },
-                (MATH16_VECTOR) { M_Random(assets, shots_output) % 640, 64 },
-                40, 0);
+                (MATH16_VECTOR) { M_Random(assets) % 640, 64 }, 40, 0);
             p->velocity_x[i] = v.x;
             p->velocity_y[i] = v.y;
             p->flag[i] = 1;
@@ -1813,7 +1696,7 @@ static void M_Leaves(
             } else {
                 p->velocity_y[i] = Math16_Wrap(p->velocity_y[i] - 1);
                 if (p->velocity_y[i] < -1) {
-                    p->velocity_y[i] = 30 + M_Random(assets, shots_output) % 20;
+                    p->velocity_y[i] = 30 + M_Random(assets) % 20;
                     p->velocity_x[i] = p->velocity_x[i] < 0 ? 20 : -20;
                 }
                 if (p->top[i] / 10 > 400) {
@@ -1822,11 +1705,11 @@ static void M_Leaves(
             }
         } else if (p->flag[i] <= 5) {
             if (M_LeafVisible(p, i)) {
-                M_Erase(assets, shots_output, p->left[i] / 10, p->top[i] / 10);
+                M_Erase(assets, p->left[i] / 10, p->top[i] / 10);
             }
             if (p->flag[i] == 5) {
                 p->flag[i] = 6;
-                p->velocity_y[i] = 3 + M_Random(assets, shots_output) % 2;
+                p->velocity_y[i] = 3 + M_Random(assets) % 2;
                 p->velocity_x[i] = 2;
             }
         }
@@ -1838,13 +1721,12 @@ static void M_Leaves(
         if (p->flag[i] == 1) {
             if (M_LeafVisible(p, i)) {
                 M_Mask(
-                    assets, shots_output, p->left[i] / 10, p->top[i] / 10,
-                    assets->spark, 7);
+                    assets, p->left[i] / 10, p->top[i] / 10, assets->spark, 7);
             }
         } else if (p->flag[i] <= 5) {
             if (M_LeafVisible(p, i)) {
                 M_Grc(
-                    assets, shots_output, p->left[i], p->top[i], 3,
+                    assets, p->left[i], p->top[i], 3,
                     Math16_Wrap(p->flag[i] - 2), 7);
             }
             if (g_B20M.frame % 4 == 0) {
@@ -1853,7 +1735,7 @@ static void M_Leaves(
         } else if (p->flag[i] == 6) {
             if (M_LeafVisible(p, i)) {
                 M_Mask(
-                    assets, shots_output, p->left[i] / 10, p->top[i] / 10,
+                    assets, p->left[i] / 10, p->top[i] / 10,
                     p->velocity_x[i] < 0 ? assets->leaf_left
                                          : assets->leaf_right,
                     7);
@@ -1867,24 +1749,22 @@ static void M_Leaves(
         }
     }
 }
-static void M_Hud(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Hud(const B20M_ASSETS *const assets)
 {
     g_Stage.first_stage = true;
     StageTimer_Redraw(true, g_Stage.timer_initialized, 0);
     Hud_ScoreAndCombo();
 }
-void B20M_BeginEntrance(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+void B20M_BeginEntrance(const B20M_ASSETS *const assets)
 {
     ASSERT(
         !g_B20M.entrance_active && g_B20M.sequence == B20M_SEQUENCE_NONE
         && g_B20M.wait_kind == B20M_WAIT_NONE);
     g_Pellets.interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
-    M_Pi(assets, shots_output, &assets->lower, true);
+    M_Pi(assets, &assets->lower, true);
     Video_SelectDrawingPage(1);
-    M_Pi(assets, shots_output, &assets->upper, true);
+    M_Pi(assets, &assets->upper, true);
     Video_SelectDrawingPage(0);
     StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
     Sound_Load(13);
@@ -1894,14 +1774,12 @@ void B20M_BeginEntrance(
     g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
     g_B20M.entrance_active = true;
 }
-bool B20M_ResumeEntrance(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+bool B20M_ResumeEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
 {
     if (!g_B20M.entrance_active) {
         return true;
     }
-    if (!M_Ready(assets, shots_output, tick)) {
+    if (!M_Ready(assets, tick)) {
         return false;
     }
     for (;;) {
@@ -1914,7 +1792,7 @@ bool B20M_ResumeEntrance(
             g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL_STEP;
             return M_Scroll(g_B20M.scroll_line);
         case B20M_ENTRANCE_SCROLL_STEP:
-            M_CopyRows(assets, shots_output, g_B20M.scroll_line, 1);
+            M_CopyRows(assets, g_B20M.scroll_line, 1);
             g_B20M.scroll_line--;
             g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
             if (!M_Delay(1)) {
@@ -1923,7 +1801,7 @@ bool B20M_ResumeEntrance(
             continue;
         case B20M_ENTRANCE_DIAGONAL:
             Video_SelectDrawingPage(1);
-            M_Pi(assets, shots_output, &assets->backgrounds[0], true);
+            M_Pi(assets, &assets->backgrounds[0], true);
             Video_SelectDrawingPage(0);
             g_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
             if (!Transition_BeginDiagonal(
@@ -1949,8 +1827,7 @@ bool B20M_ResumeEntrance(
     }
 }
 static int16_t M_InvertRings(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t base)
+    const B20M_ASSETS *const assets, const int16_t base)
 {
     int16_t outside = 0;
     for (int32_t i = 32; i < 160; i++) {
@@ -1960,11 +1837,9 @@ static int16_t M_InvertRings(
     }
     return outside;
 }
-static bool M_RingEntrance(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+static bool M_RingEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!M_Ready(assets, shots_output, tick)) {
+    if (!M_Ready(assets, tick)) {
         return false;
     }
     for (;;) {
@@ -1973,25 +1848,24 @@ static bool M_RingEntrance(
         if (g_B20M.frame == 1) {
             g_B20M.entrance_radius = 16;
         } else if (g_B20M.frame == 2) {
-            M_InvertRings(assets, shots_output, g_B20M.entrance_radius);
+            M_InvertRings(assets, g_B20M.entrance_radius);
         } else if (g_B20M.frame > 2 && g_B20M.frame % 4 == 0) {
-            M_InvertRings(assets, shots_output, g_B20M.entrance_radius);
+            M_InvertRings(assets, g_B20M.entrance_radius);
             g_B20M.entrance_radius = Math16_Wrap(g_B20M.entrance_radius + 16);
-            finish = M_InvertRings(assets, shots_output, g_B20M.entrance_radius)
-                >= 128;
+            finish = M_InvertRings(assets, g_B20M.entrance_radius) >= 128;
         }
         if (finish) {
             g_B20M.phase = B20M_PHASE_BIRDS;
             g_B20M.pattern = 0;
             g_B20M.patterns_done = 0;
-            g_B20M.patterns_until_next = 1 + M_Random(assets, shots_output) % 6;
+            g_B20M.patterns_until_next = 1 + M_Random(assets) % 6;
             g_B20M.frame = 0;
             g_B20M.hp_bar_filled = false;
-            M_Palette(assets, shots_output, &g_B20M.boss_palette);
+            M_Palette(assets, &g_B20M.boss_palette);
             g_B20M.shield.left = 304;
             g_B20M.shield.top = 144;
-            M_Snap(assets, shots_output);
-            M_WandRaise(assets, shots_output, true);
+            M_Snap(assets);
+            M_WandRaise(assets, true);
             M_BirdsReset();
             g_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
@@ -2001,12 +1875,11 @@ static bool M_RingEntrance(
         }
     }
 }
-static void M_BeginTransform(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_BeginTransform(const B20M_ASSETS *const assets)
 {
     g_B20M.frame = 0;
     g_B20M.hit.frame = 399;
-    Shots_EraseAndReset(shots_output);
+    Shots_EraseAndReset();
     Pellets_EraseAndResetMoving();
     ShootoutLasers_EraseAndReset(10);
     ORB *const orb = &g_Orb;
@@ -2024,20 +1897,18 @@ static void M_BeginTransform(
     Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
-    M_Color(assets, shots_output, 15, 0, 0, 0);
+    M_Color(assets, 15, 0, 0, 0);
     g_B20M.boss_palette = g_Palette.saved;
-    M_CopyOther(assets, shots_output);
+    M_CopyOther(assets);
     Video_SelectDrawingPage(1);
-    M_Pi(assets, shots_output, &assets->backgrounds[4], false);
+    M_Pi(assets, &assets->backgrounds[4], false);
     Video_SelectDrawingPage(0);
     g_B20M.sequence = B20M_SEQUENCE_TRANSFORM;
     g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
 }
-static bool M_Transform(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!M_Ready(assets, shots_output, tick)) {
+    if (!M_Ready(assets, tick)) {
         return false;
     }
     for (;;) {
@@ -2046,15 +1917,15 @@ static bool M_Transform(
             g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
             if (g_B20M.frame < 200) {
                 if (g_B20M.frame % 2 == 0) {
-                    M_Color(assets, shots_output, 15, 15, 15, 15);
+                    M_Color(assets, 15, 15, 15, 15);
                 } else {
-                    M_Palette(assets, shots_output, &g_B20M.boss_palette);
+                    M_Palette(assets, &g_B20M.boss_palette);
                 }
                 g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
                 return M_Scroll(g_B20M.frame % 2 == 0 ? 416 : 386);
             }
             if (g_B20M.frame == 200) {
-                M_Palette(assets, shots_output, &g_B20M.boss_palette);
+                M_Palette(assets, &g_B20M.boss_palette);
                 g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
                 return M_Scroll(0);
             }
@@ -2067,10 +1938,10 @@ static bool M_Transform(
             Video_SelectDrawingPage(1);
             Sound_Load(14);
             Sound_Play();
-            M_Pi(assets, shots_output, &assets->backgrounds[5], true);
-            M_Color(assets, shots_output, 6, 0, 0, 0);
-            M_CopyOther(assets, shots_output);
-            M_Hud(assets, shots_output);
+            M_Pi(assets, &assets->backgrounds[5], true);
+            M_Color(assets, 6, 0, 0, 0);
+            M_CopyOther(assets);
+            M_Hud(assets);
             g_B20M.sequence_stage = B20M_TRANSFORM_SECOND_FORM;
             return M_Scroll(0);
         case B20M_TRANSFORM_SHAKE_STEP:
@@ -2096,7 +1967,7 @@ static bool M_Transform(
             g_HudHp.first_white = 10;
             g_HudHp.first_redwhite = 3;
             g_B20M.hp_bar_filled = false;
-            M_Leaves(assets, shots_output, 999);
+            M_Leaves(assets, 999);
             g_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
         default:
@@ -2105,23 +1976,20 @@ static bool M_Transform(
         }
     }
 }
-static void M_BeginDefeat(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_BeginDefeat(const B20M_ASSETS *const assets)
 {
     Video_SelectDrawingPage(1);
-    M_Pi(assets, shots_output, &assets->backgrounds[5], true);
-    M_Color(assets, shots_output, 6, 0, 0, 0);
+    M_Pi(assets, &assets->backgrounds[5], true);
+    M_Color(assets, 6, 0, 0, 0);
     g_B20M.boss_palette = g_Palette.saved;
-    M_CopyOther(assets, shots_output);
+    M_CopyOther(assets);
     Video_SelectDrawingPage(0);
     g_B20M.sequence = B20M_SEQUENCE_DEFEAT;
     g_B20M.sequence_stage = B20M_DEFEAT_SHAKE;
 }
-static bool M_Defeat(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!M_Ready(assets, shots_output, tick)) {
+    if (!M_Ready(assets, tick)) {
         return false;
     }
     for (;;) {
@@ -2148,7 +2016,7 @@ static bool M_Defeat(
                             g_Palette.saved.colors[i][j]--;
                         }
                     }
-                    M_Palette(assets, shots_output, &g_Palette.saved);
+                    M_Palette(assets, &g_Palette.saved);
                 }
                 if (g_B20M.frame > 230) {
                     g_B20M.sequence_stage = B20M_DEFEAT_BONUS;
@@ -2174,8 +2042,7 @@ static bool M_Defeat(
         }
     }
 }
-static void M_Hit(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Hit(const B20M_ASSETS *const assets)
 {
     const ORB *const orb = &g_Orb;
     const bool collision = (orb->left >= 314 && orb->left <= 346
@@ -2183,16 +2050,14 @@ static void M_Hit(
         || BossEntity_HitTestOrb(&g_B20M.shield);
     const uint8_t colors[] = { 3, 4, 5 };
     BossHit_UpdateAndRender(
-        &g_B20M.hit, shots_output, &g_B20M.hp, &g_B20M.boss_palette, colors, 3,
-        10000, collision, (BOSS_SHOT_HITBOX) { 314, 104, 64, 32 });
+        &g_B20M.hit, &g_B20M.hp, &g_B20M.boss_palette, colors, 3, 10000,
+        collision, (BOSS_SHOT_HITBOX) { 314, 104, 64, 32 });
 }
-static void M_PhaseNext(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int8_t phase)
+static void M_PhaseNext(const B20M_ASSETS *const assets, const int8_t phase)
 {
     g_B20M.phase = phase;
     g_B20M.frame = 0;
-    M_Snap(assets, shots_output);
+    M_Snap(assets);
 }
 static void M_PatternNext(const int16_t first, const int16_t last)
 {
@@ -2201,13 +2066,12 @@ static void M_PatternNext(const int16_t first, const int16_t last)
                                  : Math16_Wrap(g_B20M.pattern + 1);
     g_B20M.patterns_done = Math16_Wrap(g_B20M.patterns_done + 1);
 }
-static void M_Pulse(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_Pulse(const B20M_ASSETS *const assets)
 {
     if (g_B20M.frame % 10 != 0) {
         return;
     }
-    M_Palette(assets, shots_output, &g_B20M.boss_palette);
+    M_Palette(assets, &g_B20M.boss_palette);
     int8_t *const color = g_Palette.saved.colors[6];
     if (g_B20M.patterns_done == 0) {
         if (color[0] < 10) {
@@ -2234,52 +2098,51 @@ static void M_Pulse(
             color[2]--;
         }
     }
-    M_Palette(assets, shots_output, &g_Palette.saved);
+    M_Palette(assets, &g_Palette.saved);
     g_B20M.boss_palette = g_Palette.saved;
 }
-static bool M_Pattern(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static bool M_Pattern(const B20M_ASSETS *const assets)
 {
     switch (g_B20M.call_phase) {
     case B20M_PHASE_BIRDS:
         if (g_B20M.pattern == 0) {
-            M_PurpleLasers(assets, shots_output);
+            M_PurpleLasers(assets);
         } else if (g_B20M.pattern == 1) {
-            M_Vortices(assets, shots_output);
+            M_Vortices(assets);
         } else if (g_B20M.pattern == 2) {
-            M_Eggs(assets, shots_output);
+            M_Eggs(assets);
         }
         break;
     case B20M_PHASE_VERTICAL:
         if (g_B20M.pattern == 0) {
-            M_Flake(assets, shots_output);
-            M_Rings(assets, shots_output);
+            M_Flake(assets);
+            M_Rings(assets);
         } else if (g_B20M.pattern == 1) {
-            M_Sling(assets, shots_output);
-            M_Rings(assets, shots_output);
+            M_Sling(assets);
+            M_Rings(assets);
         } else if (g_B20M.frame < 60) {
             g_B20M.frame = 0;
         }
         break;
     case B20M_PHASE_WAVY:
         if (g_B20M.pattern == 0) {
-            M_FourLasers(assets, shots_output);
+            M_FourLasers(assets);
         } else if (g_B20M.pattern == 1 || g_B20M.pattern == 4) {
-            return M_Shake(assets, shots_output);
+            return M_Shake(assets);
         } else if (g_B20M.pattern == 2 || g_B20M.pattern == 5) {
-            M_FourLasers(assets, shots_output);
-            M_TopRain(assets, shots_output);
+            M_FourLasers(assets);
+            M_TopRain(assets);
         } else if (g_B20M.pattern == 3) {
-            M_Radial(assets, shots_output);
+            M_Radial(assets);
         }
         break;
     case B20M_PHASE_VERTICAL_BIRDS:
         if (g_B20M.pattern == 0) {
-            M_SymmetricBirds(assets, shots_output);
+            M_SymmetricBirds(assets);
         } else if (g_B20M.pattern == 1) {
-            M_Semicircles(assets, shots_output);
+            M_Semicircles(assets);
         } else if (g_B20M.pattern == 2) {
-            M_Stacks(assets, shots_output);
+            M_Stacks(assets);
         }
         break;
     case B20M_PHASE_SECOND_FORM:
@@ -2291,37 +2154,37 @@ static bool M_Pattern(
             }
             break;
         case 1:
-            M_SprayOnce(assets, shots_output);
+            M_SprayOnce(assets);
             break;
         case 2:
-            M_SealRain(assets, shots_output);
+            M_SealRain(assets);
             break;
         case 3:
-            M_SprayTwice(assets, shots_output);
+            M_SprayTwice(assets);
             break;
         case 4:
-            M_Leaves(assets, shots_output, g_B20M.pattern_state);
+            M_Leaves(assets, g_B20M.pattern_state);
             if (g_B20M.frame > 300) {
                 g_B20M.frame = 0;
             }
             break;
         case 5:
-            M_Leaves(assets, shots_output, 500);
+            M_Leaves(assets, 500);
             if (g_B20M.frame > 200) {
                 g_B20M.frame = 0;
             }
             break;
         case 6:
-            M_Leaves(assets, shots_output, 500);
-            M_SprayOnce(assets, shots_output);
+            M_Leaves(assets, 500);
+            M_SprayOnce(assets);
             break;
         case 7:
-            M_Leaves(assets, shots_output, 500);
-            M_SealRain(assets, shots_output);
+            M_Leaves(assets, 500);
+            M_SealRain(assets);
             break;
         case 8:
-            M_Leaves(assets, shots_output, 32);
-            M_SprayTwice(assets, shots_output);
+            M_Leaves(assets, 32);
+            M_SprayTwice(assets);
             break;
         default:
             break;
@@ -2332,8 +2195,7 @@ static bool M_Pattern(
     }
     return true;
 }
-static bool M_Tail(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static bool M_Tail(const B20M_ASSETS *const assets)
 {
     const int8_t phase = g_B20M.call_phase;
     if (g_B20M.frame == 0) {
@@ -2346,9 +2208,9 @@ static bool M_Tail(
                 : phase == B20M_PHASE_WAVY                                  ? 5
                                            : 8);
     }
-    M_Hit(assets, shots_output);
+    M_Hit(assets);
     if (phase == B20M_PHASE_SECOND_FORM) {
-        M_Pulse(assets, shots_output);
+        M_Pulse(assets);
         if (g_B20M.hp <= 0) {
             Sound_Stop();
             g_B20M.phase = B20M_PHASE_DEFEAT;
@@ -2369,69 +2231,65 @@ static bool M_Tail(
     }
     return true;
 }
-static void M_AfterGust(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+static void M_AfterGust(const B20M_ASSETS *const assets)
 {
     const int8_t phase = g_B20M.call_phase;
-    M_Dress(assets, shots_output);
+    M_Dress(assets);
     if (g_B20M.frame != 0) {
         return;
     }
     M_PhaseNext(
-        assets, shots_output,
-        phase == B20M_PHASE_GUST_4 ? B20M_PHASE_BIRDS : phase + 1);
+        assets, phase == B20M_PHASE_GUST_4 ? B20M_PHASE_BIRDS : phase + 1);
     if (phase != B20M_PHASE_GUST_1) {
         g_B20M.boss_palette = g_Palette.saved;
     }
     g_B20M.patterns_until_next = phase == B20M_PHASE_GUST_1
-        ? 1 + M_Random(assets, shots_output) % 5
-        : phase == B20M_PHASE_GUST_2 ? 3 + M_Random(assets, shots_output) % 4
-        : phase == B20M_PHASE_GUST_3 ? 2 + M_Random(assets, shots_output) % 5
-                                     : 1 + M_Random(assets, shots_output) % 6;
+        ? 1 + M_Random(assets) % 5
+        : phase == B20M_PHASE_GUST_2 ? 3 + M_Random(assets) % 4
+        : phase == B20M_PHASE_GUST_3 ? 2 + M_Random(assets) % 5
+                                     : 1 + M_Random(assets) % 6;
 }
-bool B20M_UpdateAndRender(
-    const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const uint64_t tick)
+bool B20M_UpdateAndRender(const B20M_ASSETS *const assets, const uint64_t tick)
 {
     if (g_B20M.finished) {
         return true;
     }
     if (g_B20M.sequence == B20M_SEQUENCE_RINGS) {
-        return M_RingEntrance(assets, shots_output, tick);
+        return M_RingEntrance(assets, tick);
     }
     if (g_B20M.sequence == B20M_SEQUENCE_TRANSFORM) {
-        return M_Transform(assets, shots_output, tick);
+        return M_Transform(assets, tick);
     }
     if (g_B20M.sequence == B20M_SEQUENCE_DEFEAT) {
-        return M_Defeat(assets, shots_output, tick);
+        return M_Defeat(assets, tick);
     }
     if (g_B20M.resume_stage != B20M_RESUME_NONE) {
-        if (!M_Ready(assets, shots_output, tick)) {
+        if (!M_Ready(assets, tick)) {
             return false;
         }
         const uint8_t resume = g_B20M.resume_stage;
         g_B20M.resume_stage = B20M_RESUME_NONE;
         if (resume == B20M_RESUME_SHAKE) {
             Sound_Effect(7);
-            return M_Tail(assets, shots_output);
+            return M_Tail(assets);
         }
         if (resume == B20M_RESUME_SHAKE_END) {
             g_B20M.frame = 0;
-            return M_Tail(assets, shots_output);
+            return M_Tail(assets);
         }
         if (resume == B20M_RESUME_GUST_END) {
             const int16_t image = g_B20M.call_phase == B20M_PHASE_GUST_1 ? 1
                 : g_B20M.call_phase == B20M_PHASE_GUST_2                 ? 2
                 : g_B20M.call_phase == B20M_PHASE_GUST_3                 ? 3
                                                                          : 0;
-            M_GustFinish(assets, shots_output, image);
-            M_AfterGust(assets, shots_output);
+            M_GustFinish(assets, image);
+            M_AfterGust(assets);
             return true;
         }
-        if (!M_Pattern(assets, shots_output)) {
+        if (!M_Pattern(assets)) {
             return false;
         }
-        return M_Tail(assets, shots_output);
+        return M_Tail(assets);
     }
     if (g_B20M.phase == B20M_PHASE_START) {
         g_B20M.frame = -1;
@@ -2441,24 +2299,24 @@ bool B20M_UpdateAndRender(
         g_B20M.stage_palette = g_B20M.boss_palette;
         g_Rng = g_Session.frame_rand;
         g_B20M.sequence = B20M_SEQUENCE_RINGS;
-        return M_RingEntrance(assets, shots_output, tick);
+        return M_RingEntrance(assets, tick);
     }
     if (g_B20M.phase == B20M_PHASE_TRANSFORM) {
-        M_BeginTransform(assets, shots_output);
-        return M_Transform(assets, shots_output, tick);
+        M_BeginTransform(assets);
+        return M_Transform(assets, tick);
     }
     if (g_B20M.phase == B20M_PHASE_DEFEAT) {
-        M_BeginDefeat(assets, shots_output);
-        return M_Defeat(assets, shots_output, tick);
+        M_BeginDefeat(assets);
+        return M_Defeat(assets, tick);
     }
     g_B20M.call_phase = g_B20M.phase;
     if (g_B20M.phase >= B20M_PHASE_GUST_1 && g_B20M.phase <= B20M_PHASE_GUST_4
         && g_B20M.phase % 2 == 0) {
         g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
-        if (!M_Gust(assets, shots_output)) {
+        if (!M_Gust(assets)) {
             return false;
         }
-        M_AfterGust(assets, shots_output);
+        M_AfterGust(assets);
         return true;
     }
     if (g_B20M.phase != B20M_PHASE_BIRDS && g_B20M.phase != B20M_PHASE_VERTICAL
@@ -2475,25 +2333,24 @@ bool B20M_UpdateAndRender(
     g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
     g_B20M.hit.frame = Math16_Wrap(g_B20M.hit.frame + 1);
     if (g_B20M.phase != B20M_PHASE_SECOND_FORM) {
-        M_Shield(assets, shots_output);
-        M_Dress(assets, shots_output);
+        M_Shield(assets);
+        M_Dress(assets);
     }
     if (g_B20M.phase == B20M_PHASE_VERTICAL
         || g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS) {
-        M_Vertical(
-            assets, shots_output, g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS);
+        M_Vertical(assets, g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS);
     } else if (g_B20M.phase == B20M_PHASE_WAVY) {
-        M_Wavy(assets, shots_output);
+        M_Wavy(assets);
     } else if (g_B20M.phase == B20M_PHASE_SECOND_FORM) {
-        M_Horizontal(assets, shots_output);
+        M_Horizontal(assets);
     }
     if ((g_B20M.phase == B20M_PHASE_BIRDS
          || g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS)
-        && !M_BirdsUpdate(assets, shots_output, tick)) {
+        && !M_BirdsUpdate(assets, tick)) {
         return false;
     }
-    if (!M_Pattern(assets, shots_output)) {
+    if (!M_Pattern(assets)) {
         return false;
     }
-    return M_Tail(assets, shots_output);
+    return M_Tail(assets);
 }

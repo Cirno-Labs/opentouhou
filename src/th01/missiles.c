@@ -1,24 +1,21 @@
 #include "th01/missiles.h"
+#include "th01/sound.h"
+
 #include "pc98/zun/math16.h"
 
 #include "th01/finite.h"
 
 MISSILES g_Missiles;
 
-static void M_Action(
-    const MISSILES_OUTPUT output, const MISSILE *const missile,
-    const MISSILES_ACTION_KIND kind, const int16_t image, const int16_t quarter)
+static void M_Put(
+    const PTN *const sprites, int16_t left, int16_t top, int16_t image,
+    int16_t quarter);
+
+static void M_Restore(const MISSILE *const missile)
 {
-    output.action(
-        output.user,
-        (MISSILES_ACTION) {
-            .kind = kind,
-            .left = Math16_ToPixel(missile->previous_left),
-            .top = Math16_ToPixel(missile->previous_top),
-            .image = image,
-            .quarter = quarter,
-            .effect = kind == MISSILES_ACTION_EFFECT ? 7 : 0,
-        });
+    Sprite_Restore16(
+        Math16_ToPixel(missile->previous_left),
+        Math16_ToPixel(missile->previous_top), 32, 16);
 }
 
 RESULT Missiles_ValidateSprites(const PTN *const sprites)
@@ -62,7 +59,7 @@ void Missiles_Reset(void)
 }
 
 void Missiles_UpdateAndRender(
-    const uint16_t frame_rand, const MISSILES_OUTPUT output)
+    const uint16_t frame_rand, const PTN *const sprites)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         MISSILE *const m = &g_Missiles.slots[i];
@@ -71,7 +68,7 @@ void Missiles_UpdateAndRender(
         }
         const bool field = (i & 1) == (frame_rand & 1);
         if (field && m->previous_left != -1) {
-            M_Action(output, m, MISSILES_ACTION_RESTORE, 0, 0);
+            M_Restore(m);
         }
         if (m->flag == MISSILE_MOVING) {
             m->left = Math16_Wrap(m->left + m->velocity.x);
@@ -80,7 +77,7 @@ void Missiles_UpdateAndRender(
             const int16_t top = Math16_ToPixel(m->top);
             if (left < 0 || left > 624 || top < 64 || top > 399) {
                 m->flag = MISSILE_HIT;
-                M_Action(output, m, MISSILES_ACTION_RESTORE, 0, 0);
+                M_Restore(m);
                 if (left < 0 || left > 624) {
                     m->previous_left = Math16_FromPixel(left < 0 ? 0 : 624);
                 }
@@ -92,8 +89,8 @@ void Missiles_UpdateAndRender(
             m->flag += field;
             if (m->flag > MISSILE_HIT_LAST) {
                 m->flag = MISSILE_FREE;
-                M_Action(output, m, MISSILES_ACTION_RESTORE, 0, 0);
-                M_Action(output, m, MISSILES_ACTION_EFFECT, 0, 0);
+                M_Restore(m);
+                Sound_Effect(7);
             }
         }
     }
@@ -104,20 +101,15 @@ void Missiles_UpdateAndRender(
         }
         if (m->flag == MISSILE_MOVING) {
             const uint8_t angle = Math16_Angle(m->velocity.y, m->velocity.x);
-            output.action(
-                output.user,
-                (MISSILES_ACTION) {
-                    .kind = MISSILES_ACTION_PUT,
-                    .left = Math16_ToPixel(m->left),
-                    .top = Math16_ToPixel(m->top),
-                    .image = angle / 64,
-                    .quarter = (angle % 64) / 16,
-                });
+            M_Put(
+                sprites, Math16_ToPixel(m->left), Math16_ToPixel(m->top),
+                angle / 64, (angle % 64) / 16);
             m->previous_left = m->left;
             m->previous_top = m->top;
         } else {
-            M_Action(
-                output, m, MISSILES_ACTION_PUT, 4,
+            M_Put(
+                sprites, Math16_ToPixel(m->previous_left),
+                Math16_ToPixel(m->previous_top), 4,
                 (int16_t)(m->flag - MISSILE_HIT));
         }
     }
@@ -170,64 +162,60 @@ static void M_RawOr(
     }
 }
 
-void Missiles_RenderAction(
-    const PTN *const sprites, const MISSILES_ACTION action)
+static void M_Put(
+    const PTN *const sprites, const int16_t left, const int16_t top,
+    const int16_t image, const int16_t quarter)
 {
-    if (action.kind == MISSILES_ACTION_RESTORE) {
-        Sprite_Restore16(action.left, action.top, 32, 16);
-    } else if (action.kind == MISSILES_ACTION_PUT) {
-        const int32_t sx = (action.quarter & 1) * 16;
-        const int32_t sy = (action.quarter & 2) * 8;
-        const uint8_t *const pixels = sprites->pixels + action.image * 1024;
-        const int32_t first_bit = action.left % 8;
-        const int32_t column = action.left / 8 - (action.left % 8 < 0);
-        uint16_t offset = (uint16_t)(action.top * 80 + column);
-        for (int32_t y = 0; y < 16; y++) {
-            uint16_t planes[4] = {};
-            uint16_t mask = 0;
-            for (int32_t x = 0; x < 16; x++) {
-                const uint8_t color = pixels[(sy + y) * 32 + sx + x];
-                const uint16_t dot =
-                    (uint16_t)((0x80u >> (x & 7)) << ((x / 8) * 8));
-                if (color != PTN_TRANSPARENT) {
-                    mask |= dot;
-                }
-                for (int32_t plane = 0; plane < 4; plane++) {
-                    if ((color & (1u << plane)) != 0) {
-                        planes[plane] |= dot;
-                    }
+    const int32_t sx = (quarter & 1) * 16;
+    const int32_t sy = (quarter & 2) * 8;
+    const uint8_t *const pixels = sprites->pixels + image * 1024;
+    const int32_t first_bit = left % 8;
+    const int32_t column = left / 8 - (left % 8 < 0);
+    uint16_t offset = (uint16_t)(top * 80 + column);
+    for (int32_t y = 0; y < 16; y++) {
+        uint16_t planes[4] = {};
+        uint16_t mask = 0;
+        for (int32_t x = 0; x < 16; x++) {
+            const uint8_t color = pixels[(sy + y) * 32 + sx + x];
+            const uint16_t dot =
+                (uint16_t)((0x80u >> (x & 7)) << ((x / 8) * 8));
+            if (color != PTN_TRANSPARENT) {
+                mask |= dot;
+            }
+            for (int32_t plane = 0; plane < 4; plane++) {
+                if ((color & (1u << plane)) != 0) {
+                    planes[plane] |= dot;
                 }
             }
-            if (mask != 0) {
-                const int32_t bytes = first_bit == 0 ? 2 : 4;
-                for (int32_t byte = 0; byte < bytes; byte++) {
-                    const uint8_t shifted_mask = first_bit == 0
-                        ? (uint8_t)(mask >> (byte * 8))
-                        : M_ShiftByte(mask, first_bit, byte);
-                    const uint32_t clear_offset =
-                        ((uint32_t)offset + byte) & 0x7fffu;
-                    if (clear_offset < 32000) {
-                        for (int32_t bit = 0; bit < 8; bit++) {
-                            if ((shifted_mask & (0x80u >> bit)) != 0) {
-                                g_Video.pages[g_Video.drawing_page]
-                                             [clear_offset * 8 + bit] = 0;
-                            }
+        }
+        if (mask != 0) {
+            const int32_t bytes = first_bit == 0 ? 2 : 4;
+            for (int32_t byte = 0; byte < bytes; byte++) {
+                const uint8_t shifted_mask = first_bit == 0
+                    ? (uint8_t)(mask >> (byte * 8))
+                    : M_ShiftByte(mask, first_bit, byte);
+                const uint32_t clear_offset =
+                    ((uint32_t)offset + byte) & 0x7fffu;
+                if (clear_offset < 32000) {
+                    for (int32_t bit = 0; bit < 8; bit++) {
+                        if ((shifted_mask & (0x80u >> bit)) != 0) {
+                            g_Video.pages[g_Video.drawing_page]
+                                         [clear_offset * 8 + bit] = 0;
                         }
                     }
-                    for (int32_t plane = 0; plane < 4; plane++) {
-                        const uint8_t dots = first_bit == 0
-                            ? (uint8_t)(planes[plane] >> (byte * 8))
-                            : M_ShiftByte(planes[plane], first_bit, byte);
-                        M_RawOr(
-                            (uint32_t)offset + byte, plane,
-                            dots & shifted_mask);
-                    }
+                }
+                for (int32_t plane = 0; plane < 4; plane++) {
+                    const uint8_t dots = first_bit == 0
+                        ? (uint8_t)(planes[plane] >> (byte * 8))
+                        : M_ShiftByte(planes[plane], first_bit, byte);
+                    M_RawOr(
+                        (uint32_t)offset + byte, plane, dots & shifted_mask);
                 }
             }
-            offset = (uint16_t)(offset + 80);
-            if (offset > 32000) {
-                break;
-            }
+        }
+        offset = (uint16_t)(offset + 80);
+        if (offset > 32000) {
+            break;
         }
     }
 }

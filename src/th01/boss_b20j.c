@@ -1139,15 +1139,15 @@ static bool M_Death(const B20J_ASSETS *const assets)
         }
     }
 }
-static void M_Hit(const SHOTS_OUTPUT shots_output)
+static void M_Hit(void)
 {
     const uint8_t colors[] = { 3, 4, 5 };
     const ORB *const orb = &g_Orb;
     const bool collision = orb->left >= 288 && orb->left <= 352
         && orb->top >= 120 && orb->top <= 160;
     BossHit_UpdateAndRender(
-        &g_B20J.hit, shots_output, &g_B20J.hp, &g_B20J.boss_palette, colors, 3,
-        10000, collision, (BOSS_SHOT_HITBOX) { 288, 120, 96, 40 });
+        &g_B20J.hit, &g_B20J.hp, &g_B20J.boss_palette, colors, 3, 10000,
+        collision, (BOSS_SHOT_HITBOX) { 288, 120, 96, 40 });
 }
 static void M_Next(const B20J_ASSETS *const assets, const int8_t phase)
 {
@@ -1203,8 +1203,7 @@ static void M_Pattern(const B20J_ASSETS *const assets, const int16_t pattern)
         break;
     }
 }
-bool B20J_UpdateAndRender(
-    const B20J_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
+bool B20J_UpdateAndRender(const B20J_ASSETS *const assets)
 {
     if (g_B20J.finished) {
         return true;
@@ -1248,7 +1247,7 @@ bool B20J_UpdateAndRender(
         if (g_B20J.frame > 50 && g_B20J.frame % 4 == 0) {
             M_WhiteIn(assets);
         }
-        M_Hit(shots_output);
+        M_Hit();
         if (!g_B20J.hit.invincible && g_B20J.frame > 120) {
             M_Next(assets, g_B20J.phase + 1);
         }
@@ -1281,7 +1280,7 @@ bool B20J_UpdateAndRender(
         M_Expression(assets, 0);
         g_B20J.pattern = 99;
     }
-    M_Hit(shots_output);
+    M_Hit();
     if (g_B20J.phase == B20J_PHASE_FINAL) {
         if (g_B20J.hp <= 0) {
             M_BeginDeath(assets);

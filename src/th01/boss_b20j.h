@@ -115,4 +115,4 @@ bool B20J_ResumeEntrance(const B20J_ASSETS *assets);
 // Victory draws all nine kuji images, finishes the final scroll, adds 50,000
 // points and sets game_cleared. Finished calls stay inert. No Scene activation,
 // allocations, IO or device reads occur.
-bool B20J_UpdateAndRender(const B20J_ASSETS *assets, SHOTS_OUTPUT shots_output);
+bool B20J_UpdateAndRender(const B20J_ASSETS *assets);

@@ -89,8 +89,7 @@ void B15M_Init(void);
 // context's frame_rand. Composes load's pellet interlace and particle reset;
 // retains missile, actor, hit and pattern history. The background owner
 // applies its palette before entering. Allocates nothing and performs no IO.
-void B15M_Setup(
-    const B15M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
+void B15M_Setup(const B15M_ASSETS *assets, const PTN *miko);
 
 // Runs one ordinary call including the missile prefix. False suspends its
 // world during entrance, raw scroll, safety-circle delay or defeat. Advance
@@ -103,5 +102,4 @@ void B15M_Setup(
 // or CPU drawing cost. Keeps borrowed bindings stable; allocates nothing and
 // performs no IO. Finished calls remain inert until Setup or Init.
 bool B15M_UpdateAndRender(
-    const B15M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko,
-    uint64_t host_tick);
+    const B15M_ASSETS *assets, const PTN *miko, uint64_t host_tick);

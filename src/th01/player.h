@@ -2,7 +2,6 @@
 
 #include "th01/input.h"
 #include "th01/settings.h"
-#include "th01/shots.h"
 #include "th01/sprite.h"
 
 #define PLAYER_TOP 368
@@ -52,39 +51,9 @@ extern PLAYER g_Player;
 // Zeroes the player for a new world.
 void Player_Init(void);
 
-typedef enum {
-    PLAYER_ACTION_PTN_PUT,
-    PLAYER_ACTION_PTN_ERASE,
-    PLAYER_ACTION_BOS_48_PUT,
-    PLAYER_ACTION_BOS_48_ERASE,
-    PLAYER_ACTION_BOS_48_OVERLAP,
-    PLAYER_ACTION_BOS_32_PUT,
-    PLAYER_ACTION_BOS_32_ERASE,
-    PLAYER_ACTION_BOS_32_OVERLAP,
-    PLAYER_ACTION_SHOT,
-    PLAYER_ACTION_EFFECT,
-    PLAYER_ACTION_HUD_BOMBS,
-    PLAYER_ACTION_PELLET_SPEED_RAISE,
-} PLAYER_ACTION_KIND;
-
-typedef struct {
-    PLAYER_ACTION_KIND kind;
-    int16_t left, previous_left, image, previous_image;
-    int16_t effect, previous_bombs;
-    float pellet_speed_delta;
-    SHOTS_ACTION shot;
-} PLAYER_ACTION;
-
-typedef struct {
-    void (*action)(void *user, PLAYER_ACTION action);
-    bool (*bomb_update)(void *user, int16_t frame);
-    void *user;
-} PLAYER_OUTPUT;
-
 // Keeps the suspended bomb branch. Zero-initialize before its first use.
-// The fields belong to the Player_ functions; never copy a pending token.
+// The field belongs to the Player_ functions; never copy a pending token.
 typedef struct {
-    PLAYER_OUTPUT output;
     bool pending;
 } PLAYER_BOMB_CONTINUATION;
 
@@ -103,19 +72,17 @@ RESULT Player_ValidateSprites(const PLAYER_SPRITES *sprites);
 void Player_Reset(int32_t difficulty);
 void Player_MoveAndClamp(int16_t delta);
 
-// Runs real movement, shots, swings, slides and all three combo stages.
-// Reads only supplied state/input/RNG and allocates nothing. Mutates held
-// shot/strike/bomb flags as the source consumes them. Call before ordinary
-// Orb motion. Does not update shots, sense input or advance bomb_frame.
-// Actions execute synchronously and must not mutate actor/input/Orb state.
-// Every reached callback is required; there is no default external behavior.
+// Runs real movement, shots, swings, slides and all three combo stages,
+// drawing directly with sprites. Reads only supplied state/input/RNG and
+// allocates nothing. Mutates held shot/strike/bomb flags as the source
+// consumes them. Call before ordinary Orb motion. Does not update shots,
+// sense input or advance bomb_frame.
 //
 // Bomb start is deferred one update. HUD count follows the decrement, then
-// Orb repulsion precedes bomb_update; its result controls drawing and input
-// consumption. bomb_update implements the real external bomb operation and
-// may change shared player invincibility, invincibility_time, bomb_damaging
-// and position. frame is the low signed 16 bits of bomb_frame. Use BeginUpdate
-// and FinishBombUpdate when the bomb operation suspends for nested waits.
+// Orb repulsion precedes the real bomb operation; its outcome controls
+// drawing and input consumption. Call Player_FinishBombUpdate once that
+// operation completes, including its nested waits, with its result; never
+// begin another player update while continuation.pending.
 //
 // Regular lethal Orb tests, invincibility sprites/timer, HUD, items,
 // pellets and gameplay scene integration remain external. Bomb and Miss
@@ -123,22 +90,8 @@ void Player_MoveAndClamp(int16_t delta);
 // is_hit is set by real Orb repulsion tests if their friction reaches zero.
 // A miss requires its complete cooperative sequence before updates resume;
 // resetting alone does not implement a miss or change lives and bombs.
-void Player_UpdateAndRender(PLAYER_OUTPUT output);
-
-// Runs the same update until completion or the bomb callback boundary.
-// Returns true only when HUD decrement and Orb repulsion have completed and
-// the real bomb operation must now run. It does not invoke bomb_update.
-// Keep player/input/output alive and stable while suspended; the bomb may
-// change the shared fields described above. Call Finish exactly once after
-// that operation completes, including its nested waits. Never begin another
-// player update while continuation.pending. No action prefix is replayed.
 bool Player_BeginUpdate(
-    PLAYER_BOMB_CONTINUATION *continuation, PLAYER_OUTPUT output);
-void Player_FinishBombUpdate(PLAYER_BOMB_CONTINUATION *continuation, bool done);
-
-// Runs only drawing actions. Coordinates are regular player left values;
-// converts BOS to left-8 and top 352/368. Effects, HUD and pellet operations
-// belong to their real external modules. SHOT forwards to Shots_RenderAction
-// with supplied stage images. Requires validated player and stage assets.
-void Player_RenderAction(
-    const PLAYER_SPRITES *sprites, const PTN *stage, PLAYER_ACTION action);
+    PLAYER_BOMB_CONTINUATION *continuation, const PLAYER_SPRITES *sprites);
+void Player_FinishBombUpdate(
+    PLAYER_BOMB_CONTINUATION *continuation, const PLAYER_SPRITES *sprites,
+    bool done);

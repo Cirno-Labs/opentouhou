@@ -14,10 +14,9 @@ static void M_Flash(const uint8_t *const colors, const uint8_t count)
 }
 
 void BossHit_UpdateAndRender(
-    BOSS_HIT *const hit, const SHOTS_OUTPUT shots_output, int16_t *const hp,
-    const PALETTE *const boss_palette, const uint8_t *const flash_colors,
-    const uint8_t flash_count, const int16_t hit_score, const bool orb_hit,
-    const BOSS_SHOT_HITBOX box)
+    BOSS_HIT *const hit, int16_t *const hp, const PALETTE *const boss_palette,
+    const uint8_t *const flash_colors, const uint8_t flash_count,
+    const int16_t hit_score, const bool orb_hit, const BOSS_SHOT_HITBOX box)
 {
     if (g_TestDamage) {
         *hp = Math16_Wrap(*hp - 1);
@@ -25,8 +24,7 @@ void BossHit_UpdateAndRender(
         HudHp_Decrement(*hp);
     }
     Shots_HitTestBoss(
-        box.left, box.top, box.width_minus_shot, box.height_minus_shot,
-        shots_output);
+        box.left, box.top, box.width_minus_shot, box.height_minus_shot);
     if ((orb_hit && !hit->invincible)
         || Bomb_DealsDamage(g_Session.lives, g_Session.frame_rand)) {
         hit->frame = 0;

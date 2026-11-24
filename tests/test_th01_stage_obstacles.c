@@ -308,20 +308,17 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         g_VSync.count1 = counts[variant];
         g_VSync.count2 = 44;
         CHECK_EQ_INT(
-            Stage_BeginOrbComposite(
-                &state.sprites, nullptr, nullptr, (SHOTS_OUTPUT) {}),
+            Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr),
             variant != 0);
         CHECK_EQ_INT(g_Pellets.interlace_field, variant != 0);
         CHECK_EQ_INT(g_Orb.frames_outside_portal, 1);
         if (variant == 0) {
             const ORB orb = g_Orb;
-            CHECK(!Stage_ResumeOrbComposite(
-                &state.sprites, nullptr, nullptr, (SHOTS_OUTPUT) {}));
+            CHECK(!Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Pellets.interlace_field, false);
             Frame_VSync();
-            CHECK(Stage_ResumeOrbComposite(
-                &state.sprites, nullptr, nullptr, (SHOTS_OUTPUT) {}));
+            CHECK(Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
         }
         CHECK_EQ_INT(g_Pellets.interlace_field, true);
         CHECK_EQ_INT(g_VSync.count1, 0);
@@ -411,8 +408,7 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     Frame_Reset();
     g_VSync.count1 = -1;
     memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
-    CHECK(Stage_BeginOrbComposite(
-        &state.sprites, nullptr, nullptr, (SHOTS_OUTPUT) {}));
+    CHECK(Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr));
     CHECK(g_Player.is_hit);
     CHECK(g_Stage.cleared);
     CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_REMOVED);

@@ -223,73 +223,16 @@ bool Orb_PlayerHitTest(
     return false;
 }
 
-ORB_COMPOSITE Orb_BeginComposite(
-    const int16_t stage_id, int16_t *const card_combo)
+void Orb_Put(
+    const PTN *const sprites, const int16_t left, const int16_t top,
+    const int16_t image)
 {
-    Orb_AdvanceMotion(card_combo);
-    return (ORB_COMPOSITE) { .boss = stage_id % 5 == 4 };
+    Sprite_PtnPut(sprites, ORB_FIRST_IMAGE + image, -1, left, top);
 }
 
-ORB_ACTION Orb_NextAction(ORB_COMPOSITE *const composite, const bool player_hit)
+void Orb_Erase(
+    const PTN *const sprites, const int16_t left, const int16_t top,
+    const int16_t image)
 {
-    for (;;) {
-        ORB_ACTION_KIND kind;
-        switch (composite->phase) {
-        case 0:
-            kind = ORB_ACTION_DELAY_ONE;
-            break;
-        case 1:
-            kind = ORB_ACTION_PELLETS;
-            break;
-        case 2:
-            kind = composite->boss ? ORB_ACTION_DONE : ORB_ACTION_CARDS_HITTEST;
-            break;
-        case 3:
-            kind = composite->boss ? ORB_ACTION_DONE : ORB_ACTION_OBSTACLES;
-            break;
-        case 4:
-            kind =
-                g_Orb.in_portal ? ORB_ACTION_DONE : ORB_ACTION_PLAYER_HITTEST;
-            break;
-        case 5:
-            kind = g_Orb.in_portal ? ORB_ACTION_DONE : ORB_ACTION_ERASE;
-            break;
-        case 6:
-            kind = composite->boss ? ORB_ACTION_DONE : ORB_ACTION_CARDS_RENDER;
-            break;
-        case 7:
-            kind = g_Orb.in_portal || player_hit ? ORB_ACTION_DONE
-                                                 : ORB_ACTION_PUT;
-            break;
-        default:
-            g_Orb.previous_left = g_Orb.left;
-            g_Orb.previous_top = g_Orb.top;
-            return (ORB_ACTION) { .kind = ORB_ACTION_DONE };
-        }
-        composite->phase++;
-        if (kind != ORB_ACTION_DONE) {
-            return (ORB_ACTION) {
-                kind,
-                kind == ORB_ACTION_ERASE ? g_Orb.previous_left : g_Orb.left,
-                kind == ORB_ACTION_ERASE ? g_Orb.previous_top : g_Orb.top,
-                Orb_Image()
-            };
-        }
-    }
-}
-
-void Orb_RenderAction(const PTN *const sprites, const ORB_ACTION action)
-{
-    if (action.kind != ORB_ACTION_ERASE && action.kind != ORB_ACTION_PUT) {
-        return;
-    }
-    if (action.kind == ORB_ACTION_ERASE) {
-        Sprite_PtnErase(
-            sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
-            action.top);
-    } else {
-        Sprite_PtnPut(
-            sprites, ORB_FIRST_IMAGE + action.image, -1, action.left,
-            action.top);
-    }
+    Sprite_PtnErase(sprites, ORB_FIRST_IMAGE + image, -1, left, top);
 }

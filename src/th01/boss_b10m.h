@@ -83,8 +83,7 @@ void B10M_Init(void);
 // resets missile flags. Retains eye lock/previous-position history, hit
 // timing and pattern history. Reads no files, allocates nothing, and leaves
 // the background drawing to its owner.
-void B10M_Setup(
-    const B10M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
+void B10M_Setup(const B10M_ASSETS *assets, const PTN *miko);
 
 // Runs one ordinary call including the missile prefix. The 331-frame entrance
 // and eye transitions leave the owning world running. False suspends it during
@@ -95,5 +94,4 @@ void B10M_Setup(
 // pentagram overshoot and phase fallthrough. Keep context bindings stable.
 // Successful calls allocate nothing and perform no IO. Finished calls are inert
 // until setup or the main program's state reset.
-bool B10M_UpdateAndRender(
-    const B10M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
+bool B10M_UpdateAndRender(const B10M_ASSETS *assets, const PTN *miko);

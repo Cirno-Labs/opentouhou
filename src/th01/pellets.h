@@ -105,4 +105,4 @@ void Pellets_SpeedRaise(int16_t delta);
 // synchronous, and must not modify pellet, player, Orb or shot state.
 // Requires immutable loaded masks. Gameplay scene wiring remains external.
 void Pellets_UpdateAndRender(
-    const PELLET_ASSETS *assets, SHOTS_OUTPUT shots_output);
+    const PELLET_ASSETS *assets, const PTN *stage_sprites);

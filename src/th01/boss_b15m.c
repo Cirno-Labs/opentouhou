@@ -101,9 +101,7 @@ void B15M_Init(void)
     memset(&g_B15M, 0, sizeof(g_B15M));
 }
 
-void B15M_Setup(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+void B15M_Setup(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     ASSERT(
         !g_B15M.entrance_active && !g_B15M.defeating
@@ -131,9 +129,7 @@ void B15M_Setup(
     Particles_Init();
 }
 
-static uint16_t M_Random(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static uint16_t M_Random(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     return MasterRng_Next(&g_Rng);
 }
@@ -151,20 +147,16 @@ static void M_Sync(void)
     g_B15M.attack.top = g_B15M.girl.top;
 }
 static int16_t M_RandomLeft(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    return M_Random(assets, shots_output, miko) % 512;
+    return M_Random(assets, miko) % 512;
 }
 static int16_t M_RandomTop(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    return 64 + M_Random(assets, shots_output, miko) % 136;
+    return 64 + M_Random(assets, miko) % 136;
 }
-static void M_Snap(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Snap(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     M_Sync();
     Video_Read(
@@ -172,9 +164,7 @@ static void M_Snap(
         g_B15M.background, 128);
     Video_SelectDrawingPage(0);
 }
-static void M_Background(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Background(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     M_Sync();
     const VIDEO_IMAGE image = { .pixels = g_B15M.background,
@@ -188,50 +178,45 @@ static void M_Background(
 }
 static void M_Unlock(
     BOSS_ENTITY *const e, const B15M_ASSETS *const assets,
-    const SHOTS_OUTPUT shots_output, const PTN *const miko, const int16_t image,
-    const bool restore)
+    const PTN *const miko, const int16_t image, const bool restore)
 {
     e->lock_frame = 0;
     e->image = image;
     BossEntity_LockedMovePut(e, 0, 0, 3, restore);
 }
 static void M_Both(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, BOSS_ENTITY *const e, const int16_t image,
-    const bool erase_page0)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    BOSS_ENTITY *const e, const int16_t image, const bool erase_page0)
 {
     Video_SelectDrawingPage(1);
-    M_Background(assets, shots_output, miko);
-    M_Unlock(e, assets, shots_output, miko, image, false);
+    M_Background(assets, miko);
+    M_Unlock(e, assets, miko, image, false);
     Video_SelectDrawingPage(0);
     if (erase_page0) {
-        M_Background(assets, shots_output, miko);
+        M_Background(assets, miko);
     }
-    M_Unlock(e, assets, shots_output, miko, image, false);
+    M_Unlock(e, assets, miko, image, false);
 }
 static void M_PutBoth(
     BOSS_ENTITY *const e, const B15M_ASSETS *const assets,
-    const SHOTS_OUTPUT shots_output, const PTN *const miko, const int16_t image)
+    const PTN *const miko, const int16_t image)
 {
     Video_SelectDrawingPage(1);
-    M_Unlock(e, assets, shots_output, miko, image, false);
+    M_Unlock(e, assets, miko, image, false);
     Video_SelectDrawingPage(0);
-    M_Unlock(e, assets, shots_output, miko, image, false);
+    M_Unlock(e, assets, miko, image, false);
 }
-static void M_Attack(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Attack(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15M.frame % 8 == 0) {
-        M_Both(assets, shots_output, miko, &g_B15M.attack, 1, true);
+        M_Both(assets, miko, &g_B15M.attack, 1, true);
     } else if (g_B15M.frame % 8 == 4) {
-        M_PutBoth(&g_B15M.attack, assets, shots_output, miko, 2);
+        M_PutBoth(&g_B15M.attack, assets, miko, 2);
     }
 }
 static void M_Grc(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t left, const int16_t top,
-    const int16_t image, const uint8_t color)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t left,
+    const int16_t top, const int16_t image, const uint8_t color)
 {
     if (left < -32 || left >= 640 || top < -32 || top >= 400) {
         return;
@@ -262,8 +247,8 @@ static void M_Grc(
     }
 }
 static void M_Star8(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t left, const int16_t top)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t left,
+    const int16_t top)
 {
     if (left < 0 || left >= 640 || top < 0 || top >= 400) {
         return;
@@ -279,87 +264,78 @@ static void M_Star8(
     }
 }
 static void M_GrcErase(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y)
 {
     Sprite_Restore16(x, y, 48, 32);
 }
 static void M_Circle(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y,
-    const int16_t radius, const uint8_t color, const uint8_t step,
-    const uint8_t start, const uint8_t end)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y, const int16_t radius, const uint8_t color,
+    const uint8_t step, const uint8_t start, const uint8_t end)
 {
     Shape_EllipseArcPut(x, y, radius, radius, color, step, start, end);
 }
 static void M_EraseCircle(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y,
-    const int16_t radius, const uint8_t step)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y, const int16_t radius, const uint8_t step)
 {
     Shape_EllipseArcErase(x, y, radius, radius, step, 0, 255);
 }
 static void M_BigCircle(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint8_t color)
+    const B15M_ASSETS *const assets, const PTN *const miko, const uint8_t color)
 {
     M_Circle(
-        assets, shots_output, miko, M_CenterX(B15M_FORM_GIRL),
-        M_CenterY(B15M_FORM_GIRL), 128, color, 1, 0, 255);
+        assets, miko, M_CenterX(B15M_FORM_GIRL), M_CenterY(B15M_FORM_GIRL), 128,
+        color, 1, 0, 255);
 }
 static void M_EraseBigCircle(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
     M_EraseCircle(
-        assets, shots_output, miko, M_CenterX(B15M_FORM_GIRL),
-        M_CenterY(B15M_FORM_GIRL), 128, 1);
+        assets, miko, M_CenterX(B15M_FORM_GIRL), M_CenterY(B15M_FORM_GIRL), 128,
+        1);
 }
 static void M_SummonDots(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, B15M_CIRCLE *const circle, const int16_t x,
-    const int16_t y, const int16_t end)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    B15M_CIRCLE *const circle, const int16_t x, const int16_t y,
+    const int16_t end)
 {
     const uint8_t a = circle->angle;
+    M_Circle(assets, miko, x, y, 128, 7, 1, a, (uint8_t)(a + end));
     M_Circle(
-        assets, shots_output, miko, x, y, 128, 7, 1, a, (uint8_t)(a + end));
+        assets, miko, x, y, 128, 7, 1, (uint8_t)(a + 64), (uint8_t)(a + 66));
     M_Circle(
-        assets, shots_output, miko, x, y, 128, 7, 1, (uint8_t)(a + 64),
-        (uint8_t)(a + 66));
+        assets, miko, x, y, 128, 7, 1, (uint8_t)(a + 128), (uint8_t)(a + 130));
     M_Circle(
-        assets, shots_output, miko, x, y, 128, 7, 1, (uint8_t)(a + 128),
-        (uint8_t)(a + 130));
-    M_Circle(
-        assets, shots_output, miko, x, y, 128, 7, 1, (uint8_t)(a + 192),
-        (uint8_t)(a + 194));
+        assets, miko, x, y, 128, 7, 1, (uint8_t)(a + 192), (uint8_t)(a + 194));
     circle->angle = (uint8_t)(a + 2);
 }
 static bool M_SummonFlash(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, B15M_CIRCLE *const circle, const int16_t start,
-    const int16_t end)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    B15M_CIRCLE *const circle, const int16_t start, const int16_t end)
 {
     if (g_B15M.frame >= start && g_B15M.frame % 2 == 0 && circle->frame == 0) {
         if (g_B15M.frame == start) {
             Sound_Effect(8);
         }
         M_SummonDots(
-            assets, shots_output, miko, circle, M_CenterX(B15M_FORM_GIRL),
+            assets, miko, circle, M_CenterX(B15M_FORM_GIRL),
             M_CenterY(B15M_FORM_GIRL), end);
         if (circle->angle >= 64) {
-            M_EraseBigCircle(assets, shots_output, miko);
-            M_BigCircle(assets, shots_output, miko, 7);
+            M_EraseBigCircle(assets, miko);
+            M_BigCircle(assets, miko, 7);
             circle->frame = 1;
-            M_Both(assets, shots_output, miko, &g_B15M.girl, 0, true);
+            M_Both(assets, miko, &g_B15M.girl, 0, true);
         }
     } else if (circle->frame != 0 && circle->frame < 40) {
         circle->frame = Math16_Wrap(circle->frame + 1);
         if (circle->frame % 8 == 0) {
-            M_EraseBigCircle(assets, shots_output, miko);
-            M_BigCircle(assets, shots_output, miko, 4);
+            M_EraseBigCircle(assets, miko);
+            M_BigCircle(assets, miko, 4);
         } else if (circle->frame % 8 == 4) {
-            M_EraseBigCircle(assets, shots_output, miko);
-            M_BigCircle(assets, shots_output, miko, 7);
+            M_EraseBigCircle(assets, miko);
+            M_BigCircle(assets, miko, 7);
         }
     } else if (circle->frame != 0) {
         return true;
@@ -367,51 +343,37 @@ static bool M_SummonFlash(
     return false;
 }
 static void M_Group(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y,
-    const PELLET_GROUP group, const int16_t speed)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y, const PELLET_GROUP group, const int16_t speed)
 {
     Pellets_AddGroup(g_Session.settings.difficulty, x, y, group, speed);
 }
 static void M_FormGroup(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t form, const PELLET_GROUP group,
-    const int16_t speed)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t form,
+    const PELLET_GROUP group, const int16_t speed)
 {
     M_Group(
-        assets, shots_output, miko, Math16_Wrap(M_CenterX(form) - 4),
+        assets, miko, Math16_Wrap(M_CenterX(form) - 4),
         Math16_Wrap(M_CenterY(form) - 4), group, speed);
 }
 static void M_Single(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y,
-    const uint8_t angle, const int16_t speed, const PELLET_MOTION motion,
-    const int16_t ms)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y, const uint8_t angle, const int16_t speed,
+    const PELLET_MOTION motion, const int16_t ms)
 {
     Pellets_AddSingle(
         g_Session.settings.difficulty, x, y, angle, speed, motion, ms, 0, 0);
 }
 static void M_Laser(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t slot, const int16_t x, const int16_t y,
-    const int16_t tx, const int16_t ty, const int16_t speed, const int16_t age,
-    const int16_t width)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t slot,
+    const int16_t x, const int16_t y, const int16_t tx, const int16_t ty,
+    const int16_t speed, const int16_t age, const int16_t width)
 {
     ShootoutLasers_Spawn(
         &g_ShootoutLasers.slots[slot % 10], x, y, tx, ty, speed, 7, age, width);
 }
-static void M_MissileAction(void *const user, const MISSILES_ACTION action)
-{
-    const B15M_ASSETS *const assets = user;
-    if (action.kind == MISSILES_ACTION_EFFECT) {
-        Sound_Effect(action.effect);
-    } else {
-        Missiles_RenderAction(&assets->missiles, action);
-    }
-}
 static void M_Hit(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t form)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t form)
 {
     const BOSS_ENTITY *const e =
         g_B15M.form == B15M_FORM_GIRL ? &g_B15M.girl : &g_B15M.bat;
@@ -421,8 +383,8 @@ static void M_Hit(
                                Math16_Wrap(g_B15M.girl.top + 32), 64, 48 }
         : (BOSS_SHOT_HITBOX) { g_B15M.bat.left, g_B15M.bat.left, 32, 32 };
     BossHit_UpdateAndRender(
-        &g_B15M.hit, shots_output, &g_B15M.hp, &g_B15M.boss_palette, colors, 4,
-        7000, BossEntity_HitTestOrb(e), box);
+        &g_B15M.hit, &g_B15M.hp, &g_B15M.boss_palette, colors, 4, 7000,
+        BossEntity_HitTestOrb(e), box);
 }
 static void M_Next(const int8_t phase, const int16_t pattern)
 {
@@ -441,23 +403,22 @@ static void M_Common(void)
     }
 }
 static int16_t M_SurroundX(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const BOSS_ENTITY *const e, const bool bat)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    const BOSS_ENTITY *const e, const bool bat)
 {
     return Math16_Wrap(
-        e->left + M_Random(assets, shots_output, miko) % 192 - (bat ? 72 : 32));
+        e->left + M_Random(assets, miko) % 192 - (bat ? 72 : 32));
 }
 static int16_t M_SurroundY(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const BOSS_ENTITY *const e, const bool bat)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    const BOSS_ENTITY *const e, const bool bat)
 {
-    return Math16_Wrap(
-        e->top + M_Random(assets, shots_output, miko) % 128 - (bat ? 48 : 32));
+    return Math16_Wrap(e->top + M_Random(assets, miko) % 128 - (bat ? 48 : 32));
 }
 static void M_Rifts(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, B15M_RIFTS *const r, const bool bat,
-    const int16_t start, const int16_t end, const bool random_color)
+    const B15M_ASSETS *const assets, const PTN *const miko, B15M_RIFTS *const r,
+    const bool bat, const int16_t start, const int16_t end,
+    const bool random_color)
 {
     if (g_B15M.frame < start || g_B15M.frame > end || g_B15M.frame % 4 != 0) {
         return;
@@ -465,44 +426,43 @@ static void M_Rifts(
     BOSS_ENTITY *const e = bat ? &g_B15M.bat : &g_B15M.girl;
     for (int32_t i = 0; i < 5; i++) {
         if (g_B15M.frame > start) {
-            M_GrcErase(assets, shots_output, miko, r->x[i], r->y[i]);
+            M_GrcErase(assets, miko, r->x[i], r->y[i]);
         }
         if (g_B15M.frame % 16 == (i * 4) % 16 || g_B15M.frame == start) {
-            r->x[i] = M_SurroundX(assets, shots_output, miko, e, bat);
-            r->y[i] = M_SurroundY(assets, shots_output, miko, e, bat);
+            r->x[i] = M_SurroundX(assets, miko, e, bat);
+            r->y[i] = M_SurroundY(assets, miko, e, bat);
         }
         if (g_B15M.frame < end) {
-            const int16_t image = 4 + M_Random(assets, shots_output, miko) % 2;
-            const uint8_t color = random_color
-                ? (uint8_t)(M_Random(assets, shots_output, miko) % 16)
-                : 4;
-            M_Grc(assets, shots_output, miko, r->x[i], r->y[i], image, color);
+            const int16_t image = 4 + M_Random(assets, miko) % 2;
+            const uint8_t color =
+                random_color ? (uint8_t)(M_Random(assets, miko) % 16) : 4;
+            M_Grc(assets, miko, r->x[i], r->y[i], image, color);
         }
     }
     Sound_Effect(7);
 }
 static bool M_Teleport(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y)
 {
     M_Sync();
     switch (g_B15M.frame) {
     case 20:
         Video_SelectDrawingPage(1);
-        M_Background(assets, shots_output, miko);
+        M_Background(assets, miko);
         Video_SelectDrawingPage(0);
-        M_Unlock(&g_B15M.girl, assets, shots_output, miko, 2, false);
+        M_Unlock(&g_B15M.girl, assets, miko, 2, false);
         g_B15M.girl.orb_inactive = true;
         break;
     case 28:
-        M_Background(assets, shots_output, miko);
-        M_Unlock(&g_B15M.girl, assets, shots_output, miko, 3, false);
+        M_Background(assets, miko);
+        M_Unlock(&g_B15M.girl, assets, miko, 3, false);
         g_B15M.girl.orb_inactive = true;
         break;
     case 36:
         g_B15M.girl.orb_inactive = true;
-        M_Background(assets, shots_output, miko);
-        M_Unlock(&g_B15M.girl, assets, shots_output, miko, 4, false);
+        M_Background(assets, miko);
+        M_Unlock(&g_B15M.girl, assets, miko, 4, false);
         break;
     case 44:
         g_B15M.girl.orb_inactive = true;
@@ -512,23 +472,23 @@ static bool M_Teleport(
         g_B15M.girl.orb_inactive = true;
         g_B15M.girl.left = x;
         g_B15M.girl.top = y;
-        M_Snap(assets, shots_output, miko);
-        M_Background(assets, shots_output, miko);
-        M_Unlock(&g_B15M.girl, assets, shots_output, miko, 4, false);
+        M_Snap(assets, miko);
+        M_Background(assets, miko);
+        M_Unlock(&g_B15M.girl, assets, miko, 4, false);
         break;
     case 60:
         g_B15M.girl.orb_inactive = true;
-        M_Background(assets, shots_output, miko);
-        M_Unlock(&g_B15M.girl, assets, shots_output, miko, 3, false);
+        M_Background(assets, miko);
+        M_Unlock(&g_B15M.girl, assets, miko, 3, false);
         break;
     case 68:
         g_B15M.girl.orb_inactive = true;
-        M_Background(assets, shots_output, miko);
-        M_Unlock(&g_B15M.girl, assets, shots_output, miko, 2, false);
+        M_Background(assets, miko);
+        M_Unlock(&g_B15M.girl, assets, miko, 2, false);
         break;
     case 76:
         g_B15M.girl.orb_inactive = false;
-        M_PutBoth(&g_B15M.girl, assets, shots_output, miko, 0);
+        M_PutBoth(&g_B15M.girl, assets, miko, 0);
         break;
     default:
         if (g_B15M.frame > 80) {
@@ -544,10 +504,8 @@ static bool M_Teleport(
         if (g_B15M.frame > 4) {
             Sprite_Restore16(g_B15M.stars.x[i], g_B15M.stars.y[i], 16, 8);
         }
-        const int16_t tx = M_SurroundX(
-                          assets, shots_output, miko, &g_B15M.girl, false),
-                      ty = M_SurroundY(
-                          assets, shots_output, miko, &g_B15M.girl, false);
+        const int16_t tx = M_SurroundX(assets, miko, &g_B15M.girl, false),
+                      ty = M_SurroundY(assets, miko, &g_B15M.girl, false);
         if (g_B15M.frame < 40 || g_B15M.frame > 52) {
             g_B15M.stars.x[i] = tx;
             g_B15M.stars.y[i] = ty;
@@ -558,9 +516,7 @@ static bool M_Teleport(
                 g_B15M.stars.y[i] + Math16_Wrap(ty - g_B15M.stars.y[i]) / 3);
         }
         if (g_B15M.frame < 68) {
-            M_Star8(
-                assets, shots_output, miko, g_B15M.stars.x[i],
-                g_B15M.stars.y[i]);
+            M_Star8(assets, miko, g_B15M.stars.x[i], g_B15M.stars.y[i]);
         }
     }
     return false;
@@ -575,40 +531,29 @@ static void M_TrailCopy(const int32_t i, const int16_t x, const int16_t y)
     g_B15M.trail_y[i][0] = y;
 }
 static void M_Trail(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int32_t i, const int16_t x, const int16_t y,
-    const int16_t valid)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int32_t i,
+    const int16_t x, const int16_t y, const int16_t valid)
 {
     if (valid > 1) {
-        M_GrcErase(
-            assets, shots_output, miko, g_B15M.trail_x[i][0],
-            g_B15M.trail_y[i][0]);
+        M_GrcErase(assets, miko, g_B15M.trail_x[i][0], g_B15M.trail_y[i][0]);
     }
-    M_Grc(assets, shots_output, miko, x, y, 3, 8);
+    M_Grc(assets, miko, x, y, 3, 8);
     if (valid > 1) {
         if (valid > 2) {
             M_GrcErase(
-                assets, shots_output, miko, g_B15M.trail_x[i][1],
-                g_B15M.trail_y[i][1]);
+                assets, miko, g_B15M.trail_x[i][1], g_B15M.trail_y[i][1]);
         }
-        M_Grc(
-            assets, shots_output, miko, g_B15M.trail_x[i][0],
-            g_B15M.trail_y[i][0], 2, 8);
+        M_Grc(assets, miko, g_B15M.trail_x[i][0], g_B15M.trail_y[i][0], 2, 8);
     }
     if (valid > 2) {
         if (valid > 3) {
             M_GrcErase(
-                assets, shots_output, miko, g_B15M.trail_x[i][2],
-                g_B15M.trail_y[i][2]);
+                assets, miko, g_B15M.trail_x[i][2], g_B15M.trail_y[i][2]);
         }
-        M_Grc(
-            assets, shots_output, miko, g_B15M.trail_x[i][1],
-            g_B15M.trail_y[i][1], 1, 8);
+        M_Grc(assets, miko, g_B15M.trail_x[i][1], g_B15M.trail_y[i][1], 1, 8);
     }
 }
-static bool M_Entrance(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (!g_B15M.entrance_active) {
         g_B15M.entrance_active = true;
@@ -616,7 +561,7 @@ static bool M_Entrance(
         g_B15M.entrance_angle = 0;
         g_B15M.hit.frame = 0;
         g_B15M.boss_palette = g_Palette.saved;
-        M_Snap(assets, shots_output, miko);
+        M_Snap(assets, miko);
     }
     if (g_B15M.entrance_waiting) {
         if (!Frame_DelayReady((uint16_t)g_B15M.pending_scroll)) {
@@ -632,7 +577,7 @@ static bool M_Entrance(
                     Math16_PolarX(304, 96, g_B15M.entrance_angle + i * 128);
                 const int16_t y =
                     Math16_PolarY(114, 96, g_B15M.entrance_angle + i * 128);
-                M_Trail(assets, shots_output, miko, i, x, y, g_B15M.hit.frame);
+                M_Trail(assets, miko, i, x, y, g_B15M.hit.frame);
                 M_TrailCopy(i, x, y);
             }
             if (g_B15M.hit.frame >= 120) {
@@ -650,7 +595,7 @@ static bool M_Entrance(
                     const int16_t x = Math16_Wrap(
                                       g_B15M.trail_x[i][0] + 64 - i * 128),
                                   y = g_B15M.trail_y[i][0];
-                    M_Trail(assets, shots_output, miko, i, x, y, 4);
+                    M_Trail(assets, miko, i, x, y, 4);
                     if (g_B15M.trail_x[0][2] > 640
                         && g_B15M.trail_x[1][2] < -32) {
                         g_B15M.trails_offscreen = true;
@@ -672,24 +617,22 @@ static bool M_Entrance(
             } else if (f == 100) {
                 Wave_Restore(
                     g_B15M.girl.left, g_B15M.girl.top, 102, 0, 100, 144, 96);
-                M_Unlock(&g_B15M.girl, assets, shots_output, miko, 0, true);
+                M_Unlock(&g_B15M.girl, assets, miko, 0, true);
             } else if (f == 128) {
-                M_Background(assets, shots_output, miko);
+                M_Background(assets, miko);
                 BossEntity_WavePut(
                     &g_B15M.girl, g_B15M.girl.left, g_B15M.girl.top, 0, 3, 8,
                     64);
             } else if (f == 130) {
                 Wave_Restore(
                     g_B15M.girl.left, g_B15M.girl.top, 3, 8, 64, 144, 96);
-                M_Unlock(&g_B15M.girl, assets, shots_output, miko, 0, true);
+                M_Unlock(&g_B15M.girl, assets, miko, 0, true);
             } else if (f > 140) {
                 g_B15M.frame = 0;
                 g_B15M.hit.frame = 0;
                 g_B15M.phase = B15M_PHASE_PATTERNS_1;
                 g_B15M.girl.orb_inactive = false;
-                M_PutBoth(
-                    &g_B15M.girl, assets, shots_output, miko,
-                    g_B15M.girl.image);
+                M_PutBoth(&g_B15M.girl, assets, miko, g_B15M.girl.image);
                 g_B15M.teleport_done = false;
                 g_B15M.pattern = 1;
                 g_B15M.hp_bar_filled = false;
@@ -706,42 +649,38 @@ static bool M_Entrance(
 }
 
 static int16_t M_LasersAcross(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
     const int16_t x = M_CenterX(B15M_FORM_GIRL),
                   y = Math16_Wrap(g_B15M.girl.top + 32);
     if (g_B15M.frame == 50) {
-        g_B15M.direction = M_Random(assets, shots_output, miko) % 2;
-        M_Both(assets, shots_output, miko, &g_B15M.girl, 1, false);
+        g_B15M.direction = M_Random(assets, miko) % 2;
+        M_Both(assets, miko, &g_B15M.girl, 1, false);
         g_B15M.pattern_state = Boss_Rank(50, 55, 60, 65);
     } else if (g_B15M.frame == 60) {
-        M_Circle(assets, shots_output, miko, x, y, 32, 4, 2, 0, 255);
+        M_Circle(assets, miko, x, y, 32, 4, 2, 0, 255);
         g_B15M.circle_radius = 32;
     } else if (
         g_B15M.frame > 60 && g_B15M.frame < 120 && g_B15M.frame % 2 == 0) {
-        M_EraseCircle(
-            assets, shots_output, miko, x, y, g_B15M.circle_radius, 2);
+        M_EraseCircle(assets, miko, x, y, g_B15M.circle_radius, 2);
         g_B15M.circle_radius = Math16_Wrap(g_B15M.circle_radius + 8);
         M_Circle(
-            assets, shots_output, miko, x, y, g_B15M.circle_radius, 4,
+            assets, miko, x, y, g_B15M.circle_radius, 4,
             g_B15M.frame < 100       ? 2
                 : g_B15M.frame < 110 ? 8
                                      : 32,
             0, 255);
     } else if (g_B15M.frame == 120) {
-        M_EraseCircle(
-            assets, shots_output, miko, x, y, g_B15M.circle_radius, 32);
+        M_EraseCircle(assets, miko, x, y, g_B15M.circle_radius, 32);
     } else if (g_B15M.frame == 150) {
-        M_Both(assets, shots_output, miko, &g_B15M.girl, 0, false);
+        M_Both(assets, miko, &g_B15M.girl, 0, false);
     }
     if (g_B15M.frame >= 70 && g_B15M.frame % 10 == 0) {
         const int16_t tx = g_B15M.direction == 0
             ? Math16_Wrap((g_B15M.frame - 70) / 10 * 64)
             : Math16_Wrap(640 - (g_B15M.frame - 70) / 10 * 64);
         M_Laser(
-            assets, shots_output, miko, g_B15M.frame / 10,
-            Math16_Wrap(g_B15M.girl.left + 60),
+            assets, miko, g_B15M.frame / 10, Math16_Wrap(g_B15M.girl.left + 60),
             Math16_Wrap(g_B15M.girl.top + 28), tx, 400, g_B15M.pattern_state,
             25, 4);
         Sound_Effect(6);
@@ -754,25 +693,22 @@ static int16_t M_LasersAcross(
     return 1;
 }
 static int16_t M_RandomMissiles(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15M.frame == 50) {
-        M_Both(assets, shots_output, miko, &g_B15M.girl, 1, false);
+        M_Both(assets, miko, &g_B15M.girl, 1, false);
         g_B15M.pattern_state = Boss_Rank(15, 21, 25, 29);
     }
     if (g_B15M.frame > 60 && g_B15M.frame % 3 == 0) {
-        const int32_t i = M_Random(assets, shots_output, miko) % 5;
-        const uint8_t angle = (uint8_t)(M_Random(assets, shots_output, miko)
-                                            % g_B15M.pattern_state
-                                        - (g_B15M.pattern_state - 1) / 2 + 64);
+        const int32_t i = M_Random(assets, miko) % 5;
+        const uint8_t angle =
+            (uint8_t)(M_Random(assets, miko) % g_B15M.pattern_state
+                      - (g_B15M.pattern_state - 1) / 2 + 64);
         const MATH16_VECTOR v = Math16_Vector(7, angle);
         Missiles_Add(
             g_B15M.missile_rifts.x[i], g_B15M.missile_rifts.y[i], v.x, v.y, 0);
     }
-    M_Rifts(
-        assets, shots_output, miko, &g_B15M.missile_rifts, false, 60, 160,
-        false);
+    M_Rifts(assets, miko, &g_B15M.missile_rifts, false, 60, 160, false);
     if (g_B15M.frame > 170) {
         g_B15M.frame = 0;
         return 0;
@@ -780,30 +716,27 @@ static int16_t M_RandomMissiles(
     return 2;
 }
 static int16_t M_CirclePellets(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15M.frame < 10) {
         g_B15M.circle.frame = 0;
     }
     if (g_B15M.frame == 50) {
-        M_Both(assets, shots_output, miko, &g_B15M.girl, 1, false);
+        M_Both(assets, miko, &g_B15M.girl, 1, false);
         g_B15M.circle.angle = 0;
         g_B15M.pattern_state = Boss_Rank(
             PELLET_GROUP_SINGLE_AIMED, PELLET_GROUP_RANDOM_NARROW_AIMED,
             PELLET_GROUP_THREE_WIDE_AIMED, PELLET_GROUP_FIVE_NARROW_AIMED);
     }
-    if (M_SummonFlash(assets, shots_output, miko, &g_B15M.circle, 60, 0)) {
-        M_EraseBigCircle(assets, shots_output, miko);
+    if (M_SummonFlash(assets, miko, &g_B15M.circle, 60, 0)) {
+        M_EraseBigCircle(assets, miko);
         g_B15M.circle.angle = 0;
         for (int32_t i = 0; i < 32; i++) {
             const int16_t x = Math16_PolarX(
                 Math16_Wrap(g_B15M.girl.left + 60), 128, g_B15M.circle.angle);
             const int16_t y = Math16_PolarY(
                 M_CenterY(B15M_FORM_GIRL), 128, g_B15M.circle.angle);
-            M_Group(
-                assets, shots_output, miko, x, y,
-                (PELLET_GROUP)g_B15M.pattern_state, 4);
+            M_Group(assets, miko, x, y, (PELLET_GROUP)g_B15M.pattern_state, 4);
             g_B15M.circle.angle = (uint8_t)(g_B15M.circle.angle + 8);
         }
         g_B15M.frame = 0;
@@ -813,25 +746,24 @@ static int16_t M_CirclePellets(
     return 3;
 }
 static int16_t M_Phase1(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t id)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t id)
 {
     switch (id) {
     case 0:
-        return M_Random(assets, shots_output, miko) % 4;
+        return M_Random(assets, miko) % 4;
     case 1:
-        return M_LasersAcross(assets, shots_output, miko);
+        return M_LasersAcross(assets, miko);
     case 2:
-        return M_RandomMissiles(assets, shots_output, miko);
+        return M_RandomMissiles(assets, miko);
     case 3:
-        return M_CirclePellets(assets, shots_output, miko);
+        return M_CirclePellets(assets, miko);
     default:
         return 0;
     }
 }
 static void M_StarLines(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const bool erase, const uint8_t color)
+    const B15M_ASSETS *const assets, const PTN *const miko, const bool erase,
+    const uint8_t color)
 {
     const uint8_t pairs[6][2] = { { 192, 22 }, { 192, 106 }, { 22, 106 },
                                   { 64, 150 }, { 64, 234 },  { 150, 234 } };
@@ -851,9 +783,7 @@ static void M_StarLines(
         }
     }
 }
-static int16_t M_Star(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static int16_t M_Star(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     B15M_CIRCLE *const circle = &g_B15M.star_circle;
     if (g_B15M.frame < 5) {
@@ -864,7 +794,7 @@ static int16_t M_Star(
         return 0;
     }
     if (g_B15M.frame == 10) {
-        M_Both(assets, shots_output, miko, &g_B15M.attack, 0, true);
+        M_Both(assets, miko, &g_B15M.attack, 0, true);
         circle->angle = 0;
         circle->frame = 0;
     }
@@ -873,28 +803,28 @@ static int16_t M_Star(
             Sound_Effect(8);
         }
         M_SummonDots(
-            assets, shots_output, miko, circle, M_CenterX(B15M_FORM_GIRL),
+            assets, miko, circle, M_CenterX(B15M_FORM_GIRL),
             M_CenterY(B15M_FORM_GIRL), 2);
         if (circle->angle >= 64) {
             circle->frame = 1;
-            M_EraseBigCircle(assets, shots_output, miko);
-            M_BigCircle(assets, shots_output, miko, 7);
+            M_EraseBigCircle(assets, miko);
+            M_BigCircle(assets, miko, 7);
         }
     } else if (circle->angle >= 64) {
         circle->frame = Math16_Wrap(circle->frame + 1);
         if (circle->frame == 10) {
-            M_StarLines(assets, shots_output, miko, false, 7);
+            M_StarLines(assets, miko, false, 7);
         }
         if (circle->frame > 20 && circle->frame % 4 == 0) {
-            M_StarLines(assets, shots_output, miko, false, 4);
-            M_BigCircle(assets, shots_output, miko, 4);
+            M_StarLines(assets, miko, false, 4);
+            M_BigCircle(assets, miko, 4);
         } else if (circle->frame > 20 && circle->frame % 4 == 2) {
-            M_StarLines(assets, shots_output, miko, false, 7);
-            M_BigCircle(assets, shots_output, miko, 7);
+            M_StarLines(assets, miko, false, 7);
+            M_BigCircle(assets, miko, 7);
         }
         if (circle->frame > 60) {
-            M_StarLines(assets, shots_output, miko, true, 0);
-            M_EraseBigCircle(assets, shots_output, miko);
+            M_StarLines(assets, miko, true, 0);
+            M_EraseBigCircle(assets, miko);
             g_B15M.frame = 0;
             circle->angle = 0;
             circle->frame = 0;
@@ -904,10 +834,9 @@ static int16_t M_Star(
     return 0;
 }
 static int16_t M_CurvedRings(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Attack(assets, shots_output, miko);
+    M_Attack(assets, miko);
     int16_t offset = -1, speed = 0;
     if (g_B15M.frame == 10) {
         g_B15M.pattern_state = Boss_Rank(14, 16, 18, 20);
@@ -928,14 +857,13 @@ static int16_t M_CurvedRings(
     } else if (g_B15M.frame > 60) {
         g_B15M.frame = 0;
         Video_SelectDrawingPage(1);
-        M_Background(assets, shots_output, miko);
+        M_Background(assets, miko);
         return 0;
     }
     if (offset >= 0) {
         for (int32_t i = 0; i < g_B15M.pattern_state; i++) {
             M_Single(
-                assets, shots_output, miko,
-                Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
+                assets, miko, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
                 Math16_Wrap(M_CenterY(B15M_FORM_GIRL) - 4),
                 (uint8_t)((256 / g_B15M.pattern_state) * i + offset), speed,
                 PELLET_REGULAR, 0);
@@ -944,10 +872,9 @@ static int16_t M_CurvedRings(
     return 1;
 }
 static int16_t M_SphereClusters(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Attack(assets, shots_output, miko);
+    M_Attack(assets, miko);
     if (g_B15M.frame <= 100 && g_B15M.frame % 10 == 0) {
         const int32_t n = g_B15M.frame / 10;
         const int16_t column =
@@ -955,16 +882,13 @@ static int16_t M_SphereClusters(
             / 10;
         g_B15M.sphere_x[n - 1] =
             Math16_Wrap(n * column + M_CenterX(B15M_FORM_GIRL) - 16);
-        const int16_t row = Math16_Wrap(
-                                M_Random(assets, shots_output, miko) % 200 + 200
-                                - g_B15M.girl.top)
+        const int16_t row =
+            Math16_Wrap(M_Random(assets, miko) % 200 + 200 - g_B15M.girl.top)
             / 10;
         g_B15M.sphere_y[n - 1] =
             Math16_Wrap(n * row + M_CenterY(B15M_FORM_GIRL) - 16);
         for (int32_t i = 0; i < n; i++) {
-            M_Grc(
-                assets, shots_output, miko, g_B15M.sphere_x[i],
-                g_B15M.sphere_y[i], 3, 4);
+            M_Grc(assets, miko, g_B15M.sphere_x[i], g_B15M.sphere_y[i], 3, 4);
         }
     } else if (
         g_B15M.frame > 100 && g_B15M.frame <= 230 && g_B15M.frame % 10 == 0) {
@@ -972,29 +896,24 @@ static int16_t M_SphereClusters(
             const int32_t n = (g_B15M.frame - 100) / 10;
             Sound_Effect(7);
             M_Grc(
-                assets, shots_output, miko, g_B15M.sphere_x[n - 1],
-                g_B15M.sphere_y[n - 1], 4, 4);
+                assets, miko, g_B15M.sphere_x[n - 1], g_B15M.sphere_y[n - 1], 4,
+                4);
             for (int32_t i = n; i < 10; i++) {
                 M_Grc(
-                    assets, shots_output, miko, g_B15M.sphere_x[i],
-                    g_B15M.sphere_y[i], 3, 4);
+                    assets, miko, g_B15M.sphere_x[i], g_B15M.sphere_y[i], 3, 4);
             }
             g_B15M.pattern_state = Boss_Rank(5, 7, 9, 13);
             for (int32_t i = 0; i < g_B15M.pattern_state; i++) {
-                const uint8_t angle =
-                    M_Random(assets, shots_output, miko) & 127;
-                const int16_t speed =
-                    (M_Random(assets, shots_output, miko) + 24) & 63;
+                const uint8_t angle = M_Random(assets, miko) & 127;
+                const int16_t speed = (M_Random(assets, miko) + 24) & 63;
                 M_Single(
-                    assets, shots_output, miko, g_B15M.sphere_x[n - 1],
+                    assets, miko, g_B15M.sphere_x[n - 1],
                     g_B15M.sphere_y[n - 1], angle, speed, PELLET_REGULAR, 0);
             }
         }
         if (g_B15M.frame > 130) {
             const int32_t i = (g_B15M.frame - 130) / 10 - 1;
-            M_GrcErase(
-                assets, shots_output, miko, g_B15M.sphere_x[i],
-                g_B15M.sphere_y[i]);
+            M_GrcErase(assets, miko, g_B15M.sphere_x[i], g_B15M.sphere_y[i]);
         }
     } else if (g_B15M.frame > 250) {
         g_B15M.frame = 0;
@@ -1003,37 +922,31 @@ static int16_t M_SphereClusters(
     return 2;
 }
 static int16_t M_RandomRifts(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Attack(assets, shots_output, miko);
+    M_Attack(assets, miko);
     if (g_B15M.frame == 30) {
         g_B15M.pattern_state = Boss_Rank(6, 3, 2, 2);
     }
     if (g_B15M.frame > 60 && g_B15M.frame < 120
         && g_B15M.frame % g_B15M.pattern_state == 0) {
-        const int32_t i = M_Random(assets, shots_output, miko) % 5;
-        const uint8_t angle =
-            (uint8_t)(M_Random(assets, shots_output, miko) % 21 + 54);
+        const int32_t i = M_Random(assets, miko) % 5;
+        const uint8_t angle = (uint8_t)(M_Random(assets, miko) % 21 + 54);
         M_Single(
-            assets, shots_output, miko, g_B15M.random_rifts.x[i],
-            g_B15M.random_rifts.y[i], angle, 96, PELLET_REGULAR, 0);
+            assets, miko, g_B15M.random_rifts.x[i], g_B15M.random_rifts.y[i],
+            angle, 96, PELLET_REGULAR, 0);
     } else if (g_B15M.frame >= 120 && g_B15M.frame < 200) {
-        const int32_t i = M_Random(assets, shots_output, miko) % 5;
-        uint8_t angle =
-            (uint8_t)(M_Random(assets, shots_output, miko) % 21 + 54);
+        const int32_t i = M_Random(assets, miko) % 5;
+        uint8_t angle = (uint8_t)(M_Random(assets, miko) % 21 + 54);
         const uint8_t offset =
-            (uint8_t)((M_Random(assets, shots_output, miko) & 1)
-                          ? g_B15M.frame - 120
-                          : -(g_B15M.frame - 120));
+            (uint8_t)((M_Random(assets, miko) & 1) ? g_B15M.frame - 120
+                                                   : -(g_B15M.frame - 120));
         angle = (uint8_t)(angle * (offset / 2));
         M_Single(
-            assets, shots_output, miko, g_B15M.random_rifts.x[i],
-            g_B15M.random_rifts.y[i], angle, 96, PELLET_REGULAR, 0);
+            assets, miko, g_B15M.random_rifts.x[i], g_B15M.random_rifts.y[i],
+            angle, 96, PELLET_REGULAR, 0);
     }
-    M_Rifts(
-        assets, shots_output, miko, &g_B15M.random_rifts, false, 60, 200,
-        false);
+    M_Rifts(assets, miko, &g_B15M.random_rifts, false, 60, 200, false);
     if (g_B15M.frame > 220) {
         g_B15M.frame = 0;
         return 0;
@@ -1041,26 +954,25 @@ static int16_t M_RandomRifts(
     return 3;
 }
 static int16_t M_Phase3(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t id)
+    const B15M_ASSETS *const assets, const PTN *const miko, const int16_t id)
 {
     if (id == 99) {
         g_B15M.phase3_pattern = 0;
         return 0;
     }
     if (id == 0) {
-        return M_Random(assets, shots_output, miko) % 4;
+        return M_Random(assets, miko) % 4;
     }
     if (id < 1 || id > 3) {
         return 0;
     }
     if (g_B15M.phase3_pattern == 0) {
-        g_B15M.phase3_pattern = M_Star(assets, shots_output, miko);
+        g_B15M.phase3_pattern = M_Star(assets, miko);
         return id;
     }
-    g_B15M.phase3_pattern = id == 1 ? M_CurvedRings(assets, shots_output, miko)
-        : id == 2 ? M_SphereClusters(assets, shots_output, miko)
-                  : M_RandomRifts(assets, shots_output, miko);
+    g_B15M.phase3_pattern = id == 1 ? M_CurvedRings(assets, miko)
+        : id == 2                   ? M_SphereClusters(assets, miko)
+                                    : M_RandomRifts(assets, miko);
     return g_B15M.phase3_pattern;
 }
 
@@ -1080,8 +992,7 @@ static void M_TransformResult(void)
     }
 }
 static bool M_TransformFinish(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15M.frame <= 100) {
         if (g_B15M.call_phase == B15M_PHASE_TRANSFORM) {
@@ -1096,9 +1007,9 @@ static bool M_TransformFinish(
         g_B15M.bat.top = Math16_Wrap(g_B15M.girl.top + 32);
         g_B15M.bat.image = 0;
         Video_SelectDrawingPage(1);
-        M_Background(assets, shots_output, miko);
+        M_Background(assets, miko);
         Video_SelectDrawingPage(0);
-        M_Background(assets, shots_output, miko);
+        M_Background(assets, miko);
     } else {
         Sprite_Restore16(g_B15M.bat.left, g_B15M.bat.top, 48, 32);
         int16_t x = Math16_Wrap(g_B15M.bat.left - 40),
@@ -1113,36 +1024,33 @@ static bool M_TransformFinish(
         }
         g_B15M.girl.left = x;
         g_B15M.girl.top = y;
-        M_Snap(assets, shots_output, miko);
-        M_Both(assets, shots_output, miko, &g_B15M.attack, 1, true);
+        M_Snap(assets, miko);
+        M_Both(assets, miko, &g_B15M.attack, 1, true);
     }
     g_B15M.transform_stage = B15M_TRANSFORM_SWAPPED;
     return M_ScrollWait(400);
 }
 static bool M_Transform(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const bool bat)
+    const B15M_ASSETS *const assets, const PTN *const miko, const bool bat)
 {
     g_B15M.transform_bat = bat;
     g_B15M.transform_stage = B15M_TRANSFORM_RIFTS;
     if (bat && g_B15M.frame == 20) {
-        M_Both(assets, shots_output, miko, &g_B15M.attack, 0, true);
+        M_Both(assets, miko, &g_B15M.attack, 0, true);
     }
     M_Rifts(
-        assets, shots_output, miko,
-        bat ? &g_B15M.girl_rifts : &g_B15M.bat_rifts, !bat, 20, 100, true);
+        assets, miko, bat ? &g_B15M.girl_rifts : &g_B15M.bat_rifts, !bat, 20,
+        100, true);
     if (g_B15M.frame >= 20 && g_B15M.frame % 2 == 0) {
         return M_ScrollWait(Math16_Wrap(400 - g_B15M.frame % 4 * 2));
     }
-    return M_TransformFinish(assets, shots_output, miko);
+    return M_TransformFinish(assets, miko);
 }
 static int16_t M_Abs(const int16_t value)
 {
     return value < 0 ? Math16_Wrap(-(int32_t)value) : value;
 }
-static int16_t M_BatFly(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static int16_t M_BatFly(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15M.frame < 3) {
         g_B15M.bat_velocity_x = 0;
@@ -1151,9 +1059,8 @@ static int16_t M_BatFly(
     }
     if (g_B15M.frame == 3) {
         do {
-            g_B15M.bat_target_x = M_RandomLeft(assets, shots_output, miko);
-            g_B15M.bat_target_y =
-                Math16_Wrap(M_RandomTop(assets, shots_output, miko) + 32);
+            g_B15M.bat_target_x = M_RandomLeft(assets, miko);
+            g_B15M.bat_target_y = Math16_Wrap(M_RandomTop(assets, miko) + 32);
         } while (M_Abs(Math16_Wrap(g_B15M.bat.left - g_B15M.bat_target_x)) < 128
                  && M_Abs(Math16_Wrap(g_B15M.bat.top - g_B15M.bat_target_y))
                      < 64);
@@ -1166,8 +1073,7 @@ static int16_t M_BatFly(
             M_Abs(Math16_Wrap(g_B15M.bat_target_x - g_B15M.bat.left)) / 2;
     }
     g_B15M.bat_velocity_y = Math16_Wrap(
-        g_B15M.bat_velocity_y
-        + ((int32_t)M_Random(assets, shots_output, miko) % 5 - 2) / 10);
+        g_B15M.bat_velocity_y + ((int32_t)M_Random(assets, miko) % 5 - 2) / 10);
     if (g_B15M.frame / 3 >= g_B15M.bat_target_frames) {
         g_B15M.bat_velocity_x = 0;
         g_B15M.bat_velocity_y = 0;
@@ -1176,15 +1082,13 @@ static int16_t M_BatFly(
     }
     return 0;
 }
-static void M_BatPattern(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_BatPattern(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     switch (g_B15M.bat_pattern) {
     case 1:
         if (g_B15M.frame % 16 == 0) {
             M_FormGroup(
-                assets, shots_output, miko, B15M_FORM_BAT,
+                assets, miko, B15M_FORM_BAT,
                 (PELLET_GROUP)Boss_Rank(
                     PELLET_GROUP_THREE_WIDE_AIMED, PELLET_GROUP_FIVE_WIDE_AIMED,
                     PELLET_GROUP_FIVE_NARROW_AIMED, PELLET_GROUP_FIVE_NARROW),
@@ -1193,34 +1097,28 @@ static void M_BatPattern(
         break;
     case 2:
         if (g_B15M.frame % 4 == 0) {
-            const PELLET_GROUP group =
-                (M_Random(assets, shots_output, miko) & 1)
+            const PELLET_GROUP group = (M_Random(assets, miko) & 1)
                 ? PELLET_GROUP_TWO_NARROW_AIMED
                 : PELLET_GROUP_TWO_WIDE_AIMED;
-            M_FormGroup(assets, shots_output, miko, B15M_FORM_BAT, group, 88);
+            M_FormGroup(assets, miko, B15M_FORM_BAT, group, 88);
         }
         break;
     case 3:
         if (g_B15M.frame % 4 == 0) {
-            const uint8_t angle = (uint8_t)M_Random(assets, shots_output, miko);
+            const uint8_t angle = (uint8_t)M_Random(assets, miko);
             M_Single(
-                assets, shots_output, miko,
-                Math16_Wrap(M_CenterX(B15M_FORM_BAT) - 4),
+                assets, miko, Math16_Wrap(M_CenterX(B15M_FORM_BAT) - 4),
                 Math16_Wrap(M_CenterY(B15M_FORM_BAT) - 4), angle, 2,
                 PELLET_GRAVITY, 1);
         }
         break;
     case 4:
         if (g_B15M.frame % 50 < 10 && g_B15M.frame % 4 == 0) {
-            M_FormGroup(
-                assets, shots_output, miko, 1, PELLET_GROUP_TWO_NARROW_AIMED,
-                85);
+            M_FormGroup(assets, miko, 1, PELLET_GROUP_TWO_NARROW_AIMED, 85);
         }
         if (g_B15M.frame % 50 >= 25 && g_B15M.frame % 50 < 35
             && g_B15M.frame % 4 == 0) {
-            M_FormGroup(
-                assets, shots_output, miko, 1, PELLET_GROUP_THREE_NARROW_AIMED,
-                85);
+            M_FormGroup(assets, miko, 1, PELLET_GROUP_THREE_NARROW_AIMED, 85);
         }
         break;
     default:
@@ -1228,41 +1126,39 @@ static void M_BatPattern(
     }
 }
 static void M_SymmetricFire(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint8_t angle, const int16_t speed)
+    const B15M_ASSETS *const assets, const PTN *const miko, const uint8_t angle,
+    const int16_t speed)
 {
     const int16_t y = Math16_Wrap(M_CenterY(B15M_FORM_GIRL) - 8);
     M_Single(
-        assets, shots_output, miko, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 8),
-        y, (uint8_t)(128 - angle), speed, PELLET_REGULAR, 0);
+        assets, miko, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 8), y,
+        (uint8_t)(128 - angle), speed, PELLET_REGULAR, 0);
     M_Single(
-        assets, shots_output, miko, M_CenterX(B15M_FORM_GIRL), y, angle, speed,
+        assets, miko, M_CenterX(B15M_FORM_GIRL), y, angle, speed,
         PELLET_REGULAR, 0);
 }
 static int16_t M_SymmetricArc(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Attack(assets, shots_output, miko);
+    M_Attack(assets, miko);
     if (g_B15M.frame == 50) {
         g_B15M.pattern_state = Boss_Rank(2, 3, 3, 4);
         for (int32_t i = 0; i < 4; i++) {
             M_SymmetricFire(
-                assets, shots_output, miko, 64,
-                Math16_Wrap((i + g_B15M.pattern_state) * 16));
+                assets, miko, 64, Math16_Wrap((i + g_B15M.pattern_state) * 16));
         }
     } else if (g_B15M.frame == 60 || g_B15M.frame == 70) {
         const uint8_t angle = g_B15M.frame == 60 ? 48 : 24;
         for (int32_t i = 0; i < 4; i++) {
             M_SymmetricFire(
-                assets, shots_output, miko, angle,
+                assets, miko, angle,
                 Math16_Wrap((i + g_B15M.pattern_state) * 16));
         }
         Sound_Effect(7);
     } else if (g_B15M.frame == 80) {
         for (int32_t i = 0; i < 10; i++) {
             M_SymmetricFire(
-                assets, shots_output, miko, (uint8_t)(i * 6),
+                assets, miko, (uint8_t)(i * 6),
                 Math16_Wrap((2 + g_B15M.pattern_state) * 16));
         }
         Sound_Effect(7);
@@ -1273,35 +1169,33 @@ static int16_t M_SymmetricArc(
     return 1;
 }
 static void M_SafetyAfterHit(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (Boss_Player()->is_hit) {
         g_B15M.safety_circle.frame = 200;
     }
     if (g_B15M.frame % g_B15M.pattern_state == 0) {
-        const int16_t x = M_Random(assets, shots_output, miko) % 632;
+        const int16_t x = M_Random(assets, miko) % 632;
         M_Group(
-            assets, shots_output, miko, x, 64,
+            assets, miko, x, 64,
             g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
                                                : PELLET_GROUP_SINGLE,
             72);
     }
     if (g_B15M.safety_circle.frame > 180
         && g_B15M.safety_circle.frame % 4 == 0) {
-        M_FormGroup(
-            assets, shots_output, miko, 0, PELLET_GROUP_SINGLE_AIMED, 72);
+        M_FormGroup(assets, miko, 0, PELLET_GROUP_SINGLE_AIMED, 72);
     }
 }
 static int16_t M_Safety(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint64_t host_tick)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    const uint64_t host_tick)
 {
     B15M_CIRCLE *const circle = &g_B15M.safety_circle;
     if (g_B15M.frame < 10) {
         circle->frame = 0;
     }
-    M_Attack(assets, shots_output, miko);
+    M_Attack(assets, miko);
     if (g_B15M.frame < 60) {
         return 1;
     }
@@ -1315,27 +1209,26 @@ static int16_t M_Safety(
             g_B15M.safety_left = Boss_Player()->left;
         }
         M_SummonDots(
-            assets, shots_output, miko, circle,
-            Math16_Wrap(g_B15M.safety_left + 16), 384, 2);
+            assets, miko, circle, Math16_Wrap(g_B15M.safety_left + 16), 384, 2);
         if (circle->angle >= 64) {
             M_EraseCircle(
-                assets, shots_output, miko,
-                Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 1);
+                assets, miko, Math16_Wrap(g_B15M.safety_left + 16), 384, 128,
+                1);
             M_Circle(
-                assets, shots_output, miko,
-                Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 7, 1, 0, 255);
+                assets, miko, Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 7,
+                1, 0, 255);
             circle->frame = 1;
-            M_Both(assets, shots_output, miko, &g_B15M.girl, 0, true);
+            M_Both(assets, miko, &g_B15M.girl, 0, true);
         }
     } else if (circle->frame != 0 && circle->frame < 200) {
         circle->frame = Math16_Wrap(circle->frame + 1);
         if (circle->frame % 4 == 0) {
             M_EraseCircle(
-                assets, shots_output, miko,
-                Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 1);
+                assets, miko, Math16_Wrap(g_B15M.safety_left + 16), 384, 128,
+                1);
             M_Circle(
-                assets, shots_output, miko,
-                Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 7, 1, 0, 255);
+                assets, miko, Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 7,
+                1, 0, 255);
         }
         if (!Boss_Player()->invincible
             && (Math16_Wrap(g_B15M.safety_left + 104) <= Boss_Player()->left
@@ -1345,19 +1238,19 @@ static int16_t M_Safety(
             g_B15M.pending_tick = host_tick;
             return -1;
         }
-        M_SafetyAfterHit(assets, shots_output, miko);
+        M_SafetyAfterHit(assets, miko);
     } else if (circle->frame < 200) {
         return 1;
     } else {
         if (circle->frame == 200) {
             M_EraseCircle(
-                assets, shots_output, miko,
-                Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 1);
+                assets, miko, Math16_Wrap(g_B15M.safety_left + 16), 384, 128,
+                1);
         }
         circle->frame = Math16_Wrap(circle->frame + 1);
         if (circle->frame % 8 == 0) {
             M_Group(
-                assets, shots_output, miko, Math16_Wrap(g_B15M.bat.left + 60),
+                assets, miko, Math16_Wrap(g_B15M.bat.left + 60),
                 Math16_Wrap(g_B15M.bat.top + 44), PELLET_GROUP_SINGLE_AIMED,
                 72);
         }
@@ -1371,21 +1264,19 @@ static int16_t M_Safety(
     return 1;
 }
 static int16_t M_AimedRing(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Attack(assets, shots_output, miko);
+    M_Attack(assets, miko);
     if (g_B15M.frame < 50) {
         return 1;
     }
     if (g_B15M.frame == 50) {
-        M_Both(assets, shots_output, miko, &g_B15M.girl, 1, false);
+        M_Both(assets, miko, &g_B15M.girl, 1, false);
         g_B15M.aimed_circle.angle = 0;
         g_B15M.pattern_state = Boss_Rank(40, 30, 20, 15);
     }
-    if (M_SummonFlash(
-            assets, shots_output, miko, &g_B15M.aimed_circle, 60, 2)) {
-        M_EraseBigCircle(assets, shots_output, miko);
+    if (M_SummonFlash(assets, miko, &g_B15M.aimed_circle, 60, 2)) {
+        M_EraseBigCircle(assets, miko);
         g_B15M.aimed_circle.angle = 0;
         for (int32_t i = 0; i < 32; i++) {
             const int16_t x = Math16_PolarX(
@@ -1393,7 +1284,7 @@ static int16_t M_AimedRing(
             const int16_t y = Math16_PolarY(
                 Math16_Wrap(g_B15M.girl.top + 28), 128,
                 g_B15M.aimed_circle.angle);
-            M_Group(assets, shots_output, miko, x, y, PELLET_GROUP_SINGLE, 64);
+            M_Group(assets, miko, x, y, PELLET_GROUP_SINGLE, 64);
             g_B15M.aimed_circle.angle =
                 (uint8_t)(g_B15M.aimed_circle.angle + 8);
         }
@@ -1403,19 +1294,17 @@ static int16_t M_AimedRing(
     }
     if (g_B15M.frame % g_B15M.pattern_state == 0) {
         M_Group(
-            assets, shots_output, miko,
-            Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 42),
+            assets, miko, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 42),
             Math16_Wrap(M_CenterY(B15M_FORM_GIRL) - 8),
             PELLET_GROUP_FIVE_WIDE_AIMED, 64);
         M_Group(
-            assets, shots_output, miko,
-            Math16_Wrap(M_CenterX(B15M_FORM_GIRL) + 36),
+            assets, miko, Math16_Wrap(M_CenterX(B15M_FORM_GIRL) + 36),
             Math16_Wrap(M_CenterY(B15M_FORM_GIRL) - 8),
             PELLET_GROUP_FIVE_WIDE_AIMED, 64);
     }
     if (g_B15M.frame % (g_B15M.pattern_state * 2) == 0) {
         M_Laser(
-            assets, shots_output, miko, g_B15M.frame / 10,
+            assets, miko, g_B15M.frame / 10,
             Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
             Math16_Wrap(g_B15M.girl.top + 28), Boss_Player()->left, 400, 50, 20,
             8);
@@ -1424,27 +1313,27 @@ static int16_t M_AimedRing(
     return 1;
 }
 static int16_t M_GirlPhase5(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint64_t host_tick)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    const uint64_t host_tick)
 {
     if (g_B15M.girl_pattern == 0) {
-        g_B15M.girl_pattern = M_Random(assets, shots_output, miko) % 3 + 1;
+        g_B15M.girl_pattern = M_Random(assets, miko) % 3 + 1;
         return 0;
     }
     if (g_B15M.girl_subphase == 0) {
-        g_B15M.girl_subphase = M_Star(assets, shots_output, miko);
+        g_B15M.girl_subphase = M_Star(assets, miko);
         return 0;
     }
     int16_t result = 1;
     switch (g_B15M.girl_pattern) {
     case 1:
-        result = M_SymmetricArc(assets, shots_output, miko);
+        result = M_SymmetricArc(assets, miko);
         break;
     case 2:
-        result = M_Safety(assets, shots_output, miko, host_tick);
+        result = M_Safety(assets, miko, host_tick);
         break;
     case 3:
-        result = M_AimedRing(assets, shots_output, miko);
+        result = M_AimedRing(assets, miko);
         break;
     default:
         break;
@@ -1486,33 +1375,31 @@ static void M_AfterTransform(void)
     }
 }
 static bool M_Phase5(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint64_t host_tick)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    const uint64_t host_tick)
 {
     if (g_B15M.form == B15M_FORM_BAT) {
         if (g_B15M.phase5_subphase == 0) {
-            g_B15M.phase5_subphase = M_BatFly(assets, shots_output, miko);
+            g_B15M.phase5_subphase = M_BatFly(assets, miko);
             if (g_B15M.bat_pattern == 0) {
-                g_B15M.bat_pattern =
-                    M_Random(assets, shots_output, miko) % 4 + 1;
+                g_B15M.bat_pattern = M_Random(assets, miko) % 4 + 1;
             }
-            M_BatPattern(assets, shots_output, miko);
+            M_BatPattern(assets, miko);
         } else if (g_B15M.phase5_subphase == 1) {
-            if (!M_Transform(assets, shots_output, miko, false)) {
+            if (!M_Transform(assets, miko, false)) {
                 return false;
             }
             M_AfterTransform();
         }
     } else {
         if (g_B15M.phase5_subphase == 0) {
-            const int16_t result =
-                M_GirlPhase5(assets, shots_output, miko, host_tick);
+            const int16_t result = M_GirlPhase5(assets, miko, host_tick);
             if (result < 0) {
                 return false;
             }
             g_B15M.phase5_subphase = result;
         } else {
-            if (!M_Transform(assets, shots_output, miko, true)) {
+            if (!M_Transform(assets, miko, true)) {
                 return false;
             }
             M_AfterTransform();
@@ -1520,9 +1407,7 @@ static bool M_Phase5(
     }
     return true;
 }
-static bool M_Death(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static bool M_Death(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
             &g_B15M.defeat, &g_B15M.post_defeat, miko, &g_Orb.top)) {
@@ -1533,34 +1418,32 @@ static bool M_Death(
     g_B15M.finished = true;
     return true;
 }
-static bool M_Tail(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static bool M_Tail(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15M.call_phase == B15M_PHASE_FORMS) {
-        M_Hit(assets, shots_output, miko, g_B15M.form);
+        M_Hit(assets, miko, g_B15M.form);
         if (g_B15M.hp <= 0) {
             Sound_Fade();
             Pellets_EraseAndResetMoving();
-            M_Background(assets, shots_output, miko);
+            M_Background(assets, miko);
             Missiles_Reset();
             ShootoutLasers_EraseAndReset(10);
             BossDefeat_Begin(&g_B15M.defeat, BOSS_DEFEAT_REGULAR);
             g_B15M.defeating = true;
-            return M_Death(assets, shots_output, miko);
+            return M_Death(assets, miko);
         }
     }
     return true;
 }
 bool B15M_UpdateAndRender(
-    const B15M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint64_t host_tick)
+    const B15M_ASSETS *const assets, const PTN *const miko,
+    const uint64_t host_tick)
 {
     if (g_B15M.finished) {
         return true;
     }
     if (g_B15M.defeating) {
-        return M_Death(assets, shots_output, miko);
+        return M_Death(assets, miko);
     }
     if (g_B15M.pending == B15M_PENDING_SCROLL) {
         if (!Frame_WaitReady(&g_B15M.wait)) {
@@ -1569,7 +1452,7 @@ bool B15M_UpdateAndRender(
         g_B15M.pending = B15M_PENDING_NONE;
         Video_SetScroll(g_B15M.pending_scroll);
         if (g_B15M.transform_stage == B15M_TRANSFORM_RIFTS) {
-            if (!M_TransformFinish(assets, shots_output, miko)) {
+            if (!M_TransformFinish(assets, miko)) {
                 return false;
             }
         } else {
@@ -1577,7 +1460,7 @@ bool B15M_UpdateAndRender(
             M_TransformResult();
         }
         M_AfterTransform();
-        return M_Tail(assets, shots_output, miko);
+        return M_Tail(assets, miko);
     }
     if (g_B15M.pending == B15M_PENDING_SAFETY) {
         ASSERT(host_tick >= g_B15M.pending_tick);
@@ -1586,20 +1469,18 @@ bool B15M_UpdateAndRender(
         }
         g_B15M.pending = B15M_PENDING_NONE;
         Boss_Player()->is_hit = true;
-        M_SafetyAfterHit(assets, shots_output, miko);
+        M_SafetyAfterHit(assets, miko);
         g_B15M.girl_subphase = 1;
         g_B15M.phase5_subphase = 0;
-        return M_Tail(assets, shots_output, miko);
+        return M_Tail(assets, miko);
     }
     if (g_B15M.entrance_active) {
-        return M_Entrance(assets, shots_output, miko);
+        return M_Entrance(assets, miko);
     }
     g_B15M.call_phase = g_B15M.phase;
-    Missiles_UpdateAndRender(
-        (uint16_t)g_Session.frame_rand,
-        (MISSILES_OUTPUT) { M_MissileAction, (void *)assets });
+    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
     if (g_B15M.phase == B15M_PHASE_ENTRANCE) {
-        return M_Entrance(assets, shots_output, miko);
+        return M_Entrance(assets, miko);
     }
     if (g_B15M.phase == B15M_PHASE_PATTERNS_1
         || g_B15M.phase == B15M_PHASE_PATTERNS_2) {
@@ -1609,20 +1490,19 @@ bool B15M_UpdateAndRender(
         M_Common();
         if (g_B15M.pattern != 0) {
             g_B15M.pattern = g_B15M.phase == B15M_PHASE_PATTERNS_1
-                ? M_Phase1(assets, shots_output, miko, g_B15M.pattern)
-                : M_Phase3(assets, shots_output, miko, g_B15M.pattern);
+                ? M_Phase1(assets, miko, g_B15M.pattern)
+                : M_Phase3(assets, miko, g_B15M.pattern);
         } else if (!g_B15M.teleport_done) {
-            const int16_t top = M_RandomTop(assets, shots_output, miko);
-            const int16_t left = M_RandomLeft(assets, shots_output, miko);
-            g_B15M.teleport_done =
-                M_Teleport(assets, shots_output, miko, left, top);
+            const int16_t top = M_RandomTop(assets, miko);
+            const int16_t left = M_RandomLeft(assets, miko);
+            g_B15M.teleport_done = M_Teleport(assets, miko, left, top);
         } else {
             g_B15M.pattern = g_B15M.phase == B15M_PHASE_PATTERNS_1
-                ? M_Phase1(assets, shots_output, miko, 0)
-                : M_Phase3(assets, shots_output, miko, 0);
+                ? M_Phase1(assets, miko, 0)
+                : M_Phase3(assets, miko, 0);
             g_B15M.teleport_done = false;
         }
-        M_Hit(assets, shots_output, miko, B15M_FORM_GIRL);
+        M_Hit(assets, miko, B15M_FORM_GIRL);
         if (!g_B15M.hit.invincible
             && g_B15M.hp <= (g_B15M.phase == B15M_PHASE_PATTERNS_1 ? 10 : 6)
             && g_B15M.teleport_done) {
@@ -1635,7 +1515,7 @@ bool B15M_UpdateAndRender(
         }
     } else if (g_B15M.phase == B15M_PHASE_CENTER) {
         g_B15M.frame = Math16_Wrap(g_B15M.frame + 1);
-        g_B15M.teleport_done = M_Teleport(assets, shots_output, miko, 256, 96);
+        g_B15M.teleport_done = M_Teleport(assets, miko, 256, 96);
         if (g_B15M.teleport_done) {
             g_B15M.phase3_pattern = 0;
             M_Next(B15M_PHASE_PATTERNS_2, 1);
@@ -1643,10 +1523,9 @@ bool B15M_UpdateAndRender(
     } else if (g_B15M.phase == B15M_PHASE_TRANSFORM) {
         g_B15M.frame = Math16_Wrap(g_B15M.frame + 1);
         if (!g_B15M.teleport_done) {
-            g_B15M.teleport_done =
-                M_Teleport(assets, shots_output, miko, 256, 96);
+            g_B15M.teleport_done = M_Teleport(assets, miko, 256, 96);
         } else {
-            if (!M_Transform(assets, shots_output, miko, true)) {
+            if (!M_Transform(assets, miko, true)) {
                 return false;
             }
         }
@@ -1665,9 +1544,9 @@ bool B15M_UpdateAndRender(
                 g_B15M.bat.image = 2;
             }
         }
-        if (!M_Phase5(assets, shots_output, miko, host_tick)) {
+        if (!M_Phase5(assets, miko, host_tick)) {
             return false;
         }
     }
-    return M_Tail(assets, shots_output, miko);
+    return M_Tail(assets, miko);
 }

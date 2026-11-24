@@ -94,21 +94,14 @@ typedef struct {
     const GAMEPLAY_WORLD *initial;
 } GAMEPLAY_STORAGE;
 
-typedef struct {
-    PLAYER_SPRITES player_sprites;
-    PLAYER_OUTPUT player_output;
-    SHOTS_OUTPUT shots_output;
-    const PTN *stage_sprites;
-    ROUTE_SELECT_ASSETS route_assets;
-} GAMEPLAY_BINDINGS;
-
 struct GAMEPLAY {
     GAMEPLAY_STORAGE storage;
     GAMEPLAY_WORLD world;
-    GAMEPLAY_BINDINGS bindings;
 };
 
-void Gameplay_Bind(GAMEPLAY *gameplay);
+// The sprites for the current stage, boss or non-boss.
+const PTN *Gameplay_StageSprites(const GAMEPLAY *gameplay);
+PLAYER_SPRITES Gameplay_PlayerSprites(const GAMEPLAY *gameplay);
 void Gameplay_ResetWorld(GAMEPLAY *gameplay);
 void Gameplay_ResetInput(GAMEPLAY *gameplay);
 void Gameplay_DefaultActors(GAMEPLAY *gameplay);

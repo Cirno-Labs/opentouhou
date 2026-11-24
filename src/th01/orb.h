@@ -104,46 +104,11 @@ typedef struct {
 // selects left 4. Coordinates may include normal playfield wall overshoot.
 bool Orb_PlayerHitTest(const ORB_PLAYER *player, int16_t repel_friction);
 
-typedef enum {
-    ORB_ACTION_DONE,
-    ORB_ACTION_DELAY_ONE,
-    ORB_ACTION_PELLETS,
-    ORB_ACTION_CARDS_HITTEST,
-    ORB_ACTION_OBSTACLES,
-    ORB_ACTION_PLAYER_HITTEST,
-    ORB_ACTION_ERASE,
-    ORB_ACTION_CARDS_RENDER,
-    ORB_ACTION_PUT,
-} ORB_ACTION_KIND;
-
-typedef struct {
-    ORB_ACTION_KIND kind;
-    int16_t left, top, image;
-} ORB_ACTION;
-
-typedef struct {
-    int32_t phase;
-    bool boss;
-} ORB_COMPOSITE;
-
-// Begins the composite after motion, with the zero-based source stage ID.
-// Requires the caller to execute every yielded action before requesting
-// the next. Stage executes collision and rendering actions; the iterator
-// itself implements no collision behavior.
-// The delay consumes count1 when ready; yield only while count1 is zero.
-// Simulation timing belongs to the caller; no forced next-edge wait applies.
-ORB_COMPOSITE Orb_BeginComposite(int16_t stage_id, int16_t *card_combo);
-
-// Reads portal and player-hit state afresh at each phase, including after
-// obstacle callbacks. Erase uses the current image at the previous position.
-// Updates previous coordinates when yielding DONE, also in a portal.
-// Do not start another composite until DONE has been returned.
-ORB_ACTION Orb_NextAction(ORB_COMPOSITE *composite, bool player_hit);
-
-// Executes only PUT or ERASE actions using immutable stage PTN images.
-// Requires at least ORB_FIRST_IMAGE + ORB_IMAGE_COUNT images. Quantizes X down
-// to eight pixels. ERASE restores opaque sprite pixels from page 1 to page 0;
-// PUT uses the selected drawing page. Horizontal overshoot wraps into the
+// Draws the Orb's current image using immutable stage PTN images. Requires
+// at least ORB_FIRST_IMAGE + ORB_IMAGE_COUNT images. Quantizes X down to
+// eight pixels. Erase restores opaque sprite pixels from page 1 to page 0;
+// put uses the selected drawing page. Horizontal overshoot wraps into the
 // adjacent row as in linear planar memory. Discards pixels outside the
 // visible page rather than aliasing another memory region. Allocates nothing.
-void Orb_RenderAction(const PTN *sprites, ORB_ACTION action);
+void Orb_Put(const PTN *sprites, int16_t left, int16_t top, int16_t image);
+void Orb_Erase(const PTN *sprites, int16_t left, int16_t top, int16_t image);

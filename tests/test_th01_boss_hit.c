@@ -12,32 +12,15 @@
 typedef struct {
     ARENA arena;
     PALETTE baseline;
-    SHOTS_OUTPUT shots_output;
     BOSS_HIT hit;
     PTN sprites;
     GAME_TEXT_FONT font;
-    int16_t hp, expected_shot_hp;
-    int32_t events[8], count;
+    int16_t hp;
 } FIXTURE;
-
-static void M_Shot(void *const user, const SHOTS_ACTION action)
-{
-    FIXTURE *const f = user;
-    CHECK_EQ_INT(f->hp, f->expected_shot_hp);
-    if (action.kind == SHOTS_ACTION_EFFECT) {
-        CHECK_EQ_INT(action.effect, 16);
-        CHECK(!g_Shots.slots[0].moving);
-        CHECK_EQ_INT(g_Shots.slots[0].decay_frame, 1);
-        f->events[f->count++] = 16;
-    } else {
-        Shots_RenderAction(&f->sprites, action);
-        f->events[f->count++] = 1;
-    }
-}
 
 static void M_Init(FIXTURE *const f)
 {
-    *f = (FIXTURE) { .hp = 8, .expected_shot_hp = 8 };
+    *f = (FIXTURE) { .hp = 8 };
     g_Session.lives = 3;
     Arena_Init(&f->arena, "boss hit", 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
@@ -59,7 +42,6 @@ static void M_Init(FIXTURE *const f)
     f->baseline.colors[2][2] = 3;
     Palette_Set(&g_Palette, &f->baseline);
     Hud_Load(nullptr, &f->sprites, &f->font);
-    f->shots_output = (SHOTS_OUTPUT) { M_Shot, f };
 }
 
 TEST(real_hud_health_and_flash_follow_hit_order)
@@ -71,13 +53,11 @@ TEST(real_hud_health_and_flash_follow_hit_order)
     g_Stage.score = UINT32_MAX - 5;
     g_Orb.left = 303;
     BossHit_UpdateAndRender(
-        &f.hit, f.shots_output, &f.hp, &f.baseline, colors, 1, 10, true,
-        (BOSS_SHOT_HITBOX) {});
+        &f.hit, &f.hp, &f.baseline, colors, 1, 10, true, (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(g_Stage.score, 4);
     CHECK_EQ_INT(g_Session.high_score, 4);
     CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
     CHECK_EQ_INT(f.hp, 7);
-    CHECK_EQ_INT(f.count, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 184, 48), 0);
     CHECK_EQ_INT(g_Palette.saved.colors[2][0], 1);
     CHECK_EQ_INT(g_Video.palette[2].red, 17);
@@ -90,18 +70,16 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
     FIXTURE f;
     M_Init(&f);
     g_TestDamage = true;
-    f.expected_shot_hp = 7;
     f.hit = (BOSS_HIT) { .frame = 1, .invincible = true };
     g_Shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
     BossHit_UpdateAndRender(
-        &f.hit, f.shots_output, &f.hp, &f.baseline, nullptr, 0, 3000, true,
+        &f.hit, &f.hp, &f.baseline, nullptr, 0, 3000, true,
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
     CHECK(!g_TestDamage);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(g_Stage.score, 0);
-    CHECK_EQ_INT(f.count, 2);
-    CHECK_EQ_INT(f.events[0], 1);
-    CHECK_EQ_INT(f.events[1], 16);
+    CHECK(!g_Shots.slots[0].moving);
+    CHECK_EQ_INT(g_Shots.slots[0].decay_frame, 1);
     CHECK_EQ_INT(f.hit.frame, 1);
     Arena_Free(&f.arena);
 }
@@ -117,12 +95,12 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
     f.hit.invincible = true;
     g_Session.frame_rand = 49;
     BossHit_UpdateAndRender(
-        &f.hit, f.shots_output, &f.hp, &f.baseline, colors, 1, -1, false,
+        &f.hit, &f.hp, &f.baseline, colors, 1, -1, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(f.hp, 8);
     g_Session.frame_rand = 50;
     BossHit_UpdateAndRender(
-        &f.hit, f.shots_output, &f.hp, &f.baseline, colors, 1, -1, false,
+        &f.hit, &f.hp, &f.baseline, colors, 1, -1, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(g_Stage.score, UINT32_MAX);
@@ -138,14 +116,14 @@ TEST(palette_reset_is_strictly_after_forty_even_without_invincibility)
     f.hit = (BOSS_HIT) { .frame = 40, .invincible = true };
     Palette_SetColor(&g_Palette, 2, 15, 15, 15);
     BossHit_UpdateAndRender(
-        &f.hit, f.shots_output, &f.hp, &f.baseline, colors, 1, 3000, false,
+        &f.hit, &f.hp, &f.baseline, colors, 1, 3000, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK(f.hit.invincible);
     CHECK_EQ_INT(f.hit.frame, 40);
     CHECK_EQ_INT(g_Palette.saved.colors[2][0], 15);
     f.hit = (BOSS_HIT) { .frame = 41 };
     BossHit_UpdateAndRender(
-        &f.hit, f.shots_output, &f.hp, &f.baseline, colors, 1, 3000, false,
+        &f.hit, &f.hp, &f.baseline, colors, 1, 3000, false,
         (BOSS_SHOT_HITBOX) {});
     CHECK(!f.hit.invincible);
     CHECK_EQ_INT(f.hit.frame, 0);

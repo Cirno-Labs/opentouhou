@@ -28,7 +28,6 @@ typedef struct {
 // before battle; flashing changes saved and the DAC. Colors must be 0..15.
 // Allocates nothing, performs no IO and uses loaded caller-owned resources.
 void BossHit_UpdateAndRender(
-    BOSS_HIT *hit, SHOTS_OUTPUT shots_output, int16_t *hp,
-    const PALETTE *boss_palette, const uint8_t *flash_colors,
-    uint8_t flash_count, int16_t hit_score, bool orb_hit,
-    BOSS_SHOT_HITBOX shot_hitbox);
+    BOSS_HIT *hit, int16_t *hp, const PALETTE *boss_palette,
+    const uint8_t *flash_colors, uint8_t flash_count, int16_t hit_score,
+    bool orb_hit, BOSS_SHOT_HITBOX shot_hitbox);

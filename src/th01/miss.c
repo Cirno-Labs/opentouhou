@@ -1,9 +1,11 @@
 #include "th01/miss.h"
-#include "th01/session.h"
-#include "th01/timer.h"
-#include "th01/pellets.h"
 #include "th01/hud.h"
+#include "th01/orb.h"
+#include "th01/pellets.h"
 #include "th01/rng.h"
+#include "th01/session.h"
+#include "th01/shots.h"
+#include "th01/timer.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
@@ -12,25 +14,9 @@
 
 MISS g_Miss;
 
-typedef struct {
-    const PTN *stage;
-} MISS_SHOTS;
-
-static void M_Orb(const PTN *const miko, const PTN *const stage)
+static void M_Orb(const PTN *const stage)
 {
-    Orb_RenderAction(
-        stage,
-        (ORB_ACTION) { .kind = ORB_ACTION_PUT,
-                       .left = g_Orb.left,
-                       .top = g_Orb.top,
-                       .image = 0 });
-}
-
-static void M_Shot(void *const user, const SHOTS_ACTION action)
-{
-    const MISS_SHOTS *const context = user;
-    ASSERT(action.kind == SHOTS_ACTION_RESTORE);
-    Shots_RenderAction(context->stage, action);
+    Orb_Put(stage, g_Orb.left, g_Orb.top, 0);
 }
 
 static void M_Effect(const PTN *const miko, const PTN *const stage)
@@ -50,7 +36,7 @@ static void M_Effect(const PTN *const miko, const PTN *const stage)
     if (g_Miss.effect_left < 0) {
         g_Miss.effect_left = 0;
     }
-    M_Orb(miko, stage);
+    M_Orb(stage);
     Sprite_PtnPut(miko, 20 + g_Miss.frame % 2, -1, player->left, PLAYER_TOP);
     Sprite_PtnPut(
         miko, 20 + g_Miss.frame % 2, -1, g_Miss.effect_left, PLAYER_TOP);
@@ -61,8 +47,7 @@ static void M_Reset(const PTN *const miko, const PTN *const stage)
 {
     PLAYER *const player = &g_Player;
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
-    MISS_SHOTS shot_context = { stage };
-    Shots_EraseAndReset((SHOTS_OUTPUT) { M_Shot, &shot_context });
+    Shots_EraseAndReset();
     Pellets_Decay();
     Player_Reset(g_Session.settings.difficulty);
     g_Miss.target_right = Math16_Wrap(player->left + 160);
@@ -114,7 +99,7 @@ void Miss_Begin(const PTN *const miko, const PTN *const stage)
 {
     ASSERT(g_Miss.phase == MISS_DONE);
     Sprite_Restore16(g_Player.left, PLAYER_TOP, 32, 32);
-    M_Orb(miko, stage);
+    M_Orb(stage);
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(miko, image, -1, g_Player.left, PLAYER_TOP);
     g_Miss.frame = 0;

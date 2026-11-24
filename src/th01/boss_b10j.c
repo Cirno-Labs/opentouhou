@@ -88,9 +88,7 @@ void B10J_Init(void)
     g_B10J.spread_speed = 8;
 }
 
-void B10J_BeginSetup(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+void B10J_BeginSetup(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     ASSERT(
         !g_B10J.setup_active && !g_B10J.entrance_active && !g_B10J.defeating);
@@ -109,9 +107,7 @@ void B10J_BeginSetup(
     g_B10J.finished = false;
 }
 
-bool B10J_ResumeSetup(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+bool B10J_ResumeSetup(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (!g_B10J.setup_active) {
         return true;
@@ -140,9 +136,7 @@ bool B10J_ResumeSetup(
     return true;
 }
 
-static void M_Snap(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Snap(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     Video_Read(
         1, (GFX_RECT) { g_B10J.still.left, g_B10J.still.top, 128, 160 },
@@ -150,9 +144,7 @@ static void M_Snap(
     Video_SelectDrawingPage(0);
 }
 
-static void M_Erase(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Erase(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     const VIDEO_IMAGE bg = { .pixels = g_B10J.background,
                              .width = 128,
@@ -164,19 +156,15 @@ static void M_Erase(
         g_B10J.still.top);
 }
 
-static void M_EraseBoth(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_EraseBoth(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     Video_SelectDrawingPage(1);
-    M_Erase(assets, shots_output, miko);
+    M_Erase(assets, miko);
     Video_SelectDrawingPage(0);
-    M_Erase(assets, shots_output, miko);
+    M_Erase(assets, miko);
 }
 
-static void M_PutStill(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_PutStill(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
@@ -187,8 +175,7 @@ static void M_PutStill(
 }
 
 static void M_AnimationBoth(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t image)
+    const B10J_ASSETS *const assets, const PTN *const miko, const int16_t image)
 {
     g_B10J.animation.left = g_B10J.still.left;
     g_B10J.animation.top = Math16_Wrap(g_B10J.still.top + 48);
@@ -201,27 +188,21 @@ static void M_AnimationBoth(
     }
 }
 
-static void M_Cast(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Cast(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     g_B10J.meteor_active = false;
-    M_AnimationBoth(assets, shots_output, miko, 0);
+    M_AnimationBoth(assets, miko, 0);
 }
 
-static void M_Activate(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Activate(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (!g_B10J.meteor_active) {
         g_B10J.meteor_active = true;
-        M_AnimationBoth(assets, shots_output, miko, 1);
+        M_AnimationBoth(assets, miko, 1);
     }
 }
 
-static void M_Meteor(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Meteor(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B10J.meteor_active && g_B10J.frame % 8 == 0) {
         g_B10J.animation.left = g_B10J.still.left;
@@ -234,8 +215,8 @@ static void M_Meteor(
 }
 
 static void M_Spread(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t left, const int16_t top)
+    const B10J_ASSETS *const assets, const PTN *const miko, const int16_t left,
+    const int16_t top)
 {
     if (g_B10J.frame < 10) {
         return;
@@ -243,7 +224,7 @@ static void M_Spread(
     if (g_B10J.frame == 10) {
         g_B10J.still.left = left;
         g_B10J.still.top = top;
-        M_Snap(assets, shots_output, miko);
+        M_Snap(assets, miko);
         return;
     }
     if (g_B10J.frame % g_B10J.spread_interval != 0) {
@@ -254,7 +235,7 @@ static void M_Spread(
     const int16_t start = Math16_Wrap(80 - bottom);
     if (start < 0) {
         g_B10J.frame = 0;
-        M_PutStill(assets, shots_output, miko);
+        M_PutStill(assets, miko);
         return;
     }
     for (int16_t row = 0; row < bottom; row++) {
@@ -268,8 +249,7 @@ static void M_Spread(
 }
 
 static void M_BrokenTransition(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B10J.frame < 10 || g_B10J.frame % 4 != 0) {
         return;
@@ -299,9 +279,8 @@ static void M_Corners(
 }
 
 static void M_Loop(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x[4], const int16_t y[4],
-    const bool restore)
+    const B10J_ASSETS *const assets, const PTN *const miko, const int16_t x[4],
+    const int16_t y[4], const bool restore)
 {
     for (int32_t i = 0; i < 4; i++) {
         const int32_t next = (i + 1) % 4;
@@ -314,9 +293,8 @@ static void M_Loop(
 }
 
 static void M_Add(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t x, const int16_t y,
-    const uint8_t angle, const int16_t speed, const bool chase)
+    const B10J_ASSETS *const assets, const PTN *const miko, const int16_t x,
+    const int16_t y, const uint8_t angle, const int16_t speed, const bool chase)
 {
     Pellets_AddSingle(
         g_Session.settings.difficulty, x, y, angle, speed,
@@ -330,8 +308,7 @@ static void M_SquareInit(B10J_SQUARE *const sq)
 }
 
 static void M_AimedStatic(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10J_ASSETS *const assets, const PTN *const miko)
 {
     B10J_SQUARE *const sq = &g_B10J.squares[0];
     if (g_B10J.frame < 100) {
@@ -345,7 +322,7 @@ static void M_AimedStatic(
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         sq->angle = (uint8_t)(sq->angle + (g_B10J.frame < 260 ? 12 : -12));
         if (sq->radius < 112) {
             sq->radius += 8;
@@ -359,7 +336,7 @@ static void M_AimedStatic(
                           Math16_Wrap(384 - y[i]),
                           Math16_Wrap(Boss_Player()->left + 12 - x[i]));
                 M_Add(
-                    assets, shots_output, miko, x[i], y[i], angle,
+                    assets, miko, x[i], y[i], angle,
                     g_B10J.frame > 280 ? g_B10J.pattern_state
                                        : (int16_t)(g_B10J.pattern_state / 2),
                     false);
@@ -367,18 +344,17 @@ static void M_AimedStatic(
             }
         }
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, false);
+        M_Loop(assets, miko, x, y, false);
     }
     if (g_B10J.frame > 360) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         g_B10J.frame = 0;
     }
 }
 
 static void M_AimedMissiles(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10J_ASSETS *const assets, const PTN *const miko)
 {
     B10J_SQUARE *const sq = &g_B10J.squares[1];
     if (g_B10J.frame < 100) {
@@ -392,7 +368,7 @@ static void M_AimedMissiles(
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         sq->angle -= 12;
         if (sq->radius < 80) {
             sq->radius += 8;
@@ -412,22 +388,20 @@ static void M_AimedMissiles(
             Sound_Effect(6);
         }
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, false);
+        M_Loop(assets, miko, x, y, false);
     }
     if (g_B10J.frame > 320) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         g_B10J.frame = 0;
     }
 }
 
-static void M_TwoSquares(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_TwoSquares(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     B10J_SQUARE *const sq = &g_B10J.squares[2];
     if (g_B10J.frame == 50) {
-        M_Cast(assets, shots_output, miko);
+        M_Cast(assets, miko);
     }
     if (g_B10J.frame < 100) {
         return;
@@ -441,8 +415,8 @@ static void M_TwoSquares(
     if (g_B10J.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Corners(x2, y2, sq->radius, (uint8_t)-sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
-        M_Loop(assets, shots_output, miko, x2, y2, true);
+        M_Loop(assets, miko, x, y, true);
+        M_Loop(assets, miko, x2, y2, true);
         sq->angle -= 6;
         g_Pellets.spawn_with_cloud = true;
         if (sq->radius < 112) {
@@ -450,13 +424,13 @@ static void M_TwoSquares(
         } else {
             for (int32_t i = 0; i < 4; i++) {
                 M_Add(
-                    assets, shots_output, miko, x[i], y[i],
+                    assets, miko, x[i], y[i],
                     Math16_Angle(
                         Math16_Wrap(y[i] - g_B10J.still.top - 80),
                         Math16_Wrap(x[i] - g_B10J.still.left - 64)),
                     g_B10J.pattern_state, false);
                 M_Add(
-                    assets, shots_output, miko, x2[i], y2[i],
+                    assets, miko, x2[i], y2[i],
                     Math16_Angle(
                         Math16_Wrap(y2[i] - g_B10J.still.top - 80),
                         Math16_Wrap(x2[i] - g_B10J.still.left - 64)),
@@ -466,23 +440,21 @@ static void M_TwoSquares(
         }
         M_Corners(x, y, sq->radius, sq->angle);
         M_Corners(x2, y2, sq->radius, (uint8_t)-sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, false);
-        M_Loop(assets, shots_output, miko, x2, y2, false);
+        M_Loop(assets, miko, x, y, false);
+        M_Loop(assets, miko, x2, y2, false);
         g_Pellets.spawn_with_cloud = false;
     }
     if (g_B10J.frame > 320) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Corners(x2, y2, sq->radius, (uint8_t)-sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
-        M_Loop(assets, shots_output, miko, x2, y2, true);
+        M_Loop(assets, miko, x, y, true);
+        M_Loop(assets, miko, x2, y2, true);
         g_B10J.frame = 0;
-        M_Activate(assets, shots_output, miko);
+        M_Activate(assets, miko);
     }
 }
 
-static void M_InitHop(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_InitHop(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     g_B10J.hop = 255;
     g_B10J.spread_interval = 4;
@@ -490,37 +462,34 @@ static void M_InitHop(
     g_B10J.spread_speed = 16;
 }
 
-static void M_Hop(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Hop(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B10J.hop == 255) {
-        M_EraseBoth(assets, shots_output, miko);
+        M_EraseBoth(assets, miko);
         g_B10J.meteor_active = false;
         g_B10J.hop = 0;
         g_B10J.frame = 1;
     }
     if (g_B10J.hop == 0) {
         g_B10J.still.orb_inactive = true;
-        M_BrokenTransition(assets, shots_output, miko);
+        M_BrokenTransition(assets, miko);
     } else {
         if (g_B10J.frame == 4) {
             g_B10J.still.left = g_B10J.direction == 0
                 ? (int16_t)((g_B10J.hop - 1) * 128)
                 : (int16_t)(640 - g_B10J.hop * 128);
             g_B10J.still.top = 96;
-            M_Snap(assets, shots_output, miko);
+            M_Snap(assets, miko);
         }
         g_B10J.still.orb_inactive = g_B10J.frame < 12;
-        M_Spread(
-            assets, shots_output, miko, g_B10J.still.left, g_B10J.still.top);
+        M_Spread(assets, miko, g_B10J.still.left, g_B10J.still.top);
     }
     if (g_B10J.frame != 0) {
         return;
     }
     if (g_B10J.hop != 0) {
         if (g_B10J.hop != 4) {
-            M_EraseBoth(assets, shots_output, miko);
+            M_EraseBoth(assets, miko);
         }
         g_B10J.pattern_state = Boss_Rank(30, 35, 40, 45);
         const int16_t count = Boss_Rank(5, 8, 10, 12);
@@ -528,13 +497,13 @@ static void M_Hop(
         for (int16_t i = 0; i < count;
              i++, angle = (uint8_t)(angle + 256 / count)) {
             M_Add(
-                assets, shots_output, miko, Math16_Wrap(g_B10J.still.left + 64),
+                assets, miko, Math16_Wrap(g_B10J.still.left + 64),
                 Math16_Wrap(g_B10J.still.top + 80), angle, g_B10J.pattern_state,
                 true);
         }
     }
     if (g_B10J.hop >= 4) {
-        M_PutStill(assets, shots_output, miko);
+        M_PutStill(assets, miko);
         Palette_Set(&g_Palette, &g_StagePalette);
         g_B10J.hop = 255;
         g_B10J.direction = (uint8_t)(1 - g_B10J.direction);
@@ -552,9 +521,8 @@ static void M_Hop(
 }
 
 static void M_Pillar(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t left, const int16_t bottom,
-    const int16_t height)
+    const B10J_ASSETS *const assets, const PTN *const miko, const int16_t left,
+    const int16_t bottom, const int16_t height)
 {
     const int32_t segments = height > 8 ? height - 8 : 0;
     uint16_t offset = (uint16_t)(bottom * 80 + left / 8 - (left % 8 < 0));
@@ -577,12 +545,10 @@ static void M_Pillar(
     }
 }
 
-static void M_Pillars(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B10J.frame == 50) {
-        M_Cast(assets, shots_output, miko);
+        M_Cast(assets, miko);
     }
     if (g_B10J.frame < 100) {
         return;
@@ -616,7 +582,7 @@ static void M_Pillars(
         Sound_Effect(12);
     }
     if (g_B10J.frame == 240) {
-        M_Activate(assets, shots_output, miko);
+        M_Activate(assets, miko);
     }
     for (int32_t i = 0; i < 8; i++) {
         if (g_B10J.frame % 8 != i || g_B10J.frame <= 100 + i * 20) {
@@ -634,7 +600,7 @@ static void M_Pillars(
                 Video_LineErase(320, 200, x, bottom);
             }
             M_Pillar(
-                assets, shots_output, miko, Math16_Wrap(x - 16), bottom,
+                assets, miko, Math16_Wrap(x - 16), bottom,
                 Math16_Wrap(16 * (34 - g_B10J.pillar_time[i])));
             if (!Boss_Player()->invincible
                 && Boss_Player()->left > Math16_Wrap(x - 40)
@@ -661,9 +627,7 @@ static void M_Pillars(
     }
 }
 
-static void M_Halfcircle(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Halfcircle(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     B10J_SQUARE *const sq = &g_B10J.squares[3];
     if (g_B10J.frame < 100) {
@@ -678,7 +642,7 @@ static void M_Halfcircle(
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         sq->angle -= 12;
         if (sq->radius < 80) {
             sq->radius += 8;
@@ -692,18 +656,16 @@ static void M_Halfcircle(
             g_B10J.missile_angle += 13;
         }
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, false);
+        M_Loop(assets, miko, x, y, false);
     }
     if (g_B10J.frame > 340) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         g_B10J.frame = 0;
     }
 }
 
-static void M_Spray(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Spray(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     B10J_SQUARE *const sq = &g_B10J.squares[4];
     if (g_B10J.frame < 100) {
@@ -718,7 +680,7 @@ static void M_Spray(
     int16_t x[4], y[4];
     if (g_B10J.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         sq->angle = (uint8_t)(sq->angle + (g_B10J.frame > 270 ? 12 : -12));
         if (sq->radius < 80) {
             sq->radius += 8;
@@ -727,28 +689,26 @@ static void M_Spray(
                                             + (g_B10J.frame > 270 ? 12 : -12));
             for (int32_t i = 0; i < 4; i++) {
                 M_Add(
-                    assets, shots_output, miko, x[i], y[i], g_B10J.pellet_angle,
+                    assets, miko, x[i], y[i], g_B10J.pellet_angle,
                     g_B10J.pattern_state, false);
             }
             Sound_Effect(6);
         }
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, false);
+        M_Loop(assets, miko, x, y, false);
     }
     if (g_B10J.frame > 370) {
         M_Corners(x, y, sq->radius, sq->angle);
-        M_Loop(assets, shots_output, miko, x, y, true);
+        M_Loop(assets, miko, x, y, true);
         g_B10J.frame = 0;
     }
 }
 
-static void M_Lasers(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Lasers(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     B10J_SQUARE *const sq = &g_B10J.squares[5];
     if (g_B10J.frame == 50) {
-        M_Cast(assets, shots_output, miko);
+        M_Cast(assets, miko);
     }
     if (g_B10J.frame < 100) {
         return;
@@ -760,15 +720,13 @@ static void M_Lasers(
     }
     if (g_B10J.frame % 8 == 0) {
         M_Corners(g_B10J.laser_x, g_B10J.laser_y, sq->radius, sq->angle);
-        M_Loop(
-            assets, shots_output, miko, g_B10J.laser_x, g_B10J.laser_y, true);
+        M_Loop(assets, miko, g_B10J.laser_x, g_B10J.laser_y, true);
         sq->angle += 3;
         if (sq->radius < 80) {
             sq->radius += 8;
         }
         M_Corners(g_B10J.laser_x, g_B10J.laser_y, sq->radius, sq->angle);
-        M_Loop(
-            assets, shots_output, miko, g_B10J.laser_x, g_B10J.laser_y, false);
+        M_Loop(assets, miko, g_B10J.laser_x, g_B10J.laser_y, false);
     }
     if (g_B10J.frame > 180 && g_B10J.frame < 300) {
         const int32_t i = g_B10J.frame % 4;
@@ -779,37 +737,22 @@ static void M_Lasers(
     }
     if (g_B10J.frame > 300) {
         M_Corners(g_B10J.laser_x, g_B10J.laser_y, sq->radius, sq->angle);
-        M_Loop(
-            assets, shots_output, miko, g_B10J.laser_x, g_B10J.laser_y, true);
+        M_Loop(assets, miko, g_B10J.laser_x, g_B10J.laser_y, true);
         g_B10J.frame = 0;
     }
 }
 
-static void M_Hit(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Hit(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     const uint8_t flash[] = { 3, 9 };
     BossHit_UpdateAndRender(
-        &g_B10J.hit, shots_output, &g_B10J.hp, &g_B10J.boss_palette, flash, 2,
-        5000, BossEntity_HitTestOrb(&g_B10J.still),
+        &g_B10J.hit, &g_B10J.hp, &g_B10J.boss_palette, flash, 2, 5000,
+        BossEntity_HitTestOrb(&g_B10J.still),
         (BOSS_SHOT_HITBOX) { Math16_Wrap(g_B10J.still.left + 16),
                              Math16_Wrap(g_B10J.still.top + 48), 96, 48 });
 }
 
-static void M_MissileAction(void *const user, const MISSILES_ACTION action)
-{
-    const B10J_ASSETS *const assets = user;
-    if (action.kind == MISSILES_ACTION_EFFECT) {
-        Sound_Effect(action.effect);
-    } else {
-        Missiles_RenderAction(&assets->missiles, action);
-    }
-}
-
-static bool M_Entrance(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static bool M_Entrance(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     for (;;) {
         if (g_B10J.entrance_waiting) {
@@ -819,14 +762,14 @@ static bool M_Entrance(
             g_B10J.entrance_waiting = false;
         }
         g_B10J.frame = Math16_Wrap(g_B10J.frame + 1);
-        M_Spread(assets, shots_output, miko, 256, 120);
+        M_Spread(assets, miko, 256, 120);
         if (g_B10J.frame == 0) {
             g_B10J.phase = B10J_PHASE_FIRST;
             g_B10J.pattern = 0;
             g_B10J.hp_bar_filled = false;
             g_StagePalette = g_Palette.saved;
             g_B10J.boss_palette = g_Palette.saved;
-            M_InitHop(assets, shots_output, miko);
+            M_InitHop(assets, miko);
             g_B10J.entrance_active = false;
             return true;
         }
@@ -834,9 +777,7 @@ static bool M_Entrance(
     }
 }
 
-static bool M_Death(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static bool M_Death(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
             &g_B10J.defeat, &g_B10J.post_defeat, miko, &g_Orb.top)) {
@@ -849,22 +790,19 @@ static bool M_Death(
 }
 
 bool B10J_UpdateAndRender(
-    const B10J_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10J_ASSETS *const assets, const PTN *const miko)
 {
     ASSERT(!g_B10J.setup_active);
     if (g_B10J.finished) {
         return true;
     }
     if (g_B10J.entrance_active) {
-        return M_Entrance(assets, shots_output, miko);
+        return M_Entrance(assets, miko);
     }
     if (g_B10J.defeating) {
-        return M_Death(assets, shots_output, miko);
+        return M_Death(assets, miko);
     }
-    Missiles_UpdateAndRender(
-        (uint16_t)g_Session.frame_rand,
-        (MISSILES_OUTPUT) { M_MissileAction, (void *)assets });
+    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
     Particles_UpdateAndRender(PARTICLES_TOP_RIGHT, 7);
     if (g_B10J.phase == B10J_PHASE_START) {
         Video_SelectDrawingPage(0);
@@ -874,7 +812,7 @@ bool B10J_UpdateAndRender(
         g_B10J.spread_speed = 2;
         g_B10J.meteor_active = true;
         g_B10J.entrance_active = true;
-        return M_Entrance(assets, shots_output, miko);
+        return M_Entrance(assets, miko);
     }
     if (g_B10J.phase == B10J_PHASE_FIRST) {
         if (!g_B10J.hp_bar_filled) {
@@ -882,19 +820,19 @@ bool B10J_UpdateAndRender(
         }
         g_B10J.frame = Math16_Wrap(g_B10J.frame + 1);
         g_B10J.hit.frame = Math16_Wrap(g_B10J.hit.frame + 1);
-        M_Meteor(assets, shots_output, miko);
+        M_Meteor(assets, miko);
         switch (g_B10J.pattern) {
         case 0:
-            M_AimedStatic(assets, shots_output, miko);
+            M_AimedStatic(assets, miko);
             break;
         case 1:
-            M_AimedMissiles(assets, shots_output, miko);
+            M_AimedMissiles(assets, miko);
             break;
         case 2:
-            M_TwoSquares(assets, shots_output, miko);
+            M_TwoSquares(assets, miko);
             break;
         case 3:
-            M_Hop(assets, shots_output, miko);
+            M_Hop(assets, miko);
             break;
         default:
             break;
@@ -906,14 +844,14 @@ bool B10J_UpdateAndRender(
                 g_B10J.pattern = 99;
             }
         }
-        M_Hit(assets, shots_output, miko);
+        M_Hit(assets, miko);
         if (g_B10J.pattern == 99 && !g_B10J.hit.invincible) {
-            M_EraseBoth(assets, shots_output, miko);
+            M_EraseBoth(assets, miko);
             g_B10J.spread_interval = 4;
             g_B10J.spread_speed = 8;
             g_B10J.still.left = 256;
             g_B10J.still.top = 120;
-            M_Snap(assets, shots_output, miko);
+            M_Snap(assets, miko);
             g_B10J.phase = B10J_PHASE_SPREAD;
             g_B10J.frame = 0;
             g_B10J.hit.frame = 0;
@@ -922,7 +860,7 @@ bool B10J_UpdateAndRender(
     } else if (g_B10J.phase == B10J_PHASE_SPREAD) {
         g_B10J.frame = Math16_Wrap(g_B10J.frame + 1);
         g_B10J.hit.frame = Math16_Wrap(g_B10J.hit.frame + 1);
-        M_Spread(assets, shots_output, miko, 256, 120);
+        M_Spread(assets, miko, 256, 120);
         if (g_B10J.frame == 0) {
             g_B10J.phase = B10J_PHASE_SECOND;
             g_B10J.frame = 0;
@@ -932,19 +870,19 @@ bool B10J_UpdateAndRender(
     } else if (g_B10J.phase == B10J_PHASE_SECOND) {
         g_B10J.frame = Math16_Wrap(g_B10J.frame + 1);
         g_B10J.hit.frame = Math16_Wrap(g_B10J.hit.frame + 1);
-        M_Meteor(assets, shots_output, miko);
+        M_Meteor(assets, miko);
         switch (g_B10J.pattern) {
         case 0:
-            M_Pillars(assets, shots_output, miko);
+            M_Pillars(assets, miko);
             break;
         case 1:
-            M_Halfcircle(assets, shots_output, miko);
+            M_Halfcircle(assets, miko);
             break;
         case 2:
-            M_Spray(assets, shots_output, miko);
+            M_Spray(assets, miko);
             break;
         case 3:
-            M_Lasers(assets, shots_output, miko);
+            M_Lasers(assets, miko);
             break;
         default:
             break;
@@ -953,10 +891,10 @@ bool B10J_UpdateAndRender(
             g_B10J.pattern =
                 g_B10J.pattern == 3 ? 0 : Math16_Wrap(g_B10J.pattern + 1);
         }
-        M_Hit(assets, shots_output, miko);
+        M_Hit(assets, miko);
         if (g_B10J.hp <= 0) {
             Video_SelectDrawingPage(1);
-            M_Erase(assets, shots_output, miko);
+            M_Erase(assets, miko);
             Video_SelectDrawingPage(0);
             Sound_Fade();
             Pellets_EraseAndResetMoving();
@@ -964,7 +902,7 @@ bool B10J_UpdateAndRender(
             ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&g_B10J.defeat, BOSS_DEFEAT_REGULAR);
             g_B10J.defeating = true;
-            return M_Death(assets, shots_output, miko);
+            return M_Death(assets, miko);
         }
     }
     return true;

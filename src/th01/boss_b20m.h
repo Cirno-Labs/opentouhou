@@ -142,17 +142,15 @@ void B20M_Init(void);
 
 // Binds actor images, resets the first form and retains pattern history.
 // Run before the separate cached entrance. Performs no allocation or IO.
-void B20M_Setup(const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output);
+void B20M_Setup(const B20M_ASSETS *assets);
 
 // Starts the cached load/scroll/diagonal entrance. Advance reference VSyncs
 // and a monotonic 60 Hz host serial while polling; pending polls stay inert.
-void B20M_BeginEntrance(const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output);
-bool B20M_ResumeEntrance(
-    const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output, uint64_t host_tick);
+void B20M_BeginEntrance(const B20M_ASSETS *assets);
+bool B20M_ResumeEntrance(const B20M_ASSETS *assets, uint64_t host_tick);
 
 // Runs one battle call or resumes its nested waits. False suspends the world.
 // Implements both forms and the final 50,000-point bonus and game clear.
 // Quantizes the bird safety delay to six 60 Hz host ticks.
 // Borrows stable context bindings and allocates nothing and performs no IO.
-bool B20M_UpdateAndRender(
-    const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output, uint64_t host_tick);
+bool B20M_UpdateAndRender(const B20M_ASSETS *assets, uint64_t host_tick);
