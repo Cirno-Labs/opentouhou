@@ -106,18 +106,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .shots_output = g->bindings.shots_output,
         .miko = &a->miko,
     };
-    g->bindings.c20j = (B20J_CONTEXT) {
-        .assets = &a->b20j,
-        .shots_output = g->bindings.shots_output,
-        .game_cleared = &g->world.game_cleared,
-    };
-    g->bindings.c20m = (B20M_CONTEXT) {
-        .assets = &a->b20m,
-        .shots_output = g->bindings.shots_output,
-        .first_stage = &g->world.first_stage,
-        .timer_initialized = &g->world.timer_initialized,
-        .game_cleared = &g->world.game_cleared,
-    };
     g->bindings.bonus_context = (BONUS_CONTEXT) {
         .stage = a->bonus,
         .font = &a->bonus_font,

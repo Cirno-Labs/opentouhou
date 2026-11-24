@@ -4,6 +4,7 @@
 #include "th01/bonus.h"
 #include "th01/boss.h"
 #include "th01/extend.h"
+#include "th01/gameplay.h"
 #include "th01/session.h"
 #include "th01/hud.h"
 #include "th01/hud_hp.h"
@@ -27,6 +28,7 @@
 // Zeroes the gameplay module state as a world reset does.
 static inline void Th01Test_ResetWorld(void)
 {
+    Gameplay_ResetLiveFlags();
     Player_Init();
     Orb_Init();
     Shots_Init();
