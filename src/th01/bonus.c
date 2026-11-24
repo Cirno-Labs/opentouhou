@@ -9,6 +9,12 @@
 #include <string.h>
 
 BONUS g_Bonus;
+static uint32_t m_ScoreBonus;
+
+uint32_t *Bonus_ScoreBonus(void)
+{
+    return &m_ScoreBonus;
+}
 
 #define M_STAGE_WIDTH 288
 #define M_PADDED_HEIGHT 280
@@ -38,28 +44,27 @@ static void M_Digits(
 }
 
 static void M_Text(
-    const BONUS_CONTEXT *const c, const char *const text, const int16_t left,
-    const int16_t row, const uint8_t color)
+    const GAME_TEXT_FONT *const font, const char *const text,
+    const int16_t left, const int16_t row, const uint8_t color)
 {
-    GameText_Draw(c->font, text, 48 + left, 80 + row * 16, color, &m_Style);
+    GameText_Draw(font, text, 48 + left, 80 + row * 16, color, &m_Style);
 }
 
-static int32_t M_Add(
-    const BONUS_CONTEXT *const c, int32_t value, const int32_t cap)
+static int32_t M_Add(int32_t value, const int32_t cap)
 {
     if (value > cap) {
         value = cap;
     }
     for (int32_t i = 0; i < 10; i++) {
-        *c->score_bonus += (uint32_t)value;
+        *Bonus_ScoreBonus() += (uint32_t)value;
     }
     return value;
 }
 
 static void M_StageMetric(
-    const BONUS_CONTEXT *const c, const int16_t row, const int16_t value)
+    const GAME_TEXT_FONT *const font, const int16_t row, const int16_t value)
 {
-    const int16_t v = (int16_t)M_Add(c, value, 6553);
+    const int16_t v = (int16_t)M_Add(value, 6553);
     const int16_t digits[] = { (int16_t)(v / 1000),
                                (int16_t)(v % 1000 / 100),
                                (int16_t)(v % 100 / 10),
@@ -68,10 +73,10 @@ static void M_StageMetric(
                                10 };
     char text[19];
     M_Digits(text, digits, 6);
-    M_Text(c, text, 208, row, 7);
+    M_Text(font, text, 208, row, 7);
 }
 
-static void M_Confirm(const BONUS_CONTEXT *const c)
+static void M_Confirm(void)
 {
     GameInput_ResetGame();
     g_GameInput.shot = true;
@@ -79,7 +84,7 @@ static void M_Confirm(const BONUS_CONTEXT *const c)
     g_Bonus.phase = BONUS_CONFIRM;
 }
 
-static void M_StageCommit(const BONUS_CONTEXT *const c)
+static void M_StageCommit(const GAME_TEXT_FONT *const font)
 {
     char title[80] = "ＳＴＡＧＥ　";
     const int16_t stage_digits[] = { (int16_t)(g_Bonus.stage_number / 10),
@@ -88,22 +93,22 @@ static void M_StageCommit(const BONUS_CONTEXT *const c)
     M_Digits(number, stage_digits, 2);
     strcat(title, number);
     strcat(title, "　ＣＯＭＰＬＥＴＥ");
-    M_Text(c, title, 16, 0, 10);
+    M_Text(font, title, 16, 0, 10);
     const int16_t rows[] = { 2, 3, 5, 7, 9, 11, 13 };
     for (int32_t i = 0; i < 7; i++) {
-        M_Text(c, m_Labels[i], i == 6 ? 112 : 0, rows[i], i == 6 ? 10 : 7);
+        M_Text(font, m_Labels[i], i == 6 ? 112 : 0, rows[i], i == 6 ? 10 : 7);
     }
-    M_StageMetric(c, 3, Math16_Wrap(g_StageTimer.time * 3));
-    M_StageMetric(c, 5, Math16_Wrap(g_Stage.maximum_combo * 100));
+    M_StageMetric(font, 3, Math16_Wrap(g_StageTimer.time * 3));
+    M_StageMetric(font, 5, Math16_Wrap(g_Stage.maximum_combo * 100));
     M_StageMetric(
-        c, 7,
+        font, 7,
         Math16_Wrap(g_Session.lives * 200 + g_Player.remaining_bombs * 100));
-    M_StageMetric(c, 9, Math16_Wrap((g_Bonus.stage_number - 1) * 200));
-    g_Stage.score += *c->score_bonus;
-    const uint32_t bits = *c->score_bonus;
-    c->bonus_per_stage[(g_Bonus.stage_number - 1) % 5] = bits <= INT32_MAX
-        ? (int32_t)bits
-        : (int32_t)((int64_t)bits - INT64_C(4294967296));
+    M_StageMetric(font, 9, Math16_Wrap((g_Bonus.stage_number - 1) * 200));
+    g_Stage.score += *Bonus_ScoreBonus();
+    const uint32_t bits = *Bonus_ScoreBonus();
+    g_Session.bonus_per_stage[(g_Bonus.stage_number - 1) % 5] =
+        bits <= INT32_MAX ? (int32_t)bits
+                          : (int32_t)((int64_t)bits - INT64_C(4294967296));
     const int16_t div = Math16_Wrap((int32_t)(bits / 10000));
     const int16_t remainder = Math16_Wrap((int32_t)(bits % 10000));
     const int16_t digits[] = { (int16_t)(div / 10),
@@ -114,10 +119,10 @@ static void M_StageCommit(const BONUS_CONTEXT *const c)
                                0 };
     char text[19];
     M_Digits(text, digits, 6);
-    M_Text(c, text, 192, 11, 7);
+    M_Text(font, text, 192, 11, 7);
     Hud_ScoreAndCombo();
     Extend_UpdateAndRender();
-    M_Confirm(c);
+    M_Confirm();
 }
 
 RESULT Bonus_LoadStageAssets(
@@ -162,8 +167,8 @@ RESULT Bonus_ValidateStageAssets(
 }
 
 bool Bonus_BeginStage(
-    const BONUS_CONTEXT *const c, const int16_t stage_number,
-    const TH01_INPUT *const raw)
+    const BONUS_STAGE_ASSETS *const stage, const GAME_TEXT_FONT *const font,
+    const int16_t stage_number, const TH01_INPUT *const raw)
 {
     ASSERT(
         g_Bonus.phase == BONUS_DONE && stage_number >= 1 && stage_number <= 20
@@ -172,10 +177,12 @@ bool Bonus_BeginStage(
     g_Bonus.phase = BONUS_STAGE_BOX;
     g_Bonus.stage_number = stage_number;
     Palette_Set(&g_Palette, &g_StagePalette);
-    return Bonus_Resume(c, raw);
+    return Bonus_Resume(stage, font, raw);
 }
 
-bool Bonus_Resume(const BONUS_CONTEXT *const c, const TH01_INPUT *const raw)
+bool Bonus_Resume(
+    const BONUS_STAGE_ASSETS *const stage, const GAME_TEXT_FONT *const font,
+    const TH01_INPUT *const raw)
 {
     for (;;) {
         switch (g_Bonus.phase) {
@@ -189,12 +196,11 @@ bool Bonus_Resume(const BONUS_CONTEXT *const c, const TH01_INPUT *const raw)
                 g_Bonus.waiting = false;
             }
             if (g_Bonus.row == M_PADDED_HEIGHT / 2) {
-                M_StageCommit(c);
+                M_StageCommit(font);
                 break;
             }
             for (int32_t x = 32; x < 32 + M_STAGE_WIDTH + 32; x++) {
-                if ((c->stage->box[g_Bonus.row % 4] & (0x80u >> (x % 8)))
-                    != 0) {
+                if ((stage->box[g_Bonus.row % 4] & (0x80u >> (x % 8))) != 0) {
                     Video_Pixel(x, 180 - g_Bonus.row, 0);
                     Video_Pixel(x, 180 + g_Bonus.row, 0);
                 }
@@ -209,7 +215,7 @@ bool Bonus_Resume(const BONUS_CONTEXT *const c, const TH01_INPUT *const raw)
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
             }
-            *c->score_bonus = 0;
+            *Bonus_ScoreBonus() = 0;
             g_Bonus.phase = BONUS_DONE;
             return true;
         }

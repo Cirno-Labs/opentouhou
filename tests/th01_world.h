@@ -54,6 +54,7 @@ static inline void Th01Test_ResetWorld(void)
     g_Session.high_score = 0;
     g_Session.point_value = 0;
     g_Session.stage_id = 0;
+    *Bonus_ScoreBonus() = 0;
     Hud_Reset();
     HudHp_Reset();
 }

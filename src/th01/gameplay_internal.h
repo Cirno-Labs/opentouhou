@@ -69,7 +69,7 @@ typedef struct {
     GAMEPLAY_REQUEST request;
     GAMEPLAY_PHASE phase, after_player;
     FRAME_WAIT wait;
-    uint32_t frame, score_bonus;
+    uint32_t frame;
     bool wait_for_shot;
     bool boss_stage, waiting, bgm_started;
     BOSS boss;
@@ -100,8 +100,6 @@ typedef struct {
     SHOTS_OUTPUT shots_output;
     const PTN *stage_sprites;
     ROUTE_SELECT_ASSETS route_assets;
-    BONUS_CONTEXT bonus_context;
-    BONUS_TOTAL_CONTEXT total_context;
 } GAMEPLAY_BINDINGS;
 
 struct GAMEPLAY {
