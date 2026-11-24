@@ -227,11 +227,12 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK_EQ_INT(g_Session.stage_id, stage);
         g_Orb.left = g_StageObjects.cards[0].left;
         g_Orb.top = g_StageObjects.cards[0].top;
-        Stage_HitTestCards(&g->bindings.stage);
+        Stage_HitTestCards();
         CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
         CHECK(g_Stage.score > 0);
         for (int32_t i = 0; i < 30; i++) {
-            Stage_UpdateCards(&g->bindings.stage);
+            Stage_UpdateCards(
+                g->bindings.stage_sprites, &g->storage.assets->hud_font);
         }
         CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);

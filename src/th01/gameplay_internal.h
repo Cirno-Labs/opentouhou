@@ -98,8 +98,7 @@ typedef struct {
     PLAYER_SPRITES player_sprites;
     PLAYER_OUTPUT player_output;
     SHOTS_OUTPUT shots_output;
-    STAGE_CONTEXT stage;
-    PELLET_CONTEXT pellet;
+    const PTN *stage_sprites;
     ROUTE_SELECT_ASSETS route_assets;
     BONUS_CONTEXT bonus_context;
     BONUS_TOTAL_CONTEXT total_context;

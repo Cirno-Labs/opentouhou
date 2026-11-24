@@ -146,7 +146,9 @@ static bool M_Overlap(
     return dx < width && dx > -8 && dy < height && dy > -8;
 }
 
-static bool M_Visible(PELLET *const p, const PELLET_CONTEXT *const context)
+static bool M_Visible(
+    PELLET *const p, const PELLET_ASSETS *const assets,
+    const SHOTS_OUTPUT shots_output)
 {
     const int16_t left = Math16_ToPixel(p->left);
     const int16_t top = Math16_ToPixel(p->top);
@@ -183,7 +185,8 @@ static bool M_Visible(PELLET *const p, const PELLET_CONTEXT *const context)
     return true;
 }
 
-static void M_Clouds(const PELLET_CONTEXT *const context)
+static void M_Clouds(
+    const PELLET_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         PELLET *const p = &g_Pellets.slots[i];
@@ -194,8 +197,8 @@ static void M_Clouds(const PELLET_CONTEXT *const context)
         const int16_t frame = p->cloud_frame;
         if (frame == 2 || frame == 5 || frame == 6 || frame == 9) {
             PelletAssets_Cloud(
-                context->assets, p->cloud_left, p->cloud_top,
-                frame >= 6 ? 1 : 0, frame == 5 || frame == 9);
+                assets, p->cloud_left, p->cloud_top, frame >= 6 ? 1 : 0,
+                frame == 5 || frame == 9);
         }
         if (frame == 9) {
             p->cloud_frame = 0;
@@ -308,10 +311,11 @@ void Pellets_AddSingle(
     }
 }
 
-void Pellets_UpdateAndRender(const PELLET_CONTEXT *const context)
+void Pellets_UpdateAndRender(
+    const PELLET_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
 {
     g_Pellets.interlace_field = !g_Pellets.interlace_field;
-    M_Clouds(context);
+    M_Clouds(assets, shots_output);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         PELLET *const p = &g_Pellets.slots[i];
         if (!p->moving) {
@@ -336,7 +340,7 @@ void Pellets_UpdateAndRender(const PELLET_CONTEXT *const context)
         if (p->decay_frame == 0
             && Shots_HitTestPellet(
                 Math16_ToPixel(p->left), Math16_ToPixel(p->top),
-                context->shots_output)) {
+                shots_output)) {
             M_Remove(p);
             M_Restore(p, false);
         }
@@ -346,7 +350,7 @@ void Pellets_UpdateAndRender(const PELLET_CONTEXT *const context)
             M_Restore(p, false);
         }
     }
-    Shots_UpdateAndRender(context->shots_output);
+    Shots_UpdateAndRender(shots_output);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         PELLET *const p = &g_Pellets.slots[i];
         if (!p->moving) {
@@ -354,12 +358,11 @@ void Pellets_UpdateAndRender(const PELLET_CONTEXT *const context)
         }
         if (!g_Pellets.interlace
             || g_Pellets.interlace_field == ((i & 1) != 0)) {
-            if (M_Visible(p, context)) {
+            if (M_Visible(p, assets, shots_output)) {
                 p->not_rendered = false;
                 if (p->decay_frame < 20) {
                     PelletAssets_Put(
-                        context->assets, Math16_ToPixel(p->left),
-                        Math16_ToPixel(p->top),
+                        assets, Math16_ToPixel(p->left), Math16_ToPixel(p->top),
                         p->decay_frame == 0        ? 0
                             : p->decay_frame <= 10 ? 1
                                                    : 2);

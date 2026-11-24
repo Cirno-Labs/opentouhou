@@ -143,7 +143,7 @@ void Gameplay_DefaultActors(GAMEPLAY *const g)
 {
     Sprite_PtnPut(&g->storage.assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
     Orb_RenderAction(
-        g->bindings.stage.sprites,
+        g->bindings.stage_sprites,
         (ORB_ACTION) {
             .kind = ORB_ACTION_PUT,
             .left = g_Orb.left,

@@ -7,34 +7,34 @@
 #include "pc98/zun/master_rng.h"
 
 static void M_Put(
-    const STAGE_CONTEXT *const context, const STAGE_OBSTACLE *const obstacle,
+    const PTN *const sprites, const STAGE_OBSTACLE *const obstacle,
     const int32_t image)
 {
-    Sprite_PtnPut(context->sprites, image, -1, obstacle->left, obstacle->top);
+    Sprite_PtnPut(sprites, image, -1, obstacle->left, obstacle->top);
 }
 
 static void M_PutBoth(
-    const STAGE_CONTEXT *const context, const STAGE_OBSTACLE *const obstacle,
+    const PTN *const sprites, const STAGE_OBSTACLE *const obstacle,
     const int32_t image)
 {
     Video_SelectDrawingPage(1);
-    M_Put(context, obstacle, image);
+    M_Put(sprites, obstacle, image);
     Video_SelectDrawingPage(0);
-    M_Put(context, obstacle, image);
+    M_Put(sprites, obstacle, image);
 }
 
 static void M_Turret(
-    const STAGE_CONTEXT *const context, STAGE_OBSTACLE *const obstacle,
-    const bool reset)
+    const PTN *const sprites, STAGE_OBSTACLE *const obstacle, const bool reset)
 {
-    if (context->difficulty != SETTINGS_DIFFICULTY_EASY) {
+    if ((SETTINGS_DIFFICULTY)g_Session.settings.difficulty
+        != SETTINGS_DIFFICULTY_EASY) {
         obstacle->frame = Math16_Wrap(obstacle->frame + 1);
     }
     const int16_t interval =
         obstacle->type < STAGE_DATA_TURRET_QUICK_1_AIMED ? 200 : 100;
     if (obstacle->frame >= interval) {
         if (obstacle->turret_flag == 0) {
-            M_PutBoth(context, obstacle, 24);
+            M_PutBoth(sprites, obstacle, 24);
             obstacle->turret_flag = 1;
         } else if (obstacle->turret_flag == 1) {
             if (obstacle->frame % 10 == 9) {
@@ -53,12 +53,12 @@ static void M_Turret(
                 g_Session.settings.difficulty, obstacle->left + 12,
                 obstacle->top + 12,
                 (PELLET_GROUP)(groups[(obstacle->type - 2) % 6]), 56);
-            M_Put(context, obstacle, 24);
+            M_Put(sprites, obstacle, 24);
             obstacle->turret_flag = 3;
         } else {
             obstacle->turret_flag++;
             if (obstacle->turret_flag >= 10) {
-                M_PutBoth(context, obstacle, 23);
+                M_PutBoth(sprites, obstacle, 23);
                 obstacle->turret_flag = 0;
                 obstacle->frame = 0;
             }
@@ -72,7 +72,7 @@ static void M_Turret(
     }
 }
 
-static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
+static void M_Portal(const PTN *const sprites, const int32_t slot)
 {
     STAGE_OBJECTS *const objects = &g_StageObjects;
     STAGE_OBSTACLE *const obstacle = &objects->obstacles[slot];
@@ -89,13 +89,13 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         objects->entered_portal = slot;
         objects->portal_active = true;
         Sprite_Restore16(orb->previous_left, orb->previous_top, 32, 32);
-        M_Put(context, obstacle, 30);
+        M_Put(sprites, obstacle, 30);
     } else if (obstacle->frame == 10) {
         Sprite_Restore16(obstacle->left, obstacle->top, 32, 32);
-        M_Put(context, obstacle, 31);
+        M_Put(sprites, obstacle, 31);
     } else if (obstacle->frame == 20) {
         Sprite_Restore16(obstacle->left, obstacle->top, 32, 32);
-        M_Put(context, obstacle, 29);
+        M_Put(sprites, obstacle, 29);
         int32_t destination = 0;
         int32_t completed_loops = 0;
         for (;;) {
@@ -117,13 +117,13 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
         Sprite_Restore16(
             objects->destination_left, objects->destination_top, 32, 32);
         Sprite_PtnPut(
-            context->sprites, 31, -1, objects->destination_left,
+            sprites, 31, -1, objects->destination_left,
             objects->destination_top);
     } else if (obstacle->frame == 30 || obstacle->frame == 40) {
         Sprite_Restore16(
             objects->destination_left, objects->destination_top, 32, 32);
         Sprite_PtnPut(
-            context->sprites, obstacle->frame == 30 ? 30 : 29, -1,
+            sprites, obstacle->frame == 30 ? 30 : 29, -1,
             objects->destination_left, objects->destination_top);
         if (obstacle->frame == 40) {
             orb->velocity_x = MasterRng_Next(&g_Rng) % 5;
@@ -139,20 +139,20 @@ static void M_Portal(const STAGE_CONTEXT *const context, const int32_t slot)
     }
 }
 
-static void M_ResetPortals(const STAGE_CONTEXT *const context)
+static void M_ResetPortals(const PTN *const sprites)
 {
     STAGE_OBJECTS *const objects = &g_StageObjects;
     objects->entered_portal = 0;
     objects->portal_active = false;
     if (g_Orb.in_portal) {
         Sprite_PtnPut(
-            context->sprites, 29, -1, objects->destination_left,
+            sprites, 29, -1, objects->destination_left,
             objects->destination_top);
         g_Orb.in_portal = false;
     }
 }
 
-void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
+void Stage_UpdateObstacles(const PTN *const sprites, const bool reset)
 {
     STAGE_OBJECTS *const objects = &g_StageObjects;
     ORB *const orb = &g_Orb;
@@ -189,16 +189,16 @@ void Stage_UpdateObstacles(const STAGE_CONTEXT *const context, const bool reset)
         }
         if (obstacle->type >= STAGE_DATA_TURRET_SLOW_1_AIMED
             && obstacle->type <= STAGE_DATA_TURRET_QUICK_5_SPREAD_WIDE_AIMED) {
-            M_Turret(context, obstacle, reset);
+            M_Turret(sprites, obstacle, reset);
             continue;
         }
         if (obstacle->type == STAGE_DATA_PORTAL) {
             if ((ax < 24 && ay < 24) || obstacle->frame != 0) {
-                M_Portal(context, i);
+                M_Portal(sprites, i);
             }
             if (reset) {
                 obstacle->frame = 0;
-                M_ResetPortals(context);
+                M_ResetPortals(sprites);
             }
             continue;
         }

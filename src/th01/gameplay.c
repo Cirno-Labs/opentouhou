@@ -87,7 +87,7 @@ static void M_StageBackground(GAMEPLAY *const g)
     }
     StageObjects_InitPrepared(
         &g_Scene.active->layouts, g_Session.stage_id, Gameplay_FirstStage(),
-        g->bindings.stage.sprites);
+        g->bindings.stage_sprites);
     g->world.phase = GP_OBJECT_ENTRANCE;
 }
 
@@ -151,7 +151,7 @@ static void M_LifeBegin(GAMEPLAY *const g, const TH01_INPUT *const raw)
     g_GameInput.paused = false;
     Hud_ScoreAndCombo();
     g_GameInput.bomb_frame = 60;
-    Stage_UpdateObstacles(&g->bindings.stage, true);
+    Stage_UpdateObstacles(g->bindings.stage_sprites, true);
     if (!g->world.bgm_started && g->world.boss < BOSS_SARIEL) {
         const size_t song = g->world.boss == BOSS_SINGYOKU ? 7
             : g->world.boss == BOSS_YUUGENMAGAN || g->world.boss == BOSS_MIMA
@@ -354,7 +354,7 @@ static void M_BeginGameover(GAMEPLAY *const g)
 {
     Items_Reset();
     Orb_RenderAction(
-        g->bindings.stage.sprites,
+        g->bindings.stage_sprites,
         (ORB_ACTION) {
             .kind = ORB_ACTION_PUT,
             .left = g_Orb.left,
@@ -470,7 +470,7 @@ static GAMEPLAY_REQUEST M_Run(
             M_StageReady(g);
             break;
         case GP_OBJECT_ENTRANCE:
-            if (!StageObjects_ResumeEntrance(g->bindings.stage.sprites)) {
+            if (!StageObjects_ResumeEntrance(g->bindings.stage_sprites)) {
                 return g->world.request;
             }
             if (Gameplay_FirstStage()) {
@@ -479,7 +479,7 @@ static GAMEPLAY_REQUEST M_Run(
                 StageObjects_CopyToBackground();
                 Sprite_PtnPut(
                     &g->storage.assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
-                Items_Render(g->bindings.stage.sprites);
+                Items_Render(g->bindings.stage_sprites);
             }
             if (g->world.boss == BOSS_KIKURI) {
                 Video_Clear(0);
@@ -590,7 +590,7 @@ static GAMEPLAY_REQUEST M_Run(
         }
         case GP_ITEMS:
             Items_UpdateAndRender(
-                g->bindings.stage.sprites, &g->storage.assets->item_font);
+                g->bindings.stage_sprites, &g->storage.assets->item_font);
             g->world.frame++;
             Orb_AdvanceForceFrame();
             g_Player.bomb_frame++;
@@ -616,12 +616,16 @@ static GAMEPLAY_REQUEST M_Run(
             g->world.waiting = false;
             ShootoutLasers_UpdateAll(g->storage.assets->lasers);
             g->world.phase = GP_ORB;
-            if (!Stage_BeginOrbComposite(&g->bindings.stage)) {
+            if (!Stage_BeginOrbComposite(
+                    g->bindings.stage_sprites, &g->storage.assets->hud_font,
+                    g->storage.assets->pellets, g->bindings.shots_output)) {
                 return g->world.request;
             }
             break;
         case GP_ORB:
-            if (!Stage_ResumeOrbComposite(&g->bindings.stage)) {
+            if (!Stage_ResumeOrbComposite(
+                    g->bindings.stage_sprites, &g->storage.assets->hud_font,
+                    g->storage.assets->pellets, g->bindings.shots_output)) {
                 return g->world.request;
             }
             if (g_GameInput.paused) {
@@ -717,13 +721,13 @@ static GAMEPLAY_REQUEST M_Run(
                 Sound_Effect(5);
                 g_Session.lives--;
                 g_Extend.resident_lives = (int8_t)g_Session.lives;
-                Miss_Begin(&g->storage.assets->miko, g->bindings.stage.sprites);
+                Miss_Begin(&g->storage.assets->miko, g->bindings.stage_sprites);
                 g->world.phase = GP_MISS;
             }
             break;
         case GP_MISS:
             if (!Miss_Resume(
-                    &g->storage.assets->miko, g->bindings.stage.sprites, 1)) {
+                    &g->storage.assets->miko, g->bindings.stage_sprites, 1)) {
                 return g->world.request;
             }
             g_Player.is_hit = false;
