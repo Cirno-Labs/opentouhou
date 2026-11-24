@@ -61,8 +61,8 @@ static void M_Init(FIXTURE *const f)
     Orb_ResetFlight();
     g_StageTimer.time = 1000;
     g->world.phase = GP_FRAME_BEGIN;
-    g->world.timer_initialized = true;
-    g->world.first_stage = false;
+    Gameplay_SetTimerInitialized(true);
+    Gameplay_SetFirstStage(false);
     g->world.invincibility.frame[0] = 255;
 }
 
@@ -133,17 +133,17 @@ TEST(real_shot_boundary_advances_player_before_timer_and_rng_seed)
     GAMEPLAY *const g = f.game;
     g->world.phase = GP_WAIT_SHOT;
     g->world.wait_for_shot = true;
-    g->world.timer_initialized = false;
+    Gameplay_SetTimerInitialized(false);
     GameInput_Init();
     g_Session.frame_rand = 42;
     TH01_INPUT raw = { .shot = true, .left = true };
     Gameplay_Tick(g, &raw, false, 1);
     CHECK_EQ_INT(g->world.phase, GP_WAIT_SHOT_DELAY);
     CHECK_EQ_INT(g_Player.left, 300);
-    CHECK(!g->world.timer_initialized);
+    CHECK(!Gameplay_TimerInitialized());
     CHECK_EQ_INT(g_Session.frame_rand, 42);
     Gameplay_Tick(g, &raw, true, 2);
-    CHECK(g->world.timer_initialized);
+    CHECK(Gameplay_TimerInitialized());
     CHECK(!g->world.wait_for_shot);
     CHECK_EQ_INT(g->world.frame, 1);
     CHECK_EQ_INT(g_Session.frame_rand, 43);
@@ -182,7 +182,7 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     M_Init(&f);
     GAMEPLAY *const g = f.game;
     g->world.phase = GP_AFTER_ORB;
-    g->world.game_cleared = true;
+    Gameplay_SetGameCleared();
     g_Stage.score = 1000;
     g_PelletShared.destroy_score_delta = 70;
     g_Session.route = SESSION_ROUTE_JIGOKU;
@@ -649,7 +649,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(f.arena.used, used);
     CHECK(memcmp(&g->storage, &prepared, sizeof(prepared)) == 0);
     CHECK_EQ_INT(g->world.phase, GP_STAGE_BEGIN);
-    CHECK(g->world.first_stage && g->world.wait_for_shot);
+    CHECK(Gameplay_FirstStage() && g->world.wait_for_shot);
     CHECK_EQ_INT(g->world.frame, 0);
     CHECK_EQ_INT(g_VSync.edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);
@@ -668,7 +668,6 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK(g->bindings.c05.shots_output.user == g->bindings.shots_output.user);
     CHECK(
         g->bindings.c05.shots_output.action == g->bindings.shots_output.action);
-    CHECK(g->bindings.c20m.assets == &f.assets->b20m);
     Gameplay_BindAudio(g, nullptr);
     GameAudio_Free(output);
     Audio_Shutdown();

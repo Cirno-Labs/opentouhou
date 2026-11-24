@@ -131,14 +131,6 @@ typedef struct {
 
 extern B20M g_B20M;
 
-typedef struct {
-    const B20M_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    bool *first_stage;
-    const bool *timer_initialized;
-    bool *game_cleared;
-} B20M_CONTEXT;
-
 // Loads both forms, backgrounds and the masks of ileave_m.bmp,
 // shape8x8.bmp, leaf_s.bmp, leaf_l.bmp and leaf_r.bmp into the caller's
 // immutable asset group.
@@ -150,15 +142,17 @@ void B20M_Init(void);
 
 // Binds actor images, resets the first form and retains pattern history.
 // Run before the separate cached entrance. Performs no allocation or IO.
-void B20M_Setup(const B20M_CONTEXT *context);
+void B20M_Setup(const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output);
 
 // Starts the cached load/scroll/diagonal entrance. Advance reference VSyncs
 // and a monotonic 60 Hz host serial while polling; pending polls stay inert.
-void B20M_BeginEntrance(const B20M_CONTEXT *context);
-bool B20M_ResumeEntrance(const B20M_CONTEXT *context, uint64_t host_tick);
+void B20M_BeginEntrance(const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output);
+bool B20M_ResumeEntrance(
+    const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output, uint64_t host_tick);
 
 // Runs one battle call or resumes its nested waits. False suspends the world.
 // Implements both forms and the final 50,000-point bonus and game clear.
 // Quantizes the bird safety delay to six 60 Hz host ticks.
 // Borrows stable context bindings and allocates nothing and performs no IO.
-bool B20M_UpdateAndRender(const B20M_CONTEXT *context, uint64_t host_tick);
+bool B20M_UpdateAndRender(
+    const B20M_ASSETS *assets, SHOTS_OUTPUT shots_output, uint64_t host_tick);

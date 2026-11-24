@@ -10,6 +10,47 @@
 
 TH01_HOOKS g_Th01Hooks;
 
+static bool m_FirstStage = true;
+static bool m_TimerInitialized;
+static bool m_GameCleared;
+
+bool Gameplay_GameCleared(void)
+{
+    return m_GameCleared;
+}
+
+void Gameplay_SetGameCleared(void)
+{
+    m_GameCleared = true;
+}
+
+bool Gameplay_FirstStage(void)
+{
+    return m_FirstStage;
+}
+
+void Gameplay_SetFirstStage(const bool first_stage)
+{
+    m_FirstStage = first_stage;
+}
+
+bool Gameplay_TimerInitialized(void)
+{
+    return m_TimerInitialized;
+}
+
+void Gameplay_SetTimerInitialized(const bool timer_initialized)
+{
+    m_TimerInitialized = timer_initialized;
+}
+
+void Gameplay_ResetLiveFlags(void)
+{
+    m_FirstStage = true;
+    m_TimerInitialized = false;
+    m_GameCleared = false;
+}
+
 RESULT Gameplay_Prepare(
     const ALLOCATOR *const allocator, const GAMEPLAY_ASSETS *const assets,
     GAMEPLAY **const out)
@@ -25,7 +66,6 @@ RESULT Gameplay_Prepare(
         assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, 8, 8, allocator,
         &g_Sound.mdrv));
     Palette_Init(&g_Palette);
-    g->world.first_stage = true;
     g->world.wait_for_shot = true;
     g->world.phase = GP_STAGE_BEGIN;
     GAMEPLAY_WORLD *const initial =
@@ -40,6 +80,7 @@ RESULT Gameplay_Prepare(
 void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
     memcpy(&g->world, g->storage.initial, sizeof(g->world));
+    Gameplay_ResetLiveFlags();
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
     g_TestDamage = false;
@@ -137,10 +178,10 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
         B15M_Setup(&g->bindings.c15m);
         break;
     case BOSS_SARIEL:
-        B20M_Setup(&g->bindings.c20m);
+        B20M_Setup(&g->storage.assets->b20m, g->bindings.shots_output);
         break;
     case BOSS_KONNGARA:
-        B20J_Setup(&g->bindings.c20j);
+        B20J_Setup(&g->storage.assets->b20j);
         break;
     default:
         break;
@@ -178,9 +219,12 @@ bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
     case BOSS_ELIS:
         return B15M_UpdateAndRender(&g->bindings.c15m, g->storage.host_tick);
     case BOSS_SARIEL:
-        return B20M_UpdateAndRender(&g->bindings.c20m, g->storage.host_tick);
+        return B20M_UpdateAndRender(
+            &g->storage.assets->b20m, g->bindings.shots_output,
+            g->storage.host_tick);
     case BOSS_KONNGARA:
-        return B20J_UpdateAndRender(&g->bindings.c20j);
+        return B20J_UpdateAndRender(
+            &g->storage.assets->b20j, g->bindings.shots_output);
     default:
         return true;
     }

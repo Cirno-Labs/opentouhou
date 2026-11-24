@@ -70,7 +70,7 @@ typedef struct {
     GAMEPLAY_PHASE phase, after_player;
     FRAME_WAIT wait;
     uint32_t frame, score_bonus;
-    bool first_stage, wait_for_shot, timer_initialized, game_cleared;
+    bool wait_for_shot;
     bool boss_stage, waiting, bgm_started;
     BOSS boss;
     uint8_t menu_selection, animation_frame;
@@ -108,8 +108,6 @@ typedef struct {
     B10M_CONTEXT c10m;
     B15J_CONTEXT c15j;
     B15M_CONTEXT c15m;
-    B20J_CONTEXT c20j;
-    B20M_CONTEXT c20m;
     BONUS_CONTEXT bonus_context;
     BONUS_TOTAL_CONTEXT total_context;
 } GAMEPLAY_BINDINGS;

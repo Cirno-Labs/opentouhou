@@ -1,4 +1,5 @@
 #include "th01/boss_b20j.h"
+#include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -50,7 +51,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     memset(&g_Palette, 0, sizeof(g_Palette));
     g_Palette.saved.colors[10][1] = 7;
     memset(&g_HudHp, 0, sizeof(g_HudHp));
-    const B20J_CONTEXT c = { .assets = &assets };
+
     B20J_Init();
     g_B20J.hit = (BOSS_HIT) { 27, true };
     g_B20J.pattern_state = 32;
@@ -59,7 +60,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     g_B20J.ray_previous_x = 44;
     g_B20J.finished = true;
     const size_t used = arena.used;
-    B20J_Setup(&c);
+    B20J_Setup(&assets);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(g_B20J.hp, 18);
     CHECK_EQ_INT(g_B20J.phase, B20J_PHASE_START);
@@ -99,10 +100,9 @@ TEST(validation_requires_all_sixteen_images_and_masks)
 
 typedef struct {
     B20J_ASSETS assets;
-    B20J_CONTEXT context;
+    SHOTS_OUTPUT shots_output;
     GAME_TEXT_FONT font;
     PTN stage;
-    bool cleared;
 } FIXTURE;
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -142,13 +142,9 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     g_Session.frame_rand = 0x12345678;
-    f->context = (B20J_CONTEXT) {
-        .assets = &f->assets,
-        .shots_output = { M_Shot, f },
-        .game_cleared = &f->cleared,
-    };
+    f->shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     B20J_Init();
-    B20J_Setup(&f->context);
+    B20J_Setup(&f->assets);
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -166,7 +162,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     g_Rng = 91;
     Video_SelectDrawingPage(1);
     const size_t used = arena.used;
-    B20J_BeginEntrance(&f.context);
+    B20J_BeginEntrance(&f.assets);
     CHECK_EQ_INT(g_B20J.head.sprites.width_bytes, 10);
     CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_Rng, 91);
@@ -174,10 +170,10 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(g_StageObjects.destination_left, 77);
     Frame_Reset();
     int32_t polls = 0;
-    while (!B20J_ResumeEntrance(&f.context)) {
+    while (!B20J_ResumeEntrance(&f.assets)) {
         const B20J snapshot = g_B20J;
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_ResumeEntrance(&f.context));
+            CHECK(!B20J_ResumeEntrance(&f.assets));
             CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
         }
         Frame_VSync();
@@ -212,7 +208,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             Frame_Reset();
             int32_t frames = 0;
             do {
-                CHECK(B20J_UpdateAndRender(&f.context));
+                CHECK(B20J_UpdateAndRender(&f.assets, f.shots_output));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
                     g_Pellets.slots[i].moving = false;
                 }
@@ -225,7 +221,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             CHECK_EQ_INT(g_B20J.frame, 0);
             CHECK_EQ_INT(g_B20J.hp, 18);
             CHECK_EQ_INT(arena.used, used);
-            CHECK(!f.cleared);
+            CHECK(!Gameplay_GameCleared());
         }
     }
     Arena_Free(&arena);
@@ -247,17 +243,17 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     Frame_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.context)) {
+    while (!B20J_UpdateAndRender(&f.assets, f.shots_output)) {
         const B20J snapshot = g_B20J;
-        CHECK(!f.cleared);
+        CHECK(!Gameplay_GameCleared());
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_UpdateAndRender(&f.context));
+            CHECK(!B20J_UpdateAndRender(&f.assets, f.shots_output));
             CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
         }
         Frame_VSync();
         CHECK(++polls < 1200);
     }
-    CHECK(f.cleared && g_B20J.finished && !g_B20J.defeating);
+    CHECK(Gameplay_GameCleared() && g_B20J.finished && !g_B20J.defeating);
     CHECK_EQ_INT(g_Stage.score, 49899);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(g_B20J.frame, 65);
@@ -265,7 +261,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     const B20J snapshot = g_B20J;
     for (int32_t i = 0; i < 100; i++) {
         Frame_VSync();
-        CHECK(B20J_UpdateAndRender(nullptr));
+        CHECK(B20J_UpdateAndRender(nullptr, (SHOTS_OUTPUT) {}));
         CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
     }
     CHECK_EQ_INT(arena.used, used);
@@ -283,7 +279,7 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     g_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
     g_B20J.scroll_line = 400;
     Frame_Reset();
-    CHECK(!B20J_ResumeEntrance(&f.context));
+    CHECK(!B20J_ResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][14335], 6);
     CHECK_EQ_INT(g_Video.pages[0][14336], 0);
@@ -309,7 +305,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         g_Orb.previous_left = 300;
         g_Orb.previous_top = 140;
         Frame_Reset();
-        CHECK(B20J_UpdateAndRender(&f.context));
+        CHECK(B20J_UpdateAndRender(&f.assets, f.shots_output));
         CHECK_EQ_INT(g_B20J.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
     }
@@ -339,7 +335,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     const size_t used = arena.used;
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.context)) {
+    while (!B20J_UpdateAndRender(&f.assets, f.shots_output)) {
         if (g_B20J.defeat_stage == B20J_DEFEAT_KUJI
             && g_B20J.animation_frame != last_image) {
             CHECK_EQ_INT(g_Video.pages[0][0], images);
@@ -352,7 +348,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     CHECK_EQ_INT(images, 9);
     CHECK_EQ_INT(g_B20J.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK(f.cleared && g_B20J.finished);
+    CHECK(Gameplay_GameCleared() && g_B20J.finished);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -378,7 +374,7 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     g_B20J.entrance_active = true;
     g_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
     Frame_Reset();
-    CHECK(!B20J_ResumeEntrance(&f.context));
+    CHECK(!B20J_ResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][1], 9);
     CHECK_EQ_INT(g_Palette.resource.colors[10][0], 3);

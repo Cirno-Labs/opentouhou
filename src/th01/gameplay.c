@@ -76,7 +76,7 @@ static void M_StageBackground(GAMEPLAY *const g)
         break;
     }
     Video_SelectDrawingPage(0);
-    if (g->world.first_stage) {
+    if (Gameplay_FirstStage()) {
         memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
         Palette_Import(&g_StagePalette, background->palette);
         Palette_Set(&g_Palette, &g_StagePalette);
@@ -86,7 +86,7 @@ static void M_StageBackground(GAMEPLAY *const g)
         Sprite_PtnPut(&a->miko, 0, -1, g_Player.left, PLAYER_TOP);
     }
     StageObjects_InitPrepared(
-        &g_Scene.active->layouts, g_Session.stage_id, g->world.first_stage,
+        &g_Scene.active->layouts, g_Session.stage_id, Gameplay_FirstStage(),
         g->bindings.stage.sprites);
     g->world.phase = GP_OBJECT_ENTRANCE;
 }
@@ -107,16 +107,16 @@ static void M_StageBegin(GAMEPLAY *const g)
     g_Player.invincibility_time = 0;
     Gameplay_BossSetup(g);
     if (g->world.boss_stage) {
-        g->world.first_stage = true;
+        Gameplay_SetFirstStage(true);
         Items_Reset();
     }
     if (g->world.boss == BOSS_MIMA) {
         g->world.phase = GP_B10J_SETUP;
     } else if (g->world.boss == BOSS_SARIEL) {
-        B20M_BeginEntrance(&g->bindings.c20m);
+        B20M_BeginEntrance(&g->storage.assets->b20m, g->bindings.shots_output);
         g->world.phase = GP_FINAL_ENTRANCE;
     } else if (g->world.boss == BOSS_KONNGARA) {
-        B20J_BeginEntrance(&g->bindings.c20j);
+        B20J_BeginEntrance(&g->storage.assets->b20j);
         g->world.phase = GP_FINAL_ENTRANCE;
     } else {
         M_StageBackground(g);
@@ -126,7 +126,7 @@ static void M_StageBegin(GAMEPLAY *const g)
 static void M_StageReady(GAMEPLAY *const g)
 {
     StageTimer_Redraw(
-        g->world.first_stage, g->world.timer_initialized, g_Session.route);
+        Gameplay_FirstStage(), Gameplay_TimerInitialized(), g_Session.route);
     g_Stage.maximum_combo = 0;
     g_Orb.in_portal = false;
     g_Player.bomb_frame = 0;
@@ -184,10 +184,10 @@ static void M_StartFrames(GAMEPLAY *const g)
 {
     g->world.wait_for_shot = false;
     g_GameInput.shot = false;
-    g->world.timer_initialized = true;
+    Gameplay_SetTimerInitialized(true);
     g_Rng = g_Session.frame_rand;
     g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;
-    g->world.first_stage = false;
+    Gameplay_SetFirstStage(false);
     g->world.phase = GP_FRAME_BEGIN;
 }
 
@@ -456,8 +456,10 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_FINAL_ENTRANCE:
             if (g->world.boss == BOSS_SARIEL
-                    ? !B20M_ResumeEntrance(&g->bindings.c20m, host_tick)
-                    : !B20J_ResumeEntrance(&g->bindings.c20j)) {
+                    ? !B20M_ResumeEntrance(
+                          &g->storage.assets->b20m, g->bindings.shots_output,
+                          host_tick)
+                    : !B20J_ResumeEntrance(&g->storage.assets->b20j)) {
                 return g->world.request;
             }
             g_StagePalette = g->world.boss == BOSS_KONNGARA
@@ -469,7 +471,7 @@ static GAMEPLAY_REQUEST M_Run(
             if (!StageObjects_ResumeEntrance(g->bindings.stage.sprites)) {
                 return g->world.request;
             }
-            if (g->world.first_stage) {
+            if (Gameplay_FirstStage()) {
                 M_CopyPage(g, 0, 1);
             } else {
                 StageObjects_CopyToBackground();
@@ -550,7 +552,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_FRAME_BEGIN:
             if (g_Player.is_hit) {
-                g->world.timer_initialized = false;
+                Gameplay_SetTimerInitialized(false);
                 Frame_BeginWait(&g->world.wait);
                 g->world.phase = GP_LIFE_EXIT;
                 break;
@@ -652,7 +654,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_AFTER_ORB:
             Extend_UpdateAndRender();
-            if (g->world.game_cleared) {
+            if (Gameplay_GameCleared()) {
                 Gameplay_SyncSession(g);
                 g_Session.ending = g_Session.route == 0 ? SESSION_END_MAKAI
                                                         : SESSION_END_JIGOKU;
@@ -688,7 +690,7 @@ static GAMEPLAY_REQUEST M_Run(
                 g_Player.is_hit = false;
                 if (g->world.boss != BOSS_NONE) {
                     g->world.wait_for_shot = true;
-                    g->world.first_stage = true;
+                    Gameplay_SetFirstStage(true);
                 }
                 g_Session.stage_id++;
                 const int16_t finished = g_Session.stage_id;
