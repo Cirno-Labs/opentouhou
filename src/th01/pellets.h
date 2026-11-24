@@ -68,11 +68,6 @@ extern PELLET_SHARED g_PelletShared;
 // Zeroes the pellets and their shared speed for a new world.
 void Pellets_Init(void);
 
-typedef struct {
-    const PELLET_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-} PELLET_CONTEXT;
-
 // Zero-initialize PELLETS and PELLET_SHARED once. Keep slot storage across
 // resets: sling direction, angle and unused motion fields survive reuse.
 // Reset leaves pending delay clouds alive and sets the count to zero.
@@ -109,4 +104,5 @@ void Pellets_SpeedRaise(int16_t delta);
 // update shots separately. Every reached shot callback is required and
 // synchronous, and must not modify pellet, player, Orb or shot state.
 // Requires immutable loaded masks. Gameplay scene wiring remains external.
-void Pellets_UpdateAndRender(const PELLET_CONTEXT *context);
+void Pellets_UpdateAndRender(
+    const PELLET_ASSETS *assets, SHOTS_OUTPUT shots_output);

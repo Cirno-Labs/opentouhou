@@ -8,7 +8,7 @@ static void M_Shots(void *const user, const SHOTS_ACTION action)
     if (action.kind == SHOTS_ACTION_EFFECT) {
         Sound_Effect(action.effect);
     } else {
-        Shots_RenderAction(g->bindings.stage.sprites, action);
+        Shots_RenderAction(g->bindings.stage_sprites, action);
     }
 }
 
@@ -30,15 +30,9 @@ static void M_Player(void *const user, const PLAYER_ACTION action)
         break;
     default:
         Player_RenderAction(
-            &g->bindings.player_sprites, g->bindings.stage.sprites, action);
+            &g->bindings.player_sprites, g->bindings.stage_sprites, action);
         break;
     }
-}
-
-static void M_Pellets(void *const user)
-{
-    GAMEPLAY *const g = user;
-    Pellets_UpdateAndRender(&g->bindings.pellet);
 }
 
 void Gameplay_Bind(GAMEPLAY *const g)
@@ -52,19 +46,7 @@ void Gameplay_Bind(GAMEPLAY *const g)
     g->bindings.shots_output = (SHOTS_OUTPUT) { .action = M_Shots, .user = g };
     g->bindings.player_output =
         (PLAYER_OUTPUT) { .action = M_Player, .user = g };
-    g->bindings.stage = (STAGE_CONTEXT) {
-        .sprites = stage,
-        .font = &a->hud_font,
-        .stage_id = g_Session.stage_id,
-        .stage_num = (int16_t)(g_Session.stage_id + 1),
-        .difficulty = (SETTINGS_DIFFICULTY)g_Session.settings.difficulty,
-        .pellets_update = M_Pellets,
-        .user = g,
-    };
-    g->bindings.pellet = (PELLET_CONTEXT) {
-        .assets = a->pellets,
-        .shots_output = g->bindings.shots_output,
-    };
+    g->bindings.stage_sprites = stage;
     g->bindings.route_assets =
         (ROUTE_SELECT_ASSETS) { .font = &a->route_font,
                                 .stage = stage,

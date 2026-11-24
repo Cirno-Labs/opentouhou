@@ -1,6 +1,8 @@
 #pragma once
 
+#include "th01/pellet_assets.h"
 #include "th01/player.h"
+#include "th01/shots.h"
 #include "th01/stage_objects.h"
 #include "th01/text.h"
 
@@ -22,20 +24,9 @@ typedef struct {
 
 extern STAGE_GAMEPLAY g_Stage;
 
-typedef struct {
-    const PTN *sprites;
-    const GAME_TEXT_FONT *font;
-    int16_t stage_id, stage_num;
-    SETTINGS_DIFFICULTY difficulty;
-    bool test_damage;
-    void (*pellets_update)(void *user);
-    void *user;
-} STAGE_CONTEXT;
-
 // The HUD shows the updated score and combo. Pellet groups use Q12.4 speed
-// and may consume shared RNG. The composite pellets_update callback is
-// specified below. Keep immutable sprites and cached ASCII digit glyphs
-// alive across updates. Initialize flip_cycle once per main scene as
+// and may consume shared RNG. Keep immutable sprites and cached ASCII digit
+// glyphs alive across updates. Initialize flip_cycle once per main scene as
 // MasterRng_Next(rng) % 60; StageObjects_Init must not initialize it anew at
 // each stage change. Scores and counters wrap to their source widths;
 // updates allocate nothing.
@@ -45,14 +36,15 @@ RESULT Stage_ValidateScoreFont(const GAME_TEXT_FONT *font);
 
 // Starts flips and immediately updates score/combo/HUD, drops and effect 2.
 // Does not move or reflect the Orb. Cards are tested even inside portals.
-// Bomb selection draws before testing the selected card's alive flag.
-void Stage_HitTestCards(const STAGE_CONTEXT *context);
+// Bomb selection draws before testing the selected card's alive flag. Reads
+// the stage id, difficulty and g_TestDamage from their owning globals.
+void Stage_HitTestCards(void);
 
 // Draws score popups before card animations, retaining their overlap. Runs
 // six frames per image; revenge fires at 25, HP/removal at 30. All removed
 // sets cleared and player.is_hit together. The world must interpret this
 // pair as stage exit rather than a miss. Empty layouts clear safely.
-void Stage_UpdateCards(const STAGE_CONTEXT *context);
+void Stage_UpdateCards(const PTN *sprites, const GAME_TEXT_FONT *font);
 
 // Runs bumper, bar, turret and portal branches in obstacle order. Reset
 // still executes collisions, firing and portal animation before clearing
@@ -60,7 +52,7 @@ void Stage_UpdateCards(const STAGE_CONTEXT *context);
 // portal animation before drawing its normal sprite, retaining the source
 // artifact. Turrets on Easy retain their current cycle without advancing.
 // Call before abandoning a stage group while the Orb is in a portal.
-void Stage_UpdateObstacles(const STAGE_CONTEXT *context, bool reset);
+void Stage_UpdateObstacles(const PTN *sprites, bool reset);
 
 typedef struct {
     ORB_COMPOSITE orb;
@@ -82,5 +74,9 @@ extern STAGE_ORB_COMPOSITE g_OrbComposite;
 // erase using current image, card drawing, conditional Orb put and previous
 // coordinates follow in source order, reading hit/portal flags afresh.
 // Does not advance force age, player update, bomb frame or world counters.
-bool Stage_BeginOrbComposite(const STAGE_CONTEXT *context);
-bool Stage_ResumeOrbComposite(const STAGE_CONTEXT *context);
+bool Stage_BeginOrbComposite(
+    const PTN *sprites, const GAME_TEXT_FONT *font,
+    const PELLET_ASSETS *pellet_assets, SHOTS_OUTPUT shots_output);
+bool Stage_ResumeOrbComposite(
+    const PTN *sprites, const GAME_TEXT_FONT *font,
+    const PELLET_ASSETS *pellet_assets, SHOTS_OUTPUT shots_output);
