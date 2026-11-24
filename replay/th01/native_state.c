@@ -177,7 +177,7 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
         row[TH01_COLUMN_track] = (uint32_t)view.opening->track;
         row[TH01_COLUMN_track_starts] = view.opening->track_starts;
     } else if (view.scene == TH01_SCENE_ENDING || ending_scores) {
-        const END_RESULT *const result = Ending_Result(view.ending);
+        const END_RESULT *const result = &g_EndResult;
         row[TH01_COLUMN_program] = 4;
         row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
         row[TH01_COLUMN_rng] = result->random;

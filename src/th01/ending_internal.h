@@ -5,6 +5,13 @@
 #define ENDING_OPERATION_CAPACITY 4096
 
 typedef enum {
+    ENDING_AUDIO_IRIS,
+    ENDING_AUDIO_FADE,
+    ENDING_AUDIO_STOP,
+    ENDING_AUDIO_STAGE1,
+} ENDING_AUDIO;
+
+typedef enum {
     END_LOAD,
     END_PICTURE,
     END_TONE,
@@ -25,11 +32,7 @@ typedef struct {
     const char *text;
 } ENDING_OPERATION;
 
-struct ENDING {
-    const ENDING_ASSETS *assets;
-    ENDING_AUDIO_CONSUMER audio;
-    void *audio_context;
-    END_RESULT result;
+typedef struct {
     PALETTE_STATE palette;
     PALETTE_FADE switch_fade;
     FRAME_WAIT switch_wait;
@@ -37,4 +40,4 @@ struct ENDING {
     int32_t count, next, timeout;
     bool waiting, sensing;
     char result_lines[10][256];
-};
+} ENDING;

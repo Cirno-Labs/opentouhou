@@ -11,7 +11,6 @@
 extern const GAME_DESC g_GameDesc;
 
 typedef struct GAMEPLAY GAMEPLAY;
-typedef struct ENDING ENDING;
 
 typedef enum {
     TH01_SCENE_LOGO,
@@ -29,7 +28,6 @@ typedef struct {
     const OPENING *opening;
     const GAMEPLAY *gameplay;
     const SCORE_SCENE *score;
-    const ENDING *ending;
 } TH01_VIEW;
 
 // Fills out with the running scene and its state.

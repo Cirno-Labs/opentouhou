@@ -1,4 +1,5 @@
-#include "th01/ending_internal.h"
+#include "th01_ending.h"
+#include "th01/music.h"
 #include "th01/session.h"
 #include "core/base/arena.h"
 #include "test.h"
@@ -12,14 +13,33 @@ typedef struct {
     int32_t audio[4];
 } FIXTURE;
 
-static void M_Audio(void *const context, const ENDING_AUDIO command)
+static FIXTURE *m_Fixture;
+
+void Music_Play(const size_t song)
 {
-    FIXTURE *const f = context;
-    f->audio[command]++;
+    CHECK(song == 17 || song == 1);
+    m_Fixture->audio[song == 17 ? ENDING_AUDIO_IRIS : ENDING_AUDIO_STAGE1]++;
 }
+
+void Music_Fade(void)
+{
+    m_Fixture->audio[ENDING_AUDIO_FADE]++;
+}
+
+void Music_Stop(void)
+{
+    m_Fixture->audio[ENDING_AUDIO_STOP]++;
+}
+
+void Music_Effect(const int16_t number)
+{
+    CHECK(false);
+}
+
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
+    m_Fixture = f;
     Frame_Reset();
     GameInput_Init();
     Arena_Init(&f->arena, "ending", 2 * 1024 * 1024);
@@ -37,7 +57,8 @@ static void M_Init(FIXTURE *const f)
             f->assets.sheets[i].palette[c] = (GFX_COLOR) { 255, 170, 85, 255 };
         }
     }
-    Ending_Prepare(a, &f->assets, M_Audio, f, &f->ending);
+    Ending_Init(&f->assets);
+    f->ending = TestEnding_State();
     f->arena.capacity = f->arena.used;
     Session_Init();
     g_Session.score = 2345678;
@@ -129,7 +150,7 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
             g_Session.ending = (SESSION_END)route;
             g_Session.continues_per_scene[2] = (uint16_t)bad;
             g_Session.continues_total = 100;
-            Ending_Begin(f.ending);
+            Ending_Begin();
             int32_t duration = 0, stage5_nuls = 0, story_end = 0;
             for (int32_t i = 0; i < f.ending->count; i++) {
                 const ENDING_OPERATION *const op = &f.ending->operations[i];
@@ -152,20 +173,19 @@ TEST(all_four_stories_preserve_source_wait_totals_and_complete)
                 route == 1 ? (bad != 0 ? 3202 : 6174)
                            : (bad != 0 ? 2910 : 5528));
             CHECK_EQ_INT(stage5_nuls, bad != 0 ? 0 : 2);
-            CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) {}, false));
+            CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
             CHECK_EQ_INT(g_Video.pages[0][100 * 640 + 160], 1);
             CHECK_EQ_INT(g_Video.pages[0][0], 0);
             CHECK_EQ_INT(g_Video.drawing_page, 0);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_IRIS], 1);
             const int32_t next = f.ending->next;
             for (int32_t i = 0; i < 100; i++) {
-                CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) {}, false));
+                CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
             }
             CHECK_EQ_INT(f.ending->next, next);
             bool done = false;
             for (int32_t i = 0; i < 12000 && !done; i++) {
-                done =
-                    Ending_Tick(f.ending, &(TH01_INPUT) { .ok = true }, true);
+                done = Ending_Tick(&(TH01_INPUT) { .ok = true }, true);
             }
             CHECK(done);
             CHECK_EQ_INT(f.audio[ENDING_AUDIO_FADE], 1);
@@ -186,15 +206,15 @@ TEST(entry_wait_resets_at_start_and_retains_elapsed_count)
     FIXTURE f;
     M_Init(&f);
     g_Session.ending = SESSION_END_MAKAI;
-    Ending_Begin(f.ending);
+    Ending_Begin();
     g_VSync.count1 = 300;
-    CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) {}, false));
+    CHECK(!Ending_Tick(&(TH01_INPUT) {}, false));
     CHECK_EQ_INT(g_VSync.count1, 0);
     for (int32_t i = 0; i < 5; i++) {
-        CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) {}, true));
+        CHECK(!Ending_Tick(&(TH01_INPUT) {}, true));
     }
     CHECK_EQ_INT(g_VSync.count1, 5);
-    CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) {}, true));
+    CHECK(!Ending_Tick(&(TH01_INPUT) {}, true));
     CHECK_EQ_INT(g_VSync.count1, 0);
     f.ending->operations[0] =
         (ENDING_OPERATION) { .kind = END_WAIT, .value = 0 };
@@ -202,7 +222,7 @@ TEST(entry_wait_resets_at_start_and_retains_elapsed_count)
     f.ending->next = 0;
     f.ending->waiting = false;
     g_VSync.count1 = 999;
-    CHECK(Ending_Tick(f.ending, &(TH01_INPUT) {}, false));
+    CHECK(Ending_Tick(&(TH01_INPUT) {}, false));
     CHECK_EQ_INT(g_VSync.count1, 0);
     Arena_Free(&f.arena);
 }
@@ -212,14 +232,14 @@ TEST(results_confirmation_is_sensed_inside_its_first_wait)
     FIXTURE f;
     M_Init(&f);
     g_Session.ending = SESSION_END_MAKAI;
-    Ending_Begin(f.ending);
+    Ending_Begin();
     f.ending->operations[0] = (ENDING_OPERATION) { .kind = END_INPUT };
     f.ending->count = 1;
-    CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) { .ok = true }, false));
+    CHECK(!Ending_Tick(&(TH01_INPUT) { .ok = true }, false));
     CHECK_EQ_INT(f.ending->timeout, 1);
     CHECK_EQ_INT(g_VSync.count1, 0);
-    CHECK(!Ending_Tick(f.ending, &(TH01_INPUT) { .ok = true }, false));
-    CHECK(Ending_Tick(f.ending, &(TH01_INPUT) { .ok = true }, true));
+    CHECK(!Ending_Tick(&(TH01_INPUT) { .ok = true }, false));
+    CHECK(Ending_Tick(&(TH01_INPUT) { .ok = true }, true));
     CHECK_EQ_INT(g_VSync.count1, 1);
     Arena_Free(&f.arena);
 }

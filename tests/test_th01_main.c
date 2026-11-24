@@ -22,9 +22,6 @@ struct VFS {
 struct GFX_TEXTURE {
     bool alive;
 };
-struct ENDING {
-    END_RESULT result;
-};
 
 typedef struct {
     bool in_tick, finish_score, finish_ending, queue_on_quit, fail_save;
@@ -45,6 +42,7 @@ static MAIN_FIXTURE m_Fixture;
 
 OPENING g_Opening;
 SCORE_SCENE g_ScoreScene;
+END_RESULT g_EndResult;
 
 static RESULT M_Asset(void)
 {
@@ -209,29 +207,29 @@ bool Score_Tick(const TH01_INPUT *input, bool reference_edge)
     return m_Fixture.finish_score;
 }
 
-void Ending_Prepare(
-    const ALLOCATOR *allocator, const ENDING_ASSETS *assets,
-    ENDING_AUDIO_CONSUMER audio, void *context, ENDING **out)
+void Ending_Init(const ENDING_ASSETS *assets)
 {
-    *out = Allocator_AllocZ(allocator, sizeof(**out));
+    memset(&g_EndResult, 0, sizeof(g_EndResult));
 }
 
-void Ending_Begin(ENDING *ending)
+void Ending_Close(void)
+{
+    memset(&g_EndResult, 0, sizeof(g_EndResult));
+}
+
+void Ending_Begin(void)
 {
     m_Fixture.ending_begins++;
-    ending->result =
-        (END_RESULT) { .route = SESSION_END_MAKAI, .score = 12345, .rank = 1 };
+    memset(&g_EndResult, 0, sizeof(g_EndResult));
+    g_EndResult.route = SESSION_END_MAKAI;
+    g_EndResult.score = 12345;
+    g_EndResult.rank = 1;
 }
 
-bool Ending_Tick(ENDING *ending, const TH01_INPUT *input, bool reference_edge)
+bool Ending_Tick(const TH01_INPUT *input, bool reference_edge)
 {
     m_Fixture.ending_ticks++;
     return m_Fixture.finish_ending;
-}
-
-const END_RESULT *Ending_Result(const ENDING *ending)
-{
-    return &ending->result;
 }
 
 void Ending_Clear(void)
@@ -239,12 +237,12 @@ void Ending_Clear(void)
     m_Fixture.ending_clears++;
 }
 
-void Ending_BeginSwitch(ENDING *ending)
+void Ending_BeginSwitch(void)
 {
     m_Fixture.switch_begins++;
 }
 
-bool Ending_SwitchTick(ENDING *ending, bool reference_edge)
+bool Ending_SwitchTick(bool reference_edge)
 {
     return true;
 }
