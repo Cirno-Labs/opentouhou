@@ -173,7 +173,7 @@ static RESULT M_CheckReader(const READER *const reader)
 {
     FAIL_IF(reader == nullptr, "Missing audio reader");
     FAIL_IF(
-        !reader->owns_file && reader->buffer_allocator == nullptr,
+        !Reader_IsOwned(reader),
         "Audio requires an independently owned reader");
     return Reader_Result(reader);
 }

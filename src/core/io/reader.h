@@ -105,6 +105,14 @@ void Reader_OpenSource(
 // Reader_Close does nothing.
 RESULT Reader_OpenFile(READER *reader, const char *path);
 
+// Opens this range at position 0. Files reopen with an independent handle.
+// Views of memory or sources borrow them, so reader must stay valid until
+// the view closes. On failure, out is empty.
+RESULT Reader_OpenView(const READER *reader, READER *out);
+
+// Returns whether the reader owns its file, buffer or source.
+bool Reader_IsOwned(const READER *reader);
+
 // Closes the file of a reader that Reader_OpenFile opened, releases the data
 // of a reader that Reader_OpenOwnedBuffer opened, closes an owned source,
 // and releases the name, and

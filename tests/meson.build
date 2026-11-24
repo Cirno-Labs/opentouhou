@@ -325,6 +325,20 @@ foreach part : ['audio', 'audio_decoder', 'audio_resampler', 'audio_live']
   )
 endforeach
 
+test(
+  'core/audio/zip',
+  executable(
+    'test_audio_zip',
+    'test_audio_zip.c',
+    'audio_backend_fake.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_audio_lib, core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3, zlib, avcodec, avutil, avformat, swresample, cc_libm],
+  ),
+  suite: 'unit',
+)
+
 # The tests of th06 and th07. Each runs test_<part>.c, part being its
 # name with underscores for slashes unless it gives its own, with the
 # extra sources that it lists. The variables in env point TEST_DIR and

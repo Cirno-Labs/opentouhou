@@ -13,6 +13,7 @@
 
 struct READER_FILE {
     SDL_IOStream *stream;
+    char *path;
     char *error;
     size_t size;
     size_t buffer_start;
@@ -250,6 +251,7 @@ RESULT Reader_OpenFile(READER *const reader, const char *const path)
 
     READER_FILE *const file = Mem_AllocZ(sizeof(*file));
     file->stream = stream;
+    file->path = Str_Dup(path);
     file->size = (size_t)size;
     reader->file = file;
     reader->owns_file = true;
@@ -257,6 +259,32 @@ RESULT Reader_OpenFile(READER *const reader, const char *const path)
     reader->owns_name = true;
     reader->size = file->size;
     return OK;
+}
+
+RESULT Reader_OpenView(const READER *const reader, READER *const out)
+{
+    Reader_OpenBuffer(out, nullptr, 0, nullptr);
+    MUST(Reader_Result(reader));
+    if (reader->file != nullptr) {
+        MUST(Reader_OpenFile(out, reader->file->path));
+        const RESULT result = Reader_Narrow(out, reader->origin, reader->size);
+        if (!IS_OK(result)) {
+            Reader_Close(out);
+            return result;
+        }
+        Reader_SetName(out, reader->name);
+    } else {
+        READER copy = *reader;
+        Reader_Seek(&copy, 0);
+        *out = Reader_Slice(&copy, Reader_Size(&copy));
+    }
+    return OK;
+}
+
+bool Reader_IsOwned(const READER *const reader)
+{
+    return reader->owns_file || reader->buffer_allocator != nullptr
+        || reader->owns_source;
 }
 
 void Reader_Close(READER *const reader)
@@ -272,6 +300,7 @@ void Reader_Close(READER *const reader)
         READER_FILE *const file = reader->file;
         SDL_CloseIO(file->stream);
         Mem_Free(file->error);
+        Mem_Free(file->path);
         Mem_Free(file);
     } else if (
         reader->buffer_allocator != nullptr && reader->data != m_NoData) {
