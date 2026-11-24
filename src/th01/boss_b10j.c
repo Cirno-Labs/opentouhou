@@ -784,10 +784,8 @@ static bool M_Entrance(const B10J_CONTEXT *const c)
 
 static bool M_Death(const B10J_CONTEXT *const c)
 {
-    const BOSS_DEFEAT_CONTEXT defeat = { .post_defeat = &g_B10J.post_defeat,
-                                         .miko = c->miko,
-                                         .origin_top = &g_Orb.top };
-    if (!BossDefeat_Resume(&g_B10J.defeat, &defeat)) {
+    if (!BossDefeat_Resume(
+            &g_B10J.defeat, &g_B10J.post_defeat, c->miko, &g_Orb.top)) {
         return false;
     }
     Scene_Activate(&c->assets->next_scene);

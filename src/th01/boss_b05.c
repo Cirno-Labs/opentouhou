@@ -303,12 +303,9 @@ static bool M_Entrance(const B05_CONTEXT *const c)
 static bool M_Death(const B05_CONTEXT *const c, const TH01_INPUT *const raw)
 {
     if (g_B05.pending == B05_DEFEAT) {
-        const BOSS_DEFEAT_CONTEXT defeat = {
-            .post_defeat = &g_B05.post_defeat,
-            .miko = c->miko,
-            .origin_top = &g_B05.sphere.top,
-        };
-        if (!BossDefeat_Resume(&g_B05.defeat, &defeat)) {
+        if (!BossDefeat_Resume(
+                &g_B05.defeat, &g_B05.post_defeat, c->miko,
+                &g_B05.sphere.top)) {
             return false;
         }
         g_B05.pending = B05_ROUTE;

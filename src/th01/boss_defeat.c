@@ -5,7 +5,7 @@
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 
-static void M_Whiteout(const BOSS_DEFEAT_CONTEXT *const c)
+static void M_Whiteout(void)
 {
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
@@ -18,13 +18,13 @@ static void M_Whiteout(const BOSS_DEFEAT_CONTEXT *const c)
     Palette_Set(&g_Palette, &g_Palette.saved);
 }
 
-static bool M_Whitein(const BOSS_DEFEAT_CONTEXT *const c)
+static bool M_Whitein(const PALETTE *const post_defeat)
 {
     int32_t done = 0;
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
             int8_t *const value = &g_Palette.saved.colors[color][component];
-            const int8_t target = c->post_defeat->colors[color][component];
+            const int8_t target = post_defeat->colors[color][component];
             ASSERT(target >= 0 && target <= 15);
             if (*value > target) {
                 (*value)--;
@@ -37,15 +37,14 @@ static bool M_Whitein(const BOSS_DEFEAT_CONTEXT *const c)
     return done == 48;
 }
 
-static void M_Restore(
-    BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_CONTEXT *const c)
+static void M_Restore(BOSS_DEFEAT *const defeat, const PTN *const miko)
 {
     defeat->frame = 0;
     Palette_SetGray(&g_Palette, 15);
     Video_SelectDrawingPage(1);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     Video_SelectDrawingPage(0);
-    Sprite_PtnPut(c->miko, 0, -1, g_Player.left, PLAYER_TOP);
+    Sprite_PtnPut(miko, 0, -1, g_Player.left, PLAYER_TOP);
     defeat->phase = BOSS_DEFEAT_WHITEIN;
 }
 
@@ -66,7 +65,8 @@ void BossDefeat_Begin(BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_KIND kind)
 }
 
 bool BossDefeat_Resume(
-    BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_CONTEXT *const c)
+    BOSS_DEFEAT *const defeat, const PALETTE *const post_defeat,
+    const PTN *const miko, const int16_t *const origin_top)
 {
     for (;;) {
         switch (defeat->phase) {
@@ -78,8 +78,7 @@ bool BossDefeat_Resume(
             }
             Video_SetScroll(0);
             defeat->top = Math16_Wrap(
-                *c->origin_top
-                + (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 48 : 16));
+                *origin_top + (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 48 : 16));
             ASSERT(defeat->top >= 0 && defeat->top < VIDEO_HEIGHT);
             defeat->bottom = defeat->top;
             defeat->phase = BOSS_DEFEAT_WHITEOUT;
@@ -97,12 +96,12 @@ bool BossDefeat_Resume(
             defeat->bottom += distance;
             defeat->frame++;
             if (defeat->top < 0 && defeat->bottom >= VIDEO_HEIGHT) {
-                M_Restore(defeat, c);
+                M_Restore(defeat, miko);
                 break;
             }
             if (defeat->frame % (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 15 : 7)
                 == 0) {
-                M_Whiteout(c);
+                M_Whiteout();
             }
             defeat->phase = BOSS_DEFEAT_WHITEOUT_DELAY;
             break;
@@ -117,7 +116,7 @@ bool BossDefeat_Resume(
             defeat->frame++;
             if (defeat->frame % (defeat->kind == BOSS_DEFEAT_SINGYOKU ? 15 : 5)
                     == 0
-                && M_Whitein(c)) {
+                && M_Whitein(post_defeat)) {
                 if (defeat->kind == BOSS_DEFEAT_REGULAR) {
                     g_Stage.cleared = true;
                     g_Player.is_hit = true;
