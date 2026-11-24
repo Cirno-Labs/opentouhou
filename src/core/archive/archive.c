@@ -282,6 +282,9 @@ void Archive_Close(ARCHIVE *const archive)
         ARCHIVE_ENTRY *const entry = &archive->table.entries.items[i];
         Allocator_Free(
             archive->allocator, entry->name, strlen(entry->name) + 1);
+        if (archive->format->free_entry != nullptr) {
+            archive->format->free_entry(entry->data);
+        }
         Allocator_Free(archive->allocator, entry->data, entry->data_size);
     }
     Array_Free(&archive->table.entries);

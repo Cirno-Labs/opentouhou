@@ -29,6 +29,8 @@ typedef struct {
     uint32_t crc;
     uint32_t packed_size;
     uint32_t header_offset;
+    DEFLATE_INDEX *index;
+    bool verified;
 } ZIP_RECORD;
 
 // Finds the end of central directory record, which lies in the last
@@ -81,7 +83,7 @@ static RESULT M_ReadEntry(READER *const directory, ARCHIVE_TABLE *const table)
     FAIL_IF(
         Reader_ReadU32(directory) != M_ENTRY_SIGNATURE,
         "the central directory is damaged");
-    ZIP_RECORD record;
+    ZIP_RECORD record = {};
     const uint16_t made_by = Reader_ReadU16(directory);
     Reader_Skip(directory, 2);
     const uint16_t flags = Reader_ReadU16(directory);
@@ -222,20 +224,25 @@ static RESULT M_ReadData(
 }
 
 static RESULT M_OpenEntry(
-    READER *const archive, const void *const data, const size_t size,
+    READER *const archive, void *const data, const size_t size,
     const ALLOCATOR *const allocator, READER *const out)
 {
-    const ZIP_RECORD *const record = data;
+    ZIP_RECORD *const record = data;
     MUST(M_SeekData(archive, record));
     READER packed = Reader_Slice(archive, record->packed_size);
     MUST(Reader_Result(archive));
     if (record->method == M_METHOD_DEFLATE) {
-        return Deflate_Open(&packed, size, record->crc, allocator, out);
+        return Deflate_Open(
+            &packed, size, record->crc, allocator, &record->index, out);
     }
     FAIL_IF(
         record->method != M_METHOD_STORED,
         "its compression method %u is not supported", record->method);
     FAIL_IF(record->packed_size != size, "its stored size does not match");
+    if (record->verified) {
+        *out = packed;
+        return OK;
+    }
     uint8_t buffer[READER_BUFFER_SIZE];
     uint32_t crc = 0;
     while (Reader_Remaining(&packed) != 0) {
@@ -244,18 +251,26 @@ static RESULT M_OpenEntry(
             : sizeof(buffer);
         Reader_ReadBytes(&packed, buffer, count);
         MUST(Reader_Result(&packed));
-        crc = Crc32_Update(crc, buffer, count);
+        crc = (uint32_t)crc32(crc, buffer, (uInt)count);
     }
     FAIL_IF(crc != record->crc, "its CRC-32 does not match");
+    record->verified = true;
     Reader_Seek(&packed, 0);
     *out = packed;
     return OK;
+}
+
+static void M_FreeEntry(void *const data)
+{
+    ZIP_RECORD *const record = data;
+    Deflate_FreeIndex(record->index);
 }
 
 const ARCHIVE_FORMAT g_ZipFormat = {
     .lookup = ARCHIVE_LOOKUP_PATH,
     .max_entry_size = ZIP_MAX_ENTRY_SIZE,
     .open_entry = M_OpenEntry,
+    .free_entry = M_FreeEntry,
     .read_table = M_ReadTable,
     .read_entry = M_ReadData,
 };

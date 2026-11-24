@@ -8,12 +8,13 @@
 // stored or compressed with deflate can be read, and each is checked against
 // its CRC-32. ZIP64, encryption and archives of several parts are not
 // supported. VFS_STREAM reads stored entries from the archive and deflated
-// entries through seek checkpoints. Opening a stream scans the entry to
-// check its size and CRC-32 without keeping it whole in memory. An entry name
-// without the UTF-8 flag is read as CP932, as Japanese Windows writes it, and
-// kept as its raw bytes when it is not valid CP932. Names are looked up by the
-// whole path, exactly. The Unix mode of an entry is the one the archive records
-// when it was made on Unix, and 0 otherwise.
+// entries through seek checkpoints. The first stream open scans an entry
+// to check its size and CRC-32 without keeping it whole in memory. Later
+// opens reuse the verification and checkpoints until the archive closes. An
+// entry name without the UTF-8 flag is read as CP932, as Japanese Windows
+// writes it, and kept as its raw bytes when it is not valid CP932. Names are
+// looked up by the whole path, exactly. The Unix mode of an entry is the one
+// the archive records when it was made on Unix, and 0 otherwise.
 
 // Sets the largest entry that can be unpacked whole. VFS_STREAM reads
 // larger entries with bounded buffers.

@@ -1,7 +1,6 @@
 #include "core/archive/deflate.h"
 
 #include "core/base/utils.h"
-#include "core/hash/crc32.h"
 
 #include <string.h>
 #include <zlib.h>
@@ -14,12 +13,17 @@ typedef struct {
     size_t input_offset;
 } M_CHECKPOINT;
 
-typedef struct {
-    READER packed;
+struct DEFLATE_INDEX {
     const ALLOCATOR *allocator;
     M_CHECKPOINT *points;
     size_t capacity;
     size_t count;
+};
+
+typedef struct {
+    READER packed;
+    const ALLOCATOR *allocator;
+    DEFLATE_INDEX *index;
     z_stream stream;
     bool initialized;
     bool ended;
@@ -63,7 +67,7 @@ static RESULT M_Decode(
 
 static RESULT M_Save(M_DEFLATE *const source)
 {
-    M_CHECKPOINT *const point = &source->points[source->count];
+    M_CHECKPOINT *const point = &source->index->points[source->index->count];
     FAIL_IF(
         inflateCopy(&point->stream, &source->stream) != Z_OK,
         "cannot save a deflate checkpoint");
@@ -73,7 +77,7 @@ static RESULT M_Save(M_DEFLATE *const source)
     point->stream.avail_in = 0;
     point->stream.next_out = nullptr;
     point->stream.avail_out = 0;
-    source->count++;
+    source->index->count++;
     return OK;
 }
 
@@ -85,12 +89,13 @@ static RESULT M_Restore(M_DEFLATE *const source, const size_t index)
     }
     memset(&source->stream, 0, sizeof(source->stream));
     FAIL_IF(
-        inflateCopy(&source->stream, &source->points[index].stream) != Z_OK,
+        inflateCopy(&source->stream, &source->index->points[index].stream)
+            != Z_OK,
         "cannot restore a deflate checkpoint");
     source->initialized = true;
     source->ended = false;
     source->position = index * M_SPAN;
-    Reader_Seek(&source->packed, source->points[index].input_offset);
+    Reader_Seek(&source->packed, source->index->points[index].input_offset);
     return Reader_Result(&source->packed);
 }
 
@@ -129,12 +134,6 @@ static void M_Close(void *const user)
     if (source->initialized) {
         inflateEnd(&source->stream);
     }
-    for (size_t i = 0; i < source->count; i++) {
-        inflateEnd(&source->points[i].stream);
-    }
-    Allocator_Free(
-        source->allocator, source->points,
-        source->capacity * sizeof(*source->points));
     Reader_Close(&source->packed);
     Allocator_Free(source->allocator, source, sizeof(*source));
 }
@@ -161,7 +160,7 @@ static RESULT M_Index(
         size_t produced;
         MUST(M_Decode(source, buffer, count, &produced));
         FAIL_IF(source->position > size, "its unpacked size does not match");
-        crc = Crc32_Update(crc, buffer, produced);
+        crc = (uint32_t)crc32(crc, buffer, (uInt)produced);
         if (!source->ended && source->position < size
             && source->position % M_SPAN == 0) {
             MUST(M_Save(source));
@@ -172,26 +171,56 @@ static RESULT M_Index(
         Reader_Remaining(&source->packed) != 0 || source->stream.avail_in != 0,
         "its packed size does not match");
     FAIL_IF(crc != expected_crc, "its CRC-32 does not match");
-    return M_Restore(source, 0);
+    return OK;
+}
+
+void Deflate_FreeIndex(DEFLATE_INDEX *const index)
+{
+    if (index == nullptr) {
+        return;
+    }
+    for (size_t i = 0; i < index->count; i++) {
+        inflateEnd(&index->points[i].stream);
+    }
+    Allocator_Free(
+        index->allocator, index->points,
+        index->capacity * sizeof(*index->points));
+    Allocator_Free(index->allocator, index, sizeof(*index));
 }
 
 RESULT Deflate_Open(
     READER *const packed, const size_t size, const uint32_t crc,
-    const ALLOCATOR *const allocator, READER *const out)
+    const ALLOCATOR *const allocator, DEFLATE_INDEX **const index,
+    READER *const out)
 {
     Reader_OpenBuffer(out, nullptr, 0, nullptr);
     M_DEFLATE *const source = Allocator_AllocZ(allocator, sizeof(*source));
     source->packed = *packed;
     memset(packed, 0, sizeof(*packed));
     source->allocator = allocator;
-    source->capacity = size / M_SPAN + 1;
-    source->points =
-        Allocator_AllocZ(allocator, source->capacity * sizeof(*source->points));
-    const RESULT result = M_Index(source, size, crc);
+    const bool build = *index == nullptr;
+    source->index = *index;
+    RESULT result = OK;
+    if (build) {
+        source->index = Allocator_AllocZ(allocator, sizeof(*source->index));
+        source->index->allocator = allocator;
+        source->index->capacity = size / M_SPAN + 1;
+        source->index->points = Allocator_AllocZ(
+            allocator,
+            source->index->capacity * sizeof(*source->index->points));
+        result = M_Index(source, size, crc);
+    }
+    if (IS_OK(result)) {
+        result = M_Restore(source, 0);
+    }
     if (!IS_OK(result)) {
+        if (build) {
+            Deflate_FreeIndex(source->index);
+        }
         M_Close(source);
         return result;
     }
+    *index = source->index;
     Reader_OpenSource(out, &m_Funcs, source, size, nullptr);
     return OK;
 }

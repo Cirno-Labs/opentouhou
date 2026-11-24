@@ -868,11 +868,8 @@
       writeLanguage(FS, language);
     }
     startSync(FS);
-    show($('setup'), false);
-    show($('stage'), true);
-    $('canvas').focus();
-    // The game's start holds the main thread, so it waits for the fade.
-    await new Promise((resolve) => setTimeout(resolve, FADE_MS));
+    // Paint the loading screen before synchronous game initialization.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
     Module.callMain(['--data', dataPath]);
     // Exit and Fullscreen only for a game that started, which the site
@@ -880,6 +877,9 @@
     const started = $('log').classList.contains('off');
     show($('controls'), started);
     if (started) {
+      show($('setup'), false);
+      show($('stage'), true);
+      $('canvas').focus();
       navigator.sendBeacon?.('/play/' + PROGRAM + '/started');
     }
   }
