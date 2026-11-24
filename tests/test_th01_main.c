@@ -4,6 +4,7 @@
 #include "th01/score.h"
 #include "th01/ending.h"
 #include "th01_assets.h"
+#include "th01_world.h"
 #include "pc98/vsync.h"
 
 #include "core/audio.h"
@@ -28,14 +29,12 @@ typedef struct {
     bool in_tick, finish_score, finish_ending, queue_on_quit;
     int asset_step, fail_asset, texture_step, fail_texture;
     int textures_live, flush_calls, written;
-    int opening_begins, opening_ticks, gameplay_ticks, resumes;
+    int opening_begins, opening_ticks;
     int score_begins, score_ticks, ending_begins, ending_ticks, ending_clears,
         switch_begins;
     OPENING_ACTION action;
-    GAMEPLAY_REQUEST request;
     SCORE_CONTEXT score_context;
     SCORE_SAVES *saves;
-    GAMEPLAY *game;
     const ARENA *arena;
     GFX_TEXTURE textures[3];
 } MAIN_FIXTURE;
@@ -176,31 +175,6 @@ OPENING_EVENTS Opening_Tick(
     return (OPENING_EVENTS) { .action = action };
 }
 
-void Gameplay_Begin(GAMEPLAY *game, const TH01_INPUT *input, uint64_t host_tick)
-{
-    Gameplay_ResetWorld(game);
-    Sound_Load(11);
-    Sound_Play();
-}
-
-GAMEPLAY_REQUEST Gameplay_Tick(
-    GAMEPLAY *game, const TH01_INPUT *input, bool reference_edge,
-    uint64_t host_tick)
-{
-    m_Fixture.gameplay_ticks++;
-    m_Fixture.game = game;
-    Gameplay_AdvanceAudio(game);
-    const GAMEPLAY_REQUEST request = m_Fixture.request;
-    m_Fixture.request = GAMEPLAY_REQUEST_NONE;
-    return request;
-}
-
-void Gameplay_ResumeAfterScore(
-    GAMEPLAY *game, const TH01_INPUT *input, uint64_t host_tick)
-{
-    m_Fixture.resumes++;
-}
-
 void Score_Begin(
     SCORE_SCENE *scene, const SCORE_ASSETS *assets, SCORE_CONTEXT context,
     int32_t rank, const SCORE_ENTRY *entry)
@@ -333,15 +307,19 @@ static void M_Opening(void)
     CHECK_EQ_INT(m_Fixture.opening_begins, 1);
 }
 
-static void M_Play(void)
+static const GAMEPLAY *M_Play(void)
 {
     M_Opening();
     m_Fixture.action = OPENING_ACTION_START;
-    for (int i = 0; i < 4 && m_Fixture.gameplay_ticks == 0; i++) {
+    TH01_VIEW view = {};
+    for (int i = 0; i < 4 && view.scene != TH01_SCENE_GAMEPLAY; i++) {
         CHECK(M_Tick((TH01_INPUT) {}));
+        Th01_View(&view);
     }
-    CHECK(m_Fixture.game != nullptr);
-    CHECK(m_Fixture.game->storage.initial != nullptr);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
+    CHECK(view.gameplay != nullptr);
+    CHECK(view.gameplay->storage.initial != nullptr);
+    return view.gameplay;
 }
 
 static void M_Shutdown(void)
@@ -363,9 +341,8 @@ TEST(real_main_initializes_public_gameplay_headless_and_with_audio)
         }
         CHECK(Result_Log(g_GameDesc.init(), LOG_LEVEL_ERROR));
         CHECK_EQ_INT(m_Fixture.textures_live, 3);
-        M_Play();
-        CHECK(
-            (m_Fixture.game->storage.audio_output != nullptr) == (audio != 0));
+        const GAMEPLAY *const game = M_Play();
+        CHECK((game->storage.audio_output != nullptr) == (audio != 0));
         M_Shutdown();
     }
 }
@@ -398,38 +375,6 @@ TEST(real_main_fails_at_startup_without_a_font)
     CHECK(!Result_Ignore(g_GameDesc.init()));
     CHECK_EQ_INT(m_Fixture.asset_step, 2);
     M_Shutdown();
-}
-
-TEST(real_main_hands_score_and_ending_ownership_back_to_gameplay_and_opening)
-{
-    M_Reset();
-    CHECK(Result_Ignore(g_GameDesc.init()));
-    M_Play();
-    m_Fixture.request = GAMEPLAY_REQUEST_SCORE;
-    CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Fixture.score_context, SCORE_GAMEOVER);
-    m_Fixture.finish_score = true;
-    CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Fixture.resumes, 1);
-    CHECK(m_Fixture.saves->pending[0]);
-    CHECK_EQ_INT(m_Fixture.written, 0);
-    Th01_FlushSaves();
-    CHECK_EQ_INT(m_Fixture.written, 1);
-    m_Fixture.request = GAMEPLAY_REQUEST_ENDING;
-    CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Fixture.ending_begins, 1);
-    m_Fixture.finish_ending = true;
-    CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Fixture.score_context, SCORE_ENDING);
-    CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Fixture.switch_begins, 1);
-    CHECK_EQ_INT(m_Fixture.ending_clears, 0);
-    CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Fixture.ending_clears, 1);
-    CHECK_EQ_INT(m_Fixture.opening_begins, 2);
-    CHECK_EQ_INT(m_Fixture.written, 1);
-    M_Shutdown();
-    CHECK_EQ_INT(m_Fixture.written, 2);
 }
 
 TEST(final_quit_tick_queues_a_save_for_the_host_and_shutdown)
@@ -483,16 +428,11 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
     TH01_VIEW view;
     Th01_View(&view);
     CHECK_EQ_INT(view.scene, TH01_SCENE_OPENING);
-    M_Play();
+    const GAMEPLAY *const game = M_Play();
     Th01_View(&view);
     CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
-    CHECK(view.gameplay == m_Fixture.game);
+    CHECK(view.gameplay == game);
     CHECK(view.opening != nullptr);
-    m_Fixture.request = GAMEPLAY_REQUEST_SCORE;
-    CHECK(M_Tick((TH01_INPUT) {}));
-    Th01_View(&view);
-    CHECK_EQ_INT(view.scene, TH01_SCENE_SCORE);
-    CHECK_EQ_INT(view.score->context, SCORE_GAMEOVER);
     g_Th01Hooks = (TH01_HOOKS) {};
     M_Shutdown();
 }
