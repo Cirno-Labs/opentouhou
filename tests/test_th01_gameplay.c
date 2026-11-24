@@ -7,6 +7,7 @@
 #include "th01/rng.h"
 #include "th01/score.h"
 #include "th01_assets.h"
+#include "th01_music.h"
 
 #include "core/base/arena.h"
 #include "core/audio.h"
@@ -24,10 +25,10 @@ typedef struct {
 } FIXTURE;
 
 // Renders a while and reports whether an effect sounded.
-static bool M_EffectSounds(GAMEPLAY *const g)
+static bool M_EffectSounds(void)
 {
     MDRV_FRAME frames[2400];
-    Mdrv_Render(g_Sound.mdrv, frames, 2400);
+    Mdrv_Render(TestMusic_Driver(), frames, 2400);
     for (size_t i = 0; i < 2400; i++) {
         if (frames[i].effects[0] != 0 || frames[i].effects[1] != 0) {
             return true;
@@ -53,6 +54,10 @@ static void M_Init(FIXTURE *const f)
     f->assets = Th01TestAssets_Create(a);
     CHECK(
         Result_Log(Gameplay_Prepare(a, f->assets, &f->game), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(
+        Music_Init(
+            a, f->assets->songs, GAMEPLAY_SONG_COUNT, &f->assets->effects),
+        LOG_LEVEL_ERROR));
     GAMEPLAY *const g = f->game;
     Gameplay_ResetWorld(g);
     Frame_Reset();
@@ -94,7 +99,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(g_Orb.force_frame, 2);
     Gameplay_Tick(g, &raw, true, 4);
     CHECK(g_Shots.slots[0].moving);
-    CHECK(M_EffectSounds(g));
+    CHECK(M_EffectSounds());
     CHECK_EQ_INT(f.arena.used, used);
     Arena_Free(&f.arena);
 }
@@ -432,7 +437,7 @@ TEST(real_gameover_score_registration_precedes_continue)
         f.arena.capacity = used;
         Score_Begin(&score, &assets, SCORE_GAMEOVER, 1, &routed);
         for (int32_t i = 0; i < 16; i++) {
-            Gameplay_AdvanceAudio(g);
+            Music_Update();
             tick++;
             CHECK(!Score_Tick(&score, &(TH01_INPUT) {}, true));
         }
@@ -518,11 +523,11 @@ TEST(disabled_gameplay_cannot_start_effects)
     M_Init(&f);
     g_Session.settings.music = SETTINGS_MUSIC_OFF;
     Sound_Effect(5);
-    Gameplay_AdvanceAudio(f.game);
-    CHECK(!M_EffectSounds(f.game));
+    Music_Update();
+    CHECK(!M_EffectSounds());
     g_Session.settings.music = SETTINGS_MUSIC_FM;
     Sound_Effect(5);
-    CHECK(M_EffectSounds(f.game));
+    CHECK(M_EffectSounds());
     Arena_Free(&f.arena);
 }
 
@@ -530,19 +535,18 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
 {
     FIXTURE f;
     M_Init(&f);
-    GAMEPLAY *const g = f.game;
     g_Session.settings.music = SETTINGS_MUSIC_OFF;
     MDRV *twin;
     CHECK(Result_Ignore(Mdrv_Init(
         f.assets->songs, GAMEPLAY_SONG_COUNT, &f.assets->effects, 8, 8,
         Arena_Allocator(&f.arena), &twin)));
     const size_t used = f.arena.used;
-    Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY });
-    Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_FADE });
+    Music_Play(15);
+    Music_Fade();
     Mdrv_Play(twin, 15);
     Mdrv_Fade(twin, 1);
     for (int32_t i = 0; i < 10; i++) {
-        Gameplay_AdvanceAudio(g);
+        Music_Update();
     }
     Mdrv_Render(twin, nullptr, 8000);
     Sound_Effect(5);
@@ -552,12 +556,12 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     Sound_Fade();
     Sound_Stop();
     Sound_Stop();
-    CHECK_EQ_INT(g_Sound.song, 3);
+    CHECK_EQ_INT(TestMusic_SelectedSong(), 3);
     static MDRV_FRAME expected[4800], actual[4800];
     Mdrv_Render(twin, expected, 4800);
-    Mdrv_Render(g_Sound.mdrv, actual, 4800);
+    Mdrv_Render(TestMusic_Driver(), actual, 4800);
     CHECK(memcmp(expected, actual, sizeof(actual)) == 0);
-    Gameplay_OpeningAudio(g, (OPENING_EVENTS) { .audio = OPENING_AUDIO_STOP });
+    Music_Stop();
     CHECK_EQ_INT(f.arena.used, used);
     Arena_Free(&f.arena);
 }
@@ -566,25 +570,24 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
 {
     FIXTURE f;
     M_Init(&f);
-    GAMEPLAY *const g = f.game;
     Sound_Load(3);
     Sound_Play();
     Sound_Effect(5);
-    CHECK(M_EffectSounds(g));
+    CHECK(M_EffectSounds());
     Sound_Effect(5);
     Sound_Fade();
     Sound_Load(4);
     Sound_Play();
-    CHECK_EQ_INT(g_Sound.song, 4);
-    CHECK(!M_EffectSounds(g));
+    CHECK_EQ_INT(TestMusic_SelectedSong(), 4);
+    CHECK(!M_EffectSounds());
     Sound_Effect(5);
     Sound_Stop();
-    CHECK(!M_EffectSounds(g));
+    CHECK(!M_EffectSounds());
     Sound_Load(5);
     Sound_Play();
     Sound_Effect(5);
     Sound_Stop();
-    CHECK(!M_EffectSounds(g));
+    CHECK(!M_EffectSounds());
     Arena_Free(&f.arena);
 }
 
@@ -595,15 +598,14 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     M_Init(&f);
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(Arena_Allocator(&f.arena), &output)));
-    Gameplay_BindAudio(f.game, output);
+    Music_BindOutput(output);
     Sound_Effect(5);
-    Gameplay_AdvanceAudio(f.game);
+    Music_Update();
     const size_t used = f.arena.used;
     Gameplay_ResetWorld(f.game);
-    CHECK(f.game->storage.audio_output == output);
-    Gameplay_OpeningAudio(
-        f.game, (OPENING_EVENTS) { .audio = OPENING_AUDIO_FADE });
-    Gameplay_AdvanceAudio(f.game);
+    CHECK(TestMusic_Output() == output);
+    Music_Fade();
+    Music_Update();
     float samples[3200];
     const Uint64 deadline = SDL_GetTicks() + 5000;
     bool mixed = AudioBackend_Mix(samples, 1600);
@@ -618,7 +620,7 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     }
     CHECK(nonzero);
     CHECK_EQ_INT(f.arena.used, used);
-    Gameplay_BindAudio(f.game, nullptr);
+    Music_BindOutput(nullptr);
     GameAudio_Free(output);
     Audio_Shutdown();
     Arena_Free(&f.arena);
@@ -632,10 +634,10 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     GAMEPLAY *const g = f.game;
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(Arena_Allocator(&f.arena), &output)));
-    Gameplay_BindAudio(g, output);
+    Music_BindOutput(output);
     Sound_Load(4);
     Sound_Play();
-    Gameplay_AdvanceAudio(g);
+    Music_Update();
     g->storage.host_tick = 1234;
     const GAMEPLAY_STORAGE prepared = g->storage;
     const size_t used = f.arena.used;
@@ -663,7 +665,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g_B20M.ray_previous_y, 999);
     CHECK_EQ_INT(g_B20M.flake.state, -1);
     CHECK_EQ_INT(g_B20J.ray_previous_x, 999);
-    Gameplay_BindAudio(g, nullptr);
+    Music_BindOutput(nullptr);
     GameAudio_Free(output);
     Audio_Shutdown();
     Arena_Free(&f.arena);

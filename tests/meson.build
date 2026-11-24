@@ -1361,6 +1361,7 @@ if build_games
     executable(
       'test_th01_main',
       'test_th01_main.c',
+      'th01_music.c',
       'th01_assets.c',
       'audio_backend_fake.c',
       c_args: [layer_include['th01']] + shell_include + stg_include,
@@ -1431,7 +1432,7 @@ if build_games
       executable(
         'test_th01_' + part,
         'test_th01_' + part + '.c',
-        part == 'gameplay' ? ['audio_backend_fake.c', 'th01_assets.c'] : [],
+        part == 'gameplay' ? ['audio_backend_fake.c', 'th01_assets.c', 'th01_music.c'] : [],
         c_args: [layer_include['th01']] + core_include + stg_include,
         implicit_include_directories: false,
         link_with: [th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_image_lib, core_io_lib, core_base_lib] + (part in ['gameplay', 'score', 'ending'] ? [core_text_lib] : []) + (part == 'gameplay' ? [core_audio_lib] : []),

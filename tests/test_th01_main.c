@@ -4,6 +4,7 @@
 #include "th01/score.h"
 #include "th01/ending.h"
 #include "th01_assets.h"
+#include "th01_music.h"
 #include "th01_world.h"
 #include "pc98/vsync.h"
 
@@ -341,8 +342,8 @@ TEST(real_main_initializes_public_gameplay_headless_and_with_audio)
         }
         CHECK(Result_Log(g_GameDesc.init(), LOG_LEVEL_ERROR));
         CHECK_EQ_INT(m_Fixture.textures_live, 3);
-        const GAMEPLAY *const game = M_Play();
-        CHECK((game->storage.audio_output != nullptr) == (audio != 0));
+        M_Play();
+        CHECK((TestMusic_Output() != nullptr) == (audio != 0));
         M_Shutdown();
     }
 }

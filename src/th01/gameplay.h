@@ -1,7 +1,6 @@
 #pragma once
 
 #include "th01/gameplay_assets.h"
-#include "th01/audio.h"
 #include "th01/frame.h"
 #include "th01/session.h"
 #include "th01/opening.h"
@@ -15,7 +14,7 @@ typedef enum {
     GAMEPLAY_REQUEST_ENDING,
 } GAMEPLAY_REQUEST;
 
-// Prepares mutable world storage, boss snapshots, HUD and audio workspaces.
+// Prepares mutable world storage, boss snapshots and HUD workspaces.
 // All borrowed assets and the caller's allocator group must
 // remain alive. Begin and Tick perform no allocation or IO on successful
 // paths. One instance owns every ordinary stage and both boss routes.
@@ -49,13 +48,3 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 // only after the score request has been handled; does no registration.
 void Gameplay_ResumeAfterScore(
     GAMEPLAY *gameplay, const TH01_INPUT *input, uint64_t host_tick);
-
-// Applies opening controls to the same prepared audio producer. Call the
-// advance operation once per host tick outside gameplay. Gameplay_Tick
-// advances audio itself, including during nested waits and terminal frames.
-void Gameplay_OpeningAudio(GAMEPLAY *gameplay, OPENING_EVENTS events);
-void Gameplay_AdvanceAudio(GAMEPLAY *gameplay);
-
-// Borrows prepared output across world resets. Null selects silent output.
-// Unbind before freeing output; does not change the shared producer clock.
-void Gameplay_BindAudio(GAMEPLAY *gameplay, GAME_AUDIO *output);
