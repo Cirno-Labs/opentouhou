@@ -25,17 +25,11 @@ typedef struct {
     int16_t top, bottom, frame;
 } BOSS_DEFEAT;
 
-typedef struct {
-    const PALETTE *post_defeat;
-    const PTN *miko;
-    const int16_t *origin_top;
-} BOSS_DEFEAT_CONTEXT;
-
 RESULT BossDefeat_ValidateSprites(const PTN *miko);
 
 // Starts with a fresh raw VSync wait, without drawing or resetting counters.
 // Zero-initialize once and begin only when done. Keep borrowed storage alive
-// and supply the same context bindings until completion. origin_top is the live
+// and supply the same bindings until completion. origin_top is the live
 // Orb top for regular bosses or SinGyoku entity top; its center (+16 or +48)
 // must be in 0..399. Assets must be validated and post_defeat components must
 // stay in 0..15.
@@ -48,4 +42,6 @@ void BossDefeat_Begin(BOSS_DEFEAT *defeat, BOSS_DEFEAT_KIND kind);
 // them unchanged: start the route chooser immediately in the same tick and
 // set them only after its cached scene activation. Does not advance VSyncs,
 // actors or gameplay counters. Allocates nothing and performs no IO.
-bool BossDefeat_Resume(BOSS_DEFEAT *defeat, const BOSS_DEFEAT_CONTEXT *context);
+bool BossDefeat_Resume(
+    BOSS_DEFEAT *defeat, const PALETTE *post_defeat, const PTN *miko,
+    const int16_t *origin_top);
