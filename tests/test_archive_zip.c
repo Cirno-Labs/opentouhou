@@ -2,6 +2,8 @@
 
 #include "core/archive.h"
 #include "test.h"
+#include "test_allocator.h"
+#include "test_dir.h"
 #include "zip_builder.h"
 
 #define M_TEXT "Every package holds the game and othpatch. "
@@ -262,4 +264,297 @@ TEST(a_name_without_the_utf8_flag_reads_as_cp932_or_raw)
         ArchiveEntry_GetName(Archive_GetEntry(test.archive, 1)), "\x81.txt");
     M_CheckRead(&test, "東方/th06.dat", "a", 1);
     M_Close(&test);
+}
+
+static READER M_Stream(M_CASE *const test, const char *const name)
+{
+    VFS_SOURCE *const source = Archive_ToSource(test->archive, "");
+    READER reader;
+    CHECK(Result_Log(
+        source->funcs->open(source, name, VFS_STREAM, &reader),
+        LOG_LEVEL_ERROR));
+    return reader;
+}
+
+TEST(streamed_entries_seek_slice_and_interleave)
+{
+    const size_t size = 9 * 1024 * 1024 + 71;
+    uint8_t *const pattern = Mem_Alloc(size);
+    for (size_t i = 0; i < size; i++) {
+        pattern[i] = (uint8_t)(i * 7 + (i >> 13));
+    }
+    for (int deflate = 0; deflate < 2; deflate++) {
+        const ZIP_BUILDER_ENTRY entry = { "music", pattern, size, 0,
+                                          deflate != 0 };
+        M_CASE test;
+        M_Open(&test, &entry, 1);
+        READER first = M_Stream(&test, "music");
+        READER second;
+        VFS_SOURCE *const source = (VFS_SOURCE *)test.archive;
+        CHECK(Result_Log(
+            source->funcs->open(source, "music", VFS_STREAM, &second),
+            LOG_LEVEL_ERROR));
+        const size_t offsets[] = { 0,          5 * 1024 * 1024,
+                                   23,         4 * 1024 * 1024 - 10,
+                                   size - 128, 0 };
+        for (size_t i = 0; i < sizeof(offsets) / sizeof(*offsets); i++) {
+            uint8_t bytes[128];
+            Reader_Seek(&first, offsets[i]);
+            Reader_ReadBytes(&first, bytes, sizeof(bytes));
+            CHECK(Result_Log(Reader_Result(&first), LOG_LEVEL_ERROR));
+            CHECK(memcmp(bytes, pattern + offsets[i], sizeof(bytes)) == 0);
+            CHECK_EQ_INT(Reader_ReadU8(&second), pattern[i]);
+        }
+        Reader_Seek(&first, 4 * 1024 * 1024 - 8);
+        READER slice = Reader_Slice(&first, 128);
+        uint8_t bytes[128];
+        Reader_ReadBytes(&slice, bytes, sizeof(bytes));
+        CHECK(Result_Log(Reader_Result(&slice), LOG_LEVEL_ERROR));
+        CHECK(memcmp(bytes, pattern + 4 * 1024 * 1024 - 8, sizeof(bytes)) == 0);
+        Reader_Seek(&first, size);
+        CHECK(Result_Log(Reader_Result(&first), LOG_LEVEL_ERROR));
+        Reader_ReadU8(&first);
+        CHECK(!Result_Ignore(Reader_Result(&first)));
+        Reader_Close(&second);
+        Reader_Close(&first);
+        M_Close(&test);
+    }
+    Mem_Free(pattern);
+}
+
+TEST(streaming_checks_crc_and_local_header)
+{
+    for (int deflate = 0; deflate < 2; deflate++) {
+        const ZIP_BUILDER_ENTRY entry = { "file", M_TEXT, strlen(M_TEXT), 0,
+                                          deflate != 0 };
+        for (int damage = 0; damage < 3; damage++) {
+            M_CASE test;
+            M_Open(&test, &entry, 1);
+            if (damage == 0) {
+                test.data.data[30 + strlen(entry.name)] ^= 0xFF;
+            } else if (damage == 1) {
+                test.data.data[0] ^= 1;
+            } else {
+                test.data.data[28] = 0xFF;
+                test.data.data[29] = 0xFF;
+            }
+            VFS_SOURCE *const source = Archive_ToSource(test.archive, "");
+            READER reader;
+            CHECK(!Result_Ignore(
+                source->funcs->open(source, "file", VFS_STREAM, &reader)));
+            M_Close(&test);
+        }
+    }
+}
+
+TEST(empty_entries_stream)
+{
+    for (int deflate = 0; deflate < 2; deflate++) {
+        const ZIP_BUILDER_ENTRY entry = { "empty", "", 0, 0, deflate != 0 };
+        M_CASE test;
+        M_Open(&test, &entry, 1);
+        READER reader = M_Stream(&test, "empty");
+        CHECK_EQ_INT(Reader_Size(&reader), 0);
+        Reader_Seek(&reader, 0);
+        CHECK(Result_Log(Reader_Result(&reader), LOG_LEVEL_ERROR));
+        Reader_Close(&reader);
+        M_Close(&test);
+    }
+}
+
+static ZIP_BUILDER_ARCHIVE M_LargeZip(const size_t size)
+{
+    WRITER writer;
+    Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
+    z_stream stream = {};
+    CHECK(
+        deflateInit2(
+            &stream, Z_BEST_SPEED, Z_DEFLATED, -MAX_WBITS, 8,
+            Z_DEFAULT_STRATEGY)
+        == Z_OK);
+    uint8_t input[65536] = {};
+    uint8_t output[65536];
+    uint32_t crc = 0;
+    size_t remaining = size;
+    int status = Z_OK;
+    while (status != Z_STREAM_END) {
+        const size_t count =
+            remaining < sizeof(input) ? remaining : sizeof(input);
+        crc = Crc32_Update(crc, input, count);
+        stream.next_in = input;
+        stream.avail_in = (uInt)count;
+        remaining -= count;
+        do {
+            stream.next_out = output;
+            stream.avail_out = sizeof(output);
+            status = deflate(&stream, remaining == 0 ? Z_FINISH : Z_NO_FLUSH);
+            CHECK(status == Z_OK || status == Z_STREAM_END);
+            Writer_WriteBytes(
+                &writer, output, sizeof(output) - stream.avail_out);
+        } while (stream.avail_in != 0
+                 || (remaining == 0 && status != Z_STREAM_END));
+    }
+    deflateEnd(&stream);
+    size_t packed_size;
+    uint8_t *const packed = Writer_TakeBuffer(&writer, &packed_size);
+    CHECK(Result_Ignore(Writer_Close(&writer)));
+    const ZIP_BUILDER_ENTRY entry = { "music", "", 0, 0, true };
+    ZIP_BUILDER_ARCHIVE small = ZipBuilder_Build(&entry, 1);
+    const size_t header = 30 + strlen(entry.name);
+    const size_t directory_size = 46 + strlen(entry.name);
+    const size_t directory = header + packed_size;
+    ZIP_BUILDER_ARCHIVE result = {
+        .size = directory + directory_size + 22,
+    };
+    result.data = Mem_Alloc(result.size);
+    memcpy(result.data, small.data, header);
+    memcpy(result.data + header, packed, packed_size);
+    memcpy(
+        result.data + directory, small.data + small.size - directory_size - 22,
+        directory_size + 22);
+    uint8_t *cursor = result.data + 14;
+    M_ZipPut32(&cursor, crc);
+    M_ZipPut32(&cursor, (uint32_t)packed_size);
+    M_ZipPut32(&cursor, (uint32_t)size);
+    cursor = result.data + directory + 16;
+    M_ZipPut32(&cursor, crc);
+    M_ZipPut32(&cursor, (uint32_t)packed_size);
+    M_ZipPut32(&cursor, (uint32_t)size);
+    cursor = result.data + result.size - 6;
+    M_ZipPut32(&cursor, (uint32_t)directory);
+    Mem_Free(small.data);
+    Allocator_Free(&g_HeapAllocator, packed, packed_size);
+    return result;
+}
+
+TEST(retail_sized_music_streams_without_a_whole_entry_allocation)
+{
+    const size_t size = 444516656;
+    ZIP_BUILDER_ARCHIVE built = M_LargeZip(size);
+    TEST_ALLOCATOR allocator;
+    TestAllocator_Init(&allocator);
+    READER input;
+    Reader_OpenBuffer(&input, built.data, built.size, "game.zip");
+    ARCHIVE *archive;
+    CHECK(Result_Log(
+        Archive_Open(&g_ZipFormat, &input, &allocator.allocator, &archive),
+        LOG_LEVEL_ERROR));
+    VFS_SOURCE *const source = Archive_ToSource(archive, "");
+    READER reader;
+    CHECK(Result_Log(
+        source->funcs->open(source, "music", VFS_STREAM, &reader),
+        LOG_LEVEL_ERROR));
+    CHECK_EQ_STR(Reader_GetName(&reader), "game.zip/music");
+    CHECK_EQ_INT(Reader_Size(&reader), size);
+    CHECK(allocator.live_bytes < 1024 * 1024);
+    const size_t offsets[] = { size - 1, 4 * 1024 * 1024, 0, size / 2 };
+    for (size_t i = 0; i < sizeof(offsets) / sizeof(*offsets); i++) {
+        Reader_Seek(&reader, offsets[i]);
+        CHECK_EQ_INT(Reader_ReadU8(&reader), 0);
+        CHECK(Result_Log(Reader_Result(&reader), LOG_LEVEL_ERROR));
+    }
+    Reader_Close(&reader);
+    source->funcs->close(source);
+    CHECK_EQ_INT(allocator.live_blocks, 0);
+    CHECK_EQ_INT(allocator.size_errors, 0);
+    Mem_Free(built.data);
+}
+
+TEST(streaming_rejects_wrong_sizes_and_releases_checkpoints)
+{
+    for (int damage = 0; damage < 3; damage++) {
+        const ZIP_BUILDER_ENTRY entry = { "music", M_TEXT, strlen(M_TEXT), 0,
+                                          true };
+        ZIP_BUILDER_ARCHIVE built = ZipBuilder_Build(&entry, 1);
+        const size_t directory = built.size - 22 - 46 - strlen(entry.name);
+        uint8_t *cursor = built.data + directory + (damage == 2 ? 20 : 24);
+        const uint32_t size = damage == 0 ? (uint32_t)entry.size - 1
+            : damage == 1 ? (uint32_t)entry.size + 1
+                          : (uint32_t)(directory - 30 - strlen(entry.name) - 1);
+        M_ZipPut32(&cursor, size);
+        TEST_ALLOCATOR allocator;
+        TestAllocator_Init(&allocator);
+        READER input;
+        Reader_OpenBuffer(&input, built.data, built.size, nullptr);
+        ARCHIVE *archive;
+        CHECK(Result_Log(
+            Archive_Open(&g_ZipFormat, &input, &allocator.allocator, &archive),
+            LOG_LEVEL_ERROR));
+        VFS_SOURCE *const source = Archive_ToSource(archive, "");
+        READER reader;
+        CHECK(!Result_Ignore(
+            source->funcs->open(source, "music", VFS_STREAM, &reader)));
+        Reader_Close(&reader);
+        source->funcs->close(source);
+        CHECK_EQ_INT(allocator.live_blocks, 0);
+        CHECK_EQ_INT(allocator.size_errors, 0);
+        Mem_Free(built.data);
+    }
+}
+
+TEST(whole_entry_limit_is_checked_before_allocation)
+{
+    const ZIP_BUILDER_ENTRY entry = { "music", "", 0, 0, true };
+    ZIP_BUILDER_ARCHIVE built = ZipBuilder_Build(&entry, 1);
+    const size_t directory = built.size - 22 - 46 - strlen(entry.name);
+    uint8_t *cursor = built.data + directory + 24;
+    M_ZipPut32(&cursor, (uint32_t)ZIP_MAX_ENTRY_SIZE + 1);
+    TEST_ALLOCATOR allocator;
+    TestAllocator_Init(&allocator);
+    READER input;
+    Reader_OpenBuffer(&input, built.data, built.size, "game.zip");
+    ARCHIVE *archive;
+    CHECK(Result_Log(
+        Archive_Open(&g_ZipFormat, &input, &allocator.allocator, &archive),
+        LOG_LEVEL_ERROR));
+    uint8_t *data;
+    const RESULT result =
+        Archive_Read(archive, Archive_GetEntry(archive, 0), &data);
+    CHECK(!IS_OK(result));
+    CHECK_EQ_STR(
+        result.message, "game.zip: music: entry is too large to unpack");
+    CHECK(data == nullptr);
+    CHECK(allocator.live_bytes < 1024 * 1024);
+    Result_Ignore(result);
+    Archive_Close(archive);
+    CHECK_EQ_INT(allocator.live_blocks, 0);
+    Mem_Free(built.data);
+}
+
+TEST(file_backed_streams_keep_independent_positions)
+{
+    const ZIP_BUILDER_ENTRY entries[] = {
+        { "stored", M_TEXT, strlen(M_TEXT), 0, false },
+        { "deflated", M_TEXT, strlen(M_TEXT), 0, true },
+    };
+    ZIP_BUILDER_ARCHIVE built = ZipBuilder_Build(entries, 2);
+    char *const directory = TestDir_Prepare("file_backed_streams");
+    char *const path = TestDir_Join(directory, "game.zip");
+    CHECK(SDL_SaveFile(path, built.data, built.size));
+    READER input;
+    CHECK(Result_Log(Reader_OpenFile(&input, path), LOG_LEVEL_ERROR));
+    ARCHIVE *archive;
+    CHECK(Result_Log(
+        Archive_Open(&g_ZipFormat, &input, &g_HeapAllocator, &archive),
+        LOG_LEVEL_ERROR));
+    VFS_SOURCE *const source = Archive_ToSource(archive, "");
+    READER readers[2];
+    for (int i = 0; i < 2; i++) {
+        CHECK(Result_Log(
+            source->funcs->open(
+                source, entries[i].name, VFS_STREAM, &readers[i]),
+            LOG_LEVEL_ERROR));
+    }
+    for (size_t i = 0; i < strlen(M_TEXT); i++) {
+        CHECK_EQ_INT(Reader_ReadU8(&readers[0]), (uint8_t)M_TEXT[i]);
+        CHECK_EQ_INT(Reader_ReadU8(&readers[1]), (uint8_t)M_TEXT[i]);
+    }
+    for (int i = 0; i < 2; i++) {
+        CHECK(Result_Log(Reader_Result(&readers[i]), LOG_LEVEL_ERROR));
+        Reader_Close(&readers[i]);
+    }
+    source->funcs->close(source);
+    Mem_Free(path);
+    Mem_Free(directory);
+    Mem_Free(built.data);
 }

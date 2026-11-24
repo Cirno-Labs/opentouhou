@@ -157,6 +157,19 @@ static bool M_Copy(READER *const reader, void *const buffer, const size_t size)
     if (size == 0) {
         return true;
     }
+    if (reader->source_funcs != nullptr) {
+        const RESULT result =
+            reader->source_funcs->read_at(reader->source, offset, buffer, size);
+        if (!IS_OK(result)) {
+            reader->position -= size;
+            M_Fail(
+                reader, "read at 0x%llx failed (%s)",
+                (unsigned long long)offset, result.message);
+            Result_Ignore(result);
+            return false;
+        }
+        return true;
+    }
     if (reader->file == nullptr) {
         memcpy(buffer, reader->data + offset, size);
         return true;
@@ -208,6 +221,17 @@ void Reader_OpenOwnedBuffer(
     reader->buffer_size = size;
 }
 
+void Reader_OpenSource(
+    READER *const reader, const READER_SOURCE_FUNCS *const funcs,
+    void *const user, const size_t size, const char *const name)
+{
+    Reader_OpenBuffer(reader, nullptr, 0, name);
+    reader->source_funcs = funcs;
+    reader->source = user;
+    reader->owns_source = true;
+    reader->size = size;
+}
+
 RESULT Reader_OpenFile(READER *const reader, const char *const path)
 {
     Reader_OpenBuffer(reader, nullptr, 0, nullptr);
@@ -237,9 +261,12 @@ RESULT Reader_OpenFile(READER *const reader, const char *const path)
 
 void Reader_Close(READER *const reader)
 {
-    if (!reader->owns_file && reader->buffer_allocator == nullptr
-        && !reader->owns_name) {
+    if (!reader->owns_file && !reader->owns_source
+        && reader->buffer_allocator == nullptr && !reader->owns_name) {
         return;
+    }
+    if (reader->owns_source) {
+        reader->source_funcs->close(reader->source);
     }
     if (reader->owns_file) {
         READER_FILE *const file = reader->file;
@@ -257,6 +284,9 @@ void Reader_Close(READER *const reader)
     }
     reader->data = m_NoData;
     reader->file = nullptr;
+    reader->source_funcs = nullptr;
+    reader->source = nullptr;
+    reader->owns_source = false;
     reader->owns_file = false;
     reader->buffer_allocator = nullptr;
     reader->buffer_size = 0;
@@ -270,6 +300,16 @@ void Reader_Close(READER *const reader)
 const char *Reader_GetName(const READER *const reader)
 {
     return reader->name;
+}
+
+void Reader_SetName(READER *const reader, const char *const name)
+{
+    char *const copy = name == nullptr ? nullptr : Str_Dup(name);
+    if (reader->owns_name) {
+        Mem_Free(reader->name);
+    }
+    reader->name = copy;
+    reader->owns_name = copy != nullptr;
 }
 
 bool Reader_Failed(const READER *const reader)
@@ -425,6 +465,7 @@ char *Reader_ReadCString(
 const void *Reader_Borrow(READER *const reader, const size_t size)
 {
     ASSERT(reader->file == nullptr);
+    ASSERT(reader->source_funcs == nullptr);
     size_t offset;
     if (!M_Claim(reader, "read", size, &offset)) {
         return nullptr;
@@ -439,6 +480,7 @@ READER Reader_Slice(READER *const reader, const size_t size)
     if (!M_Claim(reader, "slice", size, &offset)) {
         slice = *reader;
         slice.owns_file = false;
+        slice.owns_source = false;
         slice.buffer_allocator = nullptr;
         slice.owns_name = false;
         slice.size = 0;
@@ -446,6 +488,7 @@ READER Reader_Slice(READER *const reader, const size_t size)
         return slice;
     }
     slice.owns_file = false;
+    slice.owns_source = false;
     slice.buffer_allocator = nullptr;
     slice.owns_name = false;
     slice.origin = offset;

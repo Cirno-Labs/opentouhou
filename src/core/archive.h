@@ -9,7 +9,8 @@
 // Reads archives through one interface: core/archive/zip.h, stg/pbg3.h and
 // each other format provide an ARCHIVE_FORMAT, and every archive behaves the
 // same whatever its format. Opening an archive reads its entry table only;
-// an entry is unpacked whole when it is read.
+// Archive_Read unpacks an entry whole. VFS_STREAM can read entries through
+// a seekable source when the format supports it.
 //
 // Each format looks names up in one of two ways (core/archive/format.h): by
 // the whole path exactly, or by the last component of the path with ASCII
@@ -79,7 +80,8 @@ RESULT Archive_Read(
 // the source. It has every such entry that is not a directory, with ASCII
 // letters folded to lower case, as the VFS normalizes paths; a format that
 // looks names up by their last component finds them by it also through the
-// source. An entry opens in memory, in a reader named "<archive>/<entry>",
+// source. VFS_STREAM uses the format's seekable source when available;
+// otherwise an entry opens in memory. The reader is named "<archive>/<entry>",
 // the archive named by its reader, or "<entry>" when the archive has no
-// name.
+// name. A streamed reader must close before the source closes.
 VFS_SOURCE *Archive_ToSource(ARCHIVE *archive, const char *root);
