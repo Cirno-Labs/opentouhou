@@ -84,4 +84,5 @@ RESULT Archive_Read(
 // otherwise an entry opens in memory. The reader is named "<archive>/<entry>",
 // the archive named by its reader, or "<entry>" when the archive has no
 // name. Streamed readers keep the archive valid after the source closes.
+// A failed open leaves an empty reader.
 VFS_SOURCE *Archive_ToSource(ARCHIVE *archive, const char *root);

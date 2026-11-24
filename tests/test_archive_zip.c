@@ -482,8 +482,11 @@ TEST(streaming_rejects_wrong_sizes_and_releases_checkpoints)
             LOG_LEVEL_ERROR));
         VFS_SOURCE *const source = Archive_ToSource(archive, "");
         READER reader;
+        memset(&reader, 0xA5, sizeof(reader));
         CHECK(!Result_Ignore(
             source->funcs->open(source, "music", VFS_STREAM, &reader)));
+        CHECK_EQ_INT(Reader_Size(&reader), 0);
+        CHECK(!Reader_IsOwned(&reader));
         Reader_Close(&reader);
         source->funcs->close(source);
         CHECK_EQ_INT(allocator.live_blocks, 0);

@@ -141,6 +141,7 @@ static RESULT M_Open(
     VFS_SOURCE *const source, const char *const path, const VFS_MODE mode,
     READER *const out)
 {
+    Reader_OpenBuffer(out, nullptr, 0, nullptr);
     ARCHIVE *const archive = (ARCHIVE *)source;
     const ARCHIVE_ENTRY *const entry = M_FindSourcePath(archive, path);
     FAIL_IF(entry == nullptr, "%s: %s: not found", source->name, path);
