@@ -45,9 +45,13 @@ typedef struct {
     BONUS_PHASE phase;
     int16_t stage_number, row;
     bool waiting;
-    // The current stage/total bonus run's accumulated score. Zero between
-    // bonus runs; Bonus_Resume and Bonus_ResumeTotal clear it on
-    // confirmation.
+} BONUS_RUN;
+
+typedef struct {
+    BONUS_RUN run;
+    // Accumulates across the stage bonuses leading up to a total; Bonus_Resume
+    // and Bonus_ResumeTotal clear it on confirmation. Bonus_BeginStage resets
+    // only run, so this survives between stage bonus runs.
     uint32_t score_bonus;
 } BONUS;
 
