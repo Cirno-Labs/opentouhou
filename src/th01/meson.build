@@ -30,6 +30,7 @@ th01_lib = static_library(
   'timer.c',
   'hud_hp.c',
   'extend.c',
+  'hooks.c',
   'shots.c',
   'rng.c',
   'pellet_assets.c',

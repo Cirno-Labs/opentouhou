@@ -110,10 +110,10 @@ static void M_Hook(void *const context, DRIVER *const driver)
     TH01_NATIVE *const native = context;
     native->driver = driver;
     native->buttons = Driver_Buttons(driver, 0);
-    g_Th01Hooks = (TH01_HOOKS) { .on_vsync = M_VSync,
+    Th01Hooks_Set((TH01_HOOKS) { .on_vsync = M_VSync,
                                  .on_start = M_Start,
                                  .on_boss = M_Boss,
-                                 .arg = native };
+                                 .arg = native });
 }
 
 int main(int argc, char **argv)

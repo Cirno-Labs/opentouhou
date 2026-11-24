@@ -14,4 +14,15 @@ typedef struct {
     void (*on_boss)(void *arg, int16_t *hp);
     void *arg;
 } TH01_HOOKS;
-extern TH01_HOOKS g_Th01Hooks;
+
+// Replaces the registered hooks wholesale, as the replay harness sets up.
+void Th01Hooks_Set(TH01_HOOKS hooks);
+
+// Calls on_start, if registered.
+void Th01Hooks_CallOnStart(void);
+
+// Calls on_vsync, if registered.
+void Th01Hooks_CallOnVSync(void);
+
+// Calls on_boss with hp, if registered.
+void Th01Hooks_CallOnBoss(int16_t *hp);

@@ -213,9 +213,8 @@ static bool M_OpeningEvents(
             events.action == OPENING_ACTION_START ? SESSION_START
                                                   : SESSION_CONTINUE,
             &g_Settings, m_Opening.frame_rand);
-        if (events.action == OPENING_ACTION_START
-            && g_Th01Hooks.on_start != nullptr) {
-            g_Th01Hooks.on_start(g_Th01Hooks.arg);
+        if (events.action == OPENING_ACTION_START) {
+            Th01Hooks_CallOnStart();
         }
         g_Session.table_high_score =
             (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
@@ -249,8 +248,8 @@ static bool M_Tick(const void *const input)
     GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
     m_HostTick++;
     const bool reference_edge = VSync_Advance(&m_Frame);
-    if (reference_edge && g_Th01Hooks.on_vsync != nullptr) {
-        g_Th01Hooks.on_vsync(g_Th01Hooks.arg);
+    if (reference_edge) {
+        Th01Hooks_CallOnVSync();
     }
     if (m_InScore) {
         Gameplay_AdvanceAudio(m_Gameplay);

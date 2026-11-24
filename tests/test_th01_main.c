@@ -414,7 +414,7 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
     VSYNC_LOG log = {};
-    g_Th01Hooks = (TH01_HOOKS) { .on_vsync = M_OnVSync, .arg = &log };
+    Th01Hooks_Set((TH01_HOOKS) { .on_vsync = M_OnVSync, .arg = &log });
     VSYNC_CLOCK clock = {};
     int edges = 0;
     for (int i = 0; i < 30; i++) {
@@ -433,6 +433,6 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_view_follows_scenes)
     CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
     CHECK(view.gameplay == game);
     CHECK(view.opening != nullptr);
-    g_Th01Hooks = (TH01_HOOKS) {};
+    Th01Hooks_Set((TH01_HOOKS) {});
     M_Shutdown();
 }
