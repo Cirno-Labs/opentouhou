@@ -158,7 +158,6 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     GAMEPLAY *const g = f.game;
     BONUS_STAGE_ASSETS stage = {};
     f.assets->bonus = &stage;
-    g->bindings.bonus_context.stage = &stage;
     g->world.phase = GP_FRAME_BEGIN;
     g_Player.is_hit = true;
     g_Stage.cleared = true;

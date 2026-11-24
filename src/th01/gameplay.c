@@ -704,14 +704,15 @@ static GAMEPLAY_REQUEST M_Run(
                 if (g->world.boss != BOSS_NONE) {
                     g->world.phase = GP_TOTAL_BONUS;
                     if (Bonus_BeginTotal(
-                            &g->bindings.total_context, finished, raw,
-                            host_tick)) {
+                            &g->storage.assets->total, g->bindings.shots_output,
+                            finished, raw, host_tick)) {
                         M_AfterBonus(g);
                     }
                 } else {
                     g->world.phase = GP_STAGE_BONUS;
                     if (Bonus_BeginStage(
-                            &g->bindings.bonus_context, finished, raw)) {
+                            g->storage.assets->bonus,
+                            &g->storage.assets->bonus_font, finished, raw)) {
                         M_AfterBonus(g);
                     }
                 }
@@ -735,14 +736,17 @@ static GAMEPLAY_REQUEST M_Run(
             g->world.phase = GP_LIFE_BEGIN;
             break;
         case GP_STAGE_BONUS:
-            if (!Bonus_Resume(&g->bindings.bonus_context, raw)) {
+            if (!Bonus_Resume(
+                    g->storage.assets->bonus, &g->storage.assets->bonus_font,
+                    raw)) {
                 return g->world.request;
             }
             M_AfterBonus(g);
             break;
         case GP_TOTAL_BONUS:
             if (!Bonus_ResumeTotal(
-                    &g->bindings.total_context, raw, host_tick)) {
+                    &g->storage.assets->total, g->bindings.shots_output, raw,
+                    host_tick)) {
                 return g->world.request;
             }
             M_AfterBonus(g);

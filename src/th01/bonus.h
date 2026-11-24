@@ -49,12 +49,10 @@ typedef struct {
 
 extern BONUS g_Bonus;
 
-typedef struct {
-    const BONUS_STAGE_ASSETS *stage;
-    const GAME_TEXT_FONT *font;
-    uint32_t *score_bonus;
-    int32_t *bonus_per_stage;
-} BONUS_CONTEXT;
+// The current stage/total bonus run's accumulated score, owned here.
+// Zero between bonus runs; Bonus_Resume and Bonus_ResumeTotal clear it on
+// confirmation.
+uint32_t *Bonus_ScoreBonus(void);
 
 // Loads the stage box mask from bonusbox.bmp into caller asset storage;
 // leaves out null on error.
@@ -76,7 +74,8 @@ RESULT Bonus_ValidateStageAssets(
 // Wrapped negative display digits draw blank rather than reading outside the
 // original numeral table; score arithmetic still retains the source widths.
 bool Bonus_BeginStage(
-    const BONUS_CONTEXT *context, int16_t stage_number, const TH01_INPUT *raw);
+    const BONUS_STAGE_ASSETS *stage, const GAME_TEXT_FONT *font,
+    int16_t stage_number, const TH01_INPUT *raw);
 
 // Resumes source-order waits without advancing VSync or gameplay. Confirmation
 // resets real GameInput history, forces shot and OK true and senses until
@@ -84,7 +83,9 @@ bool Bonus_BeginStage(
 // press. Idle input does not end the wait. Preserves bomb_frame and clears
 // score_bonus only on confirmation. Updates and pending polls allocate nothing,
 // perform no IO and read no clock, font handle or external device.
-bool Bonus_Resume(const BONUS_CONTEXT *context, const TH01_INPUT *raw);
+bool Bonus_Resume(
+    const BONUS_STAGE_ASSETS *stage, const GAME_TEXT_FONT *font,
+    const TH01_INPUT *raw);
 
 typedef struct {
     PI_IMAGE background;
@@ -114,14 +115,6 @@ typedef struct {
 
 extern BONUS_TOTAL g_BonusTotal;
 
-typedef struct {
-    const BONUS_CONTEXT *common;
-    const BONUS_TOTAL_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    uint16_t *continues_per_scene;
-    const int32_t *continues_total;
-} BONUS_TOTAL_CONTEXT;
-
 // Loads CLEAR3.GRP and NUMB.PTN into the caller's grouped allocator before
 // simulation. Keeps no file handles; failed loads leave out empty and any
 // intermediate allocations in that group. No individual resource frees occur.
@@ -136,8 +129,8 @@ RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
 // does not update the HUD or extend threshold. Saves the low sixteen bits of
 // live continues_total after resetting input, before the confirmation loop.
 bool Bonus_BeginTotal(
-    const BONUS_TOTAL_CONTEXT *context, int16_t stage_number,
-    const TH01_INPUT *raw, uint64_t host_tick);
+    const BONUS_TOTAL_ASSETS *assets, SHOTS_OUTPUT shots_output,
+    int16_t stage_number, const TH01_INPUT *raw, uint64_t host_tick);
 
 // Resumes source frame delays with count1 carry and four-millisecond digit
 // delays with fractional credit from a monotonic 60 Hz host serial. Several
@@ -154,5 +147,5 @@ bool Bonus_BeginTotal(
 // bonuses. Advance only independent VSync/audio while the world is suspended.
 // Successful updates and pending polls allocate nothing and perform no IO.
 bool Bonus_ResumeTotal(
-    const BONUS_TOTAL_CONTEXT *context, const TH01_INPUT *raw,
-    uint64_t host_tick);
+    const BONUS_TOTAL_ASSETS *assets, SHOTS_OUTPUT shots_output,
+    const TH01_INPUT *raw, uint64_t host_tick);

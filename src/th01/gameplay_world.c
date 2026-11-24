@@ -81,6 +81,7 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
     memcpy(&g->world, g->storage.initial, sizeof(g->world));
     Gameplay_ResetLiveFlags();
+    *Bonus_ScoreBonus() = 0;
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
     g_TestDamage = false;

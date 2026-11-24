@@ -52,17 +52,4 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                 .stage = stage,
                                 .makai = &a->scenes[1],
                                 .jigoku = &a->scenes[2] };
-    g->bindings.bonus_context = (BONUS_CONTEXT) {
-        .stage = a->bonus,
-        .font = &a->bonus_font,
-        .score_bonus = &g->world.score_bonus,
-        .bonus_per_stage = g_Session.bonus_per_stage,
-    };
-    g->bindings.total_context = (BONUS_TOTAL_CONTEXT) {
-        .common = &g->bindings.bonus_context,
-        .assets = &a->total,
-        .shots_output = g->bindings.shots_output,
-        .continues_per_scene = g_Session.continues_per_scene,
-        .continues_total = &g_Session.continues_total,
-    };
 }
