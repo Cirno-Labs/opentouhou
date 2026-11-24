@@ -8,8 +8,6 @@
 
 #include <string.h>
 
-TH01_HOOKS g_Th01Hooks;
-
 RESULT Gameplay_Prepare(
     const ALLOCATOR *const allocator, const GAMEPLAY_ASSETS *const assets,
     GAMEPLAY **const out)
@@ -163,16 +161,13 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
 
 void Gameplay_HookBossHp(GAMEPLAY *const g)
 {
-    if (g_Th01Hooks.on_boss == nullptr) {
-        return;
-    }
     int16_t *const hp[] = {
         [BOSS_NONE] = nullptr,           [BOSS_SINGYOKU] = &g_B05.hp,
         [BOSS_YUUGENMAGAN] = &g_B10M.hp, [BOSS_MIMA] = &g_B10J.hp,
         [BOSS_KIKURI] = &g_B15J.hp,      [BOSS_ELIS] = &g_B15M.hp,
         [BOSS_SARIEL] = &g_B20M.hp,      [BOSS_KONNGARA] = &g_B20J.hp,
     };
-    g_Th01Hooks.on_boss(g_Th01Hooks.arg, hp[g->world.boss]);
+    Th01Hooks_CallOnBoss(hp[g->world.boss]);
 }
 
 bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
