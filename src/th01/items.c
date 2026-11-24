@@ -1,5 +1,6 @@
 #include "th01/items.h"
 #include "th01/hud.h"
+#include "th01/session.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
@@ -25,14 +26,13 @@ static int16_t M_SecondLeft(const ITEM *const item)
 }
 
 static void M_Text(
-    const ITEM_CONTEXT *const context, const char *const text,
+    const GAME_TEXT_FONT *const font, const char *const text,
     const int16_t left, const int16_t top)
 {
-    GameText_Draw(context->font, text, left, top, 7, &m_Style);
+    GameText_Draw(font, text, left, top, 7, &m_Style);
 }
 
-static void M_Collect(
-    ITEM *const item, const ITEM_CONTEXT *const context, const bool bomb)
+static void M_Collect(ITEM *const item, const bool bomb)
 {
     const int32_t delta = item->left - g_Player.left;
     if (!M_Visible(item) || delta <= -24 || delta >= 24 || item->top <= 344) {
@@ -52,7 +52,7 @@ static void M_Collect(
         if (bomb) {
             g_Stage.score += 10000;
         } else {
-            uint16_t *const value = context->point_value;
+            uint16_t *const value = &g_Session.point_value;
             if (*value < 59999) {
                 *value = (uint16_t)(*value + (*value < 10000 ? 1000 : 10000));
             }
@@ -68,7 +68,8 @@ static void M_Collect(
 }
 
 static void M_Popup(
-    ITEM *const item, const ITEM_CONTEXT *const context, const bool bomb)
+    ITEM *const item, const PTN *const sprites,
+    const GAME_TEXT_FONT *const font, const bool bomb)
 {
     const int16_t left = bomb ? item->left
         : item->left > 600    ? 600
@@ -87,32 +88,33 @@ static void M_Popup(
     }
     if (bomb) {
         M_Text(
-            context, item->flag == ITEM_COLLECTED ? "Bomb" : "１萬", left,
+            font, item->flag == ITEM_COLLECTED ? "Bomb" : "１萬", left,
             item->top);
         if (item->flag == ITEM_COLLECTED) {
             M_Text(
-                context, "Extend!!", M_SecondLeft(item),
+                font, "Extend!!", M_SecondLeft(item),
                 Math16_Wrap(item->top + 16));
         }
     } else {
         char text[6] = "     ";
-        uint16_t value = *context->point_value;
+        uint16_t value = g_Session.point_value;
         int32_t i = 4;
         while (value != 0) {
             text[i--] = (char)('0' + value % 10);
             value /= 10;
         }
-        M_Text(context, text, left, item->top);
+        M_Text(font, text, left, item->top);
     }
 }
 
 static void M_Update(
-    ITEM *const item, const ITEM_CONTEXT *const context, const bool bomb)
+    ITEM *const item, const PTN *const sprites,
+    const GAME_TEXT_FONT *const font, const bool bomb)
 {
     if (item->flag == ITEM_FREE) {
         return;
     }
-    M_Collect(item, context, bomb);
+    M_Collect(item, bomb);
     const int32_t image = bomb ? ITEM_BOMB_IMAGE : ITEM_POINT_IMAGE;
     if (item->flag == ITEM_SPLASH) {
         const int16_t x = Math16_Wrap(item->left + 16);
@@ -127,7 +129,7 @@ static void M_Update(
         Shape_EllipseArcPut(
             x, y, item->radius_or_time, item->radius_or_time, 7, 8, 0, 255);
     } else if (item->flag == ITEM_FALL || item->flag == ITEM_BOUNCE) {
-        Sprite_PtnErase(context->sprites, image, -1, item->left, item->top);
+        Sprite_PtnErase(sprites, image, -1, item->left, item->top);
         if (item->flag == ITEM_FALL) {
             item->top = Math16_Wrap(item->top + item->velocity_y);
             if (item->top >= 368) {
@@ -141,14 +143,14 @@ static void M_Update(
             if (item->top >= 400) {
                 item->flag = ITEM_FREE;
                 if (!bomb) {
-                    *context->point_value = 0;
+                    g_Session.point_value = 0;
                 }
                 return;
             }
         }
-        Sprite_PtnPut(context->sprites, image, -1, item->left, item->top);
+        Sprite_PtnPut(sprites, image, -1, item->left, item->top);
     } else if (item->flag >= ITEM_COLLECTED) {
-        M_Popup(item, context, bomb);
+        M_Popup(item, sprites, font, bomb);
     }
 }
 
@@ -220,12 +222,13 @@ void Items_Render(const PTN *const sprites)
     }
 }
 
-void Items_UpdateAndRender(const ITEM_CONTEXT *const context)
+void Items_UpdateAndRender(
+    const PTN *const sprites, const GAME_TEXT_FONT *const font)
 {
     for (int32_t i = 0; i < ITEMS_BOMB_COUNT; i++) {
-        M_Update(&g_Items.bombs[i], context, true);
+        M_Update(&g_Items.bombs[i], sprites, font, true);
     }
     for (int32_t i = 0; i < ITEMS_POINT_COUNT; i++) {
-        M_Update(&g_Items.points[i], context, false);
+        M_Update(&g_Items.points[i], sprites, font, false);
     }
 }

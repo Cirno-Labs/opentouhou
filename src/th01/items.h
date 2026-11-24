@@ -26,12 +26,6 @@ typedef struct {
 
 extern ITEMS g_Items;
 
-typedef struct {
-    uint16_t *point_value;
-    const PTN *sprites;
-    const GAME_TEXT_FONT *font;
-} ITEM_CONTEXT;
-
 // Caches all popup characters from rom in caller-owned asset storage before
 // ticks.
 RESULT Items_LoadFont(
@@ -57,4 +51,4 @@ void Items_Render(const PTN *sprites);
 // only falling/bouncing items, and has no upper Y bound. Collection moves the
 // popup immediately. Updates allocate nothing and read no files, font handles
 // or devices.
-void Items_UpdateAndRender(const ITEM_CONTEXT *context);
+void Items_UpdateAndRender(const PTN *sprites, const GAME_TEXT_FONT *font);

@@ -1,4 +1,5 @@
 #include "th01/miss.h"
+#include "th01/session.h"
 #include "th01/timer.h"
 #include "th01/pellets.h"
 #include "th01/hud.h"
@@ -15,10 +16,10 @@ typedef struct {
     const PTN *stage;
 } MISS_SHOTS;
 
-static void M_Orb(const MISS_CONTEXT *const context)
+static void M_Orb(const PTN *const miko, const PTN *const stage)
 {
     Orb_RenderAction(
-        context->stage,
+        stage,
         (ORB_ACTION) { .kind = ORB_ACTION_PUT,
                        .left = g_Orb.left,
                        .top = g_Orb.top,
@@ -32,7 +33,7 @@ static void M_Shot(void *const user, const SHOTS_ACTION action)
     Shots_RenderAction(context->stage, action);
 }
 
-static void M_Effect(const MISS_CONTEXT *const context)
+static void M_Effect(const PTN *const miko, const PTN *const stage)
 {
     PLAYER *const player = &g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
@@ -49,23 +50,21 @@ static void M_Effect(const MISS_CONTEXT *const context)
     if (g_Miss.effect_left < 0) {
         g_Miss.effect_left = 0;
     }
-    M_Orb(context);
+    M_Orb(miko, stage);
+    Sprite_PtnPut(miko, 20 + g_Miss.frame % 2, -1, player->left, PLAYER_TOP);
     Sprite_PtnPut(
-        context->miko, 20 + g_Miss.frame % 2, -1, player->left, PLAYER_TOP);
-    Sprite_PtnPut(
-        context->miko, 20 + g_Miss.frame % 2, -1, g_Miss.effect_left,
-        PLAYER_TOP);
+        miko, 20 + g_Miss.frame % 2, -1, g_Miss.effect_left, PLAYER_TOP);
     g_Miss.phase = MISS_EFFECT_DELAY;
 }
 
-static void M_Reset(const MISS_CONTEXT *const context)
+static void M_Reset(const PTN *const miko, const PTN *const stage)
 {
     PLAYER *const player = &g_Player;
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
-    MISS_SHOTS shot_context = { context->stage };
+    MISS_SHOTS shot_context = { stage };
     Shots_EraseAndReset((SHOTS_OUTPUT) { M_Shot, &shot_context });
     Pellets_Decay();
-    Player_Reset(context->difficulty);
+    Player_Reset(g_Session.settings.difficulty);
     g_Miss.target_right = Math16_Wrap(player->left + 160);
     if (g_Miss.target_right >= 608) {
         g_Miss.target_right = 608;
@@ -76,18 +75,19 @@ static void M_Reset(const MISS_CONTEXT *const context)
     }
     g_Miss.effect_left = player->left;
     g_Miss.frame = 0;
-    M_Effect(context);
+    M_Effect(miko, stage);
 }
 
-static void M_Finish(const MISS_CONTEXT *const context)
+static void M_Finish(
+    const PTN *const miko, const PTN *const stage, const int16_t extra_bombs)
 {
     PLAYER *const player = &g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(g_Miss.effect_left, PLAYER_TOP, 32, 32);
-    Hud_LivesPut(Math16_Wrap(context->remaining_lives + 1));
+    Hud_LivesPut(Math16_Wrap(g_Session.lives + 1));
     const int16_t previous = player->remaining_bombs;
     player->remaining_bombs =
-        Math16_Wrap(player->remaining_bombs + context->extra_bombs);
+        Math16_Wrap(player->remaining_bombs + extra_bombs);
     if (player->remaining_bombs > 5) {
         player->remaining_bombs = 5;
     } else {
@@ -110,19 +110,20 @@ RESULT Miss_ValidateSprites(const PTN *const miko, const PTN *const stage)
     return OK;
 }
 
-void Miss_Begin(const MISS_CONTEXT *const context)
+void Miss_Begin(const PTN *const miko, const PTN *const stage)
 {
     ASSERT(g_Miss.phase == MISS_DONE);
     Sprite_Restore16(g_Player.left, PLAYER_TOP, 32, 32);
-    M_Orb(context);
+    M_Orb(miko, stage);
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
-    Sprite_PtnPut(context->miko, image, -1, g_Player.left, PLAYER_TOP);
+    Sprite_PtnPut(miko, image, -1, g_Player.left, PLAYER_TOP);
     g_Miss.frame = 0;
     g_Miss.phase = MISS_SHAKE_WAIT;
     Frame_BeginWait(&g_Miss.wait);
 }
 
-bool Miss_Resume(const MISS_CONTEXT *const context)
+bool Miss_Resume(
+    const PTN *const miko, const PTN *const stage, const int16_t extra_bombs)
 {
     for (;;) {
         switch (g_Miss.phase) {
@@ -149,7 +150,7 @@ bool Miss_Resume(const MISS_CONTEXT *const context)
                 return false;
             }
             Video_SetScroll(0);
-            M_Reset(context);
+            M_Reset(miko, stage);
             break;
         case MISS_EFFECT_DELAY: {
             const uint16_t delay =
@@ -159,10 +160,10 @@ bool Miss_Resume(const MISS_CONTEXT *const context)
             }
             g_Miss.frame++;
             if (g_Miss.frame == 30) {
-                M_Finish(context);
+                M_Finish(miko, stage, extra_bombs);
                 return true;
             }
-            M_Effect(context);
+            M_Effect(miko, stage);
             break;
         }
         }
