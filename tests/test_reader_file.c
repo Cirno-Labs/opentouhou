@@ -381,3 +381,22 @@ TEST(opening_a_directory_fails)
     Mem_Free(prefix);
     Mem_Free(directory);
 }
+
+TEST(a_file_view_keeps_its_range_after_the_parent_closes)
+{
+    char *const path = M_PrepareFile("independent_view");
+    READER reader;
+    CHECK(Result_Log(Reader_OpenFile(&reader, path), LOG_LEVEL_ERROR));
+    CHECK(Result_Log(Reader_Narrow(&reader, 31, 80), LOG_LEVEL_ERROR));
+    Reader_Seek(&reader, 17);
+    READER view;
+    CHECK(Result_Log(Reader_OpenView(&reader, &view), LOG_LEVEL_ERROR));
+    CHECK(Reader_IsOwned(&view));
+    CHECK_EQ_INT(Reader_Tell(&view), 0);
+    Reader_Close(&reader);
+    CHECK_EQ_INT(Reader_ReadU32(&view), M_PatternAt(31, 4));
+    CHECK_EQ_INT(Reader_Size(&view), 80);
+    CHECK_EQ_STR(Reader_GetName(&view), path);
+    Reader_Close(&view);
+    Mem_Free(path);
+}

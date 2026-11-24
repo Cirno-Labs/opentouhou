@@ -8,6 +8,7 @@
 #include "core/vfs/normalize.h"
 
 #include <string.h>
+#include <stdatomic.h>
 
 struct ARCHIVE_ENTRY {
     char *name;
@@ -27,6 +28,7 @@ struct ARCHIVE_TABLE {
 
 struct ARCHIVE {
     VFS_SOURCE base;
+    atomic_int references;
     const ARCHIVE_FORMAT *format;
     READER reader;
     ARCHIVE_TABLE table;
@@ -40,6 +42,36 @@ struct ARCHIVE {
     // Archive_ToSource.
     char *root;
     const ALLOCATOR *allocator;
+};
+
+typedef struct {
+    ARCHIVE *archive;
+    READER backing;
+    READER entry;
+} M_ENTRY_STREAM;
+
+static RESULT M_StreamRead(
+    void *const user, const size_t offset, void *const out, const size_t size)
+{
+    M_ENTRY_STREAM *const stream = user;
+    Reader_Seek(&stream->entry, offset);
+    Reader_ReadBytes(&stream->entry, out, size);
+    return Reader_Result(&stream->entry);
+}
+
+static void M_StreamClose(void *const user)
+{
+    M_ENTRY_STREAM *const stream = user;
+    ARCHIVE *const archive = stream->archive;
+    Reader_Close(&stream->entry);
+    Reader_Close(&stream->backing);
+    Allocator_Free(archive->allocator, stream, sizeof(*stream));
+    Archive_Close(archive);
+}
+
+static const READER_SOURCE_FUNCS m_StreamFuncs = {
+    .read_at = M_StreamRead,
+    .close = M_StreamClose,
 };
 
 // Folds the ASCII letters of text to lower case in place, matching how the
@@ -113,22 +145,29 @@ static RESULT M_Open(
     const ARCHIVE_ENTRY *const entry = M_FindSourcePath(archive, path);
     FAIL_IF(entry == nullptr, "%s: %s: not found", source->name, path);
     if (mode == VFS_STREAM && archive->format->open_entry != nullptr) {
-        Reader_Seek(&archive->reader, 0);
-        READER whole =
-            Reader_Slice(&archive->reader, Reader_Size(&archive->reader));
-        const RESULT result = archive->format->open_entry(
-            &whole, entry->data, entry->size, archive->allocator, out);
+        M_ENTRY_STREAM *const stream =
+            Allocator_AllocZ(archive->allocator, sizeof(*stream));
+        stream->archive = archive;
+        RESULT result = Reader_OpenView(&archive->reader, &stream->backing);
+        if (IS_OK(result)) {
+            result = archive->format->open_entry(
+                &stream->backing, entry->data, entry->size, archive->allocator,
+                &stream->entry);
+        }
         if (!IS_OK(result)) {
+            Reader_Close(&stream->backing);
+            Allocator_Free(archive->allocator, stream, sizeof(*stream));
             const char *const name = M_Name(archive);
             return name == nullptr
                 ? Result_Prefix(result, "%s", entry->name)
                 : Result_Prefix(result, "%s: %s", name, entry->name);
         }
+        atomic_fetch_add(&archive->references, 1);
         const char *const archive_name = M_Name(archive);
         char *const name = archive_name == nullptr
             ? Str_Dup(entry->name)
             : Str_Format("%s/%s", archive_name, entry->name);
-        Reader_SetName(out, name);
+        Reader_OpenSource(out, &m_StreamFuncs, stream, entry->size, name);
         Mem_Free(name);
         return OK;
     }
@@ -201,6 +240,7 @@ RESULT Archive_Open(
 {
     *out = nullptr;
     ARCHIVE *const archive = Allocator_AllocZ(allocator, sizeof(*archive));
+    atomic_init(&archive->references, 1);
     archive->format = format;
     archive->reader = *reader;
     archive->allocator = allocator;
@@ -235,6 +275,9 @@ RESULT Archive_Open(
 
 void Archive_Close(ARCHIVE *const archive)
 {
+    if (atomic_fetch_sub(&archive->references, 1) != 1) {
+        return;
+    }
     for (int32_t i = 0; i < archive->table.entries.count; i++) {
         ARCHIVE_ENTRY *const entry = &archive->table.entries.items[i];
         Allocator_Free(

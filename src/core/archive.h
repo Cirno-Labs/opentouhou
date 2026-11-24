@@ -42,7 +42,7 @@ RESULT Archive_Open(
     const ARCHIVE_FORMAT *format, READER *reader, const ALLOCATOR *allocator,
     ARCHIVE **out);
 
-// Closes the reader and releases the archive and its entries.
+// Releases the archive. Streamed readers keep it valid until they close.
 void Archive_Close(ARCHIVE *archive);
 
 // Return the number of entries, and the entry at index, in the order of the
@@ -83,5 +83,5 @@ RESULT Archive_Read(
 // source. VFS_STREAM uses the format's seekable source when available;
 // otherwise an entry opens in memory. The reader is named "<archive>/<entry>",
 // the archive named by its reader, or "<entry>" when the archive has no
-// name. A streamed reader must close before the source closes.
+// name. Streamed readers keep the archive valid after the source closes.
 VFS_SOURCE *Archive_ToSource(ARCHIVE *archive, const char *root);

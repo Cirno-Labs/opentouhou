@@ -558,3 +558,36 @@ TEST(file_backed_streams_keep_independent_positions)
     Mem_Free(directory);
     Mem_Free(built.data);
 }
+
+TEST(streams_keep_the_archive_alive_after_its_source_closes)
+{
+    for (int deflate = 0; deflate < 2; deflate++) {
+        const ZIP_BUILDER_ENTRY entry = { "file", M_TEXT, strlen(M_TEXT), 0,
+                                          deflate != 0 };
+        ZIP_BUILDER_ARCHIVE built = ZipBuilder_Build(&entry, 1);
+        TEST_ALLOCATOR allocator;
+        TestAllocator_Init(&allocator);
+        READER input;
+        Reader_OpenOwnedBuffer(
+            &input, built.data, built.size, &g_HeapAllocator, nullptr);
+        ARCHIVE *archive;
+        CHECK(Result_Log(
+            Archive_Open(&g_ZipFormat, &input, &allocator.allocator, &archive),
+            LOG_LEVEL_ERROR));
+        VFS_SOURCE *const source = Archive_ToSource(archive, "");
+        READER reader;
+        CHECK(Result_Log(
+            source->funcs->open(source, "file", VFS_STREAM, &reader),
+            LOG_LEVEL_ERROR));
+        CHECK(Reader_IsOwned(&reader));
+        source->funcs->close(source);
+        CHECK(allocator.live_blocks > 0);
+        char text[sizeof(M_TEXT) - 1];
+        Reader_ReadBytes(&reader, text, sizeof(text));
+        CHECK(Result_Log(Reader_Result(&reader), LOG_LEVEL_ERROR));
+        CHECK(memcmp(text, M_TEXT, sizeof(text)) == 0);
+        Reader_Close(&reader);
+        CHECK_EQ_INT(allocator.live_blocks, 0);
+        CHECK_EQ_INT(allocator.size_errors, 0);
+    }
+}
