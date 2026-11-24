@@ -32,7 +32,7 @@ static int32_t M_Add(int32_t value, const int32_t cap)
         value = cap;
     }
     for (int32_t i = 0; i < 10; i++) {
-        *Bonus_ScoreBonus() += (uint32_t)value;
+        g_Bonus.score_bonus += (uint32_t)value;
     }
     return value;
 }
@@ -41,9 +41,9 @@ static void M_Prepare(const uint64_t host_tick)
 {
     int32_t value;
     if (g_BonusTotal.metric == 4) {
-        g_Stage.score += *Bonus_ScoreBonus();
-        const int16_t div = Math16_Wrap((int32_t)(*Bonus_ScoreBonus() / 10000));
-        const int16_t rem = (int16_t)(*Bonus_ScoreBonus() % 10000);
+        g_Stage.score += g_Bonus.score_bonus;
+        const int16_t div = Math16_Wrap((int32_t)(g_Bonus.score_bonus / 10000));
+        const int16_t rem = (int16_t)(g_Bonus.score_bonus % 10000);
         g_BonusTotal.digits[0] = (int16_t)(div / 10);
         g_BonusTotal.digits[1] = (int16_t)(div % 10);
         g_BonusTotal.digits[2] = (int16_t)(rem / 1000);
@@ -250,7 +250,7 @@ bool Bonus_ResumeTotal(
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
             }
-            *Bonus_ScoreBonus() = 0;
+            g_Bonus.score_bonus = 0;
             g_BonusTotal.phase = BONUS_TOTAL_DONE;
             return true;
         }

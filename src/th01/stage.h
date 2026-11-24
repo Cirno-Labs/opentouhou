@@ -20,6 +20,10 @@ typedef struct {
     int16_t combo, maximum_combo;
     uint8_t flip_cycle;
     bool cleared;
+    // True until the first stage transition of the session.
+    bool first_stage;
+    bool timer_initialized;
+    bool game_cleared;
 } STAGE_GAMEPLAY;
 
 extern STAGE_GAMEPLAY g_Stage;

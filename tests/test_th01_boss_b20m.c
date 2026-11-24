@@ -334,7 +334,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(g_B20M.leaves.flag[7], 0);
     CHECK_EQ_INT(g_HudHp.first_white, 10);
     CHECK_EQ_INT(g_HudHp.first_redwhite, 3);
-    CHECK(Gameplay_FirstStage());
+    CHECK(g_Stage.first_stage);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -355,10 +355,10 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_DEFEAT);
     CHECK_EQ_INT(g_B20M.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 10000);
-    for (int32_t i = 0; !Gameplay_GameCleared() && i < 1500; i++) {
+    for (int32_t i = 0; !g_Stage.game_cleared && i < 1500; i++) {
         M_Tick(&f, &tick);
     }
-    CHECK(Gameplay_GameCleared());
+    CHECK(g_Stage.game_cleared);
     CHECK(g_B20M.finished);
     CHECK_EQ_INT(g_Stage.score, 60000);
     CHECK_EQ_INT(g_B20M.frame, 231);

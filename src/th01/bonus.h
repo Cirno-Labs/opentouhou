@@ -45,14 +45,13 @@ typedef struct {
     BONUS_PHASE phase;
     int16_t stage_number, row;
     bool waiting;
+    // The current stage/total bonus run's accumulated score. Zero between
+    // bonus runs; Bonus_Resume and Bonus_ResumeTotal clear it on
+    // confirmation.
+    uint32_t score_bonus;
 } BONUS;
 
 extern BONUS g_Bonus;
-
-// The current stage/total bonus run's accumulated score, owned here.
-// Zero between bonus runs; Bonus_Resume and Bonus_ResumeTotal clear it on
-// confirmation.
-uint32_t *Bonus_ScoreBonus(void);
 
 // Loads the stage box mask from bonusbox.bmp into caller asset storage;
 // leaves out null on error.
