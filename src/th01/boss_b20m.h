@@ -118,7 +118,6 @@ typedef struct {
     int16_t entrance_radius, wand_frame, bird_pellet_group;
     int16_t ray_previous_x, ray_previous_y;
     int16_t dotted_radius, rings_interval, raw_scroll, scroll_line;
-    PAGE_TRANSITION transition;
     FRAME_WAIT wait;
     uint64_t wait_tick;
     uint16_t wait_frames;

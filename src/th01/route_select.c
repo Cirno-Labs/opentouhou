@@ -14,6 +14,14 @@ typedef struct {
     uint8_t color;
 } ROUTE_LINE;
 
+typedef struct {
+    ROUTE_SELECT_PHASE phase;
+    uint8_t selection;
+    bool holding_up, holding_down;
+} ROUTE_SELECT;
+
+static ROUTE_SELECT m_Selection;
+
 static const ROUTE_LINE m_Lines[] = {
     { "ＲＯＵＮＤ　１　ＣＬＥＡＲ", 64, 64, 7 },
     { "Ｃｏｎｇｒａｔｕｌａｔｉｏｎ！！", 32, 96, 7 },
@@ -109,65 +117,70 @@ RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *const assets)
 }
 
 bool RouteSelect_Begin(
-    ROUTE_SELECT *const selection, const ROUTE_SELECT_ASSETS *const assets,
-    const TH01_INPUT *const raw)
+    const ROUTE_SELECT_ASSETS *const assets, const TH01_INPUT *const raw)
 {
-    ASSERT(selection->phase == ROUTE_SELECT_DONE);
-    *selection = (ROUTE_SELECT) { .phase = ROUTE_SELECT_INITIAL_WAIT };
+    ASSERT(m_Selection.phase == ROUTE_SELECT_DONE);
+    memset(&m_Selection, 0, sizeof(m_Selection));
+    m_Selection.phase = ROUTE_SELECT_INITIAL_WAIT;
     M_Draw(assets);
     GameInput_ResetGame();
-    return RouteSelect_Resume(selection, assets, raw);
+    return RouteSelect_Resume(assets, raw);
 }
 
 bool RouteSelect_Resume(
-    ROUTE_SELECT *const selection, const ROUTE_SELECT_ASSETS *const assets,
-    const TH01_INPUT *const raw)
+    const ROUTE_SELECT_ASSETS *const assets, const TH01_INPUT *const raw)
 {
     for (;;) {
-        switch (selection->phase) {
+        switch (m_Selection.phase) {
         case ROUTE_SELECT_DONE:
             return true;
         case ROUTE_SELECT_INITIAL_WAIT:
             if (!Frame_DelayReady(50)) {
                 return false;
             }
-            selection->phase = ROUTE_SELECT_CHOOSE;
+            m_Selection.phase = ROUTE_SELECT_CHOOSE;
             break;
         case ROUTE_SELECT_CHOOSE: {
             if (GameInput_SenseGame(raw, false)) {
                 g_Player.is_hit = true;
             }
-            if ((g_GameInput.up && !selection->holding_up)
-                || (g_GameInput.down && !selection->holding_down)) {
+            if ((g_GameInput.up && !m_Selection.holding_up)
+                || (g_GameInput.down && !m_Selection.holding_down)) {
                 Sprite_Restore16(
-                    128, selection->selection == 0 ? 250 : 300, 32, 32);
-                selection->selection ^= 1;
+                    128, m_Selection.selection == 0 ? 250 : 300, 32, 32);
+                m_Selection.selection ^= 1;
                 Sprite_PtnPut(
                     assets->stage, ORB_FIRST_IMAGE, -1, 128,
-                    selection->selection == 0 ? 250 : 300);
-                M_Palette(selection->selection);
+                    m_Selection.selection == 0 ? 250 : 300);
+                M_Palette(m_Selection.selection);
             }
-            selection->holding_up = g_GameInput.up;
-            selection->holding_down = g_GameInput.down;
+            m_Selection.holding_up = g_GameInput.up;
+            m_Selection.holding_down = g_GameInput.down;
             if (g_GameInput.shot || g_GameInput.ok) {
                 Sound_Effect(4);
                 Scene_Activate(
-                    selection->selection == 0 ? assets->makai : assets->jigoku);
-                g_Session.route = selection->selection;
+                    m_Selection.selection == 0 ? assets->makai
+                                               : assets->jigoku);
+                g_Session.route = m_Selection.selection;
                 g_Stage.cleared = true;
                 g_Player.is_hit = true;
-                selection->phase = ROUTE_SELECT_DONE;
+                m_Selection.phase = ROUTE_SELECT_DONE;
                 return true;
             }
-            selection->phase = ROUTE_SELECT_REPEAT_WAIT;
+            m_Selection.phase = ROUTE_SELECT_REPEAT_WAIT;
             break;
         }
         case ROUTE_SELECT_REPEAT_WAIT:
             if (!Frame_DelayReady(5)) {
                 return false;
             }
-            selection->phase = ROUTE_SELECT_CHOOSE;
+            m_Selection.phase = ROUTE_SELECT_CHOOSE;
             break;
         }
     }
+}
+
+void RouteSelect_Init(void)
+{
+    memset(&m_Selection, 0, sizeof(m_Selection));
 }

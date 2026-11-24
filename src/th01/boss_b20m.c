@@ -148,6 +148,7 @@ RESULT B20M_LoadAssets(
 void B20M_Init(void)
 {
     memset(&g_B20M, 0, sizeof(g_B20M));
+    Transition_Init();
     g_B20M.ray_previous_x = 999;
     g_B20M.ray_previous_y = 999;
     g_B20M.flake.state = -1;
@@ -1805,15 +1806,15 @@ bool B20M_ResumeEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
             Video_SelectDrawingPage(0);
             g_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
             if (!Transition_BeginDiagonal(
-                    &g_B20M.transition, &g_Palette, &g_Palette.saved,
-                    M_TransitionTarget(false), assets->interleave, 40, tick)) {
+                    &g_Palette, &g_Palette.saved, M_TransitionTarget(false),
+                    assets->interleave, 40, tick)) {
                 return false;
             }
             continue;
         case B20M_ENTRANCE_DIAGONAL_STEP:
             if (!Transition_Advance(
-                    &g_B20M.transition, &g_Palette, &g_Palette.saved,
-                    M_TransitionTarget(false), assets->interleave, tick)) {
+                    &g_Palette, &g_Palette.saved, M_TransitionTarget(false),
+                    assets->interleave, tick)) {
                 return false;
             }
             g_Rng = g_Session.frame_rand;
@@ -1933,8 +1934,8 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
                 g_Palette.resource.colors[15][i] = 0;
             }
             ASSERT(Transition_BeginDiagonal(
-                &g_B20M.transition, &g_Palette, &g_Palette.saved,
-                M_TransitionTarget(true), assets->interleave, 0, tick));
+                &g_Palette, &g_Palette.saved, M_TransitionTarget(true),
+                assets->interleave, 0, tick));
             Video_SelectDrawingPage(1);
             Sound_Load(14);
             Sound_Play();

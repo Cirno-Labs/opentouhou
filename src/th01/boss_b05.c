@@ -310,10 +310,10 @@ static bool M_Death(
             return false;
         }
         g_B05.pending = B05_ROUTE;
-        if (!RouteSelect_Begin(&g_B05.route_selection, route, raw)) {
+        if (!RouteSelect_Begin(route, raw)) {
             return false;
         }
-    } else if (!RouteSelect_Resume(&g_B05.route_selection, route, raw)) {
+    } else if (!RouteSelect_Resume(route, raw)) {
         return false;
     }
     g_B05.pending = B05_FINISHED;
@@ -359,6 +359,7 @@ RESULT B05_LoadAssets(
 void B05_Init(void)
 {
     memset(&g_B05, 0, sizeof(g_B05));
+    RouteSelect_Init();
 }
 
 void B05_Setup(const B05_ASSETS *const assets)

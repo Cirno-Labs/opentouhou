@@ -953,7 +953,7 @@ void Gameplay_Reset(void)
     memset(&g_Miss, 0, sizeof(g_Miss));
     memset(&g_Scene, 0, sizeof(g_Scene));
     memset(&g_Bonus, 0, sizeof(g_Bonus));
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     Hud_Reset();
     HudHp_Reset();
     Frame_Reset();

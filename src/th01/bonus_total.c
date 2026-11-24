@@ -127,6 +127,12 @@ RESULT Bonus_LoadTotalAssets(
     return OK;
 }
 
+void Bonus_InitTotal(void)
+{
+    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitRowTransition();
+}
+
 bool Bonus_BeginTotal(
     const BONUS_TOTAL_ASSETS *const assets, const int16_t stage_number,
     const TH01_INPUT *const raw, const uint64_t host_tick)
@@ -134,7 +140,7 @@ bool Bonus_BeginTotal(
     ASSERT(
         g_BonusTotal.phase == BONUS_TOTAL_DONE && stage_number >= 5
         && stage_number <= 20 && stage_number % 5 == 0);
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_INITIAL_WAIT;
     g_BonusTotal.stage_number = stage_number;
     g_BonusTotal.last_tick = host_tick;
@@ -165,14 +171,12 @@ bool Bonus_ResumeTotal(
                 &image, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0);
             g_Palette.resource = assets->palette;
             Video_SelectDrawingPage(0);
-            Bonus_BeginRowTransition(&g_BonusTotal.transition);
+            Bonus_BeginRowTransition();
             g_BonusTotal.phase = BONUS_TOTAL_TRANSITION;
             break;
         }
         case BONUS_TOTAL_TRANSITION:
-            if (!Bonus_ResumeRowTransition(
-                    &g_BonusTotal.transition, &g_Palette,
-                    &g_Palette.resource)) {
+            if (!Bonus_ResumeRowTransition(&g_Palette, &g_Palette.resource)) {
                 return false;
             }
             Sprite_PtnPut(

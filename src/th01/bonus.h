@@ -9,27 +9,19 @@
 
 #include "core/vfs.h"
 
-typedef struct {
-    uint16_t transferred[VIDEO_HEIGHT];
-    bool active[VIDEO_HEIGHT];
-    uint16_t activated, done, previous_done;
-    bool pending, waiting;
-} BONUS_ROW_TRANSITION;
-
 // Shifts page 0 by 32 pixels, left on even rows and right on odd rows.
 // Injects page 1 chunks in forward or reverse order. Requires y 0..399 and
 // transferred 0..76 in bytes, divisible by four. Selects drawing page 0.
 void Bonus_RowShift32(uint16_t y, uint16_t transferred);
 
-// Starts with the source's empty scan and two-frame delay. Stores all row
-// histories in caller-owned bounded state. Keep page 1 and target live until
-// completion. Resume uses count1, resets it only when each delay succeeds,
-// and includes the last delay. Pending polls do not repeat shifts or fades.
-// Does not advance VSync, allocate, perform IO or read external state.
-void Bonus_BeginRowTransition(BONUS_ROW_TRANSITION *transition);
-bool Bonus_ResumeRowTransition(
-    BONUS_ROW_TRANSITION *transition, PALETTE_STATE *palette,
-    const PALETTE *target);
+void Bonus_InitRowTransition(void);
+
+// Starts with the empty scan and its two-count wait.
+void Bonus_BeginRowTransition(void);
+
+// Includes the final two-count delay, clearing count1 only after each delay
+// succeeds.
+bool Bonus_ResumeRowTransition(PALETTE_STATE *palette, const PALETTE *target);
 
 typedef struct {
     uint8_t box[4];
@@ -110,7 +102,6 @@ typedef enum {
 
 typedef struct {
     BONUS_TOTAL_PHASE phase;
-    BONUS_ROW_TRANSITION transition;
     uint64_t last_tick;
     uint32_t credit;
     int16_t stage_number, digits[6], top, metric, place, digit_count, spin;
@@ -124,6 +115,8 @@ extern BONUS_TOTAL g_BonusTotal;
 RESULT Bonus_LoadTotalAssets(
     VFS *vfs, const ALLOCATOR *allocator, BONUS_TOTAL_ASSETS *out);
 RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
+
+void Bonus_InitTotal(void);
 
 // Starts a boss-stage total for stage 5, 10, 15 or 20. Uses real shot and
 // pellet reset operations before the initial fifty-frame wait. Page 1 becomes

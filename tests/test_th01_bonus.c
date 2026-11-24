@@ -1,4 +1,4 @@
-#include "th01/bonus.h"
+#include "../src/th01/bonus_transition.c"
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
@@ -58,26 +58,26 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
     PALETTE_STATE palette = {};
     PALETTE target;
     memset(&target, 15, sizeof(target));
-    BONUS_ROW_TRANSITION t = {};
+    Bonus_InitRowTransition();
     Frame_Reset();
-    Bonus_BeginRowTransition(&t);
-    CHECK(!Bonus_ResumeRowTransition(&t, &palette, &target));
-    CHECK_EQ_INT(t.activated, 0);
+    Bonus_BeginRowTransition();
+    CHECK(!Bonus_ResumeRowTransition(&palette, &target));
+    CHECK_EQ_INT(m_Transition.activated, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 0), 3);
     for (int32_t step = 0; step < 70; step++) {
-        const BONUS_ROW_TRANSITION frozen = t;
-        CHECK(!Bonus_ResumeRowTransition(&t, &palette, &target));
-        CHECK(memcmp(&frozen, &t, sizeof(t)) == 0);
+        const BONUS_ROW_TRANSITION frozen = m_Transition;
+        CHECK(!Bonus_ResumeRowTransition(&palette, &target));
+        CHECK(memcmp(&frozen, &m_Transition, sizeof(m_Transition)) == 0);
         g_VSync.count1 = 2;
-        const bool ready = Bonus_ResumeRowTransition(&t, &palette, &target);
+        const bool ready = Bonus_ResumeRowTransition(&palette, &target);
         CHECK(ready == (step == 69));
         CHECK_EQ_INT(g_VSync.count1, 0);
     }
-    CHECK_EQ_INT(t.done, 400);
+    CHECK_EQ_INT(m_Transition.done, 400);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(palette.saved.colors[0][0], 15);
     CHECK_EQ_INT(g_Video.palette[0].red, 255);
-    CHECK(Bonus_ResumeRowTransition(&t, &palette, &target));
+    CHECK(Bonus_ResumeRowTransition(&palette, &target));
     Arena_Free(&arena);
 }
 
@@ -329,7 +329,7 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
     memset(g_Video.pages[1], 14, VIDEO_PAGE_SIZE);
     const TH01_INPUT raw = {};
     Frame_Reset();
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_DIGIT;
     g_BonusTotal.top = 86;
     g_BonusTotal.digit_count = 1;
@@ -360,7 +360,7 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     const TH01_INPUT raw = {};
     Frame_Reset();
     g_VSync.count1 = 5;
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_DIGIT;
     g_BonusTotal.top = 196;
     g_BonusTotal.metric = 4;
@@ -387,26 +387,26 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     const TH01_INPUT raw = {};
     Frame_Reset();
     g_StageTimer.time = 13108;
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, 40);
     CHECK_EQ_INT(g_BonusTotal.digits[3], 4);
     CHECK_EQ_INT(g_BonusTotal.credit, 1);
     g_StageTimer.time = UINT16_MAX;
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, 65570);
     g_Stage.maximum_combo = 200;
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     g_BonusTotal.metric = 1;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, (uint32_t)-189790);
     g_Bonus.score_bonus = 123;
     g_Stage.score = UINT32_MAX - 100;
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     g_BonusTotal.metric = 4;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
