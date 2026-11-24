@@ -43,6 +43,9 @@ typedef struct {
 
 static MAIN_FIXTURE m_Fixture;
 
+OPENING g_Opening;
+SCORE_SCENE g_ScoreScene;
+
 static RESULT M_Asset(void)
 {
     CHECK(!m_Fixture.in_tick);
@@ -155,18 +158,17 @@ RESULT Ending_LoadAssets(
     return M_Asset();
 }
 
-OPENING_EVENTS Opening_Init(
-    OPENING *opening, TH01_SETTINGS *settings, const OPENING_ASSETS *assets)
+OPENING_EVENTS Opening_Init(const OPENING_ASSETS *assets)
 {
-    opening->frame_rand = 1;
+    memset(&g_Opening, 0, sizeof(g_Opening));
+    g_Opening.frame_rand = 1;
     m_Fixture.opening_begins++;
     return (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY,
                               .track = 0,
                               .clear_key_buffer = true };
 }
 
-OPENING_EVENTS Opening_Tick(
-    OPENING *opening, const TH01_INPUT *raw, bool any_key)
+OPENING_EVENTS Opening_Tick(const TH01_INPUT *raw, bool any_key)
 {
     m_Fixture.opening_ticks++;
     const OPENING_ACTION action = m_Fixture.action;
@@ -177,18 +179,28 @@ OPENING_EVENTS Opening_Tick(
     return (OPENING_EVENTS) { .action = action };
 }
 
-void Score_Begin(
-    SCORE_SCENE *scene, const SCORE_ASSETS *assets, SCORE_CONTEXT context,
-    int32_t rank, const SCORE_ENTRY *entry)
+void Opening_Close(void)
 {
-    scene->context = context;
+    memset(&g_Opening, 0, sizeof(g_Opening));
+}
+
+void Score_Close(void)
+{
+    memset(&g_ScoreScene, 0, sizeof(g_ScoreScene));
+}
+
+void Score_Begin(
+    const SCORE_ASSETS *assets, SCORE_CONTEXT context, int32_t rank,
+    const SCORE_ENTRY *entry)
+{
+    memset(&g_ScoreScene, 0, sizeof(g_ScoreScene));
+    g_ScoreScene.context = context;
     m_Fixture.score_context = context;
     m_Fixture.score_entry = *entry;
     m_Fixture.score_begins++;
 }
 
-bool Score_Tick(
-    SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge)
+bool Score_Tick(const TH01_INPUT *input, bool reference_edge)
 {
     m_Fixture.score_ticks++;
     if (m_Fixture.finish_score) {

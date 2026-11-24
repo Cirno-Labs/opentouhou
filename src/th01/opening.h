@@ -51,8 +51,6 @@ typedef struct {
 } OPENING_EVENTS;
 
 typedef struct {
-    TH01_SETTINGS *settings;
-    const OPENING_ASSETS *assets;
     PALETTE_STATE palette;
     PALETTE_FADE fade;
     MENU_INPUT input;
@@ -66,6 +64,8 @@ typedef struct {
     bool drawn_rows[VIDEO_HEIGHT];
     bool entering, left_locked[2], right_locked[2], confirm_locked;
 } OPENING;
+
+extern OPENING g_Opening;
 
 // Opens the canonical UTF-8 archive name, with a literal CP932 fallback
 // for POSIX data folders. Mounts its PF source above loose files.
@@ -85,8 +85,7 @@ const char *Opening_TrackFile(int32_t track);
 // Starts OP's title sequence with a separate default RNG seed of 1.
 // Assets, settings and initialized video must outlive the scene. Emits the
 // unconditional initial reimu play request, even with music set to OFF.
-OPENING_EVENTS Opening_Init(
-    OPENING *opening, TH01_SETTINGS *settings, const OPENING_ASSETS *assets);
+OPENING_EVENTS Opening_Init(const OPENING_ASSETS *assets);
 
 // Advances one reference VSync, without allocation, I/O, platform calls or
 // audio feedback. Uses deterministic zero-time asset loading: the sixteen
@@ -102,5 +101,6 @@ OPENING_EVENTS Opening_Init(
 // on every following tick.
 // Audio events are control requests only: PLAY means stop/load/play, FADE
 // means the source's nonblocking fade request. No PCM/device is connected.
-OPENING_EVENTS Opening_Tick(
-    OPENING *opening, const TH01_INPUT *raw, bool any_key);
+OPENING_EVENTS Opening_Tick(const TH01_INPUT *raw, bool any_key);
+
+void Opening_Close(void);

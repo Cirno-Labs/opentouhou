@@ -432,21 +432,20 @@ TEST(real_gameover_score_registration_precedes_continue)
                                     .route = "魔" };
         SCORE_ENTRY routed = entry;
         strcpy(routed.route, route == 0 ? "魔" : "地");
-        SCORE_SCENE score;
         const size_t used = f.arena.used;
         f.arena.capacity = used;
-        Score_Begin(&score, &assets, SCORE_GAMEOVER, 1, &routed);
+        Score_Begin(&assets, SCORE_GAMEOVER, 1, &routed);
         for (int32_t i = 0; i < 16; i++) {
             Music_Update();
             tick++;
-            CHECK(!Score_Tick(&score, &(TH01_INPUT) {}, true));
+            CHECK(!Score_Tick(&(TH01_INPUT) {}, true));
         }
         CHECK_EQ_INT(g_VSync.edge, edge + 16);
         CHECK_EQ_INT(g_VSync.count1, count + 16);
         CHECK_EQ_INT(g->world.phase, GP_TERMINAL);
         CHECK_EQ_INT(g_Session.continues_total, 0);
         tick++;
-        CHECK(Score_Tick(&score, &(TH01_INPUT) { .ok = true }, true));
+        CHECK(Score_Tick(&(TH01_INPUT) { .ok = true }, true));
         CHECK(g_ScoreSaves.pending[1]);
         CHECK_EQ_INT(g_ScoreSaves.tables[1].entries[0].score, 2345);
         CHECK_EQ_INT(g_ScoreSaves.tables[1].entries[0].stage, 8);
