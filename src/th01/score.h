@@ -52,7 +52,7 @@ RESULT Score_LoadAssets(
 // four-frame wait entry; Game Over also senses keypad directions and resets
 // count1 on wait exit. Entry stage uses source values: ordinary stage 1..20,
 // clear 50 or 60. Begin and Tick allocate nothing and perform no IO. Completion
-// queues a save; drain it outside simulation with ScoreData_WriteSaves.
+// queues a save; drain it at the root tick end with ScoreData_WriteSaves.
 void Score_Begin(
     SCORE_SCENE *scene, const SCORE_ASSETS *assets, SCORE_CONTEXT context,
     int32_t rank, const SCORE_ENTRY *entry);
