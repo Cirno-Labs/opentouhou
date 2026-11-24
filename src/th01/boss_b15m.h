@@ -76,12 +76,6 @@ typedef struct {
 
 extern B15M g_B15M;
 
-typedef struct {
-    const B15M_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    const PTN *miko;
-} B15M_CONTEXT;
-
 // Loads the three Elis BOS banks, sphere GRC, missiles, background, scene 5
 // and the star mask of shape8x8.bmp into the caller's asset group. Failed
 // loads leave out empty; intermediate storage belongs to the group.
@@ -95,7 +89,8 @@ void B15M_Init(void);
 // context's frame_rand. Composes load's pellet interlace and particle reset;
 // retains missile, actor, hit and pattern history. The background owner
 // applies its palette before entering. Allocates nothing and performs no IO.
-void B15M_Setup(const B15M_CONTEXT *context);
+void B15M_Setup(
+    const B15M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
 
 // Runs one ordinary call including the missile prefix. False suspends its
 // world during entrance, raw scroll, safety-circle delay or defeat. Advance
@@ -107,4 +102,6 @@ void B15M_Setup(const B15M_CONTEXT *context);
 // Uses initialized history thereafter. Does not model those undefined pixels
 // or CPU drawing cost. Keeps borrowed bindings stable; allocates nothing and
 // performs no IO. Finished calls remain inert until Setup or Init.
-bool B15M_UpdateAndRender(const B15M_CONTEXT *context, uint64_t host_tick);
+bool B15M_UpdateAndRender(
+    const B15M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko,
+    uint64_t host_tick);

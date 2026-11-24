@@ -17,7 +17,7 @@
 
 typedef struct {
     B10M_ASSETS assets;
-    B10M_CONTEXT context;
+    SHOTS_OUTPUT shots_output;
     GAME_TEXT_FONT font;
     PTN stage, miko;
 } FIXTURE;
@@ -49,7 +49,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->context = (B10M_CONTEXT) { .assets = &f->assets };
 }
 
 static void M_Shot(void *const user, const SHOTS_ACTION action)
@@ -88,8 +87,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
-    f->context.miko = &f->miko;
+    f->shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -97,7 +95,7 @@ static void M_Enter(FIXTURE *const f)
 {
     for (int32_t frame = 0; frame < 331; frame++) {
         g_Session.frame_rand++;
-        CHECK(B10M_UpdateAndRender(&f->context));
+        CHECK(B10M_UpdateAndRender(&f->assets, f->shots_output, &f->miko));
     }
     CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_LATERAL);
     CHECK_EQ_INT(g_B10M.frame, 0);
@@ -127,7 +125,7 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
-    B10M_Setup(&f.context);
+    B10M_Setup(&f.assets, f.shots_output, &f.miko);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(g_B10M.hp, 16);
     CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_ENTRANCE);
@@ -190,7 +188,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
         B10M_Init();
-        B10M_Setup(&f.context);
+        B10M_Setup(&f.assets, f.shots_output, &f.miko);
         const size_t used = arena.used;
         Frame_Reset();
         const ORB orb = g_Orb;
@@ -229,7 +227,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
         B10M_Init();
-        B10M_Setup(&f.context);
+        B10M_Setup(&f.assets, f.shots_output, &f.miko);
         Frame_Reset();
         const size_t used = arena.used;
         uint16_t phases = 0, star_phases = 0;
@@ -246,7 +244,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
             if (g_B10M.phase == B10M_PHASE_STAR_ATTACK) {
                 previous_star_phase = g_B10M.pentagram.phase;
             }
-            CHECK(B10M_UpdateAndRender(&f.context));
+            CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
             if (previous == B10M_PHASE_STAR_ATTACK
                 && g_B10M.phase == B10M_PHASE_TO_STAR) {
                 CHECK_EQ_INT(
@@ -275,7 +273,7 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     FIXTURE f;
     M_Battle(&f, &arena);
     B10M_Init();
-    B10M_Setup(&f.context);
+    B10M_Setup(&f.assets, f.shots_output, &f.miko);
     g_B10M.phase = B10M_PHASE_MISSILES;
     g_B10M.frame = 99;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
@@ -287,11 +285,11 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     uint32_t expected = g_Rng;
     const int16_t variation = (int16_t)(MasterRng_Next(&expected) % 3);
     Frame_Reset();
-    CHECK(B10M_UpdateAndRender(&f.context));
+    CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
     CHECK_EQ_INT(g_B10M.subphase, variation * 4 + 1);
     CHECK_EQ_INT(g_Rng, expected);
     g_B10M.frame = 103;
-    CHECK(B10M_UpdateAndRender(&f.context));
+    CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         CHECK_EQ_INT(g_Missiles.slots[i].left, 200 * 16);
         CHECK_EQ_INT(g_Missiles.slots[i].top, 200 * 16);
@@ -310,7 +308,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         FIXTURE f;
         M_Battle(&f, &arena);
         B10M_Init();
-        B10M_Setup(&f.context);
+        B10M_Setup(&f.assets, f.shots_output, &f.miko);
         g_B10M.phase = (int8_t)phase;
         g_B10M.hp = 0;
         g_B10M.pattern_interval = 24;
@@ -330,7 +328,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         g_Pellets.slots[1].cloud_frame = 10;
         g_ShootoutLasers.slots[6].alive = true;
         Frame_Reset();
-        CHECK(!B10M_UpdateAndRender(&f.context));
+        CHECK(!B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK(g_B10M.defeating);
         CHECK(!g_Stage.cleared);
         CHECK(g_Scene.active == nullptr);
@@ -342,12 +340,12 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
         CHECK(g_ShootoutLasers.slots[6].alive);
         const B10M frozen = g_B10M;
-        CHECK(!B10M_UpdateAndRender(&f.context));
+        CHECK(!B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK(memcmp(&g_B10M, &frozen, sizeof(g_B10M)) == 0);
         const size_t used = arena.used;
         for (int32_t frame = 0; frame < 400 && !g_B10M.finished; frame++) {
             Frame_VSync();
-            B10M_UpdateAndRender(&f.context);
+            B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko);
         }
         CHECK(g_B10M.finished);
         CHECK(g_Stage.cleared);
@@ -357,7 +355,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         const B10M finished = g_B10M;
-        CHECK(B10M_UpdateAndRender(&f.context));
+        CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK(memcmp(&g_B10M, &finished, sizeof(g_B10M)) == 0);
         Arena_Free(&arena);
     }
@@ -376,7 +374,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         FIXTURE f;
         M_Battle(&f, &arena);
         B10M_Init();
-        B10M_Setup(&f.context);
+        B10M_Setup(&f.assets, f.shots_output, &f.miko);
         g_B10M.phase = phases[i];
         g_B10M.hp = hp[i];
         g_B10M.pattern_interval = 24;
@@ -386,7 +384,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         g_Orb.previous_top = 148;
         g_Orb.velocity_x = ORB_X_LEFT_4;
         Frame_Reset();
-        CHECK(B10M_UpdateAndRender(&f.context));
+        CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK_EQ_INT(g_B10M.hp, hp[i] - 1);
         CHECK_EQ_INT(g_B10M.phase, phases[i] + 1);
         CHECK_EQ_INT(g_Stage.score, 5000);
@@ -395,7 +393,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         CHECK_EQ_INT(g_B10M.frame, 0);
         CHECK_EQ_INT(g_B10M.hit.frame, 0);
         const int16_t old_hp = g_B10M.hp;
-        CHECK(B10M_UpdateAndRender(&f.context));
+        CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK_EQ_INT(g_B10M.hp, old_hp);
         CHECK_EQ_INT(g_Stage.score, 5000);
         Arena_Free(&arena);
@@ -411,19 +409,19 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         FIXTURE f;
         M_Battle(&f, &arena);
         B10M_Init();
-        B10M_Setup(&f.context);
+        B10M_Setup(&f.assets, f.shots_output, &f.miko);
         g_B10M.frame = 160;
         g_B10M.hp_bar_filled = true;
         g_Player.invincible = false;
         g_Player.left = positions[i];
         Frame_Reset();
-        CHECK(B10M_UpdateAndRender(&f.context));
+        CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK_EQ_INT(g_Player.is_hit, i == 0 || i == 2);
         CHECK_EQ_INT(Th01Test_Pixel(0, 92, 156), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 398), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 399), 0);
         g_Player.invincible = true;
-        CHECK(B10M_UpdateAndRender(&f.context));
+        CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
         CHECK(!g_Player.is_hit);
         Arena_Free(&arena);
     }
@@ -436,7 +434,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     FIXTURE f;
     M_Battle(&f, &arena);
     B10M_Init();
-    B10M_Setup(&f.context);
+    B10M_Setup(&f.assets, f.shots_output, &f.miko);
     g_B10M.phase = B10M_PHASE_STAR_RISE;
     g_B10M.pentagram.center = (MATH16_VECTOR) { 316, 240 };
     g_B10M.pentagram.radius = 64;
@@ -446,7 +444,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     Palette_Set(&g_Palette, &g_StagePalette);
     Frame_Reset();
     for (int32_t i = 0; i < 70; i++) {
-        CHECK(B10M_UpdateAndRender(&f.context));
+        CHECK(B10M_UpdateAndRender(&f.assets, f.shots_output, &f.miko));
     }
     CHECK_EQ_INT(g_StagePalette.colors[15][0], -67);
     CHECK_EQ_INT(g_Palette.saved.colors[15][0], 0);

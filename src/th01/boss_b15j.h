@@ -43,12 +43,6 @@ typedef struct {
 
 extern B15J g_B15J;
 
-typedef struct {
-    const B15J_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    const PTN *miko;
-} B15J_CONTEXT;
-
 // Loads TAMASII.BOS, TAMASII2.BOS, TAMAYEN.PTN, BOSS4.GRP and scene 6
 // into the caller's asset group. Retains the usable background and palette.
 // Failed loads leave out empty; intermediate storage belongs to the group.
@@ -62,7 +56,8 @@ void B15J_Init(void);
 // with the setup's HP, soul positions and black defeat palette. Keeps actor and
 // pattern history. The background owner applies its palette before entering the
 // battle. No allocation or IO.
-void B15J_Setup(const B15J_CONTEXT *context);
+void B15J_Setup(
+    const B15J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
 
 // Runs one ordinary call. False suspends the world during the barn-door
 // and ring entrance or regular defeat. Advance only independent audio and
@@ -72,4 +67,5 @@ void B15J_Setup(const B15J_CONTEXT *context);
 // intervals, four-laser cleanup and silent HP timeout. Activates cached
 // scene 6 after defeat. Finished calls are inert until setup or state reset.
 // Keep borrowed resources stable. Allocates nothing and performs no IO.
-bool B15J_UpdateAndRender(const B15J_CONTEXT *context);
+bool B15J_UpdateAndRender(
+    const B15J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);

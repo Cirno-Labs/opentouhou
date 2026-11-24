@@ -46,13 +46,6 @@ typedef struct {
 
 extern B05 g_B05;
 
-typedef struct {
-    const B05_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    const PTN *miko;
-    const ROUTE_SELECT_ASSETS *route;
-} B05_CONTEXT;
-
 // Loads three immutable BOS banks and BOSS1.GRP through VFS before ticks.
 // Retains the background for the stage owner; the fight uses its palette.
 // All storage belongs to the caller's grouped allocator. Failed loads leave
@@ -69,7 +62,7 @@ void B05_Init(void);
 // or pattern boundaries. Requires no pending operation. All contexts share
 // palette and player. Setup allocates nothing, reads no file, and does not draw
 // the background.
-void B05_Setup(const B05_CONTEXT *context);
+void B05_Setup(const B05_ASSETS *assets);
 
 // Runs one ordinary boss call, or resumes its pending entrance/defeat/route
 // operation. False suspends the owning world: advance only reference VSyncs
@@ -86,4 +79,6 @@ void B05_Setup(const B05_CONTEXT *context);
 // identically until completion. frame_rand changes only between completed
 // ordinary calls. Successful operations allocate nothing and perform no IO.
 // After route completion, calls are inert until Setup or Init.
-bool B05_UpdateAndRender(const B05_CONTEXT *context, const TH01_INPUT *raw);
+bool B05_UpdateAndRender(
+    SHOTS_OUTPUT shots_output, const PTN *miko,
+    const ROUTE_SELECT_ASSETS *route, const TH01_INPUT *raw);

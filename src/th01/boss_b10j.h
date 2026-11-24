@@ -57,12 +57,6 @@ typedef struct {
 
 extern B10J g_B10J;
 
-typedef struct {
-    const B10J_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    const PTN *miko;
-} B10J_CONTEXT;
-
 // Loads BOSS3_1.BOS, BOSS3_2.BOS, BOSS3.GRP, BOSS3_M.PTN, scene 4 and
 // the pillar masks of pillar.bmp into the caller's asset group. Failed
 // loads leave out empty; intermediate storage belongs to the group.
@@ -78,8 +72,10 @@ void B10J_Init(void);
 // of the final step. Keep resources stable and advance independent audio and
 // VSyncs while suspended. Begin with black pages; the owning stage draws the
 // background afterward. Neither operation allocates or reads files or devices.
-void B10J_BeginSetup(const B10J_CONTEXT *context);
-bool B10J_ResumeSetup(const B10J_CONTEXT *context);
+void B10J_BeginSetup(
+    const B10J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
+bool B10J_ResumeSetup(
+    const B10J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
 
 // Runs one ordinary call, including missile and particle prefixes. False
 // suspends the owning world during the entrance or regular defeat; advance
@@ -89,4 +85,5 @@ bool B10J_ResumeSetup(const B10J_CONTEXT *context);
 // delayed HP gates, broken sprite strips and five-laser cleanup. Calls after
 // completion are inert. Keep borrowed resources stable through every wait.
 // Requires completed setup. Allocates nothing and performs no IO.
-bool B10J_UpdateAndRender(const B10J_CONTEXT *context);
+bool B10J_UpdateAndRender(
+    const B10J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);

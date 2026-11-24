@@ -163,19 +163,27 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
 {
     switch (g->world.boss) {
     case BOSS_SINGYOKU:
-        B05_Setup(&g->bindings.c05);
+        B05_Setup(&g->storage.assets->b05);
         break;
     case BOSS_YUUGENMAGAN:
-        B10M_Setup(&g->bindings.c10m);
+        B10M_Setup(
+            &g->storage.assets->b10m, g->bindings.shots_output,
+            &g->storage.assets->miko);
         break;
     case BOSS_MIMA:
-        B10J_BeginSetup(&g->bindings.c10j);
+        B10J_BeginSetup(
+            &g->storage.assets->b10j, g->bindings.shots_output,
+            &g->storage.assets->miko);
         break;
     case BOSS_KIKURI:
-        B15J_Setup(&g->bindings.c15j);
+        B15J_Setup(
+            &g->storage.assets->b15j, g->bindings.shots_output,
+            &g->storage.assets->miko);
         break;
     case BOSS_ELIS:
-        B15M_Setup(&g->bindings.c15m);
+        B15M_Setup(
+            &g->storage.assets->b15m, g->bindings.shots_output,
+            &g->storage.assets->miko);
         break;
     case BOSS_SARIEL:
         B20M_Setup(&g->storage.assets->b20m, g->bindings.shots_output);
@@ -209,15 +217,25 @@ bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
     switch (g->world.boss) {
     case BOSS_SINGYOKU:
-        return B05_UpdateAndRender(&g->bindings.c05, raw);
+        return B05_UpdateAndRender(
+            g->bindings.shots_output, &g->storage.assets->miko,
+            &g->bindings.route_assets, raw);
     case BOSS_YUUGENMAGAN:
-        return B10M_UpdateAndRender(&g->bindings.c10m);
+        return B10M_UpdateAndRender(
+            &g->storage.assets->b10m, g->bindings.shots_output,
+            &g->storage.assets->miko);
     case BOSS_MIMA:
-        return B10J_UpdateAndRender(&g->bindings.c10j);
+        return B10J_UpdateAndRender(
+            &g->storage.assets->b10j, g->bindings.shots_output,
+            &g->storage.assets->miko);
     case BOSS_KIKURI:
-        return B15J_UpdateAndRender(&g->bindings.c15j);
+        return B15J_UpdateAndRender(
+            &g->storage.assets->b15j, g->bindings.shots_output,
+            &g->storage.assets->miko);
     case BOSS_ELIS:
-        return B15M_UpdateAndRender(&g->bindings.c15m, g->storage.host_tick);
+        return B15M_UpdateAndRender(
+            &g->storage.assets->b15m, g->bindings.shots_output,
+            &g->storage.assets->miko, g->storage.host_tick);
     case BOSS_SARIEL:
         return B20M_UpdateAndRender(
             &g->storage.assets->b20m, g->bindings.shots_output,

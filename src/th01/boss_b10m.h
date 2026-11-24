@@ -70,12 +70,6 @@ typedef struct {
 
 extern B10M g_B10M;
 
-typedef struct {
-    const B10M_ASSETS *assets;
-    SHOTS_OUTPUT shots_output;
-    const PTN *miko;
-} B10M_CONTEXT;
-
 // Loads immutable BOSS2.BOS, BOSS2.GRP, BOSS3_M.PTN and scene 3 through VFS
 // into the caller's grouped allocator. Retains the usable background. Failed
 // loads leave out empty; intermediate storage stays in the allocator.
@@ -89,7 +83,8 @@ void B10M_Init(void);
 // resets missile flags. Retains eye lock/previous-position history, hit
 // timing and pattern history. Reads no files, allocates nothing, and leaves
 // the background drawing to its owner.
-void B10M_Setup(const B10M_CONTEXT *context);
+void B10M_Setup(
+    const B10M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
 
 // Runs one ordinary call including the missile prefix. The 331-frame entrance
 // and eye transitions leave the owning world running. False suspends it during
@@ -100,4 +95,5 @@ void B10M_Setup(const B10M_CONTEXT *context);
 // pentagram overshoot and phase fallthrough. Keep context bindings stable.
 // Successful calls allocate nothing and perform no IO. Finished calls are inert
 // until setup or the main program's state reset.
-bool B10M_UpdateAndRender(const B10M_CONTEXT *context);
+bool B10M_UpdateAndRender(
+    const B10M_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
