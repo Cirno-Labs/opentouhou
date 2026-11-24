@@ -22,13 +22,13 @@ static const ROUTE_LINE m_Lines[] = {
     { "地獄へ", 256, 300, 3 },
 };
 
-static void M_Palette(const ROUTE_SELECT_CONTEXT *const c, const uint8_t route)
+static void M_Palette(const uint8_t route)
 {
     Palette_SetColor(&g_Palette, route == 0 ? 1 : 3, 15, 15, 15);
     Palette_SetColor(&g_Palette, route == 0 ? 3 : 1, 9, 9, 9);
 }
 
-static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
+static void M_Draw(const ROUTE_SELECT_ASSETS *const assets)
 {
     for (int32_t color = 0; color < 16; color++) {
         for (int32_t component = 0; component < 3; component++) {
@@ -47,11 +47,11 @@ static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
     const GAME_TEXT_STYLE style = { .clear_background = true };
     for (int32_t line = 0; line < 5; line++) {
         GameText_Draw(
-            c->assets->font, m_Lines[line].text, 0, line * 32,
-            m_Lines[line].color, &style);
+            assets->font, m_Lines[line].text, 0, line * 32, m_Lines[line].color,
+            &style);
     }
     Video_SelectDrawingPage(0);
-    M_Palette(c, 0);
+    M_Palette(0);
     for (int32_t line = 0; line < 5; line++) {
         const int16_t width = (int16_t)(strlen(m_Lines[line].text) / 3 * 16);
         Scale2x_Copy(
@@ -59,7 +59,7 @@ static void M_Draw(const ROUTE_SELECT_CONTEXT *const c)
             width, 16);
     }
     Video_Copy(0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
-    Sprite_PtnPut(c->assets->stage, ORB_FIRST_IMAGE, -1, 128, 250);
+    Sprite_PtnPut(assets->stage, ORB_FIRST_IMAGE, -1, 128, 250);
 }
 
 RESULT RouteSelect_LoadFont(
@@ -109,18 +109,18 @@ RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *const assets)
 }
 
 bool RouteSelect_Begin(
-    ROUTE_SELECT *const selection, const ROUTE_SELECT_CONTEXT *const c,
+    ROUTE_SELECT *const selection, const ROUTE_SELECT_ASSETS *const assets,
     const TH01_INPUT *const raw)
 {
     ASSERT(selection->phase == ROUTE_SELECT_DONE);
     *selection = (ROUTE_SELECT) { .phase = ROUTE_SELECT_INITIAL_WAIT };
-    M_Draw(c);
+    M_Draw(assets);
     GameInput_ResetGame();
-    return RouteSelect_Resume(selection, c, raw);
+    return RouteSelect_Resume(selection, assets, raw);
 }
 
 bool RouteSelect_Resume(
-    ROUTE_SELECT *const selection, const ROUTE_SELECT_CONTEXT *const c,
+    ROUTE_SELECT *const selection, const ROUTE_SELECT_ASSETS *const assets,
     const TH01_INPUT *const raw)
 {
     for (;;) {
@@ -143,17 +143,16 @@ bool RouteSelect_Resume(
                     128, selection->selection == 0 ? 250 : 300, 32, 32);
                 selection->selection ^= 1;
                 Sprite_PtnPut(
-                    c->assets->stage, ORB_FIRST_IMAGE, -1, 128,
+                    assets->stage, ORB_FIRST_IMAGE, -1, 128,
                     selection->selection == 0 ? 250 : 300);
-                M_Palette(c, selection->selection);
+                M_Palette(selection->selection);
             }
             selection->holding_up = g_GameInput.up;
             selection->holding_down = g_GameInput.down;
             if (g_GameInput.shot || g_GameInput.ok) {
                 Sound_Effect(4);
                 Scene_Activate(
-                    selection->selection == 0 ? c->assets->makai
-                                              : c->assets->jigoku);
+                    selection->selection == 0 ? assets->makai : assets->jigoku);
                 g_Session.route = selection->selection;
                 g_Stage.cleared = true;
                 g_Player.is_hit = true;

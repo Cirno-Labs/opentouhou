@@ -50,7 +50,7 @@ typedef struct {
     const B05_ASSETS *assets;
     SHOTS_OUTPUT shots_output;
     const PTN *miko;
-    const ROUTE_SELECT_CONTEXT *route;
+    const ROUTE_SELECT_ASSETS *route;
 } B05_CONTEXT;
 
 // Loads three immutable BOS banks and BOSS1.GRP through VFS before ticks.

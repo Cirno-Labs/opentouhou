@@ -82,12 +82,10 @@ void Gameplay_Bind(GAMEPLAY *const g)
                                 .stage = stage,
                                 .makai = &a->scenes[1],
                                 .jigoku = &a->scenes[2] };
-    g->bindings.route =
-        (ROUTE_SELECT_CONTEXT) { .assets = &g->bindings.route_assets };
     g->bindings.c05 = (B05_CONTEXT) { .assets = &a->b05,
                                       .shots_output = g->bindings.shots_output,
                                       .miko = &a->miko,
-                                      .route = &g->bindings.route };
+                                      .route = &g->bindings.route_assets };
     g->bindings.c10j = (B10J_CONTEXT) {
         .assets = &a->b10j,
         .shots_output = g->bindings.shots_output,
