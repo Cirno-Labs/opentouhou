@@ -100,6 +100,8 @@
   #drop p[data-text="drop"], #drop p[data-text="dropHdi"] { min-height: 3em; display: grid; place-items: center; text-wrap: balance; }
   .tagline { min-height: 1.5em; text-wrap: balance; }
   #drop small, .hint { color: var(--soft); }
+  .data-pickers { display: flex; justify-content: center; gap: 14px; margin: 12px 0 18px; }
+  .data-pickers .button { display: flex; align-items: center; justify-content: center; flex: 1; padding: 10px 12px; }
   #file, #folder { position: absolute; width: 1px; height: 1px; opacity: 0; }
   .button, button {
     display: inline-block; font: 700 1em var(--font); border: 0; cursor: pointer;
@@ -160,8 +162,10 @@
           </div>
           <div id="drop" class="off">
             <p data-text="drop"></p>
-            <p><label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,application/zip"></p>
-            <p><label class="button" for="folder" data-text="folder"></label><input id="folder" type="file" webkitdirectory multiple></p>
+            <div class="data-pickers">
+              <label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,application/zip">
+              <label class="button" for="folder" data-text="folder"></label><input id="folder" type="file" webkitdirectory multiple>
+            </div>
             <p><small data-text="private"></small></p>
           </div>
         </div>
