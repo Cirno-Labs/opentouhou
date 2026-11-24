@@ -25,10 +25,6 @@ typedef struct {
     bool holding_up, holding_down;
 } ROUTE_SELECT;
 
-typedef struct {
-    const ROUTE_SELECT_ASSETS *assets;
-} ROUTE_SELECT_CONTEXT;
-
 // Caches the five route labels from rom. Glyphs belong to allocator. Load
 // both real scene descriptors before ticks, then validate every borrowed
 // asset.
@@ -40,9 +36,9 @@ RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *assets);
 // Composes the actual page-1 glyph rows, transparent doubled text and Orb
 // cursor, resets game input, then waits 50 count1 VSyncs. Zero-initialize once
 // and begin only when done. Reuses count1 immediately, including a ready
-// initial delay. Keep context and borrowed assets stable until completion.
+// initial delay. Keep the borrowed assets stable until completion.
 bool RouteSelect_Begin(
-    ROUTE_SELECT *selection, const ROUTE_SELECT_CONTEXT *context,
+    ROUTE_SELECT *selection, const ROUTE_SELECT_ASSETS *assets,
     const TH01_INPUT *raw);
 
 // Senses the supplied input only at ready source polling boundaries. New up
@@ -54,5 +50,5 @@ bool RouteSelect_Begin(
 // record sound events but must not mutate borrowed state. Allocates nothing,
 // reads no clock/device/file and advances no VSync or gameplay counters.
 bool RouteSelect_Resume(
-    ROUTE_SELECT *selection, const ROUTE_SELECT_CONTEXT *context,
+    ROUTE_SELECT *selection, const ROUTE_SELECT_ASSETS *assets,
     const TH01_INPUT *raw);

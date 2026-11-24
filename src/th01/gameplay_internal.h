@@ -103,7 +103,6 @@ typedef struct {
     PELLET_CONTEXT pellet;
     MISS_CONTEXT missing;
     ROUTE_SELECT_ASSETS route_assets;
-    ROUTE_SELECT_CONTEXT route;
     B05_CONTEXT c05;
     B10J_CONTEXT c10j;
     B10M_CONTEXT c10m;

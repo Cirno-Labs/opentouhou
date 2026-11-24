@@ -20,7 +20,6 @@ typedef struct {
     PTN stage, miko;
     SCENE_DATA cache[3];
     ROUTE_SELECT_ASSETS route_assets;
-    ROUTE_SELECT_CONTEXT route_context;
 
 } FIXTURE;
 
@@ -117,9 +116,9 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[1],
         &f->cache[2],
     };
-    f->route_context = (ROUTE_SELECT_CONTEXT) { &f->route_assets };
+
     f->context.miko = &f->miko;
-    f->context.route = &f->route_context;
+    f->context.route = &f->route_assets;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
