@@ -665,9 +665,6 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g_B20M.ray_previous_y, 999);
     CHECK_EQ_INT(g_B20M.flake.state, -1);
     CHECK_EQ_INT(g_B20J.ray_previous_x, 999);
-    CHECK(g->bindings.c05.shots_output.user == g->bindings.shots_output.user);
-    CHECK(
-        g->bindings.c05.shots_output.action == g->bindings.shots_output.action);
     Gameplay_BindAudio(g, nullptr);
     GameAudio_Free(output);
     Audio_Shutdown();

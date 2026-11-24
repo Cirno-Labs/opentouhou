@@ -448,7 +448,9 @@ static GAMEPLAY_REQUEST M_Run(
             M_StageBegin(g);
             break;
         case GP_B10J_SETUP:
-            if (!B10J_ResumeSetup(&g->bindings.c10j)) {
+            if (!B10J_ResumeSetup(
+                    &g->storage.assets->b10j, g->bindings.shots_output,
+                    &g->storage.assets->miko)) {
                 return g->world.request;
             }
             Gameplay_HookBossHp(g);

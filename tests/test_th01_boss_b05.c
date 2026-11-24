@@ -15,7 +15,7 @@
 
 typedef struct {
     B05_ASSETS assets;
-    B05_CONTEXT context;
+    SHOTS_OUTPUT shots_output;
     GAME_TEXT_FONT font;
     PTN stage, miko;
     SCENE_DATA cache[3];
@@ -57,9 +57,6 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
                 (int8_t)((color + component * 3) % 16);
         }
     }
-    f->context = (B05_CONTEXT) {
-        .assets = &f->assets,
-    };
 }
 
 static void M_Battle(FIXTURE *const f, ARENA *const arena)
@@ -109,7 +106,7 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Player.left = 300;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
-    f->context.shots_output = (SHOTS_OUTPUT) { M_Shot, f };
+    f->shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     f->route_assets = (ROUTE_SELECT_ASSETS) {
         &f->font,
         &f->stage,
@@ -117,18 +114,20 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
         &f->cache[2],
     };
 
-    f->context.miko = &f->miko;
-    f->context.route = &f->route_assets;
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static void M_Enter(FIXTURE *const f)
 {
     const TH01_INPUT raw = {};
-    CHECK(!B05_UpdateAndRender(&f->context, &raw));
+    CHECK(!B05_UpdateAndRender(
+        f->shots_output, &f->miko, &f->route_assets, &raw));
     for (int32_t frame = 0; frame < 200; frame++) {
         Frame_VSync();
-        CHECK_EQ_INT(B05_UpdateAndRender(&f->context, &raw), frame == 199);
+        CHECK_EQ_INT(
+            B05_UpdateAndRender(
+                f->shots_output, &f->miko, &f->route_assets, &raw),
+            frame == 199);
     }
     CHECK_EQ_INT(g_B05.phase, B05_PHASE_SPHERE);
     CHECK_EQ_INT(g_B05.frame, 0);
@@ -158,7 +157,7 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     g_Particles.cycle = 73;
     g_Particles.velocity_base[0] = 9;
     g_Particles.alive[0] = 255;
-    B05_Setup(&f.context);
+    B05_Setup(&f.assets);
     CHECK_EQ_INT(arena.used, used);
     CHECK(g_BossSprites.entities[0] == &f.assets.sphere);
     CHECK(g_BossSprites.entities[1] == &f.assets.flash);
@@ -219,7 +218,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         FIXTURE f;
         M_Battle(&f, &arena);
         B05_Init();
-        B05_Setup(&f.context);
+        B05_Setup(&f.assets);
         const size_t used = arena.used;
         Frame_Reset();
         g_VSync.count1 = (uint16_t)reuse;
@@ -227,17 +226,21 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         const PLAYER player = g_Player;
         const ORB orb = g_Orb;
         const uint32_t rng = g_Rng;
-        CHECK(!B05_UpdateAndRender(&f.context, &raw));
+        CHECK(!B05_UpdateAndRender(
+            f.shots_output, &f.miko, &f.route_assets, &raw));
         CHECK_EQ_INT(g_B05.frame, 1 + reuse);
         CHECK_EQ_INT(g_B05.hit.frame, 0);
         CHECK_EQ_INT(g_Palette.saved.colors[5][0], 0);
         const B05 frozen = g_B05;
-        CHECK(!B05_UpdateAndRender(&f.context, &raw));
+        CHECK(!B05_UpdateAndRender(
+            f.shots_output, &f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
         for (int32_t edge = 0; edge < 200 - reuse; edge++) {
             Frame_VSync();
             CHECK_EQ_INT(
-                B05_UpdateAndRender(&f.context, &raw), edge == 199 - reuse);
+                B05_UpdateAndRender(
+                    f.shots_output, &f.miko, &f.route_assets, &raw),
+                edge == 199 - reuse);
         }
         CHECK_EQ_INT(g_B05.phase, B05_PHASE_SPHERE);
         CHECK_EQ_INT(g_B05.pattern, 0);
@@ -265,7 +268,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
         B05_Init();
-        B05_Setup(&f.context);
+        B05_Setup(&f.assets);
         Frame_Reset();
         M_Enter(&f);
         const size_t used = arena.used;
@@ -278,7 +281,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             g_Orb.previous_left = hit ? (int16_t)(g_B05.sphere.left + 32) : 0;
             g_Orb.previous_top = hit ? (int16_t)(g_B05.sphere.top + 32) : 64;
             g_Session.frame_rand = (uint32_t)step;
-            CHECK(B05_UpdateAndRender(&f.context, &raw));
+            CHECK(B05_UpdateAndRender(
+                f.shots_output, &f.miko, &f.route_assets, &raw));
             phase_two |= g_B05.phase == B05_PHASE_TRANSFORMS;
         }
         CHECK(phase_two);
@@ -294,14 +298,16 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             .previous_top = 100 * 16,
         };
         g_Pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
-        CHECK(!B05_UpdateAndRender(&f.context, &raw));
+        CHECK(!B05_UpdateAndRender(
+            f.shots_output, &f.miko, &f.route_assets, &raw));
         CHECK(!g_Pellets.slots[0].moving);
         CHECK(!g_Pellets.slots[1].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(g_Scene.active->id, 0);
         CHECK(!g_Stage.cleared && !g_Player.is_hit);
         const B05 frozen = g_B05;
-        CHECK(!B05_UpdateAndRender(&f.context, &raw));
+        CHECK(!B05_UpdateAndRender(
+            f.shots_output, &f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
         const uint32_t rng = g_Rng;
         const uint32_t frame_rand = g_Session.frame_rand;
@@ -309,7 +315,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
             Frame_VSync();
-            B05_UpdateAndRender(&f.context, &held);
+            B05_UpdateAndRender(
+                f.shots_output, &f.miko, &f.route_assets, &held);
         }
         CHECK_EQ_INT(g_B05.pending, B05_FINISHED);
         CHECK_EQ_INT(g_Session.route, rank % 2);
@@ -319,7 +326,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = g_B05;
-        CHECK(B05_UpdateAndRender(&f.context, &raw));
+        CHECK(B05_UpdateAndRender(
+            f.shots_output, &f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&g_B05, &finished, sizeof(g_B05)) == 0);
         Arena_Free(&arena);
     }
@@ -332,7 +340,7 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     FIXTURE f;
     M_Battle(&f, &arena);
     B05_Init();
-    B05_Setup(&f.context);
+    B05_Setup(&f.assets);
     g_B05.phase = B05_PHASE_TRANSFORMS;
     g_B05.sphere.left = 272;
     g_B05.sphere.top = 96;
@@ -348,14 +356,14 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     }
     const TH01_INPUT raw = {};
     Frame_Reset();
-    CHECK(B05_UpdateAndRender(&f.context, &raw));
+    CHECK(B05_UpdateAndRender(f.shots_output, &f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     CHECK(memcmp(&g_Pellets, &full, sizeof(full)) == 0);
     g_B05.frame = 159;
-    CHECK(B05_UpdateAndRender(&f.context, &raw));
+    CHECK(B05_UpdateAndRender(f.shots_output, &f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_B05.person.image, 5);
     g_B05.frame = 163;
-    CHECK(B05_UpdateAndRender(&f.context, &raw));
+    CHECK(B05_UpdateAndRender(f.shots_output, &f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_B05.person.image, 5);
     g_B05.pattern = 3;
     g_B05.frame = 184;
@@ -363,13 +371,14 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     for (int32_t i = 0; i < 20; i++) {
         MasterRng_Next(&expected);
     }
-    CHECK(B05_UpdateAndRender(&f.context, &raw));
+    CHECK(B05_UpdateAndRender(f.shots_output, &f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     memset(&g_Pellets, 0, sizeof(g_Pellets));
     g_B05.pattern = 2;
     for (int32_t i = 0; i < 3; i++) {
         g_B05.frame = (int16_t)(239 + i * 8);
-        CHECK(B05_UpdateAndRender(&f.context, &raw));
+        CHECK(B05_UpdateAndRender(
+            f.shots_output, &f.miko, &f.route_assets, &raw));
         CHECK(g_Pellets.slots[i * 2].moving);
         CHECK(g_Pellets.slots[i * 2 + 1].moving);
     }

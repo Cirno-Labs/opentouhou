@@ -250,7 +250,7 @@ static void M_Cross(void)
     }
 }
 
-static bool M_Entrance(const B05_CONTEXT *const c)
+static bool M_Entrance(void)
 {
     for (;;) {
         if (g_B05.pending == B05_ENTRANCE_DELAY) {
@@ -300,19 +300,20 @@ static bool M_Entrance(const B05_CONTEXT *const c)
     }
 }
 
-static bool M_Death(const B05_CONTEXT *const c, const TH01_INPUT *const raw)
+static bool M_Death(
+    const PTN *const miko, const ROUTE_SELECT_ASSETS *const route,
+    const TH01_INPUT *const raw)
 {
     if (g_B05.pending == B05_DEFEAT) {
         if (!BossDefeat_Resume(
-                &g_B05.defeat, &g_B05.post_defeat, c->miko,
-                &g_B05.sphere.top)) {
+                &g_B05.defeat, &g_B05.post_defeat, miko, &g_B05.sphere.top)) {
             return false;
         }
         g_B05.pending = B05_ROUTE;
-        if (!RouteSelect_Begin(&g_B05.route_selection, c->route, raw)) {
+        if (!RouteSelect_Begin(&g_B05.route_selection, route, raw)) {
             return false;
         }
-    } else if (!RouteSelect_Resume(&g_B05.route_selection, c->route, raw)) {
+    } else if (!RouteSelect_Resume(&g_B05.route_selection, route, raw)) {
         return false;
     }
     g_B05.pending = B05_FINISHED;
@@ -360,16 +361,14 @@ void B05_Init(void)
     memset(&g_B05, 0, sizeof(g_B05));
 }
 
-void B05_Setup(const B05_CONTEXT *const c)
+void B05_Setup(const B05_ASSETS *const assets)
 {
     ASSERT(g_B05.pending == B05_IDLE || g_B05.pending == B05_FINISHED);
-    ASSERT(Result_Ignore(B05_ValidateAssets(c->assets)));
-    ASSERT(
-        Result_Ignore(BossEntity_Bind(&g_B05.sphere, 0, &c->assets->sphere)));
-    ASSERT(Result_Ignore(BossEntity_Bind(&g_B05.flash, 1, &c->assets->flash)));
-    ASSERT(
-        Result_Ignore(BossEntity_Bind(&g_B05.person, 2, &c->assets->person)));
-    g_B05.post_defeat = c->assets->palette;
+    ASSERT(Result_Ignore(B05_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&g_B05.sphere, 0, &assets->sphere)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&g_B05.flash, 1, &assets->flash)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&g_B05.person, 2, &assets->person)));
+    g_B05.post_defeat = assets->palette;
     g_StagePalette = g_B05.post_defeat;
     Palette_Set(&g_Palette, &g_B05.post_defeat);
     g_B05.boss_palette = g_Palette.saved;
@@ -388,16 +387,17 @@ void B05_Setup(const B05_CONTEXT *const c)
 }
 
 bool B05_UpdateAndRender(
-    const B05_CONTEXT *const c, const TH01_INPUT *const raw)
+    const SHOTS_OUTPUT shots_output, const PTN *const miko,
+    const ROUTE_SELECT_ASSETS *const route, const TH01_INPUT *const raw)
 {
     if (g_B05.pending == B05_FINISHED) {
         return true;
     }
     if (g_B05.pending == B05_ENTRANCE || g_B05.pending == B05_ENTRANCE_DELAY) {
-        return M_Entrance(c);
+        return M_Entrance();
     }
     if (g_B05.pending == B05_DEFEAT || g_B05.pending == B05_ROUTE) {
-        return M_Death(c, raw);
+        return M_Death(miko, route, raw);
     }
     if (g_B05.phase == B05_PHASE_START) {
         g_B05.sphere.left = 272;
@@ -408,7 +408,7 @@ bool B05_UpdateAndRender(
         g_B05.rotation_interval = 18;
         g_B05.frame = 0;
         g_B05.pending = B05_ENTRANCE;
-        return M_Entrance(c);
+        return M_Entrance();
     }
     if (g_B05.phase == B05_PHASE_SPHERE
         || g_B05.phase == B05_PHASE_TRANSFORMS) {
@@ -453,8 +453,8 @@ bool B05_UpdateAndRender(
         }
         const uint8_t flash[] = { 13 };
         BossHit_UpdateAndRender(
-            &g_B05.hit, c->shots_output, &g_B05.hp, &g_B05.boss_palette, flash,
-            1, 3000, BossEntity_HitTestOrb(&g_B05.sphere),
+            &g_B05.hit, shots_output, &g_B05.hp, &g_B05.boss_palette, flash, 1,
+            3000, BossEntity_HitTestOrb(&g_B05.sphere),
             (BOSS_SHOT_HITBOX) {
                 Math16_Wrap(g_B05.sphere.left + 16),
                 Math16_Wrap(g_B05.sphere.top + 32),
@@ -480,7 +480,7 @@ bool B05_UpdateAndRender(
         Pellets_EraseAndResetMoving();
         BossDefeat_Begin(&g_B05.defeat, BOSS_DEFEAT_SINGYOKU);
         g_B05.pending = B05_DEFEAT;
-        return M_Death(c, raw);
+        return M_Death(miko, route, raw);
     }
     return true;
 }

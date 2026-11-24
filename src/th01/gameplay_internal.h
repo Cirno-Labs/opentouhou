@@ -103,11 +103,6 @@ typedef struct {
     PELLET_CONTEXT pellet;
     MISS_CONTEXT missing;
     ROUTE_SELECT_ASSETS route_assets;
-    B05_CONTEXT c05;
-    B10J_CONTEXT c10j;
-    B10M_CONTEXT c10m;
-    B15J_CONTEXT c15j;
-    B15M_CONTEXT c15m;
     BONUS_CONTEXT bonus_context;
     BONUS_TOTAL_CONTEXT total_context;
 } GAMEPLAY_BINDINGS;
