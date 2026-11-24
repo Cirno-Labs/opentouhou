@@ -591,3 +591,67 @@ TEST(streams_keep_the_archive_alive_after_its_source_closes)
         CHECK_EQ_INT(allocator.size_errors, 0);
     }
 }
+
+typedef struct {
+    const uint8_t *data;
+    size_t read_bytes;
+} M_COUNTED_SOURCE;
+
+static RESULT M_CountRead(
+    void *const user, const size_t offset, void *const out, const size_t size)
+{
+    M_COUNTED_SOURCE *const source = user;
+    source->read_bytes += size;
+    memcpy(out, source->data + offset, size);
+    return OK;
+}
+
+static void M_CountClose([[maybe_unused]] void *const user)
+{
+}
+
+static const READER_SOURCE_FUNCS m_CountedFuncs = {
+    .read_at = M_CountRead,
+    .close = M_CountClose,
+};
+
+TEST(reopening_a_stream_reuses_verification_and_checkpoints)
+{
+    const size_t size = 5 * 1024 * 1024;
+    uint8_t *const text = Mem_AllocZ(size);
+    for (int deflate = 0; deflate < 2; deflate++) {
+        const ZIP_BUILDER_ENTRY entry = { "music", text, size, 0,
+                                          deflate != 0 };
+        ZIP_BUILDER_ARCHIVE built = ZipBuilder_Build(&entry, 1);
+        M_COUNTED_SOURCE counted = { .data = built.data };
+        READER input;
+        Reader_OpenSource(
+            &input, &m_CountedFuncs, &counted, built.size, nullptr);
+        TEST_ALLOCATOR allocator;
+        TestAllocator_Init(&allocator);
+        ARCHIVE *archive;
+        CHECK(Result_Log(
+            Archive_Open(&g_ZipFormat, &input, &allocator.allocator, &archive),
+            LOG_LEVEL_ERROR));
+        VFS_SOURCE *const source = Archive_ToSource(archive, "");
+        READER reader;
+        CHECK(Result_Log(
+            source->funcs->open(source, "music", VFS_STREAM, &reader),
+            LOG_LEVEL_ERROR));
+        Reader_Close(&reader);
+        counted.read_bytes = 0;
+        CHECK(Result_Log(
+            source->funcs->open(source, "music", VFS_STREAM, &reader),
+            LOG_LEVEL_ERROR));
+        CHECK(counted.read_bytes < 128);
+        Reader_Seek(&reader, size - 1);
+        CHECK_EQ_INT(Reader_ReadU8(&reader), 0);
+        CHECK(Result_Log(Reader_Result(&reader), LOG_LEVEL_ERROR));
+        Reader_Close(&reader);
+        source->funcs->close(source);
+        CHECK_EQ_INT(allocator.live_blocks, 0);
+        CHECK_EQ_INT(allocator.size_errors, 0);
+        Mem_Free(built.data);
+    }
+    Mem_Free(text);
+}
