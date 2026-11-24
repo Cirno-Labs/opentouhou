@@ -146,7 +146,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
         g_VSync.count1 = 1;
         CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
     }
-    CHECK_EQ_INT(g_Bonus.phase, BONUS_CONFIRM);
+    CHECK_EQ_INT(g_Bonus.run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_Stage.score, 410000);
     CHECK_EQ_INT(g_Bonus.score_bonus, 17000);
     CHECK_EQ_INT(g_Session.bonus_per_stage[3], 17000);
@@ -198,7 +198,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     CHECK_EQ_INT(g_Bonus.score_bonus, expected);
     CHECK_EQ_INT((uint32_t)g_Session.bonus_per_stage[3], expected);
     CHECK_EQ_INT(g_Stage.score, UINT32_MAX - 1000 + expected);
-    CHECK_EQ_INT(g_Bonus.phase, BONUS_CONFIRM);
+    CHECK_EQ_INT(g_Bonus.run.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_GameInput.bomb_frame, 0);
     TH01_INPUT released = {};
     CHECK(Bonus_Resume(&f.assets, &f.font, &released));
