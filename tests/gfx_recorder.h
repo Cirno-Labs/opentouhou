@@ -41,3 +41,6 @@ int32_t GfxRecorder_ReadCount(void);
 // Presents the last tick, blended toward the tick before by t, and returns
 // the vertices of quad index as the window draws them.
 const GFX_VERTEX *GfxRecorder_Blend(float t, int32_t index);
+
+// Returns the view that presents quad index at the given blend fraction.
+const GFX_PASS_VIEW *GfxRecorder_BlendView(float t, int32_t index);

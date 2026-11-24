@@ -13,10 +13,12 @@ typedef struct {
 
 typedef ARRAY(GFX_RECORDED_QUAD) M_QUAD_ARRAY;
 typedef ARRAY(GFX_VERTEX) M_VERTEX_ARRAY;
+typedef ARRAY(GFX_PASS_VIEW) M_VIEW_ARRAY;
 typedef ARRAY(M_TEXTURE) M_TEXTURE_ARRAY;
 
 static M_QUAD_ARRAY m_Quads;
 static M_VERTEX_ARRAY m_Window;
+static M_VIEW_ARRAY m_WindowViews;
 static M_TEXTURE_ARRAY m_Textures;
 static GFX_PASS m_Pass;
 static int32_t m_Copies;
@@ -72,6 +74,7 @@ static void M_BeginPass(
         Array_Clear(&m_Quads);
     } else {
         Array_Clear(&m_Window);
+        Array_Clear(&m_WindowViews);
     }
 }
 
@@ -85,6 +88,7 @@ static void M_Draw(
              first += 4) {
             if (m_Pass == GFX_PASS_WINDOW) {
                 Array_AppendSlice(&m_Window, &vertices[first], 4);
+                Array_Append(&m_WindowViews, views[batch->view]);
                 continue;
             }
             GFX_RECORDED_QUAD quad = {
@@ -143,6 +147,7 @@ void GfxRecorder_Start(void)
 {
     Array_Init(&m_Quads, &g_HeapAllocator);
     Array_Init(&m_Window, &g_HeapAllocator);
+    Array_Init(&m_WindowViews, &g_HeapAllocator);
     Array_Init(&m_Textures, &g_HeapAllocator);
     m_Copies = 0;
     m_Reads = 0;
@@ -158,6 +163,7 @@ void GfxRecorder_Stop(void)
     GfxFrontend_Stop();
     Array_Free(&m_Quads);
     Array_Free(&m_Window);
+    Array_Free(&m_WindowViews);
     for (int32_t i = 0; i < m_Textures.count; i++) {
         Mem_Free(m_Textures.items[i].pixels);
     }
@@ -220,4 +226,10 @@ const GFX_VERTEX *GfxRecorder_Blend(const float t, const int32_t index)
         LOG_FATAL("Cannot present the recorded tick");
     }
     return Array_Get(&m_Window, index * 4);
+}
+
+const GFX_PASS_VIEW *GfxRecorder_BlendView(const float t, const int32_t index)
+{
+    GfxRecorder_Blend(t, index);
+    return Array_Get(&m_WindowViews, index);
 }

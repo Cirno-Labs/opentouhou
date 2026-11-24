@@ -535,6 +535,80 @@ TEST(stage_layers_draw_through_the_stage_camera_in_fog)
     M_Teardown();
 }
 
+static void M_CheckCameraWrap(const bool projected)
+{
+    const STAGE_INSTR script[] = {
+        { 0, STAGE_OP_KEYFRAME, {} },
+        { 0, STAGE_OP_EYE, { 0.0f, 0.0f, -200.0f } },
+        { 0, STAGE_OP_AT, { 0.0f, 0.0f, 1.0f } },
+        { 1, STAGE_OP_JUMP, { M_Bits(4), M_Bits(1), 0.0f } },
+        { 1, STAGE_OP_EYE, { 20.0f, 0.0f, -200.0f } },
+        { -1, STAGE_OP_KEYFRAME, {} },
+    };
+    CHECK(Result_Log(M_Setup("camera_wrap", script, 6, 0), LOG_LEVEL_ERROR));
+    g_Stage.data.sprites[0].stage_camera = true;
+    g_Stage.data.sprites[0].auto_rotate = projected ? 2 : 0;
+    M_Run(1);
+    GfxRecorder_Start();
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw();
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    const uint64_t old_id = GfxRecorder_QuadId(0);
+    M_Run(1);
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw();
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadCount(), 1);
+    CHECK(GfxRecorder_QuadId(0) != old_id);
+    const uint64_t new_id = GfxRecorder_QuadId(0);
+    const GFX_RECORDED_QUAD current = *GfxRecorder_Quad(0);
+    const GFX_VERTEX *const vertices = GfxRecorder_Blend(0.5f, 0);
+    for (int32_t i = 0; i < 4; i++) {
+        CHECK(
+            memcmp(
+                &vertices[i].position, &current.vertices[i].position,
+                sizeof(VEC3))
+            == 0);
+    }
+    const GFX_PASS_VIEW *const view = GfxRecorder_BlendView(0.5f, 0);
+    CHECK(memcmp(&view->view, &current.view.view, sizeof(MAT4)) == 0);
+    CHECK(
+        memcmp(&view->projection, &current.view.projection, sizeof(MAT4)) == 0);
+    g_Stage.camera.current.eye.x += 4.0f;
+    Gfx_BeginTick((GFX_COLOR) {});
+    Chain_RunDraw();
+    Gfx_EndTick();
+    CHECK_EQ_INT(GfxRecorder_QuadId(0), new_id);
+    const GFX_RECORDED_QUAD next = *GfxRecorder_Quad(0);
+    const float from =
+        projected ? current.vertices[0].position.x : current.view.view.m[3][0];
+    const float to =
+        projected ? next.vertices[0].position.x : next.view.view.m[3][0];
+    CHECK(from != to);
+    const float fractions[] = { 0.25f, 0.5f, 0.75f };
+    for (size_t i = 0; i < sizeof(fractions) / sizeof(*fractions); i++) {
+        const float fraction = fractions[i];
+        const float actual = projected
+            ? GfxRecorder_Blend(fraction, 0)[0].position.x
+            : GfxRecorder_BlendView(fraction, 0)->view.m[3][0];
+        CHECK(actual == from + (to - from) * fraction);
+        CHECK(actual != from && actual != to);
+    }
+    GfxRecorder_Stop();
+    M_Teardown();
+}
+
+TEST(stage_camera_wraps_reset_blending_then_resume_it)
+{
+    M_CheckCameraWrap(false);
+}
+
+TEST(projected_sprites_reset_blending_then_resume_it)
+{
+    M_CheckCameraWrap(true);
+}
+
 TEST(objects_behind_the_camera_are_not_drawn)
 {
     CHECK(Result_Log(M_Setup("behind", m_Camera, 4, 0), LOG_LEVEL_ERROR));

@@ -12,6 +12,7 @@ typedef enum {
     ANM_VIEW_HUD, // clipped to the camera viewport made full
     ANM_VIEW_CAMERA, // the fixed gameplay camera
     ANM_VIEW_STAGE, // the background camera
+    ANM_VIEW_STAGE_ALT, // the background camera after a wrap
 } ANM_VIEW;
 
 typedef enum {
