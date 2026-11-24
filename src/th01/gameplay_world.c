@@ -19,9 +19,6 @@ RESULT Gameplay_Prepare(
     Hud_Init(allocator);
     HudHp_Init(allocator);
     Tram_Init(allocator);
-    MUST(Mdrv_Init(
-        assets->songs, GAMEPLAY_SONG_COUNT, &assets->effects, 8, 8, allocator,
-        &g_Sound.mdrv));
     Palette_Init(&g_Palette);
     g->world.wait_for_shot = true;
     g->world.phase = GP_STAGE_BEGIN;
@@ -202,37 +199,4 @@ bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
     default:
         return true;
     }
-}
-
-void Gameplay_AdvanceAudio(GAMEPLAY *const g)
-{
-    GameAudio_Render(g->storage.audio_output, g_Sound.mdrv, 800);
-}
-
-void Gameplay_OpeningAudio(GAMEPLAY *const g, const OPENING_EVENTS events)
-{
-    switch (events.audio) {
-    case OPENING_AUDIO_NONE:
-        break;
-    case OPENING_AUDIO_STOP:
-        Mdrv_Stop(g_Sound.mdrv);
-        break;
-    case OPENING_AUDIO_FADE:
-        Mdrv_Fade(g_Sound.mdrv, 1);
-        break;
-    case OPENING_AUDIO_PLAY: {
-        static const uint8_t songs[OPENING_TRACK_COUNT] = {
-            15, 16, 0, 1, 2, 3, 4, 5, 7, 8, 9, 13, 14, 12, 17,
-        };
-        ASSERT(events.track >= 0 && events.track < OPENING_TRACK_COUNT);
-        g_Sound.song = songs[events.track];
-        Mdrv_Play(g_Sound.mdrv, g_Sound.song);
-        break;
-    }
-    }
-}
-
-void Gameplay_BindAudio(GAMEPLAY *const g, GAME_AUDIO *const output)
-{
-    g->storage.audio_output = output;
 }

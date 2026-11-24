@@ -89,7 +89,6 @@ typedef struct {
 
 typedef struct {
     const GAMEPLAY_ASSETS *assets;
-    GAME_AUDIO *audio_output;
     uint64_t host_tick;
     const GAMEPLAY_WORLD *initial;
 } GAMEPLAY_STORAGE;

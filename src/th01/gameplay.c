@@ -875,7 +875,6 @@ GAMEPLAY_REQUEST Gameplay_Tick(
     const uint64_t host_tick)
 {
     g->storage.host_tick = host_tick;
-    Gameplay_AdvanceAudio(g);
     if (reference_edge && g->world.phase == GP_SWITCH) {
         Frame_PollVSync();
     } else if (reference_edge) {

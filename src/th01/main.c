@@ -1,6 +1,8 @@
 #include "th01/main.h"
 
 #include "th01/gameplay.h"
+#include "th01/music.h"
+#include "th01/sound.h"
 
 #include "th01/opening.h"
 #include "pc98/vsync.h"
@@ -13,6 +15,7 @@
 #include "th01/ending.h"
 
 #include "core/base/arena.h"
+#include "core/base/assert.h"
 #include "core/audio.h"
 #include "th01/present.h"
 #include "core/text/font_registry.h"
@@ -126,6 +129,29 @@ static void M_ShowLogoPages(void)
     Video_SelectVisiblePage(m_Logo.visible_page);
 }
 
+static void M_OpeningMusic(const OPENING_EVENTS events)
+{
+    switch (events.audio) {
+    case OPENING_AUDIO_NONE:
+        break;
+    case OPENING_AUDIO_STOP:
+        Music_Stop();
+        break;
+    case OPENING_AUDIO_FADE:
+        Music_Fade();
+        break;
+    case OPENING_AUDIO_PLAY: {
+        static const uint8_t songs[OPENING_TRACK_COUNT] = {
+            15, 16, 0, 1, 2, 3, 4, 5, 7, 8, 9, 13, 14, 12, 17,
+        };
+        ASSERT(events.track >= 0 && events.track < OPENING_TRACK_COUNT);
+        Sound_Load(songs[events.track]);
+        Music_Play(songs[events.track]);
+        break;
+    }
+    }
+}
+
 static void M_EndingAudio(void *const context, const ENDING_AUDIO command)
 {
     static const OPENING_EVENTS events[] = {
@@ -134,7 +160,7 @@ static void M_EndingAudio(void *const context, const ENDING_AUDIO command)
         { .audio = OPENING_AUDIO_STOP },
         { .audio = OPENING_AUDIO_PLAY, .track = 3 },
     };
-    Gameplay_OpeningAudio(context, events[command]);
+    M_OpeningMusic(events[command]);
 }
 
 static RESULT M_Init(void)
@@ -156,16 +182,19 @@ static RESULT M_Init(void)
     m_InSwitch = false;
     m_HostTick = 0;
     Session_Init();
+    MUST(Music_Init(
+        Arena_Allocator(&m_Assets), m_GameplayAssets.songs, GAMEPLAY_SONG_COUNT,
+        &m_GameplayAssets.effects));
     MUST(Gameplay_Prepare(
         Arena_Allocator(&m_Assets), &m_GameplayAssets, &m_Gameplay));
     if (Audio_IsInitialized()) {
         Result_Log(
             GameAudio_Prepare(Arena_Allocator(&m_Assets), &m_Audio),
             LOG_LEVEL_WARNING);
-        Gameplay_BindAudio(m_Gameplay, m_Audio);
+        Music_BindOutput(m_Audio);
     }
     Ending_Prepare(
-        Arena_Allocator(&m_Assets), &m_EndingAssets, M_EndingAudio, m_Gameplay,
+        Arena_Allocator(&m_Assets), &m_EndingAssets, M_EndingAudio, nullptr,
         &m_Ending);
     ZunLogo1_Init(&m_Logo, g_Video.pages);
     M_ShowLogoPages();
@@ -183,7 +212,7 @@ static bool M_OpeningEvents(
     if (events.action == OPENING_ACTION_QUIT) {
         return false;
     }
-    Gameplay_OpeningAudio(m_Gameplay, events);
+    M_OpeningMusic(events);
     if (events.action == OPENING_ACTION_START
         || events.action == OPENING_ACTION_CONTINUE) {
         Session_Begin(
@@ -228,8 +257,8 @@ static bool M_Tick(const void *const input)
     if (reference_edge) {
         Th01Hooks_CallOnVSync();
     }
+    Music_Update();
     if (m_InScore) {
-        Gameplay_AdvanceAudio(m_Gameplay);
         if (Score_Tick(&m_Score, raw, reference_edge)) {
             g_Session.table_high_score =
                 (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
@@ -245,7 +274,6 @@ static bool M_Tick(const void *const input)
             }
         }
     } else if (m_InSwitch) {
-        Gameplay_AdvanceAudio(m_Gameplay);
         if (Ending_SwitchTick(m_Ending, reference_edge)) {
             m_InEnding = false;
             m_InSwitch = false;
@@ -253,7 +281,6 @@ static bool M_Tick(const void *const input)
             M_BeginOpening(true, raw);
         }
     } else if (m_InEnding) {
-        Gameplay_AdvanceAudio(m_Gameplay);
         if (Ending_Tick(m_Ending, raw, reference_edge)) {
             const END_RESULT *const result = Ending_Result(m_Ending);
             SCORE_ENTRY entry = { .stage = result->route == SESSION_END_MAKAI
@@ -290,7 +317,6 @@ static bool M_Tick(const void *const input)
             m_InEnding = true;
         }
     } else {
-        Gameplay_AdvanceAudio(m_Gameplay);
         if (reference_edge) {
             if (!m_InOpening && m_IntroPressed) {
                 M_BeginOpening(false, raw);
@@ -321,9 +347,7 @@ static void M_Shutdown(void)
 {
     Th01_FlushSaves();
     m_Initialized = false;
-    if (m_Gameplay != nullptr) {
-        Gameplay_BindAudio(m_Gameplay, nullptr);
-    }
+    Music_Close();
     GameAudio_Free(m_Audio);
     m_Audio = nullptr;
     Present_Close();
