@@ -3,9 +3,7 @@
 #include "th01/gameplay_assets.h"
 #include "th01/frame.h"
 #include "th01/session.h"
-#include "th01/opening.h"
-
-typedef struct GAMEPLAY GAMEPLAY;
+#include "th01/input.h"
 
 typedef enum {
     GAMEPLAY_REQUEST_NONE,
@@ -14,20 +12,18 @@ typedef enum {
     GAMEPLAY_REQUEST_ENDING,
 } GAMEPLAY_REQUEST;
 
-// Prepares mutable world storage, boss snapshots and HUD workspaces.
-// All borrowed assets and the caller's allocator group must
-// remain alive. Begin and Tick perform no allocation or IO on successful
-// paths. One instance owns every ordinary stage and both boss routes.
-RESULT Gameplay_Prepare(
-    const ALLOCATOR *allocator, const GAMEPLAY_ASSETS *assets, GAMEPLAY **out);
+// Borrows loaded assets through Close and allocates only during initialization.
+void Gameplay_Init(const ALLOCATOR *allocator, const GAMEPLAY_ASSETS *assets);
+
+// Restores fresh gameplay defaults without reloading assets or output.
+void Gameplay_Reset(void);
 
 // Enters gameplay with the shared session's current credit. Reset session
 // fields through Session_Begin first when entering from the opening menu.
 // Resets gameplay histories while retaining prepared storage and assets.
 // Runs the stage start up to its first wait within the current host tick,
 // without advancing audio or VSync, as REIIDEN loads in zero time.
-void Gameplay_Begin(
-    GAMEPLAY *gameplay, const TH01_INPUT *input, uint64_t host_tick);
+void Gameplay_Begin(const TH01_INPUT *input, uint64_t host_tick);
 
 // Advances one host tick with supplied raw input and reference VSync edge.
 // Advance the application's fractional frame clock across internal states.
@@ -37,8 +33,7 @@ void Gameplay_Begin(
 // blacks the palette out after each of sixteen VSyncs with the counters
 // stopped, as game_switch_binary does, then requests or resets at once.
 GAMEPLAY_REQUEST Gameplay_Tick(
-    GAMEPLAY *gameplay, const TH01_INPUT *input, bool reference_edge,
-    uint64_t host_tick);
+    const TH01_INPUT *input, bool reference_edge, uint64_t host_tick);
 
 // Continues from a real score-owner handoff into the original Continue menu
 // and runs it to its first wait in the score's last host tick, as REIIDEN
@@ -46,5 +41,6 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 // original the press that confirms the name is still down there and
 // confirms Yes; fix_debouncing makes the menu wait for a fresh press. Call
 // only after the score request has been handled; does no registration.
-void Gameplay_ResumeAfterScore(
-    GAMEPLAY *gameplay, const TH01_INPUT *input, uint64_t host_tick);
+void Gameplay_ResumeAfterScore(const TH01_INPUT *input, uint64_t host_tick);
+
+void Gameplay_Close(void);
