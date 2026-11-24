@@ -62,7 +62,11 @@ typedef struct {
     bool active, waiting, boss;
 } STAGE_ORB_COMPOSITE;
 
-extern STAGE_ORB_COMPOSITE g_OrbComposite;
+// Zeroes the Orb composite state for a new world.
+void StageOrb_Init(void);
+
+// Returns whether the Orb composite is blocked waiting on frame_delay(1).
+bool StageOrb_Waiting(void);
 
 // Runs the real Orb composite through its frame_delay(1). Begin advances
 // motion before the delay; Resume continues only when count1 is ready.
