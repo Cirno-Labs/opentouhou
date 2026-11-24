@@ -27,7 +27,7 @@ struct ENDING {
 };
 
 typedef struct {
-    bool in_tick, finish_score, finish_ending, queue_on_quit;
+    bool in_tick, finish_score, finish_ending, queue_on_quit, fail_save;
     int asset_step, fail_asset, texture_step, fail_texture;
     int textures_live, flush_calls, written;
     int opening_begins, opening_ticks;
@@ -35,6 +35,7 @@ typedef struct {
         switch_begins;
     OPENING_ACTION action;
     SCORE_CONTEXT score_context;
+    SCORE_ENTRY score_entry;
     SCORE_SAVES *saves;
     const ARENA *arena;
     GFX_TEXTURE textures[3];
@@ -129,7 +130,6 @@ RESULT ScoreData_Load(VFS *original, VFS *user_files, SCORE_SAVES *out)
 
 RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
 {
-    CHECK(!m_Fixture.in_tick);
     m_Fixture.flush_calls++;
     for (size_t rank = 0; rank < SCORE_RANKS; rank++) {
         if (saves->pending[rank]) {
@@ -137,6 +137,7 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
             saves->pending[rank] = false;
         }
     }
+    FAIL_IF(m_Fixture.fail_save, "authored save failure");
     return OK;
 }
 
@@ -182,6 +183,7 @@ void Score_Begin(
 {
     scene->context = context;
     m_Fixture.score_context = context;
+    m_Fixture.score_entry = *entry;
     m_Fixture.score_begins++;
 }
 
@@ -284,7 +286,6 @@ static void M_Reset(void)
     void *const rom = Mem_AllocZ(288768);
     FontRegistry_AddFile("FONT.ROM", "test", rom, 288768);
     Mem_Free(rom);
-    Th01_FlushSaves();
     CHECK_EQ_INT(m_Fixture.flush_calls, 0);
 }
 
@@ -296,7 +297,7 @@ static bool M_Tick(const TH01_INPUT raw)
     const bool running = g_GameDesc.tick(&raw);
     m_Fixture.in_tick = false;
     CHECK_EQ_INT(m_Fixture.arena->used, before);
-    CHECK_EQ_INT(m_Fixture.flush_calls, writes);
+    CHECK_EQ_INT(m_Fixture.flush_calls, writes + 1);
     return running;
 }
 
@@ -327,9 +328,6 @@ static void M_Shutdown(void)
 {
     g_GameDesc.shutdown();
     CHECK_EQ_INT(m_Fixture.textures_live, 0);
-    const int flushes = m_Fixture.flush_calls;
-    Th01_FlushSaves();
-    CHECK_EQ_INT(m_Fixture.flush_calls, flushes);
     Audio_Shutdown();
 }
 
@@ -362,7 +360,6 @@ TEST(real_main_partial_init_cleanup_never_writes_scores)
         if (m_Fixture.saves != nullptr) {
             m_Fixture.saves->pending[0] = true;
         }
-        Th01_FlushSaves();
         CHECK_EQ_INT(m_Fixture.flush_calls, 0);
         M_Shutdown();
         CHECK_EQ_INT(m_Fixture.flush_calls, 0);
@@ -378,24 +375,91 @@ TEST(real_main_fails_at_startup_without_a_font)
     M_Shutdown();
 }
 
-TEST(final_quit_tick_queues_a_save_for_the_host_and_shutdown)
+TEST(final_quit_tick_saves_before_returning_to_the_host)
+{
+    for (int failure = 0; failure < 2; failure++) {
+        M_Reset();
+        CHECK(Result_Ignore(g_GameDesc.init()));
+        M_Opening();
+        m_Fixture.action = OPENING_ACTION_QUIT;
+        m_Fixture.queue_on_quit = true;
+        m_Fixture.fail_save = failure != 0;
+        bool running = true;
+        for (int i = 0; i < 4 && running; i++) {
+            running = M_Tick((TH01_INPUT) {});
+        }
+        CHECK(!running);
+        CHECK(!m_Fixture.saves->pending[0]);
+        CHECK_EQ_INT(m_Fixture.written, 1);
+        M_Shutdown();
+        CHECK_EQ_INT(m_Fixture.written, 1);
+    }
+}
+
+TEST(gameover_registration_saves_before_returning_to_continue)
 {
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
-    M_Opening();
-    m_Fixture.action = OPENING_ACTION_QUIT;
-    m_Fixture.queue_on_quit = true;
-    bool running = true;
-    for (int i = 0; i < 4 && running; i++) {
-        running = M_Tick((TH01_INPUT) {});
-    }
-    CHECK(!running);
-    CHECK(m_Fixture.saves->pending[0]);
-    CHECK_EQ_INT(m_Fixture.written, 0);
-    Th01_FlushSaves();
+    GAMEPLAY *const game = (GAMEPLAY *)M_Play();
+    game->world.phase = GP_TERMINAL;
+    game->world.request = GAMEPLAY_REQUEST_SCORE;
+    g_Session.score = 12345;
+    g_Session.stage_id = 4;
+    CHECK(M_Tick((TH01_INPUT) {}));
+    TH01_VIEW view;
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT(m_Fixture.score_begins, 1);
+    CHECK_EQ_INT(m_Fixture.score_context, SCORE_GAMEOVER);
+    CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
+    CHECK_EQ_INT(m_Fixture.score_entry.stage, 5);
+    CHECK_EQ_STR(m_Fixture.score_entry.route, "社");
+    m_Fixture.finish_score = true;
+    CHECK(M_Tick((TH01_INPUT) {}));
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_GAMEPLAY);
+    CHECK_EQ_INT(game->world.request, GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(game->world.phase, GP_CONTINUE_DELAY);
+    CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
+    CHECK_EQ_INT(m_Fixture.switch_begins, 0);
     M_Shutdown();
     CHECK_EQ_INT(m_Fixture.written, 1);
+}
+
+TEST(ending_registration_saves_before_switching_back_to_opening)
+{
+    M_Reset();
+    CHECK(Result_Ignore(g_GameDesc.init()));
+    GAMEPLAY *const game = (GAMEPLAY *)M_Play();
+    game->world.phase = GP_TERMINAL;
+    game->world.request = GAMEPLAY_REQUEST_ENDING;
+    CHECK(M_Tick((TH01_INPUT) {}));
+    TH01_VIEW view;
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_ENDING);
+    CHECK_EQ_INT(m_Fixture.ending_begins, 1);
+    CHECK_EQ_INT(m_Fixture.ending_ticks, 1);
+    m_Fixture.finish_ending = true;
+    CHECK(M_Tick((TH01_INPUT) {}));
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT(m_Fixture.score_context, SCORE_ENDING);
+    CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
+    CHECK_EQ_INT(m_Fixture.score_entry.stage, 50);
+    CHECK_EQ_STR(m_Fixture.score_entry.route, "完");
+    m_Fixture.finish_score = true;
+    CHECK(M_Tick((TH01_INPUT) {}));
+    CHECK_EQ_INT(m_Fixture.switch_begins, 1);
+    CHECK(!m_Fixture.saves->pending[0]);
+    CHECK_EQ_INT(m_Fixture.written, 1);
+    CHECK(M_Tick((TH01_INPUT) {}));
+    Th01_View(&view);
+    CHECK_EQ_INT(view.scene, TH01_SCENE_OPENING);
+    CHECK_EQ_INT(m_Fixture.ending_clears, 1);
+    CHECK_EQ_INT(m_Fixture.opening_begins, 2);
+    CHECK_EQ_INT(m_Fixture.written, 1);
+    M_Shutdown();
 }
 
 typedef struct {

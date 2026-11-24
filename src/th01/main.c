@@ -44,14 +44,10 @@ static BFNT m_Sprites;
 static ZUN_LOGO1 m_Logo;
 static OPENING_ASSETS m_OpeningAssets;
 static OPENING m_Opening;
-static bool m_InOpening;
-static bool m_InGameplay, m_InScore;
 static SCORE_ASSETS m_ScoreAssets;
 static SCORE_SCENE m_Score;
 static ENDING_ASSETS m_EndingAssets;
 static ENDING *m_Ending;
-static bool m_InEnding;
-static bool m_InSwitch;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
 static GAME_AUDIO *m_Audio;
@@ -59,6 +55,7 @@ static uint64_t m_HostTick;
 static VSYNC_CLOCK m_Frame;
 static bool m_IntroPressed;
 static bool m_Initialized;
+static TH01_SCENE m_Scene;
 
 static RESULT M_OpenFont(FONT_ROM **const out)
 {
@@ -175,11 +172,7 @@ static RESULT M_Init(void)
     Video_Init(Arena_Allocator(&m_Assets));
     memset(&m_Frame, 0, sizeof(m_Frame));
     m_IntroPressed = false;
-    m_InOpening = false;
-    m_InGameplay = false;
-    m_InScore = false;
-    m_InEnding = false;
-    m_InSwitch = false;
+    m_Scene = TH01_SCENE_LOGO;
     m_HostTick = 0;
     Session_Init();
     MUST(Music_Init(
@@ -227,16 +220,14 @@ static bool M_OpeningEvents(
                 .entries[0]
                 .score;
         Gameplay_Begin(m_Gameplay, raw, m_HostTick);
-        m_InGameplay = true;
-        m_InOpening = false;
+        m_Scene = TH01_SCENE_GAMEPLAY;
     }
     return true;
 }
 
 static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
 {
-    m_InOpening = true;
-    m_InGameplay = false;
+    m_Scene = TH01_SCENE_OPENING;
     Video_SetScroll(0);
     M_OpeningEvents(
         Opening_Init(&m_Opening, &g_Settings, &m_OpeningAssets), raw);
@@ -246,41 +237,31 @@ static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
     }
 }
 
-static bool M_Tick(const void *const input)
+static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
 {
-    const TH01_INPUT *const raw = input;
-    INPUT_BINDING key;
-    const bool key_pressed = Shell_GetKeyPress(&key);
-    GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
-    m_HostTick++;
-    const bool reference_edge = VSync_Advance(&m_Frame);
-    if (reference_edge) {
-        Th01Hooks_CallOnVSync();
-    }
-    Music_Update();
-    if (m_InScore) {
+    switch (m_Scene) {
+    case TH01_SCENE_SCORE:
         if (Score_Tick(&m_Score, raw, reference_edge)) {
             g_Session.table_high_score =
                 (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
                     .entries[0]
                     .score;
-            m_InScore = false;
             if (m_Score.context == SCORE_ENDING) {
                 Ending_BeginSwitch(m_Ending);
-                m_InEnding = true;
-                m_InSwitch = true;
+                m_Scene = TH01_SCENE_SWITCH;
             } else {
                 Gameplay_ResumeAfterScore(m_Gameplay, raw, m_HostTick);
+                m_Scene = TH01_SCENE_GAMEPLAY;
             }
         }
-    } else if (m_InSwitch) {
+        break;
+    case TH01_SCENE_SWITCH:
         if (Ending_SwitchTick(m_Ending, reference_edge)) {
-            m_InEnding = false;
-            m_InSwitch = false;
             Ending_Clear();
             M_BeginOpening(true, raw);
         }
-    } else if (m_InEnding) {
+        break;
+    case TH01_SCENE_ENDING:
         if (Ending_Tick(m_Ending, raw, reference_edge)) {
             const END_RESULT *const result = Ending_Result(m_Ending);
             SCORE_ENTRY entry = { .stage = result->route == SESSION_END_MAKAI
@@ -290,10 +271,10 @@ static bool M_Tick(const void *const input)
             memcpy(&entry.score, &result->score, sizeof(entry.score));
             Score_Begin(
                 &m_Score, &m_ScoreAssets, SCORE_ENDING, result->rank, &entry);
-            m_InScore = true;
-            m_InEnding = false;
+            m_Scene = TH01_SCENE_SCORE;
         }
-    } else if (m_InGameplay) {
+        break;
+    case TH01_SCENE_GAMEPLAY: {
         const GAMEPLAY_REQUEST request =
             Gameplay_Tick(m_Gameplay, raw, reference_edge, m_HostTick);
         if (request == GAMEPLAY_REQUEST_OPENING) {
@@ -309,22 +290,24 @@ static bool M_Tick(const void *const input)
             Score_Begin(
                 &m_Score, &m_ScoreAssets, SCORE_GAMEOVER,
                 g_Session.settings.difficulty, &entry);
-            m_InScore = true;
+            m_Scene = TH01_SCENE_SCORE;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {
             Ending_Begin(m_Ending);
             Ending_Tick(m_Ending, raw, false);
-            m_InGameplay = false;
-            m_InEnding = true;
+            m_Scene = TH01_SCENE_ENDING;
         }
-    } else {
+        break;
+    }
+    case TH01_SCENE_OPENING:
         if (reference_edge) {
-            if (!m_InOpening && m_IntroPressed) {
+            return M_OpeningEvents(
+                Opening_Tick(&m_Opening, raw, m_IntroPressed), raw);
+        }
+        break;
+    case TH01_SCENE_LOGO:
+        if (reference_edge) {
+            if (m_IntroPressed) {
                 M_BeginOpening(false, raw);
-            } else if (m_InOpening) {
-                if (!M_OpeningEvents(
-                        Opening_Tick(&m_Opening, raw, m_IntroPressed), raw)) {
-                    return false;
-                }
             } else {
                 const bool running =
                     ZunLogo1_Tick(&m_Logo, g_Video.pages, m_Sprites.pixels);
@@ -338,14 +321,41 @@ static bool M_Tick(const void *const input)
                 }
             }
         }
+        break;
     }
-    Present_Frame(m_InGameplay && !m_InScore);
     return true;
+}
+
+static void M_Save(void)
+{
+    if (m_Initialized) {
+        Result_Log(ScoreData_WriteSaves(&g_ScoreSaves), LOG_LEVEL_WARNING);
+    }
+}
+
+static bool M_Tick(const void *const input)
+{
+    const TH01_INPUT *const raw = input;
+    INPUT_BINDING key;
+    const bool key_pressed = Shell_GetKeyPress(&key);
+    GameInput_LatchIntro(&m_IntroPressed, raw, key_pressed ? &key : nullptr);
+    m_HostTick++;
+    const bool reference_edge = VSync_Advance(&m_Frame);
+    if (reference_edge) {
+        Th01Hooks_CallOnVSync();
+    }
+    Music_Update();
+    const bool running = M_Step(raw, reference_edge);
+    if (running) {
+        Present_Frame(m_Scene == TH01_SCENE_GAMEPLAY);
+    }
+    M_Save();
+    return running;
 }
 
 static void M_Shutdown(void)
 {
-    Th01_FlushSaves();
+    M_Save();
     m_Initialized = false;
     Music_Close();
     GameAudio_Free(m_Audio);
@@ -353,8 +363,7 @@ static void M_Shutdown(void)
     Present_Close();
     m_Ending = nullptr;
     memset(&m_EndingAssets, 0, sizeof(m_EndingAssets));
-    m_InEnding = false;
-    m_InSwitch = false;
+    m_Scene = TH01_SCENE_LOGO;
     m_Gameplay = nullptr;
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);
@@ -365,21 +374,10 @@ static void M_Shutdown(void)
     memset(&m_OpeningAssets, 0, sizeof(m_OpeningAssets));
 }
 
-void Th01_FlushSaves(void)
-{
-    if (m_Initialized) {
-        Result_Log(ScoreData_WriteSaves(&g_ScoreSaves), LOG_LEVEL_WARNING);
-    }
-}
-
 void Th01_View(TH01_VIEW *const out)
 {
     *out = (TH01_VIEW) {
-        .scene = m_InScore ? TH01_SCENE_SCORE
-            : m_InEnding   ? TH01_SCENE_ENDING
-            : m_InGameplay ? TH01_SCENE_GAMEPLAY
-            : m_InOpening  ? TH01_SCENE_OPENING
-                           : TH01_SCENE_LOGO,
+        .scene = m_Scene == TH01_SCENE_SWITCH ? TH01_SCENE_ENDING : m_Scene,
         .opening = &m_Opening,
         .gameplay = m_Gameplay,
         .score = &m_Score,

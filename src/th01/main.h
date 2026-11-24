@@ -10,10 +10,6 @@
 // Describes the TH01 native game to shell/game.
 extern const GAME_DESC g_GameDesc;
 
-// Writes queued scores after the host iteration. Does nothing until game
-// initialization completes, and after shutdown.
-void Th01_FlushSaves(void);
-
 typedef struct GAMEPLAY GAMEPLAY;
 typedef struct ENDING ENDING;
 
@@ -23,6 +19,7 @@ typedef enum {
     TH01_SCENE_GAMEPLAY,
     TH01_SCENE_SCORE,
     TH01_SCENE_ENDING,
+    TH01_SCENE_SWITCH,
 } TH01_SCENE;
 
 // Gives the running scene and the state that the harness reads. score is
