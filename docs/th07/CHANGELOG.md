@@ -6,6 +6,7 @@
 - Added support for zip files to `--data`: a zip of the game folder,
   read without unpacking, with music streamed from the zip.
 - Changed web audio playback to reduce interruptions during slow frames.
+- Fixed a brief background jump when the scrolling stage camera resets.
 
 ## 1.0.0 (2026-11-20)
 

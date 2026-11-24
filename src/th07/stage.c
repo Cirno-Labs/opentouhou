@@ -39,6 +39,15 @@ static CHAIN_ELEM m_DrawElem;
 static CHAIN_ELEM m_Draw2Elem;
 // The fog that the first draw sets up for all four layers.
 static GFX_FOG m_Fog;
+static uint32_t m_ViewId = ANM_VIEW_STAGE;
+
+static void M_RenewPresentation(void)
+{
+    m_ViewId = m_ViewId == ANM_VIEW_STAGE ? ANM_VIEW_STAGE_ALT : ANM_VIEW_STAGE;
+    for (int32_t i = 0; i < g_Stage.data.sprite_count; i++) {
+        Anm_RenewPresentation(&g_Stage.data.sprites[i]);
+    }
+}
 
 static VEC3 M_ReadVec3(READER *const reader)
 {
@@ -376,6 +385,10 @@ static bool M_RunInstr(const STAGE_INSTR *const instr)
         break;
     case STAGE_OP_EYE:
         if (g_Stage.camera.jumped) {
+            if (instr->args.x != end->eye.x || instr->args.y != end->eye.y
+                || instr->args.z != end->eye.z) {
+                M_RenewPresentation();
+            }
             Effect_OffsetPetals(Vec3_Sub(instr->args, end->eye));
             g_Stage.camera.jumped = false;
         }
@@ -685,7 +698,7 @@ static GFX_VIEW M_StageView(void)
         .projection = Mat4_PerspectiveFovLH(
             camera->fov, viewport->width / viewport->height, 30.0f, 1800.0f),
         .viewport = *viewport,
-        .id = ANM_VIEW_STAGE,
+        .id = m_ViewId,
     };
     camera->right = Vec3_Normalize(Vec3_Cross(camera->at, camera->up));
     return view;
@@ -949,6 +962,7 @@ static RESULT M_Added(void *const arg)
         Timer_Set(&g_Stage.camera.time[i], 0);
     }
     g_Stage.script.label = 0;
+    M_RenewPresentation();
     return OK;
 }
 
