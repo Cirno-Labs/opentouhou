@@ -7,6 +7,7 @@
 - Added support for zip and PC-98 hard disk image (.hdi) files to
   `--data`: a zip of the game folder, or an .hdi of the game, bare or
   in a zip, read without unpacking.
+- Changed web audio playback to reduce interruptions during slow frames.
 - Changed the music_restart fix into the debouncing fix, which also
   stops the press that confirms a high-score name from choosing Yes at
   the Continue prompt.

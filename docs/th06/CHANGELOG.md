@@ -5,6 +5,7 @@
 - Added folder selection to the web player.
 - Added support for zip files to `--data`: a zip of the game folder,
   read without unpacking, with music streamed from the zip.
+- Changed web audio playback to reduce interruptions during slow frames.
 
 ## 1.0.2 (2026-11-20)
 

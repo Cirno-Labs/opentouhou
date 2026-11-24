@@ -206,6 +206,7 @@
   // language only.
   const ENGLISH_PATCH = @ENGLISH_PATCH@;
   @GAME_DATA@
+  @WEB_AUDIO@
   // SDL keeps the user folder and the patches folder here. Only the user
   // folder is kept in IndexedDB through IDBFS: the patches are written at
   // each start, from their own cache.
@@ -217,8 +218,7 @@
   const FETCH_JOBS = 6;
   // Matches the .fade transition.
   const FADE_MS = 350;
-  // SDL's audio runs on the main thread here, so its default buffer of
-  // about 20 ms breaks up at every slow frame. ?audio_frames=N overrides it.
+  // ?audio_frames=N sets how many mixed frames browser audio queues ahead.
   const AUDIO_FRAMES =
     new URLSearchParams(location.search).get('audio_frames') || '2048';
   // ?loader=demo plays the progress bar's steps with made-up sizes, for
@@ -807,6 +807,7 @@
     progress = 0;
     try {
       setStatus('download');
+      const audio = await WebAudio.prepare(AUDIO_FRAMES);
       const wasm = await fetchWasm();
       let patches = [];
       if (patched) {
@@ -828,6 +829,7 @@
       };
       window.Module = {
         canvas: $('canvas'),
+        opentouhouAudio: audio,
         wasmBinary: wasm,
         print: (text) => { logLines.push(text); console.log(text); },
         printErr: (text) => { logLines.push(text); console.error(text); },
@@ -870,7 +872,6 @@
     startSync(FS);
     // Paint the loading screen before synchronous game initialization.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
     Module.callMain(['--data', dataPath]);
     // Exit and Fullscreen only for a game that started, which the site
     // counts; the page's base is the package's folder, so the path is whole.

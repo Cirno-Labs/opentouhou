@@ -202,6 +202,7 @@ if build_games
         configuration: {
           'RUNNER': web_runner,
           'GAME_DATA': import('fs').read('src/shell/web/data.js'),
+          'WEB_AUDIO': import('fs').read('src/core/audio/backend_web.js'),
           'PROGRAM': 'o' + name,
           'GAME_ID': name,
           'TITLE': game['title'],
