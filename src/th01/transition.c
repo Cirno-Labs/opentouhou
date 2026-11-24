@@ -2,23 +2,37 @@
 
 #include "core/base/assert.h"
 
+#include <string.h>
+
 #define M_FRAME_COUNT 130
 
+typedef struct {
+    uint64_t last_tick;
+    uint32_t credit;
+    uint16_t step_ms, frame;
+    int16_t first_left, first_top, second_left, second_top;
+    bool active;
+} PAGE_TRANSITION;
+
+static PAGE_TRANSITION m_Transition;
+
 static void M_DrawStep(
-    PAGE_TRANSITION *const t, PALETTE_STATE *const palette,
-    PALETTE *const current, const PALETTE *const target,
-    const INTERLEAVE_ASSETS *const assets)
+    PALETTE_STATE *const palette, PALETTE *const current,
+    const PALETTE *const target, const INTERLEAVE_ASSETS *const assets)
 {
-    int16_t tip_left = t->first_left;
-    int16_t tip_top = t->first_top;
-    while (t->first_left >= 0 && t->first_top < VIDEO_HEIGHT) {
-        Interleave_Put8(assets, t->first_left, t->first_top, 1);
-        t->first_left -= 8;
-        t->first_top += 8;
+    int16_t tip_left = m_Transition.first_left;
+    int16_t tip_top = m_Transition.first_top;
+    while (m_Transition.first_left >= 0
+           && m_Transition.first_top < VIDEO_HEIGHT) {
+        Interleave_Put8(
+            assets, m_Transition.first_left, m_Transition.first_top, 1);
+        m_Transition.first_left -= 8;
+        m_Transition.first_top += 8;
     }
-    t->first_left = tip_left < VIDEO_WIDTH - 8 ? tip_left + 8 : tip_left;
-    t->first_top = tip_left < VIDEO_WIDTH - 8 ? 0 : tip_top + 8;
-    if (t->frame % 8 == 0) {
+    m_Transition.first_left =
+        tip_left < VIDEO_WIDTH - 8 ? tip_left + 8 : tip_left;
+    m_Transition.first_top = tip_left < VIDEO_WIDTH - 8 ? 0 : tip_top + 8;
+    if (m_Transition.frame % 8 == 0) {
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
                 int8_t *const value = &current->colors[color][component];
@@ -30,65 +44,72 @@ static void M_DrawStep(
         }
         Palette_Set(palette, current);
     }
-    tip_left = t->second_left;
-    tip_top = t->second_top;
-    while (t->second_left >= 0 && t->second_top < VIDEO_HEIGHT) {
-        Interleave_Put8(assets, t->second_left, t->second_top, 2);
-        t->second_left -= 8;
-        t->second_top += 8;
+    tip_left = m_Transition.second_left;
+    tip_top = m_Transition.second_top;
+    while (m_Transition.second_left >= 0
+           && m_Transition.second_top < VIDEO_HEIGHT) {
+        Interleave_Put8(
+            assets, m_Transition.second_left, m_Transition.second_top, 2);
+        m_Transition.second_left -= 8;
+        m_Transition.second_top += 8;
     }
-    t->second_left = tip_top > 0 ? VIDEO_WIDTH - 8 : tip_left - 8;
-    t->second_top = tip_top > 0 ? tip_top - 8 : tip_top;
-    t->frame++;
+    m_Transition.second_left = tip_top > 0 ? VIDEO_WIDTH - 8 : tip_left - 8;
+    m_Transition.second_top = tip_top > 0 ? tip_top - 8 : tip_top;
+    m_Transition.frame++;
 }
 
 bool Transition_BeginDiagonal(
-    PAGE_TRANSITION *const t, PALETTE_STATE *const palette,
-    PALETTE *const current, const PALETTE *const target,
-    const INTERLEAVE_ASSETS *const assets, const uint16_t step_ms,
-    const uint64_t host_tick)
+    PALETTE_STATE *const palette, PALETTE *const current,
+    const PALETTE *const target, const INTERLEAVE_ASSETS *const assets,
+    const uint16_t step_ms, const uint64_t host_tick)
 {
-    ASSERT(!t->active);
-    *t = (PAGE_TRANSITION) { .last_tick = host_tick,
-                             .step_ms = step_ms,
-                             .second_left = VIDEO_WIDTH - 8,
-                             .second_top = VIDEO_HEIGHT - 8,
-                             .active = true };
-    M_DrawStep(t, palette, current, target, assets);
+    ASSERT(!m_Transition.active);
+    memset(&m_Transition, 0, sizeof(m_Transition));
+    m_Transition.last_tick = host_tick;
+    m_Transition.step_ms = step_ms;
+    m_Transition.second_left = VIDEO_WIDTH - 8;
+    m_Transition.second_top = VIDEO_HEIGHT - 8;
+    m_Transition.active = true;
+    M_DrawStep(palette, current, target, assets);
     if (step_ms == 0) {
-        while (t->frame < M_FRAME_COUNT) {
-            M_DrawStep(t, palette, current, target, assets);
+        while (m_Transition.frame < M_FRAME_COUNT) {
+            M_DrawStep(palette, current, target, assets);
         }
-        t->active = false;
+        m_Transition.active = false;
     }
-    return !t->active;
+    return !m_Transition.active;
 }
 
 bool Transition_Advance(
-    PAGE_TRANSITION *const t, PALETTE_STATE *const palette,
-    PALETTE *const current, const PALETTE *const target,
-    const INTERLEAVE_ASSETS *const assets, const uint64_t host_tick)
+    PALETTE_STATE *const palette, PALETTE *const current,
+    const PALETTE *const target, const INTERLEAVE_ASSETS *const assets,
+    const uint64_t host_tick)
 {
-    if (!t->active) {
+    if (!m_Transition.active) {
         return true;
     }
-    ASSERT(host_tick >= t->last_tick);
-    const uint64_t elapsed = host_tick - t->last_tick;
-    t->last_tick = host_tick;
-    const uint32_t delay = (uint32_t)t->step_ms * 3;
-    const uint32_t remaining = (M_FRAME_COUNT + 1 - t->frame) * delay;
-    uint64_t credit = elapsed >= (remaining - t->credit + 49u) / 50u
+    ASSERT(host_tick >= m_Transition.last_tick);
+    const uint64_t elapsed = host_tick - m_Transition.last_tick;
+    m_Transition.last_tick = host_tick;
+    const uint32_t delay = (uint32_t)m_Transition.step_ms * 3;
+    const uint32_t remaining = (M_FRAME_COUNT + 1 - m_Transition.frame) * delay;
+    uint64_t credit = elapsed >= (remaining - m_Transition.credit + 49u) / 50u
         ? remaining
-        : t->credit + elapsed * 50;
+        : m_Transition.credit + elapsed * 50;
     while (credit >= delay) {
         credit -= delay;
-        if (t->frame == M_FRAME_COUNT) {
-            t->active = false;
-            t->credit = 0;
+        if (m_Transition.frame == M_FRAME_COUNT) {
+            m_Transition.active = false;
+            m_Transition.credit = 0;
             return true;
         }
-        M_DrawStep(t, palette, current, target, assets);
+        M_DrawStep(palette, current, target, assets);
     }
-    t->credit = (uint32_t)credit;
+    m_Transition.credit = (uint32_t)credit;
     return false;
+}
+
+void Transition_Init(void)
+{
+    memset(&m_Transition, 0, sizeof(m_Transition));
 }

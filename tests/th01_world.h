@@ -48,7 +48,7 @@ static inline void Th01Test_ResetWorld(void)
     memset(&g_Miss, 0, sizeof(g_Miss));
     memset(&g_Scene, 0, sizeof(g_Scene));
     memset(&g_Bonus, 0, sizeof(g_Bonus));
-    memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
+    Bonus_InitTotal();
     Extend_Init();
     g_Session.lives = 0;
     g_Session.high_score = 0;

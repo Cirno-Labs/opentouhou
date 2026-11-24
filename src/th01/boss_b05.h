@@ -35,7 +35,6 @@ typedef struct {
     BOSS_HIT hit;
     PALETTE boss_palette, post_defeat;
     BOSS_DEFEAT defeat;
-    ROUTE_SELECT route_selection;
     int16_t hp, frame, pattern, pattern_state;
     int16_t velocity_x, velocity_y, rotation_interval;
     uint8_t angle;

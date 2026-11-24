@@ -1,4 +1,4 @@
-#include "th01/route_select.h"
+#include "../src/th01/route_select.c"
 #include "th01/shots.h"
 #include "th01/rng.h"
 #include "th01/player.h"
@@ -68,13 +68,12 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(RouteSelect_ValidateAssets(&f->assets)));
 }
 
-static bool M_Poll(
-    ROUTE_SELECT *const selection, FIXTURE *const f, const TH01_INPUT raw)
+static bool M_Poll(FIXTURE *const f, const TH01_INPUT raw)
 {
     for (int32_t i = 0; i < 5; i++) {
         Frame_VSync();
     }
-    return RouteSelect_Resume(selection, &f->assets, &raw);
+    return RouteSelect_Resume(&f->assets, &raw);
 }
 
 TEST(held_confirmation_waits_then_activates_real_cached_scene)
@@ -86,9 +85,9 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     g_GameInput.shot = g_GameInput.ok = g_GameInput.bomb = true;
     g_GameInput.bomb_frame = 72;
     Frame_Reset();
-    ROUTE_SELECT selection = {};
+    RouteSelect_Init();
     const TH01_INPUT raw = { .shot = true };
-    CHECK(!RouteSelect_Begin(&selection, &f.assets, &raw));
+    CHECK(!RouteSelect_Begin(&f.assets, &raw));
     CHECK(!g_GameInput.shot && !g_GameInput.ok && !g_GameInput.bomb);
     CHECK_EQ_INT(g_GameInput.bomb_frame, 72);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 7);
@@ -98,20 +97,20 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_Palette.saved.colors[4][0], 0);
     CHECK_EQ_INT(g_Session.route, 1);
     CHECK(g_Scene.active == &f.cache[0]);
-    const ROUTE_SELECT frozen = selection;
-    CHECK(!RouteSelect_Resume(&selection, &f.assets, &raw));
-    CHECK(memcmp(&frozen, &selection, sizeof(frozen)) == 0);
+    const ROUTE_SELECT frozen = m_Selection;
+    CHECK(!RouteSelect_Resume(&f.assets, &raw));
+    CHECK(memcmp(&frozen, &m_Selection, sizeof(frozen)) == 0);
     for (int32_t i = 0; i < 49; i++) {
         Frame_VSync();
     }
-    CHECK(!RouteSelect_Resume(&selection, &f.assets, &raw));
+    CHECK(!RouteSelect_Resume(&f.assets, &raw));
     Frame_VSync();
-    CHECK(RouteSelect_Resume(&selection, &f.assets, &raw));
+    CHECK(RouteSelect_Resume(&f.assets, &raw));
     CHECK_EQ_INT(g_Session.route, 0);
     CHECK(g_Scene.active == &f.cache[1]);
     CHECK(g_Scene.active->layouts.stages[0].cells[0][1].card);
     CHECK(g_Stage.cleared && g_Player.is_hit);
-    CHECK(RouteSelect_Resume(&selection, &f.assets, &raw));
+    CHECK(RouteSelect_Resume(&f.assets, &raw));
     Arena_Free(&arena);
 }
 
@@ -123,22 +122,21 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     M_Init(&f, &arena);
     Frame_Reset();
     g_VSync.count1 = 50;
-    ROUTE_SELECT selection = {};
+    RouteSelect_Init();
     const TH01_INPUT both = { .up = true, .down = true };
-    CHECK(!RouteSelect_Begin(&selection, &f.assets, &both));
-    CHECK_EQ_INT(selection.selection, 1);
+    CHECK(!RouteSelect_Begin(&f.assets, &both));
+    CHECK_EQ_INT(m_Selection.selection, 1);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 4);
     CHECK_EQ_INT(g_Video.pages[0][300 * VIDEO_WIDTH + 128], 7);
     CHECK_EQ_INT(g_Palette.saved.colors[1][0], 9);
     CHECK_EQ_INT(g_Palette.saved.colors[3][0], 15);
-    CHECK(!M_Poll(&selection, &f, both));
-    CHECK_EQ_INT(selection.selection, 1);
-    CHECK(!M_Poll(&selection, &f, (TH01_INPUT) { .down = true }));
-    CHECK_EQ_INT(selection.selection, 1);
-    CHECK(!M_Poll(&selection, &f, both));
-    CHECK_EQ_INT(selection.selection, 0);
-    CHECK(M_Poll(
-        &selection, &f, (TH01_INPUT) { .up = true, .down = true, .ok = true }));
+    CHECK(!M_Poll(&f, both));
+    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK(!M_Poll(&f, (TH01_INPUT) { .down = true }));
+    CHECK_EQ_INT(m_Selection.selection, 1);
+    CHECK(!M_Poll(&f, both));
+    CHECK_EQ_INT(m_Selection.selection, 0);
+    CHECK(M_Poll(&f, (TH01_INPUT) { .up = true, .down = true, .ok = true }));
     CHECK_EQ_INT(g_Session.route, 0);
     Arena_Free(&arena);
 }
@@ -150,9 +148,9 @@ TEST(transparent_scaled_spaces_preserve_backdrop)
     FIXTURE f;
     M_Init(&f, &arena);
     Frame_Reset();
-    ROUTE_SELECT selection = {};
+    RouteSelect_Init();
     const TH01_INPUT raw = {};
-    CHECK(!RouteSelect_Begin(&selection, &f.assets, &raw));
+    CHECK(!RouteSelect_Begin(&f.assets, &raw));
     const GAME_TEXT_GLYPH *const r = GameText_Find(&f.font, 0xff32);
     for (int32_t y = 0; y < 32; y++) {
         for (int32_t x = 0; x < 32; x++) {
@@ -182,11 +180,11 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     CHECK(!Result_Ignore(RouteSelect_ValidateAssets(&bad)));
     Frame_Reset();
     g_VSync.count1 = 50;
-    ROUTE_SELECT selection = {};
+    RouteSelect_Init();
     const TH01_INPUT pause = { .cancel = true };
-    CHECK(!RouteSelect_Begin(&selection, &f.assets, &pause));
+    CHECK(!RouteSelect_Begin(&f.assets, &pause));
     CHECK(g_GameInput.paused);
-    CHECK(M_Poll(&selection, &f, (TH01_INPUT) { .shot = true, .ok = true }));
+    CHECK(M_Poll(&f, (TH01_INPUT) { .shot = true, .ok = true }));
     CHECK(g_Stage.cleared && g_Player.is_hit);
     Arena_Free(&arena);
 }

@@ -4,6 +4,15 @@
 
 #include <string.h>
 
+typedef struct {
+    uint16_t transferred[VIDEO_HEIGHT];
+    bool active[VIDEO_HEIGHT];
+    uint16_t activated, done, previous_done;
+    bool pending, waiting;
+} BONUS_ROW_TRANSITION;
+
+static BONUS_ROW_TRANSITION m_Transition;
+
 void Bonus_RowShift32(const uint16_t y, const uint16_t transferred)
 {
     ASSERT(y < VIDEO_HEIGHT && transferred <= 76 && transferred % 4 == 0);
@@ -19,49 +28,57 @@ void Bonus_RowShift32(const uint16_t y, const uint16_t transferred)
     Video_SelectDrawingPage(0);
 }
 
-void Bonus_BeginRowTransition(BONUS_ROW_TRANSITION *const t)
+void Bonus_BeginRowTransition(void)
 {
-    ASSERT(!t->pending);
-    *t = (BONUS_ROW_TRANSITION) { .previous_done = 1, .pending = true };
+    ASSERT(!m_Transition.pending);
+    memset(&m_Transition, 0, sizeof(m_Transition));
+    m_Transition.previous_done = 1;
+    m_Transition.pending = true;
 }
 
 bool Bonus_ResumeRowTransition(
-    BONUS_ROW_TRANSITION *const t, PALETTE_STATE *const palette,
-    const PALETTE *const target)
+    PALETTE_STATE *const palette, const PALETTE *const target)
 {
-    while (t->pending) {
-        if (!t->waiting) {
+    while (m_Transition.pending) {
+        if (!m_Transition.waiting) {
             for (uint16_t y = 0; y < VIDEO_HEIGHT; y++) {
-                if (!t->active[y]) {
+                if (!m_Transition.active[y]) {
                     continue;
                 }
-                Bonus_RowShift32(y, t->transferred[y]);
-                t->transferred[y] += 4;
-                if (t->transferred[y] >= 80) {
-                    t->active[y] = false;
-                    t->done++;
+                Bonus_RowShift32(y, m_Transition.transferred[y]);
+                m_Transition.transferred[y] += 4;
+                if (m_Transition.transferred[y] >= 80) {
+                    m_Transition.active[y] = false;
+                    m_Transition.done++;
                 }
             }
-            t->waiting = true;
+            m_Transition.waiting = true;
         }
         if (!Frame_DelayReady(2)) {
             return false;
         }
-        t->waiting = false;
-        if (t->done >= VIDEO_HEIGHT) {
-            t->pending = false;
+        m_Transition.waiting = false;
+        if (m_Transition.done >= VIDEO_HEIGHT) {
+            m_Transition.pending = false;
             return true;
         }
-        if (t->activated < VIDEO_HEIGHT) {
-            for (uint16_t y = t->activated; y < t->activated + 8; y++) {
-                t->active[y] = true;
+        if (m_Transition.activated < VIDEO_HEIGHT) {
+            for (uint16_t y = m_Transition.activated;
+                 y < m_Transition.activated + 8; y++) {
+                m_Transition.active[y] = true;
             }
         }
-        t->activated += 8;
-        if (t->done != t->previous_done && (t->activated & 15) == 0) {
+        m_Transition.activated += 8;
+        if (m_Transition.done != m_Transition.previous_done
+            && (m_Transition.activated & 15) == 0) {
             Palette_StepTo(palette, target, false);
         }
-        t->previous_done = t->done;
+        m_Transition.previous_done = m_Transition.done;
     }
     return true;
+}
+
+void Bonus_InitRowTransition(void)
+{
+    memset(&m_Transition, 0, sizeof(m_Transition));
 }
