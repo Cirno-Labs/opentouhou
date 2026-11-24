@@ -1,4 +1,5 @@
 #include "th01/items.h"
+#include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
 #include "th01/player.h"
@@ -15,10 +16,8 @@
 
 typedef struct {
     ARENA arena;
-    ITEM_CONTEXT context;
     PTN sprites;
     GAME_TEXT_FONT font;
-    uint16_t value;
 } CASE;
 
 static void M_Init(CASE *const c)
@@ -44,11 +43,6 @@ static void M_Init(CASE *const c)
     CHECK(Result_Ignore(Items_ValidateAssets(&c->sprites, &c->font)));
     Hud_Init(Arena_Allocator(&c->arena));
     Hud_Load(nullptr, &c->sprites, &c->font);
-    c->context = (ITEM_CONTEXT) {
-        .point_value = &c->value,
-        .sprites = &c->sprites,
-        .font = &c->font,
-    };
 }
 
 TEST(pool_splash_fall_bounce_and_reset_boundaries)
@@ -60,12 +54,12 @@ TEST(pool_splash_fall_bounce_and_reset_boundaries)
     }
     CHECK_EQ_INT(g_Items.bombs[3].left, 103);
     for (int32_t i = 0; i < 11; i++) {
-        Items_UpdateAndRender(&c.context);
+        Items_UpdateAndRender(&c.sprites, &c.font);
     }
     CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_FALL);
     CHECK_EQ_INT(g_Items.bombs[0].top, 366);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 366), 0);
-    Items_UpdateAndRender(&c.context);
+    Items_UpdateAndRender(&c.sprites, &c.font);
     CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_BOUNCE);
     CHECK_EQ_INT(g_Items.bombs[0].top, 360);
     CHECK_EQ_INT(g_Items.bombs[0].velocity_y, -7);
@@ -88,7 +82,7 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     g_Items.bombs[1] = (ITEM) { .left = 100, .top = 344, .flag = ITEM_FALL };
     g_Items.bombs[2] = (ITEM) { .left = 123, .top = 1000, .flag = ITEM_FALL };
     g_Items.bombs[3] = (ITEM) { .left = 100, .top = 345, .flag = ITEM_BOUNCE };
-    Items_UpdateAndRender(&c.context);
+    Items_UpdateAndRender(&c.sprites, &c.font);
     CHECK_EQ_INT(g_Items.bombs[0].flag, ITEM_FALL);
     CHECK_EQ_INT(g_Items.bombs[1].flag, ITEM_FALL);
     CHECK_EQ_INT(g_Items.bombs[2].flag, ITEM_COLLECTED);
@@ -99,7 +93,7 @@ TEST(strict_collision_and_immediate_popup_with_bomb_cap)
     CHECK_EQ_INT(g_Stage.score, 10000);
     CHECK_EQ_INT(g_Hud.score_previous, 10000);
     for (int32_t i = 0; i < 15; i++) {
-        Items_UpdateAndRender(&c.context);
+        Items_UpdateAndRender(&c.sprites, &c.font);
     }
     CHECK_EQ_INT(g_Items.bombs[2].flag, ITEM_FREE);
     Arena_Free(&c.arena);
@@ -115,16 +109,16 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
     M_Init(&c);
     for (size_t i = 0; i < sizeof(before) / sizeof(*before); i++) {
         Items_Reset();
-        c.value = before[i];
+        g_Session.point_value = before[i];
         g_Items.points[0] = (ITEM) { .left = 0, .top = 345, .flag = ITEM_FALL };
         const uint32_t score = g_Stage.score;
-        Items_UpdateAndRender(&c.context);
-        CHECK_EQ_INT(c.value, after[i]);
+        Items_UpdateAndRender(&c.sprites, &c.font);
+        CHECK_EQ_INT(g_Session.point_value, after[i]);
         CHECK_EQ_INT(g_Stage.score, score + after[i]);
         CHECK_EQ_INT(g_Hud.score_previous, g_Stage.score);
     }
     Items_Reset();
-    c.value = 10000;
+    g_Session.point_value = 10000;
     g_Items.points[0] = (ITEM) {
         .left = 100, .top = 398, .velocity_y = 2, .flag = ITEM_BOUNCE
     };
@@ -133,8 +127,8 @@ TEST(point_width_wrap_cap_and_live_popup_on_drop)
                                  .velocity_y = -2,
                                  .flag = ITEM_COLLECTED_OVER_CAP,
                                  .radius_or_time = 3 };
-    Items_UpdateAndRender(&c.context);
-    CHECK_EQ_INT(c.value, 0);
+    Items_UpdateAndRender(&c.sprites, &c.font);
+    CHECK_EQ_INT(g_Session.point_value, 0);
     CHECK_EQ_INT(g_Items.points[0].flag, ITEM_FREE);
     CHECK_EQ_INT(g_Items.points[1].radius_or_time, 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 200 + 4 * 8 + 2, 198), 7);

@@ -61,21 +61,9 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .pellets_update = M_Pellets,
         .user = g,
     };
-    g->bindings.item = (ITEM_CONTEXT) {
-        .point_value = &g_Session.point_value,
-        .sprites = stage,
-        .font = &a->item_font,
-    };
     g->bindings.pellet = (PELLET_CONTEXT) {
         .assets = a->pellets,
         .shots_output = g->bindings.shots_output,
-    };
-    g->bindings.missing = (MISS_CONTEXT) {
-        .miko = &a->miko,
-        .stage = stage,
-        .difficulty = g_Session.settings.difficulty,
-        .remaining_lives = g_Session.lives,
-        .extra_bombs = 1,
     };
     g->bindings.route_assets =
         (ROUTE_SELECT_ASSETS) { .font = &a->route_font,

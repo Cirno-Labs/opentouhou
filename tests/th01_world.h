@@ -52,6 +52,7 @@ static inline void Th01Test_ResetWorld(void)
     memset(&g_Extend, 0, sizeof(g_Extend));
     g_Session.lives = 0;
     g_Session.high_score = 0;
+    g_Session.point_value = 0;
     Hud_Reset();
     HudHp_Reset();
 }

@@ -99,9 +99,7 @@ typedef struct {
     PLAYER_OUTPUT player_output;
     SHOTS_OUTPUT shots_output;
     STAGE_CONTEXT stage;
-    ITEM_CONTEXT item;
     PELLET_CONTEXT pellet;
-    MISS_CONTEXT missing;
     ROUTE_SELECT_ASSETS route_assets;
     BONUS_CONTEXT bonus_context;
     BONUS_TOTAL_CONTEXT total_context;

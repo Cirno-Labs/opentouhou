@@ -3,6 +3,7 @@
 #include "th01/miss.h"
 #include "th01/shots.h"
 #include "th01/player.h"
+#include "th01/session.h"
 #include "th01/pellets.h"
 #include "th01/orb.h"
 #include "th01/rng.h"
@@ -62,47 +63,37 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
     StageTimer_Init();
 }
 
-static MISS_CONTEXT M_Context(CASE *const state, const int16_t extra)
-{
-    return (MISS_CONTEXT) {
-        .miko = &state->miko,
-        .stage = &state->stage,
-        .difficulty = SETTINGS_DIFFICULTY_NORMAL,
-        .remaining_lives = 2,
-        .extra_bombs = extra,
-    };
-}
-
 TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
 {
     CASE state;
     M_Init(&state, 304, 1);
     memset(&g_Miss, 0, sizeof(g_Miss));
     Frame_Reset();
-    const MISS_CONTEXT context = M_Context(&state, 1);
+    g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
+    g_Session.lives = 2;
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
     uint32_t rng = g_Rng;
     const int32_t expected_image = MasterRng_Next(&rng) % 8 == 0 ? 23 : 22;
-    Miss_Begin(&context);
+    Miss_Begin(&state.miko, &state.stage);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 352), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 304, 368), expected_image % 14 + 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 100, 100), 4);
-    CHECK(!Miss_Resume(&context));
+    CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_StageTimer.time, 0);
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
     Frame_VSync();
-    CHECK(!Miss_Resume(&context));
+    CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_Miss.phase, MISS_SHAKE_DELAY);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(g_VSync.count1, 1);
     Frame_VSync();
-    CHECK(!Miss_Resume(&context));
+    CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_Miss.phase, MISS_SHAKE_WAIT);
     CHECK_EQ_INT(g_Miss.frame, 1);
     CHECK_EQ_INT(g_VSync.count1, 0);
     Frame_VSync();
-    CHECK(!Miss_Resume(&context));
+    CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_Video.scroll_top, 392);
     Arena_Free(&state.arena);
 }
@@ -116,26 +107,25 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
             for (int32_t variant = 0; variant < 3; variant++) {
                 CASE state;
                 M_Init(&state, starts[x], variant == 0 ? 1 : 4);
-                MISS_CONTEXT context = M_Context(
-                    &state,
-                    variant == 0       ? 1
-                        : variant == 1 ? 1
-                                       : 2);
-                context.difficulty = rank;
-                context.remaining_lives = (int16_t)variant;
+                const int16_t extra_bombs = variant == 0 ? 1
+                    : variant == 1                       ? 1
+                                                         : 2;
+                g_Session.settings.difficulty = rank;
+                g_Session.lives = variant;
                 const ORB orb = g_Orb;
                 const size_t used = state.arena.used;
                 Frame_Reset();
                 g_VSync.count1 = counts[variant];
                 g_VSync.count2 = 32760;
                 memset(&g_Miss, 0, sizeof(g_Miss));
-                Miss_Begin(&context);
+                Miss_Begin(&state.miko, &state.stage);
                 const uint32_t rng = g_Rng;
                 int32_t edges = 0;
-                while (!Miss_Resume(&context) && edges < 100) {
+                while (!Miss_Resume(&state.miko, &state.stage, extra_bombs)
+                       && edges < 100) {
                     const MISS snapshot = g_Miss;
                     const FRAME_VSYNC timing = g_VSync;
-                    CHECK(!Miss_Resume(&context));
+                    CHECK(!Miss_Resume(&state.miko, &state.stage, extra_bombs));
                     CHECK(memcmp(&g_Miss, &snapshot, sizeof(MISS)) == 0);
                     CHECK(memcmp(&g_VSync, &timing, sizeof(FRAME_VSYNC)) == 0);
                     Frame_VSync();
@@ -165,7 +155,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK_EQ_INT(g_StageTimer.time, 1000);
                 CHECK_EQ_INT(g_PelletShared.speed, -2);
                 CHECK_EQ_INT(g_VSync.count1, 0);
-                CHECK(Miss_Resume(&context));
+                CHECK(Miss_Resume(&state.miko, &state.stage, extra_bombs));
                 Arena_Free(&state.arena);
             }
         }

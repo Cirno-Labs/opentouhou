@@ -589,7 +589,8 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         }
         case GP_ITEMS:
-            Items_UpdateAndRender(&g->bindings.item);
+            Items_UpdateAndRender(
+                g->bindings.stage.sprites, &g->storage.assets->item_font);
             g->world.frame++;
             Orb_AdvanceForceFrame();
             g_Player.bomb_frame++;
@@ -716,13 +717,13 @@ static GAMEPLAY_REQUEST M_Run(
                 Sound_Effect(5);
                 g_Session.lives--;
                 g_Extend.resident_lives = (int8_t)g_Session.lives;
-                g->bindings.missing.remaining_lives = g_Session.lives;
-                Miss_Begin(&g->bindings.missing);
+                Miss_Begin(&g->storage.assets->miko, g->bindings.stage.sprites);
                 g->world.phase = GP_MISS;
             }
             break;
         case GP_MISS:
-            if (!Miss_Resume(&g->bindings.missing)) {
+            if (!Miss_Resume(
+                    &g->storage.assets->miko, g->bindings.stage.sprites, 1)) {
                 return g->world.request;
             }
             g_Player.is_hit = false;
