@@ -196,7 +196,8 @@ static void M_PlayerBegin(GAMEPLAY *const g, const GAMEPLAY_PHASE after)
     g->world.after_player = after;
     if (Player_BeginUpdate(&g->world.player_bomb, g->bindings.player_output)) {
         const BOMB_UPDATE result = Bomb_BeginUpdate(
-            &g->bindings.bombing, (int16_t)g_Player.bomb_frame);
+            &g->storage.assets->miko, &g->storage.assets->bomb,
+            (int16_t)g_Player.bomb_frame);
         if (result == BOMB_UPDATE_WAIT) {
             g->world.phase = GP_PLAYER_BOMB;
             return;
@@ -574,7 +575,7 @@ static GAMEPLAY_REQUEST M_Run(
             M_PlayerBegin(g, GP_ITEMS);
             break;
         case GP_PLAYER_BOMB: {
-            const BOMB_UPDATE result = Bomb_ResumeUpdate(&g->bindings.bombing);
+            const BOMB_UPDATE result = Bomb_ResumeUpdate();
             if (result == BOMB_UPDATE_WAIT) {
                 return g->world.request;
             }
