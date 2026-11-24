@@ -469,14 +469,9 @@ static bool M_Ready(const B20M_CONTEXT *const c, const uint64_t tick)
     g_B20M.wait_kind = B20M_WAIT_NONE;
     return true;
 }
-static TRANSITION_CONTEXT M_TransitionContext(
-    const B20M_CONTEXT *const c, const bool fade)
+static const PALETTE *M_TransitionTarget(const bool fade)
 {
-    return (TRANSITION_CONTEXT) { .palette = &g_Palette,
-                                  .current = &g_Palette.saved,
-                                  .target = fade ? &g_Palette.resource
-                                                 : &g_Palette.saved,
-                                  .assets = c->assets->interleave };
+    return fade ? &g_Palette.resource : &g_Palette.saved;
 }
 static void M_BirdsReset(void)
 {
@@ -1796,20 +1791,19 @@ bool B20M_ResumeEntrance(const B20M_CONTEXT *const c, const uint64_t tick)
             M_Pi(c, &c->assets->backgrounds[0], true);
             Video_SelectDrawingPage(0);
             g_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
-            {
-                const TRANSITION_CONTEXT t = M_TransitionContext(c, false);
-                if (!Transition_BeginDiagonal(
-                        &g_B20M.transition, &t, 40, tick)) {
-                    return false;
-                }
-            }
-            continue;
-        case B20M_ENTRANCE_DIAGONAL_STEP: {
-            const TRANSITION_CONTEXT t = M_TransitionContext(c, false);
-            if (!Transition_Advance(&g_B20M.transition, &t, tick)) {
+            if (!Transition_BeginDiagonal(
+                    &g_B20M.transition, &g_Palette, &g_Palette.saved,
+                    M_TransitionTarget(false), c->assets->interleave, 40,
+                    tick)) {
                 return false;
             }
-        }
+            continue;
+        case B20M_ENTRANCE_DIAGONAL_STEP:
+            if (!Transition_Advance(
+                    &g_B20M.transition, &g_Palette, &g_Palette.saved,
+                    M_TransitionTarget(false), c->assets->interleave, tick)) {
+                return false;
+            }
             g_Rng = g_Session.frame_rand;
             g_B20M.entrance_active = false;
             g_B20M.sequence_stage = B20M_ENTRANCE_DONE;
@@ -1925,11 +1919,9 @@ static bool M_Transform(const B20M_CONTEXT *const c, const uint64_t tick)
             for (int32_t i = 0; i < 3; i++) {
                 g_Palette.resource.colors[15][i] = 0;
             }
-            {
-                const TRANSITION_CONTEXT t = M_TransitionContext(c, true);
-                ASSERT(
-                    Transition_BeginDiagonal(&g_B20M.transition, &t, 0, tick));
-            }
+            ASSERT(Transition_BeginDiagonal(
+                &g_B20M.transition, &g_Palette, &g_Palette.saved,
+                M_TransitionTarget(true), c->assets->interleave, 0, tick));
             Video_SelectDrawingPage(1);
             Sound_Load(14);
             Sound_Play();
