@@ -46,7 +46,7 @@ if node.found()
   test(
     'shell/web/data',
     node,
-    args: ['--test', files('web/test_data.cjs')],
+    args: ['--test', files('web/test_data.cjs', 'web/test_audio.cjs')],
     suite: ['unit', 'tools'],
   )
 endif
