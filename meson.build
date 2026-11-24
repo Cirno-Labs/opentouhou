@@ -201,6 +201,7 @@ if build_games
         output: 'o' + name + '.html',
         configuration: {
           'RUNNER': web_runner,
+          'GAME_DATA': import('fs').read('src/shell/web/data.js'),
           'PROGRAM': 'o' + name,
           'GAME_ID': name,
           'TITLE': game['title'],

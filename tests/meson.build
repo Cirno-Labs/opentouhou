@@ -41,6 +41,16 @@ foreach name, lib : external_libs
   set_variable(name, declare_dependency(dependencies: [get_variable(name), test_deps]))
 endforeach
 
+node = find_program('node', required: false)
+if node.found()
+  test(
+    'shell/web/data',
+    node,
+    args: ['--test', files('web/test_data.cjs')],
+    suite: ['unit', 'tools'],
+  )
+endif
+
 # Each part of core/base has a test named after it.
 foreach part : [
   'arena',
