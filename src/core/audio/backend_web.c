@@ -27,15 +27,15 @@ static uint32_t m_TargetFrames;
 EM_JS(uint32_t, M_TargetFrames, (), {
     const audio = Module['opentouhouAudio'];
     return audio ? audio.targetFrames : 0;
-});
+})
 
 EM_JS(bool, M_StartOutput, (void *state, float *pcm, uint32_t capacity), {
     return Module['opentouhouAudio'].start(HEAPU8.buffer, state, pcm, capacity);
-});
+})
 
 EM_JS(void, M_StopOutput, (void *state, float *pcm), {
     Module['opentouhouAudio'].release(Module, state, pcm);
-});
+})
 
 static int M_Mix(void *const user)
 {
