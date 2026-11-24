@@ -97,10 +97,10 @@
   #drop.over { border-color: var(--red); background: var(--pink); transform: scale(1.02); }
   #drop p { margin: 6px 0; }
   /* Two lines in every language, so switching it does not move the card. */
-  #drop p[data-text="drop"] { min-height: 3em; display: grid; place-items: center; text-wrap: balance; }
+  #drop p[data-text="drop"], #drop p[data-text="dropHdi"] { min-height: 3em; display: grid; place-items: center; text-wrap: balance; }
   .tagline { min-height: 1.5em; text-wrap: balance; }
   #drop small, .hint { color: var(--soft); }
-  #file { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  #file, #folder { position: absolute; width: 1px; height: 1px; opacity: 0; }
   .button, button {
     display: inline-block; font: 700 1em var(--font); border: 0; cursor: pointer;
     padding: 10px 26px; border-radius: 999px; color: #fff; background: var(--red);
@@ -160,7 +160,8 @@
           </div>
           <div id="drop" class="off">
             <p data-text="drop"></p>
-            <p><label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,.hdi,application/zip"></p>
+            <p><label class="button" for="file" data-text="choose"></label><input id="file" type="file" accept=".zip,application/zip"></p>
+            <p><label class="button" for="folder" data-text="folder"></label><input id="folder" type="file" webkitdirectory multiple></p>
             <p><small data-text="private"></small></p>
           </div>
         </div>
@@ -200,6 +201,7 @@
   // Whether the English patch covers this game; else English is the page's
   // language only.
   const ENGLISH_PATCH = @ENGLISH_PATCH@;
+  @GAME_DATA@
   // SDL keeps the user folder and the patches folder here. Only the user
   // folder is kept in IndexedDB through IDBFS: the patches are written at
   // each start, from their own cache.
@@ -230,9 +232,12 @@
       credit: 'English by the ',
       play: 'Play',
       forget: 'Forget the game data',
-      drop: 'Drop a zip of your copy of ' + TITLE_EN + ' here:',
-      choose: 'Choose a zip',
-      private: 'The zip stays in this browser.',
+      drop: 'Drop your game ZIP here, or choose a folder:',
+      choose: 'Choose ZIP',
+      folder: 'Choose folder',
+      dropHdi: 'Drop your game ZIP or HDI here, or choose a folder:',
+      chooseHdi: 'Choose ZIP or HDI',
+      private: 'Your game data stays in this browser.',
       read: 'Reading the game data',
       download: 'Downloading the game',
       check: 'Checking the English patch',
@@ -253,9 +258,12 @@
       credit: '英語版：',
       play: 'プレイ',
       forget: 'ゲームデータを消す',
-      drop: TITLE + 'のフォルダをzipにして、ここにドロップ：',
+      drop: 'ゲームのzipをここにドロップ、またはフォルダを選択：',
       choose: 'zipを選ぶ',
-      private: 'zipはこのブラウザの外に出ません。',
+      folder: 'フォルダを選ぶ',
+      dropHdi: 'ゲームのzipかHDIをここにドロップ、またはフォルダを選択：',
+      chooseHdi: 'zipかHDIを選ぶ',
+      private: 'ゲームデータはこのブラウザの外に出ません。',
       read: 'ゲームデータを読み込み中',
       download: 'ゲームをダウンロード中',
       check: '英語パッチを確認中',
@@ -284,8 +292,8 @@
   // Each step of a start takes a share of the one progress bar: English
   // adds the patch's steps. The bar only moves forward.
   const STEPS = {
-    en: { read: [0, 0.1], download: [0.1, 0.7], check: [0.7, 0.75], patch: [0.75, 0.95], start: [0.95, 1] },
-    ja: { read: [0, 0.1], download: [0.1, 0.95], start: [0.95, 1] },
+    en: { download: [0, 0.6], check: [0.6, 0.65], patch: [0.65, 0.85], read: [0.85, 0.95], start: [0.95, 1] },
+    ja: { download: [0, 0.85], read: [0.85, 0.95], start: [0.95, 1] },
   };
   let steps = STEPS.ja;
   let progress = 0;
@@ -341,7 +349,7 @@
   }
 
 
-  // Store data holds the game's zip, store patches the patch cache.
+  // Store data holds the selected files, store patches the patch cache.
   let database = null;
   function openStore() {
     database ??= new Promise((resolve, reject) => {
@@ -379,7 +387,7 @@
   }
 
   // total only drives the bar: the buffer grows when the body is larger.
-  async function readWithProgress(stream, total, key) {
+  async function readWithProgress(stream, total, key, report) {
     let bytes = new Uint8Array(total || 1 << 20);
     const reader = stream.getReader();
     let done = 0;
@@ -395,7 +403,11 @@
       }
       bytes.set(chunk.value, done);
       done += chunk.value.length;
-      setStatus(key, Math.min(done, total), total);
+      if (report) {
+        report(Math.min(done, total));
+      } else {
+        setStatus(key, Math.min(done, total), total);
+      }
     }
   }
 
@@ -756,7 +768,7 @@
     steps = STEPS[ENGLISH_PATCH && chosenLanguage() === 'en' ? 'en' : 'ja'];
     progress = 0;
     const tick = () => new Promise((resolve) => setTimeout(resolve, 50));
-    for (const [key, total] of [['read', 10], ['download', 50], ['check', 0], ['patch', 20], ['start', 0]]) {
+    for (const [key, total] of [['download', 50], ['check', 0], ['patch', 20], ['read', 10], ['start', 0]]) {
       if (!steps[key]) {
         continue;
       }
@@ -781,7 +793,7 @@
     }
   }
 
-  async function start(blob, language = chosenLanguage()) {
+  async function start(selection, language = chosenLanguage()) {
     if (!hasWebGL2()) {
       showError(texts.webgl);
       return;
@@ -790,7 +802,7 @@
     steps = STEPS[patched ? 'en' : 'ja'];
     progress = 0;
     try {
-      const zip = await readWithProgress(blob.stream(), blob.size, 'read');
+      setStatus('download');
       const wasm = await fetchWasm();
       let patches = [];
       if (patched) {
@@ -798,11 +810,11 @@
           patches = await fetchEnglish();
         } catch (error) {
           showError('Cannot download the English patch: ' + error.message,
-            () => start(blob, 'ja'));
+            () => start(selection, 'ja'));
           return;
         }
       }
-      setStatus('start');
+      setStatus('read');
       window.alert = showError;
       // The game calls this once it has quit and saved.
       globalThis.opentouhouQuit = () => {
@@ -816,7 +828,7 @@
         print: (text) => { logLines.push(text); console.log(text); },
         printErr: (text) => { logLines.push(text); console.error(text); },
         onAbort: (reason) => showError('The game stopped: ' + reason),
-        onRuntimeInitialized: () => runGame(zip, language, patches).catch(
+        onRuntimeInitialized: () => runGame(selection, language, patches).catch(
           (error) => showError(String(error))),
       };
       const script = document.createElement('script');
@@ -828,9 +840,12 @@
     }
   }
 
-  async function runGame(zip, language, patches) {
+  async function runGame(selection, language, patches) {
     const { FS, IDBFS } = Module;
-    FS.writeFile('/game.zip', zip);
+    const dataPath = await GameData.stage(FS, selection,
+      (file, report) => readWithProgress(file.stream(), file.size, 'read', report),
+      (done, total) => setStatus('read', done, total));
+    setStatus('start');
     FS.mkdirTree(USER_DIR);
     FS.mount(IDBFS, {}, USER_DIR);
     userMounted = true;
@@ -855,7 +870,7 @@
     // The game's start holds the main thread, so it waits for the fade.
     await new Promise((resolve) => setTimeout(resolve, FADE_MS));
     Module.ENV.SDL_AUDIO_DEVICE_SAMPLE_FRAMES = AUDIO_FRAMES;
-    Module.callMain(['--data', '/game.zip']);
+    Module.callMain(['--data', dataPath]);
     // Exit and Fullscreen only for a game that started, which the site
     // counts; the page's base is the package's folder, so the path is whole.
     const started = $('log').classList.contains('off');
@@ -873,7 +888,7 @@
     }
   }
 
-  // The zip that Play starts: the remembered one, or the one just dropped.
+  // Play starts the remembered selection or the files just chosen.
   let stored = null;
 
   function lockIn(file) {
@@ -882,25 +897,55 @@
     show($('remembered'), true);
   }
 
-  // A dropped zip is remembered and waits for Play.
-  function choose(file) {
-    if (file) {
-      remember(file).then(() => lockIn(file));
-    }
+  function choose(selection) {
+    remember(selection).then(() => lockIn(selection));
   }
 
   $('play').addEventListener('click', () => start(stored));
-  $('file').addEventListener('change', () => choose($('file').files[0]));
+  if (GAME_ID === 'th01') {
+    $('file').accept = '.zip,.hdi,application/zip';
+    document.querySelector('[data-text="drop"]').dataset.text = 'dropHdi';
+    document.querySelector('[data-text="choose"]').dataset.text = 'chooseHdi';
+  }
+  $('file').addEventListener('change', () => {
+    const file = $('file').files[0];
+    if (file) {
+      try {
+        choose(GameData.fromFile(file, GAME_ID));
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+  });
+  $('folder').addEventListener('change', () => {
+    if ($('folder').files.length) {
+      try {
+        choose(GameData.fromFolder($('folder').files));
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+  });
   const drop = $('drop');
   drop.addEventListener('dragover', (event) => {
     event.preventDefault();
     drop.classList.add('over');
   });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-  drop.addEventListener('drop', (event) => {
+  drop.addEventListener('drop', async (event) => {
     event.preventDefault();
     drop.classList.remove('over');
-    choose(event.dataTransfer.files[0]);
+    const entry = event.dataTransfer.items[0]?.webkitGetAsEntry?.();
+    const file = event.dataTransfer.files[0];
+    try {
+      if (entry?.isDirectory) {
+        choose(await GameData.fromDirectory(entry));
+      } else if (file) {
+        choose(GameData.fromFile(file, GAME_ID));
+      }
+    } catch (error) {
+      showError(error.message);
+    }
   });
   // A failed start may leave the game half run, so back starts the page over.
   $('back').addEventListener('click', () => {
@@ -926,6 +971,7 @@
     await storeRequest('readwrite', (store) => store.delete(GAME_ID));
     stored = null;
     $('file').value = '';
+    $('folder').value = '';
     show($('remembered'), false);
     show($('drop'), true);
   });
@@ -944,7 +990,7 @@
     });
   }
 
-  // The drop zone shows only when no zip is remembered.
+  // The drop zone shows only when no game data is remembered.
   storeRequest('readonly', (store) => store.get(GAME_ID)).then((file) => {
     if (file) {
       lockIn(file);

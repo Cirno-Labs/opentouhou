@@ -99,7 +99,8 @@ The Windows images build the unit tests too, but cannot run them.
 message when wine is not installed. CI runs them on Windows.
 `tools/run_tests` runs them outside the image, from the test list that
 Meson writes into each build directory. The tests of the Python tools
-do not run on Windows.
+do not run on Windows. When Node.js is available, the unit suite also runs
+the web player's file selection tests.
 
 The graphics pixel tests also need an OpenGL driver. Run the built test
 outside Docker, with SDL's offscreen video driver. The second command

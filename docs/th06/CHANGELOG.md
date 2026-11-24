@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added folder selection to the web player.
 - Added support for zip files to `--data`: a zip of the game folder,
   read without unpacking.
 
