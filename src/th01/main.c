@@ -45,7 +45,6 @@ static ZUN_LOGO1 m_Logo;
 static OPENING_ASSETS m_OpeningAssets;
 static SCORE_ASSETS m_ScoreAssets;
 static ENDING_ASSETS m_EndingAssets;
-static ENDING *m_Ending;
 static GAMEPLAY_ASSETS m_GameplayAssets;
 static GAMEPLAY *m_Gameplay;
 static GAME_AUDIO *m_Audio;
@@ -147,17 +146,6 @@ static void M_OpeningMusic(const OPENING_EVENTS events)
     }
 }
 
-static void M_EndingAudio(void *const context, const ENDING_AUDIO command)
-{
-    static const OPENING_EVENTS events[] = {
-        { .audio = OPENING_AUDIO_PLAY, .track = 14 },
-        { .audio = OPENING_AUDIO_FADE },
-        { .audio = OPENING_AUDIO_STOP },
-        { .audio = OPENING_AUDIO_PLAY, .track = 3 },
-    };
-    M_OpeningMusic(events[command]);
-}
-
 static RESULT M_Init(void)
 {
     m_Initialized = false;
@@ -184,9 +172,7 @@ static RESULT M_Init(void)
             LOG_LEVEL_WARNING);
         Music_BindOutput(m_Audio);
     }
-    Ending_Prepare(
-        Arena_Allocator(&m_Assets), &m_EndingAssets, M_EndingAudio, nullptr,
-        &m_Ending);
+    Ending_Init(&m_EndingAssets);
     ZunLogo1_Init(&m_Logo, g_Video.pages);
     M_ShowLogoPages();
     MUST(Present_Init(Arena_Allocator(&m_Assets)));
@@ -244,7 +230,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                     .entries[0]
                     .score;
             if (g_ScoreScene.context == SCORE_ENDING) {
-                Ending_BeginSwitch(m_Ending);
+                Ending_BeginSwitch();
                 m_Scene = TH01_SCENE_SWITCH;
             } else {
                 Gameplay_ResumeAfterScore(m_Gameplay, raw, m_HostTick);
@@ -253,14 +239,14 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
         }
         break;
     case TH01_SCENE_SWITCH:
-        if (Ending_SwitchTick(m_Ending, reference_edge)) {
+        if (Ending_SwitchTick(reference_edge)) {
             Ending_Clear();
             M_BeginOpening(true, raw);
         }
         break;
     case TH01_SCENE_ENDING:
-        if (Ending_Tick(m_Ending, raw, reference_edge)) {
-            const END_RESULT *const result = Ending_Result(m_Ending);
+        if (Ending_Tick(raw, reference_edge)) {
+            const END_RESULT *const result = &g_EndResult;
             SCORE_ENTRY entry = { .stage = result->route == SESSION_END_MAKAI
                                       ? 50
                                       : 60,
@@ -288,8 +274,8 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                 &entry);
             m_Scene = TH01_SCENE_SCORE;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {
-            Ending_Begin(m_Ending);
-            Ending_Tick(m_Ending, raw, false);
+            Ending_Begin();
+            Ending_Tick(raw, false);
             m_Scene = TH01_SCENE_ENDING;
         }
         break;
@@ -356,7 +342,7 @@ static void M_Shutdown(void)
     GameAudio_Free(m_Audio);
     m_Audio = nullptr;
     Present_Close();
-    m_Ending = nullptr;
+    Ending_Close();
     memset(&m_EndingAssets, 0, sizeof(m_EndingAssets));
     m_Scene = TH01_SCENE_LOGO;
     m_Gameplay = nullptr;
@@ -377,7 +363,6 @@ void Th01_View(TH01_VIEW *const out)
         .opening = &g_Opening,
         .gameplay = m_Gameplay,
         .score = &g_ScoreScene,
-        .ending = m_Ending,
     };
 }
 
