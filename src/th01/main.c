@@ -43,9 +43,7 @@ static ARENA m_Assets;
 static BFNT m_Sprites;
 static ZUN_LOGO1 m_Logo;
 static OPENING_ASSETS m_OpeningAssets;
-static OPENING m_Opening;
 static SCORE_ASSETS m_ScoreAssets;
-static SCORE_SCENE m_Score;
 static ENDING_ASSETS m_EndingAssets;
 static ENDING *m_Ending;
 static GAMEPLAY_ASSETS m_GameplayAssets;
@@ -211,7 +209,7 @@ static bool M_OpeningEvents(
         Session_Begin(
             events.action == OPENING_ACTION_START ? SESSION_START
                                                   : SESSION_CONTINUE,
-            &g_Settings, m_Opening.frame_rand);
+            &g_Settings, g_Opening.frame_rand);
         if (events.action == OPENING_ACTION_START) {
             Th01Hooks_CallOnStart();
         }
@@ -229,11 +227,10 @@ static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
 {
     m_Scene = TH01_SCENE_OPENING;
     Video_SetScroll(0);
-    M_OpeningEvents(
-        Opening_Init(&m_Opening, &g_Settings, &m_OpeningAssets), raw);
+    M_OpeningEvents(Opening_Init(&m_OpeningAssets), raw);
     if (switched) {
         // Counts the VSync latched by the program switch (Frame_SwitchProgram).
-        m_Opening.count1 = 1;
+        g_Opening.count1 = 1;
     }
 }
 
@@ -241,12 +238,12 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
 {
     switch (m_Scene) {
     case TH01_SCENE_SCORE:
-        if (Score_Tick(&m_Score, raw, reference_edge)) {
+        if (Score_Tick(raw, reference_edge)) {
             g_Session.table_high_score =
                 (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
                     .entries[0]
                     .score;
-            if (m_Score.context == SCORE_ENDING) {
+            if (g_ScoreScene.context == SCORE_ENDING) {
                 Ending_BeginSwitch(m_Ending);
                 m_Scene = TH01_SCENE_SWITCH;
             } else {
@@ -269,8 +266,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                                       : 60,
                                   .route = "完" };
             memcpy(&entry.score, &result->score, sizeof(entry.score));
-            Score_Begin(
-                &m_Score, &m_ScoreAssets, SCORE_ENDING, result->rank, &entry);
+            Score_Begin(&m_ScoreAssets, SCORE_ENDING, result->rank, &entry);
             m_Scene = TH01_SCENE_SCORE;
         }
         break;
@@ -288,8 +284,8 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                     : g_Session.route == SESSION_ROUTE_MAKAI ? "魔"
                                                              : "地");
             Score_Begin(
-                &m_Score, &m_ScoreAssets, SCORE_GAMEOVER,
-                g_Session.settings.difficulty, &entry);
+                &m_ScoreAssets, SCORE_GAMEOVER, g_Session.settings.difficulty,
+                &entry);
             m_Scene = TH01_SCENE_SCORE;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {
             Ending_Begin(m_Ending);
@@ -300,8 +296,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
     }
     case TH01_SCENE_OPENING:
         if (reference_edge) {
-            return M_OpeningEvents(
-                Opening_Tick(&m_Opening, raw, m_IntroPressed), raw);
+            return M_OpeningEvents(Opening_Tick(raw, m_IntroPressed), raw);
         }
         break;
     case TH01_SCENE_LOGO:
@@ -370,7 +365,8 @@ static void M_Shutdown(void)
     memset(&m_Sprites, 0, sizeof(m_Sprites));
     memset(&g_Video, 0, sizeof(g_Video));
     memset(&m_Logo, 0, sizeof(m_Logo));
-    memset(&m_Opening, 0, sizeof(m_Opening));
+    Opening_Close();
+    Score_Close();
     memset(&m_OpeningAssets, 0, sizeof(m_OpeningAssets));
 }
 
@@ -378,9 +374,9 @@ void Th01_View(TH01_VIEW *const out)
 {
     *out = (TH01_VIEW) {
         .scene = m_Scene == TH01_SCENE_SWITCH ? TH01_SCENE_ENDING : m_Scene,
-        .opening = &m_Opening,
+        .opening = &g_Opening,
         .gameplay = m_Gameplay,
-        .score = &m_Score,
+        .score = &g_ScoreScene,
         .ending = m_Ending,
     };
 }

@@ -29,7 +29,6 @@ typedef enum {
 } SCORE_PHASE;
 
 typedef struct {
-    const SCORE_ASSETS *assets;
     PALETTE_STATE palette;
     PALETTE_FADE fade;
     FRAME_WAIT wait;
@@ -38,6 +37,8 @@ typedef struct {
     int32_t rank, place, row, column, cursor, inputs;
     char slots[8][9];
 } SCORE_SCENE;
+
+extern SCORE_SCENE g_ScoreScene;
 
 // Loads GAME_O.GRP and all static, imported and g_ScoreSaves glyphs from rom
 // before ticks. Storage belongs to allocator and must outlive the score scene.
@@ -54,14 +55,15 @@ RESULT Score_LoadAssets(
 // clear 50 or 60. Begin and Tick allocate nothing and perform no IO. Completion
 // queues a save; drain it at the root tick end with ScoreData_WriteSaves.
 void Score_Begin(
-    SCORE_SCENE *scene, const SCORE_ASSETS *assets, SCORE_CONTEXT context,
-    int32_t rank, const SCORE_ENTRY *entry);
+    const SCORE_ASSETS *assets, SCORE_CONTEXT context, int32_t rank,
+    const SCORE_ENTRY *entry);
 
 // Advances g_VSync exactly once. The application advances audio
 // separately once per host tick. Returns true after registration completes.
-bool Score_Tick(
-    SCORE_SCENE *scene, const TH01_INPUT *input, bool reference_edge);
+bool Score_Tick(const TH01_INPUT *input, bool reference_edge);
 
 // Applies one already-sensed source input, in direction/shot/strike order.
 // Returns true for Enter. Exposed for exhaustive grid and input checks.
-bool Score_OnInput(SCORE_SCENE *scene);
+bool Score_OnInput(void);
+
+void Score_Close(void);
