@@ -22,14 +22,6 @@ typedef struct {
     BOMB_ASSETS assets;
 } CASE;
 
-static BOMB_CONTEXT M_Context(CASE *const state)
-{
-    return (BOMB_CONTEXT) {
-        &state->miko,
-        &state->assets,
-    };
-}
-
 static void M_Init(CASE *const state)
 {
     *state = (CASE) {};
@@ -61,7 +53,6 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
 {
     CASE state;
     M_Init(&state);
-    const BOMB_CONTEXT context = M_Context(&state);
     CHECK(IS_OK(Bomb_ValidateAssets(&state.assets)));
     int32_t waits = 0;
     const size_t used = state.arena.used;
@@ -69,7 +60,8 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
         g_Player.bomb_frame = (uint32_t)frame;
         g_Player.invincible = false;
         const uint64_t edge = g_VSync.edge;
-        BOMB_UPDATE result = Bomb_BeginUpdate(&context, frame);
+        BOMB_UPDATE result =
+            Bomb_BeginUpdate(&state.miko, &state.assets, frame);
         CHECK(g_Player.invincible);
         CHECK_EQ_INT(g_Player.bomb_frame, frame);
         const bool must_wait = frame == 140 || (frame > 50 && frame % 4 == 0);
@@ -79,11 +71,11 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
             waits++;
             const uint8_t before = g_Video.pages[0][184 * 640 + 304];
             const int16_t scroll = g_Video.scroll_top;
-            CHECK_EQ_INT(Bomb_ResumeUpdate(&context), BOMB_UPDATE_WAIT);
+            CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
             CHECK_EQ_INT(g_Video.pages[0][184 * 640 + 304], before);
             CHECK_EQ_INT(g_Video.scroll_top, scroll);
             Frame_VSync();
-            result = Bomb_ResumeUpdate(&context);
+            result = Bomb_ResumeUpdate();
             const int16_t offsets[] = { 392, 0, 384, 0 };
             CHECK_EQ_INT(
                 g_Video.scroll_top, frame == 140 ? 0 : offsets[frame % 16 / 4]);
@@ -111,7 +103,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     CHECK(memcmp(&g_Palette.saved, &state.stage, sizeof(PALETTE)) == 0);
     const int16_t previous_x = g_Bomb.left[0];
     const int16_t previous_y = g_Bomb.top[0];
-    Bomb_BeginUpdate(&context, 0);
+    Bomb_BeginUpdate(&state.miko, &state.assets, 0);
     CHECK_EQ_INT(g_Bomb.left[0], previous_x);
     CHECK_EQ_INT(g_Bomb.top[0], previous_y);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 1);
@@ -191,23 +183,24 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     PLAYER_CASE actor = { .state = &state };
     const PLAYER_OUTPUT output = { .action = M_PlayerAction, .user = &actor };
     PLAYER_BOMB_CONTINUATION continuation = {};
-    const BOMB_CONTEXT context = M_Context(&state);
     CHECK(Player_BeginUpdate(&continuation, output));
     CHECK_EQ_INT(actor.hud, 1);
     CHECK_EQ_INT(g_Player.remaining_bombs, 1);
-    CHECK_EQ_INT(Bomb_BeginUpdate(&context, 0), BOMB_UPDATE_RUNNING);
+    CHECK_EQ_INT(
+        Bomb_BeginUpdate(&state.miko, &state.assets, 0), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, false);
     g_Player.bomb_frame = 64;
     g_GameInput.shot = g_GameInput.strike = true;
     CHECK(Player_BeginUpdate(&continuation, output));
     const int8_t dash = g_Player.dash_cycle;
-    CHECK_EQ_INT(Bomb_BeginUpdate(&context, 64), BOMB_UPDATE_WAIT);
-    CHECK_EQ_INT(Bomb_ResumeUpdate(&context), BOMB_UPDATE_WAIT);
+    CHECK_EQ_INT(
+        Bomb_BeginUpdate(&state.miko, &state.assets, 64), BOMB_UPDATE_WAIT);
+    CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
     CHECK(continuation.pending);
     CHECK(g_GameInput.shot && g_GameInput.strike);
     CHECK_EQ_INT(actor.draws, 0);
     Frame_VSync();
-    CHECK_EQ_INT(Bomb_ResumeUpdate(&context), BOMB_UPDATE_RUNNING);
+    CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, false);
     CHECK(!continuation.pending);
     CHECK_EQ_INT(g_Player.dash_cycle, dash);

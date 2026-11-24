@@ -22,11 +22,6 @@ typedef struct {
 
 extern BOMB g_Bomb;
 
-typedef struct {
-    const PTN *miko;
-    const BOMB_ASSETS *assets;
-} BOMB_CONTEXT;
-
 typedef enum {
     BOMB_UPDATE_WAIT,
     BOMB_UPDATE_RUNNING,
@@ -44,11 +39,12 @@ RESULT Bomb_ValidateAssets(const BOMB_ASSETS *assets);
 // frame is the signed low word of player.bomb_frame; neither function
 // advances it. Required pellet and sound hooks execute in source order.
 // All images and palettes must be loaded before ticks; updates allocate
-// nothing. Keep context state stable while suspended. Stage palette is
+// nothing. Keep borrowed assets stable while suspended. Stage palette is
 // read at completion. No new Begin is allowed while waiting.
-BOMB_UPDATE Bomb_BeginUpdate(const BOMB_CONTEXT *context, int16_t frame);
+BOMB_UPDATE Bomb_BeginUpdate(
+    const PTN *miko, const BOMB_ASSETS *assets, int16_t frame);
 
 // Resume only after WAIT. Repeated polling before the next edge has no
 // side effects. Scroll changes the display origin, not page pixels.
-BOMB_UPDATE Bomb_ResumeUpdate(const BOMB_CONTEXT *context);
+BOMB_UPDATE Bomb_ResumeUpdate(void);
 bool Bomb_DealsDamage(int16_t remaining_lives, uint32_t frame);

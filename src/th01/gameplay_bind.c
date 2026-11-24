@@ -70,10 +70,6 @@ void Gameplay_Bind(GAMEPLAY *const g)
         .assets = a->pellets,
         .shots_output = g->bindings.shots_output,
     };
-    g->bindings.bombing = (BOMB_CONTEXT) {
-        .miko = &a->miko,
-        .assets = &a->bomb,
-    };
     g->bindings.missing = (MISS_CONTEXT) {
         .miko = &a->miko,
         .stage = stage,

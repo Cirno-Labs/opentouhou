@@ -49,7 +49,7 @@ static void M_KujiPut(
     }
 }
 
-static BOMB_UPDATE M_Finish(const BOMB_CONTEXT *const context)
+static BOMB_UPDATE M_Finish(void)
 {
     const int16_t frame = g_Bomb.frame;
     if (frame == 140) {
@@ -105,14 +105,14 @@ RESULT Bomb_LoadAssets(
 }
 
 BOMB_UPDATE Bomb_BeginUpdate(
-    const BOMB_CONTEXT *const context, const int16_t frame)
+    const PTN *const miko, const BOMB_ASSETS *const assets, const int16_t frame)
 {
     ASSERT(!g_Bomb.waiting);
     g_Bomb.frame = frame;
     g_Player.invincible = true;
     if (frame == 0) {
         Pellets_Decay();
-        Sprite_PtnPut(context->miko, 3, -1, g_Player.left, PLAYER_TOP);
+        Sprite_PtnPut(miko, 3, -1, g_Player.left, PLAYER_TOP);
         g_Bomb.white = g_Palette.saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
@@ -143,7 +143,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
                     g_Bomb.left[i] = Math16_PolarX(304, radius, angle);
                     g_Bomb.top[i] = Math16_PolarY(184, radius, angle);
                     M_KujiPut(
-                        &context->assets->kuji[i - ring == 8 ? 1 : 0],
+                        &assets->kuji[i - ring == 8 ? 1 : 0],
                         i - ring == 8 ? 0 : i - ring, g_Bomb.left[i],
                         g_Bomb.top[i]);
                     angle = (uint8_t)(angle + 28);
@@ -180,7 +180,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
             Palette_Set(&g_Palette, &g_Bomb.bright);
         }
         if (frame % 4 != 0) {
-            return M_Finish(context);
+            return M_Finish();
         }
         const int16_t offsets[4] = { 392, 400, 384, 400 };
         g_Bomb.scroll = offsets[frame % 16 / 4];
@@ -196,7 +196,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
     return BOMB_UPDATE_RUNNING;
 }
 
-BOMB_UPDATE Bomb_ResumeUpdate(const BOMB_CONTEXT *const context)
+BOMB_UPDATE Bomb_ResumeUpdate(void)
 {
     ASSERT(g_Bomb.waiting);
     if (!Frame_WaitReady(&g_Bomb.wait)) {
@@ -204,7 +204,7 @@ BOMB_UPDATE Bomb_ResumeUpdate(const BOMB_CONTEXT *const context)
     }
     g_Bomb.waiting = false;
     Video_SetScroll(g_Bomb.scroll);
-    return M_Finish(context);
+    return M_Finish();
 }
 
 bool Bomb_DealsDamage(const int16_t remaining_lives, const uint32_t frame)

@@ -101,7 +101,6 @@ typedef struct {
     STAGE_CONTEXT stage;
     ITEM_CONTEXT item;
     PELLET_CONTEXT pellet;
-    BOMB_CONTEXT bombing;
     MISS_CONTEXT missing;
     ROUTE_SELECT_ASSETS route_assets;
     ROUTE_SELECT_CONTEXT route;
