@@ -80,7 +80,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(g_Player.left, 308);
     CHECK_EQ_INT(g_Orb.left, 596);
     CHECK_EQ_INT(g->world.phase, GP_ORB);
-    CHECK(g_OrbComposite.waiting);
+    CHECK(StageOrb_Waiting());
     const PLAYER player = g_Player;
     const ORB orb = g_Orb;
     const uint32_t rng = g_Rng;

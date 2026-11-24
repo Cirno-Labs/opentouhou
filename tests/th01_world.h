@@ -39,7 +39,7 @@ static inline void Th01Test_ResetWorld(void)
     memset(&g_StageObjects, 0, sizeof(g_StageObjects));
     memset(&g_Stage, 0, sizeof(g_Stage));
     g_Stage.first_stage = true;
-    memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
+    StageOrb_Init();
     memset(&g_Items, 0, sizeof(g_Items));
     memset(&g_Missiles, 0, sizeof(g_Missiles));
     memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));

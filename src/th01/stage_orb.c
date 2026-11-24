@@ -4,17 +4,29 @@
 
 #include "core/base/assert.h"
 
-STAGE_ORB_COMPOSITE g_OrbComposite;
+#include <string.h>
+
+static STAGE_ORB_COMPOSITE m_OrbComposite;
+
+void StageOrb_Init(void)
+{
+    memset(&m_OrbComposite, 0, sizeof(m_OrbComposite));
+}
+
+bool StageOrb_Waiting(void)
+{
+    return m_OrbComposite.waiting;
+}
 
 bool Stage_BeginOrbComposite(
     const PTN *const sprites, const GAME_TEXT_FONT *const font,
     const PELLET_ASSETS *const pellet_assets)
 {
-    ASSERT(!g_OrbComposite.active);
+    ASSERT(!m_OrbComposite.active);
     Orb_AdvanceMotion(&g_Stage.combo);
-    g_OrbComposite.boss = g_Session.stage_id % 5 == 4;
-    g_OrbComposite.active = true;
-    g_OrbComposite.waiting = false;
+    m_OrbComposite.boss = g_Session.stage_id % 5 == 4;
+    m_OrbComposite.active = true;
+    m_OrbComposite.waiting = false;
     return Stage_ResumeOrbComposite(sprites, font, pellet_assets);
 }
 
@@ -22,20 +34,20 @@ bool Stage_ResumeOrbComposite(
     const PTN *const sprites, const GAME_TEXT_FONT *const font,
     const PELLET_ASSETS *const pellet_assets)
 {
-    if (!g_OrbComposite.active) {
+    if (!m_OrbComposite.active) {
         return true;
     }
-    if (g_OrbComposite.waiting) {
+    if (m_OrbComposite.waiting) {
         if (!Frame_DelayReady(1)) {
             return false;
         }
-        g_OrbComposite.waiting = false;
+        m_OrbComposite.waiting = false;
     } else if (!Frame_DelayReady(1)) {
-        g_OrbComposite.waiting = true;
+        m_OrbComposite.waiting = true;
         return false;
     }
     Pellets_UpdateAndRender(pellet_assets, sprites);
-    if (!g_OrbComposite.boss) {
+    if (!m_OrbComposite.boss) {
         Stage_HitTestCards();
         Stage_UpdateObstacles(sprites, false);
     }
@@ -52,7 +64,7 @@ bool Stage_ResumeOrbComposite(
         Orb_Erase(
             sprites, g_Orb.previous_left, g_Orb.previous_top, Orb_Image());
     }
-    if (!g_OrbComposite.boss) {
+    if (!m_OrbComposite.boss) {
         Stage_UpdateCards(sprites, font);
     }
     if (!g_Orb.in_portal && !g_Player.is_hit) {
@@ -60,6 +72,6 @@ bool Stage_ResumeOrbComposite(
     }
     g_Orb.previous_left = g_Orb.left;
     g_Orb.previous_top = g_Orb.top;
-    g_OrbComposite.active = false;
+    m_OrbComposite.active = false;
     return true;
 }
