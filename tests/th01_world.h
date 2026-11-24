@@ -28,7 +28,6 @@
 // Zeroes the gameplay module state as a world reset does.
 static inline void Th01Test_ResetWorld(void)
 {
-    Gameplay_ResetLiveFlags();
     Player_Init();
     Orb_Init();
     Shots_Init();
@@ -39,6 +38,7 @@ static inline void Th01Test_ResetWorld(void)
     g_Rng = 0;
     memset(&g_StageObjects, 0, sizeof(g_StageObjects));
     memset(&g_Stage, 0, sizeof(g_Stage));
+    g_Stage.first_stage = true;
     memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
     memset(&g_Items, 0, sizeof(g_Items));
     memset(&g_Missiles, 0, sizeof(g_Missiles));
@@ -54,7 +54,6 @@ static inline void Th01Test_ResetWorld(void)
     g_Session.high_score = 0;
     g_Session.point_value = 0;
     g_Session.stage_id = 0;
-    *Bonus_ScoreBonus() = 0;
     Hud_Reset();
     HudHp_Reset();
 }

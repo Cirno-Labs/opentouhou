@@ -10,47 +10,6 @@
 
 TH01_HOOKS g_Th01Hooks;
 
-static bool m_FirstStage = true;
-static bool m_TimerInitialized;
-static bool m_GameCleared;
-
-bool Gameplay_GameCleared(void)
-{
-    return m_GameCleared;
-}
-
-void Gameplay_SetGameCleared(void)
-{
-    m_GameCleared = true;
-}
-
-bool Gameplay_FirstStage(void)
-{
-    return m_FirstStage;
-}
-
-void Gameplay_SetFirstStage(const bool first_stage)
-{
-    m_FirstStage = first_stage;
-}
-
-bool Gameplay_TimerInitialized(void)
-{
-    return m_TimerInitialized;
-}
-
-void Gameplay_SetTimerInitialized(const bool timer_initialized)
-{
-    m_TimerInitialized = timer_initialized;
-}
-
-void Gameplay_ResetLiveFlags(void)
-{
-    m_FirstStage = true;
-    m_TimerInitialized = false;
-    m_GameCleared = false;
-}
-
 RESULT Gameplay_Prepare(
     const ALLOCATOR *const allocator, const GAMEPLAY_ASSETS *const assets,
     GAMEPLAY **const out)
@@ -80,8 +39,6 @@ RESULT Gameplay_Prepare(
 void Gameplay_ResetWorld(GAMEPLAY *const g)
 {
     memcpy(&g->world, g->storage.initial, sizeof(g->world));
-    Gameplay_ResetLiveFlags();
-    *Bonus_ScoreBonus() = 0;
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
     g_TestDamage = false;
@@ -91,6 +48,7 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     Pellets_Init();
     memset(&g_StageObjects, 0, sizeof(g_StageObjects));
     memset(&g_Stage, 0, sizeof(g_Stage));
+    g_Stage.first_stage = true;
     memset(&g_OrbComposite, 0, sizeof(g_OrbComposite));
     memset(&g_Items, 0, sizeof(g_Items));
     memset(&g_Missiles, 0, sizeof(g_Missiles));

@@ -9,12 +9,6 @@
 #include <string.h>
 
 BONUS g_Bonus;
-static uint32_t m_ScoreBonus;
-
-uint32_t *Bonus_ScoreBonus(void)
-{
-    return &m_ScoreBonus;
-}
 
 #define M_STAGE_WIDTH 288
 #define M_PADDED_HEIGHT 280
@@ -56,7 +50,7 @@ static int32_t M_Add(int32_t value, const int32_t cap)
         value = cap;
     }
     for (int32_t i = 0; i < 10; i++) {
-        *Bonus_ScoreBonus() += (uint32_t)value;
+        g_Bonus.score_bonus += (uint32_t)value;
     }
     return value;
 }
@@ -104,8 +98,8 @@ static void M_StageCommit(const GAME_TEXT_FONT *const font)
         font, 7,
         Math16_Wrap(g_Session.lives * 200 + g_Player.remaining_bombs * 100));
     M_StageMetric(font, 9, Math16_Wrap((g_Bonus.stage_number - 1) * 200));
-    g_Stage.score += *Bonus_ScoreBonus();
-    const uint32_t bits = *Bonus_ScoreBonus();
+    g_Stage.score += g_Bonus.score_bonus;
+    const uint32_t bits = g_Bonus.score_bonus;
     g_Session.bonus_per_stage[(g_Bonus.stage_number - 1) % 5] =
         bits <= INT32_MAX ? (int32_t)bits
                           : (int32_t)((int64_t)bits - INT64_C(4294967296));
@@ -173,7 +167,9 @@ bool Bonus_BeginStage(
     ASSERT(
         g_Bonus.phase == BONUS_DONE && stage_number >= 1 && stage_number <= 20
         && stage_number % 5 != 0);
+    const uint32_t score_bonus = g_Bonus.score_bonus;
     memset(&g_Bonus, 0, sizeof(g_Bonus));
+    g_Bonus.score_bonus = score_bonus;
     g_Bonus.phase = BONUS_STAGE_BOX;
     g_Bonus.stage_number = stage_number;
     Palette_Set(&g_Palette, &g_StagePalette);
@@ -215,7 +211,7 @@ bool Bonus_Resume(
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
             }
-            *Bonus_ScoreBonus() = 0;
+            g_Bonus.score_bonus = 0;
             g_Bonus.phase = BONUS_DONE;
             return true;
         }

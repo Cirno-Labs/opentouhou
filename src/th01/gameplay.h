@@ -59,14 +59,3 @@ void Gameplay_AdvanceAudio(GAMEPLAY *gameplay);
 // Borrows prepared output across world resets. Null selects silent output.
 // Unbind before freeing output; does not change the shared producer clock.
 void Gameplay_BindAudio(GAMEPLAY *gameplay, GAME_AUDIO *output);
-
-// Live credit state the final bosses set directly as they finish.
-bool Gameplay_GameCleared(void);
-void Gameplay_SetGameCleared(void);
-bool Gameplay_FirstStage(void);
-void Gameplay_SetFirstStage(bool first_stage);
-bool Gameplay_TimerInitialized(void);
-void Gameplay_SetTimerInitialized(bool timer_initialized);
-
-// Resets the first-stage/timer/clear flags for a new credit or stage reset.
-void Gameplay_ResetLiveFlags(void);

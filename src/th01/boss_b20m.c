@@ -1870,8 +1870,8 @@ static void M_Leaves(
 static void M_Hud(
     const B20M_ASSETS *const assets, const SHOTS_OUTPUT shots_output)
 {
-    Gameplay_SetFirstStage(true);
-    StageTimer_Redraw(true, Gameplay_TimerInitialized(), 0);
+    g_Stage.first_stage = true;
+    StageTimer_Redraw(true, g_Stage.timer_initialized, 0);
     Hud_ScoreAndCombo();
 }
 void B20M_BeginEntrance(
@@ -2164,7 +2164,7 @@ static bool M_Defeat(
             for (int32_t i = 0; i < 5; i++) {
                 g_Stage.score += 10000;
             }
-            Gameplay_SetGameCleared();
+            g_Stage.game_cleared = true;
             g_B20M.finished = true;
             g_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;

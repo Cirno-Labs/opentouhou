@@ -107,7 +107,7 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     f->sprites = (PTN) { .count = 1, .pixels = Allocator_Alloc(a, 1024) };
     memset(f->sprites.pixels, 3, 1024);
     Hud_Load(nullptr, &f->sprites, &f->font);
-    *Bonus_ScoreBonus() = 0;
+    g_Bonus.score_bonus = 0;
     memset(g_Session.bonus_per_stage, 0, sizeof(g_Session.bonus_per_stage));
     CHECK(Result_Ignore(Bonus_ValidateStageAssets(&f->assets, &f->font)));
     memset(f->assets.box, 0xff, sizeof(f->assets.box));
@@ -148,7 +148,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     }
     CHECK_EQ_INT(g_Bonus.phase, BONUS_CONFIRM);
     CHECK_EQ_INT(g_Stage.score, 410000);
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 17000);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 17000);
     CHECK_EQ_INT(g_Session.bonus_per_stage[3], 17000);
     CHECK_EQ_INT(g_Session.high_score, 410000);
     CHECK_EQ_INT(g_Extend.next, 2);
@@ -166,7 +166,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(g_GameInput.shot_presses, 1);
     raw.shot = false;
     CHECK(Bonus_Resume(&f.assets, &f.font, &raw));
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 0);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 0);
     CHECK_EQ_INT(g_GameInput.bomb_frame, 0);
     CHECK(Bonus_Resume(&f.assets, &f.font, &raw));
     Arena_Free(&arena);
@@ -180,7 +180,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     Th01Test_ResetWorld();
     M_Init(&f, Arena_Allocator(&arena));
     g_Session.lives = 6;
-    *Bonus_ScoreBonus() = UINT32_MAX - 100;
+    g_Bonus.score_bonus = UINT32_MAX - 100;
     g_Stage.score = UINT32_MAX - 1000;
     g_StageTimer.time = 20000;
     g_Stage.maximum_combo = 100;
@@ -195,7 +195,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     // Signed timer product wraps to -5536; combo clamps to 6553.
     const uint32_t expected =
         UINT32_MAX - 100 + (uint32_t)(-5536 * 10) + 65530 + 12000 + 36000;
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), expected);
+    CHECK_EQ_INT(g_Bonus.score_bonus, expected);
     CHECK_EQ_INT((uint32_t)g_Session.bonus_per_stage[3], expected);
     CHECK_EQ_INT(g_Stage.score, UINT32_MAX - 1000 + expected);
     CHECK_EQ_INT(g_Bonus.phase, BONUS_CONFIRM);
@@ -294,7 +294,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(g_Palette.saved.colors[0][0], 13);
     g_VSync.count1 = 30;
     CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 16050);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 16050);
     CHECK_EQ_INT(g_Stage.score, 390000);
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_DIGIT_WAIT);
     VSYNC_CLOCK clock = {};
@@ -312,7 +312,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
             &f.assets, f.shots_output, &raw, (uint64_t)ticks));
     }
     CHECK(ticks < 1000);
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 96050);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 96050);
     CHECK_EQ_INT(g_Stage.score, 486050);
     CHECK_EQ_INT(g_Extend.next, 1);
     CHECK_EQ_INT(g_Session.lives, 2);
@@ -329,7 +329,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, (uint64_t)ticks));
     raw.ok = false;
     CHECK(Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, (uint64_t)ticks));
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 0);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 0);
     CHECK(Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, (uint64_t)ticks));
     Arena_Free(&arena);
 }
@@ -404,28 +404,28 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 40);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 40);
     CHECK_EQ_INT(g_BonusTotal.digits[3], 4);
     CHECK_EQ_INT(g_BonusTotal.credit, 1);
     g_StageTimer.time = UINT16_MAX;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 65570);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 65570);
     g_Stage.maximum_combo = 200;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     g_BonusTotal.metric = 1;
     CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), (uint32_t)-189790);
-    *Bonus_ScoreBonus() = 123;
+    CHECK_EQ_INT(g_Bonus.score_bonus, (uint32_t)-189790);
+    g_Bonus.score_bonus = 123;
     g_Stage.score = UINT32_MAX - 100;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     g_BonusTotal.metric = 4;
     CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
     CHECK_EQ_INT(g_Stage.score, 22);
-    CHECK_EQ_INT(*Bonus_ScoreBonus(), 123);
+    CHECK_EQ_INT(g_Bonus.score_bonus, 123);
     CHECK_EQ_INT(g_BonusTotal.digits[3], 1);
     CHECK_EQ_INT(g_BonusTotal.digits[4], 2);
     CHECK_EQ_INT(g_BonusTotal.digits[5], 3);

@@ -76,7 +76,7 @@ static void M_StageBackground(GAMEPLAY *const g)
         break;
     }
     Video_SelectDrawingPage(0);
-    if (Gameplay_FirstStage()) {
+    if (g_Stage.first_stage) {
         memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
         Palette_Import(&g_StagePalette, background->palette);
         Palette_Set(&g_Palette, &g_StagePalette);
@@ -86,7 +86,7 @@ static void M_StageBackground(GAMEPLAY *const g)
         Sprite_PtnPut(&a->miko, 0, -1, g_Player.left, PLAYER_TOP);
     }
     StageObjects_InitPrepared(
-        &g_Scene.active->layouts, g_Session.stage_id, Gameplay_FirstStage(),
+        &g_Scene.active->layouts, g_Session.stage_id, g_Stage.first_stage,
         g->bindings.stage_sprites);
     g->world.phase = GP_OBJECT_ENTRANCE;
 }
@@ -107,7 +107,7 @@ static void M_StageBegin(GAMEPLAY *const g)
     g_Player.invincibility_time = 0;
     Gameplay_BossSetup(g);
     if (g->world.boss_stage) {
-        Gameplay_SetFirstStage(true);
+        g_Stage.first_stage = true;
         Items_Reset();
     }
     if (g->world.boss == BOSS_MIMA) {
@@ -126,7 +126,7 @@ static void M_StageBegin(GAMEPLAY *const g)
 static void M_StageReady(GAMEPLAY *const g)
 {
     StageTimer_Redraw(
-        Gameplay_FirstStage(), Gameplay_TimerInitialized(), g_Session.route);
+        g_Stage.first_stage, g_Stage.timer_initialized, g_Session.route);
     g_Stage.maximum_combo = 0;
     g_Orb.in_portal = false;
     g_Player.bomb_frame = 0;
@@ -184,10 +184,10 @@ static void M_StartFrames(GAMEPLAY *const g)
 {
     g->world.wait_for_shot = false;
     g_GameInput.shot = false;
-    Gameplay_SetTimerInitialized(true);
+    g_Stage.timer_initialized = true;
     g_Rng = g_Session.frame_rand;
     g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;
-    Gameplay_SetFirstStage(false);
+    g_Stage.first_stage = false;
     g->world.phase = GP_FRAME_BEGIN;
 }
 
@@ -473,7 +473,7 @@ static GAMEPLAY_REQUEST M_Run(
             if (!StageObjects_ResumeEntrance(g->bindings.stage_sprites)) {
                 return g->world.request;
             }
-            if (Gameplay_FirstStage()) {
+            if (g_Stage.first_stage) {
                 M_CopyPage(g, 0, 1);
             } else {
                 StageObjects_CopyToBackground();
@@ -554,7 +554,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_FRAME_BEGIN:
             if (g_Player.is_hit) {
-                Gameplay_SetTimerInitialized(false);
+                g_Stage.timer_initialized = false;
                 Frame_BeginWait(&g->world.wait);
                 g->world.phase = GP_LIFE_EXIT;
                 break;
@@ -661,7 +661,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_AFTER_ORB:
             Extend_UpdateAndRender();
-            if (Gameplay_GameCleared()) {
+            if (g_Stage.game_cleared) {
                 Gameplay_SyncSession(g);
                 g_Session.ending = g_Session.route == 0 ? SESSION_END_MAKAI
                                                         : SESSION_END_JIGOKU;
@@ -697,7 +697,7 @@ static GAMEPLAY_REQUEST M_Run(
                 g_Player.is_hit = false;
                 if (g->world.boss != BOSS_NONE) {
                     g->world.wait_for_shot = true;
-                    Gameplay_SetFirstStage(true);
+                    g_Stage.first_stage = true;
                 }
                 g_Session.stage_id++;
                 const int16_t finished = g_Session.stage_id;

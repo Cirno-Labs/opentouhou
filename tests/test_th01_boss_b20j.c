@@ -221,7 +221,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             CHECK_EQ_INT(g_B20J.frame, 0);
             CHECK_EQ_INT(g_B20J.hp, 18);
             CHECK_EQ_INT(arena.used, used);
-            CHECK(!Gameplay_GameCleared());
+            CHECK(!g_Stage.game_cleared);
         }
     }
     Arena_Free(&arena);
@@ -245,7 +245,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     int32_t polls = 0;
     while (!B20J_UpdateAndRender(&f.assets, f.shots_output)) {
         const B20J snapshot = g_B20J;
-        CHECK(!Gameplay_GameCleared());
+        CHECK(!g_Stage.game_cleared);
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!B20J_UpdateAndRender(&f.assets, f.shots_output));
             CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
@@ -253,7 +253,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
         Frame_VSync();
         CHECK(++polls < 1200);
     }
-    CHECK(Gameplay_GameCleared() && g_B20J.finished && !g_B20J.defeating);
+    CHECK(g_Stage.game_cleared && g_B20J.finished && !g_B20J.defeating);
     CHECK_EQ_INT(g_Stage.score, 49899);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(g_B20J.frame, 65);
@@ -348,7 +348,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     CHECK_EQ_INT(images, 9);
     CHECK_EQ_INT(g_B20J.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK(Gameplay_GameCleared() && g_B20J.finished);
+    CHECK(g_Stage.game_cleared && g_B20J.finished);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
