@@ -5,12 +5,14 @@
 #define M_FRAME_COUNT 130
 
 static void M_DrawStep(
-    PAGE_TRANSITION *const t, const TRANSITION_CONTEXT *const c)
+    PAGE_TRANSITION *const t, PALETTE_STATE *const palette,
+    PALETTE *const current, const PALETTE *const target,
+    const INTERLEAVE_ASSETS *const assets)
 {
     int16_t tip_left = t->first_left;
     int16_t tip_top = t->first_top;
     while (t->first_left >= 0 && t->first_top < VIDEO_HEIGHT) {
-        Interleave_Put8(c->assets, t->first_left, t->first_top, 1);
+        Interleave_Put8(assets, t->first_left, t->first_top, 1);
         t->first_left -= 8;
         t->first_top += 8;
     }
@@ -19,19 +21,19 @@ static void M_DrawStep(
     if (t->frame % 8 == 0) {
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
-                int8_t *const value = &c->current->colors[color][component];
-                const int8_t target = c->target->colors[color][component];
-                if (*value != target) {
-                    *value += *value > target ? -1 : 1;
+                int8_t *const value = &current->colors[color][component];
+                const int8_t target_value = target->colors[color][component];
+                if (*value != target_value) {
+                    *value += *value > target_value ? -1 : 1;
                 }
             }
         }
-        Palette_Set(c->palette, c->current);
+        Palette_Set(palette, current);
     }
     tip_left = t->second_left;
     tip_top = t->second_top;
     while (t->second_left >= 0 && t->second_top < VIDEO_HEIGHT) {
-        Interleave_Put8(c->assets, t->second_left, t->second_top, 2);
+        Interleave_Put8(assets, t->second_left, t->second_top, 2);
         t->second_left -= 8;
         t->second_top += 8;
     }
@@ -41,8 +43,10 @@ static void M_DrawStep(
 }
 
 bool Transition_BeginDiagonal(
-    PAGE_TRANSITION *const t, const TRANSITION_CONTEXT *const c,
-    const uint16_t step_ms, const uint64_t host_tick)
+    PAGE_TRANSITION *const t, PALETTE_STATE *const palette,
+    PALETTE *const current, const PALETTE *const target,
+    const INTERLEAVE_ASSETS *const assets, const uint16_t step_ms,
+    const uint64_t host_tick)
 {
     ASSERT(!t->active);
     *t = (PAGE_TRANSITION) { .last_tick = host_tick,
@@ -50,10 +54,10 @@ bool Transition_BeginDiagonal(
                              .second_left = VIDEO_WIDTH - 8,
                              .second_top = VIDEO_HEIGHT - 8,
                              .active = true };
-    M_DrawStep(t, c);
+    M_DrawStep(t, palette, current, target, assets);
     if (step_ms == 0) {
         while (t->frame < M_FRAME_COUNT) {
-            M_DrawStep(t, c);
+            M_DrawStep(t, palette, current, target, assets);
         }
         t->active = false;
     }
@@ -61,8 +65,9 @@ bool Transition_BeginDiagonal(
 }
 
 bool Transition_Advance(
-    PAGE_TRANSITION *const t, const TRANSITION_CONTEXT *const c,
-    const uint64_t host_tick)
+    PAGE_TRANSITION *const t, PALETTE_STATE *const palette,
+    PALETTE *const current, const PALETTE *const target,
+    const INTERLEAVE_ASSETS *const assets, const uint64_t host_tick)
 {
     if (!t->active) {
         return true;
@@ -82,7 +87,7 @@ bool Transition_Advance(
             t->credit = 0;
             return true;
         }
-        M_DrawStep(t, c);
+        M_DrawStep(t, palette, current, target, assets);
     }
     t->credit = (uint32_t)credit;
     return false;
