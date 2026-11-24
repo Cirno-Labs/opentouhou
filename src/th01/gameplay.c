@@ -87,14 +87,14 @@ static void M_StageBackground(GAMEPLAY *const g)
     }
     StageObjects_InitPrepared(
         &g_Scene.active->layouts, g_Session.stage_id, g_Stage.first_stage,
-        g->bindings.stage_sprites);
+        Gameplay_StageSprites(g));
     g->world.phase = GP_OBJECT_ENTRANCE;
 }
 
 static void M_StageBegin(GAMEPLAY *const g)
 {
     Pellets_EraseAndResetMoving();
-    Shots_EraseAndReset(g->bindings.shots_output);
+    Shots_EraseAndReset();
     const int16_t stage = g_Session.stage_id;
     g->world.boss_stage = stage % 5 == 4;
     g->world.boss = stage == 4 ? BOSS_SINGYOKU
@@ -102,7 +102,9 @@ static void M_StageBegin(GAMEPLAY *const g)
         : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
         : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
                       : BOSS_NONE;
-    Gameplay_Bind(g);
+    Hud_Load(
+        &g->storage.assets->hud, Gameplay_StageSprites(g),
+        &g->storage.assets->hud_font);
     g_Player.invincible = false;
     g_Player.invincibility_time = 0;
     Gameplay_BossSetup(g);
@@ -113,7 +115,7 @@ static void M_StageBegin(GAMEPLAY *const g)
     if (g->world.boss == BOSS_MIMA) {
         g->world.phase = GP_B10J_SETUP;
     } else if (g->world.boss == BOSS_SARIEL) {
-        B20M_BeginEntrance(&g->storage.assets->b20m, g->bindings.shots_output);
+        B20M_BeginEntrance(&g->storage.assets->b20m);
         g->world.phase = GP_FINAL_ENTRANCE;
     } else if (g->world.boss == BOSS_KONNGARA) {
         B20J_BeginEntrance(&g->storage.assets->b20j);
@@ -151,7 +153,7 @@ static void M_LifeBegin(GAMEPLAY *const g, const TH01_INPUT *const raw)
     g_GameInput.paused = false;
     Hud_ScoreAndCombo();
     g_GameInput.bomb_frame = 60;
-    Stage_UpdateObstacles(g->bindings.stage_sprites, true);
+    Stage_UpdateObstacles(Gameplay_StageSprites(g), true);
     if (!g->world.bgm_started && g->world.boss < BOSS_SARIEL) {
         const size_t song = g->world.boss == BOSS_SINGYOKU ? 7
             : g->world.boss == BOSS_YUUGENMAGAN || g->world.boss == BOSS_MIMA
@@ -194,7 +196,8 @@ static void M_StartFrames(GAMEPLAY *const g)
 static void M_PlayerBegin(GAMEPLAY *const g, const GAMEPLAY_PHASE after)
 {
     g->world.after_player = after;
-    if (Player_BeginUpdate(&g->world.player_bomb, g->bindings.player_output)) {
+    const PLAYER_SPRITES sprites = Gameplay_PlayerSprites(g);
+    if (Player_BeginUpdate(&g->world.player_bomb, &sprites)) {
         const BOMB_UPDATE result = Bomb_BeginUpdate(
             &g->storage.assets->miko, &g->storage.assets->bomb,
             (int16_t)g_Player.bomb_frame);
@@ -203,7 +206,7 @@ static void M_PlayerBegin(GAMEPLAY *const g, const GAMEPLAY_PHASE after)
             return;
         }
         Player_FinishBombUpdate(
-            &g->world.player_bomb, result == BOMB_UPDATE_DONE);
+            &g->world.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
     }
     g->world.phase = after;
 }
@@ -353,14 +356,7 @@ static bool M_PausePoll(
 static void M_BeginGameover(GAMEPLAY *const g)
 {
     Items_Reset();
-    Orb_RenderAction(
-        g->bindings.stage_sprites,
-        (ORB_ACTION) {
-            .kind = ORB_ACTION_PUT,
-            .left = g_Orb.left,
-            .top = g_Orb.top,
-            .image = 0,
-        });
+    Orb_Put(Gameplay_StageSprites(g), g_Orb.left, g_Orb.top, 0);
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(
         &g->storage.assets->miko, image, -1, g_Player.left, PLAYER_TOP);
@@ -449,8 +445,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_B10J_SETUP:
             if (!B10J_ResumeSetup(
-                    &g->storage.assets->b10j, g->bindings.shots_output,
-                    &g->storage.assets->miko)) {
+                    &g->storage.assets->b10j, &g->storage.assets->miko)) {
                 return g->world.request;
             }
             Gameplay_HookBossHp(g);
@@ -458,9 +453,7 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_FINAL_ENTRANCE:
             if (g->world.boss == BOSS_SARIEL
-                    ? !B20M_ResumeEntrance(
-                          &g->storage.assets->b20m, g->bindings.shots_output,
-                          host_tick)
+                    ? !B20M_ResumeEntrance(&g->storage.assets->b20m, host_tick)
                     : !B20J_ResumeEntrance(&g->storage.assets->b20j)) {
                 return g->world.request;
             }
@@ -470,7 +463,7 @@ static GAMEPLAY_REQUEST M_Run(
             M_StageReady(g);
             break;
         case GP_OBJECT_ENTRANCE:
-            if (!StageObjects_ResumeEntrance(g->bindings.stage_sprites)) {
+            if (!StageObjects_ResumeEntrance(Gameplay_StageSprites(g))) {
                 return g->world.request;
             }
             if (g_Stage.first_stage) {
@@ -479,7 +472,7 @@ static GAMEPLAY_REQUEST M_Run(
                 StageObjects_CopyToBackground();
                 Sprite_PtnPut(
                     &g->storage.assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
-                Items_Render(g->bindings.stage_sprites);
+                Items_Render(Gameplay_StageSprites(g));
             }
             if (g->world.boss == BOSS_KIKURI) {
                 Video_Clear(0);
@@ -583,14 +576,15 @@ static GAMEPLAY_REQUEST M_Run(
             if (result == BOMB_UPDATE_WAIT) {
                 return g->world.request;
             }
+            const PLAYER_SPRITES sprites = Gameplay_PlayerSprites(g);
             Player_FinishBombUpdate(
-                &g->world.player_bomb, result == BOMB_UPDATE_DONE);
+                &g->world.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
             g->world.phase = g->world.after_player;
             break;
         }
         case GP_ITEMS:
             Items_UpdateAndRender(
-                g->bindings.stage_sprites, &g->storage.assets->item_font);
+                Gameplay_StageSprites(g), &g->storage.assets->item_font);
             g->world.frame++;
             Orb_AdvanceForceFrame();
             g_Player.bomb_frame++;
@@ -617,15 +611,15 @@ static GAMEPLAY_REQUEST M_Run(
             ShootoutLasers_UpdateAll(g->storage.assets->lasers);
             g->world.phase = GP_ORB;
             if (!Stage_BeginOrbComposite(
-                    g->bindings.stage_sprites, &g->storage.assets->hud_font,
-                    g->storage.assets->pellets, g->bindings.shots_output)) {
+                    Gameplay_StageSprites(g), &g->storage.assets->hud_font,
+                    g->storage.assets->pellets)) {
                 return g->world.request;
             }
             break;
         case GP_ORB:
             if (!Stage_ResumeOrbComposite(
-                    g->bindings.stage_sprites, &g->storage.assets->hud_font,
-                    g->storage.assets->pellets, g->bindings.shots_output)) {
+                    Gameplay_StageSprites(g), &g->storage.assets->hud_font,
+                    g->storage.assets->pellets)) {
                 return g->world.request;
             }
             if (g_GameInput.paused) {
@@ -704,8 +698,8 @@ static GAMEPLAY_REQUEST M_Run(
                 if (g->world.boss != BOSS_NONE) {
                     g->world.phase = GP_TOTAL_BONUS;
                     if (Bonus_BeginTotal(
-                            &g->storage.assets->total, g->bindings.shots_output,
-                            finished, raw, host_tick)) {
+                            &g->storage.assets->total, finished, raw,
+                            host_tick)) {
                         M_AfterBonus(g);
                     }
                 } else {
@@ -722,13 +716,13 @@ static GAMEPLAY_REQUEST M_Run(
                 Sound_Effect(5);
                 g_Session.lives--;
                 g_Extend.resident_lives = (int8_t)g_Session.lives;
-                Miss_Begin(&g->storage.assets->miko, g->bindings.stage_sprites);
+                Miss_Begin(&g->storage.assets->miko, Gameplay_StageSprites(g));
                 g->world.phase = GP_MISS;
             }
             break;
         case GP_MISS:
             if (!Miss_Resume(
-                    &g->storage.assets->miko, g->bindings.stage_sprites, 1)) {
+                    &g->storage.assets->miko, Gameplay_StageSprites(g), 1)) {
                 return g->world.request;
             }
             g_Player.is_hit = false;
@@ -744,9 +738,7 @@ static GAMEPLAY_REQUEST M_Run(
             M_AfterBonus(g);
             break;
         case GP_TOTAL_BONUS:
-            if (!Bonus_ResumeTotal(
-                    &g->storage.assets->total, g->bindings.shots_output, raw,
-                    host_tick)) {
+            if (!Bonus_ResumeTotal(&g->storage.assets->total, raw, host_tick)) {
                 return g->world.request;
             }
             M_AfterBonus(g);
@@ -805,7 +797,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             Video_SetScroll(0);
             g_Player.remaining_bombs = 1;
-            Shots_EraseAndReset(g->bindings.shots_output);
+            Shots_EraseAndReset();
             Pellets_EraseAndResetMoving();
             g_Extend.next = 1;
             Gameplay_SyncSession(g);

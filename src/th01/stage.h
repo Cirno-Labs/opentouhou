@@ -59,8 +59,7 @@ void Stage_UpdateCards(const PTN *sprites, const GAME_TEXT_FONT *font);
 void Stage_UpdateObstacles(const PTN *sprites, bool reset);
 
 typedef struct {
-    ORB_COMPOSITE orb;
-    bool active, waiting;
+    bool active, waiting, boss;
 } STAGE_ORB_COMPOSITE;
 
 extern STAGE_ORB_COMPOSITE g_OrbComposite;
@@ -77,10 +76,11 @@ extern STAGE_ORB_COMPOSITE g_OrbComposite;
 // update shots again outside it. Cards, obstacles, lethal Orb hit testing,
 // erase using current image, card drawing, conditional Orb put and previous
 // coordinates follow in source order, reading hit/portal flags afresh.
-// Does not advance force age, player update, bomb frame or world counters.
+// Boss stages skip cards and obstacles. Does not advance force age, player
+// update, bomb frame or world counters.
 bool Stage_BeginOrbComposite(
     const PTN *sprites, const GAME_TEXT_FONT *font,
-    const PELLET_ASSETS *pellet_assets, SHOTS_OUTPUT shots_output);
+    const PELLET_ASSETS *pellet_assets);
 bool Stage_ResumeOrbComposite(
     const PTN *sprites, const GAME_TEXT_FONT *font,
-    const PELLET_ASSETS *pellet_assets, SHOTS_OUTPUT shots_output);
+    const PELLET_ASSETS *pellet_assets);

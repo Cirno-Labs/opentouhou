@@ -208,17 +208,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
 typedef struct {
     FIXTURE common;
     BONUS_TOTAL_ASSETS assets;
-    SHOTS_OUTPUT shots_output;
-    int32_t restores;
 } TOTAL_FIXTURE;
-
-static void M_Shots(void *const user, const SHOTS_ACTION action)
-{
-    TOTAL_FIXTURE *const f = user;
-    CHECK_EQ_INT(action.kind, SHOTS_ACTION_RESTORE);
-    f->restores++;
-    Shots_RenderAction(&f->assets.numerals, action);
-}
 
 static void M_InitTotal(TOTAL_FIXTURE *const f, const ALLOCATOR *const a)
 {
@@ -242,7 +232,6 @@ static void M_InitTotal(TOTAL_FIXTURE *const f, const ALLOCATOR *const a)
             }
         }
     }
-    f->shots_output = (SHOTS_OUTPUT) { M_Shots, f };
     memset(
         g_Session.continues_per_scene, 0,
         sizeof(g_Session.continues_per_scene));
@@ -271,8 +260,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     Frame_Reset();
     TH01_INPUT raw = {};
-    CHECK(!Bonus_BeginTotal(&f.assets, f.shots_output, 5, &raw, 0));
-    CHECK_EQ_INT(f.restores, 2);
+    CHECK(!Bonus_BeginTotal(&f.assets, 5, &raw, 0));
     CHECK(!g_Shots.slots[0].moving);
     CHECK_EQ_INT(g_Shots.slots[1].decay_frame, 0);
     CHECK(!g_Pellets.slots[0].moving);
@@ -280,20 +268,20 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_INITIAL_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 6);
     g_VSync.count1 = 50;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_TRANSITION);
     CHECK_EQ_INT(Th01Test_Pixel(1, 0, 0), 14);
     CHECK_EQ_INT(g_Palette.resource.colors[0][0], 13);
     for (int32_t i = 0; i < 70; i++) {
         g_VSync.count1 = 2;
-        CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+        CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     }
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_STAGE_WAIT);
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 14), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 256, 14), 5);
     CHECK_EQ_INT(g_Palette.saved.colors[0][0], 13);
     g_VSync.count1 = 30;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, 16050);
     CHECK_EQ_INT(g_Stage.score, 390000);
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_DIGIT_WAIT);
@@ -301,15 +289,13 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     int32_t ticks = 0;
     while (g_BonusTotal.phase != BONUS_TOTAL_CONFIRM && ticks < 1000) {
         const BONUS_TOTAL frozen = g_BonusTotal;
-        CHECK(!Bonus_ResumeTotal(
-            &f.assets, f.shots_output, &raw, (uint64_t)ticks));
+        CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
         CHECK(memcmp(&frozen, &g_BonusTotal, sizeof(frozen)) == 0);
         ticks++;
         if (VSync_Advance(&clock)) {
             Frame_VSync();
         }
-        CHECK(!Bonus_ResumeTotal(
-            &f.assets, f.shots_output, &raw, (uint64_t)ticks));
+        CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     }
     CHECK(ticks < 1000);
     CHECK_EQ_INT(g_Bonus.score_bonus, 96050);
@@ -326,11 +312,11 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
         CHECK_EQ_INT(Th01Test_Pixel(1, 208 + i * 16, 196), 14);
     }
     raw.ok = true;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, (uint64_t)ticks));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     raw.ok = false;
-    CHECK(Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, (uint64_t)ticks));
+    CHECK(Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     CHECK_EQ_INT(g_Bonus.score_bonus, 0);
-    CHECK(Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, (uint64_t)ticks));
+    CHECK(Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     Arena_Free(&arena);
 }
 
@@ -349,17 +335,17 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
     g_BonusTotal.digit_count = 1;
     g_BonusTotal.digits[0] = 9;
     g_BonusTotal.spin = 10;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 2);
     g_BonusTotal.credit = 12;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 3);
     g_BonusTotal.spin = 17;
     g_BonusTotal.credit = 12;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 14);
     g_BonusTotal.credit = 12;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(Th01Test_Pixel(0, 224, 86), 9);
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_METRIC_WAIT);
     Arena_Free(&arena);
@@ -379,13 +365,13 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     g_BonusTotal.top = 196;
     g_BonusTotal.metric = 4;
     g_BonusTotal.digit_count = 2;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     for (uint64_t tick = 1; tick <= 4; tick++) {
-        CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, tick));
+        CHECK(!Bonus_ResumeTotal(&f.assets, &raw, tick));
     }
     CHECK_EQ_INT(g_BonusTotal.place, 1);
     CHECK_EQ_INT(g_BonusTotal.credit, 8);
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 5));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 5));
     CHECK_EQ_INT(g_BonusTotal.phase, BONUS_TOTAL_CONFIRM);
     CHECK_EQ_INT(g_VSync.count1, 0);
     CHECK_EQ_INT(g_BonusTotal.credit, 10);
@@ -403,27 +389,27 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     g_StageTimer.time = 13108;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, 40);
     CHECK_EQ_INT(g_BonusTotal.digits[3], 4);
     CHECK_EQ_INT(g_BonusTotal.credit, 1);
     g_StageTimer.time = UINT16_MAX;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, 65570);
     g_Stage.maximum_combo = 200;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     g_BonusTotal.metric = 1;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Bonus.score_bonus, (uint32_t)-189790);
     g_Bonus.score_bonus = 123;
     g_Stage.score = UINT32_MAX - 100;
     memset(&g_BonusTotal, 0, sizeof(g_BonusTotal));
     g_BonusTotal.phase = BONUS_TOTAL_PREPARE_METRIC;
     g_BonusTotal.metric = 4;
-    CHECK(!Bonus_ResumeTotal(&f.assets, f.shots_output, &raw, 0));
+    CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(g_Stage.score, 22);
     CHECK_EQ_INT(g_Bonus.score_bonus, 123);
     CHECK_EQ_INT(g_BonusTotal.digits[3], 1);

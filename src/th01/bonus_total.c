@@ -128,9 +128,8 @@ RESULT Bonus_LoadTotalAssets(
 }
 
 bool Bonus_BeginTotal(
-    const BONUS_TOTAL_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const int16_t stage_number, const TH01_INPUT *const raw,
-    const uint64_t host_tick)
+    const BONUS_TOTAL_ASSETS *const assets, const int16_t stage_number,
+    const TH01_INPUT *const raw, const uint64_t host_tick)
 {
     ASSERT(
         g_BonusTotal.phase == BONUS_TOTAL_DONE && stage_number >= 5
@@ -139,14 +138,14 @@ bool Bonus_BeginTotal(
     g_BonusTotal.phase = BONUS_TOTAL_INITIAL_WAIT;
     g_BonusTotal.stage_number = stage_number;
     g_BonusTotal.last_tick = host_tick;
-    Shots_EraseAndReset(shots_output);
+    Shots_EraseAndReset();
     Pellets_EraseAndResetMoving();
-    return Bonus_ResumeTotal(assets, shots_output, raw, host_tick);
+    return Bonus_ResumeTotal(assets, raw, host_tick);
 }
 
 bool Bonus_ResumeTotal(
-    const BONUS_TOTAL_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const TH01_INPUT *const raw, const uint64_t host_tick)
+    const BONUS_TOTAL_ASSETS *const assets, const TH01_INPUT *const raw,
+    const uint64_t host_tick)
 {
     for (;;) {
         switch (g_BonusTotal.phase) {

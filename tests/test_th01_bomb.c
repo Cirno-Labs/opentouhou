@@ -1,4 +1,5 @@
 #include "th01/bomb.h"
+#include "th01/hud.h"
 #include "th01/shots.h"
 #include "th01/player.h"
 #include "th01/pellets.h"
@@ -31,6 +32,7 @@ static void M_Init(CASE *const state)
     Arena_Init(&state->arena, "bomb", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
     Video_Init(allocator);
+    Hud_Init(allocator);
     Palette_Init(&g_Palette);
     state->stage = g_Palette.saved;
     g_StagePalette = state->stage;
@@ -147,24 +149,6 @@ TEST(square_inversion_rejects_edges_and_toggles_only_one_plane)
     Arena_Free(&state.arena);
 }
 
-typedef struct {
-    CASE *state;
-    int32_t hud, draws;
-} PLAYER_CASE;
-
-static void M_PlayerAction(void *const user, const PLAYER_ACTION action)
-{
-    PLAYER_CASE *const actor = user;
-    if (action.kind == PLAYER_ACTION_HUD_BOMBS) {
-        actor->hud++;
-    } else {
-        CHECK_EQ_INT(action.kind, PLAYER_ACTION_PTN_PUT);
-        actor->draws++;
-        Player_RenderAction(
-            &(PLAYER_SPRITES) { .miko = &actor->state->miko }, nullptr, action);
-    }
-}
-
 TEST(player_continuation_spans_real_bomb_scroll_wait)
 {
     CASE state;
@@ -180,32 +164,27 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     g_Orb.top = 100;
     memset(&g_Shots, 0, sizeof(g_Shots));
     g_Rng = 1;
-    PLAYER_CASE actor = { .state = &state };
-    const PLAYER_OUTPUT output = { .action = M_PlayerAction, .user = &actor };
+    const PLAYER_SPRITES sprites = { .miko = &state.miko };
     PLAYER_BOMB_CONTINUATION continuation = {};
-    CHECK(Player_BeginUpdate(&continuation, output));
-    CHECK_EQ_INT(actor.hud, 1);
+    CHECK(Player_BeginUpdate(&continuation, &sprites));
     CHECK_EQ_INT(g_Player.remaining_bombs, 1);
     CHECK_EQ_INT(
         Bomb_BeginUpdate(&state.miko, &state.assets, 0), BOMB_UPDATE_RUNNING);
-    Player_FinishBombUpdate(&continuation, false);
+    Player_FinishBombUpdate(&continuation, &sprites, false);
     g_Player.bomb_frame = 64;
     g_GameInput.shot = g_GameInput.strike = true;
-    CHECK(Player_BeginUpdate(&continuation, output));
+    CHECK(Player_BeginUpdate(&continuation, &sprites));
     const int8_t dash = g_Player.dash_cycle;
     CHECK_EQ_INT(
         Bomb_BeginUpdate(&state.miko, &state.assets, 64), BOMB_UPDATE_WAIT);
     CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
     CHECK(continuation.pending);
     CHECK(g_GameInput.shot && g_GameInput.strike);
-    CHECK_EQ_INT(actor.draws, 0);
     Frame_VSync();
     CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_RUNNING);
-    Player_FinishBombUpdate(&continuation, false);
+    Player_FinishBombUpdate(&continuation, &sprites, false);
     CHECK(!continuation.pending);
     CHECK_EQ_INT(g_Player.dash_cycle, dash);
-    CHECK_EQ_INT(actor.hud, 1);
-    CHECK_EQ_INT(actor.draws, 1);
     CHECK_EQ_INT(g_Player.bomb_frame, 64);
     CHECK(!g_GameInput.shot && !g_GameInput.strike);
     CHECK(Frame_DelayReady(1));

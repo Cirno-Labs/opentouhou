@@ -100,20 +100,10 @@ TEST(validation_requires_all_sixteen_images_and_masks)
 
 typedef struct {
     B20J_ASSETS assets;
-    SHOTS_OUTPUT shots_output;
     GAME_TEXT_FONT font;
     PTN stage;
 } FIXTURE;
 
-static void M_Shot(void *const user, const SHOTS_ACTION action)
-{
-    FIXTURE *const f = user;
-    if (action.kind == SHOTS_ACTION_EFFECT) {
-        Sound_Effect(action.effect);
-    } else {
-        Shots_RenderAction(&f->stage, action);
-    }
-}
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
@@ -142,7 +132,6 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     g_Session.frame_rand = 0x12345678;
-    f->shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     B20J_Init();
     B20J_Setup(&f->assets);
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
@@ -208,7 +197,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             Frame_Reset();
             int32_t frames = 0;
             do {
-                CHECK(B20J_UpdateAndRender(&f.assets, f.shots_output));
+                CHECK(B20J_UpdateAndRender(&f.assets));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
                     g_Pellets.slots[i].moving = false;
                 }
@@ -243,11 +232,11 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     Frame_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.assets, f.shots_output)) {
+    while (!B20J_UpdateAndRender(&f.assets)) {
         const B20J snapshot = g_B20J;
         CHECK(!g_Stage.game_cleared);
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_UpdateAndRender(&f.assets, f.shots_output));
+            CHECK(!B20J_UpdateAndRender(&f.assets));
             CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
         }
         Frame_VSync();
@@ -261,7 +250,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     const B20J snapshot = g_B20J;
     for (int32_t i = 0; i < 100; i++) {
         Frame_VSync();
-        CHECK(B20J_UpdateAndRender(nullptr, (SHOTS_OUTPUT) {}));
+        CHECK(B20J_UpdateAndRender(nullptr));
         CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
     }
     CHECK_EQ_INT(arena.used, used);
@@ -305,7 +294,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         g_Orb.previous_left = 300;
         g_Orb.previous_top = 140;
         Frame_Reset();
-        CHECK(B20J_UpdateAndRender(&f.assets, f.shots_output));
+        CHECK(B20J_UpdateAndRender(&f.assets));
         CHECK_EQ_INT(g_B20J.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
     }
@@ -335,7 +324,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     const size_t used = arena.used;
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.assets, f.shots_output)) {
+    while (!B20J_UpdateAndRender(&f.assets)) {
         if (g_B20J.defeat_stage == B20J_DEFEAT_KUJI
             && g_B20J.animation_frame != last_image) {
             CHECK_EQ_INT(g_Video.pages[0][0], images);

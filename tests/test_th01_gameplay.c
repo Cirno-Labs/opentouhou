@@ -216,7 +216,6 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
     GAMEPLAY *const g = f.game;
     BONUS_STAGE_ASSETS bonus = {};
     f.assets->bonus = &bonus;
-    Gameplay_Bind(g);
     f.arena.capacity = f.arena.used;
     const STAGE_CARD *const cards = g_StageObjectStorage.cards;
     const STAGE_OBSTACLE *const obstacles = g_StageObjectStorage.obstacles;
@@ -231,7 +230,7 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK(g_Stage.score > 0);
         for (int32_t i = 0; i < 30; i++) {
             Stage_UpdateCards(
-                g->bindings.stage_sprites, &g->storage.assets->hud_font);
+                Gameplay_StageSprites(g), &g->storage.assets->hud_font);
         }
         CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
@@ -641,7 +640,6 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     const GAMEPLAY_STORAGE prepared = g->storage;
     const size_t used = f.arena.used;
     memset(&g->world, 0xa5, sizeof(g->world));
-    memset(&g->bindings, 0xa5, sizeof(g->bindings));
     memset(&g_B10J, 0xa5, sizeof(g_B10J));
     memset(&g_B20J, 0xa5, sizeof(g_B20J));
     memset(&g_B20M, 0xa5, sizeof(g_B20M));

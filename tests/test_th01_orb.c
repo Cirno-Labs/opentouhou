@@ -226,66 +226,6 @@ TEST(portal_suspends_motion_but_preserves_main_loop_force_age)
     CHECK_EQ_INT(g_Orb.frames_outside_portal, INT16_MIN);
 }
 
-TEST(composite_preserves_source_order_and_erases_with_the_new_image)
-{
-    static const ORB_ACTION_KIND order[] = {
-        ORB_ACTION_DELAY_ONE,      ORB_ACTION_PELLETS,
-        ORB_ACTION_CARDS_HITTEST,  ORB_ACTION_OBSTACLES,
-        ORB_ACTION_PLAYER_HITTEST, ORB_ACTION_ERASE,
-        ORB_ACTION_CARDS_RENDER,   ORB_ACTION_PUT,
-        ORB_ACTION_DONE,
-    };
-    g_Orb = M_Orb();
-    g_Orb.rotation_frame = 2;
-    g_Rng = 1;
-    int16_t combo = 7;
-    ORB_COMPOSITE composite = Orb_BeginComposite(0, &combo);
-    for (size_t i = 0; i < sizeof(order) / sizeof(*order); i++) {
-        const ORB_ACTION action = Orb_NextAction(&composite, false);
-        CHECK_EQ_INT(action.kind, order[i]);
-        if (action.kind == ORB_ACTION_ERASE) {
-            CHECK_EQ_INT(action.left, 600);
-            CHECK_EQ_INT(action.top, 280);
-            CHECK_EQ_INT(action.image, 1);
-        }
-        if (action.kind == ORB_ACTION_PUT) {
-            CHECK_EQ_INT(action.left, 596);
-            CHECK_EQ_INT(action.top, 272);
-        }
-    }
-    CHECK_EQ_INT(g_Orb.previous_left, 596);
-    CHECK_EQ_INT(g_Orb.previous_top, 272);
-}
-
-TEST(composite_reads_portal_changes_after_obstacles_and_updates_previous)
-{
-    g_Orb = M_Orb();
-    g_Rng = 1;
-    int16_t combo = 7;
-    ORB_COMPOSITE composite = Orb_BeginComposite(0, &combo);
-    CHECK_EQ_INT(Orb_NextAction(&composite, false).kind, ORB_ACTION_DELAY_ONE);
-    CHECK_EQ_INT(Orb_NextAction(&composite, false).kind, ORB_ACTION_PELLETS);
-    CHECK_EQ_INT(
-        Orb_NextAction(&composite, false).kind, ORB_ACTION_CARDS_HITTEST);
-    CHECK_EQ_INT(Orb_NextAction(&composite, false).kind, ORB_ACTION_OBSTACLES);
-    g_Orb.in_portal = true;
-    g_Orb.left = 200;
-    g_Orb.top = 100;
-    CHECK_EQ_INT(
-        Orb_NextAction(&composite, false).kind, ORB_ACTION_CARDS_RENDER);
-    CHECK_EQ_INT(Orb_NextAction(&composite, false).kind, ORB_ACTION_DONE);
-    CHECK_EQ_INT(g_Orb.previous_left, 200);
-    CHECK_EQ_INT(g_Orb.previous_top, 100);
-    composite = Orb_BeginComposite(9, &combo);
-    CHECK_EQ_INT(Orb_NextAction(&composite, true).kind, ORB_ACTION_DELAY_ONE);
-    CHECK_EQ_INT(Orb_NextAction(&composite, true).kind, ORB_ACTION_PELLETS);
-    g_Orb.in_portal = false;
-    CHECK_EQ_INT(
-        Orb_NextAction(&composite, true).kind, ORB_ACTION_PLAYER_HITTEST);
-    CHECK_EQ_INT(Orb_NextAction(&composite, true).kind, ORB_ACTION_ERASE);
-    CHECK_EQ_INT(Orb_NextAction(&composite, true).kind, ORB_ACTION_DONE);
-}
-
 TEST(player_contact_uses_strict_deltas_and_both_invincibility_flags)
 {
     g_Orb = M_Orb();
@@ -357,14 +297,13 @@ TEST(render_restores_current_sprite_mask_at_quantized_previous_position)
     memset(pixels, PTN_TRANSPARENT, sizeof(pixels));
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT] = 2;
     pixels[(ORB_FIRST_IMAGE + 1) * PTN_WIDTH * PTN_HEIGHT + 31] = 0;
-    const ORB_ACTION action = { ORB_ACTION_ERASE, 19, 70, 1 };
-    Orb_RenderAction(&sprites, action);
+    Orb_Erase(&sprites, 19, 70, 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 70), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 47, 70), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 17, 70), 6);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.visible_page, 1);
-    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, 19, 70, 1 });
+    Orb_Put(&sprites, 19, 70, 1);
     CHECK_EQ_INT(Th01Test_Pixel(0, 16, 70), 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 47, 70), 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 17, 70), 6);
@@ -384,19 +323,19 @@ TEST(render_wall_overshoot_wraps_rows_within_visible_page)
     memset(pixels, PTN_TRANSPARENT, sizeof(pixels));
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT] = 2;
     pixels[ORB_FIRST_IMAGE * PTN_WIDTH * PTN_HEIGHT + 31] = 3;
-    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, -4, 64, 0 });
+    Orb_Put(&sprites, -4, 64, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 632, 63), 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 23, 64), 3);
-    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_ERASE, -4, 64, 0 });
+    Orb_Erase(&sprites, -4, 64, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 632, 63), 9);
     CHECK_EQ_INT(Th01Test_Pixel(0, 23, 64), 9);
-    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, 612, 64, 0 });
+    Orb_Put(&sprites, 612, 64, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 608, 64), 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 639, 64), 3);
-    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, 616, 64, 0 });
+    Orb_Put(&sprites, 616, 64, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 616, 64), 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 7, 65), 3);
-    Orb_RenderAction(&sprites, (ORB_ACTION) { ORB_ACTION_PUT, -8, 0, 0 });
+    Orb_Put(&sprites, -8, 0, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 23, 0), 3);
     CHECK_EQ_INT(Th01Test_Pixel(0, 632, 399), 6);
     Mem_Free(g_Video.pages[0]);

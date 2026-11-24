@@ -31,9 +31,25 @@ RESULT Gameplay_Prepare(
         Allocator_Alloc(allocator, sizeof(*initial));
     memcpy(initial, &g->world, sizeof(*initial));
     g->storage.initial = initial;
-    Gameplay_Bind(g);
+    Hud_Load(&assets->hud, Gameplay_StageSprites(g), &assets->hud_font);
     *out = g;
     return OK;
+}
+
+const PTN *Gameplay_StageSprites(const GAMEPLAY *const g)
+{
+    const GAMEPLAY_ASSETS *const a = g->storage.assets;
+    return g->world.boss_stage ? &a->boss_stage : &a->stage;
+}
+
+PLAYER_SPRITES Gameplay_PlayerSprites(const GAMEPLAY *const g)
+{
+    const GAMEPLAY_ASSETS *const a = g->storage.assets;
+    return (PLAYER_SPRITES) {
+        .miko = &a->miko,
+        .miko_ac = &a->miko_ac,
+        .miko_ac2 = &a->miko_ac2,
+    };
 }
 
 void Gameplay_ResetWorld(GAMEPLAY *const g)
@@ -90,7 +106,9 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     Video_SelectVisiblePage(0);
     Video_SetScroll(0);
     Video_Clear(0);
-    Gameplay_Bind(g);
+    Hud_Load(
+        &g->storage.assets->hud, Gameplay_StageSprites(g),
+        &g->storage.assets->hud_font);
 }
 
 void Gameplay_ResetInput(GAMEPLAY *const g)
@@ -101,14 +119,7 @@ void Gameplay_ResetInput(GAMEPLAY *const g)
 void Gameplay_DefaultActors(GAMEPLAY *const g)
 {
     Sprite_PtnPut(&g->storage.assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
-    Orb_RenderAction(
-        g->bindings.stage_sprites,
-        (ORB_ACTION) {
-            .kind = ORB_ACTION_PUT,
-            .left = g_Orb.left,
-            .top = g_Orb.top,
-            .image = 0,
-        });
+    Orb_Put(Gameplay_StageSprites(g), g_Orb.left, g_Orb.top, 0);
 }
 
 void Gameplay_SyncSession(GAMEPLAY *const g)
@@ -125,27 +136,19 @@ void Gameplay_BossSetup(GAMEPLAY *const g)
         B05_Setup(&g->storage.assets->b05);
         break;
     case BOSS_YUUGENMAGAN:
-        B10M_Setup(
-            &g->storage.assets->b10m, g->bindings.shots_output,
-            &g->storage.assets->miko);
+        B10M_Setup(&g->storage.assets->b10m, &g->storage.assets->miko);
         break;
     case BOSS_MIMA:
-        B10J_BeginSetup(
-            &g->storage.assets->b10j, g->bindings.shots_output,
-            &g->storage.assets->miko);
+        B10J_BeginSetup(&g->storage.assets->b10j, &g->storage.assets->miko);
         break;
     case BOSS_KIKURI:
-        B15J_Setup(
-            &g->storage.assets->b15j, g->bindings.shots_output,
-            &g->storage.assets->miko);
+        B15J_Setup(&g->storage.assets->b15j, &g->storage.assets->miko);
         break;
     case BOSS_ELIS:
-        B15M_Setup(
-            &g->storage.assets->b15m, g->bindings.shots_output,
-            &g->storage.assets->miko);
+        B15M_Setup(&g->storage.assets->b15m, &g->storage.assets->miko);
         break;
     case BOSS_SARIEL:
-        B20M_Setup(&g->storage.assets->b20m, g->bindings.shots_output);
+        B20M_Setup(&g->storage.assets->b20m);
         break;
     case BOSS_KONNGARA:
         B20J_Setup(&g->storage.assets->b20j);
@@ -175,33 +178,32 @@ void Gameplay_HookBossHp(GAMEPLAY *const g)
 bool Gameplay_BossTick(GAMEPLAY *const g, const TH01_INPUT *const raw)
 {
     switch (g->world.boss) {
-    case BOSS_SINGYOKU:
-        return B05_UpdateAndRender(
-            g->bindings.shots_output, &g->storage.assets->miko,
-            &g->bindings.route_assets, raw);
+    case BOSS_SINGYOKU: {
+        const GAMEPLAY_ASSETS *const a = g->storage.assets;
+        const ROUTE_SELECT_ASSETS route = { .font = &a->route_font,
+                                            .stage = Gameplay_StageSprites(g),
+                                            .makai = &a->scenes[1],
+                                            .jigoku = &a->scenes[2] };
+        return B05_UpdateAndRender(&a->miko, &route, raw);
+    }
     case BOSS_YUUGENMAGAN:
         return B10M_UpdateAndRender(
-            &g->storage.assets->b10m, g->bindings.shots_output,
-            &g->storage.assets->miko);
+            &g->storage.assets->b10m, &g->storage.assets->miko);
     case BOSS_MIMA:
         return B10J_UpdateAndRender(
-            &g->storage.assets->b10j, g->bindings.shots_output,
-            &g->storage.assets->miko);
+            &g->storage.assets->b10j, &g->storage.assets->miko);
     case BOSS_KIKURI:
         return B15J_UpdateAndRender(
-            &g->storage.assets->b15j, g->bindings.shots_output,
-            &g->storage.assets->miko);
+            &g->storage.assets->b15j, &g->storage.assets->miko);
     case BOSS_ELIS:
         return B15M_UpdateAndRender(
-            &g->storage.assets->b15m, g->bindings.shots_output,
-            &g->storage.assets->miko, g->storage.host_tick);
+            &g->storage.assets->b15m, &g->storage.assets->miko,
+            g->storage.host_tick);
     case BOSS_SARIEL:
         return B20M_UpdateAndRender(
-            &g->storage.assets->b20m, g->bindings.shots_output,
-            g->storage.host_tick);
+            &g->storage.assets->b20m, g->storage.host_tick);
     case BOSS_KONNGARA:
-        return B20J_UpdateAndRender(
-            &g->storage.assets->b20j, g->bindings.shots_output);
+        return B20J_UpdateAndRender(&g->storage.assets->b20j);
     default:
         return true;
     }

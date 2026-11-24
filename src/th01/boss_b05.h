@@ -80,5 +80,4 @@ void B05_Setup(const B05_ASSETS *assets);
 // ordinary calls. Successful operations allocate nothing and perform no IO.
 // After route completion, calls are inert until Setup or Init.
 bool B05_UpdateAndRender(
-    SHOTS_OUTPUT shots_output, const PTN *miko,
-    const ROUTE_SELECT_ASSETS *route, const TH01_INPUT *raw);
+    const PTN *miko, const ROUTE_SELECT_ASSETS *route, const TH01_INPUT *raw);

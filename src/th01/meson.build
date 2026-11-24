@@ -57,7 +57,6 @@ th01_lib = static_library(
   'score_load.c',
   'invincibility.c',
   'gameplay_assets.c',
-  'gameplay_bind.c',
   'gameplay_world.c',
   'gameplay.c',
   'video.c',

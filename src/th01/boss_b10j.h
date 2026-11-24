@@ -72,10 +72,8 @@ void B10J_Init(void);
 // of the final step. Keep resources stable and advance independent audio and
 // VSyncs while suspended. Begin with black pages; the owning stage draws the
 // background afterward. Neither operation allocates or reads files or devices.
-void B10J_BeginSetup(
-    const B10J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
-bool B10J_ResumeSetup(
-    const B10J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
+void B10J_BeginSetup(const B10J_ASSETS *assets, const PTN *miko);
+bool B10J_ResumeSetup(const B10J_ASSETS *assets, const PTN *miko);
 
 // Runs one ordinary call, including missile and particle prefixes. False
 // suspends the owning world during the entrance or regular defeat; advance
@@ -85,5 +83,4 @@ bool B10J_ResumeSetup(
 // delayed HP gates, broken sprite strips and five-laser cleanup. Calls after
 // completion are inert. Keep borrowed resources stable through every wait.
 // Requires completed setup. Allocates nothing and performs no IO.
-bool B10J_UpdateAndRender(
-    const B10J_ASSETS *assets, SHOTS_OUTPUT shots_output, const PTN *miko);
+bool B10J_UpdateAndRender(const B10J_ASSETS *assets, const PTN *miko);

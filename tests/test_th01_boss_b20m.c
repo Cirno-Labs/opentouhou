@@ -56,7 +56,7 @@ TEST(setup_preserves_patterns)
     g_Palette.saved.colors[6][0] = 9;
 
     const size_t used = arena.used;
-    B20M_Setup(&a, (SHOTS_OUTPUT) {});
+    B20M_Setup(&a);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(g_B20M.hp, 18);
     CHECK_EQ_INT(g_B20M.shield.left, 304);
@@ -99,21 +99,11 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
 #include <string.h>
 typedef struct {
     B20M_ASSETS assets;
-    SHOTS_OUTPUT shots_output;
     GAME_TEXT_FONT font;
     PTN stage;
     GRF mask;
 } FIXTURE;
 
-static void M_Shot(void *const user, const SHOTS_ACTION action)
-{
-    FIXTURE *const f = user;
-    if (action.kind == SHOTS_ACTION_EFFECT) {
-        Sound_Effect(action.effect);
-    } else {
-        Shots_RenderAction(&f->stage, action);
-    }
-}
 static void M_Fixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
@@ -153,15 +143,14 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     Hud_Load(&f->mask, &f->stage, &f->font);
     g_Session.stage_id = 19;
     g_Session.frame_rand = 0x12345678;
-    f->shots_output = (SHOTS_OUTPUT) { M_Shot, f };
     B20M_Init();
-    B20M_Setup(&f->assets, f->shots_output);
+    B20M_Setup(&f->assets);
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
 static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
 {
-    const bool done = B20M_UpdateAndRender(&f->assets, f->shots_output, *tick);
+    const bool done = B20M_UpdateAndRender(&f->assets, *tick);
     (*tick)++;
     Frame_VSync();
     return done;
@@ -177,17 +166,17 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    B20M_BeginEntrance(&f.assets, f.shots_output);
+    B20M_BeginEntrance(&f.assets);
     CHECK(g_Pellets.interlace);
-    CHECK(!B20M_ResumeEntrance(&f.assets, f.shots_output, tick));
+    CHECK(!B20M_ResumeEntrance(&f.assets, tick));
     const B20M pending = g_B20M;
-    CHECK(!B20M_ResumeEntrance(&f.assets, f.shots_output, tick));
+    CHECK(!B20M_ResumeEntrance(&f.assets, tick));
     CHECK(memcmp(&g_B20M, &pending, sizeof(g_B20M)) == 0);
     int32_t polls = 0;
     while (g_B20M.entrance_active && polls++ < 1500) {
         tick++;
         Frame_VSync();
-        B20M_ResumeEntrance(&f.assets, f.shots_output, tick);
+        B20M_ResumeEntrance(&f.assets, tick);
     }
     CHECK(!g_B20M.entrance_active);
     CHECK_EQ_INT(g_Rng, g_Session.frame_rand);
@@ -205,16 +194,16 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    CHECK(!B20M_UpdateAndRender(&f.assets, f.shots_output, tick));
+    CHECK(!B20M_UpdateAndRender(&f.assets, tick));
     const B20M pending = g_B20M;
     const uint32_t rng = g_Rng;
-    CHECK(!B20M_UpdateAndRender(&f.assets, f.shots_output, tick));
+    CHECK(!B20M_UpdateAndRender(&f.assets, tick));
     CHECK(memcmp(&g_B20M, &pending, sizeof(g_B20M)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
     for (int32_t i = 0; g_B20M.sequence != B20M_SEQUENCE_NONE && i < 200; i++) {
         tick++;
         Frame_VSync();
-        B20M_UpdateAndRender(&f.assets, f.shots_output, tick);
+        B20M_UpdateAndRender(&f.assets, tick);
     }
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_BIRDS);
     CHECK_EQ_INT(g_B20M.frame, 0);
@@ -311,7 +300,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    CHECK(!B20M_UpdateAndRender(&f.assets, f.shots_output, tick));
+    CHECK(!B20M_UpdateAndRender(&f.assets, tick));
     CHECK_EQ_INT(g_Player.left, 304);
     CHECK_EQ_INT(g_Orb.left, 600);
     CHECK_EQ_INT(g_Orb.top, 280);
@@ -324,7 +313,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
          i++) {
         tick++;
         Frame_VSync();
-        B20M_UpdateAndRender(&f.assets, f.shots_output, tick);
+        B20M_UpdateAndRender(&f.assets, tick);
     }
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_SECOND_FORM);
     CHECK_EQ_INT(g_B20M.hp, 6);
@@ -351,7 +340,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     Frame_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
-    CHECK(B20M_UpdateAndRender(&f.assets, f.shots_output, tick));
+    CHECK(B20M_UpdateAndRender(&f.assets, tick));
     CHECK_EQ_INT(g_B20M.phase, B20M_PHASE_DEFEAT);
     CHECK_EQ_INT(g_B20M.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 10000);
@@ -365,7 +354,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(arena.used, used);
     const B20M done = g_B20M;
-    CHECK(B20M_UpdateAndRender(&f.assets, f.shots_output, tick));
+    CHECK(B20M_UpdateAndRender(&f.assets, tick));
     CHECK(memcmp(&g_B20M, &done, sizeof(g_B20M)) == 0);
     CHECK_EQ_INT(g_Stage.score, 60000);
     Arena_Free(&arena);
@@ -388,13 +377,13 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     uint64_t tick = 100;
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;
-    CHECK(!B20M_UpdateAndRender(&f.assets, f.shots_output, tick));
+    CHECK(!B20M_UpdateAndRender(&f.assets, tick));
     CHECK(g_Player.is_hit);
     CHECK_EQ_INT(g_Rng, rng);
     const B20M pending = g_B20M;
-    CHECK(!B20M_UpdateAndRender(&f.assets, f.shots_output, tick + 5));
+    CHECK(!B20M_UpdateAndRender(&f.assets, tick + 5));
     CHECK(memcmp(&g_B20M, &pending, sizeof(g_B20M)) == 0);
-    CHECK(B20M_UpdateAndRender(&f.assets, f.shots_output, tick + 6));
+    CHECK(B20M_UpdateAndRender(&f.assets, tick + 6));
     CHECK(g_Rng != rng);
     CHECK_EQ_INT(g_B20M.frame, 50);
     CHECK_EQ_INT(g_B20M.resume_stage, B20M_RESUME_NONE);

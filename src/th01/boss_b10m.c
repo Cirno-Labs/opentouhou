@@ -62,9 +62,7 @@ void B10M_Init(void)
     memset(&g_B10M, 0, sizeof(g_B10M));
 }
 
-void B10M_Setup(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+void B10M_Setup(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     ASSERT(!g_B10M.defeating);
     ASSERT(Result_Ignore(B10M_ValidateAssets(assets)));
@@ -104,8 +102,7 @@ static int8_t M_Byte(const int32_t value)
 }
 
 static void M_Lock(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint8_t flags)
+    const B10M_ASSETS *const assets, const PTN *const miko, const uint8_t flags)
 {
     for (int32_t i = 0; i < 5; i++) {
         if ((flags & (1 << i)) != 0) {
@@ -115,8 +112,7 @@ static void M_Lock(
 }
 
 static void M_Track(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint8_t flags)
+    const B10M_ASSETS *const assets, const PTN *const miko, const uint8_t flags)
 {
     for (int32_t i = 0; i < 5; i++) {
         BOSS_ENTITY *const e = &g_B10M.eyes[i];
@@ -160,18 +156,15 @@ static void M_Common(void)
     g_B10M.hit.frame = Math16_Wrap(g_B10M.hit.frame + 1);
 }
 
-static void M_Snap(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Snap(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     Palette_Set(&g_Palette, &g_StagePalette);
     g_B10M.boss_palette = g_Palette.saved;
 }
 
 static void M_Group(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int32_t eye, const PELLET_GROUP group,
-    const int16_t speed, const bool iris)
+    const B10M_ASSETS *const assets, const PTN *const miko, const int32_t eye,
+    const PELLET_GROUP group, const int16_t speed, const bool iris)
 {
     Pellets_AddGroup(
         g_Session.settings.difficulty, Math16_Wrap(g_B10M.eyes[eye].left + 28),
@@ -179,9 +172,8 @@ static void M_Group(
 }
 
 static void M_Single(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int32_t eye, const uint8_t angle,
-    const PELLET_MOTION motion)
+    const B10M_ASSETS *const assets, const PTN *const miko, const int32_t eye,
+    const uint8_t angle, const PELLET_MOTION motion)
 {
     Pellets_AddSingle(
         g_Session.settings.difficulty, Math16_Wrap(g_B10M.eyes[eye].left + 28),
@@ -189,9 +181,7 @@ static void M_Single(
         motion == PELLET_REGULAR ? 0 : 64, 0, 0);
 }
 
-static void M_Hit(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Hit(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     bool colliding = false;
     for (int32_t i = 0; i < 5; i++) {
@@ -203,26 +193,16 @@ static void M_Hit(
     }
     const uint8_t flash[] = { 1, 11 };
     BossHit_UpdateAndRender(
-        &g_B10M.hit, shots_output, &g_B10M.hp, &g_B10M.boss_palette, flash, 2,
-        5000, colliding, (BOSS_SHOT_HITBOX) {});
-}
-
-static void M_MissileAction(void *const user, const MISSILES_ACTION action)
-{
-    const B10M_ASSETS *const assets = user;
-    if (action.kind == MISSILES_ACTION_EFFECT) {
-        Sound_Effect(action.effect);
-    } else {
-        Missiles_RenderAction(&assets->missiles, action);
-    }
+        &g_B10M.hit, &g_B10M.hp, &g_B10M.boss_palette, flash, 2, 5000,
+        colliding, (BOSS_SHOT_HITBOX) {});
 }
 
 static void M_Toggle(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const uint8_t close, const uint8_t open,
-    const int16_t dec, const int16_t inc, int16_t *const frame)
+    const B10M_ASSETS *const assets, const PTN *const miko, const uint8_t close,
+    const uint8_t open, const int16_t dec, const int16_t inc,
+    int16_t *const frame)
 {
-    M_Lock(assets, shots_output, miko, close | open);
+    M_Lock(assets, miko, close | open);
     *frame = Math16_Wrap(*frame + 1);
     if (*frame % 10 != 0) {
         if (dec < 3 && g_Palette.saved.colors[15][dec] > 0) {
@@ -253,8 +233,8 @@ static void M_Toggle(
 }
 
 static void M_DownLaser(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int32_t i, const bool put)
+    const B10M_ASSETS *const assets, const PTN *const miko, const int32_t i,
+    const bool put)
 {
     const int16_t x = Math16_Wrap(g_B10M.eyes[i].left + 28);
     const int16_t y = Math16_Wrap(g_B10M.eyes[i].top + 28);
@@ -265,20 +245,18 @@ static void M_DownLaser(
     }
 }
 
-static void M_Entrance(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     if (!g_B10M.hp_bar_filled) {
         g_B10M.hp_bar_filled = HudHp_Increment(g_B10M.hp, g_B10M.frame);
     }
     g_B10M.frame = Math16_Wrap(g_B10M.frame + 1);
-    M_Lock(assets, shots_output, miko, 31);
+    M_Lock(assets, miko, 31);
     for (int32_t i = 0; i < 5; i++) {
         const int16_t starts[] = { 160, 160, 180, 180, 200 };
         const int16_t ends[] = { 300, 300, 320, 320, 32767 };
         if (g_B10M.frame > starts[i] && g_B10M.frame < ends[i]) {
-            M_DownLaser(assets, shots_output, miko, i, true);
+            M_DownLaser(assets, miko, i, true);
             const int16_t x = Math16_Wrap(g_B10M.eyes[i].left + 28);
             const int16_t width = i == 1 ? 8 : 32;
             if (Boss_Player()->left > Math16_Wrap(x - 24)
@@ -329,64 +307,54 @@ static void M_Entrance(
             || (g_B10M.frame == 260
                 && g_Session.settings.difficulty
                     == SETTINGS_DIFFICULTY_LUNATIC)) {
-            M_Group(
-                assets, shots_output, miko, 4, PELLET_GROUP_FIVE_WIDE_AIMED, 54,
-                true);
-            M_Group(
-                assets, shots_output, miko, 3, PELLET_GROUP_FIVE_WIDE_AIMED, 54,
-                true);
-            M_Group(
-                assets, shots_output, miko, 2, PELLET_GROUP_FIVE_WIDE_AIMED, 54,
-                true);
+            M_Group(assets, miko, 4, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
+            M_Group(assets, miko, 3, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
+            M_Group(assets, miko, 2, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(
-                    assets, shots_output, miko, 0, PELLET_GROUP_FIVE_WIDE_AIMED,
-                    54, true);
+                    assets, miko, 0, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
                 M_Group(
-                    assets, shots_output, miko, 1, PELLET_GROUP_FIVE_WIDE_AIMED,
-                    54, true);
+                    assets, miko, 1, PELLET_GROUP_FIVE_WIDE_AIMED, 54, true);
             }
         }
     } else if (g_B10M.frame == 300) {
         M_Image(3, 1);
-        M_DownLaser(assets, shots_output, miko, 0, false);
-        M_DownLaser(assets, shots_output, miko, 1, false);
+        M_DownLaser(assets, miko, 0, false);
+        M_DownLaser(assets, miko, 1, false);
     } else if (g_B10M.frame == 320) {
         M_Image(3, 2);
         M_Active(3, true);
-        M_DownLaser(assets, shots_output, miko, 2, false);
-        M_DownLaser(assets, shots_output, miko, 3, false);
+        M_DownLaser(assets, miko, 2, false);
+        M_DownLaser(assets, miko, 3, false);
     } else if (g_B10M.frame > 330) {
         g_B10M.phase = B10M_PHASE_LATERAL;
         g_B10M.hit.invincible = false;
         g_B10M.frame = 0;
-        M_Snap(assets, shots_output, miko);
+        M_Snap(assets, miko);
         g_B10M.hp_bar_filled = false;
         g_B10M.eyes[0].image = 4;
         g_B10M.eyes[1].image = 3;
         g_B10M.pattern_interval = Boss_Rank(350, 300, 200, 130);
-        M_DownLaser(assets, shots_output, miko, 4, false);
+        M_DownLaser(assets, miko, 4, false);
     }
 }
 
-static void M_Lateral(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Lateral(const B10M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Lock(assets, shots_output, miko, 3);
-    M_Track(assets, shots_output, miko, 3);
+    M_Lock(assets, miko, 3);
+    M_Track(assets, miko, 3);
     const int16_t frame = g_B10M.frame % g_B10M.pattern_interval;
     const int16_t times[] = { 10, 25, 40, 60, 80, 110 };
     const int16_t speeds[] = { 24, 28, 32, 44, 50, 68 };
     for (int32_t i = 0; i < 6; i++) {
         if (frame == times[i]) {
             M_Group(
-                assets, shots_output, miko, 0,
+                assets, miko, 0,
                 i == 5 ? PELLET_GROUP_SINGLE_AIMED
                        : PELLET_GROUP_TWO_WIDE_AIMED,
                 speeds[i], false);
             M_Group(
-                assets, shots_output, miko, 1,
+                assets, miko, 1,
                 i == 5 ? PELLET_GROUP_SINGLE_AIMED
                        : PELLET_GROUP_TWO_WIDE_AIMED,
                 speeds[i], false);
@@ -396,8 +364,7 @@ static void M_Lateral(
 }
 
 static void M_FireMissiles(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10M_ASSETS *const assets, const PTN *const miko)
 {
     const uint8_t angles[] = { g_B10M.angle, g_B10M.angle_southeast };
     for (int32_t i = 0; i < 2; i++) {
@@ -409,11 +376,10 @@ static void M_FireMissiles(
 }
 
 static void M_Missiles(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const bool clock)
+    const B10M_ASSETS *const assets, const PTN *const miko, const bool clock)
 {
-    M_Lock(assets, shots_output, miko, 12);
-    M_Track(assets, shots_output, miko, 12);
+    M_Lock(assets, miko, 12);
+    M_Track(assets, miko, 12);
     if (g_B10M.frame >= 90 && (g_B10M.subphase == 0 || g_B10M.subphase == 4)) {
         M_Image(12, 1);
     }
@@ -438,7 +404,7 @@ static void M_Missiles(
                           + 16);
         }
         if (g_B10M.frame % 8 == 0) {
-            M_FireMissiles(assets, shots_output, miko);
+            M_FireMissiles(assets, miko);
         }
         if (g_B10M.frame == 200) {
             g_B10M.subphase++;
@@ -457,7 +423,7 @@ static void M_Missiles(
                 g_B10M.angle = (uint8_t)(g_B10M.angle - 2);
                 g_B10M.angle_southeast = (uint8_t)(g_B10M.angle_southeast + 2);
             }
-            M_FireMissiles(assets, shots_output, miko);
+            M_FireMissiles(assets, miko);
             if (g_B10M.pattern_state > 10) {
                 g_B10M.subphase++;
                 g_B10M.pattern_state = 0;
@@ -477,7 +443,7 @@ static void M_Missiles(
             g_B10M.angle = (uint8_t)(g_B10M.angle + 2);
             g_B10M.angle_southeast = (uint8_t)(g_B10M.angle_southeast - 2);
         }
-        M_FireMissiles(assets, shots_output, miko);
+        M_FireMissiles(assets, miko);
         if (g_B10M.pattern_state > 10) {
             g_B10M.subphase = 0;
             g_B10M.pattern_state = 0;
@@ -487,14 +453,12 @@ static void M_Missiles(
     }
 }
 
-static void M_Spray(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Spray(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     g_B10M.pattern_state = Math16_Wrap(g_B10M.pattern_state + 1);
     g_B10M.angle--;
-    M_Lock(assets, shots_output, miko, 3);
-    M_Track(assets, shots_output, miko, 3);
+    M_Lock(assets, miko, 3);
+    M_Track(assets, miko, 3);
     if (g_B10M.frame == 100 && g_B10M.subphase == 0) {
         g_B10M.pattern_state = 0;
         g_B10M.subphase = 1;
@@ -502,10 +466,8 @@ static void M_Spray(
     if (g_B10M.subphase == 1) {
         if (g_B10M.pattern_state % g_B10M.pattern_interval == 0) {
             M_Single(
-                assets, shots_output, miko, 0, (uint8_t)(128 - g_B10M.angle),
-                PELLET_REGULAR);
-            M_Single(
-                assets, shots_output, miko, 1, g_B10M.angle, PELLET_REGULAR);
+                assets, miko, 0, (uint8_t)(128 - g_B10M.angle), PELLET_REGULAR);
+            M_Single(assets, miko, 1, g_B10M.angle, PELLET_REGULAR);
         }
         if (g_B10M.pattern_state / 5 >= 36) {
             g_B10M.subphase = 2;
@@ -520,10 +482,10 @@ static void M_Spray(
     if (g_B10M.subphase == 3) {
         if (g_B10M.pattern_state % g_B10M.pattern_interval == 0) {
             M_Single(
-                assets, shots_output, miko, 0, (uint8_t)(128 - g_B10M.angle),
+                assets, miko, 0, (uint8_t)(128 - g_B10M.angle),
                 PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR);
             M_Single(
-                assets, shots_output, miko, 1, g_B10M.angle,
+                assets, miko, 1, g_B10M.angle,
                 PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR);
         }
         if (g_B10M.pattern_state / 5 >= 20) {
@@ -536,8 +498,8 @@ static void M_Spray(
 }
 
 static void M_Laser(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const bool left, const bool restore_only)
+    const B10M_ASSETS *const assets, const PTN *const miko, const bool left,
+    const bool restore_only)
 {
     const int16_t x = Math16_Wrap(g_B10M.eyes[4].left + 28);
     const int16_t y = Math16_Wrap(g_B10M.eyes[4].top + 28);
@@ -551,11 +513,9 @@ static void M_Laser(
     }
 }
 
-static void M_Lasers(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Lasers(const B10M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Lock(assets, shots_output, miko, 16);
+    M_Lock(assets, miko, 16);
     if (g_B10M.frame >= 30 && g_B10M.subphase % 2 == 0) {
         g_B10M.eyes[4].image = 1;
     }
@@ -577,23 +537,21 @@ static void M_Lasers(
     }
     if (iteration == 2) {
         g_B10M.eyes[4].image = 6;
-        M_Laser(assets, shots_output, miko, false, false);
-        M_Laser(assets, shots_output, miko, true, false);
+        M_Laser(assets, miko, false, false);
+        M_Laser(assets, miko, true, false);
         if (g_B10M.pattern_state >= 288) {
-            M_Laser(assets, shots_output, miko, false, true);
-            M_Laser(assets, shots_output, miko, true, true);
+            M_Laser(assets, miko, false, true);
+            M_Laser(assets, miko, true, true);
             g_B10M.subphase = 6;
             g_B10M.frame = 0;
             g_B10M.pattern_state = 0;
             if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_HARD) {
                 M_Group(
-                    assets, shots_output, miko, 4,
-                    PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
+                    assets, miko, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
             if (g_Session.settings.difficulty == SETTINGS_DIFFICULTY_LUNATIC) {
                 M_Group(
-                    assets, shots_output, miko, 4,
-                    PELLET_GROUP_FIVE_NARROW_AIMED, 4, true);
+                    assets, miko, 4, PELLET_GROUP_FIVE_NARROW_AIMED, 4, true);
             }
         }
     } else {
@@ -601,16 +559,15 @@ static void M_Lasers(
             ? (iteration == 1 ? 5 : 4)
             : g_B10M.pattern_state >= 384 ? (iteration == 1 ? 4 : 5)
                                           : 3;
-        M_Laser(assets, shots_output, miko, iteration == 1, false);
+        M_Laser(assets, miko, iteration == 1, false);
         if (g_B10M.pattern_state >= 592) {
-            M_Laser(assets, shots_output, miko, iteration == 1, true);
+            M_Laser(assets, miko, iteration == 1, true);
             g_B10M.subphase = (int16_t)((iteration + 1) * 2);
             g_B10M.frame = 0;
             g_B10M.pattern_state = 0;
             if (g_Session.settings.difficulty > SETTINGS_DIFFICULTY_NORMAL) {
                 M_Group(
-                    assets, shots_output, miko, 4,
-                    PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
+                    assets, miko, 4, PELLET_GROUP_THREE_NARROW_AIMED, 3, true);
             }
         }
     }
@@ -635,8 +592,8 @@ static MATH16_VECTOR M_ShrinkPoint(const int32_t i, const int16_t distance)
 }
 
 static void M_Shrink(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t distance, const bool restore)
+    const B10M_ASSETS *const assets, const PTN *const miko,
+    const int16_t distance, const bool restore)
 {
     const int32_t order[] = { 4, 2, 1, 0, 3, 4 };
     for (int32_t i = 0; i < 5; i++) {
@@ -651,8 +608,7 @@ static void M_Shrink(
 }
 
 static void M_Star(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const bool restore)
+    const B10M_ASSETS *const assets, const PTN *const miko, const bool restore)
 {
     const int32_t order[] = { 0, 2, 4, 1, 3, 0 };
     const B10M_PENTAGRAM *const p = &g_B10M.pentagram;
@@ -677,17 +633,15 @@ static void M_Corners(const int16_t angle)
 }
 
 static void M_Regular(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t angle)
+    const B10M_ASSETS *const assets, const PTN *const miko, const int16_t angle)
 {
-    M_Star(assets, shots_output, miko, true);
+    M_Star(assets, miko, true);
     M_Corners(angle);
-    M_Star(assets, shots_output, miko, false);
+    M_Star(assets, miko, false);
 }
 
 static void M_EnterStarRise(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10M_ASSETS *const assets, const PTN *const miko)
 {
     M_Next(B10M_PHASE_STAR_RISE);
     g_B10M.subphase = 0;
@@ -701,27 +655,25 @@ static void M_EnterStarRise(
     g_B10M.pattern_interval = Boss_Rank(24, 14, 10, 8);
 }
 
-static void M_SpawnStar(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_SpawnStar(const B10M_ASSETS *const assets, const PTN *const miko)
 {
-    M_Lock(assets, shots_output, miko, 31);
-    M_Track(assets, shots_output, miko, 31);
+    M_Lock(assets, miko, 31);
+    M_Track(assets, miko, 31);
     if (g_B10M.frame == 100 || g_B10M.subphase == 1) {
         if (g_B10M.subphase == 0) {
             g_B10M.subphase = 1;
             g_B10M.target_left = Boss_Player()->left;
         }
-        M_Shrink(assets, shots_output, miko, 0, false);
+        M_Shrink(assets, miko, 0, false);
         if (g_B10M.frame == 140) {
             g_B10M.subphase = 2;
             g_B10M.pattern_state = 0;
         }
     }
     if (g_B10M.subphase == 2 && g_B10M.frame % 4 == 1) {
-        M_Shrink(assets, shots_output, miko, g_B10M.pattern_state, true);
+        M_Shrink(assets, miko, g_B10M.pattern_state, true);
         g_B10M.pattern_state = Math16_Wrap(g_B10M.pattern_state + 8);
-        M_Shrink(assets, shots_output, miko, g_B10M.pattern_state, false);
+        M_Shrink(assets, miko, g_B10M.pattern_state, false);
         if (g_B10M.pattern_state > 160) {
             const int32_t order[] = { 4, 2, 1, 0, 3 };
             for (int32_t i = 0; i < 5; i++) {
@@ -742,9 +694,7 @@ static void M_Spin(const bool clockwise)
         Math16_Wrap(g_B10M.pentagram.angle + (clockwise ? delta : -delta));
 }
 
-static void M_Aim(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_Aim(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     g_B10M.pentagram.velocity = Math16_Aim(
         g_B10M.pentagram.center, (MATH16_VECTOR) { Boss_Player()->left, 400 },
@@ -752,41 +702,38 @@ static void M_Aim(
 }
 
 static void M_Back(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t phase)
+    const B10M_ASSETS *const assets, const PTN *const miko, const int16_t phase)
 {
     g_B10M.pentagram.phase = phase;
     M_Next(B10M_PHASE_TO_STAR);
     g_B10M.subphase = 3;
     g_B10M.iterations = 3;
     g_B10M.pattern_state = 0;
-    M_Star(assets, shots_output, miko, true);
+    M_Star(assets, miko, true);
 }
 
 static bool M_SlamStar(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko, const int16_t threshold)
+    const B10M_ASSETS *const assets, const PTN *const miko,
+    const int16_t threshold)
 {
     if (g_B10M.frame % 4 == 0) {
         if (g_B10M.pentagram.center.y < 400 - threshold) {
-            M_Aim(assets, shots_output, miko);
+            M_Aim(assets, miko);
         }
         M_Spin(true);
         g_B10M.pentagram.center.x = Math16_Wrap(
             g_B10M.pentagram.center.x + g_B10M.pentagram.velocity.x);
         g_B10M.pentagram.center.y = Math16_Wrap(
             g_B10M.pentagram.center.y + g_B10M.pentagram.velocity.y);
-        M_Regular(assets, shots_output, miko, g_B10M.pentagram.angle);
+        M_Regular(assets, miko, g_B10M.pentagram.angle);
     }
     return g_B10M.pentagram.center.y >= 420;
 }
 
-static void M_AttackStar(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static void M_AttackStar(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     g_B10M.pattern_state = Math16_Wrap(g_B10M.pattern_state + 1);
-    M_Lock(assets, shots_output, miko, (uint8_t)g_B10M.iterations);
+    M_Lock(assets, miko, (uint8_t)g_B10M.iterations);
     if (g_B10M.hit.invincible && g_B10M.after_hit_frame == 0) {
         g_B10M.iterations = M_Byte(g_B10M.iterations * 2);
         g_B10M.after_hit_frame = 1;
@@ -795,7 +742,7 @@ static void M_AttackStar(
         }
     } else if (g_B10M.after_hit_frame > 0) {
         M_Toggle(
-            assets, shots_output, miko,
+            assets, miko,
             g_B10M.iterations == 1 ? 16 : (uint8_t)(g_B10M.iterations >> 1),
             (uint8_t)g_B10M.iterations, 3, 3, &g_B10M.after_hit_frame);
         if (g_B10M.after_hit_frame >= 70) {
@@ -803,7 +750,7 @@ static void M_AttackStar(
             g_B10M.pattern_state = 0;
         }
     } else {
-        M_Track(assets, shots_output, miko, (uint8_t)g_B10M.iterations);
+        M_Track(assets, miko, (uint8_t)g_B10M.iterations);
     }
     B10M_PENTAGRAM *const p = &g_B10M.pentagram;
     if (g_B10M.subphase == 0 && g_B10M.frame % g_B10M.pattern_interval == 0
@@ -826,7 +773,7 @@ static void M_AttackStar(
         || p->phase == B10M_STAR_SPIN_3) {
         if (g_B10M.frame % 4 == 0) {
             M_Spin(true);
-            M_Regular(assets, shots_output, miko, p->angle);
+            M_Regular(assets, miko, p->angle);
         }
         if (g_B10M.frame >= 200) {
             p->phase++;
@@ -836,38 +783,35 @@ static void M_AttackStar(
     if (p->phase == B10M_STAR_REVERSE_1 || p->phase == B10M_STAR_REVERSE_2) {
         if (g_B10M.frame % 4 == 0) {
             M_Spin(false);
-            M_Regular(assets, shots_output, miko, p->angle);
+            M_Regular(assets, miko, p->angle);
         }
         if (g_B10M.frame >= 200) {
             p->phase++;
             g_B10M.frame = 0;
-            M_Aim(assets, shots_output, miko);
+            M_Aim(assets, miko);
         }
     } else if (p->phase == B10M_STAR_SLAM) {
-        if (M_SlamStar(assets, shots_output, miko, 100)) {
-            M_Back(assets, shots_output, miko, B10M_STAR_RETURN);
+        if (M_SlamStar(assets, miko, 100)) {
+            M_Back(assets, miko, B10M_STAR_RETURN);
         }
     } else if (p->phase == B10M_STAR_GROW) {
         if (g_B10M.frame % 4 == 0) {
             p->radius = Math16_Wrap(p->radius + 1);
             M_Spin(true);
-            M_Regular(assets, shots_output, miko, p->angle);
+            M_Regular(assets, miko, p->angle);
         }
         if (g_B10M.frame >= 200) {
             p->phase = B10M_STAR_GROWN_SLAM;
             g_B10M.frame = 0;
-            M_Aim(assets, shots_output, miko);
+            M_Aim(assets, miko);
         }
     }
-    if (p->phase == B10M_STAR_GROWN_SLAM
-        && M_SlamStar(assets, shots_output, miko, 140)) {
-        M_Back(assets, shots_output, miko, B10M_STAR_WAIT);
+    if (p->phase == B10M_STAR_GROWN_SLAM && M_SlamStar(assets, miko, 140)) {
+        M_Back(assets, miko, B10M_STAR_WAIT);
     }
 }
 
-static bool M_Death(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+static bool M_Death(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
             &g_B10M.defeat, &g_B10M.post_defeat, miko, &g_Orb.top)) {
@@ -875,7 +819,7 @@ static bool M_Death(
     }
     Scene_Activate(&assets->next_scene);
     if (g_B10M.phase == B10M_PHASE_STAR_SPAWN && !g_B10M.hit.invincible) {
-        M_EnterStarRise(assets, shots_output, miko);
+        M_EnterStarRise(assets, miko);
     }
     g_B10M.defeating = false;
     g_B10M.finished = true;
@@ -883,24 +827,21 @@ static bool M_Death(
 }
 
 bool B10M_UpdateAndRender(
-    const B10M_ASSETS *const assets, const SHOTS_OUTPUT shots_output,
-    const PTN *const miko)
+    const B10M_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B10M.finished) {
         return true;
     }
     if (g_B10M.defeating) {
-        return M_Death(assets, shots_output, miko);
+        return M_Death(assets, miko);
     }
-    Missiles_UpdateAndRender(
-        (uint16_t)g_Session.frame_rand,
-        (MISSILES_OUTPUT) { M_MissileAction, (void *)assets });
+    Missiles_UpdateAndRender((uint16_t)g_Session.frame_rand, &assets->missiles);
     if (g_B10M.phase == B10M_PHASE_ENTRANCE) {
-        M_Entrance(assets, shots_output, miko);
+        M_Entrance(assets, miko);
     } else if (g_B10M.phase == B10M_PHASE_LATERAL) {
         M_Common();
-        M_Lateral(assets, shots_output, miko);
-        M_Hit(assets, shots_output, miko);
+        M_Lateral(assets, miko);
+        M_Hit(assets, miko);
         if (g_B10M.hp <= 15 || g_B10M.frame > 1100) {
             M_Next(B10M_PHASE_TO_MISSILES);
         }
@@ -912,21 +853,21 @@ bool B10M_UpdateAndRender(
         || g_B10M.phase == B10M_PHASE_TO_STAR) {
         switch (g_B10M.phase) {
         case B10M_PHASE_TO_MISSILES:
-            M_Toggle(assets, shots_output, miko, 3, 12, 0, 2, &g_B10M.frame);
+            M_Toggle(assets, miko, 3, 12, 0, 2, &g_B10M.frame);
             break;
         case B10M_PHASE_TO_SPRAY:
-            M_Toggle(assets, shots_output, miko, 12, 3, 1, 0, &g_B10M.frame);
+            M_Toggle(assets, miko, 12, 3, 1, 0, &g_B10M.frame);
             break;
         case B10M_PHASE_TO_MISSILES_CLOCK:
-            M_Toggle(assets, shots_output, miko, 3, 12, 0, 3, &g_B10M.frame);
+            M_Toggle(assets, miko, 3, 12, 0, 3, &g_B10M.frame);
             break;
         case B10M_PHASE_TO_LASERS:
-            M_Toggle(assets, shots_output, miko, 12, 16, 2, 1, &g_B10M.frame);
+            M_Toggle(assets, miko, 12, 16, 2, 1, &g_B10M.frame);
             break;
         case B10M_PHASE_TO_STAR:
             M_Toggle(
-                assets, shots_output, miko, 0, 31, g_B10M.subphase,
-                g_B10M.iterations, &g_B10M.frame);
+                assets, miko, 0, 31, g_B10M.subphase, g_B10M.iterations,
+                &g_B10M.frame);
             break;
         }
         if (g_B10M.frame >= 70) {
@@ -948,31 +889,29 @@ bool B10M_UpdateAndRender(
             } else {
                 g_B10M.pentagram.angle = 0;
             }
-            M_Snap(assets, shots_output, miko);
+            M_Snap(assets, miko);
         }
     } else if (
         g_B10M.phase == B10M_PHASE_MISSILES
         || g_B10M.phase == B10M_PHASE_MISSILES_CLOCK) {
         M_Common();
-        M_Missiles(
-            assets, shots_output, miko,
-            g_B10M.phase == B10M_PHASE_MISSILES_CLOCK);
-        M_Hit(assets, shots_output, miko);
+        M_Missiles(assets, miko, g_B10M.phase == B10M_PHASE_MISSILES_CLOCK);
+        M_Hit(assets, miko);
         if (g_B10M.hp <= (g_B10M.phase == B10M_PHASE_MISSILES ? 12 : 8)
             || g_B10M.iterations >= 5) {
             M_Next((int8_t)(g_B10M.phase + 1));
         }
     } else if (g_B10M.phase == B10M_PHASE_SPRAY) {
         M_Common();
-        M_Spray(assets, shots_output, miko);
-        M_Hit(assets, shots_output, miko);
+        M_Spray(assets, miko);
+        M_Hit(assets, miko);
         if (g_B10M.hp <= 10 || g_B10M.iterations > 4) {
             M_Next(B10M_PHASE_TO_MISSILES_CLOCK);
         }
     } else if (g_B10M.phase == B10M_PHASE_LASERS) {
         M_Common();
-        M_Lasers(assets, shots_output, miko);
-        M_Hit(assets, shots_output, miko);
+        M_Lasers(assets, miko);
+        M_Hit(assets, miko);
         if (g_B10M.hp <= 2 || g_B10M.subphase == 6) {
             M_Next(B10M_PHASE_TO_STAR);
             g_B10M.subphase = 1;
@@ -985,11 +924,11 @@ bool B10M_UpdateAndRender(
         const bool attack = g_B10M.phase == B10M_PHASE_STAR_ATTACK;
         M_Common();
         if (g_B10M.phase == B10M_PHASE_STAR_SPAWN) {
-            M_SpawnStar(assets, shots_output, miko);
+            M_SpawnStar(assets, miko);
         } else {
-            M_AttackStar(assets, shots_output, miko);
+            M_AttackStar(assets, miko);
         }
-        M_Hit(assets, shots_output, miko);
+        M_Hit(assets, miko);
         if (g_B10M.hp <= 0) {
             Sound_Fade();
             Pellets_EraseAndResetMoving();
@@ -999,19 +938,19 @@ bool B10M_UpdateAndRender(
             ShootoutLasers_EraseAndReset(5);
             BossDefeat_Begin(&g_B10M.defeat, BOSS_DEFEAT_REGULAR);
             g_B10M.defeating = true;
-            return M_Death(assets, shots_output, miko);
+            return M_Death(assets, miko);
         }
         if (g_B10M.phase == B10M_PHASE_STAR_SPAWN && g_B10M.subphase == 3
             && !g_B10M.hit.invincible) {
-            M_EnterStarRise(assets, shots_output, miko);
+            M_EnterStarRise(assets, miko);
         }
     } else if (g_B10M.phase == B10M_PHASE_STAR_RISE) {
         g_B10M.hit.frame = Math16_Wrap(g_B10M.hit.frame + 1);
-        M_Toggle(assets, shots_output, miko, 30, 1, 1, 0, &g_B10M.frame);
+        M_Toggle(assets, miko, 30, 1, 1, 0, &g_B10M.frame);
         if (g_B10M.hit.frame % 4 == 0) {
             g_B10M.pentagram.center.y =
                 Math16_Wrap(g_B10M.pentagram.center.y - 3);
-            M_Regular(assets, shots_output, miko, 192);
+            M_Regular(assets, miko, 192);
         }
         if (g_B10M.frame >= 70) {
             M_Next(B10M_PHASE_STAR_ATTACK);
@@ -1020,7 +959,7 @@ bool B10M_UpdateAndRender(
             g_B10M.pattern_state = 0;
             g_B10M.pentagram.angle = 0;
             g_B10M.after_hit_frame = 0;
-            M_Snap(assets, shots_output, miko);
+            M_Snap(assets, miko);
         }
     }
     return true;

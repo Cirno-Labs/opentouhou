@@ -1,4 +1,5 @@
 #include "th01/shots.h"
+#include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
 #include "th01/sprite.h"
@@ -12,36 +13,32 @@ void Shots_Init(void)
     memset(&g_Shots, 0, sizeof(g_Shots));
 }
 
-static void M_Action(
-    const SHOTS_OUTPUT output, const SHOTS_ACTION_KIND kind,
-    const SHOT *const shot)
+static int16_t M_Quarter(const SHOT *const shot)
 {
-    output.action(
-        output.user,
-        (SHOTS_ACTION) {
-            .kind = kind,
-            .left = shot->left,
-            .top = shot->top,
-            .quarter = shot->moving ? 0 : shot->decay_frame / 4 + 1,
-        });
+    return shot->moving ? 0 : (int16_t)(shot->decay_frame / 4 + 1);
 }
 
-static void M_Effect(const SHOTS_OUTPUT output, const int16_t effect)
+static void M_Restore(const SHOT *const shot)
 {
-    output.action(
-        output.user,
-        (SHOTS_ACTION) {
-            .kind = SHOTS_ACTION_EFFECT,
-            .effect = effect,
-        });
+    Sprite_Restore16(shot->left, shot->top, 16, 16);
 }
 
-static void M_Hit(SHOT *const shot, const SHOTS_OUTPUT output)
+static void M_Put(const PTN *const sprites, const SHOT *const shot)
 {
-    M_Action(output, SHOTS_ACTION_RESTORE, shot);
+    Sprite_PtnPut(sprites, SHOTS_PTN, M_Quarter(shot), shot->left, shot->top);
+}
+
+static void M_Erase(const PTN *const sprites, const SHOT *const shot)
+{
+    Sprite_PtnErase(sprites, SHOTS_PTN, M_Quarter(shot), shot->left, shot->top);
+}
+
+static void M_Hit(SHOT *const shot)
+{
+    M_Restore(shot);
     shot->moving = false;
     shot->decay_frame = 1;
-    M_Effect(output, 16);
+    Sound_Effect(16);
 }
 
 RESULT Shots_ValidateSprites(const PTN *const sprites)
@@ -52,7 +49,7 @@ RESULT Shots_ValidateSprites(const PTN *const sprites)
     return OK;
 }
 
-bool Shots_Add(const int16_t left, const int16_t top, const SHOTS_OUTPUT output)
+bool Shots_Add(const int16_t left, const int16_t top)
 {
     if (left < 0 || left > 639) {
         return false;
@@ -63,7 +60,7 @@ bool Shots_Add(const int16_t left, const int16_t top, const SHOTS_OUTPUT output)
             shot->left = left;
             shot->top = top;
             shot->moving = true;
-            M_Effect(output, 1);
+            Sound_Effect(1);
             shot->decay_frame = 0;
             return true;
         }
@@ -71,15 +68,15 @@ bool Shots_Add(const int16_t left, const int16_t top, const SHOTS_OUTPUT output)
     return false;
 }
 
-void Shots_EraseAndReset(const SHOTS_OUTPUT output)
+void Shots_EraseAndReset(void)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &g_Shots.slots[i];
         if (shot->moving) {
-            M_Action(output, SHOTS_ACTION_RESTORE, shot);
+            M_Restore(shot);
             shot->moving = false;
         } else if (shot->decay_frame != 0) {
-            M_Action(output, SHOTS_ACTION_RESTORE, shot);
+            M_Restore(shot);
             shot->decay_frame = 0;
         }
     }
@@ -107,36 +104,35 @@ bool Shots_HitTestOrb(const int32_t slot)
     return true;
 }
 
-void Shots_UpdateAndRender(const SHOTS_OUTPUT output)
+void Shots_UpdateAndRender(const PTN *const sprites)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &g_Shots.slots[i];
         if (shot->moving) {
-            M_Action(output, SHOTS_ACTION_RESTORE, shot);
+            M_Restore(shot);
             shot->top = Math16_Wrap(shot->top - 12);
             if (!g_Orb.in_portal && Shots_HitTestOrb(i)) {
                 continue;
             }
             if (shot->top >= 64) {
-                M_Action(output, SHOTS_ACTION_PUT, shot);
+                M_Put(sprites, shot);
             } else {
                 shot->moving = false;
             }
         } else if (shot->decay_frame != 0) {
-            M_Action(output, SHOTS_ACTION_ERASE, shot);
+            M_Erase(sprites, shot);
             shot->decay_frame++;
             if (shot->decay_frame > 7) {
                 shot->decay_frame = 0;
                 shot->moving = false;
             } else {
-                M_Action(output, SHOTS_ACTION_PUT, shot);
+                M_Put(sprites, shot);
             }
         }
     }
 }
 
-bool Shots_HitTestPellet(
-    const int16_t left, const int16_t top, const SHOTS_OUTPUT output)
+bool Shots_HitTestPellet(const int16_t left, const int16_t top)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &g_Shots.slots[i];
@@ -144,7 +140,7 @@ bool Shots_HitTestPellet(
         const int16_t dy = Math16_Wrap(shot->top - top);
         if (shot->moving && shot->decay_frame != 1 && dx <= 6 && dx >= -14
             && dy <= 6 && dy >= -14) {
-            M_Hit(shot, output);
+            M_Hit(shot);
             return true;
         }
     }
@@ -153,35 +149,16 @@ bool Shots_HitTestPellet(
 
 bool Shots_HitTestBoss(
     const int16_t left, const int16_t top, const int16_t width_minus_shot,
-    const int16_t height_minus_shot, const SHOTS_OUTPUT output)
+    const int16_t height_minus_shot)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
         SHOT *const shot = &g_Shots.slots[i];
         if (shot->moving && shot->left >= left && shot->top >= top
             && shot->left <= Math16_Wrap(left + width_minus_shot)
             && shot->top <= Math16_Wrap(top + height_minus_shot)) {
-            M_Hit(shot, output);
+            M_Hit(shot);
             return true;
         }
     }
     return false;
-}
-
-void Shots_RenderAction(const PTN *const sprites, const SHOTS_ACTION action)
-{
-    switch (action.kind) {
-    case SHOTS_ACTION_RESTORE:
-        Sprite_Restore16(action.left, action.top, 16, 16);
-        break;
-    case SHOTS_ACTION_PUT:
-        Sprite_PtnPut(
-            sprites, SHOTS_PTN, action.quarter, action.left, action.top);
-        break;
-    case SHOTS_ACTION_ERASE:
-        Sprite_PtnErase(
-            sprites, SHOTS_PTN, action.quarter, action.left, action.top);
-        break;
-    case SHOTS_ACTION_EFFECT:
-        break;
-    }
 }

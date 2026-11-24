@@ -132,8 +132,8 @@ RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *assets);
 // does not update the HUD or extend threshold. Saves the low sixteen bits of
 // live continues_total after resetting input, before the confirmation loop.
 bool Bonus_BeginTotal(
-    const BONUS_TOTAL_ASSETS *assets, SHOTS_OUTPUT shots_output,
-    int16_t stage_number, const TH01_INPUT *raw, uint64_t host_tick);
+    const BONUS_TOTAL_ASSETS *assets, int16_t stage_number,
+    const TH01_INPUT *raw, uint64_t host_tick);
 
 // Resumes source frame delays with count1 carry and four-millisecond digit
 // delays with fractional credit from a monotonic 60 Hz host serial. Several
@@ -150,5 +150,5 @@ bool Bonus_BeginTotal(
 // bonuses. Advance only independent VSync/audio while the world is suspended.
 // Successful updates and pending polls allocate nothing and perform no IO.
 bool Bonus_ResumeTotal(
-    const BONUS_TOTAL_ASSETS *assets, SHOTS_OUTPUT shots_output,
-    const TH01_INPUT *raw, uint64_t host_tick);
+    const BONUS_TOTAL_ASSETS *assets, const TH01_INPUT *raw,
+    uint64_t host_tick);
