@@ -1,6 +1,7 @@
 #include "core/archive/zip.h"
 
 #include "core/archive/format.h"
+#include "core/archive/deflate.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/hash/crc32.h"
@@ -72,7 +73,6 @@ static RESULT M_CheckEntry(
         record->packed_size == UINT32_MAX || size == UINT32_MAX
             || record->header_offset == UINT32_MAX,
         "%s needs ZIP64, which is not supported", name);
-    FAIL_IF(size > ZIP_MAX_ENTRY_SIZE, "%s is too large to unpack", name);
     return OK;
 }
 
@@ -184,11 +184,8 @@ static RESULT M_ReadDeflated(
     return result;
 }
 
-static RESULT M_ReadData(
-    READER *const archive, const void *const data, uint8_t *const out,
-    const size_t size)
+static RESULT M_SeekData(READER *const archive, const ZIP_RECORD *const record)
 {
-    const ZIP_RECORD *const record = data;
     Reader_Seek(archive, record->header_offset);
     const uint32_t signature = Reader_ReadU32(archive);
     Reader_Skip(archive, 22);
@@ -197,6 +194,18 @@ static RESULT M_ReadData(
     Reader_Skip(archive, (size_t)name_size + extra_size);
     MUST(Reader_Result(archive));
     FAIL_IF(signature != M_HEADER_SIGNATURE, "its local header is damaged");
+    FAIL_IF(
+        record->packed_size > Reader_Remaining(archive),
+        "its packed data is outside the archive");
+    return OK;
+}
+
+static RESULT M_ReadData(
+    READER *const archive, const void *const data, uint8_t *const out,
+    const size_t size)
+{
+    const ZIP_RECORD *const record = data;
+    MUST(M_SeekData(archive, record));
     if (record->method == M_METHOD_STORED) {
         FAIL_IF(record->packed_size != size, "its stored size does not match");
         Reader_ReadBytes(archive, out, size);
@@ -212,8 +221,41 @@ static RESULT M_ReadData(
     return OK;
 }
 
+static RESULT M_OpenEntry(
+    READER *const archive, const void *const data, const size_t size,
+    const ALLOCATOR *const allocator, READER *const out)
+{
+    const ZIP_RECORD *const record = data;
+    MUST(M_SeekData(archive, record));
+    READER packed = Reader_Slice(archive, record->packed_size);
+    MUST(Reader_Result(archive));
+    if (record->method == M_METHOD_DEFLATE) {
+        return Deflate_Open(&packed, size, record->crc, allocator, out);
+    }
+    FAIL_IF(
+        record->method != M_METHOD_STORED,
+        "its compression method %u is not supported", record->method);
+    FAIL_IF(record->packed_size != size, "its stored size does not match");
+    uint8_t buffer[READER_BUFFER_SIZE];
+    uint32_t crc = 0;
+    while (Reader_Remaining(&packed) != 0) {
+        const size_t count = Reader_Remaining(&packed) < sizeof(buffer)
+            ? Reader_Remaining(&packed)
+            : sizeof(buffer);
+        Reader_ReadBytes(&packed, buffer, count);
+        MUST(Reader_Result(&packed));
+        crc = Crc32_Update(crc, buffer, count);
+    }
+    FAIL_IF(crc != record->crc, "its CRC-32 does not match");
+    Reader_Seek(&packed, 0);
+    *out = packed;
+    return OK;
+}
+
 const ARCHIVE_FORMAT g_ZipFormat = {
     .lookup = ARCHIVE_LOOKUP_PATH,
+    .max_entry_size = ZIP_MAX_ENTRY_SIZE,
+    .open_entry = M_OpenEntry,
     .read_table = M_ReadTable,
     .read_entry = M_ReadData,
 };

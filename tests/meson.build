@@ -128,8 +128,9 @@ test(
     c_args: core_include,
     implicit_include_directories: false,
     link_with: [core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
-    dependencies: [zlib],
+    dependencies: [zlib, sdl3],
   ),
+  env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'archive_zip'},
   suite: ['unit', 'core'],
 )
 

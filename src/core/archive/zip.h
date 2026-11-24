@@ -7,14 +7,16 @@
 // Reads zip archives as an ARCHIVE_FORMAT, and writes them. Entries that are
 // stored or compressed with deflate can be read, and each is checked against
 // its CRC-32. ZIP64, encryption and archives of several parts are not
-// supported. An entry name without the UTF-8 flag is read as CP932, as
-// Japanese Windows writes it, and kept as its raw bytes when it is not valid
-// CP932. Names are looked up by the whole path, exactly. The Unix mode
-// of an entry is the one the archive records when it was made on Unix, and
-// 0 otherwise.
+// supported. VFS_STREAM reads stored entries from the archive and deflated
+// entries through seek checkpoints. Opening a stream scans the entry to
+// check its size and CRC-32 without keeping it whole in memory. An entry name
+// without the UTF-8 flag is read as CP932, as Japanese Windows writes it, and
+// kept as its raw bytes when it is not valid CP932. Names are looked up by the
+// whole path, exactly. The Unix mode of an entry is the one the archive records
+// when it was made on Unix, and 0 otherwise.
 
-// Sets the largest unpacked size of an entry. An archive with a larger entry
-// fails to open.
+// Sets the largest entry that can be unpacked whole. VFS_STREAM reads
+// larger entries with bounded buffers.
 #define ZIP_MAX_ENTRY_SIZE ((size_t)256 * 1024 * 1024)
 
 extern const ARCHIVE_FORMAT g_ZipFormat;

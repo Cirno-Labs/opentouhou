@@ -4,7 +4,7 @@
 #include "core/base/result.h"
 #include "core/base/types.h"
 
-// Reads little-endian values from a buffer in memory or from a file. Every
+// Reads little-endian values from memory, a file or a seekable source. Every
 // file format is parsed field by field through a READER, so no structure is
 // ever filled straight from file data, and the code does not depend on
 // packing, pointer size or byte order.
@@ -48,6 +48,11 @@
 
 typedef struct READER_FILE READER_FILE;
 
+typedef struct {
+    RESULT (*read_at)(void *user, size_t offset, void *out, size_t size);
+    void (*close)(void *user);
+} READER_SOURCE_FUNCS;
+
 // Holds a range of a source and a position in it. The fields are private
 // to the Reader_ functions. A READER is a plain value, so it can live on
 // the stack.
@@ -55,6 +60,9 @@ typedef struct {
     const uint8_t *data;
     READER_FILE *file;
     bool owns_file;
+    const READER_SOURCE_FUNCS *source_funcs;
+    void *source;
+    bool owns_source;
     const ALLOCATOR *buffer_allocator;
     size_t buffer_size;
     char *name;
@@ -83,6 +91,14 @@ void Reader_OpenOwnedBuffer(
     READER *reader, void *data, size_t size, const ALLOCATOR *allocator,
     const char *name);
 
+// Opens a seekable source of size bytes and takes ownership of user.
+// read_at must fill the whole requested range or fail. Reader_Close calls
+// close once. Slices share the source until this reader closes. The source
+// functions must stay valid until then. Reader_Borrow cannot use a source.
+void Reader_OpenSource(
+    READER *reader, const READER_SOURCE_FUNCS *funcs, void *user, size_t size,
+    const char *name);
+
 // Opens a file for reading, at position 0. The reader reads the file in
 // blocks of READER_BUFFER_SIZE bytes as the position reaches them, and never
 // holds the whole file in memory. On failure, the reader is empty, and
@@ -90,7 +106,8 @@ void Reader_OpenOwnedBuffer(
 RESULT Reader_OpenFile(READER *reader, const char *path);
 
 // Closes the file of a reader that Reader_OpenFile opened, releases the data
-// of a reader that Reader_OpenOwnedBuffer opened, and releases the name, and
+// of a reader that Reader_OpenOwnedBuffer opened, closes an owned source,
+// and releases the name, and
 // leaves the reader empty. The slices of the reader become invalid. The error
 // flag and its message stay unchanged. For an unnamed reader over a buffer
 // that it does not own, and for a slice, does nothing.
@@ -98,6 +115,9 @@ void Reader_Close(READER *reader);
 
 // Returns the reader's name, or nullptr when it has none.
 const char *Reader_GetName(const READER *reader);
+
+// Replaces the reader's name with a copy of name, or clears it for nullptr.
+void Reader_SetName(READER *reader, const char *name);
 
 // Returns whether the error flag is set.
 bool Reader_Failed(const READER *reader);
@@ -184,7 +204,8 @@ char *Reader_ReadCString(
 // them, and moves past them. The pointer points into the memory given to
 // Reader_OpenBuffer, so it stays valid for as long as that memory does,
 // independently of the reader. On failure, returns nullptr. A file reader
-// has no memory to point into, so calling this on one is fatal.
+// or a source reader has no memory to point into, so borrowing from either
+// is fatal.
 const void *Reader_Borrow(READER *reader, size_t size);
 
 // Returns a reader over the next size bytes, and moves this reader past

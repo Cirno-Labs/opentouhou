@@ -106,12 +106,32 @@ static bool M_Contains(const VFS_SOURCE *const source, const char *const path)
 }
 
 static RESULT M_Open(
-    VFS_SOURCE *const source, const char *const path,
-    [[maybe_unused]] const VFS_MODE mode, READER *const out)
+    VFS_SOURCE *const source, const char *const path, const VFS_MODE mode,
+    READER *const out)
 {
     ARCHIVE *const archive = (ARCHIVE *)source;
     const ARCHIVE_ENTRY *const entry = M_FindSourcePath(archive, path);
     FAIL_IF(entry == nullptr, "%s: %s: not found", source->name, path);
+    if (mode == VFS_STREAM && archive->format->open_entry != nullptr) {
+        Reader_Seek(&archive->reader, 0);
+        READER whole =
+            Reader_Slice(&archive->reader, Reader_Size(&archive->reader));
+        const RESULT result = archive->format->open_entry(
+            &whole, entry->data, entry->size, archive->allocator, out);
+        if (!IS_OK(result)) {
+            const char *const name = M_Name(archive);
+            return name == nullptr
+                ? Result_Prefix(result, "%s", entry->name)
+                : Result_Prefix(result, "%s: %s", name, entry->name);
+        }
+        const char *const archive_name = M_Name(archive);
+        char *const name = archive_name == nullptr
+            ? Str_Dup(entry->name)
+            : Str_Format("%s/%s", archive_name, entry->name);
+        Reader_SetName(out, name);
+        Mem_Free(name);
+        return OK;
+    }
     uint8_t *data;
     MUST(Archive_Read(archive, entry, &data));
     const char *const archive_name = M_Name(archive);
@@ -269,6 +289,12 @@ RESULT Archive_Read(
     uint8_t **const out)
 {
     *out = nullptr;
+    FAIL_IF(
+        archive->format->max_entry_size != 0
+            && entry->size > archive->format->max_entry_size,
+        "%s%s%s: entry is too large to unpack",
+        M_Name(archive) == nullptr ? "" : M_Name(archive),
+        M_Name(archive) == nullptr ? "" : ": ", entry->name);
     Reader_Seek(&archive->reader, 0);
     READER whole =
         Reader_Slice(&archive->reader, Reader_Size(&archive->reader));

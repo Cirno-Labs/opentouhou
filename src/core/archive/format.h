@@ -32,6 +32,13 @@ void ArchiveTable_Add(
 
 struct ARCHIVE_FORMAT {
     ARCHIVE_LOOKUP lookup;
+    // Limits whole-entry allocations. Zero means no format-specific limit.
+    size_t max_entry_size;
+    // Opens a seekable entry for VFS_STREAM. The archive must stay open
+    // until out closes. Without this callback, entries open in memory.
+    RESULT (*open_entry)(
+        READER *archive, const void *data, size_t size,
+        const ALLOCATOR *allocator, READER *out);
     // Reads the entry table of archive and adds every entry to table. A
     // failure needs no archive name: core/archive adds it.
     RESULT (*read_table)(READER *archive, ARCHIVE_TABLE *table);

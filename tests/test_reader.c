@@ -574,3 +574,76 @@ TEST(a_failed_reader_gives_no_c_string)
     Result_Ignore(Reader_Result(&reader));
     Reader_Close(&reader);
 }
+
+typedef struct {
+    uint8_t bytes[16];
+    bool fail;
+    int reads;
+    int closes;
+} M_SOURCE;
+
+static RESULT M_SourceRead(
+    void *const user, const size_t offset, void *const out, const size_t size)
+{
+    M_SOURCE *const source = user;
+    source->reads++;
+    FAIL_IF(source->fail, "source failed");
+    memcpy(out, source->bytes + offset, size);
+    return OK;
+}
+
+static void M_SourceClose(void *const user)
+{
+    M_SOURCE *const source = user;
+    source->closes++;
+}
+
+static const READER_SOURCE_FUNCS m_SourceFuncs = {
+    .read_at = M_SourceRead,
+    .close = M_SourceClose,
+};
+
+TEST(source_slices_narrowing_and_close_keep_ownership)
+{
+    M_SOURCE source = {};
+    for (size_t i = 0; i < sizeof(source.bytes); i++) {
+        source.bytes[i] = (uint8_t)i;
+    }
+    READER reader;
+    Reader_OpenSource(
+        &reader, &m_SourceFuncs, &source, sizeof(source.bytes), "source");
+    CHECK(Result_Ignore(Reader_Narrow(&reader, 3, 10)));
+    Reader_Seek(&reader, 2);
+    READER slice = Reader_Slice(&reader, 4);
+    CHECK_EQ_INT(Reader_ReadU8(&slice), 5);
+    CHECK_EQ_INT(Reader_ReadU8(&reader), 9);
+    Reader_Close(&slice);
+    CHECK_EQ_INT(source.closes, 0);
+    Reader_Close(&reader);
+    Reader_Close(&reader);
+    CHECK_EQ_INT(source.closes, 1);
+}
+
+TEST(source_errors_zero_output_and_stay_until_close)
+{
+    M_SOURCE source = { .fail = true };
+    READER reader;
+    Reader_OpenSource(
+        &reader, &m_SourceFuncs, &source, sizeof(source.bytes), "source");
+    uint8_t bytes[4] = { 1, 2, 3, 4 };
+    Reader_ReadBytes(&reader, bytes, sizeof(bytes));
+    CHECK_EQ_INT(Reader_Tell(&reader), 0);
+    CHECK_EQ_INT(bytes[0] | bytes[1] | bytes[2] | bytes[3], 0);
+    CHECK_EQ_INT(Reader_ReadU8(&reader), 0);
+    CHECK_EQ_INT(source.reads, 1);
+    READER slice = Reader_Slice(&reader, 1);
+    Reader_Close(&slice);
+    CHECK_EQ_INT(source.closes, 0);
+    Reader_Close(&reader);
+    CHECK_EQ_INT(source.closes, 1);
+    const RESULT result = Reader_Result(&reader);
+    CHECK(!IS_OK(result));
+    CHECK(strstr(result.message, "source failed") != nullptr);
+    CHECK(strstr(result.message, "in source") != nullptr);
+    Result_Ignore(result);
+}
