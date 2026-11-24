@@ -111,7 +111,7 @@ static void M_Init(FIXTURE *const f, const ALLOCATOR *const a)
     memset(g_Session.bonus_per_stage, 0, sizeof(g_Session.bonus_per_stage));
     CHECK(Result_Ignore(Bonus_ValidateStageAssets(&f->assets, &f->font)));
     memset(f->assets.box, 0xff, sizeof(f->assets.box));
-    g_Extend.next = 1;
+    Extend_Reset();
 }
 
 TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
@@ -151,7 +151,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(g_Bonus.score_bonus, 17000);
     CHECK_EQ_INT(g_Session.bonus_per_stage[3], 17000);
     CHECK_EQ_INT(g_Session.high_score, 410000);
-    CHECK_EQ_INT(g_Extend.next, 2);
+    CHECK_EQ_INT(Extend_Next(), 2);
     CHECK_EQ_INT(g_PelletShared.speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
@@ -300,7 +300,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK(ticks < 1000);
     CHECK_EQ_INT(g_Bonus.score_bonus, 96050);
     CHECK_EQ_INT(g_Stage.score, 486050);
-    CHECK_EQ_INT(g_Extend.next, 1);
+    CHECK_EQ_INT(Extend_Next(), 1);
     CHECK_EQ_INT(g_Session.lives, 2);
     CHECK_EQ_INT(g_Hud.score_previous, 0);
     CHECK_EQ_INT(g_Session.bonus_per_stage[0], 0);

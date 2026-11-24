@@ -96,8 +96,8 @@ void Gameplay_ResetWorld(GAMEPLAY *const g)
     g_Player.remaining_bombs = g_Session.bombs;
     g_Player.left = 304;
     g_PelletShared.speed = g_Session.pellet_speed;
-    g_Extend.resident_lives = (int8_t)g_Session.lives;
-    g_Extend.next = Extend_NextForScore(g_Session.score);
+    Extend_SyncResidentLives(g_Session.lives);
+    Extend_ResetNext(g_Session.score);
     g_Rng = g_Session.frame_rand;
     g_Stage.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
     g->world.boss_stage = g_Session.stage_id % 5 == 4;

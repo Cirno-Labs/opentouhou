@@ -272,7 +272,7 @@ static void M_Switch(GAMEPLAY *const g)
     case GAMEPLAY_SWITCH_CONTINUE:
         g_Session.point_value = 0;
         g_Session.pellet_speed = g_PelletShared.speed;
-        g_Session.lives = g_Extend.resident_lives;
+        g_Session.lives = (int16_t)Extend_ResidentLives();
         Gameplay_ResetWorld(g);
         g->world.bgm_started = true;
         return;
@@ -426,7 +426,7 @@ void Gameplay_ResumeAfterScore(
     }
     g_Session.score = 0;
     // Restores the resident's lives; the live count stays until the re-exec.
-    g_Extend.resident_lives = (int8_t)(g_Session.settings.lives_extra + 2);
+    Extend_SyncResidentLives(g_Session.settings.lives_extra + 2);
     Pellets_SpeedLower(-2, -5);
     g->world.continue_frame = 0;
     g->world.continue_locked = g_Session.settings.fix_debouncing;
@@ -715,7 +715,7 @@ static GAMEPLAY_REQUEST M_Run(
             } else {
                 Sound_Effect(5);
                 g_Session.lives--;
-                g_Extend.resident_lives = (int8_t)g_Session.lives;
+                Extend_SyncResidentLives(g_Session.lives);
                 Miss_Begin(&g->storage.assets->miko, Gameplay_StageSprites(g));
                 g->world.phase = GP_MISS;
             }
@@ -799,7 +799,7 @@ static GAMEPLAY_REQUEST M_Run(
             g_Player.remaining_bombs = 1;
             Shots_EraseAndReset();
             Pellets_EraseAndResetMoving();
-            g_Extend.next = 1;
+            Extend_Reset();
             Gameplay_SyncSession(g);
             g->world.request = GAMEPLAY_REQUEST_SCORE;
             g->world.phase = GP_TERMINAL;
