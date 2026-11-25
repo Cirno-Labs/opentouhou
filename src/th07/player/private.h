@@ -16,12 +16,6 @@ typedef struct {
     CHAIN_ELEM draw2;
 } PLAYER_ELEMS;
 
-// Fires the shots of the power level, unfocused or focused, for frame of the
-// burst, each into the next free bullet. A shot that does not fire leaves
-// the bullet for the next shot. When the bullets run out, the shots left do
-// not fire.
-void Player_FireShots(int32_t frame);
-
 // Starts the fire timer from 0 unless it runs.
 void Player_StartFiring(void);
 
