@@ -49,3 +49,8 @@ RESULT Boss_LoadBackground(
     Reader_Close(&reader);
     return result;
 }
+
+void Boss_Select(BOSS_STATE *const state)
+{
+    g_Boss = state;
+}

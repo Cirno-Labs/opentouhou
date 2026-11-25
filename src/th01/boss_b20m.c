@@ -276,7 +276,7 @@ static void M_Init(void)
 static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
     const B20M_ASSETS *const assets = data;
-    g_Boss = &m_B20M.status;
+    Boss_Select(&m_B20M.status);
     ASSERT(
         m_B20M.sequence == B20M_SEQUENCE_NONE && Wait_Idle(&m_B20M.wait)
         && !m_B20M.entrance_active);

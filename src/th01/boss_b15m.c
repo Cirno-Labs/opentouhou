@@ -173,7 +173,7 @@ static void M_Init(void)
 static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
     const B15M_ASSETS *const assets = data;
-    g_Boss = &m_B15M.status;
+    Boss_Select(&m_B15M.status);
     ASSERT(
         !m_B15M.entrance_active && !m_B15M.defeating
         && Wait_Idle(&m_B15M.wait));

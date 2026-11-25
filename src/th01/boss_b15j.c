@@ -108,7 +108,7 @@ static void M_Init(void)
 static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
     const B15J_ASSETS *const assets = data;
-    g_Boss = &m_B15J.status;
+    Boss_Select(&m_B15J.status);
     ASSERT(!m_B15J.entrance_active && !m_B15J.defeating);
     ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.souls[0], 0, &assets->souls)));
