@@ -195,7 +195,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B15M.finished = false;
     HudHp_Begin(6, 10);
     g_Rng = g_Session.frame_rand;
-    g_Pellets.interlace = true;
+    Pellets_Interlace();
     Particles_Init();
 }
 

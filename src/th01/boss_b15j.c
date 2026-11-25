@@ -121,7 +121,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     for (int32_t i = 0; i < 10; i++) {
         m_B15J.tear_frame[i] = 0;
     }
-    g_Pellets.interlace = true;
+    Pellets_Interlace();
     m_B15J.status.phase = B15J_PHASE_ENTRANCE;
     m_B15J.status.frame = 0;
     m_B15J.status.hp = 14;

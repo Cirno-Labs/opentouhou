@@ -89,6 +89,10 @@ void Pellets_Decay(void);
 void Pellets_SpeedLower(int16_t max, int16_t delta);
 void Pellets_SpeedRaise(int16_t delta);
 
+// Draws and tests every other moving pellet per frame, alternating, until
+// Pellets_Init.
+void Pellets_Interlace(void);
+
 // Runs clouds, all pellet motion and shot collision/clipping, then calls
 // real Shots_UpdateAndRender exactly once, then draws pellets and tests
 // Orb/deflection and lethal player hits. Every moving pellet ages even when

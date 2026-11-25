@@ -1854,7 +1854,7 @@ static void M_BeginEntrance(const void *const data)
     ASSERT(
         !m_B20M.entrance_active && m_B20M.sequence == B20M_SEQUENCE_NONE
         && Wait_Idle(&m_B20M.wait));
-    g_Pellets.interlace = true;
+    Pellets_Interlace();
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(assets, &assets->lower, true);
     Video_SelectDrawingPage(1);

@@ -447,3 +447,8 @@ void Pellets_SpeedRaise(const int16_t delta)
         g_Pellets.speed = 20;
     }
 }
+
+void Pellets_Interlace(void)
+{
+    g_Pellets.interlace = true;
+}
