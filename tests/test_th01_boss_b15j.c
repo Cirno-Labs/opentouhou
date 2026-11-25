@@ -3,7 +3,6 @@
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
-#include "th01/boss_b15j.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -19,13 +18,27 @@
 #include "th01_world.h"
 #include "test.h"
 
+static void M_BossSetup(const B15J_ASSETS *const assets, const PTN *const miko)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko };
+    g_BossKikuri.setup(assets, &ctx);
+}
+
+static bool M_BossUpdate(
+    const B15J_ASSETS *const assets, const PTN *const miko,
+    const PTN *const stage)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko, .stage = stage };
+    return g_BossKikuri.update(assets, &ctx);
+}
+
 typedef struct {
     B15J_ASSETS assets;
     GAME_TEXT_FONT font;
     PTN stage, miko;
 } FIXTURE;
 
-static void M_Init(FIXTURE *const f, ARENA *const arena)
+static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
     Th01Test_ResetWorld();
@@ -52,7 +65,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 
 static void M_Battle(FIXTURE *const f, ARENA *const arena)
 {
-    M_Init(f, arena);
+    M_InitFixture(f, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Hud_Init(a);
     HudHp_Init(a);
@@ -84,8 +97,8 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     ARENA arena;
     Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
-    B15J_Init();
+    M_InitFixture(&f, &arena);
+    g_BossKikuri.init();
     m_B15J.hit = (BOSS_HIT) { .frame = 31, .invincible = true };
     m_B15J.pattern_state = 51;
     m_B15J.patterns_done = 9;
@@ -103,7 +116,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     }
     const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
-    B15J_Setup(&f.assets, &f.miko);
+    M_BossSetup(&f.assets, &f.miko);
     CHECK(g_Boss == &m_B15J.status);
     CHECK_EQ_INT(m_B15J.status.hp, 14);
     CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_ENTRANCE);
@@ -149,14 +162,14 @@ TEST(asset_validation_checks_ripples_and_live_banks)
     ARENA arena;
     Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
-    CHECK(Result_Ignore(B15J_ValidateAssets(&f.assets)));
+    M_InitFixture(&f, &arena);
+    CHECK(Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.ripples.count = 2;
-    CHECK(!Result_Ignore(B15J_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.ripples.count = 1;
     f.assets.tears.coverage = nullptr;
-    CHECK(!Result_Ignore(B15J_ValidateAssets(&f.assets)));
-    CHECK(!Result_Ignore(B15J_ValidateAssets(nullptr)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(nullptr)));
     Arena_Free(&arena);
 }
 
@@ -166,7 +179,7 @@ TEST(loader_failure_clears_output)
     Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
     VFS *const vfs = Vfs_Create(Arena_Allocator(&arena));
     B15J_ASSETS out = { .souls = { .count = 3 } };
-    CHECK(!Result_Ignore(B15J_LoadAssets(vfs, Arena_Allocator(&arena), &out)));
+    CHECK(!Result_Ignore(M_LoadAssets(vfs, Arena_Allocator(&arena), &out)));
     Vfs_Destroy(vfs);
     CHECK_EQ_INT(out.souls.count, 0);
     CHECK(out.souls.pixels == nullptr);
@@ -176,11 +189,11 @@ TEST(loader_failure_clears_output)
 static void M_Enter(FIXTURE *const f)
 {
     for (int32_t i = 0; i < 1000; i++) {
-        if (B15J_UpdateAndRender(&f->assets, &f->miko, &f->stage)) {
+        if (M_BossUpdate(&f->assets, &f->miko, &f->stage)) {
             return;
         }
         const B15J frozen = m_B15J;
-        CHECK(!B15J_UpdateAndRender(&f->assets, &f->miko, &f->stage));
+        CHECK(!M_BossUpdate(&f->assets, &f->miko, &f->stage));
         CHECK(memcmp(&m_B15J, &frozen, sizeof(m_B15J)) == 0);
         Frame_VSync();
     }
@@ -195,8 +208,8 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
             FIXTURE f;
             M_Battle(&f, &arena);
-            B15J_Init();
-            B15J_Setup(&f.assets, &f.miko);
+            g_BossKikuri.init();
+            M_BossSetup(&f.assets, &f.miko);
             Palette_Set(&g_Palette, &f.assets.palette);
             Video_SelectDrawingPage(page);
             for (int32_t x = 0; x < 640; x++) {
@@ -238,8 +251,8 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        B15J_Init();
-        B15J_Setup(&f.assets, &f.miko);
+        g_BossKikuri.init();
+        M_BossSetup(&f.assets, &f.miko);
         Frame_Reset();
         M_Enter(&f);
         const size_t used = arena.used;
@@ -251,7 +264,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
                 patterns |= 1u << m_B15J.subphase;
             }
             g_Session.frame_rand++;
-            CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+            CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
             for (int32_t i = 0; i < 10; i++) {
                 saw_tear |= m_B15J.tear_frame[i] != 0;
                 saw_ripple |= m_B15J.tear_frame[i] > 1;
@@ -281,8 +294,8 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    B15J_Init();
-    B15J_Setup(&f.assets, &f.miko);
+    g_BossKikuri.init();
+    M_BossSetup(&f.assets, &f.miko);
     Frame_Reset();
     M_Enter(&f);
     const size_t used = arena.used;
@@ -290,15 +303,15 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     g_Orb.top = 64;
     g_Orb.previous_left = 300;
     g_Orb.previous_top = 100;
-    CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+    CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 14);
     g_Orb.left = 300;
     g_Orb.top = 132;
-    CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+    CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 14);
     g_Orb.top = -100;
     g_Orb.previous_left = 0;
-    CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+    CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 13);
     CHECK_EQ_INT(g_Stage.score, 7000);
     g_Orb.top = 64;
@@ -312,11 +325,10 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
             || (m_B15J.status.phase == B15J_PHASE_PATTERNS
                 && m_B15J.status.hp > 0);
         g_Orb.left = attack ? 300 : 0;
-        const bool completed =
-            B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage);
+        const bool completed = M_BossUpdate(&f.assets, &f.miko, &f.stage);
         if (!completed) {
             const B15J frozen = m_B15J;
-            CHECK(!B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+            CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));
             CHECK(memcmp(&m_B15J, &frozen, sizeof(m_B15J)) == 0);
         }
         Frame_VSync();
@@ -331,7 +343,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
     CHECK(m_Lasers.slots[4].alive);
     const B15J finished = m_B15J;
-    CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+    CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK(memcmp(&m_B15J, &finished, sizeof(m_B15J)) == 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -346,8 +358,8 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        B15J_Init();
-        B15J_Setup(&f.assets, &f.miko);
+        g_BossKikuri.init();
+        M_BossSetup(&f.assets, &f.miko);
         m_B15J.status.phase = B15J_PHASE_PATTERNS;
         m_B15J.subphase = 1;
         m_B15J.status.frame = 249;
@@ -356,14 +368,14 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         uint32_t expected = g_Rng;
         MasterRng_Next(&expected);
         Frame_Reset();
-        CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+        CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(m_B15J.pattern_state, 52 + rank * 4);
         CHECK_EQ_INT(g_Rng, expected);
         CHECK_EQ_INT(m_Lasers.slots[0].age, 77);
         CHECK_EQ_INT(m_Lasers.slots[0].origin_left, 3210);
         m_B15J.subphase = 2;
         m_B15J.status.frame = Math16_Wrap(m_B15J.pattern_state * 2 - 1);
-        CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+        CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         int32_t alive = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
             alive += g_Pellets.slots[i].moving;
@@ -373,7 +385,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         m_B15J.subphase = 3;
         m_B15J.status.frame = 99;
         MasterRng_Next(&expected);
-        CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+        CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(g_Rng, expected);
         CHECK_EQ_INT(m_B15J.pattern_state, 60 + rank * 4);
         CHECK_EQ_INT(
@@ -393,19 +405,19 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    B15J_Init();
-    B15J_Setup(&f.assets, &f.miko);
+    g_BossKikuri.init();
+    M_BossSetup(&f.assets, &f.miko);
     m_B15J.status.phase = B15J_PHASE_PATTERNS;
     m_B15J.subphase = 1;
     m_B15J.patterns_done = 30;
     const HUD_HP health = m_Health;
     Frame_Reset();
-    CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+    CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 1);
     CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage.score, 0);
     g_TestDamage = true;
-    CHECK(!B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+    CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 0);
     CHECK(!g_TestDamage);
     CHECK(m_B15J.defeating);
@@ -421,8 +433,8 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        B15J_Init();
-        B15J_Setup(&f.assets, &f.miko);
+        g_BossKikuri.init();
+        M_BossSetup(&f.assets, &f.miko);
         m_B15J.status.phase = B15J_PHASE_PATTERNS;
         m_B15J.subphase = 1;
         m_B15J.tear_frame[0] = 1;
@@ -431,7 +443,7 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         g_Player.invincible = false;
         g_Player.left = positions[i];
         Frame_Reset();
-        CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+        CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(m_B15J.tear_frame[0], 2);
         CHECK_EQ_INT(g_Player.is_hit, i == 1 || i == 2);
         Arena_Free(&arena);
@@ -445,8 +457,8 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         Arena_Init(&arena, "b15j", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        B15J_Init();
-        B15J_Setup(&f.assets, &f.miko);
+        g_BossKikuri.init();
+        M_BossSetup(&f.assets, &f.miko);
         m_B15J.status.phase = B15J_PHASE_SOULS;
         m_B15J.subphase = 1;
         m_B15J.status.frame = 79;
@@ -456,7 +468,7 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         g_Pellets.spawn_with_cloud = cloud != 0;
         const size_t used = arena.used;
         Frame_Reset();
-        CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
+        CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
             count += cloud != 0 ? g_Pellets.slots[i].cloud_frame == 1

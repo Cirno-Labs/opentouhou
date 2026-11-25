@@ -16,72 +16,29 @@ typedef struct {
 
 static void M_BossAssets(M_ASSETS *const f, const ALLOCATOR *const a)
 {
-    GAMEPLAY_ASSETS *const assets = &f->assets;
     uint8_t *const pixels = Allocator_AllocZ(a, VIDEO_PAGE_SIZE);
-    uint8_t *const coverage = Allocator_AllocZ(a, VIDEO_PAGE_SIZE);
-    const PI_IMAGE image = { .width = VIDEO_WIDTH,
-                             .height = VIDEO_HEIGHT,
-                             .has_palette = true,
-                             .pixels = pixels };
-    assets->b05.sphere = (BOS) { 96, 96, 8, pixels, coverage };
-    assets->b05.flash = (BOS) { 96, 96, 3, pixels, coverage };
-    assets->b05.person = (BOS) { 96, 96, 5, pixels, coverage };
-    assets->b05.background = image;
-    assets->b10j.still = (BOS) { 128, 160, 1, pixels, coverage };
-    assets->b10j.animation = (BOS) { 128, 64, 5, pixels, coverage };
-    assets->b10j.background = image;
-    assets->b10j.missiles = assets->stage;
-    assets->b10j.next_scene = assets->scenes[4];
-    assets->b10m.eyes = (BOS) { 64, 48, 7, pixels, coverage };
-    assets->b10m.background = image;
-    assets->b10m.missiles = assets->stage;
-    assets->b10m.next_scene = assets->scenes[3];
-    assets->b15j.souls = (BOS) { 32, 32, 3, pixels, coverage };
-    assets->b15j.tears = (BOS) { 16, 16, 3, pixels, coverage };
-    assets->b15j.ripples = (PTN) { .count = 1, .pixels = pixels };
-    assets->b15j.background = image;
-    assets->b15j.next_scene = assets->scenes[6];
-    assets->b15m.girl = (BOS) { 128, 96, 6, pixels, coverage };
-    assets->b15m.attack = (BOS) { 128, 96, 3, pixels, coverage };
-    assets->b15m.bat = (BOS) { 48, 32, 3, pixels, coverage };
-    assets->b15m.spheres = (GRC) { 32, 32, 6, coverage };
-    assets->b15m.star = pixels;
-    assets->b15m.background = image;
-    assets->b15m.missiles = assets->stage;
-    assets->b15m.next_scene = assets->scenes[5];
-    assets->b20j.head = (BOS) { 80, 80, 3, pixels, coverage };
-    assets->b20j.face = (BOS) { 80, 32, 6, pixels, coverage };
-    assets->b20j.aim = (BOS) { 80, 32, 3, pixels, coverage };
-    assets->b20j.body.count = 16;
-    for (int32_t i = 0; i < 16; i++) {
-        assets->b20j.body.images[i] =
-            (GRX) { .stream_count = 1, .pixels = pixels, .coverage = coverage };
+    const TH01_TEST_BOSS_BACKING backing = {
+        .assets = &f->assets,
+        .pixels = pixels,
+        .coverage = Allocator_AllocZ(a, VIDEO_PAGE_SIZE),
+        .image = { .width = VIDEO_WIDTH,
+                   .height = VIDEO_HEIGHT,
+                   .has_palette = true,
+                   .pixels = pixels },
+    };
+    const void *(*const create[])(
+        const ALLOCATOR *, const TH01_TEST_BOSS_BACKING *) = {
+        [BOSS_SINGYOKU] = Th01TestAssets_Singyoku,
+        [BOSS_YUUGENMAGAN] = Th01TestAssets_YuugenMagan,
+        [BOSS_MIMA] = Th01TestAssets_Mima,
+        [BOSS_KIKURI] = Th01TestAssets_Kikuri,
+        [BOSS_ELIS] = Th01TestAssets_Elis,
+        [BOSS_SARIEL] = Th01TestAssets_Sariel,
+        [BOSS_KONNGARA] = Th01TestAssets_Konngara,
+    };
+    for (BOSS boss = BOSS_SINGYOKU; boss < BOSS_COUNT; boss++) {
+        f->assets.bosses[boss] = create[boss](a, &backing);
     }
-    assets->b20j.scroll = image;
-    assets->b20j.upper = image;
-    for (int32_t i = 0; i < 4; i++) {
-        assets->b20j.layers[i] = image;
-    }
-    assets->b20j.diamond = pixels;
-    assets->b20j.flake = pixels;
-    assets->b20m.shield = (BOS) { 48, 48, 4, pixels, coverage };
-    assets->b20m.wand = (BOS) { 96, 96, 2, pixels, coverage };
-    assets->b20m.dress = (BOS) { 96, 96, 4, pixels, coverage };
-    assets->b20m.vortex = (GRC) { 32, 32, 6, coverage };
-    assets->b20m.bird = (GRC) { 32, 32, 8, coverage };
-    assets->b20m.cross = (GRC) { 32, 32, 2, coverage };
-    assets->b20m.splash = (GRC) { 32, 32, 3, coverage };
-    assets->b20m.lower = image;
-    assets->b20m.upper = image;
-    for (int32_t i = 0; i < 6; i++) {
-        assets->b20m.backgrounds[i] = image;
-    }
-    assets->b20m.star = pixels;
-    assets->b20m.flake = pixels;
-    assets->b20m.spark = pixels;
-    assets->b20m.leaf_left = pixels;
-    assets->b20m.leaf_right = pixels;
-    assets->b20m.interleave = Allocator_AllocZ(a, sizeof(INTERLEAVE_ASSETS));
 }
 
 GAMEPLAY_ASSETS *Th01TestAssets_Create(const ALLOCATOR *const a)

@@ -227,7 +227,8 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     g_Session.stage_id = 4;
     m_Gameplay.boss_stage = true;
     g_Stage.boss = BOSS_SINGYOKU;
-    B05_Setup(&f.assets->b05);
+    BossStrategy_Get(BOSS_SINGYOKU)
+        ->setup(f.assets->bosses[BOSS_SINGYOKU], &(BOSS_CONTEXT) {});
     BOSS_STATE *const boss = g_Boss;
     const BOSS_STATE state = *boss;
     m_Gameplay.phase = GP_LIFE_EXIT;
@@ -669,7 +670,8 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     const void *const numbers = m_Hud.numbers;
     const void *const backgrounds = m_Health.backgrounds;
     const size_t used = f.arena.used;
-    B05_Setup(&f.assets->b05);
+    BossStrategy_Get(BOSS_SINGYOKU)
+        ->setup(f.assets->bosses[BOSS_SINGYOKU], &(BOSS_CONTEXT) {});
     CHECK(g_Boss != nullptr);
     memset(&m_Gameplay, 0xa5, sizeof(m_Gameplay));
     g_Stage.frame = UINT32_MAX;

@@ -1,7 +1,6 @@
 #include "../src/th01/boss_b20j.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/shootout_lasers.c"
-#include "th01/boss_b20j.h"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -17,6 +16,29 @@
 #include "test.h"
 
 #include <string.h>
+
+static void M_BossSetup(const B20J_ASSETS *const assets)
+{
+    const BOSS_CONTEXT ctx = {};
+    g_BossKonngara.setup(assets, &ctx);
+}
+
+static void M_BossBeginEntrance(const B20J_ASSETS *const assets)
+{
+    g_BossKonngara.begin_entrance(assets);
+}
+
+static bool M_BossResumeEntrance(const B20J_ASSETS *const assets)
+{
+    const BOSS_CONTEXT ctx = {};
+    return g_BossKonngara.resume_entrance(assets, &ctx);
+}
+
+static bool M_BossUpdate(const B20J_ASSETS *const assets)
+{
+    const BOSS_CONTEXT ctx = {};
+    return g_BossKonngara.update(assets, &ctx);
+}
 
 static void M_Assets(B20J_ASSETS *const a, ARENA *const arena)
 {
@@ -56,7 +78,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     memset(&m_Health, 0, sizeof(m_Health));
 
     memset(&m_B20J, 0xa5, sizeof(m_B20J));
-    B20J_Init();
+    g_BossKonngara.init();
     CHECK_EQ_INT(m_B20J.ray_previous_x, 999);
     CHECK_EQ_INT(m_B20J.ray_previous_y, 999);
     m_B20J.hit = (BOSS_HIT) { 27, true };
@@ -66,7 +88,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     m_B20J.ray_previous_x = 44;
     m_B20J.finished = true;
     const size_t used = arena.used;
-    B20J_Setup(&assets);
+    M_BossSetup(&assets);
     CHECK(g_Boss == &m_B20J.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(m_B20J.status.hp, 18);
@@ -93,15 +115,15 @@ TEST(validation_requires_all_sixteen_images_and_masks)
     Arena_Init(&arena, "Konngara validation", 1024 * 1024);
     B20J_ASSETS a;
     M_Assets(&a, &arena);
-    CHECK(Result_Ignore(B20J_ValidateAssets(&a)));
+    CHECK(Result_Ignore(M_ValidateAssets(&a)));
     a.body.count = 7;
-    CHECK(!Result_Ignore(B20J_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
     a.body.count = 16;
     a.body.images[15].coverage = nullptr;
-    CHECK(!Result_Ignore(B20J_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
     a.body.images[15].coverage = a.body.images[0].coverage;
     a.flake = nullptr;
-    CHECK(!Result_Ignore(B20J_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
     Arena_Free(&arena);
 }
 
@@ -139,8 +161,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     g_Session.frame_rand = 0x12345678;
-    B20J_Init();
-    B20J_Setup(&f->assets);
+    g_BossKonngara.init();
+    M_BossSetup(&f->assets);
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
 
@@ -160,7 +182,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
     const PALETTE before = g_StagePalette;
     const size_t used = arena.used;
-    B20J_BeginEntrance(&f.assets);
+    M_BossBeginEntrance(&f.assets);
     CHECK_EQ_INT(m_B20J.head.sprites.width_bytes, 10);
     CHECK_EQ_INT(m_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_Rng, 91);
@@ -168,11 +190,11 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(g_StageObjects.destination_left, 77);
     Frame_Reset();
     int32_t polls = 0;
-    while (!B20J_ResumeEntrance(&f.assets)) {
+    while (!M_BossResumeEntrance(&f.assets)) {
         CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
         const B20J snapshot = m_B20J;
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_ResumeEntrance(&f.assets));
+            CHECK(!M_BossResumeEntrance(&f.assets));
             CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
         }
         Frame_VSync();
@@ -208,7 +230,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             Frame_Reset();
             int32_t frames = 0;
             do {
-                CHECK(B20J_UpdateAndRender(&f.assets));
+                CHECK(M_BossUpdate(&f.assets));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
                     g_Pellets.slots[i].moving = false;
                 }
@@ -243,11 +265,11 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     Frame_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.assets)) {
+    while (!M_BossUpdate(&f.assets)) {
         const B20J snapshot = m_B20J;
         CHECK(!g_Stage.game_cleared);
         for (int32_t i = 0; i < 3; i++) {
-            CHECK(!B20J_UpdateAndRender(&f.assets));
+            CHECK(!M_BossUpdate(&f.assets));
             CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
         }
         Frame_VSync();
@@ -261,7 +283,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     const B20J snapshot = m_B20J;
     for (int32_t i = 0; i < 100; i++) {
         Frame_VSync();
-        CHECK(B20J_UpdateAndRender(nullptr));
+        CHECK(M_BossUpdate(nullptr));
         CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
     }
     CHECK_EQ_INT(arena.used, used);
@@ -279,7 +301,7 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     m_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
     m_B20J.scroll_line = 400;
     Frame_Reset();
-    CHECK(!B20J_ResumeEntrance(&f.assets));
+    CHECK(!M_BossResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][14335], 6);
     CHECK_EQ_INT(g_Video.pages[0][14336], 0);
@@ -305,7 +327,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         g_Orb.previous_left = 300;
         g_Orb.previous_top = 140;
         Frame_Reset();
-        CHECK(B20J_UpdateAndRender(&f.assets));
+        CHECK(M_BossUpdate(&f.assets));
         CHECK_EQ_INT(m_B20J.status.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
     }
@@ -335,7 +357,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     const size_t used = arena.used;
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
-    while (!B20J_UpdateAndRender(&f.assets)) {
+    while (!M_BossUpdate(&f.assets)) {
         if (m_B20J.defeat_stage == B20J_DEFEAT_KUJI
             && m_B20J.animation_frame != last_image) {
             CHECK_EQ_INT(g_Video.pages[0][0], images);
@@ -374,7 +396,7 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     m_B20J.entrance_active = true;
     m_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
     Frame_Reset();
-    CHECK(!B20J_ResumeEntrance(&f.assets));
+    CHECK(!M_BossResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][1], 9);
     CHECK_EQ_INT(g_Palette.resource.colors[10][0], 3);

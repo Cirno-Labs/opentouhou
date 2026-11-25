@@ -1,4 +1,13 @@
-#include "th01/boss_b20j.h"
+#include "th01/boss_strategy.h"
+#include "pc98/zun/math16.h"
+#include "th01/boss_hit.h"
+#include "th01/boss_entity.h"
+#include "th01/grz.h"
+#include "pc98/zun/pi.h"
+#include "th01/pellets.h"
+#include "th01/shootout_lasers.h"
+#include "th01/stage_objects.h"
+#include "th01/tram.h"
 #include "th01/gameplay.h"
 #include "th01/session.h"
 #include "th01/sound.h"
@@ -12,6 +21,13 @@
 #include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
+
+typedef struct {
+    BOS head, face, aim;
+    GRZ body;
+    PI_IMAGE scroll, upper, layers[4];
+    const uint8_t *diamond, *flake;
+} B20J_ASSETS;
 
 typedef struct {
     int16_t left[4][5], top[4][5];
@@ -109,7 +125,7 @@ static RESULT M_LoadMasks(
     out->flake = shapes + 2 * 8;
     return OK;
 }
-RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
+static RESULT M_ValidateAssets(const B20J_ASSETS *const a)
 {
     FAIL_IF(a == nullptr, "Missing Konngara assets");
     const BOS *const banks[] = { &a->head, &a->face, &a->aim };
@@ -144,9 +160,10 @@ RESULT B20J_ValidateAssets(const B20J_ASSETS *const a)
         "Missing Konngara shape masks");
     return OK;
 }
-RESULT B20J_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const a, B20J_ASSETS *const out)
+static RESULT M_LoadAssets(
+    VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
+    B20J_ASSETS *const out = data;
     *out = (B20J_ASSETS) {};
     B20J_ASSETS loaded = {};
     MUST(Boss_LoadBos(vfs, "BOSS8_1.BOS", a, &loaded.head));
@@ -161,23 +178,24 @@ RESULT B20J_LoadAssets(
         MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.layers[i]));
     }
     MUST(M_LoadMasks(vfs, a, &loaded));
-    MUST(B20J_ValidateAssets(&loaded));
+    MUST(M_ValidateAssets(&loaded));
     *out = loaded;
     return OK;
 }
-void B20J_Init(void)
+static void M_Init(void)
 {
     memset(&m_B20J, 0, sizeof(m_B20J));
     m_B20J.ray_previous_x = 999;
     m_B20J.ray_previous_y = 999;
 }
-void B20J_Setup(const B20J_ASSETS *const assets)
+static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B20J_ASSETS *const assets = data;
     g_Boss = &m_B20J.status;
     ASSERT(
         !m_B20J.entrance_active && !m_B20J.defeating
         && m_B20J.wait_kind == B20J_WAIT_NONE);
-    ASSERT(Result_Ignore(B20J_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     m_B20J.boss_palette = g_Palette.saved;
     m_B20J.status.hp = 18;
     m_B20J.status.phase = B20J_PHASE_START;
@@ -337,8 +355,9 @@ static bool M_Ready(const B20J_ASSETS *const assets)
     m_B20J.wait_kind = B20J_WAIT_NONE;
     return true;
 }
-void B20J_BeginEntrance(const B20J_ASSETS *const assets)
+static void M_BeginEntrance(const void *const data)
 {
+    const B20J_ASSETS *const assets = data;
     ASSERT(
         !m_B20J.entrance_active && !m_B20J.defeating
         && m_B20J.wait_kind == B20J_WAIT_NONE);
@@ -364,8 +383,10 @@ void B20J_BeginEntrance(const B20J_ASSETS *const assets)
     m_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
     m_B20J.entrance_active = true;
 }
-bool B20J_ResumeEntrance(const B20J_ASSETS *const assets)
+static bool M_ResumeEntrance(
+    const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B20J_ASSETS *const assets = data;
     if (!m_B20J.entrance_active) {
         return true;
     }
@@ -1275,13 +1296,14 @@ static void M_Pattern(const B20J_ASSETS *const assets, const int16_t pattern)
         break;
     }
 }
-bool B20J_UpdateAndRender(const B20J_ASSETS *const assets)
+static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B20J_ASSETS *const assets = data;
     if (m_B20J.finished) {
         return true;
     }
     if (m_B20J.entrance_active) {
-        return B20J_ResumeEntrance(assets);
+        return M_ResumeEntrance(assets, ctx);
     }
     if (m_B20J.defeating) {
         return M_Death(assets);
@@ -1376,3 +1398,14 @@ bool B20J_UpdateAndRender(const B20J_ASSETS *const assets)
     }
     return true;
 }
+
+const BOSS_STRATEGY g_BossKonngara = {
+    .assets_size = sizeof(B20J_ASSETS),
+    .load_assets = M_LoadAssets,
+    .init = M_Init,
+    .setup = M_Setup,
+    .begin_entrance = M_BeginEntrance,
+    .resume_entrance = M_ResumeEntrance,
+    .update = M_Update,
+    .song = -1,
+};

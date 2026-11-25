@@ -13,6 +13,7 @@ typedef enum {
     BOSS_ELIS,
     BOSS_SARIEL,
     BOSS_KONNGARA,
+    BOSS_COUNT,
 } BOSS;
 
 typedef struct {

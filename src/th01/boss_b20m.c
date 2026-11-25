@@ -1,4 +1,14 @@
-#include "th01/boss_b20m.h"
+#include "th01/boss_strategy.h"
+#include "th01/boss_hit.h"
+#include "th01/boss_entity.h"
+#include "th01/grc.h"
+#include "pc98/zun/pi.h"
+#include "th01/pellets.h"
+#include "th01/shootout_lasers.h"
+#include "th01/stage_objects.h"
+#include "th01/tram.h"
+#include "th01/timer.h"
+#include "th01/transition.h"
 #include "th01/gameplay.h"
 #include "th01/session.h"
 #include "th01/sound.h"
@@ -14,6 +24,14 @@
 #include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
+
+typedef struct {
+    BOS shield, wand, dress;
+    GRC vortex, bird, cross, splash;
+    PI_IMAGE lower, upper, backgrounds[6];
+    const INTERLEAVE_ASSETS *interleave;
+    const uint8_t *star, *flake, *spark, *leaf_left, *leaf_right;
+} B20M_ASSETS;
 
 typedef struct {
     double left[30], top[30], velocity_x[30], velocity_y[30];
@@ -191,7 +209,7 @@ static RESULT M_LoadMasks(
     out->interleave = interleave;
     return OK;
 }
-RESULT B20M_ValidateAssets(const B20M_ASSETS *const a)
+static RESULT M_ValidateAssets(const B20M_ASSETS *const a)
 {
     FAIL_IF(a == nullptr, "Missing Sariel assets");
     const BOS *const banks[] = { &a->shield, &a->wand, &a->dress };
@@ -229,9 +247,10 @@ RESULT B20M_ValidateAssets(const B20M_ASSETS *const a)
         "Missing Sariel shape masks");
     return OK;
 }
-RESULT B20M_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const a, B20M_ASSETS *const out)
+static RESULT M_LoadAssets(
+    VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
+    B20M_ASSETS *const out = data;
     *out = (B20M_ASSETS) {};
     B20M_ASSETS loaded = {};
     MUST(Boss_LoadBos(vfs, "BOSS6_1.BOS", a, &loaded.shield));
@@ -250,11 +269,11 @@ RESULT B20M_LoadAssets(
         MUST(Boss_LoadBackground(vfs, names[i], a, &loaded.backgrounds[i]));
     }
     MUST(M_LoadMasks(vfs, a, &loaded));
-    MUST(B20M_ValidateAssets(&loaded));
+    MUST(M_ValidateAssets(&loaded));
     *out = loaded;
     return OK;
 }
-void B20M_Init(void)
+static void M_Init(void)
 {
     memset(&m_B20M, 0, sizeof(m_B20M));
     Transition_Init();
@@ -262,13 +281,14 @@ void B20M_Init(void)
     m_B20M.ray_previous_y = 999;
     m_B20M.flake.state = -1;
 }
-void B20M_Setup(const B20M_ASSETS *const assets)
+static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B20M_ASSETS *const assets = data;
     g_Boss = &m_B20M.status;
     ASSERT(
         m_B20M.sequence == B20M_SEQUENCE_NONE
         && m_B20M.wait_kind == B20M_WAIT_NONE && !m_B20M.entrance_active);
-    ASSERT(Result_Ignore(B20M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B20M.shield, 0, &assets->shield)));
     ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.wand, 0, &assets->wand)));
     ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.dress, 1, &assets->dress)));
@@ -1870,8 +1890,9 @@ static void M_Hud(const B20M_ASSETS *const assets)
     StageTimer_Redraw(true, g_Stage.timer_initialized, 0);
     Hud_ScoreAndCombo();
 }
-void B20M_BeginEntrance(const B20M_ASSETS *const assets)
+static void M_BeginEntrance(const void *const data)
 {
+    const B20M_ASSETS *const assets = data;
     ASSERT(
         !m_B20M.entrance_active && m_B20M.sequence == B20M_SEQUENCE_NONE
         && m_B20M.wait_kind == B20M_WAIT_NONE);
@@ -1889,8 +1910,11 @@ void B20M_BeginEntrance(const B20M_ASSETS *const assets)
     m_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
     m_B20M.entrance_active = true;
 }
-bool B20M_ResumeEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
+static bool M_ResumeEntrance(
+    const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B20M_ASSETS *const assets = data;
+    const uint64_t tick = ctx->host_tick;
     if (!m_B20M.entrance_active) {
         return true;
     }
@@ -2364,8 +2388,10 @@ static void M_AfterGust(const B20M_ASSETS *const assets)
         : phase == B20M_PHASE_GUST_3 ? 2 + M_Random(assets) % 5
                                      : 1 + M_Random(assets) % 6;
 }
-bool B20M_UpdateAndRender(const B20M_ASSETS *const assets, const uint64_t tick)
+static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B20M_ASSETS *const assets = data;
+    const uint64_t tick = ctx->host_tick;
     if (m_B20M.finished) {
         return true;
     }
@@ -2472,3 +2498,14 @@ bool B20M_UpdateAndRender(const B20M_ASSETS *const assets, const uint64_t tick)
     }
     return M_Tail(assets);
 }
+
+const BOSS_STRATEGY g_BossSariel = {
+    .assets_size = sizeof(B20M_ASSETS),
+    .load_assets = M_LoadAssets,
+    .init = M_Init,
+    .setup = M_Setup,
+    .begin_entrance = M_BeginEntrance,
+    .resume_entrance = M_ResumeEntrance,
+    .update = M_Update,
+    .song = -1,
+};

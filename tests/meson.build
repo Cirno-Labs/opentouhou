@@ -1356,12 +1356,22 @@ if build_games
     ),
     suite: 'unit',
   )
+  th01_boss_fixtures = files(
+    'th01_assets_b05.c',
+    'th01_assets_b10j.c',
+    'th01_assets_b10m.c',
+    'th01_assets_b15j.c',
+    'th01_assets_b15m.c',
+    'th01_assets_b20j.c',
+    'th01_assets_b20m.c',
+  )
   test(
     'th01/main',
     executable(
       'test_th01_main',
       'test_th01_main.c',
       'th01_assets.c',
+      th01_boss_fixtures,
       'audio_backend_fake.c',
       c_args: [layer_include['th01']] + shell_include + stg_include,
       implicit_include_directories: false,
@@ -1431,7 +1441,7 @@ if build_games
       executable(
         'test_th01_' + part,
         'test_th01_' + part + '.c',
-        part == 'gameplay' ? ['audio_backend_fake.c', 'th01_assets.c'] : [],
+        part == 'gameplay' ? ['audio_backend_fake.c', 'th01_assets.c'] + th01_boss_fixtures : [],
         c_args: [layer_include['th01']] + core_include + stg_include,
         implicit_include_directories: false,
         link_with: [th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_image_lib, core_io_lib, core_base_lib] + (part in ['gameplay', 'score', 'ending'] ? [core_text_lib] : []) + (part == 'gameplay' ? [core_audio_lib] : []),

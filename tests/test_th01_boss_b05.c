@@ -3,7 +3,6 @@
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/particles.c"
-#include "th01/boss_b05.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -18,6 +17,20 @@
 #include "th01_world.h"
 #include "test.h"
 
+static void M_BossSetup(const B05_ASSETS *const assets)
+{
+    const BOSS_CONTEXT ctx = {};
+    g_BossSingyoku.setup(assets, &ctx);
+}
+
+static bool M_BossUpdate(
+    const PTN *const miko, const ROUTE_SELECT_ASSETS *const route,
+    const TH01_INPUT *const raw)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko, .route = route, .raw = raw };
+    return g_BossSingyoku.update(nullptr, &ctx);
+}
+
 typedef struct {
     B05_ASSETS assets;
     GAME_TEXT_FONT font;
@@ -27,7 +40,7 @@ typedef struct {
 
 } FIXTURE;
 
-static void M_Init(FIXTURE *const f, ARENA *const arena)
+static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
     Th01Test_ResetWorld();
@@ -55,7 +68,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 
 static void M_Battle(FIXTURE *const f, ARENA *const arena)
 {
-    M_Init(f, arena);
+    M_InitFixture(f, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Hud_Init(a);
     HudHp_Init(a);
@@ -113,12 +126,11 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
 static void M_Enter(FIXTURE *const f)
 {
     const TH01_INPUT raw = {};
-    CHECK(!B05_UpdateAndRender(&f->miko, &f->route_assets, &raw));
+    CHECK(!M_BossUpdate(&f->miko, &f->route_assets, &raw));
     for (int32_t frame = 0; frame < 200; frame++) {
         Frame_VSync();
         CHECK_EQ_INT(
-            B05_UpdateAndRender(&f->miko, &f->route_assets, &raw),
-            frame == 199);
+            M_BossUpdate(&f->miko, &f->route_assets, &raw), frame == 199);
     }
     CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_SPHERE);
     CHECK_EQ_INT(m_B05.status.frame, 0);
@@ -129,11 +141,11 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     ARENA arena;
     Arena_Init(&arena, "b05", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
+    M_InitFixture(&f, &arena);
     memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
-    B05_Init();
+    g_BossSingyoku.init();
     m_B05.status.frame = 77;
     m_B05.pattern = 3;
     m_B05.velocity_x = 999;
@@ -148,7 +160,7 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     m_Particles.cycle = 73;
     m_Particles.velocity_base[0] = 9;
     m_Particles.alive[0] = 255;
-    B05_Setup(&f.assets);
+    M_BossSetup(&f.assets);
     CHECK(g_Boss == &m_B05.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK(m_Sprites.entities[0] == &f.assets.sphere);
@@ -189,16 +201,16 @@ TEST(asset_validation_rejects_incomplete_and_wrong_sized_banks)
     ARENA arena;
     Arena_Init(&arena, "b05", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
-    CHECK(Result_Ignore(B05_ValidateAssets(&f.assets)));
+    M_InitFixture(&f, &arena);
+    CHECK(Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.person.count = 4;
-    CHECK(!Result_Ignore(B05_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.person.count = 5;
     f.assets.flash.width = 80;
-    CHECK(!Result_Ignore(B05_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.flash.width = 96;
     f.assets.background.has_palette = false;
-    CHECK(!Result_Ignore(B05_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
     Arena_Free(&arena);
 }
 
@@ -209,8 +221,8 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         Arena_Init(&arena, "b05", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        B05_Init();
-        B05_Setup(&f.assets);
+        g_BossSingyoku.init();
+        M_BossSetup(&f.assets);
         const size_t used = arena.used;
         Frame_Reset();
         g_VSync.count1 = (uint16_t)reuse;
@@ -218,17 +230,17 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         const PLAYER player = g_Player;
         const ORB orb = g_Orb;
         const uint32_t rng = g_Rng;
-        CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+        CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK_EQ_INT(m_B05.status.frame, 1 + reuse);
         CHECK_EQ_INT(m_B05.hit.frame, 0);
         CHECK_EQ_INT(g_Palette.saved.colors[5][0], 0);
         const B05 frozen = m_B05;
-        CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+        CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
         for (int32_t edge = 0; edge < 200 - reuse; edge++) {
             Frame_VSync();
             CHECK_EQ_INT(
-                B05_UpdateAndRender(&f.miko, &f.route_assets, &raw),
+                M_BossUpdate(&f.miko, &f.route_assets, &raw),
                 edge == 199 - reuse);
         }
         CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_SPHERE);
@@ -256,8 +268,8 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        B05_Init();
-        B05_Setup(&f.assets);
+        g_BossSingyoku.init();
+        M_BossSetup(&f.assets);
         Frame_Reset();
         M_Enter(&f);
         const size_t used = arena.used;
@@ -270,7 +282,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             g_Orb.previous_left = hit ? (int16_t)(m_B05.sphere.left + 32) : 0;
             g_Orb.previous_top = hit ? (int16_t)(m_B05.sphere.top + 32) : 64;
             g_Session.frame_rand = (uint32_t)step;
-            CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+            CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
             phase_two |= m_B05.status.phase == B05_PHASE_TRANSFORMS;
         }
         CHECK(phase_two);
@@ -286,14 +298,14 @@ TEST(real_hit_controller_reaches_both_cached_routes)
             .previous_top = 100 * 16,
         };
         g_Pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
-        CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+        CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(!g_Pellets.slots[0].moving);
         CHECK(!g_Pellets.slots[1].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(m_Scene.active->id, 0);
         CHECK(!g_Stage.cleared && !g_Player.is_hit);
         const B05 frozen = m_B05;
-        CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+        CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
         const uint32_t rng = g_Rng;
         const uint32_t frame_rand = g_Session.frame_rand;
@@ -301,7 +313,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
             Frame_VSync();
-            B05_UpdateAndRender(&f.miko, &f.route_assets, &held);
+            M_BossUpdate(&f.miko, &f.route_assets, &held);
         }
         CHECK_EQ_INT(m_B05.pending, B05_FINISHED);
         CHECK_EQ_INT(g_Session.route, rank % 2);
@@ -311,7 +323,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
         const B05 finished = m_B05;
-        CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+        CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &finished, sizeof(m_B05)) == 0);
         Arena_Free(&arena);
     }
@@ -323,8 +335,8 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     Arena_Init(&arena, "b05", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    B05_Init();
-    B05_Setup(&f.assets);
+    g_BossSingyoku.init();
+    M_BossSetup(&f.assets);
     m_B05.status.phase = B05_PHASE_TRANSFORMS;
     m_B05.sphere.left = 272;
     m_B05.sphere.top = 96;
@@ -340,14 +352,14 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     }
     const TH01_INPUT raw = {};
     Frame_Reset();
-    CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+    CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     CHECK(memcmp(&g_Pellets, &full, sizeof(full)) == 0);
     m_B05.status.frame = 159;
-    CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+    CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(m_B05.person.image, 5);
     m_B05.status.frame = 163;
-    CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+    CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(m_B05.person.image, 5);
     m_B05.pattern = 3;
     m_B05.status.frame = 184;
@@ -355,13 +367,13 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     for (int32_t i = 0; i < 20; i++) {
         MasterRng_Next(&expected);
     }
-    CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+    CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     memset(&g_Pellets, 0, sizeof(g_Pellets));
     m_B05.pattern = 2;
     for (int32_t i = 0; i < 3; i++) {
         m_B05.status.frame = (int16_t)(239 + i * 8);
-        CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
+        CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(g_Pellets.slots[i * 2].moving);
         CHECK(g_Pellets.slots[i * 2 + 1].moving);
     }
