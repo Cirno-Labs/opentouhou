@@ -51,3 +51,8 @@ bool VSyncIrq_DelayReady(const uint16_t frames)
     g_VSync.count1 = 0;
     return true;
 }
+
+void VSyncIrq_BeginDelay(void)
+{
+    g_VSync.count1 = 0;
+}

@@ -399,7 +399,7 @@ bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
             break;
         case END_WAIT:
             if (!m_Ending.waiting) {
-                g_VSync.count1 = 0;
+                VSyncIrq_BeginDelay();
                 m_Ending.waiting = true;
             }
             if ((uint16_t)g_VSync.count1 < op->value) {
@@ -458,7 +458,7 @@ bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
                 break;
             }
             GameInput_SenseEnding(raw);
-            g_VSync.count1 = 0;
+            VSyncIrq_BeginDelay();
             m_Ending.waiting = true;
             return false;
         case END_REGISTER:

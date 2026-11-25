@@ -38,3 +38,6 @@ bool VSyncIrq_WaitReady(const VSYNC_WAIT *wait);
 // Compares count1 as unsigned 16 bits. Resets count1 only on success;
 // frames == 0 succeeds immediately. Preserves count2 and the edge serial.
 bool VSyncIrq_DelayReady(uint16_t frames);
+
+// Resets count1, so that VSyncIrq_DelayReady counts from the current frame.
+void VSyncIrq_BeginDelay(void);

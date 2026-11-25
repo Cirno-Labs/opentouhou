@@ -423,7 +423,7 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
                 return false;
             }
             if (m_Registration.context == SCORE_ENDING) {
-                g_VSync.count1 = 0;
+                VSyncIrq_BeginDelay();
             }
             m_Registration.phase = SCORE_ENTRY_DELAY;
             break;
