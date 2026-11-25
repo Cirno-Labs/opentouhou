@@ -54,7 +54,7 @@ typedef struct {
     int32_t count1, track;
 } OPENING;
 
-extern OPENING g_Opening;
+extern const OPENING *const g_Opening;
 
 // Opens the canonical UTF-8 archive name, with a literal CP932 fallback
 // for POSIX data folders. Mounts its PF source above loose files.
@@ -93,3 +93,6 @@ OPENING_EVENTS Opening_Init(const OPENING_ASSETS *assets);
 OPENING_EVENTS Opening_Tick(const TH01_INPUT *raw, bool any_key);
 
 void Opening_Close(void);
+
+// Counts the VSync latched by a program switch (VSyncIrq_SwitchProgram).
+void Opening_CountSwitchedVSync(void);

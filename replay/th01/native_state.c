@@ -150,11 +150,11 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
         row[TH01_COLUMN_program] = 1;
     } else if ((*g_Th01Scene) == TH01_SCENE_OPENING) {
         row[TH01_COLUMN_program] = 2;
-        row[TH01_COLUMN_vsync_count1] = M_I32((int16_t)g_Opening.count1);
-        row[TH01_COLUMN_frame_rand] = g_Opening.frame_rand;
-        row[TH01_COLUMN_rng] = g_Opening.random;
-        row[TH01_COLUMN_track] = (uint32_t)g_Opening.track;
-        row[TH01_COLUMN_track_starts] = g_Opening.track_starts;
+        row[TH01_COLUMN_vsync_count1] = M_I32((int16_t)g_Opening->count1);
+        row[TH01_COLUMN_frame_rand] = g_Opening->frame_rand;
+        row[TH01_COLUMN_rng] = g_Opening->random;
+        row[TH01_COLUMN_track] = (uint32_t)g_Opening->track;
+        row[TH01_COLUMN_track_starts] = g_Opening->track_starts;
     } else if (
         (*g_Th01Scene) == TH01_SCENE_ENDING
         || (*g_Th01Scene) == TH01_SCENE_SWITCH || ending_scores) {
