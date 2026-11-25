@@ -63,6 +63,7 @@ th01_lib = static_library(
   'gameplay/exit.c',
   'gameplay/gameplay.c',
   'gameplay/pause.c',
+  'gameplay/stage.c',
   'video.c',
   'palette.c',
   'text.c',

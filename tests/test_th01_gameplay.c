@@ -8,6 +8,7 @@
 #include "../src/th01/gameplay/exit.c"
 #include "../src/th01/gameplay/gameplay.c"
 #include "../src/th01/gameplay/pause.c"
+#include "../src/th01/gameplay/stage.c"
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/player.h"
