@@ -21,6 +21,7 @@
 #include "th01/finite.h"
 #include "th01/shape.h"
 #include "th01/sprite.h"
+#include "th01/wait.h"
 #include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
@@ -131,23 +132,14 @@ typedef struct {
     int16_t pattern, pattern_state, patterns_done, patterns_until_next;
     int16_t entrance_radius, wand_frame, bird_pellet_group;
     int16_t ray_previous_x, ray_previous_y;
-    int16_t dotted_radius, rings_interval, raw_scroll, scroll_line;
-    VSYNC_WAIT wait;
-    uint64_t wait_tick;
-    uint16_t wait_frames;
-    uint8_t rings_angle, radial_angle, radial_velocity, wait_kind, sequence,
+    int16_t dotted_radius, rings_interval, scroll_line;
+    WAIT wait;
+    uint8_t rings_angle, radial_angle, radial_velocity, sequence,
         sequence_stage, resume_stage;
     int8_t call_phase;
     bool vortex_wand_done, bird_wand_done, direction_first, direction_second;
     bool hp_bar_filled, dotted_active, entrance_active, finished;
 } B20M;
-
-typedef enum {
-    B20M_WAIT_NONE,
-    B20M_WAIT_SCROLL,
-    B20M_WAIT_DELAY,
-    B20M_WAIT_TICKS,
-} B20M_WAIT;
 
 typedef enum {
     B20M_ENTRANCE_DONE,
@@ -286,8 +278,8 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     const B20M_ASSETS *const assets = data;
     g_Boss = &m_B20M.status;
     ASSERT(
-        m_B20M.sequence == B20M_SEQUENCE_NONE
-        && m_B20M.wait_kind == B20M_WAIT_NONE && !m_B20M.entrance_active);
+        m_B20M.sequence == B20M_SEQUENCE_NONE && Wait_Idle(&m_B20M.wait)
+        && !m_B20M.entrance_active);
     ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B20M.shield, 0, &assets->shield)));
     ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.wand, 0, &assets->wand)));
@@ -563,40 +555,6 @@ static void M_Ray(
     m_B20M.ray_previous_x = x;
     m_B20M.ray_previous_y = y;
 }
-static bool M_Delay(const uint16_t frames)
-{
-    if (VSyncIrq_DelayReady(frames)) {
-        return true;
-    }
-    m_B20M.wait_kind = B20M_WAIT_DELAY;
-    m_B20M.wait_frames = frames;
-    return false;
-}
-static bool M_Scroll(const int16_t line)
-{
-    m_B20M.raw_scroll = line;
-    m_B20M.wait_kind = B20M_WAIT_SCROLL;
-    VSyncIrq_BeginWait(&m_B20M.wait);
-    return false;
-}
-static bool M_Ready(const B20M_ASSETS *const assets, const uint64_t tick)
-{
-    if (m_B20M.wait_kind == B20M_WAIT_SCROLL) {
-        if (!VSyncIrq_WaitReady(&m_B20M.wait)) {
-            return false;
-        }
-        Video_SetScroll(m_B20M.raw_scroll);
-    } else if (m_B20M.wait_kind == B20M_WAIT_DELAY) {
-        if (!VSyncIrq_DelayReady(m_B20M.wait_frames)) {
-            return false;
-        }
-    } else if (
-        m_B20M.wait_kind == B20M_WAIT_TICKS && tick - m_B20M.wait_tick < 6) {
-        return false;
-    }
-    m_B20M.wait_kind = B20M_WAIT_NONE;
-    return true;
-}
 static const PALETTE *M_TransitionTarget(const bool fade)
 {
     return fade ? &g_Palette.resource : &g_Palette.saved;
@@ -684,8 +642,7 @@ static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
             && birds->left[i] < g_Player.left + 8 && birds->top[i] > 344
             && birds->top[i] < 384) {
             g_Player.is_hit = true;
-            m_B20M.wait_kind = B20M_WAIT_TICKS;
-            m_B20M.wait_tick = tick;
+            Wait_Ticks(&m_B20M.wait, tick, 6);
             m_B20M.resume_stage = B20M_RESUME_BIRD_HIT;
             return false;
         }
@@ -936,7 +893,7 @@ static bool M_Gust(const B20M_ASSETS *const assets)
         m_B20M.status.frame = 49;
         if (m_B20M.gust.id >= 3) {
             m_B20M.resume_stage = B20M_RESUME_GUST_END;
-            return M_Scroll(0);
+            return Wait_Scroll(&m_B20M.wait, 0);
         }
     }
     return true;
@@ -1397,14 +1354,15 @@ static bool M_Shake(const B20M_ASSETS *const assets)
     if (m_B20M.status.frame < 50) {
         if (m_B20M.status.frame % 8 == 0 || m_B20M.status.frame % 8 == 4) {
             m_B20M.resume_stage = B20M_RESUME_SHAKE;
-            return M_Scroll(m_B20M.status.frame % 8 == 0 ? 396 : 404);
+            return Wait_Scroll(
+                &m_B20M.wait, m_B20M.status.frame % 8 == 0 ? 396 : 404);
         }
         if (m_B20M.status.frame % 4 == 0) {
             Sound_Effect(7);
         }
     } else if (m_B20M.status.frame == 50) {
         m_B20M.resume_stage = B20M_RESUME_SHAKE_END;
-        return M_Scroll(0);
+        return Wait_Scroll(&m_B20M.wait, 0);
     }
     return true;
 }
@@ -1895,7 +1853,7 @@ static void M_BeginEntrance(const void *const data)
     const B20M_ASSETS *const assets = data;
     ASSERT(
         !m_B20M.entrance_active && m_B20M.sequence == B20M_SEQUENCE_NONE
-        && m_B20M.wait_kind == B20M_WAIT_NONE);
+        && Wait_Idle(&m_B20M.wait));
     g_Pellets.interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(assets, &assets->lower, true);
@@ -1918,7 +1876,7 @@ static bool M_ResumeEntrance(
     if (!m_B20M.entrance_active) {
         return true;
     }
-    if (!M_Ready(assets, tick)) {
+    if (!Wait_Ready(&m_B20M.wait, tick)) {
         return false;
     }
     for (;;) {
@@ -1926,15 +1884,15 @@ static bool M_ResumeEntrance(
         case B20M_ENTRANCE_SCROLL:
             if (m_B20M.scroll_line < 0) {
                 m_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL;
-                return M_Scroll(0);
+                return Wait_Scroll(&m_B20M.wait, 0);
             }
             m_B20M.sequence_stage = B20M_ENTRANCE_SCROLL_STEP;
-            return M_Scroll(m_B20M.scroll_line);
+            return Wait_Scroll(&m_B20M.wait, m_B20M.scroll_line);
         case B20M_ENTRANCE_SCROLL_STEP:
             M_CopyRows(assets, m_B20M.scroll_line, 1);
             m_B20M.scroll_line--;
             m_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
-            if (!M_Delay(1)) {
+            if (!Wait_Delay(&m_B20M.wait, 1)) {
                 return false;
             }
             continue;
@@ -1979,7 +1937,7 @@ static int16_t M_InvertRings(
 }
 static bool M_RingEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!M_Ready(assets, tick)) {
+    if (!Wait_Ready(&m_B20M.wait, tick)) {
         return false;
     }
     for (;;) {
@@ -2010,7 +1968,7 @@ static bool M_RingEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
             m_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
         }
-        if (m_B20M.status.frame % 2 != 0 && !M_Delay(1)) {
+        if (m_B20M.status.frame % 2 != 0 && !Wait_Delay(&m_B20M.wait, 1)) {
             return false;
         }
     }
@@ -2048,7 +2006,7 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
 }
 static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!M_Ready(assets, tick)) {
+    if (!Wait_Ready(&m_B20M.wait, tick)) {
         return false;
     }
     for (;;) {
@@ -2062,12 +2020,13 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
                     M_Palette(assets, &m_B20M.boss_palette);
                 }
                 m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
-                return M_Scroll(m_B20M.status.frame % 2 == 0 ? 416 : 386);
+                return Wait_Scroll(
+                    &m_B20M.wait, m_B20M.status.frame % 2 == 0 ? 416 : 386);
             }
             if (m_B20M.status.frame == 200) {
                 M_Palette(assets, &m_B20M.boss_palette);
                 m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
-                return M_Scroll(0);
+                return Wait_Scroll(&m_B20M.wait, 0);
             }
             for (int32_t i = 0; i < 3; i++) {
                 g_Palette.resource.colors[15][i] = 0;
@@ -2083,13 +2042,13 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
             M_CopyOther(assets);
             M_Hud(assets);
             m_B20M.sequence_stage = B20M_TRANSFORM_SECOND_FORM;
-            return M_Scroll(0);
+            return Wait_Scroll(&m_B20M.wait, 0);
         case B20M_TRANSFORM_SHAKE_STEP:
             if (m_B20M.status.frame < 200 && m_B20M.status.frame % 4 == 0) {
                 Sound_Effect(9);
             }
             m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
-            if (!M_Delay(1)) {
+            if (!Wait_Delay(&m_B20M.wait, 1)) {
                 return false;
             }
             continue;
@@ -2128,7 +2087,7 @@ static void M_BeginDefeat(const B20M_ASSETS *const assets)
 }
 static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!M_Ready(assets, tick)) {
+    if (!Wait_Ready(&m_B20M.wait, tick)) {
         return false;
     }
     for (;;) {
@@ -2137,7 +2096,8 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
             m_B20M.status.frame = Math16_Wrap(m_B20M.status.frame + 1);
             if (m_B20M.status.frame < 230) {
                 m_B20M.sequence_stage = B20M_DEFEAT_SHAKE_STEP;
-                return M_Scroll(m_B20M.status.frame % 2 == 0 ? 416 : 386);
+                return Wait_Scroll(
+                    &m_B20M.wait, m_B20M.status.frame % 2 == 0 ? 416 : 386);
             }
             m_B20M.sequence_stage = B20M_DEFEAT_SHAKE_STEP;
             continue;
@@ -2159,11 +2119,11 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
                 }
                 if (m_B20M.status.frame > 230) {
                     m_B20M.sequence_stage = B20M_DEFEAT_BONUS;
-                    return M_Scroll(0);
+                    return Wait_Scroll(&m_B20M.wait, 0);
                 }
             }
             m_B20M.sequence_stage = B20M_DEFEAT_SHAKE;
-            if (!M_Delay(2)) {
+            if (!Wait_Delay(&m_B20M.wait, 2)) {
                 return false;
             }
             continue;
@@ -2405,7 +2365,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         return M_Defeat(assets, tick);
     }
     if (m_B20M.resume_stage != B20M_RESUME_NONE) {
-        if (!M_Ready(assets, tick)) {
+        if (!Wait_Ready(&m_B20M.wait, tick)) {
             return false;
         }
         const uint8_t resume = m_B20M.resume_stage;
