@@ -20,7 +20,8 @@ typedef struct {
     const char *shot_type;
     int32_t seed;
     int32_t max_frames;
-    bool passive;
+    const char *strategy;
+    const char *bot;
 } M_ARGS;
 
 static const ARG_OPTION m_Options[] = {
@@ -44,9 +45,13 @@ static const ARG_OPTION m_Options[] = {
     ARG_INT_OF(
         M_ARGS, "--max-frames", max_frames, "<n>",
         "the calcs after which the run fails", ARG_FALLBACK_INT(216000)),
-    ARG_FLAG_OF(
-        M_ARGS, "--passive", passive,
-        "wander without dodging, focusing or bombing, for a game over"),
+    ARG_STRING_OF(
+        M_ARGS, "--strategy", strategy, "<name>",
+        "the bot's strategy: dodge, or wander for a game over",
+        ARG_FALLBACK("dodge")),
+    ARG_STRING_OF(
+        M_ARGS, "--bot", bot, "<file>",
+        "the bot.ini that maps the bot's roles to the game's buttons"),
 };
 
 // Finds name among the names of choice, without regard to case.
@@ -70,8 +75,12 @@ static RESULT M_Choose(
 
 static RESULT M_Run(const RECORDER_GAME *const game, const M_ARGS *const args)
 {
+    const BOT_STRATEGY *const strategy = Bot_FindStrategy(args->strategy);
+    FAIL_IF(strategy == nullptr, "there is no strategy %s", args->strategy);
     BOT bot;
-    Bot_Init(&bot, game->input_schema, (uint16_t)args->seed, args->passive);
+    MUST(Bot_Load(
+        &bot, args->bot != nullptr ? args->bot : game->bot_ini,
+        game->input_schema, strategy, (uint16_t)args->seed));
     uint8_t *const input = Mem_AllocZ(game->input_schema->size);
     VEC2 threats[BOT_MAX_THREATS];
     RECORDER_END end;

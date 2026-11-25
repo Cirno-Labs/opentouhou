@@ -721,8 +721,8 @@ test(
     '../replay/bot/bot.c',
     c_args: stg_include + bot_include,
     implicit_include_directories: false,
-    link_with: [stg_rng_lib, core_base_lib],
-    dependencies: [cc_libm],
+    link_with: [stg_rng_lib, core_ini_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3, cc_libm],
   ),
   suite: 'unit',
 )

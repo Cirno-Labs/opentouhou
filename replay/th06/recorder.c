@@ -165,6 +165,7 @@ int main(int argc, char **argv)
     const RECORDER_GAME game = {
         .program = "th06record",
         .input_schema = &g_InputSchema,
+        .bot_ini = "replay/th06/bot.ini",
         .difficulties = { m_Difficulties, ARRAY_SIZE(m_Difficulties) },
         .stages = { m_Stages, ARRAY_SIZE(m_Stages) },
         .characters = { m_Characters, ARRAY_SIZE(m_Characters) },
