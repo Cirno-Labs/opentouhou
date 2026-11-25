@@ -78,7 +78,7 @@ typedef struct {
     int16_t bat_velocity_x, bat_velocity_y, safety_left;
     int16_t girl_pattern, girl_subphase, phase5_subphase, bat_pattern;
     int16_t trail_x[2][3], trail_y[2][3];
-    int16_t entrance_tick, pending_scroll;
+    int16_t entrance_tick, entrance_delay, scroll_line;
     VSYNC_WAIT wait;
     uint64_t pending_tick;
     uint8_t entrance_stage, entrance_angle, pending, transform_stage;
@@ -642,7 +642,7 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
         M_Snap(assets, miko);
     }
     if (m_B15M.entrance_waiting) {
-        if (!VSyncIrq_DelayReady((uint16_t)m_B15M.pending_scroll)) {
+        if (!VSyncIrq_DelayReady((uint16_t)m_B15M.entrance_delay)) {
             return false;
         }
         m_B15M.entrance_waiting = false;
@@ -665,7 +665,7 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
                 continue;
             }
             m_B15M.entrance_angle = (uint8_t)(m_B15M.entrance_angle + 24);
-            m_B15M.pending_scroll = (120 - m_B15M.hit.frame) / 12 + 1;
+            m_B15M.entrance_delay = (120 - m_B15M.hit.frame) / 12 + 1;
         } else {
             const int16_t f = m_B15M.hit.frame;
             if (!m_B15M.trails_offscreen && f % 4 == 0) {
@@ -717,9 +717,9 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
                 m_B15M.entrance_active = false;
                 return true;
             }
-            m_B15M.pending_scroll = 1;
+            m_B15M.entrance_delay = 1;
         }
-        if (!VSyncIrq_DelayReady((uint16_t)m_B15M.pending_scroll)) {
+        if (!VSyncIrq_DelayReady((uint16_t)m_B15M.entrance_delay)) {
             m_B15M.entrance_waiting = true;
             return false;
         }
@@ -1061,7 +1061,7 @@ static int16_t M_Phase3(
 static bool M_ScrollWait(const int16_t top)
 {
     m_B15M.pending = B15M_PENDING_SCROLL;
-    m_B15M.pending_scroll = top;
+    m_B15M.scroll_line = top;
     VSyncIrq_BeginWait(&m_B15M.wait);
     return false;
 }
@@ -1532,7 +1532,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             return false;
         }
         m_B15M.pending = B15M_PENDING_NONE;
-        Video_SetScroll(m_B15M.pending_scroll);
+        Video_SetScroll(m_B15M.scroll_line);
         if (m_B15M.transform_stage == B15M_TRANSFORM_RIFTS) {
             if (!M_TransformFinish(assets, miko)) {
                 return false;
