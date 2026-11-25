@@ -13,7 +13,7 @@ typedef struct {
     int16_t left[18], top[18];
     int16_t frame, scroll;
     int8_t tint_offset;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     bool waiting;
 } BOMB;
 
@@ -201,12 +201,12 @@ BOMB_UPDATE Bomb_BeginUpdate(
         const int16_t offsets[4] = { 392, 400, 384, 400 };
         m_Bomb.scroll = offsets[frame % 16 / 4];
         m_Bomb.waiting = true;
-        Frame_BeginWait(&m_Bomb.wait);
+        VSyncIrq_BeginWait(&m_Bomb.wait);
         return BOMB_UPDATE_WAIT;
     } else if (frame == 140) {
         m_Bomb.scroll = 0;
         m_Bomb.waiting = true;
-        Frame_BeginWait(&m_Bomb.wait);
+        VSyncIrq_BeginWait(&m_Bomb.wait);
         return BOMB_UPDATE_WAIT;
     }
     return BOMB_UPDATE_RUNNING;
@@ -215,7 +215,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
 BOMB_UPDATE Bomb_ResumeUpdate(void)
 {
     ASSERT(m_Bomb.waiting);
-    if (!Frame_WaitReady(&m_Bomb.wait)) {
+    if (!VSyncIrq_WaitReady(&m_Bomb.wait)) {
         return BOMB_UPDATE_WAIT;
     }
     m_Bomb.waiting = false;

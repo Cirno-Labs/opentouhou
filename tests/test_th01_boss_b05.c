@@ -128,7 +128,7 @@ static void M_Enter(FIXTURE *const f)
     const TH01_INPUT raw = {};
     CHECK(!M_BossUpdate(&f->miko, &f->route_assets, &raw));
     for (int32_t frame = 0; frame < 200; frame++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK_EQ_INT(
             M_BossUpdate(&f->miko, &f->route_assets, &raw), frame == 199);
     }
@@ -224,7 +224,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         g_BossSingyoku.init();
         M_BossSetup(&f.assets);
         const size_t used = arena.used;
-        Frame_Reset();
+        VSyncIrq_Reset();
         g_VSync.count1 = (uint16_t)reuse;
         const TH01_INPUT raw = {};
         const PLAYER player = g_Player;
@@ -238,7 +238,7 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
         CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
         for (int32_t edge = 0; edge < 200 - reuse; edge++) {
-            Frame_VSync();
+            VSyncIrq_Edge();
             CHECK_EQ_INT(
                 M_BossUpdate(&f.miko, &f.route_assets, &raw),
                 edge == 199 - reuse);
@@ -270,7 +270,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         g_Session.settings.difficulty = rank;
         g_BossSingyoku.init();
         M_BossSetup(&f.assets);
-        Frame_Reset();
+        VSyncIrq_Reset();
         M_Enter(&f);
         const size_t used = arena.used;
         const TH01_INPUT raw = {};
@@ -312,7 +312,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         for (int32_t edge = 0; edge < 1000 && m_B05.pending != B05_FINISHED;
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
-            Frame_VSync();
+            VSyncIrq_Edge();
             M_BossUpdate(&f.miko, &f.route_assets, &held);
         }
         CHECK_EQ_INT(m_B05.pending, B05_FINISHED);
@@ -351,7 +351,7 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
         MasterRng_Next(&expected);
     }
     const TH01_INPUT raw = {};
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     CHECK(memcmp(&g_Pellets, &full, sizeof(full)) == 0);

@@ -61,7 +61,7 @@ TEST(row_transition_empty_scan_fades_and_final_delay)
     PALETTE target;
     memset(&target, 15, sizeof(target));
     Bonus_InitRowTransition();
-    Frame_Reset();
+    VSyncIrq_Reset();
     Bonus_BeginRowTransition();
     CHECK(!Bonus_ResumeRowTransition(&palette, &target));
     CHECK_EQ_INT(m_Transition.activated, 0);
@@ -133,7 +133,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     memset(&g_StagePalette, 11, sizeof(g_StagePalette));
     Video_SelectDrawingPage(1);
-    Frame_Reset();
+    VSyncIrq_Reset();
     TH01_INPUT raw = {};
     CHECK(!Bonus_BeginStage(&f.assets, &f.font, 4, &raw));
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 180), 0);
@@ -186,7 +186,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     g_Stage.score = UINT32_MAX - 1000;
     g_Stage.time = 20000;
     g_Stage.maximum_combo = 100;
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 100;
     const TH01_INPUT raw = { .ok = true };
     CHECK(!Bonus_BeginStage(&f.assets, &f.font, 19, &raw));
@@ -260,7 +260,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     g_Pellets.slots[1] = (PELLET) { .cloud_frame = 5 };
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    Frame_Reset();
+    VSyncIrq_Reset();
     TH01_INPUT raw = {};
     CHECK(!Bonus_BeginTotal(&f.assets, 5, &raw, 0));
     CHECK(!g_Shots.slots[0].moving);
@@ -295,7 +295,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
         CHECK(memcmp(&frozen, &m_Total, sizeof(frozen)) == 0);
         ticks++;
         if (VSync_Advance(&clock)) {
-            Frame_VSync();
+            VSyncIrq_Edge();
         }
         CHECK(!Bonus_ResumeTotal(&f.assets, &raw, (uint64_t)ticks));
     }
@@ -330,7 +330,7 @@ TEST(total_second_loop_scrambles_then_restores_final_digit)
     M_InitTotal(&f, Arena_Allocator(&arena));
     memset(g_Video.pages[1], 14, VIDEO_PAGE_SIZE);
     const TH01_INPUT raw = {};
-    Frame_Reset();
+    VSyncIrq_Reset();
     Bonus_InitTotal();
     m_Total.phase = BONUS_TOTAL_DIGIT;
     m_Total.top = 86;
@@ -360,7 +360,7 @@ TEST(total_millisecond_credit_crosses_digits_and_count1_can_satisfy_wait)
     TOTAL_FIXTURE f = {};
     M_InitTotal(&f, Arena_Allocator(&arena));
     const TH01_INPUT raw = {};
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 5;
     Bonus_InitTotal();
     m_Total.phase = BONUS_TOTAL_DIGIT;
@@ -387,7 +387,7 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     TOTAL_FIXTURE f = {};
     M_InitTotal(&f, Arena_Allocator(&arena));
     const TH01_INPUT raw = {};
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_Stage.time = 13108;
     Bonus_InitTotal();
     m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;

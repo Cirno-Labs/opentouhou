@@ -20,7 +20,7 @@ typedef struct {
     PTN sprites;
     STAGE_DATA_STAGE layouts[5];
     VIDEO saved_video;
-    FRAME_VSYNC saved_vsync;
+    VSYNC_COUNTERS saved_vsync;
     STAGE_OBJECTS saved_objects;
 } CASE;
 
@@ -147,7 +147,7 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
             }
             M_Begin(&state, false);
             const size_t used = state.arena.used;
-            Frame_Reset();
+            VSyncIrq_Reset();
             g_VSync.count1 = raw_counts[timing];
             g_VSync.count2 = 42;
             int32_t edges = 0;
@@ -156,7 +156,7 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
                 const int32_t total = g_StageObjects.entrance_total;
                 CHECK(!StageObjects_ResumeEntrance(&state.sprites));
                 CHECK_EQ_INT(g_StageObjects.entrance_total, total);
-                Frame_VSync();
+                VSyncIrq_Edge();
                 edges++;
             }
             const int32_t delays =
@@ -269,17 +269,17 @@ TEST(prepared_storage_matches_allocated_stages_without_growth)
                         * 1024),
                 0);
         }
-        allocated.saved_vsync = (FRAME_VSYNC) {};
-        Frame_Reset();
+        allocated.saved_vsync = (VSYNC_COUNTERS) {};
+        VSyncIrq_Reset();
         for (;;) {
             M_Use(&allocated);
             if (StageObjects_ResumeEntrance(&allocated.sprites)) {
                 break;
             }
-            Frame_VSync();
+            VSyncIrq_Edge();
             M_Use(&prepared);
             CHECK(!StageObjects_ResumeEntrance(&prepared.sprites));
-            Frame_VSync();
+            VSyncIrq_Edge();
         }
         M_Use(&prepared);
         CHECK(StageObjects_ResumeEntrance(&prepared.sprites));

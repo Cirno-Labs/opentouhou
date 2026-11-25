@@ -71,7 +71,7 @@ static void M_Tick(CASE *const state)
         result = Bomb_BeginUpdate(
             &state->miko, &state->bomb_assets, (int16_t)g_Player.bomb_frame);
     } else {
-        Frame_VSync();
+        VSyncIrq_Edge();
         result = Bomb_ResumeUpdate();
     }
     if (result == BOMB_UPDATE_WAIT) {

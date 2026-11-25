@@ -195,7 +195,7 @@ static void M_Enter(FIXTURE *const f)
         const B15J frozen = m_B15J;
         CHECK(!M_BossUpdate(&f->assets, &f->miko, &f->stage));
         CHECK(memcmp(&m_B15J, &frozen, sizeof(m_B15J)) == 0);
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     CHECK(false);
 }
@@ -219,7 +219,7 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             }
             const PALETTE saved = g_Palette.saved;
             const size_t used = arena.used;
-            Frame_Reset();
+            VSyncIrq_Reset();
             g_VSync.count1 = count == 0 ? 0 : 17;
             g_VSync.count2 = 21;
             M_Enter(&f);
@@ -253,7 +253,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         g_Session.settings.difficulty = rank;
         g_BossKikuri.init();
         M_BossSetup(&f.assets, &f.miko);
-        Frame_Reset();
+        VSyncIrq_Reset();
         M_Enter(&f);
         const size_t used = arena.used;
         uint32_t phases = 0, patterns = 0;
@@ -270,7 +270,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
                 saw_ripple |= m_B15J.tear_frame[i] > 1;
             }
             ShootoutLasers_UpdateAll(&(SHOOTOUT_LASERS_ASSETS) {});
-            Frame_VSync();
+            VSyncIrq_Edge();
         }
         CHECK_EQ_INT(
             phases,
@@ -296,7 +296,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     M_Battle(&f, &arena);
     g_BossKikuri.init();
     M_BossSetup(&f.assets, &f.miko);
-    Frame_Reset();
+    VSyncIrq_Reset();
     M_Enter(&f);
     const size_t used = arena.used;
     g_Orb.left = 0;
@@ -331,7 +331,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
             CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));
             CHECK(memcmp(&m_B15J, &frozen, sizeof(m_B15J)) == 0);
         }
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     CHECK(m_B15J.finished);
     CHECK_EQ_INT(m_B15J.status.hp, 0);
@@ -367,7 +367,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
             (SHOOTOUT_LASER) { .alive = true, .age = 77, .origin_left = 3210 };
         uint32_t expected = g_Rng;
         MasterRng_Next(&expected);
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(m_B15J.pattern_state, 52 + rank * 4);
         CHECK_EQ_INT(g_Rng, expected);
@@ -411,7 +411,7 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     m_B15J.subphase = 1;
     m_B15J.patterns_done = 30;
     const HUD_HP health = m_Health;
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 1);
     CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
@@ -442,7 +442,7 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         m_B15J.tears[0].top = 392;
         g_Player.invincible = false;
         g_Player.left = positions[i];
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(m_B15J.tear_frame[0], 2);
         CHECK_EQ_INT(g_Player.is_hit, i == 1 || i == 2);
@@ -467,7 +467,7 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         m_B15J.souls[0].top = m_B15J.souls[1].top = 100;
         g_Pellets.spawn_with_cloud = cloud != 0;
         const size_t used = arena.used;
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {

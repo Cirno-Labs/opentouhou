@@ -40,7 +40,7 @@ static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
     m_Fixture = f;
-    Frame_Reset();
+    VSyncIrq_Reset();
     GameInput_Init();
     Arena_Init(&f->arena, "ending", 2 * 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);

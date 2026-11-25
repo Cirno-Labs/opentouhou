@@ -4,7 +4,7 @@
 #include "harness.h"
 
 #include "pc98/vsync.h"
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 
 #include <stdint.h>
 

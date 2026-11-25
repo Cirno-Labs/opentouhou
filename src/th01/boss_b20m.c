@@ -132,7 +132,7 @@ typedef struct {
     int16_t entrance_radius, wand_frame, bird_pellet_group;
     int16_t ray_previous_x, ray_previous_y;
     int16_t dotted_radius, rings_interval, raw_scroll, scroll_line;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     uint64_t wait_tick;
     uint16_t wait_frames;
     uint8_t rings_angle, radial_angle, radial_velocity, wait_kind, sequence,
@@ -565,7 +565,7 @@ static void M_Ray(
 }
 static bool M_Delay(const uint16_t frames)
 {
-    if (Frame_DelayReady(frames)) {
+    if (VSyncIrq_DelayReady(frames)) {
         return true;
     }
     m_B20M.wait_kind = B20M_WAIT_DELAY;
@@ -576,18 +576,18 @@ static bool M_Scroll(const int16_t line)
 {
     m_B20M.raw_scroll = line;
     m_B20M.wait_kind = B20M_WAIT_SCROLL;
-    Frame_BeginWait(&m_B20M.wait);
+    VSyncIrq_BeginWait(&m_B20M.wait);
     return false;
 }
 static bool M_Ready(const B20M_ASSETS *const assets, const uint64_t tick)
 {
     if (m_B20M.wait_kind == B20M_WAIT_SCROLL) {
-        if (!Frame_WaitReady(&m_B20M.wait)) {
+        if (!VSyncIrq_WaitReady(&m_B20M.wait)) {
             return false;
         }
         Video_SetScroll(m_B20M.raw_scroll);
     } else if (m_B20M.wait_kind == B20M_WAIT_DELAY) {
-        if (!Frame_DelayReady(m_B20M.wait_frames)) {
+        if (!VSyncIrq_DelayReady(m_B20M.wait_frames)) {
             return false;
         }
     } else if (

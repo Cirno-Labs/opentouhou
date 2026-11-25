@@ -17,7 +17,7 @@ typedef enum {
 typedef struct {
     PALETTE_STATE palette;
     PALETTE_FADE fade;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     SCORE_CONTEXT context;
     SCORE_PHASE phase;
     int32_t rank, place, row, column, cursor, inputs;
@@ -372,24 +372,24 @@ void Score_Begin(
     Palette_Import(&m_Registration.palette.saved, image->palette);
     Palette_BeginFade(
         &m_Registration.fade, &m_Registration.palette, PALETTE_FADE_BLACK_IN);
-    Frame_BeginWait(&m_Registration.wait);
+    VSyncIrq_BeginWait(&m_Registration.wait);
     m_Registration.phase = SCORE_FADE_WAIT;
 }
 
 bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
 {
     if (reference_edge) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     for (;;) {
         switch (m_Registration.phase) {
         case SCORE_FADE_WAIT:
-            if (!Frame_WaitReady(&m_Registration.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Registration.wait)) {
                 return false;
             }
             Palette_FadeStep(&m_Registration.fade, &m_Registration.palette);
             if (m_Registration.fade.remaining != 0) {
-                Frame_BeginWait(&m_Registration.wait);
+                VSyncIrq_BeginWait(&m_Registration.wait);
                 return false;
             }
             M_Initial();
@@ -397,7 +397,7 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
         case SCORE_ENTRY_DELAY:
             if (m_Registration.context == SCORE_ENDING
                     ? (uint16_t)g_VSync.count1 < 4
-                    : !Frame_DelayReady(4)) {
+                    : !VSyncIrq_DelayReady(4)) {
                 return false;
             }
             m_Registration.inputs++;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "th01/gameplay_assets.h"
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/session.h"
 #include "th01/input.h"
 

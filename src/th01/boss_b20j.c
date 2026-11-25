@@ -89,7 +89,7 @@ typedef struct {
     int16_t face_direction, face_expression;
     int16_t scroll_line, scroll_speed, scroll_quarter, scroll_frame;
     int16_t animation_frame, raw_scroll;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     uint8_t cup_angle, spray_offset, spray_angle;
     uint16_t delay_frames;
     uint8_t entrance_stage, defeat_stage, wait_kind;
@@ -328,13 +328,13 @@ static bool M_Scroll(const int16_t top)
 {
     m_B20J.raw_scroll = top;
     m_B20J.wait_kind = B20J_WAIT_SCROLL;
-    Frame_BeginWait(&m_B20J.wait);
+    VSyncIrq_BeginWait(&m_B20J.wait);
     return false;
 }
 static bool M_Delay(const uint16_t frames)
 {
     m_B20J.delay_frames = frames;
-    if (Frame_DelayReady(frames)) {
+    if (VSyncIrq_DelayReady(frames)) {
         return true;
     }
     m_B20J.wait_kind = B20J_WAIT_DELAY;
@@ -343,13 +343,13 @@ static bool M_Delay(const uint16_t frames)
 static bool M_Ready(const B20J_ASSETS *const assets)
 {
     if (m_B20J.wait_kind == B20J_WAIT_SCROLL) {
-        if (!Frame_WaitReady(&m_B20J.wait)) {
+        if (!VSyncIrq_WaitReady(&m_B20J.wait)) {
             return false;
         }
         Video_SetScroll(m_B20J.raw_scroll);
     } else if (
         m_B20J.wait_kind == B20J_WAIT_DELAY
-        && !Frame_DelayReady(m_B20J.delay_frames)) {
+        && !VSyncIrq_DelayReady(m_B20J.delay_frames)) {
         return false;
     }
     m_B20J.wait_kind = B20J_WAIT_NONE;

@@ -54,7 +54,7 @@ bool Bonus_ResumeRowTransition(
             }
             m_Transition.waiting = true;
         }
-        if (!Frame_DelayReady(2)) {
+        if (!VSyncIrq_DelayReady(2)) {
             return false;
         }
         m_Transition.waiting = false;

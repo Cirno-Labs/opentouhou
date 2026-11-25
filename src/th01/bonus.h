@@ -1,7 +1,7 @@
 #pragma once
 
 #include "th01/extend.h"
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/input.h"
 #include "th01/palette.h"
 #include "pc98/zun/pi.h"

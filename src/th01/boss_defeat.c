@@ -61,7 +61,7 @@ void BossDefeat_Begin(BOSS_DEFEAT *const defeat, const BOSS_DEFEAT_KIND kind)
     ASSERT(defeat->phase == BOSS_DEFEAT_DONE);
     ASSERT(kind == BOSS_DEFEAT_REGULAR || kind == BOSS_DEFEAT_SINGYOKU);
     *defeat = (BOSS_DEFEAT) { .phase = BOSS_DEFEAT_SCROLL_WAIT, .kind = kind };
-    Frame_BeginWait(&defeat->wait);
+    VSyncIrq_BeginWait(&defeat->wait);
 }
 
 bool BossDefeat_Resume(
@@ -73,7 +73,7 @@ bool BossDefeat_Resume(
         case BOSS_DEFEAT_DONE:
             return true;
         case BOSS_DEFEAT_SCROLL_WAIT:
-            if (!Frame_WaitReady(&defeat->wait)) {
+            if (!VSyncIrq_WaitReady(&defeat->wait)) {
                 return false;
             }
             Video_SetScroll(0);
@@ -107,7 +107,7 @@ bool BossDefeat_Resume(
             break;
         }
         case BOSS_DEFEAT_WHITEOUT_DELAY:
-            if (!Frame_DelayReady(1)) {
+            if (!VSyncIrq_DelayReady(1)) {
                 return false;
             }
             defeat->phase = BOSS_DEFEAT_WHITEOUT;
@@ -127,7 +127,7 @@ bool BossDefeat_Resume(
             defeat->phase = BOSS_DEFEAT_WHITEIN_DELAY;
             break;
         case BOSS_DEFEAT_WHITEIN_DELAY:
-            if (!Frame_DelayReady(1)) {
+            if (!VSyncIrq_DelayReady(1)) {
                 return false;
             }
             defeat->phase = BOSS_DEFEAT_WHITEIN;

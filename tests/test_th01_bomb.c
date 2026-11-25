@@ -29,7 +29,7 @@ static void M_Init(CASE *const state)
     *state = (CASE) {};
     Th01Test_ResetWorld();
     g_Pellets.slots[0].moving = true;
-    Frame_Reset();
+    VSyncIrq_Reset();
     Arena_Init(&state->arena, "bomb", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
     Video_Init(allocator);
@@ -77,12 +77,12 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
             CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
             CHECK_EQ_INT(g_Video.pages[0][184 * 640 + 304], before);
             CHECK_EQ_INT(g_Video.scroll_top, scroll);
-            Frame_VSync();
+            VSyncIrq_Edge();
             result = Bomb_ResumeUpdate();
             const int16_t offsets[] = { 392, 0, 384, 0 };
             CHECK_EQ_INT(
                 g_Video.scroll_top, frame == 140 ? 0 : offsets[frame % 16 / 4]);
-            CHECK(Frame_DelayReady(1));
+            CHECK(VSyncIrq_DelayReady(1));
         }
         CHECK_EQ_INT(
             result, frame == 140 ? BOMB_UPDATE_DONE : BOMB_UPDATE_RUNNING);
@@ -181,13 +181,13 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
     CHECK(continuation.pending);
     CHECK(g_GameInput.shot && g_GameInput.strike);
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, &sprites, false);
     CHECK(!continuation.pending);
     CHECK_EQ_INT(g_Player.dash_cycle, dash);
     CHECK_EQ_INT(g_Player.bomb_frame, 64);
     CHECK(!g_GameInput.shot && !g_GameInput.strike);
-    CHECK(Frame_DelayReady(1));
+    CHECK(VSyncIrq_DelayReady(1));
     Arena_Free(&state.arena);
 }

@@ -304,7 +304,7 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         g_Orb.previous_left = 499;
         g_Orb.previous_top = 349;
         StageOrb_Init();
-        Frame_Reset();
+        VSyncIrq_Reset();
         g_VSync.count1 = counts[variant];
         g_VSync.count2 = 44;
         CHECK_EQ_INT(
@@ -317,7 +317,7 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
             CHECK(!Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Pellets.interlace_field, false);
-            Frame_VSync();
+            VSyncIrq_Edge();
             CHECK(Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
         }
         CHECK_EQ_INT(g_Pellets.interlace_field, true);
@@ -405,7 +405,7 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     }
     g_Orb.previous_left = 500;
     g_Orb.previous_top = 350;
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = -1;
     StageOrb_Init();
     CHECK(Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr));

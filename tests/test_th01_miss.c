@@ -69,7 +69,7 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CASE state;
     M_Init(&state, 304, 1);
     memset(&m_Miss, 0, sizeof(m_Miss));
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_NORMAL;
     g_Session.lives = 2;
     CHECK(IS_OK(Miss_ValidateSprites(&state.miko, &state.stage)));
@@ -83,17 +83,17 @@ TEST(miss_keeps_initial_artifacts_and_uses_one_random_draw)
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_Stage.time, 0);
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(m_Miss.phase, MISS_SHAKE_DELAY);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(g_VSync.count1, 1);
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(m_Miss.phase, MISS_SHAKE_WAIT);
     CHECK_EQ_INT(m_Miss.frame, 1);
     CHECK_EQ_INT(g_VSync.count1, 0);
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(!Miss_Resume(&state.miko, &state.stage, 1));
     CHECK_EQ_INT(g_Video.scroll_top, 392);
     Arena_Free(&state.arena);
@@ -115,7 +115,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 g_Session.lives = variant;
                 const ORB orb = g_Orb;
                 const size_t used = state.arena.used;
-                Frame_Reset();
+                VSyncIrq_Reset();
                 g_VSync.count1 = counts[variant];
                 g_VSync.count2 = 32760;
                 memset(&m_Miss, 0, sizeof(m_Miss));
@@ -125,11 +125,12 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 while (!Miss_Resume(&state.miko, &state.stage, extra_bombs)
                        && edges < 100) {
                     const MISS snapshot = m_Miss;
-                    const FRAME_VSYNC timing = g_VSync;
+                    const VSYNC_COUNTERS timing = g_VSync;
                     CHECK(!Miss_Resume(&state.miko, &state.stage, extra_bombs));
                     CHECK(memcmp(&m_Miss, &snapshot, sizeof(MISS)) == 0);
-                    CHECK(memcmp(&g_VSync, &timing, sizeof(FRAME_VSYNC)) == 0);
-                    Frame_VSync();
+                    CHECK(
+                        memcmp(&g_VSync, &timing, sizeof(VSYNC_COUNTERS)) == 0);
+                    VSyncIrq_Edge();
                     edges++;
                 }
                 CHECK_EQ_INT(edges, variant == 0 ? 82 : variant == 1 ? 81 : 83);
