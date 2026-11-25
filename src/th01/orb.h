@@ -53,6 +53,18 @@ void Orb_Init(void);
 // the state once before its first use; stage restarts retain these fields.
 void Orb_ResetFlight(void);
 
+// Restarts flight as Orb_ResetFlight does, but keeps the previous position.
+void Orb_Relaunch(void);
+
+// Takes the orb out of a portal.
+void Orb_LeavePortal(void);
+
+// Moves the orb to a portal destination and takes it out of the portal.
+void Orb_Teleport(int16_t left, int16_t top);
+
+// Stores the position as the previous one, which the next frame erases.
+void Orb_KeepPosition(void);
+
 // Advances the main-loop force counter, including while in a portal.
 // Call before the composite, rather than as part of its motion phase.
 void Orb_AdvanceForceFrame(void);

@@ -236,3 +236,30 @@ void Orb_Erase(
 {
     Sprite_PtnErase(sprites, ORB_FIRST_IMAGE + image, -1, left, top);
 }
+
+void Orb_Relaunch(void)
+{
+    g_Orb.left = ORB_BOUNDS_MAX_X - 8;
+    g_Orb.top = ORB_BOUNDS_MAX_Y - 88;
+    g_Orb.force = -8.0;
+    g_Orb.force_frame = 0;
+    g_Orb.velocity_x = ORB_X_LEFT_4;
+}
+
+void Orb_LeavePortal(void)
+{
+    g_Orb.in_portal = false;
+}
+
+void Orb_Teleport(const int16_t left, const int16_t top)
+{
+    g_Orb.left = left;
+    g_Orb.top = top;
+    Orb_LeavePortal();
+}
+
+void Orb_KeepPosition(void)
+{
+    g_Orb.previous_left = g_Orb.left;
+    g_Orb.previous_top = g_Orb.top;
+}

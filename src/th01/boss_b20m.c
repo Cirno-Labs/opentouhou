@@ -1980,12 +1980,7 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
     Shots_EraseAndReset();
     Pellets_EraseAndResetMoving();
     ShootoutLasers_EraseAndReset(10);
-    ORB *const orb = &g_Orb;
-    orb->left = 600;
-    orb->top = 280;
-    orb->force = -8;
-    orb->force_frame = 0;
-    orb->velocity_x = ORB_X_LEFT_4;
+    Orb_Relaunch();
     Player_Center();
     Player_StopActions();
     Player_Reset(g_Session.settings.difficulty);

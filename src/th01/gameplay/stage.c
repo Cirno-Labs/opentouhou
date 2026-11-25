@@ -136,7 +136,7 @@ static void M_StageReady(void)
     StageTimer_Redraw(
         g_Stage.first_stage, g_Stage.timer_initialized, g_Session.route);
     g_Stage.maximum_combo = 0;
-    g_Orb.in_portal = false;
+    Orb_LeavePortal();
     g_Player.bomb_frame = 0;
     g_Stage.frame = 0;
     Orb_ResetFlight();
