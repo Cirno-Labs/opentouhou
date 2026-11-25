@@ -324,7 +324,7 @@ static void M_BeginEntrance(const void *const data)
     ASSERT(
         !m_B20J.entrance_active && !m_B20J.defeating
         && Wait_Idle(&m_B20J.wait));
-    g_Pellets.interlace = true;
+    Pellets_Interlace();
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(assets, &assets->scroll, false);
     m_B20J.stage_palette = g_Palette.saved;
