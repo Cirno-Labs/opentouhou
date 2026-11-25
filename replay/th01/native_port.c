@@ -56,6 +56,14 @@ static void M_Boss(void *const arg, int16_t *const hp)
     Th01Start_ApplyBoss(starts, count, hp);
 }
 
+static void M_StageTime(void *const arg, uint16_t *const time)
+{
+    TH01_NATIVE *const native = arg;
+    size_t count;
+    const START_VALUE *const starts = Driver_Starts(native->driver, &count);
+    Th01Start_ApplyStageTime(starts, count, time);
+}
+
 static void M_Hook(void *const context, DRIVER *const driver)
 {
     TH01_NATIVE *const native = context;
@@ -64,6 +72,7 @@ static void M_Hook(void *const context, DRIVER *const driver)
     Th01Hooks_Set((TH01_HOOKS) { .on_vsync = M_VSync,
                                  .on_start = M_Start,
                                  .on_boss = M_Boss,
+                                 .on_stage_time = M_StageTime,
                                  .arg = native });
 }
 

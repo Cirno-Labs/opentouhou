@@ -65,7 +65,8 @@
 // Easy to 3 for Lunatic, continues the run's total, scene_continues those
 // of the start stage's scene, which the ending reads. boss_hp replaces the
 // HP that each boss's setup sets, right after the setup sets it; Sariel's
-// second form and Kikuri's timeout keep their own.
+// second form and Kikuri's timeout keep their own. stage_time replaces the
+// time that each stage's timer starts with, right after the stage sets it.
 #define TH01_START_FIELDS(X)                                                   \
     X(stage, U32)                                                              \
     X(route, U32)                                                              \
@@ -76,7 +77,8 @@
     X(continues, U32)                                                          \
     X(pellet_speed, I32)                                                       \
     X(boss_hp, I32)                                                            \
-    X(scene_continues, U32)
+    X(scene_continues, U32)                                                    \
+    X(stage_time, U32)
 
 // The opening fills vsync_count1, frame_rand, rng, track (the music
 // test's track) and track_starts (the tracks that the music test has
