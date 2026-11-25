@@ -400,7 +400,7 @@ foreach game, game_tests : {
       'sources': th06_data + ['th06_scene_stubs.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
-    'th06/scene': {'sources': ['th06_scene_stubs.c'], 'deps': [test_deps]},
+    'th06/scene': {'sources': th06_data, 'env': ['TEST_DIR']},
     'th06/screen_effect': {
       'sources': ['gfx_recorder.c', 'th06_scene_stubs.c'],
       'deps': [test_deps],
