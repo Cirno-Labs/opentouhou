@@ -258,7 +258,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     g_VSync.count1 = 12;
     g_VSync.count2 = 25;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
-    CHECK_EQ_INT(m_B15M.pending, B15M_PENDING_SCROLL);
+    CHECK_EQ_INT(m_B15M.wait.kind, WAIT_SCROLL);
     CHECK_EQ_INT(m_B15M.status.frame, 20);
     const B15M frozen = m_B15M;
     const uint32_t rng = g_Rng;
@@ -298,7 +298,7 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     g_Player.invincible = false;
     VSyncIrq_Reset();
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
-    CHECK_EQ_INT(m_B15M.pending, B15M_PENDING_SAFETY);
+    CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
     CHECK_EQ_INT(m_B15M.safety_circle.frame, 2);
     CHECK(!g_Player.is_hit);
     const B15M frozen = m_B15M;
@@ -437,7 +437,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
-    CHECK_EQ_INT(m_B15M.pending, B15M_PENDING_SAFETY);
+    CHECK_EQ_INT(m_B15M.wait.kind, WAIT_TICKS);
     CHECK(!g_Player.is_hit);
     CHECK(!g_Stage.cleared);
     CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);

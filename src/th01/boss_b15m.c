@@ -19,6 +19,7 @@
 #include "th01/shape.h"
 #include "th01/sprite.h"
 #include "pc98/zun/sprite_sheet.h"
+#include "th01/wait.h"
 #include "th01/wave.h"
 
 #include <string.h>
@@ -56,12 +57,6 @@ typedef enum {
     B15M_FORM_BAT,
 } B15M_FORM;
 
-typedef enum {
-    B15M_PENDING_NONE,
-    B15M_PENDING_SCROLL,
-    B15M_PENDING_SAFETY,
-} B15M_PENDING;
-
 typedef struct {
     BOSS_ENTITY girl, attack, bat;
     BOSS_HIT hit;
@@ -78,10 +73,9 @@ typedef struct {
     int16_t bat_velocity_x, bat_velocity_y, safety_left;
     int16_t girl_pattern, girl_subphase, phase5_subphase, bat_pattern;
     int16_t trail_x[2][3], trail_y[2][3];
-    int16_t entrance_tick, entrance_delay, scroll_line;
-    VSYNC_WAIT wait;
-    uint64_t pending_tick;
-    uint8_t entrance_stage, entrance_angle, pending, transform_stage;
+    int16_t entrance_tick, entrance_delay;
+    WAIT wait;
+    uint8_t entrance_stage, entrance_angle, transform_stage;
     int8_t call_phase;
     bool teleport_done, hp_bar_filled;
     bool entrance_active, entrance_waiting, trails_offscreen;
@@ -182,7 +176,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     g_Boss = &m_B15M.status;
     ASSERT(
         !m_B15M.entrance_active && !m_B15M.defeating
-        && m_B15M.pending == B15M_PENDING_NONE);
+        && Wait_Idle(&m_B15M.wait));
     ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.girl, 0, &assets->girl)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15M.attack, 1, &assets->attack)));
@@ -1058,13 +1052,6 @@ static int16_t M_Phase3(
     return m_B15M.phase3_pattern;
 }
 
-static bool M_ScrollWait(const int16_t top)
-{
-    m_B15M.pending = B15M_PENDING_SCROLL;
-    m_B15M.scroll_line = top;
-    VSyncIrq_BeginWait(&m_B15M.wait);
-    return false;
-}
 static void M_TransformResult(void)
 {
     if (m_B15M.call_phase == B15M_PHASE_TRANSFORM) {
@@ -1110,7 +1097,7 @@ static bool M_TransformFinish(
         M_Both(assets, miko, &m_B15M.attack, 1, true);
     }
     m_B15M.transform_stage = B15M_TRANSFORM_SWAPPED;
-    return M_ScrollWait(400);
+    return Wait_Scroll(&m_B15M.wait, 400);
 }
 static bool M_Transform(
     const B15M_ASSETS *const assets, const PTN *const miko, const bool bat)
@@ -1124,7 +1111,8 @@ static bool M_Transform(
         assets, miko, bat ? &m_B15M.girl_rifts : &m_B15M.bat_rifts, !bat, 20,
         100, true);
     if (m_B15M.status.frame >= 20 && m_B15M.status.frame % 2 == 0) {
-        return M_ScrollWait(Math16_Wrap(400 - m_B15M.status.frame % 4 * 2));
+        return Wait_Scroll(
+            &m_B15M.wait, Math16_Wrap(400 - m_B15M.status.frame % 4 * 2));
     }
     return M_TransformFinish(assets, miko);
 }
@@ -1316,8 +1304,7 @@ static int16_t M_Safety(
         if (!g_Player.invincible
             && (Math16_Wrap(m_B15M.safety_left + 104) <= g_Player.left
                 || Math16_Wrap(m_B15M.safety_left - 128) >= g_Player.left)) {
-            m_B15M.pending = B15M_PENDING_SAFETY;
-            m_B15M.pending_tick = host_tick;
+            Wait_Ticks(&m_B15M.wait, host_tick, 6);
             return -1;
         }
         M_SafetyAfterHit(assets, miko);
@@ -1527,29 +1514,23 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     if (m_B15M.defeating) {
         return M_Death(assets, miko);
     }
-    if (m_B15M.pending == B15M_PENDING_SCROLL) {
-        if (!VSyncIrq_WaitReady(&m_B15M.wait)) {
+    if (!Wait_Idle(&m_B15M.wait)) {
+        const WAIT_KIND kind = m_B15M.wait.kind;
+        if (!Wait_Ready(&m_B15M.wait, host_tick)) {
             return false;
         }
-        m_B15M.pending = B15M_PENDING_NONE;
-        Video_SetScroll(m_B15M.scroll_line);
-        if (m_B15M.transform_stage == B15M_TRANSFORM_RIFTS) {
-            if (!M_TransformFinish(assets, miko)) {
-                return false;
+        if (kind == WAIT_SCROLL) {
+            if (m_B15M.transform_stage == B15M_TRANSFORM_RIFTS) {
+                if (!M_TransformFinish(assets, miko)) {
+                    return false;
+                }
+            } else {
+                m_B15M.status.frame = 0;
+                M_TransformResult();
             }
-        } else {
-            m_B15M.status.frame = 0;
-            M_TransformResult();
+            M_AfterTransform();
+            return M_Tail(assets, miko);
         }
-        M_AfterTransform();
-        return M_Tail(assets, miko);
-    }
-    if (m_B15M.pending == B15M_PENDING_SAFETY) {
-        ASSERT(host_tick >= m_B15M.pending_tick);
-        if (host_tick - m_B15M.pending_tick < 6) {
-            return false;
-        }
-        m_B15M.pending = B15M_PENDING_NONE;
         g_Player.is_hit = true;
         M_SafetyAfterHit(assets, miko);
         m_B15M.girl_subphase = 1;
