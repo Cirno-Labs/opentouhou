@@ -3,7 +3,13 @@
 #include "state.h"
 
 #include "th01/ending.h"
-#include "th01/gameplay_internal.h"
+#include "th01/boss.h"
+#include "th01/frame.h"
+#include "th01/palette.h"
+#include "th01/pellets.h"
+#include "th01/player.h"
+#include "th01/session.h"
+#include "th01/stage.h"
 #include "th01/main.h"
 #include "th01/opening.h"
 #include "th01/rng.h"
@@ -77,7 +83,7 @@ static void M_Double(const double value, uint32_t *const lo, uint32_t *hi)
 
 static void M_Boss(uint32_t *const row)
 {
-    if (g_Gameplay.boss != BOSS_NONE && g_Boss != nullptr) {
+    if (g_Stage.boss != BOSS_NONE && g_Boss != nullptr) {
         row[TH01_COLUMN_boss_hp] = M_I32(g_Boss->hp);
         row[TH01_COLUMN_boss_phase] = M_I32(g_Boss->phase);
         row[TH01_COLUMN_boss_phase_frame] = M_I32(g_Boss->frame);
@@ -89,7 +95,7 @@ static void M_Gameplay(uint32_t *const row)
     row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
     row[TH01_COLUMN_frame_rand] = g_Session.frame_rand;
     row[TH01_COLUMN_rng] = g_Rng;
-    row[TH01_COLUMN_game_frames] = g_Gameplay.frame;
+    row[TH01_COLUMN_game_frames] = g_Stage.frame;
     row[TH01_COLUMN_stage] = (uint32_t)g_Session.stage_id;
     row[TH01_COLUMN_route] = g_Session.route;
     row[TH01_COLUMN_score] = g_Stage.score;
@@ -123,7 +129,7 @@ static void M_Gameplay(uint32_t *const row)
     row[TH01_COLUMN_card_count] = (uint32_t)g_StageObjects.card_count;
     row[TH01_COLUMN_card_hash] = M_HashCards(&g_StageObjects);
 
-    row[TH01_COLUMN_boss] = g_Gameplay.boss;
+    row[TH01_COLUMN_boss] = g_Stage.boss;
     M_Boss(row);
 
     uint32_t pellet_count;
