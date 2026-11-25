@@ -15,7 +15,7 @@ typedef struct {
     SHOT slots[SHOTS_COUNT];
 } SHOTS;
 
-extern SHOTS g_Shots;
+extern const SHOTS *const g_Shots;
 
 // Zeroes the shots for a new world.
 void Shots_Init(void);

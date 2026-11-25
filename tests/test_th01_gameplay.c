@@ -150,7 +150,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(g_Stage.frame, 2);
     CHECK_EQ_INT(g_Orb.force_frame, 2);
     Gameplay_Tick(&raw, true, 4);
-    CHECK(g_Shots.slots[0].moving);
+    CHECK(g_Shots->slots[0].moving);
     CHECK(M_EffectSounds());
     CHECK_EQ_INT(f.arena.used, used);
     Arena_Free(&f.arena);

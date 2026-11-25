@@ -136,7 +136,7 @@ static void M_Gameplay(uint32_t *const row)
     row[TH01_COLUMN_pellet_hash] = M_HashPellets(&g_Pellets, &pellet_count);
     row[TH01_COLUMN_pellet_count] = pellet_count;
     uint32_t shot_count;
-    row[TH01_COLUMN_shot_hash] = M_HashShots(&g_Shots, &shot_count);
+    row[TH01_COLUMN_shot_hash] = M_HashShots(g_Shots, &shot_count);
     row[TH01_COLUMN_shot_count] = shot_count;
 }
 

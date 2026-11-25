@@ -164,7 +164,7 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     memset(&g_Orb, 0, sizeof(g_Orb));
     g_Orb.left = 500;
     g_Orb.top = 100;
-    memset(&g_Shots, 0, sizeof(g_Shots));
+    Shots_Init();
     g_Rng = 1;
     const PLAYER_SPRITES sprites = { .miko = &state.miko };
     PLAYER_BOMB_CONTINUATION continuation = {};
