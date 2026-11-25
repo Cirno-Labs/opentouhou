@@ -3,6 +3,7 @@
 #include "th01/main.h"
 #include "th01/opening.h"
 #include "pc98/zun/bfnt.h"
+#include "../src/th01/gameplay/exit.c"
 #include "../src/th01/gameplay/gameplay.c"
 #include "../src/th01/gameplay/pause.c"
 #include "th01/score.h"
