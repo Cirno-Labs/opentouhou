@@ -20,23 +20,18 @@ typedef struct {
     int32_t difficulty;
     int32_t music;
     int32_t bombs;
-    // Stores credit_lives_extra: the menu shows this + 3, while the
-    // game's remaining-lives counter starts at this + 2.
+    // Extra lives: the menu shows this + 3; remaining lives start at this + 2.
     int32_t lives_extra;
-    // Acts once per confirm press where the original acts on a held key:
-    // the music room starts a track once, not on every frame, and the
-    // Continue prompt ignores the press still held from the name entry.
+    // Acts once per confirm press where the original acts on a held key.
     bool fix_debouncing;
 } TH01_SETTINGS;
 
-// Holds the original game options and optional fixes. shell/game loads and
-// saves these in the [game] and [fixes] sections of the user directory's
-// config.ini; shutdown must leave them intact.
+// Holds the game options and optional fixes, kept in the [game] and [fixes]
+// sections of the user directory's config.ini.
 extern TH01_SETTINGS g_Settings;
 extern const CONFIG_SCHEMA g_SettingsSchema;
 
-// Imports REIIDEN.CFG from vfs when user_files has no config.ini, compared
-// without ASCII case; an existing config.ini wins even when empty. Leaves
-// settings unchanged if REIIDEN.CFG is absent or invalid.
+// Imports REIIDEN.CFG when user_files has no config.ini; an existing config.ini
+// wins even when empty. Keeps settings when REIIDEN.CFG is absent or invalid.
 RESULT Settings_ImportOriginal(
     VFS *vfs, const VFS *user_files, TH01_SETTINGS *settings);

@@ -16,19 +16,16 @@ typedef struct {
 // Clears the selected scene for a new gameplay session.
 void Scene_Init(void);
 
-// Loads the five immutable layouts for scene 0..6 into the caller's grouped
-// allocator. Derives ST{id}.GRP and ST{id}.MDT from id, ignoring header names.
-// LoadReader keeps its reader open; Load opens STAGE{id}.DAT through VFS and
-// closes that reader. Both leave out empty on failure. Load before ticks and
-// retain the descriptor and its allocator while selected or cached.
+// Loads the five layouts of scene 0..6 into the caller's grouped allocator;
+// LoadReader keeps its reader open, Load opens and closes STAGE{id}.DAT.
+// Keep the descriptor and its allocator alive while selected or cached.
 RESULT Scene_LoadReader(
     READER *reader, uint8_t id, const ALLOCATOR *allocator, SCENE_DATA *out);
 RESULT Scene_Load(
     VFS *vfs, uint8_t id, const ALLOCATOR *allocator, SCENE_DATA *out);
 
-// Selects real cached layouts and their derived graphics/music names without
-// reading files, rendering, resetting actors or allocating. The descriptor
-// must have loaded successfully and remains borrowed. Re-selection is valid.
+// Selects a loaded scene's layouts and graphics and music names, without
+// reading files or resetting actors.
 void Scene_Activate(const SCENE_DATA *scene);
 
 // Initializes prepared stage objects from the selected scene layouts.

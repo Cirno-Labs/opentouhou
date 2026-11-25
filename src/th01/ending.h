@@ -21,9 +21,8 @@ typedef struct {
 
 extern const END_RESULT *const g_EndResult;
 
-// Snapshots signed score bits, zero-extended scene histories and the last
-// life-exit random checkpoint. Clears shared run history before the story.
-// Requires a completed route. The result owns its copied values.
+// Snapshots the run's score and histories, then clears the shared run
+// history before the story. Requires a completed route.
 void Ending_Snapshot(END_RESULT *result);
 
 // Calculates the signed source thresholds and advances its 32-bit LCG once.
@@ -33,9 +32,8 @@ void Ending_CalculateTitle(END_RESULT *result);
 // live resources, route, random checkpoints and cached table leader.
 void Ending_Clear(void);
 
-// Loads all ending sheets, cleared score background and text glyphs from rom
-// before ticks. Discard the allocator group on failure. No original data is
-// retained outside the caller's assets.
+// Loads all ending sheets, the score background and glyphs from rom.
+// Discard the allocator group on failure.
 RESULT Ending_LoadAssets(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     ENDING_ASSETS *out);
@@ -47,16 +45,12 @@ void Ending_Init(const ENDING_ASSETS *assets);
 // and g_GameInput stay shared through results and score registration.
 void Ending_Begin(void);
 
-// Advances VSync once and executes source requests until a wait suspends.
-// Returns true when the results screen hands its retained background to score.
-// Advance audio once per host tick outside this operation. No allocation,
-// IO, device or clock reads occur in Begin or Tick. Every ending delay
-// resets count1 at entry, including zero durations, and retains it on exit.
+// Advances VSync once and runs the ending until a wait suspends it. Returns
+// true when the results screen hands its background to score.
 bool Ending_Tick(const TH01_INPUT *input, bool reference_edge);
 
-// Starts game_switch_binary after the results screen's registration: its
-// vsync_exit stops the counters, and its z_palette_black_out steps the
-// ending's palette to black after each of sixteen VSyncs.
+// Starts the program switch after registration, fading the palette to black
+// over sixteen VSyncs with the counters stopped.
 void Ending_BeginSwitch(void);
 
 // Advances the switch by one host tick. Returns true after the last step,

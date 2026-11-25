@@ -60,10 +60,8 @@ extern const OPENING *const g_Opening;
 // for POSIX data folders. Mounts its PF source above loose files.
 RESULT Opening_MountArchive(VFS *vfs);
 
-// Decodes all images and caches every menu glyph from rom before ticks.
-// Storage belongs to allocator. Discard the complete asset allocation group on
-// failure; partially decoded images can remain in out. Close the VFS after
-// loading; no reader is retained.
+// Decodes all images and caches every menu glyph from rom into allocator.
+// Discard the whole allocation group on failure.
 RESULT Opening_LoadAssets(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     OPENING_ASSETS *out);
@@ -71,25 +69,13 @@ RESULT Opening_LoadAssets(
 // Returns a static MDT filename for a track from 0 through 14.
 const char *Opening_TrackFile(int32_t track);
 
-// Starts OP's title sequence with a separate default RNG seed of 1.
-// Assets, settings and initialized video must outlive the scene. Emits the
-// unconditional initial reimu play request, even with music set to OFF.
+// Starts the title sequence with RNG seed 1. Assets, settings and video
+// must outlive the scene.
 OPENING_EVENTS Opening_Init(const OPENING_ASSETS *assets);
 
-// Advances one reference VSync, without allocation, I/O, platform calls or
-// audio feedback. Uses deterministic zero-time asset loading: the sixteen
-// fade VSyncs count toward the title's shared 100-VSync delay. The white
-// lines run for 100 VSyncs before the prompt. any_key is a latched BIOS-like
-// keyboard event, cleared only when clear_key_buffer is emitted. Bound
-// menu controls are read directly, including held confirmation across menus.
-// Start/Continue request the music fade, leave frame_rand unchanged, stop
-// count1, fade the palette to black over the next sixteen ticks, and emit a
-// scene boundary action on the last of them without inventing gameplay or
-// resident state.
-// Consume these events in the game driver. If unhandled, the action repeats
-// on every following tick.
-// Audio events are control requests only: PLAY means stop/load/play, FADE
-// means the source's nonblocking fade request. No PCM/device is connected.
+// Advances one reference VSync; any_key is a latched key event, cleared only
+// by clear_key_buffer. Consume the returned events in the game driver:
+// an unhandled scene action repeats on every following tick.
 OPENING_EVENTS Opening_Tick(const TH01_INPUT *raw, bool any_key);
 
 void Opening_Close(void);

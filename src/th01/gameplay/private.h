@@ -29,8 +29,7 @@ typedef struct {
     int16_t gameover_left[5], gameover_top[5];
     bool gameover_clipped[5];
     uint16_t continue_frame;
-    // Ignores confirm at the Continue prompt until it is released, with
-    // fix_debouncing.
+    // Ignores confirm at Continue until released, with fix_debouncing.
     bool continue_locked;
     PALETTE_FADE switch_fade;
     PLAYER_BOMB_CONTINUATION player_bomb;

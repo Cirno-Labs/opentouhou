@@ -2,12 +2,9 @@
 
 #include "core/base/types.h"
 
-// Represents a finite signed value as significand * 2^exponent. Nonzero
-// significands have bit 63 set. Arithmetic rounds to 64 significant bits,
-// nearest with ties to even, before a separate binary64 store. This models
-// TH01 scalar arithmetic without depending on the host's long double.
-// Supports finite binary64 operands and results within the binary64 range;
-// excludes NaNs, infinities, exceptions and floating-point environment state.
+// Represents a finite value as significand * 2^exponent. Arithmetic rounds to
+// 64 significant bits, then a store rounds again to binary64, as TH01's x87
+// math does; no NaNs or infinities.
 typedef struct {
     uint64_t significand;
     int32_t exponent;
