@@ -26,6 +26,9 @@ typedef struct {
     // Names the program, such as "th06record".
     const char *program;
     const INPUT_SCHEMA *input_schema;
+    // Gives the bot.ini that --bot falls back to, relative to the
+    // checkout.
+    const char *bot_ini;
     RECORDER_CHOICE difficulties;
     RECORDER_CHOICE stages;
     RECORDER_CHOICE characters;
