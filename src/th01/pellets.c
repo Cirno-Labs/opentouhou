@@ -51,7 +51,7 @@ static MATH16_VECTOR M_Aim(const PELLET *const p, const int16_t speed)
 {
     return Math16_Aim(
         (MATH16_VECTOR) { Math16_ToPixel(p->left), Math16_ToPixel(p->top) },
-        (MATH16_VECTOR) { Math16_Wrap(g_Player.left + 8), 384 }, speed, 0);
+        (MATH16_VECTOR) { Math16_Wrap(g_Player->left + 8), 384 }, speed, 0);
 }
 
 static void M_Restore(const PELLET *const p, const bool current)
@@ -171,9 +171,9 @@ static bool M_Visible(PELLET *const p, const PELLET_ASSETS *const assets)
             (uint16_t)(g_Pellets.destroy_score_delta + 10);
         return true;
     }
-    if (g_Player.deflecting
-        && M_Overlap(left, top, Math16_Wrap(g_Player.left - 8), 352, 48, 48)) {
-        p->velocity = Math16_Vector(128, left <= g_Player.left + 12 ? 128 : 0);
+    if (g_Player->deflecting
+        && M_Overlap(left, top, Math16_Wrap(g_Player->left - 8), 352, 48, 48)) {
+        p->velocity = Math16_Vector(128, left <= g_Player->left + 12 ? 128 : 0);
         if (p->from_group == 0) {
             p->motion_type = PELLET_REGULAR;
         }
@@ -266,7 +266,7 @@ void Pellets_AddGroup(
             if (aimed) {
                 angle += Math16_Angle(
                     Math16_Wrap(384 - top),
-                    Math16_Wrap(g_Player.left + 12 - left));
+                    Math16_Wrap(g_Player->left + 12 - left));
             }
             p->velocity = Math16_Vector(speed, (uint8_t)angle);
         }
@@ -375,9 +375,10 @@ void Pellets_UpdateAndRender(
                 M_Remove(p);
             }
         } else if (
-            !g_Player.invincible && Math16_ToPixel(p->left) >= g_Player.left + 4
-            && Math16_ToPixel(p->left) <= g_Player.left + 20
-            && Math16_ToPixel(p->top) >= 368 + g_Player.sliding * 8
+            !g_Player->invincible
+            && Math16_ToPixel(p->left) >= g_Player->left + 4
+            && Math16_ToPixel(p->left) <= g_Player->left + 20
+            && Math16_ToPixel(p->top) >= 368 + g_Player->sliding * 8
             && Math16_ToPixel(p->top) < 392) {
             Player_Hit();
             if (!p->not_rendered) {

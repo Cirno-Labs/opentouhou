@@ -56,7 +56,7 @@ void Invincibility_Put(
 void Invincibility_UpdateAndRender(
     INVINCIBILITY *const state, const INVINCIBILITY_ASSETS *const assets)
 {
-    if (!g_Player.invincible) {
+    if (!g_Player->invincible) {
         if (state->frame[0] == 255) {
             return;
         }
@@ -77,7 +77,7 @@ void Invincibility_UpdateAndRender(
                 Sprite_Restore16(state->left[i], state->top[i], 16, 8);
             }
             state->left[i] =
-                (int16_t)(MasterRng_Next(&g_Rng) % 48 + g_Player.left - 8);
+                (int16_t)(MasterRng_Next(&g_Rng) % 48 + g_Player->left - 8);
             state->top[i] =
                 (int16_t)(MasterRng_Next(&g_Rng) % 48 + PLAYER_TOP - 16);
             state->frame[i] = (int16_t)(MasterRng_Next(&g_Rng) % 7 + 1);

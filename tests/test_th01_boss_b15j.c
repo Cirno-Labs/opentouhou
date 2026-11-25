@@ -4,6 +4,7 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/player.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -85,8 +86,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     g_Session.lives = 3;
     g_Rng = 0xb15a0000;
-    g_Player.invincible = true;
-    g_Player.left = 300;
+    m_Player.invincible = true;
+    m_Player.left = 300;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
@@ -284,7 +285,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         CHECK_EQ_INT(m_B15J.status.hp, 14);
         CHECK(g_Rng != 0xb15a0000);
         CHECK_EQ_INT(arena.used, used);
-        CHECK(!g_Player.is_hit);
+        CHECK(!m_Player.is_hit);
         Arena_Free(&arena);
     }
 }
@@ -338,7 +339,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(m_B15J.status.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 98000);
     CHECK(g_Stage.cleared);
-    CHECK(g_Player.is_hit);
+    CHECK(m_Player.is_hit);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 6);
     CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
@@ -441,12 +442,12 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         m_B15J.tear_frame[0] = 1;
         m_B15J.tears[0].left = 37;
         m_B15J.tears[0].top = 392;
-        g_Player.invincible = false;
-        g_Player.left = positions[i];
+        m_Player.invincible = false;
+        m_Player.left = positions[i];
         VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(m_B15J.tear_frame[0], 2);
-        CHECK_EQ_INT(g_Player.is_hit, i == 1 || i == 2);
+        CHECK_EQ_INT(m_Player.is_hit, i == 1 || i == 2);
         Arena_Free(&arena);
     }
 }

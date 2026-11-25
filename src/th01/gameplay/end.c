@@ -132,9 +132,9 @@ void GameplayEnd_BeginGameover(void)
     Orb_Put(Gameplay_StageSprites(), g_Orb.left, g_Orb.top, 0);
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(
-        &g_GameplayAssets->miko, image, -1, g_Player.left, PLAYER_TOP);
+        &g_GameplayAssets->miko, image, -1, g_Player->left, PLAYER_TOP);
     for (int32_t i = 0; i < 5; i++) {
-        g_Gameplay.gameover_left[i] = g_Player.left;
+        g_Gameplay.gameover_left[i] = g_Player->left;
         g_Gameplay.gameover_top[i] = PLAYER_TOP;
         g_Gameplay.gameover_clipped[i] = false;
     }
@@ -270,7 +270,7 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             return false;
         }
         Video_SetScroll(0);
-        g_Player.remaining_bombs = 1;
+        Player_SetBombs(1);
         Shots_EraseAndReset();
         Pellets_EraseAndResetMoving();
         Extend_Reset();

@@ -36,7 +36,7 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
         g_Gameplay.waiting = false;
         if (g_GameInput->paused) {
             Gameplay_Sense(raw);
-            if (g_Player.is_hit) {
+            if (g_Player->is_hit) {
                 GameplayEnd_OpenMenu();
                 return true;
             }

@@ -2,8 +2,8 @@
 
 static void M_HitTest(const int16_t right, const int16_t bottom)
 {
-    if (right > g_Player.left && right < g_Player.left + 32 && bottom > 384
-        && !g_Player.invincible) {
+    if (right > g_Player->left && right < g_Player->left + 32 && bottom > 384
+        && !g_Player->invincible) {
         Player_Hit();
     }
 }

@@ -4,6 +4,7 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
+#include "../src/th01/player.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -88,8 +89,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     g_Session.lives = 3;
     g_Rng = 0xb10a0000;
-    g_Player.invincible = true;
-    g_Player.left = 300;
+    m_Player.invincible = true;
+    m_Player.left = 300;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
@@ -201,7 +202,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         M_Enter(&f);
         CHECK_EQ_INT(g_VSync->count1, 0);
         CHECK(memcmp(&orb, &g_Orb, sizeof(orb)) == 0);
-        CHECK(!g_Player.is_hit);
+        CHECK(!m_Player.is_hit);
         CHECK_EQ_INT(g_Stage.score, 0);
         CHECK_EQ_INT(arena.used, used);
         CHECK_EQ_INT(
@@ -240,7 +241,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         int32_t loops = 0;
         int16_t previous_star_phase = -1;
         for (int32_t frame = 0; frame < 18000 && loops < 2; frame++) {
-            g_Player.left = (int16_t)(40 + (frame * 7) % 550);
+            m_Player.left = (int16_t)(40 + (frame * 7) % 550);
             g_Session.frame_rand++;
             phases |= (uint16_t)(1u << m_B10M.status.phase);
             if (m_B10M.status.phase == B10M_PHASE_STAR_ATTACK) {
@@ -355,7 +356,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         }
         CHECK(m_B10M.finished);
         CHECK(g_Stage.cleared);
-        CHECK(g_Player.is_hit);
+        CHECK(m_Player.is_hit);
         CHECK(m_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(m_Scene.active->id, 3);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
@@ -418,17 +419,17 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         M_BossSetup(&f.assets, &f.miko);
         m_B10M.status.frame = 160;
         m_B10M.hp_bar_filled = true;
-        g_Player.invincible = false;
-        g_Player.left = positions[i];
+        m_Player.invincible = false;
+        m_Player.left = positions[i];
         VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko));
-        CHECK_EQ_INT(g_Player.is_hit, i == 0 || i == 2);
+        CHECK_EQ_INT(m_Player.is_hit, i == 0 || i == 2);
         CHECK_EQ_INT(Th01Test_Pixel(0, 92, 156), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 398), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 399), 0);
-        g_Player.invincible = true;
+        m_Player.invincible = true;
         CHECK(M_BossUpdate(&f.assets, &f.miko));
-        CHECK(!g_Player.is_hit);
+        CHECK(!m_Player.is_hit);
         Arena_Free(&arena);
     }
 }

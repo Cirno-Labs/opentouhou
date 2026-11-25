@@ -44,7 +44,7 @@ static void M_Restore(BOSS_DEFEAT *const defeat, const PTN *const miko)
     Video_SelectDrawingPage(1);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     Video_SelectDrawingPage(0);
-    Sprite_PtnPut(miko, 0, -1, g_Player.left, PLAYER_TOP);
+    Sprite_PtnPut(miko, 0, -1, g_Player->left, PLAYER_TOP);
     defeat->phase = BOSS_DEFEAT_WHITEIN;
 }
 

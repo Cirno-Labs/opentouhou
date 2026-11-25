@@ -638,8 +638,8 @@ static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
             continue;
         }
         M_Grc(assets, x, y, 1, 6 + (m_B20M.status.frame / 5) % 2, 15);
-        if (!g_Player.invincible && birds->left[i] > g_Player.left - 8
-            && birds->left[i] < g_Player.left + 8 && birds->top[i] > 344
+        if (!g_Player->invincible && birds->left[i] > g_Player->left - 8
+            && birds->left[i] < g_Player->left + 8 && birds->top[i] > 344
             && birds->top[i] < 384) {
             Player_Hit();
             Wait_Ticks(&m_B20M.wait, tick, 6);
@@ -1184,7 +1184,7 @@ static void M_Flake(const B20M_ASSETS *const assets)
         m_B20M.flake.top = 1024;
         const MATH16_VECTOR v = Math16_Aim(
             (MATH16_VECTOR) { 340, 64 },
-            (MATH16_VECTOR) { Math16_Wrap(g_Player.left + 12), 380 }, 112, 0);
+            (MATH16_VECTOR) { Math16_Wrap(g_Player->left + 12), 380 }, 112, 0);
         m_B20M.flake.velocity_x = v.x;
         m_B20M.flake.velocity_y = v.y;
         m_B20M.flake.state = 2;
@@ -1255,8 +1255,8 @@ static void M_Flake(const B20M_ASSETS *const assets)
         M_Mask(assets, m_B20M.star.left, m_B20M.star.top, assets->star, 7);
     }
     const int16_t x = Math16_ToPixel(m_B20M.flake.left);
-    if (!g_Player.invincible && x + 32 > g_Player.left && x - 64 < g_Player.left
-        && m_B20M.flake.state >= 3) {
+    if (!g_Player->invincible && x + 32 > g_Player->left
+        && x - 64 < g_Player->left && m_B20M.flake.state >= 3) {
         Player_Hit();
     }
 }
@@ -1308,7 +1308,7 @@ static void M_FourLasers(const B20M_ASSETS *const assets)
     if (m_B20M.status.frame == 50) {
         x = 460;
         y = 120;
-        target = g_Player.left;
+        target = g_Player->left;
         laser = 0;
         m_B20M.laser.target = target;
         m_B20M.pattern_state = Boss_Rank(60, 64, 68, 72);
@@ -1320,12 +1320,12 @@ static void M_FourLasers(const B20M_ASSETS *const assets)
     } else if (m_B20M.status.frame == 150) {
         x = 608;
         y = 164;
-        target = g_Player.left;
+        target = g_Player->left;
         laser = 2;
     } else if (m_B20M.status.frame == 200) {
         x = 24;
         y = 164;
-        target = g_Player.left;
+        target = g_Player->left;
         laser = 3;
     }
     if (laser >= 0) {
@@ -1568,15 +1568,15 @@ static void M_Stacks(const B20M_ASSETS *const assets)
     } else if (m_B20M.status.frame > 150 && m_B20M.status.frame < 350) {
         if (m_B20M.status.frame % 10 == 0) {
             for (int16_t i = 0; i < 64; i += 16) {
-                if (g_Player.left + 16 - r->x > 32
-                    || g_Player.left + 16 - r->x < -32) {
+                if (g_Player->left + 16 - r->x > 32
+                    || g_Player->left + 16 - r->x < -32) {
                     M_Single(
                         assets, r->x, Math16_Wrap(r->y - 8), 192,
                         Math16_Wrap(i + 48));
                 }
                 const int16_t rx = M_RayX(r, false);
-                if (g_Player.left + 16 - rx > 32
-                    || g_Player.left + 16 - rx < -32) {
+                if (g_Player->left + 16 - rx > 32
+                    || g_Player->left + 16 - rx < -32) {
                     M_Single(
                         assets, rx, Math16_Wrap(r->y - 8), 192,
                         Math16_Wrap(i + 48));
@@ -1834,9 +1834,9 @@ static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
                     7);
             }
             if (p->top[i] > 3680 && p->top[i] < 3920
-                && p->left[i] / 10 > g_Player.left
-                && p->left[i] / 10 < g_Player.left + 24
-                && !g_Player.invincible) {
+                && p->left[i] / 10 > g_Player->left
+                && p->left[i] / 10 < g_Player->left + 24
+                && !g_Player->invincible) {
                 Player_Hit();
             }
         }

@@ -141,14 +141,14 @@ void Missiles_UpdateAndRender(
                 (int16_t)(m->flag - MISSILE_HIT));
         }
     }
-    if (g_Player.invincible) {
+    if (g_Player->invincible) {
         return;
     }
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         const MISSILE *const m = &m_Missiles.slots[i];
         if (m->flag != MISSILE_FREE
-            && Math16_ToPixel(m->left) > g_Player.left - 8
-            && Math16_ToPixel(m->left) < g_Player.left + 24
+            && Math16_ToPixel(m->left) > g_Player->left - 8
+            && Math16_ToPixel(m->left) < g_Player->left + 24
             && Math16_ToPixel(m->top) > 360 && Math16_ToPixel(m->top) < 400) {
             Player_Hit();
             return;

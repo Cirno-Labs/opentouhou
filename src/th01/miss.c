@@ -37,18 +37,16 @@ static void M_Orb(const PTN *const stage)
 
 static void M_Effect(const PTN *const miko, const PTN *const stage)
 {
-    PLAYER *const player = &g_Player;
+    const PLAYER *const player = g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(m_Miss.effect_left, PLAYER_TOP, 32, 32);
-    player->left = Math16_Wrap(
+    const int16_t left = Math16_Wrap(
         player->left
         + (m_Miss.frame < 10 ? 16 : (304 - m_Miss.target_right) / 20));
+    Player_MoveTo(left >= 608 ? 608 : left);
     m_Miss.effect_left = Math16_Wrap(
         m_Miss.effect_left
         + (m_Miss.frame < 10 ? -16 : (304 - m_Miss.target_left) / 20));
-    if (player->left >= 608) {
-        player->left = 608;
-    }
     if (m_Miss.effect_left < 0) {
         m_Miss.effect_left = 0;
     }
@@ -61,7 +59,7 @@ static void M_Effect(const PTN *const miko, const PTN *const stage)
 
 static void M_Reset(const PTN *const miko, const PTN *const stage)
 {
-    PLAYER *const player = &g_Player;
+    const PLAYER *const player = g_Player;
     Sprite_Restore16(Math16_Wrap(player->left - 8), 352, 48, 48);
     Shots_EraseAndReset();
     Pellets_Decay();
@@ -82,16 +80,16 @@ static void M_Reset(const PTN *const miko, const PTN *const stage)
 static void M_Finish(
     const PTN *const miko, const PTN *const stage, const int16_t extra_bombs)
 {
-    PLAYER *const player = &g_Player;
+    const PLAYER *const player = g_Player;
     Sprite_Restore16(player->left, PLAYER_TOP, 32, 32);
     Sprite_Restore16(m_Miss.effect_left, PLAYER_TOP, 32, 32);
     Hud_LivesPut(Math16_Wrap(g_Session.lives + 1));
     const int16_t previous = player->remaining_bombs;
-    player->remaining_bombs =
-        Math16_Wrap(player->remaining_bombs + extra_bombs);
-    if (player->remaining_bombs > 5) {
-        player->remaining_bombs = 5;
+    const int16_t bombs = Math16_Wrap(previous + extra_bombs);
+    if (bombs > 5) {
+        Player_SetBombs(5);
     } else {
+        Player_SetBombs(bombs);
         Hud_BombsPut(previous);
     }
     StageTimer_ExtendAndPut();
@@ -119,10 +117,10 @@ RESULT Miss_ValidateSprites(const PTN *const miko, const PTN *const stage)
 void Miss_Begin(const PTN *const miko, const PTN *const stage)
 {
     ASSERT(m_Miss.phase == MISS_DONE);
-    Sprite_Restore16(g_Player.left, PLAYER_TOP, 32, 32);
+    Sprite_Restore16(g_Player->left, PLAYER_TOP, 32, 32);
     M_Orb(stage);
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
-    Sprite_PtnPut(miko, image, -1, g_Player.left, PLAYER_TOP);
+    Sprite_PtnPut(miko, image, -1, g_Player->left, PLAYER_TOP);
     m_Miss.frame = 0;
     m_Miss.phase = MISS_SHAKE_WAIT;
     VSyncIrq_BeginWait(&m_Miss.wait);

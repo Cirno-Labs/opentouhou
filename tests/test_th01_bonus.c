@@ -4,6 +4,7 @@
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/input.c"
 #include "../src/th01/shots.c"
+#include "../src/th01/player.c"
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
@@ -131,7 +132,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     g_Stage.maximum_combo = 3;
     g_Stage.time = 100;
     g_Session.lives = 1;
-    g_Player.remaining_bombs = 3;
+    m_Player.remaining_bombs = 3;
     m_GameInput.bomb_frame = 97;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
@@ -258,7 +259,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     g_Stage.maximum_combo = 7;
     g_Stage.score = 390000;
     g_Session.lives = 2;
-    g_Player.remaining_bombs = 3;
+    m_Player.remaining_bombs = 3;
     m_GameInput.bomb_frame = 123;
     g_Session.continues_total = 65539;
     m_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };

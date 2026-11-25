@@ -1,4 +1,5 @@
 #include "../src/th01/shots.c"
+#include "../src/th01/player.c"
 #include "th01/boss_hit.h"
 #include "th01/session.h"
 
@@ -92,7 +93,7 @@ TEST(bomb_damage_ignores_invincibility_on_its_real_cadence)
     M_Init(&f);
     const uint8_t colors[] = { 2 };
     g_Session.lives = 0;
-    g_Player.bomb_damaging = true;
+    m_Player.bomb_damaging = true;
     f.hit.invincible = true;
     g_Session.frame_rand = 49;
     BossHit_UpdateAndRender(

@@ -1,4 +1,5 @@
 #include "../src/th01/missiles.c"
+#include "../src/th01/player.c"
 #include "th01/missiles.h"
 
 #include <string.h>
@@ -38,8 +39,8 @@ TEST(interlace_motion_and_explosion_lifetime)
     uint8_t pixels[5 * 1024] = {};
     PTN sprites = { .count = 5, .pixels = pixels };
     memset(&m_Missiles, 0, sizeof(m_Missiles));
-    memset(&g_Player, 0, sizeof(g_Player));
-    g_Player.left = 300;
+    memset(&m_Player, 0, sizeof(m_Player));
+    m_Player.left = 300;
     CHECK(Missiles_Add(623, 100, 2, 0, 0));
     m_Missiles.slots[0].previous_top = 80 * 16;
     Missiles_UpdateAndRender(1, &sprites);
@@ -74,15 +75,15 @@ TEST(lethal_current_coordinates_ignore_field_and_sliding)
                 .previous_top = 100 * 16,
                 .flag = MISSILE_HIT,
             };
-            memset(&g_Player, 0, sizeof(g_Player));
-            g_Player.left = 300;
-            g_Player.sliding = true;
+            memset(&m_Player, 0, sizeof(m_Player));
+            m_Player.left = 300;
+            m_Player.sliding = true;
             Missiles_UpdateAndRender(1, &sprites);
-            CHECK(g_Player.is_hit == (x > 0 && x < 3 && y > 0 && y < 3));
-            g_Player.is_hit = false;
-            g_Player.invincible = true;
+            CHECK(m_Player.is_hit == (x > 0 && x < 3 && y > 0 && y < 3));
+            m_Player.is_hit = false;
+            m_Player.invincible = true;
             Missiles_UpdateAndRender(1, &sprites);
-            CHECK(!g_Player.is_hit);
+            CHECK(!m_Player.is_hit);
         }
     }
     Mem_Free(g_Video.pages[0]);
@@ -99,8 +100,8 @@ TEST(unaligned_quarters_and_word_rounded_restore)
     CHECK(IS_OK(Missiles_ValidateSprites(&sprites)));
     Video_Init(&g_HeapAllocator);
     memset(&m_Missiles, 0, sizeof(m_Missiles));
-    memset(&g_Player, 0, sizeof(g_Player));
-    g_Player.left = 0;
+    memset(&m_Player, 0, sizeof(m_Player));
+    m_Player.left = 0;
     m_Missiles.slots[0] = (MISSILE) {
         .left = 19 * 16,
         .top = 100 * 16,

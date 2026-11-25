@@ -1,4 +1,5 @@
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/player.c"
 #include "th01/session.h"
 #include "th01/stage.h"
 #include "th01/shots.h"
@@ -40,8 +41,8 @@ static void M_Init(CASE *const state)
     g_Orb.top = 350;
     g_Orb.velocity_y = 2;
     g_Orb.force = -8;
-    memset(&g_Player, 0, sizeof(g_Player));
-    g_Player.left = 0;
+    memset(&m_Player, 0, sizeof(m_Player));
+    m_Player.left = 0;
     g_Rng = 1;
     Arena_Init(&state->arena, "stage obstacles", 2 * 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
@@ -326,7 +327,7 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         CHECK_EQ_INT(g_VSync->count2, variant == 0 ? 45 : 44);
         CHECK_EQ_INT(g_Orb.previous_left, g_Orb.left);
         CHECK_EQ_INT(g_Orb.previous_top, g_Orb.top);
-        CHECK(!g_Player.is_hit);
+        CHECK(!m_Player.is_hit);
         Arena_Free(&state.arena);
     }
 }
@@ -411,7 +412,7 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     m_VSync.count2 = g_VSync->count2;
     StageOrb_Init();
     CHECK(Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr));
-    CHECK(g_Player.is_hit);
+    CHECK(m_Player.is_hit);
     CHECK(g_Stage.cleared);
     CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_REMOVED);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 342), 6);
