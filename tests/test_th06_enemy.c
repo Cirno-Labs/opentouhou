@@ -6,7 +6,6 @@
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
-#include "th06_scene_stubs.h"
 
 #include "stg/angle.h"
 #include "th06/anm.h"
@@ -297,7 +296,6 @@ static void M_LoadStage(const int32_t stage)
     memset(&g_Player, 0, sizeof(g_Player));
     g_Player.homing_target = (VEC3) { -999.0f, -999.0f, 0.0f };
     memset(&g_Gui, 0, sizeof(g_Gui));
-    SceneStubCalls_Reset();
     M_ResetCalls();
     CHECK(Result_Log(Ecl_Load(), LOG_LEVEL_ERROR));
     g_GameManager.run.stage = stage;
