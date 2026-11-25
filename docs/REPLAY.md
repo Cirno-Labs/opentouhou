@@ -52,21 +52,20 @@ word per frame, so a role can be a sequence such as th01's bomb.
 th06record --data DATA --out OUT.rpy --start difficulty=normal \
     --start stage=1 --start character=reimu --start shot=a --seed 1
 th07record --data DATA --out OUT.rpy --start difficulty=normal \
-    --start stage=1 --start character=reimu --start shot=a --lose
+    --start stage=1 --start character=reimu --start shot=a --minimize
 th01record --data DATA --out OUT.txt --start stage=19 --start route=0 \
     --start lives=6 --start bombs=9 --start boss_hp=18 --until 8
 ```
 
 `--start` sets the run's start values: th06's and th07's practice
-choices, or the start fields of a th01 case. The recorder grows the
-run best first from every prefix that it has found without a setback,
-such as a lost life, by random and mutated segments of holds; `--seed`
-seeds the search.
-Each game scores its runs: th01 by the boss's phase or the cards
-removed, th06 and th07 by the stage frames. The run ends with the game,
-at the game's frame cap, or with `--until` once the first value of its
-score reaches a value. With `--lose`, random holds play straight to
-the end, for a game over.
+choices, or the start fields of a th01 case. The recorder grows the run
+best first from every prefix that it has found without a setback, such
+as a lost life, by random and mutated segments of holds; `--seed` seeds
+the search. Each game scores its runs: th01 by the boss's phase or the
+cards removed, th06 and th07 by the stage frames. The run ends with the
+game, at the game's frame cap, or with `--until` once the first value of
+its score reaches a value. With `--minimize`, the search keeps only
+segments that add a setback, for a game over.
 [recorder.h](../replay/bot/recorder.h) describes the search. The same
 arguments always give the same run.
 
