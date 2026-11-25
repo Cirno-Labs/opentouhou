@@ -1,3 +1,4 @@
+#include "../src/th01/scene.c"
 #include "th01/scene.h"
 
 #include "core/base/arena.h"
@@ -35,7 +36,12 @@ TEST(cached_activation_borrows_independent_layouts)
 {
     Th01Test_ResetWorld();
     ARENA arena;
-    Arena_Init(&arena, "scenes", 128 * 1024);
+    Arena_Init(&arena, "scenes", 2 * 1024 * 1024);
+    const ALLOCATOR *const allocator = Arena_Allocator(&arena);
+    Video_Init(allocator);
+    StageObjects_Prepare(allocator);
+    PTN sprites = { .count = 32, .pixels = Arena_Alloc(&arena, 32 * 1024) };
+    memset(sprites.pixels, PTN_TRANSPARENT, 32 * 1024);
     SCENE_DATA cache[SCENE_COUNT];
     for (uint8_t id = 0; id < SCENE_COUNT; id++) {
         uint8_t bytes[M_SIZE] = {};
@@ -47,18 +53,18 @@ TEST(cached_activation_borrows_independent_layouts)
         Reader_Close(&reader);
     }
     const size_t used = arena.used;
-    memset(&g_Scene, 0, sizeof(g_Scene));
+    Scene_Init();
+    arena.capacity = arena.used;
     const uint8_t ids[] = { 1, 2, 1, 6, 0 };
     for (size_t i = 0; i < sizeof(ids); i++) {
         const uint8_t id = ids[i];
         Scene_Activate(&cache[id]);
-        CHECK(g_Scene.active == &cache[id]);
-        CHECK_EQ_INT(g_Scene.active->background[2], '0' + id);
-        for (int32_t column = 0; column < 20; column++) {
-            CHECK(
-                g_Scene.active->layouts.stages[0].cells[0][column].card
-                == (column == id));
-        }
+        CHECK(m_Scene.active == &cache[id]);
+        CHECK_EQ_INT(m_Scene.active->background[2], '0' + id);
+        Scene_BeginStage(0, true, &sprites);
+        CHECK_EQ_INT(g_StageObjects.card_count, 1);
+        CHECK_EQ_INT(g_StageObjects.cards[0].left, id * 32);
+        CHECK_EQ_INT(g_StageObjects.cards[0].top, 64);
     }
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);

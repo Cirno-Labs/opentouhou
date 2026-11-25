@@ -1,3 +1,4 @@
+#include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
 #include "th01/boss_b10m.h"
 #include "th01/sound.h"
@@ -250,7 +251,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         CHECK_EQ_INT(arena.used, used);
         CHECK(g_Rng != 0xb10a0000);
         CHECK(!g_B10M.finished);
-        CHECK(g_Scene.active == nullptr);
+        CHECK(m_Scene.active == nullptr);
         Arena_Free(&arena);
     }
 }
@@ -320,7 +321,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
         CHECK(g_B10M.defeating);
         CHECK(!g_Stage.cleared);
-        CHECK(g_Scene.active == nullptr);
+        CHECK(m_Scene.active == nullptr);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(
             m_Missiles.slots[0].flag,
@@ -339,8 +340,8 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(g_B10M.finished);
         CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
-        CHECK(g_Scene.active == &f.assets.next_scene);
-        CHECK_EQ_INT(g_Scene.active->id, 3);
+        CHECK(m_Scene.active == &f.assets.next_scene);
+        CHECK_EQ_INT(m_Scene.active->id, 3);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         const B10M finished = g_B10M;

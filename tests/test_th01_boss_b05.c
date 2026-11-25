@@ -1,3 +1,4 @@
+#include "../src/th01/scene.c"
 #include "../src/th01/particles.c"
 #include "th01/boss_b05.h"
 #include "th01/sound.h"
@@ -285,7 +286,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK(!g_Pellets.slots[0].moving);
         CHECK(!g_Pellets.slots[1].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
-        CHECK_EQ_INT(g_Scene.active->id, 0);
+        CHECK_EQ_INT(m_Scene.active->id, 0);
         CHECK(!g_Stage.cleared && !g_Player.is_hit);
         const B05 frozen = g_B05;
         CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
@@ -300,7 +301,7 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         }
         CHECK_EQ_INT(g_B05.pending, B05_FINISHED);
         CHECK_EQ_INT(g_Session.route, rank % 2);
-        CHECK(g_Scene.active == &f.cache[1 + rank % 2]);
+        CHECK(m_Scene.active == &f.cache[1 + rank % 2]);
         CHECK(g_Stage.cleared && g_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(g_Session.frame_rand, frame_rand);

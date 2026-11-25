@@ -46,7 +46,7 @@ static inline void Th01Test_ResetWorld(void)
     Particles_Reset();
     Bomb_Init();
     Miss_Init();
-    memset(&g_Scene, 0, sizeof(g_Scene));
+    Scene_Init();
     Bonus_Init();
     Extend_Init();
     g_Session.lives = 0;

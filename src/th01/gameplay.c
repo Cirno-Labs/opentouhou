@@ -195,9 +195,7 @@ static void M_StageBackground(void)
         M_CopyPage(1, 0);
         Sprite_PtnPut(&a->miko, 0, -1, g_Player.left, PLAYER_TOP);
     }
-    StageObjects_InitPrepared(
-        &g_Scene.active->layouts, g_Session.stage_id, g_Stage.first_stage,
-        M_StageSprites());
+    Scene_BeginStage(g_Session.stage_id, g_Stage.first_stage, M_StageSprites());
     g_Gameplay.phase = GP_OBJECT_ENTRANCE;
 }
 
@@ -952,7 +950,7 @@ void Gameplay_Reset(void)
     Particles_Reset();
     Bomb_Init();
     Miss_Init();
-    memset(&g_Scene, 0, sizeof(g_Scene));
+    Scene_Init();
     Bonus_Init();
     Hud_Reset();
     HudHp_Reset();
