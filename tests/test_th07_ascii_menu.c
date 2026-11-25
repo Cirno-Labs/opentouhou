@@ -10,8 +10,8 @@
 #include "th07/player.h"
 
 #include "gfx_recorder.h"
+#include "shell_fake.h"
 #include "test.h"
-#include "th07_scene_stubs.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -49,7 +49,11 @@ static ANM_SCRIPT m_Script = { m_Instrs, 9, 0 };
 
 static void M_Setup(void)
 {
-    SceneStubCalls_Reset();
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    memset(&g_Player, 0, sizeof(g_Player));
+    memset(&g_Gui, 0, sizeof(g_Gui));
+    FakeShell_Reset();
+    g_FakeShell.wall_clock = 5000;
     Sound_Reset();
     g_GameSpeed = 1.0f;
     Anm_Init(&g_HeapAllocator, &m_Rng);
@@ -211,7 +215,7 @@ TEST(pause_resume_closes_after_twenty_frames)
         CHECK(!menu->sprites[i].shown);
     }
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_RESUME_MUSIC);
-    CHECK_EQ_INT(g_SceneStubCalls.play_time_restart, 1);
+    CHECK_EQ_INT(g_GameManager.play_time.play_tick, 5000);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_GAMEPLAY);
     M_Teardown();
 }
@@ -431,7 +435,7 @@ TEST(continue_opens_on_give_up_after_a_frame_of_continue)
     CHECK_EQ_INT(menu->sprites[2].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0x80, 0x80, 0x80, 0x80));
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_PAUSE_MUSIC);
-    CHECK_EQ_INT(g_SceneStubCalls.play_time_add, 1);
+    CHECK_EQ_INT(g_GameManager.records.play_stats.play_seconds, 5);
     PauseMenu_UpdateContinueMenu(menu);
     CHECK_EQ_INT(menu->sprites[3].color, COLOR_ARGB(0xff, 0xff, 0x80, 0x80));
     CHECK_EQ_INT(g_SoundEvents.pause, SOUND_PAUSE_MUSIC);
@@ -460,7 +464,7 @@ TEST(continue_give_up_waits_thirty_frames_then_shows_the_result)
     CHECK_EQ_INT(g_GameManager.score.shown, 99);
     CHECK_EQ_INT(menu->state, 0);
     CHECK_EQ_INT(menu->state_frames, 0);
-    CHECK_EQ_INT(g_SceneStubCalls.play_time_restart, 1);
+    CHECK_EQ_INT(g_GameManager.play_time.play_tick, 5000);
     M_Teardown();
 }
 

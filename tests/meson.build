@@ -505,7 +505,7 @@ foreach game, game_tests : {
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th07/ascii_menu': {
-      'sources': th07_data + ['th07_scene_stubs.c'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th07/sound': {
