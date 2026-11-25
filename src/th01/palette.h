@@ -33,6 +33,9 @@ typedef struct {
 extern PALETTE_STATE g_Palette;
 extern PALETTE g_StagePalette;
 
+// Sets the colors that a boss hit flash or a fade restores.
+void Palette_SetStage(const PALETTE *colors);
+
 // Sets the stock saved palette, an empty resource palette and tone 100,
 // leaving the DAC unchanged.
 void Palette_Init(PALETTE_STATE *state);

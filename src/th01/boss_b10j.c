@@ -187,7 +187,7 @@ static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
     HudHp_Begin(2, 6);
     Particles_Init();
     Missiles_Reset();
-    g_StagePalette = g_Palette.saved;
+    Palette_SetStage(&g_Palette.saved);
     m_B10J.setup_active = false;
     return true;
 }
@@ -828,7 +828,7 @@ static bool M_Entrance(const B10J_ASSETS *const assets, const PTN *const miko)
             m_B10J.status.phase = B10J_PHASE_FIRST;
             m_B10J.pattern = 0;
             m_B10J.hp_bar_filled = false;
-            g_StagePalette = g_Palette.saved;
+            Palette_SetStage(&g_Palette.saved);
             m_B10J.boss_palette = g_Palette.saved;
             M_InitHop(assets, miko);
             m_B10J.entrance_active = false;

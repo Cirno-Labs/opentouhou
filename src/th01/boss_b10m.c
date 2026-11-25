@@ -144,7 +144,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     Palette_Set(&g_Palette, &assets->palette);
     m_B10M.boss_palette = g_Palette.saved;
     m_B10M.post_defeat = g_Palette.saved;
-    g_StagePalette = m_B10M.post_defeat;
+    Palette_SetStage(&m_B10M.post_defeat);
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
     for (int32_t i = 0; i < 5; i++) {

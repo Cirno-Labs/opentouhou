@@ -265,7 +265,7 @@ static bool M_Entrance(
                 m_B15J.status.frame = 0;
                 Palette_Set(&g_Palette, &m_B15J.boss_palette);
                 m_B15J.hp_bar_filled = false;
-                g_StagePalette = g_Palette.saved;
+                Palette_SetStage(&g_Palette.saved);
                 m_B15J.entrance_active = false;
                 return true;
             }

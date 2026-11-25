@@ -476,7 +476,7 @@ static bool M_ResumeEntrance(
                     g_Video.drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
                     1 - g_Video.drawing_page, 0, 0);
                 m_B20J.entrance_active = false;
-                g_StagePalette = m_B20J.stage_palette;
+                Palette_SetStage(&m_B20J.stage_palette);
                 return true;
             }
             M_WhiteIn(assets);
