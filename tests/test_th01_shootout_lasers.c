@@ -34,7 +34,7 @@ TEST(loads_each_width_as_a_cel_of_eight_shifts)
 TEST(spawn_retains_cursor_and_live_spawn_is_noop)
 {
     Th01Test_ResetWorld();
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[0];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[0];
     memset(laser, 0, sizeof(*laser));
     laser->cursor_left = 123;
     laser->cursor_y = -456;
@@ -68,7 +68,7 @@ TEST(final_cached_group_omits_drawing_and_hit)
     memset(&g_Player, 0, sizeof(g_Player));
     g_Player.left = 300;
     g_Player.sliding = true;
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[0];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[0];
     memset(laser, 0, sizeof(*laser));
     ShootoutLasers_Spawn(0, 304, 377, 640, 377, 64, 7, 10, 1);
     ShootoutLasers_Update(0, &assets);
@@ -97,7 +97,7 @@ TEST(hit_uses_cached_left_and_y_even_with_empty_masks)
                 memset(&g_Player, 0, sizeof(g_Player));
                 g_Player.left = 300;
                 g_Player.invincible = mode == 1;
-                SHOOTOUT_LASER *const laser = &m_Lasers.slots[0];
+                SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[0];
                 memset(laser, 0, sizeof(*laser));
                 ShootoutLasers_Spawn(
                     0, xs[x], ys[y], xs[x], ys[y] + 10, 16, 7, 10, 1);
@@ -119,7 +119,7 @@ TEST(mask_bytes_and_shifts_use_loaded_order_and_current_page)
     SHOOTOUT_LASERS_ASSETS assets = {};
     assets.masks[7][3][0] = 0x10;
     assets.masks[7][3][1] = 0x40;
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[0];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[0];
     memset(laser, 0, sizeof(*laser));
     memset(&g_Player, 0, sizeof(g_Player));
     ShootoutLasers_Spawn(0, 99, 100, 99, 200, 16, 5, 10, 8);
@@ -140,7 +140,7 @@ TEST(detach_adopts_stopped_cursor_and_dies_before_age_or_put)
     memset(g_Video.pages[1], 3, VIDEO_PAGE_SIZE);
     SHOOTOUT_LASERS_ASSETS assets = {};
     memset(&g_Player, 0, sizeof(g_Player));
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[0];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[0];
     memset(laser, 0, sizeof(*laser));
     ShootoutLasers_Spawn(0, 638, 100, 640, 100, 128, 7, 0, 1);
     laser->length = 100;
@@ -163,26 +163,26 @@ TEST(pool_order_preserves_page_change_and_signed_history)
     Video_SelectDrawingPage(1);
     SHOOTOUT_LASERS_ASSETS assets;
     memset(&assets, 0xff, sizeof(assets));
-    memset(&m_Lasers, 0, sizeof(m_Lasers));
+    memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));
     memset(&g_Player, 0, sizeof(g_Player));
     ShootoutLasers_Spawn(0, 100, 100, 100, 200, 8, 7, 0, 1);
     ShootoutLasers_Spawn(9, 200, 100, 200, 200, 16, 5, 10, 1);
     ShootoutLasers_UpdateAll(&assets);
-    CHECK_EQ_INT(m_Lasers.slots[0].start_y, 101 * 256);
-    CHECK_EQ_INT(m_Lasers.slots[0].length, 0);
-    CHECK_EQ_INT(m_Lasers.slots[9].length, 2);
+    CHECK_EQ_INT(g_ShootoutLasers.slots[0].start_y, 101 * 256);
+    CHECK_EQ_INT(g_ShootoutLasers.slots[0].length, 0);
+    CHECK_EQ_INT(g_ShootoutLasers.slots[9].length, 2);
     CHECK_EQ_INT(Th01Test_Pixel(0, 200, 100), 5);
     CHECK_EQ_INT(Th01Test_Pixel(1, 200, 100), 0);
-    m_Lasers.slots[9].age = INT16_MAX;
-    m_Lasers.slots[9].detach_age = INT16_MAX;
+    g_ShootoutLasers.slots[9].age = INT16_MAX;
+    g_ShootoutLasers.slots[9].detach_age = INT16_MAX;
     ShootoutLasers_Update(9, &assets);
-    CHECK_EQ_INT(m_Lasers.slots[9].age, INT16_MIN);
-    const SHOOTOUT_LASER history = m_Lasers.slots[9];
-    m_Lasers.slots[9].alive = false;
-    const SHOOTOUT_LASER dead = m_Lasers.slots[9];
+    CHECK_EQ_INT(g_ShootoutLasers.slots[9].age, INT16_MIN);
+    const SHOOTOUT_LASER history = g_ShootoutLasers.slots[9];
+    g_ShootoutLasers.slots[9].alive = false;
+    const SHOOTOUT_LASER dead = g_ShootoutLasers.slots[9];
     ShootoutLasers_UpdateAll(&assets);
-    CHECK(memcmp(&m_Lasers.slots[9], &dead, sizeof(dead)) == 0);
-    CHECK_EQ_INT(m_Lasers.slots[9].cursor_y, history.cursor_y);
+    CHECK(memcmp(&g_ShootoutLasers.slots[9], &dead, sizeof(dead)) == 0);
+    CHECK_EQ_INT(g_ShootoutLasers.slots[9].cursor_y, history.cursor_y);
     Mem_Free(g_Video.pages[0]);
 }
 
@@ -197,15 +197,15 @@ TEST(reset_passes_raw_low_words_and_preserves_prefix_history)
     Mem_Free(g_Video.pages[0]);
     Video_Init(&g_HeapAllocator);
     memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
-    memset(&m_Lasers, 0, sizeof(m_Lasers));
+    memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));
     ShootoutLasers_Spawn(0, 1, 1, 1, 2, 8, 7, 20, 1);
     ShootoutLasers_Spawn(1, 10, 100, 10, 400, 8, 7, 20, 1);
-    const SHOOTOUT_LASER history = m_Lasers.slots[0];
+    const SHOOTOUT_LASER history = g_ShootoutLasers.slots[0];
     ShootoutLasers_EraseAndReset(1);
-    CHECK(!m_Lasers.slots[0].alive);
-    CHECK(m_Lasers.slots[1].alive);
-    m_Lasers.slots[0].alive = true;
-    CHECK(memcmp(&m_Lasers.slots[0], &history, sizeof(history)) == 0);
+    CHECK(!g_ShootoutLasers.slots[0].alive);
+    CHECK(g_ShootoutLasers.slots[1].alive);
+    g_ShootoutLasers.slots[0].alive = true;
+    CHECK(memcmp(&g_ShootoutLasers.slots[0], &history, sizeof(history)) == 0);
     CHECK(memcmp(g_Video.pages[0], expected, VIDEO_PAGE_SIZE) == 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 248, 255), 7);
     CHECK_EQ_INT(Th01Test_Pixel(0, 0, 0), 0);
@@ -219,7 +219,7 @@ TEST(negative_sample_counts_wrap_and_stop_on_cursor_change)
     Video_Init(&g_HeapAllocator);
     SHOOTOUT_LASERS_ASSETS assets = {};
     memset(&g_Player, 0, sizeof(g_Player));
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[0];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[0];
     memset(laser, 0, sizeof(*laser));
     ShootoutLasers_Spawn(0, 638, 100, 640, 100, -8, 7, 20, 1);
     ShootoutLasers_Update(0, &assets);
