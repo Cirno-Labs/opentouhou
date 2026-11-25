@@ -1,6 +1,8 @@
 // Gives the clock of shell/game to a recorder, which links shell/null.h
 // for the rest.
 
+#include "recorder.h"
+
 #include "shell/game.h"
 
 static int32_t m_TickRateCalls;
@@ -21,4 +23,9 @@ bool Shell_GetTickRate(float *const out)
 uint64_t Shell_GetWallClock(void)
 {
     return 0;
+}
+
+void Recorder_ResetClock(void)
+{
+    m_TickRateCalls = 0;
 }

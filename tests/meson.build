@@ -727,6 +727,20 @@ test(
   suite: 'unit',
 )
 
+test(
+  'replay/bot/recorder',
+  executable(
+    'test_recorder',
+    'test_recorder.c',
+    c_args: core_include + stg_include + bot_include,
+    implicit_include_directories: false,
+    link_with: bot_lib,
+    dependencies: [core_dep, stg_dep, sdl3, cc_libm],
+  ),
+  env: { 'TEST_DIR': meson.current_build_dir() / 'tmp' / 'recorder' },
+  suite: 'unit',
+)
+
 foreach part : ['script', 'case', 'state', 'compare', 'driver']
   test(
     'replay/harness/' + part,
