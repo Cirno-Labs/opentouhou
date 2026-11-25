@@ -436,14 +436,14 @@ foreach game, game_tests : {
     # names a msgothic.ttc.
     'th07/gui/text_image': {
       'part': 'th07_text_image',
-      'sources': th07_data + ['th07_scene_stubs.c'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR'],
       'dir': 'test_th07_text_image',
     },
     'th07/gui/text_image/ms_gothic': {
       'part': 'th07_text_image_ms',
       'main': 'test_th07_text_image.c',
-      'sources': th07_data + ['th07_scene_stubs.c'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'c_args': ['-DTEST_MS_GOTHIC'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR'],
       'dir': 'test_th07_text_image_ms',
@@ -468,26 +468,26 @@ foreach game, game_tests : {
     'th07/play_time': {'sources': ['../src/th07/play_time.c'], 'deps': [test_deps]},
     'th07/scene': {'sources': th07_data + ['th07_scene_stubs.c'], 'env': ['TEST_DIR']},
     'th07/anm': {
-      'sources': th07_data + ['th07_scene_stubs.c'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th07/stage': {
       'sources': th07_data + ['th07_scene_stubs.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
-    'th07/anm/vm': {'sources': ['th07_scene_stubs.c']},
+    'th07/anm/vm': {'sources': ['../src/th07/play_time.c']},
     'th07/anm/draw': {
-      'sources': ['th07_scene_stubs.c', 'gfx_recorder.c'],
+      'sources': ['../src/th07/play_time.c', 'gfx_recorder.c'],
       'env': ['TEST_FONT_DIR'],
     },
     'th07/anm/text': {
-      'sources': ['th07_scene_stubs.c', 'gfx_recorder.c'],
+      'sources': ['../src/th07/play_time.c', 'gfx_recorder.c'],
       'env': ['TEST_FONT_DIR'],
     },
     'th07/anm/text/ms_gothic': {
       'part': 'th07_anm_text_ms',
       'main': 'test_th07_anm_text.c',
-      'sources': ['th07_scene_stubs.c', 'gfx_recorder.c'],
+      'sources': ['../src/th07/play_time.c', 'gfx_recorder.c'],
       'c_args': ['-DTEST_MS_GOTHIC'],
       'env': ['TEST_FONT_DIR'],
     },
@@ -507,7 +507,7 @@ foreach game, game_tests : {
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th07/sound': {
-      'sources': ['audio_backend_fake.c', 'th07_data.c', 'th07_scene_stubs.c'],
+      'sources': ['audio_backend_fake.c', 'th07_data.c', '../src/th07/play_time.c'],
       'deps': [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
