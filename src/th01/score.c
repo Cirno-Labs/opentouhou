@@ -4,8 +4,26 @@
 
 #include <string.h>
 
+typedef enum {
+    SCORE_FADE_WAIT,
+    SCORE_ENTRY_INPUT,
+    SCORE_ENTRY_DELAY,
+    SCORE_RELEASE,
+    SCORE_DONE,
+} SCORE_PHASE;
+
+typedef struct {
+    PALETTE_STATE palette;
+    PALETTE_FADE fade;
+    FRAME_WAIT wait;
+    SCORE_CONTEXT context;
+    SCORE_PHASE phase;
+    int32_t rank, place, row, column, cursor, inputs;
+    char slots[8][9];
+} SCORE_SCENE;
+
 SCORE_SAVES g_ScoreSaves;
-SCORE_SCENE g_ScoreScene;
+static SCORE_SCENE m_Scene;
 
 static const SCORE_ASSETS *m_Assets;
 
@@ -104,25 +122,25 @@ static void M_Alphabet(
 
 static void M_Name(void)
 {
-    const int32_t top = 64 + g_ScoreScene.place * 16;
+    const int32_t top = 64 + m_Scene.place * 16;
     Video_Restore16((GFX_RECT) { 144, top, 128, 16 });
     for (int32_t i = 0; i < 8; i++) {
         M_Draw(
-            g_ScoreScene.slots[i], 144 + i * 16, top, 3, GAME_TEXT_BOLD, false,
+            m_Scene.slots[i], 144 + i * 16, top, 3, GAME_TEXT_BOLD, false,
             false);
     }
     M_Draw(
-        "＿", 144 + g_ScoreScene.cursor * 16, top, 3, GAME_TEXT_NORMAL, false,
+        "＿", 144 + m_Scene.cursor * 16, top, 3, GAME_TEXT_NORMAL, false,
         false);
 }
 
 static void M_Initial(void)
 {
-    const bool gameover = g_ScoreScene.context == SCORE_GAMEOVER;
+    const bool gameover = m_Scene.context == SCORE_GAMEOVER;
     Video_SelectDrawingPage(1);
     M_Draw(m_Title, 0, gameover ? 384 : 0, 7, GAME_TEXT_BOLD, false, true);
     M_Draw(
-        m_Ranks[g_ScoreScene.rank], 192, gameover ? 384 : 0, 7, GAME_TEXT_BOLD,
+        m_Ranks[m_Scene.rank], 192, gameover ? 384 : 0, 7, GAME_TEXT_BOLD,
         false, true);
     Video_SelectDrawingPage(0);
     Scale2x_Copy(48, 0, 0, gameover ? 384 : 0, 288, 16);
@@ -135,13 +153,13 @@ static void M_Initial(void)
     }
     for (int32_t i = 0; i < SCORE_PLACES; i++) {
         const SCORE_ENTRY *const e =
-            &g_ScoreSaves.tables[g_ScoreScene.rank].entries[i];
-        const uint8_t color = i == g_ScoreScene.place ? 3 : 7;
+            &g_ScoreSaves.tables[m_Scene.rank].entries[i];
+        const uint8_t color = i == m_Scene.place ? 3 : 7;
         const int32_t top = 64 + i * 16;
         M_Draw(m_Places[i], 32, top, color, GAME_TEXT_BOLD, false, false);
         M_Draw(
-            i == g_ScoreScene.place ? "＿＿＿＿＿＿＿＿" : e->name, 144, top,
-            color, GAME_TEXT_BOLD, false, false);
+            i == m_Scene.place ? "＿＿＿＿＿＿＿＿" : e->name, 144, top, color,
+            GAME_TEXT_BOLD, false, false);
         M_Number(e->score, 7, 352, top, color, GAME_TEXT_BLACK);
         if (e->stage < 40) {
             M_Number(e->stage, 2, 528, top, color, GAME_TEXT_BOLD);
@@ -154,10 +172,10 @@ static void M_Initial(void)
         M_Draw(e->route, 576, top, color, GAME_TEXT_BOLD, false, false);
     }
     GameInput_ResetGame();
-    if (g_ScoreScene.place == SCORE_PLACES) {
+    if (m_Scene.place == SCORE_PLACES) {
         g_GameInput.ok = true;
         g_GameInput.shot = true;
-        g_ScoreScene.phase = SCORE_RELEASE;
+        m_Scene.phase = SCORE_RELEASE;
         return;
     }
     for (int32_t row = 0; row < 6; row++) {
@@ -169,107 +187,97 @@ static void M_Initial(void)
             M_Alphabet(row, col, row == 0 && col == 0);
         }
     }
-    g_ScoreScene.phase = SCORE_ENTRY_INPUT;
+    m_Scene.phase = SCORE_ENTRY_INPUT;
 }
 
 static void M_Complete(void)
 {
     SCORE_ENTRY *const entry =
-        &g_ScoreSaves.tables[g_ScoreScene.rank].entries[g_ScoreScene.place];
+        &g_ScoreSaves.tables[m_Scene.rank].entries[m_Scene.place];
     entry->name[0] = '\0';
     for (int32_t i = 0; i < 8; i++) {
-        strcat(entry->name, g_ScoreScene.slots[i]);
+        strcat(entry->name, m_Scene.slots[i]);
     }
     g_GameInput.ok = false;
-    ScoreData_Queue(&g_ScoreSaves, g_ScoreScene.rank);
-    g_ScoreScene.phase = SCORE_DONE;
+    ScoreData_Queue(&g_ScoreSaves, m_Scene.rank);
+    m_Scene.phase = SCORE_DONE;
 }
 
 static bool M_Shot(const int32_t row, const int32_t column)
 {
-    const bool was_last = g_ScoreScene.cursor == 7;
+    const bool was_last = m_Scene.cursor == 7;
     if (row == 5 && column >= 15) {
         if (column == 17) {
             return true;
         }
-        if (column == 15 && g_ScoreScene.cursor > 0) {
-            g_ScoreScene.cursor--;
-        } else if (column == 16 && g_ScoreScene.cursor < 7) {
-            g_ScoreScene.cursor++;
+        if (column == 15 && m_Scene.cursor > 0) {
+            m_Scene.cursor--;
+        } else if (column == 16 && m_Scene.cursor < 7) {
+            m_Scene.cursor++;
         }
     } else {
         if (row == 5 && column == 10) {
-            strcpy(g_ScoreScene.slots[g_ScoreScene.cursor], "　");
+            strcpy(m_Scene.slots[m_Scene.cursor], "　");
         } else {
-            M_Cell(row, column, g_ScoreScene.slots[g_ScoreScene.cursor]);
+            M_Cell(row, column, m_Scene.slots[m_Scene.cursor]);
         }
-        if (g_ScoreScene.cursor < 7) {
-            g_ScoreScene.cursor++;
+        if (m_Scene.cursor < 7) {
+            m_Scene.cursor++;
         }
     }
-    const bool jump = was_last && g_ScoreScene.context == SCORE_GAMEOVER
+    const bool jump = was_last && m_Scene.context == SCORE_GAMEOVER
         && !(row == 5 && column >= 15);
     M_Name();
     if (jump) {
-        M_Alphabet(g_ScoreScene.row, g_ScoreScene.column, false);
-        g_ScoreScene.row = 5;
-        g_ScoreScene.column = 17;
-        M_Alphabet(g_ScoreScene.row, g_ScoreScene.column, true);
+        M_Alphabet(m_Scene.row, m_Scene.column, false);
+        m_Scene.row = 5;
+        m_Scene.column = 17;
+        M_Alphabet(m_Scene.row, m_Scene.column, true);
     }
     return false;
 }
 
 bool Score_OnInput(void)
 {
-    const int32_t old_row = g_ScoreScene.row, old_column = g_ScoreScene.column;
+    const int32_t old_row = m_Scene.row, old_column = m_Scene.column;
     if (g_GameInput.up) {
-        g_ScoreScene.row = g_ScoreScene.row == 0 ? 5 : g_ScoreScene.row - 1;
-        if ((g_ScoreScene.row == 1 || g_ScoreScene.row == 3)
-            && g_ScoreScene.column >= 8) {
-            g_ScoreScene.row--;
+        m_Scene.row = m_Scene.row == 0 ? 5 : m_Scene.row - 1;
+        if ((m_Scene.row == 1 || m_Scene.row == 3) && m_Scene.column >= 8) {
+            m_Scene.row--;
         }
-        if (g_ScoreScene.row == 5 && g_ScoreScene.column > 10
-            && g_ScoreScene.column < 15) {
-            g_ScoreScene.row = 4;
+        if (m_Scene.row == 5 && m_Scene.column > 10 && m_Scene.column < 15) {
+            m_Scene.row = 4;
         }
         g_GameInput.up = false;
     } else if (g_GameInput.down) {
-        g_ScoreScene.row = g_ScoreScene.row == 5 ? 0 : g_ScoreScene.row + 1;
-        if ((g_ScoreScene.row == 1 || g_ScoreScene.row == 3)
-            && g_ScoreScene.column >= 8) {
-            g_ScoreScene.row++;
+        m_Scene.row = m_Scene.row == 5 ? 0 : m_Scene.row + 1;
+        if ((m_Scene.row == 1 || m_Scene.row == 3) && m_Scene.column >= 8) {
+            m_Scene.row++;
         }
-        if (g_ScoreScene.row == 5 && g_ScoreScene.column > 10
-            && g_ScoreScene.column < 15) {
-            g_ScoreScene.row = 0;
+        if (m_Scene.row == 5 && m_Scene.column > 10 && m_Scene.column < 15) {
+            m_Scene.row = 0;
         }
         g_GameInput.down = false;
     } else if (g_GameInput.horizontal == GAME_INPUT_LEFT) {
-        g_ScoreScene.column =
-            g_ScoreScene.column == 0 ? 17 : g_ScoreScene.column - 1;
-        if ((g_ScoreScene.row == 1 || g_ScoreScene.row == 3)
-            && g_ScoreScene.column >= 8) {
-            g_ScoreScene.column = 7;
+        m_Scene.column = m_Scene.column == 0 ? 17 : m_Scene.column - 1;
+        if ((m_Scene.row == 1 || m_Scene.row == 3) && m_Scene.column >= 8) {
+            m_Scene.column = 7;
         }
-        if (g_ScoreScene.row == 5 && g_ScoreScene.column > 10
-            && g_ScoreScene.column < 15) {
-            g_ScoreScene.column = 10;
+        if (m_Scene.row == 5 && m_Scene.column > 10 && m_Scene.column < 15) {
+            m_Scene.column = 10;
         }
         g_GameInput.horizontal = 0;
     } else if (g_GameInput.horizontal == GAME_INPUT_RIGHT) {
-        g_ScoreScene.column =
-            g_ScoreScene.column == 17 ? 0 : g_ScoreScene.column + 1;
-        if ((g_ScoreScene.row == 1 || g_ScoreScene.row == 3)
-            && g_ScoreScene.column >= 8) {
-            g_ScoreScene.column = 0;
+        m_Scene.column = m_Scene.column == 17 ? 0 : m_Scene.column + 1;
+        if ((m_Scene.row == 1 || m_Scene.row == 3) && m_Scene.column >= 8) {
+            m_Scene.column = 0;
         }
-        if (g_ScoreScene.row == 5 && g_ScoreScene.column > 10
-            && g_ScoreScene.column < 15) {
-            g_ScoreScene.column = 15;
+        if (m_Scene.row == 5 && m_Scene.column > 10 && m_Scene.column < 15) {
+            m_Scene.column = 15;
         }
         g_GameInput.horizontal = 0;
     } else if (g_GameInput.shot) {
-        if (M_Shot(g_ScoreScene.row, g_ScoreScene.column)) {
+        if (M_Shot(m_Scene.row, m_Scene.column)) {
             return true;
         }
         g_GameInput.shot = false;
@@ -282,7 +290,7 @@ bool Score_OnInput(void)
         return false;
     }
     M_Alphabet(old_row, old_column, false);
-    M_Alphabet(g_ScoreScene.row, g_ScoreScene.column, true);
+    M_Alphabet(m_Scene.row, m_Scene.column, true);
     return false;
 }
 
@@ -290,16 +298,15 @@ void Score_Begin(
     const SCORE_ASSETS *const assets, const SCORE_CONTEXT context,
     const int32_t rank, const SCORE_ENTRY *const entry)
 {
-    memset(&g_ScoreScene, 0, sizeof(g_ScoreScene));
+    memset(&m_Scene, 0, sizeof(m_Scene));
     m_Assets = assets;
-    g_ScoreScene.context = context;
-    g_ScoreScene.rank = rank;
+    m_Scene.context = context;
+    m_Scene.rank = rank;
     SCORE_ENTRY inserted = *entry;
     strcpy(inserted.name, "                ");
-    g_ScoreScene.place =
-        ScoreData_Insert(&g_ScoreSaves.tables[rank], &inserted);
+    m_Scene.place = ScoreData_Insert(&g_ScoreSaves.tables[rank], &inserted);
     for (int32_t i = 0; i < 8; i++) {
-        strcpy(g_ScoreScene.slots[i], "  ");
+        strcpy(m_Scene.slots[i], "  ");
     }
     Video_SelectVisiblePage(0);
     Video_SetScroll(0);
@@ -313,12 +320,11 @@ void Score_Begin(
     const PI_IMAGE *const image = &assets->gameover;
     memcpy(g_Video.pages[1], image->pixels, VIDEO_PAGE_SIZE);
     memcpy(g_Video.pages[0], image->pixels, VIDEO_PAGE_SIZE);
-    Palette_Init(&g_ScoreScene.palette);
-    Palette_Import(&g_ScoreScene.palette.saved, image->palette);
-    Palette_BeginFade(
-        &g_ScoreScene.fade, &g_ScoreScene.palette, PALETTE_FADE_BLACK_IN);
-    Frame_BeginWait(&g_ScoreScene.wait);
-    g_ScoreScene.phase = SCORE_FADE_WAIT;
+    Palette_Init(&m_Scene.palette);
+    Palette_Import(&m_Scene.palette.saved, image->palette);
+    Palette_BeginFade(&m_Scene.fade, &m_Scene.palette, PALETTE_FADE_BLACK_IN);
+    Frame_BeginWait(&m_Scene.wait);
+    m_Scene.phase = SCORE_FADE_WAIT;
 }
 
 bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
@@ -327,29 +333,28 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
         Frame_VSync();
     }
     for (;;) {
-        switch (g_ScoreScene.phase) {
+        switch (m_Scene.phase) {
         case SCORE_FADE_WAIT:
-            if (!Frame_WaitReady(&g_ScoreScene.wait)) {
+            if (!Frame_WaitReady(&m_Scene.wait)) {
                 return false;
             }
-            Palette_FadeStep(&g_ScoreScene.fade, &g_ScoreScene.palette);
-            if (g_ScoreScene.fade.remaining != 0) {
-                Frame_BeginWait(&g_ScoreScene.wait);
+            Palette_FadeStep(&m_Scene.fade, &m_Scene.palette);
+            if (m_Scene.fade.remaining != 0) {
+                Frame_BeginWait(&m_Scene.wait);
                 return false;
             }
             M_Initial();
             break;
         case SCORE_ENTRY_DELAY:
-            if (g_ScoreScene.context == SCORE_ENDING
-                    ? (uint16_t)g_VSync.count1 < 4
-                    : !Frame_DelayReady(4)) {
+            if (m_Scene.context == SCORE_ENDING ? (uint16_t)g_VSync.count1 < 4
+                                                : !Frame_DelayReady(4)) {
                 return false;
             }
-            g_ScoreScene.inputs++;
-            g_ScoreScene.phase = SCORE_ENTRY_INPUT;
+            m_Scene.inputs++;
+            m_Scene.phase = SCORE_ENTRY_INPUT;
             break;
         case SCORE_ENTRY_INPUT: {
-            if (g_ScoreScene.context == SCORE_ENDING) {
+            if (m_Scene.context == SCORE_ENDING) {
                 GameInput_SenseEnding(raw);
             } else {
                 GameInput_SenseGame(raw, false);
@@ -360,28 +365,28 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
                 || g_GameInput.shot || g_GameInput.strike;
             const bool enter = Score_OnInput();
             if (enter || g_GameInput.ok
-                || (g_ScoreScene.context == SCORE_GAMEOVER
-                    && g_ScoreScene.inputs > 1000)) {
+                || (m_Scene.context == SCORE_GAMEOVER
+                    && m_Scene.inputs > 1000)) {
                 M_Complete();
                 return true;
             }
             if (!action) {
                 return false;
             }
-            if (g_ScoreScene.context == SCORE_ENDING) {
+            if (m_Scene.context == SCORE_ENDING) {
                 g_VSync.count1 = 0;
             }
-            g_ScoreScene.phase = SCORE_ENTRY_DELAY;
+            m_Scene.phase = SCORE_ENTRY_DELAY;
             break;
         }
         case SCORE_RELEASE:
-            if (g_ScoreScene.context == SCORE_ENDING) {
+            if (m_Scene.context == SCORE_ENDING) {
                 GameInput_SenseEnding(raw);
             } else {
                 GameInput_SenseGame(raw, false);
             }
             if (!g_GameInput.ok || !g_GameInput.shot) {
-                g_ScoreScene.phase = SCORE_DONE;
+                m_Scene.phase = SCORE_DONE;
                 return true;
             }
             return false;
@@ -393,6 +398,6 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
 
 void Score_Close(void)
 {
-    memset(&g_ScoreScene, 0, sizeof(g_ScoreScene));
+    memset(&m_Scene, 0, sizeof(m_Scene));
     m_Assets = nullptr;
 }

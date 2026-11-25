@@ -139,8 +139,7 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
     const TH01_NATIVE *const native = context;
     memset(row, 0, TH01_COLUMN_COUNT * sizeof(*row));
     row[TH01_COLUMN_buttons] = native->buttons;
-    const bool ending_scores =
-        g_Th01Scene == TH01_SCENE_SCORE && g_ScoreScene.context == SCORE_ENDING;
+    const bool ending_scores = g_Th01Scene == TH01_SCENE_ENDING_SCORE;
     if (g_Th01Scene == TH01_SCENE_LOGO) {
         row[TH01_COLUMN_program] = 1;
     } else if (g_Th01Scene == TH01_SCENE_OPENING) {

@@ -45,7 +45,6 @@ typedef struct {
 static MAIN_FIXTURE m_Fixture;
 
 OPENING g_Opening;
-SCORE_SCENE g_ScoreScene;
 END_RESULT g_EndResult;
 
 static RESULT M_Asset(void)
@@ -188,15 +187,12 @@ void Opening_Close(void)
 
 void Score_Close(void)
 {
-    memset(&g_ScoreScene, 0, sizeof(g_ScoreScene));
 }
 
 void Score_Begin(
     const SCORE_ASSETS *assets, SCORE_CONTEXT context, int32_t rank,
     const SCORE_ENTRY *entry)
 {
-    memset(&g_ScoreScene, 0, sizeof(g_ScoreScene));
-    g_ScoreScene.context = context;
     m_Fixture.score_context = context;
     m_Fixture.score_entry = *entry;
     m_Fixture.score_begins++;
@@ -448,7 +444,7 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
     CHECK_EQ_INT(m_Fixture.ending_ticks, 1);
     m_Fixture.finish_ending = true;
     CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_ENDING_SCORE);
     CHECK_EQ_INT(m_Fixture.score_context, SCORE_ENDING);
     CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
     CHECK_EQ_INT(m_Fixture.score_entry.stage, 50);

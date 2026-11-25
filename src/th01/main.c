@@ -222,12 +222,13 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
 {
     switch (g_Th01Scene) {
     case TH01_SCENE_SCORE:
+    case TH01_SCENE_ENDING_SCORE:
         if (Score_Tick(raw, reference_edge)) {
             g_Session.table_high_score =
                 (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
                     .entries[0]
                     .score;
-            if (g_ScoreScene.context == SCORE_ENDING) {
+            if (g_Th01Scene == TH01_SCENE_ENDING_SCORE) {
                 Ending_BeginSwitch();
                 g_Th01Scene = TH01_SCENE_SWITCH;
             } else {
@@ -251,7 +252,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                                   .route = "完" };
             memcpy(&entry.score, &result->score, sizeof(entry.score));
             Score_Begin(&m_ScoreAssets, SCORE_ENDING, result->rank, &entry);
-            g_Th01Scene = TH01_SCENE_SCORE;
+            g_Th01Scene = TH01_SCENE_ENDING_SCORE;
         }
         break;
     case TH01_SCENE_GAMEPLAY: {
