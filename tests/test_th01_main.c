@@ -4,6 +4,7 @@
 #include "th01/opening.h"
 #include "pc98/zun/bfnt.h"
 #include "../src/th01/gameplay/gameplay.c"
+#include "../src/th01/gameplay/pause.c"
 #include "th01/score.h"
 #include "th01/ending.h"
 #include "th01_assets.h"

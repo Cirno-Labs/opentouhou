@@ -60,6 +60,7 @@ th01_lib = static_library(
   'invincibility.c',
   'gameplay_assets.c',
   'gameplay/gameplay.c',
+  'gameplay/pause.c',
   'video.c',
   'palette.c',
   'text.c',
