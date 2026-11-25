@@ -1,3 +1,4 @@
+#include "../src/th01/items.c"
 #include "th01/session.h"
 #include "th01/stage.h"
 #include "th01/shots.h"
@@ -105,7 +106,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
             CHECK_EQ_INT(g_Hud.score_previous, expected);
-            CHECK_EQ_INT(M_Items(g_Items.points, ITEMS_POINT_COUNT), 1);
+            CHECK_EQ_INT(M_Items(m_Items.points, ITEMS_POINT_COUNT), 1);
             Arena_Free(&state.arena);
         }
     }
@@ -126,9 +127,9 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             const bool reset = drop && next >= 140;
             CHECK_EQ_INT(g_Stage.flip_cycle, reset ? 1 : next);
             CHECK_EQ_INT(
-                M_Items(g_Items.bombs, ITEMS_BOMB_COUNT), reset && !damaging);
+                M_Items(m_Items.bombs, ITEMS_BOMB_COUNT), reset && !damaging);
             CHECK_EQ_INT(
-                M_Items(g_Items.points, ITEMS_POINT_COUNT),
+                M_Items(m_Items.points, ITEMS_POINT_COUNT),
                 drop && (!reset || damaging));
             CHECK_EQ_INT(g_Rng, rng);
             Arena_Free(&state.arena);

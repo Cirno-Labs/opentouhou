@@ -5,7 +5,30 @@
 
 #include "th01/finite.h"
 
-MISSILES g_Missiles;
+#include <string.h>
+
+#define MISSILES_COUNT 50
+
+typedef enum {
+    MISSILE_FREE,
+    MISSILE_MOVING,
+    MISSILE_HIT,
+    MISSILE_HIT_LAST,
+} MISSILE_FLAG;
+
+typedef struct {
+    int16_t left, top, previous_left, previous_top;
+    MATH16_VECTOR velocity;
+    int16_t unused;
+    int8_t reserved;
+    uint8_t flag;
+} MISSILE;
+
+typedef struct {
+    MISSILE slots[MISSILES_COUNT];
+} MISSILES;
+
+static MISSILES m_Missiles;
 
 static void M_Put(
     const PTN *const sprites, int16_t left, int16_t top, int16_t image,
@@ -16,6 +39,11 @@ static void M_Restore(const MISSILE *const missile)
     Sprite_Restore16(
         Math16_ToPixel(missile->previous_left),
         Math16_ToPixel(missile->previous_top), 32, 16);
+}
+
+void Missiles_Init(void)
+{
+    memset(&m_Missiles, 0, sizeof(m_Missiles));
 }
 
 RESULT Missiles_ValidateSprites(const PTN *const sprites)
@@ -31,7 +59,7 @@ bool Missiles_Add(
     const double velocity_y, const int8_t reserved)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        MISSILE *const m = &g_Missiles.slots[i];
+        MISSILE *const m = &m_Missiles.slots[i];
         if (m->flag != MISSILE_FREE) {
             continue;
         }
@@ -54,7 +82,7 @@ bool Missiles_Add(
 void Missiles_Reset(void)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        g_Missiles.slots[i].flag = MISSILE_FREE;
+        m_Missiles.slots[i].flag = MISSILE_FREE;
     }
 }
 
@@ -62,7 +90,7 @@ void Missiles_UpdateAndRender(
     const uint16_t frame_rand, const PTN *const sprites)
 {
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        MISSILE *const m = &g_Missiles.slots[i];
+        MISSILE *const m = &m_Missiles.slots[i];
         if (m->flag == MISSILE_FREE) {
             continue;
         }
@@ -95,7 +123,7 @@ void Missiles_UpdateAndRender(
         }
     }
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        MISSILE *const m = &g_Missiles.slots[i];
+        MISSILE *const m = &m_Missiles.slots[i];
         if (m->flag == MISSILE_FREE || (i & 1) != (frame_rand & 1)) {
             continue;
         }
@@ -117,7 +145,7 @@ void Missiles_UpdateAndRender(
         return;
     }
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        const MISSILE *const m = &g_Missiles.slots[i];
+        const MISSILE *const m = &m_Missiles.slots[i];
         if (m->flag != MISSILE_FREE
             && Math16_ToPixel(m->left) > g_Player.left - 8
             && Math16_ToPixel(m->left) < g_Player.left + 24

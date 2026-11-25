@@ -3,34 +3,14 @@
 #include "th01/player.h"
 #include "pc98/zun/math16.h"
 
-#define MISSILES_COUNT 50
-
-typedef enum {
-    MISSILE_FREE,
-    MISSILE_MOVING,
-    MISSILE_HIT,
-    MISSILE_HIT_LAST,
-} MISSILE_FLAG;
-
-typedef struct {
-    int16_t left, top, previous_left, previous_top;
-    MATH16_VECTOR velocity;
-    int16_t unused;
-    int8_t reserved;
-    uint8_t flag;
-} MISSILE;
-
-typedef struct {
-    MISSILE slots[MISSILES_COUNT];
-} MISSILES;
-
-extern MISSILES g_Missiles;
+// Clears all state for a new gameplay session.
+void Missiles_Init(void);
 
 // Validates boss3_m.ptn loaded with Ptn_Load into the caller's asset arena.
 // Maps the source PTN bank to local images 0..3 and explosion image 4.
 RESULT Missiles_ValidateSprites(const PTN *sprites);
 
-// Zero-initialize once. Selects the first free slot. Converts pixels to
+// Selects the first free slot. Converts pixels to
 // signed Q12.4 and truncates velocity*16 toward zero with signed wrapping.
 // Requires finite velocities with scaled magnitude below 2^63. Retains
 // previous_top and unused history; only previous_left becomes -1.

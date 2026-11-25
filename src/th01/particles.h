@@ -2,8 +2,6 @@
 
 #include "th01/video.h"
 
-#define PARTICLES_COUNT 40
-
 typedef enum {
     PARTICLES_TOP,
     PARTICLES_TOP_RIGHT,
@@ -15,24 +13,17 @@ typedef enum {
     PARTICLES_TOP_LEFT,
 } PARTICLES_ORIGIN;
 
-typedef struct {
-    int16_t spawn_interval, velocity_max;
-    int16_t x[PARTICLES_COUNT], y[PARTICLES_COUNT];
-    int16_t velocity_x[PARTICLES_COUNT], velocity_y[PARTICLES_COUNT];
-    uint8_t alive[PARTICLES_COUNT], velocity_base[PARTICLES_COUNT];
-    uint8_t cycle;
-} PARTICLES;
+// Clears all state for a new gameplay session.
+void Particles_Reset(void);
 
-extern PARTICLES g_Particles;
-
-// Zero-initialize once per main scene. Resets alive flags and spawn settings
+// Resets alive flags and spawn settings
 // while retaining cycle, velocities, positions and velocity_base history.
 // Stores flags as raw bytes because the slot-40 spill can write 255.
 void Particles_Init(void);
 
 // Spawns, restores old pixels, advances Q12.4 motion and draws surviving dots.
 // Preserves the first cycle's slot-40 aliases through explicit field writes.
-// Uses shared RNG and caller-owned state; allocates nothing and performs no IO.
+// Uses shared RNG and module state; allocates nothing and performs no IO.
 // Requires initialization and an origin in 0..7. Keeps the drawing selector
 // when no active particle reaches restoration; otherwise finishes on page 0.
 void Particles_UpdateAndRender(PARTICLES_ORIGIN origin, uint8_t color);

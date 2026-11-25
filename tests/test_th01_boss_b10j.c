@@ -1,3 +1,4 @@
+#include "../src/th01/missiles.c"
 #include "th01/boss_b10j.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -90,8 +91,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     g_B10J.still.previous_top = 27;
     g_B10J.hit.frame = 17;
     g_B10J.pattern_state = 99;
-    g_Missiles.slots[0].flag = MISSILE_MOVING;
-    g_Missiles.slots[0].previous_top = 36;
+    m_Missiles.slots[0].flag = MISSILE_MOVING;
+    m_Missiles.slots[0].previous_top = 36;
     Frame_Reset();
     g_VSync.count1 = 12;
     g_VSync.count2 = 19;
@@ -131,8 +132,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(g_B10J.phase, B10J_PHASE_START);
     CHECK_EQ_INT(g_HudHp.first_white, 6);
     CHECK_EQ_INT(g_HudHp.first_redwhite, 2);
-    CHECK_EQ_INT(g_Missiles.slots[0].flag, MISSILE_FREE);
-    CHECK_EQ_INT(g_Missiles.slots[0].previous_top, 36);
+    CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
+    CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 36);
     CHECK_EQ_INT(g_VSync.count1, 28);
     CHECK_EQ_INT(g_VSync.count2, 35);
     CHECK_EQ_INT(arena.used, used);
@@ -185,14 +186,14 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     Frame_Reset();
     M_Setup(&f);
     g_VSync.count1 = 0;
-    g_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
+    m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                       .left = 200 * 16,
                                       .top = 200 * 16,
                                       .previous_left = -1,
                                       .velocity = { 16, 0 } };
     const size_t used = arena.used;
     CHECK(!B10J_UpdateAndRender(&f.assets, &f.miko));
-    CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_B10J.frame, 1);
     const B10J frozen = g_B10J;
     const uint32_t frozen_rng = g_Rng;
@@ -208,7 +209,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     CHECK_EQ_INT(g_B10J.frame, 0);
     CHECK_EQ_INT(g_B10J.still.left, 256);
     CHECK_EQ_INT(g_B10J.still.top, 120);
-    CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     uint32_t expected = frozen_rng;
     MasterRng_Next(&expected);
     CHECK_EQ_INT(g_Rng, expected);
@@ -393,7 +394,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     g_B10J.pattern = 1;
     g_B10J.frame = 0;
     g_B10J.hp = 0;
-    g_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
+    m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                       .left = 200 * 16,
                                       .top = 200 * 16,
                                       .previous_left = -1,
@@ -407,8 +408,8 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     }
     CHECK(!B10J_UpdateAndRender(&f.assets, &f.miko));
     CHECK(g_B10J.defeating);
-    CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
-    CHECK_EQ_INT(g_Missiles.slots[0].flag, MISSILE_FREE);
+    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK(!g_Pellets.slots[0].moving);
     CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
