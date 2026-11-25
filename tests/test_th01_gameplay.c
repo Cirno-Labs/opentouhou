@@ -1,3 +1,4 @@
+#include "../src/th01/hud.c"
 #include "../src/th01/miss.c"
 #include "th01/gameplay_internal.h"
 #include "th01/session.h"
@@ -54,7 +55,7 @@ static void M_Init(FIXTURE *const f)
     g_Session.settings.music = SETTINGS_MUSIC_FM;
     f->assets = Th01TestAssets_Create(a);
     Gameplay_Init(a, f->assets);
-    CHECK(g_Hud.numbers != nullptr);
+    CHECK(m_Hud.numbers != nullptr);
     CHECK(Result_Log(
         Music_Init(
             a, f->assets->songs, GAMEPLAY_SONG_COUNT, &f->assets->effects),
@@ -223,8 +224,8 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
     BONUS_STAGE_ASSETS bonus = {};
     f.assets->bonus = &bonus;
     f.arena.capacity = f.arena.used;
-    const STAGE_CARD *const cards = g_StageObjectStorage.cards;
-    const STAGE_OBSTACLE *const obstacles = g_StageObjectStorage.obstacles;
+    const STAGE_CARD *const cards = g_StageObjects.cards;
+    const STAGE_OBSTACLE *const obstacles = g_StageObjects.obstacles;
     TH01_INPUT raw = {};
     uint64_t tick = 0;
     for (int16_t stage = 0; stage < 3; stage++) {
@@ -251,8 +252,8 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK(entered_bonus);
         CHECK_EQ_INT(g_Session.stage_id, stage + 1);
         CHECK_EQ_INT(g_Gameplay.phase, GP_ORB);
-        CHECK(g_StageObjectStorage.cards == cards);
-        CHECK(g_StageObjectStorage.obstacles == obstacles);
+        CHECK(g_StageObjects.cards == cards);
+        CHECK(g_StageObjects.obstacles == obstacles);
         CHECK_EQ_INT(g_StageObjects.card_count, 1);
         CHECK(!g_Stage.cleared);
         CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
@@ -264,6 +265,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
 {
     FIXTURE f;
     M_Init(&f);
+    const STAGE_CARD *const cards = g_StageObjects.cards;
 
     f.arena.capacity = f.arena.used;
     const TH01_INPUT raw = {};
@@ -312,7 +314,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g_Gameplay.phase, GP_TITLE);
     CHECK_EQ_INT(g_Session.stage_id, 0);
-    CHECK(g_StageObjectStorage.cards == g_StageObjects.cards);
+    CHECK(g_StageObjects.cards == cards);
     Arena_Free(&f.arena);
 }
 
@@ -636,7 +638,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     Sound_Load(4);
     Sound_Play();
     Music_Update();
-    const void *const numbers = g_Hud.numbers;
+    const void *const numbers = m_Hud.numbers;
     const void *const backgrounds = g_HudHp.backgrounds;
     const size_t used = f.arena.used;
     memset(&g_Gameplay, 0xa5, sizeof(g_Gameplay));
@@ -651,8 +653,8 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g_Gameplay.frame, 0);
     CHECK_EQ_INT(g_VSync.edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);
-    CHECK_EQ_INT(g_Hud.score_previous, 0);
-    CHECK(g_Hud.numbers == numbers);
+    CHECK_EQ_INT(m_Hud.score_previous, 0);
+    CHECK(m_Hud.numbers == numbers);
     CHECK(g_HudHp.backgrounds == backgrounds);
     CHECK(g_Tram.visible);
     CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);

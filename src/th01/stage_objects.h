@@ -35,14 +35,7 @@ typedef struct {
     int16_t destination_left, destination_top;
 } STAGE_OBJECTS;
 
-typedef struct {
-    STAGE_CARD *cards;
-    STAGE_OBSTACLE *obstacles;
-    uint8_t *backgrounds;
-} STAGE_OBJECT_STORAGE;
-
 extern STAGE_OBJECTS g_StageObjects;
-extern STAGE_OBJECT_STORAGE g_StageObjectStorage;
 
 // Prepares reusable storage for all possible cells in a normalized layout.
 // Retain the caller's allocator group across all stages. Initialize distinct

@@ -11,26 +11,13 @@
 
 STAGE_TIMER g_StageTimer;
 
-static void M_Line(const char *const text)
-{
-    const GAME_TEXT_GLYPH *glyphs[5];
-    int32_t count = 0;
-    for (; text[count] != '\0'; count++) {
-        ASSERT(count < 5);
-        glyphs[count] =
-            GameText_Find(g_Hud.font, (uint32_t)(uint8_t)text[count]);
-        ASSERT(glyphs[count] != nullptr);
-    }
-    Tram_PutLine16(glyphs, count, TRAM_RED, TRAM_BLACK);
-}
-
 static bool M_Continue(void)
 {
     if (g_StageTimer.phase == TIMER_WAIT_HURRY) {
         if (!Frame_DelayReady(27)) {
             return false;
         }
-        M_Line("UP");
+        Hud_PutMessage("UP");
         g_StageTimer.phase = TIMER_WAIT_UP;
     }
     if (!Frame_DelayReady(27)) {
@@ -87,18 +74,7 @@ void StageTimer_Redraw(
     if (!timer_initialized) {
         M_InitFor(g_Session.stage_id, route);
     }
-    if (first_stage) {
-        Hud_SnapResources();
-        Hud_SnapStage();
-        Hud_SnapTimer(g_StageTimer.time);
-    }
-    Hud_PutStage();
-    g_Hud.maximum_combo = 0;
-    Hud_SnapNumbers(first_stage);
-    Hud_PutTimer(g_StageTimer.time);
-    g_Hud.force_numbers = true;
-    Hud_ScoreAndCombo();
-    g_Hud.force_numbers = false;
+    Hud_Redraw(first_stage, g_StageTimer.time);
 }
 
 bool StageTimer_TickAndPut(void)
@@ -115,7 +91,7 @@ bool StageTimer_TickAndPut(void)
     if (g_StageTimer.time == 0) {
         Pellets_SpeedRaise(2);
         Sound_Effect(17);
-        M_Line("HARRY");
+        Hud_PutMessage("HARRY");
         g_StageTimer.phase = TIMER_WAIT_HURRY;
         return M_Continue();
     }

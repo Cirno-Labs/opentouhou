@@ -1,3 +1,4 @@
+#include "../src/th01/hud.c"
 #include "th01/timer.h"
 #include "th01/session.h"
 #include "th01/shots.h"
@@ -166,7 +167,7 @@ TEST(redraw_does_not_claim_world_timer_initialization)
     g_StageTimer.time = 750;
     StageTimer_Redraw(false, true, 0);
     CHECK_EQ_INT(g_StageTimer.time, 750);
-    CHECK(!g_Hud.force_numbers);
+    CHECK(!m_Hud.force_numbers);
     StageTimer_Redraw(false, false, 0);
     CHECK_EQ_INT(g_StageTimer.time, 6000);
     Arena_Free(&f.arena);

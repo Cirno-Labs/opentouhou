@@ -1,3 +1,4 @@
+#include "../src/th01/hud.c"
 #include "../src/th01/items.c"
 #include "th01/session.h"
 #include "th01/stage.h"
@@ -105,7 +106,7 @@ TEST(card_scores_caps_widths_and_synchronous_order)
             CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
             CHECK(memcmp(&orb, &g_Orb, sizeof(ORB)) == 0);
             CHECK_EQ_INT(g_Rng, rng);
-            CHECK_EQ_INT(g_Hud.score_previous, expected);
+            CHECK_EQ_INT(m_Hud.score_previous, expected);
             CHECK_EQ_INT(M_Items(m_Items.points, ITEMS_POINT_COUNT), 1);
             Arena_Free(&state.arena);
         }

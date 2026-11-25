@@ -66,4 +66,5 @@ void B15J_Setup(const B15J_ASSETS *assets, const PTN *miko);
 // intervals, four-laser cleanup and silent HP timeout. Activates cached
 // scene 6 after defeat. Finished calls are inert until setup or state reset.
 // Keep borrowed resources stable. Allocates nothing and performs no IO.
-bool B15J_UpdateAndRender(const B15J_ASSETS *assets, const PTN *miko);
+bool B15J_UpdateAndRender(
+    const B15J_ASSETS *assets, const PTN *miko, const PTN *stage);

@@ -6,8 +6,14 @@
 
 #include <string.h>
 
+typedef struct {
+    STAGE_CARD *cards;
+    STAGE_OBSTACLE *obstacles;
+    uint8_t *backgrounds;
+} STAGE_OBJECT_STORAGE;
+
 STAGE_OBJECTS g_StageObjects;
-STAGE_OBJECT_STORAGE g_StageObjectStorage;
+static STAGE_OBJECT_STORAGE m_Storage;
 
 static const uint8_t m_CardAnimation[5][5] = {
     { 17, 18, 19, 20, 21 }, { 14, 15, 16, 18, 17 }, { 11, 12, 13, 15, 14 },
@@ -104,9 +110,9 @@ static void M_Init(
         }
     }
     if (allocator == nullptr) {
-        g_StageObjects.cards = g_StageObjectStorage.cards;
-        g_StageObjects.obstacles = g_StageObjectStorage.obstacles;
-        g_StageObjects.backgrounds = g_StageObjectStorage.backgrounds;
+        g_StageObjects.cards = m_Storage.cards;
+        g_StageObjects.obstacles = m_Storage.obstacles;
+        g_StageObjects.backgrounds = m_Storage.backgrounds;
         memset(
             g_StageObjects.cards, 0,
             (size_t)g_StageObjects.card_count * sizeof(STAGE_CARD));
@@ -181,12 +187,10 @@ static void M_Init(
 void StageObjects_Prepare(const ALLOCATOR *const allocator)
 {
     const size_t cells = STAGE_DATA_ROWS * STAGE_DATA_COLUMNS;
-    g_StageObjectStorage.cards =
-        Allocator_Alloc(allocator, cells * sizeof(STAGE_CARD));
-    g_StageObjectStorage.obstacles =
+    m_Storage.cards = Allocator_Alloc(allocator, cells * sizeof(STAGE_CARD));
+    m_Storage.obstacles =
         Allocator_Alloc(allocator, cells * sizeof(STAGE_OBSTACLE));
-    g_StageObjectStorage.backgrounds =
-        Allocator_Alloc(allocator, cells * 2 * 1024);
+    m_Storage.backgrounds = Allocator_Alloc(allocator, cells * 2 * 1024);
 }
 
 void StageObjects_Init(

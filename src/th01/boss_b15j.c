@@ -136,10 +136,10 @@ static void M_SymmetricLine(
     M_CopyLine(Math16_Wrap(399 - y + offset), mask);
 }
 
-static void M_Defaults(const B15J_ASSETS *const assets, const PTN *const miko)
+static void M_Defaults(const PTN *const miko, const PTN *const stage)
 {
     Sprite_PtnPut(miko, 0, -1, Boss_Player()->left, 368);
-    Orb_Put(g_Hud.sprites, g_Orb.left, g_Orb.top, 0);
+    Orb_Put(stage, g_Orb.left, g_Orb.top, 0);
 }
 
 static int16_t M_InvertRings(
@@ -155,7 +155,9 @@ static int16_t M_InvertRings(
     return outside;
 }
 
-static bool M_Entrance(const B15J_ASSETS *const assets, const PTN *const miko)
+static bool M_Entrance(
+    const B15J_ASSETS *const assets, const PTN *const miko,
+    const PTN *const stage)
 {
     if (!g_B15J.entrance_active) {
         g_B15J.entrance_active = true;
@@ -201,7 +203,7 @@ static bool M_Entrance(const B15J_ASSETS *const assets, const PTN *const miko)
                     continue;
                 }
             }
-            M_Defaults(assets, miko);
+            M_Defaults(miko, stage);
             g_B15J.entrance_waiting = true;
         } else {
             bool finish = false;
@@ -601,7 +603,8 @@ static bool M_Death(const B15J_ASSETS *const assets, const PTN *const miko)
 }
 
 bool B15J_UpdateAndRender(
-    const B15J_ASSETS *const assets, const PTN *const miko)
+    const B15J_ASSETS *const assets, const PTN *const miko,
+    const PTN *const stage)
 {
     if (g_B15J.finished) {
         return true;
@@ -610,7 +613,7 @@ bool B15J_UpdateAndRender(
         return M_Death(assets, miko);
     }
     if (g_B15J.phase == B15J_PHASE_ENTRANCE) {
-        return M_Entrance(assets, miko);
+        return M_Entrance(assets, miko, stage);
     }
     if (g_B15J.phase == B15J_PHASE_SPIRAL) {
         if (!g_B15J.hp_bar_filled) {
