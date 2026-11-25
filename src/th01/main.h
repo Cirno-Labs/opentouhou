@@ -17,4 +17,4 @@ typedef enum {
     TH01_SCENE_ENDING_SCORE,
 } TH01_SCENE;
 
-extern TH01_SCENE g_Th01Scene;
+extern const TH01_SCENE *const g_Th01Scene;

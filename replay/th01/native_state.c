@@ -145,10 +145,10 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
     const TH01_NATIVE *const native = context;
     memset(row, 0, TH01_COLUMN_COUNT * sizeof(*row));
     row[TH01_COLUMN_buttons] = native->buttons;
-    const bool ending_scores = g_Th01Scene == TH01_SCENE_ENDING_SCORE;
-    if (g_Th01Scene == TH01_SCENE_LOGO) {
+    const bool ending_scores = (*g_Th01Scene) == TH01_SCENE_ENDING_SCORE;
+    if ((*g_Th01Scene) == TH01_SCENE_LOGO) {
         row[TH01_COLUMN_program] = 1;
-    } else if (g_Th01Scene == TH01_SCENE_OPENING) {
+    } else if ((*g_Th01Scene) == TH01_SCENE_OPENING) {
         row[TH01_COLUMN_program] = 2;
         row[TH01_COLUMN_vsync_count1] = M_I32((int16_t)g_Opening.count1);
         row[TH01_COLUMN_frame_rand] = g_Opening.frame_rand;
@@ -156,8 +156,8 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
         row[TH01_COLUMN_track] = (uint32_t)g_Opening.track;
         row[TH01_COLUMN_track_starts] = g_Opening.track_starts;
     } else if (
-        g_Th01Scene == TH01_SCENE_ENDING || g_Th01Scene == TH01_SCENE_SWITCH
-        || ending_scores) {
+        (*g_Th01Scene) == TH01_SCENE_ENDING
+        || (*g_Th01Scene) == TH01_SCENE_SWITCH || ending_scores) {
         const END_RESULT *const result = &g_EndResult;
         row[TH01_COLUMN_program] = 4;
         row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync->count1);
