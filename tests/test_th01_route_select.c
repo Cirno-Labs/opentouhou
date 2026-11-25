@@ -1,5 +1,6 @@
 #include "../src/th01/scene.c"
 #include "../src/th01/route_select.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/shots.h"
 #include "th01/rng.h"
 #include "th01/player.h"
@@ -122,7 +123,8 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     FIXTURE f;
     M_Init(&f, &arena);
     VSyncIrq_Reset();
-    g_VSync.count1 = 50;
+    m_VSync.count1 = 50;
+    m_VSync.count2 = g_VSync->count2;
     RouteSelect_Init();
     const TH01_INPUT both = { .up = true, .down = true };
     CHECK(!RouteSelect_Begin(&f.assets, &both));
@@ -180,7 +182,8 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     bad.font = &missing;
     CHECK(!Result_Ignore(RouteSelect_ValidateAssets(&bad)));
     VSyncIrq_Reset();
-    g_VSync.count1 = 50;
+    m_VSync.count1 = 50;
+    m_VSync.count2 = g_VSync->count2;
     RouteSelect_Init();
     const TH01_INPUT pause = { .cancel = true };
     CHECK(!RouteSelect_Begin(&f.assets, &pause));

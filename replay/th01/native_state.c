@@ -92,7 +92,7 @@ static void M_Boss(uint32_t *const row)
 
 static void M_Gameplay(uint32_t *const row)
 {
-    row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
+    row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync->count1);
     row[TH01_COLUMN_frame_rand] = g_Session.frame_rand;
     row[TH01_COLUMN_rng] = g_Rng;
     row[TH01_COLUMN_game_frames] = g_Stage.frame;
@@ -160,7 +160,7 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
         || ending_scores) {
         const END_RESULT *const result = &g_EndResult;
         row[TH01_COLUMN_program] = 4;
-        row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync.count1);
+        row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync->count1);
         row[TH01_COLUMN_rng] = result->random;
         row[TH01_COLUMN_route] = (uint32_t)result->route;
         row[TH01_COLUMN_score] = result->score;

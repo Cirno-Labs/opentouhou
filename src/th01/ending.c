@@ -402,7 +402,7 @@ bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
                 VSyncIrq_BeginDelay();
                 m_Ending.waiting = true;
             }
-            if ((uint16_t)g_VSync.count1 < op->value) {
+            if ((uint16_t)g_VSync->count1 < op->value) {
                 return false;
             }
             m_Ending.waiting = false;
@@ -448,7 +448,7 @@ bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
                 m_Ending.sensing = true;
             }
             if (m_Ending.waiting) {
-                if ((uint16_t)g_VSync.count1 < 1) {
+                if ((uint16_t)g_VSync->count1 < 1) {
                     return false;
                 }
                 m_Ending.waiting = false;

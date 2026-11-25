@@ -3,6 +3,7 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -120,8 +121,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     m_Missiles.slots[0].flag = MISSILE_MOVING;
     m_Missiles.slots[0].previous_top = 36;
     VSyncIrq_Reset();
-    g_VSync.count1 = 12;
-    g_VSync.count2 = 19;
+    m_VSync.count1 = 12;
+    m_VSync.count2 = 19;
     M_BossSetup(&f.assets, &f.miko);
     CHECK(g_Boss == &m_B10J.status);
     const size_t used = arena.used;
@@ -161,8 +162,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(m_Health.first_redwhite, 2);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 36);
-    CHECK_EQ_INT(g_VSync.count1, 28);
-    CHECK_EQ_INT(g_VSync.count2, 35);
+    CHECK_EQ_INT(g_VSync->count1, 28);
+    CHECK_EQ_INT(g_VSync->count2, 35);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -212,7 +213,8 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     M_Battle(&f, &arena);
     VSyncIrq_Reset();
     M_SetupFixture(&f);
-    g_VSync.count1 = 0;
+    m_VSync.count1 = 0;
+    m_VSync.count2 = g_VSync->count2;
     m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                       .left = 200 * 16,
                                       .top = 200 * 16,
@@ -458,16 +460,16 @@ TEST(entrance_reuses_the_live_interrupt_counter)
         M_Battle(&f, &arena);
         VSyncIrq_Reset();
         M_SetupFixture(&f);
-        g_VSync.count1 = initial[run];
-        g_VSync.count2 = 33;
+        m_VSync.count1 = initial[run];
+        m_VSync.count2 = 33;
         int32_t edges = 0;
         while (!M_BossUpdate(&f.assets, &f.miko) && edges < 110) {
             VSyncIrq_Edge();
             edges++;
         }
         CHECK_EQ_INT(edges, run == 0 ? 99 : 98);
-        CHECK_EQ_INT(g_VSync.count1, 0);
-        CHECK_EQ_INT(g_VSync.count2, 33 + edges);
+        CHECK_EQ_INT(g_VSync->count1, 0);
+        CHECK_EQ_INT(g_VSync->count2, 33 + edges);
         CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_FIRST);
         CHECK_EQ_INT(m_B10J.status.frame, 0);
         Arena_Free(&arena);

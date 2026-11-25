@@ -1,5 +1,6 @@
 #include "../src/th01/timer.c"
 #include "../src/th01/hud.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/timer.h"
 #include "th01/session.h"
 #include "th01/shots.h"
@@ -87,7 +88,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     VSyncIrq_Edge();
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_UP);
-    CHECK_EQ_INT(g_VSync.count1, 0);
+    CHECK_EQ_INT(g_VSync->count1, 0);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640], TRAM_BLACK + 1);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640 + 192], TRAM_RED + 1);
     for (int32_t i = 0; i < 27; i++) {
@@ -106,11 +107,13 @@ TEST(ready_count_is_consumed_before_first_suspension_and_extension_wraps)
     FIXTURE f;
     M_Init(&f);
     g_Stage.time = 2;
-    g_VSync.count1 = 31;
+    m_VSync.count1 = 31;
+    m_VSync.count2 = g_VSync->count2;
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_UP);
-    CHECK_EQ_INT(g_VSync.count1, 0);
-    g_VSync.count1 = 27;
+    CHECK_EQ_INT(g_VSync->count1, 0);
+    m_VSync.count1 = 27;
+    m_VSync.count2 = g_VSync->count2;
     CHECK(StageTimer_TickAndPut());
     m_Timer.hurry_cycle = 81;
     m_Timer.frames_since_hurry = 500;

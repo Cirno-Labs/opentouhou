@@ -10,7 +10,7 @@ typedef struct {
     uint64_t edge;
 } VSYNC_COUNTERS;
 
-extern VSYNC_COUNTERS g_VSync;
+extern const VSYNC_COUNTERS *const g_VSync;
 
 typedef struct {
     uint64_t edge;

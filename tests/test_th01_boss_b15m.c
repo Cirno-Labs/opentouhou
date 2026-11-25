@@ -4,6 +4,7 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -213,8 +214,8 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
                                           .velocity = { 16, 0 },
                                           .flag = MISSILE_MOVING };
         VSyncIrq_Reset();
-        g_VSync.count1 = initial[i];
-        g_VSync.count2 = 9;
+        m_VSync.count1 = initial[i];
+        m_VSync.count2 = 9;
         uint64_t tick = 0;
         CHECK(!M_BossUpdate(&f.assets, &f.miko, tick));
         CHECK(m_B15M.entrance_active);
@@ -227,8 +228,8 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
         const size_t used = arena.used;
         M_Run(&f, &tick);
         CHECK_EQ_INT(tick, expected[i]);
-        CHECK_EQ_INT(g_VSync.count2, 9 + expected[i]);
-        CHECK_EQ_INT(g_VSync.count1, 0);
+        CHECK_EQ_INT(g_VSync->count2, 9 + expected[i]);
+        CHECK_EQ_INT(g_VSync->count1, 0);
         CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_PATTERNS_1);
         CHECK_EQ_INT(m_B15M.status.frame, 0);
         CHECK_EQ_INT(m_B15M.hit.frame, 0);
@@ -255,8 +256,8 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     m_B15M.teleport_done = true;
     m_B15M.hit.frame = 17;
     VSyncIrq_Reset();
-    g_VSync.count1 = 12;
-    g_VSync.count2 = 25;
+    m_VSync.count1 = 12;
+    m_VSync.count2 = 25;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
     CHECK_EQ_INT(m_B15M.wait.kind, WAIT_SCROLL);
     CHECK_EQ_INT(m_B15M.status.frame, 20);
@@ -271,8 +272,8 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     CHECK_EQ_INT(m_B15M.pattern, 0);
     CHECK_EQ_INT(m_B15M.status.frame, 20);
     CHECK_EQ_INT(m_B15M.hit.frame, 17);
-    CHECK_EQ_INT(g_VSync.count1, 13);
-    CHECK_EQ_INT(g_VSync.count2, 26);
+    CHECK_EQ_INT(g_VSync->count1, 13);
+    CHECK_EQ_INT(g_VSync->count2, 26);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     Arena_Free(&arena);
 }

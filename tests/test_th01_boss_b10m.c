@@ -199,7 +199,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         VSyncIrq_Reset();
         const ORB orb = g_Orb;
         M_Enter(&f);
-        CHECK_EQ_INT(g_VSync.count1, 0);
+        CHECK_EQ_INT(g_VSync->count1, 0);
         CHECK(memcmp(&orb, &g_Orb, sizeof(orb)) == 0);
         CHECK(!g_Player.is_hit);
         CHECK_EQ_INT(g_Stage.score, 0);

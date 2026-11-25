@@ -2,7 +2,8 @@
 
 #include <string.h>
 
-VSYNC_COUNTERS g_VSync;
+static VSYNC_COUNTERS m_VSync;
+const VSYNC_COUNTERS *const g_VSync = &m_VSync;
 
 static int16_t M_Increment(const int16_t value)
 {
@@ -12,47 +13,47 @@ static int16_t M_Increment(const int16_t value)
 
 void VSyncIrq_Reset(void)
 {
-    memset(&g_VSync, 0, sizeof(g_VSync));
+    memset(&m_VSync, 0, sizeof(m_VSync));
 }
 
 void VSyncIrq_Edge(void)
 {
-    g_VSync.count1 = M_Increment(g_VSync.count1);
-    g_VSync.count2 = M_Increment(g_VSync.count2);
-    g_VSync.edge++;
+    m_VSync.count1 = M_Increment(m_VSync.count1);
+    m_VSync.count2 = M_Increment(m_VSync.count2);
+    m_VSync.edge++;
 }
 
 void VSyncIrq_PollEdge(void)
 {
-    g_VSync.edge++;
+    m_VSync.edge++;
 }
 
 void VSyncIrq_SwitchProgram(void)
 {
-    g_VSync.count1 = 1;
-    g_VSync.count2 = 1;
+    m_VSync.count1 = 1;
+    m_VSync.count2 = 1;
 }
 
 void VSyncIrq_BeginWait(VSYNC_WAIT *const wait)
 {
-    wait->edge = g_VSync.edge;
+    wait->edge = m_VSync.edge;
 }
 
 bool VSyncIrq_WaitReady(const VSYNC_WAIT *const wait)
 {
-    return wait->edge != g_VSync.edge;
+    return wait->edge != m_VSync.edge;
 }
 
 bool VSyncIrq_DelayReady(const uint16_t frames)
 {
-    if ((uint16_t)g_VSync.count1 < frames) {
+    if ((uint16_t)m_VSync.count1 < frames) {
         return false;
     }
-    g_VSync.count1 = 0;
+    m_VSync.count1 = 0;
     return true;
 }
 
 void VSyncIrq_BeginDelay(void)
 {
-    g_VSync.count1 = 0;
+    m_VSync.count1 = 0;
 }

@@ -1,3 +1,4 @@
+#include "../src/th01/vsync_irq.c"
 #include "th01/stage_objects.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -51,11 +52,11 @@ static void M_Use(CASE *const state)
 {
     if (m_Active != nullptr) {
         m_Active->saved_video = g_Video;
-        m_Active->saved_vsync = g_VSync;
+        m_Active->saved_vsync = *g_VSync;
         m_Active->saved_objects = g_StageObjects;
     }
     g_Video = state->saved_video;
-    g_VSync = state->saved_vsync;
+    m_VSync = state->saved_vsync;
     g_StageObjects = state->saved_objects;
     m_Active = state;
 }
@@ -148,8 +149,8 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
             M_Begin(&state, false);
             const size_t used = state.arena.used;
             VSyncIrq_Reset();
-            g_VSync.count1 = raw_counts[timing];
-            g_VSync.count2 = 42;
+            m_VSync.count1 = raw_counts[timing];
+            m_VSync.count2 = 42;
             int32_t edges = 0;
             while (!StageObjects_ResumeEntrance(&state.sprites)
                    && edges < 240) {
@@ -164,8 +165,8 @@ TEST(entrance_consumes_ready_delays_and_preserves_blocked_polls)
             CHECK_EQ_INT(
                 edges, delays - (delays != 0 && raw_counts[timing] != 0));
             CHECK_EQ_INT(state.arena.used, used);
-            CHECK_EQ_INT(g_VSync.count2, 42 + edges);
-            CHECK_EQ_INT(g_VSync.count1, delays == 0 ? raw_counts[timing] : 0);
+            CHECK_EQ_INT(g_VSync->count2, 42 + edges);
+            CHECK_EQ_INT(g_VSync->count1, delays == 0 ? raw_counts[timing] : 0);
             for (int32_t i = 0; i < counts[variant]; i++) {
                 const STAGE_CARD *const card = &g_StageObjects.cards[i];
                 CHECK_EQ_INT(card->entrance_frame, -1);

@@ -1,3 +1,4 @@
+#include "../src/th01/vsync_irq.c"
 #include "th01/boss_defeat.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
@@ -54,16 +55,16 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     FIXTURE f;
     M_Init(&f, &arena, 14);
     VSyncIrq_Reset();
-    g_VSync.edge = 42;
-    g_VSync.count1 = 1000;
-    g_VSync.count2 = 8;
+    m_VSync.edge = 42;
+    m_VSync.count1 = 1000;
+    m_VSync.count2 = 8;
     BOSS_DEFEAT defeat = {};
     Video_SetScroll(12);
     BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(g_Video.scroll_top, 12);
     CHECK_EQ_INT(g_Video.pages[0][80 * VIDEO_WIDTH], 2);
-    CHECK_EQ_INT(g_VSync.count1, 1000);
+    CHECK_EQ_INT(g_VSync->count1, 1000);
     f.origin = 80;
     VSyncIrq_Edge();
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
@@ -75,8 +76,8 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     CHECK_EQ_INT(g_Video.pages[0][96 * VIDEO_WIDTH], 7);
     CHECK_EQ_INT(g_Video.pages[0][98 * VIDEO_WIDTH], 7);
     CHECK_EQ_INT(g_Video.pages[0][92 * VIDEO_WIDTH], 2);
-    CHECK_EQ_INT(g_VSync.count1, 0);
-    CHECK_EQ_INT(g_VSync.count2, 9);
+    CHECK_EQ_INT(g_VSync->count1, 0);
+    CHECK_EQ_INT(g_VSync->count2, 9);
     const BOSS_DEFEAT waiting = defeat;
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK(memcmp(&waiting, &defeat, sizeof(waiting)) == 0);
@@ -113,9 +114,9 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
     CHECK(BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(defeat.frame, 10);
     CHECK(g_Stage.cleared && g_Player.is_hit);
-    const VSYNC_COUNTERS finished = g_VSync;
+    const VSYNC_COUNTERS finished = *g_VSync;
     CHECK(BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
-    CHECK(memcmp(&finished, &g_VSync, sizeof(g_VSync)) == 0);
+    CHECK(memcmp(&finished, g_VSync, sizeof(finished)) == 0);
     Arena_Free(&arena);
 }
 
@@ -127,7 +128,8 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
     M_Init(&f, &arena, 15);
     f.origin = 80;
     VSyncIrq_Reset();
-    g_VSync.count1 = 10;
+    m_VSync.count1 = 10;
+    m_VSync.count2 = g_VSync->count2;
     BOSS_DEFEAT defeat = {};
     BossDefeat_Begin(&defeat, BOSS_DEFEAT_SINGYOKU);
     VSyncIrq_Edge();

@@ -1,3 +1,4 @@
+#include "../src/th01/vsync_irq.c"
 #include "th01/session.h"
 #include "th01/stage.h"
 #include "th01/shots.h"
@@ -305,8 +306,8 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         g_Orb.previous_top = 349;
         StageOrb_Init();
         VSyncIrq_Reset();
-        g_VSync.count1 = counts[variant];
-        g_VSync.count2 = 44;
+        m_VSync.count1 = counts[variant];
+        m_VSync.count2 = 44;
         CHECK_EQ_INT(
             Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr),
             variant != 0);
@@ -321,8 +322,8 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
             CHECK(Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
         }
         CHECK_EQ_INT(g_Pellets.interlace_field, true);
-        CHECK_EQ_INT(g_VSync.count1, 0);
-        CHECK_EQ_INT(g_VSync.count2, variant == 0 ? 45 : 44);
+        CHECK_EQ_INT(g_VSync->count1, 0);
+        CHECK_EQ_INT(g_VSync->count2, variant == 0 ? 45 : 44);
         CHECK_EQ_INT(g_Orb.previous_left, g_Orb.left);
         CHECK_EQ_INT(g_Orb.previous_top, g_Orb.top);
         CHECK(!g_Player.is_hit);
@@ -406,7 +407,8 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     g_Orb.previous_left = 500;
     g_Orb.previous_top = 350;
     VSyncIrq_Reset();
-    g_VSync.count1 = -1;
+    m_VSync.count1 = -1;
+    m_VSync.count2 = g_VSync->count2;
     StageOrb_Init();
     CHECK(Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr));
     CHECK(g_Player.is_hit);

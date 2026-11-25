@@ -3,6 +3,7 @@
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/particles.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -225,7 +226,8 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         M_BossSetup(&f.assets);
         const size_t used = arena.used;
         VSyncIrq_Reset();
-        g_VSync.count1 = (uint16_t)reuse;
+        m_VSync.count1 = (uint16_t)reuse;
+        m_VSync.count2 = g_VSync->count2;
         const TH01_INPUT raw = {};
         const PLAYER player = g_Player;
         const ORB orb = g_Orb;
