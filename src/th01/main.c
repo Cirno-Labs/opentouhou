@@ -237,7 +237,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
         break;
     case TH01_SCENE_ENDING:
         if (Ending_Tick(raw, reference_edge)) {
-            const END_RESULT *const result = &g_EndResult;
+            const END_RESULT *const result = g_EndResult;
             SCORE_ENTRY entry = { .stage = result->route == SESSION_END_MAKAI
                                       ? 50
                                       : 60,

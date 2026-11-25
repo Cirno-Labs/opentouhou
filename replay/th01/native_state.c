@@ -158,7 +158,7 @@ void Th01Native_Sample(void *const context, uint32_t *const row)
     } else if (
         (*g_Th01Scene) == TH01_SCENE_ENDING
         || (*g_Th01Scene) == TH01_SCENE_SWITCH || ending_scores) {
-        const END_RESULT *const result = &g_EndResult;
+        const END_RESULT *const result = g_EndResult;
         row[TH01_COLUMN_program] = 4;
         row[TH01_COLUMN_vsync_count1] = M_I32(g_VSync->count1);
         row[TH01_COLUMN_rng] = result->random;
