@@ -1284,7 +1284,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         m_B20J.hit.invincible = false;
         m_B20J.hp_bar_filled = false;
         m_B20J.boss_palette = g_Palette.saved;
-        g_Rng = g_Session.frame_rand;
+        Rng_Seed(g_Session.frame_rand);
         return true;
     }
     if (m_B20J.status.phase < B20J_PHASE_PATTERNS_1

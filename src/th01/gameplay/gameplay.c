@@ -177,7 +177,7 @@ void Gameplay_Reset(void)
     g_Pellets.speed = g_Session.pellet_speed;
     Extend_SyncResidentLives(g_Session.lives);
     Extend_ResetNext(g_Session.score);
-    g_Rng = g_Session.frame_rand;
+    Rng_Seed(g_Session.frame_rand);
     g_Stage.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
     g_Gameplay.boss_stage = g_Session.stage_id % 5 == 4;
     Scene_Activate(&g_GameplayAssets->scenes[Session_Scene()]);
