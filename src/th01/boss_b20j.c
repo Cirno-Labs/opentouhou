@@ -1201,7 +1201,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
 static void M_Hit(void)
 {
     const uint8_t colors[] = { 3, 4, 5 };
-    const ORB *const orb = &g_Orb;
+    const ORB *const orb = g_Orb;
     const bool collision = orb->left >= 288 && orb->left <= 352
         && orb->top >= 120 && orb->top <= 160;
     BossHit_UpdateAndRender(

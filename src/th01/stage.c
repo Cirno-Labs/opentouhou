@@ -73,8 +73,8 @@ void Stage_HitTestCards(void)
     STAGE_GAMEPLAY *const game = &g_Stage;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
-        const int32_t dx = card->left - g_Orb.left;
-        const int32_t dy = card->top - g_Orb.top;
+        const int32_t dx = card->left - g_Orb->left;
+        const int32_t dy = card->top - g_Orb->top;
         if (((dx > -24 && dx < 24 && dy > -24 && dy < 24)
              && card->flag == STAGE_CARD_ALIVE)
             || (g_TestDamage && card->flag == STAGE_CARD_ALIVE)

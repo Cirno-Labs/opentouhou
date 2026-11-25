@@ -42,7 +42,7 @@ typedef struct {
     double force, velocity_y;
 } ORB;
 
-extern ORB g_Orb;
+extern const ORB *const g_Orb;
 
 // Zeroes the Orb for a new world.
 void Orb_Init(void);
@@ -59,6 +59,15 @@ void Orb_LeavePortal(void);
 
 // Moves the orb to a portal destination and takes it out of the portal.
 void Orb_Teleport(int16_t left, int16_t top);
+
+// Puts the orb in a portal, which hides it.
+void Orb_EnterPortal(void);
+
+// Moves the orb to top, unclamped.
+void Orb_SetTop(int16_t top);
+
+// Sets the horizontal velocity, as a deflection does.
+void Orb_SetVelocityX(ORB_VELOCITY_X velocity);
 
 // Stores the position as the previous one, which the next frame erases.
 void Orb_KeepPosition(void);

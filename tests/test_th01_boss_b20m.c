@@ -2,6 +2,7 @@
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/input.c"
 #include "../src/th01/player.c"
+#include "../src/th01/orb.c"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -171,8 +172,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     m_Player.left = 300;
     m_Player.invincible = true;
     g_Session.lives = 3;
-    g_Orb.top = 64;
-    g_Orb.previous_top = 64;
+    m_Orb.top = 64;
+    m_Orb.previous_top = 64;
     Hud_Load(&f->mask, &f->stage, &f->font);
     g_Session.stage_id = 19;
     g_Session.frame_rand = 0x12345678;
@@ -326,8 +327,8 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     M_Fixture(&f, &arena);
     m_B20M.status.phase = B20M_PHASE_TRANSFORM;
     m_B20M.status.hp = 0;
-    g_Orb.previous_left = 123;
-    g_Orb.previous_top = 234;
+    m_Orb.previous_left = 123;
+    m_Orb.previous_top = 234;
     m_Player.invincible = true;
     m_Player.invincibility_time = 91;
     m_Player.deflecting = true;
@@ -339,10 +340,10 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
     CHECK_EQ_INT(m_Player.left, 304);
-    CHECK_EQ_INT(g_Orb.left, 600);
-    CHECK_EQ_INT(g_Orb.top, 280);
-    CHECK_EQ_INT(g_Orb.previous_left, 123);
-    CHECK_EQ_INT(g_Orb.previous_top, 234);
+    CHECK_EQ_INT(m_Orb.left, 600);
+    CHECK_EQ_INT(m_Orb.top, 280);
+    CHECK_EQ_INT(m_Orb.previous_left, 123);
+    CHECK_EQ_INT(m_Orb.previous_top, 234);
     CHECK(!m_Player.deflecting);
     CHECK(!m_Player.bomb_damaging);
     CHECK(!g_GameInput->bomb);
@@ -372,8 +373,8 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     M_Fixture(&f, &arena);
     m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
     m_B20M.status.hp = 1;
-    g_Orb.left = 320;
-    g_Orb.top = 120;
+    m_Orb.left = 320;
+    m_Orb.top = 120;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;

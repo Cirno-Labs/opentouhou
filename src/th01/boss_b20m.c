@@ -2136,7 +2136,7 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
 }
 static void M_Hit(const B20M_ASSETS *const assets)
 {
-    const ORB *const orb = &g_Orb;
+    const ORB *const orb = g_Orb;
     const bool collision = (orb->left >= 314 && orb->left <= 346
                             && orb->top >= 104 && orb->top <= 136)
         || BossEntity_HitTestOrb(&m_B20M.shield);

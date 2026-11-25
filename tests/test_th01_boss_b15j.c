@@ -5,6 +5,7 @@
 #include "../src/th01/scene.c"
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/player.c"
+#include "../src/th01/orb.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -88,8 +89,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Rng = 0xb15a0000;
     m_Player.invincible = true;
     m_Player.left = 300;
-    g_Orb.top = 64;
-    g_Orb.previous_top = 64;
+    m_Orb.top = 64;
+    m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
@@ -301,22 +302,22 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     VSyncIrq_Reset();
     M_Enter(&f);
     const size_t used = arena.used;
-    g_Orb.left = 0;
-    g_Orb.top = 64;
-    g_Orb.previous_left = 300;
-    g_Orb.previous_top = 100;
+    m_Orb.left = 0;
+    m_Orb.top = 64;
+    m_Orb.previous_left = 300;
+    m_Orb.previous_top = 100;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 14);
-    g_Orb.left = 300;
-    g_Orb.top = 132;
+    m_Orb.left = 300;
+    m_Orb.top = 132;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 14);
-    g_Orb.top = -100;
-    g_Orb.previous_left = 0;
+    m_Orb.top = -100;
+    m_Orb.previous_left = 0;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 13);
     CHECK_EQ_INT(g_Stage.score, 7000);
-    g_Orb.top = 64;
+    m_Orb.top = 64;
     g_Pellets.slots[0].cloud_frame = 12;
     m_Lasers.slots[4].alive = true;
     m_Lasers.slots[4].origin_left = 100 * 256;
@@ -326,7 +327,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
             || (m_B15J.status.phase == B15J_PHASE_TEARS && m_B15J.status.hp > 6)
             || (m_B15J.status.phase == B15J_PHASE_PATTERNS
                 && m_B15J.status.hp > 0);
-        g_Orb.left = attack ? 300 : 0;
+        m_Orb.left = attack ? 300 : 0;
         const bool completed = M_BossUpdate(&f.assets, &f.miko, &f.stage);
         if (!completed) {
             const B15J frozen = m_B15J;

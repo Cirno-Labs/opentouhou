@@ -1478,7 +1478,7 @@ static bool M_Phase5(
 static bool M_Death(const B15M_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
-            &m_B15M.defeat, &m_B15M.post_defeat, miko, &g_Orb.top)) {
+            &m_B15M.defeat, &m_B15M.post_defeat, miko, &g_Orb->top)) {
         return false;
     }
     Scene_Activate(&assets->next_scene);

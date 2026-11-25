@@ -51,7 +51,7 @@ bool Stage_ResumeOrbComposite(
         Stage_HitTestCards();
         Stage_UpdateObstacles(sprites, false);
     }
-    if (!g_Orb.in_portal) {
+    if (!g_Orb->in_portal) {
         const ORB_PLAYER player = {
             .left = g_Player->left,
             .top = PLAYER_TOP,
@@ -62,13 +62,13 @@ bool Stage_ResumeOrbComposite(
             Player_Hit();
         }
         Orb_Erase(
-            sprites, g_Orb.previous_left, g_Orb.previous_top, Orb_Image());
+            sprites, g_Orb->previous_left, g_Orb->previous_top, Orb_Image());
     }
     if (!m_OrbComposite.boss) {
         Stage_UpdateCards(sprites, font);
     }
-    if (!g_Orb.in_portal && !g_Player->is_hit) {
-        Orb_Put(sprites, g_Orb.left, g_Orb.top, Orb_Image());
+    if (!g_Orb->in_portal && !g_Player->is_hit) {
+        Orb_Put(sprites, g_Orb->left, g_Orb->top, Orb_Image());
     }
     Orb_KeepPosition();
     m_OrbComposite.active = false;

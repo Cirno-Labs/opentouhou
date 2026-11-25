@@ -86,22 +86,22 @@ void Shots_EraseAndReset(void)
 bool Shots_HitTestOrb(const int32_t slot)
 {
     SHOT *const shot = &m_Shots.slots[slot];
-    const int16_t dx = Math16_Wrap(shot->left - g_Orb.left);
-    const int16_t dy = Math16_Wrap(shot->top - g_Orb.top);
+    const int16_t dx = Math16_Wrap(shot->left - g_Orb->left);
+    const int16_t dy = Math16_Wrap(shot->top - g_Orb->top);
     if (!shot->moving || dx >= 32 || dx <= -16 || dy >= 32 || dy <= -16) {
         return false;
     }
     if (dx > 8) {
-        g_Orb.velocity_x = ORB_X_LEFT_4;
+        Orb_SetVelocityX(ORB_X_LEFT_4);
     } else if (dx == 8) {
-        g_Orb.velocity_x = ORB_X_STILL;
+        Orb_SetVelocityX(ORB_X_STILL);
     } else if (dx > -16) {
-        g_Orb.velocity_x = ORB_X_RIGHT_4;
+        Orb_SetVelocityX(ORB_X_RIGHT_4);
     }
     Orb_NewForce(ORB_FORCE_SHOT, 0);
     shot->moving = false;
-    Orb_MoveX(g_Orb.velocity_x);
-    g_Orb.top = Math16_Wrap(g_Orb.top + Orb_UpdateVelocityY());
+    Orb_MoveX(g_Orb->velocity_x);
+    Orb_SetTop(Math16_Wrap(g_Orb->top + Orb_UpdateVelocityY()));
     return true;
 }
 
@@ -112,7 +112,7 @@ void Shots_UpdateAndRender(const PTN *const sprites)
         if (shot->moving) {
             M_Restore(shot);
             shot->top = Math16_Wrap(shot->top - 12);
-            if (!g_Orb.in_portal && Shots_HitTestOrb(i)) {
+            if (!g_Orb->in_portal && Shots_HitTestOrb(i)) {
                 continue;
             }
             if (shot->top >= 64) {

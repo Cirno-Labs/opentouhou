@@ -161,9 +161,9 @@ static bool M_Visible(PELLET *const p, const PELLET_ASSETS *const assets)
     if (p->decay_frame != 0) {
         return true;
     }
-    if (M_Overlap(left, top, g_Orb.left, g_Orb.top, 32, 32)
+    if (M_Overlap(left, top, g_Orb->left, g_Orb->top, 32, 32)
         || M_Overlap(
-            Math16_Wrap(left + 8), top, g_Orb.left, g_Orb.top, 32, 32)) {
+            Math16_Wrap(left + 8), top, g_Orb->left, g_Orb->top, 32, 32)) {
         p->velocity.x = (int16_t)(p->velocity.x / 2 - (p->velocity.x % 2 < 0));
         p->velocity.y = (int16_t)(p->velocity.y / 2 - (p->velocity.y % 2 < 0));
         p->decay_frame = 1;
