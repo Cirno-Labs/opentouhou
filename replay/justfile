@@ -138,6 +138,31 @@ check game data cases jobs=num_cpus():
     echo "${#list[@]} cases, $failed failed"
     [ "${#list[@]}" -gt 0 ] && [ "$failed" -eq 0 ]
 
+# Measure the code of a game that the case files of the directory cases
+# reach: replay them on a coverage build of the native backend, then print
+# each source file's share of lines run, lowest first, with the functions
+# that never ran. Needs llvm-cov on this machine (dev only, Linux).
+[group('replay')]
+[no-cd]
+coverage game data cases jobs=num_cpus():
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root={{quote(justfile_directory())}}
+    just -f "$root/justfile" _docker_build linux media >&2
+    just -f "$root/justfile" _docker_run linux media build --target coverage >&2
+    build="$root/build/linux/coverage"
+    find "$build" -name '*.gcda' -delete
+    shopt -s nullglob
+    list=({{quote(cases)}}/*.othtc)
+    out=$(mktemp -d)
+    trap 'rm -rf "$out"' EXIT
+    # The build records into /app; GCOV_PREFIX moves that to this checkout.
+    printf '%s\0' "${list[@]}" | GCOV_PREFIX="$root" GCOV_PREFIX_STRIP=1 xargs -0 -P {{jobs}} -I{} sh -c \
+        'name=$(basename "$1" .othtc); "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || echo "FAIL $name"' \
+        _ {} "$root" {{quote(data)}} "$out" "$build/{{game}}native"
+    echo "${#list[@]} cases"
+    "$root/tools/coverage_report" "$build" "$root/src/{{game}}"
+
 # Build the patched DOSBox-X of the dosbox backend into the local image
 # opentouhou-dosbox-x (dev only, see replay/dosbox/Dockerfile).
 [group('replay')]
