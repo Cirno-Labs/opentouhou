@@ -16,7 +16,7 @@
 static bool M_Idle(void *const context)
 {
     return (*g_Th01Scene) == TH01_SCENE_OPENING
-        && g_Opening.phase == OPENING_MAIN;
+        && g_Opening->phase == OPENING_MAIN;
 }
 
 // Does nothing: OP's frame_rand starts at 0, and gameplay seeds its RNG

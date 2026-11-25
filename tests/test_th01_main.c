@@ -49,7 +49,8 @@ typedef struct {
 
 static MAIN_FIXTURE m_Fixture;
 
-OPENING g_Opening;
+static OPENING m_Opening;
+const OPENING *const g_Opening = &m_Opening;
 END_RESULT g_EndResult;
 
 static RESULT M_Asset(void)
@@ -180,8 +181,8 @@ RESULT Ending_LoadAssets(
 
 OPENING_EVENTS Opening_Init(const OPENING_ASSETS *assets)
 {
-    memset(&g_Opening, 0, sizeof(g_Opening));
-    g_Opening.frame_rand = 1;
+    memset(&m_Opening, 0, sizeof(m_Opening));
+    m_Opening.frame_rand = 1;
     m_Fixture.opening_begins++;
     return (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY,
                               .track = 0,
@@ -201,7 +202,12 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *raw, bool any_key)
 
 void Opening_Close(void)
 {
-    memset(&g_Opening, 0, sizeof(g_Opening));
+    memset(&m_Opening, 0, sizeof(m_Opening));
+}
+
+void Opening_CountSwitchedVSync(void)
+{
+    m_Opening.count1 = 1;
 }
 
 void Score_Close(void)
@@ -514,7 +520,7 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
     M_Play();
     CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
     CHECK(g_Stage.frame == 0);
-    CHECK_EQ_INT(g_Opening.frame_rand, 1);
+    CHECK_EQ_INT(g_Opening->frame_rand, 1);
     Th01Hooks_Set((TH01_HOOKS) {});
     M_Shutdown();
 }

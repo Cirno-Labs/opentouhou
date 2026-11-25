@@ -28,7 +28,8 @@ static const char *const m_TrackFiles[] = {
     "kami.mdt",  "tensi.mdt",   "syugen.mdt", "alice.mdt",    "iris.mdt",
 };
 
-OPENING g_Opening;
+static OPENING m_Opening;
+const OPENING *const g_Opening = &m_Opening;
 static OPENING_MENU m_Menu;
 static const OPENING_ASSETS *m_Assets;
 
@@ -64,13 +65,13 @@ static void M_Erase(const int32_t count)
 
 static void M_Choice(const int32_t choice, const uint8_t color)
 {
-    if (g_Opening.phase == OPENING_MAIN) {
+    if (m_Opening.phase == OPENING_MAIN) {
         M_Text(
             m_MainMenuItems[choice], 244, M_Top(4) + choice * 20, color,
             GAME_TEXT_BLACK);
         return;
     }
-    const bool music = g_Opening.phase == OPENING_MUSIC;
+    const bool music = m_Opening.phase == OPENING_MUSIC;
     const int32_t top = music ? M_Top(3) + choice * 40 : M_Top(5) + choice * 20;
     Video_Restore16((GFX_RECT) { 228, top, 176, 16 });
     char text[256];
@@ -79,10 +80,10 @@ static void M_Choice(const int32_t choice, const uint8_t color)
             Video_Restore16((GFX_RECT) { 228, top + 20, 192, 16 });
             snprintf(
                 text, sizeof(text), "%s%.2d", m_MusicMenuItems[0],
-                g_Opening.track);
+                m_Opening.track);
             M_Text(text, 228, top, color, GAME_TEXT_BLACK);
             M_Text(
-                m_TrackTitles[g_Opening.track], 228, top + 20, color,
+                m_TrackTitles[m_Opening.track], 228, top + 20, color,
                 GAME_TEXT_BLACK);
         } else {
             M_Text(m_MusicMenuItems[1], 228, top, color, GAME_TEXT_BLACK);
@@ -109,7 +110,7 @@ static void M_Lines(void)
     for (int32_t i = 0; i < 2; i++) {
         int32_t y;
         do {
-            y = MasterRng_Next(&g_Opening.random) % VIDEO_HEIGHT;
+            y = MasterRng_Next(&m_Opening.random) % VIDEO_HEIGHT;
         } while (m_Menu.drawn_rows[y]);
         m_Menu.drawn_rows[y] = true;
         m_Menu.line_y[i] = y;
@@ -124,8 +125,8 @@ static void M_Window(void)
     M_Image(&m_Assets->window, 15);
     Palette_Import(&m_Menu.palette.resource, m_Assets->window.palette);
     Video_Copy(0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
-    g_Opening.random = g_Opening.frame_rand;
-    g_Opening.phase = OPENING_MAIN;
+    m_Opening.random = m_Opening.frame_rand;
+    m_Opening.phase = OPENING_MAIN;
     m_Menu.entering = true;
 }
 
@@ -137,10 +138,10 @@ static int32_t M_Ring(
 
 static void M_Horizontal(const int32_t delta)
 {
-    if (g_Opening.phase == OPENING_MUSIC) {
+    if (m_Opening.phase == OPENING_MUSIC) {
         if (m_Menu.selection == 0) {
-            g_Opening.track =
-                M_Ring(g_Opening.track, delta, OPENING_TRACK_COUNT);
+            m_Opening.track =
+                M_Ring(m_Opening.track, delta, OPENING_TRACK_COUNT);
         }
     } else if (m_Menu.selection == 0) {
         g_Settings.difficulty = M_Ring(g_Settings.difficulty, delta, 4);
@@ -154,7 +155,7 @@ static void M_Horizontal(const int32_t delta)
 
 static void M_Menu(const TH01_INPUT *const raw, OPENING_EVENTS *const events)
 {
-    const OPENING_PHASE phase = g_Opening.phase;
+    const OPENING_PHASE phase = m_Opening.phase;
     const bool main = phase == OPENING_MAIN;
     const bool music = phase == OPENING_MUSIC;
     const int32_t count = main ? 4 : (music ? 2 : 5);
@@ -201,13 +202,13 @@ static void M_Menu(const TH01_INPUT *const raw, OPENING_EVENTS *const events)
                 m_Menu.exit_action = m_Menu.selection == 0
                     ? OPENING_ACTION_START
                     : OPENING_ACTION_CONTINUE;
-                g_Opening.phase = OPENING_EXIT_FADE;
+                m_Opening.phase = OPENING_EXIT_FADE;
                 Palette_BeginFade(
                     &m_Menu.fade, &m_Menu.palette, PALETTE_FADE_BLACK_OUT);
                 events->audio = OPENING_AUDIO_FADE;
                 return;
             } else if (m_Menu.selection == 2) {
-                g_Opening.phase = OPENING_OPTIONS;
+                m_Opening.phase = OPENING_OPTIONS;
                 m_Menu.entering = true;
             } else {
                 events->action = OPENING_ACTION_QUIT;
@@ -218,31 +219,31 @@ static void M_Menu(const TH01_INPUT *const raw, OPENING_EVENTS *const events)
         }
     } else if (!music) {
         if ((confirm && m_Menu.selection == 4) || m_Menu.input.cancel) {
-            g_Opening.phase = OPENING_WAIT_MAIN;
+            m_Opening.phase = OPENING_WAIT_MAIN;
             m_Menu.entering = true;
             m_Menu.selection = 2;
         }
         if (confirm && m_Menu.selection == 3) {
-            g_Opening.phase = OPENING_MUSIC;
+            m_Opening.phase = OPENING_MUSIC;
             m_Menu.entering = true;
             m_Menu.selection = 0;
         }
     } else {
         if ((confirm && m_Menu.selection == 1) || m_Menu.input.cancel) {
-            g_Opening.phase = OPENING_WAIT_OPTIONS;
+            m_Opening.phase = OPENING_WAIT_OPTIONS;
             m_Menu.entering = true;
             m_Menu.selection = 3;
         }
         const bool held = g_Settings.fix_debouncing && m_Menu.confirm_locked;
         if (confirm && m_Menu.selection == 0 && !held) {
             events->audio = OPENING_AUDIO_PLAY;
-            events->track = g_Opening.track;
-            g_Opening.track_starts++;
+            events->track = m_Opening.track;
+            m_Opening.track_starts++;
         }
         m_Menu.confirm_locked = confirm;
     }
     events->clear_key_buffer = true;
-    g_Opening.frame_rand++;
+    m_Opening.frame_rand++;
 }
 
 const char *Opening_TrackFile(const int32_t track)
@@ -253,11 +254,11 @@ const char *Opening_TrackFile(const int32_t track)
 
 OPENING_EVENTS Opening_Init(const OPENING_ASSETS *const assets)
 {
-    memset(&g_Opening, 0, sizeof(g_Opening));
+    memset(&m_Opening, 0, sizeof(m_Opening));
     memset(&m_Menu, 0, sizeof(m_Menu));
     m_Assets = assets;
-    g_Opening.phase = OPENING_FADE;
-    g_Opening.random = 1;
+    m_Opening.phase = OPENING_FADE;
+    m_Opening.random = 1;
     m_Menu.option_item_count = 4;
     m_Menu.music_mode = g_Settings.music;
     Palette_Init(&m_Menu.palette);
@@ -280,44 +281,44 @@ OPENING_EVENTS Opening_Init(const OPENING_ASSETS *const assets)
 OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
 {
     OPENING_EVENTS events = {};
-    if (g_Opening.phase == OPENING_EXIT_FADE) {
+    if (m_Opening.phase == OPENING_EXIT_FADE) {
         Palette_FadeStep(&m_Menu.fade, &m_Menu.palette);
         if (m_Menu.fade.remaining == 0) {
             events.action = m_Menu.exit_action;
         }
         return events;
     }
-    g_Opening.count1++;
-    if (g_Opening.phase == OPENING_FADE) {
+    m_Opening.count1++;
+    if (m_Opening.phase == OPENING_FADE) {
         const bool stepped = Palette_FadeStep(&m_Menu.fade, &m_Menu.palette);
         ASSERT(stepped);
         if (m_Menu.fade.remaining == 0) {
-            g_Opening.phase = OPENING_HOLD;
+            m_Opening.phase = OPENING_HOLD;
         }
         return events;
     }
-    if (g_Opening.phase == OPENING_HOLD) {
-        if (g_Opening.count1 < 100) {
+    if (m_Opening.phase == OPENING_HOLD) {
+        if (m_Opening.count1 < 100) {
             return events;
         }
-        g_Opening.count1 = 0;
-        g_Opening.phase = OPENING_LINES;
+        m_Opening.count1 = 0;
+        m_Opening.phase = OPENING_LINES;
         M_Lines();
         return events;
     }
-    if (g_Opening.phase == OPENING_LINES) {
-        g_Opening.count1 = 0;
+    if (m_Opening.phase == OPENING_LINES) {
+        m_Opening.count1 = 0;
         if (m_Menu.line_count < 100) {
             M_Lines();
             return events;
         }
         Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
-        g_Opening.phase = OPENING_PROMPT;
+        m_Opening.phase = OPENING_PROMPT;
     }
-    if (g_Opening.phase == OPENING_PROMPT) {
+    if (m_Opening.phase == OPENING_PROMPT) {
         if (!any_key) {
-            if (g_Opening.count1 != 0) {
-                g_Opening.count1 = 0;
+            if (m_Opening.count1 != 0) {
+                m_Opening.count1 = 0;
                 if (m_Menu.prompt_frame % 70 < 50) {
                     M_Text(m_Prompt, 244, M_Top(1), 15, GAME_TEXT_BOLD);
                 } else {
@@ -329,10 +330,10 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
         }
         M_Window();
     }
-    if (g_Opening.phase == OPENING_WAIT_MAIN
-        || g_Opening.phase == OPENING_WAIT_OPTIONS) {
+    if (m_Opening.phase == OPENING_WAIT_MAIN
+        || m_Opening.phase == OPENING_WAIT_OPTIONS) {
         if (m_Menu.wait == 0) {
-            if (g_Opening.phase == OPENING_WAIT_MAIN
+            if (m_Opening.phase == OPENING_WAIT_MAIN
                 && g_Settings.music != m_Menu.music_mode) {
                 m_Menu.music_mode = g_Settings.music;
                 events.audio = m_Menu.music_mode == SETTINGS_MUSIC_OFF
@@ -343,22 +344,22 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
             m_Menu.wait = 15;
         }
         if (--m_Menu.wait == 0) {
-            g_Opening.phase = g_Opening.phase == OPENING_WAIT_MAIN
+            m_Opening.phase = m_Opening.phase == OPENING_WAIT_MAIN
                 ? OPENING_MAIN
                 : OPENING_OPTIONS;
-            g_Opening.frame_rand++;
-            g_Opening.count1 = 0;
+            m_Opening.frame_rand++;
+            m_Opening.count1 = 0;
             events.clear_key_buffer = true;
         }
         return events;
     }
-    if (g_Opening.phase == OPENING_QUIT) {
+    if (m_Opening.phase == OPENING_QUIT) {
         return events;
     }
-    g_Opening.count1 = 0;
+    m_Opening.count1 = 0;
     M_Menu(raw, &events);
     if (events.action == OPENING_ACTION_QUIT) {
-        g_Opening.phase = OPENING_QUIT;
+        m_Opening.phase = OPENING_QUIT;
         events.audio = OPENING_AUDIO_STOP;
     }
     return events;
@@ -366,7 +367,12 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
 
 void Opening_Close(void)
 {
-    memset(&g_Opening, 0, sizeof(g_Opening));
+    memset(&m_Opening, 0, sizeof(m_Opening));
     memset(&m_Menu, 0, sizeof(m_Menu));
     m_Assets = nullptr;
+}
+
+void Opening_CountSwitchedVSync(void)
+{
+    m_Opening.count1 = 1;
 }

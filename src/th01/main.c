@@ -192,7 +192,7 @@ static bool M_OpeningEvents(
         Session_Begin(
             events.action == OPENING_ACTION_START ? SESSION_START
                                                   : SESSION_CONTINUE,
-            &g_Settings, g_Opening.frame_rand);
+            &g_Settings, g_Opening->frame_rand);
         if (events.action == OPENING_ACTION_START) {
             Th01Hooks_CallOnStart();
         }
@@ -209,9 +209,7 @@ static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
     Video_SetScroll(0);
     M_OpeningEvents(Opening_Init(&m_OpeningAssets), raw);
     if (switched) {
-        // Counts the VSync latched by the program switch
-        // (VSyncIrq_SwitchProgram).
-        g_Opening.count1 = 1;
+        Opening_CountSwitchedVSync();
     }
 }
 
