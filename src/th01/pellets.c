@@ -150,7 +150,7 @@ static bool M_Visible(PELLET *const p, const PELLET_ASSETS *const assets)
     const int16_t left = Math16_ToPixel(p->left);
     const int16_t top = Math16_ToPixel(p->top);
     for (int32_t i = 0; i < 3; i++) {
-        const SHOT *const shot = &g_Shots.slots[i];
+        const SHOT *const shot = &g_Shots->slots[i];
         if ((shot->moving
              && M_Overlap(left, top, shot->left, shot->top, 16, 16))
             || M_Overlap(

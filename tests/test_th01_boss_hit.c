@@ -1,3 +1,4 @@
+#include "../src/th01/shots.c"
 #include "th01/boss_hit.h"
 #include "th01/session.h"
 
@@ -71,15 +72,15 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
     M_Init(&f);
     g_TestDamage = true;
     f.hit = (BOSS_HIT) { .frame = 1, .invincible = true };
-    g_Shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
+    m_Shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, nullptr, 0, 3000, true,
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
     CHECK(!g_TestDamage);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(g_Stage.score, 0);
-    CHECK(!g_Shots.slots[0].moving);
-    CHECK_EQ_INT(g_Shots.slots[0].decay_frame, 1);
+    CHECK(!m_Shots.slots[0].moving);
+    CHECK_EQ_INT(m_Shots.slots[0].decay_frame, 1);
     CHECK_EQ_INT(f.hit.frame, 1);
     Arena_Free(&f.arena);
 }

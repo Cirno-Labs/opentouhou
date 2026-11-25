@@ -6,11 +6,12 @@
 
 #include <string.h>
 
-SHOTS g_Shots;
+static SHOTS m_Shots;
+const SHOTS *const g_Shots = &m_Shots;
 
 void Shots_Init(void)
 {
-    memset(&g_Shots, 0, sizeof(g_Shots));
+    memset(&m_Shots, 0, sizeof(m_Shots));
 }
 
 static int16_t M_Quarter(const SHOT *const shot)
@@ -23,7 +24,7 @@ static void M_Restore(const SHOT *const shot)
     Sprite_Restore16(shot->left, shot->top, 16, 16);
 }
 
-static void M_Put(const PTN *const sprites, const SHOT *const shot)
+static void M_PutShot(const PTN *const sprites, const SHOT *const shot)
 {
     Sprite_PtnPut(sprites, SHOTS_PTN, M_Quarter(shot), shot->left, shot->top);
 }
@@ -55,7 +56,7 @@ bool Shots_Add(const int16_t left, const int16_t top)
         return false;
     }
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
-        SHOT *const shot = &g_Shots.slots[i];
+        SHOT *const shot = &m_Shots.slots[i];
         if (!shot->moving && shot->decay_frame == 0) {
             shot->left = left;
             shot->top = top;
@@ -71,7 +72,7 @@ bool Shots_Add(const int16_t left, const int16_t top)
 void Shots_EraseAndReset(void)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
-        SHOT *const shot = &g_Shots.slots[i];
+        SHOT *const shot = &m_Shots.slots[i];
         if (shot->moving) {
             M_Restore(shot);
             shot->moving = false;
@@ -84,7 +85,7 @@ void Shots_EraseAndReset(void)
 
 bool Shots_HitTestOrb(const int32_t slot)
 {
-    SHOT *const shot = &g_Shots.slots[slot];
+    SHOT *const shot = &m_Shots.slots[slot];
     const int16_t dx = Math16_Wrap(shot->left - g_Orb.left);
     const int16_t dy = Math16_Wrap(shot->top - g_Orb.top);
     if (!shot->moving || dx >= 32 || dx <= -16 || dy >= 32 || dy <= -16) {
@@ -107,7 +108,7 @@ bool Shots_HitTestOrb(const int32_t slot)
 void Shots_UpdateAndRender(const PTN *const sprites)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
-        SHOT *const shot = &g_Shots.slots[i];
+        SHOT *const shot = &m_Shots.slots[i];
         if (shot->moving) {
             M_Restore(shot);
             shot->top = Math16_Wrap(shot->top - 12);
@@ -115,7 +116,7 @@ void Shots_UpdateAndRender(const PTN *const sprites)
                 continue;
             }
             if (shot->top >= 64) {
-                M_Put(sprites, shot);
+                M_PutShot(sprites, shot);
             } else {
                 shot->moving = false;
             }
@@ -126,7 +127,7 @@ void Shots_UpdateAndRender(const PTN *const sprites)
                 shot->decay_frame = 0;
                 shot->moving = false;
             } else {
-                M_Put(sprites, shot);
+                M_PutShot(sprites, shot);
             }
         }
     }
@@ -135,7 +136,7 @@ void Shots_UpdateAndRender(const PTN *const sprites)
 bool Shots_HitTestPellet(const int16_t left, const int16_t top)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
-        SHOT *const shot = &g_Shots.slots[i];
+        SHOT *const shot = &m_Shots.slots[i];
         const int16_t dx = Math16_Wrap(shot->left - left);
         const int16_t dy = Math16_Wrap(shot->top - top);
         if (shot->moving && shot->decay_frame != 1 && dx <= 6 && dx >= -14
@@ -152,7 +153,7 @@ bool Shots_HitTestBoss(
     const int16_t height_minus_shot)
 {
     for (int32_t i = 0; i < SHOTS_COUNT; i++) {
-        SHOT *const shot = &g_Shots.slots[i];
+        SHOT *const shot = &m_Shots.slots[i];
         if (shot->moving && shot->left >= left && shot->top >= top
             && shot->left <= Math16_Wrap(left + width_minus_shot)
             && shot->top <= Math16_Wrap(top + height_minus_shot)) {

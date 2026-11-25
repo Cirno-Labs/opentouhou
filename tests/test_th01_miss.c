@@ -1,6 +1,7 @@
 #include "../src/th01/miss.c"
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/input.c"
+#include "../src/th01/shots.c"
 #include "th01/timer.h"
 #include "th01/hud.h"
 #include "th01/miss.h"
@@ -60,7 +61,7 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
         memset(state->miko.pixels + i * 1024, i % 14 + 1, 1024);
     }
     memset(state->stage.pixels, 4, 7 * 1024);
-    g_Shots.slots[0] = (SHOT) { .left = 120, .top = 200, .moving = true };
+    m_Shots.slots[0] = (SHOT) { .left = 120, .top = 200, .moving = true };
     Hud_Init(Arena_Allocator(&state->arena));
     Hud_Load(nullptr, &state->stage, &state->font);
     StageTimer_Init();

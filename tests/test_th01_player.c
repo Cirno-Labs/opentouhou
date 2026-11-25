@@ -130,7 +130,7 @@ TEST(stationary_draw_gap_and_simultaneous_actions)
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SWING_OR_SLIDE);
     CHECK(g_Player.deflecting);
     CHECK(g_Player.invincible_against_orb);
-    CHECK(!g_Shots.slots[0].moving);
+    CHECK(!g_Shots->slots[0].moving);
     Mem_Free(g_Video.pages[0]);
     Arena_Free(&state.arena);
 }
@@ -143,11 +143,11 @@ TEST(normal_shots_spawn_on_following_updates)
     M_Tick(&state);
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_SHOOT);
     CHECK_EQ_INT(g_Player.mode_frame, 0);
-    CHECK(!g_Shots.slots[0].moving);
+    CHECK(!g_Shots->slots[0].moving);
     M_Tick(&state);
-    CHECK(g_Shots.slots[0].moving);
-    CHECK_EQ_INT(g_Shots.slots[0].left, 312);
-    CHECK_EQ_INT(g_Shots.slots[0].top, 368);
+    CHECK(g_Shots->slots[0].moving);
+    CHECK_EQ_INT(g_Shots->slots[0].left, 312);
+    CHECK_EQ_INT(g_Shots->slots[0].top, 368);
     CHECK(g_GameInput->shot);
     M_Tick(&state);
     M_Tick(&state);
@@ -162,10 +162,10 @@ TEST(normal_shots_spawn_on_following_updates)
     m_GameInput.shot = true;
     M_Tick(&state);
     M_Tick(&state);
-    CHECK(!g_Shots.slots[0].moving);
+    CHECK(!g_Shots->slots[0].moving);
     M_Tick(&state);
-    CHECK(g_Shots.slots[0].moving);
-    CHECK_EQ_INT(g_Shots.slots[0].left, 324);
+    CHECK(g_Shots->slots[0].moving);
+    CHECK_EQ_INT(g_Shots->slots[0].left, 324);
     CHECK_EQ_INT(g_Player.left, 316);
     CHECK_EQ_INT(g_Player.mode, PLAYER_MODE_REGULAR);
     Mem_Free(g_Video.pages[0]);
@@ -276,7 +276,7 @@ TEST(shot_combo_spawns_seven_source_offsets_after_drawing)
     for (int32_t frame = 0; frame <= 19; frame++) {
         M_Tick(&state);
         if (frame >= 1 && frame % 3 == 1) {
-            CHECK_EQ_INT(g_Shots.slots[count].left, 312 + offsets[count]);
+            CHECK_EQ_INT(g_Shots->slots[count].left, 312 + offsets[count]);
             count++;
         }
         if (frame >= 4) {
