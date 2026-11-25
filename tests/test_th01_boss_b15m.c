@@ -1,3 +1,4 @@
+#include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
 #include "th01/boss_b15m.h"
 #include "th01/sound.h"
@@ -372,8 +373,8 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         CHECK_EQ_INT(g_Stage.score, 98000);
         CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
-        CHECK(g_Scene.active == &f.assets.next_scene);
-        CHECK_EQ_INT(g_Scene.active->id, 5);
+        CHECK(m_Scene.active == &f.assets.next_scene);
+        CHECK_EQ_INT(m_Scene.active->id, 5);
         CHECK_EQ_INT(arena.used, used);
         const B15M done = g_B15M;
         CHECK(B15M_UpdateAndRender(&f.assets, &f.miko, tick));
@@ -428,7 +429,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK_EQ_INT(g_B15M.hp, 0);
     CHECK(g_Player.is_hit);
     CHECK(!g_Stage.cleared);
-    CHECK(g_Scene.active == nullptr);
+    CHECK(m_Scene.active == nullptr);
     CHECK_EQ_INT(g_Stage.score, 7000);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
@@ -444,7 +445,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     M_Run(&f, &tick);
     CHECK(g_B15M.finished);
     CHECK(g_Stage.cleared);
-    CHECK(g_Scene.active == &f.assets.next_scene);
+    CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(arena.used, used);

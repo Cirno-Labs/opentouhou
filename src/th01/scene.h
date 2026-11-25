@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th01/stage_data.h"
+#include "th01/ptn.h"
 
 #include "core/vfs.h"
 
@@ -12,11 +13,8 @@ typedef struct {
     char background[8], music[8];
 } SCENE_DATA;
 
-typedef struct {
-    const SCENE_DATA *active;
-} SCENE_STATE;
-
-extern SCENE_STATE g_Scene;
+// Clears the selected scene for a new gameplay session.
+void Scene_Init(void);
 
 // Loads the five immutable layouts for scene 0..6 into the caller's grouped
 // allocator. Derives ST{id}.GRP and ST{id}.MDT from id, ignoring header names.
@@ -32,3 +30,7 @@ RESULT Scene_Load(
 // reading files, rendering, resetting actors or allocating. The descriptor
 // must have loaded successfully and remains borrowed. Re-selection is valid.
 void Scene_Activate(const SCENE_DATA *scene);
+
+// Initializes prepared stage objects from the selected scene layouts.
+void Scene_BeginStage(
+    int16_t stage_id, bool first_in_scene, const PTN *sprites);

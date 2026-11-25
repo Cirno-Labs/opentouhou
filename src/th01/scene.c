@@ -1,10 +1,20 @@
 #include "th01/scene.h"
+#include "th01/stage_objects.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
 
-SCENE_STATE g_Scene;
+typedef struct {
+    const SCENE_DATA *active;
+} SCENE_STATE;
+
+static SCENE_STATE m_Scene;
+
+void Scene_Init(void)
+{
+    memset(&m_Scene, 0, sizeof(m_Scene));
+}
 
 RESULT Scene_LoadReader(
     READER *const reader, const uint8_t id, const ALLOCATOR *const allocator,
@@ -40,5 +50,12 @@ void Scene_Activate(const SCENE_DATA *const scene)
 {
     ASSERT(scene != nullptr && scene->id < SCENE_COUNT);
     ASSERT(scene->layouts.stages != nullptr);
-    g_Scene.active = scene;
+    m_Scene.active = scene;
+}
+
+void Scene_BeginStage(
+    const int16_t stage_id, const bool first_in_scene, const PTN *const sprites)
+{
+    StageObjects_InitPrepared(
+        &m_Scene.active->layouts, stage_id, first_in_scene, sprites);
 }

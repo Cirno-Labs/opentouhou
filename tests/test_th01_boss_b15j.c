@@ -1,3 +1,4 @@
+#include "../src/th01/scene.c"
 #include "th01/boss_b15j.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -319,8 +320,8 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(g_Stage.score, 98000);
     CHECK(g_Stage.cleared);
     CHECK(g_Player.is_hit);
-    CHECK(g_Scene.active == &f.assets.next_scene);
-    CHECK_EQ_INT(g_Scene.active->id, 6);
+    CHECK(m_Scene.active == &f.assets.next_scene);
+    CHECK_EQ_INT(m_Scene.active->id, 6);
     CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
     CHECK(g_ShootoutLasers.slots[4].alive);
     const B15J finished = g_B15J;

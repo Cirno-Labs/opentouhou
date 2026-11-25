@@ -1,3 +1,4 @@
+#include "../src/th01/scene.c"
 #include "../src/th01/hud.c"
 #include "../src/th01/miss.c"
 #include "th01/gameplay_internal.h"
@@ -647,7 +648,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     memset(&g_B20M, 0xa5, sizeof(g_B20M));
     Gameplay_Reset();
     CHECK_EQ_INT(f.arena.used, used);
-    CHECK(g_Scene.active == &f.assets->scenes[Session_Scene()]);
+    CHECK(m_Scene.active == &f.assets->scenes[Session_Scene()]);
     CHECK_EQ_INT(g_Gameplay.phase, GP_STAGE_BEGIN);
     CHECK(g_Stage.first_stage && g_Gameplay.wait_for_shot);
     CHECK_EQ_INT(g_Gameplay.frame, 0);
