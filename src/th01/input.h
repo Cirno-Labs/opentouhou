@@ -32,6 +32,17 @@ typedef struct {
 extern GAME_INPUT g_GameInput;
 
 typedef enum {
+    GAME_INPUT_PRESS_UP,
+    GAME_INPUT_PRESS_DOWN,
+    GAME_INPUT_PRESS_HORIZONTAL,
+    GAME_INPUT_PRESS_SHOT,
+    GAME_INPUT_PRESS_STRIKE,
+    GAME_INPUT_PRESS_OK,
+    GAME_INPUT_PRESS_PAUSE,
+    GAME_INPUT_PRESS_BOMB,
+} GAME_INPUT_PRESS;
+
+typedef enum {
     MENU_INPUT_MAIN,
     MENU_INPUT_OPTIONS,
 } MENU_INPUT_KIND;
@@ -65,6 +76,14 @@ void GameInput_ResetGame(void);
 
 // Clears only horizontal, shot and ok, keeping the repeat history.
 void GameInput_ResetMenu(void);
+
+// Clears the flag of one press after it took effect. The flag is set again
+// only when its physical source changes.
+void GameInput_Consume(GAME_INPUT_PRESS press);
+
+// Sets shot and ok as held, so that a wait for both ends when either key
+// changes.
+void GameInput_HoldConfirm(void);
 
 // Advances the signed 16-bit bomb window after a gameplay frame.
 void GameInput_AdvanceBombFrame(void);

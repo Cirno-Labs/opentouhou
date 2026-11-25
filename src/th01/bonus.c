@@ -114,8 +114,7 @@ static void M_StageMetric(
 static void M_Confirm(void)
 {
     GameInput_ResetGame();
-    g_GameInput.shot = true;
-    g_GameInput.ok = true;
+    GameInput_HoldConfirm();
     m_Bonus.run.phase = BONUS_CONFIRM;
 }
 
@@ -480,8 +479,7 @@ bool Bonus_ResumeTotal(
                 break;
             }
             GameInput_ResetGame();
-            g_GameInput.shot = true;
-            g_GameInput.ok = true;
+            GameInput_HoldConfirm();
             g_Session.continues_per_scene[m_Total.stage_number / 5 - 1] =
                 (uint16_t)g_Session.continues_total;
             m_Total.phase = BONUS_TOTAL_CONFIRM;

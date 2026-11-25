@@ -769,7 +769,7 @@ static const PI_IMAGE *M_StageBackground(const void *const data)
 
 static void M_BeginLife(void)
 {
-    g_GameInput.strike = false;
+    GameInput_Consume(GAME_INPUT_PRESS_STRIKE);
 }
 
 static void M_FinishEntrance(void)

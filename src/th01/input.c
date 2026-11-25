@@ -206,6 +206,42 @@ void GameInput_ResetMenu(void)
     g_GameInput.ok = false;
 }
 
+void GameInput_Consume(const GAME_INPUT_PRESS press)
+{
+    switch (press) {
+    case GAME_INPUT_PRESS_UP:
+        g_GameInput.up = false;
+        break;
+    case GAME_INPUT_PRESS_DOWN:
+        g_GameInput.down = false;
+        break;
+    case GAME_INPUT_PRESS_HORIZONTAL:
+        g_GameInput.horizontal = GAME_INPUT_NONE;
+        break;
+    case GAME_INPUT_PRESS_SHOT:
+        g_GameInput.shot = false;
+        break;
+    case GAME_INPUT_PRESS_STRIKE:
+        g_GameInput.strike = false;
+        break;
+    case GAME_INPUT_PRESS_OK:
+        g_GameInput.ok = false;
+        break;
+    case GAME_INPUT_PRESS_PAUSE:
+        g_GameInput.paused = false;
+        break;
+    case GAME_INPUT_PRESS_BOMB:
+        g_GameInput.bomb = false;
+        break;
+    }
+}
+
+void GameInput_HoldConfirm(void)
+{
+    g_GameInput.shot = true;
+    g_GameInput.ok = true;
+}
+
 void GameInput_AdvanceBombFrame(void)
 {
     g_GameInput.bomb_frame = Math16_Wrap(g_GameInput.bomb_frame + 1);

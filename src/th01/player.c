@@ -212,7 +212,7 @@ static void M_ShootMode(const PLAYER_SPRITES *const sprites)
         } else if (g_Player.mode_frame >= 2) {
             g_Player.bomb_frame = 0;
             g_Player.mode = PLAYER_MODE_REGULAR;
-            g_GameInput.shot = false;
+            GameInput_Consume(GAME_INPUT_PRESS_SHOT);
             g_Player.submode = GAME_INPUT_BOTH;
         }
     } else if (
@@ -230,7 +230,7 @@ static void M_ShootMode(const PLAYER_SPRITES *const sprites)
         if (g_Player.mode_frame >= 1) {
             M_Shoot(0);
             g_Player.bomb_frame = 0;
-            g_GameInput.shot = false;
+            GameInput_Consume(GAME_INPUT_PRESS_SHOT);
             g_Player.mode = PLAYER_MODE_REGULAR;
         }
     }
@@ -262,7 +262,7 @@ static void M_SwingOrSlide(const PLAYER_SPRITES *const sprites)
                     sprites, true, M_ERASE, M_SwingImage(g_Player.mode_frame));
                 g_Player.submode = GAME_INPUT_BOTH;
                 g_Player.mode_frame = 0;
-                g_GameInput.strike = false;
+                GameInput_Consume(GAME_INPUT_PRESS_STRIKE);
                 g_Player.bomb_frame = 0;
                 g_Player.invincible_against_orb = false;
             }
@@ -300,7 +300,7 @@ static void M_SwingOrSlide(const PLAYER_SPRITES *const sprites)
                 M_SpecialStart(true);
                 return;
             }
-            g_GameInput.strike = false;
+            GameInput_Consume(GAME_INPUT_PRESS_STRIKE);
             g_Player.bomb_frame = 0;
             if (right) {
                 g_Player.combo_enabled = false;
@@ -467,7 +467,7 @@ void Player_Reset(const int32_t difficulty)
                                                                        : 12;
     g_Player.bombing = false;
     g_Player.combo_enabled = false;
-    g_GameInput.bomb = false;
+    GameInput_Consume(GAME_INPUT_PRESS_BOMB);
     g_Player.invincible_against_orb = false;
 }
 
@@ -548,7 +548,7 @@ bool Player_BeginUpdate(
         g_GameInput.bomb && g_Player.mode != PLAYER_MODE_SPECIAL_FIRST
         && g_Player.remaining_bombs != 0) {
         g_Player.bomb_flag = PLAYER_BOMB_START;
-        g_GameInput.bomb = false;
+        GameInput_Consume(GAME_INPUT_PRESS_BOMB);
         Pellets_SpeedRaise(1);
     } else if (g_Player.mode == PLAYER_MODE_REGULAR) {
         M_Regular(sprites);
@@ -574,14 +574,14 @@ void Player_FinishBombUpdate(
     g_Player.bomb_flag = done ? PLAYER_BOMB_NONE : PLAYER_BOMB_ACTIVE;
     if (done) {
         g_Player.bombing = false;
-        g_GameInput.bomb = false;
+        GameInput_Consume(GAME_INPUT_PRESS_BOMB);
         M_Draw(sprites, M_PUT, M_LEFT_STILL);
         g_Player.previous_ptn = M_LEFT_STILL;
     } else if (g_Player.bomb_frame > 60) {
         M_Draw(sprites, M_PUT, M_LEFT_CAST);
     }
-    g_GameInput.shot = false;
-    g_GameInput.strike = false;
+    GameInput_Consume(GAME_INPUT_PRESS_SHOT);
+    GameInput_Consume(GAME_INPUT_PRESS_STRIKE);
     g_Player.mode = PLAYER_MODE_REGULAR;
     if (g_Player.bomb_flag == PLAYER_BOMB_NONE) {
         g_Player.deflecting = false;

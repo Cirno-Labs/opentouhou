@@ -59,10 +59,8 @@ static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
 {
     Player_Reset(g_Session.settings.difficulty);
     M_DefaultActors();
-    g_GameInput.horizontal = 0;
-    g_GameInput.shot = false;
-    g_GameInput.ok = false;
-    g_GameInput.paused = false;
+    GameInput_ResetMenu();
+    GameInput_Consume(GAME_INPUT_PRESS_PAUSE);
     Hud_ScoreAndCombo();
     g_GameInput.bomb_frame = 60;
     Stage_UpdateObstacles(Gameplay_StageSprites(), true);
@@ -93,7 +91,7 @@ static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
 static void M_StartFrames(void)
 {
     g_Gameplay.wait_for_shot = false;
-    g_GameInput.shot = false;
+    GameInput_Consume(GAME_INPUT_PRESS_SHOT);
     g_Stage.timer_initialized = true;
     g_Rng = g_Session.frame_rand;
     g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;

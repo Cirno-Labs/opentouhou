@@ -177,8 +177,7 @@ static void M_Initial(void)
     }
     GameInput_ResetGame();
     if (m_Registration.place == SCORE_PLACES) {
-        g_GameInput.ok = true;
-        g_GameInput.shot = true;
+        GameInput_HoldConfirm();
         m_Registration.phase = SCORE_RELEASE;
         return;
     }
@@ -202,7 +201,7 @@ static void M_Complete(void)
     for (int32_t i = 0; i < 8; i++) {
         strcat(entry->name, m_Registration.slots[i]);
     }
-    g_GameInput.ok = false;
+    GameInput_Consume(GAME_INPUT_PRESS_OK);
     ScoreData_Queue(&m_Saves, m_Registration.rank);
     m_Registration.phase = SCORE_DONE;
 }
@@ -287,7 +286,7 @@ bool Score_OnInput(void)
             && m_Registration.column < 15) {
             m_Registration.row = 4;
         }
-        g_GameInput.up = false;
+        GameInput_Consume(GAME_INPUT_PRESS_UP);
     } else if (g_GameInput.down) {
         m_Registration.row =
             m_Registration.row == 5 ? 0 : m_Registration.row + 1;
@@ -299,7 +298,7 @@ bool Score_OnInput(void)
             && m_Registration.column < 15) {
             m_Registration.row = 0;
         }
-        g_GameInput.down = false;
+        GameInput_Consume(GAME_INPUT_PRESS_DOWN);
     } else if (g_GameInput.horizontal == GAME_INPUT_LEFT) {
         m_Registration.column =
             m_Registration.column == 0 ? 17 : m_Registration.column - 1;
@@ -311,7 +310,7 @@ bool Score_OnInput(void)
             && m_Registration.column < 15) {
             m_Registration.column = 10;
         }
-        g_GameInput.horizontal = 0;
+        GameInput_Consume(GAME_INPUT_PRESS_HORIZONTAL);
     } else if (g_GameInput.horizontal == GAME_INPUT_RIGHT) {
         m_Registration.column =
             m_Registration.column == 17 ? 0 : m_Registration.column + 1;
@@ -323,16 +322,16 @@ bool Score_OnInput(void)
             && m_Registration.column < 15) {
             m_Registration.column = 15;
         }
-        g_GameInput.horizontal = 0;
+        GameInput_Consume(GAME_INPUT_PRESS_HORIZONTAL);
     } else if (g_GameInput.shot) {
         if (M_Shot(m_Registration.row, m_Registration.column)) {
             return true;
         }
-        g_GameInput.shot = false;
+        GameInput_Consume(GAME_INPUT_PRESS_SHOT);
         return false;
     } else if (g_GameInput.strike) {
         M_Shot(5, 15);
-        g_GameInput.strike = false;
+        GameInput_Consume(GAME_INPUT_PRESS_STRIKE);
         return false;
     } else {
         return false;
