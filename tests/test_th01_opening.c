@@ -1,3 +1,4 @@
+#include "../src/th01/opening.c"
 #include "th01/opening.h"
 
 #include "core/base/arena.h"
@@ -61,7 +62,7 @@ static void M_Options(void)
     M_Tick((TH01_INPUT) { .down = true, .ok = true });
     CHECK_EQ_INT(g_Opening.phase, OPENING_OPTIONS);
     M_Tick((TH01_INPUT) {});
-    CHECK_EQ_INT(g_Opening.selection, 0);
+    CHECK_EQ_INT(m_Menu.selection, 0);
 }
 
 TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
@@ -72,8 +73,8 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
     CHECK_EQ_INT(g_Video.pages[0][0], 1);
     CHECK_EQ_INT(g_Video.pages[1][0], 2);
     CHECK_EQ_INT(g_Video.palette[1].red, 0);
-    CHECK_EQ_INT(g_Opening.palette.saved.colors[1][1], 0);
-    CHECK_EQ_INT(g_Opening.palette.resource.colors[1][1], 1);
+    CHECK_EQ_INT(m_Menu.palette.saved.colors[1][1], 0);
+    CHECK_EQ_INT(m_Menu.palette.resource.colors[1][1], 1);
     const size_t used = arena.used;
     uint64_t model_random = 1;
     bool model_rows[400] = {};
@@ -85,12 +86,12 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
             CHECK_EQ_INT(g_Video.palette[1].green, 0);
         }
         if (tick == 99) {
-            CHECK_EQ_INT(g_Opening.line_count, 0);
+            CHECK_EQ_INT(m_Menu.line_count, 0);
         }
         if (tick == 100) {
-            CHECK_EQ_INT(g_Opening.line_count, 1);
-            CHECK_EQ_INT(g_Opening.line_y[0], 346);
-            CHECK_EQ_INT(g_Opening.line_y[1], 130);
+            CHECK_EQ_INT(m_Menu.line_count, 1);
+            CHECK_EQ_INT(m_Menu.line_y[0], 346);
+            CHECK_EQ_INT(m_Menu.line_y[1], 130);
         }
         if (tick >= 100 && tick < 200) {
             for (int32_t i = 0; i < 2; i++) {
@@ -101,7 +102,7 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
                     y = (int32_t)((model_random / 65536) % 32768) % 400;
                 } while (model_rows[y]);
                 model_rows[y] = true;
-                CHECK_EQ_INT(g_Opening.line_y[i], y);
+                CHECK_EQ_INT(m_Menu.line_y[i], y);
             }
             CHECK_EQ_INT(g_Opening.random, model_random);
             int32_t whites = 0;
@@ -112,10 +113,10 @@ TEST(title_shares_fade_and_hold_counter_then_draws_unique_rows)
         }
     }
     CHECK_EQ_INT(g_Opening.phase, OPENING_PROMPT);
-    CHECK_EQ_INT(g_Opening.prompt_frame, 0);
+    CHECK_EQ_INT(m_Menu.prompt_frame, 0);
     int32_t rows = 0;
     for (int32_t y = 0; y < VIDEO_HEIGHT; y++) {
-        rows += g_Opening.drawn_rows[y];
+        rows += m_Menu.drawn_rows[y];
     }
     CHECK_EQ_INT(rows, 200);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
@@ -136,14 +137,14 @@ TEST(prompt_blinks_after_wait_and_window_keeps_saved_palette)
         M_Tick((TH01_INPUT) {});
         CHECK_EQ_INT(Th01Test_Pixel(0, 256, 306), i < 50 ? 15 : 2);
     }
-    CHECK_EQ_INT(g_Opening.prompt_frame, 0);
+    CHECK_EQ_INT(m_Menu.prompt_frame, 0);
     Opening_Tick(&(TH01_INPUT) {}, true);
     CHECK_EQ_INT(g_Opening.phase, OPENING_MAIN);
     CHECK_EQ_INT(g_Opening.random, 0);
     CHECK_EQ_INT(g_Opening.frame_rand, 1);
     CHECK_EQ_INT(g_Video.pages[0][0], 7);
     CHECK_EQ_INT(g_Video.pages[1][0], 7);
-    CHECK_EQ_INT(g_Opening.palette.resource.colors[1][1], 2);
+    CHECK_EQ_INT(m_Menu.palette.resource.colors[1][1], 2);
     CHECK_EQ_INT(g_Video.palette[1].green, 0);
     CHECK_EQ_INT(Th01Test_Pixel(0, 269, 276), 15);
     Arena_Free(&arena);
@@ -197,7 +198,7 @@ TEST(music_entry_suppresses_one_confirmation_and_shares_options_history)
     CHECK(strcmp(Opening_TrackFile(events.track), "iris.mdt") == 0);
     M_Tick((TH01_INPUT) { .cancel = true, .ok = true });
     CHECK_EQ_INT(g_Opening.phase, OPENING_WAIT_OPTIONS);
-    CHECK_EQ_INT(g_Opening.selection, 3);
+    CHECK_EQ_INT(m_Menu.selection, 3);
     const uint32_t frame_rand = g_Opening.frame_rand;
     for (int32_t i = 0; i < 14; i++) {
         events = M_Tick((TH01_INPUT) { .down = true });
@@ -209,7 +210,7 @@ TEST(music_entry_suppresses_one_confirmation_and_shares_options_history)
     CHECK_EQ_INT(g_Opening.frame_rand, frame_rand + 1);
     CHECK(events.clear_key_buffer);
     M_Tick((TH01_INPUT) { .down = true });
-    CHECK_EQ_INT(g_Opening.selection, 0);
+    CHECK_EQ_INT(m_Menu.selection, 0);
     CHECK_EQ_INT(g_Opening.phase, OPENING_OPTIONS);
     Arena_Free(&arena);
 }
@@ -262,10 +263,10 @@ TEST(option_exit_applies_changed_music_then_waits_fifteen_plus_tail)
     }
     CHECK_EQ_INT(g_Opening.phase, OPENING_MAIN);
     CHECK_EQ_INT(g_Opening.frame_rand, frame_rand + 1);
-    CHECK_EQ_INT(g_Opening.selection, 2);
+    CHECK_EQ_INT(m_Menu.selection, 2);
     M_Tick((TH01_INPUT) {});
     CHECK_EQ_INT(g_Opening.frame_rand, frame_rand + 2);
-    CHECK_EQ_INT(g_Opening.selection, 2);
+    CHECK_EQ_INT(m_Menu.selection, 2);
     M_Tick((TH01_INPUT) { .ok = true });
     M_Tick((TH01_INPUT) {});
     g_Settings.music = 0;
@@ -351,7 +352,7 @@ TEST(horizontal_locks_ignore_releases_in_other_menus_and_waits)
         M_Tick((TH01_INPUT) {});
     }
     M_Tick((TH01_INPUT) { .left = true });
-    CHECK_EQ_INT(g_Opening.selection, 0);
+    CHECK_EQ_INT(m_Menu.selection, 0);
     CHECK_EQ_INT(g_Settings.difficulty, 0);
     M_Tick((TH01_INPUT) {});
     M_Tick((TH01_INPUT) { .left = true });
