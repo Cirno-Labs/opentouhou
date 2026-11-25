@@ -1,4 +1,11 @@
 #include "th01/gameplay.h"
+#include "th01/boss_entity.h"
+#include "th01/boss_strategy.h"
+#include "th01/hud_hp.h"
+#include "th01/missiles.h"
+#include "th01/particles.h"
+#include "th01/stage_objects.h"
+#include "th01/tram.h"
 #include "th01/invincibility.h"
 #include "th01/items.h"
 #include "th01/miss.h"
@@ -15,7 +22,7 @@
 
 typedef enum {
     GP_STAGE_BEGIN,
-    GP_B10J_SETUP,
+    GP_BOSS_SETUP,
     GP_FINAL_ENTRANCE,
     GP_OBJECT_ENTRANCE,
     GP_TITLE,
@@ -122,67 +129,60 @@ static void M_HookBossHp(void)
     Th01Hooks_CallOnBoss(&g_Boss->hp);
 }
 
+static const BOSS_STRATEGY *M_Boss(void)
+{
+    return g_Stage.boss == BOSS_NONE ? nullptr : BossStrategy_Get(g_Stage.boss);
+}
+
+static const void *M_BossAssets(void)
+{
+    return m_Assets->bosses[g_Stage.boss];
+}
+
+static BOSS_CONTEXT M_BossContext(
+    ROUTE_SELECT_ASSETS *const route, const TH01_INPUT *const raw,
+    const uint64_t host_tick)
+{
+    const GAMEPLAY_ASSETS *const a = m_Assets;
+    *route = (ROUTE_SELECT_ASSETS) { .font = &a->route_font,
+                                     .stage = M_StageSprites(),
+                                     .makai = &a->scenes[1],
+                                     .jigoku = &a->scenes[2] };
+    return (BOSS_CONTEXT) { .miko = &a->miko,
+                            .stage = M_StageSprites(),
+                            .route = route,
+                            .raw = raw,
+                            .host_tick = host_tick };
+}
+
+static bool M_BossCall(
+    bool (*const call)(const void *assets, const BOSS_CONTEXT *ctx),
+    const TH01_INPUT *const raw, const uint64_t host_tick)
+{
+    ROUTE_SELECT_ASSETS route;
+    const BOSS_CONTEXT ctx = M_BossContext(&route, raw, host_tick);
+    return call(M_BossAssets(), &ctx);
+}
+
 static void M_BossSetup(void)
 {
-    switch (g_Stage.boss) {
-    case BOSS_SINGYOKU:
-        B05_Setup(&m_Assets->b05);
-        break;
-    case BOSS_YUUGENMAGAN:
-        B10M_Setup(&m_Assets->b10m, &m_Assets->miko);
-        break;
-    case BOSS_MIMA:
-        B10J_BeginSetup(&m_Assets->b10j, &m_Assets->miko);
-        break;
-    case BOSS_KIKURI:
-        B15J_Setup(&m_Assets->b15j, &m_Assets->miko);
-        break;
-    case BOSS_ELIS:
-        B15M_Setup(&m_Assets->b15m, &m_Assets->miko);
-        break;
-    case BOSS_SARIEL:
-        B20M_Setup(&m_Assets->b20m);
-        break;
-    case BOSS_KONNGARA:
-        B20J_Setup(&m_Assets->b20j);
-        break;
-    default:
+    const BOSS_STRATEGY *const boss = M_Boss();
+    if (boss == nullptr) {
         g_Boss = nullptr;
-        break;
+        return;
     }
-    if (g_Stage.boss != BOSS_NONE && g_Stage.boss != BOSS_MIMA) {
+    ROUTE_SELECT_ASSETS route;
+    const BOSS_CONTEXT ctx = M_BossContext(&route, nullptr, m_HostTick);
+    boss->setup(M_BossAssets(), &ctx);
+    if (boss->resume_setup == nullptr) {
         M_HookBossHp();
     }
 }
 
 static bool M_BossTick(const TH01_INPUT *const raw)
 {
-    switch (g_Stage.boss) {
-    case BOSS_SINGYOKU: {
-        const GAMEPLAY_ASSETS *const a = m_Assets;
-        const ROUTE_SELECT_ASSETS route = { .font = &a->route_font,
-                                            .stage = M_StageSprites(),
-                                            .makai = &a->scenes[1],
-                                            .jigoku = &a->scenes[2] };
-        return B05_UpdateAndRender(&a->miko, &route, raw);
-    }
-    case BOSS_YUUGENMAGAN:
-        return B10M_UpdateAndRender(&m_Assets->b10m, &m_Assets->miko);
-    case BOSS_MIMA:
-        return B10J_UpdateAndRender(&m_Assets->b10j, &m_Assets->miko);
-    case BOSS_KIKURI:
-        return B15J_UpdateAndRender(
-            &m_Assets->b15j, &m_Assets->miko, M_StageSprites());
-    case BOSS_ELIS:
-        return B15M_UpdateAndRender(
-            &m_Assets->b15m, &m_Assets->miko, m_HostTick);
-    case BOSS_SARIEL:
-        return B20M_UpdateAndRender(&m_Assets->b20m, m_HostTick);
-    case BOSS_KONNGARA:
-        return B20J_UpdateAndRender(&m_Assets->b20j);
-    default:
-        return true;
-    }
+    const BOSS_STRATEGY *const boss = M_Boss();
+    return boss == nullptr || M_BossCall(boss->update, raw, m_HostTick);
 }
 
 static void M_CopyPage(const int32_t from, const int32_t to)
@@ -230,26 +230,11 @@ static void M_TitleChar(void)
 static void M_StageBackground(void)
 {
     const GAMEPLAY_ASSETS *const a = m_Assets;
-    const PI_IMAGE *background = &a->backgrounds[Session_Scene()];
-    switch (g_Stage.boss) {
-    case BOSS_SINGYOKU:
-        background = &a->b05.background;
-        break;
-    case BOSS_YUUGENMAGAN:
-        background = &a->b10m.background;
-        break;
-    case BOSS_MIMA:
-        background = &a->b10j.background;
-        break;
-    case BOSS_KIKURI:
-        background = &a->b15j.background;
-        break;
-    case BOSS_ELIS:
-        background = &a->b15m.background;
-        break;
-    default:
-        break;
-    }
+    const BOSS_STRATEGY *const boss = M_Boss();
+    const PI_IMAGE *const background =
+        boss != nullptr && boss->background != nullptr
+        ? boss->background(M_BossAssets())
+        : &a->backgrounds[Session_Scene()];
     Video_SelectDrawingPage(0);
     if (g_Stage.first_stage) {
         memcpy(g_Video.pages[0], background->pixels, VIDEO_PAGE_SIZE);
@@ -283,13 +268,11 @@ static void M_StageBegin(void)
         g_Stage.first_stage = true;
         Items_Reset();
     }
-    if (g_Stage.boss == BOSS_MIMA) {
-        m_Gameplay.phase = GP_B10J_SETUP;
-    } else if (g_Stage.boss == BOSS_SARIEL) {
-        B20M_BeginEntrance(&m_Assets->b20m);
-        m_Gameplay.phase = GP_FINAL_ENTRANCE;
-    } else if (g_Stage.boss == BOSS_KONNGARA) {
-        B20J_BeginEntrance(&m_Assets->b20j);
+    const BOSS_STRATEGY *const boss = M_Boss();
+    if (boss != nullptr && boss->resume_setup != nullptr) {
+        m_Gameplay.phase = GP_BOSS_SETUP;
+    } else if (boss != nullptr && boss->begin_entrance != nullptr) {
+        boss->begin_entrance(M_BossAssets());
         m_Gameplay.phase = GP_FINAL_ENTRANCE;
     } else {
         M_StageBackground();
@@ -325,13 +308,10 @@ static void M_LifeBegin(const TH01_INPUT *const raw)
     Hud_ScoreAndCombo();
     g_GameInput.bomb_frame = 60;
     Stage_UpdateObstacles(M_StageSprites(), true);
-    if (!m_Gameplay.bgm_started && g_Stage.boss < BOSS_SARIEL) {
-        const size_t song = g_Stage.boss == BOSS_SINGYOKU                   ? 7
-            : g_Stage.boss == BOSS_YUUGENMAGAN || g_Stage.boss == BOSS_MIMA ? 8
-            : g_Stage.boss == BOSS_KIKURI                                   ? 9
-            : g_Stage.boss == BOSS_ELIS                                     ? 10
-                                        : Session_Scene();
-        Sound_Load(song);
+    const BOSS_STRATEGY *const boss = M_Boss();
+    const int32_t song = boss != nullptr ? boss->song : Session_Scene();
+    if (!m_Gameplay.bgm_started && song >= 0) {
+        Sound_Load((size_t)song);
         Sound_Play();
         m_Gameplay.bgm_started = true;
     }
@@ -339,11 +319,11 @@ static void M_LifeBegin(const TH01_INPUT *const raw)
     if (g_Player.invincibility_time > 1) {
         g_Player.invincible = true;
     }
-    if (g_Stage.boss == BOSS_SINGYOKU || g_Stage.boss == BOSS_MIMA) {
+    if (boss != nullptr && boss->update_on_life_begin) {
         m_Gameplay.phase = GP_LIFE_BOSS;
     } else {
-        if (g_Stage.boss == BOSS_KIKURI) {
-            g_GameInput.strike = false;
+        if (boss != nullptr && boss->begin_life != nullptr) {
+            boss->begin_life();
         }
         m_Gameplay.phase = GP_WAIT_SHOT;
     }
@@ -567,17 +547,15 @@ static GAMEPLAY_REQUEST M_Run(
         case GP_STAGE_BEGIN:
             M_StageBegin();
             break;
-        case GP_B10J_SETUP:
-            if (!B10J_ResumeSetup(&m_Assets->b10j, &m_Assets->miko)) {
+        case GP_BOSS_SETUP:
+            if (!M_BossCall(M_Boss()->resume_setup, nullptr, host_tick)) {
                 return m_Gameplay.request;
             }
             M_HookBossHp();
             M_StageBackground();
             break;
         case GP_FINAL_ENTRANCE:
-            if (g_Stage.boss == BOSS_SARIEL
-                    ? !B20M_ResumeEntrance(&m_Assets->b20m, host_tick)
-                    : !B20J_ResumeEntrance(&m_Assets->b20j)) {
+            if (!M_BossCall(M_Boss()->resume_entrance, nullptr, host_tick)) {
                 return m_Gameplay.request;
             }
             M_StageReady();
@@ -594,8 +572,8 @@ static GAMEPLAY_REQUEST M_Run(
                     &m_Assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
                 Items_Render(M_StageSprites());
             }
-            if (g_Stage.boss == BOSS_KIKURI) {
-                Video_Clear(0);
+            if (M_Boss() != nullptr && M_Boss()->finish_entrance != nullptr) {
+                M_Boss()->finish_entrance();
             }
             m_Gameplay.animation_frame = 0;
             if (g_Session.stage_id % 5 == 0 || m_Gameplay.boss_stage) {
@@ -1025,13 +1003,9 @@ void Gameplay_Reset(void)
     Tram_Clear();
     Tram_SetVisible(true);
     BossEntity_Init();
-    B05_Init();
-    B10J_Init();
-    B10M_Init();
-    B15J_Init();
-    B15M_Init();
-    B20J_Init();
-    B20M_Init();
+    for (BOSS boss = BOSS_SINGYOKU; boss < BOSS_COUNT; boss++) {
+        BossStrategy_Get(boss)->init();
+    }
     g_Session.high_score = g_Session.table_high_score;
     g_Stage.score = g_Session.score;
     g_Player.remaining_bombs = g_Session.bombs;

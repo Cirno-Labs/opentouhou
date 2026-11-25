@@ -1,4 +1,14 @@
-#include "th01/boss_b10m.h"
+#include "th01/boss_strategy.h"
+#include "pc98/zun/math16.h"
+#include "th01/boss_defeat.h"
+#include "th01/boss_hit.h"
+#include "th01/boss_entity.h"
+#include "th01/missiles.h"
+#include "th01/particles.h"
+#include "th01/pellets.h"
+#include "pc98/zun/pi.h"
+#include "th01/scene.h"
+#include "th01/shootout_lasers.h"
 #include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
@@ -11,6 +21,14 @@
 #include "core/base/assert.h"
 
 #include <string.h>
+
+typedef struct {
+    BOS eyes;
+    PTN missiles;
+    PI_IMAGE background;
+    PALETTE palette;
+    SCENE_DATA next_scene;
+} B10M_ASSETS;
 
 typedef enum {
     B10M_STAR_WAIT,
@@ -74,7 +92,7 @@ static RESULT M_LoadMissiles(
     return result;
 }
 
-RESULT B10M_ValidateAssets(const B10M_ASSETS *const a)
+static RESULT M_ValidateAssets(const B10M_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->eyes.pixels == nullptr || a->eyes.coverage == nullptr
@@ -92,31 +110,33 @@ RESULT B10M_ValidateAssets(const B10M_ASSETS *const a)
     return OK;
 }
 
-RESULT B10M_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const a, B10M_ASSETS *const out)
+static RESULT M_LoadAssets(
+    VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
+    B10M_ASSETS *const out = data;
     *out = (B10M_ASSETS) {};
     B10M_ASSETS loaded = {};
     MUST(Boss_LoadBos(vfs, "BOSS2.BOS", a, &loaded.eyes));
     MUST(Boss_LoadBackground(vfs, "BOSS2.GRP", a, &loaded.background));
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 3, a, &loaded.next_scene));
-    MUST(B10M_ValidateAssets(&loaded));
+    MUST(M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
 }
 
-void B10M_Init(void)
+static void M_Init(void)
 {
     memset(&m_B10M, 0, sizeof(m_B10M));
 }
 
-void B10M_Setup(const B10M_ASSETS *const assets, const PTN *const miko)
+static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B10M_ASSETS *const assets = data;
     g_Boss = &m_B10M.status;
     ASSERT(!m_B10M.defeating);
-    ASSERT(Result_Ignore(B10M_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B10M.eyes[0], 0, &assets->eyes)));
     for (int32_t i = 1; i < 5; i++) {
         BossEntity_CopyMetadata(&m_B10M.eyes[i], &m_B10M.eyes[0]);
@@ -884,9 +904,10 @@ static bool M_Death(const B10M_ASSETS *const assets, const PTN *const miko)
     return true;
 }
 
-bool B10M_UpdateAndRender(
-    const B10M_ASSETS *const assets, const PTN *const miko)
+static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B10M_ASSETS *const assets = data;
+    const PTN *const miko = ctx->miko;
     if (m_B10M.finished) {
         return true;
     }
@@ -1024,3 +1045,19 @@ bool B10M_UpdateAndRender(
     }
     return true;
 }
+
+static const PI_IMAGE *M_StageBackground(const void *const data)
+{
+    const B10M_ASSETS *const assets = data;
+    return &assets->background;
+}
+
+const BOSS_STRATEGY g_BossYuugenMagan = {
+    .assets_size = sizeof(B10M_ASSETS),
+    .load_assets = M_LoadAssets,
+    .init = M_Init,
+    .setup = M_Setup,
+    .update = M_Update,
+    .background = M_StageBackground,
+    .song = 8,
+};

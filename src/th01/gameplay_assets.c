@@ -1,5 +1,6 @@
 #include "th01/gameplay_assets.h"
 
+#include "th01/boss_strategy.h"
 #include "th01/items.h"
 #include "th01/miss.h"
 
@@ -44,13 +45,12 @@ RESULT GameplayAssets_Load(
     M_LOAD("MIKO_AC2.BOS", Bos_Load, &out->miko_ac2);
     M_LOAD("MASK.GRF", Grf_Load, &out->hud);
     MUST(Bomb_LoadAssets(vfs, allocator, &out->bomb));
-    MUST(B05_LoadAssets(vfs, allocator, &out->b05));
-    MUST(B10J_LoadAssets(vfs, allocator, &out->b10j));
-    MUST(B10M_LoadAssets(vfs, allocator, &out->b10m));
-    MUST(B15J_LoadAssets(vfs, allocator, &out->b15j));
-    MUST(B15M_LoadAssets(vfs, allocator, &out->b15m));
-    MUST(B20J_LoadAssets(vfs, allocator, &out->b20j));
-    MUST(B20M_LoadAssets(vfs, allocator, &out->b20m));
+    for (BOSS boss = BOSS_SINGYOKU; boss < BOSS_COUNT; boss++) {
+        const BOSS_STRATEGY *const strategy = BossStrategy_Get(boss);
+        void *const assets = Allocator_AllocZ(allocator, strategy->assets_size);
+        MUST(strategy->load_assets(vfs, allocator, assets));
+        out->bosses[boss] = assets;
+    }
     MUST(Bonus_LoadTotalAssets(vfs, allocator, &out->total));
     MUST(PelletAssets_Load(vfs, allocator, &out->pellets));
     MUST(ShootoutLasers_LoadAssets(vfs, allocator, &out->lasers));

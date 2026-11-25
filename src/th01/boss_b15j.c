@@ -1,4 +1,12 @@
-#include "th01/boss_b15j.h"
+#include "th01/boss_strategy.h"
+#include "th01/boss_defeat.h"
+#include "th01/boss_hit.h"
+#include "th01/boss_entity.h"
+#include "th01/particles.h"
+#include "th01/pellets.h"
+#include "pc98/zun/pi.h"
+#include "th01/scene.h"
+#include "th01/shootout_lasers.h"
 #include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
@@ -9,6 +17,14 @@
 #include "core/base/assert.h"
 
 #include <string.h>
+
+typedef struct {
+    BOS souls, tears;
+    PTN ripples;
+    PI_IMAGE background;
+    PALETTE palette;
+    SCENE_DATA next_scene;
+} B15J_ASSETS;
 
 typedef enum {
     B15J_PHASE_ENTRANCE = 0,
@@ -46,7 +62,7 @@ static RESULT M_LoadRipples(
     return result;
 }
 
-RESULT B15J_ValidateAssets(const B15J_ASSETS *const a)
+static RESULT M_ValidateAssets(const B15J_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->souls.pixels == nullptr
@@ -67,9 +83,10 @@ RESULT B15J_ValidateAssets(const B15J_ASSETS *const a)
     return OK;
 }
 
-RESULT B15J_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const a, B15J_ASSETS *const out)
+static RESULT M_LoadAssets(
+    VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
+    B15J_ASSETS *const out = data;
     *out = (B15J_ASSETS) {};
     B15J_ASSETS loaded = {};
     MUST(Boss_LoadBos(vfs, "TAMASII.BOS", a, &loaded.souls));
@@ -77,22 +94,23 @@ RESULT B15J_LoadAssets(
     MUST(M_LoadRipples(vfs, a, &loaded.ripples));
     MUST(Boss_LoadBackground(vfs, "BOSS4.GRP", a, &loaded.background));
     MUST(Scene_Load(vfs, 6, a, &loaded.next_scene));
-    MUST(B15J_ValidateAssets(&loaded));
+    MUST(M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
 }
 
-void B15J_Init(void)
+static void M_Init(void)
 {
     memset(&m_B15J, 0, sizeof(m_B15J));
 }
 
-void B15J_Setup(const B15J_ASSETS *const assets, const PTN *const miko)
+static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B15J_ASSETS *const assets = data;
     g_Boss = &m_B15J.status;
     ASSERT(!m_B15J.entrance_active && !m_B15J.defeating);
-    ASSERT(Result_Ignore(B15J_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.souls[0], 0, &assets->souls)));
     BossEntity_CopyMetadata(&m_B15J.souls[1], &m_B15J.souls[0]);
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B15J.tears[0], 1, &assets->tears)));
@@ -623,10 +641,11 @@ static bool M_Death(const B15J_ASSETS *const assets, const PTN *const miko)
     return true;
 }
 
-bool B15J_UpdateAndRender(
-    const B15J_ASSETS *const assets, const PTN *const miko,
-    const PTN *const stage)
+static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B15J_ASSETS *const assets = data;
+    const PTN *const miko = ctx->miko;
+    const PTN *const stage = ctx->stage;
     if (m_B15J.finished) {
         return true;
     }
@@ -741,3 +760,31 @@ bool B15J_UpdateAndRender(
     }
     return true;
 }
+
+static const PI_IMAGE *M_StageBackground(const void *const data)
+{
+    const B15J_ASSETS *const assets = data;
+    return &assets->background;
+}
+
+static void M_BeginLife(void)
+{
+    g_GameInput.strike = false;
+}
+
+static void M_FinishEntrance(void)
+{
+    Video_Clear(0);
+}
+
+const BOSS_STRATEGY g_BossKikuri = {
+    .assets_size = sizeof(B15J_ASSETS),
+    .load_assets = M_LoadAssets,
+    .init = M_Init,
+    .setup = M_Setup,
+    .update = M_Update,
+    .background = M_StageBackground,
+    .begin_life = M_BeginLife,
+    .finish_entrance = M_FinishEntrance,
+    .song = 9,
+};

@@ -3,7 +3,6 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
-#include "th01/boss_b10j.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -16,13 +15,32 @@
 #include "core/base/arena.h"
 #include "th01_world.h"
 #include "test.h"
+static void M_BossSetup(const B10J_ASSETS *const assets, const PTN *const miko)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko };
+    g_BossMima.setup(assets, &ctx);
+}
+
+static bool M_BossResumeSetup(
+    const B10J_ASSETS *const assets, const PTN *const miko)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko };
+    return g_BossMima.resume_setup(assets, &ctx);
+}
+
+static bool M_BossUpdate(const B10J_ASSETS *const assets, const PTN *const miko)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko };
+    return g_BossMima.update(assets, &ctx);
+}
+
 typedef struct {
     B10J_ASSETS assets;
     GAME_TEXT_FONT font;
     PTN stage, miko;
 } FIXTURE;
 
-static void M_Init(FIXTURE *const f, ARENA *const arena)
+static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
     Th01Test_ResetWorld();
@@ -55,7 +73,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 
 static void M_Battle(FIXTURE *const f, ARENA *const arena)
 {
-    M_Init(f, arena);
+    M_InitFixture(f, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Hud_Init(a);
     HudHp_Init(a);
@@ -87,9 +105,9 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     ARENA arena;
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
+    M_InitFixture(&f, &arena);
     memset(&m_B10J, 0xa5, sizeof(m_B10J));
-    B10J_Init();
+    g_BossMima.init();
     CHECK(m_B10J.meteor_active);
     CHECK_EQ_INT(m_B10J.spread_interval, 4);
     CHECK_EQ_INT(m_B10J.spread_speed, 8);
@@ -104,20 +122,20 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     Frame_Reset();
     g_VSync.count1 = 12;
     g_VSync.count2 = 19;
-    B10J_BeginSetup(&f.assets, &f.miko);
+    M_BossSetup(&f.assets, &f.miko);
     CHECK(g_Boss == &m_B10J.status);
     const size_t used = arena.used;
-    CHECK(!B10J_ResumeSetup(&f.assets, &f.miko));
+    CHECK(!M_BossResumeSetup(&f.assets, &f.miko));
     CHECK_EQ_INT(m_B10J.status.frame, 91);
     CHECK_EQ_INT(m_B10J.status.hp, 3);
     for (int32_t step = 0; step < 16; step++) {
         Frame_VSync();
         if (step == 15) {
-            CHECK(B10J_ResumeSetup(&f.assets, &f.miko));
+            CHECK(M_BossResumeSetup(&f.assets, &f.miko));
         } else {
-            CHECK(!B10J_ResumeSetup(&f.assets, &f.miko));
+            CHECK(!M_BossResumeSetup(&f.assets, &f.miko));
             const B10J frozen = m_B10J;
-            CHECK(!B10J_ResumeSetup(&f.assets, &f.miko));
+            CHECK(!M_BossResumeSetup(&f.assets, &f.miko));
             CHECK(memcmp(&m_B10J, &frozen, sizeof(m_B10J)) == 0);
             CHECK_EQ_INT(m_B10J.status.hp, 3);
         }
@@ -154,21 +172,21 @@ TEST(assets_require_both_banks_and_the_next_scene)
     ARENA arena;
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
-    CHECK(Result_Ignore(B10J_ValidateAssets(&f.assets)));
+    M_InitFixture(&f, &arena);
+    CHECK(Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.animation.count = 4;
-    CHECK(!Result_Ignore(B10J_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
     f.assets.animation.count = 5;
     f.assets.next_scene.id = 3;
-    CHECK(!Result_Ignore(B10J_ValidateAssets(&f.assets)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&f.assets)));
     Arena_Free(&arena);
 }
 
-static void M_Setup(FIXTURE *const f)
+static void M_SetupFixture(FIXTURE *const f)
 {
-    B10J_Init();
-    B10J_BeginSetup(&f->assets, &f->miko);
-    while (!B10J_ResumeSetup(&f->assets, &f->miko)) {
+    g_BossMima.init();
+    M_BossSetup(&f->assets, &f->miko);
+    while (!M_BossResumeSetup(&f->assets, &f->miko)) {
         Frame_VSync();
     }
 }
@@ -176,7 +194,7 @@ static void M_Setup(FIXTURE *const f)
 static void M_Enter(FIXTURE *const f)
 {
     for (int32_t edge = 0; edge < 110; edge++) {
-        if (B10J_UpdateAndRender(&f->assets, &f->miko)) {
+        if (M_BossUpdate(&f->assets, &f->miko)) {
             CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_FIRST);
             CHECK_EQ_INT(m_B10J.status.frame, 0);
             return;
@@ -193,7 +211,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     FIXTURE f;
     M_Battle(&f, &arena);
     Frame_Reset();
-    M_Setup(&f);
+    M_SetupFixture(&f);
     g_VSync.count1 = 0;
     m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                       .left = 200 * 16,
@@ -201,17 +219,17 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
                                       .previous_left = -1,
                                       .velocity = { 16, 0 } };
     const size_t used = arena.used;
-    CHECK(!B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(!M_BossUpdate(&f.assets, &f.miko));
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(m_B10J.status.frame, 1);
     const B10J frozen = m_B10J;
     const uint32_t frozen_rng = g_Rng;
-    CHECK(!B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(!M_BossUpdate(&f.assets, &f.miko));
     CHECK(memcmp(&m_B10J, &frozen, sizeof(m_B10J)) == 0);
     CHECK_EQ_INT(g_Rng, frozen_rng);
     for (int32_t edge = 1; edge <= 100; edge++) {
         Frame_VSync();
-        const bool done = B10J_UpdateAndRender(&f.assets, &f.miko);
+        const bool done = M_BossUpdate(&f.assets, &f.miko);
         CHECK(done == (edge == 100));
     }
     CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_FIRST);
@@ -239,7 +257,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
         Frame_Reset();
-        M_Setup(&f);
+        M_SetupFixture(&f);
         M_Enter(&f);
         const size_t used = arena.used;
         uint16_t patterns = 0;
@@ -258,7 +276,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
                 m_B10J.status.hp = 6;
             }
             g_Session.frame_rand++;
-            CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+            CHECK(M_BossUpdate(&f.assets, &f.miko));
             if (phase == B10J_PHASE_SECOND && pattern == 3
                 && m_B10J.pattern == 0) {
                 loops++;
@@ -281,7 +299,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     FIXTURE f;
     M_Battle(&f, &arena);
     Frame_Reset();
-    M_Setup(&f);
+    M_SetupFixture(&f);
     M_Enter(&f);
     const size_t used = arena.used;
     bool saw_gate = false;
@@ -298,7 +316,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
         if (m_B10J.status.hp <= 6 && m_B10J.status.phase == B10J_PHASE_FIRST) {
             saw_gate = true;
         }
-        B10J_UpdateAndRender(&f.assets, &f.miko);
+        M_BossUpdate(&f.assets, &f.miko);
     }
     CHECK(saw_gate);
     CHECK(m_B10J.defeating);
@@ -306,12 +324,12 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     CHECK_EQ_INT(g_Stage.score, 60000);
     const B10J frozen = m_B10J;
     const uint32_t rng = g_Rng;
-    CHECK(!B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(!M_BossUpdate(&f.assets, &f.miko));
     CHECK(memcmp(&m_B10J, &frozen, sizeof(m_B10J)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
     for (int32_t edge = 0; edge < 400 && !m_B10J.finished; edge++) {
         Frame_VSync();
-        B10J_UpdateAndRender(&f.assets, &f.miko);
+        M_BossUpdate(&f.assets, &f.miko);
     }
     CHECK(m_B10J.finished);
     CHECK(g_Stage.cleared);
@@ -319,7 +337,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 4);
     const B10J finished = m_B10J;
-    CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK(memcmp(&m_B10J, &finished, sizeof(m_B10J)) == 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -332,13 +350,13 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
     FIXTURE f;
     M_Battle(&f, &arena);
     Frame_Reset();
-    M_Setup(&f);
+    M_SetupFixture(&f);
     M_Enter(&f);
     m_B10J.status.phase = B10J_PHASE_FIRST;
     m_B10J.pattern = 2;
     m_B10J.status.frame = 191;
     m_B10J.squares[2] = (B10J_SQUARE) { .angle = 32, .radius = 112 };
-    CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     for (int32_t i = 0; i < 8; i++) {
         CHECK(g_Pellets.slots[i].cloud_frame != 0);
     }
@@ -349,13 +367,13 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
     m_B10J.pattern_state = 50;
     m_B10J.laser_x[1] = 200;
     m_B10J.laser_y[1] = 128;
-    CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK(m_Lasers.slots[1].alive);
     CHECK_EQ_INT(m_Lasers.slots[1].origin_left, 200 * 256);
     const SHOOTOUT_LASER first = m_Lasers.slots[1];
     m_B10J.status.frame = 184;
     m_B10J.laser_x[1] = 300;
-    CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK(memcmp(&first, &m_Lasers.slots[1], sizeof(first)) == 0);
     Arena_Free(&arena);
 }
@@ -367,22 +385,22 @@ TEST(hp_gate_waits_for_pattern_cleanup_and_invincibility)
     FIXTURE f;
     M_Battle(&f, &arena);
     Frame_Reset();
-    M_Setup(&f);
+    M_SetupFixture(&f);
     M_Enter(&f);
     m_B10J.status.hp = 6;
     m_B10J.pattern = 0;
     m_B10J.status.frame = 360;
     m_B10J.hp_bar_filled = true;
     m_B10J.hit = (BOSS_HIT) { .frame = 0, .invincible = true };
-    CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_FIRST);
     CHECK_EQ_INT(m_B10J.pattern, 99);
     CHECK_EQ_INT(m_B10J.status.frame, 0);
     for (int32_t i = 0; i < 39; i++) {
-        CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_FIRST);
     }
-    CHECK(B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK_EQ_INT(m_B10J.status.phase, B10J_PHASE_SPREAD);
     CHECK_EQ_INT(m_B10J.pattern, 0);
     CHECK_EQ_INT(m_B10J.hit.frame, 0);
@@ -398,7 +416,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     FIXTURE f;
     M_Battle(&f, &arena);
     Frame_Reset();
-    M_Setup(&f);
+    M_SetupFixture(&f);
     M_Enter(&f);
     m_B10J.status.phase = B10J_PHASE_SECOND;
     m_B10J.pattern = 1;
@@ -416,7 +434,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     for (int32_t i = 0; i < 10; i++) {
         m_Lasers.slots[i].alive = true;
     }
-    CHECK(!B10J_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(!M_BossUpdate(&f.assets, &f.miko));
     CHECK(m_B10J.defeating);
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
@@ -439,11 +457,11 @@ TEST(entrance_reuses_the_live_interrupt_counter)
         FIXTURE f;
         M_Battle(&f, &arena);
         Frame_Reset();
-        M_Setup(&f);
+        M_SetupFixture(&f);
         g_VSync.count1 = initial[run];
         g_VSync.count2 = 33;
         int32_t edges = 0;
-        while (!B10J_UpdateAndRender(&f.assets, &f.miko) && edges < 110) {
+        while (!M_BossUpdate(&f.assets, &f.miko) && edges < 110) {
             Frame_VSync();
             edges++;
         }

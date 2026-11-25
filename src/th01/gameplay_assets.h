@@ -1,13 +1,11 @@
 #pragma once
 
+#include "th01/bomb.h"
 #include "th01/bonus.h"
-#include "th01/boss_b05.h"
-#include "th01/boss_b10j.h"
-#include "th01/boss_b10m.h"
-#include "th01/boss_b15j.h"
-#include "th01/boss_b15m.h"
-#include "th01/boss_b20j.h"
-#include "th01/boss_b20m.h"
+#include "th01/boss.h"
+#include "th01/pellets.h"
+#include "th01/scene.h"
+#include "th01/shootout_lasers.h"
 #include "pc98/mdrv.h"
 #include "th01/invincibility.h"
 
@@ -21,13 +19,8 @@ typedef struct {
     GRF hud;
     INVINCIBILITY_ASSETS invincibility;
     BOMB_ASSETS bomb;
-    B05_ASSETS b05;
-    B10J_ASSETS b10j;
-    B10M_ASSETS b10m;
-    B15J_ASSETS b15j;
-    B15M_ASSETS b15m;
-    B20J_ASSETS b20j;
-    B20M_ASSETS b20m;
+    // Each boss strategy's own assets, indexed by BOSS.
+    const void *bosses[BOSS_COUNT];
     BONUS_TOTAL_ASSETS total;
     BONUS_STAGE_ASSETS *bonus;
     PELLET_ASSETS *pellets;

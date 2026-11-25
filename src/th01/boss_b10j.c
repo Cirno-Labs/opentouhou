@@ -1,4 +1,13 @@
-#include "th01/boss_b10j.h"
+#include "th01/boss_strategy.h"
+#include "th01/boss_defeat.h"
+#include "th01/boss_hit.h"
+#include "th01/boss_entity.h"
+#include "th01/missiles.h"
+#include "th01/particles.h"
+#include "th01/pellets.h"
+#include "pc98/zun/pi.h"
+#include "th01/scene.h"
+#include "th01/shootout_lasers.h"
 #include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/rng.h"
@@ -12,6 +21,19 @@
 #include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
+
+typedef struct {
+    uint8_t masks[2][8][4];
+} B10J_PILLARS;
+
+typedef struct {
+    BOS still, animation;
+    PTN missiles;
+    PI_IMAGE background;
+    PALETTE palette;
+    SCENE_DATA next_scene;
+    B10J_PILLARS pillars;
+} B10J_ASSETS;
 
 typedef struct {
     uint8_t angle;
@@ -72,7 +94,7 @@ static RESULT M_LoadPillars(VFS *const vfs, B10J_PILLARS *const out)
     return OK;
 }
 
-RESULT B10J_ValidateAssets(const B10J_ASSETS *const a)
+static RESULT M_ValidateAssets(const B10J_ASSETS *const a)
 {
     FAIL_IF(
         a == nullptr || a->still.pixels == nullptr
@@ -95,9 +117,10 @@ RESULT B10J_ValidateAssets(const B10J_ASSETS *const a)
     return OK;
 }
 
-RESULT B10J_LoadAssets(
-    VFS *const vfs, const ALLOCATOR *const a, B10J_ASSETS *const out)
+static RESULT M_LoadAssets(
+    VFS *const vfs, const ALLOCATOR *const a, void *const data)
 {
+    B10J_ASSETS *const out = data;
     *out = (B10J_ASSETS) {};
     B10J_ASSETS loaded = {};
     MUST(Boss_LoadBos(vfs, "BOSS3_1.BOS", a, &loaded.still));
@@ -106,13 +129,13 @@ RESULT B10J_LoadAssets(
     MUST(M_LoadMissiles(vfs, a, &loaded.missiles));
     MUST(Scene_Load(vfs, 4, a, &loaded.next_scene));
     MUST(M_LoadPillars(vfs, &loaded.pillars));
-    MUST(B10J_ValidateAssets(&loaded));
+    MUST(M_ValidateAssets(&loaded));
     Palette_Import(&loaded.palette, loaded.background.palette);
     *out = loaded;
     return OK;
 }
 
-void B10J_Init(void)
+static void M_Init(void)
 {
     memset(&m_B10J, 0, sizeof(m_B10J));
     m_B10J.meteor_active = true;
@@ -120,12 +143,13 @@ void B10J_Init(void)
     m_B10J.spread_speed = 8;
 }
 
-void B10J_BeginSetup(const B10J_ASSETS *const assets, const PTN *const miko)
+static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B10J_ASSETS *const assets = data;
     g_Boss = &m_B10J.status;
     ASSERT(
         !m_B10J.setup_active && !m_B10J.entrance_active && !m_B10J.defeating);
-    ASSERT(Result_Ignore(B10J_ValidateAssets(assets)));
+    ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B10J.still, 0, &assets->still)));
     ASSERT(Result_Ignore(
         BossEntity_Bind(&m_B10J.animation, 1, &assets->animation)));
@@ -140,7 +164,7 @@ void B10J_BeginSetup(const B10J_ASSETS *const assets, const PTN *const miko)
     m_B10J.finished = false;
 }
 
-bool B10J_ResumeSetup(const B10J_ASSETS *const assets, const PTN *const miko)
+static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
     if (!m_B10J.setup_active) {
         return true;
@@ -826,9 +850,10 @@ static bool M_Death(const B10J_ASSETS *const assets, const PTN *const miko)
     return true;
 }
 
-bool B10J_UpdateAndRender(
-    const B10J_ASSETS *const assets, const PTN *const miko)
+static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
 {
+    const B10J_ASSETS *const assets = data;
+    const PTN *const miko = ctx->miko;
     ASSERT(!m_B10J.setup_active);
     if (m_B10J.finished) {
         return true;
@@ -945,3 +970,21 @@ bool B10J_UpdateAndRender(
     }
     return true;
 }
+
+static const PI_IMAGE *M_StageBackground(const void *const data)
+{
+    const B10J_ASSETS *const assets = data;
+    return &assets->background;
+}
+
+const BOSS_STRATEGY g_BossMima = {
+    .assets_size = sizeof(B10J_ASSETS),
+    .load_assets = M_LoadAssets,
+    .init = M_Init,
+    .setup = M_Setup,
+    .resume_setup = M_ResumeSetup,
+    .update = M_Update,
+    .background = M_StageBackground,
+    .update_on_life_begin = true,
+    .song = 8,
+};

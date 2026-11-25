@@ -4,7 +4,6 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
-#include "th01/boss_b10m.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -21,13 +20,25 @@
 #include "th01_world.h"
 #include "test.h"
 
+static void M_BossSetup(const B10M_ASSETS *const assets, const PTN *const miko)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko };
+    g_BossYuugenMagan.setup(assets, &ctx);
+}
+
+static bool M_BossUpdate(const B10M_ASSETS *const assets, const PTN *const miko)
+{
+    const BOSS_CONTEXT ctx = { .miko = miko };
+    return g_BossYuugenMagan.update(assets, &ctx);
+}
+
 typedef struct {
     B10M_ASSETS assets;
     GAME_TEXT_FONT font;
     PTN stage, miko;
 } FIXTURE;
 
-static void M_Init(FIXTURE *const f, ARENA *const arena)
+static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
 {
     *f = (FIXTURE) {};
     Th01Test_ResetWorld();
@@ -58,7 +69,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 
 static void M_Battle(FIXTURE *const f, ARENA *const arena)
 {
-    M_Init(f, arena);
+    M_InitFixture(f, arena);
     const ALLOCATOR *const a = Arena_Allocator(arena);
     Hud_Init(a);
     HudHp_Init(a);
@@ -89,7 +100,7 @@ static void M_Enter(FIXTURE *const f)
 {
     for (int32_t frame = 0; frame < 331; frame++) {
         g_Session.frame_rand++;
-        CHECK(B10M_UpdateAndRender(&f->assets, &f->miko));
+        CHECK(M_BossUpdate(&f->assets, &f->miko));
     }
     CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_LATERAL);
     CHECK_EQ_INT(m_B10M.status.frame, 0);
@@ -100,8 +111,8 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     ARENA arena;
     Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
-    B10M_Init();
+    M_InitFixture(&f, &arena);
+    g_BossYuugenMagan.init();
     m_B10M.status.frame = 77;
     m_B10M.status.phase = B10M_PHASE_STAR_ATTACK;
     m_B10M.pattern_state = 17;
@@ -119,7 +130,7 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
-    B10M_Setup(&f.assets, &f.miko);
+    M_BossSetup(&f.assets, &f.miko);
     CHECK(g_Boss == &m_B10M.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(m_B10M.status.hp, 16);
@@ -159,17 +170,17 @@ TEST(asset_validation_rejects_missing_live_storage)
     ARENA arena;
     Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
     FIXTURE f;
-    M_Init(&f, &arena);
-    CHECK(Result_Ignore(B10M_ValidateAssets(&f.assets)));
+    M_InitFixture(&f, &arena);
+    CHECK(Result_Ignore(M_ValidateAssets(&f.assets)));
     B10M_ASSETS a = f.assets;
     a.eyes.count = 6;
-    CHECK(!Result_Ignore(B10M_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
     a = f.assets;
     a.next_scene.id = 2;
-    CHECK(!Result_Ignore(B10M_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
     a = f.assets;
     a.missiles.count = 4;
-    CHECK(!Result_Ignore(B10M_ValidateAssets(&a)));
+    CHECK(!Result_Ignore(M_ValidateAssets(&a)));
     Arena_Free(&arena);
 }
 
@@ -182,8 +193,8 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        B10M_Init();
-        B10M_Setup(&f.assets, &f.miko);
+        g_BossYuugenMagan.init();
+        M_BossSetup(&f.assets, &f.miko);
         const size_t used = arena.used;
         Frame_Reset();
         const ORB orb = g_Orb;
@@ -221,8 +232,8 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        B10M_Init();
-        B10M_Setup(&f.assets, &f.miko);
+        g_BossYuugenMagan.init();
+        M_BossSetup(&f.assets, &f.miko);
         Frame_Reset();
         const size_t used = arena.used;
         uint16_t phases = 0, star_phases = 0;
@@ -239,7 +250,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
             if (m_B10M.status.phase == B10M_PHASE_STAR_ATTACK) {
                 previous_star_phase = m_B10M.pentagram.phase;
             }
-            CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+            CHECK(M_BossUpdate(&f.assets, &f.miko));
             if (previous == B10M_PHASE_STAR_ATTACK
                 && m_B10M.status.phase == B10M_PHASE_TO_STAR) {
                 CHECK_EQ_INT(
@@ -267,8 +278,8 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    B10M_Init();
-    B10M_Setup(&f.assets, &f.miko);
+    g_BossYuugenMagan.init();
+    M_BossSetup(&f.assets, &f.miko);
     m_B10M.status.phase = B10M_PHASE_MISSILES;
     m_B10M.status.frame = 99;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
@@ -280,11 +291,11 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     uint32_t expected = g_Rng;
     const int16_t variation = (int16_t)(MasterRng_Next(&expected) % 3);
     Frame_Reset();
-    CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK_EQ_INT(m_B10M.subphase, variation * 4 + 1);
     CHECK_EQ_INT(g_Rng, expected);
     m_B10M.status.frame = 103;
-    CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+    CHECK(M_BossUpdate(&f.assets, &f.miko));
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         CHECK_EQ_INT(m_Missiles.slots[i].left, 200 * 16);
         CHECK_EQ_INT(m_Missiles.slots[i].top, 200 * 16);
@@ -302,8 +313,8 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        B10M_Init();
-        B10M_Setup(&f.assets, &f.miko);
+        g_BossYuugenMagan.init();
+        M_BossSetup(&f.assets, &f.miko);
         m_B10M.status.phase = (int8_t)phase;
         m_B10M.status.hp = 0;
         m_B10M.pattern_interval = 24;
@@ -323,7 +334,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         g_Pellets.slots[1].cloud_frame = 10;
         m_Lasers.slots[6].alive = true;
         Frame_Reset();
-        CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(m_B10M.defeating);
         CHECK(!g_Stage.cleared);
         CHECK(m_Scene.active == nullptr);
@@ -335,12 +346,12 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
         CHECK(m_Lasers.slots[6].alive);
         const B10M frozen = m_B10M;
-        CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(memcmp(&m_B10M, &frozen, sizeof(m_B10M)) == 0);
         const size_t used = arena.used;
         for (int32_t frame = 0; frame < 400 && !m_B10M.finished; frame++) {
             Frame_VSync();
-            B10M_UpdateAndRender(&f.assets, &f.miko);
+            M_BossUpdate(&f.assets, &f.miko);
         }
         CHECK(m_B10M.finished);
         CHECK(g_Stage.cleared);
@@ -350,7 +361,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         const B10M finished = m_B10M;
-        CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK(memcmp(&m_B10M, &finished, sizeof(m_B10M)) == 0);
         Arena_Free(&arena);
     }
@@ -368,8 +379,8 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        B10M_Init();
-        B10M_Setup(&f.assets, &f.miko);
+        g_BossYuugenMagan.init();
+        M_BossSetup(&f.assets, &f.miko);
         m_B10M.status.phase = phases[i];
         m_B10M.status.hp = hp[i];
         m_B10M.pattern_interval = 24;
@@ -379,7 +390,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         g_Orb.previous_top = 148;
         g_Orb.velocity_x = ORB_X_LEFT_4;
         Frame_Reset();
-        CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10M.status.hp, hp[i] - 1);
         CHECK_EQ_INT(m_B10M.status.phase, phases[i] + 1);
         CHECK_EQ_INT(g_Stage.score, 5000);
@@ -388,7 +399,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         CHECK_EQ_INT(m_B10M.status.frame, 0);
         CHECK_EQ_INT(m_B10M.hit.frame, 0);
         const int16_t old_hp = m_B10M.status.hp;
-        CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10M.status.hp, old_hp);
         CHECK_EQ_INT(g_Stage.score, 5000);
         Arena_Free(&arena);
@@ -403,20 +414,20 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        B10M_Init();
-        B10M_Setup(&f.assets, &f.miko);
+        g_BossYuugenMagan.init();
+        M_BossSetup(&f.assets, &f.miko);
         m_B10M.status.frame = 160;
         m_B10M.hp_bar_filled = true;
         g_Player.invincible = false;
         g_Player.left = positions[i];
         Frame_Reset();
-        CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(g_Player.is_hit, i == 0 || i == 2);
         CHECK_EQ_INT(Th01Test_Pixel(0, 92, 156), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 398), 7);
         CHECK_EQ_INT(Th01Test_Pixel(0, 540, 399), 0);
         g_Player.invincible = true;
-        CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK(!g_Player.is_hit);
         Arena_Free(&arena);
     }
@@ -428,8 +439,8 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     Arena_Init(&arena, "b10m", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    B10M_Init();
-    B10M_Setup(&f.assets, &f.miko);
+    g_BossYuugenMagan.init();
+    M_BossSetup(&f.assets, &f.miko);
     m_B10M.status.phase = B10M_PHASE_STAR_RISE;
     m_B10M.pentagram.center = (MATH16_VECTOR) { 316, 240 };
     m_B10M.pentagram.radius = 64;
@@ -439,7 +450,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     Palette_Set(&g_Palette, &g_StagePalette);
     Frame_Reset();
     for (int32_t i = 0; i < 70; i++) {
-        CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
+        CHECK(M_BossUpdate(&f.assets, &f.miko));
     }
     CHECK_EQ_INT(g_StagePalette.colors[15][0], -67);
     CHECK_EQ_INT(g_Palette.saved.colors[15][0], 0);

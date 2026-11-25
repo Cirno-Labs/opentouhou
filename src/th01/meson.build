@@ -5,6 +5,7 @@ th01_lib = static_library(
   'music.c',
   'bos.c',
   'boss.c',
+  'boss_strategy.c',
   'boss_entity.c',
   'boss_hit.c',
   'boss_defeat.c',
