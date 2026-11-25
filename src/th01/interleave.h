@@ -14,9 +14,8 @@ typedef struct {
 RESULT Interleave_LoadAssets(
     VFS *vfs, const ALLOCATOR *allocator, INTERLEAVE_ASSETS **out);
 
-// Combines an 8x8 tile into page 0: set mask bits keep page 0, and cleared
-// bits take page 1. Rounds left down to eight pixels. Requires left 0..639,
-// top 0..392 and mask_id 0..9. Selects drawing page 0.
+// Combines 8x8 mask mask_id (0..9) into page 0: set bits keep page 0,
+// cleared bits take page 1. Rounds left down to eight.
 void Interleave_Put8(
     const INTERLEAVE_ASSETS *assets, int16_t left, int16_t top,
     uint8_t mask_id);

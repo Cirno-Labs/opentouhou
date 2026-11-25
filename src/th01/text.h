@@ -30,15 +30,13 @@ typedef struct {
     bool clear_background, underline, reverse;
 } GAME_TEXT_STYLE;
 
-// Copies and sorts supplied bitmap glyphs. Requires unique Unicode scalar
-// values, the character's cell width and zero low bytes in halfwidth rows.
-// ASCII and halfwidth katakana are 8 pixels wide, other characters 16.
+// Copies and sorts bitmap glyphs, which need unique code points and the
+// character's cell width: 8 pixels for ASCII and halfwidth kana, else 16.
 RESULT GameText_LoadGlyphs(
     const GAME_TEXT_GLYPH *glyphs, int32_t count, const ALLOCATOR *allocator,
     GAME_TEXT_FONT *out);
 
-// Caches the distinct characters of a UTF-8 string with their cells from
-// rom, as the original draws them. Controls use the halfwidth space glyph.
+// Caches the distinct characters of a UTF-8 string with their cells from rom.
 // A character without a cell is cached blank, with a warning.
 RESULT GameText_Load(
     const FONT_ROM *rom, const char *characters, const ALLOCATOR *allocator,
@@ -49,14 +47,9 @@ RESULT GameText_Load(
 const GAME_TEXT_GLYPH *GameText_Find(
     const GAME_TEXT_FONT *font, uint32_t codepoint);
 
-// Draws text in color masked to four bits on the drawing page, with
-// spacing pixels between cells. Applies the 16-bit weights before reverse,
-// discarding overflow to the left; uncached characters draw blank.
-// clear_background fills the text extent with index 0, through row 17 when
-// underlined, and underline draws index 7 at top+17. Stops before a cell
-// that extends beyond the right edge, as the original does. Clips left and
-// vertical writes without the VRAM's aliasing. text must be valid UTF-8,
-// and spacing 0 through 7.
+// Draws UTF-8 text with spacing 0..7 between cells on the drawing page.
+// clear_background fills the extent with index 0; underline draws index 7.
+// Stops before a cell past the right edge, as the original does.
 void GameText_Draw(
     const GAME_TEXT_FONT *font, const char *text, int32_t left, int32_t top,
     uint8_t color, const GAME_TEXT_STYLE *style);

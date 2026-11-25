@@ -4,18 +4,12 @@
 
 typedef struct GAME_AUDIO GAME_AUDIO;
 
-// Prepares one synchronized Music/Effects input for the shared producer.
-// Requires initialized core audio. Reserves conversion work in allocator's
-// group; keep that group alive until Free, before Audio_Shutdown. A failed
-// preparation leaves out null and no live input. Queues at most 3200 frames;
-// core applies synchronized overflow drops and silent underruns.
+// Prepares one synchronized Music/Effects input, queuing at most 3200 frames.
+// Keep allocator's group alive until Free, before Audio_Shutdown.
 RESULT GameAudio_Prepare(const ALLOCATOR *allocator, GAME_AUDIO **out);
 
-// Advances the producer and submits its component buses without allocation
-// or device queries. A null output advances and discards the same samples.
-// Converts with fixed 1/65536 gain and a 20 Hz DC blocker per bus/channel:
-// y[n] = x[n] - x[n-1] + 0.99738543*y[n-1]. Keeps filter history across
-// blocks, music controls and world changes. Does not clip or normalize.
+// Advances the producer and submits its buses; a null output discards them.
+// Applies a 20 Hz DC blocker per bus and channel, without clipping.
 void GameAudio_Render(GAME_AUDIO *output, MDRV *mdrv, size_t frames);
 
 // Releases the live input, retaining allocator-owned conversion storage.

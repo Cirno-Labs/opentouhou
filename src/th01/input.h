@@ -52,14 +52,8 @@ typedef struct {
     bool left, right, ok, shot, cancel;
 } MENU_INPUT;
 
-// Updates the gameplay flags only when their physical sources change. Arrow
-// and keypad sources stay separate, so a change can reassert a consumed
-// flag while the combined direction stays held. bomb stays set until
-// consumed or reset. Returns whether Return was pressed while paused and
-// shooting, which sets player_is_hit in the original.
-//
-// In debug mode, sets the memory-screen flags as events instead of entering
-// the original's recursive debug screens.
+// Updates the gameplay flags, and in debug mode the memory-screen flags; bomb
+// stays set until consumed. Returns whether Return was pressed while paused.
 bool GameInput_SenseGame(const TH01_INPUT *raw, bool debug);
 
 // Senses the ending's arrows, Z/X, Return and Escape, without keypad, debug
@@ -69,9 +63,7 @@ void GameInput_SenseEnding(const TH01_INPUT *raw);
 // Clears every flag, count and history.
 void GameInput_Init(void);
 
-// Clears held flags, pause, the repeat history, the double-tap counts and
-// the pending bomb. Keeps bomb_frame and the debug-key history, as
-// input_reset_sense does.
+// Clears held flags, pause, repeat history, double taps and the pending bomb.
 void GameInput_ResetGame(void);
 
 // Clears only horizontal, shot and ok, keeping the repeat history.
@@ -88,24 +80,19 @@ void GameInput_HoldConfirm(void);
 // Advances the signed 16-bit bomb window after a gameplay frame.
 void GameInput_AdvanceBombFrame(void);
 
-// Moves selection on up/down presses, in the original's order. Main and
-// options keep separate history; the music room shares the options history.
-// Options also update held left/right. Requires a positive choice_count and
-// a selection inside it.
+// Moves selection on up/down presses; options also update held left/right.
+// Requires a positive choice_count and a selection inside it.
 int32_t GameInput_SenseMenu(
     MENU_INPUT *state, const TH01_INPUT *raw, MENU_INPUT_KIND kind,
     int32_t choice_count, int32_t selection);
 
-// Pushes the bomb window frames past its edge, so a double tap cannot
-// trigger a bomb until frames more have advanced.
+// Pushes the bomb window past its edge, so no double tap bombs for frames.
 void GameInput_DisableBomb(int16_t frames);
 
-// Sets the bomb window frame at its edge, so the next double tap starts a
-// fresh count.
+// Sets the bomb window at its edge, so the next double tap counts afresh.
 void GameInput_OpenBombWindow(void);
 
-// Sets pending on a keyboard press or a bound confirmation control, ignoring
-// modifier-only and lock-only presses. key_press may be nullptr. Misses the
-// BIOS key repeat and taps that begin and end between polls.
+// Sets pending on a key press or bound confirmation, ignoring modifiers.
+// Misses taps that begin and end between polls.
 void GameInput_LatchIntro(
     bool *pending, const TH01_INPUT *raw, const INPUT_BINDING *key_press);

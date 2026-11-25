@@ -2,9 +2,8 @@
 
 #include "core/base/types.h"
 
-// Keeps program-local signed interrupt counters and a logical edge serial.
-// Advance exactly once per reference VSync, including edges inside nested
-// operations. Zero initialization starts both source counters at zero.
+// Holds the program-local interrupt counters and a logical edge serial.
+// Advance exactly once per reference VSync.
 typedef struct {
     int16_t count1, count2;
     uint64_t edge;
@@ -25,9 +24,8 @@ void VSyncIrq_Edge(void);
 // IRQ 2 (vsync_exit): the counters stop, and polls of the GDC still see it.
 void VSyncIrq_PollEdge(void);
 
-// Starts a new program's counters at one, keeping the edge serial. The old
-// program's vsync_exit masks IRQ 2 while its armed CRT interrupt is still due;
-// the 8259 latches it, and the new program's vsync_init delivers it at once.
+// Starts a new program's counters at one, keeping the edge serial.
+// Delivers the interrupt the old program left latched, as the 8259 does.
 void VSyncIrq_SwitchProgram(void);
 
 // Captures the current edge. Ready requires a subsequent edge, regardless

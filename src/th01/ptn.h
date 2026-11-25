@@ -14,8 +14,6 @@ typedef struct {
     uint8_t *pixels;
 } PTN;
 
-// Loads HPTN sprites as count consecutive 32 by 32 row-major images. Keeps
-// color index 15, which drawing may treat as transparent. Expands the
-// four-bit RGB palette to opaque eight-bit colors. Supports one through 64
-// images.
+// Loads 1..64 HPTN sprites as 32 by 32 index images, keeping index 15 for
+// drawing to treat as transparent.
 RESULT Ptn_Load(READER *reader, const ALLOCATOR *allocator, PTN *out);

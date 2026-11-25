@@ -56,22 +56,19 @@ void Palette_SetGray(PALETTE_STATE *state, int32_t value);
 void Palette_ShowSolid(int32_t red, int32_t green, int32_t blue);
 
 // Moves saved components one unit toward target, then clamps and shows them.
-// With only_brighten, components above target stay unchanged. target may
-// alias saved or resource.
+// With only_brighten, components above target stay unchanged.
 void Palette_StepTo(
     PALETTE_STATE *state, const PALETTE *target, bool only_brighten);
 
-// Applies the ending's integer tone from the resource colors to saved
-// entries 1 through 15 and shows all saved colors. Clamps tone to 0 through
-// 200: 0 is black, 100 is unchanged and 200 is white. Keeps saved entry 0.
+// Applies tone 0 (black) to 200 (white), 100 unchanged, to entries 1..15
+// and shows all saved colors.
 void Palette_SetTone(PALETTE_STATE *state, int32_t tone);
 
 // Shows the resource palette directly, or applies its persistent ending tone.
 void Palette_ShowResource(PALETTE_STATE *state, bool use_tone);
 
-// Starts a sixteen-step fade without changing the DAC; kind must be one of
-// the four black/white kinds. OUT copies the saved colors at the start. IN
-// moves toward the live saved colors, and only in its own direction.
+// Starts a sixteen-step black or white fade without changing the DAC.
+// OUT fades from the saved colors at the start; IN toward the live ones.
 void Palette_BeginFade(
     PALETTE_FADE *fade, const PALETTE_STATE *state, PALETTE_FADE_KIND kind);
 
