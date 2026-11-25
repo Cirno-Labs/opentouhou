@@ -20,26 +20,6 @@ typedef struct {
     GAME_TEXT_FONT font;
 } SCORE_ASSETS;
 
-typedef enum {
-    SCORE_FADE_WAIT,
-    SCORE_ENTRY_INPUT,
-    SCORE_ENTRY_DELAY,
-    SCORE_RELEASE,
-    SCORE_DONE,
-} SCORE_PHASE;
-
-typedef struct {
-    PALETTE_STATE palette;
-    PALETTE_FADE fade;
-    FRAME_WAIT wait;
-    SCORE_CONTEXT context;
-    SCORE_PHASE phase;
-    int32_t rank, place, row, column, cursor, inputs;
-    char slots[8][9];
-} SCORE_SCENE;
-
-extern SCORE_SCENE g_ScoreScene;
-
 // Loads GAME_O.GRP and all static, imported and g_ScoreSaves glyphs from rom
 // before ticks. Storage belongs to allocator and must outlive the score scene.
 RESULT Score_LoadAssets(
