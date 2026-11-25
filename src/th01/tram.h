@@ -22,7 +22,7 @@ typedef struct {
     bool visible;
 } TRAM;
 
-extern TRAM g_Tram;
+extern const TRAM *const g_Tram;
 
 // Supplies the overlay palette. Entry 0 has zero alpha; every other color,
 // including black, has full alpha.

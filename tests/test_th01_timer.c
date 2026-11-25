@@ -80,7 +80,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     g_Stage.time = 2;
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
-    CHECK_EQ_INT(g_Tram.pixels[80 * 640], TRAM_RED + 1);
+    CHECK_EQ_INT(g_Tram->pixels[80 * 640], TRAM_RED + 1);
     for (int32_t i = 0; i < 26; i++) {
         VSyncIrq_Edge();
         CHECK(!StageTimer_TickAndPut());
@@ -89,8 +89,8 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_UP);
     CHECK_EQ_INT(g_VSync->count1, 0);
-    CHECK_EQ_INT(g_Tram.pixels[80 * 640], TRAM_BLACK + 1);
-    CHECK_EQ_INT(g_Tram.pixels[80 * 640 + 192], TRAM_RED + 1);
+    CHECK_EQ_INT(g_Tram->pixels[80 * 640], TRAM_BLACK + 1);
+    CHECK_EQ_INT(g_Tram->pixels[80 * 640 + 192], TRAM_RED + 1);
     for (int32_t i = 0; i < 27; i++) {
         VSyncIrq_Edge();
     }
@@ -98,7 +98,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     CHECK_EQ_INT(g_Pellets.speed, 2);
     CHECK_EQ_INT(m_Timer.frames_since_hurry, 0);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 0);
-    CHECK_EQ_INT(g_Tram.pixels[80 * 640 + 192], 0);
+    CHECK_EQ_INT(g_Tram->pixels[80 * 640 + 192], 0);
     Arena_Free(&f.arena);
 }
 

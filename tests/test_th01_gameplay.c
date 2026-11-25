@@ -735,8 +735,8 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(m_Hud.score_previous, 0);
     CHECK(m_Hud.numbers == numbers);
     CHECK(m_Health.backgrounds == backgrounds);
-    CHECK(g_Tram.visible);
-    CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
+    CHECK(g_Tram->visible);
+    CHECK_EQ_INT(g_Tram->pixels[VIDEO_PAGE_SIZE - 1], 0);
     Music_BindOutput(nullptr);
     GameAudio_Free(output);
     Audio_Shutdown();

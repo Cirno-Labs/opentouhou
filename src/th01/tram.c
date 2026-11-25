@@ -10,7 +10,8 @@ const GFX_COLOR g_TramPalette[9] = {
     { 0, 255, 255, 255 }, { 255, 255, 0, 255 }, { 255, 255, 255, 255 },
 };
 
-TRAM g_Tram;
+static TRAM m_Tram;
+const TRAM *const g_Tram = &m_Tram;
 
 static uint8_t M_Index(const TRAM_COLOR color)
 {
@@ -26,18 +27,18 @@ static void M_Glyph(const GAME_TEXT_GLYPH *const glyph)
 
 void Tram_Init(const ALLOCATOR *const allocator)
 {
-    g_Tram.pixels = Allocator_AllocZ(allocator, VIDEO_PAGE_SIZE);
-    g_Tram.visible = true;
+    m_Tram.pixels = Allocator_AllocZ(allocator, VIDEO_PAGE_SIZE);
+    m_Tram.visible = true;
 }
 
 void Tram_SetVisible(const bool visible)
 {
-    g_Tram.visible = visible;
+    m_Tram.visible = visible;
 }
 
 void Tram_Clear(void)
 {
-    memset(g_Tram.pixels, 0, VIDEO_PAGE_SIZE);
+    memset(m_Tram.pixels, 0, VIDEO_PAGE_SIZE);
 }
 
 void Tram_Fill(const GFX_RECT rectangle, const TRAM_COLOR color)
@@ -58,7 +59,7 @@ void Tram_Fill(const GFX_RECT rectangle, const TRAM_COLOR color)
     }
     for (int64_t y = top; y < clipped_bottom; y++) {
         memset(
-            g_Tram.pixels + y * VIDEO_WIDTH + left, index,
+            m_Tram.pixels + y * VIDEO_WIDTH + left, index,
             (size_t)(clipped_right - left));
     }
 }
@@ -92,7 +93,7 @@ static void M_PutGlyph16(
                 : background_index;
             for (int64_t y = clipped_top; y < clipped_bottom; y++) {
                 memset(
-                    g_Tram.pixels + y * VIDEO_WIDTH + clipped_left, index,
+                    m_Tram.pixels + y * VIDEO_WIDTH + clipped_left, index,
                     (size_t)(clipped_right - clipped_left));
             }
         }
