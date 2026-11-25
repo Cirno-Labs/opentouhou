@@ -91,6 +91,7 @@ static RESULT M_Start(void)
             m_StartNames[i].name);
     }
     MUST(Files_Mount());
+    Rng_SetSeed(&g_Rng, 0);
     GameManager_Create(&g_GameManager);
     m_Started = true;
     MUST(Game_Init());

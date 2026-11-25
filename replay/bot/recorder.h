@@ -57,6 +57,9 @@ typedef struct {
     void (*stop)(void);
 } RECORDER_GAME;
 
+// Restarts the tick rate that the recorder reports, as a fresh run starts.
+void Recorder_ResetClock(void);
+
 // Runs the program of game and returns its exit status: 0 on success,
 // 1 on an error.
 int Recorder_Main(const RECORDER_GAME *game, int argc, char **argv);
