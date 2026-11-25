@@ -38,10 +38,32 @@ replay files: it stages the file at the slot that `replay/GAME/rpy.ini`
 names and plays the input script that it names, which selects the slot
 and lets the replay play. The harness itself never reads a replay file.
 
-The recorder, such as `th06record`, plays one practice stage with a bot
-on the native game and saves it as the game's own replay file, for new
-replay cases. The bot's shared part is in `replay/bot/`; a game gives
-its choices, such as difficulties and stages, as data.
+The recorder, such as `th06record` or `th01record`, plays a run with a
+bot on the native game and saves it in the game's own format: th06 writes
+a `.rpy`, th01 a case script for `tools/harness capture`. The bot plays
+roles (shoot, focus, bomb, strike and the four directions), which a
+strategy picks each frame: `dodge` follows a potential field of the
+threats, `wander` walks at random. `replay/GAME/bot.ini` maps each role
+to the game's buttons, with one word per frame, so a role can be a
+sequence such as th01's bomb. [bot.h](../replay/bot/bot.h) gives the
+format.
+
+```
+th06record --data DATA --out OUT.rpy --start difficulty=normal \
+    --start stage=1 --start character=reimu --start shot=a --seed 1
+th01record --data DATA --out OUT.txt --start stage=19 --start route=0 \
+    --start lives=6 --start bombs=9 --start boss_hp=18 \
+    --segment 150 --no-miss --until-progress 8
+```
+
+`--start` sets the run's start values: th06's practice choices, or the
+start fields of a th01 case. `--strategy` picks the strategy, `--seed`
+the bot's seed and `--until-progress` ends the run once its progress,
+such as a th01 boss's phase, reaches a value. Without `--segment`, the
+bot plays the run straight through. With `--segment N`, the recorder
+searches the run N frames at a time, and with `--no-miss` it keeps only
+segments that lose no life; [recorder.h](../replay/bot/recorder.h)
+describes the search. The same arguments always give the same run.
 
 ## Recipes
 
