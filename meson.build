@@ -325,6 +325,18 @@ if build_games
     # Each game's recorder plays a practice stage with the bot to make a
     # new replay file.
     executable(
+      'th01record',
+      'replay/th01/recorder.c',
+      c_args: [layer_include['th01']] + stg_include + shell_include + harness_include + bot_include,
+      implicit_include_directories: false,
+      link_with: [
+        bot_lib, shell_fonts_lib, th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_lib,
+        builtin_libs['th01'],
+      ],
+      dependencies: [core_dep, stg_dep, pc98_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
+    )
+    executable(
       'th06record',
       'replay/th06/recorder.c',
       c_args: [layer_include['th06']] + stg_include + shell_include + bot_include,
