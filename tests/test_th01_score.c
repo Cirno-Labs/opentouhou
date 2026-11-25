@@ -14,7 +14,7 @@ typedef struct {
 static void M_Init(FIXTURE *const f)
 {
     *f = (FIXTURE) {};
-    Frame_Reset();
+    VSyncIrq_Reset();
     GameInput_Init();
     Arena_Init(&f->arena, "score", 2 * 1024 * 1024);
     Video_Init(Arena_Allocator(&f->arena));

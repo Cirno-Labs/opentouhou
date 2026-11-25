@@ -312,7 +312,7 @@ if build_games
         'replay/th01/dosbox_state.c',
         'replay/th01/harness.c',
         'src/pc98/vsync.c',
-        'src/th01/frame.c',
+        'src/th01/vsync_irq.c',
         name_prefix: '',
         c_args: [layer_include['th01'], layer_include['pc98']] + core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,

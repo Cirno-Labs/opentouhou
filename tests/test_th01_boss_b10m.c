@@ -196,7 +196,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         g_BossYuugenMagan.init();
         M_BossSetup(&f.assets, &f.miko);
         const size_t used = arena.used;
-        Frame_Reset();
+        VSyncIrq_Reset();
         const ORB orb = g_Orb;
         M_Enter(&f);
         CHECK_EQ_INT(g_VSync.count1, 0);
@@ -234,7 +234,7 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         g_Session.settings.difficulty = rank;
         g_BossYuugenMagan.init();
         M_BossSetup(&f.assets, &f.miko);
-        Frame_Reset();
+        VSyncIrq_Reset();
         const size_t used = arena.used;
         uint16_t phases = 0, star_phases = 0;
         int32_t loops = 0;
@@ -290,7 +290,7 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     }
     uint32_t expected = g_Rng;
     const int16_t variation = (int16_t)(MasterRng_Next(&expected) % 3);
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko));
     CHECK_EQ_INT(m_B10M.subphase, variation * 4 + 1);
     CHECK_EQ_INT(g_Rng, expected);
@@ -333,7 +333,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
             (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
         g_Pellets.slots[1].cloud_frame = 10;
         g_ShootoutLasers.slots[6].alive = true;
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(m_B10M.defeating);
         CHECK(!g_Stage.cleared);
@@ -350,7 +350,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(memcmp(&m_B10M, &frozen, sizeof(m_B10M)) == 0);
         const size_t used = arena.used;
         for (int32_t frame = 0; frame < 400 && !m_B10M.finished; frame++) {
-            Frame_VSync();
+            VSyncIrq_Edge();
             M_BossUpdate(&f.assets, &f.miko);
         }
         CHECK(m_B10M.finished);
@@ -389,7 +389,7 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         g_Orb.previous_left = 88;
         g_Orb.previous_top = 148;
         g_Orb.velocity_x = ORB_X_LEFT_4;
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(m_B10M.status.hp, hp[i] - 1);
         CHECK_EQ_INT(m_B10M.status.phase, phases[i] + 1);
@@ -420,7 +420,7 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         m_B10M.hp_bar_filled = true;
         g_Player.invincible = false;
         g_Player.left = positions[i];
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko));
         CHECK_EQ_INT(g_Player.is_hit, i == 0 || i == 2);
         CHECK_EQ_INT(Th01Test_Pixel(0, 92, 156), 7);
@@ -448,7 +448,7 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     g_StagePalette.colors[15][1] = 0;
     g_StagePalette.colors[15][2] = 5;
     Palette_Set(&g_Palette, &g_StagePalette);
-    Frame_Reset();
+    VSyncIrq_Reset();
     for (int32_t i = 0; i < 70; i++) {
         CHECK(M_BossUpdate(&f.assets, &f.miko));
     }

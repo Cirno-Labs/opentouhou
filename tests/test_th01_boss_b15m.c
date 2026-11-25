@@ -191,7 +191,7 @@ static void M_Run(FIXTURE *const f, uint64_t *const tick)
             break;
         }
         (*tick)++;
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
 }
 
@@ -212,7 +212,7 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
                                           .previous_left = -1,
                                           .velocity = { 16, 0 },
                                           .flag = MISSILE_MOVING };
-        Frame_Reset();
+        VSyncIrq_Reset();
         g_VSync.count1 = initial[i];
         g_VSync.count2 = 9;
         uint64_t tick = 0;
@@ -254,7 +254,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     m_B15M.status.frame = 19;
     m_B15M.teleport_done = true;
     m_B15M.hit.frame = 17;
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 12;
     g_VSync.count2 = 25;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
@@ -265,7 +265,7 @@ TEST(raw_scroll_wait_freezes_then_runs_only_the_remaining_call)
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 0));
     CHECK(memcmp(&m_B15M, &frozen, sizeof(m_B15M)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(M_BossUpdate(&f.assets, &f.miko, 1));
     CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_TRANSFORM);
     CHECK_EQ_INT(m_B15M.pattern, 0);
@@ -296,7 +296,7 @@ TEST(safety_circle_delays_hit_and_preserves_later_source_effects)
     m_B15M.safety_left = 200;
     g_Player.left = 400;
     g_Player.invincible = false;
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
     CHECK_EQ_INT(m_B15M.pending, B15M_PENDING_SAFETY);
     CHECK_EQ_INT(m_B15M.safety_circle.frame, 2);
@@ -330,7 +330,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         g_BossElis.init();
         memset(m_B15M.background, 0, 128 * 96);
         M_BossSetup(&f.assets, &f.miko);
-        Frame_Reset();
+        VSyncIrq_Reset();
         uint64_t tick = 0;
         M_Run(&f, &tick);
         const size_t used = arena.used;
@@ -380,7 +380,7 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
             g_Orb.previous_left = hit ? e->left + (m_B15M.form ? 16 : 48) : 0;
             g_Orb.previous_top = hit ? e->top + 24 : 399;
             M_Run(&f, &tick);
-            Frame_VSync();
+            VSyncIrq_Edge();
             tick++;
         }
         CHECK_EQ_INT(phase1, 14);
@@ -433,7 +433,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     for (int32_t i = 0; i < 10; i++) {
         g_ShootoutLasers.slots[i].alive = true;
     }
-    Frame_Reset();
+    VSyncIrq_Reset();
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, 100));
@@ -489,7 +489,7 @@ TEST(phase_hp_gate_waits_for_teleport_and_preserves_unused_rng_draws)
     for (int32_t i = 0; i < 12; i++) {
         MasterRng_Next(&expected);
     }
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
     CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_PATTERNS_1);
     CHECK_EQ_INT(m_B15M.status.frame, 80);
@@ -522,7 +522,7 @@ TEST(circle_groups_keep_the_callers_cloud_policy)
         m_B15M.pattern_state = PELLET_GROUP_SINGLE_AIMED;
         m_B15M.hp_bar_filled = true;
         g_Pellets.spawn_with_cloud = cloud != 0;
-        Frame_Reset();
+        VSyncIrq_Reset();
         const size_t used = arena.used;
         CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
         int32_t count = 0;
@@ -558,7 +558,7 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
                                           .previous_left = -1,
                                           .flag = MISSILE_MOVING };
     }
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.assets, &f.miko, 0));
     m_B15M.status.frame = 62;
     uint32_t expected = g_Rng;

@@ -357,7 +357,7 @@ void Ending_Init(const ENDING_ASSETS *const assets)
 void Ending_Begin(void)
 {
     Ending_Snapshot(&g_EndResult);
-    Frame_SwitchProgram();
+    VSyncIrq_SwitchProgram();
     m_Ending.next = 0;
     m_Ending.count = 0;
     m_Ending.waiting = false;
@@ -373,7 +373,7 @@ void Ending_Begin(void)
 bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
 {
     if (reference_edge) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     while (m_Ending.next < m_Ending.count) {
         const ENDING_OPERATION *const op = &m_Ending.operations[m_Ending.next];
@@ -478,20 +478,20 @@ void Ending_BeginSwitch(void)
 {
     Palette_BeginFade(
         &m_Ending.switch_fade, &m_Ending.palette, PALETTE_FADE_BLACK_OUT);
-    Frame_BeginWait(&m_Ending.switch_wait);
+    VSyncIrq_BeginWait(&m_Ending.switch_wait);
 }
 
 bool Ending_SwitchTick(const bool reference_edge)
 {
     if (reference_edge) {
-        Frame_PollVSync();
+        VSyncIrq_PollEdge();
     }
-    if (!Frame_WaitReady(&m_Ending.switch_wait)) {
+    if (!VSyncIrq_WaitReady(&m_Ending.switch_wait)) {
         return false;
     }
     Palette_FadeStep(&m_Ending.switch_fade, &m_Ending.palette);
     if (m_Ending.switch_fade.remaining > 0) {
-        Frame_BeginWait(&m_Ending.switch_wait);
+        VSyncIrq_BeginWait(&m_Ending.switch_wait);
         return false;
     }
     return true;

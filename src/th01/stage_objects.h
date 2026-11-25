@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/orb.h"
 #include "th01/stage_data.h"
 

@@ -79,7 +79,7 @@ typedef struct {
     int16_t girl_pattern, girl_subphase, phase5_subphase, bat_pattern;
     int16_t trail_x[2][3], trail_y[2][3];
     int16_t entrance_tick, pending_scroll;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     uint64_t pending_tick;
     uint8_t entrance_stage, entrance_angle, pending, transform_stage;
     int8_t call_phase;
@@ -642,7 +642,7 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
         M_Snap(assets, miko);
     }
     if (m_B15M.entrance_waiting) {
-        if (!Frame_DelayReady((uint16_t)m_B15M.pending_scroll)) {
+        if (!VSyncIrq_DelayReady((uint16_t)m_B15M.pending_scroll)) {
             return false;
         }
         m_B15M.entrance_waiting = false;
@@ -719,7 +719,7 @@ static bool M_Entrance(const B15M_ASSETS *const assets, const PTN *const miko)
             }
             m_B15M.pending_scroll = 1;
         }
-        if (!Frame_DelayReady((uint16_t)m_B15M.pending_scroll)) {
+        if (!VSyncIrq_DelayReady((uint16_t)m_B15M.pending_scroll)) {
             m_B15M.entrance_waiting = true;
             return false;
         }
@@ -1062,7 +1062,7 @@ static bool M_ScrollWait(const int16_t top)
 {
     m_B15M.pending = B15M_PENDING_SCROLL;
     m_B15M.pending_scroll = top;
-    Frame_BeginWait(&m_B15M.wait);
+    VSyncIrq_BeginWait(&m_B15M.wait);
     return false;
 }
 static void M_TransformResult(void)
@@ -1528,7 +1528,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         return M_Death(assets, miko);
     }
     if (m_B15M.pending == B15M_PENDING_SCROLL) {
-        if (!Frame_WaitReady(&m_B15M.wait)) {
+        if (!VSyncIrq_WaitReady(&m_B15M.wait)) {
             return false;
         }
         m_B15M.pending = B15M_PENDING_NONE;

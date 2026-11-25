@@ -188,7 +188,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(g_Rng, 91);
     CHECK(g_StageObjects.entrance_done && g_StageObjects.portal_active);
     CHECK_EQ_INT(g_StageObjects.destination_left, 77);
-    Frame_Reset();
+    VSyncIrq_Reset();
     int32_t polls = 0;
     while (!M_BossResumeEntrance(&f.assets)) {
         CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
@@ -197,7 +197,7 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
             CHECK(!M_BossResumeEntrance(&f.assets));
             CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
         }
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(++polls < 2000);
     }
     CHECK_EQ_INT(g_Palette.resource.colors[10][0], 2);
@@ -227,7 +227,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             m_B20J.hit.frame = 0;
             m_B20J.patterns_done = 1;
             const size_t used = arena.used;
-            Frame_Reset();
+            VSyncIrq_Reset();
             int32_t frames = 0;
             do {
                 CHECK(M_BossUpdate(&f.assets));
@@ -237,7 +237,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
                 for (int32_t i = 0; i < 10; i++) {
                     g_ShootoutLasers.slots[i].alive = false;
                 }
-                Frame_VSync();
+                VSyncIrq_Edge();
                 CHECK(++frames < 1500);
             } while (m_B20J.pattern != 99);
             CHECK_EQ_INT(m_B20J.status.frame, 0);
@@ -262,7 +262,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     g_Stage.score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
     g_Palette.saved.colors[7][0] = 15;
-    Frame_Reset();
+    VSyncIrq_Reset();
     const size_t used = arena.used;
     int32_t polls = 0;
     while (!M_BossUpdate(&f.assets)) {
@@ -272,7 +272,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
             CHECK(!M_BossUpdate(&f.assets));
             CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
         }
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(++polls < 1200);
     }
     CHECK(g_Stage.game_cleared && m_B20J.finished && !m_B20J.defeating);
@@ -282,7 +282,7 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     CHECK_EQ_INT(m_B20J.scroll_frame, 264);
     const B20J snapshot = m_B20J;
     for (int32_t i = 0; i < 100; i++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(M_BossUpdate(nullptr));
         CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
     }
@@ -300,7 +300,7 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     m_B20J.entrance_active = true;
     m_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
     m_B20J.scroll_line = 400;
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(!M_BossResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][14335], 6);
@@ -326,7 +326,7 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         g_Orb.top = points[i][1];
         g_Orb.previous_left = 300;
         g_Orb.previous_top = 140;
-        Frame_Reset();
+        VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets));
         CHECK_EQ_INT(m_B20J.status.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
@@ -353,7 +353,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     g_Orb.left = 320;
     g_Orb.top = 140;
     g_Video.pages[0][0] = 9;
-    Frame_Reset();
+    VSyncIrq_Reset();
     const size_t used = arena.used;
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
@@ -364,7 +364,7 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
             last_image = m_B20J.animation_frame;
             images++;
         }
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(++polls < 1200);
     }
     CHECK_EQ_INT(images, 9);
@@ -395,7 +395,7 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     g_Video.pages[0][0] = 6;
     m_B20J.entrance_active = true;
     m_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
-    Frame_Reset();
+    VSyncIrq_Reset();
     CHECK(!M_BossResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][1], 9);

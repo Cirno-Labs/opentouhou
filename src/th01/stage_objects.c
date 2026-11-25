@@ -213,7 +213,7 @@ bool StageObjects_ResumeEntrance(const PTN *const sprites)
     if (g_StageObjects.entrance_done) {
         return true;
     }
-    if (g_StageObjects.entrance_waiting && !Frame_DelayReady(1)) {
+    if (g_StageObjects.entrance_waiting && !VSyncIrq_DelayReady(1)) {
         return false;
     }
     for (;;) {
@@ -247,7 +247,7 @@ bool StageObjects_ResumeEntrance(const PTN *const sprites)
         }
         g_StageObjects.entrance_total++;
         g_StageObjects.entrance_waiting = true;
-        if (!Frame_DelayReady(1)) {
+        if (!VSyncIrq_DelayReady(1)) {
             return false;
         }
     }

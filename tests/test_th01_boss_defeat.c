@@ -38,7 +38,7 @@ static void M_ReachWhitein(BOSS_DEFEAT *const defeat, FIXTURE *const f)
 {
     int32_t edges = 0;
     while (defeat->phase != BOSS_DEFEAT_WHITEIN_DELAY && edges < 500) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(!BossDefeat_Resume(defeat, &f->target, &f->miko, &f->origin));
         edges++;
     }
@@ -53,7 +53,7 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     Arena_Init(&arena, "defeat", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena, 14);
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.edge = 42;
     g_VSync.count1 = 1000;
     g_VSync.count2 = 8;
@@ -65,7 +65,7 @@ TEST(raw_wait_reuses_counter_without_replaying_lines)
     CHECK_EQ_INT(g_Video.pages[0][80 * VIDEO_WIDTH], 2);
     CHECK_EQ_INT(g_VSync.count1, 1000);
     f.origin = 80;
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     CHECK_EQ_INT(defeat.frame, 2);
@@ -90,7 +90,7 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
     Arena_Init(&arena, "defeat", 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena, 14);
-    Frame_Reset();
+    VSyncIrq_Reset();
     BOSS_DEFEAT defeat = {};
     BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
     M_ReachWhitein(&defeat, &f);
@@ -103,17 +103,17 @@ TEST(restore_and_extra_fade_interval_precede_clear_flags)
     CHECK_EQ_INT(g_Player.mode_frame, 9);
     CHECK_EQ_INT(g_Player.bomb_frame, 123);
     for (int32_t frame = 2; frame < 10; frame++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
         CHECK_EQ_INT(defeat.frame, frame);
         CHECK_EQ_INT(g_Palette.saved.colors[0][0], frame >= 5 ? 14 : 15);
         CHECK(!g_Stage.cleared && !g_Player.is_hit);
     }
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(defeat.frame, 10);
     CHECK(g_Stage.cleared && g_Player.is_hit);
-    const FRAME_VSYNC finished = g_VSync;
+    const VSYNC_COUNTERS finished = g_VSync;
     CHECK(BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK(memcmp(&finished, &g_VSync, sizeof(g_VSync)) == 0);
     Arena_Free(&arena);
@@ -126,17 +126,17 @@ TEST(singyoku_parameters_leave_route_and_gameplay_flags_pending)
     FIXTURE f;
     M_Init(&f, &arena, 15);
     f.origin = 80;
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 10;
     BOSS_DEFEAT defeat = {};
     BossDefeat_Begin(&defeat, BOSS_DEFEAT_SINGYOKU);
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     CHECK_EQ_INT(defeat.top, 126);
     CHECK_EQ_INT(defeat.bottom, 130);
     M_ReachWhitein(&defeat, &f);
     for (int32_t frame = 2; frame <= 15; frame++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK_EQ_INT(
             BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin),
             frame == 15);
@@ -152,18 +152,18 @@ TEST(live_target_can_stop_below_a_raised_palette)
     Arena_Init(&arena, "defeat", 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena, 14);
-    Frame_Reset();
+    VSyncIrq_Reset();
     BOSS_DEFEAT defeat = {};
     BossDefeat_Begin(&defeat, BOSS_DEFEAT_REGULAR);
     M_ReachWhitein(&defeat, &f);
     while (defeat.frame < 5) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(!BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin));
     }
     memset(f.target.colors, 15, sizeof(f.target.colors));
     bool done = false;
     while (!done && defeat.frame < 20) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         done = BossDefeat_Resume(&defeat, &f.target, &f.miko, &f.origin);
     }
     CHECK(done);

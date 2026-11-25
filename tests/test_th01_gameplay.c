@@ -66,7 +66,7 @@ static void M_Init(FIXTURE *const f)
         LOG_LEVEL_ERROR));
 
     Gameplay_Reset();
-    Frame_Reset();
+    VSyncIrq_Reset();
     StageObjects_InitPrepared(
         &f->assets->scenes[0].layouts, 0, true, &f->assets->stage);
     Orb_ResetFlight();
@@ -232,7 +232,7 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     BOSS_STATE *const boss = g_Boss;
     const BOSS_STATE state = *boss;
     m_Gameplay.phase = GP_LIFE_EXIT;
-    Frame_BeginWait(&m_Gameplay.wait);
+    VSyncIrq_BeginWait(&m_Gameplay.wait);
     g_Player.is_hit = true;
     g_TestDamage = true;
     const TH01_INPUT raw = {};
@@ -402,7 +402,7 @@ TEST(gameover_restores_defined_adjacent_array_values)
         }
         m_Gameplay.animation_frame = frame;
         m_Gameplay.phase = GP_GAMEOVER;
-        Frame_BeginWait(&m_Gameplay.wait);
+        VSyncIrq_BeginWait(&m_Gameplay.wait);
         Gameplay_Tick(&(TH01_INPUT) {}, true, 1);
         CHECK_EQ_INT(
             g_Video.pages[0][PLAYER_TOP * VIDEO_WIDTH + left + frame * 8], 3);
@@ -535,7 +535,7 @@ TEST(ending_seed_is_saved_after_the_life_exit_scroll_wait)
     g_Session.lives = 0;
     g_Session.frame_rand = 1234567;
     g_Session.exit_rand = 99;
-    Frame_BeginWait(&m_Gameplay.wait);
+    VSyncIrq_BeginWait(&m_Gameplay.wait);
     Gameplay_Tick(&(TH01_INPUT) {}, false, 1);
     CHECK_EQ_INT(g_Session.exit_rand, 99);
     CHECK_EQ_INT(m_Gameplay.phase, GP_LIFE_EXIT);

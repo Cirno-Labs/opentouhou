@@ -135,7 +135,7 @@ bool RouteSelect_Resume(
         case ROUTE_SELECT_DONE:
             return true;
         case ROUTE_SELECT_INITIAL_WAIT:
-            if (!Frame_DelayReady(50)) {
+            if (!VSyncIrq_DelayReady(50)) {
                 return false;
             }
             m_Selection.phase = ROUTE_SELECT_CHOOSE;
@@ -171,7 +171,7 @@ bool RouteSelect_Resume(
             break;
         }
         case ROUTE_SELECT_REPEAT_WAIT:
-            if (!Frame_DelayReady(5)) {
+            if (!VSyncIrq_DelayReady(5)) {
                 return false;
             }
             m_Selection.phase = ROUTE_SELECT_CHOOSE;

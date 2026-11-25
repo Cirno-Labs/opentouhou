@@ -72,7 +72,7 @@ static void M_Init(FIXTURE *const f, ARENA *const arena)
 static bool M_Poll(FIXTURE *const f, const TH01_INPUT raw)
 {
     for (int32_t i = 0; i < 5; i++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     return RouteSelect_Resume(&f->assets, &raw);
 }
@@ -85,7 +85,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     M_Init(&f, &arena);
     g_GameInput.shot = g_GameInput.ok = g_GameInput.bomb = true;
     g_GameInput.bomb_frame = 72;
-    Frame_Reset();
+    VSyncIrq_Reset();
     RouteSelect_Init();
     const TH01_INPUT raw = { .shot = true };
     CHECK(!RouteSelect_Begin(&f.assets, &raw));
@@ -102,10 +102,10 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
     CHECK(memcmp(&frozen, &m_Selection, sizeof(frozen)) == 0);
     for (int32_t i = 0; i < 49; i++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     CHECK(!RouteSelect_Resume(&f.assets, &raw));
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(RouteSelect_Resume(&f.assets, &raw));
     CHECK_EQ_INT(g_Session.route, 0);
     CHECK(m_Scene.active == &f.cache[1]);
@@ -121,7 +121,7 @@ TEST(dual_direction_toggles_once_and_holds_do_not_repeat)
     Arena_Init(&arena, "route", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 50;
     RouteSelect_Init();
     const TH01_INPUT both = { .up = true, .down = true };
@@ -148,7 +148,7 @@ TEST(transparent_scaled_spaces_preserve_backdrop)
     Arena_Init(&arena, "route", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     RouteSelect_Init();
     const TH01_INPUT raw = {};
     CHECK(!RouteSelect_Begin(&f.assets, &raw));
@@ -179,7 +179,7 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     const GAME_TEXT_FONT missing = {};
     bad.font = &missing;
     CHECK(!Result_Ignore(RouteSelect_ValidateAssets(&bad)));
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 50;
     RouteSelect_Init();
     const TH01_INPUT pause = { .cancel = true };

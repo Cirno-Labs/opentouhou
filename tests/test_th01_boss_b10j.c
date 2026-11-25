@@ -119,7 +119,7 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     m_B10J.pattern_state = 99;
     g_Missiles.slots[0].flag = MISSILE_MOVING;
     g_Missiles.slots[0].previous_top = 36;
-    Frame_Reset();
+    VSyncIrq_Reset();
     g_VSync.count1 = 12;
     g_VSync.count2 = 19;
     M_BossSetup(&f.assets, &f.miko);
@@ -129,7 +129,7 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(m_B10J.status.frame, 91);
     CHECK_EQ_INT(m_B10J.status.hp, 3);
     for (int32_t step = 0; step < 16; step++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         if (step == 15) {
             CHECK(M_BossResumeSetup(&f.assets, &f.miko));
         } else {
@@ -187,7 +187,7 @@ static void M_SetupFixture(FIXTURE *const f)
     g_BossMima.init();
     M_BossSetup(&f->assets, &f->miko);
     while (!M_BossResumeSetup(&f->assets, &f->miko)) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
 }
 
@@ -199,7 +199,7 @@ static void M_Enter(FIXTURE *const f)
             CHECK_EQ_INT(m_B10J.status.frame, 0);
             return;
         }
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     TEST_FAIL("entrance did not complete");
 }
@@ -210,7 +210,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     M_SetupFixture(&f);
     g_VSync.count1 = 0;
     g_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
@@ -228,7 +228,7 @@ TEST(entrance_preserves_prefix_and_requires_every_delay)
     CHECK(memcmp(&m_B10J, &frozen, sizeof(m_B10J)) == 0);
     CHECK_EQ_INT(g_Rng, frozen_rng);
     for (int32_t edge = 1; edge <= 100; edge++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         const bool done = M_BossUpdate(&f.assets, &f.miko);
         CHECK(done == (edge == 100));
     }
@@ -256,7 +256,7 @@ TEST(all_ranks_complete_eight_patterns_without_allocating)
         M_Battle(&f, &arena);
         g_Session.settings.difficulty = rank;
         g_Session.settings.difficulty = rank;
-        Frame_Reset();
+        VSyncIrq_Reset();
         M_SetupFixture(&f);
         M_Enter(&f);
         const size_t used = arena.used;
@@ -298,7 +298,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     M_SetupFixture(&f);
     M_Enter(&f);
     const size_t used = arena.used;
@@ -328,7 +328,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     CHECK(memcmp(&m_B10J, &frozen, sizeof(m_B10J)) == 0);
     CHECK_EQ_INT(g_Rng, rng);
     for (int32_t edge = 0; edge < 400 && !m_B10J.finished; edge++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         M_BossUpdate(&f.assets, &f.miko);
     }
     CHECK(m_B10J.finished);
@@ -349,7 +349,7 @@ TEST(two_squares_preserve_cloud_spawns_and_laser_slots)
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     M_SetupFixture(&f);
     M_Enter(&f);
     m_B10J.status.phase = B10J_PHASE_FIRST;
@@ -384,7 +384,7 @@ TEST(hp_gate_waits_for_pattern_cleanup_and_invincibility)
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     M_SetupFixture(&f);
     M_Enter(&f);
     m_B10J.status.hp = 6;
@@ -415,7 +415,7 @@ TEST(defeat_keeps_clouds_and_resets_only_five_lasers)
     Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
     FIXTURE f;
     M_Battle(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     M_SetupFixture(&f);
     M_Enter(&f);
     m_B10J.status.phase = B10J_PHASE_SECOND;
@@ -456,13 +456,13 @@ TEST(entrance_reuses_the_live_interrupt_counter)
         Arena_Init(&arena, "b10j", 2 * 1024 * 1024);
         FIXTURE f;
         M_Battle(&f, &arena);
-        Frame_Reset();
+        VSyncIrq_Reset();
         M_SetupFixture(&f);
         g_VSync.count1 = initial[run];
         g_VSync.count2 = 33;
         int32_t edges = 0;
         while (!M_BossUpdate(&f.assets, &f.miko) && edges < 110) {
-            Frame_VSync();
+            VSyncIrq_Edge();
             edges++;
         }
         CHECK_EQ_INT(edges, run == 0 ? 99 : 98);

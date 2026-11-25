@@ -68,7 +68,7 @@ typedef enum {
 typedef struct {
     GAMEPLAY_REQUEST request;
     GAMEPLAY_PHASE phase, after_player;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     bool wait_for_shot;
     bool boss_stage, waiting, bgm_started;
     uint8_t menu_selection, animation_frame;
@@ -403,7 +403,7 @@ static void M_BeginSwitch(const GAMEPLAY_SWITCH to)
     m_Gameplay.switch_to = to;
     Palette_BeginFade(
         &m_Gameplay.switch_fade, &g_Palette, PALETTE_FADE_BLACK_OUT);
-    Frame_BeginWait(&m_Gameplay.wait);
+    VSyncIrq_BeginWait(&m_Gameplay.wait);
     m_Gameplay.phase = GP_SWITCH;
 }
 
@@ -447,7 +447,7 @@ static void M_OpenMenu(void)
 static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
 {
     for (;;) {
-        if (m_Gameplay.waiting && !Frame_DelayReady(1)) {
+        if (m_Gameplay.waiting && !VSyncIrq_DelayReady(1)) {
             return false;
         }
         m_Gameplay.waiting = false;
@@ -472,7 +472,7 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
             }
             if (!g_GameInput.shot && !g_GameInput.ok) {
                 m_Gameplay.waiting = true;
-                if (!Frame_DelayReady(1)) {
+                if (!VSyncIrq_DelayReady(1)) {
                     return false;
                 }
                 m_Gameplay.waiting = false;
@@ -511,7 +511,7 @@ static void M_BeginGameover(void)
     }
     M_CopyPage(0, 1);
     m_Gameplay.animation_frame = 0;
-    Frame_BeginWait(&m_Gameplay.wait);
+    VSyncIrq_BeginWait(&m_Gameplay.wait);
     m_Gameplay.phase = GP_GAMEOVER;
 }
 
@@ -585,7 +585,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_TITLE:
-            if (!Frame_DelayReady(8)) {
+            if (!VSyncIrq_DelayReady(8)) {
                 return m_Gameplay.request;
             }
             if (++m_Gameplay.animation_frame < 6) {
@@ -596,7 +596,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_STAGE_LABEL:
-            if (!Frame_DelayReady(35)) {
+            if (!VSyncIrq_DelayReady(35)) {
                 return m_Gameplay.request;
             }
             {
@@ -610,7 +610,7 @@ static GAMEPLAY_REQUEST M_Run(
             m_Gameplay.phase = GP_STAGE_NUMBER;
             break;
         case GP_STAGE_NUMBER:
-            if (!Frame_DelayReady(35)) {
+            if (!VSyncIrq_DelayReady(35)) {
                 return m_Gameplay.request;
             }
             Tram_Clear();
@@ -635,7 +635,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_WAIT_SHOT_DELAY:
-            if (!Frame_DelayReady(1)) {
+            if (!VSyncIrq_DelayReady(1)) {
                 return m_Gameplay.request;
             }
             g_Player.bomb_frame++;
@@ -644,7 +644,7 @@ static GAMEPLAY_REQUEST M_Run(
         case GP_FRAME_BEGIN:
             if (g_Player.is_hit) {
                 g_Stage.timer_initialized = false;
-                Frame_BeginWait(&m_Gameplay.wait);
+                VSyncIrq_BeginWait(&m_Gameplay.wait);
                 m_Gameplay.phase = GP_LIFE_EXIT;
                 break;
             }
@@ -727,7 +727,7 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_PAUSE_DELAY:
-            if (!Frame_DelayReady(20)) {
+            if (!VSyncIrq_DelayReady(20)) {
                 return m_Gameplay.request;
             }
             GameInput_ResetMenu();
@@ -766,13 +766,13 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_VICTORY_DELAY:
-            if (!Frame_DelayReady(120)) {
+            if (!VSyncIrq_DelayReady(120)) {
                 return m_Gameplay.request;
             }
             M_BeginSwitch(GAMEPLAY_SWITCH_ENDING);
             break;
         case GP_LIFE_EXIT:
-            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Gameplay.wait)) {
                 return m_Gameplay.request;
             }
             Video_SetScroll(0);
@@ -833,7 +833,7 @@ static GAMEPLAY_REQUEST M_Run(
             M_AfterBonus();
             break;
         case GP_GAMEOVER:
-            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Gameplay.wait)) {
                 return m_Gameplay.request;
             }
             Video_SetScroll(
@@ -873,16 +873,16 @@ static GAMEPLAY_REQUEST M_Run(
             m_Gameplay.phase = GP_GAMEOVER_DELAY;
             break;
         case GP_GAMEOVER_DELAY:
-            if (!Frame_DelayReady(m_Gameplay.animation_frame / 6)) {
+            if (!VSyncIrq_DelayReady(m_Gameplay.animation_frame / 6)) {
                 return m_Gameplay.request;
             }
             m_Gameplay.animation_frame++;
-            Frame_BeginWait(&m_Gameplay.wait);
+            VSyncIrq_BeginWait(&m_Gameplay.wait);
             m_Gameplay.phase =
                 m_Gameplay.animation_frame < 16 ? GP_GAMEOVER : GP_GAMEOVER_END;
             break;
         case GP_GAMEOVER_END:
-            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Gameplay.wait)) {
                 return m_Gameplay.request;
             }
             Video_SetScroll(0);
@@ -900,7 +900,7 @@ static GAMEPLAY_REQUEST M_Run(
             m_Gameplay.phase = GP_CONTINUE_DELAY;
             break;
         case GP_CONTINUE_DELAY:
-            if (!Frame_DelayReady(1)) {
+            if (!VSyncIrq_DelayReady(1)) {
                 return m_Gameplay.request;
             }
             const bool confirm = g_GameInput.ok || g_GameInput.shot;
@@ -934,12 +934,12 @@ static GAMEPLAY_REQUEST M_Run(
             }
             break;
         case GP_SWITCH:
-            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Gameplay.wait)) {
                 return m_Gameplay.request;
             }
             Palette_FadeStep(&m_Gameplay.switch_fade, &g_Palette);
             if (m_Gameplay.switch_fade.remaining > 0) {
-                Frame_BeginWait(&m_Gameplay.wait);
+                VSyncIrq_BeginWait(&m_Gameplay.wait);
             } else {
                 M_Switch();
             }
@@ -996,10 +996,10 @@ void Gameplay_Reset(void)
     Bonus_Init();
     Hud_Reset();
     HudHp_Reset();
-    Frame_Reset();
+    VSyncIrq_Reset();
     GameInput_Init();
     StageTimer_Init();
-    Frame_SwitchProgram();
+    VSyncIrq_SwitchProgram();
     Tram_Clear();
     Tram_SetVisible(true);
     BossEntity_Init();
@@ -1076,9 +1076,9 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 {
     m_HostTick = host_tick;
     if (reference_edge && m_Gameplay.phase == GP_SWITCH) {
-        Frame_PollVSync();
+        VSyncIrq_PollEdge();
     } else if (reference_edge) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     return M_Run(raw, host_tick);
 }

@@ -52,7 +52,7 @@ typedef struct {
     BOSS_HIT hit;
     PALETTE boss_palette, post_defeat;
     PALETTE_FADE setup_fade;
-    FRAME_WAIT setup_wait;
+    VSYNC_WAIT setup_wait;
     BOSS_DEFEAT defeat;
     uint8_t background[128 * 160];
     B10J_SQUARE squares[6];
@@ -159,7 +159,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     m_B10J.still.image = 0;
     m_B10J.animation.image = 1;
     Palette_BeginFade(&m_B10J.setup_fade, &g_Palette, PALETTE_FADE_WHITE_IN);
-    Frame_BeginWait(&m_B10J.setup_wait);
+    VSyncIrq_BeginWait(&m_B10J.setup_wait);
     m_B10J.setup_active = true;
     m_B10J.finished = false;
 }
@@ -169,12 +169,12 @@ static bool M_ResumeSetup(const void *const data, const BOSS_CONTEXT *const ctx)
     if (!m_B10J.setup_active) {
         return true;
     }
-    if (!Frame_WaitReady(&m_B10J.setup_wait)) {
+    if (!VSyncIrq_WaitReady(&m_B10J.setup_wait)) {
         return false;
     }
     Palette_FadeStep(&m_B10J.setup_fade, &g_Palette);
     if (m_B10J.setup_fade.remaining != 0) {
-        Frame_BeginWait(&m_B10J.setup_wait);
+        VSyncIrq_BeginWait(&m_B10J.setup_wait);
         return false;
     }
     BossEntity_SetPosition(
@@ -817,7 +817,7 @@ static bool M_Entrance(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     for (;;) {
         if (m_B10J.entrance_waiting) {
-            if (!Frame_DelayReady(2)) {
+            if (!VSyncIrq_DelayReady(2)) {
                 return false;
             }
             m_B10J.entrance_waiting = false;

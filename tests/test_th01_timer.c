@@ -24,7 +24,7 @@ static void M_Init(FIXTURE *const f)
     *f = (FIXTURE) {};
     Th01Test_ResetWorld();
     g_Rng = 1;
-    Frame_Reset();
+    VSyncIrq_Reset();
     StageTimer_Init();
     Arena_Init(&f->arena, "timer", 2 * 1024 * 1024);
     const ALLOCATOR *const a = Arena_Allocator(&f->arena);
@@ -81,17 +81,17 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640], TRAM_RED + 1);
     for (int32_t i = 0; i < 26; i++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
         CHECK(!StageTimer_TickAndPut());
     }
-    Frame_VSync();
+    VSyncIrq_Edge();
     CHECK(!StageTimer_TickAndPut());
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_UP);
     CHECK_EQ_INT(g_VSync.count1, 0);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640], TRAM_BLACK + 1);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640 + 192], TRAM_RED + 1);
     for (int32_t i = 0; i < 27; i++) {
-        Frame_VSync();
+        VSyncIrq_Edge();
     }
     CHECK(StageTimer_TickAndPut());
     CHECK_EQ_INT(g_Pellets.speed, 2);

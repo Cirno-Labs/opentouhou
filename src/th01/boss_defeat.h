@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/palette.h"
 #include "th01/player.h"
 
@@ -21,7 +21,7 @@ typedef enum {
 typedef struct {
     BOSS_DEFEAT_PHASE phase;
     BOSS_DEFEAT_KIND kind;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     int16_t top, bottom, frame;
 } BOSS_DEFEAT;
 

@@ -24,7 +24,7 @@ typedef enum {
 
 typedef struct {
     MISS_PHASE phase;
-    FRAME_WAIT wait;
+    VSYNC_WAIT wait;
     int16_t frame, effect_left, target_right, target_left;
 } MISS;
 
@@ -125,7 +125,7 @@ void Miss_Begin(const PTN *const miko, const PTN *const stage)
     Sprite_PtnPut(miko, image, -1, g_Player.left, PLAYER_TOP);
     m_Miss.frame = 0;
     m_Miss.phase = MISS_SHAKE_WAIT;
-    Frame_BeginWait(&m_Miss.wait);
+    VSyncIrq_BeginWait(&m_Miss.wait);
 }
 
 bool Miss_Resume(
@@ -136,23 +136,23 @@ bool Miss_Resume(
         case MISS_DONE:
             return true;
         case MISS_SHAKE_WAIT:
-            if (!Frame_WaitReady(&m_Miss.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Miss.wait)) {
                 return false;
             }
             Video_SetScroll((int16_t)(400 - m_Miss.frame % 2 * 8));
             m_Miss.phase = MISS_SHAKE_DELAY;
             break;
         case MISS_SHAKE_DELAY:
-            if (!Frame_DelayReady(2)) {
+            if (!VSyncIrq_DelayReady(2)) {
                 return false;
             }
             m_Miss.frame++;
             m_Miss.phase =
                 m_Miss.frame < 16 ? MISS_SHAKE_WAIT : MISS_SCROLL_RESET_WAIT;
-            Frame_BeginWait(&m_Miss.wait);
+            VSyncIrq_BeginWait(&m_Miss.wait);
             return false;
         case MISS_SCROLL_RESET_WAIT:
-            if (!Frame_WaitReady(&m_Miss.wait)) {
+            if (!VSyncIrq_WaitReady(&m_Miss.wait)) {
                 return false;
             }
             Video_SetScroll(0);
@@ -161,7 +161,7 @@ bool Miss_Resume(
         case MISS_EFFECT_DELAY: {
             const uint16_t delay =
                 (uint16_t)(m_Miss.frame < 6 ? 1 : (30 - m_Miss.frame) / 10 + 1);
-            if (!Frame_DelayReady(delay)) {
+            if (!VSyncIrq_DelayReady(delay)) {
                 return false;
             }
             m_Miss.frame++;

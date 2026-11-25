@@ -301,7 +301,7 @@ bool Bonus_Resume(
             return true;
         case BONUS_STAGE_BOX:
             if (m_Bonus.run.waiting) {
-                if (!Frame_DelayReady(1)) {
+                if (!VSyncIrq_DelayReady(1)) {
                     return false;
                 }
                 m_Bonus.run.waiting = false;
@@ -398,7 +398,7 @@ bool Bonus_ResumeTotal(
         case BONUS_TOTAL_DONE:
             return true;
         case BONUS_TOTAL_INITIAL_WAIT: {
-            if (!Frame_DelayReady(50)) {
+            if (!VSyncIrq_DelayReady(50)) {
                 return false;
             }
             const VIDEO_IMAGE image = { .pixels = assets->background.pixels,
@@ -426,7 +426,7 @@ bool Bonus_ResumeTotal(
             m_Total.phase = BONUS_TOTAL_STAGE_WAIT;
             break;
         case BONUS_TOTAL_STAGE_WAIT:
-            if (!Frame_DelayReady(30)) {
+            if (!VSyncIrq_DelayReady(30)) {
                 return false;
             }
             m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
@@ -471,7 +471,7 @@ bool Bonus_ResumeTotal(
             break;
         }
         case BONUS_TOTAL_METRIC_WAIT:
-            if (!Frame_DelayReady(5)) {
+            if (!VSyncIrq_DelayReady(5)) {
                 return false;
             }
             m_Total.metric++;

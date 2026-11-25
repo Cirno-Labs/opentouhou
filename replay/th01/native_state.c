@@ -4,7 +4,7 @@
 
 #include "th01/ending.h"
 #include "th01/boss.h"
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/palette.h"
 #include "th01/pellets.h"
 #include "th01/player.h"

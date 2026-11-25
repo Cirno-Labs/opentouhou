@@ -38,11 +38,11 @@ bool Stage_ResumeOrbComposite(
         return true;
     }
     if (m_OrbComposite.waiting) {
-        if (!Frame_DelayReady(1)) {
+        if (!VSyncIrq_DelayReady(1)) {
             return false;
         }
         m_OrbComposite.waiting = false;
-    } else if (!Frame_DelayReady(1)) {
+    } else if (!VSyncIrq_DelayReady(1)) {
         m_OrbComposite.waiting = true;
         return false;
     }

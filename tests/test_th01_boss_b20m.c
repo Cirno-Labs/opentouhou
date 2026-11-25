@@ -183,7 +183,7 @@ static bool M_Tick(FIXTURE *const f, uint64_t *const tick)
 {
     const bool done = M_BossUpdate(&f->assets, *tick);
     (*tick)++;
-    Frame_VSync();
+    VSyncIrq_Edge();
     return done;
 }
 TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
@@ -194,7 +194,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     M_Fixture(&f, &arena);
     memset(f.assets.lower.pixels, 12, VIDEO_PAGE_SIZE);
     g_Rng = 5;
-    Frame_Reset();
+    VSyncIrq_Reset();
     uint64_t tick = 0;
     memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
     const PALETTE before = g_StagePalette;
@@ -209,7 +209,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     while (m_B20M.entrance_active && polls++ < 1500) {
         CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
         tick++;
-        Frame_VSync();
+        VSyncIrq_Edge();
         M_BossResumeEntrance(&f.assets, tick);
     }
     CHECK(!m_B20M.entrance_active);
@@ -226,7 +226,7 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     Arena_Init(&arena, "Sariel rings", 4 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    Frame_Reset();
+    VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
@@ -237,7 +237,7 @@ TEST(ring_entrance_preserves_pending_polls_and_reserves_wand_background)
     CHECK_EQ_INT(g_Rng, rng);
     for (int32_t i = 0; m_B20M.sequence != B20M_SEQUENCE_NONE && i < 200; i++) {
         tick++;
-        Frame_VSync();
+        VSyncIrq_Edge();
         M_BossUpdate(&f.assets, tick);
     }
     CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_BIRDS);
@@ -270,7 +270,7 @@ TEST(all_first_form_patterns_finish_with_real_projectile_pools)
                 m_B20M.status.phase = phases[phase];
                 m_B20M.pattern = pattern;
                 m_B20M.patterns_until_next = 30000;
-                Frame_Reset();
+                VSyncIrq_Reset();
                 uint64_t tick = 0;
                 const size_t used = arena.used;
                 int32_t calls = 0;
@@ -301,7 +301,7 @@ TEST(all_second_form_patterns_finish_with_persistent_leaf_state)
             m_B20M.status.hp = 6;
             m_B20M.pattern = pattern;
             m_B20M.pattern_state = 24;
-            Frame_Reset();
+            VSyncIrq_Reset();
             uint64_t tick = 0;
             const size_t used = arena.used;
             int32_t calls = 0;
@@ -332,7 +332,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     g_Player.bomb_damaging = true;
     m_B20M.leaves.flag[7] = 6;
     g_GameInput.bomb = true;
-    Frame_Reset();
+    VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
@@ -347,7 +347,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     for (int32_t i = 0; m_B20M.sequence != B20M_SEQUENCE_NONE && i < 1000;
          i++) {
         tick++;
-        Frame_VSync();
+        VSyncIrq_Edge();
         M_BossUpdate(&f.assets, tick);
     }
     CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_SECOND_FORM);
@@ -372,7 +372,7 @@ TEST(final_current_orb_hit_finishes_custom_victory_and_becomes_inert)
     m_B20M.status.hp = 1;
     g_Orb.left = 320;
     g_Orb.top = 120;
-    Frame_Reset();
+    VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(M_BossUpdate(&f.assets, tick));
@@ -408,7 +408,7 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     m_B20M.birds.alive[0] = true;
     m_B20M.birds.left[0] = 300;
     m_B20M.birds.top[0] = 368;
-    Frame_Reset();
+    VSyncIrq_Reset();
     uint64_t tick = 100;
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;

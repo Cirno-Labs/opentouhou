@@ -7,7 +7,7 @@
 #include "th01/opening.h"
 #include "pc98/vsync.h"
 #include "pc98/zun/logo1.h"
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/input.h"
 #include "th01/settings.h"
 #include "th01/score.h"
@@ -208,7 +208,8 @@ static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
     Video_SetScroll(0);
     M_OpeningEvents(Opening_Init(&m_OpeningAssets), raw);
     if (switched) {
-        // Counts the VSync latched by the program switch (Frame_SwitchProgram).
+        // Counts the VSync latched by the program switch
+        // (VSyncIrq_SwitchProgram).
         g_Opening.count1 = 1;
     }
 }

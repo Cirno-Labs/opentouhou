@@ -216,7 +216,7 @@ static bool M_Entrance(
     }
     while (true) {
         if (m_B15J.entrance_waiting) {
-            if (!Frame_DelayReady(1)) {
+            if (!VSyncIrq_DelayReady(1)) {
                 return false;
             }
             m_B15J.entrance_waiting = false;

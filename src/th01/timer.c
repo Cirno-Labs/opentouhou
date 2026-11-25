@@ -1,5 +1,5 @@
 #include "th01/timer.h"
-#include "th01/frame.h"
+#include "th01/vsync_irq.h"
 #include "th01/hud.h"
 #include "th01/pellets.h"
 #include "th01/tram.h"
@@ -30,13 +30,13 @@ static STAGE_TIMER m_Timer;
 static bool M_Continue(void)
 {
     if (m_Timer.phase == TIMER_WAIT_HURRY) {
-        if (!Frame_DelayReady(27)) {
+        if (!VSyncIrq_DelayReady(27)) {
             return false;
         }
         Hud_PutMessage("UP");
         m_Timer.phase = TIMER_WAIT_UP;
     }
-    if (!Frame_DelayReady(27)) {
+    if (!VSyncIrq_DelayReady(27)) {
         return false;
     }
     Tram_Clear();

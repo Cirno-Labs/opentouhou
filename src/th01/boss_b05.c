@@ -300,7 +300,7 @@ static bool M_Entrance(void)
 {
     for (;;) {
         if (m_B05.pending == B05_ENTRANCE_DELAY) {
-            if (!Frame_DelayReady(1)) {
+            if (!VSyncIrq_DelayReady(1)) {
                 return false;
             }
             if (m_B05.status.frame == 200) {

@@ -44,7 +44,7 @@ th01_lib = static_library(
   'miss.c',
   'opening.c',
   'opening_load.c',
-  'frame.c',
+  'vsync_irq.c',
   'finite.c',
   'orb.c',
   'input.c',
