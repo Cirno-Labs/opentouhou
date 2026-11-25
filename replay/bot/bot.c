@@ -26,7 +26,21 @@ static const char *const m_RoleNames[] = {
 #undef M_ROLE_NAME
 };
 
-static const BOT_STRATEGY *const m_Strategies[] = { &g_BotDodge, &g_BotWander };
+static const BOT_STRATEGY *const m_Strategies[] = { &g_BotDodge, &g_BotWander,
+                                                    &g_BotHold };
+
+// Moves a hold strategy draws from: shoot, shoot+left, shoot+right, left,
+// right, nothing, bomb.
+static const BOT_ROLES m_HoldMoves[] = {
+    { .shoot = true },
+    { .shoot = true, .left = true },
+    { .shoot = true, .right = true },
+    { .left = true },
+    { .right = true },
+    { 0 },
+    { .bomb = true },
+};
+static const int32_t m_HoldDurations[] = { 4, 10, 20, 40 };
 
 static float M_Length(const VEC2 offset)
 {
@@ -117,6 +131,24 @@ static void M_Dodge(
         out->bomb = true;
         bot->bomb_cooldown = M_BOMB_COOLDOWN;
     }
+}
+
+static void M_Hold(
+    BOT *const bot, const VEC2 *const threats, const int32_t count,
+    BOT_ROLES *const out)
+{
+    (void)threats;
+    (void)count;
+    if (bot->hold_frames <= 0) {
+        const uint16_t move =
+            Rng_U16InRange(&bot->rng, ARRAY_SIZE(m_HoldMoves));
+        const uint16_t duration =
+            Rng_U16InRange(&bot->rng, ARRAY_SIZE(m_HoldDurations));
+        bot->hold_roles = m_HoldMoves[move];
+        bot->hold_frames = m_HoldDurations[duration];
+    }
+    bot->hold_frames--;
+    *out = bot->hold_roles;
 }
 
 static RESULT M_ParseButtons(
@@ -210,6 +242,7 @@ static RESULT M_LoadIni(
 
 const BOT_STRATEGY g_BotDodge = { .name = "dodge", .next = M_Dodge };
 const BOT_STRATEGY g_BotWander = { .name = "wander", .next = M_Wander };
+const BOT_STRATEGY g_BotHold = { .name = "hold", .next = M_Hold };
 
 const BOT_STRATEGY *Bot_FindStrategy(const char *const name)
 {

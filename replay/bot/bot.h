@@ -74,6 +74,11 @@ extern const BOT_STRATEGY g_BotDodge;
 // 44 frames at a time, without dodging, focusing or bombing.
 extern const BOT_STRATEGY g_BotWander;
 
+// Draws one of shoot, shoot+left, shoot+right, left, right, nothing or
+// bomb, and holds it for 4, 10, 20 or 40 frames, game-agnostic and without
+// dodging or focusing.
+extern const BOT_STRATEGY g_BotHold;
+
 struct BOT {
     const INPUT_SCHEMA *schema;
     const BOT_STRATEGY *strategy;
@@ -85,6 +90,8 @@ struct BOT {
     int32_t wander_frames;
     bool wander_up, wander_down, wander_left, wander_right;
     int32_t bomb_cooldown;
+    int32_t hold_frames;
+    BOT_ROLES hold_roles;
 };
 
 // Returns the strategy named name, or nullptr.
