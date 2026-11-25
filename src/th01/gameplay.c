@@ -953,8 +953,7 @@ void Gameplay_Reset(void)
     Bomb_Init();
     Miss_Init();
     memset(&g_Scene, 0, sizeof(g_Scene));
-    memset(&g_Bonus, 0, sizeof(g_Bonus));
-    Bonus_InitTotal();
+    Bonus_Init();
     Hud_Reset();
     HudHp_Reset();
     Frame_Reset();

@@ -1,5 +1,6 @@
 #include "th01/bonus.h"
 #include "th01/session.h"
+#include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
 #include "pc98/zun/sprite_sheet.h"
@@ -8,10 +9,50 @@
 
 #include <string.h>
 
-BONUS g_Bonus;
-
 #define M_STAGE_WIDTH 288
 #define M_PADDED_HEIGHT 280
+
+typedef enum {
+    BONUS_DONE,
+    BONUS_STAGE_BOX,
+    BONUS_CONFIRM,
+} BONUS_PHASE;
+
+typedef struct {
+    BONUS_PHASE phase;
+    int16_t stage_number, row;
+    bool waiting;
+} BONUS_RUN;
+
+typedef struct {
+    BONUS_RUN run;
+    // Accumulates across the stage bonuses leading up to a total; Bonus_Resume
+    // and Bonus_ResumeTotal clear it on confirmation. Bonus_BeginStage resets
+    // only run, so this survives between stage bonus runs.
+    uint32_t score_bonus;
+} BONUS;
+
+typedef enum {
+    BONUS_TOTAL_DONE,
+    BONUS_TOTAL_INITIAL_WAIT,
+    BONUS_TOTAL_TRANSITION,
+    BONUS_TOTAL_STAGE_WAIT,
+    BONUS_TOTAL_PREPARE_METRIC,
+    BONUS_TOTAL_DIGIT,
+    BONUS_TOTAL_DIGIT_WAIT,
+    BONUS_TOTAL_METRIC_WAIT,
+    BONUS_TOTAL_CONFIRM,
+} BONUS_TOTAL_PHASE;
+
+typedef struct {
+    BONUS_TOTAL_PHASE phase;
+    uint64_t last_tick;
+    uint32_t credit;
+    int16_t stage_number, digits[6], top, metric, place, digit_count, spin;
+} BONUS_TOTAL;
+
+static BONUS m_Bonus;
+static BONUS_TOTAL m_Total;
 
 static const char *const m_Labels[] = {
     "　　ＢＯＮＵＳ",         "   　Ｔｉｍｅ　", "Ｃｏｎｔｉｎｕｏｕｓ",
@@ -50,7 +91,7 @@ static int32_t M_Add(int32_t value, const int32_t cap)
         value = cap;
     }
     for (int32_t i = 0; i < 10; i++) {
-        g_Bonus.score_bonus += (uint32_t)value;
+        m_Bonus.score_bonus += (uint32_t)value;
     }
     return value;
 }
@@ -75,14 +116,14 @@ static void M_Confirm(void)
     GameInput_ResetGame();
     g_GameInput.shot = true;
     g_GameInput.ok = true;
-    g_Bonus.run.phase = BONUS_CONFIRM;
+    m_Bonus.run.phase = BONUS_CONFIRM;
 }
 
 static void M_StageCommit(const GAME_TEXT_FONT *const font)
 {
     char title[80] = "ＳＴＡＧＥ　";
-    const int16_t stage_digits[] = { (int16_t)(g_Bonus.run.stage_number / 10),
-                                     (int16_t)(g_Bonus.run.stage_number % 10) };
+    const int16_t stage_digits[] = { (int16_t)(m_Bonus.run.stage_number / 10),
+                                     (int16_t)(m_Bonus.run.stage_number % 10) };
     char number[7];
     M_Digits(number, stage_digits, 2);
     strcat(title, number);
@@ -97,10 +138,10 @@ static void M_StageCommit(const GAME_TEXT_FONT *const font)
     M_StageMetric(
         font, 7,
         Math16_Wrap(g_Session.lives * 200 + g_Player.remaining_bombs * 100));
-    M_StageMetric(font, 9, Math16_Wrap((g_Bonus.run.stage_number - 1) * 200));
-    g_Stage.score += g_Bonus.score_bonus;
-    const uint32_t bits = g_Bonus.score_bonus;
-    g_Session.bonus_per_stage[(g_Bonus.run.stage_number - 1) % 5] =
+    M_StageMetric(font, 9, Math16_Wrap((m_Bonus.run.stage_number - 1) * 200));
+    g_Stage.score += m_Bonus.score_bonus;
+    const uint32_t bits = m_Bonus.score_bonus;
+    g_Session.bonus_per_stage[(m_Bonus.run.stage_number - 1) % 5] =
         bits <= INT32_MAX ? (int32_t)bits
                           : (int32_t)((int64_t)bits - INT64_C(4294967296));
     const int16_t div = Math16_Wrap((int32_t)(bits / 10000));
@@ -117,6 +158,82 @@ static void M_StageCommit(const GAME_TEXT_FONT *const font)
     Hud_ScoreAndCombo();
     Extend_UpdateAndRender();
     M_Confirm();
+}
+
+static void M_PutDigit(
+    const BONUS_TOTAL_ASSETS *const assets, const int16_t digit)
+{
+    const int16_t left =
+        (int16_t)(224 + (m_Total.place - (m_Total.digit_count == 6)) * 16);
+    Sprite_Restore16(left, m_Total.top, 16, 16);
+    if (digit >= 0 && digit <= 19) {
+        Sprite_PtnPut(
+            &assets->numerals, 10 + (digit % 10) / 4, digit % 4, left,
+            m_Total.top);
+    }
+}
+
+static void M_Prepare(const uint64_t host_tick)
+{
+    int32_t value;
+    if (m_Total.metric == 4) {
+        g_Stage.score += m_Bonus.score_bonus;
+        const int16_t div = Math16_Wrap((int32_t)(m_Bonus.score_bonus / 10000));
+        const int16_t rem = (int16_t)(m_Bonus.score_bonus % 10000);
+        m_Total.digits[0] = (int16_t)(div / 10);
+        m_Total.digits[1] = (int16_t)(div % 10);
+        m_Total.digits[2] = (int16_t)(rem / 1000);
+        m_Total.digits[3] = (int16_t)(rem % 1000 / 100);
+        m_Total.digits[4] = (int16_t)(rem % 100 / 10);
+        m_Total.digits[5] = (int16_t)(rem % 10);
+        m_Total.top = 196;
+        m_Total.digit_count = 6;
+    } else {
+        switch (m_Total.metric) {
+        case 0:
+            value = (uint16_t)(g_StageTimer.time * 5);
+            break;
+        case 1:
+            value = Math16_Wrap(g_Stage.maximum_combo * 200);
+            break;
+        case 2:
+            value = Math16_Wrap(g_Session.lives * 500);
+            value += Math16_Wrap(g_Player.remaining_bombs * 200);
+            break;
+        default:
+            value = Math16_Wrap(m_Total.stage_number * 1000);
+            break;
+        }
+        value = M_Add(value, m_Total.metric == 3 ? 65530 : 6553);
+        m_Total.top = (int16_t)(86 + m_Total.metric * 21);
+        m_Total.digit_count = m_Total.metric == 3 ? 6 : 5;
+        int32_t divisor = m_Total.metric == 3 ? 10000 : 1000;
+        for (int32_t i = 0; i < m_Total.digit_count; i++) {
+            if (divisor == 0) {
+                m_Total.digits[i] = 0;
+            } else {
+                m_Total.digits[i] = (int16_t)(value / divisor);
+                value %= divisor;
+                divisor /= 10;
+            }
+        }
+        if (m_Total.metric == 3) {
+            m_Total.digits[4] = 0;
+        }
+    }
+    m_Total.place = 0;
+    m_Total.spin = 0;
+    if (m_Total.metric == 0) {
+        m_Total.credit = 49;
+        m_Total.last_tick = host_tick;
+    }
+    m_Total.phase = BONUS_TOTAL_DIGIT;
+}
+
+void Bonus_Init(void)
+{
+    memset(&m_Bonus, 0, sizeof(m_Bonus));
+    Bonus_InitTotal();
 }
 
 RESULT Bonus_LoadStageAssets(
@@ -165,11 +282,11 @@ bool Bonus_BeginStage(
     const int16_t stage_number, const TH01_INPUT *const raw)
 {
     ASSERT(
-        g_Bonus.run.phase == BONUS_DONE && stage_number >= 1
+        m_Bonus.run.phase == BONUS_DONE && stage_number >= 1
         && stage_number <= 20 && stage_number % 5 != 0);
-    memset(&g_Bonus.run, 0, sizeof(g_Bonus.run));
-    g_Bonus.run.phase = BONUS_STAGE_BOX;
-    g_Bonus.run.stage_number = stage_number;
+    memset(&m_Bonus.run, 0, sizeof(m_Bonus.run));
+    m_Bonus.run.phase = BONUS_STAGE_BOX;
+    m_Bonus.run.stage_number = stage_number;
     Palette_Set(&g_Palette, &g_StagePalette);
     return Bonus_Resume(stage, font, raw);
 }
@@ -179,29 +296,29 @@ bool Bonus_Resume(
     const TH01_INPUT *const raw)
 {
     for (;;) {
-        switch (g_Bonus.run.phase) {
+        switch (m_Bonus.run.phase) {
         case BONUS_DONE:
             return true;
         case BONUS_STAGE_BOX:
-            if (g_Bonus.run.waiting) {
+            if (m_Bonus.run.waiting) {
                 if (!Frame_DelayReady(1)) {
                     return false;
                 }
-                g_Bonus.run.waiting = false;
+                m_Bonus.run.waiting = false;
             }
-            if (g_Bonus.run.row == M_PADDED_HEIGHT / 2) {
+            if (m_Bonus.run.row == M_PADDED_HEIGHT / 2) {
                 M_StageCommit(font);
                 break;
             }
             for (int32_t x = 32; x < 32 + M_STAGE_WIDTH + 32; x++) {
-                if ((stage->box[g_Bonus.run.row % 4] & (0x80u >> (x % 8)))
+                if ((stage->box[m_Bonus.run.row % 4] & (0x80u >> (x % 8)))
                     != 0) {
-                    Video_Pixel(x, 180 - g_Bonus.run.row, 0);
-                    Video_Pixel(x, 180 + g_Bonus.run.row, 0);
+                    Video_Pixel(x, 180 - m_Bonus.run.row, 0);
+                    Video_Pixel(x, 180 + m_Bonus.run.row, 0);
                 }
             }
-            g_Bonus.run.waiting = g_Bonus.run.row % 6 == 0;
-            g_Bonus.run.row++;
+            m_Bonus.run.waiting = m_Bonus.run.row % 6 == 0;
+            m_Bonus.run.row++;
             break;
         case BONUS_CONFIRM:
             if (GameInput_SenseGame(raw, false)) {
@@ -210,8 +327,174 @@ bool Bonus_Resume(
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
             }
-            g_Bonus.score_bonus = 0;
-            g_Bonus.run.phase = BONUS_DONE;
+            m_Bonus.score_bonus = 0;
+            m_Bonus.run.phase = BONUS_DONE;
+            return true;
+        }
+    }
+}
+
+RESULT Bonus_ValidateTotalAssets(const BONUS_TOTAL_ASSETS *const a)
+{
+    FAIL_IF(
+        a == nullptr || a->background.pixels == nullptr
+            || a->background.width != VIDEO_WIDTH
+            || a->background.height != VIDEO_HEIGHT
+            || !a->background.has_palette || a->numerals.pixels == nullptr
+            || a->numerals.count < 13,
+        "Missing total bonus assets");
+    return OK;
+}
+
+RESULT Bonus_LoadTotalAssets(
+    VFS *const vfs, const ALLOCATOR *const allocator,
+    BONUS_TOTAL_ASSETS *const out)
+{
+    *out = (BONUS_TOTAL_ASSETS) {};
+    BONUS_TOTAL_ASSETS loaded = {};
+    READER reader;
+    MUST(Vfs_Open(vfs, "CLEAR3.GRP", VFS_IN_MEMORY, &reader));
+    RESULT result = Pi_Load(&reader, allocator, &loaded.background);
+    Reader_Close(&reader);
+    MUST(result);
+    MUST(Vfs_Open(vfs, "NUMB.PTN", VFS_IN_MEMORY, &reader));
+    result = Ptn_Load(&reader, allocator, &loaded.numerals);
+    Reader_Close(&reader);
+    MUST(result);
+    Palette_Import(&loaded.palette, loaded.background.palette);
+    MUST(Bonus_ValidateTotalAssets(&loaded));
+    *out = loaded;
+    return OK;
+}
+
+void Bonus_InitTotal(void)
+{
+    memset(&m_Total, 0, sizeof(m_Total));
+    Bonus_InitRowTransition();
+}
+
+bool Bonus_BeginTotal(
+    const BONUS_TOTAL_ASSETS *const assets, const int16_t stage_number,
+    const TH01_INPUT *const raw, const uint64_t host_tick)
+{
+    ASSERT(
+        m_Total.phase == BONUS_TOTAL_DONE && stage_number >= 5
+        && stage_number <= 20 && stage_number % 5 == 0);
+    Bonus_InitTotal();
+    m_Total.phase = BONUS_TOTAL_INITIAL_WAIT;
+    m_Total.stage_number = stage_number;
+    m_Total.last_tick = host_tick;
+    Shots_EraseAndReset();
+    Pellets_EraseAndResetMoving();
+    return Bonus_ResumeTotal(assets, raw, host_tick);
+}
+
+bool Bonus_ResumeTotal(
+    const BONUS_TOTAL_ASSETS *const assets, const TH01_INPUT *const raw,
+    const uint64_t host_tick)
+{
+    for (;;) {
+        switch (m_Total.phase) {
+        case BONUS_TOTAL_DONE:
+            return true;
+        case BONUS_TOTAL_INITIAL_WAIT: {
+            if (!Frame_DelayReady(50)) {
+                return false;
+            }
+            const VIDEO_IMAGE image = { .pixels = assets->background.pixels,
+                                        .width = VIDEO_WIDTH,
+                                        .height = VIDEO_HEIGHT,
+                                        .stride = VIDEO_WIDTH,
+                                        .key = -1 };
+            Video_SelectDrawingPage(1);
+            Video_Blit(
+                &image, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0);
+            g_Palette.resource = assets->palette;
+            Video_SelectDrawingPage(0);
+            Bonus_BeginRowTransition();
+            m_Total.phase = BONUS_TOTAL_TRANSITION;
+            break;
+        }
+        case BONUS_TOTAL_TRANSITION:
+            if (!Bonus_ResumeRowTransition(&g_Palette, &g_Palette.resource)) {
+                return false;
+            }
+            Sprite_PtnPut(
+                &assets->numerals, m_Total.stage_number / 10, -1, 224, 14);
+            Sprite_PtnPut(
+                &assets->numerals, m_Total.stage_number % 10, -1, 256, 14);
+            m_Total.phase = BONUS_TOTAL_STAGE_WAIT;
+            break;
+        case BONUS_TOTAL_STAGE_WAIT:
+            if (!Frame_DelayReady(30)) {
+                return false;
+            }
+            m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
+            break;
+        case BONUS_TOTAL_PREPARE_METRIC:
+            M_Prepare(host_tick);
+            break;
+        case BONUS_TOTAL_DIGIT: {
+            const int16_t target = m_Total.digits[m_Total.place] % 10;
+            if (m_Total.spin < 20) {
+                M_PutDigit(assets, m_Total.spin);
+            }
+            if (m_Total.spin == 20
+                || (target >= 0 && m_Total.spin == 10 + target)) {
+                M_PutDigit(assets, m_Total.digits[m_Total.place]);
+                m_Total.spin = 0;
+                m_Total.place++;
+                if (m_Total.place == m_Total.digit_count) {
+                    m_Total.phase = BONUS_TOTAL_METRIC_WAIT;
+                }
+            } else {
+                m_Total.phase = BONUS_TOTAL_DIGIT_WAIT;
+            }
+            break;
+        }
+        case BONUS_TOTAL_DIGIT_WAIT: {
+            ASSERT(host_tick >= m_Total.last_tick);
+            const uint64_t elapsed = host_tick - m_Total.last_tick;
+            if (elapsed != 0) {
+                m_Total.credit = elapsed >= 100
+                    ? 5000
+                    : m_Total.credit + (uint32_t)elapsed * 50;
+                m_Total.last_tick = host_tick;
+            }
+            if (m_Total.credit < 12) {
+                return false;
+            }
+            m_Total.credit -= 12;
+            Sound_Effect(2);
+            m_Total.spin++;
+            m_Total.phase = BONUS_TOTAL_DIGIT;
+            break;
+        }
+        case BONUS_TOTAL_METRIC_WAIT:
+            if (!Frame_DelayReady(5)) {
+                return false;
+            }
+            m_Total.metric++;
+            if (m_Total.metric < 5) {
+                m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
+                break;
+            }
+            GameInput_ResetGame();
+            g_GameInput.shot = true;
+            g_GameInput.ok = true;
+            g_Session.continues_per_scene[m_Total.stage_number / 5 - 1] =
+                (uint16_t)g_Session.continues_total;
+            m_Total.phase = BONUS_TOTAL_CONFIRM;
+            break;
+        case BONUS_TOTAL_CONFIRM:
+            if (GameInput_SenseGame(raw, false)) {
+                g_Player.is_hit = true;
+            }
+            if (g_GameInput.shot && g_GameInput.ok) {
+                return false;
+            }
+            m_Bonus.score_bonus = 0;
+            m_Total.phase = BONUS_TOTAL_DONE;
             return true;
         }
     }

@@ -27,27 +27,8 @@ typedef struct {
     uint8_t box[4];
 } BONUS_STAGE_ASSETS;
 
-typedef enum {
-    BONUS_DONE,
-    BONUS_STAGE_BOX,
-    BONUS_CONFIRM,
-} BONUS_PHASE;
-
-typedef struct {
-    BONUS_PHASE phase;
-    int16_t stage_number, row;
-    bool waiting;
-} BONUS_RUN;
-
-typedef struct {
-    BONUS_RUN run;
-    // Accumulates across the stage bonuses leading up to a total; Bonus_Resume
-    // and Bonus_ResumeTotal clear it on confirmation. Bonus_BeginStage resets
-    // only run, so this survives between stage bonus runs.
-    uint32_t score_bonus;
-} BONUS;
-
-extern BONUS g_Bonus;
+// Clears stage and total bonus state for a new gameplay session.
+void Bonus_Init(void);
 
 // Loads the stage box mask from bonusbox.bmp into caller asset storage;
 // leaves out null on error.
@@ -65,7 +46,7 @@ RESULT Bonus_ValidateStageAssets(
 // opening, adds to the existing unsigned score_bonus, writes one of four
 // signed resident history slots with the score bits, then draws the HUD and
 // checks for an extend. Keep all bindings and loaded resources stable through
-// completion. Zero-initialize BONUS once; begin only when done.
+// completion. Begin only when done.
 // Wrapped negative display digits draw blank rather than reading outside the
 // original numeral table; score arithmetic still retains the source widths.
 bool Bonus_BeginStage(
@@ -87,27 +68,6 @@ typedef struct {
     PTN numerals;
     PALETTE palette;
 } BONUS_TOTAL_ASSETS;
-
-typedef enum {
-    BONUS_TOTAL_DONE,
-    BONUS_TOTAL_INITIAL_WAIT,
-    BONUS_TOTAL_TRANSITION,
-    BONUS_TOTAL_STAGE_WAIT,
-    BONUS_TOTAL_PREPARE_METRIC,
-    BONUS_TOTAL_DIGIT,
-    BONUS_TOTAL_DIGIT_WAIT,
-    BONUS_TOTAL_METRIC_WAIT,
-    BONUS_TOTAL_CONFIRM,
-} BONUS_TOTAL_PHASE;
-
-typedef struct {
-    BONUS_TOTAL_PHASE phase;
-    uint64_t last_tick;
-    uint32_t credit;
-    int16_t stage_number, digits[6], top, metric, place, digit_count, spin;
-} BONUS_TOTAL;
-
-extern BONUS_TOTAL g_BonusTotal;
 
 // Loads CLEAR3.GRP and NUMB.PTN into the caller's grouped allocator before
 // simulation. Keeps no file handles; failed loads leave out empty and any

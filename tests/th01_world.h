@@ -47,8 +47,7 @@ static inline void Th01Test_ResetWorld(void)
     Bomb_Init();
     Miss_Init();
     memset(&g_Scene, 0, sizeof(g_Scene));
-    memset(&g_Bonus, 0, sizeof(g_Bonus));
-    Bonus_InitTotal();
+    Bonus_Init();
     Extend_Init();
     g_Session.lives = 0;
     g_Session.high_score = 0;
