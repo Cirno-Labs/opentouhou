@@ -102,11 +102,9 @@ static RESULT M_LoadAssets(void)
             vfs, rom, Arena_Allocator(&m_Assets), &m_GameplayAssets);
     }
     if (IS_OK(result)) {
-        Result_Log(
-            ScoreData_Load(vfs, Shell_GetUserFiles(), &g_ScoreSaves),
-            LOG_LEVEL_WARNING);
         result = Score_LoadAssets(
-            vfs, rom, Arena_Allocator(&m_Assets), &m_ScoreAssets);
+            vfs, Shell_GetUserFiles(), rom, Arena_Allocator(&m_Assets),
+            &m_ScoreAssets);
     }
     if (IS_OK(result)) {
         result = Ending_LoadAssets(
@@ -197,10 +195,7 @@ static bool M_OpeningEvents(
         if (events.action == OPENING_ACTION_START) {
             Th01Hooks_CallOnStart();
         }
-        g_Session.table_high_score =
-            (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
-                .entries[0]
-                .score;
+        Score_SyncSession();
         Gameplay_Begin(raw, m_HostTick);
         g_Th01Scene = TH01_SCENE_GAMEPLAY;
     }
@@ -224,10 +219,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
     case TH01_SCENE_SCORE:
     case TH01_SCENE_ENDING_SCORE:
         if (Score_Tick(raw, reference_edge)) {
-            g_Session.table_high_score =
-                (uint32_t)g_ScoreSaves.tables[g_Session.settings.difficulty]
-                    .entries[0]
-                    .score;
+            Score_SyncSession();
             if (g_Th01Scene == TH01_SCENE_ENDING_SCORE) {
                 Ending_BeginSwitch();
                 g_Th01Scene = TH01_SCENE_SWITCH;
@@ -309,7 +301,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
 static void M_Save(void)
 {
     if (m_Initialized) {
-        Result_Log(ScoreData_WriteSaves(&g_ScoreSaves), LOG_LEVEL_WARNING);
+        Result_Log(Score_FlushSaves(), LOG_LEVEL_WARNING);
     }
 }
 

@@ -27,8 +27,8 @@ static void M_Init(FIXTURE *const f)
     SCORE_SAVES loaded;
     CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &loaded)));
     Vfs_Destroy(user_files);
-    memset(&g_ScoreSaves, 0, sizeof(g_ScoreSaves));
-    memcpy(g_ScoreSaves.tables, loaded.tables, sizeof(loaded.tables));
+    memset(&m_Saves, 0, sizeof(m_Saves));
+    memcpy(m_Saves.tables, loaded.tables, sizeof(loaded.tables));
     f->arena.capacity = f->arena.used;
 }
 
@@ -51,26 +51,26 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     g_VSync.count1 = 100;
     g_VSync.count2 = -20;
     M_Begin(&f, SCORE_GAMEOVER, 9999);
-    CHECK_EQ_INT(m_Scene.phase, SCORE_FADE_WAIT);
+    CHECK_EQ_INT(m_Registration.phase, SCORE_FADE_WAIT);
     CHECK_EQ_INT(g_VSync.count1, 100);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK_EQ_INT(g_Video.palette[0].red, 17);
     for (int32_t i = 0; i < 15; i++) {
         M_Tick(&f, (TH01_INPUT) {});
     }
-    CHECK_EQ_INT(m_Scene.phase, SCORE_ENTRY_INPUT);
+    CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);
     CHECK_EQ_INT(g_VSync.count1, 116);
     CHECK_EQ_INT(g_VSync.count2, -4);
     CHECK_EQ_INT(g_VSync.edge, 16);
-    CHECK_EQ_INT(m_Scene.place, 0);
-    CHECK_EQ_STR(g_ScoreSaves.tables[1].entries[0].route, "魔");
-    CHECK_EQ_INT(g_ScoreSaves.tables[1].entries[0].stage, 13);
+    CHECK_EQ_INT(m_Registration.place, 0);
+    CHECK_EQ_STR(m_Saves.tables[1].entries[0].route, "魔");
+    CHECK_EQ_INT(m_Saves.tables[1].entries[0].stage, 13);
     CHECK_EQ_INT(g_Video.pages[0][399 * 640 + 639], 1);
     CHECK_EQ_INT(g_Video.palette[7].red, 255);
-    CHECK(!g_ScoreSaves.pending[1]);
+    CHECK(!m_Saves.pending[1]);
     CHECK(M_Tick(&f, (TH01_INPUT) { .ok = true }));
-    CHECK(g_ScoreSaves.pending[1]);
-    CHECK_EQ_STR(g_ScoreSaves.tables[1].entries[0].name, "                ");
+    CHECK(m_Saves.pending[1]);
+    CHECK_EQ_STR(m_Saves.tables[1].entries[0].name, "                ");
     CHECK_EQ_INT(g_VSync.count1, 117);
     CHECK(!g_GameInput.ok);
     Arena_Free(&f.arena);
@@ -82,37 +82,37 @@ TEST(name_slots_edit_and_gameover_last_slot_jumps_to_enter)
     M_Init(&f);
     M_Begin(&f, SCORE_ENDING, 9000);
     for (int32_t i = 0; i < 8; i++) {
-        m_Scene.column = i;
+        m_Registration.column = i;
         g_GameInput.shot = true;
         CHECK(!Score_OnInput());
     }
-    CHECK_EQ_INT(m_Scene.cursor, 7);
-    CHECK_EQ_INT(m_Scene.row, 0);
-    CHECK_EQ_STR(m_Scene.slots[0], "ａ");
-    CHECK_EQ_STR(m_Scene.slots[7], "ｈ");
-    m_Scene.context = SCORE_GAMEOVER;
+    CHECK_EQ_INT(m_Registration.cursor, 7);
+    CHECK_EQ_INT(m_Registration.row, 0);
+    CHECK_EQ_STR(m_Registration.slots[0], "ａ");
+    CHECK_EQ_STR(m_Registration.slots[7], "ｈ");
+    m_Registration.context = SCORE_GAMEOVER;
     g_GameInput.shot = true;
     CHECK(!Score_OnInput());
-    CHECK_EQ_INT(m_Scene.row, 5);
-    CHECK_EQ_INT(m_Scene.column, 17);
+    CHECK_EQ_INT(m_Registration.row, 5);
+    CHECK_EQ_INT(m_Registration.column, 17);
     g_GameInput.strike = true;
     CHECK(!Score_OnInput());
-    CHECK_EQ_INT(m_Scene.cursor, 6);
-    m_Scene.column = 10;
+    CHECK_EQ_INT(m_Registration.cursor, 6);
+    m_Registration.column = 10;
     g_GameInput.shot = true;
     CHECK(!Score_OnInput());
-    CHECK_EQ_STR(m_Scene.slots[6], "　");
-    m_Scene.column = 15;
+    CHECK_EQ_STR(m_Registration.slots[6], "　");
+    m_Registration.column = 15;
     g_GameInput.shot = true;
     CHECK(!Score_OnInput());
-    CHECK_EQ_INT(m_Scene.cursor, 6);
-    m_Scene.column = 16;
+    CHECK_EQ_INT(m_Registration.cursor, 6);
+    m_Registration.column = 16;
     g_GameInput.shot = true;
     CHECK(!Score_OnInput());
-    CHECK_EQ_INT(m_Scene.cursor, 7);
-    m_Scene.column = 17;
+    CHECK_EQ_INT(m_Registration.cursor, 7);
+    m_Registration.column = 17;
     CHECK(M_Tick(&f, (TH01_INPUT) { .ok = true }));
-    CHECK_EQ_STR(g_ScoreSaves.tables[1].entries[0].name, "ａｂｃｄｅｆ　ｈ");
+    CHECK_EQ_STR(m_Saves.tables[1].entries[0].name, "ａｂｃｄｅｆ　ｈ");
     Arena_Free(&f.arena);
 }
 
@@ -128,8 +128,8 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
                 continue;
             }
             for (int32_t direction = 0; direction < 4; direction++) {
-                m_Scene.row = row;
-                m_Scene.column = column;
+                m_Registration.row = row;
+                m_Registration.column = column;
                 GameInput_Init();
                 g_GameInput.up = direction == 0;
                 g_GameInput.down = direction == 1;
@@ -137,28 +137,28 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
                     : direction == 3                    ? GAME_INPUT_RIGHT
                                                         : 0;
                 CHECK(!Score_OnInput());
-                CHECK(m_Scene.row >= 0 && m_Scene.row < 6);
-                CHECK(m_Scene.column >= 0 && m_Scene.column < 18);
+                CHECK(m_Registration.row >= 0 && m_Registration.row < 6);
+                CHECK(m_Registration.column >= 0 && m_Registration.column < 18);
                 CHECK(
-                    !((m_Scene.row == 1 || m_Scene.row == 3)
-                      && m_Scene.column >= 8));
+                    !((m_Registration.row == 1 || m_Registration.row == 3)
+                      && m_Registration.column >= 8));
                 CHECK(
-                    !(m_Scene.row == 5 && m_Scene.column > 10
-                      && m_Scene.column < 15));
+                    !(m_Registration.row == 5 && m_Registration.column > 10
+                      && m_Registration.column < 15));
                 CHECK(
                     !g_GameInput.up && !g_GameInput.down
                     && g_GameInput.horizontal == 0);
             }
         }
     }
-    m_Scene.row = 0;
-    m_Scene.column = 17;
+    m_Registration.row = 0;
+    m_Registration.column = 17;
     GameInput_Init();
     g_GameInput.down = true;
     g_GameInput.shot = true;
     g_GameInput.strike = true;
     Score_OnInput();
-    CHECK_EQ_INT(m_Scene.row, 2);
+    CHECK_EQ_INT(m_Registration.row, 2);
     CHECK(g_GameInput.shot && g_GameInput.strike);
     GameInput_Init();
     g_GameInput.horizontal = GAME_INPUT_BOTH;
@@ -173,20 +173,20 @@ TEST(results_input_wait_resets_at_entry_and_preserves_elapsed_count)
     M_Init(&f);
     M_Begin(&f, SCORE_ENDING, 9000);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
-    CHECK_EQ_INT(m_Scene.cursor, 1);
-    CHECK_EQ_INT(m_Scene.phase, SCORE_ENTRY_DELAY);
+    CHECK_EQ_INT(m_Registration.cursor, 1);
+    CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_DELAY);
     for (int32_t i = 0; i < 3; i++) {
         CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
-        CHECK_EQ_INT(m_Scene.phase, SCORE_ENTRY_DELAY);
+        CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_DELAY);
     }
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
-    CHECK_EQ_INT(m_Scene.phase, SCORE_ENTRY_INPUT);
+    CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);
     CHECK_EQ_INT(g_VSync.count1, 4);
-    CHECK_EQ_INT(m_Scene.inputs, 1);
-    CHECK_EQ_INT(m_Scene.cursor, 1);
+    CHECK_EQ_INT(m_Registration.inputs, 1);
+    CHECK_EQ_INT(m_Registration.cursor, 1);
     CHECK(!M_Tick(&f, (TH01_INPUT) {}));
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
-    CHECK_EQ_INT(m_Scene.cursor, 2);
+    CHECK_EQ_INT(m_Registration.cursor, 2);
     Arena_Free(&f.arena);
 }
 
@@ -195,13 +195,13 @@ TEST(nonqualifying_score_waits_for_a_sensed_press_and_release)
     FIXTURE f;
     M_Init(&f);
     M_Begin(&f, SCORE_ENDING, -1);
-    CHECK_EQ_INT(m_Scene.place, SCORE_PLACES);
+    CHECK_EQ_INT(m_Registration.place, SCORE_PLACES);
     for (int32_t i = 0; i < 5; i++) {
         CHECK(!M_Tick(&f, (TH01_INPUT) {}));
     }
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK(M_Tick(&f, (TH01_INPUT) {}));
-    CHECK(!g_ScoreSaves.pending[1]);
+    CHECK(!m_Saves.pending[1]);
     M_Begin(&f, SCORE_ENDING, -1);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .ok = true }));
     CHECK(M_Tick(&f, (TH01_INPUT) {}));
@@ -221,12 +221,12 @@ TEST(results_retain_background_palette_and_have_no_input_timeout)
     CHECK_EQ_INT(g_Video.pages[1][0], 0);
     CHECK_EQ_INT(g_Video.palette[7].red, 34);
     CHECK_EQ_INT(g_Video.palette[7].green, 68);
-    m_Scene.inputs = 1001;
+    m_Registration.inputs = 1001;
     CHECK(!M_Tick(&f, (TH01_INPUT) {}));
-    CHECK_EQ_INT(m_Scene.phase, SCORE_ENTRY_INPUT);
-    m_Scene.context = SCORE_GAMEOVER;
+    CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);
+    m_Registration.context = SCORE_GAMEOVER;
     CHECK(M_Tick(&f, (TH01_INPUT) {}));
-    CHECK(g_ScoreSaves.pending[1]);
+    CHECK(m_Saves.pending[1]);
     Arena_Free(&f.arena);
 }
 
@@ -237,11 +237,11 @@ TEST(results_ignore_keypad_and_never_generate_bomb_taps)
     M_Begin(&f, SCORE_ENDING, 9000);
     CHECK(!M_Tick(
         &f, (TH01_INPUT) { .keypad_down = true, .keypad_right = true }));
-    CHECK_EQ_INT(m_Scene.row, 0);
-    CHECK_EQ_INT(m_Scene.column, 0);
-    CHECK_EQ_INT(m_Scene.phase, SCORE_ENTRY_INPUT);
+    CHECK_EQ_INT(m_Registration.row, 0);
+    CHECK_EQ_INT(m_Registration.column, 0);
+    CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .down = true }));
-    CHECK_EQ_INT(m_Scene.row, 1);
+    CHECK_EQ_INT(m_Registration.row, 1);
     for (int32_t i = 0; i < 5; i++) {
         GameInput_SenseEnding(&(TH01_INPUT) {});
         GameInput_SenseEnding(&(TH01_INPUT) { .shot = true, .strike = true });

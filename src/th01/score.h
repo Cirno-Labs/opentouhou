@@ -7,9 +7,6 @@
 #include "th01/score_data.h"
 #include "th01/text.h"
 
-// Holds the four score tables that the game shows and registers into.
-extern SCORE_SAVES g_ScoreSaves;
-
 typedef enum {
     SCORE_GAMEOVER,
     SCORE_ENDING,
@@ -20,10 +17,10 @@ typedef struct {
     GAME_TEXT_FONT font;
 } SCORE_ASSETS;
 
-// Loads GAME_O.GRP and all static, imported and g_ScoreSaves glyphs from rom
+// Loads score tables, GAME_O.GRP and their static and imported glyphs from rom
 // before ticks. Storage belongs to allocator and must outlive the score scene.
 RESULT Score_LoadAssets(
-    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    VFS *vfs, VFS *user_files, const FONT_ROM *rom, const ALLOCATOR *allocator,
     SCORE_ASSETS *out);
 
 // Shares g_VSync and g_GameInput with gameplay across registration.
@@ -33,7 +30,7 @@ RESULT Score_LoadAssets(
 // four-frame wait entry; Game Over also senses keypad directions and resets
 // count1 on wait exit. Entry stage uses source values: ordinary stage 1..20,
 // clear 50 or 60. Begin and Tick allocate nothing and perform no IO. Completion
-// queues a save; drain it at the root tick end with ScoreData_WriteSaves.
+// queues a save; drain it at the root tick end with Score_FlushSaves.
 void Score_Begin(
     const SCORE_ASSETS *assets, SCORE_CONTEXT context, int32_t rank,
     const SCORE_ENTRY *entry);
@@ -47,3 +44,9 @@ bool Score_Tick(const TH01_INPUT *input, bool reference_edge);
 bool Score_OnInput(void);
 
 void Score_Close(void);
+
+// Copies the current rank's table high score into the live session.
+void Score_SyncSession(void);
+
+// Writes the queued score tables to user storage.
+RESULT Score_FlushSaves(void);
