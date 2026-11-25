@@ -1,6 +1,4 @@
-#include "th01/boss/strategy.h"
-#include "th01/boss/hit.h"
-#include "th01/boss/entity.h"
+#include "th01/boss/private.h"
 #include "th01/grc.h"
 #include "pc98/zun/pi.h"
 #include "th01/pellets.h"
@@ -14,7 +12,6 @@
 #include "th01/sound.h"
 #include "th01/rng.h"
 
-#include "th01/boss.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 #include "core/base/assert.h"
