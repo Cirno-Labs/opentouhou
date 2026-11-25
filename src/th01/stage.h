@@ -17,6 +17,7 @@ typedef enum {
 
 typedef struct {
     uint32_t score;
+    uint16_t time;
     int16_t combo, maximum_combo;
     uint8_t flip_cycle;
     bool cleared;

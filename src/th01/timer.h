@@ -1,26 +1,8 @@
 #pragma once
 
-#include "th01/frame.h"
-#include "th01/hud.h"
-#include "th01/pellets.h"
-#include "th01/tram.h"
+#include "core/base/types.h"
 
-typedef enum {
-    TIMER_IDLE,
-    TIMER_WAIT_HURRY,
-    TIMER_WAIT_UP,
-} TIMER_PHASE;
-
-// Holds the stage timer. StageTimer_Init zeroes it once per main scene:
-// hurry_cycle carries over between stages.
-typedef struct {
-    uint16_t time, frames_since_hurry;
-    uint8_t hurry_cycle;
-    TIMER_PHASE phase;
-} STAGE_TIMER;
-
-extern STAGE_TIMER g_StageTimer;
-
+// Clears the stage time and hurry history for a new gameplay run.
 void StageTimer_Init(void);
 
 // Redraws the HUD in the original's order. While timer_initialized is

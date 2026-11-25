@@ -1,3 +1,4 @@
+#include "../src/th01/timer.c"
 #include "../src/th01/score.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/scene.c"
@@ -69,7 +70,7 @@ static void M_Init(FIXTURE *const f)
     StageObjects_InitPrepared(
         &f->assets->scenes[0].layouts, 0, true, &f->assets->stage);
     Orb_ResetFlight();
-    g_StageTimer.time = 1000;
+    g_Stage.time = 1000;
     g_Gameplay.phase = GP_FRAME_BEGIN;
     g_Stage.timer_initialized = true;
     g_Stage.first_stage = false;
@@ -115,12 +116,12 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
     M_Init(&f);
 
     g_Session.frame_rand = 3;
-    g_StageTimer.time = 2;
+    g_Stage.time = 2;
     g_Player.invincibility_time = 2;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
     CHECK_EQ_INT(g_Gameplay.phase, GP_TIMER);
-    CHECK_EQ_INT(g_StageTimer.phase, TIMER_WAIT_HURRY);
+    CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
     CHECK_EQ_INT(g_Gameplay.frame, 1);
     CHECK_EQ_INT(g_Player.invincibility_time, 1);
     CHECK_EQ_INT(g_Orb.left, 600);
@@ -172,7 +173,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     g_Player.is_hit = true;
     g_Stage.cleared = true;
     g_Session.lives = 0;
-    g_StageTimer.time = 500;
+    g_Stage.time = 500;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
     CHECK_EQ_INT(g_Gameplay.phase, GP_LIFE_EXIT);
