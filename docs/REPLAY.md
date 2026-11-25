@@ -61,10 +61,12 @@ th01record --data DATA --out OUT.txt --start stage=19 --start route=0 \
 `--start` sets the run's start values: th06's and th07's practice
 choices, or the start fields of a th01 case. `--strategy` picks the
 strategy, `--seed` the bot's seed and `--until-progress` ends the run
-once its progress, such as a th01 boss's phase, reaches a value.
+once the first value of its score, such as a th01 boss's phase, reaches
+a value.
 Without `--segment`, the bot plays the run straight through. With
 `--segment N`, the recorder searches the run N frames at a time, and
-with `--no-miss` it keeps only segments that lose no life;
+with `--no-miss` it keeps only segments without a setback, such as a
+lost life;
 [recorder.h](../replay/bot/recorder.h) describes the search. The same
 arguments always give the same run.
 

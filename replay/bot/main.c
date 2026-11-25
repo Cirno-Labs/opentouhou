@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
     bool survived;
     bool ended;
-    int32_t progress;
+    RECORDER_SCORE score;
 } M_CANDIDATE;
 
 // Holds a search: the kept run, the frame at which each kept segment ends,
@@ -74,7 +74,8 @@ static const ARG_OPTION m_Options[] = {
         ARG_FALLBACK_INT(1)),
     ARG_INT_OF(
         M_ARGS, "--max-frames", max_frames, "<n>",
-        "the frames after which the run fails", ARG_FALLBACK_INT(216000)),
+        "the frames after which the run fails, by default the game's",
+        ARG_FALLBACK_INT(0)),
     ARG_STRING_OF(
         M_ARGS, "--strategy", strategy, "<name>",
         "the bot's strategy: dodge, or wander for a game over",
@@ -84,14 +85,15 @@ static const ARG_OPTION m_Options[] = {
         "the bot.ini that maps the bot's roles to the game's buttons"),
     ARG_INT_OF(
         M_ARGS, "--until-progress", until_progress, "<n>",
-        "end the run once its progress reaches n", ARG_FALLBACK_INT(-1)),
+        "end the run once its score's first value reaches n",
+        ARG_FALLBACK_INT(-1)),
     ARG_INT_OF(
         M_ARGS, "--segment", segment, "<n>",
         "grow the run n frames at a time with the best of several bots",
         ARG_FALLBACK_INT(0)),
     ARG_FLAG_OF(
         M_ARGS, "--no-miss", no_miss,
-        "with --segment, drop each segment that loses a life"),
+        "with --segment, drop each segment that has a setback"),
     ARG_INT_OF(
         M_ARGS, "--budget", budget, "<n>",
         "with --segment, the candidate segments after which the run fails",
@@ -110,10 +112,21 @@ static void *M_Append(M_INPUTS *const run)
     return input;
 }
 
+int Recorder_CompareScores(const RECORDER_SCORE a, const RECORDER_SCORE b)
+{
+    const int32_t count = a.count < b.count ? a.count : b.count;
+    for (int32_t i = 0; i < count; i++) {
+        if (a.values[i] != b.values[i]) {
+            return a.values[i] < b.values[i] ? -1 : 1;
+        }
+    }
+    return 0;
+}
+
 static bool M_Reached(const RECORDER_GAME *const game, const M_ARGS *const args)
 {
     return args->until_progress >= 0
-        && game->state().progress >= args->until_progress;
+        && game->score().values[0] >= args->until_progress;
 }
 
 // Plays the run from the game's start until it ends, with the script's
@@ -169,7 +182,7 @@ static RESULT M_Try(
 {
     const RECORDER_GAME *const game = search->game;
     MUST(M_Replay(game, &search->kept));
-    const int32_t lives = game->state().lives;
+    const int32_t setbacks = game->setbacks();
     BOT bot = *search->bot;
     Rng_SetSeed(&bot.rng, seed);
     search->candidate.frames = 0;
@@ -180,19 +193,19 @@ static RESULT M_Try(
         const int32_t count = game->list_threats(threats, BOT_MAX_THREATS);
         Bot_NextInput(&bot, threats, count, input);
         FAIL_IF(!game->tick(input), "the game quit during the run");
-        if (search->args->no_miss && game->state().lives < lives) {
+        if (search->args->no_miss && game->setbacks() > setbacks) {
             out->survived = false;
             return OK;
         }
         out->ended = game->has_ended();
     }
-    out->progress = game->state().progress;
+    out->score = game->score();
     for (int32_t i = 0; i < M_IDLE_FRAMES && !game->has_ended(); i++) {
         if (!game->tick(search->none)) {
             break;
         }
     }
-    out->survived = !search->args->no_miss || game->state().lives >= lives;
+    out->survived = !search->args->no_miss || game->setbacks() <= setbacks;
     return OK;
 }
 
@@ -224,7 +237,9 @@ static RESULT M_SearchSegment(M_SEARCH *const search, M_CANDIDATE *const out)
                 search, M_CandidateSeed(args->seed, depth, attempt),
                 &candidate));
             if (candidate.survived
-                && (!out->survived || candidate.progress > out->progress)) {
+                && (!out->survived
+                    || Recorder_CompareScores(candidate.score, out->score)
+                        > 0)) {
                 *out = candidate;
                 M_Copy(&search->best, &search->candidate);
             }
@@ -241,11 +256,11 @@ static RESULT M_RunSearch(M_SEARCH *const search)
     const M_ARGS *const args = search->args;
     M_CANDIDATE last = {
         .ended = game->has_ended(),
-        .progress = game->state().progress,
+        .score = game->score(),
     };
-    while (
-        !last.ended
-        && (args->until_progress < 0 || last.progress < args->until_progress)) {
+    while (!last.ended
+           && (args->until_progress < 0
+               || last.score.values[0] < args->until_progress)) {
         FAIL_IF(
             search->kept.frames >= args->max_frames,
             "the run did not end in %d frames", args->max_frames);
@@ -262,8 +277,9 @@ static RESULT M_RunSearch(M_SEARCH *const search)
             search->ends[search->depth++] = search->kept.frames;
             last = best;
             printf(
-                "kept %d frames, progress %d, %d candidates\n",
-                search->kept.frames, last.progress, search->evaluated);
+                "kept %d frames, score %lld, %d candidates\n",
+                search->kept.frames, (long long)last.score.values[0],
+                search->evaluated);
             fflush(stdout);
             continue;
         }
@@ -361,18 +377,20 @@ static RESULT M_Run(const RECORDER_GAME *const game, const M_ARGS *const args)
         result = game->save(args->out, run.inputs, run.frames);
     }
     if (IS_OK(result)) {
-        const RECORDER_STATE state = game->state();
         printf(
-            "saved %s after %d frames, %s, %d lives, progress %d\n", args->out,
-            run.frames, game->has_ended() ? "ended" : "not ended", state.lives,
-            state.progress);
+            "saved %s after %d frames, %s, %d setbacks, score %lld\n",
+            args->out, run.frames, game->has_ended() ? "ended" : "not ended",
+            game->setbacks(), (long long)game->score().values[0]);
     }
     Mem_Free(run.inputs);
     return result;
 }
 
-static RESULT M_Main(const RECORDER_GAME *const game, const M_ARGS *const args)
+static RESULT M_Main(const RECORDER_GAME *const game, M_ARGS *const args)
 {
+    if (args->max_frames <= 0) {
+        args->max_frames = game->max_frames;
+    }
     MUST(M_SetStarts(game, args));
     NullShell_SetInputSize(
         game->input_schema->size * (size_t)game->input_schema->players);
