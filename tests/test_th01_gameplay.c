@@ -7,6 +7,7 @@
 #include "../src/th01/gameplay/end.c"
 #include "../src/th01/gameplay/exit.c"
 #include "../src/th01/gameplay/gameplay.c"
+#include "../src/th01/gameplay/life.c"
 #include "../src/th01/gameplay/pause.c"
 #include "../src/th01/gameplay/stage.c"
 #include "th01/session.h"
