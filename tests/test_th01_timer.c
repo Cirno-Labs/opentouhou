@@ -94,7 +94,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
         Frame_VSync();
     }
     CHECK(StageTimer_TickAndPut());
-    CHECK_EQ_INT(g_PelletShared.speed, 2);
+    CHECK_EQ_INT(g_Pellets.speed, 2);
     CHECK_EQ_INT(m_Timer.frames_since_hurry, 0);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 0);
     CHECK_EQ_INT(g_Tram.pixels[80 * 640 + 192], 0);

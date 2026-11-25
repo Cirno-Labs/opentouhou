@@ -9,12 +9,10 @@
 #include <string.h>
 
 PELLETS g_Pellets;
-PELLET_SHARED g_PelletShared;
 
 void Pellets_Init(void)
 {
     memset(&g_Pellets, 0, sizeof(g_Pellets));
-    memset(&g_PelletShared, 0, sizeof(g_PelletShared));
 }
 
 static int16_t M_Speed(const int32_t rank, int16_t speed)
@@ -25,7 +23,7 @@ static int16_t M_Speed(const int32_t rank, int16_t speed)
                : rank == 1 ? 6
                : rank == 2 ? 12
                            : 18));
-    speed = Math16_Wrap(speed + Math16_Wrap(g_PelletShared.speed * speed) / 40);
+    speed = Math16_Wrap(speed + Math16_Wrap(g_Pellets.speed * speed) / 40);
     return speed < 16 ? 16 : speed;
 }
 
@@ -169,8 +167,8 @@ static bool M_Visible(PELLET *const p, const PELLET_ASSETS *const assets)
         p->velocity.x = (int16_t)(p->velocity.x / 2 - (p->velocity.x % 2 < 0));
         p->velocity.y = (int16_t)(p->velocity.y / 2 - (p->velocity.y % 2 < 0));
         p->decay_frame = 1;
-        g_PelletShared.destroy_score_delta =
-            (uint16_t)(g_PelletShared.destroy_score_delta + 10);
+        g_Pellets.destroy_score_delta =
+            (uint16_t)(g_Pellets.destroy_score_delta + 10);
         return true;
     }
     if (g_Player.deflecting
@@ -398,8 +396,8 @@ void Pellets_Decay(void)
             p->velocity.x = (int16_t)(p->velocity.x * 2 / 3);
             p->velocity.y = (int16_t)(p->velocity.y * 2 / 3);
             p->decay_frame = 1;
-            g_PelletShared.destroy_score_delta =
-                (uint16_t)(g_PelletShared.destroy_score_delta + 10);
+            g_Pellets.destroy_score_delta =
+                (uint16_t)(g_Pellets.destroy_score_delta + 10);
         }
     }
 }
@@ -435,18 +433,17 @@ void Pellets_EraseAndResetMoving(void)
 
 void Pellets_SpeedLower(const int16_t max, const int16_t delta)
 {
-    g_PelletShared.speed = g_PelletShared.speed > max
-        ? max
-        : Math16_Wrap(g_PelletShared.speed + delta);
-    if (g_PelletShared.speed < -15) {
-        g_PelletShared.speed = -15;
+    g_Pellets.speed =
+        g_Pellets.speed > max ? max : Math16_Wrap(g_Pellets.speed + delta);
+    if (g_Pellets.speed < -15) {
+        g_Pellets.speed = -15;
     }
 }
 
 void Pellets_SpeedRaise(const int16_t delta)
 {
-    g_PelletShared.speed = Math16_Wrap(g_PelletShared.speed + delta);
-    if (g_PelletShared.speed > 20) {
-        g_PelletShared.speed = 20;
+    g_Pellets.speed = Math16_Wrap(g_Pellets.speed + delta);
+    if (g_Pellets.speed > 20) {
+        g_Pellets.speed = 20;
     }
 }

@@ -48,27 +48,22 @@ typedef struct {
     int16_t angle, sling_direction;
 } PELLET;
 
-// Shares these source globals with the gameplay owner, bomb and miss
-// consumers. speed uses units of 1/40 pixel, normally -15 through 20.
-// destroy_score_delta accumulates in unsigned 16 bits; HUD consumes it.
-typedef struct {
-    int16_t speed;
-    uint16_t destroy_score_delta;
-} PELLET_SHARED;
-
 typedef struct {
     PELLET slots[PELLETS_COUNT];
     int16_t alive_count_excluding_clouds_after_reset;
+    // Uses 1/40 pixel units, normally -15 through 20.
+    int16_t speed;
+    // Accumulates destroyed-pellet score in unsigned 16 bits until committed.
+    uint16_t destroy_score_delta;
     bool interlace_field, interlace, spawn_with_cloud;
 } PELLETS;
 
 extern PELLETS g_Pellets;
-extern PELLET_SHARED g_PelletShared;
 
 // Zeroes the pellets and their shared speed for a new world.
 void Pellets_Init(void);
 
-// Zero-initialize PELLETS and PELLET_SHARED once. Keep slot storage across
+// Initialize once with Pellets_Init. Keep slot storage across
 // resets: sling direction, angle and unused motion fields survive reuse.
 // Reset leaves pending delay clouds alive and sets the count to zero.
 // This count can be negative and does not report pool occupancy.
@@ -99,10 +94,9 @@ void Pellets_SpeedRaise(int16_t delta);
 // Orb/deflection and lethal player hits. Every moving pellet ages even when
 // interlace skips its drawing and Orb/deflection tests. The unused top-bounce
 // motion preserves the source's mixed-unit comparison.
-// Allocates nothing and uses only supplied state and shared RNG. Execute as
+// Allocates nothing and uses the shared pool and RNG. Execute as
 // the stage Orb composite's pellets_update operation after its wait; never
-// update shots separately. Every reached shot callback is required and
-// synchronous, and must not modify pellet, player, Orb or shot state.
+// update shots separately.
 // Requires immutable loaded masks. Gameplay scene wiring remains external.
 void Pellets_UpdateAndRender(
     const PELLET_ASSETS *assets, const PTN *stage_sprites);

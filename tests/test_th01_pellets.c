@@ -45,7 +45,6 @@ TEST(all_groups_have_source_counts_angles_and_rng)
 {
     memset(&g_Player, 0, sizeof(g_Player));
     g_Player.left = 300;
-    memset(&g_PelletShared, 0, sizeof(g_PelletShared));
     for (int32_t group = 1; group <= 30; group++) {
         memset(&g_Pellets, 0, sizeof(g_Pellets));
         g_Rng = 1;
@@ -79,7 +78,6 @@ TEST(all_groups_have_source_counts_angles_and_rng)
 TEST(spawn_reuses_selective_fields_and_obeys_real_pool)
 {
     memset(&g_Pellets, 0, sizeof(g_Pellets));
-    memset(&g_PelletShared, 0, sizeof(g_PelletShared));
     memset(&g_Player, 0, sizeof(g_Player));
     g_Rng = 1;
     g_Pellets.slots[0].angle = 96;
@@ -159,7 +157,7 @@ TEST(interlace_skips_orb_but_not_movement_age_or_lethal_hits)
     CHECK(g_Player.is_hit);
     CHECK(!g_Pellets.slots[0].moving);
     CHECK_EQ_INT(g_Pellets.slots[0].age, 1);
-    CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 0);
+    CHECK_EQ_INT(g_Pellets.destroy_score_delta, 0);
     M_Free(&f);
 }
 
@@ -174,13 +172,13 @@ TEST(stale_idle_shot_can_suppress_orb_and_deflection)
     Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(g_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 0);
-    CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 0);
+    CHECK_EQ_INT(g_Pellets.destroy_score_delta, 0);
     g_Shots.slots[0].top = 0;
     g_Pellets.slots[0].velocity = (MATH16_VECTOR) { -3, -3 };
     Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 2);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.x, -2);
-    CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 10);
+    CHECK_EQ_INT(g_Pellets.destroy_score_delta, 10);
     M_Free(&f);
 }
 
@@ -195,11 +193,11 @@ TEST(deflection_is_invisible_and_decay_ends_after_frame_21)
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.x, -128);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.y, 0);
     g_Pellets.slots[0].velocity = (MATH16_VECTOR) { 7, -7 };
-    g_PelletShared.destroy_score_delta = 65530;
+    g_Pellets.destroy_score_delta = 65530;
     Pellets_Decay();
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.x, 4);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.y, -4);
-    CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 4);
+    CHECK_EQ_INT(g_Pellets.destroy_score_delta, 4);
     for (int32_t i = 2; i <= 21; i++) {
         Pellets_UpdateAndRender(&f.assets, &f.stage);
         CHECK(g_Pellets.slots[0].moving);
@@ -235,15 +233,14 @@ TEST(sling_retains_direction_and_retargets_only_after_full_turn)
 TEST(speed_tuning_wraps_product_and_helpers_keep_asymmetric_cap)
 {
     memset(&g_Pellets, 0, sizeof(g_Pellets));
-    memset(&g_PelletShared, 0, sizeof(g_PelletShared));
-    g_PelletShared.speed = 20;
+    g_Pellets.speed = 20;
     Pellets_AddSingle(3, 100, 100, 0, 2000, PELLET_REGULAR, 0, 0, 0);
     CHECK_EQ_INT(g_Pellets.slots[0].velocity.x, 1389);
-    g_PelletShared.speed = 20;
+    g_Pellets.speed = 20;
     Pellets_SpeedLower(5, -3);
-    CHECK_EQ_INT(g_PelletShared.speed, 5);
+    CHECK_EQ_INT(g_Pellets.speed, 5);
     Pellets_SpeedLower(5, -30);
-    CHECK_EQ_INT(g_PelletShared.speed, -15);
+    CHECK_EQ_INT(g_Pellets.speed, -15);
     Pellets_SpeedRaise(40);
-    CHECK_EQ_INT(g_PelletShared.speed, 20);
+    CHECK_EQ_INT(g_Pellets.speed, 20);
 }

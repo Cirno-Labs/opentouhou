@@ -101,7 +101,7 @@ static void M_Gameplay(uint32_t *const row)
     row[TH01_COLUMN_score] = g_Stage.score;
     row[TH01_COLUMN_lives] = M_I32(g_Session.lives);
     row[TH01_COLUMN_bombs] = M_I32(g_Player.remaining_bombs);
-    row[TH01_COLUMN_pellet_speed] = M_I32(g_PelletShared.speed);
+    row[TH01_COLUMN_pellet_speed] = M_I32(g_Pellets.speed);
     row[TH01_COLUMN_stage_time] = g_Stage.time;
 
     const PLAYER *const player = &g_Player;

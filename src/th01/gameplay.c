@@ -114,7 +114,7 @@ static void M_SyncSession(void)
 {
     g_Session.score = g_Stage.score;
     g_Session.bombs = g_Player.remaining_bombs;
-    g_Session.pellet_speed = g_PelletShared.speed;
+    g_Session.pellet_speed = g_Pellets.speed;
 }
 
 static void M_HookBossHp(void)
@@ -437,7 +437,7 @@ static void M_Switch(void)
         return;
     case GAMEPLAY_SWITCH_CONTINUE:
         g_Session.point_value = 0;
-        g_Session.pellet_speed = g_PelletShared.speed;
+        g_Session.pellet_speed = g_Pellets.speed;
         g_Session.lives = (int16_t)Extend_ResidentLives();
         Gameplay_Reset();
         m_Gameplay.bgm_started = true;
@@ -537,8 +537,8 @@ static void M_BeginGameover(void)
 
 static void M_AfterBonus(void)
 {
-    if (g_PelletShared.speed < 0) {
-        g_PelletShared.speed = 0;
+    if (g_Pellets.speed < 0) {
+        g_Pellets.speed = 0;
     }
     M_SyncSession();
     if (g_Session.stage_id % 5 == 4 || g_Stage.boss != BOSS_NONE) {
@@ -779,10 +779,10 @@ static GAMEPLAY_REQUEST M_Run(
                 }
                 m_Gameplay.phase = GP_VICTORY_DELAY;
             } else {
-                if (g_PelletShared.destroy_score_delta != 0) {
-                    g_Stage.score += g_PelletShared.destroy_score_delta;
+                if (g_Pellets.destroy_score_delta != 0) {
+                    g_Stage.score += g_Pellets.destroy_score_delta;
                     Hud_ScoreAndCombo();
-                    g_PelletShared.destroy_score_delta = 0;
+                    g_Pellets.destroy_score_delta = 0;
                 }
                 m_Gameplay.phase = GP_FRAME_BEGIN;
             }
@@ -1036,7 +1036,7 @@ void Gameplay_Reset(void)
     g_Stage.score = g_Session.score;
     g_Player.remaining_bombs = g_Session.bombs;
     g_Player.left = 304;
-    g_PelletShared.speed = g_Session.pellet_speed;
+    g_Pellets.speed = g_Session.pellet_speed;
     Extend_SyncResidentLives(g_Session.lives);
     Extend_ResetNext(g_Session.score);
     g_Rng = g_Session.frame_rand;
