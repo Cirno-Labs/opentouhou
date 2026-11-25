@@ -173,3 +173,8 @@ bool Palette_FadeStep(PALETTE_FADE *const fade, PALETTE_STATE *const state)
     M_Show(&fade->colors);
     return true;
 }
+
+void Palette_SetStage(const PALETTE *const colors)
+{
+    g_StagePalette = *colors;
+}

@@ -310,7 +310,7 @@ static bool M_Entrance(void)
                 m_B05.status.frame = 0;
                 m_B05.hp_bar_filled = false;
                 Palette_Set(&g_Palette, &m_B05.boss_palette);
-                g_StagePalette = g_Palette.saved;
+                Palette_SetStage(&g_Palette.saved);
                 m_B05.boss_palette = g_Palette.saved;
                 m_B05.sphere.orb_inactive = false;
                 m_B05.hit.frame = 0;
@@ -419,7 +419,7 @@ static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.flash, 1, &assets->flash)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.person, 2, &assets->person)));
     m_B05.post_defeat = assets->palette;
-    g_StagePalette = m_B05.post_defeat;
+    Palette_SetStage(&m_B05.post_defeat);
     Palette_Set(&g_Palette, &m_B05.post_defeat);
     m_B05.boss_palette = g_Palette.saved;
     Palette_Set(&g_Palette, &g_Palette.saved);

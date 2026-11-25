@@ -1915,7 +1915,7 @@ static bool M_ResumeEntrance(
             }
             g_Rng = g_Session.frame_rand;
             m_B20M.entrance_active = false;
-            g_StagePalette = m_B20M.stage_palette;
+            Palette_SetStage(&m_B20M.stage_palette);
             m_B20M.sequence_stage = B20M_ENTRANCE_DONE;
             return true;
         default:
