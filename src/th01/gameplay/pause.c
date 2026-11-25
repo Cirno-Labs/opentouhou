@@ -64,7 +64,7 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
         }
         if (quit) {
             if (g_Gameplay.menu_selection != 0) {
-                Gameplay_ContinueUse();
+                Session_CountContinue();
                 GameplayEnd_OpenMenu();
             } else {
                 Palette_Set(&g_Palette, &g_StagePalette);

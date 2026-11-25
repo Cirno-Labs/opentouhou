@@ -72,9 +72,6 @@ void Gameplay_Draw(
     const char *text, int32_t left, int32_t top, uint8_t color,
     GAME_TEXT_WEIGHT weight, bool clear);
 
-// Counts one Continue for the run and for the scene of the stage.
-void Gameplay_ContinueUse(void);
-
 // Enters the stage start at its first step.
 void GameplayStage_Begin(void);
 
