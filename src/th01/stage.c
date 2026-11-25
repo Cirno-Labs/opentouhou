@@ -10,6 +10,8 @@
 #include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
 
+#include <string.h>
+
 STAGE_GAMEPLAY g_Stage;
 
 static void M_ScorePopups(const GAME_TEXT_FONT *const font)
@@ -160,4 +162,21 @@ void Stage_UpdateCards(
         g_Stage.cleared = true;
         Player_Hit();
     }
+}
+
+void Stage_Init(void)
+{
+    memset(&g_Stage, 0, sizeof(g_Stage));
+    g_Stage.first_stage = true;
+}
+
+void Stage_AddScore(const uint32_t points)
+{
+    g_Stage.score += points;
+}
+
+void Stage_Leave(void)
+{
+    g_Stage.frame = 0;
+    g_Stage.boss = BOSS_NONE;
 }

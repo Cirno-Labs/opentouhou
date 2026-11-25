@@ -31,6 +31,15 @@ typedef struct {
 
 extern STAGE_GAMEPLAY g_Stage;
 
+// Zeroes the stage for a new world, with first_stage set.
+void Stage_Init(void);
+
+// Adds points to the score, wrapping in unsigned 32 bits.
+void Stage_AddScore(uint32_t points);
+
+// Resets the stage frame and clears the boss when the stage is left.
+void Stage_Leave(void);
+
 // The HUD shows the updated score and combo. Pellet groups use Q12.4 speed
 // and may consume shared RNG. Keep immutable sprites and cached ASCII digit
 // glyphs alive across updates. Initialize flip_cycle once per main scene as

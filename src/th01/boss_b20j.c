@@ -1186,7 +1186,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             continue;
         case B20J_DEFEAT_CLEAR:
             for (int32_t i = 0; i < 5; i++) {
-                g_Stage.score += 10000;
+                Stage_AddScore(10000);
             }
             g_Stage.game_cleared = true;
             m_B20J.finished = true;

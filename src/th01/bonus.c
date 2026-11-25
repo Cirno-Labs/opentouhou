@@ -138,7 +138,7 @@ static void M_StageCommit(const GAME_TEXT_FONT *const font)
         font, 7,
         Math16_Wrap(g_Session.lives * 200 + g_Player.remaining_bombs * 100));
     M_StageMetric(font, 9, Math16_Wrap((m_Bonus.run.stage_number - 1) * 200));
-    g_Stage.score += m_Bonus.score_bonus;
+    Stage_AddScore(m_Bonus.score_bonus);
     const uint32_t bits = m_Bonus.score_bonus;
     g_Session.bonus_per_stage[(m_Bonus.run.stage_number - 1) % 5] =
         bits <= INT32_MAX ? (int32_t)bits
@@ -176,7 +176,7 @@ static void M_Prepare(const uint64_t host_tick)
 {
     int32_t value;
     if (m_Total.metric == 4) {
-        g_Stage.score += m_Bonus.score_bonus;
+        Stage_AddScore(m_Bonus.score_bonus);
         const int16_t div = Math16_Wrap((int32_t)(m_Bonus.score_bonus / 10000));
         const int16_t rem = (int16_t)(m_Bonus.score_bonus % 10000);
         m_Total.digits[0] = (int16_t)(div / 10);

@@ -235,7 +235,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             GameplayEnd_BeginVictory();
         } else {
             if (g_Pellets.destroy_score_delta != 0) {
-                g_Stage.score += g_Pellets.destroy_score_delta;
+                Stage_AddScore(g_Pellets.destroy_score_delta);
                 Hud_ScoreAndCombo();
                 g_Pellets.destroy_score_delta = 0;
             }
