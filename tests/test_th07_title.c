@@ -10,7 +10,6 @@
 #include "test_dir.h"
 #include "th07_anm_builder.h"
 #include "th07_data.h"
-#include "th07_scene_stubs.h"
 
 #include "th07/anm.h"
 #include "th07/anm/private.h"
@@ -18,6 +17,8 @@
 #include "th07/game.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
+#include "th07/screens/result/private.h"
+#include "th07/screens/result/records.h"
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
@@ -53,6 +54,18 @@ static ANM_INSTR m_HelpInstrs[] = {
 };
 static ANM_SCRIPT m_HelpScript = { m_HelpInstrs, 2, 0 };
 static char *m_Directory;
+static int32_t m_Registers;
+
+// Stands in for the gameplay, which needs the files of every stage module.
+RESULT GameManager_Register(void)
+{
+    m_Registers++;
+    return OK;
+}
+
+void GameManager_Remove(void)
+{
+}
 
 static void M_PutU32(uint8_t *const b, const size_t offset, const uint32_t v)
 {
@@ -164,7 +177,8 @@ static void M_Setup(const char *const case_name)
     m_Directory = TestDir_Prepare(case_name);
     Th07Data_WriteArchive(m_Directory, &m_Version, 1);
     Th07Data_WriteMusic(m_Directory, nullptr, 0);
-    const char *const dirs[] = { "data", "data/title", "replay" };
+    const char *const dirs[] = { "data", "data/title", "data/result",
+                                 "replay" };
     for (size_t i = 0; i < sizeof(dirs) / sizeof(dirs[0]); i++) {
         char *const dir = TestDir_Join(m_Directory, dirs[i]);
         CHECK(Result_Log(File_MakeDir(dir), LOG_LEVEL_ERROR));
@@ -175,12 +189,15 @@ static void M_Setup(const char *const case_name)
     ANM_BUILDER_ANM *const anm = AnmBuilder_Add(&builder, 32, 32, "@");
     AnmBuilder_AddSprite(anm, 0, 0.0f, 0.0f, 16.0f, 16.0f);
     AnmBuilder_WriteFile(&builder, m_Directory, "data/title01.anm");
+    AnmBuilder_WriteFile(&builder, m_Directory, "data/result00.anm");
     M_WriteImage("data/title/title00.jpg");
     M_WriteImage("data/title/select00.jpg");
     M_WriteImage("data/title/phantasm.jpg");
+    M_WriteImage("data/result/result.jpg");
     CHECK(Result_Log(Th07Data_Mount(m_Directory), LOG_LEVEL_ERROR));
     GfxRecorder_Start();
-    SceneStubCalls_Reset();
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    m_Registers = 0;
     g_GameManager.mode.demo_index = 2;
     g_GameManager.records.phantasm_was_open = true;
     FakeShell_Reset();
@@ -200,6 +217,21 @@ static void M_Setup(const char *const case_name)
 static void M_OpenSaves(void)
 {
     ResultScreen_OpenSaves();
+}
+
+// Opens the saves, loads the records, lets set change them and writes them
+// to the score file, which the title loads when it is added.
+static void M_SaveRecords(void (*const set)(void))
+{
+    static SCORE_LIST lists[SCORE_DIFFICULTY_COUNT][SCORE_SHOT_COUNT];
+    M_OpenSaves();
+    ResultScreen_LoadTitleRecords();
+    ResultScreen_LoadPlayStats();
+    set();
+    ResultRecords_LoadLists(lists);
+    LAST_NAME_RECORD last_name;
+    ResultRecords_LoadLastName(&last_name);
+    ResultRecords_WriteScore(lists, &last_name);
 }
 
 static void M_Teardown(void)
@@ -303,7 +335,7 @@ TEST(start_sets_up_a_game_from_the_selects)
     CHECK(!g_GameManager.mode.in_replay);
     CHECK(!g_GameManager.mode.in_practice);
     M_Tick(m_NoInput);
-    CHECK_EQ_INT(g_SceneStubCalls.game_manager_register, 1);
+    CHECK_EQ_INT(m_Registers, 1);
     M_Teardown();
 }
 
@@ -450,10 +482,15 @@ TEST(a_whole_clear_opens_six_practice_stages)
     M_Teardown();
 }
 
+static void M_SetNormalClears(void)
+{
+    g_GameManager.records.clears[0].with_continues[1] = 6;
+}
+
 TEST(the_title_goes_back_to_the_practice_stage_after_a_practice)
 {
     M_Setup("practice_back");
-    g_GameManager.records.clears[0].with_continues[1] = 6;
+    M_SaveRecords(M_SetNormalClears);
     g_GameManager.mode.in_practice = true;
     g_GameManager.run.stage = 4;
     M_Tick(m_NoInput);
@@ -779,16 +816,11 @@ TEST(input_holds_the_demo_off_and_a_missing_demo_waits_again)
     M_Teardown();
 }
 
-static void M_UnlockOnLoad(void)
-{
-    M_OpenPhantasm();
-}
-
 TEST(the_phantasm_splash_shows_once_for_nine_hundred_calcs)
 {
     M_Setup("splash");
     g_GameManager.records.phantasm_was_open = false;
-    g_SceneStubCalls.on_load_title_records = M_UnlockOnLoad;
+    M_SaveRecords(M_OpenPhantasm);
     M_Run(900);
     CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_KEEP);
     M_Tick(m_NoInput);
@@ -796,7 +828,7 @@ TEST(the_phantasm_splash_shows_once_for_nine_hundred_calcs)
     CHECK(g_GameManager.records.phantasm_was_open);
     M_Teardown();
     M_Setup("splash_open");
-    g_SceneStubCalls.on_load_title_records = M_UnlockOnLoad;
+    M_SaveRecords(M_OpenPhantasm);
     M_Tick(m_NoInput);
     CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_PLAY);
     M_Teardown();
@@ -806,7 +838,7 @@ TEST(a_held_key_cuts_the_splash_short_at_the_120th_calc)
 {
     M_Setup("splash_skip");
     g_GameManager.records.phantasm_was_open = false;
-    g_SceneStubCalls.on_load_title_records = M_UnlockOnLoad;
+    M_SaveRecords(M_OpenPhantasm);
     for (int32_t i = 0; i < 120; i++) {
         M_Tick(m_Bomb);
     }
@@ -831,10 +863,17 @@ TEST(the_title_music_keeps_playing_back_from_the_scores)
     M_Press(m_Shoot);
     CHECK_EQ_INT(Scene_GetRequested(), SCENE_SCORES);
     M_Tick(m_NoInput);
-    Scene_Request(SCENE_TITLE);
-    M_Tick(m_NoInput);
+    CHECK_EQ_INT(Scene_Get(), SCENE_SCORES);
+    M_Run(21);
+    M_Press(m_Bomb);
+    M_Press(m_Bomb);
+    for (int32_t i = 0; i < 100 && Scene_Get() != SCENE_TITLE; i++) {
+        M_Tick(m_NoInput);
+    }
+    CHECK_EQ_INT(Scene_Get(), SCENE_TITLE);
     CHECK_EQ_INT(g_SoundEvents.music, SOUND_MUSIC_KEEP);
-    CHECK_EQ_INT(M_FadeCount(), 2);
+    CHECK(M_TitleAdded());
+    CHECK_EQ_INT(M_FadeCount(), 1);
     M_Teardown();
 }
 
