@@ -50,3 +50,19 @@ void Session_Begin(
 // Maps the current stage and route to one of seven cached graphics scenes.
 // Requires a normal stage ID in 0..19 and route in 0..1.
 uint8_t Session_Scene(void);
+
+// Stores the score, the bombs and the pellet speed of the run.
+void Session_Store(uint32_t score, int16_t bombs, int16_t pellet_speed);
+
+// Counts one Continue for the run and for the scene of the stage.
+void Session_CountContinue(void);
+
+// Prepares the stage restart after Continue: clears the point value and
+// sets the pellet speed and the lives.
+void Session_Continue(int16_t pellet_speed, int16_t lives);
+
+// Clears the score, the highest score and the Continue counts.
+void Session_ClearHistory(void);
+
+// Clears the ending and returns to the first stage.
+void Session_ClearProgress(void);

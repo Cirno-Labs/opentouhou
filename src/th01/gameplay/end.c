@@ -63,9 +63,7 @@ static void M_Switch(void)
         Sound_Play();
         return;
     case GAMEPLAY_SWITCH_CONTINUE:
-        g_Session.point_value = 0;
-        g_Session.pellet_speed = g_Pellets.speed;
-        g_Session.lives = (int16_t)Extend_ResidentLives();
+        Session_Continue(g_Pellets.speed, (int16_t)Extend_ResidentLives());
         Gameplay_Reset();
         g_Gameplay.bgm_started = true;
         return;
@@ -178,7 +176,7 @@ void GameplayEnd_BeginContinue(void)
     g_Gameplay.menu_selection = 0;
     M_ContinueMenu();
     GameInput_ResetGame();
-    Gameplay_ContinueUse();
+    Session_CountContinue();
     if (g_Session.highest_score < g_Stage.score) {
         g_Session.highest_score = g_Stage.score;
     }

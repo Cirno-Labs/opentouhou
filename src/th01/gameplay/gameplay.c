@@ -59,9 +59,7 @@ const PTN *Gameplay_StageSprites(void)
 
 void Gameplay_SyncSession(void)
 {
-    g_Session.score = g_Stage.score;
-    g_Session.bombs = g_Player.remaining_bombs;
-    g_Session.pellet_speed = g_Pellets.speed;
+    Session_Store(g_Stage.score, g_Player.remaining_bombs, g_Pellets.speed);
 }
 
 const BOSS_STRATEGY *Gameplay_Boss(void)
@@ -118,14 +116,6 @@ void Gameplay_Draw(
     const GAME_TEXT_STYLE style = { .weight = weight,
                                     .clear_background = clear };
     GameText_Draw(&g_GameplayAssets->menu_font, text, left, top, color, &style);
-}
-
-void Gameplay_ContinueUse(void)
-{
-    g_Session.continues_total =
-        (int32_t)((uint32_t)g_Session.continues_total + 1);
-    const int16_t scene = g_Session.stage_id / 5;
-    g_Session.continues_per_scene[scene]++;
 }
 
 void Gameplay_Init(

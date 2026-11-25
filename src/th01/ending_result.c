@@ -4,16 +4,6 @@
 
 #include <string.h>
 
-static void M_ClearHistory(void)
-{
-    g_Session.score = 0;
-    g_Session.highest_score = 0;
-    g_Session.continues_total = 0;
-    memset(
-        g_Session.continues_per_scene, 0,
-        sizeof(g_Session.continues_per_scene));
-}
-
 void Ending_Snapshot(END_RESULT *const result)
 {
     ASSERT(g_Session.ending != SESSION_END_NONE);
@@ -28,14 +18,13 @@ void Ending_Snapshot(END_RESULT *const result)
         result->continues[i] = g_Session.continues_per_scene[i];
         result->total += result->continues[i];
     }
-    M_ClearHistory();
+    Session_ClearHistory();
 }
 
 void Ending_Clear(void)
 {
-    M_ClearHistory();
-    g_Session.ending = SESSION_END_NONE;
-    g_Session.stage_id = 0;
+    Session_ClearHistory();
+    Session_ClearProgress();
 }
 
 void Ending_CalculateTitle(END_RESULT *const r)

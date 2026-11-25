@@ -32,3 +32,42 @@ uint8_t Session_Scene(void)
         ? 0
         : (uint8_t)((g_Session.stage_id / 5) * 2 - 1 + g_Session.route);
 }
+
+void Session_Store(
+    const uint32_t score, const int16_t bombs, const int16_t pellet_speed)
+{
+    g_Session.score = score;
+    g_Session.bombs = bombs;
+    g_Session.pellet_speed = pellet_speed;
+}
+
+void Session_CountContinue(void)
+{
+    g_Session.continues_total =
+        (int32_t)((uint32_t)g_Session.continues_total + 1);
+    const int16_t scene = g_Session.stage_id / 5;
+    g_Session.continues_per_scene[scene]++;
+}
+
+void Session_Continue(const int16_t pellet_speed, const int16_t lives)
+{
+    g_Session.point_value = 0;
+    g_Session.pellet_speed = pellet_speed;
+    g_Session.lives = lives;
+}
+
+void Session_ClearHistory(void)
+{
+    g_Session.score = 0;
+    g_Session.highest_score = 0;
+    g_Session.continues_total = 0;
+    memset(
+        g_Session.continues_per_scene, 0,
+        sizeof(g_Session.continues_per_scene));
+}
+
+void Session_ClearProgress(void)
+{
+    g_Session.ending = SESSION_END_NONE;
+    g_Session.stage_id = 0;
+}
