@@ -2,13 +2,8 @@
 
 #include "th01/video.h"
 
-// Allocates raw 16x16 background cells from a caller-owned arena. Keep them
-// alive across boss phases. Thresholds are borrowed source values copied by
-// the boss before each operation; they may be odd. Normal bosses use 8..18
-// points. Defines a safe domain of 0..32 points instead of the original
-// debug overflow: invalid totals or point indices leave all state unchanged.
-// Drawing clips to the visible page and changes only the drawing selector.
-// Operations allocate nothing and read no fonts, files, clocks or devices.
+// Allocates the HP bar's background cells in a caller-owned arena.
+// Keep them alive across boss phases.
 void HudHp_Init(const ALLOCATOR *allocator);
 
 // Selects red, striped and white HP sections without changing snapshots.
@@ -21,9 +16,8 @@ void HudHp_Reset(void);
 // Snapshots use the currently selected page; drawing finishes on page 0.
 void HudHp_Rerender(int16_t total);
 
-// Restores the two-point cell containing new_hp on page 1 then page 0.
-// Odd new_hp redraws new_hp-1 using the section chosen by new_hp, preserving
-// the wrong-section pattern when the thresholds are odd.
+// Restores the two-point cell containing new_hp on both pages.
+// Keeps the original's wrong-section redraw for odd thresholds.
 void HudHp_Decrement(int16_t new_hp);
 
 // Snapshots and draws exactly current. Completes only at total-1==current,

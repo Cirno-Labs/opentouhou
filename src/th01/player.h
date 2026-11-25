@@ -40,8 +40,7 @@ typedef struct {
     bool bomb_damaging;
     uint32_t bomb_frame;
     int8_t dash_cycle, mode_frame, mode, dash_direction, bomb_flag;
-    // Stores input horizontal direction, or PLAYER_SPECIAL | PLAYER_FACING
-    // during special modes. Reset uses -1; transitions retain stale values.
+    // Horizontal input direction, or PLAYER_SPECIAL | PLAYER_FACING.
     int8_t submode, previous_ptn, deflect_duration;
     bool bombing, combo_enabled;
 } PLAYER;
@@ -87,30 +86,14 @@ typedef struct {
 // immutable and belong to the caller's grouped asset lifetime.
 RESULT Player_ValidateSprites(const PLAYER_SPRITES *sprites);
 
-// Resets action state and consumes input.bomb without moving, drawing or
-// clearing hit, invincibility, remaining bombs or bomb_frame. Rank values
-// outside the four settings ranks use Normal's deflection duration.
+// Resets action state and consumes input.bomb, keeping hit, invincibility
+// and bombs.
 void Player_Reset(int32_t difficulty);
 void Player_MoveAndClamp(int16_t delta);
 
-// Runs real movement, shots, swings, slides and all three combo stages,
-// drawing directly with sprites. Reads only supplied state/input/RNG and
-// allocates nothing. Mutates held shot/strike/bomb flags as the source
-// consumes them. Call before ordinary Orb motion. Does not update shots,
-// sense input or advance bomb_frame.
-//
-// Bomb start is deferred one update. HUD count follows the decrement, then
-// Orb repulsion precedes the real bomb operation; its outcome controls
-// drawing and input consumption. Call Player_FinishBombUpdate once that
-// operation completes, including its nested waits, with its result; never
-// begin another player update while continuation.pending.
-//
-// Regular lethal Orb tests, invincibility sprites/timer, HUD, items,
-// pellets and gameplay scene integration remain external. Bomb and Miss
-// provide their reusable cooperative operations in separate modules.
-// is_hit is set by real Orb repulsion tests if their friction reaches zero.
-// A miss requires its complete cooperative sequence before updates resume;
-// resetting alone does not implement a miss or change lives and bombs.
+// Moves, shoots, swings and slides, drawing with sprites; call it before
+// Orb motion. Returns whether a bomb operation is pending: run it, then
+// Player_FinishBombUpdate with its result before the next update.
 bool Player_BeginUpdate(
     PLAYER_BOMB_CONTINUATION *continuation, const PLAYER_SPRITES *sprites);
 void Player_FinishBombUpdate(

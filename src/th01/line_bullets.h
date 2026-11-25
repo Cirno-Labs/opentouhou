@@ -2,10 +2,8 @@
 
 #include "th01/player.h"
 
-// Draws a solid or 16-bit patterned line as Video_Line does, then tests only
-// the right/bottom endpoint: sets is_hit when right lies strictly inside the
-// player's 32-pixel width and bottom > 384, unless the player is invincible.
-// Clipping never changes the hit test.
+// Draws a line as Video_Line does and sets is_hit when its right/bottom
+// endpoint lies in the player; the clipped line never changes the test.
 void LineBullets_PutAndHitTest(
     int16_t left, int16_t top, int16_t right, int16_t bottom, uint8_t color);
 void LineBullets_PutPatternedAndHitTest(

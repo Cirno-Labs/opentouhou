@@ -63,19 +63,14 @@ extern PELLETS g_Pellets;
 // Zeroes the pellets and their shared speed for a new world.
 void Pellets_Init(void);
 
-// Initialize once with Pellets_Init. Keep slot storage across
-// resets: sling direction, angle and unused motion fields survive reuse.
-// Reset leaves pending delay clouds alive and sets the count to zero.
-// This count can be negative and does not report pool occupancy.
+// Removes moving pellets and sets the count to zero; delay clouds survive.
+// The count can go negative and does not report pool occupancy.
 void Pellets_ResetMoving(void);
 void Pellets_EraseAndResetMoving(void);
 
-// Spawns only into actually free slots. No RNG draw occurs for a full pool.
-// Group coordinates must be in [-8,639] by [56,400]. Invalid groups are
-// rejected: the source otherwise reads uninitialized local velocities.
-// Single spawns do not apply the group bounds. Speeds/positions are Q12.4;
-// arguments left/top and spin_center are integer pixels. Rank tuning uses
-// 0,6,12,18 subpixels for Easy, Normal, Hard, Lunatic (also invalid ranks).
+// Spawns a group into free slots, in Q12.4 speeds and integer-pixel positions.
+// Rejects groups outside [-8,639] by [56,400], whose velocities the original
+// reads uninitialized.
 void Pellets_AddGroup(
     int32_t rank, int16_t left, int16_t top, PELLET_GROUP group, int16_t speed);
 void Pellets_AddSingle(
@@ -93,14 +88,8 @@ void Pellets_SpeedRaise(int16_t delta);
 // Pellets_Init.
 void Pellets_Interlace(void);
 
-// Runs clouds, all pellet motion and shot collision/clipping, then calls
-// real Shots_UpdateAndRender exactly once, then draws pellets and tests
-// Orb/deflection and lethal player hits. Every moving pellet ages even when
-// interlace skips its drawing and Orb/deflection tests. The unused top-bounce
-// motion preserves the source's mixed-unit comparison.
-// Allocates nothing and uses the shared pool and RNG. Execute as
-// the stage Orb composite's pellets_update operation after its wait; never
-// update shots separately.
-// Requires immutable loaded masks. Gameplay scene wiring remains external.
+// Moves pellets, updates shots once, then draws pellets and tests the Orb
+// and player. Run it as the Orb composite's pellets_update, after its wait;
+// never update shots separately.
 void Pellets_UpdateAndRender(
     const PELLET_ASSETS *assets, const PTN *stage_sprites);

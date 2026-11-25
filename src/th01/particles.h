@@ -16,14 +16,9 @@ typedef enum {
 // Clears all state for a new gameplay session.
 void Particles_Reset(void);
 
-// Resets alive flags and spawn settings
-// while retaining cycle, velocities, positions and velocity_base history.
-// Stores flags as raw bytes because the slot-40 spill can write 255.
+// Resets the alive flags and spawn settings, keeping motion history.
 void Particles_Init(void);
 
-// Spawns, restores old pixels, advances Q12.4 motion and draws surviving dots.
-// Preserves the first cycle's slot-40 aliases through explicit field writes.
-// Uses shared RNG and module state; allocates nothing and performs no IO.
-// Requires initialization and an origin in 0..7. Keeps the drawing selector
-// when no active particle reaches restoration; otherwise finishes on page 0.
+// Spawns, moves and draws the particles; origin is 0..7.
+// Keeps the original's first-cycle writes past slot 39.
 void Particles_UpdateAndRender(PARTICLES_ORIGIN origin, uint8_t color);
