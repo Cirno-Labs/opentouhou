@@ -129,14 +129,6 @@ TEST(an_unknown_role_or_button_fails_the_load)
     }
 }
 
-TEST(strategies_are_found_by_name)
-{
-    CHECK(Bot_FindStrategy("dodge") == &g_BotDodge);
-    CHECK(Bot_FindStrategy("wander") == &g_BotWander);
-    CHECK(Bot_FindStrategy("hold") == &g_BotHold);
-    CHECK(Bot_FindStrategy("panic") == nullptr);
-}
-
 TEST(one_seed_gives_the_same_hold_roles)
 {
     BOT a;

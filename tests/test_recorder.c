@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#define M_TRAP 45
+
 typedef struct {
     bool shoot;
     bool left;
@@ -32,12 +34,17 @@ static const INPUT_SCHEMA m_Schema = {
     .players = 1,
 };
 
-// Holds a toy game: the player walks between two walls and loses a life on
-// every 25th frame that it stands on a multiple of 3.
+// Holds a toy game: the player walks between two walls. It loses a life
+// on every 25th frame that it stands on a multiple of 3, or, with a trap,
+// only at frame 280 when it stood at the trap or right of it at frame 153,
+// and the game then ends at frame 400.
+static int32_t m_Trap;
 static int32_t m_StartLives;
 static int32_t m_Frame;
 static int32_t m_X;
 static int32_t m_Lives;
+static int32_t m_TrapX;
+static int32_t m_MostTrapX;
 static M_INPUT *m_Saved;
 static int32_t m_SavedFrames;
 
@@ -53,6 +60,7 @@ static RESULT M_Start(void)
     m_Frame = 0;
     m_X = 0;
     m_Lives = m_StartLives;
+    m_TrapX = 0;
     return OK;
 }
 
@@ -70,9 +78,15 @@ static bool M_Tick(const void *const input)
     const M_INPUT *const held = input;
     m_X = MAX(-50, MIN(50, m_X + held->right - held->left));
     m_Frame++;
-    if (m_Frame % 25 == 0 && m_X % 3 == 0) {
-        m_Lives--;
+    if (m_Trap == 0) {
+        m_Lives -= m_Frame % 25 == 0 && m_X % 3 == 0;
+        return true;
     }
+    if (m_Frame == 153) {
+        m_TrapX = m_X;
+        m_MostTrapX = MAX(m_MostTrapX, m_X);
+    }
+    m_Lives -= m_Frame == 280 && m_TrapX >= m_Trap;
     return true;
 }
 
@@ -90,12 +104,12 @@ static int32_t M_Setbacks(void)
 
 static RECORDER_SCORE M_Score(void)
 {
-    return (RECORDER_SCORE) { .values = { m_Frame }, .count = 1 };
+    return (RECORDER_SCORE) { .values = { m_Frame, m_X }, .count = 2 };
 }
 
 static bool M_HasEnded(void)
 {
-    return m_Lives < 0;
+    return m_Trap == 0 ? m_Lives < 0 : m_Frame >= 400;
 }
 
 static RESULT M_Save(
@@ -114,7 +128,6 @@ static void M_Stop(void)
 static const RECORDER_GAME m_Game = {
     .program = "toyrecord",
     .input_schema = &m_Schema,
-    .bot_ini = "",
     .max_frames = 216000,
     .set_start = M_SetStart,
     .start = M_Start,
@@ -128,25 +141,28 @@ static const RECORDER_GAME m_Game = {
     .stop = M_Stop,
 };
 
-// Records a run with the extra arguments and returns its inputs and frames.
+// Records a run of game with the extra arguments and returns its inputs
+// and frames.
 static M_INPUT *M_Record(
-    const char *const name, const char *const *const extra,
-    const int32_t extra_count, int32_t *const frames)
+    const char *const name, const RECORDER_GAME *const game,
+    const char *const *const extra, const int32_t extra_count,
+    int32_t *const frames)
 {
     char *const dir = TestDir_Prepare(name);
     char *const ini = TestDir_Join(dir, "bot.ini");
     const char text[] = "[roles]\nshoot = shoot\nleft = left\nright = right\n";
     TestDir_Write(ini, text, sizeof(text) - 1);
+    RECORDER_GAME with_ini = *game;
+    with_ini.bot_ini = ini;
     const char *args[16] = {
-        "toyrecord", "--data",  dir,       "--out",      "unused", "--bot",
-        ini,         "--start", "lives=2", "--strategy", "wander",
+        "toyrecord", "--data", dir, "--out", "unused", "--start", "lives=2",
     };
-    int32_t count = 11;
+    int32_t count = 7;
     for (int32_t i = 0; i < extra_count && count < (int32_t)ARRAY_SIZE(args);
          i++) {
         args[count++] = extra[i];
     }
-    CHECK_EQ_INT(Recorder_Main(&m_Game, count, (char **)args), 0);
+    CHECK_EQ_INT(Recorder_Main(&with_ini, count, (char **)args), 0);
     Mem_Free(ini);
     Mem_Free(dir);
     M_INPUT *const saved = m_Saved;
@@ -165,33 +181,68 @@ static int32_t M_Play(const M_INPUT *const inputs, const int32_t frames)
     return m_Lives;
 }
 
-TEST(a_straight_run_starts_with_the_script_and_stops_at_its_progress)
+TEST(a_losing_run_starts_with_the_script_and_plays_to_the_end)
 {
-    const char *const extra[] = { "--until-progress", "100" };
+    m_Trap = 0;
+    const char *const extra[] = { "--lose" };
     int32_t frames;
     M_INPUT *const inputs =
-        M_Record("straight", extra, ARRAY_SIZE(extra), &frames);
-    CHECK_EQ_INT(frames, 100);
+        M_Record("lose", &m_Game, extra, ARRAY_SIZE(extra), &frames);
     CHECK(inputs[0].shoot && !inputs[0].left && !inputs[0].right);
+    CHECK_EQ_INT(M_Play(inputs, frames), -1);
     Mem_Free(inputs);
 }
 
-TEST(a_search_without_misses_gives_the_same_run_each_time)
+TEST(a_search_gives_the_same_run_each_time)
 {
-    const char *const extra[] = {
-        "--segment", "20",     "--no-miss", "--until-progress",
-        "300",       "--seed", "5",
-    };
+    m_Trap = 0;
+    const char *const extra[] = { "--until", "300", "--seed", "5" };
     int32_t first_frames;
     M_INPUT *const first =
-        M_Record("search_a", extra, ARRAY_SIZE(extra), &first_frames);
+        M_Record("search_a", &m_Game, extra, ARRAY_SIZE(extra), &first_frames);
     int32_t second_frames;
     M_INPUT *const second =
-        M_Record("search_b", extra, ARRAY_SIZE(extra), &second_frames);
+        M_Record("search_b", &m_Game, extra, ARRAY_SIZE(extra), &second_frames);
     CHECK_EQ_INT(first_frames, 303);
     CHECK_EQ_INT(second_frames, first_frames);
     CHECK(memcmp(first, second, (size_t)first_frames * sizeof(M_INPUT)) == 0);
     CHECK_EQ_INT(M_Play(first, first_frames), 2);
     Mem_Free(first);
     Mem_Free(second);
+}
+
+TEST(a_search_stops_at_the_frame_cap)
+{
+    m_Trap = 0;
+    RECORDER_GAME game = m_Game;
+    game.max_frames = 200;
+    int32_t frames;
+    M_INPUT *const inputs = M_Record("cap", &game, nullptr, 0, &frames);
+    CHECK_EQ_INT(frames, 200);
+    CHECK_EQ_INT(M_Play(inputs, frames), 2);
+    Mem_Free(inputs);
+}
+
+TEST(a_dead_end_falls_back_to_a_survivor_of_the_beam)
+{
+    m_Trap = M_TRAP;
+    m_MostTrapX = -50;
+    int32_t frames;
+    M_INPUT *const inputs = M_Record("beam", &m_Game, nullptr, 0, &frames);
+    CHECK_EQ_INT(frames, 400);
+    CHECK_EQ_INT(M_Play(inputs, frames), 2);
+    CHECK(m_TrapX < M_TRAP);
+    CHECK(m_MostTrapX >= M_TRAP);
+    Mem_Free(inputs);
+}
+
+TEST(scores_compare_value_by_value)
+{
+    const RECORDER_SCORE low = { .values = { 1, 9 }, .count = 2 };
+    const RECORDER_SCORE high = { .values = { 2, 0 }, .count = 2 };
+    const RECORDER_SCORE tie = { .values = { 2, 5 }, .count = 2 };
+    CHECK(Recorder_CompareScores(high, low) > 0);
+    CHECK(Recorder_CompareScores(low, high) < 0);
+    CHECK(Recorder_CompareScores(tie, high) > 0);
+    CHECK_EQ_INT(Recorder_CompareScores(high, high), 0);
 }

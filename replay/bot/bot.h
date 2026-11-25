@@ -58,7 +58,6 @@ typedef struct {
 typedef struct BOT BOT;
 
 typedef struct {
-    const char *name;
     // Writes the roles of the next frame into out. threats holds the
     // offsets from the player to count threats and the edges, nearest
     // first.
@@ -93,9 +92,6 @@ struct BOT {
     int32_t hold_frames;
     BOT_ROLES hold_roles;
 };
-
-// Returns the strategy named name, or nullptr.
-const BOT_STRATEGY *Bot_FindStrategy(const char *name);
 
 // Sets bot up from the bot.ini at path, with the buttons of schema. Fails
 // when the file is missing, or names a role or button that does not exist.

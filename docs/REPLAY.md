@@ -43,30 +43,30 @@ a run with a bot on the native game and saves it in the game's own
 format: th06 and th07 write a `.rpy`, th01 a case script for
 `tools/harness capture`. The bot plays roles (shoot, focus, bomb,
 strike and the four directions), which a strategy picks each frame:
-`dodge` follows a potential field of the threats, `wander` walks at
-random. `replay/GAME/bot.ini` maps each role to the game's buttons,
-with one word per frame, so a role can be a sequence such as th01's
-bomb. [bot.h](../replay/bot/bot.h) gives the format.
+`dodge` follows a potential field of the threats, `hold` holds a move
+for a few frames, `wander` walks at random. `replay/GAME/bot.ini` maps
+each role to the game's buttons, with one word per frame, so a role can
+be a sequence such as th01's bomb. [bot.h](../replay/bot/bot.h) gives
+the format.
 
 ```
 th06record --data DATA --out OUT.rpy --start difficulty=normal \
     --start stage=1 --start character=reimu --start shot=a --seed 1
 th07record --data DATA --out OUT.rpy --start difficulty=normal \
-    --start stage=1 --start character=reimu --start shot=a --seed 1
+    --start stage=1 --start character=reimu --start shot=a --lose
 th01record --data DATA --out OUT.txt --start stage=19 --start route=0 \
-    --start lives=6 --start bombs=9 --start boss_hp=18 \
-    --segment 150 --no-miss --until-progress 8
+    --start lives=6 --start bombs=9 --start boss_hp=18 --until 8
 ```
 
 `--start` sets the run's start values: th06's and th07's practice
-choices, or the start fields of a th01 case. `--strategy` picks the
-strategy, `--seed` the bot's seed and `--until-progress` ends the run
-once the first value of its score, such as a th01 boss's phase, reaches
-a value.
-Without `--segment`, the bot plays the run straight through. With
-`--segment N`, the recorder searches the run N frames at a time, and
-with `--no-miss` it keeps only segments without a setback, such as a
-lost life;
+choices, or the start fields of a th01 case. The recorder searches the
+run 150 frames at a time for segments without a setback, such as a lost
+life, and keeps the one with the best score; `--seed` seeds the search.
+Each game scores its runs: th01 by the boss's phase or the cards
+removed, th06 and th07 by the stage frames. The run ends with the game,
+at the game's frame cap, or with `--until` once the first value of its
+score reaches a value. With `--lose`, the bot
+wanders straight to the end, for a game over.
 [recorder.h](../replay/bot/recorder.h) describes the search. The same
 arguments always give the same run.
 
