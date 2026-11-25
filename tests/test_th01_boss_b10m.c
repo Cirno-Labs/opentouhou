@@ -1,3 +1,4 @@
+#include "../src/th01/boss_b10m.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
@@ -90,8 +91,8 @@ static void M_Enter(FIXTURE *const f)
         g_Session.frame_rand++;
         CHECK(B10M_UpdateAndRender(&f->assets, &f->miko));
     }
-    CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_LATERAL);
-    CHECK_EQ_INT(g_B10M.frame, 0);
+    CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_LATERAL);
+    CHECK_EQ_INT(m_B10M.status.frame, 0);
 }
 
 TEST(setup_shares_eye_assets_and_retains_static_history)
@@ -101,17 +102,17 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     FIXTURE f;
     M_Init(&f, &arena);
     B10M_Init();
-    g_B10M.frame = 77;
-    g_B10M.phase = B10M_PHASE_STAR_ATTACK;
-    g_B10M.pattern_state = 17;
-    g_B10M.subphase = 8;
-    g_B10M.hit = (BOSS_HIT) { 39, true };
-    g_B10M.hp_bar_filled = true;
-    g_B10M.pentagram.angle = 450;
-    g_B10M.pentagram.phase = B10M_STAR_GROWN_SLAM;
+    m_B10M.status.frame = 77;
+    m_B10M.status.phase = B10M_PHASE_STAR_ATTACK;
+    m_B10M.pattern_state = 17;
+    m_B10M.subphase = 8;
+    m_B10M.hit = (BOSS_HIT) { 39, true };
+    m_B10M.hp_bar_filled = true;
+    m_B10M.pentagram.angle = 450;
+    m_B10M.pentagram.phase = B10M_STAR_GROWN_SLAM;
     for (int32_t i = 0; i < 5; i++) {
-        g_B10M.eyes[i].lock_frame = (int16_t)(i % 4);
-        g_B10M.eyes[i].previous_left = (int16_t)(i * 11);
+        m_B10M.eyes[i].lock_frame = (int16_t)(i % 4);
+        m_B10M.eyes[i].previous_left = (int16_t)(i * 11);
         m_Missiles.slots[i].flag = MISSILE_MOVING;
         m_Missiles.slots[i].previous_top = (int16_t)(i * 9);
     }
@@ -119,31 +120,32 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
     B10M_Setup(&f.assets, &f.miko);
+    CHECK(g_Boss == &m_B10M.status);
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(g_B10M.hp, 16);
-    CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_ENTRANCE);
-    CHECK_EQ_INT(g_B10M.frame, 0);
-    CHECK_EQ_INT(g_B10M.hit.frame, 39);
-    CHECK(g_B10M.hit.invincible);
-    CHECK(g_B10M.hp_bar_filled);
-    CHECK_EQ_INT(g_B10M.pattern_state, 17);
-    CHECK_EQ_INT(g_B10M.subphase, 8);
-    CHECK_EQ_INT(g_B10M.pentagram.angle, 450);
+    CHECK_EQ_INT(m_B10M.status.hp, 16);
+    CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_ENTRANCE);
+    CHECK_EQ_INT(m_B10M.status.frame, 0);
+    CHECK_EQ_INT(m_B10M.hit.frame, 39);
+    CHECK(m_B10M.hit.invincible);
+    CHECK(m_B10M.hp_bar_filled);
+    CHECK_EQ_INT(m_B10M.pattern_state, 17);
+    CHECK_EQ_INT(m_B10M.subphase, 8);
+    CHECK_EQ_INT(m_B10M.pentagram.angle, 450);
     CHECK_EQ_INT(m_Health.first_white, 12);
     CHECK_EQ_INT(m_Health.first_redwhite, 8);
     CHECK(m_Sprites.entities[0] == &f.assets.eyes);
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
     for (int32_t i = 0; i < 5; i++) {
-        CHECK_EQ_INT(g_B10M.eyes[i].left, left[i]);
-        CHECK_EQ_INT(g_B10M.eyes[i].top, top[i]);
-        CHECK_EQ_INT(g_B10M.eyes[i].sprites.slot, 0);
-        CHECK_EQ_INT(g_B10M.eyes[i].sprites.width_bytes, 8);
-        CHECK_EQ_INT(g_B10M.eyes[i].sprites.height, 48);
-        CHECK_EQ_INT(g_B10M.eyes[i].image, 0);
-        CHECK(g_B10M.eyes[i].orb_inactive);
-        CHECK_EQ_INT(g_B10M.eyes[i].lock_frame, i % 4);
-        CHECK_EQ_INT(g_B10M.eyes[i].previous_left, i * 11);
+        CHECK_EQ_INT(m_B10M.eyes[i].left, left[i]);
+        CHECK_EQ_INT(m_B10M.eyes[i].top, top[i]);
+        CHECK_EQ_INT(m_B10M.eyes[i].sprites.slot, 0);
+        CHECK_EQ_INT(m_B10M.eyes[i].sprites.width_bytes, 8);
+        CHECK_EQ_INT(m_B10M.eyes[i].sprites.height, 48);
+        CHECK_EQ_INT(m_B10M.eyes[i].image, 0);
+        CHECK(m_B10M.eyes[i].orb_inactive);
+        CHECK_EQ_INT(m_B10M.eyes[i].lock_frame, i % 4);
+        CHECK_EQ_INT(m_B10M.eyes[i].previous_left, i * 11);
         CHECK_EQ_INT(m_Missiles.slots[i].flag, MISSILE_FREE);
         CHECK_EQ_INT(m_Missiles.slots[i].previous_top, i * 9);
     }
@@ -192,7 +194,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
         CHECK_EQ_INT(g_Stage.score, 0);
         CHECK_EQ_INT(arena.used, used);
         CHECK_EQ_INT(
-            g_B10M.pattern_interval,
+            m_B10M.pattern_interval,
             rank == 0       ? 350
                 : rank == 1 ? 300
                 : rank == 2 ? 200
@@ -202,10 +204,10 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
             count += g_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(count, rank == 2 ? 15 : rank == 3 ? 25 : 0);
-        CHECK_EQ_INT(g_B10M.eyes[0].image, 4);
-        CHECK_EQ_INT(g_B10M.eyes[1].image, 3);
-        CHECK(!g_B10M.eyes[0].orb_inactive);
-        CHECK(g_B10M.eyes[4].orb_inactive);
+        CHECK_EQ_INT(m_B10M.eyes[0].image, 4);
+        CHECK_EQ_INT(m_B10M.eyes[1].image, 3);
+        CHECK(!m_B10M.eyes[0].orb_inactive);
+        CHECK(m_B10M.eyes[4].orb_inactive);
         Arena_Free(&arena);
     }
 }
@@ -229,19 +231,19 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         for (int32_t frame = 0; frame < 18000 && loops < 2; frame++) {
             g_Player.left = (int16_t)(40 + (frame * 7) % 550);
             g_Session.frame_rand++;
-            phases |= (uint16_t)(1u << g_B10M.phase);
-            if (g_B10M.phase == B10M_PHASE_STAR_ATTACK) {
-                star_phases |= (uint16_t)(1u << g_B10M.pentagram.phase);
+            phases |= (uint16_t)(1u << m_B10M.status.phase);
+            if (m_B10M.status.phase == B10M_PHASE_STAR_ATTACK) {
+                star_phases |= (uint16_t)(1u << m_B10M.pentagram.phase);
             }
-            const int8_t previous = g_B10M.phase;
-            if (g_B10M.phase == B10M_PHASE_STAR_ATTACK) {
-                previous_star_phase = g_B10M.pentagram.phase;
+            const int8_t previous = m_B10M.status.phase;
+            if (m_B10M.status.phase == B10M_PHASE_STAR_ATTACK) {
+                previous_star_phase = m_B10M.pentagram.phase;
             }
             CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
             if (previous == B10M_PHASE_STAR_ATTACK
-                && g_B10M.phase == B10M_PHASE_TO_STAR) {
+                && m_B10M.status.phase == B10M_PHASE_TO_STAR) {
                 CHECK_EQ_INT(
-                    g_B10M.pentagram.phase,
+                    m_B10M.pentagram.phase,
                     loops == 0 ? B10M_STAR_RETURN : B10M_STAR_WAIT);
                 CHECK_EQ_INT(previous_star_phase, loops == 0 ? 6 : 9);
                 loops++;
@@ -250,10 +252,10 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         CHECK_EQ_INT(phases, 0x3fff);
         CHECK_EQ_INT(star_phases, 0x3ff);
         CHECK_EQ_INT(loops, 2);
-        CHECK_EQ_INT(g_B10M.hp, 16);
+        CHECK_EQ_INT(m_B10M.status.hp, 16);
         CHECK_EQ_INT(arena.used, used);
         CHECK(g_Rng != 0xb10a0000);
-        CHECK(!g_B10M.finished);
+        CHECK(!m_B10M.finished);
         CHECK(m_Scene.active == nullptr);
         Arena_Free(&arena);
     }
@@ -267,8 +269,8 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     M_Battle(&f, &arena);
     B10M_Init();
     B10M_Setup(&f.assets, &f.miko);
-    g_B10M.phase = B10M_PHASE_MISSILES;
-    g_B10M.frame = 99;
+    m_B10M.status.phase = B10M_PHASE_MISSILES;
+    m_B10M.status.frame = 99;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         m_Missiles.slots[i] = (MISSILE) { .left = 200 * 16,
                                           .top = 200 * 16,
@@ -279,9 +281,9 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     const int16_t variation = (int16_t)(MasterRng_Next(&expected) % 3);
     Frame_Reset();
     CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
-    CHECK_EQ_INT(g_B10M.subphase, variation * 4 + 1);
+    CHECK_EQ_INT(m_B10M.subphase, variation * 4 + 1);
     CHECK_EQ_INT(g_Rng, expected);
-    g_B10M.frame = 103;
+    m_B10M.status.frame = 103;
     CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
         CHECK_EQ_INT(m_Missiles.slots[i].left, 200 * 16);
@@ -302,14 +304,14 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         M_Battle(&f, &arena);
         B10M_Init();
         B10M_Setup(&f.assets, &f.miko);
-        g_B10M.phase = (int8_t)phase;
-        g_B10M.hp = 0;
-        g_B10M.pattern_interval = 24;
-        g_B10M.iterations = 1;
+        m_B10M.status.phase = (int8_t)phase;
+        m_B10M.status.hp = 0;
+        m_B10M.pattern_interval = 24;
+        m_B10M.iterations = 1;
         if (variant == 2) {
-            g_B10M.pentagram.phase = B10M_STAR_SLAM;
-            g_B10M.pentagram.center.y = 420;
-            g_B10M.frame = 3;
+            m_B10M.pentagram.phase = B10M_STAR_SLAM;
+            m_B10M.pentagram.center.y = 420;
+            m_B10M.status.frame = 3;
         }
         m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                           .left = 200 * 16,
@@ -322,7 +324,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         m_Lasers.slots[6].alive = true;
         Frame_Reset();
         CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
-        CHECK(g_B10M.defeating);
+        CHECK(m_B10M.defeating);
         CHECK(!g_Stage.cleared);
         CHECK(m_Scene.active == nullptr);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
@@ -332,24 +334,24 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(!g_Pellets.slots[0].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
         CHECK(m_Lasers.slots[6].alive);
-        const B10M frozen = g_B10M;
+        const B10M frozen = m_B10M;
         CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
-        CHECK(memcmp(&g_B10M, &frozen, sizeof(g_B10M)) == 0);
+        CHECK(memcmp(&m_B10M, &frozen, sizeof(m_B10M)) == 0);
         const size_t used = arena.used;
-        for (int32_t frame = 0; frame < 400 && !g_B10M.finished; frame++) {
+        for (int32_t frame = 0; frame < 400 && !m_B10M.finished; frame++) {
             Frame_VSync();
             B10M_UpdateAndRender(&f.assets, &f.miko);
         }
-        CHECK(g_B10M.finished);
+        CHECK(m_B10M.finished);
         CHECK(g_Stage.cleared);
         CHECK(g_Player.is_hit);
         CHECK(m_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(m_Scene.active->id, 3);
         CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
-        const B10M finished = g_B10M;
+        const B10M finished = m_B10M;
         CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
-        CHECK(memcmp(&g_B10M, &finished, sizeof(g_B10M)) == 0);
+        CHECK(memcmp(&m_B10M, &finished, sizeof(m_B10M)) == 0);
         Arena_Free(&arena);
     }
 }
@@ -368,26 +370,26 @@ TEST(real_orb_hits_score_and_cross_every_hp_gate)
         M_Battle(&f, &arena);
         B10M_Init();
         B10M_Setup(&f.assets, &f.miko);
-        g_B10M.phase = phases[i];
-        g_B10M.hp = hp[i];
-        g_B10M.pattern_interval = 24;
-        g_B10M.eyes[0].image = 3;
-        g_B10M.eyes[0].orb_inactive = false;
+        m_B10M.status.phase = phases[i];
+        m_B10M.status.hp = hp[i];
+        m_B10M.pattern_interval = 24;
+        m_B10M.eyes[0].image = 3;
+        m_B10M.eyes[0].orb_inactive = false;
         g_Orb.previous_left = 88;
         g_Orb.previous_top = 148;
         g_Orb.velocity_x = ORB_X_LEFT_4;
         Frame_Reset();
         CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
-        CHECK_EQ_INT(g_B10M.hp, hp[i] - 1);
-        CHECK_EQ_INT(g_B10M.phase, phases[i] + 1);
+        CHECK_EQ_INT(m_B10M.status.hp, hp[i] - 1);
+        CHECK_EQ_INT(m_B10M.status.phase, phases[i] + 1);
         CHECK_EQ_INT(g_Stage.score, 5000);
         CHECK_EQ_INT(g_Orb.velocity_x, ORB_X_RIGHT_4);
-        CHECK(g_B10M.hit.invincible);
-        CHECK_EQ_INT(g_B10M.frame, 0);
-        CHECK_EQ_INT(g_B10M.hit.frame, 0);
-        const int16_t old_hp = g_B10M.hp;
+        CHECK(m_B10M.hit.invincible);
+        CHECK_EQ_INT(m_B10M.status.frame, 0);
+        CHECK_EQ_INT(m_B10M.hit.frame, 0);
+        const int16_t old_hp = m_B10M.status.hp;
         CHECK(B10M_UpdateAndRender(&f.assets, &f.miko));
-        CHECK_EQ_INT(g_B10M.hp, old_hp);
+        CHECK_EQ_INT(m_B10M.status.hp, old_hp);
         CHECK_EQ_INT(g_Stage.score, 5000);
         Arena_Free(&arena);
     }
@@ -403,8 +405,8 @@ TEST(entrance_white_lines_keep_asymmetric_lethal_bounds)
         M_Battle(&f, &arena);
         B10M_Init();
         B10M_Setup(&f.assets, &f.miko);
-        g_B10M.frame = 160;
-        g_B10M.hp_bar_filled = true;
+        m_B10M.status.frame = 160;
+        m_B10M.hp_bar_filled = true;
         g_Player.invincible = false;
         g_Player.left = positions[i];
         Frame_Reset();
@@ -428,9 +430,9 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     M_Battle(&f, &arena);
     B10M_Init();
     B10M_Setup(&f.assets, &f.miko);
-    g_B10M.phase = B10M_PHASE_STAR_RISE;
-    g_B10M.pentagram.center = (MATH16_VECTOR) { 316, 240 };
-    g_B10M.pentagram.radius = 64;
+    m_B10M.status.phase = B10M_PHASE_STAR_RISE;
+    m_B10M.pentagram.center = (MATH16_VECTOR) { 316, 240 };
+    m_B10M.pentagram.radius = 64;
     g_StagePalette.colors[15][0] = 126;
     g_StagePalette.colors[15][1] = 0;
     g_StagePalette.colors[15][2] = 5;
@@ -442,9 +444,9 @@ TEST(palette_recolor_keeps_signed_overflow_and_dac_clamp)
     CHECK_EQ_INT(g_StagePalette.colors[15][0], -67);
     CHECK_EQ_INT(g_Palette.saved.colors[15][0], 0);
     CHECK_EQ_INT(g_Palette.saved.colors[15][2], 5);
-    CHECK_EQ_INT(g_B10M.phase, B10M_PHASE_STAR_ATTACK);
-    CHECK_EQ_INT(g_B10M.pentagram.center.y, 189);
-    CHECK_EQ_INT(g_B10M.pentagram.angle, 0);
-    CHECK_EQ_INT(g_B10M.pattern_interval, 0);
+    CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_STAR_ATTACK);
+    CHECK_EQ_INT(m_B10M.pentagram.center.y, 189);
+    CHECK_EQ_INT(m_B10M.pentagram.angle, 0);
+    CHECK_EQ_INT(m_B10M.pattern_interval, 0);
     Arena_Free(&arena);
 }

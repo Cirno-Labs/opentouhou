@@ -1,3 +1,4 @@
+#include "../src/th01/boss_b20j.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/shootout_lasers.c"
 #include "th01/boss_b20j.h"
@@ -54,31 +55,35 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     g_Palette.saved.colors[10][1] = 7;
     memset(&m_Health, 0, sizeof(m_Health));
 
+    memset(&m_B20J, 0xa5, sizeof(m_B20J));
     B20J_Init();
-    g_B20J.hit = (BOSS_HIT) { 27, true };
-    g_B20J.pattern_state = 32;
-    g_B20J.diamond_edges_frame = 91;
-    g_B20J.two_snakes.left[1][3] = 172;
-    g_B20J.ray_previous_x = 44;
-    g_B20J.finished = true;
+    CHECK_EQ_INT(m_B20J.ray_previous_x, 999);
+    CHECK_EQ_INT(m_B20J.ray_previous_y, 999);
+    m_B20J.hit = (BOSS_HIT) { 27, true };
+    m_B20J.pattern_state = 32;
+    m_B20J.diamond_edges_frame = 91;
+    m_B20J.two_snakes.left[1][3] = 172;
+    m_B20J.ray_previous_x = 44;
+    m_B20J.finished = true;
     const size_t used = arena.used;
     B20J_Setup(&assets);
+    CHECK(g_Boss == &m_B20J.status);
     CHECK_EQ_INT(arena.used, used);
-    CHECK_EQ_INT(g_B20J.hp, 18);
-    CHECK_EQ_INT(g_B20J.phase, B20J_PHASE_START);
-    CHECK_EQ_INT(g_B20J.face_direction, 2);
-    CHECK_EQ_INT(g_B20J.face_expression, 0);
-    CHECK(g_B20J.direction_can_change);
-    CHECK(!g_B20J.finished);
+    CHECK_EQ_INT(m_B20J.status.hp, 18);
+    CHECK_EQ_INT(m_B20J.status.phase, B20J_PHASE_START);
+    CHECK_EQ_INT(m_B20J.face_direction, 2);
+    CHECK_EQ_INT(m_B20J.face_expression, 0);
+    CHECK(m_B20J.direction_can_change);
+    CHECK(!m_B20J.finished);
     CHECK_EQ_INT(m_Health.first_white, 16);
     CHECK_EQ_INT(m_Health.first_redwhite, 10);
-    CHECK_EQ_INT(g_B20J.boss_palette.colors[10][1], 7);
-    CHECK_EQ_INT(g_B20J.hit.frame, 27);
-    CHECK(g_B20J.hit.invincible);
-    CHECK_EQ_INT(g_B20J.pattern_state, 32);
-    CHECK_EQ_INT(g_B20J.diamond_edges_frame, 91);
-    CHECK_EQ_INT(g_B20J.two_snakes.left[1][3], 172);
-    CHECK_EQ_INT(g_B20J.ray_previous_x, 44);
+    CHECK_EQ_INT(m_B20J.boss_palette.colors[10][1], 7);
+    CHECK_EQ_INT(m_B20J.hit.frame, 27);
+    CHECK(m_B20J.hit.invincible);
+    CHECK_EQ_INT(m_B20J.pattern_state, 32);
+    CHECK_EQ_INT(m_B20J.diamond_edges_frame, 91);
+    CHECK_EQ_INT(m_B20J.two_snakes.left[1][3], 172);
+    CHECK_EQ_INT(m_B20J.ray_previous_x, 44);
     Arena_Free(&arena);
 }
 
@@ -152,30 +157,34 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     g_StageObjects.destination_left = 77;
     g_Rng = 91;
     Video_SelectDrawingPage(1);
+    memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
+    const PALETTE before = g_StagePalette;
     const size_t used = arena.used;
     B20J_BeginEntrance(&f.assets);
-    CHECK_EQ_INT(g_B20J.head.sprites.width_bytes, 10);
-    CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
+    CHECK_EQ_INT(m_B20J.head.sprites.width_bytes, 10);
+    CHECK_EQ_INT(m_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_Rng, 91);
     CHECK(g_StageObjects.entrance_done && g_StageObjects.portal_active);
     CHECK_EQ_INT(g_StageObjects.destination_left, 77);
     Frame_Reset();
     int32_t polls = 0;
     while (!B20J_ResumeEntrance(&f.assets)) {
-        const B20J snapshot = g_B20J;
+        CHECK(memcmp(&g_StagePalette, &before, sizeof(before)) == 0);
+        const B20J snapshot = m_B20J;
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!B20J_ResumeEntrance(&f.assets));
-            CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
+            CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
         }
         Frame_VSync();
         CHECK(++polls < 2000);
     }
     CHECK_EQ_INT(g_Palette.resource.colors[10][0], 2);
     CHECK_EQ_INT(g_Palette.saved.colors[10][0], 13);
-    CHECK_EQ_INT(g_B20J.stage_palette.colors[10][1], 7);
+    CHECK_EQ_INT(m_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(arena.used, used);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
-    CHECK_EQ_INT(g_B20J.hp, 18);
+    CHECK_EQ_INT(m_B20J.status.hp, 18);
+    CHECK(memcmp(&g_StagePalette, &m_B20J.stage_palette, sizeof(PALETTE)) == 0);
     Arena_Free(&arena);
 }
 
@@ -190,11 +199,11 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             M_Fixture(&f, &arena);
             g_Session.settings.difficulty = rank;
             g_Session.settings.difficulty = rank;
-            g_B20J.phase = B20J_PHASE_FINAL;
-            g_B20J.pattern = pattern;
-            g_B20J.frame = 0;
-            g_B20J.hit.frame = 0;
-            g_B20J.patterns_done = 1;
+            m_B20J.status.phase = B20J_PHASE_FINAL;
+            m_B20J.pattern = pattern;
+            m_B20J.status.frame = 0;
+            m_B20J.hit.frame = 0;
+            m_B20J.patterns_done = 1;
             const size_t used = arena.used;
             Frame_Reset();
             int32_t frames = 0;
@@ -208,9 +217,9 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
                 }
                 Frame_VSync();
                 CHECK(++frames < 1500);
-            } while (g_B20J.pattern != 99);
-            CHECK_EQ_INT(g_B20J.frame, 0);
-            CHECK_EQ_INT(g_B20J.hp, 18);
+            } while (m_B20J.pattern != 99);
+            CHECK_EQ_INT(m_B20J.status.frame, 0);
+            CHECK_EQ_INT(m_B20J.status.hp, 18);
             CHECK_EQ_INT(arena.used, used);
             CHECK(!g_Stage.game_cleared);
         }
@@ -224,10 +233,10 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     Arena_Init(&arena, "Konngara defeat", 2 * 1024 * 1024);
     FIXTURE f;
     M_Fixture(&f, &arena);
-    g_B20J.phase = B20J_PHASE_FINAL;
-    g_B20J.pattern = 99;
-    g_B20J.frame = 0;
-    g_B20J.hp = 0;
+    m_B20J.status.phase = B20J_PHASE_FINAL;
+    m_B20J.pattern = 99;
+    m_B20J.status.frame = 0;
+    m_B20J.status.hp = 0;
     g_Stage.score = UINT32_MAX - 100;
     f.assets.scroll.palette[7] = (GFX_COLOR) { 255, 255, 255, 255 };
     g_Palette.saved.colors[7][0] = 15;
@@ -235,25 +244,25 @@ TEST(custom_final_defeat_finishes_bonus_and_stays_inert)
     const size_t used = arena.used;
     int32_t polls = 0;
     while (!B20J_UpdateAndRender(&f.assets)) {
-        const B20J snapshot = g_B20J;
+        const B20J snapshot = m_B20J;
         CHECK(!g_Stage.game_cleared);
         for (int32_t i = 0; i < 3; i++) {
             CHECK(!B20J_UpdateAndRender(&f.assets));
-            CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
+            CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
         }
         Frame_VSync();
         CHECK(++polls < 1200);
     }
-    CHECK(g_Stage.game_cleared && g_B20J.finished && !g_B20J.defeating);
+    CHECK(g_Stage.game_cleared && m_B20J.finished && !m_B20J.defeating);
     CHECK_EQ_INT(g_Stage.score, 49899);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
-    CHECK_EQ_INT(g_B20J.frame, 65);
-    CHECK_EQ_INT(g_B20J.scroll_frame, 264);
-    const B20J snapshot = g_B20J;
+    CHECK_EQ_INT(m_B20J.status.frame, 65);
+    CHECK_EQ_INT(m_B20J.scroll_frame, 264);
+    const B20J snapshot = m_B20J;
     for (int32_t i = 0; i < 100; i++) {
         Frame_VSync();
         CHECK(B20J_UpdateAndRender(nullptr));
-        CHECK(memcmp(&g_B20J, &snapshot, sizeof(g_B20J)) == 0);
+        CHECK(memcmp(&m_B20J, &snapshot, sizeof(m_B20J)) == 0);
     }
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -266,16 +275,16 @@ TEST(entrance_pan_copies_visible_alias_after_hidden_rows)
     FIXTURE f;
     M_Fixture(&f, &arena);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
-    g_B20J.entrance_active = true;
-    g_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
-    g_B20J.scroll_line = 400;
+    m_B20J.entrance_active = true;
+    m_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
+    m_B20J.scroll_line = 400;
     Frame_Reset();
     CHECK(!B20J_ResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);
     CHECK_EQ_INT(g_Video.pages[0][14335], 6);
     CHECK_EQ_INT(g_Video.pages[0][14336], 0);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(g_B20J.scroll_line, 368);
+    CHECK_EQ_INT(m_B20J.scroll_line, 368);
     Arena_Free(&arena);
 }
 
@@ -289,15 +298,15 @@ TEST(hit_tests_current_orb_at_inclusive_rectangle_edges)
         Arena_Reset(&arena);
         FIXTURE f;
         M_Fixture(&f, &arena);
-        g_B20J.phase = B20J_PHASE_FINAL;
-        g_B20J.pattern = 99;
+        m_B20J.status.phase = B20J_PHASE_FINAL;
+        m_B20J.pattern = 99;
         g_Orb.left = points[i][0];
         g_Orb.top = points[i][1];
         g_Orb.previous_left = 300;
         g_Orb.previous_top = 140;
         Frame_Reset();
         CHECK(B20J_UpdateAndRender(&f.assets));
-        CHECK_EQ_INT(g_B20J.hp, i < 2 ? 17 : 18);
+        CHECK_EQ_INT(m_B20J.status.hp, i < 2 ? 17 : 18);
         CHECK_EQ_INT(g_Stage.score, i < 2 ? 10000 : 0);
     }
     Arena_Free(&arena);
@@ -316,9 +325,9 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
         image->coverage[0] = 1;
         image->pixels[0] = i - 7;
     }
-    g_B20J.phase = B20J_PHASE_FINAL;
-    g_B20J.pattern = 99;
-    g_B20J.hp = 1;
+    m_B20J.status.phase = B20J_PHASE_FINAL;
+    m_B20J.pattern = 99;
+    m_B20J.status.hp = 1;
     g_Orb.left = 320;
     g_Orb.top = 140;
     g_Video.pages[0][0] = 9;
@@ -327,19 +336,19 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     int32_t images = 0, last_image = -1;
     int32_t polls = 0;
     while (!B20J_UpdateAndRender(&f.assets)) {
-        if (g_B20J.defeat_stage == B20J_DEFEAT_KUJI
-            && g_B20J.animation_frame != last_image) {
+        if (m_B20J.defeat_stage == B20J_DEFEAT_KUJI
+            && m_B20J.animation_frame != last_image) {
             CHECK_EQ_INT(g_Video.pages[0][0], images);
-            last_image = g_B20J.animation_frame;
+            last_image = m_B20J.animation_frame;
             images++;
         }
         Frame_VSync();
         CHECK(++polls < 1200);
     }
     CHECK_EQ_INT(images, 9);
-    CHECK_EQ_INT(g_B20J.hp, 0);
+    CHECK_EQ_INT(m_B20J.status.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 60000);
-    CHECK(g_Stage.game_cleared && g_B20J.finished);
+    CHECK(g_Stage.game_cleared && m_B20J.finished);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -362,8 +371,8 @@ TEST(siddham_layers_use_key_fifteen_and_retain_the_resource_palette)
     }
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 51, 68, 85, 255 };
     g_Video.pages[0][0] = 6;
-    g_B20J.entrance_active = true;
-    g_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
+    m_B20J.entrance_active = true;
+    m_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
     Frame_Reset();
     CHECK(!B20J_ResumeEntrance(&f.assets));
     CHECK_EQ_INT(g_Video.pages[0][0], 6);

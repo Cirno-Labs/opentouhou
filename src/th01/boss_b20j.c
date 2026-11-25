@@ -13,13 +13,81 @@
 
 #include <string.h>
 
-B20J g_B20J;
+typedef struct {
+    int16_t left[4][5], top[4][5];
+    MATH16_VECTOR velocity[4];
+    int16_t target_left[4];
+    bool target_locked[4];
+} B20J_SNAKES;
+
+typedef enum {
+    B20J_PHASE_START,
+    B20J_PHASE_PATTERNS_1,
+    B20J_PHASE_FLASH_1,
+    B20J_PHASE_PATTERNS_2,
+    B20J_PHASE_FLASH_2,
+    B20J_PHASE_PATTERNS_3,
+    B20J_PHASE_FLASH_3,
+    B20J_PHASE_FINAL,
+} B20J_PHASE;
+
+typedef enum {
+    B20J_ENTRANCE_SCROLL = 1,
+    B20J_ENTRANCE_SCROLL_STEP,
+    B20J_ENTRANCE_SCROLL_END,
+    B20J_ENTRANCE_SHAKE_DELAY,
+    B20J_ENTRANCE_SHAKE,
+    B20J_ENTRANCE_SHAKE_STEP,
+    B20J_ENTRANCE_PAN,
+    B20J_ENTRANCE_PAN_STEP,
+    B20J_ENTRANCE_TREMBLE,
+    B20J_ENTRANCE_TREMBLE_STEP,
+    B20J_ENTRANCE_FLASH_DELAY,
+    B20J_ENTRANCE_FLASH,
+    B20J_ENTRANCE_FADE_IN,
+} B20J_ENTRANCE;
+
+typedef enum {
+    B20J_DEFEAT_KUJI = 1,
+    B20J_DEFEAT_SHAKE,
+    B20J_DEFEAT_SHAKE_STEP,
+    B20J_DEFEAT_SCROLL,
+    B20J_DEFEAT_SCROLL_STEP,
+    B20J_DEFEAT_CLEAR,
+} B20J_DEFEAT;
+
+typedef struct {
+    BOSS_ENTITY head, face, aim;
+    BOSS_HIT hit;
+    PALETTE boss_palette, stage_palette;
+    B20J_SNAKES two_snakes, four_snakes;
+    MATH16_VECTOR diamond_velocity[2];
+    int16_t diamond_left[4], diamond_top[4], diamond_edges_frame;
+    MATH16_VECTOR row_velocity;
+    int16_t row_left, row_top, row_direction, row_speed;
+    int16_t spray_delta, spray_fired;
+    int16_t ray_x, ray_y, ray_previous_x, ray_previous_y;
+    int16_t slash_left[3], slash_top[3];
+    BOSS_STATE status;
+    int16_t pattern_state, pattern, pattern_previous, patterns_done;
+    int16_t face_direction, face_expression;
+    int16_t scroll_line, scroll_speed, scroll_quarter, scroll_frame;
+    int16_t animation_frame, raw_scroll;
+    FRAME_WAIT wait;
+    uint8_t cup_angle, spray_offset, spray_angle;
+    uint16_t delay_frames;
+    uint8_t entrance_stage, defeat_stage, wait_kind;
+    bool direction_can_change, laser_right_to_left, hp_bar_filled;
+    bool entrance_active, defeating, finished;
+} B20J;
 
 typedef enum {
     B20J_WAIT_NONE,
     B20J_WAIT_SCROLL,
     B20J_WAIT_DELAY,
 } B20J_WAIT;
+
+static B20J m_B20J;
 
 static RESULT M_LoadBody(
     VFS *const vfs, const ALLOCATOR *const a, GRZ *const out)
@@ -99,24 +167,25 @@ RESULT B20J_LoadAssets(
 }
 void B20J_Init(void)
 {
-    memset(&g_B20J, 0, sizeof(g_B20J));
-    g_B20J.ray_previous_x = 999;
-    g_B20J.ray_previous_y = 999;
+    memset(&m_B20J, 0, sizeof(m_B20J));
+    m_B20J.ray_previous_x = 999;
+    m_B20J.ray_previous_y = 999;
 }
 void B20J_Setup(const B20J_ASSETS *const assets)
 {
+    g_Boss = &m_B20J.status;
     ASSERT(
-        !g_B20J.entrance_active && !g_B20J.defeating
-        && g_B20J.wait_kind == B20J_WAIT_NONE);
+        !m_B20J.entrance_active && !m_B20J.defeating
+        && m_B20J.wait_kind == B20J_WAIT_NONE);
     ASSERT(Result_Ignore(B20J_ValidateAssets(assets)));
-    g_B20J.boss_palette = g_Palette.saved;
-    g_B20J.hp = 18;
-    g_B20J.phase = B20J_PHASE_START;
-    g_B20J.frame = 0;
-    g_B20J.direction_can_change = true;
-    g_B20J.face_expression = 0;
-    g_B20J.face_direction = 2;
-    g_B20J.finished = false;
+    m_B20J.boss_palette = g_Palette.saved;
+    m_B20J.status.hp = 18;
+    m_B20J.status.phase = B20J_PHASE_START;
+    m_B20J.status.frame = 0;
+    m_B20J.direction_can_change = true;
+    m_B20J.face_expression = 0;
+    m_B20J.face_direction = 2;
+    m_B20J.finished = false;
     HudHp_Begin(10, 16);
 }
 
@@ -153,52 +222,52 @@ static void M_Grx(const B20J_ASSETS *const assets, const int16_t image)
 }
 static void M_Head(const B20J_ASSETS *const assets, const int16_t direction)
 {
-    BossEntity_Put(&g_B20J.head, 280, 80, direction);
+    BossEntity_Put(&m_B20J.head, 280, 80, direction);
 }
 static void M_Face(
     const B20J_ASSETS *const assets, const int16_t expression,
     const int16_t direction)
 {
     if (expression == 3) {
-        BossEntity_Put(&g_B20J.aim, 280, 128, direction);
+        BossEntity_Put(&m_B20J.aim, 280, 128, direction);
     } else if (expression != 0) {
         BossEntity_Put(
-            &g_B20J.face, 280, 128, (expression - 1) * 3 + direction);
+            &m_B20J.face, 280, 128, (expression - 1) * 3 + direction);
     }
 }
 static void M_Direction(
     const B20J_ASSETS *const assets, const int16_t direction)
 {
-    if (!g_B20J.direction_can_change || g_B20J.face_direction == direction) {
+    if (!m_B20J.direction_can_change || m_B20J.face_direction == direction) {
         return;
     }
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         M_Head(assets, direction);
     }
-    if (g_B20J.face_expression != 0) {
+    if (m_B20J.face_expression != 0) {
         for (int32_t page = 1; page >= 0; page--) {
             Video_SelectDrawingPage(page);
-            M_Face(assets, g_B20J.face_expression, direction);
+            M_Face(assets, m_B20J.face_expression, direction);
         }
     }
-    g_B20J.face_direction = direction;
+    m_B20J.face_direction = direction;
 }
 static void M_Expression(
     const B20J_ASSETS *const assets, const int16_t expression)
 {
-    if (g_B20J.face_expression == expression) {
+    if (m_B20J.face_expression == expression) {
         return;
     }
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
         if (expression == 0) {
-            M_Head(assets, g_B20J.face_direction);
+            M_Head(assets, m_B20J.face_direction);
         } else {
-            M_Face(assets, expression, g_B20J.face_direction);
+            M_Face(assets, expression, m_B20J.face_direction);
         }
     }
-    g_B20J.face_expression = expression;
+    m_B20J.face_expression = expression;
 }
 static void M_SlashPut(const B20J_ASSETS *const assets, const int16_t image)
 {
@@ -239,141 +308,141 @@ static void M_BlackOut(const B20J_ASSETS *const assets)
 }
 static bool M_Scroll(const int16_t top)
 {
-    g_B20J.raw_scroll = top;
-    g_B20J.wait_kind = B20J_WAIT_SCROLL;
-    Frame_BeginWait(&g_B20J.wait);
+    m_B20J.raw_scroll = top;
+    m_B20J.wait_kind = B20J_WAIT_SCROLL;
+    Frame_BeginWait(&m_B20J.wait);
     return false;
 }
 static bool M_Delay(const uint16_t frames)
 {
-    g_B20J.delay_frames = frames;
+    m_B20J.delay_frames = frames;
     if (Frame_DelayReady(frames)) {
         return true;
     }
-    g_B20J.wait_kind = B20J_WAIT_DELAY;
+    m_B20J.wait_kind = B20J_WAIT_DELAY;
     return false;
 }
 static bool M_Ready(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.wait_kind == B20J_WAIT_SCROLL) {
-        if (!Frame_WaitReady(&g_B20J.wait)) {
+    if (m_B20J.wait_kind == B20J_WAIT_SCROLL) {
+        if (!Frame_WaitReady(&m_B20J.wait)) {
             return false;
         }
-        Video_SetScroll(g_B20J.raw_scroll);
+        Video_SetScroll(m_B20J.raw_scroll);
     } else if (
-        g_B20J.wait_kind == B20J_WAIT_DELAY
-        && !Frame_DelayReady(g_B20J.delay_frames)) {
+        m_B20J.wait_kind == B20J_WAIT_DELAY
+        && !Frame_DelayReady(m_B20J.delay_frames)) {
         return false;
     }
-    g_B20J.wait_kind = B20J_WAIT_NONE;
+    m_B20J.wait_kind = B20J_WAIT_NONE;
     return true;
 }
 void B20J_BeginEntrance(const B20J_ASSETS *const assets)
 {
     ASSERT(
-        !g_B20J.entrance_active && !g_B20J.defeating
-        && g_B20J.wait_kind == B20J_WAIT_NONE);
+        !m_B20J.entrance_active && !m_B20J.defeating
+        && m_B20J.wait_kind == B20J_WAIT_NONE);
     g_Pellets.interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(assets, &assets->scroll, false);
-    g_B20J.stage_palette = g_Palette.saved;
+    m_B20J.stage_palette = g_Palette.saved;
     StageObjects_Init(nullptr, 19, false, nullptr, nullptr);
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->upper, false);
     Video_SelectDrawingPage(0);
     Sound_Load(12);
-    ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.head, 0, &assets->head)));
-    ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.face, 1, &assets->face)));
-    ASSERT(Result_Ignore(BossEntity_Bind(&g_B20J.aim, 2, &assets->aim)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&m_B20J.head, 0, &assets->head)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&m_B20J.face, 1, &assets->face)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&m_B20J.aim, 2, &assets->aim)));
     Sound_Play();
     Palette_SetGray(&g_Palette, 0);
     Tram_Clear();
-    g_B20J.scroll_line = 0;
-    g_B20J.scroll_speed = 32;
-    g_B20J.scroll_quarter = 0;
-    g_B20J.scroll_frame = 0;
-    g_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
-    g_B20J.entrance_active = true;
+    m_B20J.scroll_line = 0;
+    m_B20J.scroll_speed = 32;
+    m_B20J.scroll_quarter = 0;
+    m_B20J.scroll_frame = 0;
+    m_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
+    m_B20J.entrance_active = true;
 }
 bool B20J_ResumeEntrance(const B20J_ASSETS *const assets)
 {
-    if (!g_B20J.entrance_active) {
+    if (!m_B20J.entrance_active) {
         return true;
     }
     if (!M_Ready(assets)) {
         return false;
     }
     for (;;) {
-        switch (g_B20J.entrance_stage) {
+        switch (m_B20J.entrance_stage) {
         case B20J_ENTRANCE_SCROLL:
-            g_B20J.entrance_stage = B20J_ENTRANCE_SCROLL_STEP;
-            return M_Scroll(g_B20J.scroll_line);
+            m_B20J.entrance_stage = B20J_ENTRANCE_SCROLL_STEP;
+            return M_Scroll(m_B20J.scroll_line);
         case B20J_ENTRANCE_SCROLL_STEP:
-            g_B20J.scroll_line += g_B20J.scroll_speed;
+            m_B20J.scroll_line += m_B20J.scroll_speed;
             for (int32_t quarter = 0; quarter < 4; quarter++) {
-                if (g_B20J.scroll_quarter == quarter
-                    && g_B20J.scroll_line > (quarter + 1) * 100) {
-                    g_B20J.scroll_quarter++;
-                    g_B20J.scroll_speed--;
+                if (m_B20J.scroll_quarter == quarter
+                    && m_B20J.scroll_line > (quarter + 1) * 100) {
+                    m_B20J.scroll_quarter++;
+                    m_B20J.scroll_speed--;
                     if (quarter == 3) {
-                        g_B20J.scroll_quarter = 0;
-                        g_B20J.scroll_line -= 400;
+                        m_B20J.scroll_quarter = 0;
+                        m_B20J.scroll_line -= 400;
                     }
                 }
             }
-            if (g_B20J.scroll_speed <= 0) {
-                g_B20J.entrance_stage = B20J_ENTRANCE_SCROLL_END;
+            if (m_B20J.scroll_speed <= 0) {
+                m_B20J.entrance_stage = B20J_ENTRANCE_SCROLL_END;
                 continue;
             }
-            if (g_B20J.scroll_frame % 8 == 0) {
+            if (m_B20J.scroll_frame % 8 == 0) {
                 Palette_StepTo(&g_Palette, &g_Palette.resource, true);
             }
-            g_B20J.scroll_frame++;
-            g_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
+            m_B20J.scroll_frame++;
+            m_B20J.entrance_stage = B20J_ENTRANCE_SCROLL;
             if (!M_Delay(1)) {
                 return false;
             }
             continue;
         case B20J_ENTRANCE_SCROLL_END:
-            g_B20J.entrance_stage = B20J_ENTRANCE_SHAKE_DELAY;
+            m_B20J.entrance_stage = B20J_ENTRANCE_SHAKE_DELAY;
             return M_Scroll(0);
         case B20J_ENTRANCE_SHAKE_DELAY:
-            g_B20J.animation_frame = 0;
-            g_B20J.entrance_stage = B20J_ENTRANCE_SHAKE;
+            m_B20J.animation_frame = 0;
+            m_B20J.entrance_stage = B20J_ENTRANCE_SHAKE;
             if (!M_Delay(40)) {
                 return false;
             }
             continue;
         case B20J_ENTRANCE_SHAKE:
-            if (g_B20J.animation_frame >= 32) {
-                g_B20J.scroll_line = 400;
-                g_B20J.entrance_stage = B20J_ENTRANCE_PAN;
+            if (m_B20J.animation_frame >= 32) {
+                m_B20J.scroll_line = 400;
+                m_B20J.entrance_stage = B20J_ENTRANCE_PAN;
                 continue;
             }
-            g_B20J.entrance_stage = B20J_ENTRANCE_SHAKE_STEP;
-            return M_Scroll(416 - g_B20J.animation_frame % 2 * 32);
+            m_B20J.entrance_stage = B20J_ENTRANCE_SHAKE_STEP;
+            return M_Scroll(416 - m_B20J.animation_frame % 2 * 32);
         case B20J_ENTRANCE_SHAKE_STEP:
-            if (g_B20J.animation_frame % 8 == 0) {
+            if (m_B20J.animation_frame % 8 == 0) {
                 Sound_Effect(9);
             }
-            g_B20J.animation_frame++;
-            g_B20J.entrance_stage = B20J_ENTRANCE_SHAKE;
+            m_B20J.animation_frame++;
+            m_B20J.entrance_stage = B20J_ENTRANCE_SHAKE;
             if (!M_Delay(1)) {
                 return false;
             }
             continue;
         case B20J_ENTRANCE_PAN:
-            if (g_B20J.scroll_line < 0) {
-                g_B20J.animation_frame = 0;
-                g_B20J.entrance_stage = B20J_ENTRANCE_TREMBLE;
+            if (m_B20J.scroll_line < 0) {
+                m_B20J.animation_frame = 0;
+                m_B20J.entrance_stage = B20J_ENTRANCE_TREMBLE;
                 continue;
             }
-            g_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
-            return M_Scroll(g_B20J.scroll_line);
+            m_B20J.entrance_stage = B20J_ENTRANCE_PAN_STEP;
+            return M_Scroll(m_B20J.scroll_line);
         case B20J_ENTRANCE_PAN_STEP:
             for (int32_t i = 0; i < 32 * 80; i++) {
                 const uint16_t offset =
-                    (uint16_t)(g_B20J.scroll_line * 80 + i) & 0x7fff;
+                    (uint16_t)(m_B20J.scroll_line * 80 + i) & 0x7fff;
                 if (offset < 32000) {
                     memcpy(
                         g_Video.pages[0] + offset * 8,
@@ -381,28 +450,28 @@ bool B20J_ResumeEntrance(const B20J_ASSETS *const assets)
                 }
             }
             Video_SelectDrawingPage(0);
-            g_B20J.scroll_line -= 32;
-            g_B20J.entrance_stage = B20J_ENTRANCE_PAN;
+            m_B20J.scroll_line -= 32;
+            m_B20J.entrance_stage = B20J_ENTRANCE_PAN;
             if (!M_Delay(1)) {
                 return false;
             }
             continue;
         case B20J_ENTRANCE_TREMBLE:
-            if (g_B20J.animation_frame >= 32) {
-                g_B20J.entrance_stage = B20J_ENTRANCE_FLASH_DELAY;
+            if (m_B20J.animation_frame >= 32) {
+                m_B20J.entrance_stage = B20J_ENTRANCE_FLASH_DELAY;
                 continue;
             }
-            g_B20J.entrance_stage = B20J_ENTRANCE_TREMBLE_STEP;
-            return M_Scroll(416 - g_B20J.animation_frame % 2 * 16);
+            m_B20J.entrance_stage = B20J_ENTRANCE_TREMBLE_STEP;
+            return M_Scroll(416 - m_B20J.animation_frame % 2 * 16);
         case B20J_ENTRANCE_TREMBLE_STEP:
-            g_B20J.animation_frame++;
-            g_B20J.entrance_stage = B20J_ENTRANCE_TREMBLE;
+            m_B20J.animation_frame++;
+            m_B20J.entrance_stage = B20J_ENTRANCE_TREMBLE;
             if (!M_Delay(1)) {
                 return false;
             }
             continue;
         case B20J_ENTRANCE_FLASH_DELAY:
-            g_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
+            m_B20J.entrance_stage = B20J_ENTRANCE_FLASH;
             if (!M_Delay(30)) {
                 return false;
             }
@@ -412,19 +481,20 @@ bool B20J_ResumeEntrance(const B20J_ASSETS *const assets)
             for (int32_t i = 0; i < 4; i++) {
                 M_Pi(assets, &assets->layers[i], true);
             }
-            g_B20J.animation_frame = 0;
-            g_B20J.entrance_stage = B20J_ENTRANCE_FADE_IN;
+            m_B20J.animation_frame = 0;
+            m_B20J.entrance_stage = B20J_ENTRANCE_FADE_IN;
             continue;
         case B20J_ENTRANCE_FADE_IN:
-            if (g_B20J.animation_frame >= 16) {
+            if (m_B20J.animation_frame >= 16) {
                 Video_Copy(
                     g_Video.drawing_page, (GFX_RECT) { 0, 0, 640, 400 },
                     1 - g_Video.drawing_page, 0, 0);
-                g_B20J.entrance_active = false;
+                m_B20J.entrance_active = false;
+                g_StagePalette = m_B20J.stage_palette;
                 return true;
             }
             M_WhiteIn(assets);
-            g_B20J.animation_frame++;
+            m_B20J.animation_frame++;
             if (!M_Delay(10)) {
                 return false;
             }
@@ -486,70 +556,70 @@ static void M_Erase(
 }
 static void M_Cross(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 0);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
-        g_B20J.pattern_state = Boss_Rank(
+    if (m_B20J.status.frame == 100) {
+        m_B20J.pattern_state = Boss_Rank(
             PELLET_GROUP_TWO_NARROW_AIMED, PELLET_GROUP_THREE_NARROW_AIMED,
             PELLET_GROUP_FIVE_WIDE_AIMED, PELLET_GROUP_FIVE_NARROW_AIMED);
-        g_B20J.diamond_velocity[0] = Math16_Aim(
+        m_B20J.diamond_velocity[0] = Math16_Aim(
             (MATH16_VECTOR) { 316, 236 }, (MATH16_VECTOR) { 0, 384 }, 7, 0);
-        g_B20J.diamond_velocity[1] = Math16_Aim(
+        m_B20J.diamond_velocity[1] = Math16_Aim(
             (MATH16_VECTOR) { 316, 236 }, (MATH16_VECTOR) { 0, 64 }, 7, 0);
         for (int32_t i = 0; i < 4; i++) {
-            g_B20J.diamond_left[i] = 316;
-            g_B20J.diamond_top[i] = 236;
+            m_B20J.diamond_left[i] = 316;
+            m_B20J.diamond_top[i] = 236;
         }
-        M_Group(assets, 312, 188, g_B20J.pattern_state, 48);
-        g_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
+        M_Group(assets, 312, 188, m_B20J.pattern_state, 48);
+        m_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
         Sound_Effect(12);
-    } else if (g_B20J.diamond_left[0] > 0) {
+    } else if (m_B20J.diamond_left[0] > 0) {
         for (int32_t i = 0; i < 4; i++) {
-            M_Erase(assets, g_B20J.diamond_left[i], g_B20J.diamond_top[i]);
+            M_Erase(assets, m_B20J.diamond_left[i], m_B20J.diamond_top[i]);
         }
         for (int32_t i = 0; i < 4; i++) {
-            g_B20J.diamond_left[i] = Math16_Wrap(
-                g_B20J.diamond_left[i]
-                + (i % 2 == 0 ? 1 : -1) * g_B20J.diamond_velocity[i / 2].x);
-            g_B20J.diamond_top[i] = Math16_Wrap(
-                g_B20J.diamond_top[i] + g_B20J.diamond_velocity[i / 2].y);
+            m_B20J.diamond_left[i] = Math16_Wrap(
+                m_B20J.diamond_left[i]
+                + (i % 2 == 0 ? 1 : -1) * m_B20J.diamond_velocity[i / 2].x);
+            m_B20J.diamond_top[i] = Math16_Wrap(
+                m_B20J.diamond_top[i] + m_B20J.diamond_velocity[i / 2].y);
         }
-        if (g_B20J.diamond_left[0] <= 0) {
-            g_B20J.diamond_left[0] = 0;
-            g_B20J.diamond_left[2] = 0;
-            g_B20J.diamond_left[1] = 632;
-            g_B20J.diamond_left[3] = 632;
+        if (m_B20J.diamond_left[0] <= 0) {
+            m_B20J.diamond_left[0] = 0;
+            m_B20J.diamond_left[2] = 0;
+            m_B20J.diamond_left[1] = 632;
+            m_B20J.diamond_left[3] = 632;
         } else {
             for (int32_t i = 0; i < 4; i++) {
                 M_Diamond(
-                    assets, g_B20J.diamond_left[i], g_B20J.diamond_top[i], 9);
+                    assets, m_B20J.diamond_left[i], m_B20J.diamond_top[i], 9);
             }
         }
         return;
-    } else if (g_B20J.diamond_top[0] > 64) {
+    } else if (m_B20J.diamond_top[0] > 64) {
         for (int32_t i = 0; i < 4; i++) {
-            M_Erase(assets, g_B20J.diamond_left[i], g_B20J.diamond_top[i]);
+            M_Erase(assets, m_B20J.diamond_left[i], m_B20J.diamond_top[i]);
         }
-        g_B20J.diamond_top[0] = Math16_Wrap(g_B20J.diamond_top[0] - 3);
-        g_B20J.diamond_top[1] = Math16_Wrap(g_B20J.diamond_top[1] - 3);
-        g_B20J.diamond_left[2] = Math16_Wrap(g_B20J.diamond_left[2] + 6);
-        g_B20J.diamond_left[3] = Math16_Wrap(g_B20J.diamond_left[3] - 6);
-        if (g_B20J.diamond_top[0] <= 64) {
-            g_B20J.diamond_top[0] = 64;
+        m_B20J.diamond_top[0] = Math16_Wrap(m_B20J.diamond_top[0] - 3);
+        m_B20J.diamond_top[1] = Math16_Wrap(m_B20J.diamond_top[1] - 3);
+        m_B20J.diamond_left[2] = Math16_Wrap(m_B20J.diamond_left[2] + 6);
+        m_B20J.diamond_left[3] = Math16_Wrap(m_B20J.diamond_left[3] - 6);
+        if (m_B20J.diamond_top[0] <= 64) {
+            m_B20J.diamond_top[0] = 64;
         } else {
             for (int32_t i = 0; i < 4; i++) {
                 M_Diamond(
-                    assets, g_B20J.diamond_left[i], g_B20J.diamond_top[i], 9);
+                    assets, m_B20J.diamond_left[i], m_B20J.diamond_top[i], 9);
             }
         }
         return;
-    } else if (g_B20J.diamond_edges_frame < 200) {
-        g_B20J.diamond_edges_frame++;
-        if (g_B20J.diamond_edges_frame % g_B20J.pattern_state == 0) {
+    } else if (m_B20J.diamond_edges_frame < 200) {
+        m_B20J.diamond_edges_frame++;
+        if (m_B20J.diamond_edges_frame % m_B20J.pattern_state == 0) {
             int16_t from_y = 64 + M_Random(assets) % 200;
             int16_t to_x = 240 + M_Random(assets) % 400;
             M_Single(assets, 0, from_y, M_Angle(400 - from_y, to_x), 40);
@@ -567,44 +637,44 @@ static void M_Cross(const B20J_ASSETS *const assets)
         }
         return;
     } else {
-        g_B20J.frame = 0;
+        m_B20J.status.frame = 0;
     }
-    g_B20J.diamond_edges_frame = 0;
+    m_B20J.diamond_edges_frame = 0;
 }
 static void M_CupFire(const B20J_ASSETS *const assets, const uint8_t angle)
 {
-    M_Single(assets, 328, 188, angle, g_B20J.pattern_state);
-    M_Single(assets, 296, 188, angle, g_B20J.pattern_state);
+    M_Single(assets, 328, 188, angle, m_B20J.pattern_state);
+    M_Single(assets, 296, 188, angle, m_B20J.pattern_state);
 }
 static void M_Cup(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 1);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
-        g_B20J.cup_angle = 64;
-        g_B20J.pattern_state = Boss_Rank(80, 80, 96, 112);
+    if (m_B20J.status.frame == 100) {
+        m_B20J.cup_angle = 64;
+        m_B20J.pattern_state = Boss_Rank(80, 80, 96, 112);
     }
-    if (g_B20J.frame < 140 && g_B20J.frame % 8 == 0) {
+    if (m_B20J.status.frame < 140 && m_B20J.status.frame % 8 == 0) {
         M_CupFire(assets, 64);
         return;
     }
-    if (g_B20J.frame < 220 && g_B20J.frame % 8 == 0) {
-        g_B20J.cup_angle += 5;
-        M_CupFire(assets, g_B20J.cup_angle);
-        M_CupFire(assets, 128 - g_B20J.cup_angle);
+    if (m_B20J.status.frame < 220 && m_B20J.status.frame % 8 == 0) {
+        m_B20J.cup_angle += 5;
+        M_CupFire(assets, m_B20J.cup_angle);
+        M_CupFire(assets, 128 - m_B20J.cup_angle);
         return;
     }
-    if (g_B20J.frame < 300 && g_B20J.frame % 8 == 0) {
-        g_B20J.cup_angle -= 12;
-        M_CupFire(assets, g_B20J.cup_angle);
-        M_CupFire(assets, 128 - g_B20J.cup_angle);
+    if (m_B20J.status.frame < 300 && m_B20J.status.frame % 8 == 0) {
+        m_B20J.cup_angle -= 12;
+        M_CupFire(assets, m_B20J.cup_angle);
+        M_CupFire(assets, 128 - m_B20J.cup_angle);
     }
-    if (g_B20J.frame >= 300) {
-        g_B20J.frame = 0;
+    if (m_B20J.status.frame >= 300) {
+        m_B20J.status.frame = 0;
     }
 }
 static void M_SnakeAim(
@@ -660,15 +730,15 @@ static void M_SnakesUpdate(
 }
 static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
 {
-    B20J_SNAKES *const s = four ? &g_B20J.four_snakes : &g_B20J.two_snakes;
+    B20J_SNAKES *const s = four ? &m_B20J.four_snakes : &m_B20J.two_snakes;
     const int32_t count = four ? 4 : 2;
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 2);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
+    if (m_B20J.status.frame == 100) {
         for (int32_t i = 0; i < count; i++) {
             s->target_locked[i] = false;
         }
@@ -677,30 +747,33 @@ static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
             s->left[i][0] = 999;
         }
         if (four) {
-            g_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
+            m_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
         }
         Sound_Effect(12);
         return;
     }
-    if (g_B20J.frame < (four ? 400 : 500)) {
+    if (m_B20J.status.frame < (four ? 400 : 500)) {
         M_SnakesUpdate(s, assets, count);
-        if (g_B20J.frame == 150) {
+        if (m_B20J.status.frame == 150) {
             M_SnakeSpawn(s, assets, 1, 312, 188);
             Sound_Effect(12);
         }
-        if (four && (g_B20J.frame == 200 || g_B20J.frame == 250)) {
-            M_SnakeSpawn(s, assets, g_B20J.frame == 200 ? 2 : 3, 290, 200);
+        if (four
+            && (m_B20J.status.frame == 200 || m_B20J.status.frame == 250)) {
+            M_SnakeSpawn(
+                s, assets, m_B20J.status.frame == 200 ? 2 : 3, 290, 200);
             Sound_Effect(12);
         }
-        if (!four && g_B20J.frame > 240 - g_Session.settings.difficulty * 40
-            && g_B20J.frame % 40 == 0) {
+        if (!four
+            && m_B20J.status.frame > 240 - g_Session.settings.difficulty * 40
+            && m_B20J.status.frame % 40 == 0) {
             uint8_t angle = M_Random(assets) % 12;
-            const int16_t x = g_B20J.frame % 120 == 0 ? 410
-                : g_B20J.frame % 120 == 40            ? 316
-                                                      : 312;
-            const int16_t y = g_B20J.frame % 120 == 0 ? 70
-                : g_B20J.frame % 120 == 40            ? 140
-                                                      : 188;
+            const int16_t x = m_B20J.status.frame % 120 == 0 ? 410
+                : m_B20J.status.frame % 120 == 40            ? 316
+                                                             : 312;
+            const int16_t y = m_B20J.status.frame % 120 == 0 ? 70
+                : m_B20J.status.frame % 120 == 40            ? 140
+                                                             : 188;
             for (int32_t i = 0; i < 10; i++) {
                 const int16_t speed = 40
                     + (i % 4 == 1       ? 16
@@ -718,308 +791,309 @@ static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
                 M_Erase(assets, s->left[i][j], s->top[i][j]);
             }
         }
-        g_B20J.frame = 0;
+        m_B20J.status.frame = 0;
     }
 }
 static void M_Rows(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 0);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
-        g_B20J.row_velocity = Math16_Aim(
+    if (m_B20J.status.frame == 100) {
+        m_B20J.row_velocity = Math16_Aim(
             (MATH16_VECTOR) { 290, 200 }, (MATH16_VECTOR) { 64, 64 }, 16, 0);
-        g_B20J.row_left = 290;
-        g_B20J.row_top = 200;
-        g_B20J.row_speed = 48;
-        g_B20J.row_direction = 99;
+        m_B20J.row_left = 290;
+        m_B20J.row_top = 200;
+        m_B20J.row_speed = 48;
+        m_B20J.row_direction = 99;
         Sound_Effect(12);
-        g_B20J.pattern_state = Boss_Rank(12, 10, 8, 6);
+        m_B20J.pattern_state = Boss_Rank(12, 10, 8, 6);
         return;
     }
-    if (g_B20J.row_direction == 99) {
-        M_Erase(assets, g_B20J.row_left, g_B20J.row_top);
-        g_B20J.row_left = Math16_Wrap(g_B20J.row_left + g_B20J.row_velocity.x);
-        g_B20J.row_top = Math16_Wrap(g_B20J.row_top + g_B20J.row_velocity.y);
-        if (g_B20J.row_top <= 64) {
-            g_B20J.row_left = 64;
-            g_B20J.row_top = 64;
-            g_B20J.row_direction = 0;
+    if (m_B20J.row_direction == 99) {
+        M_Erase(assets, m_B20J.row_left, m_B20J.row_top);
+        m_B20J.row_left = Math16_Wrap(m_B20J.row_left + m_B20J.row_velocity.x);
+        m_B20J.row_top = Math16_Wrap(m_B20J.row_top + m_B20J.row_velocity.y);
+        if (m_B20J.row_top <= 64) {
+            m_B20J.row_left = 64;
+            m_B20J.row_top = 64;
+            m_B20J.row_direction = 0;
             return;
         }
-        M_Diamond(assets, g_B20J.row_left, g_B20J.row_top, 9);
-    } else if (g_B20J.row_direction < 99) {
-        M_Erase(assets, g_B20J.row_left, g_B20J.row_top);
-        g_B20J.row_left = Math16_Wrap(
-            g_B20J.row_left
-            + (g_B20J.row_direction == 0       ? 8
-                   : g_B20J.row_direction == 1 ? -8
+        M_Diamond(assets, m_B20J.row_left, m_B20J.row_top, 9);
+    } else if (m_B20J.row_direction < 99) {
+        M_Erase(assets, m_B20J.row_left, m_B20J.row_top);
+        m_B20J.row_left = Math16_Wrap(
+            m_B20J.row_left
+            + (m_B20J.row_direction == 0       ? 8
+                   : m_B20J.row_direction == 1 ? -8
                                                : 0));
-        if (g_B20J.row_direction >= 2) {
-            g_B20J.row_top = Math16_Wrap(g_B20J.row_top + 8);
-            g_B20J.row_direction++;
-            if (g_B20J.row_direction >= 10) {
-                g_B20J.row_direction = g_B20J.row_left > 320 ? 1 : 0;
+        if (m_B20J.row_direction >= 2) {
+            m_B20J.row_top = Math16_Wrap(m_B20J.row_top + 8);
+            m_B20J.row_direction++;
+            if (m_B20J.row_direction >= 10) {
+                m_B20J.row_direction = m_B20J.row_left > 320 ? 1 : 0;
             }
         }
-        if (g_B20J.row_left > 576) {
-            g_B20J.row_direction = 2;
-            g_B20J.row_left = 576;
-        } else if (g_B20J.row_left < 64) {
-            g_B20J.row_direction = 2;
-            g_B20J.row_left = 64;
+        if (m_B20J.row_left > 576) {
+            m_B20J.row_direction = 2;
+            m_B20J.row_left = 576;
+        } else if (m_B20J.row_left < 64) {
+            m_B20J.row_direction = 2;
+            m_B20J.row_left = 64;
         }
-        if (g_B20J.row_top >= 256) {
-            g_B20J.frame = 0;
+        if (m_B20J.row_top >= 256) {
+            m_B20J.status.frame = 0;
             return;
         }
-        if (g_B20J.row_direction < 2
-            && g_B20J.frame % g_B20J.pattern_state == 0) {
+        if (m_B20J.row_direction < 2
+            && m_B20J.status.frame % m_B20J.pattern_state == 0) {
             M_Group(
-                assets, g_B20J.row_left, g_B20J.row_top,
-                PELLET_GROUP_SINGLE_AIMED, g_B20J.row_speed);
-            g_B20J.row_speed = Math16_Wrap(g_B20J.row_speed + 2);
+                assets, m_B20J.row_left, m_B20J.row_top,
+                PELLET_GROUP_SINGLE_AIMED, m_B20J.row_speed);
+            m_B20J.row_speed = Math16_Wrap(m_B20J.row_speed + 2);
         }
-        M_Diamond(assets, g_B20J.row_left, g_B20J.row_top, 6);
+        M_Diamond(assets, m_B20J.row_left, m_B20J.row_top, 6);
     }
 }
 static void M_Spray(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 1);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
-        g_B20J.spray_offset = 32;
-        g_B20J.spray_delta = -8;
-        g_B20J.spray_fired = 0;
-        g_B20J.pattern_state = Boss_Rank(5, 4, 3, 2);
+    if (m_B20J.status.frame == 100) {
+        m_B20J.spray_offset = 32;
+        m_B20J.spray_delta = -8;
+        m_B20J.spray_fired = 0;
+        m_B20J.pattern_state = Boss_Rank(5, 4, 3, 2);
     }
-    if (g_B20J.frame % g_B20J.pattern_state == 0) {
-        g_B20J.spray_angle =
-            M_Angle(368 - 184, g_Player.left - 278) + g_B20J.spray_offset;
-        g_B20J.spray_offset += g_B20J.spray_delta;
-        g_B20J.spray_fired++;
-        if (g_B20J.spray_fired > 8) {
-            g_B20J.spray_delta *= -1;
-            g_B20J.spray_fired = 0;
+    if (m_B20J.status.frame % m_B20J.pattern_state == 0) {
+        m_B20J.spray_angle =
+            M_Angle(368 - 184, g_Player.left - 278) + m_B20J.spray_offset;
+        m_B20J.spray_offset += m_B20J.spray_delta;
+        m_B20J.spray_fired++;
+        if (m_B20J.spray_fired > 8) {
+            m_B20J.spray_delta *= -1;
+            m_B20J.spray_fired = 0;
         }
-        M_Single(assets, 312, 188, g_B20J.spray_angle, 48);
+        M_Single(assets, 312, 188, m_B20J.spray_angle, 48);
     }
-    if (g_B20J.frame >= 700) {
-        g_B20J.frame = 0;
+    if (m_B20J.status.frame >= 700) {
+        m_B20J.status.frame = 0;
     }
 }
 static void M_Ray(
     const B20J_ASSETS *const assets, const int16_t dx, const int16_t dy)
 {
-    if (g_B20J.ray_previous_x >= 0 && g_B20J.ray_previous_x < 640
-        && g_B20J.ray_previous_y >= 0 && g_B20J.ray_previous_y < 400) {
-        Video_LineErase(410, 70, g_B20J.ray_previous_x, g_B20J.ray_previous_y);
+    if (m_B20J.ray_previous_x >= 0 && m_B20J.ray_previous_x < 640
+        && m_B20J.ray_previous_y >= 0 && m_B20J.ray_previous_y < 400) {
+        Video_LineErase(410, 70, m_B20J.ray_previous_x, m_B20J.ray_previous_y);
     }
-    if (g_B20J.ray_x >= 0 && g_B20J.ray_x < 640 && g_B20J.ray_y >= 0
-        && g_B20J.ray_y < 400) {
-        Video_Line(410, 70, g_B20J.ray_x, g_B20J.ray_y, 6);
+    if (m_B20J.ray_x >= 0 && m_B20J.ray_x < 640 && m_B20J.ray_y >= 0
+        && m_B20J.ray_y < 400) {
+        Video_Line(410, 70, m_B20J.ray_x, m_B20J.ray_y, 6);
     }
-    g_B20J.ray_previous_x = g_B20J.ray_x;
-    g_B20J.ray_previous_y = g_B20J.ray_y;
-    g_B20J.ray_x = Math16_Wrap(g_B20J.ray_x + dx);
-    g_B20J.ray_y = Math16_Wrap(g_B20J.ray_y + dy);
+    m_B20J.ray_previous_x = m_B20J.ray_x;
+    m_B20J.ray_previous_y = m_B20J.ray_y;
+    m_B20J.ray_x = Math16_Wrap(m_B20J.ray_x + dx);
+    m_B20J.ray_y = Math16_Wrap(m_B20J.ray_y + dy);
 }
 static void M_Edges(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 3);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
-        g_B20J.ray_x = 0;
-        g_B20J.ray_y = 264;
-        g_B20J.pattern_state = Boss_Rank(5, 3, 2, 2);
+    if (m_B20J.status.frame == 100) {
+        m_B20J.ray_x = 0;
+        m_B20J.ray_y = 264;
+        m_B20J.pattern_state = Boss_Rank(5, 3, 2, 2);
     }
-    if (g_B20J.frame < 125) {
+    if (m_B20J.status.frame < 125) {
         M_Ray(assets, 0, -8);
-    } else if (g_B20J.frame <= 125) {
-        g_B20J.ray_x = 0;
-        g_B20J.ray_y = 64;
+    } else if (m_B20J.status.frame <= 125) {
+        m_B20J.ray_x = 0;
+        m_B20J.ray_y = 64;
         M_Ray(assets, 8, 0);
-    } else if (g_B20J.frame < 205) {
+    } else if (m_B20J.status.frame < 205) {
         M_Ray(assets, 8, 0);
-    } else if (g_B20J.frame == 205) {
-        g_B20J.ray_x = 639;
-        g_B20J.ray_y = 64;
+    } else if (m_B20J.status.frame == 205) {
+        m_B20J.ray_x = 639;
+        m_B20J.ray_y = 64;
         M_Ray(assets, 0, 8);
-    } else if (g_B20J.frame < 230) {
+    } else if (m_B20J.status.frame < 230) {
         M_Ray(assets, 0, 8);
-    } else if (g_B20J.frame == 230) {
-        g_B20J.ray_x = 639;
-        g_B20J.ray_y = 264;
+    } else if (m_B20J.status.frame == 230) {
+        m_B20J.ray_x = 639;
+        m_B20J.ray_y = 264;
         M_Ray(assets, 0, -8);
-    } else if (g_B20J.frame < 255) {
+    } else if (m_B20J.status.frame < 255) {
         M_Ray(assets, 0, -8);
-    } else if (g_B20J.frame == 255) {
-        g_B20J.ray_x = 639;
-        g_B20J.ray_y = 64;
+    } else if (m_B20J.status.frame == 255) {
+        m_B20J.ray_x = 639;
+        m_B20J.ray_y = 64;
         M_Ray(assets, -8, 0);
-    } else if (g_B20J.frame < 335) {
+    } else if (m_B20J.status.frame < 335) {
         M_Ray(assets, -8, 0);
-    } else if (g_B20J.frame == 335) {
-        g_B20J.ray_x = 0;
-        g_B20J.ray_y = 64;
+    } else if (m_B20J.status.frame == 335) {
+        m_B20J.ray_x = 0;
+        m_B20J.ray_y = 64;
         M_Ray(assets, 0, 8);
-    } else if (g_B20J.frame < 360) {
+    } else if (m_B20J.status.frame < 360) {
         M_Ray(assets, 0, 8);
-    } else if (g_B20J.frame == 360) {
-        g_B20J.ray_y = Math16_Wrap(g_B20J.ray_y - 8);
-        Video_LineErase(410, 70, g_B20J.ray_x, g_B20J.ray_y);
-        g_B20J.frame = 0;
+    } else if (m_B20J.status.frame == 360) {
+        m_B20J.ray_y = Math16_Wrap(m_B20J.ray_y - 8);
+        Video_LineErase(410, 70, m_B20J.ray_x, m_B20J.ray_y);
+        m_B20J.status.frame = 0;
     }
-    if (g_B20J.frame % 10 == 0) {
+    if (m_B20J.status.frame % 10 == 0) {
         Sound_Effect(6);
     }
-    if (g_B20J.frame % g_B20J.pattern_state == 0) {
-        M_Rain(assets, g_B20J.ray_x, g_B20J.ray_y, M_Random(assets) & 127, 32);
-        M_Rain(assets, g_B20J.ray_x, g_B20J.ray_y, M_Random(assets) & 127, 32);
+    if (m_B20J.status.frame % m_B20J.pattern_state == 0) {
+        M_Rain(assets, m_B20J.ray_x, m_B20J.ray_y, M_Random(assets) & 127, 32);
+        M_Rain(assets, m_B20J.ray_x, m_B20J.ray_y, M_Random(assets) & 127, 32);
     }
 }
 static void M_SlashAnimate(const B20J_ASSETS *const assets)
 {
     const int16_t frames[] = { 50, 60, 100, 120, 140, 160, 170 };
     for (int32_t i = 0; i < 7; i++) {
-        if (g_B20J.frame < frames[i]) {
+        if (m_B20J.status.frame < frames[i]) {
             return;
         }
-        if (g_B20J.frame == frames[i]) {
+        if (m_B20J.status.frame == frames[i]) {
             M_SlashPut(assets, i);
             if (i == 0) {
                 Sound_Effect(8);
             }
         }
     }
-    if (g_B20J.frame > 200) {
-        g_B20J.frame = 0;
-        g_B20J.direction_can_change = true;
+    if (m_B20J.status.frame > 200) {
+        m_B20J.status.frame = 0;
+        m_B20J.direction_can_change = true;
     }
 }
 static void M_SlashFire(const B20J_ASSETS *const assets, const int32_t pattern)
 {
-    const int16_t x = g_B20J.slash_left[pattern], y = g_B20J.slash_top[pattern];
+    const int16_t x = m_B20J.slash_left[pattern], y = m_B20J.slash_top[pattern];
     if (pattern == 0) {
         M_Rain(assets, x, y, M_Random(assets) % 127, 0);
         M_Rain(assets, x, y, M_Random(assets) % 127, 0);
     } else if (pattern == 1) {
-        M_Single(assets, x, y, 32, g_B20J.pattern_state);
-        M_Single(assets, x, y, 96, g_B20J.pattern_state);
+        M_Single(assets, x, y, 32, m_B20J.pattern_state);
+        M_Single(assets, x, y, 96, m_B20J.pattern_state);
     } else {
-        M_Group(assets, x, y, PELLET_GROUP_SINGLE_AIMED, g_B20J.pattern_state);
+        M_Group(assets, x, y, PELLET_GROUP_SINGLE_AIMED, m_B20J.pattern_state);
     }
 }
 static void M_Slash(const B20J_ASSETS *const assets, const int32_t pattern)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Direction(assets, 2);
         M_Expression(assets, pattern == 0 ? 1 : 3);
-        g_B20J.direction_can_change = false;
-        g_B20J.slash_left[pattern] = 410;
-        g_B20J.slash_top[pattern] = 70;
-        g_B20J.pattern_state = pattern == 0 ? Boss_Rank(5, 3, 2, 1)
+        m_B20J.direction_can_change = false;
+        m_B20J.slash_left[pattern] = 410;
+        m_B20J.slash_top[pattern] = 70;
+        m_B20J.pattern_state = pattern == 0 ? Boss_Rank(5, 3, 2, 1)
             : pattern == 1                  ? Boss_Rank(32, 48, 64, 72)
                                             : Boss_Rank(64, 80, 88, 96);
     }
     M_SlashAnimate(assets);
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    const int16_t interval = pattern == 0 ? g_B20J.pattern_state : 3;
-    if (g_B20J.frame < 140 && g_B20J.frame % interval == 0) {
+    const int16_t interval = pattern == 0 ? m_B20J.pattern_state : 3;
+    if (m_B20J.status.frame < 140 && m_B20J.status.frame % interval == 0) {
         M_SlashFire(assets, pattern);
-        g_B20J.slash_left[pattern] =
-            Math16_Wrap(g_B20J.slash_left[pattern] + 22 / (40 / interval));
-        g_B20J.slash_top[pattern] =
-            Math16_Wrap(g_B20J.slash_top[pattern] + 162 / (40 / interval));
+        m_B20J.slash_left[pattern] =
+            Math16_Wrap(m_B20J.slash_left[pattern] + 22 / (40 / interval));
+        m_B20J.slash_top[pattern] =
+            Math16_Wrap(m_B20J.slash_top[pattern] + 162 / (40 / interval));
     }
-    if (g_B20J.frame == 140) {
-        g_B20J.slash_left[pattern] = 432;
-        g_B20J.slash_top[pattern] = 232;
+    if (m_B20J.status.frame == 140) {
+        m_B20J.slash_left[pattern] = 432;
+        m_B20J.slash_top[pattern] = 232;
         if (pattern == 0) {
-            g_B20J.pattern_state = Boss_Rank(3, 2, 2, 2);
+            m_B20J.pattern_state = Boss_Rank(3, 2, 2, 2);
         }
     }
-    if (g_B20J.frame < 140) {
+    if (m_B20J.status.frame < 140) {
         return;
     }
-    if (g_B20J.frame < 150) {
+    if (m_B20J.status.frame < 150) {
         M_SlashFire(assets, pattern);
-        g_B20J.slash_left[pattern] =
-            Math16_Wrap(g_B20J.slash_left[pattern] - (-234 / -10));
-        g_B20J.slash_top[pattern] =
-            Math16_Wrap(g_B20J.slash_top[pattern] - (-34 / -10));
+        m_B20J.slash_left[pattern] =
+            Math16_Wrap(m_B20J.slash_left[pattern] - (-234 / -10));
+        m_B20J.slash_top[pattern] =
+            Math16_Wrap(m_B20J.slash_top[pattern] - (-34 / -10));
     }
-    if (g_B20J.frame == 150) {
-        g_B20J.slash_left[pattern] = 198;
-        g_B20J.slash_top[pattern] = 198;
+    if (m_B20J.status.frame == 150) {
+        m_B20J.slash_left[pattern] = 198;
+        m_B20J.slash_top[pattern] = 198;
         if (pattern == 0) {
-            g_B20J.pattern_state = Boss_Rank(3, 2, 1, 1);
+            m_B20J.pattern_state = Boss_Rank(3, 2, 1, 1);
         }
     }
-    if (g_B20J.frame < 150) {
+    if (m_B20J.status.frame < 150) {
         return;
     }
-    const int16_t last_interval = pattern == 0 ? g_B20J.pattern_state : 2;
-    if (g_B20J.frame < 170 && g_B20J.frame % last_interval == 0) {
+    const int16_t last_interval = pattern == 0 ? m_B20J.pattern_state : 2;
+    if (m_B20J.status.frame < 170 && m_B20J.status.frame % last_interval == 0) {
         M_SlashFire(assets, pattern);
-        g_B20J.slash_left[pattern] = Math16_Wrap(
-            g_B20J.slash_left[pattern] - (-212 / (20 / last_interval)));
-        g_B20J.slash_top[pattern] = Math16_Wrap(
-            g_B20J.slash_top[pattern] - (128 / (20 / last_interval)));
+        m_B20J.slash_left[pattern] = Math16_Wrap(
+            m_B20J.slash_left[pattern] - (-212 / (20 / last_interval)));
+        m_B20J.slash_top[pattern] = Math16_Wrap(
+            m_B20J.slash_top[pattern] - (128 / (20 / last_interval)));
     }
 }
 static void M_Lasers(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 3);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame == 100) {
-        g_B20J.laser_right_to_left = M_Random(assets) % 2 != 0;
-        g_B20J.pattern_state = Boss_Rank(128, 96, 80, 64);
+    if (m_B20J.status.frame == 100) {
+        m_B20J.laser_right_to_left = M_Random(assets) % 2 != 0;
+        m_B20J.pattern_state = Boss_Rank(128, 96, 80, 64);
     }
-    if (g_B20J.frame % 10 == 0) {
-        const int16_t distance =
-            Math16_Wrap((g_B20J.frame - 100) / 10 * g_B20J.pattern_state);
+    if (m_B20J.status.frame % 10 == 0) {
+        const int16_t distance = Math16_Wrap(
+            (m_B20J.status.frame - 100) / 10 * m_B20J.pattern_state);
         const int16_t target =
-            Math16_Wrap(g_B20J.laser_right_to_left ? 640 - distance : distance);
+            Math16_Wrap(m_B20J.laser_right_to_left ? 640 - distance : distance);
         ShootoutLasers_Spawn(
-            (g_B20J.frame / 10) % 10, 410, 70, target, 400, 68, 7, 30, 5);
+            (m_B20J.status.frame / 10) % 10, 410, 70, target, 400, 68, 7, 30,
+            5);
         Sound_Effect(6);
-        if ((!g_B20J.laser_right_to_left && target >= 640)
-            || (g_B20J.laser_right_to_left && target <= 0)) {
-            g_B20J.frame = 0;
+        if ((!m_B20J.laser_right_to_left && target >= 640)
+            || (m_B20J.laser_right_to_left && target <= 0)) {
+            m_B20J.status.frame = 0;
         }
         M_Group(assets, 410, 70, PELLET_GROUP_THREE_WIDE_AIMED, 72);
     }
 }
 static void M_Sleeve(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.frame == 10) {
+    if (m_B20J.status.frame == 10) {
         M_Expression(assets, 3);
     }
-    if (g_B20J.frame < 100) {
+    if (m_B20J.status.frame < 100) {
         return;
     }
-    if (g_B20J.frame % 20 == 0 || g_B20J.frame % 20 == 10) {
+    if (m_B20J.status.frame % 20 == 0 || m_B20J.status.frame % 20 == 10) {
         uint8_t angle = 0;
         for (int32_t i = 0; i < 10; i++, angle -= 12) {
-            if (g_B20J.frame % 20 == 0) {
+            if (m_B20J.status.frame % 20 == 0) {
                 M_Rain(assets, 290, 200, angle, 32);
             } else {
                 Pellets_AddSingle(
@@ -1029,8 +1103,8 @@ static void M_Sleeve(const B20J_ASSETS *const assets)
         }
         Sound_Effect(7);
     }
-    if (g_B20J.frame >= 300) {
-        g_B20J.frame = 0;
+    if (m_B20J.status.frame >= 300) {
+        m_B20J.status.frame = 0;
     }
 }
 
@@ -1039,9 +1113,9 @@ static void M_BeginDeath(const B20J_ASSETS *const assets)
     Tram_Clear();
     Video_Clear(0);
     Sound_Stop();
-    g_B20J.defeating = true;
-    g_B20J.defeat_stage = B20J_DEFEAT_KUJI;
-    g_B20J.animation_frame = 7;
+    m_B20J.defeating = true;
+    m_B20J.defeat_stage = B20J_DEFEAT_KUJI;
+    m_B20J.animation_frame = 7;
 }
 static bool M_Death(const B20J_ASSETS *const assets)
 {
@@ -1049,76 +1123,76 @@ static bool M_Death(const B20J_ASSETS *const assets)
         return false;
     }
     for (;;) {
-        switch (g_B20J.defeat_stage) {
+        switch (m_B20J.defeat_stage) {
         case B20J_DEFEAT_KUJI:
-            if (g_B20J.animation_frame > 15) {
-                g_B20J.frame = 0;
-                g_B20J.defeat_stage = B20J_DEFEAT_SHAKE;
+            if (m_B20J.animation_frame > 15) {
+                m_B20J.status.frame = 0;
+                m_B20J.defeat_stage = B20J_DEFEAT_SHAKE;
                 continue;
             }
-            if (g_B20J.animation_frame != 7) {
+            if (m_B20J.animation_frame != 7) {
                 Video_Clear(0);
             }
-            const int16_t flash = g_B20J.animation_frame % 2 == 0 ? 15 : 0;
+            const int16_t flash = m_B20J.animation_frame % 2 == 0 ? 15 : 0;
             Palette_SetColor(&g_Palette, 0, flash, flash, flash);
-            M_Grx(assets, g_B20J.animation_frame);
-            g_B20J.animation_frame++;
+            M_Grx(assets, m_B20J.animation_frame);
+            m_B20J.animation_frame++;
             if (!M_Delay(10)) {
                 return false;
             }
             continue;
         case B20J_DEFEAT_SHAKE:
-            g_B20J.frame = Math16_Wrap(g_B20J.frame + 1);
-            if (g_B20J.frame % 4 == 0) {
+            m_B20J.status.frame = Math16_Wrap(m_B20J.status.frame + 1);
+            if (m_B20J.status.frame % 4 == 0) {
                 M_BlackOut(assets);
                 Sound_Effect(7);
             }
-            g_B20J.defeat_stage = B20J_DEFEAT_SHAKE_STEP;
-            return M_Scroll(408 + g_B20J.frame % 2 * 16);
+            m_B20J.defeat_stage = B20J_DEFEAT_SHAKE_STEP;
+            return M_Scroll(408 + m_B20J.status.frame % 2 * 16);
         case B20J_DEFEAT_SHAKE_STEP:
-            if (g_B20J.frame > 64) {
+            if (m_B20J.status.frame > 64) {
                 Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
                 M_Pi(assets, &assets->scroll, false);
                 Palette_SetGray(&g_Palette, 0);
                 Tram_Clear();
-                g_B20J.scroll_line = 0;
-                g_B20J.scroll_frame = 0;
-                g_B20J.defeat_stage = B20J_DEFEAT_SCROLL;
+                m_B20J.scroll_line = 0;
+                m_B20J.scroll_frame = 0;
+                m_B20J.defeat_stage = B20J_DEFEAT_SCROLL;
                 continue;
             }
-            g_B20J.defeat_stage = B20J_DEFEAT_SHAKE;
+            m_B20J.defeat_stage = B20J_DEFEAT_SHAKE;
             if (!M_Delay(1)) {
                 return false;
             }
             continue;
         case B20J_DEFEAT_SCROLL:
-            g_B20J.defeat_stage = B20J_DEFEAT_SCROLL_STEP;
-            return M_Scroll(g_B20J.scroll_line);
+            m_B20J.defeat_stage = B20J_DEFEAT_SCROLL_STEP;
+            return M_Scroll(m_B20J.scroll_line);
         case B20J_DEFEAT_SCROLL_STEP:
-            g_B20J.scroll_line += 32;
-            if (g_B20J.scroll_line > 400) {
-                g_B20J.scroll_line -= 400;
+            m_B20J.scroll_line += 32;
+            if (m_B20J.scroll_line > 400) {
+                m_B20J.scroll_line -= 400;
             }
-            if (g_B20J.scroll_frame < 150) {
-                if (g_B20J.scroll_frame % 8 == 0) {
+            if (m_B20J.scroll_frame < 150) {
+                if (m_B20J.scroll_frame % 8 == 0) {
                     Palette_StepTo(&g_Palette, &g_Palette.resource, true);
                     Sound_Effect(7);
                 }
-            } else if (g_B20J.scroll_frame % 8 == 0) {
-                if (g_B20J.scroll_frame == 192) {
+            } else if (m_B20J.scroll_frame % 8 == 0) {
+                if (m_B20J.scroll_frame == 192) {
                     Sound_Fade();
                 }
                 M_BlackOut(assets);
                 if (g_Palette.saved.colors[7][0] == 0) {
-                    g_B20J.defeat_stage = B20J_DEFEAT_CLEAR;
+                    m_B20J.defeat_stage = B20J_DEFEAT_CLEAR;
                     return M_Scroll(0);
                 }
-                if (g_B20J.scroll_frame < 220) {
+                if (m_B20J.scroll_frame < 220) {
                     Sound_Effect(7);
                 }
             }
-            g_B20J.scroll_frame++;
-            g_B20J.defeat_stage = B20J_DEFEAT_SCROLL;
+            m_B20J.scroll_frame++;
+            m_B20J.defeat_stage = B20J_DEFEAT_SCROLL;
             if (!M_Delay(1)) {
                 return false;
             }
@@ -1128,8 +1202,8 @@ static bool M_Death(const B20J_ASSETS *const assets)
                 g_Stage.score += 10000;
             }
             g_Stage.game_cleared = true;
-            g_B20J.finished = true;
-            g_B20J.defeating = false;
+            m_B20J.finished = true;
+            m_B20J.defeating = false;
             return true;
         default:
             ASSERT(false);
@@ -1144,16 +1218,16 @@ static void M_Hit(void)
     const bool collision = orb->left >= 288 && orb->left <= 352
         && orb->top >= 120 && orb->top <= 160;
     BossHit_UpdateAndRender(
-        &g_B20J.hit, &g_B20J.hp, &g_B20J.boss_palette, colors, 3, 10000,
+        &m_B20J.hit, &m_B20J.status.hp, &m_B20J.boss_palette, colors, 3, 10000,
         collision, (BOSS_SHOT_HITBOX) { 288, 120, 96, 40 });
 }
 static void M_Next(const B20J_ASSETS *const assets, const int8_t phase)
 {
-    g_B20J.phase = phase;
-    g_B20J.frame = 0;
-    g_B20J.hit.frame = 0;
-    g_B20J.pattern = 99;
-    g_B20J.patterns_done = 0;
+    m_B20J.status.phase = phase;
+    m_B20J.status.frame = 0;
+    m_B20J.hit.frame = 0;
+    m_B20J.pattern = 99;
+    m_B20J.patterns_done = 0;
     if ((phase & 1) != 0) {
         M_Expression(assets, 0);
     }
@@ -1203,96 +1277,101 @@ static void M_Pattern(const B20J_ASSETS *const assets, const int16_t pattern)
 }
 bool B20J_UpdateAndRender(const B20J_ASSETS *const assets)
 {
-    if (g_B20J.finished) {
+    if (m_B20J.finished) {
         return true;
     }
-    if (g_B20J.entrance_active) {
+    if (m_B20J.entrance_active) {
         return B20J_ResumeEntrance(assets);
     }
-    if (g_B20J.defeating) {
+    if (m_B20J.defeating) {
         return M_Death(assets);
     }
-    if (g_B20J.phase == B20J_PHASE_START) {
-        g_B20J.phase = B20J_PHASE_PATTERNS_1;
-        g_B20J.pattern_previous = 99;
-        g_B20J.pattern = 99;
-        g_B20J.patterns_done = 0;
-        g_B20J.frame = 0;
-        g_B20J.hit.frame = 0;
-        g_B20J.hit.invincible = false;
-        g_B20J.hp_bar_filled = false;
-        g_B20J.boss_palette = g_Palette.saved;
+    if (m_B20J.status.phase == B20J_PHASE_START) {
+        m_B20J.status.phase = B20J_PHASE_PATTERNS_1;
+        m_B20J.pattern_previous = 99;
+        m_B20J.pattern = 99;
+        m_B20J.patterns_done = 0;
+        m_B20J.status.frame = 0;
+        m_B20J.hit.frame = 0;
+        m_B20J.hit.invincible = false;
+        m_B20J.hp_bar_filled = false;
+        m_B20J.boss_palette = g_Palette.saved;
         g_Rng = g_Session.frame_rand;
         return true;
     }
-    if (g_B20J.phase < B20J_PHASE_PATTERNS_1
-        || g_B20J.phase > B20J_PHASE_FINAL) {
+    if (m_B20J.status.phase < B20J_PHASE_PATTERNS_1
+        || m_B20J.status.phase > B20J_PHASE_FINAL) {
         return true;
     }
-    if (g_B20J.phase == B20J_PHASE_PATTERNS_1 && !g_B20J.hp_bar_filled) {
-        g_B20J.hp_bar_filled = HudHp_Increment(g_B20J.hp, g_B20J.frame);
+    if (m_B20J.status.phase == B20J_PHASE_PATTERNS_1 && !m_B20J.hp_bar_filled) {
+        m_B20J.hp_bar_filled =
+            HudHp_Increment(m_B20J.status.hp, m_B20J.status.frame);
     }
-    g_B20J.frame = Math16_Wrap(g_B20J.frame + 1);
-    g_B20J.hit.frame = Math16_Wrap(g_B20J.hit.frame + 1);
+    m_B20J.status.frame = Math16_Wrap(m_B20J.status.frame + 1);
+    m_B20J.hit.frame = Math16_Wrap(m_B20J.hit.frame + 1);
     const int16_t direction = g_Player.left < 198 ? 1
         : g_Player.left > 396                     ? 0
                                                   : 2;
     M_Direction(assets, direction);
-    if ((g_B20J.phase & 1) == 0) {
-        if (g_B20J.frame == 50) {
+    if ((m_B20J.status.phase & 1) == 0) {
+        if (m_B20J.status.frame == 50) {
             M_White(assets);
         }
-        if (g_B20J.frame > 50 && g_B20J.frame % 4 == 0) {
+        if (m_B20J.status.frame > 50 && m_B20J.status.frame % 4 == 0) {
             M_WhiteIn(assets);
         }
         M_Hit();
-        if (!g_B20J.hit.invincible && g_B20J.frame > 120) {
-            M_Next(assets, g_B20J.phase + 1);
+        if (!m_B20J.hit.invincible && m_B20J.status.frame > 120) {
+            M_Next(assets, m_B20J.status.phase + 1);
         }
         return true;
     }
-    if (g_B20J.pattern == 99) {
-        if (g_B20J.frame > (g_B20J.phase == B20J_PHASE_FINAL ? 5 : 120)) {
-            g_B20J.frame = 1;
-            const int16_t count = g_B20J.phase == B20J_PHASE_PATTERNS_1 ? 3
-                : g_B20J.phase == B20J_PHASE_PATTERNS_2                 ? 4
-                : g_B20J.phase == B20J_PHASE_PATTERNS_3                 ? 3
-                                                                        : 12;
+    if (m_B20J.pattern == 99) {
+        if (m_B20J.status.frame
+            > (m_B20J.status.phase == B20J_PHASE_FINAL ? 5 : 120)) {
+            m_B20J.status.frame = 1;
+            const int16_t count = m_B20J.status.phase == B20J_PHASE_PATTERNS_1
+                ? 3
+                : m_B20J.status.phase == B20J_PHASE_PATTERNS_2 ? 4
+                : m_B20J.status.phase == B20J_PHASE_PATTERNS_3 ? 3
+                                                               : 12;
             const int16_t retry =
-                g_B20J.phase >= B20J_PHASE_PATTERNS_3 ? 2 : count;
-            g_B20J.pattern = M_Random(assets) % count;
-            if (g_B20J.pattern == g_B20J.pattern_previous) {
-                g_B20J.pattern = M_Random(assets) % retry;
+                m_B20J.status.phase >= B20J_PHASE_PATTERNS_3 ? 2 : count;
+            m_B20J.pattern = M_Random(assets) % count;
+            if (m_B20J.pattern == m_B20J.pattern_previous) {
+                m_B20J.pattern = M_Random(assets) % retry;
             }
-            g_B20J.pattern_previous = g_B20J.pattern;
-            g_B20J.patterns_done = Math16_Wrap(g_B20J.patterns_done + 1);
+            m_B20J.pattern_previous = m_B20J.pattern;
+            m_B20J.patterns_done = Math16_Wrap(m_B20J.patterns_done + 1);
         }
     } else {
-        const int16_t pattern = g_B20J.phase == B20J_PHASE_PATTERNS_2
-            ? g_B20J.pattern + 3
-            : g_B20J.phase == B20J_PHASE_PATTERNS_3 ? g_B20J.pattern + 7
-                                                    : g_B20J.pattern;
+        const int16_t pattern = m_B20J.status.phase == B20J_PHASE_PATTERNS_2
+            ? m_B20J.pattern + 3
+            : m_B20J.status.phase == B20J_PHASE_PATTERNS_3 ? m_B20J.pattern + 7
+                                                           : m_B20J.pattern;
         M_Pattern(assets, pattern);
     }
-    if (g_B20J.frame == 0) {
+    if (m_B20J.status.frame == 0) {
         M_Expression(assets, 0);
-        g_B20J.pattern = 99;
+        m_B20J.pattern = 99;
     }
     M_Hit();
-    if (g_B20J.phase == B20J_PHASE_FINAL) {
-        if (g_B20J.hp <= 0) {
+    if (m_B20J.status.phase == B20J_PHASE_FINAL) {
+        if (m_B20J.status.hp <= 0) {
             M_BeginDeath(assets);
             return M_Death(assets);
         }
-    } else if (!g_B20J.hit.invincible && g_B20J.pattern == 99) {
-        const int16_t patterns = g_B20J.phase == B20J_PHASE_PATTERNS_1 ? 7
-            : g_B20J.phase == B20J_PHASE_PATTERNS_2                    ? 9
-                                                                       : 6;
-        const int16_t threshold = g_B20J.phase == B20J_PHASE_PATTERNS_1 ? 16
-            : g_B20J.phase == B20J_PHASE_PATTERNS_2                     ? 13
-                                                                        : 10;
-        if (g_B20J.patterns_done >= patterns || g_B20J.hp < threshold) {
-            M_Next(assets, g_B20J.phase + 1);
+    } else if (!m_B20J.hit.invincible && m_B20J.pattern == 99) {
+        const int16_t patterns = m_B20J.status.phase == B20J_PHASE_PATTERNS_1
+            ? 7
+            : m_B20J.status.phase == B20J_PHASE_PATTERNS_2 ? 9
+                                                           : 6;
+        const int16_t threshold = m_B20J.status.phase == B20J_PHASE_PATTERNS_1
+            ? 16
+            : m_B20J.status.phase == B20J_PHASE_PATTERNS_2 ? 13
+                                                           : 10;
+        if (m_B20J.patterns_done >= patterns || m_B20J.status.hp < threshold) {
+            M_Next(assets, m_B20J.status.phase + 1);
         }
     }
     return true;

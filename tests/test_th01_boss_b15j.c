@@ -1,3 +1,4 @@
+#include "../src/th01/boss_b15j.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
@@ -85,58 +86,59 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     FIXTURE f;
     M_Init(&f, &arena);
     B15J_Init();
-    g_B15J.hit = (BOSS_HIT) { .frame = 31, .invincible = true };
-    g_B15J.pattern_state = 51;
-    g_B15J.patterns_done = 9;
-    g_B15J.spiral_angle = 255;
+    m_B15J.hit = (BOSS_HIT) { .frame = 31, .invincible = true };
+    m_B15J.pattern_state = 51;
+    m_B15J.patterns_done = 9;
+    m_B15J.spiral_angle = 255;
     for (int32_t i = 0; i < 2; i++) {
-        g_B15J.souls[i].image = i + 1;
-        g_B15J.souls[i].lock_frame = 7 + i;
-        g_B15J.souls[i].previous_left = 90 + i;
-        g_B15J.souls[i].orb_inactive = true;
+        m_B15J.souls[i].image = i + 1;
+        m_B15J.souls[i].lock_frame = 7 + i;
+        m_B15J.souls[i].previous_left = 90 + i;
+        m_B15J.souls[i].orb_inactive = true;
     }
     for (int32_t i = 0; i < 10; i++) {
-        g_B15J.tears[i].left = 100 + i;
-        g_B15J.tears[i].image = 2;
-        g_B15J.tear_frame[i] = 74;
+        m_B15J.tears[i].left = 100 + i;
+        m_B15J.tears[i].image = 2;
+        m_B15J.tear_frame[i] = 74;
     }
     const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
     B15J_Setup(&f.assets, &f.miko);
-    CHECK_EQ_INT(g_B15J.hp, 14);
-    CHECK_EQ_INT(g_B15J.phase, B15J_PHASE_ENTRANCE);
-    CHECK_EQ_INT(g_B15J.frame, 0);
+    CHECK(g_Boss == &m_B15J.status);
+    CHECK_EQ_INT(m_B15J.status.hp, 14);
+    CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_ENTRANCE);
+    CHECK_EQ_INT(m_B15J.status.frame, 0);
     CHECK_EQ_INT(m_Health.first_white, 10);
     CHECK_EQ_INT(m_Health.first_redwhite, 6);
     CHECK(m_Sprites.entities[0] == &f.assets.souls);
     CHECK(m_Sprites.entities[1] == &f.assets.tears);
     for (int32_t i = 0; i < 2; i++) {
-        CHECK_EQ_INT(g_B15J.souls[i].left, 0);
-        CHECK_EQ_INT(g_B15J.souls[i].top, 0);
-        CHECK_EQ_INT(g_B15J.souls[i].image, i + 1);
-        CHECK_EQ_INT(g_B15J.souls[i].lock_frame, 7 + i);
-        CHECK_EQ_INT(g_B15J.souls[i].previous_left, 90 + i);
-        CHECK(g_B15J.souls[i].orb_inactive);
-        CHECK_EQ_INT(g_B15J.souls[i].move_clamp.left, 32);
-        CHECK_EQ_INT(g_B15J.souls[i].move_clamp.right, 576);
-        CHECK_EQ_INT(g_B15J.souls[i].move_clamp.top, 64);
-        CHECK_EQ_INT(g_B15J.souls[i].move_clamp.bottom, 400);
+        CHECK_EQ_INT(m_B15J.souls[i].left, 0);
+        CHECK_EQ_INT(m_B15J.souls[i].top, 0);
+        CHECK_EQ_INT(m_B15J.souls[i].image, i + 1);
+        CHECK_EQ_INT(m_B15J.souls[i].lock_frame, 7 + i);
+        CHECK_EQ_INT(m_B15J.souls[i].previous_left, 90 + i);
+        CHECK(m_B15J.souls[i].orb_inactive);
+        CHECK_EQ_INT(m_B15J.souls[i].move_clamp.left, 32);
+        CHECK_EQ_INT(m_B15J.souls[i].move_clamp.right, 576);
+        CHECK_EQ_INT(m_B15J.souls[i].move_clamp.top, 64);
+        CHECK_EQ_INT(m_B15J.souls[i].move_clamp.bottom, 400);
     }
     for (int32_t i = 0; i < 10; i++) {
-        CHECK_EQ_INT(g_B15J.tears[i].left, 100 + i);
-        CHECK_EQ_INT(g_B15J.tears[i].image, 2);
-        CHECK_EQ_INT(g_B15J.tears[i].sprites.slot, 1);
-        CHECK_EQ_INT(g_B15J.tears[i].sprites.count, 3);
-        CHECK_EQ_INT(g_B15J.tear_frame[i], 0);
+        CHECK_EQ_INT(m_B15J.tears[i].left, 100 + i);
+        CHECK_EQ_INT(m_B15J.tears[i].image, 2);
+        CHECK_EQ_INT(m_B15J.tears[i].sprites.slot, 1);
+        CHECK_EQ_INT(m_B15J.tears[i].sprites.count, 3);
+        CHECK_EQ_INT(m_B15J.tear_frame[i], 0);
     }
     CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
-    CHECK(memcmp(&g_B15J.boss_palette, &saved, sizeof(saved)) == 0);
-    CHECK_EQ_INT(g_B15J.post_defeat.colors[15][2], 0);
-    CHECK_EQ_INT(g_B15J.hit.frame, 31);
-    CHECK(g_B15J.hit.invincible);
-    CHECK_EQ_INT(g_B15J.pattern_state, 51);
-    CHECK_EQ_INT(g_B15J.patterns_done, 9);
-    CHECK_EQ_INT(g_B15J.spiral_angle, 255);
+    CHECK(memcmp(&m_B15J.boss_palette, &saved, sizeof(saved)) == 0);
+    CHECK_EQ_INT(m_B15J.post_defeat.colors[15][2], 0);
+    CHECK_EQ_INT(m_B15J.hit.frame, 31);
+    CHECK(m_B15J.hit.invincible);
+    CHECK_EQ_INT(m_B15J.pattern_state, 51);
+    CHECK_EQ_INT(m_B15J.patterns_done, 9);
+    CHECK_EQ_INT(m_B15J.spiral_angle, 255);
     CHECK(g_Pellets.interlace);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -177,9 +179,9 @@ static void M_Enter(FIXTURE *const f)
         if (B15J_UpdateAndRender(&f->assets, &f->miko, &f->stage)) {
             return;
         }
-        const B15J frozen = g_B15J;
+        const B15J frozen = m_B15J;
         CHECK(!B15J_UpdateAndRender(&f->assets, &f->miko, &f->stage));
-        CHECK(memcmp(&g_B15J, &frozen, sizeof(g_B15J)) == 0);
+        CHECK(memcmp(&m_B15J, &frozen, sizeof(m_B15J)) == 0);
         Frame_VSync();
     }
     CHECK(false);
@@ -208,19 +210,19 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             g_VSync.count1 = count == 0 ? 0 : 17;
             g_VSync.count2 = 21;
             M_Enter(&f);
-            CHECK_EQ_INT(g_B15J.phase, B15J_PHASE_SPIRAL);
-            CHECK_EQ_INT(g_B15J.frame, 0);
-            CHECK_EQ_INT(g_B15J.hp, 14);
-            CHECK_EQ_INT(g_B15J.hit.frame, 0);
-            CHECK(!g_B15J.hit.invincible);
+            CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_SPIRAL);
+            CHECK_EQ_INT(m_B15J.status.frame, 0);
+            CHECK_EQ_INT(m_B15J.status.hp, 14);
+            CHECK_EQ_INT(m_B15J.hit.frame, 0);
+            CHECK(!m_B15J.hit.invincible);
             CHECK_EQ_INT(g_VSync.edge, count == 0 ? 752 : 751);
             CHECK_EQ_INT(g_VSync.count2, 21 + (int32_t)g_VSync.edge);
             CHECK_EQ_INT(g_Video.drawing_page, 0);
             CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(&g_StagePalette, &saved, sizeof(saved)) == 0);
-            CHECK(memcmp(&g_B15J.boss_palette, &saved, sizeof(saved)) == 0);
-            CHECK_EQ_INT(g_B15J.souls[0].left, 0);
-            CHECK_EQ_INT(g_B15J.souls[1].top, 0);
+            CHECK(memcmp(&m_B15J.boss_palette, &saved, sizeof(saved)) == 0);
+            CHECK_EQ_INT(m_B15J.souls[0].left, 0);
+            CHECK_EQ_INT(m_B15J.souls[1].top, 0);
             CHECK_EQ_INT(arena.used, used);
             Arena_Free(&arena);
         }
@@ -244,15 +246,15 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         uint32_t phases = 0, patterns = 0;
         bool saw_tear = false, saw_ripple = false;
         for (int32_t frame = 0; frame < 12000; frame++) {
-            phases |= 1u << g_B15J.phase;
-            if (g_B15J.phase == B15J_PHASE_PATTERNS) {
-                patterns |= 1u << g_B15J.subphase;
+            phases |= 1u << m_B15J.status.phase;
+            if (m_B15J.status.phase == B15J_PHASE_PATTERNS) {
+                patterns |= 1u << m_B15J.subphase;
             }
             g_Session.frame_rand++;
             CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
             for (int32_t i = 0; i < 10; i++) {
-                saw_tear |= g_B15J.tear_frame[i] != 0;
-                saw_ripple |= g_B15J.tear_frame[i] > 1;
+                saw_tear |= m_B15J.tear_frame[i] != 0;
+                saw_ripple |= m_B15J.tear_frame[i] > 1;
             }
             ShootoutLasers_UpdateAll(&(SHOOTOUT_LASERS_ASSETS) {});
             Frame_VSync();
@@ -265,7 +267,7 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         CHECK_EQ_INT(patterns, 15);
         CHECK(saw_tear);
         CHECK(saw_ripple);
-        CHECK_EQ_INT(g_B15J.hp, 14);
+        CHECK_EQ_INT(m_B15J.status.hp, 14);
         CHECK(g_Rng != 0xb15a0000);
         CHECK_EQ_INT(arena.used, used);
         CHECK(!g_Player.is_hit);
@@ -289,37 +291,38 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     g_Orb.previous_left = 300;
     g_Orb.previous_top = 100;
     CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-    CHECK_EQ_INT(g_B15J.hp, 14);
+    CHECK_EQ_INT(m_B15J.status.hp, 14);
     g_Orb.left = 300;
     g_Orb.top = 132;
     CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-    CHECK_EQ_INT(g_B15J.hp, 14);
+    CHECK_EQ_INT(m_B15J.status.hp, 14);
     g_Orb.top = -100;
     g_Orb.previous_left = 0;
     CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-    CHECK_EQ_INT(g_B15J.hp, 13);
+    CHECK_EQ_INT(m_B15J.status.hp, 13);
     CHECK_EQ_INT(g_Stage.score, 7000);
     g_Orb.top = 64;
     g_Pellets.slots[0].cloud_frame = 12;
     m_Lasers.slots[4].alive = true;
     m_Lasers.slots[4].origin_left = 100 * 256;
-    for (int32_t frame = 0; frame < 5000 && !g_B15J.finished; frame++) {
+    for (int32_t frame = 0; frame < 5000 && !m_B15J.finished; frame++) {
         const bool attack =
-            (g_B15J.phase == B15J_PHASE_SPIRAL && g_B15J.hp > 10)
-            || (g_B15J.phase == B15J_PHASE_TEARS && g_B15J.hp > 6)
-            || (g_B15J.phase == B15J_PHASE_PATTERNS && g_B15J.hp > 0);
+            (m_B15J.status.phase == B15J_PHASE_SPIRAL && m_B15J.status.hp > 10)
+            || (m_B15J.status.phase == B15J_PHASE_TEARS && m_B15J.status.hp > 6)
+            || (m_B15J.status.phase == B15J_PHASE_PATTERNS
+                && m_B15J.status.hp > 0);
         g_Orb.left = attack ? 300 : 0;
         const bool completed =
             B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage);
         if (!completed) {
-            const B15J frozen = g_B15J;
+            const B15J frozen = m_B15J;
             CHECK(!B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-            CHECK(memcmp(&g_B15J, &frozen, sizeof(g_B15J)) == 0);
+            CHECK(memcmp(&m_B15J, &frozen, sizeof(m_B15J)) == 0);
         }
         Frame_VSync();
     }
-    CHECK(g_B15J.finished);
-    CHECK_EQ_INT(g_B15J.hp, 0);
+    CHECK(m_B15J.finished);
+    CHECK_EQ_INT(m_B15J.status.hp, 0);
     CHECK_EQ_INT(g_Stage.score, 98000);
     CHECK(g_Stage.cleared);
     CHECK(g_Player.is_hit);
@@ -327,9 +330,9 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(m_Scene.active->id, 6);
     CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
     CHECK(m_Lasers.slots[4].alive);
-    const B15J finished = g_B15J;
+    const B15J finished = m_B15J;
     CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-    CHECK(memcmp(&g_B15J, &finished, sizeof(g_B15J)) == 0);
+    CHECK(memcmp(&m_B15J, &finished, sizeof(m_B15J)) == 0);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -345,36 +348,36 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         g_Session.settings.difficulty = rank;
         B15J_Init();
         B15J_Setup(&f.assets, &f.miko);
-        g_B15J.phase = B15J_PHASE_PATTERNS;
-        g_B15J.subphase = 1;
-        g_B15J.frame = 249;
+        m_B15J.status.phase = B15J_PHASE_PATTERNS;
+        m_B15J.subphase = 1;
+        m_B15J.status.frame = 249;
         m_Lasers.slots[0] =
             (SHOOTOUT_LASER) { .alive = true, .age = 77, .origin_left = 3210 };
         uint32_t expected = g_Rng;
         MasterRng_Next(&expected);
         Frame_Reset();
         CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-        CHECK_EQ_INT(g_B15J.pattern_state, 52 + rank * 4);
+        CHECK_EQ_INT(m_B15J.pattern_state, 52 + rank * 4);
         CHECK_EQ_INT(g_Rng, expected);
         CHECK_EQ_INT(m_Lasers.slots[0].age, 77);
         CHECK_EQ_INT(m_Lasers.slots[0].origin_left, 3210);
-        g_B15J.subphase = 2;
-        g_B15J.frame = Math16_Wrap(g_B15J.pattern_state * 2 - 1);
+        m_B15J.subphase = 2;
+        m_B15J.status.frame = Math16_Wrap(m_B15J.pattern_state * 2 - 1);
         CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
         int32_t alive = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
             alive += g_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(alive, 12);
-        CHECK_EQ_INT(g_B15J.pattern_state, 52 + rank * 4);
-        g_B15J.subphase = 3;
-        g_B15J.frame = 99;
+        CHECK_EQ_INT(m_B15J.pattern_state, 52 + rank * 4);
+        m_B15J.subphase = 3;
+        m_B15J.status.frame = 99;
         MasterRng_Next(&expected);
         CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(g_Rng, expected);
-        CHECK_EQ_INT(g_B15J.pattern_state, 60 + rank * 4);
+        CHECK_EQ_INT(m_B15J.pattern_state, 60 + rank * 4);
         CHECK_EQ_INT(
-            g_B15J.random_range,
+            m_B15J.random_range,
             rank == 0       ? 0
                 : rank == 1 ? 10
                 : rank == 2 ? 16
@@ -392,20 +395,20 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     M_Battle(&f, &arena);
     B15J_Init();
     B15J_Setup(&f.assets, &f.miko);
-    g_B15J.phase = B15J_PHASE_PATTERNS;
-    g_B15J.subphase = 1;
-    g_B15J.patterns_done = 30;
+    m_B15J.status.phase = B15J_PHASE_PATTERNS;
+    m_B15J.subphase = 1;
+    m_B15J.patterns_done = 30;
     const HUD_HP health = m_Health;
     Frame_Reset();
     CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-    CHECK_EQ_INT(g_B15J.hp, 1);
+    CHECK_EQ_INT(m_B15J.status.hp, 1);
     CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage.score, 0);
     g_TestDamage = true;
     CHECK(!B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-    CHECK_EQ_INT(g_B15J.hp, 0);
+    CHECK_EQ_INT(m_B15J.status.hp, 0);
     CHECK(!g_TestDamage);
-    CHECK(g_B15J.defeating);
+    CHECK(m_B15J.defeating);
     CHECK_EQ_INT(g_Stage.score, 0);
     Arena_Free(&arena);
 }
@@ -420,16 +423,16 @@ TEST(ripple_collision_keeps_internal_unaligned_coordinates)
         M_Battle(&f, &arena);
         B15J_Init();
         B15J_Setup(&f.assets, &f.miko);
-        g_B15J.phase = B15J_PHASE_PATTERNS;
-        g_B15J.subphase = 1;
-        g_B15J.tear_frame[0] = 1;
-        g_B15J.tears[0].left = 37;
-        g_B15J.tears[0].top = 392;
+        m_B15J.status.phase = B15J_PHASE_PATTERNS;
+        m_B15J.subphase = 1;
+        m_B15J.tear_frame[0] = 1;
+        m_B15J.tears[0].left = 37;
+        m_B15J.tears[0].top = 392;
         g_Player.invincible = false;
         g_Player.left = positions[i];
         Frame_Reset();
         CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
-        CHECK_EQ_INT(g_B15J.tear_frame[0], 2);
+        CHECK_EQ_INT(m_B15J.tear_frame[0], 2);
         CHECK_EQ_INT(g_Player.is_hit, i == 1 || i == 2);
         Arena_Free(&arena);
     }
@@ -444,12 +447,12 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         M_Battle(&f, &arena);
         B15J_Init();
         B15J_Setup(&f.assets, &f.miko);
-        g_B15J.phase = B15J_PHASE_SOULS;
-        g_B15J.subphase = 1;
-        g_B15J.frame = 79;
-        g_B15J.souls[0].left = 100;
-        g_B15J.souls[1].left = 500;
-        g_B15J.souls[0].top = g_B15J.souls[1].top = 100;
+        m_B15J.status.phase = B15J_PHASE_SOULS;
+        m_B15J.subphase = 1;
+        m_B15J.status.frame = 79;
+        m_B15J.souls[0].left = 100;
+        m_B15J.souls[1].left = 500;
+        m_B15J.souls[0].top = m_B15J.souls[1].top = 100;
         g_Pellets.spawn_with_cloud = cloud != 0;
         const size_t used = arena.used;
         Frame_Reset();

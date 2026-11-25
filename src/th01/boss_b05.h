@@ -14,37 +14,6 @@ typedef struct {
     PALETTE palette;
 } B05_ASSETS;
 
-typedef enum {
-    B05_IDLE,
-    B05_ENTRANCE,
-    B05_ENTRANCE_DELAY,
-    B05_DEFEAT,
-    B05_ROUTE,
-    B05_FINISHED,
-} B05_PENDING;
-
-typedef enum {
-    B05_PHASE_START = 0,
-    B05_PHASE_SPHERE = 1,
-    B05_PHASE_TRANSFORMS = 2,
-    B05_PHASE_DEFEATED = 8,
-} B05_PHASE;
-
-typedef struct {
-    BOSS_ENTITY sphere, flash, person;
-    BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
-    BOSS_DEFEAT defeat;
-    int16_t hp, frame, pattern, pattern_state;
-    int16_t velocity_x, velocity_y, rotation_interval;
-    uint8_t angle;
-    int8_t phase, direction;
-    bool hp_bar_filled;
-    B05_PENDING pending;
-} B05;
-
-extern B05 g_B05;
-
 // Loads three immutable BOS banks and BOSS1.GRP through VFS before ticks.
 // Retains the background for the stage owner; the fight uses its palette.
 // All storage belongs to the caller's grouped allocator. Failed loads leave
@@ -58,7 +27,7 @@ void B05_Init(void);
 // Binds validated sphere, flash and person assets to slots 0..2, shows their
 // palette, and initializes the source's setup fields. Retains pattern history,
 // hit timing, image locks and particle history until their specified entrance
-// or pattern boundaries. Requires no pending operation. All contexts share
+// or pattern boundaries. Requires no pending operation. Uses the shared
 // palette and player. Setup allocates nothing, reads no file, and does not draw
 // the background.
 void B05_Setup(const B05_ASSETS *assets);
@@ -74,8 +43,8 @@ void B05_Setup(const B05_ASSETS *assets);
 //
 // Retains the sphere's left-strip typo, slam overshoot, late crossing fire,
 // male image 5 cache and transform overlays. Shared RNG is consumed before
-// spawn attempts even when the pool is full. Keep contexts and assets bound
-// identically until completion. frame_rand changes only between completed
+// spawn attempts even when the pool is full. Keep borrowed assets stable
+// until completion. frame_rand changes only between completed
 // ordinary calls. Successful operations allocate nothing and perform no IO.
 // After route completion, calls are inert until Setup or Init.
 bool B05_UpdateAndRender(
