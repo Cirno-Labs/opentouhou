@@ -3,7 +3,7 @@
 #include "th01/main.h"
 #include "th01/opening.h"
 #include "pc98/zun/bfnt.h"
-#include "th01/gameplay_internal.h"
+#include "../src/th01/gameplay.c"
 #include "th01/score.h"
 #include "th01/ending.h"
 #include "th01_assets.h"
@@ -422,8 +422,8 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
     M_Play();
-    g_Gameplay.phase = GP_TERMINAL;
-    g_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
+    m_Gameplay.phase = GP_TERMINAL;
+    m_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
     g_Session.score = 12345;
     g_Session.stage_id = 4;
     CHECK(M_Tick((TH01_INPUT) {}));
@@ -436,8 +436,8 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     m_Fixture.finish_score = true;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
-    CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_CONTINUE_DELAY);
+    CHECK_EQ_INT(m_Gameplay.request, GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_CONTINUE_DELAY);
     CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
     CHECK_EQ_INT(m_Fixture.switch_begins, 0);
@@ -450,8 +450,8 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
     M_Reset();
     CHECK(Result_Ignore(g_GameDesc.init()));
     M_Play();
-    g_Gameplay.phase = GP_TERMINAL;
-    g_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
+    m_Gameplay.phase = GP_TERMINAL;
+    m_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
     CHECK(M_Tick((TH01_INPUT) {}));
     CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_ENDING);
     CHECK_EQ_INT(m_Fixture.ending_begins, 1);
@@ -507,7 +507,7 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
     CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_OPENING);
     M_Play();
     CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
-    CHECK(g_Gameplay.frame == 0);
+    CHECK(g_Stage.frame == 0);
     CHECK_EQ_INT(g_Opening.frame_rand, 1);
     Th01Hooks_Set((TH01_HOOKS) {});
     M_Shutdown();

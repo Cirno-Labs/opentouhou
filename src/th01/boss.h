@@ -3,7 +3,17 @@
 #include "core/vfs/types.h"
 #include "pc98/zun/pi.h"
 #include "th01/bos.h"
-#include "th01/player.h"
+
+typedef enum {
+    BOSS_NONE,
+    BOSS_SINGYOKU,
+    BOSS_YUUGENMAGAN,
+    BOSS_MIMA,
+    BOSS_KIKURI,
+    BOSS_ELIS,
+    BOSS_SARIEL,
+    BOSS_KONNGARA,
+} BOSS;
 
 typedef struct {
     int16_t hp, frame;

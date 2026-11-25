@@ -1,5 +1,6 @@
 #pragma once
 
+#include "th01/boss.h"
 #include "th01/pellet_assets.h"
 #include "th01/player.h"
 #include "th01/shots.h"
@@ -16,7 +17,8 @@ typedef enum {
 } STAGE_PELLET_GROUP;
 
 typedef struct {
-    uint32_t score;
+    uint32_t score, frame;
+    BOSS boss;
     uint16_t time;
     int16_t combo, maximum_combo;
     uint8_t flip_cycle;

@@ -1,4 +1,9 @@
-#include "th01/gameplay_internal.h"
+#include "th01/gameplay.h"
+#include "th01/invincibility.h"
+#include "th01/items.h"
+#include "th01/miss.h"
+#include "th01/sound.h"
+#include "th01/stage.h"
 #include "th01/rng.h"
 #include "th01/hooks.h"
 #include "th01/scale2x.h"
@@ -8,7 +13,72 @@
 
 #include <string.h>
 
-GAMEPLAY_WORLD g_Gameplay;
+typedef enum {
+    GP_STAGE_BEGIN,
+    GP_B10J_SETUP,
+    GP_FINAL_ENTRANCE,
+    GP_OBJECT_ENTRANCE,
+    GP_TITLE,
+    GP_STAGE_LABEL,
+    GP_STAGE_NUMBER,
+    GP_LIFE_BEGIN,
+    GP_LIFE_BOSS,
+    GP_WAIT_SHOT,
+    GP_WAIT_SHOT_DELAY,
+    GP_FRAME_BEGIN,
+    GP_PLAYER_BOMB,
+    GP_ITEMS,
+    GP_TIMER,
+    GP_BOSS,
+    GP_ORB,
+    GP_AFTER_ORB,
+    GP_PAUSE,
+    GP_PAUSE_DELAY,
+    GP_QUIT_CONFIRM,
+    GP_LIFE_EXIT,
+    GP_MISS,
+    GP_STAGE_BONUS,
+    GP_TOTAL_BONUS,
+    GP_GAMEOVER,
+    GP_GAMEOVER_DELAY,
+    GP_GAMEOVER_END,
+    GP_CONTINUE,
+    GP_CONTINUE_DELAY,
+    GP_VICTORY_DELAY,
+    GP_SWITCH,
+    GP_TERMINAL,
+} GAMEPLAY_PHASE;
+
+// Names the program that game_switch_binary's black-out leads to: REIIDEN
+// again for a boss stage or a Continue, OP or FUUIN.
+typedef enum {
+    GAMEPLAY_SWITCH_STAGE,
+    GAMEPLAY_SWITCH_CONTINUE,
+    GAMEPLAY_SWITCH_OPENING,
+    GAMEPLAY_SWITCH_ENDING,
+} GAMEPLAY_SWITCH;
+
+typedef struct {
+    GAMEPLAY_REQUEST request;
+    GAMEPLAY_PHASE phase, after_player;
+    FRAME_WAIT wait;
+    bool wait_for_shot;
+    bool boss_stage, waiting, bgm_started;
+    uint8_t menu_selection, animation_frame;
+    int16_t gameover_left[5], gameover_top[5];
+    bool gameover_clipped[5];
+    uint16_t continue_frame;
+    // Ignores confirm at the Continue prompt until it is released, with
+    // fix_debouncing.
+    bool continue_locked;
+    GAMEPLAY_SWITCH switch_to;
+    PALETTE_FADE switch_fade;
+    PLAYER_BOMB_CONTINUATION player_bomb;
+    INVINCIBILITY invincibility;
+
+} GAMEPLAY;
+
+static GAMEPLAY m_Gameplay;
 
 static const GAMEPLAY_ASSETS *m_Assets;
 static uint64_t m_HostTick;
@@ -16,7 +86,7 @@ static uint64_t m_HostTick;
 static const PTN *M_StageSprites(void)
 {
     const GAMEPLAY_ASSETS *const a = m_Assets;
-    return g_Gameplay.boss_stage ? &a->boss_stage : &a->stage;
+    return m_Gameplay.boss_stage ? &a->boss_stage : &a->stage;
 }
 
 static PLAYER_SPRITES M_PlayerSprites(void)
@@ -54,7 +124,7 @@ static void M_HookBossHp(void)
 
 static void M_BossSetup(void)
 {
-    switch (g_Gameplay.boss) {
+    switch (g_Stage.boss) {
     case BOSS_SINGYOKU:
         B05_Setup(&m_Assets->b05);
         break;
@@ -80,14 +150,14 @@ static void M_BossSetup(void)
         g_Boss = nullptr;
         break;
     }
-    if (g_Gameplay.boss != BOSS_NONE && g_Gameplay.boss != BOSS_MIMA) {
+    if (g_Stage.boss != BOSS_NONE && g_Stage.boss != BOSS_MIMA) {
         M_HookBossHp();
     }
 }
 
 static bool M_BossTick(const TH01_INPUT *const raw)
 {
-    switch (g_Gameplay.boss) {
+    switch (g_Stage.boss) {
     case BOSS_SINGYOKU: {
         const GAMEPLAY_ASSETS *const a = m_Assets;
         const ROUTE_SELECT_ASSETS route = { .font = &a->route_font,
@@ -154,14 +224,14 @@ static void M_TitleChar(void)
     const uint32_t chars[] = { 0x6771, 0x65b9, 0x2605, 0x9748, 0x7570, 0x4f1d };
     Sound_Effect(14);
     Tram_PutKanji16Reverse(
-        GameText_Find(&m_Assets->menu_font, chars[g_Gameplay.animation_frame]));
+        GameText_Find(&m_Assets->menu_font, chars[m_Gameplay.animation_frame]));
 }
 
 static void M_StageBackground(void)
 {
     const GAMEPLAY_ASSETS *const a = m_Assets;
     const PI_IMAGE *background = &a->backgrounds[Session_Scene()];
-    switch (g_Gameplay.boss) {
+    switch (g_Stage.boss) {
     case BOSS_SINGYOKU:
         background = &a->b05.background;
         break;
@@ -191,7 +261,7 @@ static void M_StageBackground(void)
         Sprite_PtnPut(&a->miko, 0, -1, g_Player.left, PLAYER_TOP);
     }
     Scene_BeginStage(g_Session.stage_id, g_Stage.first_stage, M_StageSprites());
-    g_Gameplay.phase = GP_OBJECT_ENTRANCE;
+    m_Gameplay.phase = GP_OBJECT_ENTRANCE;
 }
 
 static void M_StageBegin(void)
@@ -199,8 +269,8 @@ static void M_StageBegin(void)
     Pellets_EraseAndResetMoving();
     Shots_EraseAndReset();
     const int16_t stage = g_Session.stage_id;
-    g_Gameplay.boss_stage = stage % 5 == 4;
-    g_Gameplay.boss = stage == 4 ? BOSS_SINGYOKU
+    m_Gameplay.boss_stage = stage % 5 == 4;
+    g_Stage.boss = stage == 4 ? BOSS_SINGYOKU
         : stage == 9  ? (g_Session.route == 0 ? BOSS_YUUGENMAGAN : BOSS_MIMA)
         : stage == 14 ? (g_Session.route == 0 ? BOSS_ELIS : BOSS_KIKURI)
         : stage == 19 ? (g_Session.route == 0 ? BOSS_SARIEL : BOSS_KONNGARA)
@@ -209,18 +279,18 @@ static void M_StageBegin(void)
     g_Player.invincible = false;
     g_Player.invincibility_time = 0;
     M_BossSetup();
-    if (g_Gameplay.boss_stage) {
+    if (m_Gameplay.boss_stage) {
         g_Stage.first_stage = true;
         Items_Reset();
     }
-    if (g_Gameplay.boss == BOSS_MIMA) {
-        g_Gameplay.phase = GP_B10J_SETUP;
-    } else if (g_Gameplay.boss == BOSS_SARIEL) {
+    if (g_Stage.boss == BOSS_MIMA) {
+        m_Gameplay.phase = GP_B10J_SETUP;
+    } else if (g_Stage.boss == BOSS_SARIEL) {
         B20M_BeginEntrance(&m_Assets->b20m);
-        g_Gameplay.phase = GP_FINAL_ENTRANCE;
-    } else if (g_Gameplay.boss == BOSS_KONNGARA) {
+        m_Gameplay.phase = GP_FINAL_ENTRANCE;
+    } else if (g_Stage.boss == BOSS_KONNGARA) {
         B20J_BeginEntrance(&m_Assets->b20j);
-        g_Gameplay.phase = GP_FINAL_ENTRANCE;
+        m_Gameplay.phase = GP_FINAL_ENTRANCE;
     } else {
         M_StageBackground();
     }
@@ -233,15 +303,15 @@ static void M_StageReady(void)
     g_Stage.maximum_combo = 0;
     g_Orb.in_portal = false;
     g_Player.bomb_frame = 0;
-    g_Gameplay.frame = 0;
+    g_Stage.frame = 0;
     Orb_ResetFlight();
-    if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
+    if (g_Session.stage_id % 5 == 0 || m_Gameplay.boss_stage) {
         g_Player.left = 304;
     }
     g_Player.deflecting = false;
     g_Player.bomb_damaging = false;
     g_Stage.combo = 0;
-    g_Gameplay.phase = GP_LIFE_BEGIN;
+    m_Gameplay.phase = GP_LIFE_BEGIN;
 }
 
 static void M_LifeBegin(const TH01_INPUT *const raw)
@@ -255,61 +325,59 @@ static void M_LifeBegin(const TH01_INPUT *const raw)
     Hud_ScoreAndCombo();
     g_GameInput.bomb_frame = 60;
     Stage_UpdateObstacles(M_StageSprites(), true);
-    if (!g_Gameplay.bgm_started && g_Gameplay.boss < BOSS_SARIEL) {
-        const size_t song = g_Gameplay.boss == BOSS_SINGYOKU ? 7
-            : g_Gameplay.boss == BOSS_YUUGENMAGAN
-                || g_Gameplay.boss == BOSS_MIMA
-            ? 8
-            : g_Gameplay.boss == BOSS_KIKURI ? 9
-            : g_Gameplay.boss == BOSS_ELIS   ? 10
-                                             : Session_Scene();
+    if (!m_Gameplay.bgm_started && g_Stage.boss < BOSS_SARIEL) {
+        const size_t song = g_Stage.boss == BOSS_SINGYOKU                   ? 7
+            : g_Stage.boss == BOSS_YUUGENMAGAN || g_Stage.boss == BOSS_MIMA ? 8
+            : g_Stage.boss == BOSS_KIKURI                                   ? 9
+            : g_Stage.boss == BOSS_ELIS                                     ? 10
+                                        : Session_Scene();
         Sound_Load(song);
         Sound_Play();
-        g_Gameplay.bgm_started = true;
+        m_Gameplay.bgm_started = true;
     }
     M_ResetInput();
     if (g_Player.invincibility_time > 1) {
         g_Player.invincible = true;
     }
-    if (g_Gameplay.boss == BOSS_SINGYOKU || g_Gameplay.boss == BOSS_MIMA) {
-        g_Gameplay.phase = GP_LIFE_BOSS;
+    if (g_Stage.boss == BOSS_SINGYOKU || g_Stage.boss == BOSS_MIMA) {
+        m_Gameplay.phase = GP_LIFE_BOSS;
     } else {
-        if (g_Gameplay.boss == BOSS_KIKURI) {
+        if (g_Stage.boss == BOSS_KIKURI) {
             g_GameInput.strike = false;
         }
-        g_Gameplay.phase = GP_WAIT_SHOT;
+        m_Gameplay.phase = GP_WAIT_SHOT;
     }
-    if (g_Gameplay.phase == GP_LIFE_BOSS && M_BossTick(raw)) {
-        g_Gameplay.phase = GP_WAIT_SHOT;
+    if (m_Gameplay.phase == GP_LIFE_BOSS && M_BossTick(raw)) {
+        m_Gameplay.phase = GP_WAIT_SHOT;
     }
 }
 
 static void M_StartFrames(void)
 {
-    g_Gameplay.wait_for_shot = false;
+    m_Gameplay.wait_for_shot = false;
     g_GameInput.shot = false;
     g_Stage.timer_initialized = true;
     g_Rng = g_Session.frame_rand;
     g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;
     g_Stage.first_stage = false;
-    g_Gameplay.phase = GP_FRAME_BEGIN;
+    m_Gameplay.phase = GP_FRAME_BEGIN;
 }
 
 static void M_PlayerBegin(const GAMEPLAY_PHASE after)
 {
-    g_Gameplay.after_player = after;
+    m_Gameplay.after_player = after;
     const PLAYER_SPRITES sprites = M_PlayerSprites();
-    if (Player_BeginUpdate(&g_Gameplay.player_bomb, &sprites)) {
+    if (Player_BeginUpdate(&m_Gameplay.player_bomb, &sprites)) {
         const BOMB_UPDATE result = Bomb_BeginUpdate(
             &m_Assets->miko, &m_Assets->bomb, (int16_t)g_Player.bomb_frame);
         if (result == BOMB_UPDATE_WAIT) {
-            g_Gameplay.phase = GP_PLAYER_BOMB;
+            m_Gameplay.phase = GP_PLAYER_BOMB;
             return;
         }
         Player_FinishBombUpdate(
-            &g_Gameplay.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
+            &m_Gameplay.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
     }
-    g_Gameplay.phase = after;
+    m_Gameplay.phase = after;
 }
 
 static void M_PauseDraw(const bool quit)
@@ -321,9 +389,9 @@ static void M_PauseDraw(const bool quit)
         quit ? "　うそですぅ　　はいっ" : "　再開　　終了", quit ? 224 : 256,
         144, 7, GAME_TEXT_BLACK, false);
     M_Draw("●", quit ? 224 : 256, 144, 7, GAME_TEXT_NORMAL, false);
-    g_Gameplay.menu_selection = 0;
+    m_Gameplay.menu_selection = 0;
     GameInput_ResetMenu();
-    g_Gameplay.waiting = false;
+    m_Gameplay.waiting = false;
 }
 
 static void M_PauseBegin(void)
@@ -339,7 +407,7 @@ static void M_PauseBegin(void)
         }
     }
     Palette_Set(&g_Palette, &dark);
-    g_Gameplay.phase = GP_PAUSE;
+    m_Gameplay.phase = GP_PAUSE;
 }
 
 static void M_ContinueUse(void)
@@ -352,16 +420,16 @@ static void M_ContinueUse(void)
 
 static void M_BeginSwitch(const GAMEPLAY_SWITCH to)
 {
-    g_Gameplay.switch_to = to;
+    m_Gameplay.switch_to = to;
     Palette_BeginFade(
-        &g_Gameplay.switch_fade, &g_Palette, PALETTE_FADE_BLACK_OUT);
-    Frame_BeginWait(&g_Gameplay.wait);
-    g_Gameplay.phase = GP_SWITCH;
+        &m_Gameplay.switch_fade, &g_Palette, PALETTE_FADE_BLACK_OUT);
+    Frame_BeginWait(&m_Gameplay.wait);
+    m_Gameplay.phase = GP_SWITCH;
 }
 
 static void M_Switch(void)
 {
-    switch (g_Gameplay.switch_to) {
+    switch (m_Gameplay.switch_to) {
     case GAMEPLAY_SWITCH_STAGE:
         Gameplay_Reset();
         Sound_Load(11);
@@ -372,15 +440,15 @@ static void M_Switch(void)
         g_Session.pellet_speed = g_PelletShared.speed;
         g_Session.lives = (int16_t)Extend_ResidentLives();
         Gameplay_Reset();
-        g_Gameplay.bgm_started = true;
+        m_Gameplay.bgm_started = true;
         return;
     case GAMEPLAY_SWITCH_OPENING:
-        g_Gameplay.request = GAMEPLAY_REQUEST_OPENING;
-        g_Gameplay.phase = GP_TERMINAL;
+        m_Gameplay.request = GAMEPLAY_REQUEST_OPENING;
+        m_Gameplay.phase = GP_TERMINAL;
         return;
     case GAMEPLAY_SWITCH_ENDING:
-        g_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
-        g_Gameplay.phase = GP_TERMINAL;
+        m_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
+        m_Gameplay.phase = GP_TERMINAL;
         return;
     }
 }
@@ -399,10 +467,10 @@ static void M_OpenMenu(void)
 static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
 {
     for (;;) {
-        if (g_Gameplay.waiting && !Frame_DelayReady(1)) {
+        if (m_Gameplay.waiting && !Frame_DelayReady(1)) {
             return false;
         }
-        g_Gameplay.waiting = false;
+        m_Gameplay.waiting = false;
         if (g_GameInput.paused) {
             M_Sense(raw);
             if (g_Player.is_hit) {
@@ -420,31 +488,31 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
                 M_Draw(
                     "●", select_second ? second : left, 144, 7,
                     GAME_TEXT_NORMAL, false);
-                g_Gameplay.menu_selection = select_second;
+                m_Gameplay.menu_selection = select_second;
             }
             if (!g_GameInput.shot && !g_GameInput.ok) {
-                g_Gameplay.waiting = true;
+                m_Gameplay.waiting = true;
                 if (!Frame_DelayReady(1)) {
                     return false;
                 }
-                g_Gameplay.waiting = false;
+                m_Gameplay.waiting = false;
                 continue;
             }
         }
         if (quit) {
-            if (g_Gameplay.menu_selection != 0) {
+            if (m_Gameplay.menu_selection != 0) {
                 M_ContinueUse();
                 M_OpenMenu();
             } else {
                 Palette_Set(&g_Palette, &g_StagePalette);
                 M_ResetInput();
                 Sprite_Restore16(232, 128, 176, 32);
-                g_Gameplay.phase = GP_AFTER_ORB;
+                m_Gameplay.phase = GP_AFTER_ORB;
             }
         } else {
             Sprite_Restore16(276, 128, 80, 16);
             Sprite_Restore16(256, 144, 112, 16);
-            g_Gameplay.phase = GP_PAUSE_DELAY;
+            m_Gameplay.phase = GP_PAUSE_DELAY;
         }
         return true;
     }
@@ -457,14 +525,14 @@ static void M_BeginGameover(void)
     const int16_t image = MasterRng_Next(&g_Rng) % 8 == 0 ? 23 : 22;
     Sprite_PtnPut(&m_Assets->miko, image, -1, g_Player.left, PLAYER_TOP);
     for (int32_t i = 0; i < 5; i++) {
-        g_Gameplay.gameover_left[i] = g_Player.left;
-        g_Gameplay.gameover_top[i] = PLAYER_TOP;
-        g_Gameplay.gameover_clipped[i] = false;
+        m_Gameplay.gameover_left[i] = g_Player.left;
+        m_Gameplay.gameover_top[i] = PLAYER_TOP;
+        m_Gameplay.gameover_clipped[i] = false;
     }
     M_CopyPage(0, 1);
-    g_Gameplay.animation_frame = 0;
-    Frame_BeginWait(&g_Gameplay.wait);
-    g_Gameplay.phase = GP_GAMEOVER;
+    m_Gameplay.animation_frame = 0;
+    Frame_BeginWait(&m_Gameplay.wait);
+    m_Gameplay.phase = GP_GAMEOVER;
 }
 
 static void M_AfterBonus(void)
@@ -473,7 +541,7 @@ static void M_AfterBonus(void)
         g_PelletShared.speed = 0;
     }
     M_SyncSession();
-    if (g_Session.stage_id % 5 == 4 || g_Gameplay.boss != BOSS_NONE) {
+    if (g_Session.stage_id % 5 == 4 || g_Stage.boss != BOSS_NONE) {
         Sound_Fade();
         M_BeginSwitch(GAMEPLAY_SWITCH_STAGE);
     } else {
@@ -481,42 +549,42 @@ static void M_AfterBonus(void)
         Video_SelectDrawingPage(1);
         StageObjects_PutAllBackgrounds();
         Video_SelectDrawingPage(0);
-        g_Gameplay.phase = GP_STAGE_BEGIN;
+        m_Gameplay.phase = GP_STAGE_BEGIN;
     }
 }
 
 static void M_ContinueMenu(void)
 {
-    Scale2x_Copy(288, 200, 0, g_Gameplay.menu_selection == 0 ? 16 : 48, 48, 16);
-    Scale2x_Copy(288, 232, 0, g_Gameplay.menu_selection == 0 ? 64 : 32, 48, 16);
+    Scale2x_Copy(288, 200, 0, m_Gameplay.menu_selection == 0 ? 16 : 48, 48, 16);
+    Scale2x_Copy(288, 232, 0, m_Gameplay.menu_selection == 0 ? 64 : 32, 48, 16);
 }
 
 static GAMEPLAY_REQUEST M_Run(
     const TH01_INPUT *const raw, const uint64_t host_tick)
 {
     for (;;) {
-        switch (g_Gameplay.phase) {
+        switch (m_Gameplay.phase) {
         case GP_STAGE_BEGIN:
             M_StageBegin();
             break;
         case GP_B10J_SETUP:
             if (!B10J_ResumeSetup(&m_Assets->b10j, &m_Assets->miko)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             M_HookBossHp();
             M_StageBackground();
             break;
         case GP_FINAL_ENTRANCE:
-            if (g_Gameplay.boss == BOSS_SARIEL
+            if (g_Stage.boss == BOSS_SARIEL
                     ? !B20M_ResumeEntrance(&m_Assets->b20m, host_tick)
                     : !B20J_ResumeEntrance(&m_Assets->b20j)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             M_StageReady();
             break;
         case GP_OBJECT_ENTRANCE:
             if (!StageObjects_ResumeEntrance(M_StageSprites())) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             if (g_Stage.first_stage) {
                 M_CopyPage(0, 1);
@@ -526,32 +594,32 @@ static GAMEPLAY_REQUEST M_Run(
                     &m_Assets->miko, 0, -1, g_Player.left, PLAYER_TOP);
                 Items_Render(M_StageSprites());
             }
-            if (g_Gameplay.boss == BOSS_KIKURI) {
+            if (g_Stage.boss == BOSS_KIKURI) {
                 Video_Clear(0);
             }
-            g_Gameplay.animation_frame = 0;
-            if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
+            m_Gameplay.animation_frame = 0;
+            if (g_Session.stage_id % 5 == 0 || m_Gameplay.boss_stage) {
                 M_TitleChar();
-                g_Gameplay.phase = GP_TITLE;
+                m_Gameplay.phase = GP_TITLE;
             } else {
                 M_Line("STAGE");
-                g_Gameplay.phase = GP_STAGE_LABEL;
+                m_Gameplay.phase = GP_STAGE_LABEL;
             }
             break;
         case GP_TITLE:
             if (!Frame_DelayReady(8)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
-            if (++g_Gameplay.animation_frame < 6) {
+            if (++m_Gameplay.animation_frame < 6) {
                 M_TitleChar();
             } else {
                 M_Line("STAGE");
-                g_Gameplay.phase = GP_STAGE_LABEL;
+                m_Gameplay.phase = GP_STAGE_LABEL;
             }
             break;
         case GP_STAGE_LABEL:
             if (!Frame_DelayReady(35)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             {
                 const uint32_t number = (uint32_t)(g_Session.stage_id + 1);
@@ -561,11 +629,11 @@ static GAMEPLAY_REQUEST M_Run(
                 };
                 Tram_PutLine16(glyphs, 2, TRAM_RED, TRAM_BLACK);
             }
-            g_Gameplay.phase = GP_STAGE_NUMBER;
+            m_Gameplay.phase = GP_STAGE_NUMBER;
             break;
         case GP_STAGE_NUMBER:
             if (!Frame_DelayReady(35)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             Tram_Clear();
             M_StageReady();
@@ -575,12 +643,12 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_LIFE_BOSS:
             if (!M_BossTick(raw)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
-            g_Gameplay.phase = GP_WAIT_SHOT;
+            m_Gameplay.phase = GP_WAIT_SHOT;
             break;
         case GP_WAIT_SHOT:
-            if (g_Gameplay.boss != BOSS_NONE || !g_Gameplay.wait_for_shot
+            if (g_Stage.boss != BOSS_NONE || !m_Gameplay.wait_for_shot
                 || g_GameInput.shot) {
                 M_StartFrames();
             } else {
@@ -590,16 +658,16 @@ static GAMEPLAY_REQUEST M_Run(
             break;
         case GP_WAIT_SHOT_DELAY:
             if (!Frame_DelayReady(1)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             g_Player.bomb_frame++;
-            g_Gameplay.phase = GP_WAIT_SHOT;
+            m_Gameplay.phase = GP_WAIT_SHOT;
             break;
         case GP_FRAME_BEGIN:
             if (g_Player.is_hit) {
                 g_Stage.timer_initialized = false;
-                Frame_BeginWait(&g_Gameplay.wait);
-                g_Gameplay.phase = GP_LIFE_EXIT;
+                Frame_BeginWait(&m_Gameplay.wait);
+                m_Gameplay.phase = GP_LIFE_EXIT;
                 break;
             }
             g_Session.frame_rand++;
@@ -624,80 +692,80 @@ static GAMEPLAY_REQUEST M_Run(
         case GP_PLAYER_BOMB: {
             const BOMB_UPDATE result = Bomb_ResumeUpdate();
             if (result == BOMB_UPDATE_WAIT) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             const PLAYER_SPRITES sprites = M_PlayerSprites();
             Player_FinishBombUpdate(
-                &g_Gameplay.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
-            g_Gameplay.phase = g_Gameplay.after_player;
+                &m_Gameplay.player_bomb, &sprites, result == BOMB_UPDATE_DONE);
+            m_Gameplay.phase = m_Gameplay.after_player;
             break;
         }
         case GP_ITEMS:
             Items_UpdateAndRender(M_StageSprites(), &m_Assets->item_font);
-            g_Gameplay.frame++;
+            g_Stage.frame++;
             Orb_AdvanceForceFrame();
             g_Player.bomb_frame++;
             GameInput_AdvanceBombFrame();
-            g_Gameplay.phase =
+            m_Gameplay.phase =
                 (g_Session.frame_rand & 3) == 0 ? GP_TIMER : GP_BOSS;
             break;
         case GP_TIMER:
             if (!StageTimer_TickAndPut()) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
-            g_Gameplay.phase = GP_BOSS;
+            m_Gameplay.phase = GP_BOSS;
             break;
         case GP_BOSS:
-            if (!g_Gameplay.waiting) {
+            if (!m_Gameplay.waiting) {
                 Invincibility_UpdateAndRender(
-                    &g_Gameplay.invincibility, &m_Assets->invincibility);
-                g_Gameplay.waiting = true;
+                    &m_Gameplay.invincibility, &m_Assets->invincibility);
+                m_Gameplay.waiting = true;
             }
             if (!M_BossTick(raw)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
-            g_Gameplay.waiting = false;
+            m_Gameplay.waiting = false;
             ShootoutLasers_UpdateAll(m_Assets->lasers);
-            g_Gameplay.phase = GP_ORB;
+            m_Gameplay.phase = GP_ORB;
             if (!Stage_BeginOrbComposite(
                     M_StageSprites(), &m_Assets->hud_font, m_Assets->pellets)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             break;
         case GP_ORB:
             if (!Stage_ResumeOrbComposite(
                     M_StageSprites(), &m_Assets->hud_font, m_Assets->pellets)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             if (g_GameInput.paused) {
                 M_PauseBegin();
             } else {
-                g_Gameplay.phase = GP_AFTER_ORB;
+                m_Gameplay.phase = GP_AFTER_ORB;
             }
             break;
         case GP_PAUSE:
             if (!M_PausePoll(raw, false)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             break;
         case GP_PAUSE_DELAY:
             if (!Frame_DelayReady(20)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             GameInput_ResetMenu();
-            if (g_Gameplay.menu_selection != 0 && g_GameInput.paused) {
+            if (m_Gameplay.menu_selection != 0 && g_GameInput.paused) {
                 M_PauseDraw(true);
-                g_Gameplay.phase = GP_QUIT_CONFIRM;
+                m_Gameplay.phase = GP_QUIT_CONFIRM;
             } else {
                 Palette_Set(&g_Palette, &g_StagePalette);
                 M_ResetInput();
                 Sprite_Restore16(232, 128, 176, 32);
-                g_Gameplay.phase = GP_AFTER_ORB;
+                m_Gameplay.phase = GP_AFTER_ORB;
             }
             break;
         case GP_QUIT_CONFIRM:
             if (!M_PausePoll(raw, true)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             break;
         case GP_AFTER_ORB:
@@ -709,25 +777,25 @@ static GAMEPLAY_REQUEST M_Run(
                 if (g_Stage.score > g_Session.highest_score) {
                     g_Session.highest_score = g_Stage.score;
                 }
-                g_Gameplay.phase = GP_VICTORY_DELAY;
+                m_Gameplay.phase = GP_VICTORY_DELAY;
             } else {
                 if (g_PelletShared.destroy_score_delta != 0) {
                     g_Stage.score += g_PelletShared.destroy_score_delta;
                     Hud_ScoreAndCombo();
                     g_PelletShared.destroy_score_delta = 0;
                 }
-                g_Gameplay.phase = GP_FRAME_BEGIN;
+                m_Gameplay.phase = GP_FRAME_BEGIN;
             }
             break;
         case GP_VICTORY_DELAY:
             if (!Frame_DelayReady(120)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             M_BeginSwitch(GAMEPLAY_SWITCH_ENDING);
             break;
         case GP_LIFE_EXIT:
-            if (!Frame_WaitReady(&g_Gameplay.wait)) {
-                return g_Gameplay.request;
+            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+                return m_Gameplay.request;
             }
             Video_SetScroll(0);
             g_Session.exit_rand = g_Session.frame_rand;
@@ -736,20 +804,20 @@ static GAMEPLAY_REQUEST M_Run(
             if (g_Stage.cleared) {
                 g_Stage.cleared = false;
                 g_Player.is_hit = false;
-                if (g_Gameplay.boss != BOSS_NONE) {
-                    g_Gameplay.wait_for_shot = true;
+                if (g_Stage.boss != BOSS_NONE) {
+                    m_Gameplay.wait_for_shot = true;
                     g_Stage.first_stage = true;
                 }
                 g_Session.stage_id++;
                 const int16_t finished = g_Session.stage_id;
-                if (g_Gameplay.boss != BOSS_NONE) {
-                    g_Gameplay.phase = GP_TOTAL_BONUS;
+                if (g_Stage.boss != BOSS_NONE) {
+                    m_Gameplay.phase = GP_TOTAL_BONUS;
                     if (Bonus_BeginTotal(
                             &m_Assets->total, finished, raw, host_tick)) {
                         M_AfterBonus();
                     }
                 } else {
-                    g_Gameplay.phase = GP_STAGE_BONUS;
+                    m_Gameplay.phase = GP_STAGE_BONUS;
                     if (Bonus_BeginStage(
                             m_Assets->bonus, &m_Assets->bonus_font, finished,
                             raw)) {
@@ -763,81 +831,81 @@ static GAMEPLAY_REQUEST M_Run(
                 g_Session.lives--;
                 Extend_SyncResidentLives(g_Session.lives);
                 Miss_Begin(&m_Assets->miko, M_StageSprites());
-                g_Gameplay.phase = GP_MISS;
+                m_Gameplay.phase = GP_MISS;
             }
             break;
         case GP_MISS:
             if (!Miss_Resume(&m_Assets->miko, M_StageSprites(), 1)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             g_Player.is_hit = false;
             g_Player.invincibility_time = 150;
-            g_Gameplay.phase = GP_LIFE_BEGIN;
+            m_Gameplay.phase = GP_LIFE_BEGIN;
             break;
         case GP_STAGE_BONUS:
             if (!Bonus_Resume(m_Assets->bonus, &m_Assets->bonus_font, raw)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             M_AfterBonus();
             break;
         case GP_TOTAL_BONUS:
             if (!Bonus_ResumeTotal(&m_Assets->total, raw, host_tick)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             M_AfterBonus();
             break;
         case GP_GAMEOVER:
-            if (!Frame_WaitReady(&g_Gameplay.wait)) {
-                return g_Gameplay.request;
+            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+                return m_Gameplay.request;
             }
             Video_SetScroll(
-                (int16_t)(400 - g_Gameplay.animation_frame % 2 * 8));
-            const int32_t frame = g_Gameplay.animation_frame;
+                (int16_t)(400 - m_Gameplay.animation_frame % 2 * 8));
+            const int32_t frame = m_Gameplay.animation_frame;
             // Model the clipped-flag overread through the adjacent top and
             // left arrays. The caller's nonzero saved BP suppresses frame 15.
-            const bool restore = frame < 5 ? !g_Gameplay.gameover_clipped[frame]
-                : frame < 10 ? g_Gameplay.gameover_top[frame - 5] == 0
-                : frame < 15 ? g_Gameplay.gameover_left[frame - 10] == 0
+            const bool restore = frame < 5 ? !m_Gameplay.gameover_clipped[frame]
+                : frame < 10 ? m_Gameplay.gameover_top[frame - 5] == 0
+                : frame < 15 ? m_Gameplay.gameover_left[frame - 10] == 0
                              : false;
             if (restore) {
                 for (int32_t i = 0; i < 5; i++) {
                     Sprite_Restore16(
-                        g_Gameplay.gameover_left[i], PLAYER_TOP, 32, 32);
+                        m_Gameplay.gameover_left[i], PLAYER_TOP, 32, 32);
                 }
             }
-            g_Gameplay.gameover_left[0] -= 8;
-            g_Gameplay.gameover_left[1] -= 8;
-            g_Gameplay.gameover_left[3] += 8;
-            g_Gameplay.gameover_left[4] += 8;
-            g_Gameplay.gameover_top[1] -= 8;
-            g_Gameplay.gameover_top[2] -= 8;
-            g_Gameplay.gameover_top[3] -= 8;
+            m_Gameplay.gameover_left[0] -= 8;
+            m_Gameplay.gameover_left[1] -= 8;
+            m_Gameplay.gameover_left[3] += 8;
+            m_Gameplay.gameover_left[4] += 8;
+            m_Gameplay.gameover_top[1] -= 8;
+            m_Gameplay.gameover_top[2] -= 8;
+            m_Gameplay.gameover_top[3] -= 8;
             for (int32_t i = 0; i < 5; i++) {
-                if (g_Gameplay.gameover_left[i] >= 608
-                    || g_Gameplay.gameover_left[i] < 0) {
-                    g_Gameplay.gameover_clipped[i] = true;
+                if (m_Gameplay.gameover_left[i] >= 608
+                    || m_Gameplay.gameover_left[i] < 0) {
+                    m_Gameplay.gameover_clipped[i] = true;
                 }
-                if (!g_Gameplay.gameover_clipped[i]) {
+                if (!m_Gameplay.gameover_clipped[i]) {
                     Sprite_PtnPut(
-                        &m_Assets->miko, 20 + g_Gameplay.animation_frame % 2,
-                        -1, g_Gameplay.gameover_left[i],
-                        g_Gameplay.gameover_top[i]);
+                        &m_Assets->miko, 20 + m_Gameplay.animation_frame % 2,
+                        -1, m_Gameplay.gameover_left[i],
+                        m_Gameplay.gameover_top[i]);
                 }
             }
-            g_Gameplay.phase = GP_GAMEOVER_DELAY;
+            m_Gameplay.phase = GP_GAMEOVER_DELAY;
             break;
         case GP_GAMEOVER_DELAY:
-            if (!Frame_DelayReady(g_Gameplay.animation_frame / 6)) {
-                return g_Gameplay.request;
+            if (!Frame_DelayReady(m_Gameplay.animation_frame / 6)) {
+                return m_Gameplay.request;
             }
-            g_Gameplay.animation_frame++;
-            Frame_BeginWait(&g_Gameplay.wait);
-            g_Gameplay.phase =
-                g_Gameplay.animation_frame < 16 ? GP_GAMEOVER : GP_GAMEOVER_END;
+            m_Gameplay.animation_frame++;
+            Frame_BeginWait(&m_Gameplay.wait);
+            m_Gameplay.phase =
+                m_Gameplay.animation_frame < 16 ? GP_GAMEOVER : GP_GAMEOVER_END;
             break;
         case GP_GAMEOVER_END:
-            if (!Frame_WaitReady(&g_Gameplay.wait)) {
-                return g_Gameplay.request;
+            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+                return m_Gameplay.request;
             }
             Video_SetScroll(0);
             g_Player.remaining_bombs = 1;
@@ -845,22 +913,22 @@ static GAMEPLAY_REQUEST M_Run(
             Pellets_EraseAndResetMoving();
             Extend_Reset();
             M_SyncSession();
-            g_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
-            g_Gameplay.phase = GP_TERMINAL;
+            m_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
+            m_Gameplay.phase = GP_TERMINAL;
             break;
         case GP_CONTINUE:
             M_Sense(raw);
-            g_Gameplay.continue_frame++;
-            g_Gameplay.phase = GP_CONTINUE_DELAY;
+            m_Gameplay.continue_frame++;
+            m_Gameplay.phase = GP_CONTINUE_DELAY;
             break;
         case GP_CONTINUE_DELAY:
             if (!Frame_DelayReady(1)) {
-                return g_Gameplay.request;
+                return m_Gameplay.request;
             }
             const bool confirm = g_GameInput.ok || g_GameInput.shot;
-            g_Gameplay.continue_locked &= confirm;
-            if (confirm && !g_Gameplay.continue_locked) {
-                if (g_Gameplay.menu_selection == 0) {
+            m_Gameplay.continue_locked &= confirm;
+            if (confirm && !m_Gameplay.continue_locked) {
+                if (m_Gameplay.menu_selection == 0) {
                     M_BeginSwitch(GAMEPLAY_SWITCH_CONTINUE);
                 } else {
                     g_Player.is_hit = false;
@@ -868,38 +936,38 @@ static GAMEPLAY_REQUEST M_Run(
                     Sound_Stop();
                     M_RequestOpening();
                 }
-            } else if (g_Gameplay.continue_frame > 3000 || g_GameInput.paused) {
+            } else if (m_Gameplay.continue_frame > 3000 || g_GameInput.paused) {
                 g_Player.is_hit = false;
                 g_GameInput.paused = false;
-                if (g_Gameplay.continue_frame > 3000) {
+                if (m_Gameplay.continue_frame > 3000) {
                     Sound_Stop();
                 }
                 M_RequestOpening();
             } else {
                 if (g_GameInput.up) {
-                    g_Gameplay.menu_selection = 0;
+                    m_Gameplay.menu_selection = 0;
                     M_ContinueMenu();
                 }
                 if (g_GameInput.down) {
-                    g_Gameplay.menu_selection = 1;
+                    m_Gameplay.menu_selection = 1;
                     M_ContinueMenu();
                 }
-                g_Gameplay.phase = GP_CONTINUE;
+                m_Gameplay.phase = GP_CONTINUE;
             }
             break;
         case GP_SWITCH:
-            if (!Frame_WaitReady(&g_Gameplay.wait)) {
-                return g_Gameplay.request;
+            if (!Frame_WaitReady(&m_Gameplay.wait)) {
+                return m_Gameplay.request;
             }
-            Palette_FadeStep(&g_Gameplay.switch_fade, &g_Palette);
-            if (g_Gameplay.switch_fade.remaining > 0) {
-                Frame_BeginWait(&g_Gameplay.wait);
+            Palette_FadeStep(&m_Gameplay.switch_fade, &g_Palette);
+            if (m_Gameplay.switch_fade.remaining > 0) {
+                Frame_BeginWait(&m_Gameplay.wait);
             } else {
                 M_Switch();
             }
             break;
         case GP_TERMINAL:
-            return g_Gameplay.request;
+            return m_Gameplay.request;
         }
     }
 }
@@ -909,9 +977,11 @@ void Gameplay_Init(
 {
     m_Assets = assets;
     m_HostTick = 0;
-    memset(&g_Gameplay, 0, sizeof(g_Gameplay));
-    g_Gameplay.wait_for_shot = true;
-    g_Gameplay.phase = GP_STAGE_BEGIN;
+    memset(&m_Gameplay, 0, sizeof(m_Gameplay));
+    g_Stage.frame = 0;
+    g_Stage.boss = BOSS_NONE;
+    m_Gameplay.wait_for_shot = true;
+    m_Gameplay.phase = GP_STAGE_BEGIN;
     StageObjects_Prepare(allocator);
     Hud_Init(allocator);
     HudHp_Init(allocator);
@@ -922,9 +992,11 @@ void Gameplay_Init(
 
 void Gameplay_Reset(void)
 {
-    memset(&g_Gameplay, 0, sizeof(g_Gameplay));
-    g_Gameplay.wait_for_shot = true;
-    g_Gameplay.phase = GP_STAGE_BEGIN;
+    memset(&m_Gameplay, 0, sizeof(m_Gameplay));
+    g_Stage.frame = 0;
+    g_Stage.boss = BOSS_NONE;
+    m_Gameplay.wait_for_shot = true;
+    m_Gameplay.phase = GP_STAGE_BEGIN;
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
     Boss_Init();
@@ -969,7 +1041,7 @@ void Gameplay_Reset(void)
     Extend_ResetNext(g_Session.score);
     g_Rng = g_Session.frame_rand;
     g_Stage.flip_cycle = (uint8_t)(MasterRng_Next(&g_Rng) % 60);
-    g_Gameplay.boss_stage = g_Session.stage_id % 5 == 4;
+    m_Gameplay.boss_stage = g_Session.stage_id % 5 == 4;
     Scene_Activate(&m_Assets->scenes[Session_Scene()]);
     Video_SelectDrawingPage(0);
     Video_SelectVisiblePage(0);
@@ -981,8 +1053,8 @@ void Gameplay_Reset(void)
 void Gameplay_ResumeAfterScore(
     const TH01_INPUT *const raw, const uint64_t host_tick)
 {
-    ASSERT(g_Gameplay.request == GAMEPLAY_REQUEST_SCORE);
-    g_Gameplay.request = GAMEPLAY_REQUEST_NONE;
+    ASSERT(m_Gameplay.request == GAMEPLAY_REQUEST_SCORE);
+    m_Gameplay.request = GAMEPLAY_REQUEST_NONE;
     Video_SelectDrawingPage(1);
     M_CopyPage(1, 0);
     const char *const lines[] = {
@@ -997,7 +1069,7 @@ void Gameplay_ResumeAfterScore(
     }
     Video_SelectDrawingPage(0);
     Scale2x_Copy(160, 64, 0, 0, 144, 16);
-    g_Gameplay.menu_selection = 0;
+    m_Gameplay.menu_selection = 0;
     M_ContinueMenu();
     M_ResetInput();
     M_ContinueUse();
@@ -1008,9 +1080,9 @@ void Gameplay_ResumeAfterScore(
     // Restores the resident's lives; the live count stays until the re-exec.
     Extend_SyncResidentLives(g_Session.settings.lives_extra + 2);
     Pellets_SpeedLower(-2, -5);
-    g_Gameplay.continue_frame = 0;
-    g_Gameplay.continue_locked = g_Session.settings.fix_debouncing;
-    g_Gameplay.phase = GP_CONTINUE;
+    m_Gameplay.continue_frame = 0;
+    m_Gameplay.continue_locked = g_Session.settings.fix_debouncing;
+    m_Gameplay.phase = GP_CONTINUE;
     m_HostTick = host_tick;
     M_Run(raw, host_tick);
 }
@@ -1029,7 +1101,7 @@ GAMEPLAY_REQUEST Gameplay_Tick(
     const uint64_t host_tick)
 {
     m_HostTick = host_tick;
-    if (reference_edge && g_Gameplay.phase == GP_SWITCH) {
+    if (reference_edge && m_Gameplay.phase == GP_SWITCH) {
         Frame_PollVSync();
     } else if (reference_edge) {
         Frame_VSync();
@@ -1039,7 +1111,9 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 
 void Gameplay_Close(void)
 {
-    memset(&g_Gameplay, 0, sizeof(g_Gameplay));
+    memset(&m_Gameplay, 0, sizeof(m_Gameplay));
+    g_Stage.frame = 0;
+    g_Stage.boss = BOSS_NONE;
     m_Assets = nullptr;
     m_HostTick = 0;
 }

@@ -4,7 +4,7 @@
 #include "../src/th01/scene.c"
 #include "../src/th01/hud.c"
 #include "../src/th01/miss.c"
-#include "th01/gameplay_internal.h"
+#include "../src/th01/gameplay.c"
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -71,10 +71,10 @@ static void M_Init(FIXTURE *const f)
         &f->assets->scenes[0].layouts, 0, true, &f->assets->stage);
     Orb_ResetFlight();
     g_Stage.time = 1000;
-    g_Gameplay.phase = GP_FRAME_BEGIN;
+    m_Gameplay.phase = GP_FRAME_BEGIN;
     g_Stage.timer_initialized = true;
     g_Stage.first_stage = false;
-    g_Gameplay.invincibility.frame[0] = 255;
+    m_Gameplay.invincibility.frame[0] = 255;
 }
 
 TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
@@ -86,11 +86,11 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     TH01_INPUT raw = { .right = true, .shot = true };
     CHECK_EQ_INT(Gameplay_Tick(&raw, false, 1), GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g_Session.frame_rand, 1);
-    CHECK_EQ_INT(g_Gameplay.frame, 1);
+    CHECK_EQ_INT(g_Stage.frame, 1);
     CHECK_EQ_INT(g_Orb.force_frame, 1);
     CHECK_EQ_INT(g_Player.left, 308);
     CHECK_EQ_INT(g_Orb.left, 596);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_ORB);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_ORB);
     CHECK(StageOrb_Waiting());
     const PLAYER player = g_Player;
     const ORB orb = g_Orb;
@@ -101,7 +101,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(g_Rng, rng);
     Gameplay_Tick(&raw, true, 3);
     CHECK_EQ_INT(g_Session.frame_rand, 2);
-    CHECK_EQ_INT(g_Gameplay.frame, 2);
+    CHECK_EQ_INT(g_Stage.frame, 2);
     CHECK_EQ_INT(g_Orb.force_frame, 2);
     Gameplay_Tick(&raw, true, 4);
     CHECK(g_Shots.slots[0].moving);
@@ -120,16 +120,16 @@ TEST(hurry_wait_freezes_the_remaining_iteration_prefix)
     g_Player.invincibility_time = 2;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_TIMER);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_TIMER);
     CHECK_EQ_INT(m_Timer.phase, TIMER_WAIT_HURRY);
-    CHECK_EQ_INT(g_Gameplay.frame, 1);
+    CHECK_EQ_INT(g_Stage.frame, 1);
     CHECK_EQ_INT(g_Player.invincibility_time, 1);
     CHECK_EQ_INT(g_Orb.left, 600);
     const uint32_t rng = g_Rng;
     const PLAYER player = g_Player;
     for (uint64_t i = 2; i < 12; i++) {
         Gameplay_Tick(&raw, false, i);
-        CHECK_EQ_INT(g_Gameplay.frame, 1);
+        CHECK_EQ_INT(g_Stage.frame, 1);
         CHECK_EQ_INT(g_Session.frame_rand, 4);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(memcmp(&player, &g_Player, sizeof(player)), 0);
@@ -142,21 +142,21 @@ TEST(real_shot_boundary_advances_player_before_timer_and_rng_seed)
     FIXTURE f;
     M_Init(&f);
 
-    g_Gameplay.phase = GP_WAIT_SHOT;
-    g_Gameplay.wait_for_shot = true;
+    m_Gameplay.phase = GP_WAIT_SHOT;
+    m_Gameplay.wait_for_shot = true;
     g_Stage.timer_initialized = false;
     GameInput_Init();
     g_Session.frame_rand = 42;
     TH01_INPUT raw = { .shot = true, .left = true };
     Gameplay_Tick(&raw, false, 1);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_WAIT_SHOT_DELAY);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_WAIT_SHOT_DELAY);
     CHECK_EQ_INT(g_Player.left, 300);
     CHECK(!g_Stage.timer_initialized);
     CHECK_EQ_INT(g_Session.frame_rand, 42);
     Gameplay_Tick(&raw, true, 2);
     CHECK(g_Stage.timer_initialized);
-    CHECK(!g_Gameplay.wait_for_shot);
-    CHECK_EQ_INT(g_Gameplay.frame, 1);
+    CHECK(!m_Gameplay.wait_for_shot);
+    CHECK_EQ_INT(g_Stage.frame, 1);
     CHECK_EQ_INT(g_Session.frame_rand, 43);
     CHECK_EQ_INT(g_Player.bomb_frame, 2);
     Arena_Free(&f.arena);
@@ -169,16 +169,16 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
 
     BONUS_STAGE_ASSETS stage = {};
     f.assets->bonus = &stage;
-    g_Gameplay.phase = GP_FRAME_BEGIN;
+    m_Gameplay.phase = GP_FRAME_BEGIN;
     g_Player.is_hit = true;
     g_Stage.cleared = true;
     g_Session.lives = 0;
     g_Stage.time = 500;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_LIFE_EXIT);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_LIFE_EXIT);
     Gameplay_Tick(&raw, true, 2);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_STAGE_BONUS);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_STAGE_BONUS);
     CHECK_EQ_INT(g_Session.stage_id, 1);
     CHECK_EQ_INT(g_Session.lives, 0);
     CHECK(!g_Player.is_hit);
@@ -191,14 +191,14 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     FIXTURE f;
     M_Init(&f);
 
-    g_Gameplay.phase = GP_AFTER_ORB;
+    m_Gameplay.phase = GP_AFTER_ORB;
     g_Stage.game_cleared = true;
     g_Stage.score = 1000;
     g_PelletShared.destroy_score_delta = 70;
     g_Session.route = SESSION_ROUTE_JIGOKU;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_VICTORY_DELAY);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_VICTORY_DELAY);
     CHECK_EQ_INT(g_Session.score, 1000);
     CHECK_EQ_INT(g_Session.highest_score, 1000);
     CHECK_EQ_INT(g_Session.ending, SESSION_END_JIGOKU);
@@ -206,15 +206,15 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
         CHECK_EQ_INT(Gameplay_Tick(&raw, true, tick), GAMEPLAY_REQUEST_NONE);
     }
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 121), GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_SWITCH);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_SWITCH);
     const int16_t count1 = g_VSync.count1;
     for (uint64_t tick = 122; tick < 137; tick++) {
         CHECK_EQ_INT(Gameplay_Tick(&raw, true, tick), GAMEPLAY_REQUEST_NONE);
     }
     CHECK_EQ_INT(g_VSync.count1, count1);
-    CHECK_EQ_INT(g_Gameplay.switch_fade.remaining, 1);
+    CHECK_EQ_INT(m_Gameplay.switch_fade.remaining, 1);
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 137), GAMEPLAY_REQUEST_ENDING);
-    CHECK_EQ_INT(g_Gameplay.switch_fade.remaining, 0);
+    CHECK_EQ_INT(m_Gameplay.switch_fade.remaining, 0);
     CHECK_EQ_INT(g_PelletShared.destroy_score_delta, 70);
     CHECK_EQ_INT(g_Stage.score, 1000);
     Arena_Free(&f.arena);
@@ -225,18 +225,18 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     FIXTURE f;
     M_Init(&f);
     g_Session.stage_id = 4;
-    g_Gameplay.boss_stage = true;
-    g_Gameplay.boss = BOSS_SINGYOKU;
+    m_Gameplay.boss_stage = true;
+    g_Stage.boss = BOSS_SINGYOKU;
     B05_Setup(&f.assets->b05);
     BOSS_STATE *const boss = g_Boss;
     const BOSS_STATE state = *boss;
-    g_Gameplay.phase = GP_LIFE_EXIT;
-    Frame_BeginWait(&g_Gameplay.wait);
+    m_Gameplay.phase = GP_LIFE_EXIT;
+    Frame_BeginWait(&m_Gameplay.wait);
     g_Player.is_hit = true;
     g_TestDamage = true;
     const TH01_INPUT raw = {};
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 1), GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_MISS);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_MISS);
     CHECK(!g_TestDamage);
     CHECK_EQ_INT(g_Session.lives, 3);
     CHECK(g_Boss == boss);
@@ -272,14 +272,14 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         for (int32_t i = 0; i < 1000; i++) {
             raw.shot = i % 20 < 10;
             Gameplay_Tick(&raw, true, ++tick);
-            entered_bonus |= g_Gameplay.phase == GP_STAGE_BONUS;
-            if (g_Session.stage_id == stage + 1 && g_Gameplay.phase == GP_ORB) {
+            entered_bonus |= m_Gameplay.phase == GP_STAGE_BONUS;
+            if (g_Session.stage_id == stage + 1 && m_Gameplay.phase == GP_ORB) {
                 break;
             }
         }
         CHECK(entered_bonus);
         CHECK_EQ_INT(g_Session.stage_id, stage + 1);
-        CHECK_EQ_INT(g_Gameplay.phase, GP_ORB);
+        CHECK_EQ_INT(m_Gameplay.phase, GP_ORB);
         CHECK(g_StageObjects.cards == cards);
         CHECK(g_StageObjects.obstacles == obstacles);
         CHECK_EQ_INT(g_StageObjects.card_count, 1);
@@ -302,8 +302,8 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     bool entered_miss = false;
     for (int32_t i = 0; i < 1000; i++) {
         Gameplay_Tick(&raw, true, ++tick);
-        entered_miss |= g_Gameplay.phase == GP_MISS;
-        if (entered_miss && g_Gameplay.phase == GP_ORB) {
+        entered_miss |= m_Gameplay.phase == GP_MISS;
+        if (entered_miss && m_Gameplay.phase == GP_ORB) {
             break;
         }
     }
@@ -313,14 +313,14 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK(!g_Player.is_hit);
     g_Session.lives = 0;
     g_Player.is_hit = true;
-    g_Gameplay.phase = GP_FRAME_BEGIN;
+    m_Gameplay.phase = GP_FRAME_BEGIN;
     for (int32_t i = 0; i < 200; i++) {
         if (Gameplay_Tick(&raw, true, ++tick) == GAMEPLAY_REQUEST_SCORE) {
             break;
         }
     }
-    CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_SCORE);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_TERMINAL);
+    CHECK_EQ_INT(m_Gameplay.request, GAMEPLAY_REQUEST_SCORE);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_TERMINAL);
     uint8_t before[VIDEO_PAGE_SIZE];
     memcpy(before, g_Video.pages[0], sizeof(before));
     for (int32_t i = 0; i < 5; i++) {
@@ -328,19 +328,19 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     }
     CHECK_EQ_INT(memcmp(before, g_Video.pages[0], sizeof(before)), 0);
     Gameplay_ResumeAfterScore(&raw, tick);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_CONTINUE_DELAY);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_CONTINUE_DELAY);
     CHECK_EQ_INT(g_Session.continues_total, 1);
     CHECK_EQ_INT(g_Session.lives, 0);
     CHECK_EQ_INT(Extend_ResidentLives(), 4);
     Gameplay_Tick(&(TH01_INPUT) { .shot = true }, true, ++tick);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_CONTINUE_DELAY);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_CONTINUE_DELAY);
     Gameplay_Tick(&(TH01_INPUT) { .shot = true }, true, ++tick);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_SWITCH);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_SWITCH);
     for (int32_t i = 0; i < 16; i++) {
         Gameplay_Tick(&raw, true, ++tick);
     }
-    CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_TITLE);
+    CHECK_EQ_INT(m_Gameplay.request, GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_TITLE);
     CHECK_EQ_INT(g_Session.stage_id, 0);
     CHECK(g_StageObjects.cards == cards);
     Arena_Free(&f.arena);
@@ -355,18 +355,18 @@ static int32_t M_ContinueConfirmTick(const bool fix)
     M_Init(&f);
 
     g_Session.settings.fix_debouncing = fix;
-    g_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
+    m_Gameplay.request = GAMEPLAY_REQUEST_SCORE;
     uint64_t tick = 0;
     Gameplay_ResumeAfterScore(&(TH01_INPUT) { .shot = true }, tick);
     int32_t confirmed = 0;
     for (int32_t i = 1; i <= 20 && confirmed == 0; i++) {
         const TH01_INPUT raw = { .shot = i <= 8 || i > 10 };
         Gameplay_Tick(&raw, true, ++tick);
-        if (g_Gameplay.phase == GP_SWITCH) {
+        if (m_Gameplay.phase == GP_SWITCH) {
             confirmed = i;
         }
     }
-    CHECK_EQ_INT(g_Gameplay.menu_selection, 0);
+    CHECK_EQ_INT(m_Gameplay.menu_selection, 0);
     Arena_Free(&f.arena);
     return confirmed;
 }
@@ -390,18 +390,18 @@ TEST(gameover_restores_defined_adjacent_array_values)
         memset(g_Video.pages[1], 3, VIDEO_PAGE_SIZE);
         const int16_t frame = frames[test];
         const int16_t left = lefts[test];
-        g_Gameplay.gameover_left[0] = g_Gameplay.gameover_left[1] =
+        m_Gameplay.gameover_left[0] = m_Gameplay.gameover_left[1] =
             left - frame * 8;
-        g_Gameplay.gameover_left[2] = left;
-        g_Gameplay.gameover_left[3] = g_Gameplay.gameover_left[4] =
+        m_Gameplay.gameover_left[2] = left;
+        m_Gameplay.gameover_left[3] = m_Gameplay.gameover_left[4] =
             left + frame * 8;
         for (int32_t i = 0; i < 5; i++) {
-            g_Gameplay.gameover_clipped[i] = g_Gameplay.gameover_left[i] < 0;
-            g_Gameplay.gameover_top[i] = PLAYER_TOP;
+            m_Gameplay.gameover_clipped[i] = m_Gameplay.gameover_left[i] < 0;
+            m_Gameplay.gameover_top[i] = PLAYER_TOP;
         }
-        g_Gameplay.animation_frame = frame;
-        g_Gameplay.phase = GP_GAMEOVER;
-        Frame_BeginWait(&g_Gameplay.wait);
+        m_Gameplay.animation_frame = frame;
+        m_Gameplay.phase = GP_GAMEOVER;
+        Frame_BeginWait(&m_Gameplay.wait);
         Gameplay_Tick(&(TH01_INPUT) {}, true, 1);
         CHECK_EQ_INT(
             g_Video.pages[0][PLAYER_TOP * VIDEO_WIDTH + left + frame * 8], 3);
@@ -420,7 +420,7 @@ TEST(gameover_redraws_orb_before_copying_the_miss_frame)
     g_Session.lives = 0;
     Gameplay_Tick(&(TH01_INPUT) {}, false, 1);
     Gameplay_Tick(&(TH01_INPUT) {}, true, 2);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_GAMEOVER);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_GAMEOVER);
     CHECK_EQ_INT(g_Video.pages[1][g_Orb.top * VIDEO_WIDTH + g_Orb.left], 6);
     Arena_Free(&f.arena);
 }
@@ -440,10 +440,10 @@ TEST(real_gameover_score_registration_precedes_continue)
         g_Stage.score = 2345;
         g_Player.is_hit = true;
         uint64_t tick = 0;
-        while (tick < 1000 && g_Gameplay.request != GAMEPLAY_REQUEST_SCORE) {
+        while (tick < 1000 && m_Gameplay.request != GAMEPLAY_REQUEST_SCORE) {
             Gameplay_Tick(&(TH01_INPUT) {}, true, ++tick);
         }
-        CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_SCORE);
+        CHECK_EQ_INT(m_Gameplay.request, GAMEPLAY_REQUEST_SCORE);
         VFS *const user_files = Vfs_Create(&g_HeapAllocator);
         SCORE_SAVES loaded;
         CHECK(Result_Ignore(ScoreData_Load(nullptr, user_files, &loaded)));
@@ -471,7 +471,7 @@ TEST(real_gameover_score_registration_precedes_continue)
         }
         CHECK_EQ_INT(g_VSync.edge, edge + 16);
         CHECK_EQ_INT(g_VSync.count1, count + 16);
-        CHECK_EQ_INT(g_Gameplay.phase, GP_TERMINAL);
+        CHECK_EQ_INT(m_Gameplay.phase, GP_TERMINAL);
         CHECK_EQ_INT(g_Session.continues_total, 0);
         tick++;
         CHECK(Score_Tick(&(TH01_INPUT) { .ok = true }, true));
@@ -483,19 +483,19 @@ TEST(real_gameover_score_registration_precedes_continue)
         Score_SyncSession();
         CHECK_EQ_INT(g_Session.table_high_score, 2345);
         Gameplay_ResumeAfterScore(&(TH01_INPUT) {}, tick);
-        CHECK_EQ_INT(g_Gameplay.phase, GP_CONTINUE_DELAY);
+        CHECK_EQ_INT(m_Gameplay.phase, GP_CONTINUE_DELAY);
         CHECK_EQ_INT(g_Session.continues_total, 1);
         CHECK_EQ_INT(g_Session.highest_score, 5000);
         CHECK_EQ_INT(g_VSync.edge, edge + 17);
         Gameplay_Tick(&(TH01_INPUT) { .shot = true }, true, ++tick);
-        CHECK_EQ_INT(g_Gameplay.phase, GP_CONTINUE_DELAY);
+        CHECK_EQ_INT(m_Gameplay.phase, GP_CONTINUE_DELAY);
         Gameplay_Tick(&(TH01_INPUT) { .shot = true }, true, ++tick);
-        CHECK_EQ_INT(g_Gameplay.phase, GP_SWITCH);
+        CHECK_EQ_INT(m_Gameplay.phase, GP_SWITCH);
         for (int32_t i = 0; i < 16; i++) {
             Gameplay_Tick(&(TH01_INPUT) {}, true, ++tick);
         }
-        CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
-        CHECK_EQ_INT(g_Gameplay.phase, GP_STAGE_LABEL);
+        CHECK_EQ_INT(m_Gameplay.request, GAMEPLAY_REQUEST_NONE);
+        CHECK_EQ_INT(m_Gameplay.phase, GP_STAGE_LABEL);
         CHECK_EQ_INT(g_Session.high_score, 2345);
         CHECK_EQ_INT(g_Session.highest_score, 5000);
         CHECK_EQ_INT(g_Session.stage_id, 7);
@@ -530,17 +530,17 @@ TEST(ending_seed_is_saved_after_the_life_exit_scroll_wait)
     FIXTURE f;
     M_Init(&f);
 
-    g_Gameplay.phase = GP_LIFE_EXIT;
+    m_Gameplay.phase = GP_LIFE_EXIT;
     g_Session.lives = 0;
     g_Session.frame_rand = 1234567;
     g_Session.exit_rand = 99;
-    Frame_BeginWait(&g_Gameplay.wait);
+    Frame_BeginWait(&m_Gameplay.wait);
     Gameplay_Tick(&(TH01_INPUT) {}, false, 1);
     CHECK_EQ_INT(g_Session.exit_rand, 99);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_LIFE_EXIT);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_LIFE_EXIT);
     Gameplay_Tick(&(TH01_INPUT) {}, true, 2);
     CHECK_EQ_INT(g_Session.exit_rand, 1234567);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_GAMEOVER);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_GAMEOVER);
     CHECK_EQ_INT(g_Video.scroll_top, 0);
     Arena_Free(&f.arena);
 }
@@ -671,14 +671,17 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     const size_t used = f.arena.used;
     B05_Setup(&f.assets->b05);
     CHECK(g_Boss != nullptr);
-    memset(&g_Gameplay, 0xa5, sizeof(g_Gameplay));
+    memset(&m_Gameplay, 0xa5, sizeof(m_Gameplay));
+    g_Stage.frame = UINT32_MAX;
+    g_Stage.boss = BOSS_SINGYOKU;
     Gameplay_Reset();
     CHECK_EQ_INT(f.arena.used, used);
     CHECK(m_Scene.active == &f.assets->scenes[Session_Scene()]);
-    CHECK_EQ_INT(g_Gameplay.phase, GP_STAGE_BEGIN);
-    CHECK(g_Stage.first_stage && g_Gameplay.wait_for_shot);
-    CHECK_EQ_INT(g_Gameplay.frame, 0);
+    CHECK_EQ_INT(m_Gameplay.phase, GP_STAGE_BEGIN);
+    CHECK(g_Stage.first_stage && m_Gameplay.wait_for_shot);
+    CHECK_EQ_INT(g_Stage.frame, 0);
     CHECK(g_Boss == nullptr);
+    CHECK_EQ_INT(g_Stage.boss, BOSS_NONE);
     CHECK_EQ_INT(g_VSync.edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);
     CHECK_EQ_INT(m_Hud.score_previous, 0);

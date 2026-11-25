@@ -27,7 +27,7 @@ typedef struct {
 static SCORE_SAVES m_Saves;
 static SCORE_SCENE m_Registration;
 
-static const SCORE_ASSETS *m_Assets;
+static const SCORE_ASSETS *m_ScoreAssets;
 
 static const char *const m_RankLabels[] = {
     "　イージー　",
@@ -82,7 +82,7 @@ static void M_Cell(const int32_t row, const int32_t column, char out[9])
     }
 }
 
-static void M_Draw(
+static void M_TableText(
     const char *const text, const int32_t left, const int32_t top,
     const uint8_t color, const GAME_TEXT_WEIGHT weight, const bool reverse,
     const bool clear)
@@ -90,7 +90,7 @@ static void M_Draw(
     const GAME_TEXT_STYLE style = { .weight = weight,
                                     .reverse = reverse,
                                     .clear_background = clear };
-    GameText_Draw(&m_Assets->font, text, left, top, color, &style);
+    GameText_Draw(&m_ScoreAssets->font, text, left, top, color, &style);
 }
 
 static void M_EntryScore(
@@ -109,7 +109,7 @@ static void M_EntryScore(
         strcat(full, put ? m_Digits[digit] : "　");
         divisor /= 10;
     }
-    M_Draw(full, left, top, color, weight, false, false);
+    M_TableText(full, left, top, color, weight, false, false);
 }
 
 static void M_Alphabet(
@@ -119,7 +119,8 @@ static void M_Alphabet(
     Video_Restore16((GFX_RECT) { left, top, 32, 16 });
     char text[9];
     M_Cell(row, column, text);
-    M_Draw(text, left, top, selected ? 3 : 7, GAME_TEXT_BOLD, selected, false);
+    M_TableText(
+        text, left, top, selected ? 3 : 7, GAME_TEXT_BOLD, selected, false);
 }
 
 static void M_Name(void)
@@ -127,11 +128,11 @@ static void M_Name(void)
     const int32_t top = 64 + m_Registration.place * 16;
     Video_Restore16((GFX_RECT) { 144, top, 128, 16 });
     for (int32_t i = 0; i < 8; i++) {
-        M_Draw(
+        M_TableText(
             m_Registration.slots[i], 144 + i * 16, top, 3, GAME_TEXT_BOLD,
             false, false);
     }
-    M_Draw(
+    M_TableText(
         "＿", 144 + m_Registration.cursor * 16, top, 3, GAME_TEXT_NORMAL, false,
         false);
 }
@@ -140,8 +141,8 @@ static void M_Initial(void)
 {
     const bool gameover = m_Registration.context == SCORE_GAMEOVER;
     Video_SelectDrawingPage(1);
-    M_Draw(m_Title, 0, gameover ? 384 : 0, 7, GAME_TEXT_BOLD, false, true);
-    M_Draw(
+    M_TableText(m_Title, 0, gameover ? 384 : 0, 7, GAME_TEXT_BOLD, false, true);
+    M_TableText(
         m_RankLabels[m_Registration.rank], 192, gameover ? 384 : 0, 7,
         GAME_TEXT_BOLD, false, true);
     Video_SelectDrawingPage(0);
@@ -151,27 +152,28 @@ static void M_Initial(void)
     }
     static const int32_t columns[] = { 32, 144, 352, 512 };
     for (int32_t i = 0; i < 4; i++) {
-        M_Draw(m_Headers[i], columns[i], 48, 3, GAME_TEXT_BLACK, false, false);
+        M_TableText(
+            m_Headers[i], columns[i], 48, 3, GAME_TEXT_BLACK, false, false);
     }
     for (int32_t i = 0; i < SCORE_PLACES; i++) {
         const SCORE_ENTRY *const e =
             &m_Saves.tables[m_Registration.rank].entries[i];
         const uint8_t color = i == m_Registration.place ? 3 : 7;
         const int32_t top = 64 + i * 16;
-        M_Draw(m_Places[i], 32, top, color, GAME_TEXT_BOLD, false, false);
-        M_Draw(
+        M_TableText(m_Places[i], 32, top, color, GAME_TEXT_BOLD, false, false);
+        M_TableText(
             i == m_Registration.place ? "＿＿＿＿＿＿＿＿" : e->name, 144, top,
             color, GAME_TEXT_BOLD, false, false);
         M_EntryScore(e->score, 7, 352, top, color, GAME_TEXT_BLACK);
         if (e->stage < 40) {
             M_EntryScore(e->stage, 2, 528, top, color, GAME_TEXT_BOLD);
         } else if (e->stage == 50 || e->stage == 60) {
-            M_Draw(
+            M_TableText(
                 e->stage == 50 ? "魔界" : "地獄", 528, top, color,
                 GAME_TEXT_BOLD, false, false);
         }
-        M_Draw("－", 560, top, color, GAME_TEXT_BOLD, false, false);
-        M_Draw(e->route, 576, top, color, GAME_TEXT_BOLD, false, false);
+        M_TableText("－", 560, top, color, GAME_TEXT_BOLD, false, false);
+        M_TableText(e->route, 576, top, color, GAME_TEXT_BOLD, false, false);
     }
     GameInput_ResetGame();
     if (m_Registration.place == SCORE_PLACES) {
@@ -345,7 +347,7 @@ void Score_Begin(
     const int32_t rank, const SCORE_ENTRY *const entry)
 {
     memset(&m_Registration, 0, sizeof(m_Registration));
-    m_Assets = assets;
+    m_ScoreAssets = assets;
     m_Registration.context = context;
     m_Registration.rank = rank;
     SCORE_ENTRY inserted = *entry;
@@ -447,7 +449,7 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
 void Score_Close(void)
 {
     memset(&m_Registration, 0, sizeof(m_Registration));
-    m_Assets = nullptr;
+    m_ScoreAssets = nullptr;
 }
 
 void Score_SyncSession(void)
