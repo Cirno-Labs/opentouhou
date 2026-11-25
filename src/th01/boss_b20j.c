@@ -1000,8 +1000,7 @@ static void M_Lasers(const B20J_ASSETS *const assets)
         const int16_t target =
             Math16_Wrap(g_B20J.laser_right_to_left ? 640 - distance : distance);
         ShootoutLasers_Spawn(
-            &g_ShootoutLasers.slots[(g_B20J.frame / 10) % 10], 410, 70, target,
-            400, 68, 7, 30, 5);
+            (g_B20J.frame / 10) % 10, 410, 70, target, 400, 68, 7, 30, 5);
         Sound_Effect(6);
         if ((!g_B20J.laser_right_to_left && target >= 640)
             || (g_B20J.laser_right_to_left && target <= 0)) {

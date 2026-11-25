@@ -731,7 +731,7 @@ static void M_Lasers(const B10J_ASSETS *const assets, const PTN *const miko)
     if (g_B10J.frame > 180 && g_B10J.frame < 300) {
         const int32_t i = g_B10J.frame % 4;
         ShootoutLasers_Spawn(
-            &g_ShootoutLasers.slots[i], g_B10J.laser_x[i], g_B10J.laser_y[i],
+            i, g_B10J.laser_x[i], g_B10J.laser_y[i],
             Math16_Wrap(Boss_Player()->left + 14), 400, g_B10J.pattern_state, 7,
             20, 4);
     }

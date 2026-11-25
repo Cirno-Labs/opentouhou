@@ -369,8 +369,7 @@ static void M_Laser(
     const int16_t x, const int16_t y, const int16_t tx, const int16_t ty,
     const int16_t speed, const int16_t age, const int16_t width)
 {
-    ShootoutLasers_Spawn(
-        &g_ShootoutLasers.slots[slot % 10], x, y, tx, ty, speed, 7, age, width);
+    ShootoutLasers_Spawn(slot % 10, x, y, tx, ty, speed, 7, age, width);
 }
 static void M_Hit(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t form)

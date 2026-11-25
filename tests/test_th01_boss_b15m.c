@@ -1,3 +1,4 @@
+#include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
 #include "th01/boss_b15m.h"
@@ -412,7 +413,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
                                       .flag = MISSILE_MOVING };
     g_Pellets.slots[1].cloud_frame = 10;
     for (int32_t i = 0; i < 10; i++) {
-        g_ShootoutLasers.slots[i].alive = true;
+        m_Lasers.slots[i].alive = true;
     }
     Frame_Reset();
     const uint32_t rng = g_Rng;
@@ -436,7 +437,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
-        CHECK(!g_ShootoutLasers.slots[i].alive);
+        CHECK(!m_Lasers.slots[i].alive);
     }
     const B15M frozen = g_B15M;
     CHECK(!B15M_UpdateAndRender(&f.assets, &f.miko, 106));

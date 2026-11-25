@@ -1,3 +1,4 @@
+#include "../src/th01/shootout_lasers.c"
 #include "th01/boss_b20j.h"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
@@ -202,7 +203,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
                     g_Pellets.slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
-                    g_ShootoutLasers.slots[i].alive = false;
+                    m_Lasers.slots[i].alive = false;
                 }
                 Frame_VSync();
                 CHECK(++frames < 1500);
