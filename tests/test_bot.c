@@ -133,5 +133,22 @@ TEST(strategies_are_found_by_name)
 {
     CHECK(Bot_FindStrategy("dodge") == &g_BotDodge);
     CHECK(Bot_FindStrategy("wander") == &g_BotWander);
+    CHECK(Bot_FindStrategy("hold") == &g_BotHold);
     CHECK(Bot_FindStrategy("panic") == nullptr);
+}
+
+TEST(one_seed_gives_the_same_hold_roles)
+{
+    BOT a;
+    BOT b;
+    M_Load(&a, m_Roles, &g_BotHold, 42);
+    M_Load(&b, m_Roles, &g_BotHold, 42);
+    for (int32_t i = 0; i < 200; i++) {
+        M_INPUT first;
+        M_INPUT second;
+        Bot_NextInput(&a, nullptr, 0, &first);
+        Bot_NextInput(&b, nullptr, 0, &second);
+        CHECK(memcmp(&first, &second, sizeof(first)) == 0);
+        CHECK(!first.focus);
+    }
 }
