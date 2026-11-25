@@ -1,4 +1,4 @@
-#include "th01_ending.h"
+#include "../src/th01/ending.c"
 #include "th01/music.h"
 #include "th01/session.h"
 #include "core/base/arena.h"
@@ -58,7 +58,7 @@ static void M_Init(FIXTURE *const f)
         }
     }
     Ending_Init(&f->assets);
-    f->ending = TestEnding_State();
+    f->ending = &m_Ending;
     f->arena.capacity = f->arena.used;
     Session_Init();
     g_Session.score = 2345678;
