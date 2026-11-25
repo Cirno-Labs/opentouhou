@@ -41,13 +41,12 @@ and lets the replay play. The harness itself never reads a replay file.
 The recorder, such as `th06record`, `th07record` or `th01record`, plays
 a run with a bot on the native game and saves it in the game's own
 format: th06 and th07 write a `.rpy`, th01 a case script for
-`tools/harness capture`. The bot plays roles (shoot, focus, bomb,
-strike and the four directions), which a strategy picks each frame:
-`dodge` follows a potential field of the threats, `hold` holds a move
-for a few frames, `wander` walks at random. `replay/GAME/bot.ini` maps
-each role to the game's buttons, with one word per frame, so a role can
-be a sequence such as th01's bomb. [bot.h](../replay/bot/bot.h) gives
-the format.
+`tools/harness capture`. The recorder plays holds of roles (shoot,
+focus, bomb, strike and the four directions), and no behavior of its
+own: it searches the holds directly against the game's score.
+`replay/GAME/bot.ini` maps each role to the game's buttons, with one
+word per frame, so a role can be a sequence such as th01's bomb.
+[bot.h](../replay/bot/bot.h) gives the format.
 
 ```
 th06record --data DATA --out OUT.rpy --start difficulty=normal \
@@ -65,8 +64,8 @@ life, and keeps the one with the best score; `--seed` seeds the search.
 Each game scores its runs: th01 by the boss's phase or the cards
 removed, th06 and th07 by the stage frames. The run ends with the game,
 at the game's frame cap, or with `--until` once the first value of its
-score reaches a value. With `--lose`, the bot
-wanders straight to the end, for a game over.
+score reaches a value. With `--lose`, random holds play straight to
+the end, for a game over.
 [recorder.h](../replay/bot/recorder.h) describes the search. The same
 arguments always give the same run.
 
