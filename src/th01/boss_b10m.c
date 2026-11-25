@@ -89,8 +89,7 @@ void B10M_Setup(const B10M_ASSETS *const assets, const PTN *const miko)
     g_B10M.phase = B10M_PHASE_ENTRANCE;
     g_B10M.hp = 16;
     g_B10M.finished = false;
-    g_HudHp.first_white = 12;
-    g_HudHp.first_redwhite = 8;
+    HudHp_Begin(8, 12);
     Particles_Init();
     Missiles_Reset();
 }

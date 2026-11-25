@@ -380,8 +380,7 @@ void B05_Setup(const B05_ASSETS *const assets)
     g_B05.sphere.orb_inactive = false;
     g_B05.sphere.image = 0;
     g_B05.hp = 8;
-    g_HudHp.first_white = 6;
-    g_HudHp.first_redwhite = 2;
+    HudHp_Begin(2, 6);
     g_B05.phase = B05_PHASE_START;
     g_B05.pending = B05_IDLE;
     Particles_Init();

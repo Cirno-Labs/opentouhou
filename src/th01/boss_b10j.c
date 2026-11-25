@@ -127,8 +127,7 @@ bool B10J_ResumeSetup(const B10J_ASSETS *const assets, const PTN *const miko)
     g_B10J.frame = 0;
     g_B10J.phase = B10J_PHASE_START;
     g_B10J.hp = 12;
-    g_HudHp.first_white = 6;
-    g_HudHp.first_redwhite = 2;
+    HudHp_Begin(2, 6);
     Particles_Init();
     Missiles_Reset();
     g_StagePalette = g_Palette.saved;

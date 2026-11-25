@@ -3,7 +3,7 @@
 #include "pc98/zun/math16.h"
 #include "th01/boss_defeat.h"
 #include "th01/boss_hit.h"
-#include "th01/boss_render.h"
+#include "th01/boss_entity.h"
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"

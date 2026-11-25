@@ -1,3 +1,4 @@
+#include "../src/th01/hud_hp.c"
 #include "../src/th01/hud.c"
 #include "th01/main.h"
 #include "th01/opening.h"
@@ -331,7 +332,7 @@ static void M_Play(void)
     }
     CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
     CHECK(m_Hud.numbers != nullptr);
-    CHECK(g_HudHp.backgrounds != nullptr);
+    CHECK(m_Health.backgrounds != nullptr);
 }
 
 static void M_Shutdown(void)

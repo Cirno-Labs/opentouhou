@@ -1,3 +1,4 @@
+#include "../src/th01/boss_entity.c"
 #include "th01/boss_entity.h"
 
 #include "test.h"
@@ -10,7 +11,7 @@ TEST(shared_slots_rebind_without_changing_other_metadata)
     const uint8_t coverage[16] = {};
     const BOS first = { 16, 1, 1, pixels, coverage };
     const BOS second = { 16, 1, 1, coverage, pixels };
-    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    BossEntity_Init();
     BOSS_ENTITY a = { .image = 5, .left = 100 };
     BOSS_ENTITY b = { .image = 3, .left = 200 };
     CHECK(IS_OK(BossEntity_Bind(&a, 2, &first)));
@@ -19,18 +20,18 @@ TEST(shared_slots_rebind_without_changing_other_metadata)
     CHECK_EQ_INT(b.left, 200);
     CHECK_EQ_INT(b.sprites.slot, 2);
     CHECK(IS_OK(BossEntity_Bind(&a, 2, &second)));
-    CHECK(g_BossSprites.entities[b.sprites.slot] == &second);
+    CHECK(m_Sprites.entities[b.sprites.slot] == &second);
     CHECK_EQ_INT(a.image, 5);
     BOSS_ANIMATION animation = {};
     CHECK(IS_OK(BossAnimation_Bind(&animation, 1, &first)));
-    CHECK(g_BossSprites.animations[1] == &first);
-    CHECK(g_BossSprites.entities[2] == &second);
+    CHECK(m_Sprites.animations[1] == &first);
+    CHECK(m_Sprites.entities[2] == &second);
     BOS invalid = first;
     invalid.count = 28;
     RESULT result = BossEntity_Bind(&a, 2, &invalid);
     CHECK(!IS_OK(result));
     Result_Ignore(result);
-    CHECK(g_BossSprites.entities[2] == &second);
+    CHECK(m_Sprites.entities[2] == &second);
     CHECK_EQ_INT(a.sprites.count, 1);
     result = BossAnimation_Bind(&animation, 2, &first);
     CHECK(!IS_OK(result));

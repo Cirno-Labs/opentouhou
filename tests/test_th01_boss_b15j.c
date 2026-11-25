@@ -1,3 +1,5 @@
+#include "../src/th01/hud_hp.c"
+#include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "th01/boss_b15j.h"
@@ -104,10 +106,10 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     CHECK_EQ_INT(g_B15J.hp, 14);
     CHECK_EQ_INT(g_B15J.phase, B15J_PHASE_ENTRANCE);
     CHECK_EQ_INT(g_B15J.frame, 0);
-    CHECK_EQ_INT(g_HudHp.first_white, 10);
-    CHECK_EQ_INT(g_HudHp.first_redwhite, 6);
-    CHECK(g_BossSprites.entities[0] == &f.assets.souls);
-    CHECK(g_BossSprites.entities[1] == &f.assets.tears);
+    CHECK_EQ_INT(m_Health.first_white, 10);
+    CHECK_EQ_INT(m_Health.first_redwhite, 6);
+    CHECK(m_Sprites.entities[0] == &f.assets.souls);
+    CHECK(m_Sprites.entities[1] == &f.assets.tears);
     for (int32_t i = 0; i < 2; i++) {
         CHECK_EQ_INT(g_B15J.souls[i].left, 0);
         CHECK_EQ_INT(g_B15J.souls[i].top, 0);
@@ -393,11 +395,11 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     g_B15J.phase = B15J_PHASE_PATTERNS;
     g_B15J.subphase = 1;
     g_B15J.patterns_done = 30;
-    const HUD_HP health = g_HudHp;
+    const HUD_HP health = m_Health;
     Frame_Reset();
     CHECK(B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(g_B15J.hp, 1);
-    CHECK(memcmp(&g_HudHp, &health, sizeof(health)) == 0);
+    CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage.score, 0);
     g_TestDamage = true;
     CHECK(!B15J_UpdateAndRender(&f.assets, &f.miko, &f.stage));

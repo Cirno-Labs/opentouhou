@@ -1,3 +1,4 @@
+#include "../src/th01/hud_hp.c"
 #include "../src/th01/shootout_lasers.c"
 #include "th01/boss_b20j.h"
 #include "th01/gameplay.h"
@@ -51,7 +52,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     M_Assets(&assets, &arena);
     memset(&g_Palette, 0, sizeof(g_Palette));
     g_Palette.saved.colors[10][1] = 7;
-    memset(&g_HudHp, 0, sizeof(g_HudHp));
+    memset(&m_Health, 0, sizeof(m_Health));
 
     B20J_Init();
     g_B20J.hit = (BOSS_HIT) { 27, true };
@@ -69,8 +70,8 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     CHECK_EQ_INT(g_B20J.face_expression, 0);
     CHECK(g_B20J.direction_can_change);
     CHECK(!g_B20J.finished);
-    CHECK_EQ_INT(g_HudHp.first_white, 16);
-    CHECK_EQ_INT(g_HudHp.first_redwhite, 10);
+    CHECK_EQ_INT(m_Health.first_white, 16);
+    CHECK_EQ_INT(m_Health.first_redwhite, 10);
     CHECK_EQ_INT(g_B20J.boss_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_B20J.hit.frame, 27);
     CHECK(g_B20J.hit.invincible);

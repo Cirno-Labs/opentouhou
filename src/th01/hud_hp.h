@@ -2,15 +2,6 @@
 
 #include "th01/video.h"
 
-#define HUD_HP_CAPACITY 32
-
-typedef struct {
-    uint8_t *backgrounds;
-    uint16_t first_redwhite, first_white;
-} HUD_HP;
-
-extern HUD_HP g_HudHp;
-
 // Allocates raw 16x16 background cells from a caller-owned arena. Keep them
 // alive across boss phases. Thresholds are borrowed source values copied by
 // the boss before each operation; they may be odd. Normal bosses use 8..18
@@ -19,6 +10,9 @@ extern HUD_HP g_HudHp;
 // Drawing clips to the visible page and changes only the drawing selector.
 // Operations allocate nothing and read no fonts, files, clocks or devices.
 void HudHp_Init(const ALLOCATOR *allocator);
+
+// Selects red, striped and white HP sections without changing snapshots.
+void HudHp_Begin(uint16_t first_redwhite, uint16_t first_white);
 
 // Empties the bar and keeps the snapshot storage.
 void HudHp_Reset(void);

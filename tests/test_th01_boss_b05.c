@@ -1,3 +1,5 @@
+#include "../src/th01/hud_hp.c"
+#include "../src/th01/boss_entity.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/particles.c"
 #include "th01/boss_b05.h"
@@ -147,9 +149,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     m_Particles.alive[0] = 255;
     B05_Setup(&f.assets);
     CHECK_EQ_INT(arena.used, used);
-    CHECK(g_BossSprites.entities[0] == &f.assets.sphere);
-    CHECK(g_BossSprites.entities[1] == &f.assets.flash);
-    CHECK(g_BossSprites.entities[2] == &f.assets.person);
+    CHECK(m_Sprites.entities[0] == &f.assets.sphere);
+    CHECK(m_Sprites.entities[1] == &f.assets.flash);
+    CHECK(m_Sprites.entities[2] == &f.assets.person);
     CHECK_EQ_INT(g_B05.sphere.left, 640);
     CHECK_EQ_INT(g_B05.sphere.top, 64);
     CHECK_EQ_INT(g_B05.sphere.orb_hitbox.left, 24);
@@ -167,8 +169,8 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(g_B05.pattern, 3);
     CHECK_EQ_INT(g_B05.velocity_x, 999);
     CHECK_EQ_INT(g_B05.direction, -1);
-    CHECK_EQ_INT(g_HudHp.first_white, 6);
-    CHECK_EQ_INT(g_HudHp.first_redwhite, 2);
+    CHECK_EQ_INT(m_Health.first_white, 6);
+    CHECK_EQ_INT(m_Health.first_redwhite, 2);
     CHECK_EQ_INT(m_Particles.alive[0], 0);
     CHECK_EQ_INT(m_Particles.cycle, 73);
     CHECK_EQ_INT(m_Particles.velocity_base[0], 9);

@@ -1,4 +1,4 @@
-#include "th01/boss_render.h"
+#include "th01/boss_entity.h"
 
 #include "core/base/arena.h"
 
@@ -18,7 +18,7 @@ TEST(entity_word_guard_and_animation_raw_rgb_differ)
     uint8_t coverage[16] = {};
     pixels[7] = 4;
     BOS sprites = { 16, 1, 1, pixels, coverage };
-    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    BossEntity_Init();
     BOSS_ENTITY entity = {};
     BOSS_ANIMATION animation = {};
     CHECK(IS_OK(BossEntity_Bind(&entity, 0, &sprites)));
@@ -45,7 +45,7 @@ TEST(full_put_and_restore_have_different_right_edge_guards)
     memset(pixels, 10, sizeof(pixels));
     memset(coverage, 1, sizeof(coverage));
     const BOS sprites = { 16, 1, 1, pixels, coverage };
-    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    BossEntity_Init();
     BOSS_ENTITY entity = {};
     CHECK(IS_OK(BossEntity_Bind(&entity, 0, &sprites)));
     BossEntity_Put(&entity, 639, 0, 0);
@@ -73,7 +73,7 @@ TEST(restored_line_keeps_signed_foreground_shift)
     memset(coverage, 1, sizeof(coverage));
     pixels[8] = 1;
     const BOS sprites = { 16, 1, 1, pixels, coverage };
-    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    BossEntity_Init();
     BOSS_ENTITY entity = {};
     CHECK(IS_OK(BossEntity_Bind(&entity, 0, &sprites)));
     BossEntity_RestorePutLine(&entity, 1, 0, 0, 0);
@@ -92,7 +92,7 @@ TEST(locked_movement_includes_a_separate_unlock_call)
     const uint8_t pixels[16] = {};
     const uint8_t coverage[16] = {};
     const BOS sprites = { 16, 1, 1, pixels, coverage };
-    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    BossEntity_Init();
     BOSS_ENTITY entity = {};
     CHECK(IS_OK(BossEntity_Bind(&entity, 0, &sprites)));
     BossEntity_SetPosition(

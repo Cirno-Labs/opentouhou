@@ -83,8 +83,7 @@ void B15J_Setup(const B15J_ASSETS *const assets, const PTN *const miko)
     g_B15J.frame = 0;
     g_B15J.hp = 14;
     g_B15J.finished = false;
-    g_HudHp.first_white = 10;
-    g_HudHp.first_redwhite = 6;
+    HudHp_Begin(6, 10);
     for (int32_t i = 0; i < 2; i++) {
         BossEntity_SetPosition(
             &g_B15J.souls[i], 0, 0, (BOSS_BOUNDS) { 32, 576, 64, 400 });

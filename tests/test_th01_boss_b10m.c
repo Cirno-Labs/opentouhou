@@ -1,3 +1,5 @@
+#include "../src/th01/hud_hp.c"
+#include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
@@ -127,9 +129,9 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     CHECK_EQ_INT(g_B10M.pattern_state, 17);
     CHECK_EQ_INT(g_B10M.subphase, 8);
     CHECK_EQ_INT(g_B10M.pentagram.angle, 450);
-    CHECK_EQ_INT(g_HudHp.first_white, 12);
-    CHECK_EQ_INT(g_HudHp.first_redwhite, 8);
-    CHECK(g_BossSprites.entities[0] == &f.assets.eyes);
+    CHECK_EQ_INT(m_Health.first_white, 12);
+    CHECK_EQ_INT(m_Health.first_redwhite, 8);
+    CHECK(m_Sprites.entities[0] == &f.assets.eyes);
     const int16_t left[] = { 64, 512, 192, 384, 288 };
     const int16_t top[] = { 128, 128, 176, 176, 64 };
     for (int32_t i = 0; i < 5; i++) {
