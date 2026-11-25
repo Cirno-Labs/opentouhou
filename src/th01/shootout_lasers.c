@@ -5,7 +5,21 @@
 
 #include "core/base/assert.h"
 
-SHOOTOUT_LASERS g_ShootoutLasers;
+#include <string.h>
+
+typedef struct {
+    int32_t origin_left, origin_y, start_left, start_y;
+    int32_t cursor_left, cursor_y, step_x, step_y;
+    int16_t length, tail_speed, extend_speed, age, detach_age;
+    uint8_t color, width_mask;
+    bool alive, damaging;
+} SHOOTOUT_LASER;
+
+typedef struct {
+    SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
+} SHOOTOUT_LASERS;
+
+static SHOOTOUT_LASERS m_Lasers;
 
 static int32_t M_Floor(const int32_t value, const int32_t divisor)
 {
@@ -18,7 +32,7 @@ static int32_t M_Add(const int32_t value, const int32_t step)
     return (int32_t)(sum >= 0x80000000u ? (int64_t)sum - 0x100000000ll : sum);
 }
 
-static void M_Put(
+static void M_PutDots(
     const int16_t left, const int16_t y, const uint16_t dots,
     const uint8_t color)
 {
@@ -49,7 +63,7 @@ static void M_Ray(
         if (M_Floor(left, 8) != M_Floor(laser->cursor_left, 2048)
             || y != M_Floor(laser->cursor_y, 256)) {
             if (put) {
-                M_Put(left, y, dots, laser->color);
+                M_PutDots(left, y, dots, laser->color);
                 dots = 0;
                 if (!g_Player.invincible && laser->damaging && y > 376
                     && left >= g_Player.left + 4 && left < g_Player.left + 24) {
@@ -76,6 +90,11 @@ static void M_Ray(
     }
 }
 
+void ShootoutLasers_Init(void)
+{
+    memset(&m_Lasers, 0, sizeof(m_Lasers));
+}
+
 RESULT ShootoutLasers_LoadAssets(
     VFS *const vfs, const ALLOCATOR *const allocator,
     SHOOTOUT_LASERS_ASSETS **const out)
@@ -90,11 +109,13 @@ RESULT ShootoutLasers_LoadAssets(
 }
 
 void ShootoutLasers_Spawn(
-    SHOOTOUT_LASER *const laser, const int16_t origin_left,
-    const int16_t origin_y, const int16_t target_left, const int16_t target_y,
+    const int32_t slot, const int16_t origin_left, const int16_t origin_y,
+    const int16_t target_left, const int16_t target_y,
     const int16_t speed_times_eight, const uint8_t color,
     const int16_t detach_age, const int16_t width)
 {
+    ASSERT(slot >= 0 && slot < SHOOTOUT_LASERS_COUNT);
+    SHOOTOUT_LASER *const laser = &m_Lasers.slots[slot];
     if (laser->alive) {
         return;
     }
@@ -120,8 +141,10 @@ void ShootoutLasers_Spawn(
 }
 
 void ShootoutLasers_Update(
-    SHOOTOUT_LASER *const laser, const SHOOTOUT_LASERS_ASSETS *const assets)
+    const int32_t slot, const SHOOTOUT_LASERS_ASSETS *const assets)
 {
+    ASSERT(slot >= 0 && slot < SHOOTOUT_LASERS_COUNT);
+    SHOOTOUT_LASER *const laser = &m_Lasers.slots[slot];
     if (!laser->alive) {
         return;
     }
@@ -148,7 +171,7 @@ void ShootoutLasers_Update(
 void ShootoutLasers_UpdateAll(const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     for (int32_t i = 0; i < SHOOTOUT_LASERS_COUNT; i++) {
-        ShootoutLasers_Update(&g_ShootoutLasers.slots[i], assets);
+        ShootoutLasers_Update(i, assets);
     }
 }
 
@@ -156,7 +179,7 @@ void ShootoutLasers_EraseAndReset(const int32_t count)
 {
     ASSERT(count >= 0 && count <= SHOOTOUT_LASERS_COUNT);
     for (int32_t i = 0; i < count; i++) {
-        SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[i];
+        SHOOTOUT_LASER *const laser = &m_Lasers.slots[i];
         if (laser->alive) {
             Video_LineErase(
                 Math16_Wrap(laser->start_left), Math16_Wrap(laser->start_y),

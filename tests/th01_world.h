@@ -42,7 +42,7 @@ static inline void Th01Test_ResetWorld(void)
     StageOrb_Init();
     Items_Init();
     Missiles_Init();
-    memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));
+    ShootoutLasers_Init();
     Particles_Reset();
     Bomb_Init();
     Miss_Init();

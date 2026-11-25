@@ -345,8 +345,7 @@ static void M_Laser(
     const uint8_t color, const int16_t age, const int16_t width)
 {
     ShootoutLasers_Spawn(
-        &g_ShootoutLasers.slots[((index % 10) + 10) % 10], x, y, tx, ty, speed,
-        color, age, width);
+        ((index % 10) + 10) % 10, x, y, tx, ty, speed, color, age, width);
 }
 static void M_Erase(
     const B20M_ASSETS *const assets, const int16_t x, const int16_t y)

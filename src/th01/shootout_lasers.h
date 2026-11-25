@@ -10,37 +10,26 @@ typedef struct {
     uint8_t masks[8][8][2];
 } SHOOTOUT_LASERS_ASSETS;
 
-typedef struct {
-    int32_t origin_left, origin_y, start_left, start_y;
-    int32_t cursor_left, cursor_y, step_x, step_y;
-    int16_t length, tail_speed, extend_speed, age, detach_age;
-    uint8_t color, width_mask;
-    bool alive, damaging;
-} SHOOTOUT_LASER;
-
-typedef struct {
-    SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
-} SHOOTOUT_LASERS;
-
-extern SHOOTOUT_LASERS g_ShootoutLasers;
+// Clears all laser slots for a new gameplay session.
+void ShootoutLasers_Init(void);
 
 // Loads all eight widths and pre-shifts from laser_s.bmp into the caller's
 // grouped asset allocator; leaves out null on error.
 RESULT ShootoutLasers_LoadAssets(
     VFS *vfs, const ALLOCATOR *allocator, SHOOTOUT_LASERS_ASSETS **out);
 
-// Zero-initialize the pool once. Positions, cursors and steps use Q24.8.
+// Spawns in slot 0..9. Positions, cursors and steps use Q24.8.
 // Does nothing for an alive slot, including retaining all history. Requires
 // width 1..8. Divides speed_times_eight by eight toward zero, losing the
 // fraction. Wraps target differences to signed 16 bits before finding angle.
 // Retains cursor history; unused source target/velocity/id fields are omitted.
 void ShootoutLasers_Spawn(
-    SHOOTOUT_LASER *laser, int16_t origin_left, int16_t origin_y,
-    int16_t target_left, int16_t target_y, int16_t speed_times_eight,
-    uint8_t color, int16_t detach_age, int16_t width);
+    int32_t slot, int16_t origin_left, int16_t origin_y, int16_t target_left,
+    int16_t target_y, int16_t speed_times_eight, uint8_t color,
+    int16_t detach_age, int16_t width);
 
-// Updates one slot or all ten in order. Allocates nothing and reads only
-// supplied state and immutable masks. Extends until the detach age, then
+// Updates slot 0..9 or all ten in order. Allocates nothing and reads only
+// module state and immutable masks. Extends until the detach age, then
 // restores tail_speed samples and adopts the cursor actually reached.
 // Signed negative sample counts wrap to unsigned 16 bits. Death returns
 // before incrementing age or drawing. Live updates increment signed age.
@@ -50,8 +39,7 @@ void ShootoutLasers_Spawn(
 // Invincibility or damaging=false suppresses hits; sliding does not.
 // Put preserves the drawing page; reached restores select page 0.
 // Boss scheduling and gameplay scene integration remain external.
-void ShootoutLasers_Update(
-    SHOOTOUT_LASER *laser, const SHOOTOUT_LASERS_ASSETS *assets);
+void ShootoutLasers_Update(int32_t slot, const SHOOTOUT_LASERS_ASSETS *assets);
 void ShootoutLasers_UpdateAll(const SHOOTOUT_LASERS_ASSETS *assets);
 
 // Restores with the broken low-16 raw Q24.8 start/origin coordinates, then

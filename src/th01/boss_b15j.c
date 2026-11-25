@@ -459,8 +459,7 @@ static void M_Laser(
     const int16_t x, const int16_t target, const int16_t speed,
     const int16_t width)
 {
-    ShootoutLasers_Spawn(
-        &g_ShootoutLasers.slots[i], x, 147, target, 400, speed, 10, 20, width);
+    ShootoutLasers_Spawn(i, x, 147, target, 400, speed, 10, 20, width);
 }
 
 static void M_CrossLasers(
@@ -579,9 +578,7 @@ static void M_VerticalLasers(
             (int16_t)(MasterRng_Next(&g_Rng) % (g_B15J.random_range * 2 + 1)
                       - g_B15J.random_range);
         const int16_t x = Math16_Wrap(i * 64 + offset);
-        ShootoutLasers_Spawn(
-            &g_ShootoutLasers.slots[i], x, 64, x, 400, g_B15J.pattern_state, 10,
-            20, 8);
+        ShootoutLasers_Spawn(i, x, 64, x, 400, g_B15J.pattern_state, 10, 20, 8);
         Sound_Effect(6);
     }
     if (g_B15J.frame >= 190) {

@@ -1,3 +1,4 @@
+#include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
 #include "th01/boss_b10m.h"
@@ -316,7 +317,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         g_Pellets.slots[0] =
             (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
         g_Pellets.slots[1].cloud_frame = 10;
-        g_ShootoutLasers.slots[6].alive = true;
+        m_Lasers.slots[6].alive = true;
         Frame_Reset();
         CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
         CHECK(g_B10M.defeating);
@@ -328,7 +329,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
             phase == B10M_PHASE_STAR_ATTACK ? MISSILE_FREE : MISSILE_MOVING);
         CHECK(!g_Pellets.slots[0].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
-        CHECK(g_ShootoutLasers.slots[6].alive);
+        CHECK(m_Lasers.slots[6].alive);
         const B10M frozen = g_B10M;
         CHECK(!B10M_UpdateAndRender(&f.assets, &f.miko));
         CHECK(memcmp(&g_B10M, &frozen, sizeof(g_B10M)) == 0);
