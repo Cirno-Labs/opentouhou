@@ -4,6 +4,7 @@
 #include "../src/th01/scene.c"
 #include "../src/th01/hud.c"
 #include "../src/th01/miss.c"
+#include "../src/th01/gameplay/end.c"
 #include "../src/th01/gameplay/exit.c"
 #include "../src/th01/gameplay/gameplay.c"
 #include "../src/th01/gameplay/pause.c"
