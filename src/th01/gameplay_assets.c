@@ -1,6 +1,6 @@
 #include "th01/gameplay_assets.h"
 
-#include "th01/boss_strategy.h"
+#include "th01/boss/strategy.h"
 #include "th01/items.h"
 #include "th01/miss.h"
 

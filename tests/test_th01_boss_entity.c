@@ -1,6 +1,6 @@
-#include "../src/th01/boss_entity.c"
+#include "../src/th01/boss/entity.c"
 #include "../src/th01/orb.c"
-#include "th01/boss_entity.h"
+#include "th01/boss/entity.h"
 
 #include "test.h"
 

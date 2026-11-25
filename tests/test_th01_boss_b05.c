@@ -1,6 +1,6 @@
-#include "../src/th01/boss_b05.c"
+#include "../src/th01/boss/b05.c"
 #include "../src/th01/hud_hp.c"
-#include "../src/th01/boss_entity.c"
+#include "../src/th01/boss/entity.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/particles.c"
 #include "../src/th01/vsync_irq.c"

@@ -1,4 +1,4 @@
-#include "../src/th01/boss_b10m.c"
+#include "../src/th01/boss/b10m.c"
 #include "th01_assets.h"
 
 const void *Th01TestAssets_YuugenMagan(

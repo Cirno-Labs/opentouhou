@@ -1,4 +1,4 @@
-#include "../src/th01/boss_b20j.c"
+#include "../src/th01/boss/b20j.c"
 #include "th01_assets.h"
 
 const void *Th01TestAssets_Konngara(

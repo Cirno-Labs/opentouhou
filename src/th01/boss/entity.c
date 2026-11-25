@@ -1,4 +1,4 @@
-#include "th01/boss_entity.h"
+#include "th01/boss/entity.h"
 #include "th01/sprite.h"
 #include "core/base/assert.h"
 #include <string.h>
