@@ -159,7 +159,7 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK_EQ_INT(g_Video.scroll_top, 0);
                 CHECK_EQ_INT(m_Player.remaining_bombs, variant == 0 ? 2 : 5);
                 CHECK_EQ_INT(g_Stage.time, 1000);
-                CHECK_EQ_INT(g_Pellets.speed, -2);
+                CHECK_EQ_INT(g_Pellets->speed, -2);
                 CHECK_EQ_INT(g_VSync->count1, 0);
                 CHECK(Miss_Resume(&state.miko, &state.stage, extra_bombs));
                 Arena_Free(&state.arena);

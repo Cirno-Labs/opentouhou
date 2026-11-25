@@ -58,7 +58,7 @@ typedef struct {
     bool interlace_field, interlace, spawn_with_cloud;
 } PELLETS;
 
-extern PELLETS g_Pellets;
+extern const PELLETS *const g_Pellets;
 
 // Zeroes the pellets and their shared speed for a new world.
 void Pellets_Init(void);
@@ -83,6 +83,15 @@ void Pellets_AddSingle(
 void Pellets_Decay(void);
 void Pellets_SpeedLower(int16_t max, int16_t delta);
 void Pellets_SpeedRaise(int16_t delta);
+
+// Sets the speed, unclamped.
+void Pellets_SetSpeed(int16_t speed);
+
+// Sets whether new pellets start as a cloud.
+void Pellets_SpawnWithCloud(bool cloud);
+
+// Clears the destroyed-pellet score once the caller adds it.
+void Pellets_ClearDestroyScore(void);
 
 // Draws and tests every other moving pellet per frame, alternating, until
 // Pellets_Init.

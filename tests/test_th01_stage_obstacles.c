@@ -28,7 +28,7 @@ static int32_t M_Pellets(void)
 {
     int32_t moving = 0;
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        moving += g_Pellets.slots[i].moving;
+        moving += g_Pellets->slots[i].moving;
     }
     return moving;
 }
@@ -313,17 +313,17 @@ TEST(orb_composite_reuses_ready_count_and_never_replays_motion)
         CHECK_EQ_INT(
             Stage_BeginOrbComposite(&state.sprites, nullptr, nullptr),
             variant != 0);
-        CHECK_EQ_INT(g_Pellets.interlace_field, variant != 0);
+        CHECK_EQ_INT(g_Pellets->interlace_field, variant != 0);
         CHECK_EQ_INT(m_Orb.frames_outside_portal, 1);
         if (variant == 0) {
             const ORB orb = m_Orb;
             CHECK(!Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
             CHECK(memcmp(&orb, &m_Orb, sizeof(ORB)) == 0);
-            CHECK_EQ_INT(g_Pellets.interlace_field, false);
+            CHECK_EQ_INT(g_Pellets->interlace_field, false);
             VSyncIrq_Edge();
             CHECK(Stage_ResumeOrbComposite(&state.sprites, nullptr, nullptr));
         }
-        CHECK_EQ_INT(g_Pellets.interlace_field, true);
+        CHECK_EQ_INT(g_Pellets->interlace_field, true);
         CHECK_EQ_INT(g_VSync->count1, 0);
         CHECK_EQ_INT(g_VSync->count2, variant == 0 ? 45 : 44);
         CHECK_EQ_INT(m_Orb.previous_left, m_Orb.left);
@@ -418,6 +418,6 @@ TEST(card_completion_sets_hit_after_lethal_test_and_suppresses_orb_put)
     CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_REMOVED);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 342), 6);
     CHECK_EQ_INT(Th01Test_Pixel(0, 500, 350), 2);
-    CHECK_EQ_INT(g_Pellets.interlace_field, true);
+    CHECK_EQ_INT(g_Pellets->interlace_field, true);
     Arena_Free(&state.arena);
 }

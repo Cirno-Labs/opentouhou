@@ -1,6 +1,7 @@
 #include "../src/th01/timer.c"
 #include "../src/th01/hud.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/pellets.c"
 #include "th01/timer.h"
 #include "th01/session.h"
 #include "th01/shots.h"
@@ -95,7 +96,7 @@ TEST(transition_waits_suspend_without_replaying_side_effects)
         VSyncIrq_Edge();
     }
     CHECK(StageTimer_TickAndPut());
-    CHECK_EQ_INT(g_Pellets.speed, 2);
+    CHECK_EQ_INT(m_Pellets.speed, 2);
     CHECK_EQ_INT(m_Timer.frames_since_hurry, 0);
     CHECK_EQ_INT(m_Timer.hurry_cycle, 0);
     CHECK_EQ_INT(g_Tram->pixels[80 * 640 + 192], 0);
@@ -135,7 +136,7 @@ TEST(full_pool_consumes_x_only_and_cycle_and_frame_wrap)
     FIXTURE f;
     M_Init(&f);
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        g_Pellets.slots[i].moving = true;
+        m_Pellets.slots[i].moving = true;
     }
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_LUNATIC;
     uint32_t expected = g_Rng;

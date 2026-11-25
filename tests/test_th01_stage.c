@@ -40,7 +40,7 @@ static int32_t M_Pellets(void)
 {
     int32_t moving = 0;
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        moving += g_Pellets.slots[i].moving;
+        moving += g_Pellets->slots[i].moving;
     }
     return moving;
 }

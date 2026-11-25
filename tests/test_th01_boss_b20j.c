@@ -3,6 +3,7 @@
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/pellets.c"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -234,7 +235,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
             do {
                 CHECK(M_BossUpdate(&f.assets));
                 for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-                    g_Pellets.slots[i].moving = false;
+                    m_Pellets.slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
                     m_Lasers.slots[i].alive = false;

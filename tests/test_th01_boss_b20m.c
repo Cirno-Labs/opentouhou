@@ -203,7 +203,7 @@ TEST(cached_scroll_entrance_and_diagonal_wait_without_allocating)
     const PALETTE before = g_StagePalette;
     const size_t used = arena.used;
     M_BossBeginEntrance(&f.assets);
-    CHECK(g_Pellets.interlace);
+    CHECK(g_Pellets->interlace);
     CHECK(!M_BossResumeEntrance(&f.assets, tick));
     const B20M pending = m_B20M;
     CHECK(!M_BossResumeEntrance(&f.assets, tick));

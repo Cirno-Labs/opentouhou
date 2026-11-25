@@ -63,7 +63,7 @@ static void M_Switch(void)
         Sound_Play();
         return;
     case GAMEPLAY_SWITCH_CONTINUE:
-        Session_Continue(g_Pellets.speed, (int16_t)Extend_ResidentLives());
+        Session_Continue(g_Pellets->speed, (int16_t)Extend_ResidentLives());
         Gameplay_Reset();
         g_Gameplay.bgm_started = true;
         return;
@@ -85,8 +85,8 @@ static void M_RequestOpening(void)
 
 static void M_AfterBonus(void)
 {
-    if (g_Pellets.speed < 0) {
-        g_Pellets.speed = 0;
+    if (g_Pellets->speed < 0) {
+        Pellets_SetSpeed(0);
     }
     Gameplay_SyncSession();
     if (g_Session.stage_id % 5 == 4 || g_Stage.boss != BOSS_NONE) {

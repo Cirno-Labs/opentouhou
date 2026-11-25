@@ -232,10 +232,10 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         if (g_Stage.game_cleared) {
             GameplayEnd_BeginVictory();
         } else {
-            if (g_Pellets.destroy_score_delta != 0) {
-                Stage_AddScore(g_Pellets.destroy_score_delta);
+            if (g_Pellets->destroy_score_delta != 0) {
+                Stage_AddScore(g_Pellets->destroy_score_delta);
                 Hud_ScoreAndCombo();
-                g_Pellets.destroy_score_delta = 0;
+                Pellets_ClearDestroyScore();
             }
             m_LifePhase = GP_LIFE_FRAME_BEGIN;
         }

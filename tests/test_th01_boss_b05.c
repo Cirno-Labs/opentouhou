@@ -6,6 +6,7 @@
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/pellets.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -294,18 +295,18 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(m_B05.status.hp, 0);
         CHECK_EQ_INT(g_Stage.score, 24000);
         CHECK_EQ_INT(m_B05.pending, B05_IDLE);
-        g_Pellets.slots[0] = (PELLET) {
+        m_Pellets.slots[0] = (PELLET) {
             .moving = true,
             .left = 100 * 16,
             .top = 100 * 16,
             .previous_left = 100 * 16,
             .previous_top = 100 * 16,
         };
-        g_Pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
+        m_Pellets.slots[1] = (PELLET) { .cloud_frame = 7 };
         CHECK(!M_BossUpdate(&f.miko, &f.route_assets, &raw));
-        CHECK(!g_Pellets.slots[0].moving);
-        CHECK(!g_Pellets.slots[1].moving);
-        CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
+        CHECK(!m_Pellets.slots[0].moving);
+        CHECK(!m_Pellets.slots[1].moving);
+        CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(m_Scene.active->id, 0);
         CHECK(!g_Stage.cleared && !m_Player.is_hit);
         const B05 frozen = m_B05;
@@ -347,9 +348,9 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     m_B05.pattern = 1;
     m_B05.status.frame = 134;
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        g_Pellets.slots[i].moving = true;
+        m_Pellets.slots[i].moving = true;
     }
-    const PELLETS full = g_Pellets;
+    const PELLETS full = m_Pellets;
     uint32_t expected = g_Rng;
     for (int32_t i = 0; i < 10; i++) {
         MasterRng_Next(&expected);
@@ -358,7 +359,7 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     VSyncIrq_Reset();
     CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
-    CHECK(memcmp(&g_Pellets, &full, sizeof(full)) == 0);
+    CHECK(memcmp(&m_Pellets, &full, sizeof(full)) == 0);
     m_B05.status.frame = 159;
     CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(m_B05.person.image, 5);
@@ -373,13 +374,13 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     }
     CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
-    memset(&g_Pellets, 0, sizeof(g_Pellets));
+    memset(&m_Pellets, 0, sizeof(m_Pellets));
     m_B05.pattern = 2;
     for (int32_t i = 0; i < 3; i++) {
         m_B05.status.frame = (int16_t)(239 + i * 8);
         CHECK(M_BossUpdate(&f.miko, &f.route_assets, &raw));
-        CHECK(g_Pellets.slots[i * 2].moving);
-        CHECK(g_Pellets.slots[i * 2 + 1].moving);
+        CHECK(m_Pellets.slots[i * 2].moving);
+        CHECK(m_Pellets.slots[i * 2 + 1].moving);
     }
     Arena_Free(&arena);
 }

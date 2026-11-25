@@ -2,6 +2,7 @@
 #include "../src/th01/input.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/pellets.c"
 #include "th01/bomb.h"
 #include "th01/hud.h"
 #include "th01/shots.h"
@@ -31,7 +32,7 @@ static void M_Init(CASE *const state)
 {
     *state = (CASE) {};
     Th01Test_ResetWorld();
-    g_Pellets.slots[0].moving = true;
+    m_Pellets.slots[0].moving = true;
     VSyncIrq_Reset();
     Arena_Init(&state->arena, "bomb", 1024 * 1024);
     const ALLOCATOR *const allocator = Arena_Allocator(&state->arena);
@@ -103,7 +104,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     }
     CHECK_EQ_INT(waits, 23);
     CHECK_EQ_INT(state.arena.used, used);
-    CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 1);
+    CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 1);
     CHECK_EQ_INT(m_Player.invincibility_time, 100);
     CHECK(memcmp(g_Video.pages[0], g_Video.pages[1], VIDEO_PAGE_SIZE) == 0);
     CHECK(memcmp(&g_Palette.saved, &state.stage, sizeof(PALETTE)) == 0);
@@ -112,7 +113,7 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     Bomb_BeginUpdate(&state.miko, &state.assets, 0);
     CHECK_EQ_INT(m_Bomb.left[0], previous_x);
     CHECK_EQ_INT(m_Bomb.top[0], previous_y);
-    CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 1);
+    CHECK_EQ_INT(m_Pellets.slots[0].decay_frame, 1);
     Arena_Free(&state.arena);
 }
 

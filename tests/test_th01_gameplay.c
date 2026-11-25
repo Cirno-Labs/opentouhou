@@ -22,6 +22,7 @@
 #include "../src/th01/sound.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/pellets.c"
 
 #include "core/base/arena.h"
 #include "core/audio.h"
@@ -242,7 +243,7 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     M_EnterLife(GP_LIFE_AFTER_ORB);
     g_Stage.game_cleared = true;
     g_Stage.score = 1000;
-    g_Pellets.destroy_score_delta = 70;
+    m_Pellets.destroy_score_delta = 70;
     g_Session.route = SESSION_ROUTE_JIGOKU;
     TH01_INPUT raw = {};
     Gameplay_Tick(&raw, false, 1);
@@ -263,7 +264,7 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     CHECK_EQ_INT(g_Gameplay.switch_fade.remaining, 1);
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 137), GAMEPLAY_REQUEST_ENDING);
     CHECK_EQ_INT(g_Gameplay.switch_fade.remaining, 0);
-    CHECK_EQ_INT(g_Pellets.destroy_score_delta, 70);
+    CHECK_EQ_INT(m_Pellets.destroy_score_delta, 70);
     CHECK_EQ_INT(g_Stage.score, 1000);
     Arena_Free(&f.arena);
 }

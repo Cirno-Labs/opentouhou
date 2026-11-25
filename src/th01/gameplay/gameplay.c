@@ -59,7 +59,7 @@ const PTN *Gameplay_StageSprites(void)
 
 void Gameplay_SyncSession(void)
 {
-    Session_Store(g_Stage.score, g_Player->remaining_bombs, g_Pellets.speed);
+    Session_Store(g_Stage.score, g_Player->remaining_bombs, g_Pellets->speed);
 }
 
 const BOSS_STRATEGY *Gameplay_Boss(void)
@@ -174,7 +174,7 @@ void Gameplay_Reset(void)
     g_Stage.score = g_Session.score;
     Player_SetBombs(g_Session.bombs);
     Player_Center();
-    g_Pellets.speed = g_Session.pellet_speed;
+    Pellets_SetSpeed(g_Session.pellet_speed);
     Extend_SyncResidentLives(g_Session.lives);
     Extend_ResetNext(g_Session.score);
     Rng_Seed(g_Session.frame_rand);
