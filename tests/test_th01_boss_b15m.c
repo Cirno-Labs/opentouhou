@@ -1,3 +1,5 @@
+#include "../src/th01/hud_hp.c"
+#include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
@@ -78,8 +80,8 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(g_B15M.hp, 14);
     CHECK_EQ_INT(g_B15M.phase, B15M_PHASE_ENTRANCE);
     CHECK_EQ_INT(g_B15M.frame, 0);
-    CHECK_EQ_INT(g_HudHp.first_white, 10);
-    CHECK_EQ_INT(g_HudHp.first_redwhite, 6);
+    CHECK_EQ_INT(m_Health.first_white, 10);
+    CHECK_EQ_INT(m_Health.first_redwhite, 6);
     CHECK_EQ_INT(g_Rng, 0x12345678);
     CHECK(g_Pellets.interlace);
     CHECK(memcmp(&m_Missiles, &missiles, sizeof(missiles)) == 0);
@@ -106,9 +108,9 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(g_B15M.bat.orb_hitbox.bottom, 24);
     CHECK_EQ_INT(g_B15M.attack.orb_hitbox.left, 1);
     CHECK_EQ_INT(g_B15M.attack.orb_hitbox.bottom, 4);
-    CHECK(g_BossSprites.entities[0] == &f.assets.girl);
-    CHECK(g_BossSprites.entities[1] == &f.assets.attack);
-    CHECK(g_BossSprites.entities[2] == &f.assets.bat);
+    CHECK(m_Sprites.entities[0] == &f.assets.girl);
+    CHECK(m_Sprites.entities[1] == &f.assets.attack);
+    CHECK(m_Sprites.entities[2] == &f.assets.bat);
     const PALETTE black = {};
     CHECK(memcmp(&g_B15M.post_defeat, &black, sizeof(black)) == 0);
     Arena_Free(&arena);

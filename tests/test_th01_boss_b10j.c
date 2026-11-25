@@ -1,3 +1,4 @@
+#include "../src/th01/hud_hp.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
@@ -132,8 +133,8 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     CHECK_EQ_INT(g_B10J.hp, 12);
     CHECK_EQ_INT(g_B10J.frame, 0);
     CHECK_EQ_INT(g_B10J.phase, B10J_PHASE_START);
-    CHECK_EQ_INT(g_HudHp.first_white, 6);
-    CHECK_EQ_INT(g_HudHp.first_redwhite, 2);
+    CHECK_EQ_INT(m_Health.first_white, 6);
+    CHECK_EQ_INT(m_Health.first_redwhite, 2);
     CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
     CHECK_EQ_INT(m_Missiles.slots[0].previous_top, 36);
     CHECK_EQ_INT(g_VSync.count1, 28);

@@ -1,3 +1,4 @@
+#include "../src/th01/hud_hp.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/hud.c"
 #include "../src/th01/miss.c"
@@ -640,7 +641,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     Sound_Play();
     Music_Update();
     const void *const numbers = m_Hud.numbers;
-    const void *const backgrounds = g_HudHp.backgrounds;
+    const void *const backgrounds = m_Health.backgrounds;
     const size_t used = f.arena.used;
     memset(&g_Gameplay, 0xa5, sizeof(g_Gameplay));
     memset(&g_B10J, 0xa5, sizeof(g_B10J));
@@ -656,7 +657,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g_Player.left, 304);
     CHECK_EQ_INT(m_Hud.score_previous, 0);
     CHECK(m_Hud.numbers == numbers);
-    CHECK(g_HudHp.backgrounds == backgrounds);
+    CHECK(m_Health.backgrounds == backgrounds);
     CHECK(g_Tram.visible);
     CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
     CHECK(g_B10J.meteor_active);

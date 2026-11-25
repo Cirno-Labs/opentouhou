@@ -960,7 +960,7 @@ void Gameplay_Reset(void)
     Frame_SwitchProgram();
     Tram_Clear();
     Tram_SetVisible(true);
-    memset(&g_BossSprites, 0, sizeof(g_BossSprites));
+    BossEntity_Init();
     B05_Init();
     B10J_Init();
     B10M_Init();

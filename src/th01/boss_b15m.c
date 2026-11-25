@@ -122,8 +122,7 @@ void B15M_Setup(const B15M_ASSETS *const assets, const PTN *const miko)
     g_B15M.frame = 0;
     g_B15M.hp = 14;
     g_B15M.finished = false;
-    g_HudHp.first_white = 10;
-    g_HudHp.first_redwhite = 6;
+    HudHp_Begin(6, 10);
     g_Rng = g_Session.frame_rand;
     g_Pellets.interlace = true;
     Particles_Init();

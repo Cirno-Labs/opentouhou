@@ -2,7 +2,7 @@
 
 #include "th01/boss_defeat.h"
 #include "th01/boss_hit.h"
-#include "th01/boss_render.h"
+#include "th01/boss_entity.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
 #include "pc98/zun/pi.h"

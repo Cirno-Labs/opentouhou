@@ -2,13 +2,20 @@
 
 #include <string.h>
 
-HUD_HP g_HudHp;
+#define HUD_HP_CAPACITY 32
 
-static void M_Snap(const int16_t point)
+typedef struct {
+    uint8_t *backgrounds;
+    uint16_t first_redwhite, first_white;
+} HUD_HP;
+
+static HUD_HP m_Health;
+
+static void M_SnapPoint(const int16_t point)
 {
     Video_Read(
         g_Video.drawing_page, (GFX_RECT) { 128 + point * 16, 48, 16, 16 },
-        g_HudHp.backgrounds + point * 256, 16);
+        m_Health.backgrounds + point * 256, 16);
 }
 
 static void M_Point(const int16_t point, const int16_t section_point)
@@ -18,11 +25,11 @@ static void M_Point(const int16_t point, const int16_t section_point)
         for (int32_t page = 1; page >= 0; page--) {
             Video_SelectDrawingPage(page);
             for (int32_t x = 0; x < 7; x++) {
-                const uint8_t color = section_point < g_HudHp.first_redwhite
+                const uint8_t color = section_point < m_Health.first_redwhite
                     ? 10
-                    : section_point >= g_HudHp.first_white ? 7
-                    : x % 2 == 0                           ? 10
-                                                           : 7;
+                    : section_point >= m_Health.first_white ? 7
+                    : x % 2 == 0                            ? 10
+                                                            : 7;
                 Video_Pixel(left + x, y, color);
             }
         }
@@ -31,14 +38,20 @@ static void M_Point(const int16_t point, const int16_t section_point)
 
 void HudHp_Init(const ALLOCATOR *const allocator)
 {
-    memset(&g_HudHp, 0, sizeof(g_HudHp));
-    g_HudHp.backgrounds = Allocator_AllocZ(allocator, HUD_HP_CAPACITY * 256);
+    memset(&m_Health, 0, sizeof(m_Health));
+    m_Health.backgrounds = Allocator_AllocZ(allocator, HUD_HP_CAPACITY * 256);
+}
+
+void HudHp_Begin(const uint16_t first_redwhite, const uint16_t first_white)
+{
+    m_Health.first_redwhite = first_redwhite;
+    m_Health.first_white = first_white;
 }
 
 void HudHp_Reset(void)
 {
-    g_HudHp.first_redwhite = 0;
-    g_HudHp.first_white = 0;
+    m_Health.first_redwhite = 0;
+    m_Health.first_white = 0;
 }
 
 void HudHp_Rerender(const int16_t total)
@@ -47,7 +60,7 @@ void HudHp_Rerender(const int16_t total)
         return;
     }
     for (int16_t i = 0; i < total; i++) {
-        M_Snap(i);
+        M_SnapPoint(i);
         M_Point(i, i);
     }
 }
@@ -58,7 +71,7 @@ void HudHp_Decrement(const int16_t new_hp)
         return;
     }
     const VIDEO_IMAGE image = { .pixels =
-                                    g_HudHp.backgrounds + new_hp / 2 * 256,
+                                    m_Health.backgrounds + new_hp / 2 * 256,
                                 .width = 16,
                                 .height = 16,
                                 .stride = 16,
@@ -79,7 +92,7 @@ bool HudHp_Increment(const int16_t total, const int16_t current)
         || current >= HUD_HP_CAPACITY) {
         return false;
     }
-    M_Snap(current);
+    M_SnapPoint(current);
     M_Point(current, current);
     return total - 1 == current;
 }

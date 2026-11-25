@@ -117,8 +117,7 @@ void B20J_Setup(const B20J_ASSETS *const assets)
     g_B20J.face_expression = 0;
     g_B20J.face_direction = 2;
     g_B20J.finished = false;
-    g_HudHp.first_white = 16;
-    g_HudHp.first_redwhite = 10;
+    HudHp_Begin(10, 16);
 }
 
 static uint16_t M_Random(const B20J_ASSETS *const assets)

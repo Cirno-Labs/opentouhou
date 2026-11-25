@@ -175,8 +175,7 @@ void B20M_Setup(const B20M_ASSETS *const assets)
     g_B20M.frame = 0;
     g_B20M.finished = false;
     g_B20M.boss_palette = g_Palette.saved;
-    g_HudHp.first_white = 8;
-    g_HudHp.first_redwhite = 2;
+    HudHp_Begin(2, 8);
 }
 
 static uint16_t M_Random(const B20M_ASSETS *const assets)
@@ -1964,8 +1963,7 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
             g_B20M.boss_palette = g_Palette.saved;
             g_B20M.stage_palette = g_B20M.boss_palette;
             g_B20M.hp = 6;
-            g_HudHp.first_white = 10;
-            g_HudHp.first_redwhite = 3;
+            HudHp_Begin(3, 10);
             g_B20M.hp_bar_filled = false;
             M_Leaves(assets, 999);
             g_B20M.sequence = B20M_SEQUENCE_NONE;
