@@ -7,7 +7,8 @@
 #include "th01/rng.h"
 #include "th01/score.h"
 #include "th01_assets.h"
-#include "th01_music.h"
+#include "../src/th01/music.c"
+#include "../src/th01/sound.c"
 
 #include "core/base/arena.h"
 #include "core/audio.h"
@@ -27,7 +28,7 @@ typedef struct {
 static bool M_EffectSounds(void)
 {
     MDRV_FRAME frames[2400];
-    Mdrv_Render(TestMusic_Driver(), frames, 2400);
+    Mdrv_Render(m_Driver, frames, 2400);
     for (size_t i = 0; i < 2400; i++) {
         if (frames[i].effects[0] != 0 || frames[i].effects[1] != 0) {
             return true;
@@ -552,10 +553,10 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
     Sound_Fade();
     Sound_Stop();
     Sound_Stop();
-    CHECK_EQ_INT(TestMusic_SelectedSong(), 3);
+    CHECK_EQ_INT(m_Song, 3);
     static MDRV_FRAME expected[4800], actual[4800];
     Mdrv_Render(twin, expected, 4800);
-    Mdrv_Render(TestMusic_Driver(), actual, 4800);
+    Mdrv_Render(m_Driver, actual, 4800);
     CHECK(memcmp(expected, actual, sizeof(actual)) == 0);
     Music_Stop();
     CHECK_EQ_INT(f.arena.used, used);
@@ -574,7 +575,7 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
     Sound_Fade();
     Sound_Load(4);
     Sound_Play();
-    CHECK_EQ_INT(TestMusic_SelectedSong(), 4);
+    CHECK_EQ_INT(m_Song, 4);
     CHECK(!M_EffectSounds());
     Sound_Effect(5);
     Sound_Stop();
@@ -599,7 +600,7 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     Music_Update();
     const size_t used = f.arena.used;
     Gameplay_Reset();
-    CHECK(TestMusic_Output() == output);
+    CHECK(m_Output == output);
     Music_Fade();
     Music_Update();
     float samples[3200];
