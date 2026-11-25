@@ -125,7 +125,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     M_Init(&f, Arena_Allocator(&arena));
     g_Stage.score = 393000;
     g_Stage.maximum_combo = 3;
-    g_StageTimer.time = 100;
+    g_Stage.time = 100;
     g_Session.lives = 1;
     g_Player.remaining_bombs = 3;
     g_GameInput.bomb_frame = 97;
@@ -184,7 +184,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     g_Session.lives = 6;
     m_Bonus.score_bonus = UINT32_MAX - 100;
     g_Stage.score = UINT32_MAX - 1000;
-    g_StageTimer.time = 20000;
+    g_Stage.time = 20000;
     g_Stage.maximum_combo = 100;
     Frame_Reset();
     g_VSync.count1 = 100;
@@ -247,7 +247,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     Arena_Init(&arena, "bonus total", 2 * 1024 * 1024);
     TOTAL_FIXTURE f = {};
     M_InitTotal(&f, Arena_Allocator(&arena));
-    g_StageTimer.time = 321;
+    g_Stage.time = 321;
     g_Stage.maximum_combo = 7;
     g_Stage.score = 390000;
     g_Session.lives = 2;
@@ -388,14 +388,14 @@ TEST(total_metric_widths_clamp_after_wrapping_and_sum_wraps)
     M_InitTotal(&f, Arena_Allocator(&arena));
     const TH01_INPUT raw = {};
     Frame_Reset();
-    g_StageTimer.time = 13108;
+    g_Stage.time = 13108;
     Bonus_InitTotal();
     m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
     CHECK_EQ_INT(m_Bonus.score_bonus, 40);
     CHECK_EQ_INT(m_Total.digits[3], 4);
     CHECK_EQ_INT(m_Total.credit, 1);
-    g_StageTimer.time = UINT16_MAX;
+    g_Stage.time = UINT16_MAX;
     Bonus_InitTotal();
     m_Total.phase = BONUS_TOTAL_PREPARE_METRIC;
     CHECK(!Bonus_ResumeTotal(&f.assets, &raw, 0));
