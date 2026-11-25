@@ -497,8 +497,7 @@ foreach game, game_tests : {
     'th07/screen_effect': {'sources': ['../src/th07/play_time.c', 'gfx_recorder.c']},
     'th07/screens/title': {
       'part': 'th07_title',
-      'sources': th07_data + ['th07_scene_stubs.c'],
-      'c_args': ['-DTH07_TITLE_TEST'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'TEST_FONT_DIR'],
     },
     'th07/ascii': {
