@@ -401,19 +401,13 @@ foreach game, game_tests : {
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th06/scene': {'sources': th06_data, 'env': ['TEST_DIR']},
-    'th06/screen_effect': {
-      'sources': ['gfx_recorder.c', 'th06_scene_stubs.c'],
-      'deps': [test_deps],
-    },
+    'th06/screen_effect': {'sources': ['gfx_recorder.c'], 'deps': [test_deps]},
     'th06/sound': {
       'sources': ['audio_backend_fake.c', 'pbg3_builder.c', 'th06_data.c'],
       'deps': [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
       'env': ['TEST_DIR'],
     },
-    'th06/stage': {
-      'sources': th06_data + ['th06_scene_stubs.c'],
-      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
-    },
+    'th06/stage': {'sources': th06_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
     'th06/ecl': {
       'sources': ['anm_builder.c', 'ecl_builder.c', 'pbg3_builder.c', 'th06_data.c', 'th06_scene_stubs.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
@@ -422,12 +416,9 @@ foreach game, game_tests : {
       'sources': th06_data + ['ecl_builder.c', 'th06_scene_stubs.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
-    'th06/effect': {
-      'sources': th06_data + ['th06_scene_stubs.c'],
-      'env': ['TEST_DIR', 'XDG_DATA_HOME'],
-    },
+    'th06/effect': {'sources': th06_data, 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
     'th06/gui': {
-      'sources': th06_data + ['th06_scene_stubs.c'],
+      'sources': th06_data,
       'env': ['TEST_DIR', 'XDG_DATA_HOME', 'TEST_FONT_DIR'],
     },
     'th06/files': {

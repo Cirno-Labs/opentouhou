@@ -6,7 +6,6 @@
 #include "test.h"
 #include "test_dir.h"
 #include "th06_data.h"
-#include "th06_scene_stubs.h"
 
 #include "stg/angle.h"
 #include "th06/anm.h"
@@ -330,7 +329,6 @@ static void M_Begin(const char *const case_name)
     memset(&g_Enemies, 0, sizeof(g_Enemies));
     memset(&g_Gui, 0, sizeof(g_Gui));
     memset(&g_Stage, 0, sizeof(g_Stage));
-    SceneStubCalls_Reset();
     M_ResetCalls();
     m_AimAngle = 0.0f;
     m_AwayAngle = 0.0f;
@@ -1565,14 +1563,14 @@ TEST(a_spell_card_starts_and_counts_an_attempt)
     CHECK(m_Enemy.shots.rank_speed_low == -0.5f);
     CHECK(m_Enemy.shots.rank_speed_high == 0.5f);
     CHECK_EQ_INT(m_Enemy.shots.rank_columns_high, 0);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_attempt, 1);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_attempt_index, 9);
-    CHECK_EQ_STR(g_SceneStubCalls.spell_card_attempt_name, "Spell");
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_attempt_bonus, 250000);
+    const SPELL_CARD_RECORD *const card = &g_GameManager.records.spell_cards[9];
+    CHECK_EQ_INT(card->attempts, 1);
+    CHECK_EQ_STR(card->name, "Spell");
+    CHECK_EQ_INT(card->bonus, 250000);
     g_GameManager.mode.in_replay = true;
     M_Frame();
     CHECK_EQ_INT(m_NameCalls, 2);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_attempt, 1);
+    CHECK_EQ_INT(card->attempts, 1);
     M_End();
 }
 
@@ -1592,7 +1590,7 @@ TEST(a_translated_spell_card_name_is_shown_but_not_recorded)
     M_Load();
     M_Frame();
     CHECK_EQ_STR(m_Name, "Moon Sign");
-    CHECK_EQ_STR(g_SceneStubCalls.spell_card_attempt_name, "Spell");
+    CHECK_EQ_STR(g_GameManager.records.spell_cards[9].name, "Spell");
     Translation_Shutdown();
     Patch_CloseStack(stack);
     Mem_Free(patches);
@@ -1620,9 +1618,10 @@ TEST(a_captured_spell_card_scores_its_bonus)
     CHECK_EQ_INT(m_BonusShown, 300000 + 300000 * 25 / 10);
     CHECK_EQ_INT(g_GameManager.score.value, 1000 + 1050000);
     CHECK_EQ_INT(g_GameManager.stats.spell_cards_captured, 1);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_capture, 1);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_capture_index, 20);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_capture_shot_type, 2);
+    const SPELL_CARD_RECORD *const card =
+        &g_GameManager.records.spell_cards[20];
+    CHECK_EQ_INT(card->captures, 1);
+    CHECK_EQ_INT(card->history[0], 2);
     CHECK_EQ_INT(g_Enemies.spell_card.state, ENEMY_SPELL_NONE);
     CHECK_EQ_INT(g_Stage.spell_card.state, 0);
     M_End();
@@ -1658,7 +1657,7 @@ TEST(an_ended_spell_card_scores_only_when_captured)
     g_Enemies.spell_card.capturable = true;
     M_Frame();
     CHECK_EQ_INT(m_BonusCalls, 1);
-    CHECK_EQ_INT(g_SceneStubCalls.spell_card_capture, 0);
+    CHECK_EQ_INT(g_GameManager.records.spell_cards[0].captures, 0);
     CHECK_EQ_INT(g_GameManager.stats.spell_cards_captured, 1);
     M_End();
 }
