@@ -151,7 +151,7 @@ static void M_Hit(const B15J_ASSETS *const assets, const PTN *const miko)
 {
     const ORB *const orb = &g_Orb;
     const bool colliding =
-        orb->left > 256 && orb->left < 368 && orb->top < 132 && orb->top < 196;
+        orb->left > 256 && orb->left < 352 && orb->top < 132 && orb->top < 180;
     const uint8_t flash[] = { 6, 11, 8, 2 };
     BossHit_UpdateAndRender(
         &m_B15J.hit, &m_B15J.status.hp, &m_B15J.boss_palette, flash, 4, 7000,

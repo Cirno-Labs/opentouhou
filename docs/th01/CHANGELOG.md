@@ -14,6 +14,8 @@
 - Fixed the start failing with "Truncated GRF streams" on a MASK.GRF
   whose header gives the wrong plane sizes, as fan translations write
   it.
+- Fixed the Orb hitting Kikuri up to 16 pixels too far to her right;
+  it now hits her only where it does in the original.
 
 ## 1.0.0 (2026-11-22)
 
