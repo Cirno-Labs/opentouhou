@@ -89,7 +89,7 @@ TEST(setup_resets_hp_and_face_but_preserves_history)
     m_B20J.finished = true;
     const size_t used = arena.used;
     M_BossSetup(&assets);
-    CHECK(g_Boss == &m_B20J.status);
+    CHECK((*g_Boss) == &m_B20J.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(m_B20J.status.hp, 18);
     CHECK_EQ_INT(m_B20J.status.phase, B20J_PHASE_START);

@@ -131,7 +131,7 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
     M_BossSetup(&f.assets, &f.miko);
-    CHECK(g_Boss == &m_B10M.status);
+    CHECK((*g_Boss) == &m_B10M.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(m_B10M.status.hp, 16);
     CHECK_EQ_INT(m_B10M.status.phase, B10M_PHASE_ENTRANCE);
