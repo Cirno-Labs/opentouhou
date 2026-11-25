@@ -29,7 +29,7 @@ typedef struct {
     bool memory_enter, memory_leave;
 } GAME_INPUT;
 
-extern GAME_INPUT g_GameInput;
+extern const GAME_INPUT *const g_GameInput;
 
 typedef enum {
     GAME_INPUT_PRESS_UP,
@@ -95,6 +95,14 @@ void GameInput_AdvanceBombFrame(void);
 int32_t GameInput_SenseMenu(
     MENU_INPUT *state, const TH01_INPUT *raw, MENU_INPUT_KIND kind,
     int32_t choice_count, int32_t selection);
+
+// Pushes the bomb window frames past its edge, so a double tap cannot
+// trigger a bomb until frames more have advanced.
+void GameInput_DisableBomb(int16_t frames);
+
+// Sets the bomb window frame at its edge, so the next double tap starts a
+// fresh count.
+void GameInput_OpenBombWindow(void);
 
 // Sets pending on a keyboard press or a bound confirmation control, ignoring
 // modifier-only and lock-only presses. key_press may be nullptr. Misses the

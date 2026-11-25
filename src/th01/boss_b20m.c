@@ -777,7 +777,7 @@ static void M_Wavy(const B20M_ASSETS *const assets)
             (uint16_t)x & 7, (uint8_t)p->color[i], false);
     }
 }
-static void M_Horizontal(const B20M_ASSETS *const assets)
+static void M_B20mHorizontal(const B20M_ASSETS *const assets)
 {
     B20M_PARTICLES *const p = &m_B20M.horizontal;
     if (m_B20M.status.frame % 7 == 0) {
@@ -2439,7 +2439,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     } else if (m_B20M.status.phase == B20M_PHASE_WAVY) {
         M_Wavy(assets);
     } else if (m_B20M.status.phase == B20M_PHASE_SECOND_FORM) {
-        M_Horizontal(assets);
+        M_B20mHorizontal(assets);
     }
     if ((m_B20M.status.phase == B20M_PHASE_BIRDS
          || m_B20M.status.phase == B20M_PHASE_VERTICAL_BIRDS)

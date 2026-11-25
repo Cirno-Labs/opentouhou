@@ -453,8 +453,8 @@ bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
                 }
                 m_Ending.waiting = false;
             }
-            if (m_Ending.timeout++ >= 2000 || g_GameInput.ok
-                || g_GameInput.shot) {
+            if (m_Ending.timeout++ >= 2000 || g_GameInput->ok
+                || g_GameInput->shot) {
                 break;
             }
             GameInput_SenseEnding(raw);

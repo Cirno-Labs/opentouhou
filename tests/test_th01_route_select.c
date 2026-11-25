@@ -1,6 +1,7 @@
 #include "../src/th01/scene.c"
 #include "../src/th01/route_select.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/input.c"
 #include "th01/shots.h"
 #include "th01/rng.h"
 #include "th01/player.h"
@@ -84,14 +85,14 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     Arena_Init(&arena, "route", 2 * 1024 * 1024);
     FIXTURE f;
     M_Init(&f, &arena);
-    g_GameInput.shot = g_GameInput.ok = g_GameInput.bomb = true;
-    g_GameInput.bomb_frame = 72;
+    m_GameInput.shot = m_GameInput.ok = m_GameInput.bomb = true;
+    m_GameInput.bomb_frame = 72;
     VSyncIrq_Reset();
     RouteSelect_Init();
     const TH01_INPUT raw = { .shot = true };
     CHECK(!RouteSelect_Begin(&f.assets, &raw));
-    CHECK(!g_GameInput.shot && !g_GameInput.ok && !g_GameInput.bomb);
-    CHECK_EQ_INT(g_GameInput.bomb_frame, 72);
+    CHECK(!g_GameInput->shot && !g_GameInput->ok && !g_GameInput->bomb);
+    CHECK_EQ_INT(g_GameInput->bomb_frame, 72);
     CHECK_EQ_INT(g_Video.pages[0][250 * VIDEO_WIDTH + 128], 7);
     CHECK_EQ_INT(g_Video.pages[1][250 * VIDEO_WIDTH + 128], 4);
     CHECK_EQ_INT(g_Palette.saved.colors[1][0], 15);
@@ -187,7 +188,7 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     RouteSelect_Init();
     const TH01_INPUT pause = { .cancel = true };
     CHECK(!RouteSelect_Begin(&f.assets, &pause));
-    CHECK(g_GameInput.paused);
+    CHECK(g_GameInput->paused);
     CHECK(M_Poll(&f, (TH01_INPUT) { .shot = true, .ok = true }));
     CHECK(g_Stage.cleared && g_Player.is_hit);
     Arena_Free(&arena);

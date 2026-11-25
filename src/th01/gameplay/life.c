@@ -62,7 +62,7 @@ static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
     GameInput_ResetMenu();
     GameInput_Consume(GAME_INPUT_PRESS_PAUSE);
     Hud_ScoreAndCombo();
-    g_GameInput.bomb_frame = 60;
+    GameInput_DisableBomb(60);
     Stage_UpdateObstacles(Gameplay_StageSprites(), true);
     const BOSS_STRATEGY *const boss = Gameplay_Boss();
     const int32_t song = boss != nullptr ? boss->song : Session_Scene();
@@ -94,7 +94,7 @@ static void M_StartFrames(void)
     GameInput_Consume(GAME_INPUT_PRESS_SHOT);
     g_Stage.timer_initialized = true;
     Rng_Seed(g_Session.frame_rand);
-    g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;
+    GameInput_OpenBombWindow();
     g_Stage.first_stage = false;
     m_LifePhase = GP_LIFE_FRAME_BEGIN;
 }
@@ -143,7 +143,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         return true;
     case GP_LIFE_WAIT_SHOT:
         if (g_Stage.boss != BOSS_NONE || !g_Gameplay.wait_for_shot
-            || g_GameInput.shot) {
+            || g_GameInput->shot) {
             M_StartFrames();
         } else {
             Gameplay_Sense(raw);
@@ -223,7 +223,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
                 g_GameplayAssets->pellets)) {
             return false;
         }
-        if (g_GameInput.paused) {
+        if (g_GameInput->paused) {
             GameplayPause_Begin();
         } else {
             m_LifePhase = GP_LIFE_AFTER_ORB;

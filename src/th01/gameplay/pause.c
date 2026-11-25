@@ -34,18 +34,18 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
             return false;
         }
         g_Gameplay.waiting = false;
-        if (g_GameInput.paused) {
+        if (g_GameInput->paused) {
             Gameplay_Sense(raw);
             if (g_Player.is_hit) {
                 GameplayEnd_OpenMenu();
                 return true;
             }
-            if (g_GameInput.horizontal == GAME_INPUT_LEFT
-                || g_GameInput.horizontal == GAME_INPUT_RIGHT) {
+            if (g_GameInput->horizontal == GAME_INPUT_LEFT
+                || g_GameInput->horizontal == GAME_INPUT_RIGHT) {
                 const int32_t left = quit ? 224 : 256;
                 const int32_t second = quit ? 336 : 320;
                 const bool select_second =
-                    g_GameInput.horizontal == GAME_INPUT_RIGHT;
+                    g_GameInput->horizontal == GAME_INPUT_RIGHT;
                 Sprite_Restore16(
                     (int16_t)(select_second ? left : second), 144, 16, 16);
                 Gameplay_Draw(
@@ -53,7 +53,7 @@ static bool M_PausePoll(const TH01_INPUT *const raw, const bool quit)
                     GAME_TEXT_NORMAL, false);
                 g_Gameplay.menu_selection = select_second;
             }
-            if (!g_GameInput.shot && !g_GameInput.ok) {
+            if (!g_GameInput->shot && !g_GameInput->ok) {
                 g_Gameplay.waiting = true;
                 if (!VSyncIrq_DelayReady(1)) {
                     return false;
@@ -108,7 +108,7 @@ bool GameplayPause_Step(const TH01_INPUT *const raw)
             return false;
         }
         GameInput_ResetMenu();
-        if (g_Gameplay.menu_selection != 0 && g_GameInput.paused) {
+        if (g_Gameplay.menu_selection != 0 && g_GameInput->paused) {
             M_PauseDraw(true);
             m_PausePhase = GP_PAUSE_QUIT_CONFIRM;
         } else {

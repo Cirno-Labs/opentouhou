@@ -144,8 +144,8 @@ bool RouteSelect_Resume(
             if (GameInput_SenseGame(raw, false)) {
                 Player_Hit();
             }
-            if ((g_GameInput.up && !m_Selection.holding_up)
-                || (g_GameInput.down && !m_Selection.holding_down)) {
+            if ((g_GameInput->up && !m_Selection.holding_up)
+                || (g_GameInput->down && !m_Selection.holding_down)) {
                 Sprite_Restore16(
                     128, m_Selection.selection == 0 ? 250 : 300, 32, 32);
                 m_Selection.selection ^= 1;
@@ -154,9 +154,9 @@ bool RouteSelect_Resume(
                     m_Selection.selection == 0 ? 250 : 300);
                 M_Palette(m_Selection.selection);
             }
-            m_Selection.holding_up = g_GameInput.up;
-            m_Selection.holding_down = g_GameInput.down;
-            if (g_GameInput.shot || g_GameInput.ok) {
+            m_Selection.holding_up = g_GameInput->up;
+            m_Selection.holding_down = g_GameInput->down;
+            if (g_GameInput->shot || g_GameInput->ok) {
                 Sound_Effect(4);
                 Scene_Activate(
                     m_Selection.selection == 0 ? assets->makai

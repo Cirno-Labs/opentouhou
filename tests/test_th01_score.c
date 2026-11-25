@@ -1,5 +1,6 @@
 #include "../src/th01/score.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/input.c"
 #include "th01/score.h"
 
 #include "core/base/arena.h"
@@ -73,7 +74,7 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     CHECK(m_Saves.pending[1]);
     CHECK_EQ_STR(m_Saves.tables[1].entries[0].name, "                ");
     CHECK_EQ_INT(g_VSync->count1, 117);
-    CHECK(!g_GameInput.ok);
+    CHECK(!g_GameInput->ok);
     Arena_Free(&f.arena);
 }
 
@@ -84,7 +85,7 @@ TEST(name_slots_edit_and_gameover_last_slot_jumps_to_enter)
     M_Begin(&f, SCORE_ENDING, 9000);
     for (int32_t i = 0; i < 8; i++) {
         m_Registration.column = i;
-        g_GameInput.shot = true;
+        m_GameInput.shot = true;
         CHECK(!Score_OnInput());
     }
     CHECK_EQ_INT(m_Registration.cursor, 7);
@@ -92,23 +93,23 @@ TEST(name_slots_edit_and_gameover_last_slot_jumps_to_enter)
     CHECK_EQ_STR(m_Registration.slots[0], "ａ");
     CHECK_EQ_STR(m_Registration.slots[7], "ｈ");
     m_Registration.context = SCORE_GAMEOVER;
-    g_GameInput.shot = true;
+    m_GameInput.shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.row, 5);
     CHECK_EQ_INT(m_Registration.column, 17);
-    g_GameInput.strike = true;
+    m_GameInput.strike = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.cursor, 6);
     m_Registration.column = 10;
-    g_GameInput.shot = true;
+    m_GameInput.shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_STR(m_Registration.slots[6], "　");
     m_Registration.column = 15;
-    g_GameInput.shot = true;
+    m_GameInput.shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.cursor, 6);
     m_Registration.column = 16;
-    g_GameInput.shot = true;
+    m_GameInput.shot = true;
     CHECK(!Score_OnInput());
     CHECK_EQ_INT(m_Registration.cursor, 7);
     m_Registration.column = 17;
@@ -132,9 +133,9 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
                 m_Registration.row = row;
                 m_Registration.column = column;
                 GameInput_Init();
-                g_GameInput.up = direction == 0;
-                g_GameInput.down = direction == 1;
-                g_GameInput.horizontal = direction == 2 ? GAME_INPUT_LEFT
+                m_GameInput.up = direction == 0;
+                m_GameInput.down = direction == 1;
+                m_GameInput.horizontal = direction == 2 ? GAME_INPUT_LEFT
                     : direction == 3                    ? GAME_INPUT_RIGHT
                                                         : 0;
                 CHECK(!Score_OnInput());
@@ -147,24 +148,24 @@ TEST(grid_navigation_wraps_and_skips_every_hole)
                     !(m_Registration.row == 5 && m_Registration.column > 10
                       && m_Registration.column < 15));
                 CHECK(
-                    !g_GameInput.up && !g_GameInput.down
-                    && g_GameInput.horizontal == 0);
+                    !g_GameInput->up && !g_GameInput->down
+                    && g_GameInput->horizontal == 0);
             }
         }
     }
     m_Registration.row = 0;
     m_Registration.column = 17;
     GameInput_Init();
-    g_GameInput.down = true;
-    g_GameInput.shot = true;
-    g_GameInput.strike = true;
+    m_GameInput.down = true;
+    m_GameInput.shot = true;
+    m_GameInput.strike = true;
     Score_OnInput();
     CHECK_EQ_INT(m_Registration.row, 2);
-    CHECK(g_GameInput.shot && g_GameInput.strike);
+    CHECK(g_GameInput->shot && g_GameInput->strike);
     GameInput_Init();
-    g_GameInput.horizontal = GAME_INPUT_BOTH;
+    m_GameInput.horizontal = GAME_INPUT_BOTH;
     Score_OnInput();
-    CHECK_EQ_INT(g_GameInput.horizontal, GAME_INPUT_BOTH);
+    CHECK_EQ_INT(g_GameInput->horizontal, GAME_INPUT_BOTH);
     Arena_Free(&f.arena);
 }
 
@@ -247,8 +248,8 @@ TEST(results_ignore_keypad_and_never_generate_bomb_taps)
         GameInput_SenseEnding(&(TH01_INPUT) {});
         GameInput_SenseEnding(&(TH01_INPUT) { .shot = true, .strike = true });
     }
-    CHECK(!g_GameInput.bomb);
-    CHECK_EQ_INT(g_GameInput.shot_presses, 0);
-    CHECK_EQ_INT(g_GameInput.strike_presses, 0);
+    CHECK(!g_GameInput->bomb);
+    CHECK_EQ_INT(g_GameInput->shot_presses, 0);
+    CHECK_EQ_INT(g_GameInput->strike_presses, 0);
     Arena_Free(&f.arena);
 }

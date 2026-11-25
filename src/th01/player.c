@@ -130,18 +130,18 @@ static void M_SelectStrike(const int8_t direction)
     const int8_t other =
         direction == PLAYER_FACING_RIGHT ? GAME_INPUT_LEFT : GAME_INPUT_RIGHT;
     g_Player.submode =
-        (g_GameInput.horizontal == other ? PLAYER_SPECIAL_FLIPKICK_STATIONARY
-             : g_GameInput.horizontal == same ? PLAYER_SPECIAL_SLIDEKICK
-                                              : PLAYER_SPECIAL_FLIPKICK_MOVING)
+        (g_GameInput->horizontal == other ? PLAYER_SPECIAL_FLIPKICK_STATIONARY
+             : g_GameInput->horizontal == same ? PLAYER_SPECIAL_SLIDEKICK
+                                               : PLAYER_SPECIAL_FLIPKICK_MOVING)
         | direction;
 }
 
 static void M_Regular(const PLAYER_SPRITES *const sprites)
 {
     int16_t image;
-    if (g_GameInput.horizontal == GAME_INPUT_RIGHT
-        || g_GameInput.horizontal == GAME_INPUT_LEFT) {
-        const bool right = g_GameInput.horizontal == GAME_INPUT_RIGHT;
+    if (g_GameInput->horizontal == GAME_INPUT_RIGHT
+        || g_GameInput->horizontal == GAME_INPUT_LEFT) {
+        const bool right = g_GameInput->horizontal == GAME_INPUT_RIGHT;
         g_Player.dash_direction =
             right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT;
         M_Draw(sprites, M_ERASE, g_Player.previous_ptn);
@@ -149,7 +149,7 @@ static void M_Regular(const PLAYER_SPRITES *const sprites)
         image = M_DashImage(right ? M_RIGHT_DASH : M_LEFT_DASH);
         M_Draw(sprites, M_PUT, image);
         g_Player.previous_ptn = image;
-        g_Player.submode = g_GameInput.horizontal;
+        g_Player.submode = g_GameInput->horizontal;
     } else {
         if (g_Player.submode == GAME_INPUT_NONE) {
             image = g_Player.dash_direction != PLAYER_FACING_RIGHT
@@ -163,13 +163,13 @@ static void M_Regular(const PLAYER_SPRITES *const sprites)
         }
         g_Player.submode = GAME_INPUT_NONE;
     }
-    if (g_GameInput.shot) {
+    if (g_GameInput->shot) {
         M_Draw(sprites, M_ERASE, g_Player.previous_ptn);
         g_Player.mode = PLAYER_MODE_SHOOT;
         g_Player.mode_frame = 0;
-        g_Player.submode = g_GameInput.horizontal == GAME_INPUT_BOTH
+        g_Player.submode = g_GameInput->horizontal == GAME_INPUT_BOTH
             ? GAME_INPUT_NONE
-            : g_GameInput.horizontal;
+            : g_GameInput->horizontal;
         if (g_Player.submode == GAME_INPUT_NONE) {
             image = g_Player.dash_direction != PLAYER_FACING_RIGHT
                 ? M_LEFT_CAST
@@ -181,10 +181,10 @@ static void M_Regular(const PLAYER_SPRITES *const sprites)
         M_Draw(sprites, M_PUT, image);
         g_Player.previous_ptn = image;
     }
-    if (g_GameInput.strike) {
+    if (g_GameInput->strike) {
         M_Draw(sprites, M_ERASE, g_Player.previous_ptn);
-        if (g_GameInput.horizontal == GAME_INPUT_NONE
-            || g_GameInput.horizontal == GAME_INPUT_BOTH) {
+        if (g_GameInput->horizontal == GAME_INPUT_NONE
+            || g_GameInput->horizontal == GAME_INPUT_BOTH) {
             g_Player.mode_frame = 0;
             g_Player.mode = PLAYER_MODE_SWING_OR_SLIDE;
             g_Player.submode = GAME_INPUT_NONE;
@@ -193,7 +193,7 @@ static void M_Regular(const PLAYER_SPRITES *const sprites)
             M_Effect();
             g_Player.mode_frame = 0;
             g_Player.mode = PLAYER_MODE_SWING_OR_SLIDE;
-            g_Player.submode = g_GameInput.horizontal % GAME_INPUT_BOTH;
+            g_Player.submode = g_GameInput->horizontal % GAME_INPUT_BOTH;
             g_Player.sliding = true;
             g_Player.combo_enabled = false;
             M_BosDraw(
@@ -241,7 +241,7 @@ static void M_SwingOrSlide(const PLAYER_SPRITES *const sprites)
 {
     if (g_Player.submode == GAME_INPUT_NONE) {
         if (g_Player.mode_frame < 1) {
-            g_Player.submode = g_GameInput.horizontal % GAME_INPUT_BOTH;
+            g_Player.submode = g_GameInput->horizontal % GAME_INPUT_BOTH;
             if (g_Player.submode != GAME_INPUT_NONE) {
                 g_Player.mode_frame = 0;
                 g_Player.deflecting = false;
@@ -277,8 +277,8 @@ static void M_SwingOrSlide(const PLAYER_SPRITES *const sprites)
         M_Overlap(
             sprites, false, previous_left, base + 1 - g_Player.mode_frame % 2,
             base + g_Player.mode_frame % 2);
-        if (g_Player.mode_frame >= 5 && !g_GameInput.strike
-            && !g_GameInput.shot) {
+        if (g_Player.mode_frame >= 5 && !g_GameInput->strike
+            && !g_GameInput->shot) {
             g_Player.combo_enabled = true;
         }
         if (g_Player.mode_frame >= 12) {
@@ -289,12 +289,12 @@ static void M_SwingOrSlide(const PLAYER_SPRITES *const sprites)
             g_Player.sliding = false;
             const int8_t direction =
                 right ? PLAYER_FACING_RIGHT : PLAYER_FACING_LEFT;
-            if (g_Player.combo_enabled && g_GameInput.strike) {
+            if (g_Player.combo_enabled && g_GameInput->strike) {
                 M_SelectStrike(direction);
                 g_Player.mode = PLAYER_MODE_SPECIAL_FIRST;
                 M_SpecialStart(g_Player.submode < PLAYER_SPECIAL_SLIDEKICK);
                 return;
-            } else if (g_Player.combo_enabled && g_GameInput.shot) {
+            } else if (g_Player.combo_enabled && g_GameInput->shot) {
                 g_Player.submode = PLAYER_SPECIAL_SHOTCOMBO | direction;
                 g_Player.mode = PLAYER_MODE_SPECIAL_FIRST;
                 M_SpecialStart(true);
@@ -344,7 +344,7 @@ static void M_Special(const PLAYER_SPRITES *const sprites)
         if (frame == 20) {
             g_Player.deflecting = false;
         }
-        if (frame >= 20 && !g_GameInput.strike && !g_GameInput.shot) {
+        if (frame >= 20 && !g_GameInput->strike && !g_GameInput->shot) {
             g_Player.combo_enabled = true;
         }
         duration = 28;
@@ -396,7 +396,7 @@ static void M_Special(const PLAYER_SPRITES *const sprites)
         g_Player.sliding = false;
         g_Player.deflecting = false;
         if (g_Player.mode < PLAYER_MODE_SPECIAL_THIRD) {
-            if (g_Player.combo_enabled && g_GameInput.strike) {
+            if (g_Player.combo_enabled && g_GameInput->strike) {
                 if (special == PLAYER_SPECIAL_FLIPKICK_MOVING
                     || special == PLAYER_SPECIAL_FLIPKICK_STATIONARY) {
                     M_SelectStrike(
@@ -405,7 +405,7 @@ static void M_Special(const PLAYER_SPRITES *const sprites)
                 g_Player.mode++;
                 M_SpecialStart(g_Player.submode < PLAYER_SPECIAL_SLIDEKICK);
                 return;
-            } else if (g_Player.combo_enabled && g_GameInput.shot) {
+            } else if (g_Player.combo_enabled && g_GameInput->shot) {
                 if (special == PLAYER_SPECIAL_FLIPKICK_MOVING
                     || special == PLAYER_SPECIAL_FLIPKICK_STATIONARY) {
                     g_Player.submode = PLAYER_SPECIAL_SHOTCOMBO
@@ -545,7 +545,7 @@ bool Player_BeginUpdate(
         *continuation = (PLAYER_BOMB_CONTINUATION) { .pending = true };
         return true;
     } else if (
-        g_GameInput.bomb && g_Player.mode != PLAYER_MODE_SPECIAL_FIRST
+        g_GameInput->bomb && g_Player.mode != PLAYER_MODE_SPECIAL_FIRST
         && g_Player.remaining_bombs != 0) {
         g_Player.bomb_flag = PLAYER_BOMB_START;
         GameInput_Consume(GAME_INPUT_PRESS_BOMB);
