@@ -235,7 +235,7 @@ TEST(all_patterns_complete_with_real_projectile_pools_on_every_rank)
                     g_Pellets.slots[i].moving = false;
                 }
                 for (int32_t i = 0; i < 10; i++) {
-                    g_ShootoutLasers.slots[i].alive = false;
+                    m_Lasers.slots[i].alive = false;
                 }
                 VSyncIrq_Edge();
                 CHECK(++frames < 1500);

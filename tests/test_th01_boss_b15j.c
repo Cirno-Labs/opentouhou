@@ -316,8 +316,8 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(g_Stage.score, 7000);
     g_Orb.top = 64;
     g_Pellets.slots[0].cloud_frame = 12;
-    g_ShootoutLasers.slots[4].alive = true;
-    g_ShootoutLasers.slots[4].origin_left = 100 * 256;
+    m_Lasers.slots[4].alive = true;
+    m_Lasers.slots[4].origin_left = 100 * 256;
     for (int32_t frame = 0; frame < 5000 && !m_B15J.finished; frame++) {
         const bool attack =
             (m_B15J.status.phase == B15J_PHASE_SPIRAL && m_B15J.status.hp > 10)
@@ -341,7 +341,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 6);
     CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
-    CHECK(g_ShootoutLasers.slots[4].alive);
+    CHECK(m_Lasers.slots[4].alive);
     const B15J finished = m_B15J;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK(memcmp(&m_B15J, &finished, sizeof(m_B15J)) == 0);
@@ -363,7 +363,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         m_B15J.status.phase = B15J_PHASE_PATTERNS;
         m_B15J.subphase = 1;
         m_B15J.status.frame = 249;
-        g_ShootoutLasers.slots[0] =
+        m_Lasers.slots[0] =
             (SHOOTOUT_LASER) { .alive = true, .age = 77, .origin_left = 3210 };
         uint32_t expected = g_Rng;
         MasterRng_Next(&expected);
@@ -371,8 +371,8 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         CHECK_EQ_INT(m_B15J.pattern_state, 52 + rank * 4);
         CHECK_EQ_INT(g_Rng, expected);
-        CHECK_EQ_INT(g_ShootoutLasers.slots[0].age, 77);
-        CHECK_EQ_INT(g_ShootoutLasers.slots[0].origin_left, 3210);
+        CHECK_EQ_INT(m_Lasers.slots[0].age, 77);
+        CHECK_EQ_INT(m_Lasers.slots[0].origin_left, 3210);
         m_B15J.subphase = 2;
         m_B15J.status.frame = Math16_Wrap(m_B15J.pattern_state * 2 - 1);
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
@@ -394,7 +394,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
                 : rank == 1 ? 10
                 : rank == 2 ? 16
                             : 20);
-        CHECK_EQ_INT(g_ShootoutLasers.slots[0].age, 77);
+        CHECK_EQ_INT(m_Lasers.slots[0].age, 77);
         Arena_Free(&arena);
     }
 }

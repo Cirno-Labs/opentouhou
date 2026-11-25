@@ -7,21 +7,6 @@
 #define SHOOTOUT_LASERS_COUNT 10
 
 typedef struct {
-    int32_t origin_left, origin_y, start_left, start_y;
-    int32_t cursor_left, cursor_y, step_x, step_y;
-    int16_t length, tail_speed, extend_speed, age, detach_age;
-    uint8_t color, width_mask;
-    bool alive, damaging;
-} SHOOTOUT_LASER;
-
-typedef struct {
-    SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
-} SHOOTOUT_LASERS;
-
-// Holds the lasers, whose positions are pixels in Q24.8.
-extern SHOOTOUT_LASERS g_ShootoutLasers;
-
-typedef struct {
     uint8_t masks[8][8][2];
 } SHOOTOUT_LASERS_ASSETS;
 
