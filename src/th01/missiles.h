@@ -3,6 +3,30 @@
 #include "th01/player.h"
 #include "pc98/zun/math16.h"
 
+#define MISSILES_COUNT 50
+
+typedef enum {
+    MISSILE_FREE,
+    MISSILE_MOVING,
+    MISSILE_HIT,
+    MISSILE_HIT_LAST,
+} MISSILE_FLAG;
+
+typedef struct {
+    int16_t left, top, previous_left, previous_top;
+    MATH16_VECTOR velocity;
+    int16_t unused;
+    int8_t reserved;
+    uint8_t flag;
+} MISSILE;
+
+typedef struct {
+    MISSILE slots[MISSILES_COUNT];
+} MISSILES;
+
+// Holds the missiles, whose left and top are pixels in Q12.4.
+extern MISSILES g_Missiles;
+
 // Clears all state for a new gameplay session.
 void Missiles_Init(void);
 

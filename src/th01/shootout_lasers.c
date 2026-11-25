@@ -7,19 +7,7 @@
 
 #include <string.h>
 
-typedef struct {
-    int32_t origin_left, origin_y, start_left, start_y;
-    int32_t cursor_left, cursor_y, step_x, step_y;
-    int16_t length, tail_speed, extend_speed, age, detach_age;
-    uint8_t color, width_mask;
-    bool alive, damaging;
-} SHOOTOUT_LASER;
-
-typedef struct {
-    SHOOTOUT_LASER slots[SHOOTOUT_LASERS_COUNT];
-} SHOOTOUT_LASERS;
-
-static SHOOTOUT_LASERS m_Lasers;
+SHOOTOUT_LASERS g_ShootoutLasers;
 
 static int32_t M_Floor(const int32_t value, const int32_t divisor)
 {
@@ -92,7 +80,7 @@ static void M_TraceBeam(
 
 void ShootoutLasers_Init(void)
 {
-    memset(&m_Lasers, 0, sizeof(m_Lasers));
+    memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));
 }
 
 RESULT ShootoutLasers_LoadAssets(
@@ -115,7 +103,7 @@ void ShootoutLasers_Spawn(
     const int16_t detach_age, const int16_t width)
 {
     ASSERT(slot >= 0 && slot < SHOOTOUT_LASERS_COUNT);
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[slot];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[slot];
     if (laser->alive) {
         return;
     }
@@ -144,7 +132,7 @@ void ShootoutLasers_Update(
     const int32_t slot, const SHOOTOUT_LASERS_ASSETS *const assets)
 {
     ASSERT(slot >= 0 && slot < SHOOTOUT_LASERS_COUNT);
-    SHOOTOUT_LASER *const laser = &m_Lasers.slots[slot];
+    SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[slot];
     if (!laser->alive) {
         return;
     }
@@ -179,7 +167,7 @@ void ShootoutLasers_EraseAndReset(const int32_t count)
 {
     ASSERT(count >= 0 && count <= SHOOTOUT_LASERS_COUNT);
     for (int32_t i = 0; i < count; i++) {
-        SHOOTOUT_LASER *const laser = &m_Lasers.slots[i];
+        SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[i];
         if (laser->alive) {
             Video_LineErase(
                 Math16_Wrap(laser->start_left), Math16_Wrap(laser->start_y),
