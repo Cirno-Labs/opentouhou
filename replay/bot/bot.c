@@ -26,9 +26,6 @@ static const char *const m_RoleNames[] = {
 #undef M_ROLE_NAME
 };
 
-static const BOT_STRATEGY *const m_Strategies[] = { &g_BotDodge, &g_BotWander,
-                                                    &g_BotHold };
-
 // Moves a hold strategy draws from: shoot, shoot+left, shoot+right, left,
 // right, nothing, bomb.
 static const BOT_ROLES m_HoldMoves[] = {
@@ -240,19 +237,9 @@ static RESULT M_LoadIni(
     return OK;
 }
 
-const BOT_STRATEGY g_BotDodge = { .name = "dodge", .next = M_Dodge };
-const BOT_STRATEGY g_BotWander = { .name = "wander", .next = M_Wander };
-const BOT_STRATEGY g_BotHold = { .name = "hold", .next = M_Hold };
-
-const BOT_STRATEGY *Bot_FindStrategy(const char *const name)
-{
-    for (size_t i = 0; i < ARRAY_SIZE(m_Strategies); i++) {
-        if (strcmp(m_Strategies[i]->name, name) == 0) {
-            return m_Strategies[i];
-        }
-    }
-    return nullptr;
-}
+const BOT_STRATEGY g_BotDodge = { .next = M_Dodge };
+const BOT_STRATEGY g_BotWander = { .next = M_Wander };
+const BOT_STRATEGY g_BotHold = { .next = M_Hold };
 
 RESULT Bot_LoadText(
     BOT *const bot, const char *const text, const size_t size,

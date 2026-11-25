@@ -10,14 +10,17 @@
 // format, such as a th06 .rpy or a th01 case script. A game gives a
 // RECORDER_GAME; Recorder_Main parses the command line with core/args.
 //
-// The recorder keeps the input struct of every frame. With --segment N, it
-// grows the run N frames at a time: each candidate segment, played by a bot
-// with a seed of its own, runs after the kept frames from a fresh start and
-// is followed by 90 frames without input. With --no-miss, a candidate whose
-// setbacks rise in that time is dropped. The candidate with the best score
-// is kept. When 3 batches of 16 candidates give none, the run backs
-// up by more kept segments each time that depth fails again, until a budget
-// of candidates runs out. The same arguments always give the same run.
+// The recorder keeps the input struct of every frame and grows the run 150
+// frames at a time. Each candidate segment, played by dodge or hold with a
+// seed of its own, runs after the kept frames from a fresh start and is
+// followed by 90 frames without input; a candidate whose setbacks rise in
+// that time is dropped. Batches of 16 candidates, at most 3, run until one
+// leaves a survivor; the 4 best survivors by score form the step's beam, and
+// the best is kept. At a dead end, the run takes the next survivor of the
+// step before; when that beam is spent, it backs up by more steps each time
+// that depth fails again, until a budget of candidates runs out. With
+// --lose, wander plays the run straight to its end instead. The same
+// arguments always give the same run.
 
 #define RECORDER_SCORE_MAX 4
 
@@ -32,8 +35,7 @@ typedef struct {
     // Names the program, such as "th06record".
     const char *program;
     const INPUT_SCHEMA *input_schema;
-    // Gives the bot.ini that --bot falls back to, relative to the
-    // checkout.
+    // Gives the bot.ini, relative to the checkout.
     const char *bot_ini;
     // Gives the frames after which a run stops.
     int32_t max_frames;
