@@ -333,7 +333,7 @@ static void M_AimedStatic(
                           Math16_Wrap(x[i] - g_B10J.still.left - 64))
                     : Math16_Angle(
                           Math16_Wrap(384 - y[i]),
-                          Math16_Wrap(Boss_Player()->left + 12 - x[i]));
+                          Math16_Wrap(g_Player.left + 12 - x[i]));
                 M_Add(
                     assets, miko, x[i], y[i], angle,
                     g_B10J.frame > 280 ? g_B10J.pattern_state
@@ -372,7 +372,7 @@ static void M_AimedMissiles(
         if (sq->radius < 80) {
             sq->radius += 8;
         } else if (g_B10J.frame == 224) {
-            g_B10J.target_left = Boss_Player()->left;
+            g_B10J.target_left = g_Player.left;
         } else if (g_B10J.frame > 240) {
             const MATH16_VECTOR velocity = Math16_Aim(
                 (MATH16_VECTOR) { Math16_Wrap(g_B10J.still.left + 64),
@@ -601,10 +601,9 @@ static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
             M_Pillar(
                 assets, miko, Math16_Wrap(x - 16), bottom,
                 Math16_Wrap(16 * (34 - g_B10J.pillar_time[i])));
-            if (!Boss_Player()->invincible
-                && Boss_Player()->left > Math16_Wrap(x - 40)
-                && Boss_Player()->left < Math16_Wrap(x + 8)) {
-                Boss_Player()->is_hit = true;
+            if (!g_Player.invincible && g_Player.left > Math16_Wrap(x - 40)
+                && g_Player.left < Math16_Wrap(x + 8)) {
+                g_Player.is_hit = true;
             }
             g_B10J.pillar_time[i] -= 8;
         } else if (g_B10J.pillar_time[i] != -999) {
@@ -731,8 +730,8 @@ static void M_Lasers(const B10J_ASSETS *const assets, const PTN *const miko)
         const int32_t i = g_B10J.frame % 4;
         ShootoutLasers_Spawn(
             i, g_B10J.laser_x[i], g_B10J.laser_y[i],
-            Math16_Wrap(Boss_Player()->left + 14), 400, g_B10J.pattern_state, 7,
-            20, 4);
+            Math16_Wrap(g_Player.left + 14), 400, g_B10J.pattern_state, 7, 20,
+            4);
     }
     if (g_B10J.frame > 300) {
         M_Corners(g_B10J.laser_x, g_B10J.laser_y, sq->radius, sq->angle);

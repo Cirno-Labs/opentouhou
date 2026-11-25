@@ -16,9 +16,6 @@ RESULT Boss_LoadBos(
 RESULT Boss_LoadBackground(
     VFS *vfs, const char *name, const ALLOCATOR *allocator, PI_IMAGE *out);
 
-// Returns the player.
-PLAYER *Boss_Player(void);
-
 // A debug request for the current boss to take one point of damage on its
 // next hit test.
 extern bool g_TestDamage;

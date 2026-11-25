@@ -1169,7 +1169,7 @@ static int16_t M_SymmetricArc(
 static void M_SafetyAfterHit(
     const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    if (Boss_Player()->is_hit) {
+    if (g_Player.is_hit) {
         g_B15M.safety_circle.frame = 200;
     }
     if (g_B15M.frame % g_B15M.pattern_state == 0) {
@@ -1204,7 +1204,7 @@ static int16_t M_Safety(
     if (g_B15M.frame >= 60 && g_B15M.frame % 2 == 0 && circle->frame == 0) {
         if (g_B15M.frame == 60) {
             Sound_Effect(8);
-            g_B15M.safety_left = Boss_Player()->left;
+            g_B15M.safety_left = g_Player.left;
         }
         M_SummonDots(
             assets, miko, circle, Math16_Wrap(g_B15M.safety_left + 16), 384, 2);
@@ -1228,10 +1228,9 @@ static int16_t M_Safety(
                 assets, miko, Math16_Wrap(g_B15M.safety_left + 16), 384, 128, 7,
                 1, 0, 255);
         }
-        if (!Boss_Player()->invincible
-            && (Math16_Wrap(g_B15M.safety_left + 104) <= Boss_Player()->left
-                || Math16_Wrap(g_B15M.safety_left - 128)
-                    >= Boss_Player()->left)) {
+        if (!g_Player.invincible
+            && (Math16_Wrap(g_B15M.safety_left + 104) <= g_Player.left
+                || Math16_Wrap(g_B15M.safety_left - 128) >= g_Player.left)) {
             g_B15M.pending = B15M_PENDING_SAFETY;
             g_B15M.pending_tick = host_tick;
             return -1;
@@ -1304,8 +1303,7 @@ static int16_t M_AimedRing(
         M_Laser(
             assets, miko, g_B15M.frame / 10,
             Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
-            Math16_Wrap(g_B15M.girl.top + 28), Boss_Player()->left, 400, 50, 20,
-            8);
+            Math16_Wrap(g_B15M.girl.top + 28), g_Player.left, 400, 50, 20, 8);
         Sound_Effect(6);
     }
     return 1;
@@ -1466,7 +1464,7 @@ bool B15M_UpdateAndRender(
             return false;
         }
         g_B15M.pending = B15M_PENDING_NONE;
-        Boss_Player()->is_hit = true;
+        g_Player.is_hit = true;
         M_SafetyAfterHit(assets, miko);
         g_B15M.girl_subphase = 1;
         g_B15M.phase5_subphase = 0;

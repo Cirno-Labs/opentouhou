@@ -42,8 +42,3 @@ RESULT Boss_LoadBackground(
     Reader_Close(&reader);
     return result;
 }
-
-PLAYER *Boss_Player(void)
-{
-    return &g_Player;
-}
