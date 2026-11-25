@@ -5,6 +5,7 @@
 #include "../src/th01/hud.c"
 #include "../src/th01/miss.c"
 #include "../src/th01/gameplay/gameplay.c"
+#include "../src/th01/gameplay/pause.c"
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/player.h"
