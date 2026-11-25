@@ -137,7 +137,7 @@ static void M_SymmetricLine(
 
 static void M_Defaults(const PTN *const miko, const PTN *const stage)
 {
-    Sprite_PtnPut(miko, 0, -1, Boss_Player()->left, 368);
+    Sprite_PtnPut(miko, 0, -1, g_Player.left, 368);
     Orb_Put(stage, g_Orb.left, g_Orb.top, 0);
 }
 
@@ -271,7 +271,7 @@ static void M_RippleHit(
     const B15J_ASSETS *const assets, const PTN *const miko, const int16_t left,
     const int16_t extra)
 {
-    PLAYER *const p = Boss_Player();
+    PLAYER *const p = &g_Player;
     if (!p->invincible && p->left >= Math16_Wrap(left - 16)
         && p->left <= Math16_Wrap(left + extra)) {
         p->is_hit = true;
@@ -413,7 +413,7 @@ static void M_SpinRings(const B15J_ASSETS *const assets, const PTN *const miko)
     }
     for (int32_t i = 0; i < 8; i++) {
         const uint8_t angle =
-            Math16_Angle(164, Math16_Wrap(Boss_Player()->left - 300));
+            Math16_Angle(164, Math16_Wrap(g_Player.left - 300));
         M_Single(
             assets, miko, Math16_PolarX(316, 16, i * 32),
             Math16_PolarY(224, 16, i * 32), angle, 48, PELLET_SPIN, 32, 312,
@@ -465,10 +465,8 @@ static void M_CrossLasers(
     const B15J_ASSETS *const assets, const PTN *const miko)
 {
     if (g_B15J.frame > 200 && g_B15J.frame % 200 == 0) {
-        M_Laser(
-            assets, miko, 0, 307, Math16_Wrap(Boss_Player()->left + 60), 50, 8);
-        M_Laser(
-            assets, miko, 1, 336, Math16_Wrap(Boss_Player()->left - 60), 50, 8);
+        M_Laser(assets, miko, 0, 307, Math16_Wrap(g_Player.left + 60), 50, 8);
+        M_Laser(assets, miko, 1, 336, Math16_Wrap(g_Player.left - 60), 50, 8);
         Sound_Effect(6);
     }
 }
@@ -532,7 +530,7 @@ static void M_LeftLasers(const B15J_ASSETS *const assets, const PTN *const miko)
         const int16_t offset = (int16_t)(MasterRng_Next(&g_Rng) % 120 - 60);
         M_Laser(
             assets, miko, (g_B15J.frame - 250) / 30, 307,
-            Math16_Wrap(Boss_Player()->left + offset), g_B15J.pattern_state, 4);
+            Math16_Wrap(g_Player.left + offset), g_B15J.pattern_state, 4);
     }
     if (g_B15J.frame > 500) {
         g_B15J.frame = 0;
