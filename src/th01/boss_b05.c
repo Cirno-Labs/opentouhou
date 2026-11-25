@@ -412,7 +412,7 @@ static void M_Init(void)
 static void M_Setup(const void *const data, const BOSS_CONTEXT *const ctx)
 {
     const B05_ASSETS *const assets = data;
-    g_Boss = &m_B05.status;
+    Boss_Select(&m_B05.status);
     ASSERT(m_B05.pending == B05_IDLE || m_B05.pending == B05_FINISHED);
     ASSERT(Result_Ignore(M_ValidateAssets(assets)));
     ASSERT(Result_Ignore(BossEntity_Bind(&m_B05.sphere, 0, &assets->sphere)));

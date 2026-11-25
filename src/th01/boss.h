@@ -28,6 +28,9 @@ extern BOSS_STATE *g_Boss;
 // Clears the active boss selection and debug damage for a new gameplay run.
 void Boss_Init(void);
 
+// Selects the active boss by its own state.
+void Boss_Select(BOSS_STATE *state);
+
 // Returns the value for the session difficulty, or normal for an unknown one.
 int16_t Boss_Rank(int16_t easy, int16_t normal, int16_t hard, int16_t lunatic);
 
