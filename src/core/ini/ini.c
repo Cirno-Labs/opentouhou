@@ -38,6 +38,20 @@ const char *Ini_Get(
     return value;
 }
 
+const char *Ini_GetKey(
+    const INI *const ini, const char *const section, const size_t index)
+{
+    size_t seen = 0;
+    for (int32_t i = 0; i < ini->lines.count; i++) {
+        const LINE *const line = &ini->lines.items[i];
+        if (line->kind == LINE_KEY && IniStruct_NamesEqual(line->name, section)
+            && seen++ == index) {
+            return line->key;
+        }
+    }
+    return nullptr;
+}
+
 void Ini_Free(INI *const ini)
 {
     if (ini == nullptr) {

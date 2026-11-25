@@ -96,6 +96,17 @@ TEST(duplicate_keys_keep_every_line_and_get_returns_the_last)
     Ini_Free(ini);
 }
 
+TEST(get_key_lists_the_keys_of_one_section_in_order)
+{
+    const char *const text = "[a]\nx=1\n[b]\ny=2\n[A]\nz=3\n";
+    INI *const ini = M_Parse(&g_HeapAllocator, text);
+    CHECK_EQ_STR(Ini_GetKey(ini, "a", 0), "x");
+    CHECK_EQ_STR(Ini_GetKey(ini, "a", 1), "z");
+    CHECK(Ini_GetKey(ini, "a", 2) == nullptr);
+    CHECK(Ini_GetKey(ini, "c", 0) == nullptr);
+    Ini_Free(ini);
+}
+
 TEST(section_and_key_names_compare_without_case)
 {
     const char *const text = "[Video]\nWidth=640\n";
