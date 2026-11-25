@@ -93,7 +93,7 @@ static void M_StartFrames(void)
     g_Gameplay.wait_for_shot = false;
     GameInput_Consume(GAME_INPUT_PRESS_SHOT);
     g_Stage.timer_initialized = true;
-    g_Rng = g_Session.frame_rand;
+    Rng_Seed(g_Session.frame_rand);
     g_GameInput.bomb_frame = GAME_INPUT_BOMB_WINDOW;
     g_Stage.first_stage = false;
     m_LifePhase = GP_LIFE_FRAME_BEGIN;

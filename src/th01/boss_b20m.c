@@ -1913,7 +1913,7 @@ static bool M_ResumeEntrance(
                     assets->interleave, tick)) {
                 return false;
             }
-            g_Rng = g_Session.frame_rand;
+            Rng_Seed(g_Session.frame_rand);
             m_B20M.entrance_active = false;
             Palette_SetStage(&m_B20M.stage_palette);
             m_B20M.sequence_stage = B20M_ENTRANCE_DONE;
@@ -1985,7 +1985,7 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
     Player_StopActions();
     Player_Reset(g_Session.settings.difficulty);
     m_B20M.hit.invincible = false;
-    g_Rng = g_Session.frame_rand;
+    Rng_Seed(g_Session.frame_rand);
     Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
@@ -2391,7 +2391,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         m_B20M.hit.invincible = false;
         m_B20M.boss_palette = g_Palette.saved;
         m_B20M.stage_palette = m_B20M.boss_palette;
-        g_Rng = g_Session.frame_rand;
+        Rng_Seed(g_Session.frame_rand);
         m_B20M.sequence = B20M_SEQUENCE_RINGS;
         return M_RingEntrance(assets, tick);
     }
