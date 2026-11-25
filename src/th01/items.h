@@ -17,17 +17,12 @@ RESULT Items_ValidateAssets(const PTN *sprites, const GAME_TEXT_FONT *font);
 // A full pool ignores the request.
 void Items_Add(int16_t left, int16_t top, bool bomb);
 
-// Clears flags only. Does not erase or reset the shared point value.
+// Clears the item flags, keeping the shared point value.
 void Items_Reset(void);
 
 // Draws visible falling/bouncing sprites, bombs before points.
 void Items_Render(const PTN *sprites);
 
-// Runs after the player update: all bomb slots, then all point slots.
-// Requires validated assets.
-// Keeps the point value live for existing popups, including resets on a
-// later drop. Zero formats as five spaces. Collision precedes motion, accepts
-// only falling/bouncing items, and has no upper Y bound. Collection moves the
-// popup immediately. Updates allocate nothing and read no files, font handles
-// or devices.
+// Updates and draws all bomb items, then all point items; run it after the
+// player update. Popups show the live point value, as in the original.
 void Items_UpdateAndRender(const PTN *sprites, const GAME_TEXT_FONT *font);

@@ -28,13 +28,8 @@ RESULT Shots_ValidateSprites(const PTN *sprites);
 bool Shots_Add(int16_t left, int16_t top);
 void Shots_EraseAndReset(void);
 
-// Called by the pellet composite after pellet motion/clipping and
-// before pellet rendering. Player spawning precedes ordinary Orb motion;
-// this update follows the Orb composite's wait. Do not also update shots
-// during player update. Orb hits precede top clipping and move the Orb an
-// extra time without advancing force age or rotation. Decay lasts frames
-// 1..7. Uses supplied shared RNG through Orb_NewForce only. Draws with
-// stage PTN image 1; requires at least two images.
+// Moves, hit-tests and draws shots with stage PTN image 1. Called only by
+// Pellets_UpdateAndRender, between pellet motion and pellet drawing.
 void Shots_UpdateAndRender(const PTN *sprites);
 bool Shots_HitTestOrb(int32_t slot);
 

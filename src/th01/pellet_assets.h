@@ -9,28 +9,16 @@ typedef struct {
     uint8_t clouds[2][16][2];
 } PELLET_ASSETS;
 
-// Loads the pellets from pellet.bmp, shifted right by 0 to 7 pixels into
-// big-endian 16-bit rows, and the clouds from pellet_c.bmp. Allocates the
-// result from the caller's grouped asset allocator; leaves out null on
-// failure.
+// Loads pellet.bmp in eight pre-shifted copies and the clouds of pellet_c.bmp
+// from the caller's grouped allocator; leaves out null on failure.
 RESULT PelletAssets_Load(
     VFS *vfs, const ALLOCATOR *allocator, PELLET_ASSETS **out);
 
-// Draws color 7 masked pellets with the source's eight pre-shifted images.
-// Uses the drawing page. Native gameplay renders only at 0 < left < 632
-// and 64 <= top < 400. Preserves linear row overflow and the source's
-// signed row-end test; hidden planar bytes are discarded. Requires image
-// 0 through 2.
+// Draws pellet image 0..2 in color 7 on the drawing page.
 void PelletAssets_Put(
     const PELLET_ASSETS *assets, int16_t left, int16_t top, int16_t image);
 
-// Draws or restores 16 by 16 delay clouds, quantizing X down to eight
-// pixels. Restore first clears the mask on the drawing page, then ORs
-// masked page 1 pixels onto page 0. Selects page 0 for nonempty rows only.
-// Wraps GRCG writes at 32768 bytes; hidden bytes are discarded. Raw
-// restore above that boundary aliases red and green only; the second
-// byte at 65536 aliases green only. Ignores non-VRAM writes. Requires
-// image 0 or 1.
+// Draws or restores 16 by 16 delay cloud 0 or 1, with X rounded down to 8.
 void PelletAssets_Cloud(
     const PELLET_ASSETS *assets, int16_t left, int16_t top, int16_t image,
     bool restore);

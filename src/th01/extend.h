@@ -29,7 +29,6 @@ int32_t Extend_ResidentLives(void);
 // wrapped 32-bit product of the signed threshold index and 400000.
 bool Extend_Step(int16_t *next, uint32_t score);
 
-// Calls Extend_Step on the next threshold against the live score. On award,
-// below the six-life cap, adds a life, draws it, plays effect 15 and raises
-// the pellet speed by one raw unit.
+// Awards a life, below the six-life cap, when the score passes the next
+// threshold, and raises the pellet speed.
 void Extend_UpdateAndRender(void);

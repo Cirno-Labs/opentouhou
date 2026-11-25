@@ -10,12 +10,8 @@ RESULT Hud_LoadFont(
 RESULT Hud_ValidateAssets(
     const GRF *mask, const PTN *sprites, const GAME_TEXT_FONT *font);
 
-// Allocates mutable raw snapshots in a caller-owned asset arena. Initialize
-// once per main scene, preserving snapshots and digit caches between stages.
-// Stage numbers must be 0..99. Resource counts must be 0..32; normal play uses
-// at most six. Coordinates outside the visible page are clipped for debug
-// counts. No immutable PTN asset is changed. Updates allocate nothing and read
-// no external devices.
+// Allocates the HUD's background snapshots in a caller-owned arena.
+// Initialize once per main scene.
 void Hud_Init(const ALLOCATOR *allocator);
 
 // Selects the HUD mask, the stage sprites for the life and bomb icons and
@@ -29,9 +25,7 @@ void Hud_SnapResources(void);
 void Hud_LivesPut(int16_t previous);
 void Hud_BombsPut(int16_t previous);
 
-// Draws both pages in source order, with persistent dirty-digit caches.
-// Borrows the real gameplay score/combo, resident high score and life fields.
-// maximum_combo is the separate source uint8 HUD maximum, not gameplay max.
+// Redraws the changed digits of score, high score and combo on both pages.
 void Hud_ScoreAndCombo(void);
 
 // Snapshots the stage label from the current page, draws it, then copies
@@ -41,13 +35,8 @@ void Hud_SnapStage(void);
 // Draws rank and restores/redraws the stage label on page 1 then page 0.
 void Hud_PutStage(void);
 
-// Snapshots score/combo backgrounds from page 1 on first_stage. Otherwise
-// restores combo backgrounds on the currently selected page. Draws score
-// and high score only on first_stage, resets the displayed combo and HUD
-// maximum, then copies both numeric rows from page 0 to page 1. Previous
-// digit caches persist. Timer initialization/snapshots and forced numeric
-// rendering are separate operations; StageTimer_Redraw supplies their full
-// order.
+// Snapshots the number backgrounds on first_stage, else restores the combo;
+// resets the displayed combo and copies the rows to page 1.
 void Hud_SnapNumbers(bool first_stage);
 
 // Preserves the duplicate first-quarter snapshot at x=512 for both halves.

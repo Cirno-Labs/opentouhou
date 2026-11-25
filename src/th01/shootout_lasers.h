@@ -18,31 +18,17 @@ void ShootoutLasers_Init(void);
 RESULT ShootoutLasers_LoadAssets(
     VFS *vfs, const ALLOCATOR *allocator, SHOOTOUT_LASERS_ASSETS **out);
 
-// Spawns in slot 0..9. Positions, cursors and steps use Q24.8.
-// Does nothing for an alive slot, including retaining all history. Requires
-// width 1..8. Divides speed_times_eight by eight toward zero, losing the
-// fraction. Wraps target differences to signed 16 bits before finding angle.
-// Retains cursor history; unused source target/velocity/id fields are omitted.
+// Spawns a laser of width 1..8 in free slot 0..9, in Q24.8 positions.
 void ShootoutLasers_Spawn(
     int32_t slot, int16_t origin_left, int16_t origin_y, int16_t target_left,
     int16_t target_y, int16_t speed_times_eight, uint8_t color,
     int16_t detach_age, int16_t width);
 
-// Updates slot 0..9 or all ten in order. Allocates nothing and reads only
-// module state and immutable masks. Extends until the detach age, then
-// restores tail_speed samples and adopts the cursor actually reached.
-// Signed negative sample counts wrap to unsigned 16 bits. Death returns
-// before incrementing age or drawing. Live updates increment signed age.
-// Draws and tests hits only when leaving a cached byte/row group, before
-// checking the new cursor bounds; omits the final group. Cached hits use
-// y > 376, player.left+4 <= x < player.left+24 and no upper Y limit.
+// Updates slot 0..9 or all ten in order: extends, detaches, draws and hits.
 // Invincibility or damaging=false suppresses hits; sliding does not.
-// Put preserves the drawing page; reached restores select page 0.
-// Boss scheduling and gameplay scene integration remain external.
 void ShootoutLasers_Update(int32_t slot, const SHOOTOUT_LASERS_ASSETS *assets);
 void ShootoutLasers_UpdateAll(const SHOOTOUT_LASERS_ASSETS *assets);
 
-// Restores with the broken low-16 raw Q24.8 start/origin coordinates, then
-// clears alive only. count is 0..10; preserves slots after that prefix.
-// Uses Video_LineErase's physical-copy extension for protection faults.
+// Erases and kills the first count (0..10) lasers.
+// Restores from the original's truncated low-16-bit start coordinates.
 void ShootoutLasers_EraseAndReset(int32_t count);

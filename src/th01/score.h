@@ -23,14 +23,8 @@ RESULT Score_LoadAssets(
     VFS *vfs, VFS *user_files, const FONT_ROM *rom, const ALLOCATOR *allocator,
     SCORE_ASSETS *out);
 
-// Shares g_VSync and g_GameInput with gameplay across registration.
-// Game Over loads and fades its prepared background; the results screen retains
-// the handed pages and palette. The results screen omits the last-slot jump and
-// timeout. The results screen senses arrows only and resets count1 at
-// four-frame wait entry; Game Over also senses keypad directions and resets
-// count1 on wait exit. Entry stage uses source values: ordinary stage 1..20,
-// clear 50 or 60. Begin and Tick allocate nothing and perform no IO. Completion
-// queues a save; drain it at the root tick end with Score_FlushSaves.
+// Starts score registration for Game Over or the results screen.
+// Completion queues a save; drain it with Score_FlushSaves at the tick end.
 void Score_Begin(
     const SCORE_ASSETS *assets, SCORE_CONTEXT context, int32_t rank,
     const SCORE_ENTRY *entry);
