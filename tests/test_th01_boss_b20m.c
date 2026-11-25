@@ -88,7 +88,7 @@ TEST(setup_preserves_patterns)
 
     const size_t used = arena.used;
     M_BossSetup(&a);
-    CHECK(g_Boss == &m_B20M.status);
+    CHECK((*g_Boss) == &m_B20M.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(m_B20M.status.hp, 18);
     CHECK_EQ_INT(m_B20M.shield.left, 304);

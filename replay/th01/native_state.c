@@ -83,10 +83,10 @@ static void M_Double(const double value, uint32_t *const lo, uint32_t *hi)
 
 static void M_Boss(uint32_t *const row)
 {
-    if (g_Stage.boss != BOSS_NONE && g_Boss != nullptr) {
-        row[TH01_COLUMN_boss_hp] = M_I32(g_Boss->hp);
-        row[TH01_COLUMN_boss_phase] = M_I32(g_Boss->phase);
-        row[TH01_COLUMN_boss_phase_frame] = M_I32(g_Boss->frame);
+    if (g_Stage.boss != BOSS_NONE && (*g_Boss) != nullptr) {
+        row[TH01_COLUMN_boss_hp] = M_I32((*g_Boss)->hp);
+        row[TH01_COLUMN_boss_phase] = M_I32((*g_Boss)->phase);
+        row[TH01_COLUMN_boss_phase_frame] = M_I32((*g_Boss)->frame);
     }
 }
 

@@ -38,14 +38,14 @@ static GAMEPLAY_STAGE_PHASE m_StagePhase;
 
 static void M_HookBossHp(void)
 {
-    Th01Hooks_CallOnBoss(&g_Boss->hp);
+    Th01Hooks_CallOnBoss(&(*g_Boss)->hp);
 }
 
 static void M_BossSetup(const uint64_t host_tick)
 {
     const BOSS_STRATEGY *const boss = Gameplay_Boss();
     if (boss == nullptr) {
-        g_Boss = nullptr;
+        Boss_Deselect();
         return;
     }
     ROUTE_SELECT_ASSETS route;

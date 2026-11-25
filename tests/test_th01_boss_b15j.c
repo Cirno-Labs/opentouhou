@@ -118,7 +118,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
     M_BossSetup(&f.assets, &f.miko);
-    CHECK(g_Boss == &m_B15J.status);
+    CHECK((*g_Boss) == &m_B15J.status);
     CHECK_EQ_INT(m_B15J.status.hp, 14);
     CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_ENTRANCE);
     CHECK_EQ_INT(m_B15J.status.frame, 0);

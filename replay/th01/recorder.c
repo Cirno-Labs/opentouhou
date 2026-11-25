@@ -132,8 +132,8 @@ static RECORDER_SCORE M_Score(void)
     if (!m_InGameplay) {
         return score;
     }
-    if (g_Stage.boss != BOSS_NONE && g_Boss != nullptr) {
-        score.values[0] = g_Boss->phase;
+    if (g_Stage.boss != BOSS_NONE && (*g_Boss) != nullptr) {
+        score.values[0] = (*g_Boss)->phase;
     } else {
         for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
             score.values[0] +=

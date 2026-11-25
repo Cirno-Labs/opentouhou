@@ -124,7 +124,7 @@ TEST(setup_preserves_saved_palette_and_all_sixteen_waits)
     m_VSync.count1 = 12;
     m_VSync.count2 = 19;
     M_BossSetup(&f.assets, &f.miko);
-    CHECK(g_Boss == &m_B10J.status);
+    CHECK((*g_Boss) == &m_B10J.status);
     const size_t used = arena.used;
     CHECK(!M_BossResumeSetup(&f.assets, &f.miko));
     CHECK_EQ_INT(m_B10J.status.frame, 91);

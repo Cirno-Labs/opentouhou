@@ -275,7 +275,7 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     g_Stage.boss = BOSS_SINGYOKU;
     BossStrategy_Get(BOSS_SINGYOKU)
         ->setup(f.assets->bosses[BOSS_SINGYOKU], &(BOSS_CONTEXT) {});
-    BOSS_STATE *const boss = g_Boss;
+    BOSS_STATE *const boss = (*g_Boss);
     const BOSS_STATE state = *boss;
     M_EnterExit(GP_EXIT_WAIT);
     VSyncIrq_BeginWait(&g_Gameplay.wait);
@@ -286,8 +286,8 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     CHECK(M_InExit(GP_EXIT_MISS));
     CHECK(!g_TestDamage);
     CHECK_EQ_INT(g_Session.lives, 3);
-    CHECK(g_Boss == boss);
-    CHECK(memcmp(g_Boss, &state, sizeof(state)) == 0);
+    CHECK((*g_Boss) == boss);
+    CHECK(memcmp((*g_Boss), &state, sizeof(state)) == 0);
     Arena_Free(&f.arena);
 }
 
@@ -718,7 +718,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     const size_t used = f.arena.used;
     BossStrategy_Get(BOSS_SINGYOKU)
         ->setup(f.assets->bosses[BOSS_SINGYOKU], &(BOSS_CONTEXT) {});
-    CHECK(g_Boss != nullptr);
+    CHECK((*g_Boss) != nullptr);
     memset(&g_Gameplay, 0xa5, sizeof(g_Gameplay));
     g_Stage.frame = UINT32_MAX;
     g_Stage.boss = BOSS_SINGYOKU;
@@ -728,7 +728,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK(M_InStage(GP_STAGE_BEGIN));
     CHECK(g_Stage.first_stage && g_Gameplay.wait_for_shot);
     CHECK_EQ_INT(g_Stage.frame, 0);
-    CHECK(g_Boss == nullptr);
+    CHECK((*g_Boss) == nullptr);
     CHECK_EQ_INT(g_Stage.boss, BOSS_NONE);
     CHECK_EQ_INT(g_VSync->edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);

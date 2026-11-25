@@ -23,13 +23,16 @@ typedef struct {
 
 // Points to the active boss's own state, selected by its setup. The actor
 // retains this storage across fights. Boss_Init clears the selection.
-extern BOSS_STATE *g_Boss;
+extern BOSS_STATE *const *const g_Boss;
 
 // Clears the active boss selection and debug damage for a new gameplay run.
 void Boss_Init(void);
 
 // Selects the active boss by its own state.
 void Boss_Select(BOSS_STATE *state);
+
+// Clears the active boss selection, for a stage that has no boss.
+void Boss_Deselect(void);
 
 // Returns the value for the session difficulty, or normal for an unknown one.
 int16_t Boss_Rank(int16_t easy, int16_t normal, int16_t hard, int16_t lunatic);

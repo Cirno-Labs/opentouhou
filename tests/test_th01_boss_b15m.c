@@ -91,7 +91,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
     M_BossSetup(&f.assets, &f.miko);
-    CHECK(g_Boss == &m_B15M.status);
+    CHECK((*g_Boss) == &m_B15M.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK_EQ_INT(m_B15M.status.hp, 14);
     CHECK_EQ_INT(m_B15M.status.phase, B15M_PHASE_ENTRANCE);

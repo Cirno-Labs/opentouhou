@@ -3,12 +3,13 @@
 #include "core/vfs/open.h"
 #include "th01/session.h"
 
-BOSS_STATE *g_Boss;
+static BOSS_STATE *m_Boss;
+BOSS_STATE *const *const g_Boss = &m_Boss;
 bool g_TestDamage;
 
 void Boss_Init(void)
 {
-    g_Boss = nullptr;
+    m_Boss = nullptr;
     g_TestDamage = false;
 }
 
@@ -52,5 +53,10 @@ RESULT Boss_LoadBackground(
 
 void Boss_Select(BOSS_STATE *const state)
 {
-    g_Boss = state;
+    m_Boss = state;
+}
+
+void Boss_Deselect(void)
+{
+    m_Boss = nullptr;
 }

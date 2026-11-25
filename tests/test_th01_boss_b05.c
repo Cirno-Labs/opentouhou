@@ -162,7 +162,7 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     m_Particles.velocity_base[0] = 9;
     m_Particles.alive[0] = 255;
     M_BossSetup(&f.assets);
-    CHECK(g_Boss == &m_B05.status);
+    CHECK((*g_Boss) == &m_B05.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK(m_Sprites.entities[0] == &f.assets.sphere);
     CHECK(m_Sprites.entities[1] == &f.assets.flash);
