@@ -58,9 +58,10 @@ th01record --data DATA --out OUT.txt --start stage=19 --start route=0 \
 ```
 
 `--start` sets the run's start values: th06's and th07's practice
-choices, or the start fields of a th01 case. The recorder searches the
-run 150 frames at a time for segments without a setback, such as a lost
-life, and keeps the one with the best score; `--seed` seeds the search.
+choices, or the start fields of a th01 case. The recorder grows the
+run best first from every prefix that it has found without a setback,
+such as a lost life, by random and mutated segments of holds; `--seed`
+seeds the search.
 Each game scores its runs: th01 by the boss's phase or the cards
 removed, th06 and th07 by the stage frames. The run ends with the game,
 at the game's frame cap, or with `--until` once the first value of its
