@@ -7,6 +7,7 @@
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
 #include "../src/th01/pellets.c"
+#include "../src/th01/boss.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -420,10 +421,10 @@ TEST(timeout_forces_one_hp_before_damage_without_a_health_draw)
     CHECK_EQ_INT(m_B15J.status.hp, 1);
     CHECK(memcmp(&m_Health, &health, sizeof(health)) == 0);
     CHECK_EQ_INT(g_Stage.score, 0);
-    g_TestDamage = true;
+    m_TestDamage = true;
     CHECK(!M_BossUpdate(&f.assets, &f.miko, &f.stage));
     CHECK_EQ_INT(m_B15J.status.hp, 0);
-    CHECK(!g_TestDamage);
+    CHECK(!m_TestDamage);
     CHECK(m_B15J.defeating);
     CHECK_EQ_INT(g_Stage.score, 0);
     Arena_Free(&arena);

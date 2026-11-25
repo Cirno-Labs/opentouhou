@@ -1,6 +1,7 @@
 #include "../src/th01/shots.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/boss.c"
 #include "th01/boss_hit.h"
 #include "th01/session.h"
 
@@ -72,13 +73,13 @@ TEST(debug_damage_precedes_shot_collision_while_invincible)
     Th01Test_ResetWorld();
     FIXTURE f;
     M_Init(&f);
-    g_TestDamage = true;
+    m_TestDamage = true;
     f.hit = (BOSS_HIT) { .frame = 1, .invincible = true };
     m_Shots.slots[0] = (SHOT) { .left = 120, .top = 100, .moving = true };
     BossHit_UpdateAndRender(
         &f.hit, &f.hp, &f.baseline, nullptr, 0, 3000, true,
         (BOSS_SHOT_HITBOX) { 100, 100, 40, 40 });
-    CHECK(!g_TestDamage);
+    CHECK(!m_TestDamage);
     CHECK_EQ_INT(f.hp, 7);
     CHECK_EQ_INT(g_Stage.score, 0);
     CHECK(!m_Shots.slots[0].moving);

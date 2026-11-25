@@ -32,7 +32,7 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         }
         Video_SetScroll(0);
         g_Session.exit_rand = g_Session.frame_rand;
-        g_TestDamage = false;
+        Boss_ClearTestDamage();
         Player_SetBombFrame(200);
         if (g_Stage.cleared) {
             g_Stage.cleared = false;

@@ -5,12 +5,13 @@
 
 static BOSS_STATE *m_Boss;
 BOSS_STATE *const *const g_Boss = &m_Boss;
-bool g_TestDamage;
+static bool m_TestDamage;
+const bool *const g_TestDamage = &m_TestDamage;
 
 void Boss_Init(void)
 {
     m_Boss = nullptr;
-    g_TestDamage = false;
+    m_TestDamage = false;
 }
 
 int16_t Boss_Rank(
@@ -59,4 +60,9 @@ void Boss_Select(BOSS_STATE *const state)
 void Boss_Deselect(void)
 {
     m_Boss = nullptr;
+}
+
+void Boss_ClearTestDamage(void)
+{
+    m_TestDamage = false;
 }
