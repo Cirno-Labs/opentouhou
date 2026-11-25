@@ -122,7 +122,7 @@ RESULT GameplayAssets_Load(
     return OK;
 }
 
-SCORE_SAVES g_ScoreSaves;
+static SCORE_SAVES m_Saves;
 
 RESULT ScoreData_Load(VFS *original, VFS *user_files, SCORE_SAVES *out)
 {
@@ -146,10 +146,24 @@ RESULT ScoreData_WriteSaves(SCORE_SAVES *saves)
 }
 
 RESULT Score_LoadAssets(
-    VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
+    VFS *vfs, VFS *user_files, const FONT_ROM *rom, const ALLOCATOR *allocator,
     SCORE_ASSETS *out)
 {
+    MUST(ScoreData_Load(vfs, user_files, &m_Saves));
     return M_Asset();
+}
+
+void Score_SyncSession(void)
+{
+    g_Session.table_high_score =
+        (uint32_t)m_Saves.tables[g_Session.settings.difficulty]
+            .entries[0]
+            .score;
+}
+
+RESULT Score_FlushSaves(void)
+{
+    return ScoreData_WriteSaves(&m_Saves);
 }
 
 RESULT Ending_LoadAssets(
