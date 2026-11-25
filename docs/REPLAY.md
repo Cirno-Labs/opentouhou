@@ -69,6 +69,10 @@ checks:
   just replay::dosbox-cases th01 DATA replay/th01/cases CASES
   just replay::check th01 DATA CASES
   ```
+- `replay::coverage` replays every case of a directory on a coverage
+  build of the native backend, and lists each source file's share of
+  lines run, lowest first, with the functions that no case reaches. It
+  needs `llvm-cov` on the machine.
 - `replay::dosbox-x` builds the patched DOSBox-X of the dosbox backend
   into the local image `opentouhou-dosbox-x`, `replay::dosbox-x-test`
   checks its hooks, and `replay::dosbox-test` checks the backend end to

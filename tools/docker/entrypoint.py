@@ -62,18 +62,22 @@ COMMAND_PROGRAMS = {
 
 
 def build_dir(platform: str, programs: str, target: str) -> Path:
+    if target == "coverage":
+        return REPO_DIR / "build" / platform / "coverage"
     if programs == "othpatch":
         return REPO_DIR / "build" / platform / "othpatch" / target
     return REPO_DIR / "build" / platform / target
 
 
 def run_build(platform: str, programs: str, target: str) -> None:
+    coverage = target == "coverage"
     compile_programs(
         build_dir(platform, programs, target),
         programs,
-        target,
+        "release" if coverage else target,
         CROSS_FILES.get(platform),
         repo_dir=REPO_DIR,
+        options={"b_coverage": True} if coverage else None,
     )
 
 
@@ -240,9 +244,10 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
     for name in ["build", "test", "package", "package-othpatch"]:
         subparser = subparsers.add_parser(name)
-        subparser.add_argument(
-            "--target", choices=["debug", "release"], default="debug"
-        )
+        # A coverage build is a release build that records the lines it
+        # runs, in build/<platform>/coverage/.
+        targets = ["debug", "release"] + (["coverage"] if name == "build" else [])
+        subparser.add_argument("--target", choices=targets, default="debug")
     subparsers.choices["test"].add_argument(
         "--no-suite",
         action="append",

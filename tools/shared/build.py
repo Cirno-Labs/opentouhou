@@ -72,16 +72,18 @@ def compile_programs(
     cross_file: Path | None = None,
     env: dict[str, str] | None = None,
     repo_dir: Path = REPO_DIR,
+    options: dict[str, str | bool | list[str]] | None = None,
 ) -> None:
     """Configure the build directory root for programs and a target, debug
-    or release, then compile it.
+    or release, then compile it. options adds Meson options to those of
+    option_values.
 
     A new directory is set up. An existing one is reconfigured when its
     options differ: one that builds other programs, such as the whole
     tree, which needs libraries that the build may lack, or one with
     another releases_url.
     """
-    values = option_values(programs, repo_dir)
+    values = option_values(programs, repo_dir) | (options or {})
     if not (root / "build.ninja").exists():
         command = ["meson", "setup", f"--buildtype={target}"]
         if cross_file is not None:
