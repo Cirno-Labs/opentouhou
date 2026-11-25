@@ -2,7 +2,6 @@
 
 #include "gfx_recorder.h"
 #include "test.h"
-#include "th07_scene_stubs.h"
 
 #include "th07/anm.h"
 #include "th07/game.h"
@@ -15,11 +14,13 @@
 #include "stg/chain.h"
 #include "stg/rng.h"
 
+#include <string.h>
+
 static void M_Setup(void)
 {
     Chain_Release();
     Chain_Init();
-    SceneStubCalls_Reset();
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
     g_GameManager.run.stage_frames = 100;
     g_GameSpeed = 1.0f;
     Rng_SetSeed(&g_Rng, 1234);
