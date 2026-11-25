@@ -477,7 +477,7 @@ static void M_TwoSquares(const B10J_ASSETS *const assets, const PTN *const miko)
         M_Loop(assets, miko, x, y, true);
         M_Loop(assets, miko, x2, y2, true);
         sq->angle -= 6;
-        g_Pellets.spawn_with_cloud = true;
+        Pellets_SpawnWithCloud(true);
         if (sq->radius < 112) {
             sq->radius += 8;
         } else {
@@ -501,7 +501,7 @@ static void M_TwoSquares(const B10J_ASSETS *const assets, const PTN *const miko)
         M_Corners(x2, y2, sq->radius, (uint8_t)-sq->angle);
         M_Loop(assets, miko, x, y, false);
         M_Loop(assets, miko, x2, y2, false);
-        g_Pellets.spawn_with_cloud = false;
+        Pellets_SpawnWithCloud(false);
     }
     if (m_B10J.status.frame > 320) {
         M_Corners(x, y, sq->radius, sq->angle);

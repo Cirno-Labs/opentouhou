@@ -6,6 +6,7 @@
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/pellets.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -155,7 +156,7 @@ TEST(setup_binds_shared_banks_and_keeps_actor_history)
     CHECK_EQ_INT(m_B15J.pattern_state, 51);
     CHECK_EQ_INT(m_B15J.patterns_done, 9);
     CHECK_EQ_INT(m_B15J.spiral_angle, 255);
-    CHECK(g_Pellets.interlace);
+    CHECK(m_Pellets.interlace);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
 }
@@ -318,7 +319,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK_EQ_INT(m_B15J.status.hp, 13);
     CHECK_EQ_INT(g_Stage.score, 7000);
     m_Orb.top = 64;
-    g_Pellets.slots[0].cloud_frame = 12;
+    m_Pellets.slots[0].cloud_frame = 12;
     m_Lasers.slots[4].alive = true;
     m_Lasers.slots[4].origin_left = 100 * 256;
     for (int32_t frame = 0; frame < 5000 && !m_B15J.finished; frame++) {
@@ -343,7 +344,7 @@ TEST(current_orb_hitbox_and_hp_gates_reach_real_defeat)
     CHECK(m_Player.is_hit);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 6);
-    CHECK_EQ_INT(g_Pellets.slots[0].cloud_frame, 12);
+    CHECK_EQ_INT(m_Pellets.slots[0].cloud_frame, 12);
     CHECK(m_Lasers.slots[4].alive);
     const B15J finished = m_B15J;
     CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
@@ -381,7 +382,7 @@ TEST(late_rain_reuses_laser_speed_and_full_lasers_still_consume_rng)
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         int32_t alive = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            alive += g_Pellets.slots[i].moving;
+            alive += m_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(alive, 12);
         CHECK_EQ_INT(m_B15J.pattern_state, 52 + rank * 4);
@@ -468,18 +469,18 @@ TEST(cloud_policy_is_preserved_when_rings_and_spreads_spawn)
         m_B15J.souls[0].left = 100;
         m_B15J.souls[1].left = 500;
         m_B15J.souls[0].top = m_B15J.souls[1].top = 100;
-        g_Pellets.spawn_with_cloud = cloud != 0;
+        m_Pellets.spawn_with_cloud = cloud != 0;
         const size_t used = arena.used;
         VSyncIrq_Reset();
         CHECK(M_BossUpdate(&f.assets, &f.miko, &f.stage));
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            count += cloud != 0 ? g_Pellets.slots[i].cloud_frame == 1
-                                : g_Pellets.slots[i].moving;
+            count += cloud != 0 ? m_Pellets.slots[i].cloud_frame == 1
+                                : m_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(count, 12);
-        CHECK_EQ_INT(g_Pellets.spawn_with_cloud, cloud != 0);
-        CHECK(g_Pellets.interlace);
+        CHECK_EQ_INT(m_Pellets.spawn_with_cloud, cloud != 0);
+        CHECK(m_Pellets.interlace);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }

@@ -6,6 +6,7 @@
 #include "../src/th01/missiles.c"
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
+#include "../src/th01/pellets.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -214,7 +215,7 @@ TEST(ordinary_entrance_preserves_world_and_rank_fire)
                             : 130);
         int32_t count = 0;
         for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-            count += g_Pellets.slots[i].moving;
+            count += m_Pellets.slots[i].moving;
         }
         CHECK_EQ_INT(count, rank == 2 ? 15 : rank == 3 ? 25 : 0);
         CHECK_EQ_INT(m_B10M.eyes[0].image, 4);
@@ -331,9 +332,9 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
                                           .top = 200 * 16,
                                           .previous_left = -1,
                                           .velocity = { 16, 0 } };
-        g_Pellets.slots[0] =
+        m_Pellets.slots[0] =
             (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
-        g_Pellets.slots[1].cloud_frame = 10;
+        m_Pellets.slots[1].cloud_frame = 10;
         m_Lasers.slots[6].alive = true;
         VSyncIrq_Reset();
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
@@ -344,8 +345,8 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK_EQ_INT(
             m_Missiles.slots[0].flag,
             phase == B10M_PHASE_STAR_ATTACK ? MISSILE_FREE : MISSILE_MOVING);
-        CHECK(!g_Pellets.slots[0].moving);
-        CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
+        CHECK(!m_Pellets.slots[0].moving);
+        CHECK_EQ_INT(m_Pellets.slots[1].cloud_frame, 10);
         CHECK(m_Lasers.slots[6].alive);
         const B10M frozen = m_B10M;
         CHECK(!M_BossUpdate(&f.assets, &f.miko));

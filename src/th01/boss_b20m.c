@@ -1267,7 +1267,7 @@ static void M_Rings(const B20M_ASSETS *const assets)
         m_B20M.rings_interval = Boss_Rank(18, 12, 10, 8);
     }
     if (m_B20M.status.frame % m_B20M.rings_interval == 0) {
-        g_Pellets.spawn_with_cloud = true;
+        Pellets_SpawnWithCloud(true);
         M_Single(assets, 568, 160, (uint8_t)(0 - m_B20M.rings_angle), 56);
         M_Single(assets, 568, 160, (uint8_t)(128 - m_B20M.rings_angle), 56);
         M_Single(assets, 64, 160, m_B20M.rings_angle, 56);

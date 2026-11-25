@@ -29,7 +29,7 @@ TEST(threshold_uses_unsigned_score_and_one_award_per_call)
     CHECK_EQ_INT(g_Session.lives, 2);
     CHECK_EQ_INT(Extend_ResidentLives(), 2);
     CHECK_EQ_INT(Extend_Next(), 2);
-    CHECK_EQ_INT(g_Pellets.speed, 1);
+    CHECK_EQ_INT(g_Pellets->speed, 1);
     Arena_Free(&arena);
 }
 
