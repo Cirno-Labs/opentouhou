@@ -332,12 +332,12 @@ static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
             const int16_t width = i == 1 ? 8 : 32;
             if (g_Player.left > Math16_Wrap(x - 24)
                 && g_Player.left < Math16_Wrap(x + 24 - width)) {
-                g_Player.is_hit = true;
+                Player_Hit();
             }
         }
     }
     if (g_Player.invincible) {
-        g_Player.is_hit = false;
+        Player_ClearHit();
     }
     if (m_B10M.status.frame % 40 == 0) {
         g_StagePalette.colors[15][0] = M_Byte(g_StagePalette.colors[15][0] + 1);

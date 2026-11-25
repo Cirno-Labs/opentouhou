@@ -114,8 +114,7 @@ static void M_StageBegin(const uint64_t host_tick)
     Hud_Load(
         &g_GameplayAssets->hud, Gameplay_StageSprites(),
         &g_GameplayAssets->hud_font);
-    g_Player.invincible = false;
-    g_Player.invincibility_time = 0;
+    Player_EndInvincibility();
     M_BossSetup(host_tick);
     if (g_Gameplay.boss_stage) {
         g_Stage.first_stage = true;
@@ -142,10 +141,9 @@ static void M_StageReady(void)
     g_Stage.frame = 0;
     Orb_ResetFlight();
     if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
-        g_Player.left = 304;
+        Player_Center();
     }
-    g_Player.deflecting = false;
-    g_Player.bomb_damaging = false;
+    Player_StopActions();
     g_Stage.combo = 0;
     GameplayLife_Begin();
 }

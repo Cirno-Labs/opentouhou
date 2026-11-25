@@ -55,7 +55,7 @@ static void M_TraceBeam(
                 dots = 0;
                 if (!g_Player.invincible && laser->damaging && y > 376
                     && left >= g_Player.left + 4 && left < g_Player.left + 24) {
-                    g_Player.is_hit = true;
+                    Player_Hit();
                 }
             }
             left = Math16_Wrap(M_Floor(laser->cursor_left, 256));

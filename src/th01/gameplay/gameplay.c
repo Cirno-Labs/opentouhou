@@ -107,7 +107,7 @@ void Gameplay_CopyPage(const int32_t from, const int32_t to)
 void Gameplay_Sense(const TH01_INPUT *const raw)
 {
     if (GameInput_SenseGame(raw, false)) {
-        g_Player.is_hit = true;
+        Player_Hit();
     }
 }
 
@@ -186,7 +186,7 @@ void Gameplay_Reset(void)
     g_Session.high_score = g_Session.table_high_score;
     g_Stage.score = g_Session.score;
     g_Player.remaining_bombs = g_Session.bombs;
-    g_Player.left = 304;
+    Player_Center();
     g_Pellets.speed = g_Session.pellet_speed;
     Extend_SyncResidentLives(g_Session.lives);
     Extend_ResetNext(g_Session.score);

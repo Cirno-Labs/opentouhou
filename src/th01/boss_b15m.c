@@ -1531,7 +1531,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             M_AfterTransform();
             return M_Tail(assets, miko);
         }
-        g_Player.is_hit = true;
+        Player_Hit();
         M_SafetyAfterHit(assets, miko);
         m_B15M.girl_subphase = 1;
         m_B15M.phase5_subphase = 0;

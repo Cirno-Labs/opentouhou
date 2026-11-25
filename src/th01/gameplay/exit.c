@@ -36,7 +36,7 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         g_Player.bomb_frame = 200;
         if (g_Stage.cleared) {
             g_Stage.cleared = false;
-            g_Player.is_hit = false;
+            Player_ClearHit();
             if (g_Stage.boss != BOSS_NONE) {
                 g_Gameplay.wait_for_shot = true;
                 g_Stage.first_stage = true;
@@ -57,7 +57,7 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         if (!Miss_Resume(&g_GameplayAssets->miko, Gameplay_StageSprites(), 1)) {
             return false;
         }
-        g_Player.is_hit = false;
+        Player_ClearHit();
         g_Player.invincibility_time = 150;
         GameplayLife_Begin();
         return true;

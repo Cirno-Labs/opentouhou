@@ -174,13 +174,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             }
         }
         Gameplay_Sense(raw);
-        if (g_Player.invincibility_time > 1) {
-            g_Player.invincibility_time--;
-            g_Player.invincible = true;
-        } else if (g_Player.invincibility_time == 1) {
-            g_Player.invincible = false;
-            g_Player.invincibility_time = 0;
-        }
+        Player_TickInvincibility();
         M_PlayerBegin(GP_LIFE_ITEMS);
         return true;
     case GP_LIFE_PLAYER_BOMB: {

@@ -641,7 +641,7 @@ static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
         if (!g_Player.invincible && birds->left[i] > g_Player.left - 8
             && birds->left[i] < g_Player.left + 8 && birds->top[i] > 344
             && birds->top[i] < 384) {
-            g_Player.is_hit = true;
+            Player_Hit();
             Wait_Ticks(&m_B20M.wait, tick, 6);
             m_B20M.resume_stage = B20M_RESUME_BIRD_HIT;
             return false;
@@ -1257,7 +1257,7 @@ static void M_Flake(const B20M_ASSETS *const assets)
     const int16_t x = Math16_ToPixel(m_B20M.flake.left);
     if (!g_Player.invincible && x + 32 > g_Player.left && x - 64 < g_Player.left
         && m_B20M.flake.state >= 3) {
-        g_Player.is_hit = true;
+        Player_Hit();
     }
 }
 static void M_Rings(const B20M_ASSETS *const assets)
@@ -1837,7 +1837,7 @@ static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
                 && p->left[i] / 10 > g_Player.left
                 && p->left[i] / 10 < g_Player.left + 24
                 && !g_Player.invincible) {
-                g_Player.is_hit = true;
+                Player_Hit();
             }
         }
     }
@@ -1986,9 +1986,8 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
     orb->force = -8;
     orb->force_frame = 0;
     orb->velocity_x = ORB_X_LEFT_4;
-    g_Player.left = 304;
-    g_Player.deflecting = false;
-    g_Player.bomb_damaging = false;
+    Player_Center();
+    Player_StopActions();
     Player_Reset(g_Session.settings.difficulty);
     m_B20M.hit.invincible = false;
     g_Rng = g_Session.frame_rand;
@@ -2058,8 +2057,7 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
             m_B20M.pattern = 0;
             m_B20M.patterns_done = 0;
             m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
-            g_Player.invincibility_time = 0;
-            g_Player.invincible = false;
+            Player_EndInvincibility();
             m_B20M.boss_palette = g_Palette.saved;
             m_B20M.stage_palette = m_B20M.boss_palette;
             m_B20M.status.hp = 6;

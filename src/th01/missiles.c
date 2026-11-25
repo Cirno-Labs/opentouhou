@@ -129,7 +129,7 @@ void Missiles_UpdateAndRender(
             && Math16_ToPixel(m->left) > g_Player.left - 8
             && Math16_ToPixel(m->left) < g_Player.left + 24
             && Math16_ToPixel(m->top) > 360 && Math16_ToPixel(m->top) < 400) {
-            g_Player.is_hit = true;
+            Player_Hit();
             return;
         }
     }

@@ -379,7 +379,7 @@ void Pellets_UpdateAndRender(
             && Math16_ToPixel(p->left) <= g_Player.left + 20
             && Math16_ToPixel(p->top) >= 368 + g_Player.sliding * 8
             && Math16_ToPixel(p->top) < 392) {
-            g_Player.is_hit = true;
+            Player_Hit();
             if (!p->not_rendered) {
                 M_Restore(p, false);
             }

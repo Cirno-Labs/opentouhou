@@ -315,10 +315,10 @@ static void M_RippleHit(
     const B15J_ASSETS *const assets, const PTN *const miko, const int16_t left,
     const int16_t extra)
 {
-    PLAYER *const p = &g_Player;
+    const PLAYER *const p = &g_Player;
     if (!p->invincible && p->left >= Math16_Wrap(left - 16)
         && p->left <= Math16_Wrap(left + extra)) {
-        p->is_hit = true;
+        Player_Hit();
     }
 }
 

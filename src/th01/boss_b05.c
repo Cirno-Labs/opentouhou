@@ -202,7 +202,7 @@ static void M_Slam(void)
     if (!player->invincible && m_B05.sphere.left <= player->left
         && Math16_Wrap(m_B05.sphere.left + 64) >= player->left
         && m_B05.sphere.top >= 272) {
-        g_Player.is_hit = true;
+        Player_Hit();
     }
 }
 
