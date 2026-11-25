@@ -466,7 +466,10 @@ foreach game, game_tests : {
     'th07/game_manager': {'deps': [test_deps]},
     'th07/game_manager/chain': {'deps': [test_deps]},
     'th07/play_time': {'sources': ['../src/th07/play_time.c'], 'deps': [test_deps]},
-    'th07/scene': {'sources': th07_data + ['th07_scene_stubs.c'], 'env': ['TEST_DIR']},
+    'th07/scene': {
+      'sources': th07_data + ['../src/th07/play_time.c'],
+      'env': ['TEST_DIR'],
+    },
     'th07/anm': {
       'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
