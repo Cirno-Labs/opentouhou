@@ -28,9 +28,10 @@ keeps in `[start]`. Each backend's port writes the same values in memory
 at the same point, as the run begins, and never changes a file. th01's
 fields are in [fields.h](../replay/th01/fields.h); its port sets them
 in the resident block before REIIDEN's first instruction, and in the
-session as native gameplay begins. Its boss_hp field differs: the port
-writes it over the HP that each boss's setup sets, right after the setup
-sets it, on both backends. Cases that set every field to what the run
+session as native gameplay begins. Its boss_hp and stage_time fields
+differ: the port writes them over the HP that each boss's setup sets and
+the time that each stage's timer starts with, right after the game sets
+them, on both backends. Cases that set every field to what the run
 would have anyway match the cases that set none, row for row.
 
 `tools/stage_rpy` captures a case that plays one of the game's own

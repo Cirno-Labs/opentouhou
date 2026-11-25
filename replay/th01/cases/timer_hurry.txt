@@ -1,0 +1,13 @@
+# Starts stage 1 with 2 time left on its timer and presses nothing after
+# the stage starts: the time runs out at once, the original says HARRY,
+# and pellets rain until the run ends.
+frames 2400
+start stage 0
+start route 0
+start lives 6
+start bombs 3
+start stage_time 2
+input 760 shot
+input 761 none
+input 1000 shot
+input 1002 none

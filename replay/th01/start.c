@@ -38,6 +38,7 @@ void Th01Start_Apply(const START_VALUE *const starts, const size_t count)
             g_Session.pellet_speed = (int16_t)value;
             break;
         case TH01_START_boss_hp:
+        case TH01_START_stage_time:
             break;
         case TH01_START_scene_continues:
             scene_set = true;
@@ -57,6 +58,16 @@ void Th01Start_ApplyBoss(
     for (size_t i = 0; i < count; i++) {
         if (starts[i].field == TH01_START_boss_hp) {
             *hp = (int16_t)starts[i].value;
+        }
+    }
+}
+
+void Th01Start_ApplyStageTime(
+    const START_VALUE *const starts, const size_t count, uint16_t *const time)
+{
+    for (size_t i = 0; i < count; i++) {
+        if (starts[i].field == TH01_START_stage_time) {
+            *time = (uint16_t)starts[i].value;
         }
     }
 }

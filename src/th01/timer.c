@@ -1,5 +1,6 @@
 #include "th01/timer.h"
 #include "th01/vsync_irq.h"
+#include "th01/hooks.h"
 #include "th01/hud.h"
 #include "th01/pellets.h"
 #include "th01/tram.h"
@@ -75,6 +76,7 @@ static void M_InitFor(const int16_t stage_id, const int16_t route)
     ASSERT(stage_id >= 0 && stage_id < 20 && route >= 0 && route <= 1);
     ASSERT(m_Timer.phase == TIMER_IDLE);
     g_Stage.time = times[stage_id < 5 ? stage_id : route * 15 + stage_id];
+    Th01Hooks_CallOnStageTime(&g_Stage.time);
     m_Timer.frames_since_hurry = 0;
 }
 

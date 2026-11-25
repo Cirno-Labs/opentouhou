@@ -27,3 +27,10 @@ void Th01Hooks_CallOnBoss(int16_t *const hp)
         m_Hooks.on_boss(m_Hooks.arg, hp);
     }
 }
+
+void Th01Hooks_CallOnStageTime(uint16_t *const time)
+{
+    if (m_Hooks.on_stage_time != nullptr) {
+        m_Hooks.on_stage_time(m_Hooks.arg, time);
+    }
+}

@@ -51,6 +51,11 @@ static void M_OnBoss(void *const arg, int16_t *const hp)
     Th01Start_ApplyBoss(m_Starts, m_StartCount, hp);
 }
 
+static void M_OnStageTime(void *const arg, uint16_t *const time)
+{
+    Th01Start_ApplyStageTime(m_Starts, m_StartCount, time);
+}
+
 static RESULT M_SetStart(const char *const name, const char *const value)
 {
     const int32_t field = Game_FindStart(&g_Th01Harness, name);
@@ -80,7 +85,9 @@ static RESULT M_Start(void)
     m_StartApplied = false;
     m_InGameplay = false;
     m_Setbacks = 0;
-    Th01Hooks_Set((TH01_HOOKS) { .on_start = M_OnStart, .on_boss = M_OnBoss });
+    Th01Hooks_Set((TH01_HOOKS) { .on_start = M_OnStart,
+                                 .on_boss = M_OnBoss,
+                                 .on_stage_time = M_OnStageTime });
     m_Initialized = true;
     return g_GameDesc.init();
 }

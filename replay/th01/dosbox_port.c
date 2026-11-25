@@ -103,6 +103,22 @@ static void M_BossHp(const uint16_t offset)
     }
 }
 
+// Writes the case's stage_time over the time that a stage has just started
+// its timer with.
+static void M_StageTime(void)
+{
+    size_t count;
+    const START_VALUE *const starts = Dosbox_Starts(&count);
+    for (size_t i = 0; i < count; i++) {
+        if (starts[i].field == TH01_START_stage_time) {
+            const uint16_t time = (uint16_t)starts[i].value;
+            Dosbox_Write(
+                (uint16_t)(Dosbox_LoadSegment() + RETAIL_REIIDEN_DGROUP),
+                M_DATA_stage_timer, &time, sizeof(time));
+        }
+    }
+}
+
 static void M_OnSite(void *const context, const uint8_t id)
 {
     TH01_DOSBOX *const th01 = context;
@@ -118,6 +134,9 @@ static void M_OnSite(void *const context, const uint8_t id)
         break;
     case RETAIL_SITE_SINGYOKU_HP:
         M_BossHp(M_DATA_singyoku_hp);
+        break;
+    case RETAIL_SITE_STAGE_TIME:
+        M_StageTime();
         break;
     }
 }
@@ -170,6 +189,7 @@ static void M_OnExec(void *const context, const uint8_t program)
             resident.pellet_speed = (int16_t)value;
             break;
         case TH01_START_boss_hp:
+        case TH01_START_stage_time:
             break;
         case TH01_START_scene_continues:
             scene_set = true;
