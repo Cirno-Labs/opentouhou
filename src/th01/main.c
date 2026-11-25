@@ -51,7 +51,8 @@ static uint64_t m_HostTick;
 static VSYNC_CLOCK m_Frame;
 static bool m_IntroPressed;
 static bool m_Initialized;
-TH01_SCENE g_Th01Scene;
+static TH01_SCENE m_Th01Scene;
+const TH01_SCENE *const g_Th01Scene = &m_Th01Scene;
 
 static RESULT M_OpenFont(FONT_ROM **const out)
 {
@@ -155,7 +156,7 @@ static RESULT M_Init(void)
     Video_Init(Arena_Allocator(&m_Assets));
     memset(&m_Frame, 0, sizeof(m_Frame));
     m_IntroPressed = false;
-    g_Th01Scene = TH01_SCENE_LOGO;
+    m_Th01Scene = TH01_SCENE_LOGO;
     m_HostTick = 0;
     Session_Init();
     MUST(Music_Init(
@@ -197,14 +198,14 @@ static bool M_OpeningEvents(
         }
         Score_SyncSession();
         Gameplay_Begin(raw, m_HostTick);
-        g_Th01Scene = TH01_SCENE_GAMEPLAY;
+        m_Th01Scene = TH01_SCENE_GAMEPLAY;
     }
     return true;
 }
 
 static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
 {
-    g_Th01Scene = TH01_SCENE_OPENING;
+    m_Th01Scene = TH01_SCENE_OPENING;
     Video_SetScroll(0);
     M_OpeningEvents(Opening_Init(&m_OpeningAssets), raw);
     if (switched) {
@@ -216,17 +217,17 @@ static void M_BeginOpening(const bool switched, const TH01_INPUT *const raw)
 
 static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
 {
-    switch (g_Th01Scene) {
+    switch (m_Th01Scene) {
     case TH01_SCENE_SCORE:
     case TH01_SCENE_ENDING_SCORE:
         if (Score_Tick(raw, reference_edge)) {
             Score_SyncSession();
-            if (g_Th01Scene == TH01_SCENE_ENDING_SCORE) {
+            if (m_Th01Scene == TH01_SCENE_ENDING_SCORE) {
                 Ending_BeginSwitch();
-                g_Th01Scene = TH01_SCENE_SWITCH;
+                m_Th01Scene = TH01_SCENE_SWITCH;
             } else {
                 Gameplay_ResumeAfterScore(raw, m_HostTick);
-                g_Th01Scene = TH01_SCENE_GAMEPLAY;
+                m_Th01Scene = TH01_SCENE_GAMEPLAY;
             }
         }
         break;
@@ -245,7 +246,7 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
                                   .route = "完" };
             memcpy(&entry.score, &result->score, sizeof(entry.score));
             Score_Begin(&m_ScoreAssets, SCORE_ENDING, result->rank, &entry);
-            g_Th01Scene = TH01_SCENE_ENDING_SCORE;
+            m_Th01Scene = TH01_SCENE_ENDING_SCORE;
         }
         break;
     case TH01_SCENE_GAMEPLAY: {
@@ -264,11 +265,11 @@ static bool M_Step(const TH01_INPUT *const raw, const bool reference_edge)
             Score_Begin(
                 &m_ScoreAssets, SCORE_GAMEOVER, g_Session.settings.difficulty,
                 &entry);
-            g_Th01Scene = TH01_SCENE_SCORE;
+            m_Th01Scene = TH01_SCENE_SCORE;
         } else if (request == GAMEPLAY_REQUEST_ENDING) {
             Ending_Begin();
             Ending_Tick(raw, false);
-            g_Th01Scene = TH01_SCENE_ENDING;
+            m_Th01Scene = TH01_SCENE_ENDING;
         }
         break;
     }
@@ -320,7 +321,7 @@ static bool M_Tick(const void *const input)
     Music_Update();
     const bool running = M_Step(raw, reference_edge);
     if (running) {
-        Present_Frame(g_Th01Scene == TH01_SCENE_GAMEPLAY);
+        Present_Frame(m_Th01Scene == TH01_SCENE_GAMEPLAY);
     }
     M_Save();
     return running;
@@ -336,7 +337,7 @@ static void M_Shutdown(void)
     Present_Close();
     Ending_Close();
     memset(&m_EndingAssets, 0, sizeof(m_EndingAssets));
-    g_Th01Scene = TH01_SCENE_LOGO;
+    m_Th01Scene = TH01_SCENE_LOGO;
     Gameplay_Close();
     memset(&m_GameplayAssets, 0, sizeof(m_GameplayAssets));
     Arena_Free(&m_Assets);

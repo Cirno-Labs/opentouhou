@@ -342,10 +342,10 @@ static void M_Play(void)
 {
     M_Opening();
     m_Fixture.action = OPENING_ACTION_START;
-    for (int i = 0; i < 4 && g_Th01Scene != TH01_SCENE_GAMEPLAY; i++) {
+    for (int i = 0; i < 4 && (*g_Th01Scene) != TH01_SCENE_GAMEPLAY; i++) {
         CHECK(M_Tick((TH01_INPUT) {}));
     }
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
     CHECK(m_Hud.numbers != nullptr);
     CHECK(m_Health.backgrounds != nullptr);
 }
@@ -432,7 +432,7 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     g_Session.score = 12345;
     g_Session.stage_id = 4;
     CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_SCORE);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_SCORE);
     CHECK_EQ_INT(m_Fixture.score_begins, 1);
     CHECK_EQ_INT(m_Fixture.score_context, SCORE_GAMEOVER);
     CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
@@ -440,7 +440,7 @@ TEST(gameover_registration_saves_before_returning_to_continue)
     CHECK_EQ_STR(m_Fixture.score_entry.route, "社");
     m_Fixture.finish_score = true;
     CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
     CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
     CHECK_EQ_INT(g_Gameplay.sequence, GAMEPLAY_SEQUENCE_END);
     CHECK_EQ_INT(m_EndPhase, GP_END_CONTINUE_DELAY);
@@ -459,12 +459,12 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
     g_Gameplay.sequence = GAMEPLAY_SEQUENCE_TERMINAL;
     g_Gameplay.request = GAMEPLAY_REQUEST_ENDING;
     CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_ENDING);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_ENDING);
     CHECK_EQ_INT(m_Fixture.ending_begins, 1);
     CHECK_EQ_INT(m_Fixture.ending_ticks, 1);
     m_Fixture.finish_ending = true;
     CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_ENDING_SCORE);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_ENDING_SCORE);
     CHECK_EQ_INT(m_Fixture.score_context, SCORE_ENDING);
     CHECK_EQ_INT(m_Fixture.score_entry.score, 12345);
     CHECK_EQ_INT(m_Fixture.score_entry.stage, 50);
@@ -475,7 +475,7 @@ TEST(ending_registration_saves_before_switching_back_to_opening)
     CHECK(!m_Fixture.saves->pending[0]);
     CHECK_EQ_INT(m_Fixture.written, 1);
     CHECK(M_Tick((TH01_INPUT) {}));
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_OPENING);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_OPENING);
     CHECK_EQ_INT(m_Fixture.ending_clears, 1);
     CHECK_EQ_INT(m_Fixture.opening_begins, 2);
     CHECK_EQ_INT(m_Fixture.written, 1);
@@ -491,7 +491,7 @@ static void M_OnVSync(void *const arg)
 {
     VSYNC_LOG *const log = arg;
     log->calls++;
-    log->scene = g_Th01Scene;
+    log->scene = (*g_Th01Scene);
 }
 
 TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
@@ -510,9 +510,9 @@ TEST(vsync_hook_runs_before_each_reference_vsync_and_scene_changes)
     CHECK(edges > 0);
     CHECK_EQ_INT(log.scene, TH01_SCENE_LOGO);
     M_Opening();
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_OPENING);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_OPENING);
     M_Play();
-    CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
+    CHECK_EQ_INT((*g_Th01Scene), TH01_SCENE_GAMEPLAY);
     CHECK(g_Stage.frame == 0);
     CHECK_EQ_INT(g_Opening.frame_rand, 1);
     Th01Hooks_Set((TH01_HOOKS) {});

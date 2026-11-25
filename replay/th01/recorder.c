@@ -107,7 +107,7 @@ static bool M_ScriptInput(const int32_t frame, void *const input)
 static bool M_Tick(const void *const input)
 {
     const bool running = g_GameDesc.tick(input);
-    if (!m_InGameplay && g_Th01Scene == TH01_SCENE_GAMEPLAY) {
+    if (!m_InGameplay && (*g_Th01Scene) == TH01_SCENE_GAMEPLAY) {
         m_InGameplay = true;
         m_StartStage = g_Session.stage_id;
         m_Lives = g_Session.lives;
@@ -150,7 +150,7 @@ static RECORDER_SCORE M_Score(void)
 static bool M_HasEnded(void)
 {
     return m_InGameplay
-        && (g_Th01Scene != TH01_SCENE_GAMEPLAY
+        && ((*g_Th01Scene) != TH01_SCENE_GAMEPLAY
             || g_Session.stage_id != m_StartStage);
 }
 
