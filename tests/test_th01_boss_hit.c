@@ -2,7 +2,7 @@
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
 #include "../src/th01/boss/boss.c"
-#include "th01/boss/hit.h"
+#include "th01/boss/private.h"
 #include "th01/session.h"
 
 #include "core/base/arena.h"

@@ -1,4 +1,4 @@
-#include "th01/boss/hit.h"
+#include "th01/boss/private.h"
 #include "th01/session.h"
 #include "th01/sound.h"
 
