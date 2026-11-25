@@ -1,4 +1,5 @@
 #include "../src/th01/score.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/score.h"
 
 #include "core/base/arena.h"
@@ -48,20 +49,20 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
 {
     FIXTURE f;
     M_Init(&f);
-    g_VSync.count1 = 100;
-    g_VSync.count2 = -20;
+    m_VSync.count1 = 100;
+    m_VSync.count2 = -20;
     M_Begin(&f, SCORE_GAMEOVER, 9999);
     CHECK_EQ_INT(m_Registration.phase, SCORE_FADE_WAIT);
-    CHECK_EQ_INT(g_VSync.count1, 100);
+    CHECK_EQ_INT(g_VSync->count1, 100);
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK_EQ_INT(g_Video.palette[0].red, 17);
     for (int32_t i = 0; i < 15; i++) {
         M_Tick(&f, (TH01_INPUT) {});
     }
     CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);
-    CHECK_EQ_INT(g_VSync.count1, 116);
-    CHECK_EQ_INT(g_VSync.count2, -4);
-    CHECK_EQ_INT(g_VSync.edge, 16);
+    CHECK_EQ_INT(g_VSync->count1, 116);
+    CHECK_EQ_INT(g_VSync->count2, -4);
+    CHECK_EQ_INT(g_VSync->edge, 16);
     CHECK_EQ_INT(m_Registration.place, 0);
     CHECK_EQ_STR(m_Saves.tables[1].entries[0].route, "魔");
     CHECK_EQ_INT(m_Saves.tables[1].entries[0].stage, 13);
@@ -71,7 +72,7 @@ TEST(gameover_fades_before_input_and_preserves_shared_counters)
     CHECK(M_Tick(&f, (TH01_INPUT) { .ok = true }));
     CHECK(m_Saves.pending[1]);
     CHECK_EQ_STR(m_Saves.tables[1].entries[0].name, "                ");
-    CHECK_EQ_INT(g_VSync.count1, 117);
+    CHECK_EQ_INT(g_VSync->count1, 117);
     CHECK(!g_GameInput.ok);
     Arena_Free(&f.arena);
 }
@@ -181,7 +182,7 @@ TEST(results_input_wait_resets_at_entry_and_preserves_elapsed_count)
     }
     CHECK(!M_Tick(&f, (TH01_INPUT) { .shot = true }));
     CHECK_EQ_INT(m_Registration.phase, SCORE_ENTRY_INPUT);
-    CHECK_EQ_INT(g_VSync.count1, 4);
+    CHECK_EQ_INT(g_VSync->count1, 4);
     CHECK_EQ_INT(m_Registration.inputs, 1);
     CHECK_EQ_INT(m_Registration.cursor, 1);
     CHECK(!M_Tick(&f, (TH01_INPUT) {}));

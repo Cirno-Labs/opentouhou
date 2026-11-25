@@ -395,7 +395,7 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
             break;
         case SCORE_ENTRY_DELAY:
             if (m_Registration.context == SCORE_ENDING
-                    ? (uint16_t)g_VSync.count1 < 4
+                    ? (uint16_t)g_VSync->count1 < 4
                     : !VSyncIrq_DelayReady(4)) {
                 return false;
             }

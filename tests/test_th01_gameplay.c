@@ -253,11 +253,11 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     }
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 121), GAMEPLAY_REQUEST_NONE);
     CHECK(M_InEnd(GP_END_SWITCH));
-    const int16_t count1 = g_VSync.count1;
+    const int16_t count1 = g_VSync->count1;
     for (uint64_t tick = 122; tick < 137; tick++) {
         CHECK_EQ_INT(Gameplay_Tick(&raw, true, tick), GAMEPLAY_REQUEST_NONE);
     }
-    CHECK_EQ_INT(g_VSync.count1, count1);
+    CHECK_EQ_INT(g_VSync->count1, count1);
     CHECK_EQ_INT(g_Gameplay.switch_fade.remaining, 1);
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 137), GAMEPLAY_REQUEST_ENDING);
     CHECK_EQ_INT(g_Gameplay.switch_fade.remaining, 0);
@@ -501,8 +501,8 @@ TEST(real_gameover_score_registration_precedes_continue)
             .gameover = { .pixels = f.assets->backgrounds[0].pixels },
             .font = f.assets->menu_font
         };
-        const uint64_t edge = g_VSync.edge;
-        const int16_t count = g_VSync.count1;
+        const uint64_t edge = g_VSync->edge;
+        const int16_t count = g_VSync->count1;
         const SCORE_ENTRY entry = { .score = (int32_t)g_Session.score,
                                     .stage = (int16_t)(g_Session.stage_id + 1),
                                     .route = "魔" };
@@ -516,8 +516,8 @@ TEST(real_gameover_score_registration_precedes_continue)
             tick++;
             CHECK(!Score_Tick(&(TH01_INPUT) {}, true));
         }
-        CHECK_EQ_INT(g_VSync.edge, edge + 16);
-        CHECK_EQ_INT(g_VSync.count1, count + 16);
+        CHECK_EQ_INT(g_VSync->edge, edge + 16);
+        CHECK_EQ_INT(g_VSync->count1, count + 16);
         CHECK_EQ_INT(g_Gameplay.sequence, GAMEPLAY_SEQUENCE_TERMINAL);
         CHECK_EQ_INT(g_Session.continues_total, 0);
         tick++;
@@ -533,7 +533,7 @@ TEST(real_gameover_score_registration_precedes_continue)
         CHECK(M_InEnd(GP_END_CONTINUE_DELAY));
         CHECK_EQ_INT(g_Session.continues_total, 1);
         CHECK_EQ_INT(g_Session.highest_score, 5000);
-        CHECK_EQ_INT(g_VSync.edge, edge + 17);
+        CHECK_EQ_INT(g_VSync->edge, edge + 17);
         Gameplay_Tick(&(TH01_INPUT) { .shot = true }, true, ++tick);
         CHECK(M_InEnd(GP_END_CONTINUE_DELAY));
         Gameplay_Tick(&(TH01_INPUT) { .shot = true }, true, ++tick);
@@ -730,7 +730,7 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK_EQ_INT(g_Stage.frame, 0);
     CHECK(g_Boss == nullptr);
     CHECK_EQ_INT(g_Stage.boss, BOSS_NONE);
-    CHECK_EQ_INT(g_VSync.edge, 0);
+    CHECK_EQ_INT(g_VSync->edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);
     CHECK_EQ_INT(m_Hud.score_previous, 0);
     CHECK(m_Hud.numbers == numbers);

@@ -3,6 +3,7 @@
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
+#include "../src/th01/vsync_irq.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -220,16 +221,16 @@ TEST(entrance_suspends_without_aging_actors_and_retains_interrupt_history)
             const PALETTE saved = g_Palette.saved;
             const size_t used = arena.used;
             VSyncIrq_Reset();
-            g_VSync.count1 = count == 0 ? 0 : 17;
-            g_VSync.count2 = 21;
+            m_VSync.count1 = count == 0 ? 0 : 17;
+            m_VSync.count2 = 21;
             M_Enter(&f);
             CHECK_EQ_INT(m_B15J.status.phase, B15J_PHASE_SPIRAL);
             CHECK_EQ_INT(m_B15J.status.frame, 0);
             CHECK_EQ_INT(m_B15J.status.hp, 14);
             CHECK_EQ_INT(m_B15J.hit.frame, 0);
             CHECK(!m_B15J.hit.invincible);
-            CHECK_EQ_INT(g_VSync.edge, count == 0 ? 752 : 751);
-            CHECK_EQ_INT(g_VSync.count2, 21 + (int32_t)g_VSync.edge);
+            CHECK_EQ_INT(g_VSync->edge, count == 0 ? 752 : 751);
+            CHECK_EQ_INT(g_VSync->count2, 21 + (int32_t)g_VSync->edge);
             CHECK_EQ_INT(g_Video.drawing_page, 0);
             CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
             CHECK(memcmp(&g_StagePalette, &saved, sizeof(saved)) == 0);

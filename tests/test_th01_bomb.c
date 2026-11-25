@@ -62,14 +62,14 @@ TEST(full_bomb_preserves_waits_palette_events_and_frame_ownership)
     for (int16_t frame = 0; frame <= 140; frame++) {
         g_Player.bomb_frame = (uint32_t)frame;
         g_Player.invincible = false;
-        const uint64_t edge = g_VSync.edge;
+        const uint64_t edge = g_VSync->edge;
         BOMB_UPDATE result =
             Bomb_BeginUpdate(&state.miko, &state.assets, frame);
         CHECK(g_Player.invincible);
         CHECK_EQ_INT(g_Player.bomb_frame, frame);
         const bool must_wait = frame == 140 || (frame > 50 && frame % 4 == 0);
         CHECK_EQ_INT(result == BOMB_UPDATE_WAIT, must_wait);
-        CHECK_EQ_INT(g_VSync.edge, edge);
+        CHECK_EQ_INT(g_VSync->edge, edge);
         if (must_wait) {
             waits++;
             const uint8_t before = g_Video.pages[0][184 * 640 + 304];
