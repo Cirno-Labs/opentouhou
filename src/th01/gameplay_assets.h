@@ -30,12 +30,8 @@ typedef struct {
     MDRV_EFFECTS effects;
 } GAMEPLAY_ASSETS;
 
-// Loads and validates every gameplay scene and boss before simulation. The
-// VFS must contain the mounted original archive and the sprite sheets.
-// Retain the allocator group with the assets; failures leave intermediate
-// allocations in that group. No original data is written. Font glyphs come
-// from rom. Loads all music for a prepared deterministic audio producer;
-// audio device delivery belongs to the application.
+// Loads and validates every gameplay scene, boss and music before simulation.
+// Retain the allocator group with the assets, also on failure.
 RESULT GameplayAssets_Load(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     GAMEPLAY_ASSETS *out);

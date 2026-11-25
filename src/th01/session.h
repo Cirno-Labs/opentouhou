@@ -25,8 +25,7 @@ typedef struct {
     uint32_t score, highest_score, frame_rand;
     // Retains the last life-exit checkpoint for the ending RNG seed.
     uint32_t exit_rand;
-    // Separates the loaded rank-table leader and unsigned live HUD maximum
-    // from highest_score, which tracks the run for Continue and results.
+    // Rank-table leader and live HUD maximum; highest_score tracks the run.
     uint32_t table_high_score, high_score;
     int32_t continues_total, bonus_per_stage[SESSION_HISTORY_COUNT];
     uint16_t continues_per_scene[SESSION_HISTORY_COUNT], point_value;
@@ -40,10 +39,9 @@ extern SESSION g_Session;
 // Zeroes the session.
 void Session_Init(void);
 
-// Starts a credit with the current settings and menu random frame. Start
-// clears run history. Continue preserves stage, route, highest score, ending
-// and the four history slots, but clears score and restores credit resources.
-// Call Session_Init once before the first Start for a deterministic Continue.
+// Starts a credit with the current settings. Start clears run history;
+// Continue keeps stage, route and histories but clears score.
+// Call Session_Init once before the first Start.
 void Session_Begin(
     SESSION_BEGIN begin, const TH01_SETTINGS *settings, uint32_t frame_rand);
 

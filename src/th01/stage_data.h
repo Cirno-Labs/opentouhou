@@ -42,20 +42,7 @@ typedef struct {
     const STAGE_DATA_STAGE *stages;
 } STAGE_DATA;
 
-// Loads all five STAGE?.DAT layouts before simulation. Reads and discards
-// the 22-byte header, including its magic, ID and two eight-byte names.
-// The released loader ignores these fields and derives ST{id}.GRP and
-// ST{id}.MDT from the requested scene ID. This codec selects no files.
-// Reads five 250-byte records without the original RAM's five-byte padding.
-// Expands each card byte's low four bits from bit 3 at the left; ignores
-// the upper nibble. Types 14 through 16 add one through three extra HP to
-// an existing card at that cell. Ignores orphan HP markers and unknown or
-// negative obstacle types. Cards and physical obstacles can share a cell.
-// Preserves the fifth layout, although stage initialization skips boss
-// slot 4. Does not instantiate objects, advance RNG or render anything.
-// Reads from the current position and leaves trailing bytes unread. Keeps
-// reader open. Returns immutable layouts in one allocation from allocator,
-// intended for an arena that owns their lifetime. Leaves out empty and
-// allocates nothing from allocator on read failure, including late I/O.
+// Loads all five STAGE?.DAT layouts in one allocation, ignoring the header;
+// leaves out empty on failure. Keeps reader open.
 RESULT StageData_Load(
     READER *reader, const ALLOCATOR *allocator, STAGE_DATA *out);

@@ -4,11 +4,9 @@
 
 #include <stdint.h>
 
-// Lets the replay harness watch and nudge the game: on_vsync, when set,
-// runs on each reference VSync before the game handles it, on_start when a
-// Start has set the session up, before gameplay begins, and on_boss when a
-// boss's setup has set the boss's HP, which hp points to, and on_stage_time
-// when a stage has set its timer, which time points to.
+// Lets the replay harness watch and nudge the game: each set hook runs on a
+// reference VSync, after the session starts, or after a boss sets its HP or
+// a stage its timer.
 typedef struct {
     void (*on_vsync)(void *arg);
     void (*on_start)(void *arg);

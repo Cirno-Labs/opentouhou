@@ -40,34 +40,22 @@ void Stage_AddScore(uint32_t points);
 // Resets the stage frame and clears the boss when the stage is left.
 void Stage_Leave(void);
 
-// The HUD shows the updated score and combo. Pellet groups use Q12.4 speed
-// and may consume shared RNG. Keep immutable sprites and cached ASCII digit
-// glyphs alive across updates. Initialize flip_cycle once per main scene as
-// MasterRng_Next(rng) % 60; StageObjects_Init must not initialize it anew at
-// each stage change. Scores and counters wrap to their source widths;
-// updates allocate nothing.
+// Initialize flip_cycle once per main scene as MasterRng_Next(rng) % 60,
+// not at each stage change.
 
 // Validates all ten cached halfwidth score digits before simulation.
 RESULT Stage_ValidateScoreFont(const GAME_TEXT_FONT *font);
 
-// Starts flips and immediately updates score/combo/HUD, drops and effect 2.
-// Does not move or reflect the Orb. Cards are tested even inside portals.
-// Bomb selection draws before testing the selected card's alive flag. Reads
-// the stage id, difficulty and g_TestDamage from their owning globals.
+// Hit-tests the cards against the Orb and bomb and starts their flips,
+// updating score, combo and HUD. Cards are tested even inside portals.
 void Stage_HitTestCards(void);
 
-// Draws score popups before card animations, retaining their overlap. Runs
-// six frames per image; revenge fires at 25, HP/removal at 30. All removed
-// sets cleared and player.is_hit together. The world must interpret this
-// pair as stage exit rather than a miss. Empty layouts clear safely.
+// Animates the cards and their score popups. Clearing the last card sets
+// cleared and player.is_hit together, which means stage exit, not a miss.
 void Stage_UpdateCards(const PTN *sprites, const GAME_TEXT_FONT *font);
 
-// Runs bumper, bar, turret and portal branches in obstacle order. Reset
-// still executes collisions, firing and portal animation before clearing
-// each obstacle. It can move the Orb and consume RNG. Reset does not erase
-// portal animation before drawing its normal sprite, retaining the source
-// artifact. Turrets on Easy retain their current cycle without advancing.
-// Call before abandoning a stage group while the Orb is in a portal.
+// Updates bumpers, bars, turrets and portals; reset then clears them.
+// Call with reset before abandoning a stage while the Orb is in a portal.
 void Stage_UpdateObstacles(const PTN *sprites, bool reset);
 
 typedef struct {
@@ -80,20 +68,9 @@ void StageOrb_Init(void);
 // Returns whether the Orb composite is blocked waiting on frame_delay(1).
 bool StageOrb_Waiting(void);
 
-// Runs the real Orb composite through its frame_delay(1). Begin advances
-// motion before the delay; Resume continues only when count1 is ready.
-// Zero-initialize composite once and keep context/state/assets stable while
-// suspended. Repeated blocked polls have no side effects. A ready delay
-// runs through immediately; it is not an unconditional next-edge wait.
-// Required pellets_update runs after that delay. It must implement real
-// pellet motion/clipping, then Shots_UpdateAndRender, then pellet drawing
-// in source order. This operation may change shared player/Orb state and
-// consume RNG; stage phases read those changes before proceeding. Do not
-// update shots again outside it. Cards, obstacles, lethal Orb hit testing,
-// erase using current image, card drawing, conditional Orb put and previous
-// coordinates follow in source order, reading hit/portal flags afresh.
-// Boss stages skip cards and obstacles. Does not advance force age, player
-// update, bomb frame or world counters.
+// Runs the Orb composite through its frame delay: Begin moves the Orb,
+// Resume continues when count1 is ready, then pellets_update and the cards.
+// Keep the composite and its assets stable while suspended.
 bool Stage_BeginOrbComposite(
     const PTN *sprites, const GAME_TEXT_FONT *font,
     const PELLET_ASSETS *pellet_assets);

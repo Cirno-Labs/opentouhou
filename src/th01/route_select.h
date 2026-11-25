@@ -19,9 +19,7 @@ typedef enum {
     ROUTE_SELECT_REPEAT_WAIT,
 } ROUTE_SELECT_PHASE;
 
-// Caches the five route labels from rom. Glyphs belong to allocator. Load
-// both real scene descriptors before ticks, then validate every borrowed
-// asset.
+// Caches the five route labels from rom into allocator.
 RESULT RouteSelect_LoadFont(
     const FONT_ROM *rom, const ALLOCATOR *allocator, GAME_TEXT_FONT *out);
 RESULT RouteSelect_ValidateAssets(const ROUTE_SELECT_ASSETS *assets);
