@@ -5,13 +5,15 @@
 #include "test_dir.h"
 #include "th07_anm_builder.h"
 #include "th07_data.h"
-#include "th07_scene_stubs.h"
 
 #include "th07/anm.h"
 #include "th07/effect.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/gui.h"
+#include "th07/player.h"
+#include "th07/settings.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -137,7 +139,11 @@ static RESULT M_Setup(
     Anm_Init(&g_HeapAllocator, &g_Rng);
     Anm_ResetColorModulation();
     Chain_Init();
-    SceneStubCalls_Reset();
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    memset(&g_Player, 0, sizeof(g_Player));
+    memset(&g_Gui, 0, sizeof(g_Gui));
+    memset(&g_Stage, 0, sizeof(g_Stage));
+    g_Settings.effects_quality = 2;
     g_GameSpeed = 1.0f;
     g_GameManager.run.stage = 1;
     g_GameManager.camera.viewport = (VIEWPORT) { 32, 16, 384, 448, 0, 1 };
@@ -628,7 +634,8 @@ TEST(the_loading_sprite_hides_the_layers)
     CHECK(Result_Log(M_Setup("loading", m_Camera, 4, 0), LOG_LEVEL_ERROR));
     M_StartPetal();
     M_Run(1);
-    g_SceneStubCalls.loading_shown = true;
+    g_Gui.loading.icon.sprite = 0;
+    g_Gui.loading.icon.stopped = true;
     GfxRecorder_Start();
     Gfx_BeginTick((GFX_COLOR) {});
     Chain_RunDraw();
