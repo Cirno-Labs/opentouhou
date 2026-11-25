@@ -1,4 +1,6 @@
 #include "th01/opening.h"
+#include "th01/palette.h"
+#include "th01/settings.h"
 
 #include "pc98/zun/master_rng.h"
 
@@ -9,6 +11,17 @@
 
 #include "th01/opening_strings.h"
 
+typedef struct {
+    PALETTE_STATE palette;
+    PALETTE_FADE fade;
+    MENU_INPUT input;
+    OPENING_ACTION exit_action;
+    int32_t line_count, line_y[2], prompt_frame;
+    int32_t selection, option_item_count, music_mode, wait;
+    bool drawn_rows[VIDEO_HEIGHT];
+    bool entering, left_locked[2], right_locked[2], confirm_locked;
+} OPENING_MENU;
+
 static const char *const m_TrackFiles[] = {
     "reimu.mdt", "ZIPANGU.mdt", "st0.mdt",    "st1.mdt",      "st2.mdt",
     "st3.mdt",   "st4.mdt",     "st5.mdt",    "positive.mdt", "legend.mdt",
@@ -16,6 +29,7 @@ static const char *const m_TrackFiles[] = {
 };
 
 OPENING g_Opening;
+static OPENING_MENU m_Menu;
 static const OPENING_ASSETS *m_Assets;
 
 static void M_Image(const PI_IMAGE *const image, const int32_t key)
@@ -90,29 +104,29 @@ static void M_Choice(const int32_t choice, const uint8_t color)
 static void M_Lines(void)
 {
     for (int32_t i = 0; i < 2; i++) {
-        Video_Restore16((GFX_RECT) { 0, g_Opening.line_y[i], VIDEO_WIDTH, 1 });
+        Video_Restore16((GFX_RECT) { 0, m_Menu.line_y[i], VIDEO_WIDTH, 1 });
     }
     for (int32_t i = 0; i < 2; i++) {
         int32_t y;
         do {
             y = MasterRng_Next(&g_Opening.random) % VIDEO_HEIGHT;
-        } while (g_Opening.drawn_rows[y]);
-        g_Opening.drawn_rows[y] = true;
-        g_Opening.line_y[i] = y;
+        } while (m_Menu.drawn_rows[y]);
+        m_Menu.drawn_rows[y] = true;
+        m_Menu.line_y[i] = y;
         Video_HorizontalLine(0, VIDEO_WIDTH - 1, y, 15);
     }
-    g_Opening.line_count++;
+    m_Menu.line_count++;
 }
 
 static void M_Window(void)
 {
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     M_Image(&m_Assets->window, 15);
-    Palette_Import(&g_Opening.palette.resource, m_Assets->window.palette);
+    Palette_Import(&m_Menu.palette.resource, m_Assets->window.palette);
     Video_Copy(0, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 1, 0, 0);
     g_Opening.random = g_Opening.frame_rand;
     g_Opening.phase = OPENING_MAIN;
-    g_Opening.entering = true;
+    m_Menu.entering = true;
 }
 
 static int32_t M_Ring(
@@ -124,18 +138,18 @@ static int32_t M_Ring(
 static void M_Horizontal(const int32_t delta)
 {
     if (g_Opening.phase == OPENING_MUSIC) {
-        if (g_Opening.selection == 0) {
+        if (m_Menu.selection == 0) {
             g_Opening.track =
                 M_Ring(g_Opening.track, delta, OPENING_TRACK_COUNT);
         }
-    } else if (g_Opening.selection == 0) {
+    } else if (m_Menu.selection == 0) {
         g_Settings.difficulty = M_Ring(g_Settings.difficulty, delta, 4);
-    } else if (g_Opening.selection == 1) {
+    } else if (m_Menu.selection == 1) {
         g_Settings.music = M_Ring(g_Settings.music, delta, 2);
-    } else if (g_Opening.selection == 2) {
+    } else if (m_Menu.selection == 2) {
         g_Settings.lives_extra = M_Ring(g_Settings.lives_extra, delta, 5);
     }
-    M_Choice(g_Opening.selection, 15);
+    M_Choice(m_Menu.selection, 15);
 }
 
 static void M_Menu(const TH01_INPUT *const raw, OPENING_EVENTS *const events)
@@ -144,89 +158,88 @@ static void M_Menu(const TH01_INPUT *const raw, OPENING_EVENTS *const events)
     const bool main = phase == OPENING_MAIN;
     const bool music = phase == OPENING_MUSIC;
     const int32_t count = main ? 4 : (music ? 2 : 5);
-    const int32_t previous = g_Opening.selection;
+    const int32_t previous = m_Menu.selection;
     // Discard entry selection after sensing, including the stale music exit 3.
-    g_Opening.selection = GameInput_SenseMenu(
-        &g_Opening.input, raw, main ? MENU_INPUT_MAIN : MENU_INPUT_OPTIONS,
-        main ? 4 : g_Opening.option_item_count,
-        g_Opening.entering && !main ? 0 : g_Opening.selection);
-    if (g_Opening.entering) {
-        g_Opening.entering = false;
+    m_Menu.selection = GameInput_SenseMenu(
+        &m_Menu.input, raw, main ? MENU_INPUT_MAIN : MENU_INPUT_OPTIONS,
+        main ? 4 : m_Menu.option_item_count,
+        m_Menu.entering && !main ? 0 : m_Menu.selection);
+    if (m_Menu.entering) {
+        m_Menu.entering = false;
         if (!main) {
-            g_Opening.selection = 0;
-            g_Opening.option_item_count = count;
+            m_Menu.selection = 0;
+            m_Menu.option_item_count = count;
         }
         if (music) {
-            g_Opening.input.ok = false;
-            g_Opening.input.shot = false;
+            m_Menu.input.ok = false;
+            m_Menu.input.shot = false;
         }
         M_Erase(phase == OPENING_OPTIONS ? 4 : 5);
         for (int32_t i = 0; i < count; i++) {
             M_Choice(i, 5);
         }
-        M_Choice(g_Opening.selection, 15);
-    } else if (previous != g_Opening.selection) {
+        M_Choice(m_Menu.selection, 15);
+    } else if (previous != m_Menu.selection) {
         M_Choice(previous, 5);
-        M_Choice(g_Opening.selection, 15);
+        M_Choice(m_Menu.selection, 15);
     }
     if (!main) {
         const int32_t slot = music ? 1 : 0;
-        if (g_Opening.input.left && !g_Opening.left_locked[slot]) {
+        if (m_Menu.input.left && !m_Menu.left_locked[slot]) {
             M_Horizontal(-1);
         }
-        g_Opening.left_locked[slot] = g_Opening.input.left;
-        if (g_Opening.input.right && !g_Opening.right_locked[slot]) {
+        m_Menu.left_locked[slot] = m_Menu.input.left;
+        if (m_Menu.input.right && !m_Menu.right_locked[slot]) {
             M_Horizontal(1);
         }
-        g_Opening.right_locked[slot] = g_Opening.input.right;
+        m_Menu.right_locked[slot] = m_Menu.input.right;
     }
-    const bool confirm = g_Opening.input.ok || g_Opening.input.shot;
+    const bool confirm = m_Menu.input.ok || m_Menu.input.shot;
     if (main) {
         if (confirm) {
-            if (g_Opening.selection < 2) {
-                g_Opening.exit_action = g_Opening.selection == 0
+            if (m_Menu.selection < 2) {
+                m_Menu.exit_action = m_Menu.selection == 0
                     ? OPENING_ACTION_START
                     : OPENING_ACTION_CONTINUE;
                 g_Opening.phase = OPENING_EXIT_FADE;
                 Palette_BeginFade(
-                    &g_Opening.fade, &g_Opening.palette,
-                    PALETTE_FADE_BLACK_OUT);
+                    &m_Menu.fade, &m_Menu.palette, PALETTE_FADE_BLACK_OUT);
                 events->audio = OPENING_AUDIO_FADE;
                 return;
-            } else if (g_Opening.selection == 2) {
+            } else if (m_Menu.selection == 2) {
                 g_Opening.phase = OPENING_OPTIONS;
-                g_Opening.entering = true;
+                m_Menu.entering = true;
             } else {
                 events->action = OPENING_ACTION_QUIT;
             }
         }
-        if (g_Opening.input.cancel) {
+        if (m_Menu.input.cancel) {
             events->action = OPENING_ACTION_QUIT;
         }
     } else if (!music) {
-        if ((confirm && g_Opening.selection == 4) || g_Opening.input.cancel) {
+        if ((confirm && m_Menu.selection == 4) || m_Menu.input.cancel) {
             g_Opening.phase = OPENING_WAIT_MAIN;
-            g_Opening.entering = true;
-            g_Opening.selection = 2;
+            m_Menu.entering = true;
+            m_Menu.selection = 2;
         }
-        if (confirm && g_Opening.selection == 3) {
+        if (confirm && m_Menu.selection == 3) {
             g_Opening.phase = OPENING_MUSIC;
-            g_Opening.entering = true;
-            g_Opening.selection = 0;
+            m_Menu.entering = true;
+            m_Menu.selection = 0;
         }
     } else {
-        if ((confirm && g_Opening.selection == 1) || g_Opening.input.cancel) {
+        if ((confirm && m_Menu.selection == 1) || m_Menu.input.cancel) {
             g_Opening.phase = OPENING_WAIT_OPTIONS;
-            g_Opening.entering = true;
-            g_Opening.selection = 3;
+            m_Menu.entering = true;
+            m_Menu.selection = 3;
         }
-        const bool held = g_Settings.fix_debouncing && g_Opening.confirm_locked;
-        if (confirm && g_Opening.selection == 0 && !held) {
+        const bool held = g_Settings.fix_debouncing && m_Menu.confirm_locked;
+        if (confirm && m_Menu.selection == 0 && !held) {
             events->audio = OPENING_AUDIO_PLAY;
             events->track = g_Opening.track;
             g_Opening.track_starts++;
         }
-        g_Opening.confirm_locked = confirm;
+        m_Menu.confirm_locked = confirm;
     }
     events->clear_key_buffer = true;
     g_Opening.frame_rand++;
@@ -241,24 +254,24 @@ const char *Opening_TrackFile(const int32_t track)
 OPENING_EVENTS Opening_Init(const OPENING_ASSETS *const assets)
 {
     memset(&g_Opening, 0, sizeof(g_Opening));
+    memset(&m_Menu, 0, sizeof(m_Menu));
     m_Assets = assets;
     g_Opening.phase = OPENING_FADE;
     g_Opening.random = 1;
-    g_Opening.option_item_count = 4;
-    g_Opening.music_mode = g_Settings.music;
-    Palette_Init(&g_Opening.palette);
+    m_Menu.option_item_count = 4;
+    m_Menu.music_mode = g_Settings.music;
+    Palette_Init(&m_Menu.palette);
     Video_SelectDrawingPage(1);
     Video_SelectVisiblePage(0);
     M_Image(&assets->title, -1);
-    Palette_Import(&g_Opening.palette.resource, assets->title.palette);
-    Palette_Set(&g_Opening.palette, &g_Opening.palette.resource);
+    Palette_Import(&m_Menu.palette.resource, assets->title.palette);
+    Palette_Set(&m_Menu.palette, &m_Menu.palette.resource);
     Palette_ShowSolid(0, 0, 0);
     Video_Copy(1, (GFX_RECT) { 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT }, 0, 0, 0);
     M_Image(&assets->revealed, -1);
-    Palette_Import(&g_Opening.palette.resource, assets->revealed.palette);
+    Palette_Import(&m_Menu.palette.resource, assets->revealed.palette);
     Video_SelectDrawingPage(0);
-    Palette_BeginFade(
-        &g_Opening.fade, &g_Opening.palette, PALETTE_FADE_BLACK_IN);
+    Palette_BeginFade(&m_Menu.fade, &m_Menu.palette, PALETTE_FADE_BLACK_IN);
     return (OPENING_EVENTS) { .audio = OPENING_AUDIO_PLAY,
                               .track = 0,
                               .clear_key_buffer = true };
@@ -268,18 +281,17 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
 {
     OPENING_EVENTS events = {};
     if (g_Opening.phase == OPENING_EXIT_FADE) {
-        Palette_FadeStep(&g_Opening.fade, &g_Opening.palette);
-        if (g_Opening.fade.remaining == 0) {
-            events.action = g_Opening.exit_action;
+        Palette_FadeStep(&m_Menu.fade, &m_Menu.palette);
+        if (m_Menu.fade.remaining == 0) {
+            events.action = m_Menu.exit_action;
         }
         return events;
     }
     g_Opening.count1++;
     if (g_Opening.phase == OPENING_FADE) {
-        const bool stepped =
-            Palette_FadeStep(&g_Opening.fade, &g_Opening.palette);
+        const bool stepped = Palette_FadeStep(&m_Menu.fade, &m_Menu.palette);
         ASSERT(stepped);
-        if (g_Opening.fade.remaining == 0) {
+        if (m_Menu.fade.remaining == 0) {
             g_Opening.phase = OPENING_HOLD;
         }
         return events;
@@ -295,7 +307,7 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
     }
     if (g_Opening.phase == OPENING_LINES) {
         g_Opening.count1 = 0;
-        if (g_Opening.line_count < 100) {
+        if (m_Menu.line_count < 100) {
             M_Lines();
             return events;
         }
@@ -306,12 +318,12 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
         if (!any_key) {
             if (g_Opening.count1 != 0) {
                 g_Opening.count1 = 0;
-                if (g_Opening.prompt_frame % 70 < 50) {
+                if (m_Menu.prompt_frame % 70 < 50) {
                     M_Text(m_Prompt, 244, M_Top(1), 15, GAME_TEXT_BOLD);
                 } else {
                     Video_Restore16((GFX_RECT) { 244, M_Top(1), 120, 16 });
                 }
-                g_Opening.prompt_frame = (g_Opening.prompt_frame + 1) % 70;
+                m_Menu.prompt_frame = (m_Menu.prompt_frame + 1) % 70;
             }
             return events;
         }
@@ -319,18 +331,18 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
     }
     if (g_Opening.phase == OPENING_WAIT_MAIN
         || g_Opening.phase == OPENING_WAIT_OPTIONS) {
-        if (g_Opening.wait == 0) {
+        if (m_Menu.wait == 0) {
             if (g_Opening.phase == OPENING_WAIT_MAIN
-                && g_Settings.music != g_Opening.music_mode) {
-                g_Opening.music_mode = g_Settings.music;
-                events.audio = g_Opening.music_mode == SETTINGS_MUSIC_OFF
+                && g_Settings.music != m_Menu.music_mode) {
+                m_Menu.music_mode = g_Settings.music;
+                events.audio = m_Menu.music_mode == SETTINGS_MUSIC_OFF
                     ? OPENING_AUDIO_STOP
                     : OPENING_AUDIO_PLAY;
                 events.track = 0;
             }
-            g_Opening.wait = 15;
+            m_Menu.wait = 15;
         }
-        if (--g_Opening.wait == 0) {
+        if (--m_Menu.wait == 0) {
             g_Opening.phase = g_Opening.phase == OPENING_WAIT_MAIN
                 ? OPENING_MAIN
                 : OPENING_OPTIONS;
@@ -355,5 +367,6 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
 void Opening_Close(void)
 {
     memset(&g_Opening, 0, sizeof(g_Opening));
+    memset(&m_Menu, 0, sizeof(m_Menu));
     m_Assets = nullptr;
 }
