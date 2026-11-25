@@ -345,6 +345,16 @@ if build_games
       dependencies: [core_dep, stg_dep, sdl3] + external_deps,
       win_subsystem: 'console',
     )
+    executable(
+      'th07record',
+      'replay/th07/recorder.c',
+      'src/th07/play_time.c',
+      c_args: [layer_include['th07']] + stg_include + shell_include + bot_include,
+      implicit_include_directories: false,
+      link_with: [bot_lib, th07_lib],
+      dependencies: [core_dep, stg_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
+    )
   endif
 endif
 
