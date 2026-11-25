@@ -1,0 +1,19 @@
+# Starts stage 1 and presses shot twice and strike twice, 10 frames
+# apart, past the 20 frames of a bomb: the original spends none.
+frames 1600
+start stage 0
+start route 0
+start lives 5
+start bombs 3
+input 760 shot
+input 761 none
+input 1000 shot
+input 1002 none
+input 1200 shot
+input 1201 none
+input 1210 shot
+input 1211 none
+input 1220 strike
+input 1221 none
+input 1230 strike
+input 1231 none
