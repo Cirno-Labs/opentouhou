@@ -302,16 +302,16 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
     BONUS_STAGE_ASSETS bonus = {};
     f.assets->bonus = &bonus;
     f.arena.capacity = f.arena.used;
-    const STAGE_CARD *const cards = g_StageObjects.cards;
-    const STAGE_OBSTACLE *const obstacles = g_StageObjects.obstacles;
+    const STAGE_CARD *const cards = g_StageObjects->cards;
+    const STAGE_OBSTACLE *const obstacles = g_StageObjects->obstacles;
     TH01_INPUT raw = {};
     uint64_t tick = 0;
     for (int16_t stage = 0; stage < 3; stage++) {
         CHECK_EQ_INT(g_Session.stage_id, stage);
-        m_Orb.left = g_StageObjects.cards[0].left;
-        m_Orb.top = g_StageObjects.cards[0].top;
+        m_Orb.left = g_StageObjects->cards[0].left;
+        m_Orb.top = g_StageObjects->cards[0].top;
         Stage_HitTestCards();
-        CHECK_EQ_INT(g_StageObjects.cards[0].flag, STAGE_CARD_FLIPPING);
+        CHECK_EQ_INT(g_StageObjects->cards[0].flag, STAGE_CARD_FLIPPING);
         CHECK(g_Stage.score > 0);
         for (int32_t i = 0; i < 30; i++) {
             Stage_UpdateCards(&f.assets->stage, &f.assets->hud_font);
@@ -330,9 +330,9 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK(entered_bonus);
         CHECK_EQ_INT(g_Session.stage_id, stage + 1);
         CHECK(M_InLife(GP_LIFE_ORB));
-        CHECK(g_StageObjects.cards == cards);
-        CHECK(g_StageObjects.obstacles == obstacles);
-        CHECK_EQ_INT(g_StageObjects.card_count, 1);
+        CHECK(g_StageObjects->cards == cards);
+        CHECK(g_StageObjects->obstacles == obstacles);
+        CHECK_EQ_INT(g_StageObjects->card_count, 1);
         CHECK(!g_Stage.cleared);
         CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
     }
@@ -343,7 +343,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
 {
     FIXTURE f;
     M_Init(&f);
-    const STAGE_CARD *const cards = g_StageObjects.cards;
+    const STAGE_CARD *const cards = g_StageObjects->cards;
 
     f.arena.capacity = f.arena.used;
     const TH01_INPUT raw = {};
@@ -392,7 +392,7 @@ TEST(miss_gameover_and_score_handoff_keep_prepared_storage)
     CHECK_EQ_INT(g_Gameplay.request, GAMEPLAY_REQUEST_NONE);
     CHECK(M_InStage(GP_STAGE_TITLE));
     CHECK_EQ_INT(g_Session.stage_id, 0);
-    CHECK(g_StageObjects.cards == cards);
+    CHECK(g_StageObjects->cards == cards);
     Arena_Free(&f.arena);
 }
 

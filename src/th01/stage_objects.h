@@ -35,7 +35,7 @@ typedef struct {
     int16_t destination_left, destination_top;
 } STAGE_OBJECTS;
 
-extern STAGE_OBJECTS g_StageObjects;
+extern const STAGE_OBJECTS *const g_StageObjects;
 
 // Prepares storage for every cell of a normalized layout.
 // Keep the allocator's group alive across all stages.
@@ -70,3 +70,21 @@ void StageObjects_PutAllBackgrounds(void);
 // on page 0 after any copy. Zero-object/boss calls preserve selectors.
 void StageObjects_CopyToBackground(void);
 int32_t StageObjects_CardImage(uint8_t hp, int16_t frame);
+
+// Zeroes the objects for a new run.
+void StageObjects_Clear(void);
+
+// Marks the portal at slot as holding the orb.
+void StageObjects_EnterPortal(int32_t slot);
+
+// Sets where the active portal sends the orb.
+void StageObjects_SetPortalDestination(int16_t left, int16_t top);
+
+// Ends the active portal.
+void StageObjects_ClosePortal(void);
+
+// Ends the active portal and forgets which one the orb entered.
+void StageObjects_ResetPortals(void);
+
+// Sets whether a vertical bar is bouncing the orb, which blocks the others.
+void StageObjects_SetVerticalBarActive(bool active);

@@ -66,15 +66,15 @@ static void M_Turret(
     }
     if (reset) {
         obstacle->frame = 0;
-        for (int32_t i = 0; i < g_StageObjects.obstacle_count; i++) {
-            g_StageObjects.obstacles[i].turret_flag = 0;
+        for (int32_t i = 0; i < g_StageObjects->obstacle_count; i++) {
+            g_StageObjects->obstacles[i].turret_flag = 0;
         }
     }
 }
 
 static void M_Portal(const PTN *const sprites, const int32_t slot)
 {
-    STAGE_OBJECTS *const objects = &g_StageObjects;
+    const STAGE_OBJECTS *const objects = g_StageObjects;
     STAGE_OBSTACLE *const obstacle = &objects->obstacles[slot];
     const ORB *const orb = g_Orb;
     if (objects->portal_active && objects->entered_portal != slot) {
@@ -86,8 +86,7 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
     if (obstacle->frame == 0) {
         Orb_EnterPortal();
         obstacle->frame = 1;
-        objects->entered_portal = slot;
-        objects->portal_active = true;
+        StageObjects_EnterPortal(slot);
         Sprite_Restore16(orb->previous_left, orb->previous_top, 32, 32);
         M_Put(sprites, obstacle, 30);
     } else if (obstacle->frame == 10) {
@@ -112,8 +111,9 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
                 completed_loops++;
             }
         }
-        objects->destination_left = objects->obstacles[destination].left;
-        objects->destination_top = objects->obstacles[destination].top;
+        StageObjects_SetPortalDestination(
+            objects->obstacles[destination].left,
+            objects->obstacles[destination].top);
         Sprite_Restore16(
             objects->destination_left, objects->destination_top, 32, 32);
         Sprite_PtnPut(
@@ -133,15 +133,14 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
         }
     } else if (obstacle->frame == 60) {
         obstacle->frame = 0;
-        objects->portal_active = false;
+        StageObjects_ClosePortal();
     }
 }
 
 static void M_ResetPortals(const PTN *const sprites)
 {
-    STAGE_OBJECTS *const objects = &g_StageObjects;
-    objects->entered_portal = 0;
-    objects->portal_active = false;
+    const STAGE_OBJECTS *const objects = g_StageObjects;
+    StageObjects_ResetPortals();
     if (g_Orb->in_portal) {
         Sprite_PtnPut(
             sprites, 29, -1, objects->destination_left,
@@ -152,10 +151,10 @@ static void M_ResetPortals(const PTN *const sprites)
 
 void Stage_UpdateObstacles(const PTN *const sprites, const bool reset)
 {
-    STAGE_OBJECTS *const objects = &g_StageObjects;
+    const STAGE_OBJECTS *const objects = g_StageObjects;
     const ORB *const orb = g_Orb;
     if (reset) {
-        objects->vertical_bar_active = false;
+        StageObjects_SetVerticalBarActive(false);
     }
     for (int32_t i = 0; i < objects->obstacle_count; i++) {
         STAGE_OBSTACLE *const obstacle = &objects->obstacles[i];
@@ -223,7 +222,7 @@ void Stage_UpdateObstacles(const PTN *const sprites, const bool reset)
             && (!vertical || !objects->vertical_bar_active)) {
             obstacle->frame++;
             if (vertical) {
-                objects->vertical_bar_active = true;
+                StageObjects_SetVerticalBarActive(true);
             }
             if (!vertical || orb->velocity_x == ORB_X_STILL) {
                 Orb_ReflectY();
@@ -235,7 +234,7 @@ void Stage_UpdateObstacles(const PTN *const sprites, const bool reset)
             obstacle->frame = Math16_Wrap(obstacle->frame + 1);
             if (obstacle->frame >= 8) {
                 obstacle->frame = 0;
-                objects->vertical_bar_active = false;
+                StageObjects_SetVerticalBarActive(false);
             }
             if (reset) {
                 obstacle->frame = 0;

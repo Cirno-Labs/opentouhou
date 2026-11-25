@@ -126,8 +126,8 @@ static void M_Gameplay(uint32_t *const row)
 
     row[TH01_COLUMN_card_combo] = M_I32(g_Stage.combo);
     row[TH01_COLUMN_card_flip_cycle] = g_Stage.flip_cycle;
-    row[TH01_COLUMN_card_count] = (uint32_t)g_StageObjects.card_count;
-    row[TH01_COLUMN_card_hash] = M_HashCards(&g_StageObjects);
+    row[TH01_COLUMN_card_count] = (uint32_t)g_StageObjects->card_count;
+    row[TH01_COLUMN_card_hash] = M_HashCards(g_StageObjects);
 
     row[TH01_COLUMN_boss] = g_Stage.boss;
     M_Boss(row);

@@ -147,7 +147,7 @@ void Gameplay_Reset(void)
     Orb_Init();
     Shots_Init();
     Pellets_Init();
-    memset(&g_StageObjects, 0, sizeof(g_StageObjects));
+    StageObjects_Clear();
     Stage_Init();
     StageOrb_Init();
     Items_Init();

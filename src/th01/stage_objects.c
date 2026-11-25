@@ -12,7 +12,8 @@ typedef struct {
     uint8_t *backgrounds;
 } STAGE_OBJECT_STORAGE;
 
-STAGE_OBJECTS g_StageObjects;
+static STAGE_OBJECTS m_StageObjects;
+const STAGE_OBJECTS *const g_StageObjects = &m_StageObjects;
 static STAGE_OBJECT_STORAGE m_Storage;
 
 static const uint8_t m_CardAnimation[5][5] = {
@@ -54,7 +55,7 @@ static void M_Snapshot(
         for (int32_t x = 0; x < 32; x++) {
             const int32_t at = offset + y * VIDEO_WIDTH + x;
             if (at >= 0 && at < VIDEO_PAGE_SIZE) {
-                g_StageObjects.backgrounds[slot * 1024 + y * 32 + x] =
+                m_StageObjects.backgrounds[slot * 1024 + y * 32 + x] =
                     g_Video.pages[1][at];
             }
         }
@@ -62,7 +63,7 @@ static void M_Snapshot(
     Video_SelectDrawingPage(0);
 }
 
-static void M_Copy(const int16_t left, const int16_t top)
+static void M_CopySquare(const int16_t left, const int16_t top)
 {
     const int32_t offset = M_Offset(left, top);
     for (int32_t y = 0; y < 32; y++) {
@@ -85,61 +86,61 @@ RESULT StageObjects_ValidateSprites(
     return OK;
 }
 
-static void M_Init(
+static void M_Instantiate(
     const STAGE_DATA *const data, const int16_t stage_id,
     const bool first_in_scene, const ALLOCATOR *const allocator,
     const PTN *const sprites)
 {
-    const STAGE_OBJECTS previous = g_StageObjects;
-    memset(&g_StageObjects, 0, sizeof(g_StageObjects));
-    g_StageObjects.entrance_done = true;
-    g_StageObjects.vertical_bar_active = previous.vertical_bar_active;
-    g_StageObjects.portal_active = previous.portal_active;
-    g_StageObjects.entered_portal = previous.entered_portal;
-    g_StageObjects.destination_left = previous.destination_left;
-    g_StageObjects.destination_top = previous.destination_top;
+    const STAGE_OBJECTS previous = m_StageObjects;
+    memset(&m_StageObjects, 0, sizeof(m_StageObjects));
+    m_StageObjects.entrance_done = true;
+    m_StageObjects.vertical_bar_active = previous.vertical_bar_active;
+    m_StageObjects.portal_active = previous.portal_active;
+    m_StageObjects.entered_portal = previous.entered_portal;
+    m_StageObjects.destination_left = previous.destination_left;
+    m_StageObjects.destination_top = previous.destination_top;
     if (stage_id % 5 == 4) {
         return;
     }
     const STAGE_DATA_STAGE *const layout = &data->stages[stage_id % 5];
     for (int32_t y = 0; y < 10; y++) {
         for (int32_t x = 0; x < 20; x++) {
-            g_StageObjects.card_count += layout->cells[y][x].card;
-            g_StageObjects.obstacle_count +=
+            m_StageObjects.card_count += layout->cells[y][x].card;
+            m_StageObjects.obstacle_count +=
                 layout->cells[y][x].obstacle != STAGE_DATA_OBSTACLE_NONE;
         }
     }
     if (allocator == nullptr) {
-        g_StageObjects.cards = m_Storage.cards;
-        g_StageObjects.obstacles = m_Storage.obstacles;
-        g_StageObjects.backgrounds = m_Storage.backgrounds;
+        m_StageObjects.cards = m_Storage.cards;
+        m_StageObjects.obstacles = m_Storage.obstacles;
+        m_StageObjects.backgrounds = m_Storage.backgrounds;
         memset(
-            g_StageObjects.cards, 0,
-            (size_t)g_StageObjects.card_count * sizeof(STAGE_CARD));
+            m_StageObjects.cards, 0,
+            (size_t)m_StageObjects.card_count * sizeof(STAGE_CARD));
         memset(
-            g_StageObjects.obstacles, 0,
-            (size_t)g_StageObjects.obstacle_count * sizeof(STAGE_OBSTACLE));
+            m_StageObjects.obstacles, 0,
+            (size_t)m_StageObjects.obstacle_count * sizeof(STAGE_OBSTACLE));
         memset(
-            g_StageObjects.backgrounds, 0,
-            (size_t)(g_StageObjects.card_count + g_StageObjects.obstacle_count)
+            m_StageObjects.backgrounds, 0,
+            (size_t)(m_StageObjects.card_count + m_StageObjects.obstacle_count)
                 * 1024);
     } else {
-        if (g_StageObjects.card_count + g_StageObjects.obstacle_count != 0) {
-            g_StageObjects.backgrounds = Allocator_AllocZ(
+        if (m_StageObjects.card_count + m_StageObjects.obstacle_count != 0) {
+            m_StageObjects.backgrounds = Allocator_AllocZ(
                 allocator,
-                (size_t)(g_StageObjects.card_count
-                         + g_StageObjects.obstacle_count)
+                (size_t)(m_StageObjects.card_count
+                         + m_StageObjects.obstacle_count)
                     * 1024);
         }
-        if (g_StageObjects.card_count != 0) {
-            g_StageObjects.cards = Allocator_AllocZ(
+        if (m_StageObjects.card_count != 0) {
+            m_StageObjects.cards = Allocator_AllocZ(
                 allocator,
-                (size_t)g_StageObjects.card_count * sizeof(STAGE_CARD));
+                (size_t)m_StageObjects.card_count * sizeof(STAGE_CARD));
         }
-        if (g_StageObjects.obstacle_count != 0) {
-            g_StageObjects.obstacles = Allocator_AllocZ(
+        if (m_StageObjects.obstacle_count != 0) {
+            m_StageObjects.obstacles = Allocator_AllocZ(
                 allocator,
-                (size_t)g_StageObjects.obstacle_count * sizeof(STAGE_OBSTACLE));
+                (size_t)m_StageObjects.obstacle_count * sizeof(STAGE_OBSTACLE));
         }
     }
     MasterRng_Next(&g_Rng);
@@ -147,14 +148,14 @@ static void M_Init(
     for (int32_t y = 0; y < 10; y++) {
         for (int32_t x = 0; x < 20; x++) {
             if (layout->cells[y][x].card) {
-                g_StageObjects.cards[card] = (STAGE_CARD) {
+                m_StageObjects.cards[card] = (STAGE_CARD) {
                     .left = (int16_t)(x * 32),
                     .top = (int16_t)(y * 32 + 64),
                     .hp = layout->cells[y][x].card_extra_hp,
                 };
                 M_Snapshot(
-                    g_StageObjects.cards[card].left,
-                    g_StageObjects.cards[card].top, card);
+                    m_StageObjects.cards[card].left,
+                    m_StageObjects.cards[card].top, card);
                 card++;
             }
         }
@@ -166,18 +167,18 @@ static void M_Init(
             if (type != STAGE_DATA_OBSTACLE_NONE) {
                 const int16_t left = (int16_t)(x * 32);
                 const int16_t top = (int16_t)(y * 32 + 64);
-                g_StageObjects.obstacles[obstacle] =
+                m_StageObjects.obstacles[obstacle] =
                     (STAGE_OBSTACLE) { .left = left, .top = top, .type = type };
-                M_Snapshot(left, top, obstacle + g_StageObjects.card_count);
+                M_Snapshot(left, top, obstacle + m_StageObjects.card_count);
                 Sprite_PtnPut(sprites, M_ObstacleImage(type), -1, left, top);
                 obstacle++;
             }
         }
     }
-    g_StageObjects.entrance_done = first_in_scene;
+    m_StageObjects.entrance_done = first_in_scene;
     if (first_in_scene) {
-        for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
-            const STAGE_CARD *const c = &g_StageObjects.cards[i];
+        for (int32_t i = 0; i < m_StageObjects.card_count; i++) {
+            const STAGE_CARD *const c = &m_StageObjects.cards[i];
             Sprite_PtnPut(
                 sprites, StageObjects_CardImage(c->hp, 0), -1, c->left, c->top);
         }
@@ -198,28 +199,28 @@ void StageObjects_Init(
     const bool first_in_scene, const ALLOCATOR *const allocator,
     const PTN *const sprites)
 {
-    M_Init(data, stage_id, first_in_scene, allocator, sprites);
+    M_Instantiate(data, stage_id, first_in_scene, allocator, sprites);
 }
 
 void StageObjects_InitPrepared(
     const STAGE_DATA *const data, const int16_t stage_id,
     const bool first_in_scene, const PTN *const sprites)
 {
-    M_Init(data, stage_id, first_in_scene, nullptr, sprites);
+    M_Instantiate(data, stage_id, first_in_scene, nullptr, sprites);
 }
 
 bool StageObjects_ResumeEntrance(const PTN *const sprites)
 {
-    if (g_StageObjects.entrance_done) {
+    if (m_StageObjects.entrance_done) {
         return true;
     }
-    if (g_StageObjects.entrance_waiting && !VSyncIrq_DelayReady(1)) {
+    if (m_StageObjects.entrance_waiting && !VSyncIrq_DelayReady(1)) {
         return false;
     }
     for (;;) {
         int32_t done = 0;
-        for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
-            STAGE_CARD *const card = &g_StageObjects.cards[i];
+        for (int32_t i = 0; i < m_StageObjects.card_count; i++) {
+            STAGE_CARD *const card = &m_StageObjects.cards[i];
             if (card->entrance_frame == -1) {
                 done++;
             }
@@ -237,16 +238,16 @@ bool StageObjects_ResumeEntrance(const PTN *const sprites)
                 card->entrance_frame = -1;
             }
         }
-        if (done >= g_StageObjects.card_count) {
-            g_StageObjects.entrance_done = true;
+        if (done >= m_StageObjects.card_count) {
+            m_StageObjects.entrance_done = true;
             return true;
         }
-        if (g_StageObjects.entrance_total < g_StageObjects.card_count) {
-            g_StageObjects.cards[g_StageObjects.entrance_total].entrance_frame =
+        if (m_StageObjects.entrance_total < m_StageObjects.card_count) {
+            m_StageObjects.cards[m_StageObjects.entrance_total].entrance_frame =
                 12;
         }
-        g_StageObjects.entrance_total++;
-        g_StageObjects.entrance_waiting = true;
+        m_StageObjects.entrance_total++;
+        m_StageObjects.entrance_waiting = true;
         if (!VSyncIrq_DelayReady(1)) {
             return false;
         }
@@ -267,7 +268,7 @@ void StageObjects_PutBackgroundAndObject(
                     ? PTN_TRANSPARENT
                     : sprites->pixels[image * 1024 + pixel];
                 g_Video.pages[g_Video.drawing_page][at] = fg == PTN_TRANSPARENT
-                    ? g_StageObjects.backgrounds[slot * 1024 + pixel]
+                    ? m_StageObjects.backgrounds[slot * 1024 + pixel]
                     : fg;
             }
         }
@@ -276,28 +277,28 @@ void StageObjects_PutBackgroundAndObject(
 
 void StageObjects_PutAllBackgrounds(void)
 {
-    for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
+    for (int32_t i = 0; i < m_StageObjects.card_count; i++) {
         StageObjects_PutBackgroundAndObject(
-            nullptr, g_StageObjects.cards[i].left, g_StageObjects.cards[i].top,
+            nullptr, m_StageObjects.cards[i].left, m_StageObjects.cards[i].top,
             STAGE_OBJECT_NONE, i);
     }
-    for (int32_t i = 0; i < g_StageObjects.obstacle_count; i++) {
+    for (int32_t i = 0; i < m_StageObjects.obstacle_count; i++) {
         StageObjects_PutBackgroundAndObject(
-            nullptr, g_StageObjects.obstacles[i].left,
-            g_StageObjects.obstacles[i].top, STAGE_OBJECT_NONE,
-            i + g_StageObjects.card_count);
+            nullptr, m_StageObjects.obstacles[i].left,
+            m_StageObjects.obstacles[i].top, STAGE_OBJECT_NONE,
+            i + m_StageObjects.card_count);
     }
 }
 
 void StageObjects_CopyToBackground(void)
 {
-    for (int32_t i = 0; i < g_StageObjects.obstacle_count; i++) {
-        M_Copy(
-            g_StageObjects.obstacles[i].left, g_StageObjects.obstacles[i].top);
+    for (int32_t i = 0; i < m_StageObjects.obstacle_count; i++) {
+        M_CopySquare(
+            m_StageObjects.obstacles[i].left, m_StageObjects.obstacles[i].top);
         Video_SelectDrawingPage(0);
     }
-    for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
-        M_Copy(g_StageObjects.cards[i].left, g_StageObjects.cards[i].top);
+    for (int32_t i = 0; i < m_StageObjects.card_count; i++) {
+        M_CopySquare(m_StageObjects.cards[i].left, m_StageObjects.cards[i].top);
         Video_SelectDrawingPage(0);
     }
 }
@@ -305,4 +306,37 @@ void StageObjects_CopyToBackground(void)
 int32_t StageObjects_CardImage(const uint8_t hp, const int16_t frame)
 {
     return m_CardAnimation[hp][frame / 6];
+}
+
+void StageObjects_Clear(void)
+{
+    memset(&m_StageObjects, 0, sizeof(m_StageObjects));
+}
+
+void StageObjects_EnterPortal(const int32_t slot)
+{
+    m_StageObjects.entered_portal = slot;
+    m_StageObjects.portal_active = true;
+}
+
+void StageObjects_SetPortalDestination(const int16_t left, const int16_t top)
+{
+    m_StageObjects.destination_left = left;
+    m_StageObjects.destination_top = top;
+}
+
+void StageObjects_ClosePortal(void)
+{
+    m_StageObjects.portal_active = false;
+}
+
+void StageObjects_ResetPortals(void)
+{
+    m_StageObjects.entered_portal = 0;
+    m_StageObjects.portal_active = false;
+}
+
+void StageObjects_SetVerticalBarActive(const bool active)
+{
+    m_StageObjects.vertical_bar_active = active;
 }
