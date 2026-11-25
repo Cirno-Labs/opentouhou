@@ -39,7 +39,6 @@
 
 static START_VALUE m_Starts[TH01_START_COUNT];
 static size_t m_StartCount;
-static bool m_Mounted;
 static bool m_Initialized;
 static bool m_StartApplied;
 static bool m_InGameplay;
@@ -82,11 +81,8 @@ static RESULT M_SetStart(const char *const name, const char *const value)
 // that the original lacks.
 static RESULT M_Start(void)
 {
-    if (!m_Mounted) {
-        MUST(ShellBuiltin_Mount(Shell_GetFiles()));
-        MUST(ShellFonts_Reset(false));
-        m_Mounted = true;
-    }
+    MUST(ShellBuiltin_Mount(Shell_GetFiles()));
+    MUST(ShellFonts_Reset(false));
     Config_SetDefaults(&g_SettingsSchema, &g_Settings);
     g_Settings.fix_debouncing = false;
     m_StartApplied = false;

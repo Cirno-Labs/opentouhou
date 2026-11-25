@@ -150,9 +150,14 @@ static uint16_t M_CandidateSeed(
     return (uint16_t)(hash ^ hash >> 16);
 }
 
-static RESULT M_Replay(const RECORDER_GAME *const game, const M_INPUTS *run)
+// Plays run from a fresh start, with the game's files opened anew, since a
+// game may mount files at each start that only closing them unmounts.
+static RESULT M_Replay(
+    const RECORDER_GAME *const game, const char *const data,
+    const M_INPUTS *run)
 {
     game->stop();
+    MUST(NullShell_OpenFiles(data, nullptr));
     Recorder_ResetClock();
     MUST(game->start());
     for (int32_t i = 0; i < run->frames; i++) {
@@ -175,7 +180,7 @@ static RESULT M_Try(
     const BOT_STRATEGY *const strategy, const uint16_t seed)
 {
     const RECORDER_GAME *const game = search->game;
-    MUST(M_Replay(game, &search->kept));
+    MUST(M_Replay(game, search->args->data, &search->kept));
     const int32_t setbacks = game->setbacks();
     BOT bot = *search->bot;
     bot.strategy = strategy;
@@ -388,7 +393,7 @@ static RESULT M_Search(
     printf(
         "searched %d candidates, met %d dead ends\n", search.evaluated,
         search.dead_ends);
-    return M_Replay(game, run);
+    return M_Replay(game, args->data, run);
 }
 
 static RESULT M_SetStarts(
