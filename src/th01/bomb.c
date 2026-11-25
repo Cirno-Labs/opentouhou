@@ -124,10 +124,10 @@ BOMB_UPDATE Bomb_BeginUpdate(
 {
     ASSERT(!m_Bomb.waiting);
     m_Bomb.frame = frame;
-    g_Player.invincible = true;
+    Player_BecomeInvincible();
     if (frame == 0) {
         Pellets_Decay();
-        Sprite_PtnPut(miko, 3, -1, g_Player.left, PLAYER_TOP);
+        Sprite_PtnPut(miko, 3, -1, g_Player->left, PLAYER_TOP);
         m_Bomb.white = g_Palette.saved;
         for (int32_t color = 0; color < 16; color++) {
             for (int32_t component = 0; component < 3; component++) {
@@ -176,7 +176,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
         for (int32_t i = 0; i < 18; i++) {
             Sprite_Restore16(m_Bomb.left[i], m_Bomb.top[i], 48, 32);
         }
-        g_Player.bomb_damaging = true;
+        Player_StartBombDamage();
     } else if (frame < 140) {
         if (frame % 10 == 0) {
             Sound_Effect(9);
@@ -224,5 +224,5 @@ BOMB_UPDATE Bomb_ResumeUpdate(void)
 
 bool Bomb_DealsDamage(const int16_t remaining_lives, const uint32_t frame)
 {
-    return remaining_lives == 0 && g_Player.bomb_damaging && frame % 50 == 0;
+    return remaining_lives == 0 && g_Player->bomb_damaging && frame % 50 == 0;
 }

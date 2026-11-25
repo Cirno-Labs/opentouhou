@@ -1,5 +1,6 @@
 #include "../src/th01/hud.c"
 #include "../src/th01/items.c"
+#include "../src/th01/player.c"
 #include "th01/session.h"
 #include "th01/stage.h"
 #include "th01/shots.h"
@@ -119,7 +120,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
         for (int32_t damaging = 0; damaging < 2; damaging++) {
             CASE state;
             M_Init(&state, 0);
-            g_Player.bomb_damaging = damaging;
+            m_Player.bomb_damaging = damaging;
             g_Stage.flip_cycle = (uint8_t)cycle;
             const uint32_t rng = g_Rng;
             Stage_HitTestCards();
@@ -141,7 +142,7 @@ TEST(all_postfix_drop_cycles_and_bomb_short_circuit)
             CASE state;
             M_Init(&state, 0);
             g_StageObjects.cards[0].flag = flag;
-            g_Player.bomb_damaging = true;
+            m_Player.bomb_damaging = true;
             g_Orb.left = 500;
             g_Rng = seed;
             uint32_t expected = seed;
@@ -175,7 +176,7 @@ TEST(card_hp_frames_revenge_and_stage_exit)
                         g_StageObjects.cards[0].hp,
                         hp - flip - (frame == 29 && hp > flip));
                     CHECK_EQ_INT(g_Stage.cleared, flip == hp && frame == 29);
-                    CHECK_EQ_INT(g_Player.is_hit, g_Stage.cleared);
+                    CHECK_EQ_INT(m_Player.is_hit, g_Stage.cleared);
                     CHECK_EQ_INT(state.arena.used, used);
                 }
             }

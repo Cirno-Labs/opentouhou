@@ -112,7 +112,7 @@ TEST(held_confirmation_waits_then_activates_real_cached_scene)
     CHECK_EQ_INT(g_Session.route, 0);
     CHECK(m_Scene.active == &f.cache[1]);
     CHECK(m_Scene.active->layouts.stages[0].cells[0][1].card);
-    CHECK(g_Stage.cleared && g_Player.is_hit);
+    CHECK(g_Stage.cleared && g_Player->is_hit);
     CHECK(RouteSelect_Resume(&f.assets, &raw));
     Arena_Free(&arena);
 }
@@ -165,7 +165,7 @@ TEST(transparent_scaled_spaces_preserve_backdrop)
         }
     }
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK(!g_Stage.cleared && !g_Player.is_hit);
+    CHECK(!g_Stage.cleared && !g_Player->is_hit);
     Arena_Free(&arena);
 }
 
@@ -190,6 +190,6 @@ TEST(input_side_effects_and_asset_validation_remain_real)
     CHECK(!RouteSelect_Begin(&f.assets, &pause));
     CHECK(g_GameInput->paused);
     CHECK(M_Poll(&f, (TH01_INPUT) { .shot = true, .ok = true }));
-    CHECK(g_Stage.cleared && g_Player.is_hit);
+    CHECK(g_Stage.cleared && g_Player->is_hit);
     Arena_Free(&arena);
 }

@@ -392,7 +392,7 @@ static void M_AimedStatic(
                           Math16_Wrap(x[i] - m_B10J.still.left - 64))
                     : Math16_Angle(
                           Math16_Wrap(384 - y[i]),
-                          Math16_Wrap(g_Player.left + 12 - x[i]));
+                          Math16_Wrap(g_Player->left + 12 - x[i]));
                 M_Add(
                     assets, miko, x[i], y[i], angle,
                     m_B10J.status.frame > 280
@@ -432,7 +432,7 @@ static void M_AimedMissiles(
         if (sq->radius < 80) {
             sq->radius += 8;
         } else if (m_B10J.status.frame == 224) {
-            m_B10J.target_left = g_Player.left;
+            m_B10J.target_left = g_Player->left;
         } else if (m_B10J.status.frame > 240) {
             const MATH16_VECTOR velocity = Math16_Aim(
                 (MATH16_VECTOR) { Math16_Wrap(m_B10J.still.left + 64),
@@ -662,8 +662,8 @@ static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
             M_Pillar(
                 assets, miko, Math16_Wrap(x - 16), bottom,
                 Math16_Wrap(16 * (34 - m_B10J.pillar_time[i])));
-            if (!g_Player.invincible && g_Player.left > Math16_Wrap(x - 40)
-                && g_Player.left < Math16_Wrap(x + 8)) {
+            if (!g_Player->invincible && g_Player->left > Math16_Wrap(x - 40)
+                && g_Player->left < Math16_Wrap(x + 8)) {
                 Player_Hit();
             }
             m_B10J.pillar_time[i] -= 8;
@@ -793,7 +793,7 @@ static void M_Lasers(const B10J_ASSETS *const assets, const PTN *const miko)
         const int32_t i = m_B10J.status.frame % 4;
         ShootoutLasers_Spawn(
             i, m_B10J.laser_x[i], m_B10J.laser_y[i],
-            Math16_Wrap(g_Player.left + 14), 400, m_B10J.pattern_state, 7, 20,
+            Math16_Wrap(g_Player->left + 14), 400, m_B10J.pattern_state, 7, 20,
             4);
     }
     if (m_B10J.status.frame > 300) {

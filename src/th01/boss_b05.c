@@ -176,7 +176,7 @@ static void M_Slam(void)
         M_Accelerate(1);
         return;
     }
-    const PLAYER *const player = &g_Player;
+    const PLAYER *const player = g_Player;
     if (m_B05.status.frame == 100) {
         m_B05.pattern_state = Boss_Rank(4, 4, 5, 6);
         const uint8_t angle = Math16_Angle(

@@ -33,7 +33,7 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         Video_SetScroll(0);
         g_Session.exit_rand = g_Session.frame_rand;
         g_TestDamage = false;
-        g_Player.bomb_frame = 200;
+        Player_SetBombFrame(200);
         if (g_Stage.cleared) {
             g_Stage.cleared = false;
             Player_ClearHit();
@@ -58,7 +58,7 @@ bool GameplayExit_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             return false;
         }
         Player_ClearHit();
-        g_Player.invincibility_time = 150;
+        Player_GrantInvincibility(150);
         GameplayLife_Begin();
         return true;
     }

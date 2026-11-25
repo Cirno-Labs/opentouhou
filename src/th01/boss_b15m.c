@@ -1241,7 +1241,7 @@ static int16_t M_SymmetricArc(
 static void M_SafetyAfterHit(
     const B15M_ASSETS *const assets, const PTN *const miko)
 {
-    if (g_Player.is_hit) {
+    if (g_Player->is_hit) {
         m_B15M.safety_circle.frame = 200;
     }
     if (m_B15M.status.frame % m_B15M.pattern_state == 0) {
@@ -1277,7 +1277,7 @@ static int16_t M_Safety(
         && circle->frame == 0) {
         if (m_B15M.status.frame == 60) {
             Sound_Effect(8);
-            m_B15M.safety_left = g_Player.left;
+            m_B15M.safety_left = g_Player->left;
         }
         M_SummonDots(
             assets, miko, circle, Math16_Wrap(m_B15M.safety_left + 16), 384, 2);
@@ -1301,9 +1301,9 @@ static int16_t M_Safety(
                 assets, miko, Math16_Wrap(m_B15M.safety_left + 16), 384, 128, 7,
                 1, 0, 255);
         }
-        if (!g_Player.invincible
-            && (Math16_Wrap(m_B15M.safety_left + 104) <= g_Player.left
-                || Math16_Wrap(m_B15M.safety_left - 128) >= g_Player.left)) {
+        if (!g_Player->invincible
+            && (Math16_Wrap(m_B15M.safety_left + 104) <= g_Player->left
+                || Math16_Wrap(m_B15M.safety_left - 128) >= g_Player->left)) {
             Wait_Ticks(&m_B15M.wait, host_tick, 6);
             return -1;
         }
@@ -1375,7 +1375,7 @@ static int16_t M_AimedRing(
         M_Laser(
             assets, miko, m_B15M.status.frame / 10,
             Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
-            Math16_Wrap(m_B15M.girl.top + 28), g_Player.left, 400, 50, 20, 8);
+            Math16_Wrap(m_B15M.girl.top + 28), g_Player->left, 400, 50, 20, 8);
         Sound_Effect(6);
     }
     return 1;

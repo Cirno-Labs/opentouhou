@@ -93,7 +93,7 @@ static void M_StageBackground(void)
         Gameplay_CopyPage(0, 1);
     } else {
         Gameplay_CopyPage(1, 0);
-        Sprite_PtnPut(&a->miko, 0, -1, g_Player.left, PLAYER_TOP);
+        Sprite_PtnPut(&a->miko, 0, -1, g_Player->left, PLAYER_TOP);
     }
     Scene_BeginStage(
         g_Session.stage_id, g_Stage.first_stage, Gameplay_StageSprites());
@@ -137,7 +137,7 @@ static void M_StageReady(void)
         g_Stage.first_stage, g_Stage.timer_initialized, g_Session.route);
     g_Stage.maximum_combo = 0;
     Orb_LeavePortal();
-    g_Player.bomb_frame = 0;
+    Player_SetBombFrame(0);
     g_Stage.frame = 0;
     Orb_ResetFlight();
     if (g_Session.stage_id % 5 == 0 || g_Gameplay.boss_stage) {
@@ -184,7 +184,7 @@ bool GameplayStage_Step(const uint64_t host_tick)
         } else {
             StageObjects_CopyToBackground();
             Sprite_PtnPut(
-                &g_GameplayAssets->miko, 0, -1, g_Player.left, PLAYER_TOP);
+                &g_GameplayAssets->miko, 0, -1, g_Player->left, PLAYER_TOP);
             Items_Render(Gameplay_StageSprites());
         }
         if (Gameplay_Boss() != nullptr

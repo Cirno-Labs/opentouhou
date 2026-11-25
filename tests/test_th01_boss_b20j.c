@@ -1,6 +1,7 @@
 #include "../src/th01/boss_b20j.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/shootout_lasers.c"
+#include "../src/th01/player.c"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -154,8 +155,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     CHECK(Result_Ignore(GameText_LoadGlyphs(glyphs, 10, a, &f->font)));
     f->stage = (PTN) { .count = 4, .pixels = Allocator_Alloc(a, 4096) };
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
-    g_Player.left = 300;
-    g_Player.invincible = true;
+    m_Player.left = 300;
+    m_Player.invincible = true;
     g_Session.lives = 3;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;

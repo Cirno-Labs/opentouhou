@@ -1,3 +1,4 @@
+#include "../src/th01/player.c"
 #include "th01/invincibility.h"
 #include "th01/rng.h"
 
@@ -56,8 +57,8 @@ TEST(sprite_restart_draws_three_random_values_per_new_slot)
     Video_Init(Arena_Allocator(&arena));
     INVINCIBILITY state = {};
     INVINCIBILITY_ASSETS assets = {};
-    memset(&g_Player, 0, sizeof(g_Player));
-    g_Player.left = 300;
+    memset(&m_Player, 0, sizeof(m_Player));
+    m_Player.left = 300;
     g_Rng = 41;
     Invincibility_UpdateAndRender(&state, &assets);
     CHECK_EQ_INT(state.frame[0], 255);
@@ -66,7 +67,7 @@ TEST(sprite_restart_draws_three_random_values_per_new_slot)
     Invincibility_UpdateAndRender(&state, &assets);
     CHECK_EQ_INT(memcmp(&state, &before, sizeof(state)), 0);
     CHECK_EQ_INT(g_Rng, 41);
-    g_Player.invincible = true;
+    m_Player.invincible = true;
     uint32_t expected = g_Rng;
     INVINCIBILITY expected_state = {};
     for (int32_t i = 0; i < 8; i++) {
@@ -79,7 +80,7 @@ TEST(sprite_restart_draws_three_random_values_per_new_slot)
     CHECK_EQ_INT(g_Rng, expected);
     CHECK_EQ_INT(memcmp(&state, &expected_state, sizeof(state)), 0);
     CHECK_EQ_INT(arena.used, used);
-    g_Player.invincible = false;
+    m_Player.invincible = false;
     Invincibility_UpdateAndRender(&state, &assets);
     CHECK_EQ_INT(state.frame[0], 255);
     CHECK_EQ_INT(g_Rng, expected);
@@ -94,7 +95,7 @@ TEST(rect_restore_keeps_the_original_word_width)
     memset(g_Video.pages[1], 7, VIDEO_PAGE_SIZE);
     INVINCIBILITY state = {};
     INVINCIBILITY_ASSETS assets = {};
-    memset(&g_Player, 0, sizeof(g_Player));
+    memset(&m_Player, 0, sizeof(m_Player));
     g_Rng = 1;
     for (int32_t i = 0; i < 8; i++) {
         state.left[i] = 1;

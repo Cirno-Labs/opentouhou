@@ -4,6 +4,7 @@
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/player.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -93,8 +94,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     memset(f->miko.pixels, PTN_TRANSPARENT, 1024);
     g_Session.lives = 3;
     g_Rng = 0xb10b0000;
-    g_Player.invincible = true;
-    g_Player.left = 300;
+    m_Player.invincible = true;
+    m_Player.left = 300;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
@@ -335,7 +336,7 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
     }
     CHECK(m_B10J.finished);
     CHECK(g_Stage.cleared);
-    CHECK(g_Player.is_hit);
+    CHECK(m_Player.is_hit);
     CHECK(m_Scene.active == &f.assets.next_scene);
     CHECK_EQ_INT(m_Scene.active->id, 4);
     const B10J finished = m_B10J;

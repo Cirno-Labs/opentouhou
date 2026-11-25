@@ -1,6 +1,7 @@
 #include "../src/th01/boss_b20m.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/input.c"
+#include "../src/th01/player.c"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -167,8 +168,8 @@ static void M_Fixture(FIXTURE *const f, ARENA *const arena)
     f->stage = (PTN) { .count = 4, .pixels = Allocator_Alloc(a, 4096) };
     memset(f->stage.pixels, PTN_TRANSPARENT, 4096);
     f->mask.coverage = Allocator_AllocZ(a, 640 * 66);
-    g_Player.left = 300;
-    g_Player.invincible = true;
+    m_Player.left = 300;
+    m_Player.invincible = true;
     g_Session.lives = 3;
     g_Orb.top = 64;
     g_Orb.previous_top = 64;
@@ -327,23 +328,23 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     m_B20M.status.hp = 0;
     g_Orb.previous_left = 123;
     g_Orb.previous_top = 234;
-    g_Player.invincible = true;
-    g_Player.invincibility_time = 91;
-    g_Player.deflecting = true;
-    g_Player.bomb_damaging = true;
+    m_Player.invincible = true;
+    m_Player.invincibility_time = 91;
+    m_Player.deflecting = true;
+    m_Player.bomb_damaging = true;
     m_B20M.leaves.flag[7] = 6;
     m_GameInput.bomb = true;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
-    CHECK_EQ_INT(g_Player.left, 304);
+    CHECK_EQ_INT(m_Player.left, 304);
     CHECK_EQ_INT(g_Orb.left, 600);
     CHECK_EQ_INT(g_Orb.top, 280);
     CHECK_EQ_INT(g_Orb.previous_left, 123);
     CHECK_EQ_INT(g_Orb.previous_top, 234);
-    CHECK(!g_Player.deflecting);
-    CHECK(!g_Player.bomb_damaging);
+    CHECK(!m_Player.deflecting);
+    CHECK(!m_Player.bomb_damaging);
     CHECK(!g_GameInput->bomb);
     for (int32_t i = 0; m_B20M.sequence != B20M_SEQUENCE_NONE && i < 1000;
          i++) {
@@ -354,8 +355,8 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(m_B20M.status.phase, B20M_PHASE_SECOND_FORM);
     CHECK_EQ_INT(m_B20M.status.hp, 6);
     CHECK_EQ_INT(m_B20M.status.frame, 0);
-    CHECK_EQ_INT(g_Player.invincibility_time, 0);
-    CHECK(!g_Player.invincible);
+    CHECK_EQ_INT(m_Player.invincibility_time, 0);
+    CHECK(!m_Player.invincible);
     CHECK_EQ_INT(m_B20M.leaves.flag[7], 0);
     CHECK_EQ_INT(m_Health.first_white, 10);
     CHECK_EQ_INT(m_Health.first_redwhite, 3);
@@ -405,7 +406,7 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     m_B20M.status.frame = 49;
     m_B20M.pattern = 0;
     m_B20M.patterns_until_next = 10;
-    g_Player.invincible = false;
+    m_Player.invincible = false;
     m_B20M.birds.alive[0] = true;
     m_B20M.birds.left[0] = 300;
     m_B20M.birds.top[0] = 368;
@@ -414,7 +415,7 @@ TEST(bird_collision_waits_before_pattern_rng_and_hit_tail)
     const uint32_t rng = g_Rng;
     const size_t used = arena.used;
     CHECK(!M_BossUpdate(&f.assets, tick));
-    CHECK(g_Player.is_hit);
+    CHECK(m_Player.is_hit);
     CHECK_EQ_INT(g_Rng, rng);
     const B20M pending = m_B20M;
     CHECK(!M_BossUpdate(&f.assets, tick + 5));

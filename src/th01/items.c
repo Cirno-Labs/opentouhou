@@ -56,7 +56,7 @@ static void M_Text(
 
 static void M_Collect(ITEM *const item, const bool bomb)
 {
-    const int32_t delta = item->left - g_Player.left;
+    const int32_t delta = item->left - g_Player->left;
     if (!M_Visible(item) || delta <= -24 || delta >= 24 || item->top <= 344) {
         return;
     }
@@ -66,9 +66,9 @@ static void M_Collect(ITEM *const item, const bool bomb)
     if (item->top >= 368) {
         item->top = 368;
     }
-    if (bomb && g_Player.remaining_bombs < 5) {
-        g_Player.remaining_bombs++;
-        Hud_BombsPut(g_Player.remaining_bombs - 1);
+    if (bomb && g_Player->remaining_bombs < 5) {
+        Player_GainBomb();
+        Hud_BombsPut(g_Player->remaining_bombs - 1);
         item->flag = ITEM_COLLECTED;
     } else {
         if (bomb) {

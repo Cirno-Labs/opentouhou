@@ -45,7 +45,7 @@ typedef struct {
     bool bombing, combo_enabled;
 } PLAYER;
 
-extern PLAYER g_Player;
+extern const PLAYER *const g_Player;
 
 // Zeroes the player for a new world.
 void Player_Init(void);
@@ -70,6 +70,33 @@ void Player_StopActions(void);
 
 // Moves the player to the center of the playfield.
 void Player_Center(void);
+
+// Moves the player to left, unclamped.
+void Player_MoveTo(int16_t left);
+
+// Turns invincibility on and leaves its timer.
+void Player_BecomeInvincible(void);
+
+// Turns invincibility back on while its timer runs.
+void Player_ResumeInvincibility(void);
+
+// Sets the invincibility timer to frames.
+void Player_GrantInvincibility(int16_t frames);
+
+// Lets the bomb damage until Player_EndBomb.
+void Player_StartBombDamage(void);
+
+// Sets the frame count that the bomb's damage and casting pose follow.
+void Player_SetBombFrame(uint32_t frame);
+
+// Counts one frame on the bomb frame count.
+void Player_AdvanceBombFrame(void);
+
+// Sets the remaining bombs; the caller redraws the HUD.
+void Player_SetBombs(int16_t count);
+
+// Gains one bomb; the caller keeps the cap and redraws the HUD.
+void Player_GainBomb(void);
 
 // Keeps the suspended bomb branch. Zero-initialize before its first use.
 // The field belongs to the Player_ functions; never copy a pending token.

@@ -78,8 +78,8 @@ void Stage_HitTestCards(void)
         if (((dx > -24 && dx < 24 && dy > -24 && dy < 24)
              && card->flag == STAGE_CARD_ALIVE)
             || (g_TestDamage && card->flag == STAGE_CARD_ALIVE)
-            || (g_Player.bomb_damaging
-                && g_Player.bomb_frame % (uint32_t)objects->card_count
+            || (g_Player->bomb_damaging
+                && g_Player->bomb_frame % (uint32_t)objects->card_count
                     == (uint32_t)i
                 && MasterRng_Next(&g_Rng) % 4 != 0
                 && card->flag == STAGE_CARD_ALIVE)) {
@@ -107,7 +107,7 @@ void Stage_HitTestCards(void)
                     game->flip_cycle = 1;
                 }
                 Items_Add(
-                    card->left, card->top, bomb && !g_Player.bomb_damaging);
+                    card->left, card->top, bomb && !g_Player->bomb_damaging);
             }
             Sound_Effect(2);
         }

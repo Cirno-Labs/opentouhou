@@ -679,7 +679,7 @@ static void M_SnakeSpawn(
         s->left[i][j] = x;
         s->top[i][j] = y;
     }
-    M_SnakeAim(s, assets, i, g_Player.left, 6);
+    M_SnakeAim(s, assets, i, g_Player->left, 6);
 }
 static void M_SnakesUpdate(
     B20J_SNAKES *const s, const B20J_ASSETS *const assets, const int32_t count)
@@ -694,7 +694,7 @@ static void M_SnakesUpdate(
         }
         M_Diamond(assets, s->left[i][0], s->top[i][0], 7);
         if (!s->target_locked[i]) {
-            s->target_left[i] = g_Player.left;
+            s->target_left[i] = g_Player->left;
         }
         M_SnakeAim(s, assets, i, s->target_left[i], 7);
         if (s->top[i][0] > 300) {
@@ -706,7 +706,7 @@ static void M_SnakesUpdate(
         }
         s->left[i][0] = Math16_Wrap(s->left[i][0] + s->velocity[i].x);
         s->top[i][0] = Math16_Wrap(s->top[i][0] + s->velocity[i].y);
-        const PLAYER *const player = &g_Player;
+        const PLAYER *const player = g_Player;
         if (s->left[i][0] > player->left && s->left[i][0] < player->left + 24
             && s->top[i][0] > 368 + (player->sliding ? 10 : 0)
             && s->top[i][0] < 392 && !player->invincible) {
@@ -861,7 +861,7 @@ static void M_Spray(const B20J_ASSETS *const assets)
     }
     if (m_B20J.status.frame % m_B20J.pattern_state == 0) {
         m_B20J.spray_angle =
-            M_Angle(368 - 184, g_Player.left - 278) + m_B20J.spray_offset;
+            M_Angle(368 - 184, g_Player->left - 278) + m_B20J.spray_offset;
         m_B20J.spray_offset += m_B20J.spray_delta;
         m_B20J.spray_fired++;
         if (m_B20J.spray_fired > 8) {
@@ -1297,9 +1297,9 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
     }
     m_B20J.status.frame = Math16_Wrap(m_B20J.status.frame + 1);
     m_B20J.hit.frame = Math16_Wrap(m_B20J.hit.frame + 1);
-    const int16_t direction = g_Player.left < 198 ? 1
-        : g_Player.left > 396                     ? 0
-                                                  : 2;
+    const int16_t direction = g_Player->left < 198 ? 1
+        : g_Player->left > 396                     ? 0
+                                                   : 2;
     M_Direction(assets, direction);
     if ((m_B20J.status.phase & 1) == 0) {
         if (m_B20J.status.frame == 50) {

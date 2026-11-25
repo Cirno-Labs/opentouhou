@@ -188,9 +188,9 @@ static void M_Track(
         BOSS_ENTITY *const e = &m_B10M.eyes[i];
         if ((flags & (1 << i)) != 0) {
             const int16_t center = Math16_Wrap(e->left + 32);
-            e->image = Math16_Wrap(center - g_Player.left) > 32 ? 4
-                : Math16_Wrap(g_Player.left - center) > 32      ? 5
-                                                                : 3;
+            e->image = Math16_Wrap(center - g_Player->left) > 32 ? 4
+                : Math16_Wrap(g_Player->left - center) > 32      ? 5
+                                                                 : 3;
         }
     }
 }
@@ -330,13 +330,13 @@ static void M_Entrance(const B10M_ASSETS *const assets, const PTN *const miko)
             M_DownLaser(assets, miko, i, true);
             const int16_t x = Math16_Wrap(m_B10M.eyes[i].left + 28);
             const int16_t width = i == 1 ? 8 : 32;
-            if (g_Player.left > Math16_Wrap(x - 24)
-                && g_Player.left < Math16_Wrap(x + 24 - width)) {
+            if (g_Player->left > Math16_Wrap(x - 24)
+                && g_Player->left < Math16_Wrap(x + 24 - width)) {
                 Player_Hit();
             }
         }
     }
-    if (g_Player.invincible) {
+    if (g_Player->invincible) {
         Player_ClearHit();
     }
     if (m_B10M.status.frame % 40 == 0) {
@@ -464,7 +464,7 @@ static void M_Missiles(
         if (m_B10M.subphase == 0) {
             m_B10M.subphase =
                 (int16_t)((MasterRng_Next(&g_Rng) % (clock ? 2 : 3)) * 4 + 1);
-            m_B10M.target_left = Math16_Wrap(g_Player.left - 8);
+            m_B10M.target_left = Math16_Wrap(g_Player->left - 8);
             m_B10M.angle =
                 (uint8_t)(Math16_Angle(
                               Math16_Wrap(400 - m_B10M.eyes[2].top + 28),
@@ -739,7 +739,7 @@ static void M_SpawnStar(const B10M_ASSETS *const assets, const PTN *const miko)
     if (m_B10M.status.frame == 100 || m_B10M.subphase == 1) {
         if (m_B10M.subphase == 0) {
             m_B10M.subphase = 1;
-            m_B10M.target_left = g_Player.left;
+            m_B10M.target_left = g_Player->left;
         }
         M_Shrink(assets, miko, 0, false);
         if (m_B10M.status.frame == 140) {
@@ -774,7 +774,7 @@ static void M_Spin(const bool clockwise)
 static void M_Aim(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     m_B10M.pentagram.velocity = Math16_Aim(
-        m_B10M.pentagram.center, (MATH16_VECTOR) { g_Player.left, 400 }, 4, 0);
+        m_B10M.pentagram.center, (MATH16_VECTOR) { g_Player->left, 400 }, 4, 0);
 }
 
 static void M_Back(

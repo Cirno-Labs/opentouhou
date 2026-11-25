@@ -117,7 +117,7 @@ static void M_Format(char *const text, uint16_t value, const int32_t width)
 static void M_Resource(
     const bool bomb, const int16_t previous, const bool initial)
 {
-    const int16_t count = bomb ? g_Player.remaining_bombs : g_Session.lives;
+    const int16_t count = bomb ? g_Player->remaining_bombs : g_Session.lives;
     ASSERT(count >= 0 && count <= HUD_RESOURCE_CAPACITY);
     ASSERT(previous >= 0 && previous <= HUD_RESOURCE_CAPACITY);
     uint8_t *const bg = bomb ? m_Hud.bombs : m_Hud.lives;

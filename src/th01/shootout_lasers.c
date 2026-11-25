@@ -65,8 +65,9 @@ static void M_TraceBeam(
             if (put) {
                 M_PutDots(left, y, dots, laser->color);
                 dots = 0;
-                if (!g_Player.invincible && laser->damaging && y > 376
-                    && left >= g_Player.left + 4 && left < g_Player.left + 24) {
+                if (!g_Player->invincible && laser->damaging && y > 376
+                    && left >= g_Player->left + 4
+                    && left < g_Player->left + 24) {
                     Player_Hit();
                 }
             }

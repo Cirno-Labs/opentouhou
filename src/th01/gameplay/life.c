@@ -45,7 +45,7 @@ static PLAYER_SPRITES M_PlayerSprites(void)
 
 static void M_DefaultActors(void)
 {
-    Sprite_PtnPut(&g_GameplayAssets->miko, 0, -1, g_Player.left, PLAYER_TOP);
+    Sprite_PtnPut(&g_GameplayAssets->miko, 0, -1, g_Player->left, PLAYER_TOP);
     Orb_Put(Gameplay_StageSprites(), g_Orb.left, g_Orb.top, 0);
 }
 
@@ -72,9 +72,7 @@ static void M_LifeBegin(const TH01_INPUT *const raw, const uint64_t host_tick)
         g_Gameplay.bgm_started = true;
     }
     GameInput_ResetGame();
-    if (g_Player.invincibility_time > 1) {
-        g_Player.invincible = true;
-    }
+    Player_ResumeInvincibility();
     if (boss != nullptr && boss->update_on_life_begin) {
         m_LifePhase = GP_LIFE_BOSS_BEGIN;
     } else {
@@ -106,7 +104,7 @@ static void M_PlayerBegin(const GAMEPLAY_LIFE_PHASE after)
     if (Player_BeginUpdate(&g_Gameplay.player_bomb, &sprites)) {
         const BOMB_UPDATE result = Bomb_BeginUpdate(
             &g_GameplayAssets->miko, &g_GameplayAssets->bomb,
-            (int16_t)g_Player.bomb_frame);
+            (int16_t)g_Player->bomb_frame);
         if (result == BOMB_UPDATE_WAIT) {
             m_LifePhase = GP_LIFE_PLAYER_BOMB;
             return;
@@ -154,11 +152,11 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         if (!VSyncIrq_DelayReady(1)) {
             return false;
         }
-        g_Player.bomb_frame++;
+        Player_AdvanceBombFrame();
         m_LifePhase = GP_LIFE_WAIT_SHOT;
         return true;
     case GP_LIFE_FRAME_BEGIN:
-        if (g_Player.is_hit) {
+        if (g_Player->is_hit) {
             g_Stage.timer_initialized = false;
             GameplayExit_Begin();
             return true;
@@ -166,7 +164,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         g_Session.frame_rand++;
         {
             const int32_t period =
-                1800 - g_Session.lives * 200 - g_Player.remaining_bombs * 50;
+                1800 - g_Session.lives * 200 - g_Player->remaining_bombs * 50;
             if (period != 0 && g_Session.frame_rand % (uint32_t)period == 0) {
                 Pellets_SpeedRaise(1);
             }
@@ -191,7 +189,7 @@ bool GameplayLife_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             Gameplay_StageSprites(), &g_GameplayAssets->item_font);
         g_Stage.frame++;
         Orb_AdvanceForceFrame();
-        g_Player.bomb_frame++;
+        Player_AdvanceBombFrame();
         GameInput_AdvanceBombFrame();
         m_LifePhase =
             (g_Session.frame_rand & 3) == 0 ? GP_LIFE_TIMER : GP_LIFE_BOSS;

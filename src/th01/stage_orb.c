@@ -53,10 +53,10 @@ bool Stage_ResumeOrbComposite(
     }
     if (!g_Orb.in_portal) {
         const ORB_PLAYER player = {
-            .left = g_Player.left,
+            .left = g_Player->left,
             .top = PLAYER_TOP,
-            .invincible = g_Player.invincible,
-            .invincible_against_orb = g_Player.invincible_against_orb,
+            .invincible = g_Player->invincible,
+            .invincible_against_orb = g_Player->invincible_against_orb,
         };
         if (Orb_PlayerHitTest(&player, ORB_REPEL_NONE)) {
             Player_Hit();
@@ -67,7 +67,7 @@ bool Stage_ResumeOrbComposite(
     if (!m_OrbComposite.boss) {
         Stage_UpdateCards(sprites, font);
     }
-    if (!g_Orb.in_portal && !g_Player.is_hit) {
+    if (!g_Orb.in_portal && !g_Player->is_hit) {
         Orb_Put(sprites, g_Orb.left, g_Orb.top, Orb_Image());
     }
     Orb_KeepPosition();
