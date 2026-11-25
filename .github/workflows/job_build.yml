@@ -246,6 +246,14 @@ jobs:
             echo "${base%%-*}=build/pr/$out" >> "$GITHUB_OUTPUT"
           done
 
+      - name: Upload oth01 for the pull request
+        if: ${{ steps.pr.outputs.oth01 }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ steps.pr.outputs.oth01 }}
+          archive: false
+          retention-days: 14
+
       - name: Upload oth06 for the pull request
         if: ${{ steps.pr.outputs.oth06 }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
