@@ -12,22 +12,19 @@ typedef struct {
     uint64_t host_tick;
 } BOSS_CONTEXT;
 
-// One boss's lifecycle. Assets are the boss's own immutable group of
-// assets_size bytes; gameplay owns them and never reads inside. Optional
-// operations are nullptr.
+// One boss's lifecycle, with its own assets that gameplay never reads.
+// Optional operations are nullptr.
 typedef struct {
     size_t assets_size;
     RESULT (*load_assets)(VFS *vfs, const ALLOCATOR *allocator, void *out);
     // Resets the boss state, before the first fight of a game.
     void (*init)(void);
-    // Selects g_Boss and binds the assets. Resumable setups and entrances
-    // continue through the operations below.
+    // Selects g_Boss and binds the assets.
     void (*setup)(const void *assets, const BOSS_CONTEXT *ctx);
     bool (*resume_setup)(const void *assets, const BOSS_CONTEXT *ctx);
     void (*begin_entrance)(const void *assets);
     bool (*resume_entrance)(const void *assets, const BOSS_CONTEXT *ctx);
-    // Runs one battle call, or resumes its pending operation. False suspends
-    // the owning world.
+    // Runs one battle call; false suspends the owning world.
     bool (*update)(const void *assets, const BOSS_CONTEXT *ctx);
     // The stage background, or nullptr for the scene's.
     const PI_IMAGE *(*background)(const void *assets);

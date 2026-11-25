@@ -37,14 +37,11 @@ typedef struct {
 
 extern STAGE_OBJECTS g_StageObjects;
 
-// Prepares reusable storage for all possible cells in a normalized layout.
-// Retain the caller's allocator group across all stages. Initialize distinct
-// objects with distinct storage when their mutable lifetimes overlap.
+// Prepares storage for every cell of a normalized layout.
+// Keep the allocator's group alive across all stages.
 void StageObjects_Prepare(const ALLOCATOR *allocator);
 
-// Instantiates through the same path as Init without allocating. Clears the
-// active storage while retaining the objects' obstacle history. Requires
-// storage prepared before simulation; boss stages do not access storage.
+// Instantiates as Init does, in storage from Prepare, without allocating.
 void StageObjects_InitPrepared(
     const STAGE_DATA *data, int16_t stage_id, bool first_in_scene,
     const PTN *sprites);
@@ -53,34 +50,18 @@ void StageObjects_InitPrepared(
 // 32 images; boss slot 4 accepts the reduced seven-image stage set.
 RESULT StageObjects_ValidateSprites(const PTN *sprites, int16_t stage_id);
 
-// Zero-initialize objects once and reuse it across stage changes. Preserve
-// obstacle static history, including stale portal destinations after reset
-// and across boss loads. Instantiates the normalized layout in source order.
-// Requires nonnegative stage_id and validated sprites. All
-// mutable objects, entrance timers and raw background snapshots belong to
-// the supplied stage-lifetime allocator group. Release that group between
-// stages; there are no individual frees. Snapshot cards before obstacles,
-// from page 1 before drawing, selecting page 1 then page 0 per snapshot.
-// Draw obstacles on page 0, then cards immediately for first_in_scene.
-// Otherwise begin the cooperative one-card-per-frame entrance animation.
-// Boss slot 4 returns empty before allocation or RNG. An ordinary empty
-// card layout consumes the unused random draw without dividing by zero.
-// Uses count-sized timers and snapshots, extending the original 50-card
-// entrance and 102-background DOS limits safely for debug layouts.
+// Instantiates the stage's cards and obstacles, drawing them at once for
+// first_in_scene and otherwise starting the one-card-per-frame entrance.
+// Allocates from a stage-lifetime group; release it between stages.
 void StageObjects_Init(
     const STAGE_DATA *data, int16_t stage_id, bool first_in_scene,
     const ALLOCATOR *allocator, const PTN *sprites);
 
-// Runs until the next frame_delay(1), or returns true when complete.
-// The first call runs before waiting; subsequent calls require count1 >= 1
-// as unsigned 16 bits and reset count1 on success. Repeated polls without
-// readiness do nothing. No update allocates. Preserve objects until done.
+// Runs the entrance until the next frame delay; returns true when complete.
 bool StageObjects_ResumeEntrance(const PTN *sprites);
 
-// Replaces the full 32x32 square with the raw snapshot plus opaque sprite
-// pixels. NONE restores only the snapshot. Slot order is cards, obstacles.
-// Uses the drawing page and eight-pixel X alignment, with linear row wrap
-// and outside-page writes discarded, as in the other native PTN helpers.
+// Redraws a 32x32 square as its background snapshot plus the object's
+// opaque pixels; NONE restores only the snapshot.
 void StageObjects_PutBackgroundAndObject(
     const PTN *sprites, int16_t left, int16_t top, int32_t image, int32_t slot);
 void StageObjects_PutAllBackgrounds(void);

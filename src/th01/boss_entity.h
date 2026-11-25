@@ -32,11 +32,8 @@ typedef struct {
 // Clears borrowed sprite banks for a new gameplay session.
 void BossEntity_Init(void);
 
-// Borrows immutable, word-aligned BOS assets into a shared rendering slot.
-// Accepts one through eight images, heights 1..255 and widths 16..2032.
-// Rebinding a slot changes its images for every entity that selects it,
-// while existing entity metadata stays unchanged. Leaves all state
-// unchanged on validation failure. Allocates nothing and performs no IO.
+// Borrows word-aligned BOS assets into a shared slot; rebinding changes the
+// images of every entity that selects it. Keep sprites alive while bound.
 RESULT BossEntity_Bind(BOSS_ENTITY *entity, uint8_t slot, const BOS *sprites);
 RESULT BossAnimation_Bind(
     BOSS_ANIMATION *animation, uint8_t slot, const BOS *sprites);
@@ -52,24 +49,14 @@ void BossEntity_SetPosition(
 // Adjusts relative edges by the Orb hitbox size. Activation stays unchanged.
 void BossEntity_SetOrbHitbox(BOSS_ENTITY *entity, BOSS_BOUNDS bounds);
 
-// Tests inclusive bounds against PREVIOUS Orb coordinates. Intermediate
-// coordinate arithmetic wraps to signed 16 bits. Reads no external state.
+// Tests inclusive bounds against the previous Orb coordinates.
 bool BossEntity_HitTestOrb(const BOSS_ENTITY *entity);
 
-// Saves previous position, adds signed deltas with 16-bit wrapping, then
-// applies left/right and top/bottom clamps in that order. Draws nothing.
+// Saves the previous position, adds the deltas and applies the clamps.
 void BossEntity_Move(BOSS_ENTITY *entity, int16_t delta_x, int16_t delta_y);
 
-// Draws immutable shared-bank images with the actor's retained dimensions.
-// Put rounds left toward zero to an eight-pixel byte; line operations use
-// floor division and shifted source bytes. Keeps word guards, raw RGB OR,
-// signed restore-line shifts and asymmetric edge clipping. Raw plane aliases
-// are distinct from the 15-bit GRCG erase address. Hidden/non-VRAM bytes have
-// no storage; a word crossing 65535 completes its physical byte accesses.
-// Missing banks, stale dimensions that exceed storage, and invalid images
-// draw nothing. Does not mutate assets, allocate, or perform IO.
-// Put and PutLine preserve the selector. RestorePut selects 0 only when a
-// word is reached; Erase finishes on 0 for valid images. Display stays fixed.
+// Draws the entity's image from its slot with its retained dimensions.
+// Put rounds left toward zero to eight pixels; Erase restores page 0.
 void BossEntity_Put(
     const BOSS_ENTITY *entity, int16_t left, int16_t top, int16_t image);
 void BossEntity_Erase(
@@ -86,8 +73,7 @@ void BossEntity_RestorePutLine(
     const BOSS_ENTITY *entity, int16_t left, int16_t top, int16_t image,
     int16_t row);
 
-// Applies PutLine per sprite row with wrapped sine phase and coordinates.
-// Requires a nonzero wavelength. Does not change entity position or image.
+// Applies PutLine per sprite row at a sine-displaced X; wavelength is nonzero.
 void BossEntity_WavePut(
     const BOSS_ENTITY *entity, int16_t left, int16_t top, int16_t image,
     int16_t wavelength, int16_t amplitude, int16_t phase);
@@ -96,12 +82,11 @@ void BossEntity_WavePut(
 // their alpha. Unlike entity Put, ORs RGB even for transparent whole words.
 void BossAnimation_Put(const BOSS_ANIMATION *animation);
 
-// Restores the whole actor rectangle through the existing EGC operation.
+// Restores the whole actor rectangle from page 1.
 void BossEntity_EraseRect(const BOSS_ENTITY *entity);
 
-// Moves/draws only at lock_frame 0, then sets it to 1. Later calls increment
-// it or reset it at lock_frames, without drawing. With restore, restores the
-// source's two old-edge strips before RestorePut; otherwise uses Put.
+// Moves and draws only at lock_frame 0, then counts up to lock_frames.
+// With restore, restores the two old-edge strips and uses RestorePut.
 void BossEntity_LockedMovePut(
     BOSS_ENTITY *entity, int16_t delta_x, int16_t delta_y, int16_t lock_frames,
     bool restore);
