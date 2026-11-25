@@ -66,6 +66,8 @@ static const M_START m_StartNames[M_START_COUNT] = {
 // while it is unset.
 static int32_t m_Starts[M_START_COUNT] = { -1, -1, -1, -1 };
 static bool m_Started;
+static int32_t m_Lives;
+static int32_t m_Setbacks;
 
 static RESULT M_SetStart(const char *const name, const char *const value)
 {
@@ -118,6 +120,8 @@ static RESULT M_Start(void)
     gm->mode.in_practice = true;
     TitleScene_Remove();
     Scene_Request(SCENE_GAMEPLAY);
+    m_Lives = (int32_t)g_GameManager.player.lives;
+    m_Setbacks = 0;
     return OK;
 }
 
@@ -126,9 +130,14 @@ static bool M_ScriptInput(const int32_t frame, void *const input)
     return false;
 }
 
+// Counts each life lost as a setback.
 static bool M_Tick(const void *const input)
 {
-    return Game_Tick(input);
+    const bool running = Game_Tick(input);
+    const int32_t lives = (int32_t)g_GameManager.player.lives;
+    m_Setbacks += lives < m_Lives ? m_Lives - lives : 0;
+    m_Lives = lives;
+    return running;
 }
 
 // Inserts offset into offsets, which holds *count offsets nearest first,
@@ -198,11 +207,16 @@ static int32_t M_ListThreats(VEC2 *const offsets, const int32_t max)
     return count;
 }
 
-static RECORDER_STATE M_State(void)
+static int32_t M_Setbacks(void)
 {
-    return (RECORDER_STATE) {
-        .lives = (int32_t)g_GameManager.player.lives,
-        .progress = g_GameManager.run.stage_frames,
+    return m_Setbacks;
+}
+
+static RECORDER_SCORE M_Score(void)
+{
+    return (RECORDER_SCORE) {
+        .values = { g_GameManager.run.stage_frames, g_GameManager.score.value },
+        .count = 2,
     };
 }
 
@@ -257,12 +271,14 @@ int main(int argc, char **argv)
         .program = "th07record",
         .input_schema = &g_InputSchema,
         .bot_ini = "replay/th07/bot.ini",
+        .max_frames = 216000,
         .set_start = M_SetStart,
         .start = M_Start,
         .script_input = M_ScriptInput,
         .tick = M_Tick,
         .list_threats = M_ListThreats,
-        .state = M_State,
+        .setbacks = M_Setbacks,
+        .score = M_Score,
         .has_ended = M_HasEnded,
         .save = M_Save,
         .stop = M_Stop,

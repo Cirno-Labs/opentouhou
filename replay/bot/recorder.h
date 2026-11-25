@@ -13,17 +13,20 @@
 // The recorder keeps the input struct of every frame. With --segment N, it
 // grows the run N frames at a time: each candidate segment, played by a bot
 // with a seed of its own, runs after the kept frames from a fresh start and
-// is followed by 90 frames without input. With --no-miss, a candidate that
-// loses a life in that time is dropped. The candidate with the highest
-// progress is kept. When 3 batches of 16 candidates give none, the run backs
+// is followed by 90 frames without input. With --no-miss, a candidate whose
+// setbacks rise in that time is dropped. The candidate with the best score
+// is kept. When 3 batches of 16 candidates give none, the run backs
 // up by more kept segments each time that depth fails again, until a budget
 // of candidates runs out. The same arguments always give the same run.
 
+#define RECORDER_SCORE_MAX 4
+
+// How far a run got, compared in order: the first value decides, then the
+// next breaks ties.
 typedef struct {
-    int32_t lives;
-    // Grows as the run gets further, such as with a boss's phases.
-    int32_t progress;
-} RECORDER_STATE;
+    int64_t values[RECORDER_SCORE_MAX];
+    int32_t count;
+} RECORDER_SCORE;
 
 typedef struct {
     // Names the program, such as "th06record".
@@ -32,6 +35,8 @@ typedef struct {
     // Gives the bot.ini that --bot falls back to, relative to the
     // checkout.
     const char *bot_ini;
+    // Gives the frames after which a run stops.
+    int32_t max_frames;
     // Sets the start value name, given with --start name=value, before the
     // first start.
     RESULT (*set_start)(const char *name, const char *value);
@@ -48,7 +53,9 @@ typedef struct {
     // area edges, nearest first, and returns their number. Changes no game
     // state.
     int32_t (*list_threats)(VEC2 *offsets, int32_t max);
-    RECORDER_STATE (*state)(void);
+    // Counts the setbacks so far, which the solver rejects.
+    int32_t (*setbacks)(void);
+    RECORDER_SCORE (*score)(void);
     bool (*has_ended)(void);
     // Saves the run that has just played: frames input structs, one per
     // frame from the first.
@@ -56,6 +63,10 @@ typedef struct {
     // Stops the game, also after start failed.
     void (*stop)(void);
 } RECORDER_GAME;
+
+// Returns a negative number, 0 or a positive number when a is lower than,
+// equal to or higher than b.
+int Recorder_CompareScores(RECORDER_SCORE a, RECORDER_SCORE b);
 
 // Restarts the tick rate that the recorder reports, as a fresh run starts.
 void Recorder_ResetClock(void);

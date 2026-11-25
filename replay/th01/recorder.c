@@ -44,6 +44,8 @@ static bool m_Initialized;
 static bool m_StartApplied;
 static bool m_InGameplay;
 static int16_t m_StartStage;
+static int32_t m_Lives;
+static int32_t m_Setbacks;
 
 static void M_OnStart(void *const arg)
 {
@@ -89,6 +91,7 @@ static RESULT M_Start(void)
     g_Settings.fix_debouncing = false;
     m_StartApplied = false;
     m_InGameplay = false;
+    m_Setbacks = 0;
     Th01Hooks_Set((TH01_HOOKS) { .on_start = M_OnStart, .on_boss = M_OnBoss });
     m_Initialized = true;
     return g_GameDesc.init();
@@ -105,12 +108,18 @@ static bool M_ScriptInput(const int32_t frame, void *const input)
     return true;
 }
 
+// Counts each life lost in gameplay as a setback.
 static bool M_Tick(const void *const input)
 {
     const bool running = g_GameDesc.tick(input);
     if (!m_InGameplay && g_Th01Scene == TH01_SCENE_GAMEPLAY) {
         m_InGameplay = true;
         m_StartStage = g_Session.stage_id;
+        m_Lives = g_Session.lives;
+    }
+    if (m_InGameplay) {
+        m_Setbacks += g_Session.lives < m_Lives ? m_Lives - g_Session.lives : 0;
+        m_Lives = g_Session.lives;
     }
     return running;
 }
@@ -204,22 +213,30 @@ static int32_t M_ListThreats(VEC2 *const offsets, const int32_t max)
     return count;
 }
 
-// Gives the boss's phase while a boss runs, and the cards removed
-// otherwise.
-static RECORDER_STATE M_State(void)
+static int32_t M_Setbacks(void)
 {
-    RECORDER_STATE state = { .lives = g_Session.lives };
+    return m_Setbacks;
+}
+
+// Gives the boss's phase while a boss runs and the cards removed
+// otherwise, then the score and the bombs left.
+static RECORDER_SCORE M_Score(void)
+{
+    RECORDER_SCORE score = { .count = 3 };
     if (!m_InGameplay) {
-        return state;
+        return score;
     }
     if (g_Stage.boss != BOSS_NONE && g_Boss != nullptr) {
-        state.progress = g_Boss->phase;
-        return state;
+        score.values[0] = g_Boss->phase;
+    } else {
+        for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
+            score.values[0] +=
+                g_StageObjects.cards[i].flag == STAGE_CARD_REMOVED;
+        }
     }
-    for (int32_t i = 0; i < g_StageObjects.card_count; i++) {
-        state.progress += g_StageObjects.cards[i].flag == STAGE_CARD_REMOVED;
-    }
-    return state;
+    score.values[1] = g_Session.score;
+    score.values[2] = g_Session.bombs;
+    return score;
 }
 
 // Ends the run when gameplay ends, as at a game over, or moves on to
@@ -312,12 +329,14 @@ int main(int argc, char **argv)
         .program = "th01record",
         .input_schema = &g_InputSchema,
         .bot_ini = "replay/th01/bot.ini",
+        .max_frames = 20000,
         .set_start = M_SetStart,
         .start = M_Start,
         .script_input = M_ScriptInput,
         .tick = M_Tick,
         .list_threats = M_ListThreats,
-        .state = M_State,
+        .setbacks = M_Setbacks,
+        .score = M_Score,
         .has_ended = M_HasEnded,
         .save = M_Save,
         .stop = M_Stop,

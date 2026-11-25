@@ -83,9 +83,14 @@ static int32_t M_ListThreats(VEC2 *const offsets, const int32_t max)
     return 2;
 }
 
-static RECORDER_STATE M_State(void)
+static int32_t M_Setbacks(void)
 {
-    return (RECORDER_STATE) { .lives = m_Lives, .progress = m_Frame };
+    return m_StartLives - m_Lives;
+}
+
+static RECORDER_SCORE M_Score(void)
+{
+    return (RECORDER_SCORE) { .values = { m_Frame }, .count = 1 };
 }
 
 static bool M_HasEnded(void)
@@ -110,12 +115,14 @@ static const RECORDER_GAME m_Game = {
     .program = "toyrecord",
     .input_schema = &m_Schema,
     .bot_ini = "",
+    .max_frames = 216000,
     .set_start = M_SetStart,
     .start = M_Start,
     .script_input = M_ScriptInput,
     .tick = M_Tick,
     .list_threats = M_ListThreats,
-    .state = M_State,
+    .setbacks = M_Setbacks,
+    .score = M_Score,
     .has_ended = M_HasEnded,
     .save = M_Save,
     .stop = M_Stop,
