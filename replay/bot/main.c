@@ -12,25 +12,13 @@
 #include <string.h>
 
 #define M_SEGMENT_FRAMES 150
+#define M_LONGEST_SEGMENT 300
 #define M_IDLE_FRAMES 90
 #define M_BATCHES 3
 #define M_BATCH_SIZE 16
-#define M_BEAM 4
+#define M_ELITE 4
+#define M_PLATEAU 8
 #define M_BUDGET 20000
-
-// Holds a role combination, a mask of BOT_ROLE bits, for some frames.
-typedef struct {
-    uint32_t roles;
-    int32_t frames;
-} M_HOLD;
-
-// Plays random holds one frame at a time.
-typedef struct {
-    const BOT *bot;
-    uint64_t rng;
-    M_HOLD hold;
-    int32_t frame;
-} M_HOLDER;
 
 typedef struct {
     const char *data;
@@ -49,37 +37,56 @@ typedef struct {
     size_t size;
 } M_INPUTS;
 
-// Holds a candidate segment that survived and how far its run got.
+// Holds a role combination, a mask of BOT_ROLE bits, for some frames.
 typedef struct {
-    M_INPUTS segment;
+    uint32_t roles;
+    int32_t frames;
+} M_HOLD;
+
+typedef struct {
+    M_HOLD *holds;
+    int32_t count;
+    int32_t capacity;
+} M_HOLDS;
+
+// Holds a run prefix that survived: the holds that it adds after its
+// parent's, the frame at which it ends and how far it got.
+typedef struct {
+    int32_t parent;
+    int32_t first;
+    int32_t count;
+    int32_t frames;
+    int32_t depth;
+    int32_t demotions;
     RECORDER_SCORE score;
     bool ended;
 } M_NODE;
-
-// Holds one step of the search: its survivors, best first, the one in the
-// kept run, the frame at which the kept run ends after it, and the
-// searches made and the dead ends met at its depth.
-typedef struct {
-    M_NODE nodes[M_BEAM];
-    int32_t count;
-    int32_t kept;
-    int32_t end;
-    int32_t tries;
-    int32_t dead_ends;
-} M_STEP;
 
 typedef struct {
     const RECORDER_GAME *game;
     const M_ARGS *args;
     const BOT *bot;
-    M_INPUTS kept;
-    M_INPUTS candidate;
-    M_STEP *steps;
-    int32_t step_capacity;
-    int32_t depth;
-    int32_t script_frames;
+    M_INPUTS script;
+    M_HOLDS holds;
+    M_HOLDS candidate;
+    M_NODE *nodes;
+    int32_t node_count;
+    int32_t node_capacity;
+    int32_t *frontier;
+    int32_t frontier_count;
+    int32_t frontier_capacity;
+    int32_t *path;
+    int32_t path_capacity;
+    int32_t elite[M_ELITE];
+    int32_t elite_count;
+    bool improved;
+    int32_t stalled;
+    int32_t demotions;
+    int32_t goal;
     int32_t evaluated;
     int32_t dead_ends;
+    uint64_t rng;
+    void *input;
     void *none;
 } M_SEARCH;
 
@@ -116,23 +123,31 @@ int Recorder_CompareScores(const RECORDER_SCORE a, const RECORDER_SCORE b)
     return 0;
 }
 
+// Makes room for one more item in an array of count items of size bytes.
+static void *M_Grow(
+    void *const items, int32_t *const capacity, const int32_t count,
+    const size_t size)
+{
+    if (count < *capacity) {
+        return items;
+    }
+    *capacity = *capacity == 0 ? 64 : *capacity * 2;
+    return Mem_ReallocArr(items, (size_t)*capacity, size);
+}
+
 static void *M_Append(M_INPUTS *const run)
 {
-    if (run->frames == run->capacity) {
-        run->capacity = run->capacity == 0 ? 4096 : run->capacity * 2;
-        run->inputs =
-            Mem_Realloc(run->inputs, (size_t)run->capacity * run->size);
-    }
+    run->inputs = M_Grow(run->inputs, &run->capacity, run->frames, run->size);
     void *const input = run->inputs + (size_t)run->frames * run->size;
     run->frames++;
     return input;
 }
 
-static void M_AppendAll(M_INPUTS *const to, const M_INPUTS *const from)
+static void M_AddHold(M_HOLDS *const holds, const M_HOLD hold)
 {
-    for (int32_t i = 0; i < from->frames; i++) {
-        memcpy(M_Append(to), from->inputs + (size_t)i * from->size, from->size);
-    }
+    holds->holds =
+        M_Grow(holds->holds, &holds->capacity, holds->count, sizeof(M_HOLD));
+    holds->holds[holds->count++] = hold;
 }
 
 // Returns a number below n from the splitmix64 sequence of state.
@@ -145,260 +160,438 @@ static uint32_t M_Random(uint64_t *const state, const uint32_t n)
     return (uint32_t)((z ^ z >> 31) % n);
 }
 
-// Draws a hold of each role that presses a button with odds of one in two,
-// or one in eight for a role of several frames, which also sets the
-// shortest hold.
-static M_HOLD M_RandomHold(const BOT *const bot, uint64_t *const rng)
+// Draws each role that presses a button with odds of one in two, or one in
+// eight for a role of several frames.
+static uint32_t M_RandomRoles(const BOT *const bot, uint64_t *const rng)
 {
     const uint32_t mapped = Bot_GetRoles(bot);
-    M_HOLD hold = {};
+    uint32_t roles = 0;
     for (int32_t i = 0; i < BOT_ROLE_COUNT; i++) {
         const uint32_t odds = bot->roles[i].count > 1 ? 8 : 2;
         if ((mapped & 1u << i) != 0 && M_Random(rng, odds) == 0) {
-            hold.roles |= 1u << i;
+            roles |= 1u << i;
         }
     }
-    hold.frames = m_HoldFrames[M_Random(rng, ARRAY_SIZE(m_HoldFrames))];
-    hold.frames = MAX(hold.frames, Bot_GetLeadFrames(bot, hold.roles));
+    return roles;
+}
+
+// Keeps a hold within one segment and no shorter than its leading role.
+static M_HOLD M_FitHold(const BOT *const bot, M_HOLD hold)
+{
+    hold.frames = MIN(hold.frames, M_SEGMENT_FRAMES);
+    hold.frames = MAX(hold.frames, MAX(1, Bot_GetLeadFrames(bot, hold.roles)));
     return hold;
 }
 
-static void M_NextInput(M_HOLDER *const holder, void *const out)
+static M_HOLD M_RandomHold(const BOT *const bot, uint64_t *const rng)
 {
-    if (holder->frame == holder->hold.frames) {
-        holder->hold = M_RandomHold(holder->bot, &holder->rng);
-        holder->frame = 0;
-    }
-    Bot_WriteInput(holder->bot, holder->hold.roles, holder->frame, out);
-    holder->frame++;
+    const M_HOLD hold = {
+        .roles = M_RandomRoles(bot, rng),
+        .frames = m_HoldFrames[M_Random(rng, ARRAY_SIZE(m_HoldFrames))],
+    };
+    return M_FitHold(bot, hold);
 }
 
-// Plays the run from the game's start until it ends, with the script's
-// frames first and the bot's after them.
+// Plays random holds from seed straight until the game ends, after the
+// script's frames.
 static RESULT M_RunStraight(
     const RECORDER_GAME *const game, const M_ARGS *const args,
     const BOT *const bot, M_INPUTS *const run)
 {
-    M_HOLDER holder = { .bot = bot, .rng = (uint64_t)args->seed };
+    uint64_t rng = (uint64_t)args->seed;
+    M_HOLD hold = {};
+    int32_t frame = 0;
     while (!game->has_ended()) {
         FAIL_IF(
             run->frames >= game->max_frames, "the run did not end in %d frames",
             game->max_frames);
         void *const input = M_Append(run);
         if (!game->script_input(run->frames - 1, input)) {
-            M_NextInput(&holder, input);
+            if (frame == hold.frames) {
+                hold = M_RandomHold(bot, &rng);
+                frame = 0;
+            }
+            Bot_WriteInput(bot, hold.roles, frame++, input);
         }
         FAIL_IF(!game->tick(input), "the game quit during the run");
     }
     return OK;
 }
 
-// Derives the seed of one candidate, the same for the same arguments.
-static uint32_t M_CandidateSeed(
-    const int32_t seed, const int32_t depth, const int32_t attempt)
-{
-    uint32_t hash = (uint32_t)seed * 0x9e3779b1u;
-    hash ^= (uint32_t)depth * 0x85ebca77u + 0x165667b1u;
-    hash = (hash ^ hash >> 15) * 0x2c1b3c6du;
-    hash ^= (uint32_t)attempt * 0xc2b2ae3du + 0x27d4eb2fu;
-    hash = (hash ^ hash >> 12) * 0x297a2d39u;
-    return hash ^ hash >> 16;
-}
-
-// Plays run from a fresh start, with the game's files opened anew, since a
-// game may mount files at each start that only closing them unmounts.
-static RESULT M_Replay(
+// Restarts the game with its files opened anew, since a game may mount
+// files at each start that only closing them unmounts, and plays the
+// script.
+static RESULT M_Restart(
     const RECORDER_GAME *const game, const char *const data,
-    const M_INPUTS *run)
+    const M_INPUTS *const script)
 {
     game->stop();
     MUST(NullShell_OpenFiles(data, nullptr));
     Recorder_ResetClock();
     MUST(game->start());
-    for (int32_t i = 0; i < run->frames; i++) {
+    for (int32_t i = 0; i < script->frames; i++) {
         FAIL_IF(
-            !game->tick(run->inputs + (size_t)i * run->size),
+            !game->tick(script->inputs + (size_t)i * script->size),
             "the game quit during the run");
+    }
+    return OK;
+}
+
+// Lists the nodes from the root's first child to node in search->path and
+// returns their number.
+static int32_t M_Path(M_SEARCH *const search, const int32_t node)
+{
+    const int32_t depth = search->nodes[node].depth;
+    if (depth > search->path_capacity) {
+        search->path_capacity = depth * 2;
+        search->path = Mem_ReallocArr(
+            search->path, (size_t)search->path_capacity, sizeof(int32_t));
+    }
+    int32_t at = node;
+    for (int32_t i = depth - 1; i >= 0; i--) {
+        search->path[i] = at;
+        at = search->nodes[at].parent;
+    }
+    return depth;
+}
+
+// Plays the run of node from a fresh start.
+static RESULT M_Replay(M_SEARCH *const search, const int32_t node)
+{
+    const RECORDER_GAME *const game = search->game;
+    MUST(M_Restart(game, search->args->data, &search->script));
+    const int32_t depth = M_Path(search, node);
+    for (int32_t i = 0; i < depth; i++) {
+        const M_NODE *const at = &search->nodes[search->path[i]];
+        for (int32_t j = 0; j < at->count; j++) {
+            const M_HOLD hold = search->holds.holds[at->first + j];
+            for (int32_t frame = 0; frame < hold.frames; frame++) {
+                Bot_WriteInput(search->bot, hold.roles, frame, search->input);
+                FAIL_IF(
+                    !game->tick(search->input), "the game quit during the run");
+            }
+        }
     }
     return OK;
 }
 
 static bool M_Better(const M_NODE *const a, const M_NODE *const b)
 {
-    return Recorder_CompareScores(a->score, b->score) > 0;
+    const int order = Recorder_CompareScores(a->score, b->score);
+    return order != 0 ? order > 0 : a->frames > b->frames;
 }
 
-// Plays one candidate segment after the kept run from a fresh start, then
-// the idle frames, and adds it to the beam of step when it survives.
-static RESULT M_Try(
-    M_SEARCH *const search, M_STEP *const step, const uint32_t seed)
+// Orders the frontier: fewer demotions first, then the better score, then
+// the longer run, then the earlier node.
+static bool M_Ahead(
+    const M_SEARCH *const search, const int32_t a, const int32_t b)
 {
-    const RECORDER_GAME *const game = search->game;
-    MUST(M_Replay(game, search->args->data, &search->kept));
-    const int32_t setbacks = game->setbacks();
-    M_HOLDER holder = { .bot = search->bot, .rng = seed };
-    M_INPUTS *const candidate = &search->candidate;
-    candidate->frames = 0;
-    const int32_t frames =
-        game->max_frames - search->kept.frames < M_SEGMENT_FRAMES
-        ? game->max_frames - search->kept.frames
-        : M_SEGMENT_FRAMES;
-    M_NODE node = {};
-    for (int32_t i = 0; i < frames && !node.ended; i++) {
-        void *const input = M_Append(candidate);
-        M_NextInput(&holder, input);
-        FAIL_IF(!game->tick(input), "the game quit during the run");
-        if (game->setbacks() > setbacks) {
-            return OK;
-        }
-        node.ended = game->has_ended();
+    const M_NODE *const first = &search->nodes[a];
+    const M_NODE *const second = &search->nodes[b];
+    if (first->demotions != second->demotions) {
+        return first->demotions < second->demotions;
     }
-    node.score = game->score();
+    if (M_Better(first, second) || M_Better(second, first)) {
+        return M_Better(first, second);
+    }
+    return a < b;
+}
+
+// Returns the frontier slot of the node to expand next.
+static int32_t M_Top(const M_SEARCH *const search)
+{
+    int32_t top = 0;
+    for (int32_t i = 1; i < search->frontier_count; i++) {
+        if (M_Ahead(search, search->frontier[i], search->frontier[top])) {
+            top = i;
+        }
+    }
+    return top;
+}
+
+static void M_AddElite(M_SEARCH *const search, const int32_t node)
+{
+    int32_t slot = search->elite_count;
+    if (slot == M_ELITE) {
+        slot = M_ELITE - 1;
+        if (!M_Better(
+                &search->nodes[node], &search->nodes[search->elite[slot]])) {
+            return;
+        }
+    } else {
+        search->elite_count++;
+    }
+    for (; slot > 0
+         && M_Better(
+               &search->nodes[node], &search->nodes[search->elite[slot - 1]]);
+         slot--) {
+        search->elite[slot] = search->elite[slot - 1];
+    }
+    search->elite[slot] = node;
+}
+
+static bool M_IsGoal(const M_SEARCH *const search, const M_NODE *const node)
+{
+    const int32_t until = search->args->until;
+    return node->ended || node->frames >= search->game->max_frames
+        || (until >= 0 && node->score.values[0] >= until);
+}
+
+// Adds the first frames of the candidate as a child of parent, and clears
+// every demotion when it is the best node so far.
+static void M_AddNode(
+    M_SEARCH *const search, const int32_t parent, const int32_t frames,
+    const RECORDER_SCORE score, const bool ended)
+{
+    search->nodes = M_Grow(
+        search->nodes, &search->node_capacity, search->node_count,
+        sizeof(M_NODE));
+    const int32_t index = search->node_count++;
+    const M_NODE *const from = &search->nodes[parent];
+    M_NODE *const node = &search->nodes[index];
+    *node = (M_NODE) {
+        .parent = parent,
+        .first = search->holds.count,
+        .frames = from->frames + frames,
+        .depth = from->depth + 1,
+        .demotions = from->demotions,
+        .score = score,
+        .ended = ended,
+    };
+    for (int32_t i = 0, left = frames; left > 0; i++) {
+        M_HOLD hold = search->candidate.holds[i];
+        hold.frames = MIN(hold.frames, left);
+        left -= hold.frames;
+        M_AddHold(&search->holds, hold);
+        node->count++;
+    }
+    search->frontier = M_Grow(
+        search->frontier, &search->frontier_capacity, search->frontier_count,
+        sizeof(int32_t));
+    search->frontier[search->frontier_count++] = index;
+    M_AddElite(search, index);
+    if (search->elite[0] == index) {
+        search->improved = true;
+        for (int32_t i = 0; i < search->node_count; i++) {
+            search->nodes[i].demotions = 0;
+        }
+    }
+    if (search->goal < 0 && M_IsGoal(search, node)) {
+        search->goal = index;
+    }
+}
+
+// Plays the candidate after the run of parent from a fresh start, then the
+// idle frames, adds it as a node when it survives and returns whether it
+// did.
+static RESULT M_Try(
+    M_SEARCH *const search, const int32_t parent, bool *const survived)
+{
+    *survived = false;
+    const RECORDER_GAME *const game = search->game;
+    MUST(M_Replay(search, parent));
+    const int32_t setbacks = game->setbacks();
+    const int32_t limit =
+        MIN(M_LONGEST_SEGMENT, game->max_frames - search->nodes[parent].frames);
+    int32_t frames = 0;
+    bool ended = false;
+    for (int32_t i = 0; i < search->candidate.count && !ended; i++) {
+        const M_HOLD hold = search->candidate.holds[i];
+        for (int32_t frame = 0; frame < hold.frames && frames < limit && !ended;
+             frame++) {
+            Bot_WriteInput(search->bot, hold.roles, frame, search->input);
+            FAIL_IF(!game->tick(search->input), "the game quit during the run");
+            if (game->setbacks() > setbacks) {
+                return OK;
+            }
+            frames++;
+            ended = game->has_ended();
+        }
+    }
+    const RECORDER_SCORE score = game->score();
     for (int32_t i = 0; i < M_IDLE_FRAMES && !game->has_ended(); i++) {
         if (!game->tick(search->none)) {
             break;
         }
     }
-    if (game->setbacks() > setbacks) {
+    if (game->setbacks() > setbacks || frames == 0) {
         return OK;
     }
-    int32_t slot = step->count;
-    if (slot == M_BEAM) {
-        slot = M_BEAM - 1;
-        if (!M_Better(&node, &step->nodes[slot])) {
-            return OK;
-        }
-    } else {
-        step->count++;
-    }
-    M_NODE *const nodes = step->nodes;
-    nodes[slot].score = node.score;
-    nodes[slot].ended = node.ended;
-    nodes[slot].segment.frames = 0;
-    M_AppendAll(&nodes[slot].segment, candidate);
-    for (; slot > 0 && M_Better(&nodes[slot], &nodes[slot - 1]); slot--) {
-        const M_NODE swap = nodes[slot];
-        nodes[slot] = nodes[slot - 1];
-        nodes[slot - 1] = swap;
-    }
+    *survived = true;
+    M_AddNode(search, parent, frames, score, ended);
     return OK;
 }
 
-// Fills the beam of the step after the kept run, one batch at a time until
-// a batch leaves a survivor.
-static RESULT M_SearchStep(M_SEARCH *const search)
+// Fills the candidate with random holds of one segment.
+static void M_Explore(M_SEARCH *const search)
 {
-    const int32_t depth = search->depth;
-    M_STEP *const step = &search->steps[depth];
-    step->count = 0;
-    step->kept = 0;
-    for (int32_t batch = 0; batch < M_BATCHES && step->count == 0; batch++) {
-        for (int32_t i = 0; i < M_BATCH_SIZE; i++) {
+    M_HOLDS *const candidate = &search->candidate;
+    candidate->count = 0;
+    for (int32_t frames = 0; frames < M_SEGMENT_FRAMES;) {
+        M_HOLD hold = M_RandomHold(search->bot, &search->rng);
+        hold.frames = MIN(hold.frames, M_SEGMENT_FRAMES - frames);
+        frames += hold.frames;
+        M_AddHold(candidate, hold);
+    }
+}
+
+// Fills the candidate with the holds of one of the best nodes, with one to
+// three of them changed, lengthened, shortened, swapped with the next or
+// replaced.
+static void M_Refine(M_SEARCH *const search)
+{
+    M_HOLDS *const candidate = &search->candidate;
+    uint64_t *const rng = &search->rng;
+    const M_NODE *const source = &search->nodes[search->elite[M_Random(
+        rng, (uint32_t)search->elite_count)]];
+    candidate->count = 0;
+    for (int32_t i = 0; i < source->count; i++) {
+        M_AddHold(candidate, search->holds.holds[source->first + i]);
+    }
+    const int32_t changes = 1 + (int32_t)M_Random(rng, 3);
+    for (int32_t i = 0; i < changes; i++) {
+        M_HOLD *const holds = candidate->holds;
+        const int32_t at = (int32_t)M_Random(rng, (uint32_t)candidate->count);
+        switch (M_Random(rng, 5)) {
+        case 0:
+            holds[at].roles = M_RandomRoles(search->bot, rng);
+            break;
+        case 1:
+            holds[at].frames *= 2;
+            break;
+        case 2:
+            holds[at].frames /= 2;
+            break;
+        case 3:
+            if (at + 1 < candidate->count) {
+                const M_HOLD swap = holds[at];
+                holds[at] = holds[at + 1];
+                holds[at + 1] = swap;
+            }
+            break;
+        default:
+            holds[at] = M_RandomHold(search->bot, rng);
+            break;
+        }
+        holds[at] = M_FitHold(search->bot, holds[at]);
+    }
+}
+
+// Moves the nodes under the ancestor search->demotions steps above the next
+// node to expand, but below the root, behind all others.
+static void M_Demote(M_SEARCH *const search)
+{
+    const M_NODE *const nodes = search->nodes;
+    int32_t ancestor = search->frontier[M_Top(search)];
+    for (int32_t i = 0; i < search->demotions && nodes[ancestor].depth > 1;
+         i++) {
+        ancestor = nodes[ancestor].parent;
+    }
+    if (nodes[ancestor].depth == 0) {
+        return;
+    }
+    const int32_t depth = nodes[ancestor].depth;
+    for (int32_t i = 0; i < search->frontier_count; i++) {
+        int32_t at = search->frontier[i];
+        while (nodes[at].depth > depth) {
+            at = nodes[at].parent;
+        }
+        if (at == ancestor) {
+            search->nodes[search->frontier[i]].demotions++;
+        }
+    }
+    printf(
+        "plateau, demoted %d nodes back, now at %d frames\n", search->demotions,
+        nodes[search->frontier[M_Top(search)]].frames);
+    fflush(stdout);
+}
+
+// Expands the frontier's next node with batches of candidates, half random
+// and half refined, until a batch leaves a survivor.
+static RESULT M_Expand(M_SEARCH *const search)
+{
+    const int32_t slot = M_Top(search);
+    const int32_t node = search->frontier[slot];
+    search->frontier[slot] = search->frontier[--search->frontier_count];
+    search->improved = false;
+    bool any = false;
+    for (int32_t batch = 0; batch < M_BATCHES && !any; batch++) {
+        for (int32_t i = 0; i < M_BATCH_SIZE && search->goal < 0; i++) {
             FAIL_IF(
                 search->evaluated >= M_BUDGET,
                 "no run found in %d candidate segments", M_BUDGET);
             search->evaluated++;
-            const int32_t attempt =
-                (step->tries * M_BATCHES + batch) * M_BATCH_SIZE + i;
-            MUST(M_Try(
-                search, step,
-                M_CandidateSeed(search->args->seed, depth, attempt)));
+            if (i % 2 == 0 || search->elite_count == 0) {
+                M_Explore(search);
+            } else {
+                M_Refine(search);
+            }
+            bool survived;
+            MUST(M_Try(search, node, &survived));
+            any = any || survived;
         }
     }
-    step->tries++;
+    if (!any) {
+        search->dead_ends++;
+    }
+    if (search->improved) {
+        search->stalled = 0;
+        search->demotions = 0;
+        const M_NODE *const best = &search->nodes[search->elite[0]];
+        printf(
+            "best %d frames, score %lld, %d candidates\n", best->frames,
+            (long long)best->score.values[0], search->evaluated);
+        fflush(stdout);
+    } else if (++search->stalled == M_PLATEAU && search->frontier_count > 0) {
+        search->stalled = 0;
+        search->demotions++;
+        M_Demote(search);
+    }
     return OK;
 }
 
-// Puts the kept node of the step at depth into the kept run, after the
-// steps before it.
-static void M_Keep(M_SEARCH *const search, const int32_t depth)
-{
-    M_STEP *const step = &search->steps[depth];
-    search->kept.frames =
-        depth > 0 ? search->steps[depth - 1].end : search->script_frames;
-    M_AppendAll(&search->kept, &step->nodes[step->kept].segment);
-    step->end = search->kept.frames;
-    search->depth = depth + 1;
-}
-
-static void M_GrowSteps(M_SEARCH *const search)
-{
-    if (search->depth < search->step_capacity) {
-        return;
-    }
-    const int32_t capacity =
-        search->step_capacity == 0 ? 64 : search->step_capacity * 2;
-    search->steps =
-        Mem_Realloc(search->steps, (size_t)capacity * sizeof(M_STEP));
-    memset(
-        search->steps + search->step_capacity, 0,
-        (size_t)(capacity - search->step_capacity) * sizeof(M_STEP));
-    for (int32_t i = search->step_capacity; i < capacity; i++) {
-        for (int32_t j = 0; j < M_BEAM; j++) {
-            search->steps[i].nodes[j].segment.size = search->kept.size;
-        }
-    }
-    search->step_capacity = capacity;
-}
-
-// Backs up after a dead end: to the next survivor of the step before, or
-// when that beam is spent, by more steps each time this depth fails again.
-static void M_BackUp(M_SEARCH *const search)
-{
-    search->dead_ends++;
-    const int32_t depth = search->depth;
-    if (depth > 0) {
-        M_STEP *const before = &search->steps[depth - 1];
-        if (before->kept + 1 < before->count) {
-            before->kept++;
-            M_Keep(search, depth - 1);
-            printf(
-                "dead end, survivor %d instead, %d frames\n", before->kept + 1,
-                search->kept.frames);
-            fflush(stdout);
-            return;
-        }
-    }
-    M_STEP *const step = &search->steps[depth];
-    step->dead_ends++;
-    const int32_t back = step->dead_ends < depth ? step->dead_ends : depth;
-    search->depth -= back;
-    search->kept.frames = search->depth > 0
-        ? search->steps[search->depth - 1].end
-        : search->script_frames;
-    printf("dead end, back to %d frames\n", search->kept.frames);
-    fflush(stdout);
-}
-
-// Grows the kept run, which holds the script's frames, by the search.
+// Searches from the root, the end of the script, until a node reaches the
+// goal.
 static RESULT M_RunSearch(M_SEARCH *const search)
 {
     const RECORDER_GAME *const game = search->game;
-    const int32_t until = search->args->until;
-    const M_NODE first = { .score = game->score(), .ended = game->has_ended() };
-    while (search->kept.frames < game->max_frames) {
-        const M_NODE *node = &first;
-        if (search->depth > 0) {
-            const M_STEP *const last = &search->steps[search->depth - 1];
-            node = &last->nodes[last->kept];
-        }
-        if (node->ended || (until >= 0 && node->score.values[0] >= until)) {
-            break;
-        }
-        M_GrowSteps(search);
-        MUST(M_SearchStep(search));
-        const M_STEP *const step = &search->steps[search->depth];
-        if (step->count == 0) {
-            M_BackUp(search);
-            continue;
-        }
-        M_Keep(search, search->depth);
-        printf(
-            "kept %d frames, score %lld, %d candidates\n", search->kept.frames,
-            (long long)step->nodes[0].score.values[0], search->evaluated);
-        fflush(stdout);
+    search->nodes = M_Grow(nullptr, &search->node_capacity, 0, sizeof(M_NODE));
+    search->nodes[0] = (M_NODE) {
+        .parent = -1,
+        .frames = search->script.frames,
+        .score = game->score(),
+        .ended = game->has_ended(),
+    };
+    search->node_count = 1;
+    search->goal = M_IsGoal(search, &search->nodes[0]) ? 0 : -1;
+    search->frontier =
+        M_Grow(nullptr, &search->frontier_capacity, 0, sizeof(int32_t));
+    search->frontier[search->frontier_count++] = 0;
+    while (search->goal < 0) {
+        FAIL_IF(
+            search->frontier_count == 0,
+            "every run met a dead end after %d "
+            "candidate segments",
+            search->evaluated);
+        MUST(M_Expand(search));
     }
     return OK;
+}
+
+// Writes the inputs of the run of node into run, after the script's.
+static void M_WriteRun(
+    M_SEARCH *const search, const int32_t node, M_INPUTS *const run)
+{
+    const int32_t depth = M_Path(search, node);
+    for (int32_t i = 0; i < depth; i++) {
+        const M_NODE *const at = &search->nodes[search->path[i]];
+        for (int32_t j = 0; j < at->count; j++) {
+            const M_HOLD hold = search->holds.holds[at->first + j];
+            for (int32_t frame = 0; frame < hold.frames; frame++) {
+                Bot_WriteInput(search->bot, hold.roles, frame, M_Append(run));
+            }
+        }
+    }
 }
 
 static RESULT M_Search(
@@ -420,30 +613,31 @@ static RESULT M_Search(
         .game = game,
         .args = args,
         .bot = bot,
-        .kept = *run,
-        .candidate = { .size = run->size },
-        .script_frames = run->frames,
+        .script = *run,
+        .rng = (uint64_t)args->seed,
+        .input = Mem_AllocZ(run->size),
         .none = Mem_AllocZ(run->size),
     };
     // Keeps the replays from repeating the first run's messages.
     const LOG_LEVEL level = Log_GetMinLevel();
     Log_SetMinLevel(LOG_LEVEL_ERROR);
-    const RESULT result = M_RunSearch(&search);
+    RESULT result = M_RunSearch(&search);
     Log_SetMinLevel(level);
-    *run = search.kept;
-    Mem_Free(search.candidate.inputs);
-    for (int32_t i = 0; i < search.step_capacity; i++) {
-        for (int32_t j = 0; j < M_BEAM; j++) {
-            Mem_Free(search.steps[i].nodes[j].segment.inputs);
-        }
+    if (IS_OK(result)) {
+        M_WriteRun(&search, search.goal, run);
+        printf(
+            "searched %d candidates, met %d dead ends\n", search.evaluated,
+            search.dead_ends);
+        result = M_Restart(game, args->data, run);
     }
-    Mem_Free(search.steps);
+    Mem_Free(search.holds.holds);
+    Mem_Free(search.candidate.holds);
+    Mem_Free(search.nodes);
+    Mem_Free(search.frontier);
+    Mem_Free(search.path);
+    Mem_Free(search.input);
     Mem_Free(search.none);
-    MUST(result);
-    printf(
-        "searched %d candidates, met %d dead ends\n", search.evaluated,
-        search.dead_ends);
-    return M_Replay(game, args->data, run);
+    return result;
 }
 
 static RESULT M_SetStarts(

@@ -9,17 +9,27 @@
 // format, such as a th06 .rpy or a th01 case script. A game gives a
 // RECORDER_GAME; Recorder_Main parses the command line with core/args.
 //
-// The recorder keeps the input struct of every frame and grows the run 150
-// frames at a time. Each candidate segment, a random sequence of holds of
-// role combinations (bot.h), runs after the kept frames from a fresh start
-// and is followed by 90 frames without input; a candidate whose setbacks
-// rise in that time is dropped. Batches of 16 candidates, at most 3, run
-// until one leaves a survivor; the 4 best survivors by score form the
-// step's beam, and the best is kept. At a dead end, the run takes the next
-// survivor of the step before; when that beam is spent, it backs up by
-// more steps each time that depth fails again, until a budget of
-// candidates runs out. With --lose, random holds play the run straight to
-// its end instead. The same arguments always give the same run.
+// The recorder searches holds of role combinations (bot.h) directly
+// against the score. A node is a run prefix that survived; the root ends
+// after the script's frames. Expanding a node plays candidate segments
+// after its run from a fresh start, each followed by 90 frames without
+// input, and drops those whose setbacks rise in that time. A candidate is
+// either 150 frames of random holds or the holds of one of the 4 best
+// nodes so far with one to three holds changed, lengthened, shortened,
+// swapped or replaced. Batches of 16 candidates, half of each kind and at
+// most 3, run until one leaves a survivor, and each survivor joins the
+// frontier as a child node.
+//
+// The frontier gives the next node to expand: the best score, then the
+// longer run, then the earlier node, so that a stretch of equal scores
+// still moves on. When no better node in that order has come for 8
+// expansions, the nodes under the ancestor k steps above the next node go
+// behind all others, where k counts these demotions since the best node
+// last changed; a new best node clears them. The search ends at a
+// node whose game ended, that reached the frame cap or the --until value,
+// or fails after a budget of candidates. With --lose, random holds play
+// the run straight to its end instead. All randomness comes from --seed,
+// so the same arguments always give the same run.
 
 #define RECORDER_SCORE_MAX 4
 
