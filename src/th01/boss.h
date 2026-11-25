@@ -34,6 +34,9 @@ void Boss_Select(BOSS_STATE *state);
 // Clears the active boss selection, for a stage that has no boss.
 void Boss_Deselect(void);
 
+// Drops the debug damage request, once applied or at a life's end.
+void Boss_ClearTestDamage(void);
+
 // Returns the value for the session difficulty, or normal for an unknown one.
 int16_t Boss_Rank(int16_t easy, int16_t normal, int16_t hard, int16_t lunatic);
 
@@ -47,4 +50,4 @@ RESULT Boss_LoadBackground(
 
 // A debug request for the current boss to take one point of damage on its
 // next hit test.
-extern bool g_TestDamage;
+extern const bool *const g_TestDamage;

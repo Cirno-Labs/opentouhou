@@ -77,7 +77,7 @@ void Stage_HitTestCards(void)
         const int32_t dy = card->top - g_Orb->top;
         if (((dx > -24 && dx < 24 && dy > -24 && dy < 24)
              && card->flag == STAGE_CARD_ALIVE)
-            || (g_TestDamage && card->flag == STAGE_CARD_ALIVE)
+            || (*g_TestDamage && card->flag == STAGE_CARD_ALIVE)
             || (g_Player->bomb_damaging
                 && g_Player->bomb_frame % (uint32_t)objects->card_count
                     == (uint32_t)i

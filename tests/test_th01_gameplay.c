@@ -23,6 +23,7 @@
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
 #include "../src/th01/pellets.c"
+#include "../src/th01/boss.c"
 
 #include "core/base/arena.h"
 #include "core/audio.h"
@@ -283,11 +284,11 @@ TEST(miss_clears_debug_damage_without_losing_active_boss_state)
     M_EnterExit(GP_EXIT_WAIT);
     VSyncIrq_BeginWait(&g_Gameplay.wait);
     m_Player.is_hit = true;
-    g_TestDamage = true;
+    m_TestDamage = true;
     const TH01_INPUT raw = {};
     CHECK_EQ_INT(Gameplay_Tick(&raw, true, 1), GAMEPLAY_REQUEST_NONE);
     CHECK(M_InExit(GP_EXIT_MISS));
-    CHECK(!g_TestDamage);
+    CHECK(!m_TestDamage);
     CHECK_EQ_INT(g_Session.lives, 3);
     CHECK((*g_Boss) == boss);
     CHECK(memcmp((*g_Boss), &state, sizeof(state)) == 0);
