@@ -133,8 +133,7 @@ void Gameplay_Init(
 {
     g_GameplayAssets = assets;
     memset(&g_Gameplay, 0, sizeof(g_Gameplay));
-    g_Stage.frame = 0;
-    g_Stage.boss = BOSS_NONE;
+    Stage_Leave();
     g_Gameplay.wait_for_shot = true;
     GameplayStage_Begin();
     StageObjects_Prepare(allocator);
@@ -148,8 +147,7 @@ void Gameplay_Init(
 void Gameplay_Reset(void)
 {
     memset(&g_Gameplay, 0, sizeof(g_Gameplay));
-    g_Stage.frame = 0;
-    g_Stage.boss = BOSS_NONE;
+    Stage_Leave();
     g_Gameplay.wait_for_shot = true;
     GameplayStage_Begin();
     Palette_Init(&g_Palette);
@@ -160,8 +158,7 @@ void Gameplay_Reset(void)
     Shots_Init();
     Pellets_Init();
     memset(&g_StageObjects, 0, sizeof(g_StageObjects));
-    memset(&g_Stage, 0, sizeof(g_Stage));
-    g_Stage.first_stage = true;
+    Stage_Init();
     StageOrb_Init();
     Items_Init();
     Missiles_Init();
@@ -235,7 +232,6 @@ GAMEPLAY_REQUEST Gameplay_Tick(
 void Gameplay_Close(void)
 {
     memset(&g_Gameplay, 0, sizeof(g_Gameplay));
-    g_Stage.frame = 0;
-    g_Stage.boss = BOSS_NONE;
+    Stage_Leave();
     g_GameplayAssets = nullptr;
 }

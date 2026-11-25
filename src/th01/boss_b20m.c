@@ -2127,7 +2127,7 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
             continue;
         case B20M_DEFEAT_BONUS:
             for (int32_t i = 0; i < 5; i++) {
-                g_Stage.score += 10000;
+                Stage_AddScore(10000);
             }
             g_Stage.game_cleared = true;
             m_B20M.finished = true;

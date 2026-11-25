@@ -42,7 +42,7 @@ void BossHit_UpdateAndRender(
         } else if (orb->velocity_x == ORB_X_STILL) {
             orb->velocity_x = orb->left < 304 ? ORB_X_RIGHT_4 : ORB_X_LEFT_4;
         }
-        g_Stage.score += (uint32_t)(int32_t)hit_score;
+        Stage_AddScore((uint32_t)(int32_t)hit_score);
         Hud_ScoreAndCombo();
         Sound_Effect(3);
         HudHp_Decrement(*hp);

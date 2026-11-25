@@ -72,7 +72,7 @@ static void M_Collect(ITEM *const item, const bool bomb)
         item->flag = ITEM_COLLECTED;
     } else {
         if (bomb) {
-            g_Stage.score += 10000;
+            Stage_AddScore(10000);
         } else {
             uint16_t *const value = &g_Session.point_value;
             if (*value < 59999) {
@@ -81,7 +81,7 @@ static void M_Collect(ITEM *const item, const bool bomb)
             if (*value >= 60000) {
                 *value = 65530;
             }
-            g_Stage.score += *value;
+            Stage_AddScore(*value);
         }
         Hud_ScoreAndCombo();
         item->flag = ITEM_COLLECTED_OVER_CAP;
