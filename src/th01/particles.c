@@ -8,59 +8,69 @@
 
 #include <string.h>
 
-PARTICLES g_Particles;
+#define PARTICLES_COUNT 40
+
+typedef struct {
+    int16_t spawn_interval, velocity_max;
+    int16_t x[PARTICLES_COUNT], y[PARTICLES_COUNT];
+    int16_t velocity_x[PARTICLES_COUNT], velocity_y[PARTICLES_COUNT];
+    uint8_t alive[PARTICLES_COUNT], velocity_base[PARTICLES_COUNT];
+    uint8_t cycle;
+} PARTICLES;
+
+static PARTICLES m_Particles;
 
 static void M_SetX(const uint32_t i, const int16_t value)
 {
     if (i == PARTICLES_COUNT) {
-        g_Particles.y[0] = value;
+        m_Particles.y[0] = value;
     } else {
-        g_Particles.x[i] = value;
+        m_Particles.x[i] = value;
     }
 }
 
 static void M_SetY(const uint32_t i, const int16_t value)
 {
     if (i == PARTICLES_COUNT) {
-        g_Particles.velocity_x[0] = value;
+        m_Particles.velocity_x[0] = value;
     } else {
-        g_Particles.y[i] = value;
+        m_Particles.y[i] = value;
     }
 }
 
 static void M_SetVelocityX(const uint32_t i, const int16_t value)
 {
     if (i == PARTICLES_COUNT) {
-        g_Particles.velocity_y[0] = value;
+        m_Particles.velocity_y[0] = value;
     } else {
-        g_Particles.velocity_x[i] = value;
+        m_Particles.velocity_x[i] = value;
     }
 }
 
 static void M_SetVelocityY(const uint32_t i, const int16_t value)
 {
     if (i == PARTICLES_COUNT) {
-        g_Particles.alive[0] = (uint8_t)value;
-        g_Particles.alive[1] = (uint8_t)((uint16_t)value >> 8);
+        m_Particles.alive[0] = (uint8_t)value;
+        m_Particles.alive[1] = (uint8_t)((uint16_t)value >> 8);
     } else {
-        g_Particles.velocity_y[i] = value;
+        m_Particles.velocity_y[i] = value;
     }
 }
 
 static void M_Spawn(const PARTICLES_ORIGIN origin, const uint32_t i)
 {
-    uint8_t *const alive = i == PARTICLES_COUNT ? &g_Particles.velocity_base[0]
-                                                : &g_Particles.alive[i];
+    uint8_t *const alive = i == PARTICLES_COUNT ? &m_Particles.velocity_base[0]
+                                                : &m_Particles.alive[i];
     if (*alive != 0) {
         return;
     }
     *alive = 1;
     const uint8_t speed =
-        (uint8_t)(MasterRng_Next(&g_Rng) % g_Particles.velocity_max + 1);
+        (uint8_t)(MasterRng_Next(&g_Rng) % m_Particles.velocity_max + 1);
     if (i == PARTICLES_COUNT) {
-        g_Particles.cycle = speed;
+        m_Particles.cycle = speed;
     } else {
-        g_Particles.velocity_base[i] = speed;
+        m_Particles.velocity_base[i] = speed;
     }
     if (i % 2 == 0) {
         if (origin == PARTICLES_RIGHT || origin == PARTICLES_LEFT) {
@@ -122,46 +132,51 @@ static void M_Spawn(const PARTICLES_ORIGIN origin, const uint32_t i)
     }
 }
 
+void Particles_Reset(void)
+{
+    memset(&m_Particles, 0, sizeof(m_Particles));
+}
+
 void Particles_Init(void)
 {
-    memset(g_Particles.alive, 0, sizeof(g_Particles.alive));
-    g_Particles.spawn_interval = 2;
-    g_Particles.velocity_max = 10;
+    memset(m_Particles.alive, 0, sizeof(m_Particles.alive));
+    m_Particles.spawn_interval = 2;
+    m_Particles.velocity_max = 10;
 }
 
 void Particles_UpdateAndRender(
     const PARTICLES_ORIGIN origin, const uint8_t color)
 {
-    ASSERT(g_Particles.spawn_interval == 2 && g_Particles.velocity_max == 10);
+    ASSERT(m_Particles.spawn_interval == 2 && m_Particles.velocity_max == 10);
     ASSERT(origin >= PARTICLES_TOP && origin <= PARTICLES_TOP_LEFT);
-    g_Particles.cycle++;
-    if (g_Particles.cycle > g_Particles.spawn_interval * PARTICLES_COUNT) {
-        g_Particles.cycle = 0;
+    m_Particles.cycle++;
+    if (m_Particles.cycle > m_Particles.spawn_interval * PARTICLES_COUNT) {
+        m_Particles.cycle = 0;
     }
-    if (g_Particles.cycle % g_Particles.spawn_interval == 0) {
-        M_Spawn(origin, g_Particles.cycle / g_Particles.spawn_interval);
+    if (m_Particles.cycle % m_Particles.spawn_interval == 0) {
+        M_Spawn(origin, m_Particles.cycle / m_Particles.spawn_interval);
     }
     for (uint32_t i = 0; i < PARTICLES_COUNT; i++) {
-        if (g_Particles.alive[i] == 0) {
+        if (m_Particles.alive[i] == 0) {
             continue;
         }
         Sprite_Restore16(
-            Math16_ToPixel(g_Particles.x[i]), Math16_ToPixel(g_Particles.y[i]),
+            Math16_ToPixel(m_Particles.x[i]), Math16_ToPixel(m_Particles.y[i]),
             8, 1);
-        g_Particles.x[i] =
-            Math16_Wrap(g_Particles.x[i] + g_Particles.velocity_x[i]);
-        g_Particles.y[i] =
-            Math16_Wrap(g_Particles.y[i] + g_Particles.velocity_y[i]);
-        if (g_Particles.x[i] < 0 || g_Particles.x[i] > 639 * 16
-            || g_Particles.y[i] < 0 || g_Particles.y[i] > 399 * 16) {
-            g_Particles.alive[i] = 0;
+        m_Particles.x[i] =
+            Math16_Wrap(m_Particles.x[i] + m_Particles.velocity_x[i]);
+        m_Particles.y[i] =
+            Math16_Wrap(m_Particles.y[i] + m_Particles.velocity_y[i]);
+        if (m_Particles.x[i] < 0 || m_Particles.x[i] > 639 * 16
+            || m_Particles.y[i] < 0 || m_Particles.y[i] > 399 * 16) {
+            m_Particles.alive[i] = 0;
         }
     }
     for (uint32_t i = 0; i < PARTICLES_COUNT; i++) {
-        if (g_Particles.alive[i] != 0) {
+        if (m_Particles.alive[i] != 0) {
             Video_Pixel(
-                Math16_ToPixel(g_Particles.x[i]),
-                Math16_ToPixel(g_Particles.y[i]), color);
+                Math16_ToPixel(m_Particles.x[i]),
+                Math16_ToPixel(m_Particles.y[i]), color);
         }
     }
 }

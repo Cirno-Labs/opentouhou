@@ -1,3 +1,4 @@
+#include "../src/th01/miss.c"
 #include "th01/gameplay_internal.h"
 #include "th01/session.h"
 #include "th01/shots.h"
@@ -176,7 +177,7 @@ TEST(stage_clear_beats_miss_and_starts_real_bonus)
     CHECK_EQ_INT(g_Session.stage_id, 1);
     CHECK_EQ_INT(g_Session.lives, 0);
     CHECK(!g_Player.is_hit);
-    CHECK_EQ_INT(g_Miss.phase, MISS_DONE);
+    CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
     Arena_Free(&f.arena);
 }
 
@@ -254,7 +255,7 @@ TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
         CHECK(g_StageObjectStorage.obstacles == obstacles);
         CHECK_EQ_INT(g_StageObjects.card_count, 1);
         CHECK(!g_Stage.cleared);
-        CHECK_EQ_INT(g_Miss.phase, MISS_DONE);
+        CHECK_EQ_INT(m_Miss.phase, MISS_DONE);
     }
     Arena_Free(&f.arena);
 }

@@ -1,3 +1,4 @@
+#include "../src/th01/missiles.c"
 #include "th01/boss_b15m.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -65,9 +66,9 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     g_B15M.girl.previous_left = 199;
     g_B15M.girl.orb_inactive = true;
     g_B15M.missile_rifts.x[0] = 88;
-    g_Missiles.slots[0].flag = MISSILE_MOVING;
-    g_Missiles.slots[0].left = 300;
-    const MISSILES missiles = g_Missiles;
+    m_Missiles.slots[0].flag = MISSILE_MOVING;
+    m_Missiles.slots[0].left = 300;
+    const MISSILES missiles = m_Missiles;
     const PALETTE saved = g_Palette.saved;
     const size_t used = arena.used;
     B15M_Setup(&f.assets, &f.miko);
@@ -79,7 +80,7 @@ TEST(setup_reseeds_without_resetting_actor_or_missile_history)
     CHECK_EQ_INT(g_HudHp.first_redwhite, 6);
     CHECK_EQ_INT(g_Rng, 0x12345678);
     CHECK(g_Pellets.interlace);
-    CHECK(memcmp(&g_Missiles, &missiles, sizeof(missiles)) == 0);
+    CHECK(memcmp(&m_Missiles, &missiles, sizeof(missiles)) == 0);
     CHECK(memcmp(&g_Palette.saved, &saved, sizeof(saved)) == 0);
     CHECK_EQ_INT(g_B15M.girl.left, 256);
     CHECK_EQ_INT(g_B15M.girl.top, 96);
@@ -187,7 +188,7 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
         B15M_Init();
         memset(g_B15M.background, 0, 128 * 96);
         B15M_Setup(&f.assets, &f.miko);
-        g_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
+        m_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
                                           .top = 200 * 16,
                                           .previous_left = -1,
                                           .velocity = { 16, 0 },
@@ -198,7 +199,7 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
         uint64_t tick = 0;
         CHECK(!B15M_UpdateAndRender(&f.assets, &f.miko, tick));
         CHECK(g_B15M.entrance_active);
-        CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         const B15M frozen = g_B15M;
         const uint32_t rng = g_Rng;
         CHECK(!B15M_UpdateAndRender(&f.assets, &f.miko, tick));
@@ -215,7 +216,7 @@ TEST(entrance_waits_preserve_prefix_once_and_source_counter_history)
         CHECK_EQ_INT(g_B15M.pattern, 1);
         CHECK(!g_B15M.entrance_active);
         CHECK(!g_B15M.girl.orb_inactive);
-        CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
     }
@@ -403,7 +404,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     g_Player.invincible = false;
     g_Orb.previous_left = g_B15M.girl.left + 48;
     g_Orb.previous_top = g_B15M.girl.top + 24;
-    g_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
+    m_Missiles.slots[0] = (MISSILE) { .left = 200 * 16,
                                       .top = 200 * 16,
                                       .previous_left = -1,
                                       .velocity = { 16, 0 },
@@ -419,7 +420,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK_EQ_INT(g_B15M.pending, B15M_PENDING_SAFETY);
     CHECK(!g_Player.is_hit);
     CHECK(!g_Stage.cleared);
-    CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK(!B15M_UpdateAndRender(&f.assets, &f.miko, 105));
     CHECK(!g_Player.is_hit);
     CHECK(!B15M_UpdateAndRender(&f.assets, &f.miko, 106));
@@ -430,8 +431,8 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(g_Scene.active == nullptr);
     CHECK_EQ_INT(g_Stage.score, 7000);
     CHECK_EQ_INT(g_Rng, rng);
-    CHECK_EQ_INT(g_Missiles.slots[0].flag, MISSILE_FREE);
-    CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(m_Missiles.slots[0].flag, MISSILE_FREE);
+    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
     for (int32_t i = 0; i < 10; i++) {
         CHECK(!g_ShootoutLasers.slots[i].alive);
@@ -444,7 +445,7 @@ TEST(safety_hit_tail_stacks_real_defeat_without_repeating_the_prefix)
     CHECK(g_B15M.finished);
     CHECK(g_Stage.cleared);
     CHECK(g_Scene.active == &f.assets.next_scene);
-    CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+    CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
     CHECK_EQ_INT(g_Rng, rng);
     CHECK_EQ_INT(arena.used, used);
     Arena_Free(&arena);
@@ -532,7 +533,7 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
     g_B15M.hp_bar_filled = true;
     g_B15M.pattern_state = 15;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        g_Missiles.slots[i] = (MISSILE) { .left = 200 * 16,
+        m_Missiles.slots[i] = (MISSILE) { .left = 200 * 16,
                                           .top = 200 * 16,
                                           .previous_left = -1,
                                           .flag = MISSILE_MOVING };
@@ -546,8 +547,8 @@ TEST(full_missile_pool_still_consumes_pattern_randomness)
     CHECK(B15M_UpdateAndRender(&f.assets, &f.miko, 1));
     CHECK_EQ_INT(g_Rng, expected);
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        CHECK_EQ_INT(g_Missiles.slots[i].flag, MISSILE_MOVING);
-        CHECK_EQ_INT(g_Missiles.slots[i].left, 200 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[i].flag, MISSILE_MOVING);
+        CHECK_EQ_INT(m_Missiles.slots[i].left, 200 * 16);
     }
     Arena_Free(&arena);
 }

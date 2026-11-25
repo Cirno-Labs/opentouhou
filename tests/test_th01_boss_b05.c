@@ -1,3 +1,4 @@
+#include "../src/th01/particles.c"
 #include "th01/boss_b05.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -140,9 +141,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     g_B05.sphere.previous_left = 17;
     g_B05.sphere.lock_frame = 2;
     g_B05.person.image = 5;
-    g_Particles.cycle = 73;
-    g_Particles.velocity_base[0] = 9;
-    g_Particles.alive[0] = 255;
+    m_Particles.cycle = 73;
+    m_Particles.velocity_base[0] = 9;
+    m_Particles.alive[0] = 255;
     B05_Setup(&f.assets);
     CHECK_EQ_INT(arena.used, used);
     CHECK(g_BossSprites.entities[0] == &f.assets.sphere);
@@ -167,9 +168,9 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     CHECK_EQ_INT(g_B05.direction, -1);
     CHECK_EQ_INT(g_HudHp.first_white, 6);
     CHECK_EQ_INT(g_HudHp.first_redwhite, 2);
-    CHECK_EQ_INT(g_Particles.alive[0], 0);
-    CHECK_EQ_INT(g_Particles.cycle, 73);
-    CHECK_EQ_INT(g_Particles.velocity_base[0], 9);
+    CHECK_EQ_INT(m_Particles.alive[0], 0);
+    CHECK_EQ_INT(m_Particles.cycle, 73);
+    CHECK_EQ_INT(m_Particles.velocity_base[0], 9);
     CHECK(memcmp(&g_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
     CHECK(memcmp(&g_StagePalette, &g_B05.post_defeat, sizeof(PALETTE)) == 0);
     CHECK_EQ_INT(g_Video.pages[0][0], 3);

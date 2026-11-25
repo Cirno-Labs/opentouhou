@@ -2,29 +2,8 @@
 
 #include "th01/stage.h"
 
-#define ITEMS_BOMB_COUNT 4
-#define ITEMS_POINT_COUNT 10
-
-typedef enum {
-    ITEM_FREE = 0,
-    ITEM_SPLASH = 1,
-    ITEM_FALL = 2,
-    ITEM_BOUNCE = 3,
-    ITEM_COLLECTED = 99,
-    ITEM_COLLECTED_OVER_CAP = 100,
-} ITEM_FLAG;
-
-typedef struct {
-    int16_t left, top, reserved, velocity_y;
-    uint8_t flag, radius_or_time;
-} ITEM;
-
-// Zero-initialize once; reset preserves every field except flags.
-typedef struct {
-    ITEM bombs[ITEMS_BOMB_COUNT], points[ITEMS_POINT_COUNT];
-} ITEMS;
-
-extern ITEMS g_Items;
+// Clears all state for a new gameplay session.
+void Items_Init(void);
 
 // Caches all popup characters from rom in caller-owned asset storage before
 // ticks.

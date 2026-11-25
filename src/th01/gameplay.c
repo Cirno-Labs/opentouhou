@@ -945,12 +945,12 @@ void Gameplay_Reset(void)
     memset(&g_Stage, 0, sizeof(g_Stage));
     g_Stage.first_stage = true;
     StageOrb_Init();
-    memset(&g_Items, 0, sizeof(g_Items));
-    memset(&g_Missiles, 0, sizeof(g_Missiles));
+    Items_Init();
+    Missiles_Init();
     memset(&g_ShootoutLasers, 0, sizeof(g_ShootoutLasers));
-    memset(&g_Particles, 0, sizeof(g_Particles));
-    memset(&g_Bomb, 0, sizeof(g_Bomb));
-    memset(&g_Miss, 0, sizeof(g_Miss));
+    Particles_Reset();
+    Bomb_Init();
+    Miss_Init();
     memset(&g_Scene, 0, sizeof(g_Scene));
     memset(&g_Bonus, 0, sizeof(g_Bonus));
     Bonus_InitTotal();
