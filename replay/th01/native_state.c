@@ -112,7 +112,7 @@ static void M_Gameplay(uint32_t *const row)
     row[TH01_COLUMN_invincibility_time] = M_I32(player->invincibility_time);
     row[TH01_COLUMN_bomb_frame] = player->bomb_frame;
 
-    const ORB *const orb = &g_Orb;
+    const ORB *const orb = g_Orb;
     row[TH01_COLUMN_orb_left] = M_I32(orb->left);
     row[TH01_COLUMN_orb_top] = M_I32(orb->top);
     row[TH01_COLUMN_orb_velocity_x] = M_I32(orb->velocity_x);

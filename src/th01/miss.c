@@ -32,7 +32,7 @@ static MISS m_Miss;
 
 static void M_Orb(const PTN *const stage)
 {
-    Orb_Put(stage, g_Orb.left, g_Orb.top, 0);
+    Orb_Put(stage, g_Orb->left, g_Orb->top, 0);
 }
 
 static void M_Effect(const PTN *const miko, const PTN *const stage)

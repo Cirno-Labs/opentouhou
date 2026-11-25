@@ -76,7 +76,7 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
 {
     STAGE_OBJECTS *const objects = &g_StageObjects;
     STAGE_OBSTACLE *const obstacle = &objects->obstacles[slot];
-    ORB *const orb = &g_Orb;
+    const ORB *const orb = g_Orb;
     if (objects->portal_active && objects->entered_portal != slot) {
         return;
     }
@@ -84,7 +84,7 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
         obstacle->frame = Math16_Wrap(obstacle->frame + 1);
     }
     if (obstacle->frame == 0) {
-        orb->in_portal = true;
+        Orb_EnterPortal();
         obstacle->frame = 1;
         objects->entered_portal = slot;
         objects->portal_active = true;
@@ -126,7 +126,7 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
             sprites, obstacle->frame == 30 ? 30 : 29, -1,
             objects->destination_left, objects->destination_top);
         if (obstacle->frame == 40) {
-            orb->velocity_x = MasterRng_Next(&g_Rng) % 5;
+            Orb_SetVelocityX(MasterRng_Next(&g_Rng) % 5);
             const int16_t force = (int16_t)(MasterRng_Next(&g_Rng) % 19) - 9;
             Orb_NewForce(ORB_FORCE_IMMEDIATE, force);
             Orb_Teleport(objects->destination_left, objects->destination_top);
@@ -142,7 +142,7 @@ static void M_ResetPortals(const PTN *const sprites)
     STAGE_OBJECTS *const objects = &g_StageObjects;
     objects->entered_portal = 0;
     objects->portal_active = false;
-    if (g_Orb.in_portal) {
+    if (g_Orb->in_portal) {
         Sprite_PtnPut(
             sprites, 29, -1, objects->destination_left,
             objects->destination_top);
@@ -153,7 +153,7 @@ static void M_ResetPortals(const PTN *const sprites)
 void Stage_UpdateObstacles(const PTN *const sprites, const bool reset)
 {
     STAGE_OBJECTS *const objects = &g_StageObjects;
-    ORB *const orb = &g_Orb;
+    const ORB *const orb = g_Orb;
     if (reset) {
         objects->vertical_bar_active = false;
     }
@@ -166,11 +166,11 @@ void Stage_UpdateObstacles(const PTN *const sprites, const bool reset)
         if (obstacle->type == STAGE_DATA_BUMPER) {
             if (ax < 24 && ay < 24 && obstacle->frame == 0) {
                 obstacle->frame++;
-                orb->top = obstacle->top + (dy <= 0 ? -24 : 24);
+                Orb_SetTop((int16_t)(obstacle->top + (dy <= 0 ? -24 : 24)));
                 if (orb->velocity_x == ORB_X_RIGHT_4 && dx < 0) {
-                    orb->velocity_x = ORB_X_LEFT_4;
+                    Orb_SetVelocityX(ORB_X_LEFT_4);
                 } else if (orb->velocity_x == ORB_X_LEFT_4 && dx > 0) {
-                    orb->velocity_x = ORB_X_RIGHT_4;
+                    Orb_SetVelocityX(ORB_X_RIGHT_4);
                 }
                 Orb_NewForce(ORB_FORCE_SURFACE, 1.5);
             }

@@ -841,7 +841,7 @@ static bool M_Entrance(const B10J_ASSETS *const assets, const PTN *const miko)
 static bool M_Death(const B10J_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
-            &m_B10J.defeat, &m_B10J.post_defeat, miko, &g_Orb.top)) {
+            &m_B10J.defeat, &m_B10J.post_defeat, miko, &g_Orb->top)) {
         return false;
     }
     Scene_Activate(&assets->next_scene);

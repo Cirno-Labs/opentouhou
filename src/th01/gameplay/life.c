@@ -46,7 +46,7 @@ static PLAYER_SPRITES M_PlayerSprites(void)
 static void M_DefaultActors(void)
 {
     Sprite_PtnPut(&g_GameplayAssets->miko, 0, -1, g_Player->left, PLAYER_TOP);
-    Orb_Put(Gameplay_StageSprites(), g_Orb.left, g_Orb.top, 0);
+    Orb_Put(Gameplay_StageSprites(), g_Orb->left, g_Orb->top, 0);
 }
 
 static bool M_BossTick(const TH01_INPUT *const raw, const uint64_t host_tick)

@@ -1,5 +1,6 @@
 #include "../src/th01/input.c"
 #include "../src/th01/player.c"
+#include "../src/th01/orb.c"
 #include "th01/player.h"
 #include "th01/bomb.h"
 #include "th01/hud.h"
@@ -53,9 +54,9 @@ static void M_Case(CASE *const state)
     memset(&m_Player, 0, sizeof(m_Player));
     m_Player.left = 304;
     m_Player.remaining_bombs = 3;
-    memset(&g_Orb, 0, sizeof(g_Orb));
-    g_Orb.left = 304;
-    g_Orb.top = 368;
+    memset(&m_Orb, 0, sizeof(m_Orb));
+    m_Orb.left = 304;
+    m_Orb.top = 368;
     g_Rng = 1;
     GameInput_Init();
     Player_Reset(SETTINGS_DIFFICULTY_NORMAL);
@@ -220,12 +221,12 @@ TEST(slide_requires_release_and_strike_has_combo_priority)
     m_GameInput.horizontal = GAME_INPUT_LEFT;
     m_GameInput.strike = true;
     m_GameInput.shot = true;
-    g_Orb.force_frame = 73;
+    m_Orb.force_frame = 73;
     M_Tick(&state);
     CHECK_EQ_INT(m_Player.mode, PLAYER_MODE_SPECIAL_FIRST);
     CHECK_EQ_INT(m_Player.submode, 2);
     CHECK_EQ_INT(m_Player.mode_frame, 0);
-    CHECK_EQ_INT(g_Orb.force_frame, 73);
+    CHECK_EQ_INT(m_Orb.force_frame, 73);
     CHECK(m_Player.deflecting);
     CHECK(!m_Player.sliding);
     Mem_Free(g_Video.pages[0]);
@@ -329,7 +330,7 @@ TEST(bomb_boundary_preserves_deferred_start_and_operation_order)
     M_Tick(&state);
     CHECK_EQ_INT(m_Player.bomb_flag, 2);
     CHECK_EQ_INT(m_Player.remaining_bombs, 3);
-    g_Orb.force_frame = 22;
+    m_Orb.force_frame = 22;
     M_Tick(&state);
     CHECK_EQ_INT(m_Player.remaining_bombs, 2);
     CHECK(m_Player.bombing);

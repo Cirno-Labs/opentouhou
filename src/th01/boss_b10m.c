@@ -891,7 +891,7 @@ static void M_AttackStar(const B10M_ASSETS *const assets, const PTN *const miko)
 static bool M_Death(const B10M_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
-            &m_B10M.defeat, &m_B10M.post_defeat, miko, &g_Orb.top)) {
+            &m_B10M.defeat, &m_B10M.post_defeat, miko, &g_Orb->top)) {
         return false;
     }
     Scene_Activate(&assets->next_scene);

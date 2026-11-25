@@ -149,7 +149,7 @@ static void M_Common(void)
 
 static void M_Hit(const B15J_ASSETS *const assets, const PTN *const miko)
 {
-    const ORB *const orb = &g_Orb;
+    const ORB *const orb = g_Orb;
     const bool colliding =
         orb->left > 256 && orb->left < 352 && orb->top < 132 && orb->top < 180;
     const uint8_t flash[] = { 6, 11, 8, 2 };
@@ -181,7 +181,7 @@ static void M_SymmetricLine(
 static void M_Defaults(const PTN *const miko, const PTN *const stage)
 {
     Sprite_PtnPut(miko, 0, -1, g_Player->left, 368);
-    Orb_Put(stage, g_Orb.left, g_Orb.top, 0);
+    Orb_Put(stage, g_Orb->left, g_Orb->top, 0);
 }
 
 static int16_t M_InvertRings(
@@ -632,7 +632,7 @@ static void M_VerticalLasers(
 static bool M_Death(const B15J_ASSETS *const assets, const PTN *const miko)
 {
     if (!BossDefeat_Resume(
-            &m_B15J.defeat, &m_B15J.post_defeat, miko, &g_Orb.top)) {
+            &m_B15J.defeat, &m_B15J.post_defeat, miko, &g_Orb->top)) {
         return false;
     }
     Scene_Activate(&assets->next_scene);

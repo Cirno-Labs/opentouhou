@@ -1,6 +1,7 @@
 #include "../src/th01/bomb.c"
 #include "../src/th01/input.c"
 #include "../src/th01/player.c"
+#include "../src/th01/orb.c"
 #include "th01/bomb.h"
 #include "th01/hud.h"
 #include "th01/shots.h"
@@ -162,9 +163,9 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     m_GameInput.shot = true;
     m_GameInput.strike = true;
     m_GameInput.bomb = true;
-    memset(&g_Orb, 0, sizeof(g_Orb));
-    g_Orb.left = 500;
-    g_Orb.top = 100;
+    memset(&m_Orb, 0, sizeof(m_Orb));
+    m_Orb.left = 500;
+    m_Orb.top = 100;
     Shots_Init();
     g_Rng = 1;
     const PLAYER_SPRITES sprites = { .miko = &state.miko };

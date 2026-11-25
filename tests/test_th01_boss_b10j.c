@@ -5,6 +5,7 @@
 #include "../src/th01/missiles.c"
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/player.c"
+#include "../src/th01/orb.c"
 #include "th01/sound.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -96,8 +97,8 @@ static void M_Battle(FIXTURE *const f, ARENA *const arena)
     g_Rng = 0xb10b0000;
     m_Player.invincible = true;
     m_Player.left = 300;
-    g_Orb.top = 64;
-    g_Orb.previous_top = 64;
+    m_Orb.top = 64;
+    m_Orb.previous_top = 64;
     Hud_Load(nullptr, &f->stage, &f->font);
     g_Session.settings.difficulty = SETTINGS_DIFFICULTY_EASY;
 }
@@ -312,9 +313,9 @@ TEST(real_orb_hits_gate_then_finish_the_fight)
             && (m_B10J.status.phase == B10J_PHASE_SECOND
                 || (m_B10J.status.phase == B10J_PHASE_FIRST
                     && m_B10J.status.hp > 6));
-        g_Orb.previous_left =
+        m_Orb.previous_left =
             colliding ? Math16_Wrap(m_B10J.still.left + 48) : 0;
-        g_Orb.previous_top =
+        m_Orb.previous_top =
             colliding ? Math16_Wrap(m_B10J.still.top + 48) : 64;
         if (m_B10J.status.hp <= 6 && m_B10J.status.phase == B10J_PHASE_FIRST) {
             saw_gate = true;

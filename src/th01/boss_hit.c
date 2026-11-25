@@ -31,16 +31,16 @@ void BossHit_UpdateAndRender(
         M_Flash(flash_colors, flash_count);
         *hp = Math16_Wrap(*hp - 1);
         hit->invincible = true;
-        ORB *const orb = &g_Orb;
+        const ORB *const orb = g_Orb;
         if (orb->velocity_x == ORB_X_LEFT_4
             || orb->velocity_x == ORB_X_LEFT_8) {
-            orb->velocity_x = ORB_X_RIGHT_4;
+            Orb_SetVelocityX(ORB_X_RIGHT_4);
         } else if (
             orb->velocity_x == ORB_X_RIGHT_4
             || orb->velocity_x == ORB_X_RIGHT_8) {
-            orb->velocity_x = ORB_X_LEFT_4;
+            Orb_SetVelocityX(ORB_X_LEFT_4);
         } else if (orb->velocity_x == ORB_X_STILL) {
-            orb->velocity_x = orb->left < 304 ? ORB_X_RIGHT_4 : ORB_X_LEFT_4;
+            Orb_SetVelocityX(orb->left < 304 ? ORB_X_RIGHT_4 : ORB_X_LEFT_4);
         }
         Stage_AddScore((uint32_t)(int32_t)hit_score);
         Hud_ScoreAndCombo();

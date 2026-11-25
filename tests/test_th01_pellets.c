@@ -1,5 +1,6 @@
 #include "../src/th01/shots.c"
 #include "../src/th01/player.c"
+#include "../src/th01/orb.c"
 #include "th01/pellets.h"
 #include "th01/shots.h"
 #include "th01/player.h"
@@ -24,10 +25,10 @@ static void M_Init(FIXTURE *const f)
     *f = (FIXTURE) {};
     Th01Test_ResetWorld();
     Video_Init(&g_HeapAllocator);
-    memset(&g_Orb, 0, sizeof(g_Orb));
-    g_Orb.left = 500;
-    g_Orb.top = 100;
-    g_Orb.in_portal = true;
+    memset(&m_Orb, 0, sizeof(m_Orb));
+    m_Orb.left = 500;
+    m_Orb.top = 100;
+    m_Orb.in_portal = true;
     m_Player.left = 300;
     g_Rng = 1;
     f->stage = (PTN) { .count = 2, .pixels = f->stage_pixels };
@@ -153,8 +154,8 @@ TEST(interlace_skips_orb_but_not_movement_age_or_lethal_hits)
     M_Init(&f);
     g_Pellets.interlace = true;
     M_Add(&f, 310, 368);
-    g_Orb.left = 310;
-    g_Orb.top = 369;
+    m_Orb.left = 310;
+    m_Orb.top = 369;
     Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(m_Player.is_hit);
     CHECK(!g_Pellets.slots[0].moving);
@@ -169,8 +170,8 @@ TEST(stale_idle_shot_can_suppress_orb_and_deflection)
     M_Init(&f);
     M_Add(&f, 100, 100);
     m_Shots.slots[0] = (SHOT) { .left = 115, .top = 101 };
-    g_Orb.left = 100;
-    g_Orb.top = 101;
+    m_Orb.left = 100;
+    m_Orb.top = 101;
     Pellets_UpdateAndRender(&f.assets, &f.stage);
     CHECK(g_Pellets.slots[0].not_rendered);
     CHECK_EQ_INT(g_Pellets.slots[0].decay_frame, 0);
