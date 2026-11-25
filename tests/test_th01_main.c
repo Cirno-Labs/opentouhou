@@ -1,3 +1,4 @@
+#include "../src/th01/hud.c"
 #include "th01/main.h"
 #include "th01/opening.h"
 #include "pc98/zun/bfnt.h"
@@ -329,7 +330,7 @@ static void M_Play(void)
         CHECK(M_Tick((TH01_INPUT) {}));
     }
     CHECK_EQ_INT(g_Th01Scene, TH01_SCENE_GAMEPLAY);
-    CHECK(g_Hud.numbers != nullptr);
+    CHECK(m_Hud.numbers != nullptr);
     CHECK(g_HudHp.backgrounds != nullptr);
 }
 

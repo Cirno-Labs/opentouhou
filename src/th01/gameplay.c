@@ -106,7 +106,8 @@ static bool M_BossTick(const TH01_INPUT *const raw)
     case BOSS_MIMA:
         return B10J_UpdateAndRender(&m_Assets->b10j, &m_Assets->miko);
     case BOSS_KIKURI:
-        return B15J_UpdateAndRender(&m_Assets->b15j, &m_Assets->miko);
+        return B15J_UpdateAndRender(
+            &m_Assets->b15j, &m_Assets->miko, M_StageSprites());
     case BOSS_ELIS:
         return B15M_UpdateAndRender(
             &m_Assets->b15m, &m_Assets->miko, m_HostTick);

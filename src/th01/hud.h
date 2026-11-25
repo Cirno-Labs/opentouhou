@@ -3,21 +3,6 @@
 #include "th01/grf.h"
 #include "th01/stage.h"
 
-#define HUD_RESOURCE_CAPACITY 32
-
-typedef struct {
-    uint8_t *lives, *bombs, *numbers, *stage, *timer;
-    uint32_t score_previous, high_previous;
-    int16_t combo_previous, max_previous;
-    uint8_t maximum_combo;
-    bool force_numbers;
-    const GRF *mask;
-    const PTN *sprites;
-    const GAME_TEXT_FONT *font;
-} HUD;
-
-extern HUD g_Hud;
-
 // Caches fullwidth numerals and separate ASCII stage, rank and timer glyphs
 // from rom.
 RESULT Hud_LoadFont(
@@ -68,3 +53,9 @@ void Hud_SnapNumbers(bool first_stage);
 // Preserves the duplicate first-quarter snapshot at x=512 for both halves.
 void Hud_SnapTimer(uint16_t time);
 void Hud_PutTimer(uint16_t time);
+
+// Restores the stage HUD and redraws all numeric values.
+void Hud_Redraw(bool first_stage, uint16_t time);
+
+// Draws a centered red text line of at most five characters.
+void Hud_PutMessage(const char *text);
