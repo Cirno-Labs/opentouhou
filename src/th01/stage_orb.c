@@ -59,7 +59,7 @@ bool Stage_ResumeOrbComposite(
             .invincible_against_orb = g_Player.invincible_against_orb,
         };
         if (Orb_PlayerHitTest(&player, ORB_REPEL_NONE)) {
-            g_Player.is_hit = true;
+            Player_Hit();
         }
         Orb_Erase(
             sprites, g_Orb.previous_left, g_Orb.previous_top, Orb_Image());

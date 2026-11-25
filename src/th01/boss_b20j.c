@@ -706,11 +706,11 @@ static void M_SnakesUpdate(
         }
         s->left[i][0] = Math16_Wrap(s->left[i][0] + s->velocity[i].x);
         s->top[i][0] = Math16_Wrap(s->top[i][0] + s->velocity[i].y);
-        PLAYER *const player = &g_Player;
+        const PLAYER *const player = &g_Player;
         if (s->left[i][0] > player->left && s->left[i][0] < player->left + 24
             && s->top[i][0] > 368 + (player->sliding ? 10 : 0)
             && s->top[i][0] < 392 && !player->invincible) {
-            player->is_hit = true;
+            Player_Hit();
         }
     }
 }

@@ -51,6 +51,27 @@ extern PLAYER g_Player;
 // Zeroes the player for a new world.
 void Player_Init(void);
 
+// Marks the player hit, which ends the life at the next frame.
+void Player_Hit(void);
+
+// Drops a pending hit.
+void Player_ClearHit(void);
+
+// Ends invincibility and its timer.
+void Player_EndInvincibility(void);
+
+// Counts invincibility down by one frame and ends it at the last frame.
+void Player_TickInvincibility(void);
+
+// Ends bomb damage and starts 100 invincible frames.
+void Player_EndBomb(void);
+
+// Stops deflection and bomb damage.
+void Player_StopActions(void);
+
+// Moves the player to the center of the playfield.
+void Player_Center(void);
+
 // Keeps the suspended bomb branch. Zero-initialize before its first use.
 // The field belongs to the Player_ functions; never copy a pending token.
 typedef struct {

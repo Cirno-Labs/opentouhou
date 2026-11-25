@@ -295,13 +295,13 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             if (g_Gameplay.menu_selection == 0) {
                 M_BeginSwitch(GAMEPLAY_SWITCH_CONTINUE);
             } else {
-                g_Player.is_hit = false;
+                Player_ClearHit();
                 g_GameInput.paused = false;
                 Sound_Stop();
                 M_RequestOpening();
             }
         } else if (g_Gameplay.continue_frame > 3000 || g_GameInput.paused) {
-            g_Player.is_hit = false;
+            Player_ClearHit();
             g_GameInput.paused = false;
             if (g_Gameplay.continue_frame > 3000) {
                 Sound_Stop();

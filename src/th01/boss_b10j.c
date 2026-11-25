@@ -664,7 +664,7 @@ static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
                 Math16_Wrap(16 * (34 - m_B10J.pillar_time[i])));
             if (!g_Player.invincible && g_Player.left > Math16_Wrap(x - 40)
                 && g_Player.left < Math16_Wrap(x + 8)) {
-                g_Player.is_hit = true;
+                Player_Hit();
             }
             m_B10J.pillar_time[i] -= 8;
         } else if (m_B10J.pillar_time[i] != -999) {

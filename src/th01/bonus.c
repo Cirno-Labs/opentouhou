@@ -322,7 +322,7 @@ bool Bonus_Resume(
             break;
         case BONUS_CONFIRM:
             if (GameInput_SenseGame(raw, false)) {
-                g_Player.is_hit = true;
+                Player_Hit();
             }
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;
@@ -488,7 +488,7 @@ bool Bonus_ResumeTotal(
             break;
         case BONUS_TOTAL_CONFIRM:
             if (GameInput_SenseGame(raw, false)) {
-                g_Player.is_hit = true;
+                Player_Hit();
             }
             if (g_GameInput.shot && g_GameInput.ok) {
                 return false;

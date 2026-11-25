@@ -158,6 +158,6 @@ void Stage_UpdateCards(
     }
     if (removed == objects->card_count) {
         g_Stage.cleared = true;
-        g_Player.is_hit = true;
+        Player_Hit();
     }
 }

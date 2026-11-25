@@ -481,6 +481,49 @@ void Player_MoveAndClamp(const int16_t delta)
     }
 }
 
+void Player_Hit(void)
+{
+    g_Player.is_hit = true;
+}
+
+void Player_ClearHit(void)
+{
+    g_Player.is_hit = false;
+}
+
+void Player_EndInvincibility(void)
+{
+    g_Player.invincible = false;
+    g_Player.invincibility_time = 0;
+}
+
+void Player_TickInvincibility(void)
+{
+    if (g_Player.invincibility_time > 1) {
+        g_Player.invincibility_time--;
+        g_Player.invincible = true;
+    } else if (g_Player.invincibility_time == 1) {
+        Player_EndInvincibility();
+    }
+}
+
+void Player_EndBomb(void)
+{
+    g_Player.invincibility_time = 100;
+    g_Player.bomb_damaging = false;
+}
+
+void Player_StopActions(void)
+{
+    g_Player.deflecting = false;
+    g_Player.bomb_damaging = false;
+}
+
+void Player_Center(void)
+{
+    g_Player.left = 304;
+}
+
 bool Player_BeginUpdate(
     PLAYER_BOMB_CONTINUATION *const continuation,
     const PLAYER_SPRITES *const sprites)

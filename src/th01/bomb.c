@@ -67,8 +67,7 @@ static BOMB_UPDATE M_Finish(void)
         Video_Copy(1, (GFX_RECT) { 0, 0, 640, 400 }, 0, 0, 0);
         Video_SelectDrawingPage(0);
         Palette_Set(&g_Palette, &g_StagePalette);
-        g_Player.invincibility_time = 100;
-        g_Player.bomb_damaging = false;
+        Player_EndBomb();
         return BOMB_UPDATE_DONE;
     }
     for (int32_t angle = 0; angle < 256; angle += 16) {
