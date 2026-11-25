@@ -26,11 +26,6 @@ RESULT Anm_LoadTextureAlpha(
     uint32_t color_key);
 RESULT Anm_CreateTexture(
     int32_t slot, int32_t width, int32_t height, ANM_TEXTURE_FORMAT format);
-
-// Creates the texture of slot from the image an ANM file stores at reader's
-// position, quantized to format.
-RESULT Anm_CreateTextureFromImage(
-    int32_t slot, READER *reader, ANM_TEXTURE_FORMAT format);
 void Anm_ReleaseTexture(int32_t slot);
 GFX_TEXTURE *Anm_GetTexture(int32_t slot);
 

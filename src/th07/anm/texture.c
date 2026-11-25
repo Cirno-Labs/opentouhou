@@ -266,6 +266,35 @@ static RESULT M_PatchImage(void *const user, READER *const reader)
     return result;
 }
 
+static RESULT M_CreateTextureFromImage(
+    const int32_t slot, READER *const reader, const ANM_TEXTURE_FORMAT format)
+{
+    ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
+    Reader_Skip(reader, 6);
+    const ANM_TEXTURE_FORMAT source =
+        (ANM_TEXTURE_FORMAT)Reader_ReadI16(reader);
+    const int32_t width = Reader_ReadI16(reader);
+    const int32_t height = Reader_ReadI16(reader);
+    Reader_Skip(reader, 4);
+    MUST(Reader_Result(reader));
+    FAIL_IF(
+        source < ANM_TEXTURE_RGBA8 || source > ANM_TEXTURE_A4R4G4B4,
+        "ANM image format %d is not supported", source);
+    FAIL_IF(width <= 0 || height <= 0, "Invalid ANM image dimensions");
+    FAIL_IF(
+        (uint64_t)width * (uint64_t)height * (uint64_t)M_PixelSize(source)
+            > Reader_Remaining(reader),
+        "ANM image pixels run past the file");
+    IMAGE image = Image_Create(width, height, &g_HeapAllocator);
+    for (int64_t i = 0; i < (int64_t)width * height; i++) {
+        M_ReadPixel(reader, source, &image.pixels[i * 4]);
+    }
+    M_Quantize(&image, source);
+    M_Quantize(&image, format);
+    return M_Store(
+        slot, &image, format == ANM_TEXTURE_DEFAULT ? source : format);
+}
+
 RESULT Anm_LoadTexture(
     const int32_t slot, const char *const path, const ANM_TEXTURE_FORMAT format,
     const uint32_t color_key)
@@ -313,35 +342,6 @@ RESULT Anm_CreateTexture(
     IMAGE image = Image_Create(width, height, &g_HeapAllocator);
     M_Quantize(&image, format);
     return M_Store(slot, &image, format);
-}
-
-RESULT Anm_CreateTextureFromImage(
-    const int32_t slot, READER *const reader, const ANM_TEXTURE_FORMAT format)
-{
-    ASSERT(slot >= 0 && slot < ANM_TEXTURE_COUNT);
-    Reader_Skip(reader, 6);
-    const ANM_TEXTURE_FORMAT source =
-        (ANM_TEXTURE_FORMAT)Reader_ReadI16(reader);
-    const int32_t width = Reader_ReadI16(reader);
-    const int32_t height = Reader_ReadI16(reader);
-    Reader_Skip(reader, 4);
-    MUST(Reader_Result(reader));
-    FAIL_IF(
-        source < ANM_TEXTURE_RGBA8 || source > ANM_TEXTURE_A4R4G4B4,
-        "ANM image format %d is not supported", source);
-    FAIL_IF(width <= 0 || height <= 0, "Invalid ANM image dimensions");
-    FAIL_IF(
-        (uint64_t)width * (uint64_t)height * (uint64_t)M_PixelSize(source)
-            > Reader_Remaining(reader),
-        "ANM image pixels run past the file");
-    IMAGE image = Image_Create(width, height, &g_HeapAllocator);
-    for (int64_t i = 0; i < (int64_t)width * height; i++) {
-        M_ReadPixel(reader, source, &image.pixels[i * 4]);
-    }
-    M_Quantize(&image, source);
-    M_Quantize(&image, format);
-    return M_Store(
-        slot, &image, format == ANM_TEXTURE_DEFAULT ? source : format);
 }
 
 void Anm_ReleaseTexture(const int32_t slot)
@@ -487,7 +487,7 @@ RESULT AnmTexture_LoadSlot(READER *const reader, const int32_t slot)
             image_offset >= Reader_Size(reader),
             "ANM image is outside the file");
         Reader_Seek(reader, image_offset);
-        MUST(Anm_CreateTextureFromImage(slot, reader, format));
+        MUST(M_CreateTextureFromImage(slot, reader, format));
         if (name != nullptr) {
             M_IMAGE_PATCH context = { reader, &m_Textures[slot] };
             MUST(Files_VisitPatches(name, M_PatchImage, &context));

@@ -436,7 +436,8 @@ static void M_DrawTrail(PLAYER_BULLET *const bullet, const ANM_DRAW *const draw)
         (bullet->vm.color & 0x00ffffffu) | ((uint32_t)alpha << 24);
 }
 
-void Player_FireShots(const int32_t frame)
+// A shot that does not fire leaves its bullet for the next shot.
+static void M_FireShots(const int32_t frame)
 {
     const SHOT_TYPE *const shot_type = g_Player.move.focused
         ? &g_Player.shot_type_focused
@@ -491,7 +492,7 @@ void Player_UpdateFiring(void)
         && g_GameManager.run.character == M_MARISA
         && g_GameManager.run.shot_type == M_SHOT_TYPE_B;
     if (Timer_HasTicked(timer) && !master_spark) {
-        Player_FireShots(timer->current);
+        M_FireShots(timer->current);
     }
     Timer_TickAt(timer, g_GameSpeed);
     if (timer->current >= M_FIRE_FRAMES || g_Player.state.value == PLAYER_DYING
