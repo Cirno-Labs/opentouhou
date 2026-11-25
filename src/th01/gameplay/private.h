@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th01/boss_strategy.h"
+#include "th01/boss/strategy.h"
 #include "th01/gameplay.h"
 #include "th01/invincibility.h"
 #include "th01/palette.h"

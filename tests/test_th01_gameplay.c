@@ -23,7 +23,7 @@
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
 #include "../src/th01/pellets.c"
-#include "../src/th01/boss.c"
+#include "../src/th01/boss/boss.c"
 
 #include "core/base/arena.h"
 #include "core/audio.h"

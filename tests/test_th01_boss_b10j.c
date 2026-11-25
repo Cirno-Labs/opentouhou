@@ -1,4 +1,4 @@
-#include "../src/th01/boss_b10j.c"
+#include "../src/th01/boss/b10j.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"

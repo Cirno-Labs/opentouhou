@@ -1,4 +1,4 @@
-#include "../src/th01/boss_b15m.c"
+#include "../src/th01/boss/b15m.c"
 #include "th01_assets.h"
 
 const void *Th01TestAssets_Elis(

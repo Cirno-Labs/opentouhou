@@ -1,4 +1,4 @@
-#include "../src/th01/boss_b20m.c"
+#include "../src/th01/boss/b20m.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/input.c"
 #include "../src/th01/player.c"

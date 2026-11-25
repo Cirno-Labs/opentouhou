@@ -1,4 +1,4 @@
-#include "../src/th01/boss_b05.c"
+#include "../src/th01/boss/b05.c"
 #include "th01_assets.h"
 
 const void *Th01TestAssets_Singyoku(

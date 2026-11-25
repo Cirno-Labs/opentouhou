@@ -1,6 +1,6 @@
-#include "../src/th01/boss_b15m.c"
+#include "../src/th01/boss/b15m.c"
 #include "../src/th01/hud_hp.c"
-#include "../src/th01/boss_entity.c"
+#include "../src/th01/boss/entity.c"
 #include "../src/th01/shootout_lasers.c"
 #include "../src/th01/scene.c"
 #include "../src/th01/missiles.c"

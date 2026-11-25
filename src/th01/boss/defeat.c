@@ -1,4 +1,4 @@
-#include "th01/boss_defeat.h"
+#include "th01/boss/defeat.h"
 
 #include "th01/stage.h"
 

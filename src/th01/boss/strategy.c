@@ -1,4 +1,4 @@
-#include "th01/boss_strategy.h"
+#include "th01/boss/strategy.h"
 
 #include "core/base/assert.h"
 

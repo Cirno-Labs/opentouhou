@@ -1,6 +1,6 @@
 #include "../src/th01/vsync_irq.c"
 #include "../src/th01/player.c"
-#include "th01/boss_defeat.h"
+#include "th01/boss/defeat.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
 #include "th01/player.h"
