@@ -1,0 +1,52 @@
+# Starts at YuugenMagan, stage 10 on the Makai route, with 1 HP, and
+# fights by moving, shooting, striking and bombing until it falls and
+# stage 11 starts.
+frames 2600
+start stage 9
+start route 0
+start lives 6
+start bombs 9
+start boss_hp 1
+input 760 shot
+input 761 none
+input 1000 shot
+input 1002 none
+input 1100 shot+left+right
+input 1160 shot
+input 1190 shot+left
+input 1200 shot+left
+input 1210 shot+left+right
+input 1212 shot
+input 1242 shot+left+right
+input 1272 shot
+input 1302 strike
+input 1362 shot
+input 1392 shot
+input 1402 strike
+input 1462 shot
+input 1522 strike
+input 1524 shot
+input 1584 shot+strike
+input 1594 shot
+input 1654 shot+right
+input 1656 shot+strike
+input 1686 shot
+input 1716 shot+left
+input 1746 shot+right
+input 1748 shot+right
+input 1750 shot+left
+input 1760 strike
+input 1790 shot
+input 1850 shot+strike
+input 1880 shot
+input 1910 shot
+input 1970 shot+left
+input 1980 shot+right
+input 2040 shot+left
+input 2050 strike
+input 2080 shot
+input 2110 shot+strike
+input 2120 shot
+input 2150 shot+left+right
+input 2160 shot
+input 2220 none
