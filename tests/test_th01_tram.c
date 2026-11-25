@@ -14,14 +14,14 @@ static void M_Init(ARENA *const arena)
 
 static uint8_t M_Pixel(const int32_t x, const int32_t y)
 {
-    return g_Tram.pixels[y * VIDEO_WIDTH + x];
+    return g_Tram->pixels[y * VIDEO_WIDTH + x];
 }
 
 static int32_t M_Count(const uint8_t index)
 {
     int32_t count = 0;
     for (int32_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
-        count += g_Tram.pixels[i] == index;
+        count += g_Tram->pixels[i] == index;
     }
     return count;
 }
@@ -30,7 +30,7 @@ TEST(init_allocates_a_clear_visible_layer)
 {
     ARENA arena;
     M_Init(&arena);
-    CHECK(g_Tram.visible);
+    CHECK(g_Tram->visible);
     CHECK_EQ_INT(arena.used, VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(M_Count(0), VIDEO_PAGE_SIZE);
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_RED);
@@ -38,7 +38,7 @@ TEST(init_allocates_a_clear_visible_layer)
     CHECK_EQ_INT(M_Count(3), VIDEO_PAGE_SIZE);
     Arena_Reset(&arena);
     Tram_Init(Arena_Allocator(&arena));
-    CHECK(g_Tram.visible);
+    CHECK(g_Tram->visible);
     CHECK_EQ_INT(M_Count(0), VIDEO_PAGE_SIZE);
     CHECK_EQ_INT(arena.used, VIDEO_PAGE_SIZE);
     Arena_Free(&arena);
@@ -65,14 +65,14 @@ TEST(hide_show_and_clear_preserve_the_other_state)
     M_Init(&arena);
     Tram_Fill((GFX_RECT) { 0, 0, 1, 1 }, TRAM_WHITE);
     Tram_SetVisible(false);
-    CHECK(!g_Tram.visible);
+    CHECK(!g_Tram->visible);
     CHECK_EQ_INT(M_Pixel(0, 0), 8);
     Tram_Clear();
-    CHECK(!g_Tram.visible);
+    CHECK(!g_Tram->visible);
     CHECK_EQ_INT(M_Count(0), VIDEO_PAGE_SIZE);
     Tram_Fill((GFX_RECT) { 639, 399, 1, 1 }, TRAM_BLACK);
     Tram_SetVisible(true);
-    CHECK(g_Tram.visible);
+    CHECK(g_Tram->visible);
     CHECK_EQ_INT(M_Pixel(639, 399), 1);
     Arena_Free(&arena);
 }
@@ -213,7 +213,7 @@ TEST(reverse_kanji_covers_screen_except_centered_glyph_holes)
     };
     Tram_SetVisible(false);
     Tram_PutKanji16Reverse(&glyph);
-    CHECK(!g_Tram.visible);
+    CHECK(!g_Tram->visible);
     CHECK_EQ_INT(M_Count(0), 4 * 16 * 16);
     CHECK_EQ_INT(M_Count(1), VIDEO_PAGE_SIZE - 4 * 16 * 16);
     CHECK_EQ_INT(M_Pixel(192, 80), 0);

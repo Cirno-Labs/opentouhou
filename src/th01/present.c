@@ -67,7 +67,7 @@ void Present_Frame(const bool text_visible)
                 m_UploadedPalette, g_Video.palette, sizeof(m_UploadedPalette));
         }
     }
-    const TRAM *const text = text_visible ? &g_Tram : nullptr;
+    const TRAM *const text = text_visible ? g_Tram : nullptr;
     if (text != nullptr
         && memcmp(m_UploadedText, text->pixels, VIDEO_PAGE_SIZE) != 0) {
         GfxTexture_UploadIndices(
