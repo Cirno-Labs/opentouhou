@@ -70,8 +70,7 @@ bool Stage_ResumeOrbComposite(
     if (!g_Orb.in_portal && !g_Player.is_hit) {
         Orb_Put(sprites, g_Orb.left, g_Orb.top, Orb_Image());
     }
-    g_Orb.previous_left = g_Orb.left;
-    g_Orb.previous_top = g_Orb.top;
+    Orb_KeepPosition();
     m_OrbComposite.active = false;
     return true;
 }

@@ -129,9 +129,7 @@ static void M_Portal(const PTN *const sprites, const int32_t slot)
             orb->velocity_x = MasterRng_Next(&g_Rng) % 5;
             const int16_t force = (int16_t)(MasterRng_Next(&g_Rng) % 19) - 9;
             Orb_NewForce(ORB_FORCE_IMMEDIATE, force);
-            orb->left = objects->destination_left;
-            orb->top = objects->destination_top;
-            orb->in_portal = false;
+            Orb_Teleport(objects->destination_left, objects->destination_top);
         }
     } else if (obstacle->frame == 60) {
         obstacle->frame = 0;
@@ -148,7 +146,7 @@ static void M_ResetPortals(const PTN *const sprites)
         Sprite_PtnPut(
             sprites, 29, -1, objects->destination_left,
             objects->destination_top);
-        g_Orb.in_portal = false;
+        Orb_LeavePortal();
     }
 }
 

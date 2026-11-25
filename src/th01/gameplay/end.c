@@ -93,7 +93,7 @@ static void M_AfterBonus(void)
         Sound_Fade();
         M_BeginSwitch(GAMEPLAY_SWITCH_STAGE);
     } else {
-        g_Orb.in_portal = false;
+        Orb_LeavePortal();
         Video_SelectDrawingPage(1);
         StageObjects_PutAllBackgrounds();
         Video_SelectDrawingPage(0);
