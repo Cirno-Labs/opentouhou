@@ -47,10 +47,8 @@ extern ORB g_Orb;
 // Zeroes the Orb for a new world.
 void Orb_Init(void);
 
-// Restarts flight at (600, 280), force -8, frame zero and leftward speed 4.
-// Sets both coordinate pairs. Preserves rotation, portal state, elapsed
-// outside-portal frames and the last stored Y velocity. Zero-initialize
-// the state once before its first use; stage restarts retain these fields.
+// Restarts flight at (600, 280) with force -8 and leftward speed 4.
+// Zero-initialize the state once before first use.
 void Orb_ResetFlight(void);
 
 // Restarts flight as Orb_ResetFlight does, but keeps the previous position.
@@ -69,15 +67,12 @@ void Orb_KeepPosition(void);
 // Call before the composite, rather than as part of its motion phase.
 void Orb_AdvanceForceFrame(void);
 
-// Stores the binary64 gravity result clamped to +/-16. Returns the
-// separately evaluated, unclamped pixel displacement, truncated directly
-// from 64-significant-bit arithmetic. Finite forces must have magnitude
-// below 2^62 so that the original signed 64-bit conversion is defined.
+// Stores the gravity velocity clamped to +/-16 and returns the unclamped
+// pixel displacement. Forces must have magnitude below 2^62.
 int16_t Orb_UpdateVelocityY(void);
 
-// Consumes the shared master.lib RNG only for an early surface bounce
-// from zero horizontal speed. Both draws occur even if the first changes
-// the speed; the second can overwrite it. Resets the force frame.
+// Starts a new force and resets the force frame. Draws the shared RNG
+// twice for an early bounce from zero speed; the second draw can win.
 void Orb_NewForce(ORB_FORCE mode, double immediate);
 void Orb_ReflectX(void);
 void Orb_ReflectY(void);
@@ -87,10 +82,8 @@ void Orb_ReflectY(void);
 void Orb_MoveX(ORB_VELOCITY_X requested);
 int16_t Orb_Image(void);
 
-// Performs motion, rotation and playfield bounces before the VSync wait.
-// Skips them while in a portal. Resets the shared card combo on a bottom
-// bounce. Rotation uses the speed after wall reversal; image 3 lasts one
-// frame. Allocates nothing and reads only the supplied state and RNG.
+// Moves, rotates and bounces the Orb unless it is in a portal.
+// Resets card_combo on a bottom bounce.
 void Orb_AdvanceMotion(int16_t *card_combo);
 
 typedef enum {
@@ -108,19 +101,11 @@ typedef struct {
     bool invincible, invincible_against_orb;
 } ORB_PLAYER;
 
-// Returns whether contact kills the player. Uses strict top-left delta
-// bounds of 24 by 16 for lethal contact and 40 by 32 for repulsion.
-// Repulsion ignores invincibility. Friction below 100 gives force
-// -13 + friction/2; 100 and above gives -10, with X overrides for 101..104.
-// At equal X, ordinary repulsion draws twice; either successful check
-// selects left 4. Coordinates may include normal playfield wall overshoot.
+// Returns whether contact kills the player, and repels it on near contact,
+// even while invincible; repel_friction sets the repulsion force.
 bool Orb_PlayerHitTest(const ORB_PLAYER *player, int16_t repel_friction);
 
-// Draws the Orb's current image using immutable stage PTN images. Requires
-// at least ORB_FIRST_IMAGE + ORB_IMAGE_COUNT images. Quantizes X down to
-// eight pixels. Erase restores opaque sprite pixels from page 1 to page 0;
-// put uses the selected drawing page. Horizontal overshoot wraps into the
-// adjacent row as in linear planar memory. Discards pixels outside the
-// visible page rather than aliasing another memory region. Allocates nothing.
+// Draws the Orb's current image, with X rounded down to eight pixels.
+// Requires at least ORB_FIRST_IMAGE + ORB_IMAGE_COUNT images.
 void Orb_Put(const PTN *sprites, int16_t left, int16_t top, int16_t image);
 void Orb_Erase(const PTN *sprites, int16_t left, int16_t top, int16_t image);
