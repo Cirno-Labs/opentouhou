@@ -4,6 +4,8 @@
 #include "test_dir.h"
 
 #include "core/base/utils.h"
+#include "core/vfs.h"
+#include "shell/game/files.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -47,6 +49,42 @@ static int32_t m_TrapX;
 static int32_t m_MostTrapX;
 static M_INPUT *m_Saved;
 static int32_t m_SavedFrames;
+// Counts the sources that the toy game mounts at each start and that are
+// still open.
+static int32_t m_OpenSources;
+static int32_t m_MostOpenSources;
+
+static bool M_Contains(const VFS_SOURCE *const source, const char *const path)
+{
+    return false;
+}
+
+static RESULT M_Open(
+    VFS_SOURCE *const source, const char *const path, const VFS_MODE mode,
+    READER *const out)
+{
+    return FAIL("the toy source has no files");
+}
+
+static void M_List(
+    const VFS_SOURCE *const source, const char *const dir,
+    void (*const visit)(void *user, const char *name), void *const user)
+{
+}
+
+static void M_Close(VFS_SOURCE *const source)
+{
+    m_OpenSources--;
+}
+
+static const VFS_SOURCE_FUNCS m_SourceFuncs = {
+    .contains = M_Contains,
+    .open = M_Open,
+    .list = M_List,
+    .close = M_Close,
+};
+
+static VFS_SOURCE m_Source = { .funcs = &m_SourceFuncs, .name = "toy" };
 
 static RESULT M_SetStart(const char *const name, const char *const value)
 {
@@ -55,12 +93,20 @@ static RESULT M_SetStart(const char *const name, const char *const value)
     return OK;
 }
 
-static RESULT M_Start(void)
+static void M_Reset(void)
 {
     m_Frame = 0;
     m_X = 0;
     m_Lives = m_StartLives;
     m_TrapX = 0;
+}
+
+static RESULT M_Start(void)
+{
+    Vfs_MountSource(Shell_GetFiles(), "", &m_Source, 0);
+    m_OpenSources++;
+    m_MostOpenSources = MAX(m_MostOpenSources, m_OpenSources);
+    M_Reset();
     return OK;
 }
 
@@ -174,7 +220,7 @@ static M_INPUT *M_Record(
 // Plays inputs on the toy game and returns the lives that it ends with.
 static int32_t M_Play(const M_INPUT *const inputs, const int32_t frames)
 {
-    Result_Ignore(M_Start());
+    M_Reset();
     for (int32_t i = 0; i < frames; i++) {
         M_Tick(&inputs[i]);
     }
@@ -209,6 +255,19 @@ TEST(a_search_gives_the_same_run_each_time)
     CHECK_EQ_INT(M_Play(first, first_frames), 2);
     Mem_Free(first);
     Mem_Free(second);
+}
+
+TEST(each_start_gets_fresh_files)
+{
+    m_Trap = 0;
+    m_MostOpenSources = 0;
+    const char *const extra[] = { "--until", "300" };
+    int32_t frames;
+    M_INPUT *const inputs =
+        M_Record("files", &m_Game, extra, ARRAY_SIZE(extra), &frames);
+    CHECK_EQ_INT(m_MostOpenSources, 1);
+    CHECK_EQ_INT(m_OpenSources, 0);
+    Mem_Free(inputs);
 }
 
 TEST(a_search_stops_at_the_frame_cap)

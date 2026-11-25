@@ -732,7 +732,7 @@ test(
   executable(
     'test_recorder',
     'test_recorder.c',
-    c_args: core_include + stg_include + bot_include,
+    c_args: core_include + stg_include + shell_include + bot_include,
     implicit_include_directories: false,
     link_with: bot_lib,
     dependencies: [core_dep, stg_dep, sdl3, cc_libm],
