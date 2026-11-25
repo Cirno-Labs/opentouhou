@@ -11,12 +11,13 @@
 #include "test_dir.h"
 #include "th07_anm_builder.h"
 #include "th07_data.h"
-#include "th07_scene_stubs.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 
 #include "stg/rng.h"
+
+#include <string.h>
 
 #define I(x) { .i = (x) }
 #define INSTR(op_, ...)                                                        \
@@ -47,7 +48,8 @@ static void M_WriteAnm(const char *const name)
 
 static RESULT M_Start(const char *const case_name, const bool capture)
 {
-    SceneStubCalls_Reset();
+    memset(&g_GameManager, 0, sizeof(g_GameManager));
+    memset(&g_Player, 0, sizeof(g_Player));
     GfxRecorder_Start();
     g_GameSpeed = 1.0f;
     m_Directory = TestDir_Prepare(case_name);

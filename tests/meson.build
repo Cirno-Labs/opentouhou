@@ -491,7 +491,7 @@ foreach game, game_tests : {
       'c_args': ['-DTEST_MS_GOTHIC'],
       'env': ['TEST_FONT_DIR'],
     },
-    'th07/screen_effect': {'sources': ['th07_scene_stubs.c', 'gfx_recorder.c']},
+    'th07/screen_effect': {'sources': ['../src/th07/play_time.c', 'gfx_recorder.c']},
     'th07/screens/title': {
       'part': 'th07_title',
       'sources': th07_data + ['th07_scene_stubs.c'],
@@ -499,7 +499,7 @@ foreach game, game_tests : {
       'env': ['TEST_DIR', 'TEST_FONT_DIR'],
     },
     'th07/ascii': {
-      'sources': th07_data + ['th07_scene_stubs.c'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th07/ascii_menu': {
@@ -513,7 +513,7 @@ foreach game, game_tests : {
     },
     'th07/files': {'sources': ['th07_data.c'], 'env': ['TEST_DIR', 'XDG_DATA_HOME']},
     'th07/effect': {
-      'sources': th07_data + ['th07_scene_stubs.c'],
+      'sources': th07_data + ['../src/th07/play_time.c'],
       'env': ['TEST_DIR', 'XDG_DATA_HOME'],
     },
     'th07/player_shot_type': {'sources': ['th07_data.c'], 'env': ['TEST_DIR']},
