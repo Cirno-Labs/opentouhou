@@ -16,7 +16,7 @@ STAGE_GAMEPLAY g_Stage;
 
 static void M_ScorePopups(const GAME_TEXT_FONT *const font)
 {
-    STAGE_OBJECTS *const objects = &g_StageObjects;
+    const STAGE_OBJECTS *const objects = g_StageObjects;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
         if (card->score == 0 || card->flip_frame < 15) {
@@ -69,7 +69,7 @@ RESULT Stage_ValidateScoreFont(const GAME_TEXT_FONT *const font)
 
 void Stage_HitTestCards(void)
 {
-    STAGE_OBJECTS *const objects = &g_StageObjects;
+    const STAGE_OBJECTS *const objects = g_StageObjects;
     STAGE_GAMEPLAY *const game = &g_Stage;
     for (int32_t i = 0; i < objects->card_count; i++) {
         STAGE_CARD *const card = &objects->cards[i];
@@ -117,7 +117,7 @@ void Stage_HitTestCards(void)
 void Stage_UpdateCards(
     const PTN *const sprites, const GAME_TEXT_FONT *const font)
 {
-    STAGE_OBJECTS *const objects = &g_StageObjects;
+    const STAGE_OBJECTS *const objects = g_StageObjects;
     M_ScorePopups(font);
     int32_t removed = 0;
     for (int32_t i = 0; i < objects->card_count; i++) {

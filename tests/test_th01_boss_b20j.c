@@ -4,6 +4,7 @@
 #include "../src/th01/player.c"
 #include "../src/th01/orb.c"
 #include "../src/th01/pellets.c"
+#include "../src/th01/stage_objects.c"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -178,8 +179,8 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     f.assets.scroll.palette[10] = (GFX_COLOR) { 0, 119, 0, 255 };
     f.assets.upper.palette[10] = (GFX_COLOR) { 221, 0, 0, 255 };
     f.assets.layers[3].palette[10] = (GFX_COLOR) { 34, 51, 68, 255 };
-    g_StageObjects.portal_active = true;
-    g_StageObjects.destination_left = 77;
+    m_StageObjects.portal_active = true;
+    m_StageObjects.destination_left = 77;
     g_Rng = 91;
     Video_SelectDrawingPage(1);
     memset(&g_StagePalette, 0x07, sizeof(g_StagePalette));
@@ -189,8 +190,8 @@ TEST(entrance_retains_stage_palette_and_suspends_without_repeating_effects)
     CHECK_EQ_INT(m_B20J.head.sprites.width_bytes, 10);
     CHECK_EQ_INT(m_B20J.stage_palette.colors[10][1], 7);
     CHECK_EQ_INT(g_Rng, 91);
-    CHECK(g_StageObjects.entrance_done && g_StageObjects.portal_active);
-    CHECK_EQ_INT(g_StageObjects.destination_left, 77);
+    CHECK(m_StageObjects.entrance_done && m_StageObjects.portal_active);
+    CHECK_EQ_INT(m_StageObjects.destination_left, 77);
     VSyncIrq_Reset();
     int32_t polls = 0;
     while (!M_BossResumeEntrance(&f.assets)) {

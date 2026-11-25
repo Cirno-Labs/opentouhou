@@ -36,7 +36,7 @@ static inline void Th01Test_ResetWorld(void)
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
     Boss_Init();
     g_Rng = 0;
-    memset(&g_StageObjects, 0, sizeof(g_StageObjects));
+    StageObjects_Clear();
     memset(&g_Stage, 0, sizeof(g_Stage));
     g_Stage.first_stage = true;
     StageOrb_Init();
