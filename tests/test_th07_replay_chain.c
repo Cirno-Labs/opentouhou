@@ -296,7 +296,6 @@ TEST(a_pause_marker_keeps_the_shoot_edge_from_the_recorded_frames)
     M_Calcs(2);
     CHECK_EQ_INT(g_Buttons.play_word, 1);
     CHECK_EQ_INT(g_Buttons.previous_play_word, 0);
-    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
     M_TearDown();
 }
 
@@ -331,7 +330,6 @@ static uint16_t M_PreviousOnResume(const bool fix, const bool early)
     M_Play(&spec);
     M_Calcs(6);
     CHECK_EQ_INT(g_Buttons.play_word, 1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
     const uint16_t previous = g_Buttons.previous_play_word;
     M_TearDown();
     return previous;
@@ -577,7 +575,6 @@ static uint16_t M_PreviousOnResumeAfterEnding(const int32_t calcs)
     CHECK(Result_Log(Replay_Register(REPLAY_PLAY, M_PATH), LOG_LEVEL_ERROR));
     M_Calcs(3);
     CHECK_EQ_INT(g_Buttons.play_word, 1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_PAUSE);
     const uint16_t previous = g_Buttons.previous_play_word;
     M_TearDown();
     return previous;
@@ -758,53 +755,6 @@ TEST(marking_an_event_without_a_recording_does_nothing)
     M_TearDown();
 }
 
-TEST(get_last_events_is_0_before_the_first_calc)
-{
-    M_SetUp(1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), 0);
-    M_TearDown();
-}
-
-TEST(get_last_events_returns_the_recorded_calcs_events)
-{
-    M_SetUp(1);
-    g_GameManager.mode.in_replay = false;
-    CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
-    M_MarksEvent(REPLAY_EVENT_HIT);
-    M_Calcs(1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_HIT);
-    m_EventToMark = REPLAY_EVENT_BOMB;
-    M_Calcs(1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_BOMB);
-    M_TearDown();
-}
-
-TEST(get_last_events_returns_the_played_frames_events)
-{
-    M_SetUp(1);
-    M_SPEC spec = {};
-    M_Frames(&spec.slots[1], 0x40, 4);
-    spec.slots[1].events[0] = 73;
-    spec.slots[1].events[1] = REPLAY_EVENT_BOMB;
-    M_Play(&spec);
-    M_Calcs(1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), 73);
-    M_Calcs(1);
-    CHECK_EQ_INT(Replay_GetLastEvents(), REPLAY_EVENT_BOMB);
-    M_TearDown();
-}
-
-TEST(get_last_events_is_0_during_playback)
-{
-    M_SetUp(1);
-    M_SPEC spec = {};
-    M_Frames(&spec.slots[1], 0x40, 4);
-    M_Play(&spec);
-    M_Calcs(2);
-    CHECK_EQ_INT(Replay_GetLastEvents(), 0);
-    M_TearDown();
-}
-
 // Plays a replay of difficulty with frames in slot, then resaves it with
 // a changed score. Sets *before to the RNG as the resave starts.
 static void M_PlayAndResave(
@@ -956,6 +906,29 @@ TEST(save_writes_the_recording_with_its_name_and_three_new_keys)
     CHECK_EQ_INT(stage->frame_count, 5);
     CHECK_EQ_INT(stage->frames[1].buttons, 0x3);
     CHECK_EQ_INT(stage->frames[stage->frame_count - 1].buttons, 0);
+    Replay_Free(file);
+    M_TearDown();
+}
+
+TEST(save_writes_the_events_marked_in_each_calc)
+{
+    M_SetUp(2);
+    g_GameManager.mode.in_replay = false;
+    g_GameManager.run.start_lives = (uint8_t)g_Settings.lives;
+    CHECK(Result_Ignore(Replay_Register(REPLAY_RECORD, M_PATH)));
+    M_MarksEvent(REPLAY_EVENT_HIT);
+    M_Calcs(1);
+    m_EventToMark = REPLAY_EVENT_BOMB;
+    M_Calcs(1);
+    Replay_Save(M_PATH, &m_SaveInfo);
+    READER reader;
+    Reader_OpenBuffer(&reader, m_Resaved, m_ResavedSize, nullptr);
+    REPLAY_FILE *file = nullptr;
+    CHECK(Result_Log(Replay_Read(&reader, &file), LOG_LEVEL_ERROR));
+    Reader_Close(&reader);
+    const REPLAY_STAGE *const stage = file->stages[2];
+    CHECK_EQ_INT(stage->frames[1].events, REPLAY_EVENT_HIT);
+    CHECK_EQ_INT(stage->frames[2].events, REPLAY_EVENT_BOMB);
     Replay_Free(file);
     M_TearDown();
 }

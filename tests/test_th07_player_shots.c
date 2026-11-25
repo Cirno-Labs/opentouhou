@@ -183,12 +183,19 @@ static int32_t M_Flying(void)
     return count;
 }
 
+// Fires the shots for frame of the burst.
+static void M_Fire(const int32_t frame)
+{
+    Timer_Set(&g_Player.shots.fire_timer, frame);
+    Player_UpdateFiring();
+}
+
 // Fires one plain shot into bullet 0 and returns it.
 static PLAYER_BULLET *M_FireOne(const SHOT shot)
 {
     m_Shots[0] = shot;
     M_SetShots(1);
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK(M_Bullet(0)->state == PLAYER_BULLET_FLYING);
     return M_Bullet(0);
 }
@@ -249,7 +256,7 @@ TEST(a_plain_shot_fires_where_the_frame_modulo_its_interval_is_its_phase)
     m_Shots[0].interval = 5;
     m_Shots[0].phase = 2;
     for (int32_t frame = 0; frame < 15; frame++) {
-        Player_FireShots(frame);
+        M_Fire(frame);
     }
     CHECK_EQ_INT(M_Flying(), 3);
     M_TearDown();
@@ -266,10 +273,10 @@ TEST(a_shot_that_does_not_fire_leaves_its_bullet_for_the_next_shot)
     m_Shots[2].phase = 1;
     m_Shots[2].damage = 3;
     M_SetShots(3);
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Flying(), 1);
     CHECK_EQ_INT(M_Bullet(0)->damage, 2);
-    Player_FireShots(1);
+    M_Fire(1);
     CHECK_EQ_INT(M_Flying(), 4);
     CHECK_EQ_INT(M_Bullet(1)->damage, 1);
     CHECK_EQ_INT(M_Bullet(2)->damage, 2);
@@ -284,7 +291,7 @@ TEST(shots_past_the_last_free_bullet_do_not_fire)
         M_Bullet(i)->state = PLAYER_BULLET_HIT;
     }
     M_SetShots(3);
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Flying(), 1);
     CHECK(M_Bullet(PLAYER_BULLET_COUNT - 1)->shot == &m_Shots[0]);
     M_TearDown();
@@ -299,13 +306,13 @@ TEST(the_table_past_the_power_and_the_focused_type_fire)
     m_Tables[1] = (SHOT_TABLE) { 999, 1, &m_Shots[1] };
     g_Player.shot_type.table_count = 2;
     g_GameManager.player.power = 7.9f;
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Bullet(0)->damage, 1);
     g_GameManager.player.power = 8.0f;
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Bullet(1)->damage, 2);
     g_Player.move.focused = true;
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Bullet(2)->damage, 99);
     M_TearDown();
 }
@@ -361,11 +368,11 @@ TEST(a_laser_fires_once_while_the_options_are_out)
     shot.offset_x = 4.0f;
     m_Shots[0] = shot;
     g_Player.options.state = PLAYER_OPTIONS_IN;
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Flying(), 0);
     g_Player.options.state = PLAYER_OPTIONS_OUT;
-    Player_FireShots(0);
-    Player_FireShots(1);
+    M_Fire(0);
+    M_Fire(1);
     CHECK_EQ_INT(M_Flying(), 1);
     const PLAYER_LASER *const laser = &g_Player.shots.lasers[1];
     CHECK(laser->bullet == M_Bullet(0));
@@ -384,13 +391,13 @@ TEST(a_laser_of_another_shot_is_interrupted_and_its_entry_freed)
     m_Shots[0].interval = 120;
     m_Shots[1] = m_Shots[0];
     M_SetShots(1);
-    Player_FireShots(0);
+    M_Fire(0);
     m_Tables[0].shots = &m_Shots[1];
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Bullet(0)->vm.pending_interrupt, 1);
     CHECK(g_Player.shots.lasers[0].bullet == nullptr);
     CHECK_EQ_INT(M_Flying(), 1);
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK(g_Player.shots.lasers[0].bullet == M_Bullet(1));
     M_TearDown();
 }
@@ -403,10 +410,10 @@ TEST(a_trail_laser_fires_while_the_options_are_in_with_an_empty_trail)
     shot.interval = 12;
     shot.phase = 2;
     m_Shots[0] = shot;
-    Player_FireShots(0);
+    M_Fire(0);
     CHECK_EQ_INT(M_Flying(), 0);
     g_Player.options.state = PLAYER_OPTIONS_IN;
-    Player_FireShots(0);
+    M_Fire(0);
     const PLAYER_BULLET *const bullet = M_Bullet(0);
     CHECK_EQ_INT(g_Player.shots.lasers[2].timer.current, 999);
     CHECK_EQ_INT(bullet->trail_length, 12);
@@ -421,7 +428,7 @@ TEST(lasers_go_with_their_options_and_all_go_at_a_death)
 {
     M_SetUp();
     M_SetShots(3);
-    Player_FireShots(0);
+    M_Fire(0);
     for (int32_t i = 0; i < PLAYER_LASER_COUNT; i++) {
         M_Bullet(i)->vm.stopped = true;
         g_Player.shots.lasers[i].bullet = M_Bullet(i);
