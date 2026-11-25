@@ -1,0 +1,25 @@
+# Starts at Mima, stage 10 on the Jigoku route, with 1 HP. A bomb kills
+# her, and stage 11 starts.
+frames 2400
+start stage 9
+start route 1
+start lives 6
+start bombs 9
+start boss_hp 1
+input 760 shot
+input 761 none
+input 1000 shot
+input 1002 none
+input 1200 shot+left+right
+input 1210 shot
+input 1500 shot+left+right
+input 1510 shot
+input 1800 shot+left+right
+input 1810 shot
+input 2100 shot+left+right
+input 2110 shot
+input 2400 shot+left+right
+input 2410 shot
+input 2700 shot+left+right
+input 2710 shot
+input 3000 none
