@@ -154,7 +154,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK_EQ_INT(g_Session.bonus_per_stage[3], 17000);
     CHECK_EQ_INT(g_Session.high_score, 410000);
     CHECK_EQ_INT(Extend_Next(), 2);
-    CHECK_EQ_INT(g_PelletShared.speed, 1);
+    CHECK_EQ_INT(g_Pellets.speed, 1);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 41), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 319), 0);
     CHECK_EQ_INT(Th01Test_Pixel(1, 32, 40), 6);
