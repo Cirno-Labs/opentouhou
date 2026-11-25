@@ -2,11 +2,17 @@
 
 #include "core/ini/types.h"
 
+#include <stddef.h>
+
 // Returns the value of key in section, or nullptr when the section or the
 // key does not exist. The name comparisons ignore the case of ASCII
 // letters. The returned pointer is owned by ini and stays valid until the
 // key's value changes or ini is freed.
 const char *Ini_Get(const INI *ini, const char *section, const char *key);
+
+// Returns the name of the index-th key line of section, in file order, or
+// nullptr past the last one. The pointer is owned by ini.
+const char *Ini_GetKey(const INI *ini, const char *section, size_t index);
 
 // Sets the value of key in section to a copy of value. An existing key's
 // line is rewritten as "key = value"; a new key is added after the last key
