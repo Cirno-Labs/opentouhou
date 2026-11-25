@@ -124,8 +124,8 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
     for (int32_t i = 0; i < 5; i++) {
         m_B10M.eyes[i].lock_frame = (int16_t)(i % 4);
         m_B10M.eyes[i].previous_left = (int16_t)(i * 11);
-        g_Missiles.slots[i].flag = MISSILE_MOVING;
-        g_Missiles.slots[i].previous_top = (int16_t)(i * 9);
+        m_Missiles.slots[i].flag = MISSILE_MOVING;
+        m_Missiles.slots[i].previous_top = (int16_t)(i * 9);
     }
     memset(g_Video.pages[0], 3, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
@@ -157,8 +157,8 @@ TEST(setup_shares_eye_assets_and_retains_static_history)
         CHECK(m_B10M.eyes[i].orb_inactive);
         CHECK_EQ_INT(m_B10M.eyes[i].lock_frame, i % 4);
         CHECK_EQ_INT(m_B10M.eyes[i].previous_left, i * 11);
-        CHECK_EQ_INT(g_Missiles.slots[i].flag, MISSILE_FREE);
-        CHECK_EQ_INT(g_Missiles.slots[i].previous_top, i * 9);
+        CHECK_EQ_INT(m_Missiles.slots[i].flag, MISSILE_FREE);
+        CHECK_EQ_INT(m_Missiles.slots[i].previous_top, i * 9);
     }
     CHECK_EQ_INT(g_Video.pages[0][0], 3);
     CHECK_EQ_INT(g_Video.pages[1][0], 5);
@@ -283,7 +283,7 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     m_B10M.status.phase = B10M_PHASE_MISSILES;
     m_B10M.status.frame = 99;
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        g_Missiles.slots[i] = (MISSILE) { .left = 200 * 16,
+        m_Missiles.slots[i] = (MISSILE) { .left = 200 * 16,
                                           .top = 200 * 16,
                                           .previous_left = -1,
                                           .flag = MISSILE_MOVING };
@@ -297,8 +297,8 @@ TEST(missile_variation_consumes_rng_with_a_full_pool)
     m_B10M.status.frame = 103;
     CHECK(M_BossUpdate(&f.assets, &f.miko));
     for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        CHECK_EQ_INT(g_Missiles.slots[i].left, 200 * 16);
-        CHECK_EQ_INT(g_Missiles.slots[i].top, 200 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[i].left, 200 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[i].top, 200 * 16);
     }
     CHECK_EQ_INT(g_Rng, expected);
     Arena_Free(&arena);
@@ -324,7 +324,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
             m_B10M.pentagram.center.y = 420;
             m_B10M.status.frame = 3;
         }
-        g_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
+        m_Missiles.slots[0] = (MISSILE) { .flag = MISSILE_MOVING,
                                           .left = 200 * 16,
                                           .top = 200 * 16,
                                           .previous_left = -1,
@@ -332,19 +332,19 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         g_Pellets.slots[0] =
             (PELLET) { .moving = true, .left = 200 * 16, .top = 200 * 16 };
         g_Pellets.slots[1].cloud_frame = 10;
-        g_ShootoutLasers.slots[6].alive = true;
+        m_Lasers.slots[6].alive = true;
         VSyncIrq_Reset();
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(m_B10M.defeating);
         CHECK(!g_Stage.cleared);
         CHECK(m_Scene.active == nullptr);
-        CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(
-            g_Missiles.slots[0].flag,
+            m_Missiles.slots[0].flag,
             phase == B10M_PHASE_STAR_ATTACK ? MISSILE_FREE : MISSILE_MOVING);
         CHECK(!g_Pellets.slots[0].moving);
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 10);
-        CHECK(g_ShootoutLasers.slots[6].alive);
+        CHECK(m_Lasers.slots[6].alive);
         const B10M frozen = m_B10M;
         CHECK(!M_BossUpdate(&f.assets, &f.miko));
         CHECK(memcmp(&m_B10M, &frozen, sizeof(m_B10M)) == 0);
@@ -358,7 +358,7 @@ TEST(defeat_suspends_prefix_and_activates_the_real_scene)
         CHECK(g_Player.is_hit);
         CHECK(m_Scene.active == &f.assets.next_scene);
         CHECK_EQ_INT(m_Scene.active->id, 3);
-        CHECK_EQ_INT(g_Missiles.slots[0].left, 201 * 16);
+        CHECK_EQ_INT(m_Missiles.slots[0].left, 201 * 16);
         CHECK_EQ_INT(arena.used, used);
         const B10M finished = m_B10M;
         CHECK(M_BossUpdate(&f.assets, &f.miko));
