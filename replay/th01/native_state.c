@@ -77,36 +77,11 @@ static void M_Double(const double value, uint32_t *const lo, uint32_t *hi)
 
 static void M_Boss(uint32_t *const row)
 {
-#define M_BOSS(boss)                                                           \
-    row[TH01_COLUMN_boss_hp] = M_I32((boss).hp);                               \
-    row[TH01_COLUMN_boss_phase] = M_I32((boss).phase);                         \
-    row[TH01_COLUMN_boss_phase_frame] = M_I32((boss).frame);
-    switch (g_Gameplay.boss) {
-    case BOSS_SINGYOKU:
-        M_BOSS(g_B05);
-        break;
-    case BOSS_YUUGENMAGAN:
-        M_BOSS(g_B10M);
-        break;
-    case BOSS_MIMA:
-        M_BOSS(g_B10J);
-        break;
-    case BOSS_KIKURI:
-        M_BOSS(g_B15J);
-        break;
-    case BOSS_ELIS:
-        M_BOSS(g_B15M);
-        break;
-    case BOSS_SARIEL:
-        M_BOSS(g_B20M);
-        break;
-    case BOSS_KONNGARA:
-        M_BOSS(g_B20J);
-        break;
-    default:
-        break;
+    if (g_Gameplay.boss != BOSS_NONE && g_Boss != nullptr) {
+        row[TH01_COLUMN_boss_hp] = M_I32(g_Boss->hp);
+        row[TH01_COLUMN_boss_phase] = M_I32(g_Boss->phase);
+        row[TH01_COLUMN_boss_phase_frame] = M_I32(g_Boss->frame);
     }
-#undef M_BOSS
 }
 
 static void M_Gameplay(uint32_t *const row)

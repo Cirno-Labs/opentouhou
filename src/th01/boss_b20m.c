@@ -15,7 +15,114 @@
 
 #include <string.h>
 
-B20M g_B20M;
+typedef struct {
+    double left[30], top[30], velocity_x[30], velocity_y[30];
+    int8_t reserved[30], hatch_time[30], hatch_frames[30];
+    bool alive[30];
+} B20M_BIRDS;
+typedef struct {
+    double left[30], top[30], velocity[30];
+    int8_t color[30];
+} B20M_PARTICLES;
+typedef struct {
+    int16_t left[30], top[30], velocity[30], age[30];
+    int8_t color[30];
+} B20M_WAVES;
+typedef struct {
+    int16_t left[30], top[30], velocity_x[30], velocity_y[30], flag[30];
+} B20M_LEAVES;
+typedef struct {
+    int16_t x, y, velocity_x, velocity_y, image, previous_image;
+} B20M_RAYS;
+typedef struct {
+    int16_t x, y, speed, subpattern;
+    uint8_t angle;
+} B20M_SPRAY;
+typedef struct {
+    int16_t left[2], top[2], previous_left[2], previous_top[2];
+} B20M_VORTICES;
+typedef struct {
+    int16_t x[10], y[10];
+    int16_t origin_x, origin_y, velocity_x, velocity_y, target;
+} B20M_LASER;
+typedef struct {
+    int16_t left[30], top[30], alive;
+} B20M_EGGS;
+typedef struct {
+    int16_t left, top, velocity_x, velocity_y;
+} B20M_SPAWNER;
+typedef struct {
+    int16_t state, left, top, velocity_x, velocity_y;
+} B20M_FLAKE;
+typedef struct {
+    int16_t left, top, radius_outer_1, radius_outer_2, radius_inner;
+} B20M_STAR;
+typedef struct {
+    int16_t x, y, offset, color, id;
+} B20M_GUST;
+typedef enum {
+    B20M_PHASE_START = 0,
+    B20M_PHASE_BIRDS = 1,
+    B20M_PHASE_GUST_1 = 2,
+    B20M_PHASE_VERTICAL = 3,
+    B20M_PHASE_GUST_2 = 4,
+    B20M_PHASE_WAVY = 5,
+    B20M_PHASE_GUST_3 = 6,
+    B20M_PHASE_VERTICAL_BIRDS = 7,
+    B20M_PHASE_GUST_4 = 8,
+    B20M_PHASE_TRANSFORM = 99,
+    B20M_PHASE_SECOND_FORM = 100,
+    B20M_PHASE_DEFEAT = 101,
+} B20M_PHASE;
+
+typedef enum {
+    B20M_SEQUENCE_NONE,
+    B20M_SEQUENCE_RINGS,
+    B20M_SEQUENCE_TRANSFORM,
+    B20M_SEQUENCE_DEFEAT,
+} B20M_SEQUENCE;
+
+typedef enum {
+    B20M_RESUME_NONE,
+    B20M_RESUME_SHAKE,
+    B20M_RESUME_SHAKE_END,
+    B20M_RESUME_BIRD_HIT,
+    B20M_RESUME_GUST_END,
+} B20M_RESUME;
+
+typedef struct {
+    BOSS_ENTITY shield;
+    BOSS_ANIMATION dress, wand;
+    BOSS_HIT hit;
+    PALETTE boss_palette, stage_palette;
+    uint8_t wand_background[128 * 96];
+    B20M_BIRDS birds;
+    B20M_PARTICLES vertical, horizontal;
+    B20M_WAVES waves;
+    B20M_LEAVES leaves;
+    B20M_RAYS bird_rays, stack_rays, seal_rays;
+    B20M_SPRAY sprays[2];
+    B20M_VORTICES vortices;
+    B20M_LASER laser;
+    B20M_EGGS eggs;
+    B20M_SPAWNER spawner;
+    B20M_FLAKE flake;
+    B20M_STAR star;
+    B20M_GUST gust;
+    BOSS_STATE status;
+    int16_t pattern, pattern_state, patterns_done, patterns_until_next;
+    int16_t entrance_radius, wand_frame, bird_pellet_group;
+    int16_t ray_previous_x, ray_previous_y;
+    int16_t dotted_radius, rings_interval, raw_scroll, scroll_line;
+    FRAME_WAIT wait;
+    uint64_t wait_tick;
+    uint16_t wait_frames;
+    uint8_t rings_angle, radial_angle, radial_velocity, wait_kind, sequence,
+        sequence_stage, resume_stage;
+    int8_t call_phase;
+    bool vortex_wand_done, bird_wand_done, direction_first, direction_second;
+    bool hp_bar_filled, dotted_active, entrance_active, finished;
+} B20M;
 
 typedef enum {
     B20M_WAIT_NONE,
@@ -43,6 +150,8 @@ typedef enum {
     B20M_DEFEAT_SHAKE_STEP,
     B20M_DEFEAT_BONUS,
 } B20M_DEFEAT;
+
+static B20M m_B20M;
 
 static RESULT M_LoadGrc(
     VFS *const vfs, const char *const name, const ALLOCATOR *const a,
@@ -147,34 +256,35 @@ RESULT B20M_LoadAssets(
 }
 void B20M_Init(void)
 {
-    memset(&g_B20M, 0, sizeof(g_B20M));
+    memset(&m_B20M, 0, sizeof(m_B20M));
     Transition_Init();
-    g_B20M.ray_previous_x = 999;
-    g_B20M.ray_previous_y = 999;
-    g_B20M.flake.state = -1;
+    m_B20M.ray_previous_x = 999;
+    m_B20M.ray_previous_y = 999;
+    m_B20M.flake.state = -1;
 }
 void B20M_Setup(const B20M_ASSETS *const assets)
 {
+    g_Boss = &m_B20M.status;
     ASSERT(
-        g_B20M.sequence == B20M_SEQUENCE_NONE
-        && g_B20M.wait_kind == B20M_WAIT_NONE && !g_B20M.entrance_active);
+        m_B20M.sequence == B20M_SEQUENCE_NONE
+        && m_B20M.wait_kind == B20M_WAIT_NONE && !m_B20M.entrance_active);
     ASSERT(Result_Ignore(B20M_ValidateAssets(assets)));
-    ASSERT(Result_Ignore(BossEntity_Bind(&g_B20M.shield, 0, &assets->shield)));
-    ASSERT(Result_Ignore(BossAnimation_Bind(&g_B20M.wand, 0, &assets->wand)));
-    ASSERT(Result_Ignore(BossAnimation_Bind(&g_B20M.dress, 1, &assets->dress)));
+    ASSERT(Result_Ignore(BossEntity_Bind(&m_B20M.shield, 0, &assets->shield)));
+    ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.wand, 0, &assets->wand)));
+    ASSERT(Result_Ignore(BossAnimation_Bind(&m_B20M.dress, 1, &assets->dress)));
     BossEntity_SetPosition(
-        &g_B20M.shield, 304, 144, (BOSS_BOUNDS) { 0, 640, 0, 400 });
-    BossEntity_SetOrbHitbox(&g_B20M.shield, (BOSS_BOUNDS) { -16, 64, -16, 64 });
-    g_B20M.shield.orb_inactive = false;
-    g_B20M.dress.left = 280;
-    g_B20M.dress.top = 192;
-    g_B20M.wand.left = 296;
-    g_B20M.wand.top = 48;
-    g_B20M.hp = 18;
-    g_B20M.phase = B20M_PHASE_START;
-    g_B20M.frame = 0;
-    g_B20M.finished = false;
-    g_B20M.boss_palette = g_Palette.saved;
+        &m_B20M.shield, 304, 144, (BOSS_BOUNDS) { 0, 640, 0, 400 });
+    BossEntity_SetOrbHitbox(&m_B20M.shield, (BOSS_BOUNDS) { -16, 64, -16, 64 });
+    m_B20M.shield.orb_inactive = false;
+    m_B20M.dress.left = 280;
+    m_B20M.dress.top = 192;
+    m_B20M.wand.left = 296;
+    m_B20M.wand.top = 48;
+    m_B20M.status.hp = 18;
+    m_B20M.status.phase = B20M_PHASE_START;
+    m_B20M.status.frame = 0;
+    m_B20M.finished = false;
+    m_B20M.boss_palette = g_Palette.saved;
     HudHp_Begin(2, 8);
 }
 
@@ -245,24 +355,24 @@ static void M_CopyRows(
 }
 static void M_Snap(const B20M_ASSETS *const assets)
 {
-    const int32_t left = g_B20M.wand.left / 8 * 8;
+    const int32_t left = m_B20M.wand.left / 8 * 8;
     for (int32_t y = 0; y < 96; y++) {
         memcpy(
-            g_B20M.wand_background + y * 128,
-            g_Video.pages[1] + (g_B20M.wand.top + y) * 640 + left, 128);
+            m_B20M.wand_background + y * 128,
+            g_Video.pages[1] + (m_B20M.wand.top + y) * 640 + left, 128);
     }
     Video_SelectDrawingPage(0);
 }
 static void M_WandPut(const B20M_ASSETS *const assets)
 {
-    const VIDEO_IMAGE v = { .pixels = g_B20M.wand_background,
+    const VIDEO_IMAGE v = { .pixels = m_B20M.wand_background,
                             .width = 128,
                             .height = 96,
                             .stride = 128,
                             .key = -1 };
     Video_Blit(
-        &v, (GFX_RECT) { 0, 0, 128, 96 }, g_B20M.wand.left / 8 * 8,
-        g_B20M.wand.top);
+        &v, (GFX_RECT) { 0, 0, 128, 96 }, m_B20M.wand.left / 8 * 8,
+        m_B20M.wand.top);
 }
 static void M_WandLower(const B20M_ASSETS *const assets)
 {
@@ -274,19 +384,19 @@ static void M_WandLower(const B20M_ASSETS *const assets)
 static bool M_WandRaise(const B20M_ASSETS *const assets, const bool restart)
 {
     if (restart) {
-        g_B20M.wand_frame = 0;
-    } else if (g_B20M.wand_frame == 0) {
-        g_B20M.wand_frame = 1;
+        m_B20M.wand_frame = 0;
+    } else if (m_B20M.wand_frame == 0) {
+        m_B20M.wand_frame = 1;
     } else {
-        g_B20M.wand_frame = Math16_Wrap(g_B20M.wand_frame + 1);
-        if (g_B20M.wand_frame == 2 || g_B20M.wand_frame == 16) {
-            g_B20M.wand.image = g_B20M.wand_frame == 2 ? 0 : 1;
+        m_B20M.wand_frame = Math16_Wrap(m_B20M.wand_frame + 1);
+        if (m_B20M.wand_frame == 2 || m_B20M.wand_frame == 16) {
+            m_B20M.wand.image = m_B20M.wand_frame == 2 ? 0 : 1;
             Video_SelectDrawingPage(1);
-            BossAnimation_Put(&g_B20M.wand);
+            BossAnimation_Put(&m_B20M.wand);
             Video_SelectDrawingPage(0);
-            BossAnimation_Put(&g_B20M.wand);
-            if (g_B20M.wand_frame == 16) {
-                g_B20M.wand_frame = 0;
+            BossAnimation_Put(&m_B20M.wand);
+            if (m_B20M.wand_frame == 16) {
+                m_B20M.wand_frame = 0;
                 return true;
             }
         }
@@ -295,25 +405,25 @@ static bool M_WandRaise(const B20M_ASSETS *const assets, const bool restart)
 }
 static void M_Shield(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame % 10 != 0) {
+    if (m_B20M.status.frame % 10 != 0) {
         return;
     }
-    g_B20M.shield.image = (g_B20M.frame % 40) / 10;
+    m_B20M.shield.image = (m_B20M.status.frame % 40) / 10;
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
-        g_B20M.shield.lock_frame = 0;
-        BossEntity_LockedMovePut(&g_B20M.shield, 0, 0, 1, false);
+        m_B20M.shield.lock_frame = 0;
+        BossEntity_LockedMovePut(&m_B20M.shield, 0, 0, 1, false);
     }
 }
 static void M_Dress(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame % 15 != 0) {
+    if (m_B20M.status.frame % 15 != 0) {
         return;
     }
-    g_B20M.dress.image = (g_B20M.frame % 60) / 15;
+    m_B20M.dress.image = (m_B20M.status.frame % 60) / 15;
     for (int32_t page = 1; page >= 0; page--) {
         Video_SelectDrawingPage(page);
-        BossAnimation_Put(&g_B20M.dress);
+        BossAnimation_Put(&m_B20M.dress);
     }
 }
 static void M_Group(
@@ -420,51 +530,51 @@ static void M_Ray(
     const int16_t x, const int16_t y, const uint8_t color)
 {
     if (color == 99) {
-        g_B20M.ray_previous_x = g_B20M.ray_previous_y = 999;
+        m_B20M.ray_previous_x = m_B20M.ray_previous_y = 999;
         return;
     }
-    if (g_B20M.ray_previous_x >= 0 && g_B20M.ray_previous_x < 640
-        && g_B20M.ray_previous_y >= 0 && g_B20M.ray_previous_y < 400) {
-        Video_LineErase(ox, oy, g_B20M.ray_previous_x, g_B20M.ray_previous_y);
+    if (m_B20M.ray_previous_x >= 0 && m_B20M.ray_previous_x < 640
+        && m_B20M.ray_previous_y >= 0 && m_B20M.ray_previous_y < 400) {
+        Video_LineErase(ox, oy, m_B20M.ray_previous_x, m_B20M.ray_previous_y);
     }
     if (x >= 0 && x < 640 && y >= 0 && y < 400) {
         Video_Line(ox, oy, x, y, color);
     }
-    g_B20M.ray_previous_x = x;
-    g_B20M.ray_previous_y = y;
+    m_B20M.ray_previous_x = x;
+    m_B20M.ray_previous_y = y;
 }
 static bool M_Delay(const uint16_t frames)
 {
     if (Frame_DelayReady(frames)) {
         return true;
     }
-    g_B20M.wait_kind = B20M_WAIT_DELAY;
-    g_B20M.wait_frames = frames;
+    m_B20M.wait_kind = B20M_WAIT_DELAY;
+    m_B20M.wait_frames = frames;
     return false;
 }
 static bool M_Scroll(const int16_t line)
 {
-    g_B20M.raw_scroll = line;
-    g_B20M.wait_kind = B20M_WAIT_SCROLL;
-    Frame_BeginWait(&g_B20M.wait);
+    m_B20M.raw_scroll = line;
+    m_B20M.wait_kind = B20M_WAIT_SCROLL;
+    Frame_BeginWait(&m_B20M.wait);
     return false;
 }
 static bool M_Ready(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (g_B20M.wait_kind == B20M_WAIT_SCROLL) {
-        if (!Frame_WaitReady(&g_B20M.wait)) {
+    if (m_B20M.wait_kind == B20M_WAIT_SCROLL) {
+        if (!Frame_WaitReady(&m_B20M.wait)) {
             return false;
         }
-        Video_SetScroll(g_B20M.raw_scroll);
-    } else if (g_B20M.wait_kind == B20M_WAIT_DELAY) {
-        if (!Frame_DelayReady(g_B20M.wait_frames)) {
+        Video_SetScroll(m_B20M.raw_scroll);
+    } else if (m_B20M.wait_kind == B20M_WAIT_DELAY) {
+        if (!Frame_DelayReady(m_B20M.wait_frames)) {
             return false;
         }
     } else if (
-        g_B20M.wait_kind == B20M_WAIT_TICKS && tick - g_B20M.wait_tick < 6) {
+        m_B20M.wait_kind == B20M_WAIT_TICKS && tick - m_B20M.wait_tick < 6) {
         return false;
     }
-    g_B20M.wait_kind = B20M_WAIT_NONE;
+    m_B20M.wait_kind = B20M_WAIT_NONE;
     return true;
 }
 static const PALETTE *M_TransitionTarget(const bool fade)
@@ -474,7 +584,7 @@ static const PALETTE *M_TransitionTarget(const bool fade)
 static void M_BirdsReset(void)
 {
     for (int32_t i = 0; i < 30; i++) {
-        g_B20M.birds.alive[i] = false;
+        m_B20M.birds.alive[i] = false;
     }
 }
 static void M_BirdSpawn(
@@ -484,15 +594,15 @@ static void M_BirdSpawn(
         return;
     }
     for (int32_t i = 0; i < 30; i++) {
-        if (!g_B20M.birds.alive[i]) {
-            g_B20M.birds.alive[i] = true;
-            g_B20M.birds.left[i] = x;
-            g_B20M.birds.top[i] = y;
-            g_B20M.birds.velocity_x[i] = vx;
-            g_B20M.birds.velocity_y[i] = vy;
-            g_B20M.birds.reserved[i] = 1;
-            g_B20M.birds.hatch_time[i] = 25;
-            g_B20M.birds.hatch_frames[i] = 25;
+        if (!m_B20M.birds.alive[i]) {
+            m_B20M.birds.alive[i] = true;
+            m_B20M.birds.left[i] = x;
+            m_B20M.birds.top[i] = y;
+            m_B20M.birds.velocity_x[i] = vx;
+            m_B20M.birds.velocity_y[i] = vy;
+            m_B20M.birds.reserved[i] = 1;
+            m_B20M.birds.hatch_time[i] = 25;
+            m_B20M.birds.hatch_frames[i] = 25;
             return;
         }
     }
@@ -500,11 +610,11 @@ static void M_BirdSpawn(
 static void M_BirdsFire(const B20M_ASSETS *const assets, const int16_t group)
 {
     for (int32_t i = 0; i < 30; i++) {
-        if (!g_B20M.birds.alive[i] || g_B20M.birds.hatch_time[i] != 0) {
+        if (!m_B20M.birds.alive[i] || m_B20M.birds.hatch_time[i] != 0) {
             continue;
         }
-        const int16_t x = M_PixelAdd(g_B20M.birds.left[i], 12),
-                      y = M_PixelAdd(g_B20M.birds.top[i], 12);
+        const int16_t x = M_PixelAdd(m_B20M.birds.left[i], 12),
+                      y = M_PixelAdd(m_B20M.birds.top[i], 12);
         if (group == 0) {
             M_Group(assets, x, y, PELLET_GROUP_SINGLE_AIMED, 48);
         } else if (group == 1) {
@@ -518,7 +628,7 @@ static void M_BirdsFire(const B20M_ASSETS *const assets, const int16_t group)
 }
 static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    B20M_BIRDS *const birds = &g_B20M.birds;
+    B20M_BIRDS *const birds = &m_B20M.birds;
     for (int32_t i = 0; i < 30; i++) {
         if (!birds->alive[i]) {
             continue;
@@ -549,14 +659,14 @@ static bool M_BirdsUpdate(const B20M_ASSETS *const assets, const uint64_t tick)
             birds->alive[i] = false;
             continue;
         }
-        M_Grc(assets, x, y, 1, 6 + (g_B20M.frame / 5) % 2, 15);
+        M_Grc(assets, x, y, 1, 6 + (m_B20M.status.frame / 5) % 2, 15);
         if (!g_Player.invincible && birds->left[i] > g_Player.left - 8
             && birds->left[i] < g_Player.left + 8 && birds->top[i] > 344
             && birds->top[i] < 384) {
             g_Player.is_hit = true;
-            g_B20M.wait_kind = B20M_WAIT_TICKS;
-            g_B20M.wait_tick = tick;
-            g_B20M.resume_stage = B20M_RESUME_BIRD_HIT;
+            m_B20M.wait_kind = B20M_WAIT_TICKS;
+            m_B20M.wait_tick = tick;
+            m_B20M.resume_stage = B20M_RESUME_BIRD_HIT;
             return false;
         }
     }
@@ -617,8 +727,8 @@ static void M_Particle(
 }
 static void M_Vertical(const B20M_ASSETS *const assets, const bool bottom)
 {
-    B20M_PARTICLES *const p = &g_B20M.vertical;
-    if (g_B20M.frame % 7 == 0) {
+    B20M_PARTICLES *const p = &m_B20M.vertical;
+    if (m_B20M.status.frame % 7 == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->color[i] == 0) {
                 p->left[i] = M_Random(assets) % 640;
@@ -630,7 +740,7 @@ static void M_Vertical(const B20M_ASSETS *const assets, const bool bottom)
             }
         }
     }
-    if (g_B20M.frame % 2 != 0) {
+    if (m_B20M.status.frame % 2 != 0) {
         return;
     }
     for (int32_t i = 0; i < 30; i++) {
@@ -654,8 +764,8 @@ static void M_Vertical(const B20M_ASSETS *const assets, const bool bottom)
 }
 static void M_Wavy(const B20M_ASSETS *const assets)
 {
-    B20M_WAVES *const p = &g_B20M.waves;
-    if (g_B20M.frame % 7 == 0) {
+    B20M_WAVES *const p = &m_B20M.waves;
+    if (m_B20M.status.frame % 7 == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->color[i] == 0) {
                 p->left[i] = M_Random(assets) % 640;
@@ -667,7 +777,7 @@ static void M_Wavy(const B20M_ASSETS *const assets)
             }
         }
     }
-    if (g_B20M.frame % 2 != 0) {
+    if (m_B20M.status.frame % 2 != 0) {
         return;
     }
     for (int32_t i = 0; i < 30; i++) {
@@ -692,8 +802,8 @@ static void M_Wavy(const B20M_ASSETS *const assets)
 }
 static void M_Horizontal(const B20M_ASSETS *const assets)
 {
-    B20M_PARTICLES *const p = &g_B20M.horizontal;
-    if (g_B20M.frame % 7 == 0) {
+    B20M_PARTICLES *const p = &m_B20M.horizontal;
+    if (m_B20M.status.frame % 7 == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->color[i] == 0) {
                 p->left[i] = M_Random(assets) % 640;
@@ -704,7 +814,7 @@ static void M_Horizontal(const B20M_ASSETS *const assets)
             }
         }
     }
-    if (g_B20M.frame % 2 != 0) {
+    if (m_B20M.status.frame % 2 != 0) {
         return;
     }
     for (int32_t i = 0; i < 30; i++) {
@@ -732,37 +842,37 @@ static void M_GustFinish(const B20M_ASSETS *const assets, const int16_t image)
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->backgrounds[image], true);
     M_CopyOther(assets);
-    g_B20M.stage_palette = g_Palette.saved;
+    m_B20M.stage_palette = g_Palette.saved;
     Video_SelectDrawingPage(0);
     M_Hud(assets);
-    HudHp_Rerender(g_B20M.hp);
-    g_B20M.frame = 0;
+    HudHp_Rerender(m_B20M.status.hp);
+    m_B20M.status.frame = 0;
 }
 static bool M_Gust(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame == 20) {
-        g_B20M.gust.id = 0;
+    if (m_B20M.status.frame == 20) {
+        m_B20M.gust.id = 0;
     }
-    if (g_B20M.frame < 50) {
+    if (m_B20M.status.frame < 50) {
         return true;
     }
-    if (g_B20M.frame == 50) {
-        g_B20M.gust.x = 0;
-        g_B20M.gust.y = 0;
-        g_B20M.gust.offset = 0;
-        g_B20M.gust.color = 2;
+    if (m_B20M.status.frame == 50) {
+        m_B20M.gust.x = 0;
+        m_B20M.gust.y = 0;
+        m_B20M.gust.offset = 0;
+        m_B20M.gust.color = 2;
         Sound_Effect(10);
     }
     for (int32_t row = 0; row < 100; row++) {
         const int16_t right = M_Random(assets) % 8;
         uint16_t masks[10] = {};
-        const int16_t first = Math16_Wrap(g_B20M.gust.offset + right);
+        const int16_t first = Math16_Wrap(m_B20M.gust.offset + right);
         for (int32_t stripe = 0; stripe < 10; stripe++) {
             const int16_t offset = Math16_Wrap(first - stripe * 2);
             if (first / 80 != offset / 80) {
                 break;
             }
-            if (offset >= 0 && offset / 80 == g_B20M.gust.offset / 80) {
+            if (offset >= 0 && offset / 80 == m_B20M.gust.offset / 80) {
                 masks[stripe] =
                     (uint16_t)(M_CompareByte(assets, offset)
                                | (uint16_t)M_CompareByte(
@@ -775,37 +885,37 @@ static bool M_Gust(const B20M_ASSETS *const assets)
             if (first / 80 != offset / 80) {
                 break;
             }
-            if (offset >= 0 && offset / 80 == g_B20M.gust.offset / 80) {
+            if (offset >= 0 && offset / 80 == m_B20M.gust.offset / 80) {
                 M_MaskedByte(
                     assets, offset, (uint8_t)masks[stripe],
-                    (uint8_t)(g_B20M.gust.color
+                    (uint8_t)(m_B20M.gust.color
                               + (stripe > 2 ? 4 - stripe : stripe)));
             }
         }
-        for (int32_t stripe = 0; stripe < g_B20M.gust.id + 2; stripe++) {
+        for (int32_t stripe = 0; stripe < m_B20M.gust.id + 2; stripe++) {
             const int16_t offset = Math16_Wrap(first - 10 - stripe * 2);
             if (offset / 80 != first / 80) {
                 break;
             }
-            if (offset >= 0 && offset / 80 == g_B20M.gust.offset / 80) {
+            if (offset >= 0 && offset / 80 == m_B20M.gust.offset / 80) {
                 M_MaskedByte(assets, offset, (uint8_t)masks[5 + stripe], 12);
             }
         }
-        g_B20M.gust.y = Math16_Wrap(g_B20M.gust.y + 4);
-        g_B20M.gust.offset = Math16_Wrap(
-            g_B20M.gust.y * 80 + g_B20M.gust.x / 8 - (g_B20M.gust.x % 8 < 0));
-        if (g_B20M.gust.offset >= 32000) {
-            g_B20M.gust.y = 0;
-            g_B20M.gust.x = Math16_Wrap(g_B20M.gust.x + 32);
-            g_B20M.gust.offset = g_B20M.gust.x / 8;
+        m_B20M.gust.y = Math16_Wrap(m_B20M.gust.y + 4);
+        m_B20M.gust.offset = Math16_Wrap(
+            m_B20M.gust.y * 80 + m_B20M.gust.x / 8 - (m_B20M.gust.x % 8 < 0));
+        if (m_B20M.gust.offset >= 32000) {
+            m_B20M.gust.y = 0;
+            m_B20M.gust.x = Math16_Wrap(m_B20M.gust.x + 32);
+            m_B20M.gust.offset = m_B20M.gust.x / 8;
         }
     }
     Video_SelectDrawingPage(0);
-    if (g_B20M.gust.x > 608) {
-        g_B20M.gust.id = Math16_Wrap(g_B20M.gust.id + 1);
-        g_B20M.frame = 49;
-        if (g_B20M.gust.id >= 3) {
-            g_B20M.resume_stage = B20M_RESUME_GUST_END;
+    if (m_B20M.gust.x > 608) {
+        m_B20M.gust.id = Math16_Wrap(m_B20M.gust.id + 1);
+        m_B20M.status.frame = 49;
+        if (m_B20M.gust.id >= 3) {
+            m_B20M.resume_stage = B20M_RESUME_GUST_END;
             return M_Scroll(0);
         }
     }
@@ -815,151 +925,153 @@ static void M_VortexDraw(
     const B20M_ASSETS *const assets, const int32_t i, const bool spread)
 {
     M_Erase(
-        assets, g_B20M.vortices.previous_left[i],
-        g_B20M.vortices.previous_top[i]);
+        assets, m_B20M.vortices.previous_left[i],
+        m_B20M.vortices.previous_top[i]);
     M_Grc(
-        assets, g_B20M.vortices.left[i], g_B20M.vortices.top[i], 0,
-        g_B20M.frame % 3, 7);
-    if (spread && g_B20M.frame % 4 == 0) {
+        assets, m_B20M.vortices.left[i], m_B20M.vortices.top[i], 0,
+        m_B20M.status.frame % 3, 7);
+    if (spread && m_B20M.status.frame % 4 == 0) {
         const uint8_t angle = M_Angle(
-            388 - g_B20M.vortices.top[i],
-            g_B20M.vortices.left[1 - i] - g_B20M.vortices.left[i]);
+            388 - m_B20M.vortices.top[i],
+            m_B20M.vortices.left[1 - i] - m_B20M.vortices.left[i]);
         M_Single(
-            assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
-            Math16_Wrap(g_B20M.vortices.top[i] + 12), 64, 112);
+            assets, Math16_Wrap(m_B20M.vortices.left[i] + 12),
+            Math16_Wrap(m_B20M.vortices.top[i] + 12), 64, 112);
         M_Single(
-            assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
-            Math16_Wrap(g_B20M.vortices.top[i] + 12), angle, 112);
+            assets, Math16_Wrap(m_B20M.vortices.left[i] + 12),
+            Math16_Wrap(m_B20M.vortices.top[i] + 12), angle, 112);
         M_Single(
-            assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
-            Math16_Wrap(g_B20M.vortices.top[i] + 12), (uint8_t)(128 - angle),
+            assets, Math16_Wrap(m_B20M.vortices.left[i] + 12),
+            Math16_Wrap(m_B20M.vortices.top[i] + 12), (uint8_t)(128 - angle),
             112);
     }
 }
 static void M_Vortices(const B20M_ASSETS *const assets)
 {
-    if (!g_B20M.vortex_wand_done) {
-        g_B20M.vortex_wand_done = M_WandRaise(assets, false);
+    if (!m_B20M.vortex_wand_done) {
+        m_B20M.vortex_wand_done = M_WandRaise(assets, false);
     }
-    if (g_B20M.frame < 50) {
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
-        g_B20M.pattern_state = Boss_Rank(140, 145, 150, 155);
+    if (m_B20M.status.frame == 50) {
+        m_B20M.pattern_state = Boss_Rank(140, 145, 150, 155);
     }
-    if (g_B20M.frame < 100) {
+    if (m_B20M.status.frame < 100) {
         for (int32_t i = 0; i < 2; i++) {
-            g_B20M.vortices.left[i] = (int16_t)(i * 608);
-            g_B20M.vortices.top[i] = 200;
+            m_B20M.vortices.left[i] = (int16_t)(i * 608);
+            m_B20M.vortices.top[i] = 200;
             M_VortexDraw(assets, i, false);
-            if (g_B20M.frame % 4 == 0) {
+            if (m_B20M.status.frame % 4 == 0) {
                 M_Group(
-                    assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
-                    Math16_Wrap(g_B20M.vortices.top[i] + 12),
+                    assets, Math16_Wrap(m_B20M.vortices.left[i] + 12),
+                    Math16_Wrap(m_B20M.vortices.top[i] + 12),
                     PELLET_GROUP_SINGLE, 112);
             }
-            g_B20M.vortices.previous_left[i] = g_B20M.vortices.left[i];
-            g_B20M.vortices.previous_top[i] = g_B20M.vortices.top[i];
+            m_B20M.vortices.previous_left[i] = m_B20M.vortices.left[i];
+            m_B20M.vortices.previous_top[i] = m_B20M.vortices.top[i];
         }
-    } else if (g_B20M.frame < g_B20M.pattern_state) {
+    } else if (m_B20M.status.frame < m_B20M.pattern_state) {
         for (int32_t i = 0; i < 2; i++) {
-            g_B20M.vortices.left[i] =
-                Math16_Wrap(g_B20M.vortices.left[i] + (i == 0 ? 5 : -5));
-            g_B20M.vortices.top[i] = Math16_Wrap(g_B20M.vortices.top[i] - 2);
+            m_B20M.vortices.left[i] =
+                Math16_Wrap(m_B20M.vortices.left[i] + (i == 0 ? 5 : -5));
+            m_B20M.vortices.top[i] = Math16_Wrap(m_B20M.vortices.top[i] - 2);
             M_VortexDraw(assets, i, false);
-            if (g_B20M.frame % 4 == 0) {
+            if (m_B20M.status.frame % 4 == 0) {
                 M_Group(
-                    assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
-                    Math16_Wrap(g_B20M.vortices.top[i] + 12),
+                    assets, Math16_Wrap(m_B20M.vortices.left[i] + 12),
+                    Math16_Wrap(m_B20M.vortices.top[i] + 12),
                     PELLET_GROUP_SINGLE, 112);
                 M_Single(
-                    assets, Math16_Wrap(g_B20M.vortices.left[i] + 12),
-                    Math16_Wrap(g_B20M.vortices.top[i] + 12),
-                    M_Angle(412 - g_B20M.vortices.top[i], i * 160 - 68), 112);
+                    assets, Math16_Wrap(m_B20M.vortices.left[i] + 12),
+                    Math16_Wrap(m_B20M.vortices.top[i] + 12),
+                    M_Angle(412 - m_B20M.vortices.top[i], i * 160 - 68), 112);
             }
-            g_B20M.vortices.previous_left[i] = g_B20M.vortices.left[i];
-            g_B20M.vortices.previous_top[i] = g_B20M.vortices.top[i];
+            m_B20M.vortices.previous_left[i] = m_B20M.vortices.left[i];
+            m_B20M.vortices.previous_top[i] = m_B20M.vortices.top[i];
         }
-    } else if (g_B20M.frame < 200) {
+    } else if (m_B20M.status.frame < 200) {
         for (int32_t i = 0; i < 2; i++) {
             M_VortexDraw(assets, i, true);
         }
-    } else if (g_B20M.frame < 240) {
-        if (g_B20M.frame == 200) {
-            g_B20M.direction_first = M_Random(assets) % 2 != 0;
-            if (g_B20M.direction_first) {
+    } else if (m_B20M.status.frame < 240) {
+        if (m_B20M.status.frame == 200) {
+            m_B20M.direction_first = M_Random(assets) % 2 != 0;
+            if (m_B20M.direction_first) {
                 M_WandLower(assets);
             }
         }
         for (int32_t i = 0; i < 2; i++) {
-            g_B20M.vortices.left[i] = Math16_Wrap(
-                g_B20M.vortices.left[i] + 2 - g_B20M.direction_first * 4);
+            m_B20M.vortices.left[i] = Math16_Wrap(
+                m_B20M.vortices.left[i] + 2 - m_B20M.direction_first * 4);
             M_VortexDraw(assets, i, true);
-            g_B20M.vortices.previous_left[i] = g_B20M.vortices.left[i];
+            m_B20M.vortices.previous_left[i] = m_B20M.vortices.left[i];
         }
-    } else if (g_B20M.frame < 320) {
-        if (g_B20M.frame == 240) {
-            g_B20M.direction_second = M_Random(assets) % 2 != 0;
-            if (!g_B20M.direction_second
-                && g_B20M.direction_second == g_B20M.direction_first) {
+    } else if (m_B20M.status.frame < 320) {
+        if (m_B20M.status.frame == 240) {
+            m_B20M.direction_second = M_Random(assets) % 2 != 0;
+            if (!m_B20M.direction_second
+                && m_B20M.direction_second == m_B20M.direction_first) {
                 M_WandLower(assets);
             } else if (
-                g_B20M.direction_second
-                && g_B20M.direction_second == g_B20M.direction_first) {
-                g_B20M.vortex_wand_done = false;
+                m_B20M.direction_second
+                && m_B20M.direction_second == m_B20M.direction_first) {
+                m_B20M.vortex_wand_done = false;
             }
         }
         for (int32_t i = 0; i < 2; i++) {
-            g_B20M.vortices.left[i] = Math16_Wrap(
-                g_B20M.vortices.left[i]
-                - (g_B20M.direction_second != g_B20M.direction_first
-                       ? 2 - g_B20M.direction_second * 4
-                       : 4 - g_B20M.direction_second * 8));
+            m_B20M.vortices.left[i] = Math16_Wrap(
+                m_B20M.vortices.left[i]
+                - (m_B20M.direction_second != m_B20M.direction_first
+                       ? 2 - m_B20M.direction_second * 4
+                       : 4 - m_B20M.direction_second * 8));
             M_VortexDraw(assets, i, true);
-            g_B20M.vortices.previous_left[i] = g_B20M.vortices.left[i];
+            m_B20M.vortices.previous_left[i] = m_B20M.vortices.left[i];
         }
     } else {
         for (int32_t i = 0; i < 2; i++) {
-            M_Erase(assets, g_B20M.vortices.left[i], g_B20M.vortices.top[i]);
+            M_Erase(assets, m_B20M.vortices.left[i], m_B20M.vortices.top[i]);
         }
         M_WandLower(assets);
-        g_B20M.frame = 0;
-        g_B20M.vortex_wand_done = false;
+        m_B20M.status.frame = 0;
+        m_B20M.vortex_wand_done = false;
     }
 }
 static void M_PurpleLasers(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 50) {
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
-        g_B20M.pattern_state = Boss_Rank(68, 72, 76, 80);
+    if (m_B20M.status.frame == 50) {
+        m_B20M.pattern_state = Boss_Rank(68, 72, 76, 80);
         for (int32_t i = 0; i < 10; i++) {
-            g_B20M.laser.x[i] = 120 + M_Random(assets) % 400;
-            g_B20M.laser.y[i] = 100 + M_Random(assets) % 100;
+            m_B20M.laser.x[i] = 120 + M_Random(assets) % 400;
+            m_B20M.laser.y[i] = 100 + M_Random(assets) % 100;
         }
     }
-    if (g_B20M.frame < 150) {
-        const int32_t i = (g_B20M.frame - 50) / 10;
-        if (g_B20M.frame % 10 != 9) {
-            if (g_B20M.frame % 10 != 0) {
-                const int16_t r = (int16_t)(64 - ((g_B20M.frame - 1) % 10) * 8);
+    if (m_B20M.status.frame < 150) {
+        const int32_t i = (m_B20M.status.frame - 50) / 10;
+        if (m_B20M.status.frame % 10 != 9) {
+            if (m_B20M.status.frame % 10 != 0) {
+                const int16_t r =
+                    (int16_t)(64 - ((m_B20M.status.frame - 1) % 10) * 8);
                 M_EraseEllipse(
-                    assets, g_B20M.laser.x[i], g_B20M.laser.y[i], r, r, 1);
+                    assets, m_B20M.laser.x[i], m_B20M.laser.y[i], r, r, 1);
             }
-            if (g_B20M.frame % 10 != 8) {
-                const int16_t r = (int16_t)(64 - (g_B20M.frame % 10) * 8);
+            if (m_B20M.status.frame % 10 != 8) {
+                const int16_t r =
+                    (int16_t)(64 - (m_B20M.status.frame % 10) * 8);
                 M_Ellipse(
-                    assets, g_B20M.laser.x[i], g_B20M.laser.y[i], r, r, 4, 1);
+                    assets, m_B20M.laser.x[i], m_B20M.laser.y[i], r, r, 4, 1);
             }
         } else {
             Sound_Effect(6);
             M_Laser(
-                assets, i, g_B20M.laser.x[i], g_B20M.laser.y[i],
-                M_Random(assets) % 640, 400, g_B20M.pattern_state, 4, 25, 5);
+                assets, i, m_B20M.laser.x[i], m_B20M.laser.y[i],
+                M_Random(assets) % 640, 400, m_B20M.pattern_state, 4, 25, 5);
         }
-    } else if (g_B20M.frame > 200) {
-        g_B20M.frame = 0;
+    } else if (m_B20M.status.frame > 200) {
+        m_B20M.status.frame = 0;
     }
 }
 static bool M_In(
@@ -970,106 +1082,107 @@ static bool M_In(
 }
 static void M_Eggs(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 40) {
+    if (m_B20M.status.frame < 40) {
         return;
     }
-    if (!g_B20M.bird_wand_done) {
-        g_B20M.bird_wand_done = M_WandRaise(assets, false);
+    if (!m_B20M.bird_wand_done) {
+        m_B20M.bird_wand_done = M_WandRaise(assets, false);
     }
-    if (g_B20M.frame < 50) {
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
-        g_B20M.eggs.alive = 0;
-        g_B20M.spawner.left = 5440;
-        g_B20M.spawner.top = 1024;
-        g_B20M.spawner.velocity_x =
+    if (m_B20M.status.frame == 50) {
+        m_B20M.eggs.alive = 0;
+        m_B20M.spawner.left = 5440;
+        m_B20M.spawner.top = 1024;
+        m_B20M.spawner.velocity_x =
             (int16_t)(64 - (M_Random(assets) % 2) * 128);
-        g_B20M.spawner.velocity_y = (int16_t)(32 - (M_Random(assets) % 2) * 64);
-        g_B20M.pattern_state = Boss_Rank(20, 15, 10, 8);
+        m_B20M.spawner.velocity_y = (int16_t)(32 - (M_Random(assets) % 2) * 64);
+        m_B20M.pattern_state = Boss_Rank(20, 15, 10, 8);
         Sound_Effect(8);
-    } else if (g_B20M.frame < 200) {
-        g_B20M.spawner.velocity_x = Math16_Wrap(
-            g_B20M.spawner.velocity_x + (g_B20M.spawner.left < 5120 ? 1 : -1));
-        g_B20M.spawner.velocity_y = Math16_Wrap(
-            g_B20M.spawner.velocity_y + (g_B20M.spawner.top < 2624 ? 1 : -1));
+    } else if (m_B20M.status.frame < 200) {
+        m_B20M.spawner.velocity_x = Math16_Wrap(
+            m_B20M.spawner.velocity_x + (m_B20M.spawner.left < 5120 ? 1 : -1));
+        m_B20M.spawner.velocity_y = Math16_Wrap(
+            m_B20M.spawner.velocity_y + (m_B20M.spawner.top < 2624 ? 1 : -1));
         M_Erase(
-            assets, Math16_ToPixel(g_B20M.spawner.left),
-            Math16_ToPixel(g_B20M.spawner.top));
-        for (int32_t i = g_B20M.eggs.alive - 1; i >= 0; i--) {
-            M_Grc(assets, g_B20M.eggs.left[i], g_B20M.eggs.top[i], 1, 0, 15);
+            assets, Math16_ToPixel(m_B20M.spawner.left),
+            Math16_ToPixel(m_B20M.spawner.top));
+        for (int32_t i = m_B20M.eggs.alive - 1; i >= 0; i--) {
+            M_Grc(assets, m_B20M.eggs.left[i], m_B20M.eggs.top[i], 1, 0, 15);
         }
-        g_B20M.spawner.left =
-            Math16_Wrap(g_B20M.spawner.left + g_B20M.spawner.velocity_x);
-        g_B20M.spawner.top =
-            Math16_Wrap(g_B20M.spawner.top + g_B20M.spawner.velocity_y);
-        if (g_B20M.frame % g_B20M.pattern_state == 0
+        m_B20M.spawner.left =
+            Math16_Wrap(m_B20M.spawner.left + m_B20M.spawner.velocity_x);
+        m_B20M.spawner.top =
+            Math16_Wrap(m_B20M.spawner.top + m_B20M.spawner.velocity_y);
+        if (m_B20M.status.frame % m_B20M.pattern_state == 0
             && M_In(
-                g_B20M.spawner.left, g_B20M.spawner.top, 0, 0, 9728, 5888)) {
-            if (g_B20M.eggs.alive < 30) {
-                g_B20M.eggs.left[g_B20M.eggs.alive] =
-                    Math16_ToPixel(g_B20M.spawner.left);
-                g_B20M.eggs.top[g_B20M.eggs.alive] =
-                    Math16_ToPixel(g_B20M.spawner.top);
-                g_B20M.eggs.alive++;
+                m_B20M.spawner.left, m_B20M.spawner.top, 0, 0, 9728, 5888)) {
+            if (m_B20M.eggs.alive < 30) {
+                m_B20M.eggs.left[m_B20M.eggs.alive] =
+                    Math16_ToPixel(m_B20M.spawner.left);
+                m_B20M.eggs.top[m_B20M.eggs.alive] =
+                    Math16_ToPixel(m_B20M.spawner.top);
+                m_B20M.eggs.alive++;
             }
             M_Grc(
-                assets, Math16_ToPixel(g_B20M.spawner.left),
-                Math16_ToPixel(g_B20M.spawner.top), 1, 0, 15);
+                assets, Math16_ToPixel(m_B20M.spawner.left),
+                Math16_ToPixel(m_B20M.spawner.top), 1, 0, 15);
         }
         M_Grc(
-            assets, Math16_ToPixel(g_B20M.spawner.left),
-            Math16_ToPixel(g_B20M.spawner.top), 2, g_B20M.frame % 2,
-            (uint8_t)(g_B20M.frame % 4 + 2));
-    } else if (g_B20M.frame < 400) {
-        if (g_B20M.frame == 200) {
-            if (g_B20M.spawner.velocity_y > -4
-                && g_B20M.spawner.velocity_y < 4) {
-                g_B20M.spawner.velocity_y =
-                    g_B20M.spawner.velocity_y < 0 ? -4 : 4;
+            assets, Math16_ToPixel(m_B20M.spawner.left),
+            Math16_ToPixel(m_B20M.spawner.top), 2, m_B20M.status.frame % 2,
+            (uint8_t)(m_B20M.status.frame % 4 + 2));
+    } else if (m_B20M.status.frame < 400) {
+        if (m_B20M.status.frame == 200) {
+            if (m_B20M.spawner.velocity_y > -4
+                && m_B20M.spawner.velocity_y < 4) {
+                m_B20M.spawner.velocity_y =
+                    m_B20M.spawner.velocity_y < 0 ? -4 : 4;
             }
-            if (g_B20M.spawner.velocity_x > -4
-                && g_B20M.spawner.velocity_x < 4) {
-                g_B20M.spawner.velocity_x =
-                    g_B20M.spawner.velocity_x < 0 ? -4 : 4;
+            if (m_B20M.spawner.velocity_x > -4
+                && m_B20M.spawner.velocity_x < 4) {
+                m_B20M.spawner.velocity_x =
+                    m_B20M.spawner.velocity_x < 0 ? -4 : 4;
             }
-            for (int32_t i = g_B20M.eggs.alive - 1; i >= 0; i--) {
+            for (int32_t i = m_B20M.eggs.alive - 1; i >= 0; i--) {
                 const MATH16_VECTOR v =
                     Math16_Vector(3, (M_Random(assets) & 127) + 128);
-                M_BirdSpawn(g_B20M.eggs.left[i], g_B20M.eggs.top[i], v.x, v.y);
+                M_BirdSpawn(m_B20M.eggs.left[i], m_B20M.eggs.top[i], v.x, v.y);
             }
             M_WandLower(assets);
-            g_B20M.bird_pellet_group = M_Random(assets) % 2;
+            m_B20M.bird_pellet_group = M_Random(assets) % 2;
         }
         if (M_In(
-                g_B20M.spawner.left, g_B20M.spawner.top, -512, -512, 10240,
+                m_B20M.spawner.left, m_B20M.spawner.top, -512, -512, 10240,
                 6400)) {
             M_Erase(
-                assets, Math16_ToPixel(g_B20M.spawner.left),
-                Math16_ToPixel(g_B20M.spawner.top));
-            g_B20M.spawner.left =
-                Math16_Wrap(g_B20M.spawner.left + g_B20M.spawner.velocity_x);
-            g_B20M.spawner.top =
-                Math16_Wrap(g_B20M.spawner.top + g_B20M.spawner.velocity_y);
-            if (M_In(g_B20M.spawner.left, g_B20M.spawner.top, 0, 0, 608, 368)) {
+                assets, Math16_ToPixel(m_B20M.spawner.left),
+                Math16_ToPixel(m_B20M.spawner.top));
+            m_B20M.spawner.left =
+                Math16_Wrap(m_B20M.spawner.left + m_B20M.spawner.velocity_x);
+            m_B20M.spawner.top =
+                Math16_Wrap(m_B20M.spawner.top + m_B20M.spawner.velocity_y);
+            if (M_In(m_B20M.spawner.left, m_B20M.spawner.top, 0, 0, 608, 368)) {
                 M_Grc(
-                    assets, g_B20M.spawner.left, g_B20M.spawner.top, 2,
-                    g_B20M.frame % 2, (uint8_t)(g_B20M.frame % 4 + 2));
+                    assets, m_B20M.spawner.left, m_B20M.spawner.top, 2,
+                    m_B20M.status.frame % 2,
+                    (uint8_t)(m_B20M.status.frame % 4 + 2));
             }
         }
-        if (g_B20M.frame % 16 == 0 || g_B20M.frame % 16 == 2) {
-            M_BirdsFire(assets, g_B20M.bird_pellet_group);
+        if (m_B20M.status.frame % 16 == 0 || m_B20M.status.frame % 16 == 2) {
+            M_BirdsFire(assets, m_B20M.bird_pellet_group);
         }
-    } else if (g_B20M.frame == 400) {
-        g_B20M.frame = 0;
-        g_B20M.bird_wand_done = false;
+    } else if (m_B20M.status.frame == 400) {
+        m_B20M.status.frame = 0;
+        m_B20M.bird_wand_done = false;
     }
 }
 static void M_FlakeEllipse(
     const B20M_ASSETS *const assets, const int16_t rx, const int16_t ry,
     const uint8_t color, const uint8_t step, const bool erase)
 {
-    const int16_t x = Math16_ToPixel(g_B20M.flake.left);
+    const int16_t x = Math16_ToPixel(m_B20M.flake.left);
     if (erase) {
         M_EraseEllipse(assets, x, 384, rx, ry, step);
     } else {
@@ -1078,205 +1191,206 @@ static void M_FlakeEllipse(
 }
 static void M_Flake(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 10) {
-        g_B20M.flake.state = -1;
-        g_B20M.pattern_state = 160;
+    if (m_B20M.status.frame < 10) {
+        m_B20M.flake.state = -1;
+        m_B20M.pattern_state = 160;
     }
-    if (g_B20M.frame % g_B20M.pattern_state == 0) {
-        g_B20M.flake.state = 0;
+    if (m_B20M.status.frame % m_B20M.pattern_state == 0) {
+        m_B20M.flake.state = 0;
     }
-    if (g_B20M.flake.state == 0) {
-        g_B20M.flake.state = M_WandRaise(assets, false);
+    if (m_B20M.flake.state == 0) {
+        m_B20M.flake.state = M_WandRaise(assets, false);
     }
-    if (g_B20M.flake.state == 1) {
+    if (m_B20M.flake.state == 1) {
         Sound_Effect(6);
-        g_B20M.flake.left = 5440;
-        g_B20M.flake.top = 1024;
+        m_B20M.flake.left = 5440;
+        m_B20M.flake.top = 1024;
         const MATH16_VECTOR v = Math16_Aim(
             (MATH16_VECTOR) { 340, 64 },
             (MATH16_VECTOR) { Math16_Wrap(g_Player.left + 12), 380 }, 112, 0);
-        g_B20M.flake.velocity_x = v.x;
-        g_B20M.flake.velocity_y = v.y;
-        g_B20M.flake.state = 2;
+        m_B20M.flake.velocity_x = v.x;
+        m_B20M.flake.velocity_y = v.y;
+        m_B20M.flake.state = 2;
     }
-    if (g_B20M.flake.state == 2) {
+    if (m_B20M.flake.state == 2) {
         Sprite_Restore16(
-            Math16_ToPixel(g_B20M.flake.left), Math16_ToPixel(g_B20M.flake.top),
+            Math16_ToPixel(m_B20M.flake.left), Math16_ToPixel(m_B20M.flake.top),
             16, 8);
-        g_B20M.flake.top =
-            Math16_Wrap(g_B20M.flake.top + g_B20M.flake.velocity_y);
-        if (g_B20M.flake.top >= 6336) {
-            g_B20M.flake.state = 3;
+        m_B20M.flake.top =
+            Math16_Wrap(m_B20M.flake.top + m_B20M.flake.velocity_y);
+        if (m_B20M.flake.top >= 6336) {
+            m_B20M.flake.state = 3;
             M_WandLower(assets);
             return;
         }
-        g_B20M.flake.left =
-            Math16_Wrap(g_B20M.flake.left + g_B20M.flake.velocity_x);
+        m_B20M.flake.left =
+            Math16_Wrap(m_B20M.flake.left + m_B20M.flake.velocity_x);
         M_Mask(
-            assets, Math16_ToPixel(g_B20M.flake.left),
-            Math16_ToPixel(g_B20M.flake.top), assets->flake, 7);
+            assets, Math16_ToPixel(m_B20M.flake.left),
+            Math16_ToPixel(m_B20M.flake.top), assets->flake, 7);
     }
-    if (g_B20M.flake.state == 3) {
+    if (m_B20M.flake.state == 3) {
         M_FlakeEllipse(assets, 48, 16, 6, 8, false);
         M_FlakeEllipse(assets, 16, 48, 6, 8, false);
         M_FlakeEllipse(assets, 24, 24, 7, 6, false);
-        g_B20M.star.radius_outer_1 = 48;
-        g_B20M.star.radius_outer_2 = 16;
-        g_B20M.star.radius_inner = 24;
-        g_B20M.star.left = g_B20M.flake.left;
-        g_B20M.star.top = 400 - M_Random(assets) % 48;
+        m_B20M.star.radius_outer_1 = 48;
+        m_B20M.star.radius_outer_2 = 16;
+        m_B20M.star.radius_inner = 24;
+        m_B20M.star.left = m_B20M.flake.left;
+        m_B20M.star.top = 400 - M_Random(assets) % 48;
         Sound_Effect(10);
     }
-    if (g_B20M.flake.state >= 3) {
-        g_B20M.flake.state = Math16_Wrap(g_B20M.flake.state + 1);
+    if (m_B20M.flake.state >= 3) {
+        m_B20M.flake.state = Math16_Wrap(m_B20M.flake.state + 1);
     }
-    if (g_B20M.flake.state >= 5 && g_B20M.flake.state % 8 == 0) {
-        Sprite_Restore16(g_B20M.star.left, g_B20M.star.top, 16, 8);
+    if (m_B20M.flake.state >= 5 && m_B20M.flake.state % 8 == 0) {
+        Sprite_Restore16(m_B20M.star.left, m_B20M.star.top, 16, 8);
         M_FlakeEllipse(
-            assets, g_B20M.star.radius_outer_1, g_B20M.star.radius_outer_2, 0,
+            assets, m_B20M.star.radius_outer_1, m_B20M.star.radius_outer_2, 0,
             8, true);
         M_FlakeEllipse(
-            assets, g_B20M.star.radius_outer_2, g_B20M.star.radius_outer_1, 0,
+            assets, m_B20M.star.radius_outer_2, m_B20M.star.radius_outer_1, 0,
             8, true);
         M_FlakeEllipse(
-            assets, g_B20M.star.radius_inner, g_B20M.star.radius_inner, 0, 6,
+            assets, m_B20M.star.radius_inner, m_B20M.star.radius_inner, 0, 6,
             true);
-        g_B20M.star.radius_outer_1 =
-            Math16_Wrap(g_B20M.star.radius_outer_1 - 6);
-        g_B20M.star.radius_outer_2 =
-            Math16_Wrap(g_B20M.star.radius_outer_2 + 6);
-        g_B20M.star.radius_inner = Math16_Wrap(g_B20M.star.radius_inner + 4);
-        g_B20M.star.left = Math16_Wrap(
-            M_Random(assets) % 64 + Math16_ToPixel(g_B20M.flake.left) - 28);
-        g_B20M.star.top = 400 - M_Random(assets) % 48;
-        if (g_B20M.star.radius_outer_1 <= 8) {
-            g_B20M.flake.state = -1;
+        m_B20M.star.radius_outer_1 =
+            Math16_Wrap(m_B20M.star.radius_outer_1 - 6);
+        m_B20M.star.radius_outer_2 =
+            Math16_Wrap(m_B20M.star.radius_outer_2 + 6);
+        m_B20M.star.radius_inner = Math16_Wrap(m_B20M.star.radius_inner + 4);
+        m_B20M.star.left = Math16_Wrap(
+            M_Random(assets) % 64 + Math16_ToPixel(m_B20M.flake.left) - 28);
+        m_B20M.star.top = 400 - M_Random(assets) % 48;
+        if (m_B20M.star.radius_outer_1 <= 8) {
+            m_B20M.flake.state = -1;
             return;
         }
         M_FlakeEllipse(
-            assets, g_B20M.star.radius_outer_1, g_B20M.star.radius_outer_2, 5,
+            assets, m_B20M.star.radius_outer_1, m_B20M.star.radius_outer_2, 5,
             8, false);
         M_FlakeEllipse(
-            assets, g_B20M.star.radius_outer_2, g_B20M.star.radius_outer_1, 5,
+            assets, m_B20M.star.radius_outer_2, m_B20M.star.radius_outer_1, 5,
             8, false);
         M_FlakeEllipse(
-            assets, g_B20M.star.radius_inner, g_B20M.star.radius_inner, 7, 6,
+            assets, m_B20M.star.radius_inner, m_B20M.star.radius_inner, 7, 6,
             false);
-        M_Mask(assets, g_B20M.star.left, g_B20M.star.top, assets->star, 7);
+        M_Mask(assets, m_B20M.star.left, m_B20M.star.top, assets->star, 7);
     }
-    const int16_t x = Math16_ToPixel(g_B20M.flake.left);
+    const int16_t x = Math16_ToPixel(m_B20M.flake.left);
     if (!g_Player.invincible && x + 32 > g_Player.left && x - 64 < g_Player.left
-        && g_B20M.flake.state >= 3) {
+        && m_B20M.flake.state >= 3) {
         g_Player.is_hit = true;
     }
 }
 static void M_Rings(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 5) {
-        g_B20M.rings_angle = 0;
-        g_B20M.rings_interval = Boss_Rank(18, 12, 10, 8);
+    if (m_B20M.status.frame < 5) {
+        m_B20M.rings_angle = 0;
+        m_B20M.rings_interval = Boss_Rank(18, 12, 10, 8);
     }
-    if (g_B20M.frame % g_B20M.rings_interval == 0) {
+    if (m_B20M.status.frame % m_B20M.rings_interval == 0) {
         g_Pellets.spawn_with_cloud = true;
-        M_Single(assets, 568, 160, (uint8_t)(0 - g_B20M.rings_angle), 56);
-        M_Single(assets, 568, 160, (uint8_t)(128 - g_B20M.rings_angle), 56);
-        M_Single(assets, 64, 160, g_B20M.rings_angle, 56);
-        M_Single(assets, 64, 160, (uint8_t)(128 + g_B20M.rings_angle), 56);
-        g_B20M.rings_angle =
-            (uint8_t)(g_B20M.rings_angle + g_B20M.rings_interval);
+        M_Single(assets, 568, 160, (uint8_t)(0 - m_B20M.rings_angle), 56);
+        M_Single(assets, 568, 160, (uint8_t)(128 - m_B20M.rings_angle), 56);
+        M_Single(assets, 64, 160, m_B20M.rings_angle, 56);
+        M_Single(assets, 64, 160, (uint8_t)(128 + m_B20M.rings_angle), 56);
+        m_B20M.rings_angle =
+            (uint8_t)(m_B20M.rings_angle + m_B20M.rings_interval);
     }
-    if (g_B20M.frame > 479) {
-        g_B20M.frame = 0;
+    if (m_B20M.status.frame > 479) {
+        m_B20M.status.frame = 0;
     }
 }
 static void M_Sling(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame == 10) {
-        g_B20M.pattern_state = Boss_Rank(4, 3, 2, 2);
+    if (m_B20M.status.frame == 10) {
+        m_B20M.pattern_state = Boss_Rank(4, 3, 2, 2);
     }
-    if (g_B20M.frame % 200 >= 150 && g_B20M.frame % g_B20M.pattern_state == 0) {
+    if (m_B20M.status.frame % 200 >= 150
+        && m_B20M.status.frame % m_B20M.pattern_state == 0) {
         const uint8_t angle = (uint8_t)M_Random(assets);
         Pellets_AddSingle(
             g_Session.settings.difficulty, Math16_PolarY(320, 40, angle),
             Math16_PolarX(180, 40, angle), 0, 0, PELLET_SLING_AIMED, 72, 0, 0);
     }
-    if (g_B20M.frame >= 299) {
-        g_B20M.frame = 0;
+    if (m_B20M.status.frame >= 299) {
+        m_B20M.status.frame = 0;
     }
 }
 static void M_FourLasers(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 5) {
+    if (m_B20M.status.frame < 5) {
         M_Ray(assets, 0, 0, 0, 0, 99);
     }
-    if (g_B20M.frame < 50) {
+    if (m_B20M.status.frame < 50) {
         return;
     }
     int16_t x = 0, y = 0, target = 0;
     int32_t laser = -1;
-    if (g_B20M.frame == 50) {
+    if (m_B20M.status.frame == 50) {
         x = 460;
         y = 120;
         target = g_Player.left;
         laser = 0;
-        g_B20M.laser.target = target;
-        g_B20M.pattern_state = Boss_Rank(60, 64, 68, 72);
-    } else if (g_B20M.frame == 100) {
+        m_B20M.laser.target = target;
+        m_B20M.pattern_state = Boss_Rank(60, 64, 68, 72);
+    } else if (m_B20M.status.frame == 100) {
         x = 180;
         y = 120;
-        target = Math16_Wrap(639 - g_B20M.laser.target);
+        target = Math16_Wrap(639 - m_B20M.laser.target);
         laser = 1;
-    } else if (g_B20M.frame == 150) {
+    } else if (m_B20M.status.frame == 150) {
         x = 608;
         y = 164;
         target = g_Player.left;
         laser = 2;
-    } else if (g_B20M.frame == 200) {
+    } else if (m_B20M.status.frame == 200) {
         x = 24;
         y = 164;
         target = g_Player.left;
         laser = 3;
     }
     if (laser >= 0) {
-        g_B20M.laser.origin_x = x;
-        g_B20M.laser.origin_y = y;
+        m_B20M.laser.origin_x = x;
+        m_B20M.laser.origin_y = y;
         const MATH16_VECTOR v = Math16_Aim(
             (MATH16_VECTOR) { x, y }, (MATH16_VECTOR) { target, 400 }, 16, 0);
-        g_B20M.laser.velocity_x = v.x;
-        g_B20M.laser.velocity_y = v.y;
+        m_B20M.laser.velocity_x = v.x;
+        m_B20M.laser.velocity_y = v.y;
         M_Laser(
-            assets, laser, x, y, target, 400, g_B20M.pattern_state, 7, 50, 8);
+            assets, laser, x, y, target, 400, m_B20M.pattern_state, 7, 50, 8);
         Sound_Effect(6);
-    } else if (g_B20M.frame < 250) {
+    } else if (m_B20M.status.frame < 250) {
         M_Ray(
-            assets, 320, 120, g_B20M.laser.origin_x, g_B20M.laser.origin_y, 7);
-        g_B20M.laser.origin_x =
-            Math16_Wrap(g_B20M.laser.origin_x + g_B20M.laser.velocity_x);
-        g_B20M.laser.origin_y =
-            Math16_Wrap(g_B20M.laser.origin_y + g_B20M.laser.velocity_y);
-    } else if (g_B20M.frame > 300) {
-        g_B20M.frame = 0;
+            assets, 320, 120, m_B20M.laser.origin_x, m_B20M.laser.origin_y, 7);
+        m_B20M.laser.origin_x =
+            Math16_Wrap(m_B20M.laser.origin_x + m_B20M.laser.velocity_x);
+        m_B20M.laser.origin_y =
+            Math16_Wrap(m_B20M.laser.origin_y + m_B20M.laser.velocity_y);
+    } else if (m_B20M.status.frame > 300) {
+        m_B20M.status.frame = 0;
     }
 }
 static bool M_Shake(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 50) {
-        if (g_B20M.frame % 8 == 0 || g_B20M.frame % 8 == 4) {
-            g_B20M.resume_stage = B20M_RESUME_SHAKE;
-            return M_Scroll(g_B20M.frame % 8 == 0 ? 396 : 404);
+    if (m_B20M.status.frame < 50) {
+        if (m_B20M.status.frame % 8 == 0 || m_B20M.status.frame % 8 == 4) {
+            m_B20M.resume_stage = B20M_RESUME_SHAKE;
+            return M_Scroll(m_B20M.status.frame % 8 == 0 ? 396 : 404);
         }
-        if (g_B20M.frame % 4 == 0) {
+        if (m_B20M.status.frame % 4 == 0) {
             Sound_Effect(7);
         }
-    } else if (g_B20M.frame == 50) {
-        g_B20M.resume_stage = B20M_RESUME_SHAKE_END;
+    } else if (m_B20M.status.frame == 50) {
+        m_B20M.resume_stage = B20M_RESUME_SHAKE_END;
         return M_Scroll(0);
     }
     return true;
 }
 static void M_TopRain(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame % 8 == 0) {
+    if (m_B20M.status.frame % 8 == 0) {
         M_Group(
             assets, M_Random(assets) % 640, 64,
             g_Session.settings.difficulty == 3 ? PELLET_GROUP_RANDOM_WIDE
@@ -1286,54 +1400,54 @@ static void M_TopRain(const B20M_ASSETS *const assets)
 }
 static void M_Radial(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame < 5) {
+    if (m_B20M.status.frame < 5) {
         M_Ray(assets, 0, 0, 0, 0, 99);
     }
-    if (g_B20M.frame < 150) {
+    if (m_B20M.status.frame < 150) {
         return;
     }
-    if (g_B20M.frame == 150) {
-        g_B20M.radial_angle = 0;
-        g_B20M.radial_velocity = 1;
-        g_B20M.pattern_state = Boss_Rank(60, 65, 70, 75);
+    if (m_B20M.status.frame == 150) {
+        m_B20M.radial_angle = 0;
+        m_B20M.radial_velocity = 1;
+        m_B20M.pattern_state = Boss_Rank(60, 65, 70, 75);
         Sound_Effect(6);
-    } else if (g_B20M.frame < 200) {
+    } else if (m_B20M.status.frame < 200) {
         M_Ray(
-            assets, 320, 160, Math16_PolarX(320, 140, g_B20M.radial_angle),
-            Math16_PolarY(160, 140, g_B20M.radial_angle), 7);
-        g_B20M.radial_angle =
-            (uint8_t)(g_B20M.radial_angle + g_B20M.radial_velocity);
-        g_B20M.radial_velocity++;
-        if (g_B20M.frame % 10 == 0) {
+            assets, 320, 160, Math16_PolarX(320, 140, m_B20M.radial_angle),
+            Math16_PolarY(160, 140, m_B20M.radial_angle), 7);
+        m_B20M.radial_angle =
+            (uint8_t)(m_B20M.radial_angle + m_B20M.radial_velocity);
+        m_B20M.radial_velocity++;
+        if (m_B20M.status.frame % 10 == 0) {
             Sound_Effect(6);
         }
-    } else if (g_B20M.frame == 200) {
+    } else if (m_B20M.status.frame == 200) {
         M_Ray(assets, 320, 160, 999, 999, 7);
-        g_B20M.radial_angle = 0;
-    } else if (g_B20M.frame <= 400 && g_B20M.frame % 5 == 0) {
+        m_B20M.radial_angle = 0;
+    } else if (m_B20M.status.frame <= 400 && m_B20M.status.frame % 5 == 0) {
         Sound_Effect(7);
-        if (g_B20M.frame % 15 == 0) {
+        if (m_B20M.status.frame % 15 == 0) {
             M_Laser(
-                assets, (g_B20M.frame - 215) / 15, 320, 160,
-                Math16_PolarX(320, 600, g_B20M.radial_angle),
-                Math16_PolarY(160, 600, g_B20M.radial_angle),
-                g_B20M.pattern_state, 7, 20, 4);
+                assets, (m_B20M.status.frame - 215) / 15, 320, 160,
+                Math16_PolarX(320, 600, m_B20M.radial_angle),
+                Math16_PolarY(160, 600, m_B20M.radial_angle),
+                m_B20M.pattern_state, 7, 20, 4);
         } else {
-            M_Single(assets, 320, 160, g_B20M.radial_angle, 100);
+            M_Single(assets, 320, 160, m_B20M.radial_angle, 100);
         }
-        M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle - 4), 96);
-        M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle + 4), 96);
+        M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle - 4), 96);
+        M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle + 4), 96);
         if (g_Session.settings.difficulty >= 2) {
-            M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle - 4), 64);
-            M_Single(assets, 320, 160, (uint8_t)(g_B20M.radial_angle + 4), 64);
+            M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle - 4), 64);
+            M_Single(assets, 320, 160, (uint8_t)(m_B20M.radial_angle + 4), 64);
             if (g_Session.settings.difficulty == 3) {
-                M_Single(assets, 320, 160, g_B20M.radial_angle, 64);
-                M_Single(assets, 320, 160, g_B20M.radial_angle, 48);
+                M_Single(assets, 320, 160, m_B20M.radial_angle, 64);
+                M_Single(assets, 320, 160, m_B20M.radial_angle, 48);
             }
         }
-        g_B20M.radial_angle = (uint8_t)(g_B20M.radial_angle + 12);
-    } else if (g_B20M.frame == 450) {
-        g_B20M.frame = 0;
+        m_B20M.radial_angle = (uint8_t)(m_B20M.radial_angle + 12);
+    } else if (m_B20M.status.frame == 450) {
+        m_B20M.status.frame = 0;
     }
 }
 static int16_t M_DebrisNext(const int16_t image)
@@ -1375,12 +1489,12 @@ static void M_RaysDraw(
 }
 static void M_SymmetricBirds(const B20M_ASSETS *const assets)
 {
-    B20M_RAYS *const r = &g_B20M.bird_rays;
-    if (g_B20M.frame < 50) {
+    B20M_RAYS *const r = &m_B20M.bird_rays;
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
-        g_B20M.pattern_state = Boss_Rank(6, 7, 8, 9);
+    if (m_B20M.status.frame == 50) {
+        m_B20M.pattern_state = Boss_Rank(6, 7, 8, 9);
         r->x = 2;
         r->y = 399;
         r->velocity_x = 2;
@@ -1388,15 +1502,17 @@ static void M_SymmetricBirds(const B20M_ASSETS *const assets)
         r->image = 3;
         return;
     }
-    if (g_B20M.frame < 100) {
-        M_RaysDraw(assets, r, g_B20M.frame % 2 == 0, 320, 120, 8, 2, true);
-        if (g_B20M.frame % 2 != 0) {
+    if (m_B20M.status.frame < 100) {
+        M_RaysDraw(
+            assets, r, m_B20M.status.frame % 2 == 0, 320, 120, 8, 2, true);
+        if (m_B20M.status.frame % 2 != 0) {
             r->image = M_DebrisNext(r->image);
         }
         r->x = Math16_Wrap(r->x + 2);
-        if (g_B20M.frame % 10 == 0) {
+        if (m_B20M.status.frame % 10 == 0) {
             Sound_Effect(6);
-            const int16_t target = Math16_Wrap((g_B20M.frame - 60) * 10 + r->x);
+            const int16_t target =
+                Math16_Wrap((m_B20M.status.frame - 60) * 10 + r->x);
             const MATH16_VECTOR v = Math16_Aim(
                 (MATH16_VECTOR) { r->x, Math16_Wrap(r->y - 32) },
                 (MATH16_VECTOR) { target, 0 }, 4, 0);
@@ -1405,46 +1521,46 @@ static void M_SymmetricBirds(const B20M_ASSETS *const assets)
             M_BirdSpawn(r->x, Math16_Wrap(r->y - 32), v.x, v.y);
             M_BirdSpawn(M_RayX(r, false), Math16_Wrap(r->y - 32), -v.x, v.y);
         }
-        if (g_B20M.frame % 6 == 0) {
+        if (m_B20M.status.frame % 6 == 0) {
             M_BirdsFire(assets, 2);
         }
         return;
     }
-    if (g_B20M.frame == 100) {
+    if (m_B20M.status.frame == 100) {
         Video_LineErase(320, 120, Math16_Wrap(M_RayX(r, false) + 2), r->y);
         return;
     }
-    if (g_B20M.frame % 10 == 0) {
+    if (m_B20M.status.frame % 10 == 0) {
         M_BirdsFire(assets, 2);
     }
-    if (g_B20M.frame >= 300) {
-        g_B20M.frame = 0;
+    if (m_B20M.status.frame >= 300) {
+        m_B20M.status.frame = 0;
     }
 }
 static void M_Semicircles(const B20M_ASSETS *const assets)
 {
     int32_t count = 0, angle = 0, step = 0, speed = 0;
-    if (g_B20M.frame == 50) {
+    if (m_B20M.status.frame == 50) {
         count = 20;
         step = 7;
         speed = 32;
-    } else if (g_B20M.frame == 60) {
+    } else if (m_B20M.status.frame == 60) {
         count = 10;
         angle = 4;
         step = 12;
         speed = 48;
-    } else if (g_B20M.frame == 70) {
+    } else if (m_B20M.status.frame == 70) {
         count = 8;
         angle = 4;
         step = 14;
         speed = 64;
-    } else if (g_B20M.frame == 80) {
+    } else if (m_B20M.status.frame == 80) {
         count = 10;
         angle = 14;
         step = 10;
         speed = 48;
-    } else if (g_B20M.frame > 150) {
-        g_B20M.frame = 0;
+    } else if (m_B20M.status.frame > 150) {
+        m_B20M.status.frame = 0;
     }
     for (int32_t i = 0; i < count; i++) {
         M_Single(assets, 320, 160, (uint8_t)angle, (int16_t)speed);
@@ -1453,25 +1569,26 @@ static void M_Semicircles(const B20M_ASSETS *const assets)
 }
 static void M_Stacks(const B20M_ASSETS *const assets)
 {
-    B20M_RAYS *const r = &g_B20M.stack_rays;
-    if (g_B20M.frame < 50) {
+    B20M_RAYS *const r = &m_B20M.stack_rays;
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
-        g_B20M.pattern_state = Boss_Rank(16, 13, 10, 8);
+    if (m_B20M.status.frame == 50) {
+        m_B20M.pattern_state = Boss_Rank(16, 13, 10, 8);
         r->x = 2;
         r->y = 399;
-    } else if (g_B20M.frame < 130) {
-        M_RaysDraw(assets, r, g_B20M.frame % 2 == 0, 320, 120, 8, 8, true);
-        if (g_B20M.frame % 2 != 0) {
+    } else if (m_B20M.status.frame < 130) {
+        M_RaysDraw(
+            assets, r, m_B20M.status.frame % 2 == 0, 320, 120, 8, 8, true);
+        if (m_B20M.status.frame % 2 != 0) {
             r->image = M_DebrisNext(r->image);
         }
         r->x = Math16_Wrap(r->x + 8);
-    } else if (g_B20M.frame == 130) {
+    } else if (m_B20M.status.frame == 130) {
         Video_LineErase(320, 120, Math16_Wrap(M_RayX(r, false) + 8), r->y);
         r->x = 0;
-    } else if (g_B20M.frame > 150 && g_B20M.frame < 350) {
-        if (g_B20M.frame % 10 == 0) {
+    } else if (m_B20M.status.frame > 150 && m_B20M.status.frame < 350) {
+        if (m_B20M.status.frame % 10 == 0) {
             for (int16_t i = 0; i < 64; i += 16) {
                 if (g_Player.left + 16 - r->x > 32
                     || g_Player.left + 16 - r->x < -32) {
@@ -1490,11 +1607,11 @@ static void M_Stacks(const B20M_ASSETS *const assets)
             r->x = Math16_Wrap(r->x + 32);
             Sound_Effect(7);
         }
-    } else if (g_B20M.frame == 350) {
+    } else if (m_B20M.status.frame == 350) {
         r->x = 0;
         r->y = 64;
-    } else if (g_B20M.frame < 550) {
-        if (g_B20M.frame % g_B20M.pattern_state == 0) {
+    } else if (m_B20M.status.frame < 550) {
+        if (m_B20M.status.frame % m_B20M.pattern_state == 0) {
             for (int32_t i = 0; i < 2; i++) {
                 uint8_t angle =
                     M_Angle(400 - r->y, (M_Random(assets) % 640) - r->x);
@@ -1504,8 +1621,8 @@ static void M_Stacks(const B20M_ASSETS *const assets)
             }
             r->x = Math16_Wrap(r->x + 32);
         }
-    } else if (g_B20M.frame > 600) {
-        g_B20M.frame = 0;
+    } else if (m_B20M.status.frame > 600) {
+        m_B20M.status.frame = 0;
     }
 }
 static void M_Dotted(
@@ -1515,20 +1632,20 @@ static void M_Dotted(
 {
     const int16_t radius = Math16_Wrap((frame / interval) * step + initial);
     if (frame == 1) {
-        g_B20M.dotted_active = true;
+        m_B20M.dotted_active = true;
     } else {
-        if (!g_B20M.dotted_active || frame % interval != 0) {
+        if (!m_B20M.dotted_active || frame % interval != 0) {
             return;
         }
         M_EraseEllipse(
-            assets, 320, 185, g_B20M.dotted_radius, g_B20M.dotted_radius, 1);
+            assets, 320, 185, m_B20M.dotted_radius, m_B20M.dotted_radius, 1);
         if (frame >= frames) {
-            g_B20M.dotted_active = false;
+            m_B20M.dotted_active = false;
             return;
         }
         M_Ellipse(assets, 320, 185, radius, radius, 7, 1);
     }
-    g_B20M.dotted_radius = radius;
+    m_B20M.dotted_radius = radius;
 }
 static void M_SprayInit(B20M_SPRAY *const s, const B20M_ASSETS *const assets)
 {
@@ -1536,7 +1653,7 @@ static void M_SprayInit(B20M_SPRAY *const s, const B20M_ASSETS *const assets)
     s->y = 400;
     s->speed = 112;
     s->subpattern = 0;
-    g_B20M.pattern_state = Boss_Rank(32, 24, 18, 16);
+    m_B20M.pattern_state = Boss_Rank(32, 24, 18, 16);
 }
 static void M_SprayFire(
     B20M_SPRAY *const s, const B20M_ASSETS *const assets, const bool right)
@@ -1545,22 +1662,22 @@ static void M_SprayFire(
     M_Single(assets, 320, 185, s->angle, s->speed);
     s->speed = Math16_Wrap(s->speed - 4);
     s->x = Math16_Wrap(
-        s->x + (right ? g_B20M.pattern_state : -g_B20M.pattern_state));
+        s->x + (right ? m_B20M.pattern_state : -m_B20M.pattern_state));
 }
 static void M_SprayOnce(const B20M_ASSETS *const assets)
 {
-    B20M_SPRAY *const s = &g_B20M.sprays[0];
-    if (g_B20M.frame < 50) {
+    B20M_SPRAY *const s = &m_B20M.sprays[0];
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
+    if (m_B20M.status.frame == 50) {
         M_Dotted(assets, 1, 4, 16, 32, 160);
     }
-    M_Dotted(assets, Math16_Wrap(g_B20M.frame - 49), 4, 16, 32, 90);
-    if (g_B20M.frame < 100) {
+    M_Dotted(assets, Math16_Wrap(m_B20M.status.frame - 49), 4, 16, 32, 90);
+    if (m_B20M.status.frame < 100) {
         return;
     }
-    if (g_B20M.frame == 100) {
+    if (m_B20M.status.frame == 100) {
         M_SprayInit(s, assets);
     }
     if (s->subpattern == 0) {
@@ -1573,31 +1690,32 @@ static void M_SprayOnce(const B20M_ASSETS *const assets)
     } else {
         M_SprayFire(s, assets, false);
         if (s->x < 0) {
-            g_B20M.frame = 0;
+            m_B20M.status.frame = 0;
         }
     }
 }
 static void M_SealRain(const B20M_ASSETS *const assets)
 {
-    B20M_RAYS *const r = &g_B20M.seal_rays;
-    if (g_B20M.frame < 50) {
+    B20M_RAYS *const r = &m_B20M.seal_rays;
+    if (m_B20M.status.frame < 50) {
         return;
     }
-    if (g_B20M.frame == 50) {
+    if (m_B20M.status.frame == 50) {
         r->x = 0;
         r->y = 399;
         r->image = 3;
         r->previous_image = 3;
-        g_B20M.pattern_state = Boss_Rank(30, 35, 40, 45);
+        m_B20M.pattern_state = Boss_Rank(30, 35, 40, 45);
     }
     if (r->y > 185) {
-        M_RaysDraw(assets, r, g_B20M.frame % 2 == 0, 320, 185, 32, 0, false);
-        if (g_B20M.frame % 2 != 0) {
+        M_RaysDraw(
+            assets, r, m_B20M.status.frame % 2 == 0, 320, 185, 32, 0, false);
+        if (m_B20M.status.frame % 2 != 0) {
             r->previous_image = r->image;
             r->image = M_DebrisNext(r->image);
             r->y = Math16_Wrap(r->y - 8);
         }
-        if (g_B20M.frame % 10 == 0) {
+        if (m_B20M.status.frame % 10 == 0) {
             Sound_Effect(6);
         }
         return;
@@ -1608,20 +1726,20 @@ static void M_SealRain(const B20M_ASSETS *const assets)
     Sprite_Restore16(M_DebrisX(r, true, 32, 0), Math16_Wrap(r->y - 16), 32, 50);
     Video_LineErase(320, 185, M_RayX(r, true), Math16_Wrap(r->y + 4));
     Video_LineErase(320, 185, M_RayX(r, false), Math16_Wrap(r->y + 4));
-    for (int32_t i = 0; i < g_B20M.pattern_state; i++) {
+    for (int32_t i = 0; i < m_B20M.pattern_state; i++) {
         M_Rain(
-            assets, (int16_t)((640 / g_B20M.pattern_state) * i), 185,
+            assets, (int16_t)((640 / m_B20M.pattern_state) * i), 185,
             (uint8_t)M_Random(assets), 16);
     }
-    g_B20M.frame = 0;
+    m_B20M.status.frame = 0;
 }
 static void M_SprayTwice(const B20M_ASSETS *const assets)
 {
-    B20M_SPRAY *const s = &g_B20M.sprays[1];
-    if (g_B20M.frame < 80) {
+    B20M_SPRAY *const s = &m_B20M.sprays[1];
+    if (m_B20M.status.frame < 80) {
         return;
     }
-    if (g_B20M.frame == 80) {
+    if (m_B20M.status.frame == 80) {
         M_SprayInit(s, assets);
     }
     if (s->subpattern % 2 == 0) {
@@ -1638,7 +1756,7 @@ static void M_SprayTwice(const B20M_ASSETS *const assets)
             s->speed = 112;
             s->x = 0;
             if (s->subpattern == 4) {
-                g_B20M.frame = 0;
+                m_B20M.status.frame = 0;
             }
         }
     }
@@ -1650,14 +1768,14 @@ static bool M_LeafVisible(const B20M_LEAVES *const p, const int32_t i)
 }
 static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
 {
-    B20M_LEAVES *const p = &g_B20M.leaves;
+    B20M_LEAVES *const p = &m_B20M.leaves;
     if (interval == 999) {
         for (int32_t i = 0; i < 30; i++) {
             p->flag[i] = 0;
         }
         return;
     }
-    if (g_B20M.frame % interval == 0) {
+    if (m_B20M.status.frame % interval == 0) {
         for (int32_t i = 0; i < 30; i++) {
             if (p->flag[i] != 0) {
                 continue;
@@ -1673,7 +1791,7 @@ static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
             break;
         }
     }
-    if (g_B20M.frame % 2 != 0) {
+    if (m_B20M.status.frame % 2 != 0) {
         return;
     }
     for (int32_t i = 0; i < 30; i++) {
@@ -1726,7 +1844,7 @@ static void M_Leaves(const B20M_ASSETS *const assets, const int16_t interval)
                     assets, p->left[i], p->top[i], 3,
                     Math16_Wrap(p->flag[i] - 2), 7);
             }
-            if (g_B20M.frame % 4 == 0) {
+            if (m_B20M.status.frame % 4 == 0) {
                 p->flag[i] = Math16_Wrap(p->flag[i] + 1);
             }
         } else if (p->flag[i] == 6) {
@@ -1755,8 +1873,8 @@ static void M_Hud(const B20M_ASSETS *const assets)
 void B20M_BeginEntrance(const B20M_ASSETS *const assets)
 {
     ASSERT(
-        !g_B20M.entrance_active && g_B20M.sequence == B20M_SEQUENCE_NONE
-        && g_B20M.wait_kind == B20M_WAIT_NONE);
+        !m_B20M.entrance_active && m_B20M.sequence == B20M_SEQUENCE_NONE
+        && m_B20M.wait_kind == B20M_WAIT_NONE);
     g_Pellets.interlace = true;
     Tram_Fill((GFX_RECT) { 0, 0, 640, 400 }, TRAM_BLACK);
     M_Pi(assets, &assets->lower, true);
@@ -1767,31 +1885,31 @@ void B20M_BeginEntrance(const B20M_ASSETS *const assets)
     Sound_Load(13);
     Sound_Play();
     Tram_Clear();
-    g_B20M.scroll_line = 399;
-    g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
-    g_B20M.entrance_active = true;
+    m_B20M.scroll_line = 399;
+    m_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
+    m_B20M.entrance_active = true;
 }
 bool B20M_ResumeEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (!g_B20M.entrance_active) {
+    if (!m_B20M.entrance_active) {
         return true;
     }
     if (!M_Ready(assets, tick)) {
         return false;
     }
     for (;;) {
-        switch (g_B20M.sequence_stage) {
+        switch (m_B20M.sequence_stage) {
         case B20M_ENTRANCE_SCROLL:
-            if (g_B20M.scroll_line < 0) {
-                g_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL;
+            if (m_B20M.scroll_line < 0) {
+                m_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL;
                 return M_Scroll(0);
             }
-            g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL_STEP;
-            return M_Scroll(g_B20M.scroll_line);
+            m_B20M.sequence_stage = B20M_ENTRANCE_SCROLL_STEP;
+            return M_Scroll(m_B20M.scroll_line);
         case B20M_ENTRANCE_SCROLL_STEP:
-            M_CopyRows(assets, g_B20M.scroll_line, 1);
-            g_B20M.scroll_line--;
-            g_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
+            M_CopyRows(assets, m_B20M.scroll_line, 1);
+            m_B20M.scroll_line--;
+            m_B20M.sequence_stage = B20M_ENTRANCE_SCROLL;
             if (!M_Delay(1)) {
                 return false;
             }
@@ -1800,7 +1918,7 @@ bool B20M_ResumeEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
             Video_SelectDrawingPage(1);
             M_Pi(assets, &assets->backgrounds[0], true);
             Video_SelectDrawingPage(0);
-            g_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
+            m_B20M.sequence_stage = B20M_ENTRANCE_DIAGONAL_STEP;
             if (!Transition_BeginDiagonal(
                     &g_Palette, &g_Palette.saved, M_TransitionTarget(false),
                     assets->interleave, 40, tick)) {
@@ -1814,8 +1932,9 @@ bool B20M_ResumeEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
                 return false;
             }
             g_Rng = g_Session.frame_rand;
-            g_B20M.entrance_active = false;
-            g_B20M.sequence_stage = B20M_ENTRANCE_DONE;
+            m_B20M.entrance_active = false;
+            g_StagePalette = m_B20M.stage_palette;
+            m_B20M.sequence_stage = B20M_ENTRANCE_DONE;
             return true;
         default:
             ASSERT(false);
@@ -1840,42 +1959,42 @@ static bool M_RingEntrance(const B20M_ASSETS *const assets, const uint64_t tick)
         return false;
     }
     for (;;) {
-        g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
+        m_B20M.status.frame = Math16_Wrap(m_B20M.status.frame + 1);
         bool finish = false;
-        if (g_B20M.frame == 1) {
-            g_B20M.entrance_radius = 16;
-        } else if (g_B20M.frame == 2) {
-            M_InvertRings(assets, g_B20M.entrance_radius);
-        } else if (g_B20M.frame > 2 && g_B20M.frame % 4 == 0) {
-            M_InvertRings(assets, g_B20M.entrance_radius);
-            g_B20M.entrance_radius = Math16_Wrap(g_B20M.entrance_radius + 16);
-            finish = M_InvertRings(assets, g_B20M.entrance_radius) >= 128;
+        if (m_B20M.status.frame == 1) {
+            m_B20M.entrance_radius = 16;
+        } else if (m_B20M.status.frame == 2) {
+            M_InvertRings(assets, m_B20M.entrance_radius);
+        } else if (m_B20M.status.frame > 2 && m_B20M.status.frame % 4 == 0) {
+            M_InvertRings(assets, m_B20M.entrance_radius);
+            m_B20M.entrance_radius = Math16_Wrap(m_B20M.entrance_radius + 16);
+            finish = M_InvertRings(assets, m_B20M.entrance_radius) >= 128;
         }
         if (finish) {
-            g_B20M.phase = B20M_PHASE_BIRDS;
-            g_B20M.pattern = 0;
-            g_B20M.patterns_done = 0;
-            g_B20M.patterns_until_next = 1 + M_Random(assets) % 6;
-            g_B20M.frame = 0;
-            g_B20M.hp_bar_filled = false;
-            M_Palette(assets, &g_B20M.boss_palette);
-            g_B20M.shield.left = 304;
-            g_B20M.shield.top = 144;
+            m_B20M.status.phase = B20M_PHASE_BIRDS;
+            m_B20M.pattern = 0;
+            m_B20M.patterns_done = 0;
+            m_B20M.patterns_until_next = 1 + M_Random(assets) % 6;
+            m_B20M.status.frame = 0;
+            m_B20M.hp_bar_filled = false;
+            M_Palette(assets, &m_B20M.boss_palette);
+            m_B20M.shield.left = 304;
+            m_B20M.shield.top = 144;
             M_Snap(assets);
             M_WandRaise(assets, true);
             M_BirdsReset();
-            g_B20M.sequence = B20M_SEQUENCE_NONE;
+            m_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
         }
-        if (g_B20M.frame % 2 != 0 && !M_Delay(1)) {
+        if (m_B20M.status.frame % 2 != 0 && !M_Delay(1)) {
             return false;
         }
     }
 }
 static void M_BeginTransform(const B20M_ASSETS *const assets)
 {
-    g_B20M.frame = 0;
-    g_B20M.hit.frame = 399;
+    m_B20M.status.frame = 0;
+    m_B20M.hit.frame = 399;
     Shots_EraseAndReset();
     Pellets_EraseAndResetMoving();
     ShootoutLasers_EraseAndReset(10);
@@ -1889,19 +2008,19 @@ static void M_BeginTransform(const B20M_ASSETS *const assets)
     g_Player.deflecting = false;
     g_Player.bomb_damaging = false;
     Player_Reset(g_Session.settings.difficulty);
-    g_B20M.hit.invincible = false;
+    m_B20M.hit.invincible = false;
     g_Rng = g_Session.frame_rand;
     Sound_Fade();
     Video_SelectDrawingPage(1);
     // The absent BOSS6.GRP leaves the previous image and palette intact.
     M_Color(assets, 15, 0, 0, 0);
-    g_B20M.boss_palette = g_Palette.saved;
+    m_B20M.boss_palette = g_Palette.saved;
     M_CopyOther(assets);
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->backgrounds[4], false);
     Video_SelectDrawingPage(0);
-    g_B20M.sequence = B20M_SEQUENCE_TRANSFORM;
-    g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
+    m_B20M.sequence = B20M_SEQUENCE_TRANSFORM;
+    m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
 }
 static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
 {
@@ -1909,21 +2028,21 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
         return false;
     }
     for (;;) {
-        switch (g_B20M.sequence_stage) {
+        switch (m_B20M.sequence_stage) {
         case B20M_TRANSFORM_SHAKE:
-            g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
-            if (g_B20M.frame < 200) {
-                if (g_B20M.frame % 2 == 0) {
+            m_B20M.status.frame = Math16_Wrap(m_B20M.status.frame + 1);
+            if (m_B20M.status.frame < 200) {
+                if (m_B20M.status.frame % 2 == 0) {
                     M_Color(assets, 15, 15, 15, 15);
                 } else {
-                    M_Palette(assets, &g_B20M.boss_palette);
+                    M_Palette(assets, &m_B20M.boss_palette);
                 }
-                g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
-                return M_Scroll(g_B20M.frame % 2 == 0 ? 416 : 386);
+                m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
+                return M_Scroll(m_B20M.status.frame % 2 == 0 ? 416 : 386);
             }
-            if (g_B20M.frame == 200) {
-                M_Palette(assets, &g_B20M.boss_palette);
-                g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
+            if (m_B20M.status.frame == 200) {
+                M_Palette(assets, &m_B20M.boss_palette);
+                m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE_STEP;
                 return M_Scroll(0);
             }
             for (int32_t i = 0; i < 3; i++) {
@@ -1939,32 +2058,32 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
             M_Color(assets, 6, 0, 0, 0);
             M_CopyOther(assets);
             M_Hud(assets);
-            g_B20M.sequence_stage = B20M_TRANSFORM_SECOND_FORM;
+            m_B20M.sequence_stage = B20M_TRANSFORM_SECOND_FORM;
             return M_Scroll(0);
         case B20M_TRANSFORM_SHAKE_STEP:
-            if (g_B20M.frame < 200 && g_B20M.frame % 4 == 0) {
+            if (m_B20M.status.frame < 200 && m_B20M.status.frame % 4 == 0) {
                 Sound_Effect(9);
             }
-            g_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
+            m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
             if (!M_Delay(1)) {
                 return false;
             }
             continue;
         case B20M_TRANSFORM_SECOND_FORM:
-            g_B20M.frame = 0;
-            g_B20M.hit.frame = 0;
-            g_B20M.pattern = 0;
-            g_B20M.patterns_done = 0;
-            g_B20M.phase = B20M_PHASE_SECOND_FORM;
+            m_B20M.status.frame = 0;
+            m_B20M.hit.frame = 0;
+            m_B20M.pattern = 0;
+            m_B20M.patterns_done = 0;
+            m_B20M.status.phase = B20M_PHASE_SECOND_FORM;
             g_Player.invincibility_time = 0;
             g_Player.invincible = false;
-            g_B20M.boss_palette = g_Palette.saved;
-            g_B20M.stage_palette = g_B20M.boss_palette;
-            g_B20M.hp = 6;
+            m_B20M.boss_palette = g_Palette.saved;
+            m_B20M.stage_palette = m_B20M.boss_palette;
+            m_B20M.status.hp = 6;
             HudHp_Begin(3, 10);
-            g_B20M.hp_bar_filled = false;
+            m_B20M.hp_bar_filled = false;
             M_Leaves(assets, 999);
-            g_B20M.sequence = B20M_SEQUENCE_NONE;
+            m_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
         default:
             ASSERT(false);
@@ -1977,11 +2096,11 @@ static void M_BeginDefeat(const B20M_ASSETS *const assets)
     Video_SelectDrawingPage(1);
     M_Pi(assets, &assets->backgrounds[5], true);
     M_Color(assets, 6, 0, 0, 0);
-    g_B20M.boss_palette = g_Palette.saved;
+    m_B20M.boss_palette = g_Palette.saved;
     M_CopyOther(assets);
     Video_SelectDrawingPage(0);
-    g_B20M.sequence = B20M_SEQUENCE_DEFEAT;
-    g_B20M.sequence_stage = B20M_DEFEAT_SHAKE;
+    m_B20M.sequence = B20M_SEQUENCE_DEFEAT;
+    m_B20M.sequence_stage = B20M_DEFEAT_SHAKE;
 }
 static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
 {
@@ -1989,24 +2108,24 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
         return false;
     }
     for (;;) {
-        switch (g_B20M.sequence_stage) {
+        switch (m_B20M.sequence_stage) {
         case B20M_DEFEAT_SHAKE:
-            g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
-            if (g_B20M.frame < 230) {
-                g_B20M.sequence_stage = B20M_DEFEAT_SHAKE_STEP;
-                return M_Scroll(g_B20M.frame % 2 == 0 ? 416 : 386);
+            m_B20M.status.frame = Math16_Wrap(m_B20M.status.frame + 1);
+            if (m_B20M.status.frame < 230) {
+                m_B20M.sequence_stage = B20M_DEFEAT_SHAKE_STEP;
+                return M_Scroll(m_B20M.status.frame % 2 == 0 ? 416 : 386);
             }
-            g_B20M.sequence_stage = B20M_DEFEAT_SHAKE_STEP;
+            m_B20M.sequence_stage = B20M_DEFEAT_SHAKE_STEP;
             continue;
         case B20M_DEFEAT_SHAKE_STEP:
-            if (g_B20M.frame < 200 && g_B20M.frame % 4 == 0) {
+            if (m_B20M.status.frame < 200 && m_B20M.status.frame % 4 == 0) {
                 Sound_Effect(9);
             }
-            if (g_B20M.frame == 170) {
+            if (m_B20M.status.frame == 170) {
                 Sound_Fade();
             }
-            if (g_B20M.frame > 190) {
-                if (g_B20M.frame % 2 == 0) {
+            if (m_B20M.status.frame > 190) {
+                if (m_B20M.status.frame % 2 == 0) {
                     for (int32_t i = 0; i < 16; i++) {
                         for (int32_t j = 0; j < 3; j++) {
                             g_Palette.saved.colors[i][j]--;
@@ -2014,12 +2133,12 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
                     }
                     M_Palette(assets, &g_Palette.saved);
                 }
-                if (g_B20M.frame > 230) {
-                    g_B20M.sequence_stage = B20M_DEFEAT_BONUS;
+                if (m_B20M.status.frame > 230) {
+                    m_B20M.sequence_stage = B20M_DEFEAT_BONUS;
                     return M_Scroll(0);
                 }
             }
-            g_B20M.sequence_stage = B20M_DEFEAT_SHAKE;
+            m_B20M.sequence_stage = B20M_DEFEAT_SHAKE;
             if (!M_Delay(2)) {
                 return false;
             }
@@ -2029,8 +2148,8 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
                 g_Stage.score += 10000;
             }
             g_Stage.game_cleared = true;
-            g_B20M.finished = true;
-            g_B20M.sequence = B20M_SEQUENCE_NONE;
+            m_B20M.finished = true;
+            m_B20M.sequence = B20M_SEQUENCE_NONE;
             return true;
         default:
             ASSERT(false);
@@ -2043,37 +2162,37 @@ static void M_Hit(const B20M_ASSETS *const assets)
     const ORB *const orb = &g_Orb;
     const bool collision = (orb->left >= 314 && orb->left <= 346
                             && orb->top >= 104 && orb->top <= 136)
-        || BossEntity_HitTestOrb(&g_B20M.shield);
+        || BossEntity_HitTestOrb(&m_B20M.shield);
     const uint8_t colors[] = { 3, 4, 5 };
     BossHit_UpdateAndRender(
-        &g_B20M.hit, &g_B20M.hp, &g_B20M.boss_palette, colors, 3, 10000,
+        &m_B20M.hit, &m_B20M.status.hp, &m_B20M.boss_palette, colors, 3, 10000,
         collision, (BOSS_SHOT_HITBOX) { 314, 104, 64, 32 });
 }
 static void M_PhaseNext(const B20M_ASSETS *const assets, const int8_t phase)
 {
-    g_B20M.phase = phase;
-    g_B20M.frame = 0;
+    m_B20M.status.phase = phase;
+    m_B20M.status.frame = 0;
     M_Snap(assets);
 }
 static void M_PatternNext(const int16_t first, const int16_t last)
 {
-    g_B20M.pattern = last == 1   ? Math16_Wrap(1 - g_B20M.pattern)
-        : g_B20M.pattern == last ? first
-                                 : Math16_Wrap(g_B20M.pattern + 1);
-    g_B20M.patterns_done = Math16_Wrap(g_B20M.patterns_done + 1);
+    m_B20M.pattern = last == 1   ? Math16_Wrap(1 - m_B20M.pattern)
+        : m_B20M.pattern == last ? first
+                                 : Math16_Wrap(m_B20M.pattern + 1);
+    m_B20M.patterns_done = Math16_Wrap(m_B20M.patterns_done + 1);
 }
 static void M_Pulse(const B20M_ASSETS *const assets)
 {
-    if (g_B20M.frame % 10 != 0) {
+    if (m_B20M.status.frame % 10 != 0) {
         return;
     }
-    M_Palette(assets, &g_B20M.boss_palette);
+    M_Palette(assets, &m_B20M.boss_palette);
     int8_t *const color = g_Palette.saved.colors[6];
-    if (g_B20M.patterns_done == 0) {
+    if (m_B20M.patterns_done == 0) {
         if (color[0] < 10) {
             color[0]++;
         } else {
-            g_B20M.patterns_done = 1;
+            m_B20M.patterns_done = 1;
         }
         if (color[1] < 10) {
             color[1]++;
@@ -2085,7 +2204,7 @@ static void M_Pulse(const B20M_ASSETS *const assets)
         if (color[0] > 0) {
             color[0]--;
         } else {
-            g_B20M.patterns_done = 0;
+            m_B20M.patterns_done = 0;
         }
         if (color[1] > 0) {
             color[1]--;
@@ -2095,58 +2214,58 @@ static void M_Pulse(const B20M_ASSETS *const assets)
         }
     }
     M_Palette(assets, &g_Palette.saved);
-    g_B20M.boss_palette = g_Palette.saved;
+    m_B20M.boss_palette = g_Palette.saved;
 }
 static bool M_Pattern(const B20M_ASSETS *const assets)
 {
-    switch (g_B20M.call_phase) {
+    switch (m_B20M.call_phase) {
     case B20M_PHASE_BIRDS:
-        if (g_B20M.pattern == 0) {
+        if (m_B20M.pattern == 0) {
             M_PurpleLasers(assets);
-        } else if (g_B20M.pattern == 1) {
+        } else if (m_B20M.pattern == 1) {
             M_Vortices(assets);
-        } else if (g_B20M.pattern == 2) {
+        } else if (m_B20M.pattern == 2) {
             M_Eggs(assets);
         }
         break;
     case B20M_PHASE_VERTICAL:
-        if (g_B20M.pattern == 0) {
+        if (m_B20M.pattern == 0) {
             M_Flake(assets);
             M_Rings(assets);
-        } else if (g_B20M.pattern == 1) {
+        } else if (m_B20M.pattern == 1) {
             M_Sling(assets);
             M_Rings(assets);
-        } else if (g_B20M.frame < 60) {
-            g_B20M.frame = 0;
+        } else if (m_B20M.status.frame < 60) {
+            m_B20M.status.frame = 0;
         }
         break;
     case B20M_PHASE_WAVY:
-        if (g_B20M.pattern == 0) {
+        if (m_B20M.pattern == 0) {
             M_FourLasers(assets);
-        } else if (g_B20M.pattern == 1 || g_B20M.pattern == 4) {
+        } else if (m_B20M.pattern == 1 || m_B20M.pattern == 4) {
             return M_Shake(assets);
-        } else if (g_B20M.pattern == 2 || g_B20M.pattern == 5) {
+        } else if (m_B20M.pattern == 2 || m_B20M.pattern == 5) {
             M_FourLasers(assets);
             M_TopRain(assets);
-        } else if (g_B20M.pattern == 3) {
+        } else if (m_B20M.pattern == 3) {
             M_Radial(assets);
         }
         break;
     case B20M_PHASE_VERTICAL_BIRDS:
-        if (g_B20M.pattern == 0) {
+        if (m_B20M.pattern == 0) {
             M_SymmetricBirds(assets);
-        } else if (g_B20M.pattern == 1) {
+        } else if (m_B20M.pattern == 1) {
             M_Semicircles(assets);
-        } else if (g_B20M.pattern == 2) {
+        } else if (m_B20M.pattern == 2) {
             M_Stacks(assets);
         }
         break;
     case B20M_PHASE_SECOND_FORM:
-        switch (g_B20M.pattern) {
+        switch (m_B20M.pattern) {
         case 0:
-            g_B20M.pattern_state = Boss_Rank(56, 32, 24, 20);
-            if (g_B20M.frame > 100) {
-                g_B20M.frame = 0;
+            m_B20M.pattern_state = Boss_Rank(56, 32, 24, 20);
+            if (m_B20M.status.frame > 100) {
+                m_B20M.status.frame = 0;
             }
             break;
         case 1:
@@ -2159,15 +2278,15 @@ static bool M_Pattern(const B20M_ASSETS *const assets)
             M_SprayTwice(assets);
             break;
         case 4:
-            M_Leaves(assets, g_B20M.pattern_state);
-            if (g_B20M.frame > 300) {
-                g_B20M.frame = 0;
+            M_Leaves(assets, m_B20M.pattern_state);
+            if (m_B20M.status.frame > 300) {
+                m_B20M.status.frame = 0;
             }
             break;
         case 5:
             M_Leaves(assets, 500);
-            if (g_B20M.frame > 200) {
-                g_B20M.frame = 0;
+            if (m_B20M.status.frame > 200) {
+                m_B20M.status.frame = 0;
             }
             break;
         case 6:
@@ -2193,8 +2312,8 @@ static bool M_Pattern(const B20M_ASSETS *const assets)
 }
 static bool M_Tail(const B20M_ASSETS *const assets)
 {
-    const int8_t phase = g_B20M.call_phase;
-    if (g_B20M.frame == 0) {
+    const int8_t phase = m_B20M.call_phase;
+    if (m_B20M.status.frame == 0) {
         M_PatternNext(
             phase == B20M_PHASE_WAVY              ? 10
                 : phase == B20M_PHASE_SECOND_FORM ? 4
@@ -2207,39 +2326,39 @@ static bool M_Tail(const B20M_ASSETS *const assets)
     M_Hit(assets);
     if (phase == B20M_PHASE_SECOND_FORM) {
         M_Pulse(assets);
-        if (g_B20M.hp <= 0) {
+        if (m_B20M.status.hp <= 0) {
             Sound_Stop();
-            g_B20M.phase = B20M_PHASE_DEFEAT;
-            g_B20M.frame = 0;
-            g_B20M.hit.frame = 0;
+            m_B20M.status.phase = B20M_PHASE_DEFEAT;
+            m_B20M.status.frame = 0;
+            m_B20M.hit.frame = 0;
         }
     } else {
-        if (g_B20M.hp <= 0) {
-            g_B20M.phase = B20M_PHASE_TRANSFORM;
+        if (m_B20M.status.hp <= 0) {
+            m_B20M.status.phase = B20M_PHASE_TRANSFORM;
         }
-        if (g_B20M.patterns_done >= g_B20M.patterns_until_next
-            && !g_B20M.hit.invincible) {
-            g_B20M.patterns_done = 0;
-            g_B20M.phase = phase + 1;
-            g_B20M.pattern = 0;
-            g_B20M.frame = 0;
+        if (m_B20M.patterns_done >= m_B20M.patterns_until_next
+            && !m_B20M.hit.invincible) {
+            m_B20M.patterns_done = 0;
+            m_B20M.status.phase = phase + 1;
+            m_B20M.pattern = 0;
+            m_B20M.status.frame = 0;
         }
     }
     return true;
 }
 static void M_AfterGust(const B20M_ASSETS *const assets)
 {
-    const int8_t phase = g_B20M.call_phase;
+    const int8_t phase = m_B20M.call_phase;
     M_Dress(assets);
-    if (g_B20M.frame != 0) {
+    if (m_B20M.status.frame != 0) {
         return;
     }
     M_PhaseNext(
         assets, phase == B20M_PHASE_GUST_4 ? B20M_PHASE_BIRDS : phase + 1);
     if (phase != B20M_PHASE_GUST_1) {
-        g_B20M.boss_palette = g_Palette.saved;
+        m_B20M.boss_palette = g_Palette.saved;
     }
-    g_B20M.patterns_until_next = phase == B20M_PHASE_GUST_1
+    m_B20M.patterns_until_next = phase == B20M_PHASE_GUST_1
         ? 1 + M_Random(assets) % 5
         : phase == B20M_PHASE_GUST_2 ? 3 + M_Random(assets) % 4
         : phase == B20M_PHASE_GUST_3 ? 2 + M_Random(assets) % 5
@@ -2247,36 +2366,36 @@ static void M_AfterGust(const B20M_ASSETS *const assets)
 }
 bool B20M_UpdateAndRender(const B20M_ASSETS *const assets, const uint64_t tick)
 {
-    if (g_B20M.finished) {
+    if (m_B20M.finished) {
         return true;
     }
-    if (g_B20M.sequence == B20M_SEQUENCE_RINGS) {
+    if (m_B20M.sequence == B20M_SEQUENCE_RINGS) {
         return M_RingEntrance(assets, tick);
     }
-    if (g_B20M.sequence == B20M_SEQUENCE_TRANSFORM) {
+    if (m_B20M.sequence == B20M_SEQUENCE_TRANSFORM) {
         return M_Transform(assets, tick);
     }
-    if (g_B20M.sequence == B20M_SEQUENCE_DEFEAT) {
+    if (m_B20M.sequence == B20M_SEQUENCE_DEFEAT) {
         return M_Defeat(assets, tick);
     }
-    if (g_B20M.resume_stage != B20M_RESUME_NONE) {
+    if (m_B20M.resume_stage != B20M_RESUME_NONE) {
         if (!M_Ready(assets, tick)) {
             return false;
         }
-        const uint8_t resume = g_B20M.resume_stage;
-        g_B20M.resume_stage = B20M_RESUME_NONE;
+        const uint8_t resume = m_B20M.resume_stage;
+        m_B20M.resume_stage = B20M_RESUME_NONE;
         if (resume == B20M_RESUME_SHAKE) {
             Sound_Effect(7);
             return M_Tail(assets);
         }
         if (resume == B20M_RESUME_SHAKE_END) {
-            g_B20M.frame = 0;
+            m_B20M.status.frame = 0;
             return M_Tail(assets);
         }
         if (resume == B20M_RESUME_GUST_END) {
-            const int16_t image = g_B20M.call_phase == B20M_PHASE_GUST_1 ? 1
-                : g_B20M.call_phase == B20M_PHASE_GUST_2                 ? 2
-                : g_B20M.call_phase == B20M_PHASE_GUST_3                 ? 3
+            const int16_t image = m_B20M.call_phase == B20M_PHASE_GUST_1 ? 1
+                : m_B20M.call_phase == B20M_PHASE_GUST_2                 ? 2
+                : m_B20M.call_phase == B20M_PHASE_GUST_3                 ? 3
                                                                          : 0;
             M_GustFinish(assets, image);
             M_AfterGust(assets);
@@ -2287,61 +2406,64 @@ bool B20M_UpdateAndRender(const B20M_ASSETS *const assets, const uint64_t tick)
         }
         return M_Tail(assets);
     }
-    if (g_B20M.phase == B20M_PHASE_START) {
-        g_B20M.frame = -1;
-        g_B20M.hit.frame = 0;
-        g_B20M.hit.invincible = false;
-        g_B20M.boss_palette = g_Palette.saved;
-        g_B20M.stage_palette = g_B20M.boss_palette;
+    if (m_B20M.status.phase == B20M_PHASE_START) {
+        m_B20M.status.frame = -1;
+        m_B20M.hit.frame = 0;
+        m_B20M.hit.invincible = false;
+        m_B20M.boss_palette = g_Palette.saved;
+        m_B20M.stage_palette = m_B20M.boss_palette;
         g_Rng = g_Session.frame_rand;
-        g_B20M.sequence = B20M_SEQUENCE_RINGS;
+        m_B20M.sequence = B20M_SEQUENCE_RINGS;
         return M_RingEntrance(assets, tick);
     }
-    if (g_B20M.phase == B20M_PHASE_TRANSFORM) {
+    if (m_B20M.status.phase == B20M_PHASE_TRANSFORM) {
         M_BeginTransform(assets);
         return M_Transform(assets, tick);
     }
-    if (g_B20M.phase == B20M_PHASE_DEFEAT) {
+    if (m_B20M.status.phase == B20M_PHASE_DEFEAT) {
         M_BeginDefeat(assets);
         return M_Defeat(assets, tick);
     }
-    g_B20M.call_phase = g_B20M.phase;
-    if (g_B20M.phase >= B20M_PHASE_GUST_1 && g_B20M.phase <= B20M_PHASE_GUST_4
-        && g_B20M.phase % 2 == 0) {
-        g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
+    m_B20M.call_phase = m_B20M.status.phase;
+    if (m_B20M.status.phase >= B20M_PHASE_GUST_1
+        && m_B20M.status.phase <= B20M_PHASE_GUST_4
+        && m_B20M.status.phase % 2 == 0) {
+        m_B20M.status.frame = Math16_Wrap(m_B20M.status.frame + 1);
         if (!M_Gust(assets)) {
             return false;
         }
         M_AfterGust(assets);
         return true;
     }
-    if (g_B20M.phase != B20M_PHASE_BIRDS && g_B20M.phase != B20M_PHASE_VERTICAL
-        && g_B20M.phase != B20M_PHASE_WAVY
-        && g_B20M.phase != B20M_PHASE_VERTICAL_BIRDS
-        && g_B20M.phase != B20M_PHASE_SECOND_FORM) {
+    if (m_B20M.status.phase != B20M_PHASE_BIRDS
+        && m_B20M.status.phase != B20M_PHASE_VERTICAL
+        && m_B20M.status.phase != B20M_PHASE_WAVY
+        && m_B20M.status.phase != B20M_PHASE_VERTICAL_BIRDS
+        && m_B20M.status.phase != B20M_PHASE_SECOND_FORM) {
         return true;
     }
-    if ((g_B20M.phase == B20M_PHASE_BIRDS
-         || g_B20M.phase == B20M_PHASE_SECOND_FORM)
-        && !g_B20M.hp_bar_filled) {
-        g_B20M.hp_bar_filled = HudHp_Increment(g_B20M.hp, g_B20M.frame);
+    if ((m_B20M.status.phase == B20M_PHASE_BIRDS
+         || m_B20M.status.phase == B20M_PHASE_SECOND_FORM)
+        && !m_B20M.hp_bar_filled) {
+        m_B20M.hp_bar_filled =
+            HudHp_Increment(m_B20M.status.hp, m_B20M.status.frame);
     }
-    g_B20M.frame = Math16_Wrap(g_B20M.frame + 1);
-    g_B20M.hit.frame = Math16_Wrap(g_B20M.hit.frame + 1);
-    if (g_B20M.phase != B20M_PHASE_SECOND_FORM) {
+    m_B20M.status.frame = Math16_Wrap(m_B20M.status.frame + 1);
+    m_B20M.hit.frame = Math16_Wrap(m_B20M.hit.frame + 1);
+    if (m_B20M.status.phase != B20M_PHASE_SECOND_FORM) {
         M_Shield(assets);
         M_Dress(assets);
     }
-    if (g_B20M.phase == B20M_PHASE_VERTICAL
-        || g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS) {
-        M_Vertical(assets, g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS);
-    } else if (g_B20M.phase == B20M_PHASE_WAVY) {
+    if (m_B20M.status.phase == B20M_PHASE_VERTICAL
+        || m_B20M.status.phase == B20M_PHASE_VERTICAL_BIRDS) {
+        M_Vertical(assets, m_B20M.status.phase == B20M_PHASE_VERTICAL_BIRDS);
+    } else if (m_B20M.status.phase == B20M_PHASE_WAVY) {
         M_Wavy(assets);
-    } else if (g_B20M.phase == B20M_PHASE_SECOND_FORM) {
+    } else if (m_B20M.status.phase == B20M_PHASE_SECOND_FORM) {
         M_Horizontal(assets);
     }
-    if ((g_B20M.phase == B20M_PHASE_BIRDS
-         || g_B20M.phase == B20M_PHASE_VERTICAL_BIRDS)
+    if ((m_B20M.status.phase == B20M_PHASE_BIRDS
+         || m_B20M.status.phase == B20M_PHASE_VERTICAL_BIRDS)
         && !M_BirdsUpdate(assets, tick)) {
         return false;
     }

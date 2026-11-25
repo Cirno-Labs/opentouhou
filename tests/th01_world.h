@@ -34,7 +34,7 @@ static inline void Th01Test_ResetWorld(void)
     Pellets_Init();
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
-    g_TestDamage = false;
+    Boss_Init();
     g_Rng = 0;
     memset(&g_StageObjects, 0, sizeof(g_StageObjects));
     memset(&g_Stage, 0, sizeof(g_Stage));

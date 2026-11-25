@@ -218,6 +218,30 @@ TEST(victory_handoff_keeps_destroy_points_uncommitted)
     Arena_Free(&f.arena);
 }
 
+TEST(miss_clears_debug_damage_without_losing_active_boss_state)
+{
+    FIXTURE f;
+    M_Init(&f);
+    g_Session.stage_id = 4;
+    g_Gameplay.boss_stage = true;
+    g_Gameplay.boss = BOSS_SINGYOKU;
+    B05_Setup(&f.assets->b05);
+    BOSS_STATE *const boss = g_Boss;
+    const BOSS_STATE state = *boss;
+    g_Gameplay.phase = GP_LIFE_EXIT;
+    Frame_BeginWait(&g_Gameplay.wait);
+    g_Player.is_hit = true;
+    g_TestDamage = true;
+    const TH01_INPUT raw = {};
+    CHECK_EQ_INT(Gameplay_Tick(&raw, true, 1), GAMEPLAY_REQUEST_NONE);
+    CHECK_EQ_INT(g_Gameplay.phase, GP_MISS);
+    CHECK(!g_TestDamage);
+    CHECK_EQ_INT(g_Session.lives, 3);
+    CHECK(g_Boss == boss);
+    CHECK(memcmp(g_Boss, &state, sizeof(state)) == 0);
+    Arena_Free(&f.arena);
+}
+
 TEST(real_card_consumer_runs_bonus_and_reuses_stage_storage)
 {
     FIXTURE f;
@@ -643,16 +667,16 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     const void *const numbers = m_Hud.numbers;
     const void *const backgrounds = m_Health.backgrounds;
     const size_t used = f.arena.used;
+    B05_Setup(&f.assets->b05);
+    CHECK(g_Boss != nullptr);
     memset(&g_Gameplay, 0xa5, sizeof(g_Gameplay));
-    memset(&g_B10J, 0xa5, sizeof(g_B10J));
-    memset(&g_B20J, 0xa5, sizeof(g_B20J));
-    memset(&g_B20M, 0xa5, sizeof(g_B20M));
     Gameplay_Reset();
     CHECK_EQ_INT(f.arena.used, used);
     CHECK(m_Scene.active == &f.assets->scenes[Session_Scene()]);
     CHECK_EQ_INT(g_Gameplay.phase, GP_STAGE_BEGIN);
     CHECK(g_Stage.first_stage && g_Gameplay.wait_for_shot);
     CHECK_EQ_INT(g_Gameplay.frame, 0);
+    CHECK(g_Boss == nullptr);
     CHECK_EQ_INT(g_VSync.edge, 0);
     CHECK_EQ_INT(g_Player.left, 304);
     CHECK_EQ_INT(m_Hud.score_previous, 0);
@@ -660,13 +684,6 @@ TEST(reset_restores_prepared_defaults_without_rebuilding_storage)
     CHECK(m_Health.backgrounds == backgrounds);
     CHECK(g_Tram.visible);
     CHECK_EQ_INT(g_Tram.pixels[VIDEO_PAGE_SIZE - 1], 0);
-    CHECK(g_B10J.meteor_active);
-    CHECK_EQ_INT(g_B10J.spread_interval, 4);
-    CHECK_EQ_INT(g_B10J.spread_speed, 8);
-    CHECK_EQ_INT(g_B20M.ray_previous_x, 999);
-    CHECK_EQ_INT(g_B20M.ray_previous_y, 999);
-    CHECK_EQ_INT(g_B20M.flake.state, -1);
-    CHECK_EQ_INT(g_B20J.ray_previous_x, 999);
     Music_BindOutput(nullptr);
     GameAudio_Free(output);
     Audio_Shutdown();

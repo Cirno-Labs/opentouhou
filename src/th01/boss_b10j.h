@@ -23,40 +23,6 @@ typedef struct {
     B10J_PILLARS pillars;
 } B10J_ASSETS;
 
-typedef struct {
-    uint8_t angle;
-    int16_t radius;
-} B10J_SQUARE;
-
-typedef enum {
-    B10J_PHASE_START,
-    B10J_PHASE_FIRST,
-    B10J_PHASE_SPREAD,
-    B10J_PHASE_SECOND,
-} B10J_PHASE;
-
-typedef struct {
-    BOSS_ENTITY still, animation;
-    BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
-    PALETTE_FADE setup_fade;
-    FRAME_WAIT setup_wait;
-    BOSS_DEFEAT defeat;
-    uint8_t background[128 * 160];
-    B10J_SQUARE squares[6];
-    int16_t pillar_time[8], pillar_x[8], pillar_bottom[8];
-    int16_t laser_x[4], laser_y[4];
-    int16_t hp, frame, pattern, pattern_state, target_left;
-    int8_t phase;
-    uint8_t hop, direction, missile_angle, pellet_angle;
-    uint8_t spread_interval, spread_speed;
-    bool meteor_active, hp_bar_filled;
-    bool setup_active, entrance_active, entrance_waiting;
-    bool defeating, finished;
-} B10J;
-
-extern B10J g_B10J;
-
 // Loads BOSS3_1.BOS, BOSS3_2.BOS, BOSS3.GRP, BOSS3_M.PTN, scene 4 and
 // the pillar masks of pillar.bmp into the caller's asset group. Failed
 // loads leave out empty; intermediate storage belongs to the group.

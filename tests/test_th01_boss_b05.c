@@ -1,3 +1,4 @@
+#include "../src/th01/boss_b05.c"
 #include "../src/th01/hud_hp.c"
 #include "../src/th01/boss_entity.c"
 #include "../src/th01/scene.c"
@@ -119,8 +120,8 @@ static void M_Enter(FIXTURE *const f)
             B05_UpdateAndRender(&f->miko, &f->route_assets, &raw),
             frame == 199);
     }
-    CHECK_EQ_INT(g_B05.phase, B05_PHASE_SPHERE);
-    CHECK_EQ_INT(g_B05.frame, 0);
+    CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_SPHERE);
+    CHECK_EQ_INT(m_B05.status.frame, 0);
 }
 
 TEST(setup_binds_real_banks_and_preserves_static_history)
@@ -133,49 +134,50 @@ TEST(setup_binds_real_banks_and_preserves_static_history)
     memset(g_Video.pages[1], 5, VIDEO_PAGE_SIZE);
     const size_t used = arena.used;
     B05_Init();
-    g_B05.frame = 77;
-    g_B05.pattern = 3;
-    g_B05.velocity_x = 999;
-    g_B05.velocity_y = -4;
-    g_B05.angle = 42;
-    g_B05.direction = -1;
-    g_B05.hp_bar_filled = true;
-    g_B05.hit = (BOSS_HIT) { .frame = 23, .invincible = true };
-    g_B05.sphere.previous_left = 17;
-    g_B05.sphere.lock_frame = 2;
-    g_B05.person.image = 5;
+    m_B05.status.frame = 77;
+    m_B05.pattern = 3;
+    m_B05.velocity_x = 999;
+    m_B05.velocity_y = -4;
+    m_B05.angle = 42;
+    m_B05.direction = -1;
+    m_B05.hp_bar_filled = true;
+    m_B05.hit = (BOSS_HIT) { .frame = 23, .invincible = true };
+    m_B05.sphere.previous_left = 17;
+    m_B05.sphere.lock_frame = 2;
+    m_B05.person.image = 5;
     m_Particles.cycle = 73;
     m_Particles.velocity_base[0] = 9;
     m_Particles.alive[0] = 255;
     B05_Setup(&f.assets);
+    CHECK(g_Boss == &m_B05.status);
     CHECK_EQ_INT(arena.used, used);
     CHECK(m_Sprites.entities[0] == &f.assets.sphere);
     CHECK(m_Sprites.entities[1] == &f.assets.flash);
     CHECK(m_Sprites.entities[2] == &f.assets.person);
-    CHECK_EQ_INT(g_B05.sphere.left, 640);
-    CHECK_EQ_INT(g_B05.sphere.top, 64);
-    CHECK_EQ_INT(g_B05.sphere.orb_hitbox.left, 24);
-    CHECK_EQ_INT(g_B05.sphere.orb_hitbox.right, 72);
-    CHECK_EQ_INT(g_B05.sphere.move_clamp.right, 736);
-    CHECK_EQ_INT(g_B05.sphere.image, 0);
-    CHECK_EQ_INT(g_B05.sphere.previous_left, 17);
-    CHECK_EQ_INT(g_B05.sphere.lock_frame, 2);
-    CHECK_EQ_INT(g_B05.person.image, 5);
-    CHECK_EQ_INT(g_B05.phase, B05_PHASE_START);
-    CHECK_EQ_INT(g_B05.hp, 8);
-    CHECK_EQ_INT(g_B05.frame, 77);
-    CHECK_EQ_INT(g_B05.hit.frame, 23);
-    CHECK(g_B05.hit.invincible && g_B05.hp_bar_filled);
-    CHECK_EQ_INT(g_B05.pattern, 3);
-    CHECK_EQ_INT(g_B05.velocity_x, 999);
-    CHECK_EQ_INT(g_B05.direction, -1);
+    CHECK_EQ_INT(m_B05.sphere.left, 640);
+    CHECK_EQ_INT(m_B05.sphere.top, 64);
+    CHECK_EQ_INT(m_B05.sphere.orb_hitbox.left, 24);
+    CHECK_EQ_INT(m_B05.sphere.orb_hitbox.right, 72);
+    CHECK_EQ_INT(m_B05.sphere.move_clamp.right, 736);
+    CHECK_EQ_INT(m_B05.sphere.image, 0);
+    CHECK_EQ_INT(m_B05.sphere.previous_left, 17);
+    CHECK_EQ_INT(m_B05.sphere.lock_frame, 2);
+    CHECK_EQ_INT(m_B05.person.image, 5);
+    CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_START);
+    CHECK_EQ_INT(m_B05.status.hp, 8);
+    CHECK_EQ_INT(m_B05.status.frame, 77);
+    CHECK_EQ_INT(m_B05.hit.frame, 23);
+    CHECK(m_B05.hit.invincible && m_B05.hp_bar_filled);
+    CHECK_EQ_INT(m_B05.pattern, 3);
+    CHECK_EQ_INT(m_B05.velocity_x, 999);
+    CHECK_EQ_INT(m_B05.direction, -1);
     CHECK_EQ_INT(m_Health.first_white, 6);
     CHECK_EQ_INT(m_Health.first_redwhite, 2);
     CHECK_EQ_INT(m_Particles.alive[0], 0);
     CHECK_EQ_INT(m_Particles.cycle, 73);
     CHECK_EQ_INT(m_Particles.velocity_base[0], 9);
-    CHECK(memcmp(&g_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
-    CHECK(memcmp(&g_StagePalette, &g_B05.post_defeat, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(&m_B05.boss_palette, &f.assets.palette, sizeof(PALETTE)) == 0);
+    CHECK(memcmp(&g_StagePalette, &m_B05.post_defeat, sizeof(PALETTE)) == 0);
     CHECK_EQ_INT(g_Video.pages[0][0], 3);
     CHECK_EQ_INT(g_Video.pages[1][0], 5);
     CHECK_EQ_INT(g_Video.palette[5].red, 5 * 17);
@@ -217,28 +219,28 @@ TEST(entrance_waits_all_frames_and_leaves_world_untouched)
         const ORB orb = g_Orb;
         const uint32_t rng = g_Rng;
         CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-        CHECK_EQ_INT(g_B05.frame, 1 + reuse);
-        CHECK_EQ_INT(g_B05.hit.frame, 0);
+        CHECK_EQ_INT(m_B05.status.frame, 1 + reuse);
+        CHECK_EQ_INT(m_B05.hit.frame, 0);
         CHECK_EQ_INT(g_Palette.saved.colors[5][0], 0);
-        const B05 frozen = g_B05;
+        const B05 frozen = m_B05;
         CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-        CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
+        CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
         for (int32_t edge = 0; edge < 200 - reuse; edge++) {
             Frame_VSync();
             CHECK_EQ_INT(
                 B05_UpdateAndRender(&f.miko, &f.route_assets, &raw),
                 edge == 199 - reuse);
         }
-        CHECK_EQ_INT(g_B05.phase, B05_PHASE_SPHERE);
-        CHECK_EQ_INT(g_B05.pattern, 0);
-        CHECK_EQ_INT(g_B05.frame, 0);
-        CHECK_EQ_INT(g_B05.hit.frame, 0);
-        CHECK(!g_B05.hp_bar_filled);
+        CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_SPHERE);
+        CHECK_EQ_INT(m_B05.pattern, 0);
+        CHECK_EQ_INT(m_B05.status.frame, 0);
+        CHECK_EQ_INT(m_B05.hit.frame, 0);
+        CHECK(!m_B05.hp_bar_filled);
         CHECK(memcmp(&g_Player, &player, sizeof(player)) == 0);
         CHECK(memcmp(&g_Orb, &orb, sizeof(orb)) == 0);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK(
-            memcmp(&g_Palette.saved, &g_B05.boss_palette, sizeof(PALETTE))
+            memcmp(&g_Palette.saved, &m_B05.boss_palette, sizeof(PALETTE))
             == 0);
         CHECK_EQ_INT(arena.used, used);
         Arena_Free(&arena);
@@ -262,20 +264,20 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         const TH01_INPUT raw = {};
         bool phase_two = false;
         for (int32_t step = 1;
-             step <= 2400 && g_B05.phase != B05_PHASE_DEFEATED; step++) {
+             step <= 2400 && m_B05.status.phase != B05_PHASE_DEFEATED; step++) {
             const bool hit =
                 step == 20 || step == 70 || (step >= 1620 && step % 50 == 20);
-            g_Orb.previous_left = hit ? (int16_t)(g_B05.sphere.left + 32) : 0;
-            g_Orb.previous_top = hit ? (int16_t)(g_B05.sphere.top + 32) : 64;
+            g_Orb.previous_left = hit ? (int16_t)(m_B05.sphere.left + 32) : 0;
+            g_Orb.previous_top = hit ? (int16_t)(m_B05.sphere.top + 32) : 64;
             g_Session.frame_rand = (uint32_t)step;
             CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-            phase_two |= g_B05.phase == B05_PHASE_TRANSFORMS;
+            phase_two |= m_B05.status.phase == B05_PHASE_TRANSFORMS;
         }
         CHECK(phase_two);
-        CHECK_EQ_INT(g_B05.phase, B05_PHASE_DEFEATED);
-        CHECK_EQ_INT(g_B05.hp, 0);
+        CHECK_EQ_INT(m_B05.status.phase, B05_PHASE_DEFEATED);
+        CHECK_EQ_INT(m_B05.status.hp, 0);
         CHECK_EQ_INT(g_Stage.score, 24000);
-        CHECK_EQ_INT(g_B05.pending, B05_IDLE);
+        CHECK_EQ_INT(m_B05.pending, B05_IDLE);
         g_Pellets.slots[0] = (PELLET) {
             .moving = true,
             .left = 100 * 16,
@@ -290,27 +292,27 @@ TEST(real_hit_controller_reaches_both_cached_routes)
         CHECK_EQ_INT(g_Pellets.slots[1].cloud_frame, 7);
         CHECK_EQ_INT(m_Scene.active->id, 0);
         CHECK(!g_Stage.cleared && !g_Player.is_hit);
-        const B05 frozen = g_B05;
+        const B05 frozen = m_B05;
         CHECK(!B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-        CHECK(memcmp(&g_B05, &frozen, sizeof(g_B05)) == 0);
+        CHECK(memcmp(&m_B05, &frozen, sizeof(m_B05)) == 0);
         const uint32_t rng = g_Rng;
         const uint32_t frame_rand = g_Session.frame_rand;
-        for (int32_t edge = 0; edge < 1000 && g_B05.pending != B05_FINISHED;
+        for (int32_t edge = 0; edge < 1000 && m_B05.pending != B05_FINISHED;
              edge++) {
             const TH01_INPUT held = { .shot = true, .down = rank % 2 == 1 };
             Frame_VSync();
             B05_UpdateAndRender(&f.miko, &f.route_assets, &held);
         }
-        CHECK_EQ_INT(g_B05.pending, B05_FINISHED);
+        CHECK_EQ_INT(m_B05.pending, B05_FINISHED);
         CHECK_EQ_INT(g_Session.route, rank % 2);
         CHECK(m_Scene.active == &f.cache[1 + rank % 2]);
         CHECK(g_Stage.cleared && g_Player.is_hit);
         CHECK_EQ_INT(g_Rng, rng);
         CHECK_EQ_INT(g_Session.frame_rand, frame_rand);
         CHECK_EQ_INT(arena.used, used);
-        const B05 finished = g_B05;
+        const B05 finished = m_B05;
         CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-        CHECK(memcmp(&g_B05, &finished, sizeof(g_B05)) == 0);
+        CHECK(memcmp(&m_B05, &finished, sizeof(m_B05)) == 0);
         Arena_Free(&arena);
     }
 }
@@ -323,11 +325,11 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     M_Battle(&f, &arena);
     B05_Init();
     B05_Setup(&f.assets);
-    g_B05.phase = B05_PHASE_TRANSFORMS;
-    g_B05.sphere.left = 272;
-    g_B05.sphere.top = 96;
-    g_B05.pattern = 1;
-    g_B05.frame = 134;
+    m_B05.status.phase = B05_PHASE_TRANSFORMS;
+    m_B05.sphere.left = 272;
+    m_B05.sphere.top = 96;
+    m_B05.pattern = 1;
+    m_B05.status.frame = 134;
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {
         g_Pellets.slots[i].moving = true;
     }
@@ -341,14 +343,14 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     CHECK(memcmp(&g_Pellets, &full, sizeof(full)) == 0);
-    g_B05.frame = 159;
+    m_B05.status.frame = 159;
     CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-    CHECK_EQ_INT(g_B05.person.image, 5);
-    g_B05.frame = 163;
+    CHECK_EQ_INT(m_B05.person.image, 5);
+    m_B05.status.frame = 163;
     CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
-    CHECK_EQ_INT(g_B05.person.image, 5);
-    g_B05.pattern = 3;
-    g_B05.frame = 184;
+    CHECK_EQ_INT(m_B05.person.image, 5);
+    m_B05.pattern = 3;
+    m_B05.status.frame = 184;
     expected = g_Rng;
     for (int32_t i = 0; i < 20; i++) {
         MasterRng_Next(&expected);
@@ -356,9 +358,9 @@ TEST(full_pool_consumes_male_rng_and_crossing_fires_late)
     CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
     CHECK_EQ_INT(g_Rng, expected);
     memset(&g_Pellets, 0, sizeof(g_Pellets));
-    g_B05.pattern = 2;
+    m_B05.pattern = 2;
     for (int32_t i = 0; i < 3; i++) {
-        g_B05.frame = (int16_t)(239 + i * 8);
+        m_B05.status.frame = (int16_t)(239 + i * 8);
         CHECK(B05_UpdateAndRender(&f.miko, &f.route_assets, &raw));
         CHECK(g_Pellets.slots[i * 2].moving);
         CHECK(g_Pellets.slots[i * 2 + 1].moving);

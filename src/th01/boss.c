@@ -3,7 +3,14 @@
 #include "core/vfs/open.h"
 #include "th01/session.h"
 
+BOSS_STATE *g_Boss;
 bool g_TestDamage;
+
+void Boss_Init(void)
+{
+    g_Boss = nullptr;
+    g_TestDamage = false;
+}
 
 int16_t Boss_Rank(
     const int16_t easy, const int16_t normal, const int16_t hard,

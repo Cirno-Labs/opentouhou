@@ -26,7 +26,7 @@ static int32_t M_Floor(const int32_t value, const int32_t divisor)
     return value / divisor - (value % divisor < 0);
 }
 
-static int32_t M_Add(const int32_t value, const int32_t step)
+static int32_t M_AddSubpixels(const int32_t value, const int32_t step)
 {
     const uint32_t sum = (uint32_t)value + (uint32_t)step;
     return (int32_t)(sum >= 0x80000000u ? (int64_t)sum - 0x100000000ll : sum);
@@ -51,7 +51,7 @@ static void M_PutDots(
     }
 }
 
-static void M_Ray(
+static void M_TraceBeam(
     SHOOTOUT_LASER *const laser, const SHOOTOUT_LASERS_ASSETS *const assets,
     const bool put)
 {
@@ -85,8 +85,8 @@ static void M_Ray(
                 Math16_Wrap(M_Floor(laser->cursor_left, 256)),
                 Math16_Wrap(M_Floor(laser->cursor_y, 256)), 16, 1);
         }
-        laser->cursor_left = M_Add(laser->cursor_left, laser->step_x);
-        laser->cursor_y = M_Add(laser->cursor_y, laser->step_y);
+        laser->cursor_left = M_AddSubpixels(laser->cursor_left, laser->step_x);
+        laser->cursor_y = M_AddSubpixels(laser->cursor_y, laser->step_y);
     }
 }
 
@@ -151,7 +151,7 @@ void ShootoutLasers_Update(
     if (laser->age >= laser->detach_age) {
         laser->cursor_left = laser->start_left;
         laser->cursor_y = laser->start_y;
-        M_Ray(laser, assets, false);
+        M_TraceBeam(laser, assets, false);
         laser->start_left = laser->cursor_left;
         laser->start_y = laser->cursor_y;
         if (laser->start_left >= 640 * 256 || laser->start_left < 0
@@ -165,7 +165,7 @@ void ShootoutLasers_Update(
     laser->age = Math16_Wrap(laser->age + 1);
     laser->cursor_left = laser->start_left;
     laser->cursor_y = laser->start_y;
-    M_Ray(laser, assets, true);
+    M_TraceBeam(laser, assets, true);
 }
 
 void ShootoutLasers_UpdateAll(const SHOOTOUT_LASERS_ASSETS *const assets)

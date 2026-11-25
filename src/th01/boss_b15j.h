@@ -17,32 +17,6 @@ typedef struct {
     SCENE_DATA next_scene;
 } B15J_ASSETS;
 
-typedef enum {
-    B15J_PHASE_ENTRANCE = 0,
-    B15J_PHASE_SPIRAL = 2,
-    B15J_PHASE_RECOLOR = 3,
-    B15J_PHASE_SOULS = 4,
-    B15J_PHASE_TEARS = 5,
-    B15J_PHASE_PATTERNS = 6,
-} B15J_PHASE;
-
-typedef struct {
-    BOSS_ENTITY souls[2], tears[10];
-    int8_t tear_frame[10];
-    BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
-    BOSS_DEFEAT defeat;
-    int16_t hp, frame, pattern_state, subphase, patterns_done;
-    int16_t spiral_distance, random_range, ring_radius;
-    uint8_t spiral_angle, spiral_drift, four_angle;
-    int8_t phase;
-    uint8_t entrance_stage;
-    bool hp_bar_filled, entrance_active, entrance_waiting;
-    bool defeating, finished;
-} B15J;
-
-extern B15J g_B15J;
-
 // Loads TAMASII.BOS, TAMASII2.BOS, TAMAYEN.PTN, BOSS4.GRP and scene 6
 // into the caller's asset group. Retains the usable background and palette.
 // Failed loads leave out empty; intermediate storage belongs to the group.

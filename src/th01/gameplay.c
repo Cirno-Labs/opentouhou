@@ -49,13 +49,7 @@ static void M_SyncSession(void)
 
 static void M_HookBossHp(void)
 {
-    int16_t *const hp[] = {
-        [BOSS_NONE] = nullptr,           [BOSS_SINGYOKU] = &g_B05.hp,
-        [BOSS_YUUGENMAGAN] = &g_B10M.hp, [BOSS_MIMA] = &g_B10J.hp,
-        [BOSS_KIKURI] = &g_B15J.hp,      [BOSS_ELIS] = &g_B15M.hp,
-        [BOSS_SARIEL] = &g_B20M.hp,      [BOSS_KONNGARA] = &g_B20J.hp,
-    };
-    Th01Hooks_CallOnBoss(hp[g_Gameplay.boss]);
+    Th01Hooks_CallOnBoss(&g_Boss->hp);
 }
 
 static void M_BossSetup(void)
@@ -83,6 +77,7 @@ static void M_BossSetup(void)
         B20J_Setup(&m_Assets->b20j);
         break;
     default:
+        g_Boss = nullptr;
         break;
     }
     if (g_Gameplay.boss != BOSS_NONE && g_Gameplay.boss != BOSS_MIMA) {
@@ -517,9 +512,6 @@ static GAMEPLAY_REQUEST M_Run(
                     : !B20J_ResumeEntrance(&m_Assets->b20j)) {
                 return g_Gameplay.request;
             }
-            g_StagePalette = g_Gameplay.boss == BOSS_KONNGARA
-                ? g_B20J.stage_palette
-                : g_B20M.stage_palette;
             M_StageReady();
             break;
         case GP_OBJECT_ENTRANCE:
@@ -935,7 +927,7 @@ void Gameplay_Reset(void)
     g_Gameplay.phase = GP_STAGE_BEGIN;
     Palette_Init(&g_Palette);
     memset(&g_StagePalette, 0, sizeof(g_StagePalette));
-    g_TestDamage = false;
+    Boss_Init();
     Player_Init();
     Orb_Init();
     Shots_Init();
