@@ -1,5 +1,6 @@
 #include "../src/th01/miss.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/input.c"
 #include "th01/timer.h"
 #include "th01/hud.h"
 #include "th01/miss.h"
@@ -44,9 +45,9 @@ static void M_Init(CASE *const state, const int16_t left, const int16_t bombs)
     g_Orb.rotation_frame = 8;
     g_Rng = 1;
     GameInput_Init();
-    g_GameInput.bomb = true;
-    g_GameInput.shot = true;
-    g_GameInput.strike = true;
+    m_GameInput.bomb = true;
+    m_GameInput.shot = true;
+    m_GameInput.strike = true;
     Arena_Init(&state->arena, "miss", 1024 * 1024);
     Video_Init(Arena_Allocator(&state->arena));
     memset(g_Video.pages[0], 6, VIDEO_PAGE_SIZE);
@@ -147,9 +148,9 @@ TEST(full_miss_preserves_drift_state_timing_and_hud_cap_order)
                 CHECK(g_Player.invincible);
                 CHECK_EQ_INT(g_Player.invincibility_time, 71);
                 CHECK_EQ_INT(g_Player.bomb_frame, 941);
-                CHECK(!g_GameInput.bomb);
-                CHECK(g_GameInput.shot);
-                CHECK(g_GameInput.strike);
+                CHECK(!g_GameInput->bomb);
+                CHECK(g_GameInput->shot);
+                CHECK(g_GameInput->strike);
                 const int8_t deflection[] = { 15, 12, 10, 8 };
                 CHECK_EQ_INT(g_Player.deflect_duration, deflection[rank]);
                 CHECK_EQ_INT(g_Video.scroll_top, 0);

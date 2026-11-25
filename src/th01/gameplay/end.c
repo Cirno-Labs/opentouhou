@@ -287,7 +287,7 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
         if (!VSyncIrq_DelayReady(1)) {
             return false;
         }
-        const bool confirm = g_GameInput.ok || g_GameInput.shot;
+        const bool confirm = g_GameInput->ok || g_GameInput->shot;
         g_Gameplay.continue_locked &= confirm;
         if (confirm && !g_Gameplay.continue_locked) {
             if (g_Gameplay.menu_selection == 0) {
@@ -298,7 +298,7 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
                 Sound_Stop();
                 M_RequestOpening();
             }
-        } else if (g_Gameplay.continue_frame > 3000 || g_GameInput.paused) {
+        } else if (g_Gameplay.continue_frame > 3000 || g_GameInput->paused) {
             Player_ClearHit();
             GameInput_Consume(GAME_INPUT_PRESS_PAUSE);
             if (g_Gameplay.continue_frame > 3000) {
@@ -306,11 +306,11 @@ bool GameplayEnd_Step(const TH01_INPUT *const raw, const uint64_t host_tick)
             }
             M_RequestOpening();
         } else {
-            if (g_GameInput.up) {
+            if (g_GameInput->up) {
                 g_Gameplay.menu_selection = 0;
                 M_ContinueMenu();
             }
-            if (g_GameInput.down) {
+            if (g_GameInput->down) {
                 g_Gameplay.menu_selection = 1;
                 M_ContinueMenu();
             }

@@ -323,7 +323,7 @@ bool Bonus_Resume(
             if (GameInput_SenseGame(raw, false)) {
                 Player_Hit();
             }
-            if (g_GameInput.shot && g_GameInput.ok) {
+            if (g_GameInput->shot && g_GameInput->ok) {
                 return false;
             }
             m_Bonus.score_bonus = 0;
@@ -488,7 +488,7 @@ bool Bonus_ResumeTotal(
             if (GameInput_SenseGame(raw, false)) {
                 Player_Hit();
             }
-            if (g_GameInput.shot && g_GameInput.ok) {
+            if (g_GameInput->shot && g_GameInput->ok) {
                 return false;
             }
             m_Bonus.score_bonus = 0;

@@ -275,7 +275,7 @@ bool Score_OnInput(void)
 {
     const int32_t old_row = m_Registration.row,
                   old_column = m_Registration.column;
-    if (g_GameInput.up) {
+    if (g_GameInput->up) {
         m_Registration.row =
             m_Registration.row == 0 ? 5 : m_Registration.row - 1;
         if ((m_Registration.row == 1 || m_Registration.row == 3)
@@ -287,7 +287,7 @@ bool Score_OnInput(void)
             m_Registration.row = 4;
         }
         GameInput_Consume(GAME_INPUT_PRESS_UP);
-    } else if (g_GameInput.down) {
+    } else if (g_GameInput->down) {
         m_Registration.row =
             m_Registration.row == 5 ? 0 : m_Registration.row + 1;
         if ((m_Registration.row == 1 || m_Registration.row == 3)
@@ -299,7 +299,7 @@ bool Score_OnInput(void)
             m_Registration.row = 0;
         }
         GameInput_Consume(GAME_INPUT_PRESS_DOWN);
-    } else if (g_GameInput.horizontal == GAME_INPUT_LEFT) {
+    } else if (g_GameInput->horizontal == GAME_INPUT_LEFT) {
         m_Registration.column =
             m_Registration.column == 0 ? 17 : m_Registration.column - 1;
         if ((m_Registration.row == 1 || m_Registration.row == 3)
@@ -311,7 +311,7 @@ bool Score_OnInput(void)
             m_Registration.column = 10;
         }
         GameInput_Consume(GAME_INPUT_PRESS_HORIZONTAL);
-    } else if (g_GameInput.horizontal == GAME_INPUT_RIGHT) {
+    } else if (g_GameInput->horizontal == GAME_INPUT_RIGHT) {
         m_Registration.column =
             m_Registration.column == 17 ? 0 : m_Registration.column + 1;
         if ((m_Registration.row == 1 || m_Registration.row == 3)
@@ -323,13 +323,13 @@ bool Score_OnInput(void)
             m_Registration.column = 15;
         }
         GameInput_Consume(GAME_INPUT_PRESS_HORIZONTAL);
-    } else if (g_GameInput.shot) {
+    } else if (g_GameInput->shot) {
         if (M_Shot(m_Registration.row, m_Registration.column)) {
             return true;
         }
         GameInput_Consume(GAME_INPUT_PRESS_SHOT);
         return false;
-    } else if (g_GameInput.strike) {
+    } else if (g_GameInput->strike) {
         M_Shot(5, 15);
         GameInput_Consume(GAME_INPUT_PRESS_STRIKE);
         return false;
@@ -408,12 +408,12 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
             } else {
                 GameInput_SenseGame(raw, false);
             }
-            const bool action = g_GameInput.up || g_GameInput.down
-                || g_GameInput.horizontal == GAME_INPUT_LEFT
-                || g_GameInput.horizontal == GAME_INPUT_RIGHT
-                || g_GameInput.shot || g_GameInput.strike;
+            const bool action = g_GameInput->up || g_GameInput->down
+                || g_GameInput->horizontal == GAME_INPUT_LEFT
+                || g_GameInput->horizontal == GAME_INPUT_RIGHT
+                || g_GameInput->shot || g_GameInput->strike;
             const bool enter = Score_OnInput();
-            if (enter || g_GameInput.ok
+            if (enter || g_GameInput->ok
                 || (m_Registration.context == SCORE_GAMEOVER
                     && m_Registration.inputs > 1000)) {
                 M_Complete();
@@ -434,7 +434,7 @@ bool Score_Tick(const TH01_INPUT *const raw, const bool reference_edge)
             } else {
                 GameInput_SenseGame(raw, false);
             }
-            if (!g_GameInput.ok || !g_GameInput.shot) {
+            if (!g_GameInput->ok || !g_GameInput->shot) {
                 m_Registration.phase = SCORE_DONE;
                 return true;
             }

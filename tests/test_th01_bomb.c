@@ -1,4 +1,5 @@
 #include "../src/th01/bomb.c"
+#include "../src/th01/input.c"
 #include "th01/bomb.h"
 #include "th01/hud.h"
 #include "th01/shots.h"
@@ -157,9 +158,9 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
     g_Player.remaining_bombs = 2;
     g_Player.bomb_flag = PLAYER_BOMB_START;
     GameInput_Init();
-    g_GameInput.shot = true;
-    g_GameInput.strike = true;
-    g_GameInput.bomb = true;
+    m_GameInput.shot = true;
+    m_GameInput.strike = true;
+    m_GameInput.bomb = true;
     memset(&g_Orb, 0, sizeof(g_Orb));
     g_Orb.left = 500;
     g_Orb.top = 100;
@@ -173,21 +174,21 @@ TEST(player_continuation_spans_real_bomb_scroll_wait)
         Bomb_BeginUpdate(&state.miko, &state.assets, 0), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, &sprites, false);
     g_Player.bomb_frame = 64;
-    g_GameInput.shot = g_GameInput.strike = true;
+    m_GameInput.shot = m_GameInput.strike = true;
     CHECK(Player_BeginUpdate(&continuation, &sprites));
     const int8_t dash = g_Player.dash_cycle;
     CHECK_EQ_INT(
         Bomb_BeginUpdate(&state.miko, &state.assets, 64), BOMB_UPDATE_WAIT);
     CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_WAIT);
     CHECK(continuation.pending);
-    CHECK(g_GameInput.shot && g_GameInput.strike);
+    CHECK(g_GameInput->shot && g_GameInput->strike);
     VSyncIrq_Edge();
     CHECK_EQ_INT(Bomb_ResumeUpdate(), BOMB_UPDATE_RUNNING);
     Player_FinishBombUpdate(&continuation, &sprites, false);
     CHECK(!continuation.pending);
     CHECK_EQ_INT(g_Player.dash_cycle, dash);
     CHECK_EQ_INT(g_Player.bomb_frame, 64);
-    CHECK(!g_GameInput.shot && !g_GameInput.strike);
+    CHECK(!g_GameInput->shot && !g_GameInput->strike);
     CHECK(VSyncIrq_DelayReady(1));
     Arena_Free(&state.arena);
 }

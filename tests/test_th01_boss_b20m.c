@@ -1,5 +1,6 @@
 #include "../src/th01/boss_b20m.c"
 #include "../src/th01/hud_hp.c"
+#include "../src/th01/input.c"
 #include "th01/gameplay.h"
 #include "th01/sound.h"
 #include "th01/shots.h"
@@ -331,7 +332,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     g_Player.deflecting = true;
     g_Player.bomb_damaging = true;
     m_B20M.leaves.flag[7] = 6;
-    g_GameInput.bomb = true;
+    m_GameInput.bomb = true;
     VSyncIrq_Reset();
     uint64_t tick = 0;
     const size_t used = arena.used;
@@ -343,7 +344,7 @@ TEST(form_change_resets_player_and_flight_but_retains_previous_orb)
     CHECK_EQ_INT(g_Orb.previous_top, 234);
     CHECK(!g_Player.deflecting);
     CHECK(!g_Player.bomb_damaging);
-    CHECK(!g_GameInput.bomb);
+    CHECK(!g_GameInput->bomb);
     for (int32_t i = 0; m_B20M.sequence != B20M_SEQUENCE_NONE && i < 1000;
          i++) {
         tick++;

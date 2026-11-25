@@ -2,6 +2,7 @@
 #include "../src/th01/hud.c"
 #include "../src/th01/bonus_transition.c"
 #include "../src/th01/vsync_irq.c"
+#include "../src/th01/input.c"
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/rng.h"
@@ -130,7 +131,7 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     g_Stage.time = 100;
     g_Session.lives = 1;
     g_Player.remaining_bombs = 3;
-    g_GameInput.bomb_frame = 97;
+    m_GameInput.bomb_frame = 97;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
     memset(&g_StagePalette, 11, sizeof(g_StagePalette));
@@ -168,11 +169,11 @@ TEST(stage_box_exact_rows_score_hud_extend_and_release_wait)
     CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
     raw.shot = true;
     CHECK(!Bonus_Resume(&f.assets, &f.font, &raw));
-    CHECK_EQ_INT(g_GameInput.shot_presses, 1);
+    CHECK_EQ_INT(g_GameInput->shot_presses, 1);
     raw.shot = false;
     CHECK(Bonus_Resume(&f.assets, &f.font, &raw));
     CHECK_EQ_INT(m_Bonus.score_bonus, 0);
-    CHECK_EQ_INT(g_GameInput.bomb_frame, 0);
+    CHECK_EQ_INT(g_GameInput->bomb_frame, 0);
     CHECK(Bonus_Resume(&f.assets, &f.font, &raw));
     Arena_Free(&arena);
 }
@@ -206,7 +207,7 @@ TEST(stage_wrap_clamp_and_pending_bonus_accumulator)
     CHECK_EQ_INT((uint32_t)g_Session.bonus_per_stage[3], expected);
     CHECK_EQ_INT(g_Stage.score, UINT32_MAX - 1000 + expected);
     CHECK_EQ_INT(m_Bonus.run.phase, BONUS_CONFIRM);
-    CHECK_EQ_INT(g_GameInput.bomb_frame, 0);
+    CHECK_EQ_INT(g_GameInput->bomb_frame, 0);
     TH01_INPUT released = {};
     CHECK(Bonus_Resume(&f.assets, &f.font, &released));
     Arena_Free(&arena);
@@ -257,7 +258,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     g_Stage.score = 390000;
     g_Session.lives = 2;
     g_Player.remaining_bombs = 3;
-    g_GameInput.bomb_frame = 123;
+    m_GameInput.bomb_frame = 123;
     g_Session.continues_total = 65539;
     g_Shots.slots[0] = (SHOT) { .moving = true, .left = 100, .top = 100 };
     g_Shots.slots[1] = (SHOT) { .decay_frame = 2, .left = 200, .top = 100 };
@@ -315,7 +316,7 @@ TEST(total_resets_transfers_animates_awards_and_records_continues)
     CHECK_EQ_INT(m_Hud.score_previous, 0);
     CHECK_EQ_INT(g_Session.bonus_per_stage[0], 0);
     CHECK_EQ_INT(g_Session.continues_per_scene[0], 3);
-    CHECK_EQ_INT(g_GameInput.bomb_frame, 123);
+    CHECK_EQ_INT(g_GameInput->bomb_frame, 123);
     const int16_t sum_digits[] = { 0, 9, 6, 0, 5, 0 };
     for (int32_t i = 0; i < 6; i++) {
         CHECK_EQ_INT(Th01Test_Pixel(0, 208 + i * 16, 196), sum_digits[i]);
