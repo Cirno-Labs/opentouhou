@@ -19,7 +19,7 @@ typedef struct {
     GAME_TEXT_FONT font;
 } ENDING_ASSETS;
 
-extern END_RESULT g_EndResult;
+extern const END_RESULT *const g_EndResult;
 
 // Snapshots signed score bits, zero-extended scene histories and the last
 // life-exit random checkpoint. Clears shared run history before the story.

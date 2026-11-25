@@ -51,7 +51,8 @@ static MAIN_FIXTURE m_Fixture;
 
 static OPENING m_Opening;
 const OPENING *const g_Opening = &m_Opening;
-END_RESULT g_EndResult;
+static END_RESULT m_EndResult;
+const END_RESULT *const g_EndResult = &m_EndResult;
 
 static RESULT M_Asset(void)
 {
@@ -234,21 +235,21 @@ bool Score_Tick(const TH01_INPUT *input, bool reference_edge)
 
 void Ending_Init(const ENDING_ASSETS *assets)
 {
-    memset(&g_EndResult, 0, sizeof(g_EndResult));
+    memset(&m_EndResult, 0, sizeof(m_EndResult));
 }
 
 void Ending_Close(void)
 {
-    memset(&g_EndResult, 0, sizeof(g_EndResult));
+    memset(&m_EndResult, 0, sizeof(m_EndResult));
 }
 
 void Ending_Begin(void)
 {
     m_Fixture.ending_begins++;
-    memset(&g_EndResult, 0, sizeof(g_EndResult));
-    g_EndResult.route = SESSION_END_MAKAI;
-    g_EndResult.score = 12345;
-    g_EndResult.rank = 1;
+    memset(&m_EndResult, 0, sizeof(m_EndResult));
+    m_EndResult.route = SESSION_END_MAKAI;
+    m_EndResult.score = 12345;
+    m_EndResult.rank = 1;
 }
 
 bool Ending_Tick(const TH01_INPUT *input, bool reference_edge)

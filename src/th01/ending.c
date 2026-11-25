@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
-END_RESULT g_EndResult;
+static END_RESULT m_EndResult;
+const END_RESULT *const g_EndResult = &m_EndResult;
 
 static ENDING m_Ending;
 static const ENDING_ASSETS *m_Assets;
@@ -130,7 +131,7 @@ static void M_Done(void)
 
 static void M_Story(void)
 {
-    const bool makai = g_EndResult.route == SESSION_END_MAKAI;
+    const bool makai = m_EndResult.route == SESSION_END_MAKAI;
     M_Add(END_AUDIO, ENDING_AUDIO_IRIS);
     M_Add(END_TONE, 0);
     M_Add(END_LOAD, 0);
@@ -187,7 +188,7 @@ static void M_Story(void)
         M_Picture(2, 8);
         M_Add(END_TONE, 130 + i * 5);
     }
-    if (g_EndResult.total != 0) {
+    if (m_EndResult.total != 0) {
         M_Add(END_LOAD, 5);
         M_Add(END_TONE, 200);
         M_Add(END_PICTURE, 0);
@@ -290,10 +291,10 @@ static void M_Story(void)
 
 static void M_Results(void)
 {
-    const bool makai = g_EndResult.route == SESSION_END_MAKAI;
+    const bool makai = m_EndResult.route == SESSION_END_MAKAI;
     static const char *const ranks[] = { " EASY ", "NORMAL", " HARD ",
                                          "LUNATIC" };
-    const END_RESULT *const r = &g_EndResult;
+    const END_RESULT *const r = g_EndResult;
     snprintf(
         m_Ending.result_lines[0], 256, "%s%s", m_RESULT_DIFFICULTY,
         ranks[r->rank]);
@@ -350,13 +351,13 @@ static void M_Load(const int32_t index)
 void Ending_Init(const ENDING_ASSETS *const assets)
 {
     memset(&m_Ending, 0, sizeof(m_Ending));
-    memset(&g_EndResult, 0, sizeof(g_EndResult));
+    memset(&m_EndResult, 0, sizeof(m_EndResult));
     m_Assets = assets;
 }
 
 void Ending_Begin(void)
 {
-    Ending_Snapshot(&g_EndResult);
+    Ending_Snapshot(&m_EndResult);
     VSyncIrq_SwitchProgram();
     m_Ending.next = 0;
     m_Ending.count = 0;
@@ -434,11 +435,11 @@ bool Ending_Tick(const TH01_INPUT *const raw, const bool reference_edge)
             break;
         }
         case END_TITLE: {
-            Ending_CalculateTitle(&g_EndResult);
+            Ending_CalculateTitle(&m_EndResult);
             const GAME_TEXT_STYLE style = { .weight = GAME_TEXT_HEAVY };
             GameText_Draw(
                 &m_Assets->font,
-                m_PlayerTitles[g_EndResult.group][g_EndResult.level], 488, 384,
+                m_PlayerTitles[m_EndResult.group][m_EndResult.level], 488, 384,
                 2, &style);
             break;
         }
@@ -500,6 +501,6 @@ bool Ending_SwitchTick(const bool reference_edge)
 void Ending_Close(void)
 {
     memset(&m_Ending, 0, sizeof(m_Ending));
-    memset(&g_EndResult, 0, sizeof(g_EndResult));
+    memset(&m_EndResult, 0, sizeof(m_EndResult));
     m_Assets = nullptr;
 }
