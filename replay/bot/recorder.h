@@ -27,9 +27,11 @@
 // behind all others, where k counts these demotions since the best node
 // last changed; a new best node clears them. The search ends at a
 // node whose game ended, that reached the frame cap or the --until value,
-// or fails after a budget of candidates. With --lose, random holds play
-// the run straight to its end instead. All randomness comes from --seed,
-// so the same arguments always give the same run.
+// or fails after a budget of candidates. With --minimize, the same search
+// keeps only the candidates that add setbacks or end the game: they play
+// up to 3000 frames, stop at the setback and need no idle frames. All
+// randomness comes from --seed, so the same arguments always give the
+// same run.
 
 #define RECORDER_SCORE_MAX 4
 

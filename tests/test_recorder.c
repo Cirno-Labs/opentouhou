@@ -224,10 +224,10 @@ static int32_t M_Play(const M_INPUT *const inputs, const int32_t frames)
     return m_Lives;
 }
 
-TEST(a_losing_run_starts_with_the_script_and_plays_to_the_end)
+TEST(a_minimized_run_starts_with_the_script_and_loses_every_life)
 {
     m_Trap = 0;
-    const char *const extra[] = { "--lose" };
+    const char *const extra[] = { "--minimize" };
     int32_t frames;
     M_INPUT *const inputs =
         M_Record("lose", &m_Game, extra, ARRAY_SIZE(extra), &frames);

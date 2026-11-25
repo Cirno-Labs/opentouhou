@@ -13,6 +13,7 @@
 
 #define M_SEGMENT_FRAMES 150
 #define M_LONGEST_SEGMENT 300
+#define M_LOSING_SEGMENT 3000
 #define M_IDLE_FRAMES 90
 #define M_BATCHES 3
 #define M_BATCH_SIZE 16
@@ -26,7 +27,7 @@ typedef struct {
     ARG_ITEMS starts;
     int32_t seed;
     int32_t until;
-    bool lose;
+    bool minimize;
 } M_ARGS;
 
 // Holds the input structs of a run, one per frame.
@@ -108,8 +109,8 @@ static const ARG_OPTION m_Options[] = {
         "end the run once its score's first value reaches n",
         ARG_FALLBACK_INT(-1)),
     ARG_FLAG_OF(
-        M_ARGS, "--lose", lose,
-        "play random holds straight to the game's end, for a game over"),
+        M_ARGS, "--minimize", minimize,
+        "keep only segments that add setbacks, for a game over"),
 };
 
 int Recorder_CompareScores(const RECORDER_SCORE a, const RECORDER_SCORE b)
@@ -190,32 +191,6 @@ static M_HOLD M_RandomHold(const BOT *const bot, uint64_t *const rng)
         .frames = m_HoldFrames[M_Random(rng, ARRAY_SIZE(m_HoldFrames))],
     };
     return M_FitHold(bot, hold);
-}
-
-// Plays random holds from seed straight until the game ends, after the
-// script's frames.
-static RESULT M_RunStraight(
-    const RECORDER_GAME *const game, const M_ARGS *const args,
-    const BOT *const bot, M_INPUTS *const run)
-{
-    uint64_t rng = (uint64_t)args->seed;
-    M_HOLD hold = {};
-    int32_t frame = 0;
-    while (!game->has_ended()) {
-        FAIL_IF(
-            run->frames >= game->max_frames, "the run did not end in %d frames",
-            game->max_frames);
-        void *const input = M_Append(run);
-        if (!game->script_input(run->frames - 1, input)) {
-            if (frame == hold.frames) {
-                hold = M_RandomHold(bot, &rng);
-                frame = 0;
-            }
-            Bot_WriteInput(bot, hold.roles, frame++, input);
-        }
-        FAIL_IF(!game->tick(input), "the game quit during the run");
-    }
-    return OK;
 }
 
 // Restarts the game with its files opened anew, since a game may mount
@@ -381,40 +356,47 @@ static void M_AddNode(
     }
 }
 
-// Plays the candidate after the run of parent from a fresh start, then the
-// idle frames, adds it as a node when it survives and returns whether it
-// did.
+// Plays the candidate after the run of parent from a fresh start and adds
+// it as a node when it survives. Without --minimize, the idle frames follow
+// and a rise of the setbacks drops it. With --minimize, it stops at the
+// first rise of the setbacks, and only a rise or the game's end keeps it.
 static RESULT M_Try(
     M_SEARCH *const search, const int32_t parent, bool *const survived)
 {
     *survived = false;
     const RECORDER_GAME *const game = search->game;
+    const bool minimize = search->args->minimize;
     MUST(M_Replay(search, parent));
     const int32_t setbacks = game->setbacks();
     const int32_t limit =
-        MIN(M_LONGEST_SEGMENT, game->max_frames - search->nodes[parent].frames);
+        MIN(minimize ? M_LOSING_SEGMENT : M_LONGEST_SEGMENT,
+            game->max_frames - search->nodes[parent].frames);
     int32_t frames = 0;
     bool ended = false;
-    for (int32_t i = 0; i < search->candidate.count && !ended; i++) {
+    bool lost = false;
+    for (int32_t i = 0; i < search->candidate.count && !ended && !lost; i++) {
         const M_HOLD hold = search->candidate.holds[i];
-        for (int32_t frame = 0; frame < hold.frames && frames < limit && !ended;
+        for (int32_t frame = 0;
+             frame < hold.frames && frames < limit && !ended && !lost;
              frame++) {
             Bot_WriteInput(search->bot, hold.roles, frame, search->input);
             FAIL_IF(!game->tick(search->input), "the game quit during the run");
-            if (game->setbacks() > setbacks) {
-                return OK;
-            }
             frames++;
             ended = game->has_ended();
+            lost = game->setbacks() > setbacks;
         }
     }
     const RECORDER_SCORE score = game->score();
-    for (int32_t i = 0; i < M_IDLE_FRAMES && !game->has_ended(); i++) {
+    if (minimize ? !lost && !ended : lost || frames == 0) {
+        return OK;
+    }
+    for (int32_t i = 0; !minimize && i < M_IDLE_FRAMES && !game->has_ended();
+         i++) {
         if (!game->tick(search->none)) {
             break;
         }
     }
-    if (game->setbacks() > setbacks || frames == 0) {
+    if (!minimize && game->setbacks() > setbacks) {
         return OK;
     }
     *survived = true;
@@ -422,19 +404,21 @@ static RESULT M_Try(
     return OK;
 }
 
-// Fills the candidate with random holds of one segment.
+// Fills the candidate with random holds of one segment, or of the longest
+// segment with --minimize.
 static void M_Explore(M_SEARCH *const search)
 {
     M_HOLDS *const candidate = &search->candidate;
+    const int32_t length =
+        search->args->minimize ? M_LOSING_SEGMENT : M_SEGMENT_FRAMES;
     candidate->count = 0;
-    for (int32_t frames = 0; frames < M_SEGMENT_FRAMES;) {
+    for (int32_t frames = 0; frames < length;) {
         M_HOLD hold = M_RandomHold(search->bot, &search->rng);
-        hold.frames = MIN(hold.frames, M_SEGMENT_FRAMES - frames);
+        hold.frames = MIN(hold.frames, length - frames);
         frames += hold.frames;
         M_AddHold(candidate, hold);
     }
 }
-
 // Fills the candidate with the holds of one of the best nodes, with one to
 // three of them changed, lengthened, shortened, swapped with the next or
 // replaced.
@@ -665,8 +649,7 @@ static RESULT M_Run(const RECORDER_GAME *const game, const M_ARGS *const args)
     M_INPUTS run = { .size = game->input_schema->size };
     RESULT result = game->start();
     if (IS_OK(result)) {
-        result = args->lose ? M_RunStraight(game, args, &bot, &run)
-                            : M_Search(game, args, &bot, &run);
+        result = M_Search(game, args, &bot, &run);
     }
     if (IS_OK(result)) {
         result = game->save(args->out, run.inputs, run.frames);
