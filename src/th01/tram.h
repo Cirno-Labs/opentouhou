@@ -14,9 +14,8 @@ typedef enum {
     TRAM_WHITE,
 } TRAM_COLOR;
 
-// Holds a 640x400 indexed text layer over graphics. Index 0 is transparent;
-// indices 1 through 8 are the hardware colors in B, R, G bit order. Only
-// Tram_SetVisible changes visible.
+// Holds a 640x400 text layer over graphics: index 0 is transparent and
+// 1 through 8 are the hardware colors in B, R, G bit order.
 typedef struct {
     uint8_t *pixels;
     bool visible;
@@ -38,10 +37,8 @@ void Tram_Clear(void);
 // Fills a half-open rectangle, clipped to the screen.
 void Tram_Fill(GFX_RECT rectangle, TRAM_COLOR color);
 
-// Centers up to five glyphs of at most 40 source pixels in total at y=80,
-// filling the rest of rows 0 through 335 with background. An empty line
-// only clears. Leaves rows 336 through 399 unchanged. Five halfwidth glyphs
-// fill the screen; two halfwidth glyphs start at x=192.
+// Centers up to five glyphs at y=80 and fills rows 0..335 with background.
+// An empty line only clears.
 void Tram_PutLine16(
     const GAME_TEXT_GLYPH *const *glyphs, int32_t count, TRAM_COLOR foreground,
     TRAM_COLOR background);
