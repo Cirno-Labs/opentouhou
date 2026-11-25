@@ -136,13 +136,6 @@ static bool M_Tick(const void *const input)
     return true;
 }
 
-static int32_t M_ListThreats(VEC2 *const offsets, const int32_t max)
-{
-    offsets[0] = (VEC2) { (float)(-50 - m_X), 0.0f };
-    offsets[1] = (VEC2) { (float)(50 - m_X), 0.0f };
-    return 2;
-}
-
 static int32_t M_Setbacks(void)
 {
     return m_StartLives - m_Lives;
@@ -179,7 +172,6 @@ static const RECORDER_GAME m_Game = {
     .start = M_Start,
     .script_input = M_ScriptInput,
     .tick = M_Tick,
-    .list_threats = M_ListThreats,
     .setbacks = M_Setbacks,
     .score = M_Score,
     .has_ended = M_HasEnded,

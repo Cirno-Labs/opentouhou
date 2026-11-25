@@ -5,6 +5,7 @@
 #include "core/args.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/base/utils.h"
 #include "shell/null.h"
 
 #include <stdio.h>
@@ -16,6 +17,20 @@
 #define M_BATCH_SIZE 16
 #define M_BEAM 4
 #define M_BUDGET 20000
+
+// Holds a role combination, a mask of BOT_ROLE bits, for some frames.
+typedef struct {
+    uint32_t roles;
+    int32_t frames;
+} M_HOLD;
+
+// Plays random holds one frame at a time.
+typedef struct {
+    const BOT *bot;
+    uint64_t rng;
+    M_HOLD hold;
+    int32_t frame;
+} M_HOLDER;
 
 typedef struct {
     const char *data;
@@ -68,6 +83,8 @@ typedef struct {
     void *none;
 } M_SEARCH;
 
+static const int32_t m_HoldFrames[] = { 4, 10, 20, 40 };
+
 static const ARG_OPTION m_Options[] = {
     ARG_STRING_OF(
         M_ARGS, "--data", data, "<dir>", "the game's directory", ARG_REQUIRED),
@@ -77,7 +94,7 @@ static const ARG_OPTION m_Options[] = {
         M_ARGS, "--start", starts, "<name=value>",
         "a start value of the run, such as stage=1; repeatable"),
     ARG_INT_OF(
-        M_ARGS, "--seed", seed, "<n>", "the seed of the bot's own RNGs",
+        M_ARGS, "--seed", seed, "<n>", "the seed of the search",
         ARG_FALLBACK_INT(1)),
     ARG_INT_OF(
         M_ARGS, "--until", until, "<n>",
@@ -85,7 +102,7 @@ static const ARG_OPTION m_Options[] = {
         ARG_FALLBACK_INT(-1)),
     ARG_FLAG_OF(
         M_ARGS, "--lose", lose,
-        "wander straight to the game's end, for a game over"),
+        "play random holds straight to the game's end, for a game over"),
 };
 
 int Recorder_CompareScores(const RECORDER_SCORE a, const RECORDER_SCORE b)
@@ -118,28 +135,66 @@ static void M_AppendAll(M_INPUTS *const to, const M_INPUTS *const from)
     }
 }
 
+// Returns a number below n from the splitmix64 sequence of state.
+static uint32_t M_Random(uint64_t *const state, const uint32_t n)
+{
+    *state += 0x9e3779b97f4a7c15u;
+    uint64_t z = *state;
+    z = (z ^ z >> 30) * 0xbf58476d1ce4e5b9u;
+    z = (z ^ z >> 27) * 0x94d049bb133111ebu;
+    return (uint32_t)((z ^ z >> 31) % n);
+}
+
+// Draws a hold of each role that presses a button with odds of one in two,
+// or one in eight for a role of several frames, which also sets the
+// shortest hold.
+static M_HOLD M_RandomHold(const BOT *const bot, uint64_t *const rng)
+{
+    const uint32_t mapped = Bot_GetRoles(bot);
+    M_HOLD hold = {};
+    for (int32_t i = 0; i < BOT_ROLE_COUNT; i++) {
+        const uint32_t odds = bot->roles[i].count > 1 ? 8 : 2;
+        if ((mapped & 1u << i) != 0 && M_Random(rng, odds) == 0) {
+            hold.roles |= 1u << i;
+        }
+    }
+    hold.frames = m_HoldFrames[M_Random(rng, ARRAY_SIZE(m_HoldFrames))];
+    hold.frames = MAX(hold.frames, Bot_GetLeadFrames(bot, hold.roles));
+    return hold;
+}
+
+static void M_NextInput(M_HOLDER *const holder, void *const out)
+{
+    if (holder->frame == holder->hold.frames) {
+        holder->hold = M_RandomHold(holder->bot, &holder->rng);
+        holder->frame = 0;
+    }
+    Bot_WriteInput(holder->bot, holder->hold.roles, holder->frame, out);
+    holder->frame++;
+}
+
 // Plays the run from the game's start until it ends, with the script's
 // frames first and the bot's after them.
 static RESULT M_RunStraight(
-    const RECORDER_GAME *const game, BOT *const bot, M_INPUTS *const run)
+    const RECORDER_GAME *const game, const M_ARGS *const args,
+    const BOT *const bot, M_INPUTS *const run)
 {
-    VEC2 threats[BOT_MAX_THREATS];
+    M_HOLDER holder = { .bot = bot, .rng = (uint64_t)args->seed };
     while (!game->has_ended()) {
         FAIL_IF(
             run->frames >= game->max_frames, "the run did not end in %d frames",
             game->max_frames);
         void *const input = M_Append(run);
         if (!game->script_input(run->frames - 1, input)) {
-            const int32_t count = game->list_threats(threats, BOT_MAX_THREATS);
-            Bot_NextInput(bot, threats, count, input);
+            M_NextInput(&holder, input);
         }
         FAIL_IF(!game->tick(input), "the game quit during the run");
     }
     return OK;
 }
 
-// Derives the bot seed of one candidate, the same for the same arguments.
-static uint16_t M_CandidateSeed(
+// Derives the seed of one candidate, the same for the same arguments.
+static uint32_t M_CandidateSeed(
     const int32_t seed, const int32_t depth, const int32_t attempt)
 {
     uint32_t hash = (uint32_t)seed * 0x9e3779b1u;
@@ -147,7 +202,7 @@ static uint16_t M_CandidateSeed(
     hash = (hash ^ hash >> 15) * 0x2c1b3c6du;
     hash ^= (uint32_t)attempt * 0xc2b2ae3du + 0x27d4eb2fu;
     hash = (hash ^ hash >> 12) * 0x297a2d39u;
-    return (uint16_t)(hash ^ hash >> 16);
+    return hash ^ hash >> 16;
 }
 
 // Plays run from a fresh start, with the game's files opened anew, since a
@@ -176,15 +231,12 @@ static bool M_Better(const M_NODE *const a, const M_NODE *const b)
 // Plays one candidate segment after the kept run from a fresh start, then
 // the idle frames, and adds it to the beam of step when it survives.
 static RESULT M_Try(
-    M_SEARCH *const search, M_STEP *const step,
-    const BOT_STRATEGY *const strategy, const uint16_t seed)
+    M_SEARCH *const search, M_STEP *const step, const uint32_t seed)
 {
     const RECORDER_GAME *const game = search->game;
     MUST(M_Replay(game, search->args->data, &search->kept));
     const int32_t setbacks = game->setbacks();
-    BOT bot = *search->bot;
-    bot.strategy = strategy;
-    Rng_SetSeed(&bot.rng, seed);
+    M_HOLDER holder = { .bot = search->bot, .rng = seed };
     M_INPUTS *const candidate = &search->candidate;
     candidate->frames = 0;
     const int32_t frames =
@@ -192,11 +244,9 @@ static RESULT M_Try(
         ? game->max_frames - search->kept.frames
         : M_SEGMENT_FRAMES;
     M_NODE node = {};
-    VEC2 threats[BOT_MAX_THREATS];
     for (int32_t i = 0; i < frames && !node.ended; i++) {
         void *const input = M_Append(candidate);
-        const int32_t count = game->list_threats(threats, BOT_MAX_THREATS);
-        Bot_NextInput(&bot, threats, count, input);
+        M_NextInput(&holder, input);
         FAIL_IF(!game->tick(input), "the game quit during the run");
         if (game->setbacks() > setbacks) {
             return OK;
@@ -234,8 +284,8 @@ static RESULT M_Try(
     return OK;
 }
 
-// Fills the beam of the step after the kept run, half with dodge and half
-// with hold, one batch at a time until a batch leaves a survivor.
+// Fills the beam of the step after the kept run, one batch at a time until
+// a batch leaves a survivor.
 static RESULT M_SearchStep(M_SEARCH *const search)
 {
     const int32_t depth = search->depth;
@@ -251,7 +301,7 @@ static RESULT M_SearchStep(M_SEARCH *const search)
             const int32_t attempt =
                 (step->tries * M_BATCHES + batch) * M_BATCH_SIZE + i;
             MUST(M_Try(
-                search, step, i % 2 == 0 ? &g_BotDodge : &g_BotHold,
+                search, step,
                 M_CandidateSeed(search->args->seed, depth, attempt)));
         }
     }
@@ -417,13 +467,11 @@ static RESULT M_SetStarts(
 static RESULT M_Run(const RECORDER_GAME *const game, const M_ARGS *const args)
 {
     BOT bot;
-    MUST(Bot_Load(
-        &bot, game->bot_ini, game->input_schema,
-        args->lose ? &g_BotWander : &g_BotDodge, (uint16_t)args->seed));
+    MUST(Bot_Load(&bot, game->bot_ini, game->input_schema));
     M_INPUTS run = { .size = game->input_schema->size };
     RESULT result = game->start();
     if (IS_OK(result)) {
-        result = args->lose ? M_RunStraight(game, &bot, &run)
+        result = args->lose ? M_RunStraight(game, args, &bot, &run)
                             : M_Search(game, args, &bot, &run);
     }
     if (IS_OK(result)) {

@@ -7,16 +7,11 @@
 #include "th01/hooks.h"
 #include "th01/input.h"
 #include "th01/main.h"
-#include "th01/missiles.h"
-#include "th01/pellets.h"
-#include "th01/player.h"
 #include "th01/session.h"
 #include "th01/settings.h"
-#include "th01/shootout_lasers.h"
 #include "th01/stage.h"
 #include "th01/stage_objects.h"
 
-#include "core/base/utils.h"
 #include "core/config.h"
 #include "core/io/file.h"
 #include "shell/game/builtin.h"
@@ -32,9 +27,6 @@
 // the run presses shot at frames 760 and 1000, as the case scripts do, to
 // get from the title into gameplay before the bot plays.
 
-#define M_MAX_THREATS 64
-#define M_PLAYER_ROW (PLAYER_TOP + 16)
-#define M_PLAY_WIDTH 640
 #define M_BOT_FRAME 1002
 
 static START_VALUE m_Starts[TH01_START_COUNT];
@@ -118,95 +110,6 @@ static bool M_Tick(const void *const input)
         m_Lives = g_Session.lives;
     }
     return running;
-}
-
-// Inserts offset into offsets, which holds *count offsets nearest first,
-// keeping at most max.
-static void M_Insert(
-    VEC2 *const offsets, float *const distances, int32_t *const count,
-    const int32_t max, const VEC2 offset)
-{
-    const float distance = offset.x * offset.x + offset.y * offset.y;
-    int32_t i = *count;
-    if (i < max) {
-        (*count)++;
-    } else if (distance >= distances[max - 1]) {
-        return;
-    } else {
-        i = max - 1;
-    }
-    for (; i > 0 && distances[i - 1] > distance; i--) {
-        offsets[i] = offsets[i - 1];
-        distances[i] = distances[i - 1];
-    }
-    offsets[i] = offset;
-    distances[i] = distance;
-}
-
-// Returns the offset from the player's center to the pixel at x, y. A
-// threat on the player's row moves half a pixel up, since the bot takes an
-// offset with a y of 0 for an edge.
-static VEC2 M_Offset(const int32_t x, const int32_t y)
-{
-    const float dy = (float)(y - M_PLAYER_ROW);
-    return (VEC2) {
-        (float)(x - (g_Player.left + 16)),
-        dy == 0.0f ? -0.5f : dy,
-    };
-}
-
-// Returns the point of a laser nearest the player's row: where it crosses
-// the row, or its head when it ends above the row.
-static VEC2 M_LaserOffset(const SHOOTOUT_LASER *const laser)
-{
-    const int64_t head_x =
-        laser->start_left + (int64_t)laser->step_x * laser->length;
-    const int64_t head_y =
-        laser->start_y + (int64_t)laser->step_y * laser->length;
-    const int64_t row = (int64_t)M_PLAYER_ROW * 256;
-    if (head_y < row || laser->step_y <= 0) {
-        return M_Offset((int32_t)(head_x / 256), (int32_t)(head_y / 256));
-    }
-    const int64_t x = laser->start_left
-        + (row - laser->start_y) * laser->step_x / laser->step_y;
-    return M_Offset((int32_t)(x / 256), M_PLAYER_ROW);
-}
-
-static int32_t M_ListThreats(VEC2 *const offsets, const int32_t max)
-{
-    float distances[M_MAX_THREATS];
-    const int32_t limit = MIN(max, M_MAX_THREATS);
-    int32_t count = 0;
-    for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        const PELLET *const pellet = &g_Pellets.slots[i];
-        if (pellet->moving) {
-            M_Insert(
-                offsets, distances, &count, limit,
-                M_Offset(pellet->left + 4, pellet->top + 4));
-        }
-    }
-    for (int32_t i = 0; i < MISSILES_COUNT; i++) {
-        const MISSILE *const missile = &g_Missiles.slots[i];
-        if (missile->flag != 0) {
-            M_Insert(
-                offsets, distances, &count, limit,
-                M_Offset(
-                    Math16_ToPixel(missile->left) + 8,
-                    Math16_ToPixel(missile->top) + 8));
-        }
-    }
-    for (int32_t i = 0; i < SHOOTOUT_LASERS_COUNT; i++) {
-        const SHOOTOUT_LASER *const laser = &g_ShootoutLasers.slots[i];
-        if (laser->alive && laser->damaging) {
-            M_Insert(offsets, distances, &count, limit, M_LaserOffset(laser));
-        }
-    }
-    const float center = (float)(g_Player.left + 16);
-    M_Insert(offsets, distances, &count, limit, (VEC2) { -center, 0.0f });
-    M_Insert(
-        offsets, distances, &count, limit,
-        (VEC2) { (float)M_PLAY_WIDTH - center, 0.0f });
-    return count;
 }
 
 static int32_t M_Setbacks(void)
@@ -330,7 +233,6 @@ int main(int argc, char **argv)
         .start = M_Start,
         .script_input = M_ScriptInput,
         .tick = M_Tick,
-        .list_threats = M_ListThreats,
         .setbacks = M_Setbacks,
         .score = M_Score,
         .has_ended = M_HasEnded,

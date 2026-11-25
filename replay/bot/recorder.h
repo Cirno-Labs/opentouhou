@@ -2,7 +2,6 @@
 
 #include "core/base/result.h"
 #include "core/input/schema.h"
-#include "core/math/vec.h"
 
 #include <stdint.h>
 
@@ -11,16 +10,16 @@
 // RECORDER_GAME; Recorder_Main parses the command line with core/args.
 //
 // The recorder keeps the input struct of every frame and grows the run 150
-// frames at a time. Each candidate segment, played by dodge or hold with a
-// seed of its own, runs after the kept frames from a fresh start and is
-// followed by 90 frames without input; a candidate whose setbacks rise in
-// that time is dropped. Batches of 16 candidates, at most 3, run until one
-// leaves a survivor; the 4 best survivors by score form the step's beam, and
-// the best is kept. At a dead end, the run takes the next survivor of the
-// step before; when that beam is spent, it backs up by more steps each time
-// that depth fails again, until a budget of candidates runs out. With
-// --lose, wander plays the run straight to its end instead. The same
-// arguments always give the same run.
+// frames at a time. Each candidate segment, a random sequence of holds of
+// role combinations (bot.h), runs after the kept frames from a fresh start
+// and is followed by 90 frames without input; a candidate whose setbacks
+// rise in that time is dropped. Batches of 16 candidates, at most 3, run
+// until one leaves a survivor; the 4 best survivors by score form the
+// step's beam, and the best is kept. At a dead end, the run takes the next
+// survivor of the step before; when that beam is spent, it backs up by
+// more steps each time that depth fails again, until a budget of
+// candidates runs out. With --lose, random holds play the run straight to
+// its end instead. The same arguments always give the same run.
 
 #define RECORDER_SCORE_MAX 4
 
@@ -51,10 +50,6 @@ typedef struct {
     bool (*script_input)(int32_t frame, void *input);
     // Runs one frame and returns false when the game quit.
     bool (*tick)(const void *input);
-    // Writes the offsets from the player to up to max threats and the play
-    // area edges, nearest first, and returns their number. Changes no game
-    // state.
-    int32_t (*list_threats)(VEC2 *offsets, int32_t max);
     // Counts the setbacks so far, which the solver rejects.
     int32_t (*setbacks)(void);
     RECORDER_SCORE (*score)(void);

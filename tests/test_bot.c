@@ -44,73 +44,48 @@ static const char m_Roles[] =
     "left = left\n"
     "right = right\n";
 
-static void M_Load(
-    BOT *const bot, const char *const text, const BOT_STRATEGY *strategy,
-    const uint16_t seed)
+static void M_Load(BOT *const bot, const char *const text)
 {
     CHECK(Result_Log(
-        Bot_LoadText(bot, text, strlen(text), &m_Schema, strategy, seed),
-        LOG_LEVEL_ERROR));
+        Bot_LoadText(bot, text, strlen(text), &m_Schema), LOG_LEVEL_ERROR));
 }
 
-TEST(the_bot_shoots_and_dodges_a_threat)
+TEST(a_hold_presses_the_buttons_of_its_roles)
 {
     BOT bot;
-    M_Load(&bot, m_Roles, &g_BotDodge, 1);
-    // A bullet just right of the player and edges far away.
-    const VEC2 threats[] = {
-        { 5.0f, 0.5f },   { 0.0f, 200.0f },  { -200.0f, 0.0f },
-        { 200.0f, 0.0f }, { 0.0f, -200.0f },
-    };
+    M_Load(&bot, m_Roles);
     M_INPUT input;
-    Bot_NextInput(&bot, threats, ARRAY_SIZE(threats), &input);
-    CHECK(input.shoot);
-    CHECK(input.left);
-    CHECK(!input.right);
-    CHECK(input.focus);
-    CHECK(input.bomb);
-    Bot_NextInput(&bot, threats, ARRAY_SIZE(threats), &input);
-    CHECK(!input.bomb);
-}
-
-TEST(one_seed_gives_the_same_inputs)
-{
-    BOT a;
-    BOT b;
-    M_Load(&a, m_Roles, &g_BotWander, 7);
-    M_Load(&b, m_Roles, &g_BotWander, 7);
-    for (int32_t i = 0; i < 200; i++) {
-        M_INPUT first;
-        M_INPUT second;
-        Bot_NextInput(&a, nullptr, 0, &first);
-        Bot_NextInput(&b, nullptr, 0, &second);
-        CHECK(first.up == second.up && first.down == second.down);
-        CHECK(first.left == second.left && first.right == second.right);
-        CHECK(first.shoot && !first.bomb && !first.focus);
-    }
-}
-
-TEST(a_role_of_several_frames_plays_them_in_order)
-{
-    BOT bot;
-    M_Load(&bot, "[roles]\nshoot = shoot+left . shoot\n", &g_BotWander, 1);
-    M_INPUT input;
-    Bot_NextInput(&bot, nullptr, 0, &input);
-    CHECK(input.shoot && input.left && !input.right && !input.up);
-    Bot_NextInput(&bot, nullptr, 0, &input);
-    CHECK(!input.shoot && !input.left);
-    Bot_NextInput(&bot, nullptr, 0, &input);
-    CHECK(input.shoot && !input.left);
-    Bot_NextInput(&bot, nullptr, 0, &input);
+    const uint32_t roles = 1u << BOT_ROLE_shoot | 1u << BOT_ROLE_left;
+    Bot_WriteInput(&bot, roles, 5, &input);
     CHECK(input.shoot && input.left);
+    CHECK(!input.right && !input.bomb && !input.focus);
+}
+
+TEST(a_role_of_several_frames_leads_the_hold)
+{
+    BOT bot;
+    M_Load(&bot, "[roles]\nbomb = bomb+left . bomb\nshoot = shoot\n");
+    const uint32_t roles = 1u << BOT_ROLE_bomb | 1u << BOT_ROLE_shoot;
+    CHECK_EQ_INT(Bot_GetLeadFrames(&bot, roles), 3);
+    CHECK_EQ_INT(Bot_GetLeadFrames(&bot, 1u << BOT_ROLE_shoot), 0);
+    M_INPUT input;
+    Bot_WriteInput(&bot, roles, 0, &input);
+    CHECK(input.bomb && input.left && !input.shoot);
+    Bot_WriteInput(&bot, roles, 1, &input);
+    CHECK(!input.bomb && !input.left && !input.shoot);
+    Bot_WriteInput(&bot, roles, 2, &input);
+    CHECK(input.bomb && !input.shoot);
+    Bot_WriteInput(&bot, roles, 3, &input);
+    CHECK(input.shoot && !input.bomb);
 }
 
 TEST(a_role_that_bot_ini_leaves_out_presses_nothing)
 {
     BOT bot;
-    M_Load(&bot, "[roles]\nfocus = focus\n", &g_BotDodge, 1);
+    M_Load(&bot, "[roles]\nfocus = focus\nbomb = .\n");
+    CHECK_EQ_INT(Bot_GetRoles(&bot), 1u << BOT_ROLE_focus);
     M_INPUT input;
-    Bot_NextInput(&bot, nullptr, 0, &input);
+    Bot_WriteInput(&bot, 1u << BOT_ROLE_shoot | 1u << BOT_ROLE_bomb, 0, &input);
     CHECK(!input.shoot && !input.bomb);
 }
 
@@ -124,23 +99,7 @@ TEST(an_unknown_role_or_button_fails_the_load)
         "[roles]\nshoot =\n",
     };
     for (size_t i = 0; i < ARRAY_SIZE(bad); i++) {
-        CHECK(!Result_Ignore(Bot_LoadText(
-            &bot, bad[i], strlen(bad[i]), &m_Schema, &g_BotDodge, 1)));
-    }
-}
-
-TEST(one_seed_gives_the_same_hold_roles)
-{
-    BOT a;
-    BOT b;
-    M_Load(&a, m_Roles, &g_BotHold, 42);
-    M_Load(&b, m_Roles, &g_BotHold, 42);
-    for (int32_t i = 0; i < 200; i++) {
-        M_INPUT first;
-        M_INPUT second;
-        Bot_NextInput(&a, nullptr, 0, &first);
-        Bot_NextInput(&b, nullptr, 0, &second);
-        CHECK(memcmp(&first, &second, sizeof(first)) == 0);
-        CHECK(!first.focus);
+        CHECK(!Result_Ignore(
+            Bot_LoadText(&bot, bad[i], strlen(bad[i]), &m_Schema)));
     }
 }
