@@ -1551,7 +1551,7 @@ if build_games
       suite: 'unit',
     )
   endforeach
-  foreach part : ['gaiji', 'map', 'mpn']
+  foreach part : ['gaiji', 'map', 'mpn', 'scores']
     test(
       'th02/' + part,
       executable(
