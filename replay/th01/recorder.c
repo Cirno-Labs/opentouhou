@@ -124,24 +124,25 @@ static int32_t M_Setbacks(void)
     return m_Setbacks;
 }
 
-// Gives the boss's phase while a boss runs and the cards removed
-// otherwise, then the score and the bombs left.
+// Gives the boss's phase and the damage dealt to it while a boss runs, or the
+// cards removed otherwise, then the score and the bombs left.
 static RECORDER_SCORE M_Score(void)
 {
-    RECORDER_SCORE score = { .count = 3 };
+    RECORDER_SCORE score = { .count = 4 };
     if (!m_InGameplay) {
         return score;
     }
     if (g_Stage.boss != BOSS_NONE && (*g_Boss) != nullptr) {
         score.values[0] = (*g_Boss)->phase;
+        score.values[1] = -(*g_Boss)->hp;
     } else {
         for (int32_t i = 0; i < g_StageObjects->card_count; i++) {
             score.values[0] +=
                 g_StageObjects->cards[i].flag == STAGE_CARD_REMOVED;
         }
     }
-    score.values[1] = g_Session.score;
-    score.values[2] = g_Session.bombs;
+    score.values[2] = g_Session.score;
+    score.values[3] = g_Session.bombs;
     return score;
 }
 
