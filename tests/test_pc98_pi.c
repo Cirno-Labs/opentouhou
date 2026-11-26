@@ -172,6 +172,27 @@ TEST(decodes_every_move_to_front_rank)
     Arena_Free(&arena);
 }
 
+TEST(final_literal_consumes_its_stop_bit_and_rejects_truncation)
+{
+    PI_BUILDER file = M_Header(false, 4, 1, false, nullptr, 0);
+    M_Bits(&file, "0111110010000001000010000");
+    READER reader;
+    Reader_OpenBuffer(&reader, file.bytes, file.size, nullptr);
+    ARENA arena;
+    Arena_Init(&arena, "Pi final literal", 1024);
+    PI_IMAGE image;
+    CHECK(Result_Ignore(Pi_Load(&reader, Arena_Allocator(&arena), &image)));
+    const uint8_t expected[] = { 1, 14, 10, 6 };
+    M_CheckPixels(&image, expected, sizeof(expected));
+    CHECK_EQ_INT(Reader_Tell(&reader), file.size);
+    Reader_Close(&reader);
+    Reader_OpenBuffer(&reader, file.bytes, file.size - 1, nullptr);
+    CHECK(!Result_Ignore(Pi_Load(&reader, Arena_Allocator(&arena), &image)));
+    CHECK(image.pixels == nullptr);
+    Reader_Close(&reader);
+    Arena_Free(&arena);
+}
+
 TEST(keeps_images_independent_of_readers_and_other_loads)
 {
     ARENA arena;

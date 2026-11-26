@@ -181,7 +181,8 @@ static RESULT M_Decode(READER *const reader, PI_IMAGE *const image)
                     cursor++;
                 }
                 MUST(Reader_Result(reader));
-            } while (cursor < end && M_ReadBits(&bits, 1) != 0);
+            } while (M_ReadBits(&bits, 1) != 0 && cursor < end);
+            MUST(Reader_Result(reader));
             previous_prediction = 0;
         } else {
             int32_t exponent = 0;
