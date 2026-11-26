@@ -43,7 +43,7 @@ bool Opna_Irq(const OPNA *chip);
 // Each frame holds the interval average of native sample-and-hold output,
 // without clipping, gain, DC removal or final mixing. fm_rhythm retains the
 // backend's signed stereo bus; ssg retains each unipolar legacy DAC level
-// (nominal peak 16384 per channel). Apply routing and gain in the producer.
+// (nominal peak 5461 per channel). Apply routing and gain in the producer.
 // A zero frame count does nothing; output may be nullptr to discard frames.
 // Maintains divider, output and timer phase across arbitrary block sizes.
 //
