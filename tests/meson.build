@@ -1552,6 +1552,17 @@ if build_games
     )
   endforeach
   test(
+    'th02/random',
+    executable(
+      'test_th02_random',
+      'test_th02_random.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_base_lib],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th02/vector',
     executable(
       'test_th02_vector',
