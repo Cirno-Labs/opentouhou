@@ -1612,6 +1612,30 @@ if build_games
     )
   endforeach
   test(
+    'th02/score_entry',
+    executable(
+      'test_th02_score_entry',
+      'test_th02_score_entry.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
+    'th02/score_entry_logic',
+    executable(
+      'test_th02_score_entry_logic',
+      'test_th02_score_entry_logic.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th02/score_view',
     executable(
       'test_th02_score_view',
