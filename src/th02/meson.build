@@ -25,6 +25,7 @@ th02_lib = static_library(
   'session.c',
   'settings.c',
   'text_font.c',
+  'title.c',
   'tram/cells.c',
   'tram/console.c',
   'tram/display.c',

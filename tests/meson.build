@@ -1571,6 +1571,18 @@ if build_games
     ),
     suite: 'unit',
   )
+  test(
+    'th02/title',
+    executable(
+      'test_th02_title',
+      'test_th02_title.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
   foreach part : ['wait']
     test(
       'th02/' + part,
