@@ -7,6 +7,7 @@ th02_lib = static_library(
   'wait.c',
   'demo.c',
   'grcg.c',
+  'draw/shapes.c',
   'input.c',
   'map.c',
   'mpn.c',
