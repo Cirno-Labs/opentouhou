@@ -404,19 +404,6 @@ void Pellets_Decay(void)
     }
 }
 
-void Pellets_ResetMoving(void)
-{
-    for (int32_t i = 0; i < PELLETS_COUNT; i++) {
-        PELLET *const p = &m_Pellets.slots[i];
-        if (p->moving) {
-            p->moving = false;
-            p->decay_frame = 0;
-            p->cloud_frame = 0;
-        }
-    }
-    m_Pellets.alive_count_excluding_clouds_after_reset = 0;
-}
-
 void Pellets_EraseAndResetMoving(void)
 {
     for (int32_t i = 0; i < PELLETS_COUNT; i++) {

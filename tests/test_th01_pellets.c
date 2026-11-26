@@ -93,7 +93,8 @@ TEST(spawn_reuses_selective_fields_and_obeys_real_pool)
     CHECK_EQ_INT(m_Pellets.slots[0].angle, 96);
     CHECK_EQ_INT(m_Pellets.slots[0].sling_direction, 2);
     CHECK_EQ_INT(m_Pellets.slots[0].previous_left, -1);
-    Pellets_ResetMoving();
+    m_Pellets.slots[0].moving = false;
+    m_Pellets.alive_count_excluding_clouds_after_reset = 0;
     Pellets_AddGroup(0, 100, 100, PELLET_GROUP_SINGLE, 16);
     CHECK_EQ_INT(m_Pellets.slots[0].motion_type, PELLET_SLING_AIMED);
     CHECK_EQ_INT(m_Pellets.slots[0].speed, 32);
@@ -116,7 +117,9 @@ TEST(cloud_reset_retains_delay_and_activation_moves_same_tick)
     M_Init(&f);
     m_Pellets.spawn_with_cloud = true;
     M_Add(&f, 100, 100);
-    Pellets_ResetMoving();
+    m_Pellets.slots[0].moving = false;
+    m_Pellets.slots[0].decay_frame = 0;
+    m_Pellets.alive_count_excluding_clouds_after_reset = 0;
     CHECK_EQ_INT(m_Pellets.alive_count_excluding_clouds_after_reset, 0);
     PELLET *const p = &m_Pellets.slots[0];
     for (int32_t i = 2; i <= 8; i++) {

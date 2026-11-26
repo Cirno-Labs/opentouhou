@@ -3,19 +3,12 @@
 #include "th01/sound.h"
 #include "pc98/zun/math16.h"
 
-#include <string.h>
-
 // Holds the extend threshold index and the life count that survives a
 // Continue or a program switch.
 static struct {
     int16_t next;
     int8_t resident_lives;
 } m_Extend;
-
-void Extend_Init(void)
-{
-    memset(&m_Extend, 0, sizeof(m_Extend));
-}
 
 void Extend_Reset(void)
 {
@@ -33,11 +26,6 @@ int16_t Extend_NextForScore(const uint32_t resident_score)
 void Extend_ResetNext(const uint32_t resident_score)
 {
     m_Extend.next = Extend_NextForScore(resident_score);
-}
-
-int16_t Extend_Next(void)
-{
-    return m_Extend.next;
 }
 
 void Extend_SyncResidentLives(const int32_t lives)

@@ -3,9 +3,6 @@
 #include "th01/hud.h"
 #include "th01/pellets.h"
 
-// Zeroes the extend threshold index and the resident life count.
-void Extend_Init(void);
-
 // Resets the next threshold to 1, as a fresh game starts.
 void Extend_Reset(void);
 
@@ -15,9 +12,6 @@ int16_t Extend_NextForScore(uint32_t resident_score);
 
 // Sets the next threshold from Extend_NextForScore(resident_score).
 void Extend_ResetNext(uint32_t resident_score);
-
-// Returns the next extend threshold.
-int16_t Extend_Next(void);
 
 // Sets the life count that survives a Continue or a program switch.
 void Extend_SyncResidentLives(int32_t lives);

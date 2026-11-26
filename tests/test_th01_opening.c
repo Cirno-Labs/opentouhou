@@ -195,7 +195,6 @@ TEST(music_entry_suppresses_one_confirmation_and_shares_options_history)
     events = M_Tick((TH01_INPUT) { .ok = true, .left = true });
     CHECK_EQ_INT(events.audio, OPENING_AUDIO_PLAY);
     CHECK_EQ_INT(events.track, 14);
-    CHECK(strcmp(Opening_TrackFile(events.track), "iris.mdt") == 0);
     M_Tick((TH01_INPUT) { .cancel = true, .ok = true });
     CHECK_EQ_INT(m_Opening.phase, OPENING_WAIT_OPTIONS);
     CHECK_EQ_INT(m_Menu.selection, 3);

@@ -48,7 +48,8 @@ static inline void Th01Test_ResetWorld(void)
     Miss_Init();
     Scene_Init();
     Bonus_Init();
-    Extend_Init();
+    Extend_Reset();
+    Extend_SyncResidentLives(0);
     g_Session.lives = 0;
     g_Session.high_score = 0;
     g_Session.point_value = 0;
