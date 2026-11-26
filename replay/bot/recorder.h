@@ -14,12 +14,12 @@
 // that survived; the root ends after the script's frames. Each iteration
 // descends from the root by UCB1, value + 0.02 * sqrt(ln(parent visits) /
 // visits), to the first node with fewer than 16 children, and plays one
-// new child segment after its run from a fresh start, followed by 90
-// frames without input. The segment is either 150 frames of random holds
-// or, for every second child, the holds of the node's best child with one
-// to three holds changed, lengthened, shortened, swapped or replaced. A
-// child whose setbacks rise in that time dies and is never selected. Each
-// visit, dead or alive, counts at every node above it.
+// new child segment after its run, followed by 90 frames without input. The
+// segment is either 150 frames of random holds or, for every second child, the
+// holds of the node's best child with one to three holds changed, lengthened,
+// shortened, swapped or replaced. A child whose setbacks rise in that time dies
+// and is never selected. Each visit, dead or alive, counts at every node above
+// it.
 //
 // A node's value is the share of its siblings whose best descendant does
 // not beat its own, in score and then run length, times the share of its
@@ -36,6 +36,13 @@
 // random segments that add setbacks or end the game: they play up to 3000
 // frames, stop at the setback and need no idle frames. All randomness comes
 // from --seed, so the same arguments always give the same run.
+//
+// On Linux, a node's run continues from a snapshot (snapshot.h) at its end
+// instead of a fresh start. At most 256 snapshots live; a node whose
+// snapshot went, least recently used first, gets one back by playing its
+// run from the nearest node above it that has one. With --no-fork, or
+// without fork, each candidate plays its run from a fresh start, for the
+// same result.
 
 #define RECORDER_SCORE_MAX 4
 

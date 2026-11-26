@@ -68,6 +68,7 @@ bot_lib = static_library(
   'bot/bot.c',
   'bot/main.c',
   'bot/shell.c',
+  'bot/snapshot.c',
   shell_null_files,
   shell_null_devices,
   c_args: core_include + stg_include + shell_include,
