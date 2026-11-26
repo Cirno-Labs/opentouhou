@@ -1559,6 +1559,18 @@ if build_games
     link_with: [th02_lib, core_gfx_gl_lib, core_gfx_lib, core_image_lib, core_math_lib, core_base_lib],
     dependencies: [sdl3, avcodec, avutil, swscale, cc_libm],
   )
+  test(
+    'th02/text_font',
+    executable(
+      'test_th02_text_font',
+      'test_th02_text_font.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],
+    ),
+    suite: 'unit',
+  )
   foreach part : ['wait']
     test(
       'th02/' + part,
