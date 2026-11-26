@@ -1551,6 +1551,14 @@ if build_games
       suite: 'unit',
     )
   endforeach
+  executable(
+    'test_th02_presenter_gl',
+    'test_th02_presenter_gl.c',
+    c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+    implicit_include_directories: false,
+    link_with: [th02_lib, core_gfx_gl_lib, core_gfx_lib, core_image_lib, core_math_lib, core_base_lib],
+    dependencies: [sdl3, avcodec, avutil, swscale, cc_libm],
+  )
   foreach part : ['wait']
     test(
       'th02/' + part,
