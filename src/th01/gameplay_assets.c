@@ -3,6 +3,8 @@
 #include "th01/boss/strategy.h"
 #include "th01/items.h"
 #include "th01/miss.h"
+#include "th01/route_select.h"
+#include "th01/shots.h"
 
 #define M_LOAD(name, loader, out)                                              \
     do {                                                                       \
@@ -79,6 +81,13 @@ RESULT GameplayAssets_Load(
     MUST(Stage_ValidateScoreFont(&out->hud_font));
     MUST(Hud_ValidateAssets(&out->hud, &out->stage, &out->hud_font));
     MUST(Items_ValidateAssets(&out->stage, &out->item_font));
+    MUST(Shots_ValidateSprites(&out->stage));
+    MUST(Shots_ValidateSprites(&out->boss_stage));
+    const ROUTE_SELECT_ASSETS route = { .font = &out->route_font,
+                                        .stage = &out->stage,
+                                        .makai = &out->scenes[1],
+                                        .jigoku = &out->scenes[2] };
+    MUST(RouteSelect_ValidateAssets(&route));
     MUST(Bonus_ValidateStageAssets(out->bonus, &out->bonus_font));
     return OK;
 }
