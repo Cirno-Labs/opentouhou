@@ -2,6 +2,7 @@ th02_lib = static_library(
   'th02_lib',
   'audio.c',
   'clip.c',
+  'gaiji.c',
   'vsync_irq.c',
   'patterns.c',
   'random.c',
