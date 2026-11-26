@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pc98/pmd/part.h"
-#include "pc98/pmd.h"
+#include "pc98/pmd/types.h"
 #include "pc98/pmd_data.h"
 
 typedef struct {

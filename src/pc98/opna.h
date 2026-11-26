@@ -1,5 +1,8 @@
 #pragma once
 
+// The PC-98-86 board's YM2608 (OPNA): FM, SSG and rhythm voices run
+// through the vendored emulator cores, with its two timers.
+
 #include "core/base/memory.h"
 
 typedef struct OPNA OPNA;

@@ -1,4 +1,5 @@
-#include "th07/ecl.h"
+#include "th07/ecl/run.h"
+
 #include "th07/ecl/patterns.h"
 #include "th07/ecl/private.h"
 

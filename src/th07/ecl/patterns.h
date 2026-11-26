@@ -1,6 +1,6 @@
 #pragma once
 
-#include "th07/ecl.h"
+#include "th07/ecl/types.h"
 
 #include <stdint.h>
 

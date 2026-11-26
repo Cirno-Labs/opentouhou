@@ -1,4 +1,4 @@
-#include "th01/boss.h"
+#include "th01/boss/boss.h"
 
 #include "core/vfs/open.h"
 #include "th01/session.h"

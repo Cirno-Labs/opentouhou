@@ -1,6 +1,12 @@
 #pragma once
 
-#include "pc98/pmd.h"
+#include "pc98/pmd/data.h"
+#include "pc98/pmd/types.h"
+
+#include "core/base/memory.h"
+#include "core/base/result.h"
+
+#include <stdint.h>
 
 #define MUSIC_PART_COUNT 14
 #define MUSIC_WORK_SIZE 65536
