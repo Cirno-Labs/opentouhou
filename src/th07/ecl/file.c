@@ -1,4 +1,5 @@
-#include "th07/ecl.h"
+#include "th07/ecl/file.h"
+
 #include "th07/ecl/private.h"
 
 #include "th07/game_manager.h"

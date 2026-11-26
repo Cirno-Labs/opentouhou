@@ -19,7 +19,7 @@ pc98_lib = static_library(
   'pmd/lfo.c',
   'pmd/pitch.c',
   'pmd/random.c',
-  'opna/opna.c',
+  'opna.c',
   'vsync.c',
   'zun/bfnt.c',
   'zun/logo1.c',

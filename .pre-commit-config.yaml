@@ -25,6 +25,13 @@ repos:
     files: \.h$
     exclude: ^src/pc98/opna/vendor/
 
+  - id: umbrella-header
+    name: An umbrella header holds only includes
+    entry: tools/lint/check_umbrella_header
+    language: python
+    files: \.h$
+    exclude: ^src/pc98/opna/vendor/
+
   - id: global-reset
     name: A global is reset with memset, not a compound literal
     entry: tools/lint/check_global_reset

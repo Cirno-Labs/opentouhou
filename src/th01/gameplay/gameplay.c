@@ -1,4 +1,4 @@
-#include "th01/gameplay.h"
+#include "th01/gameplay/gameplay.h"
 #include "th01/gameplay/private.h"
 #include "th01/boss/entity.h"
 #include "th01/boss/strategy.h"

@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""Fail when an umbrella header declares anything but includes.
+
+Takes the paths of C headers. A header X.h next to a directory X/ of the
+same stem is an umbrella: it holds nothing but a blank line, a comment,
+`#pragma once` or an `#include`, and the directory's own headers carry
+every type, macro and function. A line of anything else is an error.
+"""
+
+import sys
+from pathlib import Path
+
+ALLOWED = ("#pragma once", "#include", "//", "/*", "*")
+
+
+def is_umbrella(path: Path) -> bool:
+    """Return whether path is next to a directory of the same stem that
+    holds code, rather than only data such as sprite sheets."""
+    directory = path.with_suffix("")
+    if not directory.is_dir():
+        return False
+    return any(directory.glob("*.[ch]"))
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of the lines that are not blank, a comment,
+    `#pragma once` or an `#include`."""
+    found = []
+    for index, line in enumerate(lines):
+        if line and not line.startswith(ALLOWED):
+            found.append(index)
+    return found
+
+
+def main() -> int:
+    failed = False
+    for name in sys.argv[1:]:
+        path = Path(name)
+        if not is_umbrella(path):
+            continue
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for index in errors(lines):
+            print(f"{name}:{index + 1}: umbrella header holds more than includes")
+            failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

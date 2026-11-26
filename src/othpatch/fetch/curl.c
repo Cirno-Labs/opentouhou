@@ -1,4 +1,4 @@
-#include "othpatch/fetch.h"
+#include "othpatch/fetch/curl.h"
 
 #include "othpatch/fetch/backend.h"
 #include "othpatch/fetch/file.h"
