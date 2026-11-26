@@ -65,7 +65,6 @@ void Pellets_Init(void);
 
 // Removes moving pellets and sets the count to zero; delay clouds survive.
 // The count can go negative and does not report pool occupancy.
-void Pellets_ResetMoving(void);
 void Pellets_EraseAndResetMoving(void);
 
 // Spawns a group into free slots, in Q12.4 speeds and integer-pixel positions.

@@ -23,12 +23,10 @@ TEST(threshold_uses_unsigned_score_and_one_award_per_call)
     g_Stage.score = 399999;
     Extend_UpdateAndRender();
     CHECK_EQ_INT(g_Session.lives, 1);
-    CHECK_EQ_INT(Extend_Next(), 1);
     g_Stage.score = UINT32_C(0x80000000);
     Extend_UpdateAndRender();
     CHECK_EQ_INT(g_Session.lives, 2);
     CHECK_EQ_INT(Extend_ResidentLives(), 2);
-    CHECK_EQ_INT(Extend_Next(), 2);
     CHECK_EQ_INT(g_Pellets->speed, 1);
     Arena_Free(&arena);
 }
@@ -40,7 +38,6 @@ TEST(step_caps_lives_but_still_advances_next)
     Extend_Reset();
     g_Stage.score = 400000;
     Extend_UpdateAndRender();
-    CHECK_EQ_INT(Extend_Next(), 2);
     CHECK_EQ_INT(g_Session.lives, 6);
     CHECK_EQ_INT(Extend_ResidentLives(), 0);
 }

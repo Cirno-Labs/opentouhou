@@ -66,9 +66,6 @@ RESULT Opening_LoadAssets(
     VFS *vfs, const FONT_ROM *rom, const ALLOCATOR *allocator,
     OPENING_ASSETS *out);
 
-// Returns a static MDT filename for a track from 0 through 14.
-const char *Opening_TrackFile(int32_t track);
-
 // Starts the title sequence with RNG seed 1. Assets, settings and video
 // must outlive the scene.
 OPENING_EVENTS Opening_Init(const OPENING_ASSETS *assets);

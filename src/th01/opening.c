@@ -22,12 +22,6 @@ typedef struct {
     bool entering, left_locked[2], right_locked[2], confirm_locked;
 } OPENING_MENU;
 
-static const char *const m_TrackFiles[] = {
-    "reimu.mdt", "ZIPANGU.mdt", "st0.mdt",    "st1.mdt",      "st2.mdt",
-    "st3.mdt",   "st4.mdt",     "st5.mdt",    "positive.mdt", "legend.mdt",
-    "kami.mdt",  "tensi.mdt",   "syugen.mdt", "alice.mdt",    "iris.mdt",
-};
-
 static OPENING m_Opening;
 const OPENING *const g_Opening = &m_Opening;
 static OPENING_MENU m_Menu;
@@ -244,12 +238,6 @@ static void M_Menu(const TH01_INPUT *const raw, OPENING_EVENTS *const events)
     }
     events->clear_key_buffer = true;
     m_Opening.frame_rand++;
-}
-
-const char *Opening_TrackFile(const int32_t track)
-{
-    ASSERT(track >= 0 && track < OPENING_TRACK_COUNT);
-    return m_TrackFiles[track];
 }
 
 OPENING_EVENTS Opening_Init(const OPENING_ASSETS *const assets)
