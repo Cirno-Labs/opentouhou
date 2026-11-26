@@ -200,8 +200,26 @@ static RESULT M_OpenReplay(DRIVER *const driver)
     return result;
 }
 
+// Fails when work/ in the output directory holds files: the game would read
+// an earlier run's saves and settings there.
+static RESULT M_CheckWork(DRIVER *const driver)
+{
+    char *const work = M_Join(&driver->arena, driver->run->out_dir, "work");
+    if (!File_Exists(work)) {
+        return OK;
+    }
+    FILE_LIST list;
+    const RESULT result = File_ListDir(work, &g_HeapAllocator, &list);
+    const int32_t count = list.count;
+    File_FreeList(&list);
+    MUST(result);
+    FAIL_IF(count != 0, "%s holds files of an earlier run", work);
+    return OK;
+}
+
 static RESULT M_Open(DRIVER *const driver)
 {
+    MUST(M_CheckWork(driver));
     const RUN *const run = driver->run;
     if (run->role == RUN_REPLAY) {
         MUST(M_OpenReplay(driver));
