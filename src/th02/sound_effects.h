@@ -1,7 +1,10 @@
 #pragma once
 
-// The sound effects of huuma.efc, named by where the game plays them; a
-// sound that serves unrelated events lists the others.
+// The sound effects of huuma.efc, named by where the game plays them (a
+// sound that serves unrelated events lists the others), and the queue that
+// hands them to PMD by priority.
+
+#include "pc98/pmd.h"
 
 // clang-format off
 typedef enum {
@@ -25,3 +28,16 @@ typedef enum {
     SOUND_EFFECT_EXPLOSION      = 18, // A boss explosion's first frame.
 } SOUND_EFFECT;
 // clang-format on
+
+// Binds the driver; nullptr disables FM effects but not music.
+void SoundEffects_Init(PMD *pmd);
+
+// Clears the pending priority and hold time, leaving the voice playing.
+void SoundEffects_Reset(void);
+
+// Queues an effect for Update; equal or higher priority restarts the hold.
+void SoundEffects_Play(SOUND_EFFECT id);
+void SoundEffects_Update(void);
+
+// Resets priority and starts playback immediately.
+void SoundEffects_Force(SOUND_EFFECT id);

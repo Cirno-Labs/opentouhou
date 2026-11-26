@@ -1,6 +1,7 @@
 th02_lib = static_library(
   'th02_lib',
   'audio.c',
+  'audio_clock.c',
   'clip.c',
   'gaiji.c',
   'vsync_irq.c',
@@ -26,6 +27,7 @@ th02_lib = static_library(
   'scores.c',
   'session.c',
   'settings.c',
+  'sound_effects.c',
   'text_font.c',
   'title.c',
   'tram/cells.c',
