@@ -1551,6 +1551,20 @@ if build_games
       suite: 'unit',
     )
   endforeach
+  foreach part : ['wait']
+    test(
+      'th02/' + part,
+      executable(
+        'test_th02_' + part,
+        'test_th02_' + part + '.c',
+        c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+        implicit_include_directories: false,
+        link_with: [th02_lib, core_base_lib],
+        dependencies: [pc98_dep, sdl3],
+      ),
+      suite: 'unit',
+    )
+  endforeach
   foreach part : ['gaiji', 'palette', 'map', 'mpn', 'scores']
     test(
       'th02/' + part,
