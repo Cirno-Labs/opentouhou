@@ -13,25 +13,6 @@ typedef struct {
     const char *content;
 } TH07_DATA_FILE;
 
-// Writes th07.dat in directory, holding files.
-void Th07Data_WriteArchive(
-    const char *directory, const TH07_DATA_FILE *files, int32_t count);
-
-// Writes thbgm.dat in directory: the header of 1.00 and then size bytes
-// of pcm.
-void Th07Data_WriteMusic(const char *directory, const void *pcm, size_t size);
-
-// Writes size bytes of data as the loose file name in directory.
-void Th07Data_WriteFile(
-    const char *directory, const char *name, const void *data, size_t size);
-
-// Makes directory both files of the null shell and mounts th07.dat into
-// Shell_GetFiles with Files_Mount, whose result it returns.
-RESULT Th07Data_Mount(const char *directory);
-
-// Drops the patches of Files_SetPatches and closes the null shell's files.
-void Th07Data_Unmount(void);
-
 // Holds one shot of an SHT file as the file stores it.
 typedef struct {
     int16_t interval, phase;
@@ -57,6 +38,25 @@ typedef struct {
     int32_t table_count;
     const TH07_SHT_TABLE *tables;
 } TH07_SHT;
+
+// Writes th07.dat in directory, holding files.
+void Th07Data_WriteArchive(
+    const char *directory, const TH07_DATA_FILE *files, int32_t count);
+
+// Writes thbgm.dat in directory: the header of 1.00 and then size bytes
+// of pcm.
+void Th07Data_WriteMusic(const char *directory, const void *pcm, size_t size);
+
+// Writes size bytes of data as the loose file name in directory.
+void Th07Data_WriteFile(
+    const char *directory, const char *name, const void *data, size_t size);
+
+// Makes directory both files of the null shell and mounts th07.dat into
+// Shell_GetFiles with Files_Mount, whose result it returns.
+RESULT Th07Data_Mount(const char *directory);
+
+// Drops the patches of Files_SetPatches and closes the null shell's files.
+void Th07Data_Unmount(void);
 
 // Returns sht as SHT bytes, which Mem_Free releases, and sets *size. Each
 // table's shots follow the table entries, closed by a shot of interval -1.

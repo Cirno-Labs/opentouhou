@@ -22,14 +22,6 @@ typedef enum {
 // Collects the entries that read_table finds.
 typedef struct ARCHIVE_TABLE ARCHIVE_TABLE;
 
-// Adds an entry named name, of size unpacked bytes and Unix mode mode (or
-// 0). data is data_size bytes of the format's own record for the entry, such
-// as where it lies, how it is packed and its check value; read_entry
-// receives it back. Both name and data are copied.
-void ArchiveTable_Add(
-    ARCHIVE_TABLE *table, const char *name, size_t size, uint32_t mode,
-    const void *data, size_t data_size);
-
 struct ARCHIVE_FORMAT {
     ARCHIVE_LOOKUP lookup;
     // Limits whole-entry allocations. Zero means no format-specific limit.
@@ -54,3 +46,11 @@ struct ARCHIVE_FORMAT {
     // share one reader; nullptr when unused.
     const void *context;
 };
+
+// Adds an entry named name, of size unpacked bytes and Unix mode mode (or
+// 0). data is data_size bytes of the format's own record for the entry, such
+// as where it lies, how it is packed and its check value; read_entry
+// receives it back. Both name and data are copied.
+void ArchiveTable_Add(
+    ARCHIVE_TABLE *table, const char *name, size_t size, uint32_t mode,
+    const void *data, size_t data_size);

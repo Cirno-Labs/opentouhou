@@ -18,10 +18,6 @@ typedef struct {
     const char *dll;
 } RETAIL_PROGRAM;
 
-// Starts the program for the command line of argv and returns the exit
-// status: 0 when the run matches, 1 when it differs, 2 on an error.
-int Retail_Launch(const RETAIL_PROGRAM *program, int argc, char **argv);
-
 typedef struct {
     PORT port;
     // Lists the code whose clock reads move on at once, so that the game's
@@ -37,6 +33,10 @@ typedef struct {
     // display Retail_Fps.
     RESULT (*hook)(void *context);
 } RETAIL_PORT;
+
+// Starts the program for the command line of argv and returns the exit
+// status: 0 when the run matches, 1 when it differs, 2 on an error.
+int Retail_Launch(const RETAIL_PROGRAM *program, int argc, char **argv);
 
 // Sets the process up for the run and calls port's hook. Called from the
 // DLL's entry; exits the process with status 2 on an error.

@@ -31,6 +31,13 @@ typedef struct {
     uint32_t part;
 } ANM_DRAW;
 
+// Holds one vertex of a triangle strip, in screen pixels.
+typedef struct {
+    VEC3 pos;
+    uint32_t color; // 0xAARRGGBB
+    VEC2 uv;
+} ANM_STRIP_VERTEX;
+
 // Returns a draw on the screen view, with unconditional depth writes.
 ANM_DRAW Anm_ScreenDraw(void);
 
@@ -81,13 +88,6 @@ void Anm_DrawProjected3D(ANM_VM *vm, const ANM_DRAW *draw);
 
 // Draws the VM's quad in 3D through the camera that stage_camera picks.
 void Anm_Draw3D(ANM_VM *vm, const ANM_DRAW *draw);
-
-// Holds one vertex of a triangle strip, in screen pixels.
-typedef struct {
-    VEC3 pos;
-    uint32_t color; // 0xAARRGGBB
-    VEC2 uv;
-} ANM_STRIP_VERTEX;
 
 // Draws count vertices as a triangle strip with the texture and blending
 // of vm, positions in screen pixels; skips a hidden or transparent vm.

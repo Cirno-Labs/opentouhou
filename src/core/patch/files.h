@@ -12,6 +12,14 @@
 // beats an earlier one, and in each patch the build-specific name beats the
 // plain one, as in thcrap.
 
+// Selects the directory of a patch that a JSON file is in.
+typedef enum {
+    // The patch directory itself, as for stringdefs.js and themes.js.
+    PATCH_ROOT,
+    // The game directory of the patch, as for spells.js and stringlocs.js.
+    PATCH_GAME_DIR,
+} PATCH_SCOPE;
+
 // Builds a VFS source with the game files of the patches. For a game path,
 // it has the file of the last patch that has one. .jdiff files and files of
 // the kind PATCH_FILE_IGNORED are not in it. The source is named "patches"
@@ -29,14 +37,6 @@ VFS_SOURCE *Patch_CreateSource(
 RESULT Patch_VisitFiles(
     const PATCH_STACK *stack, const char *path,
     RESULT (*visit)(void *user, READER *reader), void *user);
-
-// Selects the directory of a patch that a JSON file is in.
-typedef enum {
-    // The patch directory itself, as for stringdefs.js and themes.js.
-    PATCH_ROOT,
-    // The game directory of the patch, as for spells.js and stringlocs.js.
-    PATCH_GAME_DIR,
-} PATCH_SCOPE;
 
 // Merges the JSON file name of every patch into one tree, as thcrap merges
 // the JSON files of a stack: in the order in which the patches apply, and in

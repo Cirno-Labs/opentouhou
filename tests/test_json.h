@@ -15,6 +15,10 @@
 #define TestJson_Parse(allocator_, text_)                                      \
     TestJson_ParseAt(__FILE__, __LINE__, (allocator_), (text_))
 
+// Holds a JSON text that a test builds piece by piece, with a NUL after it.
+// Array_Free releases it.
+typedef ARRAY(char) TEST_JSON_TEXT;
+
 [[maybe_unused]] static JSON_VALUE *TestJson_ParseAt(
     const char *const file, const int line, const ALLOCATOR *const allocator,
     const char *const text)
@@ -73,10 +77,6 @@
     }
 #undef M_PRINT
 }
-
-// Holds a JSON text that a test builds piece by piece, with a NUL after it.
-// Array_Free releases it.
-typedef ARRAY(char) TEST_JSON_TEXT;
 
 // Appends printf-style formatted text.
 PRINTF_FORMAT(2, 3)

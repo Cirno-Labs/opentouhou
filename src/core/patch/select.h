@@ -50,20 +50,11 @@ typedef struct {
     int32_t locale_count;
 } PATCH_CHOICE;
 
-// Reads enabled, disabled and language of the [patches] section of ini into
-// choice, and leaves the locales as they are. The strings belong to ini.
-// enabled is true unless it is false, no, off or 0; a value that is not a
-// boolean is a warning.
-void Patch_ReadChoice(const INI *ini, PATCH_CHOICE *choice);
-
 typedef enum {
     PATCH_ROLE_LANGUAGE,
     PATCH_ROLE_LIBRARY,
     PATCH_ROLE_MOD,
 } PATCH_ROLE;
-
-// Returns "language", "library" or "mod".
-const char *Patch_GetRoleName(PATCH_ROLE role);
 
 typedef struct {
     // Holds "<repo>/<patch>".
@@ -82,6 +73,15 @@ typedef struct {
     const int32_t *dependencies;
     int32_t dependency_count;
 } PATCH_ENTRY;
+
+// Reads enabled, disabled and language of the [patches] section of ini into
+// choice, and leaves the locales as they are. The strings belong to ini.
+// enabled is true unless it is false, no, off or 0; a value that is not a
+// boolean is a warning.
+void Patch_ReadChoice(const INI *ini, PATCH_CHOICE *choice);
+
+// Returns "language", "library" or "mod".
+const char *Patch_GetRoleName(PATCH_ROLE role);
 
 // Selects the patches of dir for the game game_id. A nullptr game_id
 // accepts every supported_games. A nullptr choice is enabled, with nothing

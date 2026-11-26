@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Fail when a header declares a type after a function.
+
+Takes the paths of C headers. A header lists its types (typedef, struct,
+union and enum definitions) before its functions, so that the data reads
+first. A top-level type definition that follows a function declaration
+or an inline function is an error.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+TYPES = ("typedef", "struct", "union", "enum")
+NOT_FUNCTIONS = ("#", "//", "/*", "*", "extern", "}", "static_assert") + TYPES
+MACRO_NAME = re.compile(r"^[A-Z_][A-Z0-9_]*$")
+
+
+def is_function(lines: list[str], index: int) -> bool:
+    """Return whether the top-level statement at index declares or defines
+    a function, rather than a bare macro invocation such as an attribute
+    (PRINTF_FORMAT(2, 3)) or an X-macro list (TH06_ACTIONS(BUTTON, STICK))."""
+    line = lines[index]
+    if not line or line[0].isspace() or line.startswith(NOT_FUNCTIONS):
+        return False
+    statement = ""
+    for text in lines[index:]:
+        statement += text
+        if ";" in text or "{" in text:
+            break
+    head = statement.split(";")[0].split("{")[0]
+    if "(" not in head:
+        return False
+    return not MACRO_NAME.match(head.split("(")[0].strip())
+
+
+def is_type(line: str) -> bool:
+    """Return whether a top-level line starts a type definition."""
+    if not line.startswith(TYPES):
+        return False
+    return "(" not in line.split("{")[0] or line.startswith("typedef")
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of type definitions that follow a function."""
+    found = []
+    seen_function = False
+    depth = 0
+    for index, line in enumerate(lines):
+        if depth == 0:
+            if is_function(lines, index):
+                seen_function = True
+            elif seen_function and is_type(line):
+                found.append(index)
+        depth += line.count("{") - line.count("}")
+    return found
+
+
+def main() -> int:
+    failed = False
+    for name in sys.argv[1:]:
+        lines = Path(name).read_text(encoding="utf-8").splitlines()
+        for index in errors(lines):
+            print(f"{name}:{index + 1}: type after a function")
+            failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

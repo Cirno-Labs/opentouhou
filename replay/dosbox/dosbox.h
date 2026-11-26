@@ -56,11 +56,6 @@ typedef struct {
     const char *library;
 } DOSBOX_PROGRAM;
 
-// Starts the emulator for the command line of argv and returns the exit
-// status: 0 when the run matches, 1 when it differs, 2 on an error.
-// Rejects --live.
-int Dosbox_Launch(const DOSBOX_PROGRAM *program, int argc, char **argv);
-
 typedef enum {
     // The conditional jump that closes a VSync wait loop. When it is
     // taken, ends frames up to one with a VSync.
@@ -131,6 +126,11 @@ typedef struct {
     // instruction next, after the sites follow it, or nullptr.
     void (*on_exec)(void *context, uint8_t program);
 } DOSBOX_PORT;
+
+// Starts the emulator for the command line of argv and returns the exit
+// status: 0 when the run matches, 1 when it differs, 2 on an error.
+// Rejects --live.
+int Dosbox_Launch(const DOSBOX_PROGRAM *program, int argc, char **argv);
 
 // Sets the run up for port and returns the guest for the emulator. Called
 // from the library's Dosbox_Attach with its arguments, the backend

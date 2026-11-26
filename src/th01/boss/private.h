@@ -22,14 +22,6 @@ typedef struct {
     int16_t left, top, width_minus_shot, height_minus_shot;
 } BOSS_SHOT_HITBOX;
 
-// Applies debug damage and Orb or bomb hits: flashes, decrements HP, reflects
-// the Orb and adds hit_score. Shots hit even during invincibility.
-// Capture boss_palette before battle: flashing changes saved and the DAC.
-void BossHit_UpdateAndRender(
-    BOSS_HIT *hit, int16_t *hp, const PALETTE *boss_palette,
-    const uint8_t *flash_colors, uint8_t flash_count, int16_t hit_score,
-    bool orb_hit, BOSS_SHOT_HITBOX shot_hitbox);
-
 typedef enum {
     BOSS_DEFEAT_REGULAR,
     BOSS_DEFEAT_SINGYOKU,
@@ -50,6 +42,14 @@ typedef struct {
     VSYNC_WAIT wait;
     int16_t top, bottom, frame;
 } BOSS_DEFEAT;
+
+// Applies debug damage and Orb or bomb hits: flashes, decrements HP, reflects
+// the Orb and adds hit_score. Shots hit even during invincibility.
+// Capture boss_palette before battle: flashing changes saved and the DAC.
+void BossHit_UpdateAndRender(
+    BOSS_HIT *hit, int16_t *hp, const PALETTE *boss_palette,
+    const uint8_t *flash_colors, uint8_t flash_count, int16_t hit_score,
+    bool orb_hit, BOSS_SHOT_HITBOX shot_hitbox);
 
 RESULT BossDefeat_ValidateSprites(const PTN *miko);
 

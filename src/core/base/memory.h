@@ -7,6 +7,24 @@
 // functions without Z leave the new memory uninitialized; the Z ones fill
 // it with zeros.
 
+// Provides memory to the containers and to other code that does not decide
+// where its memory comes from. The functions receive context as their first
+// argument. alloc and realloc return nullptr when they cannot provide the
+// memory; the Allocator_ functions make that fatal. Blocks are aligned for
+// any type. realloc with a memory of nullptr allocates a new block. realloc
+// and free receive the size the block has, so that an allocator does not
+// have to record it.
+//
+// g_HeapAllocator takes its memory from the C heap, and Arena_Allocator
+// returns one that takes it from an arena.
+typedef struct {
+    void *(*alloc)(void *context, size_t size);
+    void *(*realloc)(
+        void *context, void *memory, size_t old_size, size_t new_size);
+    void (*free)(void *context, void *memory, size_t size);
+    void *context;
+} ALLOCATOR;
+
 // Returns size bytes. A size of 0 returns a valid block that must not be
 // accessed.
 void *Mem_Alloc(size_t size);
@@ -35,24 +53,6 @@ void *Mem_Dup(const void *data, size_t size);
 // Returns count * size, or ends the program if the product overflows
 // size_t.
 size_t Mem_ArrSize(size_t count, size_t size);
-
-// Provides memory to the containers and to other code that does not decide
-// where its memory comes from. The functions receive context as their first
-// argument. alloc and realloc return nullptr when they cannot provide the
-// memory; the Allocator_ functions make that fatal. Blocks are aligned for
-// any type. realloc with a memory of nullptr allocates a new block. realloc
-// and free receive the size the block has, so that an allocator does not
-// have to record it.
-//
-// g_HeapAllocator takes its memory from the C heap, and Arena_Allocator
-// returns one that takes it from an arena.
-typedef struct {
-    void *(*alloc)(void *context, size_t size);
-    void *(*realloc)(
-        void *context, void *memory, size_t old_size, size_t new_size);
-    void (*free)(void *context, void *memory, size_t size);
-    void *context;
-} ALLOCATOR;
 
 extern const ALLOCATOR g_HeapAllocator;
 
