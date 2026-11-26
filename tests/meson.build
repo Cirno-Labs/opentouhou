@@ -1535,3 +1535,30 @@ executable(
   link_with: builtin_libs['th06'],
   dependencies: [shell_game_dep, sdl3],
 )
+
+if build_games
+  foreach part : ['clip', 'video']
+    test(
+      'th02/' + part,
+      executable(
+        'test_th02_' + part,
+        'test_th02_' + part + '.c',
+        c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+        implicit_include_directories: false,
+        link_with: [th02_lib, core_base_lib],
+        dependencies: [sdl3],
+      ),
+      suite: 'unit',
+    )
+  endforeach
+  test(
+    'th02/vector',
+    executable(
+      'test_th02_vector',
+      'test_th02_vector.c',
+      implicit_include_directories: false,
+      dependencies: [pc98_dep, test_deps],
+    ),
+    suite: 'unit',
+  )
+endif
