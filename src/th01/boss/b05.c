@@ -90,7 +90,7 @@ static void M_Accelerate(const int16_t delta)
         return;
     }
     if (m_B05.status.frame == 50) {
-        Sound_Effect(8);
+        Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     }
     if (m_B05.status.frame < 100 && m_B05.status.frame % 4 == 0) {
         M_Put(&m_B05.sphere, m_B05.sphere.image);
@@ -518,7 +518,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
             m_B05.status.phase == B05_PHASE_TRANSFORMS
             && m_B05.status.hp <= 0) {
             m_B05.status.phase = B05_PHASE_DEFEATED;
-            Sound_Effect(5);
+            Sound_Effect(SOUND_EFFECT_MISS);
             m_B05.status.frame = 0;
         }
     } else if (m_B05.status.phase == B05_PHASE_DEFEATED) {

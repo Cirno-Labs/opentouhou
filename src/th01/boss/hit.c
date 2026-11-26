@@ -44,7 +44,7 @@ void BossHit_UpdateAndRender(
         }
         Stage_AddScore((uint32_t)(int32_t)hit_score);
         Hud_ScoreAndCombo();
-        Sound_Effect(3);
+        Sound_Effect(SOUND_EFFECT_BOSS_HIT);
         HudHp_Decrement(*hp);
     }
     if (hit->invincible && hit->frame < 40) {

@@ -109,7 +109,7 @@ void Stage_HitTestCards(void)
                 Items_Add(
                     card->left, card->top, bomb && !g_Player->bomb_damaging);
             }
-            Sound_Effect(2);
+            Sound_Effect(SOUND_EFFECT_HIT);
         }
     }
 }

@@ -109,7 +109,7 @@ bool StageTimer_TickAndPut(void)
     Hud_PutTimer(g_Stage.time);
     if (g_Stage.time == 0) {
         Pellets_SpeedRaise(2);
-        Sound_Effect(17);
+        Sound_Effect(SOUND_EFFECT_TIME_UP);
         Hud_PutMessage("HARRY");
         m_Timer.phase = TIMER_WAIT_HURRY;
         return M_Continue();

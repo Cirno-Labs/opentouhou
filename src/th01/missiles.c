@@ -118,7 +118,7 @@ void Missiles_UpdateAndRender(
             if (m->flag > MISSILE_HIT_LAST) {
                 m->flag = MISSILE_FREE;
                 M_Restore(m);
-                Sound_Effect(7);
+                Sound_Effect(SOUND_EFFECT_PELLET);
             }
         }
     }

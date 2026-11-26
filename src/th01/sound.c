@@ -5,7 +5,7 @@
 
 static size_t m_Song;
 
-void Sound_Effect(const int16_t number)
+void Sound_Effect(const SOUND_EFFECT number)
 {
     if (g_Session.settings.music != SETTINGS_MUSIC_OFF) {
         Music_Effect(number);

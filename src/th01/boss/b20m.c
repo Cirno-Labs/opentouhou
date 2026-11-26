@@ -835,7 +835,7 @@ static bool M_Gust(const B20M_ASSETS *const assets)
         m_B20M.gust.y = 0;
         m_B20M.gust.offset = 0;
         m_B20M.gust.color = 2;
-        Sound_Effect(10);
+        Sound_Effect(SOUND_EFFECT_GUST);
     }
     for (int32_t row = 0; row < 100; row++) {
         const int16_t right = M_Random(assets) % 8;
@@ -1039,7 +1039,7 @@ static void M_PurpleLasers(const B20M_ASSETS *const assets)
                     assets, m_B20M.laser.x[i], m_B20M.laser.y[i], r, r, 4, 1);
             }
         } else {
-            Sound_Effect(6);
+            Sound_Effect(SOUND_EFFECT_LASER);
             M_Laser(
                 assets, i, m_B20M.laser.x[i], m_B20M.laser.y[i],
                 M_Random(assets) % 640, 400, m_B20M.pattern_state, 4, 25, 5);
@@ -1073,7 +1073,7 @@ static void M_Eggs(const B20M_ASSETS *const assets)
             (int16_t)(64 - (M_Random(assets) % 2) * 128);
         m_B20M.spawner.velocity_y = (int16_t)(32 - (M_Random(assets) % 2) * 64);
         m_B20M.pattern_state = Boss_Rank(20, 15, 10, 8);
-        Sound_Effect(8);
+        Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     } else if (m_B20M.status.frame < 200) {
         m_B20M.spawner.velocity_x = Math16_Wrap(
             m_B20M.spawner.velocity_x + (m_B20M.spawner.left < 5120 ? 1 : -1));
@@ -1176,7 +1176,7 @@ static void M_Flake(const B20M_ASSETS *const assets)
         m_B20M.flake.state = M_WandRaise(assets, false);
     }
     if (m_B20M.flake.state == 1) {
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
         m_B20M.flake.left = 5440;
         m_B20M.flake.top = 1024;
         const MATH16_VECTOR v = Math16_Aim(
@@ -1212,7 +1212,7 @@ static void M_Flake(const B20M_ASSETS *const assets)
         m_B20M.star.radius_inner = 24;
         m_B20M.star.left = m_B20M.flake.left;
         m_B20M.star.top = 400 - M_Random(assets) % 48;
-        Sound_Effect(10);
+        Sound_Effect(SOUND_EFFECT_GUST);
     }
     if (m_B20M.flake.state >= 3) {
         m_B20M.flake.state = Math16_Wrap(m_B20M.flake.state + 1);
@@ -1334,7 +1334,7 @@ static void M_FourLasers(const B20M_ASSETS *const assets)
         m_B20M.laser.velocity_y = v.y;
         M_Laser(
             assets, laser, x, y, target, 400, m_B20M.pattern_state, 7, 50, 8);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
     } else if (m_B20M.status.frame < 250) {
         M_Ray(
             assets, 320, 120, m_B20M.laser.origin_x, m_B20M.laser.origin_y, 7);
@@ -1355,7 +1355,7 @@ static bool M_Shake(const B20M_ASSETS *const assets)
                 &m_B20M.wait, m_B20M.status.frame % 8 == 0 ? 396 : 404);
         }
         if (m_B20M.status.frame % 4 == 0) {
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
         }
     } else if (m_B20M.status.frame == 50) {
         m_B20M.resume_stage = B20M_RESUME_SHAKE_END;
@@ -1385,7 +1385,7 @@ static void M_Radial(const B20M_ASSETS *const assets)
         m_B20M.radial_angle = 0;
         m_B20M.radial_velocity = 1;
         m_B20M.pattern_state = Boss_Rank(60, 65, 70, 75);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
     } else if (m_B20M.status.frame < 200) {
         M_Ray(
             assets, 320, 160, Math16_PolarX(320, 140, m_B20M.radial_angle),
@@ -1394,13 +1394,13 @@ static void M_Radial(const B20M_ASSETS *const assets)
             (uint8_t)(m_B20M.radial_angle + m_B20M.radial_velocity);
         m_B20M.radial_velocity++;
         if (m_B20M.status.frame % 10 == 0) {
-            Sound_Effect(6);
+            Sound_Effect(SOUND_EFFECT_LASER);
         }
     } else if (m_B20M.status.frame == 200) {
         M_Ray(assets, 320, 160, 999, 999, 7);
         m_B20M.radial_angle = 0;
     } else if (m_B20M.status.frame <= 400 && m_B20M.status.frame % 5 == 0) {
-        Sound_Effect(7);
+        Sound_Effect(SOUND_EFFECT_PELLET);
         if (m_B20M.status.frame % 15 == 0) {
             M_Laser(
                 assets, (m_B20M.status.frame - 215) / 15, 320, 160,
@@ -1485,7 +1485,7 @@ static void M_SymmetricBirds(const B20M_ASSETS *const assets)
         }
         r->x = Math16_Wrap(r->x + 2);
         if (m_B20M.status.frame % 10 == 0) {
-            Sound_Effect(6);
+            Sound_Effect(SOUND_EFFECT_LASER);
             const int16_t target =
                 Math16_Wrap((m_B20M.status.frame - 60) * 10 + r->x);
             const MATH16_VECTOR v = Math16_Aim(
@@ -1580,7 +1580,7 @@ static void M_Stacks(const B20M_ASSETS *const assets)
                 }
             }
             r->x = Math16_Wrap(r->x + 32);
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
         }
     } else if (m_B20M.status.frame == 350) {
         r->x = 0;
@@ -1691,11 +1691,11 @@ static void M_SealRain(const B20M_ASSETS *const assets)
             r->y = Math16_Wrap(r->y - 8);
         }
         if (m_B20M.status.frame % 10 == 0) {
-            Sound_Effect(6);
+            Sound_Effect(SOUND_EFFECT_LASER);
         }
         return;
     }
-    Sound_Effect(3);
+    Sound_Effect(SOUND_EFFECT_BOSS_HIT);
     Sprite_Restore16(
         M_DebrisX(r, false, 32, 0), Math16_Wrap(r->y - 16), 32, 40);
     Sprite_Restore16(M_DebrisX(r, true, 32, 0), Math16_Wrap(r->y - 16), 32, 50);
@@ -2036,7 +2036,7 @@ static bool M_Transform(const B20M_ASSETS *const assets, const uint64_t tick)
             return Wait_Scroll(&m_B20M.wait, 0);
         case B20M_TRANSFORM_SHAKE_STEP:
             if (m_B20M.status.frame < 200 && m_B20M.status.frame % 4 == 0) {
-                Sound_Effect(9);
+                Sound_Effect(SOUND_EFFECT_SHAKE);
             }
             m_B20M.sequence_stage = B20M_TRANSFORM_SHAKE;
             if (!Wait_Delay(&m_B20M.wait, 1)) {
@@ -2093,7 +2093,7 @@ static bool M_Defeat(const B20M_ASSETS *const assets, const uint64_t tick)
             continue;
         case B20M_DEFEAT_SHAKE_STEP:
             if (m_B20M.status.frame < 200 && m_B20M.status.frame % 4 == 0) {
-                Sound_Effect(9);
+                Sound_Effect(SOUND_EFFECT_SHAKE);
             }
             if (m_B20M.status.frame == 170) {
                 Sound_Fade();
@@ -2361,7 +2361,7 @@ static bool M_Update(const void *const data, const BOSS_CONTEXT *const ctx)
         const uint8_t resume = m_B20M.resume_stage;
         m_B20M.resume_stage = B20M_RESUME_NONE;
         if (resume == B20M_RESUME_SHAKE) {
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
             return M_Tail(assets);
         }
         if (resume == B20M_RESUME_SHAKE_END) {

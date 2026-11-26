@@ -601,11 +601,11 @@ TEST(disabled_gameplay_cannot_start_effects)
     FIXTURE f;
     M_Init(&f);
     g_Session.settings.music = SETTINGS_MUSIC_OFF;
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     Music_Update();
     CHECK(!M_EffectSounds());
     g_Session.settings.music = SETTINGS_MUSIC_FM;
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     CHECK(M_EffectSounds());
     Arena_Free(&f.arena);
 }
@@ -628,7 +628,7 @@ TEST(disabled_gameplay_preserves_an_existing_opening_fade)
         Music_Update();
     }
     Mdrv_Render(twin, nullptr, 8000);
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     Sound_Load(3);
     Sound_Play();
     Sound_Stop();
@@ -651,20 +651,20 @@ TEST(enabled_gameplay_controls_the_prepared_producer)
     M_Init(&f);
     Sound_Load(3);
     Sound_Play();
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     CHECK(M_EffectSounds());
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     Sound_Fade();
     Sound_Load(4);
     Sound_Play();
     CHECK_EQ_INT(m_Song, 4);
     CHECK(!M_EffectSounds());
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     Sound_Stop();
     CHECK(!M_EffectSounds());
     Sound_Load(5);
     Sound_Play();
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     Sound_Stop();
     CHECK(!M_EffectSounds());
     Arena_Free(&f.arena);
@@ -678,7 +678,7 @@ TEST(prepared_output_survives_world_reset_and_opening_controls)
     GAME_AUDIO *output;
     CHECK(Result_Ignore(GameAudio_Prepare(Arena_Allocator(&f.arena), &output)));
     Music_BindOutput(output);
-    Sound_Effect(5);
+    Sound_Effect(SOUND_EFFECT_MISS);
     Music_Update();
     const size_t used = f.arena.used;
     Gameplay_Reset();

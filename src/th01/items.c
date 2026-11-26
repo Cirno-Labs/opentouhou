@@ -86,7 +86,7 @@ static void M_Collect(ITEM *const item, const bool bomb)
         Hud_ScoreAndCombo();
         item->flag = ITEM_COLLECTED_OVER_CAP;
     }
-    Sound_Effect(15);
+    Sound_Effect(SOUND_EFFECT_ITEM);
 }
 
 static void M_Popup(

@@ -24,7 +24,7 @@ void Shots_Init(void);
 RESULT Shots_ValidateSprites(const PTN *sprites);
 
 // Zero-initialize once. Add selects the first idle, non-decaying slot and
-// plays effect 1 only on success. Accepts X from 0 through 639.
+// plays SOUND_EFFECT_SHOT only on success. Accepts X from 0 through 639.
 bool Shots_Add(int16_t left, int16_t top);
 void Shots_EraseAndReset(void);
 
@@ -34,7 +34,8 @@ void Shots_UpdateAndRender(const PTN *sprites);
 bool Shots_HitTestOrb(int32_t slot);
 
 // Tests inclusive overlap with an 8 by 8 pellet, with two-pixel margins.
-// First hit restores the shot, starts decay at 1 and plays effect 16.
+// First hit restores the shot, starts decay at 1 and plays
+// SOUND_EFFECT_SHOT_HIT.
 bool Shots_HitTestPellet(int16_t left, int16_t top);
 
 // Tests shot top-left against inclusive boss bounds. Width and height are

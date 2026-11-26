@@ -79,7 +79,7 @@ static void M_BosDraw(
 
 static void M_ActionSound(void)
 {
-    Sound_Effect(11);
+    Sound_Effect(SOUND_EFFECT_STRIKE);
 }
 
 static void M_Repel(const int16_t friction)

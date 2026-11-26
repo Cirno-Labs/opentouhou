@@ -39,7 +39,7 @@ static void M_Hit(SHOT *const shot)
     M_Restore(shot);
     shot->moving = false;
     shot->decay_frame = 1;
-    Sound_Effect(16);
+    Sound_Effect(SOUND_EFFECT_SHOT_HIT);
 }
 
 RESULT Shots_ValidateSprites(const PTN *const sprites)
@@ -61,7 +61,7 @@ bool Shots_Add(const int16_t left, const int16_t top)
             shot->left = left;
             shot->top = top;
             shot->moving = true;
-            Sound_Effect(1);
+            Sound_Effect(SOUND_EFFECT_SHOT);
             shot->decay_frame = 0;
             return true;
         }

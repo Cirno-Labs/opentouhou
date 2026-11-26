@@ -349,7 +349,7 @@ static void M_Ripple(
         M_RipplePart(assets, miko, left, top, *frame < 5 ? 0 : 1);
         M_RippleHit(assets, miko, left, 0);
         if (*frame < 5) {
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
         }
         return;
     }
@@ -507,7 +507,7 @@ static void M_CrossLasers(
     if (m_B15J.status.frame > 200 && m_B15J.status.frame % 200 == 0) {
         M_Laser(assets, miko, 0, 307, Math16_Wrap(g_Player->left + 60), 50, 8);
         M_Laser(assets, miko, 1, 336, Math16_Wrap(g_Player->left - 60), 50, 8);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
     }
 }
 
@@ -566,7 +566,7 @@ static void M_LeftLasers(const B15J_ASSETS *const assets, const PTN *const miko)
     }
     if (m_B15J.status.frame >= 250 && m_B15J.status.frame <= 400
         && (m_B15J.status.frame - 250) % 30 == 0) {
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
         const int16_t offset = (int16_t)(MasterRng_Next(&g_Rng) % 120 - 60);
         M_Laser(
             assets, miko, (m_B15J.status.frame - 250) / 30, 307,
@@ -591,7 +591,7 @@ static void M_Rain(const B15J_ASSETS *const assets, const PTN *const miko)
                     assets, miko, x, y, j < 3 ? 0 : 128, speed, PELLET_GRAVITY,
                     1, 0, 0);
             }
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
         }
     }
     if (m_B15J.status.frame > 250) {
@@ -617,7 +617,7 @@ static void M_VerticalLasers(
                       - m_B15J.random_range);
         const int16_t x = Math16_Wrap(i * 64 + offset);
         ShootoutLasers_Spawn(i, x, 64, x, 400, m_B15J.pattern_state, 10, 20, 8);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
     }
     if (m_B15J.status.frame >= 190) {
         m_B15J.status.frame = 0;

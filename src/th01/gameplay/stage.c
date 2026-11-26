@@ -72,7 +72,7 @@ static void M_Line(const char *const text)
 static void M_TitleChar(void)
 {
     const uint32_t chars[] = { 0x6771, 0x65b9, 0x2605, 0x9748, 0x7570, 0x4f1d };
-    Sound_Effect(14);
+    Sound_Effect(SOUND_EFFECT_TITLE_TEXT);
     Tram_PutKanji16Reverse(GameText_Find(
         &g_GameplayAssets->menu_font, chars[g_Gameplay.animation_frame]));
 }
