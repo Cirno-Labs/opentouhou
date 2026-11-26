@@ -1526,3 +1526,12 @@ executable(
   link_with: builtin_libs['th06'],
   dependencies: [shell_game_dep, sdl3],
 )
+
+executable(
+  'test_shell_save_settings',
+  'test_shell_save_settings.c',
+  c_args: shell_include,
+  implicit_include_directories: false,
+  link_with: builtin_libs['th06'],
+  dependencies: [shell_game_dep, sdl3],
+)
