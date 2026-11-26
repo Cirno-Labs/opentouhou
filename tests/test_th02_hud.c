@@ -6,7 +6,6 @@
 
 TEST(hud_score_keeps_first_quotient_and_separate_continue_cell)
 {
-
     memset(&m_Tram, 0xa5, sizeof(m_Tram));
     Hud_Score(6, 10000000);
     CHECK_EQ_INT(m_Tram.codes[6 * 80 + 56], 0x2a57);
@@ -24,7 +23,6 @@ TEST(hud_score_keeps_first_quotient_and_separate_continue_cell)
 
 TEST(hud_tallies_preserve_signed_blanking_and_right_edge_spill)
 {
-
     memset(&m_Tram, 0xa5, sizeof(m_Tram));
     Hud_Lives(-1);
     CHECK_EQ_INT(m_Tram.codes[17 * 80 + 60], 0x4f57);
@@ -39,7 +37,6 @@ TEST(hud_tallies_preserve_signed_blanking_and_right_edge_spill)
 
 TEST(hud_power_keeps_zero_quirk_and_returns_shot_level)
 {
-
     Tram_Init();
     CHECK_EQ_INT(Hud_Power(0), 0);
     CHECK_EQ_INT(m_Tram.codes[20 * 80 + 62], 0x3f56);

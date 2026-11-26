@@ -14,4 +14,8 @@ PointerAlignment: Right
 SortIncludes: false
 InsertBraces: true
 InsertNewlineAtEOF: true
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
 SpaceInEmptyBraces: Never

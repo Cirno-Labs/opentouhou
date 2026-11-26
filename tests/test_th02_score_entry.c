@@ -146,7 +146,6 @@ TEST(main_and_ending_keep_distinct_header_and_tenth_place_positions)
     SCORES scores;
     Scores_Defaults(&scores);
     for (int ending = 0; ending < 2; ending++) {
-
         Tram_Init();
         ScoreEntryRender_Table(&scores.sections[0], ending != 0, 9);
         CHECK_EQ_INT(m_Tram.codes[4 * 80 + 27 + ending], 0x3957);
