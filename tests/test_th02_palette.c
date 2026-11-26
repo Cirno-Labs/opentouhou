@@ -5,7 +5,6 @@
 
 TEST(stock_colors_match_pc98_index_bits)
 {
-
     Palette_Init();
     CHECK_EQ_INT(m_Palette.tone, 100);
     CHECK_EQ_INT(m_Palette.colors[1][2], 255);
@@ -31,7 +30,6 @@ TEST(stock_colors_match_pc98_index_bits)
 
 TEST(import_keeps_raw_channels_and_does_not_change_the_display)
 {
-
     Palette_Init();
     m_Palette.tone = 50;
     GFX_COLOR colors[16];
@@ -56,7 +54,6 @@ TEST(import_keeps_raw_channels_and_does_not_change_the_display)
 
 TEST(tone_rounding_and_clamps_keep_logical_colors_and_raw_tone)
 {
-
     Palette_Init();
     memset(m_Palette.colors, 0, sizeof(m_Palette.colors));
     m_Palette.colors[0][0] = 0xab;
@@ -91,7 +88,6 @@ TEST(positive_fades_wait_for_alignment_and_the_full_requested_edge_count)
     for (int kind = PALETTE_BLACK_IN; kind <= PALETTE_WHITE_OUT; kind++) {
         for (size_t speed = 0; speed < sizeof(speeds) / sizeof(speeds[0]);
              speed++) {
-
             Palette_Init();
             memset(&g_Video, 0, sizeof(g_Video));
             g_Video.palette[7].red = 123;
@@ -122,7 +118,6 @@ TEST(nonpositive_fades_finish_on_the_initial_edge_and_use_live_colors)
     const int16_t speeds[] = { 0, -1, INT16_MIN };
     for (size_t speed = 0; speed < sizeof(speeds) / sizeof(speeds[0]);
          speed++) {
-
         Palette_Init();
         memset(&g_Video, 0, sizeof(g_Video));
         g_Video.palette[7].red = 123;

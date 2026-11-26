@@ -146,7 +146,6 @@ TEST(text_writes_keep_the_code_then_attribute_order_at_plane_boundaries)
 
 TEST(single_character_writes_keep_ank_literals_and_wide_cell_attributes)
 {
-
     memset(&m_Tram, 0xa5, sizeof(m_Tram));
     const TRAM_CHARACTER space = { .code = ' ' };
     Tram_PutCharacter(39, 24, &space, 0xe1);

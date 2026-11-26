@@ -11,7 +11,6 @@ TEST(console_clear_homes_the_software_cursor_and_keeps_hidden_cells_and_flags)
         0xe5,
     };
     for (size_t mode = 0; mode < ARRAY_SIZE(attributes); mode++) {
-
         memset(&m_Tram, 0x99, sizeof(m_Tram));
         TRAM_CONSOLE console;
         TramConsole_Init(&console, attributes[mode]);
@@ -95,7 +94,6 @@ TEST(hidden_text_keeps_blinking_and_display_initialization_accepts_phase_seeds)
 
 TEST(visible_fill_keeps_both_plane_tails)
 {
-
     Tram_Init();
     for (size_t cell = 0; cell < TRAM_PLANE_CELLS; cell++) {
         CHECK_EQ_INT(m_Tram.codes[cell], 0);
@@ -111,7 +109,6 @@ TEST(visible_fill_keeps_both_plane_tails)
 
 TEST(gaiji_codes_keep_both_halves_and_spill_across_rows)
 {
-
     Tram_Init();
     Tram_PutGaiji(79, 0, 0x127f, 0x34e1);
     CHECK_EQ_INT(m_Tram.codes[79], 0x7f56);
@@ -132,7 +129,6 @@ TEST(gaiji_codes_keep_both_halves_and_spill_across_rows)
 
 TEST(gaiji_strings_keep_overlap_and_offset_wrap)
 {
-
     Tram_Init();
     const uint8_t glyphs[] = { 1, 128, 255, 0, 2 };
     Tram_PutGaijiString(78, 0, glyphs, 0xabcd);
@@ -163,7 +159,6 @@ TEST(gaiji_strings_keep_overlap_and_offset_wrap)
 
 TEST(attribute_boxes_preserve_codes_and_other_cells)
 {
-
     memset(&m_Tram, 0xa5, sizeof(m_Tram));
     Tram_FillAttributes(4, 1, 51, 23, 0x0501);
     Tram_FillAttributes(79, 24, 79, 24, 0x8021);
@@ -190,7 +185,6 @@ static uint16_t M_FontRow(
 
 TEST(scanout_alternates_custom_halves_and_pairs_normal_wide_glyphs)
 {
-
     Tram_Init();
     GAIJI bank = {};
     for (size_t y = 0; y < 16; y++) {
@@ -225,7 +219,6 @@ TEST(scanout_alternates_custom_halves_and_pairs_normal_wide_glyphs)
 
 TEST(scanout_preserves_hidden_reverse_blink_and_cross_cell_lines)
 {
-
     Tram_Init();
     GAIJI bank = {};
     const TRAM_FONT font = { M_FontRow, nullptr };
@@ -266,7 +259,6 @@ TEST(scanout_preserves_hidden_reverse_blink_and_cross_cell_lines)
 
 TEST(scanout_wraps_text_fetches_and_restarts_halves_at_each_row)
 {
-
     Tram_Init();
     GAIJI bank = {};
     for (size_t y = 0; y < 16; y++) {
@@ -300,7 +292,6 @@ TEST(scanout_wraps_text_fetches_and_restarts_halves_at_each_row)
 
 TEST(scanout_treats_zero_high_byte_as_ank_before_custom_half_selection)
 {
-
     Tram_Init();
     GAIJI bank = {};
     bank.rows[0][0] = 0x8001;
