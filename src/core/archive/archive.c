@@ -346,8 +346,8 @@ RESULT Archive_Read(
     READER whole =
         Reader_Slice(&archive->reader, Reader_Size(&archive->reader));
     uint8_t *const data = Allocator_Alloc(archive->allocator, entry->size);
-    const RESULT result =
-        archive->format->read_entry(&whole, entry->data, data, entry->size);
+    const RESULT result = archive->format->read_entry(
+        &whole, archive->format->context, entry->data, data, entry->size);
     if (!IS_OK(result)) {
         Allocator_Free(archive->allocator, data, entry->size);
         const char *const name = M_Name(archive);

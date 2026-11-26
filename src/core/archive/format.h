@@ -48,5 +48,9 @@ struct ARCHIVE_FORMAT {
     // exactly size bytes, the size that read_table gave, and checks it. A
     // failure needs no archive or entry name: core/archive adds them.
     RESULT (*read_entry)(
-        READER *archive, const void *data, uint8_t *out, size_t size);
+        READER *archive, const void *context, const void *data, uint8_t *out,
+        size_t size);
+    // Is handed to read_entry, so that formats differing only in a value
+    // share one reader; nullptr when unused.
+    const void *context;
 };
