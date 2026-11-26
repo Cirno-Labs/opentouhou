@@ -51,6 +51,11 @@ bool Shell_IsFullscreen(void);
 // toggles it.
 void Shell_RequestFullscreen(bool fullscreen);
 
+// Asks to save current game settings, shell settings and input bindings to
+// config.ini after the tick. Merges edits made on disk while the game ran.
+// Multiple requests in one tick save once. Reports errors through the log.
+void Shell_RequestSaveSettings(void);
+
 // Returns whether shell/game measured the tick rate since the tick before,
 // and writes the rate, in ticks per second, into out. shell/game counts the
 // ticks of each period of half a second or more, outside the ticks, and

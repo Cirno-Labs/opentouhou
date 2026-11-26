@@ -23,7 +23,8 @@ typedef struct {
     const INPUT_SCHEMA *input_schema;
     // Describes the game's own settings and points at the struct that holds
     // them. shell/game loads them from its INI before init and saves them
-    // after shutdown. Both are nullptr for a game without settings.
+    // on request and after shutdown. Both are nullptr for a game without
+    // settings.
     const CONFIG_SCHEMA *settings_schema;
     void *settings;
     // Describes the game to thcrap patches. shell/game opens the patch stack
