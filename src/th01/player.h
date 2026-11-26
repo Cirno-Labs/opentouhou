@@ -45,6 +45,17 @@ typedef struct {
     bool bombing, combo_enabled;
 } PLAYER;
 
+// Keeps the suspended bomb branch. Zero-initialize before its first use.
+// The field belongs to the Player_ functions; never copy a pending token.
+typedef struct {
+    bool pending;
+} PLAYER_BOMB_CONTINUATION;
+
+typedef struct {
+    const PTN *miko;
+    const BOS *miko_ac, *miko_ac2;
+} PLAYER_SPRITES;
+
 extern const PLAYER *const g_Player;
 
 // Zeroes the player for a new world.
@@ -97,17 +108,6 @@ void Player_SetBombs(int16_t count);
 
 // Gains one bomb; the caller keeps the cap and redraws the HUD.
 void Player_GainBomb(void);
-
-// Keeps the suspended bomb branch. Zero-initialize before its first use.
-// The field belongs to the Player_ functions; never copy a pending token.
-typedef struct {
-    bool pending;
-} PLAYER_BOMB_CONTINUATION;
-
-typedef struct {
-    const PTN *miko;
-    const BOS *miko_ac, *miko_ac2;
-} PLAYER_SPRITES;
 
 // Validates all actor image dimensions/counts before ticks. Images remain
 // immutable and belong to the caller's grouped asset lifetime.

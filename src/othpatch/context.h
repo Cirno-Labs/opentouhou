@@ -69,23 +69,6 @@ typedef struct {
     char line[512];
 } CONSOLE_BAR;
 
-// Returns a string that fmt formats, from arena.
-PRINTF_FORMAT(2, 3)
-char *Console_Format(ARENA *arena, const char *fmt, ...);
-
-// Prints the line that fmt formats, such as with the message of result,
-// and consumes result.
-PRINTF_FORMAT(3, 4)
-void Console_Fail(FILE *out, RESULT result, const char *fmt, ...);
-
-// Starts a section: a blank line after the section before, then heading.
-// Under the heading of the first section, it prints the patches folder.
-PRINTF_FORMAT(2, 3)
-void Console_StartSection(APP_CONTEXT *run, const char *fmt, ...);
-
-// Returns the number of code points of UTF-8 text.
-int32_t Console_CountCodePoints(const char *text);
-
 #define CONSOLE_FILE_LINES 4
 
 // Holds one file line of a CONSOLE_PATCH: the file, or nullptr for a free
@@ -109,6 +92,23 @@ typedef struct {
     int32_t lines;
     char block[4096];
 } CONSOLE_PATCH;
+
+// Returns a string that fmt formats, from arena.
+PRINTF_FORMAT(2, 3)
+char *Console_Format(ARENA *arena, const char *fmt, ...);
+
+// Prints the line that fmt formats, such as with the message of result,
+// and consumes result.
+PRINTF_FORMAT(3, 4)
+void Console_Fail(FILE *out, RESULT result, const char *fmt, ...);
+
+// Starts a section: a blank line after the section before, then heading.
+// Under the heading of the first section, it prints the patches folder.
+PRINTF_FORMAT(2, 3)
+void Console_StartSection(APP_CONTEXT *run, const char *fmt, ...);
+
+// Returns the number of code points of UTF-8 text.
+int32_t Console_CountCodePoints(const char *text);
 
 // Shows the progress of a patch that fetches files files, with label
 // padded to width code points. Without a terminal, only Console_EndPatch

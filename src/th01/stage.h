@@ -29,6 +29,10 @@ typedef struct {
     bool game_cleared;
 } STAGE_GAMEPLAY;
 
+typedef struct {
+    bool active, waiting, boss;
+} STAGE_ORB_COMPOSITE;
+
 extern STAGE_GAMEPLAY g_Stage;
 
 // Zeroes the stage for a new world, with first_stage set.
@@ -57,10 +61,6 @@ void Stage_UpdateCards(const PTN *sprites, const GAME_TEXT_FONT *font);
 // Updates bumpers, bars, turrets and portals; reset then clears them.
 // Call with reset before abandoning a stage while the Orb is in a portal.
 void Stage_UpdateObstacles(const PTN *sprites, bool reset);
-
-typedef struct {
-    bool active, waiting, boss;
-} STAGE_ORB_COMPOSITE;
 
 // Zeroes the Orb composite state for a new world.
 void StageOrb_Init(void);

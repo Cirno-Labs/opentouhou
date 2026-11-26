@@ -2,16 +2,16 @@
 
 #include "th01/gameplay_assets.h"
 
-// Creates complete, synthetic assets for public construction and lifecycle
-// tests. All bytes and mutable fixture backing belong to allocator.
-GAMEPLAY_ASSETS *Th01TestAssets_Create(const ALLOCATOR *allocator);
-
 // Shared backing for the synthetic assets of each boss.
 typedef struct {
     const GAMEPLAY_ASSETS *assets;
     uint8_t *pixels, *coverage;
     PI_IMAGE image;
 } TH01_TEST_BOSS_BACKING;
+
+// Creates complete, synthetic assets for public construction and lifecycle
+// tests. All bytes and mutable fixture backing belong to allocator.
+GAMEPLAY_ASSETS *Th01TestAssets_Create(const ALLOCATOR *allocator);
 
 // Create one boss's synthetic assets. Each lives in its own file, with the
 // boss's source.

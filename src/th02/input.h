@@ -40,17 +40,6 @@ typedef struct {
     size_t clock_count;
 } TH02_INPUT;
 
-extern const INPUT_SCHEMA g_Th02InputSchema;
-
-// Returns the key mask, keeping contradictory bits; Space and Z both shoot.
-uint16_t GameInput_Sense(const TH02_INPUT *sample);
-
-// Reports a key that skips the logo; keypad directions do not.
-bool GameInput_LogoKey(const TH02_INPUT *sample);
-
-// Reports a key in BIOS groups 5, 3 or 0, other than Space and movement.
-bool GameInput_AnyWaitKey(const TH02_INPUT *sample);
-
 typedef enum {
     KEY_WAIT_RELEASE,
     KEY_WAIT_PRESS,
@@ -62,6 +51,17 @@ typedef struct {
     uint8_t frames_left;
     bool pending;
 } KEY_WAIT;
+
+extern const INPUT_SCHEMA g_Th02InputSchema;
+
+// Returns the key mask, keeping contradictory bits; Space and Z both shoot.
+uint16_t GameInput_Sense(const TH02_INPUT *sample);
+
+// Reports a key that skips the logo; keypad directions do not.
+bool GameInput_LogoKey(const TH02_INPUT *sample);
+
+// Reports a key in BIOS groups 5, 3 or 0, other than Space and movement.
+bool GameInput_AnyWaitKey(const TH02_INPUT *sample);
 
 // Starts a release-then-press wait that samples every second frame.
 void GameInput_BeginWait(KEY_WAIT *wait, const TH02_INPUT *sample);

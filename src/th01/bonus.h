@@ -9,6 +9,16 @@
 
 #include "core/vfs.h"
 
+typedef struct {
+    uint8_t box[4];
+} BONUS_STAGE_ASSETS;
+
+typedef struct {
+    PI_IMAGE background;
+    PTN numerals;
+    PALETTE palette;
+} BONUS_TOTAL_ASSETS;
+
 // Shifts page 0 by 32 pixels, left on even rows and right on odd rows,
 // feeding in page 1. transferred is 0..76 bytes, divisible by four.
 void Bonus_RowShift32(uint16_t y, uint16_t transferred);
@@ -21,10 +31,6 @@ void Bonus_BeginRowTransition(void);
 // Includes the final two-count delay, clearing count1 only after each delay
 // succeeds.
 bool Bonus_ResumeRowTransition(PALETTE_STATE *palette, const PALETTE *target);
-
-typedef struct {
-    uint8_t box[4];
-} BONUS_STAGE_ASSETS;
 
 // Clears stage and total bonus state for a new gameplay session.
 void Bonus_Init(void);
@@ -51,12 +57,6 @@ bool Bonus_BeginStage(
 bool Bonus_Resume(
     const BONUS_STAGE_ASSETS *stage, const GAME_TEXT_FONT *font,
     const TH01_INPUT *raw);
-
-typedef struct {
-    PI_IMAGE background;
-    PTN numerals;
-    PALETTE palette;
-} BONUS_TOTAL_ASSETS;
 
 // Loads CLEAR3.GRP and NUMB.PTN into the caller's grouped allocator.
 RESULT Bonus_LoadTotalAssets(

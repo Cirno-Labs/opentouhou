@@ -42,6 +42,21 @@ typedef struct {
     double force, velocity_y;
 } ORB;
 
+typedef enum {
+    ORB_REPEL_NONE = 0,
+    ORB_REPEL_MAX = 26,
+    ORB_REPEL_3_X_UNCHANGED = 100,
+    ORB_REPEL_3_X_LEFT_4 = 101,
+    ORB_REPEL_3_X_RIGHT_4 = 102,
+    ORB_REPEL_3_X_RIGHT_8 = 103,
+    ORB_REPEL_3_X_LEFT_8 = 104,
+} ORB_REPEL;
+
+typedef struct {
+    int16_t left, top;
+    bool invincible, invincible_against_orb;
+} ORB_PLAYER;
+
 extern const ORB *const g_Orb;
 
 // Zeroes the Orb for a new world.
@@ -94,21 +109,6 @@ int16_t Orb_Image(void);
 // Moves, rotates and bounces the Orb unless it is in a portal.
 // Resets card_combo on a bottom bounce.
 void Orb_AdvanceMotion(int16_t *card_combo);
-
-typedef enum {
-    ORB_REPEL_NONE = 0,
-    ORB_REPEL_MAX = 26,
-    ORB_REPEL_3_X_UNCHANGED = 100,
-    ORB_REPEL_3_X_LEFT_4 = 101,
-    ORB_REPEL_3_X_RIGHT_4 = 102,
-    ORB_REPEL_3_X_RIGHT_8 = 103,
-    ORB_REPEL_3_X_LEFT_8 = 104,
-} ORB_REPEL;
-
-typedef struct {
-    int16_t left, top;
-    bool invincible, invincible_against_orb;
-} ORB_PLAYER;
 
 // Returns whether contact kills the player, and repels it on near contact,
 // even while invincible; repel_friction sets the repulsion force.

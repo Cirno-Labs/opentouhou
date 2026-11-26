@@ -4,6 +4,13 @@
 #include "core/io/reader.h"
 #include "core/vfs/types.h"
 
+// Runs on every file a VFS_IN_MEMORY open returns, before the caller sees
+// it, and may replace what the READER holds (core/patch uses this to apply
+// thcrap jdiffs). A file opened as VFS_STREAM never goes through the hook,
+// because the hook needs the whole file in memory to patch it. A hook that
+// fails closes the READER and fails the open.
+typedef RESULT (*VFS_HOOK)(void *context, const char *path, READER *file);
+
 // Returns whether a lookup for path would find a file.
 bool Vfs_Exists(const VFS *vfs, const char *path);
 
@@ -32,13 +39,6 @@ RESULT Vfs_Remove(VFS *vfs, const char *name);
 void Vfs_List(
     const VFS *vfs, const char *dir,
     void (*visit)(void *user, const char *name), void *user);
-
-// Runs on every file a VFS_IN_MEMORY open returns, before the caller sees
-// it, and may replace what the READER holds (core/patch uses this to apply
-// thcrap jdiffs). A file opened as VFS_STREAM never goes through the hook,
-// because the hook needs the whole file in memory to patch it. A hook that
-// fails closes the READER and fails the open.
-typedef RESULT (*VFS_HOOK)(void *context, const char *path, READER *file);
 
 // Sets the hook that every VFS_IN_MEMORY open runs through, along with the
 // context it receives. A vfs starts with no hook. Setting it again replaces

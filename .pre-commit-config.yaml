@@ -18,6 +18,13 @@ repos:
     language: python
     files: \.h$
 
+  - id: header-order
+    name: A header declares its types before its functions
+    entry: tools/lint/check_header_order
+    language: python
+    files: \.h$
+    exclude: ^src/pc98/opna/vendor/
+
   - id: global-reset
     name: A global is reset with memset, not a compound literal
     entry: tools/lint/check_global_reset
