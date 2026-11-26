@@ -285,3 +285,124 @@ TEST(a_write_below_a_mount_point_lands_in_its_directory)
     Mem_Free(root);
     Mem_Free(directory);
 }
+
+TEST(removal_matches_case_and_invalidates_cached_lookups)
+{
+    char *const directory = TestDir_Prepare("remove_case");
+    char *const file = TestDir_Join(directory, "Huuhi.DAT");
+    M_Create(file, "score");
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS *const vfs = Vfs_Create(&test.allocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", directory, 0, true)));
+    CHECK(Vfs_Exists(vfs, "huuhi.dat"));
+    CHECK(Result_Ignore(Vfs_Remove(vfs, "HUUHI.DAT")));
+    CHECK(!SDL_GetPathInfo(file, nullptr));
+    CHECK(!Vfs_Exists(vfs, "huuhi.dat"));
+    CHECK(Result_Ignore(Vfs_Remove(vfs, "huuhi.dat")));
+    Vfs_Destroy(vfs);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(file);
+    Mem_Free(directory);
+}
+
+TEST(removal_refuses_names_below_a_mount)
+{
+    char *const directory = TestDir_Prepare("remove_mount");
+    char *const file = TestDir_Join(directory, "huuhi.dat");
+    M_Create(file, "score");
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "user", directory, 0, true)));
+    CHECK(!Result_Ignore(Vfs_Remove(vfs, "huuhi.dat")));
+    CHECK(SDL_GetPathInfo(file, nullptr));
+    Vfs_Destroy(vfs);
+    Mem_Free(file);
+    Mem_Free(directory);
+}
+
+TEST(removal_preserves_lower_sources_and_never_falls_through)
+{
+    char *const directory = TestDir_Prepare("remove_priority");
+    char *const low = TestDir_Join(directory, "low");
+    char *const high = TestDir_Join(directory, "high");
+    char *const original = TestDir_Join(directory, "original");
+    CHECK(SDL_CreateDirectory(low));
+    CHECK(SDL_CreateDirectory(high));
+    CHECK(SDL_CreateDirectory(original));
+    char *const low_file = TestDir_Join(low, "HUUHI.DAT");
+    char *const high_file = TestDir_Join(high, "huuhi.dat");
+    char *const original_file = TestDir_Join(original, "huuhi.dat");
+    M_Create(low_file, "low");
+    M_Create(high_file, "high");
+    M_Create(original_file, "original");
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", low, 0, true)));
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", high, 1, true)));
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", original, 2, false)));
+    CHECK(Result_Ignore(Vfs_Remove(vfs, "HUUHI.DAT")));
+    CHECK(!SDL_GetPathInfo(high_file, nullptr));
+    CHECK(SDL_GetPathInfo(low_file, nullptr));
+    CHECK(SDL_GetPathInfo(original_file, nullptr));
+    CHECK(Result_Ignore(Vfs_Remove(vfs, "HUUHI.DAT")));
+    CHECK(SDL_GetPathInfo(low_file, nullptr));
+    READER reader;
+    CHECK(Result_Ignore(Vfs_Open(vfs, "huuhi.dat", VFS_STREAM, &reader)));
+    CHECK(M_ReadsAs(&reader, "original"));
+    Reader_Close(&reader);
+    CHECK(SDL_CreateDirectory(high_file));
+    CHECK(!Result_Ignore(Vfs_Remove(vfs, "huuhi.dat")));
+    CHECK(SDL_GetPathInfo(low_file, nullptr));
+    Vfs_Destroy(vfs);
+    Mem_Free(original_file);
+    Mem_Free(high_file);
+    Mem_Free(low_file);
+    Mem_Free(original);
+    Mem_Free(high);
+    Mem_Free(low);
+    Mem_Free(directory);
+}
+
+TEST(removal_rejects_directories_invalid_paths_and_read_only_sources)
+{
+    char *const directory = TestDir_Prepare("remove_invalid");
+    char *const file = TestDir_Join(directory, "score.dat");
+    char *const sub = TestDir_Join(directory, "sub");
+    M_Create(file, "original");
+    CHECK(SDL_CreateDirectory(sub));
+    VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", directory, 0, false)));
+    CHECK(!Result_Ignore(Vfs_Remove(vfs, "score.dat")));
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", directory, 1, true)));
+    const char *const invalid[] = {
+        "",           "sub",          "sub/score.dat",    ".",
+        "..",         "../score.dat", "sub/../score.dat", "C:/score.dat",
+        "/score.dat", "\\score.dat"
+    };
+    for (size_t i = 0; i < ARRAY_SIZE(invalid); i++) {
+        CHECK(!Result_Ignore(Vfs_Remove(vfs, invalid[i])));
+    }
+    CHECK(SDL_GetPathInfo(file, nullptr));
+    CHECK(SDL_GetPathInfo(sub, nullptr));
+    Vfs_Destroy(vfs);
+    Mem_Free(sub);
+    Mem_Free(file);
+    Mem_Free(directory);
+}
+
+TEST(removal_reports_directory_lookup_errors)
+{
+    char *const directory = TestDir_Prepare("remove_lookup");
+    char *const root = TestDir_Join(directory, "root");
+    CHECK(SDL_CreateDirectory(root));
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    VFS *const vfs = Vfs_Create(&test.allocator);
+    CHECK(Result_Ignore(Vfs_MountDir(vfs, "", root, 0, true)));
+    CHECK(SDL_RemovePath(root));
+    M_Create(root, "not a directory");
+    CHECK(!Result_Ignore(Vfs_Remove(vfs, "score.dat")));
+    Vfs_Destroy(vfs);
+    CHECK_EQ_INT(test.live_blocks, 0);
+    Mem_Free(root);
+    Mem_Free(directory);
+}
