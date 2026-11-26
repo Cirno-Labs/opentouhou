@@ -113,6 +113,12 @@ that shell/game took before the ticks of the display frame, and it asks
 for changes. shell/game queues the requests and applies them after the
 tick that made them, so that this state never changes during a tick.
 
+An input schema can declare clock fields, each filled with a wall clock
+reading, in microseconds, by role: the display frame's own clock, or the
+host's start origin. shell/game writes them into the sampled input once
+per display frame, before the ticks; the game only reads them. The
+replay harness records these values and supplies them during playback.
+
 `tick` updates the game and draws it in one call, because the originals
 interleave the two and some of their drawing code changes state.
 Drawing runs in call order into a logical screen of the game's size, and
