@@ -269,6 +269,44 @@ TEST(line_points_write_bytes_and_shallow_lines_write_words)
     Arena_Free(&arena);
 }
 
+TEST(tdw_lines_and_filled_circles_write_whole_addressed_bytes)
+{
+    ARENA arena;
+    Arena_Init(&arena, "GRCG TDW writes", 1024 * 1024);
+    Video_Init(Arena_Allocator(&arena));
+    Clip_Reset();
+    Grcg_SetColor(1);
+    m_Grcg.mode = 0x8e;
+    m_Grcg.tiles[0] = 0xa5;
+
+    memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
+    Draw_HLine(g_Clip, 4, 4, 7);
+    CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, 7 * 80), 0xa5);
+    CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, 7 * 80 + 1), 0xa5);
+    CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, 7 * 80 + 2), 255);
+    for (uint8_t plane = 1; plane < 4; plane++) {
+        CHECK_EQ_INT(Video_ReadPlaneByte(0, plane, 7 * 80), 255);
+        CHECK_EQ_INT(Video_ReadPlaneByte(0, plane, 7 * 80 + 1), 255);
+    }
+
+    memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
+    Draw_CircleFill(4, 9, 0);
+    CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, 9 * 80), 0xa5);
+    CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, 9 * 80 + 1), 255);
+
+    memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
+    Draw_CircleFill(4, 11, 1);
+    for (int y = 10; y <= 12; y++) {
+        CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, y * 80), 0xa5);
+        CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, y * 80 + 1), 0xa5);
+        CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, y * 80 + 2), 255);
+    }
+    CHECK_EQ_INT(Video_ReadPlaneByte(0, 0, 9 * 80), 255);
+    CHECK_EQ_INT(m_Grcg.mode, 0x8e);
+    CHECK_EQ_INT(m_Grcg.tiles[0], 0xa5);
+    Arena_Free(&arena);
+}
+
 TEST(rectangles_keep_inclusive_clip_endpoints_and_untouched_storage)
 {
     const MATH16_VECTOR vertices[2][4] = {
