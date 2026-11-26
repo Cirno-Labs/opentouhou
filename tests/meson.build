@@ -1583,6 +1583,33 @@ if build_games
     ),
     suite: 'unit',
   )
+  foreach part : ['music_wait']
+    test(
+      'th02/' + part,
+      executable(
+        'test_th02_' + part,
+        'test_th02_' + part + '.c',
+        c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+        implicit_include_directories: false,
+        link_with: [th02_lib, core_hash_lib, core_io_lib, core_base_lib],
+        dependencies: [pc98_dep, sdl3],
+      ),
+      suite: 'unit',
+    )
+  endforeach
+  test(
+    'th02/music_data',
+    executable(
+      'test_th02_music_data',
+      'test_th02_music_data.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_vfs_lib, core_io_lib, core_base_lib],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th02' / 'music_data'},
+  )
   foreach part : ['wait']
     test(
       'th02/' + part,

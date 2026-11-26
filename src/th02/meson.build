@@ -16,6 +16,8 @@ th02_lib = static_library(
   'input.c',
   'map.c',
   'mpn.c',
+  'music/assets.c',
+  'music/wait.c',
   'palette.c',
   'patterns.c',
   'presenter.c',
