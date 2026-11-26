@@ -4,6 +4,7 @@ th02_lib = static_library(
   'clip.c',
   'gaiji.c',
   'vsync_irq.c',
+  'wait.c',
   'demo.c',
   'grcg.c',
   'input.c',
