@@ -9,6 +9,7 @@ th02_lib = static_library(
   'input.c',
   'map.c',
   'mpn.c',
+  'palette.c',
   'patterns.c',
   'random.c',
   'performance.c',
