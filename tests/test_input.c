@@ -5,6 +5,8 @@
 #include "input_backend_fake.h"
 #include "test.h"
 
+#include <SDL3/SDL_scancode.h>
+
 #include <string.h>
 
 typedef struct {
@@ -692,4 +694,45 @@ TEST(load_reads_chords_and_skips_chords_with_a_whole_stick)
     CHECK(!M_HasBindingNamed(bindings, count, "back+left_stick"));
     Ini_Free(ini);
     Input_Destroy(input);
+}
+
+TEST(punctuation_and_international_names_match_backend_scancodes)
+{
+    static const struct {
+        const char *name;
+        SDL_Scancode code;
+    } keys[] = {
+        { "minus", SDL_SCANCODE_MINUS },
+        { "equals", SDL_SCANCODE_EQUALS },
+        { "left_bracket", SDL_SCANCODE_LEFTBRACKET },
+        { "right_bracket", SDL_SCANCODE_RIGHTBRACKET },
+        { "backslash", SDL_SCANCODE_BACKSLASH },
+        { "non_us_hash", SDL_SCANCODE_NONUSHASH },
+        { "semicolon", SDL_SCANCODE_SEMICOLON },
+        { "apostrophe", SDL_SCANCODE_APOSTROPHE },
+        { "grave", SDL_SCANCODE_GRAVE },
+        { "comma", SDL_SCANCODE_COMMA },
+        { "period", SDL_SCANCODE_PERIOD },
+        { "slash", SDL_SCANCODE_SLASH },
+        { "non_us_backslash", SDL_SCANCODE_NONUSBACKSLASH },
+        { "international_1", SDL_SCANCODE_INTERNATIONAL1 },
+        { "international_3", SDL_SCANCODE_INTERNATIONAL3 },
+        { "international_4", SDL_SCANCODE_INTERNATIONAL4 },
+    };
+    for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
+        INPUT_BINDING binding;
+        CHECK(Input_BindingFromName(keys[i].name, &binding));
+        CHECK_EQ_INT(binding.device, INPUT_DEVICE_KEYBOARD);
+        CHECK_EQ_INT(binding.count, 1);
+        CHECK_EQ_INT(binding.codes[0], keys[i].code);
+        char name[INPUT_BINDING_NAME_SIZE];
+        Input_BindingName(binding, name);
+        CHECK_EQ_STR(name, keys[i].name);
+    }
+    INPUT_BINDING chord;
+    CHECK(Input_BindingFromName("ctrl+comma", &chord));
+    CHECK_EQ_INT(chord.count, 2);
+    char name[INPUT_BINDING_NAME_SIZE];
+    Input_BindingName(chord, name);
+    CHECK_EQ_STR(name, "ctrl+comma");
 }
