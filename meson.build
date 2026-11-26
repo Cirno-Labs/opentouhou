@@ -80,7 +80,7 @@ endif
 # that is not on its include path.
 include_root = meson.current_build_dir() / 'include'
 layer_include = {}
-foreach layer : ['core', 'shell', 'stg', 'pc98', 'th01', 'th06', 'th07', 'othpatch']
+foreach layer : ['core', 'shell', 'stg', 'pc98', 'th01', 'th02', 'th06', 'th07', 'othpatch']
   run_command(
     python3,
     files('tools/meson/link_layer'),
