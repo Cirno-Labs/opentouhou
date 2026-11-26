@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""Fail when a Markdown line runs past 80 columns.
+
+Takes the paths of Markdown files. A longer line passes when it is a
+table row, sits in a fenced code block, is a single word, or fits once its
+link targets are left out: wrapping a link reads worse.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+WIDTH = 80
+LINK_RE = re.compile(r"\]\([^)]*\)")
+MESSAGE = f"wrap at {WIDTH} columns"
+
+
+def errors(lines: list[str]) -> list[int]:
+    """Return the indices of the lines that are too long."""
+    found = []
+    fenced = False
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            fenced = not fenced
+            continue
+        if len(LINK_RE.sub("]()", line)) <= WIDTH:
+            continue
+        if fenced or stripped.startswith("|"):
+            continue
+        if " " in stripped.lstrip("-*0123456789. >"):
+            found.append(index)
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    paths = [Path(path) for path in (sys.argv[1:] if argv is None else argv)]
+    failed = False
+    for path in paths:
+        for index in errors(path.read_text().split("\n")):
+            failed = True
+            print(f"{path}:{index + 1}: {MESSAGE}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

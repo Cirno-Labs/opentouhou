@@ -24,6 +24,12 @@ repos:
     language: python
     files: ^(src|tests)/.*\.[ch]$
 
+  - id: md-wrap
+    name: Markdown wraps at 80 columns
+    entry: tools/lint/check_md_wrap
+    language: python
+    files: \.md$
+
   - id: raw-color
     name: A color is written with COLOR_ARGB, not a raw literal
     entry: tools/lint/check_raw_color
