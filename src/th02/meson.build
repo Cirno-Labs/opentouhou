@@ -8,6 +8,8 @@ th02_lib = static_library(
   'demo.c',
   'grcg.c',
   'draw/blit.c',
+  'draw/circles.c',
+  'draw/glyphs.c',
   'draw/shapes.c',
   'draw/sprites.c',
   'input.c',
