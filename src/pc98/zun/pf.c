@@ -157,8 +157,8 @@ static RESULT M_ReadEntry(
 }
 
 static RESULT M_ReadEntryTH01(
-    READER *const archive, const void *const data, uint8_t *const out,
-    const size_t size)
+    READER *const archive, const void *const context, const void *const data,
+    uint8_t *const out, const size_t size)
 {
     return M_ReadEntry(archive, data, out, size, 0x76);
 }

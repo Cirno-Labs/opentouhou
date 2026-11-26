@@ -394,8 +394,8 @@ static RESULT M_ReadTable(READER *const archive, ARCHIVE_TABLE *const table)
 }
 
 static RESULT M_ReadData(
-    READER *const archive, const void *const data, uint8_t *const out,
-    const size_t size)
+    READER *const archive, const void *const context, const void *const data,
+    uint8_t *const out, const size_t size)
 {
     const HDI_RECORD *const record = data;
     size_t done = 0;

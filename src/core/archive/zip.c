@@ -203,8 +203,8 @@ static RESULT M_SeekData(READER *const archive, const ZIP_RECORD *const record)
 }
 
 static RESULT M_ReadData(
-    READER *const archive, const void *const data, uint8_t *const out,
-    const size_t size)
+    READER *const archive, const void *const context, const void *const data,
+    uint8_t *const out, const size_t size)
 {
     const ZIP_RECORD *const record = data;
     MUST(M_SeekData(archive, record));
