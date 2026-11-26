@@ -12,7 +12,6 @@
 
 #define M_TRAP 10
 #define M_TRAP_FRAME 153
-#define M_SPRING_FRAME 700
 #define M_TRAP_END 1000
 
 typedef struct {
@@ -41,10 +40,11 @@ static const INPUT_SCHEMA m_Schema = {
 
 // Holds a toy game: the player walks between two walls. It loses a life
 // on every 25th frame that it stands on a multiple of 3. With a trap, it
-// loses one only at M_SPRING_FRAME when it stood at the trap or right of it
+// loses one only at frame m_Spring when it stood at the trap or right of it
 // at M_TRAP_FRAME, its score favors the trap, and the game ends at
 // M_TRAP_END.
 static int32_t m_Trap;
+static int32_t m_Spring;
 static int32_t m_StartLives;
 static int32_t m_Frame;
 static int32_t m_X;
@@ -136,7 +136,7 @@ static bool M_Tick(const void *const input)
         m_TrapX = m_X;
         m_MostTrapX = MAX(m_MostTrapX, m_X);
     }
-    m_Lives -= m_Frame == M_SPRING_FRAME && m_TrapX >= m_Trap;
+    m_Lives -= m_Frame == m_Spring && m_TrapX >= m_Trap;
     return true;
 }
 
@@ -279,17 +279,46 @@ TEST(a_search_stops_at_the_frame_cap)
     Mem_Free(inputs);
 }
 
-TEST(a_plateau_of_dead_ends_sends_the_search_back)
+TEST(a_dead_end_sends_the_search_to_another_branch)
 {
     m_Trap = M_TRAP;
+    m_Spring = 700;
     m_MostTrapX = -50;
     int32_t frames;
-    M_INPUT *const inputs = M_Record("plateau", &m_Game, nullptr, 0, &frames);
+    M_INPUT *const inputs = M_Record("trap", &m_Game, nullptr, 0, &frames);
     CHECK_EQ_INT(frames, M_TRAP_END);
     CHECK_EQ_INT(M_Play(inputs, frames), 2);
     CHECK(m_TrapX < M_TRAP);
     CHECK(m_MostTrapX >= M_TRAP);
     Mem_Free(inputs);
+}
+
+TEST(a_search_of_dead_ends_saves_its_best_run)
+{
+    m_Trap = -50;
+    m_Spring = 250;
+    int32_t frames;
+    M_INPUT *const inputs = M_Record("doom", &m_Game, nullptr, 0, &frames);
+    CHECK(frames >= M_TRAP_FRAME && frames < m_Spring);
+    CHECK_EQ_INT(M_Play(inputs, frames), 2);
+    Mem_Free(inputs);
+}
+
+TEST(a_search_past_a_dead_end_gives_the_same_run_each_time)
+{
+    m_Trap = M_TRAP;
+    m_Spring = 700;
+    const char *const extra[] = { "--seed", "7" };
+    int32_t first_frames;
+    M_INPUT *const first =
+        M_Record("trap_a", &m_Game, extra, ARRAY_SIZE(extra), &first_frames);
+    int32_t second_frames;
+    M_INPUT *const second =
+        M_Record("trap_b", &m_Game, extra, ARRAY_SIZE(extra), &second_frames);
+    CHECK_EQ_INT(second_frames, first_frames);
+    CHECK(memcmp(first, second, (size_t)first_frames * sizeof(M_INPUT)) == 0);
+    Mem_Free(first);
+    Mem_Free(second);
 }
 
 TEST(scores_compare_value_by_value)

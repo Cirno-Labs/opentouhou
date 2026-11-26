@@ -60,12 +60,13 @@ th01record --data DATA --out OUT.txt --start stage=19 --start route=0 \
 
 `--start` sets the run's start values: th06's and th07's practice
 choices, or the start fields of a th01 case. The recorder grows the run
-best first from every prefix that it has found without a setback, such
-as a lost life, by random and mutated segments of holds; `--seed` seeds
+by Monte Carlo tree search over prefixes without a setback, such as a
+lost life, made of random and mutated segments of holds; `--seed` seeds
 the search. Each game scores its runs: th01 by the boss's phase or the
 cards removed, th06 and th07 by the stage frames. The run ends with the
 game, at the game's frame cap, or with `--until` once the first value of
-its score reaches a value. With `--minimize`, the search keeps only
+its score reaches a value; when the search runs out first, the recorder
+saves its best run. With `--minimize`, the search keeps only
 segments that add a setback, for a game over.
 [recorder.h](../replay/bot/recorder.h) describes the search. The same
 arguments always give the same run.
