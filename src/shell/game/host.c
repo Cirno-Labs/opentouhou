@@ -142,8 +142,11 @@ static void M_WriteSettings(const SHELL_CONTEXT *const ctx, INI *const ini)
 
 // Reads config.ini again so that an edit made while the game ran, such as
 // by othpatch, stays.
-static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
+static void M_SaveSettings(SHELL_CONTEXT *const ctx)
 {
+    if (ctx->ini_path == nullptr || ctx->loaded_settings == nullptr) {
+        return;
+    }
     INI *current;
     if (!Result_Log(
             Ini_Parse("", 0, &g_HeapAllocator, &current), LOG_LEVEL_ERROR)) {
@@ -155,7 +158,11 @@ static void M_SaveSettings(const SHELL_CONTEXT *const ctx)
         Ini_Load(ctx->ini_path, &g_HeapAllocator, &disk), LOG_LEVEL_ERROR);
     INI *const target = disk != nullptr ? disk : ctx->ini;
     Ini_MergeChanges(target, ctx->loaded_settings, current);
-    Result_Log(Ini_Save(target, ctx->ini_path), LOG_LEVEL_ERROR);
+    if (Result_Log(Ini_Save(target, ctx->ini_path), LOG_LEVEL_ERROR)) {
+        Ini_Free(ctx->loaded_settings);
+        ctx->loaded_settings = current;
+        current = nullptr;
+    }
     Ini_Free(disk);
     Ini_Free(current);
 }
@@ -418,6 +425,15 @@ static void M_ApplyRequests(SHELL_CONTEXT *const ctx)
             Result_Log(M_SetFullscreen(ctx, fullscreen), LOG_LEVEL_WARNING);
         }
     }
+    if (ctx->requests.save_settings) {
+        ctx->requests.save_settings = false;
+        M_SaveSettings(ctx);
+    }
+}
+
+void Shell_RequestSaveSettings(void)
+{
+    m_Context.requests.save_settings = true;
 }
 
 bool Shell_GetPadPress(INPUT_BINDING *const out)

@@ -52,3 +52,7 @@ bool Shell_IsFullscreen(void)
 void Shell_RequestFullscreen(const bool fullscreen)
 {
 }
+
+void Shell_RequestSaveSettings(void)
+{
+}

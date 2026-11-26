@@ -28,6 +28,7 @@ typedef struct {
     // Holds the window mode asked for: -1 for none, 0 for windowed and 1
     // for fullscreen.
     int32_t fullscreen;
+    bool save_settings;
 } SHELL_REQUESTS;
 
 typedef struct {
