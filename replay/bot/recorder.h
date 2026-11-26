@@ -10,28 +10,32 @@
 // RECORDER_GAME; Recorder_Main parses the command line with core/args.
 //
 // The recorder searches holds of role combinations (bot.h) directly
-// against the score. A node is a run prefix that survived; the root ends
-// after the script's frames. Expanding a node plays candidate segments
-// after its run from a fresh start, each followed by 90 frames without
-// input, and drops those whose setbacks rise in that time. A candidate is
-// either 150 frames of random holds or the holds of one of the 4 best
-// nodes so far with one to three holds changed, lengthened, shortened,
-// swapped or replaced. Batches of 16 candidates, half of each kind and at
-// most 3, run until one leaves a survivor, and each survivor joins the
-// frontier as a child node.
+// against the score, with Monte Carlo tree search. A node is a run prefix
+// that survived; the root ends after the script's frames. Each iteration
+// descends from the root by UCB1, value + 0.02 * sqrt(ln(parent visits) /
+// visits), to the first node with fewer than 16 children, and plays one
+// new child segment after its run from a fresh start, followed by 90
+// frames without input. The segment is either 150 frames of random holds
+// or, for every second child, the holds of the node's best child with one
+// to three holds changed, lengthened, shortened, swapped or replaced. A
+// child whose setbacks rise in that time dies and is never selected. Each
+// visit, dead or alive, counts at every node above it.
 //
-// The frontier gives the next node to expand: the best score, then the
-// longer run, then the earlier node, so that a stretch of equal scores
-// still moves on. When no better node in that order has come for 8
-// expansions, the nodes under the ancestor k steps above the next node go
-// behind all others, where k counts these demotions since the best node
-// last changed; a new best node clears them. The search ends at a
-// node whose game ended, that reached the frame cap or the --until value,
-// or fails after a budget of candidates. With --minimize, the same search
-// keeps only the candidates that add setbacks or end the game: they play
-// up to 3000 frames, stop at the setback and need no idle frames. All
-// randomness comes from --seed, so the same arguments always give the
-// same run.
+// A node's value is the share of its siblings whose best descendant does
+// not beat its own, in score and then run length, times the share of its
+// visits that came before that descendant was found. The first factor
+// keeps the order of scores without knowing their scale; the second sends
+// the search away from a branch that stopped improving, back to a sibling
+// or an ancestor's sibling. A node whose children all died or ran out is
+// never selected again.
+//
+// The search ends at a node whose game ended, that reached the frame cap or
+// the --until value, when every node ran out, or after a budget of
+// candidates; it saves the run of that node, or of the best node in score
+// and then run length. With --minimize, the search instead grows one run by
+// random segments that add setbacks or end the game: they play up to 3000
+// frames, stop at the setback and need no idle frames. All randomness comes
+// from --seed, so the same arguments always give the same run.
 
 #define RECORDER_SCORE_MAX 4
 

@@ -8,6 +8,7 @@
 #include "core/base/utils.h"
 #include "shell/null.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -15,10 +16,8 @@
 #define M_LONGEST_SEGMENT 300
 #define M_LOSING_SEGMENT 3000
 #define M_IDLE_FRAMES 90
-#define M_BATCHES 3
-#define M_BATCH_SIZE 16
-#define M_ELITE 4
-#define M_PLATEAU 8
+#define M_BRANCHES 16
+#define M_EXPLORATION 0.02
 #define M_BUDGET 20000
 
 typedef struct {
@@ -54,13 +53,19 @@ typedef struct {
 // parent's, the frame at which it ends and how far it got.
 typedef struct {
     int32_t parent;
+    int32_t child;
+    int32_t sibling;
     int32_t first;
     int32_t count;
     int32_t frames;
     int32_t depth;
-    int32_t demotions;
+    int32_t tries;
+    int32_t visits;
+    int32_t improved;
+    int32_t top;
     RECORDER_SCORE score;
     bool ended;
+    bool exhausted;
 } M_NODE;
 
 typedef struct {
@@ -73,19 +78,13 @@ typedef struct {
     M_NODE *nodes;
     int32_t node_count;
     int32_t node_capacity;
-    int32_t *frontier;
-    int32_t frontier_count;
-    int32_t frontier_capacity;
     int32_t *path;
     int32_t path_capacity;
-    int32_t elite[M_ELITE];
-    int32_t elite_count;
-    bool improved;
-    int32_t stalled;
-    int32_t demotions;
+    int32_t best;
+    int32_t tip;
     int32_t goal;
     int32_t evaluated;
-    int32_t dead_ends;
+    int32_t dead;
     uint64_t rng;
     void *input;
     void *none;
@@ -256,55 +255,6 @@ static bool M_Better(const M_NODE *const a, const M_NODE *const b)
     return order != 0 ? order > 0 : a->frames > b->frames;
 }
 
-// Orders the frontier: fewer demotions first, then the better score, then
-// the longer run, then the earlier node.
-static bool M_Ahead(
-    const M_SEARCH *const search, const int32_t a, const int32_t b)
-{
-    const M_NODE *const first = &search->nodes[a];
-    const M_NODE *const second = &search->nodes[b];
-    if (first->demotions != second->demotions) {
-        return first->demotions < second->demotions;
-    }
-    if (M_Better(first, second) || M_Better(second, first)) {
-        return M_Better(first, second);
-    }
-    return a < b;
-}
-
-// Returns the frontier slot of the node to expand next.
-static int32_t M_Top(const M_SEARCH *const search)
-{
-    int32_t top = 0;
-    for (int32_t i = 1; i < search->frontier_count; i++) {
-        if (M_Ahead(search, search->frontier[i], search->frontier[top])) {
-            top = i;
-        }
-    }
-    return top;
-}
-
-static void M_AddElite(M_SEARCH *const search, const int32_t node)
-{
-    int32_t slot = search->elite_count;
-    if (slot == M_ELITE) {
-        slot = M_ELITE - 1;
-        if (!M_Better(
-                &search->nodes[node], &search->nodes[search->elite[slot]])) {
-            return;
-        }
-    } else {
-        search->elite_count++;
-    }
-    for (; slot > 0
-         && M_Better(
-               &search->nodes[node], &search->nodes[search->elite[slot - 1]]);
-         slot--) {
-        search->elite[slot] = search->elite[slot - 1];
-    }
-    search->elite[slot] = node;
-}
-
 static bool M_IsGoal(const M_SEARCH *const search, const M_NODE *const node)
 {
     const int32_t until = search->args->until;
@@ -312,9 +262,9 @@ static bool M_IsGoal(const M_SEARCH *const search, const M_NODE *const node)
         || (until >= 0 && node->score.values[0] >= until);
 }
 
-// Adds the first frames of the candidate as a child of parent, and clears
-// every demotion when it is the best node so far.
-static void M_AddNode(
+// Adds the first frames of the candidate as the last child of parent and
+// returns its index.
+static int32_t M_AddNode(
     M_SEARCH *const search, const int32_t parent, const int32_t frames,
     const RECORDER_SCORE score, const bool ended)
 {
@@ -322,14 +272,16 @@ static void M_AddNode(
         search->nodes, &search->node_capacity, search->node_count,
         sizeof(M_NODE));
     const int32_t index = search->node_count++;
-    const M_NODE *const from = &search->nodes[parent];
-    M_NODE *const node = &search->nodes[index];
+    M_NODE *const nodes = search->nodes;
+    M_NODE *const node = &nodes[index];
     *node = (M_NODE) {
         .parent = parent,
+        .child = -1,
+        .sibling = -1,
+        .top = index,
         .first = search->holds.count,
-        .frames = from->frames + frames,
-        .depth = from->depth + 1,
-        .demotions = from->demotions,
+        .frames = nodes[parent].frames + frames,
+        .depth = nodes[parent].depth + 1,
         .score = score,
         .ended = ended,
     };
@@ -340,30 +292,33 @@ static void M_AddNode(
         M_AddHold(&search->holds, hold);
         node->count++;
     }
-    search->frontier = M_Grow(
-        search->frontier, &search->frontier_capacity, search->frontier_count,
-        sizeof(int32_t));
-    search->frontier[search->frontier_count++] = index;
-    M_AddElite(search, index);
-    if (search->elite[0] == index) {
-        search->improved = true;
-        for (int32_t i = 0; i < search->node_count; i++) {
-            search->nodes[i].demotions = 0;
-        }
+    int32_t *link = &nodes[parent].child;
+    while (*link >= 0) {
+        link = &nodes[*link].sibling;
+    }
+    *link = index;
+    if (M_Better(node, &nodes[search->best])) {
+        search->best = index;
+        printf(
+            "best %d frames, score %lld, %d candidates\n", node->frames,
+            (long long)node->score.values[0], search->evaluated);
+        fflush(stdout);
     }
     if (search->goal < 0 && M_IsGoal(search, node)) {
         search->goal = index;
     }
+    return index;
 }
 
 // Plays the candidate after the run of parent from a fresh start and adds
-// it as a node when it survives. Without --minimize, the idle frames follow
-// and a rise of the setbacks drops it. With --minimize, it stops at the
-// first rise of the setbacks, and only a rise or the game's end keeps it.
+// it as a child when it survives, or gives -1. Without --minimize, the idle
+// frames follow and a rise of the setbacks drops it. With --minimize, it
+// stops at the first rise of the setbacks, and only a rise or the game's
+// end keeps it.
 static RESULT M_Try(
-    M_SEARCH *const search, const int32_t parent, bool *const survived)
+    M_SEARCH *const search, const int32_t parent, int32_t *const child)
 {
-    *survived = false;
+    *child = -1;
     const RECORDER_GAME *const game = search->game;
     const bool minimize = search->args->minimize;
     MUST(M_Replay(search, parent));
@@ -399,8 +354,7 @@ static RESULT M_Try(
     if (!minimize && game->setbacks() > setbacks) {
         return OK;
     }
-    *survived = true;
-    M_AddNode(search, parent, frames, score, ended);
+    *child = M_AddNode(search, parent, frames, score, ended);
     return OK;
 }
 
@@ -419,18 +373,17 @@ static void M_Explore(M_SEARCH *const search)
         M_AddHold(candidate, hold);
     }
 }
-// Fills the candidate with the holds of one of the best nodes, with one to
-// three of them changed, lengthened, shortened, swapped with the next or
-// replaced.
-static void M_Refine(M_SEARCH *const search)
+
+// Fills the candidate with the holds of source, with one to three of them
+// changed, lengthened, shortened, swapped with the next or replaced.
+static void M_Refine(M_SEARCH *const search, const int32_t source)
 {
     M_HOLDS *const candidate = &search->candidate;
     uint64_t *const rng = &search->rng;
-    const M_NODE *const source = &search->nodes[search->elite[M_Random(
-        rng, (uint32_t)search->elite_count)]];
+    const M_NODE *const from = &search->nodes[source];
     candidate->count = 0;
-    for (int32_t i = 0; i < source->count; i++) {
-        M_AddHold(candidate, search->holds.holds[source->first + i]);
+    for (int32_t i = 0; i < from->count; i++) {
+        M_AddHold(candidate, search->holds.holds[from->first + i]);
     }
     const int32_t changes = 1 + (int32_t)M_Random(rng, 3);
     for (int32_t i = 0; i < changes; i++) {
@@ -461,103 +414,177 @@ static void M_Refine(M_SEARCH *const search)
     }
 }
 
-// Moves the nodes under the ancestor search->demotions steps above the next
-// node to expand, but below the root, behind all others.
-static void M_Demote(M_SEARCH *const search)
+// Returns the child of node with the best score, or -1 when it has none.
+static int32_t M_BestChild(const M_SEARCH *const search, const int32_t node)
 {
     const M_NODE *const nodes = search->nodes;
-    int32_t ancestor = search->frontier[M_Top(search)];
-    for (int32_t i = 0; i < search->demotions && nodes[ancestor].depth > 1;
-         i++) {
-        ancestor = nodes[ancestor].parent;
-    }
-    if (nodes[ancestor].depth == 0) {
-        return;
-    }
-    const int32_t depth = nodes[ancestor].depth;
-    for (int32_t i = 0; i < search->frontier_count; i++) {
-        int32_t at = search->frontier[i];
-        while (nodes[at].depth > depth) {
-            at = nodes[at].parent;
-        }
-        if (at == ancestor) {
-            search->nodes[search->frontier[i]].demotions++;
+    int32_t best = -1;
+    for (int32_t at = nodes[node].child; at >= 0; at = nodes[at].sibling) {
+        if (best < 0 || M_Better(&nodes[at], &nodes[best])) {
+            best = at;
         }
     }
-    printf(
-        "plateau, demoted %d nodes back, now at %d frames\n", search->demotions,
-        nodes[search->frontier[M_Top(search)]].frames);
-    fflush(stdout);
+    return best;
 }
 
-// Expands the frontier's next node with batches of candidates, half random
-// and half refined, until a batch leaves a survivor.
-static RESULT M_Expand(M_SEARCH *const search)
+// Adds a visit to node and each node above it, and makes child, when not
+// -1, the best node of each that it beats.
+static void M_Backpropagate(
+    M_SEARCH *const search, const int32_t node, const int32_t child)
 {
-    const int32_t slot = M_Top(search);
-    const int32_t node = search->frontier[slot];
-    search->frontier[slot] = search->frontier[--search->frontier_count];
-    search->improved = false;
-    bool any = false;
-    for (int32_t batch = 0; batch < M_BATCHES && !any; batch++) {
-        for (int32_t i = 0; i < M_BATCH_SIZE && search->goal < 0; i++) {
-            FAIL_IF(
-                search->evaluated >= M_BUDGET,
-                "no run found in %d candidate segments", M_BUDGET);
-            search->evaluated++;
-            if (i % 2 == 0 || search->elite_count == 0) {
-                M_Explore(search);
-            } else {
-                M_Refine(search);
-            }
-            bool survived;
-            MUST(M_Try(search, node, &survived));
-            any = any || survived;
+    M_NODE *const nodes = search->nodes;
+    for (int32_t at = node; at >= 0; at = nodes[at].parent) {
+        nodes[at].visits++;
+        if (at == child
+            || (child >= 0 && M_Better(&nodes[child], &nodes[nodes[at].top]))) {
+            nodes[at].top = child;
+            nodes[at].improved = nodes[at].visits;
         }
     }
-    if (!any) {
-        search->dead_ends++;
+}
+
+// Marks node exhausted once it has all its children and none of them can
+// grow, then does the same for each node above it.
+static void M_Settle(M_SEARCH *const search, const int32_t node)
+{
+    M_NODE *const nodes = search->nodes;
+    for (int32_t at = node; at >= 0; at = nodes[at].parent) {
+        if (nodes[at].tries < M_BRANCHES) {
+            return;
+        }
+        for (int32_t child = nodes[at].child; child >= 0;
+             child = nodes[child].sibling) {
+            if (!nodes[child].exhausted) {
+                return;
+            }
+        }
+        nodes[at].exhausted = true;
     }
-    if (search->improved) {
-        search->stalled = 0;
-        search->demotions = 0;
-        const M_NODE *const best = &search->nodes[search->elite[0]];
-        printf(
-            "best %d frames, score %lld, %d candidates\n", best->frames,
-            (long long)best->score.values[0], search->evaluated);
-        fflush(stdout);
-    } else if (++search->stalled == M_PLATEAU && search->frontier_count > 0) {
-        search->stalled = 0;
-        search->demotions++;
-        M_Demote(search);
+}
+
+// Returns the share of the other open siblings of node whose best node
+// does not beat node's, times the share of node's visits that came before
+// its best node last changed.
+static double M_Value(const M_SEARCH *const search, const int32_t node)
+{
+    const M_NODE *const nodes = search->nodes;
+    const M_NODE *const top = &nodes[nodes[node].top];
+    int32_t others = 0;
+    int32_t beaten = 0;
+    for (int32_t at = nodes[nodes[node].parent].child; at >= 0;
+         at = nodes[at].sibling) {
+        if (at != node && !nodes[at].exhausted) {
+            others++;
+            beaten += !M_Better(&nodes[nodes[at].top], top);
+        }
+    }
+    const double rank = others == 0 ? 1.0 : (double)beaten / others;
+    return rank * nodes[node].improved / nodes[node].visits;
+}
+
+// Descends from the root by UCB1 to the first node with fewer than
+// M_BRANCHES children.
+static int32_t M_Select(const M_SEARCH *const search)
+{
+    const M_NODE *const nodes = search->nodes;
+    int32_t at = 0;
+    while (nodes[at].tries >= M_BRANCHES) {
+        const double log_visits = log(nodes[at].visits);
+        int32_t pick = -1;
+        double most = 0.0;
+        for (int32_t child = nodes[at].child; child >= 0;
+             child = nodes[child].sibling) {
+            const M_NODE *const node = &nodes[child];
+            const double bound = M_Value(search, child)
+                + M_EXPLORATION * sqrt(log_visits / node->visits);
+            if (!node->exhausted && (pick < 0 || bound > most)) {
+                pick = child;
+                most = bound;
+            }
+        }
+        at = pick;
+    }
+    return at;
+}
+
+// Plays one new segment at the node that M_Select gives, at random or
+// refined from the node's best child, and backpropagates the visit.
+static RESULT M_Expand(M_SEARCH *const search)
+{
+    const int32_t node = M_Select(search);
+    const int32_t source = M_BestChild(search, node);
+    if (search->nodes[node].tries % 2 == 0 || source < 0) {
+        M_Explore(search);
+    } else {
+        M_Refine(search, source);
+    }
+    search->nodes[node].tries++;
+    search->evaluated++;
+    int32_t child;
+    MUST(M_Try(search, node, &child));
+    if (child < 0) {
+        search->dead++;
+        M_Backpropagate(search, node, -1);
+        M_Settle(search, node);
+    } else {
+        M_Backpropagate(search, child, child);
     }
     return OK;
 }
 
-// Searches from the root, the end of the script, until a node reaches the
-// goal.
-static RESULT M_RunSearch(M_SEARCH *const search)
+// Plays one random segment at the tip and moves the tip to it when it
+// survives.
+static RESULT M_Descend(M_SEARCH *const search)
+{
+    M_Explore(search);
+    search->evaluated++;
+    int32_t child;
+    MUST(M_Try(search, search->tip, &child));
+    if (child < 0) {
+        search->dead++;
+    } else {
+        search->tip = child;
+    }
+    return OK;
+}
+
+// Searches from the root, the end of the script, and returns the node
+// whose run to save.
+static RESULT M_RunSearch(M_SEARCH *const search, int32_t *const result)
 {
     const RECORDER_GAME *const game = search->game;
     search->nodes = M_Grow(nullptr, &search->node_capacity, 0, sizeof(M_NODE));
     search->nodes[0] = (M_NODE) {
         .parent = -1,
+        .child = -1,
+        .sibling = -1,
         .frames = search->script.frames,
         .score = game->score(),
         .ended = game->has_ended(),
     };
     search->node_count = 1;
     search->goal = M_IsGoal(search, &search->nodes[0]) ? 0 : -1;
-    search->frontier =
-        M_Grow(nullptr, &search->frontier_capacity, 0, sizeof(int32_t));
-    search->frontier[search->frontier_count++] = 0;
-    while (search->goal < 0) {
-        FAIL_IF(
-            search->frontier_count == 0,
-            "every run met a dead end after %d "
-            "candidate segments",
-            search->evaluated);
-        MUST(M_Expand(search));
+    const bool minimize = search->args->minimize;
+    while (search->goal < 0 && !search->nodes[0].exhausted
+           && search->evaluated < M_BUDGET) {
+        MUST(minimize ? M_Descend(search) : M_Expand(search));
+    }
+    if (search->goal >= 0) {
+        const M_NODE *const goal = &search->nodes[search->goal];
+        *result = search->goal;
+        if (goal->ended) {
+            printf("the game ended\n");
+        } else if (goal->frames >= game->max_frames) {
+            printf("the run reached the frame cap\n");
+        } else {
+            printf("the score reached --until\n");
+        }
+    } else if (search->nodes[0].exhausted) {
+        *result = search->best;
+        printf("every segment met a dead end\n");
+    } else {
+        *result = minimize ? search->tip : search->best;
+        printf("the budget of %d candidates ran out\n", M_BUDGET);
     }
     return OK;
 }
@@ -605,19 +632,19 @@ static RESULT M_Search(
     // Keeps the replays from repeating the first run's messages.
     const LOG_LEVEL level = Log_GetMinLevel();
     Log_SetMinLevel(LOG_LEVEL_ERROR);
-    RESULT result = M_RunSearch(&search);
+    int32_t node;
+    RESULT result = M_RunSearch(&search, &node);
     Log_SetMinLevel(level);
     if (IS_OK(result)) {
-        M_WriteRun(&search, search.goal, run);
+        M_WriteRun(&search, node, run);
         printf(
-            "searched %d candidates, met %d dead ends\n", search.evaluated,
-            search.dead_ends);
+            "searched %d candidates, %d of them dead\n", search.evaluated,
+            search.dead);
         result = M_Restart(game, args->data, run);
     }
     Mem_Free(search.holds.holds);
     Mem_Free(search.candidate.holds);
     Mem_Free(search.nodes);
-    Mem_Free(search.frontier);
     Mem_Free(search.path);
     Mem_Free(search.input);
     Mem_Free(search.none);
