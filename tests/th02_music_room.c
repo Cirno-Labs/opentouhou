@@ -1,0 +1,73 @@
+#include "th02_music_room.h"
+
+static const TEST_MUSIC_VIEW *m_MusicRoomObserver;
+
+static void M_MusicRoomBegin(
+    const MUSIC_ROOM_ASSETS *assets, const TITLE_ASSETS *menu,
+    uint8_t selection)
+{
+    if (m_MusicRoomObserver != nullptr
+        && m_MusicRoomObserver->begin != nullptr) {
+        m_MusicRoomObserver->begin(m_MusicRoomObserver->context, selection);
+    }
+}
+
+static void M_MusicRoomTrack(uint8_t selection, uint8_t color)
+{
+    if (m_MusicRoomObserver != nullptr
+        && m_MusicRoomObserver->track != nullptr) {
+        m_MusicRoomObserver->track(
+            m_MusicRoomObserver->context, selection, color);
+    }
+}
+
+static void M_MusicRoomComment(uint8_t selection)
+{
+    if (m_MusicRoomObserver != nullptr
+        && m_MusicRoomObserver->comment != nullptr) {
+        m_MusicRoomObserver->comment(m_MusicRoomObserver->context, selection);
+    }
+}
+
+static void M_MusicRoomFrame(void)
+{
+    if (m_MusicRoomObserver != nullptr
+        && m_MusicRoomObserver->frame != nullptr) {
+        m_MusicRoomObserver->frame(m_MusicRoomObserver->context);
+    }
+}
+
+static void M_MusicRoomFlip(uint8_t drawing, uint8_t visible)
+{
+    if (m_MusicRoomObserver != nullptr
+        && m_MusicRoomObserver->flip != nullptr) {
+        m_MusicRoomObserver->flip(
+            m_MusicRoomObserver->context, drawing, visible);
+    }
+}
+
+static void M_MusicRoomEnd(void)
+{
+    if (m_MusicRoomObserver != nullptr && m_MusicRoomObserver->end != nullptr) {
+        m_MusicRoomObserver->end(m_MusicRoomObserver->context);
+    }
+}
+
+#define MusicRoomRender_Begin M_MusicRoomBegin
+#define MusicRoomRender_Track M_MusicRoomTrack
+#define MusicRoomRender_Comment M_MusicRoomComment
+#define MusicRoomRender_Frame M_MusicRoomFrame
+#define MusicRoomRender_Flip M_MusicRoomFlip
+#define MusicRoomRender_End M_MusicRoomEnd
+#include "th02/music_room/logic.c"
+#undef MusicRoomRender_Begin
+#undef MusicRoomRender_Track
+#undef MusicRoomRender_Comment
+#undef MusicRoomRender_Frame
+#undef MusicRoomRender_Flip
+#undef MusicRoomRender_End
+
+void TestMusicRoom_Observe(const TEST_MUSIC_VIEW *view)
+{
+    m_MusicRoomObserver = view;
+}
