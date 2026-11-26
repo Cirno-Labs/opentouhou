@@ -116,6 +116,9 @@ SDL_VIDEODRIVER=offscreen \
 SDL_VIDEODRIVER=offscreen \
     TEST_DIR="$PWD/build/linux/debug/tests/tmp/shell_clocks" \
     build/linux/debug/tests/test_shell_clocks
+SDL_VIDEODRIVER=offscreen build/linux/debug/tests/test_th02_presenter_gl
+SDL_VIDEODRIVER=offscreen TEST_GFX_ES=1 \
+    build/linux/debug/tests/test_th02_presenter_gl
 ```
 
 These tests use generated images and do not need game data. The replay
