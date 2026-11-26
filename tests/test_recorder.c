@@ -284,8 +284,11 @@ TEST(a_dead_end_sends_the_search_to_another_branch)
     m_Trap = M_TRAP;
     m_Spring = 700;
     m_MostTrapX = -50;
+    // Plays every candidate in this process, where m_MostTrapX sees it.
+    const char *const extra[] = { "--no-fork" };
     int32_t frames;
-    M_INPUT *const inputs = M_Record("trap", &m_Game, nullptr, 0, &frames);
+    M_INPUT *const inputs =
+        M_Record("trap", &m_Game, extra, ARRAY_SIZE(extra), &frames);
     CHECK_EQ_INT(frames, M_TRAP_END);
     CHECK_EQ_INT(M_Play(inputs, frames), 2);
     CHECK(m_TrapX < M_TRAP);
@@ -315,6 +318,24 @@ TEST(a_search_past_a_dead_end_gives_the_same_run_each_time)
     int32_t second_frames;
     M_INPUT *const second =
         M_Record("trap_b", &m_Game, extra, ARRAY_SIZE(extra), &second_frames);
+    CHECK_EQ_INT(second_frames, first_frames);
+    CHECK(memcmp(first, second, (size_t)first_frames * sizeof(M_INPUT)) == 0);
+    Mem_Free(first);
+    Mem_Free(second);
+}
+
+TEST(snapshots_give_the_same_run_as_fresh_starts)
+{
+    m_Trap = M_TRAP;
+    m_Spring = 700;
+    const char *const forked[] = { "--seed", "3" };
+    const char *const fresh[] = { "--seed", "3", "--no-fork" };
+    int32_t first_frames;
+    M_INPUT *const first =
+        M_Record("forked", &m_Game, forked, ARRAY_SIZE(forked), &first_frames);
+    int32_t second_frames;
+    M_INPUT *const second =
+        M_Record("fresh", &m_Game, fresh, ARRAY_SIZE(fresh), &second_frames);
     CHECK_EQ_INT(second_frames, first_frames);
     CHECK(memcmp(first, second, (size_t)first_frames * sizeof(M_INPUT)) == 0);
     Mem_Free(first);

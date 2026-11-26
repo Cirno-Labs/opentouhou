@@ -1,6 +1,7 @@
 #include "recorder.h"
 
 #include "bot.h"
+#include "snapshot.h"
 
 #include "core/args.h"
 #include "core/base/log.h"
@@ -19,6 +20,7 @@
 #define M_BRANCHES 16
 #define M_EXPLORATION 0.02
 #define M_BUDGET 20000
+#define M_SNAPSHOTS 256
 
 typedef struct {
     const char *data;
@@ -27,6 +29,7 @@ typedef struct {
     int32_t seed;
     int32_t until;
     bool minimize;
+    bool no_fork;
 } M_ARGS;
 
 // Holds the input structs of a run, one per frame.
@@ -63,10 +66,43 @@ typedef struct {
     int32_t visits;
     int32_t improved;
     int32_t top;
+    int32_t slot;
     RECORDER_SCORE score;
     bool ended;
     bool exhausted;
 } M_NODE;
+
+// Names what a snapshot plays: the holds of a run prefix to the end, or a
+// candidate as M_Try describes.
+typedef enum {
+    M_PLAY_PATH,
+    M_PLAY_CANDIDATE,
+} M_PLAY;
+
+// Leads a request to a snapshot, before count holds.
+typedef struct {
+    M_PLAY play;
+    int32_t limit;
+    int32_t count;
+} M_REQUEST;
+
+// Tells how a play went: the game quit, or the candidate's frames, score
+// and end, and whether it survived.
+typedef struct {
+    bool quit;
+    bool alive;
+    bool ended;
+    int32_t frames;
+    RECORDER_SCORE score;
+} M_OUTCOME;
+
+// Holds a live snapshot, the node at whose end it is and when it was last
+// used.
+typedef struct {
+    SNAPSHOT snapshot;
+    int32_t node;
+    uint64_t used;
+} M_SLOT;
 
 typedef struct {
     const RECORDER_GAME *game;
@@ -75,6 +111,7 @@ typedef struct {
     M_INPUTS script;
     M_HOLDS holds;
     M_HOLDS candidate;
+    M_HOLDS request;
     M_NODE *nodes;
     int32_t node_count;
     int32_t node_capacity;
@@ -86,6 +123,10 @@ typedef struct {
     int32_t evaluated;
     int32_t dead;
     uint64_t rng;
+    M_SLOT slots[M_SNAPSHOTS];
+    int32_t slot_count;
+    uint64_t clock;
+    bool forked;
     void *input;
     void *none;
 } M_SEARCH;
@@ -110,6 +151,9 @@ static const ARG_OPTION m_Options[] = {
     ARG_FLAG_OF(
         M_ARGS, "--minimize", minimize,
         "keep only segments that add setbacks, for a game over"),
+    ARG_FLAG_OF(
+        M_ARGS, "--no-fork", no_fork,
+        "play each candidate's run from a fresh start, not from a snapshot"),
 };
 
 int Recorder_CompareScores(const RECORDER_SCORE a, const RECORDER_SCORE b)
@@ -229,23 +273,202 @@ static int32_t M_Path(M_SEARCH *const search, const int32_t node)
     return depth;
 }
 
-// Plays the run of node from a fresh start.
-static RESULT M_Replay(M_SEARCH *const search, const int32_t node)
+// Plays count holds in full and returns false when the game quit.
+static bool M_PlayHolds(
+    const M_SEARCH *const search, const M_HOLD *const holds,
+    const int32_t count)
 {
-    const RECORDER_GAME *const game = search->game;
-    MUST(M_Restart(game, search->args->data, &search->script));
-    const int32_t depth = M_Path(search, node);
-    for (int32_t i = 0; i < depth; i++) {
-        const M_NODE *const at = &search->nodes[search->path[i]];
-        for (int32_t j = 0; j < at->count; j++) {
-            const M_HOLD hold = search->holds.holds[at->first + j];
-            for (int32_t frame = 0; frame < hold.frames; frame++) {
-                Bot_WriteInput(search->bot, hold.roles, frame, search->input);
-                FAIL_IF(
-                    !game->tick(search->input), "the game quit during the run");
+    for (int32_t i = 0; i < count; i++) {
+        for (int32_t frame = 0; frame < holds[i].frames; frame++) {
+            Bot_WriteInput(search->bot, holds[i].roles, frame, search->input);
+            if (!search->game->tick(search->input)) {
+                return false;
             }
         }
     }
+    return true;
+}
+
+// Plays the run of node from a fresh start.
+static RESULT M_Replay(M_SEARCH *const search, const int32_t node)
+{
+    MUST(M_Restart(search->game, search->args->data, &search->script));
+    const int32_t depth = M_Path(search, node);
+    for (int32_t i = 0; i < depth; i++) {
+        const M_NODE *const at = &search->nodes[search->path[i]];
+        FAIL_IF(
+            !M_PlayHolds(search, search->holds.holds + at->first, at->count),
+            "the game quit during the run");
+    }
+    return OK;
+}
+
+// Plays the candidate's holds after the run so far, up to the limit, the
+// game's end or a rise of the setbacks. Without --minimize, the idle frames
+// follow and a rise of the setbacks drops it. With --minimize, only a rise
+// or the game's end keeps it. A candidate that may survive keeps its state
+// at the end of its segment in copy, when not null, and returns true in
+// that snapshot.
+static bool M_PlayCandidate(
+    const M_SEARCH *const search, const M_REQUEST *const request,
+    const M_HOLD *const holds, SNAPSHOT_COPY *const copy,
+    M_OUTCOME *const outcome)
+{
+    const RECORDER_GAME *const game = search->game;
+    const bool minimize = search->args->minimize;
+    *outcome = (M_OUTCOME) {};
+    const int32_t setbacks = game->setbacks();
+    bool lost = false;
+    for (int32_t i = 0; i < request->count && !outcome->ended && !lost; i++) {
+        const M_HOLD hold = holds[i];
+        for (int32_t frame = 0; frame < hold.frames
+             && outcome->frames < request->limit && !outcome->ended && !lost;
+             frame++) {
+            Bot_WriteInput(search->bot, hold.roles, frame, search->input);
+            if (!game->tick(search->input)) {
+                outcome->quit = true;
+                return false;
+            }
+            outcome->frames++;
+            outcome->ended = game->has_ended();
+            lost = game->setbacks() > setbacks;
+        }
+    }
+    outcome->score = game->score();
+    if (minimize ? !lost && !outcome->ended : lost || outcome->frames == 0) {
+        return false;
+    }
+    if (copy != nullptr && Snapshot_Keep(copy)) {
+        return true;
+    }
+    for (int32_t i = 0; !minimize && i < M_IDLE_FRAMES && !game->has_ended()
+         && game->tick(search->none);
+         i++) {}
+    outcome->alive = minimize || game->setbacks() <= setbacks;
+    if (!outcome->alive && copy != nullptr) {
+        Snapshot_Drop(copy);
+    }
+    return false;
+}
+
+// Serves a request in a copy of a snapshot, which keeps the end of a path
+// or of a candidate as a new snapshot.
+static bool M_Serve(
+    void *const context, const void *const request, const size_t size,
+    SNAPSHOT_COPY *const copy)
+{
+    const M_SEARCH *const search = context;
+    M_REQUEST header;
+    memcpy(&header, request, sizeof(header));
+    const M_HOLD *const holds =
+        (const M_HOLD *)((const uint8_t *)request + sizeof(header));
+    M_OUTCOME outcome = {};
+    if (header.play == M_PLAY_PATH) {
+        outcome.quit = !M_PlayHolds(search, holds, header.count);
+        if (!outcome.quit && Snapshot_Keep(copy)) {
+            return true;
+        }
+    } else if (M_PlayCandidate(search, &header, holds, copy, &outcome)) {
+        return true;
+    }
+    Snapshot_Reply(copy, &outcome, sizeof(outcome));
+    return false;
+}
+
+// Closes the snapshot of node, unless it is the root's, and frees its slot.
+static void M_Release(M_SEARCH *const search, const int32_t node)
+{
+    M_NODE *const nodes = search->nodes;
+    const int32_t slot = nodes[node].slot;
+    if (slot <= 0) {
+        return;
+    }
+    Snapshot_Close(&search->slots[slot].snapshot);
+    nodes[node].slot = -1;
+    search->slots[slot] = search->slots[--search->slot_count];
+    if (slot < search->slot_count) {
+        nodes[search->slots[slot].node].slot = slot;
+    }
+}
+
+static void M_Touch(M_SEARCH *const search, const int32_t node)
+{
+    search->slots[search->nodes[node].slot].used = ++search->clock;
+}
+
+// Gives node the snapshot, in place of the least recently used one other
+// than the root's when every slot is taken.
+static void M_Store(
+    M_SEARCH *const search, const int32_t node, const SNAPSHOT snapshot)
+{
+    if (search->slot_count == M_SNAPSHOTS) {
+        int32_t oldest = 1;
+        for (int32_t i = 2; i < M_SNAPSHOTS; i++) {
+            if (search->slots[i].used < search->slots[oldest].used) {
+                oldest = i;
+            }
+        }
+        M_Release(search, search->slots[oldest].node);
+    }
+    const int32_t slot = search->slot_count++;
+    search->slots[slot] = (M_SLOT) {
+        .snapshot = snapshot,
+        .node = node,
+        .used = ++search->clock,
+    };
+    search->nodes[node].slot = slot;
+}
+
+// Sends the request and its holds to the snapshot of node.
+static RESULT M_Ask(
+    M_SEARCH *const search, const int32_t node, const M_REQUEST *const request,
+    const M_HOLD *const holds, M_OUTCOME *const outcome, SNAPSHOT *const kept)
+{
+    const size_t size =
+        sizeof(*request) + (size_t)request->count * sizeof(*holds);
+    uint8_t *const message = Mem_Alloc(size);
+    memcpy(message, request, sizeof(*request));
+    memcpy(
+        message + sizeof(*request), holds,
+        (size_t)request->count * sizeof(*holds));
+    const RESULT result = Snapshot_Request(
+        search->slots[search->nodes[node].slot].snapshot, message, size,
+        outcome, sizeof(*outcome), kept);
+    Mem_Free(message);
+    return result;
+}
+
+// Gives node a snapshot, made by playing its run from the nearest node
+// above it that has one.
+static RESULT M_Reach(M_SEARCH *const search, const int32_t node)
+{
+    const M_NODE *const nodes = search->nodes;
+    if (nodes[node].slot >= 0) {
+        M_Touch(search, node);
+        return OK;
+    }
+    int32_t from = node;
+    while (nodes[from].slot < 0) {
+        from = nodes[from].parent;
+    }
+    M_Touch(search, from);
+    const int32_t depth = M_Path(search, node);
+    search->request.count = 0;
+    for (int32_t i = nodes[from].depth; i < depth; i++) {
+        const M_NODE *const at = &nodes[search->path[i]];
+        for (int32_t j = 0; j < at->count; j++) {
+            M_AddHold(&search->request, search->holds.holds[at->first + j]);
+        }
+    }
+    const M_REQUEST request = {
+        .play = M_PLAY_PATH,
+        .count = search->request.count,
+    };
+    M_OUTCOME outcome;
+    SNAPSHOT kept;
+    MUST(M_Ask(search, from, &request, search->request.holds, &outcome, &kept));
+    FAIL_IF(outcome.quit, "the game quit during the run");
+    M_Store(search, node, kept);
     return OK;
 }
 
@@ -279,6 +502,7 @@ static int32_t M_AddNode(
         .child = -1,
         .sibling = -1,
         .top = index,
+        .slot = -1,
         .first = search->holds.count,
         .frames = nodes[parent].frames + frames,
         .depth = nodes[parent].depth + 1,
@@ -310,51 +534,40 @@ static int32_t M_AddNode(
     return index;
 }
 
-// Plays the candidate after the run of parent from a fresh start and adds
-// it as a child when it survives, or gives -1. Without --minimize, the idle
-// frames follow and a rise of the setbacks drops it. With --minimize, it
-// stops at the first rise of the setbacks, and only a rise or the game's
-// end keeps it.
+// Plays the candidate after the run of parent, from the parent's snapshot
+// or from a fresh start, and adds it as a child when it survives, or gives
+// -1.
 static RESULT M_Try(
     M_SEARCH *const search, const int32_t parent, int32_t *const child)
 {
     *child = -1;
-    const RECORDER_GAME *const game = search->game;
-    const bool minimize = search->args->minimize;
-    MUST(M_Replay(search, parent));
-    const int32_t setbacks = game->setbacks();
-    const int32_t limit =
-        MIN(minimize ? M_LOSING_SEGMENT : M_LONGEST_SEGMENT,
-            game->max_frames - search->nodes[parent].frames);
-    int32_t frames = 0;
-    bool ended = false;
-    bool lost = false;
-    for (int32_t i = 0; i < search->candidate.count && !ended && !lost; i++) {
-        const M_HOLD hold = search->candidate.holds[i];
-        for (int32_t frame = 0;
-             frame < hold.frames && frames < limit && !ended && !lost;
-             frame++) {
-            Bot_WriteInput(search->bot, hold.roles, frame, search->input);
-            FAIL_IF(!game->tick(search->input), "the game quit during the run");
-            frames++;
-            ended = game->has_ended();
-            lost = game->setbacks() > setbacks;
+    const M_REQUEST request = {
+        .play = M_PLAY_CANDIDATE,
+        .limit =
+            MIN(search->args->minimize ? M_LOSING_SEGMENT : M_LONGEST_SEGMENT,
+                search->game->max_frames - search->nodes[parent].frames),
+        .count = search->candidate.count,
+    };
+    M_OUTCOME outcome;
+    SNAPSHOT kept = { .fd = -1 };
+    if (search->forked) {
+        MUST(M_Reach(search, parent));
+        MUST(M_Ask(
+            search, parent, &request, search->candidate.holds, &outcome,
+            &kept));
+    } else {
+        MUST(M_Replay(search, parent));
+        M_PlayCandidate(
+            search, &request, search->candidate.holds, nullptr, &outcome);
+    }
+    FAIL_IF(outcome.quit, "the game quit during the run");
+    if (outcome.alive) {
+        *child = M_AddNode(
+            search, parent, outcome.frames, outcome.score, outcome.ended);
+        if (search->forked) {
+            M_Store(search, *child, kept);
         }
     }
-    const RECORDER_SCORE score = game->score();
-    if (minimize ? !lost && !ended : lost || frames == 0) {
-        return OK;
-    }
-    for (int32_t i = 0; !minimize && i < M_IDLE_FRAMES && !game->has_ended();
-         i++) {
-        if (!game->tick(search->none)) {
-            break;
-        }
-    }
-    if (!minimize && game->setbacks() > setbacks) {
-        return OK;
-    }
-    *child = M_AddNode(search, parent, frames, score, ended);
     return OK;
 }
 
@@ -459,6 +672,7 @@ static void M_Settle(M_SEARCH *const search, const int32_t node)
             }
         }
         nodes[at].exhausted = true;
+        M_Release(search, at);
     }
 }
 
@@ -543,6 +757,7 @@ static RESULT M_Descend(M_SEARCH *const search)
     if (child < 0) {
         search->dead++;
     } else {
+        M_Release(search, search->tip);
         search->tip = child;
     }
     return OK;
@@ -558,12 +773,19 @@ static RESULT M_RunSearch(M_SEARCH *const search, int32_t *const result)
         .parent = -1,
         .child = -1,
         .sibling = -1,
+        .slot = -1,
         .frames = search->script.frames,
         .score = game->score(),
         .ended = game->has_ended(),
     };
     search->node_count = 1;
     search->goal = M_IsGoal(search, &search->nodes[0]) ? 0 : -1;
+    if (search->forked && search->goal < 0) {
+        MUST(M_Restart(game, search->args->data, &search->script));
+        SNAPSHOT root;
+        MUST(Snapshot_Start(&root, M_Serve, search));
+        M_Store(search, 0, root);
+    }
     const bool minimize = search->args->minimize;
     while (search->goal < 0 && !search->nodes[0].exhausted
            && search->evaluated < M_BUDGET) {
@@ -626,6 +848,7 @@ static RESULT M_Search(
         .bot = bot,
         .script = *run,
         .rng = (uint64_t)args->seed,
+        .forked = SNAPSHOT_AVAILABLE && !args->no_fork,
         .input = Mem_AllocZ(run->size),
         .none = Mem_AllocZ(run->size),
     };
@@ -642,8 +865,15 @@ static RESULT M_Search(
             search.dead);
         result = M_Restart(game, args->data, run);
     }
+    for (int32_t i = 0; i < search.slot_count; i++) {
+        Snapshot_Close(&search.slots[i].snapshot);
+    }
+    if (search.forked) {
+        Snapshot_Shutdown();
+    }
     Mem_Free(search.holds.holds);
     Mem_Free(search.candidate.holds);
+    Mem_Free(search.request.holds);
     Mem_Free(search.nodes);
     Mem_Free(search.path);
     Mem_Free(search.input);
