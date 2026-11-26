@@ -1566,6 +1566,20 @@ if build_games
     )
   endforeach
   test(
+    'th02/settings',
+    executable(
+      'test_th02_settings',
+      'test_th02_settings.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_config_lib, core_ini_lib, core_vfs_lib,
+        core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+    env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th02' / 'settings'},
+  )
+  test(
     'th02/random',
     executable(
       'test_th02_random',
