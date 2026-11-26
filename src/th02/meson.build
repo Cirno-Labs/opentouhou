@@ -5,6 +5,7 @@ th02_lib = static_library(
   'gaiji.c',
   'vsync_irq.c',
   'map.c',
+  'mpn.c',
   'patterns.c',
   'random.c',
   'video.c',
