@@ -38,6 +38,8 @@ th02_lib = static_library(
   'presenter.c',
   'random.c',
   'performance.c',
+  'score_view/logic.c',
+  'score_view/render.c',
   'scores.c',
   'session.c',
   'settings.c',
