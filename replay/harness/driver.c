@@ -210,6 +210,10 @@ static RESULT M_Open(DRIVER *const driver)
             ZIP_ENTRY script;
             MUST(M_ReadFile(driver, run->script, &script));
             MUST(M_ReadScript(driver, &script));
+            if (driver->script.description != nullptr) {
+                driver->recorded.description =
+                    Str_Dup(driver->script.description);
+            }
         }
         MUST(M_ReadFiles(driver));
     }

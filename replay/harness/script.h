@@ -19,7 +19,8 @@
 // KEYS is a '+'-separated list of binding names. Frame 0 is the first
 // presented frame. Frames of each line kind increase strictly, and each
 // start field is set at most once. Blank lines and '#' comments are
-// allowed.
+// allowed. The script's leading '#' lines (and blank lines between them)
+// are its description, kept verbatim and written back first.
 
 typedef struct {
     uint32_t frame;
@@ -41,6 +42,8 @@ typedef struct {
 typedef struct {
     // Gives the number of frames, or 0 when the script sets none.
     uint32_t frames;
+    // Holds the script's description block, or nullptr when it has none.
+    char *description;
     ARRAY(SCRIPT_INPUT) inputs;
     ARRAY(SCRIPT_FPS) fps;
     ARRAY(START_VALUE) starts;

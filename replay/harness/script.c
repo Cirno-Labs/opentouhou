@@ -121,6 +121,36 @@ static RESULT M_ReadLine(
     return FAIL("unknown line kind %s", fields[0]);
 }
 
+// Returns the script's leading description block (the '#' lines, and any
+// blank lines between them) duped from text, or nullptr when it has none.
+static char *M_ReadDescription(const char *const text)
+{
+    size_t pos = 0;
+    size_t block_end = 0;
+    while (text[pos] != '\0') {
+        const size_t line_start = pos;
+        const char *const newline = strchr(text + pos, '\n');
+        const size_t line_end =
+            newline != nullptr ? (size_t)(newline - text) : strlen(text);
+        const size_t next_pos = newline != nullptr ? line_end + 1 : line_end;
+        const bool blank =
+            strspn(text + line_start, " \t\r") >= line_end - line_start;
+        if (text[line_start] == '#') {
+            block_end = next_pos;
+        } else if (!blank) {
+            break;
+        }
+        pos = next_pos;
+    }
+    if (block_end == 0) {
+        return nullptr;
+    }
+    char *const block = Mem_Alloc(block_end + 1);
+    memcpy(block, text, block_end);
+    block[block_end] = '\0';
+    return block;
+}
+
 char *Script_NextLine(char **const text)
 {
     char *const line = *text;
@@ -144,7 +174,7 @@ RESULT Script_Read(
     if (text == nullptr) {
         return Reader_Result(in);
     }
-    SCRIPT script = {};
+    SCRIPT script = { .description = M_ReadDescription(text) };
     Array_Init(&script.inputs, &g_HeapAllocator);
     Array_Init(&script.fps, &g_HeapAllocator);
     Array_Init(&script.starts, &g_HeapAllocator);
@@ -194,6 +224,9 @@ void Script_Write(
     const SCRIPT *const script)
 {
     char line[64];
+    if (script->description != nullptr) {
+        M_Write(out, script->description);
+    }
     if (script->frames != 0) {
         snprintf(line, sizeof(line), "frames %" PRIu32 "\n", script->frames);
         M_Write(out, line);
@@ -220,10 +253,11 @@ void Script_Write(
 
 void Script_Free(SCRIPT *const script)
 {
+    Mem_Free(script->description);
     Array_Free(&script->inputs);
     Array_Free(&script->fps);
     Array_Free(&script->starts);
-    script->frames = 0;
+    *script = (SCRIPT) {};
 }
 
 // Returns the index of the last of count entries of size bytes at items
