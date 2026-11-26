@@ -2,6 +2,7 @@
 
 #if SNAPSHOT_AVAILABLE
 
+    #include "core/base/log.h"
     #include "core/base/memory.h"
 
     #include <errno.h>
@@ -150,6 +151,9 @@ static bool M_ReceiveReply(const int fd, M_REPLY *const header, int *const kept)
             break;
         }
         const pid_t pid = fork();
+        if (pid < 0) {
+            LOG_ERROR("Cannot fork a snapshot's copy: %s", strerror(errno));
+        }
         if (pid == 0) {
             SNAPSHOT_COPY copy = { .fd = fd, .kept = -1, .kept_pid = -1 };
             if (m_Serve(m_Context, request, (size_t)size, &copy)) {
@@ -247,10 +251,12 @@ bool Snapshot_Keep(SNAPSHOT_COPY *const copy)
 {
     int sockets[2];
     if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sockets) != 0) {
+        LOG_ERROR("Cannot open a snapshot socket: %s", strerror(errno));
         _exit(1);
     }
     const pid_t pid = fork();
     if (pid < 0) {
+        LOG_ERROR("Cannot fork a snapshot: %s", strerror(errno));
         _exit(1);
     }
     if (pid == 0) {
