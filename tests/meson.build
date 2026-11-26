@@ -1537,7 +1537,7 @@ executable(
 )
 
 if build_games
-  foreach part : ['input', 'grcg', 'clip', 'video', 'tiny', 'patterns', 'performance']
+  foreach part : ['input', 'tram', 'grcg', 'clip', 'video', 'tiny', 'patterns', 'performance']
     test(
       'th02/' + part,
       executable(
@@ -1565,7 +1565,7 @@ if build_games
       suite: 'unit',
     )
   endforeach
-  foreach part : ['gaiji', 'palette', 'map', 'mpn', 'scores']
+  foreach part : ['tram_text', 'gaiji', 'palette', 'map', 'mpn', 'scores']
     test(
       'th02/' + part,
       executable(
