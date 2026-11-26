@@ -10,6 +10,7 @@ th02_lib = static_library(
   'random.c',
   'performance.c',
   'scores.c',
+  'session.c',
   'settings.c',
   'video.c',
   c_args: [layer_include['th02']],
