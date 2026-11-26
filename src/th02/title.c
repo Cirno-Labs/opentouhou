@@ -58,8 +58,8 @@ static void M_Door(void)
     if (step < 40) {
         const TRAM_CHARACTER space = { .code = ' ' };
         for (uint16_t y = 0; y < TRAM_ROWS; y++) {
-            Tram_PutCharacter(39 - step, y, &space, 0xe1);
-            Tram_PutCharacter(40 + step, y, &space, 0xe1);
+            Tram_PutCharacter(39 - step, y, &space, TRAM_WHITE);
+            Tram_PutCharacter(40 + step, y, &space, TRAM_WHITE);
         }
     }
     Palette_SetTone(200 - step * 2);
@@ -141,7 +141,7 @@ TITLE_EVENTS Title_Step(void)
     }
     switch (m_Title.phase) {
     case TITLE_PREPARE:
-        Tram_Fill(' ', 0x05);
+        Tram_Fill(' ', TRAM_BLACK | TRAM_REVERSE);
         M_Audio(&events, TITLE_LOAD_EFFECTS, false, 0);
         m_Title.phase = TITLE_MENU_BACKGROUND;
         break;
