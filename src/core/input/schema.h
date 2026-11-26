@@ -87,9 +87,29 @@ typedef struct {
     const char *defaults[INPUT_DEVICE_COUNT];
 } INPUT_ACTION;
 
+typedef enum {
+    // The wall clock, in microseconds, when the shell sampled this frame's
+    // input.
+    INPUT_CLOCK_FRAME,
+    // The wall clock, in microseconds, when the shell started. Constant
+    // for the run.
+    INPUT_CLOCK_HOST_ORIGIN,
+} INPUT_CLOCK_ROLE;
+
+// Describes one clock field. INPUT_CLOCK fills it in.
+typedef struct {
+    INPUT_CLOCK_ROLE role;
+    // Sets the offset of the uint64_t field that holds the microseconds.
+    size_t offset;
+} INPUT_CLOCK_FIELD;
+
 typedef struct {
     const INPUT_ACTION *actions;
     size_t count;
+    // Sets the clock fields that the shell fills once per display frame,
+    // before any ticks. nullptr for none.
+    const INPUT_CLOCK_FIELD *clocks;
+    size_t clock_count;
     // Sets the size of the game's input struct.
     size_t size;
     // Sets how many players the game has, 1 or 2.
@@ -142,6 +162,32 @@ typedef struct {
                       [INPUT_DEVICE_JOYSTICK] = (joystick_) },                 \
     }
 
+// Declares a clock field: a uint64_t field that the shell fills with a
+// clock reading, in microseconds, once per display frame before any ticks.
+#define INPUT_CLOCK(type_, field_, role_)                                      \
+    {                                                                          \
+        .role = (role_),                                                       \
+        .offset = offsetof(type_, field_)                                      \
+            + INPUT_FIELD_CHECK(type_, field_, uint64_t),                      \
+    }
+
 // Builds the INPUT_SCHEMA for an input struct type and its action table.
 #define INPUT_SCHEMA_OF(type_, actions_, players_)                             \
-    { (actions_), ARRAY_SIZE(actions_), sizeof(type_), (players_) }
+    {                                                                          \
+        .actions = (actions_),                                                 \
+        .count = ARRAY_SIZE(actions_),                                         \
+        .size = sizeof(type_),                                                 \
+        .players = (players_),                                                 \
+    }
+
+// Builds the INPUT_SCHEMA for an input struct type, its action table and
+// its clock fields.
+#define INPUT_SCHEMA_WITH_CLOCKS_OF(type_, actions_, clocks_, players_)        \
+    {                                                                          \
+        .actions = (actions_),                                                 \
+        .count = ARRAY_SIZE(actions_),                                         \
+        .clocks = (clocks_),                                                   \
+        .clock_count = ARRAY_SIZE(clocks_),                                    \
+        .size = sizeof(type_),                                                 \
+        .players = (players_),                                                 \
+    }

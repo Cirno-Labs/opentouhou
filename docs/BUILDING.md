@@ -110,6 +110,9 @@ checks the same renderer through OpenGL ES 3.0:
 SDL_VIDEODRIVER=offscreen build/linux/debug/tests/test_gfx_gl
 SDL_VIDEODRIVER=offscreen TEST_GFX_ES=1 \
     build/linux/debug/tests/test_gfx_gl
+SDL_VIDEODRIVER=offscreen \
+    TEST_DIR="$PWD/build/linux/debug/tests/tmp/shell_clocks" \
+    build/linux/debug/tests/test_shell_clocks
 ```
 
 These tests use generated images and do not need game data. The replay

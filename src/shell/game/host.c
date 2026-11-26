@@ -94,6 +94,8 @@ struct SHELL_CONTEXT {
     bool screenshot_pending;
     SHELL_REQUESTS requests;
     SHELL_INPUT_PRESSES presses;
+    // Holds the wall clock, in microseconds, from when the host started.
+    uint64_t host_origin_us;
 };
 
 static SHELL_CONTEXT m_Context;
@@ -295,6 +297,7 @@ static RESULT M_Init(
     SHELL_CONTEXT *const ctx, const int argc, char *const argv[],
     bool *const done)
 {
+    ctx->host_origin_us = SDL_GetTicksNS() / 1000;
     M_ARGS args = {
         .folders = {
             .exe_dir = Path_GetExeDir(),
@@ -563,6 +566,28 @@ SHELL_STATUS Shell_Event(const SDL_Event *const event)
     return SHELL_CONTINUE;
 }
 
+// Writes the schema's clock fields into every player's copy of
+// ctx->input_buffer, by role.
+static void M_FillClocks(const SHELL_CONTEXT *const ctx)
+{
+    const INPUT_SCHEMA *const schema = ctx->desc->input_schema;
+    if (schema->clock_count == 0) {
+        return;
+    }
+    const uint64_t frame_us = Shell_GetWallClock() * 1000;
+    for (int32_t player = 0; player < schema->players; player++) {
+        uint8_t *const out =
+            (uint8_t *)ctx->input_buffer + (size_t)player * schema->size;
+        for (size_t i = 0; i < schema->clock_count; i++) {
+            const INPUT_CLOCK_FIELD *const field = &schema->clocks[i];
+            const uint64_t value = field->role == INPUT_CLOCK_HOST_ORIGIN
+                ? ctx->host_origin_us
+                : frame_us;
+            *(uint64_t *)(out + field->offset) = value;
+        }
+    }
+}
+
 SHELL_STATUS Shell_Iterate(void)
 {
     SHELL_CONTEXT *const ctx = &m_Context;
@@ -575,6 +600,7 @@ SHELL_STATUS Shell_Iterate(void)
         ctx->measured_tick_rate = tick_rate;
     }
     Input_Update(ctx->input, ctx->input_buffer);
+    M_FillClocks(ctx);
     for (int device = 0; device < INPUT_DEVICE_COUNT; device++) {
         Input_GetDevice(ctx->input, device, ctx->device_input[device]);
     }
