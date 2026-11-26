@@ -90,12 +90,13 @@ checks:
 - `replay::dosbox` checks a PC-98 port against its original on the
   dosbox backend, and `replay::live-dosbox` does it for a person's play.
 - `replay::dosbox-cases` captures one case per script of a directory on
-  the original, such as `replay/th01/cases/`; `replay::check` then
-  replays them all on the native backend:
+  the original; `replay::check` then replays them all on the native
+  backend. The scripts live next to their cases in the cases repository,
+  so both commands take its game directory:
 
   ```
-  just replay::dosbox-cases th01 DATA replay/th01/cases CASES
-  just replay::check th01 DATA CASES
+  just replay::dosbox-cases th01 DATA CASES/th01 CASES/th01
+  just replay::check th01 DATA CASES/th01
   ```
 - `replay::coverage` replays every case of a directory on a coverage
   build of the native backend, and lists each source file's share of
