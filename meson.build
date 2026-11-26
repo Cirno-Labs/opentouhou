@@ -145,6 +145,7 @@ if build_games
   # o<game>.html.
   games = {}
   subdir('src/th01')
+  subdir('src/th02')
   subdir('src/th06')
   subdir('src/th07')
 
