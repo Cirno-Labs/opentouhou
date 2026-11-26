@@ -283,6 +283,34 @@ static RESULT M_Write(
     return result;
 }
 
+static RESULT M_Remove(VFS_SOURCE *const source, const char *const name)
+{
+    DIR_SOURCE *const dir = (DIR_SOURCE *)source;
+    const ALLOCATOR *const allocator = dir->allocator;
+    M_Forget(dir);
+    FILE_LIST list;
+    MUST(File_ListDir(dir->name, allocator, &list));
+    char *disk = nullptr;
+    for (int32_t i = 0; i < list.count; i++) {
+        if (M_Matches(allocator, list.items[i], name)) {
+            M_FreeText(allocator, disk);
+            disk = Path_Join(allocator, dir->name, list.items[i]);
+        }
+    }
+    File_FreeList(&list);
+    RESULT result = OK;
+    if (disk != nullptr) {
+        FILE_TYPE type;
+        result = File_GetType(disk, &type);
+        if (IS_OK(result)) {
+            result = type == FILE_TYPE_DIR ? FAIL("cannot remove a directory")
+                                           : File_Remove(disk);
+        }
+    }
+    M_FreeText(allocator, disk);
+    return result;
+}
+
 static void M_Close(VFS_SOURCE *const source)
 {
     DIR_SOURCE *const dir = (DIR_SOURCE *)source;
@@ -312,6 +340,7 @@ static const VFS_SOURCE_FUNCS M_WriteFuncs = {
     .open = M_Open,
     .list = M_List,
     .write = M_Write,
+    .remove = M_Remove,
     .close = M_Close,
 };
 

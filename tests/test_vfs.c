@@ -18,6 +18,7 @@ typedef struct {
     int32_t count;
     const ALLOCATOR *allocator;
     int32_t *close_count;
+    int32_t *remove_count;
 } FAKE_SOURCE;
 
 static const FAKE_ENTRY *M_FindEntry(
@@ -335,4 +336,59 @@ TEST(a_missing_file_names_the_path_and_the_sources)
     CHECK(strstr(result.message, "紅魔郷CM.DAT") != nullptr);
     Result_Ignore(result);
     Vfs_Destroy(vfs);
+}
+
+static RESULT M_WriteUnused(
+    VFS_SOURCE *source, const char *path, const void *data, size_t size)
+{
+    return FAIL("write not expected");
+}
+
+static RESULT M_RemoveFailed(VFS_SOURCE *source, const char *path)
+{
+    return FAIL("removal denied");
+}
+
+static RESULT M_RemoveCount(VFS_SOURCE *const source, const char *path)
+{
+    FAKE_SOURCE *const fake = (FAKE_SOURCE *)source;
+    (*fake->remove_count)++;
+    return OK;
+}
+
+TEST(removal_does_not_fall_back_from_an_unsupported_or_failing_source)
+{
+    TEST_ALLOCATOR test;
+    TestAllocator_Init(&test);
+    for (int32_t failure = 0; failure < 2; failure++) {
+        VFS *const vfs = Vfs_Create(&test.allocator);
+        int32_t removed = 0;
+        VFS_SOURCE_FUNCS low_funcs = M_Funcs;
+        low_funcs.write = M_WriteUnused;
+        low_funcs.remove = M_RemoveCount;
+        VFS_SOURCE *const low =
+            M_CreateFake(&test.allocator, "lower", nullptr, 0, nullptr);
+        low->funcs = &low_funcs;
+        ((FAKE_SOURCE *)low)->remove_count = &removed;
+        Vfs_MountSource(vfs, "", low, -1);
+        VFS_SOURCE_FUNCS funcs = M_Funcs;
+        funcs.write = M_WriteUnused;
+        funcs.remove = failure != 0 ? M_RemoveFailed : nullptr;
+        VFS_SOURCE *const source =
+            M_CreateFake(&test.allocator, "writable", nullptr, 0, nullptr);
+        source->funcs = &funcs;
+        Vfs_MountSource(vfs, "", source, 0);
+        const RESULT result = Vfs_Remove(vfs, "missing.dat");
+        CHECK(!IS_OK(result));
+        const char *const message = result.message;
+        CHECK(
+            strstr(
+                message,
+                failure != 0 ? "removal denied" : "does not support removal")
+            != nullptr);
+        Result_Ignore(result);
+        CHECK_EQ_INT(removed, 0);
+        Vfs_Destroy(vfs);
+    }
+    CHECK_EQ_INT(test.live_blocks, 0);
 }

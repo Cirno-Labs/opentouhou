@@ -22,6 +22,10 @@ RESULT Vfs_Open(VFS *vfs, const char *path, VFS_MODE mode, READER *out);
 // writable source that covers it. Reports failure when no source does.
 RESULT Vfs_Write(VFS *vfs, const char *path, const void *data, size_t size);
 
+// Removes the file name, without directories, from the writable root source
+// that Vfs_Write would write it to; an absent file succeeds.
+RESULT Vfs_Remove(VFS *vfs, const char *name);
+
 // Visits the name of each file directly below dir that a lookup would
 // find, once, spelled as the highest-priority source that has it spells it,
 // in byte order of those names. "" lists the root.

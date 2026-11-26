@@ -204,6 +204,27 @@ RESULT Vfs_Write(
     return Result_Prefix(result, "%s", path);
 }
 
+RESULT Vfs_Remove(VFS *const vfs, const char *const name)
+{
+    FAIL_IF(
+        name[0] == '\0' || strpbrk(name, "/\\:") != nullptr
+            || strcmp(name, ".") == 0 || strcmp(name, "..") == 0,
+        "%s: not a file name", name);
+    char *normalized;
+    MUST(VfsNormalize_Path(name, vfs->allocator, &normalized), "%s", name);
+    const VFS_MOUNT *const mount = M_Find(vfs, normalized, true);
+    RESULT result;
+    if (mount == nullptr || mount->mount_at[0] != '\0') {
+        result = FAIL("no writable source holds it");
+    } else if (mount->source->funcs->remove == nullptr) {
+        result = FAIL("source does not support removal");
+    } else {
+        result = mount->source->funcs->remove(mount->source, normalized);
+    }
+    M_FreeText(vfs, normalized);
+    return Result_Prefix(result, "%s", name);
+}
+
 static void M_ListVisit(void *const user, const char *const name)
 {
     M_LIST_VISIT *const visit = user;

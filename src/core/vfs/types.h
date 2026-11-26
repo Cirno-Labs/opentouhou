@@ -41,7 +41,8 @@ typedef struct VFS_SOURCE VFS_SOURCE;
 // "" for its root, as the source spells it, in the source's order. write,
 // nullptr in a read-only source, creates or replaces the file at path,
 // which keeps the case that the game gave, with size bytes of data. close
-// releases the source itself, along with anything it holds.
+// releases the source itself, along with anything it holds. remove, when
+// present, removes a normalized file name; an absent file succeeds.
 typedef struct {
     bool (*contains)(const VFS_SOURCE *source, const char *path);
     RESULT (*open)(
@@ -52,6 +53,7 @@ typedef struct {
     RESULT (*write)(
         VFS_SOURCE *source, const char *path, const void *data, size_t size);
     void (*close)(VFS_SOURCE *source);
+    RESULT (*remove)(VFS_SOURCE *source, const char *path);
 } VFS_SOURCE_FUNCS;
 
 // The part every source implementation shares. A source embeds this as its
