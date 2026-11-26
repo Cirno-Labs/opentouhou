@@ -22,6 +22,9 @@ typedef struct {
     PF_RECORD record;
 } PF_ENTRY;
 
+static const uint8_t m_Key76 = 0x76;
+static const uint8_t m_Key12 = 0x12;
+
 static RESULT M_ReadName(READER *const reader, char out[M_UTF8_NAME_SIZE])
 {
     char bytes[M_NAME_SIZE];
@@ -120,9 +123,10 @@ static RESULT M_ReadTable(READER *const archive, ARCHIVE_TABLE *const table)
 }
 
 static RESULT M_ReadEntry(
-    READER *const archive, const void *const data, uint8_t *const out,
-    const size_t size, const uint8_t key)
+    READER *const archive, const void *const context, const void *const data,
+    uint8_t *const out, const size_t size)
 {
+    const uint8_t key = *(const uint8_t *)context;
     const PF_RECORD *const record = data;
     Reader_Seek(archive, record->offset);
     READER input = Reader_Slice(archive, record->packed_size);
@@ -156,18 +160,18 @@ static RESULT M_ReadEntry(
     return OK;
 }
 
-static RESULT M_ReadEntryTH01(
-    READER *const archive, const void *const context, const void *const data,
-    uint8_t *const out, const size_t size)
-{
-    return M_ReadEntry(archive, data, out, size, 0x76);
-}
-
 static const ARCHIVE_FORMAT m_Formats[] = {
     [PF_TH01] = {
         .lookup = ARCHIVE_LOOKUP_PATH,
         .read_table = M_ReadTable,
-        .read_entry = M_ReadEntryTH01,
+        .read_entry = M_ReadEntry,
+        .context = &m_Key76,
+    },
+    [PF_KEY_12] = {
+        .lookup = ARCHIVE_LOOKUP_PATH,
+        .read_table = M_ReadTable,
+        .read_entry = M_ReadEntry,
+        .context = &m_Key12,
     },
 };
 

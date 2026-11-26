@@ -132,6 +132,35 @@ TEST(contents_use_the_key_of_the_archive)
     }
 }
 
+TEST(key_12_archives_xor_their_contents_with_0x12)
+{
+    uint8_t bytes[M_ARCHIVE_SIZE] = {};
+    const uint8_t packed[] = { 'a', 'a', 2, 'b' };
+    M_Entry(
+        bytes, 0, "RAW.TXT", M_DATA_OFFSET, (const uint8_t *)"hello", 5, 5,
+        0xf388);
+    M_Entry(
+        bytes, 1, "RUN.BIN", M_DATA_OFFSET + 32, packed, sizeof(packed), 5,
+        0x9595);
+    for (size_t i = M_DATA_OFFSET; i < M_DATA_OFFSET + 32 + sizeof(packed);
+         i++) {
+        bytes[i] ^= 0x76 ^ 0x12;
+    }
+    READER reader;
+    Reader_OpenBuffer(&reader, bytes, sizeof(bytes), "key12.pf");
+    VFS_SOURCE *source;
+    const bool loaded = Result_Ignore(
+        Pf_Open(&reader, PF_KEY_12, "key12.pf", &g_HeapAllocator, &source));
+    CHECK(loaded);
+    if (loaded) {
+        VFS *const vfs = Vfs_Create(&g_HeapAllocator);
+        Vfs_MountSource(vfs, "", source, 0);
+        M_CheckContent(vfs, "raw.txt", "hello", 5);
+        M_CheckContent(vfs, "run.bin", "aaaab", 5);
+        Vfs_Destroy(vfs);
+    }
+}
+
 TEST(rle_preserves_continuations_zero_counts_and_the_last_literal)
 {
     uint8_t bytes[M_ARCHIVE_SIZE] = {};

@@ -4,6 +4,7 @@
 
 typedef enum {
     PF_TH01, // key 0x76
+    PF_KEY_12, // key 0x12, tables and lookup as PF_TH01
 } PF_GAME;
 
 // Opens a PF archive as a read-only VFS source that owns the archive.
