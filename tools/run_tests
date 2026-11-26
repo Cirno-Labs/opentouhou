@@ -152,7 +152,17 @@ def main() -> int:
         dest="skipped",
         help="leave out the tests of a Meson suite",
     )
-    parser.add_argument("--jobs", type=int, default=os.cpu_count())
+    jobs: int = (
+        len(os.sched_getaffinity(0))
+        if hasattr(os, "sched_getaffinity")
+        else os.cpu_count() or 1
+    )
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=jobs,
+        help="concurrent tests (default: available CPUs)",
+    )
     args = parser.parse_args()
 
     wrapper = shlex.split(args.wrapper)
