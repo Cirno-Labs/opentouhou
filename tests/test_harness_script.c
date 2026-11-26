@@ -111,6 +111,38 @@ TEST(a_recorded_script_writes_only_changes)
     Script_Free(&script);
 }
 
+TEST(a_description_is_read_and_written_back_verbatim)
+{
+    SCRIPT script;
+    CHECK(Result_Ignore(
+        M_Read("# line one\n#\n# line two\ninput 3 shoot\n", &script)));
+    CHECK_EQ_STR(script.description, "# line one\n#\n# line two\n");
+    char *const text = M_Write(&script);
+    CHECK_EQ_STR(text, "# line one\n#\n# line two\ninput 3 shoot\n");
+    Mem_Free(text);
+    Script_Free(&script);
+}
+
+TEST(a_script_without_a_description_writes_nothing_extra)
+{
+    SCRIPT script;
+    CHECK(Result_Ignore(M_Read("input 3 shoot\n", &script)));
+    CHECK(script.description == nullptr);
+    char *const text = M_Write(&script);
+    CHECK_EQ_STR(text, "input 3 shoot\n");
+    Mem_Free(text);
+    Script_Free(&script);
+}
+
+TEST(a_comment_after_the_first_line_is_not_a_description)
+{
+    SCRIPT script;
+    CHECK(Result_Ignore(
+        M_Read("# header\ninput 3 shoot\n# not a header\n", &script)));
+    CHECK_EQ_STR(script.description, "# header\n");
+    Script_Free(&script);
+}
+
 TEST(a_record_twice_in_one_frame_keeps_the_last)
 {
     SCRIPT script = {};
