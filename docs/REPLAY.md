@@ -169,7 +169,7 @@ with a running hash that a replay checks on every row.
 [case.h](../replay/harness/case.h) gives `case.ini` and the case
 format, [script.h](../replay/harness/script.h) the script format of
 `inputs.txt` and [state.h](../replay/harness/state.h) the layout of
-`state.bin`, with its chunk size and the rows between checks. A HASH column holds a
-value only on those check rows, every 60th; `tools/harness rows` shows
+`state.bin`, with its chunk size and the rows between checks. A HASH column
+holds a value only on those check rows, every 60th; `tools/harness rows` shows
 `-` on the others. A case
 never holds screenshots or original game data.
