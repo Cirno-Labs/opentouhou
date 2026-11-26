@@ -1580,6 +1580,18 @@ if build_games
     env: {'TEST_DIR': meson.current_build_dir() / 'tmp' / 'th02' / 'settings'},
   )
   test(
+    'th02/demo',
+    executable(
+      'test_th02_demo',
+      'test_th02_demo.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_vfs_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th02/session',
     executable(
       'test_th02_session',
