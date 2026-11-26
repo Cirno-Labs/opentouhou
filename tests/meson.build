@@ -1537,7 +1537,7 @@ executable(
 )
 
 if build_games
-  foreach part : ['clip', 'video', 'tiny', 'patterns']
+  foreach part : ['clip', 'video', 'tiny', 'patterns', 'performance']
     test(
       'th02/' + part,
       executable(

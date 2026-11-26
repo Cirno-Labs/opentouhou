@@ -8,6 +8,7 @@ th02_lib = static_library(
   'mpn.c',
   'patterns.c',
   'random.c',
+  'performance.c',
   'scores.c',
   'video.c',
   c_args: [layer_include['th02']],
