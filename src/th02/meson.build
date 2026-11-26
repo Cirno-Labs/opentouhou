@@ -7,6 +7,7 @@ th02_lib = static_library(
   'vsync_irq.c',
   'wait.c',
   'demo.c',
+  'game_over.c',
   'grcg.c',
   'draw/blit.c',
   'draw/circles.c',

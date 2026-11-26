@@ -1612,6 +1612,18 @@ if build_games
     )
   endforeach
   test(
+    'th02/game_over',
+    executable(
+      'test_th02_game_over',
+      'test_th02_game_over.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_base_lib],
+      dependencies: [pc98_dep, sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th02/score_entry',
     executable(
       'test_th02_score_entry',
