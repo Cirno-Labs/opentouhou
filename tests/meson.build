@@ -1504,3 +1504,16 @@ test(
   ],
   suite: 'unit',
 )
+
+test(
+  'core/text/font_rom_cells',
+  executable(
+    'test_font_rom_cells',
+    'test_font_rom_cells.c',
+    c_args: core_include,
+    implicit_include_directories: false,
+    link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+    dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],
+  ),
+  suite: 'unit',
+)

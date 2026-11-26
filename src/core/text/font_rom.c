@@ -26,6 +26,8 @@
 #define M_BDF_MAX_BBX 64
 
 struct FONT_ROM {
+    // Takes JIS rows 0x29 and 0x2a and 0x2b21 from the ANK cells (BDF).
+    bool borrows_ank_rows;
     uint16_t half[256][M_CELL_ROWS];
     uint16_t full[M_JIS_COUNT][M_JIS_COUNT][M_CELL_ROWS];
 };
@@ -415,6 +417,7 @@ RESULT FontRom_ReadBdf(
 {
     *out = nullptr;
     FONT_ROM *const rom = Mem_AllocZ(sizeof(FONT_ROM));
+    rom->borrows_ank_rows = true;
     RESULT result = M_ReadBdf(full, rom, 16, m_FullRegistries, 2);
     if (IS_OK(result) && half != nullptr) {
         result = M_ReadBdf(half, rom, 8, m_HalfRegistries, 1);
@@ -461,6 +464,31 @@ RESULT FontRom_Open(
 void FontRom_Free(FONT_ROM *const rom)
 {
     Mem_Free(rom);
+}
+
+const uint16_t *FontRom_Cell(
+    const FONT_ROM *const rom, const uint16_t code, const bool wide)
+{
+    if (!wide) {
+        return code < 256 ? rom->half[code] : nullptr;
+    }
+    const int32_t first = code >> 8;
+    const int32_t second = code & 255;
+    if (!M_IsJis(first) || !M_IsJis(second)) {
+        return nullptr;
+    }
+    if (rom->borrows_ank_rows) {
+        if (first == 0x29) {
+            return rom->half[second];
+        }
+        if (first == 0x2a && second <= 0x5f) {
+            return rom->half[second + 0x80];
+        }
+        if (code == 0x2b21) {
+            return rom->half[0x20];
+        }
+    }
+    return rom->full[first - M_JIS_FIRST][second - M_JIS_FIRST];
 }
 
 bool FontRom_Glyph(

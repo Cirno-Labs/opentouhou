@@ -43,6 +43,10 @@ RESULT FontRom_Open(const char *name, const char *half, FONT_ROM **out);
 
 void FontRom_Free(FONT_ROM *rom);
 
+// Returns the 16 rows of an ANK byte, or of a JIS word with wide; nullptr
+// out of range. BDF fonts take JIS rows 0x29, 0x2a and 0x2b21 from ANK.
+const uint16_t *FontRom_Cell(const FONT_ROM *rom, uint16_t code, bool wide);
+
 // Gives the cell of a Unicode character as the original's CP932 bytes
 // read it from the ROM: U+0020 through U+007E and U+FF61 through U+FF9F
 // take the 8x16 cell of their byte, so '\' draws the ROM's yen sign, and
