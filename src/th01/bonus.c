@@ -464,7 +464,7 @@ bool Bonus_ResumeTotal(
                 return false;
             }
             m_Total.credit -= 12;
-            Sound_Effect(2);
+            Sound_Effect(SOUND_EFFECT_HIT);
             m_Total.spin++;
             m_Total.phase = BONUS_TOTAL_DIGIT;
             break;

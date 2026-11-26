@@ -405,7 +405,7 @@ static bool M_ResumeEntrance(
                 &m_B20J.wait, 416 - m_B20J.animation_frame % 2 * 32);
         case B20J_ENTRANCE_SHAKE_STEP:
             if (m_B20J.animation_frame % 8 == 0) {
-                Sound_Effect(9);
+                Sound_Effect(SOUND_EFFECT_SHAKE);
             }
             m_B20J.animation_frame++;
             m_B20J.entrance_stage = B20J_ENTRANCE_SHAKE;
@@ -559,7 +559,7 @@ static void M_Cross(const B20J_ASSETS *const assets)
         }
         M_Group(assets, 312, 188, m_B20J.pattern_state, 48);
         m_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
-        Sound_Effect(12);
+        Sound_Effect(SOUND_EFFECT_SPAWN);
     } else if (m_B20J.diamond_left[0] > 0) {
         for (int32_t i = 0; i < 4; i++) {
             M_Erase(assets, m_B20J.diamond_left[i], m_B20J.diamond_top[i]);
@@ -732,20 +732,20 @@ static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
         if (four) {
             m_B20J.pattern_state = Boss_Rank(18, 16, 14, 12);
         }
-        Sound_Effect(12);
+        Sound_Effect(SOUND_EFFECT_SPAWN);
         return;
     }
     if (m_B20J.status.frame < (four ? 400 : 500)) {
         M_SnakesUpdate(s, assets, count);
         if (m_B20J.status.frame == 150) {
             M_SnakeSpawn(s, assets, 1, 312, 188);
-            Sound_Effect(12);
+            Sound_Effect(SOUND_EFFECT_SPAWN);
         }
         if (four
             && (m_B20J.status.frame == 200 || m_B20J.status.frame == 250)) {
             M_SnakeSpawn(
                 s, assets, m_B20J.status.frame == 200 ? 2 : 3, 290, 200);
-            Sound_Effect(12);
+            Sound_Effect(SOUND_EFFECT_SPAWN);
         }
         if (!four
             && m_B20J.status.frame > 240 - g_Session.settings.difficulty * 40
@@ -766,7 +766,7 @@ static void M_Snakes(const B20J_ASSETS *const assets, const bool four)
                 M_Single(assets, x, y, angle, speed);
                 angle += 12;
             }
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
         }
     } else {
         for (int32_t i = 0; i < count; i++) {
@@ -792,7 +792,7 @@ static void M_Rows(const B20J_ASSETS *const assets)
         m_B20J.row_top = 200;
         m_B20J.row_speed = 48;
         m_B20J.row_direction = 99;
-        Sound_Effect(12);
+        Sound_Effect(SOUND_EFFECT_SPAWN);
         m_B20J.pattern_state = Boss_Rank(12, 10, 8, 6);
         return;
     }
@@ -938,7 +938,7 @@ static void M_Edges(const B20J_ASSETS *const assets)
         m_B20J.status.frame = 0;
     }
     if (m_B20J.status.frame % 10 == 0) {
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
     }
     if (m_B20J.status.frame % m_B20J.pattern_state == 0) {
         M_Rain(assets, m_B20J.ray_x, m_B20J.ray_y, M_Random(assets) & 127, 32);
@@ -955,7 +955,7 @@ static void M_SlashAnimate(const B20J_ASSETS *const assets)
         if (m_B20J.status.frame == frames[i]) {
             M_SlashPut(assets, i);
             if (i == 0) {
-                Sound_Effect(8);
+                Sound_Effect(SOUND_EFFECT_TELEGRAPH);
             }
         }
     }
@@ -1057,7 +1057,7 @@ static void M_Lasers(const B20J_ASSETS *const assets)
         ShootoutLasers_Spawn(
             (m_B20J.status.frame / 10) % 10, 410, 70, target, 400, 68, 7, 30,
             5);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
         if ((!m_B20J.laser_right_to_left && target >= 640)
             || (m_B20J.laser_right_to_left && target <= 0)) {
             m_B20J.status.frame = 0;
@@ -1084,7 +1084,7 @@ static void M_Sleeve(const B20J_ASSETS *const assets)
                     PELLET_FALL_STRAIGHT_FROM_TOP_THEN_REGULAR, 48, 0, 0);
             }
         }
-        Sound_Effect(7);
+        Sound_Effect(SOUND_EFFECT_PELLET);
     }
     if (m_B20J.status.frame >= 300) {
         m_B20J.status.frame = 0;
@@ -1128,7 +1128,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             m_B20J.status.frame = Math16_Wrap(m_B20J.status.frame + 1);
             if (m_B20J.status.frame % 4 == 0) {
                 M_BlackOut(assets);
-                Sound_Effect(7);
+                Sound_Effect(SOUND_EFFECT_PELLET);
             }
             m_B20J.defeat_stage = B20J_DEFEAT_SHAKE_STEP;
             return Wait_Scroll(
@@ -1160,7 +1160,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
             if (m_B20J.scroll_frame < 150) {
                 if (m_B20J.scroll_frame % 8 == 0) {
                     Palette_StepTo(&g_Palette, &g_Palette.resource, true);
-                    Sound_Effect(7);
+                    Sound_Effect(SOUND_EFFECT_PELLET);
                 }
             } else if (m_B20J.scroll_frame % 8 == 0) {
                 if (m_B20J.scroll_frame == 192) {
@@ -1172,7 +1172,7 @@ static bool M_Death(const B20J_ASSETS *const assets)
                     return Wait_Scroll(&m_B20J.wait, 0);
                 }
                 if (m_B20J.scroll_frame < 220) {
-                    Sound_Effect(7);
+                    Sound_Effect(SOUND_EFFECT_PELLET);
                 }
             }
             m_B20J.scroll_frame++;

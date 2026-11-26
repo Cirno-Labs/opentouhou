@@ -157,7 +157,7 @@ bool RouteSelect_Resume(
             m_Selection.holding_up = g_GameInput->up;
             m_Selection.holding_down = g_GameInput->down;
             if (g_GameInput->shot || g_GameInput->ok) {
-                Sound_Effect(4);
+                Sound_Effect(SOUND_EFFECT_CONFIRM);
                 Scene_Activate(
                     m_Selection.selection == 0 ? assets->makai
                                                : assets->jigoku);

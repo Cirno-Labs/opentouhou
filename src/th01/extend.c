@@ -58,7 +58,7 @@ void Extend_UpdateAndRender(void)
         (*lives)++;
         m_Extend.resident_lives = (int8_t)*lives;
         Hud_LivesPut((int16_t)(*lives - 1));
-        Sound_Effect(15);
+        Sound_Effect(SOUND_EFFECT_ITEM);
         Pellets_SpeedRaise(1);
     }
 }

@@ -384,7 +384,7 @@ static bool M_SummonFlash(
     if (m_B15M.status.frame >= start && m_B15M.status.frame % 2 == 0
         && circle->frame == 0) {
         if (m_B15M.status.frame == start) {
-            Sound_Effect(8);
+            Sound_Effect(SOUND_EFFECT_TELEGRAPH);
         }
         M_SummonDots(
             assets, miko, circle, M_CenterX(B15M_FORM_GIRL),
@@ -507,7 +507,7 @@ static void M_Rifts(
             M_Grc(assets, miko, r->x[i], r->y[i], image, color);
         }
     }
-    Sound_Effect(7);
+    Sound_Effect(SOUND_EFFECT_PELLET);
 }
 static bool M_Teleport(
     const B15M_ASSETS *const assets, const PTN *const miko, const int16_t x,
@@ -753,7 +753,7 @@ static int16_t M_LasersAcross(
             Math16_Wrap(m_B15M.girl.left + 60),
             Math16_Wrap(m_B15M.girl.top + 28), tx, 400, m_B15M.pattern_state,
             25, 4);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
         if ((m_B15M.direction == 0 && tx >= 640)
             || (m_B15M.direction == 1 && tx <= 0)) {
             m_B15M.status.frame = 0;
@@ -871,7 +871,7 @@ static int16_t M_Star(const B15M_ASSETS *const assets, const PTN *const miko)
     if (m_B15M.status.frame >= 10 && m_B15M.status.frame % 2 == 0
         && circle->frame == 0) {
         if (m_B15M.status.frame == 10) {
-            Sound_Effect(8);
+            Sound_Effect(SOUND_EFFECT_TELEGRAPH);
         }
         M_SummonDots(
             assets, miko, circle, M_CenterX(B15M_FORM_GIRL),
@@ -966,7 +966,7 @@ static int16_t M_SphereClusters(
         && m_B15M.status.frame % 10 == 0) {
         if (m_B15M.status.frame <= 200) {
             const int32_t n = (m_B15M.status.frame - 100) / 10;
-            Sound_Effect(7);
+            Sound_Effect(SOUND_EFFECT_PELLET);
             M_Grc(
                 assets, miko, m_B15M.sphere_x[n - 1], m_B15M.sphere_y[n - 1], 4,
                 4);
@@ -1220,14 +1220,14 @@ static int16_t M_SymmetricArc(
                 assets, miko, angle,
                 Math16_Wrap((i + m_B15M.pattern_state) * 16));
         }
-        Sound_Effect(7);
+        Sound_Effect(SOUND_EFFECT_PELLET);
     } else if (m_B15M.status.frame == 80) {
         for (int32_t i = 0; i < 10; i++) {
             M_SymmetricFire(
                 assets, miko, (uint8_t)(i * 6),
                 Math16_Wrap((2 + m_B15M.pattern_state) * 16));
         }
-        Sound_Effect(7);
+        Sound_Effect(SOUND_EFFECT_PELLET);
     } else if (m_B15M.status.frame >= 120) {
         m_B15M.status.frame = 0;
         return 0;
@@ -1272,7 +1272,7 @@ static int16_t M_Safety(
     if (m_B15M.status.frame >= 60 && m_B15M.status.frame % 2 == 0
         && circle->frame == 0) {
         if (m_B15M.status.frame == 60) {
-            Sound_Effect(8);
+            Sound_Effect(SOUND_EFFECT_TELEGRAPH);
             m_B15M.safety_left = g_Player->left;
         }
         M_SummonDots(
@@ -1372,7 +1372,7 @@ static int16_t M_AimedRing(
             assets, miko, m_B15M.status.frame / 10,
             Math16_Wrap(M_CenterX(B15M_FORM_GIRL) - 4),
             Math16_Wrap(m_B15M.girl.top + 28), g_Player->left, 400, 50, 20, 8);
-        Sound_Effect(6);
+        Sound_Effect(SOUND_EFFECT_LASER);
     }
     return 1;
 }

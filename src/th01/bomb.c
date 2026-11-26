@@ -167,7 +167,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
             }
         }
         if (frame % 30 == 0) {
-            Sound_Effect(8);
+            Sound_Effect(SOUND_EFFECT_TELEGRAPH);
         }
         if (frame % 10 == 0) {
             Pellets_Decay();
@@ -179,7 +179,7 @@ BOMB_UPDATE Bomb_BeginUpdate(
         Player_StartBombDamage();
     } else if (frame < 140) {
         if (frame % 10 == 0) {
-            Sound_Effect(9);
+            Sound_Effect(SOUND_EFFECT_SHAKE);
         }
         if (frame % 4 == 0) {
             PALETTE peak;
