@@ -61,6 +61,8 @@ typedef struct {
     const char *bot_ini;
     // Gives the frames after which a run stops.
     int32_t max_frames;
+    // Gives the candidates a search may play, or 0 for the default.
+    int32_t budget;
     // Sets the start value name, given with --start name=value, before the
     // first start.
     RESULT (*set_start)(const char *name, const char *value);

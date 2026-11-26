@@ -19,7 +19,7 @@
 #define M_IDLE_FRAMES 90
 #define M_BRANCHES 16
 #define M_EXPLORATION 0.02
-#define M_BUDGET 20000
+#define M_DEFAULT_BUDGET 20000
 #define M_SNAPSHOTS 256
 
 typedef struct {
@@ -787,8 +787,9 @@ static RESULT M_RunSearch(M_SEARCH *const search, int32_t *const result)
         M_Store(search, 0, root);
     }
     const bool minimize = search->args->minimize;
+    const int32_t budget = game->budget > 0 ? game->budget : M_DEFAULT_BUDGET;
     while (search->goal < 0 && !search->nodes[0].exhausted
-           && search->evaluated < M_BUDGET) {
+           && search->evaluated < budget) {
         MUST(minimize ? M_Descend(search) : M_Expand(search));
     }
     if (search->goal >= 0) {
@@ -806,7 +807,7 @@ static RESULT M_RunSearch(M_SEARCH *const search, int32_t *const result)
         printf("every segment met a dead end\n");
     } else {
         *result = minimize ? search->tip : search->best;
-        printf("the budget of %d candidates ran out\n", M_BUDGET);
+        printf("the budget of %d candidates ran out\n", budget);
     }
     return OK;
 }
