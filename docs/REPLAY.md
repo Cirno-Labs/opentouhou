@@ -126,7 +126,9 @@ work/            every file that the game wrote
 
 Screenshots are PNG files of the logical screen and never go into a
 case. The game's directory stays unchanged: the game reads the staged
-files, never the player's own saves, and writes into `work/`.
+files, never the player's own saves, and writes into `work/`. A run
+fails when `work/` already holds files, since the game would read an
+earlier run's saves and settings there.
 
 ## Code
 
