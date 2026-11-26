@@ -89,8 +89,9 @@ retail game data script shots="" out="":
     fi
     [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$dir/native/report.ini"
 
-# Capture one case per .rpy file of the directory replays into out: the
-# retail backend stages each into the original's replay slot and plays it.
+# Capture one case per .rpy file under the directory replays into out, at
+# the same relative path: the retail backend stages each into the
+# original's replay slot and plays it.
 [group('replay')]
 [no-cd]
 rpy-cases game data replays out:
@@ -99,15 +100,17 @@ rpy-cases game data replays out:
     root={{quote(justfile_directory())}}
     just -f "$root/justfile" replay::build {{game}}
     mkdir -p {{quote(out)}}
-    shopt -s nullglob
-    for rpy in {{quote(replays)}}/*.rpy; do
-        name=$(basename "$rpy" .rpy)
+    shopt -s nullglob globstar
+    for rpy in {{quote(replays)}}/**/*.rpy; do
+        name=${rpy#{{quote(replays)}}/}
+        name=${name%.rpy}
+        mkdir -p "$(dirname {{quote(out)}}/"$name")"
         "$root/tools/stage_rpy" {{game}} "$rpy" {{quote(out)}}/"$name.othtc" \
             --backend retail --data {{quote(data)}} --headless > /dev/null
         echo "captured $name"
     done
 
-# Replay every case file of the directory cases on the native backend
+# Replay every case file under the directory cases on the native backend
 # headless, with a release build and one process per case, and fail unless
 # every state row of every case matches.
 [group('replay')]
@@ -117,16 +120,17 @@ check game data cases jobs=num_cpus():
     set -euo pipefail
     root={{quote(justfile_directory())}}
     program=$(just -f "$root/justfile" replay::_native {{game}} release)
-    shopt -s nullglob
-    list=({{quote(cases)}}/*.othtc)
+    shopt -s nullglob globstar
+    list=({{quote(cases)}}/**/*.othtc)
     out=$(mktemp -d)
     trap 'rm -rf "$out"' EXIT
     printf '%s\0' "${list[@]}" | xargs -0 -P {{jobs}} -I{} sh -c \
-        'name=$(basename "$1" .othtc); "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || touch "$4/$name.fail"' \
-        _ {} "$root" {{quote(data)}} "$out" "$program"
+        'name=${1#"$6"/}; name=${name%.othtc}; mkdir -p "$(dirname "$4/$name")"; "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || touch "$4/$name.fail"' \
+        _ {} "$root" {{quote(data)}} "$out" "$program" {{quote(cases)}}
     failed=0
     for case in "${list[@]}"; do
-        name=$(basename "$case" .othtc)
+        name=${case#{{quote(cases)}}/}
+        name=${name%.othtc}
         if [ -e "$out/$name.fail" ]; then
             failed=$((failed + 1))
             echo "FAIL $name"
@@ -138,7 +142,7 @@ check game data cases jobs=num_cpus():
     echo "${#list[@]} cases, $failed failed"
     [ "${#list[@]}" -gt 0 ] && [ "$failed" -eq 0 ]
 
-# Measure the code of a game that the case files of the directory cases
+# Measure the code of a game that the case files under the directory cases
 # reach: replay them on a coverage build of the native backend, then print
 # each source file's share of lines run, lowest first, with the functions
 # that never ran. Needs llvm-cov on this machine (dev only, Linux).
@@ -152,14 +156,14 @@ coverage game data cases jobs=num_cpus():
     just -f "$root/justfile" _docker_run linux media build --target coverage >&2
     build="$root/build/linux/coverage"
     find "$build" -name '*.gcda' -delete
-    shopt -s nullglob
-    list=({{quote(cases)}}/*.othtc)
+    shopt -s nullglob globstar
+    list=({{quote(cases)}}/**/*.othtc)
     out=$(mktemp -d)
     trap 'rm -rf "$out"' EXIT
     # The build records into /app; GCOV_PREFIX moves that to this checkout.
     printf '%s\0' "${list[@]}" | GCOV_PREFIX="$root" GCOV_PREFIX_STRIP=1 xargs -0 -P {{jobs}} -I{} sh -c \
-        'name=$(basename "$1" .othtc); "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || echo "FAIL $name"' \
-        _ {} "$root" {{quote(data)}} "$out" "$build/{{game}}native"
+        'name=${1#"$6"/}; name=${name%.othtc}; mkdir -p "$(dirname "$4/$name")"; "$2/tools/harness" replay "$1" --program "$5" --data "$3" --out "$4/$name" --headless > "$4/$name.log" 2>&1 || echo "FAIL $name"' \
+        _ {} "$root" {{quote(data)}} "$out" "$build/{{game}}native" {{quote(cases)}}
     echo "${#list[@]} cases"
     "$root/tools/coverage_report" "$build" "$root/src/{{game}}"
 
@@ -268,8 +272,9 @@ dosbox game data script shots="" out="": dosbox-x
     fi
     [ "$status" -le 1 ] && ! grep -qx '\[difference\]' "$dir/native/report.ini"
 
-# Capture one case per input script of the directory scripts into out: the
-# dosbox backend plays each on the original, one process per script. Each
+# Capture one case per input script under the directory scripts into out,
+# at the same relative path: the dosbox backend plays each on the original,
+# one process per script. Each
 # script must set its frames, at most 20000, and each capture stops after
 # 10 minutes.
 [group('replay')]
@@ -278,8 +283,8 @@ dosbox-cases game data scripts out jobs="2": dosbox-x
     #!/usr/bin/env bash
     set -euo pipefail
     root={{quote(justfile_directory())}}
-    shopt -s nullglob
-    list=({{quote(scripts)}}/*.txt)
+    shopt -s nullglob globstar
+    list=({{quote(scripts)}}/**/*.txt)
     for script in "${list[@]}"; do
         frames=$(sed -n 's/^frames[[:space:]]\+\([0-9]\+\).*/\1/p' "$script")
         if [ -z "$frames" ] || [ "$frames" -gt 20000 ]; then
@@ -290,8 +295,8 @@ dosbox-cases game data scripts out jobs="2": dosbox-x
     just -f "$root/justfile" _build linux media debug >&2
     mkdir -p {{quote(out)}}
     printf '%s\0' "${list[@]}" | xargs -0 -P {{jobs}} -I{} sh -c \
-        'name=$(basename "$1" .txt); timeout 600 "$2/tools/harness" capture {{game}} "$4/$name.othtc" --backend dosbox --data "$3" --script "$1" > "$4/$name.log" 2>&1 && rm "$4/$name.log" && echo "captured $name" || echo "FAIL $name: see $4/$name.log"' \
-        _ {} "$root" {{quote(data)}} {{quote(out)}}
+        'name=${1#"$5"/}; name=${name%.txt}; mkdir -p "$(dirname "$4/$name")"; timeout 600 "$2/tools/harness" capture {{game}} "$4/$name.othtc" --backend dosbox --data "$3" --script "$1" > "$4/$name.log" 2>&1 && rm "$4/$name.log" && echo "captured $name" || echo "FAIL $name: see $4/$name.log"' \
+        _ {} "$root" {{quote(data)}} {{quote(out)}} {{quote(scripts)}}
 
 # Check a person's play of a PC-98 game against its original: capture the
 # play on the native backend in a window, then capture the original on the

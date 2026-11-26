@@ -91,8 +91,8 @@ checks:
   dosbox backend, and `replay::live-dosbox` does it for a person's play.
 - `replay::dosbox-cases` captures one case per script of a directory on
   the original; `replay::check` then replays them all on the native
-  backend. The scripts live next to their cases in the cases repository,
-  so both commands take its game directory:
+  backend. Both walk subdirectories, and the scripts live next to their
+  cases in the cases repository, so both take its game directory:
 
   ```
   just replay::dosbox-cases th01 DATA CASES/th01 CASES/th01
