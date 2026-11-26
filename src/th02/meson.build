@@ -1,5 +1,6 @@
 th02_lib = static_library(
   'th02_lib',
+  'audio.c',
   'clip.c',
   'patterns.c',
   'random.c',

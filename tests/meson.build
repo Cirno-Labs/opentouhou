@@ -1563,6 +1563,19 @@ if build_games
     suite: 'unit',
   )
   test(
+    'th02/audio',
+    executable(
+      'test_th02_audio',
+      'test_th02_audio.c',
+      'audio_backend_fake.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_audio_lib, core_hash_lib, core_io_lib, core_base_lib],
+      dependencies: [pc98_dep, sdl3, avcodec, avutil, avformat, swresample, cc_libm],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th02/vector',
     executable(
       'test_th02_vector',
