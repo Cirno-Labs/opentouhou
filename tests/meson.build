@@ -1827,6 +1827,18 @@ if build_games
     )
   endforeach
   test(
+    'th02/stage_data',
+    executable(
+      'test_th02_stage_data',
+      'test_th02_stage_data.c',
+      c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+      implicit_include_directories: false,
+      link_with: [th02_lib, core_io_lib, core_base_lib],
+      dependencies: [sdl3],
+    ),
+    suite: 'unit',
+  )
+  test(
     'th02/high_scores_format',
     executable(
       'test_th02_high_scores_format',
