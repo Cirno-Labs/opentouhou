@@ -1,11 +1,11 @@
-#include "shell/data.h"
+#include "tests/hdi_builder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/zip_builder.h"
 
 #include "core/archive/zip.h"
 #include "core/vfs.h"
-#include "hdi_builder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "zip_builder.h"
+#include "shell/data.h"
 
 static void M_CheckRoot(
     const ZIP_BUILDER_ENTRY *const entries, const int count,

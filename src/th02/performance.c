@@ -1,4 +1,5 @@
 #include "th02/performance.h"
+
 #include "pc98/zun/math16.h"
 
 #include <string.h>

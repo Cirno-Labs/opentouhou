@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/mpn.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 static void M_Header(uint8_t *const bytes, const uint16_t count)
 {

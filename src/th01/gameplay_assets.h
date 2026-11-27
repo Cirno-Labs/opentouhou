@@ -3,11 +3,12 @@
 #include "th01/bomb.h"
 #include "th01/bonus.h"
 #include "th01/boss.h"
+#include "th01/invincibility.h"
 #include "th01/pellets.h"
 #include "th01/scene.h"
 #include "th01/shootout_lasers.h"
+
 #include "pc98/mdrv.h"
-#include "th01/invincibility.h"
 
 #define GAMEPLAY_SONG_COUNT 18
 

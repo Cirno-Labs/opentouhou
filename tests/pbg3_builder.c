@@ -1,4 +1,4 @@
-#include "pbg3_builder.h"
+#include "tests/pbg3_builder.h"
 
 #include <string.h>
 

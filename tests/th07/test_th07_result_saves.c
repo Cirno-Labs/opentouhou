@@ -1,18 +1,15 @@
-#include "th07/screens/result/private.h"
-#include "th07/screens/result/records.h"
-
-#include "stg/replay_files.h"
-
-#include "test.h"
-#include "test_dir.h"
-
+#include "tests/test.h"
+#include "tests/test_dir.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/replay.h"
+#include "th07/screens/result/private.h"
+#include "th07/screens/result/records.h"
 
-#include "shell/null.h"
 #include "core/base/memory.h"
 #include "core/io/file.h"
+#include "shell/null.h"
+#include "stg/replay_files.h"
 
 #include <string.h>
 

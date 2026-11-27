@@ -1,6 +1,6 @@
-#include "pc98/zun/math16.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/zun/math16.h"
 
 TEST(sine_and_cosine_use_the_stock_integer_angles)
 {

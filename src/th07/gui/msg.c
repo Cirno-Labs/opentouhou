@@ -1,5 +1,4 @@
 #include "th07/gui/private.h"
-
 #include "th07/stage.h"
 
 #include "core/base/cp932.h"

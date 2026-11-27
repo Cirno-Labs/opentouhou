@@ -1,11 +1,11 @@
 #include "th01/orb.h"
-#include "th01/rng.h"
-
-#include "th01/sprite.h"
 
 #include "th01/finite.h"
-#include "pc98/zun/math16.h"
+#include "th01/rng.h"
+#include "th01/sprite.h"
+
 #include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

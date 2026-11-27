@@ -1,4 +1,4 @@
-#include "anm_builder.h"
+#include "tests/th06/anm_builder.h"
 
 #include "core/base/assert.h"
 

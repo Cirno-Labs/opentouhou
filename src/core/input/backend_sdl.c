@@ -1,7 +1,6 @@
-#include "core/input/backend.h"
-
 #include "core/base/assert.h"
 #include "core/base/memory.h"
+#include "core/input/backend.h"
 #include "core/input/codes.h"
 
 #include <SDL3/SDL.h>

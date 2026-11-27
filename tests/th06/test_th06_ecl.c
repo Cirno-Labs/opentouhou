@@ -1,15 +1,12 @@
-#include "th06/ecl.h"
-
-#include "anm_builder.h"
-#include "ecl_builder.h"
-#include "patch_builder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th06_data.h"
-
-#include "stg/angle.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th06/anm_builder.h"
+#include "tests/th06/ecl_builder.h"
+#include "tests/th06/th06_data.h"
 #include "th06/anm.h"
 #include "th06/bullet.h"
+#include "th06/ecl.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"
 #include "th06/files.h"
@@ -20,18 +17,18 @@
 #include "th06/player.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "stg/translation.h"
 #include "th06/strings.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
-#include "core/patch.h"
 #include "core/math/common.h"
 #include "core/math/vec.h"
 #include "core/math/x87.h"
-
+#include "core/patch.h"
+#include "stg/angle.h"
 #include "stg/rng.h"
+#include "stg/translation.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>

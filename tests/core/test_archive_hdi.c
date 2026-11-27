@@ -1,8 +1,8 @@
-#include "core/archive/hdi.h"
+#include "tests/hdi_builder.h"
+#include "tests/test.h"
 
 #include "core/archive.h"
-#include "hdi_builder.h"
-#include "test.h"
+#include "core/archive/hdi.h"
 
 #define M_TEXT "Every package holds the game and othpatch. "
 

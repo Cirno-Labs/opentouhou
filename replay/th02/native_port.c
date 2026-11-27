@@ -1,14 +1,13 @@
-#include "native.h"
-#include "harness.h"
-#include "state.h"
-
-#include "gameplay_sample.h"
-#include "start.h"
+#include "replay/harness/native.h"
+#include "replay/harness/state.h"
+#include "replay/th02/gameplay_sample.h"
+#include "replay/th02/harness.h"
+#include "replay/th02/start.h"
 #include "th02/main.h"
-#include "th02/vsync_irq.h"
 #include "th02/opening.h"
 #include "th02/settings.h"
 #include "th02/video.h"
+#include "th02/vsync_irq.h"
 
 #include "shell/game/files.h"
 

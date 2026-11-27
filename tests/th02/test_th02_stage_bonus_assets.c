@@ -1,7 +1,6 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 #include "th02/stage_bonus/assets.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 TEST(bonus_cache_decodes_the_built_in_labels_and_frees_cleanly)
 {

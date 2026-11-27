@@ -1,15 +1,14 @@
 #include "th01/opening.h"
+
+#include "th01/opening_strings.h"
 #include "th01/palette.h"
 #include "th01/settings.h"
 
-#include "pc98/zun/master_rng.h"
-
 #include "core/base/assert.h"
+#include "pc98/zun/master_rng.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#include "th01/opening_strings.h"
 
 typedef struct {
     PALETTE_STATE palette;

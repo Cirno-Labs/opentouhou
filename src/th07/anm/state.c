@@ -1,17 +1,15 @@
 #include "th07/anm.h"
 #include "th07/anm/private.h"
-
 #include "th07/game.h"
 
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
+#include "core/vfs.h"
+#include "shell/game.h"
 #include "stg/angle.h"
 #include "stg/note.h"
 #include "stg/timer.h"

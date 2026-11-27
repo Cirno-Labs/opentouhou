@@ -1,5 +1,6 @@
-#include "harness.h"
-#include "state.h"
+#include "replay/th02/harness.h"
+
+#include "replay/harness/state.h"
 
 #include "core/base/utils.h"
 

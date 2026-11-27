@@ -7,7 +7,6 @@
 #include <libavutil/channel_layout.h>
 #include <libavutil/error.h>
 #include <libswresample/swresample.h>
-
 #include <string.h>
 
 #define RESAMPLER_CHANNELS 2

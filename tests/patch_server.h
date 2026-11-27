@@ -4,13 +4,13 @@
 // and othpatch, in the test directories of test_dir.h, and fetches them
 // without a server.
 
+#include "tests/patch_builder.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/hash/crc32.h"
 #include "core/io/reader.h"
 #include "core/patch/fetch.h"
-
-#include "patch_builder.h"
 
 #include <stdlib.h>
 #include <string.h>

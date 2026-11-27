@@ -1,11 +1,12 @@
 #pragma once
 
-#include "th01/vsync_irq.h"
 #include "th01/input.h"
 #include "th01/palette.h"
-#include "pc98/zun/pi.h"
 #include "th01/score_data.h"
 #include "th01/text.h"
+#include "th01/vsync_irq.h"
+
+#include "pc98/zun/pi.h"
 
 typedef enum {
     SCORE_GAMEOVER,

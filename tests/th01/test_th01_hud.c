@@ -1,16 +1,17 @@
-#include "../../src/th01/hud.c"
-#include "../../src/th01/player.c"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "tests/th01/th01_world.h"
+#include "th01/hud.c"
 #include "th01/hud.h"
+#include "th01/orb.h"
+#include "th01/pellets.h"
+#include "th01/player.c"
+#include "th01/player.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/shots.h"
-#include "th01/rng.h"
-#include "th01/player.h"
-#include "th01/pellets.h"
-#include "th01/orb.h"
+
 #include "core/base/arena.h"
-#include "th01_video.h"
-#include "th01_world.h"
-#include "test.h"
 
 typedef struct {
     ARENA arena;

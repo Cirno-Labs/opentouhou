@@ -1,8 +1,7 @@
-#include "../../src/th01/transition.c"
+#include "tests/test.h"
+#include "th01/transition.c"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 #include <string.h>
 

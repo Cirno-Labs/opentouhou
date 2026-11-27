@@ -1,6 +1,6 @@
-#include "th02/stage/private.h"
 #include "th02/background.h"
 #include "th02/pillars.h"
+#include "th02/stage/private.h"
 #include "th02/stage_effects.h"
 
 #include <string.h>

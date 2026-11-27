@@ -1,7 +1,7 @@
 #pragma once
 
-#include "fields.h"
-#include "game.h"
+#include "replay/harness/game.h"
+#include "replay/th02/fields.h"
 
 #include <stddef.h>
 #include <stdint.h>

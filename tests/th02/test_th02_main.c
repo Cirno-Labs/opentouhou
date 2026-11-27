@@ -1,18 +1,17 @@
-#include "th02_score_fixture.h"
-#include "th02/main.h"
-#include "th02/program/private.h"
-#include "th02/game_over.h"
-#include "th02/opening.h"
+#include "tests/test.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/audio.h"
-#include "th02/presenter.h"
-#include "th02/high_scores.h"
-#include "th02/text_font.h"
 #include "th02/ending.h"
+#include "th02/game_over.h"
 #include "th02/high_score_entry.h"
+#include "th02/high_scores.h"
+#include "th02/main.h"
+#include "th02/opening.h"
+#include "th02/presenter.h"
+#include "th02/program/private.h"
 #include "th02/stage_bonus.h"
 #include "th02/stage_effects.h"
-
-#include "test.h"
+#include "th02/text_font.h"
 
 static HIGH_SCORE_ENTRY_EVENTS M_TestRegistration(const TH02_INPUT *input);
 static void M_TestResume(void);
@@ -62,10 +61,10 @@ static void M_TestBeginProgram(void);
 #define M_Render M_RenderClock
 #include "th02/audio_clock.c"
 #undef M_Render
-#include "th02/program/audio.c"
-#include "th02/program/assets.c"
-#include "th02/program/scenes.c"
 #include "th02/main.c"
+#include "th02/program/assets.c"
+#include "th02/program/audio.c"
+#include "th02/program/scenes.c"
 #undef Ending_Begin
 #undef StageBonus_Update
 #undef Ending_Update

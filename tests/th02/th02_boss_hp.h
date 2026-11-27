@@ -1,7 +1,7 @@
 #pragma once
 
+#include "tests/test.h"
 #include "th02/hooks.h"
-#include "test.h"
 
 typedef struct {
     int16_t thresholds[16];

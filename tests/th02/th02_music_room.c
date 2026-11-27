@@ -1,4 +1,4 @@
-#include "th02_music_room.h"
+#include "tests/th02/th02_music_room.h"
 
 static const TEST_MUSIC_VIEW *m_MusicRoomObserver;
 

@@ -79,6 +79,11 @@ Rules:
   literal on the stack, and a large struct overflows it.
 - One declaration per statement: `int16_t x;` and `int16_t y;`, never
   `int16_t x, y;`.
+- A quoted include names a file in `src/` from `src/`
+  (`"core/vfs.h"`) and any other from the repository root
+  (`"tests/test.h"`), never from the including file's directory.
+- A directory includes only the layers that it may use
+  (`tools/lint/check_layers` lists them).
 - Comments are `//` only.
 - In a header, a blank line comes before each commented function
   declaration, so that every documented function stands apart.

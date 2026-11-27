@@ -1,10 +1,9 @@
 #include "othpatch/install.h"
-
-#include "fake_program.h"
-#include "patch_builder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "zip_builder.h"
+#include "tests/othpatch/fake_program.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/zip_builder.h"
 
 #include <SDL3/SDL.h>
 #include <sys/stat.h>

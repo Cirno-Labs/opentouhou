@@ -1,8 +1,7 @@
 #include "th02/program/private.h"
 
-#include "pc98/zun/pf.h"
-
 #include "core/vfs.h"
+#include "pc98/zun/pf.h"
 
 RESULT ProgramAssets_Mount(VFS *const files)
 {

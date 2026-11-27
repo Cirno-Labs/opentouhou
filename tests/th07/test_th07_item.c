@@ -1,11 +1,8 @@
-#include "th07/item.h"
-
-#include "gfx_recorder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_data.h"
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/effect.h"
@@ -14,6 +11,7 @@
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/gui.h"
+#include "th07/item.h"
 #include "th07/player.h"
 #include "th07/replay.h"
 #include "th07/sound.h"
@@ -22,7 +20,6 @@
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
-
 #include "stg/rng.h"
 
 #include <SDL3/SDL.h>

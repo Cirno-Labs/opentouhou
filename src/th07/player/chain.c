@@ -1,4 +1,4 @@
-#include "th07/player/private.h"
+#include "stg/chain.h"
 
 #include "th07/anm.h"
 #include "th07/ascii.h"
@@ -11,6 +11,7 @@
 #include "th07/game_manager.h"
 #include "th07/gui.h"
 #include "th07/item.h"
+#include "th07/player/private.h"
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
@@ -20,9 +21,7 @@
 #include "core/base/utils.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
-#include "stg/chain.h"
 #include "stg/timer.h"
 
 #include <math.h>

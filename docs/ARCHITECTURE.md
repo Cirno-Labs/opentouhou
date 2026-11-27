@@ -61,8 +61,9 @@ src/othpatch/  the patch downloader and updater, a program on core and shell
 - `pc98` depends only on `core`. Games can depend on `pc98`; `core`,
   `shell` and `stg` never depend on it. Game-specific audio controls and
   balance settings belong to the game.
-- The build enforces this: each layer is a static library that sees only
-  its own and its dependencies' headers. Code includes `shell/game.h`.
+- `tools/lint/check_layers` enforces this: each directory includes only
+  the headers of its own layer and its dependencies. Code includes
+  `shell/game.h`, from `src/`.
 
 Inside a layer, each module has one public header that other modules
 include: `src/core/vfs.h`. Its code is one source file beside the

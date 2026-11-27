@@ -3,15 +3,15 @@
 #include "th06/anm.h"
 #include "th06/ascii.h"
 #include "th06/game_manager.h"
-#include "stg/note.h"
 #include "th06/scene.h"
 #include "th06/screens/result.h"
 #include "th06/time.h"
 
-#include "shell/game.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/gfx.h"
+#include "shell/game.h"
+#include "stg/note.h"
 
 RNG g_Rng;
 TH06_INPUT g_Input;

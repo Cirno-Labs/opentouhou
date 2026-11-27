@@ -1,7 +1,6 @@
-#include "script.h"
-
-#include "harness_game.h"
-#include "test.h"
+#include "replay/harness/script.h"
+#include "tests/harness_game.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"

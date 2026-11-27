@@ -1,17 +1,16 @@
-#include "../../src/th01/scene.c"
-#include "../../src/th01/route_select.c"
-#include "../../src/th01/vsync_irq.c"
-#include "../../src/th01/input.c"
-#include "th01/shots.h"
-#include "th01/rng.h"
-#include "th01/player.h"
-#include "th01/pellets.h"
+#include "tests/test.h"
+#include "tests/th01/th01_world.h"
+#include "th01/input.c"
 #include "th01/orb.h"
+#include "th01/pellets.h"
+#include "th01/player.h"
+#include "th01/rng.h"
+#include "th01/route_select.c"
+#include "th01/scene.c"
+#include "th01/shots.h"
+#include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
-
-#include "th01_world.h"
-#include "test.h"
 
 typedef struct {
     GAME_TEXT_FONT font;

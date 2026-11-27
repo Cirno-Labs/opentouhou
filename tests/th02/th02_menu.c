@@ -1,4 +1,4 @@
-#include "th02_menu.h"
+#include "tests/th02/th02_menu.h"
 
 static TEST_MENU_TRACE *m_Trace;
 
@@ -15,7 +15,7 @@ static void M_RestoreDraw(const TITLE_ASSETS *assets);
 #define MainMenuRender_Put M_PutDraw
 #define Menu_Clear M_ClearDraw
 #define MainMenuRender_Restore M_RestoreDraw
-#include "../../src/th02/main_menu/logic.c"
+#include "th02/main_menu/logic.c"
 #undef MainMenuRender_Init
 #undef MainMenuRender_Put
 #undef Menu_Clear

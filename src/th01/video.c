@@ -1,9 +1,8 @@
 #include "th01/video.h"
 
-#include "pc98/zun/math16.h"
-
 #include "core/base/assert.h"
 #include "core/base/utils.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

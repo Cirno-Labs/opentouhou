@@ -1,12 +1,10 @@
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th07/th07_data.h"
+#include "th07/files.h"
 #include "th07/player/shot_type.h"
 
-#include "th07/files.h"
-
 #include "core/base/memory.h"
-
-#include "test.h"
-#include "test_dir.h"
-#include "th07_data.h"
 
 #include <string.h>
 

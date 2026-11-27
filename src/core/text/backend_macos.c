@@ -1,5 +1,4 @@
 #include "core/text/font_registry.h"
-
 #include "core/text/private.h"
 
 #include <CoreFoundation/CoreFoundation.h>

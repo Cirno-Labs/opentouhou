@@ -1,8 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_dir.h"
+
 #include "shell/game.h"
 #include "shell/game/entry.h"
-
-#include "test.h"
-#include "test_dir.h"
 
 typedef struct {
     bool unused;

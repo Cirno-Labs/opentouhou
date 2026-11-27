@@ -1,17 +1,15 @@
 #include "th06/screens/ending/screen.h"
 
-#include "th06/screens/ending/script.h"
-
 #include "th06/anm.h"
 #include "th06/ascii.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"
+#include "th06/screens/ending/script.h"
 #include "th06/sound.h"
 
 #include "core/base/cp932.h"
-#include "core/base/memory.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 

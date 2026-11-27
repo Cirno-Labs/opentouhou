@@ -1,8 +1,7 @@
+#include "tests/test.h"
+#include "tests/test_fonts.h"
 #include "th07/anm.h"
 #include "th07/anm/private.h"
-
-#include "test.h"
-#include "test_fonts.h"
 
 #include "core/base/memory.h"
 

@@ -1,4 +1,4 @@
-#include "settings.h"
+#include "shell/game/settings.h"
 
 static const char *const m_Scalings[] = { "sharp", "smooth", "integer",
                                           nullptr };

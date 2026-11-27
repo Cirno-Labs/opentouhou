@@ -1,17 +1,14 @@
-#include "th06/enemy.h"
-
-#include "anm_builder.h"
-#include "ecl_builder.h"
-#include "gfx_recorder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th06_data.h"
-
-#include "stg/angle.h"
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th06/anm_builder.h"
+#include "tests/th06/ecl_builder.h"
+#include "tests/th06/th06_data.h"
 #include "th06/anm.h"
 #include "th06/bullet.h"
 #include "th06/ecl.h"
 #include "th06/effect.h"
+#include "th06/enemy.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -23,10 +20,10 @@
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
-#include "core/gfx/private.h"
 #include "core/base/utils.h"
+#include "core/gfx/private.h"
 #include "core/math/vec.h"
-
+#include "stg/angle.h"
 #include "stg/chain.h"
 #include "stg/rng.h"
 

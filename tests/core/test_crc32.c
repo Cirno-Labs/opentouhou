@@ -1,6 +1,6 @@
-#include "core/hash/crc32.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/hash/crc32.h"
 
 #include <string.h>
 

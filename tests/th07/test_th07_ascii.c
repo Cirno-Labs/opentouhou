@@ -1,20 +1,17 @@
-#include "th07/settings.h"
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_data.h"
 #include "th07/ascii.h"
-
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/player.h"
-
-#include "gfx_recorder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
+#include "th07/settings.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
-
 #include "stg/rng.h"
 
 #include <string.h>

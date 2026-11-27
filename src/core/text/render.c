@@ -1,11 +1,10 @@
-#include "core/text/private.h"
-
 #include "core/base/array.h"
+#include "core/text/private.h"
 
 #include <limits.h>
 #include <math.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Caps the parameters of a markup command that the layout reads: the
 // command, the text and the column.

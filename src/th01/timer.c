@@ -1,16 +1,17 @@
 #include "th01/timer.h"
-#include "th01/vsync_irq.h"
+
 #include "th01/hooks.h"
 #include "th01/hud.h"
 #include "th01/pellets.h"
-#include "th01/tram.h"
+#include "th01/rng.h"
 #include "th01/session.h"
 #include "th01/sound.h"
-#include "th01/rng.h"
+#include "th01/tram.h"
+#include "th01/vsync_irq.h"
 
+#include "core/base/assert.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
-#include "core/base/assert.h"
 
 #include <string.h>
 

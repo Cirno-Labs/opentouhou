@@ -1,10 +1,9 @@
-#include "pc98/pmd/effect.h"
-
-#include "pc98/pmd/data.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
 #include "core/base/arena.h"
-#include "test.h"
-#include "test_allocator.h"
+#include "pc98/pmd/data.h"
+#include "pc98/pmd/effect.h"
 
 typedef struct {
     TEST_ALLOCATOR allocator;

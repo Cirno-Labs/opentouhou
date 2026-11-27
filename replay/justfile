@@ -184,15 +184,15 @@ dosbox-x-test shot="": dosbox-x
     dir=$(mktemp -d)
     trap 'rm -rf "$dir"' EXIT
     docker run --rm --user "$(id -u):$(id -g)" -e HOME=/work \
-        -v {{quote(justfile_directory() / "replay/dosbox")}}:/src:ro -v "$dir:/work" \
+        -v {{quote(justfile_directory())}}:/src:ro -v "$dir:/work" \
         opentouhou-dosbox-x bash -c '
             set -euo pipefail
             mkdir -p /work/base /work/overlay
-            nasm -f bin -o /work/base/HOOKTEST.COM /src/test/hooktest.asm
+            nasm -f bin -o /work/base/HOOKTEST.COM /src/replay/dosbox/test/hooktest.asm
             echo secret > /work/base/SECRET.TXT
             gcc -std=c2x -O2 -Wall -Wextra -Wno-unused-parameter -shared -fPIC \
-                -I/src -o /work/hooktest.so /src/test/hooktest.c
-            { cat /src/dosbox-x.conf; printf "[autoexec]\nC:\nHOOKTEST.COM\nexit\n"; } > /work/test.conf
+                -I/src -o /work/hooktest.so /src/replay/dosbox/test/hooktest.c
+            { cat /src/replay/dosbox/dosbox-x.conf; printf "[autoexec]\nC:\nHOOKTEST.COM\nexit\n"; } > /work/test.conf
             status=0
             timeout 60 dosbox-x -conf /work/test.conf -harness /work/hooktest.so \
                 -- /work/base /work/overlay /work/shot.ppm > /work/log.txt 2>&1 || status=$?

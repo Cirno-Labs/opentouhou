@@ -1,8 +1,7 @@
 #include "othpatch/context.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
-
-#include "test.h"
 
 #include <stdlib.h>
 #include <string.h>

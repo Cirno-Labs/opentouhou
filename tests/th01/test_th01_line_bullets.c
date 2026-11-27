@@ -1,10 +1,9 @@
-#include "../../src/th01/player.c"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
 #include "th01/line_bullets.h"
+#include "th01/player.c"
 
 #include <string.h>
-
-#include "th01_video.h"
-#include "test.h"
 
 TEST(endpoint_hit_test_uses_supplied_unclipped_coordinates)
 {

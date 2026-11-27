@@ -1,8 +1,5 @@
 #include "stg/note.h"
 
-#include "stg/game_font.h"
-#include "stg/translation.h"
-
 #include "core/base/arena.h"
 #include "core/base/array.h"
 #include "core/base/log.h"
@@ -12,6 +9,8 @@
 #include "core/json.h"
 #include "core/patch.h"
 #include "core/text.h"
+#include "stg/game_font.h"
+#include "stg/translation.h"
 
 #include <stdlib.h>
 #include <string.h>

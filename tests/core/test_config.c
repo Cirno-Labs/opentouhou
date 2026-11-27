@@ -1,8 +1,7 @@
-#include "core/config.h"
+#include "tests/test.h"
 
 #include "core/base/log.h"
-
-#include "test.h"
+#include "core/config.h"
 
 #include <float.h>
 #include <string.h>

@@ -1,8 +1,9 @@
 #include "th02/gameplay/memory.h"
-#include "th02/bomb.h"
 
+#include "th02/bomb.h"
 #include "th02/demo.h"
 #include "th02/video.h"
+
 #include "core/base/assert.h"
 
 #include <string.h>

@@ -3,13 +3,13 @@
 // Builds patches folders for the core/patch tests, in the test directories
 // of test_dir.h.
 
+#include "tests/test.h"
+#include "tests/test_dir.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
-
-#include "test.h"
-#include "test_dir.h"
 
 #include <string.h>
 

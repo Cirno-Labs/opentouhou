@@ -1,7 +1,7 @@
 // Gives the clock of shell/game to a recorder, which links shell/null.h
 // for the rest.
 
-#include "recorder.h"
+#include "replay/bot/recorder.h"
 
 #include "shell/game.h"
 

@@ -22,7 +22,13 @@ project(
 
 cc = meson.get_compiler('c')
 src_root = meson.current_source_dir() / '../../src'
-core_include = ['-I' + src_root]
+# Code in src/ is included from src/, "core/vfs.h", and the rest from the
+# repository root, "replay/harness/case.h".
+add_project_arguments(
+  '-I' + src_root,
+  '-I' + meson.current_source_dir() / '..' / '..',
+  language: 'c',
+)
 
 add_project_arguments('-ffp-contract=off', '-fno-fast-math', language: 'c')
 add_project_arguments('-msse2', '-mfpmath=sse', language: 'c')
@@ -64,12 +70,9 @@ media = [sdl3, zlib, avcodec, avutil, swscale, jpeg]
 core_lib = static_library(
   'core',
   core_sources,
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: media,
 )
-
-harness_include = core_include + ['-I' + meson.current_source_dir() / '../harness', '-I' + meson.current_source_dir()]
 
 harness_sources = []
 foreach line : fs.read('../harness/sources.txt').split('\n')
@@ -80,7 +83,6 @@ endforeach
 harness_lib = static_library(
   'harness',
   harness_sources,
-  c_args: harness_include,
   implicit_include_directories: false,
   link_with: core_lib,
   dependencies: [zlib],
@@ -105,7 +107,6 @@ shared_library(
   game + 'retail',
   retail_sources + game_dll_sources,
   name_prefix: '',
-  c_args: harness_include,
   implicit_include_directories: false,
   link_with: [harness_lib],
   dependencies: media + [cc.find_library('winmm')],
@@ -114,7 +115,6 @@ shared_library(
 executable(
   game + 'retail',
   launch_sources + game_exe_sources,
-  c_args: harness_include,
   implicit_include_directories: false,
   link_with: [harness_lib],
   dependencies: media,

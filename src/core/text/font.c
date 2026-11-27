@@ -1,7 +1,6 @@
-#include "core/text/private.h"
-
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/text/private.h"
 
 #include <math.h>
 #include <string.h>

@@ -1,10 +1,9 @@
 #include "th01/opening.h"
+#include "th01/opening_strings.h"
 
 #include "pc98/zun/pf.h"
 
 #include <string.h>
-
-#include "th01/opening_strings.h"
 
 static RESULT M_Image(
     VFS *const vfs, const char *const name, const ALLOCATOR *const allocator,

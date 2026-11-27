@@ -3,9 +3,9 @@
 // Waits that span frames: a number of VSyncs, the next VSync, a key, a
 // palette fade or a song measure, checked each frame until they end.
 
-#include "th02/vsync_irq.h"
 #include "th02/input.h"
 #include "th02/palette.h"
+#include "th02/vsync_irq.h"
 
 typedef enum {
     WAIT_READY,

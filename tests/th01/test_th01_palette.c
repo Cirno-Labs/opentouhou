@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th01/palette.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 static void M_Init(ARENA *const arena, PALETTE_STATE *const state)
 {

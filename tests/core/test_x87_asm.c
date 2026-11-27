@@ -9,7 +9,7 @@
 // range the games can produce; this is meant to be run by hand, not as
 // part of `just test`.
 
-#include "test.h"
+#include "tests/test.h"
 
 #if (defined(__x86_64__) || defined(__i386__))                                 \
     && (defined(__GNUC__) || defined(__clang__))

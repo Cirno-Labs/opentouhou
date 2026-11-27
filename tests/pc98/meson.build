@@ -4,7 +4,6 @@ foreach part : ['mdrv_data', 'mdrv', 'pmd', 'opna', 'vsync', 'master_rng', 'math
     executable(
       'test_pc98_' + part,
       'test_pc98_' + part + '.c',
-      c_args: tests_include,
       implicit_include_directories: false,
       dependencies: [pc98_dep, test_deps] + (part in ['mdrv_data', 'sprite_sheet', 'pmd_data'] ? [sdl3] : []),
     ),
@@ -21,7 +20,6 @@ test(
     executable(
       'test_pc98_mdrv_malformed',
       'test_pc98_mdrv_malformed.c',
-      c_args: tests_include,
       implicit_include_directories: false,
       dependencies: [pc98_dep, sdl3],
     ),

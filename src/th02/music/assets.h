@@ -3,9 +3,8 @@
 // The songs: the fifteen PMD files of the game's music, loaded once and
 // played by their number.
 
-#include "pc98/pmd_data.h"
-
 #include "core/vfs.h"
+#include "pc98/pmd_data.h"
 
 typedef enum {
     MUSIC_STAGE0,

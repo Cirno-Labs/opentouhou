@@ -1,9 +1,10 @@
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "tests/th01/th01_world.h"
 #include "th01/extend.h"
 #include "th01/session.h"
+
 #include "core/base/arena.h"
-#include "th01_video.h"
-#include "th01_world.h"
-#include "test.h"
 
 #include <string.h>
 

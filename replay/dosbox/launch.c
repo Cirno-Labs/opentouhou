@@ -1,7 +1,7 @@
 // Uses realpath and mkdtemp of POSIX 2008.
 #define _XOPEN_SOURCE 700
 
-#include "dosbox.h"
+#include "replay/dosbox/dosbox.h"
 
 #include "core/base/log.h"
 #include "core/base/string.h"

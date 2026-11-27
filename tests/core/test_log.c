@@ -1,6 +1,6 @@
-#include "core/base/log.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/base/log.h"
 
 static char m_Output[4096];
 

@@ -1,7 +1,8 @@
+#include "tests/test.h"
 #include "th02/gameplay/memory.h"
 #include "th02/video.h"
+
 #include "core/base/arena.h"
-#include "test.h"
 
 static void M_Begin(const int32_t height)
 {

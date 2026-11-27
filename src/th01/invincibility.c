@@ -1,8 +1,9 @@
 #include "th01/invincibility.h"
+
 #include "th01/rng.h"
+#include "th01/sprite.h"
 
 #include "pc98/zun/master_rng.h"
-#include "th01/sprite.h"
 #include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>

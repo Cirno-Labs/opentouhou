@@ -1,8 +1,8 @@
 #pragma once
 
 #include "th02/draw.h"
-#include "th02/palette.h"
 #include "th02/high_scores.h"
+#include "th02/palette.h"
 #include "th02/settings.h"
 #include "th02/tram.h"
 

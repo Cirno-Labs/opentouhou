@@ -1,4 +1,4 @@
-#include "snapshot.h"
+#include "replay/bot/snapshot.h"
 
 #if SNAPSHOT_AVAILABLE
 

@@ -1,4 +1,4 @@
-#include "retail.h"
+#include "replay/retail/retail.h"
 
 // Runs retail th06 1.02h on the retail backend as th06retail.exe.
 

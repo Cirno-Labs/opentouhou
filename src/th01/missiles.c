@@ -1,9 +1,9 @@
 #include "th01/missiles.h"
+
+#include "th01/finite.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
-
-#include "th01/finite.h"
 
 #include <string.h>
 

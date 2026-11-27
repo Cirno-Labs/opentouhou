@@ -8,7 +8,7 @@
 // argument, y is its tail from argument reduction. Returns tan(x+y) when
 // odd == 0, and -1/tan(x+y) when odd != 0.
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 static const double T[] = {
     3.33333333333334091986e-01, 1.33333333333201242699e-01,

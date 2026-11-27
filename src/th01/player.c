@@ -1,13 +1,13 @@
 #include "th01/player.h"
+
 #include "th01/hud.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
 #include "th01/shots.h"
 #include "th01/sound.h"
 
-#include "pc98/zun/math16.h"
-
 #include "core/base/assert.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

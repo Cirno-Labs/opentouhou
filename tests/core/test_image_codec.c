@@ -1,8 +1,8 @@
-#include "core/image.h"
+#include "tests/jpeg_fixtures.h"
+#include "tests/test.h"
 
-#include "test.h"
-#include "jpeg_fixtures.h"
 #include "core/hash.h"
+#include "core/image.h"
 
 #include <string.h>
 

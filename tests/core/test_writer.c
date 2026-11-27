@@ -1,9 +1,9 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+
 #include "core/base/utils.h"
 #include "core/io/reader.h"
 #include "core/io/writer.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 // Checks the bytes of a writer whose allocator is the heap's.
 static bool M_Holds(

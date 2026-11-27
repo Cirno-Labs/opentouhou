@@ -1,6 +1,6 @@
-#include "stg/timer.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "stg/timer.h"
 
 #include <stdint.h>
 #include <string.h>

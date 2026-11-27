@@ -1,12 +1,11 @@
-#include "../../src/th02/point_numbers.c"
+#include "tests/test.h"
+#include "tests/th02/th02_sprites.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
+#include "th02/point_numbers.c"
 #include "th02/point_numbers.h"
 
 #include "core/base/arena.h"
-
-#include "th02_sprites.h"
-#include "test.h"
 
 TEST(font_is_owned_and_copied_from_pointnum_sheet)
 {

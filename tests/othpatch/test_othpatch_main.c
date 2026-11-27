@@ -1,13 +1,12 @@
 #include "othpatch/install.h"
 #include "othpatch/main.h"
+#include "tests/othpatch/fake_program.h"
+#include "tests/patch_server.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/zip_builder.h"
 
 #include "core/hash/sha256.h"
-
-#include "fake_program.h"
-#include "patch_server.h"
-#include "test.h"
-#include "test_dir.h"
-#include "zip_builder.h"
 
 #ifdef _WIN32
     #define M_SEPARATOR "\\"

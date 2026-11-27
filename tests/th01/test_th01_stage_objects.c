@@ -1,19 +1,17 @@
-#include "../../src/th01/vsync_irq.c"
-#include "../../src/th01/stage_objects.c"
-#include "th01/stage_objects.h"
-#include "th01/shots.h"
-#include "th01/player.h"
-#include "th01/pellets.h"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "tests/th01/th01_world.h"
 #include "th01/orb.h"
+#include "th01/pellets.h"
+#include "th01/player.h"
 #include "th01/rng.h"
-
-#include "pc98/zun/master_rng.h"
+#include "th01/shots.h"
+#include "th01/stage_objects.c"
+#include "th01/stage_objects.h"
+#include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
-
-#include "th01_video.h"
-#include "th01_world.h"
-#include "test.h"
+#include "pc98/zun/master_rng.h"
 
 #include <string.h>
 

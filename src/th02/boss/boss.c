@@ -1,9 +1,10 @@
 #include "th02/boss.h"
+
 #include "th02/gameplay/memory.h"
 #include "th02/hooks.h"
-#include "th02/shots/hit.h"
 #include "th02/palette.h"
 #include "th02/score.h"
+#include "th02/shots/hit.h"
 #include "th02/stage.h"
 
 #include "pc98/zun/math16.h"

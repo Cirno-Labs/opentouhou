@@ -12,7 +12,6 @@
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/chain.h"
 #include "stg/rng.h"

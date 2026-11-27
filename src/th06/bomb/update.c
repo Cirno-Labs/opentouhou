@@ -1,6 +1,5 @@
-#include "th06/bomb.h"
-
 #include "th06/anm.h"
+#include "th06/bomb.h"
 #include "th06/effect.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
@@ -14,7 +13,6 @@
 #include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/rng.h"
 #include "stg/timer.h"
 

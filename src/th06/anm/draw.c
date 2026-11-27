@@ -1,10 +1,9 @@
 #include "th06/anm/draw.h"
 
-#include "stg/translation.h"
-
 #include "core/base/assert.h"
 #include "core/base/utils.h"
 #include "core/math/x87.h"
+#include "stg/translation.h"
 
 #include <math.h>
 

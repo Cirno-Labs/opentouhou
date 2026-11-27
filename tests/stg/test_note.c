@@ -1,17 +1,15 @@
-#include "stg/note.h"
-
-#include "gfx_recorder.h"
-#include "patch_builder.h"
-#include "test.h"
-#include "test_fonts.h"
-
-#include "stg/translation.h"
+#include "tests/gfx_recorder.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/test_fonts.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/gfx.h"
 #include "core/patch.h"
 #include "core/text.h"
+#include "stg/note.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

@@ -1,12 +1,11 @@
-#include "../../src/th01/missiles.c"
-#include "../../src/th01/player.c"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "tests/th01/th01_world.h"
+#include "th01/missiles.c"
 #include "th01/missiles.h"
+#include "th01/player.c"
 
 #include <string.h>
-
-#include "th01_video.h"
-#include "th01_world.h"
-#include "test.h"
 
 TEST(pool_and_spawn_history)
 {

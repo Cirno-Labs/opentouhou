@@ -1,11 +1,10 @@
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_player_graphics.h"
+#include "tests/th02/th02_random_fixture.h"
 #include "th02/player.h"
-#include "th02/shots.h"
 #include "th02/random.h"
-
-#include "test.h"
-#include "th02_player_graphics.h"
+#include "th02/shots.h"
 
 static void M_Init(const uint8_t type, const uint8_t level)
 {

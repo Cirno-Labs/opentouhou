@@ -1,20 +1,17 @@
-#include "th06/stage.h"
-
-#include "anm_builder.h"
-#include "gfx_recorder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th06_data.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th06/anm_builder.h"
+#include "tests/th06/th06_data.h"
 #include "th06/anm.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/stage.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
-
 #include "stg/chain.h"
 
 #include <SDL3/SDL.h>

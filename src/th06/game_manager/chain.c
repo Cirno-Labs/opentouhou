@@ -1,19 +1,18 @@
-#include "th06/game_manager.h"
-
-#include "th06/bullet.h"
 #include "th06/ascii.h"
+#include "th06/bullet.h"
 #include "th06/ecl.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"
 #include "th06/game.h"
+#include "th06/game_manager.h"
 #include "th06/gui.h"
 #include "th06/player.h"
+#include "th06/replay.h"
 #include "th06/scene.h"
 #include "th06/screen_effect.h"
+#include "th06/screens/result.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/replay.h"
-#include "th06/screens/result.h"
 
 #include "core/io/reader.h"
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pc98/pmd_data.h"
 #include "pc98/pmd/part.h"
+#include "pc98/pmd_data.h"
 
 typedef struct {
     PMD_PART channel;

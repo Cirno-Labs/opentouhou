@@ -1,8 +1,7 @@
-#include "compare.h"
-
-#include "harness_game.h"
-#include "test.h"
-#include "test_dir.h"
+#include "replay/harness/compare.h"
+#include "tests/harness_game.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/image/decode.h"
 #include "core/image/encode.h"

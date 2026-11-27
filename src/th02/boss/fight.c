@@ -1,4 +1,5 @@
 #include "th02/boss/fight.h"
+
 #include "th02/boss/private.h"
 #include "th02/boss/strategy.h"
 

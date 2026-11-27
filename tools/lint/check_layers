@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""Fail when a file includes a layer that its directory may not use.
+
+Takes the paths of C files. LAYERS gives each directory the patterns of the
+includes that its files may name, from the dependencies between the layers
+in docs/ARCHITECTURE.md: core uses nothing; shell, stg and pc98 use core;
+a game uses core, shell and stg, and a PC-98 game pc98 too. A file belongs to
+the longest directory of LAYERS that holds it. A quoted include that no
+pattern of its directory matches is an error, and so is a file in a
+directory that LAYERS lacks.
+"""
+
+import re
+import sys
+from pathlib import PurePosixPath
+
+# The layers that the programs share; .clang-format groups their includes.
+SHARED = ["core", "pc98", "shell", "stg"]
+CORE = ["core/"]
+SHELL = [*CORE, "shell/"]
+STG = [*CORE, "stg/"]
+PC98 = [*CORE, "pc98/"]
+GAME = [*SHELL, "stg/"]
+PC98_GAME = [*GAME, "pc98/"]
+# What a replay of a Windows game uses beside the game.
+REPLAY = [*GAME, "replay/harness/", "replay/bot/", "replay/retail/"]
+# The helpers directly in tests/, but not the areas below it.
+TEST_HELPERS = [r"tests/[^/]+$"]
+
+# Each directory with the patterns, from the start of an include path, of
+# what its files may include: a path from src/ for a layer, from the
+# repository root for the rest.
+LAYERS = {
+    "src/core": CORE,
+    "src/shell": SHELL,
+    "src/stg": STG,
+    "src/pc98": PC98,
+    # othpatch is a program on core and shell, without shell/game.
+    "src/othpatch": [*CORE, r"shell/(?!game[/.])", "othpatch/"],
+    "src/th01": [*PC98_GAME, "th01/"],
+    "src/th02": [*PC98_GAME, "th02/"],
+    "src/th06": [*GAME, "th06/"],
+    "src/th07": [*GAME, "th07/"],
+    "replay/harness": [*SHELL, "replay/harness/"],
+    "replay/bot": [*GAME, "replay/bot/"],
+    "replay/dosbox": [*CORE, "replay/harness/", "replay/dosbox/"],
+    "replay/retail": [*CORE, "replay/harness/", "replay/retail/"],
+    "replay/th01": [
+        *PC98_GAME,
+        "th01/",
+        "replay/harness/",
+        "replay/bot/",
+        "replay/dosbox/",
+        "replay/th01/",
+    ],
+    "replay/th02": [
+        *PC98_GAME,
+        "th02/",
+        "replay/harness/",
+        "replay/bot/",
+        "replay/dosbox/",
+        "replay/th02/",
+    ],
+    "replay/th06": [
+        *GAME,
+        "th06/",
+        "replay/harness/",
+        "replay/bot/",
+        "replay/retail/",
+        "replay/th06/",
+    ],
+    "replay/th07": [
+        *GAME,
+        "th07/",
+        "replay/harness/",
+        "replay/bot/",
+        "replay/retail/",
+        "replay/th07/",
+    ],
+    "tests": [*GAME, "replay/harness/", *TEST_HELPERS],
+    "tests/compile_fail": CORE,
+    "tests/core": [*CORE, *TEST_HELPERS, "tests/core/"],
+    "tests/shell": [*SHELL, *TEST_HELPERS, "tests/shell/"],
+    "tests/stg": [*STG, *TEST_HELPERS, "tests/stg/"],
+    "tests/pc98": [*PC98, *TEST_HELPERS, "tests/pc98/"],
+    "tests/othpatch": [*SHELL, "othpatch/", *TEST_HELPERS, "tests/othpatch/"],
+    "tests/replay": [
+        *GAME,
+        "replay/harness/",
+        "replay/bot/",
+        "replay/dosbox/",
+        *TEST_HELPERS,
+        "tests/replay/",
+    ],
+    "tests/th01": [
+        *PC98_GAME,
+        "th01/",
+        "replay/harness/",
+        "replay/th01/",
+        *TEST_HELPERS,
+        "tests/th01/",
+    ],
+    "tests/th02": [*PC98_GAME, "th02/", *TEST_HELPERS, "tests/th02/"],
+    "tests/th06": [*GAME, "th06/", *TEST_HELPERS, "tests/th06/"],
+    "tests/th07": [*GAME, "th07/", *TEST_HELPERS, "tests/th07/"],
+}
+INCLUDE = re.compile(r'^\s*#\s*include\s*"([^"]*)"')
+
+
+def directory(path: str) -> str | None:
+    """Return the longest directory of LAYERS that holds path. The entry
+    of tests/ holds only the files directly in it, so that a new area of
+    tests needs its own."""
+    parent = PurePosixPath(path).parent
+    for candidate in (parent, *parent.parents):
+        if str(candidate) in LAYERS and (
+            candidate == parent or str(candidate) != "tests"
+        ):
+            return str(candidate)
+    return None
+
+
+def errors(path: str, lines: list[str]) -> list[tuple[int, str]]:
+    """Return the index and message of each include of a file at path that
+    its directory may not name."""
+    owner = directory(path)
+    if owner is None:
+        return [(0, "directory has no entry in tools/lint/check_layers")]
+    patterns = [re.compile(pattern) for pattern in LAYERS[owner]]
+    found = []
+    for index, line in enumerate(lines):
+        match = INCLUDE.match(line)
+        if match and not any(pattern.match(match.group(1)) for pattern in patterns):
+            found.append((index, f"{owner} may not include {match.group(1)}"))
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    failed = False
+    for name in sys.argv[1:] if argv is None else argv:
+        path = PurePosixPath(name).as_posix()
+        with open(name, encoding="utf-8") as file:
+            lines = file.read().splitlines()
+        for index, message in errors(path, lines):
+            print(f"{name}:{index + 1}: {message}")
+            failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

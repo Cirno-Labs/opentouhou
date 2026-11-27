@@ -1,8 +1,6 @@
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
 #include "th06/ascii.h"
-
-#include "gfx_recorder.h"
-#include "test.h"
-
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/scene.h"

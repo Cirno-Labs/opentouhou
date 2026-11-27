@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/draw/private.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 static void M_Init(ARENA *const arena)
 {

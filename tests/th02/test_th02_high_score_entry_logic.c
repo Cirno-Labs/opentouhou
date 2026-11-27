@@ -1,6 +1,5 @@
-#include "th02_high_score_entry.c"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th02/th02_high_score_entry.c"
 
 TEST(registration_rejects_low_scores_and_preserves_name_tail_on_ties)
 {

@@ -1,10 +1,8 @@
-#include "native.h"
-
-#include "files.h"
-#include "harness.h"
-#include "native_state.h"
-#include "start.h"
-
+#include "replay/harness/native.h"
+#include "replay/th01/files.h"
+#include "replay/th01/harness.h"
+#include "replay/th01/native_state.h"
+#include "replay/th01/start.h"
 #include "th01/main.h"
 #include "th01/opening.h"
 #include "th01/settings.h"

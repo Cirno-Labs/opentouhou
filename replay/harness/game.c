@@ -1,4 +1,4 @@
-#include "game.h"
+#include "replay/harness/game.h"
 
 #include "core/base/string.h"
 

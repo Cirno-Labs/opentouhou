@@ -1,7 +1,7 @@
-#include "pc98/zun/sprite_sheet.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
-#include "test.h"
-#include "test_dir.h"
+#include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
 

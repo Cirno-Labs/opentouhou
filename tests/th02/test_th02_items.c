@@ -1,16 +1,15 @@
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/performance.c"
-#include "../../src/th02/items.c"
-#include "../../src/th02/point_numbers.c"
-#include "th02/player.h"
+#include "tests/test.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_player_graphics.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/background.h"
+#include "th02/items.c"
 #include "th02/items.h"
-
-#include "test.h"
-#include "th02_sound.h"
-#include "th02_player_graphics.h"
+#include "th02/performance.c"
+#include "th02/player.h"
+#include "th02/point_numbers.c"
 
 typedef struct {
     TEST_PLAYER_GRAPHICS graphics;

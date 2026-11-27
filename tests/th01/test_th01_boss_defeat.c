@@ -1,16 +1,15 @@
-#include "../../src/th01/vsync_irq.c"
-#include "../../src/th01/player.c"
+#include "tests/test.h"
+#include "tests/th01/th01_world.h"
 #include "th01/boss/private.h"
-#include "th01/shots.h"
-#include "th01/rng.h"
-#include "th01/player.h"
-#include "th01/pellets.h"
 #include "th01/orb.h"
+#include "th01/pellets.h"
+#include "th01/player.c"
+#include "th01/player.h"
+#include "th01/rng.h"
+#include "th01/shots.h"
+#include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
-
-#include "th01_world.h"
-#include "test.h"
 
 typedef struct {
     PALETTE target;

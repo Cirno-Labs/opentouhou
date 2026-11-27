@@ -1,7 +1,7 @@
-#include "pc98/pmd/lfo.h"
+#include "tests/test.h"
 
 #include "core/base/utils.h"
-#include "test.h"
+#include "pc98/pmd/lfo.h"
 
 TEST(random_scaling_includes_limit_and_zero_limit_still_advances)
 {

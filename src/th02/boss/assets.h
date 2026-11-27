@@ -1,9 +1,9 @@
 #pragma once
 
-#include "th02/dialogue/assets.h"
 #include "th02/boss/marisa/assets.h"
 #include "th02/boss/mima/assets.h"
 #include "th02/boss/sigma/assets.h"
+#include "th02/dialogue/assets.h"
 
 // Each landed boss adds its own bank by value here (as e.g. MARISA_ASSETS
 // marisa;), once its asset type exists.

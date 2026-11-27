@@ -1,6 +1,6 @@
 #pragma once
 
-#include "harness.h"
+#include "replay/th07/harness.h"
 
 #include <stdint.h>
 

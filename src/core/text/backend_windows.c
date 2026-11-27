@@ -1,7 +1,6 @@
-#include "core/text/font_registry.h"
-
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/text/font_registry.h"
 #include "core/text/private.h"
 
 #include <windows.h>

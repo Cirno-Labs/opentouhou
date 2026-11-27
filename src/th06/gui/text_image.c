@@ -1,10 +1,10 @@
 #include "th06/anm.h"
 #include "th06/files.h"
 #include "th06/gui/private.h"
-#include "stg/translation.h"
 
 #include "core/base/log.h"
 #include "core/base/utils.h"
+#include "stg/translation.h"
 
 #define M_STAGE_TITLE 0x700
 #define M_SONG_TITLE 0x701

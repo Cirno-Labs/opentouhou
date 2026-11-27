@@ -3,13 +3,12 @@
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 
+#include <errno.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/error.h>
 #include <libswresample/swresample.h>
-
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 

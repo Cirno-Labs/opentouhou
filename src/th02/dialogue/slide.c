@@ -1,12 +1,12 @@
 #include "th02/dialogue/slide.h"
-#include "th02/background.h"
-#include "th02/stage.h"
 
+#include "th02/background.h"
 #include "th02/grcg.h"
 #include "th02/hud.h"
 #include "th02/palette.h"
 #include "th02/player.h"
 #include "th02/score.h"
+#include "th02/stage.h"
 #include "th02/video.h"
 
 #include "core/base/assert.h"

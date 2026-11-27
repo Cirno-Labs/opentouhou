@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/gaiji.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(bfnt_registration_keeps_glyph_order_and_both_halves)
 {

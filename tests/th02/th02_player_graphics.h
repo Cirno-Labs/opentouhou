@@ -1,15 +1,14 @@
 #pragma once
 
-#include "th02/player.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/grcg.h"
+#include "th02/player.h"
 #include "th02/video.h"
 
 #include "core/base/arena.h"
-#include "test.h"
-
-#include "th02_clip_fixture.h"
 
 typedef struct {
     ARENA arena;

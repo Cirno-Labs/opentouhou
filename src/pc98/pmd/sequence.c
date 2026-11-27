@@ -1,6 +1,5 @@
-#include "pc98/pmd/driver.h"
-
 #include "pc98/pmd/data.h"
+#include "pc98/pmd/driver.h"
 
 #include <string.h>
 

@@ -1,8 +1,7 @@
-#include "recorder.h"
+#include "replay/bot/recorder.h"
 
-#include "harness.h"
-#include "start.h"
-
+#include "replay/th01/harness.h"
+#include "replay/th01/start.h"
 #include "th01/boss.h"
 #include "th01/hooks.h"
 #include "th01/input.h"

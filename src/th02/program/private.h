@@ -1,6 +1,5 @@
 #pragma once
 
-#include "th02/main.h"
 #include "th02/audio.h"
 #include "th02/audio_clock.h"
 #include "th02/bomb.h"
@@ -16,6 +15,7 @@
 #include "th02/hud.h"
 #include "th02/input.h"
 #include "th02/items.h"
+#include "th02/main.h"
 #include "th02/miss.h"
 #include "th02/music/assets.h"
 #include "th02/music/wait.h"
@@ -39,7 +39,6 @@
 
 #include "core/audio.h"
 #include "core/base/arena.h"
-
 #include "pc98/pmd.h"
 #include "pc98/pmd_data.h"
 

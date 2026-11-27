@@ -4,9 +4,8 @@
 // and stand-ins for the modules it drives. th07_gui_setup.c defines the
 // globals of those modules and the stand-ins.
 
-#include "th07_anm_builder.h"
-#include "th07_msg_builder.h"
-
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_msg_builder.h"
 #include "th07/scene.h"
 
 #include "core/base/result.h"

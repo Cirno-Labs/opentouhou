@@ -1,6 +1,5 @@
 subdir('opna')
 
-pc98_include = [layer_include['pc98']]
 pc98_lib = static_library(
   'pc98',
   'mdrv.c',
@@ -28,12 +27,10 @@ pc98_lib = static_library(
   'zun/pf.c',
   'zun/pi.c',
   'zun/sprite_sheet.c',
-  c_args: pc98_include,
   implicit_include_directories: false,
   dependencies: [core_dep, opna_dep],
 )
 pc98_dep = declare_dependency(
-  compile_args: pc98_include,
   link_with: pc98_lib,
   dependencies: [core_dep, opna_dep],
 )

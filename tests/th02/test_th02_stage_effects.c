@@ -1,15 +1,14 @@
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/background/private.h"
-#include "th02_random_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
-#include "../../src/th02/stage_effects.c"
 #include "th02/draw.h"
 #include "th02/palette.h"
 #include "th02/random.h"
 #include "th02/sparks.h"
-
-#include "test.h"
-#include "th02_sound.h"
+#include "th02/stage_effects.c"
 
 typedef struct {
     uint8_t slowdown;

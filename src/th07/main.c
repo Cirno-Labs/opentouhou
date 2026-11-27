@@ -6,24 +6,22 @@
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/replay.h"
-#include "th07/screens/title.h"
 #include "th07/screens/result/records.h"
 #include "th07/screens/result/saves.h"
+#include "th07/screens/title.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
 #include "th07/strings.h"
+#include "th07/version.h"
 
+#include "core/base/log.h"
+#include "core/base/memory.h"
+#include "core/patch.h"
+#include "core/vfs.h"
+#include "shell/game.h"
 #include "stg/note.h"
 #include "stg/replay_files.h"
 #include "stg/translation.h"
-
-#include "shell/game.h"
-#include "core/patch.h"
-#include "core/vfs.h"
-#include "core/base/log.h"
-#include "core/base/memory.h"
-
-#include "version.h"
 
 #include <time.h>
 

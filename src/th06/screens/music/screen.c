@@ -6,13 +6,13 @@
 #include "th06/scene.h"
 #include "th06/screens/music/comments.h"
 #include "th06/sound.h"
-#include "stg/translation.h"
 
-#include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/translation.h"
 
 #define M_CALC_PRIORITY 2
 #define M_DRAW_PRIORITY 0

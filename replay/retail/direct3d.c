@@ -1,9 +1,9 @@
 // C, so that d3d8.h declares the vtables as structs and the compiler
 // checks every replacement against the method it replaces.
 
-#include "direct3d.h"
+#include "replay/retail/direct3d.h"
 
-#include "iat.h"
+#include "replay/retail/iat.h"
 
 #include <string.h>
 

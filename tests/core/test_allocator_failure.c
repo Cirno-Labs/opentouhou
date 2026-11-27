@@ -1,6 +1,6 @@
-#include "core/base/memory.h"
+#include "tests/test_allocator.h"
 
-#include "test_allocator.h"
+#include "core/base/memory.h"
 
 int main(void)
 {

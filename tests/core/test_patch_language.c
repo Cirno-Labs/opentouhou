@@ -1,6 +1,6 @@
-#include "core/patch/language.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/patch/language.h"
 
 #include <stdio.h>
 

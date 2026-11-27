@@ -1,28 +1,26 @@
 #include "th01/main.h"
 
-#include "th01/gameplay.h"
-#include "th01/music.h"
-#include "th01/sound.h"
-
-#include "th01/opening.h"
-#include "pc98/vsync.h"
-#include "pc98/zun/logo1.h"
-#include "th01/vsync_irq.h"
-#include "th01/input.h"
-#include "th01/settings.h"
-#include "th01/score.h"
-#include "pc98/zun/bfnt.h"
 #include "th01/ending.h"
+#include "th01/gameplay.h"
+#include "th01/input.h"
+#include "th01/music.h"
+#include "th01/opening.h"
+#include "th01/present.h"
+#include "th01/score.h"
+#include "th01/settings.h"
+#include "th01/sound.h"
+#include "th01/version.h"
+#include "th01/vsync_irq.h"
 
+#include "core/audio.h"
 #include "core/base/arena.h"
 #include "core/base/assert.h"
-#include "core/audio.h"
-#include "th01/present.h"
 #include "core/text/font_registry.h"
 #include "core/text/font_rom.h"
 #include "core/vfs.h"
-
-#include "version.h"
+#include "pc98/vsync.h"
+#include "pc98/zun/bfnt.h"
+#include "pc98/zun/logo1.h"
 
 #include <string.h>
 

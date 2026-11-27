@@ -1,6 +1,7 @@
 #include "th02/music_room/render.h"
-#include "th02/music_room/private.h"
+
 #include "th02/draw.h"
+#include "th02/music_room/private.h"
 
 #include "core/base/assert.h"
 

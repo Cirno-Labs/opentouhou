@@ -1,9 +1,8 @@
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
 #include "th02/ending/images.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 typedef struct {
     const char *path;

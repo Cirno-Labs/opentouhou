@@ -1,11 +1,10 @@
-#include "th02_tram_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/main_menu/render.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 typedef struct {
     ARENA arena;

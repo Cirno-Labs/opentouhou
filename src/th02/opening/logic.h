@@ -1,8 +1,8 @@
 #pragma once
 
 #include "th02/main_menu.h"
-#include "th02/music_room.h"
 #include "th02/menu.h"
+#include "th02/music_room.h"
 #include "th02/opening/assets.h"
 
 typedef struct {

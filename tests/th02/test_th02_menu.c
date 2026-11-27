@@ -1,6 +1,5 @@
-#include "th02_menu.c"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th02/th02_menu.c"
 
 TEST(main_menu_requires_release_and_handles_up_then_down_independently)
 {

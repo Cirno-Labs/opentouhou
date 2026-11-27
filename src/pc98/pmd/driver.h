@@ -1,15 +1,13 @@
 #pragma once
 
-#include "pc98/pmd/sequence.h"
-#include "pc98/pmd/fm.h"
-#include "pc98/pmd/ssg.h"
-#include "pc98/pmd/effect.h"
-#include "pc98/pmd/drums.h"
-#include "pc98/pmd/rhythm.h"
-#include "pc98/pmd/types.h"
-
 #include "pc98/opna.h"
-
+#include "pc98/pmd/drums.h"
+#include "pc98/pmd/effect.h"
+#include "pc98/pmd/fm.h"
+#include "pc98/pmd/rhythm.h"
+#include "pc98/pmd/sequence.h"
+#include "pc98/pmd/ssg.h"
+#include "pc98/pmd/types.h"
 #include "pc98/pmd_data.h"
 
 struct PMD {

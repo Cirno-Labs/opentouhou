@@ -1,13 +1,13 @@
-#include "th07_data.h"
+#include "tests/th07/th07_data.h"
 
 #include "th07/files.h"
 
-#include "shell/null.h"
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/writer.h"
+#include "shell/null.h"
 #include "stg/lzss.h"
 
 #include <SDL3/SDL.h>

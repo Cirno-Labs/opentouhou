@@ -1,8 +1,7 @@
-#include "th02_tram_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_tram_fixture.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 static RESULT M_Read(
     const uint8_t *const bytes, const size_t size, ARENA *const arena,

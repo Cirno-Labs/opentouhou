@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th02/patterns.h"
-
-#include "test.h"
 
 typedef struct {
     size_t allocations;

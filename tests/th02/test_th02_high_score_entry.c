@@ -1,9 +1,7 @@
-#include "th02_tram_fixture.h"
-#include "../../src/th02/high_score_entry/logic.c"
-
+#include "tests/test.h"
+#include "tests/th02/th02_tram_fixture.h"
+#include "th02/high_score_entry/logic.c"
 #include "th02/vsync_irq.h"
-
-#include "test.h"
 
 typedef struct {
     HIGH_SCORES scores;

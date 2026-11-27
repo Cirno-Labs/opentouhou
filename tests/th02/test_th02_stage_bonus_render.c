@@ -1,12 +1,10 @@
-#include "th02_score_fixture.h"
-#include "th02_tram_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02/hud.h"
+#include "tests/test.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/hud.h"
 #include "th02/stage_bonus/render.h"
-
-#include "test.h"
-#include "th02_sound.h"
 
 TEST(overlay_wipe_preserves_hud_borders_and_plane_tails)
 {

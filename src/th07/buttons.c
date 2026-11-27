@@ -1,7 +1,7 @@
 #include "th07/buttons.h"
 
-#include "shell/game.h"
 #include "core/base/utils.h"
+#include "shell/game.h"
 
 static const INPUT_ACTION m_Actions[] = {
 #define M_BUTTON(field_, bit_, keyboard_, gamepad_, joystick_)                 \

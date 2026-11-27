@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th02/clip.h"
-
-#include "test.h"
 
 TEST(initial_bounds_cover_the_screen_inclusively)
 {

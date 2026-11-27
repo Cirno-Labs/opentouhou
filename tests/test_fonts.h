@@ -4,11 +4,12 @@
 // built-in fonts, and $OPENTOUHOU_MSGOTHIC, where it is set, the
 // msgothic.ttc that the MS Gothic tests use.
 
+#include "tests/test.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/reader.h"
 #include "core/text/font_registry.h"
-#include "test.h"
 
 #include <SDL3/SDL.h>
 #include <stdlib.h>

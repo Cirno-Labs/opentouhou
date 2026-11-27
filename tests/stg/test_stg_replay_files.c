@@ -1,8 +1,7 @@
-#include "stg/replay_files.h"
-
-#include "test.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
+#include "stg/replay_files.h"
 
 static uint8_t *M_Bytes(const uint8_t first, const size_t size)
 {

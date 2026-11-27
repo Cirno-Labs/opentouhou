@@ -1,7 +1,6 @@
-#include "core/image.h"
-
 #include "core/base/assert.h"
 #include "core/base/log.h"
+#include "core/image.h"
 #include "core/image/codec.h"
 
 #include <libavcodec/avcodec.h>

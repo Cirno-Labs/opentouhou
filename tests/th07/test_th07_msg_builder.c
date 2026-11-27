@@ -1,6 +1,5 @@
-#include "th07_msg_builder.h"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th07/th07_msg_builder.h"
 
 #include <string.h>
 

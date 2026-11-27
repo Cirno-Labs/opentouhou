@@ -1,8 +1,8 @@
 #include "th07/player/shot_type.h"
 
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/base/memory.h"
+#include "core/vfs.h"
+#include "shell/game.h"
 
 #define M_HEADER_SIZE 0x34
 #define M_TABLE_SIZE 8

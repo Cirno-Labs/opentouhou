@@ -1,11 +1,10 @@
-#include "../../src/th01/orb.c"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "th01/orb.c"
 #include "th01/orb.h"
 #include "th01/rng.h"
 
 #include <string.h>
-
-#include "th01_video.h"
-#include "test.h"
 
 static ORB M_Orb(void)
 {

@@ -1,8 +1,8 @@
-#include "dosbox_state.h"
+#include "replay/th01/dosbox_state.h"
 
-#include "addresses.h"
-#include "dosbox.h"
-#include "state.h"
+#include "replay/dosbox/dosbox.h"
+#include "replay/harness/state.h"
+#include "replay/th01/addresses.h"
 
 #include "core/base/memory.h"
 

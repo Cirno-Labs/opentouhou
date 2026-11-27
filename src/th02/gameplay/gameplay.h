@@ -1,11 +1,11 @@
 #pragma once
 
-#include "th02/gameplay/assets.h"
 #include "th02/bomb/assets.h"
 #include "th02/boss/fight.h"
 #include "th02/demo.h"
-#include "th02/stage/assets.h"
+#include "th02/gameplay/assets.h"
 #include "th02/music/wait.h"
+#include "th02/stage/assets.h"
 
 typedef enum {
     GAMEPLAY_RUNNING,

@@ -1,11 +1,10 @@
-#include "core/patch/select.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/ini.h"
-
-#include "patch_builder.h"
-#include "test.h"
+#include "core/patch/select.h"
 
 #include <string.h>
 

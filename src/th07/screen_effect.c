@@ -8,7 +8,6 @@
 #include "core/base/memory.h"
 #include "core/gfx.h"
 #include "core/math/x87.h"
-
 #include "stg/chain.h"
 #include "stg/rng.h"
 #include "stg/timer.h"

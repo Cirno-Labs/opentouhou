@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/math/vec.h"
-
 #include "stg/timer.h"
 
 #include <stdint.h>

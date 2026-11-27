@@ -1,7 +1,7 @@
-#include "pc98/pmd/ssg.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
-#include "test.h"
+#include "pc98/pmd/ssg.h"
 
 typedef struct {
     MUSIC_SSG ssg;

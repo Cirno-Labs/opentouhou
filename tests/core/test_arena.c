@@ -1,6 +1,6 @@
-#include "core/base/arena.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/base/arena.h"
 
 #include <stdint.h>
 

@@ -4,14 +4,13 @@
 #include "th06/game_manager.h"
 #include "th06/gui.h"
 
-#include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
 #include "core/vfs.h"
-
+#include "shell/game.h"
 #include "stg/chain.h"
 
 #include <string.h>

@@ -1,9 +1,7 @@
 #include "othpatch/context.h"
+#include "othpatch/game.h"
 #include "othpatch/step.h"
 
-#include "othpatch/game.h"
-
-#include "shell/folders.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/ini.h"
@@ -11,6 +9,7 @@
 #include "core/io/path.h"
 #include "core/json/get.h"
 #include "core/patch/language.h"
+#include "shell/folders.h"
 
 #include <ctype.h>
 #include <string.h>

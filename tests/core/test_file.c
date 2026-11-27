@@ -1,9 +1,9 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/test_dir.h"
+
 #include "core/base/utils.h"
 #include "core/io/file.h"
-
-#include "test.h"
-#include "test_allocator.h"
-#include "test_dir.h"
 
 static void M_Create(const char *const path)
 {

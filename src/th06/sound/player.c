@@ -3,13 +3,12 @@
 #include "th06/settings.h"
 #include "th06/sound/events.h"
 
-#include "stg/wave.h"
-
-#include "shell/game.h"
 #include "core/audio.h"
 #include "core/base/utils.h"
 #include "core/math.h"
 #include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/wave.h"
 
 #include <string.h>
 

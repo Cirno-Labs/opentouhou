@@ -1,9 +1,8 @@
 #include "th01/input.h"
 
-#include "pc98/zun/math16.h"
-
 #include "core/base/assert.h"
 #include "core/input/codes.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

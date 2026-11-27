@@ -1,10 +1,9 @@
 #include "othpatch/context.h"
-#include "othpatch/step.h"
-
 #include "othpatch/fetch.h"
 #include "othpatch/game.h"
 #include "othpatch/install.h"
 #include "othpatch/release.h"
+#include "othpatch/step.h"
 
 #include "core/base/string.h"
 #include "core/hash/sha256.h"

@@ -1,7 +1,6 @@
-#include "th02_tram_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/hud.h"
-
-#include "test.h"
 
 TEST(wipe_draws_all_cels_with_two_count_waits_and_preserves_border)
 {

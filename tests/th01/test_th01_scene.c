@@ -1,10 +1,9 @@
-#include "../../src/th01/scene.c"
+#include "tests/test.h"
+#include "tests/th01/th01_world.h"
+#include "th01/scene.c"
 #include "th01/scene.h"
 
 #include "core/base/arena.h"
-
-#include "th01_world.h"
-#include "test.h"
 
 #include <string.h>
 

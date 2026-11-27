@@ -1,8 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_fonts.h"
+
 #include "core/text.h"
 #include "core/text/private.h"
-
-#include "test.h"
-#include "test_fonts.h"
 
 #include <string.h>
 

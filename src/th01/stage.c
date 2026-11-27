@@ -1,14 +1,15 @@
 #include "th01/stage.h"
+
 #include "th01/boss.h"
-#include "th01/session.h"
+#include "th01/hud.h"
 #include "th01/items.h"
 #include "th01/pellets.h"
-#include "th01/hud.h"
-#include "th01/sound.h"
 #include "th01/rng.h"
+#include "th01/session.h"
+#include "th01/sound.h"
 
-#include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

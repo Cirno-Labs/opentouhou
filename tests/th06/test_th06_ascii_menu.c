@@ -1,7 +1,5 @@
+#include "tests/test.h"
 #include "th06/ascii/pause_menu.h"
-
-#include "test.h"
-
 #include "th06/ascii/text.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"

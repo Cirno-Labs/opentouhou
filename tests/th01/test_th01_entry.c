@@ -1,10 +1,9 @@
+#include "tests/test.h"
 #include "th01/main.h"
 
 #include "shell/game/entry.h"
 
 #include <SDL3/SDL.h>
-
-#include "test.h"
 
 SDL_AppResult SDL_AppIterate(void *appstate);
 

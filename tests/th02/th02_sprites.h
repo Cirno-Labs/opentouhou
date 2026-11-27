@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/vfs.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/vfs.h"
 
 #include <stdlib.h>
 

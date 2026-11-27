@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th01/session.h"
-
-#include "test.h"
 
 TEST(start_clears_all_run_history_and_restores_credit)
 {

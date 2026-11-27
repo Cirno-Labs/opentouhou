@@ -2,10 +2,10 @@
 
 // Builds zip archives in memory for the tests.
 
+#include "tests/test.h"
+
 #include "core/base/memory.h"
 #include "core/hash/crc32.h"
-
-#include "test.h"
 
 #include <string.h>
 #include <zlib.h>

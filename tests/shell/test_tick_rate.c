@@ -1,6 +1,6 @@
-#include "shell/game/tick_rate.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "shell/game/tick_rate.h"
 
 #define NS_PER_MS 1000000ULL
 

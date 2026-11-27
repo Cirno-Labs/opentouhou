@@ -1,12 +1,12 @@
 #pragma once
 
-#include "pc98/zun/pi.h"
 #include "th02/draw.h"
 #include "th02/gaiji.h"
 #include "th02/patterns.h"
 
 #include "core/gfx/types.h"
 #include "core/vfs.h"
+#include "pc98/zun/pi.h"
 
 typedef enum {
     ENDING_IMAGE_STORY_1,

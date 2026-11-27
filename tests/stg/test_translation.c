@@ -1,11 +1,10 @@
-#include "stg/translation.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/patch.h"
-
-#include "patch_builder.h"
-#include "test.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

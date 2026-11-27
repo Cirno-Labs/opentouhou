@@ -1,6 +1,6 @@
-#include "th01/gameplay/private.h"
 #include "th01/boss.h"
 #include "th01/extend.h"
+#include "th01/gameplay/private.h"
 #include "th01/miss.h"
 #include "th01/player.h"
 #include "th01/session.h"

@@ -1,6 +1,5 @@
-#include "core/input.h"
-
 #include "core/base/string.h"
+#include "core/input.h"
 #include "core/input/codes.h"
 
 #include <stdio.h>

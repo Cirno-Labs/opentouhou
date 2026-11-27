@@ -1,7 +1,6 @@
-#include "start.h"
+#include "replay/th01/start.h"
 
-#include "harness.h"
-
+#include "replay/th01/harness.h"
 #include "th01/session.h"
 
 #include "core/base/utils.h"

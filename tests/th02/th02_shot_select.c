@@ -1,4 +1,4 @@
-#include "th02_shot_select.h"
+#include "tests/th02/th02_shot_select.h"
 
 static TEST_SHOT_TRACE *m_Trace;
 
@@ -14,7 +14,7 @@ static void M_DarkenDraw(int16_t left, int16_t top);
 #define ShotSelectRender_Background M_BackgroundDraw
 #define ShotSelectRender_Picture M_PictureDraw
 #define ShotSelectRender_Darken M_DarkenDraw
-#include "../../src/th02/shot_select/logic.c"
+#include "th02/shot_select/logic.c"
 #undef ShotSelectRender_Description
 #undef ShotSelectRender_Background
 #undef ShotSelectRender_Picture

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "pc98/pmd.h"
+#include "tests/test.h"
 #include "th02/sound_effects.h"
 
 #include "core/base/arena.h"
-#include "test.h"
+#include "pc98/pmd.h"
 
 typedef struct {
     ARENA arena;

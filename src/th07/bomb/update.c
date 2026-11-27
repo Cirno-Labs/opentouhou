@@ -1,6 +1,5 @@
-#include "th07/bomb.h"
-
 #include "th07/anm.h"
+#include "th07/bomb.h"
 #include "th07/bullet.h"
 #include "th07/effect.h"
 #include "th07/game.h"
@@ -15,7 +14,6 @@
 #include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/rng.h"
 #include "stg/timer.h"

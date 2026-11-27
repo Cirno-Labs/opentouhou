@@ -1,7 +1,6 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 #include "th02/background/assets.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 typedef struct {
     char path[11];

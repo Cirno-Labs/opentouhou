@@ -1,13 +1,13 @@
-#include "backend.h"
+#include "replay/harness/backend.h"
+#include "tests/harness_game.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
-#include "harness_game.h"
 #include "core/archive/zip.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/file.h"
 #include "core/vfs.h"
-#include "test.h"
-#include "test_dir.h"
 
 #define M_ARENA_SIZE (1024 * 1024)
 

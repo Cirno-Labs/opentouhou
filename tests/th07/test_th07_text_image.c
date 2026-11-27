@@ -1,11 +1,14 @@
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/test_fonts.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_data.h"
 #include "th07/anm.h"
 #include "th07/anm/private.h"
 #include "th07/files.h"
 #include "th07/gui/private.h"
 #include "th07/strings.h"
-
-#include "stg/rng.h"
-#include "stg/translation.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -13,13 +16,8 @@
 #include "core/io/file.h"
 #include "core/io/writer.h"
 #include "core/patch.h"
-
-#include "patch_builder.h"
-#include "test.h"
-#include "test_fonts.h"
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
+#include "stg/rng.h"
+#include "stg/translation.h"
 
 #include <SDL3/SDL.h>
 

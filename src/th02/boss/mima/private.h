@@ -1,8 +1,8 @@
 #pragma once
 
+#include "th02/boss.h"
 #include "th02/boss/mima/assets.h"
 #include "th02/boss/talk.h"
-#include "th02/boss.h"
 
 // Shared between Mima's combat (logic.c) and her form-change script
 // (transition.c); nothing outside the mima/ directory sees these.

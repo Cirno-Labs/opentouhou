@@ -1,10 +1,10 @@
-#include "../../src/th01/score.c"
-#include "../../src/th01/vsync_irq.c"
-#include "../../src/th01/input.c"
+#include "tests/test.h"
+#include "th01/input.c"
+#include "th01/score.c"
 #include "th01/score.h"
+#include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
-#include "test.h"
 
 #include <string.h>
 

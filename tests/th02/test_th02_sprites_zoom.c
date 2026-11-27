@@ -1,9 +1,8 @@
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/draw/private.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(zoom_ignores_coverage_and_treats_color_zero_as_transparent)
 {

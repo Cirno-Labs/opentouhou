@@ -1,13 +1,12 @@
-#include "th02_player_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/player.h"
 #include "th02/shots.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(shot_body_option_and_big_hit_wrap_and_clear_on_the_drawing_page)
 {

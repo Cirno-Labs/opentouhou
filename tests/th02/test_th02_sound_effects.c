@@ -1,8 +1,7 @@
-#include "th02/sound_effects.h"
+#include "tests/test.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/audio_clock.h"
-
-#include "test.h"
-#include "th02_sound.h"
+#include "th02/sound_effects.h"
 
 TEST(original_priority_matrix_reaches_the_driver_at_the_update_boundary)
 {

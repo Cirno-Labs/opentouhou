@@ -1,9 +1,10 @@
 #include "th02/sparks.h"
-#include "th02/random.h"
+
 #include "th02/background.h"
-#include "th02/draw.h"
 #include "th02/clip.h"
+#include "th02/draw.h"
 #include "th02/grcg.h"
+#include "th02/random.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"

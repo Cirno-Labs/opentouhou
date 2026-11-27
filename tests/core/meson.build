@@ -20,7 +20,6 @@ foreach part : [
     executable(
       'test_' + part,
       'test_' + part + '.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: core_base_lib,
     ),
@@ -39,7 +38,6 @@ foreach part : [
     executable(
       'test_' + part,
       'test_' + part + '.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_hash_lib, core_base_lib],
     ),
@@ -52,7 +50,6 @@ test(
   executable(
     'test_core_args',
     'test_core_args.c',
-    c_args: core_include + tests_include,
     implicit_include_directories: false,
     link_with: [core_args_lib, core_base_lib],
   ),
@@ -64,7 +61,6 @@ test(
   executable(
     'test_archive_hdi',
     'test_archive_hdi.c',
-    c_args: core_include + tests_include,
     implicit_include_directories: false,
     link_with: [core_archive_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -77,7 +73,6 @@ test(
   executable(
     'test_archive_zip',
     'test_archive_zip.c',
-    c_args: core_include + tests_include,
     implicit_include_directories: false,
     link_with: [core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
     dependencies: [zlib, sdl3],
@@ -98,7 +93,6 @@ foreach part : [
     executable(
       'test_json_' + part,
       'test_json_' + part + '.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_json_lib, core_base_lib],
     ),
@@ -125,7 +119,6 @@ foreach name : [
     executable(
       'test_' + name,
       'test_' + name + '.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_io_lib, core_base_lib],
       dependencies: [sdl3],
@@ -162,7 +155,6 @@ foreach name, expected : {
       executable(
         'test_' + part,
         'test_' + part + '.c',
-        c_args: core_include + tests_include,
         implicit_include_directories: false,
         link_with: [core_io_lib, core_base_lib],
         dependencies: [test_deps],
@@ -181,7 +173,6 @@ test(
     executable(
       'test_core_args_bad_rule',
       'test_core_args_bad_rule.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_args_lib, core_base_lib],
     ),
@@ -195,7 +186,6 @@ if build_games
     executable(
       'test_audio_device',
       'test_audio_device.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_audio_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
@@ -211,7 +201,6 @@ if build_games
         'test_' + part,
         'test_' + part + '.c',
         '../audio_backend_fake.c',
-        c_args: core_include + tests_include,
         implicit_include_directories: false,
         link_with: [core_audio_lib, core_io_lib, core_base_lib],
         dependencies: [sdl3, avcodec, avutil, avformat, swresample, cc_libm],
@@ -226,7 +215,6 @@ if build_games
       'test_audio_zip',
       'test_audio_zip.c',
       '../audio_backend_fake.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_audio_lib, core_archive_lib, core_hash_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3, zlib, avcodec, avutil, avformat, swresample, cc_libm],
@@ -245,7 +233,6 @@ if build_games
       executable(
         'test_' + part,
         'test_' + part + '.c',
-        c_args: core_include + tests_include,
         implicit_include_directories: false,
         link_with: [core_math_lib, core_base_lib],
         dependencies: [cc_libm],
@@ -261,7 +248,6 @@ if build_games
     executable(
       'test_x87_asm',
       'test_x87_asm.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_math_lib, core_base_lib],
       dependencies: [cc_libm],
@@ -274,7 +260,6 @@ if build_games
     executable(
       'test_config',
       'test_config.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_config_lib, core_ini_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3],
@@ -287,7 +272,6 @@ if build_games
     executable(
       'test_image_pixels',
       'test_image_pixels.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_image_lib, core_base_lib],
       dependencies: [avcodec, avutil, swscale, cc_libm],
@@ -300,7 +284,6 @@ if build_games
     executable(
       'test_image_codec',
       'test_image_codec.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_image_lib, core_io_lib, core_base_lib, core_hash_lib],
       dependencies: [avcodec, avutil, swscale, cc_libm],
@@ -313,7 +296,6 @@ if build_games
     executable(
       'test_ini',
       'test_ini.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_ini_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3],
@@ -331,7 +313,6 @@ if build_games
       'test_input',
       'test_input.c',
       '../input_backend_fake.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [
         core_input_lib, core_config_lib, core_ini_lib, core_io_lib,
@@ -347,7 +328,6 @@ if build_games
     executable(
       'test_patch_files',
       'test_patch_files.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [
         core_patch_lib, core_json_lib, core_vfs_lib, core_io_lib, core_base_lib,
@@ -363,7 +343,6 @@ if build_games
     executable(
       'test_patch_strings',
       'test_patch_strings.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [
         core_patch_lib, core_json_lib, core_vfs_lib, core_io_lib, core_base_lib,
@@ -384,7 +363,6 @@ if build_games
       executable(
         'test_patch_' + part,
         'test_patch_' + part + '.c',
-        c_args: core_include + tests_include,
         implicit_include_directories: false,
         link_with: [
           core_patch_select_lib, core_ini_lib, core_json_lib, core_io_lib,
@@ -405,7 +383,6 @@ if build_games
     executable(
       'test_patch_stack',
       'test_patch_stack.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [
         core_patch_lib, core_json_lib, core_vfs_lib, core_image_lib, core_io_lib,
@@ -425,7 +402,6 @@ if build_games
     executable(
       'test_vfs',
       'test_vfs.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_vfs_lib, core_io_lib, core_base_lib],
       dependencies: [test_deps],
@@ -438,7 +414,6 @@ if build_games
     executable(
       'test_archive',
       'test_archive.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib],
       dependencies: [test_deps],
@@ -451,7 +426,6 @@ if build_games
     executable(
       'test_vfs_mount_dir',
       'test_vfs_mount_dir.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_vfs_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3],
@@ -473,7 +447,6 @@ if build_games
         'test_input_duplicate_action',
         'test_input_duplicate_action.c',
         '../input_backend_fake.c',
-        c_args: core_include + tests_include,
         implicit_include_directories: false,
         link_with: [
           core_input_lib, core_config_lib, core_ini_lib, core_io_lib,
@@ -487,7 +460,7 @@ if build_games
 
   # Each of these files compiles, and fails to compile with BREAK defined,
   # which shows that the container macros reject a value of the wrong type.
-  compile_fail_args = core_include + ['-Werror']
+  compile_fail_args = root_include + ['-Werror']
   foreach name : [
     'array_item_type',
     'array_slice_type',
@@ -513,7 +486,6 @@ if build_games
     executable(
       'test_gfx',
       'test_gfx.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_gfx_lib, core_image_lib, core_math_lib, core_base_lib],
       dependencies: [cc_libm],
@@ -530,7 +502,6 @@ if build_games
       executable(
         'test_gfx_duplicate_id',
         'test_gfx_duplicate_id.c',
-        c_args: core_include + tests_include,
         implicit_include_directories: false,
         link_with: [core_gfx_lib, core_image_lib, core_math_lib, core_base_lib],
         dependencies: [cc_libm],
@@ -544,7 +515,6 @@ if build_games
   executable(
     'test_gfx_gl',
     'test_gfx_gl.c',
-    c_args: core_include + tests_include,
     implicit_include_directories: false,
     link_with: [
       core_gfx_gl_lib, core_gfx_lib, core_image_lib, core_math_lib,
@@ -559,7 +529,7 @@ if build_games
       executable(
         variant[1],
         'test_text.c',
-        c_args: core_include + variant[2] + tests_include,
+        c_args: variant[2],
         implicit_include_directories: false,
         link_with: [
           core_patch_lib, core_json_lib, core_vfs_lib, core_text_lib,
@@ -582,7 +552,6 @@ if build_games
     executable(
       'test_font_registry',
       'test_font_registry.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3_ttf, sdl3, cc_libm],
@@ -598,7 +567,6 @@ if build_games
     executable(
       'test_font_rom',
       'test_font_rom.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],
@@ -611,7 +579,6 @@ if build_games
     executable(
       'test_font_rom_cells',
       'test_font_rom_cells.c',
-      c_args: core_include + tests_include,
       implicit_include_directories: false,
       link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
       dependencies: [sdl3_ttf, sdl3, text_system, cc_libm],

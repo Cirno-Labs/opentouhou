@@ -1,7 +1,7 @@
 #pragma once
 
-#include "th01/vsync_irq.h"
 #include "th01/player.h"
+#include "th01/vsync_irq.h"
 
 // Clears all state for a new gameplay session.
 void Miss_Init(void);

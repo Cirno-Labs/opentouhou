@@ -7,8 +7,8 @@
 #include "core/io/path.h"
 #include "core/vfs/normalize.h"
 
-#include <string.h>
 #include <stdatomic.h>
+#include <string.h>
 
 struct ARCHIVE_ENTRY {
     char *name;

@@ -1,11 +1,11 @@
 #include "th07/gui.h"
-#include "th07/gui/private.h"
 
 #include "th07/bullet.h"
 #include "th07/enemy.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/gui/private.h"
 #include "th07/item.h"
 #include "th07/player.h"
 #include "th07/replay.h"
@@ -14,23 +14,21 @@
 #include "th07/sound.h"
 #include "th07/stage.h"
 
-#include "shell/game.h"
-#include "core/vfs.h"
+#include "core/base/arena.h"
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/utils.h"
 #include "core/gfx.h"
 #include "core/io/reader.h"
+#include "core/json.h"
 #include "core/math/x87.h"
-
+#include "core/vfs.h"
+#include "shell/game.h"
 #include "stg/chain.h"
 #include "stg/msg_diff.h"
 #include "stg/note.h"
 #include "stg/translation.h"
-
-#include "core/base/arena.h"
-#include "core/json.h"
 
 #include <stdio.h>
 #include <string.h>

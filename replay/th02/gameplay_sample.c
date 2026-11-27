@@ -1,4 +1,4 @@
-#include "gameplay_sample.h"
+#include "replay/th02/gameplay_sample.h"
 
 #include "th02/background.h"
 #include "th02/player.h"

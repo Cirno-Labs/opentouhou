@@ -1,8 +1,9 @@
 #include "th02/boss/scene.h"
+
+#include "th02/draw.h"
+#include "th02/player.h"
 #include "th02/stage.h"
 
-#include "th02/player.h"
-#include "th02/draw.h"
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 

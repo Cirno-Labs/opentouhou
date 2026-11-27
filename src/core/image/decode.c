@@ -1,12 +1,10 @@
-#include "core/image.h"
-
 #include "core/base/memory.h"
+#include "core/image.h"
 #include "core/image/codec.h"
 #include "core/image/jpeg.h"
 
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
-
 #include <string.h>
 
 // Returns the codec the data's magic bytes name, or AV_CODEC_ID_NONE when

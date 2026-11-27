@@ -1,7 +1,7 @@
 #pragma once
 
-#include "backend.h"
-#include "hook.h"
+#include "replay/dosbox/hook.h"
+#include "replay/harness/backend.h"
 
 #include <stddef.h>
 #include <stdint.h>

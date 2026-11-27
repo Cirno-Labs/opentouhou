@@ -1,4 +1,4 @@
-#include "th07_ecl_builder.h"
+#include "tests/th07/th07_ecl_builder.h"
 
 #include "core/base/assert.h"
 

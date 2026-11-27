@@ -1,6 +1,6 @@
-#include "pc98/zun/master_rng.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/zun/master_rng.h"
 
 TEST(random_matches_the_fixed_sequence_and_wrapping_state)
 {

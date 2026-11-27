@@ -1,7 +1,6 @@
 #pragma once
 
-#include "game.h"
-
+#include "replay/harness/game.h"
 #include "th02/session.h"
 
 #include <stddef.h>

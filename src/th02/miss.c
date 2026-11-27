@@ -1,12 +1,13 @@
 #include "th02/miss.h"
-#include "th02/sparks.h"
-#include "th02/score.h"
-#include "th02/performance.h"
-#include "th02/items.h"
+
 #include "th02/hud.h"
+#include "th02/items.h"
+#include "th02/performance.h"
 #include "th02/player.h"
+#include "th02/score.h"
 #include "th02/shots.h"
 #include "th02/sound_effects.h"
+#include "th02/sparks.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"

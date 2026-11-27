@@ -1,7 +1,7 @@
-#include "pc98/pmd/driver.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
-#include "test.h"
+#include "pc98/pmd/driver.h"
 
 #define M_BYTES 512
 

@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th01/finite.h"
-
-#include "test.h"
 
 #include <string.h>
 

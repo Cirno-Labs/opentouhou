@@ -1,9 +1,11 @@
 #include "th02/opening/logic.h"
-#include "th02/wait.h"
-#include "pc98/zun/logo1.h"
-#include "pc98/zun/bfnt.h"
+
 #include "th02/high_score_view.h"
 #include "th02/shot_select.h"
+#include "th02/wait.h"
+
+#include "pc98/zun/bfnt.h"
+#include "pc98/zun/logo1.h"
 
 #include <string.h>
 

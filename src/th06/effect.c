@@ -5,7 +5,6 @@
 
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/chain.h"
 #include "stg/rng.h"
 

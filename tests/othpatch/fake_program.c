@@ -2,7 +2,7 @@
 // appends an output and an exit status to a copy of this executable. The
 // copy prints that output and exits with that status.
 
-#include "fake_program_marker.h"
+#include "tests/othpatch/fake_program_marker.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th02/high_scores/format.h"
-
-#include "test.h"
 
 static uint8_t *M_Encode(
     const HIGH_SCORE_SECTION *const section, size_t *const size)

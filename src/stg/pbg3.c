@@ -4,7 +4,6 @@
 #include "core/base/array.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
-
 #include "stg/lzss.h"
 
 #define M_MAGIC 0x33474250u

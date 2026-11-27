@@ -1,9 +1,9 @@
 #pragma once
 
-#include "th01/vsync_irq.h"
 #include "th01/grc.h"
 #include "th01/palette.h"
 #include "th01/player.h"
+#include "th01/vsync_irq.h"
 
 #include "core/vfs.h"
 

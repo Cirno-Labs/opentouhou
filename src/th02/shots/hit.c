@@ -1,9 +1,10 @@
 #include "th02/shots/hit.h"
+
+#include "th02/bomb.h"
+#include "th02/player.h"
 #include "th02/shots/pool.h"
 #include "th02/shots/private.h"
 #include "th02/sparks.h"
-#include "th02/bomb.h"
-#include "th02/player.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"

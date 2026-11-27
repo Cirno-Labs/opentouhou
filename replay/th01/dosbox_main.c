@@ -1,5 +1,5 @@
-#include "addresses.h"
-#include "dosbox.h"
+#include "replay/dosbox/dosbox.h"
+#include "replay/th01/addresses.h"
 
 #include "core/base/utils.h"
 

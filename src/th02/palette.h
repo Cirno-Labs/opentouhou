@@ -3,8 +3,9 @@
 // The 16-color analog palette and the tone it shows at: palette files,
 // the stock colors, and the fades that step the tone toward black or white.
 
-#include "core/io/reader.h"
 #include "th02/video.h"
+
+#include "core/io/reader.h"
 
 typedef struct {
     uint8_t colors[16][3];

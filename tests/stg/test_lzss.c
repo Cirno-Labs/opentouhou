@@ -1,9 +1,8 @@
-#include "stg/lzss.h"
-
-#include "pbg3_builder.h"
+#include "tests/pbg3_builder.h"
+#include "tests/test.h"
 
 #include "core/hash/crc32.h"
-#include "test.h"
+#include "stg/lzss.h"
 
 #include <string.h>
 

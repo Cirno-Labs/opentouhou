@@ -1,19 +1,18 @@
 #include "othpatch/main.h"
 
+#include "othpatch/context.h"
 #include "othpatch/fetch.h"
 #include "othpatch/game.h"
 #include "othpatch/install.h"
-#include "othpatch/context.h"
 #include "othpatch/step.h"
+#include "othpatch/version.h"
 
-#include "shell/folders.h"
 #include "core/args.h"
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
-
-#include "version.h"
+#include "shell/folders.h"
 
 #define M_DEFAULT_REPO "https://srv.thpatch.net/repo.js"
 

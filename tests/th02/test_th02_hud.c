@@ -1,10 +1,9 @@
-#include "th02_score_fixture.h"
-#include "th02_tram_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/gaiji.h"
 #include "th02/hud.h"
-
-#include "test.h"
-#include "th02_sound.h"
 
 TEST(hud_score_keeps_first_quotient_and_separate_continue_cell)
 {

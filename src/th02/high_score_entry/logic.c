@@ -1,7 +1,7 @@
 #include "th02/high_score_entry/logic.h"
 
-#include "th02/hud.h"
 #include "th02/high_score_entry/render.h"
+#include "th02/hud.h"
 #include "th02/wait.h"
 
 #include "core/base/assert.h"

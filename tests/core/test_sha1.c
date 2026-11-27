@@ -1,6 +1,6 @@
-#include "core/hash/sha1.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/hash/sha1.h"
 
 #include <string.h>
 

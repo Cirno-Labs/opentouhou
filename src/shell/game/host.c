@@ -1,9 +1,5 @@
-#include "shell/game.h"
-#include "shell/game/entry.h"
-
 #include "core/args.h"
 #include "core/audio.h"
-
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -19,16 +15,17 @@
 #include "shell/data.h"
 #include "shell/fatal.h"
 #include "shell/folders.h"
+#include "shell/game.h"
+#include "shell/game/builtin.h"
+#include "shell/game/clock.h"
+#include "shell/game/entry.h"
+#include "shell/game/fonts.h"
+#include "shell/game/hotkeys.h"
+#include "shell/game/request_queue.h"
+#include "shell/game/screenshot.h"
+#include "shell/game/settings.h"
+#include "shell/game/tick_rate.h"
 #include "shell/log_file.h"
-
-#include "builtin.h"
-#include "clock.h"
-#include "fonts.h"
-#include "hotkeys.h"
-#include "request_queue.h"
-#include "settings.h"
-#include "screenshot.h"
-#include "tick_rate.h"
 
 #include <SDL3/SDL.h>
 

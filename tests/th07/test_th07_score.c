@@ -1,9 +1,7 @@
-#include "th07/screens/result/score.h"
-
-#include "test.h"
-
-#include "replay_lzss_literals.h"
+#include "tests/test.h"
+#include "tests/th07/replay_lzss_literals.h"
 #include "th07/exe_identity.h"
+#include "th07/screens/result/score.h"
 
 #include "core/base/memory.h"
 

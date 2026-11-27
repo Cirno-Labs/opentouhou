@@ -1,4 +1,5 @@
 #include "th02/stage/scroll.h"
+
 #include "th02/background.h"
 #include "th02/grcg.h"
 #include "th02/stage/private.h"

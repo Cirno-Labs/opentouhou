@@ -1,6 +1,8 @@
 #include "th01/extend.h"
+
 #include "th01/session.h"
 #include "th01/sound.h"
+
 #include "pc98/zun/math16.h"
 
 // Holds the extend threshold index and the life count that survives a

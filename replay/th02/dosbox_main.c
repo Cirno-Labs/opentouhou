@@ -1,4 +1,4 @@
-#include "dosbox.h"
+#include "replay/dosbox/dosbox.h"
 
 #include "core/base/utils.h"
 

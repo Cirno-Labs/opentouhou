@@ -4,19 +4,19 @@
 #include "th06/ascii.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
-#include "stg/note.h"
 #include "th06/replay.h"
 #include "th06/scene.h"
 #include "th06/screens/result/private.h"
 #include "th06/sound.h"
 #include "th06/strings.h"
-#include "stg/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "stg/note.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

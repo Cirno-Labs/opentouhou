@@ -5,6 +5,7 @@
 // closing fade.
 
 #include "th02/session.h"
+
 #include "core/vfs.h"
 
 #define DEMO_INPUT_COUNT 7000

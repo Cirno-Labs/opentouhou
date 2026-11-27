@@ -2,11 +2,11 @@
 // written to.
 #define _POSIX_C_SOURCE 200809L
 
+#include "tests/test.h"
+#include "tests/test_dir.h"
+
 #include "core/io/reader.h"
 #include "core/io/writer.h"
-
-#include "test.h"
-#include "test_dir.h"
 
 #include <unistd.h>
 

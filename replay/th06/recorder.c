@@ -1,4 +1,4 @@
-#include "recorder.h"
+#include "replay/bot/recorder.h"
 
 #include "th06/buttons.h"
 #include "th06/files.h"

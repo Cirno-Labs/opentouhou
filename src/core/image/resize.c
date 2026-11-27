@@ -1,6 +1,5 @@
-#include "core/image.h"
-
 #include "core/base/log.h"
+#include "core/image.h"
 #include "core/image/codec.h"
 
 #include <libswscale/swscale.h>

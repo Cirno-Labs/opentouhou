@@ -12,14 +12,13 @@
 #include "th07/sound.h"
 #include "th07/strings.h"
 
-#include "stg/note.h"
-#include "stg/translation.h"
-
 #include "core/base/color.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "stg/note.h"
+#include "stg/translation.h"
 
 #include <stdio.h>
 #include <string.h>

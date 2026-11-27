@@ -1,7 +1,7 @@
+#include "tests/test.h"
+
 #include "core/base/memory.h"
 #include "core/text/font_rom.h"
-
-#include "test.h"
 
 static uint16_t M_CellBits(const int first, const int second, const int row)
 {

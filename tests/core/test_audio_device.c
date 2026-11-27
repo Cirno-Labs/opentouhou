@@ -1,8 +1,7 @@
+#include "tests/test.h"
+
 #include "core/audio.h"
-
 #include "core/io/writer.h"
-
-#include "test.h"
 
 #include <SDL3/SDL.h>
 

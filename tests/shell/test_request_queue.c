@@ -1,9 +1,8 @@
-#include "shell/game/request_queue.h"
+#include "tests/input_backend_fake.h"
+#include "tests/test.h"
 
 #include "core/base/log.h"
-
-#include "input_backend_fake.h"
-#include "test.h"
+#include "shell/game/request_queue.h"
 
 #include <string.h>
 

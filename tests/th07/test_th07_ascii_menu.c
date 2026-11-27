@@ -1,21 +1,18 @@
-#include "th07/ascii/pause_menu.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/shell_fake.h"
+#include "tests/test.h"
 #include "th07/anm/private.h"
+#include "th07/ascii/pause_menu.h"
 #include "th07/ascii/text.h"
 #include "th07/game.h"
+#include "th07/game_manager.h"
 #include "th07/gui.h"
+#include "th07/player.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
-#include "th07/game_manager.h"
-#include "th07/player.h"
-
-#include "gfx_recorder.h"
-#include "shell_fake.h"
-#include "test.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
-
 #include "stg/rng.h"
 
 #include <string.h>

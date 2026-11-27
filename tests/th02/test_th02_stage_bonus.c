@@ -1,10 +1,9 @@
-#include "th02_score_fixture.h"
-#include "th02/stage_bonus/logic.h"
+#include "tests/test.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/hud.h"
+#include "th02/stage_bonus/logic.h"
 #include "th02/tram.h"
-
-#include "test.h"
-#include "th02_sound.h"
 
 typedef struct {
     int16_t rows[10];

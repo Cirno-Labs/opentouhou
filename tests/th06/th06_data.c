@@ -1,14 +1,14 @@
-#include "th06_data.h"
+#include "tests/th06/th06_data.h"
 
-#include "pbg3_builder.h"
-#include "shell_fake.h"
-#include "shell/null.h"
+#include "tests/pbg3_builder.h"
+#include "tests/shell_fake.h"
 #include "th06/files.h"
 
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "shell/null.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>

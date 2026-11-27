@@ -1,12 +1,12 @@
+#include "tests/th02/th02_boss_hp.h"
+#include "tests/th02/th02_gameplay_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
-#include "th02/bullets/private.h"
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/performance.c"
 #include "th02/boss/sigma/logic.c"
-#include "th02_gameplay_fixture.h"
-#include "th02_boss_hp.h"
+#include "th02/bullets/private.h"
+#include "th02/performance.c"
 
 TEST(extra_tile_midboss_runs_three_waves_and_ends_without_damage_or_rewards)
 {

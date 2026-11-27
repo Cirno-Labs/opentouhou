@@ -1,4 +1,4 @@
-#include "staged.h"
+#include "replay/harness/staged.h"
 
 #include "core/base/memory.h"
 #include "core/io/reader.h"

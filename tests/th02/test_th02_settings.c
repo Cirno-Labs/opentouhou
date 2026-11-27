@@ -1,9 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_dir.h"
 #include "th02/settings.h"
 
 #include "core/vfs.h"
-
-#include "test.h"
-#include "test_dir.h"
 
 static void M_Check(const TH02_SETTINGS *actual, const TH02_SETTINGS *expected)
 {

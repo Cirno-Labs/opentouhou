@@ -1,4 +1,5 @@
 #include "th02/ending.h"
+
 #include "th02/ending/credits.h"
 #include "th02/ending/images.h"
 #include "th02/ending/story.h"

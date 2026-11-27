@@ -1,8 +1,7 @@
-#include "pc98/zun/pi.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
+#include "pc98/zun/pi.h"
 
 typedef struct {
     uint8_t bytes[4096];

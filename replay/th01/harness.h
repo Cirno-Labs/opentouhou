@@ -1,7 +1,7 @@
 #pragma once
 
-#include "fields.h"
-#include "game.h"
+#include "replay/harness/game.h"
+#include "replay/th01/fields.h"
 
 // Describes th01 to the harness: its button word and the state columns
 // and start fields of fields.h.

@@ -1,6 +1,6 @@
-#include "th01/stage.h"
 #include "th01/pellets.h"
 #include "th01/session.h"
+#include "th01/stage.h"
 
 #include "core/base/assert.h"
 

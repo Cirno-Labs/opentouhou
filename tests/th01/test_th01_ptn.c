@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th01/ptn.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 #define M_HEADER_SIZE 54
 #define M_IMAGE_SIZE 513

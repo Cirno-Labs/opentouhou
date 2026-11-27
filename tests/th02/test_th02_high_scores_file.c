@@ -1,7 +1,6 @@
+#include "tests/test.h"
+#include "tests/test_dir.h"
 #include "th02/high_scores/file.h"
-
-#include "test.h"
-#include "test_dir.h"
 
 typedef struct {
     VFS *original;

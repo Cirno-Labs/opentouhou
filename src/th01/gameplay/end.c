@@ -1,6 +1,6 @@
-#include "th01/gameplay/private.h"
 #include "th01/bonus.h"
 #include "th01/extend.h"
+#include "th01/gameplay/private.h"
 #include "th01/input.h"
 #include "th01/items.h"
 #include "th01/orb.h"

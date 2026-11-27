@@ -1,10 +1,10 @@
-#include "th01/stage.h"
-#include "th01/session.h"
 #include "th01/pellets.h"
 #include "th01/rng.h"
+#include "th01/session.h"
+#include "th01/stage.h"
 
-#include "pc98/zun/math16.h"
 #include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 static void M_Put(
     const PTN *const sprites, const STAGE_OBSTACLE *const obstacle,

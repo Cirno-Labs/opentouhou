@@ -128,7 +128,6 @@ th02_lib = static_library(
   'tram/scanout.c',
   'tram/text.c',
   'video.c',
-  c_args: [layer_include['th02']],
   implicit_include_directories: false,
   dependencies: [core_dep, pc98_dep],
 )
@@ -147,7 +146,6 @@ th02_main_lib = static_library(
   'program/assets.c',
   'program/scenes.c',
   th02_version,
-  c_args: [layer_include['th02'], layer_include['shell'], '-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [core_dep, pc98_dep],
 )
@@ -173,7 +171,6 @@ games += {
     'title': '東方封魔録',
     'title_en': 'Touhou 02',
     'subtitle_en': 'the Story of Eastern Wonderland',
-    'c_args': [layer_include['th02'], layer_include['pc98']],
     'fonts': ['fonts/shnmk16.bdf', 'fonts/shnm8x16r.bdf'],
     'builtin_dir': meson.current_source_dir() / 'sprites',
     'builtins': th02_sprites,

@@ -1,10 +1,10 @@
-#include "dosbox.h"
-#include "harness.h"
-#include "state.h"
+#include "replay/dosbox/dosbox.h"
+#include "replay/harness/state.h"
+#include "replay/th02/harness.h"
+#include "th02/clock.h"
 
 #include "core/base/utils.h"
 #include "pc98/vsync.h"
-#include "th02/clock.h"
 
 #include <ctype.h>
 #include <string.h>

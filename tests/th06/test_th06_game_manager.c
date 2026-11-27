@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th06/game_manager.h"
-
-#include "test.h"
 
 #include <math.h>
 

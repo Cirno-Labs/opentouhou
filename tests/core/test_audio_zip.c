@@ -1,9 +1,9 @@
+#include "tests/test.h"
+#include "tests/zip_builder.h"
+
 #include "core/archive/zip.h"
 #include "core/audio.h"
 #include "core/io/writer.h"
-
-#include "test.h"
-#include "zip_builder.h"
 
 #include <SDL3/SDL.h>
 

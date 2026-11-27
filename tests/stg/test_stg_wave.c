@@ -1,9 +1,8 @@
-#include "stg/wave.h"
-
-#include "test.h"
+#include "tests/test.h"
 
 #include "core/base/result.h"
 #include "core/io/reader.h"
+#include "stg/wave.h"
 
 #include <math.h>
 #include <string.h>

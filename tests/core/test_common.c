@@ -1,6 +1,6 @@
-#include "core/math/common.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/math/common.h"
 
 #include <math.h>
 

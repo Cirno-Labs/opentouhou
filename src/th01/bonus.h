@@ -1,13 +1,13 @@
 #pragma once
 
 #include "th01/extend.h"
-#include "th01/vsync_irq.h"
 #include "th01/input.h"
 #include "th01/palette.h"
-#include "pc98/zun/pi.h"
 #include "th01/timer.h"
+#include "th01/vsync_irq.h"
 
 #include "core/vfs.h"
+#include "pc98/zun/pi.h"
 
 typedef struct {
     uint8_t box[4];

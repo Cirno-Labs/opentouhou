@@ -1,9 +1,9 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/json.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 #include <math.h>
 

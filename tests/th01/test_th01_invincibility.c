@@ -1,15 +1,11 @@
-#include "../../src/th01/player.c"
+#include "tests/test.h"
+#include "tests/th01/th01_sprites.h"
 #include "th01/invincibility.h"
+#include "th01/player.c"
 #include "th01/rng.h"
 
-#include <string.h>
-
-#include "pc98/zun/master_rng.h"
-
 #include "core/base/arena.h"
-
-#include "th01_sprites.h"
-#include "test.h"
+#include "pc98/zun/master_rng.h"
 
 #include <string.h>
 

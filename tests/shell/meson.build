@@ -15,7 +15,6 @@ test(
     'test_request_queue.c',
     '../input_backend_fake.c',
     '../../src/shell/game/request_queue.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: [
       core_input_lib, core_config_lib, core_ini_lib, core_io_lib,
@@ -34,7 +33,6 @@ test(
     'test_clock',
     'test_clock.c',
     '../../src/shell/game/clock.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
   ),
   suite: 'unit',
@@ -45,7 +43,6 @@ test(
   executable(
     'test_folders',
     'test_folders.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: [shell_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -63,7 +60,6 @@ test(
     'test_shell_data',
     'test_shell_data.c',
     '../../src/shell/data.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: [
       core_vfs_lib, core_archive_lib, core_hash_lib, core_io_lib,
@@ -82,7 +78,6 @@ test(
     'test_fatal.c',
     '../../src/shell/fatal.c',
     '../../src/shell/log_file.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: [core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -96,7 +91,6 @@ test(
     'test_log_file',
     'test_log_file.c',
     '../../src/shell/log_file.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: [core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -112,7 +106,6 @@ test(
   executable(
     'test_shell_host',
     'test_shell_host.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: builtin_libs['th06'],
     dependencies: [shell_game_dep, sdl3],
@@ -130,7 +123,6 @@ test(
     'test_tick_rate',
     'test_tick_rate.c',
     '../../src/shell/game/tick_rate.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
   ),
   suite: 'unit',
@@ -142,7 +134,6 @@ test(
     'test_screenshot',
     'test_screenshot.c',
     '../../src/shell/game/screenshot.c',
-    c_args: shell_include + tests_include,
     implicit_include_directories: false,
     link_with: [core_image_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -154,7 +145,6 @@ test(
 executable(
   'test_shell_clocks',
   'test_shell_clocks.c',
-  c_args: shell_include + tests_include,
   implicit_include_directories: false,
   link_with: builtin_libs['th06'],
   dependencies: [shell_game_dep, sdl3],
@@ -163,7 +153,6 @@ executable(
 executable(
   'test_shell_save_settings',
   'test_shell_save_settings.c',
-  c_args: shell_include + tests_include,
   implicit_include_directories: false,
   link_with: builtin_libs['th06'],
   dependencies: [shell_game_dep, sdl3],
@@ -174,7 +163,7 @@ test(
   executable(
     'test_shell_fonts',
     'test_shell_fonts.c',
-    c_args: shell_include + tests_include + [
+    c_args: [
       '-DTEST_BUILTIN_FONTS=' + (get_option('font') == 'none' ? 'false' : 'true'),
     ],
     implicit_include_directories: false,

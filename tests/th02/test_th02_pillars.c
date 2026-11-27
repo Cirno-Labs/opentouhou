@@ -1,15 +1,14 @@
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/pillars.c"
+#include "tests/test.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_player_graphics.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
-#include "th02/player.h"
-#include "th02/pillars.h"
 #include "th02/draw.h"
-
-#include "test.h"
-#include "th02_sound.h"
-#include "th02_player_graphics.h"
+#include "th02/pillars.c"
+#include "th02/pillars.h"
+#include "th02/player.h"
 #include "th02/random.h"
 
 typedef struct {

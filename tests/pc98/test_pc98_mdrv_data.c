@@ -1,8 +1,8 @@
-#include "pc98/mdrv_data.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/base/arena.h"
-#include "test.h"
-#include "test_dir.h"
+#include "pc98/mdrv_data.h"
 
 typedef struct {
     uint8_t bytes[2048];

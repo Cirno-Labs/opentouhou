@@ -1,10 +1,9 @@
 #pragma once
 
-#include "pc98/pmd/data.h"
-#include "pc98/pmd/types.h"
-
 #include "core/base/memory.h"
 #include "core/base/result.h"
+#include "pc98/pmd/data.h"
+#include "pc98/pmd/types.h"
 
 #include <stdint.h>
 

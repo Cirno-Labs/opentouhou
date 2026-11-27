@@ -1,9 +1,8 @@
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/ending/text.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 typedef struct {
     size_t calls;

@@ -3,8 +3,9 @@
 // What the main menu and the options menu share: cursor movement and the
 // difficulty rank names.
 
-#include "core/base/types.h"
 #include "th02/tram.h"
+
+#include "core/base/types.h"
 
 typedef struct {
     int8_t selection;

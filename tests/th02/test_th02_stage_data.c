@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/stage/data.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 #define M_SIZE 176
 

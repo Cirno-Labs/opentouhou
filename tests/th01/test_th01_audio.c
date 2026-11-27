@@ -1,9 +1,9 @@
+#include "tests/test.h"
 #include "th01/audio.h"
 
 #include "core/audio.h"
 #include "core/audio/backend.h"
 #include "core/base/arena.h"
-#include "test.h"
 
 #include <SDL3/SDL.h>
 #include <math.h>

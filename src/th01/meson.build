@@ -79,7 +79,6 @@ th01_lib = static_library(
   'stage.c',
   'stage_obstacles.c',
   'stage_orb.c',
-  c_args: [layer_include['th01']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep, pc98_dep],
 )
@@ -95,7 +94,6 @@ th01_main_lib = static_library(
   'th01_main',
   'main.c',
   th01_version,
-  c_args: [layer_include['th01'], layer_include['shell'], '-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep, pc98_dep],
 )
@@ -126,7 +124,6 @@ games += {
     'subtitle_en': 'Highly Responsive to Prayers',
     'aspect': '16 / 10',
     'controls': 'th01',
-    'c_args': [layer_include['th01'], layer_include['pc98']],
     'fonts': ['fonts/shnmk16.bdf', 'fonts/shnm8x16r.bdf'],
     'builtin_dir': meson.current_source_dir() / 'sprites',
     'builtins': th01_sprites,

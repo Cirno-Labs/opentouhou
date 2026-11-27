@@ -1,6 +1,6 @@
 #pragma once
 
-#include "state.h"
+#include "replay/harness/state.h"
 
 #include "core/base/arena.h"
 #include "core/image/pixels.h"

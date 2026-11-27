@@ -7,11 +7,10 @@
 // the members, the string bytes and the children of every container. The
 // second pass, which cannot fail, fills one block of exactly that size.
 
-#include "core/json.h"
-
 #include "core/base/array.h"
 #include "core/base/assert.h"
 #include "core/base/string.h"
+#include "core/json.h"
 
 #include <math.h>
 #include <stdarg.h>

@@ -47,7 +47,6 @@ th06_lib = static_library(
   'stage.c',
   'strings.c',
   'time.c',
-  c_args: [layer_include['th06'], layer_include['shell']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],
 )
@@ -65,7 +64,6 @@ th06_main_lib = static_library(
   'th06_main',
   'main.c',
   th06_version,
-  c_args: [layer_include['th06'], layer_include['shell'], '-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],
 )
@@ -92,7 +90,6 @@ games += {
     'title_en': 'Touhou 06',
     'subtitle_en': 'the Embodiment of Scarlet Devil',
     'english_patch': true,
-    'c_args': [layer_include['th06']],
     'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
     'link_with': [th06_main_lib, th06_lib],
   },

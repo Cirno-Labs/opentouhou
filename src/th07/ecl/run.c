@@ -1,11 +1,10 @@
 #include "th07/ecl/run.h"
 
-#include "th07/ecl/patterns.h"
-#include "th07/ecl/private.h"
-
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/bullet.h"
+#include "th07/ecl/patterns.h"
+#include "th07/ecl/private.h"
 #include "th07/effect.h"
 #include "th07/enemy.h"
 #include "th07/game.h"
@@ -13,20 +12,18 @@
 #include "th07/gui.h"
 #include "th07/item.h"
 #include "th07/player.h"
+#include "th07/screens/result/records.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
-#include "th07/screens/result/records.h"
-
-#include "stg/translation.h"
 
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/rng.h"
 #include "stg/timer.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

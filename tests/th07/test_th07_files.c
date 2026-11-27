@@ -1,15 +1,14 @@
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th07/th07_data.h"
 #include "th07/files.h"
 
-#include "shell/game.h"
 #include "core/base/arena.h"
 #include "core/json.h"
 #include "core/patch.h"
 #include "core/vfs.h"
-
-#include "patch_builder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th07_data.h"
+#include "shell/game.h"
 
 #include <string.h>
 

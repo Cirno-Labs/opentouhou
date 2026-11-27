@@ -1,9 +1,8 @@
 #include "th01/shootout_lasers.h"
 
+#include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 #include "pc98/zun/sprite_sheet.h"
-
-#include "core/base/assert.h"
 
 #include <string.h>
 

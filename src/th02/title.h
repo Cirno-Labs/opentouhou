@@ -4,9 +4,9 @@
 // opens while the tone falls, the flash over three images and the ZUN
 // credit, stepped one event at a time.
 
+#include "th02/draw.h"
 #include "th02/palette.h"
 #include "th02/sound_effects.h"
-#include "th02/draw.h"
 #include "th02/tram.h"
 
 #define TITLE_FLASH_IMAGE_COUNT 3

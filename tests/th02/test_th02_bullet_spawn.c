@@ -1,13 +1,12 @@
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/performance.c"
-#include "../../src/th02/bullets/spawn.c"
-#include "th02/bullets/private.h"
+#include "tests/test.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
 #include "th02/bullets.h"
+#include "th02/bullets/private.h"
+#include "th02/bullets/spawn.c"
+#include "th02/performance.c"
 #include "th02/player.h"
 #include "th02/random.h"
-
-#include "test.h"
 
 TEST(spawn_checks_keep_order_and_easy_slow_cycle)
 {

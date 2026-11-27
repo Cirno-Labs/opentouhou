@@ -1,8 +1,9 @@
 #include "th02/items.h"
+
 #include "th02/background.h"
 #include "th02/miss.h"
-#include "th02/shots.h"
 #include "th02/player.h"
+#include "th02/shots.h"
 #include "th02/sound_effects.h"
 
 #include "core/base/assert.h"

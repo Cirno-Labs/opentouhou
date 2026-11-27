@@ -1,7 +1,7 @@
+#include "tests/test.h"
 #include "th02/ending/assets.h"
 
 #include "core/base/arena.h"
-#include "test.h"
 
 static RESULT M_FontFailure(
     void *const context, const DRAW_TEXT_CHARACTER *const character,

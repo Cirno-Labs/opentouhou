@@ -1,9 +1,8 @@
-#include "core/audio/resampler.h"
+#include "tests/test.h"
 
 #include "core/audio/backend.h"
+#include "core/audio/resampler.h"
 #include "core/base/memory.h"
-
-#include "test.h"
 
 #include <math.h>
 

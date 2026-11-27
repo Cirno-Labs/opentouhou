@@ -15,7 +15,7 @@ static void M_NameDraw(
 #define HighScoreEntryRender_Table M_Table
 #define HighScoreEntryRender_Alphabet M_AlphabetDraw
 #define HighScoreEntryRender_Name M_NameDraw
-#include "../../src/th02/high_score_entry/logic.c"
+#include "th02/high_score_entry/logic.c"
 #undef HighScoreEntryRender_Table
 #undef HighScoreEntryRender_Alphabet
 #undef HighScoreEntryRender_Name

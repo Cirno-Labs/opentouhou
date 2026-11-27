@@ -1,6 +1,6 @@
-#include "shell/fatal.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "shell/fatal.h"
 
 TEST(uses_box_by_default)
 {

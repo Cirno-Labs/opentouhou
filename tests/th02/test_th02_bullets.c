@@ -1,21 +1,20 @@
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "th02_clip_fixture.h"
-#include "../../src/th02/sparks.c"
-#include "../../src/th02/performance.c"
-#include "../../src/th02/bullets/spawn.c"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_sprites.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
-#include "th02/bullets/private.h"
 #include "th02/bullets.h"
-#include "th02/sparks.h"
+#include "th02/bullets/private.h"
+#include "th02/bullets/spawn.c"
+#include "th02/performance.c"
 #include "th02/player.h"
 #include "th02/random.h"
+#include "th02/sparks.c"
+#include "th02/sparks.h"
 
 #include "core/base/arena.h"
-
-#include "th02_sprites.h"
-#include "test.h"
 
 static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
 {

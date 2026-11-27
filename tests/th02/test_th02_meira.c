@@ -1,11 +1,11 @@
+#include "tests/th02/th02_gameplay_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
-#include "th02/bullets/private.h"
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/performance.c"
 #include "th02/boss/meira.c"
-#include "th02_gameplay_fixture.h"
+#include "th02/bullets/private.h"
+#include "th02/performance.c"
 
 static void M_MeiraStep(FIXTURE *const f, const int16_t frame)
 {

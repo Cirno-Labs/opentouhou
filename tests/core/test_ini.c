@@ -1,11 +1,10 @@
-#include "core/ini.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/test_dir.h"
 
 #include "core/base/string.h"
+#include "core/ini.h"
 #include "core/io/writer.h"
-
-#include "test.h"
-#include "test_allocator.h"
-#include "test_dir.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>

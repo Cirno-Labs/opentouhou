@@ -1,8 +1,7 @@
 #include "othpatch/main.h"
+#include "othpatch/version.h"
 
 #include "core/io/path.h"
-
-#include "version.h"
 
 #include <stdlib.h>
 #include <string.h>

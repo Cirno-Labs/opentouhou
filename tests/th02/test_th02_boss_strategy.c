@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th02/boss/strategy.h"
-
-#include "test.h"
 
 TEST(get_returns_every_landed_bosss_strategy)
 {

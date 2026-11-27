@@ -1,6 +1,6 @@
-#include "pc98/vsync.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/vsync.h"
 
 static uint64_t M_ReferenceCount(const uint64_t host_ticks)
 {

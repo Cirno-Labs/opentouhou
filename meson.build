@@ -74,22 +74,16 @@ if host_machine.system() == 'emscripten'
   endif
 endif
 
-# Each layer has its own include root in the build directory. The root
-# holds one link, named after the layer, to the layer's source directory,
-# so that a file includes "shell/game.h" and a layer cannot include a layer
-# that is not on its include path.
-include_root = meson.current_build_dir() / 'include'
-layer_include = {}
-foreach layer : ['core', 'shell', 'stg', 'pc98', 'th01', 'th02', 'th06', 'th07', 'othpatch']
-  run_command(
-    python3,
-    files('tools/meson/link_layer'),
-    meson.current_source_dir() / 'src' / layer,
-    include_root / layer / layer,
-    check: true,
-  )
-  layer_include += {layer: '-I' + include_root / layer}
-endforeach
+# Code in src/ is included from src/, "shell/game.h", and the rest from the
+# repository root, "tests/test.h". A header that the build generates is
+# included from the build's src/ at the same path, "th06/version.h".
+# tools/lint/check_layers keeps each layer to the layers that it may use.
+root_include = [
+  '-I' + meson.project_source_root() / 'src',
+  '-I' + meson.project_source_root(),
+  '-I' + meson.project_build_root() / 'src',
+]
+add_project_arguments(root_include, language: 'c')
 
 programs = get_option('programs')
 build_games = programs != 'othpatch'
@@ -190,7 +184,6 @@ if build_games
     executable(
       'o' + name,
       game['sources'],
-      c_args: game['c_args'],
       link_with: game.get('link_with', []) + [builtin_libs[name]],
       implicit_include_directories: false,
       dependencies: [shell_game_dep, stg_dep, sdl3] + external_deps,
@@ -232,7 +225,6 @@ if build_games
     executable(
       'th01native',
       'replay/th01/native_port.c',
-      c_args: [layer_include['th01']] + stg_include + shell_include + harness_include,
       implicit_include_directories: false,
       link_with: [
         th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_native_lib,
@@ -244,7 +236,6 @@ if build_games
     executable(
       'th02native',
       'replay/th02/native_port.c',
-      c_args: [layer_include['th02']] + shell_include + harness_include,
       implicit_include_directories: false,
       link_with: [
         th02_main_lib, th02_harness_lib, th02_lib, harness_native_lib, harness_lib,
@@ -256,7 +247,6 @@ if build_games
     executable(
       'th06native',
       'replay/th06/native_port.c',
-      c_args: [layer_include['th06']] + stg_include + shell_include + harness_include,
       implicit_include_directories: false,
       link_with: [
         th06_main_lib, th06_harness_lib, th06_lib, harness_native_lib, harness_lib,
@@ -269,7 +259,6 @@ if build_games
       'th07native',
       'replay/th07/native_port.c',
       'src/th07/play_time.c',
-      c_args: [layer_include['th07']] + stg_include + shell_include + harness_include,
       implicit_include_directories: false,
       link_with: [
         th07_main_lib, th07_harness_lib, th07_lib, harness_native_lib, harness_lib,
@@ -293,7 +282,6 @@ if build_games
         'dostestdosbox',
         'replay/dosbox/launch.c',
         'replay/dosbox/test/main.c',
-        c_args: core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,
         link_with: [harness_lib],
         dependencies: dosbox_deps,
@@ -303,7 +291,6 @@ if build_games
         'replay/dosbox/test/attach.c',
         'replay/dosbox/test/port.c',
         name_prefix: '',
-        c_args: core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,
         link_with: [harness_dosbox_lib, harness_lib],
         link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
@@ -313,7 +300,6 @@ if build_games
       pc98_font_bmp = executable(
         'pc98_font_bmp',
         'replay/dosbox/font_bmp.c',
-        c_args: core_include,
         implicit_include_directories: false,
         link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
         dependencies: dosbox_deps,
@@ -331,7 +317,6 @@ if build_games
         'th02dosbox',
         'replay/dosbox/launch.c',
         'replay/th02/dosbox_main.c',
-        c_args: core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,
         link_with: [harness_lib],
         dependencies: dosbox_deps,
@@ -341,7 +326,6 @@ if build_games
         'th02dosbox',
         'replay/th02/dosbox_port.c',
         name_prefix: '',
-        c_args: [layer_include['th02']] + core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,
         link_with: [th02_harness_lib, harness_dosbox_lib, harness_lib],
         link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
@@ -352,7 +336,6 @@ if build_games
         'th01dosbox',
         'replay/dosbox/launch.c',
         'replay/th01/dosbox_main.c',
-        c_args: core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,
         link_with: [harness_lib],
         dependencies: dosbox_deps,
@@ -365,7 +348,6 @@ if build_games
         'src/pc98/vsync.c',
         'src/th01/vsync_irq.c',
         name_prefix: '',
-        c_args: [layer_include['th01'], layer_include['pc98']] + core_include + harness_include + harness_dosbox_include,
         implicit_include_directories: false,
         link_with: [harness_dosbox_lib, harness_lib],
         link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
@@ -378,7 +360,6 @@ if build_games
     executable(
       'th01record',
       'replay/th01/recorder.c',
-      c_args: [layer_include['th01']] + stg_include + shell_include + harness_include + bot_include,
       implicit_include_directories: false,
       link_with: [
         bot_lib, shell_fonts_lib, th01_main_lib, th01_harness_lib, th01_lib, core_hash_lib, harness_lib,
@@ -390,7 +371,6 @@ if build_games
     executable(
       'th02record',
       'replay/th02/recorder.c',
-      c_args: [layer_include['th02']] + shell_include + harness_include + bot_include,
       implicit_include_directories: false,
       link_with: [
         bot_lib, shell_fonts_lib, th02_main_lib, th02_harness_lib, th02_lib, harness_lib,
@@ -402,7 +382,6 @@ if build_games
     executable(
       'th06record',
       'replay/th06/recorder.c',
-      c_args: [layer_include['th06']] + stg_include + shell_include + bot_include,
       implicit_include_directories: false,
       link_with: [bot_lib, th06_lib],
       dependencies: [core_dep, stg_dep, sdl3] + external_deps,
@@ -412,7 +391,6 @@ if build_games
       'th07record',
       'replay/th07/recorder.c',
       'src/th07/play_time.c',
-      c_args: [layer_include['th07']] + stg_include + shell_include + bot_include,
       implicit_include_directories: false,
       link_with: [bot_lib, th07_lib],
       dependencies: [core_dep, stg_dep, sdl3] + external_deps,
@@ -428,7 +406,6 @@ if build_othpatch
   executable(
     'othpatch',
     othpatch_entry,
-    c_args: [layer_include['othpatch'], othpatch_version_include] + shell_include,
     implicit_include_directories: false,
     link_with: othpatch_libs,
     dependencies: othpatch_deps + external_deps,

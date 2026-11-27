@@ -1,6 +1,6 @@
-#include "pc98/pmd/part.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/pmd/part.h"
 
 TEST(gate_wraps_before_minimum_and_slur_overrides_all_rules)
 {

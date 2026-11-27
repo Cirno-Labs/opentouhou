@@ -1,12 +1,10 @@
+#include "tests/test.h"
 #include "th07/anm.h"
 #include "th07/game.h"
-
-#include "test.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/rng.h"
 

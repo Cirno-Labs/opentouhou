@@ -1,8 +1,7 @@
 #pragma once
 
-#include "pc98/zun/pi.h"
-
 #include "core/vfs.h"
+#include "pc98/zun/pi.h"
 
 typedef struct {
     PI_IMAGE illustration;

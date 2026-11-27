@@ -48,7 +48,6 @@ th07_lib = static_library(
   'sound/player.c',
   'stage.c',
   'strings.c',
-  c_args: [layer_include['th07'], layer_include['shell']],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],
 )
@@ -66,7 +65,6 @@ th07_main_lib = static_library(
   'th07_main',
   'main.c',
   th07_version,
-  c_args: [layer_include['th07'], layer_include['shell'], '-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [core_dep, stg_dep],
 )
@@ -93,7 +91,6 @@ games += {
     'title_en': 'Touhou 07',
     'subtitle_en': 'Perfect Cherry Blossom',
     'english_patch': true,
-    'c_args': [layer_include['th07']],
     'fonts': ['fonts/ipag.ttf', 'fonts/ipagp.ttf'],
     'link_with': [th07_main_lib, th07_lib],
   },

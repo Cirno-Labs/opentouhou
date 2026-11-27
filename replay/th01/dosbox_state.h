@@ -1,10 +1,10 @@
 #pragma once
 
-#include "addresses.h"
-#include "harness.h"
+#include "replay/th01/addresses.h"
+#include "replay/th01/harness.h"
+#include "th01/vsync_irq.h"
 
 #include "pc98/vsync.h"
-#include "th01/vsync_irq.h"
 
 #include <stdint.h>
 

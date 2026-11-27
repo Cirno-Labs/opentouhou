@@ -1,11 +1,10 @@
-#include "../../src/th01/shots.c"
-#include "../../src/th01/orb.c"
-#include "th01/shots.h"
+#include "tests/test.h"
+#include "th01/orb.c"
 #include "th01/rng.h"
+#include "th01/shots.c"
+#include "th01/shots.h"
 
 #include <string.h>
-
-#include "test.h"
 
 TEST(requires_shot_image_before_ticks)
 {

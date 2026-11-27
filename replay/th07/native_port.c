@@ -1,8 +1,6 @@
-#include "native.h"
-
-#include "harness.h"
-#include "native_state.h"
-
+#include "replay/harness/native.h"
+#include "replay/th07/harness.h"
+#include "replay/th07/native_state.h"
 #include "th07/game.h"
 #include "th07/main.h"
 #include "th07/scene.h"

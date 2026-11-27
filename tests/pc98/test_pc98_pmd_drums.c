@@ -1,7 +1,7 @@
-#include "pc98/pmd/drums.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
-#include "test.h"
+#include "pc98/pmd/drums.h"
 
 typedef struct {
     SSG_EFFECT_BANK bank;

@@ -4,7 +4,7 @@
 // "--", prints one line per check and exits with status 0 when every check
 // passes.
 
-#include "hook.h"
+#include "replay/dosbox/hook.h"
 
 #include <stdio.h>
 #include <string.h>

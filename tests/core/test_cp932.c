@@ -1,8 +1,8 @@
+#include "tests/test.h"
+
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
-
-#include "test.h"
 
 #include <stdint.h>
 

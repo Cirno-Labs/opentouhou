@@ -1,18 +1,16 @@
-#include "th07/gui/private.h"
-
 #include "th07/ascii.h"
 #include "th07/enemy.h"
 #include "th07/game_manager.h"
+#include "th07/gui/private.h"
+#include "th07/screens/result/records.h"
 #include "th07/sound.h"
 #include "th07/strings.h"
-#include "th07/screens/result/records.h"
-
-#include "stg/translation.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/math/x87.h"
+#include "stg/translation.h"
 
 #include <stdio.h>
 #include <string.h>

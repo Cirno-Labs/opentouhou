@@ -1,7 +1,6 @@
 #pragma once
 
 #include <windows.h>
-
 #include <stdint.h>
 
 // Replaces module's import of name from dll with hook and stores the old

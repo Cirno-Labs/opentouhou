@@ -2,14 +2,13 @@
 
 #include "th07/files.h"
 
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/base/arena.h"
 #include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/json.h"
-
+#include "core/vfs.h"
+#include "shell/game.h"
 #include "stg/end_diff.h"
 
 #include <string.h>

@@ -1,11 +1,10 @@
-#include "th02_player_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_player_graphics.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/player.h"
 #include "th02/shots.h"
-
-#include "test.h"
-#include "th02_player_graphics.h"
 
 static SHOT M_Active(void)
 {

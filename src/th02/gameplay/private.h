@@ -1,10 +1,10 @@
 #pragma once
 
-#include "th02/gameplay.h"
 #include "th02/bomb/assets.h"
+#include "th02/gameplay.h"
+#include "th02/hud.h"
 #include "th02/pause_menu.h"
 #include "th02/wait.h"
-#include "th02/hud.h"
 
 typedef enum {
     STAGE_RUNNING,

@@ -1,6 +1,6 @@
-#include "pc98/pmd/registers.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/pmd/registers.h"
 
 TEST(program_caches_instrument_and_clears_keys_for_muted_voices)
 {

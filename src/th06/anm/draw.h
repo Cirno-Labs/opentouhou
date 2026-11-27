@@ -1,7 +1,7 @@
 #pragma once
 
-#include "th06/anm/types.h"
 #include "th06/anm/texture.h"
+#include "th06/anm/types.h"
 
 #include "core/gfx.h"
 

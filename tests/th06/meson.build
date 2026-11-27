@@ -89,7 +89,7 @@ foreach name, t : th06_tests
       t.get('main', 'test_' + part + '.c'),
       t.get('sources', []),
       shell_fake,
-      c_args: [layer_include['th06']] + t.get('c_args', []) + core_include + stg_include + shell_include + tests_include,
+      c_args: t.get('c_args', []),
       implicit_include_directories: false,
       link_with: th06_test_libs,
       dependencies: t.get('deps', [sdl3]),

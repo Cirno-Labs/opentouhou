@@ -1,9 +1,9 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/test_dir.h"
+
 #include "pc98/pmd/data.h"
 #include "pc98/pmd/effect.h"
-
-#include "test.h"
-#include "test_allocator.h"
-#include "test_dir.h"
 
 #define M_BANK_SIZE (259 + 3 * 26 + 2)
 

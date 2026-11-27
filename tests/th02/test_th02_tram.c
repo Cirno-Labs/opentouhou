@@ -1,7 +1,6 @@
-#include "th02_tram_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/tram.h"
-
-#include "test.h"
 
 TEST(console_clear_homes_the_software_cursor_and_keeps_hidden_cells_and_flags)
 {

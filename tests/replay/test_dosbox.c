@@ -1,8 +1,8 @@
-#include "dosbox.h"
+#include "replay/dosbox/dosbox.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/base/utils.h"
-#include "test.h"
-#include "test_dir.h"
 
 // Drives the dosbox backend's library with a fake emulator: a guest that
 // waits like Borland's frame_delay on a counter of its IRQ 2 handler, and

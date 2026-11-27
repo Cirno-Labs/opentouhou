@@ -1,7 +1,8 @@
 #pragma once
 
-#include "core/base/result.h"
 #include "th07/ecl/types.h"
+
+#include "core/base/result.h"
 
 #include <stdint.h>
 

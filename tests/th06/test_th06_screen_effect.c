@@ -1,14 +1,11 @@
-#include "th06/screen_effect.h"
-
-#include "gfx_recorder.h"
-#include "test.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/screen_effect.h"
 #include "th06/time.h"
 
 #include "core/gfx/private.h"
-
 #include "stg/chain.h"
 #include "stg/rng.h"
 

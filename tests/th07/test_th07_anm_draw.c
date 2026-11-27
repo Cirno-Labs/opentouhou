@@ -1,12 +1,10 @@
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
 #include "th07/anm.h"
-
-#include "gfx_recorder.h"
-#include "test.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/x87.h"
-
 #include "stg/rng.h"
 
 static RNG m_Rng;

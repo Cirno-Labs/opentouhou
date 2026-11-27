@@ -1,6 +1,6 @@
-#include "core/io/locale.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/io/locale.h"
 
 #include <SDL3/SDL.h>
 #include <string.h>
