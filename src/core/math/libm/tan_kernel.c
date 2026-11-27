@@ -24,10 +24,17 @@ static const double PIO4_LO = 3.06161699786838301793e-17;
 
 double otm_TanKernel(double x, double y, const int odd)
 {
-    double_t z, r, v, w, s, a;
-    double w0, a0;
+    double_t z;
+    double_t r;
+    double_t v;
+    double_t w;
+    double_t s;
+    double_t a;
+    double w0;
+    double a0;
     uint32_t hx;
-    int big, sign;
+    int big;
+    int sign;
 
     OTM_GET_HIGH_WORD(hx, x);
     big = (hx & 0x7fffffff) >= 0x3fe59428; // |x| >= 0.6744

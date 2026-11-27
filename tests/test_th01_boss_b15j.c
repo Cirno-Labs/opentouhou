@@ -40,7 +40,8 @@ static bool M_BossUpdate(
 typedef struct {
     B15J_ASSETS assets;
     GAME_TEXT_FONT font;
-    PTN stage, miko;
+    PTN stage;
+    PTN miko;
 } FIXTURE;
 
 static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
@@ -261,8 +262,10 @@ TEST(all_ranks_run_souls_tears_and_every_late_pattern)
         VSyncIrq_Reset();
         M_Enter(&f);
         const size_t used = arena.used;
-        uint32_t phases = 0, patterns = 0;
-        bool saw_tear = false, saw_ripple = false;
+        uint32_t phases = 0;
+        uint32_t patterns = 0;
+        bool saw_tear = false;
+        bool saw_ripple = false;
         for (int32_t frame = 0; frame < 12000; frame++) {
             phases |= 1u << m_B15J.status.phase;
             if (m_B15J.status.phase == B15J_PHASE_PATTERNS) {

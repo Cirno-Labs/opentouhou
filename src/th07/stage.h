@@ -77,7 +77,8 @@ typedef struct {
     int16_t script; // from the stage's first background script
     int16_t sprite; // its VM in data.sprites
     VEC3 pos;
-    float width, height; // 0 keeps the sprite's size
+    float width;
+    float height; // 0 keeps the sprite's size
 } STAGE_QUAD;
 
 typedef struct {
@@ -95,7 +96,8 @@ typedef struct {
 } STAGE_INSTANCE;
 
 typedef struct {
-    float near, far;
+    float near;
+    float far;
     uint32_t color;
 } STAGE_FOG;
 
@@ -144,10 +146,15 @@ typedef struct {
 
     struct {
         STAGE_CAMERA current;
-        STAGE_CAMERA start, end; // where a fade begins and ends
-        STAGE_CAMERA start_tangent, end_tangent;
-        VEC3 pos, key_pos, next_key_pos;
-        int32_t key_frame, next_key_frame;
+        STAGE_CAMERA start;
+        STAGE_CAMERA end; // where a fade begins and ends
+        STAGE_CAMERA start_tangent;
+        STAGE_CAMERA end_tangent;
+        VEC3 pos;
+        VEC3 key_pos;
+        VEC3 next_key_pos;
+        int32_t key_frame;
+        int32_t next_key_frame;
         int32_t frames[STAGE_FADE_COUNT];
         TIMER time[STAGE_FADE_COUNT];
         STAGE_EASE ease[STAGE_FADE_COUNT];
@@ -155,7 +162,9 @@ typedef struct {
     } camera;
 
     struct {
-        STAGE_FOG current, from, to;
+        STAGE_FOG current;
+        STAGE_FOG from;
+        STAGE_FOG to;
         int32_t frames;
         TIMER time;
     } fog;
@@ -174,7 +183,8 @@ typedef struct {
 
     // Run and drawn while spell_card.state is 1 or more.
     struct {
-        int32_t count, offset;
+        int32_t count;
+        int32_t offset;
         ANM_VM sprites[32];
     } spell_background;
 

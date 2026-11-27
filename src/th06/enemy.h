@@ -114,14 +114,17 @@ typedef struct ENEMY {
         float angular_velocity;
         float speed;
         float acceleration;
-        VEC3 start, delta;
+        VEC3 start;
+        VEC3 delta;
         TIMER timer; // counts down move.duration
         int32_t duration;
-        VEC2 bounds_min, bounds_max;
+        VEC2 bounds_min;
+        VEC2 bounds_max;
     } move;
 
     VEC3 hitbox_size;
-    int32_t life, max_life;
+    int32_t life;
+    int32_t max_life;
     int32_t score;
 
     struct {
@@ -131,9 +134,12 @@ typedef struct ENEMY {
         TIMER timer;
         // Hold how the speeds and counts of the shots grow with the rank:
         // what is added at rank 0 and at rank 32.
-        float rank_speed_low, rank_speed_high;
-        int16_t rank_columns_low, rank_columns_high;
-        int16_t rank_rows_low, rank_rows_high;
+        float rank_speed_low;
+        float rank_speed_high;
+        int16_t rank_columns_low;
+        int16_t rank_columns_high;
+        int16_t rank_rows_low;
+        int16_t rank_rows_high;
         BULLET_SHOOTER laser_shooter;
         LASER *lasers[ENEMY_LASER_COUNT];
         int32_t laser_index; // where the next laser goes in lasers
@@ -171,8 +177,11 @@ typedef struct ENEMY {
     // at first, to still from left and from right, to left and to right.
     // With left negative, the sprite never turns.
     struct {
-        int16_t still, still_from_left, still_from_right;
-        int16_t left, right;
+        int16_t still;
+        int16_t still_from_left;
+        int16_t still_from_right;
+        int16_t left;
+        int16_t right;
     } turns;
 
     // Hold the orbit effects that follow the enemy and widen to radius.

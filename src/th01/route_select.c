@@ -10,14 +10,16 @@
 
 typedef struct {
     const char *text;
-    int16_t left, top;
+    int16_t left;
+    int16_t top;
     uint8_t color;
 } ROUTE_LINE;
 
 typedef struct {
     ROUTE_SELECT_PHASE phase;
     uint8_t selection;
-    bool holding_up, holding_down;
+    bool holding_up;
+    bool holding_down;
 } ROUTE_SELECT;
 
 static ROUTE_SELECT m_Selection;

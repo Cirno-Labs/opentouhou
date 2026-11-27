@@ -12,7 +12,8 @@
 #define M_RLE 0x9595
 
 typedef struct {
-    uint32_t offset, packed_size;
+    uint32_t offset;
+    uint32_t packed_size;
     bool compressed;
 } PF_RECORD;
 

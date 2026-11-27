@@ -14,8 +14,20 @@
 #define DOSBOX_ATTACH_SYMBOL "Dosbox_Attach"
 
 typedef struct {
-    uint16_t ax, bx, cx, dx, si, di, bp, sp;
-    uint16_t cs, ds, es, ss, ip, flags;
+    uint16_t ax;
+    uint16_t bx;
+    uint16_t cx;
+    uint16_t dx;
+    uint16_t si;
+    uint16_t di;
+    uint16_t bp;
+    uint16_t sp;
+    uint16_t cs;
+    uint16_t ds;
+    uint16_t es;
+    uint16_t ss;
+    uint16_t ip;
+    uint16_t flags;
 } DOSBOX_REGS;
 
 // Holds what the emulator gives the library. Calls other than mount are

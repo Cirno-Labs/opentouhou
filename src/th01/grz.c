@@ -9,7 +9,8 @@
 
 typedef struct {
     int32_t stream_count;
-    uint16_t rle_size, planar_size;
+    uint16_t rle_size;
+    uint16_t planar_size;
     GFX_COLOR palette[16];
     const uint8_t *rle;
     const uint8_t *planar;

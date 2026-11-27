@@ -144,7 +144,8 @@ TEST(rotated_sprites_turn_the_other_way_from_th06)
     vm.pos = (VEC3) { 100.0f, 100.0f, 0.0f };
     vm.rotation.z = 0.5f;
     Anm_Draw(&vm, &draw);
-    float s, c;
+    float s;
+    float c;
     X87_SinCos(0.5f, &s, &c);
     Gfx_EndTick();
     const GFX_VERTEX *const top_right = &GfxRecorder_Quad(0)->vertices[1];

@@ -35,11 +35,17 @@ typedef enum {
 } ORB_FORCE;
 
 typedef struct {
-    int16_t left, top, previous_left, previous_top;
-    int16_t rotation_frame, force_frame, frames_outside_portal;
+    int16_t left;
+    int16_t top;
+    int16_t previous_left;
+    int16_t previous_top;
+    int16_t rotation_frame;
+    int16_t force_frame;
+    int16_t frames_outside_portal;
     bool in_portal;
     ORB_VELOCITY_X velocity_x;
-    double force, velocity_y;
+    double force;
+    double velocity_y;
 } ORB;
 
 typedef enum {
@@ -53,8 +59,10 @@ typedef enum {
 } ORB_REPEL;
 
 typedef struct {
-    int16_t left, top;
-    bool invincible, invincible_against_orb;
+    int16_t left;
+    int16_t top;
+    bool invincible;
+    bool invincible_against_orb;
 } ORB_PLAYER;
 
 extern const ORB *const g_Orb;

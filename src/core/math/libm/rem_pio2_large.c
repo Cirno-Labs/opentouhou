@@ -135,8 +135,25 @@ static const double PIo2[] = {
 int otm_RemPio2Large(
     double *x, double *y, const int e0, const int nx, const int prec)
 {
-    int32_t jz, jx, jv, jp, jk, carry, n, iq[20], i, j, k, m, q0, ih;
-    double z, fw, f[20], fq[20], q[20];
+    int32_t jz;
+    int32_t jx;
+    int32_t jv;
+    int32_t jp;
+    int32_t jk;
+    int32_t carry;
+    int32_t n;
+    int32_t iq[20];
+    int32_t i;
+    int32_t j;
+    int32_t k;
+    int32_t m;
+    int32_t q0;
+    int32_t ih;
+    double z;
+    double fw;
+    double f[20];
+    double fq[20];
+    double q[20];
 
     // Determine jk, jx, jv, q0 (3 > q0).
     jk = init_jk[prec];

@@ -21,14 +21,20 @@
 #include <string.h>
 
 typedef struct {
-    BOS head, face, aim;
+    BOS head;
+    BOS face;
+    BOS aim;
     GRZ body;
-    PI_IMAGE scroll, upper, layers[4];
-    const uint8_t *diamond, *flake;
+    PI_IMAGE scroll;
+    PI_IMAGE upper;
+    PI_IMAGE layers[4];
+    const uint8_t *diamond;
+    const uint8_t *flake;
 } B20J_ASSETS;
 
 typedef struct {
-    int16_t left[4][5], top[4][5];
+    int16_t left[4][5];
+    int16_t top[4][5];
     MATH16_VECTOR velocity[4];
     int16_t target_left[4];
     bool target_locked[4];
@@ -71,27 +77,55 @@ typedef enum {
 } B20J_DEFEAT;
 
 typedef struct {
-    BOSS_ENTITY head, face, aim;
+    BOSS_ENTITY head;
+    BOSS_ENTITY face;
+    BOSS_ENTITY aim;
     BOSS_HIT hit;
-    PALETTE boss_palette, stage_palette;
-    B20J_SNAKES two_snakes, four_snakes;
+    PALETTE boss_palette;
+    PALETTE stage_palette;
+    B20J_SNAKES two_snakes;
+    B20J_SNAKES four_snakes;
     MATH16_VECTOR diamond_velocity[2];
-    int16_t diamond_left[4], diamond_top[4], diamond_edges_frame;
+    int16_t diamond_left[4];
+    int16_t diamond_top[4];
+    int16_t diamond_edges_frame;
     MATH16_VECTOR row_velocity;
-    int16_t row_left, row_top, row_direction, row_speed;
-    int16_t spray_delta, spray_fired;
-    int16_t ray_x, ray_y, ray_previous_x, ray_previous_y;
-    int16_t slash_left[3], slash_top[3];
+    int16_t row_left;
+    int16_t row_top;
+    int16_t row_direction;
+    int16_t row_speed;
+    int16_t spray_delta;
+    int16_t spray_fired;
+    int16_t ray_x;
+    int16_t ray_y;
+    int16_t ray_previous_x;
+    int16_t ray_previous_y;
+    int16_t slash_left[3];
+    int16_t slash_top[3];
     BOSS_STATE status;
-    int16_t pattern_state, pattern, pattern_previous, patterns_done;
-    int16_t face_direction, face_expression;
-    int16_t scroll_line, scroll_speed, scroll_quarter, scroll_frame;
+    int16_t pattern_state;
+    int16_t pattern;
+    int16_t pattern_previous;
+    int16_t patterns_done;
+    int16_t face_direction;
+    int16_t face_expression;
+    int16_t scroll_line;
+    int16_t scroll_speed;
+    int16_t scroll_quarter;
+    int16_t scroll_frame;
     int16_t animation_frame;
     WAIT wait;
-    uint8_t cup_angle, spray_offset, spray_angle;
-    uint8_t entrance_stage, defeat_stage;
-    bool direction_can_change, laser_right_to_left, hp_bar_filled;
-    bool entrance_active, defeating, finished;
+    uint8_t cup_angle;
+    uint8_t spray_offset;
+    uint8_t spray_angle;
+    uint8_t entrance_stage;
+    uint8_t defeat_stage;
+    bool direction_can_change;
+    bool laser_right_to_left;
+    bool hp_bar_filled;
+    bool entrance_active;
+    bool defeating;
+    bool finished;
 } B20J;
 
 static B20J m_B20J;
@@ -966,7 +1000,8 @@ static void M_SlashAnimate(const B20J_ASSETS *const assets)
 }
 static void M_SlashFire(const B20J_ASSETS *const assets, const int32_t pattern)
 {
-    const int16_t x = m_B20J.slash_left[pattern], y = m_B20J.slash_top[pattern];
+    const int16_t x = m_B20J.slash_left[pattern];
+    const int16_t y = m_B20J.slash_top[pattern];
     if (pattern == 0) {
         M_Rain(assets, x, y, M_Random(assets) % 127, 0);
         M_Rain(assets, x, y, M_Random(assets) % 127, 0);

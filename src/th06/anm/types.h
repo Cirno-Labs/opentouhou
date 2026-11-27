@@ -13,10 +13,18 @@
 // A rectangle of a loaded ANM file's texture.
 typedef struct {
     int32_t slot; // the ANM slot it came from; negative when unused
-    float x0, y0, x1, y1; // pixels, in the texture
-    float texture_width, texture_height;
-    float u0, v0, u1, v1;
-    float width, height;
+    float x0;
+    float y0;
+    float x1;
+    float y1; // pixels, in the texture
+    float texture_width;
+    float texture_height;
+    float u0;
+    float v0;
+    float u1;
+    float v1;
+    float width;
+    float height;
     int32_t id; // the order sprites were loaded in
 } ANM_SPRITE;
 
@@ -62,7 +70,8 @@ typedef struct {
     ANM_MOVE move_mode;
     int16_t move_time; // the length of the position interpolation; 0 for none
     TIMER move_timer;
-    VEC3 move_from, move_to;
+    VEC3 move_from;
+    VEC3 move_to;
 
     VEC3 rotation;
     VEC3 rotation_speed;
@@ -72,26 +81,38 @@ typedef struct {
     // is 0 (opcode 11). scale_target_x/y, scale_time and scale_timer run an
     // interpolation from scale_from_x/y to them (opcode 30); opcode 30
     // also sets scale_speed_x/y to 0, so nothing is added once it ends.
-    float scale_x, scale_y;
-    float scale_speed_x, scale_speed_y;
-    float scale_target_x, scale_target_y;
-    float scale_from_x, scale_from_y;
+    float scale_x;
+    float scale_y;
+    float scale_speed_x;
+    float scale_speed_y;
+    float scale_target_x;
+    float scale_target_y;
+    float scale_from_x;
+    float scale_from_y;
     int16_t scale_time;
     TIMER scale_timer;
 
     uint32_t color; // 0xAARRGGBB
-    uint32_t fade_from, fade_to;
+    uint32_t fade_from;
+    uint32_t fade_to;
     int16_t fade_time; // the length of the alpha interpolation; 0 for none
     TIMER fade_timer;
 
-    bool shown, visible, blend_add, color_op, z_write_off;
+    bool shown;
+    bool visible;
+    bool blend_add;
+    bool color_op;
+    bool z_write_off;
     uint8_t flip; // bit 0 mirrors horizontally, bit 1 vertically
     uint8_t anchor; // bit 0 anchors the left edge, bit 1 the top edge
 
-    float uv_scroll_x, uv_scroll_y;
-    float uv_scale_x, uv_scale_y; // the sprite's size in texture coordinates
+    float uv_scroll_x;
+    float uv_scroll_y;
+    float uv_scale_x;
+    float uv_scale_y; // the sprite's size in texture coordinates
 
-    uint8_t font_width, font_height;
+    uint8_t font_width;
+    uint8_t font_height;
 
     // Identifies one presentation lifetime. Exclude it from simulation hashes
     // and saves.

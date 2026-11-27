@@ -6,7 +6,8 @@
 #define SHOTS_PTN 1
 
 typedef struct {
-    int16_t left, top;
+    int16_t left;
+    int16_t top;
     bool moving;
     uint8_t decay_frame;
 } SHOT;

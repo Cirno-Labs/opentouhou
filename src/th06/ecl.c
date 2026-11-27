@@ -258,7 +258,8 @@ static ECL_TIMELINE_ENTRY *m_Timeline;
 // center moves from and to. It lasts across loads.
 static struct {
     float angles[6];
-    VEC3 from, to;
+    VEC3 from;
+    VEC3 to;
 } m_Star;
 
 // Hold the values that operands -10021, -10023 and -10025 point at.

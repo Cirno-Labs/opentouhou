@@ -1101,7 +1101,10 @@ TEST(the_spark_shakes_the_screen_at_frames_60_and_120)
 // Sakuya A
 
 typedef struct {
-    float angle, speed, speed_step, turn;
+    float angle;
+    float speed;
+    float speed_step;
+    float turn;
 } M_KNIFE;
 
 static M_KNIFE M_DrawKnife(RNG *const rng)

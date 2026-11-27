@@ -12,7 +12,8 @@ typedef struct {
     int32_t last_camera; // -1 for none
     bool modulate;
     uint32_t modulate_color;
-    float shake_x, shake_y;
+    float shake_x;
+    float shake_y;
 } M_STATE;
 
 static M_STATE m_State = {
@@ -107,8 +108,10 @@ static void M_DrawQuad(
         positions[0].y = positions[1].y = y0;
         positions[2].y = positions[3].y = y1;
     }
-    float min_x = positions[0].x, max_x = positions[0].x;
-    float min_y = positions[0].y, max_y = positions[0].y;
+    float min_x = positions[0].x;
+    float max_x = positions[0].x;
+    float min_y = positions[0].y;
+    float max_y = positions[0].y;
     for (int32_t i = 1; i < 4; i++) {
         min_x = positions[i].x < min_x ? positions[i].x : min_x;
         max_x = positions[i].x > max_x ? positions[i].x : max_x;
@@ -193,7 +196,8 @@ static void M_Rotated(
 static MAT4 M_Rotation(const int32_t axis, const float angle)
 {
     MAT4 rotation = Mat4_Identity();
-    float sine, cosine;
+    float sine;
+    float cosine;
     X87_SinCos(angle, &sine, &cosine);
     const int32_t a = (axis + 1) % 3;
     const int32_t b = (axis + 2) % 3;
@@ -347,7 +351,8 @@ void Anm_Draw(const ANM_VM *const vm, const ANM_DRAW *const draw)
     if (!M_Visible(vm)) {
         return;
     }
-    float sine, cosine;
+    float sine;
+    float cosine;
     X87_SinCos(vm->rotation.z, &sine, &cosine);
     const float w = vm->sprite_data->width * vm->scale_x / 2.0f;
     const float h = vm->sprite_data->height * vm->scale_y / 2.0f;
@@ -369,7 +374,8 @@ void Anm_DrawProjected(const ANM_VM *const vm, const ANM_DRAW *const draw)
     if (!M_Visible(vm)) {
         return;
     }
-    float sine, cosine;
+    float sine;
+    float cosine;
     X87_SinCos(vm->rotation.z, &sine, &cosine);
     MAT4 world = Mat4_Identity();
     world.m[3][0] = vm->pos.x;

@@ -8,7 +8,10 @@
 #include "core/base/types.h"
 
 typedef struct {
-    int16_t left, top, right, bottom;
+    int16_t left;
+    int16_t top;
+    int16_t right;
+    int16_t bottom;
 } CLIP;
 
 extern const CLIP *const g_Clip;

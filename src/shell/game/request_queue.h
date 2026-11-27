@@ -32,8 +32,10 @@ typedef struct {
 } SHELL_REQUESTS;
 
 typedef struct {
-    bool key_pending, pad_pending;
-    INPUT_BINDING key, pad;
+    bool key_pending;
+    bool pad_pending;
+    INPUT_BINDING key;
+    INPUT_BINDING pad;
 } SHELL_INPUT_PRESSES;
 
 // Polls unbound keyboard and pad presses before ticks. Keeps the first

@@ -23,12 +23,17 @@ typedef enum {
 } ITEM_FLAG;
 
 typedef struct {
-    int16_t left, top, reserved, velocity_y;
-    uint8_t flag, radius_or_time;
+    int16_t left;
+    int16_t top;
+    int16_t reserved;
+    int16_t velocity_y;
+    uint8_t flag;
+    uint8_t radius_or_time;
 } ITEM;
 
 typedef struct {
-    ITEM bombs[ITEMS_BOMB_COUNT], points[ITEMS_POINT_COUNT];
+    ITEM bombs[ITEMS_BOMB_COUNT];
+    ITEM points[ITEMS_POINT_COUNT];
 } ITEMS;
 
 static ITEMS m_Items;

@@ -25,10 +25,14 @@ struct PMD {
     RESULT error;
     PMD_RHYTHM rhythm;
     uint16_t deferred_masks;
-    uint8_t timer_b, timer_a, last_timer_a, timer_delta;
+    uint8_t timer_b;
+    uint8_t timer_a;
+    uint8_t last_timer_a;
+    uint8_t timer_delta;
     uint8_t dispatch_part;
     bool dispatching;
-    bool failed, pending_a;
+    bool failed;
+    bool pending_a;
 };
 
 // Plays PMD 4.8 songs and effects at 48000 Hz. Board 26 has three FM

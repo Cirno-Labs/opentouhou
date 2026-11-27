@@ -8,11 +8,13 @@
 
 typedef struct {
     uint16_t offset;
-    uint8_t channel, reserved;
+    uint8_t channel;
+    uint8_t reserved;
 } MDRV_TRACK;
 
 typedef struct {
-    uint8_t channel_count, base_channel;
+    uint8_t channel_count;
+    uint8_t base_channel;
     uint16_t block_offset;
     uint16_t stream_offsets[MDRV_EFFECT_MAX_CHANNELS];
 } MDRV_EFFECT;
@@ -21,18 +23,28 @@ typedef struct {
     const uint8_t *bytes;
     size_t size;
     const MDRV_TRACK *tracks;
-    uint8_t track_count, flags, metadata_flags, reserved;
+    uint8_t track_count;
+    uint8_t flags;
+    uint8_t metadata_flags;
+    uint8_t reserved;
     uint16_t hardware;
-    uint16_t commands_offset, fm_offset, ssg_offset;
-    uint16_t fm_count, ssg_count;
-    const char *pcm_name, *spm_name, *title;
+    uint16_t commands_offset;
+    uint16_t fm_offset;
+    uint16_t ssg_offset;
+    uint16_t fm_count;
+    uint16_t ssg_count;
+    const char *pcm_name;
+    const char *spm_name;
+    const char *title;
 } MDRV_MUSIC;
 
 typedef struct {
     const uint8_t *bytes;
     size_t size;
     const MDRV_EFFECT *effects;
-    uint16_t effect_count, ssg_offset, ssg_count;
+    uint16_t effect_count;
+    uint16_t ssg_offset;
+    uint16_t ssg_count;
     uint16_t reserved[5];
 } MDRV_EFFECTS;
 

@@ -17,8 +17,11 @@
 // VRAM with hidden tails; index bits are blue, red, green and intensity.
 typedef struct {
     uint8_t *pages[2];
-    uint8_t drawing_page, visible_page;
-    uint16_t first_lines, first_address, second_address;
+    uint8_t drawing_page;
+    uint8_t visible_page;
+    uint16_t first_lines;
+    uint16_t first_address;
+    uint16_t second_address;
     GFX_COLOR palette[16];
 } VIDEO;
 

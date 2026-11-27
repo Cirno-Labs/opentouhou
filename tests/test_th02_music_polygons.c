@@ -31,7 +31,8 @@ static void M_Draw(
 TEST(initialization_uses_ninety_six_rng_outputs_and_is_not_repeated)
 {
     MUSIC_POLYGONS state = {};
-    uint32_t seed = 1, expected = 1;
+    uint32_t seed = 1;
+    uint32_t expected = 1;
     for (int call = 0; call < 96; call++) {
         MasterRng_Next(&expected);
     }
@@ -87,7 +88,8 @@ TEST(respawn_consumes_five_outputs_and_emits_the_old_offscreen_polygon)
                                           .y_subpixel = 7999,
                                           .velocity_y_subpixel = 1 };
     TRACE trace = { .state = &state, .check_respawn = true };
-    uint32_t seed = 7, expected = 7;
+    uint32_t seed = 7;
+    uint32_t expected = 7;
     for (int call = 0; call < 5; call++) {
         MasterRng_Next(&expected);
     }
@@ -103,8 +105,10 @@ TEST(respawn_consumes_five_outputs_and_emits_the_old_offscreen_polygon)
 
 TEST(omitting_drawing_preserves_identical_motion_and_rng_state)
 {
-    MUSIC_POLYGONS drawn = {}, skipped = {};
-    uint32_t drawn_seed = 0x12345678, skipped_seed = drawn_seed;
+    MUSIC_POLYGONS drawn = {};
+    MUSIC_POLYGONS skipped = {};
+    uint32_t drawn_seed = 0x12345678;
+    uint32_t skipped_seed = drawn_seed;
     for (int frame = 0; frame < 300; frame++) {
         TRACE trace = { .state = &drawn };
         MusicPolygons_UpdateAndRender(&drawn, &drawn_seed, M_Draw, &trace);

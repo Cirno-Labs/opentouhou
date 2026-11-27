@@ -237,7 +237,8 @@ TEST(warmup_updates_thirty_times_without_drawing)
 {
     M_Setup("warmup");
     M_WARMUP warmup = {};
-    CHAIN_ELEM calc, draw;
+    CHAIN_ELEM calc;
+    CHAIN_ELEM draw;
     Chain_InitElem(&calc, M_WarmupCalc, &warmup);
     Chain_InitElem(&draw, M_WarmupDraw, &warmup);
     CHECK(Result_Log(Chain_AddCalc(&calc, 1), LOG_LEVEL_ERROR));

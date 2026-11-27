@@ -20,7 +20,8 @@
 typedef struct {
     ARENA arena;
     PTN miko;
-    BOS miko_ac, miko_ac2;
+    BOS miko_ac;
+    BOS miko_ac2;
     BOMB_ASSETS bomb_assets;
     PLAYER_SPRITES sprites;
     PLAYER_BOMB_CONTINUATION continuation;

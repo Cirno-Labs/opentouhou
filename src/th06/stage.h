@@ -38,7 +38,8 @@ typedef struct {
     int16_t script; // from the stage's first background script
     int16_t sprite; // its VM in data.sprites
     VEC3 pos;
-    float width, height; // 0 keeps the sprite's size
+    float width;
+    float height; // 0 keeps the sprite's size
 } STAGE_QUAD;
 
 typedef struct {
@@ -56,7 +57,8 @@ typedef struct {
 } STAGE_INSTANCE;
 
 typedef struct {
-    float near, far;
+    float near;
+    float far;
     uint32_t color;
 } STAGE_FOG;
 
@@ -85,19 +87,24 @@ typedef struct {
 
     struct {
         VEC3 pos;
-        VEC3 key_pos, next_key_pos;
-        int32_t key_frame, next_key_frame;
+        VEC3 key_pos;
+        VEC3 next_key_pos;
+        int32_t key_frame;
+        int32_t next_key_frame;
     } camera;
 
     // Fades the offset and zoom of g_GameManager.camera.
     struct {
-        VEC3 from, to;
+        VEC3 from;
+        VEC3 to;
         int32_t frames;
         TIMER time;
     } offset;
 
     struct {
-        STAGE_FOG current, from, to;
+        STAGE_FOG current;
+        STAGE_FOG from;
+        STAGE_FOG to;
         int32_t frames;
         TIMER time;
         bool color_changed;

@@ -14,7 +14,10 @@
 typedef struct {
     int32_t score;
     uint8_t name_glyphs[HIGH_SCORES_NAME_GLYPHS];
-    uint8_t stage, shot_type, day, month;
+    uint8_t stage;
+    uint8_t shot_type;
+    uint8_t day;
+    uint8_t month;
     int16_t year;
 } HIGH_SCORE_RECORD;
 
@@ -28,7 +31,9 @@ typedef struct {
 } HIGH_SCORES;
 
 typedef struct {
-    bool game[3], extra[3], extra_unlocked;
+    bool game[3];
+    bool extra[3];
+    bool extra_unlocked;
 } HIGH_SCORE_CLEARS;
 
 // Fills the factory tables, names of six bullet glyphs dated 1900-01-01,

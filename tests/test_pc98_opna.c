@@ -11,7 +11,9 @@ typedef struct {
     uint64_t events[4096];
     unsigned timers[4096];
     size_t count;
-    bool acknowledge, disable_b, synthesize;
+    bool acknowledge;
+    bool disable_b;
+    bool synthesize;
 } FIXTURE;
 
 static void *M_Allocate(void *const context, const size_t size)
@@ -160,7 +162,8 @@ TEST(ssg_noise_envelope_shared_state_and_register_ports)
 {
     FIXTURE f;
     M_Init(&f);
-    OPNA_FRAME out[4096], tone[4096];
+    OPNA_FRAME out[4096];
+    OPNA_FRAME tone[4096];
     Opna_Write(f.chip, 7, 0x38);
     for (unsigned ch = 0; ch < 3; ch++) {
         Opna_Write(f.chip, ch * 2, 101);
@@ -287,7 +290,8 @@ TEST(reset_replay_and_arbitrary_render_blocks_match)
 {
     FIXTURE f;
     M_Init(&f);
-    OPNA_FRAME whole[16000], pieces[16000];
+    OPNA_FRAME whole[16000];
+    OPNA_FRAME pieces[16000];
     M_AllVoices(f.chip);
     M_Timers(f.chip);
     f.acknowledge = f.synthesize = true;
@@ -386,7 +390,8 @@ TEST(fm_algorithms_lfo_and_three_slot_mode_change_output)
 {
     FIXTURE f;
     M_Init(&f);
-    OPNA_FRAME normal[4096], changed[4096];
+    OPNA_FRAME normal[4096];
+    OPNA_FRAME changed[4096];
     M_Fm(f.chip, 2, 0xc0);
     Opna_Render(f.chip, normal, 4096);
     Opna_Reset(f.chip);

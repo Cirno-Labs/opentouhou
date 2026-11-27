@@ -6,7 +6,8 @@ TEST(gate_wraps_before_minimum_and_slur_overrides_all_rules)
 {
     const struct {
         PMD_GATE rules;
-        uint8_t duration, expected;
+        uint8_t duration;
+        uint8_t expected;
         bool slur;
     } cases[] = {
         { { 200, 128, 0 }, 200, 44, false },

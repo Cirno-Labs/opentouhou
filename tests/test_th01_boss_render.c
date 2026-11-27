@@ -41,7 +41,8 @@ TEST(full_put_and_restore_have_different_right_edge_guards)
     ARENA arena;
     Arena_Init(&arena, "boss edge", 1024 * 1024);
     Video_Init(Arena_Allocator(&arena));
-    uint8_t pixels[16], coverage[16];
+    uint8_t pixels[16];
+    uint8_t coverage[16];
     memset(pixels, 10, sizeof(pixels));
     memset(coverage, 1, sizeof(coverage));
     const BOS sprites = { 16, 1, 1, pixels, coverage };

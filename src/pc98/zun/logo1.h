@@ -3,7 +3,8 @@
 #include "core/gfx/types.h"
 
 typedef struct {
-    int32_t x, y;
+    int32_t x;
+    int32_t y;
 } ZUN_LOGO1_POINT;
 
 // ZUN's launcher logo, as the PC-98 games open with it.
@@ -13,10 +14,16 @@ typedef struct {
     ZUN_LOGO1_POINT stars[50];
     uint8_t speeds[50];
     uint8_t star_phase;
-    int32_t frame, tone, sprite, period, phase, amplitude;
+    int32_t frame;
+    int32_t tone;
+    int32_t sprite;
+    int32_t period;
+    int32_t phase;
+    int32_t amplitude;
     uint32_t random;
     bool half_tick;
-    uint8_t drawing_page, visible_page;
+    uint8_t drawing_page;
+    uint8_t visible_page;
 } ZUN_LOGO1;
 
 // Clears the visible 640x400 area of both index pages; draws to page 0

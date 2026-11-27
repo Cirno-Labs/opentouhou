@@ -35,8 +35,12 @@ typedef enum {
 } M_VALIGN;
 
 typedef struct {
-    float reference_width, reference_height;
-    float left, top, width, height;
+    float reference_width;
+    float reference_height;
+    float left;
+    float top;
+    float width;
+    float height;
     int32_t outline_radius;
     float fade_ms;
     float read_speed;
@@ -93,7 +97,8 @@ static bool M_ReadPair(
 
 static void M_ReadRegion(const JSON_VALUE *const notes)
 {
-    float x, y;
+    float x;
+    float y;
     const JSON_VALUE *value = Json_Get(notes, "reference_resolution");
     if (value != nullptr) {
         if (M_ReadPair(value, &x, &y) && x > 0.0f && y > 0.0f) {

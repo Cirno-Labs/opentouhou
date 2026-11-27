@@ -38,7 +38,8 @@ static bool M_BossUpdate(const B10M_ASSETS *const assets, const PTN *const miko)
 typedef struct {
     B10M_ASSETS assets;
     GAME_TEXT_FONT font;
-    PTN stage, miko;
+    PTN stage;
+    PTN miko;
 } FIXTURE;
 
 static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
@@ -239,7 +240,8 @@ TEST(full_rank_fights_run_patterns_and_both_star_cycles)
         M_BossSetup(&f.assets, &f.miko);
         VSyncIrq_Reset();
         const size_t used = arena.used;
-        uint16_t phases = 0, star_phases = 0;
+        uint16_t phases = 0;
+        uint16_t star_phases = 0;
         int32_t loops = 0;
         int16_t previous_star_phase = -1;
         for (int32_t frame = 0; frame < 18000 && loops < 2; frame++) {

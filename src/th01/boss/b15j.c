@@ -15,7 +15,8 @@
 #include <string.h>
 
 typedef struct {
-    BOS souls, tears;
+    BOS souls;
+    BOS tears;
     PTN ripples;
     PI_IMAGE background;
     PALETTE palette;
@@ -32,18 +33,29 @@ typedef enum {
 } B15J_PHASE;
 
 typedef struct {
-    BOSS_ENTITY souls[2], tears[10];
+    BOSS_ENTITY souls[2];
+    BOSS_ENTITY tears[10];
     int8_t tear_frame[10];
     BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
+    PALETTE boss_palette;
+    PALETTE post_defeat;
     BOSS_DEFEAT defeat;
     BOSS_STATE status;
-    int16_t pattern_state, subphase, patterns_done;
-    int16_t spiral_distance, random_range, ring_radius;
-    uint8_t spiral_angle, spiral_drift, four_angle;
+    int16_t pattern_state;
+    int16_t subphase;
+    int16_t patterns_done;
+    int16_t spiral_distance;
+    int16_t random_range;
+    int16_t ring_radius;
+    uint8_t spiral_angle;
+    uint8_t spiral_drift;
+    uint8_t four_angle;
     uint8_t entrance_stage;
-    bool hp_bar_filled, entrance_active, entrance_waiting;
-    bool defeating, finished;
+    bool hp_bar_filled;
+    bool entrance_active;
+    bool entrance_waiting;
+    bool defeating;
+    bool finished;
 } B15J;
 
 static B15J m_B15J;

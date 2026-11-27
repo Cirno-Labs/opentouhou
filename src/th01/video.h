@@ -11,7 +11,8 @@
 // Pixel indices hold blue, red, green and intensity in bits 0 through 3.
 typedef struct {
     uint8_t *pages[2];
-    int32_t drawing_page, visible_page;
+    int32_t drawing_page;
+    int32_t visible_page;
     GFX_COLOR palette[16];
     int16_t scroll_top;
 } VIDEO;
@@ -21,8 +22,12 @@ extern VIDEO g_Video;
 // Views row-major indices 0 through 15, with optional per-pixel coverage
 // (zero skips) and a transparent key index (-1 for none).
 typedef struct {
-    const uint8_t *pixels, *coverage;
-    int32_t width, height, stride, coverage_stride;
+    const uint8_t *pixels;
+    const uint8_t *coverage;
+    int32_t width;
+    int32_t height;
+    int32_t stride;
+    int32_t coverage_stride;
     int32_t key;
 } VIDEO_IMAGE;
 
@@ -30,7 +35,9 @@ typedef struct {
 // bytes draw the supplied color.
 typedef struct {
     const uint8_t *pixels;
-    int32_t width, height, stride;
+    int32_t width;
+    int32_t height;
+    int32_t stride;
 } VIDEO_MASK;
 
 // Allocates zeroed pages and selects page 0 with an opaque black DAC.

@@ -31,7 +31,8 @@ typedef enum {
     GP_LIFE_AFTER_ORB,
 } GAMEPLAY_LIFE_PHASE;
 
-static GAMEPLAY_LIFE_PHASE m_LifePhase, m_AfterPlayer;
+static GAMEPLAY_LIFE_PHASE m_LifePhase;
+static GAMEPLAY_LIFE_PHASE m_AfterPlayer;
 
 static PLAYER_SPRITES M_PlayerSprites(void)
 {

@@ -9,7 +9,8 @@
 typedef struct {
     const GAME_TEXT_FONT *font;
     const PTN *stage;
-    const SCENE_DATA *makai, *jigoku;
+    const SCENE_DATA *makai;
+    const SCENE_DATA *jigoku;
 } ROUTE_SELECT_ASSETS;
 
 typedef enum {

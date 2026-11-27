@@ -9,15 +9,20 @@
 struct PMD_SONG {
     const uint8_t *bytes;
     size_t size;
-    uint16_t tracks[PMD_TRACK_COUNT], rhythm[PMD_RHYTHM_LIMIT];
-    uint16_t rhythm_count, instrument_offset, instrument_count, command_end;
+    uint16_t tracks[PMD_TRACK_COUNT];
+    uint16_t rhythm[PMD_RHYTHM_LIMIT];
+    uint16_t rhythm_count;
+    uint16_t instrument_offset;
+    uint16_t instrument_count;
+    uint16_t command_end;
 };
 
 struct PMD_EFFECTS {
     const uint8_t *bytes;
     size_t size;
     uint16_t offsets[PMD_EFFECT_COUNT];
-    uint16_t instrument_offset, instrument_count;
+    uint16_t instrument_offset;
+    uint16_t instrument_count;
 };
 
 const uint8_t *PmdData_Instrument(const PMD_EFFECTS *bank, uint8_t id);

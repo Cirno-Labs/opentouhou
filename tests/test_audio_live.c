@@ -328,7 +328,8 @@ TEST(submit_clear_and_free_share_the_actual_mixer_lock)
         return;
     }
     M_WaitMixes(&check, 1);
-    float music[16], effects[16];
+    float music[16];
+    float effects[16];
     for (uint32_t step = 0; step < 1000; step++) {
         for (uint32_t i = 0; i < 8; i++) {
             music[i * 2] = (float)(step % 113 + 1);

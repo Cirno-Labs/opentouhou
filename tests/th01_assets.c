@@ -11,7 +11,8 @@ typedef struct {
     SHOOTOUT_LASERS_ASSETS lasers;
     MDRV_TRACK track;
     MDRV_EFFECT effects[17];
-    uint8_t music_bytes[3], effect_bytes[118];
+    uint8_t music_bytes[3];
+    uint8_t effect_bytes[118];
 } M_ASSETS;
 
 static void M_BossAssets(M_ASSETS *const f, const ALLOCATOR *const a)

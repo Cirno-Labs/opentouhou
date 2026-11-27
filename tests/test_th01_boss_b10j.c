@@ -41,7 +41,8 @@ static bool M_BossUpdate(const B10J_ASSETS *const assets, const PTN *const miko)
 typedef struct {
     B10J_ASSETS assets;
     GAME_TEXT_FONT font;
-    PTN stage, miko;
+    PTN stage;
+    PTN miko;
 } FIXTURE;
 
 static void M_InitFixture(FIXTURE *const f, ARENA *const arena)

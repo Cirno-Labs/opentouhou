@@ -15,7 +15,8 @@ typedef struct {
     char *text;
     VEC3 pos;
     uint32_t color;
-    float scale_x, scale_y;
+    float scale_x;
+    float scale_y;
     bool highlight;
     bool in_arena;
 } ASCII_STRING;
@@ -60,7 +61,8 @@ typedef struct {
     bool hide_frame_rate;
     char replay_rate[8];
     uint32_t color;
-    float scale_x, scale_y;
+    float scale_x;
+    float scale_y;
     bool in_arena;
     bool highlight;
     // The interrupt AsciiText_SetSummaryInterrupt sent last.

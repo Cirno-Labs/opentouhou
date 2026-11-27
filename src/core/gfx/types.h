@@ -6,11 +6,17 @@
 typedef struct GFX_TEXTURE GFX_TEXTURE;
 
 typedef struct {
-    uint8_t red, green, blue, alpha;
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t alpha;
 } GFX_COLOR;
 
 typedef struct {
-    int32_t x, y, width, height;
+    int32_t x;
+    int32_t y;
+    int32_t width;
+    int32_t height;
 } GFX_RECT;
 
 typedef struct {
@@ -65,7 +71,8 @@ typedef struct {
 typedef struct {
     bool enabled;
     // Clamps the fog factor after interpolation across a triangle.
-    float begin, end; // view-space depth
+    float begin;
+    float end; // view-space depth
     GFX_COLOR color;
 } GFX_FOG;
 
@@ -73,7 +80,8 @@ typedef struct {
 // projection as row vectors; viewport maps the result to logical-screen
 // pixels and clips to it.
 typedef struct {
-    MAT4 view, projection;
+    MAT4 view;
+    MAT4 projection;
     VIEWPORT viewport;
     GFX_FOG fog;
     // Stays the same across ticks; 0 is never blended. The nth view of an
@@ -92,7 +100,8 @@ typedef struct {
 } GFX_MOTION;
 
 typedef struct {
-    int32_t width, height; // window pixels
+    int32_t width;
+    int32_t height; // window pixels
     bool integer_scale; // whole multiples when they fit
     GFX_COLOR border;
     // Samples the screen where it is scaled to the window: the screen

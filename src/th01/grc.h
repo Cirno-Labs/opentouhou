@@ -5,7 +5,9 @@
 #define GRC_MAX_IMAGES 8
 
 typedef struct {
-    int32_t width, height, count;
+    int32_t width;
+    int32_t height;
+    int32_t count;
     uint8_t *coverage;
 } GRC;
 

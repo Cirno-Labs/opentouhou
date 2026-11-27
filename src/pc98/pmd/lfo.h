@@ -4,10 +4,20 @@
 
 typedef struct {
     uint16_t value;
-    uint8_t delay, speed, delta, period;
-    uint8_t initial_delay, initial_speed, initial_delta, initial_period;
-    uint8_t wave, depth, depth_counter, depth_interval;
-    uint8_t depth_count, initial_depth_count;
+    uint8_t delay;
+    uint8_t speed;
+    uint8_t delta;
+    uint8_t period;
+    uint8_t initial_delay;
+    uint8_t initial_speed;
+    uint8_t initial_delta;
+    uint8_t initial_period;
+    uint8_t wave;
+    uint8_t depth;
+    uint8_t depth_counter;
+    uint8_t depth_interval;
+    uint8_t depth_count;
+    uint8_t initial_depth_count;
 } PMD_LFO;
 
 // Evolves KAJA PMD's word-valued LFO with byte counters and signed-byte

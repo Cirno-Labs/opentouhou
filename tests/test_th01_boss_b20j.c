@@ -359,7 +359,8 @@ TEST(last_orb_hit_draws_every_cached_kuji_then_adds_final_bonus)
     g_Video.pages[0][0] = 9;
     VSyncIrq_Reset();
     const size_t used = arena.used;
-    int32_t images = 0, last_image = -1;
+    int32_t images = 0;
+    int32_t last_image = -1;
     int32_t polls = 0;
     while (!M_BossUpdate(&f.assets)) {
         if (m_B20J.defeat_stage == B20J_DEFEAT_KUJI

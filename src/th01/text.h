@@ -27,7 +27,9 @@ typedef enum {
 typedef struct {
     GAME_TEXT_WEIGHT weight;
     int32_t spacing;
-    bool clear_background, underline, reverse;
+    bool clear_background;
+    bool underline;
+    bool reverse;
 } GAME_TEXT_STYLE;
 
 // Copies and sorts bitmap glyphs, which need unique code points and the

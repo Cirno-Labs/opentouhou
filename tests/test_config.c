@@ -202,7 +202,8 @@ static void M_CheckFloatRoundTrips(const float value)
     Config_Save(&schema, ini, &settings);
     FLOAT_SETTINGS loaded;
     Config_Load(&schema, ini, &loaded);
-    uint32_t a, b;
+    uint32_t a;
+    uint32_t b;
     memcpy(&a, &settings.number, sizeof(a));
     memcpy(&b, &loaded.number, sizeof(b));
     if (a != b) {

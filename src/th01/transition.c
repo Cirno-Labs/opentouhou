@@ -9,8 +9,12 @@
 typedef struct {
     uint64_t last_tick;
     uint32_t credit;
-    uint16_t step_ms, frame;
-    int16_t first_left, first_top, second_left, second_top;
+    uint16_t step_ms;
+    uint16_t frame;
+    int16_t first_left;
+    int16_t first_top;
+    int16_t second_left;
+    int16_t second_top;
     bool active;
 } PAGE_TRANSITION;
 

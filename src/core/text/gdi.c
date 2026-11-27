@@ -247,7 +247,8 @@ RESULT TextRaster_RenderSimple(
     SDL_Surface **const out)
 {
     *out = nullptr;
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     MUST(TextRaster_MeasureSimple(font, text, size, &width, &height));
     SDL_Surface *const surface =
         SDL_CreateSurface(width, height, SDL_PIXELFORMAT_RGBA32);
@@ -268,7 +269,8 @@ RESULT TextRaster_RenderSimple(
             break;
         }
         SDL_Surface *glyph;
-        int32_t offset_x, offset_y;
+        int32_t offset_x;
+        int32_t offset_y;
         result = TextRaster_Glyph(f, index, &glyph, &offset_x, &offset_y);
         if (!IS_OK(result)) {
             break;

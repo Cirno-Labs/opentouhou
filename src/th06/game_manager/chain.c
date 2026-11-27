@@ -27,7 +27,9 @@ static const uint32_t m_ExtendScores[] = {
 };
 
 static const struct {
-    int32_t value, min, max;
+    int32_t value;
+    int32_t min;
+    int32_t max;
 } m_Ranks[] = {
     { 16, 12, 20 }, { 16, 10, 32 }, { 16, 10, 32 },
     { 16, 10, 32 }, { 16, 14, 18 },

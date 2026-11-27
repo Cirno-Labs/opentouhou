@@ -60,8 +60,10 @@
 typedef struct {
     int16_t interval;
     int16_t phase;
-    float offset_x, offset_y; // from the player, or from the option
-    float size_x, size_y;
+    float offset_x;
+    float offset_y; // from the player, or from the option
+    float size_x;
+    float size_y;
     float angle;
     float speed;
     int16_t damage;

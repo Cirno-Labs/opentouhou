@@ -90,7 +90,8 @@ static FONT_ROM *M_Rom(
     const char *const full, const size_t full_size, const char *const half,
     const size_t half_size)
 {
-    READER full_reader, half_reader;
+    READER full_reader;
+    READER half_reader;
     Reader_OpenBuffer(&full_reader, full, full_size, "full");
     Reader_OpenBuffer(&half_reader, half, half_size, "half");
     FONT_ROM *rom = nullptr;
@@ -538,7 +539,8 @@ TEST(utf8_scalars_include_two_and_four_byte_characters)
 
 TEST(built_in_shinonome_inks_every_character_that_th01_draws)
 {
-    size_t full_size, half_size;
+    size_t full_size;
+    size_t half_size;
     uint8_t *const full = TestFonts_Read("shnmk16.bdf", &full_size);
     uint8_t *const half = TestFonts_Read("shnm8x16r.bdf", &half_size);
     FONT_ROM *const rom =

@@ -8,7 +8,12 @@
 #include <string.h>
 
 typedef struct {
-    int32_t sx, sy, dx, dy, width, height;
+    int32_t sx;
+    int32_t sy;
+    int32_t dx;
+    int32_t dy;
+    int32_t width;
+    int32_t height;
 } VIDEO_REGION;
 
 VIDEO g_Video;

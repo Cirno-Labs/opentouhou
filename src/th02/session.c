@@ -3,7 +3,8 @@
 #include <string.h>
 
 typedef struct {
-    bool extra, active;
+    bool extra;
+    bool active;
 } GAME_START;
 
 static GAME_START m_Start;

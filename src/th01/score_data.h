@@ -10,7 +10,8 @@
 #define SCORE_FILE_SIZE 247
 
 typedef struct {
-    char name[SCORE_NAME_SIZE], route[9];
+    char name[SCORE_NAME_SIZE];
+    char route[9];
     int32_t score;
     int16_t stage;
 } SCORE_ENTRY;
@@ -21,7 +22,8 @@ typedef struct {
 
 typedef struct {
     SCORE_TABLE tables[SCORE_RANKS];
-    bool pending[SCORE_RANKS], writable[SCORE_RANKS];
+    bool pending[SCORE_RANKS];
+    bool writable[SCORE_RANKS];
     VFS *user_files;
 } SCORE_SAVES;
 

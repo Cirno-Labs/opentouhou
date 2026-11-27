@@ -5,10 +5,20 @@
 #define GAME_INPUT_BOMB_WINDOW 20
 
 typedef struct {
-    bool up, down, left, right;
-    bool keypad_up, keypad_down, keypad_left, keypad_right;
-    bool shot, strike, ok, cancel;
-    bool memory_enter, memory_leave;
+    bool up;
+    bool down;
+    bool left;
+    bool right;
+    bool keypad_up;
+    bool keypad_down;
+    bool keypad_left;
+    bool keypad_right;
+    bool shot;
+    bool strike;
+    bool ok;
+    bool cancel;
+    bool memory_enter;
+    bool memory_leave;
 } TH01_INPUT;
 
 extern const INPUT_SCHEMA g_InputSchema;
@@ -22,11 +32,19 @@ typedef enum {
 
 typedef struct {
     TH01_INPUT previous;
-    uint8_t shot_presses, strike_presses;
+    uint8_t shot_presses;
+    uint8_t strike_presses;
     int16_t bomb_frame;
     uint8_t horizontal;
-    bool up, down, shot, strike, ok, paused, bomb;
-    bool memory_enter, memory_leave;
+    bool up;
+    bool down;
+    bool shot;
+    bool strike;
+    bool ok;
+    bool paused;
+    bool bomb;
+    bool memory_enter;
+    bool memory_leave;
 } GAME_INPUT;
 
 extern const GAME_INPUT *const g_GameInput;
@@ -48,8 +66,13 @@ typedef enum {
 } MENU_INPUT_KIND;
 
 typedef struct {
-    bool previous_up[2], previous_down[2];
-    bool left, right, ok, shot, cancel;
+    bool previous_up[2];
+    bool previous_down[2];
+    bool left;
+    bool right;
+    bool ok;
+    bool shot;
+    bool cancel;
 } MENU_INPUT;
 
 // Updates the gameplay flags, and in debug mode the memory-screen flags; bomb

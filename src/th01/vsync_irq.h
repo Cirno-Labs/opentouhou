@@ -5,7 +5,8 @@
 // Holds the program-local interrupt counters and a logical edge serial.
 // Advance exactly once per reference VSync.
 typedef struct {
-    int16_t count1, count2;
+    int16_t count1;
+    int16_t count2;
     uint64_t edge;
 } VSYNC_COUNTERS;
 

@@ -47,7 +47,8 @@ static RESULT M_Measure(
         return OK;
     }
     M_SetFace(font, style->face);
-    int natural_width, natural_height;
+    int natural_width;
+    int natural_height;
     MUST(TextGlyphs_Measure(
         font, text, size, style->gdi_raster, &natural_width, &natural_height));
     const double scaled_width =

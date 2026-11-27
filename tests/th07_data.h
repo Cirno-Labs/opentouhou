@@ -15,12 +15,23 @@ typedef struct {
 
 // Holds one shot of an SHT file as the file stores it.
 typedef struct {
-    int16_t interval, phase;
-    float offset_x, offset_y, size_x, size_y, angle, speed;
+    int16_t interval;
+    int16_t phase;
+    float offset_x;
+    float offset_y;
+    float size_x;
+    float size_y;
+    float angle;
+    float speed;
     int16_t damage;
-    uint8_t option, kind;
-    int16_t script, sound;
-    uint32_t fire, move, draw, hit;
+    uint8_t option;
+    uint8_t kind;
+    int16_t script;
+    int16_t sound;
+    uint32_t fire;
+    uint32_t move;
+    uint32_t draw;
+    uint32_t hit;
 } TH07_SHT_SHOT;
 
 typedef struct {

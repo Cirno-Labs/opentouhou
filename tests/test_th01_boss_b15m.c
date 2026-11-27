@@ -39,7 +39,8 @@ static bool M_BossUpdate(
 typedef struct {
     B15M_ASSETS assets;
     GAME_TEXT_FONT font;
-    PTN stage, miko;
+    PTN stage;
+    PTN miko;
 } FIXTURE;
 
 static void M_InitFixture(FIXTURE *const f, ARENA *const arena)
@@ -338,8 +339,12 @@ TEST(real_orb_battle_visits_every_form_and_pattern_then_defeats)
         uint64_t tick = 0;
         M_Run(&f, &tick);
         const size_t used = arena.used;
-        uint32_t phase1 = 0, phase3 = 0, girl = 0, bat = 0;
-        int32_t p1ticks = 0, p3ticks = 0;
+        uint32_t phase1 = 0;
+        uint32_t phase3 = 0;
+        uint32_t girl = 0;
+        uint32_t bat = 0;
+        int32_t p1ticks = 0;
+        int32_t p3ticks = 0;
         for (int32_t step = 1; step < 40000 && !m_B15M.finished; step++) {
             g_Session.frame_rand = (uint32_t)step;
             if (m_B15M.status.phase == B15M_PHASE_PATTERNS_1) {

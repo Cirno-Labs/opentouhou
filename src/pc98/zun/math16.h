@@ -3,7 +3,8 @@
 #include "core/base/types.h"
 
 typedef struct {
-    int16_t x, y;
+    int16_t x;
+    int16_t y;
 } MATH16_VECTOR;
 
 // Sine and cosine scaled by 256, 256 units per turn, positive sine pointing

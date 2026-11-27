@@ -874,7 +874,8 @@ static CHAIN_STATUS M_Update(void *const arg)
 // their direct and wrapped distances.
 static float M_LerpAngle(float a, const float b, const float t)
 {
-    float diff, wrap;
+    float diff;
+    float wrap;
     if (a < b) {
         diff = b - a;
         wrap = a + M_FULL_TURN - b;

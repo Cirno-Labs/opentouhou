@@ -9,7 +9,8 @@ struct GAME_AUDIO {
     AUDIO_LIVE *input;
     OPNA_FRAME raw[M_BLOCK_FRAMES];
     float samples[M_BLOCK_FRAMES * 2];
-    float previous_input[2], previous_output[2];
+    float previous_input[2];
+    float previous_output[2];
 };
 
 RESULT GameAudio_Prepare(

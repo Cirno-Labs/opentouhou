@@ -24,6 +24,7 @@ CHECKS = [
     ("check_header_order", r"\.h$", None),
     ("check_umbrella_header", r"\.h$", None),
     ("check_global_reset", r"^(src|tests)/.*\.[ch]$", None),
+    ("check_single_declaration", r"\.[ch]$", None),
     ("check_raw_color", r"^(src/th0[67]/|tests/(test_)?th0[67]).*\.[ch]$", None),
     ("check_md_wrap", r"\.(md|txt)$", r"^src/shell/builtin/fonts/"),
     ("check_md_underline", r"\.(md|txt)$", r"^src/shell/builtin/fonts/"),

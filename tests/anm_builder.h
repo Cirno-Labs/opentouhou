@@ -14,7 +14,10 @@
 
 typedef struct {
     int32_t id;
-    float x, y, w, h;
+    float x;
+    float y;
+    float w;
+    float h;
 } ANM_BUILDER_SPRITE;
 
 typedef struct {
@@ -24,7 +27,8 @@ typedef struct {
 } ANM_BUILDER_SCRIPT;
 
 typedef struct {
-    int32_t width, height;
+    int32_t width;
+    int32_t height;
     // Names the image "@", so that loading creates a blank texture of
     // width x height.
     bool blank_texture;

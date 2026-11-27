@@ -23,7 +23,8 @@ typedef struct {
 } B10J_PILLARS;
 
 typedef struct {
-    BOS still, animation;
+    BOS still;
+    BOS animation;
     PTN missiles;
     PI_IMAGE background;
     PALETTE palette;
@@ -44,23 +45,38 @@ typedef enum {
 } B10J_PHASE;
 
 typedef struct {
-    BOSS_ENTITY still, animation;
+    BOSS_ENTITY still;
+    BOSS_ENTITY animation;
     BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
+    PALETTE boss_palette;
+    PALETTE post_defeat;
     PALETTE_FADE setup_fade;
     VSYNC_WAIT setup_wait;
     BOSS_DEFEAT defeat;
     uint8_t background[128 * 160];
     B10J_SQUARE squares[6];
-    int16_t pillar_time[8], pillar_x[8], pillar_bottom[8];
-    int16_t laser_x[4], laser_y[4];
+    int16_t pillar_time[8];
+    int16_t pillar_x[8];
+    int16_t pillar_bottom[8];
+    int16_t laser_x[4];
+    int16_t laser_y[4];
     BOSS_STATE status;
-    int16_t pattern, pattern_state, target_left;
-    uint8_t hop, direction, missile_angle, pellet_angle;
-    uint8_t spread_interval, spread_speed;
-    bool meteor_active, hp_bar_filled;
-    bool setup_active, entrance_active, entrance_waiting;
-    bool defeating, finished;
+    int16_t pattern;
+    int16_t pattern_state;
+    int16_t target_left;
+    uint8_t hop;
+    uint8_t direction;
+    uint8_t missile_angle;
+    uint8_t pellet_angle;
+    uint8_t spread_interval;
+    uint8_t spread_speed;
+    bool meteor_active;
+    bool hp_bar_filled;
+    bool setup_active;
+    bool entrance_active;
+    bool entrance_waiting;
+    bool defeating;
+    bool finished;
 } B10J;
 
 static B10J m_B10J;
@@ -372,7 +388,8 @@ static void M_AimedStatic(
         m_B10J.pattern_state = Boss_Rank(64, 72, 80, 88);
         Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     }
-    int16_t x[4], y[4];
+    int16_t x[4];
+    int16_t y[4];
     if (m_B10J.status.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Loop(assets, miko, x, y, true);
@@ -420,7 +437,8 @@ static void M_AimedMissiles(
         m_B10J.pattern_state = Boss_Rank(96, 104, 112, 118);
         Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     }
-    int16_t x[4], y[4];
+    int16_t x[4];
+    int16_t y[4];
     if (m_B10J.status.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Loop(assets, miko, x, y, true);
@@ -466,7 +484,10 @@ static void M_TwoSquares(const B10J_ASSETS *const assets, const PTN *const miko)
         m_B10J.pattern_state = Boss_Rank(64, 72, 80, 88);
         Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     }
-    int16_t x[4], y[4], x2[4], y2[4];
+    int16_t x[4];
+    int16_t y[4];
+    int16_t x2[4];
+    int16_t y2[4];
     if (m_B10J.status.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Corners(x2, y2, sq->radius, (uint8_t)-sq->angle);
@@ -644,7 +665,8 @@ static void M_Pillars(const B10J_ASSETS *const assets, const PTN *const miko)
             || m_B10J.status.frame <= 100 + i * 20) {
             continue;
         }
-        const int16_t x = m_B10J.pillar_x[i], bottom = m_B10J.pillar_bottom[i];
+        const int16_t x = m_B10J.pillar_x[i];
+        const int16_t bottom = m_B10J.pillar_bottom[i];
         if (m_B10J.pillar_time[i] > 32) {
             Shape_EllipseArcPut(
                 x, bottom, m_B10J.pillar_time[i], m_B10J.pillar_time[i], 7, 4,
@@ -694,7 +716,8 @@ static void M_Halfcircle(const B10J_ASSETS *const assets, const PTN *const miko)
         m_B10J.pattern_state = Boss_Rank(40, 45, 50, 55);
         Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     }
-    int16_t x[4], y[4];
+    int16_t x[4];
+    int16_t y[4];
     if (m_B10J.status.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Loop(assets, miko, x, y, true);
@@ -732,7 +755,8 @@ static void M_Spray(const B10J_ASSETS *const assets, const PTN *const miko)
         m_B10J.pattern_state = Boss_Rank(32, 40, 48, 56);
         Sound_Effect(SOUND_EFFECT_TELEGRAPH);
     }
-    int16_t x[4], y[4];
+    int16_t x[4];
+    int16_t y[4];
     if (m_B10J.status.frame % 8 == 0) {
         M_Corners(x, y, sq->radius, sq->angle);
         M_Loop(assets, miko, x, y, true);

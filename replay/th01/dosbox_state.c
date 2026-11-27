@@ -31,9 +31,12 @@ static_assert(M_PELLET_COUNT * M_PELLET_SIZE + 27 == 0x1083);
 
 // The cards: far pointers to their arrays, and the count.
 typedef struct [[gnu::packed]] {
-    uint16_t left[2], top[2], flag[2];
+    uint16_t left[2];
+    uint16_t top[2];
+    uint16_t flag[2];
     int16_t count;
-    uint16_t flip_frame[2], hp[2];
+    uint16_t flip_frame[2];
+    uint16_t hp[2];
 } M_CARDS;
 static_assert(sizeof(M_CARDS) == 0x16);
 
@@ -158,7 +161,8 @@ static uint32_t M_HashCards(
         const uint16_t hp_at[2] = { (uint16_t)(cards.hp[0] + i), cards.hp[1] };
         const uint16_t frame_at[2] = { (uint16_t)(cards.flip_frame[0] + i * 2),
                                        cards.flip_frame[1] };
-        uint8_t flag, hp;
+        uint8_t flag;
+        uint8_t hp;
         int16_t frame;
         M_Far(flag_at, &flag, sizeof(flag));
         M_Far(hp_at, &hp, sizeof(hp));

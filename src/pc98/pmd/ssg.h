@@ -6,7 +6,9 @@ typedef struct {
     PMD_PART channels[3];
     PMD_CONTROL *control;
     PMD_CHIP *chip;
-    uint8_t noise, volume_down, effect_id;
+    uint8_t noise;
+    uint8_t volume_down;
+    uint8_t effect_id;
     bool effect_active;
 } MUSIC_SSG;
 

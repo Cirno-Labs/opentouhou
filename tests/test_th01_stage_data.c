@@ -181,7 +181,8 @@ TEST(layouts_share_an_arena_and_release_together)
     uint8_t bytes[M_SIZE] = {};
     STORAGE storage;
     const ALLOCATOR allocator = M_Init(&storage);
-    STAGE_DATA first, second;
+    STAGE_DATA first;
+    STAGE_DATA second;
     bytes[22] = 8;
     CHECK(Result_Ignore(M_Load(bytes, sizeof(bytes), &allocator, &first)));
     bytes[22] = 1;

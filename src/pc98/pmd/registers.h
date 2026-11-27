@@ -4,7 +4,11 @@
 #include "pc98/pmd/chip.h"
 
 typedef struct {
-    uint8_t channel, algorithm_feedback, carriers, levels[4], key_slots;
+    uint8_t channel;
+    uint8_t algorithm_feedback;
+    uint8_t carriers;
+    uint8_t levels[4];
+    uint8_t key_slots;
 } PMD_FM;
 
 typedef struct {

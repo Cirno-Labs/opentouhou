@@ -12,7 +12,8 @@ typedef struct {
     ARENA arena;
     ALLOCATOR allocator;
     size_t allocations;
-    uint8_t bytes[2][806], effect_bytes[118];
+    uint8_t bytes[2][806];
+    uint8_t effect_bytes[118];
     MDRV_TRACK tracks[2][10];
     MDRV_MUSIC songs[2];
     MDRV_EFFECT effects[2];
@@ -153,7 +154,8 @@ TEST(real_producer_chunks_and_bus_controls_share_one_timeline)
     CHECK(Result_Ignore(GameAudio_Prepare(&fixture.allocator, &output)));
     MDRV *const twin = M_Play(&fixture);
     const size_t before = fixture.allocations;
-    float whole[3200], split[3200];
+    float whole[3200];
+    float split[3200];
     GameAudio_Render(output, fixture.mdrv, 1600);
     M_Mix(whole, 1600);
     GameAudio_Free(output);
@@ -189,8 +191,10 @@ TEST(mixer_routes_components_with_gain_mute_and_pause)
     CHECK(Result_Ignore(Audio_SetMasterVolume(0.5f)));
     CHECK(Result_Ignore(Audio_SetGroupVolume(AUDIO_GROUP_MUSIC, 0.5f)));
     CHECK(Result_Ignore(Audio_SetGroupVolume(AUDIO_GROUP_EFFECTS, 0.25f)));
-    float previous_input[2][2] = {}, previous_output[2][2] = {};
-    bool music = false, effects = false;
+    float previous_input[2][2] = {};
+    float previous_output[2][2] = {};
+    bool music = false;
+    bool effects = false;
     for (size_t i = 0; i < 800; i++) {
         const bool pause = i >= 200 && i < 400;
         const bool mute = i >= 400 && i < 600;

@@ -196,8 +196,10 @@ typedef struct {
     int16_t type;
     int16_t color;
     VEC3 pos;
-    float angle1, angle2;
-    float speed1, speed2;
+    float angle1;
+    float angle2;
+    float speed1;
+    float speed2;
     BULLET_COMMAND commands[BULLET_COMMAND_COUNT]; // copied into each bullet
 
     struct {
@@ -234,7 +236,8 @@ typedef struct {
     ANM_VM origin; // the glow at the start; only drawing reads it
     VEC3 pos;
     float angle;
-    float start_offset, end_offset;
+    float start_offset;
+    float end_offset;
     float max_length;
     float width;
     // Holds the width its start has grown to; a clear ends it from there.

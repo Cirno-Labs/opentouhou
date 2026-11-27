@@ -83,7 +83,8 @@ TEST(raw_entries_use_utf8_names_casefolding_and_independent_readers)
     Vfs_MountSource(vfs, "", source, 0);
     M_CheckContent(vfs, "TEST.txt", "hello", 5);
     M_CheckContent(vfs, "あ.txt", "kana", 4);
-    READER first, second;
+    READER first;
+    READER second;
     const bool first_opened =
         Result_Ignore(Vfs_Open(vfs, "test.txt", VFS_IN_MEMORY, &first));
     const bool second_opened =
@@ -413,7 +414,8 @@ TEST(source_and_readers_share_an_arena_until_it_is_reset)
     VFS_SOURCE *source;
     CHECK(Result_Ignore(
         M_Open(bytes, sizeof(bytes), Arena_Allocator(&arena), &source)));
-    READER first, second;
+    READER first;
+    READER second;
     CHECK(Result_Ignore(
         source->funcs->open(source, "first.txt", VFS_STREAM, &first)));
     CHECK(Result_Ignore(

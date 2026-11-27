@@ -85,10 +85,14 @@ typedef struct {
         ANM_VM stage_name;
         ANM_VM song_name;
         int32_t song; // the song of g_Stage.data that song_name shows
-        ANM_VM bomb_portrait, bomb_name, bomb_bar;
+        ANM_VM bomb_portrait;
+        ANM_VM bomb_name;
+        ANM_VM bomb_bar;
         const char *bomb_text;
         float bomb_width;
-        ANM_VM spell_portrait, spell_name, spell_bar;
+        ANM_VM spell_portrait;
+        ANM_VM spell_name;
+        ANM_VM spell_bar;
         const char *spell_text;
         float spell_width;
     } banners;

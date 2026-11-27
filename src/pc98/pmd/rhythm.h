@@ -5,7 +5,9 @@
 typedef struct {
     PMD_CHIP *chip;
     PMD_CONTROL *control;
-    uint8_t levels[6], volume, volume_down;
+    uint8_t levels[6];
+    uint8_t volume;
+    uint8_t volume_down;
 } PMD_RHYTHM;
 
 // Routes PMD86 percussion through one YM2608. Init borrows chip and control;

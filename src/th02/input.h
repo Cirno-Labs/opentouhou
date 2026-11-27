@@ -24,13 +24,33 @@ typedef enum {
 
 // One frame's key state, with arrows and keypad apart.
 typedef struct {
-    bool up, down, left, right;
-    bool up_left, up_right, down_left, down_right;
-    bool shot, space, bomb, cancel, ok, q;
-    bool extra_group_0, extra_group_3, extra_group_5;
-    bool keypad_up, keypad_down, keypad_left, keypad_right;
-    bool extra_group_1, extra_group_2, extra_group_4;
-    bool extra_group_6, extra_group_7, logo_aliases;
+    bool up;
+    bool down;
+    bool left;
+    bool right;
+    bool up_left;
+    bool up_right;
+    bool down_left;
+    bool down_right;
+    bool shot;
+    bool space;
+    bool bomb;
+    bool cancel;
+    bool ok;
+    bool q;
+    bool extra_group_0;
+    bool extra_group_3;
+    bool extra_group_5;
+    bool keypad_up;
+    bool keypad_down;
+    bool keypad_left;
+    bool keypad_right;
+    bool extra_group_1;
+    bool extra_group_2;
+    bool extra_group_4;
+    bool extra_group_6;
+    bool extra_group_7;
+    bool logo_aliases;
     // Local date as YYYYMMDD.
     uint32_t date;
     // The frame's clock samples (th02/clock.h): the times at which the

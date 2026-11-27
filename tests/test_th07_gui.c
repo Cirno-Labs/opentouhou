@@ -675,7 +675,8 @@ TEST(the_last_stages_count_the_lives_and_the_bombs)
 {
     static const struct {
         int32_t stage;
-        bool practice, replay;
+        bool practice;
+        bool replay;
         int32_t replay_stage;
         bool counts;
     } cases[] = {

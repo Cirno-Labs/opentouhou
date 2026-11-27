@@ -17,10 +17,12 @@ typedef enum {
 } STAGE_PELLET_GROUP;
 
 typedef struct {
-    uint32_t score, frame;
+    uint32_t score;
+    uint32_t frame;
     BOSS boss;
     uint16_t time;
-    int16_t combo, maximum_combo;
+    int16_t combo;
+    int16_t maximum_combo;
     uint8_t flip_cycle;
     bool cleared;
     // True until the first stage transition of the session.
@@ -30,7 +32,9 @@ typedef struct {
 } STAGE_GAMEPLAY;
 
 typedef struct {
-    bool active, waiting, boss;
+    bool active;
+    bool waiting;
+    bool boss;
 } STAGE_ORB_COMPOSITE;
 
 extern STAGE_GAMEPLAY g_Stage;

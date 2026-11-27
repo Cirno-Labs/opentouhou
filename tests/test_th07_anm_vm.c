@@ -299,7 +299,8 @@ TEST(conditional_jumps)
 {
     static const struct {
         int16_t opcode;
-        ANM_ARG taken[2], not_taken[2];
+        ANM_ARG taken[2];
+        ANM_ARG not_taken[2];
     } cases[] = {
         { 67, { I(3), I(3) }, { I(3), I(4) } },
         { 68, { F(1.5f), F(1.5f) }, { F(1.5f), F(2.0f) } },

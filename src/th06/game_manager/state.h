@@ -8,7 +8,10 @@
 
 // A rectangle in play-area pixels.
 typedef struct {
-    float x, y, width, height;
+    float x;
+    float y;
+    float width;
+    float height;
 } PLAY_RECT;
 
 // Holds the state of the game being played.
@@ -89,7 +92,8 @@ typedef struct {
 
     struct {
         float distance;
-        float offset_x, offset_y;
+        float offset_x;
+        float offset_y;
         float zoom;
         VIEWPORT viewport;
         MAT4 view;

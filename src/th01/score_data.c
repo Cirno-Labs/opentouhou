@@ -65,7 +65,9 @@ static void M_Defaults(SCORE_TABLE *const table)
 static RESULT M_Read(READER *const reader, SCORE_TABLE *const out)
 {
     SCORE_TABLE table = {};
-    char magic[7], names[SCORE_PLACES][16], routes[SCORE_PLACES][2];
+    char magic[7];
+    char names[SCORE_PLACES][16];
+    char routes[SCORE_PLACES][2];
     Reader_ReadBytes(reader, magic, sizeof(magic));
     Reader_ReadBytes(reader, names, sizeof(names));
     for (int32_t i = 0; i < SCORE_PLACES; i++) {
@@ -90,7 +92,8 @@ static RESULT M_Read(READER *const reader, SCORE_TABLE *const out)
 
 static RESULT M_Write(WRITER *const writer, const SCORE_TABLE *const table)
 {
-    char names[SCORE_PLACES][16], routes[SCORE_PLACES][2];
+    char names[SCORE_PLACES][16];
+    char routes[SCORE_PLACES][2];
     for (int32_t i = 0; i < SCORE_PLACES; i++) {
         MUST(M_Encode(table->entries[i].name, 16, names[i]));
         MUST(M_Encode(table->entries[i].route, 2, routes[i]));

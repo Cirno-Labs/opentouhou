@@ -5,7 +5,8 @@
 // Shared backing for the synthetic assets of each boss.
 typedef struct {
     const GAMEPLAY_ASSETS *assets;
-    uint8_t *pixels, *coverage;
+    uint8_t *pixels;
+    uint8_t *coverage;
     PI_IMAGE image;
 } TH01_TEST_BOSS_BACKING;
 

@@ -18,8 +18,13 @@
 
 // Mirrors the table at 102h of hooktest.asm.
 typedef struct {
-    uint16_t site_regs, site_vsync, site_vblank_end;
-    uint16_t regs_value, frames, irqs, limit;
+    uint16_t site_regs;
+    uint16_t site_vsync;
+    uint16_t site_vblank_end;
+    uint16_t regs_value;
+    uint16_t frames;
+    uint16_t irqs;
+    uint16_t limit;
 } M_TABLE;
 
 typedef struct {

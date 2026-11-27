@@ -9,7 +9,9 @@
 #define OPENING_TRACK_COUNT 15
 
 typedef struct {
-    PI_IMAGE title, revealed, window;
+    PI_IMAGE title;
+    PI_IMAGE revealed;
+    PI_IMAGE window;
     GAME_TEXT_FONT font;
 } OPENING_ASSETS;
 
@@ -50,8 +52,11 @@ typedef struct {
 
 typedef struct {
     OPENING_PHASE phase;
-    uint32_t random, frame_rand, track_starts;
-    int32_t count1, track;
+    uint32_t random;
+    uint32_t frame_rand;
+    uint32_t track_starts;
+    int32_t count1;
+    int32_t track;
 } OPENING;
 
 extern const OPENING *const g_Opening;

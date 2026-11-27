@@ -139,7 +139,8 @@ static void M_MarisaAFocused(const ANM_DRAW *const draw)
 {
     static const struct {
         int32_t trail; // -1 for the star itself
-        float z, scale;
+        float z;
+        float scale;
     } passes[] = {
         { -1, 0.3f, 3.2f },
         { 3, 0.32f, 2.2f },

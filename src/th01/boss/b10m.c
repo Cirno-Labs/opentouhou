@@ -57,23 +57,34 @@ typedef enum {
 } B10M_PHASE;
 
 typedef struct {
-    int16_t x[5], y[5], radius;
-    MATH16_VECTOR center, velocity;
-    int16_t phase, angle;
+    int16_t x[5];
+    int16_t y[5];
+    int16_t radius;
+    MATH16_VECTOR center;
+    MATH16_VECTOR velocity;
+    int16_t phase;
+    int16_t angle;
 } B10M_PENTAGRAM;
 
 typedef struct {
     BOSS_ENTITY eyes[5];
     BOSS_HIT hit;
-    PALETTE boss_palette, post_defeat;
+    PALETTE boss_palette;
+    PALETTE post_defeat;
     BOSS_DEFEAT defeat;
     B10M_PENTAGRAM pentagram;
     BOSS_STATE status;
     int16_t pattern_interval;
-    int16_t pattern_state, subphase, target_left, after_hit_frame;
+    int16_t pattern_state;
+    int16_t subphase;
+    int16_t target_left;
+    int16_t after_hit_frame;
     int8_t iterations;
-    uint8_t angle, angle_southeast;
-    bool hp_bar_filled, defeating, finished;
+    uint8_t angle;
+    uint8_t angle_southeast;
+    bool hp_bar_filled;
+    bool defeating;
+    bool finished;
 } B10M;
 
 static B10M m_B10M;
@@ -686,7 +697,8 @@ static void M_Star(
     const int32_t order[] = { 0, 2, 4, 1, 3, 0 };
     const B10M_PENTAGRAM *const p = &m_B10M.pentagram;
     for (int32_t i = 0; i < 5; i++) {
-        const int32_t a = order[i], z = order[i + 1];
+        const int32_t a = order[i];
+        const int32_t z = order[i + 1];
         if (restore) {
             LineBullets_Erase(p->x[a], p->y[a], p->x[z], p->y[z]);
         } else {

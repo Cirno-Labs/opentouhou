@@ -5,8 +5,11 @@
 typedef struct {
     OPNA *opna;
     uint64_t next_b;
-    uint8_t timer_b, timer_control, prescaler;
-    uint8_t registers[16], last_noise;
+    uint8_t timer_b;
+    uint8_t timer_control;
+    uint8_t prescaler;
+    uint8_t registers[16];
+    uint8_t last_noise;
 } PMD_CHIP;
 
 void PmdChip_Init(
