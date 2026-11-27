@@ -1,4 +1,5 @@
 #include "th02/boss.h"
+#include "th02/gameplay/memory.h"
 #include "th02/hooks.h"
 #include "th02/shots/hit.h"
 #include "th02/palette.h"
@@ -51,9 +52,7 @@ void Boss_SelectPatterns(
     PATTERN_BANK *const target, const PATTERN_BANK *const bank,
     const GFX_COLOR *const palette)
 {
-    // The gameplay working set also tracks which patterns are selected
-    // (GameplayMemory_SelectPatterns); that bookkeeping isn't wired in yet,
-    // since th02/gameplay hasn't landed.
+    GameplayMemory_SelectPatterns(bank);
     memcpy(
         &target->entries[128], &bank->entries[128],
         (PATTERN_LIMIT - 128) * sizeof(PATTERN));

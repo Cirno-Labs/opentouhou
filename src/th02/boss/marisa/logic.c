@@ -14,6 +14,7 @@
 #include "th02/dialogue/render.h"
 #include "th02/dialogue/sequence.h"
 #include "th02/dialogue/summon.h"
+#include "th02/gameplay/memory.h"
 #include "th02/items.h"
 #include "th02/palette.h"
 #include "th02/player.h"
@@ -1654,9 +1655,7 @@ static bool M_TalkUpdate(
             sequence->view.wipe(sequence->view.context);
             Video_Clear();
             Marisa_DrawScene(boss, patterns);
-            // GameplayMemory_CopyPage isn't landed yet; this is its
-            // underlying primitive.
-            Video_CopyPage(g_Stage->scroll.front);
+            Result_Ignore(GameplayMemory_CopyPage(g_Stage->scroll.front));
             Video_AccessPage(g_Stage->scroll.back);
             Video_ShowPage(g_Stage->scroll.front);
             m_Talk.phase = MARISA_TALK_DONE;

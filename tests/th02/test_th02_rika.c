@@ -10,7 +10,9 @@
 #include "../../src/th02/shots/pool.c"
 #include "../../src/th02/shots/fire.c"
 #include "../../src/th02/stage_effects.c"
+#include "../../src/th02/bomb/logic.c"
 #include "th02/boss/rika.c"
+#include "th02/stage/flow.c"
 #include "th02/grcg.h"
 #include "th02/pillars.h"
 #include "th02/player.h"
@@ -19,6 +21,7 @@
 
 #include "core/base/arena.h"
 #include "test.h"
+#include "th02_sound.h"
 
 typedef struct {
     ARENA arena;
@@ -241,5 +244,76 @@ TEST(stage_one_midboss_enters_through_live_modules_and_activates_weather)
     CHECK_EQ_INT(g_Sparks->acceleration_x, -1);
     CHECK_EQ_INT(g_Stage->world.frame, world);
     CHECK_EQ_INT(f.session.frame, session);
+    Arena_Free(&f.arena);
+}
+
+TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
+{
+    FIXTURE f;
+    M_Init(&f);
+    f.session.frame = 713;
+    Stage_Begin(f.session.stage, f.session.reduce_effects);
+    StageFlow_Begin(f.session.stage, f.session.reduce_effects);
+    const BOSS_ASSETS assets = { 0 };
+    const BOSS_MUSIC music = { 0 };
+    const TH02_INPUT input = { 0 };
+    TEST_SOUND sound;
+    TestSound_Init(&sound);
+    p_Stage->world.frame = 713;
+    p_Stage->scroll.line = 0;
+    p_Stage->scroll.done = 1;
+    CHECK_EQ_INT(
+        StageFlow_Enter(&f.patterns, &assets, &music, &f.session, &input),
+        STAGE_FLOW_BOSS_STARTED);
+    CHECK_EQ_INT(g_Stage->world.frame, 0);
+    CHECK(g_Pillars->enabled);
+    p_BossState->damage = 2259;
+    p_BossState->phase_frame = 40;
+    m_Bomb.active = 1;
+    const uint16_t next = g_Sparks->next;
+    StageFlow_Invalidate(f.session.stage, f.session.reduce_effects);
+    CHECK_EQ_INT(
+        StageFlow_Update(&f.patterns, &assets, &music, &f.session, &input),
+        STAGE_FLOW_RUNNING);
+    CHECK_EQ_INT(g_Stage->world.progression, 1);
+    CHECK_EQ_INT(BossFight_State()->damage, 2260);
+    CHECK_EQ_INT(BossFight_State()->defeated, 0);
+    CHECK_EQ_INT(m_Score.delta, 1);
+    SoundEffects_Update();
+    TestSound_Check(&sound, 4);
+    CHECK_EQ_INT(
+        g_Video.pages[g_Video.drawing_page][48 * VIDEO_WIDTH + 191], 15);
+    p_Stage->world.frame = 2;
+    StageFlow_Invalidate(f.session.stage, f.session.reduce_effects);
+    CHECK_EQ_INT(
+        StageFlow_Update(&f.patterns, &assets, &music, &f.session, &input),
+        STAGE_FLOW_RUNNING);
+    CHECK_EQ_INT(g_Stage->world.progression, 1);
+    CHECK_EQ_INT(BossFight_State()->damage, 2261);
+    CHECK_EQ_INT(BossFight_State()->defeated, 1);
+    CHECK_EQ_INT(m_Score.delta, 20002);
+    CHECK_EQ_INT(g_Player->invincibility, 200);
+    CHECK_EQ_INT(m_Rika.frame, 2);
+    CHECK_EQ_INT(g_Sparks->next, next);
+    m_Bomb.active = 0;
+    for (int frame = 1; frame <= 80; frame++) {
+        StageFlow_Invalidate(f.session.stage, f.session.reduce_effects);
+        CHECK_EQ_INT(
+            StageFlow_Update(&f.patterns, &assets, &music, &f.session, &input),
+            STAGE_FLOW_RUNNING);
+        CHECK_EQ_INT(g_Stage->world.progression, frame == 80 ? 2 : 1);
+        CHECK_EQ_INT(m_Rika.kill_frame, frame == 80 ? 0 : frame);
+    }
+    CHECK_EQ_INT(g_Sparks->next, (next + 160) % SPARK_COUNT);
+    CHECK_EQ_INT(m_Score.delta, 20002);
+    CHECK_EQ_INT(f.session.frame, 713);
+    CHECK_EQ_INT(g_Stage->world.frame, 2);
+    p_Stage->world.progression = 2;
+    CHECK_EQ_INT(
+        StageFlow_End(&f.patterns, &assets, &music, &f.session, &input),
+        STAGE_FLOW_CLEARED);
+    CHECK_EQ_INT(g_Stage->world.progression, 2);
+    CHECK_EQ_INT(f.session.stage, 0);
+    TestSound_Free(&sound);
     Arena_Free(&f.arena);
 }

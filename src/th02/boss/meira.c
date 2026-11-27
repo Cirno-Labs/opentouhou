@@ -488,7 +488,7 @@ static void M_Square(BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
     }
 }
 
-static void M_Burst(BOSS_STATE *const boss)
+static void M_MeiraBurst(BOSS_STATE *const boss)
 {
     const ENTITY_POINT position = *M_Position(boss);
     SoundEffects_Play(SOUND_EFFECT_PATTERN_FIRE);
@@ -509,7 +509,7 @@ static void M_Triple(BOSS_STATE *const boss, const PATTERN_BANK *const patterns)
         boss->sprite = 142;
         m_Meira.flower_group = BULLET_RANDOM_ONE;
     } else if (frame == 99 || frame == 108 || frame == 116) {
-        M_Burst(boss);
+        M_MeiraBurst(boss);
     } else if (frame >= 100 && frame < 116) {
         boss->sprite = 142;
     } else if (frame > 116) {
