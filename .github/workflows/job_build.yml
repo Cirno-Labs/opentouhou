@@ -161,11 +161,13 @@ jobs:
           stage=build/win-tests
           for dir in build/win/debug build/win/othpatch/debug; do
             if [ -e "$dir/meson-info/intro-tests.json" ]; then
-              mkdir -p "$stage/$dir/meson-info" "$stage/$dir/tests"
+              mkdir -p "$stage/$dir/meson-info"
               cp "$dir/meson-info/meson-info.json" "$dir/meson-info/intro-tests.json" "$stage/$dir/meson-info/"
-              for file in "$dir"/tests/*.exe "$dir"/tests/*.dll; do
-                strip --strip-all -o "$stage/$file" "$file"
-              done
+              find "$dir/tests" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 |
+                while IFS= read -r -d '' file; do
+                  mkdir -p "$stage/$(dirname "$file")"
+                  strip --strip-all -o "$stage/$file" "$file"
+                done
             fi
           done
           tar -C "$stage" -cf - . | zstd -15 --long=27 -T0 -q -o build/win-tests.tar.zst

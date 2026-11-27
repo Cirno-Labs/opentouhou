@@ -76,8 +76,21 @@ def load_tests(build_dir: Path, source_dir: Path, wrapper: list[str]) -> list[Te
         (directories["build"], build_dir.resolve()),
         (directories["source"], source_dir.resolve()),
     ]
+    entries = json.loads((build_dir / "meson-info/intro-tests.json").read_text())
+    # On Windows a test finds the DLLs it links, such as libtest_deps.dll
+    # one directory up, only through PATH. meson lists their directories per
+    # test, but not for a test that runs its program through a script, so
+    # every test gets all of the build's.
+    libraries = list(
+        dict.fromkeys(
+            str(Path(local_path(path, prefixes)))
+            for entry in entries
+            for path in entry.get("extra_paths", [])
+            if local_path(path, prefixes) != path
+        )
+    )
     tests = []
-    for entry in json.loads((build_dir / "meson-info/intro-tests.json").read_text()):
+    for entry in entries:
         cmd = []
         for index, arg in enumerate(entry["cmd"]):
             arg = local_path(arg, prefixes)
@@ -89,6 +102,10 @@ def load_tests(build_dir: Path, source_dir: Path, wrapper: list[str]) -> list[Te
         env = {
             name: local_path(value, prefixes) for name, value in entry["env"].items()
         }
+        if libraries:
+            env["PATH"] = os.pathsep.join(
+                [*libraries, env.get("PATH", os.environ.get("PATH", ""))]
+            )
         workdir = entry["workdir"]
         tests.append(
             Test(
