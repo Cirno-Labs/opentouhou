@@ -1,4 +1,5 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/input.c"
 #include "th01/orb.h"

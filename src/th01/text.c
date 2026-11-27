@@ -1,4 +1,4 @@
-#include "th01/text.h"
+#include "th01/text_private.h"
 
 #include "core/base/array.h"
 #include "core/base/assert.h"
@@ -9,17 +9,17 @@
 
 typedef ARRAY(GAME_TEXT_GLYPH) GLYPH_ARRAY;
 
-static bool M_Scalar(const uint32_t value)
+bool Text_Scalar(const uint32_t value)
 {
     return value <= 0x10ffff && (value < 0xd800 || value > 0xdfff);
 }
 
-static uint32_t M_Normalize(const uint32_t value)
+uint32_t Text_Normalize(const uint32_t value)
 {
     return value < 0x20 || (value >= 0x7f && value <= 0x9f) ? 0x20 : value;
 }
 
-static uint8_t M_Width(const uint32_t value)
+uint8_t Text_Width(const uint32_t value)
 {
     return value < 0x80 || (value >= 0xff61 && value <= 0xff9f) ? 8 : 16;
 }
@@ -32,7 +32,7 @@ static size_t M_Decode(
     }
     const uint8_t first = (uint8_t)text[0];
     if (first < 0x80) {
-        *value = M_Normalize(first);
+        *value = Text_Normalize(first);
         return 1;
     }
     const size_t length = first >= 0xc2 && first <= 0xdf ? 2
@@ -50,16 +50,16 @@ static size_t M_Decode(
         }
         result = (result << 6) | (byte & 0x3f);
     }
-    if (!M_Scalar(result) || (length == 2 && result < 0x80)
+    if (!Text_Scalar(result) || (length == 2 && result < 0x80)
         || (length == 3 && result < 0x800)
         || (length == 4 && result < 0x10000)) {
         return 0;
     }
-    *value = M_Normalize(result);
+    *value = Text_Normalize(result);
     return length;
 }
 
-static int M_Compare(const void *const first, const void *const second)
+int Text_Compare(const void *const first, const void *const second)
 {
     const uint32_t a = ((const GAME_TEXT_GLYPH *)first)->codepoint;
     const uint32_t b = ((const GAME_TEXT_GLYPH *)second)->codepoint;
@@ -75,14 +75,14 @@ static RESULT M_Characters(const char *const text, GLYPH_ARRAY *const glyphs)
             M_Decode(text + offset, size - offset, &codepoint);
         FAIL_IF(length == 0, "Invalid UTF-8 at text offset %zu", offset);
         const GAME_TEXT_GLYPH glyph = { .codepoint = codepoint,
-                                        .width = M_Width(codepoint) };
+                                        .width = Text_Width(codepoint) };
         Array_Append(glyphs, glyph);
         offset += length;
     }
     if (glyphs->count > 1) {
         qsort(
             glyphs->items, (size_t)glyphs->count, sizeof(*glyphs->items),
-            M_Compare);
+            Text_Compare);
     }
     int32_t count = 0;
     for (int32_t i = 0; i < glyphs->count; i++) {
@@ -141,47 +141,6 @@ static void M_Fill(
     }
 }
 
-RESULT GameText_LoadGlyphs(
-    const GAME_TEXT_GLYPH *const glyphs, const int32_t count,
-    const ALLOCATOR *const allocator, GAME_TEXT_FONT *const out)
-{
-    *out = (GAME_TEXT_FONT) {};
-    FAIL_IF(
-        count < 0 || (count != 0 && glyphs == nullptr),
-        "Invalid graphics glyph array");
-    for (int32_t i = 0; i < count; i++) {
-        FAIL_IF(
-            !M_Scalar(glyphs[i].codepoint) || glyphs[i].codepoint == 0
-                || glyphs[i].width != M_Width(glyphs[i].codepoint),
-            "Invalid graphics glyph %d", i);
-        for (int32_t y = 0; y < 16; y++) {
-            FAIL_IF(
-                glyphs[i].width == 8 && (glyphs[i].rows[y] & 0xff) != 0,
-                "Halfwidth glyph %d has pixels outside its cell", i);
-        }
-        FAIL_IF(
-            M_Normalize(glyphs[i].codepoint) != glyphs[i].codepoint,
-            "Control glyph %d must use the space code point", i);
-    }
-    if (count == 0) {
-        return OK;
-    }
-    const size_t size = Mem_ArrSize((size_t)count, sizeof(*glyphs));
-    GAME_TEXT_GLYPH *const sorted = Mem_Dup(glyphs, size);
-    qsort(sorted, (size_t)count, sizeof(*sorted), M_Compare);
-    for (int32_t i = 1; i < count; i++) {
-        if (sorted[i - 1].codepoint == sorted[i].codepoint) {
-            Mem_Free(sorted);
-            return FAIL("Duplicate graphics glyph");
-        }
-    }
-    GAME_TEXT_GLYPH *const copied = Allocator_Alloc(allocator, size);
-    memcpy(copied, sorted, size);
-    Mem_Free(sorted);
-    *out = (GAME_TEXT_FONT) { copied, count };
-    return OK;
-}
-
 RESULT GameText_Load(
     const FONT_ROM *const rom, const char *const characters,
     const ALLOCATOR *const allocator, GAME_TEXT_FONT *const out)
@@ -210,7 +169,7 @@ RESULT GameText_Load(
 const GAME_TEXT_GLYPH *GameText_Find(
     const GAME_TEXT_FONT *const font, const uint32_t codepoint)
 {
-    const uint32_t normalized = M_Normalize(codepoint);
+    const uint32_t normalized = Text_Normalize(codepoint);
     int32_t left = 0;
     int32_t right = font->count;
     while (left < right) {
@@ -242,7 +201,7 @@ static int32_t M_Measure(
             M_Decode(text + offset, size - offset, &codepoint);
         ASSERT(length != 0);
         const GAME_TEXT_GLYPH *const glyph = GameText_Find(font, codepoint);
-        extent += (glyph != nullptr ? glyph->width : M_Width(codepoint))
+        extent += (glyph != nullptr ? glyph->width : Text_Width(codepoint))
             + style->spacing;
         ASSERT(extent - style->spacing <= INT32_MAX);
         offset += length;
@@ -277,7 +236,7 @@ void GameText_Draw(
             M_Decode(text + offset, size - offset, &codepoint);
         const GAME_TEXT_GLYPH *const glyph = GameText_Find(font, codepoint);
         const uint8_t cell_width =
-            glyph != nullptr ? glyph->width : M_Width(codepoint);
+            glyph != nullptr ? glyph->width : Text_Width(codepoint);
         if (pen > VIDEO_WIDTH - cell_width) {
             break;
         }

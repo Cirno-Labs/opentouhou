@@ -1,5 +1,7 @@
 #include "tests/th01/th01_assets.h"
 
+#include "tests/th01/th01_text_fixture.h"
+
 #include "core/base/assert.h"
 
 #include <string.h>

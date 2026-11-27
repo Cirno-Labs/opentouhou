@@ -1,5 +1,6 @@
 #include "tests/test.h"
 #include "tests/test_fonts.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "th01/bonus.h"
 #include "th01/hud.h"

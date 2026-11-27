@@ -11,6 +11,7 @@ test(
   ),
   suite: 'unit',
 )
+th01_text_fixture = files('th01_text_fixture.c')
 th01_boss_fixtures = files(
   'th01_assets_b05.c',
   'th01_assets_b10j.c',
@@ -26,6 +27,7 @@ test(
     'test_th01_main',
     'test_th01_main.c',
     'th01_assets.c',
+    th01_text_fixture,
     th01_boss_fixtures,
     '../audio_backend_fake.c',
     implicit_include_directories: false,
@@ -42,6 +44,7 @@ test(
   executable(
     'test_th01_text',
     'test_th01_text.c',
+    th01_text_fixture,
     implicit_include_directories: false,
     link_with: [
       th01_lib, core_text_lib, core_image_lib, core_io_lib, core_base_lib,
@@ -57,6 +60,7 @@ test(
   executable(
     'test_th01_opening',
     'test_th01_opening.c',
+    th01_text_fixture,
     '../input_backend_fake.c',
     implicit_include_directories: false,
     link_with: [th01_lib, core_text_lib, core_image_lib, core_input_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_io_lib, core_base_lib],
@@ -88,13 +92,26 @@ test(
   ),
   suite: 'unit',
 )
+th01_text_fixture_parts = [
+  'boss_b05', 'boss_b10j', 'boss_b10m', 'boss_b15j', 'boss_b15m', 'boss_b20j',
+  'boss_b20m', 'boss_hit', 'hud', 'items', 'route_select', 'stage', 'timer',
+  'bonus',
+]
 foreach part : ['bos', 'boss_b05', 'boss_b10m', 'boss_b10j', 'boss_b15j', 'boss_b15m', 'boss_b20j', 'boss_b20m', 'boss_entity', 'boss_render', 'boss_hit', 'boss_defeat', 'route_select', 'sprite', 'shape', 'particles', 'wave', 'interleave', 'transition', 'scale2x', 'hud', 'hud_hp', 'extend', 'timer', 'items', 'bonus', 'shots', 'pellet_assets', 'shootout_lasers', 'pellets', 'missiles', 'line_bullets', 'player', 'bomb', 'miss', 'vsync_irq', 'wait', 'finite', 'orb', 'settings', 'score_data', 'score', 'ending', 'session', 'invincibility', 'gameplay', 'video', 'palette', 'tram', 'ptn', 'grc', 'grf', 'grz', 'stage_data', 'scene', 'stage_objects', 'stage', 'stage_obstacles']
+  part_sources = []
+  if part == 'gameplay'
+    part_sources = ['../audio_backend_fake.c', 'th01_assets.c', th01_text_fixture] + th01_boss_fixtures
+  elif part == 'grz'
+    part_sources = ['th01_grz_fixture.c']
+  elif part in th01_text_fixture_parts
+    part_sources = th01_text_fixture
+  endif
   test(
     'th01/' + part,
     executable(
       'test_th01_' + part,
       'test_th01_' + part + '.c',
-      part == 'gameplay' ? ['../audio_backend_fake.c', 'th01_assets.c'] + th01_boss_fixtures : [],
+      part_sources,
       implicit_include_directories: false,
       link_with: [th01_lib, core_hash_lib, core_config_lib, core_ini_lib, core_vfs_lib, core_image_lib, core_io_lib, core_base_lib] + (part in ['gameplay', 'score', 'ending'] ? [core_text_lib] : []) + (part == 'gameplay' ? [core_audio_lib] : []),
       dependencies: [pc98_dep, sdl3] + (part == 'gameplay' ? [avcodec, avutil, avformat, swresample, cc_libm] : []),

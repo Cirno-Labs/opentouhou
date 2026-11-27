@@ -25,6 +25,7 @@
 #include "th01/session.h"
 #include "th01/shots.h"
 #include "th01/sound.c"
+#include "th01/stage_private.h"
 #include "th01/timer.c"
 
 #include "core/audio.h"
@@ -34,6 +35,13 @@
 
 #include <SDL3/SDL.h>
 #include <string.h>
+
+// Whether the Orb composite is blocked waiting on frame_delay(1). No
+// caller outside tests needs it.
+static bool M_StageOrbWaiting(void)
+{
+    return p_OrbComposite.waiting;
+}
 
 typedef struct {
     ARENA arena;
@@ -142,7 +150,7 @@ TEST(ordinary_loop_consumes_real_input_and_suspends_after_motion)
     CHECK_EQ_INT(m_Player.left, 308);
     CHECK_EQ_INT(m_Orb.left, 596);
     CHECK(M_InLife(GP_LIFE_ORB));
-    CHECK(StageOrb_Waiting());
+    CHECK(M_StageOrbWaiting());
     const PLAYER player = m_Player;
     const ORB orb = m_Orb;
     const uint32_t rng = g_Rng;

@@ -1,4 +1,5 @@
 #include "tests/test.h"
+#include "tests/th01/th01_grz_fixture.h"
 #include "th01/grz.h"
 
 #include "core/base/arena.h"

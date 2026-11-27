@@ -69,9 +69,6 @@ void Stage_UpdateObstacles(const PTN *sprites, bool reset);
 // Zeroes the Orb composite state for a new world.
 void StageOrb_Init(void);
 
-// Returns whether the Orb composite is blocked waiting on frame_delay(1).
-bool StageOrb_Waiting(void);
-
 // Runs the Orb composite through its frame delay: Begin moves the Orb,
 // Resume continues when count1 is ready, then pellets_update and the cards.
 // Keep the composite and its assets stable while suspended.

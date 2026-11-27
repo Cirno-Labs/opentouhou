@@ -1,4 +1,4 @@
-#include "th01/grz.h"
+#include "th01/grz_private.h"
 
 #include <string.h>
 
@@ -7,16 +7,7 @@
 #define M_GRZ_HEADER_SIZE 96
 #define M_GRX_HEADER_SIZE 64
 
-typedef struct {
-    int32_t stream_count;
-    uint16_t rle_size;
-    uint16_t planar_size;
-    GFX_COLOR palette[16];
-    const uint8_t *rle;
-    const uint8_t *planar;
-} GRX_RECORD;
-
-static RESULT M_ReadHeader(READER *const reader, GRX_RECORD *const record)
+RESULT Grz_ReadHeader(READER *const reader, GRX_RECORD *const record)
 {
     uint8_t magic[4];
     Reader_ReadBytes(reader, magic, sizeof(magic));
@@ -81,7 +72,7 @@ static RESULT M_Validate(const GRX_RECORD *const record)
     return OK;
 }
 
-static RESULT M_ReadBody(READER *const reader, GRX_RECORD *const record)
+RESULT Grz_ReadBody(READER *const reader, GRX_RECORD *const record)
 {
     record->rle = Reader_Borrow(reader, record->rle_size);
     record->planar = Reader_Borrow(
@@ -90,7 +81,7 @@ static RESULT M_ReadBody(READER *const reader, GRX_RECORD *const record)
     return M_Validate(record);
 }
 
-static void M_Publish(
+void Grz_Publish(
     const GRX_RECORD *const record, const ALLOCATOR *const allocator,
     GRX *const out)
 {
@@ -138,26 +129,6 @@ static void M_Publish(
     *out = image;
 }
 
-RESULT Grx_Load(
-    READER *const reader, const ALLOCATOR *const allocator, GRX *const out)
-{
-    *out = (GRX) {};
-    GRX_RECORD record = {};
-    MUST(M_ReadHeader(reader, &record));
-    const size_t size =
-        record.rle_size + (size_t)record.stream_count * record.planar_size;
-    uint8_t *const data = Reader_ReadAlloc(reader, size, &g_HeapAllocator);
-    MUST(Reader_Result(reader));
-    READER body;
-    Reader_OpenBuffer(&body, data, size, nullptr);
-    const RESULT result = M_ReadBody(&body, &record);
-    if (IS_OK(result)) {
-        M_Publish(&record, allocator, out);
-    }
-    Mem_Free(data);
-    return result;
-}
-
 RESULT Grz_Load(
     READER *const reader, const ALLOCATOR *const allocator, GRZ *const out)
 {
@@ -191,7 +162,7 @@ RESULT Grz_Load(
     size_t working_size = 0;
     for (int32_t i = 0; i < count; i++) {
         Reader_Seek(reader, start + offsets[i]);
-        MUST(M_ReadHeader(reader, &records[i]));
+        MUST(Grz_ReadHeader(reader, &records[i]));
         sizes[i] = records[i].rle_size
             + (size_t)records[i].stream_count * records[i].planar_size;
         FAIL_IF(
@@ -209,7 +180,7 @@ RESULT Grz_Load(
         if (IS_OK(result)) {
             READER body;
             Reader_OpenBuffer(&body, data + position, sizes[i], nullptr);
-            result = M_ReadBody(&body, &records[i]);
+            result = Grz_ReadBody(&body, &records[i]);
         }
         position += sizes[i];
     }
@@ -220,7 +191,7 @@ RESULT Grz_Load(
     if (IS_OK(result)) {
         GRZ images = { .count = count };
         for (int32_t i = 0; i < count; i++) {
-            M_Publish(&records[i], allocator, &images.images[i]);
+            Grz_Publish(&records[i], allocator, &images.images[i]);
         }
         *out = images;
     }

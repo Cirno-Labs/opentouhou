@@ -20,9 +20,7 @@ typedef struct {
     GRX images[GRZ_MAX_IMAGES];
 } GRZ;
 
-// Loads HGRX data as stream_count (1..16) 640 by 400 index images sharing
-// one coverage; the palette expands to opaque eight-bit colors.
-RESULT Grx_Load(READER *reader, const ALLOCATOR *allocator, GRX *out);
-
-// Loads all 1..16 HGRX images of an HGRZ container as Grx_Load does.
+// Loads all 1..16 HGRX images of an HGRZ container, each as stream_count
+// (1..16) 640 by 400 index images sharing one coverage; the palette
+// expands to opaque eight-bit colors.
 RESULT Grz_Load(READER *reader, const ALLOCATOR *allocator, GRZ *out);

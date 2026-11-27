@@ -32,12 +32,6 @@ typedef struct {
     bool reverse;
 } GAME_TEXT_STYLE;
 
-// Copies and sorts bitmap glyphs, which need unique code points and the
-// character's cell width: 8 pixels for ASCII and halfwidth kana, else 16.
-RESULT GameText_LoadGlyphs(
-    const GAME_TEXT_GLYPH *glyphs, int32_t count, const ALLOCATOR *allocator,
-    GAME_TEXT_FONT *out);
-
 // Caches the distinct characters of a UTF-8 string with their cells from rom.
 // A character without a cell is cached blank, with a warning.
 RESULT GameText_Load(

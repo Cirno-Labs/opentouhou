@@ -1,4 +1,5 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_video.h"
 #include "th01/opening.c"
 #include "th01/opening.h"

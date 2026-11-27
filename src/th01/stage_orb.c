@@ -1,32 +1,27 @@
 #include "th01/pellets.h"
 #include "th01/session.h"
-#include "th01/stage.h"
+#include "th01/stage_private.h"
 
 #include "core/base/assert.h"
 
 #include <string.h>
 
-static STAGE_ORB_COMPOSITE m_OrbComposite;
+STAGE_ORB_COMPOSITE p_OrbComposite;
 
 void StageOrb_Init(void)
 {
-    memset(&m_OrbComposite, 0, sizeof(m_OrbComposite));
-}
-
-bool StageOrb_Waiting(void)
-{
-    return m_OrbComposite.waiting;
+    memset(&p_OrbComposite, 0, sizeof(p_OrbComposite));
 }
 
 bool Stage_BeginOrbComposite(
     const PTN *const sprites, const GAME_TEXT_FONT *const font,
     const PELLET_ASSETS *const pellet_assets)
 {
-    ASSERT(!m_OrbComposite.active);
+    ASSERT(!p_OrbComposite.active);
     Orb_AdvanceMotion(&g_Stage.combo);
-    m_OrbComposite.boss = g_Session.stage_id % 5 == 4;
-    m_OrbComposite.active = true;
-    m_OrbComposite.waiting = false;
+    p_OrbComposite.boss = g_Session.stage_id % 5 == 4;
+    p_OrbComposite.active = true;
+    p_OrbComposite.waiting = false;
     return Stage_ResumeOrbComposite(sprites, font, pellet_assets);
 }
 
@@ -34,20 +29,20 @@ bool Stage_ResumeOrbComposite(
     const PTN *const sprites, const GAME_TEXT_FONT *const font,
     const PELLET_ASSETS *const pellet_assets)
 {
-    if (!m_OrbComposite.active) {
+    if (!p_OrbComposite.active) {
         return true;
     }
-    if (m_OrbComposite.waiting) {
+    if (p_OrbComposite.waiting) {
         if (!VSyncIrq_DelayReady(1)) {
             return false;
         }
-        m_OrbComposite.waiting = false;
+        p_OrbComposite.waiting = false;
     } else if (!VSyncIrq_DelayReady(1)) {
-        m_OrbComposite.waiting = true;
+        p_OrbComposite.waiting = true;
         return false;
     }
     Pellets_UpdateAndRender(pellet_assets, sprites);
-    if (!m_OrbComposite.boss) {
+    if (!p_OrbComposite.boss) {
         Stage_HitTestCards();
         Stage_UpdateObstacles(sprites, false);
     }
@@ -64,13 +59,13 @@ bool Stage_ResumeOrbComposite(
         Orb_Erase(
             sprites, g_Orb->previous_left, g_Orb->previous_top, Orb_Image());
     }
-    if (!m_OrbComposite.boss) {
+    if (!p_OrbComposite.boss) {
         Stage_UpdateCards(sprites, font);
     }
     if (!g_Orb->in_portal && !g_Player->is_hit) {
         Orb_Put(sprites, g_Orb->left, g_Orb->top, Orb_Image());
     }
     Orb_KeepPosition();
-    m_OrbComposite.active = false;
+    p_OrbComposite.active = false;
     return true;
 }

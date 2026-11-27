@@ -1,4 +1,5 @@
 #include "tests/test.h"
+#include "tests/th01/th01_text_fixture.h"
 #include "tests/th01/th01_world.h"
 #include "th01/boss/b15j.c"
 #include "th01/boss/boss.c"
