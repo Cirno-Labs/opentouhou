@@ -26,9 +26,9 @@ TEST(spawn_checks_keep_order_and_easy_slow_cycle)
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
     CHECK_EQ_INT(speed, 6);
     CHECK(BulletSpawn_Skip(23, 10, false, &speed));
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     CHECK(BulletSpawn_Skip(24, 10, false, &speed));
-    m_Bomb.active = 0;
+    p_Bomb->active = 0;
     CHECK(!BulletSpawn_Skip(24, 10, true, &speed));
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
     CHECK_EQ_INT(speed, 6);

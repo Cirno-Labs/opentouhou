@@ -66,7 +66,7 @@ TEST(full_bank_consumes_overrides_and_wrapped_cycle_keeps_consecutive_attempts)
     m_Items.overflow = 17;
     m_Items.slots[0].age = 23;
     m_Items.slots[0].speed_y = 99;
-    m_Miss.item_gameover = 7;
+    p_Miss->item_gameover = 7;
     p_PointNumbers->slots[0].state = ENTITY_ACTIVE;
     p_PointNumbers->slots[0].age = 23;
     Items_ResetStage(2);
@@ -75,7 +75,7 @@ TEST(full_bank_consumes_overrides_and_wrapped_cycle_keeps_consecutive_attempts)
     CHECK_EQ_INT(p_PointNumbers->slots[0].age, 23);
     CHECK_EQ_INT(p_PointNumbers->operation, 10);
     CHECK_EQ_INT(p_PointNumbers->operand, 2);
-    CHECK_EQ_INT(m_Miss.item_gameover, 0);
+    CHECK_EQ_INT(p_Miss->item_gameover, 0);
     CHECK_EQ_INT(m_Items.frame, 123);
     CHECK_EQ_INT(m_Items.overflow, 17);
     CHECK_EQ_INT(m_Items.cycle, 99);
@@ -102,7 +102,7 @@ TEST(partial_recovery_uses_player_zone_and_gameover_drops_do_not_consume_rng)
     for (size_t i = 1; i < ITEM_COUNT; i++) {
         m_Items.slots[i].state = ENTITY_REMOVE;
     }
-    m_Player.current.x = 128;
+    p_Player->current.x = 128;
     p_Rng->ring[0] = 1;
     Items_Drop(300, 320);
     CHECK_EQ_INT(m_Items.slots[0].kind, ITEM_POWER);
@@ -113,7 +113,7 @@ TEST(partial_recovery_uses_player_zone_and_gameover_drops_do_not_consume_rng)
     for (size_t i = 0; i < ITEM_COUNT; i++) {
         m_Items.slots[i].state = ENTITY_FREE;
     }
-    m_Miss.item_gameover = 1;
+    p_Miss->item_gameover = 1;
     Items_Drop(300, 320);
     CHECK_EQ_INT(p_Rng->cursor, 2);
     for (size_t i = 0; i < 5; i++) {
@@ -135,7 +135,7 @@ TEST(capped_bomb_rewards_precede_removal_effect_skill_commit_and_ranked_delta)
         .kind = ITEM_BOMB,
         .position = { { 200, 1600 }, { 200, 1600 } },
     };
-    m_Player.current = (ENTITY_POINT) { 200, 100 };
+    p_Player->current = (ENTITY_POINT) { 200, 100 };
     p_Score->bombs = 5;
     p_Score->delta = 10;
     p_Performance->collected = 16;

@@ -24,8 +24,8 @@ TEST(stage_four_midboss_entry_targets_old_position_and_moves_page_zero)
     m_Marisa.position = (ENTITY_POINT) { 100, 80 };
     BossFight_MidbossUpdate(
         &game->assets.patterns, f.session.stage, (uint8_t)f.session.rank);
-    CHECK_EQ_INT(m_Shots.target.x, 124);
-    CHECK_EQ_INT(m_Shots.target.y, 104);
+    CHECK_EQ_INT(p_Shots->target.x, 124);
+    CHECK_EQ_INT(p_Shots->target.y, 104);
     CHECK_EQ_INT(BossFight_State()->position[0].x, 72);
     CHECK_EQ_INT(BossFight_State()->position[0].y, -14);
     CHECK_EQ_INT(BossFight_State()->position[1].x, 64);
@@ -55,7 +55,7 @@ TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
     m_Marisa.phase = 1;
     TestBossFight_State()->phase_frame = 2;
     TestBossFight_State()->damage = 399;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     p_Stage->world.midboss_row = 944;
     M_MidbossUpdateCore(
@@ -88,8 +88,8 @@ TEST(stage_four_midboss_kill_requires_a_new_hit_inside_the_rolled_y_band)
     CHECK_EQ_INT(BossFight_State()->phase_frame, 0);
     CHECK_EQ_INT(m_Marisa.direction, -1);
     CHECK_EQ_INT(g_Stage->world.midboss_row, 1632);
-    CHECK_EQ_INT(m_Shots.target.x, -1);
-    CHECK_EQ_INT(m_Shots.target.y, -1);
+    CHECK_EQ_INT(p_Shots->target.x, -1);
+    CHECK_EQ_INT(p_Shots->target.y, -1);
     CHECK(!M_MidbossInvalidateCore(TestBossFight_State()));
     Arena_Free(&f.arena);
 }
@@ -111,7 +111,7 @@ TEST(stage_four_second_midboss_enters_right_and_drops_a_life)
     TestBossFight_State()->phase_frame = 3;
     TestBossFight_State()->position[0].y = 100;
     TestBossFight_State()->damage = 399;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     p_Score->lives = 4;
     M_MidbossUpdateCore(
@@ -136,7 +136,7 @@ TEST(stage_four_midboss_timeout_does_not_award_and_stops_before_hit_testing)
     TestBossFight_State()->position[0] = (ENTITY_POINT) { 4, 100 };
     TestBossFight_State()->phase_frame = 51;
     TestBossFight_State()->damage = 500;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     M_MidbossUpdateCore(
         TestBossFight_State(), &game->assets.patterns, (uint8_t)f.session.rank);
@@ -421,9 +421,9 @@ TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
     m_Marisa.bit_state[0] = 0;
     m_Marisa.bit_hits[0] = 108;
     m_Marisa.bit_position[0][0] = (ENTITY_POINT) { 300, 120 };
-    m_Shots.weapon.level = 3;
-    m_Player.power = 80;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 3;
+    p_Player->power = 80;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->position[0] = (ENTITY_POINT) { 308 * 16, 128 * 16 };
@@ -451,7 +451,7 @@ TEST(marisa_orbs_count_hit_calls_and_keep_real_shot_aging)
     CHECK_EQ_INT(p_Score->delta, 5010);
     CHECK_EQ_INT(p_Rng->cursor, (uint8_t)(cursor + 1));
     CHECK_EQ_INT(g_Items->slots[0].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_Shots.target.x, -1);
+    CHECK_EQ_INT(p_Shots->target.x, -1);
     Arena_Free(&f.arena);
 }
 
@@ -466,7 +466,7 @@ TEST(marisa_bomb_masks_and_body_multiplier_keep_distinct_damage_gates)
     M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 2;
     m_Marisa.pattern = 1;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
         M_UpdateCore(
@@ -519,7 +519,7 @@ TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
     m_Marisa.pattern = 1;
     m_Marisa.damage_enable = 1;
     TestBossFight_State()->damage = 899;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
         M_UpdateCore(
@@ -529,7 +529,7 @@ TEST(marisa_real_lethal_hit_runs_one_hundred_defeat_updates)
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(BossFight_State()->damage, 900);
     CHECK_EQ_INT(p_Score->delta, 20001);
-    CHECK_EQ_INT(m_Player.invincibility, 200);
+    CHECK_EQ_INT(p_Player->invincibility, 200);
     CHECK_EQ_INT(m_Marisa.defeat_frame, 1);
     for (int frame = 2; frame < 100; frame++) {
         M_InvalidateCore(TestBossFight_State(), f.session.reduce_effects);

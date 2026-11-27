@@ -67,8 +67,8 @@ TEST(hit_reads_live_shots_and_adds_scaled_damage_to_the_running_total)
     Score_Init();
     p_Stage->scroll.back = 1;
     p_Stage->world.frame = 2;
-    m_Shots.weapon.level = 0;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 0;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->age = 0;

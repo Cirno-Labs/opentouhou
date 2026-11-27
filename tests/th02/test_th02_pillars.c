@@ -23,7 +23,7 @@ static void M_Init(FIXTURE *const f)
     memset(f, 0, sizeof(*f));
     TestPlayerGraphics_Init(&f->graphics);
     Random_Reset();
-    memset(&m_Player, 0, sizeof(m_Player));
+    memset(p_Player, 0, sizeof(*p_Player));
     Background_Init();
     Pillars_Init();
     Pillars_ResetStage(3);
@@ -146,10 +146,10 @@ TEST(active_collision_has_strict_x_edges_and_uses_new_phase_after_duration)
         Pillars_Add(224, 96, cases[i].duration, 0x6f);
         p_Pillars->slots[0].cel = 5;
         p_Pillars->slots[0].phase = 4;
-        m_Player.current = (ENTITY_POINT) { cases[i].x, cases[i].y };
-        m_Player.invincibility = 255;
+        p_Player->current = (ENTITY_POINT) { cases[i].x, cases[i].y };
+        p_Player->invincibility = 255;
         Pillars_Update(M_Pages(0, 399), 0, &f.graphics.patterns);
-        CHECK_EQ_INT(m_Player.hit, cases[i].hit);
+        CHECK_EQ_INT(p_Player->hit, cases[i].hit);
         CHECK_EQ_INT(p_Pillars->slots[0].duration, cases[i].duration - 1);
         M_Free(&f);
     }
@@ -206,8 +206,8 @@ TEST(pillar_cycles_keep_pool_order_scroll_pixels_collision_and_sound)
                 TEST_SOUND sound;
                 TestSound_Init(&sound);
                 Video_AccessPage(page);
-                m_Player.current = (ENTITY_POINT) { 224, 96 };
-                m_Player.invincibility = 255;
+                p_Player->current = (ENTITY_POINT) { 224, 96 };
+                p_Player->invincibility = 255;
                 Pillars_Add(224, 96, durations[duration], 111);
                 Pillars_Add(32, 112, 3, 103);
                 Pillars_Add(415, 128, 3, 111);
@@ -220,7 +220,7 @@ TEST(pillar_cycles_keep_pool_order_scroll_pixels_collision_and_sound)
                     const int32_t values[] = {
                         p_Pillars->current.x,  p_Pillars->current.y,
                         p_Pillars->frames_new, p_Pillars->enabled,
-                        m_Player.hit,          p_Rng->cursor,
+                        p_Player->hit,         p_Rng->cursor,
                         g_Grcg->mode,          g_Video.drawing_page,
                     };
                     for (size_t i = 0; i < ARRAY_SIZE(values); i++) {

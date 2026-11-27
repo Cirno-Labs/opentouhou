@@ -204,8 +204,8 @@ TEST(spawn_patterns_layers_pages_and_partial_pools_keep_state_and_rng)
                         for (size_t pattern = 0; pattern < ARRAY_SIZE(patterns);
                              pattern++) {
                             Player_Init();
-                            m_Player.current = (ENTITY_POINT) { 208, 336 };
-                            m_Bomb.active = bomb;
+                            p_Player->current = (ENTITY_POINT) { 208, 336 };
+                            p_Bomb->active = bomb;
                             p_Performance->value = performance[perf];
                             memset(p_Bullets, 0xa5, sizeof(*p_Bullets));
                             BulletSpawn_Init(rank);
@@ -248,7 +248,7 @@ TEST(pellet_layers_preserve_unwritten_bytes_and_the_other_page)
     m_Spawn.layers = 2;
     Random_Reset();
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
     p_Performance->value = 0;
     Bullets_AddPellets(1, 100, 40, 0, BULLET_RING4, 128);
     CHECK_EQ_INT(p_Rng->cursor, 0);
@@ -286,7 +286,7 @@ TEST(partial_random_volley_consumes_only_allocated_slots)
     p_Rng->ring[1] = 64;
     p_Rng->ring[2] = 31;
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
     p_Performance->value = 0;
     Bullets_AddSprites(0, 100, 40, 3, BULLET_RANDOM_SPEED, 300, 64);
     CHECK_EQ_INT(p_Rng->cursor, 3);
@@ -306,7 +306,7 @@ TEST(gravity_bypasses_tuning_but_full_and_rejected_spawns_keep_rng)
     BulletSpawn_Init(0);
     Random_Reset();
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
     p_Performance->value = -48;
     Bullets_AddSprites(0, 100, 40, 0, BULLET_MOTION_GRAVITY, 55, 3);
     CHECK_EQ_INT(p_Bullets->slots[0].speed, 3);
@@ -319,10 +319,10 @@ TEST(gravity_bypasses_tuning_but_full_and_rejected_spawns_keep_rng)
     Bullets_AddPellets(0, 100, 40, 0, BULLET_RANDOM_SPEED, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
     CHECK_EQ_INT(p_Rng->cursor, 0);
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     Bullets_AddPellets(0, 100, 40, 0, BULLET_RANDOM_SPEED, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
-    m_Bomb.active = 0;
+    p_Bomb->active = 0;
     Bullets_AddPellets(0, 23, 40, 0, BULLET_RANDOM_SPEED, 3);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 1);
     CHECK_EQ_INT(p_Rng->cursor, 0);
@@ -349,7 +349,7 @@ static FRAME_FIXTURE *M_Frame(void)
     Arena_Init(&fixture->arena, "bullet frame", 1024 * 1024);
     Video_Init(Arena_Allocator(&fixture->arena));
     TestClip_Set(0, 0, 639, 399);
-    m_Player.current = (ENTITY_POINT) { 208, 336 };
+    p_Player->current = (ENTITY_POINT) { 208, 336 };
     fixture->patterns.entries[50] = (PATTERN) {
         .size = 0x0210,
         .data = fixture->tiny,
@@ -426,7 +426,7 @@ TEST(slowing_rounds_toward_zero_and_homing_keeps_byte_phase_wrap)
     FRAME_FIXTURE *const fixture = M_Frame();
     p_Bullets->motion_b = 256;
     p_Bullets->turn_limit = 1;
-    m_Player.current = (ENTITY_POINT) { 91, 92 };
+    p_Player->current = (ENTITY_POINT) { 91, 92 };
     p_Bullets->slots[0] = M_Bullet(BULLET_MOTION_SLOW_THEN_AIM);
     p_Bullets->slots[1] = M_Bullet(BULLET_MOTION_HOMING);
     p_Bullets->slots[1].phase = 255;
@@ -475,7 +475,7 @@ TEST(drift_and_corner_bounces_wrap_bytes_before_testing_signed_limits)
 TEST(collision_edges_override_existing_hit_and_removed_slots_do_not_draw)
 {
     FRAME_FIXTURE *const fixture = M_Frame();
-    m_Player.hit = 255;
+    p_Player->hit = 255;
     for (size_t i = 0; i < 4; i++) {
         p_Bullets->slots[i] = M_Bullet(0);
         p_Bullets->slots[i].kind = BULLET_PELLET;
@@ -486,7 +486,7 @@ TEST(collision_edges_override_existing_hit_and_removed_slots_do_not_draw)
     p_Bullets->slots[2].position[0] = (ENTITY_POINT) { 214 * 16, 348 * 16 };
     p_Bullets->slots[3].position[0] = (ENTITY_POINT) { 20 * 16 + 15, 100 * 16 };
     M_Step(fixture);
-    CHECK_EQ_INT(m_Player.hit, 1);
+    CHECK_EQ_INT(p_Player->hit, 1);
     CHECK_EQ_INT(p_Bullets->slots[0].state, ENTITY_REMOVE);
     CHECK_EQ_INT(p_Bullets->slots[1].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(p_Bullets->slots[2].state, ENTITY_ACTIVE);

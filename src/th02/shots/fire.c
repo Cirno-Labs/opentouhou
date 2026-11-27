@@ -251,7 +251,7 @@ static void M_Parameters(SHOTS_WEAPON *const weapon)
     weapon->parameter[1] = weapon->level == 9 ? weapon->maximum[1] : 0x3f;
 }
 
-static void M_Emit(const uint8_t back)
+void Fire_Emit(const uint8_t back)
 {
     const uint8_t type = g_Player->shot_type;
     ASSERT(type < 3 && back < 2 && p_Shots->weapon.level <= 9);
@@ -347,7 +347,7 @@ void Shots_Fire(const uint8_t back, const uint16_t keys)
     if (weapon->cycle[0] != 255) {
         if (weapon->cooldown[0] == 0) {
             M_Parameters(weapon);
-            M_Emit(back);
+            Fire_Emit(back);
             SoundEffects_Play(SOUND_EFFECT_SHOT);
             weapon->cooldown[0] = 8;
             weapon->cycle[0]++;
@@ -375,7 +375,7 @@ void Shots_Fire(const uint8_t back, const uint16_t keys)
                     }
                 }
             }
-            M_Emit(back);
+            Fire_Emit(back);
             weapon->cooldown[1] = 8;
             weapon->cycle[1]++;
         } else {

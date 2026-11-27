@@ -1,7 +1,6 @@
-#include "th02/miss.h"
-
 #include "th02/hud.h"
 #include "th02/items.h"
+#include "th02/miss_private.h"
 #include "th02/performance.h"
 #include "th02/player.h"
 #include "th02/score.h"
@@ -18,6 +17,7 @@
 
 static MISS m_Miss;
 const MISS *const g_Miss = &m_Miss;
+MISS *const p_Miss = &m_Miss;
 
 static const uint8_t m_Power[] = { 1, 1, 4, 8, 16, 24, 32, 40, 52, 64 };
 

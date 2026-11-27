@@ -25,7 +25,7 @@ static void M_MeiraDash(FIXTURE *const f, const unsigned flowers)
     TestBossFight_State()->sprite = 141;
     M_Place(TestBossFight_State());
     M_BeginCore(TestBossFight_State(), (uint8_t)f->session.rank);
-    m_Player.current = (ENTITY_POINT) { 0, 336 };
+    p_Player->current = (ENTITY_POINT) { 0, 336 };
     M_MeiraStep(f, 90);
     M_MeiraStep(f, 19);
     for (unsigned i = 0; i < flowers; i++) {
@@ -79,8 +79,8 @@ TEST(stage_two_midboss_enters_through_modules_and_activates_lightning)
     CHECK_EQ_INT(BossFight_State()->position[1].y, -16);
     CHECK_EQ_INT(BossFight_State()->defeated, 7);
     CHECK_EQ_INT(m_Midboss.kill_frame, 13);
-    CHECK_EQ_INT(m_Shots.target.x, 216);
-    CHECK_EQ_INT(m_Shots.target.y, 65);
+    CHECK_EQ_INT(p_Shots->target.x, 216);
+    CHECK_EQ_INT(p_Shots->target.y, 65);
     CHECK_EQ_INT(g_StageEffects->lightning_frame, 1);
     CHECK(BossFight_MidbossInvalidate(f.session.stage));
     StageEffects_Update(
@@ -105,8 +105,8 @@ TEST(
     TestBossFight_State()->phase_frame = 100;
     TestBossFight_State()->damage = 70;
     p_Stage->world.frame = 2;
-    m_Shots.weapon.level = 0;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 0;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->position[p_Stage->scroll.back] = (ENTITY_POINT) { 208 * 16, 80 * 16 };
@@ -143,9 +143,9 @@ TEST(stage_two_midboss_defeat_clears_shared_flag_after_three_sprite_bursts)
     TestBossFight_State()->phase_frame = 320;
     TestBossFight_State()->damage = 380;
     p_Stage->scroll.line = 240;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.midboss_active = 1;
-    m_Player.invincibility = 17;
+    p_Player->invincibility = 17;
     M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->damage, 381);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
@@ -171,9 +171,9 @@ TEST(stage_two_midboss_defeat_clears_shared_flag_after_three_sprite_bursts)
     CHECK_EQ_INT(expected, 72);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 0);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
-    CHECK_EQ_INT(m_Shots.target.x, -1);
-    CHECK_EQ_INT(m_Shots.target.y, -1);
-    CHECK_EQ_INT(m_Player.invincibility, 17);
+    CHECK_EQ_INT(p_Shots->target.x, -1);
+    CHECK_EQ_INT(p_Shots->target.y, -1);
+    CHECK_EQ_INT(p_Player->invincibility, 17);
     CHECK_EQ_INT(p_Score->delta, 20002);
     CHECK_EQ_INT(g_Stage->world.midboss_active, 1);
     CHECK(!BossFight_MidbossInvalidate(f.session.stage));
@@ -207,7 +207,7 @@ TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
     CHECK_EQ_INT(g_Bullets->slots[1].speed, 45);
     CHECK_EQ_INT(g_Bullets->slots[1].position[1].x, 220 * 16);
     TestBossFight_State()->phase_frame = 399;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(g_Bullets->slots[2].state, ENTITY_FREE);
     CHECK(memcmp(p_Rng, &before_random, sizeof(before_random)) == 0);
@@ -226,7 +226,7 @@ TEST(stage_two_midboss_timeout_waits_for_no_hit_without_award_or_sound)
     TestBossFight_State()->phase_frame = 1600;
     TestBossFight_State()->damage = 380;
     p_Stage->scroll.line = 240;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 2;
     M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
@@ -375,8 +375,8 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
     }
     TestBossFight_State()->phase_frame = 32;
     TestBossFight_State()->damage = 2399;
-    m_Bomb.active = 1;
-    m_Player.current =
+    p_Bomb->active = 1;
+    p_Player->current =
         (ENTITY_POINT) { flower->position.x - 16, flower->position.y - 1 };
     CHECK_EQ_INT(
         M_UpdateCore(
@@ -386,8 +386,8 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
     CHECK_EQ_INT(BossFight_State()->damage, 2400);
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(p_Score->delta, 30001);
-    CHECK_EQ_INT(m_Player.invincibility, 200);
-    CHECK_EQ_INT(m_Player.hit, 1);
+    CHECK_EQ_INT(p_Player->invincibility, 200);
+    CHECK_EQ_INT(p_Player->hit, 1);
     CHECK_EQ_INT(flower->frames_left, 0);
     const uint32_t world_frame = g_Stage->world.frame;
     for (int frame = 1; frame < 96; frame++) {
@@ -399,7 +399,7 @@ TEST(meira_lethal_hit_runs_flowers_and_clears_only_after_96_defeat_updates)
             1);
         CHECK_EQ_INT(m_Meira.kill_frame, frame);
     }
-    m_Bomb.active = 0;
+    p_Bomb->active = 0;
     M_MeiraDash(&f, 1);
     const uint8_t remaining = flower->frames_left;
     CHECK_EQ_INT(flower->flag, ENTITY_ACTIVE);

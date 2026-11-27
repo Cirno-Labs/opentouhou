@@ -4,20 +4,17 @@
 #include "tests/th02/th02_random_fixture.h"
 #include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
-#include "th02/bomb/logic.c"
+#include "th02/bomb/private.h"
 #include "th02/boss/fight.h"
 #include "th02/boss/stones.c"
 #include "th02/bullets/private.h"
 #include "th02/enemies.c"
 #include "th02/grcg.h"
 #include "th02/items.h"
-#include "th02/miss.c"
-#include "th02/performance.c"
+#include "th02/miss_private.h"
 #include "th02/pillars.h"
-#include "th02/player/logic.c"
-#include "th02/player/render.c"
-#include "th02/shots/fire.c"
-#include "th02/shots/pool.c"
+#include "th02/player/private.h"
+#include "th02/shots/private.h"
 #include "th02/sparks.h"
 #include "th02/stage/private.h"
 #include "th02/stage_effects.h"
@@ -100,14 +97,14 @@ TEST(stage_three_midboss_keeps_shared_arrays_and_entrance_hit_ownership)
     BossFight_MidbossUpdate(
         &f.patterns, f.session.stage, (uint8_t)f.session.rank);
     CHECK_EQ_INT(BossFight_State()->phase_frame, 1);
-    CHECK_EQ_INT(m_Shots.target.x, 31);
-    CHECK_EQ_INT(m_Shots.target.y, 25);
+    CHECK_EQ_INT(p_Shots->target.x, 31);
+    CHECK_EQ_INT(p_Shots->target.y, 25);
     CHECK_EQ_INT(m_Stones.midboss_position[0][0].x, 32);
     CHECK_EQ_INT(m_Stones.midboss_position[1][1].x, 352);
     CHECK_EQ_INT(m_Stones.midboss_position[1][0].y, -16);
     p_Stage->scroll.line = 200;
     p_Stage->scroll.moved = 1;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     m_Stones.damage[0] = 280;
     m_Stones.damage[1] = 280;
@@ -137,8 +134,8 @@ TEST(stage_three_midboss_keeps_shared_arrays_and_entrance_hit_ownership)
     CHECK_EQ_INT(m_Stones.flag[0], 2);
     CHECK_EQ_INT(m_Stones.flag[1], 2);
     CHECK_EQ_INT(m_Stones.midboss_kill_frame[0], 0);
-    CHECK_EQ_INT(m_Shots.target.x, -1);
-    CHECK_EQ_INT(m_Shots.target.y, -1);
+    CHECK_EQ_INT(p_Shots->target.x, -1);
+    CHECK_EQ_INT(p_Shots->target.y, -1);
     CHECK(!M_MidbossInvalidateCore());
     CHECK_EQ_INT(g_Stage->world.frame, frame);
     CHECK_EQ_INT(f.session.frame, session_frame);
@@ -186,8 +183,8 @@ TEST(stage_three_midboss_uses_real_shot_aging_and_raw_damage)
     p_BossState->phase_frame = 128;
     m_Stones.midboss_position[0][0] = (ENTITY_POINT) { 32, 100 };
     m_Stones.midboss_position[1][0] = (ENTITY_POINT) { 352, 100 };
-    m_Shots.weapon.level = 3;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 3;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->position[0] = (ENTITY_POINT) { 48 * 16, 110 * 16 };
     shot->sprite = 50;
@@ -263,12 +260,12 @@ TEST(dormant_stones_consume_real_shots_without_accumulating_damage)
     p_Stage->scroll.line = 0;
     p_Stage->scroll.back = 0;
     p_Stage->scroll.front = 1;
-    SHOT *const shot = &m_Shots.slots[0];
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->position[0] = (ENTITY_POINT) { 144 * 16, 40 * 16 };
     shot->sprite = 50;
     shot->velocity.y = -128;
-    m_Shots.weapon.level = 3;
+    p_Shots->weapon.level = 3;
     CHECK_EQ_INT(
         M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
     CHECK_EQ_INT(p_Score->delta, 5);
@@ -298,7 +295,7 @@ TEST(stones_keep_individual_item_rewards_and_deferred_final_cleanup)
     p_Stage->scroll.line = 0;
     m_Stones.phase = STONES_NORTH_FINAL;
     m_Stones.pattern = 2;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     for (int i = 0; i < STONE_COUNT; i++) {
         m_Stones.flag[i] = STONE_ACTIVE;
@@ -307,7 +304,7 @@ TEST(stones_keep_individual_item_rewards_and_deferred_final_cleanup)
     CHECK_EQ_INT(
         M_UpdateCore(p_BossState, &f.patterns, (uint8_t)f.session.rank), 1);
     CHECK_EQ_INT(p_Score->delta, 150005);
-    CHECK_EQ_INT(m_Player.invincibility, 200);
+    CHECK_EQ_INT(p_Player->invincibility, 200);
     CHECK_EQ_INT(g_Items->slots[0].kind, ITEM_BOMB);
     CHECK_EQ_INT(g_Items->slots[1].kind, ITEM_BIG_POWER);
     CHECK_EQ_INT(g_Items->slots[2].kind, ITEM_BIG_POWER);

@@ -66,7 +66,7 @@ TEST(extra_tile_midboss_emits_with_live_scroll_performance_and_bomb_state)
         p_Stage->scroll.line = 399;
         TestBossFight_State()->phase_frame = 300;
         p_Performance->value = 96;
-        m_Bomb.active = bombing;
+        p_Bomb->active = bombing;
         BulletSpawn_Init(SESSION_EXTRA_RANK);
         m_Sigma.tiles[0] = (SIGMA_MIDBOSS_TILE) {
             .flag = 6,
@@ -146,14 +146,14 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     m_Sigma.phase = SIGMA_FINAL;
     m_Sigma.circle_frame_mask = 255;
     p_Stage->world.extra_boss_frames = 900;
-    m_Shots.slots[0].state = ENTITY_ACTIVE;
-    m_Shots.slots[0].age = 3;
+    p_Shots->slots[0].state = ENTITY_ACTIVE;
+    p_Shots->slots[0].age = 3;
     p_Bullets->slots[0].state = ENTITY_ACTIVE;
     p_Bullets->slots[1].state = ENTITY_REMOVE;
     p_Background->cache.mode = TILE_DISABLED;
     const SCORE score = *g_Score;
     const RANDOM_STATE before_random = *p_Rng;
-    const PLAYER player = m_Player;
+    const PLAYER player = *p_Player;
     const uint32_t world = g_Stage->world.frame;
     const int32_t session = f.session.frame;
     Sigma_Begin(TestBossFight_State());
@@ -174,8 +174,8 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     CHECK(m_Sigma.midboss_active);
     CHECK_EQ_INT(m_Sigma.midboss_spread, 144);
     CHECK_EQ_INT(g_Stage->world.extra_boss_frames, 900);
-    CHECK_EQ_INT(m_Shots.slots[0].state, ENTITY_FREE);
-    CHECK_EQ_INT(m_Shots.slots[0].age, 3);
+    CHECK_EQ_INT(p_Shots->slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Shots->slots[0].age, 3);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_REMOVE);
     CHECK_EQ_INT(g_Bullets->slots[1].state, ENTITY_FREE);
     Video_AccessPage(0);
@@ -184,7 +184,7 @@ TEST(sigma_entry_borrows_cached_sprites_and_resets_only_its_owned_state)
     CHECK_EQ_INT(g_Video.pages[0][143 * 640 + 287], 6);
     CHECK(memcmp(g_Score, &score, sizeof(score)) == 0);
     CHECK(memcmp(p_Rng, &before_random, sizeof(before_random)) == 0);
-    CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
+    CHECK(memcmp(p_Player, &player, sizeof(player)) == 0);
     CHECK_EQ_INT(g_Stage->world.frame, world);
     CHECK_EQ_INT(f.session.frame, session);
     SIGMA retained = m_Sigma;
@@ -250,8 +250,8 @@ TEST(sigma_live_hit_draws_the_hit_sprite_then_restores_its_pattern)
             PatternBank_Put(&f.assets.patterns, id, 64, 96, pixels, 0)));
         g->assets.patterns.entries[id] = f.assets.patterns.entries[id];
     }
-    m_Shots.weapon.level = 3;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 3;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->position[1] = (ENTITY_POINT) { 200 * 16, 88 * 16 };
@@ -288,7 +288,7 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
     p_Score->value = 123;
     p_Score->delta = 17;
     p_Stage->world.extra_boss_frames = UINT32_MAX;
-    m_Player.invincibility = 77;
+    p_Player->invincibility = 77;
     CHECK_EQ_INT(
         M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
@@ -299,10 +299,10 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
     CHECK_EQ_INT(p_Score->value, 300123);
     CHECK_EQ_INT(p_Score->delta, 17);
     CHECK_EQ_INT(g_Stage->world.extra_boss_frames, 0);
-    CHECK_EQ_INT(m_Player.invincibility, 77);
-    m_Player.position[0] = (ENTITY_POINT) { 224, 390 };
+    CHECK_EQ_INT(p_Player->invincibility, 77);
+    p_Player->position[0] = (ENTITY_POINT) { 224, 390 };
     for (int frame = 1; frame <= 224; frame++) {
-        m_Player.hit = 0;
+        p_Player->hit = 0;
         CHECK_EQ_INT(
             M_UpdateCore(
                 TestBossFight_State(), &g->assets.patterns,
@@ -311,7 +311,7 @@ TEST(sigma_defeat_awards_directly_and_excludes_its_animation_from_fight_time)
         CHECK_EQ_INT(g_Stage->world.extra_boss_frames, 0);
         CHECK_EQ_INT(p_Score->value, 300123);
         if (frame == 101) {
-            CHECK_EQ_INT(m_Player.hit, 1);
+            CHECK_EQ_INT(p_Player->hit, 1);
         } else if (frame == 141) {
             CHECK_EQ_INT(g_Stage->world.slowdown, 2);
         } else if (frame == 180) {
@@ -341,7 +341,7 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
                           .center = { 240, 200 },
                           .radius_max = 64,
                           .radius = 64 };
-    m_Player.position[1] = (ENTITY_POINT) { 224, 184 };
+    p_Player->position[1] = (ENTITY_POINT) { 224, 184 };
     M_InvalidateCore(TestBossFight_State());
     CHECK_EQ_INT(c->flag, 3);
     CHECK_EQ_INT(
@@ -353,7 +353,7 @@ TEST(sigma_circles_advance_on_background_and_change_hit_radius_before_testing)
     CHECK_EQ_INT(c->frame, 0);
     CHECK_EQ_INT(c->radius_max, 64);
     CHECK_EQ_INT(c->radius, 8);
-    CHECK_EQ_INT(m_Player.hit, 0);
+    CHECK_EQ_INT(p_Player->hit, 0);
     CHECK_EQ_INT(
         M_UpdateCore(
             TestBossFight_State(), &g->assets.patterns,
@@ -410,7 +410,7 @@ TEST(sigma_sweep_reads_x_before_speed_and_keeps_the_frame_start_origin)
     CHECK_EQ_INT(BossFight_State()->position[1].x, 161);
     CHECK_EQ_INT(m_Sigma.position.x, 161);
     CHECK_EQ_INT(m_Sigma.bullet_origin.x, 220);
-    CHECK_EQ_INT(m_Shots.target.x, 220);
+    CHECK_EQ_INT(p_Shots->target.x, 220);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_ACTIVE);
     CHECK_EQ_INT(g_Bullets->slots[0].position[1].x, 177 * 16);
     CHECK_EQ_INT(g_Bullets->slots[0].position[1].y, 112 * 16);

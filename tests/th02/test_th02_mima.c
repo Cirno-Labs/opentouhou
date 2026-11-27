@@ -68,8 +68,8 @@ TEST(
     TestBossFight_State()->hit_flash = 1;
     TestBossFight_State()->defeated = 2;
     TestBossFight_State()->angle = 77;
-    m_Shots.slots[0].state = ENTITY_ACTIVE;
-    const PLAYER player = m_Player;
+    p_Shots->slots[0].state = ENTITY_ACTIVE;
+    const PLAYER player = *p_Player;
     const RANDOM_STATE before_random = *p_Rng;
     memset(g_Video.pages[0], 5, VIDEO_PAGE_SIZE);
     memset(g_Video.pages[1], 6, VIDEO_PAGE_SIZE);
@@ -94,9 +94,9 @@ TEST(
     CHECK_EQ_INT(BossFight_State()->defeated, 0);
     CHECK_EQ_INT(BossFight_State()->sprite, 128);
     CHECK_EQ_INT(BossFight_State()->angle, 77);
-    CHECK_EQ_INT(m_Shots.slots[0].state, ENTITY_FREE);
+    CHECK_EQ_INT(p_Shots->slots[0].state, ENTITY_FREE);
     CHECK_EQ_INT(g_Stage->world.frame, 1234);
-    CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
+    CHECK(memcmp(p_Player, &player, sizeof(player)) == 0);
     CHECK(memcmp(p_Rng, &before_random, sizeof(before_random)) == 0);
     m_Mima.phase = MIMA_POST;
     m_Mima.flash_cycle = 7;
@@ -170,8 +170,8 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
     GAMEPLAY *const g = TestGameplay_State();
     m_Mima.phase = MIMA_ATTACK_ONE;
     m_Mima.pattern = 99;
-    m_Shots.weapon.level = 3;
-    SHOT *const shot = &m_Shots.slots[0];
+    p_Shots->weapon.level = 3;
+    SHOT *const shot = &p_Shots->slots[0];
     shot->state = ENTITY_ACTIVE;
     shot->sprite = 50;
     shot->position[p_Stage->scroll.back] =
@@ -196,7 +196,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
     CHECK_EQ_INT(BossFight_State()->damage, 5);
     CHECK_EQ_INT(p_Score->delta, 10);
     Shots_FreeAll();
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     m_Mima.sphere_active[0] = 1;
     m_Mima.sphere_position[g_Stage->scroll.back][0] =
@@ -225,7 +225,7 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
     TestBossFight_State()->phase_frame = 100;
     TestBossFight_State()->damage = 5999;
     p_Score->value = 123;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     p_Stage->world.frame = 0;
     CHECK_EQ_INT(
         M_UpdateCore(
@@ -236,7 +236,7 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
     CHECK_EQ_INT(BossFight_State()->defeated, 1);
     CHECK_EQ_INT(p_Score->value, 500123);
     CHECK_EQ_INT(p_Score->delta, 1);
-    CHECK_EQ_INT(m_Player.invincibility, 200);
+    CHECK_EQ_INT(p_Player->invincibility, 200);
     CHECK_EQ_INT(m_Mima.phase, MIMA_ATTACK_FOUR);
     CHECK_EQ_INT(
         M_UpdateCore(

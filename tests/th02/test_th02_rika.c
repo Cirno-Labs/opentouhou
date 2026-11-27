@@ -220,8 +220,8 @@ TEST(stage_one_midboss_enters_through_live_modules_and_activates_weather)
     CHECK_EQ_INT(BossFight_State()->position[0].y, -16);
     CHECK_EQ_INT(BossFight_State()->position[1].y, -16);
     CHECK_EQ_INT(g_StageEffects->storm_frame, 1);
-    CHECK_EQ_INT(m_Shots.target.x, 216);
-    CHECK_EQ_INT(m_Shots.target.y, 64);
+    CHECK_EQ_INT(p_Shots->target.x, 216);
+    CHECK_EQ_INT(p_Shots->target.y, 64);
     StageScroll_Swap();
     for (int frame = 2; frame <= 17; frame++) {
         CHECK(BossFight_MidbossInvalidate(f.session.stage));
@@ -271,7 +271,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
     CHECK(g_Pillars->enabled);
     p_BossState->damage = 2259;
     p_BossState->phase_frame = 40;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     const uint16_t next = g_Sparks->next;
     StageFlow_Invalidate(f.session.stage, f.session.reduce_effects);
     CHECK_EQ_INT(
@@ -297,7 +297,7 @@ TEST(default_stage_one_boss_hits_defeats_and_finishes_through_stage_flow)
     CHECK_EQ_INT(g_Player->invincibility, 200);
     CHECK_EQ_INT(m_Rika.frame, 2);
     CHECK_EQ_INT(g_Sparks->next, next);
-    m_Bomb.active = 0;
+    p_Bomb->active = 0;
     for (int frame = 1; frame <= 80; frame++) {
         StageFlow_Invalidate(f.session.stage, f.session.reduce_effects);
         CHECK_EQ_INT(

@@ -77,8 +77,8 @@ static FIXTURE *M_New(void)
                         .storage_size = sizeof(fixture->pixels) };
     }
     Player_Init();
-    m_Player.current = (ENTITY_POINT) { 300, 300 };
-    m_Player.position[1] = m_Player.current;
+    p_Player->current = (ENTITY_POINT) { 300, 300 };
+    p_Player->position[1] = p_Player->current;
     Random_Reset();
     BulletSpawn_Init(1);
     fixture->pages = (PLAYFIELD_PAGES) { 0, 1, 0 };
@@ -250,7 +250,7 @@ TEST(invincible_formations_and_script_return_carry_keep_their_order)
 {
     FIXTURE *const fixture = M_New();
     fixture->formations[0].hp = -2;
-    m_Bomb.active = 1;
+    p_Bomb->active = 1;
     M_Add(0, 0);
     M_Update(fixture);
     CHECK_EQ_INT(m_Enemies.slots[0].damage, 0);
@@ -258,7 +258,7 @@ TEST(invincible_formations_and_script_return_carry_keep_their_order)
     SoundEffects_Update();
     TestSound_Check(&fixture->sound, 4);
     CHECK_EQ_INT(p_Score->delta, 1);
-    m_Bomb.active = 0;
+    p_Bomb->active = 0;
     fixture->scripts[0].bytes[0] = 0x11;
     M_Add(1, 1);
     m_Enemies.slots[1].dying = 1;
@@ -273,22 +273,22 @@ TEST(player_collision_uses_front_x_and_current_y_without_testing_protection)
 {
     FIXTURE *const fixture = M_New();
     M_Add(0, 0);
-    m_Player.current = (ENTITY_POINT) { 300, 100 };
-    m_Player.position[1].x = 100;
-    m_Player.invincibility = 99;
-    m_Player.hit = 255;
+    p_Player->current = (ENTITY_POINT) { 300, 100 };
+    p_Player->position[1].x = 100;
+    p_Player->invincibility = 99;
+    p_Player->hit = 255;
     M_Update(fixture);
-    CHECK_EQ_INT(m_Player.hit, 1);
+    CHECK_EQ_INT(p_Player->hit, 1);
     CHECK_EQ_INT(m_Enemies.slots[0].dying, 1);
     CHECK_EQ_INT(m_Enemies.slots[0].wait_frame, 0);
     SoundEffects_Update();
     TestSound_Check(&fixture->sound, -1);
     CHECK_EQ_INT(p_Shots->target.x, 108);
     M_Add(0, 0);
-    m_Player.position[1].x = 300;
-    m_Player.hit = 255;
+    p_Player->position[1].x = 300;
+    p_Player->hit = 255;
     M_Update(fixture);
-    CHECK_EQ_INT(m_Player.hit, 255);
+    CHECK_EQ_INT(p_Player->hit, 255);
     CHECK_EQ_INT(m_Enemies.slots[0].dying, 0);
     M_Free(fixture);
 }
@@ -377,7 +377,7 @@ static uint64_t M_HashState(uint64_t hash)
             hash = M_HashValue(hash, (uint32_t)values[j]);
         }
     }
-    hash = M_HashValue(hash, m_Player.hit);
+    hash = M_HashValue(hash, p_Player->hit);
     hash = M_HashValue(hash, (uint32_t)p_Shots->target.x);
     hash = M_HashValue(hash, (uint32_t)p_Shots->target.y);
     hash = M_HashValue(hash, (uint32_t)p_Score->delta);
@@ -444,10 +444,10 @@ TEST(script_commands_pages_ranks_and_dying_slots_keep_state_pixels_and_sound)
                 fixture->bomb_frame_mask = rank & 1;
                 p_Performance->value = rank * 24;
                 p_Shots->weapon.level = rank;
-                m_Bomb.active = rank == 3 ? 1 : 0;
-                m_Player.current =
+                p_Bomb->active = rank == 3 ? 1 : 0;
+                p_Player->current =
                     (ENTITY_POINT) { rank == 2 ? 100 : 300, 100 };
-                m_Player.position[back ^ 1] = m_Player.current;
+                p_Player->position[back ^ 1] = p_Player->current;
                 p_Rng->cursor = 255;
                 for (size_t i = 0; i < RANDOM_RING_SIZE; i++) {
                     p_Rng->ring[i] = (uint8_t)(i ^ 0x5a);

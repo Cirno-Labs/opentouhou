@@ -29,7 +29,7 @@ static void M_Init(FIXTURE *const fixture)
     Stage_Init();
     Tram_Init();
     memset(fixture, 0, sizeof(*fixture));
-    memset(&m_Player, 0, sizeof(m_Player));
+    memset(p_Player, 0, sizeof(*p_Player));
     Arena_Init(&fixture->arena, "dialogue slide test", 2 * 1024 * 1024);
     Video_Init(Arena_Allocator(&fixture->arena));
     memset(g_Video.pages[0], 15, VIDEO_PAGE_SIZE);
@@ -52,10 +52,10 @@ static void M_Init(FIXTURE *const fixture)
     CHECK(Result_Ignore(
         PatternBank_Put(&fixture->patterns, 72, 16, 16, pixels, 0)));
     CHECK(Result_Ignore(PatternBank_ConvertTiny(&fixture->patterns, 72)));
-    m_Player.current = (ENTITY_POINT) { 200, 330 };
-    m_Player.option[0] = (ENTITY_POINT) { 180, 350 };
-    m_Player.option[1] = (ENTITY_POINT) { 100, 300 };
-    m_Player.option_sprite = 74;
+    p_Player->current = (ENTITY_POINT) { 200, 330 };
+    p_Player->option[0] = (ENTITY_POINT) { 180, 350 };
+    p_Player->option[1] = (ENTITY_POINT) { 100, 300 };
+    p_Player->option_sprite = 74;
     p_Stage->scroll.front = 1;
     Palette_Init();
     p_Palette->tone = 70;
@@ -97,7 +97,7 @@ TEST(sequence_waits_for_vsync_and_release_press_and_restores_pre_dialogue_pages)
         FIXTURE fixture;
         M_Init(&fixture);
         p_Background->cache.mode = TILE_DISABLED;
-        const PLAYER player = m_Player;
+        const PLAYER player = *p_Player;
         const STAGE_SCROLL scroll = g_Stage->scroll;
         const TRAM_CHARACTER character = { .code = 'X', .source_end = 1 };
         const TRAM_TEXT text = { "X", &character, 1, 1 };
@@ -174,7 +174,7 @@ TEST(sequence_waits_for_vsync_and_release_press_and_restores_pre_dialogue_pages)
         CHECK_EQ_INT(p_Score->transferred, 17);
         CHECK_EQ_INT(p_Score->extends, 1);
         CHECK_EQ_INT(p_Score->lives, 5);
-        CHECK(memcmp(&m_Player, &player, sizeof(player)) == 0);
+        CHECK(memcmp(p_Player, &player, sizeof(player)) == 0);
         CHECK(memcmp(&p_Stage->scroll, &scroll, sizeof(scroll)) == 0);
         const DIALOGUE_SEQUENCE done = sequence;
         CHECK(DialogueSequence_Update(&sequence, nullptr));

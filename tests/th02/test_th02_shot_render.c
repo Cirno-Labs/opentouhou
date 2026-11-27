@@ -40,17 +40,17 @@ TEST(shot_body_option_and_big_hit_wrap_and_clear_on_the_drawing_page)
     int16_t scroll = 63;
     Shots_Init();
     for (size_t i = 0; i < 3; i++) {
-        m_Shots.slots[i].state = ENTITY_ACTIVE;
-        m_Shots.slots[i].position[1] =
+        p_Shots->slots[i].state = ENTITY_ACTIVE;
+        p_Shots->slots[i].position[1] =
             (ENTITY_POINT) { (int16_t)((200 + i * 50) * 16), 336 * 16 };
     }
-    m_Shots.slots[0].sprite = 52;
-    m_Shots.frames[0] = 1;
-    m_Shots.slots[1].sprite = 59;
-    m_Shots.slots[1].age = 1;
-    m_Shots.slots[1].from_option = 1;
-    m_Shots.slots[2].sprite = 124;
-    m_Shots.slots[2].age = 1;
+    p_Shots->slots[0].sprite = 52;
+    p_Shots->frames[0] = 1;
+    p_Shots->slots[1].sprite = 59;
+    p_Shots->slots[1].age = 1;
+    p_Shots->slots[1].from_option = 1;
+    p_Shots->slots[2].sprite = 124;
+    p_Shots->slots[2].age = 1;
     Shots_Update((PLAYFIELD_PAGES) { 1, 0, scroll }, false, 1, &patterns);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 200], 12);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 201], 9);
