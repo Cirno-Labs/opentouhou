@@ -41,6 +41,16 @@ th01_harness_lib = static_library(
   dependencies: [pc98_dep, sdl3],
 )
 
+th02_harness_lib = static_library(
+  'th02_harness',
+  'th02/harness.c',
+  'th02/gameplay_sample.c',
+  'th02/start.c',
+  c_args: [layer_include['th02']] + shell_include + harness_include,
+  implicit_include_directories: false,
+  dependencies: [pc98_dep, sdl3],
+)
+
 th06_harness_lib = static_library(
   'th06_harness',
   'th06/harness.c',
