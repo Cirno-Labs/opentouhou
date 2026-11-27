@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Fail when a numbered or lettered list marker is not followed by a space.
+
+Takes the paths of Markdown and text files. A line that starts, after its
+indent, with a marker such as 1., (a), (1) or a) has a space after it, as in
+"1. The term". Markers that open Japanese text stay as they are: it sets
+them without a space. --fix inserts the spaces instead.
+"""
+
+import argparse
+import re
+import sys
+import unicodedata
+from pathlib import Path
+
+MARKER_RE = re.compile(
+    r"^([ 　]*(?:\* )?)([0-9]{1,3}\.|\([0-9a-z]{1,3}\)|[a-z]\))(?=\S)"
+)
+MESSAGE = "put a space after the list marker"
+
+
+def missing(line: str) -> re.Match[str] | None:
+    """Return the marker that wants a space after it, or None."""
+    match = MARKER_RE.match(line)
+    if match is None:
+        return None
+    following = line[match.end()]
+    if following.isdigit() or following in ".)" or following.isspace():
+        return None
+    text = line[match.end() : match.end() + 8]
+    if any(unicodedata.east_asian_width(char) in "WF" for char in text):
+        return None
+    return match
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("paths", nargs="*")
+    args = parser.parse_args()
+    failed = False
+    for name in args.paths:
+        path = Path(name)
+        lines = path.read_text(encoding="utf-8").split("\n")
+        changed = False
+        fenced = False
+        for index, line in enumerate(lines):
+            if line.strip().startswith("```"):
+                fenced = not fenced
+            match = None if fenced else missing(line)
+            if match is None:
+                continue
+            if args.fix:
+                lines[index] = line[: match.end()] + " " + line[match.end() :]
+                changed = True
+            else:
+                print(f"{name}:{index + 1}: {MESSAGE}")
+                failed = True
+        if changed:
+            path.write_text("\n".join(lines), encoding="utf-8")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

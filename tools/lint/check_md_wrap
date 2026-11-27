@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
-"""Fail when a Markdown line runs past 80 columns.
+"""Fail when a Markdown or text line runs past 80 columns.
 
-Takes the paths of Markdown files. A longer line passes when it is a
-table row, sits in a fenced code block, is a single word, or fits once its
-link targets are left out: wrapping a link reads worse.
+Takes the paths of Markdown and text files. Wide characters, such as kanji
+and kana, count as two columns. A longer line passes when it is a table
+row, sits in a fenced code block, is a single word without wide characters,
+or fits once its link targets are left out: wrapping a link reads worse.
 """
 
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 WIDTH = 80
 LINK_RE = re.compile(r"\]\([^)]*\)")
 MESSAGE = f"wrap at {WIDTH} columns"
+
+
+def width(text: str) -> int:
+    """Return the columns text takes, wide characters counting two."""
+    return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in text)
 
 
 def errors(lines: list[str]) -> list[int]:
@@ -24,11 +31,12 @@ def errors(lines: list[str]) -> list[int]:
         if stripped.startswith("```"):
             fenced = not fenced
             continue
-        if len(LINK_RE.sub("]()", line)) <= WIDTH:
+        if width(LINK_RE.sub("]()", line)) <= WIDTH:
             continue
         if fenced or stripped.startswith("|"):
             continue
-        if " " in stripped.lstrip("-*0123456789. >"):
+        body = stripped.lstrip("-*0123456789. >")
+        if " " in body or width(body) > len(body):
             found.append(index)
     return found
 
