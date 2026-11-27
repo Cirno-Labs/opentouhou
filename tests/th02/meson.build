@@ -334,6 +334,8 @@ foreach part : [
   'dialogue_render',
   'dialogue_sequence',
   'dialogue_slide',
+  'boss',
+  'boss_strategy',
 ]
   test(
     'th02/' + part,

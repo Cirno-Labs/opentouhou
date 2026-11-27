@@ -90,3 +90,15 @@ void Stage_SetProgression(const uint8_t progression)
 {
     m_Stage.world.progression = progression;
 }
+
+void Stage_ResetScrollPosition(void)
+{
+    m_Stage.scroll.line = 0;
+    m_Stage.scroll.address = 0;
+}
+
+void Stage_ResetPages(void)
+{
+    m_Stage.scroll.front = 1;
+    m_Stage.scroll.back = 0;
+}
