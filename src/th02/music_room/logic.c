@@ -64,6 +64,13 @@ void MusicRoom_Init(void)
     MusicRoomRender_Init();
 }
 
+void MusicRoom_Reset(void)
+{
+    const uint8_t playing = m_Room.playing;
+    memset(&m_Room, 0, sizeof(m_Room));
+    m_Room.playing = playing;
+}
+
 void MusicRoom_Begin(
     const MUSIC_ROOM_ASSETS *const assets, const TITLE_ASSETS *const menu,
     const bool midi_possible, const bool midi_active,
