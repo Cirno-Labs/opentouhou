@@ -340,6 +340,7 @@ foreach part : [
   'rika',
   'stones',
   'marisa',
+  'mima',
 ]
   test(
     'th02/' + part,
