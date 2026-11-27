@@ -342,6 +342,7 @@ foreach part : [
   'marisa',
   'mima',
   'sigma',
+  'stage_flow',
 ]
   test(
     'th02/' + part,

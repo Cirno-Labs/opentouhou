@@ -43,6 +43,7 @@ th02_lib = static_library(
   'stage/assets.c',
   'stage/backdrop.c',
   'stage/titles.c',
+  'stage/flow.c',
   'stage_bonus/assets.c',
   'stage_bonus/logic.c',
   'stage_bonus/render.c',
