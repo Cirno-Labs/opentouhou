@@ -3,6 +3,7 @@
 #include "th02/dialogue/assets.h"
 #include "th02/boss/marisa/assets.h"
 #include "th02/boss/mima/assets.h"
+#include "th02/boss/sigma/assets.h"
 
 // Each landed boss adds its own bank by value here (as e.g. MARISA_ASSETS
 // marisa;), once its asset type exists.
@@ -11,6 +12,7 @@ typedef struct {
     DIALOGUE_SCRIPTS scripts;
     MARISA_ASSETS marisa;
     MIMA_ASSETS mima;
+    SIGMA_ASSETS sigma;
 } BOSS_ASSETS;
 
 typedef enum {
