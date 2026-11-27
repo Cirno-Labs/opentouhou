@@ -3186,7 +3186,8 @@ whatsoever.
 TH02 source and sound-core notices
 ==================================
 
-TH02 reconstruction references include N0zoM1z0's work:
+TH02 reconstruction references include N0zoM1z0's work, at revision
+cd7af6995a009d765999e580839b7cfc5989d73b:
 https://github.com/N0zoM1z0/th02
 
 Project-authored code and documentation in that reference use the MIT
