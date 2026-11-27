@@ -3,7 +3,7 @@
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_tram_fixture.h"
 #include "th02/dialogue/private.h"
-#include "th02/grcg.c"
+#include "th02/grcg_private.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
 
@@ -205,7 +205,8 @@ TEST(portraits_ignore_clip_and_keep_tile_row_gaps_hidden_rows_and_plane_aliases)
     TestClip_Set(100, 100, 101, 101);
     Grcg_Init();
     memcpy(
-        m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
+        p_Grcg->tiles, (const uint8_t[4]) { 1, 2, 3, 4 },
+        sizeof(p_Grcg->tiles));
 
     memset(&p_Stage->scroll, 0, sizeof(p_Stage->scroll));
     DIALOGUE_RENDER render = {
@@ -228,9 +229,9 @@ TEST(portraits_ignore_clip_and_keep_tile_row_gaps_hidden_rows_and_plane_aliases)
     CHECK_EQ_INT(g_Video.pages[0][296], 9);
     CHECK_EQ_INT(g_Video.pages[0][312], 11);
     CHECK_EQ_INT(g_Video.pages[0][328], 13);
-    CHECK_EQ_INT(m_Grcg.mode, 0);
-    CHECK_EQ_INT(m_Grcg.tiles[0], 1);
-    CHECK_EQ_INT(m_Grcg.tiles[3], 4);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
+    CHECK_EQ_INT(p_Grcg->tiles[0], 1);
+    CHECK_EQ_INT(p_Grcg->tiles[3], 4);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.visible_page, 1);
     CHECK_EQ_INT(g_Video.first_lines, 123);
@@ -251,7 +252,8 @@ TEST(black_portrait_clips_without_rolling_and_does_not_touch_hidden_rows)
     Clip_Reset();
     Grcg_Init();
     memcpy(
-        m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
+        p_Grcg->tiles, (const uint8_t[4]) { 1, 2, 3, 4 },
+        sizeof(p_Grcg->tiles));
 
     memset(&p_Stage->scroll, 0, sizeof(p_Stage->scroll));
 
@@ -264,9 +266,9 @@ TEST(black_portrait_clips_without_rolling_and_does_not_touch_hidden_rows)
     CHECK_EQ_INT(g_Video.pages[0][399 * 640 + 88], 15);
     CHECK_EQ_INT(g_Video.pages[0][400 * 640 + 40], 15);
     CHECK_EQ_INT(g_Video.pages[0][40], 15);
-    CHECK_EQ_INT(m_Grcg.mode, 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
     for (size_t i = 0; i < 4; i++) {
-        CHECK_EQ_INT(m_Grcg.tiles[i], 0);
+        CHECK_EQ_INT(p_Grcg->tiles[i], 0);
     }
     Mem_Free(g_Video.pages[0]);
 }

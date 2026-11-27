@@ -1,7 +1,7 @@
 #include "tests/test.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
-#include "th02/grcg.c"
+#include "th02/grcg_private.h"
 #include "th02/video.h"
 
 #include "core/base/arena.h"
@@ -48,7 +48,7 @@ TEST(dirty_tile_copy_uses_raw_image_id_and_current_page)
     CHECK_EQ_INT(g_Video.first_lines, 123);
     CHECK_EQ_INT(g_Video.first_address, 45);
     CHECK_EQ_INT(g_Video.second_address, 67);
-    CHECK_EQ_INT(m_Grcg.mode, 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
     CHECK_EQ_INT(cache->columns[23], 0);
     Arena_Free(&arena);
 }
@@ -95,23 +95,23 @@ TEST(black_and_disabled_passes_keep_charger_and_page_side_effects)
             x >= 32 && x < 48 && y >= 16 && y < 32 ? 0 : 15);
         CHECK_EQ_INT(g_Video.pages[1][pixel], 7);
     }
-    CHECK_EQ_INT(m_Grcg.mode, 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
     for (size_t plane = 0; plane < 4; plane++) {
-        CHECK_EQ_INT(m_Grcg.tiles[plane], 0);
+        CHECK_EQ_INT(p_Grcg->tiles[plane], 0);
     }
     Grcg_SetColor(5);
-    m_Grcg.mode = 0xc3;
+    p_Grcg->mode = 0xc3;
     p_Background->cache.mode = TILE_DISABLED;
     p_Background->cache.redraw_all = 1;
     Background_RepaintDirty();
-    CHECK_EQ_INT(m_Grcg.mode, 0xc3);
-    CHECK_EQ_INT(m_Grcg.tiles[0], 255);
-    CHECK_EQ_INT(m_Grcg.tiles[2], 255);
+    CHECK_EQ_INT(p_Grcg->mode, 0xc3);
+    CHECK_EQ_INT(p_Grcg->tiles[0], 255);
+    CHECK_EQ_INT(p_Grcg->tiles[2], 255);
     CHECK_EQ_INT(p_Background->cache.redraw_all, 0);
     p_Background->cache.mode = TILE_BLACK;
     Background_RepaintDirty();
-    CHECK_EQ_INT(m_Grcg.mode, 0);
-    CHECK_EQ_INT(m_Grcg.tiles[0], 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
+    CHECK_EQ_INT(p_Grcg->tiles[0], 0);
     Arena_Free(&arena);
 }
 
@@ -147,7 +147,7 @@ TEST(set_both_updates_one_ring_entry_and_preserves_page_specific_sources)
     Video_Init(Arena_Allocator(&arena));
 
     Grcg_SetColor(9);
-    m_Grcg.mode = 0xc5;
+    p_Grcg->mode = 0xc5;
     memset(p_Background->sources, 0, sizeof(p_Background->sources));
     p_Background->sources[9] = 72;
     memset(&p_Background->scroll, 0, sizeof(p_Background->scroll));
@@ -175,10 +175,10 @@ TEST(set_both_updates_one_ring_entry_and_preserves_page_specific_sources)
         CHECK_EQ_INT(g_Video.pages[page][32 * 640 + 112], 1 + page * 4);
     }
     CHECK_EQ_INT(g_Video.drawing_page, 0);
-    CHECK_EQ_INT(m_Grcg.mode, 0);
-    CHECK_EQ_INT(m_Grcg.tiles[0], 255);
-    CHECK_EQ_INT(m_Grcg.tiles[1], 0);
-    CHECK_EQ_INT(m_Grcg.tiles[3], 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
+    CHECK_EQ_INT(p_Grcg->tiles[0], 255);
+    CHECK_EQ_INT(p_Grcg->tiles[1], 0);
+    CHECK_EQ_INT(p_Grcg->tiles[3], 0);
     Arena_Free(&arena);
 }
 

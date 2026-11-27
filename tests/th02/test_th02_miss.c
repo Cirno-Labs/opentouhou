@@ -7,7 +7,7 @@
 #include "tests/th02/th02_tram_fixture.h"
 #include "th02/items.h"
 #include "th02/miss.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/shots.h"
 #include "th02/sparks.h"
@@ -24,7 +24,7 @@ static void M_Init(FIXTURE *const fixture)
 {
     Sparks_Init();
     Items_Init();
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     Tram_Init();
     memset(fixture, 0, sizeof(*fixture));
     TestPlayerGraphics_Init(&fixture->graphics);
@@ -42,7 +42,7 @@ static void M_Init(FIXTURE *const fixture)
     m_Score.value = 100;
     m_Score.delta = 77;
     fixture->start_bombs = 1;
-    m_Performance.value = 7;
+    p_Performance->value = 7;
 }
 
 TEST(miss_keeps_score_display_and_current_position_lag_through_respawn)
@@ -59,7 +59,7 @@ TEST(miss_keeps_score_display_and_current_position_lag_through_respawn)
     CHECK_EQ_INT(m_Score.value, 177);
     CHECK_EQ_INT(m_Score.delta, 0);
     CHECK_EQ_INT(m_Tram.codes[4 * 80 + 56], 0xa5a5);
-    CHECK_EQ_INT(m_Performance.total_misses, 1);
+    CHECK_EQ_INT(p_Performance->total_misses, 1);
     CHECK_EQ_INT(m_Miss.stage_misses, 1);
     CHECK_EQ_INT(m_Miss.active, 1);
     TestSound_Check(&sound, -1);
@@ -81,7 +81,7 @@ TEST(miss_keeps_score_display_and_current_position_lag_through_respawn)
     CHECK_EQ_INT(m_Player.invincibility, 220);
     CHECK_EQ_INT(m_Player.power, 64);
     CHECK_EQ_INT(m_Shots.weapon.level, 8);
-    CHECK_EQ_INT(m_Performance.value, 0);
+    CHECK_EQ_INT(p_Performance->value, 0);
     CHECK_EQ_INT(g_Sparks->next, 48);
     CHECK_EQ_INT(g_Sparks->slots[16].position[0].y, 360 * 16);
     for (size_t i = 0; i < 5; i++) {
@@ -138,12 +138,12 @@ TEST(gameover_drops_use_the_flag_without_rng_and_player_update_consumes_quit)
     m_Miss.frame = 23;
     m_Miss.active = 1;
     m_Score.lives = 0;
-    m_Performance.value = -5;
+    p_Performance->value = -5;
     const RANDOM_STATE before_random = m_Rng;
     CHECK(Player_Update(
         (PLAYFIELD_PAGES) { 0, 0, 0 }, 0, false, &fixture.graphics.patterns,
         fixture.start_bombs));
-    CHECK_EQ_INT(m_Performance.value, -6);
+    CHECK_EQ_INT(p_Performance->value, -6);
     CHECK_EQ_INT(m_Miss.frame, 0);
     CHECK_EQ_INT(m_Miss.item_gameover, 0);
     CHECK_EQ_INT(m_Miss.active, 1);

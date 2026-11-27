@@ -10,7 +10,7 @@
 #include "th02/background/private.h"
 #include "th02/bomb.h"
 #include "th02/bullets/private.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/random.h"
 #include "th02/sparks.h"
@@ -55,7 +55,7 @@ static void M_Init(FIXTURE *const fixture, const uint8_t type)
     Sparks_Init();
     Bullets_Init();
     Score_Init();
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(&p_Background->cache, 0, sizeof(p_Background->cache));
@@ -116,7 +116,7 @@ TEST(
     M_Init(&fixture, 0);
     m_Bomb.ages[3] = 4;
     m_Bomb.frame = 47;
-    m_Bomb.stage_bombs = m_Performance.total_bombs = 255;
+    m_Bomb.stage_bombs = p_Performance->total_bombs = 255;
     m_Score.bombs = INT8_MIN;
     p_Bullets->slots[0] = (BULLET) {
         .state = ENTITY_ACTIVE,
@@ -126,7 +126,7 @@ TEST(
     M_Activate(&fixture);
     CHECK_EQ_INT(m_Score.bombs, 127);
     CHECK_EQ_INT(m_Bomb.stage_bombs, 0);
-    CHECK_EQ_INT(m_Performance.total_bombs, 0);
+    CHECK_EQ_INT(p_Performance->total_bombs, 0);
     CHECK_EQ_INT(m_Bomb.ages[3], 4);
     CHECK_EQ_INT(m_Bomb.center.x, 220);
     CHECK_EQ_INT(m_Bomb.center.y, 196);
@@ -172,7 +172,7 @@ TEST(
         CHECK_EQ_INT(m_Player.invincibility, 70);
         CHECK_EQ_INT(m_Score.bombs, 2);
         CHECK_EQ_INT(m_Bomb.stage_bombs, 1);
-        CHECK_EQ_INT(m_Performance.total_bombs, 1);
+        CHECK_EQ_INT(p_Performance->total_bombs, 1);
         CHECK_EQ_INT(p_Palette->tone, 100);
         CHECK_EQ_INT(p_Background->cache.mode, TILE_IMAGES);
         CHECK_EQ_INT(fixture.slowdown, 1);
@@ -242,7 +242,7 @@ TEST(transition_fix_preserves_complete_animation_state_and_random_stream)
                 observed.random = m_Rng;
                 observed.sparks = *g_Sparks;
                 observed.score = *g_Score;
-                observed.performance = m_Performance;
+                observed.performance = *p_Performance;
                 observed.palette = (*p_Palette);
                 observed.slowdown = fixture.slowdown;
                 observed.pcm = fixture.pcm;
@@ -336,7 +336,7 @@ static uint64_t M_HashState(const FIXTURE *const fixture, uint64_t hash)
         m_Player.bomb_invincible,
         m_Player.invincibility,
         m_Score.bombs,
-        m_Performance.total_bombs,
+        p_Performance->total_bombs,
         fixture->slowdown,
         p_Palette->tone,
         p_Background->cache.mode,

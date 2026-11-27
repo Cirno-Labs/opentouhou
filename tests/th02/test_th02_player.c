@@ -8,7 +8,7 @@
 #include "th02/bullets.h"
 #include "th02/bullets/private.h"
 #include "th02/items.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/sparks.h"
 
@@ -92,7 +92,7 @@ TEST(firing_emits_real_shots_before_bomb_and_skips_the_second_cycle)
     Tram_Init();
     Score_Init();
     m_Score.bombs = 3;
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     Bullets_Init();
     memset(p_Background, 0, sizeof(*p_Background));
     const PLAYFIELD_PAGES pages = { 0, 1, 0 };
@@ -114,7 +114,7 @@ TEST(firing_emits_real_shots_before_bomb_and_skips_the_second_cycle)
     CHECK_EQ_INT(m_Player.bomb_invincible, 1);
     CHECK_EQ_INT(m_Bomb.stage_bombs, 1);
     CHECK_EQ_INT(m_Score.bombs, 2);
-    CHECK_EQ_INT(m_Performance.total_bombs, 1);
+    CHECK_EQ_INT(p_Performance->total_bombs, 1);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_REMOVE);
     CHECK_EQ_INT(g_Bullets->slots[0].position[0].x, 120 * 16);
     CHECK_EQ_INT(p_Background->cache.columns[4], 1);
@@ -194,7 +194,7 @@ TEST(update_uses_post_decrement_blinking_and_gameover_skips_normal_drawing)
         .sprite = 52,
     };
     Score_Init();
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     Sparks_Init();
     Items_Init();
     CHECK(!Player_Update(

@@ -10,7 +10,7 @@
 #include "th02/enemies.c"
 #include "th02/enemies.h"
 #include "th02/items.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/shots/private.h"
 #include "th02/sparks.h"
@@ -44,7 +44,7 @@ static FIXTURE *M_New(void)
     Enemies_Init();
     Items_Init();
     Score_Init();
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     Grcg_Init();
     Background_Init();
     memset(&m_Rng, 0, sizeof(m_Rng));
@@ -442,7 +442,7 @@ TEST(script_commands_pages_ranks_and_dying_slots_keep_state_pixels_and_sound)
                 fixture->scrolled = rank & 1;
                 fixture->rank = rank;
                 fixture->bomb_frame_mask = rank & 1;
-                m_Performance.value = rank * 24;
+                p_Performance->value = rank * 24;
                 p_Shots->weapon.level = rank;
                 m_Bomb.active = rank == 3 ? 1 : 0;
                 m_Player.current =

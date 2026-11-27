@@ -7,8 +7,8 @@
 #include "th02/bullets/private.h"
 #include "th02/enemies.c"
 #include "th02/items.c"
-#include "th02/performance.c"
-#include "th02/sparks.c"
+#include "th02/performance_private.h"
+#include "th02/sparks_private.h"
 
 #include "core/base/memory.h"
 
@@ -306,15 +306,15 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
     m_Shots.fire_cycle = 254;
     m_Shots.target = (ENTITY_POINT) { 20, 30 };
     m_Rng.cursor = 77;
-    memset(&m_Performance, 0, sizeof(m_Performance));
-    m_Performance.value = 5;
-    m_Performance.item_skill = 21;
-    m_Performance.maximum = 16;
-    m_Performance.total_misses = 3;
-    m_Performance.total_bombs = 4;
-    m_Performance.collected = 13;
-    m_Performance.dropped = 9;
-    const PERFORMANCE performance = m_Performance;
+    memset(p_Performance, 0, sizeof(*p_Performance));
+    p_Performance->value = 5;
+    p_Performance->item_skill = 21;
+    p_Performance->maximum = 16;
+    p_Performance->total_misses = 3;
+    p_Performance->total_bombs = 4;
+    p_Performance->collected = 13;
+    p_Performance->dropped = 9;
+    const PERFORMANCE performance = *p_Performance;
     p_Bullets->slots[0].state = ENTITY_ACTIVE;
     p_Bullets->slots[0].position[0].x = 17;
     p_Stage->scroll.done = 1;
@@ -358,7 +358,7 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
     CHECK_EQ_INT(m_Shots.fire_cycle, 254);
     CHECK_EQ_INT(m_Shots.target.x, -1);
     CHECK_EQ_INT(m_Rng.cursor, 78);
-    CHECK(memcmp(&m_Performance, &performance, sizeof(performance)) == 0);
+    CHECK(memcmp(p_Performance, &performance, sizeof(performance)) == 0);
     CHECK_EQ_INT(p_Bullets->slots[0].state, ENTITY_FREE);
     CHECK_EQ_INT(p_Bullets->slots[0].position[0].x, 17);
     CHECK_EQ_INT(m_Bomb.active, 0);
@@ -411,7 +411,7 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
     p_Stage->scroll.page_lines[0] = 398;
     p_Stage->scroll.page_lines[1] = 399;
     const RANDOM_STATE before_random = m_Rng;
-    const PERFORMANCE performance = m_Performance;
+    const PERFORMANCE performance = *p_Performance;
     const uint16_t count2 = g_VSync.count2;
     const uint64_t edges = g_VSync.edges;
     const uint16_t world_frame = g_Stage->world.frame;
@@ -451,7 +451,7 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
     CHECK_EQ_INT(g_VSync.count2, (uint16_t)(count2 + 42));
     CHECK_EQ_INT(g_VSync.edges, edges + 42);
     CHECK(memcmp(&before_random, &m_Rng, sizeof(before_random)) == 0);
-    CHECK(memcmp(&performance, &m_Performance, sizeof(performance)) == 0);
+    CHECK(memcmp(&performance, p_Performance, sizeof(performance)) == 0);
     CHECK_EQ_INT(g_Video.drawing_page, g_Stage->scroll.back);
     CHECK_EQ_INT(game->loop.wait, STAGE_QUIT);
     for (unsigned i = 0; i < 42; i++) {
@@ -652,7 +652,7 @@ TEST(world_cleanup_restores_the_back_page_before_swapping_it)
     for (unsigned page = 0; page < 2; page++) {
         memset(g_Video.pages[page] + 100 * VIDEO_WIDTH + 100, 5, 8);
     }
-    SPARK *const spark = &m_Sparks.slots[0];
+    SPARK *const spark = &p_Sparks->slots[0];
     spark->state = ENTITY_REMOVE;
     spark->drawing = 1;
     spark->position[g_Stage->scroll.back] =

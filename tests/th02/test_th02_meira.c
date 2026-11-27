@@ -6,7 +6,7 @@
 #include "th02/background/private.h"
 #include "th02/boss/meira.c"
 #include "th02/bullets/private.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 
 #include <string.h>
 
@@ -190,7 +190,7 @@ TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
     TestBossFight_State()->position[0] = TestBossFight_State()->position[1] =
         (ENTITY_POINT) { 192, 64 };
     TestBossFight_State()->phase_frame = 383;
-    m_Performance.value = 48;
+    p_Performance->value = 48;
     const RANDOM_STATE before_random = m_Rng;
     M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(g_Bullets->slots[0].state, ENTITY_ACTIVE);
@@ -200,7 +200,7 @@ TEST(stage_two_midboss_chase_bullets_read_live_performance_page_and_bomb)
     CHECK_EQ_INT(g_Bullets->slots[0].position[0].x, 220 * 16);
     CHECK_EQ_INT(g_Bullets->slots[0].position[0].y, 96 * 16);
     TestBossFight_State()->phase_frame = 391;
-    m_Performance.value = 24;
+    p_Performance->value = 24;
     p_Stage->scroll.back = 1;
     M_MidbossUpdateCore(TestBossFight_State(), &game->assets.patterns);
     CHECK_EQ_INT(g_Bullets->slots[1].state, ENTITY_ACTIVE);

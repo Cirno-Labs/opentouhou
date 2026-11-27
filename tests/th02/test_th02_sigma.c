@@ -7,7 +7,7 @@
 #include "th02/background/private.h"
 #include "th02/boss/sigma/logic.c"
 #include "th02/bullets/private.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 
 #include "core/base/memory.h"
 
@@ -65,7 +65,7 @@ TEST(extra_tile_midboss_emits_with_live_scroll_performance_and_bomb_state)
         p_Stage->scroll.front = 0;
         p_Stage->scroll.line = 399;
         TestBossFight_State()->phase_frame = 300;
-        m_Performance.value = 96;
+        p_Performance->value = 96;
         m_Bomb.active = bombing;
         BulletSpawn_Init(SESSION_EXTRA_RANK);
         m_Sigma.tiles[0] = (SIGMA_MIDBOSS_TILE) {
@@ -396,7 +396,7 @@ TEST(sigma_sweep_reads_x_before_speed_and_keeps_the_frame_start_origin)
     m_Sigma.attacks[0] = SIGMA_ATTACK_SWEEP;
     m_Sigma.sweep_velocity = 1;
     TestBossFight_State()->phase_frame = 20;
-    m_Performance.value = 0;
+    p_Performance->value = 0;
     BulletSpawn_Init(SESSION_EXTRA_RANK);
     m_Rng.cursor = 0;
     m_Rng.ring[0] = 17;

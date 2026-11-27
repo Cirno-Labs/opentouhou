@@ -8,7 +8,6 @@
 #include "th02/player.h"
 #include "th02/random.h"
 #include "th02/shots.h"
-#include "th02/sparks.c"
 #include "th02/sparks.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"

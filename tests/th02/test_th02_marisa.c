@@ -6,7 +6,7 @@
 #include "th02/background/private.h"
 #include "th02/boss/marisa/logic.c"
 #include "th02/bullets/private.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 
 #include "core/base/memory.h"
 
@@ -561,7 +561,7 @@ TEST(marisa_edge_stars_read_random_position_before_speed)
     f.session.stage = 3;
     f.session.rank = 1;
     BulletSpawn_Init(1);
-    m_Performance.value = 48;
+    p_Performance->value = 48;
     Marisa_Place(TestBossFight_State());
     M_BeginCore(TestBossFight_State(), (uint8_t)f.session.rank);
     m_Marisa.phase = 2;

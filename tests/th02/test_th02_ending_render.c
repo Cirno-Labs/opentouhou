@@ -4,7 +4,7 @@
 #include "tests/th02/th02_sprites.h"
 #include "th02/ending/render.h"
 #include "th02/ending/text.h"
-#include "th02/grcg.c"
+#include "th02/grcg_private.h"
 
 #include "core/base/memory.h"
 
@@ -29,7 +29,8 @@ TEST(staging_can_keep_the_previous_palette_until_the_credits_change)
     TestClip_Set(0, 0, 639, 399);
     Grcg_Init();
     memcpy(
-        m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
+        p_Grcg->tiles, (const uint8_t[4]) { 1, 2, 3, 4 },
+        sizeof(p_Grcg->tiles));
 
     ENDING_IMAGES images = {};
     PI_IMAGE *const image = &images.images[ENDING_IMAGE_CREDITS_2];
@@ -70,7 +71,7 @@ TEST(staging_can_keep_the_previous_palette_until_the_credits_change)
     CHECK_EQ_INT(g_Video.first_lines, 200);
     CHECK_EQ_INT(g_Video.first_address, 1234);
     CHECK_EQ_INT(g_Video.second_address, 5678);
-    CHECK(memcmp(m_Grcg.tiles, (uint8_t[]) { 1, 2, 3, 4 }, 4) == 0);
+    CHECK(memcmp(p_Grcg->tiles, (uint8_t[]) { 1, 2, 3, 4 }, 4) == 0);
     Mem_Free(image->pixels);
     Mem_Free(g_Video.pages[0]);
 }
@@ -108,7 +109,7 @@ TEST(quarter_and_row_copies_read_mutable_page_one_and_leave_latched_tiles)
         }
         EndingRender_Copy(left, top, quarter, source_top, rows);
         CHECK(memcmp(expected, g_Video.pages[0], VIDEO_PAGE_SIZE * 2) == 0);
-        CHECK_EQ_INT(m_Grcg.mode, 0);
+        CHECK_EQ_INT(p_Grcg->mode, 0);
         for (uint8_t plane = 0; plane < 4; plane++) {
             uint8_t bits = (13 & (1 << plane)) != 0 ? 255 : 0;
             if (rows != 0) {
@@ -121,7 +122,7 @@ TEST(quarter_and_row_copies_read_mutable_page_one_and_leave_latched_tiles)
                     }
                 }
             }
-            CHECK_EQ_INT(m_Grcg.tiles[plane], bits);
+            CHECK_EQ_INT(p_Grcg->tiles[plane], bits);
         }
         CHECK_EQ_INT(g_Video.drawing_page, rows == 0 ? step % 2 : 0);
         CHECK_EQ_INT(g_Video.visible_page, step % 2);
@@ -222,7 +223,8 @@ TEST(reveal_reads_live_page_one_and_preserves_pixels_outside_each_mask)
     Grcg_Init();
     Grcg_SetPlanes(1);
     memcpy(
-        m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
+        p_Grcg->tiles, (const uint8_t[4]) { 1, 2, 3, 4 },
+        sizeof(p_Grcg->tiles));
 
     ENDING_REVEAL_MASKS masks;
     for (size_t y = 0; y < 16; y++) {
@@ -259,9 +261,9 @@ TEST(reveal_reads_live_page_one_and_preserves_pixels_outside_each_mask)
         CHECK_EQ_INT(g_Video.first_lines, 123);
         CHECK_EQ_INT(g_Video.first_address, 456);
         CHECK_EQ_INT(g_Video.second_address, 789);
-        CHECK_EQ_INT(m_Grcg.mode, 0);
+        CHECK_EQ_INT(p_Grcg->mode, 0);
         for (size_t plane = 0; plane < 4; plane++) {
-            CHECK_EQ_INT(m_Grcg.tiles[plane], 0);
+            CHECK_EQ_INT(p_Grcg->tiles[plane], 0);
         }
         CHECK(memcmp(g_Video.palette, before_dac, sizeof(before_dac)) == 0);
     }
@@ -270,7 +272,7 @@ TEST(reveal_reads_live_page_one_and_preserves_pixels_outside_each_mask)
     Video_AccessPage(1);
     CHECK(EndingRender_StepReveal(&reveal));
     CHECK(EndingRender_StepReveal(&reveal));
-    CHECK_EQ_INT(m_Grcg.mode, 0xce);
+    CHECK_EQ_INT(p_Grcg->mode, 0xce);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     Mem_Free(g_Video.pages[0]);
 }
@@ -283,8 +285,9 @@ TEST(empty_reveal_keeps_pages_and_charger_but_still_has_three_waits)
     Grcg_Init();
     Grcg_SetPlanes(1);
     memcpy(
-        m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
-    const GRCG before = m_Grcg;
+        p_Grcg->tiles, (const uint8_t[4]) { 1, 2, 3, 4 },
+        sizeof(p_Grcg->tiles));
+    const GRCG before = *p_Grcg;
 
     const ENDING_REVEAL_MASKS masks = {};
     ENDING_REVEAL reveal;
@@ -292,10 +295,10 @@ TEST(empty_reveal_keeps_pages_and_charger_but_still_has_three_waits)
     for (size_t step = 0; step < ENDING_REVEAL_STEPS; step++) {
         CHECK(!EndingRender_StepReveal(&reveal));
         CHECK_EQ_INT(g_Video.drawing_page, 1);
-        CHECK(memcmp(&m_Grcg, &before, sizeof(m_Grcg)) == 0);
+        CHECK(memcmp(p_Grcg, &before, sizeof(*p_Grcg)) == 0);
     }
     CHECK(EndingRender_StepReveal(&reveal));
-    CHECK(memcmp(&m_Grcg, &before, sizeof(m_Grcg)) == 0);
+    CHECK(memcmp(p_Grcg, &before, sizeof(*p_Grcg)) == 0);
     Mem_Free(g_Video.pages[0]);
 }
 
@@ -310,7 +313,8 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
     Grcg_Init();
     Grcg_SetPlanes(1);
     memcpy(
-        m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
+        p_Grcg->tiles, (const uint8_t[4]) { 1, 2, 3, 4 },
+        sizeof(p_Grcg->tiles));
 
     Palette_Init();
     p_Palette->tone = 73;
@@ -320,10 +324,10 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
     ENDING_ROTATION rotation;
     EndingRender_BeginRotation(&rotation, 252, 41);
     CHECK_EQ_INT(g_Video.pages[1][0], 3);
-    CHECK_EQ_INT(m_Grcg.mode, 0xce);
+    CHECK_EQ_INT(p_Grcg->mode, 0xce);
     for (size_t step = 0; step < 20; step++) {
         CHECK(!EndingRender_StepRotation(&rotation));
-        CHECK_EQ_INT(m_Grcg.mode, 0xc0);
+        CHECK_EQ_INT(p_Grcg->mode, 0xc0);
         CHECK(
             memcmp(p_Palette->colors, before.colors, sizeof(p_Palette->colors))
             == 0);
@@ -332,9 +336,9 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
     }
     CHECK(EndingRender_StepRotation(&rotation));
     CHECK_EQ_INT(p_Palette->tone, 200);
-    CHECK_EQ_INT(m_Grcg.mode, 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
     for (size_t plane = 0; plane < 4; plane++) {
-        CHECK_EQ_INT(m_Grcg.tiles[plane], 255);
+        CHECK_EQ_INT(p_Grcg->tiles[plane], 255);
     }
     for (size_t y = 0; y < VIDEO_HEIGHT; y++) {
         for (size_t x = 0; x <= 384; x++) {
@@ -358,7 +362,7 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
     Grcg_SetPlanes(1);
     p_Palette->tone = 12;
     CHECK(EndingRender_StepRotation(&rotation));
-    CHECK_EQ_INT(m_Grcg.mode, 0xce);
+    CHECK_EQ_INT(p_Grcg->mode, 0xce);
     CHECK_EQ_INT(p_Palette->tone, 12);
     Mem_Free(g_Video.pages[0]);
 }

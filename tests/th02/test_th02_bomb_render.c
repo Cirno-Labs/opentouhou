@@ -2,7 +2,7 @@
 #include "tests/th02/th02_clip_fixture.h"
 #include "tests/th02/th02_tram_fixture.h"
 #include "th02/bomb/private.h"
-#include "th02/grcg.c"
+#include "th02/grcg_private.h"
 
 #include "core/base/arena.h"
 
@@ -48,8 +48,8 @@ TEST(circle_shifts_across_bytes_rolls_rows_and_ignores_clip)
     CHECK_EQ_INT(g_Video.pages[1][34], 14);
     CHECK_EQ_INT(g_Video.pages[1][32], 9);
     CHECK_EQ_INT(g_Video.pages[0][399 * 640 + 33], 6);
-    CHECK_EQ_INT(m_Grcg.mode, 0xc0);
-    CHECK_EQ_INT(m_Grcg.tiles[0], 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0xc0);
+    CHECK_EQ_INT(p_Grcg->tiles[0], 0);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     BombRender_CirclePoint(&fixture.assets, fixture.scroll, 24, 16);
     BombRender_CirclePoint(&fixture.assets, fixture.scroll, 33, 8);
@@ -61,7 +61,7 @@ TEST(particle_and_smear_keep_byte_alignment_plane_masks_and_short_tail)
 {
     FIXTURE fixture;
     M_Init(&fixture);
-    m_Grcg.mode = 0xc1;
+    p_Grcg->mode = 0xc1;
     fixture.assets.particles[2][0] = 0x80;
     BombRender_Particle(&fixture.assets, fixture.scroll, 39, 16, 2);
     CHECK_EQ_INT(g_Video.pages[1][16 * 640 + 32], 15);
@@ -128,7 +128,7 @@ TEST(illustration_rolls_opaque_pixels_without_using_palette_or_color_key)
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 32], 0);
     CHECK_EQ_INT(g_Video.pages[1][399 * 640 + 47], 15);
     CHECK_EQ_INT(g_Video.pages[1][32], 0);
-    CHECK_EQ_INT(m_Grcg.mode, 0);
-    CHECK_EQ_INT(m_Grcg.tiles[0], 0);
+    CHECK_EQ_INT(p_Grcg->mode, 0);
+    CHECK_EQ_INT(p_Grcg->tiles[0], 0);
     M_Free(&fixture);
 }

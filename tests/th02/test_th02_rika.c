@@ -10,7 +10,7 @@
 #include "th02/boss/rika.c"
 #include "th02/bullets/private.h"
 #include "th02/grcg.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/pillars.h"
 #include "th02/player.h"
 #include "th02/shots/fire.c"
@@ -82,7 +82,7 @@ TEST(rika_first_attack_emits_aimed_triple_and_wide_fan)
 {
     FIXTURE f;
     M_Init(&f);
-    m_Performance.value = 0;
+    p_Performance->value = 0;
     BOSS_STATE *const boss = p_BossState;
     M_BeginCore(boss, 1);
     boss->phase_frame = 63;

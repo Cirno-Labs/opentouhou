@@ -4,7 +4,7 @@
 #include "th02/bullets.h"
 #include "th02/bullets/private.h"
 #include "th02/bullets/spawn.c"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/random.h"
 
@@ -14,7 +14,7 @@ TEST(spawn_checks_keep_order_and_easy_slow_cycle)
 {
     Bullets_Init();
     Player_Init();
-    m_Performance.value = 0;
+    p_Performance->value = 0;
     m_Spawn.slow_cycle = 255;
     BulletSpawn_Init(0);
     CHECK_EQ_INT(m_Spawn.slow_cycle, 255);
@@ -34,11 +34,11 @@ TEST(spawn_checks_keep_order_and_easy_slow_cycle)
     CHECK_EQ_INT(speed, 6);
     BulletSpawn_Init(1);
     speed = 256;
-    m_Performance.value = 256;
+    p_Performance->value = 256;
     CHECK(!BulletSpawn_Tune(&speed));
     CHECK_EQ_INT(speed, 256);
     speed = 100;
-    m_Performance.value = -6;
+    p_Performance->value = -6;
     CHECK(!BulletSpawn_Tune(&speed));
     CHECK_EQ_INT(speed, 88);
 }

@@ -7,7 +7,7 @@
 #include "th02/background.h"
 #include "th02/items.c"
 #include "th02/items.h"
-#include "th02/performance.c"
+#include "th02/performance_private.h"
 #include "th02/player.h"
 #include "th02/point_numbers.c"
 
@@ -26,7 +26,7 @@ static void M_Init(FIXTURE *const fixture)
     PointNumbers_Init();
     PointNumbers_ResetStage(4);
     Score_Init();
-    memset(&m_Performance, 0, sizeof(m_Performance));
+    memset(p_Performance, 0, sizeof(*p_Performance));
     Tram_Init();
     memset(&m_Rng, 0, sizeof(m_Rng));
     Player_Init();
@@ -138,8 +138,8 @@ TEST(capped_bomb_rewards_precede_removal_effect_skill_commit_and_ranked_delta)
     m_Player.current = (ENTITY_POINT) { 200, 100 };
     m_Score.bombs = 5;
     m_Score.delta = 10;
-    m_Performance.collected = 16;
-    m_Performance.item_skill = INT16_MAX;
+    p_Performance->collected = 16;
+    p_Performance->item_skill = INT16_MAX;
     Items_Update(
         (PLAYFIELD_PAGES) { 0, 0, 0 }, 4, &fixture.graphics.patterns,
         &fixture.font);
@@ -152,8 +152,8 @@ TEST(capped_bomb_rewards_precede_removal_effect_skill_commit_and_ranked_delta)
     TestSound_Check(&sound, -1);
     SoundEffects_Update();
     TestSound_Check(&sound, 13);
-    CHECK_EQ_INT(m_Performance.collected, 0);
-    CHECK_EQ_INT(m_Performance.item_skill, INT16_MIN);
+    CHECK_EQ_INT(p_Performance->collected, 0);
+    CHECK_EQ_INT(p_Performance->item_skill, INT16_MIN);
     CHECK_EQ_INT(m_Score.delta, 10 + 6553 * 8);
     TestSound_Free(&sound);
     M_Free(&fixture);

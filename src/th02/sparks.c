@@ -1,10 +1,9 @@
-#include "th02/sparks.h"
-
 #include "th02/background.h"
 #include "th02/clip.h"
 #include "th02/draw.h"
 #include "th02/grcg.h"
 #include "th02/random.h"
+#include "th02/sparks_private.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
@@ -14,6 +13,7 @@
 
 static SPARKS m_Sparks;
 const SPARKS *const g_Sparks = &m_Sparks;
+SPARKS *const p_Sparks = &m_Sparks;
 
 static void M_Put(
     const SPARK_IMAGES *const images, const int16_t left, const uint16_t top,
