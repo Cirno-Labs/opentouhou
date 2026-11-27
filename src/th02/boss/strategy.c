@@ -1,5 +1,6 @@
 #include "th02/boss/strategy.h"
 
+#include "th02/boss/marisa.h"
 #include "th02/boss/meira.h"
 #include "th02/boss/rika.h"
 #include "th02/boss/stones.h"
@@ -10,7 +11,7 @@
 // (Rika, Meira, the stones, Marisa, Mima, Sigma); a stage whose boss hasn't
 // landed yet keeps its nullptr.
 static const BOSS_STRATEGY *const m_Strategies[6] = {
-    &g_BossRika, &g_BossMeira, &g_BossStones, nullptr, nullptr, nullptr,
+    &g_BossRika, &g_BossMeira, &g_BossStones, &g_BossMarisa, nullptr, nullptr,
 };
 
 const BOSS_STRATEGY *BossStrategy_Get(const uint8_t stage)
