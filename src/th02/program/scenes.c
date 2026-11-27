@@ -138,7 +138,7 @@ static void M_Opening(const TH02_INPUT *const input)
 
 static void M_UpdateGameOver(const TH02_INPUT *input);
 
-void M_UpdateRegistration(const TH02_INPUT *const input)
+static void M_UpdateRegistration(const TH02_INPUT *const input)
 {
     const HIGH_SCORE_ENTRY_EVENTS event = HighScoreEntry_Update(input);
     if (event.save_section) {

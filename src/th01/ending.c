@@ -14,6 +14,35 @@ const END_RESULT *const g_EndResult = &m_EndResult;
 static ENDING m_Ending;
 static const ENDING_ASSETS *m_Assets;
 
+// clang-format off
+static const char *const m_PlayerTitles[3][6] = {
+    {
+        "　モンキー　",
+        "　類人猿",
+        "ホモサピエンス",
+        "　超人",
+        "　靈神　",
+        "　神を超越",
+    },
+    {
+        "お子様ゲーマー",
+        "似非スコアラー",
+        "ミドルスコアラー",
+        "ハイスコアラー",
+        "スーパーゲーマー",
+        "ゲーマーを超越",
+    },
+    {
+        "腐ったみかん",
+        "ザックームの実",
+        "禁断の林檎",
+        "世界樹の葉",
+        "黄帝九鼎神丹経",
+        "　アムリタ",
+    },
+};
+// clang-format on
+
 static void M_Audio(const ENDING_AUDIO command)
 {
     switch (command) {
@@ -272,12 +301,15 @@ static void M_Story(void)
     M_Add(END_TONE, 100);
     M_Wait(50);
     M_Captions(m_BOSS_STAGE_5, m_BOSS_NAME_5, true);
-    const char *const titles[] = { m_BOSS_STAGE_10, m_BOSS_STAGE_15,
-                                   m_BOSS_STAGE_20 };
+    const char *const titles[] = {
+        m_BOSS_STAGE_10,
+        m_BOSS_STAGE_15,
+        m_BOSS_STAGE_20,
+    };
     const char *const bosses[] = {
         makai ? m_BOSS_NAME_10_MAKAI : m_BOSS_NAME_10_JIGOKU,
         makai ? m_BOSS_NAME_15_MAKAI : m_BOSS_NAME_15_JIGOKU,
-        makai ? m_BOSS_NAME_20_MAKAI : m_BOSS_NAME_20_JIGOKU
+        makai ? m_BOSS_NAME_20_MAKAI : m_BOSS_NAME_20_JIGOKU,
     };
     for (int32_t i = 0; i < 3; i++) {
         M_Wait(150);
@@ -294,8 +326,12 @@ static void M_Story(void)
 static void M_Results(void)
 {
     const bool makai = m_EndResult.route == SESSION_END_MAKAI;
-    static const char *const ranks[] = { " EASY ", "NORMAL", " HARD ",
-                                         "LUNATIC" };
+    static const char *const ranks[] = {
+        " EASY ",
+        "NORMAL",
+        " HARD ",
+        "LUNATIC",
+    };
     const END_RESULT *const r = g_EndResult;
     snprintf(
         m_Ending.result_lines[0], 256, "%s%s", m_RESULT_DIFFICULTY,

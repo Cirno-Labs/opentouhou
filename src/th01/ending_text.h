@@ -32,12 +32,3 @@ static const char m_RESULT_MAKAI_TOTAL[] = "  魔界ルート総合　　　　�
 static const char m_RESULT_JIGOKU_TOTAL[] = "　地獄ルート総合　　　　　　　";
 static const char m_RESULT_THANKS[] = "    Thank you for Playing !! ";
 static const char m_RESULT_TITLE_HEADING[] = "★★★あなたの称号★★★";
-
-static const char *const m_PlayerTitles[3][6] = {
-    { "　モンキー　", "　類人猿", "ホモサピエンス", "　超人", "　靈神　",
-      "　神を超越" },
-    { "お子様ゲーマー", "似非スコアラー", "ミドルスコアラー", "ハイスコアラー",
-      "スーパーゲーマー", "ゲーマーを超越" },
-    { "腐ったみかん", "ザックームの実", "禁断の林檎", "世界樹の葉",
-      "黄帝九鼎神丹経", "　アムリタ" },
-};

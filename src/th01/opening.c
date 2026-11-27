@@ -68,7 +68,7 @@ static void M_Choice(const int32_t choice, const uint8_t color)
 {
     if (m_Opening.phase == OPENING_MAIN) {
         M_Text(
-            m_MainMenuItems[choice], 244, M_Top(4) + choice * 20, color,
+            g_OpeningMainMenuItems[choice], 244, M_Top(4) + choice * 20, color,
             GAME_TEXT_BLACK);
         return;
     }
@@ -80,26 +80,28 @@ static void M_Choice(const int32_t choice, const uint8_t color)
         if (choice == 0) {
             Video_Restore16((GFX_RECT) { 228, top + 20, 192, 16 });
             snprintf(
-                text, sizeof(text), "%s%.2d", m_MusicMenuItems[0],
+                text, sizeof(text), "%s%.2d", g_OpeningMusicMenuItems[0],
                 m_Opening.track);
             M_Text(text, 228, top, color, GAME_TEXT_BLACK);
             M_Text(
-                m_TrackTitles[m_Opening.track], 228, top + 20, color,
+                g_OpeningTrackTitles[m_Opening.track], 228, top + 20, color,
                 GAME_TEXT_BLACK);
         } else {
-            M_Text(m_MusicMenuItems[1], 228, top, color, GAME_TEXT_BLACK);
+            M_Text(
+                g_OpeningMusicMenuItems[1], 228, top, color, GAME_TEXT_BLACK);
         }
         return;
     }
     const char *value = "";
     if (choice == 0) {
-        value = m_Ranks[g_Settings.difficulty];
+        value = g_OpeningRanks[g_Settings.difficulty];
     } else if (choice == 1) {
-        value = m_MusicModes[g_Settings.music];
+        value = g_OpeningMusicModes[g_Settings.music];
     } else if (choice == 2) {
-        value = m_Lives[g_Settings.lives_extra];
+        value = g_OpeningLives[g_Settings.lives_extra];
     }
-    snprintf(text, sizeof(text), "%s%s", m_OptionMenuItems[choice], value);
+    snprintf(
+        text, sizeof(text), "%s%s", g_OpeningOptionMenuItems[choice], value);
     M_Text(text, 228, top, color, GAME_TEXT_BLACK);
 }
 
@@ -315,7 +317,7 @@ OPENING_EVENTS Opening_Tick(const TH01_INPUT *const raw, const bool any_key)
             if (m_Opening.count1 != 0) {
                 m_Opening.count1 = 0;
                 if (m_Menu.prompt_frame % 70 < 50) {
-                    M_Text(m_Prompt, 244, M_Top(1), 15, GAME_TEXT_BOLD);
+                    M_Text(g_OpeningPrompt, 244, M_Top(1), 15, GAME_TEXT_BOLD);
                 } else {
                     Video_Restore16((GFX_RECT) { 244, M_Top(1), 120, 16 });
                 }
