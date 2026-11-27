@@ -336,6 +336,7 @@ foreach part : [
   'dialogue_slide',
   'boss',
   'boss_strategy',
+  'rika',
 ]
   test(
     'th02/' + part,
