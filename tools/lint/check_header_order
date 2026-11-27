@@ -56,9 +56,9 @@ def errors(lines: list[str]) -> list[int]:
     return found
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     failed = False
-    for name in sys.argv[1:]:
+    for name in sys.argv[1:] if argv is None else argv:
         lines = Path(name).read_text(encoding="utf-8").splitlines()
         for index in errors(lines):
             print(f"{name}:{index + 1}: type after a function")

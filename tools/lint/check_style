@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Run every per-file style check in one process.
+
+Takes the paths that prek hands over. Each check sees only the files it is
+for, through the main(argv) that every check has, with the same messages and
+exit status as when it runs on its own. Starting one interpreter instead
+of one per check keeps a commit's checks quick.
+"""
+
+import importlib.machinery
+import importlib.util
+import re
+import sys
+from pathlib import Path
+
+LINT_DIR = Path(__file__).resolve().parent
+
+# Each check, with the paths it applies to and the ones it leaves out.
+# Vendored code keeps its own style.
+VENDOR = r"^src/pc98/opna/vendor/"
+
+CHECKS = [
+    ("check_header_spacing", r"\.h$", None),
+    ("check_header_order", r"\.h$", None),
+    ("check_umbrella_header", r"\.h$", None),
+    ("check_global_reset", r"^(src|tests)/.*\.[ch]$", None),
+    ("check_raw_color", r"^(src/th0[67]/|tests/(test_)?th0[67]).*\.[ch]$", None),
+    ("check_md_wrap", r"\.(md|txt)$", r"^src/shell/builtin/fonts/"),
+    ("check_md_underline", r"\.(md|txt)$", r"^src/shell/builtin/fonts/"),
+    ("check_list_marker", r"\.(md|txt)$", r"^src/shell/builtin/fonts/"),
+]
+
+
+def load(name: str):
+    """Return the module of the check called name."""
+    path = LINT_DIR / name
+    loader = importlib.machinery.SourceFileLoader(name, str(path))
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def main() -> int:
+    paths = sys.argv[1:]
+    failed = False
+    for name, files, exclude in CHECKS:
+        selected = [
+            path
+            for path in paths
+            if re.search(files, path)
+            and not (exclude and re.search(exclude, path))
+            and not re.search(VENDOR, path)
+        ]
+        if not selected:
+            continue
+        status = load(name).main(selected)
+        failed |= bool(status)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -12,58 +12,11 @@ repos:
     additional_dependencies: [clang-format==22.1.8]
     files: \.[ch]$
 
-  - id: header-spacing
-    name: A commented function in a header has a blank line above it
-    entry: tools/lint/check_header_spacing
+  - id: style
+    name: The style checks of tools/lint pass
+    entry: tools/lint/check_style
     language: python
-    files: \.h$
-
-  - id: header-order
-    name: A header declares its types before its functions
-    entry: tools/lint/check_header_order
-    language: python
-    files: \.h$
-    exclude: ^src/pc98/opna/vendor/
-
-  - id: umbrella-header
-    name: An umbrella header holds only includes
-    entry: tools/lint/check_umbrella_header
-    language: python
-    files: \.h$
-    exclude: ^src/pc98/opna/vendor/
-
-  - id: global-reset
-    name: A global is reset with memset, not a compound literal
-    entry: tools/lint/check_global_reset
-    language: python
-    files: ^(src|tests)/.*\.[ch]$
-
-  - id: md-wrap
-    name: Markdown and text wrap at 80 columns
-    entry: tools/lint/check_md_wrap
-    language: python
-    files: \.(md|txt)$
-    exclude: ^src/shell/builtin/fonts/
-
-  - id: list-marker
-    name: A list marker has a space after it
-    entry: tools/lint/check_list_marker
-    language: python
-    files: \.(md|txt)$
-    exclude: ^src/shell/builtin/fonts/
-
-  - id: md-underline
-    name: A heading's underline spans its title
-    entry: tools/lint/check_md_underline
-    language: python
-    files: \.(md|txt)$
-    exclude: ^src/shell/builtin/fonts/
-
-  - id: raw-color
-    name: A color is written with COLOR_ARGB, not a raw literal
-    entry: tools/lint/check_raw_color
-    language: python
-    files: ^(src/th0[67]/|tests/(test_)?th0[67]).*\.[ch]$
+    files: \.(c|h|md|txt)$
 
   - id: commit-msg
     name: Commit message has a module prefix and follows 50/72
