@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Touhou 2: the Story of Eastern Wonderland
+Name[ja]=東方封魔録 ~ the Story of Eastern Wonderland
+Comment=Play Touhou 2 with your original game data
+Exec=oth02
+Icon=th02
+Categories=Game;ArcadeGame;
+Terminal=false

@@ -1,0 +1,30 @@
+#define SDL_MAIN_USE_CALLBACKS
+#include "shell/game/entry.h"
+#include "th02/main.h"
+
+#include <SDL3/SDL_main.h>
+
+SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
+{
+    const SHELL_STATUS status = Shell_Init(&g_GameDesc, argc, argv);
+    if (status == SHELL_CONTINUE) {
+        Th02_EnableLiveClock();
+    }
+    return (SDL_AppResult)status;
+}
+
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
+{
+    return (SDL_AppResult)Shell_Event(event);
+}
+
+SDL_AppResult SDL_AppIterate(void *appstate)
+{
+    const SDL_AppResult result = (SDL_AppResult)Shell_Iterate();
+    return Th02_Failed() ? SDL_APP_FAILURE : result;
+}
+
+void SDL_AppQuit(void *appstate, SDL_AppResult result)
+{
+    Shell_Quit();
+}

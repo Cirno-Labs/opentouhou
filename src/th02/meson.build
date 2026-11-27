@@ -132,3 +132,51 @@ th02_lib = static_library(
   implicit_include_directories: false,
   dependencies: [core_dep, pc98_dep],
 )
+
+th02_version = custom_target(
+  'th02_version',
+  output: 'version.h',
+  command: [python3, files('../../tools/meson/version_header'), 'th02', '@OUTPUT@'],
+  build_always_stale: true,
+)
+
+th02_main_lib = static_library(
+  'th02_main',
+  'main.c',
+  'program/audio.c',
+  'program/assets.c',
+  'program/scenes.c',
+  th02_version,
+  c_args: [layer_include['th02'], layer_include['shell'], '-I' + meson.current_build_dir()],
+  implicit_include_directories: false,
+  dependencies: [core_dep, pc98_dep],
+)
+
+th02_sprites = [
+  'bombpart.bmp', 'pellet.bmp', 'pointnum.bmp', 'sparks.bmp', 'verdict.bmp',
+]
+
+th02_sources = [files('entry.c')]
+if host_machine.system() == 'windows'
+  th02_sources += import('windows').compile_resources(
+    'th02.rc',
+    args: ['--include-dir', meson.current_build_dir(),
+           '--include-dir', meson.project_source_root() / 'tools/packaging/th02'],
+    depends: th02_version,
+    depend_files: files('../../tools/packaging/th02/icon.ico'),
+  )
+endif
+
+games += {
+  'th02': {
+    'sources': th02_sources,
+    'title': '東方封魔録',
+    'title_en': 'Touhou 02',
+    'subtitle_en': 'the Story of Eastern Wonderland',
+    'c_args': [layer_include['th02'], layer_include['pc98']],
+    'fonts': ['fonts/shnmk16.bdf', 'fonts/shnm8x16r.bdf'],
+    'builtin_dir': meson.current_source_dir() / 'sprites',
+    'builtins': th02_sprites,
+    'link_with': [th02_main_lib, th02_lib],
+  },
+}
