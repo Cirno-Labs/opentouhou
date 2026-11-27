@@ -136,3 +136,13 @@ TEST(flush_uses_column_order_exact_all_flag_and_black_charger_sequence)
     CHECK_EQ_INT(p_Background->cache.dirty[0][0], 0);
     Arena_Free(&arena);
 }
+
+TEST(init_clears_every_part)
+{
+    memset(p_Background, 0x5a, sizeof(*p_Background));
+    Background_Init();
+    const uint8_t *const bytes = (const uint8_t *)g_Background;
+    for (size_t i = 0; i < sizeof(*g_Background); i++) {
+        CHECK_EQ_INT(bytes[i], 0);
+    }
+}
