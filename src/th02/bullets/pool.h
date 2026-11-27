@@ -132,3 +132,6 @@ void Bullets_SetMotion(int16_t motion_a, int16_t motion_b);
 
 // Sets the turn limit used by homing and drift-chase bullets.
 void Bullets_SetTurnLimit(int16_t turn_limit);
+
+// Sets the fan/ring spawn layer count to base_layers * multiplier.
+void Bullets_SetSpawnLayers(uint8_t multiplier);

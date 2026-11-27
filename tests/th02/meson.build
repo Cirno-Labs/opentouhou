@@ -338,6 +338,7 @@ foreach part : [
   'boss_strategy',
   'meira',
   'rika',
+  'stones',
 ]
   test(
     'th02/' + part,
