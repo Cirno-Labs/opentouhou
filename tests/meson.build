@@ -1575,7 +1575,12 @@ if build_games
     )
   endforeach
   # These load the built-in sprite sheets from src/th02/sprites.
-  foreach part : ['sparks', 'point_numbers']
+  foreach part : [
+    'sparks',
+    'point_numbers',
+    'bomb_assets',
+    'bullets',
+  ]
     test(
       'th02/' + part,
       executable(
@@ -1843,6 +1848,34 @@ if build_games
         implicit_include_directories: false,
         link_with: [th02_lib, core_io_lib, core_base_lib],
         dependencies: [sdl3],
+      ),
+      suite: 'unit',
+    )
+  endforeach
+  foreach part : [
+    'items',
+    'miss',
+    'bomb',
+    'bomb_render',
+    'shots',
+    'shot_fire',
+    'shot_hit',
+    'shot_render',
+    'player',
+    'player_render',
+    'bullet_spawn',
+  ]
+    test(
+      'th02/' + part,
+      executable(
+        'test_th02_' + part,
+        'test_th02_' + part + '.c',
+        c_args: [layer_include['th02'], layer_include['pc98']] + core_include,
+        implicit_include_directories: false,
+        link_with: [
+          th02_lib, core_io_lib, core_vfs_lib, core_hash_lib, core_base_lib,
+        ],
+        dependencies: [pc98_dep, sdl3],
       ),
       suite: 'unit',
     )
