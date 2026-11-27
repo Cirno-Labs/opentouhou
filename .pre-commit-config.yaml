@@ -39,10 +39,18 @@ repos:
     files: ^(src|tests)/.*\.[ch]$
 
   - id: md-wrap
-    name: Markdown wraps at 80 columns
+    name: Markdown and text wrap at 80 columns
     entry: tools/lint/check_md_wrap
     language: python
-    files: \.md$
+    files: \.(md|txt)$
+    exclude: ^src/shell/builtin/fonts/
+
+  - id: list-marker
+    name: A list marker has a space after it
+    entry: tools/lint/check_list_marker
+    language: python
+    files: \.(md|txt)$
+    exclude: ^src/shell/builtin/fonts/
 
   - id: md-underline
     name: A heading's underline spans its title
