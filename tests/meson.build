@@ -1575,7 +1575,7 @@ if build_games
     )
   endforeach
   # These load the built-in sprite sheets from src/th02/sprites.
-  foreach part : ['sparks']
+  foreach part : ['sparks', 'point_numbers']
     test(
       'th02/' + part,
       executable(
