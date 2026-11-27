@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define M_MAX_FIELDS 3
+#define M_MAX_FIELDS 4
 #define M_MAX_KEYS 32
 
 // Splits text in place at runs of the characters in seps into up to
@@ -65,6 +65,70 @@ static RESULT M_ReadFps(const char *const text, FPS *const out)
     return OK;
 }
 
+static RESULT M_ReadDate(const char *const text, uint32_t *const out)
+{
+    if (strcmp(text, "none") == 0) {
+        *out = 0;
+        return OK;
+    }
+    FAIL_IF(
+        strlen(text) != 10 || text[4] != '-' || text[7] != '-', "bad date %s",
+        text);
+    uint32_t date = 0;
+    for (size_t i = 0; i < 10; i++) {
+        if (i == 4 || i == 7) {
+            continue;
+        }
+        FAIL_IF(text[i] < '0' || text[i] > '9', "bad date %s", text);
+        date = date * 10 + (uint32_t)(text[i] - '0');
+    }
+    const uint32_t year = date / 10000;
+    const uint32_t month = date / 100 % 100;
+    const uint32_t day = date % 100;
+    FAIL_IF(year == 0 || month == 0 || month > 12, "bad date %s", text);
+    static const uint8_t days[] = { 31, 28, 31, 30, 31, 30,
+                                    31, 31, 30, 31, 30, 31 };
+    const bool leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    const uint32_t last = days[month - 1] + (month == 2 && leap ? 1u : 0u);
+    FAIL_IF(day == 0 || day > last, "bad date %s", text);
+    *out = date;
+    return OK;
+}
+
+static bool M_ReadClockValue(const char *const text, uint64_t *const out)
+{
+    uint64_t value = 0;
+    if (*text == '\0') {
+        return false;
+    }
+    for (const char *c = text; *c != '\0'; c++) {
+        const uint64_t digit = (uint64_t)(*c - '0');
+        if (*c < '0' || *c > '9' || value > (UINT64_MAX - digit) / 10) {
+            return false;
+        }
+        value = value * 10 + digit;
+    }
+    *out = value;
+    return true;
+}
+
+static int32_t M_ClockIndex(
+    const SCRIPT *const script, const uint32_t frame, const uint32_t key)
+{
+    int32_t low = 0;
+    int32_t high = script->clocks.count;
+    while (low < high) {
+        const int32_t middle = low + (high - low) / 2;
+        const SCRIPT_CLOCK *const at = &script->clocks.items[middle];
+        if (at->frame < frame || (at->frame == frame && at->key < key)) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    return low;
+}
+
 static RESULT M_ReadLine(
     const HARNESS_GAME *const game, char *const line, SCRIPT *const script)
 {
@@ -95,6 +159,24 @@ static RESULT M_ReadLine(
         Array_Append(&script->starts, start);
         return OK;
     }
+    if (strcmp(fields[0], "clock") == 0) {
+        SCRIPT_CLOCK clock = {};
+        FAIL_IF(
+            count != 4 || !Str_ParseU32(fields[1], &clock.frame)
+                || !Str_ParseU32(fields[2], &clock.key)
+                || !M_ReadClockValue(fields[3], &clock.microseconds),
+            "expected clock FRAME KEY MICROSECONDS");
+        if (script->clocks.count > 0) {
+            const SCRIPT_CLOCK *const last =
+                &script->clocks.items[script->clocks.count - 1];
+            FAIL_IF(
+                last->frame > clock.frame
+                    || (last->frame == clock.frame && last->key >= clock.key),
+                "clock frame/key pairs must increase");
+        }
+        Array_Append(&script->clocks, clock);
+        return OK;
+    }
     FAIL_IF(count != 3, "expected KIND FRAME VALUE");
     FAIL_IF(!Str_ParseU32(fields[1], &frame), "bad frame %s", fields[1]);
     if (strcmp(fields[0], "input") == 0) {
@@ -116,6 +198,16 @@ static RESULT M_ReadLine(
         SCRIPT_FPS fps = { .frame = frame };
         MUST(M_ReadFps(fields[2], &fps.fps));
         Array_Append(&script->fps, fps);
+        return OK;
+    }
+    if (strcmp(fields[0], "date") == 0) {
+        FAIL_IF(
+            script->dates.count > 0
+                && script->dates.items[script->dates.count - 1].frame >= frame,
+            "date frames must increase");
+        SCRIPT_DATE date = { .frame = frame };
+        MUST(M_ReadDate(fields[2], &date.date));
+        Array_Append(&script->dates, date);
         return OK;
     }
     return FAIL("unknown line kind %s", fields[0]);
@@ -177,6 +269,8 @@ RESULT Script_Read(
     SCRIPT script = { .description = M_ReadDescription(text) };
     Array_Init(&script.inputs, &g_HeapAllocator);
     Array_Init(&script.fps, &g_HeapAllocator);
+    Array_Init(&script.dates, &g_HeapAllocator);
+    Array_Init(&script.clocks, &g_HeapAllocator);
     Array_Init(&script.starts, &g_HeapAllocator);
     RESULT result = OK;
     char *rest = text;
@@ -249,6 +343,27 @@ void Script_Write(
         }
         M_Write(out, line);
     }
+    for (int32_t i = 0; i < script->dates.count; i++) {
+        const SCRIPT_DATE *const date = &script->dates.items[i];
+        if (date->date == 0) {
+            snprintf(
+                line, sizeof(line), "date %" PRIu32 " none\n", date->frame);
+        } else {
+            snprintf(
+                line, sizeof(line),
+                "date %" PRIu32 " %04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 "\n",
+                date->frame, date->date / 10000, date->date / 100 % 100,
+                date->date % 100);
+        }
+        M_Write(out, line);
+    }
+    for (int32_t i = 0; i < script->clocks.count; i++) {
+        const SCRIPT_CLOCK *const clock = &script->clocks.items[i];
+        snprintf(
+            line, sizeof(line), "clock %" PRIu32 " %" PRIu32 " %" PRIu64 "\n",
+            clock->frame, clock->key, clock->microseconds);
+        M_Write(out, line);
+    }
 }
 
 void Script_Free(SCRIPT *const script)
@@ -256,6 +371,8 @@ void Script_Free(SCRIPT *const script)
     Mem_Free(script->description);
     Array_Free(&script->inputs);
     Array_Free(&script->fps);
+    Array_Free(&script->dates);
+    Array_Free(&script->clocks);
     Array_Free(&script->starts);
     *script = (SCRIPT) {};
 }
@@ -294,6 +411,68 @@ FPS Script_Fps(const SCRIPT *const script, const uint32_t frame)
     const int32_t i =
         M_Find(script->fps.items, script->fps.count, sizeof(SCRIPT_FPS), frame);
     return i < 0 ? (FPS) {} : script->fps.items[i].fps;
+}
+
+uint32_t Script_Date(const SCRIPT *const script, const uint32_t frame)
+{
+    const int32_t i = M_Find(
+        script->dates.items, script->dates.count, sizeof(SCRIPT_DATE), frame);
+    return i < 0 ? 0 : script->dates.items[i].date;
+}
+
+bool Script_Clock(
+    const SCRIPT *const script, const uint32_t frame, const uint32_t key,
+    uint64_t *const out)
+{
+    const int32_t i = M_ClockIndex(script, frame, key);
+    if (i == script->clocks.count || script->clocks.items[i].frame != frame
+        || script->clocks.items[i].key != key) {
+        return false;
+    }
+    *out = script->clocks.items[i].microseconds;
+    return true;
+}
+
+const SCRIPT_CLOCK *Script_Clocks(
+    const SCRIPT *const script, const uint32_t frame, size_t *const count)
+{
+    const int32_t first = M_ClockIndex(script, frame, 0);
+    int32_t end = first;
+    while (end < script->clocks.count
+           && script->clocks.items[end].frame == frame) {
+        end++;
+    }
+    *count = (size_t)(end - first);
+    return end == first ? nullptr : &script->clocks.items[first];
+}
+
+void Script_RecordClock(
+    SCRIPT *const script, const uint32_t frame, const uint32_t key,
+    const uint64_t microseconds)
+{
+    const int32_t i = M_ClockIndex(script, frame, key);
+    if (i < script->clocks.count && script->clocks.items[i].frame == frame
+        && script->clocks.items[i].key == key) {
+        script->clocks.items[i].microseconds = microseconds;
+        return;
+    }
+    Array_Insert(
+        &script->clocks, i,
+        ((SCRIPT_CLOCK) {
+            .frame = frame, .key = key, .microseconds = microseconds }));
+}
+
+void Script_RecordDate(
+    SCRIPT *const script, const uint32_t frame, const uint32_t date)
+{
+    if (script->dates.count > 0
+        && script->dates.items[script->dates.count - 1].frame == frame) {
+        script->dates.count--;
+    }
+    if (Script_Date(script, frame) != date) {
+        Array_Append(
+            &script->dates, ((SCRIPT_DATE) { .frame = frame, .date = date }));
+    }
 }
 
 void Script_RecordButtons(

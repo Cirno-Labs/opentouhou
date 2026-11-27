@@ -245,3 +245,17 @@ TEST(state_with_bytes_past_its_rows_fails)
     CHECK(!M_ReadsBack(&file, 9));
     M_Free(&file);
 }
+
+TEST(hash_bytes_folds_the_same_as_hash_u32_for_matching_bits)
+{
+    const uint32_t value = 0x12345678;
+    const uint32_t by_bytes =
+        State_HashBytes(STATE_HASH_INIT, &value, sizeof(value));
+    CHECK(by_bytes != STATE_HASH_INIT);
+    const uint32_t other = State_HashBytes(STATE_HASH_INIT, "abc", 3);
+    CHECK(other != by_bytes);
+    CHECK_EQ_INT(
+        State_HashBytes(STATE_HASH_INIT, "abc", 3),
+        State_HashBytes(STATE_HASH_INIT, "abc", 3));
+    CHECK(State_HashBytes(STATE_HASH_INIT, "abc", 0) == STATE_HASH_INIT);
+}

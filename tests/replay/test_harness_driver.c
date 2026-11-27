@@ -155,6 +155,88 @@ TEST(a_live_capture_records_the_held_buttons)
     Mem_Free(root);
 }
 
+TEST(a_capture_records_date_and_clock_and_replay_returns_them)
+{
+    char *const root = TestDir_Prepare("driver_date_clock");
+    char *const capture_dir = TestDir_Join(root, "capture");
+    char *const case_path = TestDir_Join(root, "test.othtc");
+    char *const replay_dir = TestDir_Join(root, "replay");
+    M_GAME game = {};
+    const PORT port = {
+        .game = &m_TestGame,
+        .context = &game,
+        .sample = M_Sample,
+        .idle = M_Idle,
+        .seed = M_Seed,
+    };
+    const RUN capture = {
+        .role = RUN_CAPTURE,
+        .game_dir = root,
+        .case_path = case_path,
+        .out_dir = capture_dir,
+        .live = true,
+    };
+    DRIVER *driver;
+    CHECK(Result_Ignore(Driver_Open(&port, &capture, "native", &driver)));
+    while (!Driver_Done(driver) && game.frame < 10) {
+        Driver_Buttons(driver, 0);
+        CHECK_EQ_INT(Driver_Date(driver, 20261127), 20261127);
+        if (game.frame == 1) {
+            Driver_RecordClock(driver, 7, 12345);
+        }
+        uint64_t microseconds;
+        CHECK_EQ_INT(Driver_Clock(driver, 7, &microseconds), game.frame == 1);
+        Driver_EndCalc(driver);
+        CHECK(Result_Ignore(Driver_EndFrame(driver, nullptr)));
+        game.frame++;
+    }
+    bool differs = true;
+    CHECK(Result_Ignore(Driver_Close(driver, true, &differs)));
+    CHECK(!differs);
+
+    char *const inputs = M_ReadEntry(case_path, "inputs.txt");
+    CHECK(
+        inputs != nullptr && strstr(inputs, "date 0 2026-11-27\n") != nullptr);
+    CHECK(inputs != nullptr && strstr(inputs, "clock 1 7 12345\n") != nullptr);
+    Mem_Free(inputs);
+
+    const RUN replay = {
+        .role = RUN_REPLAY,
+        .game_dir = root,
+        .case_path = case_path,
+        .out_dir = replay_dir,
+    };
+    M_GAME replay_game = {};
+    const PORT replay_port = {
+        .game = &m_TestGame,
+        .context = &replay_game,
+        .sample = M_Sample,
+        .idle = M_Idle,
+        .seed = M_Seed,
+    };
+    CHECK(Result_Ignore(Driver_Open(&replay_port, &replay, "native", &driver)));
+    while (!Driver_Done(driver) && replay_game.frame < 10) {
+        Driver_Buttons(driver, 0);
+        CHECK_EQ_INT(Driver_Date(driver, 0), 20261127);
+        uint64_t microseconds;
+        CHECK_EQ_INT(
+            Driver_Clock(driver, 7, &microseconds), replay_game.frame == 1);
+        if (replay_game.frame == 1) {
+            CHECK_EQ_INT(microseconds, 12345);
+        }
+        Driver_EndCalc(driver);
+        CHECK(Result_Ignore(Driver_EndFrame(driver, nullptr)));
+        replay_game.frame++;
+    }
+    CHECK(Result_Ignore(Driver_Close(driver, true, &differs)));
+    CHECK(!differs);
+
+    Mem_Free(replay_dir);
+    Mem_Free(case_path);
+    Mem_Free(capture_dir);
+    Mem_Free(root);
+}
+
 TEST(a_capture_replays_to_a_match)
 {
     char *const root = TestDir_Prepare("driver");
