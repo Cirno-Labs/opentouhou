@@ -310,6 +310,44 @@ if build_games
         link_depends: dosbox_export,
         dependencies: dosbox_deps,
       )
+      pc98_font_bmp = executable(
+        'pc98_font_bmp',
+        'replay/dosbox/font_bmp.c',
+        c_args: core_include,
+        implicit_include_directories: false,
+        link_with: [core_text_lib, core_image_lib, core_io_lib, core_base_lib],
+        dependencies: dosbox_deps,
+      )
+      th02_dosbox_font = custom_target(
+        'th02_dosbox_font',
+        input: files(
+          'src/shell/builtin/fonts/shnmk16.bdf',
+          'src/shell/builtin/fonts/shnm8x16r.bdf',
+        ),
+        output: 'th02-font.bmp',
+        command: [pc98_font_bmp, '@INPUT0@', '@INPUT1@', '@OUTPUT@'],
+      )
+      executable(
+        'th02dosbox',
+        'replay/dosbox/launch.c',
+        'replay/th02/dosbox_main.c',
+        c_args: core_include + harness_include + harness_dosbox_include,
+        implicit_include_directories: false,
+        link_with: [harness_lib],
+        dependencies: dosbox_deps,
+        link_depends: th02_dosbox_font,
+      )
+      shared_library(
+        'th02dosbox',
+        'replay/th02/dosbox_port.c',
+        name_prefix: '',
+        c_args: [layer_include['th02']] + core_include + harness_include + harness_dosbox_include,
+        implicit_include_directories: false,
+        link_with: [th02_harness_lib, harness_dosbox_lib, harness_lib],
+        link_args: ['-Wl,--version-script=' + dosbox_export[0].full_path()],
+        link_depends: dosbox_export,
+        dependencies: dosbox_deps + [pc98_dep],
+      )
       executable(
         'th01dosbox',
         'replay/dosbox/launch.c',
