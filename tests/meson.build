@@ -1865,6 +1865,7 @@ if build_games
     'player_render',
     'bullet_spawn',
     'pillars',
+    'enemies',
   ]
     test(
       'th02/' + part,
