@@ -79,6 +79,11 @@ typedef struct {
     int32_t (*setbacks)(void);
     RECORDER_SCORE (*score)(void);
     bool (*has_ended)(void);
+    // Gives how many frames without input the search plays after each
+    // segment, in a throwaway copy, to drop a segment that ends where the
+    // player dies a moment later; they are not added to the run. nullptr
+    // gives 90.
+    int32_t (*idle_frames)(void);
     // Saves the run that has just played: frames input structs, one per
     // frame from the first.
     RESULT (*save)(const char *path, const void *inputs, int32_t frames);
