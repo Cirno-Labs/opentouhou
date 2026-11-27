@@ -557,16 +557,21 @@ TEST(built_in_shinonome_inks_every_character_that_th01_draws)
     CHECK(IS_OK(RouteSelect_LoadFont(rom, allocator, &font)));
     M_CheckInked(&font);
     const char *const *const groups[] = {
-        m_MainMenuItems, m_OptionMenuItems, m_MusicMenuItems, m_Ranks,
-        m_MusicModes,    m_Lives,           m_TrackTitles,
+        g_OpeningMainMenuItems,  g_OpeningOptionMenuItems,
+        g_OpeningMusicMenuItems, g_OpeningRanks,
+        g_OpeningMusicModes,     g_OpeningLives,
+        g_OpeningTrackTitles,
     };
     const size_t counts[] = {
-        ARRAY_SIZE(m_MainMenuItems),  ARRAY_SIZE(m_OptionMenuItems),
-        ARRAY_SIZE(m_MusicMenuItems), ARRAY_SIZE(m_Ranks),
-        ARRAY_SIZE(m_MusicModes),     ARRAY_SIZE(m_Lives),
-        ARRAY_SIZE(m_TrackTitles),
+        ARRAY_SIZE(g_OpeningMainMenuItems),
+        ARRAY_SIZE(g_OpeningOptionMenuItems),
+        ARRAY_SIZE(g_OpeningMusicMenuItems),
+        ARRAY_SIZE(g_OpeningRanks),
+        ARRAY_SIZE(g_OpeningMusicModes),
+        ARRAY_SIZE(g_OpeningLives),
+        ARRAY_SIZE(g_OpeningTrackTitles),
     };
-    CHECK(IS_OK(GameText_Load(rom, m_Prompt, allocator, &font)));
+    CHECK(IS_OK(GameText_Load(rom, g_OpeningPrompt, allocator, &font)));
     M_CheckInked(&font);
     for (size_t group = 0; group < ARRAY_SIZE(groups); group++) {
         for (size_t i = 0; i < counts[group]; i++) {

@@ -45,11 +45,13 @@ RESULT Opening_LoadAssets(
     MUST(M_Image(vfs, "op_win.grp", allocator, &out->window));
     char characters[8192] = "0123456789";
     const char *const *const groups[] = {
-        m_MainMenuItems, m_OptionMenuItems, m_MusicMenuItems, m_Ranks,
-        m_MusicModes,    m_Lives,           m_TrackTitles,
+        g_OpeningMainMenuItems,  g_OpeningOptionMenuItems,
+        g_OpeningMusicMenuItems, g_OpeningRanks,
+        g_OpeningMusicModes,     g_OpeningLives,
+        g_OpeningTrackTitles,
     };
     const int32_t counts[] = { 4, 5, 2, 4, 2, 5, 15 };
-    strcat(characters, m_Prompt);
+    strcat(characters, g_OpeningPrompt);
     for (int32_t group = 0; group < 7; group++) {
         for (int32_t i = 0; i < counts[group]; i++) {
             strcat(characters, groups[group][i]);
