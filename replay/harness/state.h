@@ -77,6 +77,17 @@ static inline uint32_t State_Hash(uint32_t hash, const uint32_t value)
     return hash;
 }
 
+// Folds bytes into hash with FNV-1a.
+static inline uint32_t State_HashBytes(
+    uint32_t hash, const void *const data, const size_t size)
+{
+    const uint8_t *const bytes = data;
+    for (size_t i = 0; i < size; i++) {
+        hash = (hash ^ bytes[i]) * 0x01000193u;
+    }
+    return hash;
+}
+
 // Returns the bits of value, which a column of kind F32 holds.
 static inline uint32_t State_F32(const float value)
 {

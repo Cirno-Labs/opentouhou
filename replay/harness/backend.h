@@ -54,7 +54,7 @@ typedef struct {
     const char *case_path;
     // Gives the directory that the game loads from.
     const char *game_dir;
-    // Receives state.bin, the screenshots and report.ini of a replay, and
+    // Receives state.bin, the screenshots and report.ini of a run, and
     // in work/ the files that the game writes.
     const char *out_dir;
     // Gives a capture's input script, which a live capture has none of.
@@ -148,6 +148,21 @@ uint32_t Driver_Buttons(DRIVER *driver, uint32_t held);
 // clock. A capture records measured and returns it; a replay returns the
 // recorded rate.
 FPS Driver_Fps(DRIVER *driver, FPS measured);
+
+// Records the local date as YYYYMMDD. A capture uses the scripted date
+// when supplied, otherwise measured; a replay returns the recorded date,
+// or zero when none was recorded.
+uint32_t Driver_Date(DRIVER *driver, uint32_t measured);
+
+// Records an external clock sample during capture; replay leaves it unchanged.
+void Driver_RecordClock(DRIVER *driver, uint32_t key, uint64_t microseconds);
+
+// Copies a clock sample for the current frame, leaving out unchanged if absent.
+// A capture reads its measured samples; replay reads only the case's samples.
+bool Driver_Clock(const DRIVER *driver, uint32_t key, uint64_t *out);
+
+// Borrows the current frame's clock samples, or nullptr when empty.
+const SCRIPT_CLOCK *Driver_Clocks(const DRIVER *driver, size_t *count);
 
 // Samples, writes and compares the game's row after a completed calc.
 void Driver_EndCalc(DRIVER *driver);

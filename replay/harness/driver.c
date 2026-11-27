@@ -256,9 +256,13 @@ RESULT Driver_Open(
     Arena_Init(&driver->arena, "harness driver", M_ARENA_SIZE);
     Array_Init(&driver->script.inputs, &g_HeapAllocator);
     Array_Init(&driver->script.fps, &g_HeapAllocator);
+    Array_Init(&driver->script.dates, &g_HeapAllocator);
+    Array_Init(&driver->script.clocks, &g_HeapAllocator);
     Array_Init(&driver->script.starts, &g_HeapAllocator);
     Array_Init(&driver->recorded.inputs, &g_HeapAllocator);
     Array_Init(&driver->recorded.fps, &g_HeapAllocator);
+    Array_Init(&driver->recorded.dates, &g_HeapAllocator);
+    Array_Init(&driver->recorded.clocks, &g_HeapAllocator);
     Array_Init(&driver->recorded.starts, &g_HeapAllocator);
     Array_Init(&driver->steps, Arena_Allocator(&driver->arena));
     Array_Init(&driver->entries, Arena_Allocator(&driver->arena));
@@ -328,6 +332,41 @@ FPS Driver_Fps(DRIVER *const driver, const FPS measured)
     }
     Script_RecordFps(&driver->recorded, driver->frame, measured);
     return measured;
+}
+
+uint32_t Driver_Date(DRIVER *const driver, const uint32_t measured)
+{
+    const uint32_t scripted = Script_Date(&driver->script, driver->frame);
+    if (driver->run->role == RUN_REPLAY) {
+        return scripted;
+    }
+    const uint32_t date = scripted != 0 ? scripted : measured;
+    Script_RecordDate(&driver->recorded, driver->frame, date);
+    return date;
+}
+
+void Driver_RecordClock(
+    DRIVER *const driver, const uint32_t key, const uint64_t microseconds)
+{
+    if (driver->run->role == RUN_CAPTURE) {
+        Script_RecordClock(&driver->recorded, driver->frame, key, microseconds);
+    }
+}
+
+bool Driver_Clock(
+    const DRIVER *const driver, const uint32_t key, uint64_t *const out)
+{
+    const SCRIPT *const script =
+        driver->run->role == RUN_CAPTURE ? &driver->recorded : &driver->script;
+    return Script_Clock(script, driver->frame, key, out);
+}
+
+const SCRIPT_CLOCK *Driver_Clocks(
+    const DRIVER *const driver, size_t *const count)
+{
+    const SCRIPT *const script =
+        driver->run->role == RUN_CAPTURE ? &driver->recorded : &driver->script;
+    return Script_Clocks(script, driver->frame, count);
 }
 
 void Driver_EndCalc(DRIVER *const driver)
@@ -436,9 +475,23 @@ bool Driver_Done(const DRIVER *const driver)
         return driver->frame >= driver->script.frames;
     }
     const SCRIPT *const script = &driver->script;
-    const uint32_t last_input = script->inputs.count == 0
+    uint32_t last_input = script->inputs.count == 0
         ? 0
         : script->inputs.items[script->inputs.count - 1].frame;
+    if (script->dates.count > 0) {
+        const uint32_t last_date =
+            script->dates.items[script->dates.count - 1].frame;
+        if (last_date > last_input) {
+            last_input = last_date;
+        }
+    }
+    if (script->clocks.count > 0) {
+        const uint32_t last_clock =
+            script->clocks.items[script->clocks.count - 1].frame;
+        if (last_clock > last_input) {
+            last_input = last_clock;
+        }
+    }
     return driver->frame > last_input
         && driver->port->idle(driver->port->context);
 }

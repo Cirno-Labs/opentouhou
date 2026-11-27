@@ -21,6 +21,9 @@ typedef struct {
     // Changes the game's settings after Native_Main sets their defaults and
     // before the game starts, or nullptr.
     void (*configure)(void *context);
+    // Fills in frame metadata (date, clock samples) that the game's own
+    // input schema does not cover, right before each tick, or nullptr.
+    void (*prepare_input)(void *context, DRIVER *driver, void *input);
     // Gives the port the driver before each tick, for the port to call
     // Driver_EndCalc after each calc of that tick.
     void (*hook)(void *context, DRIVER *driver);

@@ -184,6 +184,10 @@ static RESULT M_Start(M_NATIVE *const native)
 static RESULT M_Frame(M_NATIVE *const native)
 {
     M_SetInput(native, Driver_Buttons(native->driver, 0));
+    if (native->port->prepare_input != nullptr) {
+        native->port->prepare_input(
+            native->port->port.context, native->driver, native->input);
+    }
     M_UpdateRate(native);
     native->port->hook(native->port->port.context, native->driver);
     const bool draw = Driver_WantsDraw(native->driver);
