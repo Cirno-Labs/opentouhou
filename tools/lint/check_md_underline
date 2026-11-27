@@ -44,11 +44,11 @@ def headings(lines: list[str]) -> list[tuple[int, int]]:
     return found
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fix", action="store_true")
     parser.add_argument("paths", nargs="*")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     failed = False
     for name in args.paths:
         path = Path(name)
