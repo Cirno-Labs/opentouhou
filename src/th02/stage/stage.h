@@ -68,3 +68,10 @@ void Stage_AdvanceFrame(void);
 
 // Sets the boss fight progression.
 void Stage_SetProgression(uint8_t progression);
+
+// Zeros the scroll line and address; talk resets them at stage entry.
+void Stage_ResetScrollPosition(void);
+
+// Sets the front and back pages to 1 and 0; gameplay resets them at stage
+// entry.
+void Stage_ResetPages(void);
