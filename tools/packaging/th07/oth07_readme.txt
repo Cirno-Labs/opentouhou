@@ -6,6 +6,39 @@ Blossom (Touhou 7) for Windows, Linux and macOS, faithful down to its
 replays. It needs your own copy of the game data to run.
 
 
+Differences from the original
+-----------------------------
+
+The program plays as the original game does, and your scores and
+replays keep the format of the original. Beyond the original, it has:
+
+- Native packages for Windows, Linux and macOS.
+- English and other languages from thpatch.net, and mods, through
+  othpatch, which also keeps the game up to date.
+- Smooth motion between the 60 Hz steps of the game on faster
+  displays.
+- Rebindable keys, gamepad and joystick buttons.
+- Sharp, smooth or integer scaling of the screen to any window size,
+  and full screen with F11 or Alt+Enter.
+- Screenshots in PNG or JPEG with F12 or Print Screen.
+- Portable mode, and --user-dir to keep your files in another folder.
+- The game data read from a zip of the game folder.
+- Your own font files in place of the fonts that the game uses.
+- Paths longer than 260 characters on Windows.
+- A message box when the game cannot start, and a log of the last
+  start.
+
+It also fixes two faults of the original, each of which config.ini
+can turn off or on (see Settings):
+
+- replay_desync, on by default: replays keep the score carried into
+  each stage, and replays recorded with VsyncPatch no longer skip a
+  line of dialogue after a pause.
+- input_lag, off by default: the game acts on a button press a frame
+  sooner, as with VsyncPatch.
+
+
+
 Installing
 ----------
 
