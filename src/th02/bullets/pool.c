@@ -346,3 +346,8 @@ void Bullets_SetTurnLimit(const int16_t turn_limit)
 {
     m_Bullets.turn_limit = turn_limit;
 }
+
+void Bullets_SetSpawnLayers(const uint8_t multiplier)
+{
+    BulletSpawn_Layers(multiplier);
+}
