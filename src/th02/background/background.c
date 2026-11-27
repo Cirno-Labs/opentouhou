@@ -75,6 +75,11 @@ static void M_Flush(const TILE_COPY_MODE mode)
     p_Background->cache.redraw_all = 0;
 }
 
+void Background_Init(void)
+{
+    memset(&m_Background, 0, sizeof(m_Background));
+}
+
 void Background_SetMode(const TILE_MODE mode)
 {
     p_Background->cache.mode = (uint8_t)mode;

@@ -48,6 +48,9 @@ typedef struct {
 
 extern const BACKGROUND *const g_Background;
 
+// Clears the whole background, once per run.
+void Background_Init(void);
+
 // Sets the cache's mode, keeping its dirty state.
 void Background_SetMode(TILE_MODE mode);
 
