@@ -18,7 +18,7 @@ typedef struct {
 
 static void M_Begin(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(fixture, 0, sizeof(*fixture));
     Arena_Init(&fixture->arena, "Shot renderer test", 1024 * 1024);
@@ -72,17 +72,17 @@ TEST(shot_init_keeps_clean_background_page_and_darkens_alternate_portrait_dots)
     CHECK_EQ_INT(g_Video.visible_page, 1);
     CHECK_EQ_INT(g_Video.first_lines, 123);
     CHECK_EQ_INT(g_Video.first_address, 456);
-    CHECK_EQ_INT(m_Palette.tone, 0);
+    CHECK_EQ_INT(p_Palette->tone, 0);
     CHECK_EQ_INT(g_Grcg->mode, 0);
     CHECK_EQ_INT(M_Fade(), 35);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK(ShotSelect_VSync());
     for (size_t i = 0; i < 3; i++) {
         fixture.assets.portraits[i].pixels = nullptr;
     }
     ShotSelect_BeginFadeOut();
     CHECK_EQ_INT(M_Fade(), 18);
-    CHECK_EQ_INT(m_Palette.tone, 0);
+    CHECK_EQ_INT(p_Palette->tone, 0);
     CHECK(ShotSelect_VSync());
     Arena_Free(&fixture.arena);
 }

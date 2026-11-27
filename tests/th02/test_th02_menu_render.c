@@ -24,7 +24,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     Tram_Init();
     memset(fixture, 0, sizeof(*fixture));
@@ -100,11 +100,11 @@ TEST(menu_init_copies_visible_background_and_keeps_hidden_video_and_text_tails)
     FIXTURE fixture;
     M_Init(&fixture);
     Grcg_SetColor(15);
-    m_Palette.tone = 50;
+    p_Palette->tone = 50;
     g_Video.visible_page = g_Video.drawing_page = 1;
     Video_SetSplit(123, 456, 789);
     MainMenuRender_Init(&fixture.assets, &fixture.settings, fixture.console, 5);
-    CHECK_EQ_INT(m_Palette.tone, 50);
+    CHECK_EQ_INT(p_Palette->tone, 50);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.first_lines, 123);
@@ -130,11 +130,11 @@ TEST(score_return_keeps_text_and_tone_while_restoring_both_visible_pages)
     FIXTURE fixture;
     M_Init(&fixture);
     memset(fixture.pixels, 3, sizeof(fixture.pixels));
-    m_Palette.tone = 50;
+    p_Palette->tone = 50;
     MainMenuRender_Restore(&fixture.assets);
     CHECK_EQ_INT(g_Video.drawing_page, 0);
     CHECK_EQ_INT(g_Video.visible_page, 0);
-    CHECK_EQ_INT(m_Palette.tone, 50);
+    CHECK_EQ_INT(p_Palette->tone, 50);
     for (size_t i = 0; i < TRAM_PLANE_CELLS; i++) {
         CHECK_EQ_INT(m_Tram.codes[i], 0x9999);
         CHECK_EQ_INT(m_Tram.attributes[i], 0x9999);
@@ -152,7 +152,7 @@ TEST(score_return_keeps_text_and_tone_while_restoring_both_visible_pages)
         CHECK_EQ_INT(g_Video.palette[i].red, 119);
         CHECK_EQ_INT(g_Video.palette[i].green, 0);
         CHECK_EQ_INT(g_Video.palette[i].blue, 0);
-        CHECK_EQ_INT(m_Palette.colors[i][0], 255);
+        CHECK_EQ_INT(p_Palette->colors[i][0], 255);
     }
     Arena_Free(&fixture.arena);
 }

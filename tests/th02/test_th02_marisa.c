@@ -612,7 +612,7 @@ TEST(marisa_borrows_banks_and_imports_logical_palettes_without_showing_them)
     const PATTERN startup = TestGameplay_State()->assets.patterns.entries[0];
     const PATTERN stage = f.assets.patterns.entries[128];
     const GFX_COLOR displayed = g_Video.palette[0];
-    m_Palette.tone = 77;
+    p_Palette->tone = 77;
     Marisa_SelectPatterns(
         &TestGameplay_State()->assets.patterns, &assets, false);
     CHECK(
@@ -620,8 +620,8 @@ TEST(marisa_borrows_banks_and_imports_logical_palettes_without_showing_them)
         == assets.summon.entries[128].data);
     CHECK(
         TestGameplay_State()->assets.patterns.entries[0].data == startup.data);
-    CHECK_EQ_INT(m_Palette.colors[0][0], 12);
-    CHECK_EQ_INT(m_Palette.tone, 77);
+    CHECK_EQ_INT(p_Palette->colors[0][0], 12);
+    CHECK_EQ_INT(p_Palette->tone, 77);
     CHECK(memcmp(&g_Video.palette[0], &displayed, sizeof(displayed)) == 0);
     Marisa_SelectPatterns(
         &TestGameplay_State()->assets.patterns, &assets, true);
@@ -629,9 +629,9 @@ TEST(marisa_borrows_banks_and_imports_logical_palettes_without_showing_them)
         TestGameplay_State()->assets.patterns.entries[128].data
         == assets.combat.entries[128].data);
     CHECK(f.assets.patterns.entries[128].data == stage.data);
-    CHECK_EQ_INT(m_Palette.colors[0][0], 78);
-    CHECK_EQ_INT(m_Palette.colors[0][2], 123);
-    CHECK_EQ_INT(m_Palette.tone, 77);
+    CHECK_EQ_INT(p_Palette->colors[0][0], 78);
+    CHECK_EQ_INT(p_Palette->colors[0][2], 123);
+    CHECK_EQ_INT(p_Palette->tone, 77);
     CHECK(memcmp(&g_Video.palette[0], &displayed, sizeof(displayed)) == 0);
     TestGameplay_State()->assets.patterns = f.assets.patterns;
     MarisaAssets_Free(&assets);

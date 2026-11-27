@@ -56,7 +56,7 @@ static void M_Init(FIXTURE *const fixture, const uint8_t type)
     Bullets_Init();
     Score_Init();
     memset(&m_Performance, 0, sizeof(m_Performance));
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(&p_Background->cache, 0, sizeof(p_Background->cache));
     Tram_Init();
@@ -74,8 +74,8 @@ static void M_Init(FIXTURE *const fixture, const uint8_t type)
     };
     memset(fixture->assets.particles, 0xff, sizeof(fixture->assets.particles));
     memset(fixture->tail, 0x80, sizeof(fixture->tail));
-    m_Palette.tone = 100;
-    memset(m_Palette.colors, 87, sizeof(m_Palette.colors));
+    p_Palette->tone = 100;
+    memset(p_Palette->colors, 87, sizeof(p_Palette->colors));
     m_Score.bombs = 3;
     fixture->pages = (PLAYFIELD_PAGES) { 0, 1, 0 };
     fixture->slowdown = 1;
@@ -173,7 +173,7 @@ TEST(
         CHECK_EQ_INT(m_Score.bombs, 2);
         CHECK_EQ_INT(m_Bomb.stage_bombs, 1);
         CHECK_EQ_INT(m_Performance.total_bombs, 1);
-        CHECK_EQ_INT(m_Palette.tone, 100);
+        CHECK_EQ_INT(p_Palette->tone, 100);
         CHECK_EQ_INT(p_Background->cache.mode, TILE_IMAGES);
         CHECK_EQ_INT(fixture.slowdown, 1);
         CHECK_EQ_INT(g_Grcg->mode, 0);
@@ -243,7 +243,7 @@ TEST(transition_fix_preserves_complete_animation_state_and_random_stream)
                 observed.sparks = *g_Sparks;
                 observed.score = *g_Score;
                 observed.performance = m_Performance;
-                observed.palette = m_Palette;
+                observed.palette = (*p_Palette);
                 observed.slowdown = fixture.slowdown;
                 observed.pcm = fixture.pcm;
                 if (fixed == 0) {
@@ -338,7 +338,7 @@ static uint64_t M_HashState(const FIXTURE *const fixture, uint64_t hash)
         m_Score.bombs,
         m_Performance.total_bombs,
         fixture->slowdown,
-        m_Palette.tone,
+        p_Palette->tone,
         p_Background->cache.mode,
         p_Background->cache.redraw_all,
         g_Sparks->next,
@@ -378,7 +378,7 @@ static uint64_t M_HashState(const FIXTURE *const fixture, uint64_t hash)
     }
     for (size_t i = 0; i < 16; i++) {
         for (size_t channel = 0; channel < 3; channel++) {
-            hash = M_HashValue(hash, m_Palette.colors[i][channel]);
+            hash = M_HashValue(hash, p_Palette->colors[i][channel]);
         }
     }
     for (size_t i = 0; i < 4; i++) {

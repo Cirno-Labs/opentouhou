@@ -24,7 +24,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     Stage_Init();
     Tram_Init();
@@ -58,7 +58,7 @@ static void M_Init(FIXTURE *const fixture)
     m_Player.option_sprite = 74;
     p_Stage->scroll.front = 1;
     Palette_Init();
-    m_Palette.tone = 70;
+    p_Palette->tone = 70;
     Score_Init();
     m_Score.value = 99900;
     m_Score.delta = 200;

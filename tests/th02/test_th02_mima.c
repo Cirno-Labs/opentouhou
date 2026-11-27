@@ -30,7 +30,7 @@ TEST(mima_banks_borrow_cached_patterns_and_import_palettes_without_dac_writes)
         TestGameplay_State()->assets.patterns.entries[0].data;
     const uint8_t *const owner = f.assets.patterns.entries[128].data;
     const GFX_COLOR displayed = g_Video.palette[0];
-    m_Palette.tone = 77;
+    p_Palette->tone = 77;
     for (int bank = 0; bank < MIMA_BANK_COUNT; bank++) {
         Mima_SelectPatterns(
             &TestGameplay_State()->assets.patterns, &assets, bank);
@@ -40,8 +40,8 @@ TEST(mima_banks_borrow_cached_patterns_and_import_palettes_without_dac_writes)
         CHECK(TestGameplay_State()->assets.patterns.entries[0].data == startup);
         CHECK(f.assets.patterns.entries[128].data == owner);
         CHECK_EQ_INT(TestGameplay_State()->assets.patterns.next, 129);
-        CHECK_EQ_INT(m_Palette.colors[0][0], 20 + bank);
-        CHECK_EQ_INT(m_Palette.tone, 77);
+        CHECK_EQ_INT(p_Palette->colors[0][0], 20 + bank);
+        CHECK_EQ_INT(p_Palette->tone, 77);
         CHECK(memcmp(&displayed, &g_Video.palette[0], sizeof(displayed)) == 0);
     }
     Mima_Place(TestBossFight_State());

@@ -1,4 +1,4 @@
-#include "th02/palette.h"
+#include "th02/palette_private.h"
 
 #include "core/base/assert.h"
 
@@ -6,6 +6,7 @@
 
 static PALETTE_STATE m_Palette;
 const PALETTE_STATE *const g_Palette = &m_Palette;
+PALETTE_STATE *const p_Palette = &m_Palette;
 
 static uint8_t M_Component(
     const uint8_t nibble, const int32_t factor, const uint8_t invert)

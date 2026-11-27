@@ -33,8 +33,8 @@ TEST(pause_draws_cached_labels_and_distinct_heading_and_blank_widths)
     Video_AccessPage(1);
     Video_ShowPage(1);
     Video_SetSplit(123, 456, 789);
-    memset(&m_Palette, 0, sizeof(m_Palette));
-    memset(m_Palette.colors, 255, sizeof(m_Palette.colors));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
+    memset(p_Palette->colors, 255, sizeof(p_Palette->colors));
 
     memset(&m_Tram, 0xa5, sizeof(m_Tram));
     PauseMenu_Init();
@@ -43,7 +43,7 @@ TEST(pause_draws_cached_labels_and_distinct_heading_and_blank_widths)
     CHECK_EQ_INT(m_Tram.attributes[15 * 80 + 23], 0xe9);
     CHECK_EQ_INT(m_Tram.codes[16 * 80 + 23], 'Q');
     CHECK_EQ_INT(m_Tram.attributes[16 * 80 + 23], 0x61);
-    CHECK_EQ_INT(m_Palette.tone, 70);
+    CHECK_EQ_INT(p_Palette->tone, 70);
     CHECK_EQ_INT(g_Video.palette[15].red, 170);
     CHECK_EQ_INT(PauseMenu_Update(0).result, PAUSE_MENU_INPUT);
     CHECK_EQ_INT(m_Tram.codes[12 * 80 + 18], 0x3957);
@@ -58,7 +58,7 @@ TEST(pause_draws_cached_labels_and_distinct_heading_and_blank_widths)
     CHECK_EQ_INT(m_Tram.codes[12 * 80 + 40], 0xa5a5);
     m_Pause.state = 2;
     CHECK_EQ_INT(PauseMenu_Update(0).result, PAUSE_MENU_RESUME);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     CHECK_EQ_INT(g_Video.palette[15].red, 255);
     CHECK_EQ_INT(m_Tram.codes[15 * 80 + 23], 0x4f57);
     CHECK_EQ_INT(m_Tram.codes[16 * 80 + 23], 0x4f57);
@@ -75,7 +75,7 @@ TEST(pause_draws_cached_labels_and_distinct_heading_and_blank_widths)
     }
     for (size_t color = 0; color < 16; color++) {
         for (size_t channel = 0; channel < 3; channel++) {
-            CHECK_EQ_INT(m_Palette.colors[color][channel], 255);
+            CHECK_EQ_INT(p_Palette->colors[color][channel], 255);
         }
     }
     Arena_Free(&arena);

@@ -17,7 +17,7 @@ typedef struct {
 
 static void M_Init(FIXTURE *const fixture)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));
     memset(fixture, 0, sizeof(*fixture));
@@ -26,7 +26,7 @@ static void M_Init(FIXTURE *const fixture)
     Video_Init(allocator);
     Clip_Reset();
     Palette_Init();
-    m_Palette.tone = 0;
+    p_Palette->tone = 0;
     VSyncIrq_BeginProgram();
     g_VSync.count1 = 65534;
     g_VSync.count2 = 65530;
@@ -112,7 +112,7 @@ TEST(verdict_runs_all_rows_with_counter_waits_and_separate_skill_reveals)
         CHECK_EQ_INT(accepted, 1599);
         CHECK_EQ_INT(g_VSync.count1, 88);
         CHECK_EQ_INT(g_VSync.count2, (uint16_t)(65530u + accepted));
-        CHECK_EQ_INT(m_Palette.tone, 0);
+        CHECK_EQ_INT(p_Palette->tone, 0);
         CHECK_EQ_INT(g_Video.drawing_page, 0);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK_EQ_INT(g_Grcg->mode, 0);

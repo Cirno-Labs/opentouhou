@@ -35,7 +35,7 @@ static void M_Music(void *const context, const STORY_MUSIC song)
 
 static void M_Init(FIXTURE *const f)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     Tram_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));
@@ -100,7 +100,7 @@ TEST(entry_retains_the_displayed_palette_through_the_initial_wait)
             f.session.rank = SESSION_EXTRA_RANK;
             f.extra_unlocked = true;
         }
-        memset(m_Palette.colors, 0xaa, sizeof(m_Palette.colors));
+        memset(p_Palette->colors, 0xaa, sizeof(p_Palette->colors));
         Palette_SetTone(75);
         GFX_COLOR displayed[16];
         memcpy(displayed, g_Video.palette, sizeof(displayed));
@@ -155,7 +155,7 @@ TEST(normal_routes_keep_one_cache_through_story_credits_and_verdict)
         CHECK_EQ_INT(f.songs[0], STORY_MUSIC_INTRO);
         CHECK_EQ_INT(f.songs[1], STORY_MUSIC_CREDITS);
         CHECK_EQ_INT(g_VSync.count2, (uint16_t)(65500 + frame));
-        CHECK_EQ_INT(m_Palette.tone, 0);
+        CHECK_EQ_INT(p_Palette->tone, 0);
         CHECK_EQ_INT(g_Video.pages[0][0], 0);
         CHECK_EQ_INT(g_Video.drawing_page, 0);
         CHECK_EQ_INT(g_Video.visible_page, 0);
@@ -182,7 +182,7 @@ TEST(extra_clear_fades_holds_all_clear_then_waits_on_the_partial_picture)
         CHECK(!Ending_Update(&input, false, 0));
     }
     CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_IN);
-    CHECK_EQ_INT(m_Palette.tone, 0);
+    CHECK_EQ_INT(p_Palette->tone, 0);
     CHECK_EQ_INT(g_Video.pages[0][0], ENDING_IMAGE_ALL_CLEAR + 1);
     const ENDING waiting = m_Ending;
     CHECK(!Ending_Update(&input, false, 0));
@@ -192,7 +192,7 @@ TEST(extra_clear_fades_holds_all_clear_then_waits_on_the_partial_picture)
         CHECK(!Ending_Update(&input, false, 0));
     }
     CHECK_EQ_INT(m_Ending.phase, ENDING_FINISH_HOLD);
-    CHECK_EQ_INT(m_Palette.tone, 100);
+    CHECK_EQ_INT(p_Palette->tone, 100);
     for (unsigned i = 0; i < 149; i++) {
         VSyncIrq_VSync();
         CHECK(!Ending_Update(&input, false, 0));
@@ -220,7 +220,7 @@ TEST(extra_clear_fades_holds_all_clear_then_waits_on_the_partial_picture)
         VSyncIrq_VSync();
         CHECK_EQ_INT(Ending_Update(&input, false, 0), i == 85);
     }
-    CHECK_EQ_INT(m_Palette.tone, 0);
+    CHECK_EQ_INT(p_Palette->tone, 0);
     CHECK_EQ_INT(g_Video.pages[0][0], ENDING_IMAGE_EXTRA_CLEAR + 1);
     Arena_Free(&f.arena);
 }
@@ -233,7 +233,7 @@ TEST(extra_without_normal_clear_markers_skips_the_finish_pictures)
     for (size_t i = 0; i < 16; i++) {
         f.assets.title_palette[i] = (GFX_COLOR) { 0x22, 0x44, 0x66, 255 };
     }
-    memset(m_Palette.colors, 255, sizeof(m_Palette.colors));
+    memset(p_Palette->colors, 255, sizeof(p_Palette->colors));
     M_Begin(&f);
     const TH02_INPUT input = {};
     for (unsigned i = 0; i < 100; i++) {

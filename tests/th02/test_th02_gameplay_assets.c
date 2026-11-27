@@ -301,9 +301,9 @@ TEST(backdrop_draw_uses_owned_pixels_and_keeps_live_video_state)
     const GRCG charger_before = *g_Grcg;
 
     Palette_Init();
-    m_Palette.tone = 50;
+    p_Palette->tone = 50;
     StageBackdrop_Draw(&backdrop);
-    CHECK_EQ_INT(m_Palette.tone, 50);
+    CHECK_EQ_INT(p_Palette->tone, 50);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(g_Video.first_lines, 200);

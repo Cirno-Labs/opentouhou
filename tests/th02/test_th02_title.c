@@ -40,7 +40,7 @@ TEST(flash_emits_audio_before_drawing_and_finishes_after_eighteen_waits)
             CHECK(!events.release_images && !events.complete);
             CHECK_EQ_INT(g_Video.visible_page, 1 - frame % 2);
             CHECK_EQ_INT(g_Video.drawing_page, drawing_page);
-            CHECK_EQ_INT(m_Palette.tone, frame % 3 == 0 ? 150 : 100);
+            CHECK_EQ_INT(p_Palette->tone, frame % 3 == 0 ? 150 : 100);
             const uint8_t color = frame < 5 ? 5 : frame < 10 ? 6 : 7;
             for (size_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
                 CHECK_EQ_INT(
@@ -60,7 +60,7 @@ TEST(flash_emits_audio_before_drawing_and_finishes_after_eighteen_waits)
         CHECK(!m_Flash.active);
         CHECK(m_Flash.images == nullptr);
         CHECK_EQ_INT(g_Video.visible_page, 0);
-        CHECK_EQ_INT(m_Palette.tone, 100);
+        CHECK_EQ_INT(p_Palette->tone, 100);
         const VIDEO complete = g_Video;
         for (size_t i = 0; i < 3; i++) {
             events = TitleFlash_Advance();
@@ -148,7 +148,7 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
                 frame_waits += events.count;
                 if (door_frames < 50) {
                     CHECK_EQ_INT(events.count, 1);
-                    CHECK_EQ_INT(m_Palette.tone, 200 - door_frames * 2);
+                    CHECK_EQ_INT(p_Palette->tone, 200 - door_frames * 2);
                     for (size_t y = 0; y < 25; y++) {
                         for (size_t x = 0; x < 80; x++) {
                             const bool open = door_frames >= 39
@@ -184,7 +184,7 @@ TEST(title_sequence_preserves_demo_branches_and_distinct_waits)
             cold ? initial_midi && m_Title.midi_possible : initial_midi);
         CHECK_EQ_INT(g_Video.visible_page, 0);
         CHECK_EQ_INT(g_Video.drawing_page, 0);
-        CHECK_EQ_INT(m_Palette.tone, 100);
+        CHECK_EQ_INT(p_Palette->tone, 100);
         CHECK_EQ_INT(g_Grcg->mode, 0);
         for (size_t i = 0; i < 16; i++) {
             CHECK_EQ_INT(g_Video.palette[i].red, i * 17);

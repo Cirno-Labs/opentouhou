@@ -28,7 +28,7 @@ static void M_RecordMusic(void *const context, const STORY_MUSIC song)
 
 static void M_Init(FIXTURE *const f, const TH02_SESSION *const session)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     Grcg_Init();
     memset(&g_VSync, 0, sizeof(g_VSync));
     memset(f, 0, sizeof(*f));
@@ -107,7 +107,7 @@ TEST(both_stories_cover_all_shot_branches_with_counter_wrap_and_fast_forward)
                 CHECK_EQ_INT(f.songs[1], STORY_MUSIC_CREDITS);
                 CHECK_EQ_INT(g_Video.drawing_page, 0);
                 CHECK_EQ_INT(g_Video.visible_page, 0);
-                CHECK_EQ_INT(m_Palette.tone, 100);
+                CHECK_EQ_INT(p_Palette->tone, 100);
                 CHECK_EQ_INT(g_Grcg->mode, 0);
                 CHECK_EQ_INT(
                     g_Video.pages[0][100 * 640 + 36],

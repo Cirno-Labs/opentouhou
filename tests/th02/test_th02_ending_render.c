@@ -44,12 +44,12 @@ TEST(staging_can_keep_the_previous_palette_until_the_credits_change)
     }
 
     Palette_Init();
-    m_Palette.tone = 76;
-    const PALETTE_STATE before = m_Palette;
+    p_Palette->tone = 76;
+    const PALETTE_STATE before = (*p_Palette);
     GFX_COLOR dac[16];
     memcpy(dac, g_Video.palette, sizeof(dac));
     EndingRender_Stage(&images, ENDING_IMAGE_CREDITS_2, false);
-    CHECK(memcmp(&before, &m_Palette, sizeof(before)) == 0);
+    CHECK(memcmp(&before, p_Palette, sizeof(before)) == 0);
     CHECK(memcmp(dac, g_Video.palette, sizeof(dac)) == 0);
     CHECK(memcmp(g_Video.pages[1], image->pixels, VIDEO_VISIBLE_SIZE) == 0);
     for (size_t i = 0; i < VIDEO_PAGE_SIZE; i++) {
@@ -60,11 +60,11 @@ TEST(staging_can_keep_the_previous_palette_until_the_credits_change)
     }
     EndingRender_Stage(&images, ENDING_IMAGE_CREDITS_2, true);
     for (size_t i = 0; i < 16; i++) {
-        CHECK_EQ_INT(m_Palette.colors[i][0], i * 17);
-        CHECK_EQ_INT(m_Palette.colors[i][1], 255 - i * 17);
-        CHECK_EQ_INT(m_Palette.colors[i][2], 0);
+        CHECK_EQ_INT(p_Palette->colors[i][0], i * 17);
+        CHECK_EQ_INT(p_Palette->colors[i][1], 255 - i * 17);
+        CHECK_EQ_INT(p_Palette->colors[i][2], 0);
     }
-    CHECK_EQ_INT(m_Palette.tone, 76);
+    CHECK_EQ_INT(p_Palette->tone, 76);
     CHECK_EQ_INT(g_Video.drawing_page, 1);
     CHECK_EQ_INT(g_Video.visible_page, 0);
     CHECK_EQ_INT(g_Video.first_lines, 200);
@@ -313,8 +313,8 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
         m_Grcg.tiles, (const uint8_t[4]) { 1, 2, 3, 4 }, sizeof(m_Grcg.tiles));
 
     Palette_Init();
-    m_Palette.tone = 73;
-    const PALETTE_STATE before = m_Palette;
+    p_Palette->tone = 73;
+    const PALETTE_STATE before = (*p_Palette);
     GFX_COLOR dac[16];
     memcpy(dac, g_Video.palette, sizeof(dac));
     ENDING_ROTATION rotation;
@@ -325,13 +325,13 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
         CHECK(!EndingRender_StepRotation(&rotation));
         CHECK_EQ_INT(m_Grcg.mode, 0xc0);
         CHECK(
-            memcmp(m_Palette.colors, before.colors, sizeof(m_Palette.colors))
+            memcmp(p_Palette->colors, before.colors, sizeof(p_Palette->colors))
             == 0);
-        CHECK_EQ_INT(m_Palette.tone, 73);
+        CHECK_EQ_INT(p_Palette->tone, 73);
         CHECK(memcmp(dac, g_Video.palette, sizeof(dac)) == 0);
     }
     CHECK(EndingRender_StepRotation(&rotation));
-    CHECK_EQ_INT(m_Palette.tone, 200);
+    CHECK_EQ_INT(p_Palette->tone, 200);
     CHECK_EQ_INT(m_Grcg.mode, 0);
     for (size_t plane = 0; plane < 4; plane++) {
         CHECK_EQ_INT(m_Grcg.tiles[plane], 255);
@@ -356,9 +356,9 @@ TEST(rotation_finishes_after_twenty_waits_and_keeps_the_live_page_and_clip)
     CHECK_EQ_INT(g_Video.second_address, 789);
     Grcg_SetColor(7);
     Grcg_SetPlanes(1);
-    m_Palette.tone = 12;
+    p_Palette->tone = 12;
     CHECK(EndingRender_StepRotation(&rotation));
     CHECK_EQ_INT(m_Grcg.mode, 0xce);
-    CHECK_EQ_INT(m_Palette.tone, 12);
+    CHECK_EQ_INT(p_Palette->tone, 12);
     Mem_Free(g_Video.pages[0]);
 }

@@ -61,14 +61,14 @@ static bool M_Boss(
 
 static void M_Init(FIXTURE *const f, const uint8_t stage, const bool reduced)
 {
-    memset(&m_Palette, 0, sizeof(m_Palette));
+    memset(p_Palette, 0, sizeof((*p_Palette)));
     memset(f, 0, sizeof(*f));
     Stage_Init();
     Stage_Begin(stage, reduced);
     f->session.stage = stage;
     Palette_Init();
     Enemies_Init();
-    memset(m_Palette.colors[0], 0x70, 3);
+    memset(p_Palette->colors[0], 0x70, 3);
     m_Enemies.count = 3;
     m_Enemies.slots[0].state = ENTITY_ACTIVE;
     m_Enemies.slots[1].state = ENTITY_REMOVE;
@@ -142,7 +142,7 @@ TEST(stage_flow_preserves_entry_and_exit_order_across_nested_waits)
         CHECK_EQ_INT(m_Enemies.count, 3);
         CHECK_EQ_INT(m_Enemies.slots[0].state, ENTITY_ACTIVE);
         CHECK_EQ_INT(g_Stage->scroll.cycle, 7);
-        CHECK_EQ_INT(m_Palette.colors[0][0], stage == 2 ? 0 : 0x70);
+        CHECK_EQ_INT(p_Palette->colors[0][0], stage == 2 ? 0 : 0x70);
         CHECK_EQ_INT(g_Stage->world.frame, 159);
         CHECK_EQ_INT(
             StageFlow_Enter(nullptr, nullptr, nullptr, &f.session, &f.input),
@@ -169,11 +169,11 @@ TEST(stage_flow_preserves_entry_and_exit_order_across_nested_waits)
             StageFlow_End(nullptr, nullptr, nullptr, &f.session, &f.input),
             STAGE_FLOW_RUNNING);
         p_Stage->world.progression = 2;
-        memset(m_Palette.colors[0], 0x90, 3);
+        memset(p_Palette->colors[0], 0x90, 3);
         CHECK_EQ_INT(
             StageFlow_End(nullptr, nullptr, nullptr, &f.session, &f.input),
             STAGE_FLOW_WAIT);
-        CHECK_EQ_INT(m_Palette.colors[0][0], stage == 2 ? 0 : 0x90);
+        CHECK_EQ_INT(p_Palette->colors[0][0], stage == 2 ? 0 : 0x90);
         CHECK_EQ_INT(
             StageFlow_End(nullptr, nullptr, nullptr, &f.session, &f.input),
             STAGE_FLOW_CLEARED);
