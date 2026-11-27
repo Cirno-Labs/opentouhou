@@ -9,6 +9,36 @@ This development build includes normal and Extra play, endings and
 score saving. Original-game parity verification is in progress.
 
 
+Differences from the original
+-----------------------------
+
+The program plays as the original game does, and your scores keep the
+format of the original. Beyond the original, it has:
+
+- Native packages for Windows, Linux and macOS, with no PC-98
+  emulator.
+- The game data read from the game folder, a zip of it, or a PC-98
+  hard disk image.
+- Settings in config.ini, taken from HUUMA.CFG on the first start.
+- Rebindable keys, gamepad and joystick buttons.
+- Sharp, smooth or integer scaling of the screen to any window size,
+  and full screen with F11 or Alt+Enter.
+- Screenshots in PNG or JPEG with F12 or Print Screen.
+- Portable mode, and --user-dir to keep your files in another folder.
+- The bundled Shinonome 16 font for the text of the PC-98 font ROM, or
+  your own dump of the ROM.
+- Updates through othpatch.
+- A message box when the game cannot start, and a log of the last
+  start.
+
+It also fixes one fault of the original, which config.ini can turn off
+(see Settings):
+
+- bomb_transition_overread, on by default: the last bomb transition
+  draws nothing where the original reads past its table into unrelated
+  memory and draws that.
+
+
 Installing
 ----------
 
