@@ -341,7 +341,9 @@ static bool M_PlayCandidate(
     if (copy != nullptr && Snapshot_Keep(copy)) {
         return true;
     }
-    for (int32_t i = 0; !minimize && i < M_IDLE_FRAMES && !game->has_ended()
+    const int32_t idle =
+        game->idle_frames != nullptr ? game->idle_frames() : M_IDLE_FRAMES;
+    for (int32_t i = 0; !minimize && i < idle && !game->has_ended()
          && game->tick(search->none);
          i++) {}
     outcome->alive = minimize || game->setbacks() <= setbacks;
