@@ -179,3 +179,9 @@ void Score_ClearDelta(void)
 {
     m_Score.delta = 0;
 }
+
+void Score_AddDamage(const int16_t damage)
+{
+    const uint16_t low = (uint16_t)((uint16_t)m_Score.delta + damage);
+    m_Score.delta = (int32_t)(((uint32_t)m_Score.delta & 0xffff0000u) | low);
+}
