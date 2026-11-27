@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""Fail when a module name leaks, or a file-scope static is unnamed.
+
+Takes the paths of C files. M_PascalCase functions and m_PascalCase
+variables belong to one .c file: a header may not name one, and a .c file
+defines each with static. Names such as M_PI, all capitals after M_, are
+macros of libraries, not module names.
+
+The converse also holds: every static at file scope in a .c file is
+M_PascalCase (a function) or m_PascalCase (a variable, including a
+static const table or a function-pointer table). Headers are exempt (a
+static inline helper there keeps its Module_ name), as is a static
+local to a function body, found by its indentation. Vendor code under
+src/pc98/opna/vendor or src/core/math/libm is exempt from this half of
+the check, so it can keep the names of the code it was vendored from.
+A multi-line declaration whose name is not on the `static` line is not
+matched, so it is silently out of scope rather than flagged.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+NAME = r"\b[Mm]_[A-Z][a-z0-9]\w*"
+NAME_RE = re.compile(NAME)
+# A declaration at file scope: from the start of the line, no static, then
+# the name before its parameters, size, value or end.
+DEFINITION_RE = re.compile(rf"^(?!static\b)[A-Za-z_][\w \t*]*?({NAME})\s*[(\[=;,]")
+HEADER_MESSAGE = "a header may not name {name}, which belongs to one .c file"
+SOURCE_MESSAGE = "{name} belongs to this file: make it static"
+
+VENDOR_PATHS = ("src/pc98/opna/vendor/", "src/core/math/libm/")
+
+ATTRIBUTE_RE = re.compile(r"__attribute__\s*\(\([^()]*\)\)\s*")
+# A function-pointer name, written `(*name)`, as a variable or a table.
+FUNC_PTR_NAME_RE = re.compile(r"\(\s*\*\s*([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*\)")
+# A plain static declaration: the name, then what follows it. `(` means a
+# function; `[`, `=`, `;` or `,` means a variable.
+STATIC_DEF_RE = re.compile(r"^static\b[\w \t*]*?([A-Za-z_]\w*)\s*([(\[=;,])")
+# Loose on purpose: just the right case after the prefix (an existing name
+# such as m_VSync, with an acronym right after the prefix, still passes).
+M_FUNC_RE = re.compile(r"^M_[A-Z]\w*$")
+M_VAR_RE = re.compile(r"^m_[A-Z]\w*$")
+UNNAMED_FUNC_MESSAGE = "static function {name} must be named M_PascalCase"
+UNNAMED_VAR_MESSAGE = "static variable {name} must be named m_PascalCase"
+
+
+def _file_scope_static_error(line: str) -> str | None:
+    """Return the message for a file-scope static that is not named
+    M_PascalCase (a function) or m_PascalCase (a variable), or None if the
+    line is not such a static, or its name is not on this line."""
+    if line != line.lstrip() or not line.startswith("static"):
+        return None
+    cleaned = ATTRIBUTE_RE.sub("", line)
+    ptr_match = FUNC_PTR_NAME_RE.search(cleaned)
+    if ptr_match:
+        name = ptr_match.group(1)
+        is_function = False
+    else:
+        match = STATIC_DEF_RE.match(cleaned)
+        if not match:
+            return None
+        name, terminator = match.group(1), match.group(2)
+        is_function = terminator == "("
+    if is_function:
+        if M_FUNC_RE.match(name):
+            return None
+        return UNNAMED_FUNC_MESSAGE.format(name=name)
+    if M_VAR_RE.match(name):
+        return None
+    return UNNAMED_VAR_MESSAGE.format(name=name)
+
+
+def errors(path: str, lines: list[str]) -> list[tuple[int, str]]:
+    """Return the index and message of each line of the file at path that
+    lets a module name out of its file, or that is a file-scope static
+    not named M_PascalCase or m_PascalCase."""
+    found = []
+    is_vendor = any(vendor_path in path for vendor_path in VENDOR_PATHS)
+    for index, line in enumerate(lines):
+        code = line.split("//", 1)[0]
+        if path.endswith(".h"):
+            match = NAME_RE.search(code)
+            if match:
+                found.append((index, HEADER_MESSAGE.format(name=match.group(0))))
+        else:
+            match = DEFINITION_RE.match(code)
+            if match:
+                found.append((index, SOURCE_MESSAGE.format(name=match.group(1))))
+            elif not is_vendor:
+                message = _file_scope_static_error(code)
+                if message:
+                    found.append((index, message))
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    failed = False
+    for name in sys.argv[1:] if argv is None else argv:
+        lines = Path(name).read_text(encoding="utf-8").split("\n")
+        for index, message in errors(Path(name).as_posix(), lines):
+            print(f"{name}:{index + 1}: {message}")
+            failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

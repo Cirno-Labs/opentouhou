@@ -61,6 +61,7 @@ Naming:
   ...); the name after the underscore is spelled out in full.
 - Module functions: `static M_PascalCase()`
 - Structs, enums, enum members, macros: `UPPER_SNAKE_CASE`
+- `M_` and `m_` names never leave their `.c` file (lint-enforced).
 
 Rules:
 
