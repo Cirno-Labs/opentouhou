@@ -1,4 +1,4 @@
-#include "th02/score_entry/render.h"
+#include "th02/high_score_entry/render.h"
 
 #include "th02/gaiji.h"
 #include "th02/hud.h"
@@ -14,25 +14,26 @@ static const uint8_t m_Point[] = { 0xb9, 0xb8, 0xb2, 0xb6, 0xbd, 0 };
 static const uint8_t m_Stage[] = { 0xbc, 0xbd, 0 };
 
 static void M_NameString(
-    const SCORE_SECTION *const section, const int8_t place,
+    const HIGH_SCORE_SECTION *const section, const int8_t place,
     const uint16_t attribute)
 {
     const uint8_t *const name = section->records[place].name_glyphs;
-    ASSERT(memchr(name, 0, SCORES_NAME_GLYPHS) != nullptr);
+    ASSERT(memchr(name, 0, HIGH_SCORES_NAME_GLYPHS) != nullptr);
     Tram_PutGaijiString(10, 6 + place, name, attribute);
 }
 
-void ScoreEntryRender_Alphabet(
+void HighScoreEntryRender_Alphabet(
     const uint8_t col, const uint8_t row, const uint16_t attribute)
 {
     Tram_PutGaiji(
-        10 + col * 2, 18 + row, ScoreEntry_Alphabet(col, row), attribute);
+        10 + col * 2, 18 + row, HighScoreEntry_Alphabet(col, row), attribute);
 }
 
-void ScoreEntryRender_Table(
-    const SCORE_SECTION *const section, const bool ending, const int8_t place)
+void HighScoreEntryRender_Table(
+    const HIGH_SCORE_SECTION *const section, const bool ending,
+    const int8_t place)
 {
-    ASSERT(place >= -1 && place < SCORES_PLACES);
+    ASSERT(place >= -1 && place < HIGH_SCORES_PLACES);
     Tram_PutGaijiString(20, 2, m_Title, TRAM_GREEN);
     Tram_PutGaijiString(12, 4, m_NameHeader, TRAM_GREEN);
     Tram_PutGaijiString(27 + ending, 4, m_Point, TRAM_GREEN);
@@ -40,14 +41,14 @@ void ScoreEntryRender_Table(
     if (place != -1) {
         for (uint8_t row = 0; row < 3; row++) {
             for (uint8_t col = 0; col < 17; col++) {
-                ScoreEntryRender_Alphabet(col, row, TRAM_WHITE);
+                HighScoreEntryRender_Alphabet(col, row, TRAM_WHITE);
             }
         }
-        ScoreEntryRender_Alphabet(0, 0, 0x85);
+        HighScoreEntryRender_Alphabet(0, 0, 0x85);
     }
-    for (int8_t i = 0; i < SCORES_PLACES; i++) {
+    for (int8_t i = 0; i < HIGH_SCORES_PLACES; i++) {
         const uint16_t attribute = i == place ? TRAM_GREEN : TRAM_WHITE;
-        const SCORE_RECORD *const record = &section->records[i];
+        const HIGH_SCORE_RECORD *const record = &section->records[i];
         M_NameString(section, i, attribute);
         Hud_Number(26, 6 + i, 8, record->score, attribute, false);
         Tram_PutGaiji(
@@ -56,9 +57,9 @@ void ScoreEntryRender_Table(
                                  : (uint8_t)(GAIJI_DIGIT_0 + record->stage),
             attribute);
     }
-    for (int8_t i = 0; i < SCORES_PLACES; i++) {
+    for (int8_t i = 0; i < HIGH_SCORES_PLACES; i++) {
         const uint16_t attribute = i == place ? TRAM_GREEN : TRAM_WHITE;
-        if (i < SCORES_PLACES - 1) {
+        if (i < HIGH_SCORES_PLACES - 1) {
             Tram_PutGaiji(6, 6 + i, GAIJI_DIGIT_0 + 1 + i, attribute);
         } else {
             const uint16_t left = 5 - ending;
@@ -68,11 +69,11 @@ void ScoreEntryRender_Table(
     }
 }
 
-void ScoreEntryRender_Name(
-    const SCORE_SECTION *const section, const int8_t place,
+void HighScoreEntryRender_Name(
+    const HIGH_SCORE_SECTION *const section, const int8_t place,
     const uint8_t position)
 {
-    ASSERT(place >= 0 && place < SCORES_PLACES && position < 6);
+    ASSERT(place >= 0 && place < HIGH_SCORES_PLACES && position < 6);
     M_NameString(section, place, TRAM_GREEN);
     Tram_PutGaiji(
         10 + position * 2, 6 + place,

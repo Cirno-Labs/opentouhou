@@ -1,4 +1,4 @@
-#include "th02/score_view/render.h"
+#include "th02/high_score_view/render.h"
 
 #include "th02/gaiji.h"
 #include "th02/hud.h"
@@ -34,18 +34,19 @@ static void M_Number(
 }
 
 static void M_Table(
-    const SCORES *const scores, const TH02_SETTINGS *const settings,
-    const SCORE_VIEW_ASSETS *const assets)
+    const HIGH_SCORES *const scores, const TH02_SETTINGS *const settings,
+    const HIGH_SCORE_VIEW_ASSETS *const assets)
 {
     const int32_t rank = settings->difficulty;
     ASSERT(rank >= 0 && rank < 4);
-    const SCORE_SECTION *const section = &scores->sections[rank];
+    const HIGH_SCORE_SECTION *const section = &scores->sections[rank];
     Tram_PutGaijiString(22, 2, m_Title, TRAM_GREEN);
     Tram_PutGaijiString(40, 2, m_Ranks[rank], TRAM_GREEN);
     Tram_PutText(8, 4, &assets->header, UINT16_MAX, TRAM_GREEN);
-    for (int16_t i = 0; i < SCORES_PLACES; i++) {
-        const SCORE_RECORD *const record = &section->records[i];
-        ASSERT(memchr(record->name_glyphs, 0, SCORES_NAME_GLYPHS) != nullptr);
+    for (int16_t i = 0; i < HIGH_SCORES_PLACES; i++) {
+        const HIGH_SCORE_RECORD *const record = &section->records[i];
+        ASSERT(
+            memchr(record->name_glyphs, 0, HIGH_SCORES_NAME_GLYPHS) != nullptr);
         ASSERT(record->shot_type < 3);
         const uint16_t y = 7 + i;
         Tram_PutGaijiString(12, y, record->name_glyphs, TRAM_WHITE);
@@ -63,7 +64,7 @@ static void M_Table(
         M_Character(63, y, '/');
         M_Number(64, y, (int8_t)record->day, 2);
     }
-    for (int16_t i = 0; i < SCORES_PLACES - 1; i++) {
+    for (int16_t i = 0; i < HIGH_SCORES_PLACES - 1; i++) {
         Tram_PutGaiji(9, 7 + i, GAIJI_DIGIT_0 + 1 + i, TRAM_WHITE);
     }
     Tram_PutGaiji(8, 16, GAIJI_DIGIT_0 + 1, TRAM_WHITE);
@@ -78,9 +79,9 @@ static void M_Fill(void)
     Grcg_Off();
 }
 
-void ScoreViewRender_Begin(
-    const SCORES *const scores, const TH02_SETTINGS *const settings,
-    const SCORE_VIEW_ASSETS *const assets)
+void HighScoreViewRender_Begin(
+    const HIGH_SCORES *const scores, const TH02_SETTINGS *const settings,
+    const HIGH_SCORE_VIEW_ASSETS *const assets)
 {
     Video_AccessPage(0);
     Video_Clear();
@@ -95,8 +96,8 @@ void ScoreViewRender_Begin(
     Video_ShowPage(1);
 }
 
-void ScoreViewRender_Frame(
-    const SCORE_VIEW_ASSETS *const assets, const int16_t frame)
+void HighScoreViewRender_Frame(
+    const HIGH_SCORE_VIEW_ASSETS *const assets, const int16_t frame)
 {
     M_Fill();
     for (int16_t offset = 0; offset <= 320; offset += 320) {
@@ -113,14 +114,14 @@ void ScoreViewRender_Frame(
     }
 }
 
-void ScoreViewRender_Flip(
+void HighScoreViewRender_Flip(
     const uint8_t drawing_page, const uint8_t visible_page)
 {
     Video_AccessPage(drawing_page);
     Video_ShowPage(visible_page);
 }
 
-void ScoreViewRender_End(void)
+void HighScoreViewRender_End(void)
 {
     Clip_Reset();
 }

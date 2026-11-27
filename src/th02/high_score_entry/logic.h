@@ -4,7 +4,7 @@
 // not-qualified release/press wait around it.
 
 #include "th02/input.h"
-#include "th02/scores.h"
+#include "th02/high_scores.h"
 
 typedef struct {
     int32_t score;
@@ -16,31 +16,31 @@ typedef struct {
 } SCORE_RUN;
 
 typedef enum {
-    SCORE_ENTRY_INPUT,
-    SCORE_ENTRY_FRAME,
-    SCORE_ENTRY_WAIT_KEY,
-    SCORE_ENTRY_COMPLETE,
-} SCORE_ENTRY_RESULT;
+    HIGH_SCORE_ENTRY_INPUT,
+    HIGH_SCORE_ENTRY_FRAME,
+    HIGH_SCORE_ENTRY_WAIT_KEY,
+    HIGH_SCORE_ENTRY_COMPLETE,
+} HIGH_SCORE_ENTRY_RESULT;
 
 typedef struct {
-    SCORE_ENTRY_RESULT result;
+    HIGH_SCORE_ENTRY_RESULT result;
     bool save_section;
-} SCORE_ENTRY_EVENTS;
+} HIGH_SCORE_ENTRY_EVENTS;
 
 // Returns internal_score * 10 + continues with 32-bit wrap; ending scores
 // are already in these units.
-int32_t ScoreEntry_MainScore(int32_t internal_score, uint16_t continues);
+int32_t HighScoreEntry_MainScore(int32_t internal_score, uint16_t continues);
 
 // Returns the gaiji at alphabet column 0..16, row 0..2.
-uint8_t ScoreEntry_Alphabet(uint8_t col, uint8_t row);
+uint8_t HighScoreEntry_Alphabet(uint8_t col, uint8_t row);
 
-void ScoreEntry_Init(void);
+void HighScoreEntry_Init(void);
 
 // Starts the name entry for a run's score and date; a score that does not
 // qualify only waits for release and press.
-void ScoreEntry_Begin(
-    SCORE_SECTION *section, const SCORE_RUN *run, bool ending,
+void HighScoreEntry_Begin(
+    HIGH_SCORE_SECTION *section, const SCORE_RUN *run, bool ending,
     const TH02_INPUT *input);
 
 // Runs one frame; a completed entry requests save_section once.
-SCORE_ENTRY_EVENTS ScoreEntry_Update(const TH02_INPUT *input);
+HIGH_SCORE_ENTRY_EVENTS HighScoreEntry_Update(const TH02_INPUT *input);
