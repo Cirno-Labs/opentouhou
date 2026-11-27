@@ -6,6 +6,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(flash_emits_audio_before_drawing_and_finishes_after_eighteen_waits)
 {
     for (uint8_t drawing_page = 0; drawing_page < 2; drawing_page++) {

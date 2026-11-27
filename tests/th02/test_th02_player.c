@@ -12,6 +12,8 @@
 #include "th02/player.h"
 #include "th02/sparks.h"
 
+#include <string.h>
+
 TEST(initialization_and_position_reset_preserve_their_distinct_scopes)
 {
     memset(&m_Player, 0xff, sizeof(m_Player));

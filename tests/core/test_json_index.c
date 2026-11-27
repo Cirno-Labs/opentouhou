@@ -3,7 +3,11 @@
 #include "tests/test_json.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 #include "core/json.h"
+
+#include <stdio.h>
+#include <string.h>
 
 #define M_STRING_COUNT 5000
 

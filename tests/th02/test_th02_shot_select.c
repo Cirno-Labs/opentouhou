@@ -1,6 +1,8 @@
 #include "tests/test.h"
 #include "tests/th02/th02_shot_select.c"
 
+#include <string.h>
+
 static SHOT_SELECT_EVENTS M_Loop(const uint16_t keys, int *const frames)
 {
     SHOT_SELECT_EVENTS events = ShotSelect_Update(keys);

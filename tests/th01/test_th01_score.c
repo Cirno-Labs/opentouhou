@@ -5,6 +5,7 @@
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 
 #include <string.h>
 

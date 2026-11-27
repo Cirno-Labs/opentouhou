@@ -6,6 +6,10 @@
 #include "th02/ending/text.h"
 #include "th02/grcg.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 static void M_Fill(void)
 {
     for (size_t page = 0; page < 2; page++) {

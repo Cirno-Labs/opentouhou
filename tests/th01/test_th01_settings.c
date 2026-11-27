@@ -2,6 +2,9 @@
 #include "tests/test_dir.h"
 #include "th01/settings.h"
 
+#include "core/base/memory.h"
+#include "core/io/file.h"
+#include "core/io/reader.h"
 #include "core/io/writer.h"
 #include "core/vfs.h"
 

@@ -6,6 +6,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(reset_and_map_end_keep_pending_rows_and_draw_parameters)
 {
     memset(&p_Background->scroll, 0xa5, sizeof(p_Background->scroll));

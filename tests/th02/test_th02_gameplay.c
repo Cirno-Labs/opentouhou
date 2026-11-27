@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "tests/th02/th02_gameplay_fixture.h"
 #include "tests/th02/th02_player_fixture.h"
 #include "tests/th02/th02_random_fixture.h"
@@ -9,14 +10,18 @@
 #include "th02/performance.c"
 #include "th02/sparks.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 TEST(pause_entry_reads_input_before_its_first_frame_delay)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     g_VSync.count1 = 100;
     TH02_INPUT input = {};
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
-    M_FinishReveal(&f, &input);
+    TestGameplay_FinishReveal(&f, &input);
     VSyncIrq_VSync();
     input.cancel = true;
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
@@ -40,12 +45,12 @@ TEST(main_entry_restores_continue_score_and_recovery_items)
     static const int32_t scores[] = { 1, 3, 9, 9 };
     for (size_t i = 0; i < ARRAY_SIZE(continues); i++) {
         FIXTURE f;
-        M_Init(&f);
+        TestGameplay_FixtureInit(&f);
         f.session.continues_used = continues[i];
         f.session.stage = stages[i];
         f.stage.stage = stages[i];
         f.session.score = 12345;
-        M_Start(&f);
+        TestGameplay_Start(&f);
         CHECK_EQ_INT(m_Score.value, scores[i]);
         CHECK_EQ_INT(m_Items.big_power, (stages[i] % 5) + 2);
         CHECK_EQ_INT(f.session.score, 12345);
@@ -102,14 +107,14 @@ static bool M_BossWait(
 TEST(map_end_boss_waits_share_vsync_and_disable_ordinary_enemy_calls)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     BOSS_FIXTURE state = { .fixture = &f };
     const TEST_BOSS boss = { M_BossWait, &state };
     TestStageFlow_Boss(&boss);
     g_VSync.count1 = 100;
     const TH02_INPUT input = {};
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
-    M_FinishReveal(&f, &input);
+    TestGameplay_FinishReveal(&f, &input);
     p_Stage->scroll.done = 1;
     bool complete = false;
     bool checked_gate = false;
@@ -141,7 +146,7 @@ TEST(map_end_boss_waits_share_vsync_and_disable_ordinary_enemy_calls)
 TEST(stage_entry_keeps_cached_images_alive_through_wait_and_page_swaps)
 {
     FIXTURE fixture;
-    M_Init(&fixture);
+    TestGameplay_FixtureInit(&fixture);
     GAMEPLAY *const game = TestGameplay_State();
     const uint8_t pattern_byte = fixture.assets.patterns.entries[0].data[0];
     CHECK_EQ_INT(game->phase, GAMEPLAY_PREPARE);
@@ -159,7 +164,7 @@ TEST(stage_entry_keeps_cached_images_alive_through_wait_and_page_swaps)
     }
     VSyncIrq_VSync();
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
-    M_FinishReveal(&fixture, &input);
+    TestGameplay_FinishReveal(&fixture, &input);
     CHECK_EQ_INT(game->phase, GAMEPLAY_STAGE);
     CHECK_EQ_INT(g_Stage->world.frame, 0);
     CHECK_EQ_INT(m_Player.current.x, 213);
@@ -195,7 +200,7 @@ TEST(stage_entry_keeps_cached_images_alive_through_wait_and_page_swaps)
 TEST(active_bomb_damages_stage_enemies_every_other_frame)
 {
     FIXTURE fixture;
-    M_Init(&fixture);
+    TestGameplay_FixtureInit(&fixture);
     GAMEPLAY *const game = TestGameplay_State();
     STAGE_FORMATION formations[] = {
         { .pattern = 10, .hp = 2, .score = 100, .item = 3 },
@@ -243,14 +248,14 @@ TEST(active_bomb_damages_stage_enemies_every_other_frame)
 TEST(reentry_rebinds_extra_and_selected_bomb_without_reloading)
 {
     FIXTURE fixture;
-    M_Init(&fixture);
+    TestGameplay_FixtureInit(&fixture);
     for (uint8_t shot = 0; shot < 3; shot++) {
         fixture.session.stage = fixture.stage.stage = 5;
         fixture.session.rank = 4;
         fixture.session.shot_type = fixture.bomb.shot_type = shot;
         fixture.fix_bomb_transition_overread = shot != 1;
         memset(fixture.bomb_tail, shot + 1, sizeof(fixture.bomb_tail));
-        M_Start(&fixture);
+        TestGameplay_Start(&fixture);
         if (shot == 1) {
             CHECK(
                 memcmp(TestGameplay_State()->bomb_tail, fixture.bomb_tail, 72)
@@ -273,7 +278,7 @@ TEST(reentry_rebinds_extra_and_selected_bomb_without_reloading)
 TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     const TH02_INPUT input = {};
     m_Flow.phase = STAGE_FLOW_DONE;
@@ -380,7 +385,7 @@ TEST(next_stage_keeps_run_state_and_resets_only_stage_state)
 TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     const TH02_INPUT input = {};
     for (size_t frame = 0; frame < 152; frame++) {
@@ -461,16 +466,16 @@ TEST(continue_resumes_same_stage_without_resetting_world_or_rng)
 TEST(gameplay_sound_requests_wait_for_the_next_sound_update)
 {
     FIXTURE fixture;
-    M_Init(&fixture);
+    TestGameplay_FixtureInit(&fixture);
     TEST_SOUND sound;
     TestSound_Init(&sound);
-    M_Start(&fixture);
+    TestGameplay_Start(&fixture);
     const TH02_INPUT input = {};
     for (unsigned i = 0; i < 100; i++) {
         VSyncIrq_VSync();
         CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
     }
-    M_FinishReveal(&fixture, &input);
+    TestGameplay_FinishReveal(&fixture, &input);
     SoundEffects_Play(SOUND_EFFECT_ITEM);
     TestSound_Check(&sound, -1);
     VSyncIrq_VSync();
@@ -482,7 +487,7 @@ TEST(gameplay_sound_requests_wait_for_the_next_sound_update)
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
     TestSound_Check(&sound, -1);
     SoundEffects_Play(SOUND_EFFECT_ITEM);
-    M_Start(&fixture);
+    TestGameplay_Start(&fixture);
     SoundEffects_Update();
     TestSound_Check(&sound, -1);
     TestSound_Free(&sound);
@@ -506,14 +511,14 @@ TEST(stage_waits_for_both_music_and_frame_gates_before_playing_its_song)
 {
     for (unsigned late_music = 0; late_music < 2; late_music++) {
         FIXTURE fixture;
-        M_Init(&fixture);
+        TestGameplay_FixtureInit(&fixture);
         MUSIC_WAIT wait;
         MusicWait_Init(&wait);
         MUSIC_REQUEST request = { TestGameplay_State(), 0 };
         fixture.music.entry = &wait;
         fixture.music.stage = M_StageMusic;
         fixture.music.bosses.context = &request;
-        M_Start(&fixture);
+        TestGameplay_Start(&fixture);
         const TH02_INPUT input = {};
         for (unsigned i = 0; i < 99; i++) {
             VSyncIrq_VSync();
@@ -539,7 +544,7 @@ TEST(stage_waits_for_both_music_and_frame_gates_before_playing_its_song)
         }
         CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);
         CHECK_EQ_INT(TestGameplay_State()->phase, GAMEPLAY_REVEAL);
-        M_FinishReveal(&fixture, &input);
+        TestGameplay_FinishReveal(&fixture, &input);
         CHECK_EQ_INT(TestGameplay_State()->phase, GAMEPLAY_STAGE);
         CHECK_EQ_INT(request.calls, 1);
         VSyncIrq_VSync();
@@ -552,11 +557,11 @@ TEST(stage_waits_for_both_music_and_frame_gates_before_playing_its_song)
 TEST(stage_music_fade_precedes_item_and_extend_resets)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     MUSIC_WAIT wait;
     MusicWait_Init(&wait);
     f.music.entry = &wait;
-    M_Start(&f);
+    TestGameplay_Start(&f);
     CHECK_EQ_INT(m_Rng.cursor, 0);
     m_Items.slots[0].state = ENTITY_ACTIVE;
     m_Items.point_count = 37;
@@ -595,7 +600,7 @@ TEST(stage_music_fade_precedes_item_and_extend_resets)
 TEST(stage_entry_keeps_carried_cache_row_and_both_source_strips)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     GAMEPLAY *const game = TestGameplay_State();
     memset(p_Background->cache.images[24], 99, TILE_COLUMNS);
     for (unsigned page = 0; page < 2; page++) {
@@ -635,7 +640,7 @@ TEST(stage_entry_keeps_carried_cache_row_and_both_source_strips)
 TEST(world_cleanup_restores_the_back_page_before_swapping_it)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     const TH02_INPUT input = {};
     g_VSync.count1 = 100;
     CHECK_EQ_INT(Gameplay_Update(&input), GAMEPLAY_RUNNING);

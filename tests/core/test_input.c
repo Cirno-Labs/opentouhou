@@ -2,6 +2,7 @@
 #include "tests/test.h"
 
 #include "core/base/log.h"
+#include "core/base/memory.h"
 #include "core/input.h"
 
 #include <SDL3/SDL_scancode.h>

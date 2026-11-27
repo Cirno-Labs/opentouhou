@@ -1,7 +1,10 @@
 #include "tests/test.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
 #include "pc98/pmd/driver.h"
+
+#include <string.h>
 
 #define M_BYTES 512
 

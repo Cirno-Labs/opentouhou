@@ -3,9 +3,12 @@
 #include "th02/presenter.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 #include "core/gfx.h"
 
 #include <SDL3/SDL.h>
+#include <stdlib.h>
+#include <string.h>
 
 static SDL_Window *m_Window;
 static SDL_GLContext m_Context;

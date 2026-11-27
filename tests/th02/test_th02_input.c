@@ -1,6 +1,8 @@
 #include "tests/test.h"
 #include "th02/input.h"
 
+#include <string.h>
+
 TEST(sensing_keeps_contradictions_and_keypad_diagonal_flags)
 {
     TH02_INPUT sample = { .up = true,

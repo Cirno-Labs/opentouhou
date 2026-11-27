@@ -22,6 +22,7 @@
 #include "core/base/memory.h"
 #include "core/image.h"
 #include "core/io/file.h"
+#include "core/io/writer.h"
 #include "core/patch.h"
 #include "stg/translation.h"
 

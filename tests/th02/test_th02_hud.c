@@ -5,6 +5,8 @@
 #include "th02/gaiji.h"
 #include "th02/hud.h"
 
+#include <string.h>
+
 TEST(hud_score_keeps_first_quotient_and_separate_continue_cell)
 {
     memset(&m_Tram, 0xa5, sizeof(m_Tram));

@@ -6,6 +6,8 @@
 #include "th02/stage.h"
 #include "th02/stage/private.h"
 
+#include <string.h>
+
 typedef struct {
     TH02_SESSION session;
     TH02_INPUT input;

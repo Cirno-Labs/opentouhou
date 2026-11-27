@@ -4,6 +4,7 @@
 #include "core/base/memory.h"
 
 #include <stdint.h>
+#include <string.h>
 
 static bool M_IsZero(const void *const memory, const size_t size)
 {

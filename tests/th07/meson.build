@@ -8,7 +8,7 @@ th07_test_libs = [
   th07_lib, stg_chain_lib, stg_angle_lib, stg_timer_lib, stg_rng_lib, stg_pbg4_lib, stg_lzss_lib,
   stg_end_diff_lib, core_patch_lib, core_json_lib, core_vfs_lib, core_archive_lib, core_audio_lib,
   core_config_lib, core_ini_lib, core_io_lib, core_math_lib, core_base_lib, core_gfx_lib,
-  core_image_lib,
+  core_image_lib, test_fonts_lib,
 ]
 test_fonts = meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts'
 shell_fake = files('../shell_fake.c') + shell_null_files

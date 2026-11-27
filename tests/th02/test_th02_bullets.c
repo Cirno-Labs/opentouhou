@@ -15,6 +15,9 @@
 #include "th02/sparks.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 static uint64_t M_HashValue(uint64_t hash, const uint32_t value)
 {

@@ -2,6 +2,9 @@
 #include "th02/stage/data.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 #define M_SIZE 176
 

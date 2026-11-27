@@ -2,6 +2,10 @@
 
 #include "core/base/result.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 static int m_Line;
 
 static RESULT M_ReadVersion(const int version)

@@ -6,6 +6,8 @@
 #include "core/json.h"
 
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
 
 static ARENA m_Arena;
 

@@ -4,6 +4,10 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <string.h>
 
 #define M_ARENA_SIZE (1024 * 1024)
 
@@ -41,7 +45,7 @@ TEST(a_manifest_round_trips)
     };
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    Case_WriteManifest(&writer, &m_TestGame, &manifest);
+    Case_WriteManifest(&writer, &g_TestGame, &manifest);
     char *const text = M_Take(&writer);
     CHECK(
         strstr(text, "1 = stage files/x.rpy -> replay/slot.rpy\n") != nullptr);
@@ -51,7 +55,7 @@ TEST(a_manifest_round_trips)
     Reader_OpenBuffer(&reader, text, strlen(text), "case.ini");
     CASE_MANIFEST read;
     CHECK(
-        Result_Ignore(Case_ReadManifest(&reader, &m_TestGame, &arena, &read)));
+        Result_Ignore(Case_ReadManifest(&reader, &g_TestGame, &arena, &read)));
     Reader_Close(&reader);
     CHECK_EQ_STR(read.game, "test");
     CHECK_EQ_STR(read.backend, "native");
@@ -81,7 +85,7 @@ TEST(a_manifest_of_another_format_is_rejected)
     Reader_OpenBuffer(&reader, text, strlen(text), "case.ini");
     CASE_MANIFEST read = { .frames = 9 };
     CHECK(
-        !Result_Ignore(Case_ReadManifest(&reader, &m_TestGame, &arena, &read)));
+        !Result_Ignore(Case_ReadManifest(&reader, &g_TestGame, &arena, &read)));
     CHECK_EQ_INT(read.frames, 9);
     Reader_Close(&reader);
     Arena_Free(&arena);
@@ -100,7 +104,7 @@ TEST(a_manifest_without_a_choice_is_rejected)
         Reader_OpenBuffer(&reader, texts[i], strlen(texts[i]), "case.ini");
         CASE_MANIFEST read;
         CHECK(!Result_Ignore(
-            Case_ReadManifest(&reader, &m_TestGame, &arena, &read)));
+            Case_ReadManifest(&reader, &g_TestGame, &arena, &read)));
         Reader_Close(&reader);
         Arena_Free(&arena);
     }
@@ -130,7 +134,7 @@ TEST(a_bad_staging_step_is_rejected)
         Reader_OpenBuffer(&reader, texts[i], strlen(texts[i]), "case.ini");
         CASE_MANIFEST read;
         CHECK(!Result_Ignore(
-            Case_ReadManifest(&reader, &m_TestGame, &arena, &read)));
+            Case_ReadManifest(&reader, &g_TestGame, &arena, &read)));
         Reader_Close(&reader);
         Arena_Free(&arena);
     }

@@ -6,6 +6,7 @@
 #include "core/ini.h"
 #include "core/patch/select.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static PATCH_SELECTION *M_Select(

@@ -3,6 +3,8 @@
 
 #include "core/io/reader.h"
 
+#include <string.h>
+
 static void *M_Copy(
     const char *const text, const size_t size, const ALLOCATOR *const allocator)
 {

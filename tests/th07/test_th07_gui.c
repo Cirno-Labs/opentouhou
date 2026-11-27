@@ -16,6 +16,7 @@
 #include "th07/sound.h"
 #include "th07/strings.h"
 
+#include "core/base/memory.h"
 #include "core/gfx.h"
 #include "stg/timer.h"
 #include "stg/translation.h"

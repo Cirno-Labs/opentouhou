@@ -1,7 +1,10 @@
 #include "tests/test.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
 #include "pc98/zun/bfnt.h"
+
+#include <string.h>
 
 static void M_Header(uint8_t *const bytes, const uint8_t color)
 {

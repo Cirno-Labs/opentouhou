@@ -1,6 +1,7 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
 #include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>

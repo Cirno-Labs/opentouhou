@@ -5,6 +5,12 @@
 #include "tests/th02/th02_sprites.h"
 #include "th02/gameplay/assets.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct {
     const char *path;
     uint8_t *bytes;

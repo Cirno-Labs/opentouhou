@@ -2,6 +2,8 @@
 
 #include "pc98/pmd/pitch.h"
 
+#include <string.h>
+
 TEST(transpose_preserves_byte_octave_and_rest_quirks)
 {
     CHECK_EQ_INT(PmdPitch_Transpose(0x40, 12, 0), 0x50);

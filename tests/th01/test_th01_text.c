@@ -9,8 +9,12 @@
 #include "th01/text.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 
 #include <limits.h>
+#include <stdio.h>
+#include <string.h>
 
 // あ, 0x2422, and Ａ, 0x2341.
 static const char m_BdfFull[] =

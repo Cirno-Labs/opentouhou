@@ -3,6 +3,7 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/file.h"
 #include "shell/game/entry.h"
 #include "shell/log_file.h"
 

@@ -2,6 +2,9 @@
 #include "th01/grf.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 #define M_PACKED_SIZE (GRF_WIDTH * GRF_HEIGHT / 8)
 

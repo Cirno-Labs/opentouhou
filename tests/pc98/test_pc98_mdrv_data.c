@@ -2,7 +2,12 @@
 #include "tests/test_dir.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "pc98/mdrv_data.h"
+
+#include <SDL3/SDL.h>
+#include <string.h>
 
 typedef struct {
     uint8_t bytes[2048];

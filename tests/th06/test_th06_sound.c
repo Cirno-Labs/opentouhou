@@ -7,6 +7,9 @@
 
 #include "core/audio.h"
 #include "core/audio/backend.h"
+#include "core/base/memory.h"
+#include "core/base/string.h"
+#include "core/io/file.h"
 #include "core/io/writer.h"
 
 #include <SDL3/SDL.h>

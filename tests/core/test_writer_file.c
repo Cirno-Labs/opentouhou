@@ -5,9 +5,14 @@
 #include "tests/test.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/io/reader.h"
 #include "core/io/writer.h"
 
+#include <SDL3/SDL.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #define M_BODY_SIZE 200000

@@ -1,6 +1,10 @@
 #include "tests/test.h"
 #include "th02/demo.h"
 
+#include "core/io/reader.h"
+
+#include <string.h>
+
 TEST(recording_is_owned_and_requires_exact_word_count)
 {
     uint8_t bytes[DEMO_INPUT_COUNT * 2] = {};

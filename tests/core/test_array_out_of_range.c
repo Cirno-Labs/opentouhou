@@ -1,4 +1,5 @@
 #include "core/base/array.h"
+#include "core/base/memory.h"
 
 #include <stdlib.h>
 

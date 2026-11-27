@@ -1,22 +1,16 @@
 #pragma once
 
-// Provides a minimal unit test harness. Each test file includes this header
-// once, defines its cases with TEST, and gets a main function that runs every
-// case. The executable exits with failure if any check fails, which is what
-// meson test reads.
+// Declares a minimal unit test harness. Each test file includes this
+// header once, defines its cases with TEST, and links test_lib (tests/
+// meson.build), which provides the case registry, the failure counter
+// and main(). The counter is a true global shared by every translation
+// unit a test links, so a fixture in its own .c file can fail a check
+// too.
 
-#include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef _WIN32
-    #include <unistd.h>
-#endif
-#if __has_include(<execinfo.h>)
-    #include <execinfo.h>
-    #define M_TEST_HAS_BACKTRACE 1
-#endif
 
 #define TEST_MAX_CASES 128
 
@@ -25,25 +19,18 @@ typedef struct {
     void (*func)(void);
 } TEST_CASE;
 
-static TEST_CASE m_TestCases[TEST_MAX_CASES];
-static int m_TestCaseCount;
-static int m_TestFailures;
-static const char *volatile m_TestRunning;
+extern TEST_CASE g_TestCases[TEST_MAX_CASES];
+extern int g_TestCaseCount;
+extern int g_TestFailures;
+extern const char *volatile g_TestRunning;
 
-static void Test_Register(const char *const name, void (*const func)(void))
-{
-    if (m_TestCaseCount >= TEST_MAX_CASES) {
-        fprintf(stderr, "%s does not fit, raise TEST_MAX_CASES\n", name);
-        abort();
-    }
-    m_TestCases[m_TestCaseCount++] = (TEST_CASE) { name, func };
-}
+void Test_Register(const char *name, void (*func)(void));
 
 // Defines a test case. Cases register themselves before main runs, so a file
 // needs no list of its cases.
 #define TEST(name_)                                                            \
     static void name_(void);                                                   \
-    __attribute__((constructor)) static void M_Register_##name_(void)          \
+    __attribute__((constructor)) static void Test_Register_##name_(void)       \
     {                                                                          \
         Test_Register(#name_, name_);                                          \
     }                                                                          \
@@ -54,7 +41,7 @@ static void Test_Register(const char *const name, void (*const func)(void))
         printf(                                                                \
             "    %s:%d: " fmt_ "\n", __FILE__,                                 \
             __LINE__ __VA_OPT__(, ) __VA_ARGS__);                              \
-        m_TestFailures++;                                                      \
+        g_TestFailures++;                                                      \
     } while (0)
 
 // Prints why the test cannot run and exits with meson's skip status, 77.
@@ -90,48 +77,3 @@ static void Test_Register(const char *const name, void (*const func)(void))
                 a_ != nullptr ? a_ : "(null)");                                \
         }                                                                      \
     } while (0)
-
-#ifndef _WIN32
-
-// Names the case that runs when meson stops a test that ran out of time,
-// with a backtrace where the C library has one, and then ends as the
-// signal would have. Calls only functions that are safe in a handler.
-static void M_TestOnTerm(const int signal_number)
-{
-    const char *const name = m_TestRunning;
-    static const char before[] = "  KILLED  ";
-    write(STDOUT_FILENO, before, sizeof(before) - 1);
-    if (name != nullptr) {
-        write(STDOUT_FILENO, name, strlen(name));
-    }
-    write(STDOUT_FILENO, "\n", 1);
-    #ifdef M_TEST_HAS_BACKTRACE
-    void *frames[64];
-    backtrace_symbols_fd(frames, backtrace(frames, 64), STDOUT_FILENO);
-    #endif
-    signal(signal_number, SIG_DFL);
-    raise(signal_number);
-}
-#endif
-
-int main(void)
-{
-    setvbuf(stdout, nullptr, _IONBF, 0);
-#ifndef _WIN32
-    signal(SIGTERM, M_TestOnTerm);
-#endif
-    int failed = 0;
-    for (int i = 0; i < m_TestCaseCount; i++) {
-        const int failures_before = m_TestFailures;
-        m_TestRunning = m_TestCases[i].name;
-        m_TestCases[i].func();
-        if (m_TestFailures == failures_before) {
-            printf("  PASS  %s\n", m_TestCases[i].name);
-        } else {
-            printf("  FAIL  %s\n", m_TestCases[i].name);
-            failed++;
-        }
-    }
-    printf("%d passed, %d failed\n", m_TestCaseCount - failed, failed);
-    return failed == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-}

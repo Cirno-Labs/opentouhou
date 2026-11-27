@@ -2,6 +2,10 @@
 #include "th02/mpn.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 static void M_Header(uint8_t *const bytes, const uint16_t count)
 {

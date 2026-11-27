@@ -6,6 +6,7 @@
 #include "core/base/string.h"
 #include "core/patch.h"
 #include "core/text.h"
+#include "core/text/font_registry.h"
 
 #include <string.h>
 

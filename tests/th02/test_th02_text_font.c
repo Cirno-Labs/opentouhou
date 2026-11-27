@@ -4,6 +4,8 @@
 #include "th02/text_font.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/text/font_registry.h"
 
 static void M_SetCell(

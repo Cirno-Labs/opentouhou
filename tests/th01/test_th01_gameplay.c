@@ -30,8 +30,10 @@
 #include "core/audio.h"
 #include "core/audio/backend.h"
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 
 #include <SDL3/SDL.h>
+#include <string.h>
 
 typedef struct {
     ARENA arena;

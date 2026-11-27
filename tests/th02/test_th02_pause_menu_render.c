@@ -7,6 +7,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(pause_draws_cached_labels_and_distinct_heading_and_blank_widths)
 {
     static const TRAM_CHARACTER characters[] = {

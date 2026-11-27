@@ -15,7 +15,8 @@ foreach part : ['fetch', 'game', 'install', 'main', 'release', 'console']
       'test_othpatch_' + part,
       'test_othpatch_' + part + '.c',
       implicit_include_directories: false,
-      link_with: othpatch_libs,
+      link_with: othpatch_libs + [test_lib]
+        + (part in ['install', 'main'] ? [zip_builder_lib] : []),
       dependencies: othpatch_deps + [test_deps],
     ),
     env: {

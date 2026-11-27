@@ -1,6 +1,8 @@
 #include "tests/test.h"
 #include "tests/test_allocator.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/vfs.h"
 
 #include <string.h>

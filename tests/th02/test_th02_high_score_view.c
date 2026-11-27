@@ -3,6 +3,8 @@
 
 #include "core/base/utils.h"
 
+#include <string.h>
+
 typedef struct {
     int begin_count;
     int end_count;

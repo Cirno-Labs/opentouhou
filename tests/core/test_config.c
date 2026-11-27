@@ -1,9 +1,11 @@
 #include "tests/test.h"
 
 #include "core/base/log.h"
+#include "core/base/memory.h"
 #include "core/config.h"
 
 #include <float.h>
+#include <stdio.h>
 #include <string.h>
 
 typedef struct {

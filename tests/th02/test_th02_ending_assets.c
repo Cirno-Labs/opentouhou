@@ -2,6 +2,9 @@
 #include "th02/ending/assets.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 static RESULT M_FontFailure(
     void *const context, const DRAW_TEXT_CHARACTER *const character,

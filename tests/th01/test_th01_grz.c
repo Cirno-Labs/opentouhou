@@ -2,6 +2,9 @@
 #include "th01/grz.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 #define M_CAPACITY (16 * 1024 * 1024)
 #define M_PIXELS (GRX_WIDTH * GRX_HEIGHT)

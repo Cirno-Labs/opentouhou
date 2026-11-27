@@ -7,7 +7,7 @@ th06_data = ['../gfx_recorder.c', 'anm_builder.c', '../pbg3_builder.c', 'th06_da
 th06_test_libs = [
   th06_lib, stg_translation_lib, stg_note_lib, stg_end_diff_lib, stg_rng_lib, stg_pbg3_lib,
   core_patch_lib, core_json_lib, core_vfs_lib, core_audio_lib, core_config_lib, core_ini_lib,
-  core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib,
+  core_io_lib, core_math_lib, core_base_lib, core_gfx_lib, core_image_lib, test_fonts_lib,
 ]
 test_fonts = meson.project_source_root() / 'src' / 'shell' / 'builtin' / 'fonts'
 shell_fake = files('../shell_fake.c') + shell_null_files

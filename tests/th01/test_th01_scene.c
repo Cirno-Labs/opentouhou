@@ -4,6 +4,7 @@
 #include "th01/scene.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
 
 #include <string.h>
 

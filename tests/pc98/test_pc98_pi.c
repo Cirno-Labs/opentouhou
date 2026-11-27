@@ -1,6 +1,8 @@
 #include "tests/test.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "pc98/zun/pi.h"
 
 typedef struct {

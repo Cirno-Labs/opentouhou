@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <stdatomic.h>
+#include <string.h>
 
 #define WAIT_MILLISECONDS 5000
 

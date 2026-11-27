@@ -5,6 +5,8 @@
 #include "th02/hud.h"
 #include "th02/stage_bonus/logic.c"
 
+#include <string.h>
+
 typedef struct {
     STAGE_BONUS_ASSETS assets;
     TEST_SOUND sound;

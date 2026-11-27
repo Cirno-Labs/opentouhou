@@ -4,6 +4,7 @@
 #include "th07/anm/private.h"
 
 #include "core/base/memory.h"
+#include "core/text/font_registry.h"
 
 #include <stdint.h>
 

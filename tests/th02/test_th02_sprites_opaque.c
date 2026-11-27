@@ -3,6 +3,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(opaque_copies_ignore_coverage_round_x_and_overwrite_zero)
 {
     ARENA arena;

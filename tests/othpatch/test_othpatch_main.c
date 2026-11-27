@@ -6,7 +6,14 @@
 #include "tests/test_dir.h"
 #include "tests/zip_builder.h"
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
 #include "core/hash/sha256.h"
+
+#include <SDL3/SDL.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 
 #ifdef _WIN32
     #define M_SEPARATOR "\\"

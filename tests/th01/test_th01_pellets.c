@@ -10,6 +10,7 @@
 #include "th01/shots.c"
 #include "th01/shots.h"
 
+#include "core/base/memory.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
 

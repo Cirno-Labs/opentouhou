@@ -1,8 +1,12 @@
 #include "tests/jpeg_fixtures.h"
 #include "tests/test.h"
 
+#include "core/base/memory.h"
 #include "core/hash.h"
+#include "core/hash/crc32.h"
 #include "core/image.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 
 #include <string.h>
 
@@ -94,9 +98,9 @@ TEST(jpeg_pixels_match_direct3d)
         int32_t height;
         uint32_t crc;
     } cases[] = {
-        { m_Jpeg444, sizeof(m_Jpeg444), 32, 32, 0xa4a6167c },
-        { m_Jpeg420Tail, sizeof(m_Jpeg420Tail), 37, 29, 0xd2253ec9 },
-        { m_JpegGray, sizeof(m_JpegGray), 32, 32, 0xcd55426c },
+        { g_Jpeg444, sizeof(g_Jpeg444), 32, 32, 0xa4a6167c },
+        { g_Jpeg420Tail, sizeof(g_Jpeg420Tail), 37, 29, 0xd2253ec9 },
+        { g_JpegGray, sizeof(g_JpegGray), 32, 32, 0xcd55426c },
     };
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         READER reader;

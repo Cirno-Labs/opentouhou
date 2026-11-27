@@ -3,6 +3,8 @@
 #include "th01/line_bullets.h"
 #include "th01/player.c"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 TEST(endpoint_hit_test_uses_supplied_unclipped_coordinates)

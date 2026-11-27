@@ -6,6 +6,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(pattern_mask_and_odd_boundary_decrement)
 {
     Th01Test_ResetWorld();

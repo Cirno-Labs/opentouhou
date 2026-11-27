@@ -4,6 +4,7 @@
 #include "th01/interleave.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 
 #include <string.h>
 

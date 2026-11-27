@@ -4,10 +4,12 @@
 #include "core/audio.h"
 #include "core/audio/backend.h"
 #include "core/base/arena.h"
+#include "core/io/reader.h"
 #include "pc98/pmd.h"
 
 #include <SDL3/SDL.h>
 #include <math.h>
+#include <string.h>
 
 typedef struct {
     ARENA arena;

@@ -2,7 +2,12 @@
 #include "tests/test_allocator.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "pc98/zun/pf.h"
+
+#include <stdio.h>
+#include <string.h>
 
 #define M_DATA_OFFSET 1024
 #define M_ARCHIVE_SIZE 4096

@@ -4,12 +4,16 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
+
+#include <string.h>
 
 static RESULT M_Read(const char *const text, SCRIPT *const out)
 {
     READER reader;
     Reader_OpenBuffer(&reader, text, strlen(text), "inputs.txt");
-    const RESULT result = Script_Read(&reader, &m_TestGame, out);
+    const RESULT result = Script_Read(&reader, &g_TestGame, out);
     Reader_Close(&reader);
     return result;
 }
@@ -18,7 +22,7 @@ static char *M_Write(const SCRIPT *const script)
 {
     WRITER writer;
     Writer_OpenBuffer(&writer, &g_HeapAllocator, nullptr);
-    Script_Write(&writer, &m_TestGame, script);
+    Script_Write(&writer, &g_TestGame, script);
     Writer_WriteU8(&writer, 0);
     size_t size;
     uint8_t *const bytes = Writer_TakeBuffer(&writer, &size);

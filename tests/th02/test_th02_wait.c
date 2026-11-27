@@ -1,6 +1,8 @@
 #include "tests/test.h"
 #include "th02/wait.h"
 
+#include <string.h>
+
 TEST(application_start_restarts_the_clock_but_program_handoffs_do_not)
 {
     VSYNC_CLOCK clock = { .phase = 12345 };

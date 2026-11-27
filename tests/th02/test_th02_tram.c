@@ -2,6 +2,10 @@
 #include "tests/th02/th02_tram_fixture.h"
 #include "th02/tram.h"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 TEST(console_clear_homes_the_software_cursor_and_keeps_hidden_cells_and_flags)
 {
     static const uint8_t attributes[] = {

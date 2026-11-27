@@ -3,9 +3,11 @@
 
 #include "core/base/arena.h"
 #include "core/base/log.h"
+#include "core/io/reader.h"
 #include "pc98/pmd.h"
 
 #include <setjmp.h>
+#include <string.h>
 
 typedef struct {
     ARENA arena;

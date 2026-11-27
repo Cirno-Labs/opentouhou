@@ -3,6 +3,11 @@
 #include "tests/th02/th02_music_room_render.h"
 #include "tests/th02/th02_palette_fixture.h"
 
+#include "core/base/memory.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct {
     MUSIC_ROOM_ASSETS assets;
     TITLE_ASSETS menu;

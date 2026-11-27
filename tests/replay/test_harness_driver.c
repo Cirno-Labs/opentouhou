@@ -4,10 +4,15 @@
 #include "tests/test_dir.h"
 
 #include "core/archive/zip.h"
+#include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/file.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 #include "core/vfs.h"
+
+#include <string.h>
 
 #define M_ARENA_SIZE (1024 * 1024)
 
@@ -133,7 +138,7 @@ TEST(a_live_capture_records_the_held_buttons)
     char *const case_path = TestDir_Join(root, "live.othtc");
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .sample = M_Sample,
         .idle = M_Idle,
@@ -163,7 +168,7 @@ TEST(a_capture_records_date_and_clock_and_replay_returns_them)
     char *const replay_dir = TestDir_Join(root, "replay");
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .sample = M_Sample,
         .idle = M_Idle,
@@ -208,7 +213,7 @@ TEST(a_capture_records_date_and_clock_and_replay_returns_them)
     };
     M_GAME replay_game = {};
     const PORT replay_port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &replay_game,
         .sample = M_Sample,
         .idle = M_Idle,
@@ -253,7 +258,7 @@ TEST(a_capture_replays_to_a_match)
     M_WriteText(stage_dir, "slot.bin", "staged");
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .sample = M_Sample,
         .idle = M_Idle,
@@ -345,7 +350,7 @@ TEST(a_staged_path_must_stay_below_the_game_directory)
     char *const script = TestDir_Join(root, "inputs.txt");
     M_WriteText(root, "inputs.txt", "frames 1\n");
     M_GAME game = {};
-    const PORT port = { .game = &m_TestGame, .context = &game };
+    const PORT port = { .game = &g_TestGame, .context = &game };
     const char *const paths[] = { "../x", "Save/x", "save//x" };
     for (size_t i = 0; i < ARRAY_SIZE(paths); i++) {
         const RUN capture = {
@@ -374,7 +379,7 @@ TEST(a_failed_run_writes_no_case_or_report)
     M_WriteText(root, "inputs.txt", "frames 3\n");
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .sample = M_Sample,
         .idle = M_Idle,
@@ -424,7 +429,7 @@ TEST(the_port_files_lie_beneath_the_staged_ones)
     };
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .files = files,
         .file_count = ARRAY_SIZE(files),
@@ -465,7 +470,7 @@ TEST(the_overlay_serves_the_staged_files_and_takes_the_writes)
     char *const script = TestDir_Join(root, "inputs.txt");
     M_WriteText(root, "inputs.txt", "frames 1\n");
     M_GAME game = {};
-    const PORT port = { .game = &m_TestGame, .context = &game };
+    const PORT port = { .game = &g_TestGame, .context = &game };
     const RUN capture = {
         .role = RUN_CAPTURE,
         .game_dir = root,
@@ -554,7 +559,7 @@ TEST(a_replay_against_another_run_differs_by_its_shots)
     M_WriteText(root, "inputs.txt", "input 2 shoot\ninput 5 none\n");
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .sample = M_Sample,
         .idle = M_Idle,
@@ -651,7 +656,7 @@ TEST(a_case_of_another_version_fails)
     char *const case_path = TestDir_Join(root, "test.othtc");
     char *const replay_dir = TestDir_Join(root, "replay");
     M_WriteText(script_dir, "inputs.txt", "frames 2\n");
-    HARNESS_GAME other = m_TestGame;
+    HARNESS_GAME other = g_TestGame;
     other.version = "0.9";
     M_GAME game = {};
     PORT port = {
@@ -670,7 +675,7 @@ TEST(a_case_of_another_version_fails)
     };
     CHECK(!M_Run(&port, &capture));
 
-    port.game = &m_TestGame;
+    port.game = &g_TestGame;
     const RUN replay = {
         .role = RUN_REPLAY,
         .game_dir = root,
@@ -740,7 +745,7 @@ TEST(a_replay_draws_only_before_its_shots)
     M_WriteText(root, "inputs.txt", "input 2 shoot\ninput 5 none\n");
     M_GAME game = {};
     const PORT port = {
-        .game = &m_TestGame,
+        .game = &g_TestGame,
         .context = &game,
         .sample = M_Sample,
         .idle = M_Idle,

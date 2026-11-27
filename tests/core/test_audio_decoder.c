@@ -1,6 +1,8 @@
 #include "tests/test.h"
 
 #include "core/audio/decoder.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/io/writer.h"
 
 static READER M_Wave(const uint16_t channels, const uint32_t frames)

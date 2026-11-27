@@ -5,7 +5,12 @@
 #include "tests/test_dir.h"
 #include "tests/zip_builder.h"
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
+#include "core/io/file.h"
+
 #include <SDL3/SDL.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #define M_OLD_OTHPATCH "old othpatch"

@@ -2,6 +2,8 @@
 #include "th02/performance.c"
 #include "th02/performance.h"
 
+#include <string.h>
+
 TEST(performance_initialization_and_timed_raises_keep_source_limits)
 {
     memset(&m_Performance, 0x5a, sizeof(m_Performance));

@@ -7,6 +7,7 @@
 
 #include <SDL3/SDL.h>
 #include <math.h>
+#include <string.h>
 
 typedef struct {
     ARENA arena;

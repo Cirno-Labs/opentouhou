@@ -7,6 +7,9 @@
 #include "th02/player.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 TEST(player_draws_and_cleans_rolling_body_and_options_on_the_selected_page)
 {

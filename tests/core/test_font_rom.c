@@ -2,6 +2,7 @@
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/reader.h"
 #include "core/text/font_registry.h"
 #include "core/text/font_rom.h"
 

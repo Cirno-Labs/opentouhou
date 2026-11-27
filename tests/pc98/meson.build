@@ -5,6 +5,7 @@ foreach part : ['mdrv_data', 'mdrv', 'pmd', 'opna', 'vsync', 'master_rng', 'math
       'test_pc98_' + part,
       'test_pc98_' + part + '.c',
       implicit_include_directories: false,
+      link_with: test_lib,
       dependencies: [pc98_dep, test_deps] + (part in ['mdrv_data', 'sprite_sheet', 'pmd_data'] ? [sdl3] : []),
     ),
     suite: 'unit',

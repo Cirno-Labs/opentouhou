@@ -6,6 +6,8 @@
 #include "th02/player.h"
 #include "th02/shots.h"
 
+#include <string.h>
+
 static SHOT M_Active(void)
 {
     return (

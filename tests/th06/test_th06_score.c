@@ -2,6 +2,8 @@
 #include "th06/screens/result/score.h"
 
 #include "core/base/memory.h"
+#include "core/io/reader.h"
+#include "core/io/writer.h"
 
 #include <string.h>
 

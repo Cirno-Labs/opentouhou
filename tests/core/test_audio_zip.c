@@ -3,6 +3,8 @@
 
 #include "core/archive/zip.h"
 #include "core/audio.h"
+#include "core/base/memory.h"
+#include "core/io/reader.h"
 #include "core/io/writer.h"
 
 #include <SDL3/SDL.h>

@@ -4,7 +4,10 @@
 #include "th02/sound_effects.h"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
 #include "pc98/pmd.h"
+
+#include <string.h>
 
 typedef struct {
     ARENA arena;

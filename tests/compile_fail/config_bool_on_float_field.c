@@ -6,9 +6,7 @@ typedef struct {
     float volume;
 } SETTINGS;
 
-void M_Use(void);
-
-void M_Use(void)
+static void Use(void)
 {
 #ifdef BREAK
     [[maybe_unused]] static const CONFIG_OPTION options[] = {

@@ -18,11 +18,15 @@
 
 #include "core/audio.h"
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 #include "core/gfx.h"
+#include "core/io/reader.h"
 #include "core/text/font_registry.h"
 #include "core/vfs.h"
 #include "pc98/vsync.h"
 #include "pc98/zun/bfnt.h"
+
+#include <string.h>
 
 struct VFS {
     bool user;

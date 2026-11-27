@@ -6,6 +6,8 @@
 #include "th01/shootout_lasers.c"
 #include "th01/shootout_lasers.h"
 
+#include "core/base/memory.h"
+
 #include <string.h>
 
 TEST(asset_errors_do_not_publish)

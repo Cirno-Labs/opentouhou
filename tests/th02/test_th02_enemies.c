@@ -16,6 +16,9 @@
 #include "th02/sparks.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
+
+#include <string.h>
 
 typedef struct {
     uint8_t rank;

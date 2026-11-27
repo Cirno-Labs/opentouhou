@@ -3,6 +3,8 @@
 #include "core/base/arena.h"
 #include "pc98/opna.h"
 
+#include <string.h>
+
 typedef struct {
     ARENA arena;
     ALLOCATOR allocator;

@@ -3,7 +3,9 @@
 
 #include "core/archive.h"
 #include "core/archive/format.h"
+#include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/reader.h"
 #include "core/vfs.h"
 
 #include <string.h>

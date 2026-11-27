@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "tests/th02/th02_boss_hp.h"
 #include "tests/th02/th02_gameplay_fixture.h"
 #include "tests/th02/th02_player_fixture.h"
@@ -7,10 +8,14 @@
 #include "th02/boss/mima/logic.c"
 #include "th02/boss/mima/transition.c"
 
+#include "core/base/memory.h"
+
+#include <string.h>
+
 TEST(mima_banks_borrow_cached_patterns_and_import_palettes_without_dac_writes)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     MIMA_ASSETS assets = {};
     uint8_t pixels[48 * 128];
     for (int bank = 0; bank < MIMA_BANK_COUNT; bank++) {
@@ -53,7 +58,7 @@ TEST(
     mima_combat_scene_clears_both_pages_and_keeps_right_border_and_hidden_tails)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     p_Stage->scroll.front = 0;
     p_Stage->scroll.back = 1;
     p_Stage->world.frame = 1234;
@@ -100,7 +105,7 @@ TEST(
     m_Mima.transition_started = true;
     m_Mima.ended = true;
     Clip_Reset();
-    M_Start(&f);
+    TestGameplay_Start(&f);
     CHECK_EQ_INT(m_Mima.phase, MIMA_APPEAR);
     CHECK_EQ_INT(m_Mima.flash_cycle, 0);
     CHECK_EQ_INT(m_Mima.pattern_cycles, 0);
@@ -128,7 +133,7 @@ static void M_MimaPatterns(FIXTURE *const f)
 TEST(mima_suspension_preserves_stage_progression)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     f.session.stage = 4;
     p_Stage->index = 4;
@@ -141,7 +146,7 @@ TEST(mima_suspension_preserves_stage_progression)
     const uint32_t frame = g_Stage->world.frame;
     const int32_t session_frame = f.session.frame;
     for (unsigned attempt = 0; attempt < 2; attempt++) {
-        CHECK_EQ_INT(M_FlowUpdate(&f), STAGE_FLOW_WAIT);
+        CHECK_EQ_INT(TestGameplay_FlowUpdate(&f), STAGE_FLOW_WAIT);
         CHECK_EQ_INT(g_Stage->world.progression, 1);
         CHECK_EQ_INT(m_Flow.phase, STAGE_FLOW_FIGHT);
         CHECK(memcmp(&mima, &m_Mima, sizeof(mima)) == 0);
@@ -150,7 +155,7 @@ TEST(mima_suspension_preserves_stage_progression)
     }
     m_Mima.phase = MIMA_ATTACK_ONE;
     m_Mima.pattern = 99;
-    CHECK_EQ_INT(M_FlowUpdate(&f), STAGE_FLOW_RUNNING);
+    CHECK_EQ_INT(TestGameplay_FlowUpdate(&f), STAGE_FLOW_RUNNING);
     CHECK_EQ_INT(g_Stage->world.progression, 1);
     CHECK_EQ_INT(g_Stage->world.frame, frame);
     CHECK_EQ_INT(f.session.frame, session_frame);
@@ -160,7 +165,7 @@ TEST(mima_suspension_preserves_stage_progression)
 TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     GAMEPLAY *const g = TestGameplay_State();
     m_Mima.phase = MIMA_ATTACK_ONE;
@@ -211,7 +216,7 @@ TEST(mima_real_hits_consume_shots_while_shielded_and_spheres_ignore_damage)
 TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     GAMEPLAY *const g = TestGameplay_State();
     m_Mima.phase = MIMA_ATTACK_FOUR;
@@ -246,7 +251,7 @@ TEST(mima_six_thousand_damage_awards_direct_score_without_ending_the_phase)
 TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     GAMEPLAY *const g = TestGameplay_State();
     m_Mima.phase = MIMA_ATTACK_FOUR;
@@ -292,7 +297,7 @@ TEST(mima_first_form_wraps_pattern_seven_and_suspends_at_its_real_boundary)
 TEST(mima_expanding_spheres_keep_the_source_birth_center_and_cleanup_guard)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     GAMEPLAY *const g = TestGameplay_State();
     m_Mima.phase = MIMA_ATTACK_THREE;
@@ -333,7 +338,7 @@ TEST(mima_expanding_spheres_keep_the_source_birth_center_and_cleanup_guard)
 
 static BOSS_RESULT M_MimaController(FIXTURE *const f)
 {
-    const STAGE_FLOW_RESULT result = M_FlowUpdate(f);
+    const STAGE_FLOW_RESULT result = TestGameplay_FlowUpdate(f);
     return result == STAGE_FLOW_WAIT ? BOSS_WAIT
                                      : (BOSS_RESULT)g_Stage->world.progression;
 }
@@ -342,7 +347,7 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
 {
     for (unsigned continued = 0; continued < 2; continued++) {
         FIXTURE f;
-        M_Init(&f);
+        TestGameplay_FixtureInit(&f);
         GAMEPLAY *const g = TestGameplay_State();
         f.session.stage = 4;
         p_Stage->index = 4;
@@ -462,7 +467,7 @@ TEST(mima_form_dialogue_resumes_once_or_aborts_before_final_score_commit)
 TEST(mima_flash_consumes_every_fourth_pending_draw_and_keeps_other_page)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     GAMEPLAY *const g = TestGameplay_State();
     p_Stage->scroll.back = 1;
@@ -512,7 +517,7 @@ TEST(mima_transition_requests_each_script_once_and_stays_inert_after_ending)
 {
     for (unsigned form = 0; form < 2; form++) {
         FIXTURE f;
-        M_Init(&f);
+        TestGameplay_FixtureInit(&f);
         BOSS_STATE *const boss = TestBossFight_State();
         const PATTERN_BANK *const patterns =
             &TestGameplay_State()->assets.patterns;
@@ -539,7 +544,7 @@ TEST(mima_transition_requests_each_script_once_and_stays_inert_after_ending)
 TEST(mima_hp_hook_waits_for_each_phase_setup_including_final_form)
 {
     FIXTURE f;
-    M_Init(&f);
+    TestGameplay_FixtureInit(&f);
     M_MimaPatterns(&f);
     TEST_BOSS_HP hp;
     TestBossHp_Begin(&hp);

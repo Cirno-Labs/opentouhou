@@ -3,6 +3,8 @@
 #include "core/base/arena.h"
 #include "pc98/mdrv.h"
 
+#include <string.h>
+
 #define M_FRAMES 48000
 
 typedef struct {

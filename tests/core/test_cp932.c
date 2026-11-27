@@ -5,6 +5,7 @@
 #include "core/base/utils.h"
 
 #include <stdint.h>
+#include <string.h>
 
 typedef struct {
     const char *utf8;

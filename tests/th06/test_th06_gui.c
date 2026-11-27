@@ -30,6 +30,7 @@
 #include "stg/translation.h"
 
 #include <SDL3/SDL.h>
+#include <stdio.h>
 #include <string.h>
 
 #define M_MAX_SCRIPTS 4

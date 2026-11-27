@@ -443,7 +443,7 @@ test(
     'test_th02_session',
     'test_th02_session.c',
     implicit_include_directories: false,
-    link_with: [th02_lib],
+    link_with: [test_lib, th02_lib],
   ),
   suite: 'unit',
 )
@@ -475,6 +475,7 @@ test(
     'test_th02_vector',
     'test_th02_vector.c',
     implicit_include_directories: false,
+    link_with: test_lib,
     dependencies: [pc98_dep, test_deps],
   ),
   suite: 'unit',

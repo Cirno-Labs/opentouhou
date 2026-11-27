@@ -11,6 +11,8 @@
 #include "th02/player.h"
 #include "th02/random.h"
 
+#include <string.h>
+
 typedef struct {
     TEST_PLAYER_GRAPHICS graphics;
     int16_t scroll;

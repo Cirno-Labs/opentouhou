@@ -6,6 +6,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(dirty_tile_copy_uses_raw_image_id_and_current_page)
 {
     ARENA arena;

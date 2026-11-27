@@ -2,6 +2,11 @@
 #include "tests/test_allocator.h"
 #include "th02/background/assets.h"
 
+#include "core/base/memory.h"
+#include "core/io/reader.h"
+
+#include <string.h>
+
 typedef struct {
     char path[11];
     uint8_t *bytes;

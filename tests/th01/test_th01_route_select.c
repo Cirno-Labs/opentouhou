@@ -11,6 +11,9 @@
 #include "th01/vsync_irq.c"
 
 #include "core/base/arena.h"
+#include "core/io/reader.h"
+
+#include <string.h>
 
 typedef struct {
     GAME_TEXT_FONT font;

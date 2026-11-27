@@ -17,6 +17,7 @@
 #include "core/gfx.h"
 #include "core/image.h"
 #include "core/io/file.h"
+#include "core/io/writer.h"
 
 static const char *const m_AnmFiles[] = {
     "data/text.anm",     "data/ascii.anm",    "data/asciis.anm",

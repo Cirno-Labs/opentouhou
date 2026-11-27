@@ -7,6 +7,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(cleanup_uses_the_page_position_and_movement_uses_the_saved_position)
 {
     memset(&p_Stage->scroll, 0, sizeof(p_Stage->scroll));

@@ -25,6 +25,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 typedef struct {
     ARENA arena;
     PATTERN_BANK patterns;

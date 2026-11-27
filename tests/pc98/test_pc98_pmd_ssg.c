@@ -3,6 +3,8 @@
 #include "core/base/arena.h"
 #include "pc98/pmd/ssg.h"
 
+#include <string.h>
+
 typedef struct {
     MUSIC_SSG ssg;
     PMD_CONTROL control;

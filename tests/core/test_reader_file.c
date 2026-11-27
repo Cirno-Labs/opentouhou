@@ -2,7 +2,14 @@
 #include "tests/test_allocator.h"
 #include "tests/test_dir.h"
 
+#include "core/base/memory.h"
+#include "core/base/string.h"
+#include "core/io/file.h"
 #include "core/io/reader.h"
+
+#include <SDL3/SDL.h>
+#include <stdio.h>
+#include <string.h>
 
 #define M_FILE_SIZE (3 * READER_BUFFER_SIZE + 123)
 

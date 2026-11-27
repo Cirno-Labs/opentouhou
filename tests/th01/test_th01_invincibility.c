@@ -5,6 +5,7 @@
 #include "th01/rng.h"
 
 #include "core/base/arena.h"
+#include "core/base/memory.h"
 #include "pc98/zun/master_rng.h"
 
 #include <string.h>

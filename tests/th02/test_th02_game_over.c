@@ -4,6 +4,8 @@
 #include "th02/game_over.c"
 #include "th02/input.h"
 
+#include <string.h>
+
 typedef struct {
     TH02_SESSION session;
 } FIXTURE;

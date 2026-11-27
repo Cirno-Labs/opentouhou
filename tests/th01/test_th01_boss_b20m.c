@@ -15,6 +15,7 @@
 #include "th01/sound.h"
 
 #include "core/base/arena.h"
+
 static void M_BossSetup(const B20M_ASSETS *const assets)
 {
     const BOSS_CONTEXT ctx = {};
@@ -132,6 +133,7 @@ TEST(validation_requires_both_forms_and_all_cached_resources)
 }
 
 #include <string.h>
+
 typedef struct {
     B20M_ASSETS assets;
     GAME_TEXT_FONT font;

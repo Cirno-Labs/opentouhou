@@ -3,6 +3,7 @@
 #include "core/base/arena.h"
 
 #include <stdint.h>
+#include <string.h>
 
 typedef struct NODE {
     struct NODE *next;

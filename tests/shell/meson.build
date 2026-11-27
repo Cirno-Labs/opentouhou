@@ -34,6 +34,7 @@ test(
     'test_clock.c',
     '../../src/shell/game/clock.c',
     implicit_include_directories: false,
+    link_with: test_lib,
   ),
   suite: 'unit',
 )
@@ -63,7 +64,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       core_vfs_lib, core_archive_lib, core_hash_lib, core_io_lib,
-      core_base_lib,
+      core_base_lib, zip_builder_lib, hdi_builder_lib,
     ],
     dependencies: [zlib, sdl3],
   ),
@@ -107,7 +108,7 @@ test(
     'test_shell_host',
     'test_shell_host.c',
     implicit_include_directories: false,
-    link_with: builtin_libs['th06'],
+    link_with: [test_lib, builtin_libs['th06']],
     dependencies: [shell_game_dep, sdl3],
   ),
   env: {
@@ -124,6 +125,7 @@ test(
     'test_tick_rate.c',
     '../../src/shell/game/tick_rate.c',
     implicit_include_directories: false,
+    link_with: test_lib,
   ),
   suite: 'unit',
 )
@@ -146,7 +148,7 @@ executable(
   'test_shell_clocks',
   'test_shell_clocks.c',
   implicit_include_directories: false,
-  link_with: builtin_libs['th06'],
+  link_with: [test_lib, builtin_libs['th06']],
   dependencies: [shell_game_dep, sdl3],
 )
 
@@ -154,7 +156,7 @@ executable(
   'test_shell_save_settings',
   'test_shell_save_settings.c',
   implicit_include_directories: false,
-  link_with: builtin_libs['th06'],
+  link_with: [test_lib, builtin_libs['th06']],
   dependencies: [shell_game_dep, sdl3],
 )
 
@@ -169,7 +171,7 @@ test(
     implicit_include_directories: false,
     link_with: [
       shell_fonts_lib, builtin_libs['th06'], core_archive_lib, core_vfs_lib, core_text_lib,
-      core_image_lib, core_hash_lib, core_io_lib, core_base_lib,
+      core_image_lib, core_hash_lib, core_io_lib, core_base_lib, test_fonts_lib,
     ],
     dependencies: [sdl3_ttf, sdl3, zlib, text_system, cc_libm],
   ),

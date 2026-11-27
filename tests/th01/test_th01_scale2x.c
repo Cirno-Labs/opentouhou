@@ -3,6 +3,8 @@
 
 #include "core/base/arena.h"
 
+#include <string.h>
+
 TEST(transparent_cells_and_byte_rounding)
 {
     ARENA arena;

@@ -1,9 +1,13 @@
 #include "tests/test.h"
 #include "tests/test_allocator.h"
 
+#include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
+
+#include <stdio.h>
+#include <string.h>
 
 typedef struct {
     const char *name;

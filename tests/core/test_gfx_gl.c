@@ -1,10 +1,12 @@
 #include "tests/test.h"
 
+#include "core/base/memory.h"
 #include "core/gfx.h"
 
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define SIZE 8
 #define BLACK ((GFX_COLOR) { 0, 0, 0, 255 })

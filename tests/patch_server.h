@@ -9,6 +9,7 @@
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/hash/crc32.h"
+#include "core/io/file.h"
 #include "core/io/reader.h"
 #include "core/patch/fetch.h"
 

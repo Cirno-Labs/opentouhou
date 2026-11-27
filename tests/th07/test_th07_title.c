@@ -24,6 +24,7 @@
 #include "core/base/memory.h"
 #include "core/image.h"
 #include "core/io/file.h"
+#include "core/io/writer.h"
 #include "stg/replay_files.h"
 
 #include <stdio.h>

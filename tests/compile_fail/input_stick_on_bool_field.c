@@ -9,9 +9,7 @@ typedef struct {
     float aim_y;
 } GAME_INPUT;
 
-void M_Use(void);
-
-void M_Use(void)
+static void Use(void)
 {
 #ifdef BREAK
     [[maybe_unused]] static const INPUT_ACTION actions[] = {
