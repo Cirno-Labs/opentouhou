@@ -18,6 +18,7 @@ th02_lib = static_library(
   'point_numbers.c',
   'bullets/spawn.c',
   'bullets/pool.c',
+  'pillars.c',
   'items.c',
   'player/logic.c',
   'player/render.c',
