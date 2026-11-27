@@ -166,7 +166,8 @@ index dd7ed8b..dc22fff 100644
 +    pc98_text_draw.begin_frame();
 +    for (unsigned int line = 0; line < 400; line++) {
 +        vga.draw.lines_done = line;
-+        const uint32_t *src = (const uint32_t*)VGA_PC98_Xlat32_Draw_Line(0, line);
++        const Bitu text_line = line % ((vga.crtc.maximum_scan_line & 0x1Fu) + 1u);
++        const uint32_t *src = (const uint32_t*)VGA_PC98_Xlat32_Draw_Line(0, text_line);
 +        for (unsigned int x = 0; x < 640; x++) pixels[line * 640 + x] = Harness_ToXrgb(src[x]);
 +        for (unsigned int i = 0; i < 2; i++) pc98_gdc[i].next_line();
 +        pc98_text_draw.next_line();
@@ -262,3 +263,18 @@ index 9355454..f7a04ce 100644
  		first_shell->Run();
  		delete first_shell;
  		first_shell = nullptr;//Make clear that it shouldn't be used anymore
+diff --git a/src/hardware/snd_pc98/sound/fmtimer.c b/src/hardware/snd_pc98/sound/fmtimer.c
+--- a/src/hardware/snd_pc98/sound/fmtimer.c
++++ b/src/hardware/snd_pc98/sound/fmtimer.c
+@@ -83,3 +83,4 @@
+      * dt = l / 1000000 */
+-    double dt_ms = (double)l / 1000;
++    // Convert 8 MHz timer units to the PC-98's 7.9872 MHz clock.
++    double dt_ms = (double)l * 8000.0 / 7987200.0;
+     nevent_set(NEVENT_FMTIMERA,dt_ms);
+@@ -106,3 +107,4 @@
+ #else
+-    double dt_ms = (double)l / 1000;
++    // Convert 8 MHz timer units to the PC-98's 7.9872 MHz clock.
++    double dt_ms = (double)l * 8000.0 / 7987200.0;
+     nevent_set(NEVENT_FMTIMERB,dt_ms);
