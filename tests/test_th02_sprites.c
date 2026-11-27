@@ -1,4 +1,5 @@
 #include "th02/draw/private.h"
+#include "th02/draw/sprites.h"
 
 #include "core/base/arena.h"
 
@@ -153,6 +154,22 @@ TEST(raw_coordinate_bits_follow_unsigned_x_and_wrapped_byte_offsets)
     Blit_Put(&bank.entries[0], 0, -1);
     CHECK_EQ_INT(g_Video.pages[0][(VIDEO_PLANE_SIZE - 80) * 8], 7);
     CHECK_EQ_INT(g_Video.pages[0][0], 7);
+    PatternBank_Reset(&bank);
+    Arena_Free(&arena);
+}
+
+TEST(mask_byte_writes_only_set_bits_with_color_masked_to_four_bits)
+{
+    ARENA arena;
+    PATTERN_BANK bank;
+    M_Init(&arena, &bank);
+    memset(g_Video.pages[0], 9, 8);
+    Draw_MaskByte(0, 0xaa, 0xf3);
+    for (size_t bit = 0; bit < 8; bit++) {
+        CHECK_EQ_INT(g_Video.pages[0][bit], (bit % 2 == 0) ? 3 : 9);
+    }
+    Draw_MaskByte(0x8000, 0xff, 5);
+    CHECK_EQ_INT(g_Video.pages[0][0], 5);
     PatternBank_Reset(&bank);
     Arena_Free(&arena);
 }

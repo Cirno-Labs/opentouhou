@@ -38,3 +38,7 @@ void Draw_SpriteZoom(
 // Draws a sprite opaquely for the ending, the B and R planes aliasing into
 // R and G; requires charging off.
 void Draw_SpriteOpaque(const PATTERN *pattern, int16_t left, int16_t top);
+
+// Writes color to the pixels of mask at a VRAM byte offset of the drawing
+// page, bypassing the charger.
+void Draw_MaskByte(uint32_t offset, uint8_t mask, uint8_t color);

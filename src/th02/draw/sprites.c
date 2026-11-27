@@ -1,5 +1,6 @@
 #include "th02/draw/sprites.h"
 #include "th02/draw/private.h"
+#include "th02/video.h"
 
 #include "core/base/assert.h"
 
@@ -71,4 +72,16 @@ void Draw_SpriteOpaque(
 {
     ASSERT(g_Grcg->mode == 0);
     Blit_OverPut8(pattern, left, top);
+}
+
+void Draw_MaskByte(
+    const uint32_t offset, const uint8_t mask, const uint8_t color)
+{
+    uint8_t *const pixels =
+        g_Video.pages[g_Video.drawing_page] + (offset & 0x7fff) * 8;
+    for (uint32_t bit = 0; bit < 8; bit++) {
+        if ((mask & (0x80u >> bit)) != 0) {
+            pixels[bit] = color & 15;
+        }
+    }
 }
