@@ -131,10 +131,31 @@ index dd7ed8b..dc22fff 100644
              GDC_vsync_interrupt = false;
              PIC_ActivateIRQ(2);
          }
-@@ -8826,3 +8827,46 @@ void POD_Load_VGA_Draw( std::istream& stream )
+@@ -8826,3 +8827,68 @@ void POD_Load_VGA_Draw( std::istream& stream )
  		case 19: VGA_DrawLine = VGA_Draw_3270_2BPP_Line; break;
  	}
  }
++
++void Harness_ReadGraphics(uint8_t *pages, uint8_t *palette) {
++    for (unsigned page = 0; page < 2; page++) {
++        const uint8_t *src = vga.mem.linear + PC98_VRAM_GRAPHICS_OFFSET + page * PC98_VRAM_PAGEFLIP_SIZE;
++        for (unsigned offset = 0; offset < 32000; offset++) {
++            uint8_t planes[4];
++            for (unsigned plane = 0; plane < 4; plane++) planes[plane] = src[offset + pc98_pgram_bitplane_offset(plane)];
++            for (unsigned bit = 0; bit < 8; bit++) {
++                uint8_t index = 0;
++                for (unsigned plane = 0; plane < 4; plane++) index |= ((planes[plane] >> (7 - bit)) & 1u) << plane;
++                pages[page * 640 * 400 + offset * 8 + bit] = index;
++            }
++        }
++    }
++    for (unsigned i = 0; i < 16; i++) {
++        palette[i * 4 + 0] = (pc98_pal_analog[i * 3 + 1] & 15u) * 17u;
++        palette[i * 4 + 1] = (pc98_pal_analog[i * 3 + 0] & 15u) * 17u;
++        palette[i * 4 + 2] = (pc98_pal_analog[i * 3 + 2] & 15u) * 17u;
++        palette[i * 4 + 3] = 255;
++    }
++}
 +
 +static uint32_t Harness_FromRgb(uint32_t r, uint32_t g, uint32_t b) {
 +    if (GFX_bpp >= 24) return (r << GFX_Rshift) | (g << GFX_Gshift) | (b << GFX_Bshift) | GFX_Amask;

@@ -318,6 +318,9 @@ static bool M_EndFrame(void)
         m_Dosbox.host->clear_vblank();
         m_Dosbox.vblank = false;
     }
+    if (m_Dosbox.port->on_frame_end != nullptr) {
+        m_Dosbox.port->on_frame_end(m_Dosbox.port->port.context);
+    }
     IMAGE screen = {};
     const bool shot = Driver_WantsShot(driver);
     if (shot && !M_Check(M_Shot(&screen))) {
@@ -535,6 +538,9 @@ static void M_OnSite(void *const context, const uint32_t address)
     if (m_Dosbox.driver == nullptr) {
         return;
     }
+    if (m_Dosbox.port->observe_site != nullptr) {
+        m_Dosbox.port->observe_site(m_Dosbox.port->port.context, address);
+    }
     const int32_t index = M_FindSite(address);
     if (index < 0) {
         return;
@@ -601,6 +607,9 @@ static void M_OnExec(
     if (m_Dosbox.driver == nullptr) {
         return;
     }
+    if (port->on_load != nullptr) {
+        port->on_load(port->port.context, name, psp);
+    }
     // An overlay load, such as Borland's exec, replaces the program at psp.
     if (m_Dosbox.running_count > 0
         && m_Dosbox.running[m_Dosbox.running_count - 1].psp == psp) {
@@ -616,7 +625,9 @@ static void M_OnExec(
             program = (int32_t)i;
         }
     }
-    if (program < 0) {
+    if (program < 0
+        || (port->accept_exec != nullptr
+            && !port->accept_exec(port->port.context, (uint8_t)program, psp))) {
         return;
     }
     if (m_Dosbox.running_count == M_RUNNING_MAX) {
@@ -938,6 +949,11 @@ void Dosbox_Read(
     m_Dosbox.host->read(M_Linear(segment, offset), out, size);
 }
 
+void Dosbox_ReadGraphics(uint8_t *const pages, uint8_t *const palette)
+{
+    m_Dosbox.host->read_graphics(pages, palette);
+}
+
 void Dosbox_Write(
     const uint16_t segment, const uint16_t offset, const void *const data,
     const size_t size)
@@ -955,4 +971,49 @@ DOSBOX_REGS Dosbox_Regs(void)
     DOSBOX_REGS regs;
     m_Dosbox.host->get_regs(&regs);
     return regs;
+}
+
+void Dosbox_Date(void)
+{
+    DOSBOX_REGS regs = Dosbox_Regs();
+    const uint32_t measured = (uint32_t)regs.cx * 10000
+        + (uint32_t)(regs.dx >> 8) * 100 + (regs.dx & 255);
+    const uint32_t date = Driver_Date(m_Dosbox.driver, measured);
+    if (date != 0 && date != measured) {
+        regs.cx = (uint16_t)(date / 10000);
+        regs.dx = (uint16_t)(((date / 100 % 100) << 8) | (date % 100));
+        m_Dosbox.host->set_regs(&regs);
+    }
+}
+
+void Dosbox_RecordDate(const uint32_t date)
+{
+    Driver_Date(m_Dosbox.driver, date);
+}
+
+void Dosbox_ObserveSite(const uint32_t address)
+{
+    m_Dosbox.host->set_site(address);
+}
+
+void Dosbox_RemoveObserver(const uint32_t address)
+{
+    m_Dosbox.host->clear_site(address);
+}
+
+uint64_t Dosbox_Now(void)
+{
+    return m_Dosbox.host->now();
+}
+
+void Dosbox_RecordClock(const uint32_t key, const uint64_t microseconds)
+{
+    Driver_RecordClock(m_Dosbox.driver, key, microseconds);
+    uint64_t expected;
+    if (Driver_Clock(m_Dosbox.driver, key, &expected)
+        && expected != microseconds) {
+        M_Check(FAIL(
+            "clock key %u differs: expected %llu, got %llu", key,
+            (unsigned long long)expected, (unsigned long long)microseconds));
+    }
 }

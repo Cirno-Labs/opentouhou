@@ -8,7 +8,7 @@
 // guest addresses, segment * 16 + offset. Emulated time is in microseconds
 // since the emulator started. The header is C and C++.
 
-#define DOSBOX_HOOK_ABI 2
+#define DOSBOX_HOOK_ABI 3
 
 // Names the library's one export, a DOSBOX_ATTACH_FN.
 #define DOSBOX_ATTACH_SYMBOL "Dosbox_Attach"
@@ -81,6 +81,10 @@ typedef struct {
     // Makes the emulator call on_timer each period of emulated time from now
     // on, between two instructions, or no longer when period is 0.
     void (*set_timer)(uint64_t period);
+    // Copies both 640 by 400 graphics pages as color indices, page 0 then
+    // page 1, and the sixteen analog palette entries as RGBA bytes. Reads
+    // raw VRAM without scroll, text, page selection or display masking.
+    void (*read_graphics)(uint8_t *pages, uint8_t *palette);
 } DOSBOX_HOST;
 
 // Holds what the library gives the emulator.
