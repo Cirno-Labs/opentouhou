@@ -242,6 +242,18 @@ if build_games
       win_subsystem: 'console',
     )
     executable(
+      'th02native',
+      'replay/th02/native_port.c',
+      c_args: [layer_include['th02']] + shell_include + harness_include,
+      implicit_include_directories: false,
+      link_with: [
+        th02_main_lib, th02_harness_lib, th02_lib, harness_native_lib, harness_lib,
+        builtin_libs['th02'],
+      ],
+      dependencies: [core_dep, pc98_dep, sdl3] + external_deps,
+      win_subsystem: 'console',
+    )
+    executable(
       'th06native',
       'replay/th06/native_port.c',
       c_args: [layer_include['th06']] + stg_include + shell_include + harness_include,
