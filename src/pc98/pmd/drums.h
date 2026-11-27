@@ -1,8 +1,7 @@
 #pragma once
 
-#include "pc98/pmd/chip.h"
-
 #include "core/base/result.h"
+#include "pc98/pmd/chip.h"
 
 #define SSG_EFFECT_LIMIT 128
 

@@ -1,13 +1,12 @@
-#include "th02_clip_fixture.h"
-#include "../../src/th02/sparks.c"
-#include "th02/sparks.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_sprites.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
+#include "th02/sparks.c"
+#include "th02/sparks.h"
 
 #include "core/base/arena.h"
-
-#include "th02_sprites.h"
-#include "test.h"
 
 TEST(loads_pre_shifted_mask_words_from_sparks_sheet)
 {

@@ -1,17 +1,16 @@
 #include "th01/boss/private.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
-#include "pc98/zun/pi.h"
+#include "th01/rng.h"
 #include "th01/route_select.h"
 #include "th01/session.h"
 #include "th01/sound.h"
-#include "th01/rng.h"
-
-#include "pc98/zun/math16.h"
-#include "pc98/zun/master_rng.h"
 #include "th01/sprite.h"
 
 #include "core/base/assert.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/pi.h"
 
 #include <string.h>
 

@@ -3,8 +3,9 @@
 // The input that one frame samples: the PC-98 key groups the game reads,
 // the keys it maps them to, the date and the clock samples.
 
-#include "core/input/schema.h"
 #include "th02/clock.h"
+
+#include "core/input/schema.h"
 
 typedef enum {
     GAME_KEY_UP = 0x0001,

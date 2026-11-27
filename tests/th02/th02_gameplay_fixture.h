@@ -1,19 +1,19 @@
 #pragma once
 
+#include "tests/test.h"
+#include "tests/th02/th02_boss_explosion.c"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_gameplay.c"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_sound.h"
+#include "tests/th02/th02_stage_flow.c"
+#include "th02/boss/private.h"
 #include "th02/enemies.h"
 #include "th02/items.h"
+#include "th02/player.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-#include "th02/player.h"
-#include "th02_clip_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02_gameplay.c"
-#include "th02_stage_flow.c"
-#include "th02/boss/private.h"
-#include "th02_boss_explosion.c"
 
-#include "test.h"
-#include "th02_sound.h"
 #include "core/base/arena.h"
 
 typedef struct {

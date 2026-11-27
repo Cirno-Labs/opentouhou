@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/music_room/private.h"
 
 #include "pc98/zun/master_rng.h"
-
-#include "test.h"
 
 typedef struct {
     MUSIC_POLYGONS *state;

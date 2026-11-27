@@ -1,10 +1,9 @@
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
 #include "th02/shot_select/logic.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 typedef struct {
     ARENA arena;

@@ -1,13 +1,12 @@
-#include "th02_player_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/player.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
-#include "th02_sound.h"
 
 TEST(player_draws_and_cleans_rolling_body_and_options_on_the_selected_page)
 {

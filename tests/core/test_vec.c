@@ -1,6 +1,6 @@
-#include "core/math/vec.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/math/vec.h"
 
 #include <math.h>
 

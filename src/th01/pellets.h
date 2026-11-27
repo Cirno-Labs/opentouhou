@@ -1,8 +1,9 @@
 #pragma once
 
-#include "pc98/zun/math16.h"
 #include "th01/pellet_assets.h"
 #include "th01/player.h"
+
+#include "pc98/zun/math16.h"
 
 #define PELLETS_COUNT 100
 

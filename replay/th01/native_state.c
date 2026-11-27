@@ -1,19 +1,18 @@
-#include "native_state.h"
+#include "replay/th01/native_state.h"
 
-#include "state.h"
-
-#include "th01/ending.h"
+#include "replay/harness/state.h"
 #include "th01/boss.h"
-#include "th01/vsync_irq.h"
+#include "th01/ending.h"
+#include "th01/main.h"
+#include "th01/opening.h"
 #include "th01/palette.h"
 #include "th01/pellets.h"
 #include "th01/player.h"
-#include "th01/session.h"
-#include "th01/stage.h"
-#include "th01/main.h"
-#include "th01/opening.h"
 #include "th01/rng.h"
+#include "th01/session.h"
 #include "th01/settings.h"
+#include "th01/stage.h"
+#include "th01/vsync_irq.h"
 
 #include <string.h>
 

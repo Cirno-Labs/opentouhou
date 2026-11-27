@@ -1,8 +1,9 @@
 #include "th02/shots/fire.h"
-#include "th02/shots/private.h"
+
 #include "th02/input.h"
-#include "th02/random.h"
 #include "th02/player.h"
+#include "th02/random.h"
+#include "th02/shots/private.h"
 #include "th02/sound_effects.h"
 
 #include "core/base/assert.h"

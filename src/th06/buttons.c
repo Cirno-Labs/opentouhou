@@ -1,7 +1,7 @@
 #include "th06/buttons.h"
 
-#include "shell/game.h"
 #include "core/base/utils.h"
+#include "shell/game.h"
 
 #include <stddef.h>
 #include <string.h>

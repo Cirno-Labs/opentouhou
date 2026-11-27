@@ -1,7 +1,7 @@
-#include "retail_state.h"
+#include "replay/th07/retail_state.h"
 
-#include "addresses.h"
-#include "state.h"
+#include "replay/harness/state.h"
+#include "replay/th07/addresses.h"
 
 #include "core/base/utils.h"
 

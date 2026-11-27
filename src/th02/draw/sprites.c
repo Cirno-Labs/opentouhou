@@ -1,4 +1,5 @@
 #include "th02/draw/sprites.h"
+
 #include "th02/draw/private.h"
 #include "th02/video.h"
 

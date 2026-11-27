@@ -1,10 +1,9 @@
-#include "th07_gui_setup.h"
+#include "tests/th07/th07_gui_setup.h"
 
-#include "gfx_recorder.h"
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test_dir.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_data.h"
 #include "th07/anm.h"
 #include "th07/bullet.h"
 #include "th07/buttons.h"
@@ -17,14 +16,13 @@
 #include "th07/player.h"
 #include "th07/replay.h"
 #include "th07/screen_effect.h"
+#include "th07/screens/result/records.h"
 #include "th07/sound.h"
 #include "th07/stage.h"
-#include "th07/screens/result/records.h"
 
 #include "core/base/assert.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
-
 #include "stg/chain.h"
 
 #include <SDL3/SDL.h>

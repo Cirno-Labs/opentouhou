@@ -1,11 +1,10 @@
+#include "tests/test.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/grcg.h"
 #include "th02/video.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(reset_and_map_end_keep_pending_rows_and_draw_parameters)
 {

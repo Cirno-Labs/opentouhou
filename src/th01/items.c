@@ -1,10 +1,11 @@
 #include "th01/items.h"
+
 #include "th01/hud.h"
 #include "th01/session.h"
+#include "th01/shape.h"
 #include "th01/sound.h"
 
 #include "pc98/zun/math16.h"
-#include "th01/shape.h"
 
 #include <string.h>
 

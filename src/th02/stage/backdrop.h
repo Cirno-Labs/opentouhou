@@ -1,10 +1,10 @@
 #pragma once
 
-#include "pc98/zun/pi.h"
 #include "th02/draw.h"
 #include "th02/palette.h"
 
 #include "core/vfs.h"
+#include "pc98/zun/pi.h"
 
 typedef struct {
     PI_IMAGE image;

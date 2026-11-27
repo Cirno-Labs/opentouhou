@@ -1,8 +1,7 @@
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
 #include "th02/ending/story.c"
-
-#include "test.h"
 
 typedef struct {
     ENDING_ASSETS assets;

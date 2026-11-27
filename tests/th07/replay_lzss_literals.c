@@ -1,4 +1,4 @@
-#include "replay_lzss_literals.h"
+#include "tests/th07/replay_lzss_literals.h"
 
 size_t ReplayTestLzss_EncodeLiterals(
     const uint8_t *const data, const size_t size, uint8_t *const out)

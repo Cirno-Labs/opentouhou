@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/map.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 #define M_FILE_SIZE (10 + MAP_SECTION_COUNT * MAP_SECTION_ROWS * MAP_COLUMNS)
 

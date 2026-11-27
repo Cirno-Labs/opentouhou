@@ -2,7 +2,9 @@
 #include "th01/ending_text.h"
 #include "th01/music.h"
 #include "th01/sound.h"
+
 #include "core/base/assert.h"
+
 #include <stdio.h>
 #include <string.h>
 

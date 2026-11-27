@@ -1,7 +1,8 @@
-#include "th07/ecl/patterns.h"
-
+#include "tests/test.h"
+#include "tests/th07/th07_play_setup.h"
 #include "th07/anm.h"
 #include "th07/bullet.h"
+#include "th07/ecl/patterns.h"
 #include "th07/effect.h"
 #include "th07/enemy.h"
 #include "th07/game.h"
@@ -10,13 +11,9 @@
 #include "th07/sound.h"
 #include "th07/stage.h"
 
-#include "test.h"
-#include "th07_play_setup.h"
-
 #include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/rng.h"
 

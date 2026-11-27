@@ -1,14 +1,13 @@
 #include "th06/files.h"
 
-#include "stg/pbg3.h"
-
-#include "shell/game.h"
 #include "core/archive.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/patch.h"
 #include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/pbg3.h"
 
 #include <string.h>
 

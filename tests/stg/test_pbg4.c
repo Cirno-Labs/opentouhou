@@ -1,11 +1,11 @@
-#include "stg/pbg4.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
 #include "core/archive.h"
 #include "core/base/cp932.h"
 #include "core/io/writer.h"
 #include "stg/lzss.h"
-#include "test.h"
-#include "test_allocator.h"
+#include "stg/pbg4.h"
 
 #include <string.h>
 

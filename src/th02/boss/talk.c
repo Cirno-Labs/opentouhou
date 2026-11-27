@@ -1,13 +1,15 @@
 #include "th02/boss/talk.h"
-#include "th02/boss/strategy.h"
+
 #include "th02/background.h"
+#include "th02/boss/strategy.h"
 #include "th02/clip.h"
 #include "th02/dialogue/sequence.h"
 #include "th02/palette.h"
+#include "th02/player.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-#include "th02/player.h"
 #include "th02/video.h"
+
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 

@@ -1,11 +1,11 @@
 #include "th01/bonus.h"
+
 #include "th01/session.h"
 #include "th01/sound.h"
 
+#include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 #include "pc98/zun/sprite_sheet.h"
-
-#include "core/base/assert.h"
 
 #include <string.h>
 

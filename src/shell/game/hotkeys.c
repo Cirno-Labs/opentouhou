@@ -1,4 +1,4 @@
-#include "hotkeys.h"
+#include "shell/game/hotkeys.h"
 
 static const INPUT_ACTION m_Actions[] = {
     INPUT_BUTTON(HOTKEYS, screenshot, "print_screen, f12", nullptr, nullptr),

@@ -1,4 +1,4 @@
-#include "th02_boss_explosion.h"
+#include "tests/th02/th02_boss_explosion.h"
 
 static TEST_BOSS_DOTS *m_Dots;
 
@@ -13,7 +13,7 @@ static void M_ObservedDot(int16_t left, int16_t top, uint8_t size)
 }
 
 #define Draw_Dot M_ObservedDot
-#include "../src/th02/boss/explosion.c"
+#include "th02/boss/explosion.c"
 #undef Draw_Dot
 
 void TestBossExplosion_Observe(TEST_BOSS_DOTS *dots)

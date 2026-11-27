@@ -1,9 +1,8 @@
+#include "tests/test.h"
 #include "th01/grc.h"
 
 #include "core/base/arena.h"
 #include "core/io/file.h"
-
-#include "test.h"
 
 static size_t M_File(uint8_t *const bytes, const int32_t count)
 {

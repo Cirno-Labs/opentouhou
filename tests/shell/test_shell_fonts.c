@@ -1,11 +1,10 @@
-#include "shell/game/fonts.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/test_fonts.h"
 
 #include "core/text.h"
 #include "core/vfs.h"
-
-#include "test.h"
-#include "test_dir.h"
-#include "test_fonts.h"
+#include "shell/game/fonts.h"
 
 #include <string.h>
 

@@ -7,7 +7,7 @@
 // Kernel sine on ~[-pi/4, pi/4] (except on -0). x is the reduced argument,
 // y is its tail from argument reduction (0 when iy == 0).
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 static const double S1 = -1.66666666666666324348e-01;
 static const double S2 = 8.33333333332248946124e-03;

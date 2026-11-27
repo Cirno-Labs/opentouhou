@@ -1,9 +1,5 @@
 #include "core/patch/manager.h"
 
-#include "core/patch/language.h"
-#include "core/patch/repo.h"
-#include "core/patch/update.h"
-
 #include "core/base/arena.h"
 #include "core/base/assert.h"
 #include "core/base/log.h"
@@ -12,6 +8,9 @@
 #include "core/base/utils.h"
 #include "core/io/path.h"
 #include "core/json/get.h"
+#include "core/patch/language.h"
+#include "core/patch/repo.h"
+#include "core/patch/update.h"
 
 #include <stdarg.h>
 #include <stdlib.h>

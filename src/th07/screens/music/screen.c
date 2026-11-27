@@ -7,13 +7,12 @@
 #include "th07/screens/music/comments.h"
 #include "th07/sound.h"
 
-#include "stg/translation.h"
-
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
+#include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

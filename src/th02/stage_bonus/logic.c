@@ -1,4 +1,5 @@
 #include "th02/stage_bonus/logic.h"
+
 #include "th02/score.h"
 #include "th02/sound_effects.h"
 #include "th02/stage_bonus/render.h"

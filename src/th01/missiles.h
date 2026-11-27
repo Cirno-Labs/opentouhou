@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th01/player.h"
+
 #include "pc98/zun/math16.h"
 
 // Clears all state for a new gameplay session.

@@ -1,7 +1,7 @@
-#include "core/vfs.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
-#include "test.h"
-#include "test_allocator.h"
+#include "core/vfs.h"
 
 #include <string.h>
 

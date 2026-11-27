@@ -1,6 +1,5 @@
 #include "th06/enemy.h"
 
-#include "stg/angle.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
@@ -10,7 +9,7 @@
 
 #include "core/base/assert.h"
 #include "core/base/color.h"
-
+#include "stg/angle.h"
 #include "stg/chain.h"
 #include "stg/rng.h"
 

@@ -1,9 +1,11 @@
 #include "th01/boss/entity.h"
-#include "th01/sprite.h"
-#include "core/base/assert.h"
-#include <string.h>
 
+#include "th01/sprite.h"
+
+#include "core/base/assert.h"
 #include "pc98/zun/math16.h"
+
+#include <string.h>
 
 typedef struct {
     const BOS *entities[BOSS_ENTITY_SLOTS];

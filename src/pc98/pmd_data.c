@@ -1,6 +1,5 @@
-#include "pc98/pmd/data.h"
-
 #include "core/base/cp932.h"
+#include "pc98/pmd/data.h"
 
 #include <string.h>
 

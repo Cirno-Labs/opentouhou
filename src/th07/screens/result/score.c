@@ -2,10 +2,9 @@
 
 #include "th07/exe_identity.h"
 
-#include "stg/lzss.h"
-
 #include "core/base/memory.h"
 #include "core/base/utils.h"
+#include "stg/lzss.h"
 
 #include <string.h>
 

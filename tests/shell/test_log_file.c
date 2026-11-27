@@ -1,10 +1,9 @@
-#include "shell/log_file.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
-
-#include "test.h"
-#include "test_dir.h"
+#include "shell/log_file.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>

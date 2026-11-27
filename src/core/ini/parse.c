@@ -1,7 +1,6 @@
-#include "core/ini/struct.h"
-
 #include "core/base/log.h"
 #include "core/base/string.h"
+#include "core/ini/struct.h"
 #include "core/io/file.h"
 #include "core/io/reader.h"
 

@@ -1,8 +1,7 @@
-#include "../../src/th01/input.c"
+#include "tests/input_backend_fake.h"
+#include "tests/test.h"
+#include "th01/input.c"
 #include "th01/input.h"
-
-#include "input_backend_fake.h"
-#include "test.h"
 
 static INPUT_BINDING M_Binding(const char *const name)
 {

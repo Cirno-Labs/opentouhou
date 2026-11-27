@@ -1,8 +1,6 @@
-#include "th01/sprite.h"
-
+#include "tests/test.h"
 #include "th01/shape.h"
-
-#include "test.h"
+#include "th01/sprite.h"
 
 #include <string.h>
 

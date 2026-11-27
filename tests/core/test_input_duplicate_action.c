@@ -1,6 +1,6 @@
-#include "core/input.h"
+#include "tests/input_backend_fake.h"
 
-#include "input_backend_fake.h"
+#include "core/input.h"
 
 #include <stdlib.h>
 

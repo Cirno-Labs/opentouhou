@@ -1,11 +1,10 @@
-#include "shell/folders.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/io/file.h"
-
-#include "test.h"
-#include "test_dir.h"
+#include "shell/folders.h"
 
 #include <SDL3/SDL.h>
 

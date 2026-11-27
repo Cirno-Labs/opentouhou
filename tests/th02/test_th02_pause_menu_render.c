@@ -1,12 +1,11 @@
-#include "th02_tram_fixture.h"
-#include "th02_palette_fixture.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_pause_menu.c"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/pause_menu.h"
-#include "th02_pause_menu.c"
 
 #include "core/base/arena.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 TEST(pause_draws_cached_labels_and_distinct_heading_and_blank_widths)
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "th02/gameplay/assets.h"
 #include "th02/bomb/assets.h"
+#include "th02/gameplay/assets.h"
 #include "th02/stage/assets.h"
 
 // Starts tracking retail's 288000-byte gameplay working set.

@@ -1,6 +1,7 @@
-#include "files.h"
-#include "harness.h"
-
+#include "replay/th01/files.h"
+#include "replay/th01/harness.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 #include "th01/input.h"
 #include "th01/score_data.h"
 #include "th01/settings.h"
@@ -8,8 +9,6 @@
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/vfs.h"
-#include "test.h"
-#include "test_dir.h"
 
 #include <string.h>
 

@@ -1,5 +1,6 @@
-#include "th02/ending/images.h"
 #include "th02/ending/render.h"
+
+#include "th02/ending/images.h"
 #include "th02/ending/text.h"
 #include "th02/grcg.h"
 

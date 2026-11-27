@@ -1,7 +1,7 @@
 #pragma once
 
-#include "th01/stage_data.h"
 #include "th01/ptn.h"
+#include "th01/stage_data.h"
 
 #include "core/vfs.h"
 

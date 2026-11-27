@@ -1,10 +1,9 @@
-#include "core/gfx/private.h"
-#include "core/math/common.h"
-
 #include "core/base/array.h"
 #include "core/base/assert.h"
 #include "core/base/hash_map.h"
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
+#include "core/math/common.h"
 
 #include <math.h>
 #include <string.h>

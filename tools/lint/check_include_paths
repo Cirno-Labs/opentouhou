@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+"""Fail when a quoted include does not name its file from one include root.
+
+Takes the paths of C files. The build includes from two roots: src/, for the
+code in it ("core/vfs.h"), and the repository root, for the rest
+("tests/test.h"). A quoted include is an error unless it names a file under
+exactly one of the two, or one of GENERATED, which the build writes to its
+own src/. It is an error too when it starts with src/ or steps through "."
+or "..", or when a file of that name sits beside the including file, where
+the compiler looks first. A directory in src/ named like one at the root
+would let a path name two files, so that fails as well.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+# The headers that the build generates, by their path from the build's src/.
+GENERATED = {
+    "core/gfx_shaders.h",
+    "othpatch/version.h",
+    "th01/version.h",
+    "th02/version.h",
+    "th06/version.h",
+    "th07/version.h",
+}
+INCLUDE = re.compile(r'^\s*#\s*include\s*"([^"]*)"')
+
+
+def error(path: Path, name: str) -> str | None:
+    """Return why the include of name in the file at path is wrong, or None."""
+    parts = name.split("/")
+    if "." in parts or ".." in parts:
+        return f'"{name}" steps through . or ..'
+    if parts[0] == "src":
+        return f'"{name}" starts with src/, which is an include root'
+    if (path.parent / name).is_file() and path.resolve().parent not in (ROOT, SRC):
+        return f'"{name}" names a file beside the including one'
+    if name in GENERATED:
+        return None
+    roots = [root for root in (SRC, ROOT) if (root / name).is_file()]
+    if len(roots) != 1:
+        return f'"{name}" is a file under {len(roots)} of src/ and the root, not 1'
+    return None
+
+
+def clashes() -> list[str]:
+    """Return the directories of src/ named like a directory at the root."""
+    top = {entry.name for entry in ROOT.iterdir() if entry.is_dir()}
+    return sorted(
+        entry.name for entry in SRC.iterdir() if entry.is_dir() and entry.name in top
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    failed = False
+    for name in clashes():
+        print(f"src/{name}: shares its name with the directory {name}/ at the root")
+        failed = True
+    for name in sys.argv[1:] if argv is None else argv:
+        path = Path(name)
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for index, line in enumerate(lines):
+            match = INCLUDE.match(line)
+            if not match:
+                continue
+            message = error(path, match.group(1))
+            if message:
+                print(f"{name}:{index + 1}: {message}")
+                failed = True
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

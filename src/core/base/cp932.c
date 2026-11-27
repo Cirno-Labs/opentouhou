@@ -1,8 +1,7 @@
 #include "core/base/cp932.h"
 
+#include "core/base/cp932_table.h"
 #include "core/base/memory.h"
-
-#include "cp932_table.h"
 
 #include <stdlib.h>
 #include <string.h>

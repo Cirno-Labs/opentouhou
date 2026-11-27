@@ -1,13 +1,13 @@
 #include "th06/anm/text.h"
 
 #include "th06/anm/texture.h"
+
+#include "core/base/cp932.h"
+#include "core/base/log.h"
+#include "core/text.h"
 #include "stg/game_font.h"
 #include "stg/note.h"
 #include "stg/translation.h"
-
-#include "core/base/log.h"
-#include "core/base/cp932.h"
-#include "core/text.h"
 
 #include <stdarg.h>
 #include <stdio.h>

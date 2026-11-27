@@ -1,7 +1,7 @@
 #include "core/archive/zip.h"
 
-#include "core/archive/format.h"
 #include "core/archive/deflate.h"
+#include "core/archive/format.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/hash/crc32.h"

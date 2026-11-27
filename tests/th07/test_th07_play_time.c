@@ -1,10 +1,7 @@
-#include "th07/play_time.h"
-
-#include "test.h"
-
+#include "tests/shell_fake.h"
+#include "tests/test.h"
 #include "th07/game_manager.h"
-
-#include "shell_fake.h"
+#include "th07/play_time.h"
 
 static void M_Setup(void)
 {

@@ -1,6 +1,5 @@
-#include "core/io/backend.h"
-
 #include "core/base/string.h"
+#include "core/io/backend.h"
 
 char *IoBackend_SystemPath(const char *const path)
 {

@@ -1,8 +1,9 @@
 #pragma once
 
+#include "th01/bos.h"
+
 #include "core/vfs/types.h"
 #include "pc98/zun/pi.h"
-#include "th01/bos.h"
 
 typedef enum {
     BOSS_NONE,

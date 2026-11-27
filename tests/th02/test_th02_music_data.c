@@ -1,12 +1,11 @@
-#include "pc98/pmd/data.h"
-#include "pc98/pmd.h"
-
-#include "core/base/arena.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/test_dir.h"
 #include "th02/music/assets.h"
 
-#include "test.h"
-#include "test_allocator.h"
-#include "test_dir.h"
+#include "core/base/arena.h"
+#include "pc98/pmd.h"
+#include "pc98/pmd/data.h"
 
 #define M_SIZE 161
 

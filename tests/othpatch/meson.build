@@ -14,7 +14,6 @@ foreach part : ['fetch', 'game', 'install', 'main', 'release', 'console']
     executable(
       'test_othpatch_' + part,
       'test_othpatch_' + part + '.c',
-      c_args: [layer_include['othpatch']] + core_include + tests_include,
       implicit_include_directories: false,
       link_with: othpatch_libs,
       dependencies: othpatch_deps + [test_deps],

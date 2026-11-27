@@ -1,6 +1,6 @@
-#include "shell/game/clock.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "shell/game/clock.h"
 
 #define NS_PER_SECOND 1000000000ULL
 #define TICK_NS (NS_PER_SECOND / 60 + 1)

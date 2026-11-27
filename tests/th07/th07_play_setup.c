@@ -1,5 +1,8 @@
-#include "th07_play_setup.h"
+#include "tests/th07/th07_play_setup.h"
 
+#include "tests/test_dir.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_data.h"
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/bullet.h"
@@ -15,14 +18,9 @@
 #include "th07/sound.h"
 #include "th07/stage.h"
 
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
-
 #include "core/base/assert.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
-
 #include "stg/chain.h"
 #include "stg/rng.h"
 

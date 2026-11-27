@@ -1,11 +1,10 @@
-#include "th02_palette_fixture.h"
-#include "../src/th02/enemies.c"
-#include "th02_stage_flow.c"
+#include "tests/test.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_stage_flow.c"
+#include "th02/enemies.c"
+#include "th02/enemies.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-#include "th02/enemies.h"
-
-#include "test.h"
 
 typedef struct {
     TH02_SESSION session;

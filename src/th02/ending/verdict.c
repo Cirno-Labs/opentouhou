@@ -1,5 +1,6 @@
-#include "th02/ending/render.h"
 #include "th02/ending/verdict.h"
+
+#include "th02/ending/render.h"
 #include "th02/wait.h"
 
 #include "core/base/assert.h"

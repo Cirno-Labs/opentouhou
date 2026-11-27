@@ -1,10 +1,9 @@
-#include "th02_tram_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/presenter.h"
 
 #include "core/base/arena.h"
 #include "core/gfx.h"
-
-#include "test.h"
 
 #include <SDL3/SDL.h>
 

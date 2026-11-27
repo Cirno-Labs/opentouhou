@@ -1,7 +1,6 @@
-#include "th02_palette_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_palette_fixture.h"
 #include "th02/palette.h"
-
-#include "test.h"
 
 TEST(stock_colors_match_pc98_index_bits)
 {

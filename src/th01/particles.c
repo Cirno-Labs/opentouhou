@@ -1,10 +1,11 @@
 #include "th01/particles.h"
-#include "th01/rng.h"
 
+#include "th01/rng.h"
+#include "th01/sprite.h"
+
+#include "core/base/assert.h"
 #include "pc98/zun/master_rng.h"
 #include "pc98/zun/math16.h"
-#include "core/base/assert.h"
-#include "th01/sprite.h"
 
 #include <string.h>
 

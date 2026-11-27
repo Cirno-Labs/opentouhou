@@ -1,14 +1,12 @@
-#include "th06/replay.h"
-
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
+#include "th06/replay.h"
 #include "th06/replay/format.h"
-
-#include "stg/replay_files.h"
 
 #include "core/base/assert.h"
 #include "core/base/memory.h"
+#include "stg/replay_files.h"
 
 #include <limits.h>
 #include <string.h>

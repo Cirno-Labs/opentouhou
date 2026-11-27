@@ -1,9 +1,8 @@
-#include "core/patch.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
-
-#include "patch_builder.h"
-#include "test.h"
+#include "core/patch.h"
 
 #include <string.h>
 

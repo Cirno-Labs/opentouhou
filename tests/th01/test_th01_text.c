@@ -1,17 +1,14 @@
-#include "th01/text.h"
-
+#include "tests/test.h"
+#include "tests/test_fonts.h"
+#include "tests/th01/th01_video.h"
 #include "th01/bonus.h"
 #include "th01/hud.h"
 #include "th01/items.h"
+#include "th01/opening_strings.h"
 #include "th01/route_select.h"
+#include "th01/text.h"
 
 #include "core/base/arena.h"
-
-#include "th01_video.h"
-#include "test.h"
-#include "test_fonts.h"
-
-#include "th01/opening_strings.h"
 
 #include <limits.h>
 

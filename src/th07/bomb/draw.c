@@ -7,7 +7,6 @@
 #include "core/base/utils.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 
 #define M_ORB_COUNT 8

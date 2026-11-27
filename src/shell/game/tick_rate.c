@@ -1,4 +1,4 @@
-#include "tick_rate.h"
+#include "shell/game/tick_rate.h"
 
 #define PERIOD_NS 500000000ULL
 #define NS_PER_SECOND 1000000000.0

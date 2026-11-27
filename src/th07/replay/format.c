@@ -1,11 +1,10 @@
 #include "th07/replay/file.h"
 
-#include "stg/lzss.h"
-
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/io/writer.h"
+#include "stg/lzss.h"
 
 #include <limits.h>
 #include <string.h>

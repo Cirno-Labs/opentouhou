@@ -1,6 +1,6 @@
-#include "backend.h"
-#include "case.h"
-#include "script.h"
+#include "replay/harness/backend.h"
+#include "replay/harness/case.h"
+#include "replay/harness/script.h"
 
 #include "core/base/string.h"
 #include "core/io/reader.h"

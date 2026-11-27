@@ -1,8 +1,7 @@
+#include "tests/test.h"
+
 #include "core/args.h"
-
 #include "core/base/memory.h"
-
-#include "test.h"
 
 #include <stdarg.h>
 

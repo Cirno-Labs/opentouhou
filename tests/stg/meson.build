@@ -4,7 +4,6 @@ test(
     'test_note',
     'test_note.c',
     '../gfx_recorder.c',
-    c_args: core_include + stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [
       stg_note_lib, stg_translation_lib, core_patch_lib, core_json_lib,
@@ -24,7 +23,6 @@ test(
   executable(
     'test_end_diff',
     'test_end_diff.c',
-    c_args: core_include + stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_end_diff_lib, core_json_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -38,7 +36,6 @@ test(
   executable(
     'test_msg_diff',
     'test_msg_diff.c',
-    c_args: core_include + stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_msg_diff_lib, core_json_lib, core_io_lib, core_base_lib],
     dependencies: [sdl3],
@@ -52,7 +49,6 @@ test(
   executable(
     'test_translation',
     'test_translation.c',
-    c_args: core_include + stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_translation_lib, core_patch_lib, core_json_lib, core_io_lib],
     dependencies: [sdl3],
@@ -66,7 +62,6 @@ test(
   executable(
     'test_chain',
     'test_chain.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_chain_lib, core_base_lib],
   ),
@@ -78,7 +73,6 @@ test(
   executable(
     'test_stg_angle',
     'test_stg_angle.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_angle_lib, core_math_lib],
   ),
@@ -90,7 +84,6 @@ test(
   executable(
     'test_stg_replay_files',
     'test_stg_replay_files.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_replay_files_lib],
     dependencies: [test_deps],
@@ -103,7 +96,6 @@ test(
   executable(
     'test_rng',
     'test_rng.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_rng_lib],
   ),
@@ -115,7 +107,6 @@ test(
   executable(
     'test_stg_wave',
     'test_stg_wave.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_wave_lib],
     dependencies: [test_deps],
@@ -128,7 +119,6 @@ test(
   executable(
     'test_timer',
     'test_timer.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_timer_lib],
   ),
@@ -140,7 +130,6 @@ test(
     'test_lzss',
     'test_lzss.c',
     '../pbg3_builder.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [stg_lzss_lib, core_hash_lib, core_io_lib, core_base_lib],
     dependencies: [test_deps],
@@ -154,7 +143,6 @@ test(
     'test_pbg3',
     'test_pbg3.c',
     '../pbg3_builder.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [
       stg_pbg3_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,
@@ -169,7 +157,6 @@ test(
   executable(
     'test_pbg4',
     'test_pbg4.c',
-    c_args: stg_include + tests_include,
     implicit_include_directories: false,
     link_with: [
       stg_pbg4_lib, core_archive_lib, core_vfs_lib, core_io_lib, core_base_lib,

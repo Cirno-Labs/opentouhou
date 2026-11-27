@@ -1,6 +1,6 @@
-#include "pc98/zun/math16.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/zun/math16.h"
 
 TEST(vector_uses_original_byte_angles_and_signed_lengths)
 {

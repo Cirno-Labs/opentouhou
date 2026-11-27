@@ -1,8 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 TEST(dup_copies_the_text)
 {

@@ -1,4 +1,4 @@
-#include "gfx_recorder.h"
+#include "tests/gfx_recorder.h"
 
 #include "core/base/array.h"
 #include "core/base/log.h"

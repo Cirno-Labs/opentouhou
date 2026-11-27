@@ -1,11 +1,10 @@
+#include "tests/test.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
 #include "th02/grcg.h"
 #include "th02/video.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(cache_reset_keeps_ring_and_dirty_bytes)
 {

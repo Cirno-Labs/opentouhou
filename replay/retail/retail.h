@@ -1,7 +1,7 @@
 #pragma once
 
-#include "backend.h"
-#include "clock.h"
+#include "replay/harness/backend.h"
+#include "replay/retail/clock.h"
 
 #include <stddef.h>
 #include <stdint.h>

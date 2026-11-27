@@ -1,7 +1,7 @@
 #pragma once
 
-#include "compare.h"
-#include "script.h"
+#include "replay/harness/compare.h"
+#include "replay/harness/script.h"
 
 #include "core/args.h"
 #include "core/base/arena.h"

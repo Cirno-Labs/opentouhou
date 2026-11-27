@@ -1,9 +1,9 @@
 #pragma once
 
-#include "th02/wait.h"
 #include "th02/draw.h"
 #include "th02/palette.h"
 #include "th02/sound_effects.h"
+#include "th02/wait.h"
 
 typedef struct {
     const PATTERN_BANK *patterns;

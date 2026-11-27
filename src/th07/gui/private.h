@@ -4,7 +4,6 @@
 
 #include "core/base/result.h"
 #include "core/io/reader.h"
-
 #include "stg/chain.h"
 #include "stg/msg_diff.h"
 

@@ -9,7 +9,7 @@
 // the quotient mod 8 (the caller only reads it mod 4). Dispatches to
 // otm_RemPio2Large for |x| beyond about 2^20*(pi/2).
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 static const double toint = 1.5 / DBL_EPSILON;
 static const double pio4 = 0x1.921fb54442d18p-1;

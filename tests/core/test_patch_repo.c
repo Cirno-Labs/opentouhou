@@ -1,8 +1,8 @@
-#include "core/patch/repo.h"
+#include "tests/patch_server.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
-#include "patch_server.h"
-#include "test.h"
-#include "test_dir.h"
+#include "core/patch/repo.h"
 
 #define M_ARENA_SIZE ((size_t)64 * 1024 * 1024)
 

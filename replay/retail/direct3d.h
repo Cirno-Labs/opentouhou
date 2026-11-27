@@ -4,7 +4,6 @@
 #include "core/image/pixels.h"
 
 #include <windows.h>
-
 #include <d3d8.h>
 
 // Hooks module's Direct3DCreate8 so that every device it creates calls

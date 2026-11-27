@@ -1,8 +1,7 @@
-#include "stg/rng.h"
-
-#include "test.h"
+#include "tests/test.h"
 
 #include "core/base/utils.h"
+#include "stg/rng.h"
 
 #include <stdint.h>
 #include <string.h>

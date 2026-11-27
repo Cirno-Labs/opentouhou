@@ -46,11 +46,6 @@ endforeach
 # meson.current_build_dir() / 'tmp'.
 tests_tmp = meson.current_build_dir() / 'tmp'
 
-# A test in an area's own subdirectory that includes a helper from here
-# (gfx_recorder.h, pbg3_builder.h, audio_backend_fake.h, ...) needs this on
-# its include path, since implicit_include_directories is false.
-tests_include = ['-I' + meson.current_source_dir()]
-
 # Tests that do something fatal pass only when the program aborts with a
 # fatal error that contains the given text. core, tools and pc98 all have
 # fatal-error tests, so the checker and the Python it runs under are shared.

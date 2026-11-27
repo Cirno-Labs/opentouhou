@@ -1,10 +1,9 @@
+#include "tests/test.h"
+#include "tests/test_dir.h"
 #include "th01/settings.h"
 
 #include "core/io/writer.h"
 #include "core/vfs.h"
-
-#include "test.h"
-#include "test_dir.h"
 
 #include <string.h>
 

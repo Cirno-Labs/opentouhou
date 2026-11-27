@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th06/screens/result/score.h"
-
-#include "test.h"
 
 #include "core/base/memory.h"
 

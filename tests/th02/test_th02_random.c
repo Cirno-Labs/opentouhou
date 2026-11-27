@@ -1,7 +1,6 @@
-#include "th02_random_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_random_fixture.h"
 #include "th02/random.h"
-
-#include "test.h"
 
 TEST(reset_and_direct_generation_match_master_lib)
 {

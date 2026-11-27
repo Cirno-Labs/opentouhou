@@ -1,7 +1,6 @@
-#include "th01/wait.h"
+#include "tests/test.h"
 #include "th01/video.h"
-
-#include "test.h"
+#include "th01/wait.h"
 
 #include <string.h>
 

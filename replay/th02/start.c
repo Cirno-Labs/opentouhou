@@ -1,6 +1,6 @@
-#include "start.h"
+#include "replay/th02/start.h"
 
-#include "harness.h"
+#include "replay/th02/harness.h"
 
 void Th02Start_Apply(
     const START_VALUE *const starts, const size_t count,

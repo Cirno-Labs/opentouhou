@@ -2,11 +2,10 @@
 
 #include "othpatch/fetch/backend.h"
 #include "othpatch/fetch/file.h"
+#include "othpatch/version.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
-
-#include "version.h"
 
 #include <curl/curl.h>
 #include <stdlib.h>

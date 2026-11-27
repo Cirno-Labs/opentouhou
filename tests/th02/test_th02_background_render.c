@@ -1,11 +1,10 @@
-#include "../../src/th02/grcg.c"
+#include "tests/test.h"
 #include "th02/background.h"
 #include "th02/background/private.h"
+#include "th02/grcg.c"
 #include "th02/video.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(dirty_tile_copy_uses_raw_image_id_and_current_page)
 {

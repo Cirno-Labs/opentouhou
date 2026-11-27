@@ -3,9 +3,9 @@
 #include "pc98/opna.h"
 
 #include "core/base/assert.h"
-#include "opna/vendor/emu/cores/ayintf.h"
-#include "opna/vendor/emu/cores/ay8910.h"
-#include "opna/vendor/emu/cores/fmopn.h"
+#include "pc98/opna/vendor/emu/cores/ayintf.h"
+#include "pc98/opna/vendor/emu/cores/ay8910.h"
+#include "pc98/opna/vendor/emu/cores/fmopn.h"
 
 #include <stdalign.h>
 #include <string.h>

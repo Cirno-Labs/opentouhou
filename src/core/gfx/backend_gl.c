@@ -1,8 +1,7 @@
-#include "core/gfx/private.h"
-
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
+#include "core/gfx/private.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengl.h>
@@ -192,7 +191,7 @@ typedef struct {
 
 static M_BACKEND m_Backend;
 
-#include "gfx_shaders.h"
+#include "core/gfx_shaders.h"
 
 static RESULT M_LoadFunctions(void)
 {

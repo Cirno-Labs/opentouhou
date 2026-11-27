@@ -1,8 +1,9 @@
 #include "th02/shots/pool.h"
-#include "th02/shots/private.h"
+
 #include "th02/background.h"
 #include "th02/draw.h"
 #include "th02/shots/fire.h"
+#include "th02/shots/private.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"

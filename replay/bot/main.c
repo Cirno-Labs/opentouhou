@@ -1,7 +1,6 @@
-#include "recorder.h"
-
-#include "bot.h"
-#include "snapshot.h"
+#include "replay/bot/bot.h"
+#include "replay/bot/recorder.h"
+#include "replay/bot/snapshot.h"
 
 #include "core/args.h"
 #include "core/base/log.h"

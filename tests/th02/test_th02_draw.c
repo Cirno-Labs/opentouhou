@@ -1,10 +1,9 @@
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/draw.h"
 #include "th02/tram.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(sprite_cleanup_controls_the_next_box_fill)
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dosbox.h"
+#include "replay/dosbox/dosbox.h"
 
 // Describes the test game dostest, FRAMES.COM of frames.asm, to the
 // harness and to the dosbox backend.

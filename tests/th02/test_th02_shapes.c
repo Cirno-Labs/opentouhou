@@ -1,10 +1,9 @@
-#include "th02_clip_fixture.h"
-#include "../../src/th02/grcg.c"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/draw.h"
+#include "th02/grcg.c"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(rmw_orders_endpoints_and_clips_inclusive_edges)
 {

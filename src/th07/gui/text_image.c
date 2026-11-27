@@ -2,11 +2,10 @@
 #include "th07/files.h"
 #include "th07/gui/private.h"
 
-#include "stg/translation.h"
-
 #include "core/base/log.h"
 #include "core/base/utils.h"
 #include "core/gfx.h"
+#include "stg/translation.h"
 
 #define M_BOSS_TITLE M_NAMEPLATE_SCRIPT
 #define M_BOSS_NAME (M_NAMEPLATE_SCRIPT + 1)

@@ -1,7 +1,8 @@
 #include "th01/shape.h"
 
-#include "pc98/zun/math16.h"
 #include "th01/sprite.h"
+
+#include "pc98/zun/math16.h"
 
 static int32_t M_Byte(const int16_t x)
 {

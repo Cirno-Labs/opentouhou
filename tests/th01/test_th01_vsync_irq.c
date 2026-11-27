@@ -1,7 +1,6 @@
-#include "../../src/th01/vsync_irq.c"
+#include "tests/test.h"
+#include "th01/vsync_irq.c"
 #include "th01/vsync_irq.h"
-
-#include "test.h"
 
 TEST(raw_wait_requires_next_edge_and_delay_reuses_it)
 {

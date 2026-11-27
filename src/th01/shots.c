@@ -1,8 +1,9 @@
 #include "th01/shots.h"
+
 #include "th01/sound.h"
+#include "th01/sprite.h"
 
 #include "pc98/zun/math16.h"
-#include "th01/sprite.h"
 
 #include <string.h>
 

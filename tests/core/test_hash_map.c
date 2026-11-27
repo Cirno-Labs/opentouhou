@@ -1,8 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+
 #include "core/base/arena.h"
 #include "core/base/hash_map.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 typedef struct {
     int32_t font;

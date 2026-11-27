@@ -1,11 +1,9 @@
-#include "fatal.h"
-
-#include "log_file.h"
+#include "shell/fatal.h"
 
 #include "core/base/log.h"
+#include "shell/log_file.h"
 
 #include <SDL3/SDL.h>
-
 #include <stdio.h>
 #include <string.h>
 

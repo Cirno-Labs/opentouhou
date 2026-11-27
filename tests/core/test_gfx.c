@@ -1,9 +1,8 @@
-#include "core/gfx/private.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
+#include "core/gfx/private.h"
 #include "core/math/vec.h"
-
-#include "test.h"
 
 #include <math.h>
 #include <string.h>

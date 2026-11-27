@@ -1,5 +1,3 @@
-#include "core/patch/private.h"
-
 #include "core/base/assert.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -9,6 +7,7 @@
 #include "core/io/path.h"
 #include "core/io/reader.h"
 #include "core/json.h"
+#include "core/patch/private.h"
 #include "core/text/font_registry.h"
 #include "core/vfs/normalize.h"
 

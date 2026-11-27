@@ -12,7 +12,6 @@
 #include "core/base/color.h"
 #include "core/base/utils.h"
 #include "core/math/x87.h"
-
 #include "stg/rng.h"
 #include "stg/timer.h"
 

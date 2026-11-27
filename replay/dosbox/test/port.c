@@ -1,5 +1,6 @@
-#include "dosbox.h"
-#include "port.h"
+#include "replay/dosbox/test/port.h"
+
+#include "replay/dosbox/dosbox.h"
 
 #include "core/base/utils.h"
 

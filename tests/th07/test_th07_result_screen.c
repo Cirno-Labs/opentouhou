@@ -1,13 +1,8 @@
-#include "th07/screens/result/screen.h"
-
-#include "gfx_recorder.h"
-#include "stg/replay_files.h"
-
-#include "test.h"
-#include "test_dir.h"
-#include "th07_anm_builder.h"
-#include "th07_data.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_data.h"
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/buttons.h"
@@ -22,12 +17,14 @@
 #include "th07/scene.h"
 #include "th07/screens/result/private.h"
 #include "th07/screens/result/records.h"
+#include "th07/screens/result/screen.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
 
 #include "core/base/memory.h"
 #include "core/image.h"
 #include "core/io/file.h"
+#include "stg/replay_files.h"
 
 #include <string.h>
 

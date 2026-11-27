@@ -1,6 +1,4 @@
-#include "fonts.h"
-
-#include "builtin.h"
+#include "shell/game/fonts.h"
 
 #include "core/base/array.h"
 #include "core/base/log.h"
@@ -8,6 +6,7 @@
 #include "core/base/string.h"
 #include "core/text/font_registry.h"
 #include "core/vfs.h"
+#include "shell/game/builtin.h"
 
 #include <string.h>
 

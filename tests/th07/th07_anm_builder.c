@@ -1,6 +1,6 @@
-#include "th07_anm_builder.h"
+#include "tests/th07/th07_anm_builder.h"
 
-#include "th07_data.h"
+#include "tests/th07/th07_data.h"
 
 #include "core/base/assert.h"
 #include "core/base/memory.h"

@@ -1,4 +1,5 @@
 #include "th02/point_numbers.h"
+
 #include "th02/background.h"
 #include "th02/draw.h"
 #include "th02/grcg.h"

@@ -1,18 +1,15 @@
+#include "tests/gfx_recorder.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/test_fonts.h"
+#include "tests/th06/anm_builder.h"
+#include "tests/th06/th06_data.h"
 #include "th06/anm.h"
 #include "th06/anm/private.h"
-
 #include "th06/files.h"
-#include "stg/translation.h"
 #include "th06/strings.h"
 #include "th06/time.h"
-
-#include "anm_builder.h"
-#include "gfx_recorder.h"
-#include "patch_builder.h"
-#include "test.h"
-#include "test_fonts.h"
-#include "test_dir.h"
-#include "th06_data.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
@@ -20,9 +17,9 @@
 #include "core/io/writer.h"
 #include "core/patch.h"
 #include "core/text.h"
-
 #include "stg/rng.h"
 #include "stg/timer.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

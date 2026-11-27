@@ -1,4 +1,5 @@
 #include "th02/stage_bonus/render.h"
+
 #include "th02/hud.h"
 #include "th02/palette.h"
 #include "th02/tram.h"

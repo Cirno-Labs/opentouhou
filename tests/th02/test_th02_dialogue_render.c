@@ -1,12 +1,11 @@
-#include "th02_tram_fixture.h"
-#include "th02_clip_fixture.h"
-#include "../src/th02/grcg.c"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_tram_fixture.h"
+#include "th02/dialogue/private.h"
+#include "th02/grcg.c"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-#include "th02/dialogue/private.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 typedef struct {
     VFS_SOURCE base;

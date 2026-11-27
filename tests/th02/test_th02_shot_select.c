@@ -1,6 +1,5 @@
-#include "th02_shot_select.c"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th02/th02_shot_select.c"
 
 static SHOT_SELECT_EVENTS M_Loop(const uint16_t keys, int *const frames)
 {

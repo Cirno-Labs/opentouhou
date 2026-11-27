@@ -1,6 +1,5 @@
-#include "pc98/mdrv.h"
-
 #include "core/base/arena.h"
+#include "pc98/mdrv.h"
 
 int main(void)
 {

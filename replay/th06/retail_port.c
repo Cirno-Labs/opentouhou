@@ -1,14 +1,12 @@
-#include "retail.h"
-
-#include "addresses.h"
-#include "harness.h"
-#include "patch.h"
-#include "retail_state.h"
+#include "replay/retail/patch.h"
+#include "replay/retail/retail.h"
+#include "replay/th06/addresses.h"
+#include "replay/th06/harness.h"
+#include "replay/th06/retail_state.h"
 
 #include "core/base/utils.h"
 
 #include <windows.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 

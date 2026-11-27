@@ -1,7 +1,7 @@
-#include "core/math/x87.h"
+#include "tests/test.h"
 
 #include "core/math/common.h"
-#include "test.h"
+#include "core/math/x87.h"
 
 #include <math.h>
 #include <stdint.h>

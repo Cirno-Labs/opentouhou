@@ -1,8 +1,5 @@
 #include "core/patch/select.h"
 
-#include "core/patch/language.h"
-#include "core/patch/private.h"
-
 #include "core/base/arena.h"
 #include "core/base/array.h"
 #include "core/base/assert.h"
@@ -15,6 +12,8 @@
 #include "core/io/path.h"
 #include "core/io/reader.h"
 #include "core/json.h"
+#include "core/patch/language.h"
+#include "core/patch/private.h"
 
 #include <stdarg.h>
 #include <stdlib.h>

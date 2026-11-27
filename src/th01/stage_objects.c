@@ -1,8 +1,9 @@
 #include "th01/stage_objects.h"
+
 #include "th01/rng.h"
+#include "th01/sprite.h"
 
 #include "pc98/zun/master_rng.h"
-#include "th01/sprite.h"
 
 #include <string.h>
 

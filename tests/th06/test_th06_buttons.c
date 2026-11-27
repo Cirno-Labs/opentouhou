@@ -1,7 +1,6 @@
+#include "tests/shell_fake.h"
+#include "tests/test.h"
 #include "th06/buttons.h"
-
-#include "shell_fake.h"
-#include "test.h"
 
 #include "core/base/utils.h"
 

@@ -1,11 +1,10 @@
-#include "stg/end_diff.h"
-
-#include "test.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/json.h"
+#include "stg/end_diff.h"
 
 #include <string.h>
 

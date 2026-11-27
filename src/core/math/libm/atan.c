@@ -5,7 +5,7 @@
 // (otm_ prefix) to avoid colliding with a platform libm. Used only by
 // otm_Atan2, so it is not declared in libm_internal.h.
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 static const double atanhi[] = {
     4.63647609000806093515e-01,

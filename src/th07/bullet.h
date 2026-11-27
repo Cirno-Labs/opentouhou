@@ -5,7 +5,6 @@
 
 #include "core/base/result.h"
 #include "core/math/vec.h"
-
 #include "stg/timer.h"
 
 #include <stdint.h>

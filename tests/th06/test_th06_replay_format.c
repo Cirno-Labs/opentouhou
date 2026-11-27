@@ -1,7 +1,5 @@
+#include "tests/test.h"
 #include "th06/replay.h"
-
-#include "test.h"
-
 #include "th06/replay/format.h"
 
 #include "core/base/memory.h"

@@ -1,4 +1,4 @@
-#include "compare.h"
+#include "replay/harness/compare.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"

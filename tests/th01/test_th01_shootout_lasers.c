@@ -1,11 +1,10 @@
-#include "../../src/th01/shootout_lasers.c"
-#include "../../src/th01/player.c"
+#include "tests/test.h"
+#include "tests/th01/th01_sprites.h"
+#include "tests/th01/th01_video.h"
+#include "tests/th01/th01_world.h"
+#include "th01/player.c"
+#include "th01/shootout_lasers.c"
 #include "th01/shootout_lasers.h"
-
-#include "th01_sprites.h"
-#include "th01_video.h"
-#include "th01_world.h"
-#include "test.h"
 
 #include <string.h>
 

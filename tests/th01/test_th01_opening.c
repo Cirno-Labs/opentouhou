@@ -1,10 +1,9 @@
-#include "../../src/th01/opening.c"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "th01/opening.c"
 #include "th01/opening.h"
 
 #include "core/base/arena.h"
-
-#include "th01_video.h"
-#include "test.h"
 
 static void M_Init(ARENA *const arena, OPENING_ASSETS *const assets)
 {

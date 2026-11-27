@@ -1,9 +1,9 @@
+#include "tests/test.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/backend.h"
-
-#include "test.h"
 
 #include <string.h>
 

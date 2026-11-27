@@ -1,11 +1,10 @@
-#include "th02_tram_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/title.c"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(flash_emits_audio_before_drawing_and_finishes_after_eighteen_waits)
 {

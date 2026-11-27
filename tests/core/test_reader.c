@@ -1,9 +1,9 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+
 #include "core/base/string.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 typedef struct {
     const char *name;

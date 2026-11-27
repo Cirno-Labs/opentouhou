@@ -4,13 +4,12 @@
 #include "th07/sound/bgm.h"
 #include "th07/sound/events.h"
 
-#include "stg/wave.h"
-
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/audio.h"
 #include "core/base/memory.h"
 #include "core/math.h"
+#include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/wave.h"
 
 #include <string.h>
 

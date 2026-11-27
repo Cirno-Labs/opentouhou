@@ -2,11 +2,11 @@
 
 // Parses the JSON texts of the core/json tests.
 
+#include "tests/test.h"
+
 #include "core/base/array.h"
 #include "core/base/string.h"
 #include "core/json.h"
-
-#include "test.h"
 
 #include <stdarg.h>
 

@@ -1,25 +1,22 @@
-#include "th07/gui.h"
-#include "th07/gui/private.h"
-
-#include "gfx_recorder.h"
-#include "patch_builder.h"
-#include "test.h"
-#include "th07_anm_builder.h"
-#include "th07_gui_setup.h"
-#include "th07_msg_builder.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+#include "tests/th07/th07_anm_builder.h"
+#include "tests/th07/th07_gui_setup.h"
+#include "tests/th07/th07_msg_builder.h"
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/enemy.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
+#include "th07/gui.h"
+#include "th07/gui/private.h"
 #include "th07/scene.h"
 #include "th07/sound.h"
 #include "th07/strings.h"
 
 #include "core/gfx.h"
-
 #include "stg/timer.h"
 #include "stg/translation.h"
 

@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th01/scale2x.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(transparent_cells_and_byte_rounding)
 {

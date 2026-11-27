@@ -1,7 +1,7 @@
 // Uses symlink of POSIX 2008.
 #define _XOPEN_SOURCE 700
 
-#include "dosbox.h"
+#include "replay/dosbox/dosbox.h"
 
 #include "core/base/cp932.h"
 #include "core/base/log.h"

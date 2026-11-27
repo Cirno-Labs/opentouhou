@@ -7,12 +7,12 @@
 // fake_program_marker.h describes. The copy runs on every platform, so the
 // tests need no shell.
 
+#include "tests/othpatch/fake_program_marker.h"
+#include "tests/patch_builder.h"
+#include "tests/test.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
-
-#include "fake_program_marker.h"
-#include "patch_builder.h"
-#include "test.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>

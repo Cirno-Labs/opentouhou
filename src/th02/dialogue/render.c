@@ -1,9 +1,9 @@
 #include "th02/dialogue/render.h"
-#include "th02/stage.h"
 
 #include "th02/clip.h"
 #include "th02/draw.h"
 #include "th02/grcg.h"
+#include "th02/stage.h"
 #include "th02/video.h"
 
 #include "core/base/assert.h"

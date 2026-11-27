@@ -1,13 +1,13 @@
+#include "tests/th02/th02_gameplay_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
 #include "th02/bullets/private.h"
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/enemies.c"
-#include "../../src/th02/sparks.c"
-#include "../../src/th02/performance.c"
-#include "../../src/th02/items.c"
-#include "th02_gameplay_fixture.h"
+#include "th02/enemies.c"
+#include "th02/items.c"
+#include "th02/performance.c"
+#include "th02/sparks.c"
 
 TEST(pause_entry_reads_input_before_its_first_frame_delay)
 {

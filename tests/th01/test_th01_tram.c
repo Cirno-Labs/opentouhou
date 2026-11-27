@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th01/tram.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 #include <limits.h>
 

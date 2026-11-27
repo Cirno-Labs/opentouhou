@@ -1,11 +1,10 @@
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/grcg.h"
 #include "th02/text_font.h"
 
 #include "core/base/arena.h"
 #include "core/text/font_registry.h"
-
-#include "test.h"
 
 static void M_SetCell(
     uint8_t *const bytes, const uint16_t address, const uint16_t bits)

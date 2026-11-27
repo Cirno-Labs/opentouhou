@@ -1,16 +1,16 @@
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_high_score_view.c"
+#include "tests/th02/th02_menu.c"
+#include "tests/th02/th02_music_room.c"
+#include "tests/th02/th02_palette_fixture.h"
 #include "th02/opening/logic.c"
-#include "th02_menu.c"
-#include "th02_high_score_view.c"
-#include "th02_music_room.c"
 #define M_Audio M_TitleAudio
 #include "th02/title.c"
 #undef M_Audio
 
-#include "core/base/arena.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/base/arena.h"
 
 typedef struct {
     ARENA arena;

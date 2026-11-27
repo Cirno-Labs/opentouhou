@@ -1,11 +1,10 @@
 #include "othpatch/release.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/json/parse.h"
-
-#include "test.h"
 
 #define M_DIGEST                                                               \
     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

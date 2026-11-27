@@ -8,18 +8,17 @@
 #include "th07/replay.h"
 #include "th07/scene.h"
 #include "th07/screen_effect.h"
+#include "th07/screens/result/records.h"
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
 #include "th07/sound.h"
-#include "th07/screens/result/records.h"
 #include "th07/strings.h"
 
-#include "stg/replay_files.h"
-
-#include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/utils.h"
+#include "shell/game.h"
+#include "stg/replay_files.h"
 
 #include <stdio.h>
 #include <string.h>

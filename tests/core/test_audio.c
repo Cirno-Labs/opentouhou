@@ -1,11 +1,10 @@
-#include "core/audio.h"
+#include "tests/test.h"
 
+#include "core/audio.h"
 #include "core/audio/backend.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/io/writer.h"
-
-#include "test.h"
 
 #include <SDL3/SDL.h>
 #include <float.h>

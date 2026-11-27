@@ -1,18 +1,17 @@
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02_boss_hp.h"
-#include "../../src/th02/sparks.c"
+#include "tests/test.h"
+#include "tests/th02/th02_boss_hp.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/boss.h"
 #include "th02/player.h"
-#include "th02/sparks.h"
 #include "th02/random.h"
 #include "th02/shots.h"
+#include "th02/sparks.c"
+#include "th02/sparks.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-
-#include "test.h"
 
 TEST(init_clears_state_and_sets_the_default_angle)
 {

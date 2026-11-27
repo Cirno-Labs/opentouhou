@@ -3,7 +3,7 @@
 // Gives the harness tests a small game with three bindings, one column of
 // each kind, one choice and two start fields.
 
-#include "game.h"
+#include "replay/harness/game.h"
 
 #include "core/base/utils.h"
 

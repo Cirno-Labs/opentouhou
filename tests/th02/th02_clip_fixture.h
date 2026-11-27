@@ -3,7 +3,7 @@
 // g_Clip is read-only outside th02/clip.c; this fixture pulls in the
 // module's private storage so tests can poke it directly for setup,
 // bypassing Clip_Set's screen clamp.
-#include "../../src/th02/clip.c"
+#include "th02/clip.c"
 
 static inline void TestClip_Set(
     const int16_t left, const int16_t top, const int16_t right,

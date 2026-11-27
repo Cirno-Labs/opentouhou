@@ -1,4 +1,4 @@
-#include "retail.h"
+#include "replay/retail/retail.h"
 
 #include "core/base/log.h"
 #include "core/hash/sha1.h"
@@ -6,7 +6,6 @@
 #include "core/io/path.h"
 
 #include <windows.h>
-
 #include <stdio.h>
 #include <string.h>
 

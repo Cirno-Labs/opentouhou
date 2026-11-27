@@ -4,9 +4,10 @@
 // page for drawing and a display page for the screen, with the hidden bytes
 // past row 400 kept. docs/PC98.md describes the model.
 
+#include "th02/clip.h"
+
 #include "core/base/memory.h"
 #include "core/gfx/types.h"
-#include "th02/clip.h"
 
 #define VIDEO_WIDTH 640
 #define VIDEO_HEIGHT 400

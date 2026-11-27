@@ -1,4 +1,5 @@
 #include "th01/miss.h"
+
 #include "th01/hud.h"
 #include "th01/orb.h"
 #include "th01/pellets.h"
@@ -7,10 +8,9 @@
 #include "th01/shots.h"
 #include "th01/timer.h"
 
-#include "pc98/zun/math16.h"
-#include "pc98/zun/master_rng.h"
-
 #include "core/base/assert.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

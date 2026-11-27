@@ -1,8 +1,7 @@
-#include "th02_score_fixture.h"
-#include "th02_tram_fixture.h"
-
-#include "test.h"
-#include "th02_sound.h"
+#include "tests/test.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
+#include "tests/th02/th02_tram_fixture.h"
 
 TEST(score_transfer_keeps_step_until_empty_and_resets_on_the_following_update)
 {

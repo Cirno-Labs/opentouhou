@@ -1,7 +1,6 @@
-#include "patch.h"
+#include "replay/retail/patch.h"
 
 #include <windows.h>
-
 #include <string.h>
 
 #define M_MAX_CALLS 16

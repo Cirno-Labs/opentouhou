@@ -1,3 +1,4 @@
+#include "tests/test.h"
 #include "th02/background/private.h"
 #include "th02/grcg.h"
 #include "th02/stage/private.h"
@@ -5,8 +6,6 @@
 #include "th02/video.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(cleanup_uses_the_page_position_and_movement_uses_the_saved_position)
 {

@@ -1,8 +1,7 @@
-#include "recorder.h"
+#include "replay/bot/recorder.h"
 
-#include "harness.h"
-#include "start.h"
-
+#include "replay/th02/harness.h"
+#include "replay/th02/start.h"
 #include "th02/boss.h"
 #include "th02/boss/fight.h"
 #include "th02/bullets.h"
@@ -26,7 +25,6 @@
 #include "shell/game/fonts.h"
 
 #include <SDL3/SDL_stdinc.h>
-
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>

@@ -4,7 +4,6 @@
 #include "core/base/array.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
-
 #include "stg/lzss.h"
 
 #include <string.h>

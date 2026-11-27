@@ -1,4 +1,4 @@
-#include "native.h"
+#include "replay/harness/native.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
@@ -13,7 +13,6 @@
 #include <SDL3/SDL.h>
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL_main.h>
-
 #include <math.h>
 #include <stdio.h>
 #include <string.h>

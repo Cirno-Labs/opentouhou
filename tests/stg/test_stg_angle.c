@@ -1,8 +1,7 @@
-#include "stg/angle.h"
-
-#include "test.h"
+#include "tests/test.h"
 
 #include "core/math/x87.h"
+#include "stg/angle.h"
 
 TEST(add_normalize_keeps_angles_in_range)
 {

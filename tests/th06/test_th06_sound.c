@@ -1,3 +1,6 @@
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th06/th06_data.h"
 #include "th06/files.h"
 #include "th06/settings.h"
 #include "th06/sound.h"
@@ -5,10 +8,6 @@
 #include "core/audio.h"
 #include "core/audio/backend.h"
 #include "core/io/writer.h"
-
-#include "test.h"
-#include "test_dir.h"
-#include "th06_data.h"
 
 #include <SDL3/SDL.h>
 #include <math.h>

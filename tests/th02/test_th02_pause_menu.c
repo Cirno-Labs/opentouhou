@@ -1,6 +1,5 @@
-#include "th02_pause_menu.c"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th02/th02_pause_menu.c"
 
 static PAUSE_MENU_RESULT M_Poll(const uint16_t keys)
 {

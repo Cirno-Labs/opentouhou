@@ -1,19 +1,16 @@
-#include "th06/screens/result.h"
-
-#include "shell_fake.h"
-#include "stg/replay_files.h"
-
-#include "shell/null.h"
-#include "test.h"
-#include "test_dir.h"
-
+#include "tests/shell_fake.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 #include "th06/game_manager.h"
 #include "th06/replay.h"
 #include "th06/replay/format.h"
+#include "th06/screens/result.h"
 #include "th06/screens/result/private.h"
 
 #include "core/base/memory.h"
 #include "core/io/file.h"
+#include "shell/null.h"
+#include "stg/replay_files.h"
 
 #include <string.h>
 

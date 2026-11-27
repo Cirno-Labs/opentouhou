@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pc98/pmd_data.h"
 #include "pc98/pmd/chip.h"
+#include "pc98/pmd_data.h"
 
 typedef struct {
     uint8_t channel;

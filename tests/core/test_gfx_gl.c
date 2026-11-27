@@ -1,9 +1,8 @@
+#include "tests/test.h"
+
 #include "core/gfx.h"
 
-#include "test.h"
-
 #include <SDL3/SDL.h>
-
 #include <math.h>
 #include <stdlib.h>
 

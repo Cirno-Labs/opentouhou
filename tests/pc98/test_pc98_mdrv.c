@@ -1,7 +1,7 @@
-#include "pc98/mdrv.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
-#include "test.h"
+#include "pc98/mdrv.h"
 
 #define M_FRAMES 48000
 

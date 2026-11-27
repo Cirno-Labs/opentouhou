@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/base/result.h"
 #include "th07/buttons.h"
 
+#include "core/base/result.h"
 #include "stg/chain.h"
 #include "stg/rng.h"
 

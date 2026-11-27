@@ -1,10 +1,11 @@
 #include "th01/route_select.h"
+
+#include "th01/scale2x.h"
 #include "th01/session.h"
 #include "th01/sound.h"
 #include "th01/stage.h"
 
 #include "core/base/assert.h"
-#include "th01/scale2x.h"
 
 #include <string.h>
 

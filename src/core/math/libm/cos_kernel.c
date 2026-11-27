@@ -7,7 +7,7 @@
 // Kernel cosine on [-pi/4, pi/4]. x is the reduced argument, y is its tail
 // from argument reduction.
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 static const double C1 = 4.16666666666666019037e-02;
 static const double C2 = -1.38888888888741095749e-03;

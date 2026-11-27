@@ -1,10 +1,8 @@
-#include "th02_tram_fixture.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/stage/titles.c"
-
 #include "th02/tram.h"
-
-#include "test.h"
-#include "test_allocator.h"
 
 static void M_MakeText(
     const uint8_t *const bytes, const size_t size,

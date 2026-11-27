@@ -3,7 +3,6 @@
 #include "th06/anm.h"
 
 #include "core/base/result.h"
-
 #include "stg/timer.h"
 
 #include <stdint.h>

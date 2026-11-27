@@ -1,11 +1,10 @@
-#include "core/io/backend.h"
-
 #include "core/base/memory.h"
 #include "core/base/string.h"
+#include "core/io/backend.h"
 
+#include <windows.h>
 #include <errno.h>
 #include <string.h>
-#include <windows.h>
 
 static wchar_t *M_ToWide(const char *const text)
 {

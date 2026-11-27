@@ -1,4 +1,4 @@
-#include "th02_high_score_view.h"
+#include "tests/th02/th02_high_score_view.h"
 
 static const TEST_HIGH_SCORE_VIEW *m_HighScoreViewObserver;
 

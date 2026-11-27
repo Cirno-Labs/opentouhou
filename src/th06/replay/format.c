@@ -1,4 +1,4 @@
-#include "format.h"
+#include "th06/replay/format.h"
 
 #include "th06/replay/file.h"
 

@@ -1,17 +1,16 @@
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/background/private.h"
-#include "th02_score_fixture.h"
-#include "th02_tram_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02_player_fixture.h"
-#include "th02_clip_fixture.h"
+#include "th02/dialogue/sequence.h"
+#include "th02/player.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-#include "th02/player.h"
-#include "th02/dialogue/sequence.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 typedef struct {
     ARENA arena;

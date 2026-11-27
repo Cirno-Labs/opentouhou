@@ -15,7 +15,6 @@
 #include "core/base/color.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/rng.h"
 #include "stg/timer.h"

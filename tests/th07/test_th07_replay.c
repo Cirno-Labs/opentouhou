@@ -1,12 +1,10 @@
+#include "tests/test.h"
+#include "tests/th07/replay_lzss_literals.h"
 #include "th07/replay.h"
-
-#include "test.h"
-
-#include "replay_lzss_literals.h"
-#include "stg/lzss.h"
 
 #include "core/base/memory.h"
 #include "core/io/writer.h"
+#include "stg/lzss.h"
 
 #define M_PLAIN_SIZE 0x54
 #define M_HEADER_SIZE 0xe8

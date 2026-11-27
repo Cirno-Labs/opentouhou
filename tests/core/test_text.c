@@ -1,11 +1,11 @@
+#include "tests/test.h"
+#include "tests/test_fonts.h"
+
 #include "core/patch.h"
 #include "core/text.h"
 #include "core/text/private.h"
-
-#include "test.h"
-#include "test_fonts.h"
 #ifdef TEST_MS_GOTHIC
-    #include "patch_builder.h"
+    #include "tests/patch_builder.h"
 #endif
 
 #include <SDL3/SDL.h>

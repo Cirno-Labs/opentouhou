@@ -1,7 +1,7 @@
 #pragma once
 
-#include "th02/entity.h"
 #include "th02/draw.h"
+#include "th02/entity.h"
 
 #include "core/vfs.h"
 

@@ -1,17 +1,16 @@
 #include "th06/gui.h"
-#include "th06/gui/private.h"
 
 #include "th06/ascii.h"
 #include "th06/effect.h"
 #include "th06/files.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
+#include "th06/gui/private.h"
 #include "th06/scene.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
 #include "th06/strings.h"
 
-#include "shell/game.h"
 #include "core/base/arena.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
@@ -19,7 +18,7 @@
 #include "core/io/reader.h"
 #include "core/json.h"
 #include "core/vfs.h"
-
+#include "shell/game.h"
 #include "stg/chain.h"
 #include "stg/msg_diff.h"
 #include "stg/note.h"

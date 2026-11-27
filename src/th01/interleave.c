@@ -1,8 +1,7 @@
 #include "th01/interleave.h"
 
-#include "pc98/zun/sprite_sheet.h"
-
 #include "core/base/assert.h"
+#include "pc98/zun/sprite_sheet.h"
 
 RESULT Interleave_LoadAssets(
     VFS *const vfs, const ALLOCATOR *const allocator,

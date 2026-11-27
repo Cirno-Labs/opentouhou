@@ -1,13 +1,12 @@
 #include "othpatch/main.h"
+#include "othpatch/version.h"
 
 #include "core/base/memory.h"
 #include "core/io/path.h"
 
-#include "version.h"
-
+#include <windows.h>
 #include <io.h>
 #include <stdio.h>
-#include <windows.h>
 
 // Returns whether othpatch is the only process on its console, which is
 // the case when it was started by a double-click rather than from a

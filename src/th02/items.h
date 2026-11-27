@@ -3,8 +3,8 @@
 #include "th02/entity.h"
 #include "th02/hud.h"
 #include "th02/performance.h"
-#include "th02/random.h"
 #include "th02/point_numbers.h"
+#include "th02/random.h"
 
 #define ITEM_COUNT 20
 

@@ -1,8 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_json.h"
+
 #include "core/base/arena.h"
 #include "core/json.h"
-
-#include "test.h"
-#include "test_json.h"
 
 #include <math.h>
 

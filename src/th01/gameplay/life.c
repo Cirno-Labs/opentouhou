@@ -1,6 +1,6 @@
-#include "th01/gameplay/private.h"
 #include "th01/bomb.h"
 #include "th01/extend.h"
+#include "th01/gameplay/private.h"
 #include "th01/hud.h"
 #include "th01/input.h"
 #include "th01/invincibility.h"

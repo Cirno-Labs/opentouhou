@@ -1,4 +1,4 @@
-#include "th02_pause_menu.h"
+#include "tests/th02/th02_pause_menu.h"
 
 static TEST_PAUSE_REQUESTS *m_Requests;
 
@@ -9,7 +9,7 @@ static void M_ObserveTone(int16_t tone);
 
 #define PauseMenuRender_Draw M_ObserveDraw
 #define Palette_SetTone M_ObserveTone
-#include "../../src/th02/pause_menu/logic.c"
+#include "th02/pause_menu/logic.c"
 #undef PauseMenuRender_Draw
 #undef Palette_SetTone
 

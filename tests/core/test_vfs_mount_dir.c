@@ -1,10 +1,10 @@
-#include "core/vfs.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/test_dir.h"
 
 #include "core/base/string.h"
 #include "core/base/utils.h"
-#include "test.h"
-#include "test_allocator.h"
-#include "test_dir.h"
+#include "core/vfs.h"
 
 #include <string.h>
 

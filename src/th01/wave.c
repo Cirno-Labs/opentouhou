@@ -1,8 +1,9 @@
 #include "th01/wave.h"
 
+#include "th01/sprite.h"
+
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
-#include "th01/sprite.h"
 
 void Wave_Restore(
     const int16_t left, const int16_t top, const int16_t wavelength,

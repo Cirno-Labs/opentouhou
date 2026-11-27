@@ -1,8 +1,7 @@
 #include "th06/bullet.h"
-#include "th06/ascii.h"
 
-#include "stg/angle.h"
 #include "th06/anm.h"
+#include "th06/ascii.h"
 #include "th06/game.h"
 #include "th06/game_manager.h"
 #include "th06/gui.h"
@@ -16,7 +15,7 @@
 #include "core/base/utils.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
+#include "stg/angle.h"
 #include "stg/chain.h"
 #include "stg/rng.h"
 #include "stg/timer.h"

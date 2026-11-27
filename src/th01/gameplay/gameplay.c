@@ -1,20 +1,21 @@
 #include "th01/gameplay/gameplay.h"
-#include "th01/gameplay/private.h"
+
 #include "th01/boss/entity.h"
 #include "th01/boss/strategy.h"
+#include "th01/gameplay/private.h"
 #include "th01/hud_hp.h"
-#include "th01/missiles.h"
-#include "th01/particles.h"
-#include "th01/stage_objects.h"
-#include "th01/tram.h"
 #include "th01/items.h"
 #include "th01/miss.h"
+#include "th01/missiles.h"
+#include "th01/particles.h"
+#include "th01/rng.h"
 #include "th01/sound.h"
 #include "th01/stage.h"
-#include "th01/rng.h"
+#include "th01/stage_objects.h"
+#include "th01/tram.h"
 
-#include "pc98/zun/master_rng.h"
 #include "core/base/assert.h"
+#include "pc98/zun/master_rng.h"
 
 #include <string.h>
 

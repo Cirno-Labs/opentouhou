@@ -1,10 +1,9 @@
+#include "tests/test.h"
+#include "tests/th01/th01_sprites.h"
+#include "tests/th01/th01_video.h"
 #include "th01/interleave.h"
 
 #include "core/base/arena.h"
-
-#include "th01_sprites.h"
-#include "th01_video.h"
-#include "test.h"
 
 #include <string.h>
 

@@ -1,4 +1,5 @@
 #include "th01/scene.h"
+
 #include "th01/stage_objects.h"
 
 #include "core/base/assert.h"

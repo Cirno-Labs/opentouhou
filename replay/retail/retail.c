@@ -1,13 +1,12 @@
-#include "retail.h"
+#include "replay/retail/retail.h"
 
-#include "direct3d.h"
-#include "overlay.h"
+#include "replay/retail/direct3d.h"
+#include "replay/retail/overlay.h"
 
 #include "core/base/log.h"
 #include "core/io/path.h"
 
 #include <windows.h>
-
 #include <stdio.h>
 #include <string.h>
 

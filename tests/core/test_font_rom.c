@@ -1,9 +1,9 @@
+#include "tests/test.h"
+
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/text/font_registry.h"
 #include "core/text/font_rom.h"
-
-#include "test.h"
 
 #include <string.h>
 

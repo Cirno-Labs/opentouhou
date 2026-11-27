@@ -1,8 +1,7 @@
-#include "th02_high_score_view.c"
+#include "tests/test.h"
+#include "tests/th02/th02_high_score_view.c"
 
 #include "core/base/utils.h"
-
-#include "test.h"
 
 typedef struct {
     int begin_count;

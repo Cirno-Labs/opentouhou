@@ -1,28 +1,26 @@
 #include "th06/main.h"
 
-#include "shell/game.h"
-#include "core/base/log.h"
-#include "core/patch.h"
-#include "core/vfs.h"
-
-#include "stg/note.h"
-#include "stg/replay_files.h"
-#include "stg/translation.h"
-
-#include "th06/buttons.h"
 #include "th06/anm.h"
 #include "th06/ascii.h"
+#include "th06/buttons.h"
 #include "th06/files.h"
 #include "th06/game.h"
-#include "th06/scene.h"
-#include "th06/screens/title.h"
 #include "th06/replay.h"
+#include "th06/scene.h"
 #include "th06/screens/result.h"
+#include "th06/screens/title.h"
 #include "th06/settings.h"
 #include "th06/sound.h"
 #include "th06/strings.h"
+#include "th06/version.h"
 
-#include "version.h"
+#include "core/base/log.h"
+#include "core/patch.h"
+#include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/note.h"
+#include "stg/replay_files.h"
+#include "stg/translation.h"
 
 #include <time.h>
 

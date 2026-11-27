@@ -1,9 +1,8 @@
-#include "th02_tram_fixture.h"
-#include "th02_palette_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/game_over.c"
-
 #include "th02/input.h"
-#include "test.h"
 
 typedef struct {
     TH02_SESSION session;

@@ -1,7 +1,8 @@
 #include "th01/boss/boss.h"
 
-#include "core/vfs/open.h"
 #include "th01/session.h"
+
+#include "core/vfs/open.h"
 
 static BOSS_STATE *m_Boss;
 BOSS_STATE *const *const g_Boss = &m_Boss;

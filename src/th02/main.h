@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th02/hooks.h"
+
 #include "shell/game.h"
 
 typedef enum {

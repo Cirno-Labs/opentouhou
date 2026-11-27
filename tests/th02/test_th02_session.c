@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th02/session.h"
-
-#include "test.h"
 
 static TH02_SESSION M_Seed(void)
 {

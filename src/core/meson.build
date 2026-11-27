@@ -1,5 +1,3 @@
-core_include = [layer_include['core']]
-
 # Reads sources.txt into core_sources, a list of sources by library.
 # sources.txt lists only the libraries that replay/retail's own project
 # builds too; the others list their sources here.
@@ -25,7 +23,6 @@ cc_libm = meson.get_compiler('c').find_library('m', required: false)
 core_base_lib = static_library(
   'core_base',
   core_sources['base'],
-  c_args: core_include,
   implicit_include_directories: false,
 )
 
@@ -34,7 +31,6 @@ core_base_lib = static_library(
 core_args_lib = static_library(
   'core_args',
   core_sources['args'],
-  c_args: core_include,
   implicit_include_directories: false,
 )
 
@@ -42,7 +38,6 @@ core_args_lib = static_library(
 core_hash_lib = static_library(
   'core_hash',
   core_sources['hash'],
-  c_args: core_include,
   implicit_include_directories: false,
 )
 
@@ -53,7 +48,6 @@ core_json_lib = static_library(
   'json/index.c',
   'json/merge.c',
   'json/parse.c',
-  c_args: core_include,
   implicit_include_directories: false,
 )
 
@@ -61,7 +55,6 @@ core_io_lib = static_library(
   'core_io',
   core_sources['io'],
   host_machine.system() == 'windows' ? 'io/backend_windows.c' : 'io/backend_posix.c',
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
 )
@@ -70,7 +63,6 @@ core_io_lib = static_library(
 core_ini_lib = static_library(
   'core_ini',
   core_sources['ini'],
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
 )
@@ -85,7 +77,6 @@ core_patch_select_lib = static_library(
   'patch/repo.c',
   'patch/select.c',
   'patch/update.c',
-  c_args: core_include,
   implicit_include_directories: false,
   link_with: core_ini_lib,
   dependencies: [sdl3],
@@ -96,7 +87,6 @@ core_patch_select_lib = static_library(
 core_archive_lib = static_library(
   'core_archive',
   core_sources['archive'],
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [zlib],
 )
@@ -126,7 +116,6 @@ core_math_lib = static_library(
   'math/libm/tan_kernel.c',
   'math/vec.c',
   'math/x87.c',
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [cc_libm],
 )
@@ -136,7 +125,6 @@ core_math_lib = static_library(
 core_config_lib = static_library(
   'core_config',
   'config.c',
-  c_args: core_include,
   implicit_include_directories: false,
 )
 
@@ -151,7 +139,6 @@ core_input_lib = static_library(
   'input/input.c',
   'input/names.c',
   input_backend_sources[get_option('platform')],
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
 )
@@ -159,7 +146,6 @@ core_input_lib = static_library(
 core_vfs_lib = static_library(
   'core_vfs',
   core_sources['vfs'],
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3],
 )
@@ -186,7 +172,6 @@ core_text_lib = static_library(
   'text/glyphs.c',
   'text/render.c',
   text_backend,
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3_ttf, sdl3, freetype, text_system, cc_libm],
 )
@@ -197,7 +182,6 @@ core_patch_lib = static_library(
   'patch/files.c',
   'patch/stack.c',
   'patch/strings.c',
-  c_args: core_include,
   implicit_include_directories: false,
   link_with: [core_patch_select_lib, core_text_lib],
   dependencies: [sdl3],
@@ -208,7 +192,6 @@ core_patch_lib = static_library(
 core_image_lib = static_library(
   'core_image',
   core_sources['image'],
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [avcodec, avutil, swscale, jpeg, cc_libm],
 )
@@ -219,7 +202,6 @@ core_audio_lib = static_library(
   'audio/decoder.c',
   'audio/resampler.c',
   host_machine.system() == 'emscripten' ? 'audio/backend_web.c' : 'audio/backend_sdl.c',
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [sdl3, avformat, avcodec, avutil, swresample, cc_libm],
 )
@@ -231,7 +213,6 @@ core_gfx_lib = static_library(
   'core_gfx',
   'gfx/backend_null.c',
   'gfx/frontend.c',
-  c_args: core_include,
   implicit_include_directories: false,
   dependencies: [cc_libm],
 )
@@ -247,14 +228,12 @@ core_gfx_gl_lib = static_library(
   'core_gfx_gl',
   'gfx/backend_gl.c',
   gfx_shaders,
-  c_args: core_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [sdl3, cc_libm],
 )
 
 # Layers above core never see the headers of its external libraries.
 core_dep = declare_dependency(
-  compile_args: core_include,
   link_with: [
     core_gfx_gl_lib, core_gfx_lib, core_input_lib, core_patch_lib,
     core_patch_select_lib, core_archive_lib, core_vfs_lib,

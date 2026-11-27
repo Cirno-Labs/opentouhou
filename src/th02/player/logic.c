@@ -1,9 +1,10 @@
 #include "th02/player/logic.h"
+
+#include "th02/background.h"
 #include "th02/bomb.h"
 #include "th02/miss.h"
-#include "th02/shots.h"
-#include "th02/background.h"
 #include "th02/player/render.h"
+#include "th02/shots.h"
 #include "th02/sound_effects.h"
 
 #include "core/base/assert.h"

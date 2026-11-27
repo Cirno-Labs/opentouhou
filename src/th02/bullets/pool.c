@@ -1,5 +1,5 @@
-#include "th02/bullets/private.h"
 #include "th02/background.h"
+#include "th02/bullets/private.h"
 #include "th02/draw.h"
 #include "th02/grcg.h"
 #include "th02/player.h"

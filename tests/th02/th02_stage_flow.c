@@ -1,4 +1,4 @@
-#include "th02_stage_flow.h"
+#include "tests/th02/th02_stage_flow.h"
 
 static const TEST_BOSS *m_TestBoss;
 
@@ -17,7 +17,7 @@ static bool M_TestEnd(
 #define BossFight_Invalidate M_TestInvalidate
 #define BossFight_Update M_TestUpdate
 #define BossFight_End M_TestEnd
-#include "../src/th02/stage/flow.c"
+#include "th02/stage/flow.c"
 #undef BossFight_Begin
 #undef BossFight_Invalidate
 #undef BossFight_Update

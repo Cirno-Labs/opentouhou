@@ -1,7 +1,8 @@
 #include "th02/stage/flow.h"
+
+#include "th02/enemies.h"
 #include "th02/stage.h"
 #include "th02/stage/private.h"
-#include "th02/enemies.h"
 #include "th02/stage_effects.h"
 
 #include "core/base/assert.h"

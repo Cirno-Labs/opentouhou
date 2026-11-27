@@ -1,14 +1,13 @@
 #include "othpatch/game.h"
+#include "tests/othpatch/fake_program.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/base/arena.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/io/file.h"
 #include "core/io/path.h"
-
-#include "fake_program.h"
-#include "test.h"
-#include "test_dir.h"
 
 #include <stdio.h>
 #include <string.h>

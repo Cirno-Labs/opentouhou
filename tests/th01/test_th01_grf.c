@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th01/grf.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 #define M_PACKED_SIZE (GRF_WIDTH * GRF_HEIGHT / 8)
 

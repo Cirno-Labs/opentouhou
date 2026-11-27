@@ -1,7 +1,6 @@
-#include "recorder.h"
-
-#include "test.h"
-#include "test_dir.h"
+#include "replay/bot/recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
 #include "core/base/utils.h"
 #include "core/vfs.h"

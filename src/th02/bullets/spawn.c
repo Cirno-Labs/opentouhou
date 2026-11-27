@@ -1,5 +1,5 @@
-#include "th02/bullets/private.h"
 #include "th02/bomb.h"
+#include "th02/bullets/private.h"
 #include "th02/performance.h"
 #include "th02/random.h"
 

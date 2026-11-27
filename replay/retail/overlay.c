@@ -1,6 +1,6 @@
-#include "overlay.h"
+#include "replay/retail/overlay.h"
 
-#include "iat.h"
+#include "replay/retail/iat.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"

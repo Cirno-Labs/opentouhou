@@ -1,7 +1,6 @@
-#include "state.h"
-
-#include "harness_game.h"
-#include "test.h"
+#include "replay/harness/state.h"
+#include "tests/harness_game.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
 

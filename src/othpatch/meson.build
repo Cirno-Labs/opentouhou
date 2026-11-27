@@ -45,7 +45,6 @@ othpatch_lib = static_library(
   'step_remove.c',
   'step_upgrade.c',
   othpatch_version,
-  c_args: [layer_include['othpatch']] + shell_include + ['-I' + meson.current_build_dir()],
   implicit_include_directories: false,
   dependencies: [curl],
 )
@@ -69,4 +68,3 @@ if host_machine.system() == 'windows'
     depend_files: files('../../tools/packaging/othpatch/icon.ico'),
   )
 endif
-othpatch_version_include = '-I' + meson.current_build_dir()

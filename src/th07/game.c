@@ -4,13 +4,12 @@
 #include "th07/ascii.h"
 #include "th07/scene.h"
 #include "th07/screens/result/saves.h"
-#include "shell/game.h"
-
-#include "stg/note.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/gfx.h"
+#include "shell/game.h"
+#include "stg/note.h"
 
 RNG g_Rng;
 float g_GameSpeed = 1.0f;

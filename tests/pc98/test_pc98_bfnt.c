@@ -1,8 +1,7 @@
-#include "pc98/zun/bfnt.h"
+#include "tests/test.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
+#include "pc98/zun/bfnt.h"
 
 static void M_Header(uint8_t *const bytes, const uint8_t color)
 {

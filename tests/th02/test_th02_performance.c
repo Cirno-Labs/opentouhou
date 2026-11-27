@@ -1,7 +1,6 @@
-#include "../../src/th02/performance.c"
+#include "tests/test.h"
+#include "th02/performance.c"
 #include "th02/performance.h"
-
-#include "test.h"
 
 TEST(performance_initialization_and_timed_raises_keep_source_limits)
 {

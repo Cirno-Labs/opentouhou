@@ -2,12 +2,11 @@
 
 #include "core/image/codec.h"
 
+#include <jpeglib.h>
 #include <limits.h>
 #include <setjmp.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <jpeglib.h>
 
 typedef struct {
     struct jpeg_error_mgr manager;

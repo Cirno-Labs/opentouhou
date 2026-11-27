@@ -1,8 +1,7 @@
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
-#include "th02_music_room_render.h"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_music_room_render.h"
+#include "tests/th02/th02_palette_fixture.h"
 
 typedef struct {
     MUSIC_ROOM_ASSETS assets;

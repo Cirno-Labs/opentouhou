@@ -4,7 +4,7 @@
 // branch at commit 7813e9119eb5fe681b6750b8a033a0490bca0941. Renamed
 // (otm_ prefix) to avoid colliding with a platform libm.
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 double otm_Cos(double x)
 {

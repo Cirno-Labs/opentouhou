@@ -1,7 +1,5 @@
-#include "th02/boss/mima.h"
 #include "th02/background.h"
-#include "th02/stage.h"
-
+#include "th02/boss/mima.h"
 #include "th02/boss/mima/assets.h"
 #include "th02/boss/mima/private.h"
 #include "th02/boss/private.h"
@@ -9,13 +7,15 @@
 #include "th02/boss/strategy.h"
 #include "th02/bullets.h"
 #include "th02/draw.h"
-#include "th02/palette.h"
 #include "th02/items.h"
+#include "th02/palette.h"
 #include "th02/player.h"
-#include "th02/shots.h"
 #include "th02/random.h"
 #include "th02/score.h"
+#include "th02/shots.h"
 #include "th02/sound_effects.h"
+#include "th02/stage.h"
+
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"
 

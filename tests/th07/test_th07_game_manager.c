@@ -1,7 +1,5 @@
+#include "tests/test.h"
 #include "th07/game_manager.h"
-
-#include "test.h"
-
 #include "th07/gui.h"
 #include "th07/player.h"
 

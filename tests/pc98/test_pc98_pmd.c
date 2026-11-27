@@ -1,9 +1,9 @@
-#include "pc98/pmd.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
 #include "core/base/arena.h"
 #include "core/base/log.h"
-#include "test.h"
-#include "test_allocator.h"
+#include "pc98/pmd.h"
 
 #include <setjmp.h>
 

@@ -1,6 +1,5 @@
-#include "bot.h"
-
-#include "test.h"
+#include "replay/bot/bot.h"
+#include "tests/test.h"
 
 #include "core/base/utils.h"
 

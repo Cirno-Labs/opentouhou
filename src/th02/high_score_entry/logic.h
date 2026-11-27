@@ -3,8 +3,8 @@
 // Name entry after a run qualifies for the score table, with the
 // not-qualified release/press wait around it.
 
-#include "th02/input.h"
 #include "th02/high_scores.h"
+#include "th02/input.h"
 
 typedef struct {
     int32_t score;

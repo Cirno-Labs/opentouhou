@@ -1,6 +1,5 @@
+#include "tests/test.h"
 #include "th02/patterns.h"
-
-#include "test.h"
 
 TEST(tiny_records_sort_colors_and_grow_storage_when_needed)
 {

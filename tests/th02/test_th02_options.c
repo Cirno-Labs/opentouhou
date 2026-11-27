@@ -1,6 +1,5 @@
-#include "th02_menu.c"
-
-#include "test.h"
+#include "tests/test.h"
+#include "tests/th02/th02_menu.c"
 
 typedef struct {
     OPTIONS_MENU_SOUND_EVENT events[16];

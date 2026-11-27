@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/draw/private.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(opaque_copies_ignore_coverage_round_x_and_overwrite_zero)
 {

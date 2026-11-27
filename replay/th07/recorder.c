@@ -1,4 +1,4 @@
-#include "recorder.h"
+#include "replay/bot/recorder.h"
 
 #include "th07/buttons.h"
 #include "th07/files.h"
@@ -6,11 +6,9 @@
 #include "th07/game_manager.h"
 #include "th07/replay/chain.h"
 #include "th07/scene.h"
-#include "th07/screens/title.h"
 #include "th07/screens/result/saves.h"
+#include "th07/screens/title.h"
 #include "th07/settings.h"
-
-#include "shell/game/files.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"
@@ -18,6 +16,7 @@
 #include "core/config.h"
 #include "core/io/file.h"
 #include "core/vfs.h"
+#include "shell/game/files.h"
 
 #include <stdio.h>
 #include <string.h>

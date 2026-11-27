@@ -1,9 +1,8 @@
-#include "pc98/zun/pf.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
-#include "test_allocator.h"
+#include "pc98/zun/pf.h"
 
 #define M_DATA_OFFSET 1024
 #define M_ARCHIVE_SIZE 4096

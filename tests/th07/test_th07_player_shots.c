@@ -1,21 +1,18 @@
-#include "th07/player/private.h"
-
-#include "gfx_recorder.h"
-#include "test.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
 #include "th07/anm.h"
 #include "th07/effect.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/gui.h"
 #include "th07/player.h"
+#include "th07/player/private.h"
 #include "th07/sound.h"
 
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/math/common.h"
 #include "core/math/x87.h"
-
 #include "stg/angle.h"
 #include "stg/rng.h"
 #include "stg/timer.h"

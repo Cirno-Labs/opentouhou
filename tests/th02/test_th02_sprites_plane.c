@@ -1,8 +1,7 @@
+#include "tests/test.h"
 #include "th02/draw/private.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 TEST(source_planes_and_selected_destination_bits_are_independent)
 {

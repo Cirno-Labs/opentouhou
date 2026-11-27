@@ -4,9 +4,9 @@
 // tests: 17 sectors a track, 4 heads, and one FAT partition from cylinder 1,
 // after an inactive entry that points at cylinder 0.
 
-#include "core/base/memory.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "core/base/memory.h"
 
 #include <string.h>
 

@@ -1,13 +1,12 @@
-#include "stg/pbg3.h"
-
-#include "pbg3_builder.h"
+#include "tests/pbg3_builder.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
 #include "core/archive.h"
 #include "core/base/cp932.h"
 #include "core/base/string.h"
 #include "core/vfs.h"
-#include "test.h"
-#include "test_allocator.h"
+#include "stg/pbg3.h"
 
 #include <string.h>
 

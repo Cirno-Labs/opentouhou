@@ -1,11 +1,11 @@
+#include "tests/th02/th02_boss_hp.h"
+#include "tests/th02/th02_gameplay_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
 #include "th02/boss/mima/logic.c"
 #include "th02/boss/mima/transition.c"
-#include "th02_gameplay_fixture.h"
-#include "th02_boss_hp.h"
 
 TEST(mima_banks_borrow_cached_patterns_and_import_palettes_without_dac_writes)
 {

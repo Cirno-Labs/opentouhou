@@ -1,9 +1,7 @@
+#include "core/base/memory.h"
 #include "core/text/private.h"
 
-#include "core/base/memory.h"
-
 #include <SDL3_ttf/SDL_textengine.h>
-
 #include <limits.h>
 #include <stdlib.h>
 

@@ -3,9 +3,8 @@
 // The music room's background polygons: sixteen shapes drifting and
 // spinning down the screen, replayed from a shared RNG seed.
 
-#include "pc98/zun/math16.h"
-
 #include "core/base/types.h"
+#include "pc98/zun/math16.h"
 
 #define MUSIC_POLYGON_COUNT 16
 

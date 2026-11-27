@@ -1,6 +1,7 @@
 #pragma once
 
 #include "th02/patterns.h"
+
 #include "core/vfs.h"
 
 typedef enum {

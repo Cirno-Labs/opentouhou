@@ -1,8 +1,7 @@
-#include "core/hash/sha256.h"
+#include "tests/test.h"
 
 #include "core/base/memory.h"
-
-#include "test.h"
+#include "core/hash/sha256.h"
 
 static void M_CheckHash(
     const void *const data, const size_t size, const char *const expected)

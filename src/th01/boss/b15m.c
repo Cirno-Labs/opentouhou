@@ -2,21 +2,21 @@
 #include "th01/missiles.h"
 #include "th01/particles.h"
 #include "th01/pellets.h"
-#include "pc98/zun/pi.h"
-#include "th01/scene.h"
-#include "th01/shootout_lasers.h"
-#include "th01/session.h"
-#include "th01/sound.h"
 #include "th01/rng.h"
-
-#include "pc98/zun/master_rng.h"
-#include "pc98/zun/math16.h"
-#include "core/base/assert.h"
+#include "th01/scene.h"
+#include "th01/session.h"
 #include "th01/shape.h"
+#include "th01/shootout_lasers.h"
+#include "th01/sound.h"
 #include "th01/sprite.h"
-#include "pc98/zun/sprite_sheet.h"
 #include "th01/wait.h"
 #include "th01/wave.h"
+
+#include "core/base/assert.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
+#include "pc98/zun/pi.h"
+#include "pc98/zun/sprite_sheet.h"
 
 #include <string.h>
 

@@ -1,7 +1,8 @@
 #include "th02/boss/explosion.h"
+
 #include "th02/background.h"
-#include "th02/stage.h"
 #include "th02/sound_effects.h"
+#include "th02/stage.h"
 
 #include "core/base/assert.h"
 #include "pc98/zun/math16.h"

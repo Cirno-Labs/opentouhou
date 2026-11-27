@@ -1,16 +1,15 @@
 #include "th07/ecl/file.h"
 
 #include "th07/ecl/private.h"
-
 #include "th07/game_manager.h"
 
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/base/assert.h"
 #include "core/base/cp932.h"
 #include "core/base/memory.h"
 #include "core/base/utils.h"
 #include "core/io/reader.h"
+#include "core/vfs.h"
+#include "shell/game.h"
 
 #include <string.h>
 

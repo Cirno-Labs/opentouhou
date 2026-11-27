@@ -1,17 +1,16 @@
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_tram_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/performance.c"
+#include "tests/test.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_player_graphics.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
+#include "tests/th02/th02_tram_fixture.h"
 #include "th02/items.h"
-#include "th02/sparks.h"
+#include "th02/miss.h"
+#include "th02/performance.c"
 #include "th02/player.h"
 #include "th02/shots.h"
-#include "th02/miss.h"
-
-#include "test.h"
-#include "th02_player_graphics.h"
-#include "th02_sound.h"
+#include "th02/sparks.h"
 
 typedef struct {
     uint8_t start_bombs;

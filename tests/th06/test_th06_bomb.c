@@ -1,12 +1,10 @@
-#include "th06/bomb.h"
-
-#include "anm_builder.h"
-#include "gfx_recorder.h"
-#include "test.h"
-#include "test_dir.h"
-#include "th06_data.h"
-
+#include "tests/gfx_recorder.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
+#include "tests/th06/anm_builder.h"
+#include "tests/th06/th06_data.h"
 #include "th06/anm.h"
+#include "th06/bomb.h"
 #include "th06/bullet.h"
 #include "th06/effect.h"
 #include "th06/enemy.h"
@@ -24,7 +22,6 @@
 #include "core/base/memory.h"
 #include "core/gfx/private.h"
 #include "core/math/x87.h"
-
 #include "stg/chain.h"
 #include "stg/rng.h"
 

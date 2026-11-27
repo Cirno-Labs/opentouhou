@@ -1,11 +1,11 @@
+#include "tests/th02/th02_gameplay_fixture.h"
+#include "tests/th02/th02_player_fixture.h"
+#include "tests/th02/th02_random_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
 #include "th02/background/private.h"
-#include "th02/bullets/private.h"
-#include "th02_score_fixture.h"
-#include "th02_random_fixture.h"
-#include "th02_player_fixture.h"
-#include "../../src/th02/performance.c"
 #include "th02/boss/marisa/logic.c"
-#include "th02_gameplay_fixture.h"
+#include "th02/bullets/private.h"
+#include "th02/performance.c"
 
 TEST(stage_four_midboss_entry_targets_old_position_and_moves_page_zero)
 {

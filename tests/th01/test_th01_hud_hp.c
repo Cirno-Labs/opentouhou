@@ -1,9 +1,10 @@
-#include "../../src/th01/hud_hp.c"
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
+#include "tests/th01/th01_world.h"
+#include "th01/hud_hp.c"
 #include "th01/hud_hp.h"
+
 #include "core/base/arena.h"
-#include "th01_video.h"
-#include "th01_world.h"
-#include "test.h"
 
 TEST(pattern_mask_and_odd_boundary_decrement)
 {

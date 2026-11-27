@@ -1,10 +1,10 @@
-#include "core/archive/zip.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/test_dir.h"
+#include "tests/zip_builder.h"
 
 #include "core/archive.h"
-#include "test.h"
-#include "test_allocator.h"
-#include "test_dir.h"
-#include "zip_builder.h"
+#include "core/archive/zip.h"
 
 #define M_TEXT "Every package holds the game and othpatch. "
 

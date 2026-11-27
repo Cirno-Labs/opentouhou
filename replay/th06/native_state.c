@@ -1,7 +1,6 @@
-#include "native_state.h"
+#include "replay/th06/native_state.h"
 
-#include "state.h"
-
+#include "replay/harness/state.h"
 #include "th06/bullet.h"
 #include "th06/enemy.h"
 #include "th06/game.h"

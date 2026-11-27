@@ -1,17 +1,16 @@
 #include "th07/screens/ending/screen.h"
 
-#include "th07/screens/ending/script.h"
-
 #include "th07/anm.h"
 #include "th07/ascii.h"
 #include "th07/files.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/scene.h"
+#include "th07/screens/ending/script.h"
 #include "th07/sound.h"
 
-#include "core/base/cp932.h"
 #include "core/base/color.h"
+#include "core/base/cp932.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 

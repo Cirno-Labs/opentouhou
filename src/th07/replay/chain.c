@@ -1,15 +1,12 @@
-#include "th07/replay.h"
-
 #include "th07/enemy.h"
 #include "th07/exe_identity.h"
 #include "th07/game.h"
 #include "th07/game_manager.h"
 #include "th07/gui.h"
 #include "th07/player.h"
+#include "th07/replay.h"
 #include "th07/screens/result/saves.h"
 #include "th07/settings.h"
-
-#include "stg/replay_files.h"
 
 #include "core/base/assert.h"
 #include "core/base/log.h"
@@ -17,6 +14,7 @@
 #include "core/base/utils.h"
 #include "core/io/writer.h"
 #include "core/math/x87.h"
+#include "stg/replay_files.h"
 
 #include <limits.h>
 #include <stdio.h>

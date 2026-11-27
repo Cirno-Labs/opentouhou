@@ -1,6 +1,6 @@
-#include "pc98/pmd/pitch.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/pmd/pitch.h"
 
 TEST(transpose_preserves_byte_octave_and_rest_quirks)
 {

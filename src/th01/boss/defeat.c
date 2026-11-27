@@ -1,5 +1,4 @@
 #include "th01/boss/private.h"
-
 #include "th01/stage.h"
 
 #include "core/base/assert.h"

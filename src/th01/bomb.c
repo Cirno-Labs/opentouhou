@@ -1,10 +1,10 @@
 #include "th01/bomb.h"
+
 #include "th01/pellets.h"
 #include "th01/sound.h"
 
-#include "pc98/zun/math16.h"
-
 #include "core/base/assert.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

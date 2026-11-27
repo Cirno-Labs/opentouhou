@@ -1,9 +1,8 @@
-#include "th02_clip_fixture.h"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
 #include "th02/draw/private.h"
 
 #include "core/base/arena.h"
-
-#include "test.h"
 
 static void M_Init(ARENA *const arena, PATTERN_BANK *const bank)
 {

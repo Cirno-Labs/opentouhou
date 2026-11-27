@@ -1,7 +1,7 @@
 #include "th02/main.h"
-#include "th02/program/private.h"
 
-#include "version.h"
+#include "th02/program/private.h"
+#include "th02/version.h"
 
 static const char *const m_DataFiles[] = { "TOUHOU.DAT", "東方封魔.録" };
 

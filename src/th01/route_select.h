@@ -1,10 +1,10 @@
 #pragma once
 
-#include "th01/vsync_irq.h"
-#include "th01/player.h"
 #include "th01/palette.h"
+#include "th01/player.h"
 #include "th01/scene.h"
 #include "th01/text.h"
+#include "th01/vsync_irq.h"
 
 typedef struct {
     const GAME_TEXT_FONT *font;

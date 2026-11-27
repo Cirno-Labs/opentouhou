@@ -1,8 +1,8 @@
-#include "addresses.h"
-#include "dosbox.h"
-#include "dosbox_state.h"
-#include "files.h"
-#include "harness.h"
+#include "replay/dosbox/dosbox.h"
+#include "replay/th01/addresses.h"
+#include "replay/th01/dosbox_state.h"
+#include "replay/th01/files.h"
+#include "replay/th01/harness.h"
 
 #include "core/base/utils.h"
 

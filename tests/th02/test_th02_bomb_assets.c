@@ -1,9 +1,8 @@
+#include "tests/test.h"
+#include "tests/test_allocator.h"
+#include "tests/th02/th02_sprites.h"
 #include "th02/bomb/assets.h"
 #include "th02/bomb/tail.h"
-
-#include "th02_sprites.h"
-#include "test.h"
-#include "test_allocator.h"
 
 typedef struct {
     const char *path;

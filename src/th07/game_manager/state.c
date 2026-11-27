@@ -1,6 +1,5 @@
-#include "th07/game_manager.h"
-
 #include "th07/game.h"
+#include "th07/game_manager.h"
 
 #include "core/base/utils.h"
 

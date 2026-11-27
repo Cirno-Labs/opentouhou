@@ -1,18 +1,16 @@
 #include "th06/anm.h"
 #include "th06/anm/private.h"
-
-#include "stg/angle.h"
-#include "stg/note.h"
 #include "th06/time.h"
 
-#include "shell/game.h"
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/memory.h"
 #include "core/io/reader.h"
 #include "core/math/x87.h"
 #include "core/vfs.h"
-
+#include "shell/game.h"
+#include "stg/angle.h"
+#include "stg/note.h"
 #include "stg/timer.h"
 
 #include <string.h>

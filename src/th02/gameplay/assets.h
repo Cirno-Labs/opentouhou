@@ -1,15 +1,15 @@
 #pragma once
 
-#include "th02/gaiji.h"
+#include "th02/boss/fight.h"
 #include "th02/bullets.h"
+#include "th02/gaiji.h"
 #include "th02/patterns.h"
+#include "th02/pause_menu.h"
 #include "th02/point_numbers.h"
 #include "th02/sparks.h"
 #include "th02/stage/backdrop.h"
-#include "th02/stage_bonus/assets.h"
 #include "th02/stage/titles.h"
-#include "th02/boss/fight.h"
-#include "th02/pause_menu.h"
+#include "th02/stage_bonus/assets.h"
 
 #include "core/vfs.h"
 

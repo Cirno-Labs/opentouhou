@@ -1,11 +1,11 @@
 #include "th06/bomb/draw.h"
 
-#include "stg/angle.h"
 #include "th06/anm.h"
 #include "th06/game_manager.h"
 #include "th06/player.h"
 
 #include "core/math/x87.h"
+#include "stg/angle.h"
 
 static void M_Dim(void)
 {

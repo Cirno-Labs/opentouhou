@@ -1,4 +1,4 @@
-#include "screenshot.h"
+#include "shell/game/screenshot.h"
 
 #include "core/base/log.h"
 #include "core/base/memory.h"

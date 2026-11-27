@@ -1,4 +1,4 @@
-#include "script.h"
+#include "replay/harness/script.h"
 
 #include "core/base/memory.h"
 #include "core/base/string.h"

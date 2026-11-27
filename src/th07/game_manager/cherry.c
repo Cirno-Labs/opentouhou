@@ -1,5 +1,4 @@
 #include "th07/game_manager.h"
-
 #include "th07/gui.h"
 #include "th07/player.h"
 

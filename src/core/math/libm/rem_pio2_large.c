@@ -10,7 +10,7 @@
 // selects how many doubles y needs (1 here, since this is reached only
 // through otm_RemPio2's double-precision path).
 
-#include "libm_internal.h"
+#include "core/math/libm/libm_internal.h"
 
 #include <float.h>
 

@@ -1,7 +1,9 @@
 #include "th02/opening/assets.h"
+
+#include "th02/tram.h"
+
 #include "core/base/cp932.h"
 #include "pc98/zun/pi.h"
-#include "th02/tram.h"
 
 #include <string.h>
 

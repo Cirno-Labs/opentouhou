@@ -1,8 +1,8 @@
-#include "core/patch/manager.h"
+#include "tests/patch_server.h"
+#include "tests/test.h"
+#include "tests/test_dir.h"
 
-#include "patch_server.h"
-#include "test.h"
-#include "test_dir.h"
+#include "core/patch/manager.h"
 
 #include <stdarg.h>
 #include <string.h>

@@ -1,5 +1,5 @@
+#include "tests/test.h"
 #include "th02/demo.h"
-#include "test.h"
 
 TEST(recording_is_owned_and_requires_exact_word_count)
 {

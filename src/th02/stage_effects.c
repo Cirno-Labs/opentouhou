@@ -1,4 +1,5 @@
 #include "th02/stage_effects.h"
+
 #include "th02/background.h"
 #include "th02/clip.h"
 #include "th02/draw.h"

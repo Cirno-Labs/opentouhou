@@ -1,12 +1,10 @@
-#include "core/input.h"
+#include "tests/input_backend_fake.h"
+#include "tests/test.h"
 
 #include "core/base/log.h"
-
-#include "input_backend_fake.h"
-#include "test.h"
+#include "core/input.h"
 
 #include <SDL3/SDL_scancode.h>
-
 #include <string.h>
 
 typedef struct {

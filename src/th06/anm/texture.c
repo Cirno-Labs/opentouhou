@@ -3,9 +3,9 @@
 #include "th06/anm/private.h"
 #include "th06/files.h"
 
-#include "shell/game.h"
 #include "core/base/assert.h"
 #include "core/vfs.h"
+#include "shell/game.h"
 
 #include <string.h>
 

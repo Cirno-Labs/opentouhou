@@ -1,7 +1,7 @@
 #include "th02/draw/circles.h"
-#include "th02/draw/shapes.h"
 
 #include "th02/clip.h"
+#include "th02/draw/shapes.h"
 #include "th02/grcg.h"
 #include "th02/video.h"
 

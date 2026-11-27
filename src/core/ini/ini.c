@@ -1,6 +1,5 @@
-#include "core/ini/struct.h"
-
 #include "core/base/string.h"
+#include "core/ini/struct.h"
 
 #include <string.h>
 

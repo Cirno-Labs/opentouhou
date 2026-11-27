@@ -1,4 +1,4 @@
-#include "th07_msg_builder.h"
+#include "tests/th07/th07_msg_builder.h"
 
 #include "core/base/assert.h"
 #include "core/base/cp932.h"

@@ -1,10 +1,8 @@
 #include "pc98/zun/logo1.h"
-#include "pc98/zun/master_rng.h"
-#include "pc98/zun/math16.h"
-#include "pc98/zun/math16.h"
-#include "pc98/zun/master_rng.h"
 
 #include "core/base/assert.h"
+#include "pc98/zun/master_rng.h"
+#include "pc98/zun/math16.h"
 
 #include <string.h>
 

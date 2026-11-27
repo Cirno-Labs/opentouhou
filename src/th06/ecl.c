@@ -1,6 +1,5 @@
 #include "th06/ecl.h"
 
-#include "stg/angle.h"
 #include "th06/anm.h"
 #include "th06/bullet.h"
 #include "th06/effect.h"
@@ -10,12 +9,10 @@
 #include "th06/gui.h"
 #include "th06/item.h"
 #include "th06/player.h"
+#include "th06/screens/result.h"
 #include "th06/sound.h"
 #include "th06/stage.h"
-#include "th06/screens/result.h"
-#include "stg/translation.h"
 
-#include "shell/game.h"
 #include "core/base/assert.h"
 #include "core/base/color.h"
 #include "core/base/cp932.h"
@@ -25,8 +22,10 @@
 #include "core/math/common.h"
 #include "core/math/x87.h"
 #include "core/vfs.h"
-
+#include "shell/game.h"
+#include "stg/angle.h"
 #include "stg/rng.h"
+#include "stg/translation.h"
 
 #include <string.h>
 

@@ -1,11 +1,10 @@
-#include "th02_palette_fixture.h"
-#include "th02_clip_fixture.h"
-#include "../../src/th02/grcg.c"
+#include "tests/test.h"
+#include "tests/th02/th02_clip_fixture.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_sprites.h"
 #include "th02/ending/render.h"
 #include "th02/ending/text.h"
-
-#include "th02_sprites.h"
-#include "test.h"
+#include "th02/grcg.c"
 
 static void M_Fill(void)
 {

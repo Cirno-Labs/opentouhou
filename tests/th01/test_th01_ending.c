@@ -1,9 +1,10 @@
-#include "../../src/th01/ending.c"
-#include "../../src/th01/vsync_irq.c"
+#include "tests/test.h"
+#include "th01/ending.c"
 #include "th01/music.h"
 #include "th01/session.h"
+#include "th01/vsync_irq.c"
+
 #include "core/base/arena.h"
-#include "test.h"
 
 #include <string.h>
 

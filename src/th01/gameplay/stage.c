@@ -1,5 +1,7 @@
-#include "th01/gameplay/private.h"
+#include "th01/stage.h"
+
 #include "th01/boss.h"
+#include "th01/gameplay/private.h"
 #include "th01/hooks.h"
 #include "th01/hud.h"
 #include "th01/items.h"
@@ -12,7 +14,6 @@
 #include "th01/shots.h"
 #include "th01/sound.h"
 #include "th01/sprite.h"
-#include "th01/stage.h"
 #include "th01/stage_objects.h"
 #include "th01/text.h"
 #include "th01/timer.h"

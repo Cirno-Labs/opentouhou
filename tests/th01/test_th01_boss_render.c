@@ -1,9 +1,8 @@
+#include "tests/test.h"
+#include "tests/th01/th01_video.h"
 #include "th01/boss/entity.h"
 
 #include "core/base/arena.h"
-
-#include "th01_video.h"
-#include "test.h"
 
 #include <string.h>
 

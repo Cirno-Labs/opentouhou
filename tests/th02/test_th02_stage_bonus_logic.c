@@ -1,10 +1,9 @@
-#include "th02_score_fixture.h"
-#include "th02_palette_fixture.h"
-#include "th02/stage_bonus/logic.c"
+#include "tests/test.h"
+#include "tests/th02/th02_palette_fixture.h"
+#include "tests/th02/th02_score_fixture.h"
+#include "tests/th02/th02_sound.h"
 #include "th02/hud.h"
-
-#include "test.h"
-#include "th02_sound.h"
+#include "th02/stage_bonus/logic.c"
 
 typedef struct {
     STAGE_BONUS_ASSETS assets;

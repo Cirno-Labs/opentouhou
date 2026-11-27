@@ -1,7 +1,7 @@
-#include "core/io/reader.h"
+#include "tests/test.h"
+#include "tests/test_allocator.h"
 
-#include "test.h"
-#include "test_allocator.h"
+#include "core/io/reader.h"
 
 static void *M_Copy(
     const char *const text, const size_t size, const ALLOCATOR *const allocator)

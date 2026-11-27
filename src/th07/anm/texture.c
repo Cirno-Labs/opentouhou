@@ -3,10 +3,10 @@
 #include "th07/anm/private.h"
 #include "th07/files.h"
 
-#include "shell/game.h"
-#include "core/vfs.h"
 #include "core/base/assert.h"
 #include "core/base/utils.h"
+#include "core/vfs.h"
+#include "shell/game.h"
 
 #include <math.h>
 #include <string.h>

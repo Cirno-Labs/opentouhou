@@ -1,6 +1,6 @@
-#include "clock.h"
+#include "replay/retail/clock.h"
 
-#include "iat.h"
+#include "replay/retail/iat.h"
 
 #include <math.h>
 #include <mmsystem.h>

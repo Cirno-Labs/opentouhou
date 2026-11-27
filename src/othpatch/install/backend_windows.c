@@ -1,5 +1,5 @@
-#include "othpatch/install/install.h"
 #include "othpatch/install/backend.h"
+#include "othpatch/install/install.h"
 
 const INSTALL_PLATFORM *Install_GetPlatform(void)
 {

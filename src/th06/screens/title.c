@@ -12,10 +12,10 @@
 #include "th06/strings.h"
 #include "th06/time.h"
 
-#include "shell/game.h"
 #include "core/base/color.h"
 #include "core/base/log.h"
 #include "core/base/utils.h"
+#include "shell/game.h"
 
 #include <stdio.h>
 #include <string.h>

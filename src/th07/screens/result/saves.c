@@ -1,15 +1,13 @@
-#include "th07/screens/result/private.h"
-
 #include "th07/game_manager.h"
 #include "th07/replay.h"
+#include "th07/screens/result/private.h"
 
-#include "stg/replay_files.h"
-
-#include "shell/game.h"
 #include "core/base/log.h"
 #include "core/base/memory.h"
 #include "core/base/string.h"
 #include "core/vfs.h"
+#include "shell/game.h"
+#include "stg/replay_files.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -1,4 +1,4 @@
-#include "th01_assets.h"
+#include "tests/th01/th01_assets.h"
 
 #include "core/base/assert.h"
 

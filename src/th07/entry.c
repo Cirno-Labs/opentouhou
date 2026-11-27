@@ -1,5 +1,6 @@
 #define SDL_MAIN_USE_CALLBACKS
 #include "shell/game/entry.h"
+
 #include "th07/main.h"
 
 #include <SDL3/SDL_main.h>

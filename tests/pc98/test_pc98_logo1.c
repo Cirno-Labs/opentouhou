@@ -1,6 +1,6 @@
-#include "pc98/zun/logo1.h"
+#include "tests/test.h"
 
-#include "test.h"
+#include "pc98/zun/logo1.h"
 
 #include <string.h>
 

@@ -1,8 +1,7 @@
-#include "../../src/th01/boss/entity.c"
-#include "../../src/th01/orb.c"
+#include "tests/test.h"
+#include "th01/boss/entity.c"
 #include "th01/boss/entity.h"
-
-#include "test.h"
+#include "th01/orb.c"
 
 #include <string.h>
 

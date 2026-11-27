@@ -1,4 +1,4 @@
-#include "harness.h"
+#include "replay/th07/harness.h"
 
 #include "th07/buttons.h"
 
