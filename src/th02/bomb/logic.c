@@ -34,7 +34,7 @@ static void M_Clear(const PLAYFIELD_PAGES pages)
     Bullets_RemoveAll(pages);
 }
 
-static void M_Circle(
+static void M_BombCircle(
     const BOMB_ASSETS *const assets, const int16_t scroll, const int16_t radius,
     const uint8_t first_angle, const bool erase)
 {
@@ -52,7 +52,7 @@ static void M_Circle(
     }
 }
 
-static void M_Particles(
+static void M_BombParticles(
     const BOMB_ASSETS *const assets, const int16_t scroll_line)
 {
     const size_t first = ((uint16_t)m_Bomb.frame & 15) * 2;
@@ -158,7 +158,7 @@ static bool M_TypeA(
             if ((frame & 3) == 0) {
                 SoundEffects_Play(SOUND_EFFECT_BOMB_1);
             }
-            M_Particles(assets, pages.scroll);
+            M_BombParticles(assets, pages.scroll);
         }
         if (frame == 86) {
             SoundEffects_Play(SOUND_EFFECT_BOMB_3);
@@ -211,7 +211,7 @@ static bool M_TypeB(
         }
         Draw_BoxFill(g_Clip, 32, 0, 415, 399);
         Grcg_SetColor(4);
-        M_Particles(assets, pages.scroll);
+        M_BombParticles(assets, pages.scroll);
     } else if (m_Bomb.frame < 164) {
         Draw_BoxFill(g_Clip, 32, 0, 415, 399);
         *slowdown = 2;
@@ -228,7 +228,7 @@ static bool M_TypeB(
             : frame <= 156                ? frame - 148
                                           : frame - 156;
         Grcg_SetColor(14);
-        M_Circle(
+        M_BombCircle(
             assets, pages.scroll, Math16_Wrap(ring * 32), (uint8_t)ring, false);
         Grcg_Off();
         Palette_SetTone(Math16_Wrap(596 - frame * 3));
@@ -277,7 +277,7 @@ static bool M_TypeC(
             *slowdown = 2;
         }
         Grcg_SetColor(14);
-        M_Particles(assets, pages.scroll);
+        M_BombParticles(assets, pages.scroll);
         Grcg_SetColor(1);
         for (size_t i = 0; i < 48; i++) {
             m_Bomb.columns[i].y =
@@ -360,7 +360,7 @@ void Bomb_Invalidate(
     }
     if (m_Bomb.circle_frame > 1) {
         m_Bomb.frame = Math16_Wrap((int32_t)m_Bomb.frame - 1);
-        M_Circle(
+        M_BombCircle(
             assets, pages.scroll, Math16_Wrap(256 - m_Bomb.frame * 8),
             (uint8_t)m_Bomb.frame, true);
         if (m_Bomb.frame >= 32) {
@@ -393,7 +393,7 @@ void Bomb_Update(
             m_Bomb.circle_frame = Math16_Wrap((int32_t)m_Bomb.circle_frame + 1);
             m_Bomb.page_scroll[pages.back] = pages.scroll;
             Grcg_SetColor(15);
-            M_Circle(
+            M_BombCircle(
                 assets, pages.scroll, Math16_Wrap(256 - m_Bomb.frame * 8),
                 (uint8_t)m_Bomb.frame, false);
             Grcg_Off();

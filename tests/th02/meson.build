@@ -41,6 +41,7 @@ foreach part : [
   'point_numbers',
   'bomb_assets',
   'bullets',
+  'gameplay_assets',
 ]
   test(
     'th02/' + part,
@@ -343,6 +344,8 @@ foreach part : [
   'mima',
   'sigma',
   'stage_flow',
+  'gameplay',
+  'gameplay_memory',
 ]
   test(
     'th02/' + part,
