@@ -19,6 +19,7 @@ th02_lib = static_library(
   'bullets/spawn.c',
   'bullets/pool.c',
   'pillars.c',
+  'enemies.c',
   'items.c',
   'player/logic.c',
   'player/render.c',
