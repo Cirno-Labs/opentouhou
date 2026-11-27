@@ -42,6 +42,7 @@ foreach part : [
   'bomb_assets',
   'bullets',
   'gameplay_assets',
+  'ending_render',
 ]
   test(
     'th02/' + part,
@@ -346,6 +347,13 @@ foreach part : [
   'stage_flow',
   'gameplay',
   'gameplay_memory',
+  'story',
+  'credits',
+  'verdict',
+  'ending',
+  'ending_assets',
+  'ending_images',
+  'ending_text',
 ]
   test(
     'th02/' + part,
