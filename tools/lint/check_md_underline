@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""Fail when a heading's underline does not span its title.
+
+Takes the paths of Markdown and text files. A setext heading, a title line
+that starts a block with a line of = or - below it, has an underline
+exactly as wide as the title,
+counting wide characters as two columns. --fix sets each underline to
+that width instead.
+"""
+
+import argparse
+import re
+import sys
+import unicodedata
+from pathlib import Path
+
+UNDERLINE_RE = re.compile(r"^(=+|-+)\s*$")
+MESSAGE = "make the underline as wide as the heading"
+
+
+def width(text: str) -> int:
+    """Return the columns text takes, wide characters counting two."""
+    return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in text)
+
+
+def headings(lines: list[str]) -> list[tuple[int, int]]:
+    """Return (underline index, wanted width) for each setext heading."""
+    found = []
+    fenced = False
+    for index, line in enumerate(lines):
+        if line.strip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced or index == 0 or not UNDERLINE_RE.match(line):
+            continue
+        title = lines[index - 1].rstrip()
+        if not title.strip() or title.startswith((" ", "\t", "|", "#", ">")):
+            continue
+        if UNDERLINE_RE.match(title):
+            continue
+        if index >= 2 and lines[index - 2].strip():
+            continue
+        found.append((index, width(title)))
+    return found
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("paths", nargs="*")
+    args = parser.parse_args()
+    failed = False
+    for name in args.paths:
+        path = Path(name)
+        lines = path.read_text(encoding="utf-8").split("\n")
+        changed = False
+        for index, wanted in headings(lines):
+            line = lines[index].rstrip()
+            if len(line) == wanted:
+                continue
+            if args.fix:
+                lines[index] = line[0] * wanted
+                changed = True
+            else:
+                print(f"{name}:{index + 1}: {MESSAGE}")
+                failed = True
+        if changed:
+            path.write_text("\n".join(lines), encoding="utf-8")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

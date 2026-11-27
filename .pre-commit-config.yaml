@@ -44,6 +44,13 @@ repos:
     language: python
     files: \.md$
 
+  - id: md-underline
+    name: A heading's underline spans its title
+    entry: tools/lint/check_md_underline
+    language: python
+    files: \.(md|txt)$
+    exclude: ^src/shell/builtin/fonts/
+
   - id: raw-color
     name: A color is written with COLOR_ARGB, not a raw literal
     entry: tools/lint/check_raw_color

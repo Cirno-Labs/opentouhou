@@ -1,5 +1,5 @@
 OpenTouhou and bundled-component licenses
-========================================
+=========================================
 
 Each notice applies to its component, not to all bundled code.
 Source and build information: https://github.com/Cirno-Labs/opentouhou
